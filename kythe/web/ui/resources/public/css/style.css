@@ -1,0 +1,76 @@
+/* Fullscreen display elements */
+html, body, #kythe, #container, #container div {
+  height: 100%;
+  margin-bottom: 0px;
+}
+
+#fringe {
+  float: left;
+  border: 0px;
+  background: none;
+  width: 35px; /* Enough space for 4-digit line numbers */
+  word-wrap: normal;
+  padding-left: 0px;
+  padding-right: 4px;
+  text-align: right;
+}
+
+#src-container code {
+  white-space: pre;
+  word-wrap: normal;
+}
+
+#src-container, #filetree-container {
+  overflow: auto;
+}
+
+/* Compress file tree items */
+#filetree-container ul > li {
+  margin-left: 11px;
+}
+#filetree-container a {
+  display: inline;
+}
+#filetree-container > ul > li {
+  margin-left: 5px;
+}
+#filetree-container a {
+  padding: 3px;
+  margin: -1px;
+}
+
+.border {
+  border: 1px solid lightgray;
+  border-radius: 4px;
+}
+
+/* TODO(schroederc): don't overlay on top of source text */
+#xrefs {
+  padding: 5px;
+  width: 100%;
+  position: fixed;
+  margin: 0px;
+  bottom: 0px;
+  overflow: auto;
+  background: white;
+  height: 200px !important;
+}
+
+#xrefs div {
+  height: auto;
+}
+
+.spinner {
+  -animation: spin 0.9s infinite linear;
+  -webkit-animation: spin-webkit 0.9s infinite linear;
+}
+
+@-webkit-keyframes spin-webkit {
+  from { -webkit-transform: rotate(0deg); }
+  to   { -webkit-transform: rotate(360deg); }
+}
+
+@keyframes spin {
+  from { transform: scale(1) rotate(0deg); }
+  to   { transform: scale(1) rotate(360deg); }
+}

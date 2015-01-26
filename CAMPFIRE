@@ -1,0 +1,11 @@
+[
+  {
+    "name": "README",
+    "kind": "asciidoc",
+    "inputs": {
+      "srcs": [
+        "README.adoc"
+      ]
+    }
+  }
+]

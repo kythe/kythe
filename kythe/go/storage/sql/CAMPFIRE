@@ -1,0 +1,34 @@
+[
+  {
+    "name": "sql",
+    "kind": "go_library",
+    "inputs": {
+      "srcs": [
+        "sql.go"
+      ],
+      "go_pkgs": [
+        "//kythe/proto:storage_proto",
+        "//third_party/go/github.com:go-sqlite3"
+      ]
+    }
+  },
+  {
+    "name": "sql_test",
+    "kind": "go_test",
+    "properties": {
+      "go_benchmark": true
+    },
+    "inputs": {
+      "srcs": [
+        "sql_test.go"
+      ],
+      "go_lib": [
+        ":sql"
+      ],
+      "go_pkgs": [
+        "//kythe/go/storage",
+        "//kythe/proto:storage_proto"
+      ]
+    }
+  }
+]

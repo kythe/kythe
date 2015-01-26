@@ -1,0 +1,25 @@
+[
+  {
+    "name": "levigo",
+    "kind": "go_external_lib",
+    "properties": {
+      "go_package": "github.com/jmhodges/levigo",
+      "cgo_ldflags": [
+        "-lstdc++"
+      ]
+    },
+    "inputs": {
+      "cc_libs": [
+        "//third_party/leveldb",
+        "//third_party/snappy"
+      ]
+    }
+  },
+  {
+    "name": "go-sqlite3",
+    "kind": "go_external_lib",
+    "properties": {
+      "go_package": "github.com/mattn/go-sqlite3"
+    }
+  }
+]

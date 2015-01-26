@@ -1,0 +1,10 @@
+URL: https://code.google.com/p/protobuf/downloads/detail?name=protobuf-2.5.0.tar.gz
+Version: 2.5.0
+License: New BSD License: http://opensource.org/licenses/BSD-3-Clause
+License File: LICENSE
+
+Description:
+Data serialization format by Google.
+
+Local Modifications:
+No Modifications.

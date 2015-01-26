@@ -1,0 +1,22 @@
+application: kythe-repo
+module: xrefs
+runtime: custom
+version: 1
+vm: true
+api_version: 1
+threadsafe: yes
+manual_scaling:
+  instances: 1
+
+handlers:
+- url: /watcher
+  secure: always
+  script: watcher.app
+- url: /schema/
+  login: required
+  secure: always
+  script: schema.app
+- url: .*
+  login: admin
+  secure: always
+  script: main.app

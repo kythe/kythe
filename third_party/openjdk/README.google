@@ -1,0 +1,10 @@
+URL: //depot2/google_vendor_src_branch/openjdk8
+Version: u20
+License: Various.  Mostly covered by GPL v2 with classpath exception.
+License File: LICENSE
+
+Description:
+Java JDK.
+
+Local Modifications:
+No modifications.

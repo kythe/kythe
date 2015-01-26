@@ -1,0 +1,16 @@
+[
+  {
+    "name": "inmemory",
+    "kind": "go_library",
+    "inputs": {
+      "srcs": [
+        "inmemory.go"
+      ],
+      "go_pkgs": [
+        "//kythe/go/storage",
+        "//kythe/proto:storage_proto",
+        "//third_party/go/code.google.com:protobuf"
+      ]
+    }
+  }
+]

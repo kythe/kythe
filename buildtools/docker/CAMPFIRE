@@ -1,0 +1,22 @@
+[
+  {
+    "name": "docker",
+    "kind": "docker_deploy",
+    "properties": {
+      "docker_name": "google/kythe-campfire",
+      "release_version": "0.1.0"
+    },
+    "inputs": {
+      "srcs": [
+        "Dockerfile"
+      ],
+      "deps": [
+        "//kythe/release/base"
+      ],
+      "data": [
+        "campfire-wrapper",
+        "campfire_settings"
+      ]
+    }
+  }
+]

@@ -1,0 +1,33 @@
+v_name {
+  signature: "test_kindex"
+  corpus: "kythe"
+  language: "c++"
+}
+required_input {
+  v_name {
+    path: "/fake/test.h"
+    corpus: "fake_corpus"
+    language: "c++"
+  }
+  info {
+    path: "/fake/test.h"
+    digest: "86738f47e0006e580619b16f6049f7bb43131aa90f8500fd44d47467c6539a03"
+  }
+}
+required_input {
+  v_name {
+    path: "/fake/test.cc"
+    corpus: "fake_corpus"
+    language: "c++"
+  }
+  info {
+    path: "/fake/test.cc"
+    digest: "e505365b9fb607e9077b673cbafb0d756bc6a13316fd63f2908b679f884cfb80"
+  }
+}
+argument: "unusedexecutable"
+argument: "-DCMDARG"
+argument: "/fake/test.cc"
+has_compile_errors: false
+source_file: "/fake/test.cc"
+output_key: "/fake-out/test.o"

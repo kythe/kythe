@@ -1,0 +1,17 @@
+[
+  {
+    "name": "base",
+    "kind": "docker_deploy",
+    "properties": {
+      "docker_name": "google/kythe-base"
+    },
+    "inputs": {
+      "srcs": [
+        "Dockerfile"
+      ],
+      "data": [
+        "fix_permissions.sh"
+      ]
+    }
+  }
+]

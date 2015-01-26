@@ -1,0 +1,34 @@
+#!/bin/bash -e
+#
+# campfire-docker will build/run the google/kythe-campfire Docker container,
+# passing all arguments to campfire. See ./campfire help for its commands.
+
+cd "$(dirname "$0")"
+
+error() { echo -e "\e[0;31mERROR:\e[m $@" >&2; exit 1; }
+info() { echo -e "\e[0;32mINFO:\e[m $@" >&2; }
+
+if ! command -v docker &>/dev/null; then
+  error "docker binary not found
+Please see https://docs.docker.com/installation/ for installation instructions."
+fi
+
+if ! docker images | grep '^google/kythe-campfire\s' >/dev/null; then
+  info "missing campfire docker image"
+  ./jenkins/docker-pull.sh google/kythe-campfire
+fi
+
+INTERACTIVE=-i
+DOCKER_FLAGS=(--rm -t -v "$PWD:/repo")
+CAMPFIRE_ARGS=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --non-interactive)
+      INTERACTIVE= ;;
+    *)
+      CAMPFIRE_ARGS+=("$1") ;;
+  esac
+  shift
+done
+
+docker run "${DOCKER_FLAGS[@]}" $INTERACTIVE google/kythe-campfire "${CAMPFIRE_ARGS[@]}"

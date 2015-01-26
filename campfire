@@ -1,0 +1,4 @@
+#!/bin/sh
+ROOT=$(dirname $0)
+NODEDIR=${NODEDIR:-$ROOT/third_party/node/bin/}
+${NODEDIR}/node ${ROOT}/buildtools/main "$@"

@@ -1,0 +1,32 @@
+[
+  {
+    "name": "util",
+    "kind": "java_library",
+    "inputs": {
+      "srcs": [
+        "DeleteRecursively.java",
+        "KytheURI.java",
+        "Span.java"
+      ],
+      "jars": [
+        "//kythe/proto:storage_proto",
+        "//third_party/guava",
+        "//third_party/protobuf:protobuf_jar"
+      ]
+    }
+  },
+  {
+    "name": "json",
+    "kind": "java_library",
+    "inputs": {
+      "srcs": [
+        "JsonUtil.java"
+      ],
+      "jars": [
+        "//third_party/gson",
+        "//third_party/gson:proto",
+        "//third_party/protobuf:protobuf_jar"
+      ]
+    }
+  }
+]

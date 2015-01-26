@@ -1,0 +1,5 @@
+URL: https://github.com/schuhschuh/gflags
+License: BSD 3 http://opensource.org/licenses/BSD-3-Clause
+
+Local Modifications: third_party/gflags/include/gflags/gflags.h modified to load gflags_declare.h from the local directory insted of system directory.
+

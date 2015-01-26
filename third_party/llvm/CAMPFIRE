@@ -1,0 +1,48 @@
+[
+  {
+    "name": "lib",
+    "kind": "cc_external_lib",
+    "inputs": {
+      "srcs": [
+        "lib/libclang.a",
+        "lib/libclangTooling.a",
+        "lib/libclangFrontend.a",
+        "lib/libclangDriver.a",
+        "lib/libclangFrontendTool.a",
+        "lib/libclangParse.a",
+        "lib/libclangSema.a",
+        "lib/libclangEdit.a",
+        "lib/libclangRewrite.a",
+        "lib/libclangFormat.a",
+        "lib/libclangIndex.a",
+        "lib/libclangSerialization.a",
+        "lib/libclangAST.a",
+        "lib/libclangLex.a",
+        "lib/libclangBasic.a",
+        "lib/libclangAnalysis.a",
+        "lib/libLLVMSupport.a",
+        "lib/libLLVMOption.a",
+        "lib/libLLVMTransformUtils.a",
+        "lib/libLLVMMC.a",
+        "lib/libLLVMMCParser.a",
+        "lib/libLLVMBitReader.a",
+        "lib/libLLVMCore.a",
+        "lib/libLLVMSupport.a"
+      ],
+      "libs": [
+        "//third_party/zlib"
+      ]
+    },
+    "properties": {
+      "cc_extra_link_flags": [
+        "-ldl",
+        "-lcurses"
+      ],
+      "cc_exported_copts": [
+        "-D__STDC_LIMIT_MACROS",
+        "-D__STDC_CONSTANT_MACROS"
+      ],
+      "cc_include_path": "third_party/llvm/include"
+    }
+  }
+]

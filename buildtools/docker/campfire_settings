@@ -1,0 +1,8 @@
+{
+  "configurations": {
+    "base": {
+      "cxx_path": "/usr/lib/llvm-3.5/bin/clang++",
+      "cc_path": "/usr/lib/llvm-3.5/bin/clang"
+    }
+  }
+}

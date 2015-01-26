@@ -1,0 +1,14 @@
+[
+  {
+    "name": "glog",
+    "kind": "cc_external_lib",
+    "inputs": {
+      "srcs": [
+        "lib/libglog.a"
+      ]
+    },
+    "properties": {
+      "cc_include_path": "third_party/glog/include"
+    }
+  }
+]

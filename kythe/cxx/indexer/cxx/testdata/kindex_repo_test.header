@@ -1,0 +1,5 @@
+content: "class Header;\n"
+info {
+  path: "/absolute/test.h"
+  digest: "uncheckedh"
+}

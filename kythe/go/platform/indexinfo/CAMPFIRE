@@ -1,0 +1,17 @@
+[
+  {
+    "name": "indexinfo",
+    "kind": "go_library",
+    "inputs": {
+      "srcs": [
+        "indexinfo.go"
+      ],
+      "go_pkgs": [
+        "//kythe/go/platform/analysis",
+        "//kythe/go/platform/delimited",
+        "//kythe/proto:analysis_proto",
+        "//third_party/go/code.google.com:protobuf"
+      ]
+    }
+  }
+]

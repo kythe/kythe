@@ -1,0 +1,25 @@
+#!/bin/sh
+#
+# This script wraps the `campfire` tool. It calls it with options and
+# tool paths appropriate for the kythe-campfire Docker container.
+#
+# The campfire root is set through the CAMPFIRE_ROOT environment variables; if
+# it is unset, $PWD will be assumed to be the root.
+#
+# On exit, the campfire root directory will be recursively chown'd to the root
+# directory's permissions. This mostly fixes the issue with campfire being run
+# as root inside the Docker container, creating root-owned build artifacts.
+#
+# Usage: campfire-wrapper [campfire_args...]
+
+if [ -n "$CAMPFIRE_ROOT" ]; then
+  cd "$CAMPFIRE_ROOT" || exit $?
+fi
+CAMPFIRE_ROOT="$PWD"
+
+cleanup() {
+  fix_permissions "$CAMPFIRE_ROOT"
+}
+trap cleanup EXIT ERR INT
+
+./campfire "$@"

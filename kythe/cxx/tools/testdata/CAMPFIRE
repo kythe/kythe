@@ -1,0 +1,16 @@
+[
+  {
+    "name": "test_kindex_tool",
+    "kind": "sh_test",
+    "inputs": {
+      "srcs": [
+        "test_kindex_tool.sh"
+      ],
+      "data": [
+        "//kythe/cxx/tools:kindex_tool",
+        "java.kindex_UNIT",
+        "java.kindex_cf28b786fa21d0c45156e8011ac809afc454703fa03d767a5aeeed382f902795"
+      ]
+    }
+  }
+]

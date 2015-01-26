@@ -1,0 +1,29 @@
+[
+  {
+    "name": "html",
+    "kind": "go_library",
+    "inputs": {
+      "srcs": [
+        "html.go"
+      ],
+      "go_pkgs": [
+        "//third_party/go/golang.org:html"
+      ]
+    }
+  },
+  {
+    "name": "html_test",
+    "kind": "go_test",
+    "inputs": {
+      "srcs": [
+        "html_test.go"
+      ],
+      "go_lib": [
+        ":html"
+      ],
+      "go_pkgs": [
+        "//third_party/go/golang.org:html"
+      ]
+    }
+  }
+]

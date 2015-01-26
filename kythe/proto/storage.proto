@@ -1,0 +1,149 @@
+/*
+ * Copyright 2014 Google Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto2";
+
+package kythe.proto;
+option java_package = "com.google.devtools.kythe.proto";
+
+// VName is a proto representation of a vector name.
+//
+// Rules:
+//  - All fields must be optional, and must have default values.
+//  - No field may ever be removed.  If a field is deprecated, it may be
+//    renamed or marked with a comment, but must not be deleted.
+//  - New fields are always added to the end of the message.
+//  - All fields must be strings, not messages.
+//
+// One of the key principles is that we want as few fields as possible in a
+// vname.  We're not trying to exhaust the possible dimensions along which a
+// name could vary, but to find a minimal basis. Be conservative.
+message VName {
+  // A language-specific signature assigned by the analyzer.
+  // e.g., "com.google.common.collect.Lists.newLinkedList<#1>()"
+  optional string signature = 1;
+
+  // The corpus this name belongs to.
+  // e.g., "kythe", "chromium", "github.com/creachadair/imath", "aosp"
+  // The corpus label "kythe" is reserved for internal use.
+  optional string corpus = 2;
+
+  // A corpus-specific root label, designating a subordinate collection within
+  // the corpus.  If a corpus stores files in unrelated directory structures,
+  // for example, the root can be used to distinguish them.  Or, of a corpus
+  // incorporates subprojects, the root can be a project ID that it governs.
+  // This may also be used to distinguish virtual subgroups of a corpus such as
+  // generated files.
+  optional string root = 3;
+
+  // A path-structured label describing the location of this object relative to
+  // the corpus and the root.  For code, this will generally be the relative
+  // path to the file containing the code, e.g., "storage/service.go" in kythe.
+  //
+  // However, this need not be a true file path; virtual objects like figments
+  // can assign an ad-hoc abstract ID, or omit it entirely.
+  //
+  // Examples:
+  //   "devools/kythe/platform/go/datastore.go" (a file)
+  //   "type/cpp/void.cc" (a type figment)
+  optional string path = 4;
+
+  // The language this name belongs to.
+  // e.g., "c++", "python", "elisp", "haskell", "java"
+  //
+  // The schema will define specific labels for each supported language, so we
+  // don't wind up with a confusion of names like "cxx", "cpp", "C++", etc.
+  // Prototype: Official language name converted to lowercase.  If a version
+  // number is necessary, include it, e.g., "python3".
+  optional string language = 5;
+
+  // Other fields we may need in the future, but do not currently use:
+  // branch -- a branch name within the corpus depot, e.g., "gslb_branch".
+  // client -- a source-control client ID, e.g., "sergey:googlex:8:citc".
+
+  // Note: We have intentionally NOT included a revision or timestamp here.
+  // Time should be recorded as facts belonging to the appropriate Nodes and
+  // Edges.  Having records of when something existed may be important, but time
+  // is not a good axis for a name -- a name should say "what" something is, not
+  // "when".  So we will store timestamps, revisions, and other markers of this
+  // kind as facts inside the graph.
+}
+
+// An Entry associates a fact with a graph object (node or edge).  This is the
+// the primary unit of storage.
+message Entry {
+  optional VName source = 1;
+
+  // The following two fields must either be both empty, or both nonempty.
+  optional string edge_kind = 2;
+  optional VName target = 3;
+
+  // The grammar for fact_name:
+  //  name   = "/" | 1*path
+  //  path   = "/" word
+  //  word   = 1*{LETTER|DIGIT|PUNCT}
+  //  LETTER = [A-Za-z]
+  //  DIGIT  = [0-9]
+  //  PUNCT  = [-.@#$%&_+:()]
+  optional string fact_name = 4;
+  optional bytes  fact_value = 5;
+}
+
+// A collection of Entry instances.
+message Entries {
+  repeated Entry entries = 1;
+}
+
+// Request for a stream of Entry objects from a GraphStore. Read operations
+// should be implemented with time complexity proportional to the size of the
+// return set.
+message ReadRequest {
+  // Return entries having this source VName, which may not be empty.
+  optional VName source = 1;
+
+  // Return entries having this edge kind; if empty, only entries with an empty
+  // edge kind are returned; if "*", entries of any edge kind are returned.
+  optional string edge_kind = 2;
+}
+
+// Request to write Entry objects to a GraphStore
+message WriteRequest {
+  message Update {
+    optional string edge_kind = 1;
+    optional VName target = 2;
+    optional string fact_name = 3;
+    optional bytes fact_value = 4;
+  }
+
+  optional VName source = 1;
+  repeated Update update = 2;
+}
+
+// Request for a stream of Entry objects resulting from a full scan of a
+// GraphStore.
+message ScanRequest {
+  // Return entries having this target VName; if empty, any target field is
+  // matched, including empty.
+  optional VName target = 1;
+
+  // Return entries having this kind; if empty, any kind is matched, including
+  // empty.
+  optional string edge_kind = 2;
+
+  // Return entries having fact labels with this prefix; if empty, any fact
+  // label is matched,
+  optional string fact_prefix = 3;
+}

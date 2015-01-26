@@ -1,0 +1,11 @@
+[
+  {
+    "name": "tools_jar",
+    "kind": "java_external_jar",
+    "inputs": {
+      "srcs": [
+        "tools.jar"
+      ]
+    }
+  }
+]

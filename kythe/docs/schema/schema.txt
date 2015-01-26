@@ -1,0 +1,1505 @@
+// Copyright 2014 Google Inc. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+Kythe Schema Reference
+======================
+:Revision: 1.0
+:toc2:
+:toclevels: 3
+:priority: 999
+
+.This document is part of the Kythe test suite.
+TIP: Successfully generating this document is part of the test suite for the
+Kythe indexers. The assertions in the example code all verify and the
+graphs provided are the graphs that are actually output. Feel free to add
+examples from your own languages, but be sure to keep them up to date.
+
+VName conventions
+-----------------
+
+By default, assume that the VNames of nodes should be chosen according to the
+following rules:
+
+  * `language`: the source language.
+  * `corpus`: the node's containing corpus.
+  * `root`: a root path relative to the node's corpus.
+  * `path`: a path relative to the corpus *and* root of the node.
+  * `signature`: a unique string (per `corpus`, `root`, `path`, and `language`)
+    that should be consistently generated given the same input to the indexer,
+    but that does not necessarily need to be stable across different versions of
+    the input.
+
+Additional rules govern the generation of VNames for certain kinds of nodes,
+most notably types and <<name,names>>. These nodes are frequently used as points
+for linking together the output of discrete indexer runs and may have greater
+stability properties than may be derived using the preceding VName rules. These
+additional rules may be specified using the following functions:
+
+  * *ID*(*edge*): the `signature` of the node at the other end of *edge*.
+    If there are multiple edges with the same kind (and ordinal), prefer one
+    consistently. For an example, see <<tapp>>.
+
+Edge kinds
+----------
+
+[[aliases]]
+aliases
+~~~~~~~
+
+Brief description::
+  A *aliases* T if A may be used in place of T.
+Commonly arises from::
+  typedefs
+Points from::
+  <<talias>>
+Points toward::
+  types
+Ordinals are used::
+  never
+
+[kythe,C++,"Typedefs are aliases."]
+--------------------------------------------------------------------------------
+//- @Counter defines TAlias
+//- TAlias aliases TInt
+typedef int Counter;
+--------------------------------------------------------------------------------
+
+[[callableas]]
+callableas
+~~~~~~~~~~
+
+Brief description::
+  A *callableas* B if A participates in the call graph as B.
+Commonly arises from::
+  callable objects
+Points from::
+  semantic nodes
+Points toward::
+  semantic nodes
+
+[kythe,C++,"Functions can become callables."]
+--------------------------------------------------------------------------------
+//- @F defines FnF
+//- FnF.node/kind function
+//- FnF callableas CF
+//- CF.node/kind callable
+void F() { }
+--------------------------------------------------------------------------------
+
+[[childof]]
+childof
+~~~~~~~
+
+Brief description::
+  A *childof* B if A is contained in or dominated by B.
+Commonly arises from::
+  <<anchor>>s, block syntax, membership
+Points from::
+  any
+Points toward::
+  semantic nodes
+Ordinals are used::
+  never
+
+[kythe,C++,"Enumerators are children of enumerations."]
+--------------------------------------------------------------------------------
+//- @Enum defines Enumeration
+enum class Enum {
+//- @Etor defines Enumerator
+  Etor
+};
+//- Enumerator childof Enumeration
+--------------------------------------------------------------------------------
+
+[[completes]]
+completes
+~~~~~~~~~
+
+Brief description::
+  Definition A *completes* declaration B if A fully specifies B, but
+  there may exist other definitions that may also fully specify B.
+Commonly arises from::
+  definitions of forward declarations
+Points from::
+  anchors
+Points toward::
+  semantic nodes with `complete` facts set to `incomplete` or `complete`
+See also::
+  <<record>>, <<sum>>, <<completesuniquely>>
+
+[kythe,C++,"Definitions complete forward declarations in headers."]
+--------------------------------------------------------------------------------
+#include "test.h"
+//- @C completes Decl1
+//- @C completes Decl2
+//- @C defines Defn
+class C { };
+
+#example test.h
+//- @C defines Decl1
+class C;
+//- @C defines Decl2
+class C;
+--------------------------------------------------------------------------------
+
+[[completesuniquely]]
+completes/uniquely
+~~~~~~~~~~~~~~~~~~
+
+Brief description::
+  Definition A *completes/uniquely* declaration B if A fully specifies B
+  and there is no other definition that could possibly do so.
+Commonly arises from::
+  definitions of forward declarations
+Points from::
+  anchors
+Points toward::
+  semantic nodes with `complete` facts set to `incomplete` or `complete`
+See also::
+  <<completes>>, <<record>>, <<sum>>
+
+[kythe,C++,"Definitions uniquely complete same-file forward declarations."]
+--------------------------------------------------------------------------------
+//- @C defines Decl1
+class C;
+//- @C defines Decl2
+class C;
+//- @C completes/uniquely Decl1
+//- @C completes/uniquely Decl2
+//- @C defines Defn
+class C { };
+--------------------------------------------------------------------------------
+
+[kythe,C++,"Completeness links abs nodes for function templates."]
+--------------------------------------------------------------------------------
+//- @id defines Decl
+template <typename T> T id(T x);
+//- @id defines Defn
+//- @id completes/uniquely Decl
+template <typename T> T id(T x) { return x; }
+//- Defn.node/kind abs
+//- Decl.node/kind abs
+--------------------------------------------------------------------------------
+
+[[defines]]
+defines
+~~~~~~~
+
+Brief description::
+  A *defines* B if A generates the semantic object B.
+Commonly arises from::
+  definitions and declarations
+Points from::
+  anchors
+Points toward::
+  semantic nodes
+Ordinals are used::
+  never
+Notes::
+  It is valid for multiple anchors to define the same semantic object. These
+  anchors may even overlap.
+
+[kythe,C++,"Variable definitions define variables."]
+--------------------------------------------------------------------------------
+//- @x defines VariableX
+int x;
+--------------------------------------------------------------------------------
+
+[[instantiates]]
+instantiates
+~~~~~~~~~~~
+
+Brief description::
+  A *instantiates* B if A is the result of monomorphizing B.
+Commonly arises from::
+  implicit template application
+Points from::
+  semantic nodes
+Points toward::
+  semantic nodes (<<tapp>>)
+Ordinals are used::
+  never
+See also::
+  <<specializes>>
+
+In C++, *specialization* and *instantiation* capture distinct relationships.
+Every template `T` has a primary template, which defines the number and kind
+of template parameters that are written down whenever `T` is (normally)
+expressed. Other templates *specialize* `T` by specifying alternate bodies
+for the template depending on the values bound to the template parameters.
+This *specializes* relationship is always between a more-specific (or implicit)
+template and its primary template (applied to one or more arguments). We do not
+attempt to model a subtyping relationship between template specializations.
+
+When `T<...>` is written down, an element from the set of *T* and its
+specializations must be chosen for manifestation. This element may have free
+type parameters. These are deduced during the process of *instantiating* the
+chosen specialization of *T*. Some C++ _total specializations_ do not bind any
+template parameters. Other C++ _partial specializations_ do, and may bind
+different numbers of type parameters than the primary template. The
+*instantiates* relationship records which total or partial specialization was
+chosen (or if the primary template was chosen), and the template arguments that
+were matched to that specialization's parameters. In contrast, the *specializes*
+relationship for `T<...>` records the primary template for T, as well as which
+template arguments were substituted for the primary template's parameters.
+
+When the primary template is chosen for the *instantiates* relationship, the
+*specializes* edge points to the same node:
+
+[kythe,C++,"Instantiating the primary template"]
+--------------------------------------------------------------------------------
+//- @t_equals_float defines PrimaryTemplate
+template<typename T, typename S> bool t_equals_float = false;
+
+//- @t_equals_float ref TEqualsFloatForLongLong
+//- TEqualsFloatForLongLong instantiates TAppLongLong
+//- TEqualsFloatForLongLong specializes TAppLongLong
+//- TAppLongLong param.0 PrimaryTemplate
+bool is_false = t_equals_float<long, long>;
+--------------------------------------------------------------------------------
+
+When a specialization of a template is chosen for *instantiates*, the
+*specializes* edge still points to the primary template applied to the correct
+number of arguments. The *instantiates* edge points to the specialization that
+was used. It is applied to the template arguments appropriate for that
+specialization. Note in the below example how we *specialize*
+`PrimaryTemplate<float, long>` but *instantiate* `SpecificTemplate<long>`:
+
+[kythe,C++,"Instantiating a partial specialization"]
+--------------------------------------------------------------------------------
+//- @t_equals_float defines PrimaryTemplate
+template<typename T, typename S> bool t_equals_float = false;
+//- @int ref IntType @long ref LongType
+int i; long l;
+
+//- @t_equals_float defines SpecificTemplate
+template <typename S> bool t_equals_float<float, S> = true;
+//- @t_equals_float ref TEqualsFloatForFloatLong
+//- TEqualsFloatForFloatLong instantiates TAppSpecificFloatLong
+//- TAppSpecificFloatLong param.0 SpecificTemplate
+//- TAppSpecificFloatLong param.1 LongType
+//- TEqualsFloatForLongLong specializes TAppPrimaryFloatLong
+//- TAppPrimaryFloatLong param.0 PrimaryTemplate
+//- TAppPrimaryFloatLong param.1 FloatType
+//- TAppPrimaryFloatLong param.2 LongType
+bool is_true = t_equals_float<float, long>;
+--------------------------------------------------------------------------------
+
+Here is another similar example:
+
+[kythe,C++,"Instantiation versus specialization."]
+--------------------------------------------------------------------------------
+//- @v defines PrimaryTemplate
+template <typename T, typename S, typename V> T v;
+template <typename U>
+//- @v defines PartialSpecialization
+U v<int, U, long>;
+//- @v ref ImplicitSpecialization
+float w = v<int, float, long>;
+//- ImplicitSpecialization specializes TAppPrimaryTemplate
+//- ImplicitSpecialization instantiates TAppPartialSpecialization
+//- TAppPrimaryTemplate param.0 PrimaryTemplate
+//- TAppPrimaryTemplate param.1 vname("int#builtin",_,_,_,_)
+//- TAppPrimaryTemplate param.2 vname("float#builtin",_,_,_,_)
+//- TAppPrimaryTemplate param.3 vname("long#builtin",_,_,_,_)
+//- TAppPartialSpecialization param.0 PartialSpecialization
+//- TAppPartialSpecialization param.1 vname("float#builtin",_,_,_,_)
+--------------------------------------------------------------------------------
+
+[[named]]
+named
+~~~~~
+
+Brief description::
+  A *named* B if B identifies A.
+Commonly arises from::
+  definitions and declarations
+Points from::
+  semantic nodes
+Points toward::
+  names
+Ordinals are used::
+  never
+See also::
+  <<name>>
+
+[kythe,C++,"Variables have names."]
+--------------------------------------------------------------------------------
+//- @x defines VariableX
+//- VariableX named NameX
+int x;
+--------------------------------------------------------------------------------
+
+[kythe,Java,"Classes have names."]
+--------------------------------------------------------------------------------
+package pkg;
+//- @E defines ClassE
+//- ClassE named vname("pkg.E","","","","java")
+public class E {
+}
+--------------------------------------------------------------------------------
+
+[[overrides]]
+overrides
+~~~~~~~~~
+
+Brief description::
+  A *overrides* B if A directly overrides B in an inheritance-based relationship.
+Points from::
+  semantic nodes
+Points toward::
+  semantic nodes
+Ordinals are used::
+  never
+See also::
+  <<overridestransitive>>
+
+[kythe,Java,"Methods have overrides edges."]
+--------------------------------------------------------------------------------
+package pkg;
+public class E {
+  static class A implements I {
+    //- @method defines AMethod
+    //- AMethod overrides IMethod
+    public void method() {}
+  }
+  static class B extends A implements I {
+    //- @method defines BMethod
+    //- BMethod overrides AMethod
+    //- BMethod overrides IMethod
+    public void method() {}
+  }
+  static interface I {
+    //- @method defines IMethod
+    public void method();
+  }
+}
+--------------------------------------------------------------------------------
+
+[[overridestransitive]]
+overrides/transitive
+~~~~~~~~~~~~~~~~~~~~
+
+Brief description::
+  A *overrides/transitive* B if A transitively overrides B, but the relationship
+  A <<overrides>> B doesn't exist.
+Points from::
+  semantic nodes
+Points toward::
+  semantic nodes
+Ordinals are used::
+  never
+See also::
+  <<overrides>>
+
+[kythe,Java,"Methods have overrides/transitive edges."]
+--------------------------------------------------------------------------------
+package pkg;
+public class E {
+  static class A {
+    //- @method defines AMethod
+    public void method() {}
+  }
+  static class B extends A {
+    //- @method defines BMethod
+    //- !{ BMethod overrides/transitive AMethod }
+    public void method() {}
+  }
+  static class C extends B {
+    //- @method defines CMethod
+    //- !{ CMethod overrides/transitive BMethod }
+    //- CMethod overrides/transitive AMethod
+    public void method() {}
+  }
+}
+--------------------------------------------------------------------------------
+
+[[param]]
+param
+~~~~~
+
+Brief description::
+  A *param.N* B if B is the Nth parameter of A.
+Commonly arises from::
+  ordered lists
+Points from::
+  semantic nodes
+Points toward::
+  semantic nodes
+Ordinals are used::
+  always
+
+[kythe,C++,"Type applications have parameters."]
+--------------------------------------------------------------------------------
+//- @"int*" ref PtrInt
+//- PtrInt param.0 PointerConstructor
+//- PtrInt param.1 IntType
+using T = int*;
+--------------------------------------------------------------------------------
+
+[[ref]]
+ref
+~~~
+
+Brief description::
+  A *ref* B if A refers to some previously-defined B.
+Commonly arises from::
+  expressions, spelled-out types
+Points from::
+  anchors
+Points toward::
+  semantic nodes
+
+[kythe,C++,"Mentions of variables are refs."]
+--------------------------------------------------------------------------------
+//- @x defines VariableX
+int x;
+//- @y defines VariableY
+//- @x ref VariableX
+int y = x;
+--------------------------------------------------------------------------------
+
+[[refcall]]
+ref/call
+~~~~~~~~
+
+Brief description::
+  A *ref/call* C if A is an anchor that calls C.
+Points from::
+  anchors
+Points toward::
+  <<callable,callables>>
+Ordinals are used::
+  never
+
+[kythe,C++,"Anchors inside functions call callables."]
+--------------------------------------------------------------------------------
+//- @A defines FnA
+//- FnA callableas CallableA
+void A() { }
+//- @B defines FnB
+//- ACall childof FnB
+//- ACall.node/kind anchor
+//- ACall ref/call CallableA
+void B() { A(); }
+--------------------------------------------------------------------------------
+
+[[refexpands]]
+ref/expands
+~~~~~~~~~~~
+
+Brief description::
+  A *ref/expands* M if A is an anchor that expands macro M.
+Points from::
+  anchors
+Points toward::
+  <<macro,macros>>
+Ordinals are used::
+  never
+Notes::
+  This edge is used only for first-level macro expansions (where the macro
+  being expanded is spelled out in the source file). Subsequent expansions are
+  recorded using the <<refexpandstransitive,ref/expands/transitive>> edge.
+
+[kythe,C++,"Uttering the name of a macro expands it."]
+--------------------------------------------------------------------------------
+//- @FOO defines MacroFoo
+#define FOO BAR
+//- @FOO ref/expands MacroFoo
+int FOO;
+--------------------------------------------------------------------------------
+
+[[refexpandstransitive]]
+ref/expands/transitive
+~~~~~~~~~~~~~~~~~~~~~~
+
+Brief description::
+  A *ref/expands/transitive* M if A is an anchor that expands macro M', which
+  (after one or more additional expansions) expands macro M.
+Points from::
+  anchors
+Points toward::
+  <<macro,macros>>
+Ordinals are used::
+  never
+Notes::
+  First-level macro expansions (like those written down in the source file)
+  are recorded with the <<refexpands,ref/expands>> edge.
+
+TODO(zarko): C++ example.
+
+[[refincludes]]
+ref/includes
+~~~~~~~~~~~~
+
+Brief description::
+  A *ref/includes* F if A is an anchor that inlines the text of file F.
+Points from::
+  anchors
+Points toward::
+  <<file,files>>
+Ordinals are used::
+  never
+
+[kythe,C++,"Includes include files."]
+--------------------------------------------------------------------------------
+//- @"\"test.h\"" ref/includes HeaderFile
+//- HeaderFile.node/kind file
+#include "test.h"
+
+#example test.h
+// ...
+--------------------------------------------------------------------------------
+
+[[refqueries]]
+ref/queries
+~~~~~~~~~~~
+
+Brief description::
+  A *ref/queries* M if A is an anchor that queries whether macro M is bound.
+Points from::
+  anchors
+Points toward::
+  <<macro,macros>>, <<name,names>>
+Ordinals are used::
+  never
+
+[kythe,C++,"Queries can be bound or unbound."]
+--------------------------------------------------------------------------------
+//- @FOO defines MacroFoo
+#define FOO BAR
+//- @FOO ref/queries MacroFoo
+//- MacroFoo named vname("FOO#m",_,_,_,_)
+#if defined(FOO)
+#endif
+//- @BAZ ref/queries vname("BAZ#m",_,_,_,_)
+#ifdef BAZ
+#endif
+--------------------------------------------------------------------------------
+
+
+[[specializes]]
+specializes
+~~~~~~~~~~~
+
+Brief description::
+  A *specializes* B if A provides a declaration of a type specialization B.
+Commonly arises from::
+  template total and partial specialization
+Points from::
+  semantic nodes
+Points toward::
+  semantic nodes (<<tapp>>)
+Ordinals are used::
+  never
+See also::
+  <<instantiates>>
+
+[kythe,C++,"Template specializations specialize."]
+--------------------------------------------------------------------------------
+//- @C defines TemplateClassC
+template <typename T> class C { };
+//- @C defines SpecializedClassC
+template <> class C<int> { };
+//- SpecializedClassC specializes TAppCInt
+//- TAppCInt.node/kind tapp
+//- TAppCInt param.0 TemplateClassC
+//- TemplateClassC.node/kind abs
+--------------------------------------------------------------------------------
+
+[kythe,C++,"Function templates specialize."]
+--------------------------------------------------------------------------------
+//- @id defines IdFn
+template <typename T> T id(T x) { return x; }
+//- @id defines IdSpecFn
+template <> bool id(bool x) { return !(!x); }
+//- IdSpecFn specializes TAppIdFnBool
+//- TAppIdFnBool.node/kind tapp
+//- TAppIdFnBool param.0 IdFn
+//- TAppIdFnBool param.1 vname("bool#builtin",_,_,_,_)
+--------------------------------------------------------------------------------
+
+[[typed]]
+typed
+~~~~~
+
+Brief description::
+  A is *typed* B if A has the type B.
+Commonly arises from::
+  terms with types; definitions and declarations
+Points from::
+  anchors
+Points toward::
+  types
+Ordinals are used::
+  never
+
+[kythe,C++,"Enumerations can be ascribed types."]
+--------------------------------------------------------------------------------
+//- @E defines EnumE
+//- EnumE typed IntType
+enum E : int;
+--------------------------------------------------------------------------------
+
+[[undefines]]
+undefines
+~~~~~~~~~
+
+Brief description::
+  A *undefines* M if A detaches M from M's binding.
+Commonly arises from::
+  macro undefinition
+Points from::
+  anchors
+Points toward::
+  <<macro,macros>>
+
+[kythe,C++,"Undef undefines macros."]
+--------------------------------------------------------------------------------
+//- @FOO defines MacroFoo
+#define FOO BAR
+//- @FOO undefines MacroFoo
+#undef FOO
+//- @FOO defines DifferentMacroFoo
+#define FOO BAZ
+--------------------------------------------------------------------------------
+
+Node kinds
+----------
+
+[[abs]]
+abs
+~~~
+
+Brief description::
+  An *abs* abstracts over a subgraph by binding <<absvar>>s.
+See also::
+  <<absvar>>, <<specializes>>, <<tapp>>
+
+It is not necessarily the case that the child of the abs node be a type;
+for example, in C++, it may be a variable or a function.
+
+[kythe,C++,"Templates are abs nodes."]
+--------------------------------------------------------------------------------
+//- @C defines TemplateC
+//- TemplateC.node/kind abs
+//- TemplaceCBody childof TemplateC
+//- TemplaceCBody.node/kind record
+template <typename T, typename S> class C { };
+
+//- @C defines PartialSpecializationC
+//- PartialSpecializationC.node/kind abs
+template <typename U> class C<int, U> { };
+
+//- @C defines TotalSpecializationC
+//- TotalSpecializationC.node/kind record
+template <> class C<int, float> { };
+--------------------------------------------------------------------------------
+
+[[absvar]]
+absvar
+~~~~~~
+
+Brief description::
+  An *absvar* is bound by an <<abs>> and valid in its children.
+See also::
+  <<abs>>, <<specializes>>
+
+[kythe,C++,"Type variables are absvars."]
+--------------------------------------------------------------------------------
+//- @C defines TemplateC
+//- @T defines AbsVarT
+//- AbsVarT.node/kind absvar
+//- TemplateC param.0 AbsVarT
+template <typename T> class C {
+//- @T ref AbsVarT
+  using S = T;
+};
+--------------------------------------------------------------------------------
+
+[[anchor]]
+anchor
+~~~~~~
+
+Brief description::
+  An *anchor* connects concrete syntax to abstract syntax.
+Expected out-edges::
+  <<childof>>
+Facts::
+  loc/start:::
+    The starting byte offset (from 0) in the <<file>> this anchor is <<childof>>
+  loc/end:::
+    The ending byte offset (exclusive) in the <<file>> this anchor is
+    <<childof>>
+See also::
+  <<file>>
+
+[kythe,C++,"Anchors have byte offsets."]
+--------------------------------------------------------------------------------
+int 錨;
+//- VarNameAnchor.loc/start 4
+//- VarNameAnchor.loc/end 7
+// Note that the glyph 錨 is encoded in UTF-8 as [e9 8c a8].
+--------------------------------------------------------------------------------
+
+[kythe,Java,"Anchors can overlap."]
+--------------------------------------------------------------------------------
+import java.util.Optional;
+public class E {
+  //- @"Optional<String>" ref TSpecClass
+  //- @Optional ref OptClass
+  //- @String ref StrClass
+  Optional<String> f;
+}
+--------------------------------------------------------------------------------
+
+[[callable]]
+callable
+~~~~~~~~
+
+Brief description::
+  A *callable* is the target of a <<refcall,ref/call>> edge.
+Notes::
+  Callables abstract different notions of call targets. For example, in C++,
+  a struct may define an `operator()`. That struct and its operator are both
+  <<callableas,callable as>> the same callable. If the struct defines more
+  than one `operator()`, the struct will be callable as multiple callables. The
+  callable's type also abstracts away any implicit arguments (such as `this`).
+  An instance member function with type `int -> string` will be callable as a
+  callable with the same type as a free function typed as `int -> string`.
+See also::
+  <<callableas>>, <<function>>, <<refcall,ref/call>>
+
+[kythe,C++,"Functions are callable as callables."]
+--------------------------------------------------------------------------------
+//- @F defines FnF
+//- FnF callableas CF
+//- CF.node/kind callable
+void F(int X);
+--------------------------------------------------------------------------------
+
+[[constant]]
+constant
+~~~~~~~~
+
+Brief description::
+  A *constant* is a value that can be statically determined.
+Facts::
+  text:::
+    A string representation of the constant.
+See also::
+  <<sum>>
+
+[kythe,C++,"Enumerators are constants."]
+--------------------------------------------------------------------------------
+enum E {
+//- @EM defines Enumerator
+  EM = 42
+};
+//- Enumerator.node/kind constant
+//- Enumerator.text 42
+--------------------------------------------------------------------------------
+
+[[file]]
+file
+~~~~
+
+Brief description::
+  A *file* is an array of bytes with a significant external name.
+Naming convention::
+  Path:::
+    *External path to this file (or some other unique ID if this file is
+    virtual)*
+  Signature:::
+    *empty*
+Facts::
+  text:::
+    Uninterpreted content as an array of bytes.
+See also::
+  <<anchor>>, <<refincludes,ref/includes>>
+
+[kythe,C++,"Anchors are children of files."]
+--------------------------------------------------------------------------------
+int x;
+//- XAnchor.node/kind anchor
+//- XAnchor.loc/start 4
+//- XAnchor.loc/end 5
+//- XAnchor childof SourceFile
+//- SourceFile.node/kind file
+--------------------------------------------------------------------------------
+
+[[function]]
+function
+~~~~~~~~
+
+Brief description::
+  A *function* binds zero or more parameters and returns a result.
+Facts::
+  complete:::
+    `incomplete` if this is only a declaration; `definition` if it is a
+    definition.
+See also::
+  <<callable>>
+
+[kythe,C++,"Functions are functions."]
+--------------------------------------------------------------------------------
+//- @F defines FnF
+//- FnF.node/kind function
+//- FnF.complete incomplete
+//- @X defines VarX
+//- VarX.complete incomplete
+//- FnF param.0 VarX
+void F(int X);
+--------------------------------------------------------------------------------
+
+[[lookup]]
+lookup
+~~~~~~~
+
+Brief description::
+  A *lookup* is a structured name whose resolution cannot be completed
+  without additional context.
+Facts::
+  text:::
+    The deferred name to be resolved.
+Notes::
+  Name resolution can be a complicated problem. In C++ templates, the
+  meaning of a dependent name cannot be determined until the template
+  parameters it depends upon are supplied. Similarly, in dynamic languages
+  like Python, name resolution may depend on the runtime context.
+  Nevertheless, when we are unable to come up with a semantic representation
+  of one or more nodes in a path-structured name, we record this name as
+  a collection of *lookup* nodes. Each *lookup* node has some *text* (the
+  'dynamic' lookup done at that node) as well as some *params* (to record the
+  semantic object into which *text* is being used as a key).
+
+[kythe,C++,"Dependent names are lookups."]
+--------------------------------------------------------------------------------
+template
+//- @T defines DepT
+<template <typename> class T>
+struct C {
+//- @D ref DepTIntD
+using S = typename T<int>::D;
+};
+//- DepTIntD.text D
+//- DepTIntD.node/kind lookup
+//- DepTIntD param.0 DepTInt
+//- DepTInt.node/kind tapp
+//- DepTInt param.0 DepT
+//- DepTInt param.1 Int
+--------------------------------------------------------------------------------
+
+[kythe,C++,"Lookups record paths."]
+--------------------------------------------------------------------------------
+template
+<template <typename> class T>
+struct C {
+//- @F ref DepTIntDEF
+//- DepTIntDEF.text F
+//- @E ref DepTIntDE
+//- DepTIntDE.text E
+//- @D ref DepTIntD
+//- DepTIntD.text D
+using S = typename T<int>::D::E::F;
+};
+//- DepTIntDEF param.0 DepTIntDE
+//- DepTIntDE param.0 DepTIntD
+--------------------------------------------------------------------------------
+
+[[macro]]
+macro
+~~~~~
+Brief description::
+  A *macro* is a metaprogram that operates on source text.
+Notes::
+  Macros are distinct from <<abs,abs>> because they do not
+  participate in the programming language proper. Instead, they are evaluated
+  separately, usually before semantic analysis takes place.
+See also::
+  <<refexpands,ref/expands>>, <<refexpandstransitive,ref/expands/transitive>>,
+  <<refqueries,ref/queries>>, <<undefines,undefines>>
+
+[kythe,C++,"Defines define macros."]
+--------------------------------------------------------------------------------
+//- @FOO defines MacroFoo
+//- MacroFoo.node/kind macro
+#define FOO BAR
+--------------------------------------------------------------------------------
+
+[[name]]
+name
+~~~~
+
+Brief description::
+  A *name* identifies zero or more nodes.
+Naming convention::
+  Signature:::
+    *language-specific-string*#*language-specific-tag*
+Notes::
+  See the <<lsr,Language-specific rules>> section below for name formation
+  rules.
+
+[kythe,C++,"Declarations and definitions share the same name."]
+--------------------------------------------------------------------------------
+//- @C defines CDecl
+class C;
+//- @C defines CDefn
+class C { };
+//- CDecl named CName
+//- CDefn named CName
+--------------------------------------------------------------------------------
+
+[[package]]
+package
+~~~~~~
+
+Brief description::
+  A *package* defines a module containing declarations.
+
+[kythe,Java,"Top-level declarations are children of package nodes."]
+--------------------------------------------------------------------------------
+//- @pkg ref Pkg
+//- Pkg named vname("pkg","","","","java")
+//- Pkg.node/kind package
+package pkg;
+//- @E defines ClassE
+//- ClassE childof Pkg
+public class E {}
+--------------------------------------------------------------------------------
+
+[[record]]
+record
+~~~~~~
+
+Brief description::
+  A *record* defines a type composed of a collection of elements.
+Facts::
+  subkind:::
+    <<lsr,Language-specific subkind>> for this record.
+  complete:::
+    `incomplete` if this is only a declaration; `definition` if it is a
+    definition.
+Notes::
+  This node is a nominal record such that two records with the same
+  children but different names should always be considered to be distinct.
+
+[kythe,C++,"Classes are records."]
+--------------------------------------------------------------------------------
+//- @C defines ClassCDecl
+//- ClassCDecl.node/kind record
+//- ClassCDecl.complete incomplete
+class C;
+
+//- @C defines ClassCDefn
+//- ClassCDefn.node/kind record
+//- ClassCDefn.complete definition
+class C { };
+--------------------------------------------------------------------------------
+
+[kythe,Java,"Classes are records."]
+--------------------------------------------------------------------------------
+package pkg;
+//- @E defines ClassE
+//- ClassE.node/kind record
+//- ClassE.subkind class
+public class E {
+}
+--------------------------------------------------------------------------------
+
+[[sum]]
+sum
+~~~
+
+Brief description::
+  A *sum* defines a type whose instances must choose one out of a set of
+  possible representations.
+Facts::
+  subkind:::
+    <<lsr,Language-specific subkind>> for this record.
+  complete:::
+    * `incomplete` if this is only a declaration.
+    * `complete` if this is a declaration that is considered usable by value.
+    * `definition` if this provides a full description of the type.
+
+[kythe,C++,"Enums are sums."]
+--------------------------------------------------------------------------------
+//- @CE defines EnumCE
+//- EnumCE.node/kind sum
+//- EnumCE.complete definition
+enum CE { };
+
+//- @E defines EnumE
+//- EnumE.node/kind sum
+//- EnumE.complete incomplete
+enum class E;
+
+//- @E defines EnumETyped
+//- EnumETyped.node/kind sum
+//- EnumETyped.complete complete
+enum class E : int;
+
+//- @E defines EnumEDefn
+//- EnumEDefn.node/kind sum
+//- EnumEDefn.complete definition
+enum class E : int { };
+--------------------------------------------------------------------------------
+
+[kythe,Java,"Enums are sum/enumClasses."]
+--------------------------------------------------------------------------------
+//- @E defines EnumE
+//- E.node/kind sum
+//- E.subkind enumClass
+public enum E {}
+--------------------------------------------------------------------------------
+
+[[talias]]
+talias
+~~~~~~
+
+Brief description::
+  A *talias* gives a new name to an existing type.
+Expected out-edges::
+  <<aliases>>, <<named>>
+Naming convention::
+  Signature:::
+    talias(*ID*(*named*),*ID*(*aliases*))
+Notes::
+  A *talias* may be virtually removed from the graph. Some languages may have
+  additional reduction rules.
+
+[kythe,C++,"Type aliases are taliases."]
+--------------------------------------------------------------------------------
+//- @Counter defines TAlias
+//- TAlias.node/kind talias
+using Counter = int;
+--------------------------------------------------------------------------------
+
+[[tapp]]
+tapp
+~~~~
+
+Brief description::
+  A *tapp* applies a type constructor or <<abs>> to zero or more parameters.
+Expected out-edges::
+  <<param>> (at least ordinal 0)
+Naming convention::
+  Signature:::
+    *ID*(*param.0*)(*ID*(*param.1*),...,*ID*(*param.N*))
+
+[kythe,C++,"Pointers are type constructors."]
+--------------------------------------------------------------------------------
+//- @"int*" ref IntPtrType
+//- @"int*" ref vname("ptr#builtin(int#builtin)",_,_,_,"c++")
+using PtrInt = int*;
+//- IntPtrType.node/kind tapp
+//- IntPtrType param.0 vname("ptr#builtin",_,_,_,"c++")
+//- IntPtrType param.1 vname("int#builtin",_,_,_,"c++")
+--------------------------------------------------------------------------------
+
+[kythe,Java,"Generic classes are type constructors."]
+--------------------------------------------------------------------------------
+import java.util.Optional;
+public class E {
+  //- @f defines Field
+  //- Field typed TSpecClass
+  //- TSpecClass.node/kind tapp
+  //- TSpecClass param.0 OptClass
+  //- TSpecClass param.1 StrClass
+  Optional<String> f;
+}
+--------------------------------------------------------------------------------
+
+[[tbuiltin]]
+tbuiltin
+~~~~~~~~
+
+Brief description::
+  A *tbuiltin* is a type that is supplied by the language itself.
+Naming convention::
+  Signature:::
+    *language-specific-string*#builtin
+Notes::
+  See the <<lsr,Language-specific rules>> section below for enumerations of
+  these builtin types.
+
+[[tnominal]]
+tnominal
+~~~~~~~~
+
+Brief description::
+  A *tnominal* is a type that may be purely identified by its name.
+Naming convention::
+  Signature:::
+    *ID*(*named*)#t
+Expected out-edges::
+  <<named>>
+Notes::
+  When a `tnominal`'s definition is known, some <<lsr,language-specific rules>>
+  dictate that the definition node be used instead of a `tnominal` in the
+  type graph.
+
+[kythe,C++,"Forward-declared classes are tnominals."]
+--------------------------------------------------------------------------------
+//- @C defines ClassC
+//- ClassC.node/kind record
+//- ClassC named ClassCName
+class C;
+//- @"C*" ref PtrC
+//- PtrC param.1 NominalC
+//- NominalC.node/kind tnominal
+//- NominalC named ClassCName
+using Alias = C*;
+--------------------------------------------------------------------------------
+
+
+[[variable]]
+variable
+~~~~~~~~
+
+Brief description::
+  A *variable* is a location for storing data.
+Facts::
+  complete:::
+    * `incomplete` if this is only a declaration.
+    * `definition` if this is a variable definition.
+
+[kythe,C++,"Variables are variables."]
+--------------------------------------------------------------------------------
+//- @x defines VariableX
+//- VariableX.node/kind variable
+int x;
+--------------------------------------------------------------------------------
+
+[kythe,Java,"Fields are variables."]
+--------------------------------------------------------------------------------
+public class E {
+  //- @f defines Field
+  //- Field.node/kind variable
+  Optional<String> f;
+}
+--------------------------------------------------------------------------------
+
+[kythe,Java,"Parameters are variables."]
+--------------------------------------------------------------------------------
+public class E {
+  //- @arg defines Param
+  //- Param.node/kind variable
+  void f(String arg) {}
+}
+--------------------------------------------------------------------------------
+
+[kythe,Java,"Locals are variables."]
+--------------------------------------------------------------------------------
+public class E {
+  void f() {
+    //- @var defines Local
+    //- Local.node/kind variable
+    String var;
+  }
+}
+--------------------------------------------------------------------------------
+
+[[lsr]]
+Language-specific rules
+-----------------------
+
+C++
+~~~
+
+C++'s source language is spelled "`c++`".
+
+Builtin types
+^^^^^^^^^^^^^
+
+C++ supplies the following <<tbuiltin>> nodes by default:
+
+[kythe,C++,"Builtin type nodes"]
+--------------------------------------------------------------------------------
+//- @"void" ref vname("void#builtin","","","","c++")
+using Void = void;
+
+//- @"void*" ref TappPtrVoid
+//- TappPtrVoid param.0 vname("ptr#builtin","","","","c++")
+using PtrVoid = void*;
+
+//- @"int" ref vname("int#builtin","","","","c++")
+using Int = int;
+
+//- @ConstVoid defines TappConstVoidAlias
+//- TappConstVoidAlias aliases TAppConstVoid
+//- TAppConstVoid param.0 vname("const#builtin","","","","c++")
+using ConstVoid = const void;
+
+//- @VolatileVoid defines TappVolatileVoidAlias
+//- TappVolatileVoidAlias aliases TAppVolatileVoid
+//- TAppVolatileVoid param.0 vname("volatile#builtin","","","","c++")
+using VolatileVoid = volatile void;
+
+///- @RestrictPtrVoid defines TappRestrictPtrVoidAlias
+///- TappRestrictPtrVoidAlias aliases TAppRestrictPtrVoid
+///- TAppRestrictPtrVoid param.0 vname("restrict#builtin","","","","c++")
+using RestrictPtrVoid = void * __restrict__;
+--------------------------------------------------------------------------------
+
+Record and sum subkinds
+^^^^^^^^^^^^^^^^^^^^^^^
+
+C++ defines the following subkinds for <<record>> nodes:
+
+[kythe,C++,"Record subkinds"]
+--------------------------------------------------------------------------------
+//- @C defines ClassC
+//- C.subkind class
+class C;
+
+//- @S defines StructS
+//- S.subkind struct
+struct S;
+
+//- @U defines UnionU
+//- U.subkind union
+union U;
+--------------------------------------------------------------------------------
+
+C++ defines the following subkinds for <<sum>> nodes:
+
+[kythe,C++,"Sum subkinds"]
+--------------------------------------------------------------------------------
+//- @E defines EnumE
+//- E.subkind enum
+enum E { };
+
+//- @EC defines EnumClassEC
+//- EnumClassEC.subkind enumClass
+enum class EC;
+--------------------------------------------------------------------------------
+
+Names
+^^^^^
+
+C++ defines the following language-specific tags for lexically scoped names:
+
+  * `m`: macros (see <<macro>>)
+  * `c`: class or struct (see <<record>>)
+  * `u`: union (see <<record>>)
+  * `n`: any other name
+
+A C++ lexically-scoped name is stored as a colon-delimited path, starting with
+the most specific name and ending with the most general.
+
+[kythe,C++,"Lexically scoped names"]
+--------------------------------------------------------------------------------
+//- @C defines ClassC
+//- ClassC named vname("C#c",_,_,_,_)
+class C;
+namespace A {
+//- @D defines ClassD
+//- ClassD named vname("D:A#c",_,_,_,_)
+  class D;
+  namespace B {
+//- @E defines ClassE
+//- ClassE named vname("E:B:A#c",_,_,_,_)
+    class E;
+  }
+}
+--------------------------------------------------------------------------------
+
+Anonymous namespaces are represented using `@`:
+
+[kythe,C++,"Anonymous namespaces"]
+--------------------------------------------------------------------------------
+//- @A defines UnionA
+namespace { union A; }
+//- @B defines UnionB
+namespace { union B; }
+//- UnionA named vname("A:@#u",_,_,_,_)
+//- UnionB named vname("B:@#u",_,_,_,_)
+--------------------------------------------------------------------------------
+
+Scopes without names are given ordinal values reflecting an arbitrary but
+consistent ordering between syntactic elements:
+
+[kythe,C++,"Ordinal path nodes in names"]
+--------------------------------------------------------------------------------
+void foo() {
+//- @x defines VarNode
+//- VarNode named vname("x:0:0:foo#n",_,_,_,_)
+  int x;
+//- @x defines VarNode2
+//- VarNode2 named vname("x:0:1:0:foo#n",_,_,_,_)
+  { int x; }
+//- @x defines VarNode3
+//- VarNode3 named vname("x:0:2:0:foo#n",_,_,_,_)
+  { int x; }
+}
+--------------------------------------------------------------------------------
+
+References to definitions and declarations of types
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If the indexer has available a *definition* of a C++ node, edges should
+be drawn directly to that node:
+
+[kythe,C++,"Refer to definitions directly."]
+--------------------------------------------------------------------------------
+//- @C defines ClassCDefn
+class C { };
+//- @Alias defines CAlias
+//- CAlias aliases ClassCDefn
+using Alias = C;
+--------------------------------------------------------------------------------
+
+If the indexer only has a *complete* C++ node, or if the node is *incomplete*,
+edges should be drawn to a <<tnominal>> node:
+
+[kythe,C++,"Refer to complete or incomplete declarations indirectly."]
+--------------------------------------------------------------------------------
+//- @E defines CompleteEnumE
+//- CompleteEnumE named EnumEName
+enum class E : int;
+//- @Alias defines EAlias
+//- EAlias aliases EnumETNominal
+//- EnumETNominal.node/kind tnominal
+//- EnumETNominal named EnumEName
+using Alias = E;
+--------------------------------------------------------------------------------
+
+When spelling out the name of a C++ type, the rules for *ID*(*edge*) are
+refined as follows:
+
+  * If there are multiple possible nodes connected by *edge*, consistently
+    prefer one that has a `complete` fact set to `definition`; failing that,
+    prefer one that has a `complete` fact set to `complete`; failing that,
+    consistently prefer an arbitrary node from the *edge*-connected set
+    (see <<record>>, <<sum>>).
+
+Qualifiers on types
+^^^^^^^^^^^^^^^^^^^
+
+The `const`, `restrict`, and `volatile` qualifiers may be applied to types.
+These are represented as type constructors. The indexer always applies them
+in the same order (`const` innermost, then `restrict`, then `volatile`) and
+collapses redundant qualifiers should they arise (`const const` becomes
+`const`). Tools should optimally canonicalize types according to these rules
+(for instance, after removing a <<talias>> node).
+
+[kythe,C++,"Qualifiers have canonical order."]
+--------------------------------------------------------------------------------
+//- @U defines VRCAlias
+//- VRCAlias aliases vname(
+//-"volatile#builtin(restrict#builtin(const#builtin(ptr#builtin(int#builtin))))"
+//- ,_,_,_,_)
+//- VRCAlias aliases VRCInt
+using U = int * __restrict__ const volatile;
+//- @V defines AnotherAlias
+//- AnotherAlias aliases VRCInt
+using V = int * volatile __restrict__ const;
+--------------------------------------------------------------------------------
+
+[kythe,C++,"Redundant CVR-qualifiers are dropped."]
+--------------------------------------------------------------------------------
+#arguments -Wno-duplicate-decl-specifier
+//- @U defines CIAlias
+//- CIAlias aliases vname("const#builtin(int#builtin)",_,_,_,_)
+using U = const const int;
+--------------------------------------------------------------------------------
+
+Function types
+^^^^^^^^^^^^^^
+
+The `fn#builtin` type constructor is used to represent function types.
+Its first parameter is the return type; subsequent parameters are arguments.
+
+[kythe,C++,"Function types use a builtin type constructor."]
+--------------------------------------------------------------------------------
+//- @U defines UAlias
+//- UAlias aliases TAppFn
+//- TAppFn param.0 vname("fn#builtin",_,_,_,_)
+//- TAppFn param.1 vname("int#builtin",_,_,_,_)
+//- TAppFn param.2 vname("short#builtin",_,_,_,_)
+//- TAppFn param.3 vname("float#builtin",_,_,_,_)
+using U = int(short, float);
+--------------------------------------------------------------------------------
+
+For K&R-style prototypes in C, the indexer will use the `knrfn#builtin` type.
+
+Structural hashes
+^^^^^^^^^^^^^^^^^
+
+<<record>> and <<sum>> definitions are given vnames with `signatures` composed
+of their lexical names and their *structural hash*, which unifies equivalent
+definitions that appear across distinct and unrelated translation units.
+
+Template template parameters
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Template template parameters are stored as <<abs>>-dominated <<absvar>>
+parameters of their binding abstractions. The name of the template template
+parameter is given to the inner <<abs>>.
+
+[kythe,C++,"We do not represent higher kinds"]
+--------------------------------------------------------------------------------
+//- @A defines AbsvarA
+//- @B defines NestedAbs
+//- @C defines TemplateC
+template <template <typename A> class B> class C;
+//- TemplateC param.0 NestedAbs
+//- NestedAbs.node/kind abs
+//- NestedAbsvar childof NestedAbs
+//- NestedAbs param.0 AbsvarA
+--------------------------------------------------------------------------------
+
+Java
+~~~~
+
+Java's source language is spelled "`java`".
+
+Builtin types
+^^^^^^^^^^^^^
+
+Java supplies the following <<tbuiltin>> nodes by default:
+
+[kythe,Java,"Builtin type nodes"]
+--------------------------------------------------------------------------------
+public class E {
+  //- @f defines F
+  //- F typed FnType
+  //- FnType.node/kind tapp
+  //- FnType param.0 FnBuiltin = vname("fn#builtin","","","","java")
+  //- FnType param.1 VoidBuiltin = vname("void#builtin","","","","java")
+  public static void f(
+    //- FnType param.2 BooleanBuiltin = vname("boolean#builtin","","","","java")
+    boolean bool,
+    //- FnType param.3 ByteBuiltin = vname("byte#builtin","","","","java")
+    byte b,
+    //- FnType param.4 ShortBuiltin = vname("short#builtin","","","","java")
+    short s,
+    //- FnType param.5 IntBuiltin = vname("int#builtin","","","","java")
+    int i,
+    //- FnType param.6 LongBuiltin = vname("long#builtin","","","","java")
+    long l,
+    //- FnType param.7 CharBuiltin = vname("char#builtin","","","","java")
+    char c,
+    //- FnType param.8 FloatBuiltin = vname("float#builtin","","","","java")
+    float f,
+    //- FnType param.9 DoubleBuiltin = vname("double#builtin","","","","java")
+    double d,
+    //- FnType param.10 StrArray
+    //- StrArray.node/kind tapp
+    //- StrArray param.0 ArrayBuiltin = vname("array#builtin","","","","java")
+    //- StrArray param.1 String
+    String[] arry) {}
+}
+--------------------------------------------------------------------------------

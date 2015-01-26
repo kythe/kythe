@@ -1,0 +1,35 @@
+[
+  {
+    "name": "indexpack",
+    "kind": "go_library",
+    "inputs": {
+      "srcs": [
+        "fs.go",
+        "indexpack.go"
+      ],
+      "go_pkgs": [
+        "//kythe/go/platform/analysis",
+        "//third_party/go/code.google.com:uuid",
+        "//third_party/go/golang.org:context"
+      ]
+    }
+  },
+  {
+    "name": "indexpack_test",
+    "kind": "go_test",
+    "inputs": {
+      "srcs": [
+        "indexpack_test.go"
+      ],
+      "go_lib": [
+        ":indexpack"
+      ],
+      "go_pkgs": [
+        "//kythe/proto:analysis_proto",
+        "//kythe/proto:storage_proto",
+        "//third_party/go/code.google.com:protobuf",
+        "//third_party/go/golang.org:context"
+      ]
+    }
+  }
+]

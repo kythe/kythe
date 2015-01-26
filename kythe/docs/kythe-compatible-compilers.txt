@@ -1,0 +1,464 @@
+// Copyright 2014 Google Inc. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+Making Tools Kythe-Compatible
+=============================
+Michael J. Fromberger <fromberger@google.com>, Steve Yegge <stevey@google.com>
+v0.1.1, 28-Oct-2014: Draft
+:toc:
+:priority: 998
+
+This document outlines the work needed to make a production compiler,
+interpreter, or analysis tool able to work smoothly within the Kythe ecosystem.
+We won't discuss integrating a build system here -- although the details of
+doing so are similar in broad outlines.  The specifics differ enough, though,
+that build systems are covered in a separate document.
+
+Specific details will vary for a given tool, but there are a number of general
+features that most or all tools will need to support in order to communicate
+effectively with other tools.
+
+For simplicity, we will use the word `compiler' throughout, though the same
+approach applies for instrumenting other analysis tools.
+
+See also: link:kythe-overview.html[An Overview of Kythe]
+
+== Quick Overview
+
+First, provide a way to link against your compiler as a library and invoke it
+on some source code via a direct function call, which we'll call `analyze`.
+
+The `analyze` function should run the compiler in a special ``analysis'' mode.
+In this mode, the compiler should behave as follows:
+
+ * *don't* generate any executable code
+ * *do* recover from errors and process the whole input (to the extent possible)
+ * *don't* discard any source information you normally throw away (even comments!)
+ * *do* generate a rich AST, symbol table and type graph
+
+Using this mode, Kythe tools can invoke the compiler as a reusable component
+for other interesting tasks, such as locating semantic cross-references,
+extracting structured documentation, linting, syntax highlighting, code
+folding, and so forth.
+
+== Adding Support for a New Language
+
+Adding support for a new language to Kythe consists in instrumenting a compiler
+for that language to emit information about the fully lexed, parsed, and
+type-resolved AST in a Kythe-compliant intermediate representation.  In some
+cases (_e.g.,_ Haskell), a library may already exist to provide these data --
+in which case, the task is much simpler.  Often, however, existing tools do not
+provide what we need.
+
+The information needed to supply semantic cross-references, extract structured
+documentation, perform syntax highlighting and code-folding, and other tasks on
+a source file in language X is a subset of what the front-end of a compiler for
+that language generates.  Lexing and parsing the source is usually not that
+complex (though there are notable exceptions like C++), but for more
+interesting tasks you'll also need type and dependency information.
+
+In brief, the steps to add support for a new language are:
+
+ 1. *Identify a suitable compiler* or interpreter for the language.
+
+ 2. *Instrument the compiler* to emit Kythe-compliant graph artifacts.
+
+ 3. [optional, as needed] *Update the Kythe schema* for any new concepts that
+    need to be modeled to support your language.
+
+Step (1) should be straightforward: Ideally, you should use whatever compiler
+is used to produce your production binaries for the language -- that way you
+can be sure your analysis results will agree with your production code.  In
+some cases, this may not be feasible, however -- many compilers are not
+designed to be invoked as libraries.  In that case you may wind up having to
+compromise on using some other implementation. The important points are:
+
+ 1. *Do not rewrite the compiler.* By design, the Kythe project does not write
+    or maintain separate compilers for the languages it supports. For each
+    language, choose one canonical compiler (preferably, the one that you would
+    use to process the language in a production environment), and use it to
+    build your indexer. If such a compiler does not yet exist, then finding or
+    creating an alternative should be the first priority.
+
+ 2. *Push compiler changes upstream.* When you do have to work around
+    limitations in your chosen compiler, try to find solutions that can be
+    folded back into the compiler itself, and plan to offer your changes to the
+    maintainer of the compiler for a future revision. Standardizing the
+    features needed to produce a valuable index is an important high-level goal
+    of the Kythe project; owning parts of the toolchain is decidedly not.
+
+ 3. *Avoid forking the compiler.* Occasionally the only way to get what you
+    need will be to fork an existing compiler. This should be seen as a measure
+    of last resort, to be avoided if at all possible. If there truly is no
+    other solution, try to fork only the pieces you absolutely have to change,
+    and maintain compatibility with as much of the remaining code as
+    possible. Moreover, as described in point (2), try to make your changes in
+    a way that will permit re-integration with the upstream project as soon as
+    possible.
+
+Step (2) is where the interesting work happens.  Ideally, this work would be
+done by the author or maintainers of the compiler, but in practice the initial
+work is sometimes performed by an outside contributor (at Google, many of our
+existing language analyzers were initially written by a Kythe team member, for
+example).  However, we want to encourage the compiler owners to take control of
+this work at some point.  We have not yet met a compiler team who are opposed
+to having their compiler emit high-quality metadata.  For example, they may
+improve support by storing documentation comments within the AST so Kythe can
+add the text to its index.
+
+Step (3) is an optional step that can be undertaken by whomever is implementing
+Step (2).  Often, no schema changes will be needed at all, particularly for
+analyses that re-use existing schema components like cross-references and
+documentation comments, for which we already have a pretty solid model.  If
+your language requires some new kind of data to work smoothly, though, this is
+where it should be documented.
+
+Once all three of these steps are complete, your new language is ready to plug
+into the Kythe ecosystem.
+
+== Interfacing with the Compiler
+
+Kythe provides tools for invoking a language analyzer, which it does using
+information captured from the build system.  The details of build system
+integration are outside the scope of this document, though in outline it is
+similar to compiler integration.  The important point for writing a language
+analyzer is to record how to invoke the compiler front-end, given the settings
+from the build system, including
+
+ * The command-line for the compiler invocation
+ * Environment variables
+ * All the input files required to process the compilation
+
+There are several ways to hook into the compiler, and we discuss a few of the
+more common models here.
+
+=== Direct Linking
+
+By far the most common (and flexible) approach is for the language analyzer to
+statically link against the compiler as a library.  The analyzer and compiler
+run in the same process, and the indexer queries the compiler's data structures
+via direct function or method calls.
+
+This approach has pros and cons.  It is usually the easiest path for the
+compiler team to take, since it just requires exposing some previously private
+functions and data structures.  It also yields the richest data for the
+indexer, since it's all right there in memory.
+
+One downside is that it tends to force the analyzer to be written in the same
+language as the compiler, which can sometimes limit code sharing across Kythe
+indexers.  Another is that it closely couples the indexer's implementation to
+the compiler internals.  The coupling can be ameliorated by having the compiler
+expose "internal public" APIs, although the extra layer can make it harder to
+get at the data the indexer actually needs.
+
+In practice, providing a typed AST visitor and/or access to a symbol table are
+usually sufficient for loose coupling and rich data availability.
+
+=== Pre-Composed Index
+
+Some compilers are written to support IDEs directly, such as the Eclipse JDT
+(for Java) and CDT (for C++) compilers.  Such compilers often produce
+high-level code indexes for their own internal consumption.  One way to extract
+data for Kythe is to process that internal index -- either using library-level
+APIs (_i.e.,_ by linking the compiler in-process) or by running the compiler
+with the appropriate flags to dump out the underlying data.
+
+The main problem we've encountered with such pre-composed indexes is that they
+tend to have a public API that exports only what the designers anticipated
+would be needed for their primary client, for instance an IDE.  Kythe supports
+many different kinds of clients, including static analysis clients and database
+query engines -- so as a general rule, Kythe needs _all_ the information your
+compiler generates in its semantic analysis.  However, in the absence of a more
+direct approach, this can be one way to get started.
+
+== Compiler Facilities
+
+When you're instrumenting a compiler for Kythe, you need to decide which Kythe
+features you want to support.  This is often a moving target, as both compilers
+and the languages they implement are subject to change over time.  As such,
+it's usually a matter of judgement -- but since the Kythe data model is
+designed to cope with missing or incomplete information, it's fine to start by
+emitting any information that's easy to construct.  You can go back and add
+additional data later on as the need arises.
+
+The safest way to be forward-compatible is to have your compiler expose
+_everything_ up front.  If no information is ever thrown away, then we won't
+need to ask you to add it back in later.  We recognize, however, that this is
+often difficult and expensive.  Kythe is designed to degrade gracefully if the
+compiler is missing information.
+
+=== Type-Resolved AST
+
+The main feature needed to provide minimal Kythe functionality is a fully
+type-resolved AST.  By _type-resolved_ we mean that for each indexable entity
+that has a type, Kythe should be able to find a representation of that entity's
+associated type.
+
+This core facility is used in many situations: static analysis queries, file
+outlining, structural navigation (_e.g.,_ `next-function`), and others.
+
+Ideally:
+
+ * The AST must faithfully represent the original source, with no tree rewrites.
+
+ * For languages with macros or code generation, we need ASTs for both the pre-
+   and post-preprocessed versions.
+
+ * All AST nodes must include their source file offset and length.  The length
+   is node-specific but should encompass all children.
+
+ * The AST should provide a visitor interface that walks the whole tree.  The
+   indexer can use your visitor to create a richer interface with
+   preorder/postorder/inorder traversals, node parent links and so on.
+
+ * An AST should be created even for files that do not compile (if possible).
+   The compiler should perform error recovery, and may choose to model error
+   nodes explicitly.
+
+It's fine if the AST produced by the compiler is highly language-specific; the
+purpose of the analyzer is to walk through this structure and emit a subset of
+its data into the Kythe graph.  The important part for the analyzer is to have
+all the information available.
+
+=== Symbol Table
+
+Kythe needs access to the association between named entities and their
+referents. This information is important to support features like
+jump-to-definition, hover-documentation and cross-references.
+
+Sometimes this information is attached directly to the compiler's AST, but in
+other cases it's represented by a separate ``symbol table'' generated by the
+compiler.  For compilers that use this structure, it should be exposed so that
+Kythe tools can resolve names to their corresponding type and definition data.
+
+When possible, a compiler should provide a way to resolve a named entity even
+without an explicit reference in the source -- consider the problem of
+decorating references to named types embedded in documentation comments, for
+example.  These kinds of queries can usually be satisfied from a symbol table,
+if the compiler provides one.
+
+=== Optional AST facilities
+
+The following AST facilities are optional but desired.  Keep in mind that these
+features are generally helpful to anyone making tools for your language -- not
+just Kythe!
+
+*Delimiters and keywords*::
+  We would prefer to be able to query the AST for information about delimiters
+  and keywords.  This is optional if we have access to the tokenizer (see
+  below).
+
+*Parent links*::
+  Kythe indexers often need to search up the AST from a given node, so it is
+  helpful if the AST contains parent links.  This is optional, however, as we
+  can build a traversable AST during the first visitor pass.
+
+*Serialization*::
+  It is very helpful if the AST can be serialized.  A binary format is useful
+  for caching ASTs if parsing is at all slow (which for some languages it is).
+  A text format is useful for debugging.  Either one, or both, is very helpful.
+  We can of course build our own AST format with a visitor pass, if necessary.
+
+=== What Kythe Typically Records
+
+Kythe indexes information about various code entities, including:
+
+ * named, *externally addressable* symbols such as classes, methods and fields
+
+ * symbols that are *not normally addressable* outside a function, such as
+   local variables and function parameters
+
+ * *anonymous* classes, anonymous structs or unions, lambda functions
+
+ * *type-system information*, including nodes to represent templates, generics,
+    type constructors and the like.
+
+Every recorded entity gets a *node* in Kythe's graph.  Kythe nodes comprise a
+unique name (called a *VName*) that serves as the storage ``key'' for the node,
+together with a bag of key-value properties describing features of that node
+(such as its location, its ``kind'', and so forth), and a collection of
+labelled *edges* that express its relationships to other nodes.  For example, a
+node representing a function parameter may have edges connecting it to the type
+of the parameter, the place where the parameter is defined, and so forth.
+
+==== What Entities Should Be Supported
+
+Although there is some variation across languages as to what constitute objects
+of interest for Kythe, there are a number of common themes:
+
+*Variables*::
+  The indexer should be able to locate function parameters and local variables,
+  and distinguish between the two.
+
+*Usages*::
+  The AST should ideally provide lists of usage locations for any symbol,
+  though Kythe can synthesize these if necessary.
+
+*Types*::
+  Each named entity should have type information (see Type Graph below).  When
+  appropriate, the type information may be an error or unknown type.
+
+*Metadata*::
+  Each named entity should record its relevant language-specific metadata,
+  including but not limited to: visibility modifiers on the definition
+  (private, protected, etc.), access modifiers such as const or final, and
+  other language-specific modifiers such as static, abstract, virtual, native,
+  extern, volatile, etc.
+
+*Declarations*::
+  Kythe must be able to distinguish definitions from declarations, if the
+  language differentiates them.
+
+*Implicit definitions*::
+  If the compiler generates any entities that participate in the program
+  structure or type graph, even if they are not directly nameable or
+  addressable in the language, Kythe needs to be able to get them.
+  Examples include default constructors, declarations generated through macro
+  expansion, function prototypes, an implicit `this` reference, and
+  iterator/generator objects produced by `yield`.  The general rule is that any
+  structure in the source should be represented in the AST, even if it does not
+  correspond to literal source text.
+
+*Locations*::
+  Each (named) entity should have a pointer to its defining location in the
+  concrete syntax.  Any usages should also point to their defining locations.
+
+*Scope Chain*::
+  A named entity should if at all possible have a pointer to its enclosing
+  scope(s).  Kythe should be able to determine the lexical scope and (if
+  different) the containing scope for the symbol's definition node.  Note that
+  a pointer to the AST node is minimally sufficient if the AST has a visitor
+  interface.
+
+*Comments*::
+  If the language supports documentation comments, Kythe needs to be able to
+  tie each doc comment to the entity it is documenting -- ideally by looking up
+  the comment in the symbol table.
+
+*Suggested URLs*::
+  Some built-in (``intrinsic'') language constructs do not have any AST node
+  corresponding to their definitions.  However, in such cases the compiler
+  should provide a URL syntax (not necessarily as a compiler facility) that
+  points to canonical online documentation of the built-in.  An indexer may
+  use this to give a ``location'' to such intrinsics.
+
+=== Working around Frugal Compilers
+
+The Kythe graph records as much information as it can about the ``interesting''
+semantic entities in a source program.  In some cases, however, the compiler
+for the language does not provide everything we would like.  In such cases, we
+generally attempt to work around the problem by doing additional analysis on
+the compiler's AST.
+
+We encounter this issue in purely dynamic languages (such as Python and
+JavaScript) that lack type annotations.  The AST generated for these languages
+typically lacks enough information to do more than rudimentary scoped name
+lookup.  In some cases, we have had to implement our own type inference
+(usually approximate) to get the data we want to record.
+
+Even in statically-typed languages, though, compilers tend to discard data
+unless they are immediately relevant to the task at hand. By the time Kythe
+walks the AST, much of the distinguishing information may have been dropped --
+for instance, the lexical or dynamic scope chains.
+
+In an ideal world, the compiler's AST provides everything Kythe needs, so that
+we can build a graph with a simple walk.  We prefer this for two main reasons:
+
+ 1. Any ``synthesized'' language semantics embedded in a Kythe analyzer,
+    separate from the compiler itself, are inherently fragile -- they can (and
+    do) bit-rot as the compiler and language evolve.
+
+ 2. Compilers that provide these data for Kythe are also making them available
+    for other tools.
+
+It can be tricky to balance data richness and compilation efficiency.  Some
+compilers wind up needing separate code paths for the two use cases.  But we
+believe that compilers should -- wherever practical -- provide introspection
+facilities natively rather than relying on the tools community to reinvent the
+semantic analysis done by the core compiler.
+
+=== Other Optional Compiler Facilities
+
+There are a number of other features we have found useful, beyond the core
+cross-reference style information.  Broadly speaking, the more data a compiler
+can emit, the better your tools will be overall.  Tools are generally the main
+obstacle to adoption of a language, so it makes sense to support as many as you
+can.
+
+==== Modeling Types
+
+A compiler should expose its representation of types and their relationships.
+For complex type structures such as aliases, compound types (_e.g.,_ pointers,
+unions), generics and their specializations, and so on, it should be possible
+to decipher and capture the structure of the underlying types, at least in
+outline.
+
+==== Structured Documentation
+
+Some languages (_e.g.,_ Java) define a specific format for structured
+documentation along with the language; more commonly, structured documentation
+is done by convention, using tools like Doxygen.  To the extent possible, the
+compiler should make it easy to figure out the association between source
+comments, annotations, and other structured or semi-structured source metadata,
+and the program structures they're attached to.
+
+Kythe analyzers typically record comments in the index, and attempt to attach
+each comment to the appropriate statement or expression.
+
+   * It helps greatly if the compiler provides a list of comments attached to
+     the AST.
+
+   * The compiler is likely to be smarter about attaching comments to AST nodes
+     than the indexer would be, so doing so is helpful.
+
+If the language supports structured comments (_e.g.,_ JavaDoc, JSDoc), the
+compiler should provide a comment parser module that can identify tags, types
+and other distinguished structures within the comments.  Kythe attempts to
+record the structure of such comments, as well as links between the comment
+structures and their associated semantic entities.
+
+Ideally we would like a structured comment to appear as a pre-parsed,
+pre-resolved AST, so that other tools can process structured documentation
+after the fact without having to re-invoke the compiler. With sufficient
+context, Kythe may even be able to synthesize views that the compiler does
+_not_ provide explicitly, like semantic/structural file outlines and
+hover-documentation, that a UI can then present without having to incorporate
+specific knowledge of the underlying language.
+
+==== Tokenizer
+
+Although this facility is optional, it is _strongly recommended_ that you
+support it.  Kythe uses your compiler's lexical analyzer as an adjunct to
+syntax highlighting, indentation support and several other important use cases.
+
+It is extremely useful to have public access to the tokenizer itself, to run on
+an arbitrary source text and get back a token stream.  Alternately if we can
+get at the tokens via an AST traversal that can usually work as well.
+
+One common use for the tokenizer is to permit Kythe to pick up information that
+was discarded from the AST, either by design or by accident.
+
+==== Diagnostics
+
+Compilers should provide access to compilation diagnostics, including:
+
+   * compiler configuration errors or warnings
+   * parse errors
+   * name-resolution errors
+   * lint warnings
+
+Kythe records diagnostics in a language-agnostic way, so an analyzer has the
+option to emit a node to represent each diagnostic message, and edges to
+connect that message to other objects in the graph that are affected by that
+diagnostic (_e.g.,_ a file, a variable definition, an expression).

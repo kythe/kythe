@@ -1,0 +1,305 @@
+/*
+ * Copyright 2014 Google Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto2";
+
+package kythe.proto;
+
+// Design document: <link when written>
+// This proto represents a very preliminary attempt to define a cross-reference
+// service interface, based on Kythe data.  Its main consumer is Acropolis, but
+// the goal is to provide an interface that will be useful to other tools also.
+
+// TODO(fromberger): For now I have used tickets to identify nodes instead of
+// VNames.  We may choose to replace those with VNames.  Otherwise, define and
+// link to the preferred ticket encoding.
+// Strawman: Lightly canonicalized proto wire format encoded base64.
+// Strawman: Kythe URI scheme, a cleaned-up version of the Kythe scheme.
+
+// XRefService provides access to a Kythe graph for fast read-only access to
+// cross-reference relationships.  What constitutes a "Cross-reference" is not
+// precisely defined, but generally includes non-transitive (single-step)
+// relation like usage of a declaration, instantiation of a type, invocation of
+// a function, direct inheritance or overrides, and so forth.  Some transitive
+// relations can be converted into cross-references by precomputing a flattened
+// representation of a transitive relation.  In general, though, this service
+// is designed to be most efficient for single-step expansions.
+//
+// Key design principles:
+//  - All requests must be satisfied "quickly", e.g., in time proportional to
+//    the size of the returned set.
+//
+//  - The client should be able to batch related requests.
+//
+//  - The client specifies exactly what facts should be returned.
+//
+// There is no distinction made in the API between "node not found" and "no
+// facts/edges for node".  A node is extensionally defined by its facts and
+// edges, so a node without any facts or edges is not considered to exist.
+service XRefService {
+  // Nodes returns a subset of the facts for each of the requested nodes.
+  rpc Nodes(NodesRequest) returns (NodesReply) {}
+
+  // Edges returns a subset of the outbound edges for each of a set of
+  // requested nodes.
+  rpc Edges(EdgesRequest) returns (EdgesReply) {}
+
+  // Decorations returns an index of the nodes and edges associated with a
+  // particular file node.
+  rpc Decorations(DecorationsRequest) returns (DecorationsReply) {}
+}
+
+message NodesRequest {
+  // The tickets of the nodes to be looked up.
+  repeated string ticket = 1;
+
+  // A collection of filter globs that specify which facts (by name) should be
+  // returned for each node.  If filter is empty or unset, all available facts
+  // are returned for each matching node.  The filter applies to ALL requested
+  // nodes.  For different filters per node, the client must issue separate
+  // requests.  See EdgesRequest for the format of the filter globs.
+  repeated string filter = 2;
+}
+
+// To keep request and reply in sync, the server echoes the request ticket
+// back.  Since the ticket is a fairly substantial fraction of the data for a
+// node, we could save some encoding space by having the server respect the
+// original request ordering offsets.  I think this is too fragile, though, as
+// any error on the part of client or server could perturb the results in a way
+// would be tricky to debug.  I think the protocol will be simplest if we do
+// not couple the reply to the request in this way.
+
+message NodeInfo {
+  optional string ticket = 1;  // The ticket for a matching node.
+  repeated Fact fact = 2;      // The matching facts known for that node.
+}
+
+message NodesReply {
+  // One NodeInfo is returned for each requested node that had a non-zero
+  // number of matching facts.
+  repeated NodeInfo node = 1;
+}
+
+message EdgesRequest {
+  // The tickets of the source nodes for which edges are requested.
+  // The service will return an error if no tickets are specified.
+  repeated string ticket = 1;
+
+  // The kinds of outbound edges that should be returned for each matching
+  // source node.  If empty, all available edge kinds are returned.
+  repeated string kind = 2;
+
+  // A collection of filter globs that specify which facts (by name) should be
+  // returned for the target node of each matching edge.  If filter is empty,
+  // no facts are returned.
+  //
+  // The supported glob operators are:
+  //   *   zero or more non-slash characters ([^/]*)
+  //   ?   any single non-slash character ([^/])
+  //   **  zero or more of any character (.*)
+  //
+  // All other characters match literally, and the glob must consume the entire
+  // name in order to match.  The facts returned are the union of those matched
+  // by all the globs provided.
+  repeated string filter = 3;
+
+  // The edges matching a request are organized into logical pages.  The size
+  // of each page is a number of distinct edges.  Notionally: All the matching
+  // edges are ordered lexicographically by (start_ticket, kind, end_ticket);
+  // the page_token determines where in the ordering to start, and page_size
+  // determines how many edges should be returned.
+  //
+  // If page_token is empty, edges will be returned starting at the beginning
+  // of the sequence; otherwise the starting point named by the page_token will
+  // be used.  Legal values of page_token are returned by the server in the
+  // next_page_token field of the EdgesReply.  A page token should be treated
+  // as an opaque value by the client, and is valid only relative to a
+  // particular set of tickets and kinds.  If an invalid page token is
+  // requested, the server will return an error.
+  //
+  // If page_size > 0, at most that number of edges will be returned by the
+  // service for this request (see EdgeSet and EdgesReply below).
+  // If page_size = 0, the default, the server will assume a reasonable default
+  // page size.  The server will return an error if page_size < 0.
+  //
+  // The server is allowed to return fewer edges than the requested page_size,
+  // even if more are available, save that it must return at least 1 edge if
+  // any are available at all.
+  optional int32  page_size  = 8;
+  optional string page_token = 9;
+
+
+  // TODO(fromberger): Should this interface support automatic indirection
+  // through "name" nodes?
+  // For now, I'm assuming name-indirecting lookup will be a separate
+  // API, and that the initial clients will just make two (batching)
+  // calls if they need to.
+}
+
+// An EdgeSet represents a collection of edges outbound from a single node.
+// The edges are organized into groups, each sharing a common edge kind.
+//
+// The number of edges represented by an EdgeSet es, denoted len(es), is the
+// sum of the lengths of the repeated target_ticket fields for all the groups
+// in the EdgeSet.  This count is used to determine page size in a request.
+//
+// TODO(fromberger): Sort out what to do about the rare case of facts attached
+// to edges.
+message EdgeSet {
+  message Group {
+    optional string kind = 1;
+    repeated string target_ticket = 2;
+  }
+
+  // The ticket of the source node for all the edges in the edge set.
+  optional string source_ticket = 1;
+
+  // Each group is a collection of outbound edges from source node sharing a
+  // given kind.  In a given EdgeSet, the server will not send more than one
+  // group with the same kind label.
+  repeated Group group = 2;
+}
+
+message EdgesReply {
+  // This field will contain one EdgeSet for each source node with one or more
+  // matching outbound edges.  The number of edges represented by an EdgesReply
+  // er, denoted len(er), is the sum of len(es) for each es in edgeset.  This
+  // count is used to determine the page size.
+  repeated EdgeSet edge_set = 1;
+
+  // This field will contain one entry for each distinct node referenced by
+  // some edge in edgesets, for which there is one or more matching facts.
+  //
+  // Rationale: This prevents us from having to copy the data to all the end
+  // nodes, but allows the client to have that information without making
+  // additional requests.
+  repeated NodeInfo node = 2;
+
+  // If there are additional pages of edges after the ones returned in this
+  // reply, next_page_token is the page token that may be passed to fetch the
+  // next page in sequence after this one.  If there are no additional edges,
+  // this field will be empty.
+  optional string next_page_token = 9;
+}
+
+// Fact represents a single key/value fact from the graph.
+message Fact {
+  optional string name = 1;
+  optional bytes value = 2;
+}
+
+// A Location represents a single span of zero or more contiguous bytes of a
+// file or buffer.  An empty LOCATION denotes the entirety of the referenced
+// file or buffer.
+//
+message Location {
+  // The ticket of the file this location belongs to.  If the location
+  // represents a memory buffer, the ticket should be omitted.
+  optional string ticket = 1;
+
+  enum Kind {
+    // The entire file; the start and end fields are ignored.
+    FILE = 0;
+
+    // The point or span of file subtended by start and end.
+    SPAN = 1;
+  }
+
+  // What kind of location this is.
+  optional Kind kind = 2 [default= FILE];
+
+  // A Point represents a location within a file or buffer.
+  //
+  // If line_number ≤ 0, the line number and column offset are considered
+  // unknown and will be ignored.
+  //
+  // A point with line_number > 0 is said to be _normalized_ if it satisfies
+  // the constraint 0 ≤ column_offset ≤ bytelen(line_number); that is, if the
+  // column_offset is within the actual range of the corresponding line.  A
+  // point can be normalized by adjusting line_number and column_offset so that
+  // this constraint is satisfied.  This may be impossible if the column offset
+  // exceeds the bounds of the file.
+  message Point {
+    // The offset in bytes from the beginning of the file.
+    // Requires 0 ≤ byte_offset ≤ len(file).
+    optional int32 byte_offset = 1;
+
+    // The line number containing the point, 1-based.
+    optional int32 line_number = 2;
+
+    // The byte offset of the point within its line.
+    optional int32 column_offset = 3;
+  }
+
+  // The starting point of the location.
+  optional Point start = 3;
+
+  // The ending point of the location.
+  optional Point end = 4;
+
+  // A location is _valid_ if 0 ≤ start.offset ≤ end.offset.  If a valid
+  // location has start.offset = end.offset, it denotes a single point;
+  // otherwise it denotes the half-closed interval [start.offset, end.offset).
+  //
+  // When kind = FILE, start and end should be unset or set to zero values.
+}
+
+message DecorationsRequest {
+  // The location of the file to fetch decorations for.  The ticket of location
+  // must be non-empty.
+  //
+  // If the location is a SPAN, decorations are only returned for the specified
+  // window of the file.  It is an error in any case if location is invalid.
+  optional Location location = 1;
+
+  // If dirty_buffer is non-empty, the results will be adjusted (patched) to
+  // account for the regions of the specified file differing from the contents
+  // of the dirty buffer.
+  optional bytes dirty_buffer = 2;
+
+  // If true, return the encoded source text for the selected window.  Source
+  // text is not affected by patching.
+  optional bool source_text = 3;
+
+  // If true, return reference edges whose source nodes are located in the
+  // selected window.  References are affected by patching.
+  optional bool references = 4;
+}
+
+message DecorationsReply {
+  // The normalized location for which decorations are returned.
+  optional Location location = 1;
+
+  // The encoded source text for the selected window.
+  optional bytes source_text = 2;
+  optional string encoding = 3;
+
+  // Represents a reference edge source ---KIND---> target.
+  message Reference {
+    optional string source_ticket = 1;
+    optional string target_ticket = 2;
+    optional string kind = 3;
+  }
+
+  // The reference edges located in the specified window.
+  repeated Reference reference = 4;
+
+  // This field will contain one entry for each distinct node referenced by a
+  // reference edge.
+  repeated NodeInfo node = 15;
+
+  // TODO(fromberger): Patch diff information.
+}

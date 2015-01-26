@@ -1,0 +1,11 @@
+[
+  {
+    "name": "stringset",
+    "kind": "go_library",
+    "inputs": {
+      "srcs": [
+        "stringset.go"
+      ]
+    }
+  }
+]

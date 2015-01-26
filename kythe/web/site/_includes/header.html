@@ -1,0 +1,39 @@
+<header class="site-header">
+  <div class="wrapper">
+    <a class="site-title" href="{{ site.baseurl }}/">{{ site.title }}</a>
+    <nav class="site-nav">
+      <div class="btn-group">
+        {% assign pages = site.pages | sort:"order" %}
+        {% for page in pages %}
+        {% if page.title and page.order %}
+        {% if page.menu %}
+        <div class="btn-group" role="group">
+          <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-expanded="true">
+            <a href="{{ page.url | prepend: site.baseurl }}">{{ page.title }}</a>
+            <span class="caret"></span>
+          </button>
+          <ul class="dropdown-menu" role="menu">
+            {% for item in page.menu %}
+            <li role="presentation">
+              {% assign href = item.href | liquify %}
+              {% if href contains 'http' %}
+              <a role="menuitem" href="{{ href }}" target="_blank">
+                {{ item.title }}
+                <span class="glyphicon glyphicon-link small"></span>
+              </a>
+              {% else %}
+              <a role="menuitem" href="{{ href }}">{{ item.title }}</a>
+              {% endif %}
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% else %}
+        <a class="btn btn-default" href="{{ page.url | prepend: site.baseurl }}">{{ page.title }}</a>
+        {% endif %}
+        {% endif %}
+        {% endfor %}
+      </div>
+    </nav>
+  </div>
+</header>

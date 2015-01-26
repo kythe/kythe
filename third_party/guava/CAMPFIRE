@@ -1,0 +1,11 @@
+[
+  {
+    "name": "guava",
+    "kind": "java_external_jar",
+    "inputs": {
+      "srcs": [
+        "guava-16.0.1.jar"
+      ]
+    }
+  }
+]

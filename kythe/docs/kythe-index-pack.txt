@@ -1,0 +1,247 @@
+// Copyright 2014 Google Inc. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+Kythe Index Pack Format
+=======================
+Michael J. Fromberger <fromberger@google.com>
+v.0.1.0, 24-Nov-2014: Draft
+:toc:
+:toclevels: 3
+:priority: 500
+
+== Summary
+
+This document specifies a compact persistent storage representation for
+compilation information, suitable for use by Kythe to generate cross-reference
+data.
+
+== Background
+
+To generate cross-references, Kythe captures a record of each compilation that
+is to be indexed (_e.g.,_ a library or binary) with enough information to
+enable us to replay the compilation to the front-end of the compiler.  This
+record consists of a
++CompilationUnit+ link:https://developers.google.com/protocol-buffers[protobuf]
+message, together with the content of all the source files and other inputs the
+compiler needs to process the compilation (_e.g.,_ header files or type
+snapshots from dependencies).
+
+[[_kindex_format]]
+For a single compilation, we can store this record in a +.kindex+ file, which
+contains a GZip-compressed sequence of length-prefixed binary records (length
+encoded as a protobuf-style
+link:https://developers.google.com/protocol-buffers/docs/encoding#varints[varint]),
+organized as:
+
+[cols="10%,90%"]
+|================================================================================
+|Record # |Content
+|0        |link:/repo/kythe/proto/analysis.proto[`CompilationUnit`] protobuf, wire format [specifying n required inputs]
+|1        |link:/repo/kythe/proto/analysis.proto[`CompilationUnit_FileInput`] protobuf, wire format [file 1 contents]
+|…        |…
+|n        |… [file n contents]
+|================================================================================
+
+This file-format is adequate for a single compilation. It doesn't work well for
+indexing a corpus comprising many compilations, however, because such
+compilations typically share many input files in common, and storing the
+complete record per file means we duplicate the contents of all those shared
+input files that are shared across multiple records.
+
+== Index Pack Format
+
+To solve the problems described above, we use a more compact format called an
+*index pack*. An index pack is a specially-structured directory (using a layout
+inspired by link:http://cr.yp.to/proto/maildir.html[Maildir]):
+
+[literal]
+root/                # Any legal directory name is fine here
+   units/
+     abcd1234.unit   # Compilation unit (see below for format)
+     …               # (name is hex-coded SHA256 of uncompressed data)
+   files/
+     1a2b3c4e.data   # File contents, compressed
+     …               # (name is hex-coded SHA256 of uncompressed data)
+
+
+This organization separates the compilation unit descriptions from their file
+data, which are shared among multiple compilations. Transporting the index pack
+is accomplished by archiving it with tar or zip or another format as desired.
+
+=== Directory and File Layout
+
+An index pack is a directory (called the root) containing two subdirectories, one named units and one named files.
+
+ * The `units` subdirectory may contain only unit files and temp files, as
+   described below.
+
+ * The `files` subdirectory may contain only data files and temp files, as
+   described below.
+
+ * Other files or directories inside the units or files subdirectories should
+   cause a tool to consider the index pack invalid.
+
+ * Other files or subdirectories in the root should be ignored by a tool
+   processing the index pack.
+
+A *unit file* is a file containing a GZip-compressed compilation unit
+description. The name of a unit file has the form `<digest>.unit`, where
+`<digest>` denotes a lower-case hex-encoded SHA256 digest of the uncompressed
+compilation unit description stored in the file.
+
+A *data file* is a file containing a GZip-compressed blob of file data. The
+name of a data file has the form `<digest>.data`, where `<digest>` denotes a
+lower-case hex-encoded SHA256 digest of the uncompressed blob data stored in
+the file.
+
+A *temp file* is a file containing arbitrary data being staged into the index
+pack. The name of a temp file has the form `<uuid>.new`, where `<uuid>` denotes
+an ASCII-encoded Version 4 UUID as described by
+link:http://www.ietf.org/rfc/rfc4122.txt[RFC 4122].
+
+=== Compilation Unit Description Format
+
+The contents of a unit file are a GZip-compressed compilation unit
+description. The description is encoded as a single
+link:http://www.json.org/[JSON] object, having the following top-level
+structure:
+
+[source,javascript]
+{
+  "format":  <format-key>,
+  "content": <content-object>
+}
+
+The two keys `"format"` and `"content"` are required; any additional keys must
+be ignored by a reader that does not understand them (this permits forward
+migration to newer versions). The values of these fields are defined as
+follows:
+
+<format-key>::
+  A string value describing the format of the content. This value may be
+  empty. A reader that discovers a `<format-key>` value it does not recognize
+  should skip processing the unit in that file.
+
+<content-object>::
+  A JSON object carrying the compilation description. A reader that discovers a
+  missing `<content-object>` field, or is unable to parse the value, should
+  consider the unit ill-formed and return an error.
+
+The format key is intended to support versioning of the format of compilation
+units across potentially-breaking changes.  Tools that write an index pack can
+be changed to emit multiple unit formats into the same pack without waiting for
+the consumers to all be updated.  Once migration is complete, the old format
+can be dropped.
+
+==== Format Values
+
+The following format values are currently defined:
+
+[cols="10%,90%"]
+|==================================================================
+|Key       |Object description
+|`"kythe"` |JSON encoding of a single Kythe `CompilationUnit` message.
+|==================================================================
+
+=== Encoding and Decoding Protocol
+
+A reader must be able to decode compilation units from JSON, which is
+represented in the pseudocode below by a function with signature:
+
+   func decodeCompilationUnit(json string, unit *CompilationUnit)
+
+This function decodes the given JSON content object into whatever compilation
+unit representation the reader prefers, or returns an error.
+
+A writer must be able to encode compilation units to JSON, which is represented
+in the pseucocode below by a function with signature:
+
+   func encodeCompilationUnit(unit CompilationUnit) string
+
+This function takes a compilation unit in whatever format the writer prefers,
+and returns the preferred format key and the JSON encoding of the message (or
+signaling an error).
+
+==== Read Protocol
+
+Multiple concurrent processes can safely read unit files and data files from an
+index pack directory, even if there are also concurrent writers. The protocol
+for reading a file from the index pack is described by the following
+pseudocode:
+
+[source,python]
+func readFile(directory, sourceName):
+  fp   = file(path.join(directory, sourceName), 'r')
+  gz   = GZipDecompressor(input=fp)
+  data = gz.readAll()
+  fp.close()
+  return data
+
+Using `readFile` as a primitive, data and unit files are read as follows
+(modulo error-handling):
+
+[source,python]
+func readDataFile(root, digest):
+  sourceName = digest+'.data'
+  return readFile(path.join(root, 'files'), sourceName)
+
+[source,python]
+func readUnitFile(root, digest, formatKey, unit):
+  sourceName = digest+'.unit'
+  contents   = readFile(root, sourceName)
+  wrapper    = JSON.decode(contents)
+  if wrapper.format == formatKey:
+    decodeCompilationUnit(wrapper["content"], unit)
+
+Note: While it is safe to read while there are concurrent writers (in the sense
+that you will get consistent data), it is not recommended to iterate over the
+contents of the index pack while it is being written, since the results may be
+incomplete. This is not a problem during normal use.
+
+==== Write Protocol
+
+Multiple concurrent processes can safely write into a single index pack,
+provided the index pack is stored in a filesystem that supports an atomic
+file-rename operation. Filesystems that are POSIX-compliant support atomic
+rename via the `rename(2)` call. The protocol for writing a new file into the
+index pack is described by the following pseudocode:
+
+[source,python]
+func writeFile(directory, targetName, contents):
+  tmp = path.join(directory, toHex(UUID4()) + '.new')
+  fp  = file(tmp, 'w')
+  gz  = GZipCompressor(output=fp)
+  gz.write(contents); gz.flush(); fp.close()
+  rename(tmp, path.join(directory, targetName))
+
+Using `writeFile` as a primitive, data and unit files are written as follows:
+
+[source,python]
+func writeDataFile(root, contents):
+  targetName = toHex(sha256(contents))+'.data'
+  writeFile(path.join(root, 'files'), targetName, contents)
+
+[source,python]
+func writeUnitFile(root, formatKey, unit):
+  content    = encodeCompilationUnit(unit)
+  body       = JSON{"format": formatKey, "content": content}.toString()
+  targetName = toHex(sha256(body))+'.unit'
+  writeFile(path.join(root, 'units'), targetName, body)
+
+Concurrent writers may store the same data without conflict, since files are
+named by a cryptographic digest of their contents. There is no provision for
+deleting data from an index pack within the protocol specified here. Note that
+this specification does not impose any ordering constraints between data files
+and unit files—in particular, an implementation may write data files before or
+after the unit file, at its option.

@@ -1,0 +1,12 @@
+= Kythe Website
+
+== Getting Started
+
+[source,shell]
+----
+# Build static website in _site
+./build.sh
+
+# Serve website locally on port 4000
+bundle exec jekyll serve
+----

@@ -1,0 +1,15 @@
+To add a new component to this third_party directory, follow these steps:
+
+1) Have a discussion on kythe-dev mailing list;
+2) Provide a clear rational in the change adding the third_party code;
+3) Add the third_party code in a patch containing no other changes;
+4) Add a third_party/<projectxyz>/README.google file listing:
+     * The URL to the package version
+     * The Version
+     * The License
+     * The path to a LICENSE file (create one if it does not exist)
+     * A brief Description
+     * A list of Local Modifications
+5) Have the change reviewed by multiple people in the team.
+
+Thank you.

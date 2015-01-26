@@ -1,0 +1,23 @@
+{
+  "linters": {
+    "spelling": {
+      "type": "spelling",
+      "exclude": "(^third_party)"
+    },
+    "merge-conflict": {
+      "type": "merge-conflict"
+    },
+    "campfire": {
+      "type": "json",
+      "include": "([/^]CAMPFIRE$|^.campfire_settings$)"
+    },
+    "go": {
+      "type": "golint",
+      "include": "(\\.go$)",
+      "exclude": "(^third_party)"
+    },
+    "custom": {
+      "type": "script-and-regex"
+    }
+  }
+}

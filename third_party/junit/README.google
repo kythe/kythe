@@ -1,0 +1,10 @@
+URL: http://search.maven.org/remotecontent?filepath=junit/junit/4.11/junit-4.11.jar
+Version: 4.11
+License: Eclipse Public License - v 1.0
+License File: LICENSE-junit.txt
+
+Description:
+Unit testing library for Java
+
+Local Modifications:
+No modifications.

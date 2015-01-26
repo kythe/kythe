@@ -1,0 +1,11 @@
+{
+  "dependencies": {
+    "js-yaml": "latest",
+    "mocha": "latest",
+    "tmp": "latest",
+    "data-driven": "latest"
+  },
+  "scripts": {
+    "test": "mocha -R spec ./*_test.js"
+  }
+}

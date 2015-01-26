@@ -1,0 +1,16 @@
+[
+  {
+    "name": "gopackages",
+    "kind": "go_binary",
+    "inputs": {
+      "srcs": [
+        "gopackages.go"
+      ],
+      "go_pkgs": [
+        "//kythe/go/platform/indexinfo",
+        "//kythe/go/platform/local",
+        "//kythe/proto:analysis_proto"
+      ]
+    }
+  }
+]

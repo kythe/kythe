@@ -1,0 +1,74 @@
+Index: ProtoTypeAdapter.java
+===================================================================
+--- ProtoTypeAdapter.java	(revision 1300)
++++ ProtoTypeAdapter.java	(working copy)
+@@ -25,8 +25,10 @@
+ import com.google.gson.JsonSerializationContext;
+ import com.google.gson.JsonSerializer;
+ import com.google.protobuf.Descriptors.Descriptor;
++import com.google.protobuf.Descriptors.EnumValueDescriptor;
+ import com.google.protobuf.Descriptors.FieldDescriptor;
+ import com.google.protobuf.GeneratedMessage;
++import com.google.protobuf.ProtocolMessageEnum;
+ 
+ import java.lang.reflect.Field;
+ import java.lang.reflect.InvocationTargetException;
+@@ -52,15 +54,9 @@
+ 
+     for (Map.Entry<FieldDescriptor, Object> fieldPair : fields.entrySet()) {
+       final FieldDescriptor desc = fieldPair.getKey();
+-      if (desc.isRepeated()) {
+-        List<?> fieldList = (List<?>) fieldPair.getValue();
+-        if (fieldList.size() != 0) {
+-          JsonArray array = new JsonArray();
+-          for (Object o : fieldList) {
+-            array.add(context.serialize(o));
+-          }
+-          ret.add(desc.getName(), array);
+-        }
++      if (fieldPair.getValue() instanceof EnumValueDescriptor) {
++        EnumValueDescriptor valDesc = (EnumValueDescriptor) fieldPair.getValue();
++        ret.add(desc.getName(), context.serialize(valDesc.getNumber()));
+       } else {
+         ret.add(desc.getName(), context.serialize(fieldPair.getValue()));
+       }
+@@ -89,10 +85,13 @@
+           String name = fieldDescriptor.getName();
+           if (jsonObject.has(name)) {
+             JsonElement jsonElement = jsonObject.get(name);
+-            String fieldName = name + "_";
++            String fieldName = getJavaFieldName(name);
+             Field field = protoClass.getDeclaredField(fieldName);
+             Type fieldType = field.getGenericType();
+             Object fieldValue = context.deserialize(jsonElement, fieldType);
++            if (fieldValue instanceof ProtocolMessageEnum) {
++              fieldValue = ((ProtocolMessageEnum) fieldValue).getValueDescriptor();
++            }
+             Method method = getCachedMethod(
+               builderClass, "setField", FieldDescriptor.class, Object.class);
+             method.invoke(protoBuilder, fieldDescriptor, fieldValue);
+@@ -118,6 +117,17 @@
+     }
+   }
+ 
++  private static String getJavaFieldName(String name) {
++    String[] parts = name.split("_");
++    StringBuilder fieldName = new StringBuilder(parts[0]);
++    for (int i = 1; i < parts.length; i++) {
++      fieldName.append(Character.toUpperCase(parts[i].charAt(0)));
++      fieldName.append(parts[i].substring(1));
++    }
++    fieldName.append('_');
++    return fieldName.toString();
++  }
++
+   private static Method getCachedMethod(Class<?> clazz, String methodName,
+       Class<?>... methodParamTypes) throws NoSuchMethodException {
+     Map<Class<?>, Method> mapOfMethods = mapOfMapOfMethods.get(methodName);
+@@ -135,4 +145,4 @@
+ 
+   private static Map<String, Map<Class<?>, Method>> mapOfMapOfMethods =
+     new HashMap<String, Map<Class<?>, Method>>();
+-}
+\ No newline at end of file
++}

@@ -1,0 +1,48 @@
+\documentclass[10pt,letterpaper]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\usepackage{relsize}
+\usepackage{xspace}
+\newcommand{\mailto}[1]{\href{mailto:#1}{\nolinkurl{#1}}}
+% The International Standard Way to Typeset "C++"
+% (https://github.com/cplusplus/draft/blob/master/source/macros.tex)
+\newcommand{\Rplus}{\protect\hspace{-.1em}\protect\raisebox{.35ex}{\smaller{\smaller\textbf{+}}}}
+\newcommand{\Cpp}{\mbox{C\Rplus\Rplus}\xspace}
+\newcommand{\Cyy}{\mbox{C\Rplus\Rplus}14\xspace}
+\begin{document}
+\title{Indexing Large, Mixed-Language Codebases}
+\author{James Dennett, Luke Zarko\\
+{\small\mailto{jdennett@google.com}, \mailto{zarko@google.com}}\\
+\\
+Google, Inc.}
+\date{}
+\maketitle
+\thispagestyle{empty}
+
+The Kythe project aims to establish open data formats and protocols for
+interoperable developer tools. In this talk, we will introduce the Kythe model
+as it applies to \Cyy, concentrating on features required for generating
+cross-references. We will discuss how the Clang front-end was instrumental in
+developing an indexing tool that produces Kythe data describing \Cpp source
+code. We will also give an overview of a reference pipeline that consumes code
+and build information to produce a navigable index. This index, when combined
+with Kythe data from other indexers, allows developers to explore code from
+projects composed of many different languages.
+
+Our overall goal is to loosen the coupling between programming languages and
+the software that supports them. With the Kythe abstractions, a single tool
+may handle a corpus containing code written in any number of languages, some
+of which the tool's author may never have encountered. Language and compiler
+authors who produce Kythe data immediately benefit from global support rather
+than having to implement a custom version of each tool in turn. In this way
+Kythe reduces the product of M languages by N tools to a sum.
+
+We are interested in collaborating with others who are also indexing code with
+Clang. Of course, we would also like to work with developers who can build
+indexers for other programming languages as well. The Kythe model is derived
+from the format used internally at Google to cross-reference a very large
+mixed-language source repository. It is designed to scale in corpus size and
+diversity, in language count, and in variety of tooling. Development along any
+of these axes benefits all participants in the community.
+
+\end{document}

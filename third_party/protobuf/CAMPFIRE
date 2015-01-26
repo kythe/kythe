@@ -1,0 +1,38 @@
+[
+  {
+    "name": "protobuf_jar",
+    "kind": "java_external_jar",
+    "inputs": {
+      "srcs": [
+        "protobuf-java-2.5.0.jar"
+      ]
+    }
+  },
+  {
+    "name": "protobuf_cc",
+    "kind": "cc_external_lib",
+    "inputs": {
+      "srcs": [
+        "lib/libprotobuf.a"
+      ]
+    },
+    "properties": {
+      "cc_include_path": "third_party/protobuf/include"
+    }
+  },
+  {
+    "name": "descriptor_proto",
+    "kind": "proto_library",
+    "inputs": {
+      "srcs": [
+        "include/google/protobuf/descriptor.proto"
+      ],
+      "go_pkgs": [
+        "//third_party/go/code.google.com:protobuf"
+      ]
+    },
+    "properties": {
+      "go_api": true
+    }
+  }
+]

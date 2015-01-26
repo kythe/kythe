@@ -1,0 +1,11 @@
+[
+  {
+    "name": "go_testmain_generator",
+    "kind": "go_binary",
+    "inputs": {
+      "srcs": [
+        "go_testmain_generator.go"
+      ]
+    }
+  }
+]

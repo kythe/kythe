@@ -1,0 +1,65 @@
+[
+  {
+    "name": "kythe-compatible-compilers",
+    "kind": "asciidoc",
+    "inputs": {
+      "srcs": [
+        "kythe-compatible-compilers.txt"
+      ]
+    }
+  },
+  {
+    "name": "kythe-index-pack",
+    "kind": "asciidoc",
+    "inputs": {
+      "srcs": [
+        "kythe-index-pack.txt"
+      ]
+    }
+  },
+  {
+    "name": "kythe-overview",
+    "kind": "asciidoc",
+    "inputs": {
+      "srcs": [
+        "kythe-overview.txt"
+      ]
+    }
+  },
+  {
+    "name": "kythe-storage",
+    "kind": "asciidoc",
+    "inputs": {
+      "srcs": [
+        "kythe-storage.txt"
+      ]
+    }
+  },
+  {
+    "name": "kythe-uri-spec",
+    "kind": "asciidoc",
+    "inputs": {
+      "srcs": [
+        "kythe-uri-spec.txt"
+      ]
+    }
+  },
+  {
+    "name": "campfire",
+    "kind": "asciidoc",
+    "inputs": {
+      "srcs": [
+        "campfire.txt"
+      ]
+    }
+  },
+  {
+    "name": "kythe-verifier",
+    "kind": "asciidoc",
+    "inputs": {
+      "srcs": [
+        "kythe-verifier.txt"
+      ]
+    }
+  }
+]

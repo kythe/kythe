@@ -1,0 +1,27 @@
+# Kythe artifacts
+*.kindex
+*.ldb
+*.log
+CURRENT
+LOCK
+LOG
+MANIFEST-*
+
+# Editor files
+*~
+.#*
+\#*#
+
+# Binary files
+*.class
+*.deb
+
+# Build artifacts
+/.campfire_lock
+/.campfire_state
+/campfire-out
+/doxygen-out
+*.ninja*
+
+# Misc
+node_modules

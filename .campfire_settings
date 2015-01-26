@@ -1,0 +1,52 @@
+{
+  "configuration": "amd64-release",
+  "configurations": {
+    "base": {
+      "out_label": "",
+
+      "asciidoc_path": "asciidoc",
+      "bison_path": "bison",
+      "cc_path": "clang",
+      "cxx_path": "clang++",
+      "flex_path": "flex",
+      "go_path": "go",
+      "go_testmain_generator": "//buildtools:go_testmain_generator",
+      "jar_path": "jar",
+      "java_path": "java",
+      "javac_path": "javac",
+      "junit_path": "third_party/junit/junit-4.11.jar",
+      "ninja_path": "ninja",
+
+      "cc_opts": ["-std=c++11", "-pthread", "-fno-rtti", "-Wall", "-Werror", "-Wno-unused-variable"],
+      "docker_namespace": "gcr.io/kythe_repo"
+    },
+    "amd64": {
+      "@inherit": "base",
+      "ninja_path": "third_party/ninja/ninja",
+      "protoc_path": "third_party/protobuf/bin",
+      "+copts": ["-DCAMPFIRE_CONFIGURATION=amd64"]
+    },
+    "amd64-debug": {
+      "@inherit": "amd64",
+      "out_label": "amd64-debug"
+    },
+    "amd64-release": {
+      "@inherit": "amd64",
+      "out_label": ""
+    }
+  },
+  "rules": [
+    "./cc_rules.js",
+    "./doc_rules.js",
+    "./docker_rules.js",
+    "./go_rules.js",
+    "./java_rules.js",
+    "./kythe_rules.js",
+    "./lexparse_rules.js",
+    "./proto_rules.js",
+    "./sh_rules.js"
+  ],
+  "allowed_dependencies": {
+    "kythe": { "buildtools": true, "third_party" : true }
+  }
+}

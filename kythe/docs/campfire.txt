@@ -1,0 +1,160 @@
+// Copyright 2014 Google Inc. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+= Campfire Build System
+Cody Schroeder <schroederc@google.com>
+v0.1.0, 13-Jan-2015
+:toc:
+
+WARNING: campfire is a temporary solution that will be supported only for a
+limited time.  It is expected to be replaced in the near future.
+
+Kythe uses http://martine.github.io/ninja/[ninja] to build its sources and has
+its own meta-build system, campfire, to generate the ninja build rules.  At its
+core, campfire is a system to describe the higher-level dependencies between
+libraries for ease-of-use, speed, and correctness.  These relationships are then
+lowered into file-based dependencies in the generated `build.ninja` file.
+
+This document is meant to be a brief introduction of the main concepts behind
+campfire.  For more in-depth information, please refer to its source
+documentation in Kythe's `buildtools/` directory.
+
+== Getting Started
+
+=== Configuration
+
+Campfire is configured by the hidden `.campfire_settings` file in the root of
+the Kythe repository.  It primarily contains paths for the build tools needed by
+Kythe and is configured, by default, to find most of the tools using the normal
+`$PATH` environmental variable.  However, some systems may need to manually
+tweak where some of the tools are found.  These overrides may be placed in a
+`$HOME/.campfire_settings` (see buildtools/docker/campfire_settings for an
+example).
+
+=== Build/Test/Run Kythe
+
+Once configured, most users of campfire will only need to know the `build`,
+`test`, and `run` commands.  `build` and `test` will compile the Kythe sources
+into binaries and place those outputs into the `campfire-out` directory. The
+`run` command can be used to both build an executable target and then
+immediately run it.
+
+[source,shell]
+----
+./campfire build # Build all of Kythe
+./campfire test  # Build and test all of Kythe
+
+# Run the C++ indexer on a source file and save the entry outputs as JSON
+./campfire run //kythe/cxx/indexer/cxx:indexer \
+    --ignore_unimplemented -i kythe/cxx/indexer/cxx/KytheGraphObserver.cc | \
+  ./campfire run //kythe/go/platform/tools:entrystream --write_json > entries.json
+----
+
+As seen above, when the `build` or `test` commands are not given any
+<<_target_specifiers,target specifiers>>, they default to the entire Kythe
+repository (`//...`).  However, it may be useful at times to restrict the build
+to a particular target or set of targets and this may be done by passing any
+number of targets as arguments to the `build` or `test` commands.
+
+[source,shell]
+----
+./campfire build //kythe/go/platform/... # Build only the Go platform targets
+./campfire test //kythe/cxx/...          # Test all C++ targets
+
+# Build the main Kythe documentation and run all Java tests
+./campfire test //kythe/docs/... //kythe/javatests/...
+----
+
+TIP: Use `./campfire help` to discover more advanced commands
+
+== Target Specifiers
+
+Campfire's way of specifying individual libraries/binaries to build or test is
+based around packages and targets.  Packages are collections of targets and are
+directory-based.  Targets are named and generally describe a single compilation
+to build.  All targets must be statically specified by `CAMPFIRE` files
+(<<_build_specifications,see below>>).
+
+Single target::
+----
+//kythe/go/platform/tools:entrystream (the entrystream binary)
+//kythe/cxx/verifier                  (the verifier binary)
+//kythe/go/storage/leveldb            (the leveldb storage library)
+//kythe/go/storage:storage_test       (the Go storage tests target)
+----
+
+All targets in a package::
+----
+//kythe/docs:all             (all top-level documentation targets)
+//kythe/cxx/indexer/cxx:all  (all targets in the C++ indexer package)
+----
+
+All targets recursively below or in a package::
+----
+//kythe/go/...        (all packages below or in kythe/go)
+//kythe/cxx/tools/... (all C++ tools)
+//third_party/...     (all third_party code)
+//...                 (all packages)
+----
+
+== Build Specifications
+
+Campfire requires all library/binary dependencies to be declared statically in
+`CAMPFIRE` files.  Each specification file (describing a single *package*) may
+contain zero or more *build targets*.
+
+`CAMPFIRE` files are JSON-formatted as a single array, with each build target as
+a JSON object containing at least the following properties:
+
+name:: name of the target
+kind:: name of the rule used to build the target
+inputs:: map of inputs keyed by their usage in the build rule
+
+As a simple example, a build target for this document could be:
+
+[source,js]
+----
+{
+  "name": "campfire-build-system",
+  "kind": "asciidoc",
+  "inputs": {
+    "srcs": [
+      "campfire.txt"
+    ]
+  }
+}
+----
+
+This target is named `campfire-build-system`, should be built using the
+`asciidoc` build rule, and has exactly 1 source input, `campfire.txt`, which is
+located in the same directory as the `CAMPFIRE` file.
+
+=== Basic Rule Kinds
+
+campfire supports over a dozen different rule kinds but there are 4 basic kinds
+of rules.
+
+*_library rules:: non-executable collection of code meant to be reusable on its
+ own (*examples:* `java_library`, `cc_library`, `go_library`, `proto_library`)
+
+*_test rules:: executable that, when run, tests some subset of the Kythe
+ codebase (*examples:* `java_test`, `cc_test`, `go_test`, `sh_test`)
+
+*_binary rules:: regular exectuable, normally meant to be a reusable tool
+ (*examples:* `java_binary`, `cc_binary`, `go_binary`)
+
+\*\_external_* rules:: shim to allow campfire to use externally compiled code
+(*examples:* `java_external_jar`, `cc_external_lib`, `go_external_lib`)
+
+// TODO(schroederc): == Extending Campfire

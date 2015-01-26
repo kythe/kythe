@@ -1,0 +1,29 @@
+[
+  {
+    "name": "release",
+    "kind": "docker_deploy",
+    "properties": {
+      "docker_name": "google/kythe",
+      "release_version": "0.1.0"
+    },
+    "inputs": {
+      "srcs": [
+        "Dockerfile"
+      ],
+      "deps": [
+        "//kythe/release/base"
+      ],
+      "data": [
+        "//kythe/cxx/indexer/cxx:indexer",
+        "//kythe/go/extractors/gopackages",
+        "//kythe/go/platform/tools:dedup_stream",
+        "//kythe/go/storage/tools:directory_indexer",
+        "//kythe/go/storage/tools:write_entries",
+        "//kythe/java/com/google/devtools/kythe/analyzers/java:java_indexer_deploy",
+        "//kythe/java/com/google/devtools/kythe/extractors/java/standalone:javac_extractor_deploy",
+        "kythe.sh",
+        "maven_extractor.sh"
+      ]
+    }
+  }
+]

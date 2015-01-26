@@ -1,0 +1,42 @@
+[
+  {
+    "name": "buildutil",
+    "kind": "go_external_lib",
+    "properties": {
+      "go_package": "golang.org/x/tools/go/buildutil"
+    }
+  },
+  {
+    "name": "context",
+    "kind": "go_external_lib",
+    "properties": {
+      "go_package": "golang.org/x/net/context"
+    }
+  },
+  {
+    "name": "html",
+    "kind": "go_external_lib",
+    "properties": {
+      "go_package": "golang.org/x/net/html"
+    },
+    "inputs": {
+      "go_pkgs": [
+        ":html_atom"
+      ]
+    }
+  },
+  {
+    "name": "html_atom",
+    "kind": "go_external_lib",
+    "properties": {
+      "go_package": "golang.org/x/net/html/atom"
+    }
+  },
+  {
+    "name": "types",
+    "kind": "go_external_lib",
+    "properties": {
+      "go_package": "golang.org/x/tools/go/types"
+    }
+  }
+]

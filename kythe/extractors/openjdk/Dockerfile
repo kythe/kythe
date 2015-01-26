@@ -1,0 +1,32 @@
+FROM google/kythe-base
+
+# Output location for .kindex files
+VOLUME /idx
+
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y mercurial curl zsh \
+      ant build-essential autoconf automake binutils cpio procps gawk m4 file libmotif-dev libcups2-dev libfreetype6-dev libasound2-dev libX11-dev libxext-dev libxrender-dev libxtst-dev libxt-dev unzip zip && \
+    apt-get clean -y
+ENTRYPOINT ["/usr/bin/zsh"]
+
+RUN hg clone http://hg.openjdk.java.net/jdk8/jdk8/ /tmp/jdk8
+WORKDIR /tmp/jdk8
+
+RUN sh ./get_source.sh
+RUN sh ./configure \
+      --with-freetype-lib=/usr/lib/x86_64-linux-gnu --with-freetype-include=/usr/include/freetype2
+
+# Fix make4.0 issue
+RUN curl http://hg.openjdk.java.net/jdk9/dev/hotspot/raw-rev/e8d4d0db1f06 \
+    | tail -n+10 \
+    | patch -d hotspot -p1
+
+# Ensure all dependencies are present
+RUN LOG= make JOBS=4 jdk
+
+ADD javac_extractor_deploy.jar /kythe/bin/
+ADD extract.sh /kythe/bin/
+
+# Extract compilations when run
+ENTRYPOINT ["/kythe/bin/extract.sh"]

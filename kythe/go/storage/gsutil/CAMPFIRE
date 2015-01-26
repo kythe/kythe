@@ -1,0 +1,17 @@
+[
+  {
+    "name": "gsutil",
+    "kind": "go_library",
+    "inputs": {
+      "srcs": [
+        "gsutil.go"
+      ],
+      "go_pkgs": [
+        "//kythe/go/storage",
+        "//kythe/go/storage/inmemory",
+        "//kythe/go/storage/leveldb",
+        "//kythe/go/storage/sql"
+      ]
+    }
+  }
+]

@@ -1,0 +1,35 @@
+v_name {
+  signature: "test_kindex"
+  corpus: "kythe"
+  language: "c++"
+}
+required_input {
+  v_name {
+    path: "/absolute/test.h"
+    corpus: "absolute_corpus"
+    root: "absolute_root"
+    language: "c++"
+  }
+  info {
+    path: "/absolute/test.h"
+    digest: "uncheckedh"
+  }
+}
+required_input {
+  v_name {
+    path: "fake/test.cc"
+    corpus: "fake_corpus"
+    language: "c++"
+  }
+  info {
+    path: "/repo/fake/test.cc"
+    digest: "uncheckedcc"
+  }
+}
+argument: "unusedexecutable"
+argument: "-DCMDARG"
+argument: "fake/test.cc"
+has_compile_errors: false
+source_file: "fake/test.cc"
+output_key: "/fake-out/test.o"
+working_directory: "/repo"

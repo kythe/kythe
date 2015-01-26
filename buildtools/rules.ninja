@@ -1,0 +1,100 @@
+ninja_required_version = 1.5
+
+rule run_test
+  command = set -o pipefail; $in $args 2>&1 | tee $log && touch $out || { code=$$?; echo "Test failure code: $$code"; exit $$code; }
+  description = test $in $args
+
+rule javac
+  command = mkdir -p $out.classes && '$javac' -cp '$classpath' $in -d $out.classes && '$javajar' cf $out -C $out.classes .
+  description = javac $owner
+
+rule java_shell
+  command = echo 'exec "$java" -cp "$classpath" "$main" $args "$$@"' > $out && chmod +x $out
+  description = java_shell $main
+
+rule java_deploy_jar
+  command = root=$$PWD; mkdir -p $out.classes && cd $out.classes && for i in $in; do '$javajar' xf $$root/$$i; done && echo 'Main-Class: $main' > manifest.txt && '$javajar' cfm deploy.jar manifest.txt . && mv deploy.jar $$root/$out
+  description = java_deploy_jar $out
+
+rule go_build
+  command = CC=$cpath GOPATH="$$PWD/$root" CGO_CFLAGS="$cflags" CGO_LDFLAGS="$ldflags" $gotool build -o $out $package
+  description = go_build $owner
+
+rule go_compile
+  command = $gotool tool 6g -p $package -complete -pack -o $out $$(sed -r 's/( |^)([^$$])/ -I \2/g' <<<'$include') $in
+  description = go_compile $owner
+
+rule go_linker
+  command = $gotool tool 6l $$(sed -r 's/( |^)([^$$])/ -L \2/g' <<<'$include') --extldflags='$extldflags' -o $out $in
+  description = go_linker $out
+
+rule go_testmain
+  command = $generator $package $out $in
+  description = go_testmain $package
+
+rule c_compile
+  command = $cpath -c $in -o $out $copts
+  description = c_compile $in
+
+rule cpp_compile
+  command = $cxxpath -c $in -o $out $copts
+  description = cpp_compile $in
+
+rule archive
+  command = ar cr $out $in
+  description = archive $out
+
+rule linker
+  command = $cxxpath -o $out -pthread $in $in $flags
+  description = linker $out
+
+rule protoc_java
+  command = set -o pipefail; mkdir -p $out.{srcs,classes} && '$protocpath/protoc' --java_out=$out.srcs $in && find $out.srcs -name "*.java" | xargs '$javac' -cp '$classpath' -d $out.classes && '$javajar' cf $out -C $out.classes .
+  description = protoc_java $owner
+
+rule protoc_go
+  command = mkdir -p $outdir && $protocpath/protoc --plugin=$protocpath/protoc-gen-go --go_out=import_path=$package$importpath:$outdir $in && $gotool tool 6g -p $package -complete -pack -o $out -I $$(sed 's/ / -I /g' <<<'$include') $$(find $outdir -name '*.go')
+  description = protoc_go $owner
+
+rule protoc_cpp
+  command = mkdir -p $outdir && $protocpath/protoc --cpp_out=$outdir $in && for i in $$(find $outdir -name '*.cc'); do $cxxpath -c -I $outdir $$(sed -r 's/( |^)([^$$])/ -I\2/g' <<<'$include') $$i -o $$i.o; done && ar cr $out $$(find $outdir -name '*.o')
+  description = protoc_cpp $owner
+
+rule docker_build
+  command = mkdir -p $outdir && cp -Lr --preserve=all $in $outdir && docker build -t $name $outdir && touch $out
+  description = docker_build $name
+  pool = console
+
+rule docker_pull
+  command = docker pull $remote && docker tag -f $remote $local && touch $out
+  description = docker_pull $remote $local
+  pool = console
+
+rule docker_push
+  command = docker tag -f $local $remote && docker push $remote && touch $out
+  description = docker_push $local $remote
+  pool = console
+
+rule kythe_extractor
+  command = tmp="$$(mktemp -d)"; trap 'rm -rf "$$tmp"' ERR EXIT INT && KYTHE_VNAMES=$vnames KYTHE_OUTPUT_DIRECTORY="$$tmp" KYTHE_ROOT_DIRECTORY=$$PWD $in $args && find "$$tmp" -name '*.kindex' -exec mv '{}' $out \;
+  description = kythe_extractor $out
+
+rule kythe_analyzer
+  command = $analyzer $args $in > $out
+  description = kythe_analyzer $out
+
+rule kythe_verifier
+  command = set -o pipefail; cat $entries | $verifier --ignore_dups $in 2>&1 | tee $log && touch $out || { code=$$?; echo "Test failure code: $$code"; exit $$code; }
+  description = kythe_verifier $owner
+
+rule asciidoc
+  command = $asciidoc $args --backend=$backend -o $out $in
+  description = asciidoc $in
+
+rule genlex
+  command = $flex -o $out $in
+  description = flex $in
+
+rule genyacc
+  command = $bison $$([[ $$($bison --version) == *\)\ 3.* ]] && echo "-Wno-deprecated") -o $main_out $in
+  description = bison $in

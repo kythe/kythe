@@ -1,0 +1,30 @@
+[
+  {
+    "name": "shared",
+    "kind": "java_library",
+    "inputs": {
+      "srcs": [
+        "AnalysisException.java",
+        "NullStatisticsCollector.java",
+        "StatisticsCollector.java"
+      ]
+    }
+  },
+  {
+    "name": "file_data",
+    "kind": "java_library",
+    "inputs": {
+      "srcs": [
+        "FileDataCache.java",
+        "FileDataDirectory.java",
+        "FileDataProvider.java"
+      ],
+      "jars": [
+        "//kythe/java/com/google/devtools/kythe/common",
+        "//kythe/proto:analysis_proto",
+        "//third_party/guava",
+        "//third_party/protobuf:protobuf_jar"
+      ]
+    }
+  }
+]

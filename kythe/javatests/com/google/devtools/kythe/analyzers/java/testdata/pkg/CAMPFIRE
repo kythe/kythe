@@ -1,0 +1,225 @@
+[
+  {
+    "name": "selectors_tests",
+    "kind": "verifier_test",
+    "properties": {
+      "language": "java"
+    },
+    "inputs": {
+      "srcs": [
+        "Selectors.java"
+      ],
+      "compilation": [
+        ":selectors_lib"
+      ]
+    }
+  },
+  {
+    "name": "selectors_lib",
+    "kind": "java_library",
+    "inputs": {
+      "srcs": [
+        "Selectors.java"
+      ]
+    }
+  },
+  {
+    "name": "classes_tests",
+    "kind": "verifier_test",
+    "properties": {
+      "language": "java"
+    },
+    "inputs": {
+      "srcs": [
+        "Classes.java"
+      ],
+      "compilation": [
+        ":classes_lib"
+      ]
+    }
+  },
+  {
+    "name": "classes_lib",
+    "kind": "java_library",
+    "inputs": {
+      "srcs": [
+        "Classes.java"
+      ]
+    }
+  },
+  {
+    "name": "inheritance_tests",
+    "kind": "verifier_test",
+    "properties": {
+      "language": "java"
+    },
+    "inputs": {
+      "srcs": [
+        "Inheritance.java"
+      ],
+      "compilation": [
+        ":inheritance_lib"
+      ]
+    }
+  },
+  {
+    "name": "inheritance_lib",
+    "kind": "java_library",
+    "inputs": {
+      "srcs": [
+        "Inheritance.java"
+      ]
+    }
+  },
+  {
+    "name": "cross_file_tests",
+    "kind": "verifier_test",
+    "properties": {
+      "language": "java"
+    },
+    "inputs": {
+      "srcs": [
+        "CrossFile.java",
+        "Files.java"
+      ],
+      "compilation": [
+        ":cross_file_lib"
+      ],
+      "entries": [
+        ":files_tests"
+      ]
+    }
+  },
+  {
+    "name": "cross_file_lib",
+    "kind": "java_library",
+    "inputs": {
+      "srcs": [
+        "CrossFile.java"
+      ],
+      "jars": [
+        ":files_lib"
+      ]
+    }
+  },
+  {
+    "name": "generics_tests",
+    "kind": "verifier_test",
+    "properties": {
+      "language": "java"
+    },
+    "inputs": {
+      "srcs": [
+        "Generics.java"
+      ],
+      "compilation": [
+        ":generics_lib"
+      ]
+    }
+  },
+  {
+    "name": "generics_lib",
+    "kind": "java_library",
+    "inputs": {
+      "srcs": [
+        "Generics.java"
+      ]
+    }
+  },
+  {
+    "name": "files_tests",
+    "kind": "verifier_test",
+    "properties": {
+      "language": "java"
+    },
+    "inputs": {
+      "srcs": [
+        "Files.java"
+      ],
+      "compilation": [
+        ":files_lib"
+      ]
+    }
+  },
+  {
+    "name": "files_lib",
+    "kind": "java_library",
+    "inputs": {
+      "srcs": [
+        "Files.java"
+      ]
+    }
+  },
+  {
+    "name": "names_tests",
+    "kind": "verifier_test",
+    "properties": {
+      "language": "java"
+    },
+    "inputs": {
+      "srcs": [
+        "Names.java"
+      ],
+      "compilation": [
+        ":names_lib"
+      ]
+    }
+  },
+  {
+    "name": "names_lib",
+    "kind": "java_library",
+    "inputs": {
+      "srcs": [
+        "Names.java"
+      ]
+    }
+  },
+  {
+    "name": "methods_tests",
+    "kind": "verifier_test",
+    "properties": {
+      "language": "java"
+    },
+    "inputs": {
+      "srcs": [
+        "Methods.java"
+      ],
+      "compilation": [
+        ":methods_lib"
+      ]
+    }
+  },
+  {
+    "name": "methods_lib",
+    "kind": "java_library",
+    "inputs": {
+      "srcs": [
+        "Methods.java"
+      ]
+    }
+  },
+  {
+    "name": "variables_tests",
+    "kind": "verifier_test",
+    "properties": {
+      "language": "java"
+    },
+    "inputs": {
+      "srcs": [
+        "Variables.java"
+      ],
+      "compilation": [
+        ":variables_lib"
+      ]
+    }
+  },
+  {
+    "name": "variables_lib",
+    "kind": "java_library",
+    "inputs": {
+      "srcs": [
+        "Variables.java"
+      ]
+    }
+  }
+]

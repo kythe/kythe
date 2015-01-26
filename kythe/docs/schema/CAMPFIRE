@@ -1,0 +1,27 @@
+[
+  {
+    "name": "schema",
+    "kind": "asciidoc",
+    "inputs": {
+      "srcs": [
+        "schema.txt"
+      ],
+      "confs": [
+        "kythe-filter.conf"
+      ],
+      "tools": [
+        "//kythe/cxx/indexer/cxx:indexer",
+        "//kythe/cxx/tools:kindex_tool",
+        "//kythe/cxx/verifier",
+        "//kythe/java/com/google/devtools/kythe/analyzers/java:indexer"
+      ],
+      "data": [
+        "example-cxx.sh",
+        "example-java.sh",
+        "example.sh",
+        "java-schema-file-data-template.FileData",
+        "java-schema-unit-template.CompilationUnit"
+      ]
+    }
+  }
+]

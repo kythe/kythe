@@ -1,0 +1,6 @@
+//- MainAnchor defines MainClass
+//- MainClass named vname("Main#c",_,_,_,_)
+//- HeaderAnchor defines HeaderClass
+//- HeaderClass named vname("Header#c",_,_,_,_)
+//- CcFile=vname("","fake_corpus",SameRoot,"/fake/test.cc","c++").node/kind file
+//- HFile=vname("","fake_corpus",SameRoot,"/fake/test.h","c++").node/kind file

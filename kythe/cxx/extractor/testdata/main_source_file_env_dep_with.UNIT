@@ -1,0 +1,30 @@
+v_name {
+  signature: "cu#092175fd1d6172588ef89d4d6a0979460fef9eaa5b28b32fde5f38895962aab0"
+  corpus: ""
+  language: "c++"
+}
+required_input {
+  v_name {
+    corpus: ""
+    path: "kythe/cxx/extractor/testdata/main_source_file_env_dep.cc"
+    language: "c++"
+  }
+  info {
+    path: "./kythe/cxx/extractor/testdata/main_source_file_env_dep.cc"
+    digest: "7fc8bce46febc9e8c660fdaa7caa9e27e64a9f85769d69ca9ecfc8a2ca751335"
+  }
+  context {
+    source_context: "786d055224012090fdd9d254bc652e77c3d5550a7246523b88d76bdce1214ce3"
+  }
+}
+has_compile_errors: false
+argument: "/usr/bin/g++"
+argument: "-resource-dir"
+argument: "/kythe_builtins"
+argument: "-I./kythe/cxx/extractor/testdata"
+argument: "-DMACRO"
+argument: "./kythe/cxx/extractor/testdata/main_source_file_env_dep.cc"
+argument: "-fsyntax-only"
+source_file: "./kythe/cxx/extractor/testdata/main_source_file_env_dep.cc"
+working_directory: "."
+entry_context: "786d055224012090fdd9d254bc652e77c3d5550a7246523b88d76bdce1214ce3"

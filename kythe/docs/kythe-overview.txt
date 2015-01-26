@@ -1,0 +1,191 @@
+// Copyright 2014 Google Inc. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+An Overview of Kythe
+====================
+Michael J. Fromberger <fromberger@google.com>
+v0.1.1, 28-Oct-2014: Draft
+:toc:
+:priority: 1000
+
+== Introduction to Kythe
+
+The Kythe project was founded to provide and support tools and standards that
+encourage interoperability among programs that manipulate source code.  At a
+high level, the main goal of Kythe is to provide a standard, language-agnostic
+interchange mechanism, allowing tools that operate on source code -- including
+build systems, compilers, interpreters, static analyses, editors, code-review
+applications, and more -- to share information with each other smoothly.
+
+The remainder of this document gives a basic introduction to the ideas and
+rationale behind Kythe, and provides links to other more specific documentation
+about the project.
+
+== Background
+
+As the size and scope of a software project grows, developers rely more and
+more on tools for routine tasks such as building, testing, deploying,
+debugging, refactoring, and analyzing their source code.  Even for a small
+development team such as a startup, the toolchain used to write, test, and
+deploy code can be fairly complex -- subsuming multiple languages, a variety of
+source control systems, a variety of build & deployment tools, test frameworks,
+and of course a great patchwork of scripts to tie it all together.
+
+When a codebase is small and dependencies are few, it's fairly easy to do these
+tasks manually: A small codebase of a few thousand files can be imported into
+an IDE and manipulated directly.  As the codebase grows, however, it assumes
+more and more dependencies on external (``third party'') libraries and tools.
+Moreover, as a developer team grows, the complexity of performing those tasks
+increases to the point where it is difficult -- or even infeasible -- to build,
+debug, and test the project efficiently on a single workstation.
+
+Kythe grew out of our experience creating a large-scale semantic index of
+cross-references for the enormous, multi-lingual internal codebase at Google.
+We found that engineers often lose a lot of time adapting a new tool to their
+project, and in the process wind up re-inventing a solution to a problem that
+had already been solved by some other program (_e.g.,_ the compiler or an
+analysis tool embedded in the IDE).  The main reason this happens is that the
+existing solution usually doesn't play well with the other tools the developers
+are using.  Some teams `work around' this problem by forcing everyone to use
+the same tools; but in our experience, that approach scales poorly: Integrated
+environments work well for the languages and tools that are integrated, but the
+cost of adding new pieces is high.  Developer tool-preferences are highly
+diverse and idiosyncratic, and developers' productivity declines sharply when
+they are forced to use tools they dislike.
+
+The main premise of Kythe, therefore, is that programming language tools ought
+to be able to talk to each other easily: Not just the tools for a given
+language, but across all the languages used in your project -- and not just for
+a single chosen development environment, but (potentially) for any workable
+combination of tools your developers may use.  Considering editors, compilers,
+build systems, analysis tools, deployment, testing, continuous integration --
+there are a lot of options for each of these and more; but at present
+relatively few combinations actually work well together in practice.
+
+== Goals of Kythe
+
+The best way to view Kythe is as a ``hub'' for connecting tools for various
+languages, clients and build systems.  By defining *language-agnostic
+protocols and data formats* for representing, accessing and querying
+source code information as data, Kythe allows *language analysis and
+indexing to be run as services*.  This, in turn, enables lightweight
+(``thin'') composition of analysis tools with client tools such as
+editors, IDEs, and code browsers. 
+
+A hub-and-spoke model reduces the overall work to integrate _L_ languages, _C_
+clients, and _B_ build systems from a worst-case of O(L×C×B) -- combinatorial
+in the size of the ecosystem -- to O(L+C+B): Implementing Kythe compatibility
+for a given compiler, editor, or build system is, roughly, a constant up-front
+cost for each component, after which that component can interoperate with all
+the existing pieces directly.
+
+To make this model work, Kythe provides a language-agnostic graph structure to
+capture build-system and compiler metadata, as well as semantic information
+about source code such as cross-references (_e.g.,_ definitions and their
+usages, type information, and cross-language associations).  By design, the
+Kythe graph schema is liberal and extensible -- we've defined a number of
+useful subgraphs, but new node and edge kinds are structured so that the graph
+can easily be extended without recourse to a central authority.
+
+One of the basic design principles of Kythe is that interoperability should not
+be `all-or-nothing': Tools should adjust gracefully to missing or incomplete
+data.  For many purposes, we've found that some information is almost always
+better than none.  At the same time, it is better to emit _incomplete_ data
+than to emit _incorrect_ data.  In practice, the important point is that tools
+should not ``give up'' in the presence of incomplete data, as partial results
+are often still useful.
+
+== Non-goals of Kythe
+
+Although Kythe provides interoperability for many purposes, it does not cover
+every possible situation.  By design, there are some specific problems we are
+explicitly _not_ attempting to solve with this project:
+
+ * *Writing a compiler or optimizer.* Kythe's graph is meant to capture
+   high-level, cross-cutting information that has a similar character across a
+   variety of languages.
+   Low-level details like code generation and optimization are, by nature,
+   language-specific.  While you could in principle model a compiler's internal
+   structures in Kythe's graph, that is not a primary goal.
+
+ * *Replacing existing IRs.* Some tools (_e.g.,_ static analyzers) already have
+   expressive purpose-built internal representations for code.  Kythe is not
+   meant to be a universal replacement for such IRs -- instead, our goal is to
+   provide a way for such tools to capture ``interesting subsets'' of an
+   analysis for sharing with other tools.
+
+*In short:* We are not interested in an http://en.wikipedia.org/wiki/UNCOL[UNCOL].
+
+Our goal is to provide a language for sharing data between tools, and while we
+find that this works well for a large class of interesting problems, there will
+always be situations that are highly specific to a particular language or data
+model.  For such cases, it's entirely appropriate to use a representation that
+is tuned to that purpose.
+
+== What Kythe Provides
+
+The core of the Kythe project centers around three themes, which are embodied
+in our open-source tools and supported by the Kythe team at Google together
+with any interested contributors:
+
+ * *Language-agnostic graph storage format*.  Kythe defines a simple, flexible,
+   and portable graph representation that is easy to emit from an instrumented
+   compiler, and for clients to consume.
+
+ * *Graph schema*. Kythe provides a simple, extensible
+   http://kythe.io/schema/[graph schema] for a variety of
+   interesting semantic cross-reference data in various languages, including
+   C++, Java, and (soon) Go.  We also provide some simple, open-source tools
+   that make it easy to add new elements to the schema, and test whether an
+   analyzer that produces those elements has met its contract.
+
+ * *Analyzers, tools and examples*. The Kythe project provides several
+   open-source tools for generating and manipulating Kythe data, including
+   indexers for C++, Java, and (soon) Go; a self-contained server that can use
+   Kythe data to answer cross-reference queries; and some UI example code that
+   shows how some of these pieces can be glued together.
+
+== What Kythe Requires
+
+Essentially all that is needed to participate in the Kythe ecosystem is for a
+tool to consume and/or emit data in the Kythe format, and -- where appropriate
+-- to follow the Kythe schema.  You'll need:
+
+*To plug in a language*::
+  A compiler that can be instrumented to produce an indexer that emits Kythe
+  data about source code in that language.
+
+*To plug in a build system*::
+  A tool that can ``extract'' compilation information from the build process,
+  allowing a language-specific analyzer to be run on the code and its
+  dependencies.
+
+*To plug in a UI tool*::
+  Any tool that can consume Kythe graph artifacts can use Kythe data to answer
+  questions about code.  The only specific knowledge that needs to be baked
+  into the tool is the naming scheme.
+
+*To build a service or other analysis on Kythe data*::
+  The Kythe data format is simple, flat, and easily portable.  A tool or
+  service can quickly convert Kythe graph data into tabular or other structured
+  formats for quick serving, graph exploration, visualization, etc.
+
+Other documents and examples cover the details of how these pieces are
+implemented in practice, but the unifying principles are the common data
+representation and schema.
+
+== Related Documentatation
+
+ * link:kythe-compatible-compilers.html[Kythe-Compatible Tools]
+ * link:schema/[Kythe Schema Reference]

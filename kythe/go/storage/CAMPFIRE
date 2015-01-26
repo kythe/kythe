@@ -1,0 +1,30 @@
+[
+  {
+    "name": "storage",
+    "kind": "go_library",
+    "inputs": {
+      "srcs": [
+        "storage.go"
+      ],
+      "go_pkgs": [
+        "//kythe/proto:storage_proto"
+      ]
+    }
+  },
+  {
+    "name": "storage_test",
+    "kind": "go_test",
+    "inputs": {
+      "srcs": [
+        "storage_test.go"
+      ],
+      "go_lib": [
+        ":storage"
+      ],
+      "go_pkgs": [
+        "//kythe/proto:storage_proto",
+        "//third_party/go/code.google.com:protobuf"
+      ]
+    }
+  }
+]

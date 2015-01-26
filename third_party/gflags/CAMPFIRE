@@ -1,0 +1,14 @@
+[
+  {
+    "name": "gflags",
+    "kind": "cc_external_lib",
+    "inputs": {
+      "srcs": [
+        "lib/libgflags.a"
+      ]
+    },
+    "properties": {
+      "cc_include_path": "third_party/gflags/include"
+    }
+  }
+]

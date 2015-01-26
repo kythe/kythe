@@ -1,0 +1,14 @@
+[
+  {
+    "name": "files",
+    "kind": "go_library",
+    "inputs": {
+      "srcs": [
+        "files.go"
+      ],
+      "go_pkgs": [
+        "//kythe/proto:analysis_proto"
+      ]
+    }
+  }
+]

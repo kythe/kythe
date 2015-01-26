@@ -1,0 +1,215 @@
+;; Copyright 2014 Google Inc. All rights reserved.
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License");
+;; you may not use this file except in compliance with the License.
+;; You may obtain a copy of the License at
+;;
+;;   http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+(ns ui.src
+  "View for source pane"
+  (:require [cljs.core.async :refer [put! chan]]
+            [goog.crypt.base64 :as b64]
+            [om.core :as om :include-macros true]
+            [om.dom :as dom :include-macros true]
+            [ui.schema :as schema]
+            [ui.service :as service]
+            [ui.util :refer [handle-ch]]))
+
+(defn- fix-encoding
+  "Tries to fix the encoding of strings with non-ASCII characters. Useful for displaying the result
+  of b64/decodeString."
+  [str]
+  (js/decodeURIComponent (js/escape str)))
+
+(defn- overlay-anchors
+  "Reduces each group of overlapping anchors into a series of non-overlapping anchors and concats
+  the results together.  The resulting sequence of anchors are sorted by their positions."
+  [anchors]
+  (reduce (fn map-anchor [anchors n]
+            (if (empty? anchors)
+              (cons n anchors)
+              (let [[first & rest] anchors]
+                (cond
+                 (>= (:start n) (:end first))         ;; n is past first
+                 (cons first
+                       (map-anchor rest n))
+                 (<= (:end n) (:start first))         ;; n is before first
+                 (cons n anchors)
+                 (and (= (:start n) (:start first))   ;; n is the same as first
+                      (= (:end n) (:end first)))
+                 anchors
+                 (< (:start n) (:start first))        ;; n overlaps first's start
+                 (cons (assoc n :end (:start first)) anchors)
+                 (> (:end n) (:end first))            ;; n overlap's first's end
+                 (let [[next & _] rest]
+                   (if (and next
+                            (< (:start next) (:end n)))
+                     anchors
+                     (cons first
+                           (cons (assoc n :start (:end first))
+                                 rest))))
+                 (= (:start n) (:start first))        ;; n is a prefix of first
+                 (cons n (cons (assoc first :start (:end n))
+                               rest))
+                 (= (:end n) (:end first))            ;; n is a suffix of first
+                 (cons (assoc first :end (:start n))
+                       (cons n rest))
+                 :else                                ;; n is contained within first
+                 (cons (assoc first :end (:start n))
+                       (cons n
+                             (cons (assoc first :start (:end n))
+                                   rest)))))))
+          (list)
+          ;; the order of anchors matter for the resulting sliced anchors sequence
+          (sort-by (juxt :start :end) anchors)))
+
+(defn- group-overlapping-anchors
+  "Returns a sequence of sequences of overlapping anchors"
+  [anchors]
+  (let [[overlaps [leftover _ __]]
+        (reduce (fn [[overlaps [anchors cur-start cur-end]] n]
+                  (if (<= (:start n) cur-end)
+                    [overlaps [(conj anchors n) cur-start (max cur-end (:end n))]]
+                    [(conj overlaps anchors) [[n] (:start n) (:end n)]]))
+                [[] [[] 0 0]]
+                (sort-by :start anchors))]
+    (drop-while empty?
+                (if (empty? leftover)
+                  overlaps
+                  (conj overlaps leftover)))))
+
+(defn- facts->map
+  "Converts the service NodeInfo into a map from fact name to value"
+  [facts]
+  (into {} (map (fn [f] [(:name f) (b64/decodeString (:value f))]) facts)))
+
+(defn- count-lines [text] (count (.split text "\n")))
+
+(defn construct-decorations
+  "Returns a seq of precomputed text/anchors to display as the source-text"
+  [decorations]
+  (let [src (b64/decodeString (:source_text decorations))
+        nodes (into {}
+                (map (fn [{ticket :ticket
+                           facts :fact}]
+                       [ticket (facts->map facts)])
+                  (:node decorations)))
+        refs (into {}
+               (map (fn [{:keys [source_ticket target_ticket kind]}]
+                      [source_ticket {:kind kind :ticket target_ticket}])
+                 (:reference decorations)))
+        anchors (mapcat overlay-anchors
+                  (group-overlapping-anchors
+                    (filter (fn [{:keys [:start :end]}]
+                              (and start end (< start end)))
+                      (map (fn [[ticket {start schema/anchor-start
+                                         end schema/anchor-end}]]
+                             {:start (js/parseInt start)
+                              :end (js/parseInt end)
+                              :anchor-ticket ticket
+                              :target-ticket (:ticket (get refs ticket))})
+                        (schema/filter-nodes-by-kind "anchor" nodes)))))]
+    {:source-text src
+     :num-lines (count-lines src)
+     :nodes
+     (loop [mark 0
+            anchors anchors
+            nodes []]
+       (if (empty? anchors)
+         (conj nodes (fix-encoding (subs src mark)))
+         (let [{:keys [:start :end] :as anchor} (first anchors)]
+           (if (< start mark)
+             (do
+               (.log js/console (str "Overlapping anchor at offest " start))
+               (recur mark (rest anchors) nodes))
+             (recur end (rest anchors)
+               (conj (if (> start mark)
+                       (conj nodes (fix-encoding (subs src mark start)))
+                       nodes)
+                 (assoc anchor :text (fix-encoding (subs src start end)))))))))}))
+
+(defn- src-node-view [state owner]
+  (reify
+    om/IRenderState
+    (render-state [_ {:keys [xrefs-to-view hover]}]
+      (let [{:keys [:start :end :anchor-ticket :target-ticket :text :background]} state]
+        (if anchor-ticket
+          (dom/a #js {:title target-ticket
+                      :href "#"
+                      :onClick #(put! xrefs-to-view target-ticket)
+                      :style #js {:backgroundColor background}
+                      :onMouseEnter #(put! hover
+                                       {:ticket anchor-ticket :target target-ticket})
+                      :onMouseLeave #(put! hover {})}
+            text)
+          (dom/span nil state))))))
+
+(defn- decorations-view [state owner]
+  (reify
+    om/IInitState
+    (init-state [_]
+      {:hover (chan)})
+    om/IWillMount
+    (will-mount [_]
+      (handle-ch (om/get-state owner :hover)
+        (fn [{:keys [ticket target]}]
+          (om/transact! state :nodes
+            (fn [nodes]
+              (map (fn [node]
+                     (if (:anchor-ticket node)
+                       (cond
+                         (= ticket (:anchor-ticket node))
+                         (assoc node :background "lightgray")
+                         (= target (:target-ticket node))
+                         (assoc node :background "yellow")
+                         (:background node) (dissoc node :background)
+                         :else node)
+                       node))
+                nodes))))))
+    om/IRenderState
+    (render-state [_ {:keys [xrefs-to-view hover]}]
+      (dom/div #js {:className "col-md-9 col-lg-10" :id "src-container"}
+        (apply dom/pre #js {:id "fringe"}
+          (mapcat (fn [i] [(dom/a #js {:id (str "line" i)
+                                       :href "#"
+                                       :onClick #(let [el (.-target %)]
+                                                   (.scrollIntoView el true)
+                                                   (.focus el))}
+                             (str i)) "\n"])
+            (range 1 (:num-lines state))))
+        (dom/pre nil
+          (apply dom/code #js {:id "src"}
+            (if (empty? (:source-text state))
+              nil
+              (om/build-all src-node-view (:nodes state)
+                {:init-state {:xrefs-to-view xrefs-to-view
+                              :hover hover}}))))))))
+
+(defn line-in-string [text offset] (count (.split (subs text 0 offset) "\n")))
+
+(defn src-view [state owner]
+  (reify
+    om/IRenderState
+    (render-state [_ {:keys [xrefs-to-view]}]
+      (cond
+        (empty? state) (dom/span nil "Please select a file to your left!")
+        (:failure state) (dom/div nil
+                           (dom/p nil "Sorry, an error occurred!")
+                           (dom/p nil (:original-text (:parse-error state))))
+        (:loading state) (dom/div nil
+                           (dom/span nil "Loading...")
+                           (dom/span #js {:className "glyphicon glyphicon-repeat spinner"}))
+        :else (om/build decorations-view (:decorations state)
+                {:init-state {:xrefs-to-view xrefs-to-view}})))
+    om/IDidUpdate
+    (did-update [_ __ ___]
+      (when-let [line-num (:line state)]
+        ;; Scroll to line in source
+        (.click (. js/document (getElementById (str "line" line-num))))
+        (om/transact! state :line (constantly nil))))))

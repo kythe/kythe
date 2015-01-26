@@ -1,0 +1,16 @@
+[
+  {
+    "name": "stream",
+    "kind": "go_library",
+    "inputs": {
+      "srcs": [
+        "stream.go"
+      ],
+      "go_pkgs": [
+        "//kythe/go/platform/delimited",
+        "//kythe/proto:storage_proto",
+        "//third_party/go/code.google.com:protobuf"
+      ]
+    }
+  }
+]

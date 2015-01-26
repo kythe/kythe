@@ -1,0 +1,37 @@
+[
+  {
+    "name": "preprocessor_util_lib",
+    "kind": "cc_library",
+    "inputs": {
+      "srcs": [
+        "cxx_extractor_preprocessor_utils.cc"
+      ],
+      "hdrs": [
+        "cxx_extractor_preprocessor_utils.h"
+      ],
+      "cc_libs": [
+        "//kythe/cxx/common:lib",
+        "//kythe/proto:analysis_proto",
+        "//kythe/proto:storage_proto",
+        "//third_party/gflags",
+        "//third_party/glog",
+        "//third_party/llvm:lib",
+        "//third_party/protobuf:protobuf_cc",
+        "//third_party/re2",
+        "//third_party/zlib"
+      ]
+    }
+  },
+  {
+    "name": "clang_builtin_headers",
+    "kind": "cc_library",
+    "inputs": {
+      "srcs": [
+        "clang_builtin_headers.cc"
+      ],
+      "hdrs": [
+        "clang_builtin_headers.h"
+      ]
+    }
+  }
+]

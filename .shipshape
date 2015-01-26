@@ -1,0 +1,10 @@
+global:
+  ignore:
+    - campfire-out/
+    - third_party/
+    - shipshape/analyzers/govet/testdata/
+
+events:
+  - event: default
+    categories:
+      - go vet

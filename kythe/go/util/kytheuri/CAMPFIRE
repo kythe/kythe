@@ -1,0 +1,27 @@
+[
+  {
+    "name": "kytheuri",
+    "kind": "go_library",
+    "inputs": {
+      "srcs": [
+        "escape.go",
+        "uri.go"
+      ],
+      "go_pkgs": [
+        "//kythe/proto:storage_proto"
+      ]
+    }
+  },
+  {
+    "name": "kytheuri_test",
+    "kind": "go_test",
+    "inputs": {
+      "srcs": [
+        "uri_test.go"
+      ],
+      "go_lib": [
+        ":kytheuri"
+      ]
+    }
+  }
+]

@@ -1,0 +1,205 @@
+= Kythe
+08-Dec-2014
+:toc2:
+
+== Features
+
+* Extensive documentation of the Kythe schema
+* Indexer implementations for C++ and Java
+* Compilation extractors for javac, Maven, cmake, Go, and Campfire
+* Generic verifier for indexers
+* Sample cross-reference service and accompanying web UI
+* Many useful utility commands to work with Kythe artifacts
+
+== Getting Started
+
+=== External Dependencies
+
+go1.3::
+clang-3.4::
+jdk8::
+lxc-docker:: used for `//kythe/release/...` and `//kythe/extractors/openjdk`
+parallel:: used for pipeline examples
+jq1.4::
+asciidoc:: used for `//kythe/docs/schema`
+source-highlight:: used for `//kythe/docs/schema`
+graphviz:: used for `//kythe/docs/schema`
+leiningen:: used for `//kythe/web/ui`
+libncurses-dev:: needed by LLVM
+uuid-dev::
+libssl-dev::
+bison-2.3::
+flex-2.5::
+
+NOTE: All other Kythe dependencies are hosted within the repository under
+`//third_party/...`
+
+.Installing Debian Jessie Packages
+[source,shell]
+----
+apt-get install \
+    asciidoc source-highlight graphviz \
+    libssl-dev uuid-dev libncurses-dev flex clang-3.5 \
+    golang-go gcc \
+    docker.io \
+    parallel jq
+
+# OpenJDK 8
+curl https://storage.googleapis.com/dev-con-jessie-apt/convoy.key | apt-key add -
+echo deb http://storage.googleapis.com/dev-con-jessie-apt/ jessie main >> /etc/apt/sources.list
+apt-get update
+apt-get install openjdk-8-jdk
+
+# Bison 2.3
+wget http://archive.kernel.org/debian-archive/debian/pool/main/b/bison/bison_2.3.dfsg-5_amd64.deb -O /tmp/bison_2.3.deb
+dpkg -i /tmp/bison_2.3.deb
+----
+
+=== Building
+
+To build its sources, Kythe uses its own build system named `campfire`.
+
+WARNING: campfire is a temporary solution that will be supported only for a
+limited time.  It is expected to be replaced in the near future.
+
+[source,shell]
+----
+# From the root of the repository
+./campfire help  # Show command documentation
+
+./campfire build # Build everything
+./campfire test  # Test everything
+
+# Build all of the Go platform tools
+./campfire build //kythe/go/platform/tools:all
+
+# Build and run the Java indexer
+./campfire build //kythe/java/com/google/devtools/kythe/analyzers/java:indexer
+./campfire-out/bin/kythe/java/com/google/devtools/kythe/analyzers/java/indexer
+
+# Package Kythe release images
+./campfire package //kythe/release/...
+----
+
+To lessen the burden of dependencies when getting started, a Docker container
+has been provided that can run `campfire` to build Kythe's binaries.
+
+For more information about campfire, see its source documentation in the
+`buildtools/` directory as well as its standalone documentation in
+`kythe/docs/campfire.txt`
+
+[source,shell]
+----
+# From the root of the repository
+./campfire-docker build
+----
+
+=== Usage
+
+The Kythe repository contains multiple binaries that work together to produce a
+Kythe index. The easiest way to test Kythe is to run it on its own repository
+using the Kythe Docker containers.
+
+.Indexing Kythe using Docker containers
+[source,shell]
+----
+./campfire package //kythe/release # build the Kythe Docker container
+
+mkdir .kythe_{graphstore,compilations}
+# .kythe_graphstore is the output directory for the resulting Kythe GraphStore
+# .kythe_compilations will contain the intermediary .kindex file for each
+#   indexed compilation
+
+# Produce the .kindex files for each compilation in the Kythe repo
+./kythe/extractors/campfire/extract.sh "$PWD" .kythe_compilations
+
+# Index the compilations, producing a GraphStore containing a Kythe index
+docker run --rm \
+  -v "${PWD}:/repo" \
+  -v "${PWD}/.kythe_compilations:/compilations" \
+  -v "${PWD}/.kythe_graphstore:/graphstore" \
+  google/kythe --index
+----
+
+.Running the Sample Kythe X-Refs UI
+[source,shell]
+----
+pushd kythe/web/ui
+lein cljsbuild once prod # Build the necessary client-side code
+popd
+./campfire run //kythe/go/serving/xrefs/tools:xrefs_server --port 8080 --graphstore .kythe_graphstore
+----
+
+.Building the Kythe schema document
+[source,shell]
+----
+./campfire build //kythe/docs/schema
+xdg-open campfire-out/gen/kythe/docs/schema/schema.html
+----
+
+.Using Cayley to explore a GraphStore
+[source,shell]
+----
+# Convert GraphStore to nquads format
+./campfire run //kythe/go/storage/tools:triples --graphstore /path/to/graphstore | gzip >kythe.nq.gz
+
+# Install Cayley (if necessary) (or https://github.com/google/cayley/releases)
+go get install github.com/google/cayley
+
+$GOPATH/bin/cayley repl --dbpath kythe.nq.gz # or $GOPATH/bin/cayley http --dbpath kythe.nq.gz
+----
+
+
+----
+// Get all file nodes
+cayley> g.V().Has("/kythe/node/kind", "file").All()
+
+// Get definition anchors for all record nodes
+cayley> g.V().Has("/kythe/node/kind", "record").Tag("record").In("/kythe/edge/defines").All()
+
+// Get the file(s) defining a particular node
+cayley> g.V("node_ticket").In("/kythe/edge/defines").Out("/kythe/edge/childof").Has("/kythe/node/kind", "file").All()
+----
+
+== Contributing
+
+All code in Kythe is required to go through code review at
+https://phabricator-dot-kythe-repo.appspot.com/. This requires setting up
+`arcanist` on your workstation.
+
+.Install arcanist
+[source,shell]
+----
+ARC_PATH=~/arc # path to install arcanist/libphutil
+
+sudo apt-get install php5 php5-curl
+mkdir "$ARC_PATH"
+pushd "$ARC_PATH"
+git clone https://github.com/phacility/libphutil.git
+git clone https://github.com/phacility/arcanist.git
+popd
+
+# add arc to the PATH
+echo "export PATH=\"${ARC_PATH}/arcanist/bin:\$PATH\"" >> ~/.bashrc
+source ~/.bashrc
+
+arc install-certificate # in Kythe repository root
+----
+
+.arcanist Usage Example
+[source,shell]
+----
+git checkout master
+arc feature feature-name # OR git checkout -b feature-name
+# do some changes
+git add ...                    # add the changes
+git commit -m "Commit message" # commit the changes
+arc diff                       # send the commit for review
+# go through code review in Phabricator UI...
+# get change accepted
+arc land                       # merge change into master
+----
+
+== Contact
+
+ - https://groups.google.com/forum/#!forum/kythe-early-interest

@@ -1,0 +1,629 @@
+// Copyright 2014 Google Inc. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+Kythe Storage Model
+===================
+Michael J. Fromberger <fromberger@google.com>
+v.0.1.0, 31-Oct-2014: Draft
+:toc:
+:priority: 750
+
+== Summary
+
+This document describes a persistent storage representation for Kythe analysis
+data. The main goal of this representation is to permit Kythe data to be stored
+in a compact and portable way.  This is a ``storage'' representation --
+intended for persistent storage of Kythe data -- in contrast to ``serving''
+representations intended for efficient implementation of UI-facing services.
+As such, the performance of general-purpose graph queries is not a primary
+consideration. We expect data stored in this format to be further processed
+into more efficient formats for searching or serving, _e.g._, into denormalized
+paged association tables, or graph-database triples.
+
+== Goals
+
+Simplicity::
+  Each entry is a simple, tabular record that is easy to generate in an
+  analyzer and convert between different physical storage formats (_e.g._,
+  LevelDB files, CSV, SQLite tables, Google Cloud Datastore).
+
+Compactness::
+  Storage tables are in 1NF (each entry represents a single atomic value; set-
+  or sequence-valued fields are stored as multiple entries), and each entry is
+  stored only once. Indexing for efficient queries is the responsibility of the
+  consumer.
+
+Neutrality::
+  The representation does not depend on specific features of any particular
+  programming language or toolchain, allowing tools for this format to be
+  written in any language.
+
+Portability::
+  Analysis artifacts stored in this format can be easily packaged with other
+  code artifacts such as object files, JARs, and symbol tables.
+
+Composability::
+  Multiple store files can be easily combined to aggregate stores containing
+  results from separate analyses into a single store representing all of them
+  together.
+
+== Non-Goals
+Query efficiency::
+  This representation is for storage, not serving, so it is not optimized for
+  general-purpose searching or queries. Separate indexes should be extracted
+  for those purposes.
+
+Schematization and validation::
+  The storage representation here does not include a schema for its contents,
+  apart from the structure of the data itself. A schema for what
+  <<TermFact,facts>> should be stored, their exact value formats, and other
+  validation constraints are outside the scope of this document. Keys and
+  values are stored as strings.
+
+== Overview
+
+A *graph store* is the interface between Kythe analyzers and the tools that
+consume their outputs. Output from each (analyzer, target) combination is
+converted into the storage format described below, and the results are
+aggregated together into a combined store. Tools consume Kythe artifacts by
+looking up or extracting values from the graph store to produce indexes, or by
+processing the store in bulk.
+
+The desired high-level architecture is illustrated by this diagram:
+
+[graphviz]
+------------------------------------------------------------------------
+digraph Pipeline {
+  graph [rankdir=LR];
+  node [shape=box, style=filled, fillcolor=white, fontsize=10, fontname="sans-serif"];
+
+  build [label="Build system", shape=ellipse, fillcolor=gray];
+
+  analysis   [shape=record, label="Cross-reference indexer\l|Static analyzer\l|other analyses ...\l"];
+  dedup      [label="Remove duplicates", shape=hexagon];
+  storage    [label=<<B>Graph Store</B>>, style="rounded,filled", fillcolor=mediumseagreen];
+  tools      [label="Other tools", shape=ellipse, fillcolor=gray];
+  synthesis  [shape=record,
+    label="Cross-language linking\l|Cleanup, canonicalization\l|other syntheses ...\l",
+  ];
+  processing [shape=record,
+    label="reverse edges\l|denormalize nodes\l|other indexes ...\l",
+  ];
+
+  build -> analysis -> dedup -> storage -> processing -> tools;
+  storage -> synthesis [dir=both];
+}
+------------------------------------------------------------------------
+
+Analyzers, shown on the left, consume build information from the build system
+and emit Kythe <<TermFact,facts>>. Tools, shown on the right, read facts from a
+graph store and do useful work with them. Broadly speaking, there are two
+varieties of processing that can be applied to the data in the store:
+
+ * *Synthesis of new facts.* Some tools extend the graph store by locating
+    interesting patterns of data and adding new facts to represent
+    them. Examples: Cross-language linking, precomputation of transitive
+    closure relations, inference of cross edges for parametric types,
+    dependency injection.
+
+ * *Extraction of indexes.* Some tools create new tables to efficiently provide
+    services. Examples: Denormalized adjacency-list tables for cross-reference
+    serving; graph-database triples for whole-graph analysis.
+
+This document also defines a RPC-style interface that a graph store
+implementation may use to provide format-independent access to its contents.  A
+graph store implementation is not _required_ to support this interface.  A key
+point of the design, however, is to permit tools to operate on the contents of
+a graph store without a need for ``thick'' client libraries.  An implementation
+that has an idiosyncratic internal representation can support this RPC
+interface, allowing Kythe tools to access their contents without baking
+knowledge of that representation into each consumer.
+
+== Terminology
+
+Throughout the rest of this document, the following terminology is used.
+
+=== [[TermNode]] Nodes as Vectors
+
+As viewed from the storage layer, a `node' in a Kythe graph is essentially a
+bag of string-valued key/value properties associated with a unique name.  In
+order for this representation to make sense, each node must have a unique name,
+to distinguish it from all the other nodes in the graph.
+
+To solve this naming problem, Kythe adopts the view that a node is a
+_d_-dimensional `vector', where each dimension represents some scalar
+<<TermFact,fact>> about the node: The ``dimensions'' in this case are not
+numbers, but arbitrary semantic categories, _e.g._, kind, identifier, snippet,
+location, corpus, language. A particular node is defined by fixing its values
+in each dimension (where ``empty'' is also an option).
+
+In practice it is not necessary to model nodes as explicit vectors, but the
+ability to do so is very convenient for computation. In particular, searching,
+clustering, indexing, and other related machine-learning tasks are simple to
+express in this model: Node-vectors can be projected into weight vectors for
+computing similarities or identifying clusters, or subjected to principal
+components analysis to identify relevant features, and so on.
+
+=== [[TermVName]] Vector-Name (*VName*)
+
+Taking the view that a node is essentially a vector of its properties leads to
+the naming scheme Kythe uses for nodes in its graph:
+
+A node _N_ can be uniquely identified relative to a universe _U_ of nodes by
+fixing any _v_-dimensional projection of the node's attributes that differs
+from all _U_ \ {N} under the same projection. In other words, we can choose a
+name for _N_ by picking a small basis of <<TermFact,facts>> about a node, and
+use the node's projection into the basis as its ``name''.  This works as long
+as the facts we pick are sufficient to distinguish all the nodes in our set
+_U_.
+
+We call a name constructed using this approach a ``Vector-Name'' or *VName* for
+the node. A VName is the primary unit of naming in the Kythe graph store.
+
+One important property of a VName is that it is extensible: As a collection of
+nodes grows, new nodes may arrive that differ from the existing nodes, but have
+the same VName. To maintain uniqueness, it is only necessary to add one or more
+additional dimensions to the VName projection to account for the new
+data. Updating existing VNames to a new projection is a trivial mechanical
+rewriting process, particularly when the new projection is an extension of the
+old one.
+
+The initial definition of a VName will include the following 5 fields:
+
+ * *Signature.* An opaque signature generated by the analyzer. The format of
+   this string is opaque outside the analyzer itself, but informally should be
+   sufficient to distinguish nodes within a single compilation unit of the
+   language.  For example:
+   `com.google.common.collect.Lists.newLinkedList<#1>()`.
+
+ * *Corpus.* The corpus of source code this VName belongs to.  Loosely, a
+   corpus is a collection of related files, such as the contents of a given
+   sourc repository.  Corpora are generally be identified by URLs or other
+   string labels.
+   Examples: "chromium", "aosp", "github.com/creachadair/imath".
+   We reserve the corpus name `kythe` for the Kythe open-source project itself.
+
+ * *Root.* A corpus-specific root label, typically a directory path or project
+   identifier, denoting a distinct subset of the corpus. This may also be used
+   to designate virtual collections like generated files.
+
+ * *Path.* A path-structured label describing the ``location'' of the named
+   object relative to the corpus and the root. For code, this will typically be
+   the relative path of the file containing the code under analysis, _e.g._,
+   `kythe/cxx/tools/kindex_tool_main.cc` in the `kythe` corpus.
+
+ * *Language.* The language this name belongs to. The schema defines specific
+   labels for each supported language, so we don't wind up with a confusion of
+   names like "cxx", "cpp", "C\+\+", etc. As a rule of thumb, we will use the
+   common name of the language, in lowercase ("c++", "python", "elisp").
+
+Other fields can be added as necessary—for example, if a Branch or Client label
+becomes necessary. As a rule, we try to keep the number of essential VName
+dimensions as small as possible.
+
+=== [[TermTicket]] Ticket
+
+A ticket is defined as a canonical, invertible, textual (and, if practical,
+human-readable) string encoding of a <<TermVName,VName>> (or a projection of a
+VName). A ticket encoding is a rule for rendering a (partial) VName into a
+string such as a URI, JSON or similar.  We have the option to define as many
+such encodings as we may need, subject to the following restrictions:
+
+Canonicalization::
+  If two VNames are equal under a given projection, then the tickets generated
+  from those projections must also be equal.  This makes it possible to use a
+  ticket as a map key, or hash it to get a sharding function.
+
+Invertibility::
+  Given the ticket for any projection of a VName, it must be possible to
+  recover the original VName; the encoding does not discard any information
+  from the VName.
+
+Textual::
+  Tickets are encoded so as to be easily manipulated by a human user in a user
+  interface. In particular, a ticket may contain only printable non-whitespace
+  characters, with the exception of the Unicode `SPACE` character (code 32);
+  all other characters must be escaped in some way (_e.g._, base64, HTML
+  entities, URL encoding).
+
+A ticket should be easy to copy and paste and send around in e-mail or as a URI
+or JSON string.  A ticket doesn't necessarily have to make sense to a human
+reader, though to the extent it is possible and practical, it should.
+
+Any encoding that satisfies the above requirements can be used as a ticket; the
+Kythe open-source tools will use the link:kythe-uri-spec.html[Kythe URI]
+encoding to create tickets.
+
+=== [[TermFact]] Fact
+
+A fact is a pair (name, value) of strings, with the constraints that the fact
+name (*fact label*) must be non-empty and conform to the following EBNF grammar:
+
+[literal]
+name   =  "/" | 1*path
+path   =  "/" word
+word   =  1*{LETTER|DIGIT|PUNCT}
+LETTER =  // Unicode letter; see below.
+DIGIT  =  // Unicode digit; see below.
+PUNCT  =  [-.@#$%&_+:()]
+value  = 1*byte
+
+In other words, a fact name is a simple, path-structured label. This
+construction makes it easy to encode an extensible schema for fact names—the
+first path component can be used as a schema label, _e.g._, `/kythe` for facts
+defined by the Kythe schema. Other schemata or extensions are free to define
+different naming conventions within their own namespace. Fact names must be
+encoded as UTF-8 strings.
+
+In link:http://www.unicode.org/versions/Unicode6.3.0/[The Unicode Standard
+6.3], Section 4.5 "General Category" defines a set of character categories.  In
+the grammar above, `LETTER` corresponds to characters in categories Lu, Ll, Lt,
+Lm, or Lo, and `DIGIT` corresponds to those in category Nd.
+
+Values are stored as strings of uninterpreted bytes—it is up to the schema to
+define what values are legal for a given fact name, and how to encode
+them. Importantly, however, the graph store considers values atomic, and does
+not interpret any structure that may be stored inside them. Set- or
+sequence-valued data can be stored as multiple facts with a common prefix,
+_e.g._,
+
+[width="25%"]
+|=============================================
+|`/kythe/filter/kind#0`  |`DECLARES`
+|`/kythe/filter/kind#1`  |`HAS_TYPE`
+|`/kythe/filter/kind#2`  |`EATS_CABBAGE_WITH`
+|=============================================
+
+The graph store does not interpret fact names; the schema must define the
+specific rules that apply to their construction and relationships.
+
+=== Entry
+
+An entry is a data structure that associates a single <<TermFact,fact>> with a
+graph object (a node or an edge). An entry is the primary unit of encoding in
+the graph store, and each has the following components:
+
+[width="50%"]
+|==============================================================
+|source [ticket] | kind | target [ticket] | fact label | value
+|==============================================================
+
+where
+
+ * *Source.* The <<TermTicket,ticket>> of the source node (must not be empty).
+ * *Kind.* An edge label (may be empty). The schema defines which labels are
+   meaningful.
+ * *Target.* The <<TermTicket,ticket>> of the target node (may be empty).
+ * *Fact.* A fact label (must not be empty). The schema defines which fact labels
+   are meaningful.
+ * *Value.* The string value of the fact (may be empty).
+
+If _Kind_ and _Target_ are set, the entry denotes a fact about an edge in the
+graph; otherwise the entry denotes a fact about a node in the graph. To be
+valid, an entry must satisfy this constraint:
+
+ * Either kind and target are both empty (a node entry), or both are non-empty
+   (an edge entry).
+
+Implementations of specific services (_e.g.,_ cross-references) may define
+their own specific node and edge representations as needed.  The primitive
+graph store records only entries. A "node" or "edge" in the graph store is
+simply the collection of entries in the store that share a source, kind, and
+target.
+
+=== [[TermOrder]] Ordering
+
+Given a particular ticket encoding, the standard entry order is defined by
+lexicographic comparison of the fields of the entry, with ties broken in
+left-to-right order: Source, Kind, Target, Fact, Value. An empty string (ø) is
+considered to precede any non-empty string.
+
+For example, the following entries are in standard (nondecreasing) entry order;
+the underlined element in each row denotes the field that “causes” the row to
+be ordered after the previous row.
+
+[width="40%",cols="10%,10%,10%,60%,10%"]
+|=====================================================================================
+|A               |ø              |ø              | /                 | x
+|A               |ø              |ø              | [underline]#/foo# | w
+|A               |[underline]#m# |C              | /bar              | w
+|A               |m              |C              | [underline]#/car# | w
+|A               |m              |C              | /car              | [underline]#y#
+|A               |[underline]#n# |B              | /                 | ø
+|A               |n              |[underline]#C# | /bar              | ø
+|[underline]#AB# |ø              |ø              | /                 | t
+|=====================================================================================
+
+Conceptually, each field is compared in isolation; in practice this can be
+implemented by a flat string comparison treating adjacent fields as if they
+were separated by a NUL byte.
+
+=== [[TermDirection]] Edge Direction
+
+All edges in a Kythe graph are labelled and directional. The schema defines
+which edge labels are expected for various purposes, and more can be added.
+
+To support efficient queries, services based on Kythe data will often find it
+useful to denormalize the Kythe data, to make it easy to traverse the edges of
+the graph in either direction.  For example, if the schema defines a `calls`
+edge that connects a function call site with the function it invokes, a user
+may be interested in two obvious questions:
+
+ * ``What function is called at this location?'' This is the question answered
+   by the edge itself.
+
+ * ``Where are the places where this function is called?''  This question is
+   _not_ covered by the `calls` edge directly, but can be obtained by finding
+   all the `calls` edges that end at the function of interest, and tracing them
+   back to their origins.
+
+To answer cross-reference queries efficiently, one simple strategy is to
+pre-compute the ``mirror'' of each `calls` edge, that is to say, the edge with
+the endpoints reversed, and the relationship inverted.  Notionally, this is as
+if we had, for each edge of the form `A calls B`, a ``reverse'' edge `B
+called_by A`.
+
+When adding a new feature to the Kythe schema, a natural question to ask is
+which direction should be the canonical or `forward' edge, _i.e.,_ which edge
+should be emitted by the indexer, and which should be derived?
+
+In Kythe, we have adopted the convention that the ``forward'' edge, which is
+the one to be emitted by the indexer, should be the one that expresses some
+kind of dependency relationship between the source and the target.  In the
+example above, `A calls B` expresses a dependency between the call site and the
+callee function.  The callee, however, does not have any dependency on the call
+site; the call site could be deleted from the source without affecting the
+target function at all.
+
+In the rare cases where no obvious dependency relationship exists, either edge
+may be labelled as ``forward'', but we have adopted the convention that the
+forward direction is whichever is expected to have the lesser out-degree. As a
+rule of thumb, if the number of edges `X foo Y` is expected to be some constant
+multiple of the number of occurrences of X, `foo` is designated a forward
+relationship; otherwise `foo` is considered a reverse relationship.
+
+By convention, Kythe tools use a fixed lexical convention for generating names
+for ``reverse'' edges -- generally synthesized for serving purposes -- from the
+edges specified in the schema (refer to the
+link:http://kythe.io/schema/[Kythe graph schema]).
+
+=== [[TermGraphStore]] Graph Store
+
+A graph store is any set of valid entries. A *forward* graph store is a graph
+store in which every non-empty edge label is a <<TermDirection,forward>> edge
+label as defined by the schema. Informally, forward edges are those that denote
+a dependency relationship of the source on the target (see above).
+
+In this model, combining two graph stores into one is accomplished by computing
+the set union of the two stores. How this is implemented depends on the
+concrete representation, but for the simple case of a flat ordered table of
+entries, it can be a simple merge-and-remove-duplicates.
+
+== [[TermServiceInterface]] Service Interface
+
+A concrete implementation of a graph store may use whatever physical
+representation it wishes. However, to permit tools to access different
+implementations of a graph store, each implementation _should_ also provide
+access to the store via an RPC interface. The operations supported by this
+interface are:
+
+=== [[ServiceRead]] Reading
+
+A Read operation should be implemented with time complexity proportional to the
+size of the return set. The general form of a Read query is:
+
+   Read(source, kind)
+
+This operation returns all entries with the given source <<TermTicket,ticket>>,
+subject to the following rules:
+
+[width="50%",options="header",cols="10%,90%"]
+|=================================================================
+|Kind   | Result
+|ø      | All entries with kind and target empty (node entries).
+|`*`    | All entries (node and edge, regardless of kind/target).
+|_kind_ | All edge entries with the given kind.
+|=================================================================
+
+*Rationale:* This formulation allows a client to fetch node metadata and
+implement depth-first traversals over selected parts of the graph. Because
+nodes in a forward graph store are expected to have low out-degree for any
+given edge kind, this allows transitive-closure computations and other simple
+forward-graph explorations to be performed fairly efficiently. Any
+implementation that can easily locate all the entries with a given source
+should be able to implement this query efficiently (even a flat file of entries
+in standard entry order).
+
+=== [[ServiceWrite]] Writing
+
+Write operations update the contents of the store. The general form of a write
+query is:
+
+   Write(source, updates…)
+
+This operation atomically inserts or updates a collection of entries into the
+store. Each update is a tuple of the form (kind, target, fact, value). For each
+such update, the entry (source, kind, target, fact, value) is written into the
+store, replacing any existing entry (source, kind, target, fact, value') that
+may exist. Note that this operation cannot delete any data from the store;
+entries are only ever inserted or updated. Apart from acting atomically, no
+other constraints are placed on the implementation.
+
+****
+*Note:* Tools that generate Kythe entries should avoid producing entries with
+conflicting data.
+****
+
+*Rationale:* Synthesis operations may modify existing data, or add new data,
+but data need not be deleted except to satisfy requirements external to the
+data model such as requests to obliterate sensitive data. Such cases must be
+handled by explicit modification of the underlying storage, and are not
+addressed by the tool interface.
+
+=== [[ServiceScan]] Scanning
+
+A Scan is similar to a Read, but with no time complexity restrictions. The
+general form of a scan query is:
+
+   Scan(target, kind, fact)
+
+This operation returns all entries with the specified target, kind, and fact
+label prefix. Each of the parameters may also be empty, in which case that
+parameter is always considered to match. Thus, the full range of possibilities
+is:
+
+[width="50%",options="header",cols="5%,5%,5%,85%"]
+|===========================================================================
+|target|kind|fact|result
+|ø     |ø   |ø   |All entries.
+|ø     |ø   |F   |All entries with fact label prefix F.
+|ø     |K   |ø   |All entries with kind K.
+|ø     |K   |F   |All entries with kind K and fact label prefix F.
+|T     |ø   |ø   |All entries with target T.
+|T     |ø   |F   |All entries with target T and fact label prefix F.
+|T     |K   |ø   |All entries with target T and kind K.
+|T     |K   |F   |All entries with target T, kind K, and fact label prefix F.
+|===========================================================================
+
+As the name implies, scans are expected and allowed to be time-consuming,
+full-table scan operations. An implementation is of course free to construct
+side-indices as needed to improve performance, but this isn't required.
+
+=== [[ServiceShard]] Sharding
+
+////
+TODO(fromberger): Include an illustration here.
+////
+
+A sharding is a special case of a scan that is intended to support bulk
+manipulation of a large, complete graph store, _e.g.,_ via tools like Hadoop or
+MapReduce or Hadoop. The two general forms of sharding query are:
+
+   Count(index, n)
+   Shard(index, n)
+
+These operations nominally partition the graph store into _n > 0_ shards by
+fingerprint of `source` | `kind`, and return to the caller (the count of) all
+the entries in shard index, where _0 ≤ index < n_. Basically this operation
+allows a graph store to be adapted to a MapReduce or Hadoop Reader for sharded
+processing. A caller can invoke `Count(0, 1)` to obtain the total number of
+entries in the graph store.
+
+*Rationale:* Sharding by source and kind ensures a processing tool can assemble
+complete nodes and edges from the entries sent to a given shard. Since a
+forward graph is expected to have low average out degree, we have omitted more
+general features like configurable hash functions.
+
+== Implementation Strategies
+
+The Kythe graph storage format is intentionally designed to be simple and flat,
+allowing Kythe artifacts to be handled by a variety of concrete representations
+to meet different demands of scale and performance.  A few possibilities are
+described below, and more can easily be derived.
+
+=== Single File
+
+The simplest reasonable graph store implementation is a single file of entries
+in standard order, such as a LevelDB file or a sequence of CSV or JSON records
+with a line index.
+
+Modifications in this representation are inefficient—they are best handled by
+keeping a log of small append-only tables, one for each file being analyzed,
+say, and periodically merging the results together.  Despite being unsuited for
+writing, However, a single-file format is a good and portable transport method
+for small graph stores, and has the advantage that it is easy to work with.
+
+This format is a reasonable choice for read-only artifacts emitted from a
+standalone command-line analyzer, where the end results are expected to be
+combined with other stores to form a larger index for serving.  The advantage
+of single-file formats is that they are easy to ship around to other tools and
+can be converted to more complex formats without too much overhead.
+
+=== SQL
+
+A slightly more flexible graph store implementation can be built on top of a
+SQLite or MySQL database. A trivial implementation can be built using a single
+table of entries, which is more or less a transliteration of the single-file
+implementation into SQL. A more sophisticated approach (and more efficient for
+writing) is to split the entries into three tables -- this example uses the
+syntax supported by SQLite:
+
+  CREATE TABLE Tickets (
+    id integer primary key autoincrement,
+    ticket text unique not null
+  );
+
+  CREATE TABLE Nodes (
+    source integer,
+    factLabel text not null,
+    factValue text,
+    foreign key (source) references Tickets(id)
+  );
+
+  CREATE TABLE Edges (
+    source integer,
+    kind text not null,
+    target integer,
+    factLabel text not null default "/",
+    factValue text,
+    foreign key (source) references Tickets(id),
+    foreign key (target) references Tickets(id)
+  );
+
+Implementing most of the service methods is fairly straightforward in this
+representation: Writes can be wrapped in transactions to ensure they are
+atomic, while reads and scans can be fairly easily turned into simple SQL
+queries. The map operations are harder in this format, however.
+
+== Graph Store Tools
+
+There are some existing tools for processing graph stores in the Kythe
+repository:
+
+write_entries::
+  A tool that writes a stream of Kythe entries stored as protobuf messages to
+  an arbitrary graph store service.
+  [link:/repo/kythe/go/storage/tools/write_entries.go[source]]
+
+read_entries::
+  A tool that scans a Kythe graph store, printing each entry to standard output.
+  [link:/repo/kythe/go/storage/tools/read_entries.go[source]]
+
+triples::
+  A tool to convert a stream of Kythe entries into
+  link:http://en.wikipedia.org/wiki/N-Triples[triples].
+  [link:/repo/kythe/go/storage/tools/triples.go[source]]
+
+directory_indexer::
+  A tool to generate Kythe entries representing a directory tree.
+  [link:/repo/kythe/go/storage/tools/directory_indexer.go[source]]
+
+There are several implementations of graph stores using various storage
+formats:
+
+leveldb::
+  An implementation of a graph store using link:http://leveldb.org[LevelDB]
+  (via link:http://github.com/jmjodges/levigo[levigo]).
+  [link:/repo/kythe/go/storage/leveldb/leveldb.go[source]]
+
+sql::
+  An implementation of a graph store using a SQL database, specifically
+  link:http://sqlite.org[SQLite3] (via
+  link:http://github.com/mattn/go-sqlite3[go-sqlite3]).
+  [link:/repo/kythe/go/storage/sql/sql.go[source]]
+
+client::
+  An implementation of a graph store using a network-accessible remote graph
+  store as a delegate.
+  [link:/repo/kythe/go/storage/client/client.go[source]]

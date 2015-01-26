@@ -1,0 +1,10 @@
+URL: cloned from https://code.google.com/p/google-glog/ on 2/28/2014
+Version: 0.3.3
+License: New BSD License: http://opensource.org/licenses/BSD-3-Clause
+License File: LICENSE
+
+Description:
+Google library for logging
+
+Local Modifications:
+No modifications.

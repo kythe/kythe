@@ -1,0 +1,76 @@
+v_name {
+  signature: "cu#4a9aa76e4ce8a7d496e9c24d1ef114887292b86e014c60c4b774c2c19224bdcf"
+  corpus: ""
+  language: "c++"
+}
+required_input {
+  v_name {
+    corpus: ""
+    path: "kythe/cxx/extractor/testdata/transcript_main.cc"
+    language: "c++"
+  }
+  info {
+    path: "./kythe/cxx/extractor/testdata/transcript_main.cc"
+    digest: "7684704ae672c88bd4a656eff30a716ab29a8270e87e387d9101b32527cde498"
+  }
+  context {
+    source_context: "1a814ff73e6b1f3599d0f2423cacad9efddb2f49fac7c25f0bbc436d2d50c77a"
+    column {
+      offset: 0
+      linked_context: "d6d64ed67e1b08c31ff4a965ee27e974a116603e8c81d777b57e3025e8d7c762"
+    }
+    column {
+      offset: 26
+      linked_context: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+    column {
+      offset: 52
+      linked_context: "e3d0e816288477f3e6f62eda2874525f0685207706ca4f73da94553fdfc5df24"
+    }
+    column {
+      offset: 78
+      linked_context: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  }
+}
+required_input {
+  v_name {
+    corpus: ""
+    path: "kythe/cxx/extractor/testdata/transcript_b.h"
+    language: "c++"
+  }
+  info {
+    path: "./kythe/cxx/extractor/testdata/transcript_b.h"
+    digest: "6904079b7b9d5d0586a08dbbdac2b08d35f00c1dbb4cc63721f22a347f52e2f7"
+  }
+  context {
+    source_context: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}
+required_input {
+  v_name {
+    corpus: ""
+    path: "kythe/cxx/extractor/testdata/transcript_a.h"
+    language: "c++"
+  }
+  info {
+    path: "./kythe/cxx/extractor/testdata/transcript_a.h"
+    digest: "15d3490610af31dff6f1be9948ef61e66db48a84fc8fd93a81a5433abab04309"
+  }
+  context {
+    source_context: "d6d64ed67e1b08c31ff4a965ee27e974a116603e8c81d777b57e3025e8d7c762"
+  }
+  context {
+    source_context: "e3d0e816288477f3e6f62eda2874525f0685207706ca4f73da94553fdfc5df24"
+  }
+}
+has_compile_errors: false
+argument: "/usr/bin/g++"
+argument: "-resource-dir"
+argument: "/kythe_builtins"
+argument: "-I./kythe/cxx/extractor/testdata"
+argument: "./kythe/cxx/extractor/testdata/transcript_main.cc"
+argument: "-fsyntax-only"
+source_file: "./kythe/cxx/extractor/testdata/transcript_main.cc"
+working_directory: "."
+entry_context: "1a814ff73e6b1f3599d0f2423cacad9efddb2f49fac7c25f0bbc436d2d50c77a"

@@ -1,0 +1,11 @@
+URL: http://search.maven.org/remotecontent?filepath=com/google/code/findbugs/jsr305/2.0.3/jsr305-2.0.3.jar
+Version: 2.0.3
+License: Apache 2.0 http://www.apache.org/licenses/LICENSE-2.0
+License File: LICENSE
+
+Description:
+Annotations for Java for default detection.
+
+Local Modifications:
+LICENSE file has been created for compliance purposes. Not included in original
+distribution.

@@ -1,0 +1,37 @@
+---
+$class: !freestyle
+kind: !freestyle # TODO(schroederc): remove duplicate kind/staper-class lines
+                 #                   once Leeroy has pushed kind syntax change
+label: &LABEL google/cloud-dev-java:prod
+hasSlaveAffinity: true        # TODO(schroederc): remove these lines once Leeroy has
+_.assignedLabelString: *LABEL #                   pushed label syntax upgrade
+builder:
+- $class: !shell
+  kind: !shell
+  command: |
+    #!/bin/bash -e
+
+    ./jenkins/docker-pull.sh google/kythe:latest google/kythe-campfire:latest
+
+    rm -rf .kythe_{graphstore,compilations}
+    mkdir .kythe_{graphstore,compilations} # Give the directories the right ownership
+
+    ./kythe/extractors/campfire/extract.sh --docker .kythe_compilations
+
+    docker run --rm \
+      -v "${WORKSPACE}:/repo" \
+      -v "${WORKSPACE}/.kythe_compilations:/compilations" \
+      -v "${WORKSPACE}/.kythe_graphstore:/graphstore" \
+      google/kythe --index \
+      --files kythe/data/vnames.json --files-excludes '^\.git,^campfire-out,^\.kythe_,^third_party,^.campfire_state'
+
+    tar czf graphstore_${BUILD_ID}.tar.gz -C "${WORKSPACE}/.kythe_graphstore" .
+publisher:
+  $class: !by-name Google Cloud Storage Uploader
+  kind: !by-name Google Cloud Storage Uploader
+  credentialsId: kythe-repo
+  uploads:
+  - $class: !by-name Classic Upload
+    stapler-class: !by-name Classic Upload
+    sourceGlobWithVars: graphstore_${BUILD_ID}.tar.gz
+    bucketNameWithVars: gs://kythe-builds/

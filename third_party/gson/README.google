@@ -1,0 +1,17 @@
+URL: cloned from https://code.google.com/p/google-gson/ on 11/3/2014
+Version:  2.3.1
+License: Apache License 2.0 http://www.apache.org/licenses/LICENSE-2.0
+License File: LICENSE
+Description:
+Google Java library that can be used to convert Java Objects into their JSON
+representation.
+Local Modifications:
+No modifications.
+
+URL: https://google-gson.googlecode.com/svn-history/r1300/trunk/proto/src/main/java/com/google/gson/protobuf/ProtoTypeAdapter.java
+Version: r1300
+License: Apache License 2.0 http://www.apache.org/licenses/LICENSE-2.0
+License File: LICENSE
+Description: GSON type adapter for Protocol Buffers
+Local Modifications:
+  gson-proto.patch fixes proto enum support in ProtoTypeAdapter.java

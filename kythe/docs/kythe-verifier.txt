@@ -1,0 +1,298 @@
+Kythe Indexer Verification
+==========================
+
+Kythe is intended to be source language agnostic. This extends to the facility
+for writing tests to check whether Kythe is correctly processing source text.
+Here we describe the *verifier*, a standalone component that checks that a
+*database* of Kythe facts supports a set of *goals*.
+
+== Basic well-formedness checks
+
+The verifier begins by checking that the input database obeys basic Kythe
+conventions and some uniqueness properties:
+
+* All vnames must have at least one field set.
+* Facts must be one of the following forms:
+  - `(source, edge, target, "", "")`
+  - `(source, edge, target, /kythe/ordinal, base10string)`
+  - `(source, "", "", string, _)`
+* forall `s k`, there may be at most one fact matching `(s, "", "", k, _)`.
+* forall `s e t k v`, there may be at most one fact matching `(s, e, t, k, v)`.
+
+For the moment, these checks are done by code baked into the verifier; in the
+future, they may be specified in a startup script.
+
+== Specifying goals
+
+Verification goals may be inlined into ordinary source text. Lines beginning
+with language-specific magic comments are treated as goals. For languages
+supporting BCPL-style // comments, these look like:
+
+  //- this-is-a-goal
+
+For languages supporting shell-style comments, like Python or text protobufs,
+instead use:
+
+  #- this-is-a-goal
+
+The verifier will ignore any combination of spaces or tabs before the comment
+token. Long goals may be split across multiple lines, each of which must begin
+with the comment token (after zero or more tabs or spaces). Within the assertion
+language, the verifier is whitespace insensitive.
+
+=== Literal strings
+
+The verifier permits literal strings to be specified with C-style escapes:
+
+  "foo"
+  "foo \"bar\""
+  "foo \\"
+
+Currently, the allowed escape codes are `\"` and `\\`. It is an error to use
+a disallowed escape code.
+
+=== Existential variables
+
+Any identifier beginning with a capital letter is parsed as an existential
+variable, or *evar*. Evars are initially unset. In the course of solving a goal,
+the verifier may attempt to find values for zero or more evars. It is possible
+for all goals to be satisfied with some evars left unset. All input files share
+the same evar namespace.
+
+If you want to match against text beginning with a capital letter, you must
+surround it with quotes to form a string literal.
+
+IMPORTANT: Any mention of `SomeEvar` refers to the *same* `SomeEvar`, even
+across different rules. There are cases where new evars may be instantiated at
+runtime (universal quantification), but these aren't yet implemented.
+
+=== Anchor specifiers
+
+Tests written against Kythe indexers must frequently refer to *anchor* nodes, as
+these connect the syntax of the source code with the indexer's semantic model.
+It is alternately possible to write down the vname of the syntactic or semantic
+objects, but this makes the test depend on a particular vname encoding strategy
+that may be unreasonable to compute manually. The verifier provides syntactic
+sugar for referring to anchor nodes. When it encounters an anchor specifier, the
+verifier generates an evar to refer to the anchor's vname. It also generates
+goals to ensure that vname refers to an anchor node with the specified source
+location.
+
+==== Tokens
+
+The location specifier `@tok` refers to the source text range for the identifier
+`tok` on the next source line. This may not be the next line in the input file,
+as is the case when the next line begins with a magic comment as previously
+described. It is an error if matching `tok` is ambiguous. Substring matching is
+used. `tok` may be a literal string; `@text` and `@"text"` are equivalent.
+
+For example, the following two rules both match tokens from the same line. 
+If `@text` and `@more` were swapped in this example, the rules would remain
+valid.
+
+  #- @text defines SomeNode
+  #- @more defines OtherNode
+  ##text more
+
+The following two rules match tokens from different lines:
+
+  #- @text defines SomeNode
+  ##text
+  #- @more defines OtherNode
+  #more
+
+If `@text` and `@more` were swapped in this example, the rules would be invalid.
+
+The constraints generated for some `@text` are of the form:
+
+  #- TextEvar.node/kind anchor
+  #- TextEvar./kythe/loc/start starting-offset
+  #- TextEvar./kythe/loc/end ending-offset
+
+These constraints notably leave out the file that the anchor is a child of.
+If there is concern that the anchor may match against an equivalent range in
+a different file, you can use an equality constraint to bind a name to the
+anchor's implicit evar, then constrain this evar to be the child of some
+file node.
+
+IMPORTANT: Each mention of `@tok` generates a fresh evar.
+
+==== Offset specifications
+
+If you are only interested in the byte offset of a token or string literal,
+you may use an offset specification. `@^tok` will become the offset of the
+`t` on the next source line. `@$tok` will become the offset immediately after
+the `k` on the next source line. The rules for `tok` are the same as for
+anchor specifiers; it may also be a literal string.
+
+The following snippet demonstrates the relationship between anchors and offsets:
+
+  #- AnchorX=@x.node/kind anchor
+  #- AnchorX.loc/start @^x
+  #- AnchorX.loc/end @$x
+
+NOTE: Offset specifications are equivalent to the atomic string literal
+containing the decimal stringification of the relevant byte offset. They are
+manifested as evars that are unified before solving begins.
+
+=== Edge goals
+
+An edge kind, suitably intercalated between two expressions representing vnames,
+serves to create a goal that looks for a matching edge in the database. The edge
+kind is automatically given a `/kythe/edge/` prefix. The goal
+
+  #- SomeAnchor defines SomeNode
+
+will succeed if there exists any edge with the kind `/kythe/edge/defines` from
+the vname `SomeAnchor` to the vname `SomeNode`.
+
+If the edge kind begins with a `/`, it is not given the automatic prefix. The
+line above can therefore be rewritten as:
+
+  #- SomeAnchor /kythe/edge/defines SomeNode
+
+To match an edge with an ordinal component, add it after the edge name using a
+period:
+
+  #- SomeParam is_param.1 SomeNode
+
+While the edge name is a literal, the ordinal is an atom: you may replace it
+with an evar:
+
+  #- SomeParam is_param.Ordinal SomeNode
+
+=== Node goals
+
+The goal `evar-exp . name-literal value-exp` is satisfied when `evar-exp`
+unifies with a vname that appears in a Kythe fact assigning `value-exp` to the
+fact called `/kythe/name-literal`. For example:
+
+  #- SomeNode.content 42
+
+generates a goal that can be satisfied when there exists a node with a fact
+called `/kythe/content`.
+
+=== Getting feedback
+
+You can check the assignments made to evars (and thus examine the evidence used
+to support the truth of a goal) using the `?` operator after any mention of that
+evar. A callback provided to the verifier at runtime is called once per instance
+of `?` after all goals are successfully solved but (importantly) before the
+solver unwinds its state.
+
+The default behavior for the verifier is to print inspections to standard out,
+eg:
+
+  #- SomeAnchor? defines SomeNode?
+  (...)
+  SomeAnchor: EVar(0x1a7b298 = App(vname, ("", "", 1, "", "")))
+  SomeNode: EVar(0x1a7b2c8 = App(vname, ("", "", 2, "", "")))
+
+It may also be useful to see a dump of your goals after they have been parsed.
+For this, pass the `--show_goals` command-line flag.
+
+=== Explicit unification
+
+At times it might be necessary to match subparts of vnames. A vname is stored
+as a predicate with head atom `vname` applied to a 5-tuple of `(signature,
+corpus, root, path, language)`. Elements of a vname that are missing are set
+to `""`.
+
+NOTE: The Kythe storage specification draws no distinction between empty fields
+and default-valued or unset fields. As such, the verifier unifies both of these
+states as the empty identifier, `""`.
+
+  #- vname(Signature?, Corpus?, Root?, Path?, Language?) defines SomeNode
+  (...)
+  Signature: EVar(0x2180888 = Signature)
+  Corpus: EVar(0x21808b8 = Corpus)
+  Root: EVar(0x21808e8 = Root)
+  Path: EVar(0x2180918 = Path)
+  Language: EVar(0x2180948 = Language)
+
+Note that this is also possible with facts (the head atom is `fact`), but not
+recommended.
+
+Sometimes you don't care about the value in a particular position and never
+expect to refer to it again. In this case, write down a `_`, and the parser will
+create an unnamed evar distinct from any other evar (including other ones
+instantiated for `_`):
+
+  #- vname(Signature?, Corpus?, Root?, _?, Language?) defines SomeNode
+  (...)
+  Signature: EVar(0x7f4948 = Signature)
+  Corpus: EVar(0x7f4978 = Corpus)
+  Root: EVar(0x7f49a8 = Root)
+  _: EVar(0x7f49d8 = Path)
+  Language: EVar(0x7f4a08 = Language)
+
+=== Naming expressions
+
+You may wish to name the result of an expression match. For example, a node in
+the graph may have two out-edges with the same kind. If you want to match
+one of the target nodes using a specific `vname`, then later write
+specifications about that particular node, you must write down an equality
+constraint:
+
+  #- Node is Type = vname("java.lang.Object",_,_,_,_)
+
+This is distinct from these rules:
+
+  #- Node is Type
+  #- Node is vname("java.lang.Object",_,_,_,_)
+
+In the latter case, `Type` may unify with a `vname` distinct from the one spelled
+in the second rule.
+
+Take care to avoid introducing cyclic constraints. The verifier rejects tests
+that attempt to create graph structures through unification:
+
+  #- Bad is Mu = vname(_,_,Mu,_,_)
+  #- Worse is vname(_,_,Foo = Bar = Foo,_,_)
+
+=== Checking that rules are unsatisfiable
+
+It is sometimes necessary to assert that a fact does *not* appear in a Kythe
+database. For example, you may be testing an indexer that is meant to refrain
+from indexing certain objects if a flag is set. The verifier provides a
+mechanism for making these assertions using goal groups. This mechanism is
+fairly restrictive: goal groups may not be nested and are always processed
+last when solving. Negated goal groups begin with a bang (`!`). Not every goal
+in a negated goal group must fail, but at least one must fail. Assignments made
+inside a negated goal group are undone once the group is known to fail. Goal
+groups never cause assignments made by ungrouped goals or previously
+completed goals (from non-negated groups) to be undone.
+
+  #- This must Pass
+  #- !{ If this Passes
+  #-    This must Fail }
+  #- !{ This must AlwaysFail }
+
+Inspections are performed once all goal groups have been resolved, when a
+goal group fails, or when a negated goal group succeeds.
+
+=== Specifying the database
+
+The verifier supports reading Kythe facts from standard input. It expects
+a sequence of `(varint32 record-size, kythe::proto::Entry record)` records.
+To request that the verifier print out debug versions of the facts it reads in,
+pass the `--show_protos` flag.
+
+The rule file to parse can be specified as a positional argument.
+
+For example, the following command pipes output from an indexer to the verifier,
+dumping the protocol buffers along the way:
+
+  ${INDEXER_BIN} -i $1 | ${VERIFIER_BIN} --show_protos $1
+
+=== Dumping the database as a graph
+
+Passing the `--graphviz` flag will cause the verifier to ignore rule files
+and dump its fact database as a Kythe graph to standard out in graphviz format.
+Note that the database must still be well-formed according to the
+basic well-formedness checks described earlier.
+
+=== Return code
+
+If the database passes all well-formedness checks and all rules could be
+satisfied, the verifier returns *0*; otherwise, it returns nonzero.

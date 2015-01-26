@@ -1,0 +1,4 @@
+info {
+  path: "kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/E.java"
+  digest: "DIGEST"
+}

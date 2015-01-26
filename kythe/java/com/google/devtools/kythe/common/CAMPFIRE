@@ -1,0 +1,15 @@
+[
+  {
+    "name": "common",
+    "kind": "java_library",
+    "inputs": {
+      "srcs": [
+        "FormattingLogger.java",
+        "PathUtil.java"
+      ],
+      "jars": [
+        "//third_party/guava"
+      ]
+    }
+  }
+]

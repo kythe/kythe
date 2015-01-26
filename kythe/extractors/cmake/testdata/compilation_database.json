@@ -1,0 +1,7 @@
+[
+  {
+    "directory": "./../testdata/",
+    "command": "/usr/bin/g++ -c -o test_file.o test_file.cc",
+    "file": "test_file.cc"
+  }
+]

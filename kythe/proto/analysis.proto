@@ -1,0 +1,171 @@
+/*
+ * Copyright 2014 Google Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto2";
+
+package kythe.proto;
+option java_package = "com.google.devtools.kythe.proto";
+
+import "kythe/proto/storage.proto";
+
+// An AnalysisRequest instructs an analyzer to perform an analysis on a single
+// CompilationUnit.
+message AnalysisRequest {
+  // The compilation to analyze.
+  optional CompilationUnit compilation = 1;
+
+  // The address of a file data service to use.  If this is provided, it should
+  // be used in preference to any other file data service the analyzer may know
+  // about for this compilation.
+  optional string file_data_service = 2;
+}
+
+// An AnalysisOutput contains some output artifacts for the current analysis
+// taking place.  A given analysis may not produce any outputs.  It is okay for
+// an indexer to send an empty AnalysisOutput message if needed to keep the RPC
+// channel alive; the driver must correctly handle this.
+message AnalysisOutput {
+  optional bytes value = 1;
+}
+
+// Describes a single unit of compilation.
+message CompilationUnit {
+  // The base VName for the compilation and any generated VNames from its
+  // analysis. Generally, the `language` component designates the language of
+  // the compilation's sources.
+  optional VName v_name = 1;
+
+  // The revision of the compilation.
+  optional string revision = 2;
+
+  // All files that might be touched in the course of this compilation.
+  repeated FileInput required_input = 3;
+
+  // Set by the extractor to indicate that the original input had compile
+  // errors. This is used to check validity of the sharded analysis.
+  optional bool has_compile_errors = 4;
+
+  // The arguments to pass to a compiler tool for this compilation unit,
+  // including the compiler executable, flags, and input files.
+  repeated string argument = 5;
+
+  // Of those files in `required_input`, the ones that this CompilationUnit
+  // is intended to analyze. This is necessary to support languages like Go,
+  // where a single translation unit may contain many source files that must all
+  // be processed at once (while excluding source files that belong to other
+  // CUs/packages, if any).
+  repeated string source_file = 6;
+
+  // The output key of the CompilationUnit; for example, the object file that
+  // it writes.
+  // TODO(zarko): should this be a VName? Are there uniqueness requirements?
+  // How is this used in the pipeline?
+  optional string output_key = 7;
+
+  // ContextDependentVersionColumn and ContextDependentVersionRow
+  // define a table that relates input contexts (keyed by a single
+  // source context per row) to tuples of (byte offset * linked context).
+  // When a FileInput F being processed in context C refers to another
+  // FileInput F' at offset O (perhaps because F has an #include directive at O)
+  // the context in which F' should be processed is the linked context derived
+  // from this table.
+  // TODO(zarko): Revisit the use of "column".
+  message ContextDependentVersionColumn {
+    // The byte offset into the file resource.
+    optional int32 offset = 1;
+    // The signature for the resulting context.
+    optional string linked_context = 2;
+  }
+
+  // See ContextDependentVersionColumn for details.
+  // It is valid for a ContextDependentVersionRow to have no columns. In this
+  // case, the associated FileInput was seen to exist in some context C, but
+  // did not refer to any other FileInputs while in that context.
+  message ContextDependentVersionRow {
+    // The context to be applied to all columns.
+    optional string source_context = 1;
+    // A map from byte offsets to linked contexts.
+    repeated ContextDependentVersionColumn column = 2;
+  }
+
+  message FileInput {
+    // If set, overrides the `v_name` in the `CompilationUnit` for deriving
+    // VNames during analysis.
+    optional VName v_name = 1;
+
+    // The file's metadata. It is invalid to provide a FileInput without both
+    // the file's path and digest.
+    optional FileInfo info = 2;
+
+    // The file's context-dependent versions.
+    repeated ContextDependentVersionRow context = 3;
+  }
+
+  // The absolute path of the current working directory where the build tool
+  // was invoked.  During analysis, a file whose path has working_directory
+  // plus a path separator as an exact prefix is considered accessible from
+  // that same path without said prefix.  It is only necessary to set this
+  // field if the build tool requires it.
+  optional string working_directory = 8;
+
+  // For languages that make use of resource contexts (like C++), the context
+  // that should be initially entered.
+  // TODO(zarko): What is a "resource context"? Needs a clear definition and/or
+  // a link to one.
+  optional string entry_context = 9;
+
+  // An Env message represents the name and value of a single environment
+  // variable in the build environment.
+  message Env {
+    optional string name = 1;
+    optional string value = 2;
+  }
+
+  // A collection of environment variables that the build environment expects
+  // to be set.  As a rule, we only record variables here that must be set to
+  // specific values for the build to work.
+  // TODO(fromberger): When we move to NWP, use a map instead.
+  repeated Env environment = 10;
+}
+
+// A FileInfo specifies metadata for a file under analysis.
+message FileInfo {
+  // This path should be relative to the working directory of the compilation
+  // command -- typically the root of the build.
+  // i.e. file/base/file.cc or ../../base/atomic_ref_count.h
+  optional string path = 1;
+
+  // The lowercase ascii hex SHA-256 digest of the file contents.
+  optional string digest = 2;
+}
+
+// A FileDataRequest specifies one or more files whose content is optional for
+// analysis.
+message FileDataRequest {
+  // A FileInfo describes a single file to be fetched.  At least one of path or
+  // digest must be specified for each file requested.  The server should return
+  // an error if file_info is empty.
+  repeated FileInfo file_info = 1;
+}
+
+// A FileData describes the content of a single file.  A server responding to a
+// FileDataRequest must populate the same path and digest in the reply that were
+// provided by the client in the request, if any.  If either field was empty in
+// the request, the server may leave it empty or fill in its value.
+message FileData {
+  optional bytes content = 1;
+  optional FileInfo info = 2;
+}

@@ -1,0 +1,56 @@
+[
+  {
+    "name": "xrefs_server",
+    "kind": "go_binary",
+    "inputs": {
+      "srcs": [
+        "xrefs_server.go"
+      ],
+      "go_pkgs": [
+        ":tools",
+        "//kythe/go/serving/xrefs",
+        "//kythe/go/serving/xrefs/tables",
+        "//kythe/go/serving/xrefs/web",
+        "//kythe/go/storage",
+        "//kythe/go/storage/filetree",
+        "//kythe/go/storage/gsutil"
+      ]
+    }
+  },
+  {
+    "name": "xref_tables",
+    "kind": "go_binary",
+    "inputs": {
+      "srcs": [
+        "xref_tables.go"
+      ],
+      "go_pkgs": [
+        ":tools",
+        "//kythe/go/serving/xrefs/tables",
+        "//kythe/go/storage",
+        "//kythe/go/storage/gsutil",
+        "//kythe/proto:storage_proto"
+      ]
+    }
+  },
+  {
+    "name": "tools",
+    "kind": "go_library",
+    "inputs": {
+      "srcs": [
+        "tools.go"
+      ],
+      "go_pkgs": [
+        "//kythe/go/serving/xrefs",
+        "//kythe/go/storage",
+        "//kythe/go/storage/filetree",
+        "//kythe/go/util/kytheuri",
+        "//kythe/go/util/schema",
+        "//kythe/go/util/stringset",
+        "//kythe/proto:storage_proto",
+        "//kythe/proto:xref_proto",
+        "//third_party/go/code.google.com:protobuf"
+      ]
+    }
+  }
+]

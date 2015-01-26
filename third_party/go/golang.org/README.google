@@ -1,0 +1,5 @@
+URL: http://golang.org/x/net/context
+URL: http://golang.org/x/tools/go
+License: New BSD License: http://opensource.org/licenses/BSD-3-Clause
+Local Modifications: Built using go install.
+

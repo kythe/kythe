@@ -1,0 +1,5 @@
+content: "#include \"/absolute/test.h\"\n#ifdef CMDARG\nclass Main;\n#else\n#error CMDARG unset--maybe we didn't see the CompilationUnit's arguments?\n#endif\n"
+info {
+  path: "/repo/fake/test.cc"
+  digest: "uncheckedcc"
+}

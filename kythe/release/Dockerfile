@@ -1,0 +1,68 @@
+# Copyright 2014 Google Inc. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+FROM google/kythe-base
+
+# Usage: see kythe.sh
+# Volumes:
+#   /repo         -- Input repository for extraction/indexing
+#   /compilations -- Output directory for extracted compilations
+#   /graphstore   -- Output directory for indexing
+#   /root/.m2     -- Maven cache
+
+################################## <EXTRACTORS>
+# Root of repository from which to extract compilations
+VOLUME /repo
+# Output directory for compilations
+VOLUME /compilations
+# Allow Maven cache to be shared
+VOLUME /root/.m2
+
+# Maven Extractor
+ADD javac_extractor_deploy.jar /kythe/bin/javac_extractor_deploy.jar
+ADD maven_extractor.sh /kythe/bin/maven_extractor
+
+# GoPackages Extractor
+ADD gopackages /kythe/bin/
+RUN echo '/kythe/bin/gopackages --goroot "$GOROOT" --output_dir /compilations/go "$@"' > /kythe/bin/go_extractor
+
+RUN chmod +x /kythe/bin/*_extractor
+################################## </EXTRACTORS>
+
+################################## <INDEXERS>
+# C++
+ADD indexer /kythe/bin/c++_indexer.bin
+RUN echo 'exec /kythe/bin/c++_indexer.bin --flush_after_each_entry=true --ignore_unimplemented=true --index_template_instantiations=false "$@"' > /kythe/bin/c++_indexer
+
+# Java
+ADD java_indexer_deploy.jar /kythe/bin/
+RUN echo 'exec java -jar /kythe/bin/java_indexer_deploy.jar "$@"' > /kythe/bin/java_indexer
+
+RUN chmod +x /kythe/bin/*_indexer
+################################## </INDEXERS>
+
+################################## <STORAGE>
+VOLUME /graphstore
+
+ADD write_entries /kythe/bin/
+ADD dedup_stream /kythe/bin/
+
+ADD directory_indexer /kythe/bin/index_repository
+################################## </STORAGE>
+
+ADD kythe.sh /kythe/bin/
+RUN chmod +x /kythe/bin/*.sh
+
+ENTRYPOINT ["kythe.sh"]
+CMD []

@@ -1,0 +1,5 @@
+content: "class Header;\n"
+info {
+  path: "/fake/test.h"
+  digest: "86738f47e0006e580619b16f6049f7bb43131aa90f8500fd44d47467c6539a03"
+}

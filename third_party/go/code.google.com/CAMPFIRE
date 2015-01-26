@@ -1,0 +1,16 @@
+[
+  {
+    "name": "protobuf",
+    "kind": "go_external_lib",
+    "properties": {
+      "go_package": "code.google.com/p/goprotobuf/proto"
+    }
+  },
+  {
+    "name": "uuid",
+    "kind": "go_external_lib",
+    "properties": {
+      "go_package": "code.google.com/p/go-uuid/uuid"
+    }
+  }
+]

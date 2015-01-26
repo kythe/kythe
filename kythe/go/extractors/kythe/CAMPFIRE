@@ -1,0 +1,15 @@
+[
+  {
+    "name": "kytheextractor",
+    "kind": "go_binary",
+    "inputs": {
+      "srcs": [
+        "kytheextractor.go"
+      ],
+      "go_pkgs": [
+        "//kythe/go/platform/indexinfo",
+        "//kythe/go/platform/local"
+      ]
+    }
+  }
+]

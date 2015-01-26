@@ -1,0 +1,24 @@
+[
+  {
+    "name": "filemanager",
+    "kind": "java_library",
+    "inputs": {
+      "srcs": [
+        "CompilationUnitBasedJavaFileManager.java",
+        "CompilationUnitBasedJavaFileStore.java",
+        "CompilationUnitFileTree.java",
+        "CustomFileObject.java",
+        "CustomJavaFileObject.java",
+        "JavaFileStore.java",
+        "JavaFileStoreBasedFileManager.java"
+      ],
+      "jars": [
+        "//kythe/java/com/google/devtools/kythe/common",
+        "//kythe/java/com/google/devtools/kythe/platform/shared:file_data",
+        "//kythe/proto:analysis_proto",
+        "//third_party/guava",
+        "//third_party/protobuf:protobuf_jar"
+      ]
+    }
+  }
+]

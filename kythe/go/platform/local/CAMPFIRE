@@ -1,0 +1,17 @@
+[
+  {
+    "name": "local",
+    "kind": "go_library",
+    "inputs": {
+      "srcs": [
+        "local.go"
+      ],
+      "go_pkgs": [
+        "//kythe/go/storage/files",
+        "//kythe/proto:analysis_proto",
+        "//kythe/proto:storage_proto",
+        "//third_party/go/code.google.com:protobuf"
+      ]
+    }
+  }
+]

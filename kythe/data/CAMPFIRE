@@ -1,0 +1,17 @@
+[
+  {
+    "name": "filevnames_config",
+    "kind": "sh_test",
+    "inputs": {
+      "srcs": [
+        "test_filevnames.sh"
+      ],
+      "tools": [
+        "//kythe/go/storage/tools:directory_indexer"
+      ],
+      "data": [
+        "vnames.json"
+      ]
+    }
+  }
+]
