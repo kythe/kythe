@@ -69,7 +69,7 @@ function javaNinjaBuild(target, srcs) {
 }
 
 function goNinjaBuild(target, srcs) {
-  var outDir = path.join(target.getRoot('gen'), 'go');
+  var outDir = target.getRoot('gen/go/src');
   var includePaths = rule.getAllOutputsFor(target.inputsByKind['go_pkgs'], 'build',
                                            rule.propertyFilter('go_include_path'));
   includePaths.append(rule.getAllOutputsFor(target.inputsByKind['proto_libs'], 'build',

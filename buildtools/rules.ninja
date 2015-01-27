@@ -53,7 +53,10 @@ rule protoc_java
   description = protoc_java $owner
 
 rule protoc_go
-  command = mkdir -p $outdir && $protocpath/protoc --plugin=$protocpath/protoc-gen-go --go_out=import_path=$package$importpath:$outdir $in && $gotool tool 6g -p $package -complete -pack -o $out -I $$(sed 's/ / -I /g' <<<'$include') $$(find $outdir -name '*.go')
+  command = mkdir -p $outdir $
+    && $protocpath/protoc --plugin=$protocpath/protoc-gen-go --go_out=import_path=$package$importpath:$outdir $in $
+    && find $outdir -type f -name '*.go' -exec mv -f {} $outdir ';' $
+    && $gotool tool 6g -p $package -complete -pack -o $out -I $$(sed 's/ / -I /g' <<<'$include') $$(ls -1 $outdir/*.go)
   description = protoc_go $owner
 
 rule protoc_cpp
