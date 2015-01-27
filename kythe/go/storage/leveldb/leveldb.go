@@ -118,21 +118,54 @@ func (s *levelDB) Close() error {
 	return nil
 }
 
+type snapshot struct {
+	db *levigo.DB
+	s  *levigo.Snapshot
+}
+
+// NewSnapshot implements part of the keyvalue.DB interface.
+func (s *levelDB) NewSnapshot() keyvalue.Snapshot {
+	return &snapshot{s.db, s.db.NewSnapshot()}
+}
+
+// Close implements part of the keyvalue.Snapshot interface.
+func (s *snapshot) Close() error {
+	s.db.ReleaseSnapshot(s.s)
+	return nil
+}
+
 // Writer implements part of the keyvalue.DB interface.
 func (s *levelDB) Writer() (keyvalue.Writer, error) {
 	return &writer{s, levigo.NewWriteBatch()}, nil
 }
 
-// Reader implements part of the keyvalue.DB interface.
-func (s *levelDB) Reader(prefix []byte, opts *keyvalue.Options) (keyvalue.Iterator, error) {
-	var iter *levigo.Iterator
-	if opts.IsLargeRead() {
-		iter = s.db.NewIterator(s.largeReadOpts)
-	} else {
-		iter = s.db.NewIterator(s.readOpts)
-	}
+// ScanPrefix implements part of the keyvalue.DB interface.
+func (s *levelDB) ScanPrefix(prefix []byte, opts *keyvalue.Options) (keyvalue.Iterator, error) {
+	iter, ro := s.iterator(opts)
 	iter.Seek(prefix)
-	return &iterator{iter, prefix}, nil
+	return &iterator{iter, ro, prefix, nil}, nil
+}
+
+// ScanRange implements part of the keyvalue.DB interface.
+func (s *levelDB) ScanRange(r *keyvalue.Range, opts *keyvalue.Options) (keyvalue.Iterator, error) {
+	iter, ro := s.iterator(opts)
+	iter.Seek(r.Start)
+	return &iterator{iter, ro, nil, r}, nil
+}
+
+// iterator creates a new levigo Iterator based on the given options.  It also
+// returns any ReadOptions that should be Closed once the Iterator is Closed.
+func (s *levelDB) iterator(opts *keyvalue.Options) (*levigo.Iterator, *levigo.ReadOptions) {
+	if snap := opts.GetSnapshot(); snap != nil {
+		ro := levigo.NewReadOptions()
+		ro.SetSnapshot(snap.(*snapshot).s)
+		ro.SetFillCache(!opts.IsLargeRead())
+		return s.db.NewIterator(ro), ro
+	}
+	if opts.IsLargeRead() {
+		return s.db.NewIterator(s.largeReadOpts), nil
+	}
+	return s.db.NewIterator(s.readOpts), nil
 }
 
 type writer struct {
@@ -156,12 +189,18 @@ func (w *writer) Close() error {
 }
 
 type iterator struct {
-	it     *levigo.Iterator
+	it   *levigo.Iterator
+	opts *levigo.ReadOptions
+
 	prefix []byte
+	r      *keyvalue.Range
 }
 
 // Close implements part of the keyvalue.Iterator interface.
 func (i iterator) Close() error {
+	if i.opts != nil {
+		i.opts.Close()
+	}
 	i.it.Close()
 	return nil
 }
@@ -175,7 +214,7 @@ func (i iterator) Next() ([]byte, []byte, error) {
 		return nil, nil, io.EOF
 	}
 	key, val := i.it.Key(), i.it.Value()
-	if !bytes.HasPrefix(key, i.prefix) {
+	if (i.r == nil && !bytes.HasPrefix(key, i.prefix)) || (i.r != nil && bytes.Compare(key, i.r.End) >= 0) {
 		return nil, nil, io.EOF
 	}
 	i.it.Next()

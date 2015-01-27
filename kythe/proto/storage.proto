@@ -147,3 +147,17 @@ message ScanRequest {
   // label is matched,
   optional string fact_prefix = 3;
 }
+
+// TODO(fromberger): add RPC service interfaces
+
+// Request for the size of the shard at the given index.
+message CountRequest {
+  optional int64 index = 1;
+  optional int64 shards = 2;
+}
+
+// Request for a stream of Entry objects in the given shard.
+message ShardRequest {
+  optional int64 index = 1;
+  optional int64 shards = 2;
+}

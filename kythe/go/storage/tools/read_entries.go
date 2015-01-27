@@ -24,6 +24,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"kythe/go/platform/delimited"
 	"kythe/go/storage"
@@ -32,7 +33,15 @@ import (
 	spb "kythe/proto/storage_proto"
 )
 
-var gs storage.GraphStore
+var (
+	gs storage.GraphStore
+
+	count = flag.Bool("count", false, "Only print the number of entries scanned")
+
+	shardsToFiles = flag.String("sharded_file", "", "If given, scan the entire GraphStore, storing each shard in a separate file instead of stdout (requires --shards)")
+	shardIndex    = flag.Int64("shard_index", 0, "Index of a single shard to emit (requires --shards)")
+	shards        = flag.Int64("shards", 0, "Number of shards to split the GraphStore")
+)
 
 func init() {
 	gsutil.Flag(&gs, "graphstore", "GraphStore to read")
@@ -49,12 +58,75 @@ func main() {
 	flag.Parse()
 	if gs == nil {
 		log.Fatal("Missing --graphstore")
+	} else if *shardsToFiles != "" && *shards <= 0 {
+		log.Fatal("--sharded_file and --shards must be given together")
 	}
 
 	wr := delimited.NewWriter(os.Stdout)
-	if err := storage.EachScanEntry(gs, nil, func(entry *spb.Entry) error {
+	var total int64
+	if *shards <= 0 {
+		if err := storage.EachScanEntry(gs, nil, func(entry *spb.Entry) error {
+			if *count {
+				total++
+				return nil
+			}
+			return wr.PutProto(entry)
+		}); err != nil {
+			log.Fatalf("GraphStore Scan error: %v", err)
+		}
+		if *count {
+			fmt.Println(total)
+		}
+		return
+	}
+
+	sgs, ok := gs.(storage.ShardedGraphStore)
+	if !ok {
+		log.Fatalf("Sharding unsupported for given GraphStore type: %T", gs)
+	} else if *shardIndex >= *shards {
+		log.Fatalf("Invalid shard index for %d shards: %d", *shards, *shardIndex)
+	}
+
+	if *count {
+		cnt, err := sgs.Count(&spb.CountRequest{Index: shardIndex, Shards: shards})
+		if err != nil {
+			log.Fatalf("ERROR: %v", err)
+		}
+		fmt.Println(cnt)
+		return
+	} else if *shardsToFiles != "" {
+		var wg sync.WaitGroup
+		wg.Add(int(*shards))
+		for i := int64(0); i < *shards; i++ {
+			go func(i int64) {
+				defer wg.Done()
+				path := fmt.Sprintf("%s-%.5d-of-%.5d", *shardsToFiles, i, *shards)
+				f, err := os.Create(path)
+				if err != nil {
+					log.Fatalf("Failed to create file %q: %v", path, err)
+				}
+				defer f.Close()
+				wr := delimited.NewWriter(f)
+				if err := storage.EachShardEntry(sgs, &spb.ShardRequest{
+					Index:  &i,
+					Shards: shards,
+				}, func(entry *spb.Entry) error {
+					return wr.PutProto(entry)
+				}); err != nil {
+					log.Fatalf("GraphStore shard scan error: %v", err)
+				}
+			}(i)
+		}
+		wg.Wait()
+		return
+	}
+
+	if err := storage.EachShardEntry(sgs, &spb.ShardRequest{
+		Index:  shardIndex,
+		Shards: shards,
+	}, func(entry *spb.Entry) error {
 		return wr.PutProto(entry)
 	}); err != nil {
-		log.Fatalf("GraphStore Scan error: %v", err)
+		log.Fatalf("GraphStore shard scan error: %v", err)
 	}
 }

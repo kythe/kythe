@@ -352,7 +352,7 @@ var errNoSuchKey = errors.New("no such key")
 
 func (t *jsonLookupTable) get(key string, val interface{}) error {
 	bKey := []byte(key)
-	rd, err := t.Reader(bKey, nil)
+	rd, err := t.ScanPrefix(bKey, nil)
 	if err != nil {
 		return fmt.Errorf("db reader error: %v", err)
 	}
@@ -386,7 +386,7 @@ func (t *jsonLookupTable) dumpToText() (err error) {
 		}
 	}()
 
-	it, err := t.Reader(nil, nil)
+	it, err := t.ScanPrefix(nil, nil)
 	if err != nil {
 		return fmt.Errorf("db scanner error: %v", err)
 	}

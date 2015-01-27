@@ -66,6 +66,19 @@ type GraphStore interface {
 	Close() error
 }
 
+// ShardedGraphStore is a GraphStore that can be arbitrarily sharded for
+// parallel processing.  Depending on the implementation, these methods may not
+// return consistent results when the GraphStore is being written to.
+type ShardedGraphStore interface {
+	GraphStore
+
+	// Count returns the number of entries in the given shard.
+	Count(req *spb.CountRequest) (int64, error)
+
+	// Shard sends to stream all of the entries within the given shard.
+	Shard(req *spb.ShardRequest, stream chan<- *spb.Entry) error
+}
+
 // EachScanEntry calls f for each Entry in the GraphStore matching the ScanRequest.
 func EachScanEntry(gs GraphStore, req *spb.ScanRequest, f func(*spb.Entry) error) error {
 	var wg sync.WaitGroup
@@ -117,6 +130,34 @@ func EachReadEntry(gs GraphStore, req *spb.ReadRequest, f func(*spb.Entry) error
 		req = &spb.ReadRequest{}
 	}
 	err := gs.Read(req, entries)
+	close(entries)
+	wg.Wait()
+	if iterErr != nil {
+		return iterErr
+	}
+	if err != nil {
+		return fmt.Errorf("read error: %v", err)
+	}
+	return nil
+}
+
+// EachShardEntry calls f for each Entry in the given GraphStore shard
+func EachShardEntry(gs ShardedGraphStore, req *spb.ShardRequest, f func(*spb.Entry) error) error {
+	var wg sync.WaitGroup
+	wg.Add(1)
+	entries := make(chan *spb.Entry)
+	var iterErr error
+	go func() {
+		defer wg.Done()
+		for entry := range entries {
+			if iterErr != nil {
+				continue
+			}
+			iterErr = f(entry)
+		}
+	}()
+
+	err := gs.Shard(req, entries)
 	close(entries)
 	wg.Wait()
 	if iterErr != nil {

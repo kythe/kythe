@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"sync"
 
 	"kythe/go/storage"
 
@@ -32,11 +33,25 @@ import (
 // A Store implements the storage.GraphStore interface for a keyvalue DB
 type Store struct {
 	db DB
+
+	shardMu        sync.Mutex // guards shardTables/shardSnapshots during construction
+	shardTables    map[int64][]shard
+	shardSnapshots map[int64]Snapshot
+}
+
+// Range is section of contiguous keys, including Start and excluding End.
+type Range struct {
+	Start, End []byte
+}
+
+type shard struct {
+	Range
+	count int64
 }
 
 // NewGraphStore returns a GraphStore backed by the given keyvalue DB.
 func NewGraphStore(db DB) *Store {
-	return &Store{db}
+	return &Store{db: db}
 }
 
 // A DB is a sorted key-value store with read/write access. DBs must be Closed
@@ -44,12 +59,24 @@ func NewGraphStore(db DB) *Store {
 type DB interface {
 	io.Closer
 
-	// Reader returns an Iterator for all key-values starting with the given
+	// ScanPrefix returns an Iterator for all key-values starting with the given
 	// key prefix.  Options may be nil to use the defaults.
-	Reader([]byte, *Options) (Iterator, error)
+	ScanPrefix([]byte, *Options) (Iterator, error)
+
+	// ScanRange returns an Iterator for all key-values starting with the given
+	// key range.  Options may be nil to use the defaults.
+	ScanRange(*Range, *Options) (Iterator, error)
+
 	// Writer return a new write-access object
 	Writer() (Writer, error)
+
+	// NewSnapshot returns a new consistent view of the DB that can be passed as
+	// an option to DB scan methods.
+	NewSnapshot() Snapshot
 }
+
+// Snapshot is a consistent view of the DB.
+type Snapshot io.Closer
 
 // Options alters the behavior of an Iterator.
 type Options struct {
@@ -57,11 +84,23 @@ type Options struct {
 	// "large" and the implementation should usually avoid certain behaviors such
 	// as caching the entire visited key-value range.  Defaults to false.
 	LargeRead bool
+
+	// Snapshot causes the iterator to view the DB as it was at the Snapshot's
+	// creation.
+	Snapshot
 }
 
 // IsLargeRead returns the LargeRead option or the default of false when o==nil.
 func (o *Options) IsLargeRead() bool {
 	return o != nil && o.LargeRead
+}
+
+// GetSnapshot returns the Snapshot option or the default of nil when o==nil.
+func (o *Options) GetSnapshot() Snapshot {
+	if o == nil {
+		return nil
+	}
+	return o.Snapshot
 }
 
 // Iterator provides sequential access to a DB. Iterators must be Closed when
@@ -91,10 +130,14 @@ func (s *Store) Read(req *spb.ReadRequest, stream chan<- *spb.Entry) error {
 	if err != nil {
 		return fmt.Errorf("invalid ReadRequest: %v", err)
 	}
-	iter, err := s.db.Reader(keyPrefix, nil)
+	iter, err := s.db.ScanPrefix(keyPrefix, nil)
 	if err != nil {
 		return fmt.Errorf("db seek error: %v", err)
 	}
+	return streamEntries(iter, stream)
+}
+
+func streamEntries(iter Iterator, stream chan<- *spb.Entry) error {
 	defer iter.Close()
 	for {
 		key, val, err := iter.Next()
@@ -115,6 +158,8 @@ func (s *Store) Read(req *spb.ReadRequest, stream chan<- *spb.Entry) error {
 
 // Write implements part of the GraphStore interface.
 func (s *Store) Write(req *spb.WriteRequest) (err error) {
+	// TODO(schroederc): fix shardTables to include new entries
+
 	wr, err := s.db.Writer()
 	if err != nil {
 		return fmt.Errorf("db writer error: %v", err)
@@ -142,7 +187,7 @@ func (s *Store) Write(req *spb.WriteRequest) (err error) {
 
 // Scan implements part of the GraphStore interface.
 func (s *Store) Scan(req *spb.ScanRequest, stream chan<- *spb.Entry) error {
-	iter, err := s.db.Reader(entryKeyPrefixBytes, &Options{LargeRead: true})
+	iter, err := s.db.ScanPrefix(entryKeyPrefixBytes, &Options{LargeRead: true})
 	if err != nil {
 		return fmt.Errorf("db seek error: %v", err)
 	}
@@ -168,6 +213,142 @@ func (s *Store) Scan(req *spb.ScanRequest, stream chan<- *spb.Entry) error {
 
 // Close implements part of the GraphStore interface.
 func (s *Store) Close() error { return s.db.Close() }
+
+// Count implements part of the ShardedGraphStore interface.
+func (s *Store) Count(req *spb.CountRequest) (int64, error) {
+	if req.GetShards() < 1 {
+		return 0, fmt.Errorf("invalid number of shards: %d", req.GetShards())
+	} else if req.GetIndex() < 0 || req.GetIndex() >= req.GetShards() {
+		return 0, fmt.Errorf("invalid index for %d shards: %d", req.GetShards(), req.GetIndex())
+	}
+
+	tbl, _, err := s.constructShards(req.GetShards())
+	if err != nil {
+		return 0, err
+	}
+	return tbl[req.GetIndex()].count, nil
+}
+
+// Shard implements part of the ShardedGraphStore interface.
+func (s *Store) Shard(req *spb.ShardRequest, stream chan<- *spb.Entry) error {
+	if req.GetShards() < 1 {
+		return fmt.Errorf("invalid number of shards: %d", req.GetShards())
+	} else if req.GetIndex() < 0 || req.GetIndex() >= req.GetShards() {
+		return fmt.Errorf("invalid index for %d shards: %d", req.GetShards(), req.GetIndex())
+	}
+
+	tbl, snapshot, err := s.constructShards(req.GetShards())
+	if err != nil {
+		return err
+	}
+	if tbl[req.GetIndex()].count == 0 {
+		return nil
+	}
+	shard := tbl[req.GetIndex()]
+	iter, err := s.db.ScanRange(&shard.Range, &Options{
+		LargeRead: true,
+		Snapshot:  snapshot,
+	})
+	if err != nil {
+		return err
+	}
+	return streamEntries(iter, stream)
+}
+
+func (s *Store) constructShards(num int64) ([]shard, Snapshot, error) {
+	s.shardMu.Lock()
+	defer s.shardMu.Unlock()
+	if s.shardTables == nil {
+		s.shardTables = make(map[int64][]shard)
+		s.shardSnapshots = make(map[int64]Snapshot)
+	}
+	if tbl, ok := s.shardTables[num]; ok {
+		return tbl, s.shardSnapshots[num], nil
+	}
+	snapshot := s.db.NewSnapshot()
+	iters := make([]Iterator, num)
+	for i := range iters {
+		var err error
+		iters[i], err = s.db.ScanPrefix(entryKeyPrefixBytes, &Options{
+			LargeRead: true,
+			Snapshot:  snapshot,
+		})
+		if err != nil {
+			snapshot.Close()
+			return nil, nil, fmt.Errorf("error creating iterator: %v", err)
+		}
+	}
+
+	// This loop determines the ending key to each shard's range and the number of
+	// entries each iterator has passed.  Each iterator always represents the
+	// current ending key to each shard and is moved in (i+1) groups of entries
+	// where i is its index in iters/tbl.  If a group consisted of a single entry,
+	// this staggered iteration evenly distribute the iterators across the entire
+	// GraphStore.  However, this loop iterates past groups of entries sharing the
+	// same (source+edgeKind) at a time to ensure the property that no node/edge
+	// crosses a shard boundary.  This also means that the shards will be less
+	// evenly distributed.
+	tbl := make([]shard, num)
+loop:
+	for { // Until an iterator (usually iters[num-1]) reaches io.EOF
+		for i, iter := range iters {
+			// Move iters[i] past i+1 sets of entries sharing the same
+			// (source+edgeKind) prefix.
+			for j := 0; j <= i; j++ {
+				k, _, err := iter.Next()
+				if err == io.EOF {
+					break loop
+				} else if err != nil {
+					snapshot.Close()
+					return nil, nil, err
+				}
+				prefix := sourceKindPrefix(k)
+				tbl[i].count++
+				tbl[i].End = k
+
+				// Iterate past all entries with the same source+kind prefix as k
+				for {
+					k, _, err = iter.Next()
+					if err == io.EOF {
+						break loop
+					} else if err != nil {
+						snapshot.Close()
+						return nil, nil, err
+					}
+					tbl[i].count++
+					tbl[i].End = k
+					if !bytes.HasPrefix(k, prefix) {
+						break
+					}
+				}
+			}
+		}
+	}
+
+	// Fix up the border shards
+	tbl[0].Start = entryKeyPrefixBytes
+	tbl[num-1].End = entryKeyPrefixEndRange
+	tbl[0].count--
+	tbl[num-1].count++
+
+	// Set the starting keys to each shard.
+	for i := int64(1); i < num; i++ {
+		tbl[i].Start = tbl[i-1].End
+	}
+	// Determine the size of each shard.
+	for i := num - 1; i > 0; i-- {
+		tbl[i].count -= tbl[i-1].count
+	}
+
+	s.shardTables[num] = tbl
+	s.shardSnapshots[num] = snapshot
+	return tbl, snapshot, nil
+}
+
+func sourceKindPrefix(key []byte) []byte {
+	idx := bytes.IndexRune(key, entryKeySep)
+	return key[:bytes.IndexRune(key[idx+1:], entryKeySep)+idx+2]
+}
 
 // GraphStore Implementation Details:
 //   These details are strictly for this particular implementation of a
@@ -202,8 +383,9 @@ const (
 )
 
 var (
-	entryKeyPrefixBytes = []byte(entryKeyPrefix)
-	entryKeySepBytes    = []byte{entryKeySep}
+	entryKeyPrefixBytes    = []byte(entryKeyPrefix)
+	entryKeyPrefixEndRange = append([]byte(entryKeyPrefix[:len(entryKeyPrefixBytes)-1]), entryKeyPrefix[len(entryKeyPrefixBytes)-1]+1)
+	entryKeySepBytes       = []byte{entryKeySep}
 )
 
 // EncodeKey returns a canonical encoding of an Entry (minus its value).
