@@ -134,9 +134,6 @@ exports.commands = {
   'package': new Command(function(engine, args) {
     engine.ninjaCommand(rule.kinds.PACKAGE, args, true);
   }, 'Creates docker packages for provided targets'),
-  deploy: new Command(function(engine, args) {
-    engine.ninjaCommand(rule.kinds.DEPLOY, args, true);
-  }, 'Releases docker packages for provided targets'),
   extract: new Command(function(engine, args) {
     engine.ninjaCommand(rule.kinds.EXTRACT, args, true);
   }, 'Extract kindex compilations'),

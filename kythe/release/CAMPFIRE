@@ -15,7 +15,6 @@
       ],
       "data": [
         "//kythe/cxx/indexer/cxx:indexer",
-        "//kythe/go/extractors/gopackages",
         "//kythe/go/platform/tools:dedup_stream",
         "//kythe/go/storage/tools:directory_indexer",
         "//kythe/go/storage/tools:write_entries",

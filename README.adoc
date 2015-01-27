@@ -74,8 +74,7 @@ limited time.  It is expected to be replaced in the near future.
 ./campfire build //kythe/go/platform/tools:all
 
 # Build and run the Java indexer
-./campfire build //kythe/java/com/google/devtools/kythe/analyzers/java:indexer
-./campfire-out/bin/kythe/java/com/google/devtools/kythe/analyzers/java/indexer
+./campfire run //kythe/java/com/google/devtools/kythe/analyzers/java:indexer
 
 # Package Kythe release images
 ./campfire package //kythe/release/...
@@ -134,7 +133,7 @@ popd
 [source,shell]
 ----
 ./campfire build //kythe/docs/schema
-xdg-open campfire-out/gen/kythe/docs/schema/schema.html
+xdg-open campfire-out/doc/kythe/docs/schema/schema.html
 ----
 
 .Using Cayley to explore a GraphStore

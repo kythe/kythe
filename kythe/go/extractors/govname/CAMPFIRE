@@ -1,0 +1,16 @@
+[
+  {
+    "name": "govname",
+    "kind": "go_library",
+    "inputs": {
+      "srcs": [
+        "govname.go"
+      ],
+      "go_pkgs": [
+        "//kythe/go/storage/vnameutil",
+        "//kythe/proto:storage_proto",
+        "//third_party/go/code.google.com:protobuf"
+      ]
+    }
+  }
+]

@@ -31,7 +31,7 @@ Extraction:
   which will copied to /repo) will be extracted to the /compilations VOLUME w/ subdirectories for
   each compilation's language (e.g. /compilations/java, /compilations/go).
 
-  Supported Extractors: maven,go
+  Supported Extractors: maven
 
 Indexing:
   If given the --index flag, each compilation in /compilations will be sent to a corresponding
@@ -110,7 +110,7 @@ if [[ -n "$REPO" ]]; then
 fi
 
 case "$EXTRACTOR" in
-  maven|go)
+  maven)
     echo 'Extracting compilations' >&2
     "${EXTRACTOR}_extractor" ;;
   "")

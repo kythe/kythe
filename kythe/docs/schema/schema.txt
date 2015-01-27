@@ -537,8 +537,6 @@ Notes::
   First-level macro expansions (like those written down in the source file)
   are recorded with the <<refexpands,ref/expands>> edge.
 
-TODO(zarko): C++ example.
-
 [[refincludes]]
 ref/includes
 ~~~~~~~~~~~~

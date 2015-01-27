@@ -1,0 +1,21 @@
+[
+  {
+    "name": "golang",
+    "kind": "go_library",
+    "inputs": {
+      "srcs": [
+        "golang.go"
+      ],
+      "go_pkgs": [
+        "//kythe/go/extractors/govname",
+        "//kythe/go/platform/indexpack",
+        "//kythe/go/storage/vnameutil",
+        "//kythe/go/util/stringset",
+        "//kythe/proto:analysis_proto",
+        "//kythe/proto:storage_proto",
+        "//third_party/go/code.google.com:protobuf",
+        "//third_party/go/golang.org:context"
+      ]
+    }
+  }
+]

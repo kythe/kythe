@@ -1,0 +1,17 @@
+[
+  {
+    "name": "gotool",
+    "kind": "go_binary",
+    "inputs": {
+      "srcs": [
+        "gotool.go"
+      ],
+      "go_pkgs": [
+        "//kythe/go/extractors/golang",
+        "//kythe/go/platform/indexpack",
+        "//kythe/proto:analysis_proto",
+        "//third_party/go/golang.org:context"
+      ]
+    }
+  }
+]

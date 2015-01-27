@@ -33,9 +33,7 @@ VOLUME /root/.m2
 ADD javac_extractor_deploy.jar /kythe/bin/javac_extractor_deploy.jar
 ADD maven_extractor.sh /kythe/bin/maven_extractor
 
-# GoPackages Extractor
-ADD gopackages /kythe/bin/
-RUN echo '/kythe/bin/gopackages --goroot "$GOROOT" --output_dir /compilations/go "$@"' > /kythe/bin/go_extractor
+# TODO(fromberger): Add new Go extractor.
 
 RUN chmod +x /kythe/bin/*_extractor
 ################################## </EXTRACTORS>

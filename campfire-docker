@@ -15,7 +15,7 @@ fi
 
 if ! docker images | grep '^google/kythe-campfire\s' >/dev/null; then
   info "missing campfire docker image"
-  ./jenkins/docker-pull.sh google/kythe-campfire
+  ./campfire package //buildtools/docker
 fi
 
 INTERACTIVE=-i
