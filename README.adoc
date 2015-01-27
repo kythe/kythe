@@ -201,4 +201,6 @@ arc land                       # merge change into master
 
 == Contact
 
+ - https://groups.google.com/forum/#!forum/kythe - General Kythe Community
+ - https://groups.google.com/forum/#!forum/kythe-dev - Kythe Development
  - https://groups.google.com/forum/#!forum/kythe-early-interest

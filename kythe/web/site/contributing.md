@@ -29,10 +29,14 @@ Kythe relies on the following external dependencies:
 * clang-3.5
 * jdk >=8
 * parallel
-* jq >=1.3
+* jq >=1.4
 * asciidoc
 * source-highlight
 * graphviz
+* libncurses-dev
+* libssl-dev
+* bison-2.3
+* flex-2.5
 * [docker](https://www.docker.com/) (for release images `//kythe/release/...` and `//buildtools/docker)
 * [leiningen](http://leiningen.org/) (used to build `kythe/web/ui`)
 
@@ -77,7 +81,21 @@ git commit -m "Commit message" # commit the changes
 arc diff --browse              # send the commit for review
 # go through code review in Phabricator UI...
 # get change accepted
-arc land                       # merge change into master
+
+arc land                       # merge the change into master
+{% endhighlight %}
+
+For core contributors with write access to the Kythe repository, `arc land` will
+merge the change into master and push it to Github.  Others should request that
+someone else land their change for them once the change has been reviewed and
+accepted.
+
+{% highlight bash %}
+# Land a reviewed change
+git checkout master
+arc patch --nobranch D1234
+git push
+arc close-revision D1234
 {% endhighlight %}
 
 ## Contribution Ideas
