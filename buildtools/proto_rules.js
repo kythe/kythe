@@ -97,7 +97,7 @@ function goNinjaBuild(target, srcs) {
     properties: [new entity.Property(target.id, 'go_include_path', outDir)],
     vars: {
       'package': target.asPath(),
-      include: includePaths.join(' '),
+      include: go_rules.constructIncludeArgs(includePaths),
       importpath: protoImportMappings,
       outdir: outDir
     }
@@ -109,6 +109,7 @@ function ccNinjaBuild(target, srcs) {
                                            rule.propertyFilter('cc_include_path'));
   includePaths.append(rule.getAllOutputsFor(target.inputsByKind['proto_libs'], 'build',
                                             rule.propertyFilter('cc_include_path')));
+  includePaths = includePaths.map(function(p) { return p.value; });
   var libs = rule.getAllOutputsFor(target.inputsByKind['proto_libs'], 'build',
                                    rule.fileFilter('cc_archive'));
 
@@ -122,7 +123,7 @@ function ccNinjaBuild(target, srcs) {
     outs: [archive],
     properties: [new entity.Property(target.id, 'cc_include_path', outputDir)],
     vars: {
-      include: includePaths.map(function(p) { return p.value; }).join(' '),
+      include: go_rules.constructIncludeArgs(includePaths),
       outdir: outputDir
     }
   };

@@ -33,10 +33,17 @@ GoLibrary.prototype.getNinjaBuilds = function(target) {
       outs: [target.getFileNode(outPath + '.a', 'go_archive')],
       vars: {
         'package': pkgName,
-        include: includePaths.join(' ')
+        include: exports.constructIncludeArgs(includePaths),
       }
     }]
   };
+};
+
+exports.constructIncludeArgs = function(includePaths, flag) {
+  flag = flag || '-I';
+  return includePaths
+      .mapcat(function(p) { return [flag, p]; })
+      .join(' ');
 };
 
 function GoBinary(engine) {
@@ -75,7 +82,7 @@ GoBinary.prototype.getNinjaBuilds = function(target) {
     implicits: pkgs.concat(ccLibs),
     outs: [archive],
     vars: {
-      include: includePaths.join(' ')
+      include: exports.constructIncludeArgs(includePaths),
     }
   },{
     rule: 'go_linker',
@@ -83,7 +90,7 @@ GoBinary.prototype.getNinjaBuilds = function(target) {
     implicits: pkgs,
     outs: [this.getExecutable(target)],
     vars: {
-      include: recursiveIncludePaths.join(' '),
+      include: exports.constructIncludeArgs(recursiveIncludePaths, '-L'),
       extldflags: ['-lstdc++']
     }
   }];
@@ -170,7 +177,7 @@ GoTest.prototype.getNinjaBuilds = function(target) {
     outs: [testArchive],
     vars: {
       'package': testPkg,
-      include: includePaths.join(' ')
+      include: exports.constructIncludeArgs(includePaths),
     }
   });
   builds.BUILD.push({
@@ -180,7 +187,7 @@ GoTest.prototype.getNinjaBuilds = function(target) {
     outs: [testMainArchive],
     vars: {
       'package': 'main',
-      include: includePaths.join(' ')
+      include: exports.constructIncludeArgs(includePaths),
     }
   });
 
@@ -206,7 +213,7 @@ GoTest.prototype.getNinjaBuilds = function(target) {
     implicits: pkgs.concat(ccLibs),
     outs: [testBinary],
     vars: {
-      include: recursiveIncludePaths.join(' '),
+      include: exports.constructIncludeArgs(recursiveIncludePaths, '-L'),
       extldflags: extLDArgs.join(' ')
     }
   });
