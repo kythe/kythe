@@ -38,6 +38,38 @@
     }
   },
   {
+    "name": "curl_lib",
+    "kind": "cc_external_lib",
+    "properties": {
+      "cc_extra_link_flags": [
+        "-lcurl"
+      ]
+    }
+  },
+  {
+    "name": "net_client",
+    "kind": "cc_library",
+    "inputs": {
+      "srcs": [
+        "net_client.cc"
+      ],
+      "hdrs": [
+        "net_client.h"
+      ],
+      "cc_libs": [
+        ":curl_lib",
+        ":lib",
+        "//kythe/proto:storage_proto",
+        "//kythe/proto:xref_proto",
+        "//third_party/gflags",
+        "//third_party/glog",
+        "//third_party/protobuf:protobuf_cc",
+        "//third_party/rapidjson",
+        "//third_party/zlib"
+      ]
+    }
+  },
+  {
     "name": "lib",
     "kind": "cc_library",
     "inputs": {
@@ -202,6 +234,35 @@
     "inputs": {
       "cc_libs": [
         ":json_proto_testlib"
+      ]
+    }
+  },
+  {
+    "name": "net_client_testlib",
+    "kind": "cc_library",
+    "inputs": {
+      "srcs": [
+        "net_client_test.cc"
+      ],
+      "hdrs": [],
+      "cc_libs": [
+        "//kythe/cxx/common:net_client",
+        "//kythe/proto:analysis_proto",
+        "//kythe/proto:storage_proto",
+        "//third_party/gflags",
+        "//third_party/glog",
+        "//third_party/googletest:lib",
+        "//third_party/protobuf:protobuf_cc",
+        "//third_party/zlib"
+      ]
+    }
+  },
+  {
+    "name": "net_client_test",
+    "kind": "cc_binary",
+    "inputs": {
+      "cc_libs": [
+        ":net_client_testlib"
       ]
     }
   }

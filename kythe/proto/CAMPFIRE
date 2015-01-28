@@ -118,10 +118,14 @@
       ],
       "go_pkgs": [
         "//third_party/go/github.com:protobuf"
+      ],
+      "cc_libs": [
+        "//third_party/protobuf:protobuf_cc"
       ]
     },
     "properties": {
-      "go_api": true
+      "go_api": true,
+      "cc_api": true
     }
   },
   {

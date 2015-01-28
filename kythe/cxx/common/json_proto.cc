@@ -191,6 +191,17 @@ bool JsonOfMessage(const google::protobuf::Message &message, W *writer) {
 }
 
 bool WriteMessageAsJsonToString(const google::protobuf::Message &message,
+                                std::string *out) {
+  rapidjson::StringBuffer buffer;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+  if (!JsonOfMessage(message, &writer)) {
+    return false;
+  }
+  *out = buffer.GetString();
+  return true;
+}
+
+bool WriteMessageAsJsonToString(const google::protobuf::Message &message,
                                 const std::string &format_key,
                                 std::string *out) {
   rapidjson::StringBuffer buffer;
