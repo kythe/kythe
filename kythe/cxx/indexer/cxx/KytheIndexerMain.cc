@@ -101,10 +101,12 @@ static void DecodeIndexPack(const std::string &cu_hash,
     CHECK(!info.path().empty());
     CHECK(!info.digest().empty())
         << "Required input " << info.path() << " is missing its digest.";
-    proto::FileData file_data;
-    CHECK(index_pack->ReadFileData(info.digest(), file_data.mutable_content()))
+    std::string read_data;
+    CHECK(index_pack->ReadFileData(info.digest(), &read_data))
         << "Could not read " << info.path() << " (digest " << info.digest()
-        << ") from the index pack: " << file_data.content();
+        << ") from the index pack: " << read_data;
+    proto::FileData file_data;
+    file_data.set_content(read_data);
     file_data.mutable_info()->set_path(info.path());
     file_data.mutable_info()->set_digest(info.digest());
     virtual_files->push_back(std::move(file_data));
