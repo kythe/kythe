@@ -140,7 +140,9 @@ public class KytheEntrySets {
    */
   public NodeBuilder newNode(NodeKind kind, Iterable<EntrySet> dependencies) {
     NodeBuilder builder = newNode(kind);
-    dependencies.forEach(e -> builder.addSignatureSalt(e.getVName()));
+    for (EntrySet e : dependencies) {
+      builder.addSignatureSalt(e.getVName());
+    };
     return builder;
   }
 

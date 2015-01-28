@@ -42,7 +42,7 @@ public class FileDataCache implements FileDataProvider {
     byte[] content = fileContents.get(digest);
     return content != null
         ? Futures.immediateFuture(content)
-        : Futures.immediateFailedFuture(new RuntimeException(
+        : Futures.<byte[]>immediateFailedFuture(new RuntimeException(
               "Cache does not contain file for digest: " + digest));
   }
 }

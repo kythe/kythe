@@ -1,8 +1,5 @@
 package pkg;
 
-//- @Optional ref Optional
-import java.util.Optional;
-
 public class Selectors {
   //- @field defines Field
   String field;
@@ -30,5 +27,11 @@ public class Selectors {
     //- @field ref Field
     //- @this ref This
     return this.field;
+  }
+
+  //- @Optional defines Optional
+  private static interface Optional<T> {
+    public T get();
+    public boolean isPresent();
   }
 }

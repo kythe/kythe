@@ -16,6 +16,7 @@
 
 package com.google.devtools.kythe.util;
 
+import com.google.common.io.BaseEncoding;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
@@ -30,7 +31,6 @@ import com.google.protobuf.GeneratedMessage;
 import com.google.protobuf.ProtocolMessageEnum;
 
 import java.lang.reflect.Type;
-import java.util.Base64;
 
 /** Utility class for working with JSON/{@link Gson}. */
 public class JsonUtil {
@@ -63,18 +63,17 @@ public class JsonUtil {
 
   private static class ByteArrayTypeAdapter
       implements JsonSerializer<byte[]>, JsonDeserializer<byte[]> {
-    private static final Base64.Encoder ENCODER = Base64.getEncoder();
-    private static final Base64.Decoder DECODER = Base64.getDecoder();
+    private static final BaseEncoding ENCODING = BaseEncoding.base64();
 
     @Override
     public JsonElement serialize(byte[] arry, Type t, JsonSerializationContext ctx) {
-      return new JsonPrimitive(ENCODER.encodeToString(arry));
+      return new JsonPrimitive(ENCODING.encode(arry));
     }
 
     @Override
     public byte[] deserialize(JsonElement json, Type typeOfT,
           JsonDeserializationContext context) throws JsonParseException {
-      return DECODER.decode((String) context.deserialize(json, String.class));
+      return ENCODING.decode((String) context.deserialize(json, String.class));
     }
   }
 

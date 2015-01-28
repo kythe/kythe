@@ -16,11 +16,10 @@
 
 package com.google.devtools.kythe.analyzers.java;
 
-import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
-
+import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
 import com.google.devtools.kythe.analyzers.base.EdgeKind;
 import com.google.devtools.kythe.analyzers.base.EntrySet;
 import com.google.devtools.kythe.common.FormattingLogger;
@@ -53,9 +52,9 @@ import com.sun.tools.javac.util.Name;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 
 /** {@link JCTreeScanner} that emits Kythe nodes and edges. */
@@ -89,17 +88,18 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, Void> {
   public JavaNode visitTopLevel(JCCompilationUnit compilation, Void v) {
     EntrySet fileNode = entrySets.getFileNode(filePositions);
 
-    List<JavaNode> decls = scanList(compilation.getTypeDecls(), v).stream()
-        .filter(Objects::nonNull)
-        .collect(toList());
-    decls.stream()
-        .forEach(n -> entrySets.emitEdge(n.entries, EdgeKind.CHILDOF, fileNode));
+    List<JavaNode> decls = scanList(compilation.getTypeDecls(), v);
+    decls.removeAll(Collections.singleton(null));
+    for (JavaNode n : decls) {
+      entrySets.emitEdge(n.entries, EdgeKind.CHILDOF, fileNode);
+    }
 
     if (compilation.getPackageName() != null) {
       EntrySet pkgNode = entrySets.getPackageNode(compilation.packge);
       emitAnchor(compilation.getPackageName(), EdgeKind.REF, pkgNode);
-      decls.stream()
-          .forEach(n -> entrySets.emitEdge(n.entries, EdgeKind.CHILDOF, pkgNode));
+      for (JavaNode n : decls) {
+        entrySets.emitEdge(n.entries, EdgeKind.CHILDOF, pkgNode);
+      }
     }
 
     scanList(compilation.getImports(), v);
@@ -145,11 +145,12 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, Void> {
         emitEdge(classNode, EdgeKind.IMPLEMENTS, implNode);
       }
 
-      classDef.getMembers().stream()
-          .map(member -> scan(member, v))
-          .filter(Objects::nonNull)
-          .forEach(member ->
-              entrySets.emitEdge(member.entries, EdgeKind.CHILDOF, classNode));
+      for (JCTree member : classDef.getMembers()) {
+        JavaNode n = scan(member, v);
+        if (n != null) {
+          entrySets.emitEdge(n.entries, EdgeKind.CHILDOF, classNode);
+        }
+      }
 
       return new JavaNode(classNode, signature.get());
     }
@@ -161,6 +162,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, Void> {
     scan(methodDef.getBody(), v);
     JavaNode returnType = scan(methodDef.getReturnType(), v);
     List<JavaNode> params = scanList(methodDef.getParameters(), v);
+    List<EntrySet> paramTypes = Lists.newLinkedList();
+    for (JavaNode n : params) {
+      paramTypes.add(n.typeNode);
+    }
 
     Optional<String> signature = signatureGenerator.getSignature(methodDef.sym);
     if (signature.isPresent()) {
@@ -183,9 +188,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, Void> {
       }
 
       emitOrdinalEdges(methodNode, EdgeKind.PARAM, params);
-      EntrySet fnTypeNode = entrySets.newFunctionType(ret, params.stream()
-          .map(n -> n.typeNode)
-          .collect(toList()));
+      EntrySet fnTypeNode = entrySets.newFunctionType(ret, paramTypes);
       entrySets.emitEdge(methodNode, EdgeKind.TYPED, fnTypeNode);
 
       ClassSymbol ownerClass = (ClassSymbol) methodDef.sym.owner;
@@ -230,15 +233,18 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, Void> {
     JavaNode typeCtorNode = scan(tApply.getType(), v);
 
     List<JavaNode> arguments = scanList(tApply.getTypeArguments(), v);
-    List<EntrySet> argEntries = arguments.stream()
-        .map(n -> n.entries)
-        .collect(toList());
+    List<EntrySet> argEntries = Lists.newLinkedList();
+    List<String> argNames = Lists.newLinkedList();
+    for (JavaNode n : arguments) {
+      argEntries.add(n.entries);
+      argNames.add(n.qualifiedName);
+    }
 
     EntrySet typeNode = entrySets.newTApply(typeCtorNode.entries, argEntries);
     emitAnchor(tApply, EdgeKind.REF, typeNode);
 
     String qualifiedName = typeCtorNode.qualifiedName
-        + "<" + arguments.stream().map(n -> n.qualifiedName).collect(joining(",")) + ">";
+        + "<" + Joiner.on(',').join(argNames) + ">";
     entrySets.emitName(typeNode, qualifiedName);
 
     return new JavaNode(typeNode, qualifiedName);
@@ -364,8 +370,11 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, Void> {
 
   // Unwraps each target EntrySet and emits an ordinal edge to each from the given source node
   private void emitOrdinalEdges(EntrySet node, EdgeKind kind, List<JavaNode> targets) {
-    entrySets.emitOrdinalEdges(node, kind,
-        targets.stream().map(n -> n.entries).collect(toList()));
+    List<EntrySet> entries = Lists.newLinkedList();
+    for (JavaNode n : targets) {
+      entries.add(n.entries);
+    }
+    entrySets.emitOrdinalEdges(node, kind, entries);
   }
 
   @Deprecated
@@ -375,7 +384,11 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, Void> {
   }
 
   private <T extends JCTree> List<JavaNode> scanList(List<T> trees, Void v) {
-    return trees.stream().map(t -> scan(t, v)).collect(toList());
+    List<JavaNode> nodes = Lists.newLinkedList();
+    for (T t : trees) {
+      nodes.add(scan(t, v));
+    }
+    return nodes;
   }
 }
 

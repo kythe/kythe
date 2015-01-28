@@ -1,7 +1,5 @@
 package pkg;
 
-import java.util.Optional;
-
 // TODO(schroederc): generic class definition tests
 public class Generics<T> {
 
@@ -24,4 +22,6 @@ public class Generics<T> {
     //- OVar typed OType
     Optional<Generics<String>> opt;
   }
+
+  private static class Optional<T> {}
 }

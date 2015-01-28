@@ -541,6 +541,7 @@ function ninjaBuildHeader(engine) {
     'gotool': engine.settings.properties['go_path'],
     'java': engine.settings.properties['java_path'],
     'javac': engine.settings.properties['javac_path'],
+    'javacopts': (engine.settings.properties['javac_opts'] || []).join(' '),
     'javajar': engine.settings.properties['jar_path'],
     'protocpath': engine.settings.properties['protoc_path']
   };

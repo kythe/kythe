@@ -85,11 +85,11 @@ public class FileVNames {
   }
 
   public static FileVNames fromFile(String configFile) throws IOException {
-    return new FileVNames(GSON.fromJson(new FileReader(configFile), CONFIG_TYPE));
+    return new FileVNames(GSON.<List<BaseFileVName>>fromJson(new FileReader(configFile), CONFIG_TYPE));
   }
 
   public static FileVNames fromJson(String json) {
-    return new FileVNames(GSON.fromJson(json, CONFIG_TYPE));
+    return new FileVNames(GSON.<List<BaseFileVName>>fromJson(json, CONFIG_TYPE));
   }
 
   /**

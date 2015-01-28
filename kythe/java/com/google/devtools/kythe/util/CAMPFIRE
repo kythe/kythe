@@ -25,6 +25,7 @@
       "jars": [
         "//third_party/gson",
         "//third_party/gson:proto",
+        "//third_party/guava",
         "//third_party/protobuf:protobuf_jar"
       ]
     }

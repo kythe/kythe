@@ -22,7 +22,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.HashSet;
 
 /** DeleteRecursively is a {@link SimpleFileVisitor} that deletes every visited file/directory. */
 public class DeleteRecursively extends SimpleFileVisitor<Path> {
@@ -31,7 +30,7 @@ public class DeleteRecursively extends SimpleFileVisitor<Path> {
 
   /** Deletes {@code path}, and if a {@code path} is a directory, all contained files. */
   public static void delete(Path path) throws IOException {
-    Files.walkFileTree(path, new HashSet<>(), Integer.MAX_VALUE, INSTANCE);
+    Files.walkFileTree(path, INSTANCE);
   }
 
   @Override

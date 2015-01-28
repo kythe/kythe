@@ -16,7 +16,9 @@
 
 package com.google.devtools.kythe.platform.indexpack;
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
@@ -25,6 +27,7 @@ import com.google.common.hash.Hashing;
 import com.google.common.io.ByteStreams;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
+import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
 import com.google.devtools.kythe.proto.Analysis.FileData;
 import com.google.devtools.kythe.util.JsonUtil;
 import com.google.gson.Gson;
@@ -53,7 +56,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.UUID;
-import java.util.Objects;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -127,20 +129,28 @@ public class Archive {
    * each unit's required inputs.
    */
   public Iterator<CompilationDescription> readDescriptions() throws IOException {
-    return Iterators.transform(readUnits(), this::completeDescription);
+    return Iterators.transform(readUnits(), new Function<CompilationUnit, CompilationDescription>() {
+          @Override
+          public CompilationDescription apply(CompilationUnit unit) {
+            return completeDescription(unit);
+          }
+        });
   }
 
   /** Returns a complete {@link CompilationDescription} of the given {@link CompilationUnit}. */
   public CompilationDescription completeDescription(CompilationUnit unit) {
     return new CompilationDescription(unit, Iterables.transform(unit.getRequiredInputList(),
-            (input) -> {
-              try {
-                return FileData.newBuilder()
-                    .setInfo(input.getInfo())
-                    .setContent(ByteString.copyFrom(readFile(input.getInfo().getDigest())))
-                    .build();
-              } catch (IOException ioe) {
-                throw Throwables.propagate(ioe);
+            new Function<FileInput, FileData>() {
+              @Override
+              public FileData apply(FileInput input) {
+                try {
+                  return FileData.newBuilder()
+                      .setInfo(input.getInfo())
+                      .setContent(ByteString.copyFrom(readFile(input.getInfo().getDigest())))
+                      .build();
+                } catch (IOException ioe) {
+                  throw Throwables.propagate(ioe);
+                }
               }
             }));
   }
@@ -168,23 +178,31 @@ public class Archive {
   }
 
   /** Returns an {@link Iterator} of the units stored in the archive with a given format key. */
-  public <T> Iterator<T> readUnits(final String formatKey, Class<T> cls) throws IOException {
+  public <T> Iterator<T> readUnits(final String formatKey, final Class<T> cls) throws IOException {
     Preconditions.checkNotNull(formatKey);
     return Iterators.filter(
         Iterators.transform(Files.newDirectoryStream(unitDir, "*" + UNIT_SUFFIX).iterator(),
-            (path) -> {
-              try {
-                String name = path.getFileName().toString();
-                if (!name.endsWith(UNIT_SUFFIX)) {
-                  throw new IllegalStateException("Received path without unit suffix: " + path);
+            new Function<Path, T>() {
+              @Override
+              public T apply(Path path) {
+                try {
+                  String name = path.getFileName().toString();
+                  if (!name.endsWith(UNIT_SUFFIX)) {
+                    throw new IllegalStateException("Received path without unit suffix: " + path);
+                  }
+                  String key = name.substring(0, name.length() - UNIT_SUFFIX.length());
+                  return readUnit(key, formatKey, cls);
+                } catch (IOException ioe) {
+                  throw Throwables.propagate(ioe);
                 }
-                String key = name.substring(0, name.length() - UNIT_SUFFIX.length());
-                return readUnit(key, formatKey, cls);
-              } catch (IOException ioe) {
-                throw Throwables.propagate(ioe);
               }
             }),
-        Objects::nonNull);
+        new Predicate<T>() {
+          @Override
+          public boolean apply(T unit) {
+            return unit != null;
+          }
+        });
   }
 
   /**
@@ -291,7 +309,7 @@ public class Archive {
     public UnitWrapper deserialize(JsonElement json, Type t, JsonDeserializationContext ctx) {
       JsonObject obj = json.getAsJsonObject();
       return new UnitWrapper(
-          ctx.deserialize(obj.get(FORMAT_KEY_LABEL), String.class),
+          ctx.<String>deserialize(obj.get(FORMAT_KEY_LABEL), String.class),
           obj.get(CONTENT_LABEL));
     }
   }
