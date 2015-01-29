@@ -43,8 +43,13 @@ Kythe relies on the following external dependencies:
 ## Code review
 
 All changes to Kythe must go through code review before being submitted, and
-each individual or corporate contributor must sign an appropriate
-[Contributor License Agreement](https://cla.developers.google.com/about).
+each individual or corporate contributor must sign an appropriate [Contributor
+License Agreement](https://cla.developers.google.com/about).  Once your CLA is
+submitted (or if you already submitted one for another Google project), make a
+commit adding yourself to the
+[AUTHORS]({{site.data.development.source_browser}}/AUTHORS) and
+[CONTRIBUTORS]({{site.data.development.source_browser}}/CONTRIBUTORS)
+files. This commit can be part of your first Differential code review.
 
 The Kythe team has chosen to use a [Phabricator](http://phabricator.org/)
 instance located at
@@ -92,10 +97,8 @@ accepted.
 
 {% highlight bash %}
 # Land a reviewed change
-git checkout master
-arc patch --nobranch D1234
-git push
-arc close-revision D1234
+arc patch D1234
+arc land
 {% endhighlight %}
 
 ## Contribution Ideas
