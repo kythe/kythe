@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # This script wraps the `campfire` tool. It calls it with options and
 # tool paths appropriate for the kythe-campfire Docker container.

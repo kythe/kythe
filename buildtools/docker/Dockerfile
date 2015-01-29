@@ -20,9 +20,6 @@ RUN apt-get update \
       bundler ruby-dev make nodejs rsync patch \
  && apt-get clean
 
-# Needed for Kythe's ninja rules
-RUN ln -fs /bin/bash /bin/sh
-
 # Setup locale (needed for campfire)
 RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
 RUN locale-gen en_US.UTF-8
