@@ -180,7 +180,6 @@ var ctrlMap = map[rune]string{
 	'\n': `\n`,
 	'\r': `\r`,
 	'\f': `\f`,
-	'"':  `\"`,
 	'\'': `\'`,
 	'\\': `\\`,
 }
@@ -199,6 +198,8 @@ func turtleEncode(s string) string {
 			} else {
 				fmt.Fprintf(&buf, "\\u%04x", c)
 			}
+		case c == '"':
+			buf.WriteString(`\"`)
 		case c <= unicode.MaxASCII:
 			buf.WriteRune(c)
 		case c == unicode.ReplacementChar:
