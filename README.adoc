@@ -143,7 +143,7 @@ xdg-open campfire-out/doc/kythe/docs/schema/schema.html
 ./campfire run //kythe/go/storage/tools:triples --graphstore /path/to/graphstore | gzip >kythe.nq.gz
 
 # Install Cayley (if necessary) (or https://github.com/google/cayley/releases)
-go get install github.com/google/cayley
+go get -u github.com/google/cayley
 
 $GOPATH/bin/cayley repl --dbpath kythe.nq.gz # or $GOPATH/bin/cayley http --dbpath kythe.nq.gz
 ----
