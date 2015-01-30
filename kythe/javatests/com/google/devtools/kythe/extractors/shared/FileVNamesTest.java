@@ -16,6 +16,7 @@
 
 package com.google.devtools.kythe.extractors.shared;
 
+import com.google.common.base.Joiner;
 import com.google.devtools.kythe.proto.Storage.VName;
 
 import junit.framework.TestCase;
@@ -24,7 +25,7 @@ import junit.framework.TestCase;
 public class FileVNamesTest extends TestCase {
 
   // Mirror of test config in kythe/storage/go/filevnames/filevnames_test.go
-  private static final String TEST_CONFIG = String.join("\n", new String[]{
+  private static final String TEST_CONFIG = Joiner.on('\n').join(new String[]{
     "[",
     "  {",
     "    \"pattern\": \"static/path\",",

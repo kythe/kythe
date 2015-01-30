@@ -1,10 +1,10 @@
-URL: //depot2/google_vendor_src_branch/openjdk8
-Version: u20
-License: Various.  Mostly covered by GPL v2 with classpath exception.
+URL: http://hg.openjdk.java.net/jdk8u/jdk8u/langtools/archive/jdk8u5-b13.zip
+Version: jdk8u5
+License: GPL v2 with "Classpath" exception
 License File: LICENSE
 
 Description:
-Java JDK.
+The java 8 langtools.
 
-Local Modifications:
-No modifications.
+Local modifications:
+No Modifications.

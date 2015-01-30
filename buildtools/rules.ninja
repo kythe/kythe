@@ -7,7 +7,7 @@ rule run_test
 
 rule javac
   command = mkdir -p $out.classes && $
-            '$javac' -cp '$classpath' $in -d $out.classes && $
+            '$javac' $javacopts -cp '$classpath' $in -d $out.classes && $
             '$javajar' cf $out -C $out.classes .
   description = javac $owner
 
@@ -63,7 +63,7 @@ rule linker
 rule protoc_java
   command = mkdir -p $out.srcs $out.classes && $
             $protocpath/protoc --java_out=$out.srcs $in && $
-            $javac -cp $classpath -d $out.classes $$(find $out.srcs -name '*.java') && $
+            $javac $javacopts -cp $classpath -d $out.classes $$(find $out.srcs -name '*.java') && $
             $javajar cf $out -C $out.classes .
   description = protoc_java $owner
 

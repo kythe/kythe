@@ -9,6 +9,7 @@
       "jars": [
         "//kythe/java/com/google/devtools/kythe/extractors/shared:file_vnames",
         "//kythe/proto:storage_proto",
+        "//third_party/guava",
         "//third_party/junit",
         "//third_party/protobuf:protobuf_jar"
       ]

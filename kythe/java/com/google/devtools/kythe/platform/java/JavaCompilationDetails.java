@@ -68,7 +68,8 @@ public class JavaCompilationDetails {
 
   public static JavaCompilationDetails createDetails(CompilationUnit compilationUnit,
     FileDataProvider fileDataProvider, boolean useStdErr) {
-    return createDetails(compilationUnit, fileDataProvider, false, ImmutableList.of(), useStdErr);
+    return createDetails(
+        compilationUnit, fileDataProvider, false, ImmutableList.<Processor>of(), useStdErr);
   }
 
   public static JavaCompilationDetails createDetails(CompilationUnit compilationUnit,
