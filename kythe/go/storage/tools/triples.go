@@ -32,7 +32,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"kythe/go/storage"
+	"kythe/go/services/graphstore"
 	"kythe/go/storage/gsutil"
 	"kythe/go/storage/stream"
 	"kythe/go/util/encoding/rdf"
@@ -52,7 +52,7 @@ var (
 	keepReverseEdges = flag.Bool("keep_reverse_edges", false, "Do not filter reverse edges from triples output")
 	quiet            = flag.Bool("quiet", false, "Do not emit logging messages")
 
-	gs storage.GraphStore
+	gs graphstore.Service
 )
 
 func init() {

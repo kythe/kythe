@@ -27,14 +27,14 @@ import (
 	"sync"
 
 	"kythe/go/platform/delimited"
-	"kythe/go/storage"
+	"kythe/go/services/graphstore"
 	"kythe/go/storage/gsutil"
 
 	spb "kythe/proto/storage_proto"
 )
 
 var (
-	gs storage.GraphStore
+	gs graphstore.Service
 
 	count = flag.Bool("count", false, "Only print the number of entries scanned")
 
@@ -65,7 +65,7 @@ func main() {
 	wr := delimited.NewWriter(os.Stdout)
 	var total int64
 	if *shards <= 0 {
-		if err := storage.EachScanEntry(gs, nil, func(entry *spb.Entry) error {
+		if err := graphstore.EachScanEntry(gs, nil, func(entry *spb.Entry) error {
 			if *count {
 				total++
 				return nil
@@ -80,7 +80,7 @@ func main() {
 		return
 	}
 
-	sgs, ok := gs.(storage.ShardedGraphStore)
+	sgs, ok := gs.(graphstore.ShardedService)
 	if !ok {
 		log.Fatalf("Sharding unsupported for given GraphStore type: %T", gs)
 	} else if *shardIndex >= *shards {
@@ -107,7 +107,7 @@ func main() {
 				}
 				defer f.Close()
 				wr := delimited.NewWriter(f)
-				if err := storage.EachShardEntry(sgs, &spb.ShardRequest{
+				if err := graphstore.EachShardEntry(sgs, &spb.ShardRequest{
 					Index:  &i,
 					Shards: shards,
 				}, func(entry *spb.Entry) error {
@@ -121,7 +121,7 @@ func main() {
 		return
 	}
 
-	if err := storage.EachShardEntry(sgs, &spb.ShardRequest{
+	if err := graphstore.EachShardEntry(sgs, &spb.ShardRequest{
 		Index:  shardIndex,
 		Shards: shards,
 	}, func(entry *spb.Entry) error {

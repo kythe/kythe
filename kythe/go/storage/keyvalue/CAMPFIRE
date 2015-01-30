@@ -7,7 +7,7 @@
         "keyvalue.go"
       ],
       "go_pkgs": [
-        "//kythe/go/storage",
+        "//kythe/go/services/graphstore",
         "//kythe/proto:storage_proto"
       ]
     }

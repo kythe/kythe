@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Google Inc. All rights reserved.
+ * Copyright 2015 Google Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,21 @@
  * limitations under the License.
  */
 
-// Package tools implements common utility functions for xrefs binary tools.
-package tools
+// Package xrefs defines the xrefs Service interface and useful xrefs utility
+// functions.
+package xrefs
 
 import (
 	"fmt"
 	"log"
+	"net/http"
+	"path/filepath"
+	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
-	"kythe/go/serving/xrefs"
-	"kythe/go/storage"
-	"kythe/go/storage/filetree"
+	"kythe/go/services/web"
 	"kythe/go/util/kytheuri"
 	"kythe/go/util/schema"
 	"kythe/go/util/stringset"
@@ -36,52 +39,172 @@ import (
 	"code.google.com/p/goprotobuf/proto"
 )
 
-// AddReverseEdges scans gs for all forward edges, adding a reverse for each
-// back into the GraphStore.
-func AddReverseEdges(gs storage.GraphStore) error {
-	log.Println("Adding reverse edges")
-	var (
-		totalEntries int
-		addedEdges   int
-	)
-	startTime := time.Now()
-	err := storage.EachScanEntry(gs, nil, func(entry *spb.Entry) error {
-		kind := entry.GetEdgeKind()
-		if kind != "" && schema.EdgeDirection(kind) == schema.Forward {
-			if err := gs.Write(&spb.WriteRequest{
-				Source: entry.Target,
-				Update: []*spb.WriteRequest_Update{{
-					Target:    entry.Source,
-					EdgeKind:  proto.String(schema.MirrorEdge(kind)),
-					FactName:  entry.FactName,
-					FactValue: entry.FactValue,
-				}},
-			}); err != nil {
-				return fmt.Errorf("Failed to write reverse edge: %v", err)
-			}
-			addedEdges++
-		}
-		totalEntries++
-		return nil
-	})
-	log.Printf("Wrote %d reverse edges to GraphStore (%d total entries): %v", addedEdges, totalEntries, time.Since(startTime))
-	return err
+// Service provides access to a Kythe graph for fast access to cross-references.
+type Service interface {
+	NodesService
+	EdgesService
+	DecorationsService
 }
 
-// CreateFileTree times the population of a filetree.Map with a given
-// GraphStore.
-func CreateFileTree(gs storage.GraphStore) (filetree.FileTree, error) {
-	log.Println("Creating GraphStore file tree")
-	startTime := time.Now()
-	defer func() {
-		log.Printf("Tree populated in %v", time.Since(startTime))
-	}()
-	t := filetree.NewMap()
-	return t, t.Populate(gs)
+// NodesService provides fast access to nodes in a Kythe graph.
+type NodesService interface {
+	// Nodes returns a subset of the facts for each of the requested nodes.
+	Nodes(*xpb.NodesRequest) (*xpb.NodesReply, error)
+}
+
+// EdgesService provides fast access to edges in a Kythe graph.
+type EdgesService interface {
+	// Edges returns a subset of the outbound edges for each of a set of requested
+	// nodes.
+	Edges(*xpb.EdgesRequest) (*xpb.EdgesReply, error)
+}
+
+// DecorationsService provides fast access to file decorations in a Kythe graph.
+type DecorationsService interface {
+	// Decorations returns an index of the nodes and edges associated with a
+	// particular file node.
+	Decorations(*xpb.DecorationsRequest) (*xpb.DecorationsReply, error)
+}
+
+// ConvertFilters converts each filter glob into an equivalent regexp.
+func ConvertFilters(filters []string) []*regexp.Regexp {
+	var patterns []*regexp.Regexp
+	for _, filter := range filters {
+		patterns = append(patterns, filterToRegexp(filter))
+	}
+	return patterns
+}
+
+var filterOpsRE = regexp.MustCompile("[*][*]|[*?]")
+
+func filterToRegexp(pattern string) *regexp.Regexp {
+	var re string
+	for {
+		loc := filterOpsRE.FindStringIndex(pattern)
+		if loc == nil {
+			break
+		}
+		re += regexp.QuoteMeta(pattern[:loc[0]])
+		switch pattern[loc[0]:loc[1]] {
+		case "**":
+			re += ".*"
+		case "*":
+			re += "[^/]*"
+		case "?":
+			re += "[^/]"
+		default:
+			log.Fatal("Unknown filter operator: " + pattern[loc[0]:loc[1]])
+		}
+		pattern = pattern[loc[1]:]
+	}
+	return regexp.MustCompile(re + regexp.QuoteMeta(pattern))
+}
+
+// MatchesAny reports whether if str matches any of the patterns
+func MatchesAny(str string, patterns []*regexp.Regexp) bool {
+	for _, p := range patterns {
+		if p.MatchString(str) {
+			return true
+		}
+	}
+	return false
+}
+
+const indirectNameNodes = true
+
+// RegisterHTTPHandlers registers JSON HTTP handlers with mux using the given
+// xrefs Service.  The following methods with be exposed:
+//
+//   GET /file/<path>?corpus=<corpus>&root=<root>&language=<lang>&signature=<sig>
+//     Returns the JSON equivalent of an xrefs.DecorationsReply for the
+//     described file.  References and source-text will be supplied in the
+//     reply.
+//   GET /xrefs?ticket=<ticket>
+//     Returns a JSON map from edgeKind to a set of anchor/file locations that
+//     attach to the given node.
+func RegisterHTTPHandlers(prefix string, xs Service, mux *http.ServeMux) {
+	mux.Handle(prefix+"/file/", http.StripPrefix(prefix, fileHandler(xs)))
+	mux.Handle(prefix+"/xrefs", http.StripPrefix(prefix, xrefsHandler(xs, indirectNameNodes)))
+}
+
+// fileHandler parses a file VName from the Request URL's Path/Query and replies
+// with a JSON object equivalent to a xpb.DecorationsReply with its SourceText
+// and Reference fields populated
+func fileHandler(xs Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			http.Error(w, "Only GET requests allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		path := web.TrimPath(r, "/file/")
+		if path == "/file" {
+			http.Error(w, "Bad Request: no file path given", http.StatusBadRequest)
+			return
+		}
+
+		fileVName := &spb.VName{
+			Signature: web.ArgOrNil(r, "signature"),
+			Language:  web.ArgOrNil(r, "language"),
+			Corpus:    web.ArgOrNil(r, "corpus"),
+			Root:      web.ArgOrNil(r, "root"),
+			Path:      proto.String(path),
+		}
+
+		startTime := time.Now()
+		reply, err := xs.Decorations(&xpb.DecorationsRequest{
+			Location:   &xpb.Location{Ticket: proto.String(kytheuri.FromVName(fileVName).String())},
+			SourceText: proto.Bool(true),
+			References: proto.Bool(true),
+		})
+		if err != nil {
+			code := http.StatusInternalServerError
+			if strings.Contains(err.Error(), "file not found") {
+				code = http.StatusNotFound
+			}
+			http.Error(w, err.Error(), code)
+			return
+		}
+		log.Printf("Decorations [%v]", time.Since(startTime))
+
+		if err := web.WriteJSONResponse(w, r, reply); err != nil {
+			log.Printf("Error encoding file response: %v", err)
+		}
+	}
+}
+
+// xrefsHandler returns a map from edge kind to set of anchorLocations for a
+// given ticket.
+func xrefsHandler(xs Service, indirectNameNodes bool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		startTime := time.Now()
+		ticket := web.Arg(r, "ticket")
+		if ticket == "" {
+			http.Error(w, "Bad Request: missing target parameter", http.StatusBadRequest)
+			return
+		}
+
+		refs, total, err := XRefs(xs, ticket, indirectNameNodes)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		} else if len(refs) == 0 {
+			http.Error(w, fmt.Sprintf("No references found for ticket %q", ticket), http.StatusNotFound)
+			return
+		}
+
+		log.Printf("XRefs [%v]\t%d", time.Since(startTime), total)
+		if err := web.WriteJSONResponse(w, r, refs); err != nil {
+			log.Println(err)
+		}
+	}
+}
+
+func trimPath(path, prefix string) string {
+	return strings.TrimPrefix(filepath.Clean(path), prefix)
 }
 
 var (
-	anchorFilters  = []string{schema.NodeKindFact, "/kythe/loc/*"}
+	anchorFilters  = []string{schema.NodeKindFact, schema.AnchorLocFilter}
 	revDefinesEdge = schema.MirrorEdge(schema.DefinesEdge)
 	revNamedEdge   = schema.MirrorEdge(schema.NamedEdge)
 )
@@ -97,8 +220,8 @@ type AnchorLocation struct {
 // XRefs returns a set of related AnchorLocations for the given ticket in a map
 // keyed by edge kind. If indirectNames is set, the resulting set of anchors
 // will include those for nodes that can be reached through related name nodes.
-// TODO(schroederc): clean up and decide if this goes into the xrefs.Service api
-func XRefs(xs xrefs.Service, ticket string, indirectNames bool) (map[string][]*AnchorLocation, int, error) {
+// TODO(schroederc): clean up and decide if this goes into the Service api
+func XRefs(xs Service, ticket string, indirectNames bool) (map[string][]*AnchorLocation, int, error) {
 	// Graph path:
 	//  node[ticket]
 	//    ( --%edge-> || --edge-> relatedNode --%defines-> )
@@ -228,7 +351,7 @@ func XRefs(xs xrefs.Service, ticket string, indirectNames bool) (map[string][]*A
 // mergeIndirectMaps will find the related nodes of a ticket through the
 // indirectEdgeKind using xs, adding each node's anchors to the given nodes and
 // edges maps.
-func mergeIndirectMaps(xs xrefs.Service, anchorEdges map[string]map[string][]string, anchorNodes map[string]*xpb.NodeInfo, ticket string, indirectEdgeKind string) error {
+func mergeIndirectMaps(xs Service, anchorEdges map[string]map[string][]string, anchorNodes map[string]*xpb.NodeInfo, ticket string, indirectEdgeKind string) error {
 	var nodes []string
 	for _, target := range anchorEdges[ticket][indirectEdgeKind] {
 		nodes = append(nodes, target)

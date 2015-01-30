@@ -23,7 +23,7 @@ import (
 	"os"
 	"testing"
 
-	"kythe/go/storage"
+	"kythe/go/services/graphstore"
 	"kythe/go/storage/keyvalue"
 
 	spb "kythe/proto/storage_proto"
@@ -101,7 +101,7 @@ func BenchmarkWriteBatchLrg(b *testing.B) { batchWriteBenchmark(b, largeBatchSiz
 func BenchmarkWriteParallelSingle(b *testing.B)   { batchWriteParallelBenchmark(b, 1) }
 func BenchmarkWriteParallelBatchLrg(b *testing.B) { batchWriteParallelBenchmark(b, largeBatchSize) }
 
-func tempGS() (storage.GraphStore, string, error) {
+func tempGS() (graphstore.Service, string, error) {
 	db, path, err := tempDB()
 	if err != nil {
 		return nil, "", fmt.Errorf("error creating temporary DB: %v", err)
@@ -167,8 +167,8 @@ func TestGraphStoreOrder(t *testing.T) {
 
 	var lastEntry *spb.Entry
 	fatalOnErrT(t, "entryLess error: %v",
-		storage.EachScanEntry(gs, nil, func(entry *spb.Entry) error {
-			if !storage.EntryLess(lastEntry, entry) {
+		graphstore.EachScanEntry(gs, nil, func(entry *spb.Entry) error {
+			if !graphstore.EntryLess(lastEntry, entry) {
 				return fmt.Errorf("expected {%v} < {%v}", lastEntry, entry)
 			}
 			return nil

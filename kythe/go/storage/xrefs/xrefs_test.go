@@ -18,12 +18,12 @@ package xrefs
 
 import (
 	"reflect"
-	"regexp"
 	"sort"
 	"testing"
 
-	"kythe/go/storage"
+	"kythe/go/services/graphstore"
 	"kythe/go/storage/inmemory"
+	"kythe/go/util/kytheuri"
 	"kythe/go/util/schema"
 
 	spb "kythe/proto/storage_proto"
@@ -108,7 +108,7 @@ func TestDecorations(t *testing.T) {
 
 	reply, err := xs.Decorations(&xpb.DecorationsRequest{
 		Location: &xpb.Location{
-			Ticket: proto.String(vnameToTicket(testFileVName)),
+			Ticket: proto.String(kytheuri.ToString(testFileVName)),
 		},
 		SourceText: proto.Bool(true),
 		References: proto.Bool(true),
@@ -126,8 +126,8 @@ func TestDecorations(t *testing.T) {
 
 	expectedRefs := []*xpb.DecorationsReply_Reference{
 		{
-			SourceTicket: proto.String(vnameToTicket(testAnchorVName)),
-			TargetTicket: proto.String(vnameToTicket(testAnchorTargetVName)),
+			SourceTicket: proto.String(kytheuri.ToString(testAnchorVName)),
+			TargetTicket: proto.String(kytheuri.ToString(testAnchorTargetVName)),
 			Kind:         proto.String(schema.RefEdge),
 		},
 	}
@@ -142,42 +142,10 @@ func TestDecorations(t *testing.T) {
 	}
 }
 
-func TestFilterRegexp(t *testing.T) {
-	tests := []struct {
-		filter string
-		regexp string
-	}{
-		{"", ""},
-
-		// Bare glob patterns
-		{"?", "[^/]"},
-		{"*", "[^/]*"},
-		{"**", ".*"},
-
-		// Literal characters
-		{schema.NodeKindFact, schema.NodeKindFact},
-		{`!@#$%^&()-_=+[]{};:'"/<>.,`, regexp.QuoteMeta(`!@#$%^&()-_=+[]{};:'"/<>.,`)},
-		{"abcdefghijklmnopqrstuvwxyz", "abcdefghijklmnopqrstuvwxyz"},
-		{"ABCDEFGHIJKLMNOPQRSTUVWXYZ", "ABCDEFGHIJKLMNOPQRSTUVWXYZ"},
-
-		{"/kythe/*", "/kythe/[^/]*"},
-		{"/kythe/**", "/kythe/.*"},
-		{"/array#?", "/array#[^/]"},
-		{"/kythe/node?/*/blah/**", "/kythe/node[^/]/[^/]*/blah/.*"},
-	}
-
-	for _, test := range tests {
-		res := filterToRegexp(test.filter)
-		if res.String() != test.regexp {
-			t.Errorf(" Filter %q; Got %q; Expected regexp %q", test.filter, res, test.regexp)
-		}
-	}
-}
-
-func newService(t *testing.T, entries []*spb.Entry) Service {
+func newService(t *testing.T, entries []*spb.Entry) *GraphStoreService {
 	gs := inmemory.Create()
 
-	for req := range storage.BatchWrites(channelEntries(entries), 64) {
+	for req := range graphstore.BatchWrites(channelEntries(entries), 64) {
 		if err := gs.Write(req); err != nil {
 			t.Fatalf("Failed to write entries: %v", err)
 		}
@@ -206,7 +174,7 @@ type node struct {
 
 func (n *node) Info() *xpb.NodeInfo {
 	info := &xpb.NodeInfo{
-		Ticket: proto.String(vnameToTicket(n.Source)),
+		Ticket: proto.String(kytheuri.ToString(n.Source)),
 	}
 	for name, val := range n.Facts {
 		info.Fact = append(info.Fact, &xpb.Fact{
@@ -222,7 +190,7 @@ func (n *node) EdgeSet() *xpb.EdgeSet {
 	for kind, targets := range n.Edges {
 		var tickets []string
 		for _, target := range targets {
-			tickets = append(tickets, vnameToTicket(target))
+			tickets = append(tickets, kytheuri.ToString(target))
 		}
 		groups = append(groups, &xpb.EdgeSet_Group{
 			Kind:         proto.String(kind),
@@ -230,7 +198,7 @@ func (n *node) EdgeSet() *xpb.EdgeSet {
 		})
 	}
 	return &xpb.EdgeSet{
-		SourceTicket: proto.String(vnameToTicket(n.Source)),
+		SourceTicket: proto.String(kytheuri.ToString(n.Source)),
 		Group:        groups,
 	}
 }
@@ -238,7 +206,7 @@ func (n *node) EdgeSet() *xpb.EdgeSet {
 func nodesToTickets(nodes []*node) []string {
 	var tickets []string
 	for _, n := range nodes {
-		tickets = append(tickets, vnameToTicket(n.Source))
+		tickets = append(tickets, kytheuri.ToString(n.Source))
 	}
 	return tickets
 }

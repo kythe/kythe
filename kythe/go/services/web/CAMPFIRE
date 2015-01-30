@@ -1,0 +1,14 @@
+[
+  {
+    "name": "web",
+    "kind": "go_library",
+    "inputs": {
+      "srcs": [
+        "web.go"
+      ],
+      "go_pkgs": [
+        "//kythe/go/util/httpencoding"
+      ]
+    }
+  }
+]

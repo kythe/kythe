@@ -27,14 +27,14 @@ import (
 	"strings"
 	"syscall"
 
-	"kythe/go/storage"
+	"kythe/go/services/graphstore"
 	"kythe/go/storage/inmemory"
 	"kythe/go/storage/leveldb"
 	"kythe/go/storage/sql"
 )
 
 type gsFlag struct {
-	gs *storage.GraphStore
+	gs *graphstore.Service
 }
 
 // String implements part of the flag.Value interface.
@@ -47,7 +47,7 @@ func (f *gsFlag) Set(str string) (err error) {
 }
 
 // Flag defines a GraphStore flag with the specified name and usage string.
-func Flag(gs *storage.GraphStore, name, usage string) {
+func Flag(gs *graphstore.Service, name, usage string) {
 	if gs == nil {
 		log.Fatalf("GraphStoreFlag given nil GraphStore pointer")
 	}
@@ -56,7 +56,7 @@ func Flag(gs *storage.GraphStore, name, usage string) {
 }
 
 // ParseGraphStore returns a GraphStore for the given specification.
-func ParseGraphStore(str string) (storage.GraphStore, error) {
+func ParseGraphStore(str string) (graphstore.Service, error) {
 	str = strings.TrimSpace(str)
 	split := strings.SplitN(str, ":", 2)
 	var kind, spec string
@@ -79,7 +79,7 @@ func ParseGraphStore(str string) (storage.GraphStore, error) {
 	case "in-memory":
 		return inmemory.Create(), nil
 	case "proxy":
-		var stores []storage.GraphStore
+		var stores []graphstore.Service
 		for _, s := range strings.Split(spec, ",") {
 			gs, err := ParseGraphStore(s)
 			if err != nil {
@@ -90,7 +90,7 @@ func ParseGraphStore(str string) (storage.GraphStore, error) {
 		if len(stores) == 0 {
 			return nil, errors.New("no proxy GraphStores specified")
 		}
-		return storage.NewProxy(stores...), nil
+		return graphstore.NewProxy(stores...), nil
 	case "leveldb":
 		gs, err := leveldb.OpenGraphStore(spec, nil)
 		if err != nil {
@@ -111,7 +111,7 @@ func ParseGraphStore(str string) (storage.GraphStore, error) {
 // errors will be logged. This function should only be called once and closing
 // the GraphStores manually is still needed when the program does not receive a
 // signal to quit.
-func EnsureGracefulExit(gs ...storage.GraphStore) {
+func EnsureGracefulExit(gs ...graphstore.Service) {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 	signal.Notify(c, syscall.SIGTERM)
@@ -127,7 +127,7 @@ func EnsureGracefulExit(gs ...storage.GraphStore) {
 }
 
 // LogClose closes gs and logs any resulting error.
-func LogClose(gs storage.GraphStore) {
+func LogClose(gs graphstore.Service) {
 	if err := gs.Close(); err != nil {
 		log.Printf("GraphStore failed to close: %v", err)
 	}

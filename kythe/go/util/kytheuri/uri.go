@@ -227,6 +227,9 @@ func Parse(s string) (*URI, error) {
 	return u, nil
 }
 
+// ToString renders the given VName into the standard string uri format.
+func ToString(v *spb.VName) string { return FromVName(v).String() }
+
 // ToVName parses the given string as a URI and returns an equivalent VName.
 func ToVName(s string) (*spb.VName, error) {
 	uri, err := Parse(s)

@@ -40,7 +40,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"kythe/go/storage"
+	"kythe/go/services/graphstore"
 	"kythe/go/storage/gsutil"
 	"kythe/go/storage/stream"
 
@@ -62,7 +62,7 @@ var (
 	numWorkers = flag.Int("workers", 1, "Number of concurrent workers writing to the GraphStore")
 	profCPU    = flag.String("cpu_profile", "", "Write CPU profile to the specified file (if nonempty)")
 
-	gs storage.GraphStore
+	gs graphstore.Service
 )
 
 func init() {
@@ -94,7 +94,7 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
-	writes := storage.BatchWrites(stream.ReadEntries(os.Stdin), *batchSize)
+	writes := graphstore.BatchWrites(stream.ReadEntries(os.Stdin), *batchSize)
 
 	var (
 		wg         sync.WaitGroup
@@ -117,7 +117,7 @@ func main() {
 	log.Printf("Wrote %d entries", numEntries)
 }
 
-func writeEntries(s storage.GraphStore, reqs <-chan *spb.WriteRequest) (uint64, error) {
+func writeEntries(s graphstore.Service, reqs <-chan *spb.WriteRequest) (uint64, error) {
 	var num uint64
 
 	for req := range reqs {

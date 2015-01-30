@@ -47,6 +47,9 @@ const (
 	RefEdge     = edgePrefix + "ref"
 )
 
+// Fact filter for anchor locations
+const AnchorLocFilter = "/kythe/loc/*"
+
 // reverseEdgePrefix is the Kythe edgeKind prefix for reverse edges.  Edge kinds
 // must be prefixed at most once with this string.
 const reverseEdgePrefix = "%"

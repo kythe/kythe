@@ -23,10 +23,10 @@ import (
 	"log"
 	"strings"
 
-	"kythe/go/serving/xrefs/tables"
-	"kythe/go/serving/xrefs/tools"
-	"kythe/go/storage"
+	"kythe/go/services/graphstore"
+	srvx "kythe/go/serving/xrefs"
 	"kythe/go/storage/gsutil"
+	sxrefs "kythe/go/storage/xrefs"
 )
 
 var (
@@ -34,7 +34,7 @@ var (
 	dumpText          = flag.Bool("dump_text", false, "Dump each table to a text file")
 	skipPreprocessing = flag.Bool("skip_preprocessing", false, "Skip GraphStore preprocessing")
 
-	gs storage.GraphStore
+	gs graphstore.Service
 )
 
 func init() {
@@ -45,10 +45,10 @@ func main() {
 	flag.Parse()
 
 	if gs != nil && !*skipPreprocessing {
-		fatalOnErr("Failed to add reverse edges: %v", tools.AddReverseEdges(gs))
+		fatalOnErr("Failed to add reverse edges: %v", sxrefs.AddReverseEdges(gs))
 	}
 
-	tbls, err := tables.Open(*outDir)
+	tbls, err := srvx.Open(*outDir)
 	fatalOnErr("Failed to open xrefs tables: %v", err)
 	if gs == nil {
 		log.Println("WARNING: no --graphstore given to fill tables.")

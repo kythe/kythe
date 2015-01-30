@@ -21,7 +21,7 @@ import (
 	"sort"
 	"sync"
 
-	"kythe/go/storage"
+	"kythe/go/services/graphstore"
 
 	spb "kythe/proto/storage_proto"
 
@@ -34,7 +34,7 @@ type store struct {
 }
 
 // Create returns a new in-memory GraphStore
-func Create() storage.GraphStore {
+func Create() graphstore.Service {
 	return &store{}
 }
 
@@ -59,11 +59,11 @@ func (s *store) Write(req *spb.WriteRequest) error {
 
 func (s *store) insert(e *spb.Entry) {
 	i := sort.Search(len(s.entries), func(i int) bool {
-		return storage.EntryLess(e, s.entries[i])
+		return graphstore.EntryLess(e, s.entries[i])
 	})
 	if i == len(s.entries) {
 		s.entries = append(s.entries, e)
-	} else if i < len(s.entries) && storage.EntryCompare(e, s.entries[i]) == storage.EQ {
+	} else if i < len(s.entries) && graphstore.EntryCompare(e, s.entries[i]) == graphstore.EQ {
 		s.entries[i] = e
 	} else if i == 0 {
 		s.entries = append([]*spb.Entry{e}, s.entries...)
@@ -77,12 +77,12 @@ func (s *store) Read(req *spb.ReadRequest, stream chan<- *spb.Entry) error {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	start := sort.Search(len(s.entries), func(i int) bool {
-		comp := storage.VNameCompare(s.entries[i].Source, req.Source)
-		return comp != storage.LT && (comp == storage.GT || req.GetEdgeKind() == "*" || s.entries[i].GetEdgeKind() >= req.GetEdgeKind())
+		comp := graphstore.VNameCompare(s.entries[i].Source, req.Source)
+		return comp != graphstore.LT && (comp == graphstore.GT || req.GetEdgeKind() == "*" || s.entries[i].GetEdgeKind() >= req.GetEdgeKind())
 	})
 	end := sort.Search(len(s.entries), func(i int) bool {
-		comp := storage.VNameCompare(s.entries[i].Source, req.Source)
-		return comp == storage.GT || (req.GetEdgeKind() != "*" && s.entries[i].GetEdgeKind() > req.GetEdgeKind())
+		comp := graphstore.VNameCompare(s.entries[i].Source, req.Source)
+		return comp == graphstore.GT || (req.GetEdgeKind() != "*" && s.entries[i].GetEdgeKind() > req.GetEdgeKind())
 	})
 	for i := start; i < end; i++ {
 		stream <- s.entries[i]
@@ -95,7 +95,7 @@ func (s *store) Scan(req *spb.ScanRequest, stream chan<- *spb.Entry) error {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	for _, e := range s.entries {
-		if storage.EntryMatchesScan(req, e) {
+		if graphstore.EntryMatchesScan(req, e) {
 			stream <- e
 		}
 	}

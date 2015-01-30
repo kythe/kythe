@@ -7,7 +7,7 @@
         "gsutil.go"
       ],
       "go_pkgs": [
-        "//kythe/go/storage",
+        "//kythe/go/services/graphstore",
         "//kythe/go/storage/inmemory",
         "//kythe/go/storage/leveldb",
         "//kythe/go/storage/sql"
