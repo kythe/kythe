@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	"kythe/go/services/graphstore"
@@ -36,10 +37,61 @@ import (
 	"code.google.com/p/goprotobuf/proto"
 )
 
-// AddReverseEdges scans gs for all forward edges, adding a reverse for each
-// back into the GraphStore.  This is necessary for a GraphStoreService to work
-// properly.
-func AddReverseEdges(gs graphstore.Service) error {
+const errSendOnClosedChannel = "send on closed channel"
+
+// EnsureReverseEdges checks if gs contains reverse edges.  If it doesn't, it
+// will scan gs for all forward edges, adding a reverse for each back into the
+// GraphStore.  This is necessary for a GraphStoreService to work properly.
+func EnsureReverseEdges(gs graphstore.Service) error {
+	entries := make(chan *spb.Entry)
+	var err error
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		defer func() {
+			// Recover from entries channel being closed when an edge is found below.
+			// TODO(schroederc): fix this pending http://kythe.io/phabricator/T14
+			if err := recover(); err != nil && err != errSendOnClosedChannel {
+				panic(err)
+			}
+		}()
+		err = gs.Scan(&spb.ScanRequest{}, entries)
+		close(entries)
+	}()
+	var edge *spb.Entry
+	for entry := range entries {
+		if entry.GetEdgeKind() != "" {
+			edge = entry
+			close(entries) // this will cause the above Scan to panic
+		}
+	}
+	wg.Wait()
+	if err != nil {
+		return err
+	} else if edge == nil {
+		log.Println("No edges found in GraphStore")
+		return nil
+	} else if schema.EdgeDirection(edge.GetEdgeKind()) == schema.Reverse {
+		return nil
+	}
+	var foundReverse bool
+	if err := graphstore.EachReadEntry(gs, &spb.ReadRequest{
+		Source:   edge.Target,
+		EdgeKind: proto.String(schema.MirrorEdge(edge.GetEdgeKind())),
+	}, func(entry *spb.Entry) error {
+		foundReverse = true
+		return nil
+	}); err != nil {
+		return fmt.Errorf("error checking for reverse edge: %v", err)
+	}
+	if foundReverse {
+		return nil
+	}
+	return addReverseEdges(gs)
+}
+
+func addReverseEdges(gs graphstore.Service) error {
 	log.Println("Adding reverse edges")
 	var (
 		totalEntries int

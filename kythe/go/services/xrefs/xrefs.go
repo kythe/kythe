@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// Package xrefs defines the xrefs Service interface and useful xrefs utility
+// Package xrefs defines the xrefs Service interface and some useful utility
 // functions.
 package xrefs
 
@@ -22,21 +22,15 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"path/filepath"
 	"regexp"
 	"strconv"
-	"strings"
 	"time"
 
 	"kythe/go/services/web"
-	"kythe/go/util/kytheuri"
 	"kythe/go/util/schema"
 	"kythe/go/util/stringset"
 
-	spb "kythe/proto/storage_proto"
 	xpb "kythe/proto/xref_proto"
-
-	"code.google.com/p/goprotobuf/proto"
 )
 
 // Service provides access to a Kythe graph for fast access to cross-references.
@@ -110,72 +104,86 @@ func MatchesAny(str string, patterns []*regexp.Regexp) bool {
 	return false
 }
 
-const indirectNameNodes = true
-
 // RegisterHTTPHandlers registers JSON HTTP handlers with mux using the given
 // xrefs Service.  The following methods with be exposed:
 //
-//   GET /file/<path>?corpus=<corpus>&root=<root>&language=<lang>&signature=<sig>
-//     Returns the JSON equivalent of an xrefs.DecorationsReply for the
-//     described file.  References and source-text will be supplied in the
-//     reply.
+//   GET /nodes
+//     Request: JSON encoded xrefs.NodesRequest
+//     Response: JSON encoded xrefs.NodesResponse
+//   GET /edges
+//     Request: JSON encoded xrefs.EdgesRequest
+//     Response: JSON encoded xrefs.EdgesResponse
+//   GET /decorations
+//     Request: JSON encoded xrefs.DecorationsRequest
+//     Response: JSON encoded xrefs.DecorationsResponse
 //   GET /xrefs?ticket=<ticket>
-//     Returns a JSON map from edgeKind to a set of anchor/file locations that
-//     attach to the given node.
-func RegisterHTTPHandlers(prefix string, xs Service, mux *http.ServeMux) {
-	mux.Handle(prefix+"/file/", http.StripPrefix(prefix, fileHandler(xs)))
-	mux.Handle(prefix+"/xrefs", http.StripPrefix(prefix, xrefsHandler(xs, indirectNameNodes)))
-}
-
-// fileHandler parses a file VName from the Request URL's Path/Query and replies
-// with a JSON object equivalent to a xpb.DecorationsReply with its SourceText
-// and Reference fields populated
-func fileHandler(xs Service) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
-			http.Error(w, "Only GET requests allowed", http.StatusMethodNotAllowed)
+//     Response: JSON map from edgeKind to a set of anchor/file locations that
+//               attach to the given node.
+//
+// Note: /nodes, /edges, and /decorations will return their responses as
+// serialized protobufs if the "proto" query parameter is set.
+func RegisterHTTPHandlers(xs Service, mux *http.ServeMux) {
+	mux.HandleFunc("/decorations", func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		defer func() {
+			log.Printf("xrefs.Decorations:\t%s", time.Since(start))
+		}()
+		var req xpb.DecorationsRequest
+		if err := web.ReadJSONBody(r, &req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		path := web.TrimPath(r, "/file/")
-		if path == "/file" {
-			http.Error(w, "Bad Request: no file path given", http.StatusBadRequest)
-			return
-		}
-
-		fileVName := &spb.VName{
-			Signature: web.ArgOrNil(r, "signature"),
-			Language:  web.ArgOrNil(r, "language"),
-			Corpus:    web.ArgOrNil(r, "corpus"),
-			Root:      web.ArgOrNil(r, "root"),
-			Path:      proto.String(path),
-		}
-
-		startTime := time.Now()
-		reply, err := xs.Decorations(&xpb.DecorationsRequest{
-			Location:   &xpb.Location{Ticket: proto.String(kytheuri.FromVName(fileVName).String())},
-			SourceText: proto.Bool(true),
-			References: proto.Bool(true),
-		})
+		reply, err := xs.Decorations(&req)
 		if err != nil {
-			code := http.StatusInternalServerError
-			if strings.Contains(err.Error(), "file not found") {
-				code = http.StatusNotFound
-			}
-			http.Error(w, err.Error(), code)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		log.Printf("Decorations [%v]", time.Since(startTime))
 
-		if err := web.WriteJSONResponse(w, r, reply); err != nil {
-			log.Printf("Error encoding file response: %v", err)
+		if err := web.WriteResponse(w, r, reply); err != nil {
+			log.Println(err)
 		}
-	}
-}
+	})
+	mux.HandleFunc("/nodes", func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		defer func() {
+			log.Printf("xrefs.Nodes:\t%s", time.Since(start))
+		}()
 
-// xrefsHandler returns a map from edge kind to set of anchorLocations for a
-// given ticket.
-func xrefsHandler(xs Service, indirectNameNodes bool) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+		var req xpb.NodesRequest
+		if err := web.ReadJSONBody(r, &req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		reply, err := xs.Nodes(&req)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if err := web.WriteResponse(w, r, reply); err != nil {
+			log.Println(err)
+		}
+	})
+	mux.HandleFunc("/edges", func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		defer func() {
+			log.Printf("xrefs.Edges:\t%s", time.Since(start))
+		}()
+
+		var req xpb.EdgesRequest
+		if err := web.ReadJSONBody(r, &req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		reply, err := xs.Edges(&req)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if err := web.WriteResponse(w, r, reply); err != nil {
+			log.Println(err)
+		}
+	})
+	mux.HandleFunc("/xrefs", func(w http.ResponseWriter, r *http.Request) {
 		startTime := time.Now()
 		ticket := web.Arg(r, "ticket")
 		if ticket == "" {
@@ -183,7 +191,7 @@ func xrefsHandler(xs Service, indirectNameNodes bool) http.HandlerFunc {
 			return
 		}
 
-		refs, total, err := XRefs(xs, ticket, indirectNameNodes)
+		refs, total, err := XRefs(xs, ticket, true)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -192,15 +200,11 @@ func xrefsHandler(xs Service, indirectNameNodes bool) http.HandlerFunc {
 			return
 		}
 
-		log.Printf("XRefs [%v]\t%d", time.Since(startTime), total)
+		log.Printf("xrefs.XRefs:\t%s\t%d", time.Since(startTime), total)
 		if err := web.WriteJSONResponse(w, r, refs); err != nil {
 			log.Println(err)
 		}
-	}
-}
-
-func trimPath(path, prefix string) string {
-	return strings.TrimPrefix(filepath.Clean(path), prefix)
+	})
 }
 
 var (
@@ -209,12 +213,12 @@ var (
 	revNamedEdge   = schema.MirrorEdge(schema.NamedEdge)
 )
 
-// AnchorLocation is an unwrapped anchor node with its parent file's VName.
+// AnchorLocation is an unwrapped anchor node with its parent file's ticket.
 type AnchorLocation struct {
-	Anchor string     `json:"anchor"`
-	File   *spb.VName `json:"file"`
-	Start  int        `json:"start"`
-	End    int        `json:"end"`
+	Anchor string `json:"anchor"`
+	File   string `json:"file"`
+	Start  int    `json:"start"`
+	End    int    `json:"end"`
 }
 
 // XRefs returns a set of related AnchorLocations for the given ticket in a map
@@ -331,12 +335,7 @@ func XRefs(xs Service, ticket string, indirectNames bool) (map[string][]*AnchorL
 				log.Printf("XRefs: not one file found for anchor %q: %v", loc.Anchor, file.Slice())
 				continue
 			}
-			ticket := file.Slice()[0]
-			vname, err := kytheuri.ToVName(ticket)
-			if err != nil {
-				return nil, 0, fmt.Errorf("failed to parse file VName %q: %v", ticket, err)
-			}
-			loc.File = vname
+			loc.File = file.Slice()[0]
 			fileLocs = append(fileLocs, loc)
 		}
 		if len(fileLocs) != 0 {

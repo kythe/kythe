@@ -121,7 +121,9 @@ docker run --rm \
 pushd kythe/web/ui
 lein cljsbuild once prod # Build the necessary client-side code
 popd
-./campfire run //kythe/go/serving/xrefs/tools:xrefs_server --listen localhost:8080 --graphstore .kythe_graphstore
+./campfire run //kythe/go/serving/tools:http_server \
+  --public_resources kythe/web/ui/resources/public \
+  --listen localhost:8080 --graphstore .kythe_graphstore
 ----
 
 .Building the Kythe schema document
@@ -199,11 +201,12 @@ merge the change into master and push it to Github.  Others should request that
 someone else land their change for them once the change has been reviewed and
 accepted.
 
-{% highlight bash %}
+[source,bash]
+----
 # Land a reviewed change
 arc patch D1234
 arc land
-{% endhighlight %}
+----
 
 == Contact
 

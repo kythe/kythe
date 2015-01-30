@@ -23,11 +23,14 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"time"
 
 	"kythe/go/services/graphstore"
 	"kythe/go/services/web"
+	"kythe/go/util/kytheuri"
 	"kythe/go/util/schema"
 
+	srvpb "kythe/proto/serving_proto"
 	spb "kythe/proto/storage_proto"
 
 	"code.google.com/p/goprotobuf/proto"
@@ -35,73 +38,71 @@ import (
 
 // Service provides an interface to explore a tree of VName files.
 type Service interface {
-	// Dir returns the Directory for the given corpus/root/path. nil is returned
-	// if one is not found.
-	Dir(corpus, root, path string) (*Directory, error)
+	// Dir returns the FileDirectory for the given corpus/root/path.  nil is
+	// returned for both the error and FileDirectory, if a directory is not found.
+	Dir(corpus, root, path string) (*srvpb.FileDirectory, error)
 
 	// CorporaRoots returns a map from corpus to known roots.
-	CorporaRoots() (map[string][]string, error)
+	CorporaRoots() (*srvpb.CorpusRoots, error)
 }
 
 // Map is a FileTree backed by an in-memory map.
 type Map struct {
-	// corpus -> root -> dirPath -> Directory
-	M map[string]map[string]map[string]*Directory
-}
-
-// A Directory is a named container for other Directories and VName-based files.
-type Directory struct {
-	// Set of sub-directories basenames
-	Dirs []string `json:"dirs"`
-
-	// Map of files within the Directory key'd by their basename.  Note: the value
-	// is a slice because there may be different versions of file's signature
-	// (its digest)
-	Files map[string][]*spb.VName `json:"files"`
+	// corpus -> root -> dirPath -> FileDirectory
+	M map[string]map[string]map[string]*srvpb.FileDirectory
 }
 
 // NewMap returns an empty filetree Map
 func NewMap() *Map {
-	return &Map{make(map[string]map[string]map[string]*Directory)}
+	return &Map{make(map[string]map[string]map[string]*srvpb.FileDirectory)}
 }
 
 // Populate adds each file node in the GraphStore to the FileTree
 func (m *Map) Populate(gs graphstore.Service) error {
+	start := time.Now()
+	log.Println("Populating in-memory file tree")
+	var total int
 	if err := graphstore.EachScanEntry(gs, &spb.ScanRequest{
 		FactPrefix: proto.String(schema.NodeKindFact),
 	}, func(entry *spb.Entry) error {
 		if entry.GetFactName() == schema.NodeKindFact && string(entry.GetFactValue()) == schema.FileKind {
 			m.AddFile(entry.Source)
+			total++
 		}
 		return nil
 	}); err != nil {
 		return fmt.Errorf("failed to Scan GraphStore for directory structure: %v", err)
 	}
+	log.Printf("Indexed %d files in %s", total, time.Since(start))
 	return nil
 }
 
 // AddFile adds the given VName file to the FileTree.
 func (m *Map) AddFile(file *spb.VName) {
+	ticket := kytheuri.ToString(file)
 	path := filepath.Join("/", file.GetPath())
 	dir := m.ensureDir(file.GetCorpus(), file.GetRoot(), filepath.Dir(path))
-	dir.Files[filepath.Base(path)] = append(dir.Files[filepath.Base(path)], file)
+	dir.FileTicket = addToSet(dir.FileTicket, ticket)
 }
 
 // CorporaRoots implements part of the FileTree interface.
-func (m *Map) CorporaRoots() (map[string][]string, error) {
-	corporaRoots := make(map[string][]string)
+func (m *Map) CorporaRoots() (*srvpb.CorpusRoots, error) {
+	cr := &srvpb.CorpusRoots{}
 	for corpus, rootDirs := range m.M {
 		var roots []string
 		for root := range rootDirs {
 			roots = append(roots, root)
 		}
-		corporaRoots[corpus] = roots
+		cr.Corpus = append(cr.Corpus, &srvpb.CorpusRoots_Corpus{
+			Corpus: proto.String(corpus),
+			Root:   roots,
+		})
 	}
-	return corporaRoots, nil
+	return cr, nil
 }
 
 // Dir implements part of the FileTree interface.
-func (m *Map) Dir(corpus, root, path string) (*Directory, error) {
+func (m *Map) Dir(corpus, root, path string) (*srvpb.FileDirectory, error) {
 	roots := m.M[corpus]
 	if roots == nil {
 		return nil, nil
@@ -113,31 +114,31 @@ func (m *Map) Dir(corpus, root, path string) (*Directory, error) {
 	return dirs[path], nil
 }
 
-func (m *Map) ensureCorpusRoot(corpus, root string) map[string]*Directory {
+func (m *Map) ensureCorpusRoot(corpus, root string) map[string]*srvpb.FileDirectory {
 	roots := m.M[corpus]
 	if roots == nil {
-		roots = make(map[string]map[string]*Directory)
+		roots = make(map[string]map[string]*srvpb.FileDirectory)
 		m.M[corpus] = roots
 	}
 
 	dirs := roots[root]
 	if dirs == nil {
-		dirs = make(map[string]*Directory)
+		dirs = make(map[string]*srvpb.FileDirectory)
 		roots[root] = dirs
 	}
 	return dirs
 }
 
-func (m *Map) ensureDir(corpus, root, path string) *Directory {
+func (m *Map) ensureDir(corpus, root, path string) *srvpb.FileDirectory {
 	dirs := m.ensureCorpusRoot(corpus, root)
 	dir := dirs[path]
 	if dir == nil {
-		dir = &Directory{[]string{}, make(map[string][]*spb.VName)}
+		dir = &srvpb.FileDirectory{}
 		dirs[path] = dir
 
 		if path != "/" {
 			parent := m.ensureDir(corpus, root, filepath.Dir(path))
-			parent.Dirs = addToSet(parent.Dirs, filepath.Base(path))
+			parent.Subdirectory = addToSet(parent.Subdirectory, path)
 		}
 	}
 	return dir
@@ -152,50 +153,57 @@ func addToSet(strs []string, str string) []string {
 	return append(strs, str)
 }
 
+type corpusPath struct {
+	Corpus string `json:"corpus"`
+	Root   string `json:"root"`
+	Path   string `json:"path"`
+}
+
 // RegisterHTTPHandlers registers JSON HTTP handlers with mux using the given
 // filetree Service.  The following methods with be exposed:
 //
 //   GET /corpusRoots
-//     Returns a JSON map from corpus to []root names (map[string][]string)
-//   GET /dir/<path>?corpus=<corpus>&root=<root>[&recursive]
-//     Returns the JSON equivalent of a filetree.Directory describing the given
-//     directory's contents (sub-directories and files).
-func RegisterHTTPHandlers(prefix string, ft Service, mux *http.ServeMux) {
-	mux.Handle(prefix+"/corpusRoots", http.StripPrefix(prefix, corpusRootsHandler(ft)))
-	mux.Handle(prefix+"/dir/", http.StripPrefix(prefix, dirHandler(ft)))
-}
+//     Response: JSON encoded serving.CorpusRoots
+//   GET /dir
+//     Request: JSON encoded {"corpus": <string>, "root": <string>, "path": <string>}
+//     Response: JSON encoded serving.FileDirectory
+//
+// Note: /corpusRoots and /dir will return their responses as serialized
+// protobufs if the "proto" query parameter is set.
+func RegisterHTTPHandlers(ft Service, mux *http.ServeMux) {
+	mux.HandleFunc("/corpusRoots", func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		defer func() {
+			log.Printf("filetree.CorporaRoots:\t%s", time.Since(start))
+		}()
 
-// corpusRootsHandler replies with a JSON map of corpus roots
-func corpusRootsHandler(ft Service) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		roots, err := ft.CorporaRoots()
+		cr, err := ft.CorporaRoots()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		web.WriteJSONResponse(w, r, roots)
-	}
-}
-
-// dirHandler parses a corpus/root/path from the Request URL's Path/Query and
-// replies with a JSON object describing the directories sub-directories and
-// files
-func dirHandler(ft Service) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		path := web.TrimPath(r, "/dir")
-		if path == "" {
-			path = "/"
+		if err := web.WriteResponse(w, r, cr); err != nil {
+			log.Println(err)
 		}
-		corpus, root := web.Arg(r, "corpus"), web.Arg(r, "root")
+	})
+	mux.HandleFunc("/dir", func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		defer func() {
+			log.Printf("filetree.Dir:\t%s", time.Since(start))
+		}()
 
-		dir, err := ft.Dir(corpus, root, path)
+		var req corpusPath
+		if err := web.ReadJSONBody(r, &req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		dir, err := ft.Dir(req.Corpus, req.Root, req.Path)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
-		if err := web.WriteJSONResponse(w, r, dir); err != nil {
-			log.Printf("Failed to encode directory: %v", err)
+		if err := web.WriteResponse(w, r, dir); err != nil {
+			log.Println(err)
 		}
-	}
+	})
 }

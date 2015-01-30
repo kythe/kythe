@@ -124,6 +124,7 @@ pushd kythe/web/ui
 lein cljsbuild once prod # Build the necessary client-side code
 popd
 
-./campfire run //kythe/go/serving/xrefs/tools:xrefs_server \
+./campfire run //kythe/go/serving/tools:http_server \
+  --public_resources kythe/web/ui/resources/public \
   --listen localhost:8080 --graphstore .kythe_graphstore
 {% endhighlight %}

@@ -22,10 +22,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"path/filepath"
-	"strings"
 
 	"kythe/go/util/httpencoding"
+
+	"code.google.com/p/goprotobuf/proto"
 )
 
 // ReadJSONBody reads the entire body of r and unmarshals it from JSON into v.
@@ -37,12 +37,34 @@ func ReadJSONBody(r *http.Request, v interface{}) error {
 	return json.Unmarshal(rec, v)
 }
 
+// WriteResponse writes msg to w as a serialized protobuf if the "proto" query
+// parameter is set; otherwise as JSON.
+func WriteResponse(w http.ResponseWriter, r *http.Request, msg proto.Message) error {
+	if Arg(r, "proto") != "" {
+		return WriteProtoResponse(w, r, msg)
+	}
+	return WriteJSONResponse(w, r, msg)
+}
+
 // WriteJSONResponse encodes v as JSON and writes it to w.
 func WriteJSONResponse(w http.ResponseWriter, r *http.Request, v interface{}) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	cw := httpencoding.CompressData(w, r)
 	defer cw.Close()
 	return json.NewEncoder(cw).Encode(v)
+}
+
+// WriteProtoResponse serializes msg to w.
+func WriteProtoResponse(w http.ResponseWriter, r *http.Request, msg proto.Message) error {
+	w.Header().Set("Content-Type", "application/x-protobuf")
+	cw := httpencoding.CompressData(w, r)
+	defer cw.Close()
+	rec, err := proto.Marshal(msg)
+	if err != nil {
+		return fmt.Errorf("error marshaling proto: %v", err)
+	}
+	_, err = cw.Write(rec)
+	return err
 }
 
 // Arg returns the first query value for the named parameter or "" if it was not
@@ -63,10 +85,4 @@ func ArgOrNil(r *http.Request, name string) *string {
 		return nil
 	}
 	return &arg
-}
-
-// TrimPath returns the URL path of the given request with the given prefix
-// trimmed from it.
-func TrimPath(r *http.Request, prefix string) string {
-	return strings.TrimPrefix(filepath.Clean(r.URL.Path), prefix)
 }
