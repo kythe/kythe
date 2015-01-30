@@ -125,5 +125,5 @@ lein cljsbuild once prod # Build the necessary client-side code
 popd
 
 ./campfire run //kythe/go/serving/xrefs/tools:xrefs_server \
-  --port 8080 --graphstore .kythe_graphstore
+  --listen localhost:8080 --graphstore .kythe_graphstore
 {% endhighlight %}

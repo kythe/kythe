@@ -199,6 +199,17 @@ arc diff                       # send the commit for review
 arc land                       # merge change into master
 ----
 
+For core contributors with write access to the Kythe repository, `arc land` will
+merge the change into master and push it to Github.  Others should request that
+someone else land their change for them once the change has been reviewed and
+accepted.
+
+{% highlight bash %}
+# Land a reviewed change
+arc patch D1234
+arc land
+{% endhighlight %}
+
 == Contact
 
  - https://groups.google.com/forum/#!forum/kythe - General Kythe Community
