@@ -1,0 +1,133 @@
+/*
+ * Copyright 2014 Google Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto2";
+
+package kythe.proto;
+
+// A derivative of xref.NodeInfo for serving.
+message Node {
+  message Fact {
+    optional string name = 1;
+    optional bytes value = 2;
+  }
+
+  optional string ticket = 1;
+  repeated Fact fact = 2;
+}
+
+// An EdgeSet represents a collection of edges from a single node.  The edges
+// are organized into groups, each sharing a common edge kind.
+//
+// The number of edges represented by an EdgeSet es, denoted len(es), is the
+// sum of the lengths of the repeated target_ticket fields for all the groups
+// in the EdgeSet.  This count is used to determine page size in a request.
+//
+// Note: this is a derivative of xref.EdgeSet
+message EdgeSet {
+  message Group {
+    optional string kind = 1;
+    repeated string target_ticket = 2;
+  }
+
+  // The ticket of the source node for all the edges in the edge set.
+  optional string source_ticket = 1;
+
+  // Each group is a collection of outbound edges from source node sharing a
+  // given kind.  In a given EdgeSet, the server will not send more than one
+  // group with the same kind label.
+  repeated Group group = 2;
+}
+
+// PagedEdgeSets are used for efficiently storing EdgeSets, all originating from
+// the same source ticket, in order to handle pagination requests.
+message PagedEdgeSet {
+  // Collection of edges on the first page.  If the number of edges for a
+  // particular source_ticket is small, this may contain all known edges and
+  // no page_index will exist.
+  optional EdgeSet edge_set = 1;
+
+  // Total number of edges in all of the EdgePages, including this one.
+  optional int32 total_edges = 2;
+
+  // Page indices for other EdgePages, sorted by edge kind.
+  repeated PageIndex page_index = 3;
+}
+
+// PageIndex is a pointer to an EdgePage.  In order to keep the PagedEdgeSet
+// small, we don't store edges here.  We just store a key for looking up an
+// EdgePage and the type of edge.
+message PageIndex {
+  // The kind of all edges on the referred EdgePage.
+  optional string edge_kind = 1;
+
+  // Total number of edges on the referred EdgePage.
+  optional int32 edge_count = 2;
+
+  // Key that can be used to lookup the referred EdgePage.
+  optional string page_key = 3;
+}
+
+// EdgePages are a group of edges for a particular edge kind and source ticket.
+message EdgePage {
+  // Corresponding PageIndex key that can be used to lookup this page.
+  optional string page_key = 1;
+  optional string source_ticket = 2;
+  optional EdgeSet.Group edges_group = 3;
+}
+
+// FileDirectory describes a virtual directory of file nodes.
+message FileDirectory {
+  // Set of full paths for each contained sub-directory.
+  repeated string subdirectory = 1;
+
+  // Set of file nodes contained within this directory.
+  repeated string file_ticket = 2;
+}
+
+// CorpusRoots describes all of the known corpus/root pairs that contain file
+// nodes.
+message CorpusRoots {
+  message Corpus {
+    optional string corpus = 1;
+    repeated string root = 2;
+  }
+  repeated Corpus corpus = 1;
+}
+
+// FileDecorations stores a file's contents and all contained anchor edges.
+message FileDecorations {
+  optional string file_ticket = 1;
+
+  optional bytes source_text = 2;
+  optional string encoding = 3;
+
+  // Represents an edge from an anchor contained within the file to some target.
+  message Decoration {
+    message Anchor {
+      optional string ticket = 1;
+      optional int32 start_offset = 2;
+      optional int32 end_offset = 3;
+    }
+
+    optional Anchor anchor = 1;
+    optional string target_ticket = 2;
+    optional string kind = 3;
+  }
+
+  // The decorations located in the file, sorted by starting offset.
+  repeated Decoration decoration = 4;
+}

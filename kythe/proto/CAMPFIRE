@@ -64,5 +64,20 @@
     "properties": {
       "go_api": true
     }
+  },
+  {
+    "name": "serving_proto",
+    "kind": "proto_library",
+    "inputs": {
+      "srcs": [
+        "serving.proto"
+      ],
+      "go_pkgs": [
+        "//third_party/go/code.google.com:protobuf"
+      ]
+    },
+    "properties": {
+      "go_api": true
+    }
   }
 ]
