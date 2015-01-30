@@ -1,0 +1,23 @@
+[
+  {
+    "name": "rdf",
+    "kind": "go_library",
+    "inputs": {
+      "srcs": [
+        "rdf.go"
+      ]
+    }
+  },
+  {
+    "name": "rdf_test",
+    "kind": "go_test",
+    "inputs": {
+      "srcs": [
+        "rdf_test.go"
+      ],
+      "go_lib": [
+        ":rdf"
+      ]
+    }
+  }
+]
