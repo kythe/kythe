@@ -27,7 +27,7 @@ Kythe relies on the following external dependencies:
 
 * go >=1.3
 * clang-3.5
-* jdk >=8
+* jdk >=7
 * parallel
 * jq >=1.4
 * asciidoc
