@@ -17,17 +17,11 @@ FROM debian:jessie
 ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl ca-certificates && \
-    apt-get clean
-
-RUN curl https://storage.googleapis.com/dev-con-jessie-apt/convoy.key | apt-key add -
-RUN echo deb http://storage.googleapis.com/dev-con-jessie-apt/ jessie main >> /etc/apt/sources.list
-
-RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \
+      curl ca-certificates \
       less parallel jq net-tools locales zsh wget unzip libssl-dev \
-      openjdk-8-jdk clang-3.5 ca-certificates-java uuid-dev flex \
+      openjdk-7-jdk clang-3.5 ca-certificates-java uuid-dev flex \
       golang-go && \
     apt-get clean
 

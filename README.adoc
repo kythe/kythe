@@ -17,7 +17,7 @@
 
 go1.3::
 clang-3.4::
-jdk8::
+jdk7::
 lxc-docker:: used for `//kythe/release/...` and `//kythe/extractors/openjdk`
 parallel:: used for pipeline examples
 jq1.4::
@@ -40,15 +40,10 @@ NOTE: All other Kythe dependencies are hosted within the repository under
 apt-get install \
     asciidoc source-highlight graphviz \
     libssl-dev uuid-dev libncurses-dev flex clang-3.5 \
+    openjdk-7-jdk \
     golang-go gcc \
     docker.io \
     parallel jq
-
-# OpenJDK 8
-curl https://storage.googleapis.com/dev-con-jessie-apt/convoy.key | apt-key add -
-echo deb http://storage.googleapis.com/dev-con-jessie-apt/ jessie main >> /etc/apt/sources.list
-apt-get update
-apt-get install openjdk-8-jdk
 
 # Bison 2.3
 wget http://archive.kernel.org/debian-archive/debian/pool/main/b/bison/bison_2.3.dfsg-5_amd64.deb -O /tmp/bison_2.3.deb
