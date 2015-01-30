@@ -26,16 +26,14 @@
 package main
 
 import (
-	"bytes"
 	"flag"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
-	"unicode"
 
 	"kythe/go/storage"
+	"kythe/go/storage/encoding/rdf"
 	"kythe/go/storage/gsutil"
 	"kythe/go/storage/stream"
 	"kythe/go/util/kytheuri"
@@ -137,29 +135,14 @@ func main() {
 	}
 }
 
-type triple struct {
-	Subject   string
-	Predicate string
-	Object    string
-}
-
-func (t *triple) String() string {
-	return strings.Join([]string{
-		turtleEncode(t.Subject),
-		turtleEncode(t.Predicate),
-		turtleEncode(t.Object),
-		".",
-	}, " ")
-}
-
-// toTriple converts an Entry to the triple file format. Returns an error if the
-// entry is not valid.
-func toTriple(entry *spb.Entry) (*triple, error) {
+// toTriple converts an Entry to the triple file format. Returns an error if
+// the entry is not valid.
+func toTriple(entry *spb.Entry) (*rdf.Triple, error) {
 	if entry.Source == nil || (entry.Target == nil) != (entry.GetEdgeKind() == "") {
 		return nil, fmt.Errorf("invalid entry: %v", entry)
 	}
 
-	t := &triple{
+	t := &rdf.Triple{
 		Subject: kytheuri.FromVName(entry.Source).String(),
 	}
 	if entry.GetEdgeKind() != "" {
@@ -170,49 +153,4 @@ func toTriple(entry *spb.Entry) (*triple, error) {
 		t.Object = string(entry.GetFactValue())
 	}
 	return t, nil
-}
-
-// RDF (TURTLE) shortcut escape sequences.
-// cf. http://www.w3.org/TR/2014/REC-turtle-20140225/#sec-escapes.
-var ctrlMap = map[rune]string{
-	'\t': `\t`,
-	'\b': `\b`,
-	'\n': `\n`,
-	'\r': `\r`,
-	'\f': `\f`,
-	'\'': `\'`,
-	'\\': `\\`,
-}
-
-// turtleEncode produces a quote-bounded string from s, following the
-// requirements for RDF triples (http://www.w3.org/TR/n-quads/#sec-grammar).
-func turtleEncode(s string) string {
-	var buf bytes.Buffer
-	buf.Grow(2 + len(s))
-	buf.WriteByte('"')
-	for i, c := range s {
-		switch {
-		case unicode.IsControl(c):
-			if s, ok := ctrlMap[c]; ok {
-				buf.WriteString(s)
-			} else {
-				fmt.Fprintf(&buf, "\\u%04x", c)
-			}
-		case c == '"':
-			buf.WriteString(`\"`)
-		case c <= unicode.MaxASCII:
-			buf.WriteRune(c)
-		case c == unicode.ReplacementChar:
-			// In correctly-encoded UTF-8, we should never see a replacement
-			// char.  Some text in the wild has valid Unicode characters that
-			// aren't UTF-8, and this case lets us be more forgiving of those.
-			fmt.Fprintf(&buf, "\\u%04x", s[i])
-		case c <= 0xffff:
-			fmt.Fprintf(&buf, "\\u%04x", c)
-		default:
-			fmt.Fprintf(&buf, "\\u%07x", c)
-		}
-	}
-	buf.WriteByte('"')
-	return buf.String()
 }
