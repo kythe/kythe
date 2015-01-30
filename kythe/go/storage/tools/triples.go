@@ -33,9 +33,9 @@ import (
 	"path/filepath"
 
 	"kythe/go/storage"
-	"kythe/go/storage/encoding/rdf"
 	"kythe/go/storage/gsutil"
 	"kythe/go/storage/stream"
+	"kythe/go/util/encoding/rdf"
 	"kythe/go/util/kytheuri"
 	"kythe/go/util/schema"
 

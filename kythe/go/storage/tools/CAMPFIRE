@@ -38,9 +38,9 @@
       ],
       "go_pkgs": [
         "//kythe/go/storage",
-        "//kythe/go/storage/encoding/rdf",
         "//kythe/go/storage/gsutil",
         "//kythe/go/storage/stream",
+        "//kythe/go/util/encoding/rdf",
         "//kythe/go/util/kytheuri",
         "//kythe/go/util/schema",
         "//kythe/proto:storage_proto",
