@@ -1,0 +1,16 @@
+[
+  {
+    "pattern": "<stdin:(.*)>",
+    "vname": {
+      "corpus": "stdintest_pass",
+      "path": "@1@"
+    }
+  },
+  {
+    "pattern": "(.*)",
+    "vname": {
+      "corpus": "stdintest_fail",
+      "path": "@1@"
+    }
+  }
+]

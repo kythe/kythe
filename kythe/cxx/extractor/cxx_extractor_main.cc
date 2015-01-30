@@ -117,20 +117,23 @@ int main(int argc, char* argv[]) {
   {
     llvm::IntrusiveRefCntPtr<clang::FileManager> file_manager(
         new clang::FileManager(file_system_options));
-    auto extractor = kythe::NewExtractor([&index_writer, &using_index_packs](
-        const std::string& main_source_file,
-        const kythe::PreprocessorTranscript& transcript,
-        const std::unordered_map<std::string, kythe::SourceFile>& source_files,
-        bool had_errors) {
-      std::unique_ptr<kythe::IndexWriterSink> sink;
-      if (using_index_packs) {
-        sink.reset(new kythe::IndexPackWriterSink());
-      } else {
-        sink.reset(new kythe::KindexWriterSink());
-      }
-      index_writer.WriteIndex(std::move(sink), main_source_file, transcript,
-                              source_files, had_errors);
-    });
+    auto extractor = kythe::NewExtractor(
+        &index_writer,
+        [&index_writer, &using_index_packs](
+            const std::string& main_source_file,
+            const kythe::PreprocessorTranscript& transcript,
+            const std::unordered_map<std::string, kythe::SourceFile>&
+                source_files,
+            bool had_errors) {
+          std::unique_ptr<kythe::IndexWriterSink> sink;
+          if (using_index_packs) {
+            sink.reset(new kythe::IndexPackWriterSink());
+          } else {
+            sink.reset(new kythe::KindexWriterSink());
+          }
+          index_writer.WriteIndex(std::move(sink), main_source_file, transcript,
+                                  source_files, had_errors);
+        });
     clang::tooling::ToolInvocation invocation(final_args, extractor.release(),
                                               file_manager.get());
     if (map_builtin_resources) {

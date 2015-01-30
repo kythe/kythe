@@ -72,6 +72,8 @@ struct SourceFile {
   /// include-#-offset, we can expect to enter another file that-version.
   /// The offset is in number of bytes from the start of the file.
   std::map<PreprocessorTranscript, FileHandlingAnnotations> include_history;
+  /// This SourceFile's vname, normalized according to the configuration file.
+  kythe::proto::VName vname;
 };
 
 /// \brief A function the extractor will call once it's done extracting input
@@ -90,11 +92,6 @@ using ExtractorCallback = std::function<void(
     const PreprocessorTranscript &main_source_file_transcript,
     const std::unordered_map<std::string, SourceFile> &source_files,
     bool had_errors)>;
-
-/// \brief Creates a `FrontendAction` that records information about a
-/// compilation involving a single source file and all of its dependencies.
-/// \param callback A function to call once extraction is complete.
-std::unique_ptr<clang::FrontendAction> NewExtractor(ExtractorCallback callback);
 
 /// \brief Called by the `IndexWriter` once it has finished building protobufs.
 ///
@@ -168,6 +165,7 @@ class IndexWriter {
   void set_output_directory(const std::string &dir) { output_directory_ = dir; }
   /// \brief Configure the path used for the root.
   void set_root_directory(const std::string &dir) { root_directory_ = dir; }
+  const std::string &root_directory() const { return root_directory_; }
   /// \brief Write the index file to `sink`, consuming the sink in the process.
   void WriteIndex(
       std::unique_ptr<IndexWriterSink> sink,
@@ -177,6 +175,7 @@ class IndexWriter {
   /// \brief Set the fields of `file_input` for the given file.
   /// \param clang_path A path to the file as seen by clang.
   /// \param source_file The `SourceFile` to configure `file_input` with.
+  /// \param file_vname The file's VName.
   /// \param file_input The proto to configure.
   void FillFileInput(const std::string &clang_path,
                      const SourceFile &source_file,
@@ -196,10 +195,11 @@ class IndexWriter {
   /// \param in_path The path to convert.
   static std::string MakeCleanAbsolutePath(const std::string &in_path);
 
- private:
   /// \brief Attempts to generate a VName for the file at some path.
   /// \param path The path (likely from Clang) to the file.
   kythe::proto::VName VNameForPath(const std::string &path);
+
+ private:
   /// The `FileVNameGenerator` used to generate file vnames.
   FileVNameGenerator vname_generator_;
   /// The arguments used for this compilation.
@@ -211,6 +211,13 @@ class IndexWriter {
   /// The directory to use to generate relative paths.
   std::string root_directory_ = ".";
 };
+
+/// \brief Creates a `FrontendAction` that records information about a
+/// compilation involving a single source file and all of its dependencies.
+/// \param index_writer The `IndexWriter` to use.
+/// \param callback A function to call once extraction is complete.
+std::unique_ptr<clang::FrontendAction> NewExtractor(IndexWriter *index_writer,
+                                                    ExtractorCallback callback);
 
 /// \brief Adds builtin versions of the compiler header files to
 /// `invocation`'s virtual file system in `map_directory`.

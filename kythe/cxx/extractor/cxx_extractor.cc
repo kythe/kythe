@@ -89,6 +89,13 @@ class RunningHash {
     ::SHA256_Init(&sha_context_);
     return LowercaseStringHexEncodeSha(sha_buf);
   }
+  /// \brief Return the current state of the hash.
+  std::string Compute() const {
+    unsigned char sha_buf[SHA256_DIGEST_LENGTH];
+    ::SHA256_CTX copy_context = sha_context_;
+    ::SHA256_Final(sha_buf, &copy_context);
+    return LowercaseStringHexEncodeSha(sha_buf);
+  }
 
  private:
   ::SHA256_CTX sha_context_;
@@ -106,11 +113,13 @@ static std::string Sha256(const void* bytes, size_t length) {
 ///
 /// None of the fields in this struct are owned by the struct.
 struct ExtractorState {
+  IndexWriter* index_writer;
   clang::SourceManager* source_manager;
   clang::Preprocessor* preprocessor;
   std::string* main_source_file;
   std::string* main_source_file_transcript;
   std::unordered_map<std::string, SourceFile>* source_files;
+  std::string* main_source_file_stdin_alternate;
 };
 
 /// \brief The state we've accumulated within a particular file.
@@ -161,6 +170,9 @@ class ExtractorPPCallbacks : public clang::PPCallbacks {
                             llvm::StringRef unexpanded,
                             llvm::StringRef expanded);
 
+  /// \brief Records `loc` as an offset along with its vname.
+  void RecordSpecificLocation(clang::SourceLocation loc);
+
   /// \brief Amends history to include a conditional expression.
   /// \param instance_loc Where the conditional occurred. Must be in a file.
   /// \param directive_kind The directive kind ("#if", etc).
@@ -181,6 +193,12 @@ class ExtractorPPCallbacks : public clang::PPCallbacks {
                     const clang::MacroDirective* macro_directive,
                     clang::SourceRange range,
                     const clang::MacroArgs* macro_args) override;
+
+  void MacroDefined(const clang::Token& macro_name,
+                    const clang::MacroDirective* macro_directive) override;
+
+  void MacroUndefined(const clang::Token& macro_name,
+                      const clang::MacroDirective* macro_directive) override;
 
   void Defined(const clang::Token& macro_name,
                const clang::MacroDirective* macro_directive,
@@ -223,6 +241,20 @@ class ExtractorPPCallbacks : public clang::PPCallbacks {
   /// \brief Return the active `RunningHash` for preprocessor events.
   RunningHash* history();
 
+  /// \brief Ensures that the main source file, if read from stdin,
+  /// is given the correct name for VName generation.
+  ///
+  /// Files read from standard input still must be distinguished
+  /// from one another. We name these files as "<stdin:hash>",
+  /// where the hash is taken from the file's content at the time
+  /// of extraction.
+  ///
+  /// \param file The file entry of the main source file.
+  /// \param path The path as known to Clang.
+  /// \return The path that should be used to generate VNames.
+  std::string FilterMainSourceFile(const clang::FileEntry* file,
+                                   const std::string& path);
+
   /// The `SourceManager` used for the compilation.
   clang::SourceManager* source_manager_;
   /// The `Preprocessor` we're attached to.
@@ -239,13 +271,21 @@ class ExtractorPPCallbacks : public clang::PPCallbacks {
   std::string* main_source_file_transcript_;
   /// Contents of the files we've used, indexed by normalized path.
   std::unordered_map<std::string, SourceFile>* const source_files_;
+  /// The active IndexWriter.
+  IndexWriter* index_writer_;
+  /// Non-empty if the main source file was stdin ("-") and we have chosen
+  /// a new name for it.
+  std::string* main_source_file_stdin_alternate_;
 };
 
 ExtractorPPCallbacks::ExtractorPPCallbacks(ExtractorState state)
     : source_manager_(state.source_manager),
       preprocessor_(state.preprocessor),
       main_source_file_transcript_(state.main_source_file_transcript),
-      source_files_(state.source_files) {
+      source_files_(state.source_files),
+      index_writer_(state.index_writer),
+      main_source_file_stdin_alternate_(
+          state.main_source_file_stdin_alternate) {
   class PragmaHandlerWrapper : public clang::PragmaHandler {
    public:
     PragmaHandlerWrapper(ExtractorPPCallbacks* context)
@@ -320,15 +360,34 @@ void ExtractorPPCallbacks::EndOfMainFile() {
   *main_source_file_transcript_ = PopFile();
 }
 
+std::string ExtractorPPCallbacks::FilterMainSourceFile(
+    const clang::FileEntry* file, const std::string& in_path) {
+  if (in_path == "-" || in_path == "<stdin>") {
+    if (main_source_file_stdin_alternate_->empty()) {
+      const llvm::MemoryBuffer* buffer =
+          source_manager_->getMemoryBufferForFile(file);
+      std::string hashed_name =
+          Sha256(buffer->getBufferStart(),
+                 buffer->getBufferEnd() - buffer->getBufferStart());
+      *main_source_file_stdin_alternate_ = "<stdin:" + hashed_name + ">";
+    }
+    return *main_source_file_stdin_alternate_;
+  }
+  return in_path;
+}
+
 void ExtractorPPCallbacks::AddFile(const clang::FileEntry* file,
-                                   const std::string& path) {
+                                   const std::string& in_path) {
+  std::string path = FilterMainSourceFile(file, in_path);
   auto contents =
-      source_files_->insert(std::make_pair(path, SourceFile{std::string()}));
+      source_files_->insert(std::make_pair(in_path, SourceFile{std::string()}));
   if (contents.second) {
     const llvm::MemoryBuffer* buffer =
         source_manager_->getMemoryBufferForFile(file);
     contents.first->second.file_content.assign(buffer->getBufferStart(),
                                                buffer->getBufferEnd());
+    contents.first->second.vname.CopyFrom(index_writer_->VNameForPath(
+        index_writer_->RelativizePath(path, index_writer_->root_directory())));
     LOG(INFO) << "added content for " << path << "\n";
   }
 }
@@ -336,7 +395,7 @@ void ExtractorPPCallbacks::AddFile(const clang::FileEntry* file,
 void ExtractorPPCallbacks::RecordMacroExpansion(
     clang::SourceLocation expansion_loc, llvm::StringRef unexpanded,
     llvm::StringRef expanded) {
-  history()->Update(source_manager_->getFileOffset(expansion_loc));
+  RecordSpecificLocation(expansion_loc);
   history()->Update(unexpanded);
   history()->Update(expanded);
 }
@@ -345,23 +404,30 @@ void ExtractorPPCallbacks::MacroExpands(
     const clang::Token& macro_name,
     const clang::MacroDirective* macro_directive, clang::SourceRange range,
     const clang::MacroArgs* macro_args) {
-  clang::SourceLocation macro_location = macro_name.getLocation();
-  if (!macro_location.isFileID()) {
-    // We don't care about inner macro expansions. We will record state
-    // for the initial, unexpanded macro (SECOND_PARAM(A,B,C)) and we will
-    // record the result of expansion (SECOND_PARAM(A,B,C) ->* B). It is
-    // not necessary for us to record intermediate state because we care
-    // only about observational equivalence.
-    return;
-  }
+  // We do care about inner macro expansions: the indexer will
+  // emit transitive macro expansion edges, and if we don't distinguish
+  // expansion paths, we will leave edges out of the graph.
   const auto* macro_info = macro_directive->getMacroInfo();
-  llvm::StringRef macro_name_string =
-      macro_name.getIdentifierInfo()->getName().str();
-  RecordMacroExpansion(macro_location,
-                       getMacroUnexpandedString(range, *preprocessor_,
-                                                macro_name_string, macro_info),
-                       getMacroExpandedString(*preprocessor_, macro_name_string,
-                                              macro_info, macro_args));
+  if (macro_info) {
+    clang::SourceLocation def_loc = macro_info->getDefinitionLoc();
+    RecordSpecificLocation(def_loc);
+  }
+  if (!range.getBegin().isFileID()) {
+    auto begin = source_manager_->getExpansionLoc(range.getBegin());
+    if (begin.isFileID()) {
+      RecordSpecificLocation(begin);
+    }
+  }
+  if (macro_name.getLocation().isFileID()) {
+    llvm::StringRef macro_name_string =
+        macro_name.getIdentifierInfo()->getName().str();
+    RecordMacroExpansion(
+        macro_name.getLocation(),
+        getMacroUnexpandedString(range, *preprocessor_, macro_name_string,
+                                 macro_info),
+        getMacroExpandedString(*preprocessor_, macro_name_string, macro_info,
+                               macro_args));
+  }
 }
 
 void ExtractorPPCallbacks::Defined(const clang::Token& macro_name,
@@ -370,6 +436,61 @@ void ExtractorPPCallbacks::Defined(const clang::Token& macro_name,
   clang::SourceLocation macro_location = macro_name.getLocation();
   RecordMacroExpansion(macro_location, getSourceString(*preprocessor_, range),
                        macro_directive ? "1" : "0");
+}
+
+void ExtractorPPCallbacks::RecordSpecificLocation(clang::SourceLocation loc) {
+  if (loc.isValid() && loc.isFileID() &&
+      source_manager_->getFileID(loc) != preprocessor_->getPredefinesFileID()) {
+    history()->Update(source_manager_->getFileOffset(loc));
+    const auto filename_ref = source_manager_->getFilename(loc);
+    const auto* file_ref =
+        source_manager_->getFileEntryForID(source_manager_->getFileID(loc));
+    if (file_ref) {
+      auto vname = index_writer_->VNameForPath(index_writer_->RelativizePath(
+          FilterMainSourceFile(file_ref, filename_ref),
+          index_writer_->root_directory()));
+      history()->Update(vname.signature());
+      history()->Update(vname.corpus());
+      history()->Update(vname.root());
+      history()->Update(vname.path());
+      history()->Update(vname.language());
+    } else {
+      LOG(WARNING) << "No FileRef for " << filename_ref.str() << " (location "
+                   << loc.printToString(*source_manager_) << ")";
+    }
+  }
+}
+
+void ExtractorPPCallbacks::MacroDefined(
+    const clang::Token& macro_name,
+    const clang::MacroDirective* macro_directive) {
+  clang::SourceLocation macro_location = macro_name.getLocation();
+  if (!macro_location.isFileID()) {
+    return;
+  }
+  llvm::StringRef macro_name_string =
+      macro_name.getIdentifierInfo()->getName().str();
+  history()->Update(source_manager_->getFileOffset(macro_location));
+  history()->Update(macro_name_string);
+}
+
+void ExtractorPPCallbacks::MacroUndefined(
+    const clang::Token& macro_name,
+    const clang::MacroDirective* macro_directive) {
+  clang::SourceLocation macro_location = macro_name.getLocation();
+  if (!macro_location.isFileID()) {
+    return;
+  }
+  llvm::StringRef macro_name_string =
+      macro_name.getIdentifierInfo()->getName().str();
+  history()->Update(source_manager_->getFileOffset(macro_location));
+  if (macro_directive) {
+    // We don't just care that a macro was undefined; we care that
+    // a *specific* macro definition was undefined.
+    RecordSpecificLocation(macro_directive->getLocation());
+  }
+  history()->Update("#undef");
+  history()->Update(macro_name_string);
 }
 
 void ExtractorPPCallbacks::RecordCondition(
@@ -494,7 +615,9 @@ void ExtractorPPCallbacks::HandlePragma(clang::Preprocessor& preprocessor,
 
 class ExtractorAction : public clang::PreprocessorFrontendAction {
  public:
-  explicit ExtractorAction(ExtractorCallback callback) : callback_(callback) {}
+  explicit ExtractorAction(IndexWriter* index_writer,
+                           ExtractorCallback callback)
+      : callback_(callback), index_writer_(index_writer) {}
 
   void ExecuteAction() override {
     const auto inputs = getCompilerInstance().getFrontendOpts().Inputs;
@@ -502,10 +625,11 @@ class ExtractorAction : public clang::PreprocessorFrontendAction {
                                << inputs.size() << ".";
     main_source_file_ = inputs[0].getFile();
     auto* preprocessor = &getCompilerInstance().getPreprocessor();
-    preprocessor->addPPCallbacks(llvm::make_unique<ExtractorPPCallbacks>(
-        ExtractorState{&getCompilerInstance().getSourceManager(), preprocessor,
-                       &main_source_file_, &main_source_file_transcript_,
-                       &source_files_}));
+    preprocessor->addPPCallbacks(
+        llvm::make_unique<ExtractorPPCallbacks>(ExtractorState{
+            index_writer_, &getCompilerInstance().getSourceManager(),
+            preprocessor, &main_source_file_, &main_source_file_transcript_,
+            &source_files_, &main_source_file_stdin_alternate_}));
     preprocessor->EnterMainSourceFile();
     clang::Token token;
     do {
@@ -514,6 +638,9 @@ class ExtractorAction : public clang::PreprocessorFrontendAction {
   }
 
   void EndSourceFileAction() override {
+    main_source_file_ = main_source_file_stdin_alternate_.empty()
+                            ? main_source_file_
+                            : main_source_file_stdin_alternate_;
     callback_(main_source_file_, main_source_file_transcript_, source_files_,
               getCompilerInstance().getDiagnostics().hasErrorOccurred());
   }
@@ -526,6 +653,11 @@ class ExtractorAction : public clang::PreprocessorFrontendAction {
   std::string main_source_file_transcript_;
   /// Contents of the files we've used, indexed by normalized path.
   std::unordered_map<std::string, SourceFile> source_files_;
+  /// The active IndexWriter.
+  IndexWriter* index_writer_;
+  /// Nonempty if the main source file was stdin ("-") and we have chosen
+  /// an alternate name for it.
+  std::string main_source_file_stdin_alternate_;
 };
 
 }  // anonymous namespace
@@ -620,7 +752,7 @@ std::string IndexWriter::MakeCleanAbsolutePath(const std::string& in_path) {
   using namespace llvm::sys::path;
   std::string abs_path = clang::tooling::getAbsolutePath(in_path);
   std::string root_part =
-      (root_name(abs_path) + root_directory(abs_path)).str();
+      (root_name(abs_path) + llvm::sys::path::root_directory(abs_path)).str();
   llvm::SmallString<1024> out_path = llvm::StringRef(root_part);
   std::vector<llvm::StringRef> path_components;
   int skip_count = 0;
@@ -662,12 +794,15 @@ std::string IndexWriter::RelativizePath(const std::string& to_relativize,
 void IndexWriter::FillFileInput(
     const std::string& clang_path, const SourceFile& source_file,
     kythe::proto::CompilationUnit_FileInput* file_input) {
-  file_input->mutable_v_name()->CopyFrom(
-      VNameForPath(RelativizePath(clang_path, root_directory_)));
+  CHECK(!source_file.vname.language().empty());
+  file_input->mutable_v_name()->CopyFrom(source_file.vname);
   // This path is distinct from the VName path. It is used by analysis tools
   // to configure Clang's virtual filesystem.
   auto* file_info = file_input->mutable_info();
-  file_info->set_path(clang_path);
+  // We need to use something other than "-", since clang special-cases
+  // it. (clang also refers to standard input as <stdin>, so we're
+  // consistent there.)
+  file_info->set_path(clang_path == "-" ? "<stdin>" : clang_path);
   file_info->set_digest(Sha256(source_file.file_content.c_str(),
                                source_file.file_content.size()));
   for (const auto& row : source_file.include_history) {
@@ -726,8 +861,9 @@ void IndexWriter::WriteIndex(
 }
 
 std::unique_ptr<clang::FrontendAction> NewExtractor(
-    ExtractorCallback callback) {
-  return std::unique_ptr<clang::FrontendAction>(new ExtractorAction(callback));
+    IndexWriter* index_writer, ExtractorCallback callback) {
+  return std::unique_ptr<clang::FrontendAction>(
+      new ExtractorAction(index_writer, callback));
 }
 
 void MapCompilerResources(clang::tooling::ToolInvocation* invocation,
