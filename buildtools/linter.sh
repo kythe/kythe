@@ -1,4 +1,19 @@
 #!/bin/sh -e
+
+# Copyright 2015 Google Inc. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # Kythe's arcanist script-and-regex linter. Expected output format:
 #   /^((?P<name>.+?)::)?(?P<severity>warning|error|advice):(?P<line>\\d+)? (?P<message>.*)$/m
 #
@@ -16,6 +31,13 @@ lint_campfire() {
   fi
 }
 
+lint_copyright() {
+  if ! grep -Pq 'Copyright 201[45] Google Inc. All rights reserved.' "$file"; then
+    echo 'copyright header::error: File missing copyright header'
+  fi
+}
+
 case "$name" in
   CAMPFIRE) lint_campfire;;
+  *) lint_copyright;;
 esac
