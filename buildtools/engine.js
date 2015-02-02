@@ -19,6 +19,7 @@ var BUILD_FILE_BASENAME = 'CAMPFIRE';
  */
 exports.Engine = function(settings, campfireRoot, relative) {
   this.rules = {};
+  this.tools = {};
   this.files = {};
   this.targets = new graphs.Graph();
   this.entities = {};
@@ -47,6 +48,13 @@ exports.Engine.prototype.loadRules = function() {
 exports.Engine.prototype.addRule = function(name, rule) {
   this.rules[name] = rule;
   rule.config_name = name;
+};
+
+/**
+ * Adds the given tool to the campfire runtime.
+ */
+exports.Engine.prototype.addTool = function(name, tool) {
+  this.tools[name] = tool;
 };
 
 /**
@@ -470,6 +478,9 @@ exports.Engine.prototype.convertToNinja = function(kind) {
     if (target.rule.getBuilds) {
       writeBuilds(ninjaFile, target.rule.getBuilds(target, kind), target.id);
     }
+  }
+  for (var name in this.tools) {
+    writeBuilds(ninjaFile, [this.tools[name].getBuild()]);
   }
   fs.closeSync(ninjaFile);
 };

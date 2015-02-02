@@ -7,6 +7,13 @@ var entity = require('./entity.js');
 var kythe_rules = require('./kythe_rules.js');
 var rule = require('./rule.js');
 
+function JavaTool(engine) {
+  rule.Tool.call(this, engine, 'java',
+                 '$javac', ['-version'],
+                 '(?<=javac )1\\.[7-9]', '1.7');
+}
+JavaTool.prototype = Object.create(rule.Tool.prototype);
+
 function JavaLibrary(engine) {
   this.engine = engine;
 }
@@ -20,7 +27,7 @@ JavaLibrary.prototype.getNinjaBuilds = function(target) {
   var javacBuild = {
     rule: 'javac',
     inputs: srcs,
-    implicits: deps,
+    implicits: [target.getVersionMarker('java')].concat(deps),
     outs: [target.getFileNode(target.getRoot('bin') + '.jar', 'java_jar')],
     vars: {
       classpath: this.getClasspath(target)
@@ -145,6 +152,7 @@ JavaExternalJar.prototype.getOutputsFor = function(target, kind) {
 };
 
 exports.register = function(engine) {
+  engine.addTool('java', new JavaTool(engine));
   engine.addRule('java_library', new JavaLibrary(engine));
   engine.addRule('java_binary', new JavaBinary(engine));
   engine.addRule('java_test', new JavaTest(engine));
