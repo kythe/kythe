@@ -245,7 +245,7 @@ func writeEdgePages(t table.Proto, gs graphstore.Service) error {
 				pes.EdgeSet.Group = append(pes.EdgeSet.Group, grp)
 				pesTotal += len(grp.TargetTicket)
 			}
-			pes.TotalEdges = proto.Int32(int32(pesTotal))
+			pes.TotalEdges = proto.Int(pesTotal)
 			if err := t.Put(xsrv.EdgeSetKey(pes.EdgeSet.GetSourceTicket()), pes); err != nil {
 				return err
 			}
@@ -283,7 +283,7 @@ func writeEdgePages(t table.Proto, gs graphstore.Service) error {
 			pes.EdgeSet.Group = append(pes.EdgeSet.Group, grp)
 			pesTotal += len(grp.TargetTicket)
 		}
-		pes.TotalEdges = proto.Int32(int32(pesTotal))
+		pes.TotalEdges = proto.Int(pesTotal)
 		if err := t.Put(xsrv.EdgeSetKey(pes.EdgeSet.GetSourceTicket()), pes); err != nil {
 			return err
 		}
@@ -399,8 +399,8 @@ func getDecorations(es xrefs.EdgesService, anchor *xpb.NodeInfo) ([]*srvpb.FileD
 
 	a := &srvpb.FileDecorations_Decoration_Anchor{
 		Ticket:      anchor.Ticket,
-		StartOffset: proto.Int32(int32(start)),
-		EndOffset:   proto.Int32(int32(end)),
+		StartOffset: proto.Int(start),
+		EndOffset:   proto.Int(end),
 	}
 	var ds []*srvpb.FileDecorations_Decoration
 	for _, grp := range edges.EdgeSet[0].Group {

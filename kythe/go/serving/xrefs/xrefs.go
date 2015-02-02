@@ -318,11 +318,12 @@ func normalizePoint(text []byte, p *xpb.Location_Point) *xpb.Location_Point {
 	if p == nil {
 		return nil
 	}
+	// TODO line (+column)? -> byte_offset (+column)? conversion
 	offset := p.GetByteOffset()
 	textBefore := text[:offset]
 	np := &xpb.Location_Point{
 		ByteOffset: p.ByteOffset,
-		LineNumber: proto.Int32(int32(bytes.Count(textBefore, lineEnd)) + 1),
+		LineNumber: proto.Int(bytes.Count(textBefore, lineEnd) + 1),
 	}
 	lineStart := int32(bytes.LastIndex(textBefore, lineEnd))
 	if lineStart != -1 {
