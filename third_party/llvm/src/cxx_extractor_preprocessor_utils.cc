@@ -35,10 +35,14 @@ std::string getMacroUnexpandedString(clang::SourceRange Range,
   return llvm::StringRef(BeginPtr, Length).trim().str();
 }
 
-std::string getMacroExpandedString(clang::Preprocessor &PP,
-                                   llvm::StringRef MacroName,
-                                   const clang::MacroInfo *MI,
-                                   const clang::MacroArgs *Args) {
+// Changed vs. modularize: added Visited set.
+std::string getMacroExpandedStringInternal(
+    clang::Preprocessor &PP, llvm::StringRef MacroName,
+    const clang::MacroInfo *MI, const clang::MacroArgs *Args,
+    std::set<const clang::MacroInfo *> &Visited) {
+  if (!Visited.insert(MI).second) {
+    return MacroName.str();
+  }
   std::string Expanded;
   // Walk over the macro Tokens.
   typedef clang::MacroInfo::tokens_iterator Iter;
@@ -54,9 +58,9 @@ std::string getMacroExpandedString(clang::Preprocessor &PP,
         std::string Name = II->getName().str();
         // Check for nexted macro references.
         clang::MacroInfo *MacroInfo = PP.getMacroInfo(II);
-        // Changed vs. modularize: added `MacroInfo != MI`.
-        if (MacroInfo && MacroInfo != MI)
-          Expanded += getMacroExpandedString(PP, Name, MacroInfo, nullptr);
+        if (MacroInfo)
+          Expanded += getMacroExpandedStringInternal(PP, Name, MacroInfo,
+                                                     nullptr, Visited);
         else
           Expanded += Name;
       }
@@ -85,13 +89,22 @@ std::string getMacroExpandedString(clang::Preprocessor &PP,
         std::string Name = II->getName().str();
         clang::MacroInfo *MacroInfo = PP.getMacroInfo(II);
         if (MacroInfo)
-          Expanded += getMacroExpandedString(PP, Name, MacroInfo, nullptr);
+          Expanded += getMacroExpandedStringInternal(PP, Name, MacroInfo,
+                                                     nullptr, Visited);
         else
           Expanded += Name;
       }
     }
   }
   return Expanded;
+}
+
+std::string getMacroExpandedString(clang::Preprocessor &PP,
+                                   llvm::StringRef MacroName,
+                                   const clang::MacroInfo *MI,
+                                   const clang::MacroArgs *Args) {
+  std::set<const clang::MacroInfo *> Visited;
+  return getMacroExpandedStringInternal(PP, MacroName, MI, Args, Visited);
 }
 
 std::string getSourceString(clang::Preprocessor &PP, clang::SourceRange Range) {

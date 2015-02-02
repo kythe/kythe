@@ -77,6 +77,21 @@
     }
   },
   {
+    "name": "recursish_macro_test",
+    "kind": "verifier_test",
+    "inputs": {
+      "srcs": [
+        "recursish_macro.cc"
+      ],
+      "compilation": [
+        "//kythe/cxx/extractor/testdata:recursish_macro_test_compilation"
+      ]
+    },
+    "properties": {
+      "language": "c++"
+    }
+  },
+  {
     "name": "extract_verify_test",
     "kind": "verifier_test",
     "inputs": {
@@ -134,6 +149,15 @@
     },
     "properties": {
       "language": "c++"
+    }
+  },
+  {
+    "name": "recursish_macro_test_compilation",
+    "kind": "cc_library",
+    "inputs": {
+      "srcs": [
+        "recursish_macro.cc"
+      ]
     }
   },
   {
