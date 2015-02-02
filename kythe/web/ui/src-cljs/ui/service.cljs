@@ -13,48 +13,70 @@
 ;; limitations under the License.
 (ns ui.service
   "Namespace for functions communicating with the xrefs server"
-  (:require [ajax.core :refer [GET]]
+  (:require [ajax.core :refer [GET POST]]
             [ui.util :as util]))
+
+(defn- unwrap-corpus-roots-response [resp]
+  (into {}
+    (for [corpusRoots (get resp "corpus")]
+      [(get corpusRoots "corpus") (get corpusRoots "root")])))
 
 (defn get-corpus-roots
   "Requests all of the known corpus roots"
   [handler error-handler]
   (GET "corpusRoots"
-       {:response-format :json
-        :handler handler
-        :error-handler error-handler}))
+    {:response-format :json
+     :handler (comp handler unwrap-corpus-roots-response)
+     :error-handler error-handler}))
+
+(defn- unwrap-dir-response [resp]
+  {:dirs (into {}
+           (map (fn [name] [name {}])
+             (get resp "subdirectory")))
+   :files (into {}
+            (map (fn [ticket]
+                   (let [vname (util/ticket->vname ticket)]
+                     [(util/basename (:path vname)) {:ticket ticket
+                                                     :vname vname}]))
+              (get resp "file_ticket")))})
 
 (defn get-directory
   "Requests the contents of the given directory"
   [corpus root path handler error-handler]
-  (GET (str "dir" path)
-       {:params {:corpus corpus
-                 :root (or root "")}
-        :response-format :json
-        :handler handler
-        :error-handler error-handler}))
+  (POST "dir"
+    {:params {:corpus corpus
+              :root root
+              :path path}
+     :format :json
+     :response-format :json
+     :handler (comp handler unwrap-dir-response)
+     :error-handler error-handler}))
 
-(defn ^:private normalize-xrefs [xrefs]
-  (into {} (for [[k refs] xrefs]
+(defn- unwrap-xrefs-response [resp]
+  (into {} (for [[k refs] resp]
              [k (for [ref refs]
-                  (assoc ref :file (util/normalize-vname (:file ref))))])))
+                  (assoc ref :file {:ticket (:file ref)
+                                    :vname (util/ticket->vname (:file ref))}))])))
 
 (defn get-xrefs
   "Requests the cross-references for the given node ticket"
   [ticket handler error-handler]
   (GET "xrefs"
-       {:params {:ticket ticket}
-        :response-format :json
-        :keywords? true
-        :handler #(handler (normalize-xrefs %))
-        :error-handler error-handler}))
+    {:params {:ticket ticket}
+     :response-format :json
+     :keywords? true
+     :handler (comp handler unwrap-xrefs-response)
+     :error-handler error-handler}))
 
 (defn get-file
   "Requests the source text and decorations of the given file"
-  [vname handler error-handler]
-  (GET (str "file/" (:path vname))
-       {:params (select-keys vname [:corpus :root :language :signature])
-        :response-format :json
-        :keywords? true
-        :handler handler
-        :error-handler error-handler}))
+  [ticket handler error-handler]
+  (POST "decorations"
+    {:params {:location {:ticket ticket}
+              :source_text true
+              :references true}
+     :format :json
+     :response-format :json
+     :keywords? true
+     :handler handler
+     :error-handler error-handler}))

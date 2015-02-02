@@ -13,26 +13,8 @@
 ;; limitations under the License.
 (ns ui.util
   (:require-macros [cljs.core.async.macros :refer [go-loop]])
-  (:require [cljs.core.async :refer [<!]]))
-
-(defn keywordize-keys [m]
-  (into {} (for [[k v] m] [(keyword k) v])))
-
-(defn starts-with [str prefix]
-  (= (.indexOf str prefix) 0))
-
-(defn dirname
-  "Returns the absolute dirname of the given path"
-  [path]
-  (if (empty? path)
-    "/"
-    (let [idx (.lastIndexOf path "/")]
-      (if (< idx 0)
-        "/"
-        (let [dir (subs path 0 (+ 1 idx))]
-          (if (starts-with dir "/")
-            dir
-            (str "/" dir)))))))
+  (:require [cljs.core.async :refer [<!]])
+  (:import [goog Uri]))
 
 (defn basename
   "Returns the basename of the given path"
@@ -41,13 +23,6 @@
    (empty? path) path
    (= (get path (- (count path) 1)) "/") (basename (subs path 0 (- (count path) 1)))
    :else (subs path (+ 1 (.lastIndexOf path "/")))))
-
-(defn split-path [path]
-  (filter #(not (empty? %)) (.split path "/")))
-
-(defn normalize-vname [vname]
-  (into {} (for [k [:corpus :root :path :signature :language]]
-             [k (or (k vname) "")])))
 
 (defn path-display
   ([{:keys [corpus root path]}]
@@ -63,3 +38,20 @@
      (go-loop []
        (handler (<! ch))
        (recur))))
+
+(defn- decode-ticket-query [query]
+  (let [params (into {}
+                 (for [arg (.split query "?")]
+                   (let [[key val] (.split arg "=" 2)]
+                     [(keyword key) val])))]
+    {:language (:lang params)
+     :path (:path params)
+     :root (:root params)}))
+
+(defn ticket->vname [ticket]
+  (let [uri (Uri. ticket)]
+    (when-not (= (.getScheme uri))
+      (.log js/console (str "WARNING: invalid ticket '" ticket "'")))
+    (assoc (decode-ticket-query (.getDecodedQuery uri))
+      :corpus (.getDomain uri)
+      :signature (.getFragment uri))))

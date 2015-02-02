@@ -34,25 +34,27 @@
     om/IWillMount
     (will-mount [_]
       (handle-ch (om/get-state owner :file-to-view) nil
-        (fn [{:keys [offset] :as loc} last-vname]
-          (let [vname (select-keys loc [:corpus :root :path :language :signature])]
-            (cond
-              (not= vname last-vname)
-              (do
-                (om/transact! state :current-file (constantly {:loading true}))
-                (service/get-file vname
-                  (fn [decorations]
-                    (let [decorations (construct-decorations decorations)
-                          scroll-to-line (when offset (line-in-string (:source-text decorations) offset))]
-                      (om/transact! state :current-file (constantly
-                                                          {:line scroll-to-line
-                                                           :decorations decorations}))))
-                  (replace-state! state :current-file)))
-              offset (om/transact! state :current-file
-                       (fn [file]
-                         (assoc file
-                           :line (line-in-string (:source-text (:decorations file)) offset)))))
-            vname)))
+        (fn [file last-ticket]
+          (let [file (if (:ticket file) file {:ticket file})
+                ticket (:ticket file)
+                offset (:offset file)]
+           (cond
+             (not= ticket last-ticket)
+             (do
+               (om/transact! state :current-file (constantly {:loading true}))
+               (service/get-file ticket
+                 (fn [decorations]
+                   (let [decorations (construct-decorations decorations)
+                         scroll-to-line (when offset (line-in-string (:source-text decorations) offset))]
+                     (om/transact! state :current-file (constantly
+                                                         {:line scroll-to-line
+                                                          :decorations decorations}))))
+                 (replace-state! state :current-file)))
+             offset (om/transact! state :current-file
+                      (fn [file]
+                        (assoc file
+                          :line (line-in-string (:source-text (:decorations file)) offset)))))
+           ticket)))
       (handle-ch (om/get-state owner :xrefs-to-view)
         (fn [target-ticket]
           (om/transact! state :current-xrefs (constantly {:loading target-ticket}))
