@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Google Inc. All rights reserved.
+ * Copyright 2015 Google Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,18 @@
  * limitations under the License.
  */
 
-// Package filetree implements an in-memory filetree Map and Directory model
-// used to store VName-based file paths.
+// Package filetree defines the filetree Service interface and a simple
+// in-memory implementation.
 package filetree
 
 import (
 	"fmt"
+	"log"
+	"net/http"
 	"path/filepath"
 
-	"kythe/go/storage"
+	"kythe/go/services/graphstore"
+	"kythe/go/services/web"
 	"kythe/go/util/schema"
 
 	spb "kythe/proto/storage_proto"
@@ -30,8 +33,8 @@ import (
 	"code.google.com/p/goprotobuf/proto"
 )
 
-// FileTree provides an interface to explore a tree of VName files.
-type FileTree interface {
+// Service provides an interface to explore a tree of VName files.
+type Service interface {
 	// Dir returns the Directory for the given corpus/root/path. nil is returned
 	// if one is not found.
 	Dir(corpus, root, path string) (*Directory, error)
@@ -63,8 +66,8 @@ func NewMap() *Map {
 }
 
 // Populate adds each file node in the GraphStore to the FileTree
-func (m *Map) Populate(gs storage.GraphStore) error {
-	if err := storage.EachScanEntry(gs, &spb.ScanRequest{
+func (m *Map) Populate(gs graphstore.Service) error {
+	if err := graphstore.EachScanEntry(gs, &spb.ScanRequest{
 		FactPrefix: proto.String(schema.NodeKindFact),
 	}, func(entry *spb.Entry) error {
 		if entry.GetFactName() == schema.NodeKindFact && string(entry.GetFactValue()) == schema.FileKind {
@@ -147,4 +150,52 @@ func addToSet(strs []string, str string) []string {
 		}
 	}
 	return append(strs, str)
+}
+
+// RegisterHTTPHandlers registers JSON HTTP handlers with mux using the given
+// filetree Service.  The following methods with be exposed:
+//
+//   GET /corpusRoots
+//     Returns a JSON map from corpus to []root names (map[string][]string)
+//   GET /dir/<path>?corpus=<corpus>&root=<root>[&recursive]
+//     Returns the JSON equivalent of a filetree.Directory describing the given
+//     directory's contents (sub-directories and files).
+func RegisterHTTPHandlers(prefix string, ft Service, mux *http.ServeMux) {
+	mux.Handle(prefix+"/corpusRoots", http.StripPrefix(prefix, corpusRootsHandler(ft)))
+	mux.Handle(prefix+"/dir/", http.StripPrefix(prefix, dirHandler(ft)))
+}
+
+// corpusRootsHandler replies with a JSON map of corpus roots
+func corpusRootsHandler(ft Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		roots, err := ft.CorporaRoots()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		web.WriteJSONResponse(w, r, roots)
+	}
+}
+
+// dirHandler parses a corpus/root/path from the Request URL's Path/Query and
+// replies with a JSON object describing the directories sub-directories and
+// files
+func dirHandler(ft Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		path := web.TrimPath(r, "/dir")
+		if path == "" {
+			path = "/"
+		}
+		corpus, root := web.Arg(r, "corpus"), web.Arg(r, "root")
+
+		dir, err := ft.Dir(corpus, root, path)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if err := web.WriteJSONResponse(w, r, dir); err != nil {
+			log.Printf("Failed to encode directory: %v", err)
+		}
+	}
 }

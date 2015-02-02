@@ -8,7 +8,7 @@
       ],
       "go_pkgs": [
         "//kythe/go/platform/delimited",
-        "//kythe/go/storage",
+        "//kythe/go/services/graphstore",
         "//kythe/go/storage/stream",
         "//kythe/proto:storage_proto",
         "//third_party/go/code.google.com:protobuf"

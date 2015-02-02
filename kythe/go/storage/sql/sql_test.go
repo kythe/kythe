@@ -24,7 +24,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"kythe/go/storage"
+	"kythe/go/services/graphstore"
 
 	spb "kythe/proto/storage_proto"
 )
@@ -104,8 +104,8 @@ func TestGraphStoreOrder(t *testing.T) {
 
 	var lastEntry *spb.Entry
 	fatalOnErrT(t, "entryLess error: %v",
-		storage.EachScanEntry(gs, nil, func(entry *spb.Entry) error {
-			if !storage.EntryLess(lastEntry, entry) {
+		graphstore.EachScanEntry(gs, nil, func(entry *spb.Entry) error {
+			if !graphstore.EntryLess(lastEntry, entry) {
 				return fmt.Errorf("expected {%v} < {%v}", lastEntry, entry)
 			}
 			return nil

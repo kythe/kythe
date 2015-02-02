@@ -14,17 +14,37 @@
  * limitations under the License.
  */
 
-// Package xrefs contains the xref.Service interface and a simple implementation
-// backed by a storage.GraphStore
+// Package xrefs provides an xrefs.Service implementation backed by static
+// serving tables located on disk.  It also provides a way to Fill the tables
+// using an existing GraphStore.
+//
+// Currently there are 4 separate lookup tables:
+//   decorations: ticket -> [DecorationReply_Reference]
+//   nodes: ticket -> {factName: []byte(factValue)}
+//   edges: ticket -> {edgeKind: [ticket]}
+//   dirs: ticket -> {"dirs": [dirName], "files": [VName]}
+//
+// NOTE: this package is deprecated and will soon be replaced by lookup tables
+//       backed by kythe/proto/serving.proto
 package xrefs
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
-	"regexp"
+	"io"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"sync"
 
-	"kythe/go/storage"
+	"kythe/go/services/filetree"
+	"kythe/go/services/graphstore"
+	"kythe/go/services/xrefs"
+	"kythe/go/storage/keyvalue"
+	"kythe/go/storage/leveldb"
+	sxrefs "kythe/go/storage/xrefs"
 	"kythe/go/util/kytheuri"
 	"kythe/go/util/schema"
 	"kythe/go/util/stringset"
@@ -35,347 +55,407 @@ import (
 	"code.google.com/p/goprotobuf/proto"
 )
 
-// Service provides access to a Kythe graph for fast access to cross-references.
-type Service interface {
-	// Nodes returns a subset of the facts for each of the requested nodes.
-	Nodes(*xpb.NodesRequest) (*xpb.NodesReply, error)
+// Tables is a set of static lookup tables that can serve as an xrefs.Service
+// and a filetree.Service.
+type Tables struct {
+	// TODO(schroederc): use a single namespaced keyvalue.DB (LevelDB)
+	decorations *jsonLookupTable
+	nodes       *jsonLookupTable
+	edges       *jsonLookupTable
+	dirs        *jsonLookupTable
 
-	// Edges returns a subset of the outbound edges for each of a set of requested
-	// nodes.
-	Edges(*xpb.EdgesRequest) (*xpb.EdgesReply, error)
-
-	// Decorations returns an index of the nodes and edges associated with a
-	// particular file node.
-	Decorations(*xpb.DecorationsRequest) (*xpb.DecorationsReply, error)
+	// TODO(schroederc): add/use xrefs table
+	//   ticket -> {edgeKind: [{"anchor": ticket, "file": VName, "start": offset, "end": offset}]
 }
 
-// A GraphStoreService implements the Service interface for a GraphStore that
-// has been preprocessed for cross-references.
-// TODO(schroederc): parallelize GraphStore calls
-type GraphStoreService struct {
-	gs storage.GraphStore
+// Open opens the set of lookup tables located in the given directory.
+func Open(dirPath string) (*Tables, error) {
+	err := os.MkdirAll(dirPath, os.ModePerm)
+	if err != nil {
+		return nil, fmt.Errorf("error making %q: %v", dirPath, err)
+	}
+
+	tbls := new(Tables)
+	tbls.decorations, err = openTable(filepath.Join(dirPath, "decorations"))
+	if err != nil {
+		return nil, err
+	}
+	tbls.nodes, err = openTable(filepath.Join(dirPath, "nodes"))
+	if err != nil {
+		return nil, err
+	}
+	tbls.edges, err = openTable(filepath.Join(dirPath, "edges"))
+	if err != nil {
+		return nil, err
+	}
+	tbls.dirs, err = openTable(filepath.Join(dirPath, "dirs"))
+	if err != nil {
+		return nil, err
+	}
+
+	return tbls, nil
 }
 
-// NewGraphStoreService returns a new GraphStoreService given an
-// existing GraphStore.
-func NewGraphStoreService(gs storage.GraphStore) *GraphStoreService {
-	return &GraphStoreService{gs}
-}
+// XRefs returns an xrefs.Service backed by the Tables data.
+func (t *Tables) XRefs() xrefs.Service { return t }
 
-// Nodes implements part of the Service interface.
-func (g *GraphStoreService) Nodes(req *xpb.NodesRequest) (*xpb.NodesReply, error) {
-	patterns := ConvertFilters(req.Filter)
+// FileTree returns a filetree.Service backed by the Tables data.
+func (t *Tables) FileTree() filetree.Service { return t }
 
-	var names []*spb.VName
+// Nodes implements part of the xrefs.Service interface.
+func (t *Tables) Nodes(req *xpb.NodesRequest) (*xpb.NodesReply, error) {
+	patterns := xrefs.ConvertFilters(req.Filter)
+	reply := new(xpb.NodesReply)
 	for _, ticket := range req.Ticket {
-		name, err := kytheuri.ToVName(ticket)
-		if err != nil {
-			return nil, err
+		var facts nodeFacts
+		if err := t.nodes.get(ticket, &facts); err != nil {
+			return nil, fmt.Errorf("error getting facts for %q: %v", ticket, err)
 		}
-		names = append(names, name)
-	}
-	var nodes []*xpb.NodeInfo
-	for i, vname := range names {
-		info := &xpb.NodeInfo{Ticket: &req.Ticket[i]}
-		if err := storage.EachReadEntry(g.gs, &spb.ReadRequest{Source: vname}, func(entry *spb.Entry) error {
-			if len(patterns) == 0 || MatchesAny(entry.GetFactName(), patterns) {
-				info.Fact = append(info.Fact, entryToFact(entry))
+
+		info := &xpb.NodeInfo{Ticket: proto.String(ticket)}
+		for name, val := range facts {
+			if len(patterns) == 0 || xrefs.MatchesAny(name, patterns) {
+				info.Fact = append(info.Fact, &xpb.Fact{
+					Name:  proto.String(name),
+					Value: val,
+				})
 			}
-			return nil
-		}); err != nil {
-			return nil, err
 		}
-		nodes = append(nodes, info)
+		if len(info.Fact) > 0 {
+			reply.Node = append(reply.Node, info)
+		}
 	}
-	return &xpb.NodesReply{Node: nodes}, nil
+	return reply, nil
 }
 
-// Edges implements part of the Service interface.
-// TODO(schroederc): handle pagination requests
-func (g *GraphStoreService) Edges(req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
+// Edges implements part of the xrefs.Service interface.
+func (t *Tables) Edges(req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
 	if req.GetPageToken() != "" {
 		return nil, errors.New("UNIMPLEMENTED: page_token")
 	}
 
-	patterns := ConvertFilters(req.Filter)
 	allowedKinds := stringset.New(req.Kind...)
-	targetSet := stringset.New()
+	nodeSet := stringset.New()
 	reply := new(xpb.EdgesReply)
 
 	for _, ticket := range req.Ticket {
-		vname, err := kytheuri.ToVName(ticket)
-		if err != nil {
-			return nil, fmt.Errorf("invalid ticket %q: %v", ticket, err)
+		var edges nodeEdges
+		if err := t.edges.get(ticket, &edges); err != nil {
+			return nil, fmt.Errorf("error getting edges for %q: %v", ticket, err)
 		}
 
-		var (
-			// EdgeKind -> StringSet<TargetTicket>
-			filteredEdges = make(map[string]stringset.Set)
-			filteredFacts []*xpb.Fact
-		)
-
-		if err := storage.EachReadEntry(g.gs, &spb.ReadRequest{
-			Source:   vname,
-			EdgeKind: proto.String("*"),
-		}, func(entry *spb.Entry) error {
-			edgeKind := entry.GetEdgeKind()
-			if edgeKind == "" {
-				// node fact
-				if len(patterns) > 0 && MatchesAny(entry.GetFactName(), patterns) {
-					filteredFacts = append(filteredFacts, entryToFact(entry))
-				}
-			} else {
-				// edge
-				if len(req.Kind) == 0 || allowedKinds.Contains(edgeKind) {
-					targets := filteredEdges[edgeKind]
-					if targets == nil {
-						targets = stringset.New()
-						filteredEdges[edgeKind] = targets
-					}
-					targets.Add(vnameToTicket(entry.Target))
-				}
-			}
-			return nil
-		}); err != nil {
-			return nil, fmt.Errorf("failed to retrieve entries for ticket %q", ticket)
-		}
-
-		// Only add a EdgeSet if there are targets for the requested edge kinds.
-		if len(filteredEdges) > 0 {
-			var groups []*xpb.EdgeSet_Group
-			for edgeKind, targets := range filteredEdges {
-				g := &xpb.EdgeSet_Group{Kind: proto.String(edgeKind)}
-				for target := range targets {
-					g.TargetTicket = append(g.TargetTicket, target)
-					targetSet.Add(target)
-				}
-				groups = append(groups, g)
-			}
-			reply.EdgeSet = append(reply.EdgeSet, &xpb.EdgeSet{
-				SourceTicket: proto.String(ticket),
-				Group:        groups,
-			})
-
-			// In addition, only add a NodeInfo if the filters have resulting facts.
-			if len(filteredFacts) > 0 {
-				reply.Node = append(reply.Node, &xpb.NodeInfo{
-					Ticket: proto.String(ticket),
-					Fact:   filteredFacts,
+		es := &xpb.EdgeSet{SourceTicket: proto.String(ticket)}
+		for kind, targets := range edges {
+			if len(allowedKinds) == 0 || allowedKinds.Contains(kind) {
+				es.Group = append(es.Group, &xpb.EdgeSet_Group{
+					Kind:         proto.String(kind),
+					TargetTicket: targets,
 				})
+				nodeSet.Add(targets...)
 			}
+		}
+		if len(es.Group) > 0 {
+			nodeSet.Add(ticket)
+			reply.EdgeSet = append(reply.EdgeSet, es)
 		}
 	}
 
-	// Ensure reply.Node is a unique set by removing already requested nodes from targetSet
-	for _, n := range reply.Node {
-		targetSet.Remove(n.GetTicket())
-	}
-
-	// Batch request all leftover target nodes
-	nodesReply, err := g.Nodes(&xpb.NodesRequest{Ticket: targetSet.Slice(), Filter: req.Filter})
+	nodesReply, err := t.Nodes(&xpb.NodesRequest{
+		Ticket: nodeSet.Slice(),
+		Filter: req.Filter,
+	})
 	if err != nil {
-		return nil, fmt.Errorf("failure getting target nodes: %v", err)
+		return nil, err
 	}
-	reply.Node = append(reply.Node, nodesReply.Node...)
+	reply.Node = nodesReply.Node
 
 	return reply, nil
 }
 
-// Decorations implements part of the Service interface.
-// TODO(schroederc): implement location windowing
-// TODO(schroederc): implement patching
-func (g *GraphStoreService) Decorations(req *xpb.DecorationsRequest) (*xpb.DecorationsReply, error) {
+// Decorations implements part of the xrefs.Service interface.
+func (t *Tables) Decorations(req *xpb.DecorationsRequest) (*xpb.DecorationsReply, error) {
 	if len(req.DirtyBuffer) > 0 {
 		return nil, errors.New("UNIMPLEMENTED: patching")
 	} else if req.Location.GetKind() != xpb.Location_FILE {
 		return nil, errors.New("UNIMPLEMENTED: span locations")
 	}
 
-	fileVName, err := kytheuri.ToVName(req.Location.GetTicket())
-	if err != nil {
-		return nil, fmt.Errorf("invalid file ticket %q: %v", req.Location.GetTicket(), err)
-	}
-
+	ticket := req.Location.GetTicket()
 	reply := &xpb.DecorationsReply{Location: req.Location}
-
-	// Handle DecorationsRequest.SourceText switch
 	if req.GetSourceText() {
-		text, encoding, err := getSourceText(g.gs, fileVName)
-		if err != nil {
-			return nil, fmt.Errorf("failed to retrieve file text: %v", err)
+		var file nodeFacts
+		if err := t.nodes.get(ticket, &file); err != nil {
+			return nil, fmt.Errorf("error getting source text: %v", err)
 		}
-		reply.SourceText = text
-		reply.Encoding = &encoding
+
+		if val := file[schema.FileEncodingFact]; val != nil {
+			reply.Encoding = proto.String(string(val))
+		}
+		reply.SourceText = file[schema.FileTextFact]
 	}
 
-	// Handle DecorationsRequest.References switch
 	if req.GetReferences() {
-		// Traverse the following chain of edges:
-		//   file --%/kythe/edge/childof-> []anchor --forwardEdgeKind-> []target
-		//
-		// Add []anchor and []target nodes to reply.Node
-		// Add all {anchor, forwardEdgeKind, target} tuples to reply.Reference
+		var refs []*xpb.DecorationsReply_Reference
+		if err := t.decorations.get(ticket, &refs); err != nil {
+			return nil, fmt.Errorf("error getting references: %v", err)
+		}
+		reply.Reference = refs
 
-		children, err := getEdges(g.gs, fileVName, func(e *spb.Entry) bool {
-			return e.GetEdgeKind() == revChildOfEdgeKind
-		})
+		nodes := stringset.New()
+		for _, ref := range refs {
+			nodes.Add(ref.GetSourceTicket(), ref.GetTargetTicket())
+		}
+
+		nodesReply, err := t.Nodes(&xpb.NodesRequest{Ticket: nodes.Slice()})
 		if err != nil {
-			return nil, fmt.Errorf("failed to retrieve file children: %v", err)
+			return nil, err
 		}
 
-		targetSet := stringset.New()
-		for _, edge := range children {
-			anchor := edge.Target
-			anchorNodeReply, err := g.Nodes(&xpb.NodesRequest{Ticket: []string{vnameToTicket(anchor)}})
-			if err != nil {
-				return nil, fmt.Errorf("failure getting reference source node: %v", err)
-			} else if len(anchorNodeReply.Node) != 1 {
-				return nil, fmt.Errorf("found %d nodes for {%+v}", len(anchorNodeReply.Node), anchor)
-			} else if infoNodeKind(anchorNodeReply.Node[0]) != schema.AnchorKind {
-				// Skip child if it isn't an anchor node
-				continue
-			}
-			reply.Node = append(reply.Node, anchorNodeReply.Node[0])
-
-			targets, err := getEdges(g.gs, anchor, func(e *spb.Entry) bool {
-				return schema.EdgeDirection(e.GetEdgeKind()) == schema.Forward && e.GetEdgeKind() != schema.ChildOfEdge
-			})
-			if err != nil {
-				return nil, fmt.Errorf("failed to retrieve targets of anchor %v: %v", anchor, err)
-			}
-			if len(targets) == 0 {
-				log.Printf("Anchor missing forward edges: {%+v}", anchor)
-			}
-			for _, edge := range targets {
-				targetTicket := vnameToTicket(edge.Target)
-				targetSet.Add(targetTicket)
-				reply.Reference = append(reply.Reference, &xpb.DecorationsReply_Reference{
-					SourceTicket: proto.String(vnameToTicket(anchor)),
-					Kind:         proto.String(edge.Kind),
-					TargetTicket: proto.String(targetTicket),
-				})
-			}
-		}
-
-		// Batch request all Reference target nodes
-		nodesReply, err := g.Nodes(&xpb.NodesRequest{Ticket: targetSet.Slice()})
-		if err != nil {
-			return nil, fmt.Errorf("failure getting reference target nodes: %v", err)
-		}
-		reply.Node = append(reply.Node, nodesReply.Node...)
+		reply.Node = nodesReply.Node
 	}
 
 	return reply, nil
 }
 
-var revChildOfEdgeKind = schema.MirrorEdge(schema.ChildOfEdge)
+const corporaRootsKey = "__corpora_roots"
 
-func infoNodeKind(info *xpb.NodeInfo) string {
-	for _, fact := range info.Fact {
-		if fact.GetName() == schema.NodeKindFact {
-			return string(fact.Value)
-		}
-	}
-	return ""
+// CorporaRoots implements part of the filetree.Service interface.
+func (t *Tables) CorporaRoots() (map[string][]string, error) {
+	var corporaRoots map[string][]string
+	return corporaRoots, t.dirs.get(corporaRootsKey, &corporaRoots)
 }
 
-func getSourceText(gs storage.GraphStore, fileVName *spb.VName) (text []byte, encoding string, err error) {
-	if err := storage.EachReadEntry(gs, &spb.ReadRequest{
-		Source: fileVName,
-	}, func(entry *spb.Entry) error {
-		switch entry.GetFactName() {
-		case schema.FileTextFact:
-			text = entry.GetFactValue()
-		case schema.FileEncodingFact:
-			encoding = string(entry.GetFactValue())
-		default:
-			// skip other file facts
+// Dir implements part of the filetree.Service interface.
+func (t *Tables) Dir(corpus, root, path string) (*filetree.Directory, error) {
+	uri := &kytheuri.URI{
+		Corpus: corpus,
+		Root:   root,
+		Path:   path,
+	}
+	var dir filetree.Directory
+	return &dir, t.dirs.get(uri.String(), &dir)
+}
+
+// DumpToText writes .txt files for each of the xrefs tables
+func (t *Tables) DumpToText() error {
+	if err := t.nodes.dumpToText(); err != nil {
+		return fmt.Errorf("error dumping nodes: %v", err)
+	}
+	if err := t.edges.dumpToText(); err != nil {
+		return fmt.Errorf("error dumping edges: %v", err)
+	}
+	if err := t.decorations.dumpToText(); err != nil {
+		return fmt.Errorf("error dumping decorations: %v", err)
+	}
+	if err := t.dirs.dumpToText(); err != nil {
+		return fmt.Errorf("error dumping dirs: %v", err)
+	}
+	return nil
+}
+
+// Fill constructs entries in the xrefs Tables with the contents of gs.
+func (t *Tables) Fill(gs graphstore.Service) (err error) {
+	xs := sxrefs.NewGraphStoreService(gs)
+
+	entries := make(chan *spb.Entry)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		defer func() {
+			if pErr := recover(); pErr != nil && err == nil {
+				switch pErr := pErr.(type) {
+				case error:
+					err = pErr
+				default:
+					err = fmt.Errorf("panic error: %v", pErr)
+				}
+			}
+		}()
+		// In this routine, we panic on any error, immediately recover from it
+		// above, and then propagate it to Fill's return error variable without
+		// clobbering any existing error.
+
+		tree := filetree.NewMap()
+		for node := range collectFacts(entries) {
+			uri := kytheuri.FromVName(node.VName).String()
+			panicOnErr(t.nodes.put(uri, node.Facts))
+			panicOnErr(t.edges.put(uri, node.Edges))
+
+			if string(node.Facts[schema.NodeKindFact]) == schema.FileKind {
+				tree.AddFile(node.VName)
+				reply, err := xs.Decorations(&xpb.DecorationsRequest{
+					Location:   &xpb.Location{Ticket: &uri},
+					References: proto.Bool(true),
+				})
+				panicOnErr(err)
+				panicOnErr(t.decorations.put(uri, reply.Reference))
+			}
 		}
-		return nil
-	}); err != nil {
-		return nil, "", fmt.Errorf("read error: %v", err)
-	}
-	if text == nil {
-		err = fmt.Errorf("file not found: %+v", fileVName)
-	}
+
+		for corpus, roots := range tree.M {
+			for root, dirs := range roots {
+				for path, dir := range dirs {
+					uri := &kytheuri.URI{
+						Corpus: corpus,
+						Root:   root,
+						Path:   path,
+					}
+					panicOnErr(t.dirs.put(uri.String(), dir))
+				}
+			}
+		}
+		corporaRoots, err := tree.CorporaRoots()
+		panicOnErr(err)
+		panicOnErr(t.dirs.put(corporaRootsKey, corporaRoots))
+	}()
+	err = gs.Scan(&spb.ScanRequest{}, entries)
+	close(entries)
+	wg.Wait()
 	return
 }
 
-type edgeTarget struct {
-	Kind   string
-	Target *spb.VName
+type jsonLookupTable struct {
+	keyvalue.DB
+	path string
 }
 
-// getEdges returns edgeTargets with the given node as their source.  Only edge
-// entries that return true when applied to pred are returned.
-func getEdges(gs storage.GraphStore, node *spb.VName, pred func(*spb.Entry) bool) ([]*edgeTarget, error) {
-	var targets []*edgeTarget
+func openTable(path string) (*jsonLookupTable, error) {
+	path, err := filepath.Abs(path)
+	if err != nil {
+		return nil, fmt.Errorf("path error: %v", err)
+	}
+	db, err := leveldb.Open(path, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &jsonLookupTable{db, path}, nil
+}
 
-	if err := storage.EachReadEntry(gs, &spb.ReadRequest{
-		Source:   node,
-		EdgeKind: proto.String("*"),
-	}, func(entry *spb.Entry) error {
-		if entry.GetEdgeKind() != "" && pred(entry) {
-			targets = append(targets, &edgeTarget{entry.GetEdgeKind(), entry.Target})
+func (t *jsonLookupTable) put(key string, val interface{}) (err error) {
+	bytes, err := json.Marshal(val)
+	if err != nil {
+		return fmt.Errorf("error marshaling: %v", err)
+	}
+	wr, err := t.Writer()
+	if err != nil {
+		return fmt.Errorf("db writer error: %v", err)
+	}
+	defer func() {
+		if cErr := wr.Close(); err == nil {
+			err = cErr
 		}
-		return nil
-	}); err != nil {
-		return nil, fmt.Errorf("read error: %v", err)
+	}()
+	if err := wr.Write([]byte(key), bytes); err != nil {
+		return fmt.Errorf("write error: %v", err)
 	}
-	return targets, nil
+	return nil
 }
 
-// ConvertFilters converts each filter glob into an equivalent regexp.
-func ConvertFilters(filters []string) []*regexp.Regexp {
-	var patterns []*regexp.Regexp
-	for _, filter := range filters {
-		patterns = append(patterns, filterToRegexp(filter))
+var errNoSuchKey = errors.New("no such key")
+
+func (t *jsonLookupTable) get(key string, val interface{}) error {
+	bKey := []byte(key)
+	rd, err := t.ScanPrefix(bKey, nil)
+	if err != nil {
+		return fmt.Errorf("db reader error: %v", err)
 	}
-	return patterns
+	defer rd.Close()
+
+	k, v, err := rd.Next()
+	if err == io.EOF {
+		return errNoSuchKey
+	} else if err != nil {
+		return fmt.Errorf("read error: %v", err)
+	} else if !bytes.Equal(bKey, k) {
+		return errNoSuchKey
+	}
+
+	return json.Unmarshal(v, val)
 }
 
-var filterOpsRE = regexp.MustCompile("[*][*]|[*?]")
+func (t *jsonLookupTable) dumpToText() (err error) {
+	path := t.path + ".txt"
+	f, err := os.Create(path)
+	if err != nil {
+		return fmt.Errorf("error creating %q: %v", path, err)
+	}
+	defer func() {
+		if cErr := f.Close(); err == nil {
+			err = cErr
+			return
+		}
+		if sErr := exec.Command("sort", "-k1", f.Name(), "-o", f.Name()).Run(); err == nil {
+			err = sErr
+		}
+	}()
 
-func filterToRegexp(pattern string) *regexp.Regexp {
-	var re string
+	it, err := t.ScanPrefix(nil, nil)
+	if err != nil {
+		return fmt.Errorf("db scanner error: %v", err)
+	}
+	defer it.Close()
+
 	for {
-		loc := filterOpsRE.FindStringIndex(pattern)
-		if loc == nil {
+		k, v, err := it.Next()
+		if err == io.EOF {
 			break
+		} else if err != nil {
+			return fmt.Errorf("read error: %v", err)
 		}
-		re += regexp.QuoteMeta(pattern[:loc[0]])
-		switch pattern[loc[0]:loc[1]] {
-		case "**":
-			re += ".*"
-		case "*":
-			re += "[^/]*"
-		case "?":
-			re += "[^/]"
-		default:
-			log.Fatal("Unknown filter operator: " + pattern[loc[0]:loc[1]])
-		}
-		pattern = pattern[loc[1]:]
-	}
-	return regexp.MustCompile(re + regexp.QuoteMeta(pattern))
-}
 
-func vnameToTicket(v *spb.VName) string {
-	return kytheuri.FromVName(v).String()
-}
-
-func entryToFact(entry *spb.Entry) *xpb.Fact {
-	return &xpb.Fact{
-		Name:  entry.FactName,
-		Value: entry.FactValue,
-	}
-}
-
-// MatchesAny reports whether if str matches any of the patterns
-func MatchesAny(str string, patterns []*regexp.Regexp) bool {
-	for _, p := range patterns {
-		if p.MatchString(str) {
-			return true
+		if _, err := fmt.Fprintln(f, string(k), string(v)); err != nil {
+			return fmt.Errorf("write error: %v", err)
 		}
 	}
-	return false
+
+	return nil
+}
+
+type nodeFacts map[string][]byte
+type nodeEdges map[string][]string
+
+type node struct {
+	VName *spb.VName
+	Facts nodeFacts
+	Edges nodeEdges
+}
+
+func collectFacts(entries <-chan *spb.Entry) <-chan *node {
+	ch := make(chan *node)
+	go func() {
+		defer close(ch)
+		var n *node
+		for entry := range entries {
+			if n != nil && !graphstore.VNameEqual(n.VName, entry.GetSource()) {
+				ch <- n
+				n = nil
+			}
+
+			if n == nil {
+				n = &node{
+					VName: entry.GetSource(),
+					Facts: make(map[string][]byte),
+					Edges: make(map[string][]string),
+				}
+			}
+
+			edgeKind := entry.GetEdgeKind()
+			if edgeKind == "" {
+				n.Facts[entry.GetFactName()] = entry.FactValue
+			} else {
+				n.Edges[edgeKind] = append(n.Edges[edgeKind], kytheuri.FromVName(entry.GetTarget()).String())
+			}
+		}
+		if n != nil {
+			ch <- n
+		}
+	}()
+	return ch
+}
+
+func panicOnErr(err error) {
+	if err != nil {
+		panic(err)
+	}
 }

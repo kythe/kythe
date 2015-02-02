@@ -45,7 +45,7 @@ PRAGMA case_sensitive_like = true;
 CREATE TABLE IF NOT EXISTS ` + tableName + " (" + columns + ", UNIQUE(" + uniqueColumns + "))"
 )
 
-// DB is a wrapper around a sql.DB that implements storage.GraphStore
+// DB is a wrapper around a sql.DB that implements graphstore.Service
 type DB struct {
 	*sql.DB
 	writeStmt *sql.Stmt

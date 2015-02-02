@@ -7,7 +7,8 @@
         "filetree.go"
       ],
       "go_pkgs": [
-        "//kythe/go/storage",
+        "//kythe/go/services/graphstore",
+        "//kythe/go/services/web",
         "//kythe/go/util/schema",
         "//kythe/proto:storage_proto",
         "//third_party/go/code.google.com:protobuf"

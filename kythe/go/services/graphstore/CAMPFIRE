@@ -1,10 +1,10 @@
 [
   {
-    "name": "storage",
+    "name": "graphstore",
     "kind": "go_library",
     "inputs": {
       "srcs": [
-        "storage.go"
+        "graphstore.go"
       ],
       "go_pkgs": [
         "//kythe/proto:storage_proto"
@@ -12,14 +12,14 @@
     }
   },
   {
-    "name": "storage_test",
+    "name": "graphstore_test",
     "kind": "go_test",
     "inputs": {
       "srcs": [
-        "storage_test.go"
+        "graphstore_test.go"
       ],
       "go_lib": [
-        ":storage"
+        ":graphstore"
       ],
       "go_pkgs": [
         "//kythe/proto:storage_proto",

@@ -26,14 +26,14 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"time"
 
-	"kythe/go/serving/xrefs"
-	"kythe/go/serving/xrefs/tables"
-	"kythe/go/serving/xrefs/tools"
-	"kythe/go/serving/xrefs/web"
-	"kythe/go/storage"
-	"kythe/go/storage/filetree"
+	"kythe/go/services/filetree"
+	"kythe/go/services/graphstore"
+	"kythe/go/services/xrefs"
+	srvx "kythe/go/serving/xrefs"
 	"kythe/go/storage/gsutil"
+	sxrefs "kythe/go/storage/xrefs"
 )
 
 var (
@@ -44,7 +44,7 @@ var (
 	indirectNameNodes = flag.Bool("indirect_names", false, "For xrefs calls, indirect through name nodes to get a complete set of references")
 
 	tablesPath = flag.String("tables", "", "Path to xrefs tables to serve")
-	gs         storage.GraphStore
+	gs         graphstore.Service
 )
 
 func init() {
@@ -62,24 +62,24 @@ func main() {
 	}
 
 	var (
-		tree filetree.FileTree
+		tree filetree.Service
 		xs   xrefs.Service
 	)
 
 	if gs != nil {
 		if !*skipPreprocessing {
-			if err := tools.AddReverseEdges(gs); err != nil {
+			if err := sxrefs.AddReverseEdges(gs); err != nil {
 				log.Fatalf("Failed to add reverse edges: %v", err)
 			}
 		}
 		var err error
-		tree, err = tools.CreateFileTree(gs)
+		tree, err = createFileTree(gs)
 		if err != nil {
 			log.Fatalf("Failed to create GraphStore file tree: %v", err)
 		}
-		xs = xrefs.NewGraphStoreService(gs)
+		xs = sxrefs.NewGraphStoreService(gs)
 	} else {
-		tbls, err := tables.Open(*tablesPath)
+		tbls, err := srvx.Open(*tablesPath)
 		if err != nil {
 			log.Fatalf("Error opening tables at %q: %v", *tablesPath, err)
 		}
@@ -88,13 +88,24 @@ func main() {
 	}
 
 	// Add HTTP handlers
-	handlers := &web.Handlers{xs, tree}
-	mux := http.NewServeMux()
-	web.AddXRefHandlers("", handlers, mux, *indirectNameNodes)
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	xrefs.RegisterHTTPHandlers("", xs, http.DefaultServeMux)
+	filetree.RegisterHTTPHandlers("", tree, http.DefaultServeMux)
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, filepath.Join(*servingDir, filepath.Clean(r.URL.Path)))
 	})
 
 	log.Printf("xrefs browser launching on %q", *listeningAddr)
-	log.Fatal(http.ListenAndServe(*listeningAddr, mux))
+	log.Fatal(http.ListenAndServe(*listeningAddr, nil))
+}
+
+// createFileTree times the population of a filetree.Map with a given
+// GraphStore.
+func createFileTree(gs graphstore.Service) (filetree.Service, error) {
+	log.Println("Creating GraphStore file tree")
+	startTime := time.Now()
+	defer func() {
+		log.Printf("Tree populated in %v", time.Since(startTime))
+	}()
+	t := filetree.NewMap()
+	return t, t.Populate(gs)
 }

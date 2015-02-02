@@ -23,7 +23,7 @@ import (
 	"io"
 	"os"
 
-	"kythe/go/storage"
+	"kythe/go/services/graphstore"
 	"kythe/go/storage/keyvalue"
 
 	"github.com/jmhodges/levigo"
@@ -70,7 +70,7 @@ func ValidDB(path string) bool {
 
 // OpenGraphStore returns a GraphStore backed by a LevelDB database at the given
 // filepath.  If opts==nil, the DefaultOptions are used.
-func OpenGraphStore(path string, opts *Options) (storage.GraphStore, error) {
+func OpenGraphStore(path string, opts *Options) (graphstore.Service, error) {
 	db, err := Open(path, opts)
 	if err != nil {
 		return nil, err
@@ -142,7 +142,11 @@ func (s *levelDB) Writer() (keyvalue.Writer, error) {
 // ScanPrefix implements part of the keyvalue.DB interface.
 func (s *levelDB) ScanPrefix(prefix []byte, opts *keyvalue.Options) (keyvalue.Iterator, error) {
 	iter, ro := s.iterator(opts)
-	iter.Seek(prefix)
+	if len(prefix) == 0 {
+		iter.SeekToFirst()
+	} else {
+		iter.Seek(prefix)
+	}
 	return &iterator{iter, ro, prefix, nil}, nil
 }
 

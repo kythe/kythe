@@ -7,7 +7,7 @@
         "write_entries.go"
       ],
       "go_pkgs": [
-        "//kythe/go/storage",
+        "//kythe/go/services/graphstore",
         "//kythe/go/storage/gsutil",
         "//kythe/go/storage/stream",
         "//kythe/proto:storage_proto"
@@ -23,7 +23,7 @@
       ],
       "go_pkgs": [
         "//kythe/go/platform/delimited",
-        "//kythe/go/storage",
+        "//kythe/go/services/graphstore",
         "//kythe/go/storage/gsutil",
         "//kythe/proto:storage_proto"
       ]
@@ -37,7 +37,7 @@
         "triples.go"
       ],
       "go_pkgs": [
-        "//kythe/go/storage",
+        "//kythe/go/services/graphstore",
         "//kythe/go/storage/gsutil",
         "//kythe/go/storage/stream",
         "//kythe/go/util/encoding/rdf",

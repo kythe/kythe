@@ -25,12 +25,12 @@ import (
 	"strings"
 	"sync"
 
-	"kythe/go/storage"
+	"kythe/go/services/graphstore"
 
 	spb "kythe/proto/storage_proto"
 )
 
-// A Store implements the storage.GraphStore interface for a keyvalue DB
+// A Store implements the graphstore.Service interface for a keyvalue DB
 type Store struct {
 	db DB
 
@@ -204,7 +204,7 @@ func (s *Store) Scan(req *spb.ScanRequest, stream chan<- *spb.Entry) error {
 			return fmt.Errorf("invalid key/value entry: %v", err)
 		}
 
-		if storage.EntryMatchesScan(req, entry) {
+		if graphstore.EntryMatchesScan(req, entry) {
 			stream <- entry
 		}
 	}
