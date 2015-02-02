@@ -9,6 +9,13 @@ var rule = require('./rule.js');
 
 exports.PACKAGE_DIR = 'campfire-out/go/pkg/linux_amd64/';
 
+function GoTool(engine) {
+  rule.Tool.call(this, engine, 'go',
+                 '$gotool', ['version'],
+                 '(?<=go)1\\.[3-9](\\.\\d)', '1.3');
+}
+GoTool.prototype = Object.create(rule.Tool.prototype);
+
 function GoLibrary(engine) {
   this.engine = engine;
 }
@@ -29,7 +36,7 @@ GoLibrary.prototype.getNinjaBuilds = function(target) {
     BUILD: [{
       rule: 'go_compile',
       inputs: srcs,
-      implicits: pkgs,
+      implicits: [target.getVersionMarker('go')].concat(pkgs),
       outs: [target.getFileNode(outPath + '.a', 'go_archive')],
       vars: {
         'package': pkgName,
@@ -79,7 +86,9 @@ GoBinary.prototype.getNinjaBuilds = function(target) {
   return [{
     rule: 'go_compile',
     inputs: srcs,
-    implicits: pkgs.concat(ccLibs),
+    implicits: [target.getVersionMarker('go')]
+        .concat(pkgs)
+        .concat(ccLibs),
     outs: [archive],
     vars: {
       include: exports.constructIncludeArgs(includePaths),
@@ -173,7 +182,7 @@ GoTest.prototype.getNinjaBuilds = function(target) {
   builds.BUILD.push({
     rule: 'go_compile',
     inputs: srcs,
-    implicits: pkgs,
+    implicits: [target.getVersionMarker('go')].concat(pkgs),
     outs: [testArchive],
     vars: {
       'package': testPkg,
@@ -297,7 +306,10 @@ GoExternalLib.prototype.getNinjaBuilds = function(target) {
     BUILD: [{
       rule: 'go_build',
       inputs: [],
-      implicits: ccLibs.concat(deps).concat(srcs),
+      implicits: [target.getVersionMarker('go')]
+          .concat(ccLibs)
+          .concat(deps)
+          .concat(srcs),
       outs: [archive],
       vars: {
         root: root,
@@ -310,6 +322,7 @@ GoExternalLib.prototype.getNinjaBuilds = function(target) {
 };
 
 exports.register = function(engine) {
+  engine.addTool('go', new GoTool(engine));
   engine.addRule('go_library', new GoLibrary(engine));
   engine.addRule('go_test', new GoTest(engine));
   engine.addRule('go_binary', new GoBinary(engine));

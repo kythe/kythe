@@ -60,7 +60,7 @@ function javaNinjaBuild(target, srcs) {
     rule: 'protoc_java',
     phony: target.id + '_java',
     inputs: srcs,
-    implicits: jars,
+    implicits: [target.getVersionMarker('java')].concat(jars),
     outs: [target.getFileNode(target.getRoot('bin') + '.jar', 'java_jar')],
     vars: {
       classpath: rule.getPaths(jars).join(':')
@@ -91,7 +91,7 @@ function goNinjaBuild(target, srcs) {
     rule: 'protoc_go',
     phony: target.id + '_go',
     inputs: srcs,
-    implicits: pkgs,
+    implicits: [target.getVersionMarker('go')].concat(pkgs),
     outs: [target.getFileNode(go_rules.PACKAGE_DIR + target.asPath() + '.a',
                               'go_archive')],
     properties: [new entity.Property(target.id, 'go_include_path', outDir)],
@@ -119,7 +119,7 @@ function ccNinjaBuild(target, srcs) {
     rule: 'protoc_cpp',
     phony: target.id + '_cpp',
     inputs: srcs,
-    implicits: libs,
+    implicits: [target.getVersionMarker('cpp')].concat(libs),
     outs: [archive],
     properties: [new entity.Property(target.id, 'cc_include_path', outputDir)],
     vars: {

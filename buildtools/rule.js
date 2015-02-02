@@ -6,6 +6,38 @@ var path = require('path');
 var graphs = require('./graphs.js');
 var entity = require('./entity.js');
 
+exports.Tool = function(engine, name,
+                        tool, args,
+                        regexp, minversion) {
+  this.engine = engine;
+  this.out = new entity.File(path.join('campfire-out/tools/', name),
+                             'version_marker', this);
+  this.tool = tool;
+  this.args = args;
+  this.regexp = regexp;
+  this.minversion = minversion;
+};
+exports.Tool.prototype.getBuild = function() {
+  if (this.engine.settings.properties['skip_version_checks']) {
+    return {
+      rule: 'touch',
+      inputs: [],
+      outs: [this.out]
+    };
+  }
+  return {
+    rule: 'check_version',
+    inputs: [],
+    outs: [this.out],
+    vars: {
+      tool: this.tool,
+      args: this.args.join(' '),
+      regexp: this.regexp,
+      minversion: this.minversion
+    }
+  };
+};
+
 exports.Target = function(id, json) {
   this.init(id);
   this.json = json;
@@ -87,6 +119,15 @@ exports.Target.prototype.getDirectoryNode = function(path) {
 exports.Target.prototype.getPropertyValue = function(name) {
   var prop = this.getProperty(name);
   return prop ? prop.value : undefined;
+};
+
+exports.Target.prototype.getVersionMarker = function(name) {
+  var tool = this.engine.tools[name];
+  if (!tool) {
+    console.error('ERROR: no such tool named "' + name + '"');
+    process.exit(1);
+  }
+  return tool.out;
 };
 
 exports.Rule = function(engine) {

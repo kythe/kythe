@@ -21,6 +21,20 @@ var LOCAL_COPTS_PROPERTY = 'cc_local_copts';
 // strings.
 var EXPORTED_COPTS_PROPERTY = 'cc_exported_copts';
 
+function CTool(engine) {
+  rule.Tool.call(this, engine, 'c',
+                 '$cpath', ['--version'],
+                 '(?<=clang version )3\\.[4-9]', '3.4');
+}
+CTool.prototype = Object.create(rule.Tool.prototype);
+
+function CppTool(engine) {
+  rule.Tool.call(this, engine, 'cpp',
+                 '$cxxpath', ['--version'],
+                 '(?<=clang version )3\\.[4-9]', '3.4');
+}
+CppTool.prototype = Object.create(rule.Tool.prototype);
+
 function CcLibrary(engine) {
   this.engine = engine;
 }
@@ -71,7 +85,7 @@ CcLibrary.prototype.getNinjaBuilds = function(target) {
       rule: lang + '_compile',
       inputs: [srcs[i]],
       outs: [obj],
-      implicits: deps,
+      implicits: [target.getVersionMarker(lang)].concat(deps),
       vars: {
         copts: opts.join(' ')
       }
@@ -218,6 +232,8 @@ CCExternalLib.prototype.getOutputsFor = function(target, kind) {
 };
 
 exports.register = function(engine) {
+  engine.addTool('c', new CTool(engine));
+  engine.addTool('cpp', new CppTool(engine));
   engine.addRule('cc_library', new CcLibrary(engine));
   engine.addRule('cc_binary', new CcBinary(engine));
   engine.addRule('cc_test', new CcTest(engine));

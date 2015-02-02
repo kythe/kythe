@@ -1,5 +1,14 @@
 ninja_required_version = 1.5
 
+rule touch
+  command = touch -a $out
+  description = touch $out
+  restat = 1
+
+rule check_version
+  command = $tool $args >$out 2>&1; grep -Pq '$regexp' $out || { echo 'Invalid $tool version.  Minimum required version: $minversion (use --skip_version_checks to ignore)'; exit 1; }
+  description = check_version $tool
+
 rule run_test
   command = bash -c "set -o pipefail; $in $args 2>&1 | tee $log && $
                      touch $out || { code=$$?; echo \"Test failure code: $$code\"; exit $$code; }"
