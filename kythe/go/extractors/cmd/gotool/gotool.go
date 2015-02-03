@@ -41,7 +41,7 @@ Extract Kythe compilation records from Go import paths specified on the command 
 Outputs are written to an index pack directory.
 
 If the -campfire flag is set, the extractor assumes the working directory is
-the root of the Kythe repository, and sets up extra paths to handle
+the root of the Kythe repository, and sets up extra paths to handle that.
 
 Options:`)
 		flag.PrintDefaults()
