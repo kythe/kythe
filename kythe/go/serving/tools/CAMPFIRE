@@ -1,33 +1,37 @@
 [
   {
-    "name": "xrefs_server",
+    "name": "http_server",
     "kind": "go_binary",
     "inputs": {
       "srcs": [
-        "xrefs_server.go"
+        "http_server.go"
       ],
       "go_pkgs": [
         "//kythe/go/services/filetree",
         "//kythe/go/services/graphstore",
         "//kythe/go/services/xrefs",
+        "//kythe/go/serving/filetree",
         "//kythe/go/serving/xrefs",
         "//kythe/go/storage/gsutil",
+        "//kythe/go/storage/leveldb",
+        "//kythe/go/storage/table",
         "//kythe/go/storage/xrefs"
       ]
     }
   },
   {
-    "name": "xref_tables",
+    "name": "write_tables",
     "kind": "go_binary",
     "inputs": {
       "srcs": [
-        "xref_tables.go"
+        "write_tables.go"
       ],
       "go_pkgs": [
         "//kythe/go/services/graphstore",
-        "//kythe/go/serving/xrefs",
+        "//kythe/go/serving/pipeline",
         "//kythe/go/storage/gsutil",
-        "//kythe/go/storage/xrefs"
+        "//kythe/go/storage/leveldb",
+        "//kythe/go/storage/table"
       ]
     }
   }

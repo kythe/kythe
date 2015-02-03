@@ -1,13 +1,13 @@
 [
   {
-    "name": "web",
+    "name": "table",
     "kind": "go_library",
     "inputs": {
       "srcs": [
-        "web.go"
+        "table.go"
       ],
       "go_pkgs": [
-        "//kythe/go/util/httpencoding",
+        "//kythe/go/storage/keyvalue",
         "//third_party/go/code.google.com:protobuf"
       ]
     }

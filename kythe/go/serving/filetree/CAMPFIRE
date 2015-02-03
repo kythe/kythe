@@ -1,0 +1,15 @@
+[
+  {
+    "name": "filetree",
+    "kind": "go_library",
+    "inputs": {
+      "srcs": [
+        "filetree.go"
+      ],
+      "go_pkgs": [
+        "//kythe/go/storage/table",
+        "//kythe/proto:serving_proto"
+      ]
+    }
+  }
+]
