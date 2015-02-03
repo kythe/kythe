@@ -17,7 +17,7 @@
             [om.core :as om :include-macros true]
             [om.dom :as dom :include-macros true]
             [ui.service :as service]
-            [ui.util :refer [keywordize-keys path-display]]))
+            [ui.util :refer [path-display basename]]))
 
 (defn- dir-view [state owner {:keys [corpus root path name]}]
   (reify
@@ -39,20 +39,12 @@
                           (om/set-state! owner :failure nil)
                           (service/get-directory corpus root path
                             (fn [dir]
-                              (om/transact! state :contents
-                                (fn [_]
-                                  {:dirs (into {}
-                                           (map (fn [name] [name {}])
-                                             (get dir "dirs")))
-                                   :files (into {}
-                                            (map (fn [[name vnames]]
-                                                   [name (vec (map keywordize-keys vnames))])
-                                              (get dir "files")))}))
+                              (om/transact! state :contents (constantly dir))
                               (om/set-state! owner :status :loaded))
                             (fn [err]
                               (om/set-state! owner :failure err)
                               (om/set-state! owner :status nil))))))}
-          (str (or name (str corpus (if root (str "/" root) ""))) "/ ")
+          (str (or name (path-display corpus root path)) "/ ")
           (when failure
             (dom/span #js {:className "glyphicon glyphicon-exclamation-sign"
                            :title (or (:original-text (:parse-error failure))
@@ -62,18 +54,18 @@
         (when (and expanded (not (empty? (:contents state))))
           (apply dom/ul #js {:className "nav nav-pills nav-stacked"}
             (concat
-              (map (fn [[dir-name dir]]
+              (map (fn [[path dir]]
                      (om/build dir-view dir {:opts {:corpus corpus
                                                     :root root
-                                                    :name dir-name
-                                                    :path (str path dir-name "/")}
+                                                    :name (basename path)
+                                                    :path path}
                                              :init-state {:file-to-view file-to-view}}))
                 (sort-by first (:dirs (:contents state))))
-              (map (fn [[name [vname]]]
+              (map (fn [[name {:keys [vname ticket]}]]
                      (dom/li nil
-                       (dom/a #js {:title (path-display corpus root (str path "/" name))
+                       (dom/a #js {:title (path-display vname)
                                    :href "#"
-                                   :onClick #(put! file-to-view (om/value vname))}
+                                   :onClick #(put! file-to-view (om/value ticket))}
                          name)))
                 (sort-by first (:files (:contents state)))))))))))
 

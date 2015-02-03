@@ -46,7 +46,7 @@
                                                :onClick (fn [_]
                                                           (put! file-to-view
                                                             (assoc (:file %) :offset (:start %))))}
-                                     (str (path-display (:file %))
+                                     (str (path-display (:vname (:file %)))
                                        "[" (:start %) ":" (:end %) "]")))
-                             (sort-by (juxt #(get-in % [:file :path]) :start) refs)))))
+                             (sort-by (juxt #(get-in % [:file :vname :path]) :start) refs)))))
                   (sort-by first state)))))))
