@@ -48,6 +48,18 @@ apt-get install \
 # Bison 2.3
 wget http://archive.kernel.org/debian-archive/debian/pool/main/b/bison/bison_2.3.dfsg-5_amd64.deb -O /tmp/bison_2.3.deb
 dpkg -i /tmp/bison_2.3.deb
+
+# Debian Jessie installs clang-3.5 with version suffixes; this shows campfire
+# what the binaries are named
+echo '{
+  "configurations": {
+    "base": {
+      "cxx_path": "clang++-3.5",
+      "cc_path": "clang-3.5"
+    }
+  }
+}
+' > $HOME/.campfire_settings
 ----
 
 === Building
