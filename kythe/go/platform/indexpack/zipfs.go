@@ -110,11 +110,7 @@ func (z zipFS) Glob(_ context.Context, glob string) ([]string, error) {
 	return names, nil
 }
 
-
-
-func (zipFS) Create(_ context.Context, _ string) (io.WriteCloser, error) {
-	return nil, errNotSupported
-}
-func (zipFS) MkdirAll(_ context.Context, _ string, _ os.FileMode) error { return errNotSupported }
-func (zipFS) Rename(_ context.Context, _, _ string) error               { return errNotSupported }
-func (zipFS) Remove(_ context.Context, _ string) error                  { return errNotSupported }
+func (zipFS) Create(_ context.Context, _ string) (io.WriteCloser, error) { return nil, errNotSupported }
+func (zipFS) MkdirAll(_ context.Context, _ string, _ os.FileMode) error  { return errNotSupported }
+func (zipFS) Rename(_ context.Context, _, _ string) error                { return errNotSupported }
+func (zipFS) Remove(_ context.Context, _ string) error                   { return errNotSupported }
