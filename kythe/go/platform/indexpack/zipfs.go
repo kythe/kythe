@@ -16,6 +16,11 @@
 
 package indexpack
 
+// This file adds a VFS implementation that enables an index pack to be read
+// from a ZIP file of its root directory.  It is not possible to write to the
+// pack in this format, and the methods that support writing will return
+// errors.
+
 import (
 	"archive/zip"
 	"errors"
@@ -29,15 +34,12 @@ import (
 	"golang.org/x/net/context"
 )
 
-// This file adds a VFS implementation that enables an index pack to be read
-// from a ZIP file of its root directory.  It is not possible to write to the
-// pack in this format, and the methods that support writing will return
-// errors.
+// The operations that support writing all return errNotSupported for all calls.
 var errNotSupported = errors.New("operation not supported")
 
 // OpenZip returns a read-only *Archive pointing to the ZIP file at path, which
 // is expected to contain the recursive contents an indexpack directory named
-// rootand its subdirectories.  Operations that write to the pack will return
+// root and its subdirectories.  Operations that write to the pack will return
 // errors.
 func OpenZip(ctx context.Context, path, root string, opts ...Option) (*Archive, error) {
 	prefix := filepath.Dir(path)
@@ -70,7 +72,7 @@ func (z zipFS) find(path string) *zip.File {
 	return nil
 }
 
-// Stat implements part of indexpack.VFS, using the file metadata stored in the
+// Stat implements part of indexpack.VFS using the file metadata stored in the
 // zip archive.  The path must match one of the archive paths, modulo the
 // prefix associated with z.
 func (z zipFS) Stat(_ context.Context, path string) (os.FileInfo, error) {
@@ -92,7 +94,7 @@ func (z zipFS) Open(_ context.Context, path string) (io.ReadCloser, error) {
 	return f.Open()
 }
 
-// Glob implements part of indexpack.VFS, using filepath.Match to compare the
+// Glob implements part of indexpack.VFS using filepath.Match to compare the
 // glob pattern to each archive path as trimmed by the prefix.
 func (z zipFS) Glob(_ context.Context, glob string) ([]string, error) {
 	needle := strings.TrimPrefix(glob, z.prefix)
@@ -108,7 +110,7 @@ func (z zipFS) Glob(_ context.Context, glob string) ([]string, error) {
 	return names, nil
 }
 
-// The operations that support writing all return errNotSupported for all calls.
+
 
 func (zipFS) Create(_ context.Context, _ string) (io.WriteCloser, error) {
 	return nil, errNotSupported
