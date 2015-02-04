@@ -138,7 +138,12 @@ func (m *Map) ensureDir(corpus, root, path string) *srvpb.FileDirectory {
 
 		if path != "/" {
 			parent := m.ensureDir(corpus, root, filepath.Dir(path))
-			parent.Subdirectory = addToSet(parent.Subdirectory, path)
+			uri := kytheuri.URI{
+				Corpus: corpus,
+				Root:   root,
+				Path:   path,
+			}
+			parent.Subdirectory = addToSet(parent.Subdirectory, uri.String())
 		}
 	}
 	return dir
