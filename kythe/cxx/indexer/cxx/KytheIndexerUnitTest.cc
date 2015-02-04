@@ -182,7 +182,8 @@ TEST(KytheIndexerUnitTest, TrivialHappyCase) {
 /// top-level FrontendAction.
 class PushPopLintingGraphObserver : public NullGraphObserver {
  public:
-  void pushFile(clang::SourceLocation Location) override {
+  void pushFile(clang::SourceLocation BlameLocation,
+                clang::SourceLocation Location) override {
     if (!Location.isFileID()) {
       FileNames.push("not-file-id");
       return;

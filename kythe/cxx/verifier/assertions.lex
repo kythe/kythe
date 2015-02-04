@@ -132,10 +132,10 @@ void AssertionParser::ScanBeginFile(bool trace_scanning) {
   BEGIN(INITIAL);
   loc_ofs = 0;
   yy_flex_debug = trace_scanning;
-  if (file_.empty() || file_ == "-") {
+  if (file().empty() || file() == "-") {
     yyin = stdin;
-  } else if (!(yyin = fopen(file_.c_str(), "r"))) {
-    Error("cannot open " + file_ + ": " + strerror(errno));
+  } else if (!(yyin = fopen(file().c_str(), "r"))) {
+    Error("cannot open " + file() + ": " + strerror(errno));
     exit(EXIT_FAILURE);
   }
 }

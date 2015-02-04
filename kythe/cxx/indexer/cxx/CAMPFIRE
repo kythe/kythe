@@ -7,6 +7,7 @@
         "IndexerASTHooks.cc",
         "IndexerFrontendAction.cc",
         "IndexerPPCallbacks.cc",
+        "KytheClaimClient.cc",
         "KytheGraphObserver.cc",
         "KytheGraphRecorder.cc"
       ],
@@ -15,11 +16,13 @@
         "IndexerASTHooks.h",
         "IndexerFrontendAction.h",
         "IndexerPPCallbacks.h",
+        "KytheClaimClient.h",
         "KytheGraphObserver.h",
         "KytheGraphRecorder.h",
         "KytheOutputStream.h"
       ],
       "cc_libs": [
+        "//kythe/cxx/common:lib",
         "//kythe/proto:storage_proto",
         "//third_party/gflags",
         "//third_party/llvm:lib",
@@ -58,6 +61,7 @@
         ":lib",
         "//kythe/cxx/common:lib",
         "//kythe/proto:analysis_proto",
+        "//kythe/proto:claim_proto",
         "//kythe/proto:storage_proto",
         "//third_party/gflags",
         "//third_party/glog",

@@ -24,22 +24,25 @@
     }
   },
   {
-    "name": "index_pack",
+    "name": "bundle",
     "kind": "sh_test",
     "inputs": {
       "srcs": [
-        "test_index_pack.sh"
+        "test_bundle.sh"
       ],
       "tools": [
+        "//kythe/cxx/extractor:cxx_extractor",
         "//kythe/cxx/indexer/cxx:indexer",
-        "//kythe/cxx/verifier",
-        "//kythe/go/platform/tools:indexpack"
+        "//kythe/cxx/verifier"
       ],
       "data": [
-        "kindex_test.header",
-        "kindex_test.main",
-        "kindex_test.unit",
-        "kindex_test.verify"
+        "bundle_self_test.cc",
+        "bundle_self_test_mix.cc",
+        "bundle_self_test_multi_transcript.cc",
+        "bundle_self_test_unclaimed.cc",
+        "bundle_self_test_vnames_json.cc",
+        "claim_macro_features.cc",
+        "test_vnames.json"
       ]
     }
   },
@@ -62,6 +65,14 @@
         "basic/alias_int.cc",
         "basic/alias_int_twice.cc",
         "basic/anchor_utf8.cc",
+        "basic/auto.cc",
+        "basic/auto_const_ref.cc",
+        "basic/auto_multi.cc",
+        "basic/auto_zoo.cc",
+        "basic/decltype.cc",
+        "basic/decltype_auto.cc",
+        "basic/decltype_const_ref.cc",
+        "basic/decltype_parens.cc",
         "basic/empty_case.cc",
         "basic/enum_class_decl.cc",
         "basic/enum_class_element_decl.cc",
@@ -77,6 +88,7 @@
         "basic/file_node_reentrant.cc",
         "basic/function_args_decl.cc",
         "basic/function_args_defn.cc",
+        "basic/function_auto_return.cc",
         "basic/function_decl.cc",
         "basic/function_decl_completes.cc",
         "basic/function_defn.cc",
@@ -96,6 +108,7 @@
         "basic/function_vararg_ty.cc",
         "basic/macros_defn.cc",
         "basic/macros_expand.cc",
+        "basic/macros_expand_transitive.cc",
         "basic/macros_if.cc",
         "basic/macros_if_defined.cc",
         "basic/macros_ifdef.cc",

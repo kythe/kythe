@@ -52,14 +52,26 @@ namespace kythe {
 /// See //kythe/cxx/indexer/cxx/claiming.ad for more details.
 using PreprocessorTranscript = std::string;
 
+/// \brief Describes special handling directives for claiming a resource.
+enum class ClaimDirective {
+  NoDirectivesFound,  ///< No directives were issued.
+  AlwaysClaim         ///< This resource should always be claimed.
+};
+
 /// \brief A record for a single source file.
 struct SourceFile {
   std::string file_content;  ///< The full uninterpreted file content.
+  struct FileHandlingAnnotations {
+    ClaimDirective default_claim;  ///< Claiming behavior for this version.
+    /// The (include-#-offset, that-version) components of the tuple set
+    /// described below.
+    std::map<unsigned, PreprocessorTranscript> out_edges;
+  };
   /// A set of tuples (this-version, include-#-offset, that-version) such that
   /// if we are in file this-version and reach an include at
   /// include-#-offset, we can expect to enter another file that-version.
-  std::map<PreprocessorTranscript, std::map<unsigned, PreprocessorTranscript>>
-      include_history;
+  /// The offset is in number of bytes from the start of the file.
+  std::map<PreprocessorTranscript, FileHandlingAnnotations> include_history;
 };
 
 /// \brief A function the extractor will call once it's done extracting input

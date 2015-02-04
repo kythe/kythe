@@ -58,6 +58,26 @@
     }
   },
   {
+    "name": "claim_pragma",
+    "kind": "sh_test",
+    "inputs": {
+      "srcs": [
+        "test_claim_pragma.sh"
+      ],
+      "tools": [
+        "//kythe/cxx/extractor:cxx_extractor",
+        "//kythe/cxx/tools:kindex_tool"
+      ],
+      "data": [
+        "claim_a.h",
+        "claim_b.h",
+        "claim_main.UNIT",
+        "claim_main.cc",
+        "test_claim_pragma.sh"
+      ]
+    }
+  },
+  {
     "name": "index_pack",
     "kind": "sh_test",
     "inputs": {

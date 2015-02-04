@@ -28,6 +28,7 @@
 
 #include "llvm/ADT/APSInt.h"
 #include "llvm/ADT/StringRef.h"
+#include "llvm/Support/Casting.h"
 #include "llvm/Support/raw_ostream.h"
 
 namespace kythe {
@@ -41,15 +42,54 @@ namespace kythe {
 /// as an argument, the `GraphObserver`'s `SourceManager` must be set.
 class GraphObserver {
 public:
-  // TODO(zarko): Should GraphObserver be parameterized by
-  // another type that provides the definitions of NodeId
-  // and NameId (or just one of these)? Be explicit about
-  // the guarantees about `signature`. There is some text
-  // in the DESIGN file about it. Also, probably s/eId/eID/g.
-  struct NodeId {
-    std::string Signature;
-    // \brief Returns a string representation of this `NodeId`.
-    const std::string &ToString() const { return Signature; }
+  /// \brief Provides additional information about an object that may be
+  /// used to determine responsibility for processing it.
+  ///
+  /// ClaimTokens are owned by the `GraphObserver` and are destroyed
+  /// with the `GraphObserver`. The information they represent is specific
+  /// to each `GraphObserver` implementation and may include the claimable
+  /// object's representative source path, whether a claim has been successfully
+  /// made (thus making the token active), and so on.
+  class ClaimToken {
+  public:
+    virtual ~ClaimToken(){};
+    /// \brief Returns a string representation of `Identity` stamped with this
+    /// token.
+    virtual std::string StampIdentity(const std::string &Identity) const = 0;
+    /// \brief Returns a value unique to each implementation of `ClaimToken`.
+    virtual void *GetClass() const = 0;
+    /// \brief Checks for equality.
+    ///
+    /// `ClaimTokens` are only equal if they have the same value for `GetClass`.
+    virtual bool operator==(const ClaimToken &RHS) const = 0;
+    virtual bool operator!=(const ClaimToken &RHS) const = 0;
+  };
+
+  /// \brief The identifier for an object in the graph being observed.
+  ///
+  /// A node is identified uniquely in the graph by its `Token`, which
+  /// provides evidence of its provenance (and may be used to determine whether
+  /// the node should be analyzed), and its `Identity`, a string of bytes
+  /// determined by the `IndexerASTHooks` and `GraphObserver` override.
+  class NodeId {
+  public:
+    explicit NodeId(const ClaimToken *Token) : Token(Token) {}
+    NodeId(const NodeId &C) { *this = C; }
+    NodeId &operator=(const NodeId *C) {
+      Token = C->Token;
+      Identity = C->Identity;
+      return *this;
+    }
+    /// \brief Returns a string representation of this `NodeId`.
+    std::string ToString() const { return Token->StampIdentity(Identity); }
+    bool operator==(const NodeId &RHS) const {
+      return *Token == *RHS.Token && Identity == RHS.Identity;
+    }
+    bool operator!=(const NodeId &RHS) const {
+      return *Token != *RHS.Token || Identity != RHS.Identity;
+    }
+    const ClaimToken *Token;
+    std::string Identity;
   };
 
   /// \brief A range of source text, potentially associated with a node.
@@ -74,8 +114,8 @@ public:
       Wraith
     };
     /// \brief Constructs a physical `Range` for the given `clang::SourceRange`.
-    explicit Range(const clang::SourceRange &R)
-        : Kind(RangeKind::Physical), PhysicalRange(R) {}
+    Range(const clang::SourceRange &R, const ClaimToken *T)
+        : Kind(RangeKind::Physical), PhysicalRange(R), Context(T) {}
     /// \brief Constructs a `Range` with some physical location, but specific to
     /// the context of some semantic node.
     Range(const clang::SourceRange &R, const NodeId &C)
@@ -129,6 +169,9 @@ public:
 
   /// \param PP The `Preprocessor` to use.
   virtual void setPreprocessor(clang::Preprocessor *PP) { Preprocessor = PP; }
+
+  /// \brief Returns a claim token that provides no additional information.
+  virtual const ClaimToken *getDefaultClaimToken() const = 0;
 
   /// \brief Returns the `NodeId` for the builtin type or type constructor named
   /// by `Spelling`.
@@ -420,8 +463,22 @@ public:
   /// \param SourceRange The `Range` covering the text causing the expansion.
   /// \param MacroId The `NodeId` of the macro being expanded.
   /// \sa recordBoundQueryRange, recordUnboundQueryRange
+  /// \sa recordIndirectlyExpandsRange
   virtual void recordExpandsRange(const Range &SourceRange,
                                   const NodeId &MacroId) {}
+
+  /// \brief Records that a macro was expanded indirectly at some location.
+  ///
+  /// This function is called when a macro with some (potentially empty)
+  /// definition is substituted for that definition because an initial
+  /// macro substitution was made at the provided source location.
+  ///
+  /// \param SourceRange The `Range` covering the original text causing the
+  /// (first) expansion.
+  /// \param MacroId The `NodeId` of the macro being expanded.
+  /// \sa recordBoundQueryRange, recordUnboundQueryRange, recordExpandsRange
+  virtual void recordIndirectlyExpandsRange(const Range &SourceRange,
+                                            const NodeId &MacroId) {}
 
   /// \brief Records that a macro was undefined at some location.
   /// \param SourceRange The `Range` covering the text causing the undefinition.
@@ -458,13 +515,65 @@ public:
   /// The file entered in the first `pushFile` is the compilation unit being
   /// indexed.
   ///
+  /// \param BlameLocation If valid, the `SourceLocation` that caused the file
+  /// to be pushed, e.g., an include directive.
   /// \param Loc A `SourceLocation` in the file being entered.
   /// \sa popFile
-  virtual void pushFile(clang::SourceLocation Location) {}
+  virtual void pushFile(clang::SourceLocation BlameLocation,
+                        clang::SourceLocation Location) {}
 
   /// \brief Called when the previous input file to be entered is left.
   /// \sa pushFile
   virtual void popFile() {}
+
+  /// \brief Checks whether this `GraphObserver` should emit data for some
+  /// `NodeId` and its descendants.
+  ///
+  /// \param NodeId The node to claim.
+  ///
+  /// It is always safe to return `true` here.
+  virtual bool claimNode(const NodeId &NodeId) { return true; }
+
+  /// \brief Checks whether this `GraphObserver` should emit data for
+  /// nodes at some `SourceLocation`.
+  ///
+  /// \param Loc The location to claim.
+  ///
+  /// It is always safe to return `true` here.
+  virtual bool claimLocation(clang::SourceLocation Loc) { return true; }
+
+  /// \brief Returns a `ClaimToken` covering a given source location.
+  ///
+  /// NB: FileIds represent each *inclusion* of a file. This allows us to
+  /// map from the FileId inside a SourceLocation to a (file, transcript)
+  /// pair.
+  virtual const ClaimToken *
+  getClaimTokenForLocation(const clang::SourceLocation L) {
+    return getDefaultClaimToken();
+  }
+
+  /// \brief Returns a `ClaimToken` covering a given source range.
+  virtual const ClaimToken *
+  getClaimTokenForRange(const clang::SourceRange &SR) {
+    return getDefaultClaimToken();
+  }
+
+  /// \brief Append a string representation of `Range` to `Ostream`.
+  /// \return true on success, false if the range was invalid.
+  virtual bool AppendRangeToStream(llvm::raw_ostream &Ostream,
+                                   const Range &Range) {
+    if (Range.PhysicalRange.isInvalid()) {
+      return false;
+    }
+    Range.PhysicalRange.getBegin().print(Ostream, *SourceManager);
+    Ostream << "@";
+    Range.PhysicalRange.getEnd().print(Ostream, *SourceManager);
+    if (Range.Kind == Range::RangeKind::Wraith) {
+      Ostream << "@";
+      Ostream << Range.Context.ToString();
+    }
+    return true;
+  }
 
   virtual ~GraphObserver() = 0;
 
@@ -485,34 +594,59 @@ inline GraphObserver::~GraphObserver() {}
 /// \brief A GraphObserver that does nothing.
 class NullGraphObserver : public GraphObserver {
 public:
+  /// \brief A ClaimToken that provides no information or evidence.
+  class NullClaimToken : public ClaimToken {
+  public:
+    std::string StampIdentity(const std::string &Identity) const override {
+      return Identity;
+    }
+    void *GetClass() const override { return &NullClaimTokenClass; }
+    bool operator==(const ClaimToken &RHS) const override {
+      return RHS.GetClass() == GetClass();
+    }
+    bool operator!=(const ClaimToken &RHS) const override {
+      return RHS.GetClass() != GetClass();
+    }
+
+  private:
+    static void *NullClaimTokenClass;
+  };
+
   NodeId getNodeIdForBuiltinType(const llvm::StringRef &Spelling) override {
-    return NodeId();
+    return NodeId(getDefaultClaimToken());
   }
 
   NodeId nodeIdForTypeAliasNode(const NameId &AliasName,
                                 const NodeId &AliasedType) override {
-    return NodeId();
+    return NodeId(getDefaultClaimToken());
   }
 
   NodeId recordTypeAliasNode(const NameId &AliasName,
                              const NodeId &AliasedType) override {
-    return NodeId();
+    return NodeId(getDefaultClaimToken());
   }
 
   NodeId nodeIdForNominalTypeNode(const NameId &type_name) override {
-    return NodeId();
+    return NodeId(getDefaultClaimToken());
   }
 
   NodeId recordNominalTypeNode(const NameId &TypeName) override {
-    return NodeId();
+    return NodeId(getDefaultClaimToken());
   }
 
   NodeId recordTappNode(const NodeId &TyconId,
                         const std::vector<const NodeId *> &Params) override {
-    return NodeId();
+    return NodeId(getDefaultClaimToken());
+  }
+
+  const ClaimToken *getDefaultClaimToken() const override {
+    return &DefaultToken;
   }
 
   ~NullGraphObserver() {}
+
+private:
+  NullClaimToken DefaultToken;
 };
 
 /// \brief Emits a stringified representation of the given `NameId`,
@@ -540,7 +674,7 @@ inline llvm::raw_ostream &operator<<(llvm::raw_ostream &OS,
 /// \brief Emits a stringified representation of the given `NodeId`.
 inline llvm::raw_ostream &operator<<(llvm::raw_ostream &OS,
                                      const GraphObserver::NodeId &N) {
-  return OS << N.Signature;
+  return OS << N.ToString();
 }
 
 inline std::string GraphObserver::NameId::ToString() const {
@@ -554,7 +688,7 @@ inline bool operator==(const GraphObserver::Range &L,
                        const GraphObserver::Range &R) {
   return L.Kind == R.Kind && L.PhysicalRange == R.PhysicalRange &&
          (L.Kind == GraphObserver::Range::RangeKind::Physical ||
-          L.Context.Signature == R.Context.Signature);
+          L.Context == R.Context);
 }
 
 inline bool operator!=(const GraphObserver::Range &L,

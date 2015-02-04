@@ -1,0 +1,17 @@
+[
+  {
+    "pattern": "campfire-out/test/kythe/cxx/indexer/cxx/testdata/[^/]+/test_bundle/(.*)_(.*)_(.*)",
+    "vname": {
+      "corpus": "@1@",
+      "root": "@2@",
+      "path": "@3@"
+    }
+  },
+  {
+    "pattern": "campfire-out/test/kythe/cxx/indexer/cxx/testdata/[^/]+/test_bundle/(.*)",
+    "vname": {
+      "corpus": "bundle",
+      "path": "@1@"
+    }
+  }
+]

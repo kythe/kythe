@@ -349,10 +349,28 @@ static bool PrintFileSection(FILE *file, size_t start_line, size_t start_ix,
 
 void Verifier::DumpErrorGoal(size_t group, size_t index) {
   FileHandlePrettyPrinter printer(stderr);
-  if (group >= parser_.groups().size() ||
-      index >= parser_.groups()[group].goals.size()) {
-    printer.Print("(invalid index)\n");
-    return;
+  if (group >= parser_.groups().size()) {
+    printer.Print("(invalid group index ");
+    printer.Print(std::to_string(group));
+    printer.Print(")\n");
+  }
+  if (index >= parser_.groups()[group].goals.size()) {
+    if (index > parser_.groups()[group].goals.size() ||
+        parser_.groups()[group].goals.empty()) {
+      printer.Print("(invalid index ");
+      printer.Print(std::to_string(group));
+      printer.Print(":");
+      printer.Print(std::to_string(index));
+      printer.Print(")\n");
+      return;
+    }
+    printer.Print("(past the end of a ");
+    if (parser_.groups()[group].accept_if ==
+        AssertionParser::GoalGroup::kSomeMustFail) {
+      printer.Print("negated ");
+    }
+    printer.Print("group, whose last goal was)\n  ");
+    --index;
   }
   auto *goal = parser_.groups()[group].goals[index];
   yy::location goal_location = goal->location();

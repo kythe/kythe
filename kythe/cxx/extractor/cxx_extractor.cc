@@ -115,21 +115,20 @@ struct ExtractorState {
 
 /// \brief The state we've accumulated within a particular file.
 struct FileState {
-  std::string file_path;         ///< Clang's path for the file.
+  std::string file_path;  ///< Clang's path for the file.
+  /// The default claim behavior for this version.
+  ClaimDirective default_behavior;
   RunningHash history;           ///< Some record of the preprocessor state.
   unsigned last_include_offset;  ///< The #include last seen in this file.
-  /// \brief Maps `#include` directives to transcripts we've observed so far.
+  /// \brief Maps `#include` directives (identified as byte offsets from the
+  /// start of the file to the #) to transcripts we've observed so far.
   std::map<unsigned, PreprocessorTranscript> transcripts;
 };
 
 /// \brief Hooks the Clang preprocessor to detect required include files.
 class ExtractorPPCallbacks : public clang::PPCallbacks {
  public:
-  ExtractorPPCallbacks(ExtractorState state)
-      : source_manager_(state.source_manager),
-        preprocessor_(state.preprocessor),
-        main_source_file_transcript_(state.main_source_file_transcript),
-        source_files_(state.source_files) {}
+  ExtractorPPCallbacks(ExtractorState state);
 
   /// \brief Common utility to pop a file off the file stack.
   ///
@@ -206,6 +205,17 @@ class ExtractorPPCallbacks : public clang::PPCallbacks {
       const clang::FileEntry* File, llvm::StringRef SearchPath,
       llvm::StringRef RelativePath, const clang::Module* Imported) override;
 
+  /// \brief Run by a `clang::PragmaHandler` to handle the `kythe_claim` pragma.
+  ///
+  /// This has the same semantics as `clang::PragmaHandler::HandlePragma`.
+  /// We pass Clang a throwaway `PragmaHandler` instance that delegates to
+  /// this member function.
+  ///
+  /// \sa clang::PragmaHandler::HandlePragma
+  void HandlePragma(clang::Preprocessor& preprocessor,
+                    clang::PragmaIntroducerKind introducer,
+                    clang::Token& first_token);
+
  private:
   /// \brief Returns the main file for this compile action.
   const clang::FileEntry* GetMainFile();
@@ -231,19 +241,43 @@ class ExtractorPPCallbacks : public clang::PPCallbacks {
   std::unordered_map<std::string, SourceFile>* const source_files_;
 };
 
+ExtractorPPCallbacks::ExtractorPPCallbacks(ExtractorState state)
+    : source_manager_(state.source_manager),
+      preprocessor_(state.preprocessor),
+      main_source_file_transcript_(state.main_source_file_transcript),
+      source_files_(state.source_files) {
+  class PragmaHandlerWrapper : public clang::PragmaHandler {
+   public:
+    PragmaHandlerWrapper(ExtractorPPCallbacks* context)
+        : PragmaHandler("kythe_claim"), context_(context) {}
+    void HandlePragma(clang::Preprocessor& preprocessor,
+                      clang::PragmaIntroducerKind introducer,
+                      clang::Token& first_token) override {
+      context_->HandlePragma(preprocessor, introducer, first_token);
+    }
+
+   private:
+    ExtractorPPCallbacks* context_;
+  };
+  // Clang takes ownership.
+  preprocessor_->AddPragmaHandler(new PragmaHandlerWrapper(this));
+}
+
 void ExtractorPPCallbacks::FileChanged(
     clang::SourceLocation /*Loc*/, FileChangeReason Reason,
     clang::SrcMgr::CharacteristicKind /*FileType*/, clang::FileID /*PrevFID*/) {
   if (Reason == EnterFile) {
     if (last_inclusion_directive_path_.empty()) {
-      current_files_.push(FileState{GetMainFile()->getName()});
+      current_files_.push(FileState{GetMainFile()->getName(),
+                                    ClaimDirective::NoDirectivesFound});
     } else {
       CHECK(!current_files_.empty());
       current_files_.top().last_include_offset = last_inclusion_offset_;
-      current_files_.push(FileState{last_inclusion_directive_path_});
+      current_files_.push(FileState{last_inclusion_directive_path_,
+                                    ClaimDirective::NoDirectivesFound});
     }
   } else if (Reason == ExitFile) {
-    PreprocessorTranscript transcript = PopFile();
+    auto transcript = PopFile();
     if (!current_files_.empty()) {
       history()->Update(transcript);
     }
@@ -254,15 +288,18 @@ PreprocessorTranscript ExtractorPPCallbacks::PopFile() {
   CHECK(!current_files_.empty());
   PreprocessorTranscript top_transcript =
       current_files_.top().history.CompleteAndReset();
+  ClaimDirective top_directive = current_files_.top().default_behavior;
   auto file_data = source_files_->find(current_files_.top().file_path);
   if (file_data == source_files_->end()) {
     // We pop the main source file before doing anything interesting.
     return top_transcript;
   }
-  auto old_record = file_data->second.include_history.insert(
-      std::make_pair(top_transcript, current_files_.top().transcripts));
+  auto old_record = file_data->second.include_history.insert(std::make_pair(
+      top_transcript, SourceFile::FileHandlingAnnotations{
+                          top_directive, current_files_.top().transcripts}));
   if (!old_record.second) {
-    if (old_record.first->second != current_files_.top().transcripts) {
+    if (old_record.first->second.out_edges !=
+        current_files_.top().transcripts) {
       LOG(ERROR) << "Previous record for "
                  << current_files_.top().file_path.c_str() << " for transcript "
                  << top_transcript.c_str()
@@ -448,6 +485,13 @@ RunningHash* ExtractorPPCallbacks::history() {
   return &current_files_.top().history;
 }
 
+void ExtractorPPCallbacks::HandlePragma(clang::Preprocessor& preprocessor,
+                                        clang::PragmaIntroducerKind introducer,
+                                        clang::Token& first_token) {
+  CHECK(!current_files_.empty());
+  current_files_.top().default_behavior = ClaimDirective::AlwaysClaim;
+}
+
 class ExtractorAction : public clang::PreprocessorFrontendAction {
  public:
   explicit ExtractorAction(ExtractorCallback callback) : callback_(callback) {}
@@ -629,7 +673,10 @@ void IndexWriter::FillFileInput(
   for (const auto& row : source_file.include_history) {
     auto* row_pb = file_input->add_context();
     row_pb->set_source_context(row.first);
-    for (const auto& col : row.second) {
+    if (row.second.default_claim == ClaimDirective::AlwaysClaim) {
+      row_pb->set_always_process(true);
+    }
+    for (const auto& col : row.second.out_edges) {
       auto* col_pb = row_pb->add_column();
       col_pb->set_offset(col.first);
       col_pb->set_linked_context(col.second);

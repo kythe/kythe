@@ -68,7 +68,7 @@ bool AssertionParser::ParseInlineRuleString(const std::string &content,
                                             const char *comment_prefix) {
   lex_check_against_ = comment_prefix;
   had_errors_ = false;
-  file_ = fake_filename;
+  files_.push_back(fake_filename);
   ResetLexCheck();
   ScanBeginString(content, trace_lex_);
   yy::AssertionParserImpl parser(*this);
@@ -81,7 +81,7 @@ bool AssertionParser::ParseInlineRuleString(const std::string &content,
 bool AssertionParser::ParseInlineRuleFile(const std::string &filename,
                                           const char *comment_prefix) {
   lex_check_against_ = comment_prefix;
-  file_ = filename;
+  files_.push_back(filename);
   had_errors_ = false;
   ResetLexCheck();
   ScanBeginFile(trace_lex_);
@@ -101,7 +101,7 @@ void AssertionParser::Error(const yy::location &location,
 
 void AssertionParser::Error(const std::string &message) {
   // TODO(zarko): replace with a PrettyPrinter
-  std::cerr << "When trying " << file_ << ": " << message << std::endl;
+  std::cerr << "When trying " << file() << ": " << message << std::endl;
   had_errors_ = true;
 }
 

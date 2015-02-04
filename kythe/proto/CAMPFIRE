@@ -27,6 +27,24 @@
     }
   },
   {
+    "name": "claim_proto",
+    "kind": "proto_library",
+    "inputs": {
+      "srcs": [
+        "claim.proto"
+      ],
+      "proto_libs": [
+        ":storage_proto"
+      ],
+      "cc_libs": [
+        "//third_party/protobuf:protobuf_cc"
+      ]
+    },
+    "properties": {
+      "cc_api": true
+    }
+  },
+  {
     "name": "storage_proto",
     "kind": "proto_library",
     "inputs": {

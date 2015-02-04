@@ -45,11 +45,7 @@ namespace kythe {
 
 IndexerPPCallbacks::IndexerPPCallbacks(const clang::Preprocessor &PP,
                                        GraphObserver &GO)
-    : Preprocessor(PP), Observer(GO) {
-  // Silence an unused member warning (as this member will be used shortly
-  // in a future change).
-  (void)Preprocessor;
-}
+    : Preprocessor(PP), Observer(GO) {}
 
 IndexerPPCallbacks::~IndexerPPCallbacks() {}
 
@@ -59,7 +55,7 @@ void IndexerPPCallbacks::FileChanged(clang::SourceLocation Loc,
                                      clang::FileID PrevFID) {
   switch (Reason) {
   case clang::PPCallbacks::EnterFile:
-    Observer.pushFile(Loc);
+    Observer.pushFile(LastInclusionHash, Loc);
     break;
   case clang::PPCallbacks::ExitFile:
     Observer.popFile();
@@ -118,10 +114,13 @@ void IndexerPPCallbacks::MacroDefined(const clang::Token &Token,
     return;
   }
   GraphObserver::NodeId MacroId = BuildNodeIdForMacro(Token, Info);
-  GraphObserver::NameId MacroName = BuildNameIdForMacro(Token);
-  Observer.recordDefinitionRange(RangeForTokenInCurrentContext(Token), MacroId);
-  Observer.recordMacroNode(MacroId);
-  Observer.recordNamedEdge(MacroId, MacroName);
+  if (Observer.claimNode(MacroId)) {
+    GraphObserver::NameId MacroName = BuildNameIdForMacro(Token);
+    Observer.recordDefinitionRange(RangeForTokenInCurrentContext(Token),
+                                   MacroId);
+    Observer.recordMacroNode(MacroId);
+    Observer.recordNamedEdge(MacroId, MacroName);
+  }
   // TODO(zarko): Record information about the definition (like other macro
   // references).
 }
@@ -141,17 +140,31 @@ void IndexerPPCallbacks::MacroExpands(const clang::Token &Token,
                                       const clang::MacroDirective *Macro,
                                       clang::SourceRange Range,
                                       const clang::MacroArgs *Args) {
-  if (Macro == nullptr) {
+  if (Macro == nullptr || Range.isInvalid()) {
     return;
   }
-  if (Range.isInvalid() || !Range.getBegin().isFileID() ||
-      !Range.getEnd().isFileID()) {
-    // Only record the starting point of an expansion graph.
-    return;
-  }
+
   const clang::MacroInfo &Info = *Macro->getMacroInfo();
   GraphObserver::NodeId MacroId = BuildNodeIdForMacro(Token, Info);
-  Observer.recordExpandsRange(RangeForTokenInCurrentContext(Token), MacroId);
+  if (!Range.getBegin().isFileID() || !Range.getEnd().isFileID()) {
+    auto NewBegin =
+        Observer.getSourceManager()->getExpansionLoc(Range.getBegin());
+    if (!NewBegin.isFileID()) {
+      return;
+    }
+    Range = clang::SourceRange(NewBegin,
+                               clang::Lexer::getLocForEndOfToken(
+                                   NewBegin, 0, /* offset from end of token */
+                                   *Observer.getSourceManager(),
+                                   *Observer.getLangOptions()));
+    if (Range.isInvalid()) {
+      return;
+    }
+    Observer.recordIndirectlyExpandsRange(RangeInCurrentContext(Range),
+                                          MacroId);
+  } else {
+    Observer.recordExpandsRange(RangeForTokenInCurrentContext(Token), MacroId);
+  }
   // TODO(zarko): Index macro arguments.
 }
 
@@ -189,6 +202,7 @@ void IndexerPPCallbacks::InclusionDirective(
     Observer.recordIncludesRange(
         RangeInCurrentContext(FilenameRange.getAsRange()), FileEntry);
   }
+  LastInclusionHash = HashLocation;
 }
 
 void IndexerPPCallbacks::AddMacroReferenceIfDefined(
@@ -241,8 +255,9 @@ IndexerPPCallbacks::BuildNodeIdForMacro(const clang::Token &Spelling,
   // Macro definitions always appear at the topmost level *and* always appear
   // in source text (or are implicit). For this reason, it's safe to use
   // location information to stably unique them.
-  GraphObserver::NodeId Id;
-  llvm::raw_string_ostream Ostream(Id.Signature);
+  GraphObserver::NodeId Id(
+      Observer.getClaimTokenForLocation(Info.getDefinitionLoc()));
+  llvm::raw_string_ostream Ostream(Id.Identity);
   Ostream << BuildNameIdForMacro(Spelling);
   clang::SourceLocation Loc = Info.getDefinitionLoc();
   if (Loc.isInvalid()) {

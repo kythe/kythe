@@ -18,11 +18,40 @@
     }
   },
   {
+    "name": "claimcmdlib",
+    "kind": "cc_library",
+    "inputs": {
+      "srcs": [
+        "static_claim_main.cc"
+      ],
+      "hdrs": [],
+      "cc_libs": [
+        "//kythe/cxx/common:lib",
+        "//kythe/proto:analysis_proto",
+        "//kythe/proto:claim_proto",
+        "//kythe/proto:storage_proto",
+        "//third_party/gflags",
+        "//third_party/glog",
+        "//third_party/protobuf:protobuf_cc",
+        "//third_party/zlib"
+      ]
+    }
+  },
+  {
     "name": "kindex_tool",
     "kind": "cc_binary",
     "inputs": {
       "cc_libs": [
         ":cmdlib"
+      ]
+    }
+  },
+  {
+    "name": "static_claim",
+    "kind": "cc_binary",
+    "inputs": {
+      "cc_libs": [
+        ":claimcmdlib"
       ]
     }
   }

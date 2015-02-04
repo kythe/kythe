@@ -40,6 +40,7 @@
 #include "google/protobuf/stubs/common.h"
 #include "kythe/cxx/common/index_pack.h"
 #include "kythe/proto/analysis.pb.h"
+#include "kythe/proto/claim.pb.h"
 
 #include "IndexerFrontendAction.h"
 #include "KytheGraphObserver.h"
@@ -52,11 +53,37 @@ DEFINE_bool(ignore_unimplemented, false,
             "Continue indexing even if we find something we don't support.");
 DEFINE_bool(flush_after_each_entry, false,
             "Flush output after writing each entry.");
+DEFINE_string(static_claim, "", "Use a static claim table.");
+DEFINE_bool(claim_unknown, true, "Process files with unknown claim status.");
 DEFINE_bool(index_template_instantiations, true,
             "Index template instantiations.");
 DEFINE_string(index_pack, "", "Mount an index pack rooted at this directory.");
 
 namespace kythe {
+/// \brief Reads the output of the static claim tool.
+///
+/// `path` should be a file that contains a GZip-compressed sequence of
+/// varint-prefixed wire format ClaimAssignment protobuf messages.
+static void DecodeStaticClaimTable(const std::string &path,
+                                   kythe::StaticClaimClient *client) {
+  using namespace google::protobuf::io;
+  int fd = open(path.c_str(), O_RDONLY, S_IREAD | S_IWRITE);
+  CHECK_GE(fd, 0) << "Couldn't open input file " << path;
+  FileInputStream file_input_stream(fd);
+  GzipInputStream gzip_input_stream(&file_input_stream);
+  CodedInputStream coded_input_stream(&gzip_input_stream);
+  google::protobuf::uint32 byte_size;
+  while (coded_input_stream.ReadVarint32(&byte_size)) {
+    auto limit = coded_input_stream.PushLimit(byte_size);
+    kythe::proto::ClaimAssignment claim;
+    CHECK(claim.ParseFromCodedStream(&coded_input_stream));
+    // NB: We don't filter on compilation unit here. A dependency has three
+    // static states (wrt some CU): unknown, owned by CU, owned by another CU.
+    client->AssignClaim(claim.dependency_v_name(), claim.compilation_v_name());
+    coded_input_stream.PopLimit(limit);
+  }
+  close(fd);
+}
 
 /// \brief Reads data from a .kindex file into memory.
 /// \param path The path from which the file should be read.
@@ -230,6 +257,12 @@ Examples:
     virtual_files.push_back(std::move(file_data));
   }
 
+  kythe::StaticClaimClient claim_client;
+  if (!FLAGS_static_claim.empty()) {
+    DecodeStaticClaimTable(FLAGS_static_claim, &claim_client);
+  }
+  claim_client.set_process_unknown_status(FLAGS_claim_unknown);
+
   int write_fd = STDOUT_FILENO;
   if (FLAGS_o != "-") {
     write_fd = open(FLAGS_o.c_str(), O_WRONLY | O_CREAT | O_TRUNC,
@@ -243,21 +276,55 @@ Examples:
   bool had_no_errors;
   {
     google::protobuf::io::FileOutputStream raw_output(write_fd);
-    FileOutputStream kythe_output(&raw_output);
-    KytheGraphRecorder kythe_recorder(&kythe_output);
-    KytheGraphObserver observer(&kythe_recorder);
-    std::map<std::string, proto::VName> path_to_vname;
+    kythe::FileOutputStream kythe_output(&raw_output);
+    kythe::KytheGraphRecorder kythe_recorder(&kythe_output);
+    kythe::KytheGraphObserver observer(&kythe_recorder, &claim_client);
+    observer.set_claimant(unit.v_name());
+    std::map<std::string, kythe::proto::VName> path_to_vname;
+    observer.set_starting_context(unit.entry_context());
+    // It seems as though Clang doesn't use file_system_options.WorkingDir
+    // as expected. Make another mapping with relative paths when we need it.
+    std::string expect_prefix;
+    if (!file_system_options.WorkingDir.empty()) {
+      expect_prefix = (file_system_options.WorkingDir +
+                       llvm::sys::path::get_separator()).str();
+    }
+
     for (const auto &input : unit.required_input()) {
       if (input.has_info() && input.info().has_path() && input.has_v_name()) {
         observer.set_path_vname(input.info().path(), input.v_name());
         path_to_vname[input.info().path()] = input.v_name();
       }
+      const std::string &file_path = input.info().path();
+      std::string file_relative_path;
+      if (!expect_prefix.empty() &&
+          llvm::StringRef(file_path).startswith(expect_prefix)) {
+        file_relative_path = file_path.substr(expect_prefix.size());
+      }
+      for (const auto &row : input.context()) {
+        if (row.always_process()) {
+          auto claimable_vname = input.v_name();
+          claimable_vname.set_signature(row.source_context() +
+                                        claimable_vname.signature());
+          claim_client.AssignClaim(claimable_vname, unit.v_name());
+        }
+        for (const auto &col : row.column()) {
+          observer.AddContextInformation(file_path, row.source_context(),
+                                         col.offset(), col.linked_context());
+          if (!file_relative_path.empty()) {
+            observer.AddContextInformation(file_relative_path,
+                                           row.source_context(), col.offset(),
+                                           col.linked_context());
+          }
+        }
+      }
     }
-    std::unique_ptr<IndexerFrontendAction> action(
-        new IndexerFrontendAction(&observer));
-    action->setIgnoreUnimplemented(FLAGS_ignore_unimplemented
-                                       ? BehaviorOnUnimplemented::Continue
-                                       : BehaviorOnUnimplemented::Abort);
+
+    std::unique_ptr<kythe::IndexerFrontendAction> action(
+        new kythe::IndexerFrontendAction(&observer));
+    action->setIgnoreUnimplemented(
+        FLAGS_ignore_unimplemented ? kythe::BehaviorOnUnimplemented::Continue
+                                   : kythe::BehaviorOnUnimplemented::Abort);
     action->setTemplateMode(FLAGS_index_template_instantiations
                                 ? BehaviorOnTemplates::VisitInstantiations
                                 : BehaviorOnTemplates::SkipInstantiations);
@@ -266,13 +333,6 @@ Examples:
     final_args.insert(final_args.begin() + 1, "-fsyntax-only");
     clang::tooling::ToolInvocation invocation(final_args, action.release(),
                                               file_manager.get());
-    // It seems as though Clang doesn't use file_system_options.WorkingDir
-    // as expected. Make another mapping with relative paths when we need it.
-    std::string expect_prefix;
-    if (!file_system_options.WorkingDir.empty()) {
-      expect_prefix = (file_system_options.WorkingDir +
-                       llvm::sys::path::get_separator()).str();
-    }
     for (const auto &file : virtual_files) {
       llvm::StringRef file_content(file.content().data(),
                                    file.content().size());

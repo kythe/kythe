@@ -1,0 +1,67 @@
+v_name {
+  signature: "cu#701540b440f4a705d068bf22dca4963251447feb72b2cdecd24c83ac369dedf7"
+  corpus: ""
+  language: "c++"
+}
+required_input {
+  v_name {
+    corpus: ""
+    path: "kythe/cxx/extractor/testdata/claim_main.cc"
+    language: "c++"
+  }
+  info {
+    path: "./kythe/cxx/extractor/testdata/claim_main.cc"
+    digest: "4b19bb44ad66bc14a2b29694604420990d94e2b27bb55d10ce9ad5a93f6a6bde"
+  }
+  context {
+    source_context: "030fe2633e9a305bb89631df43ee3aa517819018435e7c3f10a121280d5d74fa"
+    column {
+      offset: 12
+      linked_context: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+    column {
+      offset: 33
+      linked_context: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+    always_process: true
+  }
+}
+required_input {
+  v_name {
+    corpus: ""
+    path: "kythe/cxx/extractor/testdata/claim_b.h"
+    language: "c++"
+  }
+  info {
+    path: "./kythe/cxx/extractor/testdata/claim_b.h"
+    digest: "a3d03965930673eced0d8ad50753f1933013a27a06b8be57443781275f1f937f"
+  }
+  context {
+    source_context: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    always_process: true
+  }
+}
+required_input {
+  v_name {
+    corpus: ""
+    path: "kythe/cxx/extractor/testdata/claim_a.h"
+    language: "c++"
+  }
+  info {
+    path: "./kythe/cxx/extractor/testdata/claim_a.h"
+    digest: "2c339c36aa02459955c6d5be9e73ebe030baf3b74dc1123439af8613844d0b1f"
+  }
+  context {
+    source_context: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}
+has_compile_errors: false
+argument: "/usr/bin/g++"
+argument: "-resource-dir"
+argument: "/kythe_builtins"
+argument: "-I./kythe/cxx/extractor/testdata"
+argument: "./kythe/cxx/extractor/testdata/claim_main.cc"
+argument: "-fsyntax-only"
+source_file: "./kythe/cxx/extractor/testdata/claim_main.cc"
+working_directory: "."
+entry_context: "030fe2633e9a305bb89631df43ee3aa517819018435e7c3f10a121280d5d74fa"

@@ -7,3 +7,4 @@ template <typename T> T v;
 //- AppPTInt param.0 PrimaryTemplateV
 //- AppPTInt param.1 vname("int#builtin",_,_,_,_)
 template <> int v<int>;
+template <> float v<float>;

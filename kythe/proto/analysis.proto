@@ -99,6 +99,9 @@ message CompilationUnit {
     optional string source_context = 1;
     // A map from byte offsets to linked contexts.
     repeated ContextDependentVersionColumn column = 2;
+    // If true, this version should always be processed regardless of any
+    // claiming.
+    optional bool always_process = 3;
   }
 
   message FileInput {

@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+#ifndef KYTHE_CXX_COMMON_INDEX_PACK_H_
+#define KYTHE_CXX_COMMON_INDEX_PACK_H_
+
 #include <memory>
 #include <string>
 
@@ -260,3 +263,5 @@ bool WriteMessageAsJsonToString(const google::protobuf::Message &message,
                                 const std::string &format_key,
                                 std::string *out);
 }
+
+#endif  // KYTHE_CXX_COMMON_INDEX_PACK_H_

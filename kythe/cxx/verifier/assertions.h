@@ -17,6 +17,7 @@
 #ifndef KYTHE_CXX_VERIFIER_ASSERTIONS_H_
 #define KYTHE_CXX_VERIFIER_ASSERTIONS_H_
 
+#include <deque>
 #include <unordered_map>
 #include <vector>
 
@@ -71,8 +72,9 @@ class AssertionParser {
                              const std::string &fake_filename,
                              const char *comment_prefix);
 
-  /// \brief The name of the current file being read.
-  std::string &file() { return file_; }
+  /// \brief The name of the current file being read. It is safe to take
+  /// the address of this string (which shares the lifetime of this object.)
+  std::string &file() { return files_.back(); }
 
   /// \brief This `AssertionParser`'s associated `Verifier`.
   Verifier &verifier() { return verifier_; }
@@ -269,7 +271,9 @@ class AssertionParser {
   std::vector<UnresolvedLocation> unresolved_locations_;
   std::vector<AstNode *> node_stack_;
   std::vector<std::string> location_spec_stack_;
-  std::string file_;
+  /// Files we've parsed or are parsing (pushed onto the back).
+  /// Note that location records will have internal pointers to these strings.
+  std::deque<std::string> files_;
   std::string line_;
   /// The comment prefix we're looking for.
   std::string lex_check_against_;

@@ -97,7 +97,7 @@ private:
   GraphObserver::Range RangeInCurrentContext(const clang::SourceRange &SR) {
     // TODO(zarko): which expansion are we in? (We don't generally want
     // to record this, though.)
-    return GraphObserver::Range(SR);
+    return GraphObserver::Range(SR, Observer.getClaimTokenForRange(SR));
   }
 
   /// \brief Records the use of a macro if that macro is defined.
@@ -124,6 +124,8 @@ private:
   /// \param Spelling A token representing the macro's spelling.
   GraphObserver::NameId BuildNameIdForMacro(const clang::Token &Spelling);
 
+  /// The location of the hash for the last-seen #include.
+  clang::SourceLocation LastInclusionHash;
   /// The `clang::Preprocessor` to which this `IndexerPPCallbacks` is listening.
   const clang::Preprocessor &Preprocessor;
   /// The `GraphObserver` we will use for reporting information.

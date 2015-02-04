@@ -29,7 +29,8 @@
       "hdrs": [
         "CommandLineUtils.h",
         "file_vname_generator.h",
-        "index_pack.h"
+        "index_pack.h",
+        "vname_ordering.h"
       ],
       "cc_libs": [
         ":sha_lib",

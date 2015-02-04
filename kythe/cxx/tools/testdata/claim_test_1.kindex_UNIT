@@ -1,0 +1,22 @@
+v_name {
+  signature: "claim_test_1"
+}
+required_input {
+  v_name {
+    path: "a.h"
+  }
+  context {
+    source_context: "a.h_1"
+  }
+  context {
+    source_context: "a.h_2"
+  }
+}
+required_input {
+  v_name {
+    path: "c.h"
+  }
+  context {
+    source_context: "c.h_1"
+  }
+}

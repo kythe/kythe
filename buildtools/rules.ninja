@@ -11,7 +11,7 @@ rule check_version
 
 rule run_test
   command = bash -c "set -o pipefail; $in $args 2>&1 | tee $log && $
-                     touch $out || { code=$$?; echo \"Test failure code: $$code\"; exit $$code; }"
+                     touch $out || { code=\$$?; echo Test failure code: \$$code; exit \$$code; }"
   description = test $in $args
 
 rule javac
@@ -116,7 +116,7 @@ rule docker_push
   pool = console
 
 rule kythe_extractor
-  command = bash -c "tmp=$$(mktemp -d) && $
+  command = bash -c "tmp=\$$(mktemp -d) && $
                      trap \"rm -rf '\$$tmp'\" ERR EXIT INT && $
                      KYTHE_VNAMES=$vnames KYTHE_OUTPUT_DIRECTORY=\$$tmp KYTHE_ROOT_DIRECTORY=\$$PWD $in $args && $
                      mv \"\$$tmp\"/*.kindex $out"
@@ -133,7 +133,8 @@ rule kythe_verifier
   description = kythe_verifier $owner
 
 rule asciidoc
-  command = $asciidoc $args --backend=$backend -o $out $in
+  command = bash -c "set -o pipefail; $asciidoc $args --backend=$backend -o $out $in 2>&1 | $
+                     awk '/filter non-zero exit code/ {code=1} // {print} END {exit code}'"
   description = asciidoc $in
 
 rule genlex

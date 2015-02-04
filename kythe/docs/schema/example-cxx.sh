@@ -77,11 +77,12 @@ CXX_ARGS="-std=c++1y $(cat "$ARGS_FILE")"
 
 set +e # Handle these error separately below
 "$CXX_INDEXER_BIN" -i "$TEST_MAIN" -- $CXX_ARGS | "$VERIFIER_BIN" "$SRCS"/*
+RESULTS=( ${PIPESTATUS[0]} ${PIPESTATUS[1]} )
 set -e
 
-if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
+if [[ ${RESULTS[0]} -ne 0 ]]; then
   error INDEX
-elif [[ ${PIPESTATUS[1]} -ne 0 ]]; then
+elif [[ ${RESULTS[1]} -ne 0 ]]; then
   error VERIFY
 fi
 

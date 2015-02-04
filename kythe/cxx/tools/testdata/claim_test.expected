@@ -1,0 +1,27 @@
+compilation_v_name {
+  signature: "claim_test_2"
+}
+dependency_v_name {
+  path: "b.h"
+}
+compilation_v_name {
+  signature: "claim_test_1"
+}
+dependency_v_name {
+  signature: "a.h_1"
+  path: "a.h"
+}
+compilation_v_name {
+  signature: "claim_test_1"
+}
+dependency_v_name {
+  signature: "a.h_2"
+  path: "a.h"
+}
+compilation_v_name {
+  signature: "claim_test_1"
+}
+dependency_v_name {
+  signature: "c.h_1"
+  path: "c.h"
+}

@@ -1,0 +1,12 @@
+#pragma kythe_claim
+// This is a multiplexed test file. The default file will be named
+// test.cc.
+#include "a.h"
+//- AnchorC.node/kind anchor
+//- AnchorC childof vname("","bundle","","test.cc","c++")
+#define C macroc
+#example a.h
+// This is now a header file called a.h. It is unclaimed.
+//- !{ @A=AnchorA.node/kind anchor
+//-    AnchorA childof vname("","bundle","","a.h","c++") }
+#define A macroa

@@ -271,6 +271,30 @@ public:
   /// \param Type The type that is being identified. If its location is valid
   /// and `ER` is `EmitRanges::Yes`, notifies the attached `GraphObserver` about
   /// the location of constituent elements.
+  /// \param DType The deduced form of `Type`. (May be `Type.getTypePtr()`).
+  /// \param ER whether to notify the `GraphObserver` about source text ranges
+  /// for types.
+  /// \return The Node ID for `Type`.
+  MaybeFew<GraphObserver::NodeId> BuildNodeIdForType(const clang::TypeLoc &Type,
+                                                     const clang::Type *DType,
+                                                     EmitRanges ER);
+
+  /// \brief Builds a stable node ID for `Type`.
+  /// \param Type The type that is being identified. If its location is valid
+  /// and `ER` is `EmitRanges::Yes`, notifies the attached `GraphObserver` about
+  /// the location of constituent elements.
+  /// \param QT The deduced form of `Type`. (May be `Type.getType()`).
+  /// \param ER whether to notify the `GraphObserver` about source text ranges
+  /// for types.
+  /// \return The Node ID for `Type`.
+  MaybeFew<GraphObserver::NodeId> BuildNodeIdForType(const clang::TypeLoc &Type,
+                                                     const clang::QualType &QT,
+                                                     EmitRanges ER);
+
+  /// \brief Builds a stable node ID for `Type`.
+  /// \param Type The type that is being identified. If its location is valid
+  /// and `ER` is `EmitRanges::Yes`, notifies the attached `GraphObserver` about
+  /// the location of constituent elements.
   /// \param ER whether to notify the `GraphObserver` about source text ranges
   /// for types.
   /// \return The Node ID for `Type`.
@@ -537,12 +561,16 @@ private:
                               const MaybeFew<GraphObserver::NodeId> &Param);
 
   /// \brief Ascribes a type to `AscribeTo`.
-  /// \param TypeSpellingRange The `SourceRange` associated with the type's
-  /// spelling in the source text.
   /// \param Type The `TypeLoc` referring to the type
+  /// \param DType A possibly deduced type (or simply Type->getType()).
   /// \param AscribeTo The node to which the type should be ascribed.
-  void AscribeSpelledType(const clang::SourceRange &TypeSpellingRange,
-                          const clang::TypeLoc &Type,
+  ///
+  /// `auto` does not update TypeSourceInfo records after deduction, so
+  /// a deduced `auto` in the source text will appear to be undeduced.
+  /// In this case, it's useful to query the object being ascribed for its
+  /// unlocated QualType, as this does get updated.
+  void AscribeSpelledType(const clang::TypeLoc &Type,
+                          const clang::QualType &DType,
                           const GraphObserver::NodeId &AscribeTo);
 
   /// \brief Returns the parents of the given node, along with the index
