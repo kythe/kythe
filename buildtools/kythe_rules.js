@@ -108,6 +108,7 @@ VerifierTest.prototype.getNinjaBuilds = function(target) {
       }
     }
 
+    extractorArguments.append(engine.settings.properties['javac_opts'] || []);
     extractorArguments.append([
       '-cp',
       "'" + compilation.rule.getClasspath(compilation) + "'"
@@ -170,10 +171,11 @@ VerifierTest.prototype.getNinjaBuilds = function(target) {
 exports.javaNinjaExtractor = function(compilationTarget, compilationBuild, kindex) {
   var engine = compilationTarget.rule.engine;
   var extractor = rule.getExecutable(engine, JAVA_EXTRACTOR_TARGET);
-  var extractorArguments = [
+  var extractorArguments = engine.settings.properties['javac_opts'] || [];
+  extractorArguments = extractorArguments.concat([
     '-cp',
     "'" + compilationTarget.rule.getClasspath(compilationTarget) + "'"
-  ];
+  ]);
   extractorArguments.append(rule.getPaths(compilationBuild.inputs));
   return ninjaExtractor(extractor, compilationBuild, extractorArguments, kindex);
 };
