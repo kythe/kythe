@@ -315,11 +315,16 @@ func TestZipReader(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	pack, err := OpenZip(ctx, zipPath, "TestIndexPack", UnitType((*cpb.CompilationUnit)(nil)))
+	f, err := os.Open(zipPath)
+	if err != nil {
+		t.Fatalf("Error opening zip file: %v", err)
+	}
+	defer f.Close()
+
+	pack, err := OpenZip(ctx, f, "TestIndexPack", UnitType((*cpb.CompilationUnit)(nil)))
 	if err != nil {
 		t.Fatalf("Error opening pack %q: %v", root, err)
 	}
-	defer pack.Close()
 
 	var numUnits int
 	digests := make(map[string]bool)

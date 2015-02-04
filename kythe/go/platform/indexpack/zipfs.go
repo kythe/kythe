@@ -37,28 +37,41 @@ import (
 // The operations that support writing all return errNotSupported for all calls.
 var errNotSupported = errors.New("operation not supported")
 
-// OpenZip returns a read-only *Archive pointing to the ZIP file at path, which
-// is expected to contain the recursive contents an indexpack directory named
+type readerAt struct{ io.ReadSeeker }
+
+func (r readerAt) ReadAt(buf []byte, pos int64) (int, error) {
+	const fromStart = 0
+	if _, err := r.Seek(pos, fromStart); err != nil {
+		return 0, err
+	}
+	return r.Read(buf)
+}
+
+// OpenZip returns a read-only *Archive tied to the ZIP file at r, which is
+// expected to contain the recursive contents of an indexpack directory named
 // root and its subdirectories.  Operations that write to the pack will return
 // errors.
-func OpenZip(ctx context.Context, path, root string, opts ...Option) (*Archive, error) {
-	prefix := filepath.Dir(path)
-	packRoot := filepath.Join(prefix, root)
-	rc, err := zip.OpenReader(path)
+func OpenZip(ctx context.Context, r io.ReadSeeker, root string, opts ...Option) (*Archive, error) {
+	const fromEnd = 2
+	size, err := r.Seek(0, fromEnd)
 	if err != nil {
 		return nil, err
 	}
-	opts = append(opts, FS(zipFS{rc, prefix + string(filepath.Separator)}))
-	pack, err := Open(ctx, packRoot, opts...)
+
+	rc, err := zip.NewReader(readerAt{r}, size)
 	if err != nil {
 		return nil, err
 	}
-	pack.closer = rc
+	opts = append(opts, FS(zipFS{rc, "./"}))
+	pack, err := Open(ctx, "./"+root, opts...)
+	if err != nil {
+		return nil, err
+	}
 	return pack, nil
 }
 
 type zipFS struct {
-	pack   *zip.ReadCloser
+	pack   *zip.Reader
 	prefix string
 }
 
