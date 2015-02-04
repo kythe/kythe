@@ -118,6 +118,7 @@ type Archive struct {
 	root     string       // The root path of the index pack
 	unitType reflect.Type // The concrete value type for the ReadUnits callback
 	fs       VFS          // Filesystem implementation used for file access
+	closer   io.Closer    // If non-nil, this will be called at close
 }
 
 // VFS is the interface consumed by the Archive to manipulate the filesystem
@@ -371,6 +372,15 @@ func (a *Archive) WriteFile(ctx context.Context, data []byte) (string, error) {
 
 // Root returns the root path of the archive.
 func (a *Archive) Root() string { return a.root }
+
+// Close releases any resources held by the archive.  If the archive was
+// created with the default VFS, this is a no-op and is optional.
+func (a *Archive) Close() error {
+	if a.closer != nil {
+		return a.closer.Close()
+	}
+	return nil
+}
 
 func hexDigest(data []byte) string {
 	h := sha256.New()
