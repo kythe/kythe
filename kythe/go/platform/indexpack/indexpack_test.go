@@ -17,8 +17,10 @@
 package indexpack
 
 import (
+	"archive/zip"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -304,6 +306,54 @@ func TestCreateOrOpen(t *testing.T) {
 	}
 }
 
+func TestZipReader(t *testing.T) {
+	// Create a zip file from the "TestIndexPack" directory.
+	root := testArchive.Root()
+	zipPath := filepath.Join(tempDir, "testpack.zip")
+	if err := zipDir(root, tempDir, zipPath); err != nil {
+		t.Fatal("Unable to create pack zip: %v", err)
+	}
+
+	ctx := context.Background()
+	f, err := os.Open(zipPath)
+	if err != nil {
+		t.Fatalf("Error opening zip file: %v", err)
+	}
+	defer f.Close()
+
+	pack, err := OpenZip(ctx, f, "TestIndexPack", UnitType((*cpb.CompilationUnit)(nil)))
+	if err != nil {
+		t.Fatalf("Error opening pack %q: %v", root, err)
+	}
+
+	var numUnits int
+	digests := make(map[string]bool)
+	if err := pack.ReadUnits(ctx, "kythe", func(v interface{}) error {
+		numUnits++
+		for _, ri := range v.(*cpb.CompilationUnit).RequiredInput {
+			digests[ri.GetInfo().GetDigest()] = true
+		}
+		return nil
+	}); err != nil {
+		t.Errorf("Error reading pack: %v", err)
+	}
+	if numUnits != len(testUnits) {
+		t.Errorf("Read compilations: got %d compilations, want %d", numUnits, len(testUnits))
+	}
+	if len(digests) != len(testFiles) {
+		t.Errorf("Read files: got %d, want %d", len(digests), len(testFiles))
+	}
+	t.Logf("Found %d compilations and %d unique file digests", numUnits, len(digests))
+	for digest := range digests {
+		data, err := pack.ReadFile(ctx, digest)
+		if err != nil {
+			t.Errorf("Reading digest %q failed: %v", digest, err)
+		} else {
+			t.Logf("Read %d bytes for digest %q", len(data), digest)
+		}
+	}
+}
+
 // This test does not actually test anything, it's just here to clean up after
 // the other test cases at the end.  This should remain last in the file.
 func TestCleanup(t *testing.T) {
@@ -337,4 +387,49 @@ func unitsEqual(a, b []*cpb.CompilationUnit) bool {
 		}
 	}
 	return true
+}
+
+// zipDir creates a zip file at zipPath from the recursive contents of root.
+// The names in the archive have prefix trimmed from them.
+func zipDir(root, prefix, zipPath string) error {
+	f, err := os.Create(zipPath)
+	if err != nil {
+		return fmt.Errorf("creating zip file: %v", err)
+	}
+
+	w := zip.NewWriter(f)
+	if err := filepath.Walk(root, func(path string, fi os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		trimmed := path[len(prefix)+1:] // remove prefix/ prefix
+		fh, err := zip.FileInfoHeader(fi)
+		if err != nil {
+			return err
+		}
+		fh.Name = trimmed
+		f, err := w.CreateHeader(fh)
+		if err != nil {
+			return err
+		}
+		if !fi.IsDir() { // for non-directories, copy the file contents
+			r, err := os.Open(path)
+			if err != nil {
+				return err
+			}
+			_, err = io.Copy(f, r)
+			r.Close()
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		f.Close()
+		return fmt.Errorf("writing zip file: %v", err)
+	}
+	if err := w.Close(); err != nil {
+		return fmt.Errorf("closing zip writer: %v", err)
+	}
+	return f.Close()
 }

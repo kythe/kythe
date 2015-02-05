@@ -5,7 +5,8 @@
     "inputs": {
       "srcs": [
         "fs.go",
-        "indexpack.go"
+        "indexpack.go",
+        "zipfs.go"
       ],
       "go_pkgs": [
         "//kythe/go/platform/analysis",
