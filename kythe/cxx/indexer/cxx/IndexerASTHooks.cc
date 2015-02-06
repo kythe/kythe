@@ -785,7 +785,7 @@ IndexerASTVisitor::RecordTemplate(const TemplateDeclish *Decl,
   Observer->recordAbsNode(DeclNode);
   for (const auto *ND : *Decl->getTemplateParameters()) {
     GraphObserver::NodeId ParamId(Observer->getDefaultClaimToken());
-    unsigned ParamIndex;
+    unsigned ParamIndex = 0;
     if (const auto *TTPD = dyn_cast<clang::TemplateTypeParmDecl>(ND)) {
       ParamId = BuildNodeIdForDecl(ND);
       Observer->recordAbsVarNode(ParamId);
