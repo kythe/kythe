@@ -408,6 +408,10 @@ func zipDir(root, prefix, zipPath string) error {
 			return err
 		}
 		fh.Name = trimmed
+		if fi.IsDir() {
+			// The "zip" command-line tool appends a separator to directory names.
+			fh.Name += string(filepath.Separator)
+		}
 		f, err := w.CreateHeader(fh)
 		if err != nil {
 			return err
