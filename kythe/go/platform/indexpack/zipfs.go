@@ -76,8 +76,8 @@ type zipFS struct {
 }
 
 func (z zipFS) find(path string) *zip.File {
-	dirNeedle := strings.TrimPrefix(path, z.prefix) + string(filepath.Separator)
-	needle := dirNeedle[:len(dirNeedle)-1]
+	needle := strings.TrimPrefix(path, z.prefix)
+	dirNeedle := needle + string(filepath.Separator)
 	for _, f := range z.pack.File {
 		switch f.Name {
 		case needle, dirNeedle:
