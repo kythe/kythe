@@ -41,13 +41,13 @@ type Service interface {
 	// Read calls f with each entry having the ReadRequest's given source
 	// VName, subject to the following rules:
 	//
-	// |----------+---------------------------------------------------------|
-	// | EdgeKind | Result                                                  |
-	// |----------+---------------------------------------------------------|
-	// | ø        | All entries with kind and target empty (node entries).  |
-	// | "*"      | All entries (node and edge, regardless of kind/target). |
-	// | "kind"   | All edge entries with the given edge kind.              |
-	// |----------+---------------------------------------------------------|
+	//  |----------+---------------------------------------------------------|
+	//  | EdgeKind | Result                                                  |
+	//  |----------+---------------------------------------------------------|
+	//  | ø        | All entries with kind and target empty (node entries).  |
+	//  | "*"      | All entries (node and edge, regardless of kind/target). |
+	//  | "kind"   | All edge entries with the given edge kind.              |
+	//  |----------+---------------------------------------------------------|
 	//
 	// Read returns when there are no more entries to send. The Read operation should be
 	// implemented with time complexity proportional to the size of the return set.
@@ -69,14 +69,15 @@ type Service interface {
 	// are placed on the implementation.
 	Write(req *spb.WriteRequest) error
 
-	// Close and release any underlying resources used by the
-	// No operations should be used on the store after this has been called.
+	// Close and release any underlying resources used by the store.
+	// No operations may be used on the store after this has been called.
 	Close() error
 }
 
-// Sharded is a store that can be arbitrarily sharded for parallel processing.
-// Depending on the implementation, these methods may not return consistent
-// results when the store is being written to.
+// Sharded represents a store that can be arbitrarily sharded for parallel
+// processing.  Depending on the implementation, these methods may not return
+// consistent results when the store is being written to.  Shards are indexed
+// from 0.
 type Sharded interface {
 	Service
 
@@ -91,8 +92,8 @@ type proxyService struct {
 	stores []Service
 }
 
-// NewProxy returns a Service that forwards Reads, Writes, and Scans to a
-// set of stores in parallel, and merges their results.
+// NewProxy returns a Service that forwards Reads, Writes, and Scans to a set
+// of stores in parallel, and merges their results.
 func NewProxy(stores ...Service) Service { return &proxyService{stores} }
 
 // Read implements Service and forwards the request to the proxied stores.
@@ -139,6 +140,10 @@ func waitErr(errc <-chan error) error {
 	return err
 }
 
+// foreach concurrently invokes f(i, p.stores[i]) for each proxied store.  The
+// return value from each invocation is delivered to the error channel that is
+// returned, which will be closed once all the calls are complete.  The channel
+// is unbuffered, so the caller must drain the channel to avoid deadlock.
 func (p *proxyService) foreach(f func(int, Service) error) chan error {
 	errc := make(chan error)
 	var wg sync.WaitGroup
@@ -154,7 +159,7 @@ func (p *proxyService) foreach(f func(int, Service) error) chan error {
 	return errc
 }
 
-// entryHeap is a min-heap of entries.
+// entryHeap is a min-heap of entries, orderd by EntryLess.
 type entryHeap []*spb.Entry
 
 func (h entryHeap) Len() int           { return len(h) }
@@ -170,8 +175,7 @@ func (h *entryHeap) Pop() interface{} {
 	return out
 }
 
-// EntryMatchesScan returns whether the Entry should be in the result set for
-// the ScanRequest.
+// EntryMatchesScan reports whether entry belongs in the result set for req.
 func EntryMatchesScan(req *spb.ScanRequest, entry *spb.Entry) bool {
 	return (req.GetTarget() == nil || VNameEqual(entry.Target, req.Target)) &&
 		(req.GetEdgeKind() == "" || entry.GetEdgeKind() == req.GetEdgeKind()) &&
@@ -182,28 +186,18 @@ func EntryMatchesScan(req *spb.ScanRequest, entry *spb.Entry) bool {
 func EntryLess(i, j *spb.Entry) bool { return EntryCompare(i, j) == LT }
 
 // EntryCompare reports whether i is LT, GT, or EQ to j in entry order.
-// It compares the following fields, in order, until a difference is found:
-//   - Source
-//   - EdgeKind
-//   - FactName
-//   - Target
+// The ordering for entries is defined by lexicographic comparison of
+// [source, edge kind, fact name, target].
 func EntryCompare(i, j *spb.Entry) Order {
 	if i == j {
 		return EQ
 	}
-	sourceComp := VNameCompare(i.GetSource(), j.GetSource())
-	if sourceComp == LT {
-		return LT
-	} else if sourceComp == GT {
-		return GT
-	} else if i.GetEdgeKind() < j.GetEdgeKind() {
-		return LT
-	} else if i.GetEdgeKind() > j.GetEdgeKind() {
-		return GT
-	} else if i.GetFactName() < j.GetFactName() {
-		return LT
-	} else if i.GetFactName() > j.GetFactName() {
-		return GT
+	if c := VNameCompare(i.GetSource(), j.GetSource()); c != EQ {
+		return c
+	} else if c := stringComp(i.GetEdgeKind(), j.GetEdgeKind()); c != EQ {
+		return c
+	} else if c := stringComp(i.GetFactName(), j.GetFactName()); c != EQ {
+		return c
 	}
 	return VNameCompare(i.GetTarget(), j.GetTarget())
 }
@@ -211,25 +205,12 @@ func EntryCompare(i, j *spb.Entry) Order {
 // Order represents a total order for values.
 type Order int
 
-// LT, EQ, and GT (each self-explanatory) are the only acceptable Order values.
+// LT, EQ, and GT are the standard values for an Order.
 const (
-	LT Order = -1
-	EQ Order = 0
-	GT Order = 1
+	LT Order = -1 // lhs < rhs
+	EQ Order = 0  // lhs == rhs
+	GT Order = 1  // lhs > rhs
 )
-
-func (o Order) String() string {
-	switch o {
-	case LT:
-		return "<"
-	case EQ:
-		return "="
-	case GT:
-		return ">"
-	default:
-		return "??"
-	}
-}
 
 // stringComp returns LT if s < t, EQ if s == t, or GT if s > t.
 func stringComp(s, t string) Order {
@@ -308,13 +289,17 @@ func VNameEqual(v1, v2 *spb.VName) bool {
 	return (v1 == v2) || (v1.GetSignature() == v2.GetSignature() && v1.GetCorpus() == v2.GetCorpus() && v1.GetRoot() == v2.GetRoot() && v1.GetPath() == v2.GetPath() && v1.GetLanguage() == v2.GetLanguage())
 }
 
+// invoke calls req concurrently for each delegated service in p, merges the
+// results, and delivers them to f.
 func (p *proxyService) invoke(req func(Service, EntryFunc) error, f EntryFunc) error {
-	var h entryHeap             // Preserve stream order
-	var last *spb.Entry         // Deduplicate entries
 	stop := make(chan struct{}) // Closed to signal cancellation
 
-	rcv := make([]EntryFunc, len(p.stores))       // Callbacks from client requests
-	chs := make([]chan *spb.Entry, len(p.stores)) // Entries from callbacks
+	// Create a channel for each delegated request, and a callback that
+	// delivers results to that channel.  The callback will handle cancellation
+	// signaled by a close of the stop channel, and exit early.
+
+	rcv := make([]EntryFunc, len(p.stores))       // callbacks
+	chs := make([]chan *spb.Entry, len(p.stores)) // channels
 	for i := range p.stores {
 		ch := make(chan *spb.Entry)
 		chs[i] = ch
@@ -327,12 +312,20 @@ func (p *proxyService) invoke(req func(Service, EntryFunc) error, f EntryFunc) e
 			}
 		}
 	}
+
+	// Invoke the requests for each service, using the corresponding callback.
 	errc := p.foreach(func(i int, s Service) error {
 		err := req(s, rcv[i])
 		close(chs[i])
 		return err
 	})
-	var perr error
+
+	// Accumulate and merge the results.  This is a straightforward round-robin
+	// n-finger merge of the values from the delegated requests.
+
+	var h entryHeap     // used to preserve stream order
+	var last *spb.Entry // used to deduplicate entries
+	var perr error      // error while accumulating
 	go func() {
 		defer close(stop)
 		for {
