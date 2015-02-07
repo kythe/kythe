@@ -18,6 +18,7 @@
 package inmemory
 
 import (
+	"io"
 	"sort"
 	"sync"
 
@@ -73,7 +74,7 @@ func (s *store) insert(e *spb.Entry) {
 }
 
 // Read implements part of the GraphStore interface.
-func (s *store) Read(req *spb.ReadRequest, stream chan<- *spb.Entry) error {
+func (s *store) Read(req *spb.ReadRequest, f graphstore.EntryFunc) error {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	start := sort.Search(len(s.entries), func(i int) bool {
@@ -85,18 +86,27 @@ func (s *store) Read(req *spb.ReadRequest, stream chan<- *spb.Entry) error {
 		return comp == graphstore.GT || (req.GetEdgeKind() != "*" && s.entries[i].GetEdgeKind() > req.GetEdgeKind())
 	})
 	for i := start; i < end; i++ {
-		stream <- s.entries[i]
+		if err := f(s.entries[i]); err == io.EOF {
+			return nil
+		} else if err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
 // Scan implements part of the GraphStore interface.
-func (s *store) Scan(req *spb.ScanRequest, stream chan<- *spb.Entry) error {
+func (s *store) Scan(req *spb.ScanRequest, f graphstore.EntryFunc) error {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
+
 	for _, e := range s.entries {
-		if graphstore.EntryMatchesScan(req, e) {
-			stream <- e
+		if !graphstore.EntryMatchesScan(req, e) {
+			continue
+		} else if err := f(e); err == io.EOF {
+			return nil
+		} else if err != nil {
+			return err
 		}
 	}
 	return nil

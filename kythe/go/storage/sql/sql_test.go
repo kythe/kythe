@@ -104,7 +104,7 @@ func TestGraphStoreOrder(t *testing.T) {
 
 	var lastEntry *spb.Entry
 	fatalOnErrT(t, "entryLess error: %v",
-		graphstore.EachScanEntry(gs, nil, func(entry *spb.Entry) error {
+		gs.Scan(nil, func(entry *spb.Entry) error {
 			if !graphstore.EntryLess(lastEntry, entry) {
 				return fmt.Errorf("expected {%v} < {%v}", lastEntry, entry)
 			}
