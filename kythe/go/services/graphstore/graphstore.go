@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-// Package graphstore defines the GraphStore Service interfaces and some useful
-// utility functions.
+// Package graphstore defines the Service and Sharded interfaces, and provides
+// some useful utility functions.
+//
+// TODO(fromberger): Move the ordering-related code to a separate package.
 package graphstore
 
 import (
@@ -100,22 +102,25 @@ func (p *proxyService) Read(req *spb.ReadRequest, f EntryFunc) error {
 	}, f)
 }
 
-// Scan implements a GraphStore and forwards the request to the proxied stores.
+// Scan implements part of graphstore.Service by forwarding the request to the
+// proxied stores.
 func (p *proxyService) Scan(req *spb.ScanRequest, f EntryFunc) error {
 	return p.invoke(func(svc Service, cb EntryFunc) error {
 		return svc.Scan(req, cb)
 	}, f)
 }
 
-// Write implements a GraphStore and forwards the request to the proxied
-// stores.
+// Write implements part of graphstore.Service by forwarding the request to the
+// proxied stores.
 func (p *proxyService) Write(req *spb.WriteRequest) error {
 	return waitErr(p.foreach(func(i int, s Service) error {
 		return s.Write(req)
 	}))
 }
 
-// Close implements a GraphStore and calls Close on each proxied store.
+// Close implements part of graphstore.Service by calling Close on each proxied
+// store.  All the stores are given an opportunity to close, even in case of
+// error, but only one error is returned.
 func (p *proxyService) Close() error {
 	return waitErr(p.foreach(func(i int, s Service) error {
 		return s.Close()

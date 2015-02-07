@@ -44,7 +44,7 @@ import (
 )
 
 // Run writes the xrefs and filetree serving tables to tbl based on the given
-// GraphStore.
+// graphstore.Service.
 func Run(gs graphstore.Service, tbl table.Proto) error {
 	log.Println("Starting serving pipeline")
 

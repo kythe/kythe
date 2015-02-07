@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-// Package leveldb implements a GraphStore using a LevelDB backend database.
+// Package leveldb implements a graphstore.Service using a LevelDB backend
+// database.
 package leveldb
 
 import (
@@ -68,8 +69,8 @@ func ValidDB(path string) bool {
 	return os.IsNotExist(err) || (err == nil && stat.IsDir())
 }
 
-// OpenGraphStore returns a GraphStore backed by a LevelDB database at the given
-// filepath.  If opts==nil, the DefaultOptions are used.
+// OpenGraphStore returns a graphstore.Service backed by a LevelDB database at
+// the given filepath.  If opts==nil, the DefaultOptions are used.
 func OpenGraphStore(path string, opts *Options) (graphstore.Service, error) {
 	db, err := Open(path, opts)
 	if err != nil {

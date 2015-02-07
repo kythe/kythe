@@ -49,7 +49,7 @@ type shard struct {
 	count int64
 }
 
-// NewGraphStore returns a GraphStore backed by the given keyvalue DB.
+// NewGraphStore returns a graphstore.Service backed by the given keyvalue DB.
 func NewGraphStore(db DB) *Store {
 	return &Store{db: db}
 }
@@ -218,10 +218,10 @@ func (s *Store) Scan(req *spb.ScanRequest, f graphstore.EntryFunc) error {
 	return nil
 }
 
-// Close implements part of the GraphStore interface.
+// Close implements part of the graphstore.Service interface.
 func (s *Store) Close() error { return s.db.Close() }
 
-// Count implements part of the ShardedGraphStore interface.
+// Count implements part of the graphstore.Sharded interface.
 func (s *Store) Count(req *spb.CountRequest) (int64, error) {
 	if req.GetShards() < 1 {
 		return 0, fmt.Errorf("invalid number of shards: %d", req.GetShards())

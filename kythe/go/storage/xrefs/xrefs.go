@@ -107,8 +107,8 @@ func addReverseEdges(gs graphstore.Service) error {
 	return err
 }
 
-// A GraphStoreService partially implements the xrefs.Service interface directly
-// using a GraphStore Service with stored reverse edges.  This is a
+// A GraphStoreService partially implements the xrefs.Service interface
+// directly using a graphstore.Service with stored reverse edges.  This is a
 // low-performance, simple alternative to creating the serving Table
 // representation.
 // TODO(schroederc): parallelize GraphStore calls
@@ -117,7 +117,7 @@ type GraphStoreService struct {
 }
 
 // NewGraphStoreService returns a new GraphStoreService given an
-// existing GraphStore.
+// existing graphstore.Service.
 func NewGraphStoreService(gs graphstore.Service) *GraphStoreService {
 	return &GraphStoreService{gs}
 }

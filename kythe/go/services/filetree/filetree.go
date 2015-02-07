@@ -52,12 +52,12 @@ type Map struct {
 	M map[string]map[string]map[string]*srvpb.FileDirectory
 }
 
-// NewMap returns an empty filetree Map
+// NewMap returns an empty filetree map.
 func NewMap() *Map {
 	return &Map{make(map[string]map[string]map[string]*srvpb.FileDirectory)}
 }
 
-// Populate adds each file node in the GraphStore to the FileTree
+// Populate adds each file node in gs to m.
 func (m *Map) Populate(gs graphstore.Service) error {
 	start := time.Now()
 	log.Println("Populating in-memory file tree")
@@ -76,7 +76,7 @@ func (m *Map) Populate(gs graphstore.Service) error {
 	return nil
 }
 
-// AddFile adds the given VName file to the FileTree.
+// AddFile adds the given file VName to m.
 func (m *Map) AddFile(file *spb.VName) {
 	ticket := kytheuri.ToString(file)
 	path := filepath.Join("/", file.GetPath())
@@ -84,7 +84,7 @@ func (m *Map) AddFile(file *spb.VName) {
 	dir.FileTicket = addToSet(dir.FileTicket, ticket)
 }
 
-// CorporaRoots implements part of the FileTree interface.
+// CorporaRoots implements part of the filetree.Service interface.
 func (m *Map) CorporaRoots() (*srvpb.CorpusRoots, error) {
 	cr := &srvpb.CorpusRoots{}
 	for corpus, rootDirs := range m.M {
@@ -100,7 +100,7 @@ func (m *Map) CorporaRoots() (*srvpb.CorpusRoots, error) {
 	return cr, nil
 }
 
-// Dir implements part of the FileTree interface.
+// Dir implements part of the filetree.Service interface.
 func (m *Map) Dir(corpus, root, path string) (*srvpb.FileDirectory, error) {
 	roots := m.M[corpus]
 	if roots == nil {

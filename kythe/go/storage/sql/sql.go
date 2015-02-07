@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// Package sql implements a GraphStore using a SQL database backend.
+// Package sql implements a graphstore.Service using a SQL database backend.
 package sql
 
 import (
@@ -54,8 +54,8 @@ type DB struct {
 	writeStmt *sql.Stmt
 }
 
-// OpenGraphStore returns a GraphStore backed by a SQL database at the given
-// filepath.
+// OpenGraphStore returns a graphstore.Service backed by a SQL database at the
+// given filepath.
 func OpenGraphStore(driverName, dataSourceName string) (*DB, error) {
 	db, err := sql.Open(driverName, dataSourceName)
 	if err != nil {
@@ -119,7 +119,7 @@ func (db *DB) Scan(req *spb.ScanRequest, f graphstore.EntryFunc) (err error) {
 	return scanEntries(rows, f)
 }
 
-// Write implements part of the GraphStore interface.
+// Write implements part of the graphstore.Service interface.
 func (db *DB) Write(req *spb.WriteRequest) error {
 	tx, err := db.Begin()
 	if err != nil {
