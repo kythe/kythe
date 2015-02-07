@@ -68,8 +68,8 @@ func OpenZip(ctx context.Context, r io.ReadSeeker, opts ...Option) (*Archive, er
 	if i := strings.Index(root, string(filepath.Separator)); i > 0 {
 		root = root[:i]
 	}
-	opts = append(opts, FS(zipFS{rc, "./"}))
-	pack, err := Open(ctx, "./"+root, opts...)
+	opts = append(opts, FS(zipFS{rc}))
+	pack, err := Open(ctx, root, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -77,16 +77,14 @@ func OpenZip(ctx context.Context, r io.ReadSeeker, opts ...Option) (*Archive, er
 }
 
 type zipFS struct {
-	pack   *zip.Reader
-	prefix string
+	pack *zip.Reader
 }
 
 func (z zipFS) find(path string) *zip.File {
-	needle := strings.TrimPrefix(path, z.prefix)
-	dirNeedle := needle + string(filepath.Separator)
+	dirPath := path + string(filepath.Separator)
 	for _, f := range z.pack.File {
 		switch f.Name {
-		case needle, dirNeedle:
+		case path, dirPath:
 			return f
 		}
 	}
@@ -94,8 +92,7 @@ func (z zipFS) find(path string) *zip.File {
 }
 
 // Stat implements part of indexpack.VFS using the file metadata stored in the
-// zip archive.  The path must match one of the archive paths, modulo the
-// prefix associated with z.
+// zip archive.  The path must match one of the archive paths.
 func (z zipFS) Stat(_ context.Context, path string) (os.FileInfo, error) {
 	f := z.find(path)
 	if f == nil {
@@ -116,16 +113,14 @@ func (z zipFS) Open(_ context.Context, path string) (io.ReadCloser, error) {
 }
 
 // Glob implements part of indexpack.VFS using filepath.Match to compare the
-// glob pattern to each archive path as trimmed by the prefix.
+// glob pattern to each archive path.
 func (z zipFS) Glob(_ context.Context, glob string) ([]string, error) {
-	needle := strings.TrimPrefix(glob, z.prefix)
 	var names []string
 	for _, f := range z.pack.File {
-		name := strings.TrimPrefix(f.Name, z.prefix)
-		if ok, err := filepath.Match(needle, name); err != nil {
-			log.Panicf("Invalid glob pattern %q: %v", needle, err)
+		if ok, err := filepath.Match(glob, f.Name); err != nil {
+			log.Panicf("Invalid glob pattern %q: %v", glob, err)
 		} else if ok {
-			names = append(names, name)
+			names = append(names, f.Name)
 		}
 	}
 	return names, nil
