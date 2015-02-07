@@ -332,6 +332,7 @@ func (p *proxyService) invoke(req func(Service, EntryFunc) error, f EntryFunc) e
 		close(chs[i])
 		return err
 	})
+	var perr error
 	go func() {
 		defer close(stop)
 		for {
@@ -354,7 +355,7 @@ func (p *proxyService) invoke(req func(Service, EntryFunc) error, f EntryFunc) e
 					last = entry
 					if err := f(entry); err != nil {
 						if err != io.EOF {
-							errc <- err
+							perr = err
 						}
 						return
 					}
@@ -364,7 +365,10 @@ func (p *proxyService) invoke(req func(Service, EntryFunc) error, f EntryFunc) e
 			}
 		}
 	}()
-	err := waitErr(errc)
-	<-stop
+	err := waitErr(errc) // wait for all receives to complete
+	<-stop               // wait for all sends to complete
+	if perr != nil {
+		return perr
+	}
 	return err
 }
