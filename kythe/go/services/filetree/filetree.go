@@ -62,15 +62,14 @@ func (m *Map) Populate(gs graphstore.Service) error {
 	start := time.Now()
 	log.Println("Populating in-memory file tree")
 	var total int
-	if err := graphstore.EachScanEntry(gs, &spb.ScanRequest{
-		FactPrefix: proto.String(schema.NodeKindFact),
-	}, func(entry *spb.Entry) error {
-		if entry.GetFactName() == schema.NodeKindFact && string(entry.GetFactValue()) == schema.FileKind {
-			m.AddFile(entry.Source)
-			total++
-		}
-		return nil
-	}); err != nil {
+	if err := gs.Scan(&spb.ScanRequest{FactPrefix: proto.String(schema.NodeKindFact)},
+		func(entry *spb.Entry) error {
+			if entry.GetFactName() == schema.NodeKindFact && string(entry.GetFactValue()) == schema.FileKind {
+				m.AddFile(entry.Source)
+				total++
+			}
+			return nil
+		}); err != nil {
 		return fmt.Errorf("failed to Scan GraphStore for directory structure: %v", err)
 	}
 	log.Printf("Indexed %d files in %s", total, time.Since(start))

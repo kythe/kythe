@@ -65,7 +65,7 @@ func main() {
 	wr := delimited.NewWriter(os.Stdout)
 	var total int64
 	if *shards <= 0 {
-		if err := graphstore.EachScanEntry(gs, nil, func(entry *spb.Entry) error {
+		if err := gs.Scan(nil, func(entry *spb.Entry) error {
 			if *count {
 				total++
 				return nil
@@ -80,7 +80,7 @@ func main() {
 		return
 	}
 
-	sgs, ok := gs.(graphstore.ShardedService)
+	sgs, ok := gs.(graphstore.Sharded)
 	if !ok {
 		log.Fatalf("Sharding unsupported for given GraphStore type: %T", gs)
 	} else if *shardIndex >= *shards {
@@ -107,7 +107,7 @@ func main() {
 				}
 				defer f.Close()
 				wr := delimited.NewWriter(f)
-				if err := graphstore.EachShardEntry(sgs, &spb.ShardRequest{
+				if err := sgs.Shard(&spb.ShardRequest{
 					Index:  &i,
 					Shards: shards,
 				}, func(entry *spb.Entry) error {
@@ -121,7 +121,7 @@ func main() {
 		return
 	}
 
-	if err := graphstore.EachShardEntry(sgs, &spb.ShardRequest{
+	if err := sgs.Shard(&spb.ShardRequest{
 		Index:  shardIndex,
 		Shards: shards,
 	}, func(entry *spb.Entry) error {

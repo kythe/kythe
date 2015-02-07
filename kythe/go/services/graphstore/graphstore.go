@@ -168,7 +168,7 @@ func (h *entryHeap) Pop() interface{} {
 // EntryMatchesScan returns whether the Entry should be in the result set for
 // the ScanRequest.
 func EntryMatchesScan(req *spb.ScanRequest, entry *spb.Entry) bool {
-	return (req.Target == nil || VNameEqual(entry.Target, req.Target)) &&
+	return (req.GetTarget() == nil || VNameEqual(entry.Target, req.Target)) &&
 		(req.GetEdgeKind() == "" || entry.GetEdgeKind() == req.GetEdgeKind()) &&
 		strings.HasPrefix(entry.GetFactName(), req.GetFactPrefix())
 }

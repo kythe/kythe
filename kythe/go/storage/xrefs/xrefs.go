@@ -21,8 +21,8 @@ package xrefs
 import (
 	"errors"
 	"fmt"
+	"io"
 	"log"
-	"sync"
 	"time"
 
 	"kythe/go/services/graphstore"
@@ -43,40 +43,26 @@ const errSendOnClosedChannel = "send on closed channel"
 // will scan gs for all forward edges, adding a reverse for each back into the
 // GraphStore.  This is necessary for a GraphStoreService to work properly.
 func EnsureReverseEdges(gs graphstore.Service) error {
-	entries := make(chan *spb.Entry)
-	var err error
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		defer func() {
-			// Recover from entries channel being closed when an edge is found below.
-			// TODO(schroederc): fix this pending http://kythe.io/phabricator/T14
-			if err := recover(); err != nil && err != errSendOnClosedChannel {
-				panic(err)
-			}
-		}()
-		err = gs.Scan(&spb.ScanRequest{}, entries)
-		close(entries)
-	}()
 	var edge *spb.Entry
-	for entry := range entries {
-		if entry.GetEdgeKind() != "" {
-			edge = entry
-			close(entries) // this will cause the above Scan to panic
+	if err := gs.Scan(&spb.ScanRequest{}, func(e *spb.Entry) error {
+		if e.GetEdgeKind() != "" {
+			edge = e
+			return io.EOF
 		}
-	}
-	wg.Wait()
-	if err != nil {
+		return nil
+	}); err != nil {
 		return err
-	} else if edge == nil {
+	}
+
+	if edge == nil {
 		log.Println("No edges found in GraphStore")
 		return nil
 	} else if schema.EdgeDirection(edge.GetEdgeKind()) == schema.Reverse {
 		return nil
 	}
+
 	var foundReverse bool
-	if err := graphstore.EachReadEntry(gs, &spb.ReadRequest{
+	if err := gs.Read(&spb.ReadRequest{
 		Source:   edge.Target,
 		EdgeKind: proto.String(schema.MirrorEdge(edge.GetEdgeKind())),
 	}, func(entry *spb.Entry) error {
@@ -98,7 +84,7 @@ func addReverseEdges(gs graphstore.Service) error {
 		addedEdges   int
 	)
 	startTime := time.Now()
-	err := graphstore.EachScanEntry(gs, nil, func(entry *spb.Entry) error {
+	err := gs.Scan(nil, func(entry *spb.Entry) error {
 		kind := entry.GetEdgeKind()
 		if kind != "" && schema.EdgeDirection(kind) == schema.Forward {
 			if err := gs.Write(&spb.WriteRequest{
@@ -151,7 +137,7 @@ func (g *GraphStoreService) Nodes(req *xpb.NodesRequest) (*xpb.NodesReply, error
 	var nodes []*xpb.NodeInfo
 	for i, vname := range names {
 		info := &xpb.NodeInfo{Ticket: &req.Ticket[i]}
-		if err := graphstore.EachReadEntry(g.gs, &spb.ReadRequest{Source: vname}, func(entry *spb.Entry) error {
+		if err := g.gs.Read(&spb.ReadRequest{Source: vname}, func(entry *spb.Entry) error {
 			if len(patterns) == 0 || xrefs.MatchesAny(entry.GetFactName(), patterns) {
 				info.Fact = append(info.Fact, entryToFact(entry))
 			}
@@ -187,7 +173,7 @@ func (g *GraphStoreService) Edges(req *xpb.EdgesRequest) (*xpb.EdgesReply, error
 			filteredFacts []*xpb.Fact
 		)
 
-		if err := graphstore.EachReadEntry(g.gs, &spb.ReadRequest{
+		if err := g.gs.Read(&spb.ReadRequest{
 			Source:   vname,
 			EdgeKind: proto.String("*"),
 		}, func(entry *spb.Entry) error {
@@ -351,9 +337,7 @@ func infoNodeKind(info *xpb.NodeInfo) string {
 }
 
 func getSourceText(gs graphstore.Service, fileVName *spb.VName) (text []byte, encoding string, err error) {
-	if err := graphstore.EachReadEntry(gs, &spb.ReadRequest{
-		Source: fileVName,
-	}, func(entry *spb.Entry) error {
+	if err := gs.Read(&spb.ReadRequest{Source: fileVName}, func(entry *spb.Entry) error {
 		switch entry.GetFactName() {
 		case schema.FileTextFact:
 			text = entry.GetFactValue()
@@ -382,7 +366,7 @@ type edgeTarget struct {
 func getEdges(gs graphstore.Service, node *spb.VName, pred func(*spb.Entry) bool) ([]*edgeTarget, error) {
 	var targets []*edgeTarget
 
-	if err := graphstore.EachReadEntry(gs, &spb.ReadRequest{
+	if err := gs.Read(&spb.ReadRequest{
 		Source:   node,
 		EdgeKind: proto.String("*"),
 	}, func(entry *spb.Entry) error {

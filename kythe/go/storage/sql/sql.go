@@ -97,7 +97,7 @@ var likeEscaper = strings.NewReplacer("%", "\t%", "_", "\t_")
 func (db *DB) Scan(req *spb.ScanRequest, stream chan<- *spb.Entry) (err error) {
 	var rows *sql.Rows
 	factPrefix := likeEscaper.Replace(req.GetFactPrefix()) + "%"
-	if req.Target != nil {
+	if req.GetTarget() != nil {
 		if req.GetEdgeKind() == "" {
 			rows, err = db.Query("SELECT "+columns+" FROM "+tableName+` WHERE fact LIKE ? ESCAPE '\t' AND source_signature = ? AND source_corpus = ? AND source_root = ? AND source_language = ? AND source_path = ? `+orderByClause, factPrefix, req.GetTarget().GetSignature(), req.GetTarget().GetCorpus(), req.GetTarget().GetRoot(), req.GetTarget().GetLanguage(), req.GetTarget().GetPath())
 		} else {
