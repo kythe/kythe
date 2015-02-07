@@ -321,7 +321,7 @@ func TestZipReader(t *testing.T) {
 	}
 	defer f.Close()
 
-	pack, err := OpenZip(ctx, f, "TestIndexPack", UnitType((*cpb.CompilationUnit)(nil)))
+	pack, err := OpenZip(ctx, f, UnitType((*cpb.CompilationUnit)(nil)))
 	if err != nil {
 		t.Fatalf("Error opening pack %q: %v", root, err)
 	}
@@ -351,6 +351,38 @@ func TestZipReader(t *testing.T) {
 		} else {
 			t.Logf("Read %d bytes for digest %q", len(data), digest)
 		}
+	}
+}
+
+func TestZipErrors(t *testing.T) {
+	ctx := context.Background()
+
+	// Opening an empty archive should report an error.
+	empty := strings.NewReader("")
+	if pack, err := OpenZip(ctx, empty); err == nil {
+		t.Errorf("Opening empty zip: got %+v, wanted error", pack)
+	}
+
+	root := testArchive.Root()
+	zipPath := filepath.Join(tempDir, "testpack.zip")
+	f, err := os.Open(zipPath)
+	if err != nil {
+		t.Fatalf("Error opening zip file: %v", err)
+	}
+	defer f.Close()
+
+	pack, err := OpenZip(ctx, f)
+	if err != nil {
+		t.Fatalf("Error opening pack %q: %v", root, err)
+	}
+
+	// Writes to a zip archive are expected to fail gracefully.  This reuses
+	// the zip from the previous test.
+	if id, err := pack.WriteFile(ctx, []byte("zut alors!")); err == nil {
+		t.Errorf("WriteFile: got id %q, wanted error", id)
+	}
+	if id, err := pack.WriteUnit(ctx, "foo", []string{"x"}); err == nil {
+		t.Errorf("WriteUnit: got id %q, wanted error", id)
 	}
 }
 

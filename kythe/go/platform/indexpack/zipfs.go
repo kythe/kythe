@@ -48,10 +48,9 @@ func (r readerAt) ReadAt(buf []byte, pos int64) (int, error) {
 }
 
 // OpenZip returns a read-only *Archive tied to the ZIP file at r, which is
-// expected to contain the recursive contents of an indexpack directory named
-// root and its subdirectories.  Operations that write to the pack will return
-// errors.
-func OpenZip(ctx context.Context, r io.ReadSeeker, root string, opts ...Option) (*Archive, error) {
+// expected to contain the recursive contents of an indexpack directory and its
+// subdirectories.  Operations that write to the pack will return errors.
+func OpenZip(ctx context.Context, r io.ReadSeeker, opts ...Option) (*Archive, error) {
 	const fromEnd = 2
 	size, err := r.Seek(0, fromEnd)
 	if err != nil {
@@ -61,6 +60,13 @@ func OpenZip(ctx context.Context, r io.ReadSeeker, root string, opts ...Option) 
 	rc, err := zip.NewReader(readerAt{r}, size)
 	if err != nil {
 		return nil, err
+	}
+	if len(rc.File) == 0 {
+		return nil, errors.New("archive has no root directory")
+	}
+	root := rc.File[0].Name
+	if i := strings.Index(root, string(filepath.Separator)); i > 0 {
+		root = root[:i]
 	}
 	opts = append(opts, FS(zipFS{rc, "./"}))
 	pack, err := Open(ctx, "./"+root, opts...)
