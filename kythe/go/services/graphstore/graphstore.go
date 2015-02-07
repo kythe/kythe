@@ -144,7 +144,7 @@ func waitErr(errc <-chan error) error {
 // return value from each invocation is delivered to the error channel that is
 // returned, which will be closed once all the calls are complete.  The channel
 // is unbuffered, so the caller must drain the channel to avoid deadlock.
-func (p *proxyService) foreach(f func(int, Service) error) chan error {
+func (p *proxyService) foreach(f func(int, Service) error) <-chan error {
 	errc := make(chan error)
 	var wg sync.WaitGroup
 	wg.Add(len(p.stores))
