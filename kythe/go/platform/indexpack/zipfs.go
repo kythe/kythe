@@ -30,6 +30,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"golang.org/x/net/context"
 )
@@ -37,14 +38,20 @@ import (
 // The operations that support writing all return errNotSupported for all calls.
 var errNotSupported = errors.New("operation not supported")
 
-type readerAt struct{ io.ReadSeeker }
+type readerAt struct {
+	sync.Mutex
+	rs io.ReadSeeker
+}
 
-func (r readerAt) ReadAt(buf []byte, pos int64) (int, error) {
+func (r *readerAt) ReadAt(buf []byte, pos int64) (int, error) {
+	r.Lock()
+	defer r.Unlock()
+
 	const fromStart = 0
-	if _, err := r.Seek(pos, fromStart); err != nil {
+	if _, err := r.rs.Seek(pos, fromStart); err != nil {
 		return 0, err
 	}
-	return r.Read(buf)
+	return r.rs.Read(buf)
 }
 
 // OpenZip returns a read-only *Archive tied to the ZIP file at r, which is
@@ -57,7 +64,7 @@ func OpenZip(ctx context.Context, r io.ReadSeeker, opts ...Option) (*Archive, er
 		return nil, err
 	}
 
-	rc, err := zip.NewReader(readerAt{r}, size)
+	rc, err := zip.NewReader(&readerAt{rs: r}, size)
 	if err != nil {
 		return nil, err
 	}
