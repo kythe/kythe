@@ -266,6 +266,8 @@ IndexerPPCallbacks::BuildNodeIdForMacro(const clang::Token &Spelling,
     Ostream << "@invalid";
   } else if (SM.getFileID(Loc) ==
              Observer.getPreprocessor()->getPredefinesFileID()) {
+    // Locations of predefines in the predefine buffer can spuriously differ
+    // from TU to TU, so we collapse them here.
     Ostream << "@builtin";
   } else {
     Loc.print(Ostream, SM);
