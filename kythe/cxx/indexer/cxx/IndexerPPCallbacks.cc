@@ -260,10 +260,17 @@ IndexerPPCallbacks::BuildNodeIdForMacro(const clang::Token &Spelling,
   llvm::raw_string_ostream Ostream(Id.Identity);
   Ostream << BuildNameIdForMacro(Spelling);
   clang::SourceLocation Loc = Info.getDefinitionLoc();
+  auto &SM = *Observer.getSourceManager();
+
   if (Loc.isInvalid()) {
     Ostream << "@invalid";
+  } else if (SM.getFileID(Loc) ==
+             Observer.getPreprocessor()->getPredefinesFileID()) {
+    // Locations of predefines in the predefine buffer can spuriously differ
+    // from TU to TU, so we collapse them here.
+    Ostream << "@builtin";
   } else {
-    Loc.print(Ostream, *Observer.getSourceManager());
+    Loc.print(Ostream, SM);
   }
   return Id;
 }

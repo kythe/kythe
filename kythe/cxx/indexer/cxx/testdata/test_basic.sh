@@ -1,4 +1,19 @@
 #!/bin/bash
+
+# Copyright 2015 Google Inc. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # This script runs the indexer on various test cases, piping the results
 # to the verifier. The test cases contain assertions for the verifier to
 # verify. Should every case succeed, this script returns zero.
@@ -69,6 +84,7 @@ one_case "${BASEDIR}/function_ptr_ty.cc" "c++1y"
 one_case "${BASEDIR}/function_ty.cc" "c++1y"
 one_case "${BASEDIR}/function_vararg.cc" "c++1y"
 one_case "${BASEDIR}/function_vararg_ty.cc" "c++1y"
+one_case "${BASEDIR}/macros_builtin.c" "c99"
 one_case "${BASEDIR}/macros_defn.cc" "c++1y"
 one_case "${BASEDIR}/macros_expand.cc" "c++1y"
 one_case "${BASEDIR}/macros_expand_transitive.cc" "c++1y"
