@@ -91,10 +91,10 @@ message EdgePage {
 
 // FileDirectory describes a virtual directory of file nodes.
 message FileDirectory {
-  // Set of full paths for each contained sub-directory.
+  // Set of URIs for each contained sub-directory's corpus, root, and full path.
   repeated string subdirectory = 1;
 
-  // Set of file nodes contained within this directory.
+  // Set of file node tickets contained within this directory.
   repeated string file_ticket = 2;
 }
 

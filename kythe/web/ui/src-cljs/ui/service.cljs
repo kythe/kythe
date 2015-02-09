@@ -31,7 +31,9 @@
 
 (defn- unwrap-dir-response [resp]
   {:dirs (into {}
-           (map (fn [name] [name {}])
+           (map (fn [ticket]
+                  (let [uri (util/ticket->vname ticket)]
+                    [(:path uri) {}]))
              (get resp "subdirectory")))
    :files (into {}
             (map (fn [ticket]
