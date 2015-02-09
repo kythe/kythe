@@ -106,6 +106,7 @@
         "basic/function_ty.cc",
         "basic/function_vararg.cc",
         "basic/function_vararg_ty.cc",
+        "basic/macros_builtin.c",
         "basic/macros_defn.cc",
         "basic/macros_expand.cc",
         "basic/macros_expand_transitive.cc",
