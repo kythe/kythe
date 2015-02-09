@@ -1,0 +1,159 @@
+// Copyright 2015 Google Inc. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+Indexing the Linux kernel with Kythe
+====================================
+
+The kernel is an interesting case. Its build process relies heavily on
+handwritten Makefiles, so we have little recourse but to intercept calls to the
+compiler. Along the way we'll see how Kythe tools can be connected together by
+standard Unix pipes.
+
+Build the parts of Kythe we'll need:
+
+[source,bash]
+----
+cd ~/kythe
+./campfire build //kythe/cxx/extractor:cxx_extractor \
+    //kythe/cxx/indexer/cxx:indexer \
+    //kythe/go/platform/tools:dedup_stream \
+    //kythe/go/storage/tools:write_entries \
+    //kythe/go/serving/tools:http_server
+git clean -fdx kythe/web/ui
+pushd kythe/web/ui
+lein cljsbuild once prod
+popd
+export KYTHE_EXTRACTOR="${PWD}/campfire-out/bin/kythe/cxx/extractor/cxx_extractor"
+export KYTHE_INDEXER="${PWD}/campfire-out/bin/kythe/cxx/indexer/cxx/indexer"
+export KYTHE_DEDUP_STREAM="${PWD}/campfire-out/bin/kythe/go/platform/tools/dedup_stream"
+export KYTHE_WRITE_ENTRIES="${PWD}/campfire-out/bin/kythe/go/storage/tools/write_entries"
+export KYTHE_HTTP_SERVER="${PWD}/campfire-out/bin/kythe/go/serving/tools/http_server"
+export KYTHE_WEB_UI="${PWD}/kythe/web/ui/resources/public"
+----
+
+Get the kernel source. I'm using 3.19-rc6 from kernel.org.
+
+[source,bash]
+----
+mkdir ~/linux
+cd ~/linux
+wget https://www.kernel.org/pub/linux/kernel/v3.x/testing/linux-3.19-rc6.tar.xz
+tar xf linux-3.19-rc6.tar.xz
+export KERNEL_SOURCES="${PWD}/linux-3.19-rc6"
+cd "${KERNEL_SOURCES}"
+----
+
+We need to get the kernel build process to invoke the extractor. Add
+`${KERNEL_SOURCES}/extract_compile.sh`:
+
+[source,bash]
+----
+echo '#!/bin/bash
+"${KYTHE_EXTRACTOR}" --with_executable gcc $@ >> kythe_extractor.log 2>&1
+gcc $@' > "${KERNEL_SOURCES}/extract_compile.sh"
+chmod +x "${KERNEL_SOURCES}/extract_compile.sh"
+----
+
+Kythe extractors can be configured to rewrite paths in your filesystem to
+'canonical' paths. This mechanism is also used to choose the corpus to which
+the code belongs. Here is an example file, called `vnames.json`, that does
+this for the kernel (and for the C libraries on my machine):
+
+[source,bash]
+----
+echo '[
+  {
+    "pattern": "(/kythe_builtins/include)/(.*)",
+    "vname": {
+      "corpus": "cstdlib",
+      "root": "@1@",
+      "path": "@2@"
+    }
+  },
+  {
+    "pattern": "(/usr/include/c\\+\\+/[^/]+)/(.*)",
+    "vname": {
+      "corpus": "libstdcxx",
+      "root": "@1@",
+      "path": "@2@"
+    }
+  },
+  {
+    "pattern": "/usr/include/(.*)",
+    "vname": {
+      "corpus": "cstdlib",
+      "root": "/usr/include",
+      "path": "@1@"
+    }
+  },
+  {
+    "pattern": "/.*/linux-3\\.19-rc6/(.*)",
+    "vname": {
+      "corpus": "kernel",
+      "path": "@1@"
+    }
+  },
+  {
+    "pattern": "(.*)",
+    "vname": {
+      "corpus": "kernel",
+      "path": "@1@"
+    }
+  }
+]' > "${KERNEL_SOURCES}/vnames.json"
+----
+
+Tell the Kythe tools about your configuration and where it should put the
+extractor output:
+
+[source,bash]
+----
+export KYTHE_INDEX_PACK=1
+export KYTHE_OUTPUT_DIRECTORY="${KERNEL_SOURCES}/kernel-pack"
+export KYTHE_VNAMES="${KERNEL_SOURCES}/vnames.json"
+----
+
+Build the kernel, pulling the code into a Kythe index pack:
+[source,bash]
+----
+make CC="${KERNEL_SOURCES}/extract_compile.sh" \
+     HOSTCC="${KERNEL_SOURCES}/extract_compile.sh" defconfig
+make CC="${KERNEL_SOURCES}/extract_compile.sh" \
+     HOSTCC="${KERNEL_SOURCES}/extract_compile.sh" -j 12
+----
+
+Index the kernel. This part takes a fair amount of time (several minutes,
+typically).
+
+[source,bash]
+----
+find "${KYTHE_OUTPUT_DIRECTORY}/units" -name '*.unit' -printf '%f\n' |
+  sed "s/.unit//" | sort -R |
+  { parallel --gnu -L1 "${KYTHE_INDEXER}" -ignore_unimplemented=true \
+        -index_pack "${KYTHE_OUTPUT_DIRECTORY}" || \
+    echo "$? failures" >&2; } | \
+  "${KYTHE_DEDUP_STREAM}" | \
+  "${KYTHE_WRITE_ENTRIES}" --workers 12 \
+      --graphstore ${KERNEL_SOURCES}/graphstore
+----
+
+Host the index (without generating experimental serving tables):
+
+[source,bash]
+----
+"${KYTHE_HTTP_SERVER}" -public_resources="${KYTHE_WEB_UI}" \
+    -graphstore "${KERNEL_SOURCES}/graphstore"
+----
+
+The demonstration UI listens by default on http://localhost:8080
