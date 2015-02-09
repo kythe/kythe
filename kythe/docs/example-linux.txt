@@ -1,10 +1,24 @@
+// Copyright 2015 Google Inc. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 Indexing the Linux kernel with Kythe
 ====================================
 
-The kernel is an interesting case. It relies heavily on handwritten Makefiles,
-so we have little recourse but to intercept calls to the compiler. Along the
-way we'll see how Kythe tools can be connected together by standard Unix
-pipes.
+The kernel is an interesting case. Its build process relies heavily on
+handwritten Makefiles, so we have little recourse but to intercept calls to the
+compiler. Along the way we'll see how Kythe tools can be connected together by
+standard Unix pipes.
 
 Build the parts of Kythe we'll need:
 
@@ -119,7 +133,8 @@ make CC="${KERNEL_SOURCES}/extract_compile.sh" \
      HOSTCC="${KERNEL_SOURCES}/extract_compile.sh" -j 12
 ----
 
-Index the kernel. This part takes a fair amount of time.
+Index the kernel. This part takes a fair amount of time (several minutes,
+typically).
 
 [source,bash]
 ----
@@ -133,7 +148,7 @@ find "${KYTHE_OUTPUT_DIRECTORY}/units" -name '*.unit' -printf '%f\n' |
       --graphstore ${KERNEL_SOURCES}/graphstore
 ----
 
-Host the index (without generating experimental tables):
+Host the index (without generating experimental serving tables):
 
 [source,bash]
 ----
