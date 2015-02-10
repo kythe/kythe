@@ -52,15 +52,15 @@ type Service interface {
 	Read(req *spb.ReadRequest, f EntryFunc) error
 
 	// Scan calls f with each entries having the specified target VName, kind,
-	// and fact label prefix. If any field is empty, any Entry value for that
-	// fields matches and will be returned. Scan returns when there are no more
+	// and fact label prefix. If a field is empty, any entry value for that
+	// field matches and will be returned. Scan returns when there are no more
 	// entries to send. Scan is similar to Read, but with no time complexity
 	// restrictions.
 	Scan(req *spb.ScanRequest, f EntryFunc) error
 
 	// Write atomically inserts or updates a collection of entries into the
 	// Each update is a tuple of the form (kind, target, fact, value). For each such
-	// update, the entry (source, kind, target, fact, value) is written into the store,
+	// update, an entry (source, kind, target, fact, value) is written into the store,
 	// replacing any existing entry (source, kind, target, fact, value') that may
 	// exist. Note that this operation cannot delete any data from the store; entries are
 	// only ever inserted or updated. Apart from acting atomically, no other constraints
@@ -180,7 +180,7 @@ func EntryMatchesScan(req *spb.ScanRequest, entry *spb.Entry) bool {
 		strings.HasPrefix(entry.GetFactName(), req.GetFactPrefix())
 }
 
-// EntryLess reports whether if i precedes j in entry order.
+// EntryLess reports whether i precedes j in entry order.
 func EntryLess(i, j *spb.Entry) bool { return EntryCompare(i, j) == LT }
 
 // EntryCompare reports whether i is LT, GT, or EQ to j in entry order.

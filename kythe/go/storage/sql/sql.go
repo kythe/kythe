@@ -97,6 +97,8 @@ func (db *DB) Read(req *spb.ReadRequest, f graphstore.EntryFunc) (err error) {
 var likeEscaper = strings.NewReplacer("%", "\t%", "_", "\t_")
 
 // Scan implements part of the graphstore.Service interface.
+//
+// TODO(fromberger): Maybe use prepared statements here.
 func (db *DB) Scan(req *spb.ScanRequest, f graphstore.EntryFunc) (err error) {
 	var rows *sql.Rows
 	factPrefix := likeEscaper.Replace(req.GetFactPrefix()) + "%"

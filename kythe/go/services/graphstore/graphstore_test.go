@@ -327,10 +327,10 @@ func (m *mockGraphStore) Write(req *spb.WriteRequest) error {
 
 func (m *mockGraphStore) Close() error { return m.Error }
 
-// checkResults starts a goroutine consumes entries from results and compares
-// them to corresponding members of want.  If the corresponding values are
-// unequal or if there are more or fewer results than wanted, errors are logged
-// to t prefixed with the given tag.
+// checkResults starts a goroutine that consumes entries from results and
+// compares them to corresponding members of want.  If the corresponding values
+// are unequal or if there are more or fewer results than wanted, errors are
+// logged to t prefixed with the given tag.
 //
 // The returned channel is closed when all results have been checked.
 func checkResults(t *testing.T, tag string, results <-chan *spb.Entry, want []*spb.Entry) chan struct{} {
