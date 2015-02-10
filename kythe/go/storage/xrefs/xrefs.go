@@ -37,8 +37,6 @@ import (
 	"code.google.com/p/goprotobuf/proto"
 )
 
-const errSendOnClosedChannel = "send on closed channel"
-
 // EnsureReverseEdges checks if gs contains reverse edges.  If it doesn't, it
 // will scan gs for all forward edges, adding a reverse for each back into the
 // GraphStore.  This is necessary for a GraphStoreService to work properly.
