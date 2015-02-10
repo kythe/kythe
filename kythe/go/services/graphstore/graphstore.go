@@ -16,8 +16,6 @@
 
 // Package graphstore defines the Service and Sharded interfaces, and provides
 // some useful utility functions.
-//
-// TODO(fromberger): Move the ordering-related code to a separate package.
 package graphstore
 
 import (
@@ -203,6 +201,8 @@ func EntryCompare(i, j *spb.Entry) Order {
 }
 
 // Order represents a total order for values.
+//
+// TODO(fromberger): Move the ordering-related code to a separate package.
 type Order int
 
 // LT, EQ, and GT are the standard values for an Order.
