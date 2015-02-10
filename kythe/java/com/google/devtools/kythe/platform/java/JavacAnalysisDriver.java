@@ -58,13 +58,7 @@ public class JavacAnalysisDriver {
 
   public void analyze(JavacAnalyzer analyzer, CompilationUnit compilationUnit,
       FileDataProvider fileDataProvider, boolean isLocalAnalysis) throws AnalysisException {
-    JavaCompilationDetails details =
-        JavaCompilationDetails.createDetails(compilationUnit, fileDataProvider, isLocalAnalysis, processors);
-    if (details == null) {
-      throw new AnalysisException(
-          "Could not build javac compilation details; perhaps missing javac arguments?");
-    }
-
-    analyzer.analyzeCompilationUnit(details);
+    analyzer.analyzeCompilationUnit(JavaCompilationDetails
+        .createDetails(compilationUnit, fileDataProvider, isLocalAnalysis, processors));
   }
 }
