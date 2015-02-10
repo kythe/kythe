@@ -58,7 +58,7 @@ type Service interface {
 	// restrictions.
 	Scan(req *spb.ScanRequest, f EntryFunc) error
 
-	// Write atomically inserts or updates a collection of entries into the
+	// Write atomically inserts or updates a collection of entries into the store.
 	// Each update is a tuple of the form (kind, target, fact, value). For each such
 	// update, an entry (source, kind, target, fact, value) is written into the store,
 	// replacing any existing entry (source, kind, target, fact, value') that may
