@@ -311,7 +311,7 @@ func TestZipReader(t *testing.T) {
 	root := testArchive.Root()
 	zipPath := filepath.Join(tempDir, "testpack.zip")
 	if err := zipDir(root, tempDir, zipPath); err != nil {
-		t.Fatal("Unable to create pack zip: %v", err)
+		t.Fatalf("Unable to create pack zip: %v", err)
 	}
 
 	ctx := context.Background()
