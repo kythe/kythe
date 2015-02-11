@@ -9,8 +9,10 @@
       "go_pkgs": [
         "//kythe/go/services/filetree",
         "//kythe/go/services/graphstore",
+        "//kythe/go/services/search",
         "//kythe/go/services/xrefs",
         "//kythe/go/serving/filetree",
+        "//kythe/go/serving/search",
         "//kythe/go/serving/xrefs",
         "//kythe/go/storage/gsutil",
         "//kythe/go/storage/leveldb",
@@ -30,8 +32,10 @@
       ],
       "go_pkgs": [
         "//kythe/go/services/filetree",
+        "//kythe/go/services/search",
         "//kythe/go/services/xrefs",
         "//kythe/go/serving/filetree",
+        "//kythe/go/serving/search",
         "//kythe/go/serving/xrefs",
         "//kythe/go/storage/leveldb",
         "//kythe/go/storage/table",
@@ -52,8 +56,7 @@
         "//kythe/go/services/graphstore",
         "//kythe/go/serving/pipeline",
         "//kythe/go/storage/gsutil",
-        "//kythe/go/storage/leveldb",
-        "//kythe/go/storage/table"
+        "//kythe/go/storage/leveldb"
       ]
     }
   }

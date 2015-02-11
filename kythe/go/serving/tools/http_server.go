@@ -26,8 +26,10 @@ import (
 
 	"kythe/go/services/filetree"
 	"kythe/go/services/graphstore"
+	"kythe/go/services/search"
 	"kythe/go/services/xrefs"
 	ftsrv "kythe/go/serving/filetree"
+	srchsrv "kythe/go/serving/search"
 	xsrv "kythe/go/serving/xrefs"
 	"kythe/go/storage/gsutil"
 	"kythe/go/storage/leveldb"
@@ -71,6 +73,7 @@ func main() {
 		tbl := &table.KVProto{db}
 		xs = &xsrv.Table{tbl}
 		ft = &ftsrv.Table{tbl}
+		search.RegisterHTTPHandlers(&srchsrv.Table{&table.KVInverted{db}}, http.DefaultServeMux)
 	} else {
 		log.Println("WARNING: serving directly from a GraphStore can be slow; you may want to use a --serving_table")
 		m := filetree.NewMap()

@@ -27,6 +27,7 @@ import (
 	"kythe/go/util/schema"
 
 	srvpb "kythe/proto/serving_proto"
+	spb "kythe/proto/storage_proto"
 	xpb "kythe/proto/xref_proto"
 )
 
@@ -153,5 +154,19 @@ func displayNodes(nodes []*xpb.NodeInfo) error {
 			}
 		}
 	}
+	return nil
+}
+
+func displaySearch(reply *spb.SearchReply) error {
+	if *displayJSON {
+		return json.NewEncoder(out).Encode(reply)
+	}
+
+	for _, t := range reply.Ticket {
+		if _, err := fmt.Fprintln(out, t); err != nil {
+			return err
+		}
+	}
+	fmt.Fprintln(os.Stderr, "Total Results:", len(reply.Ticket))
 	return nil
 }

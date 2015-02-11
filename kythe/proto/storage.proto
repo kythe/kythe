@@ -161,3 +161,25 @@ message ShardRequest {
   optional int64 index = 1;
   optional int64 shards = 2;
 }
+
+// Request for the set of node tickets matching a partial VName and collection
+// of known facts.
+message SearchRequest {
+  // Optional partial VName to match against nodes.  Each non-empty field
+  // becomes a constraint (i.e. the signature/corpus/etc. must be exactly
+  // case-sensitively equal to the given string) on the set of returned nodes.
+  optional VName partial = 1;
+
+  message Fact {
+    optional string name = 1;
+    optional bytes value = 2;
+  }
+
+  // Facts that a node must have to be matched.
+  repeated Fact fact = 2;
+}
+
+message SearchReply {
+  // Set of node tickets matching a given SearchRequest.
+  repeated string ticket = 1;
+}

@@ -38,6 +38,16 @@ type Proto interface {
 	Put(key []byte, msg proto.Message) error
 }
 
+// Inverted is an inverted index lookup table for []byte values with associated
+// []byte keys.  Keys and values should not contain \000 bytes.
+type Inverted interface {
+	// Lookup returns a slice of []byte keys associated with the given value.
+	Lookup(val []byte) ([][]byte, error)
+
+	// Put writes an entry associating val with key.
+	Put(key, val []byte) error
+}
+
 // KVProto implements a Proto table using a keyvalue.DB.
 type KVProto struct{ keyvalue.DB }
 
@@ -77,4 +87,68 @@ func (t *KVProto) Put(key []byte, msg proto.Message) error {
 	}
 	defer wr.Close()
 	return wr.Write(key, rec)
+}
+
+// KVInverted implements an Inverted table in a keyvalue.DB.
+type KVInverted struct{ keyvalue.DB }
+
+// Lookup implements part of the Inverted interface.
+func (i *KVInverted) Lookup(val []byte) ([][]byte, error) {
+	prefix := invertedPrefix(val)
+	iter, err := i.ScanPrefix(prefix, nil)
+	if err != nil {
+		return nil, fmt.Errorf("table iterator error: %v", err)
+	}
+	defer iter.Close()
+
+	var results [][]byte
+	for {
+		k, _, err := iter.Next()
+		if err == io.EOF {
+			return results, nil
+		} else if err != nil {
+			return nil, err
+		}
+
+		if !bytes.HasPrefix(k, prefix) {
+			return results, nil
+		}
+
+		i := bytes.IndexByte(k, invertedKeySep)
+		if i == -1 {
+			return nil, fmt.Errorf("invalid index key: %q", string(k))
+		}
+		results = append(results, k[i+1:])
+	}
+}
+
+var emptyValue = []byte{}
+
+// Put implements part of the Inverted interface.
+func (i *KVInverted) Put(key, val []byte) error {
+	wr, err := i.Writer()
+	if err != nil {
+		return err
+	}
+	defer wr.Close()
+	return wr.Write(invertedKey(key, val), emptyValue)
+}
+
+const invertedKeySep = '\000'
+
+func invertedKey(key, val []byte) []byte {
+	var buf bytes.Buffer
+	buf.Grow(len(val) + 1 + len(key))
+	buf.Write(val)
+	buf.WriteByte(invertedKeySep)
+	buf.Write(key)
+	return buf.Bytes()
+}
+
+func invertedPrefix(val []byte) []byte {
+	var buf bytes.Buffer
+	buf.Grow(len(val) + 1)
+	buf.Write(val)
+	buf.WriteByte(invertedKeySep)
+	return buf.Bytes()
 }

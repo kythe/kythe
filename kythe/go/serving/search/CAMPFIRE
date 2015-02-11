@@ -1,0 +1,16 @@
+[
+  {
+    "name": "search",
+    "kind": "go_library",
+    "inputs": {
+      "srcs": [
+        "search.go"
+      ],
+      "go_pkgs": [
+        "//kythe/go/storage/table",
+        "//kythe/go/util/stringset",
+        "//kythe/proto:storage_proto"
+      ]
+    }
+  }
+]
