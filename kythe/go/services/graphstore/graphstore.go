@@ -25,6 +25,7 @@ import (
 	"sync"
 
 	"kythe/go/services/graphstore/compare"
+
 	spb "kythe/proto/storage_proto"
 )
 

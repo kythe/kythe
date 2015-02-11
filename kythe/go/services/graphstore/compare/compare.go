@@ -20,6 +20,7 @@ package compare
 
 import (
 	"bytes"
+
 	spb "kythe/proto/storage_proto"
 )
 
