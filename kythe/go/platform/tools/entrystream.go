@@ -36,7 +36,7 @@ import (
 	"os"
 
 	"kythe/go/platform/delimited"
-	"kythe/go/services/graphstore"
+	"kythe/go/services/graphstore/compare"
 	"kythe/go/storage/stream"
 
 	spb "kythe/proto/storage_proto"
@@ -96,7 +96,7 @@ func main() {
 		if *countOnly {
 			entryCount++
 		} else if *entrySets {
-			if !graphstore.VNameEqual(set.Source, entry.Source) || !graphstore.VNameEqual(set.Target, entry.Target) || set.EdgeKind != entry.GetEdgeKind() {
+			if compare.VNamesEqual(set.Source, entry.Source) || !compare.VNamesEqual(set.Target, entry.Target) || set.EdgeKind != entry.GetEdgeKind() {
 				if len(set.Properties) != 0 {
 					failOnErr(encoder.Encode(set))
 				}
@@ -132,7 +132,7 @@ type sortedEntries []*spb.Entry
 
 func (m sortedEntries) Len() int { return len(m) }
 func (m sortedEntries) Less(i, j int) bool {
-	return graphstore.EntryLess(m[i], m[j])
+	return compare.Entries(m[i], m[j]) == compare.LT
 }
 func (m sortedEntries) Swap(i, j int) {
 	m[i], m[j] = m[j], m[i]

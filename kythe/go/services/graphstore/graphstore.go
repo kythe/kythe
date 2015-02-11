@@ -19,12 +19,12 @@
 package graphstore
 
 import (
-	"bytes"
 	"container/heap"
 	"io"
 	"strings"
 	"sync"
 
+	"kythe/go/services/graphstore/compare"
 	spb "kythe/proto/storage_proto"
 )
 
@@ -157,11 +157,11 @@ func (p *proxyService) foreach(f func(int, Service) error) <-chan error {
 	return errc
 }
 
-// entryHeap is a min-heap of entries, orderd by EntryLess.
+// entryHeap is a min-heap of entries, ordered by compare.Entries.
 type entryHeap []*spb.Entry
 
 func (h entryHeap) Len() int           { return len(h) }
-func (h entryHeap) Less(i, j int) bool { return EntryLess(h[i], h[j]) }
+func (h entryHeap) Less(i, j int) bool { return compare.Entries(h[i], h[j]) == compare.LT }
 func (h entryHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
 
 func (h *entryHeap) Push(v interface{}) { *h = append(*h, v.(*spb.Entry)) }
@@ -175,71 +175,9 @@ func (h *entryHeap) Pop() interface{} {
 
 // EntryMatchesScan reports whether entry belongs in the result set for req.
 func EntryMatchesScan(req *spb.ScanRequest, entry *spb.Entry) bool {
-	return (req.GetTarget() == nil || VNameEqual(entry.Target, req.Target)) &&
+	return (req.GetTarget() == nil || vnamesEqual(entry.Target, req.Target)) &&
 		(req.GetEdgeKind() == "" || entry.GetEdgeKind() == req.GetEdgeKind()) &&
 		strings.HasPrefix(entry.GetFactName(), req.GetFactPrefix())
-}
-
-// EntryLess reports whether i precedes j in entry order.
-func EntryLess(i, j *spb.Entry) bool { return EntryCompare(i, j) == LT }
-
-// EntryCompare reports whether i is LT, GT, or EQ to j in entry order.
-// The ordering for entries is defined by lexicographic comparison of
-// [source, edge kind, fact name, target].
-func EntryCompare(i, j *spb.Entry) Order {
-	if i == j {
-		return EQ
-	}
-	if c := VNameCompare(i.GetSource(), j.GetSource()); c != EQ {
-		return c
-	} else if c := stringComp(i.GetEdgeKind(), j.GetEdgeKind()); c != EQ {
-		return c
-	} else if c := stringComp(i.GetFactName(), j.GetFactName()); c != EQ {
-		return c
-	}
-	return VNameCompare(i.GetTarget(), j.GetTarget())
-}
-
-// Order represents a total order for values.
-//
-// TODO(fromberger): Move the ordering-related code to a separate package.
-type Order int
-
-// LT, EQ, and GT are the standard values for an Order.
-const (
-	LT Order = -1 // lhs < rhs
-	EQ Order = 0  // lhs == rhs
-	GT Order = 1  // lhs > rhs
-)
-
-// stringComp returns LT if s < t, EQ if s == t, or GT if s > t.
-func stringComp(s, t string) Order {
-	switch {
-	case s < t:
-		return LT
-	case s > t:
-		return GT
-	default:
-		return EQ
-	}
-}
-
-// VNameCompare returns LT if i precedes j, EQ if i and j are equal, or GT if i
-// follows j, in standard order.  The ordering for VNames is defined by
-// lexicographic comparison of [signature, corpus, root, path, language].
-func VNameCompare(i, j *spb.VName) Order {
-	if i == j {
-		return EQ
-	} else if c := stringComp(i.GetSignature(), j.GetSignature()); c != EQ {
-		return c
-	} else if c := stringComp(i.GetCorpus(), j.GetCorpus()); c != EQ {
-		return c
-	} else if c := stringComp(i.GetRoot(), j.GetRoot()); c != EQ {
-		return c
-	} else if c := stringComp(i.GetPath(), j.GetPath()); c != EQ {
-		return c
-	}
-	return stringComp(i.GetLanguage(), j.GetLanguage())
 }
 
 // BatchWrites returns a channel of WriteRequests for the given entries.
@@ -258,7 +196,7 @@ func BatchWrites(entries <-chan *spb.Entry, maxSize int) <-chan *spb.WriteReques
 				FactValue: entry.FactValue,
 			}
 
-			if req != nil && (!VNameEqual(req.Source, entry.Source) || len(req.Update) >= maxSize) {
+			if req != nil && (!vnamesEqual(req.Source, entry.Source) || len(req.Update) >= maxSize) {
 				ch <- req
 				req = nil
 			}
@@ -279,15 +217,8 @@ func BatchWrites(entries <-chan *spb.Entry, maxSize int) <-chan *spb.WriteReques
 	return ch
 }
 
-// EntryEqual determines if two Entry protos are equivalent
-func EntryEqual(e1, e2 *spb.Entry) bool {
-	return (e1 == e2) || (e1.GetFactName() == e2.GetFactName() && e1.GetEdgeKind() == e2.GetEdgeKind() && VNameEqual(e1.Target, e2.Target) && VNameEqual(e1.Source, e2.Source) && bytes.Equal(e1.FactValue, e2.FactValue))
-}
-
-// VNameEqual determines if two VNames are equivalent
-func VNameEqual(v1, v2 *spb.VName) bool {
-	return (v1 == v2) || (v1.GetSignature() == v2.GetSignature() && v1.GetCorpus() == v2.GetCorpus() && v1.GetRoot() == v2.GetRoot() && v1.GetPath() == v2.GetPath() && v1.GetLanguage() == v2.GetLanguage())
-}
+// vnamesEqual reports whether v1 == v2.
+func vnamesEqual(v1, v2 *spb.VName) bool { return compare.VNames(v1, v2) == compare.EQ }
 
 // invoke calls req concurrently for each delegated service in p, merges the
 // results, and delivers them to f.
@@ -344,7 +275,7 @@ func (p *proxyService) invoke(req func(Service, EntryFunc) error, f EntryFunc) e
 			// If not, and there are no more values coming, we're finished.
 			if h.Len() != 0 {
 				entry := heap.Pop(&h).(*spb.Entry)
-				if last == nil || !EntryEqual(last, entry) {
+				if last == nil || !compare.EntriesEqual(last, entry) {
 					last = entry
 					if err := f(entry); err != nil {
 						if err != io.EOF {

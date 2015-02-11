@@ -1,26 +1,25 @@
 [
   {
-    "name": "graphstore",
+    "name": "compare",
     "kind": "go_library",
     "inputs": {
       "srcs": [
-        "graphstore.go"
+        "compare.go"
       ],
       "go_pkgs": [
-        "//kythe/go/services/graphstore/compare",
         "//kythe/proto:storage_proto"
       ]
     }
   },
   {
-    "name": "graphstore_test",
+    "name": "compare_test",
     "kind": "go_test",
     "inputs": {
       "srcs": [
-        "graphstore_test.go"
+        "compare_test.go"
       ],
       "go_lib": [
-        ":graphstore"
+        ":compare"
       ],
       "go_pkgs": [
         "//kythe/proto:storage_proto",

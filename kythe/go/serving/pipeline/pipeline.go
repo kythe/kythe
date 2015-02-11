@@ -28,6 +28,7 @@ import (
 
 	"kythe/go/services/filetree"
 	"kythe/go/services/graphstore"
+	"kythe/go/services/graphstore/compare"
 	"kythe/go/services/xrefs"
 	ftsrv "kythe/go/serving/filetree"
 	xsrv "kythe/go/serving/xrefs"
@@ -161,7 +162,7 @@ func collectNodes(nodeEntries <-chan *spb.Entry) <-chan *srvpb.Node {
 			vname *spb.VName
 		)
 		for e := range nodeEntries {
-			if node != nil && !graphstore.VNameEqual(e.Source, vname) {
+			if node != nil && !compare.VNamesEqual(e.Source, vname) {
 				nodes <- node
 				node = nil
 				vname = nil
@@ -204,7 +205,7 @@ func writeEdges(t table.Proto, edges <-chan *spb.Entry) error {
 	log.Println("Writing temporary reverse edges table")
 	var writeReq *spb.WriteRequest
 	for e := range edges {
-		if writeReq != nil && graphstore.VNameCompare(e.Source, writeReq.Source) != graphstore.EQ {
+		if writeReq != nil && !compare.VNamesEqual(e.Source, writeReq.Source) {
 			if err := writeWithReverses(gs, writeReq); err != nil {
 				return err
 			}
@@ -243,7 +244,7 @@ func writeEdgePages(t table.Proto, gs graphstore.Service) error {
 			panic("non-edge entry")
 		}
 
-		if pes != nil && !graphstore.VNameEqual(lastSrc, e.Source) {
+		if pes != nil && !compare.VNamesEqual(lastSrc, e.Source) {
 			if grp != nil {
 				pes.EdgeSet.Group = append(pes.EdgeSet.Group, grp)
 				pesTotal += len(grp.TargetTicket)
