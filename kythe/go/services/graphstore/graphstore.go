@@ -19,10 +19,7 @@
 package graphstore
 
 import (
-	"container/heap"
-	"io"
 	"strings"
-	"sync"
 
 	"kythe/go/services/graphstore/compare"
 
@@ -87,93 +84,6 @@ type Sharded interface {
 	Shard(req *spb.ShardRequest, f EntryFunc) error
 }
 
-type proxyService struct {
-	stores []Service
-}
-
-// NewProxy returns a Service that forwards Reads, Writes, and Scans to a set
-// of stores in parallel, and merges their results.
-func NewProxy(stores ...Service) Service { return &proxyService{stores} }
-
-// Read implements Service and forwards the request to the proxied stores.
-func (p *proxyService) Read(req *spb.ReadRequest, f EntryFunc) error {
-	return p.invoke(func(svc Service, cb EntryFunc) error {
-		return svc.Read(req, cb)
-	}, f)
-}
-
-// Scan implements part of graphstore.Service by forwarding the request to the
-// proxied stores.
-func (p *proxyService) Scan(req *spb.ScanRequest, f EntryFunc) error {
-	return p.invoke(func(svc Service, cb EntryFunc) error {
-		return svc.Scan(req, cb)
-	}, f)
-}
-
-// Write implements part of graphstore.Service by forwarding the request to the
-// proxied stores.
-func (p *proxyService) Write(req *spb.WriteRequest) error {
-	return waitErr(p.foreach(func(i int, s Service) error {
-		return s.Write(req)
-	}))
-}
-
-// Close implements part of graphstore.Service by calling Close on each proxied
-// store.  All the stores are given an opportunity to close, even in case of
-// error, but only one error is returned.
-func (p *proxyService) Close() error {
-	return waitErr(p.foreach(func(i int, s Service) error {
-		return s.Close()
-	}))
-}
-
-// waitErr reads values from errc until it closes, then returns the first
-// non-nil error it received (if any).
-func waitErr(errc <-chan error) error {
-	var err error
-	for e := range errc {
-		if e != nil && err == nil {
-			err = e
-		}
-	}
-	return err
-}
-
-// foreach concurrently invokes f(i, p.stores[i]) for each proxied store.  The
-// return value from each invocation is delivered to the error channel that is
-// returned, which will be closed once all the calls are complete.  The channel
-// is unbuffered, so the caller must drain the channel to avoid deadlock.
-func (p *proxyService) foreach(f func(int, Service) error) <-chan error {
-	errc := make(chan error)
-	var wg sync.WaitGroup
-	wg.Add(len(p.stores))
-	for i, s := range p.stores {
-		i, s := i, s
-		go func() {
-			defer wg.Done()
-			errc <- f(i, s)
-		}()
-	}
-	go func() { wg.Wait(); close(errc) }()
-	return errc
-}
-
-// entryHeap is a min-heap of entries, ordered by compare.Entries.
-type entryHeap []*spb.Entry
-
-func (h entryHeap) Len() int           { return len(h) }
-func (h entryHeap) Less(i, j int) bool { return compare.Entries(h[i], h[j]) == compare.LT }
-func (h entryHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
-
-func (h *entryHeap) Push(v interface{}) { *h = append(*h, v.(*spb.Entry)) }
-
-func (h *entryHeap) Pop() interface{} {
-	n := h.Len() - 1
-	out := (*h)[n]
-	*h = (*h)[:n]
-	return out
-}
-
 // EntryMatchesScan reports whether entry belongs in the result set for req.
 func EntryMatchesScan(req *spb.ScanRequest, entry *spb.Entry) bool {
 	return (req.GetTarget() == nil || compare.VNamesEqual(entry.Target, req.Target)) &&
@@ -216,81 +126,4 @@ func BatchWrites(entries <-chan *spb.Entry, maxSize int) <-chan *spb.WriteReques
 		}
 	}()
 	return ch
-}
-
-// invoke calls req concurrently for each delegated service in p, merges the
-// results, and delivers them to f.
-func (p *proxyService) invoke(req func(Service, EntryFunc) error, f EntryFunc) error {
-	stop := make(chan struct{}) // Closed to signal cancellation
-
-	// Create a channel for each delegated request, and a callback that
-	// delivers results to that channel.  The callback will handle cancellation
-	// signaled by a close of the stop channel, and exit early.
-
-	rcv := make([]EntryFunc, len(p.stores))       // callbacks
-	chs := make([]chan *spb.Entry, len(p.stores)) // channels
-	for i := range p.stores {
-		ch := make(chan *spb.Entry)
-		chs[i] = ch
-		rcv[i] = func(e *spb.Entry) error {
-			select {
-			case <-stop: // cancellation has been signalled
-				return nil
-			case ch <- e:
-				return nil
-			}
-		}
-	}
-
-	// Invoke the requests for each service, using the corresponding callback.
-	errc := p.foreach(func(i int, s Service) error {
-		err := req(s, rcv[i])
-		close(chs[i])
-		return err
-	})
-
-	// Accumulate and merge the results.  This is a straightforward round-robin
-	// n-finger merge of the values from the delegated requests.
-
-	var h entryHeap     // used to preserve stream order
-	var last *spb.Entry // used to deduplicate entries
-	var perr error      // error while accumulating
-	go func() {
-		defer close(stop)
-		for {
-			hit := false // are any requests still pending?
-
-			// Give each channel a chance to produce a value, round-robin to
-			// preserve the global ordering.
-			for _, ch := range chs {
-				if e, ok := <-ch; ok {
-					hit = true
-					heap.Push(&h, e)
-				}
-			}
-
-			// If there are any values pending, deliver one to the consumer.
-			// If not, and there are no more values coming, we're finished.
-			if h.Len() != 0 {
-				entry := heap.Pop(&h).(*spb.Entry)
-				if last == nil || !compare.EntriesEqual(last, entry) {
-					last = entry
-					if err := f(entry); err != nil {
-						if err != io.EOF {
-							perr = err
-						}
-						return
-					}
-				}
-			} else if !hit {
-				return // no more work to do
-			}
-		}
-	}()
-	err := waitErr(errc) // wait for all receives to complete
-	<-stop               // wait for all sends to complete
-	if perr != nil {
-		return perr
-	}
-	return err
 }

@@ -28,6 +28,7 @@ import (
 	"syscall"
 
 	"kythe/go/services/graphstore"
+	"kythe/go/services/graphstore/proxy"
 	"kythe/go/storage/inmemory"
 	"kythe/go/storage/leveldb"
 	"kythe/go/storage/sql"
@@ -90,7 +91,7 @@ func ParseGraphStore(str string) (graphstore.Service, error) {
 		if len(stores) == 0 {
 			return nil, errors.New("no proxy GraphStores specified")
 		}
-		return graphstore.NewProxy(stores...), nil
+		return proxy.New(stores...), nil
 	case "leveldb":
 		gs, err := leveldb.OpenGraphStore(spec, nil)
 		if err != nil {
