@@ -11,21 +11,5 @@
         "//kythe/proto:storage_proto"
       ]
     }
-  },
-  {
-    "name": "graphstore_test",
-    "kind": "go_test",
-    "inputs": {
-      "srcs": [
-        "graphstore_test.go"
-      ],
-      "go_lib": [
-        ":graphstore"
-      ],
-      "go_pkgs": [
-        "//kythe/proto:storage_proto",
-        "//third_party/go/code.google.com:protobuf"
-      ]
-    }
   }
 ]
