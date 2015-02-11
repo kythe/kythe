@@ -175,7 +175,7 @@ func (h *entryHeap) Pop() interface{} {
 
 // EntryMatchesScan reports whether entry belongs in the result set for req.
 func EntryMatchesScan(req *spb.ScanRequest, entry *spb.Entry) bool {
-	return (req.GetTarget() == nil || vnamesEqual(entry.Target, req.Target)) &&
+	return (req.GetTarget() == nil || compare.VNamesEqual(entry.Target, req.Target)) &&
 		(req.GetEdgeKind() == "" || entry.GetEdgeKind() == req.GetEdgeKind()) &&
 		strings.HasPrefix(entry.GetFactName(), req.GetFactPrefix())
 }
@@ -196,7 +196,7 @@ func BatchWrites(entries <-chan *spb.Entry, maxSize int) <-chan *spb.WriteReques
 				FactValue: entry.FactValue,
 			}
 
-			if req != nil && (!vnamesEqual(req.Source, entry.Source) || len(req.Update) >= maxSize) {
+			if req != nil && (!compare.VNamesEqual(req.Source, entry.Source) || len(req.Update) >= maxSize) {
 				ch <- req
 				req = nil
 			}
@@ -216,9 +216,6 @@ func BatchWrites(entries <-chan *spb.Entry, maxSize int) <-chan *spb.WriteReques
 	}()
 	return ch
 }
-
-// vnamesEqual reports whether v1 == v2.
-func vnamesEqual(v1, v2 *spb.VName) bool { return compare.VNames(v1, v2) == compare.EQ }
 
 // invoke calls req concurrently for each delegated service in p, merges the
 // results, and delivers them to f.
