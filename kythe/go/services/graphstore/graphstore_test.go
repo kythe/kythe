@@ -27,66 +27,6 @@ import (
 	spb "kythe/proto/storage_proto"
 )
 
-func TestVNameCompare(t *testing.T) {
-	var ordered []vname
-	for i := 0; i < 100000; i += 307 {
-		key := fmt.Sprintf("%05d", i)
-		ordered = append(ordered, vname{
-			string(key[0]), string(key[1]), string(key[2]), string(key[3]), string(key[4]),
-		})
-	}
-
-	for i, fst := range ordered {
-		for j, snd := range ordered {
-			want := LT
-			if i == j {
-				want = EQ
-			} else if i > j {
-				want = GT
-			}
-
-			got := VNameCompare(fst.proto(), snd.proto())
-			if got != want {
-				t.Errorf("Comparison %+v ? %+v failed: got %q, want %q", fst, snd, got, want)
-			}
-		}
-	}
-}
-
-func TestEntryLess(t *testing.T) {
-	tests := []struct {
-		car, cdr entry
-		want     bool
-	}{
-		{want: false}, // empty == empty
-
-		{entry{S: vname{S: "a"}, F: "/", V: "b"}, entry{S: vname{S: "b"}, F: "/", V: "a"}, true},
-		{entry{S: vname{S: "b"}, F: "/", V: "a"}, entry{S: vname{S: "a"}, F: "/", V: "b"}, false},
-		{entry{S: vname{S: "eq"}, F: "/"}, entry{S: vname{S: "eq"}, F: "/"}, false},
-		{entry{K: "a", F: "/", V: "b"}, entry{K: "b", F: "/", V: "a"}, true},
-		{entry{K: "b", F: "/", V: "a"}, entry{K: "a", F: "/", V: "b"}, false},
-		{entry{K: "eq", F: "/"}, entry{K: "eq", F: "/"}, false},
-		{entry{F: "/a", V: "b"}, entry{F: "/b", V: "a"}, true},
-		{entry{F: "/b", V: "a"}, entry{F: "/a", V: "b"}, false},
-		{entry{F: "/eq"}, entry{F: "/eq"}, false},
-		{entry{F: "/", T: vname{S: "a"}, V: "b"}, entry{F: "/", T: vname{S: "b"}, V: "a"}, true},
-		{entry{F: "/", T: vname{S: "b"}, V: "a"}, entry{F: "/", T: vname{S: "a"}, V: "b"}, false},
-		{entry{F: "/", T: vname{S: "eq"}}, entry{F: "/", T: vname{S: "eq"}}, false},
-		{entry{V: "a"}, entry{V: "b"}, false},
-		{entry{V: "b"}, entry{V: "a"}, false},
-		{entry{V: "eq"}, entry{V: "eq"}, false},
-	}
-
-	for _, pair := range tests {
-		lhs := pair.car.proto()
-		rhs := pair.cdr.proto()
-		if got := EntryLess(lhs, rhs); got != pair.want {
-			t.Errorf("EntryLess: got %v, want %v\nlhs: {%+v}\nrhs: {%+v}",
-				got, pair.want, lhs, rhs)
-		}
-	}
-}
-
 // Static set of Entry protos to use for testing
 var testEntries = []entry{
 	{},

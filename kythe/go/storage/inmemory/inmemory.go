@@ -23,6 +23,7 @@ import (
 	"sync"
 
 	"kythe/go/services/graphstore"
+	"kythe/go/services/graphstore/compare"
 
 	spb "kythe/proto/storage_proto"
 
@@ -58,11 +59,11 @@ func (s *store) Write(req *spb.WriteRequest) error {
 
 func (s *store) insert(e *spb.Entry) {
 	i := sort.Search(len(s.entries), func(i int) bool {
-		return graphstore.EntryLess(e, s.entries[i])
+		return compare.Entries(e, s.entries[i]) == compare.LT
 	})
 	if i == len(s.entries) {
 		s.entries = append(s.entries, e)
-	} else if i < len(s.entries) && graphstore.EntryCompare(e, s.entries[i]) == graphstore.EQ {
+	} else if i < len(s.entries) && compare.EntriesEqual(e, s.entries[i]) {
 		s.entries[i] = e
 	} else if i == 0 {
 		s.entries = append([]*spb.Entry{e}, s.entries...)
@@ -76,12 +77,12 @@ func (s *store) Read(req *spb.ReadRequest, f graphstore.EntryFunc) error {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	start := sort.Search(len(s.entries), func(i int) bool {
-		comp := graphstore.VNameCompare(s.entries[i].Source, req.Source)
-		return comp != graphstore.LT && (comp == graphstore.GT || req.GetEdgeKind() == "*" || s.entries[i].GetEdgeKind() >= req.GetEdgeKind())
+		comp := compare.VNames(s.entries[i].Source, req.Source)
+		return comp != compare.LT && (comp == compare.GT || req.GetEdgeKind() == "*" || s.entries[i].GetEdgeKind() >= req.GetEdgeKind())
 	})
 	end := sort.Search(len(s.entries), func(i int) bool {
-		comp := graphstore.VNameCompare(s.entries[i].Source, req.Source)
-		return comp == graphstore.GT || (req.GetEdgeKind() != "*" && s.entries[i].GetEdgeKind() > req.GetEdgeKind())
+		comp := compare.VNames(s.entries[i].Source, req.Source)
+		return comp == compare.GT || (req.GetEdgeKind() != "*" && s.entries[i].GetEdgeKind() > req.GetEdgeKind())
 	})
 	for i := start; i < end; i++ {
 		if err := f(s.entries[i]); err == io.EOF {

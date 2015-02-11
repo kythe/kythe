@@ -27,7 +27,7 @@
         ":sql"
       ],
       "go_pkgs": [
-        "//kythe/go/services/graphstore",
+        "//kythe/go/services/graphstore/compare",
         "//kythe/proto:storage_proto"
       ]
     }
