@@ -49,7 +49,7 @@ type shard struct {
 	count int64
 }
 
-// NewGraphStore returns a GraphStore backed by the given keyvalue DB.
+// NewGraphStore returns a graphstore.Service backed by the given keyvalue DB.
 func NewGraphStore(db DB) *Store {
 	return &Store{db: db}
 }
@@ -124,8 +124,8 @@ type Writer interface {
 	Write(key, val []byte) error
 }
 
-// Read implements part of the GraphStore interface.
-func (s *Store) Read(req *spb.ReadRequest, stream chan<- *spb.Entry) error {
+// Read implements part of the graphstore.Service interface.
+func (s *Store) Read(req *spb.ReadRequest, f graphstore.EntryFunc) error {
 	keyPrefix, err := KeyPrefix(req.Source, req.GetEdgeKind())
 	if err != nil {
 		return fmt.Errorf("invalid ReadRequest: %v", err)
@@ -134,10 +134,10 @@ func (s *Store) Read(req *spb.ReadRequest, stream chan<- *spb.Entry) error {
 	if err != nil {
 		return fmt.Errorf("db seek error: %v", err)
 	}
-	return streamEntries(iter, stream)
+	return streamEntries(iter, f)
 }
 
-func streamEntries(iter Iterator, stream chan<- *spb.Entry) error {
+func streamEntries(iter Iterator, f graphstore.EntryFunc) error {
 	defer iter.Close()
 	for {
 		key, val, err := iter.Next()
@@ -151,7 +151,11 @@ func streamEntries(iter Iterator, stream chan<- *spb.Entry) error {
 		if err != nil {
 			return fmt.Errorf("encoding error: %v", err)
 		}
-		stream <- entry
+		if err := f(entry); err == io.EOF {
+			return nil
+		} else if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -185,8 +189,8 @@ func (s *Store) Write(req *spb.WriteRequest) (err error) {
 	return nil
 }
 
-// Scan implements part of the GraphStore interface.
-func (s *Store) Scan(req *spb.ScanRequest, stream chan<- *spb.Entry) error {
+// Scan implements part of the graphstore.Service interface.
+func (s *Store) Scan(req *spb.ScanRequest, f graphstore.EntryFunc) error {
 	iter, err := s.db.ScanPrefix(entryKeyPrefixBytes, &Options{LargeRead: true})
 	if err != nil {
 		return fmt.Errorf("db seek error: %v", err)
@@ -203,18 +207,21 @@ func (s *Store) Scan(req *spb.ScanRequest, stream chan<- *spb.Entry) error {
 		if err != nil {
 			return fmt.Errorf("invalid key/value entry: %v", err)
 		}
-
-		if graphstore.EntryMatchesScan(req, entry) {
-			stream <- entry
+		if !graphstore.EntryMatchesScan(req, entry) {
+			continue
+		} else if err := f(entry); err == io.EOF {
+			return nil
+		} else if err != nil {
+			return err
 		}
 	}
 	return nil
 }
 
-// Close implements part of the GraphStore interface.
+// Close implements part of the graphstore.Service interface.
 func (s *Store) Close() error { return s.db.Close() }
 
-// Count implements part of the ShardedGraphStore interface.
+// Count implements part of the graphstore.Sharded interface.
 func (s *Store) Count(req *spb.CountRequest) (int64, error) {
 	if req.GetShards() < 1 {
 		return 0, fmt.Errorf("invalid number of shards: %d", req.GetShards())
@@ -229,8 +236,8 @@ func (s *Store) Count(req *spb.CountRequest) (int64, error) {
 	return tbl[req.GetIndex()].count, nil
 }
 
-// Shard implements part of the ShardedGraphStore interface.
-func (s *Store) Shard(req *spb.ShardRequest, stream chan<- *spb.Entry) error {
+// Shard implements part of the graphstore.Sharded interface.
+func (s *Store) Shard(req *spb.ShardRequest, f graphstore.EntryFunc) error {
 	if req.GetShards() < 1 {
 		return fmt.Errorf("invalid number of shards: %d", req.GetShards())
 	} else if req.GetIndex() < 0 || req.GetIndex() >= req.GetShards() {
@@ -252,7 +259,7 @@ func (s *Store) Shard(req *spb.ShardRequest, stream chan<- *spb.Entry) error {
 	if err != nil {
 		return err
 	}
-	return streamEntries(iter, stream)
+	return streamEntries(iter, f)
 }
 
 func (s *Store) constructShards(num int64) ([]shard, Snapshot, error) {

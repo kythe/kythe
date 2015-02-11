@@ -14,15 +14,18 @@
  * limitations under the License.
  */
 
-// Package sql implements a GraphStore using a SQL database backend.
+// Package sql implements a graphstore.Service using a SQL database backend.
 package sql
 
 import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"strings"
+
+	"kythe/go/services/graphstore"
 
 	spb "kythe/proto/storage_proto"
 
@@ -51,8 +54,8 @@ type DB struct {
 	writeStmt *sql.Stmt
 }
 
-// OpenGraphStore returns a GraphStore backed by a SQL database at the given
-// filepath.
+// OpenGraphStore returns a graphstore.Service backed by a SQL database at the
+// given filepath.
 func OpenGraphStore(driverName, dataSourceName string) (*DB, error) {
 	db, err := sql.Open(driverName, dataSourceName)
 	if err != nil {
@@ -72,8 +75,8 @@ func OpenGraphStore(driverName, dataSourceName string) (*DB, error) {
 	return d, nil
 }
 
-// Read implements part of the GraphStore interface.
-func (db *DB) Read(req *spb.ReadRequest, stream chan<- *spb.Entry) (err error) {
+// Read implements part of the graphstore.Service interface.
+func (db *DB) Read(req *spb.ReadRequest, f graphstore.EntryFunc) (err error) {
 	if req.Source == nil {
 		return errors.New("invalid ReadRequest: missing Source")
 	}
@@ -88,16 +91,18 @@ func (db *DB) Read(req *spb.ReadRequest, stream chan<- *spb.Entry) (err error) {
 	if err != nil {
 		return fmt.Errorf("sql select error: %v", err)
 	}
-	return scanEntries(rows, stream)
+	return scanEntries(rows, f)
 }
 
 var likeEscaper = strings.NewReplacer("%", "\t%", "_", "\t_")
 
-// Scan implements part of the GraphStore interface.
-func (db *DB) Scan(req *spb.ScanRequest, stream chan<- *spb.Entry) (err error) {
+// Scan implements part of the graphstore.Service interface.
+//
+// TODO(fromberger): Maybe use prepared statements here.
+func (db *DB) Scan(req *spb.ScanRequest, f graphstore.EntryFunc) (err error) {
 	var rows *sql.Rows
 	factPrefix := likeEscaper.Replace(req.GetFactPrefix()) + "%"
-	if req.Target != nil {
+	if req.GetTarget() != nil {
 		if req.GetEdgeKind() == "" {
 			rows, err = db.Query("SELECT "+columns+" FROM "+tableName+` WHERE fact LIKE ? ESCAPE '\t' AND source_signature = ? AND source_corpus = ? AND source_root = ? AND source_language = ? AND source_path = ? `+orderByClause, factPrefix, req.GetTarget().GetSignature(), req.GetTarget().GetCorpus(), req.GetTarget().GetRoot(), req.GetTarget().GetLanguage(), req.GetTarget().GetPath())
 		} else {
@@ -113,10 +118,10 @@ func (db *DB) Scan(req *spb.ScanRequest, stream chan<- *spb.Entry) (err error) {
 	if err != nil {
 		return err
 	}
-	return scanEntries(rows, stream)
+	return scanEntries(rows, f)
 }
 
-// Write implements part of the GraphStore interface.
+// Write implements part of the graphstore.Service interface.
 func (db *DB) Write(req *spb.WriteRequest) error {
 	tx, err := db.Begin()
 	if err != nil {
@@ -146,7 +151,7 @@ func (db *DB) Write(req *spb.WriteRequest) error {
 	return nil
 }
 
-func scanEntries(rows *sql.Rows, stream chan<- *spb.Entry) error {
+func scanEntries(rows *sql.Rows, f graphstore.EntryFunc) error {
 	for rows.Next() {
 		entry := &spb.Entry{
 			Source: &spb.VName{},
@@ -174,7 +179,13 @@ func scanEntries(rows *sql.Rows, stream chan<- *spb.Entry) error {
 			entry.EdgeKind = nil
 			entry.Target = nil
 		}
-		stream <- entry
+		if err := f(entry); err == io.EOF {
+			rows.Close()
+			return nil
+		} else if err != nil {
+			rows.Close()
+			return err
+		}
 	}
 	return rows.Close()
 }

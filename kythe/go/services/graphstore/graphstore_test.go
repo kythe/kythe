@@ -18,6 +18,8 @@ package graphstore
 
 import (
 	"errors"
+	"fmt"
+	"io"
 	"testing"
 
 	"code.google.com/p/goprotobuf/proto"
@@ -25,246 +27,266 @@ import (
 	spb "kythe/proto/storage_proto"
 )
 
-func vname(signature, corpus, root, path, language string) *spb.VName {
-	return &spb.VName{
-		Signature: &signature,
-		Corpus:    &corpus,
-		Root:      &root,
-		Path:      &path,
-		Language:  &language,
-	}
-}
-
 func TestVNameCompare(t *testing.T) {
-	tests := []struct {
-		car  *spb.VName
-		cdr  *spb.VName
-		comp Order
-	}{
-		{nil, nil, EQ},
-		{vname("", "", "", "", ""), vname("", "", "", "", ""), EQ},
-		{vname("sig", "corpus", "root", "path", "language"), vname("sig", "corpus", "root", "path", "language"), EQ},
-		{vname("a", "", "", "", ""), vname("b", "", "", "", ""), LT},
-		{vname("b", "", "", "", ""), vname("a", "", "", "", ""), GT},
-		{vname("s", "a", "", "", ""), vname("s", "b", "", "", ""), LT},
-		{vname("s", "b", "", "", ""), vname("s", "a", "", "", ""), GT},
-		{vname("s", "c", "a", "", ""), vname("s", "c", "b", "", ""), LT},
-		{vname("s", "c", "b", "", ""), vname("s", "c", "a", "", ""), GT},
-		{vname("s", "c", "r", "a", ""), vname("s", "c", "r", "b", ""), LT},
-		{vname("s", "c", "r", "b", ""), vname("s", "c", "r", "a", ""), GT},
-		{vname("s", "c", "r", "p", "a"), vname("s", "c", "r", "p", "b"), LT},
-		{vname("s", "c", "r", "p", "b"), vname("s", "c", "r", "p", "a"), GT},
-		{vname("s", "c", "a", "p", "l"), vname("s", "c", "b", "p", "l"), LT},
-		{vname("s", "c", "b", "p", "l"), vname("s", "c", "a", "p", "l"), GT},
-		{vname("s", "c", "a", "b", "l"), vname("s", "c", "b", "a", "l"), LT},
-		{vname("s", "c", "b", "a", "l"), vname("s", "c", "a", "b", "l"), GT},
+	var ordered []vname
+	for i := 0; i < 100000; i += 307 {
+		key := fmt.Sprintf("%05d", i)
+		ordered = append(ordered, vname{
+			string(key[0]), string(key[1]), string(key[2]), string(key[3]), string(key[4]),
+		})
 	}
 
-	for _, pair := range tests {
-		if res := VNameCompare(pair.car, pair.cdr); res != pair.comp {
-			t.Errorf("Compare({%+v}, {%+v}); Expected %d; Result %d", pair.car, pair.cdr, pair.comp, res)
+	for i, fst := range ordered {
+		for j, snd := range ordered {
+			want := LT
+			if i == j {
+				want = EQ
+			} else if i > j {
+				want = GT
+			}
+
+			got := VNameCompare(fst.proto(), snd.proto())
+			if got != want {
+				t.Errorf("Comparison %+v ? %+v failed: got %q, want %q", fst, snd, got, want)
+			}
 		}
-	}
-}
-
-func entry(source *spb.VName, edgeKind, factName string, target *spb.VName, value string) *spb.Entry {
-	return &spb.Entry{
-		Source:    source,
-		EdgeKind:  &edgeKind,
-		FactName:  &factName,
-		Target:    target,
-		FactValue: []byte(value),
 	}
 }
 
 func TestEntryLess(t *testing.T) {
 	tests := []struct {
-		car  *spb.Entry
-		cdr  *spb.Entry
-		less bool
+		car, cdr entry
+		want     bool
 	}{
-		{nil, nil, false},
-		{entry(vname("a", "", "", "", ""), "", "/", nil, "b"),
-			entry(vname("b", "", "", "", ""), "", "/", nil, "a"), true},
-		{entry(vname("b", "", "", "", ""), "", "/", nil, "a"),
-			entry(vname("a", "", "", "", ""), "", "/", nil, "b"), false},
-		{entry(vname("eq", "", "", "", ""), "", "/", nil, ""),
-			entry(vname("eq", "", "", "", ""), "", "/", nil, ""), false},
-		{entry(nil, "a", "/", nil, "b"),
-			entry(nil, "b", "/", nil, "a"), true},
-		{entry(nil, "b", "/", nil, "a"),
-			entry(nil, "a", "/", nil, "b"), false},
-		{entry(nil, "eq", "/", nil, ""),
-			entry(nil, "eq", "/", nil, ""), false},
-		{entry(nil, "", "/a", nil, "b"),
-			entry(nil, "", "/b", nil, "a"), true},
-		{entry(nil, "", "/b", nil, "a"),
-			entry(nil, "", "/a", nil, "b"), false},
-		{entry(nil, "", "/eq", nil, ""),
-			entry(nil, "", "/eq", nil, ""), false},
-		{entry(nil, "", "/", vname("a", "", "", "", ""), "b"),
-			entry(nil, "", "/", vname("b", "", "", "", ""), "a"), true},
-		{entry(nil, "", "/", vname("b", "", "", "", ""), "a"),
-			entry(nil, "", "/", vname("a", "", "", "", ""), "b"), false},
-		{entry(nil, "", "/", vname("eq", "", "", "", ""), ""),
-			entry(nil, "", "/", vname("eq", "", "", "", ""), ""), false},
-		{entry(nil, "", "", nil, "a"),
-			entry(nil, "", "", nil, "b"), false},
-		{entry(nil, "", "", nil, "b"),
-			entry(nil, "", "", nil, "a"), false},
-		{entry(nil, "", "", nil, "eq"),
-			entry(nil, "", "", nil, "eq"), false},
+		{want: false}, // empty == empty
+
+		{entry{S: vname{S: "a"}, F: "/", V: "b"}, entry{S: vname{S: "b"}, F: "/", V: "a"}, true},
+		{entry{S: vname{S: "b"}, F: "/", V: "a"}, entry{S: vname{S: "a"}, F: "/", V: "b"}, false},
+		{entry{S: vname{S: "eq"}, F: "/"}, entry{S: vname{S: "eq"}, F: "/"}, false},
+		{entry{K: "a", F: "/", V: "b"}, entry{K: "b", F: "/", V: "a"}, true},
+		{entry{K: "b", F: "/", V: "a"}, entry{K: "a", F: "/", V: "b"}, false},
+		{entry{K: "eq", F: "/"}, entry{K: "eq", F: "/"}, false},
+		{entry{F: "/a", V: "b"}, entry{F: "/b", V: "a"}, true},
+		{entry{F: "/b", V: "a"}, entry{F: "/a", V: "b"}, false},
+		{entry{F: "/eq"}, entry{F: "/eq"}, false},
+		{entry{F: "/", T: vname{S: "a"}, V: "b"}, entry{F: "/", T: vname{S: "b"}, V: "a"}, true},
+		{entry{F: "/", T: vname{S: "b"}, V: "a"}, entry{F: "/", T: vname{S: "a"}, V: "b"}, false},
+		{entry{F: "/", T: vname{S: "eq"}}, entry{F: "/", T: vname{S: "eq"}}, false},
+		{entry{V: "a"}, entry{V: "b"}, false},
+		{entry{V: "b"}, entry{V: "a"}, false},
+		{entry{V: "eq"}, entry{V: "eq"}, false},
 	}
 
 	for _, pair := range tests {
-		if res := EntryLess(pair.car, pair.cdr); res != pair.less {
-			t.Errorf("Less({%+v}, {%+v});\tExpected %v;\tResult %v", pair.car, pair.cdr, pair.less, res)
+		lhs := pair.car.proto()
+		rhs := pair.cdr.proto()
+		if got := EntryLess(lhs, rhs); got != pair.want {
+			t.Errorf("EntryLess: got %v, want %v\nlhs: {%+v}\nrhs: {%+v}",
+				got, pair.want, lhs, rhs)
 		}
 	}
 }
 
 // Static set of Entry protos to use for testing
-var testEntries = []*spb.Entry{
-	entry(nil, "", "", nil, ""),
-	entry(nil, "edge", "fact", nil, "value"),
-	entry(nil, "a", "", nil, ""),
-	entry(nil, "b", "", nil, ""),
-	entry(nil, "c", "", nil, ""),
-	entry(nil, "d", "", nil, ""),
-	entry(nil, "e", "", nil, ""),
-	entry(nil, "f", "", nil, ""),
-	entry(nil, "g", "", nil, ""),
-	entry(nil, "h", "", nil, ""),
-	entry(nil, "i", "", nil, ""),
+var testEntries = []entry{
+	{},
+	{K: "edge", F: "fact", V: "value"},
+	{K: "a"}, {K: "b"}, {K: "c"}, {K: "d"}, {K: "e"},
+	{K: "f"}, {K: "g"}, {K: "h"}, {K: "i"},
 }
 
-func TestMergeTestEntries(t *testing.T) {
+func te(i int) *spb.Entry { return testEntries[i].proto() }
+
+func tes(is ...int) (es []*spb.Entry) {
+	for _, i := range is {
+		es = append(es, te(i))
+	}
+	return es
+}
+
+func TestMergeOrder(t *testing.T) {
 	tests := []struct {
-		streams [][]*spb.Entry
-		results []*spb.Entry
+		streams [][]*spb.Entry // Each stream must be in order
+		want    []*spb.Entry
 	}{
+		{nil, nil},
+
 		{[][]*spb.Entry{}, []*spb.Entry{}},
+
 		{[][]*spb.Entry{{}}, []*spb.Entry{}},
-		{[][]*spb.Entry{{testEntries[0]}}, []*spb.Entry{testEntries[0]}},
-		{[][]*spb.Entry{
-			{testEntries[0]},
-			{testEntries[1]},
-			{testEntries[5]},
-		}, []*spb.Entry{
-			testEntries[0], testEntries[5], testEntries[1],
-		}},
-		{[][]*spb.Entry{
-			{testEntries[0]},
-			{testEntries[1]},
-			{testEntries[0], testEntries[1], testEntries[1]},
-		}, []*spb.Entry{
-			testEntries[0], testEntries[0], testEntries[1], testEntries[1], testEntries[1],
-		}},
-		{[][]*spb.Entry{
-			{testEntries[2], testEntries[5], testEntries[7]},
-			{testEntries[3], testEntries[8]},
-			{testEntries[4], testEntries[6]},
-		}, []*spb.Entry{
-			testEntries[2], testEntries[3], testEntries[4], testEntries[5], testEntries[6], testEntries[7], testEntries[8],
-		}},
-		{[][]*spb.Entry{
-			{testEntries[8]},
-			{testEntries[2], testEntries[3], testEntries[5]},
-			{testEntries[5], testEntries[6]},
-			{testEntries[7], testEntries[9], testEntries[10]},
-			{testEntries[4]},
-			{testEntries[6], testEntries[6], testEntries[6], testEntries[6], testEntries[6]},
-		}, []*spb.Entry{
-			testEntries[2], testEntries[3], testEntries[4], testEntries[5], testEntries[5],
-			testEntries[6], testEntries[6], testEntries[6], testEntries[6], testEntries[6],
-			testEntries[6], testEntries[7], testEntries[8], testEntries[9], testEntries[10],
-		}},
+
+		{[][]*spb.Entry{{te(0)}}, tes(0)},
+
+		{[][]*spb.Entry{tes(0), tes(1), tes(5)}, tes(0, 5, 1)},
+
+		{[][]*spb.Entry{tes(0), tes(1), tes(0, 1, 1)}, tes(0, 1)},
+
+		{[][]*spb.Entry{tes(2, 5, 7), tes(3, 8), tes(4, 6)}, tes(2, 3, 4, 5, 6, 7, 8)},
+
+		{[][]*spb.Entry{tes(8), tes(2, 3, 5), tes(5, 6), tes(7, 9, 10), tes(4), tes(6, 6, 6, 6, 6)},
+			tes(2, 3, 4, 5, 6, 7, 8, 9, 10)},
 	}
 
-	for _, test := range tests {
-		streams := make([]chan *spb.Entry, len(test.streams))
-		merged := make(chan *spb.Entry, len(test.results))
-
-		for idx, stream := range test.streams {
-			streams[idx] = make(chan *spb.Entry)
-			go func(idx int, entries []*spb.Entry) {
-				defer close(streams[idx])
-				for _, entry := range entries {
-					streams[idx] <- entry
-				}
-			}(idx, stream)
+	for i, test := range tests {
+		t.Logf("Begin test %d", i)
+		var ss []Service
+		for _, stream := range test.streams {
+			ss = append(ss, &mockGraphStore{Entries: stream})
 		}
+		result := make(chan *spb.Entry)
+		done := checkResults(t, fmt.Sprintf("Merge test %d", i), result, test.want)
 
-		mergeEntries(merged, streams)
-		close(merged)
-		checkEntryResults(t, "", merged, test.results)
-	}
-}
-
-func checkEntryResults(t *testing.T, errorPrefix string, results <-chan *spb.Entry, expected []*spb.Entry) {
-	for i := 0; i < len(expected); i++ {
-		entry := <-results
-		if !proto.Equal(entry, expected[i]) {
-			t.Errorf("%sExpected {%+v};\tReceived {%+v}", errorPrefix, expected[i], entry)
+		if err := NewProxy(ss...).Read(new(spb.ReadRequest), func(e *spb.Entry) error {
+			result <- e
+			return nil
+		}); err != nil {
+			t.Errorf("Test %d Read failed: %v", i, err)
 		}
-	}
-
-	for extra := range results {
-		t.Errorf("%sReceived extra Entry: {%+v}", errorPrefix, extra)
+		close(result)
+		<-done
 	}
 }
 
 func TestProxy(t *testing.T) {
 	testError := errors.New("test")
 	mocks := []*mockGraphStore{
-		{Entries: []*spb.Entry{testEntries[2], testEntries[3]}},
-		{Entries: []*spb.Entry{testEntries[5], testEntries[6]}, Error: testError},
-		{Entries: []*spb.Entry{testEntries[2], testEntries[4]}},
+		{Entries: []*spb.Entry{te(2), te(3)}},
+		{Entries: []*spb.Entry{te(5), te(6)}, Error: testError},
+		{Entries: []*spb.Entry{te(2), te(4)}},
 	}
 	allEntries := []*spb.Entry{
-		testEntries[2], testEntries[2], testEntries[3],
-		testEntries[4], testEntries[5], testEntries[6],
+		te(2), te(3), te(4),
+		te(5), te(6),
 	}
 	proxy := NewProxy(mocks[0], mocks[1], mocks[2])
 
-	readReq := &spb.ReadRequest{}
+	readReq := new(spb.ReadRequest)
 	readRes := make(chan *spb.Entry)
-	go func() {
-		defer close(readRes)
-		if err := proxy.Read(readReq, readRes); err != testError {
-			t.Errorf("Incorrect Read error: %v", err)
-		}
-	}()
-	checkEntryResults(t, "Read: ", readRes, allEntries)
+	readDone := checkResults(t, "Read", readRes, allEntries)
+
+	if err := proxy.Read(readReq, func(e *spb.Entry) error {
+		readRes <- e
+		return nil
+	}); err != testError {
+		t.Errorf("Incorrect Read error: %v", err)
+	}
+	close(readRes)
+	<-readDone
+
 	for idx, mock := range mocks {
 		if mock.LastReq != readReq {
-			t.Errorf("ReadRequest not set for mock %d", idx)
+			t.Errorf("Read request was not sent to service %d", idx)
 		}
 	}
 
-	scanReq := &spb.ScanRequest{}
+	scanReq := new(spb.ScanRequest)
 	scanRes := make(chan *spb.Entry)
-	go func() {
-		defer close(scanRes)
-		if err := proxy.Scan(scanReq, scanRes); err != testError {
-			t.Errorf("Incorrect Scan error: %v", err)
-		}
-	}()
-	checkEntryResults(t, "Scan: ", scanRes, allEntries)
+	scanDone := checkResults(t, "Scan", scanRes, allEntries)
+
+	if err := proxy.Scan(scanReq, func(e *spb.Entry) error {
+		scanRes <- e
+		return nil
+	}); err != testError {
+		t.Errorf("Incorrect Scan error: %v", err)
+	}
+	close(scanRes)
+	<-scanDone
+
 	for idx, mock := range mocks {
 		if mock.LastReq != scanReq {
-			t.Errorf("ScanRequest not set for mock %d", idx)
+			t.Errorf("Scan request was not sent to for service %d", idx)
 		}
 	}
 
-	writeReq := &spb.WriteRequest{}
+	writeReq := new(spb.WriteRequest)
 	if err := proxy.Write(writeReq); err != testError {
 		t.Errorf("Incorrect Write error: %v", err)
 	}
 	for idx, mock := range mocks {
 		if mock.LastReq != writeReq {
-			t.Errorf("WriteRequest not set for mock %d", idx)
+			t.Errorf("Write request was not sent to service %d", idx)
 		}
+	}
+}
+
+// Verify that a proxy store behaves sensibly if an operation fails.
+func TestCancellation(t *testing.T) {
+	bomb := entry{K: "bomb", F: "die", V: "horrible catastrophe"}
+	stores := []Service{
+		&mockGraphStore{Entries: tes(8, 3, 2, 4, 5, 9, 2, 0)},
+		&mockGraphStore{Entries: []*spb.Entry{bomb.proto()}},
+		&mockGraphStore{Entries: tes(1, 1, 1, 0, 1, 6, 5)},
+		&mockGraphStore{Entries: tes(3, 10, 7)},
+	}
+	p := NewProxy(stores...)
+
+	// Check that a callback returning a non-EOF error propagates an error to
+	// the caller.
+	var numEntries int
+	if err := p.Scan(nil, func(e *spb.Entry) error {
+		if e.GetFactName() == bomb.F {
+			return errors.New(bomb.V)
+		}
+		numEntries++
+		return nil
+	}); err != nil {
+		t.Logf("Got expected error: %v", err)
+	} else {
+		t.Error("Unexpected success! Got nil, wanted an error")
+	}
+	if numEntries != 3 {
+		t.Errorf("Wrong number of entries scanned: got %d, want 3", numEntries)
+	}
+
+	// Check that a callback returning io.EOF ends without error.
+	numEntries = 0
+	if err := p.Read(nil, func(e *spb.Entry) error {
+		if e.GetFactName() == bomb.F {
+			return io.EOF
+		}
+		numEntries++
+		return nil
+	}); err != nil {
+		t.Errorf("Read: unexpected error: %v", err)
+	}
+	if numEntries != 3 {
+		t.Errorf("Wrong number of entries read: got %d, want 3", numEntries)
+	}
+}
+
+type vname struct {
+	S, C, R, P, L string
+}
+
+func nilEmpty(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
+}
+
+func (v vname) proto() *spb.VName {
+	return &spb.VName{
+		Signature: nilEmpty(v.S),
+		Corpus:    nilEmpty(v.C),
+		Path:      nilEmpty(v.P),
+		Root:      nilEmpty(v.R),
+		Language:  nilEmpty(v.L),
+	}
+}
+
+type entry struct {
+	S, T    vname
+	K, F, V string
+}
+
+func (e entry) proto() *spb.Entry {
+	return &spb.Entry{
+		Source:    e.S.proto(),
+		EdgeKind:  nilEmpty(e.K),
+		FactName:  nilEmpty(e.F),
+		Target:    e.T.proto(),
+		FactValue: []byte(e.V),
 	}
 }
 
@@ -274,18 +296,26 @@ type mockGraphStore struct {
 	Error   error
 }
 
-func (m *mockGraphStore) Read(req *spb.ReadRequest, stream chan<- *spb.Entry) error {
+func (m *mockGraphStore) Read(req *spb.ReadRequest, f EntryFunc) error {
 	m.LastReq = req
 	for _, entry := range m.Entries {
-		stream <- entry
+		if err := f(entry); err == io.EOF {
+			return nil
+		} else if err != nil {
+			return err
+		}
 	}
 	return m.Error
 }
 
-func (m *mockGraphStore) Scan(req *spb.ScanRequest, stream chan<- *spb.Entry) error {
+func (m *mockGraphStore) Scan(req *spb.ScanRequest, f EntryFunc) error {
 	m.LastReq = req
 	for _, entry := range m.Entries {
-		stream <- entry
+		if err := f(entry); err == io.EOF {
+			return nil
+		} else if err != nil {
+			return err
+		}
 	}
 	return m.Error
 }
@@ -295,6 +325,33 @@ func (m *mockGraphStore) Write(req *spb.WriteRequest) error {
 	return m.Error
 }
 
-func (m *mockGraphStore) Close() error {
-	return m.Error
+func (m *mockGraphStore) Close() error { return m.Error }
+
+// checkResults starts a goroutine that consumes entries from results and
+// compares them to corresponding members of want.  If the corresponding values
+// are unequal or if there are more or fewer results than wanted, errors are
+// logged to t prefixed with the given tag.
+//
+// The returned channel is closed when all results have been checked.
+func checkResults(t *testing.T, tag string, results <-chan *spb.Entry, want []*spb.Entry) chan struct{} {
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		i := 0
+		for entry := range results {
+			if i < len(want) {
+				if !proto.Equal(entry, want[i]) {
+					t.Errorf("%s result %d: got {%+v}, want {%+v}", tag, i, entry, want[i])
+				}
+			} else {
+				t.Errorf("%s extra result %d: {%+v}", tag, i, entry)
+			}
+			i++
+		}
+		for i < len(want) {
+			t.Errorf("%s missing result %d: {%+v}", tag, i, want[i])
+			i++
+		}
+	}()
+	return done
 }

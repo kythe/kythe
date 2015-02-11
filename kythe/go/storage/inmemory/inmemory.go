@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-// Package inmemory implements a simple in-memory GraphStore.
+// Package inmemory implements a simple in-memory graphstore.Service.
 package inmemory
 
 import (
+	"io"
 	"sort"
 	"sync"
 
@@ -33,15 +34,13 @@ type store struct {
 	mu      sync.RWMutex
 }
 
-// Create returns a new in-memory GraphStore
-func Create() graphstore.Service {
-	return &store{}
-}
+// Create returns a new in-memory graphstore.Service
+func Create() graphstore.Service { return &store{} }
 
-// Close implements part of the GraphStore interface.
+// Close implements part of the graphstore.Service interface.
 func (store) Close() error { return nil }
 
-// Write implements part of the GraphStore interface.
+// Write implements part of the graphstore.Service interface.
 func (s *store) Write(req *spb.WriteRequest) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -72,8 +71,8 @@ func (s *store) insert(e *spb.Entry) {
 	}
 }
 
-// Read implements part of the GraphStore interface.
-func (s *store) Read(req *spb.ReadRequest, stream chan<- *spb.Entry) error {
+// Read implements part of the graphstore.Service interface.
+func (s *store) Read(req *spb.ReadRequest, f graphstore.EntryFunc) error {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	start := sort.Search(len(s.entries), func(i int) bool {
@@ -85,18 +84,27 @@ func (s *store) Read(req *spb.ReadRequest, stream chan<- *spb.Entry) error {
 		return comp == graphstore.GT || (req.GetEdgeKind() != "*" && s.entries[i].GetEdgeKind() > req.GetEdgeKind())
 	})
 	for i := start; i < end; i++ {
-		stream <- s.entries[i]
+		if err := f(s.entries[i]); err == io.EOF {
+			return nil
+		} else if err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-// Scan implements part of the GraphStore interface.
-func (s *store) Scan(req *spb.ScanRequest, stream chan<- *spb.Entry) error {
+// Scan implements part of the graphstore.Service interface.
+func (s *store) Scan(req *spb.ScanRequest, f graphstore.EntryFunc) error {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
+
 	for _, e := range s.entries {
-		if graphstore.EntryMatchesScan(req, e) {
-			stream <- e
+		if !graphstore.EntryMatchesScan(req, e) {
+			continue
+		} else if err := f(e); err == io.EOF {
+			return nil
+		} else if err != nil {
+			return err
 		}
 	}
 	return nil

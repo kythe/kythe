@@ -44,7 +44,7 @@ import (
 )
 
 // Run writes the xrefs and filetree serving tables to tbl based on the given
-// GraphStore.
+// graphstore.Service.
 func Run(gs graphstore.Service, tbl table.Proto) error {
 	log.Println("Starting serving pipeline")
 
@@ -72,7 +72,10 @@ func Run(gs graphstore.Service, tbl table.Proto) error {
 	log.Println("Scanning GraphStore")
 	var sErr error
 	go func() {
-		sErr = gs.Scan(&spb.ScanRequest{}, entries)
+		sErr = gs.Scan(&spb.ScanRequest{}, func(e *spb.Entry) error {
+			entries <- e
+			return nil
+		})
 		close(entries)
 	}()
 
@@ -235,7 +238,7 @@ func writeEdgePages(t table.Proto, gs graphstore.Service) error {
 		grp      *srvpb.EdgeSet_Group
 		pesTotal int
 	)
-	if err := graphstore.EachScanEntry(gs, nil, func(e *spb.Entry) error {
+	if err := gs.Scan(nil, func(e *spb.Entry) error {
 		if e.GetEdgeKind() == "" {
 			panic("non-edge entry")
 		}

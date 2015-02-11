@@ -107,8 +107,11 @@ func main() {
 		entries = ch
 		go func() {
 			defer close(ch)
-			if err := gs.Scan(&spb.ScanRequest{}, ch); err != nil {
-				log.Fatalf("GraphStore Scan error: %v", err)
+			if err := gs.Scan(&spb.ScanRequest{}, func(e *spb.Entry) error {
+				ch <- e
+				return nil
+			}); err != nil {
+				log.Fatalf("Error scanning graphstore: %v", err)
 			}
 		}()
 	}
