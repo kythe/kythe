@@ -32,9 +32,14 @@ lint_campfire() {
 }
 
 lint_copyright() {
-  if ! grep -Pq 'Copyright 201[45] Google Inc. All rights reserved.' "$file"; then
-    echo 'copyright header::error: File missing copyright header'
-  fi
+  case $file in
+    third_party/*|*.md|CAMPFIRE|.campfire_settings|buildtools/*|*/testdata/*)
+      ;; # skip copyright checks
+    *)
+      if ! grep -Pq 'Copyright 201[45] Google Inc. All rights reserved.' "$file"; then
+        echo 'copyright header::error: File missing copyright header'
+      fi ;;
+  esac
 }
 
 case "$name" in
