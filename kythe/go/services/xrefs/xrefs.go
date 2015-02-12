@@ -35,9 +35,14 @@ import (
 
 // Service provides access to a Kythe graph for fast access to cross-references.
 type Service interface {
+	NodesEdgesService
+	DecorationsService
+}
+
+// NodesEdgesService provides fast access to nodes and edges in a Kythe graph.
+type NodesEdgesService interface {
 	NodesService
 	EdgesService
-	DecorationsService
 }
 
 // NodesService provides fast access to nodes in a Kythe graph.

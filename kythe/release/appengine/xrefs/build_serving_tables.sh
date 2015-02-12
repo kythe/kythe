@@ -17,7 +17,7 @@
 # Builds serving tables based on either Kythe's sources, a set of compilation
 # units, or a populated GraphStore.
 #
-# Usage: ./build_serving_tables.sh [--graphstore gs] [--compilations dir] [--out path]
+# Usage: ./build_serving_tables.sh [--index_files] [--graphstore gs] [--compilations dir] [--out path]
 #
 # The default --out directory is ./serving.  This script is expected to be in
 # the ./kythe/release/appengine/xrefs directory of the Kythe repository.
@@ -25,9 +25,12 @@
 COMPILATIONS=
 GRAPHSTORE=
 TABLES="$PWD/serving"
+INDEX_FILES=
 
 while [[ $# -gt 0 ]]; do
   case $1 in
+    --index_files)
+      INDEX_FILES=1 ;;
     --graphstore)
       GRAPHSTORE="$(readlink -m "$2")"
       shift ;;
@@ -65,13 +68,28 @@ if [[ -n "$(find "$GRAPHSTORE" -maxdepth 0 -empty)" ]]; then
   fi
 
   echo "Writing to GraphStore at $GRAPHSTORE" >&2
-  time docker run --rm -ti \
-    -v "$COMPILATIONS:/compilations" -v "$GRAPHSTORE:/graphstore" \
-    google/kythe --index
+  if [[ -n "$INDEX_FILES" ]]; then
+    TMP_REPO="$(mktemp -d)"
+    trap "rm -rf '$TMP_REPO'" EXIT ERR INT
+    COMMIT=$(git rev-parse --abbrev-ref HEAD)
+    echo "Checking out $COMMIT to $TMP_REPO for file indexing" >&2
+    git --work-tree="$TMP_REPO" checkout -f $COMMIT
+
+    time docker run --rm -ti \
+      -v "$COMPILATIONS:/compilations" \
+      -v "$GRAPHSTORE:/graphstore" \
+      -v "$TMP_REPO:/repo" \
+      google/kythe --index --files kythe/data/vnames.json
+  else
+    time docker run --rm -ti \
+      -v "$COMPILATIONS:/compilations" \
+      -v "$GRAPHSTORE:/graphstore" \
+      google/kythe --index
+  fi
 fi
 
 echo "Writing serving tables to $TABLES"
 rm -rf "$TABLES"
 mkdir -p "$TABLES"
-./campfire run //kythe/go/serving/tools:write_tables \
+time ./campfire run //kythe/go/serving/tools:write_tables \
   --graphstore "$GRAPHSTORE" --out "$TABLES"
