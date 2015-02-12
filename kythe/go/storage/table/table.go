@@ -25,7 +25,7 @@ import (
 
 	"kythe/go/storage/keyvalue"
 
-	"code.google.com/p/goprotobuf/proto"
+	"github.com/golang/protobuf/proto"
 )
 
 // Proto is a key-value direct lookup table with protobuf values.

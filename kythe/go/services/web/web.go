@@ -25,7 +25,7 @@ import (
 
 	"kythe/go/util/httpencoding"
 
-	"code.google.com/p/goprotobuf/proto"
+	"github.com/golang/protobuf/proto"
 )
 
 // ReadJSONBody reads the entire body of r and unmarshals it from JSON into v.

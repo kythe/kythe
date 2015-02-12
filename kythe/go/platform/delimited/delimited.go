@@ -28,7 +28,7 @@ import (
 	"fmt"
 	"io"
 
-	"code.google.com/p/goprotobuf/proto"
+	"github.com/golang/protobuf/proto"
 )
 
 // A Reader consumes delimited records from an io.Reader.

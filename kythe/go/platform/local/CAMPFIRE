@@ -10,7 +10,7 @@
         "//kythe/go/storage/files",
         "//kythe/proto:analysis_proto",
         "//kythe/proto:storage_proto",
-        "//third_party/go/code.google.com:protobuf"
+        "//third_party/go/github.com:protobuf"
       ]
     }
   }

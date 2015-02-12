@@ -22,7 +22,7 @@ import (
 	"io"
 	"testing"
 
-	"code.google.com/p/goprotobuf/proto"
+	"github.com/golang/protobuf/proto"
 
 	spb "kythe/proto/storage_proto"
 )

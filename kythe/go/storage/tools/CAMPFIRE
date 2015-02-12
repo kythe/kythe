@@ -44,7 +44,7 @@
         "//kythe/go/util/kytheuri",
         "//kythe/go/util/schema",
         "//kythe/proto:storage_proto",
-        "//third_party/go/code.google.com:protobuf"
+        "//third_party/go/github.com:protobuf"
       ]
     }
   },
@@ -59,7 +59,7 @@
         "//kythe/go/platform/delimited",
         "//kythe/go/storage/vnameutil",
         "//kythe/proto:storage_proto",
-        "//third_party/go/code.google.com:protobuf"
+        "//third_party/go/github.com:protobuf"
       ]
     }
   }

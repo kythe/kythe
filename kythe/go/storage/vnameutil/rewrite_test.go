@@ -23,7 +23,7 @@ import (
 
 	spb "kythe/proto/storage_proto"
 
-	"code.google.com/p/goprotobuf/proto"
+	"github.com/golang/protobuf/proto"
 )
 
 // Copied exactly from kythe/javatests/com/google/devtools/kythe/extractors/shared/FileVNamesTest.java

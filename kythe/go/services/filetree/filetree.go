@@ -33,7 +33,7 @@ import (
 	srvpb "kythe/proto/serving_proto"
 	spb "kythe/proto/storage_proto"
 
-	"code.google.com/p/goprotobuf/proto"
+	"github.com/golang/protobuf/proto"
 )
 
 // Service provides an interface to explore a tree of VName files.

@@ -554,6 +554,7 @@ function ninjaBuildHeader(engine) {
     'javac': engine.settings.properties['javac_path'],
     'javacopts': (engine.settings.properties['javac_opts'] || []).join(' '),
     'javajar': engine.settings.properties['jar_path'],
+    'protocgengo': engine.settings.properties['protoc_gen_go_path'],
     'protocpath': engine.settings.properties['protoc_path']
   };
 

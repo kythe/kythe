@@ -38,7 +38,7 @@ import (
 	srvpb "kythe/proto/serving_proto"
 	xpb "kythe/proto/xref_proto"
 
-	"code.google.com/p/goprotobuf/proto"
+	"github.com/golang/protobuf/proto"
 )
 
 const (

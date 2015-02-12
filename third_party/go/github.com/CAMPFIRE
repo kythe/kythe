@@ -1,5 +1,12 @@
 [
   {
+    "name": "protobuf",
+    "kind": "go_external_lib",
+    "properties": {
+      "go_package": "github.com/golang/protobuf/proto"
+    }
+  },
+  {
     "name": "levigo",
     "kind": "go_external_lib",
     "properties": {

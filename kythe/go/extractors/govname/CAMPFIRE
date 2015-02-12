@@ -9,7 +9,7 @@
       "go_pkgs": [
         "//kythe/go/storage/vnameutil",
         "//kythe/proto:storage_proto",
-        "//third_party/go/code.google.com:protobuf"
+        "//third_party/go/github.com:protobuf"
       ]
     }
   }
