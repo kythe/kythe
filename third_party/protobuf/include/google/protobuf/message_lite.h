@@ -1,6 +1,6 @@
 // Protocol Buffers - Google's data interchange format
 // Copyright 2008 Google Inc.  All rights reserved.
-// http://code.google.com/p/protobuf/
+// https://developers.google.com/protocol-buffers/
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -43,7 +43,7 @@
 
 namespace google {
 namespace protobuf {
-
+  class Arena;
 namespace io {
   class CodedInputStream;
   class CodedOutputStream;
@@ -88,6 +88,27 @@ class LIBPROTOBUF_EXPORT MessageLite {
   // caller.
   virtual MessageLite* New() const = 0;
 
+  // Construct a new instance on the arena. Ownership is passed to the caller
+  // if arena is a NULL. Default implementation for backwards compatibility.
+  virtual MessageLite* New(::google::protobuf::Arena* arena) const;
+
+  // Get the arena, if any, associated with this message. Virtual method
+  // required for generic operations but most arena-related operations should
+  // use the GetArenaNoVirtual() generated-code method. Default implementation
+  // to reduce code size by avoiding the need for per-type implementations when
+  // types do not implement arena support.
+  virtual ::google::protobuf::Arena* GetArena() const { return NULL; }
+
+  // Get a pointer that may be equal to this message's arena, or may not be. If
+  // the value returned by this method is equal to some arena pointer, then this
+  // message is on that arena; however, if this message is on some arena, this
+  // method may or may not return that arena's pointer. As a tradeoff, this
+  // method may be more efficient than GetArena(). The intent is to allow
+  // underlying representations that use e.g. tagged pointers to sometimes store
+  // the arena pointer directly, and sometimes in a more indirect way, and allow
+  // a fastpath comparison against the arena pointer when it's easy to obtain.
+  virtual void* GetMaybeArenaPointer() const { return GetArena(); }
+
   // Clear all fields of the message and set them to their default values.
   // Clear() avoids freeing memory, assuming that any memory allocated
   // to hold parts of the message will be needed again to hold the next
@@ -109,7 +130,8 @@ class LIBPROTOBUF_EXPORT MessageLite {
 
   // Parsing ---------------------------------------------------------
   // Methods for parsing in protocol buffer format.  Most of these are
-  // just simple wrappers around MergeFromCodedStream().
+  // just simple wrappers around MergeFromCodedStream().  Clear() will be called
+  // before merging the input.
 
   // Fill the message with a protocol buffer parsed from the given input
   // stream.  Returns false on a read error or if the input is in the

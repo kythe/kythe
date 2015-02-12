@@ -1,6 +1,6 @@
 // Protocol Buffers - Google's data interchange format
 // Copyright 2008 Google Inc.  All rights reserved.
-// http://code.google.com/p/protobuf/
+// https://developers.google.com/protocol-buffers/
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -45,6 +45,7 @@
 // is released to components.
 #include <google/protobuf/generated_enum_reflection.h>
 #include <google/protobuf/message.h>
+#include <google/protobuf/metadata.h>
 #include <google/protobuf/unknown_field_set.h>
 
 
@@ -61,6 +62,7 @@ namespace protobuf {
 
 namespace protobuf {
 namespace internal {
+class DefaultEmptyOneof;
 
 // Defined in this file.
 class GeneratedMessageReflection;
@@ -133,8 +135,76 @@ class LIBPROTOBUF_EXPORT GeneratedMessageReflection : public Reflection {
                              int extensions_offset,
                              const DescriptorPool* pool,
                              MessageFactory* factory,
-                             int object_size);
+                             int object_size,
+                             int arena_offset,
+                             int is_default_instance_offset = -1);
+
+  // Similar with the construction above. Call this construction if the
+  // message has oneof definition.
+  // Parameters:
+  //   offsets:       An array of ints giving the byte offsets.
+  //                  For each oneof field, the offset is relative to the
+  //                  default_oneof_instance. These can be computed at compile
+  //                  time using the
+  //                  PROTO2_GENERATED_DEFAULT_ONEOF_FIELD_OFFSET() macro.
+  //                  For each none oneof field, the offset is related to
+  //                  the start of the message object.  These can be computed
+  //                  at compile time using the
+  //                  GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET() macro.
+  //                  Besides offsets for all fields, this array also contains
+  //                  offsets for oneof unions. The offset of the i-th oneof
+  //                  union is offsets[descriptor->field_count() + i].
+  //   default_oneof_instance: The default instance of the oneofs. It is a
+  //                  struct holding the default value of all oneof fields
+  //                  for this message. It is only used to obtain pointers
+  //                  to default instances of oneof fields, which Get
+  //                  methods will return if the field is not set.
+  //   oneof_case_offset:  Offset in the message of an array of uint32s of
+  //                  size descriptor->oneof_decl_count().  Each uint32
+  //                  indicates what field is set for each oneof.
+  //   other parameters are the same with the construction above.
+  GeneratedMessageReflection(const Descriptor* descriptor,
+                             const Message* default_instance,
+                             const int offsets[],
+                             int has_bits_offset,
+                             int unknown_fields_offset,
+                             int extensions_offset,
+                             const void* default_oneof_instance,
+                             int oneof_case_offset,
+                             const DescriptorPool* pool,
+                             MessageFactory* factory,
+                             int object_size,
+                             int arena_offset,
+                             int is_default_instance_offset = -1);
   ~GeneratedMessageReflection();
+
+  // Shorter-to-call helpers for the above two constructions that work if the
+  // pool and factory are the usual, namely, DescriptorPool::generated_pool()
+  // and MessageFactory::generated_factory().
+
+  static GeneratedMessageReflection* NewGeneratedMessageReflection(
+      const Descriptor* descriptor,
+      const Message* default_instance,
+      const int offsets[],
+      int has_bits_offset,
+      int unknown_fields_offset,
+      int extensions_offset,
+      const void* default_oneof_instance,
+      int oneof_case_offset,
+      int object_size,
+      int arena_offset,
+      int is_default_instance_offset = -1);
+
+  static GeneratedMessageReflection* NewGeneratedMessageReflection(
+      const Descriptor* descriptor,
+      const Message* default_instance,
+      const int offsets[],
+      int has_bits_offset,
+      int unknown_fields_offset,
+      int extensions_offset,
+      int object_size,
+      int arena_offset,
+      int is_default_instance_offset = -1);
 
   // implements Reflection -------------------------------------------
 
@@ -146,11 +216,16 @@ class LIBPROTOBUF_EXPORT GeneratedMessageReflection : public Reflection {
   bool HasField(const Message& message, const FieldDescriptor* field) const;
   int FieldSize(const Message& message, const FieldDescriptor* field) const;
   void ClearField(Message* message, const FieldDescriptor* field) const;
+  bool HasOneof(const Message& message,
+                const OneofDescriptor* oneof_descriptor) const;
+  void ClearOneof(Message* message, const OneofDescriptor* field) const;
   void RemoveLast(Message* message, const FieldDescriptor* field) const;
   Message* ReleaseLast(Message* message, const FieldDescriptor* field) const;
   void Swap(Message* message1, Message* message2) const;
+  void SwapFields(Message* message1, Message* message2,
+                  const vector<const FieldDescriptor*>& fields) const;
   void SwapElements(Message* message, const FieldDescriptor* field,
-            int index1, int index2) const;
+                    int index1, int index2) const;
   void ListFields(const Message& message,
                   vector<const FieldDescriptor*>* output) const;
 
@@ -175,10 +250,17 @@ class LIBPROTOBUF_EXPORT GeneratedMessageReflection : public Reflection {
                                    string* scratch) const;
   const EnumValueDescriptor* GetEnum(const Message& message,
                                      const FieldDescriptor* field) const;
+  int GetEnumValue(const Message& message,
+                   const FieldDescriptor* field) const;
   const Message& GetMessage(const Message& message,
                             const FieldDescriptor* field,
                             MessageFactory* factory = NULL) const;
 
+  const FieldDescriptor* GetOneofFieldDescriptor(
+      const Message& message,
+      const OneofDescriptor* oneof_descriptor) const;
+
+ public:
   void SetInt32 (Message* message,
                  const FieldDescriptor* field, int32  value) const;
   void SetInt64 (Message* message,
@@ -198,8 +280,13 @@ class LIBPROTOBUF_EXPORT GeneratedMessageReflection : public Reflection {
                  const string& value) const;
   void SetEnum  (Message* message, const FieldDescriptor* field,
                  const EnumValueDescriptor* value) const;
+  void SetEnumValue(Message* message, const FieldDescriptor* field,
+                    int value) const;
   Message* MutableMessage(Message* message, const FieldDescriptor* field,
                           MessageFactory* factory = NULL) const;
+  void SetAllocatedMessage(Message* message,
+                           Message* sub_message,
+                           const FieldDescriptor* field) const;
   Message* ReleaseMessage(Message* message, const FieldDescriptor* field,
                           MessageFactory* factory = NULL) const;
 
@@ -225,6 +312,9 @@ class LIBPROTOBUF_EXPORT GeneratedMessageReflection : public Reflection {
   const EnumValueDescriptor* GetRepeatedEnum(const Message& message,
                                              const FieldDescriptor* field,
                                              int index) const;
+  int GetRepeatedEnumValue(const Message& message,
+                           const FieldDescriptor* field,
+                           int index) const;
   const Message& GetRepeatedMessage(const Message& message,
                                     const FieldDescriptor* field,
                                     int index) const;
@@ -249,6 +339,8 @@ class LIBPROTOBUF_EXPORT GeneratedMessageReflection : public Reflection {
                          const string& value) const;
   void SetRepeatedEnum(Message* message, const FieldDescriptor* field,
                        int index, const EnumValueDescriptor* value) const;
+  void SetRepeatedEnumValue(Message* message, const FieldDescriptor* field,
+                            int index, int value) const;
   // Get a mutable pointer to a field with a message type.
   Message* MutableRepeatedMessage(Message* message,
                                   const FieldDescriptor* field,
@@ -273,16 +365,41 @@ class LIBPROTOBUF_EXPORT GeneratedMessageReflection : public Reflection {
   void AddEnum(Message* message,
                const FieldDescriptor* field,
                const EnumValueDescriptor* value) const;
+  void AddEnumValue(Message* message,
+                    const FieldDescriptor* field,
+                    int value) const;
   Message* AddMessage(Message* message, const FieldDescriptor* field,
                       MessageFactory* factory = NULL) const;
 
   const FieldDescriptor* FindKnownExtensionByName(const string& name) const;
   const FieldDescriptor* FindKnownExtensionByNumber(int number) const;
 
+  bool SupportsUnknownEnumValues() const;
+
+  // This value for arena_offset_ indicates that there is no arena pointer in
+  // this message (e.g., old generated code).
+  static const int kNoArenaPointer = -1;
+
+  // This value for unknown_field_offset_ indicates that there is no
+  // UnknownFieldSet in this message, and that instead, we are using the
+  // Zero-Overhead Arena Pointer trick. When this is the case, arena_offset_
+  // actually indexes to an InternalMetadataWithArena instance, which can return
+  // either an arena pointer or an UnknownFieldSet or both. It is never the case
+  // that unknown_field_offset_ == kUnknownFieldSetInMetadata && arena_offset_
+  // == kNoArenaPointer.
+  static const int kUnknownFieldSetInMetadata = -1;
+
  protected:
   virtual void* MutableRawRepeatedField(
       Message* message, const FieldDescriptor* field, FieldDescriptor::CppType,
       int ctype, const Descriptor* desc) const;
+
+  virtual MessageFactory* GetMessageFactory() const;
+
+  virtual void* RepeatedFieldData(
+      Message* message, const FieldDescriptor* field,
+      FieldDescriptor::CppType cpp_type,
+      const Descriptor* message_type) const;
 
  private:
   friend class GeneratedMessage;
@@ -293,12 +410,18 @@ class LIBPROTOBUF_EXPORT GeneratedMessageReflection : public Reflection {
 
   const Descriptor* descriptor_;
   const Message* default_instance_;
+  const void* default_oneof_instance_;
   const int* offsets_;
 
   int has_bits_offset_;
+  int oneof_case_offset_;
   int unknown_fields_offset_;
   int extensions_offset_;
+  int arena_offset_;
+  int is_default_instance_offset_;
   int object_size_;
+
+  static const int kHasNoDefaultInstanceField = -1;
 
   const DescriptorPool* descriptor_pool_;
   MessageFactory* message_factory_;
@@ -311,11 +434,26 @@ class LIBPROTOBUF_EXPORT GeneratedMessageReflection : public Reflection {
                           const FieldDescriptor* field) const;
   template <typename Type>
   inline const Type& DefaultRaw(const FieldDescriptor* field) const;
+  template <typename Type>
+  inline const Type& DefaultOneofRaw(const FieldDescriptor* field) const;
 
   inline const uint32* GetHasBits(const Message& message) const;
   inline uint32* MutableHasBits(Message* message) const;
+  inline uint32 GetOneofCase(
+      const Message& message,
+      const OneofDescriptor* oneof_descriptor) const;
+  inline uint32* MutableOneofCase(
+      Message* message,
+      const OneofDescriptor* oneof_descriptor) const;
   inline const ExtensionSet& GetExtensionSet(const Message& message) const;
   inline ExtensionSet* MutableExtensionSet(Message* message) const;
+  inline Arena* GetArena(Message* message) const;
+  inline const internal::InternalMetadataWithArena&
+      GetInternalMetadataWithArena(const Message& message) const;
+  inline internal::InternalMetadataWithArena*
+      MutableInternalMetadataWithArena(Message* message) const;
+
+  inline bool GetIsDefaultInstance(const Message& message) const;
 
   inline bool HasBit(const Message& message,
                      const FieldDescriptor* field) const;
@@ -323,6 +461,26 @@ class LIBPROTOBUF_EXPORT GeneratedMessageReflection : public Reflection {
                      const FieldDescriptor* field) const;
   inline void ClearBit(Message* message,
                        const FieldDescriptor* field) const;
+  inline void SwapBit(Message* message1,
+                      Message* message2,
+                      const FieldDescriptor* field) const;
+
+  // This function only swaps the field. Should swap corresponding has_bit
+  // before or after using this function.
+  void SwapField(Message* message1,
+                 Message* message2,
+                 const FieldDescriptor* field) const;
+
+  void SwapOneofField(Message* message1,
+                      Message* message2,
+                      const OneofDescriptor* oneof_descriptor) const;
+
+  inline bool HasOneofField(const Message& message,
+                            const FieldDescriptor* field) const;
+  inline void SetOneofCase(Message* message,
+                           const FieldDescriptor* field) const;
+  inline void ClearOneofField(Message* message,
+                              const FieldDescriptor* field) const;
 
   template <typename Type>
   inline const Type& GetField(const Message& message,
@@ -358,6 +516,28 @@ class LIBPROTOBUF_EXPORT GeneratedMessageReflection : public Reflection {
 
   int GetExtensionNumberOrDie(const Descriptor* type) const;
 
+  // Internal versions of EnumValue API perform no checking. Called after checks
+  // by public methods.
+  void SetEnumValueInternal(Message* message,
+                            const FieldDescriptor* field,
+                            int value) const;
+  void SetRepeatedEnumValueInternal(Message* message,
+                                    const FieldDescriptor* field,
+                                    int index,
+                                    int value) const;
+  void AddEnumValueInternal(Message* message,
+                            const FieldDescriptor* field,
+                            int value) const;
+
+
+  Message* UnsafeArenaReleaseMessage(Message* message,
+                                     const FieldDescriptor* field,
+                                     MessageFactory* factory = NULL) const;
+
+  void UnsafeArenaSetAllocatedMessage(Message* message,
+                                      Message* sub_message,
+                                      const FieldDescriptor* field) const;
+
   GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(GeneratedMessageReflection);
 };
 
@@ -376,9 +556,14 @@ class LIBPROTOBUF_EXPORT GeneratedMessageReflection : public Reflection {
 // be confused by an unaligned pointer.
 #define GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(TYPE, FIELD)    \
   static_cast<int>(                                           \
-    reinterpret_cast<const char*>(                            \
-      &reinterpret_cast<const TYPE*>(16)->FIELD) -            \
-    reinterpret_cast<const char*>(16))
+      reinterpret_cast<const char*>(                          \
+          &reinterpret_cast<const TYPE*>(16)->FIELD) -        \
+      reinterpret_cast<const char*>(16))
+
+#define PROTO2_GENERATED_DEFAULT_ONEOF_FIELD_OFFSET(ONEOF, FIELD)     \
+  static_cast<int>(                                                   \
+      reinterpret_cast<const char*>(&(ONEOF->FIELD))                  \
+      - reinterpret_cast<const char*>(ONEOF))
 
 // There are some places in proto2 where dynamic_cast would be useful as an
 // optimization.  For example, take Message::MergeFrom(const Message& other).

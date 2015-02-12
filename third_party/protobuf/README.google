@@ -1,5 +1,5 @@
-URL: https://code.google.com/p/protobuf/downloads/detail?name=protobuf-2.5.0.tar.gz
-Version: 2.5.0
+URL: https://github.com/google/protobuf/releases/download/v3.0.0-alpha-1/protobuf-java-3.0.0-alpha-1.tar.gz
+Version: 3.0.0-alpha-1
 License: New BSD License: http://opensource.org/licenses/BSD-3-Clause
 License File: LICENSE
 

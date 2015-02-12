@@ -4,7 +4,7 @@
     "kind": "java_external_jar",
     "inputs": {
       "srcs": [
-        "protobuf-java-2.5.0.jar"
+        "protobuf-java-3.0.0-alpha-1.jar"
       ]
     }
   },

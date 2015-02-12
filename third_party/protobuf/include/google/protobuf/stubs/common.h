@@ -1,6 +1,6 @@
 // Protocol Buffers - Google's data interchange format
 // Copyright 2008 Google Inc.  All rights reserved.
-// http://code.google.com/p/protobuf/
+// https://developers.google.com/protocol-buffers/
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -113,24 +113,24 @@ namespace internal {
 
 // The current version, represented as a single integer to make comparison
 // easier:  major * 10^6 + minor * 10^3 + micro
-#define GOOGLE_PROTOBUF_VERSION 2005000
+#define GOOGLE_PROTOBUF_VERSION 3000000
 
 // The minimum library version which works with the current version of the
 // headers.
-#define GOOGLE_PROTOBUF_MIN_LIBRARY_VERSION 2005000
+#define GOOGLE_PROTOBUF_MIN_LIBRARY_VERSION 3000000
 
 // The minimum header version which works with the current version of
 // the library.  This constant should only be used by protoc's C++ code
 // generator.
-static const int kMinHeaderVersionForLibrary = 2005000;
+static const int kMinHeaderVersionForLibrary = 3000000;
 
 // The minimum protoc version which works with the current version of the
 // headers.
-#define GOOGLE_PROTOBUF_MIN_PROTOC_VERSION 2005000
+#define GOOGLE_PROTOBUF_MIN_PROTOC_VERSION 3000000
 
 // The minimum header version which works with the current version of
 // protoc.  This constant should only be used in VerifyVersion().
-static const int kMinHeaderVersionForProtoc = 2005000;
+static const int kMinHeaderVersionForProtoc = 3000000;
 
 // Verifies that the headers and libraries are compatible.  Use the macro
 // below to call this.
@@ -218,6 +218,17 @@ static const uint64 kuint64max = GOOGLE_ULONGLONG(0xFFFFFFFFFFFFFFFF);
 #endif
 #endif
 
+#ifndef GOOGLE_ATTRIBUTE_NOINLINE
+#if defined(__GNUC__) && (__GNUC__ > 3 ||(__GNUC__ == 3 && __GNUC_MINOR__ >= 1))
+// For functions we want to force not inline.
+// Introduced in gcc 3.1.
+#define GOOGLE_ATTRIBUTE_NOINLINE __attribute__ ((noinline))
+#else
+// Other compilers will have to figure it out for themselves.
+#define GOOGLE_ATTRIBUTE_NOINLINE
+#endif
+#endif
+
 #ifndef GOOGLE_ATTRIBUTE_DEPRECATED
 #ifdef __GNUC__
 // If the method/variable/type is used anywhere, produce a warning.
@@ -236,6 +247,15 @@ static const uint64 kuint64max = GOOGLE_ULONGLONG(0xFFFFFFFFFFFFFFFF);
 #endif
 #endif
 
+#ifndef GOOGLE_PREDICT_FALSE
+#ifdef __GNUC__
+// Provided at least since GCC 3.0.
+#define GOOGLE_PREDICT_FALSE(x) (__builtin_expect(!!(x), 1))
+#else
+#define GOOGLE_PREDICT_FALSE
+#endif
+#endif
+
 // Delimits a block of code which may write to memory which is simultaneously
 // written by other threads, but which has been determined to be thread-safe
 // (e.g. because it is an idempotent write).
@@ -244,6 +264,60 @@ static const uint64 kuint64max = GOOGLE_ULONGLONG(0xFFFFFFFFFFFFFFFF);
 #endif
 #ifndef GOOGLE_SAFE_CONCURRENT_WRITES_END
 #define GOOGLE_SAFE_CONCURRENT_WRITES_END()
+#endif
+
+#define GOOGLE_GUARDED_BY(x)
+#define GOOGLE_FALLTHROUGH_INTENDED
+#define GOOGLE_ATTRIBUTE_COLD
+
+// x86 and x86-64 can perform unaligned loads/stores directly.
+#if defined(_M_X64) || defined(__x86_64__) || \
+    defined(_M_IX86) || defined(__i386__)
+
+#define GOOGLE_UNALIGNED_LOAD16(_p) (*reinterpret_cast<const uint16 *>(_p))
+#define GOOGLE_UNALIGNED_LOAD32(_p) (*reinterpret_cast<const uint32 *>(_p))
+#define GOOGLE_UNALIGNED_LOAD64(_p) (*reinterpret_cast<const uint64 *>(_p))
+
+#define GOOGLE_UNALIGNED_STORE16(_p, _val) (*reinterpret_cast<uint16 *>(_p) = (_val))
+#define GOOGLE_UNALIGNED_STORE32(_p, _val) (*reinterpret_cast<uint32 *>(_p) = (_val))
+#define GOOGLE_UNALIGNED_STORE64(_p, _val) (*reinterpret_cast<uint64 *>(_p) = (_val))
+
+#else
+inline uint16 GOOGLE_UNALIGNED_LOAD16(const void *p) {
+  uint16 t;
+  memcpy(&t, p, sizeof t);
+  return t;
+}
+
+inline uint32 GOOGLE_UNALIGNED_LOAD32(const void *p) {
+  uint32 t;
+  memcpy(&t, p, sizeof t);
+  return t;
+}
+
+inline uint64 GOOGLE_UNALIGNED_LOAD64(const void *p) {
+  uint64 t;
+  memcpy(&t, p, sizeof t);
+  return t;
+}
+
+inline void GOOGLE_UNALIGNED_STORE16(void *p, uint16 v) {
+  memcpy(p, &v, sizeof v);
+}
+
+inline void GOOGLE_UNALIGNED_STORE32(void *p, uint32 v) {
+  memcpy(p, &v, sizeof v);
+}
+
+inline void GOOGLE_UNALIGNED_STORE64(void *p, uint64 v) {
+  memcpy(p, &v, sizeof v);
+}
+#endif
+
+#if defined(_MSC_VER)
+#define GOOGLE_THREAD_LOCAL __declspec(thread)
+#else
+#define GOOGLE_THREAD_LOCAL __thread
 #endif
 
 // ===================================================================
@@ -288,71 +362,6 @@ static const uint64 kuint64max = GOOGLE_ULONGLONG(0xFFFFFFFFFFFFFFFF);
   ((sizeof(a) / sizeof(*(a))) / \
    static_cast<size_t>(!(sizeof(a) % sizeof(*(a)))))
 
-namespace internal {
-
-// Use implicit_cast as a safe version of static_cast or const_cast
-// for upcasting in the type hierarchy (i.e. casting a pointer to Foo
-// to a pointer to SuperclassOfFoo or casting a pointer to Foo to
-// a const pointer to Foo).
-// When you use implicit_cast, the compiler checks that the cast is safe.
-// Such explicit implicit_casts are necessary in surprisingly many
-// situations where C++ demands an exact type match instead of an
-// argument type convertable to a target type.
-//
-// The From type can be inferred, so the preferred syntax for using
-// implicit_cast is the same as for static_cast etc.:
-//
-//   implicit_cast<ToType>(expr)
-//
-// implicit_cast would have been part of the C++ standard library,
-// but the proposal was submitted too late.  It will probably make
-// its way into the language in the future.
-template<typename To, typename From>
-inline To implicit_cast(From const &f) {
-  return f;
-}
-
-// When you upcast (that is, cast a pointer from type Foo to type
-// SuperclassOfFoo), it's fine to use implicit_cast<>, since upcasts
-// always succeed.  When you downcast (that is, cast a pointer from
-// type Foo to type SubclassOfFoo), static_cast<> isn't safe, because
-// how do you know the pointer is really of type SubclassOfFoo?  It
-// could be a bare Foo, or of type DifferentSubclassOfFoo.  Thus,
-// when you downcast, you should use this macro.  In debug mode, we
-// use dynamic_cast<> to double-check the downcast is legal (we die
-// if it's not).  In normal mode, we do the efficient static_cast<>
-// instead.  Thus, it's important to test in debug mode to make sure
-// the cast is legal!
-//    This is the only place in the code we should use dynamic_cast<>.
-// In particular, you SHOULDN'T be using dynamic_cast<> in order to
-// do RTTI (eg code like this:
-//    if (dynamic_cast<Subclass1>(foo)) HandleASubclass1Object(foo);
-//    if (dynamic_cast<Subclass2>(foo)) HandleASubclass2Object(foo);
-// You should design the code some other way not to need this.
-
-template<typename To, typename From>     // use like this: down_cast<T*>(foo);
-inline To down_cast(From* f) {                   // so we only accept pointers
-  // Ensures that To is a sub-type of From *.  This test is here only
-  // for compile-time type checking, and has no overhead in an
-  // optimized build at run-time, as it will be optimized away
-  // completely.
-  if (false) {
-    implicit_cast<From*, To>(0);
-  }
-
-#if !defined(NDEBUG) && !defined(GOOGLE_PROTOBUF_NO_RTTI)
-  assert(f == NULL || dynamic_cast<To>(f) != NULL);  // RTTI: debug mode only!
-#endif
-  return static_cast<To>(f);
-}
-
-}  // namespace internal
-
-// We made these internal so that they would show up as such in the docs,
-// but we don't want to stick "internal::" in front of them everywhere.
-using internal::implicit_cast;
-using internal::down_cast;
-
 // The COMPILE_ASSERT macro can be used to verify that a compile time
 // expression is true. For example, you could use it to verify the
 // size of a static array:
@@ -378,8 +387,9 @@ struct CompileAssert {
 
 #undef GOOGLE_COMPILE_ASSERT
 #define GOOGLE_COMPILE_ASSERT(expr, msg) \
-  typedef ::google::protobuf::internal::CompileAssert<(bool(expr))> \
-          msg[bool(expr) ? 1 : -1]
+  ::google::protobuf::internal::CompileAssert<(bool(expr))> \
+          msg[bool(expr) ? 1 : -1]; \
+  (void)msg
 
 
 // Implementation details of COMPILE_ASSERT:
@@ -449,7 +459,7 @@ class scoped_ptr {
   // The element type
   typedef C element_type;
 
-  // Constructor.  Defaults to intializing with NULL.
+  // Constructor.  Defaults to initializing with NULL.
   // There is no way to create an uninitialized scoped_ptr.
   // The input parameter must be allocated with new.
   explicit scoped_ptr(C* p = NULL) : ptr_(p) { }
@@ -536,7 +546,7 @@ class scoped_array {
   // The element type
   typedef C element_type;
 
-  // Constructor.  Defaults to intializing with NULL.
+  // Constructor.  Defaults to initializing with NULL.
   // There is no way to create an uninitialized scoped_array.
   // The input parameter must be allocated with new [].
   explicit scoped_array(C* p = NULL) : array_(p) { }
@@ -657,6 +667,7 @@ class LIBPROTOBUF_EXPORT LogMessage {
   LogMessage& operator<<(long value);
   LogMessage& operator<<(unsigned long value);
   LogMessage& operator<<(double value);
+  LogMessage& operator<<(void* value);
 
  private:
   friend class LogFinisher;
@@ -685,6 +696,7 @@ class LIBPROTOBUF_EXPORT LogFinisher {
 #undef GOOGLE_LOG_IF
 
 #undef GOOGLE_CHECK
+#undef GOOGLE_CHECK_OK
 #undef GOOGLE_CHECK_EQ
 #undef GOOGLE_CHECK_NE
 #undef GOOGLE_CHECK_LT
@@ -711,6 +723,7 @@ class LIBPROTOBUF_EXPORT LogFinisher {
 
 #define GOOGLE_CHECK(EXPRESSION) \
   GOOGLE_LOG_IF(FATAL, !(EXPRESSION)) << "CHECK failed: " #EXPRESSION ": "
+#define GOOGLE_CHECK_OK(A) GOOGLE_CHECK(A)
 #define GOOGLE_CHECK_EQ(A, B) GOOGLE_CHECK((A) == (B))
 #define GOOGLE_CHECK_NE(A, B) GOOGLE_CHECK((A) != (B))
 #define GOOGLE_CHECK_LT(A, B) GOOGLE_CHECK((A) <  (B))
@@ -720,7 +733,8 @@ class LIBPROTOBUF_EXPORT LogFinisher {
 
 namespace internal {
 template<typename T>
-T* CheckNotNull(const char *file, int line, const char *name, T* val) {
+T* CheckNotNull(const char* /* file */, int /* line */,
+                const char* name, T* val) {
   if (val == NULL) {
     GOOGLE_LOG(FATAL) << name;
   }
@@ -728,7 +742,8 @@ T* CheckNotNull(const char *file, int line, const char *name, T* val) {
 }
 }  // namespace internal
 #define GOOGLE_CHECK_NOTNULL(A) \
-  internal::CheckNotNull(__FILE__, __LINE__, "'" #A "' must not be NULL", (A))
+  ::google::protobuf::internal::CheckNotNull(\
+      __FILE__, __LINE__, "'" #A "' must not be NULL", (A))
 
 #ifdef NDEBUG
 
