@@ -7,4 +7,5 @@ Description:
 Google library for logging
 
 Local Modifications:
-No modifications.
+#ifndef guard checks for the definition of GOOGLE_PREDICT_BRANCH_NOT_TAKEN,
+GOOGLE_PREDICT_TRUE, and GOOGLE_PREDICT_FALSE.
