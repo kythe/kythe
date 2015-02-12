@@ -78,6 +78,26 @@
     }
   },
   {
+    "name": "stdin_names",
+    "kind": "sh_test",
+    "inputs": {
+      "srcs": [
+        "test_stdin_names.sh"
+      ],
+      "tools": [
+        "//kythe/cxx/extractor:cxx_extractor",
+        "//kythe/cxx/indexer/cxx:indexer",
+        "//kythe/cxx/verifier",
+        "//kythe/go/platform/tools:indexpack"
+      ],
+      "data": [
+        "stdin.vnames",
+        "test_stdin_names.sh",
+        "test_stdin_names_verify.cc"
+      ]
+    }
+  },
+  {
     "name": "index_pack",
     "kind": "sh_test",
     "inputs": {

@@ -197,16 +197,18 @@ class CxxExtractorTest : public testing::Test {
     file_system_options.WorkingDir = root_.str();
     llvm::IntrusiveRefCntPtr<clang::FileManager> file_manager(
         new clang::FileManager(file_system_options));
-    auto extractor = kythe::NewExtractor([&index_writer, &sink](
-        const std::string &main_source_file,
-        const PreprocessorTranscript &transcript,
-        const std::unordered_map<std::string, SourceFile> &source_files,
-        bool had_errors) {
-      index_writer.WriteIndex(std::unique_ptr<kythe::IndexWriterSink>(
-                                  new ForwardingIndexWriterSink(sink)),
-                              main_source_file, transcript, source_files,
-                              had_errors);
-    });
+    auto extractor = kythe::NewExtractor(
+        &index_writer,
+        [&index_writer, &sink](
+            const std::string &main_source_file,
+            const PreprocessorTranscript &transcript,
+            const std::unordered_map<std::string, SourceFile> &source_files,
+            bool had_errors) {
+          index_writer.WriteIndex(std::unique_ptr<kythe::IndexWriterSink>(
+                                      new ForwardingIndexWriterSink(sink)),
+                                  main_source_file, transcript, source_files,
+                                  had_errors);
+        });
     clang::tooling::ToolInvocation invocation(
         final_arguments, extractor.release(), file_manager.get());
     invocation.run();

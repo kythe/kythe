@@ -181,6 +181,7 @@
         "basic/typedef_ptr_int.cc",
         "basic/typedef_ptr_int_canonicalized.cc",
         "basic/typedef_same.cc",
+        "basic/typeof_param.c",
         "basic/vardecl_double_shadowed_local_anchor.cc",
         "basic/vardecl_global_anchor.cc",
         "basic/vardecl_global_anon_ns_anchor.cc",

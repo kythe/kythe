@@ -1234,7 +1234,25 @@ IndexerASTVisitor::BuildNameIdForDecl(const clang::Decl *Decl) {
       if (CurrentNodeAsDecl && CurrentNodeAsDecl->isImplicit()) {
         if (const NamedDecl *ND = dyn_cast<NamedDecl>(CurrentNodeAsDecl)) {
           if (!AddNameToStream(Ostream, ND)) {
-            // There's nothing else we can do here.
+            if (const DeclContext *DC = ND->getDeclContext()) {
+              if (DC->isFunctionOrMethod()) {
+                // Heroically try to come up with a disambiguating identifier,
+                // even when the IndexedParentVector is empty. This can happen
+                // in anonymous parameter declarations that belong to function
+                // prototypes.
+                const clang::FunctionDecl *FD =
+                    static_cast<const clang::FunctionDecl *>(DC);
+                int param_count = 0, found_param = -1;
+                for (const auto *P : FD->params()) {
+                  if (ND == P) {
+                    found_param = param_count;
+                    break;
+                  }
+                  ++param_count;
+                }
+                Ostream << "@#" << found_param;
+              }
+            }
             Ostream << "@unknown@";
           }
         }

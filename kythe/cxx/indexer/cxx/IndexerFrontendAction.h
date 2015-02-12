@@ -105,6 +105,41 @@ private:
   BehaviorOnTemplates TemplateMode = BehaviorOnTemplates::VisitInstantiations;
 };
 
+/// \brief Allows stdin to be replaced with a mapped file.
+///
+/// `clang::CompilerInstance::InitializeSourceManager` special-cases the path
+/// "-" to llvm::MemoryBuffer::getSTDIN() even if "-" has been remapped.
+/// This class mutates the frontend input list such that any file input that
+/// would trip this logic instead tries to resolve a file named "<stdin>",
+/// which is a token used elsewhere in the compiler to refer to standard input.
+class StdinAdjustSingleFrontendActionFactory
+    : public clang::tooling::FrontendActionFactory {
+  clang::FrontendAction *Action;
+
+public:
+  /// \param Action The single FrontendAction to run once. Takes ownership.
+  StdinAdjustSingleFrontendActionFactory(clang::FrontendAction *Action)
+      : Action(Action) {}
+
+  virtual bool runInvocation(clang::CompilerInvocation *Invocation,
+                             clang::FileManager *Files,
+                             clang::DiagnosticConsumer *DiagConsumer) override {
+    auto &FEOpts = Invocation->getFrontendOpts();
+    for (auto &Input : FEOpts.Inputs) {
+      if (Input.isFile() && Input.getFile() == "-") {
+        Input = clang::FrontendInputFile("<stdin>", Input.getKind(),
+                                         Input.isSystem());
+      }
+    }
+    return clang::tooling::FrontendActionFactory::runInvocation(
+        Invocation, Files, DiagConsumer);
+  }
+
+  /// Note that FrontendActionFactory::create() specifies that the
+  /// returned action is owned by the caller.
+  clang::FrontendAction *create() override { return Action; }
+};
+
 } // namespace kythe
 
 #endif // KYTHE_CXX_INDEXER_CXX_INDEXER_FRONTEND_ACTION_H_

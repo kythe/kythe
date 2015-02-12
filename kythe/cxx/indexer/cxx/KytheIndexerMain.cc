@@ -73,6 +73,8 @@ static void DecodeStaticClaimTable(const std::string &path,
   GzipInputStream gzip_input_stream(&file_input_stream);
   CodedInputStream coded_input_stream(&gzip_input_stream);
   google::protobuf::uint32 byte_size;
+  // Silence a warning about input size.
+  coded_input_stream.SetTotalBytesLimit(INT_MAX, -1);
   while (coded_input_stream.ReadVarint32(&byte_size)) {
     auto limit = coded_input_stream.PushLimit(byte_size);
     kythe::proto::ClaimAssignment claim;
@@ -98,6 +100,8 @@ static void DecodeIndexFile(const std::string &path,
   FileInputStream file_input_stream(fd);
   GzipInputStream gzip_input_stream(&file_input_stream);
   CodedInputStream coded_input_stream(&gzip_input_stream);
+  // Silence a warning about input size.
+  coded_input_stream.SetTotalBytesLimit(INT_MAX, -1);
   google::protobuf::uint32 byte_size;
   while (coded_input_stream.ReadVarint32(&byte_size)) {
     auto limit = coded_input_stream.PushLimit(byte_size);
@@ -126,8 +130,8 @@ static void DecodeIndexPack(const std::string &cu_hash,
   for (const auto &input : unit->required_input()) {
     const auto &info = input.info();
     CHECK(!info.path().empty());
-    CHECK(!info.digest().empty())
-        << "Required input " << info.path() << " is missing its digest.";
+    CHECK(!info.digest().empty()) << "Required input " << info.path()
+                                  << " is missing its digest.";
     std::string read_data;
     CHECK(index_pack->ReadFileData(info.digest(), &read_data))
         << "Could not read " << info.path() << " (digest " << info.digest()
@@ -331,7 +335,11 @@ Examples:
     llvm::IntrusiveRefCntPtr<clang::FileManager> file_manager(
         new clang::FileManager(file_system_options));
     final_args.insert(final_args.begin() + 1, "-fsyntax-only");
-    clang::tooling::ToolInvocation invocation(final_args, action.release(),
+    // StdinAdjustSingleFrontendActionFactory takes ownership of its action.
+    std::unique_ptr<kythe::StdinAdjustSingleFrontendActionFactory> tool(
+        new kythe::StdinAdjustSingleFrontendActionFactory(action.release()));
+    // ToolInvocation doesn't take ownership of ToolActions.
+    clang::tooling::ToolInvocation invocation(final_args, tool.get(),
                                               file_manager.get());
     for (const auto &file : virtual_files) {
       llvm::StringRef file_content(file.content().data(),

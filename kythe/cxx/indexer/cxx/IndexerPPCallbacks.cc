@@ -254,23 +254,29 @@ IndexerPPCallbacks::BuildNodeIdForMacro(const clang::Token &Spelling,
                                         clang::MacroInfo const &Info) {
   // Macro definitions always appear at the topmost level *and* always appear
   // in source text (or are implicit). For this reason, it's safe to use
-  // location information to stably unique them.
-  GraphObserver::NodeId Id(
-      Observer.getClaimTokenForLocation(Info.getDefinitionLoc()));
+  // location information to stably unique them. However, we must be careful
+  // to select canonical paths.
+  clang::SourceLocation Loc = Info.getDefinitionLoc();
+  GraphObserver::NodeId Id(Observer.getClaimTokenForLocation(Loc));
   llvm::raw_string_ostream Ostream(Id.Identity);
   Ostream << BuildNameIdForMacro(Spelling);
-  clang::SourceLocation Loc = Info.getDefinitionLoc();
   auto &SM = *Observer.getSourceManager();
-
   if (Loc.isInvalid()) {
     Ostream << "@invalid";
+  } else if (!Loc.isFileID()) {
+    // This case shouldn't happen (given the above), but let's be robust.
+    llvm::errs() << "Macro definition found in non-file "
+                 << Loc.printToString(SM) << "\n";
+    Loc.print(Ostream, SM);
   } else if (SM.getFileID(Loc) ==
              Observer.getPreprocessor()->getPredefinesFileID()) {
     // Locations of predefines in the predefine buffer can spuriously differ
     // from TU to TU, so we collapse them here.
     Ostream << "@builtin";
   } else {
-    Loc.print(Ostream, SM);
+    // Remember that we're inheriting the claim token (which in non-trivial
+    // cases should contain canonical source file information).
+    Ostream << "@" << SM.getFileOffset(Loc);
   }
   return Id;
 }

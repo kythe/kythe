@@ -14,7 +14,7 @@ required_input {
     digest: "7fc8bce46febc9e8c660fdaa7caa9e27e64a9f85769d69ca9ecfc8a2ca751335"
   }
   context {
-    source_context: "786d055224012090fdd9d254bc652e77c3d5550a7246523b88d76bdce1214ce3"
+    source_context: "e2a75bf06c78eae11f0fab4b76b38550db533f776a983ceadb9602bfe0b61747"
   }
 }
 has_compile_errors: false
@@ -27,4 +27,4 @@ argument: "./kythe/cxx/extractor/testdata/main_source_file_env_dep.cc"
 argument: "-fsyntax-only"
 source_file: "./kythe/cxx/extractor/testdata/main_source_file_env_dep.cc"
 working_directory: "."
-entry_context: "786d055224012090fdd9d254bc652e77c3d5550a7246523b88d76bdce1214ce3"
+entry_context: "e2a75bf06c78eae11f0fab4b76b38550db533f776a983ceadb9602bfe0b61747"

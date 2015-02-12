@@ -1,4 +1,18 @@
 #!/bin/bash -e
+# Copyright 2015 Google Inc. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 # This test checks that the extractor will emit index packs.
 # It should be run from the Kythe root.
 BASE_DIR="${PWD}/kythe/cxx/extractor/testdata"
@@ -18,7 +32,5 @@ KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}" KYTHE_INDEX_PACK="1" \
     ./kythe/cxx/extractor/testdata/transcript_main.cc
 test -e "${OUT_DIR}/units" || exit 1
 test -e "${OUT_DIR}/files" || exit 1
-test -e "${OUT_DIR}/files/15d3490610af31dff6f1be9948ef61e66db48a84fc8fd93a81a5433abab04309.data" || exit 1
-test -e "${OUT_DIR}/files/6904079b7b9d5d0586a08dbbdac2b08d35f00c1dbb4cc63721f22a347f52e2f7.data" || exit 1
-test -e "${OUT_DIR}/files/7684704ae672c88bd4a656eff30a716ab29a8270e87e387d9101b32527cde498.data" || exit 1
-test -e "${OUT_DIR}/units/daf513175d9a2222733647f6d3df0f22368e7440e4ca0b70669b78dbfb2672b0.unit" || exit 1
+[[ $(ls "${OUT_DIR}"/files/*.data | wc -l) == 3 ]]
+[[ $(ls "${OUT_DIR}"/units/*.unit | wc -l) == 1 ]]

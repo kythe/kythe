@@ -574,20 +574,21 @@ void KytheGraphObserver::pushFile(clang::SourceLocation blame_location,
               } else {
                 fprintf(stderr,
                         "Warning: when looking for %s[%s]:%u: missing source "
-                        "offset",
+                        "offset\n",
                         previous_path.c_str(), previous_context.c_str(),
                         offset);
               }
             } else {
-              fprintf(
-                  stderr,
-                  "Warning: when looking for %s[%s]:%u: missing source context",
-                  previous_path.c_str(), previous_context.c_str(), offset);
+              fprintf(stderr,
+                      "Warning: when looking for %s[%s]:%u: missing source "
+                      "context\n",
+                      previous_path.c_str(), previous_context.c_str(), offset);
             }
           } else {
-            fprintf(stderr,
-                    "Warning: when looking for %s[%s]:%u: missing source path",
-                    previous_path.c_str(), previous_context.c_str(), offset);
+            fprintf(
+                stderr,
+                "Warning: when looking for %s[%s]:%u: missing source path\n",
+                previous_path.c_str(), previous_context.c_str(), offset);
           }
         }
         state.vname.set_signature(state.context + state.vname.signature());

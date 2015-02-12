@@ -14,14 +14,14 @@ required_input {
     digest: "7684704ae672c88bd4a656eff30a716ab29a8270e87e387d9101b32527cde498"
   }
   context {
-    source_context: "1a814ff73e6b1f3599d0f2423cacad9efddb2f49fac7c25f0bbc436d2d50c77a"
+    source_context: "2c886012e7f9c5683fdc2d9a82dbdf594995dfbee385842eadb6587d2a05a4ed"
     column {
       offset: 0
       linked_context: "d6d64ed67e1b08c31ff4a965ee27e974a116603e8c81d777b57e3025e8d7c762"
     }
     column {
       offset: 26
-      linked_context: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      linked_context: "001e57a883858ce37ccee1bb799ce45576f4bacb870f6db132fc1d309fc12247"
     }
     column {
       offset: 52
@@ -29,7 +29,7 @@ required_input {
     }
     column {
       offset: 78
-      linked_context: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      linked_context: "001e57a883858ce37ccee1bb799ce45576f4bacb870f6db132fc1d309fc12247"
     }
   }
 }
@@ -44,7 +44,7 @@ required_input {
     digest: "6904079b7b9d5d0586a08dbbdac2b08d35f00c1dbb4cc63721f22a347f52e2f7"
   }
   context {
-    source_context: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    source_context: "001e57a883858ce37ccee1bb799ce45576f4bacb870f6db132fc1d309fc12247"
   }
 }
 required_input {
@@ -73,4 +73,4 @@ argument: "./kythe/cxx/extractor/testdata/transcript_main.cc"
 argument: "-fsyntax-only"
 source_file: "./kythe/cxx/extractor/testdata/transcript_main.cc"
 working_directory: "."
-entry_context: "1a814ff73e6b1f3599d0f2423cacad9efddb2f49fac7c25f0bbc436d2d50c77a"
+entry_context: "2c886012e7f9c5683fdc2d9a82dbdf594995dfbee385842eadb6587d2a05a4ed"
