@@ -24,7 +24,8 @@
     "amd64": {
       "@inherit": "base",
       "ninja_path": "third_party/ninja/ninja",
-      "protoc_path": "third_party/protobuf/bin",
+      "protoc_gen_go_path": "third_party/go/github.com/bin/protoc-gen-go",
+      "protoc_path": "third_party/protobuf/bin/protoc",
       "+copts": ["-DCAMPFIRE_CONFIGURATION=amd64"]
     },
     "amd64-debug": {

@@ -11,7 +11,7 @@
         "//kythe/go/services/graphstore/compare",
         "//kythe/go/storage/stream",
         "//kythe/proto:storage_proto",
-        "//third_party/go/code.google.com:protobuf"
+        "//third_party/go/github.com:protobuf"
       ]
     }
   },

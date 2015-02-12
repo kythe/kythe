@@ -71,7 +71,7 @@ rule linker
 
 rule protoc_java
   command = mkdir -p $out.srcs $out.classes && $
-            $protocpath/protoc --java_out=$out.srcs $in && $
+            $protocpath --java_out=$out.srcs $in && $
             $javac $javacopts -cp $classpath -d $out.classes $$(find $out.srcs -name '*.java') && $
             $javajar cf $out -C $out.classes .
   description = protoc_java $owner
@@ -79,14 +79,14 @@ rule protoc_java
 rule protoc_go
   command = rm -rf $outdir && $
             mkdir -p $outdir && $
-            $protocpath/protoc --plugin=$protocpath/protoc-gen-go --go_out=import_path=$package$importpath:$outdir $in && $
+            $protocpath --plugin=$protocgengo --go_out=import_path=$package$importpath:$outdir $in && $
             find $outdir -type f -name '*.go' -exec mv -f {} $outdir ';' && $
             $gotool tool 6g -p $package -complete -pack -o $out $include $$(ls -1 $outdir/*.go)
   description = protoc_go $owner
 
 rule protoc_cpp
   command = mkdir -p $outdir && $
-            $protocpath/protoc --cpp_out=$outdir $in && $
+            $protocpath --cpp_out=$outdir $in && $
             for i in $$(find $outdir -name '*.cc'); do $
               $cxxpath -c -I $outdir $include $$i -o $$i.o; $
             done && $

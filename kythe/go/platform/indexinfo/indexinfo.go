@@ -48,7 +48,7 @@ import (
 
 	apb "kythe/proto/analysis_proto"
 
-	"code.google.com/p/goprotobuf/proto"
+	"github.com/golang/protobuf/proto"
 )
 
 // Standard file extension for Kythe indexinfo files.

@@ -62,7 +62,7 @@ import (
 	apb "kythe/proto/analysis_proto"
 	spb "kythe/proto/storage_proto"
 
-	"code.google.com/p/goprotobuf/proto"
+	"github.com/golang/protobuf/proto"
 )
 
 // A Compilation provides an interface to build a CompilationUnit message for a

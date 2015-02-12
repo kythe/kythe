@@ -45,7 +45,7 @@ import (
 	"kythe/go/extractors/govname"
 	"kythe/go/platform/indexpack"
 
-	"code.google.com/p/goprotobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
 
 	apb "kythe/proto/analysis_proto"

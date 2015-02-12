@@ -16,7 +16,7 @@
         "//third_party/protobuf:protobuf_cc"
       ],
       "go_pkgs": [
-        "//third_party/go/code.google.com:protobuf"
+        "//third_party/go/github.com:protobuf"
       ]
     },
     "properties": {
@@ -58,7 +58,7 @@
         "//third_party/protobuf:protobuf_cc"
       ],
       "go_pkgs": [
-        "//third_party/go/code.google.com:protobuf"
+        "//third_party/go/github.com:protobuf"
       ]
     },
     "properties": {
@@ -76,7 +76,7 @@
         "xref.proto"
       ],
       "go_pkgs": [
-        "//third_party/go/code.google.com:protobuf"
+        "//third_party/go/github.com:protobuf"
       ]
     },
     "properties": {
@@ -91,7 +91,7 @@
         "serving.proto"
       ],
       "go_pkgs": [
-        "//third_party/go/code.google.com:protobuf"
+        "//third_party/go/github.com:protobuf"
       ]
     },
     "properties": {
