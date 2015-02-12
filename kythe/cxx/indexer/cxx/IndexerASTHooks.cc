@@ -1237,7 +1237,9 @@ IndexerASTVisitor::BuildNameIdForDecl(const clang::Decl *Decl) {
             if (const DeclContext *DC = ND->getDeclContext()) {
               if (DC->isFunctionOrMethod()) {
                 // Heroically try to come up with a disambiguating identifier,
-                // even when the IndexedParentVector is empty.
+                // even when the IndexedParentVector is empty. This can happen
+                // in anonymous parameter declarations that belong to function
+                // prototypes.
                 const clang::FunctionDecl *FD =
                     static_cast<const clang::FunctionDecl *>(DC);
                 int param_count = 0, found_param = -1;

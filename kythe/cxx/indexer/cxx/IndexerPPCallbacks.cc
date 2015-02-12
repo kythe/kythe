@@ -265,6 +265,8 @@ IndexerPPCallbacks::BuildNodeIdForMacro(const clang::Token &Spelling,
     Ostream << "@invalid";
   } else if (!Loc.isFileID()) {
     // This case shouldn't happen (given the above), but let's be robust.
+    llvm::errs() << "Macro definition found in non-file "
+                 << Loc.printToString(SM) << "\n";
     Loc.print(Ostream, SM);
   } else if (SM.getFileID(Loc) ==
              Observer.getPreprocessor()->getPredefinesFileID()) {

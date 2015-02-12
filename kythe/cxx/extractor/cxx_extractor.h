@@ -175,7 +175,6 @@ class IndexWriter {
   /// \brief Set the fields of `file_input` for the given file.
   /// \param clang_path A path to the file as seen by clang.
   /// \param source_file The `SourceFile` to configure `file_input` with.
-  /// \param file_vname The file's VName.
   /// \param file_input The proto to configure.
   void FillFileInput(const std::string &clang_path,
                      const SourceFile &source_file,

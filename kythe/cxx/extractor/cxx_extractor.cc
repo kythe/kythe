@@ -89,13 +89,6 @@ class RunningHash {
     ::SHA256_Init(&sha_context_);
     return LowercaseStringHexEncodeSha(sha_buf);
   }
-  /// \brief Return the current state of the hash.
-  std::string Compute() const {
-    unsigned char sha_buf[SHA256_DIGEST_LENGTH];
-    ::SHA256_CTX copy_context = sha_context_;
-    ::SHA256_Final(sha_buf, &copy_context);
-    return LowercaseStringHexEncodeSha(sha_buf);
-  }
 
  private:
   ::SHA256_CTX sha_context_;
@@ -252,8 +245,8 @@ class ExtractorPPCallbacks : public clang::PPCallbacks {
   /// \param file The file entry of the main source file.
   /// \param path The path as known to Clang.
   /// \return The path that should be used to generate VNames.
-  std::string FilterMainSourceFile(const clang::FileEntry* file,
-                                   const std::string& path);
+  std::string FixStdinPath(const clang::FileEntry* file,
+                           const std::string& path);
 
   /// The `SourceManager` used for the compilation.
   clang::SourceManager* source_manager_;
@@ -360,8 +353,8 @@ void ExtractorPPCallbacks::EndOfMainFile() {
   *main_source_file_transcript_ = PopFile();
 }
 
-std::string ExtractorPPCallbacks::FilterMainSourceFile(
-    const clang::FileEntry* file, const std::string& in_path) {
+std::string ExtractorPPCallbacks::FixStdinPath(const clang::FileEntry* file,
+                                               const std::string& in_path) {
   if (in_path == "-" || in_path == "<stdin>") {
     if (main_source_file_stdin_alternate_->empty()) {
       const llvm::MemoryBuffer* buffer =
@@ -378,7 +371,7 @@ std::string ExtractorPPCallbacks::FilterMainSourceFile(
 
 void ExtractorPPCallbacks::AddFile(const clang::FileEntry* file,
                                    const std::string& in_path) {
-  std::string path = FilterMainSourceFile(file, in_path);
+  std::string path = FixStdinPath(file, in_path);
   auto contents =
       source_files_->insert(std::make_pair(in_path, SourceFile{std::string()}));
   if (contents.second) {
@@ -446,9 +439,9 @@ void ExtractorPPCallbacks::RecordSpecificLocation(clang::SourceLocation loc) {
     const auto* file_ref =
         source_manager_->getFileEntryForID(source_manager_->getFileID(loc));
     if (file_ref) {
-      auto vname = index_writer_->VNameForPath(index_writer_->RelativizePath(
-          FilterMainSourceFile(file_ref, filename_ref),
-          index_writer_->root_directory()));
+      auto vname = index_writer_->VNameForPath(
+          index_writer_->RelativizePath(FixStdinPath(file_ref, filename_ref),
+                                        index_writer_->root_directory()));
       history()->Update(vname.signature());
       history()->Update(vname.corpus());
       history()->Update(vname.root());
