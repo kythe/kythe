@@ -227,7 +227,7 @@ GoTest.prototype.getNinjaBuilds = function(target) {
     }
   });
   var testLog = target.getFileNode(target.getRoot('test') + '.log', 'test_log');
-  var testArgs = (target.getPropertyValue('go_test_args')||[]).join(' ');
+  var testArgs = (target.getPropertyValue('go_test_args') || []).join(' ');
   builds.TEST = [{
     rule: 'run_test',
     inputs: [testBinary],
