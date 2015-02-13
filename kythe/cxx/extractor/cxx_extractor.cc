@@ -633,8 +633,46 @@ class ExtractorAction : public clang::PreprocessorFrontendAction {
     main_source_file_ = main_source_file_stdin_alternate_.empty()
                             ? main_source_file_
                             : main_source_file_stdin_alternate_;
+    auto& header_search_info =
+        getCompilerInstance().getPreprocessor().getHeaderSearchInfo();
+    HeaderSearchInformation info;
+    info.angled_dir_idx = header_search_info.search_dir_size();
+    info.system_dir_idx = header_search_info.search_dir_size();
+    info.is_valid = true;
+    // TODO(zarko): Record module flags (::DisableModuleHash, ::ModuleMaps)
+    // from HeaderSearchOptions; support "apple-style headermaps" (see
+    // Clang's InitHeaderSearch.cpp.)
+    unsigned cur_dir_idx = 0;
+    // Clang never sets no_cur_dir_search to true? (see InitHeaderSearch.cpp)
+    bool no_cur_dir_search = false;
+    auto first_angled_dir = header_search_info.angled_dir_begin();
+    auto first_system_dir = header_search_info.system_dir_begin();
+    auto last_dir = header_search_info.system_dir_end();
+    for (const auto& prefix :
+         getCompilerInstance().getHeaderSearchOpts().SystemHeaderPrefixes) {
+      info.system_prefixes.push_back(
+          std::make_pair(prefix.Prefix, prefix.IsSystemHeader));
+    }
+    std::vector<std::string> paths;
+    for (auto i = header_search_info.search_dir_begin(); i != last_dir;
+         ++cur_dir_idx, ++i) {
+      if (i == first_angled_dir) {
+        info.angled_dir_idx = cur_dir_idx;
+      } else if (i == first_system_dir) {
+        info.system_dir_idx = cur_dir_idx;
+      }
+      // TODO(zarko): Support non-LT_NormalDir entries (these are frameworks
+      // and header maps).
+      if (!i->isNormalDir()) {
+        LOG(WARNING) << "Can't reproduce this include lookup state.";
+        info.is_valid = false;
+        break;
+      }
+      info.paths.push_back(
+          std::make_pair(i->getName(), i->getDirCharacteristic()));
+    }
     callback_(main_source_file_, main_source_file_transcript_, source_files_,
-              getCompilerInstance().getDiagnostics().hasErrorOccurred());
+              info, getCompilerInstance().getDiagnostics().hasErrorOccurred());
   }
 
  private:
@@ -772,7 +810,7 @@ void IndexWriter::WriteIndex(
     std::unique_ptr<IndexWriterSink> sink, const std::string& main_source_file,
     const std::string& entry_context,
     const std::unordered_map<std::string, SourceFile>& source_files,
-    bool had_errors) {
+    const HeaderSearchInformation& header_search_info, bool had_errors) {
   kythe::proto::CompilationUnit unit;
   std::string identifying_blob;
   identifying_blob.append(corpus_);
@@ -789,6 +827,22 @@ void IndexWriter::WriteIndex(
   unit_vname->CopyFrom(main_vname);
   unit_vname->set_signature("cu#" + identifying_blob_digest);
   unit_vname->clear_path();
+
+  if (header_search_info.is_valid) {
+    auto* info = unit.mutable_header_search_info();
+    info->set_first_angled_dir(header_search_info.angled_dir_idx);
+    info->set_first_system_dir(header_search_info.system_dir_idx);
+    for (const auto& path : header_search_info.paths) {
+      auto* dir = info->add_dir();
+      dir->set_path(path.first);
+      dir->set_characteristic_kind(path.second);
+    }
+    for (const auto& prefix : header_search_info.system_prefixes) {
+      auto* proto = unit.add_system_header_prefix();
+      proto->set_is_system_header(prefix.second);
+      proto->set_prefix(prefix.first);
+    }
+  }
 
   for (const auto& file : source_files) {
     FillFileInput(file.first, file.second, unit.add_required_input());

@@ -76,6 +76,17 @@ struct SourceFile {
   kythe::proto::VName vname;
 };
 
+/// \brief Reproduces Clang's internal header search state.
+///
+/// See clang::HeaderSearch.
+struct HeaderSearchInformation {
+  bool is_valid;
+  unsigned angled_dir_idx;
+  unsigned system_dir_idx;
+  std::vector<std::pair<std::string, clang::SrcMgr::CharacteristicKind>> paths;
+  std::vector<std::pair<std::string, bool>> system_prefixes;
+};
+
 /// \brief A function the extractor will call once it's done extracting input
 /// for a particular `main_source_file`.
 /// \param main_source_file The path used by Clang to refer to the main source
@@ -86,12 +97,13 @@ struct SourceFile {
 /// \param source_files All files, including the `main_source_file`, that will
 /// be touched during the compilation action. The keys are the paths used by
 /// Clang to refer to each file.
+/// \param header_search_info The header search information to use.
 /// \param had_errors Whether we encountered any errors so far.
 using ExtractorCallback = std::function<void(
     const std::string &main_source_file,
     const PreprocessorTranscript &main_source_file_transcript,
     const std::unordered_map<std::string, SourceFile> &source_files,
-    bool had_errors)>;
+    const HeaderSearchInformation &header_search_info, bool had_errors)>;
 
 /// \brief Called by the `IndexWriter` once it has finished building protobufs.
 ///
@@ -171,7 +183,7 @@ class IndexWriter {
       std::unique_ptr<IndexWriterSink> sink,
       const std::string &main_source_file, const std::string &entry_context,
       const std::unordered_map<std::string, SourceFile> &source_files,
-      bool had_errors);
+      const HeaderSearchInformation &header_search_info, bool had_errors);
   /// \brief Set the fields of `file_input` for the given file.
   /// \param clang_path A path to the file as seen by clang.
   /// \param source_file The `SourceFile` to configure `file_input` with.

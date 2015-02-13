@@ -24,6 +24,7 @@
 #include "GraphObserver.h"
 #include "KytheClaimClient.h"
 #include "KytheGraphRecorder.h"
+#include "KytheVFS.h"
 #include "kythe/proto/storage.pb.h"
 
 namespace kythe {
@@ -116,8 +117,9 @@ class KytheClaimToken : public GraphObserver::ClaimToken {
 /// discovered during indexing to the provided `KytheGraphRecorder`.
 class KytheGraphObserver : public GraphObserver {
  public:
-  KytheGraphObserver(KytheGraphRecorder *recorder, KytheClaimClient *client)
-      : recorder_(recorder), client_(client) {
+  KytheGraphObserver(KytheGraphRecorder *recorder, KytheClaimClient *client,
+                     const llvm::IntrusiveRefCntPtr<IndexVFS> vfs)
+      : recorder_(recorder), client_(client), vfs_(vfs) {
     assert(recorder_ != nullptr);
     assert(client_ != nullptr);
     default_token_.set_rough_claimed(true);
@@ -235,14 +237,6 @@ class KytheGraphObserver : public GraphObserver {
   /// \brief Configures the claimant that will be used to make claims.
   void set_claimant(const kythe::proto::VName &vname) { claimant_ = vname; }
 
-  /// \brief Associates a path with a vname.
-  /// \param path The path to associate. This should be the Clang lookup path.
-  /// \param vname The vname to use for this path.
-  void set_path_vname(const std::string &path,
-                      const kythe::proto::VName &vname) {
-    path_to_vname_[path] = vname;
-  }
-
   bool claimNode(const NodeId &NodeId) override {
     if (const auto *token = clang::dyn_cast<KytheClaimToken>(NodeId.Token)) {
       return token->rough_claimed();
@@ -322,7 +316,7 @@ class KytheGraphObserver : public GraphObserver {
     PreprocessorContext context;     ///< The context for this file.
     kythe::proto::VName vname;       ///< The file's VName.
     kythe::proto::VName base_vname;  ///< The file's VName without context.
-    std::string clang_path;          ///< The path Clang uses for this file.
+    llvm::sys::fs::UniqueID uid;     ///< The ID Clang uses for this file.
     bool claimed;                    ///< Whether we have claimed this file.
   };
   /// The files we have entered but not left.
@@ -343,8 +337,8 @@ class KytheGraphObserver : public GraphObserver {
   using IncludeToContext = std::map<unsigned, PreprocessorContext>;
   /// Maps from preprocessor contexts to context-specific records.
   using ContextToIncludes = std::map<PreprocessorContext, IncludeToContext>;
-  /// Maps from file path to its various context incarnations.
-  std::map<std::string, ContextToIncludes> path_to_context_data_;
+  /// Maps from file UID to its various context incarnations.
+  std::map<llvm::sys::fs::UniqueID, ContextToIncludes> path_to_context_data_;
   /// The `KytheClaimClient` used to reduce output redundancy. Not null.
   KytheClaimClient *client_;
   /// Contains the `FileEntry`s for files we have already recorded.
@@ -368,8 +362,8 @@ class KytheGraphObserver : public GraphObserver {
   /// The set of `tapp` nodes we've emitted so far (identified by
   /// `NodeId::ToString()`).
   std::unordered_set<std::string> written_tapps_;
-  /// A map from paths to VNames, extracted from a .kindex file.
-  std::unordered_map<std::string, kythe::proto::VName> path_to_vname_;
+  /// The virtual filesystem in use.
+  llvm::IntrusiveRefCntPtr<IndexVFS> vfs_;
   /// A neutral claim token.
   KytheClaimToken default_token_;
   /// The claim token to use for structural types.

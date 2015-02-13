@@ -9,7 +9,8 @@
         "IndexerPPCallbacks.cc",
         "KytheClaimClient.cc",
         "KytheGraphObserver.cc",
-        "KytheGraphRecorder.cc"
+        "KytheGraphRecorder.cc",
+        "KytheVFS.cc"
       ],
       "hdrs": [
         "GraphObserver.h",
@@ -19,7 +20,8 @@
         "KytheClaimClient.h",
         "KytheGraphObserver.h",
         "KytheGraphRecorder.h",
-        "KytheOutputStream.h"
+        "KytheOutputStream.h",
+        "KytheVFS.h"
       ],
       "cc_libs": [
         "//kythe/cxx/common:lib",
