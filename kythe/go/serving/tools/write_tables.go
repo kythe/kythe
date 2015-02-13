@@ -26,7 +26,6 @@ import (
 	"kythe/go/serving/pipeline"
 	"kythe/go/storage/gsutil"
 	"kythe/go/storage/leveldb"
-	"kythe/go/storage/table"
 )
 
 var (
@@ -50,7 +49,7 @@ func main() {
 	}
 	defer db.Close()
 
-	if err := pipeline.Run(gs, &table.KVProto{db}); err != nil {
+	if err := pipeline.Run(gs, db); err != nil {
 		log.Fatal(err)
 	}
 }

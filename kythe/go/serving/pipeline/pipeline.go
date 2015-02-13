@@ -31,7 +31,9 @@ import (
 	"kythe/go/services/graphstore/compare"
 	"kythe/go/services/xrefs"
 	ftsrv "kythe/go/serving/filetree"
+	"kythe/go/serving/search"
 	xsrv "kythe/go/serving/xrefs"
+	"kythe/go/storage/keyvalue"
 	"kythe/go/storage/leveldb"
 	"kythe/go/storage/table"
 	"kythe/go/util/kytheuri"
@@ -44,10 +46,15 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
-// Run writes the xrefs and filetree serving tables to tbl based on the given
+// maxIndexedFactValueSize is the maximum length in bytes of fact values to
+// write to the inverted index search table.
+const maxIndexedFactValueSize = 512
+
+// Run writes the xrefs and filetree serving tables to db based on the given
 // graphstore.Service.
-func Run(gs graphstore.Service, tbl table.Proto) error {
+func Run(gs graphstore.Service, db keyvalue.DB) error {
 	log.Println("Starting serving pipeline")
+	tbl := &table.KVProto{db}
 
 	// TODO(schroederc): for large corpora, this won't fit in memory
 	var files []string
@@ -91,15 +98,27 @@ func Run(gs graphstore.Service, tbl table.Proto) error {
 		log.Println("Wrote FileTree")
 	}()
 	edgeNodeWG.Add(2)
+	nodes := make(chan *srvpb.Node)
 	go func() {
 		defer edgeNodeWG.Done()
-		nErr = writeNodes(tbl, nIn)
+		nErr = writeNodes(tbl, nIn, nodes)
 		log.Println("Wrote Nodes")
 	}()
 	go func() {
 		defer edgeNodeWG.Done()
 		eErr = writeEdges(tbl, eIn)
 		log.Println("Wrote Edges")
+	}()
+
+	var (
+		idxWG  sync.WaitGroup
+		idxErr error
+	)
+	idxWG.Add(1)
+	go func() {
+		defer idxWG.Done()
+		idxErr = writeIndex(&table.KVInverted{db}, nodes)
+		log.Println("Wrote Search Index")
 	}()
 
 	edgeNodeWG.Wait()
@@ -117,6 +136,10 @@ func Run(gs graphstore.Service, tbl table.Proto) error {
 	ftWG.Wait()
 	if ftErr != nil {
 		return ftErr
+	}
+	idxWG.Wait()
+	if idxErr != nil {
+		return idxErr
 	}
 
 	return sErr
@@ -145,8 +168,10 @@ func writeFileTree(t table.Proto, files <-chan *spb.VName) error {
 	return t.Put(ftsrv.CorpusRootsKey, cr)
 }
 
-func writeNodes(t table.Proto, nodeEntries <-chan *spb.Entry) error {
+func writeNodes(t table.Proto, nodeEntries <-chan *spb.Entry, nodes chan<- *srvpb.Node) error {
+	defer close(nodes)
 	for node := range collectNodes(nodeEntries) {
+		nodes <- node
 		if err := t.Put(xsrv.NodeKey(node.GetTicket()), node); err != nil {
 			return err
 		}
@@ -446,4 +471,49 @@ func readEdges(es xrefs.EdgesService, files []string, edges chan<- *xpb.EdgesRep
 		}
 	}
 	return eErr
+}
+
+func writeIndex(t table.Inverted, nodes <-chan *srvpb.Node) error {
+	for n := range nodes {
+		uri, err := kytheuri.Parse(n.GetTicket())
+		if err != nil {
+			return err
+		}
+		key := []byte(n.GetTicket())
+
+		if uri.Signature != "" {
+			if err := t.Put(key, search.VNameVal("signature", uri.Signature)); err != nil {
+				return err
+			}
+		}
+		if uri.Corpus != "" {
+			if err := t.Put(key, search.VNameVal("corpus", uri.Corpus)); err != nil {
+				return err
+			}
+		}
+		if uri.Root != "" {
+			if err := t.Put(key, search.VNameVal("root", uri.Root)); err != nil {
+				return err
+			}
+		}
+		if uri.Path != "" {
+			if err := t.Put(key, search.VNameVal("path", uri.Path)); err != nil {
+				return err
+			}
+		}
+		if uri.Language != "" {
+			if err := t.Put(key, search.VNameVal("language", uri.Language)); err != nil {
+				return err
+			}
+		}
+
+		for _, f := range n.Fact {
+			if len(f.Value) <= maxIndexedFactValueSize {
+				if err := t.Put(key, search.FactVal(f.GetName(), f.Value)); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
 }

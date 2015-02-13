@@ -26,17 +26,21 @@ import (
 	"strings"
 
 	"kythe/go/services/filetree"
+	"kythe/go/services/search"
 	"kythe/go/services/xrefs"
 	"kythe/go/util/kytheuri"
+	"kythe/go/util/schema"
 
+	spb "kythe/proto/storage_proto"
 	xpb "kythe/proto/xref_proto"
 
 	"github.com/golang/protobuf/proto"
 )
 
 var (
-	xs xrefs.Service
-	ft filetree.Service
+	xs  xrefs.Service
+	ft  filetree.Service
+	idx search.Service
 
 	// ls flags
 	lsURIs bool
@@ -54,6 +58,13 @@ var (
 
 	// file flags
 	decorSpan string
+
+	// search flags
+	corpus    string
+	root      string
+	path      string
+	language  string
+	signature string
 
 	cmdLS = newCommand("ls", "[--uris] [directory-uri]",
 		"List a directory's contents",
@@ -211,6 +222,54 @@ var (
 				return err
 			}
 			return displayReferences(reply)
+		})
+
+	cmdSearch = newCommand("search", "[--corpus c] [--sig s] [--root r] [--lang l] [--path p] [factName factValue]...",
+		"Search for nodes based on partial components and fact values.",
+		func(flag *flag.FlagSet) {
+			flag.StringVar(&corpus, "corpus", "", "Limit results to nodes with the given corpus (optional)")
+			flag.StringVar(&root, "root", "", "Limit results to nodes with the given root (optional)")
+			flag.StringVar(&path, "path", "", "Limit results to nodes with the given path (optional)")
+			flag.StringVar(&signature, "sig", "", "Limit results to nodes with the given signature (optional)")
+			flag.StringVar(&language, "lang", "", "Limit results to nodes with the given language (optional)")
+		},
+		func(flag *flag.FlagSet) error {
+			if len(flag.Args())%2 != 0 {
+				return fmt.Errorf("given odd number of arguments (%d): %v", len(flag.Args()), flag.Args())
+			}
+
+			req := &spb.SearchRequest{Partial: &spb.VName{}}
+			if corpus != "" {
+				req.Partial.Corpus = &corpus
+			}
+			if signature != "" {
+				req.Partial.Signature = &signature
+			}
+			if root != "" {
+				req.Partial.Root = &root
+			}
+			if path != "" {
+				req.Partial.Path = &path
+			}
+			if language != "" {
+				req.Partial.Language = &language
+			}
+
+			for i := 0; i < len(flag.Args()); i = i + 2 {
+				if flag.Arg(i) == schema.FileTextFact {
+					log.Printf("WARNING: Large facts such as %s are not likely to be indexed", schema.FileTextFact)
+				}
+				req.Fact = append(req.Fact, &spb.SearchRequest_Fact{
+					Name:  proto.String(flag.Arg(i)),
+					Value: []byte(flag.Arg(i + 1)),
+				})
+			}
+
+			reply, err := idx.Search(req)
+			if err != nil {
+				return err
+			}
+			return displaySearch(reply)
 		})
 )
 

@@ -41,6 +41,9 @@
 //
 //   # Show all facts (except /kythe/text) for a node
 //   kythe --serving_table /path/to/table node kythe:?lang=c%2B%2B#StripPrefix%3Acommon%3Akythe%23n%23D%40kythe%2Fcxx%2Fcommon%2FCommandLineUtils.cc%3A167%3A1
+//
+//   # Search for all Java class nodes with the given VName path
+//   kythe --serving_table /path/to/table search --lang java --path kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java /kythe/node/kind record /kythe/subkind class
 package main
 
 import (
@@ -52,6 +55,7 @@ import (
 	"sort"
 
 	"kythe/go/serving/filetree"
+	"kythe/go/serving/search"
 	"kythe/go/serving/xrefs"
 	"kythe/go/storage/leveldb"
 	"kythe/go/storage/table"
@@ -87,7 +91,7 @@ var cmds = map[string]command{
 	"node":   cmdNode,
 	"refs":   cmdRefs,
 	"source": cmdSource,
-	// TODO(schroederc): search command using inverted index to find nodes
+	"search": cmdSearch,
 }
 
 func init() {
@@ -124,6 +128,7 @@ func main() {
 	tbl := &table.KVProto{db}
 	xs = &xrefs.Table{tbl}
 	ft = &filetree.Table{tbl}
+	idx = &search.Table{&table.KVInverted{db}}
 
 	if err := getCommand(flag.Arg(0)).run(); err != nil {
 		log.Fatal("ERROR: ", err)
