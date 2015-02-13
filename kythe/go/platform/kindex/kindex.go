@@ -36,7 +36,10 @@
 package kindex
 
 import (
+	"bytes"
 	"compress/gzip"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
@@ -109,6 +112,25 @@ func New(r io.Reader) (*Compilation, error) {
 		Proto: cu,
 		Files: files,
 	}, nil
+}
+
+// Fetch implements the analysis.Fetcher interface for files attached to c.
+// If digest == "", files are matched by path only.
+func (c *Compilation) Fetch(path, digest string) ([]byte, error) {
+	for _, f := range c.Files {
+		info := f.GetInfo()
+		fp := info.GetPath()
+		fd := info.GetDigest()
+		if fp == path {
+			if digest == "" || digest == fd {
+				return f.Content, nil
+			}
+		}
+		if fd != "" && digest == fd {
+			return f.Content, nil
+		}
+	}
+	return nil, os.ErrNotExist
 }
 
 // WriteTo implements the io.WriterTo interface, writing the contents of the
@@ -194,5 +216,25 @@ func FromUnit(unit *apb.CompilationUnit, f analysis.Fetcher) (*Compilation, erro
 	return &Compilation{
 		Proto: unit,
 		Files: inputs,
+	}, nil
+}
+
+// FileData creates a file data protobuf message by fully reading the contents
+// of r, having the designated path.
+func FileData(path string, r io.Reader) (*apb.FileData, error) {
+	var buf bytes.Buffer
+	hash := sha256.New()
+
+	w := io.MultiWriter(&buf, hash)
+	if _, err := io.Copy(w, r); err != nil {
+		return nil, err
+	}
+	digest := hex.EncodeToString(hash.Sum(nil))
+	return &apb.FileData{
+		Content: buf.Bytes(),
+		Info: &apb.FileInfo{
+			Path:   &path,
+			Digest: &digest,
+		},
 	}, nil
 }
