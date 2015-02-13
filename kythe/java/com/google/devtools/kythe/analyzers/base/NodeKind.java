@@ -20,9 +20,10 @@ package com.google.devtools.kythe.analyzers.base;
 public enum NodeKind {
   // Core kinds
   ANCHOR("anchor"),
-  NAME("name"),
   FILE("file"),
   FUNCTION("function"),
+  INTERFACE("interface"),
+  NAME("name"),
   PACKAGE("package"),
   TAPPLY("tapp"),
   TBUILTIN("tbuiltin"),

@@ -849,6 +849,20 @@ int x;
 //- SourceFile.node/kind file
 --------------------------------------------------------------------------------
 
+[[interface]]
+interface
+~~~~~~~~~
+
+Brief description::
+  An *interface* defines an implementable type.
+
+[kythe,Java,"Interfaces are interfaces."]
+--------------------------------------------------------------------------------
+//- @I defines Interface
+//- Interface.node/kind interface
+public interface I {}
+--------------------------------------------------------------------------------
+
 [[function]]
 function
 ~~~~~~~~
