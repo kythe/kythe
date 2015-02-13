@@ -1,0 +1,105 @@
+---
+title: Exploring Kythe's Sample Web UI
+author: Cody Schroeder
+layout: post
+---
+
+Everybody loves a good web UI.
+
+Kythe indexers produce a rich set of data about analyzed source files.  They
+also produce *a lot* of data, which means that sometimes it can be hard to
+understand exactly where the edges and nodes are connected or even what nodes
+exist.  One way to help visualize the data better is to provide a web UI for
+browsing the set of files indexed.  The Kythe team has provided a sample
+implementation of one such UI as an example.footnote:[Chromium's
+https://code.google.com/p/chromium/codesearch#chromium/src/chrome/browser/devtools/browser_list_tabcontents_provider.cc[Code
+Search] browser is another example of a UI using similar data from Google's
+internal version of Kythe.]
+
+We currently host our http://kythe.io/repo/kythe/web/ui[sample web UI] at
+https://xrefs-dot-kythe-repo.appspot.com/ based on Kythe's own Java and C++
+source code and would like to invite everyone to explore it.  We trust that this
+UI example will help show the depth of analysis that Kythe can provide and how
+its language-agnostic http://www.kythe.io/docs/schema/[schema] is a useful
+abstraction for
+http://www.kythe.io/docs/kythe-overview.html#_goals_of_kythe[building tools for
+programming languages] (including web UIs).
+
+*Current Features of the Sample Web UI:*
+
+* All surfaced data is based on the contents of a
+  link:/docs/kythe-storage.html[GraphStore]
+** No cheating by browsing the Kythe git repository directly or calling out to
+   other tools
+** Data is
+   http://kythe.io/repo/kythe/go/serving/pipeline/pipeline.go[transformed] into
+   http://kythe.io/repo/kythe/proto/serving.proto[protobuf] lookup tables to
+   provide efficient access
+* Filetree pane to browse all files by path, separated by their corpus roots
+* Source code decorated with links for each known
+  http://www.kythe.io/docs/schema/#anchor[anchor] node
+* Clicking a file decoration opens a pane to view the edges of the anchor's
+  target node
+* Clicking an anchor's node kind in the edges pane will jump to that anchor's
+  source location, possibly in another file
+
+This simple list of features allows for some surprisingly deep introspection of
+source code.  For instance, one can jump to a node's definition or any location
+where it is referenced to provide an experience similar to the
+http://en.wikipedia.org/wiki/LXR_Cross_Referencer[Linux Cross Reference]
+service.  Likewise, there are also Kythe edges to describe
+http://www.kythe.io/docs/schema/#typed[type relationships],
+http://www.kythe.io/docs/schema/#childof[parent-child relationships],
+http://www.kythe.io/docs/schema/#overrides[inheritance trees],
+http://www.kythe.io/docs/schema/#refexpands[macro expansion], and more.
+
+Kythe indexers emit many useful edges.  By clicking on the `JsonUtil` class name
+on
+https://xrefs-dot-kythe-repo.appspot.com/#kythe/java/com/google/devtools/kythe/util/JsonUtil.java?line=36[line
+36 of kythe/java/com/google/devtools/kythe/util/JsonUtil.java], one can see even
+the simple `JsonUtil` Java class has the following edges:
+
+%link:http://www.kythe.io/docs/schema/#defines[/kythe/edge/defines] ::
+definition anchor location for `JsonUtil` footnote:[The `%` edge kind prefix
+means that the edge is a mirror of an edge without the kind prefix.  That is,
+`/kythe/edge/childof` edges lead to a node's parents and their mirrors,
+`%/kythe/edge/childof` edges, lead to a node's children.]
+
+%/kythe/edge/ref:: anchor locations of `JsonUtil` references
+
+http://www.kythe.io/docs/schema/#childof[/kythe/edge/childof]:: parents of
+  `JsonUtil` (i.e. the http://www.kythe.io/docs/schema/#file[file] and
+  http://www.kythe.io/docs/schema/#package[package] to which the `JsonUtil`
+  class belongs)
+
+%/kythe/edge/childof:: children of `JsonUtil` (i.e. methods, fields, inner
+ classes, etc.)
+
+http://www.kythe.io/docs/schema/#named[/kythe/edge/named]:: associated
+  http://www.kythe.io/docs/schema/#name[name] of the `JsonUtil` class
+
+%link:http://www.kythe.io/docs/schema/#param[/kythe/edge/param]:: semantic nodes
+  that have `JsonUtil` as a parameter (in this case, where `JsonUtil` is used a
+  part of a function http://www.kythe.io/docs/schema/#tapp[tapp] type)
+
+By clicking on `GCCArgsToClangArgs` on https://xrefs-dot-kythe-repo.appspot.com/#kythe/cxx/common/CommandLineUtils.h?line=61[line 61 of kythe/cxx/common/CommandLineUtils.h], one can see some other simple examples of edges from C++'s perspective:
+
+%link:http://www.kythe.io/docs/schema/#completes[/kythe/edge/completes]:: anchor
+  location of definitions for the `GCCArgsToClangArgs`
+  http://www.kythe.io/docs/schema/#function[function]
+
+http://www.kythe.io/docs/schema/#callableas[/kythe/edge/callableas]:: the
+  associated http://www.kythe.io/docs/schema/#callable[callable] node for
+  `GCCArgsToClangArgs`
+
+http://www.kythe.io/docs/schema/#typed[/kythe/edge/typed]:: associated nodes for
+  the type structure of `GCCArgsToClangArgs`
+
+http://www.kythe.io/docs/schema/#param[/kythe/edge/param]:: declared parameters
+  of `GCCArgsToClangArgs`
+
+These examples are just a taste of the data exposed in our sample web UI.  With
+other specialized interfaces such as the
+http://kythe.io/repo/kythe/go/serving/tools/kythe.go[Kythe command-line],
+Kythe's data can lead to some very useful tools for viewing, editing, and
+grokking source code across multiple languages.

@@ -3,3 +3,6 @@ gem 'jekyll'
 gem 'jekyll-redirect-from'
 gem 'asciidoctor'
 gem 'nokogiri'
+group :jekyll_plugins do
+  gem "jekyll-asciidoc"
+end
