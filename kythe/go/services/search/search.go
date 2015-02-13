@@ -35,6 +35,19 @@ type Service interface {
 	Search(q *spb.SearchRequest) (*spb.SearchReply, error)
 }
 
+type webClient struct{ addr string }
+
+// Search implements the Service interface.
+func (w *webClient) Search(q *spb.SearchRequest) (*spb.SearchReply, error) {
+	var reply spb.SearchReply
+	return &reply, web.Call(w.addr, "search", q, &reply)
+}
+
+// WebClient returns a search Service based on a remote web server.
+func WebClient(addr string) Service {
+	return &webClient{addr}
+}
+
 // RegisterHTTPHandlers registers JSON HTTP handlers with mux using the given
 // search Service.  The following method with be exposed:
 //

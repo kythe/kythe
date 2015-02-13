@@ -54,16 +54,19 @@ import (
 	"path/filepath"
 	"sort"
 
-	"kythe/go/serving/filetree"
-	"kythe/go/serving/search"
-	"kythe/go/serving/xrefs"
+	"kythe/go/services/filetree"
+	"kythe/go/services/search"
+	"kythe/go/services/xrefs"
+	ftsrv "kythe/go/serving/filetree"
+	srchsrv "kythe/go/serving/search"
+	xsrv "kythe/go/serving/xrefs"
 	"kythe/go/storage/leveldb"
 	"kythe/go/storage/table"
 )
 
 var (
-	// TODO(schroederc): add an option for a remote xrefs/filetree service
-	servingTable = flag.String("serving_table", "", "LevelDB serving table (required)")
+	remoteAPI    = flag.String("api", "https://xrefs-dot-kythe-repo.appspot.com", "Remote api server")
+	servingTable = flag.String("serving_table", "", "LevelDB serving table")
 )
 
 func globalUsage() {
@@ -113,22 +116,26 @@ func main() {
 	if len(flag.Args()) == 0 {
 		flag.Usage()
 		os.Exit(0)
+	} else if *servingTable == "" && *remoteAPI == "" {
+		log.Fatal("One of --serving_table or --api is required")
 	}
 
 	if *servingTable == "" {
-		log.Fatal("Missing required --serving_table argument")
-	}
+		xs = xrefs.WebClient(*remoteAPI)
+		ft = filetree.WebClient(*remoteAPI)
+		idx = search.WebClient(*remoteAPI)
+	} else {
+		db, err := leveldb.Open(*servingTable, nil)
+		if err != nil {
+			log.Fatalf("Error opening db at %q: %v", *servingTable, err)
+		}
+		defer db.Close()
 
-	db, err := leveldb.Open(*servingTable, nil)
-	if err != nil {
-		log.Fatalf("Error opening db at %q: %v", *servingTable, err)
+		tbl := &table.KVProto{db}
+		xs = &xsrv.Table{tbl}
+		ft = &ftsrv.Table{tbl}
+		idx = &srchsrv.Table{&table.KVInverted{db}}
 	}
-	defer db.Close()
-
-	tbl := &table.KVProto{db}
-	xs = &xrefs.Table{tbl}
-	ft = &filetree.Table{tbl}
-	idx = &search.Table{&table.KVInverted{db}}
 
 	if err := getCommand(flag.Arg(0)).run(); err != nil {
 		log.Fatal("ERROR: ", err)

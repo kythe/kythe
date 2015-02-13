@@ -163,6 +163,27 @@ type corpusPath struct {
 	Path   string `json:"path"`
 }
 
+type webClient struct{ addr string }
+
+// CorporaRoots implements part of the Service interface.
+func (w *webClient) CorporaRoots() (*srvpb.CorpusRoots, error) {
+	var reply srvpb.CorpusRoots
+	return &reply, web.Call(w.addr, "corpusRoots", struct{}{}, &reply)
+}
+
+// Dir implements part of the Service interface.
+func (w *webClient) Dir(corpus, root, path string) (*srvpb.FileDirectory, error) {
+	var reply srvpb.FileDirectory
+	return &reply, web.Call(w.addr, "dir", &corpusPath{
+		Corpus: corpus,
+		Root:   root,
+		Path:   path,
+	}, &reply)
+}
+
+// WebClient returns an filetree Service based on a remote web server.
+func WebClient(addr string) Service { return &webClient{addr} }
+
 // RegisterHTTPHandlers registers JSON HTTP handlers with mux using the given
 // filetree Service.  The following methods with be exposed:
 //
