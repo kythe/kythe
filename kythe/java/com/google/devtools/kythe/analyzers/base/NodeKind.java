@@ -20,6 +20,7 @@ package com.google.devtools.kythe.analyzers.base;
 public enum NodeKind {
   // Core kinds
   ANCHOR("anchor"),
+  CONSTANT("constant"),
   FILE("file"),
   FUNCTION("function"),
   INTERFACE("interface"),

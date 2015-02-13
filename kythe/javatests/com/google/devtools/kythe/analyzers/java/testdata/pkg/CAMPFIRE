@@ -48,6 +48,30 @@
     }
   },
   {
+    "name": "enums_tests",
+    "kind": "verifier_test",
+    "properties": {
+      "language": "java"
+    },
+    "inputs": {
+      "srcs": [
+        "Enums.java"
+      ],
+      "compilation": [
+        ":enums_lib"
+      ]
+    }
+  },
+  {
+    "name": "enums_lib",
+    "kind": "java_library",
+    "inputs": {
+      "srcs": [
+        "Enums.java"
+      ]
+    }
+  },
+  {
     "name": "interfaces_tests",
     "kind": "verifier_test",
     "properties": {

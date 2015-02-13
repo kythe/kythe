@@ -123,6 +123,7 @@ public class JavaEntrySets extends KytheEntrySets {
     switch (kind) {
       case CLASS: return NodeKind.RECORD_CLASS;
       case ENUM: return NodeKind.SUM_ENUM_CLASS;
+      case ENUM_CONSTANT: return NodeKind.CONSTANT;
       case INTERFACE: return NodeKind.INTERFACE;
       case PARAMETER: case LOCAL_VARIABLE: case FIELD:
         return NodeKind.VARIABLE;
