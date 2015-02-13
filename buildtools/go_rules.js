@@ -227,11 +227,13 @@ GoTest.prototype.getNinjaBuilds = function(target) {
     }
   });
   var testLog = target.getFileNode(target.getRoot('test') + '.log', 'test_log');
+  var testArgs = (target.getPropertyValue('go_test_args')||[]).join(' ');
   builds.TEST = [{
     rule: 'run_test',
     inputs: [testBinary],
     outs: [target.getFileNode(target.getRoot('test') + '.done', 'done_marker')],
     vars: {
+      args: testArgs,
       log: testLog.getPath()
     }
   }];
