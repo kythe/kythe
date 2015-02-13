@@ -15,10 +15,9 @@
 FROM debian:jessie
 
 EXPOSE 8080
+ADD server /usr/local/bin/
+ENTRYPOINT ["/usr/local/bin/server"]
+CMD ["--listen", ":8080"]
 
 ADD public /srv/public/
 ADD serving /srv/table
-ADD server /usr/local/bin/
-
-ENTRYPOINT ["/usr/local/bin/server"]
-CMD ["--listen", ":8080"]

@@ -104,6 +104,31 @@ func MatchesAny(str string, patterns []*regexp.Regexp) bool {
 	return false
 }
 
+type webClient struct{ addr string }
+
+// Nodes implements part of the Service interface.
+func (w *webClient) Nodes(q *xpb.NodesRequest) (*xpb.NodesReply, error) {
+	var reply xpb.NodesReply
+	return &reply, web.Call(w.addr, "nodes", q, &reply)
+}
+
+// Edges implements part of the Service interface.
+func (w *webClient) Edges(q *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
+	var reply xpb.EdgesReply
+	return &reply, web.Call(w.addr, "edges", q, &reply)
+}
+
+// Decorations implements part of the Service interface.
+func (w *webClient) Decorations(q *xpb.DecorationsRequest) (*xpb.DecorationsReply, error) {
+	var reply xpb.DecorationsReply
+	return &reply, web.Call(w.addr, "decorations", q, &reply)
+}
+
+// WebClient returns an xrefs Service based on a remote web server.
+func WebClient(addr string) Service {
+	return &webClient{addr}
+}
+
 // RegisterHTTPHandlers registers JSON HTTP handlers with mux using the given
 // xrefs Service.  The following methods with be exposed:
 //

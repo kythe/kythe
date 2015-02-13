@@ -18,15 +18,44 @@
 package web
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	"kythe/go/util/httpencoding"
 
 	"github.com/golang/protobuf/proto"
 )
+
+const jsonBodyType = "application/json; charset=utf-8"
+
+// Call sends req to the given server method as a JSON-encoded body and
+// unmarshals the response body as JSON into reply.
+func Call(server, method string, req, reply interface{}) error {
+	body, err := json.Marshal(req)
+	if err != nil {
+		return fmt.Errorf("error marshaling %T: %v", req, err)
+	}
+	resp, err := http.Post(strings.TrimSuffix(server, "/")+"/"+strings.Trim(method, "/"),
+		jsonBodyType, bytes.NewBuffer(body))
+	if err != nil {
+		return fmt.Errorf("http error: %v", err)
+	}
+	rec, err := ioutil.ReadAll(resp.Body)
+	resp.Body.Close()
+	if err != nil {
+		return fmt.Errorf("error reading response body: %v", err)
+	} else if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("remote method error (code %d): %s", resp.StatusCode, string(rec))
+	}
+	if err := json.Unmarshal(rec, &reply); err != nil {
+		return fmt.Errorf("error unmarshaling %T: %v", reply, err)
+	}
+	return nil
+}
 
 // ReadJSONBody reads the entire body of r and unmarshals it from JSON into v.
 func ReadJSONBody(r *http.Request, v interface{}) error {

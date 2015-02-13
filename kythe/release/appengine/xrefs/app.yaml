@@ -12,5 +12,4 @@ automatic_scaling:
 handlers:
 - url: .*
   secure: always
-  login: admin
   script: main.app
