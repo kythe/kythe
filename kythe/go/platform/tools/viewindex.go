@@ -28,7 +28,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"kythe/go/platform/indexinfo"
+	"kythe/go/platform/kindex"
 )
 
 func init() {
@@ -49,7 +49,7 @@ func main() {
 	}
 
 	path := flag.Arg(0)
-	idx, err := indexinfo.Open(path)
+	idx, err := kindex.Open(path)
 	if err != nil {
 		log.Fatalf("Error reading %q: %v", path, err)
 	}
@@ -60,7 +60,7 @@ func main() {
 			log.Fatalf("Error encoding JSON: %v", err)
 		}
 	} else {
-		if err := en.Encode(idx.Compilation); err != nil {
+		if err := en.Encode(idx.Proto); err != nil {
 			log.Fatalf("Error encoding JSON compilation: %v", err)
 		}
 	}

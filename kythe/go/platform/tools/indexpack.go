@@ -33,8 +33,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"kythe/go/platform/indexinfo"
 	"kythe/go/platform/indexpack"
+	"kythe/go/platform/kindex"
 
 	apb "kythe/proto/analysis_proto"
 
@@ -86,7 +86,7 @@ func main() {
 			log.Println("WARNING: no kindex file paths given")
 		}
 		for _, path := range flag.Args() {
-			kindex, err := indexinfo.Open(path)
+			kindex, err := kindex.Open(path)
 			if err != nil {
 				log.Fatalf("Error opening kindex at %q: %v", path, err)
 			}
@@ -111,14 +111,14 @@ func main() {
 	}
 }
 
-func packIndex(ctx context.Context, pack *indexpack.Archive, kindex *indexinfo.IndexInfo) error {
-	for _, data := range kindex.Files {
+func packIndex(ctx context.Context, pack *indexpack.Archive, idx *kindex.Compilation) error {
+	for _, data := range idx.Files {
 		if _, err := pack.WriteFile(ctx, data.Content); err != nil {
 			return fmt.Errorf("error writing file %v: %v", data.Info, err)
 		}
 	}
 
-	path, err := pack.WriteUnit(ctx, formatKey, kindex.Compilation)
+	path, err := pack.WriteUnit(ctx, formatKey, idx.Proto)
 	if err != nil {
 		return fmt.Errorf("error writing compilation unit: %v", err)
 	}
@@ -129,46 +129,37 @@ func packIndex(ctx context.Context, pack *indexpack.Archive, kindex *indexinfo.I
 }
 
 func unpackIndex(ctx context.Context, pack *indexpack.Archive, dir string) error {
+	fetcher := pack.Fetcher(ctx)
 	return pack.ReadUnits(ctx, formatKey, func(u interface{}) error {
 		unit, ok := u.(*apb.CompilationUnit)
 		if !ok {
 			return fmt.Errorf("%T is not a CompilationUnit", u)
 		}
-		kindex := &indexinfo.IndexInfo{Compilation: unit}
-		for _, input := range unit.RequiredInput {
-			if !*quiet {
-				log.Println("Reading file", input.GetInfo().GetDigest())
-			}
-			data, err := pack.ReadFile(ctx, input.GetInfo().GetDigest())
-			if err != nil {
-				return fmt.Errorf("error reading required input (%v): %v", input, err)
-			}
-			kindex.Files = append(kindex.Files, &apb.FileData{
-				Info:    input.Info,
-				Content: data,
-			})
+		idx, err := kindex.FromUnit(unit, fetcher)
+		if err != nil {
+			return fmt.Errorf("error creating kindex: %v", err)
 		}
-		path := kindexPath(dir, kindex)
+		path := kindexPath(dir, idx)
 		if !*quiet {
 			log.Println("Writing compilation unit to", path)
 		}
 		f, err := os.Create(path)
 		if err != nil {
-			return fmt.Errorf("error creating kindex file: %v", err)
+			return fmt.Errorf("error creating output file: %v", err)
 		}
-		if _, err := kindex.WriteTo(f); err != nil {
+		if _, err := idx.WriteTo(f); err != nil {
 			f.Close() // try to close file before returning
-			return fmt.Errorf("error writing to kindex file: %v", err)
+			return fmt.Errorf("error writing output file: %v", err)
 		}
 		return f.Close()
 	})
 }
 
-func kindexPath(dir string, kindex *indexinfo.IndexInfo) string {
-	name := kindex.Compilation.VName.GetSignature()
+func kindexPath(dir string, idx *kindex.Compilation) string {
+	name := idx.Proto.VName.GetSignature()
 	if name == "" {
 		h := sha256.New()
-		data, err := json.Marshal(kindex.Compilation)
+		data, err := json.Marshal(idx.Proto)
 		if err != nil {
 			panic(err)
 		}
@@ -176,5 +167,5 @@ func kindexPath(dir string, kindex *indexinfo.IndexInfo) string {
 		name = hex.EncodeToString(h.Sum(nil))
 	}
 	name = strings.Trim(strings.Replace(name, "/", "_", -1), "/")
-	return filepath.Join(dir, name+indexinfo.FileExt)
+	return filepath.Join(dir, name+kindex.Extension)
 }

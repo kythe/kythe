@@ -35,7 +35,7 @@
         "viewindex.go"
       ],
       "go_pkgs": [
-        "//kythe/go/platform/indexinfo"
+        "//kythe/go/platform/kindex"
       ]
     }
   },
@@ -47,8 +47,8 @@
         "indexpack.go"
       ],
       "go_pkgs": [
-        "//kythe/go/platform/indexinfo",
         "//kythe/go/platform/indexpack",
+        "//kythe/go/platform/kindex",
         "//kythe/proto:analysis_proto",
         "//third_party/go/golang.org:context"
       ]
