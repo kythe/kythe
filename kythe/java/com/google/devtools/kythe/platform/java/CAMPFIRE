@@ -11,7 +11,6 @@
       ],
       "jars": [
         "//kythe/java/com/google/devtools/kythe/common",
-        "//kythe/java/com/google/devtools/kythe/extractors/java",
         "//kythe/java/com/google/devtools/kythe/platform/java/filemanager",
         "//kythe/java/com/google/devtools/kythe/platform/shared",
         "//kythe/java/com/google/devtools/kythe/platform/shared:file_data",
