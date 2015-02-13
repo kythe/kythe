@@ -29,11 +29,10 @@
 #include "clang/Lex/MacroArgs.h"
 #include "clang/Lex/PPCallbacks.h"
 #include "clang/Lex/Preprocessor.h"
-#include "clang/Tooling/Tooling.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
+#include "kythe/cxx/common/path_utils.h"
 #include "kythe/proto/analysis.pb.h"
-#include "llvm/Support/Path.h"
 #include "third_party/llvm/src/clang_builtin_headers.h"
 #include "third_party/llvm/src/cxx_extractor_preprocessor_utils.h"
 
@@ -380,7 +379,7 @@ void ExtractorPPCallbacks::AddFile(const clang::FileEntry* file,
     contents.first->second.file_content.assign(buffer->getBufferStart(),
                                                buffer->getBufferEnd());
     contents.first->second.vname.CopyFrom(index_writer_->VNameForPath(
-        index_writer_->RelativizePath(path, index_writer_->root_directory())));
+        RelativizePath(path, index_writer_->root_directory())));
     LOG(INFO) << "added content for " << path << "\n";
   }
 }
@@ -440,8 +439,8 @@ void ExtractorPPCallbacks::RecordSpecificLocation(clang::SourceLocation loc) {
         source_manager_->getFileEntryForID(source_manager_->getFileID(loc));
     if (file_ref) {
       auto vname = index_writer_->VNameForPath(
-          index_writer_->RelativizePath(FixStdinPath(file_ref, filename_ref),
-                                        index_writer_->root_directory()));
+          RelativizePath(FixStdinPath(file_ref, filename_ref),
+                         index_writer_->root_directory()));
       history()->Update(vname.signature());
       history()->Update(vname.corpus());
       history()->Update(vname.root());
@@ -739,49 +738,6 @@ kythe::proto::VName IndexWriter::VNameForPath(const std::string& path) {
     out.set_corpus(corpus_);
   }
   return out;
-}
-
-std::string IndexWriter::MakeCleanAbsolutePath(const std::string& in_path) {
-  using namespace llvm::sys::path;
-  std::string abs_path = clang::tooling::getAbsolutePath(in_path);
-  std::string root_part =
-      (root_name(abs_path) + llvm::sys::path::root_directory(abs_path)).str();
-  llvm::SmallString<1024> out_path = llvm::StringRef(root_part);
-  std::vector<llvm::StringRef> path_components;
-  int skip_count = 0;
-  for (auto node = rbegin(abs_path), node_end = rend(abs_path);
-       node != node_end; ++node) {
-    if (*node == "..") {
-      ++skip_count;
-    } else if (*node != ".") {
-      if (skip_count > 0) {
-        --skip_count;
-      } else {
-        path_components.push_back(*node);
-      }
-    }
-  }
-  for (auto node = path_components.crbegin(),
-            node_end = path_components.crend();
-       node != node_end; ++node) {
-    append(out_path, *node);
-  }
-  return out_path.str();
-}
-
-std::string IndexWriter::RelativizePath(const std::string& to_relativize,
-                                        const std::string& relativize_against) {
-  std::string to_relativize_abs = MakeCleanAbsolutePath(to_relativize);
-  std::string relativize_against_abs =
-      MakeCleanAbsolutePath(relativize_against);
-  llvm::StringRef to_relativize_parent =
-      llvm::sys::path::parent_path(to_relativize_abs);
-  std::string ret =
-      to_relativize_parent.startswith(relativize_against_abs)
-          ? to_relativize_abs.substr(relativize_against_abs.size() +
-                                     llvm::sys::path::get_separator().size())
-          : to_relativize_abs;
-  return ret;
 }
 
 void IndexWriter::FillFileInput(

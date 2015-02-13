@@ -348,42 +348,6 @@ TEST_F(CxxExtractorTest, DoesNotBreakForCompilerErrors) {
   FillAndVerifyCompilationUnit("b.cc", {}, {"./b.h", "b.cc"});
 }
 
-TEST(CxxExtractorPathTest, RelativizePath) {
-  llvm::SmallString<128> current_dir_llvm;
-  std::error_code get_dir_failed =
-      llvm::sys::fs::current_path(current_dir_llvm);
-  ASSERT_FALSE(get_dir_failed);
-
-  llvm::SmallString<128> cwd_foo_llvm = current_dir_llvm;
-  llvm::sys::path::append(cwd_foo_llvm, "foo");
-
-  std::string current_dir(current_dir_llvm.str());
-  std::string cwd_foo(cwd_foo_llvm.str());
-
-  EXPECT_EQ("foo", IndexWriter::RelativizePath("foo", "."));
-  EXPECT_EQ("foo", IndexWriter::RelativizePath("foo", current_dir));
-  EXPECT_EQ("bar", IndexWriter::RelativizePath("foo/bar", "foo"));
-  EXPECT_EQ("bar", IndexWriter::RelativizePath("foo/bar", cwd_foo));
-  EXPECT_EQ("foo", IndexWriter::RelativizePath(cwd_foo, "."));
-  EXPECT_EQ(cwd_foo, IndexWriter::RelativizePath(cwd_foo, "bar"));
-}
-
-TEST(CxxExtractorPathTest, MakeCleanAbsolutePath) {
-  llvm::SmallString<128> current_dir_llvm;
-  std::error_code get_dir_failed =
-      llvm::sys::fs::current_path(current_dir_llvm);
-  ASSERT_FALSE(get_dir_failed);
-  std::string current_dir(current_dir_llvm.str());
-  EXPECT_EQ("/a/b/c", IndexWriter::MakeCleanAbsolutePath("/a/b/c"));
-  EXPECT_EQ("/a/b/c", IndexWriter::MakeCleanAbsolutePath("/a/b/c/."));
-  EXPECT_EQ("/a/b", IndexWriter::MakeCleanAbsolutePath("/a/b/c/./.."));
-  EXPECT_EQ("/a/b", IndexWriter::MakeCleanAbsolutePath("/a/b/c/../."));
-  EXPECT_EQ("/a/b", IndexWriter::MakeCleanAbsolutePath("/a/b/c/.."));
-  EXPECT_EQ("/", IndexWriter::MakeCleanAbsolutePath("/a/../c/.."));
-  EXPECT_EQ("/", IndexWriter::MakeCleanAbsolutePath("/a/b/c/../../.."));
-  EXPECT_EQ(current_dir, IndexWriter::MakeCleanAbsolutePath("."));
-}
-
 }  // anonymous namespace
 }  // namespace kythe
 

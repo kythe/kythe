@@ -180,20 +180,6 @@ class IndexWriter {
                      const SourceFile &source_file,
                      kythe::proto::CompilationUnit_FileInput *file_input);
 
-  /// \brief Relativize `to_relativize` with respect to `relativize_against`.
-  ///
-  /// If `to_relativize` does not name a path that is a child of
-  /// `relativize_against`, `RelativizePath` will return an absolute path.
-  ///
-  /// \param to_relativize Relative or absolute path to a file.
-  /// \param relativize_against Relative or absolute path to a directory.
-  static std::string RelativizePath(const std::string &to_relativize,
-                                    const std::string &relativize_against);
-
-  /// \brief Convert `in_path` to an absolute path, eliminating `.` and `..`.
-  /// \param in_path The path to convert.
-  static std::string MakeCleanAbsolutePath(const std::string &in_path);
-
   /// \brief Attempts to generate a VName for the file at some path.
   /// \param path The path (likely from Clang) to the file.
   kythe::proto::VName VNameForPath(const std::string &path);
