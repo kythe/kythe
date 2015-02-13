@@ -121,12 +121,10 @@ func (c *Compilation) Fetch(path, digest string) ([]byte, error) {
 		info := f.GetInfo()
 		fp := info.GetPath()
 		fd := info.GetDigest()
-		if fp == path {
-			if digest == "" || digest == fd {
-				return f.Content, nil
-			}
+		if path == fp && (digest == "" || digest == fd) {
+			return f.Content, nil
 		}
-		if fd != "" && digest == fd {
+		if digest != "" && digest == fd {
 			return f.Content, nil
 		}
 	}
