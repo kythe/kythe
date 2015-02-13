@@ -137,6 +137,26 @@ func displayEdges(edges *xpb.EdgesReply) error {
 	return nil
 }
 
+func displayEdgeCounts(edges *xpb.EdgesReply) error {
+	counts := make(map[string]int)
+	for _, es := range edges.EdgeSet {
+		for _, g := range es.Group {
+			counts[g.GetKind()] += len(g.TargetTicket)
+		}
+	}
+
+	if *displayJSON {
+		return json.NewEncoder(out).Encode(counts)
+	}
+
+	for kind, cnt := range counts {
+		if _, err := fmt.Fprintf(out, "%s\t%d\n", kind, cnt); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func displayNodes(nodes []*xpb.NodeInfo) error {
 	if *displayJSON {
 		return json.NewEncoder(out).Encode(nodes)
