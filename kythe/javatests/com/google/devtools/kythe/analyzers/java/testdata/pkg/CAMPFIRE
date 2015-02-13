@@ -48,6 +48,30 @@
     }
   },
   {
+    "name": "interfaces_tests",
+    "kind": "verifier_test",
+    "properties": {
+      "language": "java"
+    },
+    "inputs": {
+      "srcs": [
+        "Interfaces.java"
+      ],
+      "compilation": [
+        ":interfaces_lib"
+      ]
+    }
+  },
+  {
+    "name": "interfaces_lib",
+    "kind": "java_library",
+    "inputs": {
+      "srcs": [
+        "Interfaces.java"
+      ]
+    }
+  },
+  {
     "name": "inheritance_tests",
     "kind": "verifier_test",
     "properties": {
