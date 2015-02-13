@@ -123,6 +123,7 @@ func (c *Compilation) WriteTo(w io.Writer) (int64, error) {
 
 	buf := proto.NewBuffer(nil)
 	if err := buf.Marshal(c.Proto); err != nil {
+		gz.Close()
 		return 0, fmt.Errorf("marshalling compilation: %v", err)
 	}
 
@@ -144,6 +145,7 @@ func (c *Compilation) WriteTo(w io.Writer) (int64, error) {
 		nw, err := w.Write(buf.Bytes())
 		total += int64(nw)
 		if err != nil {
+			gz.Close()
 			return total, fmt.Errorf("writing file data: %v", err)
 		}
 	}
