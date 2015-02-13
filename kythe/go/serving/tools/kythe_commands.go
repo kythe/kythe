@@ -52,6 +52,7 @@ var (
 	showFileText bool
 
 	// edges flags
+	countOnly bool
 	edgeKinds string
 	pageToken string
 	pageSize  int
@@ -103,9 +104,10 @@ var (
 			return displayDirectory(dir)
 		})
 
-	cmdEdges = newCommand("edges", "[--kinds edgeKind1,edgeKind2,...] [--page_token token] [--page_size num] <ticket>",
+	cmdEdges = newCommand("edges", "[--count_only] [--kinds edgeKind1,edgeKind2,...] [--page_token token] [--page_size num] <ticket>",
 		"Retrieve outward edges from a node",
 		func(flag *flag.FlagSet) {
+			flag.BoolVar(&countOnly, "count_only", false, "Only print counts per edge kind")
 			flag.StringVar(&edgeKinds, "kinds", "", "Comma-separated list of edge kinds to return (default returns all)")
 			flag.StringVar(&pageToken, "page_token", "", "Edges page token")
 			flag.IntVar(&pageSize, "page_size", 0, "Maximum number of edges returned (0 lets the service use a sensible default)")
@@ -122,6 +124,9 @@ var (
 			reply, err := xs.Edges(req)
 			if err != nil {
 				return err
+			}
+			if countOnly {
+				return displayEdgeCounts(reply)
 			}
 			return displayEdges(reply)
 		})
