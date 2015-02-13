@@ -6,27 +6,32 @@ var DEFAULT_BUILD_KIND = 'build';
  * Returns the set of targets that are dependencies of the given target/targets.
  */
 var deps = function() {
-  function dfs(targets, action) {
+  function dfs(targets, action, maxDepth) {
+    targets = targets.map(function(t) {
+      return {depth: 0, target: t};
+    });
     var discovered = {};
     while (targets.length > 0) {
       var current = targets.pop();
-      if (!discovered[current.id]) {
-        discovered[current.id] = true;
-        action(current);
-        for (var i = 0; i < current.inputs.length; ++i) {
-          if (current.inputs[i].json) {
-            targets.push(current.inputs[i]);
+      if (!discovered[current.target.id] &&
+          (current.depth < maxDepth || maxDepth <= 0)) {
+        discovered[current.target.id] = true;
+        action(current.target);
+        for (var i = 0; i < current.target.inputs.length; ++i) {
+          if (current.target.inputs[i].json) {
+            targets.push({depth: current.depth+1,
+                          target: current.target.inputs[i]});
           }
         }
       }
     }
   }
-  return function(targets) {
+  return function(targets, maxDepth) {
     targets = resolveTargets(targets);
     var deparr = [];
     dfs(targets, function(node) {
       deparr.push(node);
-    });
+    }, maxDepth);
     return deparr;
   };
 }();
@@ -122,6 +127,28 @@ function files(targets) {
         res.push(inputs[j]);
       }
     }
+  }
+  return res;
+}
+
+/**
+ * Returns the set of targets using the given file(s) as inputs.
+ */
+function target(files) {
+  files = resolveTargets(files);
+  var resSet = {};
+
+  for (var i = 0; i < files.length; i++) {
+    for (var j = 0; j < files[i].outputs.length; j++) {
+      if (files[i].outputs[j].name) {
+        resSet[files[i].outputs[j].id] = files[i].outputs[j];
+      }
+    }
+  }
+
+  var res = [];
+  for (var id in resSet) {
+    res.push(resSet[id]);
   }
   return res;
 }
