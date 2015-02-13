@@ -24,12 +24,14 @@
       "srcs": [
         "CommandLineUtils.cc",
         "file_vname_generator.cc",
-        "index_pack.cc"
+        "index_pack.cc",
+        "path_utils.cc"
       ],
       "hdrs": [
         "CommandLineUtils.h",
         "file_vname_generator.h",
         "index_pack.h",
+        "path_utils.h",
         "vname_ordering.h"
       ],
       "cc_libs": [
@@ -94,6 +96,30 @@
     "inputs": {
       "cc_libs": [
         ":file_vname_generator_testlib"
+      ]
+    }
+  },
+  {
+    "name": "path_utils_testlib",
+    "kind": "cc_library",
+    "inputs": {
+      "srcs": [
+        "path_utils_test.cc"
+      ],
+      "hdrs": [],
+      "cc_libs": [
+        ":lib",
+        "//third_party/googletest:lib",
+        "//third_party/llvm:lib"
+      ]
+    }
+  },
+  {
+    "name": "path_utils_test",
+    "kind": "cc_test",
+    "inputs": {
+      "cc_libs": [
+        ":path_utils_testlib"
       ]
     }
   },
