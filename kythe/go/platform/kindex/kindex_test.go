@@ -18,7 +18,9 @@ package kindex
 
 import (
 	"bytes"
+	"log"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/golang/protobuf/proto"
@@ -107,5 +109,51 @@ func TestRoundTrip(t *testing.T) {
 	// Verify that we got everything we put in.
 	if got, want := len(after.Files), len(before.Files); got != want {
 		t.Errorf("Wrong number of files: got %d, want %d", got, want)
+	}
+}
+
+func mustFD(path, data string) *apb.FileData {
+	fd, err := FileData(path, strings.NewReader(data))
+	if err != nil {
+		log.Panicf("Unable to construct FileData for %q: %v", path, err)
+	}
+	return fd
+}
+
+func TestFetch(t *testing.T) {
+	const magic = "xyzzy"
+	const magicDigest = "184858a00fd7971f810848266ebcecee5e8b69972c5ffaed622f5ee078671aed"
+	idx := &Compilation{
+		Files: []*apb.FileData{
+			mustFD("A", "A is for Amy, who fell down the stairs"),
+			mustFD("B", "B is for Basil, assaulted by bears"),
+			mustFD("C", "C is for Clara, who wasted away"),
+			mustFD("D", "D is for Desmond, thrown out of a sleigh"),
+			mustFD("E", "E is for Ernest, who choked on a peach"),
+			mustFD("X", magic),
+		},
+	}
+	numGood := len(idx.Files)
+
+	// Basic path resolution should work, ignoring the digest.
+	for i, path := range []string{"A", "B", "C", "D", "E", "X", "F", "G"} {
+		got, err := idx.Fetch(path, "")
+		if err != nil && i < numGood {
+			t.Errorf("Fetch %q: unexpected error: %v", path, err)
+		} else if err == nil && i >= numGood {
+			t.Errorf("Fetch %q: unexpectedly succeeded with %q", path, got)
+		}
+	}
+
+	// A path lookup with an incorrect digest should fail.
+	if got, err := idx.Fetch("A", "bogusdigestvalue"); err == nil {
+		t.Errorf("Fetch A with bogus digest: got %q, wanted error", got)
+	}
+
+	// A digest lookup on its own should work.
+	if raw, err := idx.Fetch("", magicDigest); err != nil {
+		t.Errorf("Fetch %q: unexpected error: %v", magicDigest, err)
+	} else if got := string(raw); got != magic {
+		t.Errorf("Fetch %q: got %q, want %q", magicDigest, got, magic)
 	}
 }
