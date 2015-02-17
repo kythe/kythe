@@ -186,6 +186,15 @@ public class KytheEntrySets {
     }
   }
 
+  /** Returns (and emits) a new abstract node over child. */
+  public EntrySet newAbstract(EntrySet child, List<EntrySet> params) {
+    EntrySet abs = emitAndReturn(newNode(NodeKind.ABS)
+        .addSignatureSalt(child.getVName()));
+    emitEdge(child, EdgeKind.CHILDOF, abs);
+    emitOrdinalEdges(abs, EdgeKind.PARAM, params);
+    return abs;
+  }
+
   /** Returns and emits a new {@link NodeKind.TAPPLY} function type node. */
   public EntrySet newFunctionType(EntrySet returnType, List<EntrySet> arguments) {
     List<EntrySet> tArgs = new LinkedList<>(arguments);

@@ -22,6 +22,7 @@ public enum EdgeKind {
   REF(true, "ref"),
 
   ANNOTATED_BY("annotatedby"),
+  BOUNDED_UPPER("bounded/upper"),
   CHILDOF("childof"),
   EXTENDS("extends"),
   IMPLEMENTS("implements"),

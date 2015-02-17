@@ -44,6 +44,7 @@ import com.sun.tools.javac.tree.JCTree.JCMethodDecl;
 import com.sun.tools.javac.tree.JCTree.JCNewClass;
 import com.sun.tools.javac.tree.JCTree.JCPrimitiveTypeTree;
 import com.sun.tools.javac.tree.JCTree.JCTypeApply;
+import com.sun.tools.javac.tree.JCTree.JCTypeParameter;
 import com.sun.tools.javac.tree.JCTree.JCVariableDecl;
 import com.sun.tools.javac.tree.JCTree.JCWildcard;
 import com.sun.tools.javac.util.Context;
@@ -150,7 +151,13 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, Void> {
     Optional<String> signature = signatureGenerator.getSignature(classDef.sym);
     if (signature.isPresent()) {
       EntrySet classNode = entrySets.getNode(classDef.sym, signature.get());
-      emitAnchor(classDef.name, classDef.getStartPosition(), EdgeKind.DEFINES, classNode);
+      EntrySet anchor =
+          emitAnchor(classDef.name, classDef.getStartPosition(), EdgeKind.DEFINES, classNode);
+
+      EntrySet absNode = defineTypeParameters(classNode, classDef.getTypeParameters(), v);
+      if (absNode != null) {
+        emitAnchor(anchor, EdgeKind.DEFINES, absNode);
+      }
 
       visitAnnotations(classNode, classDef.getModifiers().getAnnotations(), v);
 
@@ -195,19 +202,26 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, Void> {
       EntrySet methodNode = entrySets.getNode(methodDef.sym, signature.get());
       visitAnnotations(methodNode, methodDef.getModifiers().getAnnotations(), v);
 
-      EntrySet ret;
+      EntrySet absNode = defineTypeParameters(methodNode, methodDef.getTypeParameters(), v);
+
+      EntrySet ret, anchor;
       if (methodDef.sym.isConstructor()) {
         // Use the owner's name (the class name) to find the definition anchor's
         // location because constructors are internally named "<init>".
-        emitAnchor(methodDef.sym.owner.name, methodDef.getPreferredPosition(),
+        anchor = emitAnchor(methodDef.sym.owner.name, methodDef.getPreferredPosition(),
             EdgeKind.DEFINES, methodNode);
         // Likewise, constructors don't have return types in the Java AST, but
         // Kythe models all functions with return types.  As a solution, we use
         // the class type as the return type for all constructors.
         ret = getNode(methodDef.sym.owner);
       } else {
-        emitAnchor(methodDef.name, methodDef.getPreferredPosition(), EdgeKind.DEFINES, methodNode);
+        anchor = emitAnchor(methodDef.name, methodDef.getPreferredPosition(),
+            EdgeKind.DEFINES, methodNode);
         ret = returnType.entries;
+      }
+
+      if (absNode != null) {
+        emitAnchor(anchor, EdgeKind.DEFINES, absNode);
       }
 
       emitOrdinalEdges(methodNode, EdgeKind.PARAM, params);
@@ -322,6 +336,26 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, Void> {
 
   //// Utility methods ////
 
+  private EntrySet defineTypeParameters(EntrySet owner, List<JCTypeParameter> params, Void v) {
+    if (params.isEmpty()) {
+      return null;
+    }
+
+    List<EntrySet> typeParams = Lists.newLinkedList();
+    for (JCTypeParameter tParam : params) {
+      EntrySet node = getNode(tParam.type.asElement());
+      emitAnchor(tParam.name, tParam.getStartPosition(), EdgeKind.DEFINES, node);
+      visitAnnotations(node, tParam.getAnnotations(), v);
+      typeParams.add(node);
+
+      for (JCExpression expr : tParam.getBounds()) {
+        emitEdge(node, EdgeKind.BOUNDED_UPPER, scan(expr, v));
+      }
+    }
+
+    return entrySets.newAbstract(owner, typeParams);
+  }
+
   /** Returns the node associated with a {@link Symbol} or {@link null}. */
   private EntrySet getNode(Symbol sym) {
     JavaNode node = getJavaNode(sym);
@@ -366,25 +400,26 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, Void> {
   }
 
   // Creates/emits an anchor and an associated edge
-  private void emitAnchor(JCTree anchorTree, EdgeKind kind, EntrySet node) {
-    emitAnchor(entrySets.getAnchor(filePositions, anchorTree), kind, node);
+  private EntrySet emitAnchor(JCTree anchorTree, EdgeKind kind, EntrySet node) {
+    return emitAnchor(entrySets.getAnchor(filePositions, anchorTree), kind, node);
   }
 
   // Creates/emits an anchor (for an identifier) and an associated edge
-  private void emitAnchor(Name name, int startOffset, EdgeKind kind, EntrySet node) {
+  private EntrySet emitAnchor(Name name, int startOffset, EdgeKind kind, EntrySet node) {
     EntrySet anchor = entrySets.getAnchor(filePositions, name, startOffset);
     if (anchor == null) {
       // TODO(schroederc): Special-case these anchors (most come from visitSelect)
-      return;
+      return null;
     }
-    emitAnchor(anchor, kind, node);
+    return emitAnchor(anchor, kind, node);
   }
 
   // Creates/emits an anchor and an associated edge
-  private void emitAnchor(EntrySet anchor, EdgeKind kind, EntrySet node) {
+  private EntrySet emitAnchor(EntrySet anchor, EdgeKind kind, EntrySet node) {
     Preconditions.checkArgument(kind.isAnchorEdge(),
         "EdgeKind was not intended for ANCHORs: " + kind);
     entrySets.emitEdge(anchor, kind, node);
+    return anchor;
   }
 
   // Unwraps the target EntrySet and emits an edge to it from the sourceNode
