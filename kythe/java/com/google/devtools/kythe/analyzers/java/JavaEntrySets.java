@@ -127,7 +127,8 @@ public class JavaEntrySets extends KytheEntrySets {
       case INTERFACE: return NodeKind.INTERFACE;
       case PARAMETER: case LOCAL_VARIABLE: case FIELD:
         return NodeKind.VARIABLE;
-      case METHOD: return NodeKind.FUNCTION;
+      case CONSTRUCTOR: case METHOD:
+        return NodeKind.FUNCTION;
       default:
         // TODO(schroederc): handle all cases, make this exceptional, and remove all null checks
         return null;

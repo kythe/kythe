@@ -4,6 +4,8 @@ package pkg;
 public class Methods {
 
   //- @Methods defines Ctor
+  //- Ctor.node/kind function
+  //- Ctor childof Class
   //- Ctor typed CtorType
   //- CtorType param.0 FnBuiltin
   //- CtorType param.1 Class

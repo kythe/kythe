@@ -9,6 +9,14 @@ package pkg;
 //- N.subkind class
 public class Classes {
 
+  //- DefaultCtor childof N
+  //- DefaultCtor.node/kind function
+  //- DefaultCtor typed DefaultCtorType
+  //- DefaultCtorType param.0 FnBuiltin
+  //- DefaultCtorType param.1 N
+  // TODO(schroederc): Don't emit an anchor for the default constructor
+  // !{ DefaultCtorAnchor defines DefaultCtor }
+
   //- @StaticInner defines SI
   //- SI.node/kind record
   //- SI.subkind class
