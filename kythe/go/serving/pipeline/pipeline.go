@@ -433,12 +433,14 @@ func getDecorations(es xrefs.EdgesService, anchor *xpb.NodeInfo) ([]*srvpb.FileD
 	}
 	var ds []*srvpb.FileDecorations_Decoration
 	for _, grp := range edges.EdgeSet[0].Group {
-		for _, target := range grp.TargetTicket {
-			ds = append(ds, &srvpb.FileDecorations_Decoration{
-				Anchor:       a,
-				Kind:         grp.Kind,
-				TargetTicket: proto.String(target),
-			})
+		if schema.EdgeDirection(grp.GetKind()) == schema.Forward && grp.GetKind() != schema.ChildOfEdge {
+			for _, target := range grp.TargetTicket {
+				ds = append(ds, &srvpb.FileDecorations_Decoration{
+					Anchor:       a,
+					Kind:         grp.Kind,
+					TargetTicket: proto.String(target),
+				})
+			}
 		}
 	}
 	return ds, nil
