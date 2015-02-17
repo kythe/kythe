@@ -27,6 +27,7 @@ import com.google.devtools.kythe.platform.java.helpers.JCTreeScanner;
 import com.google.devtools.kythe.platform.java.helpers.JavacUtil;
 import com.google.devtools.kythe.platform.java.helpers.SignatureGenerator;
 
+import com.sun.source.tree.Tree.Kind;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Symbol.MethodSymbol;
@@ -331,7 +332,17 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, Void> {
 
   @Override
   public JavaNode visitWildcard(JCWildcard wild, Void v) {
-    return todoNode("WildCard: " + wild);
+    EntrySet node = entrySets.getWildcardNode(wild);
+    String signature = wild.kind.kind.toString();
+    if (wild.getKind() != Kind.UNBOUNDED_WILDCARD) {
+      JavaNode bound = scan(wild.getBound(), v);
+      signature += bound.qualifiedName;
+      emitEdge(
+          node,
+          wild.getKind() == Kind.EXTENDS_WILDCARD ? EdgeKind.BOUNDED_UPPER : EdgeKind.BOUNDED_LOWER,
+          bound);
+    }
+    return new JavaNode(node, signature);
   }
 
   //// Utility methods ////

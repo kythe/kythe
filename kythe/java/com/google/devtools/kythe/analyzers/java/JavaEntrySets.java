@@ -104,6 +104,12 @@ public class JavaEntrySets extends KytheEntrySets {
     return node;
   }
 
+  /** Emits and returns a new {@link EntrySet} for the given wildcard. */
+  public EntrySet getWildcardNode(JCTree.JCWildcard wild) {
+    return emitAndReturn(newNode(NodeKind.ABS_VAR)
+        .addSignatureSalt("" + wild.hashCode()));
+  }
+
   /** Returns and emits a Java anchor for the given {@link JCTree}. */
   public EntrySet getAnchor(FilePositions filePositions, JCTree tree) {
     return getAnchor(filePositions, filePositions.getStart(tree), filePositions.getEnd(tree));
