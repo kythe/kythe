@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"kythe/go/util/kytheuri"
 	"kythe/go/util/schema"
@@ -107,9 +108,21 @@ func displayReferences(decor *xpb.DecorationsReply) error {
 		return json.NewEncoder(out).Encode(decor)
 	}
 
+	nodes := nodesMap(decor.Node)
+
 	for _, ref := range decor.Reference {
-		// TODO anchor/source information
-		if _, err := fmt.Fprintf(out, "%s\t%s\n", ref.GetKind(), ref.GetTargetTicket()); err != nil {
+		nodeKind := factValue(nodes, ref.GetTargetTicket(), schema.NodeKindFact, "UNKNOWN")
+		startOffset := factValue(nodes, ref.GetSourceTicket(), schema.AnchorStartFact, "_")
+		endOffset := factValue(nodes, ref.GetSourceTicket(), schema.AnchorEndFact, "_")
+		r := strings.NewReplacer(
+			"@source@", ref.GetSourceTicket(),
+			"@target@", ref.GetTargetTicket(),
+			"@edgeKind@", ref.GetKind(),
+			"@nodeKind@", nodeKind,
+			"@beg@", startOffset,
+			"@end@", endOffset,
+		)
+		if _, err := r.WriteString(out, refFormat+"\n"); err != nil {
 			return err
 		}
 	}
@@ -189,4 +202,25 @@ func displaySearch(reply *spb.SearchReply) error {
 	}
 	fmt.Fprintln(os.Stderr, "Total Results:", len(reply.Ticket))
 	return nil
+}
+
+func factValue(m map[string]map[string][]byte, ticket, factName, def string) string {
+	if n, ok := m[ticket]; ok {
+		if val, ok := n[factName]; ok {
+			return string(val)
+		}
+	}
+	return def
+}
+
+func nodesMap(nodes []*xpb.NodeInfo) map[string]map[string][]byte {
+	m := make(map[string]map[string][]byte, len(nodes))
+	for _, n := range nodes {
+		facts := make(map[string][]byte, len(n.Fact))
+		for _, f := range n.Fact {
+			facts[f.GetName()] = f.Value
+		}
+		m[n.GetTicket()] = facts
+	}
+	return m
 }

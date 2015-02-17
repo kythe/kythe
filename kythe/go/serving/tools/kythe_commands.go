@@ -19,6 +19,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -57,8 +58,12 @@ var (
 	pageToken string
 	pageSize  int
 
-	// file flags
+	// source/refs flags
 	decorSpan string
+
+	// refs flags
+	dirtyFile string
+	refFormat string
 
 	// search flags
 	corpus    string
@@ -190,9 +195,20 @@ var (
 			return displaySource(reply)
 		})
 
-	cmdRefs = newCommand("refs", "[--span b1-b2] <file-ticket>",
+	cmdRefs = newCommand("refs", "[--format spec] [--dirty file] [--span b1-b2] <file-ticket>",
 		"List a file's anchor references",
 		func(flag *flag.FlagSet) {
+			// TODO(schroederc): add option to look for dirty files based on file-ticket path and a directory root
+			flag.StringVar(&dirtyFile, "dirty", "", "Send the given file as the dirty buffer for patching references")
+			flag.StringVar(&refFormat, "format", "@edgeKind@\t@beg@:@end@\t@nodeKind@\t@target@",
+				`Format for each decoration result.
+      Format Markers:
+        @source@   -- ticket of anchor source node
+        @target@   -- ticket of referenced target node
+        @edgeKind@ -- edge kind from anchor node to its referenced target
+        @nodeKind@ -- node kind of referenced target
+        @beg@      -- starting byte-offset of anchor source
+        @end@      -- ending byte-offset of anchor source`)
 			// TODO handle line/column spans
 			flag.StringVar(&decorSpan, "span", "", "Limit to this byte-offset span (b1-b2)")
 		},
@@ -202,6 +218,20 @@ var (
 					Ticket: proto.String(flag.Arg(0)),
 				},
 				References: proto.Bool(true),
+			}
+			if dirtyFile != "" {
+				f, err := os.Open(dirtyFile)
+				if err != nil {
+					return fmt.Errorf("error opening dirty buffer file at %q: %v", dirtyFile, err)
+				}
+				buf, err := ioutil.ReadAll(f)
+				if err != nil {
+					f.Close()
+					return fmt.Errorf("error reading dirty buffer file: %v", err)
+				} else if err := f.Close(); err != nil {
+					return fmt.Errorf("error closing dirty buffer file: %v", err)
+				}
+				req.DirtyBuffer = buf
 			}
 			if decorSpan != "" {
 				parts := strings.Split(decorSpan, "-")
