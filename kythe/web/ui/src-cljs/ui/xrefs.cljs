@@ -45,7 +45,9 @@
                                    (dom/a #js {:href "#"
                                                :onClick (fn [_]
                                                           (put! file-to-view
-                                                            (assoc (:file %) :offset (:start %))))}
+                                                            (assoc (:file %)
+                                                              :offset (:start %)
+                                                              :anchor (:anchor %))))}
                                      (str (path-display (:vname (:file %)))
                                        "[" (:start %) ":" (:end %) "]")))
                              (sort-by (juxt #(get-in % [:file :vname :path]) :start) refs)))))

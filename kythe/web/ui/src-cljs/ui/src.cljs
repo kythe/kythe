@@ -13,7 +13,7 @@
 ;; limitations under the License.
 (ns ui.src
   "View for source pane"
-  (:require [cljs.core.async :refer [put! chan]]
+  (:require [cljs.core.async :refer [put!]]
             [goog.crypt.base64 :as b64]
             [om.core :as om :include-macros true]
             [om.dom :as dom :include-macros true]
@@ -152,18 +152,17 @@
 
 (defn- decorations-view [state owner]
   (reify
-    om/IInitState
-    (init-state [_]
-      {:hover (chan)})
     om/IWillMount
     (will-mount [_]
       (handle-ch (om/get-state owner :hover)
-        (fn [{:keys [ticket target]}]
+        (fn [{:keys [ticket target xref-jump]}]
           (om/transact! state :nodes
             (fn [nodes]
               (map (fn [node]
                      (if (:anchor-ticket node)
                        (cond
+                         (= xref-jump (:anchor-ticket node))
+                         (assoc node :background "lightgreen")
                          (= ticket (:anchor-ticket node))
                          (assoc node :background "lightgray")
                          (= target (:target-ticket node))
@@ -196,7 +195,7 @@
 (defn src-view [state owner]
   (reify
     om/IRenderState
-    (render-state [_ {:keys [xrefs-to-view]}]
+    (render-state [_ {:keys [xrefs-to-view hover]}]
       (cond
         (empty? state) (dom/span nil "Please select a file to your left!")
         (:failure state) (dom/div nil
@@ -206,7 +205,8 @@
                            (dom/span nil "Loading...")
                            (dom/span #js {:className "glyphicon glyphicon-repeat spinner"}))
         :else (om/build decorations-view (:decorations state)
-                {:init-state {:xrefs-to-view xrefs-to-view}})))
+                {:init-state {:xrefs-to-view xrefs-to-view
+                              :hover hover}})))
     om/IDidUpdate
     (did-update [_ __ ___]
       (when-let [line-num (:line state)]

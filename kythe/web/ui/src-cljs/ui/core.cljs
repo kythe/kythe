@@ -13,7 +13,7 @@
 ;; limitations under the License.
 (ns ui.core
   "Main UI view and glue"
-  (:require [cljs.core.async :refer [chan]]
+  (:require [cljs.core.async :refer [chan put!]]
             [om.core :as om :include-macros true]
             [om.dom :as dom :include-macros true]
             [ui.filetree :refer [filetree-view]]
@@ -30,31 +30,36 @@
     om/IInitState
     (init-state [_]
       {:file-to-view (chan)
-       :xrefs-to-view (chan)})
+       :xrefs-to-view (chan)
+       :hover (chan)})
     om/IWillMount
     (will-mount [_]
       (handle-ch (om/get-state owner :file-to-view) nil
         (fn [file last-ticket]
           (let [file (if (:ticket file) file {:ticket file})
                 ticket (:ticket file)
-                offset (:offset file)]
-           (cond
-             (not= ticket last-ticket)
-             (do
-               (om/transact! state :current-file (constantly {:loading true}))
-               (service/get-file ticket
-                 (fn [decorations]
-                   (let [decorations (construct-decorations decorations)
-                         scroll-to-line (when offset (line-in-string (:source-text decorations) offset))]
-                     (om/transact! state :current-file (constantly
-                                                         {:line scroll-to-line
-                                                          :decorations decorations}))))
-                 (replace-state! state :current-file)))
-             offset (om/transact! state :current-file
-                      (fn [file]
-                        (assoc file
-                          :line (line-in-string (:source-text (:decorations file)) offset)))))
-           ticket)))
+                offset (:offset file)
+                anchor (:anchor file)]
+            (cond
+              (not= ticket last-ticket)
+              (do
+                (om/transact! state :current-file (constantly {:loading true}))
+                (service/get-file ticket
+                  (fn [decorations]
+                    (let [decorations (construct-decorations decorations)
+                          scroll-to-line (when offset (line-in-string (:source-text decorations) offset))]
+                      (om/transact! state :current-file (constantly
+                                                          {:line scroll-to-line
+                                                           :decorations decorations}))
+                      (put! (om/get-state owner :hover) {:xref-jump anchor})))
+                  (replace-state! state :current-file)))
+              offset (do
+                       (om/transact! state :current-file
+                         (fn [file]
+                           (assoc file
+                             :line (line-in-string (:source-text (:decorations file)) offset))))
+                       (put! (om/get-state owner :hover) {:xref-jump anchor})))
+            ticket)))
       (handle-ch (om/get-state owner :xrefs-to-view)
         (fn [target-ticket]
           (om/transact! state :current-xrefs (constantly {:loading target-ticket}))
@@ -75,13 +80,14 @@
                     corpus-roots))))))
         (replace-state! state :files)))
     om/IRenderState
-    (render-state [_ {:keys [file-to-view xrefs-to-view]}]
+    (render-state [_ {:keys [file-to-view xrefs-to-view hover]}]
       (dom/div #js {:id "container"}
         (dom/div #js {:className "container-row"}
           (om/build filetree-view (:files state)
             {:init-state {:file-to-view file-to-view}})
           (om/build src-view (:current-file state)
-            {:init-state {:xrefs-to-view xrefs-to-view}}))
+            {:init-state {:xrefs-to-view xrefs-to-view
+                          :hover hover}}))
         (om/build xrefs-view (:current-xrefs state)
           {:init-state {:file-to-view file-to-view}})))))
 
