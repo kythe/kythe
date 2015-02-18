@@ -94,6 +94,9 @@ const (
 
 // Edges implements part of the xrefs Service interface.
 func (t *Table) Edges(req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
+	if len(req.Ticket) == 0 {
+		return nil, errors.New("no tickets specified")
+	}
 	stats := filterStats{
 		max: int(req.GetPageSize()),
 	}

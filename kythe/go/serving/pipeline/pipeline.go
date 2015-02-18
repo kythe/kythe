@@ -128,7 +128,7 @@ func Run(gs graphstore.Service, db keyvalue.DB) error {
 		return nErr
 	}
 
-	es := xrefs.EdgesService(&xsrv.Table{tbl})
+	es := xrefs.NodesEdgesService(&xsrv.Table{tbl})
 	if err := writeDecorations(tbl, es, files); err != nil {
 		return err
 	}
@@ -342,7 +342,7 @@ func writeWithReverses(gs graphstore.Service, req *spb.WriteRequest) error {
 
 var revChildOfEdgeKind = schema.MirrorEdge(schema.ChildOfEdge)
 
-func writeDecorations(t table.Proto, es xrefs.EdgesService, files []string) error {
+func writeDecorations(t table.Proto, es xrefs.NodesEdgesService, files []string) error {
 	log.Println("Writing Decorations")
 
 	edges := make(chan *xpb.EdgesReply)
@@ -354,13 +354,18 @@ func writeDecorations(t table.Proto, es xrefs.EdgesService, files []string) erro
 	}()
 
 	for e := range edges {
+		decor := &srvpb.FileDecorations{}
 		if len(e.EdgeSet) == 0 {
-			continue
+			if len(e.Node) != 1 {
+				log.Println("ERROR: missing node for non-decoration file")
+				continue
+			}
+			decor.FileTicket = e.Node[0].Ticket
 		} else if len(e.EdgeSet) != 1 {
-			log.Println("Invalid number of decoration EdgeSets: %d", len(e.EdgeSet))
-		}
-		decor := &srvpb.FileDecorations{
-			FileTicket: e.EdgeSet[0].SourceTicket,
+			log.Println("ERROR: invalid number of decoration EdgeSets:", len(e.EdgeSet))
+			continue
+		} else {
+			decor.FileTicket = e.EdgeSet[0].SourceTicket
 		}
 
 		for _, n := range e.Node {
@@ -453,7 +458,7 @@ var decorationFilters = []string{
 	schema.AnchorLocFilter,
 }
 
-func readEdges(es xrefs.EdgesService, files []string, edges chan<- *xpb.EdgesReply, filters []string, kinds []string) error {
+func readEdges(es xrefs.NodesEdgesService, files []string, edges chan<- *xpb.EdgesReply, filters []string, kinds []string) error {
 	var eErr error
 	for _, file := range files {
 		if eErr == nil {
@@ -467,7 +472,15 @@ func readEdges(es xrefs.EdgesService, files []string, edges chan<- *xpb.EdgesRep
 				continue
 			}
 			if len(reply.EdgeSet) == 0 {
-				log.Println("Found no edges for", file)
+				// File does not have any decorations, but we still want the source text/encoding.
+				nodeReply, err := es.Nodes(&xpb.NodesRequest{
+					Ticket: []string{file},
+					Filter: filters,
+				})
+				if err != nil {
+					return fmt.Errorf("error getting file node: %v", err)
+				}
+				reply.Node = nodeReply.Node
 			}
 			edges <- reply
 		}

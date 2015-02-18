@@ -150,7 +150,9 @@ func (g *GraphStoreService) Nodes(req *xpb.NodesRequest) (*xpb.NodesReply, error
 
 // Edges implements part of the Service interface.
 func (g *GraphStoreService) Edges(req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
-	if req.GetPageToken() != "" {
+	if len(req.Ticket) == 0 {
+		return nil, errors.New("no tickets specified")
+	} else if req.GetPageToken() != "" {
 		return nil, errors.New("UNIMPLEMENTED: page_token")
 	}
 
