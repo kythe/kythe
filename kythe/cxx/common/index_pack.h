@@ -131,7 +131,9 @@ class IndexPackPosixFilesystem : public IndexPackFilesystem {
       const std::string &root_path, IndexPackFilesystem::OpenMode open_mode,
       std::string *error_text);
 
-  IndexPackFilesystem::OpenMode open_mode() const { return open_mode_; }
+  IndexPackFilesystem::OpenMode open_mode() const override {
+    return open_mode_;
+  }
 
   bool AddFileContent(DataKind data_kind, WriteCallback callback,
                       std::string *error_text) override;

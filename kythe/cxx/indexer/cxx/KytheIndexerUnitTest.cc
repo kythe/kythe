@@ -201,7 +201,7 @@ class PushPopLintingGraphObserver : public NullGraphObserver {
     AllPushedFiles.push_back(FileNames.top());
   }
 
-  void popFile() {
+  void popFile() override {
     if (FileNames.empty()) {
       HadUnderrun = true;
     } else {
