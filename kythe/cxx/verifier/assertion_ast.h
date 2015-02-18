@@ -220,7 +220,7 @@ class App : public AstNode {
   App(const yy::location &location, AstNode *lhs, AstNode *rhs)
       : AstNode(location), lhs_(lhs), rhs_(rhs) {}
 
-  App *AsApp() { return this; }
+  App *AsApp() override { return this; }
   void Dump(const SymbolTable &, PrettyPrinter *) override;
 
   /// \brief The left-hand side (`f` in `f(g)`) of this `App`
@@ -240,7 +240,7 @@ class Identifier : public AstNode {
       : AstNode(location), symbol_(symbol) {}
   /// \brief The `Symbol` this `Identifier` represents.
   Symbol symbol() const { return symbol_; }
-  Identifier *AsIdentifier() { return this; }
+  Identifier *AsIdentifier() override { return this; }
   void Dump(const SymbolTable &, PrettyPrinter *) override;
 
  private:
@@ -257,7 +257,7 @@ class EVar : public AstNode {
   /// Constructs a new `EVar` with no assignment.
   explicit EVar(const yy::location &location)
       : AstNode(location), current_(nullptr) {}
-  EVar *AsEVar() { return this; }
+  EVar *AsEVar() override { return this; }
   void Dump(const SymbolTable &, PrettyPrinter *) override;
 
   /// \brief Returns current assignment, or `nullptr` if one has not been made.

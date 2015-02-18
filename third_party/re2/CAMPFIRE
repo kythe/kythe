@@ -70,7 +70,8 @@
         "-Ithird_party/re2",
         "-Wno-unknown-warning-option",
         "-Wno-sign-compare",
-        "-Wno-tautological-undefined-compare"
+        "-Wno-tautological-undefined-compare",
+        "-Wno-unused-local-typedef"
       ]
     }
   }

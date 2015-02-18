@@ -145,9 +145,9 @@ class KytheGraphObserver : public GraphObserver {
                              const NodeId &DeclNode) override;
 
   void recordFunctionNode(const NodeId &Node,
-                          Completeness FunctionCompleteness);
+                          Completeness FunctionCompleteness) override;
 
-  void recordCallableNode(const NodeId &Node);
+  void recordCallableNode(const NodeId &Node) override;
 
   void recordAbsVarNode(const NodeId &Node) override;
 
