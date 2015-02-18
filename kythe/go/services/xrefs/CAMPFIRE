@@ -8,8 +8,6 @@
       ],
       "go_pkgs": [
         "//kythe/go/services/web",
-        "//kythe/go/util/schema",
-        "//kythe/go/util/stringset",
         "//kythe/proto:xref_proto"
       ]
     }

@@ -16,6 +16,12 @@
   (:require [cljs.core.async :refer [<!]])
   (:import [goog Uri]))
 
+(defn fix-encoding
+  "Tries to fix the encoding of strings with non-ASCII characters. Useful for displaying the result
+  of b64/decodeString."
+  [str]
+  (js/decodeURIComponent (js/escape str)))
+
 (defn basename
   "Returns the basename of the given path"
   [path]

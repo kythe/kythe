@@ -19,13 +19,7 @@
             [om.dom :as dom :include-macros true]
             [ui.schema :as schema]
             [ui.service :as service]
-            [ui.util :refer [handle-ch]]))
-
-(defn- fix-encoding
-  "Tries to fix the encoding of strings with non-ASCII characters. Useful for displaying the result
-  of b64/decodeString."
-  [str]
-  (js/decodeURIComponent (js/escape str)))
+            [ui.util :refer [fix-encoding handle-ch]]))
 
 (defn- overlay-anchors
   "Reduces each group of overlapping anchors into a series of non-overlapping anchors and concats

@@ -14,6 +14,8 @@
 (ns ui.schema)
 
 (def node-kind-fact "/kythe/node/kind")
+
+(def anchor-loc-filter "/kythe/loc/*")
 (def anchor-start "/kythe/loc/start")
 (def anchor-end "/kythe/loc/end")
 
