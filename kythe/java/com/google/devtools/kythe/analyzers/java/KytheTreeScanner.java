@@ -338,8 +338,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, Void> {
   }
 
   private void visitAnnotations(EntrySet owner, List<JCAnnotation> annotations, Void v) {
-    // TODO(schroederc): edge from owner to each of its annotations
-    scanList(annotations, v);
+    for (JavaNode node : scanList(annotations, v)) {
+      entrySets.emitEdge(owner, EdgeKind.ANNOTATED_BY, node.entries);
+    }
   }
 
   // Emits a node for the given sym, an anchor encompassing the tree, and a REF edge

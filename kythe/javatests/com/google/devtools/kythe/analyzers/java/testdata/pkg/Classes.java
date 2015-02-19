@@ -2,8 +2,6 @@ package pkg;
 
 // Checks that classes are record/class nodes and enums are sum/enumClass nodes
 
-//- @Deprecated ref Deprecated
-@Deprecated
 //- @Classes defines N
 //- N.node/kind record
 //- N.subkind class
@@ -34,11 +32,4 @@ public class Classes {
   //- E.subkind enumClass
   //- E childof N
   private static enum Enum {}
-
-  //- @Deprecated ref Deprecated
-  //- @Override ref Override
-  @Override @Deprecated
-  public String toString() {
-    return "Classes";
-  }
 }
