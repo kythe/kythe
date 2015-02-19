@@ -17,11 +17,14 @@
 package com.google.devtools.kythe.platform.java.helpers;
 
 import com.sun.tools.javac.code.Scope;
+import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import com.sun.tools.javac.code.Symbol.TypeSymbol;
+import com.sun.tools.javac.code.Symtab;
 import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.code.Types;
 import com.sun.tools.javac.util.Context;
+import com.sun.tools.javac.util.Names;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -54,5 +57,27 @@ public class JavacUtil {
       }
     }
     return supers;
+  }
+
+  /** Searches in the symbol table to find a class with a particular name. */
+  public static ClassSymbol getClassSymbol(Context context, String name) {
+    Symtab symtab = Symtab.instance(context);
+    Names names = Names.instance(context);
+
+    int len = name.length();
+    char[] nameChars = name.toCharArray();
+    int dotIndex = len;
+    while (true) {
+      ClassSymbol s = symtab.classes.get(names.fromChars(nameChars, 0, len));
+      if (s != null) {
+        return s;
+      }
+      dotIndex = name.substring(0, dotIndex).lastIndexOf('.');
+      if (dotIndex < 0) {
+        break;
+      }
+      nameChars[dotIndex] = '$';
+    }
+    return null;
   }
 }

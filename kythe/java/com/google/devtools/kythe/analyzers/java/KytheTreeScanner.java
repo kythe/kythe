@@ -112,7 +112,30 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, Void> {
     if (imprt.qualid instanceof JCFieldAccess) {
       JCFieldAccess imprtField = (JCFieldAccess) imprt.qualid;
       // TODO(schroeder): emit package node for imprtField.selected
-      return emitNameUsage(imprtField, imprtField.sym, imprtField.name);
+
+      if (imprtField.name.toString().equals("*")) {
+        return null;
+      }
+
+      Symbol sym = imprtField.sym;
+      if (sym == null && imprt.isStatic()) {
+        // Static imports don't have their symbol populated so we search for the symbol.
+
+        ClassSymbol cls =
+            JavacUtil.getClassSymbol(context, imprtField.selected + "." + imprtField.name);
+        if (cls != null) {
+          // Import was a inner class import
+          sym = cls;
+        } else {
+          cls = JavacUtil.getClassSymbol(context, imprtField.selected.toString());
+          if (cls != null) {
+            // Import may be a class member
+            sym = cls.members().lookup(imprtField.name).sym;
+          }
+        }
+      }
+
+      return emitNameUsage(imprtField, sym, imprtField.name);
     }
     return scan(imprt.qualid, v);
   }
