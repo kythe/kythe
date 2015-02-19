@@ -14,6 +14,8 @@
 (ns ui.service
   "Namespace for functions communicating with the xrefs server"
   (:require [ajax.core :refer [GET POST]]
+            [goog.crypt.base64 :as b64]
+            [ui.schema :as schema]
             [ui.util :as util]))
 
 (defn- unwrap-corpus-roots-response [resp]
@@ -54,21 +56,32 @@
      :handler (comp handler unwrap-dir-response)
      :error-handler error-handler}))
 
-(defn- unwrap-xrefs-response [resp]
-  (into {} (for [[k refs] resp]
-             [k (for [ref refs]
-                  (assoc ref :file {:ticket (:file ref)
-                                    :vname (util/ticket->vname (:file ref))}))])))
+(defn- unwrap-edges-response [resp]
+  {:edge_set (first (:edge_set resp))
+   :nodes (into {} (map (juxt :ticket
+                          #(into {} (map (juxt :name
+                                           (fn [fact]
+                                             (util/fix-encoding (b64/decodeString (:value fact)))))
+                                      (:fact %))))
+                     (:node resp)))
+   :next (:next_page_token resp)})
 
-(defn get-xrefs
-  "Requests the cross-references for the given node ticket"
-  [ticket handler error-handler]
-  (GET "xrefs"
-    {:params {:ticket ticket}
-     :response-format :json
-     :keywords? true
-     :handler (comp handler unwrap-xrefs-response)
-     :error-handler error-handler}))
+(defn get-edges
+  "Requests the outward edges from the given node ticket"
+  ([ticket handler error-handler]
+   (get-edges ticket {} handler error-handler))
+  ([ticket opts handler error-handler]
+   (POST "edges"
+     {:params (merge {:filter [schema/node-kind-fact
+                               schema/anchor-loc-filter]
+                      :page_size 20}
+                opts
+                {:ticket (if (seq? ticket) ticket [ticket])})
+      :format :json
+      :response-format :json
+      :keywords? true
+      :handler (comp handler unwrap-edges-response)
+      :error-handler error-handler})))
 
 (defn get-file
   "Requests the source text and decorations of the given file"

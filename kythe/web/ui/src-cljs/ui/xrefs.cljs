@@ -16,12 +16,75 @@
   (:require [cljs.core.async :refer [put!]]
             [om.core :as om :include-macros true]
             [om.dom :as dom :include-macros true]
+            [ui.schema :as schema]
+            [ui.service :as service]
             [ui.util :refer [path-display]]))
+
+(defn- fact-value [nodes ticket fact-name]
+  (get (get nodes ticket) fact-name))
+
+(defn- node-kind [nodes ticket]
+  (or (fact-value nodes ticket "/kythe/node/kind") "UNKNOWN"))
+
+(defn- display-node [file-to-view xrefs-to-view nodes ticket with-link]
+  (dom/div nil
+    (let [kind (node-kind nodes ticket)]
+      (if (= kind "anchor")
+        (dom/a #js {:href "#"
+                    :onClick (fn [_]
+                               (service/get-edges ticket {:kind ["/kythe/edge/childof"]}
+                                 (fn [edges]
+                                   (put! file-to-view
+                                     {:ticket (first (:target_ticket (first (:group (:edge_set edges)))))
+                                      :anchor ticket
+                                      :offset (fact-value nodes ticket schema/anchor-start)}))
+                                 #(.log js/console (str "Couldn't find file for " ticket))))} ;; TODO display error
+          kind)
+        kind))
+    " "
+    (if with-link
+      (dom/a #js {:href "#"
+                  :onClick (fn [_] (put! xrefs-to-view ticket))}
+        ticket)
+      ticket)))
+
+(defn- page-navigation [xrefs-to-view pages current-page-token ticket]
+  (let [current-page (first (first (filter #(= (second %) current-page-token) (map-indexed (fn [i t] [i t]) pages))))
+        prev-page (when (> current-page 0)
+                    (nth pages (dec current-page)))
+        next-page (when (< (inc current-page) (count pages))
+                    (nth pages (inc current-page)))]
+   (dom/nav nil
+     (apply dom/ul #js {:className "pagination pagination-sm"}
+       (concat
+         [(dom/li #js {:className (when-not prev-page "disabled")}
+            (dom/a #js {:href "#"
+                        :ariaLabel "Previous"
+                        :onClick (when prev-page
+                                   #(put! xrefs-to-view {:ticket ticket
+                                                         :page_token prev-page}))}
+              "<"))]
+         (map-indexed (fn [page token]
+                        (dom/li #js {:className (when (= token current-page-token)
+                                                  "active")}
+                          (dom/a #js {:href "#"
+                                      :onClick (fn [_]
+                                                 (put! xrefs-to-view {:ticket ticket
+                                                                      :page_token token}))}
+                            (str (inc page)))))
+           pages)
+         [(dom/li #js {:className (when-not next-page "disabled")}
+            (dom/a #js {:href "#"
+                        :ariaLabel "Next"
+                        :onClick (when next-page
+                                   #(put! xrefs-to-view {:ticket ticket
+                                                         :page_token next-page}))}
+              ">"))])))))
 
 (defn- xrefs-view [state owner]
   (reify
     om/IRenderState
-    (render-state [_ {:keys [file-to-view]}]
+    (render-state [_ {:keys [file-to-view xrefs-to-view]}]
       (apply dom/div #js {:id "xrefs"
                           :className "row border"
                           :style (when (or (:hidden state) (empty? state))
@@ -37,18 +100,14 @@
           (:loading state) [(dom/span #js {:title (:loading state)}
                               "Loading xrefs... ")
                             (dom/span #js {:className "glyphicon glyphicon-repeat spinner"})]
-          :else (map (fn [[kind refs]]
-                       (dom/div nil
-                         (dom/strong nil (subs (str kind) 1))
-                         (apply dom/ul nil
-                           (map #(dom/li nil
-                                   (dom/a #js {:href "#"
-                                               :onClick (fn [_]
-                                                          (put! file-to-view
-                                                            (assoc (:file %)
-                                                              :offset (:start %)
-                                                              :anchor (:anchor %))))}
-                                     (str (path-display (:vname (:file %)))
-                                       "[" (:start %) ":" (:end %) "]")))
-                             (sort-by (juxt #(get-in % [:file :vname :path]) :start) refs)))))
-                  (sort-by first state)))))))
+          :else [(dom/strong nil (display-node file-to-view xrefs-to-view (:nodes state) (:source_ticket (:edge_set state)) false))
+                 (apply dom/ul nil
+                   (map (fn [grp]
+                          (dom/li nil
+                            (dom/strong nil (:kind grp))
+                            (apply dom/ul nil
+                              (map (fn [target]
+                                     (dom/li nil (display-node file-to-view xrefs-to-view (:nodes state) target true)))
+                                (sort-by #(str (node-kind (:nodes state) %) " " %) (:target_ticket grp))))))
+                     (sort-by :kind (:group (:edge_set state)))))
+                 (page-navigation xrefs-to-view (cons "" (:pages state)) (or (:current-page-token state) "") (:source_ticket (:edge_set state)))])))))

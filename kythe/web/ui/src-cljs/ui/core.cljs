@@ -61,11 +61,28 @@
                        (put! (om/get-state owner :hover) {:xref-jump anchor})))
             ticket)))
       (handle-ch (om/get-state owner :xrefs-to-view)
-        (fn [target-ticket]
-          (om/transact! state :current-xrefs (constantly {:loading target-ticket}))
-          (service/get-xrefs target-ticket
-            (replace-state! state :current-xrefs)
-            (replace-state! state :current-xrefs))))
+        (fn [target]
+          (let [target (if (:ticket target) target {:ticket target})
+                page-token (:page_token target)]
+           (om/transact! state :current-xrefs #(assoc % :loading (:ticket target)))
+           (service/get-edges (:ticket target) target
+             (fn [edges]
+               (om/transact! state :current-xrefs
+                 (fn [prev]
+                   (let [prev-pages (if (= (:source_ticket (:edge_set prev)) (:source_ticket (:edge_set edges)))
+                                      (:pages prev)
+                                      [])]
+                     (assoc edges :current-page-token page-token
+                       :pages
+                       (cond
+                         (not (:next edges)) prev-pages
+                         (and page-token (= (last prev-pages) page-token))
+                         (conj prev-pages (:next edges))
+                         (some #{(:next edges)} prev-pages)
+                         prev-pages
+                         :else
+                         [(:next edges)]))))))
+             (replace-state! state :current-xrefs)))))
       (service/get-corpus-roots
         (fn [corpus-roots]
           (om/transact! state :files
@@ -89,7 +106,8 @@
             {:init-state {:xrefs-to-view xrefs-to-view
                           :hover hover}}))
         (om/build xrefs-view (:current-xrefs state)
-          {:init-state {:file-to-view file-to-view}})))))
+          {:init-state {:xrefs-to-view xrefs-to-view
+                        :file-to-view file-to-view}})))))
 
 (def ^:private kythe-state (atom {:current-file {}
                                   :current-xrefs {}}))
