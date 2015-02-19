@@ -26,10 +26,10 @@ package xrefs
 
 import (
 	"bytes"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"log"
-	"strconv"
 
 	"kythe/go/services/xrefs"
 	"kythe/go/storage/table"
@@ -109,11 +109,15 @@ func (t *Table) Edges(req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
 	}
 
 	if req.GetPageToken() != "" {
-		n, err := strconv.Atoi(req.GetPageToken())
-		if err != nil || n < 0 {
+		rec, err := base64.StdEncoding.DecodeString(req.GetPageToken())
+		if err != nil {
 			return nil, fmt.Errorf("invalid page_token: %q", req.GetPageToken())
 		}
-		stats.skip = n
+		var t srvpb.PageToken
+		if err := proto.Unmarshal(rec, &t); err != nil || t.GetIndex() < 0 {
+			return nil, fmt.Errorf("invalid page_token: %q", req.GetPageToken())
+		}
+		stats.skip = int(t.GetIndex())
 	}
 	pageToken := stats.skip
 
@@ -193,7 +197,11 @@ func (t *Table) Edges(req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
 
 	if pageToken+stats.total != totalEdgesPossible && stats.total != 0 {
 		// TODO: take into account an empty last page (due to kind filters)
-		reply.NextPageToken = proto.String(strconv.Itoa(pageToken + stats.total))
+		rec, err := proto.Marshal(&srvpb.PageToken{Index: proto.Int(pageToken + stats.total)})
+		if err != nil {
+			return nil, fmt.Errorf("error marshalling page token: %v", err)
+		}
+		reply.NextPageToken = proto.String(base64.StdEncoding.EncodeToString(rec))
 	}
 	return reply, nil
 }
