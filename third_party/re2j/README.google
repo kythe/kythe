@@ -1,0 +1,10 @@
+URL: https://github.com/google/re2j/releases/download/re2j-1.0/re2j-1.0.jar
+Version: 1.0
+License: New BSD License: http://opensource.org/licenses/BSD-3-Clause
+
+Description:
+RE2 is a regular expression engine that runs in time linear in the size of the
+input.  RE2/J is a port of RE2 to pure Java.
+
+Local modifications:
+No Modifications.

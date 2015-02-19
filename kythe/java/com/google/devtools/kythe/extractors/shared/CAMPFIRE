@@ -30,7 +30,8 @@
         "//kythe/proto:storage_proto",
         "//third_party/gson",
         "//third_party/guava",
-        "//third_party/protobuf:protobuf_jar"
+        "//third_party/protobuf:protobuf_jar",
+        "//third_party/re2j"
       ]
     }
   }

@@ -1,0 +1,11 @@
+[
+  {
+    "name": "re2j",
+    "kind": "java_external_jar",
+    "inputs": {
+      "srcs": [
+        "re2j-1.0.jar"
+      ]
+    }
+  }
+]

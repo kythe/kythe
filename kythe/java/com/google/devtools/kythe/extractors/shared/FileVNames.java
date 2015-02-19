@@ -25,6 +25,8 @@ import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
 import com.google.gson.reflect.TypeToken;
+import com.google.re2j.Matcher;
+import com.google.re2j.Pattern;
 
 import java.io.FileReader;
 import java.io.IOException;
@@ -32,9 +34,6 @@ import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Stack;
-import java.util.regex.MatchResult;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Utility for configuring base {@link VName}s to use for particular file paths. Useful for
@@ -54,9 +53,7 @@ import java.util.regex.Pattern;
  * The {@link VName} template values can contain markers such as @1@ or @2@ that will be replaced by
  * the first or second regex groups in the pathRegex.
  *
- * NOTE: regex syntax is currently based on Java's
- *       http://docs.oracle.com/javase/8/docs/api/java/util/regex/Pattern.html spec.  This is likely
- *       to change.
+ * NOTE: regex syntax is RE2: https://code.google.com/p/re2/wiki/Syntax
  */
 public class FileVNames {
   private static final Gson GSON = new GsonBuilder()
@@ -110,8 +107,6 @@ public class FileVNames {
 
   /** Base {@link VName} to use for files matching {@code pattern}. */
   private static class BaseFileVName {
-    // TODO(schroederc): ensure pattern syntax is consistent across implementations (probably by
-    //                   using an RE2 implementation)
     public final Pattern pattern;
     public final VNameTemplate vname;
 
@@ -152,15 +147,15 @@ public class FileVNames {
     private static final Pattern replacerMatcher  = Pattern.compile("@(\\d+)@");
     private static String fillIn(String tmpl, Matcher m) {
       Matcher replacers = replacerMatcher.matcher(tmpl);
-      Stack<MatchResult> matches = new Stack<MatchResult>();
+      Stack<ReplacementMarker> matches = new Stack<ReplacementMarker>();
       while (replacers.find()) {
-        matches.push(replacers.toMatchResult());
+        matches.push(new ReplacementMarker(replacers.start(), replacers.end(),
+                Integer.parseInt(replacers.group(1))));
       }
       StringBuilder builder = new StringBuilder(tmpl);
       while (!matches.isEmpty()) {
-        MatchResult res = matches.pop();
-        int grp = Integer.parseInt(res.group(1));
-        builder.replace(res.start(), res.end(), m.group(grp));
+        ReplacementMarker res = matches.pop();
+        builder.replace(res.start, res.end, m.group(res.grp));
       }
       return builder.toString();
     }
@@ -168,6 +163,17 @@ public class FileVNames {
     @Override
     public String toString() {
       return String.format("{corpus: %s, root: %s, path: %s}", corpus, root, path);
+    }
+  }
+
+  /** Representation of a '@n@' marker's span and integer parse of 'n'. */
+  private static class ReplacementMarker {
+    final int start, end, grp;
+
+    ReplacementMarker(int start, int end, int grp) {
+      this.start = start;
+      this.end = end;
+      this.grp = grp;
     }
   }
 
