@@ -131,3 +131,9 @@ message FileDecorations {
   // The decorations located in the file, sorted by starting offset.
   repeated Decoration decoration = 4;
 }
+
+// Internal encoding for an EdgesReply page_token
+message PageToken {
+  // Index into sequence of edges to return in EdgesReply.
+  optional int32 index = 1;
+}
