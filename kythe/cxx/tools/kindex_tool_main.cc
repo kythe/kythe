@@ -38,7 +38,7 @@
 
 DEFINE_string(assemble, "", "Assemble positional args into output file");
 DEFINE_string(explode, "", "Explode this kindex file into its constituents");
-DEFINE_bool(suppress_header_info, false, "Suppress header search information.");
+DEFINE_bool(suppress_details, false, "Suppress CU details.");
 
 static void DumpIndexFile(const std::string& path) {
   using namespace google::protobuf::io;
@@ -58,8 +58,8 @@ static void DumpIndexFile(const std::string& path) {
       int out_fd = open(out_path.c_str(), O_WRONLY | O_CREAT | O_TRUNC,
                         S_IREAD | S_IWRITE);
       CHECK_GE(out_fd, 0) << "Couldn't open " << out_path << " for writing.";
-      if (FLAGS_suppress_header_info) {
-        unit.clear_header_search_info();
+      if (FLAGS_suppress_details) {
+        unit.clear_details();
       }
       FileOutputStream file_output_stream(out_fd);
       CHECK(google::protobuf::TextFormat::Print(unit, &file_output_stream));

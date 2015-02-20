@@ -41,6 +41,7 @@
 #include "kythe/cxx/common/index_pack.h"
 #include "kythe/proto/analysis.pb.h"
 #include "kythe/proto/claim.pb.h"
+#include "kythe/proto/cxx.pb.h"
 
 #include "IndexerFrontendAction.h"
 #include "KytheGraphObserver.h"
@@ -146,31 +147,38 @@ static void DecodeIndexPack(const std::string &cu_hash,
 }
 
 static void DecodeHeaderSearchInformation(const proto::CompilationUnit &unit,
-                                          HeaderSearchInformation *info) {
-  if (!unit.has_header_search_info()) {
-    info->IsValid = false;
+                                          HeaderSearchInfo *info) {
+  info->is_valid = false;
+  kythe::proto::CxxCompilationUnitDetails details;
+  for (const auto &any : unit.details()) {
+    if (any.type_uri() == kCxxCompilationUnitDetailsURI) {
+      info->is_valid = UnpackAny(any, &details);
+      break;
+    }
+  }
+  if (!info->is_valid) {
     return;
   }
-  const auto &info_proto = unit.header_search_info();
-  info->AngledDirIdx = info_proto.first_angled_dir();
-  info->SystemDirIdx = info_proto.first_system_dir();
+  const auto &info_proto = details.header_search_info();
+  info->angled_dir_idx = info_proto.first_angled_dir();
+  info->system_dir_idx = info_proto.first_system_dir();
   for (const auto &dir : info_proto.dir()) {
-    info->Paths.push_back(std::make_pair(
+    info->paths.push_back(std::make_pair(
         dir.path(), static_cast<clang::SrcMgr::CharacteristicKind>(
                         dir.characteristic_kind())));
   }
-  for (const auto &prefix : unit.system_header_prefix()) {
-    info->SystemPrefixes.push_back(
+  for (const auto &prefix : details.system_header_prefix()) {
+    info->system_prefixes.push_back(
         std::make_pair(prefix.prefix(), prefix.is_system_header()));
   }
-  if (!(info->AngledDirIdx <= info->SystemDirIdx &&
-        info->SystemDirIdx <= info->Paths.size())) {
+  if (!(info->angled_dir_idx <= info->system_dir_idx &&
+        info->system_dir_idx <= info->paths.size())) {
     fprintf(stderr,
             "Warning: unit has header search info, but it is ill-formed.\n");
-    info->IsValid = false;
+    info->is_valid = false;
     return;
   }
-  info->IsValid = true;
+  info->is_valid = true;
 }
 
 /// \brief Does `input` end with `suffix`?
@@ -325,11 +333,12 @@ Examples:
                                        virtual_file_system);
     observer.set_claimant(unit.v_name());
     observer.set_starting_context(unit.entry_context());
-    kythe::HeaderSearchInformation header_search_info;
+    kythe::HeaderSearchInfo header_search_info;
     DecodeHeaderSearchInformation(unit, &header_search_info);
 
     for (const auto &input : unit.required_input()) {
-      if (input.has_info() && input.info().has_path() && input.has_v_name()) {
+      if (input.has_info() && !input.info().path().empty() &&
+          input.has_v_name()) {
         virtual_file_system->SetVName(input.info().path(), input.v_name());
       }
       const std::string &file_path = input.info().path();

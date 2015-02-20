@@ -20,8 +20,8 @@ KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}" \
     "${EXTRACTOR}" --with_executable "/usr/bin/g++" \
     -I./kythe/cxx/extractor/testdata -DMACRO \
     ./kythe/cxx/extractor/testdata/main_source_file_env_dep.cc
-"${KINDEX_TOOL}" -suppress_header_info -explode "${INDEX_PATH_WITH_MACRO}"
-"${KINDEX_TOOL}" -suppress_header_info -explode "${INDEX_PATH_WITHOUT_MACRO}"
+"${KINDEX_TOOL}" -suppress_details -explode "${INDEX_PATH_WITH_MACRO}"
+"${KINDEX_TOOL}" -suppress_details -explode "${INDEX_PATH_WITHOUT_MACRO}"
 diff "${BASE_DIR}/main_source_file_env_dep_with.UNIT" \
     "${INDEX_PATH_WITH_MACRO}_UNIT"
 diff "${BASE_DIR}/main_source_file_env_dep_without.UNIT" \

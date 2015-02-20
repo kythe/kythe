@@ -124,7 +124,7 @@ int main(int argc, char* argv[]) {
             const kythe::PreprocessorTranscript& transcript,
             const std::unordered_map<std::string, kythe::SourceFile>&
                 source_files,
-            const kythe::HeaderSearchInformation& header_search_info,
+            const kythe::HeaderSearchInfo& header_search_info,
             bool had_errors) {
           std::unique_ptr<kythe::IndexWriterSink> sink;
           if (using_index_packs) {

@@ -33,6 +33,7 @@
 #include "glog/logging.h"
 #include "kythe/cxx/common/path_utils.h"
 #include "kythe/proto/analysis.pb.h"
+#include "kythe/proto/cxx.pb.h"
 #include "third_party/llvm/src/clang_builtin_headers.h"
 #include "third_party/llvm/src/cxx_extractor_preprocessor_utils.h"
 
@@ -633,9 +634,10 @@ class ExtractorAction : public clang::PreprocessorFrontendAction {
     main_source_file_ = main_source_file_stdin_alternate_.empty()
                             ? main_source_file_
                             : main_source_file_stdin_alternate_;
+    // Include information about the header search state in the CU.
     auto& header_search_info =
         getCompilerInstance().getPreprocessor().getHeaderSearchInfo();
-    HeaderSearchInformation info;
+    HeaderSearchInfo info;
     info.angled_dir_idx = header_search_info.search_dir_size();
     info.system_dir_idx = header_search_info.search_dir_size();
     info.is_valid = true;
@@ -664,7 +666,9 @@ class ExtractorAction : public clang::PreprocessorFrontendAction {
       // TODO(zarko): Support non-LT_NormalDir entries (these are frameworks
       // and header maps).
       if (!i->isNormalDir()) {
-        LOG(WARNING) << "Can't reproduce this include lookup state.";
+        LOG(WARNING) << "Can't reproduce include lookup state for "
+                     << main_source_file_ << ": " << i->getName()
+                     << " is not a normal directory.";
         info.is_valid = false;
         break;
       }
@@ -810,7 +814,7 @@ void IndexWriter::WriteIndex(
     std::unique_ptr<IndexWriterSink> sink, const std::string& main_source_file,
     const std::string& entry_context,
     const std::unordered_map<std::string, SourceFile>& source_files,
-    const HeaderSearchInformation& header_search_info, bool had_errors) {
+    const HeaderSearchInfo& header_search_info, bool had_errors) {
   kythe::proto::CompilationUnit unit;
   std::string identifying_blob;
   identifying_blob.append(corpus_);
@@ -829,7 +833,8 @@ void IndexWriter::WriteIndex(
   unit_vname->clear_path();
 
   if (header_search_info.is_valid) {
-    auto* info = unit.mutable_header_search_info();
+    kythe::proto::CxxCompilationUnitDetails cxx_details;
+    auto* info = cxx_details.mutable_header_search_info();
     info->set_first_angled_dir(header_search_info.angled_dir_idx);
     info->set_first_system_dir(header_search_info.system_dir_idx);
     for (const auto& path : header_search_info.paths) {
@@ -838,10 +843,11 @@ void IndexWriter::WriteIndex(
       dir->set_characteristic_kind(path.second);
     }
     for (const auto& prefix : header_search_info.system_prefixes) {
-      auto* proto = unit.add_system_header_prefix();
+      auto* proto = cxx_details.add_system_header_prefix();
       proto->set_is_system_header(prefix.second);
       proto->set_prefix(prefix.first);
     }
+    PackAny(cxx_details, kCxxCompilationUnitDetailsURI, unit.add_details());
   }
 
   for (const auto& file : source_files) {

@@ -7,6 +7,7 @@
         "analysis.proto"
       ],
       "proto_libs": [
+        ":any_proto",
         ":storage_proto"
       ],
       "jars": [
@@ -36,6 +37,22 @@
       "proto_libs": [
         ":storage_proto"
       ],
+      "cc_libs": [
+        "//third_party/protobuf:protobuf_cc"
+      ]
+    },
+    "properties": {
+      "cc_api": true
+    }
+  },
+  {
+    "name": "cxx_proto",
+    "kind": "proto_library",
+    "inputs": {
+      "srcs": [
+        "cxx.proto"
+      ],
+      "proto_libs": [],
       "cc_libs": [
         "//third_party/protobuf:protobuf_cc"
       ]

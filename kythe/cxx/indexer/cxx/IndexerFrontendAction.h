@@ -36,6 +36,7 @@
 #include "clang/Lex/HeaderSearch.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Tooling/Tooling.h"
+#include "kythe/cxx/common/cxx_details.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/Twine.h"
 
@@ -44,15 +45,6 @@
 #include "IndexerPPCallbacks.h"
 
 namespace kythe {
-
-/// \brief Reproduces Clang's internal header search state.
-struct HeaderSearchInformation {
-  bool IsValid;
-  unsigned AngledDirIdx;
-  unsigned SystemDirIdx;
-  std::vector<std::pair<std::string, clang::SrcMgr::CharacteristicKind>> Paths;
-  std::vector<std::pair<std::string, bool>> SystemPrefixes;
-};
 
 /// \brief Runs a given tool on a piece of code with a given assumed filename.
 /// \returns true on success, false on failure.
@@ -69,7 +61,7 @@ bool RunToolOnCode(std::unique_ptr<clang::FrontendAction> tool_action,
 class IndexerFrontendAction : public clang::ASTFrontendAction {
 public:
   explicit IndexerFrontendAction(GraphObserver *GO,
-                                 const HeaderSearchInformation &Info)
+                                 const HeaderSearchInfo &Info)
       : Observer(GO), HeaderSearchInfo(Info) {
     assert(GO != nullptr);
   }
@@ -88,12 +80,12 @@ private:
   std::unique_ptr<clang::ASTConsumer>
   CreateASTConsumer(clang::CompilerInstance &CI,
                     llvm::StringRef Filename) override {
-    if (HeaderSearchInfo.IsValid) {
+    if (HeaderSearchInfo.is_valid) {
       auto &HeaderSearch = CI.getPreprocessor().getHeaderSearchInfo();
       auto &FileManager = CI.getFileManager();
       std::vector<clang::DirectoryLookup> Lookups;
       unsigned CurrentIdx = 0;
-      for (const auto &Path : HeaderSearchInfo.Paths) {
+      for (const auto &Path : HeaderSearchInfo.paths) {
         const clang::DirectoryEntry *DirEnt =
             FileManager.getDirectory(Path.first);
         if (DirEnt != nullptr) {
@@ -103,18 +95,18 @@ private:
           // This can happen if a path was included in the HeaderSearchInfo,
           // but no headers were found underneath that path during extraction.
           // We'll prune out that path here.
-          if (CurrentIdx < HeaderSearchInfo.AngledDirIdx) {
-            --HeaderSearchInfo.AngledDirIdx;
+          if (CurrentIdx < HeaderSearchInfo.angled_dir_idx) {
+            --HeaderSearchInfo.angled_dir_idx;
           }
-          if (CurrentIdx < HeaderSearchInfo.SystemDirIdx) {
-            --HeaderSearchInfo.SystemDirIdx;
+          if (CurrentIdx < HeaderSearchInfo.system_dir_idx) {
+            --HeaderSearchInfo.system_dir_idx;
           }
         }
       }
       HeaderSearch.ClearFileInfo();
-      HeaderSearch.SetSearchPaths(Lookups, HeaderSearchInfo.AngledDirIdx,
-                                  HeaderSearchInfo.SystemDirIdx, false);
-      HeaderSearch.SetSystemHeaderPrefixes(HeaderSearchInfo.SystemPrefixes);
+      HeaderSearch.SetSearchPaths(Lookups, HeaderSearchInfo.angled_dir_idx,
+                                  HeaderSearchInfo.system_dir_idx, false);
+      HeaderSearch.SetSystemHeaderPrefixes(HeaderSearchInfo.system_prefixes);
     }
     if (Observer) {
       Observer->setSourceManager(&CI.getSourceManager());
@@ -143,7 +135,7 @@ private:
   /// Whether to visit template instantiations.
   BehaviorOnTemplates TemplateMode = BehaviorOnTemplates::VisitInstantiations;
   /// Configuration information for header search.
-  HeaderSearchInformation HeaderSearchInfo;
+  HeaderSearchInfo HeaderSearchInfo;
 };
 
 /// \brief Allows stdin to be replaced with a mapped file.

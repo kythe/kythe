@@ -25,6 +25,7 @@
       ],
       "cc_libs": [
         "//kythe/cxx/common:lib",
+        "//kythe/proto:cxx_proto",
         "//kythe/proto:storage_proto",
         "//third_party/gflags",
         "//third_party/llvm:lib",
@@ -44,6 +45,7 @@
       ],
       "cc_libs": [
         ":lib",
+        "//kythe/proto:cxx_proto",
         "//kythe/proto:storage_proto",
         "//third_party/gflags",
         "//third_party/googletest:lib",
@@ -64,6 +66,7 @@
         "//kythe/cxx/common:lib",
         "//kythe/proto:analysis_proto",
         "//kythe/proto:claim_proto",
+        "//kythe/proto:cxx_proto",
         "//kythe/proto:storage_proto",
         "//third_party/gflags",
         "//third_party/glog",
