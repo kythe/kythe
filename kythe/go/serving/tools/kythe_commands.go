@@ -47,10 +47,8 @@ var (
 	lsURIs bool
 
 	// node flags
-	nodeFilters string
-
-	// node/edges shared flags
-	showFileText bool
+	nodeFilters       string
+	factSizeThreshold int
 
 	// edges flags
 	countOnly bool
@@ -136,13 +134,18 @@ var (
 			return displayEdges(reply)
 		})
 
-	cmdNode = newCommand("node", "[--filters factFilter1,factFilter2,...] [--show_text] <ticket>",
+	cmdNode = newCommand("node", "[--filters factFilter1,factFilter2,...] [--max_fact_size] <ticket>",
 		"Retrieve a node's facts",
 		func(flag *flag.FlagSet) {
 			flag.StringVar(&nodeFilters, "filters", "", "Comma-separated list of node fact filters (default returns all)")
-			flag.BoolVar(&showFileText, "show_text", false, "Show the /kythe/text fact when available")
+			flag.IntVar(&factSizeThreshold, "max_fact_size", 64,
+				"Maximum size of fact values to display.  Facts with byte lengths longer than this value will only have their fact names displayed.")
 		},
 		func(flag *flag.FlagSet) error {
+			if factSizeThreshold < 0 {
+				return fmt.Errorf("invalid --max_fact_size value (must be non-negative): %d", factSizeThreshold)
+			}
+
 			req := &xpb.NodesRequest{
 				Ticket: flag.Args(),
 			}

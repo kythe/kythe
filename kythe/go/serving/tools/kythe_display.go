@@ -180,8 +180,12 @@ func displayNodes(nodes []*xpb.NodeInfo) error {
 			return err
 		}
 		for _, fact := range n.Fact {
-			if showFileText || fact.GetName() != schema.FileTextFact {
-				if _, err := fmt.Fprintf(out, "  %s\t%s\n", fact.GetName(), (fact.GetValue())); err != nil {
+			if len(fact.Value) <= factSizeThreshold {
+				if _, err := fmt.Fprintf(out, "  %s\t%s\n", fact.GetName(), fact.GetValue()); err != nil {
+					return err
+				}
+			} else {
+				if _, err := fmt.Fprintf(out, "  %s\n", fact.GetName()); err != nil {
 					return err
 				}
 			}
