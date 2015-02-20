@@ -227,7 +227,7 @@ public class JavaCompilationUnitExtractor {
     for (FileData data : fileContents) {
       String relativePath = results.relativePaths.get(data.getInfo().getPath());
       VName vname = fileVNames.lookupBaseVName(relativePath);
-      if (vname.getPath() == "") {
+      if (vname.getPath().isEmpty()) {
         vname = vname.toBuilder().setPath(data.getInfo().getPath()).build();
       }
       String sourceBasename = results.sourceFileNames.get(data.getInfo().getPath());

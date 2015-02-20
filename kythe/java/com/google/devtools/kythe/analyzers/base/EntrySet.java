@@ -198,7 +198,7 @@ public class EntrySet {
       ImmutableSortedMap<String, byte[]> properties = this.properties.build();
       VName source = this.source;
       if (source == null) {
-        if (sourceBuilder.hasSignature()) {
+        if (!sourceBuilder.getSignature().isEmpty()) {
           source = sourceBuilder.build();
         } else {
           source = sourceBuilder.clone()

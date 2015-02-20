@@ -58,18 +58,11 @@ public class KytheEntrySets {
     for (FileInput input : requiredInputs) {
       String digest = input.getInfo().getDigest();
       VName.Builder name = input.getVName().toBuilder();
-      Preconditions.checkArgument(name.hasPath(), "Required input VName must have path set");
-      if (!name.hasSignature()) {
+      Preconditions.checkArgument(!name.getPath().isEmpty(),
+          "Required input VName must have non-empty path");
+      if (name.getSignature().isEmpty()) {
         // Ensure file VName has digest signature
         name = name.setSignature(digest);
-      }
-      // Ensure Corpus/Root are set to eliminate any protobuf set/empty confusion
-      // TODO(schroederc): remove once using NWP
-      if (!name.hasCorpus()) {
-        name.setCorpus("");
-      }
-      if (!name.hasRoot()) {
-        name.setRoot("");
       }
       inputVNames.put(digest, name.build());
     }
