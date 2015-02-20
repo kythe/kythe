@@ -45,6 +45,28 @@ public class Generics<T> {
     Optional<Generics<String>> opt;
   }
 
+  //- @"Optional<?>" ref OptionalWild
+  //- OptionalWild.node/kind tapp
+  //- OptionalWild param.0 OptionalClass
+  //- OptionalWild param.1 Wildcard0
+  //- Wildcard0.node/kind absvar
+  //- OptionalWild named vname("pkg.Generics.Optional<?>","","","","java")
+  //- !{ Wildcard0 bounded/upper Anything0
+  //-    Wildcard0 bounded/lower Anything1 }
+  private static void wildcard(Optional<?> o) {}
+
+  //- @"Optional<? extends String>" ref OptionalWildString
+  //- OptionalWildString.node/kind tapp
+  //- OptionalWildString param.0 OptionalClass
+  //- OptionalWildString param.1 Wildcard1
+  //- Wildcard1.node/kind absvar
+  //- Wildcard1 bounded/upper Str
+  //- @String ref Str
+  //- !{ Wildcard1 bounded/lower Anything2 }
+  //- OptionalWildString named vname("pkg.Generics.Optional<? extends java.lang.String>","","","","java")
+  private static void wildcardBound(Optional<? extends String> o) {}
+
+  //- @Optional defines OptionalClass
   //- @T defines OptionalTVar
   //- OptionalTVar.node/kind absvar
   private static class Optional<T> {}
