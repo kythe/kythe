@@ -1,5 +1,29 @@
 [
   {
+    "name": "annotations_tests",
+    "kind": "verifier_test",
+    "properties": {
+      "language": "java"
+    },
+    "inputs": {
+      "srcs": [
+        "Annotations.java"
+      ],
+      "compilation": [
+        ":annotations_lib"
+      ]
+    }
+  },
+  {
+    "name": "annotations_lib",
+    "kind": "java_library",
+    "inputs": {
+      "srcs": [
+        "Annotations.java"
+      ]
+    }
+  },
+  {
     "name": "selectors_tests",
     "kind": "verifier_test",
     "properties": {

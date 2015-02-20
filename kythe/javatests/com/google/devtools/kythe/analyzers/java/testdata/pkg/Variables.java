@@ -8,8 +8,6 @@ import java.io.OutputStream;
 //- @Variables defines Class
 public class Variables {
 
-  //- @Deprecated ref Deprecated
-  @Deprecated
   //- @field defines V
   //- V.node/kind variable
   //- V childof Class

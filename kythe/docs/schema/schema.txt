@@ -75,6 +75,27 @@ Ordinals are used::
 typedef int Counter;
 --------------------------------------------------------------------------------
 
+[[annotatedby]]
+annotatedby
+~~~~~~~~~~~
+
+Brief description::
+  A *annotatedby* B if A provides metadata for B.
+Points from::
+  semantic nodes
+Points toward::
+  semantic nodes
+Ordinals are used::
+  never
+
+[kythe,Java,"Classes can be annotated."]
+--------------------------------------------------------------------------------
+//- @Deprecated ref Deprecated
+//- @E defines Class
+//- Class annotatedby Deprecated
+@Deprecated public class E {}
+--------------------------------------------------------------------------------
+
 [[callableas]]
 callableas
 ~~~~~~~~~~
