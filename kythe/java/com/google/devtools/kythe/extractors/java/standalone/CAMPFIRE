@@ -12,6 +12,7 @@
         "//kythe/java/com/google/devtools/kythe/extractors/java",
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
         "//kythe/java/com/google/devtools/kythe/extractors/shared:file_vnames",
+        "//kythe/java/com/google/devtools/kythe/platform/indexpack",
         "//kythe/proto:analysis_proto",
         "//kythe/proto:storage_proto",
         "//third_party/guava",
