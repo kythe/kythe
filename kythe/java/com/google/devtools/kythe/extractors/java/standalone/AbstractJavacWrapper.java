@@ -26,6 +26,7 @@ import com.google.devtools.kythe.extractors.java.JavaCompilationUnitExtractor;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.google.devtools.kythe.extractors.shared.FileVNames;
 import com.google.devtools.kythe.extractors.shared.IndexInfoUtils;
+import com.google.devtools.kythe.platform.indexpack.Archive;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Analysis.FileData;
 
@@ -50,6 +51,9 @@ import java.util.List;
  *                         the {@link CompilationUnit} will be made to be relative to this directory
  *
  *   KYTHE_OUTPUT_DIRECTORY: required directory path to store the resulting .kindex file
+ *
+ *   KYTHE_INDEX_PACK: if set to a non-empty value, interpret KYTHE_OUTPUT_DIRECTORY as the root of
+ *                     an indexpack instead of a collection of .kindex files
  */
 public abstract class AbstractJavacWrapper {
   public static final String DEFAULT_CORPUS = "kythe";
@@ -60,8 +64,8 @@ public abstract class AbstractJavacWrapper {
 
   /**
    * Given the command-line arguments to javac, construct a {@link CompilationUnit} and write it to
-   * a .kindex file. Parameters to the extraction logic are passed by environment variables (see
-   * class comment).
+   * a .kindex file or indexpack.  Parameters to the extraction logic are passed by environment
+   * variables (see class comment).
    */
   public void process(String[] args) {
     try {
@@ -79,9 +83,16 @@ public abstract class AbstractJavacWrapper {
                   readEnvironmentVariable("KYTHE_ROOT_DIRECTORY"));
         }
 
-        CompilationDescription indexInfo = processCompilation(
-            getCleanedUpArguments(args), extractor);
-        writeIndexInfoToFile(readEnvironmentVariable("KYTHE_OUTPUT_DIRECTORY"), indexInfo);
+        CompilationDescription indexInfo =
+            processCompilation(getCleanedUpArguments(args), extractor);
+
+        String outputDir = readEnvironmentVariable("KYTHE_OUTPUT_DIRECTORY");
+        if (Strings.isNullOrEmpty(System.getenv("KYTHE_INDEX_PACK"))) {
+          writeIndexInfoToFile(outputDir, indexInfo);
+        } else {
+          new Archive(outputDir).writeDescription(indexInfo);
+        }
+
         CompilationUnit compilationUnit = indexInfo.getCompilationUnit();
         if(compilationUnit.getHasCompileErrors()) {
           System.err.println("Errors encountered during compilation");
