@@ -19,6 +19,8 @@ package com.google.devtools.kythe.analyzers.base;
 /** Schema-defined Kythe node kinds. */
 public enum NodeKind {
   // Core kinds
+  ABS("abs"),
+  ABS_VAR("absvar"),
   ANCHOR("anchor"),
   CONSTANT("constant"),
   FILE("file"),

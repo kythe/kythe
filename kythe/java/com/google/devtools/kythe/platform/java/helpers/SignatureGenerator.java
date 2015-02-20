@@ -27,6 +27,7 @@ import com.sun.tools.javac.code.BoundKind;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import com.sun.tools.javac.code.Symbol.TypeSymbol;
+import com.sun.tools.javac.code.Symbol.TypeVariableSymbol;
 import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.code.Type.AnnotatedType;
 import com.sun.tools.javac.code.Type.ArrayType;
@@ -126,7 +127,11 @@ public class SignatureGenerator
   public Optional<String> getSignature(Symbol symbol) {
     try {
       StringBuilder sb = getStringBuilder();
-      symbol.accept(this, sb);
+      if (symbol instanceof TypeVariableSymbol) {
+        symbol.type.accept(this, sb);
+      } else {
+        symbol.accept(this, sb);
+      }
       return Optional.of(sb.toString());
     } catch (Throwable e) {
       // In case something unexpected happened during signature generation we do not want to

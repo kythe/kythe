@@ -33,8 +33,10 @@ import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.util.Name;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.lang.model.element.ElementKind;
 import javax.tools.JavaFileObject;
@@ -42,6 +44,7 @@ import javax.tools.JavaFileObject;
 /** Specialization of {@link KytheEntrySets} for Java. */
 public class JavaEntrySets extends KytheEntrySets {
   private final Map<Symbol, EntrySet> symbolNodes = new HashMap<>();
+  private final Map<Symbol, Set<String>> symbolSigs = new HashMap<Symbol, Set<String>>();
 
   public JavaEntrySets(FactEmitter emitter, VName compilationVName,
       List<FileInput> requiredInputs) {
@@ -58,6 +61,8 @@ public class JavaEntrySets extends KytheEntrySets {
    * emitted if necessary.
    */
   public EntrySet getNode(Symbol sym, String signature) {
+    checkSignature(sym, signature);
+
     EntrySet node;
     if ((node = symbolNodes.get(sym)) != null) {
       return node;
@@ -130,6 +135,7 @@ public class JavaEntrySets extends KytheEntrySets {
         return NodeKind.VARIABLE;
       case CONSTRUCTOR: case METHOD:
         return NodeKind.FUNCTION;
+      case TYPE_PARAMETER: return NodeKind.ABS_VAR;
       default:
         // TODO(schroederc): handle all cases, make this exceptional, and remove all null checks
         return null;
@@ -152,6 +158,19 @@ public class JavaEntrySets extends KytheEntrySets {
     }
     // This matches our {@link CustomFileObject#toUri()} logic
     return sourceFile.toUri().getHost();
+  }
+
+  /** Ensures that a particular {@link Symbol} is only associated with a single signature. */
+  private void checkSignature(Symbol sym, String signature) {
+    // TODO(schroederc): remove this check in production releases
+    if (!symbolSigs.containsKey(sym)) {
+      symbolSigs.put(sym, new HashSet<String>());
+    }
+    Set<String> signatures = symbolSigs.get(sym);
+    signatures.add(signature);
+    if (signatures.size() > 1) {
+      throw new IllegalStateException("Multiple signatures found for " + sym + ": " + signatures);
+    }
   }
 
   /**
