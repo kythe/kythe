@@ -142,7 +142,7 @@ TEST(IndexPack, ScanData) {
         kythe::proto::CompilationUnit unit;
         std::string error_text;
         if (!pack.ReadCompilationUnit(unit_hash, &unit, &error_text) ||
-            !error_text.empty() || !unit.has_revision()) {
+            !error_text.empty() || unit.revision().empty()) {
           unit_errors = true;
         } else if (unit.revision() == "unit_a" && !unit_a_ok) {
           unit_a_ok = true;
@@ -185,7 +185,6 @@ TEST(IndexPack, ReadCompilationUnit) {
   std::string error_text;
   EXPECT_TRUE(pack.ReadCompilationUnit("fakehash", &unit, &error_text));
   EXPECT_TRUE(error_text.empty());
-  EXPECT_TRUE(unit.has_revision());
   EXPECT_EQ("test", unit.revision());
   EXPECT_FALSE(pack.ReadCompilationUnit("notafile", &unit, &error_text));
   EXPECT_FALSE(error_text.empty());

@@ -1,11 +1,9 @@
 v_name {
   signature: "cu#701540b440f4a705d068bf22dca4963251447feb72b2cdecd24c83ac369dedf7"
-  corpus: ""
   language: "c++"
 }
 required_input {
   v_name {
-    corpus: ""
     path: "kythe/cxx/extractor/testdata/claim_main.cc"
     language: "c++"
   }
@@ -28,7 +26,6 @@ required_input {
 }
 required_input {
   v_name {
-    corpus: ""
     path: "kythe/cxx/extractor/testdata/claim_b.h"
     language: "c++"
   }
@@ -43,7 +40,6 @@ required_input {
 }
 required_input {
   v_name {
-    corpus: ""
     path: "kythe/cxx/extractor/testdata/claim_a.h"
     language: "c++"
   }
@@ -55,7 +51,6 @@ required_input {
     source_context: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   }
 }
-has_compile_errors: false
 argument: "/usr/bin/g++"
 argument: "-resource-dir"
 argument: "/kythe_builtins"

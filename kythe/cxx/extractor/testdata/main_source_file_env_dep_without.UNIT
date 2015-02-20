@@ -1,11 +1,9 @@
 v_name {
   signature: "cu#dffcbf93cf2aa88c7a32245e36e0645c481edcfbfb6484bb6ee0d2b0363439a7"
-  corpus: ""
   language: "c++"
 }
 required_input {
   v_name {
-    corpus: ""
     path: "kythe/cxx/extractor/testdata/main_source_file_env_dep.cc"
     language: "c++"
   }
@@ -17,7 +15,6 @@ required_input {
     source_context: "1d1caadc57d706619d2310f27c0fa261e7186c7b2ca3ffd513d0678ae50df764"
   }
 }
-has_compile_errors: false
 argument: "/usr/bin/g++"
 argument: "-resource-dir"
 argument: "/kythe_builtins"

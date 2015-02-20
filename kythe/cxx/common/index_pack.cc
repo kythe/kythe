@@ -578,12 +578,8 @@ bool IndexPack::ScanData(IndexPackFilesystem::DataKind kind,
 
 bool IndexPack::AddFileData(const kythe::proto::FileData &content,
                             std::string *error_text) {
-  if (!content.has_content()) {
-    *error_text = "Badly formed FileData message.";
-    return false;
-  }
   std::string digest;
-  if (content.has_info() && content.info().has_digest()) {
+  if (content.has_info()) {
     digest = content.info().digest();
   }
   return WriteData(IndexPackFilesystem::DataKind::kFileData,

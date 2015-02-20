@@ -1,11 +1,9 @@
 v_name {
   signature: "cu#4a9aa76e4ce8a7d496e9c24d1ef114887292b86e014c60c4b774c2c19224bdcf"
-  corpus: ""
   language: "c++"
 }
 required_input {
   v_name {
-    corpus: ""
     path: "kythe/cxx/extractor/testdata/transcript_main.cc"
     language: "c++"
   }
@@ -16,7 +14,6 @@ required_input {
   context {
     source_context: "2c886012e7f9c5683fdc2d9a82dbdf594995dfbee385842eadb6587d2a05a4ed"
     column {
-      offset: 0
       linked_context: "d6d64ed67e1b08c31ff4a965ee27e974a116603e8c81d777b57e3025e8d7c762"
     }
     column {
@@ -35,7 +32,6 @@ required_input {
 }
 required_input {
   v_name {
-    corpus: ""
     path: "kythe/cxx/extractor/testdata/transcript_b.h"
     language: "c++"
   }
@@ -49,7 +45,6 @@ required_input {
 }
 required_input {
   v_name {
-    corpus: ""
     path: "kythe/cxx/extractor/testdata/transcript_a.h"
     language: "c++"
   }
@@ -64,7 +59,6 @@ required_input {
     source_context: "e3d0e816288477f3e6f62eda2874525f0685207706ca4f73da94553fdfc5df24"
   }
 }
-has_compile_errors: false
 argument: "/usr/bin/g++"
 argument: "-resource-dir"
 argument: "/kythe_builtins"

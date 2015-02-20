@@ -17,7 +17,6 @@ required_input {
     source_context: "e67e72111b363d80c8124d28193926000980e1211c7986cacbd26aacc5528d48"
   }
 }
-has_compile_errors: false
 argument: "/usr/bin/g++"
 argument: "-resource-dir"
 argument: "/kythe_builtins"
