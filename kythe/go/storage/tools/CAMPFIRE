@@ -43,8 +43,7 @@
         "//kythe/go/util/encoding/rdf",
         "//kythe/go/util/kytheuri",
         "//kythe/go/util/schema",
-        "//kythe/proto:storage_proto",
-        "//third_party/go/github.com:protobuf"
+        "//kythe/proto:storage_proto"
       ]
     }
   },
@@ -58,8 +57,7 @@
       "go_pkgs": [
         "//kythe/go/platform/delimited",
         "//kythe/go/storage/vnameutil",
-        "//kythe/proto:storage_proto",
-        "//third_party/go/github.com:protobuf"
+        "//kythe/proto:storage_proto"
       ]
     }
   }

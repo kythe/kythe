@@ -165,8 +165,8 @@ func TestCancellation(t *testing.T) {
 	// Check that a callback returning a non-EOF error propagates an error to
 	// the caller.
 	var numEntries int
-	if err := p.Scan(nil, func(e *spb.Entry) error {
-		if e.GetFactName() == bomb.F {
+	if err := p.Scan(new(spb.ScanRequest), func(e *spb.Entry) error {
+		if e.FactName == bomb.F {
 			return errors.New(bomb.V)
 		}
 		numEntries++
@@ -182,8 +182,8 @@ func TestCancellation(t *testing.T) {
 
 	// Check that a callback returning io.EOF ends without error.
 	numEntries = 0
-	if err := p.Read(nil, func(e *spb.Entry) error {
-		if e.GetFactName() == bomb.F {
+	if err := p.Read(new(spb.ReadRequest), func(e *spb.Entry) error {
+		if e.FactName == bomb.F {
 			return io.EOF
 		}
 		numEntries++
@@ -200,20 +200,13 @@ type vname struct {
 	S, C, R, P, L string
 }
 
-func nilEmpty(s string) *string {
-	if s == "" {
-		return nil
-	}
-	return &s
-}
-
 func (v vname) proto() *spb.VName {
 	return &spb.VName{
-		Signature: nilEmpty(v.S),
-		Corpus:    nilEmpty(v.C),
-		Path:      nilEmpty(v.P),
-		Root:      nilEmpty(v.R),
-		Language:  nilEmpty(v.L),
+		Signature: v.S,
+		Corpus:    v.C,
+		Path:      v.P,
+		Root:      v.R,
+		Language:  v.L,
 	}
 }
 
@@ -225,8 +218,8 @@ type entry struct {
 func (e entry) proto() *spb.Entry {
 	return &spb.Entry{
 		Source:    e.S.proto(),
-		EdgeKind:  nilEmpty(e.K),
-		FactName:  nilEmpty(e.F),
+		EdgeKind:  e.K,
+		FactName:  e.F,
 		Target:    e.T.proto(),
 		FactValue: []byte(e.V),
 	}

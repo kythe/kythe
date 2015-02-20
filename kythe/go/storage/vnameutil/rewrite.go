@@ -53,14 +53,8 @@ func (r Rule) Apply(input string) (*spb.VName, bool) {
 	}, true
 }
 
-func (r Rule) expand(match []int, input string, template *string) *string {
-	if template != nil {
-		s := string(r.ExpandString(nil, *template, input, match))
-		if s != "" {
-			return &s
-		}
-	}
-	return nil
+func (r Rule) expand(match []int, input, template string) string {
+	return string(r.ExpandString(nil, template, input, match))
 }
 
 // Rules are an ordered set of rewriting rules.  Applying a group of rules
@@ -116,15 +110,14 @@ var fieldRE = regexp.MustCompile(`@(\w+)@`)
 
 // fixTemplate rewrites @x@ markers in the template to the ${x} markers used by
 // the regexp.Expand function, to simplify rewriting.
-func fixTemplate(s string) *string {
+func fixTemplate(s string) string {
 	if s == "" {
-		return nil
+		return ""
 	}
-	t := fieldRE.ReplaceAllStringFunc(strings.Replace(s, "$", "$$", -1),
+	return fieldRE.ReplaceAllStringFunc(strings.Replace(s, "$", "$$", -1),
 		func(s string) string {
 			return "${" + strings.Trim(s, "@") + "}"
 		})
-	return &t
 }
 
 type pattern struct {

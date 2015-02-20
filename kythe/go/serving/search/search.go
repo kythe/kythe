@@ -45,40 +45,40 @@ func (t *Table) Search(q *spb.SearchRequest) (*spb.SearchReply, error) {
 	tickets := stringset.New()
 	var err error
 
-	if q.Partial.GetSignature() != "" {
-		tickets, err = t.intersect(tickets, VNameVal("signature", q.Partial.GetSignature()))
+	if q.Partial.Signature != "" {
+		tickets, err = t.intersect(tickets, VNameVal("signature", q.Partial.Signature))
 		if err != nil {
 			return nil, err
 		} else if len(tickets) == 0 {
 			return constructReply(tickets), nil
 		}
 	}
-	if q.Partial.GetPath() != "" {
-		tickets, err = t.intersect(tickets, VNameVal("path", q.Partial.GetPath()))
+	if q.Partial.Path != "" {
+		tickets, err = t.intersect(tickets, VNameVal("path", q.Partial.Path))
 		if err != nil {
 			return nil, err
 		} else if len(tickets) == 0 {
 			return constructReply(tickets), nil
 		}
 	}
-	if q.Partial.GetLanguage() != "" {
-		tickets, err = t.intersect(tickets, VNameVal("language", q.Partial.GetLanguage()))
+	if q.Partial.Language != "" {
+		tickets, err = t.intersect(tickets, VNameVal("language", q.Partial.Language))
 		if err != nil {
 			return nil, err
 		} else if len(tickets) == 0 {
 			return constructReply(tickets), nil
 		}
 	}
-	if q.Partial.GetRoot() != "" {
-		tickets, err = t.intersect(tickets, VNameVal("root", q.Partial.GetRoot()))
+	if q.Partial.Root != "" {
+		tickets, err = t.intersect(tickets, VNameVal("root", q.Partial.Root))
 		if err != nil {
 			return nil, err
 		} else if len(tickets) == 0 {
 			return constructReply(tickets), nil
 		}
 	}
-	if q.Partial.GetCorpus() != "" {
-		tickets, err = t.intersect(tickets, VNameVal("corpus", q.Partial.GetCorpus()))
+	if q.Partial.Corpus != "" {
+		tickets, err = t.intersect(tickets, VNameVal("corpus", q.Partial.Corpus))
 		if err != nil {
 			return nil, err
 		} else if len(tickets) == 0 {
@@ -87,7 +87,7 @@ func (t *Table) Search(q *spb.SearchRequest) (*spb.SearchReply, error) {
 	}
 
 	for _, f := range q.Fact {
-		tickets, err = t.intersect(tickets, FactVal(f.GetName(), f.Value))
+		tickets, err = t.intersect(tickets, FactVal(f.Name, f.Value))
 		if err != nil {
 			return nil, err
 		} else if len(tickets) == 0 {

@@ -50,7 +50,7 @@
 //   // the third parameter to Open (or Create).
 //   err := pack.ReadUnits(ctx, "kythe", func(cu interface{}) error {
 //     for _, input := range cu.(*cpb.CompilationUnit).RequiredInput {
-//       bits, err := pack.ReadFile(ctx, input.GetDigest())
+//       bits, err := pack.ReadFile(ctx, input.Digest)
 //       if err != nil {
 //         return err
 //       }

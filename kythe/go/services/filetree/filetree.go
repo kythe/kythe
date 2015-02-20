@@ -32,8 +32,6 @@ import (
 
 	srvpb "kythe/proto/serving_proto"
 	spb "kythe/proto/storage_proto"
-
-	"github.com/golang/protobuf/proto"
 )
 
 // Service provides an interface to explore a tree of VName files.
@@ -62,9 +60,9 @@ func (m *Map) Populate(gs graphstore.Service) error {
 	start := time.Now()
 	log.Println("Populating in-memory file tree")
 	var total int
-	if err := gs.Scan(&spb.ScanRequest{FactPrefix: proto.String(schema.NodeKindFact)},
+	if err := gs.Scan(&spb.ScanRequest{FactPrefix: schema.NodeKindFact},
 		func(entry *spb.Entry) error {
-			if entry.GetFactName() == schema.NodeKindFact && string(entry.GetFactValue()) == schema.FileKind {
+			if entry.FactName == schema.NodeKindFact && string(entry.FactValue) == schema.FileKind {
 				m.AddFile(entry.Source)
 				total++
 			}
@@ -79,8 +77,8 @@ func (m *Map) Populate(gs graphstore.Service) error {
 // AddFile adds the given file VName to m.
 func (m *Map) AddFile(file *spb.VName) {
 	ticket := kytheuri.ToString(file)
-	path := filepath.Join("/", file.GetPath())
-	dir := m.ensureDir(file.GetCorpus(), file.GetRoot(), filepath.Dir(path))
+	path := filepath.Join("/", file.Path)
+	dir := m.ensureDir(file.Corpus, file.Root, filepath.Dir(path))
 	dir.FileTicket = addToSet(dir.FileTicket, ticket)
 }
 
@@ -93,7 +91,7 @@ func (m *Map) CorporaRoots() (*srvpb.CorpusRoots, error) {
 			roots = append(roots, root)
 		}
 		cr.Corpus = append(cr.Corpus, &srvpb.CorpusRoots_Corpus{
-			Corpus: proto.String(corpus),
+			Corpus: corpus,
 			Root:   roots,
 		})
 	}

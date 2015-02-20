@@ -42,24 +42,17 @@ type URI struct {
 	Language  string
 }
 
-func nilEmpty(s string) *string {
-	if s == "" {
-		return nil
-	}
-	return &s
-}
-
 // VName converts the URI to an equivalent Kythe VName protobuf message.
 func (u *URI) VName() *spb.VName {
 	if u == nil {
 		return new(spb.VName)
 	}
 	return &spb.VName{
-		Signature: nilEmpty(u.Signature),
-		Corpus:    nilEmpty(u.Corpus),
-		Root:      nilEmpty(u.Root),
-		Path:      nilEmpty(u.Path),
-		Language:  nilEmpty(u.Language),
+		Signature: u.Signature,
+		Corpus:    u.Corpus,
+		Root:      u.Root,
+		Path:      u.Path,
+		Language:  u.Language,
 	}
 }
 
@@ -117,11 +110,11 @@ func (u *URI) Equal(v *URI) bool { return u.String() == v.String() }
 // FromVName returns a Kythe URI for the given Kythe VName protobuf message.
 func FromVName(v *spb.VName) *URI {
 	return &URI{
-		Signature: v.GetSignature(),
-		Corpus:    v.GetCorpus(),
-		Root:      v.GetRoot(),
-		Path:      v.GetPath(),
-		Language:  v.GetLanguage(),
+		Signature: v.Signature,
+		Corpus:    v.Corpus,
+		Root:      v.Root,
+		Path:      v.Path,
+		Language:  v.Language,
 	}
 }
 

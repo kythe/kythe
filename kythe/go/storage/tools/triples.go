@@ -117,7 +117,7 @@ func main() {
 	}
 
 	for entry := range entries {
-		if schema.EdgeDirection(entry.GetEdgeKind()) == schema.Reverse && !*keepReverseEdges {
+		if schema.EdgeDirection(entry.EdgeKind) == schema.Reverse && !*keepReverseEdges {
 			reverseEdges++
 			continue
 		}
@@ -141,19 +141,19 @@ func main() {
 // toTriple converts an Entry to the triple file format. Returns an error if
 // the entry is not valid.
 func toTriple(entry *spb.Entry) (*rdf.Triple, error) {
-	if entry.Source == nil || (entry.Target == nil) != (entry.GetEdgeKind() == "") {
+	if entry.Source == nil || (entry.Target == nil) != (entry.EdgeKind == "") {
 		return nil, fmt.Errorf("invalid entry: %v", entry)
 	}
 
 	t := &rdf.Triple{
 		Subject: kytheuri.FromVName(entry.Source).String(),
 	}
-	if entry.GetEdgeKind() != "" {
-		t.Predicate = entry.GetEdgeKind()
+	if entry.EdgeKind != "" {
+		t.Predicate = entry.EdgeKind
 		t.Object = kytheuri.FromVName(entry.Target).String()
 	} else {
-		t.Predicate = entry.GetFactName()
-		t.Object = string(entry.GetFactValue())
+		t.Predicate = entry.FactName
+		t.Object = string(entry.FactValue)
 	}
 	return t, nil
 }

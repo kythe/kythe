@@ -156,7 +156,7 @@ func unpackIndex(ctx context.Context, pack *indexpack.Archive, dir string) error
 }
 
 func kindexPath(dir string, idx *kindex.Compilation) string {
-	name := idx.Proto.VName.GetSignature()
+	name := idx.Proto.VName.Signature
 	if name == "" {
 		h := sha256.New()
 		data, err := json.Marshal(idx.Proto)

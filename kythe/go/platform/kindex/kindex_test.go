@@ -50,21 +50,21 @@ func TestRoundTrip(t *testing.T) {
 	}
 	unit := &apb.CompilationUnit{
 		VName: &spb.VName{
-			Corpus:    proto.String("test"),
-			Path:      proto.String("magic/test/unit"),
-			Signature: proto.String("成功"),
+			Corpus:    "test",
+			Path:      "magic/test/unit",
+			Signature: "成功",
 		},
-		Revision:         proto.String("1"),
-		WorkingDirectory: proto.String("/usr/local/src"),
+		Revision:         "1",
+		WorkingDirectory: "/usr/local/src",
 		RequiredInput: []*apb.CompilationUnit_FileInput{
 			{Info: &apb.FileInfo{
-				Path: proto.String("input 1"),
+				Path: "input 1",
 			}},
 			{Info: &apb.FileInfo{
-				Path: proto.String("input 2"),
+				Path: "input 2",
 			}},
 			{Info: &apb.FileInfo{
-				Path: proto.String("input 3"),
+				Path: "input 3",
 			}},
 		},
 		Argument:   []string{"go", "ask", "your", "mother"},
@@ -96,7 +96,7 @@ func TestRoundTrip(t *testing.T) {
 
 	// Verify that we got the expected file contents.
 	for _, ri := range after.Files {
-		path := ri.GetInfo().GetPath()
+		path := ri.GetInfo().Path
 		got := string(ri.Content)
 		want, ok := data[path]
 		if !ok {

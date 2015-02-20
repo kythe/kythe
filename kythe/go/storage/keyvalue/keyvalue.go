@@ -126,7 +126,7 @@ type Writer interface {
 
 // Read implements part of the graphstore.Service interface.
 func (s *Store) Read(req *spb.ReadRequest, f graphstore.EntryFunc) error {
-	keyPrefix, err := KeyPrefix(req.Source, req.GetEdgeKind())
+	keyPrefix, err := KeyPrefix(req.Source, req.EdgeKind)
 	if err != nil {
 		return fmt.Errorf("invalid ReadRequest: %v", err)
 	}
@@ -175,10 +175,10 @@ func (s *Store) Write(req *spb.WriteRequest) (err error) {
 		}
 	}()
 	for _, update := range req.Update {
-		if update.GetFactName() == "" {
+		if update.FactName == "" {
 			return fmt.Errorf("invalid WriteRequest: Update missing FactName")
 		}
-		updateKey, err := EncodeKey(req.Source, update.GetFactName(), update.GetEdgeKind(), update.Target)
+		updateKey, err := EncodeKey(req.Source, update.FactName, update.EdgeKind, update.Target)
 		if err != nil {
 			return fmt.Errorf("encoding error: %v", err)
 		}
@@ -223,35 +223,35 @@ func (s *Store) Close() error { return s.db.Close() }
 
 // Count implements part of the graphstore.Sharded interface.
 func (s *Store) Count(req *spb.CountRequest) (int64, error) {
-	if req.GetShards() < 1 {
-		return 0, fmt.Errorf("invalid number of shards: %d", req.GetShards())
-	} else if req.GetIndex() < 0 || req.GetIndex() >= req.GetShards() {
-		return 0, fmt.Errorf("invalid index for %d shards: %d", req.GetShards(), req.GetIndex())
+	if req.Shards < 1 {
+		return 0, fmt.Errorf("invalid number of shards: %d", req.Shards)
+	} else if req.Index < 0 || req.Index >= req.Shards {
+		return 0, fmt.Errorf("invalid index for %d shards: %d", req.Shards, req.Index)
 	}
 
-	tbl, _, err := s.constructShards(req.GetShards())
+	tbl, _, err := s.constructShards(req.Shards)
 	if err != nil {
 		return 0, err
 	}
-	return tbl[req.GetIndex()].count, nil
+	return tbl[req.Index].count, nil
 }
 
 // Shard implements part of the graphstore.Sharded interface.
 func (s *Store) Shard(req *spb.ShardRequest, f graphstore.EntryFunc) error {
-	if req.GetShards() < 1 {
-		return fmt.Errorf("invalid number of shards: %d", req.GetShards())
-	} else if req.GetIndex() < 0 || req.GetIndex() >= req.GetShards() {
-		return fmt.Errorf("invalid index for %d shards: %d", req.GetShards(), req.GetIndex())
+	if req.Shards < 1 {
+		return fmt.Errorf("invalid number of shards: %d", req.Shards)
+	} else if req.Index < 0 || req.Index >= req.Shards {
+		return fmt.Errorf("invalid index for %d shards: %d", req.Shards, req.Index)
 	}
 
-	tbl, snapshot, err := s.constructShards(req.GetShards())
+	tbl, snapshot, err := s.constructShards(req.Shards)
 	if err != nil {
 		return err
 	}
-	if tbl[req.GetIndex()].count == 0 {
+	if tbl[req.Index].count == 0 {
 		return nil
 	}
-	shard := tbl[req.GetIndex()]
+	shard := tbl[req.Index]
 	iter, err := s.db.ScanRange(&shard.Range, &Options{
 		LargeRead: true,
 		Snapshot:  snapshot,
@@ -472,8 +472,8 @@ func Entry(key []byte, val []byte) (*spb.Entry, error) {
 
 	return &spb.Entry{
 		Source:    srcVName,
-		FactName:  &keyParts[2],
-		EdgeKind:  &keyParts[1],
+		FactName:  keyParts[2],
+		EdgeKind:  keyParts[1],
 		Target:    targetVName,
 		FactValue: val,
 	}, nil
@@ -483,19 +483,19 @@ func Entry(key []byte, val []byte) (*spb.Entry, error) {
 func encodeVName(v *spb.VName) ([]byte, error) {
 	if v == nil {
 		return nil, nil
-	} else if strings.Index(v.GetSignature(), vNameFieldSep) != -1 ||
-		strings.Index(v.GetCorpus(), vNameFieldSep) != -1 ||
-		strings.Index(v.GetRoot(), vNameFieldSep) != -1 ||
-		strings.Index(v.GetPath(), vNameFieldSep) != -1 ||
-		strings.Index(v.GetLanguage(), vNameFieldSep) != -1 {
+	} else if strings.Contains(v.Signature, vNameFieldSep) ||
+		strings.Contains(v.Corpus, vNameFieldSep) ||
+		strings.Contains(v.Root, vNameFieldSep) ||
+		strings.Contains(v.Path, vNameFieldSep) ||
+		strings.Contains(v.Language, vNameFieldSep) {
 		return nil, fmt.Errorf("VName contains invalid rune: %q", vNameFieldSep)
 	}
 	return []byte(strings.Join([]string{
-		v.GetSignature(),
-		v.GetCorpus(),
-		v.GetRoot(),
-		v.GetPath(),
-		v.GetLanguage(),
+		v.Signature,
+		v.Corpus,
+		v.Root,
+		v.Path,
+		v.Language,
 	}, vNameFieldSep)), nil
 }
 
@@ -509,10 +509,10 @@ func decodeVName(data string) (*spb.VName, error) {
 		return nil, fmt.Errorf("invalid VName encoding: %q", data)
 	}
 	return &spb.VName{
-		Signature: &parts[0],
-		Corpus:    &parts[1],
-		Root:      &parts[2],
-		Path:      &parts[3],
-		Language:  &parts[4],
+		Signature: parts[0],
+		Corpus:    parts[1],
+		Root:      parts[2],
+		Path:      parts[3],
+		Language:  parts[4],
 	}, nil
 }

@@ -8,8 +8,7 @@
       ],
       "go_pkgs": [
         "//kythe/go/platform/delimited",
-        "//kythe/proto:storage_proto",
-        "//third_party/go/github.com:protobuf"
+        "//kythe/proto:storage_proto"
       ]
     }
   }

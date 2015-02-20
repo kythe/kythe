@@ -104,7 +104,7 @@ func TestGraphStoreOrder(t *testing.T) {
 
 	var lastEntry *spb.Entry
 	fatalOnErrT(t, "entryLess error: %v",
-		gs.Scan(nil, func(entry *spb.Entry) error {
+		gs.Scan(new(spb.ScanRequest), func(entry *spb.Entry) error {
 			if compare.Entries(lastEntry, entry) != compare.LT {
 				return fmt.Errorf("expected {%v} < {%v}", lastEntry, entry)
 			}
@@ -148,14 +148,13 @@ func randVName(v *spb.VName, buf []byte) {
 	v.Language = randStr(buf)
 }
 
-func randStr(buf []byte) *string {
+func randStr(buf []byte) string {
 	const chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 	randBytes(buf)
 	for i, b := range buf {
 		buf[i] = chars[b%byte(len(chars))]
 	}
-	str := string(buf)
-	return &str
+	return string(buf)
 }
 
 func randBytes(bytes []byte) {

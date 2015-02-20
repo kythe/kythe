@@ -96,16 +96,16 @@ func main() {
 		if *countOnly {
 			entryCount++
 		} else if *entrySets {
-			if compare.VNamesEqual(set.Source, entry.Source) || !compare.VNamesEqual(set.Target, entry.Target) || set.EdgeKind != entry.GetEdgeKind() {
+			if compare.VNamesEqual(set.Source, entry.Source) || !compare.VNamesEqual(set.Target, entry.Target) || set.EdgeKind != entry.EdgeKind {
 				if len(set.Properties) != 0 {
 					failOnErr(encoder.Encode(set))
 				}
 				set.Source = entry.Source
-				set.EdgeKind = entry.GetEdgeKind()
+				set.EdgeKind = entry.EdgeKind
 				set.Target = entry.Target
 				set.Properties = make(map[string]string)
 			}
-			set.Properties[entry.GetFactName()] = string(entry.GetFactValue())
+			set.Properties[entry.FactName] = string(entry.FactValue)
 		} else if *writeJSON {
 			failOnErr(encoder.Encode(entry))
 		} else {

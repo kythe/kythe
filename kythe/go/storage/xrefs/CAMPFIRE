@@ -13,8 +13,7 @@
         "//kythe/go/util/schema",
         "//kythe/go/util/stringset",
         "//kythe/proto:storage_proto",
-        "//kythe/proto:xref_proto",
-        "//third_party/go/github.com:protobuf"
+        "//kythe/proto:xref_proto"
       ]
     }
   },
@@ -34,8 +33,7 @@
         "//kythe/go/util/kytheuri",
         "//kythe/go/util/schema",
         "//kythe/proto:storage_proto",
-        "//kythe/proto:xref_proto",
-        "//third_party/go/github.com:protobuf"
+        "//kythe/proto:xref_proto"
       ]
     }
   }

@@ -87,8 +87,8 @@ type Sharded interface {
 // EntryMatchesScan reports whether entry belongs in the result set for req.
 func EntryMatchesScan(req *spb.ScanRequest, entry *spb.Entry) bool {
 	return (req.GetTarget() == nil || compare.VNamesEqual(entry.Target, req.Target)) &&
-		(req.GetEdgeKind() == "" || entry.GetEdgeKind() == req.GetEdgeKind()) &&
-		strings.HasPrefix(entry.GetFactName(), req.GetFactPrefix())
+		(req.EdgeKind == "" || entry.EdgeKind == req.EdgeKind) &&
+		strings.HasPrefix(entry.FactName, req.FactPrefix)
 }
 
 // BatchWrites returns a channel of WriteRequests for the given entries.

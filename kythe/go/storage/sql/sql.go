@@ -77,16 +77,16 @@ func OpenGraphStore(driverName, dataSourceName string) (*DB, error) {
 
 // Read implements part of the graphstore.Service interface.
 func (db *DB) Read(req *spb.ReadRequest, f graphstore.EntryFunc) (err error) {
-	if req.Source == nil {
+	if req.GetSource() == nil {
 		return errors.New("invalid ReadRequest: missing Source")
 	}
 
 	var rows *sql.Rows
 	const baseQuery = "SELECT " + columns + " FROM " + tableName + " WHERE source_signature = ? AND source_corpus = ? AND source_root = ? AND source_language = ? AND source_path = ? "
-	if req.GetEdgeKind() == "*" {
-		rows, err = db.Query(baseQuery+orderByClause, req.GetSource().GetSignature(), req.GetSource().GetCorpus(), req.GetSource().GetRoot(), req.GetSource().GetLanguage(), req.GetSource().GetPath())
+	if req.EdgeKind == "*" {
+		rows, err = db.Query(baseQuery+orderByClause, req.Source.Signature, req.Source.Corpus, req.Source.Root, req.Source.Language, req.Source.Path)
 	} else {
-		rows, err = db.Query(baseQuery+"AND kind = ? "+orderByClause, req.GetSource().GetSignature(), req.GetSource().GetCorpus(), req.GetSource().GetRoot(), req.GetSource().GetLanguage(), req.GetSource().GetPath(), req.GetEdgeKind())
+		rows, err = db.Query(baseQuery+"AND kind = ? "+orderByClause, req.Source.Signature, req.Source.Corpus, req.Source.Root, req.Source.Language, req.Source.Path, req.EdgeKind)
 	}
 	if err != nil {
 		return fmt.Errorf("sql select error: %v", err)
@@ -101,18 +101,18 @@ var likeEscaper = strings.NewReplacer("%", "\t%", "_", "\t_")
 // TODO(fromberger): Maybe use prepared statements here.
 func (db *DB) Scan(req *spb.ScanRequest, f graphstore.EntryFunc) (err error) {
 	var rows *sql.Rows
-	factPrefix := likeEscaper.Replace(req.GetFactPrefix()) + "%"
+	factPrefix := likeEscaper.Replace(req.FactPrefix) + "%"
 	if req.GetTarget() != nil {
-		if req.GetEdgeKind() == "" {
-			rows, err = db.Query("SELECT "+columns+" FROM "+tableName+` WHERE fact LIKE ? ESCAPE '\t' AND source_signature = ? AND source_corpus = ? AND source_root = ? AND source_language = ? AND source_path = ? `+orderByClause, factPrefix, req.GetTarget().GetSignature(), req.GetTarget().GetCorpus(), req.GetTarget().GetRoot(), req.GetTarget().GetLanguage(), req.GetTarget().GetPath())
+		if req.EdgeKind == "" {
+			rows, err = db.Query("SELECT "+columns+" FROM "+tableName+` WHERE fact LIKE ? ESCAPE '\t' AND source_signature = ? AND source_corpus = ? AND source_root = ? AND source_language = ? AND source_path = ? `+orderByClause, factPrefix, req.Target.Signature, req.Target.Corpus, req.Target.Root, req.Target.Language, req.Target.Path)
 		} else {
-			rows, err = db.Query("SELECT "+columns+" FROM "+tableName+` WHERE fact LIKE ? ESCAPE '\t' AND source_signature = ? AND source_corpus = ? AND source_root = ? AND source_language = ? AND source_path = ? AND kind = ? `+orderByClause, factPrefix, req.GetTarget().GetSignature(), req.GetTarget().GetCorpus(), req.GetTarget().GetRoot(), req.GetTarget().GetLanguage(), req.GetTarget().GetPath(), req.GetEdgeKind())
+			rows, err = db.Query("SELECT "+columns+" FROM "+tableName+` WHERE fact LIKE ? ESCAPE '\t' AND source_signature = ? AND source_corpus = ? AND source_root = ? AND source_language = ? AND source_path = ? AND kind = ? `+orderByClause, factPrefix, req.Target.Signature, req.Target.Corpus, req.Target.Root, req.Target.Language, req.Target.Path, req.EdgeKind)
 		}
 	} else {
-		if req.GetEdgeKind() == "" {
+		if req.EdgeKind == "" {
 			rows, err = db.Query("SELECT "+columns+" FROM "+tableName+" WHERE fact LIKE ? ESCAPE '\t' "+orderByClause, factPrefix)
 		} else {
-			rows, err = db.Query("SELECT "+columns+" FROM "+tableName+` WHERE fact LIKE ? ESCAPE '\t' AND kind = ? `+orderByClause, factPrefix, req.GetEdgeKind())
+			rows, err = db.Query("SELECT "+columns+" FROM "+tableName+` WHERE fact LIKE ? ESCAPE '\t' AND kind = ? `+orderByClause, factPrefix, req.EdgeKind)
 		}
 	}
 	if err != nil {
@@ -121,8 +121,13 @@ func (db *DB) Scan(req *spb.ScanRequest, f graphstore.EntryFunc) (err error) {
 	return scanEntries(rows, f)
 }
 
+var emptyVName = new(spb.VName)
+
 // Write implements part of the graphstore.Service interface.
 func (db *DB) Write(req *spb.WriteRequest) error {
+	if req.GetSource() == nil {
+		return fmt.Errorf("missing Source in WriteRequest: {%v}", req)
+	}
 	tx, err := db.Begin()
 	if err != nil {
 		return fmt.Errorf("sql transaction begin error: %v", err)
@@ -134,11 +139,14 @@ func (db *DB) Write(req *spb.WriteRequest) error {
 		}
 	}()
 	for _, update := range req.Update {
+		if update.Target == nil {
+			update.Target = emptyVName
+		}
 		_, err := writeStmt.Exec(
-			req.GetSource().GetSignature(), req.GetSource().GetCorpus(), req.GetSource().GetRoot(), req.GetSource().GetPath(), req.GetSource().GetLanguage(),
-			update.GetEdgeKind(),
-			update.GetFactName(),
-			update.GetTarget().GetSignature(), update.GetTarget().GetCorpus(), update.GetTarget().GetRoot(), update.GetTarget().GetPath(), update.GetTarget().GetLanguage(),
+			req.Source.Signature, req.Source.Corpus, req.Source.Root, req.Source.Path, req.Source.Language,
+			update.EdgeKind,
+			update.FactName,
+			update.Target.Signature, update.Target.Corpus, update.Target.Root, update.Target.Path, update.Target.Language,
 			update.FactValue)
 		if err != nil {
 			tx.Rollback()
@@ -175,8 +183,7 @@ func scanEntries(rows *sql.Rows, f graphstore.EntryFunc) error {
 			rows.Close() // ignore errors
 			return err
 		}
-		if entry.GetEdgeKind() == "" {
-			entry.EdgeKind = nil
+		if entry.EdgeKind == "" {
 			entry.Target = nil
 		}
 		if err := f(entry); err == io.EOF {

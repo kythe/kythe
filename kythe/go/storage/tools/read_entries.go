@@ -65,7 +65,7 @@ func main() {
 	wr := delimited.NewWriter(os.Stdout)
 	var total int64
 	if *shards <= 0 {
-		if err := gs.Scan(nil, func(entry *spb.Entry) error {
+		if err := gs.Scan(new(spb.ScanRequest), func(entry *spb.Entry) error {
 			if *count {
 				total++
 				return nil
@@ -88,7 +88,7 @@ func main() {
 	}
 
 	if *count {
-		cnt, err := sgs.Count(&spb.CountRequest{Index: shardIndex, Shards: shards})
+		cnt, err := sgs.Count(&spb.CountRequest{Index: *shardIndex, Shards: *shards})
 		if err != nil {
 			log.Fatalf("ERROR: %v", err)
 		}
@@ -108,8 +108,8 @@ func main() {
 				defer f.Close()
 				wr := delimited.NewWriter(f)
 				if err := sgs.Shard(&spb.ShardRequest{
-					Index:  &i,
-					Shards: shards,
+					Index:  i,
+					Shards: *shards,
 				}, func(entry *spb.Entry) error {
 					return wr.PutProto(entry)
 				}); err != nil {
@@ -122,8 +122,8 @@ func main() {
 	}
 
 	if err := sgs.Shard(&spb.ShardRequest{
-		Index:  shardIndex,
-		Shards: shards,
+		Index:  *shardIndex,
+		Shards: *shards,
 	}, func(entry *spb.Entry) error {
 		return wr.PutProto(entry)
 	}); err != nil {

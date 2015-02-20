@@ -163,8 +163,8 @@ func TestCancellation(t *testing.T) {
 	// Check that a callback returning a non-EOF error propagates an error to
 	// the caller.
 	var numEntries int
-	if err := p.Scan(nil, func(e *spb.Entry) error {
-		if e.GetFactName() == bomb.F {
+	if err := p.Scan(new(spb.ScanRequest), func(e *spb.Entry) error {
+		if e.FactName == bomb.F {
 			return errors.New(bomb.V)
 		}
 		numEntries++
@@ -180,8 +180,8 @@ func TestCancellation(t *testing.T) {
 
 	// Check that a callback returning io.EOF ends without error.
 	numEntries = 0
-	if err := p.Read(nil, func(e *spb.Entry) error {
-		if e.GetFactName() == bomb.F {
+	if err := p.Read(new(spb.ReadRequest), func(e *spb.Entry) error {
+		if e.FactName == bomb.F {
 			return io.EOF
 		}
 		numEntries++

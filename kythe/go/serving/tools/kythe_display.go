@@ -47,12 +47,12 @@ func displayCorpusRoots(cr *srvpb.CorpusRoots) error {
 			var err error
 			if lsURIs {
 				uri := kytheuri.URI{
-					Corpus: c.GetCorpus(),
+					Corpus: c.Corpus,
 					Root:   root,
 				}
 				_, err = fmt.Fprintln(out, uri.String())
 			} else {
-				_, err = fmt.Fprintln(out, filepath.Join(c.GetCorpus(), root))
+				_, err = fmt.Fprintln(out, filepath.Join(c.Corpus, root))
 			}
 			if err != nil {
 				return err
@@ -111,13 +111,13 @@ func displayReferences(decor *xpb.DecorationsReply) error {
 	nodes := nodesMap(decor.Node)
 
 	for _, ref := range decor.Reference {
-		nodeKind := factValue(nodes, ref.GetTargetTicket(), schema.NodeKindFact, "UNKNOWN")
-		startOffset := factValue(nodes, ref.GetSourceTicket(), schema.AnchorStartFact, "_")
-		endOffset := factValue(nodes, ref.GetSourceTicket(), schema.AnchorEndFact, "_")
+		nodeKind := factValue(nodes, ref.TargetTicket, schema.NodeKindFact, "UNKNOWN")
+		startOffset := factValue(nodes, ref.SourceTicket, schema.AnchorStartFact, "_")
+		endOffset := factValue(nodes, ref.SourceTicket, schema.AnchorEndFact, "_")
 		r := strings.NewReplacer(
-			"@source@", ref.GetSourceTicket(),
-			"@target@", ref.GetTargetTicket(),
-			"@edgeKind@", ref.GetKind(),
+			"@source@", ref.SourceTicket,
+			"@target@", ref.TargetTicket,
+			"@edgeKind@", ref.Kind,
 			"@nodeKind@", nodeKind,
 			"@beg@", startOffset,
 			"@end@", endOffset,
@@ -136,12 +136,12 @@ func displayEdges(edges *xpb.EdgesReply) error {
 	}
 
 	for _, es := range edges.EdgeSet {
-		if _, err := fmt.Fprintln(out, "source:", es.GetSourceTicket()); err != nil {
+		if _, err := fmt.Fprintln(out, "source:", es.SourceTicket); err != nil {
 			return err
 		}
 		for _, g := range es.Group {
 			for _, target := range g.TargetTicket {
-				if _, err := fmt.Fprintf(out, "%s\t%s\n", g.GetKind(), target); err != nil {
+				if _, err := fmt.Fprintf(out, "%s\t%s\n", g.Kind, target); err != nil {
 					return err
 				}
 			}
@@ -154,7 +154,7 @@ func displayEdgeCounts(edges *xpb.EdgesReply) error {
 	counts := make(map[string]int)
 	for _, es := range edges.EdgeSet {
 		for _, g := range es.Group {
-			counts[g.GetKind()] += len(g.TargetTicket)
+			counts[g.Kind] += len(g.TargetTicket)
 		}
 	}
 
@@ -176,16 +176,16 @@ func displayNodes(nodes []*xpb.NodeInfo) error {
 	}
 
 	for _, n := range nodes {
-		if _, err := fmt.Fprintln(out, n.GetTicket()); err != nil {
+		if _, err := fmt.Fprintln(out, n.Ticket); err != nil {
 			return err
 		}
 		for _, fact := range n.Fact {
 			if len(fact.Value) <= factSizeThreshold {
-				if _, err := fmt.Fprintf(out, "  %s\t%s\n", fact.GetName(), fact.GetValue()); err != nil {
+				if _, err := fmt.Fprintf(out, "  %s\t%s\n", fact.Name, fact.Value); err != nil {
 					return err
 				}
 			} else {
-				if _, err := fmt.Fprintf(out, "  %s\n", fact.GetName()); err != nil {
+				if _, err := fmt.Fprintf(out, "  %s\n", fact.Name); err != nil {
 					return err
 				}
 			}
@@ -222,9 +222,9 @@ func nodesMap(nodes []*xpb.NodeInfo) map[string]map[string][]byte {
 	for _, n := range nodes {
 		facts := make(map[string][]byte, len(n.Fact))
 		for _, f := range n.Fact {
-			facts[f.GetName()] = f.Value
+			facts[f.Name] = f.Value
 		}
-		m[n.GetTicket()] = facts
+		m[n.Ticket] = facts
 	}
 	return m
 }

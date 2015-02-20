@@ -87,7 +87,7 @@ func TestErrors(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		key, err := EncodeKey(test.entry.Source, test.entry.GetFactName(), test.entry.GetEdgeKind(), test.entry.Target)
+		key, err := EncodeKey(test.entry.Source, test.entry.FactName, test.entry.EdgeKind, test.entry.Target)
 		if err == nil {
 			t.Fatalf("Missing expected error containing %q for test {%+v}; got %q", test.error, test.entry, string(key))
 		} else if !strings.Contains(err.Error(), test.error) {
@@ -106,14 +106,14 @@ func TestKeyEncoding(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		key, err := EncodeKey(test.Source, test.GetFactName(), test.GetEdgeKind(), test.Target)
+		key, err := EncodeKey(test.Source, test.FactName, test.EdgeKind, test.Target)
 		fatalOnErr(t, "Error encoding key: %v", err)
 
 		if !bytes.HasPrefix(key, entryKeyPrefixBytes) {
 			t.Fatalf("Key missing entry prefix: %q", string(key))
 		}
 
-		prefix, err := KeyPrefix(test.Source, test.GetEdgeKind())
+		prefix, err := KeyPrefix(test.Source, test.EdgeKind)
 		fatalOnErr(t, "Error creating key prefix: %v", err)
 
 		if !bytes.HasPrefix(key, prefix) {
@@ -137,20 +137,20 @@ func fatalOnErr(t *testing.T, msg string, err error) {
 
 func vname(signature, corpus, root, path, language string) *spb.VName {
 	return &spb.VName{
-		Signature: &signature,
-		Corpus:    &corpus,
-		Root:      &root,
-		Path:      &path,
-		Language:  &language,
+		Signature: signature,
+		Corpus:    corpus,
+		Root:      root,
+		Path:      path,
+		Language:  language,
 	}
 }
 
 func entry(src *spb.VName, edgeKind string, target *spb.VName, factName string, factValue string) *spb.Entry {
 	return &spb.Entry{
 		Source:    src,
-		EdgeKind:  &edgeKind,
+		EdgeKind:  edgeKind,
 		Target:    target,
-		FactName:  &factName,
+		FactName:  factName,
 		FactValue: []byte(factValue),
 	}
 }
