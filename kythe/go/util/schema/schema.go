@@ -22,6 +22,7 @@ import "strings"
 // Kythe node fact labels
 const (
 	NodeKindFact = "/kythe/node/kind"
+	SubkindFact  = "/kythe/subkind"
 
 	AnchorStartFact = "/kythe/loc/start"
 	AnchorEndFact   = "/kythe/loc/end"
@@ -35,6 +36,18 @@ const (
 	AnchorKind = "anchor"
 	FileKind   = "file"
 	NameKind   = "name"
+
+	EnumKind     = "enum"
+	FunctionKind = "function"
+	PackageKind  = "package"
+	RecordKind   = "record"
+	VariableKind = "variable"
+)
+
+// Kythe node subkinds
+const (
+	ClassSubkind     = "class"
+	EnumClassSubkind = "enumClass"
 )
 
 // Kythe edge kinds
@@ -44,6 +57,7 @@ const (
 	ChildOfEdge = edgePrefix + "childof"
 	DefinesEdge = edgePrefix + "defines"
 	NamedEdge   = edgePrefix + "named"
+	ParamEdge   = edgePrefix + "param"
 	RefEdge     = edgePrefix + "ref"
 )
 
