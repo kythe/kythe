@@ -36,7 +36,7 @@ import java.util.Arrays;
 /** Binary to run Kythe's Java index over a single .kindex file, emitting entries to STDOUT. */
 public class JavaIndexer {
   public static void main(String[] args) throws AnalysisException, IOException {
-    if (args.length > 0 && (args[0] == "--help" || args[0] == "-h")) {
+    if (args.length > 0 && ("--help".equals(args[0]) || "-h".equals(args[0]))) {
       usage(0);
     }
 
