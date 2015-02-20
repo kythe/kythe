@@ -46,22 +46,33 @@ func Strings(s, t string) Order {
 	}
 }
 
+var (
+	emptyVName = new(spb.VName)
+	emptyEntry = new(spb.Entry)
+)
+
 // VNames returns LT if v1 precedes v2, EQ if v1 and v2 are equal, or GT if v1
 // follows v2, in standard order.  The ordering for VNames is defined by
 // lexicographic comparison of [signature, corpus, root, path, language].
 func VNames(v1, v2 *spb.VName) Order {
+	if v1 == nil {
+		v1 = emptyVName
+	}
+	if v2 == nil {
+		v2 = emptyVName
+	}
 	if v1 == v2 {
 		return EQ
-	} else if c := Strings(v1.GetSignature(), v2.GetSignature()); c != EQ {
+	} else if c := Strings(v1.Signature, v2.Signature); c != EQ {
 		return c
-	} else if c := Strings(v1.GetCorpus(), v2.GetCorpus()); c != EQ {
+	} else if c := Strings(v1.Corpus, v2.Corpus); c != EQ {
 		return c
-	} else if c := Strings(v1.GetRoot(), v2.GetRoot()); c != EQ {
+	} else if c := Strings(v1.Root, v2.Root); c != EQ {
 		return c
-	} else if c := Strings(v1.GetPath(), v2.GetPath()); c != EQ {
+	} else if c := Strings(v1.Path, v2.Path); c != EQ {
 		return c
 	}
-	return Strings(v1.GetLanguage(), v2.GetLanguage())
+	return Strings(v1.Language, v2.Language)
 }
 
 // VNamesEqual reports whether v1 and v2 are equal.
@@ -73,14 +84,20 @@ func VNamesEqual(v1, v2 *spb.VName) bool { return VNames(v1, v2) == EQ }
 // The ordering for entries is defined by lexicographic comparison of
 // [source, edge kind, fact name, target].
 func Entries(e1, e2 *spb.Entry) Order {
+	if e1 == nil {
+		e1 = emptyEntry
+	}
+	if e2 == nil {
+		e2 = emptyEntry
+	}
 	if e1 == e2 {
 		return EQ
 	}
 	if c := VNames(e1.GetSource(), e2.GetSource()); c != EQ {
 		return c
-	} else if c := Strings(e1.GetEdgeKind(), e2.GetEdgeKind()); c != EQ {
+	} else if c := Strings(e1.EdgeKind, e2.EdgeKind); c != EQ {
 		return c
-	} else if c := Strings(e1.GetFactName(), e2.GetFactName()); c != EQ {
+	} else if c := Strings(e1.FactName, e2.FactName); c != EQ {
 		return c
 	}
 	return VNames(e1.GetTarget(), e2.GetTarget())
@@ -92,7 +109,7 @@ func ValueEntries(e1, e2 *spb.Entry) Order {
 	if c := Entries(e1, e2); c != EQ {
 		return c
 	}
-	return Order(bytes.Compare(e1.GetFactValue(), e2.GetFactValue()))
+	return Order(bytes.Compare(e1.FactValue, e2.FactValue))
 }
 
 // EntriesEqual reports whether e1 and e2 are equivalent, including their fact

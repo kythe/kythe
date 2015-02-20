@@ -12,7 +12,6 @@ required_input {
     digest: "cf28b786fa21d0c45156e8011ac809afc454703fa03d767a5aeeed382f902795"
   }
 }
-has_compile_errors: false
 argument: "-sourcepath"
 argument: "kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata"
 source_file: "kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/Names.java"

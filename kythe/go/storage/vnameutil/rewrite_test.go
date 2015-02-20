@@ -159,23 +159,16 @@ func TestFileRewrites(t *testing.T) {
 	}
 }
 
-func nilEmpty(s string) *string {
-	if s == "" {
-		return nil
-	}
-	return &s
-}
-
 type V struct {
 	Corpus, Root, Path, Sig, Lang string
 }
 
 func (v V) pb() *spb.VName {
 	return &spb.VName{
-		Corpus:    nilEmpty(v.Corpus),
-		Root:      nilEmpty(v.Root),
-		Path:      nilEmpty(v.Path),
-		Signature: nilEmpty(v.Sig),
-		Language:  nilEmpty(v.Lang),
+		Corpus:    v.Corpus,
+		Root:      v.Root,
+		Path:      v.Path,
+		Signature: v.Sig,
+		Language:  v.Lang,
 	}
 }

@@ -25,8 +25,6 @@ import (
 
 	"kythe/go/storage/vnameutil"
 
-	"github.com/golang/protobuf/proto"
-
 	spb "kythe/proto/storage_proto"
 )
 
@@ -41,27 +39,27 @@ const (
 var VCSRules = vnameutil.Rules{{
 	// Google code, new syntax
 	regexp.MustCompile(`^(?i)(?P<corpus>code\.google\.com/p/[-a-z0-9]+)(?:\.(?P<subrepo>\w+))?` + pathTail),
-	&spb.VName{Corpus: proto.String("${corpus}"), Signature: proto.String(packageSig), Root: proto.String("${subrepo}")},
+	&spb.VName{Corpus: "${corpus}", Signature: packageSig, Root: "${subrepo}"},
 }, {
 	// Google code, old syntax
 	regexp.MustCompile(`^(?i)(?P<corpus>[-._a-z0-9]+\.googlecode\.com)` + pathTail),
-	&spb.VName{Corpus: proto.String("${corpus}"), Signature: proto.String(packageSig)},
+	&spb.VName{Corpus: "${corpus}", Signature: packageSig},
 }, {
 	// GitHub
 	regexp.MustCompile(`^(?P<corpus>github\.com/(?:[-.\w]+){2})` + pathTail),
-	&spb.VName{Corpus: proto.String("${corpus}"), Signature: proto.String(packageSig)},
+	&spb.VName{Corpus: "${corpus}", Signature: packageSig},
 }, {
 	// Bitbucket
 	regexp.MustCompile(`^(?P<corpus>bitbucket\.org(?:/[-.\w]+){2})` + pathTail),
-	&spb.VName{Corpus: proto.String("${corpus}"), Signature: proto.String(packageSig)},
+	&spb.VName{Corpus: "${corpus}", Signature: packageSig},
 }, {
 	// Launchpad
 	regexp.MustCompile(`^(?P<corpus>launchpad\.net/(?:[-.\w]+|~[-.\w]+/[-.\w]+))` + pathTail),
-	&spb.VName{Corpus: proto.String("${corpus}"), Signature: proto.String(packageSig)},
+	&spb.VName{Corpus: "${corpus}", Signature: packageSig},
 }, {
 	// Go extension repositories
 	regexp.MustCompile(`(?P<corpus>golang\.org(?:/x/\w+))` + pathTail),
-	&spb.VName{Corpus: proto.String("${corpus}"), Signature: proto.String(packageSig)},
+	&spb.VName{Corpus: "${corpus}", Signature: packageSig},
 },
 }
 
@@ -76,24 +74,24 @@ func ForPackage(corpus string, pkg *build.Package) *spb.VName {
 	ip := pkg.ImportPath
 	v, ok := VCSRules.Apply(ip)
 	if !ok {
-		v = &spb.VName{Signature: proto.String(":pkg:" + ip)}
+		v = &spb.VName{Signature: ":pkg:" + ip}
 		if pkg.Goroot {
 			// This is a Go standard library package; the corpus is implicit.
-			v.Corpus = proto.String("golang.org")
+			v.Corpus = "golang.org"
 		} else if strings.HasPrefix(ip, ".") {
 			// Local import; no corpus
 		} else if i := strings.Index(ip, "/"); i > 0 {
 			// Take the first slash-delimited component to be the corpus.
 			// e.g., import "foo/bar/baz" ⇒ corpus "foo", signature "bar/baz".
-			v.Corpus = proto.String(ip[:i])
-			v.Signature = proto.String(":pkg:" + ip[i+1:])
+			v.Corpus = ip[:i]
+			v.Signature = ":pkg:" + ip[i+1:]
 		} else if corpus != "" {
 			// Default: Assume the package is in "this" corpus, if defined.
-			v.Corpus = proto.String(corpus)
+			v.Corpus = corpus
 		}
 	}
 	if v != nil {
-		v.Language = proto.String(Language)
+		v.Language = Language
 	}
 	return v
 }

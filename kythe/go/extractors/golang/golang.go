@@ -45,7 +45,6 @@ import (
 	"kythe/go/extractors/govname"
 	"kythe/go/platform/indexpack"
 
-	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
 
 	apb "kythe/proto/analysis_proto"
@@ -304,7 +303,7 @@ func (p *Package) Extract() error {
 
 	p.Units = append(p.Units, cu)
 	if len(missing) != 0 {
-		cu.HasCompileErrors = proto.Bool(true)
+		cu.HasCompileErrors = true
 		return &MissingError{p.Path, missing}
 	}
 	return nil
@@ -328,7 +327,7 @@ func (p *Package) Store(ctx context.Context, a *indexpack.Archive) ([]string, er
 			// now).  Once we have fetched the file contents, we'll update the
 			// field with the correct digest value.  We only want to do this
 			// once, per input, however.
-			path := ri.Info.GetDigest()
+			path := ri.Info.Digest
 			if !strings.Contains(path, "/") {
 				continue
 			}
@@ -339,7 +338,7 @@ func (p *Package) Store(ctx context.Context, a *indexpack.Archive) ([]string, er
 			if err != nil {
 				return nil, err
 			}
-			ri.Info.Digest = proto.String(digest)
+			ri.Info.Digest = digest
 		}
 
 		// Pack the compilation unit into the archive.
@@ -365,8 +364,8 @@ func (*Package) addFiles(cu *apb.CompilationUnit, root, base string, names []str
 		}
 		cu.RequiredInput = append(cu.RequiredInput, &apb.CompilationUnit_FileInput{
 			Info: &apb.FileInfo{
-				Path:   proto.String(strings.TrimPrefix(path, root+"/")),
-				Digest: proto.String(path),
+				Path:   strings.TrimPrefix(path, root+"/"),
+				Digest: path,
 			},
 		})
 	}
@@ -377,7 +376,7 @@ func (*Package) addFiles(cu *apb.CompilationUnit, root, base string, names []str
 func (p *Package) addSource(cu *apb.CompilationUnit, root, base string, names []string) {
 	p.addFiles(cu, root, base, names)
 	for _, in := range cu.RequiredInput[len(cu.RequiredInput)-len(names):] {
-		cu.SourceFile = append(cu.SourceFile, in.Info.GetPath())
+		cu.SourceFile = append(cu.SourceFile, in.Info.Path)
 	}
 }
 
@@ -389,14 +388,14 @@ func (p *Package) addInput(cu *apb.CompilationUnit, bp *build.Package) {
 	fi := cu.RequiredInput[len(cu.RequiredInput)-1]
 	fi.VName = p.ext.vnameFor(bp)
 	fi.VName.Path = fi.Info.Path
-	fi.VName.Signature = nil // updated in the fetcher
+	fi.VName.Signature = "" // updated in the fetcher
 }
 
 // addEnv adds an environment variable to cu.
 func (*Package) addEnv(cu *apb.CompilationUnit, name, value string) {
 	cu.Environment = append(cu.Environment, &apb.CompilationUnit_Env{
-		Name:  &name,
-		Value: &value,
+		Name:  name,
+		Value: value,
 	})
 }
 

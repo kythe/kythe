@@ -49,7 +49,7 @@ func InMemory() InMemoryStore {
 // AddData adds each FileData to the InMemoryStore based on their digests.
 func (s InMemoryStore) AddData(files ...*apb.FileData) error {
 	for _, file := range files {
-		digest := file.GetInfo().GetDigest()
+		digest := file.GetInfo().Digest
 		if digest == "" {
 			return fmt.Errorf("empty digest for %v", file)
 		}

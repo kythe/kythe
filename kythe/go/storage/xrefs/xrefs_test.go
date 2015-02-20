@@ -28,8 +28,6 @@ import (
 
 	spb "kythe/proto/storage_proto"
 	xpb "kythe/proto/xref_proto"
-
-	"github.com/golang/protobuf/proto"
 )
 
 var (
@@ -46,20 +44,20 @@ var (
 			schema.NodeKindFact, schema.FileKind,
 			schema.FileTextFact, testFileContent,
 			schema.FileEncodingFact, testFileEncoding), map[string][]*spb.VName{
-			revChildOfEdgeKind: []*spb.VName{testAnchorVName},
+			revChildOfEdgeKind: {testAnchorVName},
 		}},
 		{sig("sig2"), facts(schema.NodeKindFact, "test"), map[string][]*spb.VName{
-			"someEdgeKind": []*spb.VName{sig("signature")},
+			"someEdgeKind": {sig("signature")},
 		}},
 		{sig("signature"), facts(schema.NodeKindFact, "test"), map[string][]*spb.VName{
-			schema.MirrorEdge("someEdgeKind"): []*spb.VName{sig("sig2")},
+			schema.MirrorEdge("someEdgeKind"): {sig("sig2")},
 		}},
 		{testAnchorVName, facts(schema.NodeKindFact, schema.AnchorKind), map[string][]*spb.VName{
-			schema.ChildOfEdge: []*spb.VName{testFileVName},
-			schema.RefEdge:     []*spb.VName{testAnchorTargetVName},
+			schema.ChildOfEdge: {testFileVName},
+			schema.RefEdge:     {testAnchorTargetVName},
 		}},
 		{testAnchorTargetVName, facts(schema.NodeKindFact, "record"), map[string][]*spb.VName{
-			schema.MirrorEdge(schema.RefEdge): []*spb.VName{testAnchorVName},
+			schema.MirrorEdge(schema.RefEdge): {testAnchorVName},
 		}},
 	}
 	testEntries = nodesToEntries(testNodes)
@@ -108,10 +106,10 @@ func TestDecorations(t *testing.T) {
 
 	reply, err := xs.Decorations(&xpb.DecorationsRequest{
 		Location: &xpb.Location{
-			Ticket: proto.String(kytheuri.ToString(testFileVName)),
+			Ticket: kytheuri.ToString(testFileVName),
 		},
-		SourceText: proto.Bool(true),
-		References: proto.Bool(true),
+		SourceText: true,
+		References: true,
 	})
 	if err != nil {
 		t.Fatalf("Error fetching decorations for %+v: %v", testFileVName, err)
@@ -120,15 +118,15 @@ func TestDecorations(t *testing.T) {
 	if string(reply.SourceText) != testFileContent {
 		t.Errorf("Incorrect file content: %q; Expected: %q", string(reply.SourceText), testFileContent)
 	}
-	if reply.GetEncoding() != testFileEncoding {
-		t.Errorf("Incorrect file encoding: %q; Expected: %q", reply.GetEncoding(), testFileEncoding)
+	if reply.Encoding != testFileEncoding {
+		t.Errorf("Incorrect file encoding: %q; Expected: %q", reply.Encoding, testFileEncoding)
 	}
 
 	expectedRefs := []*xpb.DecorationsReply_Reference{
 		{
-			SourceTicket: proto.String(kytheuri.ToString(testAnchorVName)),
-			TargetTicket: proto.String(kytheuri.ToString(testAnchorTargetVName)),
-			Kind:         proto.String(schema.RefEdge),
+			SourceTicket: kytheuri.ToString(testAnchorVName),
+			TargetTicket: kytheuri.ToString(testAnchorTargetVName),
+			Kind:         schema.RefEdge,
 		},
 	}
 	if !reflect.DeepEqual(sortRefs(reply.Reference), sortRefs(expectedRefs)) {
@@ -174,11 +172,11 @@ type node struct {
 
 func (n *node) Info() *xpb.NodeInfo {
 	info := &xpb.NodeInfo{
-		Ticket: proto.String(kytheuri.ToString(n.Source)),
+		Ticket: kytheuri.ToString(n.Source),
 	}
 	for name, val := range n.Facts {
 		info.Fact = append(info.Fact, &xpb.Fact{
-			Name:  proto.String(name),
+			Name:  name,
 			Value: []byte(val),
 		})
 	}
@@ -193,12 +191,12 @@ func (n *node) EdgeSet() *xpb.EdgeSet {
 			tickets = append(tickets, kytheuri.ToString(target))
 		}
 		groups = append(groups, &xpb.EdgeSet_Group{
-			Kind:         proto.String(kind),
+			Kind:         kind,
 			TargetTicket: tickets,
 		})
 	}
 	return &xpb.EdgeSet{
-		SourceTicket: proto.String(kytheuri.ToString(n.Source)),
+		SourceTicket: kytheuri.ToString(n.Source),
 		Group:        groups,
 	}
 }
@@ -246,7 +244,7 @@ func nodesToEdgeSets(nodes []*node) []*xpb.EdgeSet {
 }
 
 func sig(sig string) *spb.VName {
-	return &spb.VName{Signature: &sig}
+	return &spb.VName{Signature: sig}
 }
 
 func facts(keyVals ...string) map[string]string {
@@ -260,7 +258,7 @@ func facts(keyVals ...string) map[string]string {
 func nodeFact(vname *spb.VName, fact, val string) *spb.Entry {
 	return &spb.Entry{
 		Source:    vname,
-		FactName:  &fact,
+		FactName:  fact,
 		FactValue: []byte(val),
 	}
 }
@@ -269,8 +267,8 @@ func edgeFact(source *spb.VName, kind string, target *spb.VName) *spb.Entry {
 	return &spb.Entry{
 		Source:    source,
 		Target:    target,
-		EdgeKind:  &kind,
-		FactName:  proto.String("/"),
+		EdgeKind:  kind,
+		FactName:  "/",
 		FactValue: []byte{},
 	}
 }
@@ -281,7 +279,7 @@ type sortedFacts []*xpb.Fact
 
 func (h sortedFacts) Len() int { return len(h) }
 func (h sortedFacts) Less(i, j int) bool {
-	return h[i].GetName() < h[j].GetName()
+	return h[i].Name < h[j].Name
 }
 func (h sortedFacts) Swap(i, j int) {
 	h[i], h[j] = h[j], h[i]
@@ -291,7 +289,7 @@ type sortedGroups []*xpb.EdgeSet_Group
 
 func (h sortedGroups) Len() int { return len(h) }
 func (h sortedGroups) Less(i, j int) bool {
-	return h[i].GetKind() < h[j].GetKind()
+	return h[i].Kind < h[j].Kind
 }
 func (h sortedGroups) Swap(i, j int) {
 	h[i], h[j] = h[j], h[i]
@@ -301,7 +299,7 @@ type sortedEdgeSets []*xpb.EdgeSet
 
 func (h sortedEdgeSets) Len() int { return len(h) }
 func (h sortedEdgeSets) Less(i, j int) bool {
-	return h[i].GetSourceTicket() < h[j].GetSourceTicket()
+	return h[i].SourceTicket < h[j].SourceTicket
 }
 func (h sortedEdgeSets) Swap(i, j int) {
 	h[i], h[j] = h[j], h[i]
@@ -311,7 +309,7 @@ type sortedNodeInfos []*xpb.NodeInfo
 
 func (h sortedNodeInfos) Len() int { return len(h) }
 func (h sortedNodeInfos) Less(i, j int) bool {
-	return h[i].GetTicket() < h[j].GetTicket()
+	return h[i].Ticket < h[j].Ticket
 }
 func (h sortedNodeInfos) Swap(i, j int) {
 	h[i], h[j] = h[j], h[i]
@@ -322,16 +320,16 @@ type sortedReferences []*xpb.DecorationsReply_Reference
 func (h sortedReferences) Len() int { return len(h) }
 func (h sortedReferences) Less(i, j int) bool {
 	switch {
-	case h[i].GetSourceTicket() < h[j].GetSourceTicket():
+	case h[i].SourceTicket < h[j].SourceTicket:
 		return true
-	case h[i].GetSourceTicket() > h[j].GetSourceTicket():
+	case h[i].SourceTicket > h[j].SourceTicket:
 		return false
-	case h[i].GetKind() < h[j].GetKind():
+	case h[i].Kind < h[j].Kind:
 		return true
-	case h[i].GetKind() > h[j].GetKind():
+	case h[i].Kind > h[j].Kind:
 		return false
 	}
-	return h[i].GetTargetTicket() < h[j].GetTargetTicket()
+	return h[i].TargetTicket < h[j].TargetTicket
 }
 func (h sortedReferences) Swap(i, j int) {
 	h[i], h[j] = h[j], h[i]

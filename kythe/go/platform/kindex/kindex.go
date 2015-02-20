@@ -119,8 +119,8 @@ func New(r io.Reader) (*Compilation, error) {
 func (c *Compilation) Fetch(path, digest string) ([]byte, error) {
 	for _, f := range c.Files {
 		info := f.GetInfo()
-		fp := info.GetPath()
-		fd := info.GetDigest()
+		fp := info.Path
+		fd := info.Digest
 		if path == fp && (digest == "" || digest == fd) {
 			return f.Content, nil
 		}
@@ -187,7 +187,7 @@ func FromUnit(unit *apb.CompilationUnit, f analysis.Fetcher) (*Compilation, erro
 			defer wg.Done()
 
 			in := unit.RequiredInput[i].GetInfo()
-			data, err := f.Fetch(in.GetPath(), in.GetDigest())
+			data, err := f.Fetch(in.Path, in.Digest)
 			if err != nil {
 				errc <- err
 				return
@@ -231,8 +231,8 @@ func FileData(path string, r io.Reader) (*apb.FileData, error) {
 	return &apb.FileData{
 		Content: buf.Bytes(),
 		Info: &apb.FileInfo{
-			Path:   &path,
-			Digest: &digest,
+			Path:   path,
+			Digest: digest,
 		},
 	}, nil
 }

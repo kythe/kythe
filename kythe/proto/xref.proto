@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-syntax = "proto2";
+syntax = "proto3";
 
 package kythe.proto;
 
@@ -219,7 +219,7 @@ message Location {
   }
 
   // What kind of location this is.
-  optional Kind kind = 2 [default= FILE];
+  optional Kind kind = 2;
 
   // A Point represents a location within a file or buffer.
   //

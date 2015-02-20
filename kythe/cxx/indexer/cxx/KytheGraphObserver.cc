@@ -120,10 +120,10 @@ void KytheGraphObserver::AppendFullLocationToStream(
     }
     posted_fileids->push_back(file_id);
     kythe::proto::VName file_vname(VNameFromFileID(file_id));
-    if (file_vname.has_corpus() && !file_vname.corpus().empty()) {
+    if (!file_vname.corpus().empty()) {
       Ostream << file_vname.corpus() << "/";
     }
-    if (file_vname.has_root() && !file_vname.root().empty()) {
+    if (!file_vname.root().empty()) {
       Ostream << file_vname.root() << "/";
     }
     Ostream << file_vname.path();

@@ -61,8 +61,6 @@ import (
 	"kythe/go/storage/vnameutil"
 
 	spb "kythe/proto/storage_proto"
-
-	"github.com/golang/protobuf/proto"
 )
 
 var (
@@ -80,7 +78,7 @@ var (
 var w = delimited.NewWriter(os.Stdout)
 
 func emitEntry(v *spb.VName, label string, value []byte) error {
-	return w.PutProto(&spb.Entry{Source: v, FactName: &label, FactValue: value})
+	return w.PutProto(&spb.Entry{Source: v, FactName: label, FactValue: value})
 }
 
 var (
@@ -106,13 +104,13 @@ func emitPath(path string, info os.FileInfo, err error) error {
 	vName := fileRules.ApplyDefault(path, new(spb.VName))
 
 	digest := sha256.Sum256(contents)
-	vName.Signature = proto.String(hex.EncodeToString(digest[:]))
+	vName.Signature = hex.EncodeToString(digest[:])
 
-	if vName.Language == nil {
+	if vName.Language == "" {
 		vName.Language = sourceLanguage(path)
 	}
-	if vName.Path == nil {
-		vName.Path = proto.String(path)
+	if vName.Path == "" {
+		vName.Path = path
 	}
 
 	if err := emitEntry(vName, kindLabel, fileKind); err != nil {
@@ -150,16 +148,16 @@ func main() {
 	}
 }
 
-func sourceLanguage(path string) *string {
+func sourceLanguage(path string) string {
 	ext := strings.TrimPrefix(strings.ToLower(filepath.Ext(path)), ".")
 	switch ext {
 	case "java", "go":
-		return proto.String(ext)
+		return ext
 	case "py":
-		return proto.String("python")
+		return "python"
 	case "cc", "cpp", "h":
-		return proto.String("c++")
+		return "c++"
 	default:
-		return nil
+		return ""
 	}
 }

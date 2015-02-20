@@ -34,8 +34,6 @@ import (
 
 	spb "kythe/proto/storage_proto"
 	xpb "kythe/proto/xref_proto"
-
-	"github.com/golang/protobuf/proto"
 )
 
 var (
@@ -118,8 +116,8 @@ var (
 		func(flag *flag.FlagSet) error {
 			req := &xpb.EdgesRequest{
 				Ticket:    flag.Args(),
-				PageToken: &pageToken,
-				PageSize:  proto.Int(pageSize),
+				PageToken: pageToken,
+				PageSize:  int32(pageSize),
 			}
 			if edgeKinds != "" {
 				req.Kind = strings.Split(edgeKinds, ",")
@@ -168,9 +166,9 @@ var (
 		func(flag *flag.FlagSet) error {
 			req := &xpb.DecorationsRequest{
 				Location: &xpb.Location{
-					Ticket: proto.String(flag.Arg(0)),
+					Ticket: flag.Arg(0),
 				},
-				SourceText: proto.Bool(true),
+				SourceText: true,
 			}
 			if decorSpan != "" {
 				parts := strings.Split(decorSpan, "-")
@@ -186,9 +184,9 @@ var (
 					return fmt.Errorf("invalid --span end %q: %v", decorSpan, err)
 				}
 
-				req.Location.Kind = xpb.Location_SPAN.Enum()
-				req.Location.Start = &xpb.Location_Point{ByteOffset: proto.Int(start)}
-				req.Location.End = &xpb.Location_Point{ByteOffset: proto.Int(end)}
+				req.Location.Kind = xpb.Location_SPAN
+				req.Location.Start = &xpb.Location_Point{ByteOffset: int32(start)}
+				req.Location.End = &xpb.Location_Point{ByteOffset: int32(end)}
 			}
 
 			reply, err := xs.Decorations(req)
@@ -218,9 +216,9 @@ var (
 		func(flag *flag.FlagSet) error {
 			req := &xpb.DecorationsRequest{
 				Location: &xpb.Location{
-					Ticket: proto.String(flag.Arg(0)),
+					Ticket: flag.Arg(0),
 				},
-				References: proto.Bool(true),
+				References: true,
 			}
 			if dirtyFile != "" {
 				f, err := os.Open(dirtyFile)
@@ -250,9 +248,9 @@ var (
 					return fmt.Errorf("invalid --span end %q: %v", decorSpan, err)
 				}
 
-				req.Location.Kind = xpb.Location_SPAN.Enum()
-				req.Location.Start = &xpb.Location_Point{ByteOffset: proto.Int(start)}
-				req.Location.End = &xpb.Location_Point{ByteOffset: proto.Int(end)}
+				req.Location.Kind = xpb.Location_SPAN
+				req.Location.Start = &xpb.Location_Point{ByteOffset: int32(start)}
+				req.Location.End = &xpb.Location_Point{ByteOffset: int32(end)}
 			}
 
 			reply, err := xs.Decorations(req)
@@ -276,29 +274,21 @@ var (
 				return fmt.Errorf("given odd number of arguments (%d): %v", len(flag.Args()), flag.Args())
 			}
 
-			req := &spb.SearchRequest{Partial: &spb.VName{}}
-			if corpus != "" {
-				req.Partial.Corpus = &corpus
+			req := &spb.SearchRequest{
+				Partial: &spb.VName{
+					Corpus:    corpus,
+					Signature: signature,
+					Root:      root,
+					Path:      path,
+					Language:  language,
+				},
 			}
-			if signature != "" {
-				req.Partial.Signature = &signature
-			}
-			if root != "" {
-				req.Partial.Root = &root
-			}
-			if path != "" {
-				req.Partial.Path = &path
-			}
-			if language != "" {
-				req.Partial.Language = &language
-			}
-
 			for i := 0; i < len(flag.Args()); i = i + 2 {
 				if flag.Arg(i) == schema.FileTextFact {
 					log.Printf("WARNING: Large facts such as %s are not likely to be indexed", schema.FileTextFact)
 				}
 				req.Fact = append(req.Fact, &spb.SearchRequest_Fact{
-					Name:  proto.String(flag.Arg(i)),
+					Name:  flag.Arg(i),
 					Value: []byte(flag.Arg(i + 1)),
 				})
 			}

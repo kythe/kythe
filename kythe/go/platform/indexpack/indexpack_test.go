@@ -56,23 +56,23 @@ var (
 	// Test compilations, see below.
 	testUnits = []*cpb.CompilationUnit{{
 		VName: &spb.VName{
-			Signature: proto.String("//root/source/java:foo"),
-			Language:  proto.String("java"),
+			Signature: "//root/source/java:foo",
+			Language:  "java",
 		},
 	}, {
 		VName: &spb.VName{
-			Signature: proto.String("//root/source/go:main"),
-			Language:  proto.String("go"),
+			Signature: "//root/source/go:main",
+			Language:  "go",
 		},
 	}, {
 		VName: &spb.VName{
-			Signature: proto.String("//root/source/go:lib"),
-			Language:  proto.String("go"),
+			Signature: "//root/source/go:lib",
+			Language:  "go",
 		},
 	}, {
 		VName: &spb.VName{
-			Signature: proto.String("//lonely/little/python"),
-			Language:  proto.String("python"),
+			Signature: "//lonely/little/python",
+			Language:  "python",
 		},
 	}}
 )
@@ -93,11 +93,11 @@ func init() {
 		for path, data := range testFiles {
 			unit.RequiredInput = append(unit.RequiredInput, &cpb.CompilationUnit_FileInput{
 				Info: &cpb.FileInfo{
-					Path:   proto.String(path),
-					Digest: proto.String(hexDigest([]byte(data))),
+					Path:   path,
+					Digest: hexDigest([]byte(data)),
 				},
 			})
-			switch unit.VName.GetLanguage() {
+			switch unit.VName.Language {
 			case "go":
 				if strings.HasSuffix(path, ".go") {
 					unit.SourceFile = append(unit.SourceFile, path)
@@ -263,7 +263,7 @@ func TestFilter(t *testing.T) {
 
 	for target, key := range tests {
 		if _, err := pack.WriteUnit(ctx, key, &cpb.CompilationUnit{
-			VName: &spb.VName{Signature: proto.String(target)},
+			VName: &spb.VName{Signature: target},
 		}); err != nil {
 			t.Fatalf("WriteUnit key=%q target=%q failed: %v", key, target, err)
 		}
@@ -272,7 +272,7 @@ func TestFilter(t *testing.T) {
 	// Read all the units with key "alpha".
 	got := make(map[string]string)
 	if err := pack.ReadUnits(ctx, "alpha", func(unit interface{}) error {
-		got[unit.(*cpb.CompilationUnit).GetVName().GetSignature()] = "alpha"
+		got[unit.(*cpb.CompilationUnit).GetVName().Signature] = "alpha"
 		return nil
 	}); err != nil {
 		t.Errorf("ReadUnits key=alpha failed: %v", err)
@@ -331,7 +331,7 @@ func TestZipReader(t *testing.T) {
 	if err := pack.ReadUnits(ctx, "kythe", func(v interface{}) error {
 		numUnits++
 		for _, ri := range v.(*cpb.CompilationUnit).RequiredInput {
-			digests[ri.GetInfo().GetDigest()] = true
+			digests[ri.GetInfo().Digest] = true
 		}
 		return nil
 	}); err != nil {
@@ -404,7 +404,7 @@ type byTarget []*cpb.CompilationUnit
 func (b byTarget) Len() int      { return len(b) }
 func (b byTarget) Swap(i, j int) { b[i], b[j] = b[j], b[i] }
 func (b byTarget) Less(i, j int) bool {
-	return b[i].GetVName().GetSignature() < b[j].GetVName().GetSignature()
+	return b[i].GetVName().Signature < b[j].GetVName().Signature
 }
 
 // Reports whether a and b are equal, like reflect.DeepEqual but with correct

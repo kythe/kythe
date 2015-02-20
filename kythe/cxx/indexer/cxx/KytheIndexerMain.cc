@@ -295,7 +295,8 @@ Examples:
     }
 
     for (const auto &input : unit.required_input()) {
-      if (input.has_info() && input.info().has_path() && input.has_v_name()) {
+      if (input.has_info() && !input.info().path().empty() &&
+          input.has_v_name()) {
         observer.set_path_vname(input.info().path(), input.v_name());
         path_to_vname[input.info().path()] = input.v_name();
       }

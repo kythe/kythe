@@ -21,8 +21,6 @@ import (
 	"testing"
 
 	spb "kythe/proto/storage_proto"
-
-	"github.com/golang/protobuf/proto"
 )
 
 func TestCompareVNames(t *testing.T) {
@@ -30,11 +28,11 @@ func TestCompareVNames(t *testing.T) {
 	for i := 0; i < 100000; i += 307 {
 		key := fmt.Sprintf("%05d", i)
 		ordered = append(ordered, &spb.VName{
-			Signature: proto.String(key[0:1]),
-			Corpus:    proto.String(key[1:2]),
-			Root:      proto.String(key[2:3]),
-			Path:      proto.String(key[3:4]),
-			Language:  proto.String(key[4:5]),
+			Signature: key[0:1],
+			Corpus:    key[1:2],
+			Root:      key[2:3],
+			Path:      key[3:4],
+			Language:  key[4:5],
 		})
 	}
 
@@ -57,16 +55,16 @@ func TestCompareVNames(t *testing.T) {
 }
 
 func TestCompareEntries(t *testing.T) {
-	a := proto.String("a")
-	b := proto.String("b")
-	e := proto.String("eq")
+	a := "a"
+	b := "b"
+	e := "eq"
 	na := &spb.VName{Signature: a}
 	nb := &spb.VName{Signature: b}
 	ne := &spb.VName{Signature: e}
-	root := proto.String("/")
-	fa := proto.String("/a")
-	fb := proto.String("/b")
-	fe := proto.String("/eq")
+	root := "/"
+	fa := "/a"
+	fb := "/b"
+	fe := "/eq"
 	va := []byte("a")
 	vb := []byte("b")
 	ve := []byte("eq")

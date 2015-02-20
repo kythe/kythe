@@ -734,7 +734,7 @@ bool IndexWriter::SetVNameConfiguration(const std::string& json) {
 kythe::proto::VName IndexWriter::VNameForPath(const std::string& path) {
   kythe::proto::VName out = vname_generator_.LookupVName(path);
   out.set_language("c++");
-  if (!out.has_corpus()) {
+  if (out.corpus().empty()) {
     out.set_corpus(corpus_);
   }
   return out;

@@ -61,11 +61,9 @@ TEST(KytheIndexerUnitTest, GraphRecorderNodeKind) {
   recorder.EndNode();
   ASSERT_EQ(1, stream.entries().size());
   const auto& entry = stream.entries()[0];
-  ASSERT_TRUE(entry.has_fact_value());
   ASSERT_EQ("file", entry.fact_value());
-  ASSERT_TRUE(entry.has_fact_name());
   ASSERT_EQ("/kythe/node/kind", entry.fact_name());
-  ASSERT_FALSE(entry.has_edge_kind());
+  ASSERT_TRUE(entry.edge_kind().empty());
   ASSERT_FALSE(entry.has_target());
   ASSERT_TRUE(entry.has_source());
   ASSERT_EQ(vname.DebugString(), entry.source().DebugString());
@@ -86,8 +84,6 @@ TEST(KytheIndexerUnitTest, GraphRecorderNodeProperty) {
   ASSERT_EQ(2, stream.entries().size());
   bool found_kind_fact = false, found_property_fact = false;
   for (const auto& entry : stream.entries()) {
-    ASSERT_TRUE(entry.has_fact_value());
-    ASSERT_TRUE(entry.has_fact_name());
     if (entry.fact_name() == "/kythe/loc/uri") {
       ASSERT_EQ("test://file", entry.fact_value());
       ASSERT_FALSE(found_property_fact);
@@ -97,7 +93,7 @@ TEST(KytheIndexerUnitTest, GraphRecorderNodeProperty) {
       ASSERT_FALSE(found_kind_fact);
       found_kind_fact = true;
     }
-    ASSERT_FALSE(entry.has_edge_kind());
+    ASSERT_TRUE(entry.edge_kind().empty());
     ASSERT_FALSE(entry.has_target());
     ASSERT_TRUE(entry.has_source());
     ASSERT_EQ(vname.DebugString(), entry.source().DebugString());
@@ -124,11 +120,8 @@ TEST(KytheIndexerUnitTest, GraphRecorderEdge) {
   recorder.AddEdge(vname_source, EdgeKindID::kDefines, vname_target);
   ASSERT_EQ(1, stream.entries().size());
   const auto& entry = stream.entries()[0];
-  EXPECT_TRUE(entry.has_fact_value());
-  EXPECT_EQ("", entry.fact_value());
-  EXPECT_TRUE(entry.has_fact_name());
+  EXPECT_TRUE(entry.fact_value().empty());
   EXPECT_EQ("/", entry.fact_name());
-  ASSERT_TRUE(entry.has_edge_kind());
   ASSERT_EQ("/kythe/edge/defines", entry.edge_kind());
   ASSERT_TRUE(entry.has_target());
   ASSERT_TRUE(entry.has_source());
@@ -153,11 +146,8 @@ TEST(KytheIndexerUnitTest, GraphRecorderEdgeOrdinal) {
   recorder.AddEdge(vname_source, EdgeKindID::kDefines, vname_target, 42);
   ASSERT_EQ(1, stream.entries().size());
   const auto& entry = stream.entries()[0];
-  ASSERT_TRUE(entry.has_fact_value());
   ASSERT_EQ("42", entry.fact_value());
-  ASSERT_TRUE(entry.has_fact_name());
   ASSERT_EQ("/kythe/ordinal", entry.fact_name());
-  ASSERT_TRUE(entry.has_edge_kind());
   ASSERT_EQ("/kythe/edge/defines", entry.edge_kind());
   ASSERT_TRUE(entry.has_target());
   ASSERT_TRUE(entry.has_source());

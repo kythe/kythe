@@ -703,21 +703,16 @@ bool Verifier::PrepareDatabase() {
 AstNode *Verifier::ConvertVName(const yy::location &loc,
                                 const kythe::proto::VName &vname) {
   AstNode **values = (AstNode **)arena_.New(sizeof(AstNode *) * 5);
-  values[0] = vname.has_signature() && vname.signature().size()
-                  ? IdentifierFor(loc, vname.signature())
-                  : empty_string_id_;
-  values[1] = vname.has_corpus() && vname.corpus().size()
-                  ? IdentifierFor(loc, vname.corpus())
-                  : empty_string_id_;
-  values[2] = vname.has_root() && vname.root().size()
-                  ? IdentifierFor(loc, vname.root())
-                  : empty_string_id_;
-  values[3] = vname.has_path() && vname.path().size()
-                  ? IdentifierFor(loc, vname.path())
-                  : empty_string_id_;
-  values[4] = vname.has_language() && vname.language().size()
-                  ? IdentifierFor(loc, vname.language())
-                  : empty_string_id_;
+  values[0] = vname.signature().empty() ? empty_string_id_
+                                        : IdentifierFor(loc, vname.signature());
+  values[1] = vname.corpus().empty() ? empty_string_id_
+                                     : IdentifierFor(loc, vname.corpus());
+  values[2] = vname.root().empty() ? empty_string_id_
+                                   : IdentifierFor(loc, vname.root());
+  values[3] = vname.path().empty() ? empty_string_id_
+                                   : IdentifierFor(loc, vname.path());
+  values[4] = vname.language().empty() ? empty_string_id_
+                                       : IdentifierFor(loc, vname.language());
   AstNode *tuple = new (&arena_) Tuple(loc, 5, values);
   return new (&arena_) App(vname_id_, tuple);
 }
@@ -731,17 +726,15 @@ void Verifier::AssertSingleFact(std::string *database, unsigned int fact_id,
   AstNode **values = (AstNode **)arena_.New(sizeof(AstNode *) * 5);
   values[0] =
       entry.has_source() ? ConvertVName(loc, entry.source()) : empty_string_id_;
-  values[1] = entry.has_edge_kind() && entry.edge_kind().size() > 0
-                  ? IdentifierFor(loc, entry.edge_kind())
-                  : empty_string_id_;
+  values[1] = entry.edge_kind().empty() ? empty_string_id_
+                                        : IdentifierFor(loc, entry.edge_kind());
   values[2] =
       entry.has_target() ? ConvertVName(loc, entry.target()) : empty_string_id_;
-  values[3] = entry.has_fact_name() && entry.fact_name().size()
-                  ? IdentifierFor(loc, entry.fact_name())
-                  : empty_string_id_;
-  values[4] = entry.has_fact_value() && entry.fact_value().size()
-                  ? IdentifierFor(loc, entry.fact_value())
-                  : empty_string_id_;
+  values[3] = entry.fact_name().empty() ? empty_string_id_
+                                        : IdentifierFor(loc, entry.fact_name());
+  values[4] = entry.fact_value().empty()
+                  ? empty_string_id_
+                  : IdentifierFor(loc, entry.fact_value());
 
   AstNode *tuple = new (&arena_) Tuple(loc, 5, values);
   AstNode *fact = new (&arena_) App(fact_id_, tuple);

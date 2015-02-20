@@ -33,8 +33,6 @@ import (
 
 	spb "kythe/proto/storage_proto"
 	xpb "kythe/proto/xref_proto"
-
-	"github.com/golang/protobuf/proto"
 )
 
 // EnsureReverseEdges checks if gs contains reverse edges.  If it doesn't, it
@@ -43,7 +41,7 @@ import (
 func EnsureReverseEdges(gs graphstore.Service) error {
 	var edge *spb.Entry
 	if err := gs.Scan(&spb.ScanRequest{}, func(e *spb.Entry) error {
-		if e.GetEdgeKind() != "" {
+		if e.EdgeKind != "" {
 			edge = e
 			return io.EOF
 		}
@@ -55,14 +53,14 @@ func EnsureReverseEdges(gs graphstore.Service) error {
 	if edge == nil {
 		log.Println("No edges found in GraphStore")
 		return nil
-	} else if schema.EdgeDirection(edge.GetEdgeKind()) == schema.Reverse {
+	} else if schema.EdgeDirection(edge.EdgeKind) == schema.Reverse {
 		return nil
 	}
 
 	var foundReverse bool
 	if err := gs.Read(&spb.ReadRequest{
 		Source:   edge.Target,
-		EdgeKind: proto.String(schema.MirrorEdge(edge.GetEdgeKind())),
+		EdgeKind: schema.MirrorEdge(edge.EdgeKind),
 	}, func(entry *spb.Entry) error {
 		foundReverse = true
 		return nil
@@ -82,14 +80,14 @@ func addReverseEdges(gs graphstore.Service) error {
 		addedEdges   int
 	)
 	startTime := time.Now()
-	err := gs.Scan(nil, func(entry *spb.Entry) error {
-		kind := entry.GetEdgeKind()
+	err := gs.Scan(new(spb.ScanRequest), func(entry *spb.Entry) error {
+		kind := entry.EdgeKind
 		if kind != "" && schema.EdgeDirection(kind) == schema.Forward {
 			if err := gs.Write(&spb.WriteRequest{
 				Source: entry.Target,
 				Update: []*spb.WriteRequest_Update{{
 					Target:    entry.Source,
-					EdgeKind:  proto.String(schema.MirrorEdge(kind)),
+					EdgeKind:  schema.MirrorEdge(kind),
 					FactName:  entry.FactName,
 					FactValue: entry.FactValue,
 				}},
@@ -134,9 +132,9 @@ func (g *GraphStoreService) Nodes(req *xpb.NodesRequest) (*xpb.NodesReply, error
 	}
 	var nodes []*xpb.NodeInfo
 	for i, vname := range names {
-		info := &xpb.NodeInfo{Ticket: &req.Ticket[i]}
+		info := &xpb.NodeInfo{Ticket: req.Ticket[i]}
 		if err := g.gs.Read(&spb.ReadRequest{Source: vname}, func(entry *spb.Entry) error {
-			if len(patterns) == 0 || xrefs.MatchesAny(entry.GetFactName(), patterns) {
+			if len(patterns) == 0 || xrefs.MatchesAny(entry.FactName, patterns) {
 				info.Fact = append(info.Fact, entryToFact(entry))
 			}
 			return nil
@@ -152,7 +150,7 @@ func (g *GraphStoreService) Nodes(req *xpb.NodesRequest) (*xpb.NodesReply, error
 func (g *GraphStoreService) Edges(req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
 	if len(req.Ticket) == 0 {
 		return nil, errors.New("no tickets specified")
-	} else if req.GetPageToken() != "" {
+	} else if req.PageToken != "" {
 		return nil, errors.New("UNIMPLEMENTED: page_token")
 	}
 
@@ -175,12 +173,12 @@ func (g *GraphStoreService) Edges(req *xpb.EdgesRequest) (*xpb.EdgesReply, error
 
 		if err := g.gs.Read(&spb.ReadRequest{
 			Source:   vname,
-			EdgeKind: proto.String("*"),
+			EdgeKind: "*",
 		}, func(entry *spb.Entry) error {
-			edgeKind := entry.GetEdgeKind()
+			edgeKind := entry.EdgeKind
 			if edgeKind == "" {
 				// node fact
-				if len(patterns) > 0 && xrefs.MatchesAny(entry.GetFactName(), patterns) {
+				if len(patterns) > 0 && xrefs.MatchesAny(entry.FactName, patterns) {
 					filteredFacts = append(filteredFacts, entryToFact(entry))
 				}
 			} else {
@@ -203,7 +201,7 @@ func (g *GraphStoreService) Edges(req *xpb.EdgesRequest) (*xpb.EdgesReply, error
 		if len(filteredEdges) > 0 {
 			var groups []*xpb.EdgeSet_Group
 			for edgeKind, targets := range filteredEdges {
-				g := &xpb.EdgeSet_Group{Kind: proto.String(edgeKind)}
+				g := &xpb.EdgeSet_Group{Kind: edgeKind}
 				for target := range targets {
 					g.TargetTicket = append(g.TargetTicket, target)
 					targetSet.Add(target)
@@ -211,14 +209,14 @@ func (g *GraphStoreService) Edges(req *xpb.EdgesRequest) (*xpb.EdgesReply, error
 				groups = append(groups, g)
 			}
 			reply.EdgeSet = append(reply.EdgeSet, &xpb.EdgeSet{
-				SourceTicket: proto.String(ticket),
+				SourceTicket: ticket,
 				Group:        groups,
 			})
 
 			// In addition, only add a NodeInfo if the filters have resulting facts.
 			if len(filteredFacts) > 0 {
 				reply.Node = append(reply.Node, &xpb.NodeInfo{
-					Ticket: proto.String(ticket),
+					Ticket: ticket,
 					Fact:   filteredFacts,
 				})
 			}
@@ -227,7 +225,7 @@ func (g *GraphStoreService) Edges(req *xpb.EdgesRequest) (*xpb.EdgesReply, error
 
 	// Ensure reply.Node is a unique set by removing already requested nodes from targetSet
 	for _, n := range reply.Node {
-		targetSet.Remove(n.GetTicket())
+		targetSet.Remove(n.Ticket)
 	}
 
 	// Batch request all leftover target nodes
@@ -244,29 +242,29 @@ func (g *GraphStoreService) Edges(req *xpb.EdgesRequest) (*xpb.EdgesReply, error
 func (g *GraphStoreService) Decorations(req *xpb.DecorationsRequest) (*xpb.DecorationsReply, error) {
 	if len(req.DirtyBuffer) > 0 {
 		return nil, errors.New("UNIMPLEMENTED: dirty buffers")
-	} else if req.Location.GetKind() != xpb.Location_FILE {
+	} else if req.Location.Kind != xpb.Location_FILE {
 		return nil, errors.New("UNIMPLEMENTED: non-FILE locations")
 	}
 
-	fileVName, err := kytheuri.ToVName(req.Location.GetTicket())
+	fileVName, err := kytheuri.ToVName(req.Location.Ticket)
 	if err != nil {
-		return nil, fmt.Errorf("invalid file ticket %q: %v", req.Location.GetTicket(), err)
+		return nil, fmt.Errorf("invalid file ticket %q: %v", req.Location.Ticket, err)
 	}
 
 	reply := &xpb.DecorationsReply{Location: req.Location}
 
 	// Handle DecorationsRequest.SourceText switch
-	if req.GetSourceText() {
+	if req.SourceText {
 		text, encoding, err := getSourceText(g.gs, fileVName)
 		if err != nil {
 			return nil, fmt.Errorf("failed to retrieve file text: %v", err)
 		}
 		reply.SourceText = text
-		reply.Encoding = &encoding
+		reply.Encoding = encoding
 	}
 
 	// Handle DecorationsRequest.References switch
-	if req.GetReferences() {
+	if req.References {
 		// Traverse the following chain of edges:
 		//   file --%/kythe/edge/childof-> []anchor --forwardEdgeKind-> []target
 		//
@@ -274,7 +272,7 @@ func (g *GraphStoreService) Decorations(req *xpb.DecorationsRequest) (*xpb.Decor
 		// Add all {anchor, forwardEdgeKind, target} tuples to reply.Reference
 
 		children, err := getEdges(g.gs, fileVName, func(e *spb.Entry) bool {
-			return e.GetEdgeKind() == revChildOfEdgeKind
+			return e.EdgeKind == revChildOfEdgeKind
 		})
 		if err != nil {
 			return nil, fmt.Errorf("failed to retrieve file children: %v", err)
@@ -295,7 +293,7 @@ func (g *GraphStoreService) Decorations(req *xpb.DecorationsRequest) (*xpb.Decor
 			reply.Node = append(reply.Node, anchorNodeReply.Node[0])
 
 			targets, err := getEdges(g.gs, anchor, func(e *spb.Entry) bool {
-				return schema.EdgeDirection(e.GetEdgeKind()) == schema.Forward && e.GetEdgeKind() != schema.ChildOfEdge
+				return schema.EdgeDirection(e.EdgeKind) == schema.Forward && e.EdgeKind != schema.ChildOfEdge
 			})
 			if err != nil {
 				return nil, fmt.Errorf("failed to retrieve targets of anchor %v: %v", anchor, err)
@@ -307,9 +305,9 @@ func (g *GraphStoreService) Decorations(req *xpb.DecorationsRequest) (*xpb.Decor
 				targetTicket := kytheuri.ToString(edge.Target)
 				targetSet.Add(targetTicket)
 				reply.Reference = append(reply.Reference, &xpb.DecorationsReply_Reference{
-					SourceTicket: proto.String(kytheuri.ToString(anchor)),
-					Kind:         proto.String(edge.Kind),
-					TargetTicket: proto.String(targetTicket),
+					SourceTicket: kytheuri.ToString(anchor),
+					Kind:         edge.Kind,
+					TargetTicket: targetTicket,
 				})
 			}
 		}
@@ -329,7 +327,7 @@ var revChildOfEdgeKind = schema.MirrorEdge(schema.ChildOfEdge)
 
 func infoNodeKind(info *xpb.NodeInfo) string {
 	for _, fact := range info.Fact {
-		if fact.GetName() == schema.NodeKindFact {
+		if fact.Name == schema.NodeKindFact {
 			return string(fact.Value)
 		}
 	}
@@ -338,11 +336,11 @@ func infoNodeKind(info *xpb.NodeInfo) string {
 
 func getSourceText(gs graphstore.Service, fileVName *spb.VName) (text []byte, encoding string, err error) {
 	if err := gs.Read(&spb.ReadRequest{Source: fileVName}, func(entry *spb.Entry) error {
-		switch entry.GetFactName() {
+		switch entry.FactName {
 		case schema.FileTextFact:
-			text = entry.GetFactValue()
+			text = entry.FactValue
 		case schema.FileEncodingFact:
-			encoding = string(entry.GetFactValue())
+			encoding = string(entry.FactValue)
 		default:
 			// skip other file facts
 		}
@@ -368,10 +366,10 @@ func getEdges(gs graphstore.Service, node *spb.VName, pred func(*spb.Entry) bool
 
 	if err := gs.Read(&spb.ReadRequest{
 		Source:   node,
-		EdgeKind: proto.String("*"),
+		EdgeKind: "*",
 	}, func(entry *spb.Entry) error {
-		if entry.GetEdgeKind() != "" && pred(entry) {
-			targets = append(targets, &edgeTarget{entry.GetEdgeKind(), entry.Target})
+		if entry.EdgeKind != "" && pred(entry) {
+			targets = append(targets, &edgeTarget{entry.EdgeKind, entry.Target})
 		}
 		return nil
 	}); err != nil {

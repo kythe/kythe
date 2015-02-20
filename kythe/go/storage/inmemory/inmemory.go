@@ -78,11 +78,11 @@ func (s *store) Read(req *spb.ReadRequest, f graphstore.EntryFunc) error {
 	defer s.mu.RUnlock()
 	start := sort.Search(len(s.entries), func(i int) bool {
 		comp := compare.VNames(s.entries[i].Source, req.Source)
-		return comp != compare.LT && (comp == compare.GT || req.GetEdgeKind() == "*" || s.entries[i].GetEdgeKind() >= req.GetEdgeKind())
+		return comp != compare.LT && (comp == compare.GT || req.EdgeKind == "*" || s.entries[i].EdgeKind >= req.EdgeKind)
 	})
 	end := sort.Search(len(s.entries), func(i int) bool {
 		comp := compare.VNames(s.entries[i].Source, req.Source)
-		return comp == compare.GT || (req.GetEdgeKind() != "*" && s.entries[i].GetEdgeKind() > req.GetEdgeKind())
+		return comp == compare.GT || (req.EdgeKind != "*" && s.entries[i].EdgeKind > req.EdgeKind)
 	})
 	for i := start; i < end; i++ {
 		if err := f(s.entries[i]); err == io.EOF {

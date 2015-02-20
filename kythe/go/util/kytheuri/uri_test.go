@@ -156,19 +156,19 @@ func TestProto(t *testing.T) {
 	}
 	v := u.VName()
 	t.Logf(" URL is %q\nVName is %v", u.String(), v)
-	if s := v.GetSignature(); s != u.Signature {
+	if s := v.Signature; s != u.Signature {
 		t.Errorf("Signature: got %q, want %q", s, u.Signature)
 	}
-	if s := v.GetCorpus(); s != u.Corpus {
+	if s := v.Corpus; s != u.Corpus {
 		t.Errorf("Corpus: got %q, want %q", s, u.Corpus)
 	}
-	if s := v.GetPath(); s != u.Path {
+	if s := v.Path; s != u.Path {
 		t.Errorf("Path: got %q, want %q", s, u.Path)
 	}
-	if s := v.GetRoot(); s != u.Root {
+	if s := v.Root; s != u.Root {
 		t.Errorf("Root: got %q, want %q", s, u.Root)
 	}
-	if s := v.GetLanguage(); s != u.Language {
+	if s := v.Language; s != u.Language {
 		t.Errorf("Language: got %q, want %q", s, u.Language)
 	}
 	w := FromVName(v)

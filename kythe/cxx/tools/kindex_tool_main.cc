@@ -64,7 +64,7 @@ static void DumpIndexFile(const std::string& path) {
     } else {
       kythe::proto::FileData content;
       CHECK(content.ParseFromCodedStream(&coded_input_stream));
-      CHECK(content.has_info() && content.info().has_digest());
+      CHECK(content.has_info() && !content.info().digest().empty());
       std::string out_path = path + "_" + content.info().digest();
       int out_fd = open(out_path.c_str(), O_WRONLY | O_CREAT | O_TRUNC,
                         S_IREAD | S_IWRITE);

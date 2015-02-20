@@ -42,8 +42,6 @@ import (
 	srvpb "kythe/proto/serving_proto"
 	spb "kythe/proto/storage_proto"
 	xpb "kythe/proto/xref_proto"
-
-	"github.com/golang/protobuf/proto"
 )
 
 // maxIndexedFactValueSize is the maximum length in bytes of fact values to
@@ -63,9 +61,9 @@ func Run(gs graphstore.Service, db keyvalue.DB) error {
 	ftIn, nIn, eIn := make(chan *spb.VName), make(chan *spb.Entry), make(chan *spb.Entry)
 	go func() {
 		for entry := range entries {
-			if entry.GetEdgeKind() == "" {
+			if entry.EdgeKind == "" {
 				nIn <- entry
-				if entry.GetFactName() == schema.NodeKindFact && string(entry.FactValue) == "file" {
+				if entry.FactName == schema.NodeKindFact && string(entry.FactValue) == "file" {
 					ftIn <- entry.Source
 					files = append(files, kytheuri.ToString(entry.Source))
 				}
@@ -172,7 +170,7 @@ func writeNodes(t table.Proto, nodeEntries <-chan *spb.Entry, nodes chan<- *srvp
 	defer close(nodes)
 	for node := range collectNodes(nodeEntries) {
 		nodes <- node
-		if err := t.Put(xsrv.NodeKey(node.GetTicket()), node); err != nil {
+		if err := t.Put(xsrv.NodeKey(node.Ticket), node); err != nil {
 			return err
 		}
 	}
@@ -195,7 +193,7 @@ func collectNodes(nodeEntries <-chan *spb.Entry) <-chan *srvpb.Node {
 			if node == nil {
 				vname = e.Source
 				ticket := kytheuri.ToString(vname)
-				node = &srvpb.Node{Ticket: &ticket}
+				node = &srvpb.Node{Ticket: ticket}
 			}
 			node.Fact = append(node.Fact, &srvpb.Node_Fact{
 				Name:  e.FactName,
@@ -264,8 +262,8 @@ func writeEdgePages(t table.Proto, gs graphstore.Service) error {
 		grp      *srvpb.EdgeSet_Group
 		pesTotal int
 	)
-	if err := gs.Scan(nil, func(e *spb.Entry) error {
-		if e.GetEdgeKind() == "" {
+	if err := gs.Scan(new(spb.ScanRequest), func(e *spb.Entry) error {
+		if e.EdgeKind == "" {
 			panic("non-edge entry")
 		}
 
@@ -274,8 +272,8 @@ func writeEdgePages(t table.Proto, gs graphstore.Service) error {
 				pes.EdgeSet.Group = append(pes.EdgeSet.Group, grp)
 				pesTotal += len(grp.TargetTicket)
 			}
-			pes.TotalEdges = proto.Int(pesTotal)
-			if err := t.Put(xsrv.EdgeSetKey(pes.EdgeSet.GetSourceTicket()), pes); err != nil {
+			pes.TotalEdges = int32(pesTotal)
+			if err := t.Put(xsrv.EdgeSetKey(pes.EdgeSet.SourceTicket), pes); err != nil {
 				return err
 			}
 			pes = nil
@@ -285,12 +283,12 @@ func writeEdgePages(t table.Proto, gs graphstore.Service) error {
 		if pes == nil {
 			pes = &srvpb.PagedEdgeSet{
 				EdgeSet: &srvpb.EdgeSet{
-					SourceTicket: proto.String(kytheuri.ToString(e.Source)),
+					SourceTicket: kytheuri.ToString(e.Source),
 				},
 			}
 		}
 
-		if grp != nil && grp.GetKind() != e.GetEdgeKind() {
+		if grp != nil && grp.Kind != e.EdgeKind {
 			pes.EdgeSet.Group = append(pes.EdgeSet.Group, grp)
 			pesTotal += len(grp.TargetTicket)
 			grp = nil
@@ -312,8 +310,8 @@ func writeEdgePages(t table.Proto, gs graphstore.Service) error {
 			pes.EdgeSet.Group = append(pes.EdgeSet.Group, grp)
 			pesTotal += len(grp.TargetTicket)
 		}
-		pes.TotalEdges = proto.Int(pesTotal)
-		if err := t.Put(xsrv.EdgeSetKey(pes.EdgeSet.GetSourceTicket()), pes); err != nil {
+		pes.TotalEdges = int32(pesTotal)
+		if err := t.Put(xsrv.EdgeSetKey(pes.EdgeSet.SourceTicket), pes); err != nil {
 			return err
 		}
 	}
@@ -329,7 +327,7 @@ func writeWithReverses(gs graphstore.Service, req *spb.WriteRequest) error {
 			Source: u.Target,
 			Update: []*spb.WriteRequest_Update{{
 				Target:    req.Source,
-				EdgeKind:  proto.String(schema.MirrorEdge(u.GetEdgeKind())),
+				EdgeKind:  schema.MirrorEdge(u.EdgeKind),
 				FactName:  u.FactName,
 				FactValue: u.FactValue,
 			}},
@@ -369,13 +367,13 @@ func writeDecorations(t table.Proto, es xrefs.NodesEdgesService, files []string)
 		}
 
 		for _, n := range e.Node {
-			if n.GetTicket() == decor.GetFileTicket() {
+			if n.Ticket == decor.FileTicket {
 				for _, f := range n.Fact {
-					switch f.GetName() {
+					switch f.Name {
 					case schema.FileTextFact:
 						decor.SourceText = f.Value
 					case schema.FileEncodingFact:
-						decor.Encoding = proto.String(string(f.GetValue()))
+						decor.Encoding = string(f.Value)
 					}
 				}
 			} else {
@@ -387,7 +385,7 @@ func writeDecorations(t table.Proto, es xrefs.NodesEdgesService, files []string)
 			}
 		}
 
-		if err := t.Put(xsrv.DecorationsKey(decor.GetFileTicket()), decor); err != nil {
+		if err := t.Put(xsrv.DecorationsKey(decor.FileTicket), decor); err != nil {
 			return err
 		}
 	}
@@ -402,7 +400,7 @@ func getDecorations(es xrefs.EdgesService, anchor *xpb.NodeInfo) ([]*srvpb.FileD
 		err        error
 	)
 	for _, f := range anchor.Fact {
-		switch f.GetName() {
+		switch f.Name {
 		case schema.NodeKindFact:
 			if string(f.Value) == schema.AnchorKind {
 				isAnchor = true
@@ -410,12 +408,12 @@ func getDecorations(es xrefs.EdgesService, anchor *xpb.NodeInfo) ([]*srvpb.FileD
 		case schema.AnchorStartFact:
 			start, err = strconv.Atoi(string(f.Value))
 			if err != nil {
-				return nil, fmt.Errorf("invalid anchor %q start offset: %q", anchor.GetTicket(), string(f.Value))
+				return nil, fmt.Errorf("invalid anchor %q start offset: %q", anchor.Ticket, string(f.Value))
 			}
 		case schema.AnchorEndFact:
 			end, err = strconv.Atoi(string(f.Value))
 			if err != nil {
-				return nil, fmt.Errorf("invalid anchor %q end offset: %q", anchor.GetTicket(), string(f.Value))
+				return nil, fmt.Errorf("invalid anchor %q end offset: %q", anchor.Ticket, string(f.Value))
 			}
 		}
 	}
@@ -423,7 +421,7 @@ func getDecorations(es xrefs.EdgesService, anchor *xpb.NodeInfo) ([]*srvpb.FileD
 		return nil, nil
 	}
 
-	edges, err := es.Edges(&xpb.EdgesRequest{Ticket: []string{anchor.GetTicket()}})
+	edges, err := es.Edges(&xpb.EdgesRequest{Ticket: []string{anchor.Ticket}})
 	if err != nil {
 		return nil, err
 	}
@@ -433,17 +431,17 @@ func getDecorations(es xrefs.EdgesService, anchor *xpb.NodeInfo) ([]*srvpb.FileD
 
 	a := &srvpb.FileDecorations_Decoration_Anchor{
 		Ticket:      anchor.Ticket,
-		StartOffset: proto.Int(start),
-		EndOffset:   proto.Int(end),
+		StartOffset: int32(start),
+		EndOffset:   int32(end),
 	}
 	var ds []*srvpb.FileDecorations_Decoration
 	for _, grp := range edges.EdgeSet[0].Group {
-		if schema.EdgeDirection(grp.GetKind()) == schema.Forward && grp.GetKind() != schema.ChildOfEdge {
+		if schema.EdgeDirection(grp.Kind) == schema.Forward && grp.Kind != schema.ChildOfEdge {
 			for _, target := range grp.TargetTicket {
 				ds = append(ds, &srvpb.FileDecorations_Decoration{
 					Anchor:       a,
 					Kind:         grp.Kind,
-					TargetTicket: proto.String(target),
+					TargetTicket: target,
 				})
 			}
 		}
@@ -490,11 +488,11 @@ func readEdges(es xrefs.NodesEdgesService, files []string, edges chan<- *xpb.Edg
 
 func writeIndex(t table.Inverted, nodes <-chan *srvpb.Node) error {
 	for n := range nodes {
-		uri, err := kytheuri.Parse(n.GetTicket())
+		uri, err := kytheuri.Parse(n.Ticket)
 		if err != nil {
 			return err
 		}
-		key := []byte(n.GetTicket())
+		key := []byte(n.Ticket)
 
 		if uri.Signature != "" {
 			if err := t.Put(key, search.VNameVal("signature", uri.Signature)); err != nil {
@@ -524,7 +522,7 @@ func writeIndex(t table.Inverted, nodes <-chan *srvpb.Node) error {
 
 		for _, f := range n.Fact {
 			if len(f.Value) <= maxIndexedFactValueSize {
-				if err := t.Put(key, search.FactVal(f.GetName(), f.Value)); err != nil {
+				if err := t.Put(key, search.FactVal(f.Name, f.Value)); err != nil {
 					return err
 				}
 			}

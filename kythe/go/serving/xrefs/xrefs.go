@@ -65,7 +65,7 @@ func (t *Table) Nodes(req *xpb.NodesRequest) (*xpb.NodesReply, error) {
 		}
 		ni := &xpb.NodeInfo{Ticket: n.Ticket}
 		for _, fact := range n.Fact {
-			if len(patterns) == 0 || xrefs.MatchesAny(fact.GetName(), patterns) {
+			if len(patterns) == 0 || xrefs.MatchesAny(fact.Name, patterns) {
 				ni.Fact = append(ni.Fact, &xpb.Fact{Name: fact.Name, Value: fact.Value})
 			}
 		}
@@ -98,26 +98,26 @@ func (t *Table) Edges(req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
 		return nil, errors.New("no tickets specified")
 	}
 	stats := filterStats{
-		max: int(req.GetPageSize()),
+		max: int(req.PageSize),
 	}
 	if stats.max < 0 {
-		return nil, fmt.Errorf("invalid page_size: %d", req.GetPageSize())
+		return nil, fmt.Errorf("invalid page_size: %d", req.PageSize)
 	} else if stats.max == 0 {
 		stats.max = defaultPageSize
 	} else if stats.max > maxPageSize {
 		stats.max = maxPageSize
 	}
 
-	if req.GetPageToken() != "" {
-		rec, err := base64.StdEncoding.DecodeString(req.GetPageToken())
+	if req.PageToken != "" {
+		rec, err := base64.StdEncoding.DecodeString(req.PageToken)
 		if err != nil {
-			return nil, fmt.Errorf("invalid page_token: %q", req.GetPageToken())
+			return nil, fmt.Errorf("invalid page_token: %q", req.PageToken)
 		}
 		var t srvpb.PageToken
-		if err := proto.Unmarshal(rec, &t); err != nil || t.GetIndex() < 0 {
-			return nil, fmt.Errorf("invalid page_token: %q", req.GetPageToken())
+		if err := proto.Unmarshal(rec, &t); err != nil || t.Index < 0 {
+			return nil, fmt.Errorf("invalid page_token: %q", req.PageToken)
 		}
-		stats.skip = int(t.GetIndex())
+		stats.skip = int(t.Index)
 	}
 	pageToken := stats.skip
 
@@ -134,11 +134,11 @@ func (t *Table) Edges(req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
 		} else if err != nil {
 			return nil, fmt.Errorf("lookup error for node edges %q: %v", ticket, err)
 		}
-		totalEdgesPossible += int(pes.GetTotalEdges())
+		totalEdgesPossible += int(pes.TotalEdges)
 
 		var groups []*xpb.EdgeSet_Group
 		for _, grp := range pes.EdgeSet.Group {
-			if len(allowedKinds) == 0 || allowedKinds.Contains(grp.GetKind()) {
+			if len(allowedKinds) == 0 || allowedKinds.Contains(grp.Kind) {
 				ng := stats.filter(grp)
 				if ng != nil {
 					nodeTickets.Add(ng.TargetTicket...)
@@ -151,10 +151,10 @@ func (t *Table) Edges(req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
 		}
 
 		for _, idx := range pes.PageIndex {
-			if len(allowedKinds) == 0 || allowedKinds.Contains(idx.GetEdgeKind()) {
+			if len(allowedKinds) == 0 || allowedKinds.Contains(idx.EdgeKind) {
 				var ep srvpb.EdgePage
-				if err := t.Lookup([]byte(edgePagesTablePrefix+idx.GetPageKey()), &ep); err == table.ErrNoSuchKey {
-					return nil, fmt.Errorf("missing edge page: %q", idx.GetPageKey())
+				if err := t.Lookup([]byte(edgePagesTablePrefix+idx.PageKey), &ep); err == table.ErrNoSuchKey {
+					return nil, fmt.Errorf("missing edge page: %q", idx.PageKey)
 				} else if err != nil {
 					return nil, fmt.Errorf("lookup error for node edges %q: %v", ticket, err)
 				}
@@ -171,7 +171,7 @@ func (t *Table) Edges(req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
 		}
 
 		if len(groups) > 0 {
-			nodeTickets.Add(pes.EdgeSet.GetSourceTicket())
+			nodeTickets.Add(pes.EdgeSet.SourceTicket)
 			reply.EdgeSet = append(reply.EdgeSet, &xpb.EdgeSet{
 				SourceTicket: pes.EdgeSet.SourceTicket,
 				Group:        groups,
@@ -197,11 +197,11 @@ func (t *Table) Edges(req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
 
 	if pageToken+stats.total != totalEdgesPossible && stats.total != 0 {
 		// TODO: take into account an empty last page (due to kind filters)
-		rec, err := proto.Marshal(&srvpb.PageToken{Index: proto.Int(pageToken + stats.total)})
+		rec, err := proto.Marshal(&srvpb.PageToken{Index: int32(pageToken + stats.total)})
 		if err != nil {
 			return nil, fmt.Errorf("error marshalling page token: %v", err)
 		}
-		reply.NextPageToken = proto.String(base64.StdEncoding.EncodeToString(rec))
+		reply.NextPageToken = base64.StdEncoding.EncodeToString(rec)
 	}
 	return reply, nil
 }
@@ -241,10 +241,13 @@ func (t *Table) Decorations(req *xpb.DecorationsRequest) (*xpb.DecorationsReply,
 	if len(req.DirtyBuffer) > 0 {
 		log.Println("TODO: implement DecorationsRequest.DirtyBuffer")
 		return nil, errors.New("dirty buffers unimplemented")
+	} else if req.GetLocation() == nil {
+		// TODO(schroederc): allow empty location when given dirty buffer
+		return nil, errors.New("missing location")
 	}
 
 	var decor srvpb.FileDecorations
-	ticket := req.GetLocation().GetTicket()
+	ticket := req.GetLocation().Ticket
 	if err := t.Lookup(DecorationsKey(ticket), &decor); err == table.ErrNoSuchKey {
 		return nil, fmt.Errorf("decorations not found for file %q", ticket)
 	} else if err != nil {
@@ -252,8 +255,14 @@ func (t *Table) Decorations(req *xpb.DecorationsRequest) (*xpb.DecorationsReply,
 	}
 
 	reply := &xpb.DecorationsReply{}
-	windowStart := req.GetLocation().GetStart().GetByteOffset()
-	windowEnd := req.GetLocation().GetEnd().GetByteOffset()
+	var windowStart int32
+	if s := req.GetLocation().GetStart(); s != nil {
+		windowStart = s.ByteOffset
+	}
+	var windowEnd int32
+	if e := req.GetLocation().GetEnd(); e != nil {
+		windowEnd = e.ByteOffset
+	}
 	if windowStart > windowEnd {
 		return nil, fmt.Errorf("invalid SPAN: start (%d) is after end (%d)", windowStart, windowEnd)
 	} else if windowEnd >= int32(len(decor.SourceText)) {
@@ -262,31 +271,31 @@ func (t *Table) Decorations(req *xpb.DecorationsRequest) (*xpb.DecorationsReply,
 		return nil, fmt.Errorf("invalid SPAN: negative offset {%+v}", req.GetLocation())
 	}
 
-	if req.GetSourceText() {
+	if req.SourceText {
 		reply.Encoding = decor.Encoding
-		if req.GetLocation().GetKind() == xpb.Location_FILE {
+		if req.GetLocation().Kind == xpb.Location_FILE {
 			reply.SourceText = decor.SourceText
 		} else {
 			reply.SourceText = decor.SourceText[windowStart:windowEnd]
 		}
 	}
 
-	if req.GetReferences() {
+	if req.References {
 		nodeTickets := stringset.New()
-		if req.Location.GetKind() == xpb.Location_FILE {
+		if req.Location.Kind == xpb.Location_FILE {
 			reply.Reference = make([]*xpb.DecorationsReply_Reference, len(decor.Decoration))
 			for i, d := range decor.Decoration {
 				reply.Reference[i] = decorationToReference(d)
-				nodeTickets.Add(d.Anchor.GetTicket())
-				nodeTickets.Add(d.GetTargetTicket())
+				nodeTickets.Add(d.Anchor.Ticket)
+				nodeTickets.Add(d.TargetTicket)
 			}
 		} else {
 			for _, d := range decor.Decoration {
 				// TODO(schroederc): handle invalid Anchor spans (e.g. [100 -1])
-				if d.Anchor.GetStartOffset() >= windowStart && d.Anchor.GetEndOffset() < windowEnd {
+				if d.Anchor.StartOffset >= windowStart && d.Anchor.EndOffset < windowEnd {
 					reply.Reference = append(reply.Reference, decorationToReference(d))
-					nodeTickets.Add(d.Anchor.GetTicket())
-					nodeTickets.Add(d.GetTargetTicket())
+					nodeTickets.Add(d.Anchor.Ticket)
+					nodeTickets.Add(d.TargetTicket)
 				}
 			}
 		}
@@ -302,7 +311,7 @@ func (t *Table) Decorations(req *xpb.DecorationsRequest) (*xpb.DecorationsReply,
 		Ticket: req.Location.Ticket,
 		Kind:   req.Location.Kind,
 	}
-	if req.Location.GetKind() == xpb.Location_SPAN {
+	if req.Location.Kind == xpb.Location_SPAN {
 		reply.Location.Start = normalizePoint(decor.SourceText, req.Location.Start)
 		reply.Location.End = normalizePoint(decor.SourceText, req.Location.End)
 	}
@@ -330,17 +339,17 @@ func normalizePoint(text []byte, p *xpb.Location_Point) *xpb.Location_Point {
 		return nil
 	}
 	// TODO line (+column)? -> byte_offset (+column)? conversion
-	offset := p.GetByteOffset()
+	offset := p.ByteOffset
 	textBefore := text[:offset]
 	np := &xpb.Location_Point{
 		ByteOffset: p.ByteOffset,
-		LineNumber: proto.Int(bytes.Count(textBefore, lineEnd) + 1),
+		LineNumber: int32(bytes.Count(textBefore, lineEnd) + 1),
 	}
 	lineStart := int32(bytes.LastIndex(textBefore, lineEnd))
 	if lineStart != -1 {
-		np.ColumnOffset = proto.Int32(offset - lineStart - 1)
+		np.ColumnOffset = offset - lineStart - 1
 	} else {
-		np.ColumnOffset = proto.Int32(offset)
+		np.ColumnOffset = offset
 	}
 	return np
 }
