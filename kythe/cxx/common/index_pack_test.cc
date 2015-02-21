@@ -547,7 +547,7 @@ TEST(IndexPack, Serialize) {
   data_out.clear();
   ASSERT_TRUE(WriteMessageAsJsonToString(file_data, "kythe", &data_out));
   EXPECT_EQ(
-      "{\"format\":\"kythe\",\"content\":{\"content\":\"text\",\"info\":{"
+      "{\"format\":\"kythe\",\"content\":{\"content\":\"dGV4dA==\",\"info\":{"
       "\"path\":\"here\"}}}",
       data_out);
   proto::FileDataRequest has_repeated_field;
@@ -580,7 +580,7 @@ TEST(IndexPack, Deserialize) {
                                    &format_string, &file_data));
   EXPECT_EQ("kythe", format_string);
   ASSERT_TRUE(MergeJsonWithMessage(
-      "{\"format\":\"kythe\",\"content\":{\"content\":\"text\",\"info\":{"
+      "{\"format\":\"kythe\",\"content\":{\"content\":\"dGV4dA==\",\"info\":{"
       "\"path\":\"here\"}}}",
       &format_string, &file_data));
   EXPECT_EQ("text", file_data.content());
@@ -597,6 +597,28 @@ TEST(IndexPack, Deserialize) {
   EXPECT_EQ(2, has_repeated_field.file_info_size());
   EXPECT_EQ("1", has_repeated_field.file_info(0).path());
   EXPECT_EQ("2", has_repeated_field.file_info(1).path());
+}
+
+TEST(IndexPack, Encode64) {
+  EXPECT_EQ("aGVsbG8K", EncodeBase64("hello\n"));
+  EXPECT_EQ("", EncodeBase64(""));
+}
+
+TEST(IndexPack, Decode64) {
+  google::protobuf::string buffer;
+  EXPECT_TRUE(DecodeBase64("aGVsbG8K", &buffer));
+  EXPECT_EQ("hello\n", buffer);
+  EXPECT_TRUE(DecodeBase64("YnllCg==", &buffer));
+  EXPECT_EQ("bye\n", buffer);
+  EXPECT_TRUE(DecodeBase64("Y2lhbwo=", &buffer));
+  EXPECT_EQ("ciao\n", buffer);
+  EXPECT_TRUE(DecodeBase64("", &buffer));
+  EXPECT_EQ("", buffer);
+  // Check to make sure that the function tolerates bad input.
+  DecodeBase64("==", &buffer);
+  DecodeBase64("=", &buffer);
+  DecodeBase64("===", &buffer);
+  DecodeBase64("!", &buffer);
 }
 
 }  // namespace
