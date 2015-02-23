@@ -19,6 +19,10 @@
 (def anchor-start "/kythe/loc/start")
 (def anchor-end "/kythe/loc/end")
 
+(def text-fact "/kythe/text")
+
+(def childof-edge "/kythe/edge/childof")
+
 (defn filter-nodes-by-kind [kind nodes]
   "Returns the nodes of the given kind from the given collection"
   (filter (fn [[_ {k node-kind-fact}]] (= kind k)) nodes))
