@@ -1,0 +1,166 @@
+/*
+ * Copyright 2015 Google Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// Binary ktags emits ctags-formatted lines for the definitions of the given files.
+package main
+
+import (
+	"bytes"
+	"flag"
+	"fmt"
+	"log"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+
+	"kythe/go/services/search"
+	"kythe/go/services/xrefs"
+	"kythe/go/util/schema"
+	"kythe/go/util/stringset"
+
+	spb "kythe/proto/storage_proto"
+	xpb "kythe/proto/xref_proto"
+)
+
+var remoteAPI = flag.String("api", "https://xrefs-dot-kythe-repo.appspot.com", "Remote api server")
+
+func init() {
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage: %s [--api address] <file>...\n", filepath.Base(os.Args[0]))
+		flag.PrintDefaults()
+	}
+}
+
+// TODO(schroederc): use cross-language facts to determine a node's tag name.
+// Currently, this fact is only emitted by the Java indexer.
+const identifierFact = "/kythe/identifier"
+
+func main() {
+	flag.Parse()
+
+	xs := xrefs.WebClient(*remoteAPI)
+	idx := search.WebClient(*remoteAPI)
+
+	for _, file := range flag.Args() {
+		results, err := idx.Search(&spb.SearchRequest{
+			Partial: &spb.VName{Path: file},
+			Fact: []*spb.SearchRequest_Fact{
+				&spb.SearchRequest_Fact{
+					Name:  schema.NodeKindFact,
+					Value: []byte(schema.FileKind)},
+			},
+		})
+		if err != nil {
+			log.Fatalf("Error searching for ticket of file %q", file)
+		} else if len(results.Ticket) == 0 {
+			log.Printf("Could not find ticket for file %q", file)
+			continue
+		} else if len(results.Ticket) != 1 {
+			log.Println("Multiple tickets found for file %q; choosing first from %v", file, results.Ticket)
+		}
+
+		ticket := results.Ticket[0]
+		decor, err := xs.Decorations(&xpb.DecorationsRequest{
+			Location:   &xpb.Location{Ticket: ticket},
+			SourceText: true,
+			References: true,
+		})
+		if err != nil {
+			log.Fatalf("Failed to get decorations for file %q", file)
+		}
+
+		nodes := xrefs.NodesMap(decor.Node)
+		emitted := stringset.New()
+
+		for _, r := range decor.Reference {
+			if r.Kind != schema.DefinesEdge || emitted.Contains(r.TargetTicket) {
+				continue
+			}
+
+			ident := string(nodes[r.TargetTicket][identifierFact])
+			if ident == "" {
+				continue
+			}
+
+			offset, err := strconv.Atoi(string(nodes[r.SourceTicket][schema.AnchorStartFact]))
+			if err != nil {
+				log.Println("Invalid start offset for anchor %q", r.SourceTicket)
+				continue
+			}
+
+			fields, err := getTagFields(xs, r.TargetTicket)
+			if err != nil {
+				log.Printf("Failed to get tagfields for %q: %v", r.TargetTicket, err)
+			}
+
+			fmt.Printf("%s\t%s\t%d;\"\t%s\n",
+				ident, file, offsetLine(decor.SourceText, offset), strings.Join(fields, "\t"))
+			emitted.Add(r.TargetTicket)
+		}
+	}
+}
+
+func getTagFields(xs xrefs.Service, ticket string) ([]string, error) {
+	reply, err := xs.Edges(&xpb.EdgesRequest{
+		Ticket: []string{ticket},
+		Kind:   []string{schema.ChildOfEdge, schema.ParamEdge},
+		Filter: []string{schema.NodeKindFact, schema.SubkindFact, identifierFact},
+	})
+	if err != nil || len(reply.EdgeSet) == 0 {
+		return nil, err
+	}
+
+	var fields []string
+
+	nodes := xrefs.NodesMap(reply.Node)
+	edges := xrefs.EdgesMap(reply.EdgeSet)
+
+	switch string(nodes[ticket][schema.NodeKindFact]) + "|" + string(nodes[ticket][schema.SubkindFact]) {
+	case schema.FunctionKind + "|":
+		fields = append(fields, "f")
+		fields = append(fields, "arity:"+strconv.Itoa(len(edges[ticket][schema.ParamEdge])))
+	case schema.EnumKind + "|" + schema.EnumClassSubkind:
+		fields = append(fields, "g")
+	case schema.PackageKind + "|":
+		fields = append(fields, "p")
+	case schema.RecordKind + "|" + schema.ClassSubkind:
+		fields = append(fields, "c")
+	case schema.VariableKind + "|":
+		fields = append(fields, "v")
+	}
+
+	for _, parent := range edges[ticket][schema.ChildOfEdge] {
+		parentIdent := string(nodes[parent][identifierFact])
+		if parentIdent == "" {
+			continue
+		}
+		switch string(nodes[parent][schema.NodeKindFact]) + "|" + string(nodes[parent][schema.SubkindFact]) {
+		case schema.FunctionKind + "|":
+			fields = append(fields, "function:"+parentIdent)
+		case schema.RecordKind + "|" + schema.ClassSubkind:
+			fields = append(fields, "class:"+parentIdent)
+		case schema.EnumKind + "|" + schema.EnumClassSubkind:
+			fields = append(fields, "enum:"+parentIdent)
+		}
+	}
+
+	return fields, nil
+}
+
+func offsetLine(text []byte, offset int) int {
+	return bytes.Count(text[:offset], []byte("\n")) + 1
+}

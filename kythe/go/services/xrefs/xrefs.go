@@ -61,6 +61,32 @@ type DecorationsService interface {
 	Decorations(*xpb.DecorationsRequest) (*xpb.DecorationsReply, error)
 }
 
+// NodesMap returns a map from each node ticket to a map of its facts.
+func NodesMap(nodes []*xpb.NodeInfo) map[string]map[string][]byte {
+	m := make(map[string]map[string][]byte, len(nodes))
+	for _, n := range nodes {
+		facts := make(map[string][]byte, len(n.Fact))
+		for _, f := range n.Fact {
+			facts[f.Name] = f.Value
+		}
+		m[n.Ticket] = facts
+	}
+	return m
+}
+
+// EdgesMap returns a map from each node ticket to a map of its outward edge kinds.
+func EdgesMap(edges []*xpb.EdgeSet) map[string]map[string][]string {
+	m := make(map[string]map[string][]string, len(edges))
+	for _, es := range edges {
+		kinds := make(map[string][]string, len(es.Group))
+		for _, g := range es.Group {
+			kinds[g.Kind] = g.TargetTicket
+		}
+		m[es.SourceTicket] = kinds
+	}
+	return m
+}
+
 // ConvertFilters converts each filter glob into an equivalent regexp.
 func ConvertFilters(filters []string) []*regexp.Regexp {
 	var patterns []*regexp.Regexp

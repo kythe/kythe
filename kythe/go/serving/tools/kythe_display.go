@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"kythe/go/services/xrefs"
 	"kythe/go/util/kytheuri"
 	"kythe/go/util/schema"
 
@@ -108,7 +109,7 @@ func displayReferences(decor *xpb.DecorationsReply) error {
 		return json.NewEncoder(out).Encode(decor)
 	}
 
-	nodes := nodesMap(decor.Node)
+	nodes := xrefs.NodesMap(decor.Node)
 
 	for _, ref := range decor.Reference {
 		nodeKind := factValue(nodes, ref.TargetTicket, schema.NodeKindFact, "UNKNOWN")
@@ -215,16 +216,4 @@ func factValue(m map[string]map[string][]byte, ticket, factName, def string) str
 		}
 	}
 	return def
-}
-
-func nodesMap(nodes []*xpb.NodeInfo) map[string]map[string][]byte {
-	m := make(map[string]map[string][]byte, len(nodes))
-	for _, n := range nodes {
-		facts := make(map[string][]byte, len(n.Fact))
-		for _, f := range n.Fact {
-			facts[f.Name] = f.Value
-		}
-		m[n.Ticket] = facts
-	}
-	return m
 }
