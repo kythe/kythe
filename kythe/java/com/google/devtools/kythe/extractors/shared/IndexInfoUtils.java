@@ -35,19 +35,15 @@ import java.util.List;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-/**
- * A class that contains utilities to read, write, and manipulate compilation index information.
- */
+/** Utilities to read and write compilation index information in .kindex files. */
 public class IndexInfoUtils {
   public static final String INDEX_FILE_EXT = ".kindex";
 
-  public static CompilationDescription readIndexInfoFromFile(
-      String indexInfoFilename) throws IOException {
+  public static CompilationDescription readIndexInfoFromFile(String indexInfoFilename)
+      throws IOException {
     checkArgument(!Strings.isNullOrEmpty(indexInfoFilename), "indexInfoFilename");
 
-    //TODO(jvg): switch to java.nio
-    InputStream indexInfoInputStream = new GZIPInputStream(
-        new FileInputStream(indexInfoFilename));
+    InputStream indexInfoInputStream = new GZIPInputStream(new FileInputStream(indexInfoFilename));
     try {
       return readIndexInfoFromStream(indexInfoInputStream);
     } finally {
@@ -55,8 +51,8 @@ public class IndexInfoUtils {
     }
   }
 
-  public static CompilationDescription readIndexInfoFromStream(
-      InputStream inputStream) throws IOException {
+  public static CompilationDescription readIndexInfoFromStream(InputStream inputStream)
+      throws IOException {
     checkNotNull(inputStream, "inputStream");
 
     // We do not use parseDelimitedFrom but use CodedInputStream manually,
@@ -73,8 +69,8 @@ public class IndexInfoUtils {
   }
 
 
-  public static void writeIndexInfoToStream(CompilationDescription description,
-      OutputStream stream) throws IOException {
+  public static void writeIndexInfoToStream(CompilationDescription description, OutputStream stream)
+      throws IOException {
     OutputStream indexOutputStream = new GZIPOutputStream(stream);
     try {
       description.getCompilationUnit().writeDelimitedTo(indexOutputStream);
