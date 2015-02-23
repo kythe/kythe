@@ -104,8 +104,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, Void> {
       }
     }
 
-    scanList(compilation.getImports(), v);
-    scanList(compilation.getPackageAnnotations(), v);
+    scan(compilation.getImports(), v);
+    scan(compilation.getPackageAnnotations(), v);
     return new JavaNode(fileNode, filePositions.getFilename());
   }
 
@@ -191,6 +191,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, Void> {
   @Override
   public JavaNode visitMethodDef(JCMethodDecl methodDef, Void v) {
     scan(methodDef.getBody(), v);
+    scan(methodDef.getThrows(), v);
+
     JavaNode returnType = scan(methodDef.getReturnType(), v);
     List<JavaNode> params = scanList(methodDef.getParameters(), v);
     List<EntrySet> paramTypes = Lists.newLinkedList();
