@@ -20,6 +20,8 @@ package kythe.proto;
 option java_package = "com.google.devtools.kythe.proto";
 
 // A binary blob with a type tag.
+// TOOD(zarko): Swap this out with the official version once it appears in
+// proto3.
 message Any {
   // The URI for this message type (eg, kythe.io/proto/kythe.proto.CxxDetails)
   string type_uri = 1;
