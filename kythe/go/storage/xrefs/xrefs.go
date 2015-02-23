@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"sort"
 	"strconv"
 	"time"
 
@@ -342,12 +343,13 @@ func (g *GraphStoreService) Decorations(req *xpb.DecorationsRequest) (*xpb.Decor
 				targetTicket := kytheuri.ToString(edge.Target)
 				targetSet.Add(targetTicket)
 				reply.Reference = append(reply.Reference, &xpb.DecorationsReply_Reference{
-					SourceTicket: kytheuri.ToString(anchor),
+					SourceTicket: ticket,
 					Kind:         edge.Kind,
 					TargetTicket: targetTicket,
 				})
 			}
 		}
+		sortReferences(reply)
 
 		// Ensure returned nodes are not duplicated.
 		for _, n := range reply.Node {
@@ -362,6 +364,42 @@ func (g *GraphStoreService) Decorations(req *xpb.DecorationsRequest) (*xpb.Decor
 	}
 
 	return reply, nil
+}
+
+func sortReferences(d *xpb.DecorationsReply) {
+	refs := d.Reference
+	spans := make([]struct{ start, end int }, len(refs))
+	nodes := xrefs.NodesMap(d.Node)
+	for i, r := range refs {
+		if n, ok := nodes[r.SourceTicket]; ok {
+			// Ignore errors; 0 works fine for sorting purposes
+			start, _ := strconv.Atoi(string(n[schema.AnchorStartFact]))
+			end, _ := strconv.Atoi(string(n[schema.AnchorEndFact]))
+			spans[i] = struct{ start, end int }{start, end}
+		}
+	}
+	sort.Sort(bySpan{refs, spans})
+}
+
+type bySpan struct {
+	refs  []*xpb.DecorationsReply_Reference
+	spans []struct{ start, end int }
+}
+
+func (s bySpan) Len() int { return len(s.refs) }
+func (s bySpan) Swap(i, j int) {
+	s.refs[i], s.refs[j] = s.refs[j], s.refs[i]
+	s.spans[i], s.spans[j] = s.spans[j], s.spans[i]
+}
+func (s bySpan) Less(i, j int) bool {
+	if s.spans[i].start < s.spans[j].start {
+		return true
+	} else if s.spans[i].start > s.spans[j].start {
+		return false
+	} else if s.spans[i].end < s.spans[j].end {
+		return true
+	}
+	return false
 }
 
 var revChildOfEdgeKind = schema.MirrorEdge(schema.ChildOfEdge)

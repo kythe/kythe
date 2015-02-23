@@ -23,6 +23,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"sort"
 	"strconv"
 	"sync"
 
@@ -385,12 +386,28 @@ func writeDecorations(t table.Proto, es xrefs.NodesEdgesService, files []string)
 			}
 		}
 
+		sort.Sort(byOffset(decor.Decoration))
 		if err := t.Put(xsrv.DecorationsKey(decor.FileTicket), decor); err != nil {
 			return err
 		}
 	}
 
 	return eErr
+}
+
+type byOffset []*srvpb.FileDecorations_Decoration
+
+func (s byOffset) Len() int      { return len(s) }
+func (s byOffset) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
+func (s byOffset) Less(i, j int) bool {
+	if s[i].Anchor.StartOffset < s[j].Anchor.StartOffset {
+		return true
+	} else if s[i].Anchor.StartOffset > s[j].Anchor.StartOffset {
+		return false
+	} else if s[i].Anchor.EndOffset < s[j].Anchor.EndOffset {
+		return true
+	}
+	return false
 }
 
 func getDecorations(es xrefs.EdgesService, anchor *xpb.NodeInfo) ([]*srvpb.FileDecorations_Decoration, error) {
@@ -418,6 +435,9 @@ func getDecorations(es xrefs.EdgesService, anchor *xpb.NodeInfo) ([]*srvpb.FileD
 		}
 	}
 	if !isAnchor {
+		return nil, nil
+	} else if start > end {
+		log.Printf("Invalid anchor span %d:%d for %q", start, end, anchor.Ticket)
 		return nil, nil
 	}
 
