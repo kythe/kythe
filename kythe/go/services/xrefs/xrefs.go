@@ -19,6 +19,7 @@
 package xrefs
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"regexp"
@@ -85,6 +86,25 @@ func EdgesMap(edges []*xpb.EdgeSet) map[string]map[string][]string {
 		m[es.SourceTicket] = kinds
 	}
 	return m
+}
+
+// WindowOffsets returns the start and end offset of the requested location.
+// The given totalTextSize is used to validate the end offset.
+func WindowOffsets(req *xpb.DecorationsRequest, totalTextSize int32) (start, end int32, err error) {
+	if s := req.GetLocation().GetStart(); s != nil {
+		start = s.ByteOffset
+	}
+	if e := req.GetLocation().GetEnd(); e != nil {
+		end = e.ByteOffset
+	}
+	if start > end {
+		err = fmt.Errorf("invalid SPAN: start (%d) is after end (%d)", start, end)
+	} else if end >= totalTextSize {
+		err = fmt.Errorf("invalid SPAN: end (%d) is past size of source text (%d)", end, totalTextSize)
+	} else if start < 0 || end < 0 {
+		err = fmt.Errorf("invalid SPAN: negative offset {%+v}", req.GetLocation())
+	}
+	return
 }
 
 // ConvertFilters converts each filter glob into an equivalent regexp.

@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"strconv"
 	"time"
 
 	"kythe/go/services/graphstore"
@@ -242,8 +243,6 @@ func (g *GraphStoreService) Edges(req *xpb.EdgesRequest) (*xpb.EdgesReply, error
 func (g *GraphStoreService) Decorations(req *xpb.DecorationsRequest) (*xpb.DecorationsReply, error) {
 	if len(req.DirtyBuffer) > 0 {
 		return nil, errors.New("UNIMPLEMENTED: dirty buffers")
-	} else if req.Location.Kind != xpb.Location_FILE {
-		return nil, errors.New("UNIMPLEMENTED: non-FILE locations")
 	}
 
 	fileVName, err := kytheuri.ToVName(req.Location.Ticket)
@@ -253,13 +252,23 @@ func (g *GraphStoreService) Decorations(req *xpb.DecorationsRequest) (*xpb.Decor
 
 	reply := &xpb.DecorationsReply{Location: req.Location}
 
+	text, encoding, err := getSourceText(g.gs, fileVName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve file text: %v", err)
+	}
+
+	windowStart, windowEnd, err := xrefs.WindowOffsets(req, int32(len(text)))
+	if err != nil {
+		return nil, err
+	}
+
 	// Handle DecorationsRequest.SourceText switch
 	if req.SourceText {
-		text, encoding, err := getSourceText(g.gs, fileVName)
-		if err != nil {
-			return nil, fmt.Errorf("failed to retrieve file text: %v", err)
+		if req.GetLocation().Kind == xpb.Location_FILE {
+			reply.SourceText = text
+		} else {
+			reply.SourceText = text[windowStart:windowEnd]
 		}
-		reply.SourceText = text
 		reply.Encoding = encoding
 	}
 
@@ -281,16 +290,41 @@ func (g *GraphStoreService) Decorations(req *xpb.DecorationsRequest) (*xpb.Decor
 		targetSet := stringset.New()
 		for _, edge := range children {
 			anchor := edge.Target
-			anchorNodeReply, err := g.Nodes(&xpb.NodesRequest{Ticket: []string{kytheuri.ToString(anchor)}})
+			ticket := kytheuri.ToString(anchor)
+			anchorNodeReply, err := g.Nodes(&xpb.NodesRequest{Ticket: []string{ticket}})
 			if err != nil {
 				return nil, fmt.Errorf("failure getting reference source node: %v", err)
 			} else if len(anchorNodeReply.Node) != 1 {
 				return nil, fmt.Errorf("found %d nodes for {%+v}", len(anchorNodeReply.Node), anchor)
-			} else if infoNodeKind(anchorNodeReply.Node[0]) != schema.AnchorKind {
+			}
+
+			node, ok := xrefs.NodesMap(anchorNodeReply.Node)[ticket]
+			if !ok {
+				return nil, fmt.Errorf("failed to find info for node %q", ticket)
+			} else if string(node[schema.NodeKindFact]) != schema.AnchorKind {
 				// Skip child if it isn't an anchor node
 				continue
+			} else if req.GetLocation().Kind == xpb.Location_SPAN {
+				// Check if anchor fits within request source text window
+
+				anchorStart, err := strconv.Atoi(string(node[schema.AnchorStartFact]))
+				if err != nil {
+					log.Printf("Invalid anchor start offset %q for node %q: %v", node[schema.AnchorStartFact], ticket, err)
+					continue
+				} else if int32(anchorStart) < windowStart {
+					continue
+				}
+				anchorEnd, err := strconv.Atoi(string(node[schema.AnchorEndFact]))
+				if err != nil {
+					log.Printf("Invalid anchor end offset %q for node %q: %v", node[schema.AnchorEndFact], ticket, err)
+					continue
+				} else if anchorStart > anchorEnd {
+					log.Printf("Invalid anchor offset span %d:%d", anchorStart, anchorEnd)
+					continue
+				} else if int32(anchorEnd) >= windowEnd {
+					continue
+				}
 			}
-			reply.Node = append(reply.Node, anchorNodeReply.Node[0])
 
 			targets, err := getEdges(g.gs, anchor, func(e *spb.Entry) bool {
 				return schema.EdgeDirection(e.EdgeKind) == schema.Forward && e.EdgeKind != schema.ChildOfEdge
@@ -300,7 +334,10 @@ func (g *GraphStoreService) Decorations(req *xpb.DecorationsRequest) (*xpb.Decor
 			}
 			if len(targets) == 0 {
 				log.Printf("Anchor missing forward edges: {%+v}", anchor)
+				continue
 			}
+
+			reply.Node = append(reply.Node, anchorNodeReply.Node[0])
 			for _, edge := range targets {
 				targetTicket := kytheuri.ToString(edge.Target)
 				targetSet.Add(targetTicket)
@@ -312,6 +349,10 @@ func (g *GraphStoreService) Decorations(req *xpb.DecorationsRequest) (*xpb.Decor
 			}
 		}
 
+		// Ensure returned nodes are not duplicated.
+		for _, n := range reply.Node {
+			targetSet.Remove(n.Ticket)
+		}
 		// Batch request all Reference target nodes
 		nodesReply, err := g.Nodes(&xpb.NodesRequest{Ticket: targetSet.Slice()})
 		if err != nil {
@@ -324,15 +365,6 @@ func (g *GraphStoreService) Decorations(req *xpb.DecorationsRequest) (*xpb.Decor
 }
 
 var revChildOfEdgeKind = schema.MirrorEdge(schema.ChildOfEdge)
-
-func infoNodeKind(info *xpb.NodeInfo) string {
-	for _, fact := range info.Fact {
-		if fact.Name == schema.NodeKindFact {
-			return string(fact.Value)
-		}
-	}
-	return ""
-}
 
 func getSourceText(gs graphstore.Service, fileVName *spb.VName) (text []byte, encoding string, err error) {
 	if err := gs.Read(&spb.ReadRequest{Source: fileVName}, func(entry *spb.Entry) error {
