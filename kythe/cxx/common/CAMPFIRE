@@ -38,6 +38,7 @@
         ":sha_lib",
         ":uuid_lib",
         "//kythe/proto:analysis_proto",
+        "//kythe/proto:any_proto",
         "//kythe/proto:storage_proto",
         "//third_party/gflags",
         "//third_party/glog",

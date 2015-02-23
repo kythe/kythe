@@ -69,6 +69,30 @@
     }
   },
   {
+    "name": "any_proto",
+    "kind": "proto_library",
+    "inputs": {
+      "srcs": [
+        "any.proto"
+      ],
+      "jars": [
+        "//third_party/protobuf:protobuf_jar"
+      ],
+      "cc_libs": [
+        "//third_party/protobuf:protobuf_cc"
+      ],
+      "go_pkgs": [
+        "//third_party/go/github.com:protobuf"
+      ]
+    },
+    "properties": {
+      "java_api": true,
+      "javacopts": "-source 7 -target 7",
+      "cc_api": true,
+      "go_api": true
+    }
+  },
+  {
     "name": "xref_proto",
     "kind": "proto_library",
     "inputs": {
