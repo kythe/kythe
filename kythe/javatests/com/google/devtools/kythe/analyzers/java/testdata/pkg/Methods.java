@@ -1,5 +1,8 @@
 package pkg;
 
+//- @IOException ref IOE
+import java.io.IOException;
+
 //- @Methods defines Class
 public class Methods {
 
@@ -70,4 +73,13 @@ public class Methods {
   //- StrArray param.0 ArrayBuiltin = vname("array#builtin", "", "", "", "java")
   //- StrArray param.1 String
   public static void main(String[] args) {}
+
+  //- @IOException ref IOE
+  public static void throwsException() throws IOException {
+    //- @IOException ref IOE
+    throw new IOException();
+  }
+
+  //- @Exception ref Exception
+  public void error() throws Exception {}
 }
