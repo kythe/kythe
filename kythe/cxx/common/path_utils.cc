@@ -28,7 +28,8 @@ std::string MakeCleanAbsolutePath(const std::string& in_path) {
   llvm::SmallString<1024> out_path = llvm::StringRef(root_part);
   std::vector<llvm::StringRef> path_components;
   int skip_count = 0;
-  for (auto node = rbegin(abs_path), node_end = rend(abs_path);
+  for (auto node = llvm::sys::path::rbegin(abs_path),
+            node_end = llvm::sys::path::rend(abs_path);
        node != node_end; ++node) {
     if (*node == "..") {
       ++skip_count;
