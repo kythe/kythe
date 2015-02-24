@@ -57,12 +57,9 @@
      :error-handler error-handler}))
 
 (defn- unwrap-edges-response [resp]
-  {:edge_set (first (:edge_set resp))
+  {:edge_set (:edge_set resp)
    :nodes (into {} (map (juxt :ticket
-                          #(into {} (map (juxt :name
-                                           (fn [fact]
-                                             (util/fix-encoding (b64/decodeString (:value fact)))))
-                                      (:fact %))))
+                          #(into {} (map (juxt :name (comp b64/decodeString :value)) (:fact %))))
                      (:node resp)))
    :next (:next_page_token resp)})
 

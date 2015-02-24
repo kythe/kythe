@@ -64,25 +64,26 @@
         (fn [target]
           (let [target (if (:ticket target) target {:ticket target})
                 page-token (:page_token target)]
-           (om/transact! state :current-xrefs #(assoc % :loading (:ticket target)))
-           (service/get-edges (:ticket target) target
-             (fn [edges]
-               (om/transact! state :current-xrefs
-                 (fn [prev]
-                   (let [prev-pages (if (= (:source_ticket (:edge_set prev)) (:source_ticket (:edge_set edges)))
-                                      (:pages prev)
-                                      [])]
-                     (assoc edges :current-page-token page-token
-                       :pages
-                       (cond
-                         (not (:next edges)) prev-pages
-                         (and page-token (= (last prev-pages) page-token))
-                         (conj prev-pages (:next edges))
-                         (some #{(:next edges)} prev-pages)
-                         prev-pages
-                         :else
-                         [(:next edges)]))))))
-             (replace-state! state :current-xrefs)))))
+            (om/transact! state :current-xrefs #(assoc % :loading (:ticket target)))
+            (service/get-edges (:ticket target) target
+              (fn [edges]
+                (let [edges (assoc edges :edge_set (first (:edge_set edges)))]
+                  (om/transact! state :current-xrefs
+                    (fn [prev]
+                      (let [prev-pages (if (= (:source_ticket (:edge_set prev)) (:source_ticket (:edge_set edges)))
+                                         (:pages prev)
+                                         [])]
+                        (assoc edges :current-page-token page-token
+                          :pages
+                          (cond
+                            (not (:next edges)) prev-pages
+                            (and page-token (= (last prev-pages) page-token))
+                            (conj prev-pages (:next edges))
+                            (some #{(:next edges)} prev-pages)
+                            prev-pages
+                            :else
+                            [(:next edges)])))))))
+              (replace-state! state :current-xrefs)))))
       (service/get-corpus-roots
         (fn [corpus-roots]
           (om/transact! state :files
