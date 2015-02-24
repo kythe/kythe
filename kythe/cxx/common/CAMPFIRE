@@ -34,6 +34,7 @@
         "file_vname_generator.h",
         "index_pack.h",
         "path_utils.h",
+        "proto_conversions.h",
         "vname_ordering.h"
       ],
       "cc_libs": [

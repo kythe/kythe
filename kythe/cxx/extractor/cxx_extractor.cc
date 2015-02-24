@@ -32,6 +32,7 @@
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "kythe/cxx/common/path_utils.h"
+#include "kythe/cxx/common/proto_conversions.h"
 #include "kythe/proto/analysis.pb.h"
 #include "kythe/proto/cxx.pb.h"
 #include "third_party/llvm/src/clang_builtin_headers.h"
@@ -442,11 +443,11 @@ void ExtractorPPCallbacks::RecordSpecificLocation(clang::SourceLocation loc) {
       auto vname = index_writer_->VNameForPath(
           RelativizePath(FixStdinPath(file_ref, filename_ref),
                          index_writer_->root_directory()));
-      history()->Update(vname.signature());
-      history()->Update(vname.corpus());
-      history()->Update(vname.root());
-      history()->Update(vname.path());
-      history()->Update(vname.language());
+      history()->Update(ToStringRef(vname.signature()));
+      history()->Update(ToStringRef(vname.corpus()));
+      history()->Update(ToStringRef(vname.root()));
+      history()->Update(ToStringRef(vname.path()));
+      history()->Update(ToStringRef(vname.language()));
     } else {
       LOG(WARNING) << "No FileRef for " << filename_ref.str() << " (location "
                    << loc.printToString(*source_manager_) << ")";
