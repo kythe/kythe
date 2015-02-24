@@ -33,9 +33,10 @@
 
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendAction.h"
+#include "clang/Lex/HeaderSearch.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Tooling/Tooling.h"
-
+#include "kythe/cxx/common/cxx_details.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/Twine.h"
 
@@ -59,7 +60,9 @@ bool RunToolOnCode(std::unique_ptr<clang::FrontendAction> tool_action,
 // TODO(jdennett): Consider moving/renaming this to kythe::ExtractIndexAction.
 class IndexerFrontendAction : public clang::ASTFrontendAction {
 public:
-  explicit IndexerFrontendAction(GraphObserver *GO) : Observer(GO) {
+  explicit IndexerFrontendAction(GraphObserver *GO,
+                                 const HeaderSearchInfo &Info)
+      : Observer(GO), HeaderSearchInfo(Info) {
     assert(GO != nullptr);
   }
 
@@ -77,6 +80,34 @@ private:
   std::unique_ptr<clang::ASTConsumer>
   CreateASTConsumer(clang::CompilerInstance &CI,
                     llvm::StringRef Filename) override {
+    if (HeaderSearchInfo.is_valid) {
+      auto &HeaderSearch = CI.getPreprocessor().getHeaderSearchInfo();
+      auto &FileManager = CI.getFileManager();
+      std::vector<clang::DirectoryLookup> Lookups;
+      unsigned CurrentIdx = 0;
+      for (const auto &Path : HeaderSearchInfo.paths) {
+        const clang::DirectoryEntry *DirEnt =
+            FileManager.getDirectory(Path.first);
+        if (DirEnt != nullptr) {
+          Lookups.push_back(clang::DirectoryLookup(DirEnt, Path.second, false));
+          ++CurrentIdx;
+        } else {
+          // This can happen if a path was included in the HeaderSearchInfo,
+          // but no headers were found underneath that path during extraction.
+          // We'll prune out that path here.
+          if (CurrentIdx < HeaderSearchInfo.angled_dir_idx) {
+            --HeaderSearchInfo.angled_dir_idx;
+          }
+          if (CurrentIdx < HeaderSearchInfo.system_dir_idx) {
+            --HeaderSearchInfo.system_dir_idx;
+          }
+        }
+      }
+      HeaderSearch.ClearFileInfo();
+      HeaderSearch.SetSearchPaths(Lookups, HeaderSearchInfo.angled_dir_idx,
+                                  HeaderSearchInfo.system_dir_idx, false);
+      HeaderSearch.SetSystemHeaderPrefixes(HeaderSearchInfo.system_prefixes);
+    }
     if (Observer) {
       Observer->setSourceManager(&CI.getSourceManager());
       Observer->setLangOptions(&CI.getLangOpts());
@@ -103,6 +134,8 @@ private:
   BehaviorOnUnimplemented IgnoreUnimplemented = BehaviorOnUnimplemented::Abort;
   /// Whether to visit template instantiations.
   BehaviorOnTemplates TemplateMode = BehaviorOnTemplates::VisitInstantiations;
+  /// Configuration information for header search.
+  HeaderSearchInfo HeaderSearchInfo;
 };
 
 /// \brief Allows stdin to be replaced with a mapped file.

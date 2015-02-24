@@ -41,11 +41,13 @@
 #include "kythe/cxx/common/index_pack.h"
 #include "kythe/proto/analysis.pb.h"
 #include "kythe/proto/claim.pb.h"
+#include "kythe/proto/cxx.pb.h"
 
 #include "IndexerFrontendAction.h"
 #include "KytheGraphObserver.h"
 #include "KytheGraphRecorder.h"
 #include "KytheOutputStream.h"
+#include "KytheVFS.h"
 
 DEFINE_string(o, "-", "Output filename");
 DEFINE_string(i, "-", "Input filename");
@@ -144,6 +146,41 @@ static void DecodeIndexPack(const std::string &cu_hash,
   }
 }
 
+static void DecodeHeaderSearchInformation(const proto::CompilationUnit &unit,
+                                          HeaderSearchInfo *info) {
+  info->is_valid = false;
+  kythe::proto::CxxCompilationUnitDetails details;
+  for (const auto &any : unit.details()) {
+    if (any.type_uri() == kCxxCompilationUnitDetailsURI) {
+      info->is_valid = UnpackAny(any, &details);
+      break;
+    }
+  }
+  if (!info->is_valid) {
+    return;
+  }
+  const auto &info_proto = details.header_search_info();
+  info->angled_dir_idx = info_proto.first_angled_dir();
+  info->system_dir_idx = info_proto.first_system_dir();
+  for (const auto &dir : info_proto.dir()) {
+    info->paths.push_back(std::make_pair(
+        dir.path(), static_cast<clang::SrcMgr::CharacteristicKind>(
+                        dir.characteristic_kind())));
+  }
+  for (const auto &prefix : details.system_header_prefix()) {
+    info->system_prefixes.push_back(
+        std::make_pair(prefix.prefix(), prefix.is_system_header()));
+  }
+  if (!(info->angled_dir_idx <= info->system_dir_idx &&
+        info->system_dir_idx <= info->paths.size())) {
+    fprintf(stderr,
+            "Warning: unit has header search info, but it is ill-formed.\n");
+    info->is_valid = false;
+    return;
+  }
+  info->is_valid = true;
+}
+
 /// \brief Does `input` end with `suffix`?
 static bool EndsWith(const std::string &input, const std::string &suffix) {
   return input.size() >= suffix.size() &&
@@ -227,9 +264,17 @@ Examples:
     // We presently handle kindex files with only one main source file.
     CHECK_EQ(1, unit.source_file_size());
     file_system_options.WorkingDir = unit.working_directory();
+    if (!llvm::sys::path::is_absolute(file_system_options.WorkingDir)) {
+      llvm::SmallString<1024> stored_wd;
+      CHECK(!llvm::sys::fs::make_absolute(stored_wd));
+      file_system_options.WorkingDir = stored_wd.str();
+    }
   } else {
     int read_fd = STDIN_FILENO;
     std::string source_file_name = "stdin.cc";
+    llvm::SmallString<1024> cwd;
+    CHECK(!llvm::sys::fs::current_path(cwd));
+    file_system_options.WorkingDir = cwd.str();
 
     if (FLAGS_i != "-") {
       read_fd = open(FLAGS_i.c_str(), O_RDONLY);
@@ -279,33 +324,24 @@ Examples:
 
   bool had_no_errors;
   {
+    llvm::IntrusiveRefCntPtr<IndexVFS> virtual_file_system(
+        new IndexVFS(file_system_options.WorkingDir, virtual_files));
     google::protobuf::io::FileOutputStream raw_output(write_fd);
     kythe::FileOutputStream kythe_output(&raw_output);
     kythe::KytheGraphRecorder kythe_recorder(&kythe_output);
-    kythe::KytheGraphObserver observer(&kythe_recorder, &claim_client);
+    kythe::KytheGraphObserver observer(&kythe_recorder, &claim_client,
+                                       virtual_file_system);
     observer.set_claimant(unit.v_name());
-    std::map<std::string, kythe::proto::VName> path_to_vname;
     observer.set_starting_context(unit.entry_context());
-    // It seems as though Clang doesn't use file_system_options.WorkingDir
-    // as expected. Make another mapping with relative paths when we need it.
-    std::string expect_prefix;
-    if (!file_system_options.WorkingDir.empty()) {
-      expect_prefix = (file_system_options.WorkingDir +
-                       llvm::sys::path::get_separator()).str();
-    }
+    kythe::HeaderSearchInfo header_search_info;
+    DecodeHeaderSearchInformation(unit, &header_search_info);
 
     for (const auto &input : unit.required_input()) {
       if (input.has_info() && !input.info().path().empty() &&
           input.has_v_name()) {
-        observer.set_path_vname(input.info().path(), input.v_name());
-        path_to_vname[input.info().path()] = input.v_name();
+        virtual_file_system->SetVName(input.info().path(), input.v_name());
       }
       const std::string &file_path = input.info().path();
-      std::string file_relative_path;
-      if (!expect_prefix.empty() &&
-          llvm::StringRef(file_path).startswith(expect_prefix)) {
-        file_relative_path = file_path.substr(expect_prefix.size());
-      }
       for (const auto &row : input.context()) {
         if (row.always_process()) {
           auto claimable_vname = input.v_name();
@@ -316,17 +352,12 @@ Examples:
         for (const auto &col : row.column()) {
           observer.AddContextInformation(file_path, row.source_context(),
                                          col.offset(), col.linked_context());
-          if (!file_relative_path.empty()) {
-            observer.AddContextInformation(file_relative_path,
-                                           row.source_context(), col.offset(),
-                                           col.linked_context());
-          }
         }
       }
     }
 
     std::unique_ptr<kythe::IndexerFrontendAction> action(
-        new kythe::IndexerFrontendAction(&observer));
+        new kythe::IndexerFrontendAction(&observer, header_search_info));
     action->setIgnoreUnimplemented(
         FLAGS_ignore_unimplemented ? kythe::BehaviorOnUnimplemented::Continue
                                    : kythe::BehaviorOnUnimplemented::Abort);
@@ -334,7 +365,9 @@ Examples:
                                 ? BehaviorOnTemplates::VisitInstantiations
                                 : BehaviorOnTemplates::SkipInstantiations);
     llvm::IntrusiveRefCntPtr<clang::FileManager> file_manager(
-        new clang::FileManager(file_system_options));
+        new clang::FileManager(file_system_options, kindex_file_or_cu.empty()
+                                                        ? nullptr
+                                                        : virtual_file_system));
     final_args.insert(final_args.begin() + 1, "-fsyntax-only");
     // StdinAdjustSingleFrontendActionFactory takes ownership of its action.
     std::unique_ptr<kythe::StdinAdjustSingleFrontendActionFactory> tool(
@@ -342,21 +375,6 @@ Examples:
     // ToolInvocation doesn't take ownership of ToolActions.
     clang::tooling::ToolInvocation invocation(final_args, tool.get(),
                                               file_manager.get());
-    for (const auto &file : virtual_files) {
-      llvm::StringRef file_content(file.content().data(),
-                                   file.content().size());
-      const std::string &file_path = file.info().path();
-      invocation.mapVirtualFile(file_path, file_content);
-      if (!expect_prefix.empty() &&
-          llvm::StringRef(file_path).startswith(expect_prefix)) {
-        std::string relative_path = file_path.substr(expect_prefix.size());
-        invocation.mapVirtualFile(relative_path, file_content);
-        const auto vname_iterator = path_to_vname.find(file_path);
-        if (vname_iterator != path_to_vname.end()) {
-          observer.set_path_vname(relative_path, vname_iterator->second);
-        }
-      }
-    }
     had_no_errors = invocation.run();
   }
 

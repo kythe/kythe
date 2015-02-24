@@ -124,6 +124,7 @@ int main(int argc, char* argv[]) {
             const kythe::PreprocessorTranscript& transcript,
             const std::unordered_map<std::string, kythe::SourceFile>&
                 source_files,
+            const kythe::HeaderSearchInfo& header_search_info,
             bool had_errors) {
           std::unique_ptr<kythe::IndexWriterSink> sink;
           if (using_index_packs) {
@@ -132,7 +133,7 @@ int main(int argc, char* argv[]) {
             sink.reset(new kythe::KindexWriterSink());
           }
           index_writer.WriteIndex(std::move(sink), main_source_file, transcript,
-                                  source_files, had_errors);
+                                  source_files, header_search_info, had_errors);
         });
     clang::tooling::ToolInvocation invocation(final_args, extractor.release(),
                                               file_manager.get());

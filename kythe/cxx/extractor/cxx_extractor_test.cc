@@ -203,11 +203,11 @@ class CxxExtractorTest : public testing::Test {
             const std::string &main_source_file,
             const PreprocessorTranscript &transcript,
             const std::unordered_map<std::string, SourceFile> &source_files,
-            bool had_errors) {
+            const HeaderSearchInfo &header_search_info, bool had_errors) {
           index_writer.WriteIndex(std::unique_ptr<kythe::IndexWriterSink>(
                                       new ForwardingIndexWriterSink(sink)),
                                   main_source_file, transcript, source_files,
-                                  had_errors);
+                                  header_search_info, had_errors);
         });
     clang::tooling::ToolInvocation invocation(
         final_arguments, extractor.release(), file_manager.get());

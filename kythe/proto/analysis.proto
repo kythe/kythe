@@ -19,6 +19,7 @@ syntax = "proto3";
 package kythe.proto;
 option java_package = "com.google.devtools.kythe.proto";
 
+import "kythe/proto/any.proto";
 import "kythe/proto/storage.proto";
 
 // An AnalysisRequest instructs an analyzer to perform an analysis on a single
@@ -142,6 +143,9 @@ message CompilationUnit {
   // specific values for the build to work.
   // TODO(fromberger): When we move to NWP, use a map instead.
   repeated Env environment = 10;
+
+  // Per-language or -tool details.
+  repeated Any details = 11;
 }
 
 // A FileInfo specifies metadata for a file under analysis.

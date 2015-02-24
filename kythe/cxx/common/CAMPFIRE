@@ -23,12 +23,14 @@
     "inputs": {
       "srcs": [
         "CommandLineUtils.cc",
+        "cxx_details.cc",
         "file_vname_generator.cc",
         "index_pack.cc",
         "path_utils.cc"
       ],
       "hdrs": [
         "CommandLineUtils.h",
+        "cxx_details.h",
         "file_vname_generator.h",
         "index_pack.h",
         "path_utils.h",

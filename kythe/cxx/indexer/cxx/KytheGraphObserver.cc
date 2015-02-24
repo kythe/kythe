@@ -36,6 +36,7 @@
 #include "clang/AST/Type.h"
 #include "clang/AST/TypeLoc.h"
 #include "clang/Basic/SourceManager.h"
+#include "kythe/cxx/common/path_utils.h"
 
 #include "IndexerASTHooks.h"
 #include "KytheGraphRecorder.h"
@@ -62,36 +63,32 @@ static const char *CompletenessToString(
 
 kythe::proto::VName KytheGraphObserver::VNameFromFileEntry(
     const clang::FileEntry *file_entry) {
-  auto lookup_result = path_to_vname_.find(file_entry->getName());
-  if (lookup_result != path_to_vname_.end()) {
-    return lookup_result->second;
-  }
   kythe::proto::VName out_name;
-  out_name.set_language("c++");
-  out_name.set_path(file_entry->getName());
+  if (!vfs_->get_vname(file_entry, &out_name)) {
+    out_name.set_language("c++");
+    llvm::StringRef working_directory = vfs_->working_directory();
+    llvm::StringRef file_name(file_entry->getName());
+    if (file_name.startswith(working_directory)) {
+      out_name.set_path(RelativizePath(file_name, working_directory));
+    } else {
+      out_name.set_path(file_entry->getName());
+    }
+  }
   return out_name;
 }
 
 kythe::proto::VName KytheGraphObserver::VNameFromFileID(
     const clang::FileID &file_id) {
-  const clang::FileEntry *file_entry =
-      SourceManager->getFileEntryForID(file_id);
-  if (file_entry) {
-    auto lookup_result = path_to_vname_.find(file_entry->getName());
-    if (lookup_result != path_to_vname_.end()) {
-      return lookup_result->second;
-    }
+  if (const clang::FileEntry *file_entry =
+          SourceManager->getFileEntryForID(file_id)) {
+    return VNameFromFileEntry(file_entry);
   }
   kythe::proto::VName out_name;
   out_name.set_language("c++");
-  if (file_entry) {
-    out_name.set_path(file_entry->getName());
-  } else {
-    // TODO(zarko): What should we do in this case? We could invent a name
-    // for file_id (maybe just stringify file_id + some salt) to keep from
-    // breaking other parts of the index.
-    out_name.set_path("(invalid)");
-  }
+  // TODO(zarko): What should we do in this case? We could invent a name
+  // for file_id (maybe just stringify file_id + some salt) to keep from
+  // breaking other parts of the index.
+  out_name.set_path("(invalid)");
   return out_name;
 }
 
@@ -529,15 +526,15 @@ void KytheGraphObserver::recordDeclUseLocation(
   RecordAnchor(source_range, VNameFromNodeId(node), EdgeKindID::kRef);
 }
 
-// TODO(zarko): Create Kythe nodes for files and file content; create and
-// update internal records used to generate VNames (keep track of URIs,
-// etc.)
 void KytheGraphObserver::pushFile(clang::SourceLocation blame_location,
                                   clang::SourceLocation source_location) {
   PreprocessorContext previous_context =
       file_stack_.empty() ? starting_context_ : file_stack_.back().context;
-  std::string previous_path =
-      file_stack_.empty() ? "" : file_stack_.back().clang_path;
+  bool has_previous_uid = !file_stack_.empty();
+  llvm::sys::fs::UniqueID previous_uid;
+  if (has_previous_uid) {
+    previous_uid = file_stack_.back().uid;
+  }
   file_stack_.push_back(FileState{});
   FileState &state = file_stack_.back();
   state.claimed = true;
@@ -554,17 +551,17 @@ void KytheGraphObserver::pushFile(clang::SourceLocation blame_location,
       if (entry) {
         // An actual file.
         state.vname = state.base_vname = VNameFromFileID(file);
-        state.clang_path = entry->getName();
+        state.uid = entry->getUniqueID();
         // Attempt to compute the state-amended VName using the state table.
         // If we aren't working under any context, we won't end up making the
         // VName more specific.
         if (file_stack_.size() == 1) {
           // Start state.
           state.context = starting_context_;
-        } else if (!previous_path.empty() && !previous_context.empty() &&
+        } else if (has_previous_uid && !previous_context.empty() &&
                    blame_location.isValid() && blame_location.isFileID()) {
           unsigned offset = SourceManager->getFileOffset(blame_location);
-          const auto path_info = path_to_context_data_.find(previous_path);
+          const auto path_info = path_to_context_data_.find(previous_uid);
           if (path_info != path_to_context_data_.end()) {
             const auto context_info = path_info->second.find(previous_context);
             if (context_info != path_info->second.end()) {
@@ -575,20 +572,22 @@ void KytheGraphObserver::pushFile(clang::SourceLocation blame_location,
                 fprintf(stderr,
                         "Warning: when looking for %s[%s]:%u: missing source "
                         "offset\n",
-                        previous_path.c_str(), previous_context.c_str(),
-                        offset);
+                        vfs_->get_debug_uid_string(previous_uid).c_str(),
+                        previous_context.c_str(), offset);
               }
             } else {
               fprintf(stderr,
                       "Warning: when looking for %s[%s]:%u: missing source "
                       "context\n",
-                      previous_path.c_str(), previous_context.c_str(), offset);
+                      vfs_->get_debug_uid_string(previous_uid).c_str(),
+                      previous_context.c_str(), offset);
             }
           } else {
             fprintf(
                 stderr,
                 "Warning: when looking for %s[%s]:%u: missing source path\n",
-                previous_path.c_str(), previous_context.c_str(), offset);
+                vfs_->get_debug_uid_string(previous_uid).c_str(),
+                previous_context.c_str(), offset);
           }
         }
         state.vname.set_signature(state.context + state.vname.signature());
@@ -646,7 +645,14 @@ bool KytheGraphObserver::claimLocation(clang::SourceLocation source_location) {
 void KytheGraphObserver::AddContextInformation(
     const std::string &path, const PreprocessorContext &context,
     unsigned offset, const PreprocessorContext &dest_context) {
-  path_to_context_data_[path][context][offset] = dest_context;
+  auto found_file = vfs_->status(path);
+  if (found_file) {
+    path_to_context_data_[found_file->getUniqueID()][context][offset] =
+        dest_context;
+  } else {
+    fprintf(stderr, "WARNING: Path %s could not be mapped to a VFS record.\n",
+            path.c_str());
+  }
 }
 
 const GraphObserver::ClaimToken *KytheGraphObserver::getClaimTokenForLocation(

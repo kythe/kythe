@@ -26,7 +26,7 @@ rm -f "${OUT_DIR}/*.kindex*"
 KYTHE_CORPUS=test_corpus KYTHE_ROOT_DIRECTORY="${BASE_DIR}/testdata" \
     KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}" \
     "${EXTRACT}" "${BASE_DIR}/testdata/compilation_database.json"
-"${KINDEX_TOOL}" -explode "${OUT_DIR}/${EXPECTED_INDEX}"
+"${KINDEX_TOOL}" -suppress_details -explode "${OUT_DIR}/${EXPECTED_INDEX}"
 sed "s:BASE_DIR:${BASE_DIR}:g" "${BASE_DIR}/testdata/expected.unit" \
     > "${OUT_DIR}/expected.unit"
 sed "s:BASE_DIR:${BASE_DIR}:g" "${BASE_DIR}/testdata/expected.file" \
