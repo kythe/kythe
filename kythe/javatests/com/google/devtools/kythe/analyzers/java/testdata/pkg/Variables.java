@@ -10,6 +10,7 @@ public class Variables {
 
   //- @field defines V
   //- V.node/kind variable
+  //- V.subkind field
   //- V childof Class
   //- V typed Str = vname("java.lang.String","","","","java")
   //- Str.node/kind name
@@ -18,6 +19,8 @@ public class Variables {
   //- @m defines F
   //- @p1 defines P1
   //- @p2 defines P2
+  //- P1.node/kind variable
+  //- P1.subkind local/parameter
   //- F param.0 P1
   //- F param.1 P2
   //- P1 typed Str
@@ -26,17 +29,20 @@ public class Variables {
 
     //- @local defines L
     //- L.node/kind variable
+    //- L.subkind local
     //- L typed Int
     int local = 0;
 
     //- @stream defines ResourceVar
     //- ResourceVar.node/kind variable
+    //- ResourceVar.subkind local/resource
     try (OutputStream stream = System.out) {
       //- @stream ref ResourceVar
       stream.write('\n');
 
       //- @ioe defines ExceptionParam
       //- ExceptionParam.node/kind variable
+      //- ExceptionParam.subkind local/exception
     } catch (IOException ioe) {
       //- @ioe ref ExceptionParam
       throw ioe;
