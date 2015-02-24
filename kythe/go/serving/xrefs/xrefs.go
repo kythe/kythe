@@ -280,7 +280,6 @@ func (t *Table) Decorations(req *xpb.DecorationsRequest) (*xpb.DecorationsReply,
 			}
 		} else {
 			for _, d := range decor.Decoration {
-				// TODO(schroederc): handle invalid Anchor spans (e.g. [100 -1])
 				if d.Anchor.StartOffset >= windowStart && d.Anchor.EndOffset < windowEnd {
 					reply.Reference = append(reply.Reference, decorationToReference(d))
 					nodeTickets.Add(d.Anchor.Ticket)
