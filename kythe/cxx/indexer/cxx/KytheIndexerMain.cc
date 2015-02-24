@@ -39,6 +39,7 @@
 #include "google/protobuf/io/gzip_stream.h"
 #include "google/protobuf/stubs/common.h"
 #include "kythe/cxx/common/index_pack.h"
+#include "kythe/cxx/common/json_proto.h"
 #include "kythe/proto/analysis.pb.h"
 #include "kythe/proto/claim.pb.h"
 #include "kythe/proto/cxx.pb.h"
