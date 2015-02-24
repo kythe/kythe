@@ -1557,3 +1557,100 @@ public class E {
     String[] arry) {}
 }
 --------------------------------------------------------------------------------
+
+
+Node Subkinds
+^^^^^^^^^^^^^
+
+Classes and Enums
++++++++++++++++++
+
+In Java, classes are [[record]] nodes with a subkind of 'class'.  Likewise, enum
+classes are [[sum]] nodes with a subkind of 'enumClass'.
+
+[kythe,Java,"Classes and enums"]
+--------------------------------------------------------------------------------
+//- @E defines EClass
+//- EClass.node/kind record
+//- EClass.subkind class
+public class E {
+
+  //- @Enum defines Enum
+  //- Enum.node/kind sum
+  //- Enum.subkind enumClass
+  static enum Enum {}
+}
+--------------------------------------------------------------------------------
+
+Functions
++++++++++
+
+All methods are [[function]] nodes, including class constructors.  To
+differentiate between constructors and other methods, [[function]] nodes for
+constructors have the subkind 'constructor'.
+
+[kythe,Java,"Methods and constructors"]
+--------------------------------------------------------------------------------
+public class E {
+
+  //- @E defines ECtor
+  //- ECtor.node/kind function
+  //- ECtor.subkind constructor
+  public E() {}
+
+  //- @staticMethod defines StaticMethod
+  //- StaticMethod.node/kind function
+  public static void staticMethod() {}
+
+  //- @instanceMethod defines InstanceMethod
+  //- InstanceMethod.node/kind function
+  public void instanceMethod() {}
+}
+--------------------------------------------------------------------------------
+
+Variables
++++++++++
+
+Java has 5 types of [[variable]] nodes, each with a distinct subkind:
+
+Fields:: 'field' subkind
+Locals:: 'local' subkind
+Exception Variables (see http://docs.oracle.com/javase/tutorial/essential/exceptions/catch.html[catch blocks]):: 'local/exception' subkind
+Parameters:: 'local/parameter' subkind
+Resource Variables (see the http://docs.oracle.com/javase/tutorial/essential/exceptions/tryResourceClose.html[try-with-resources statement]):: 'local/resource' subkind
+
+[kythe,Java,"Variables"]
+--------------------------------------------------------------------------------
+import java.io.IOException;
+import java.io.OutputStream;
+
+public class E {
+
+  //- @field defines Field
+  //- Field.node/kind variable
+  //- Field.subkind field
+  private final Object field = null;
+
+  //- @param defines Parmeter
+  //- Parameter.node/kind variable
+  //- Parameter.subkind local/parameter
+  public static void m(String param) throws IOException {
+
+    //- @local defines Local
+    //- Local.node/kind variable
+    //- Local.subkind local
+    int local = 42;
+
+    //- @resource defines ResourceVar
+    //- ResourceVar.node/kind variable
+    //- ResourceVar.subkind local/resource
+    try (OutputStream resource = System.out) {
+      resource.write("hello");
+
+      //- @exception defines ExceptionVar
+      //- ExceptionVar.node/kind variable
+      //- ExceptionVar.subkind local/exception
+    } catch (IOException exception) {}
+  }
+}
+--------------------------------------------------------------------------------

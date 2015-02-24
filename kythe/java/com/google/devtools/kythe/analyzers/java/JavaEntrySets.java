@@ -135,12 +135,17 @@ public class JavaEntrySets extends KytheEntrySets {
       case CLASS: return NodeKind.RECORD_CLASS;
       case ENUM: return NodeKind.SUM_ENUM_CLASS;
       case ENUM_CONSTANT: return NodeKind.CONSTANT;
-      case ANNOTATION_TYPE: case INTERFACE: return NodeKind.INTERFACE;
-      case RESOURCE_VARIABLE: case EXCEPTION_PARAMETER:
-      case PARAMETER: case LOCAL_VARIABLE: case FIELD:
-        return NodeKind.VARIABLE;
-      case CONSTRUCTOR: case METHOD:
-        return NodeKind.FUNCTION;
+      case ANNOTATION_TYPE: case INTERFACE:
+        return NodeKind.INTERFACE;
+
+      case EXCEPTION_PARAMETER: return NodeKind.VARIABLE_EXCEPTION;
+      case FIELD: return NodeKind.VARIABLE_FIELD;
+      case LOCAL_VARIABLE: return NodeKind.VARIABLE_LOCAL;
+      case PARAMETER: return NodeKind.VARIABLE_PARAMETER;
+      case RESOURCE_VARIABLE: return NodeKind.VARIABLE_RESOURCE;
+
+      case CONSTRUCTOR: return NodeKind.FUNCTION_CONSTRUCTOR;
+      case METHOD: return NodeKind.FUNCTION;
       case TYPE_PARAMETER: return NodeKind.ABS_VAR;
       default:
         // TODO(schroederc): handle all cases, make this exceptional, and remove all null checks
