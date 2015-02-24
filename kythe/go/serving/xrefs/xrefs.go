@@ -255,20 +255,9 @@ func (t *Table) Decorations(req *xpb.DecorationsRequest) (*xpb.DecorationsReply,
 	}
 
 	reply := &xpb.DecorationsReply{}
-	var windowStart int32
-	if s := req.GetLocation().GetStart(); s != nil {
-		windowStart = s.ByteOffset
-	}
-	var windowEnd int32
-	if e := req.GetLocation().GetEnd(); e != nil {
-		windowEnd = e.ByteOffset
-	}
-	if windowStart > windowEnd {
-		return nil, fmt.Errorf("invalid SPAN: start (%d) is after end (%d)", windowStart, windowEnd)
-	} else if windowEnd >= int32(len(decor.SourceText)) {
-		return nil, fmt.Errorf("invalid SPAN: end (%d) is past size of source text (%d)", windowEnd, len(decor.SourceText))
-	} else if windowStart < 0 || windowEnd < 0 {
-		return nil, fmt.Errorf("invalid SPAN: negative offset {%+v}", req.GetLocation())
+	windowStart, windowEnd, err := xrefs.WindowOffsets(req, int32(len(decor.SourceText)))
+	if err != nil {
+		return nil, err
 	}
 
 	if req.SourceText {
