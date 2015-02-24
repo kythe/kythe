@@ -30,7 +30,8 @@
         (dom/a #js {:title (path-display corpus root path)
                     :href "#"
                     :onClick
-                    (fn [_]
+                    (fn [e]
+                      (.preventDefault e)
                       (condp = (om/get-state owner :status)
                         :loading nil
                         :loaded (om/update-state! owner :expanded not)
@@ -65,7 +66,9 @@
                      (dom/li nil
                        (dom/a #js {:title (path-display vname)
                                    :href "#"
-                                   :onClick #(put! file-to-view (om/value ticket))}
+                                   :onClick (fn [e]
+                                              (put! file-to-view (om/value ticket))
+                                              (.preventDefault e))}
                          name)))
                 (sort-by first (:files (:contents state)))))))))))
 

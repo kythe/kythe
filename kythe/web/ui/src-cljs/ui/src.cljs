@@ -136,7 +136,9 @@
         (if anchor-ticket
           (dom/a #js {:title target-ticket
                       :href "#"
-                      :onClick #(put! xrefs-to-view target-ticket)
+                      :onClick (fn [e]
+                                 (put! xrefs-to-view target-ticket)
+                                 (.preventDefault e))
                       :style #js {:backgroundColor background}
                       :onMouseEnter #(put! hover
                                        {:ticket anchor-ticket :target target-ticket})
@@ -173,7 +175,8 @@
                                        :href "#"
                                        :onClick #(let [el (.-target %)]
                                                    (.scrollIntoView el true)
-                                                   (.focus el))}
+                                                   (.focus el)
+                                                   (.preventDefault %))}
                              (str i)) "\n"])
             (range 1 (:num-lines state))))
         (dom/pre nil

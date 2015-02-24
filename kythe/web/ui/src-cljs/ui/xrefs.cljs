@@ -37,7 +37,8 @@
           file-ticket (:file (get anchor-info ticket))]
       (if (and (= kind "anchor") file-ticket)
         (dom/a #js {:href "#"
-                    :onClick (fn [_]
+                    :onClick (fn [e]
+                               (.preventDefault e)
                                (put! file-to-view
                                  {:ticket file-ticket
                                   :anchor ticket
@@ -47,7 +48,9 @@
     " "
     (if with-link
       (dom/a #js {:href "#"
-                  :onClick (fn [_] (put! xrefs-to-view ticket))}
+                  :onClick (fn [e]
+                             (.preventDefault e)
+                             (put! xrefs-to-view ticket))}
         ticket)
       ticket)))
 
@@ -64,14 +67,17 @@
             (dom/a #js {:href "#"
                         :ariaLabel "Previous"
                         :onClick (when prev-page
-                                   #(put! xrefs-to-view {:ticket ticket
-                                                         :page_token prev-page}))}
+                                   (fn [e]
+                                     (.preventDefault e)
+                                     (put! xrefs-to-view {:ticket ticket
+                                                          :page_token prev-page})))}
               "<"))]
          (map-indexed (fn [page token]
                         (dom/li #js {:className (when (= token current-page-token)
                                                   "active")}
                           (dom/a #js {:href "#"
-                                      :onClick (fn [_]
+                                      :onClick (fn [e]
+                                                 (.preventDefault e)
                                                  (put! xrefs-to-view {:ticket ticket
                                                                       :page_token token}))}
                             (str (inc page)))))
@@ -80,8 +86,10 @@
             (dom/a #js {:href "#"
                         :ariaLabel "Next"
                         :onClick (when next-page
-                                   #(put! xrefs-to-view {:ticket ticket
-                                                         :page_token next-page}))}
+                                   (fn [e]
+                                     (.preventDefault e)
+                                     (put! xrefs-to-view {:ticket ticket
+                                                          :page_token next-page})))}
               ">"))])))))
 
 (defn- xrefs-view [state owner]
