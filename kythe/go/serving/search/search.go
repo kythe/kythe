@@ -30,7 +30,6 @@ import (
 	"bytes"
 
 	"kythe/go/storage/table"
-	"kythe/go/util/stringset"
 
 	spb "kythe/proto/storage_proto"
 )
@@ -42,83 +41,59 @@ const indexTablePrefix = "indexNodes:"
 
 // Search implements the search.Service interface.
 func (t *Table) Search(q *spb.SearchRequest) (*spb.SearchReply, error) {
-	tickets := stringset.New()
-	var err error
+
+	// Ordering of vals matter for performance reasons.  Values should be ordered,
+	// as best as possible, from least associated keys to most so that there are
+	// fewer Contains checks and a small initial Lookup set.
+	var vals [][]byte
 
 	if q.Partial.Signature != "" {
-		tickets, err = t.intersect(tickets, VNameVal("signature", q.Partial.Signature))
-		if err != nil {
-			return nil, err
-		} else if len(tickets) == 0 {
-			return constructReply(tickets), nil
-		}
+		vals = append(vals, VNameVal("signature", q.Partial.Signature))
 	}
 	if q.Partial.Path != "" {
-		tickets, err = t.intersect(tickets, VNameVal("path", q.Partial.Path))
-		if err != nil {
-			return nil, err
-		} else if len(tickets) == 0 {
-			return constructReply(tickets), nil
-		}
+		vals = append(vals, VNameVal("path", q.Partial.Path))
+	}
+	for _, f := range q.Fact {
+		vals = append(vals, FactVal(f.Name, f.Value))
 	}
 	if q.Partial.Language != "" {
-		tickets, err = t.intersect(tickets, VNameVal("language", q.Partial.Language))
-		if err != nil {
-			return nil, err
-		} else if len(tickets) == 0 {
-			return constructReply(tickets), nil
-		}
+		vals = append(vals, VNameVal("language", q.Partial.Language))
 	}
 	if q.Partial.Root != "" {
-		tickets, err = t.intersect(tickets, VNameVal("root", q.Partial.Root))
-		if err != nil {
-			return nil, err
-		} else if len(tickets) == 0 {
-			return constructReply(tickets), nil
-		}
+		vals = append(vals, VNameVal("root", q.Partial.Root))
 	}
 	if q.Partial.Corpus != "" {
-		tickets, err = t.intersect(tickets, VNameVal("corpus", q.Partial.Corpus))
-		if err != nil {
-			return nil, err
-		} else if len(tickets) == 0 {
-			return constructReply(tickets), nil
-		}
+		vals = append(vals, VNameVal("corpus", q.Partial.Corpus))
 	}
 
-	for _, f := range q.Fact {
-		tickets, err = t.intersect(tickets, FactVal(f.Name, f.Value))
-		if err != nil {
-			return nil, err
-		} else if len(tickets) == 0 {
-			return constructReply(tickets), nil
-		}
+	if len(vals) == 0 {
+		return &spb.SearchReply{}, nil
 	}
 
-	return constructReply(tickets), nil
-}
-
-func constructReply(results stringset.Set) *spb.SearchReply {
-	return &spb.SearchReply{Ticket: results.Slice()}
-}
-
-func (t *Table) intersect(results stringset.Set, val []byte) (stringset.Set, error) {
-	keys, err := t.Lookup(val)
+	keys, err := t.Lookup(vals[0])
 	if err != nil {
 		return nil, err
-	} else if len(keys) == 0 {
-		return nil, nil
 	}
 
-	res := stringset.New()
-	for _, k := range keys {
-		s := string(k)
-		if results.Contains(s) || len(results) == 0 {
-			res.Add(s)
+	for _, val := range vals[1:] {
+		if len(keys) == 0 {
+			return &spb.SearchReply{}, nil
+		}
+
+		for i := len(keys) - 1; i >= 0; i-- {
+			if exists, err := t.Contains(keys[i], val); err != nil {
+				return nil, err
+			} else if !exists {
+				keys = append(keys[:i], keys[i+1:]...)
+			}
 		}
 	}
 
-	return res, nil
+	tickets := make([]string, len(keys), len(keys))
+	for i, k := range keys {
+		tickets[i] = string(k)
+	}
+	return &spb.SearchReply{Ticket: tickets}, nil
 }
 
 const (

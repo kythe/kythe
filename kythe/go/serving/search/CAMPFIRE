@@ -8,7 +8,6 @@
       ],
       "go_pkgs": [
         "//kythe/go/storage/table",
-        "//kythe/go/util/stringset",
         "//kythe/proto:storage_proto"
       ]
     }

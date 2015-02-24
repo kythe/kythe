@@ -44,6 +44,9 @@ type Inverted interface {
 	// Lookup returns a slice of []byte keys associated with the given value.
 	Lookup(val []byte) ([][]byte, error)
 
+	// Contains determines whether there is an association between key and val
+	Contains(key, val []byte) (bool, error)
+
 	// Put writes an entry associating val with key.
 	Put(key, val []byte) error
 }
@@ -120,6 +123,25 @@ func (i *KVInverted) Lookup(val []byte) ([][]byte, error) {
 		}
 		results = append(results, k[i+1:])
 	}
+}
+
+// Contains implements part of the Inverted interface.
+func (i *KVInverted) Contains(key, val []byte) (bool, error) {
+	iKey := invertedKey(key, val)
+	iter, err := i.ScanPrefix(iKey, nil)
+	if err != nil {
+		return false, fmt.Errorf("table iterator error: %v", err)
+	}
+	defer iter.Close()
+
+	k, _, err := iter.Next()
+	if err == io.EOF {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	return bytes.Equal(k, iKey), nil
 }
 
 var emptyValue = []byte{}
