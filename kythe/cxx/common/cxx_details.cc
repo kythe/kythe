@@ -18,6 +18,7 @@
 
 namespace kythe {
 
+/// The type URI for C++ details.
 const char kCxxCompilationUnitDetailsURI[] =
     "kythe.io/proto/kythe.proto.CxxCompilationUnitDetails";
 
