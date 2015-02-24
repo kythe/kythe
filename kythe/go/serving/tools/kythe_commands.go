@@ -208,6 +208,7 @@ var (
         @target@   -- ticket of referenced target node
         @edgeKind@ -- edge kind from anchor node to its referenced target
         @nodeKind@ -- node kind of referenced target
+        @subkind@  -- subkind of referenced target
         @beg@      -- starting byte-offset of anchor source
         @end@      -- ending byte-offset of anchor source`)
 			// TODO handle line/column spans

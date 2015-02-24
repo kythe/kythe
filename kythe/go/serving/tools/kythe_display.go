@@ -113,6 +113,7 @@ func displayReferences(decor *xpb.DecorationsReply) error {
 
 	for _, ref := range decor.Reference {
 		nodeKind := factValue(nodes, ref.TargetTicket, schema.NodeKindFact, "UNKNOWN")
+		subkind := factValue(nodes, ref.TargetTicket, schema.SubkindFact, "")
 		startOffset := factValue(nodes, ref.SourceTicket, schema.AnchorStartFact, "_")
 		endOffset := factValue(nodes, ref.SourceTicket, schema.AnchorEndFact, "_")
 		r := strings.NewReplacer(
@@ -120,6 +121,7 @@ func displayReferences(decor *xpb.DecorationsReply) error {
 			"@target@", ref.TargetTicket,
 			"@edgeKind@", ref.Kind,
 			"@nodeKind@", nodeKind,
+			"@subkind@", subkind,
 			"@beg@", startOffset,
 			"@end@", endOffset,
 		)
