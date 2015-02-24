@@ -17,9 +17,10 @@
             [om.core :as om :include-macros true]
             [om.dom :as dom :include-macros true]
             [ui.filetree :refer [filetree-view]]
+            [ui.schema :as schema]
             [ui.service :as service]
             [ui.src :refer [src-view construct-decorations line-in-string]]
-            [ui.util :refer [handle-ch]]
+            [ui.util :refer [handle-ch parse-url-state set-url-state ticket->vname]]
             [ui.xrefs :refer [xrefs-view]]))
 
 (defn- replace-state! [state key]
@@ -34,11 +35,29 @@
        :hover (chan)})
     om/IWillMount
     (will-mount [_]
+
+      ;; Restore page state based on URL initially given
+      (let [state (parse-url-state)
+            file (select-keys state [:path :corpus :signature :root :language])]
+        (when-not (empty? file)
+          (service/get-search {:partial file
+                               :fact [{:name schema/node-kind-fact
+                                       :value "file"}]}
+            (fn [results]
+              (if (= 1 (count results))
+                (put! (om/get-state owner :file-to-view)
+                  (assoc (select-keys state [:offset :line])
+                    :ticket (first results)))
+                (.log js/console (str "Search results (" (count results) "): " (pr-str results)))))
+            #(.log js/console (str "Error searching: " %)))))
+
+      ;; Handle all jump requests to files and anchors within a file
       (handle-ch (om/get-state owner :file-to-view) nil
         (fn [file last-ticket]
           (let [file (if (:ticket file) file {:ticket file})
                 ticket (:ticket file)
                 offset (:offset file)
+                line (:line file)
                 anchor (:anchor file)]
             (cond
               (not= ticket last-ticket)
@@ -47,19 +66,29 @@
                 (service/get-file ticket
                   (fn [decorations]
                     (let [decorations (construct-decorations decorations)
-                          scroll-to-line (when offset (line-in-string (:source-text decorations) offset))]
+                          scroll-to-line (cond
+                                           line line
+                                           offset (line-in-string (:source-text decorations) offset))]
+                      (set-url-state
+                        (assoc (ticket->vname ticket)
+                          :line scroll-to-line
+                          :offset offset))
                       (om/transact! state :current-file (constantly
                                                           {:line scroll-to-line
                                                            :decorations decorations}))
                       (put! (om/get-state owner :hover) {:xref-jump anchor})))
                   (replace-state! state :current-file)))
               offset (do
+                      (set-url-state
+                        (assoc (ticket->vname ticket) :offset offset))
                        (om/transact! state :current-file
                          (fn [file]
                            (assoc file
                              :line (line-in-string (:source-text (:decorations file)) offset))))
                        (put! (om/get-state owner :hover) {:xref-jump anchor})))
             ticket)))
+
+      ;; Handle all requests for the xrefs pane
       (handle-ch (om/get-state owner :xrefs-to-view)
         (fn [target]
           (let [target (if (:ticket target) target {:ticket target})
@@ -84,6 +113,8 @@
                             :else
                             [(:next edges)])))))))
               (replace-state! state :current-xrefs)))))
+
+      ;; Populate the initial filetree data
       (service/get-corpus-roots
         (fn [corpus-roots]
           (om/transact! state :files

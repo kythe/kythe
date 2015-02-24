@@ -61,3 +61,25 @@
     (assoc (decode-ticket-query (.getDecodedQuery uri))
       :corpus (.getDomain uri)
       :signature (.getFragment uri))))
+
+(def ^:private abbreviations
+  {:lang :language
+   :sig :signature})
+
+(defn parse-url-state []
+  (let [uri (Uri. (subs (.-hash js/location) 1))
+        q (.getQueryData uri)
+        state (into {} (for [key (.getKeys q)
+                             :let [k (keyword key)]]
+                         [(or (k abbreviations) k) (.get q key)]))]
+    (if (empty? (.getPath uri))
+      state
+      (assoc state :path (.getPath uri)))))
+
+(defn set-url-state [state]
+  (let [path (:path state)
+        q (Uri.QueryData.)]
+    (doseq [[k v] (dissoc state :path)
+            :when v]
+      (.add q (name k) v))
+    (set! (.-hash js/location) (str "#" path "?" q))))
