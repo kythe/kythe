@@ -82,7 +82,7 @@ class IndexVFS : public clang::vfs::FileSystem {
     void setName(llvm::StringRef name) override {}
     llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> getBuffer(
         const llvm::Twine &Name, int64_t FileSize, bool RequiresNullTerminator,
-        bool IsVolatile) {
+        bool IsVolatile) override {
       name_ = Name.str();
       return llvm::MemoryBuffer::getMemBuffer(record_->data, name_,
                                               RequiresNullTerminator);
