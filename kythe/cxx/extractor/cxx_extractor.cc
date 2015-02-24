@@ -31,6 +31,7 @@
 #include "clang/Lex/Preprocessor.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
+#include "kythe/cxx/common/json_proto.h"
 #include "kythe/cxx/common/path_utils.h"
 #include "kythe/cxx/common/proto_conversions.h"
 #include "kythe/proto/analysis.pb.h"

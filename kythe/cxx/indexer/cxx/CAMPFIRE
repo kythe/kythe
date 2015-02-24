@@ -24,6 +24,7 @@
         "KytheVFS.h"
       ],
       "cc_libs": [
+        "//kythe/cxx/common:json_proto",
         "//kythe/cxx/common:lib",
         "//kythe/proto:cxx_proto",
         "//kythe/proto:storage_proto",
