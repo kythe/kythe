@@ -97,6 +97,10 @@ public class KytheEntrySets {
 
   /** Returns (and emits) a new anchor node at the given location in the file. */
   public EntrySet getAnchor(VName fileVName, int start, int end) {
+    if (start > end || start < 0) {
+      // TODO(schroederc): reduce number of invalid anchors
+      return null;
+    }
     EntrySet anchor = newNode(NodeKind.ANCHOR)
         .setCorpusPath(CorpusPath.fromVName(fileVName))
         .addSignatureSalt(fileVName)
