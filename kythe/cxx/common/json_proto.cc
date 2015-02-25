@@ -85,7 +85,7 @@ google::protobuf::string EncodeBase64(const google::protobuf::string &data) {
   CHECK(stream != nullptr);
   ::BIO_set_flags(stream, BIO_FLAGS_BASE64_NO_NL);
   ::BIO_write(stream, data.c_str(), data.size());
-  BIO_flush(stream);
+  (void)BIO_flush(stream);
   char *buffer = nullptr;
   long size = ::BIO_get_mem_data(stream, &buffer);
   if (buffer == nullptr) {

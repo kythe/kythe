@@ -62,7 +62,7 @@ class IndexerFrontendAction : public clang::ASTFrontendAction {
 public:
   explicit IndexerFrontendAction(GraphObserver *GO,
                                  const HeaderSearchInfo &Info)
-      : Observer(GO), HeaderSearchInfo(Info) {
+      : Observer(GO), HeaderConfig(Info) {
     assert(GO != nullptr);
   }
 
@@ -80,12 +80,12 @@ private:
   std::unique_ptr<clang::ASTConsumer>
   CreateASTConsumer(clang::CompilerInstance &CI,
                     llvm::StringRef Filename) override {
-    if (HeaderSearchInfo.is_valid) {
+    if (HeaderConfig.is_valid) {
       auto &HeaderSearch = CI.getPreprocessor().getHeaderSearchInfo();
       auto &FileManager = CI.getFileManager();
       std::vector<clang::DirectoryLookup> Lookups;
       unsigned CurrentIdx = 0;
-      for (const auto &Path : HeaderSearchInfo.paths) {
+      for (const auto &Path : HeaderConfig.paths) {
         const clang::DirectoryEntry *DirEnt =
             FileManager.getDirectory(Path.first);
         if (DirEnt != nullptr) {
@@ -95,18 +95,18 @@ private:
           // This can happen if a path was included in the HeaderSearchInfo,
           // but no headers were found underneath that path during extraction.
           // We'll prune out that path here.
-          if (CurrentIdx < HeaderSearchInfo.angled_dir_idx) {
-            --HeaderSearchInfo.angled_dir_idx;
+          if (CurrentIdx < HeaderConfig.angled_dir_idx) {
+            --HeaderConfig.angled_dir_idx;
           }
-          if (CurrentIdx < HeaderSearchInfo.system_dir_idx) {
-            --HeaderSearchInfo.system_dir_idx;
+          if (CurrentIdx < HeaderConfig.system_dir_idx) {
+            --HeaderConfig.system_dir_idx;
           }
         }
       }
       HeaderSearch.ClearFileInfo();
-      HeaderSearch.SetSearchPaths(Lookups, HeaderSearchInfo.angled_dir_idx,
-                                  HeaderSearchInfo.system_dir_idx, false);
-      HeaderSearch.SetSystemHeaderPrefixes(HeaderSearchInfo.system_prefixes);
+      HeaderSearch.SetSearchPaths(Lookups, HeaderConfig.angled_dir_idx,
+                                  HeaderConfig.system_dir_idx, false);
+      HeaderSearch.SetSystemHeaderPrefixes(HeaderConfig.system_prefixes);
     }
     if (Observer) {
       Observer->setSourceManager(&CI.getSourceManager());
@@ -135,7 +135,7 @@ private:
   /// Whether to visit template instantiations.
   BehaviorOnTemplates TemplateMode = BehaviorOnTemplates::VisitInstantiations;
   /// Configuration information for header search.
-  HeaderSearchInfo HeaderSearchInfo;
+  HeaderSearchInfo HeaderConfig;
 };
 
 /// \brief Allows stdin to be replaced with a mapped file.
