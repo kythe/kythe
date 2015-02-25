@@ -327,7 +327,9 @@ func newCommand(name, argsSpec, description string, init func(*flag.FlagSet), f 
 		fs.Usage = func() {
 			fmt.Fprintln(os.Stderr, "#", description)
 			fmt.Fprintln(os.Stderr, name, argsSpec)
-			fs.PrintDefaults()
+			if !shortHelp {
+				fs.PrintDefaults()
+			}
 		}
 	}
 	return command{fs, f}
