@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-// Package sql implements a graphstore.Service using a SQL database backend.
+// Package sql implements a graphstore.Service using a SQL database backend.  A
+// specialized implementation for an xrefs.Service is also available.
 package sql
 
 import (
@@ -48,15 +49,85 @@ PRAGMA case_sensitive_like = true;
 CREATE TABLE IF NOT EXISTS ` + tableName + " (" + columns + ", UNIQUE(" + uniqueColumns + "))"
 )
 
+// Prepared statements
+const (
+	writeStmt = "INSERT OR REPLACE INTO kythe (" + columns + ") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)"
+
+	anchorEdgesStmt = `
+SELECT
+  target_signature,
+  target_corpus,
+  target_root,
+  target_path,
+  target_language,
+  kind
+FROM kythe
+WHERE kind != ""
+  AND kind != ?
+  AND kind NOT LIKE "!%" ESCAPE '!'
+  AND source_signature = ?
+  AND source_corpus = ?
+  AND source_root = ?
+  AND source_path = ?
+  AND source_language = ?`
+
+	edgesStmt = `
+SELECT
+  target_signature,
+  target_corpus,
+  target_root,
+  target_path,
+  target_language,
+  kind
+FROM kythe
+WHERE source_signature = ?
+  AND source_corpus = ?
+  AND source_root = ?
+  AND source_path = ?
+  AND source_language = ?
+  AND kind != ""`
+
+	revEdgesStmt = `
+SELECT
+  source_signature,
+  source_corpus,
+  source_root,
+  source_path,
+  source_language,
+  kind
+FROM kythe
+WHERE target_signature = ?
+  AND target_corpus = ?
+  AND target_root = ?
+  AND target_path = ?
+  AND target_language = ?
+  AND kind != ""`
+
+	nodeFactsStmt = `
+SELECT fact, value
+FROM kythe
+WHERE source_signature = ?
+  AND source_corpus = ?
+  AND source_root = ?
+  AND source_language = ?
+  AND source_path = ?
+  AND kind = ""`
+)
+
 // DB is a wrapper around a sql.DB that implements graphstore.Service
 type DB struct {
 	*sql.DB
-	writeStmt *sql.Stmt
+
+	writeStmt       *sql.Stmt
+	nodeFactsStmt   *sql.Stmt
+	edgesStmt       *sql.Stmt
+	revEdgesStmt    *sql.Stmt
+	anchorEdgesStmt *sql.Stmt
 }
 
-// OpenGraphStore returns a graphstore.Service backed by a SQL database at the
-// given filepath.
-func OpenGraphStore(driverName, dataSourceName string) (*DB, error) {
+// Open returns an opened SQL database at the given path that can be used as a GraphStore and
+// xrefs.Service.
+func Open(driverName, dataSourceName string) (*DB, error) {
 	db, err := sql.Open(driverName, dataSourceName)
 	if err != nil {
 		return nil, err
@@ -68,9 +139,25 @@ func OpenGraphStore(driverName, dataSourceName string) (*DB, error) {
 		return nil, fmt.Errorf("error initializing SQL db: %v", err)
 	}
 	d := &DB{DB: db}
-	d.writeStmt, err = db.Prepare("INSERT OR REPLACE INTO kythe (" + columns + ") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)")
+	d.writeStmt, err = db.Prepare(writeStmt)
 	if err != nil {
 		return nil, fmt.Errorf("error preparing write statement: %v", err)
+	}
+	d.anchorEdgesStmt, err = db.Prepare(anchorEdgesStmt)
+	if err != nil {
+		return nil, fmt.Errorf("error preparing anchor edges statement: %v", err)
+	}
+	d.edgesStmt, err = db.Prepare(edgesStmt)
+	if err != nil {
+		return nil, fmt.Errorf("error preparing edges statement: %v", err)
+	}
+	d.revEdgesStmt, err = db.Prepare(revEdgesStmt)
+	if err != nil {
+		return nil, fmt.Errorf("error preparing reverse edges statement: %v", err)
+	}
+	d.nodeFactsStmt, err = db.Prepare(nodeFactsStmt)
+	if err != nil {
+		return nil, fmt.Errorf("error preparing node facts statement: %v", err)
 	}
 	return d, nil
 }

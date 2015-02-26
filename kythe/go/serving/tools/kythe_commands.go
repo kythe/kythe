@@ -285,8 +285,8 @@ var (
 				},
 			}
 			for i := 0; i < len(flag.Args()); i = i + 2 {
-				if flag.Arg(i) == schema.FileTextFact {
-					log.Printf("WARNING: Large facts such as %s are not likely to be indexed", schema.FileTextFact)
+				if flag.Arg(i) == schema.TextFact {
+					log.Printf("WARNING: Large facts such as %s are not likely to be indexed", schema.TextFact)
 				}
 				req.Fact = append(req.Fact, &spb.SearchRequest_Fact{
 					Name:  flag.Arg(i),

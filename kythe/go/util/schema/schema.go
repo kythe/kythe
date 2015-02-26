@@ -27,8 +27,8 @@ const (
 	AnchorStartFact = "/kythe/loc/start"
 	AnchorEndFact   = "/kythe/loc/end"
 
-	FileTextFact     = "/kythe/text"
-	FileEncodingFact = "/kythe/text/encoding"
+	TextFact         = "/kythe/text"
+	TextEncodingFact = "/kythe/text/encoding"
 )
 
 // Kythe node kinds

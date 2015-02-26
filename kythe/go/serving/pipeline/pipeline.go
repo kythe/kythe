@@ -371,9 +371,9 @@ func writeDecorations(t table.Proto, es xrefs.NodesEdgesService, files []string)
 			if n.Ticket == decor.FileTicket {
 				for _, f := range n.Fact {
 					switch f.Name {
-					case schema.FileTextFact:
+					case schema.TextFact:
 						decor.SourceText = f.Value
-					case schema.FileEncodingFact:
+					case schema.TextEncodingFact:
 						decor.Encoding = string(f.Value)
 					}
 				}
@@ -471,8 +471,8 @@ func getDecorations(es xrefs.EdgesService, anchor *xpb.NodeInfo) ([]*srvpb.FileD
 
 var decorationFilters = []string{
 	schema.NodeKindFact,
-	schema.FileTextFact,
-	schema.FileEncodingFact,
+	schema.TextFact,
+	schema.TextEncodingFact,
 	schema.AnchorLocFilter,
 }
 

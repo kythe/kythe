@@ -99,7 +99,7 @@ func ParseGraphStore(str string) (graphstore.Service, error) {
 		}
 		return gs, nil
 	default:
-		gs, err := sql.OpenGraphStore(kind, spec)
+		gs, err := sql.Open(kind, spec)
 		if err != nil {
 			return nil, fmt.Errorf("error opening SQL GraphStore: %v", err)
 		}
