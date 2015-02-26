@@ -431,6 +431,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, Void> {
   private EntrySet emitAnchor(EntrySet anchor, EdgeKind kind, EntrySet node) {
     Preconditions.checkArgument(kind.isAnchorEdge(),
         "EdgeKind was not intended for ANCHORs: " + kind);
+    if (anchor == null) {
+      return null;
+    }
     entrySets.emitEdge(anchor, kind, node);
     return anchor;
   }
