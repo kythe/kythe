@@ -67,15 +67,22 @@ import (
 var (
 	remoteAPI    = flag.String("api", "https://xrefs-dot-kythe-repo.appspot.com", "Remote api server")
 	servingTable = flag.String("serving_table", "", "LevelDB serving table")
+
+	shortHelp bool
 )
 
 func globalUsage() {
 	fmt.Fprintf(os.Stderr, `Usage: %s <global-flags> <command> <flags>
-Example: %[1]s --serving_table /path/to/table ls --uris kythe://kythe?path=kythe/cxx/common
 
-Global Flags:
+Examples:
+  %[1]s ls --uris kythe://kythe?path=kythe/cxx/common
+  %[1]s search --path kythe/cxx/common/CommandLineUtils.h /kythe/node/kind file
+  %[1]s node kythe:?lang=java#java.util.List
 `, filepath.Base(os.Args[0]))
-	flag.PrintDefaults()
+	if !shortHelp {
+		fmt.Fprintln(os.Stderr, "\nGlobal Flags:")
+		flag.PrintDefaults()
+	}
 	fmt.Fprintln(os.Stderr, "\nCommands:")
 	var cmdNames []string
 	for name := range cmds {
@@ -100,7 +107,9 @@ var cmds = map[string]command{
 func init() {
 	cmds["help"] = newCommand("help", "[command]",
 		"Print help information for the given command",
-		func(flag *flag.FlagSet) {}, func(flag *flag.FlagSet) error {
+		func(flag *flag.FlagSet) {
+			flag.BoolVar(&shortHelp, "short", false, "Display only command descriptions")
+		}, func(flag *flag.FlagSet) error {
 			if len(flag.Args()) == 0 {
 				globalUsage()
 			} else {
