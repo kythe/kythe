@@ -60,8 +60,7 @@ size_t JsonClient::CurlReadCallback(void *data, size_t size, size_t nmemb,
   }
   size_t bytes_to_send =
       std::min(size * nmemb, client->to_send_.size() - client->send_head_);
-  ::memcpy(static_cast<char *>(data),
-           client->to_send_.data() + client->send_head_, bytes_to_send);
+  ::memcpy(data, client->to_send_.data() + client->send_head_, bytes_to_send);
   client->send_head_ += bytes_to_send;
   return bytes_to_send;
 }
@@ -166,4 +165,4 @@ bool XrefsJsonClient::Roundtrip(const std::string &endpoint,
   }
   return true;
 }
-}
+}  // namespace kythe
