@@ -61,37 +61,43 @@ public class KytheURITest extends TestCase {
 
   public void testToString() throws URISyntaxException {
     // Empty URIs
-    checkToString("kythe:", new String[]{"", "kythe:", "kythe://", "kythe://#"});
+    checkToString("kythe:",
+        "",
+        "kythe:",
+        "kythe://",
+        "kythe://#");
 
     // Order of attributes is normalized (lang, path, root)
-    checkToString("kythe:?lang=L?path=P?root=R", new String[]{
-          "kythe:?root=R?path=P?lang=L",
-          "kythe:?root=R?lang=L?path=P",
-          "kythe:?lang=L?path=P?root=R",
-          "kythe://?lang=L?path=P?root=R#"
-        });
+    checkToString("kythe:?lang=L?path=P?root=R",
+        "kythe:?root=R?path=P?lang=L",
+        "kythe:?root=R?lang=L?path=P",
+        "kythe:?lang=L?path=P?root=R",
+        "kythe://?lang=L?path=P?root=R#");
 
     // Test various characters in the hostname
-    assertEquals("kythe://com.crazyTown-1.20_PROTOTYPE/blah?path=P",
-        parse("kythe://com.crazyTown-1.20_PROTOTYPE/blah?path=P").toString());
+    checkToString("kythe://com.crazyTown-1.20_PROTOTYPE/blah?path=P",
+        "kythe://com.crazyTown-1.20_PROTOTYPE/blah?path=P");
 
     // Check escaping
-    assertEquals("kythe:?path=P", parse("kythe://?path=%50").toString());
-    assertEquals("kythe:?path=%20", parse("kythe://?path=%20").toString());
-    assertEquals("kythe:?path=a%2Bb", parse("kythe://?path=a+b").toString());
-    assertEquals("kythe:?path=%2B", parse("kythe://?path=%2B").toString());
+    checkToString("kythe:?path=P", "kythe://?path=%50");
+    checkToString("kythe:?path=%20", "kythe://?path=%20");
+    checkToString("kythe:?path=a%2Bb", "kythe://?path=a+b");
+    checkToString("kythe:?path=%2B", "kythe://?path=%2B");
     String hairyUri =
         "kythe://libstdc%2B%2B?lang=c%2B%2B?path=bits/basic_string.h?root=/usr/include/c%2B%2B/4.8";
-    assertEquals(hairyUri, parse(hairyUri).toString());
+    checkToString(hairyUri, hairyUri);
 
     // Path cleaning
-    checkToString("kythe://a/c#sig", new String[]{
-          "kythe://a/b/../c#sig",
-          "kythe://a/./d/.././c#sig"
-        });
+    checkToString("kythe://corpus/name/with/path",
+        "kythe://corpus/name/with/path",
+        "kythe://corpus/name///with//path",
+        "kythe://corpus/name///with/./../with/path");
+    checkToString("kythe://a/c#sig",
+        "kythe://a/b/../c#sig",
+        "kythe://a/./d/.././c#sig");
   }
 
-  private void checkToString(String expected, String[] cases) throws URISyntaxException {
+  private void checkToString(String expected, String... cases) throws URISyntaxException {
     for (String str : cases) {
       assertEquals("KytheURI.parse(\"" + str + "\").toString()", expected, parse(str).toString());
     }
@@ -106,9 +112,9 @@ public class KytheURITest extends TestCase {
     KytheURI uri = new KytheURI(signature, corpus, root, path, lang);
     assertEquals(signature, uri.getSignature());
     assertEquals(corpus, uri.getCorpus());
-    assertEquals(root, uri.getRoot());
+    assertEquals("", uri.getRoot()); // nullToEmpty used
     assertEquals(path, uri.getPath());
-    assertEquals(null, uri.getLanguage()); // emptyToNull used
+    assertEquals(lang, uri.getLanguage());
   }
 
   public void testToVName() throws URISyntaxException {

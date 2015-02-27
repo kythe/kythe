@@ -28,7 +28,6 @@ import com.google.devtools.kythe.proto.Storage.VName;
 import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Objects;
 
 /**
  * {@link URI}/{@link String} realization of a {@link VName}.
@@ -41,54 +40,52 @@ public class KytheURI implements Serializable {
   public static final String SCHEME_LABEL = "kythe";
   public static final KytheURI EMPTY = new KytheURI();
 
-  private final String signature, corpus, root, path, language;
+  private final VName vName;
 
   /** Construct a new {@link KytheURI}. */
   public KytheURI(String signature, String corpus, String root, String path, String language) {
-    this.signature = emptyToNull(signature);
-    this.corpus = emptyToNull(corpus);
-    this.root = emptyToNull(root);
-    this.path = emptyToNull(path);
-    this.language = emptyToNull(language);
+    this(VName.newBuilder()
+        .setSignature(nullToEmpty(signature))
+        .setCorpus(nullToEmpty(corpus))
+        .setRoot(nullToEmpty(root))
+        .setPath(nullToEmpty(path))
+        .setLanguage(nullToEmpty(language))
+        .build());
   }
 
   /** Constructs an empty {@link KytheURI}. */
   private KytheURI() {
-    this(null, null, null, null, null);
+    this(VName.getDefaultInstance());
   }
 
   /** Unpacks a {@link VName} into a new {@link KytheURI}. */
-  public KytheURI(VName vname) {
-    this(vname.getSignature(),
-        vname.getCorpus(),
-        vname.getRoot(),
-        vname.getPath(),
-        vname.getLanguage());
+  public KytheURI(VName vName) {
+    this.vName = vName;
   }
 
   /** Returns the {@link KytheURI}'s signature. */
   public String getSignature() {
-    return signature;
+    return vName.getSignature();
   }
 
   /** Returns the {@link KytheURI}'s corpus name. */
   public String getCorpus() {
-    return corpus;
+    return vName.getCorpus();
   }
 
   /** Returns the {@link KytheURI}'s corpus path. */
   public String getPath() {
-    return path;
+    return vName.getPath();
   }
 
   /** Returns the {@link KytheURI}'s corpus root. */
   public String getRoot() {
-    return root;
+    return vName.getRoot();
   }
 
   /** Returns the {@link KytheURI}'s language. */
   public String getLanguage() {
-    return language;
+    return vName.getLanguage();
   }
 
   /**
@@ -98,45 +95,35 @@ public class KytheURI implements Serializable {
    */
   public URI toURI() throws URISyntaxException {
     String query = Joiner.on("?").skipNulls()
-        .join(attr("lang", language), attr("path", path), attr("root", root));
+        .join(
+            attr("lang", vName.getLanguage()),
+            attr("path", vName.getPath()),
+            attr("root", vName.getRoot()));
+    String corpus = vName.getCorpus();
     String authority = corpus, path = null;
-    int slash = corpus != null ? corpus.indexOf('/') : -1;
+    int slash = corpus.indexOf('/');
     if (slash != -1) {
       authority = corpus.substring(0, slash);
       path = corpus.substring(slash);
     }
     return new URI(SCHEME_LABEL,
-        authority, path, emptyToNull(query), signature).normalize();
+        emptyToNull(authority), path, emptyToNull(query), emptyToNull(vName.getSignature()))
+        .normalize();
   }
 
   /** Returns an equivalent {@link VName}. */
   public VName toVName() {
-    VName.Builder builder = VName.newBuilder();
-    if (signature != null) {
-      builder.setSignature(signature);
-    }
-    if (corpus != null) {
-      builder.setCorpus(corpus);
-    }
-    if (path != null) {
-      builder.setPath(path);
-    }
-    if (root != null) {
-      builder.setRoot(root);
-    }
-    if (language != null) {
-      builder.setLanguage(language);
-    }
-    return builder.build();
+    return vName;
   }
 
   @Override
   public String toString() {
-    if (corpus == null && path == null && root == null && language == null) {
+    if (vName.getCorpus().isEmpty() && vName.getPath().isEmpty() && vName.getRoot().isEmpty()
+        && vName.getLanguage().isEmpty()) {
       // java.net.URI does not handle an empty scheme-specific-part well...
-      return signature == null
+      return vName.getSignature().isEmpty()
           ? SCHEME_LABEL + ":"
-          : SCHEME_LABEL + ":#" + signature;
+          : SCHEME_LABEL + ":#" + vName.getSignature();
     }
     try {
       return toURI().toString().replace("+", "%2B");
@@ -147,13 +134,13 @@ public class KytheURI implements Serializable {
 
   @Override
   public int hashCode() {
-    return Objects.hash(signature, corpus, language, path, root);
+    return vName.hashCode();
   }
 
   @Override
   public boolean equals(Object o) {
     return this == o ||
-        (o instanceof KytheURI && toString().equals(o.toString()));
+        (o instanceof KytheURI && vName.equals(((KytheURI) o).vName));
   }
 
   /** Parses the given string to produce a new {@link KytheURI}. */
@@ -205,41 +192,39 @@ public class KytheURI implements Serializable {
   }
 
   public static class Builder {
-    private String signature, corpus, language, path, root;
+    private final VName.Builder builder = VName.newBuilder();
 
     public Builder setSignature(String signature) {
-      this.signature = signature;
+      builder.setSignature(nullToEmpty(signature));
       return this;
     }
 
     public Builder setCorpus(String corpus) {
-      this.corpus = corpus;
+      builder.setCorpus(nullToEmpty(corpus));
       return this;
     }
 
     public Builder setPath(String path) {
-      this.path = path;
+      builder.setPath(nullToEmpty(path));
       return this;
     }
 
     public Builder setRoot(String root) {
-      this.root = root;
+      builder.setRoot(nullToEmpty(root));
       return this;
     }
 
     public Builder setLanguage(String language) {
-      this.language = language;
+      builder.setLanguage(nullToEmpty(language));
       return this;
     }
 
     public KytheURI build() {
-      return new KytheURI(signature, corpus, root, path, language);
+      return new KytheURI(builder.build());
     }
   }
 
   private static String attr(String name, String value) {
-    return value == null
-        ? null
-        : name + "=" + value;
+    return value.isEmpty() ? null : name + "=" + value;
   }
 }
