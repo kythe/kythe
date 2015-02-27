@@ -17,6 +17,7 @@
       "junit_path": "third_party/junit/junit-4.11.jar",
       "ninja_path": "ninja",
 
+      "buildtools_root": "buildtools",
       "cc_opts": ["-std=c++11", "-pthread", "-fno-rtti", "-Wall", "-Werror", "-Wno-unused-variable"],
       "javac_opts": ["-encoding", "utf-8"],
       "docker_namespace": "gcr.io/kythe_repo"

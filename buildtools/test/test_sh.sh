@@ -1,3 +1,2 @@
-#!/bin/bash
-cat buildtools/test/test_sh.data
-exit 0
+#!/bin/bash -e
+cat "$(dirname "$0")"/test_sh.data

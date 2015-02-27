@@ -4,8 +4,13 @@ var fs = require('fs');
 var path = require('path');
 
 var entity = require('./entity.js');
-var kythe_rules = require('./kythe_rules.js');
 var rule = require('./rule.js');
+
+try {
+  var kythe_rules = require('./kythe_rules.js');
+} catch (e) {
+  // No Kythe support available
+}
 
 function JavaTool(engine) {
   rule.Tool.call(this, engine, 'java',
@@ -37,8 +42,9 @@ JavaLibrary.prototype.getNinjaBuilds = function(target) {
       target.getFileNode(target.getRoot('gen') + '.java.kindex', 'kindex');
   return {
     BUILD: [javacBuild],
-    EXTRACT: [
-      kythe_rules.javaNinjaExtractor(target, javacBuild, kindex)]
+    EXTRACT: kythe_rules ?
+        [kythe_rules.javaNinjaExtractor(target, javacBuild, kindex)] :
+        []
   };
 };
 JavaLibrary.prototype.getClasspath = function(target) {

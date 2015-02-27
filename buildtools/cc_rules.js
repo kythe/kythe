@@ -3,8 +3,13 @@
 var path = require('path');
 
 var entity = require('./entity.js');
-var kythe_rules = require('./kythe_rules.js');
 var rule = require('./rule.js');
+
+try {
+  var kythe_rules = require('./kythe_rules.js');
+} catch (e) {
+  // No Kythe support available
+}
 
 // A property that, when specified on a cc_external_lib, requires
 // additional flags to be passed to the linker. Takes a list of strings
@@ -93,7 +98,9 @@ CcLibrary.prototype.getNinjaBuilds = function(target) {
     builds.push(compile);
     var kindex = target.getFileNode(target.getRoot('gen') +
         path.basename(srcs[i].getPath()) + '.c++.kindex', 'kindex');
-    extractions.push(kythe_rules.cxxNinjaExtractor(target, compile, kindex));
+    if (kythe_rules) {
+      extractions.push(kythe_rules.cxxNinjaExtractor(target, compile, kindex));
+    }
     objects.push(obj);
   }
   var archiveRoot = target.getRoot('bin');
