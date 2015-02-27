@@ -34,6 +34,8 @@ Kythe relies on the following external dependencies:
 * source-highlight
 * graphviz
 * libncurses-dev
+* libcurl4-openssl-dev
+* uuid-dev
 * libssl-dev
 * bison-2.3
 * flex-2.5
