@@ -19,7 +19,7 @@ var deps = function() {
         action(current.target);
         for (var i = 0; i < current.target.inputs.length; ++i) {
           if (current.target.inputs[i].json) {
-            targets.push({depth: current.depth+1,
+            targets.push({depth: current.depth + 1,
                           target: current.target.inputs[i]});
           }
         }
@@ -31,7 +31,7 @@ var deps = function() {
     var deparr = [];
     dfs(targets, function(node) {
       deparr.push(node);
-    }, maxDepth);
+    }, maxDepth || -1);
     return deparr;
   };
 }();
