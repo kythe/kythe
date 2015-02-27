@@ -12,7 +12,7 @@ exports.PACKAGE_DIR = 'campfire-out/go/pkg/linux_amd64/';
 function GoTool(engine) {
   rule.Tool.call(this, engine, 'go',
                  '$gotool', ['version'],
-                 '(?<=go)1\\.[3-9](\\.\\d)', '1.3');
+                 '(?<=go)1\\.[3-9](\\.\\d)?', '1.3');
 }
 GoTool.prototype = Object.create(rule.Tool.prototype);
 
