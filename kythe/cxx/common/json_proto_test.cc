@@ -19,6 +19,7 @@
 #include "glog/logging.h"
 #include "gtest/gtest.h"
 #include "kythe/proto/analysis.pb.h"
+#include "kythe/proto/storage.pb.h"
 
 namespace kythe {
 namespace {
@@ -35,19 +36,18 @@ TEST(JsonProto, Serialize) {
       "{\"format\":\"kythe\",\"content\":{\"content\":\"dGV4dA==\",\"info\":{"
       "\"path\":\"here\"}}}",
       data_out);
-  proto::FileDataRequest has_repeated_field;
+  proto::SearchReply has_repeated_field;
   data_out.clear();
   ASSERT_TRUE(
       WriteMessageAsJsonToString(has_repeated_field, "kythe", &data_out));
   EXPECT_EQ("{\"format\":\"kythe\",\"content\":{}}", data_out);
-  has_repeated_field.add_file_info()->set_path("1");
-  has_repeated_field.add_file_info()->set_path("2");
+  has_repeated_field.add_ticket("1");
+  has_repeated_field.add_ticket("2");
   data_out.clear();
   ASSERT_TRUE(
       WriteMessageAsJsonToString(has_repeated_field, "kythe", &data_out));
   EXPECT_EQ(
-      "{\"format\":\"kythe\",\"content\":{\"file_info\":[{\"path\":\"1\"},{"
-      "\"path\":\"2\"}]}}",
+      "{\"format\":\"kythe\",\"content\":{\"ticket\":[\"1\",\"2\"]}}",
       data_out);
 }
 
@@ -70,18 +70,17 @@ TEST(JsonProto, Deserialize) {
       &format_string, &file_data));
   EXPECT_EQ("text", file_data.content());
   EXPECT_EQ("here", file_data.info().path());
-  proto::FileDataRequest has_repeated_field;
+  proto::SearchReply has_repeated_field;
   ASSERT_TRUE(MergeJsonWithMessage(
-      "{\"format\":\"kythe\",\"content\":{\"file_info\":[]}}", &format_string,
+      "{\"format\":\"kythe\",\"content\":{\"ticket\":[]}}", &format_string,
       &has_repeated_field));
-  EXPECT_EQ(0, has_repeated_field.file_info_size());
+  EXPECT_EQ(0, has_repeated_field.ticket_size());
   ASSERT_TRUE(MergeJsonWithMessage(
-      "{\"format\":\"kythe\",\"content\":{\"file_info\":[{\"path\":\"1\"},{"
-      "\"path\":\"2\"}]}}",
+      "{\"format\":\"kythe\",\"content\":{\"ticket\":[\"1\",\"2\"]}}",
       &format_string, &has_repeated_field));
-  EXPECT_EQ(2, has_repeated_field.file_info_size());
-  EXPECT_EQ("1", has_repeated_field.file_info(0).path());
-  EXPECT_EQ("2", has_repeated_field.file_info(1).path());
+  EXPECT_EQ(2, has_repeated_field.ticket_size());
+  EXPECT_EQ("1", has_repeated_field.ticket(0));
+  EXPECT_EQ("2", has_repeated_field.ticket(1));
 }
 
 TEST(JsonProto, Encode64) {

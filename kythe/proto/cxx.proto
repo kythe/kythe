@@ -25,10 +25,10 @@ message CxxCompilationUnitDetails {
   // A path used to search for compilation resources.
   message HeaderSearchDir {
     // The path to search in. If relative, is relative to working_directory.
-    optional string path = 1;
+    string path = 1;
     // The kind of data stored in this directory.
     // For C++, {0 = user code, 1 = system code, 2 = "extern C" system code}.
-    optional int32 characteristic_kind = 2;
+    int32 characteristic_kind = 2;
   }
 
   // Configuration for header search. This may be a function
@@ -36,24 +36,24 @@ message CxxCompilationUnitDetails {
   // arguments.
   message HeaderSearchInfo {
     // For C-family languages, the index of the first directory to require <>s.
-    optional int32 first_angled_dir = 1;
+    int32 first_angled_dir = 1;
     // For C-family languages, the index of the first directory to have the
     // 'system_header' property.
-    optional int32 first_system_dir = 2;
+    int32 first_system_dir = 2;
     // All search directories, ordered as {quoted, angled, system}.
     repeated HeaderSearchDir dir = 3;
   }
 
-  optional HeaderSearchInfo header_search_info = 1;
+  HeaderSearchInfo header_search_info = 1;
 
   // Overrides the default assignment for the 'system_header' property for
   // C-family languages for both quoted and angled includes. The last matching
   // entry has effect.
   message SystemHeaderPrefix {
     // Matches if the include path has this string as a prefix.
-    optional string prefix = 1;
+    string prefix = 1;
     // Controls whether the matched path has the 'system_header' property.
-    optional bool is_system_header = 2;
+    bool is_system_header = 2;
   }
 
   repeated SystemHeaderPrefix system_header_prefix = 2;

@@ -83,8 +83,8 @@ message NodesRequest {
 // not couple the reply to the request in this way.
 
 message NodeInfo {
-  optional string ticket = 1;  // The ticket for a matching node.
-  repeated Fact fact = 2;      // The matching facts known for that node.
+  string ticket = 1;       // The ticket for a matching node.
+  repeated Fact fact = 2;  // The matching facts known for that node.
 }
 
 message NodesReply {
@@ -138,8 +138,8 @@ message EdgesRequest {
   // The server is allowed to return fewer edges than the requested page_size,
   // even if more are available, save that it must return at least 1 edge if
   // any are available at all.
-  optional int32  page_size  = 8;
-  optional string page_token = 9;
+  int32  page_size  = 8;
+  string page_token = 9;
 
 
   // TODO(fromberger): Should this interface support automatic indirection
@@ -160,12 +160,12 @@ message EdgesRequest {
 // to edges.
 message EdgeSet {
   message Group {
-    optional string kind = 1;
+    string kind = 1;
     repeated string target_ticket = 2;
   }
 
   // The ticket of the source node for all the edges in the edge set.
-  optional string source_ticket = 1;
+  string source_ticket = 1;
 
   // Each group is a collection of outbound edges from source node sharing a
   // given kind.  In a given EdgeSet, the server will not send more than one
@@ -192,13 +192,13 @@ message EdgesReply {
   // reply, next_page_token is the page token that may be passed to fetch the
   // next page in sequence after this one.  If there are no additional edges,
   // this field will be empty.
-  optional string next_page_token = 9;
+  string next_page_token = 9;
 }
 
 // Fact represents a single key/value fact from the graph.
 message Fact {
-  optional string name = 1;
-  optional bytes value = 2;
+  string name = 1;
+  bytes value = 2;
 }
 
 // A Location represents a single span of zero or more contiguous bytes of a
@@ -208,7 +208,7 @@ message Fact {
 message Location {
   // The ticket of the file this location belongs to.  If the location
   // represents a memory buffer, the ticket should be omitted.
-  optional string ticket = 1;
+  string ticket = 1;
 
   enum Kind {
     // The entire file; the start and end fields are ignored.
@@ -219,7 +219,7 @@ message Location {
   }
 
   // What kind of location this is.
-  optional Kind kind = 2;
+  Kind kind = 2;
 
   // A Point represents a location within a file or buffer.
   //
@@ -235,20 +235,20 @@ message Location {
   message Point {
     // The offset in bytes from the beginning of the file.
     // Requires 0 ≤ byte_offset ≤ len(file).
-    optional int32 byte_offset = 1;
+    int32 byte_offset = 1;
 
     // The line number containing the point, 1-based.
-    optional int32 line_number = 2;
+    int32 line_number = 2;
 
     // The byte offset of the point within its line.
-    optional int32 column_offset = 3;
+    int32 column_offset = 3;
   }
 
   // The starting point of the location.
-  optional Point start = 3;
+  Point start = 3;
 
   // The ending point of the location.
-  optional Point end = 4;
+  Point end = 4;
 
   // A location is _valid_ if 0 ≤ start.offset ≤ end.offset.  If a valid
   // location has start.offset = end.offset, it denotes a single point;
@@ -263,35 +263,35 @@ message DecorationsRequest {
   //
   // If the location is a SPAN, decorations are only returned for the specified
   // window of the file.  It is an error in any case if location is invalid.
-  optional Location location = 1;
+  Location location = 1;
 
   // If dirty_buffer is non-empty, the results will be adjusted (patched) to
   // account for the regions of the specified file differing from the contents
   // of the dirty buffer.
-  optional bytes dirty_buffer = 2;
+  bytes dirty_buffer = 2;
 
   // If true, return the encoded source text for the selected window.  Source
   // text is not affected by patching.
-  optional bool source_text = 3;
+  bool source_text = 3;
 
   // If true, return reference edges whose source nodes are located in the
   // selected window.  References are affected by patching.
-  optional bool references = 4;
+  bool references = 4;
 }
 
 message DecorationsReply {
   // The normalized location for which decorations are returned.
-  optional Location location = 1;
+  Location location = 1;
 
   // The encoded source text for the selected window.
-  optional bytes source_text = 2;
-  optional string encoding = 3;
+  bytes source_text = 2;
+  string encoding = 3;
 
   // Represents a reference edge source ---KIND---> target.
   message Reference {
-    optional string source_ticket = 1;
-    optional string target_ticket = 2;
-    optional string kind = 3;
+    string source_ticket = 1;
+    string target_ticket = 2;
+    string kind = 3;
   }
 
   // The reference edges located in the specified window.
