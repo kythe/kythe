@@ -3,9 +3,16 @@ url: 'https://kythe.io'
 description: >
   A pluggable, (mostly) language-agnostic ecosystem for building tools that work
   with code.
+permalink: pretty
+future: false
 exclude: ['README.adoc', 'Gemfile.lock', 'Gemfile', 'build.sh', 'sync_docs.sh', 'check_links.sh']
 collections:
   docs:
     output: true
 gems:
   - jekyll-redirect-from
+  - jekyll-asciidoc
+asciidoctor:
+  attributes:
+    - hardbreaks!
+    - source-highlighter=pygments

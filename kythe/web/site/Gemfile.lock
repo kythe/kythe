@@ -31,6 +31,8 @@ GEM
       redcarpet (~> 3.1)
       safe_yaml (~> 1.0)
       toml (~> 0.1.0)
+    jekyll-asciidoc (1.0.0)
+      asciidoctor (>= 0.1.4)
     jekyll-coffeescript (1.0.1)
       coffee-script (~> 2.2)
     jekyll-gist (1.1.0)
@@ -75,5 +77,6 @@ PLATFORMS
 DEPENDENCIES
   asciidoctor
   jekyll
+  jekyll-asciidoc
   jekyll-redirect-from
   nokogiri
