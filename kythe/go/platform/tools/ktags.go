@@ -58,11 +58,10 @@ func main() {
 	for _, file := range flag.Args() {
 		results, err := idx.Search(&spb.SearchRequest{
 			Partial: &spb.VName{Path: file},
-			Fact: []*spb.SearchRequest_Fact{
-				&spb.SearchRequest_Fact{
-					Name:  schema.NodeKindFact,
-					Value: []byte(schema.FileKind)},
-			},
+			Fact: []*spb.SearchRequest_Fact{{
+				Name:  schema.NodeKindFact,
+				Value: []byte(schema.FileKind),
+			}},
 		})
 		if err != nil {
 			log.Fatalf("Error searching for ticket of file %q", file)
