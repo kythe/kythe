@@ -54,9 +54,9 @@ service ShardedGraphStore {
   rpc Shard(ShardRequest) returns (stream Entry) {}
 }
 
-// Search is a service for querying nodes based on a partial VName and
-// collection of known facts.
-service Search {
+// SearchService for querying nodes based on a partial VName and collection of
+// known facts.
+service SearchService {
   // Search responds with the set of node tickets that match the given
   // SearchRequest.
   rpc Search(SearchRequest) returns (SearchReply) {}
