@@ -251,7 +251,6 @@
         "//kythe/proto:storage_proto",
         "//third_party/gflags",
         "//third_party/glog",
-        "//third_party/googletest:lib",
         "//third_party/protobuf:protobuf_cc",
         "//third_party/zlib"
       ]

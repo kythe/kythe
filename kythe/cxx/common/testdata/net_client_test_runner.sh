@@ -21,7 +21,7 @@ KYTHE_HTTP_SERVER="${PWD}/campfire-out/bin/kythe/go/serving/tools/http_server"
 OUT_DIR="${PWD}/campfire-out/test/kythe/cxx/common/testdata/net_client_test_runner"
 
 server_addr() {
-  lsof -p "$1" -i -s TCP:LISTEN 2>/dev/null | grep -ohw "localhost:[0-9]*"
+  lsof -a -p "$1" -i -s TCP:LISTEN 2>/dev/null | grep -ohw "localhost:[0-9]*"
 }
 
 rm -rf -- "${OUT_DIR}"
@@ -34,12 +34,17 @@ cat "${BASE_DIR}/net_client_test_data.json" \
 SERVER_PID=$!
 trap 'kill $SERVER_PID' EXIT ERR INT
 
+COUNTDOWN=16
 while :; do
   sleep 1s
   LISTEN_AT=$(server_addr "$SERVER_PID") \
     && curl -s "$LISTEN_AT" >/dev/null \
     && break
-  echo 'Waiting for server...' >&2
+  echo "Waiting for server ($COUNTDOWN seconds remaining)..." >&2
+  if [[ $((COUNTDOWN--)) -eq 0 ]]; then
+    echo "Aborting (launching server took too long)" >&2
+    exit 1
+  fi
 done
 
 "$TEST_BIN" --xrefs="http://$LISTEN_AT"
