@@ -20,20 +20,26 @@ KYTHE_ENTRYSTREAM="${PWD}/campfire-out/bin/kythe/go/platform/tools/entrystream"
 KYTHE_HTTP_SERVER="${PWD}/campfire-out/bin/kythe/go/serving/tools/http_server"
 OUT_DIR="${PWD}/campfire-out/test/kythe/cxx/common/testdata/net_client_test_runner"
 
+server_addr() {
+  lsof -p "$1" -i -s TCP:LISTEN 2>/dev/null | grep -ohw "localhost:[0-9]*"
+}
+
 rm -rf -- "${OUT_DIR}"
 mkdir -p "${OUT_DIR}/gs"
 
 cat "${BASE_DIR}/net_client_test_data.json" \
     | "${KYTHE_ENTRYSTREAM}" -read_json=true  \
-    | "${KYTHE_WRITE_ENTRIES}" -graphstore "${OUT_DIR}/gs"
-"${KYTHE_HTTP_SERVER}" -graphstore "${OUT_DIR}/gs" -listen="localhost:0" &
+    | "${KYTHE_WRITE_ENTRIES}" -graphstore "${OUT_DIR}/gs" 2>/dev/null
+"${KYTHE_HTTP_SERVER}" -graphstore "${OUT_DIR}/gs" -listen="localhost:0" 2>/dev/null &
 SERVER_PID=$!
 trap 'kill $SERVER_PID' EXIT ERR INT
-LISTEN_AT=$((lsof -p "${SERVER_PID}" | grep -ohw "localhost:[0-9]*") || true)
-while ! curl -s "${LISTEN_AT}" > /dev/null; do
-  echo 'Waiting for server...' >&2
+
+while :; do
   sleep 1s
-  LISTEN_AT=$((lsof -p "${SERVER_PID}" | grep -ohw "localhost:[0-9]*") || true)
+  LISTEN_AT=$(server_addr "$SERVER_PID") \
+    && curl -s "$LISTEN_AT" >/dev/null \
+    && break
+  echo 'Waiting for server...' >&2
 done
 
-"${TEST_BIN}" --xrefs="http://${LISTEN_AT}"
+"$TEST_BIN" --xrefs="http://$LISTEN_AT"
