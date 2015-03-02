@@ -19,6 +19,49 @@ syntax = "proto3";
 package kythe.proto;
 option java_package = "com.google.devtools.kythe.proto";
 
+// Persistent storage server for Kythe analysis data.
+// See: http://www.kythe.io/docs/kythe-storage.html
+service GraphStore {
+  // Read responds with all Entry messages that match the given ReadRequest.
+  // The Read operation should be implemented with time complexity proportional
+  // to the size of the return set.
+  rpc Read(ReadRequest) returns (stream Entry) {}
+
+  // Scan responds with all Entry messages matching the given ScanRequest.  If a
+  // ScanRequest field is empty, any entry value for that field matches and will
+  // be returned.  Scan is similar to Read, but with no time complexity
+  // restrictions.
+  rpc Scan(ScanRequest) returns (stream Entry) {}
+
+  // Write atomically inserts or updates a collection of entries into the store.
+  // Each update is a tuple of the form (kind, target, fact, value).  For each
+  // such update, an entry (source, kind, target, fact, value) is written into
+  // the store, replacing any existing entry (source, kind, target, fact,
+  // value') that may exist.  Note that this operation cannot delete any data
+  // from the store; entries are only ever inserted or updated.  Apart from
+  // acting atomically, no other constraints are placed on the implementation.
+  rpc Write(WriteRequest) returns (WriteReply) {}
+}
+
+// ShardedGraphStores can be arbitrarily sharded for parallel processing.
+// Depending on the implementation, these methods may not return consistent
+// results when the store is being written to.  Shards are indexed from 0.
+service ShardedGraphStore {
+  // Count returns the number of entries in the given shard.
+  rpc Count(CountRequest) returns (CountReply) {}
+
+  // Shard responds with each Entry in the given shard.
+  rpc Shard(ShardRequest) returns (stream Entry) {}
+}
+
+// Search is a service for querying nodes based on a partial VName and
+// collection of known facts.
+service Search {
+  // Search responds with the set of node tickets that match the given
+  // SearchRequest.
+  rpc Search(SearchRequest) returns (SearchReply) {}
+}
+
 // VName is a proto representation of a vector name.
 //
 // Rules:
@@ -34,12 +77,12 @@ option java_package = "com.google.devtools.kythe.proto";
 message VName {
   // A language-specific signature assigned by the analyzer.
   // e.g., "com.google.common.collect.Lists.newLinkedList<#1>()"
-  optional string signature = 1;
+  string signature = 1;
 
   // The corpus this name belongs to.
   // e.g., "kythe", "chromium", "github.com/creachadair/imath", "aosp"
   // The corpus label "kythe" is reserved for internal use.
-  optional string corpus = 2;
+  string corpus = 2;
 
   // A corpus-specific root label, designating a subordinate collection within
   // the corpus.  If a corpus stores files in unrelated directory structures,
@@ -47,7 +90,7 @@ message VName {
   // incorporates subprojects, the root can be a project ID that it governs.
   // This may also be used to distinguish virtual subgroups of a corpus such as
   // generated files.
-  optional string root = 3;
+  string root = 3;
 
   // A path-structured label describing the location of this object relative to
   // the corpus and the root.  For code, this will generally be the relative
@@ -59,7 +102,7 @@ message VName {
   // Examples:
   //   "devools/kythe/platform/go/datastore.go" (a file)
   //   "type/cpp/void.cc" (a type figment)
-  optional string path = 4;
+  string path = 4;
 
   // The language this name belongs to.
   // e.g., "c++", "python", "elisp", "haskell", "java"
@@ -68,7 +111,7 @@ message VName {
   // don't wind up with a confusion of names like "cxx", "cpp", "C++", etc.
   // Prototype: Official language name converted to lowercase.  If a version
   // number is necessary, include it, e.g., "python3".
-  optional string language = 5;
+  string language = 5;
 
   // Other fields we may need in the future, but do not currently use:
   // branch -- a branch name within the corpus depot, e.g., "gslb_branch".
@@ -85,11 +128,11 @@ message VName {
 // An Entry associates a fact with a graph object (node or edge).  This is the
 // the primary unit of storage.
 message Entry {
-  optional VName source = 1;
+  VName source = 1;
 
   // The following two fields must either be both empty, or both nonempty.
-  optional string edge_kind = 2;
-  optional VName target = 3;
+  string edge_kind = 2;
+  VName target = 3;
 
   // The grammar for fact_name:
   //  name   = "/" | 1*path
@@ -98,8 +141,8 @@ message Entry {
   //  LETTER = [A-Za-z]
   //  DIGIT  = [0-9]
   //  PUNCT  = [-.@#$%&_+:()]
-  optional string fact_name = 4;
-  optional bytes  fact_value = 5;
+  string fact_name = 4;
+  bytes  fact_value = 5;
 }
 
 // A collection of Entry instances.
@@ -107,78 +150,88 @@ message Entries {
   repeated Entry entries = 1;
 }
 
-// Request for a stream of Entry objects from a GraphStore. Read operations
+// Request for a stream of Entry objects from a GraphStore.  Read operations
 // should be implemented with time complexity proportional to the size of the
 // return set.
 message ReadRequest {
   // Return entries having this source VName, which may not be empty.
-  optional VName source = 1;
+  VName source = 1;
 
   // Return entries having this edge kind; if empty, only entries with an empty
   // edge kind are returned; if "*", entries of any edge kind are returned.
-  optional string edge_kind = 2;
+  string edge_kind = 2;
 }
 
 // Request to write Entry objects to a GraphStore
 message WriteRequest {
   message Update {
-    optional string edge_kind = 1;
-    optional VName target = 2;
-    optional string fact_name = 3;
-    optional bytes fact_value = 4;
+    string edge_kind = 1;
+    VName target = 2;
+    string fact_name = 3;
+    bytes fact_value = 4;
   }
 
-  optional VName source = 1;
+  VName source = 1;
   repeated Update update = 2;
 }
+
+// Response to a WriteRequest
+message WriteReply {}
 
 // Request for a stream of Entry objects resulting from a full scan of a
 // GraphStore.
 message ScanRequest {
   // Return entries having this target VName; if empty, any target field is
   // matched, including empty.
-  optional VName target = 1;
+  VName target = 1;
 
   // Return entries having this kind; if empty, any kind is matched, including
   // empty.
-  optional string edge_kind = 2;
+  string edge_kind = 2;
 
   // Return entries having fact labels with this prefix; if empty, any fact
   // label is matched,
-  optional string fact_prefix = 3;
+  string fact_prefix = 3;
 }
-
-// TODO(fromberger): add RPC service interfaces
 
 // Request for the size of the shard at the given index.
 message CountRequest {
-  optional int64 index = 1;
-  optional int64 shards = 2;
+  int64 index = 1;
+  int64 shards = 2;
+}
+
+// Response for a CountRequest
+message CountReply {
+  // Total number of entries in the specified shard.
+  int64 entries = 1;
 }
 
 // Request for a stream of Entry objects in the given shard.
 message ShardRequest {
-  optional int64 index = 1;
-  optional int64 shards = 2;
+  int64 index = 1;
+  int64 shards = 2;
 }
 
 // Request for the set of node tickets matching a partial VName and collection
 // of known facts.
 message SearchRequest {
-  // Optional partial VName to match against nodes.  Each non-empty field
+  // partial VName to match against nodes.  Each non-empty field
   // becomes a constraint (i.e. the signature/corpus/etc. must be exactly
   // case-sensitively equal to the given string) on the set of returned nodes.
-  optional VName partial = 1;
+  VName partial = 1;
 
   message Fact {
-    optional string name = 1;
-    optional bytes value = 2;
+    string name = 1;
+    bytes value = 2;
   }
 
   // Facts that a node must have to be matched.
   repeated Fact fact = 2;
+
+  // TODO(schroederc): pagination for large result sets
 }
 
+// Response for a SearchRequest.
 message SearchReply {
   // Set of node tickets matching a given SearchRequest.
   repeated string ticket = 1;
