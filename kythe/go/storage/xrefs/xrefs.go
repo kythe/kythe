@@ -407,9 +407,9 @@ var revChildOfEdgeKind = schema.MirrorEdge(schema.ChildOfEdge)
 func getSourceText(gs graphstore.Service, fileVName *spb.VName) (text []byte, encoding string, err error) {
 	if err := gs.Read(&spb.ReadRequest{Source: fileVName}, func(entry *spb.Entry) error {
 		switch entry.FactName {
-		case schema.FileTextFact:
+		case schema.TextFact:
 			text = entry.FactValue
-		case schema.FileEncodingFact:
+		case schema.TextEncodingFact:
 			encoding = string(entry.FactValue)
 		default:
 			// skip other file facts

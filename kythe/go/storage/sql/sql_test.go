@@ -42,7 +42,7 @@ func tempGS() (*DB, string, error) {
 	if err != nil {
 		return nil, "", err
 	}
-	db, err := OpenGraphStore(SQLite3, filepath.Join(dir, "db"))
+	db, err := Open(SQLite3, filepath.Join(dir, "db"))
 	return db, dir, err
 }
 

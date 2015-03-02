@@ -42,8 +42,8 @@ var (
 		{sig("orphanedNode"), facts(schema.NodeKindFact, "orphan"), nil},
 		{testFileVName, facts(
 			schema.NodeKindFact, schema.FileKind,
-			schema.FileTextFact, testFileContent,
-			schema.FileEncodingFact, testFileEncoding), map[string][]*spb.VName{
+			schema.TextFact, testFileContent,
+			schema.TextEncodingFact, testFileEncoding), map[string][]*spb.VName{
 			revChildOfEdgeKind: {testAnchorVName},
 		}},
 		{sig("sig2"), facts(schema.NodeKindFact, "test"), map[string][]*spb.VName{

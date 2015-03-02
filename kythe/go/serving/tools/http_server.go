@@ -62,6 +62,7 @@ func main() {
 	var (
 		xs xrefs.Service
 		ft filetree.Service
+		sr search.Service
 	)
 
 	if *servingTable != "" {
@@ -73,22 +74,43 @@ func main() {
 		tbl := &table.KVProto{db}
 		xs = &xsrv.Table{tbl}
 		ft = &ftsrv.Table{tbl}
-		search.RegisterHTTPHandlers(&srchsrv.Table{&table.KVInverted{db}}, http.DefaultServeMux)
+		sr = &srchsrv.Table{&table.KVInverted{db}}
 	} else {
 		log.Println("WARNING: serving directly from a GraphStore can be slow; you may want to use a --serving_table")
-		m := filetree.NewMap()
-		if err := m.Populate(gs); err != nil {
-			log.Fatalf("Error populating file tree from GraphStore: %v", err)
+		if f, ok := gs.(filetree.Service); ok {
+			log.Printf("Using %T directly as filetree service", gs)
+			ft = f
+		} else {
+			m := filetree.NewMap()
+			if err := m.Populate(gs); err != nil {
+				log.Fatalf("Error populating file tree from GraphStore: %v", err)
+			}
+			ft = m
 		}
-		ft = m
-		if err := xstore.EnsureReverseEdges(gs); err != nil {
-			log.Fatalf("Error ensuring reverse edges in GraphStore: %v", err)
+
+		if x, ok := gs.(xrefs.Service); ok {
+			log.Printf("Using %T directly as xrefs service", gs)
+			xs = x
+		} else {
+			if err := xstore.EnsureReverseEdges(gs); err != nil {
+				log.Fatalf("Error ensuring reverse edges in GraphStore: %v", err)
+			}
+			xs = xstore.NewGraphStoreService(gs)
 		}
-		xs = xstore.NewGraphStoreService(gs)
+
+		if s, ok := gs.(search.Service); ok {
+			log.Printf("Using %T directly as search service", gs)
+			sr = s
+		}
 	}
 
 	xrefs.RegisterHTTPHandlers(xs, http.DefaultServeMux)
 	filetree.RegisterHTTPHandlers(ft, http.DefaultServeMux)
+	if sr != nil {
+		search.RegisterHTTPHandlers(sr, http.DefaultServeMux)
+	} else {
+		log.Println("Search API not supported")
+	}
 
 	if *publicResources != "" {
 		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
