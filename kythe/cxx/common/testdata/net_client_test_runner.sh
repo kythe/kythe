@@ -41,8 +41,8 @@ while :; do
     && curl -s "$LISTEN_AT" >/dev/null \
     && break
   echo "Waiting for server ($COUNTDOWN seconds remaining)..." >&2
-  if [ $((COUNTDOWN--)) -eq 0 ]; then
-    echo "Aborting (server bringup took too long)" >&2
+  if [[ $((COUNTDOWN--)) -eq 0 ]]; then
+    echo "Aborting (launching server took too long)" >&2
     exit 1
   fi
 done
