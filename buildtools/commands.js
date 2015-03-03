@@ -60,6 +60,15 @@ function camper(input) {
       });
       parsed[j].inputs[inputKind] = labels.length > 0 ? labels : undefined;
     }
+
+    // Remove empty fields (e.g. an empty "properties" or "inputs" field)
+    for (var key in parsed[j]) {
+      var val = parsed[j][key];
+      if (val instanceof Array && val.length == 0 ||
+          typeof(val) === 'object' && Object.keys(val).length == 0) {
+        parsed[j][key] = undefined;
+      }
+    }
   }
   // TODO(schroederc): store as YAML?
   return JSON.stringify(parsed, undefined, 2) + '\n';
