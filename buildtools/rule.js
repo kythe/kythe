@@ -206,10 +206,14 @@ exports.getAllOutputsRecursiveFor = function(targets, kind, filter,
     return [];
   }
   if (!results) {
-    results = [];
+    results = {};
     exports.getAllOutputsRecursiveFor(
         targets, kind, filter, results, {});
-    return results;
+    var entities = [];
+    for (var id in results) {
+      entities.push(results[id]);
+    }
+    return entities;
   }
   for (var i = 0; i < targets.length; i++) {
     var target = targets[i];
@@ -224,7 +228,7 @@ exports.getAllOutputsRecursiveFor = function(targets, kind, filter,
           continue;
         }
       }
-      results.push(outputs[j]);
+      results[outputs[j].id] = outputs[j];
     }
     exports.getAllOutputsRecursiveFor(target.inputs, kind, filter,
                                       results, visited);

@@ -17,7 +17,7 @@ rule run_test
 rule javac
   command = mkdir -p $out.classes && $
             '$javac' $javacopts -cp '$classpath' $in -d $out.classes && $
-            '$javajar' cf $out -C $out.classes .
+            '$javajar' cMf $out -C $out.classes .
   description = javac $owner
 
 rule java_shell
@@ -28,13 +28,15 @@ rule java_shell
 rule java_deploy_jar
   command = root=$$PWD; $
             mkdir -p $out.classes && $
-            cd $out.classes && $
-            for i in $in; do $
-              '$javajar' xf $$root/$$i; $
+            for j in $in; do $
+              if [[ -d "$$j.classes" ]]; then $
+                cp -lr "$$j.classes"/* $out.classes/; $
+              else $
+                cd $out.classes && '$javajar' xf "$$root/$$j"; $
+                cd "$$root"; $
+              fi; $
             done && $
-            echo 'Main-Class: $main' > manifest.txt && $
-            '$javajar' cfm deploy.jar manifest.txt . && $
-            mv deploy.jar $$root/$out
+            '$javajar' cfe $out $main -C $out.classes .
   description = java_deploy_jar $out
 
 rule go_build
