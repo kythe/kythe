@@ -31,6 +31,7 @@
       ],
       "go_pkgs": [
         "//kythe/go/services/graphstore",
+        "//kythe/go/services/graphstore/compare",
         "//kythe/go/storage/keyvalue",
         "//kythe/proto:storage_proto"
       ]

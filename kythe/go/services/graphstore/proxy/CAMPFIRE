@@ -24,6 +24,7 @@
         ":proxy"
       ],
       "go_pkgs": [
+        "//kythe/go/services/graphstore",
         "//kythe/proto:storage_proto",
         "//third_party/go/github.com:protobuf"
       ]
