@@ -130,6 +130,9 @@ exports.commands = {
     if (fs.existsSync('build.ninja')) {
       fs.unlinkSync('build.ninja');
     }
+    if (fs.existsSync('compile_commands.json')) {
+      fs.unlinkSync('compile_commands.json');
+    }
   }, 'Cleans campfire state and output'),
   'package': new Command(function(engine, args) {
     engine.ninjaCommand(rule.kinds.PACKAGE, args, true);

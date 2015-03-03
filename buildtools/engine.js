@@ -423,22 +423,34 @@ exports.Engine.prototype.ninjaCommand = function(kind, targetArgs, execute,
     targets.append(this.resolveTargets('//...'));
   }
   this.convertToNinja(kind);
-  if (execute) {
-    var ninjaPath = this.settings.properties['ninja_path'] || 'ninja';
-    runNinja(ninjaPath, ids, callback);
-  }
+  var ninjaPath = this.settings.properties['ninja_path'] || 'ninja';
+  var dbPath = this.campfireRoot + '/compile_commands.json';
+  updateCompilationDatabase(ninjaPath, dbPath, function() {
+    if (execute) {
+      runNinja(ninjaPath, ids, redirectNinjaToStderr, callback);
+    }
+  });
 };
 
-function runNinja(ninjaPath, targets, callback) {
-  // Execute ninja using the command 'sh -c "ninja <targets> >&2"'.  This rather
-  // complicated function ensures that all ninja output is properly piped to
-  // stderr.  It's not possible to just set the 'stdio' spawn option to
+function updateCompilationDatabase(ninjaPath, dbPath, callback) {
+  // Update supported actions in the ninja compilation database. Calls
+  // callback on success.
+  runNinja(ninjaPath, ["-t", "compdb", "c_compile", "cpp_compile"],
+           " >> " + dbPath, callback);
+}
+
+var redirectNinjaToStderr = ' >&2';
+
+function runNinja(ninjaPath, ninjaArgs, redirect, callback) {
+  // Execute ninja using the command 'sh -c "ninja <ninjaArgs> redirect"'.  This
+  // rather complicated function ensures that all ninja output is properly piped
+  // to stderr.  It's not possible to just set the 'stdio' spawn option to
   // ['ignore', 2, 2] or something similar because NodeJS will just drop either
   // stdout or stderr and using stream.pipe() will cause ninja to remove its
   // formatting escapes.  Executing commands is just too stressful for NodeJS so
   // we'll leave it to a shell.
 
-  var args = ['-c', ninjaPath + ' ' + targets.join(' ') + ' >&2'];
+  var args = ['-c', ninjaPath + ' ' + ninjaArgs.join(' ') + redirect];
   var childExit = false;
   var child = child_process.spawn('sh', args, {
     stdio: ['ignore', 'ignore', 2]
