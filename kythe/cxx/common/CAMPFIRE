@@ -112,7 +112,6 @@
       "srcs": [
         "CommandLineUtilsTest.cc"
       ],
-      "hdrs": [],
       "cc_libs": [
         ":lib",
         "//third_party/googletest:lib",
@@ -136,7 +135,6 @@
       "srcs": [
         "file_vname_generator_test.cc"
       ],
-      "hdrs": [],
       "cc_libs": [
         ":lib",
         "//kythe/proto:storage_proto",
@@ -162,7 +160,6 @@
       "srcs": [
         "path_utils_test.cc"
       ],
-      "hdrs": [],
       "cc_libs": [
         ":lib",
         "//third_party/googletest:lib",
@@ -186,7 +183,6 @@
       "srcs": [
         "index_pack_test.cc"
       ],
-      "hdrs": [],
       "cc_libs": [
         ":lib",
         "//kythe/proto:analysis_proto",
@@ -217,7 +213,6 @@
       "srcs": [
         "json_proto_test.cc"
       ],
-      "hdrs": [],
       "cc_libs": [
         ":json_proto",
         "//kythe/proto:analysis_proto",
@@ -244,7 +239,6 @@
       "srcs": [
         "net_client_test.cc"
       ],
-      "hdrs": [],
       "cc_libs": [
         "//kythe/cxx/common:net_client",
         "//kythe/proto:analysis_proto",

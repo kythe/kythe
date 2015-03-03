@@ -52,7 +52,6 @@
       "srcs": [
         "cxx.proto"
       ],
-      "proto_libs": [],
       "cc_libs": [
         "//third_party/protobuf:protobuf_cc"
       ]

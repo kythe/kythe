@@ -58,7 +58,7 @@ function camper(input) {
         }
         return a.localeCompare(b);
       });
-      parsed[j].inputs[inputKind] = labels;
+      parsed[j].inputs[inputKind] = labels.length > 0 ? labels : undefined;
     }
   }
   // TODO(schroederc): store as YAML?

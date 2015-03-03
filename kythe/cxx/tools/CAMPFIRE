@@ -6,7 +6,6 @@
       "srcs": [
         "kindex_tool_main.cc"
       ],
-      "hdrs": [],
       "cc_libs": [
         "//kythe/proto:analysis_proto",
         "//kythe/proto:storage_proto",
@@ -24,7 +23,6 @@
       "srcs": [
         "static_claim_main.cc"
       ],
-      "hdrs": [],
       "cc_libs": [
         "//kythe/cxx/common:lib",
         "//kythe/proto:analysis_proto",

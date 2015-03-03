@@ -55,7 +55,6 @@
       "srcs": [
         "verifier_main.cc"
       ],
-      "hdrs": [],
       "cc_libs": [
         ":lib",
         "//kythe/proto:storage_proto",
