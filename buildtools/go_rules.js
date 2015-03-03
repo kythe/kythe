@@ -7,7 +7,8 @@ var cc_rules = require('./cc_rules.js');
 var entity = require('./entity.js');
 var rule = require('./rule.js');
 
-exports.PACKAGE_DIR = 'campfire-out/go/pkg/linux_amd64/';
+var GOPATH = 'campfire-out/go';
+exports.PACKAGE_DIR = path.join(GOPATH, 'pkg/linux_amd64/');
 
 function GoTool(engine) {
   rule.Tool.call(this, engine, 'go',
@@ -262,6 +263,8 @@ function GoExternalLib(engine) {
 
 GoExternalLib.prototype = new rule.Rule();
 GoExternalLib.prototype.getNinjaBuilds = function(target) {
+  var campfireRoot = target.engine.campfireRoot;
+
   // TODO(schroederc): unify external and kythe Go build rules
   var packageName = target.getPropertyValue('go_package');
   if (!packageName) {
@@ -270,14 +273,27 @@ GoExternalLib.prototype.getNinjaBuilds = function(target) {
   }
   var deps = rule.getAllOutputsFor(target.inputsByKind['go_pkgs'], 'build',
                                    rule.fileFilter('go_archive'));
+
   var root = path.dirname(target.asPath());
+  var roots = {};
+  rule.getAllOutputsRecursiveFor(target.inputsByKind['go_pkgs'], 'build',
+                                 rule.propertyFilter('go_path'))
+                                     .map(function(p) {
+                                       roots[p.value] = true;
+                                     });
+
   var srcDir = path.join(root, 'src', packageName);
   var srcs = fs.readdirSync(srcDir)
       .filter(function(file) {
         return file.endsWith('.go') &&
             !file.endsWith('_test.go');
-      }).map(function(file) {
-        return target.getFileNode(path.join(srcDir, file), 'src_file');
+      }).mapcat(function(file) {
+        var t = target.engine.rules['static_file'].createTarget(
+            target.id.substring(0, target.id.indexOf(':') + 1) + file,
+            path.join(srcDir, file));
+        // Push to inputs for `campfire query` commands
+        target.inputs.push(t);
+        return t.rule.getOutputsFor(t);
       });
 
   var outPath = exports.PACKAGE_DIR + packageName;
@@ -314,11 +330,16 @@ GoExternalLib.prototype.getNinjaBuilds = function(target) {
           .concat(srcs),
       outs: [archive],
       vars: {
-        root: root,
+        gopath: Object.keys(roots)
+            .map(function(p) { return path.join(campfireRoot, p); })
+            .join(':'),
         'package': packageName,
+        srcpath: path.join(campfireRoot, root),
+        outpath: path.join(campfireRoot, GOPATH),
         cflags: cflags.join(' '),
         ldflags: ldflags.join(' ')
-      }
+      },
+      properties: [new entity.Property(target.id, 'go_path', root)]
     }]
   };
 };

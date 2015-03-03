@@ -40,7 +40,12 @@ rule java_deploy_jar
   description = java_deploy_jar $out
 
 rule go_build
-  command = CC=$cpath GOPATH="$$PWD/$root" CGO_CFLAGS="$cflags" CGO_LDFLAGS="$ldflags" $gotool build -o $out $package
+  command = bash -c 'tmp=$$(mktemp -d --suffix=campfire.gopath) && $
+                     trap "rm -rf $$tmp" EXIT ERR INT && $
+                     ln -s "$srcpath/src" "$$tmp/src" && $
+                     mkdir -p $outpath/pkg && $
+                     ln -s "$outpath/pkg" "$$tmp/pkg" && $
+                     CC=$cpath GOPATH="$$tmp:$gopath" CGO_CFLAGS="$cflags" CGO_LDFLAGS="$ldflags" $gotool install $package'
   description = go_build $owner
 
 rule go_compile
