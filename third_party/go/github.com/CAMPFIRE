@@ -28,5 +28,12 @@
     "properties": {
       "go_package": "github.com/mattn/go-sqlite3"
     }
+  },
+  {
+    "name": "http2",
+    "kind": "go_external_lib",
+    "properties": {
+      "go_package": "github.com/bradfitz/http2"
+    }
   }
 ]

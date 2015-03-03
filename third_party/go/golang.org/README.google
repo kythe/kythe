@@ -1,5 +1,6 @@
 URL: http://golang.org/x/net/context
 URL: http://golang.org/x/tools/go
+URL: http://golang.org/x/oauth2
 License: New BSD License: http://opensource.org/licenses/BSD-3-Clause
 Local Modifications: No modifications.
 

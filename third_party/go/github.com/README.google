@@ -5,3 +5,7 @@ Local Modifications: No modifications.
 URL: https://github.com/mattn/go-sqlite3
 License: MIT: http://opensource.org/licenses/MIT
 Local Modifications: No modifications.
+
+URL: https://github.com/bradfitz/http2
+License: New BSD License: http://opensource.org/licenses/BSD-3-Clause
+Local Modifications: No modifications.
