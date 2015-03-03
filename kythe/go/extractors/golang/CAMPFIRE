@@ -9,8 +9,6 @@
       "go_pkgs": [
         "//kythe/go/extractors/govname",
         "//kythe/go/platform/indexpack",
-        "//kythe/go/storage/vnameutil",
-        "//kythe/go/util/stringset",
         "//kythe/proto:analysis_proto",
         "//kythe/proto:storage_proto",
         "//third_party/go/golang.org:context"
