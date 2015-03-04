@@ -17,12 +17,14 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -67,6 +69,11 @@ var (
 	path      string
 	language  string
 	signature string
+
+	spanHelp = `Limit results to this span (e.g. "10-30", "b1462-b1847", "3:5-3:10")
+      Formats:
+        b\d+-b\d+             -- Byte-offsets
+        \d+(:\d+)?-\d+(:\d+)? -- Line offsets with optional column offsets`
 
 	cmdLS = newCommand("ls", "[--uris] [directory-uri]",
 		"List a directory's contents",
@@ -157,11 +164,10 @@ var (
 			return displayNodes(reply.Node)
 		})
 
-	cmdSource = newCommand("source", "[--span b1-b2] <file-ticket>",
+	cmdSource = newCommand("source", "[--span span] <file-ticket>",
 		"Retrieve a file's source text",
 		func(flag *flag.FlagSet) {
-			// TODO handle line/column spans
-			flag.StringVar(&decorSpan, "span", "", "Limit to this byte-offset span (b1-b2)")
+			flag.StringVar(&decorSpan, "span", "", spanHelp)
 		},
 		func(flag *flag.FlagSet) error {
 			req := &xpb.DecorationsRequest{
@@ -171,22 +177,14 @@ var (
 				SourceText: true,
 			}
 			if decorSpan != "" {
-				parts := strings.Split(decorSpan, "-")
-				if len(parts) != 2 {
-					return fmt.Errorf("invalid --span %q", decorSpan)
-				}
-				start, err := strconv.Atoi(parts[0])
+				start, end, err := parseSpan(decorSpan)
 				if err != nil {
-					return fmt.Errorf("invalid --span start %q: %v", decorSpan, err)
-				}
-				end, err := strconv.Atoi(parts[1])
-				if err != nil {
-					return fmt.Errorf("invalid --span end %q: %v", decorSpan, err)
+					return fmt.Errorf("invalid --span %q: %v", decorSpan, err)
 				}
 
 				req.Location.Kind = xpb.Location_SPAN
-				req.Location.Start = &xpb.Location_Point{ByteOffset: int32(start)}
-				req.Location.End = &xpb.Location_Point{ByteOffset: int32(end)}
+				req.Location.Start = start
+				req.Location.End = end
 			}
 
 			reply, err := xs.Decorations(req)
@@ -196,7 +194,7 @@ var (
 			return displaySource(reply)
 		})
 
-	cmdRefs = newCommand("refs", "[--format spec] [--dirty file] [--span b1-b2] <file-ticket>",
+	cmdRefs = newCommand("refs", "[--format spec] [--dirty file] [--span span] <file-ticket>",
 		"List a file's anchor references",
 		func(flag *flag.FlagSet) {
 			// TODO(schroederc): add option to look for dirty files based on file-ticket path and a directory root
@@ -211,8 +209,7 @@ var (
         @subkind@  -- subkind of referenced target
         @beg@      -- starting byte-offset of anchor source
         @end@      -- ending byte-offset of anchor source`)
-			// TODO handle line/column spans
-			flag.StringVar(&decorSpan, "span", "", "Limit to this byte-offset span (b1-b2)")
+			flag.StringVar(&decorSpan, "span", "", spanHelp)
 		},
 		func(flag *flag.FlagSet) error {
 			req := &xpb.DecorationsRequest{
@@ -236,22 +233,14 @@ var (
 				req.DirtyBuffer = buf
 			}
 			if decorSpan != "" {
-				parts := strings.Split(decorSpan, "-")
-				if len(parts) != 2 {
-					return fmt.Errorf("invalid --span %q", decorSpan)
-				}
-				start, err := strconv.Atoi(parts[0])
+				start, end, err := parseSpan(decorSpan)
 				if err != nil {
-					return fmt.Errorf("invalid --span start %q: %v", decorSpan, err)
-				}
-				end, err := strconv.Atoi(parts[1])
-				if err != nil {
-					return fmt.Errorf("invalid --span end %q: %v", decorSpan, err)
+					return fmt.Errorf("invalid --span %q: %v", decorSpan, err)
 				}
 
 				req.Location.Kind = xpb.Location_SPAN
-				req.Location.Start = &xpb.Location_Point{ByteOffset: int32(start)}
-				req.Location.End = &xpb.Location_Point{ByteOffset: int32(end)}
+				req.Location.Start = start
+				req.Location.End = end
 			}
 
 			reply, err := xs.Decorations(req)
@@ -301,6 +290,52 @@ var (
 			return displaySearch(reply)
 		})
 )
+
+var (
+	byteOffsetPointRE = regexp.MustCompile(`^b(\d+)$`)
+	lineNumberPointRE = regexp.MustCompile(`^(\d+)(:(\d+))?$`)
+)
+
+func parsePoint(p string) (*xpb.Location_Point, error) {
+	if m := byteOffsetPointRE.FindStringSubmatch(p); m != nil {
+		offset, err := strconv.Atoi(m[1])
+		if err != nil {
+			return nil, fmt.Errorf("invalid byte-offset: %v", err)
+		}
+		return &xpb.Location_Point{ByteOffset: int32(offset)}, nil
+	} else if m := lineNumberPointRE.FindStringSubmatch(p); m != nil {
+		line, err := strconv.Atoi(m[1])
+		if err != nil {
+			return nil, fmt.Errorf("invalid line number: %v", err)
+		}
+		np := &xpb.Location_Point{LineNumber: int32(line)}
+		if m[3] != "" {
+			col, err := strconv.Atoi(m[3])
+			if err != nil {
+				return nil, fmt.Errorf("invalid column offset: %v", err)
+			}
+			np.ColumnOffset = int32(col)
+		}
+		return np, nil
+	}
+	return nil, fmt.Errorf("unknown format %q", p)
+}
+
+func parseSpan(span string) (start, end *xpb.Location_Point, err error) {
+	parts := strings.Split(span, "-")
+	if len(parts) != 2 {
+		return nil, nil, errors.New("unknown format")
+	}
+	start, err = parsePoint(parts[0])
+	if err != nil {
+		return nil, nil, fmt.Errorf("invalid start: %v", err)
+	}
+	end, err = parsePoint(parts[1])
+	if err != nil {
+		return nil, nil, fmt.Errorf("invalid end: %v", err)
+	}
+	return
+}
 
 // command specifies a named sub-command for the kythe tool with its own flags.
 type command struct {

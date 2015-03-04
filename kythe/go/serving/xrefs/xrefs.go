@@ -25,7 +25,6 @@
 package xrefs
 
 import (
-	"bytes"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -254,24 +253,25 @@ func (t *Table) Decorations(req *xpb.DecorationsRequest) (*xpb.DecorationsReply,
 		return nil, fmt.Errorf("lookup error for file decorations %q: %v", ticket, err)
 	}
 
-	reply := &xpb.DecorationsReply{}
-	windowStart, windowEnd, err := xrefs.WindowOffsets(req, int32(len(decor.SourceText)))
+	loc, err := xrefs.NormalizeLocation(req.GetLocation(), decor.SourceText)
 	if err != nil {
 		return nil, err
 	}
 
+	reply := &xpb.DecorationsReply{Location: loc}
+
 	if req.SourceText {
 		reply.Encoding = decor.Encoding
-		if req.GetLocation().Kind == xpb.Location_FILE {
+		if loc.Kind == xpb.Location_FILE {
 			reply.SourceText = decor.SourceText
 		} else {
-			reply.SourceText = decor.SourceText[windowStart:windowEnd]
+			reply.SourceText = decor.SourceText[loc.Start.ByteOffset:loc.End.ByteOffset]
 		}
 	}
 
 	if req.References {
 		nodeTickets := stringset.New()
-		if req.Location.Kind == xpb.Location_FILE {
+		if loc.Kind == xpb.Location_FILE {
 			reply.Reference = make([]*xpb.DecorationsReply_Reference, len(decor.Decoration))
 			for i, d := range decor.Decoration {
 				reply.Reference[i] = decorationToReference(d)
@@ -280,7 +280,7 @@ func (t *Table) Decorations(req *xpb.DecorationsRequest) (*xpb.DecorationsReply,
 			}
 		} else {
 			for _, d := range decor.Decoration {
-				if d.Anchor.StartOffset >= windowStart && d.Anchor.EndOffset < windowEnd {
+				if d.Anchor.StartOffset >= loc.Start.ByteOffset && d.Anchor.EndOffset <= loc.End.ByteOffset {
 					reply.Reference = append(reply.Reference, decorationToReference(d))
 					nodeTickets.Add(d.Anchor.Ticket)
 					nodeTickets.Add(d.TargetTicket)
@@ -293,15 +293,6 @@ func (t *Table) Decorations(req *xpb.DecorationsRequest) (*xpb.DecorationsReply,
 			return nil, fmt.Errorf("error getting nodes: %v", err)
 		}
 		reply.Node = nodesReply.Node
-	}
-
-	reply.Location = &xpb.Location{
-		Ticket: req.Location.Ticket,
-		Kind:   req.Location.Kind,
-	}
-	if req.Location.Kind == xpb.Location_SPAN {
-		reply.Location.Start = normalizePoint(decor.SourceText, req.Location.Start)
-		reply.Location.End = normalizePoint(decor.SourceText, req.Location.End)
 	}
 
 	return reply, nil
@@ -318,26 +309,4 @@ func decorationToReference(d *srvpb.FileDecorations_Decoration) *xpb.Decorations
 		TargetTicket: d.TargetTicket,
 		Kind:         d.Kind,
 	}
-}
-
-var lineEnd = []byte("\n")
-
-func normalizePoint(text []byte, p *xpb.Location_Point) *xpb.Location_Point {
-	if p == nil {
-		return nil
-	}
-	// TODO line (+column)? -> byte_offset (+column)? conversion
-	offset := p.ByteOffset
-	textBefore := text[:offset]
-	np := &xpb.Location_Point{
-		ByteOffset: p.ByteOffset,
-		LineNumber: int32(bytes.Count(textBefore, lineEnd) + 1),
-	}
-	lineStart := int32(bytes.LastIndex(textBefore, lineEnd))
-	if lineStart != -1 {
-		np.ColumnOffset = offset - lineStart - 1
-	} else {
-		np.ColumnOffset = offset
-	}
-	return np
 }

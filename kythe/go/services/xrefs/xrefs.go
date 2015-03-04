@@ -19,6 +19,7 @@
 package xrefs
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"net/http"
@@ -88,23 +89,75 @@ func EdgesMap(edges []*xpb.EdgeSet) map[string]map[string][]string {
 	return m
 }
 
-// WindowOffsets returns the start and end offset of the requested location.
-// The given totalTextSize is used to validate the end offset.
-func WindowOffsets(req *xpb.DecorationsRequest, totalTextSize int32) (start, end int32, err error) {
-	if s := req.GetLocation().GetStart(); s != nil {
-		start = s.ByteOffset
+// NormalizeLocation returns a normalized location within text.  Normalized FILE
+// locations have no start/end points.  Normalized SPAN locations have fully
+// populated start/end points clamped in the range [0, len(text)).
+func NormalizeLocation(loc *xpb.Location, text []byte) (*xpb.Location, error) {
+	nl := &xpb.Location{}
+	if loc == nil {
+		return nl, nil
 	}
-	if e := req.GetLocation().GetEnd(); e != nil {
-		end = e.ByteOffset
+	nl.Ticket = loc.Ticket
+	nl.Kind = loc.Kind
+	if loc.Kind == xpb.Location_FILE {
+		return nl, nil
 	}
+
+	nl.Start = normalizePoint(loc.Start, text)
+	nl.End = normalizePoint(loc.End, text)
+
+	start, end := nl.Start.ByteOffset, nl.End.ByteOffset
 	if start > end {
-		err = fmt.Errorf("invalid SPAN: start (%d) is after end (%d)", start, end)
-	} else if end >= totalTextSize {
-		err = fmt.Errorf("invalid SPAN: end (%d) is past size of source text (%d)", end, totalTextSize)
-	} else if start < 0 || end < 0 {
-		err = fmt.Errorf("invalid SPAN: negative offset {%+v}", req.GetLocation())
+		return nil, fmt.Errorf("invalid SPAN: start (%d) is after end (%d)", start, end)
 	}
-	return
+	return nl, nil
+}
+
+var lineEnd = []byte("\n")
+
+func normalizePoint(p *xpb.Location_Point, text []byte) *xpb.Location_Point {
+	np := &xpb.Location_Point{}
+
+	if p == nil {
+		return np
+	} else if p.ByteOffset > 0 {
+		np.ByteOffset = p.ByteOffset
+		if textLen := int32(len(text)); np.ByteOffset > textLen {
+			np.ByteOffset = textLen
+		}
+
+		textBefore := text[:np.ByteOffset]
+		np.LineNumber = int32(bytes.Count(textBefore, lineEnd) + 1)
+
+		lineStart := int32(bytes.LastIndex(textBefore, lineEnd))
+		if lineStart != -1 {
+			np.ColumnOffset = np.ByteOffset - lineStart - 1
+		} else {
+			np.ColumnOffset = np.ByteOffset
+		}
+	} else if p.LineNumber > 0 {
+		np.LineNumber = p.LineNumber
+		np.ColumnOffset = p.ColumnOffset
+
+		lines := bytes.Split(text, lineEnd)
+		if totalLines := int32(len(lines)); p.LineNumber > totalLines {
+			np.LineNumber = totalLines
+		}
+		if p.ColumnOffset < 0 {
+			np.ColumnOffset = 0
+		} else if p.ColumnOffset > 0 {
+			if lineLen := int32(len(lines[np.LineNumber-1]) + len(lineEnd)); p.ColumnOffset > lineLen {
+				np.ColumnOffset = lineLen
+			}
+		}
+
+		for i := int32(0); i < np.LineNumber-1; i++ {
+			np.ByteOffset += int32(len(lines[i]) + len(lineEnd))
+		}
+		np.ByteOffset += np.ColumnOffset
+	}
+
+	return np
 }
 
 // ConvertFilters converts each filter glob into an equivalent regexp.
