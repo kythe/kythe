@@ -423,11 +423,49 @@ exports.Engine.prototype.ninjaCommand = function(kind, targetArgs, execute,
     targets.append(this.resolveTargets('//...'));
   }
   this.convertToNinja(kind);
-  if (execute) {
-    var ninjaPath = this.settings.properties['ninja_path'] || 'ninja';
-    runNinja(ninjaPath, ids, callback);
-  }
+  var ninjaPath = this.settings.properties['ninja_path'] || 'ninja';
+  var dbPath = path.join(this.campfireRoot, 'compile_commands.json');
+  updateCompilationDatabase(ninjaPath, dbPath, function() {
+    if (execute) {
+      runNinja(ninjaPath, ids, callback);
+    }
+  });
 };
+
+function guardProcessSpawn(exePath, args, options, callback) {
+  // Forwards a call to "child_process.spawn", calling callback on
+  // success and exiting the parent process on failure (duplicating the child's
+  // return code). Ensures that the child process has terminated before the
+  // parent process terminates.
+  var childExit = false;
+  var child = child_process.spawn(exePath, args, options)
+  .on('exit', function(code) {
+    childExit = true;
+    if (code !== 0) {
+      process.exit(code);
+    } else if (callback) {
+      callback();
+    }
+  }).on('error', function(err) {
+    console.error('ERROR: could not run ' + exePath);
+    process.exit(1);
+  });
+  process.on('exit', function() {
+    if (!childExit) {
+      // Ensure child has terminated
+      child.kill();
+    }
+  });
+}
+
+function updateCompilationDatabase(ninjaPath, dbPath, callback) {
+  // Update supported actions in the ninja compilation database. Calls
+  // callback on success.
+  var dbFile = fs.openSync(dbPath, 'w');
+  guardProcessSpawn(ninjaPath, ['-t', 'compdb', 'c_compile', 'cpp_compile'],
+      { stdio: [null, dbFile, null] },
+      function() { fs.close(dbFile, callback); });
+}
 
 function runNinja(ninjaPath, targets, callback) {
   // Execute ninja using the command 'sh -c "ninja <targets> >&2"'.  This rather
@@ -437,28 +475,8 @@ function runNinja(ninjaPath, targets, callback) {
   // stdout or stderr and using stream.pipe() will cause ninja to remove its
   // formatting escapes.  Executing commands is just too stressful for NodeJS so
   // we'll leave it to a shell.
-
   var args = ['-c', ninjaPath + ' ' + targets.join(' ') + ' >&2'];
-  var childExit = false;
-  var child = child_process.spawn('sh', args, {
-    stdio: ['ignore', 'ignore', 2]
-  }).on('exit', function(code) {
-    childExit = true;
-    if (code !== 0) {
-      process.exit(code);
-    } else if (callback) {
-      callback();
-    }
-  }).on('error', function(err) {
-    console.error('ERROR: could not run ninja (problem finding sh?)');
-    process.exit(1);
-  });
-  process.on('exit', function() {
-    if (!childExit) {
-      // Ensure child has terminated
-      child.kill();
-    }
-  });
+  guardProcessSpawn('sh', args, {stdio: ['ignore', 'ignore', 2]}, callback);
 }
 
 /**

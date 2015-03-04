@@ -20,6 +20,7 @@ MANIFEST-*
 /.campfire_lock
 /.campfire_state
 /campfire-out
+/compile_commands.json
 /doxygen-out
 *.ninja*
 
