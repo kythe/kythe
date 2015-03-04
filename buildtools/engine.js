@@ -424,37 +424,22 @@ exports.Engine.prototype.ninjaCommand = function(kind, targetArgs, execute,
   }
   this.convertToNinja(kind);
   var ninjaPath = this.settings.properties['ninja_path'] || 'ninja';
-  var dbPath = this.campfireRoot + '/compile_commands.json';
+  var dbPath = path.join(this.campfireRoot, 'compile_commands.json');
   updateCompilationDatabase(ninjaPath, dbPath, function() {
     if (execute) {
-      runNinja(ninjaPath, ids, redirectNinjaToStderr, callback);
+      runNinja(ninjaPath, ids, callback);
     }
   });
 };
 
-function updateCompilationDatabase(ninjaPath, dbPath, callback) {
-  // Update supported actions in the ninja compilation database. Calls
-  // callback on success.
-  runNinja(ninjaPath, ["-t", "compdb", "c_compile", "cpp_compile"],
-           " >> " + dbPath, callback);
-}
-
-var redirectNinjaToStderr = ' >&2';
-
-function runNinja(ninjaPath, ninjaArgs, redirect, callback) {
-  // Execute ninja using the command 'sh -c "ninja <ninjaArgs> redirect"'.  This
-  // rather complicated function ensures that all ninja output is properly piped
-  // to stderr.  It's not possible to just set the 'stdio' spawn option to
-  // ['ignore', 2, 2] or something similar because NodeJS will just drop either
-  // stdout or stderr and using stream.pipe() will cause ninja to remove its
-  // formatting escapes.  Executing commands is just too stressful for NodeJS so
-  // we'll leave it to a shell.
-
-  var args = ['-c', ninjaPath + ' ' + ninjaArgs.join(' ') + redirect];
+function guardProcessSpawn(exePath, args, options, callback) {
+  // Forwards a call to "child_process.spawn", calling callback on
+  // success and exiting the parent process on failure (duplicating the child's
+  // return code). Ensures that the child process has terminated before the
+  // parent process terminates.
   var childExit = false;
-  var child = child_process.spawn('sh', args, {
-    stdio: ['ignore', 'ignore', 2]
-  }).on('exit', function(code) {
+  var child = child_process.spawn(exePath, args, options
+  ).on('exit', function(code) {
     childExit = true;
     if (code !== 0) {
       process.exit(code);
@@ -462,7 +447,7 @@ function runNinja(ninjaPath, ninjaArgs, redirect, callback) {
       callback();
     }
   }).on('error', function(err) {
-    console.error('ERROR: could not run ninja (problem finding sh?)');
+    console.error('ERROR: could not run ' + exePath);
     process.exit(1);
   });
   process.on('exit', function() {
@@ -471,6 +456,27 @@ function runNinja(ninjaPath, ninjaArgs, redirect, callback) {
       child.kill();
     }
   });
+}
+
+function updateCompilationDatabase(ninjaPath, dbPath, callback) {
+  // Update supported actions in the ninja compilation database. Calls
+  // callback on success.
+  var dbFile = fs.openSync(dbPath, 'w');
+  guardProcessSpawn(ninjaPath, ['-t', 'compdb', 'c_compile', 'cpp_compile'],
+      { stdio: [null, dbFile, null] },
+      function() { fs.closeSync(dbFile); callback(); });
+}
+
+function runNinja(ninjaPath, targets, callback) {
+  // Execute ninja using the command 'sh -c "ninja <targets> >&2"'.  This rather
+  // complicated function ensures that all ninja output is properly piped to
+  // stderr.  It's not possible to just set the 'stdio' spawn option to
+  // ['ignore', 2, 2] or something similar because NodeJS will just drop either
+  // stdout or stderr and using stream.pipe() will cause ninja to remove its
+  // formatting escapes.  Executing commands is just too stressful for NodeJS so
+  // we'll leave it to a shell.
+  var args = ['-c', ninjaPath + ' ' + targets.join(' ') + ' >&2'];
+  guardProcessSpawn('sh', args, {stdio: ['ignore', 'ignore', 2]}, callback);
 }
 
 /**
