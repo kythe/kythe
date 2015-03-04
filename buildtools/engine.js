@@ -438,8 +438,8 @@ function guardProcessSpawn(exePath, args, options, callback) {
   // return code). Ensures that the child process has terminated before the
   // parent process terminates.
   var childExit = false;
-  var child = child_process.spawn(exePath, args, options
-  ).on('exit', function(code) {
+  var child = child_process.spawn(exePath, args, options)
+  .on('exit', function(code) {
     childExit = true;
     if (code !== 0) {
       process.exit(code);
@@ -464,7 +464,7 @@ function updateCompilationDatabase(ninjaPath, dbPath, callback) {
   var dbFile = fs.openSync(dbPath, 'w');
   guardProcessSpawn(ninjaPath, ['-t', 'compdb', 'c_compile', 'cpp_compile'],
       { stdio: [null, dbFile, null] },
-      function() { fs.closeSync(dbFile); callback(); });
+      function() { fs.close(dbFile, callback); });
 }
 
 function runNinja(ninjaPath, targets, callback) {
