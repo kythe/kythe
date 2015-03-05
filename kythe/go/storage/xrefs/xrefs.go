@@ -259,7 +259,7 @@ func (g *GraphStoreService) Decorations(req *xpb.DecorationsRequest) (*xpb.Decor
 		return nil, fmt.Errorf("failed to retrieve file text: %v", err)
 	}
 
-	loc, err := xrefs.NormalizeLocation(req.GetLocation(), text)
+	loc, err := xrefs.NewNormalizer(text).Location(req.GetLocation())
 	if err != nil {
 		return nil, err
 	}

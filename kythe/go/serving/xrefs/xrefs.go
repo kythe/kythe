@@ -253,7 +253,7 @@ func (t *Table) Decorations(req *xpb.DecorationsRequest) (*xpb.DecorationsReply,
 		return nil, fmt.Errorf("lookup error for file decorations %q: %v", ticket, err)
 	}
 
-	loc, err := xrefs.NormalizeLocation(req.GetLocation(), decor.SourceText)
+	loc, err := xrefs.NewNormalizer(decor.SourceText).Location(req.GetLocation())
 	if err != nil {
 		return nil, err
 	}

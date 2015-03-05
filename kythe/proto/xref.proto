@@ -292,6 +292,8 @@ message DecorationsReply {
     string source_ticket = 1;
     string target_ticket = 2;
     string kind = 3;
+
+    // TODO(schroederc): Location anchor_location = 10;
   }
 
   // The reference edges located in the specified window.
