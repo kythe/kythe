@@ -199,7 +199,7 @@ var (
 		func(flag *flag.FlagSet) {
 			// TODO(schroederc): add option to look for dirty files based on file-ticket path and a directory root
 			flag.StringVar(&dirtyFile, "dirty", "", "Send the given file as the dirty buffer for patching references")
-			flag.StringVar(&refFormat, "format", "@edgeKind@\t@beg@:@end@\t@nodeKind@\t@target@",
+			flag.StringVar(&refFormat, "format", "@edgeKind@\t@^line@:@^col@-@$line@:@$col@\t@nodeKind@\t@target@",
 				`Format for each decoration result.
       Format Markers:
         @source@   -- ticket of anchor source node
@@ -207,8 +207,12 @@ var (
         @edgeKind@ -- edge kind from anchor node to its referenced target
         @nodeKind@ -- node kind of referenced target
         @subkind@  -- subkind of referenced target
-        @beg@      -- starting byte-offset of anchor source
-        @end@      -- ending byte-offset of anchor source`)
+        @^offset@  -- anchor source's starting byte-offset
+        @^line@    -- anchor source's starting line
+        @^col@     -- anchor source's starting column offset
+        @$offset@  -- anchor source's ending byte-offset
+        @$line@    -- anchor source's ending line
+        @$col@     -- anchor source's ending column offset`)
 			flag.StringVar(&decorSpan, "span", "", spanHelp)
 		},
 		func(flag *flag.FlagSet) error {
@@ -241,12 +245,44 @@ var (
 				req.Location.Kind = xpb.Location_SPAN
 				req.Location.Start = start
 				req.Location.End = end
+			} else {
+				req.SourceText = true // TODO(schroederc): remove need for this
 			}
 
 			reply, err := xs.Decorations(req)
 			if err != nil {
 				return err
 			}
+
+			if !req.SourceText {
+				// We need to grab the full SourceText to normalize each anchor's
+				// location, but when given a --span, we don't receive the full text and
+				// we require a separate Nodes call.
+				// TODO(schroederc): add Locations for each DecorationsReply_Reference
+
+				fileNodeReply, err := xs.Nodes(&xpb.NodesRequest{
+					Ticket: []string{req.Location.Ticket},
+					Filter: []string{schema.TextFact, schema.TextEncodingFact},
+				})
+				if err != nil {
+					return err
+				}
+				for _, n := range fileNodeReply.Node {
+					if n.Ticket != req.Location.Ticket {
+						log.Println("WARNING: received unrequested node: %q", n.Ticket)
+						continue
+					}
+					for _, f := range n.Fact {
+						switch f.Name {
+						case schema.TextFact:
+							reply.SourceText = f.Value
+						case schema.TextEncodingFact:
+							reply.Encoding = string(f.Value)
+						}
+					}
+				}
+			}
+
 			return displayReferences(reply)
 		})
 

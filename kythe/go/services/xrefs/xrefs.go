@@ -24,6 +24,7 @@ import (
 	"log"
 	"net/http"
 	"regexp"
+	"sort"
 	"time"
 
 	"kythe/go/services/web"
@@ -89,10 +90,33 @@ func EdgesMap(edges []*xpb.EdgeSet) map[string]map[string][]string {
 	return m
 }
 
-// NormalizeLocation returns a normalized location within text.  Normalized FILE
-// locations have no start/end points.  Normalized SPAN locations have fully
-// populated start/end points clamped in the range [0, len(text)).
-func NormalizeLocation(loc *xpb.Location, text []byte) (*xpb.Location, error) {
+// Normalizers fix xref.Locations within a given source text so that each point
+// has consistent byte_offset, line_number, and column_offset fields within the
+// range of text's length and its line lengths.
+type Normalizer struct {
+	textLen   int32
+	lineLen   []int32
+	prefixLen []int32
+}
+
+// NewNormalizer returns a Normalizer for Locations within text.
+func NewNormalizer(text []byte) *Normalizer {
+	lines := bytes.Split(text, lineEnd)
+	lineLen := make([]int32, len(lines))
+	prefixLen := make([]int32, len(lines))
+	for i := 1; i < len(lines); i++ {
+		lineLen[i-1] = int32(len(lines[i-1]) + len(lineEnd))
+		prefixLen[i] = prefixLen[i-1] + lineLen[i-1]
+	}
+	lineLen[len(lines)-1] = int32(len(lines[len(lines)-1]) + len(lineEnd))
+	return &Normalizer{int32(len(text)), lineLen, prefixLen}
+}
+
+// Location returns a normalized location within the Normalizer's text.
+// Normalized FILE locations have no start/end points.  Normalized SPAN
+// locations have fully populated start/end points clamped in the range [0,
+// len(text)).
+func (n *Normalizer) Location(loc *xpb.Location) (*xpb.Location, error) {
 	nl := &xpb.Location{}
 	if loc == nil {
 		return nl, nil
@@ -103,8 +127,8 @@ func NormalizeLocation(loc *xpb.Location, text []byte) (*xpb.Location, error) {
 		return nl, nil
 	}
 
-	nl.Start = normalizePoint(loc.Start, text)
-	nl.End = normalizePoint(loc.End, text)
+	nl.Start = n.Point(loc.Start)
+	nl.End = n.Point(loc.End)
 
 	start, end := nl.Start.ByteOffset, nl.End.ByteOffset
 	if start > end {
@@ -115,46 +139,40 @@ func NormalizeLocation(loc *xpb.Location, text []byte) (*xpb.Location, error) {
 
 var lineEnd = []byte("\n")
 
-func normalizePoint(p *xpb.Location_Point, text []byte) *xpb.Location_Point {
+// Point returns a normalized point within the Normalizer's text.  A normalized
+// point has all of its fields set consistently and clamped within the range
+// [0,len(text)).
+func (n *Normalizer) Point(p *xpb.Location_Point) *xpb.Location_Point {
 	np := &xpb.Location_Point{}
 
 	if p == nil {
 		return np
 	} else if p.ByteOffset > 0 {
 		np.ByteOffset = p.ByteOffset
-		if textLen := int32(len(text)); np.ByteOffset > textLen {
-			np.ByteOffset = textLen
+		if np.ByteOffset > n.textLen {
+			np.ByteOffset = n.textLen
 		}
 
-		textBefore := text[:np.ByteOffset]
-		np.LineNumber = int32(bytes.Count(textBefore, lineEnd) + 1)
-
-		lineStart := int32(bytes.LastIndex(textBefore, lineEnd))
-		if lineStart != -1 {
-			np.ColumnOffset = np.ByteOffset - lineStart - 1
-		} else {
-			np.ColumnOffset = np.ByteOffset
-		}
+		np.LineNumber = int32(sort.Search(len(n.lineLen), func(i int) bool {
+			return n.prefixLen[i] > np.ByteOffset
+		}))
+		np.ColumnOffset = np.ByteOffset - n.prefixLen[np.LineNumber-1]
 	} else if p.LineNumber > 0 {
 		np.LineNumber = p.LineNumber
 		np.ColumnOffset = p.ColumnOffset
 
-		lines := bytes.Split(text, lineEnd)
-		if totalLines := int32(len(lines)); p.LineNumber > totalLines {
+		if totalLines := int32(len(n.lineLen)); p.LineNumber > totalLines {
 			np.LineNumber = totalLines
 		}
 		if p.ColumnOffset < 0 {
 			np.ColumnOffset = 0
 		} else if p.ColumnOffset > 0 {
-			if lineLen := int32(len(lines[np.LineNumber-1]) + len(lineEnd)); p.ColumnOffset > lineLen {
+			if lineLen := n.lineLen[np.LineNumber-1]; p.ColumnOffset > lineLen {
 				np.ColumnOffset = lineLen
 			}
 		}
 
-		for i := int32(0); i < np.LineNumber-1; i++ {
-			np.ByteOffset += int32(len(lines[i]) + len(lineEnd))
-		}
-		np.ByteOffset += np.ColumnOffset
+		np.ByteOffset = n.prefixLen[np.LineNumber-1] + np.ColumnOffset
 	}
 
 	return np

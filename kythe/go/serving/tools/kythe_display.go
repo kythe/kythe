@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"kythe/go/services/xrefs"
@@ -111,19 +112,40 @@ func displayReferences(decor *xpb.DecorationsReply) error {
 
 	nodes := xrefs.NodesMap(decor.Node)
 
+	// TODO(schroederc): return anchor locations from server
+	norm := xrefs.NewNormalizer(decor.SourceText)
+
 	for _, ref := range decor.Reference {
 		nodeKind := factValue(nodes, ref.TargetTicket, schema.NodeKindFact, "UNKNOWN")
 		subkind := factValue(nodes, ref.TargetTicket, schema.SubkindFact, "")
 		startOffset := factValue(nodes, ref.SourceTicket, schema.AnchorStartFact, "_")
 		endOffset := factValue(nodes, ref.SourceTicket, schema.AnchorEndFact, "_")
+
+		// ignore errors (locations will be 0)
+		s, _ := strconv.Atoi(startOffset)
+		e, _ := strconv.Atoi(endOffset)
+
+		loc, err := norm.Location(&xpb.Location{
+			Kind:  xpb.Location_SPAN,
+			Start: &xpb.Location_Point{ByteOffset: int32(s)},
+			End:   &xpb.Location_Point{ByteOffset: int32(e)},
+		})
+		if err != nil {
+			return fmt.Errorf("error normalizing reference location for anchor %q: %v", ref.SourceTicket)
+		}
+
 		r := strings.NewReplacer(
 			"@source@", ref.SourceTicket,
 			"@target@", ref.TargetTicket,
 			"@edgeKind@", ref.Kind,
 			"@nodeKind@", nodeKind,
 			"@subkind@", subkind,
-			"@beg@", startOffset,
-			"@end@", endOffset,
+			"@^offset@", startOffset,
+			"@^line@", strconv.Itoa(int(loc.Start.LineNumber)),
+			"@^col@", strconv.Itoa(int(loc.Start.ColumnOffset)),
+			"@$offset@", endOffset,
+			"@$line@", strconv.Itoa(int(loc.End.LineNumber)),
+			"@$col@", strconv.Itoa(int(loc.End.ColumnOffset)),
 		)
 		if _, err := r.WriteString(out, refFormat+"\n"); err != nil {
 			return err
