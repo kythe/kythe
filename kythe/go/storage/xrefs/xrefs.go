@@ -244,6 +244,9 @@ func (g *GraphStoreService) Edges(req *xpb.EdgesRequest) (*xpb.EdgesReply, error
 func (g *GraphStoreService) Decorations(req *xpb.DecorationsRequest) (*xpb.DecorationsReply, error) {
 	if len(req.DirtyBuffer) > 0 {
 		return nil, errors.New("UNIMPLEMENTED: dirty buffers")
+	} else if req.GetLocation() == nil {
+		// TODO(schroederc): allow empty location when given dirty buffer
+		return nil, errors.New("missing location")
 	}
 
 	fileVName, err := kytheuri.ToVName(req.Location.Ticket)
@@ -251,24 +254,24 @@ func (g *GraphStoreService) Decorations(req *xpb.DecorationsRequest) (*xpb.Decor
 		return nil, fmt.Errorf("invalid file ticket %q: %v", req.Location.Ticket, err)
 	}
 
-	reply := &xpb.DecorationsReply{Location: req.Location}
-
 	text, encoding, err := getSourceText(g.gs, fileVName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve file text: %v", err)
 	}
 
-	windowStart, windowEnd, err := xrefs.WindowOffsets(req, int32(len(text)))
+	loc, err := xrefs.NormalizeLocation(req.GetLocation(), text)
 	if err != nil {
 		return nil, err
 	}
 
+	reply := &xpb.DecorationsReply{Location: loc}
+
 	// Handle DecorationsRequest.SourceText switch
 	if req.SourceText {
-		if req.GetLocation().Kind == xpb.Location_FILE {
+		if loc.Kind == xpb.Location_FILE {
 			reply.SourceText = text
 		} else {
-			reply.SourceText = text[windowStart:windowEnd]
+			reply.SourceText = text[loc.Start.ByteOffset:loc.End.ByteOffset]
 		}
 		reply.Encoding = encoding
 	}
@@ -305,14 +308,14 @@ func (g *GraphStoreService) Decorations(req *xpb.DecorationsRequest) (*xpb.Decor
 			} else if string(node[schema.NodeKindFact]) != schema.AnchorKind {
 				// Skip child if it isn't an anchor node
 				continue
-			} else if req.GetLocation().Kind == xpb.Location_SPAN {
+			} else if loc.Kind == xpb.Location_SPAN {
 				// Check if anchor fits within request source text window
 
 				anchorStart, err := strconv.Atoi(string(node[schema.AnchorStartFact]))
 				if err != nil {
 					log.Printf("Invalid anchor start offset %q for node %q: %v", node[schema.AnchorStartFact], ticket, err)
 					continue
-				} else if int32(anchorStart) < windowStart {
+				} else if int32(anchorStart) < loc.Start.ByteOffset {
 					continue
 				}
 				anchorEnd, err := strconv.Atoi(string(node[schema.AnchorEndFact]))
@@ -322,7 +325,7 @@ func (g *GraphStoreService) Decorations(req *xpb.DecorationsRequest) (*xpb.Decor
 				} else if anchorStart > anchorEnd {
 					log.Printf("Invalid anchor offset span %d:%d", anchorStart, anchorEnd)
 					continue
-				} else if int32(anchorEnd) >= windowEnd {
+				} else if int32(anchorEnd) > loc.End.ByteOffset {
 					continue
 				}
 			}
