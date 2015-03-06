@@ -20,6 +20,7 @@
 // Usages:
 //   indexpack --from_archive <root> [dir]
 //   indexpack --to_archive   <root> <kindex-file>...
+//   indexpack --view_archive <root> [digest...]
 package main
 
 import (
@@ -46,6 +47,7 @@ const formatKey = "kythe"
 var (
 	toArchive   = flag.String("to_archive", "", "Move kindex files into the given indexpack archive")
 	fromArchive = flag.String("from_archive", "", "Move the compilation units from the given archive into separate kindex files")
+	viewArchive = flag.String("view_archive", "", "Print JSON representations of each specified compilation unit in the given archive")
 
 	quiet = flag.Bool("quiet", false, "Suppress normal log output")
 )
@@ -53,7 +55,8 @@ var (
 func init() {
 	flag.Usage = func() {
 		fmt.Fprintln(os.Stderr, `Usage: indexpack --to_archive <root> [kindex-paths...]
-       indexpack --from_archive <root> [dir]`)
+       indexpack --from_archive <root> [dir]
+       indexpack --view_archive <root> [unit-digests...]`)
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
@@ -65,14 +68,23 @@ func main() {
 	if *toArchive != "" && *fromArchive != "" {
 		fmt.Fprintln(os.Stderr, "ERROR: --to_archive and --from_archive are mutually exclusive")
 		flag.Usage()
-	} else if *toArchive == "" && *fromArchive == "" {
-		fmt.Fprintln(os.Stderr, "ERROR: Either --to_archive or --from_archive must be specified")
+	} else if *toArchive != "" && *viewArchive != "" {
+		fmt.Fprintln(os.Stderr, "ERROR: --to_archive and --view_archive are mutually exclusive")
+		flag.Usage()
+	} else if *fromArchive != "" && *viewArchive != "" {
+		fmt.Fprintln(os.Stderr, "ERROR: --from_archive and --view_archive are mutually exclusive")
+		flag.Usage()
+	} else if *toArchive == "" && *fromArchive == "" && *viewArchive == "" {
+		fmt.Fprintln(os.Stderr, "ERROR: One of [--to_archive --from_archive --view_archive] must be specified")
 		flag.Usage()
 	}
 
 	archiveRoot := *toArchive
 	if archiveRoot == "" {
 		archiveRoot = *fromArchive
+	}
+	if archiveRoot == "" {
+		archiveRoot = *viewArchive
 	}
 
 	ctx := context.Background()
@@ -94,7 +106,7 @@ func main() {
 				log.Fatalf("Error packing kindex at %q into %q: %v", path, pack.Root(), err)
 			}
 		}
-	} else {
+	} else if *fromArchive != "" {
 		var dir string
 		if len(flag.Args()) > 1 {
 			fmt.Fprintf(os.Stderr, "ERROR: Too many positional arguments for --from_archive: %v\n", flag.Args())
@@ -107,6 +119,19 @@ func main() {
 		}
 		if err := unpackIndex(ctx, pack, dir); err != nil {
 			log.Fatalf("Error unpacking compilation units at %q: %v", pack.Root(), err)
+		}
+	} else {
+		en := json.NewEncoder(os.Stdout)
+		for _, digest := range flag.Args() {
+			if err := pack.ReadUnit(ctx, formatKey, digest, func(i interface{}) error {
+				cu, ok := i.(*apb.CompilationUnit)
+				if !ok {
+					return fmt.Errorf("unit (digest: %q) is not analysis.CompilationUnit", digest)
+				}
+				return en.Encode(cu)
+			}); err != nil {
+				log.Fatal(err)
+			}
 		}
 	}
 }

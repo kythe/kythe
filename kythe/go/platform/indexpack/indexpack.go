@@ -76,6 +76,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 
 	"kythe/go/platform/analysis"
 
@@ -296,38 +297,49 @@ func (a *Archive) writeFile(ctx context.Context, dir, name string, data []byte) 
 // If f returns a non-nil error, no further compilations are read and the error
 // is propagated back to the caller of ReadUnits.
 func (a *Archive) ReadUnits(ctx context.Context, formatKey string, f func(interface{}) error) error {
-	units := filepath.Join(a.root, unitDir)
-	fss, err := a.fs.Glob(ctx, filepath.Join(units, "*"+unitSuffix))
+	fss, err := a.fs.Glob(ctx, filepath.Join(filepath.Join(a.root, unitDir), "*"+unitSuffix))
 	if err != nil {
 		return err
 	}
 	for _, fs := range fss {
-		base := filepath.Base(fs)
-		data, err := a.readFile(ctx, units, base)
-		if err != nil {
+		if err := a.ReadUnit(ctx, formatKey, strings.TrimSuffix(filepath.Base(fs), unitSuffix), f); err != nil {
 			return err
 		}
+	}
+	return nil
+}
 
-		// Parse the unit wrapper, {"format": "kythe", "content": ...}
-		var unit unitWrapper
-		if err := json.Unmarshal(data, &unit); err != nil {
-			return fmt.Errorf("error parsing unit: %v", err)
-		}
-		if unit.Format != formatKey {
-			continue // Format does not match; skip this one
-		}
-		if len(unit.Content) == 0 {
-			return errors.New("invalid compilation unit")
-		}
+// ReadUnit calls f with the compilation unit stored in the units subdirectory
+// with the given formatKey and digest.  The concrete type of the value passed
+// to f will be the same as the concrete type of the unitType argument that was
+// passed to Open or Create.
+//
+// If f returns a non-nil error, it is returned.
+func (a *Archive) ReadUnit(ctx context.Context, formatKey, digest string, f func(interface{}) error) error {
+	data, err := a.readFile(ctx, filepath.Join(a.root, unitDir), digest+unitSuffix)
+	if err != nil {
+		return err
+	}
 
-		// Parse the content into the receiver's type.
-		cu := reflect.New(a.unitType).Interface()
-		if err := json.Unmarshal(unit.Content, cu); err != nil {
-			return fmt.Errorf("error parsing content: %v", err)
-		}
-		if err := f(cu); err != nil {
-			return err
-		}
+	// Parse the unit wrapper, {"format": "kythe", "content": ...}
+	var unit unitWrapper
+	if err := json.Unmarshal(data, &unit); err != nil {
+		return fmt.Errorf("error parsing unit: %v", err)
+	}
+	if unit.Format != formatKey {
+		return nil
+	}
+	if len(unit.Content) == 0 {
+		return errors.New("invalid compilation unit")
+	}
+
+	// Parse the content into the receiver's type.
+	cu := reflect.New(a.unitType).Interface()
+	if err := json.Unmarshal(unit.Content, cu); err != nil {
+		return fmt.Errorf("error parsing content: %v", err)
+	}
+	if err := f(cu); err != nil {
+		return err
 	}
 	return nil
 }
@@ -359,6 +371,16 @@ func (a *Archive) WriteUnit(ctx context.Context, formatKey string, cu interface{
 	}
 	name := hexDigest(data) + unitSuffix
 	return name, a.writeFile(ctx, filepath.Join(a.root, unitDir), name, data)
+}
+
+// FileExists determines whether a file with the given digest exists.
+func (a *Archive) FileExists(ctx context.Context, digest string) (bool, error) {
+	path := filepath.Join(a.root, dataDir, digest+dataSuffix)
+	_, err := a.fs.Stat(ctx, path)
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return err == nil, err
 }
 
 // WriteFile writes the specified file contents to the files/ subdirectory of
