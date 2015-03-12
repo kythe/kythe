@@ -17,6 +17,8 @@
 #ifndef KYTHE_CXX_COMMON_PATH_UTILS_H_
 #define KYTHE_CXX_COMMON_PATH_UTILS_H_
 
+#include "llvm/ADT/StringRef.h"
+
 #include <string>
 
 namespace kythe {
@@ -33,6 +35,16 @@ std::string RelativizePath(const std::string &to_relativize,
 /// \brief Convert `in_path` to an absolute path, eliminating `.` and `..`.
 /// \param in_path The path to convert.
 std::string MakeCleanAbsolutePath(const std::string &in_path);
+
+/// \brief Lexically eliminate `.` and `..` from `in_path`.
+///
+/// This function ignores the effects of symlinks.
+///
+/// \param in_path The path to convert.
+std::string CleanPath(llvm::StringRef in_path);
+
+/// \brief Append path `b` to path `a`, cleaning and returning the result.
+std::string JoinPath(llvm::StringRef a, llvm::StringRef b);
 }
 
 #endif  // KYTHE_CXX_COMMON_PATH_UTILS_H_

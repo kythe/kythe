@@ -62,6 +62,26 @@ TEST(PathUtilsTest, MakeCleanAbsolutePath) {
   EXPECT_EQ(current_dir, MakeCleanAbsolutePath("."));
 }
 
+TEST(PathUtilsTest, CleanPath) {
+  EXPECT_EQ("/a/c", CleanPath("/../../a/c"));
+  EXPECT_EQ("", CleanPath(""));
+  // CleanPath should match the semantics of Go's path.Clean (except for
+  // "" => "", not "" => "."); the examples from the documentation at
+  // http://golang.org/pkg/path/#example_Clean are checked here.
+  EXPECT_EQ("a/c", CleanPath("a/c"));
+  EXPECT_EQ("a/c", CleanPath("a//c"));
+  EXPECT_EQ("a/c", CleanPath("a/c/."));
+  EXPECT_EQ("a/c", CleanPath("a/c/b/.."));
+  EXPECT_EQ("/a/c", CleanPath("/../a/c"));
+  EXPECT_EQ("/a/c", CleanPath("/../a/b/../././/c"));
+}
+
+TEST(PathUtilsTest, JoinPath) {
+  EXPECT_EQ("a/c", JoinPath("a", "c"));
+  EXPECT_EQ("a/c", JoinPath("a/", "c"));
+  EXPECT_EQ("a/c", JoinPath("a", "/c"));
+}
+
 }  // anonymous namespace
 }  // namespace kythe
 

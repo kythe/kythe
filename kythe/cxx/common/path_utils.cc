@@ -20,16 +20,12 @@
 
 namespace kythe {
 
-std::string MakeCleanAbsolutePath(const std::string& in_path) {
-  using namespace llvm::sys::path;
-  std::string abs_path = clang::tooling::getAbsolutePath(in_path);
-  std::string root_part =
-      (root_name(abs_path) + llvm::sys::path::root_directory(abs_path)).str();
-  llvm::SmallString<1024> out_path = llvm::StringRef(root_part);
+static void LexicallyEliminateRelativePathNodes(
+    llvm::SmallString<1024>* out_path, llvm::StringRef path) {
   std::vector<llvm::StringRef> path_components;
   int skip_count = 0;
-  for (auto node = llvm::sys::path::rbegin(abs_path),
-            node_end = llvm::sys::path::rend(abs_path);
+  for (auto node = llvm::sys::path::rbegin(path),
+            node_end = llvm::sys::path::rend(path);
        node != node_end; ++node) {
     if (*node == "..") {
       ++skip_count;
@@ -44,9 +40,27 @@ std::string MakeCleanAbsolutePath(const std::string& in_path) {
   for (auto node = path_components.crbegin(),
             node_end = path_components.crend();
        node != node_end; ++node) {
-    append(out_path, *node);
+    llvm::sys::path::append(*out_path, *node);
   }
+}
+
+std::string CleanPath(llvm::StringRef in_path) {
+  std::string root_part = (llvm::sys::path::root_name(in_path) +
+                           llvm::sys::path::root_directory(in_path)).str();
+  llvm::SmallString<1024> out_path = llvm::StringRef(root_part);
+  LexicallyEliminateRelativePathNodes(&out_path, llvm::StringRef(in_path));
   return out_path.str();
+}
+
+std::string JoinPath(llvm::StringRef a, llvm::StringRef b) {
+  llvm::SmallString<1024> out_path = a;
+  llvm::sys::path::append(out_path, b);
+  return out_path.str();
+}
+
+std::string MakeCleanAbsolutePath(const std::string& in_path) {
+  std::string abs_path = clang::tooling::getAbsolutePath(in_path);
+  return CleanPath(abs_path);
 }
 
 std::string RelativizePath(const std::string& to_relativize,

@@ -78,6 +78,7 @@
         "cxx_details.cc",
         "file_vname_generator.cc",
         "index_pack.cc",
+        "kythe_uri.cc",
         "path_utils.cc"
       ],
       "hdrs": [
@@ -85,6 +86,7 @@
         "cxx_details.h",
         "file_vname_generator.h",
         "index_pack.h",
+        "kythe_uri.h",
         "path_utils.h",
         "proto_conversions.h",
         "vname_ordering.h"
@@ -256,6 +258,32 @@
     "inputs": {
       "cc_libs": [
         ":net_client_testlib"
+      ]
+    }
+  },
+  {
+    "name": "kythe_uri_testlib",
+    "kind": "cc_library",
+    "inputs": {
+      "srcs": [
+        "kythe_uri_test.cc"
+      ],
+      "cc_libs": [
+        ":lib",
+        "//kythe/proto:storage_proto",
+        "//third_party/gflags",
+        "//third_party/glog",
+        "//third_party/googletest:lib",
+        "//third_party/protobuf:protobuf_cc"
+      ]
+    }
+  },
+  {
+    "name": "kythe_uri_test",
+    "kind": "cc_test",
+    "inputs": {
+      "cc_libs": [
+        ":kythe_uri_testlib"
       ]
     }
   }
