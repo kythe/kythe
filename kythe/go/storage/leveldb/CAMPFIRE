@@ -12,7 +12,7 @@
       "go_pkgs": [
         "//kythe/go/services/graphstore",
         "//kythe/go/storage/keyvalue",
-        "//third_party/go/github.com:levigo"
+        "//third_party/go:levigo"
       ]
     }
   },

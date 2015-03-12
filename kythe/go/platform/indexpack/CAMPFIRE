@@ -10,8 +10,8 @@
       ],
       "go_pkgs": [
         "//kythe/go/platform/analysis",
-        "//third_party/go/code.google.com:uuid",
-        "//third_party/go/golang.org:context"
+        "//third_party/go:context",
+        "//third_party/go:uuid"
       ]
     }
   },
@@ -28,8 +28,8 @@
       "go_pkgs": [
         "//kythe/proto:analysis_proto",
         "//kythe/proto:storage_proto",
-        "//third_party/go/github.com:protobuf",
-        "//third_party/go/golang.org:context"
+        "//third_party/go:context",
+        "//third_party/go:protobuf"
       ]
     }
   }

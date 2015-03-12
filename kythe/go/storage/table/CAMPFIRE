@@ -8,7 +8,7 @@
       ],
       "go_pkgs": [
         "//kythe/go/storage/keyvalue",
-        "//third_party/go/github.com:protobuf"
+        "//third_party/go:protobuf"
       ]
     }
   }

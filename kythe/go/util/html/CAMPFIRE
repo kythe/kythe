@@ -7,7 +7,7 @@
         "html.go"
       ],
       "go_pkgs": [
-        "//third_party/go/golang.org:html"
+        "//third_party/go:html"
       ]
     }
   },
@@ -22,7 +22,7 @@
         ":html"
       ],
       "go_pkgs": [
-        "//third_party/go/golang.org:html"
+        "//third_party/go:html"
       ]
     }
   }

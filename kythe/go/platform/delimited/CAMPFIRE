@@ -7,7 +7,7 @@
         "delimited.go"
       ],
       "go_pkgs": [
-        "//third_party/go/github.com:protobuf"
+        "//third_party/go:protobuf"
       ]
     }
   },

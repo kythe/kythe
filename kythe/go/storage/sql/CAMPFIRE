@@ -15,7 +15,7 @@
         "//kythe/go/util/stringset",
         "//kythe/proto:storage_proto",
         "//kythe/proto:xref_proto",
-        "//third_party/go/github.com:go-sqlite3"
+        "//third_party/go:go-sqlite3"
       ]
     }
   },

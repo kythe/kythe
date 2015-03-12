@@ -1,0 +1,29 @@
+URL: http://code.google.com/p/go-uuid
+License: New BSD License: http://opensource.org/licenses/BSD-3-Clause
+Local Modifications: Built using go install.
+
+URL: https://github.com/golang/protobuf
+License: New BSD License: http://opensource.org/licenses/BSD-3-Clause
+Local Modifications: No modifications.
+
+URL: https://github.com/mattn/go-sqlite3
+License: MIT: http://opensource.org/licenses/MIT
+Local Modifications: No modifications.
+
+URL: https://github.com/bradfitz/http2
+License: New BSD License: http://opensource.org/licenses/BSD-3-Clause
+Local Modifications: No modifications.
+
+URL: http://golang.org/x/net/context
+URL: http://golang.org/x/tools/go
+URL: http://golang.org/x/oauth2
+License: New BSD License: http://opensource.org/licenses/BSD-3-Clause
+Local Modifications: No modifications.
+
+URL: http://google.golang.org/grpc
+License: New BSD License: http://opensource.org/licenses/BSD-3-Clause
+Local Modifications: No modifications.
+
+URL: http://google.golang.org/cloud
+License: Apache 2.0 http://www.apache.org/licenses/LICENSE-2.0
+Local Modifications: No modifications.

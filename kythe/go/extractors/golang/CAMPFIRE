@@ -11,7 +11,7 @@
         "//kythe/go/platform/indexpack",
         "//kythe/proto:analysis_proto",
         "//kythe/proto:storage_proto",
-        "//third_party/go/golang.org:context"
+        "//third_party/go:context"
       ]
     }
   }

@@ -28,7 +28,7 @@
         "include/google/protobuf/descriptor.proto"
       ],
       "go_pkgs": [
-        "//third_party/go/github.com:protobuf"
+        "//third_party/go:protobuf"
       ]
     },
     "properties": {

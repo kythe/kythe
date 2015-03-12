@@ -12,7 +12,7 @@
         "//kythe/go/util/stringset",
         "//kythe/proto:serving_proto",
         "//kythe/proto:xref_proto",
-        "//third_party/go/github.com:protobuf"
+        "//third_party/go:protobuf"
       ]
     }
   }
