@@ -12,7 +12,7 @@ required_input {
     digest: "d4fbc426e39f838a6253845a50f0e0089207ed423f852b08c283e3627bc5d49f"
   }
   context {
-    source_context: "6c5343d9e2f6b85fb7adbfaf95659e1453137691e56a7c104b031d63df3cadea"
+    source_context: "EC_HASH
   }
 }
 argument: "/usr/bin/g++"
@@ -24,4 +24,4 @@ argument: "./kythe/cxx/extractor/testdata/main_source_file_no_env_dep.cc"
 argument: "-fsyntax-only"
 source_file: "./kythe/cxx/extractor/testdata/main_source_file_no_env_dep.cc"
 working_directory: "."
-entry_context: "6c5343d9e2f6b85fb7adbfaf95659e1453137691e56a7c104b031d63df3cadea"
+entry_context: "EC_HASH

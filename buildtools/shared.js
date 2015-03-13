@@ -80,7 +80,8 @@ exports.merge = function(objects) {
   for (var i = 0; i < arguments.length; i++) {
     for (var key in arguments[i]) {
       var val = arguments[i][key];
-      if (val instanceof Object && obj[key] instanceof Object) {
+      if (val instanceof Object && obj[key] instanceof Object
+          && !(val instanceof Array || obj[key] instanceof Array)) {
         obj[key] = exports.merge(obj[key], val);
       } else {
         obj[key] = val;

@@ -137,12 +137,15 @@ function getBaseCOpts(target) {
   var includePaths =
       rule.getAllOutputsRecursiveFor(target.inputsByKind['cc_libs'], 'build',
                             rule.propertyFilter(exports.INCLUDE_PATH_PROPERTY))
-      .concat(rule.getAllOutputsRecursiveFor(target.inputsByKind['srcs'], 'build',
+      .concat(rule.getAllOutputsRecursiveFor(target.inputsByKind['srcs'],
+                                             'build',
                                              rule.propertyFilter(
-                                               exports.INCLUDE_PATH_PROPERTY)));
-  copts.append(includePaths
-      .map(function(p) { return '-I ' + p.value; }));
-
+                                               exports.INCLUDE_PATH_PROPERTY)))
+      .reduce(function (p, n) { return p.concat(
+          n.value instanceof Array ? n.value : [n.value]); }, [])
+      .reduce(function (p, n) { return p.concat(
+          target.engine.substituteArrayProperties(n)); }, []);
+  copts.append(includePaths.map(function(p) { return '-I ' + p; }));
   copts.push('-I.');
   return copts;
 }

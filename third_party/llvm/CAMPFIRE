@@ -4,30 +4,30 @@
     "kind": "cc_external_lib",
     "inputs": {
       "srcs": [
-        "lib/libclang.a",
-        "lib/libclangTooling.a",
-        "lib/libclangFrontend.a",
-        "lib/libclangDriver.a",
-        "lib/libclangFrontendTool.a",
-        "lib/libclangParse.a",
-        "lib/libclangSema.a",
-        "lib/libclangEdit.a",
-        "lib/libclangRewrite.a",
-        "lib/libclangFormat.a",
-        "lib/libclangIndex.a",
-        "lib/libclangSerialization.a",
-        "lib/libclangAST.a",
-        "lib/libclangLex.a",
-        "lib/libclangBasic.a",
-        "lib/libclangAnalysis.a",
-        "lib/libLLVMSupport.a",
-        "lib/libLLVMOption.a",
-        "lib/libLLVMTransformUtils.a",
-        "lib/libLLVMMC.a",
-        "lib/libLLVMMCParser.a",
-        "lib/libLLVMBitReader.a",
-        "lib/libLLVMCore.a",
-        "lib/libLLVMSupport.a"
+        "$(third_party_llvm_rel_llvm_lib)/libclang.a",
+        "$(third_party_llvm_rel_llvm_lib)/libclangTooling.a",
+        "$(third_party_llvm_rel_llvm_lib)/libclangFrontend.a",
+        "$(third_party_llvm_rel_llvm_lib)/libclangDriver.a",
+        "$(third_party_llvm_rel_llvm_lib)/libclangFrontendTool.a",
+        "$(third_party_llvm_rel_llvm_lib)/libclangParse.a",
+        "$(third_party_llvm_rel_llvm_lib)/libclangSema.a",
+        "$(third_party_llvm_rel_llvm_lib)/libclangEdit.a",
+        "$(third_party_llvm_rel_llvm_lib)/libclangRewrite.a",
+        "$(third_party_llvm_rel_llvm_lib)/libclangFormat.a",
+        "$(third_party_llvm_rel_llvm_lib)/libclangIndex.a",
+        "$(third_party_llvm_rel_llvm_lib)/libclangSerialization.a",
+        "$(third_party_llvm_rel_llvm_lib)/libclangAST.a",
+        "$(third_party_llvm_rel_llvm_lib)/libclangLex.a",
+        "$(third_party_llvm_rel_llvm_lib)/libclangBasic.a",
+        "$(third_party_llvm_rel_llvm_lib)/libclangAnalysis.a",
+        "$(third_party_llvm_rel_llvm_lib)/libLLVMSupport.a",
+        "$(third_party_llvm_rel_llvm_lib)/libLLVMOption.a",
+        "$(third_party_llvm_rel_llvm_lib)/libLLVMTransformUtils.a",
+        "$(third_party_llvm_rel_llvm_lib)/libLLVMMC.a",
+        "$(third_party_llvm_rel_llvm_lib)/libLLVMMCParser.a",
+        "$(third_party_llvm_rel_llvm_lib)/libLLVMBitReader.a",
+        "$(third_party_llvm_rel_llvm_lib)/libLLVMCore.a",
+        "$(third_party_llvm_rel_llvm_lib)/libLLVMSupport.a"
       ],
       "libs": [
         "//third_party/zlib"
@@ -42,7 +42,7 @@
         "-D__STDC_LIMIT_MACROS",
         "-D__STDC_CONSTANT_MACROS"
       ],
-      "cc_include_path": "third_party/llvm/include"
+      "cc_include_path": "$(root_rel_llvm_include)"
     }
   }
 ]

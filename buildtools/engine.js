@@ -141,6 +141,72 @@ exports.Engine.prototype.loadAllTargets = function(file) {
 };
 
 /**
+ * Substitute .campfire_settings properties into string {@code instring},
+ * returning an array. If any property is array-valued, the size of the
+ * result array will be multiplied by the number of values of the property.
+ * For example, if the input string is "$(a)$(b)", a = [0,1], b = [2,3], then
+ * the output will contain all of the elements {"02", "03", "12", "13"}.
+ */
+exports.Engine.prototype.substituteArrayProperties = function(instring) {
+  var newArray = [instring];
+  var changed = false;
+  do {
+    changed = false;
+    var oldArray = newArray;
+    newArray = [];
+    for (var i = 0; i < oldArray.length; ++i) {
+      var s = oldArray[i];
+      changed = false;
+      var varOpen = s.indexOf('$(');
+      if (varOpen < 0) {
+        newArray.push(s);
+        continue;
+      }
+      var varClose = s.indexOf(')');
+      if (varClose < 0) {
+        newArray.push(s);
+        continue;
+      }
+      var pre = s.substring(0, varOpen);
+      var post = s.substring(varClose + 1);
+      var varName = s.substring(varOpen + 2, varClose);
+      var propValue = this.settings.properties[varName];
+      if (propValue instanceof Array) {
+        for (var v = 0; v < propValue.length; ++v) {
+          newArray.push(pre + propValue[v] + post);
+        }
+        changed = true;
+      } else {
+        newArray.push(pre + propValue + post);
+        changed = true;
+      }
+    }
+  } while (changed);
+  return newArray;
+}
+
+/**
+ * Substitute .campfire_settings properites into string {@code s}.
+ */
+exports.Engine.prototype.substituteProperties = function(s) {
+  while (true) {
+    var varOpen = s.indexOf('$(');
+    if (varOpen < 0) {
+      break;
+    }
+    var varClose = s.indexOf(')');
+    if (varClose < 0) {
+      break;
+    }
+    var pre = s.substring(0, varOpen);
+    var post = s.substring(varClose + 1);
+    var varName = s.substring(varOpen + 2, varClose);
+    s = pre + this.settings.properties[varName] + post;
+  }
+  return s;
+}
+
+/**
  * Given a target string specification, with a possible {@code file} environment
  * (see {@code loadFile}), returns its fully resolved target definition.
  * {@code file} is needed to resolve target dependencies and files relative to a
@@ -163,20 +229,7 @@ exports.Engine.prototype.resolveTarget = function(target, file, context) {
     var sub = target.substring(target.lastIndexOf('/') + 1);
     target = target + ':' + sub;
   }
-  while (true) {
-    var varOpen = target.indexOf('$(');
-    if (varOpen < 0) {
-      break;
-    }
-    var varClose = target.indexOf(')');
-    if (varClose < 0) {
-      break;
-    }
-    var pre = target.substring(0, varOpen);
-    var post = target.substring(varClose + 1);
-    var varName = target.substring(varOpen + 2, varClose);
-    target = pre + this.settings.properties[varName] + post;
-  }
+  target = this.substituteProperties(target);
   var entry;
   var name;
   if (target.indexOf(':') === 0) {

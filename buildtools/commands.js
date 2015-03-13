@@ -166,6 +166,17 @@ exports.commands = {
     }
     engine.ninjaCommand(kind, args, engine.settings.properties['run_ninja']);
   }, 'Converts CAMPFIRE files to an equivalent build.ninja file'),
+  query_config: new Command(function(engine, args) {
+    if (!!args[0] && engine.settings.properties.hasOwnProperty(args[0])) {
+      console.log(engine.settings.properties[args[0]]);
+      process.exit(0);
+    } else if (args.length == 0) {
+      console.error('query_config expects one argument');
+    } else {
+      console.error('query_config: missing property "' + args[0] + '"');
+    }
+    process.exit(1);
+  }, 'Prints the value of a build configuration variable.'),
   show_config: new Command(function(engine, args) {
     console.log(
         util.inspect(engine.settings.properties, {depth: undefined }));
