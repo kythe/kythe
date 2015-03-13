@@ -20,9 +20,19 @@ KYTHE_ENTRYSTREAM="${PWD}/campfire-out/bin/kythe/go/platform/tools/entrystream"
 KYTHE_HTTP_SERVER="${PWD}/campfire-out/bin/kythe/go/serving/tools/http_server"
 OUT_DIR="${PWD}/campfire-out/test/kythe/cxx/common/testdata/net_client_test_runner"
 
-server_addr() {
-  lsof -a -p "$1" -i -s TCP:LISTEN 2>/dev/null | grep -ohw "localhost:[0-9]*"
-}
+if grep ':/docker' /proc/1/cgroup ; then
+# lsof doesn't work inside docker because of AppArmor.
+# Until that's fixed, we'll pick our own port.
+  LISTEN_TO="localhost:31338"
+  server_addr() {
+    echo "localhost:31338"
+  }
+else
+  LISTEN_TO="localhost:0"
+  server_addr() {
+    lsof -a -p "$1" -i -s TCP:LISTEN 2>/dev/null | grep -ohw "localhost:[0-9]*"
+  }
+fi
 
 rm -rf -- "${OUT_DIR}"
 mkdir -p "${OUT_DIR}/gs"
@@ -30,7 +40,7 @@ mkdir -p "${OUT_DIR}/gs"
 cat "${BASE_DIR}/net_client_test_data.json" \
     | "${KYTHE_ENTRYSTREAM}" -read_json=true  \
     | "${KYTHE_WRITE_ENTRIES}" -graphstore "${OUT_DIR}/gs" 2>/dev/null
-"${KYTHE_HTTP_SERVER}" -graphstore "${OUT_DIR}/gs" -listen="localhost:0" 2>/dev/null &
+"${KYTHE_HTTP_SERVER}" -graphstore "${OUT_DIR}/gs" -listen="${LISTEN_TO}" 2>/dev/null &
 SERVER_PID=$!
 trap 'kill $SERVER_PID' EXIT ERR INT
 
