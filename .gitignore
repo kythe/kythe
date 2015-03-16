@@ -26,3 +26,7 @@ MANIFEST-*
 
 # Misc
 node_modules
+
+# Third-party
+/third_party/llvm/llvm
+/third_party/llvm/include

@@ -47,6 +47,7 @@ uuid-dev::
 libssl-dev::
 bison-2.3::
 flex-2.5::
+llvm::
 
 NOTE: All other Kythe dependencies are hosted within the repository under
 `//third_party/...`
@@ -77,6 +78,55 @@ echo '{
   }
 }
 ' > $HOME/.campfire_settings
+----
+
+.Installing and keeping LLVM up to date
+By default, we assume that you have an LLVM checkout in //third_party/llvm/llvm.
+Whenever you run `campfire`, we check to see if the checkout is up to date.
+If you don't have an LLVM checkout in that directory, or if you fall out of
+date, the `./buildtools/update_modules.sh` script will update you to the exact
+revisions that we test against.
+
+Note that you don't need to have a checkout of LLVM per Kythe checkout.
+You can point campfire to a different path by adding a `.campfire_settings`
+file to your `HOME` directory. For example, if your LLVM checkout is located
+at the absolute path `/home/self/llvm`, your `.campfire_settings` file would
+look something like:
+
+[source,js]
+----
+{
+  "configurations": {
+    "base": {
+      "root_rel_llvm_repo": "/home/self/llvm-git",
+      "third_party_llvm_rel_llvm_lib": "/home/self/llvm-git/kythe-build/Release+Asserts/lib",
+      "root_rel_llvm_include": [
+        "/home/self/llvm-git/include",
+        "/home/self/llvm-git/tools/clang/include",
+        "/home/self/llvm-git/kythe-build/include",
+        "/home/self/llvm-git/kythe-build/tools/clang/include"
+      ]
+    }
+  }
+}
+----
+
+third_party_llvm_rel_llvm_lib is relative to third_party/llvm.
+root_rel_llvm_repo is relative to the campfire root.
+root_rel_llvm_include is also relative to the campfire root.
+Any of these properties may be set to absolute paths, as in the example
+above. See `//third_party/llvm/CAMPFIRE` for how these properties are used.
+
+If you don't use `update_modules.sh`, you will need to manually update your copy
+of the amalgamated compiler builtin headers. From your checkout root, you can do
+this by:
+
+[source,shell]
+----
+mkdir -p third_party/llvm/include && cd third_party/llvm && \
+../../kythe/cxx/extractor/rebuild_resources.sh \
+  $(./../../campfire query_config third_party_llvm_rel_llvm_lib)/clang/3.7.0 > \
+  ./include/cxx_extractor_resources.inc && cd ../..
 ----
 
 === Building

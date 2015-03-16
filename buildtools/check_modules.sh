@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/bin/bash -e
 # Copyright 2015 Google Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,22 +34,13 @@
 # root_rel_llvm_include is also relative to the campfire root.
 # Any of these properties may be set to absolute paths, as in the example
 # above.
-#
-# LLVM checkouts can be svn or git. Each svn revision has an associated
-# git-svn sha. (The svn revision will appear in the git log entry.) When a
-# checkout is updated to a new minimum version, both its _SHA and _REV should
-# be set to the new (matched) strings.
-MIN_LLVM_SHA="ed0266d8ee16537e7cec9d9409ddf07a8e3efbc5"
-MIN_LLVM_REV="231571"
-MIN_CLANG_SHA="9e51c85a582963e272b3462d5f40752aff2830ab"
-MIN_CLANG_REV="231564"
-MIN_EXTRA_SHA="82e3f4fb0b2898ec2c581d0fe26f52f48d535003"
-MIN_EXTRA_REV="231440"
 QUERY_CONFIG="$1"
 LLVM_LIB=$(${QUERY_CONFIG} third_party_llvm_rel_llvm_lib)
 LLVM_INCLUDE=$(${QUERY_CONFIG} root_rel_llvm_include)
 LLVM_REPO="$(${QUERY_CONFIG} root_rel_llvm_repo)"
 CWD="${PWD}"
+
+. "$(dirname $0)/module_versions.sh"
 
 # check_repo repo_path friendly_name expect_sha expect_rev
 check_repo() {
@@ -60,14 +51,23 @@ check_repo() {
           && [[ $(svnversion) -ge "${4:?no revison}" ]] \
           && cd "${CWD}" ) \
       || ( echo \
-            "Missing ${2:?no friendly name} with ancestor $3 (rev $4) in $1" \
+            "Missing ${2:-repo checkout} with ancestor $3 (rev $4) in $1
+Please see README.adoc for details (or run ./buildtools/update_modules.sh or
+./buildtools/update_modules.sh --docker from your campfire root)" \
           && exit 1 )
 }
 
-# TODO(zarko): Turn these checks on in the second stage of this change.
+check_repo "${LLVM_REPO}" "LLVM" "${MIN_LLVM_SHA}" "${MIN_LLVM_REV}"
+check_repo "${LLVM_REPO}/tools/clang" "clang" "${MIN_CLANG_SHA}" \
+     "${MIN_CLANG_REV}"
+check_repo "${LLVM_REPO}/tools/clang/tools/extra" "clang extra tools" \
+     "${MIN_EXTRA_SHA}" "${MIN_EXTRA_REV}"
 
-# check_repo "${LLVM_REPO}" "LLVM" "${MIN_LLVM_SHA}" "${MIN_LLVM_REV}"
-# check_repo "${LLVM_REPO}/tools/clang" "clang" "${MIN_CLANG_SHA}" \
-#      "${MIN_CLANG_REV}"
-# check_repo "${LLVM_REPO}/tools/clang/tools/extra" "clang extra tools" \
-#      "${MIN_EXTRA_SHA}" "${MIN_EXTRA_REV}"
+if [ ! -e "$(dirname $0)/../third_party/llvm/include/cxx_extractor_resources.inc" ]; then
+  echo 'Missing amalgamated header for C++. Please run from the project root:
+mkdir -p third_party/llvm/include && cd third_party/llvm && \
+../../kythe/cxx/extractor/rebuild_resources.sh \
+  $(./../../campfire query_config third_party_llvm_rel_llvm_lib)/clang/3.7.0 > \
+  ./include/cxx_extractor_resources.inc && cd ../..'
+  exit 1
+fi

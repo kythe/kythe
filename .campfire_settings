@@ -17,9 +17,13 @@
       "junit_path": "third_party/junit/junit-4.11.jar",
       "ninja_path": "ninja",
       "root_rel_llvm_repo": "third_party/llvm/llvm",
-      "third_party_llvm_rel_llvm_lib": "lib",
-      "root_rel_llvm_include": "third_party/llvm/include",
-
+      "third_party_llvm_rel_llvm_lib": "llvm/build/Release+Asserts/lib",
+      "root_rel_llvm_include": [
+        "third_party/llvm/llvm/include",
+        "third_party/llvm/llvm/tools/clang/include",
+        "third_party/llvm/llvm/build/include",
+        "third_party/llvm/llvm/build/tools/clang/include"
+      ],
       "buildtools_root": "buildtools",
       "cc_opts": ["-std=c++11", "-pthread", "-fno-rtti", "-Wall", "-Werror", "-Wno-unused-variable"],
       "javac_opts": ["-encoding", "utf-8"],

@@ -22,4 +22,8 @@ cleanup() {
 }
 trap cleanup EXIT ERR INT
 
-./campfire "$@"
+if [[ "$1" == "build_update_modules" ]]; then
+  ./buildtools/update_modules.sh --build_only
+else
+  ./campfire "$@"
+fi

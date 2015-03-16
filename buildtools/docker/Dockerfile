@@ -16,7 +16,7 @@ FROM google/kythe-base
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
-      asciidoc source-highlight graphviz libncurses-dev gcc \
+      asciidoc source-highlight graphviz libncurses-dev gcc git \
       bundler ruby-dev make nodejs rsync patch libcurl4-openssl-dev \
  && apt-get clean
 
