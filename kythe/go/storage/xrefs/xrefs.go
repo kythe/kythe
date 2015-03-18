@@ -225,17 +225,20 @@ func (g *GraphStoreService) Edges(req *xpb.EdgesRequest) (*xpb.EdgesReply, error
 		}
 	}
 
-	// Ensure reply.Node is a unique set by removing already requested nodes from targetSet
-	for _, n := range reply.Node {
-		targetSet.Remove(n.Ticket)
-	}
+	// Only request Nodes when there are fact filters given.
+	if len(req.Filter) > 0 {
+		// Ensure reply.Node is a unique set by removing already requested nodes from targetSet
+		for _, n := range reply.Node {
+			targetSet.Remove(n.Ticket)
+		}
 
-	// Batch request all leftover target nodes
-	nodesReply, err := g.Nodes(&xpb.NodesRequest{Ticket: targetSet.Slice(), Filter: req.Filter})
-	if err != nil {
-		return nil, fmt.Errorf("failure getting target nodes: %v", err)
+		// Batch request all leftover target nodes
+		nodesReply, err := g.Nodes(&xpb.NodesRequest{Ticket: targetSet.Slice(), Filter: req.Filter})
+		if err != nil {
+			return nil, fmt.Errorf("failure getting target nodes: %v", err)
+		}
+		reply.Node = append(reply.Node, nodesReply.Node...)
 	}
-	reply.Node = append(reply.Node, nodesReply.Node...)
 
 	return reply, nil
 }
