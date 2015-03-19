@@ -1,0 +1,19 @@
+[
+  {
+    "name": "nothing",
+    "kind": "sh_test",
+    "inputs": {
+      "srcs": [
+        "nothing_test.sh"
+      ],
+      "tools": [
+        "//kythe/cxx/tools/fyi"
+      ],
+      "data": [
+        "compile_commands.json.in",
+        "nothing.cc",
+        "nothing.cc.expected"
+      ]
+    }
+  }
+]

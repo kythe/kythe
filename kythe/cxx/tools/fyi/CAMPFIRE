@@ -1,0 +1,34 @@
+[
+  {
+    "name": "fyilib",
+    "kind": "cc_library",
+    "inputs": {
+      "srcs": [
+        "fyi.cc",
+        "fyi_main.cc"
+      ],
+      "hdrs": [
+        "fyi.h"
+      ],
+      "cc_libs": [
+        "//kythe/cxx/common:net_client",
+        "//kythe/proto:analysis_proto",
+        "//kythe/proto:storage_proto",
+        "//third_party/gflags",
+        "//third_party/glog",
+        "//third_party/llvm/src:clang_builtin_headers",
+        "//third_party/llvm:lib",
+        "//third_party/protobuf:protobuf_cc"
+      ]
+    }
+  },
+  {
+    "name": "fyi",
+    "kind": "cc_binary",
+    "inputs": {
+      "cc_libs": [
+        ":fyilib"
+      ]
+    }
+  }
+]
