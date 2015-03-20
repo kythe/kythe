@@ -13,48 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 set -o pipefail
+
 BASE_DIR="${PWD}/kythe/cxx/common/testdata"
+TEST_JSON="${BASE_DIR}/net_client_test_data.json"
 TEST_BIN="${PWD}/campfire-out/bin/kythe/cxx/common/net_client_test"
-KYTHE_WRITE_ENTRIES="${PWD}/campfire-out/bin/kythe/go/storage/tools/write_entries"
-KYTHE_ENTRYSTREAM="${PWD}/campfire-out/bin/kythe/go/platform/tools/entrystream"
-KYTHE_HTTP_SERVER="${PWD}/campfire-out/bin/kythe/go/serving/tools/http_server"
 OUT_DIR="${PWD}/campfire-out/test/kythe/cxx/common/testdata/net_client_test_runner"
 
-if grep ':/docker' /proc/1/cgroup ; then
-# lsof doesn't work inside docker because of AppArmor.
-# Until that's fixed, we'll pick our own port.
-  LISTEN_TO="localhost:31338"
-  server_addr() {
-    echo "localhost:31338"
-  }
-else
-  LISTEN_TO="localhost:0"
-  server_addr() {
-    lsof -a -p "$1" -i -s TCP:LISTEN 2>/dev/null | grep -ohw "localhost:[0-9]*"
-  }
-fi
-
-rm -rf -- "${OUT_DIR}"
-mkdir -p "${OUT_DIR}/gs"
-
-cat "${BASE_DIR}/net_client_test_data.json" \
-    | "${KYTHE_ENTRYSTREAM}" -read_json=true  \
-    | "${KYTHE_WRITE_ENTRIES}" -graphstore "${OUT_DIR}/gs" 2>/dev/null
-"${KYTHE_HTTP_SERVER}" -graphstore "${OUT_DIR}/gs" -listen="${LISTEN_TO}" 2>/dev/null &
-SERVER_PID=$!
-trap 'kill $SERVER_PID' EXIT ERR INT
-
-COUNTDOWN=16
-while :; do
-  sleep 1s
-  LISTEN_AT=$(server_addr "$SERVER_PID") \
-    && curl -s "$LISTEN_AT" >/dev/null \
-    && break
-  echo "Waiting for server ($COUNTDOWN seconds remaining)..." >&2
-  if [[ $((COUNTDOWN--)) -eq 0 ]]; then
-    echo "Aborting (launching server took too long)" >&2
-    exit 1
-  fi
-done
+source "kythe/cxx/common/testdata/start_http_service.sh"
 
 "$TEST_BIN" --xrefs="http://$LISTEN_AT"

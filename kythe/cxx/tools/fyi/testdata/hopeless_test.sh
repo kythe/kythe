@@ -13,5 +13,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This file is expected to be unchanged.
-./kythe/cxx/tools/fyi/testdata/test_case.sh nothing.cc
+# This source file can't be repaired.
+./kythe/cxx/tools/fyi/testdata/test_case.sh hopeless.cc

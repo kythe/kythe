@@ -19,6 +19,7 @@
 
 #include "clang/Lex/PreprocessorOptions.h"
 #include "clang/Tooling/Tooling.h"
+#include "kythe/cxx/common/net_client.h"
 
 namespace kythe {
 namespace fyi {
@@ -29,8 +30,9 @@ class FileTracker;
 /// \brief Creates actions for fyi passes.
 class ActionFactory : public clang::tooling::ToolAction {
  public:
+  /// \param xrefs A source for cross-references.
   /// \param iterations The maximum number of iterations to try before stopping.
-  explicit ActionFactory(size_t iterations);
+  ActionFactory(std::unique_ptr<XrefsClient> xrefs, size_t iterations);
   ~ActionFactory();
 
   /// \brief Call before starting the next iteration around the fixpoint.
@@ -55,6 +57,9 @@ class ActionFactory : public clang::tooling::ToolAction {
 
   /// \brief All of Clang's builtin headers.
   std::vector<std::unique_ptr<llvm::MemoryBuffer>> builtin_headers_;
+
+  /// The client to use to find cross-references.
+  std::unique_ptr<XrefsClient> xrefs_;
 
   /// \brief Try to find a `FileTracker` for the given path.
   /// \param filename the path to search for

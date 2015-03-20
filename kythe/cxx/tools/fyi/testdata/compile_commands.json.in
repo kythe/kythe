@@ -1,7 +1,17 @@
 [
   {
     "directory": "OUT_DIR",
-    "command": "clang++ -c nothing.cc -std=c++11 -Wall -Werror -I.",
+    "command": "clang++ -c nothing.cc -std=c++11 -Wall -Werror -I. -ITEST_DIR",
     "file": "nothing.cc"
+  },
+  {
+    "directory": "OUT_DIR",
+    "command": "clang++ -c basic.cc -std=c++11 -Wall -Werror -I. -IBASE_DIR",
+    "file": "basic.cc"
+  },
+  {
+    "directory": "OUT_DIR",
+    "command": "clang++ -c hopeless.cc -std=c++11 -Wall -Werror -I. -IBASE_DIR",
+    "file": "hopeless.cc"
   }
 ]

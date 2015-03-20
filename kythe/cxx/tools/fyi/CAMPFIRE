@@ -11,6 +11,7 @@
         "fyi.h"
       ],
       "cc_libs": [
+        "//kythe/cxx/common:lib",
         "//kythe/cxx/common:net_client",
         "//kythe/proto:analysis_proto",
         "//kythe/proto:storage_proto",

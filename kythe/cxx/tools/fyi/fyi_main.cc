@@ -38,8 +38,10 @@ int main(int argc, const char **argv) {
   google::SetUsageMessage("fyi: repair a C++ file with missing includes");
   clang::tooling::CommonOptionsParser options(argc, argv, fyi_options);
   kythe::JsonClient::InitNetwork();
+  auto xrefs_db = llvm::make_unique<kythe::XrefsJsonClient>(
+      llvm::make_unique<kythe::JsonClient>(), xrefs);
   clang::tooling::ClangTool tool(options.getCompilations(),
                                  options.getSourcePathList());
-  kythe::fyi::ActionFactory factory(5);
+  kythe::fyi::ActionFactory factory(std::move(xrefs_db), 5);
   return tool.run(&factory);
 }

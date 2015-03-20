@@ -7,12 +7,66 @@
         "nothing_test.sh"
       ],
       "tools": [
-        "//kythe/cxx/tools/fyi"
+        "//kythe/cxx/tools/fyi",
+        "//kythe/go/platform/tools:entrystream",
+        "//kythe/go/serving/tools:http_server",
+        "//kythe/go/serving/tools:write_tables",
+        "//kythe/go/storage/tools:write_entries"
       ],
       "data": [
+        "../../../common/testdata/start_http_service.sh",
         "compile_commands.json.in",
         "nothing.cc",
-        "nothing.cc.expected"
+        "nothing.cc.expected",
+        "nothing.cc.json",
+        "test_case.sh"
+      ]
+    }
+  },
+  {
+    "name": "basic",
+    "kind": "sh_test",
+    "inputs": {
+      "srcs": [
+        "basic_test.sh"
+      ],
+      "tools": [
+        "//kythe/cxx/tools/fyi",
+        "//kythe/go/platform/tools:entrystream",
+        "//kythe/go/serving/tools:http_server",
+        "//kythe/go/serving/tools:write_tables",
+        "//kythe/go/storage/tools:write_entries"
+      ],
+      "data": [
+        "../../../common/testdata/start_http_service.sh",
+        "basic.cc",
+        "basic.cc.expected",
+        "basic.cc.json",
+        "compile_commands.json.in",
+        "test_case.sh"
+      ]
+    }
+  },
+  {
+    "name": "hopeless",
+    "kind": "sh_test",
+    "inputs": {
+      "srcs": [
+        "hopeless_test.sh"
+      ],
+      "tools": [
+        "//kythe/cxx/tools/fyi",
+        "//kythe/go/platform/tools:entrystream",
+        "//kythe/go/serving/tools:http_server",
+        "//kythe/go/serving/tools:write_tables",
+        "//kythe/go/storage/tools:write_entries"
+      ],
+      "data": [
+        "../../../common/testdata/start_http_service.sh",
+        "compile_commands.json.in",
+        "hopeless.cc",
+        "hopeless.cc.json",
+        "test_case.sh"
       ]
     }
   }
