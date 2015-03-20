@@ -36,7 +36,6 @@ function one_case {
   fi
 }
 
-# Remember to add these files to CAMPFIRE as well.
 one_case "${BASEDIR}/alias_alias_int.cc" "c++1y"
 one_case "${BASEDIR}/alias_alias_ptr_int.cc" "c++1y"
 one_case "${BASEDIR}/alias_and_cvr.cc" "c++1y"
