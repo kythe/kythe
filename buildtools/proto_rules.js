@@ -25,6 +25,7 @@ function getProtoImportMappings(owner, output, seen) {
   }
   var srcs = rule.getAllOutputsFor(owner.inputsByKind['srcs'], 'build',
                                    rule.fileFilter('src_file', '.proto'));
+  // TODO(schroederc): change import path to use Kythe vanity URL
   output.push('M' + srcs[0].getPath() + '=' + owner.asPath());
 }
 
@@ -69,13 +70,11 @@ function javaNinjaBuild(target, srcs) {
 }
 
 function goNinjaBuild(target, srcs) {
-  var outDir = target.getRoot('gen/go/src');
   var includePaths = rule.getAllOutputsFor(target.inputsByKind['go_pkgs'], 'build',
                                            rule.propertyFilter('go_include_path'));
   includePaths.append(rule.getAllOutputsFor(target.inputsByKind['proto_libs'], 'build',
                                             rule.propertyFilter('go_include_path')));
   includePaths = includePaths.map(function(p) { return p.value; });
-  includePaths.push(outDir);
   includePaths.push('campfire-out/go/pkg/linux_amd64/');
   var pkgs = rule.getAllOutputsFor(target.inputsByKind['go_pkgs'], 'build',
                                    rule.fileFilter('go_archive'));
@@ -87,19 +86,31 @@ function goNinjaBuild(target, srcs) {
     protoImportMappings = ',' + protoImportMappings;
   }
 
+  var outs = srcs.map(function(src) {
+    var src = path.join(target.asPath(),
+                        path.basename(src.getPath(), '.proto') + '.pb.go');
+    return target.getFileNode(src, 'src_file');
+  });
+  var archive =
+      target.getFileNode(go_rules.PACKAGE_DIR + target.asPath() + '.a',
+                         'go_archive');
+  outs.push(archive);
+
   return {
     rule: 'protoc_go',
     phony: target.id + '_go',
     inputs: srcs,
     implicits: [target.getVersionMarker('go')].concat(pkgs),
-    outs: [target.getFileNode(go_rules.PACKAGE_DIR + target.asPath() + '.a',
-                              'go_archive')],
-    properties: [new entity.Property(target.id, 'go_include_path', outDir)],
+    outs: outs,
     vars: {
       'package': target.asPath(),
       include: go_rules.constructIncludeArgs(includePaths),
       importpath: protoImportMappings,
-      outdir: outDir
+      archive: archive.getPath(),
+
+      // place generated source files back into source tree so that Go packages
+      // can be directly built using the go tool
+      outdir: target.asPath()
     }
   };
 }

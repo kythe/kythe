@@ -88,7 +88,7 @@ rule protoc_go
             mkdir -p $outdir && $
             $protocpath --plugin=$protocgengo --go_out=import_path=$package$importpath:$outdir $in && $
             find $outdir -type f -name '*.go' -exec mv -f {} $outdir ';' && $
-            $gotool tool 6g -p $package -complete -pack -o $out $include $$(ls -1 $outdir/*.go)
+            $gotool tool 6g -p $package -complete -pack -o $archive $include $$(ls -1 $outdir/*.go)
   description = protoc_go $owner
 
 rule protoc_cpp

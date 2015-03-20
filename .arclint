@@ -14,7 +14,7 @@
     "go": {
       "type": "golint",
       "include": "(\\.go$)",
-      "exclude": "(^third_party)"
+      "exclude": "(^third_party|^kythe/proto/)"
     },
     "custom": {
       "type": "script-and-regex"
