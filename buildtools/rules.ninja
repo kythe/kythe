@@ -151,3 +151,13 @@ rule genlex
 rule genyacc
   command = $bison $$($bison --version | grep -qE '^bison .* 3\..*' && echo -Wno-deprecated) -o $main_out $in
   description = bison $in
+
+rule cc_resource
+  command = bash -c 'echo "static const struct FileToc kPackedFiles[] = {" > $out; $
+                     for j in $in; do $
+                       echo "{\"$$(basename "$${j}")\"," >> $out; $
+                       echo "R\"filecontent($$(< $${j}))filecontent\"" >> $out; $
+                       echo "}," >> $out; $
+                     done && $
+                     echo "{nullptr, nullptr}};" >> $out'
+  description = cc_resource $out

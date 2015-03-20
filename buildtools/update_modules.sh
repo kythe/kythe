@@ -74,8 +74,4 @@ if [[ -z "$1" || "$1" == "--build_only" ]]; then
                 --enable-optimized --disable-bindings
   make -j8
   cd "${ROOT_ABS}"
-  mkdir -p third_party/llvm/include
-  ./kythe/cxx/extractor/rebuild_resources.sh \
-      third_party/llvm/llvm/build/Release+Asserts/lib/clang/3.7.0 > \
-      third_party/llvm/include/cxx_extractor_resources.inc
 fi

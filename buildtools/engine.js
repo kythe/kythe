@@ -183,7 +183,7 @@ exports.Engine.prototype.substituteArrayProperties = function(instring) {
     }
   } while (changed);
   return newArray;
-}
+};
 
 /**
  * Substitute .campfire_settings properites into string {@code s}.
@@ -204,7 +204,7 @@ exports.Engine.prototype.substituteProperties = function(s) {
     s = pre + this.settings.properties[varName] + post;
   }
   return s;
-}
+};
 
 /**
  * Given a target string specification, with a possible {@code file} environment
@@ -314,6 +314,42 @@ exports.Engine.prototype.loadTarget = function(file, config) {
   if (loaded) {
     return loaded;
   }
+  // Rewrite "dir:..." inputs to "...", ignoring dotfiles.
+  var oldInputs = config.inputs;
+  config.inputs = {};
+  var dirRegex = /dir:(.+)/;
+  for (var inputKind in oldInputs) {
+    var match = dirRegex.exec(inputKind);
+    var newInputs;
+    if (match != null) {
+      var allDirs = oldInputs[inputKind];
+      for (var e = 0; e < allDirs.length; ++e) {
+        var spec = allDirs[e];
+        inputKind = match[1];
+        var specPath = this.substituteProperties(spec);
+        if (specPath.charAt(0) != '/') {
+          specPath = path.join(file.packageName, specPath);
+        }
+        try {
+          var content = fs.readdirSync(specPath);
+          newInputs = content.filter(function(f) { return !f.startsWith('.') })
+                             .map(function(f) { return path.join(spec, f); });
+        } catch (x) {
+          contextError(targetId, 'Could not open ' + spec + '\n  (' + specPath +
+                                 '):\n  ' + x.toString());
+          process.exit(1);
+        }
+      }
+    } else {
+      newInputs = oldInputs[inputKind];
+    }
+    if (config.inputs.hasOwnProperty(inputKind)) {
+      config.inputs[inputKind] = newInputs.concat(config.inputs[inputKind]);
+    } else {
+      config.inputs[inputKind] = newInputs;
+    }
+  }
+
   var root = getRoot(targetId);
   var allowedRoots = this.settings['allowed_dependencies'][root];
   var resolvedInputsByKind = {};

@@ -44,5 +44,14 @@
       ],
       "cc_include_path": "$(root_rel_llvm_include)"
     }
+  },
+  {
+    "name": "clang_builtin_headers_resources",
+    "kind": "cc_resources",
+    "inputs": {
+      "dir:data": [
+        "$(third_party_llvm_rel_llvm_lib)/clang/3.7.0/include"
+      ]
+    }
   }
 ]

@@ -119,6 +119,30 @@ CcLibrary.prototype.getNinjaBuilds = function(target) {
   };
 };
 
+function CcResources(engine) {
+  this.engine = engine;
+}
+
+CcResources.prototype = new rule.Rule();
+CcResources.prototype.getNinjaBuilds = function(target) {
+  var data = rule.getAllOutputsFor(target.inputsByKind['data'], 'build',
+                                   rule.allFilesFilter);
+  var incRoot = target.getRoot('gen');
+  var incPath = path.join(path.dirname(incRoot),
+                          path.basename(incRoot),
+                          path.basename(incRoot) + '.inc');
+  return {
+    BUILD: [{
+      rule: 'cc_resource',
+      inputs: data,
+      outs: [target.getFileNode(incPath, 'gen_header_file')],
+      properties: [
+        new entity.Property(target.id, 'cc_include_path', incRoot)
+      ]
+    }]
+  };
+};
+
 function getBaseCOpts(target) {
   var copts =
       rule.getAllOutputsFor(target.inputsByKind['cc_libs'], 'build',
@@ -141,9 +165,9 @@ function getBaseCOpts(target) {
                                              'build',
                                              rule.propertyFilter(
                                                exports.INCLUDE_PATH_PROPERTY)))
-      .reduce(function (p, n) { return p.concat(
+      .reduce(function(p, n) { return p.concat(
           n.value instanceof Array ? n.value : [n.value]); }, [])
-      .reduce(function (p, n) { return p.concat(
+      .reduce(function(p, n) { return p.concat(
           target.engine.substituteArrayProperties(n)); }, []);
   copts.append(includePaths.map(function(p) { return '-I ' + p; }));
   copts.push('-I.');
@@ -245,6 +269,7 @@ exports.register = function(engine) {
   engine.addTool('c', new CTool(engine));
   engine.addTool('cpp', new CppTool(engine));
   engine.addRule('cc_library', new CcLibrary(engine));
+  engine.addRule('cc_resources', new CcResources(engine));
   engine.addRule('cc_binary', new CcBinary(engine));
   engine.addRule('cc_test', new CcTest(engine));
   engine.addRule('cc_external_lib', new CCExternalLib(engine));

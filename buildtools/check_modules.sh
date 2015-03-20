@@ -62,12 +62,3 @@ check_repo "${LLVM_REPO}/tools/clang" "clang" "${MIN_CLANG_SHA}" \
      "${MIN_CLANG_REV}"
 check_repo "${LLVM_REPO}/tools/clang/tools/extra" "clang extra tools" \
      "${MIN_EXTRA_SHA}" "${MIN_EXTRA_REV}"
-
-if [ ! -e "$(dirname $0)/../third_party/llvm/include/cxx_extractor_resources.inc" ]; then
-  echo 'Missing amalgamated header for C++. Please run from the project root:
-mkdir -p third_party/llvm/include && cd third_party/llvm && \
-../../kythe/cxx/extractor/rebuild_resources.sh \
-  $(./../../campfire query_config third_party_llvm_rel_llvm_lib)/clang/3.7.0 > \
-  ./include/cxx_extractor_resources.inc && cd ../..'
-  exit 1
-fi

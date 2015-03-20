@@ -117,18 +117,6 @@ root_rel_llvm_include is also relative to the campfire root.
 Any of these properties may be set to absolute paths, as in the example
 above. See `//third_party/llvm/CAMPFIRE` for how these properties are used.
 
-If you don't use `update_modules.sh`, you will need to manually update your copy
-of the amalgamated compiler builtin headers. From your checkout root, you can do
-this by:
-
-[source,shell]
-----
-mkdir -p third_party/llvm/include && cd third_party/llvm && \
-../../kythe/cxx/extractor/rebuild_resources.sh \
-  $(./../../campfire query_config third_party_llvm_rel_llvm_lib)/clang/3.7.0 > \
-  ./include/cxx_extractor_resources.inc && cd ../..
-----
-
 === Building
 
 To build its sources, Kythe uses its own build system named `campfire`.

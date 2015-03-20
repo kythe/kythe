@@ -27,6 +27,7 @@
     "kind": "cc_library",
     "inputs": {
       "srcs": [
+        "//third_party/llvm:clang_builtin_headers_resources",
         "clang_builtin_headers.cc"
       ],
       "hdrs": [
