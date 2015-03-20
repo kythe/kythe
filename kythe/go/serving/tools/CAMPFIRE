@@ -4,7 +4,7 @@
     "kind": "go_binary",
     "inputs": {
       "srcs": [
-        "http_server.go"
+        "http_server/http_server.go"
       ],
       "go_pkgs": [
         "//kythe/go/services/filetree",
@@ -26,9 +26,9 @@
     "kind": "go_binary",
     "inputs": {
       "srcs": [
-        "kythe.go",
-        "kythe_commands.go",
-        "kythe_display.go"
+        "kythe/kythe.go",
+        "kythe/kythe_commands.go",
+        "kythe/kythe_display.go"
       ],
       "go_pkgs": [
         "//kythe/go/services/filetree",
@@ -52,7 +52,7 @@
     "kind": "go_binary",
     "inputs": {
       "srcs": [
-        "write_tables.go"
+        "write_tables/write_tables.go"
       ],
       "go_pkgs": [
         "//kythe/go/services/graphstore",

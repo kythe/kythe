@@ -4,7 +4,7 @@
     "kind": "go_binary",
     "inputs": {
       "srcs": [
-        "write_entries.go"
+        "write_entries/write_entries.go"
       ],
       "go_pkgs": [
         "//kythe/go/services/graphstore",
@@ -19,7 +19,7 @@
     "kind": "go_binary",
     "inputs": {
       "srcs": [
-        "read_entries.go"
+        "read_entries/read_entries.go"
       ],
       "go_pkgs": [
         "//kythe/go/platform/delimited",
@@ -34,7 +34,7 @@
     "kind": "go_binary",
     "inputs": {
       "srcs": [
-        "triples.go"
+        "triples/triples.go"
       ],
       "go_pkgs": [
         "//kythe/go/services/graphstore",
@@ -52,7 +52,7 @@
     "kind": "go_binary",
     "inputs": {
       "srcs": [
-        "directory_indexer.go"
+        "directory_indexer/directory_indexer.go"
       ],
       "go_pkgs": [
         "//kythe/go/platform/delimited",
