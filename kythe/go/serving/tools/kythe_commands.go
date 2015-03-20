@@ -269,7 +269,7 @@ var (
 				}
 				for _, n := range fileNodeReply.Node {
 					if n.Ticket != req.Location.Ticket {
-						log.Println("WARNING: received unrequested node: %q", n.Ticket)
+						log.Printf("WARNING: received unrequested node: %q", n.Ticket)
 						continue
 					}
 					for _, f := range n.Fact {

@@ -69,7 +69,7 @@ func main() {
 			log.Printf("Could not find ticket for file %q", file)
 			continue
 		} else if len(results.Ticket) != 1 {
-			log.Println("Multiple tickets found for file %q; choosing first from %v", file, results.Ticket)
+			log.Printf("Multiple tickets found for file %q; choosing first from %v", file, results.Ticket)
 		}
 
 		ticket := results.Ticket[0]
@@ -97,7 +97,7 @@ func main() {
 
 			offset, err := strconv.Atoi(string(nodes[r.SourceTicket][schema.AnchorStartFact]))
 			if err != nil {
-				log.Println("Invalid start offset for anchor %q", r.SourceTicket)
+				log.Printf("Invalid start offset for anchor %q", r.SourceTicket)
 				continue
 			}
 

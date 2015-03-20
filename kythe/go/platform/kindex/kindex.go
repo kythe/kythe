@@ -160,7 +160,7 @@ func (c *Compilation) WriteTo(w io.Writer) (int64, error) {
 		buf.Reset()
 		if err := buf.Marshal(file); err != nil {
 			gz.Close()
-			return total, fmt.Errorf("marshaling file data: %v", file, err)
+			return total, fmt.Errorf("marshaling file data: %v", err)
 		}
 		nw, err := w.Write(buf.Bytes())
 		total += int64(nw)

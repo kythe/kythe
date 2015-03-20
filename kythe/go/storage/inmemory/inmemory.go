@@ -39,7 +39,7 @@ type store struct {
 func Create() graphstore.Service { return &store{} }
 
 // Close implements part of the graphstore.Service interface.
-func (store) Close() error { return nil }
+func (*store) Close() error { return nil }
 
 // Write implements part of the graphstore.Service interface.
 func (s *store) Write(req *spb.WriteRequest) error {

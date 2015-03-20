@@ -90,7 +90,7 @@ func EdgesMap(edges []*xpb.EdgeSet) map[string]map[string][]string {
 	return m
 }
 
-// Normalizers fix xref.Locations within a given source text so that each point
+// Normalizer fixes xref.Locations within a given source text so that each point
 // has consistent byte_offset, line_number, and column_offset fields within the
 // range of text's length and its line lengths.
 type Normalizer struct {
