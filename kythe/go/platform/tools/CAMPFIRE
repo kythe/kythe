@@ -4,7 +4,7 @@
     "kind": "go_binary",
     "inputs": {
       "srcs": [
-        "entrystream.go"
+        "entrystream/entrystream.go"
       ],
       "go_pkgs": [
         "//kythe/go/platform/delimited",
@@ -20,7 +20,7 @@
     "kind": "go_binary",
     "inputs": {
       "srcs": [
-        "ktags.go"
+        "ktags/ktags.go"
       ],
       "go_pkgs": [
         "//kythe/go/services/search",
@@ -37,7 +37,7 @@
     "kind": "go_binary",
     "inputs": {
       "srcs": [
-        "dedup_stream.go"
+        "dedup_stream/dedup_stream.go"
       ],
       "go_pkgs": [
         "//kythe/go/platform/delimited"
@@ -49,7 +49,7 @@
     "kind": "go_binary",
     "inputs": {
       "srcs": [
-        "viewindex.go"
+        "viewindex/viewindex.go"
       ],
       "go_pkgs": [
         "//kythe/go/platform/kindex"
@@ -61,7 +61,7 @@
     "kind": "go_binary",
     "inputs": {
       "srcs": [
-        "indexpack.go"
+        "indexpack/indexpack.go"
       ],
       "go_pkgs": [
         "//kythe/go/platform/indexpack",
