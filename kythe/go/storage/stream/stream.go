@@ -22,9 +22,9 @@ import (
 	"io"
 	"log"
 
-	"kythe/go/platform/delimited"
+	"kythe.io/kythe/go/platform/delimited"
 
-	spb "kythe/proto/storage_proto"
+	spb "kythe.io/kythe/proto/storage_proto"
 )
 
 // ReadEntries reads a stream of Entry protobufs from r.

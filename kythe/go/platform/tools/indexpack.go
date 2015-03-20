@@ -34,10 +34,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"kythe/go/platform/indexpack"
-	"kythe/go/platform/kindex"
+	"kythe.io/kythe/go/platform/indexpack"
+	"kythe.io/kythe/go/platform/kindex"
 
-	apb "kythe/proto/analysis_proto"
+	apb "kythe.io/kythe/proto/analysis_proto"
 
 	"golang.org/x/net/context"
 )

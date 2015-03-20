@@ -27,11 +27,11 @@ import (
 	"strings"
 	"syscall"
 
-	"kythe/go/services/graphstore"
-	"kythe/go/services/graphstore/proxy"
-	"kythe/go/storage/inmemory"
-	"kythe/go/storage/leveldb"
-	"kythe/go/storage/sql"
+	"kythe.io/kythe/go/services/graphstore"
+	"kythe.io/kythe/go/services/graphstore/proxy"
+	"kythe.io/kythe/go/storage/inmemory"
+	"kythe.io/kythe/go/storage/leveldb"
+	"kythe.io/kythe/go/storage/sql"
 )
 
 type gsFlag struct {

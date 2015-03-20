@@ -22,10 +22,10 @@ import (
 	"flag"
 	"log"
 
-	"kythe/go/services/graphstore"
-	"kythe/go/serving/pipeline"
-	"kythe/go/storage/gsutil"
-	"kythe/go/storage/leveldb"
+	"kythe.io/kythe/go/services/graphstore"
+	"kythe.io/kythe/go/serving/pipeline"
+	"kythe.io/kythe/go/storage/gsutil"
+	"kythe.io/kythe/go/storage/leveldb"
 )
 
 var (

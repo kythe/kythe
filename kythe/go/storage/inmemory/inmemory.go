@@ -22,10 +22,10 @@ import (
 	"sort"
 	"sync"
 
-	"kythe/go/services/graphstore"
-	"kythe/go/services/graphstore/compare"
+	"kythe.io/kythe/go/services/graphstore"
+	"kythe.io/kythe/go/services/graphstore/compare"
 
-	spb "kythe/proto/storage_proto"
+	spb "kythe.io/kythe/proto/storage_proto"
 
 	"github.com/golang/protobuf/proto"
 )

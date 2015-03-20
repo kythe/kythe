@@ -78,7 +78,7 @@ import (
 	"reflect"
 	"strings"
 
-	"kythe/go/platform/analysis"
+	"kythe.io/kythe/go/platform/analysis"
 
 	"code.google.com/p/go-uuid/uuid"
 	"golang.org/x/net/context"

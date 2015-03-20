@@ -26,11 +26,11 @@ import (
 	"path/filepath"
 	"sync"
 
-	"kythe/go/platform/delimited"
-	"kythe/go/services/graphstore"
-	"kythe/go/storage/gsutil"
+	"kythe.io/kythe/go/platform/delimited"
+	"kythe.io/kythe/go/services/graphstore"
+	"kythe.io/kythe/go/storage/gsutil"
 
-	spb "kythe/proto/storage_proto"
+	spb "kythe.io/kythe/proto/storage_proto"
 )
 
 var (

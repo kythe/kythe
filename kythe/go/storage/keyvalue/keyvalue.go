@@ -25,9 +25,9 @@ import (
 	"strings"
 	"sync"
 
-	"kythe/go/services/graphstore"
+	"kythe.io/kythe/go/services/graphstore"
 
-	spb "kythe/proto/storage_proto"
+	spb "kythe.io/kythe/proto/storage_proto"
 )
 
 // A Store implements the graphstore.Service interface for a keyvalue DB

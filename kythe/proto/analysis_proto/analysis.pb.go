@@ -18,8 +18,8 @@ It has these top-level messages:
 package analysis_proto
 
 import proto "github.com/golang/protobuf/proto"
-import kythe_proto "kythe/proto/any_proto"
-import kythe_proto1 "kythe/proto/storage_proto"
+import kythe_proto "kythe.io/kythe/proto/any_proto"
+import kythe_proto1 "kythe.io/kythe/proto/storage_proto"
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal

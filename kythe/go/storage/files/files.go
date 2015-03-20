@@ -23,7 +23,7 @@ import (
 	"errors"
 	"fmt"
 
-	apb "kythe/proto/analysis_proto"
+	apb "kythe.io/kythe/proto/analysis_proto"
 )
 
 // FileStore refers to an open Kythe file storage server.

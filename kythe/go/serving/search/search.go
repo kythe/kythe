@@ -29,9 +29,9 @@ package search
 import (
 	"bytes"
 
-	"kythe/go/storage/table"
+	"kythe.io/kythe/go/storage/table"
 
-	spb "kythe/proto/storage_proto"
+	spb "kythe.io/kythe/proto/storage_proto"
 )
 
 // Table implements a search.Service using an inverted index table.

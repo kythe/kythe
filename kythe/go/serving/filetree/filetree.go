@@ -26,9 +26,9 @@ import (
 	"fmt"
 	"strings"
 
-	"kythe/go/storage/table"
+	"kythe.io/kythe/go/storage/table"
 
-	srvpb "kythe/proto/serving_proto"
+	srvpb "kythe.io/kythe/proto/serving_proto"
 )
 
 const (

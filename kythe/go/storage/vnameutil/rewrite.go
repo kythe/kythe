@@ -24,7 +24,7 @@ import (
 	"regexp"
 	"strings"
 
-	spb "kythe/proto/storage_proto"
+	spb "kythe.io/kythe/proto/storage_proto"
 )
 
 // A Rule associates a regular expression pattern with a VName template.  A

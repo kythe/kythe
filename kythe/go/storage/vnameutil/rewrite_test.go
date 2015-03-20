@@ -21,7 +21,7 @@ import (
 	"strings"
 	"testing"
 
-	spb "kythe/proto/storage_proto"
+	spb "kythe.io/kythe/proto/storage_proto"
 
 	"github.com/golang/protobuf/proto"
 )

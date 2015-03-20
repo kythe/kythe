@@ -23,11 +23,11 @@ import (
 	"os"
 	"testing"
 
-	"kythe/go/services/graphstore"
-	"kythe/go/services/graphstore/compare"
-	"kythe/go/storage/keyvalue"
+	"kythe.io/kythe/go/services/graphstore"
+	"kythe.io/kythe/go/services/graphstore/compare"
+	"kythe.io/kythe/go/storage/keyvalue"
 
-	spb "kythe/proto/storage_proto"
+	spb "kythe.io/kythe/proto/storage_proto"
 )
 
 const (

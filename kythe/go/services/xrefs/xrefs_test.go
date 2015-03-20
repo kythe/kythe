@@ -20,7 +20,7 @@ import (
 	"regexp"
 	"testing"
 
-	"kythe/go/util/schema"
+	"kythe.io/kythe/go/util/schema"
 )
 
 func TestFilterRegexp(t *testing.T) {

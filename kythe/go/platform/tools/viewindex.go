@@ -28,7 +28,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"kythe/go/platform/kindex"
+	"kythe.io/kythe/go/platform/kindex"
 )
 
 func init() {

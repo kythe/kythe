@@ -21,7 +21,7 @@ package compare
 import (
 	"bytes"
 
-	spb "kythe/proto/storage_proto"
+	spb "kythe.io/kythe/proto/storage_proto"
 )
 
 // An Order represents an ordering relationship between values.

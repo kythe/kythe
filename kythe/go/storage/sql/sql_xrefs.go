@@ -20,12 +20,12 @@ import (
 	"errors"
 	"fmt"
 
-	"kythe/go/services/xrefs"
-	"kythe/go/util/kytheuri"
-	"kythe/go/util/schema"
-	"kythe/go/util/stringset"
+	"kythe.io/kythe/go/services/xrefs"
+	"kythe.io/kythe/go/util/kytheuri"
+	"kythe.io/kythe/go/util/schema"
+	"kythe.io/kythe/go/util/stringset"
 
-	xpb "kythe/proto/xref_proto"
+	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
 // Nodes implements part of the xrefs.Service interface.

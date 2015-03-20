@@ -26,9 +26,9 @@ import (
 	"log"
 	"strings"
 
-	"kythe/go/services/graphstore"
+	"kythe.io/kythe/go/services/graphstore"
 
-	spb "kythe/proto/storage_proto"
+	spb "kythe.io/kythe/proto/storage_proto"
 
 	_ "github.com/mattn/go-sqlite3" // register the "sqlite3" driver
 )

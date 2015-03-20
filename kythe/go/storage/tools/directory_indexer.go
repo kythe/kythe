@@ -57,10 +57,10 @@ import (
 	"regexp"
 	"strings"
 
-	"kythe/go/platform/delimited"
-	"kythe/go/storage/vnameutil"
+	"kythe.io/kythe/go/platform/delimited"
+	"kythe.io/kythe/go/storage/vnameutil"
 
-	spb "kythe/proto/storage_proto"
+	spb "kythe.io/kythe/proto/storage_proto"
 )
 
 var (

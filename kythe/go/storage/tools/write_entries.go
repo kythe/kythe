@@ -40,11 +40,11 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"kythe/go/services/graphstore"
-	"kythe/go/storage/gsutil"
-	"kythe/go/storage/stream"
+	"kythe.io/kythe/go/services/graphstore"
+	"kythe.io/kythe/go/storage/gsutil"
+	"kythe.io/kythe/go/storage/stream"
 
-	spb "kythe/proto/storage_proto"
+	spb "kythe.io/kythe/proto/storage_proto"
 )
 
 func init() {

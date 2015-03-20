@@ -30,12 +30,12 @@ import (
 	"fmt"
 	"log"
 
-	"kythe/go/services/xrefs"
-	"kythe/go/storage/table"
-	"kythe/go/util/stringset"
+	"kythe.io/kythe/go/services/xrefs"
+	"kythe.io/kythe/go/storage/table"
+	"kythe.io/kythe/go/util/stringset"
 
-	srvpb "kythe/proto/serving_proto"
-	xpb "kythe/proto/xref_proto"
+	srvpb "kythe.io/kythe/proto/serving_proto"
+	xpb "kythe.io/kythe/proto/xref_proto"
 
 	"github.com/golang/protobuf/proto"
 )

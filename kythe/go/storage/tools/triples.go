@@ -32,14 +32,14 @@ import (
 	"os"
 	"path/filepath"
 
-	"kythe/go/services/graphstore"
-	"kythe/go/storage/gsutil"
-	"kythe/go/storage/stream"
-	"kythe/go/util/encoding/rdf"
-	"kythe/go/util/kytheuri"
-	"kythe/go/util/schema"
+	"kythe.io/kythe/go/services/graphstore"
+	"kythe.io/kythe/go/storage/gsutil"
+	"kythe.io/kythe/go/storage/stream"
+	"kythe.io/kythe/go/util/encoding/rdf"
+	"kythe.io/kythe/go/util/kytheuri"
+	"kythe.io/kythe/go/util/schema"
 
-	spb "kythe/proto/storage_proto"
+	spb "kythe.io/kythe/proto/storage_proto"
 )
 
 func usage() {

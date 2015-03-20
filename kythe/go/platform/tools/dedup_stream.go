@@ -25,7 +25,7 @@ import (
 	"log"
 	"os"
 
-	"kythe/go/platform/delimited"
+	"kythe.io/kythe/go/platform/delimited"
 )
 
 func main() {

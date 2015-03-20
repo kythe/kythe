@@ -45,10 +45,10 @@ import (
 	"os"
 	"sync"
 
-	"kythe/go/platform/analysis"
-	"kythe/go/platform/delimited"
+	"kythe.io/kythe/go/platform/analysis"
+	"kythe.io/kythe/go/platform/delimited"
 
-	apb "kythe/proto/analysis_proto"
+	apb "kythe.io/kythe/proto/analysis_proto"
 
 	"github.com/golang/protobuf/proto"
 )

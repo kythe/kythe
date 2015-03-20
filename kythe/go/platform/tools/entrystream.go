@@ -35,11 +35,11 @@ import (
 	"log"
 	"os"
 
-	"kythe/go/platform/delimited"
-	"kythe/go/services/graphstore/compare"
-	"kythe/go/storage/stream"
+	"kythe.io/kythe/go/platform/delimited"
+	"kythe.io/kythe/go/services/graphstore/compare"
+	"kythe.io/kythe/go/storage/stream"
 
-	spb "kythe/proto/storage_proto"
+	spb "kythe.io/kythe/proto/storage_proto"
 
 	"github.com/golang/protobuf/proto"
 )

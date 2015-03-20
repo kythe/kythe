@@ -23,7 +23,7 @@ import (
 	"fmt"
 	"sync"
 
-	"kythe/go/platform/analysis"
+	"kythe.io/kythe/go/platform/analysis"
 )
 
 type cachedFetcher struct {

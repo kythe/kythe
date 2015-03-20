@@ -25,8 +25,8 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
-	apb "kythe/proto/analysis_proto"
-	spb "kythe/proto/storage_proto"
+	apb "kythe.io/kythe/proto/analysis_proto"
+	spb "kythe.io/kythe/proto/storage_proto"
 )
 
 // A fakeFetcher maps file "paths" to their contents.

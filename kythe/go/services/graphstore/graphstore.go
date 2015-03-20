@@ -21,9 +21,9 @@ package graphstore
 import (
 	"strings"
 
-	"kythe/go/services/graphstore/compare"
+	"kythe.io/kythe/go/services/graphstore/compare"
 
-	spb "kythe/proto/storage_proto"
+	spb "kythe.io/kythe/proto/storage_proto"
 )
 
 // An EntryFunc is a callback from the implementation of a Service to deliver

@@ -27,13 +27,13 @@ import (
 	"strconv"
 	"strings"
 
-	"kythe/go/services/search"
-	"kythe/go/services/xrefs"
-	"kythe/go/util/schema"
-	"kythe/go/util/stringset"
+	"kythe.io/kythe/go/services/search"
+	"kythe.io/kythe/go/services/xrefs"
+	"kythe.io/kythe/go/util/schema"
+	"kythe.io/kythe/go/util/stringset"
 
-	spb "kythe/proto/storage_proto"
-	xpb "kythe/proto/xref_proto"
+	spb "kythe.io/kythe/proto/storage_proto"
+	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
 var remoteAPI = flag.String("api", "https://xrefs-dot-kythe-repo.appspot.com", "Remote api server")

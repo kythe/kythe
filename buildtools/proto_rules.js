@@ -25,8 +25,9 @@ function getProtoImportMappings(owner, output, seen) {
   }
   var srcs = rule.getAllOutputsFor(owner.inputsByKind['srcs'], 'build',
                                    rule.fileFilter('src_file', '.proto'));
-  // TODO(schroederc): change import path to use Kythe vanity URL
-  output.push('M' + srcs[0].getPath() + '=' + owner.asPath());
+  output.push('M' + srcs[0].getPath() + '=' +
+      (owner.engine.settings.properties['go_package_prefix'] || '') +
+      owner.asPath());
 }
 
 function ProtoLibrary(engine) {
@@ -86,14 +87,16 @@ function goNinjaBuild(target, srcs) {
     protoImportMappings = ',' + protoImportMappings;
   }
 
+  var pkgName = (target.engine.settings.properties['go_package_prefix'] || '') +
+      target.asPath();
+
   var outs = srcs.map(function(src) {
     var src = path.join(target.asPath(),
                         path.basename(src.getPath(), '.proto') + '.pb.go');
     return target.getFileNode(src, 'src_file');
   });
   var archive =
-      target.getFileNode(go_rules.PACKAGE_DIR + target.asPath() + '.a',
-                         'go_archive');
+      target.getFileNode(go_rules.PACKAGE_DIR + pkgName + '.a', 'go_archive');
   outs.push(archive);
 
   return {
@@ -103,7 +106,7 @@ function goNinjaBuild(target, srcs) {
     implicits: [target.getVersionMarker('go')].concat(pkgs),
     outs: outs,
     vars: {
-      'package': target.asPath(),
+      'package': pkgName,
       include: go_rules.constructIncludeArgs(includePaths),
       importpath: protoImportMappings,
       archive: archive.getPath(),

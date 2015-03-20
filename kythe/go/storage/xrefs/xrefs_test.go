@@ -21,13 +21,13 @@ import (
 	"sort"
 	"testing"
 
-	"kythe/go/services/graphstore"
-	"kythe/go/storage/inmemory"
-	"kythe/go/util/kytheuri"
-	"kythe/go/util/schema"
+	"kythe.io/kythe/go/services/graphstore"
+	"kythe.io/kythe/go/storage/inmemory"
+	"kythe.io/kythe/go/util/kytheuri"
+	"kythe.io/kythe/go/util/schema"
 
-	spb "kythe/proto/storage_proto"
-	xpb "kythe/proto/xref_proto"
+	spb "kythe.io/kythe/proto/storage_proto"
+	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
 var (

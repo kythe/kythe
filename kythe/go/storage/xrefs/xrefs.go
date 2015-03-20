@@ -27,14 +27,14 @@ import (
 	"strconv"
 	"time"
 
-	"kythe/go/services/graphstore"
-	"kythe/go/services/xrefs"
-	"kythe/go/util/kytheuri"
-	"kythe/go/util/schema"
-	"kythe/go/util/stringset"
+	"kythe.io/kythe/go/services/graphstore"
+	"kythe.io/kythe/go/services/xrefs"
+	"kythe.io/kythe/go/util/kytheuri"
+	"kythe.io/kythe/go/util/schema"
+	"kythe.io/kythe/go/util/stringset"
 
-	spb "kythe/proto/storage_proto"
-	xpb "kythe/proto/xref_proto"
+	spb "kythe.io/kythe/proto/storage_proto"
+	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
 // EnsureReverseEdges checks if gs contains reverse edges.  If it doesn't, it

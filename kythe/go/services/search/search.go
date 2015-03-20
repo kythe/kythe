@@ -23,9 +23,9 @@ import (
 	"net/http"
 	"time"
 
-	"kythe/go/services/web"
+	"kythe.io/kythe/go/services/web"
 
-	spb "kythe/proto/storage_proto"
+	spb "kythe.io/kythe/proto/storage_proto"
 )
 
 // Service to search for nodes based on a partial VName and collection of known

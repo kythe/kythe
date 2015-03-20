@@ -23,7 +23,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
-	spb "kythe/proto/storage_proto"
+	spb "kythe.io/kythe/proto/storage_proto"
 )
 
 func TestVNameEncoding(t *testing.T) {

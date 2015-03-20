@@ -26,6 +26,7 @@
       ],
       "buildtools_root": "buildtools",
       "cc_opts": ["-std=c++11", "-pthread", "-fno-rtti", "-Wall", "-Werror", "-Wno-unused-variable"],
+      "go_package_prefix": "kythe.io/",
       "javac_opts": ["-encoding", "utf-8"],
       "docker_namespace": "gcr.io/kythe_repo"
     },

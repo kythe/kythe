@@ -25,7 +25,7 @@ import (
 	"net/http"
 	"strings"
 
-	"kythe/go/util/httpencoding"
+	"kythe.io/kythe/go/util/httpencoding"
 
 	"github.com/golang/protobuf/proto"
 )

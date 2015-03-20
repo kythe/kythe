@@ -23,7 +23,7 @@ import (
 	"fmt"
 	"io"
 
-	"kythe/go/storage/keyvalue"
+	"kythe.io/kythe/go/storage/keyvalue"
 
 	"github.com/golang/protobuf/proto"
 )

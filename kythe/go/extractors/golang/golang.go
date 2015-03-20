@@ -42,13 +42,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"kythe/go/extractors/govname"
-	"kythe/go/platform/indexpack"
+	"kythe.io/kythe/go/extractors/govname"
+	"kythe.io/kythe/go/platform/indexpack"
 
 	"golang.org/x/net/context"
 
-	apb "kythe/proto/analysis_proto"
-	spb "kythe/proto/storage_proto"
+	apb "kythe.io/kythe/proto/analysis_proto"
+	spb "kythe.io/kythe/proto/storage_proto"
 )
 
 var workingDir string

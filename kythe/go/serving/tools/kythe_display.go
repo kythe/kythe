@@ -25,13 +25,13 @@ import (
 	"strconv"
 	"strings"
 
-	"kythe/go/services/xrefs"
-	"kythe/go/util/kytheuri"
-	"kythe/go/util/schema"
+	"kythe.io/kythe/go/services/xrefs"
+	"kythe.io/kythe/go/util/kytheuri"
+	"kythe.io/kythe/go/util/schema"
 
-	srvpb "kythe/proto/serving_proto"
-	spb "kythe/proto/storage_proto"
-	xpb "kythe/proto/xref_proto"
+	srvpb "kythe.io/kythe/proto/serving_proto"
+	spb "kythe.io/kythe/proto/storage_proto"
+	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
 var (

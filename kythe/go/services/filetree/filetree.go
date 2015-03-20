@@ -25,13 +25,13 @@ import (
 	"path/filepath"
 	"time"
 
-	"kythe/go/services/graphstore"
-	"kythe/go/services/web"
-	"kythe/go/util/kytheuri"
-	"kythe/go/util/schema"
+	"kythe.io/kythe/go/services/graphstore"
+	"kythe.io/kythe/go/services/web"
+	"kythe.io/kythe/go/util/kytheuri"
+	"kythe.io/kythe/go/util/schema"
 
-	srvpb "kythe/proto/serving_proto"
-	spb "kythe/proto/storage_proto"
+	srvpb "kythe.io/kythe/proto/serving_proto"
+	spb "kythe.io/kythe/proto/storage_proto"
 )
 
 // Service provides an interface to explore a tree of VName files.

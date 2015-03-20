@@ -31,7 +31,8 @@ GoLibrary.prototype.getNinjaBuilds = function(target) {
                                    rule.fileFilter('src_file', '.go'));
   var pkgs = rule.getAllOutputsFor(target.inputsByKind['go_pkgs'], 'build',
                                    rule.fileFilter('go_archive'));
-  var pkgName = path.dirname(target.asPath());
+  var pkgName = (target.engine.settings.properties['go_package_prefix'] || '') +
+      path.dirname(target.asPath());
   var outPath = exports.PACKAGE_DIR + pkgName;
   return {
     BUILD: [{

@@ -24,8 +24,8 @@ import (
 	"io"
 	"os"
 
-	"kythe/go/services/graphstore"
-	"kythe/go/storage/keyvalue"
+	"kythe.io/kythe/go/services/graphstore"
+	"kythe.io/kythe/go/storage/keyvalue"
 
 	"github.com/jmhodges/levigo"
 )

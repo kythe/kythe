@@ -27,9 +27,9 @@ import (
 	"sort"
 	"time"
 
-	"kythe/go/services/web"
+	"kythe.io/kythe/go/services/web"
 
-	xpb "kythe/proto/xref_proto"
+	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
 // Service provides access to a Kythe graph for fast access to cross-references.

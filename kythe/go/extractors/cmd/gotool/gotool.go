@@ -29,12 +29,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"kythe/go/extractors/golang"
-	"kythe/go/platform/indexpack"
+	"kythe.io/kythe/go/extractors/golang"
+	"kythe.io/kythe/go/platform/indexpack"
 
 	"golang.org/x/net/context"
 
-	apb "kythe/proto/analysis_proto"
+	apb "kythe.io/kythe/proto/analysis_proto"
 )
 
 var (

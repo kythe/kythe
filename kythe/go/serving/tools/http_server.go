@@ -24,17 +24,17 @@ import (
 	"net/http"
 	"path/filepath"
 
-	"kythe/go/services/filetree"
-	"kythe/go/services/graphstore"
-	"kythe/go/services/search"
-	"kythe/go/services/xrefs"
-	ftsrv "kythe/go/serving/filetree"
-	srchsrv "kythe/go/serving/search"
-	xsrv "kythe/go/serving/xrefs"
-	"kythe/go/storage/gsutil"
-	"kythe/go/storage/leveldb"
-	"kythe/go/storage/table"
-	xstore "kythe/go/storage/xrefs"
+	"kythe.io/kythe/go/services/filetree"
+	"kythe.io/kythe/go/services/graphstore"
+	"kythe.io/kythe/go/services/search"
+	"kythe.io/kythe/go/services/xrefs"
+	ftsrv "kythe.io/kythe/go/serving/filetree"
+	srchsrv "kythe.io/kythe/go/serving/search"
+	xsrv "kythe.io/kythe/go/serving/xrefs"
+	"kythe.io/kythe/go/storage/gsutil"
+	"kythe.io/kythe/go/storage/leveldb"
+	"kythe.io/kythe/go/storage/table"
+	xstore "kythe.io/kythe/go/storage/xrefs"
 )
 
 var (

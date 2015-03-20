@@ -23,9 +23,9 @@ import (
 	"regexp"
 	"strings"
 
-	"kythe/go/storage/vnameutil"
+	"kythe.io/kythe/go/storage/vnameutil"
 
-	spb "kythe/proto/storage_proto"
+	spb "kythe.io/kythe/proto/storage_proto"
 )
 
 const (
