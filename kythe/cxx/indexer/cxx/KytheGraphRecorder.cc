@@ -32,10 +32,8 @@ static const std::string *const kNodeKindSpellings[] = {
 
 static const std::string *kEdgeKindSpellings[] = {
     new std::string("/kythe/edge/defines"),
-    new std::string("/kythe/edge/named"),
-    new std::string("/kythe/edge/typed"),
-    new std::string("/kythe/edge/ref"),
-    new std::string("/kythe/edge/param"),
+    new std::string("/kythe/edge/named"), new std::string("/kythe/edge/typed"),
+    new std::string("/kythe/edge/ref"), new std::string("/kythe/edge/param"),
     new std::string("/kythe/edge/aliases"),
     new std::string("/kythe/edge/completes/uniquely"),
     new std::string("/kythe/edge/completes"),
@@ -48,7 +46,15 @@ static const std::string *kEdgeKindSpellings[] = {
     new std::string("/kythe/edge/ref/includes"),
     new std::string("/kythe/edge/ref/queries"),
     new std::string("/kythe/edge/instantiates"),
-    new std::string("/kythe/edge/ref/expands/transitive")};
+    new std::string("/kythe/edge/ref/expands/transitive"),
+    new std::string("/kythe/edge/extends/public"),
+    new std::string("/kythe/edge/extends/protected"),
+    new std::string("/kythe/edge/extends/private"),
+    new std::string("/kythe/edge/extends"),
+    new std::string("/kythe/edge/extends/public/virtual"),
+    new std::string("/kythe/edge/extends/protected/virtual"),
+    new std::string("/kythe/edge/extends/private/virtual"),
+    new std::string("/kythe/edge/extends/virtual")};
 
 static const std::string *const kPropertySpellings[] = {
     new std::string("/kythe/loc"),

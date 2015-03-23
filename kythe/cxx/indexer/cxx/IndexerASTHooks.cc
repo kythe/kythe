@@ -907,6 +907,15 @@ bool IndexerASTVisitor::VisitRecordDecl(const clang::RecordDecl *Decl) {
               : GraphObserver::Specificity::Completes);
     }
   }
+  if (auto *CRD = dyn_cast<const clang::CXXRecordDecl>(Decl)) {
+    for (const auto &BCS : CRD->bases()) {
+      if (auto BCSType = BuildNodeIdForType(
+              BCS.getTypeSourceInfo()->getTypeLoc(), EmitRanges::Yes)) {
+        Observer->recordExtendsEdge(BodyDeclNode, BCSType.primary(),
+                                    BCS.isVirtual(), BCS.getAccessSpecifier());
+      }
+    }
+  }
   Observer->recordRecordNode(BodyDeclNode, RK,
                              GraphObserver::Completeness::Definition);
   return true;
@@ -2007,15 +2016,17 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
     for (unsigned P = 0; P < Params; ++P) {
       MaybeFew<GraphObserver::NodeId> ParmType;
       if (const ParmVarDecl *PVD = T.getParam(P)) {
-        const auto *DPT =
-            DT && P < DT->getNumParams() ? DT->getParamType(P).getTypePtr() : nullptr;
+        const auto *DPT = DT && P < DT->getNumParams()
+                              ? DT->getParamType(P).getTypePtr()
+                              : nullptr;
         ParmType = BuildNodeIdForType(
             PVD->getTypeSourceInfo()->getTypeLoc(),
             DPT ? DPT : PVD->getTypeSourceInfo()->getTypeLoc().getTypePtr(),
             EmitRanges);
       } else {
-        ParmType =
-            BuildNodeIdForType(DT && P < DT->getNumParams() ? DT->getParamType(P) : FT->getParamType(P));
+        ParmType = BuildNodeIdForType(DT && P < DT->getNumParams()
+                                          ? DT->getParamType(P)
+                                          : FT->getParamType(P));
       }
       if (!ParmType) {
         return ParmType;
@@ -2198,6 +2209,9 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
     // or template template parameter. Non-dependent template specializations
     // appear as different types.
     const auto &T = Type.castAs<TemplateSpecializationTypeLoc>();
+    // TODO(zarko): Consider linking directly to the instantiation or partial
+    // specialization here if one has been created. These can be found with
+    // ClassTemplateDecl::{findSpecialization, findPartialSpecialization}.
     auto TemplateName = BuildNodeIdForTemplateName(
         T.getTypePtr()->getTemplateName(), T.getTemplateNameLoc());
     if (!TemplateName) {

@@ -24,6 +24,7 @@
 
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/SourceManager.h"
+#include "clang/Basic/Specifiers.h"
 #include "clang/Lex/Preprocessor.h"
 
 #include "llvm/ADT/APSInt.h"
@@ -437,6 +438,15 @@ public:
   /// \param ParentNodeId The identifier for the parent node.
   virtual void recordChildOfEdge(const NodeId &ChildNodeId,
                                  const NodeId &ParentNodeId) {}
+
+  /// \brief Records that a record directly inherits from another record.
+  /// \param InheritingNodeId The inheriting record type (the derived class).
+  /// \param InheritedTypeId The record type being inherited (the base class).
+  /// \param IsVirtual True if the inheritance is virtual.
+  /// \param AS The access specifier for this inheritance.
+  virtual void recordExtendsEdge(const NodeId &InheritingNodeId,
+                                 const NodeId &InheritedTypeId, bool IsVirtual,
+                                 clang::AccessSpecifier AS) {}
 
   /// \brief Records a use site for some decl.
   virtual void recordDeclUseLocation(const Range &SourceRange,

@@ -174,6 +174,10 @@ class KytheGraphObserver : public GraphObserver {
 
   NodeId recordNominalTypeNode(const NameId &TypeName) override;
 
+  void recordExtendsEdge(const NodeId &InheritingNodeId,
+                         const NodeId &InheritedTypeId, bool IsVirtual,
+                         clang::AccessSpecifier AS) override;
+
   void recordDeclUseLocation(const Range &SourceRange,
                              const NodeId &DeclId) override;
 

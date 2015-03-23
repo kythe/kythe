@@ -96,6 +96,9 @@ one_case "${BASEDIR}/macros_subst_one_level.cc" "c++1y" --ignore_dups=true
 one_case "${BASEDIR}/macros_undef.cc" "c++1y"
 one_case "${BASEDIR}/rec_anon_struct.cc" "c++1y" --ignore_dups=true
 one_case "${BASEDIR}/rec_class.cc" "c++1y"
+one_case "${BASEDIR}/rec_class_base.cc" "c++1y" --ignore_dups=true
+one_case "${BASEDIR}/rec_class_base_dependent.cc" "c++1y"
+one_case "${BASEDIR}/rec_class_base_recurring.cc" "c++1y"
 one_case "${BASEDIR}/rec_class_header_completes.cc" "c++1y"
 one_case "${BASEDIR}/rec_class_macro.cc" "c++1y"
 one_case "${BASEDIR}/rec_struct.c" "c99"

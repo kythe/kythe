@@ -77,7 +77,15 @@ enum class EdgeKindID {
   kRefIncludes,
   kRefQueries,
   kInstantiates,
-  kRefExpandsTransitive
+  kRefExpandsTransitive,
+  kExtendsPublic,
+  kExtendsProtected,
+  kExtendsPrivate,
+  kExtends,
+  kExtendsPublicVirtual,
+  kExtendsProtectedVirtual,
+  kExtendsPrivateVirtual,
+  kExtendsVirtual
 };
 
 /// \brief Returns the Kythe spelling of `node_kind_id`

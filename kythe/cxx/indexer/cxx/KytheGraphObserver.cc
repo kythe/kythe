@@ -521,6 +521,36 @@ void KytheGraphObserver::recordTypeSpellingLocation(
   RecordAnchor(type_source_range, VNameFromNodeId(type_id), EdgeKindID::kRef);
 }
 
+void KytheGraphObserver::recordExtendsEdge(const NodeId &from, const NodeId &to,
+                                           bool is_virtual,
+                                           clang::AccessSpecifier specifier) {
+  switch (specifier) {
+    case clang::AccessSpecifier::AS_public:
+      recorder_->AddEdge(VNameFromNodeId(from),
+                         is_virtual ? EdgeKindID::kExtendsPublicVirtual
+                                    : EdgeKindID::kExtendsPublic,
+                         VNameFromNodeId(to));
+      break;
+    case clang::AccessSpecifier::AS_protected:
+      recorder_->AddEdge(VNameFromNodeId(from),
+                         is_virtual ? EdgeKindID::kExtendsProtectedVirtual
+                                    : EdgeKindID::kExtendsProtected,
+                         VNameFromNodeId(to));
+      break;
+    case clang::AccessSpecifier::AS_private:
+      recorder_->AddEdge(VNameFromNodeId(from),
+                         is_virtual ? EdgeKindID::kExtendsPrivateVirtual
+                                    : EdgeKindID::kExtendsPrivate,
+                         VNameFromNodeId(to));
+      break;
+    default:
+      recorder_->AddEdge(
+          VNameFromNodeId(from),
+          is_virtual ? EdgeKindID::kExtendsVirtual : EdgeKindID::kExtends,
+          VNameFromNodeId(to));
+  }
+}
+
 void KytheGraphObserver::recordDeclUseLocation(
     const GraphObserver::Range &source_range, const NodeId &node) {
   RecordAnchor(source_range, VNameFromNodeId(node), EdgeKindID::kRef);

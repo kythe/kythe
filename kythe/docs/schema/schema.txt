@@ -237,6 +237,47 @@ Notes::
 int x;
 --------------------------------------------------------------------------------
 
+[[extends]]
+extends
+~~~~~~~
+
+Brief description::
+  A *extends* B if A is a direct nominal subtype of B.
+Commonly arises from::
+  inheritance
+Points from::
+  semantic nodes
+Points toward::
+  type/semantic nodes
+Ordinals are used::
+  never
+Notes::
+  An indexer may emit more descriptive edges with the *extends* prefix.
+  For example, C++ will emit *extends/public*, *extends/public/virtual*,
+  *extends/protected*, *extends/protected/virtual*, *extends/private*,
+  *extends/private/virtual*, and *extends/virtual*.
+
+[kythe,Java,"Classes extend classes."]
+--------------------------------------------------------------------------------
+package pkg;
+public class E {
+  //- @A defines ClassA
+  static class A { }
+  //- @B defines ClassB
+  //- ClassB extends ClassA
+  static class B extends A { }
+}
+--------------------------------------------------------------------------------
+
+[kythe,C++,"Classes extend classes."]
+--------------------------------------------------------------------------------
+//- @A defines ClassA
+class A { };
+//- @B defines ClassB
+//- ClassB extends/public ClassA
+class B : public A { };
+--------------------------------------------------------------------------------
+
 [[instantiates]]
 instantiates
 ~~~~~~~~~~~
