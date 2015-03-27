@@ -28,6 +28,7 @@ import (
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema"
+	"kythe.io/kythe/go/util/stringset"
 
 	srvpb "kythe.io/kythe/proto/serving_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
@@ -170,6 +171,26 @@ func displayEdges(edges *xpb.EdgesReply) error {
 					return err
 				}
 			}
+		}
+	}
+	return nil
+}
+
+func displayTargets(edges []*xpb.EdgeSet) error {
+	targets := stringset.New()
+	for _, es := range edges {
+		for _, g := range es.Group {
+			targets.Add(g.TargetTicket...)
+		}
+	}
+
+	if *displayJSON {
+		return json.NewEncoder(out).Encode(targets.Slice())
+	}
+
+	for target := range targets {
+		if _, err := fmt.Fprintln(out, target); err != nil {
+			return err
 		}
 	}
 	return nil

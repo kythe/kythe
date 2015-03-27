@@ -53,10 +53,11 @@ var (
 	factSizeThreshold int
 
 	// edges flags
-	countOnly bool
-	edgeKinds string
-	pageToken string
-	pageSize  int
+	countOnly   bool
+	targetsOnly bool
+	edgeKinds   string
+	pageToken   string
+	pageSize    int
 
 	// source/refs flags
 	decorSpan string
@@ -131,6 +132,7 @@ var (
 		"Retrieve outward edges from a node",
 		func(flag *flag.FlagSet) {
 			flag.BoolVar(&countOnly, "count_only", false, "Only print counts per edge kind")
+			flag.BoolVar(&targetsOnly, "targets_only", false, "Only display edge targets")
 			flag.StringVar(&edgeKinds, "kinds", "", "Comma-separated list of edge kinds to return (default returns all)")
 			flag.StringVar(&pageToken, "page_token", "", "Edges page token")
 			flag.IntVar(&pageSize, "page_size", 0, "Maximum number of edges returned (0 lets the service use a sensible default)")
@@ -150,6 +152,8 @@ var (
 			}
 			if countOnly {
 				return displayEdgeCounts(reply)
+			} else if targetsOnly {
+				return displayTargets(reply.EdgeSet)
 			}
 			return displayEdges(reply)
 		})
