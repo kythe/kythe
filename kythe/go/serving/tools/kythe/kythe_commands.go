@@ -44,7 +44,9 @@ var (
 	idx search.Service
 
 	// ls flags
-	lsURIs bool
+	lsURIs    bool
+	filesOnly bool
+	dirsOnly  bool
 
 	// node flags
 	nodeFilters       string
@@ -79,8 +81,14 @@ var (
 		"List a directory's contents",
 		func(flag *flag.FlagSet) {
 			flag.BoolVar(&lsURIs, "uris", false, "Display files/directories as Kythe URIs")
+			flag.BoolVar(&filesOnly, "files", false, "Display only files")
+			flag.BoolVar(&dirsOnly, "dirs", false, "Display only directories")
 		},
 		func(flag *flag.FlagSet) error {
+			if filesOnly && dirsOnly {
+				return errors.New("--files and --dirs are mutually exclusive")
+			}
+
 			if len(flag.Args()) == 0 {
 				cr, err := ft.CorporaRoots()
 				if err != nil {
@@ -109,6 +117,13 @@ var (
 			} else if dir == nil {
 				return fmt.Errorf("no such directory: %q in corpus %q (root %q)", path, corpus, root)
 			}
+
+			if filesOnly {
+				dir.Subdirectory = nil
+			} else if dirsOnly {
+				dir.FileTicket = nil
+			}
+
 			return displayDirectory(dir)
 		})
 
