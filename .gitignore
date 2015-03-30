@@ -17,6 +17,7 @@ MANIFEST-*
 *.deb
 
 # Build artifacts
+/bazel-*
 /.campfire_lock
 /.campfire_state
 /campfire-out
