@@ -1,0 +1,262 @@
+---
+title: Kythe's Command-line Tool
+author: Cody Schroeder
+layout: post
+---
+
+Every good interface deserves a good command-line tool.
+
+Along with the sample web UI, Kythe also provides a basic command-line tool for
+the xrefs, filetree, and search interfaces.  The Kythe tool can use serving
+tables directly or communicate with a remote API service.  By default, it talks
+to the API at https://xrefs-dot-kythe-repo.appspot.com/ which serves a
+recentfootnote:[The serving data for the sample web UI is currently updated
+manually which can lead to stale data over time.] index of Kythe's own sources.
+
+All of the information surfaced by the sample web UI, and *more*, can be
+retrieved with the Kythe command-line tool.  It's simply a wrapper around the
+protobuf service APIs that exist in
+http://kythe.io/repo/kythe/go/services/[kythe/go/services] with some extra
+usability features.
+
+So, what _exactly_ can the tool do?  Let's build it and then check its `help`
+command.
+
+[source,shell]
+----
+$ ./campfire build //kythe/go/serving/tools:kythe
+$ alias kythe="$PWD/campfire-out/bin/kythe/go/serving/tools/kythe"
+
+$ kythe help --short
+----
+
+[role=output]
+.Output
+----
+Usage: kythe <global-flags> <command> <flags>
+
+Examples:
+  kythe ls --uris kythe://kythe?path=kythe/cxx/common
+  kythe search --path kythe/cxx/common/CommandLineUtils.h /kythe/node/kind file
+  kythe node kythe:?lang=java#java.util.List
+
+Commands:
+# Retrieve outward edges from a node
+edges [--count_only] [--kinds edgeKind1,edgeKind2,...] [--page_token token] [--page_size num] <ticket>
+
+# Print help information for the given command
+help [command]
+
+# List a directory's contents
+ls [--uris] [directory-uri]
+
+# Retrieve a node's facts
+node [--filters factFilter1,factFilter2,...] [--max_fact_size] <ticket>
+
+# List a file's anchor references
+refs [--format spec] [--dirty file] [--span span] <file-ticket>
+
+# Search for nodes based on partial components and fact values.
+search [--corpus c] [--sig s] [--root r] [--lang l] [--path p] [factName factValue]...
+
+# Retrieve a file's source text
+source [--span span] <file-ticket>
+----
+
+Even with these _basic_ commands, one can build sophisticated queries and gather
+rich data about Kythe indexed source code.footnote:[Special attention should be
+made that this tool is built to be *very simple*.  It is entirely meant to be
+built upon to provide better abstractions for clients.]  The tool can browse all
+known node facts, edges, directories, files, and file anchor references.  By
+combining these commands, one can begin to uncover larger structures within the
+graph and then use that knowledge to better maintain, refactor, and otherwise
+understand source code.
+
+As a simple example, we can list the link:/docs/schema/#name[names] of all
+defined classes within the files of a directory.  It's important to note that
+the following script is *completely language-agnostic*; it works for any Kythe
+supported language with classes.
+
+[source,shell]
+----
+print_classes() {
+  kythe ls --uris --files "kythe://kythe?path=$1" \
+    | parallel kythe refs --format "'@target@ @edgeKind@ @nodeKind@ @subkind@'" \
+    | awk '$2 == "/kythe/edge/defines" && $3 == "record" && $4 == "class" { print $1 }' \
+    | xargs kythe edges --targets_only --kinds /kythe/edge/named \
+    | awk '{ print substr($0, index($0, "#")+1) }' \
+    | parallel python -c '"import urllib, sys; print urllib.unquote(sys.argv[1])"'
+}
+
+print_classes kythe/java/com/google/devtools/kythe/analyzers/java/
+print_classes kythe/cxx/tools/fyi/
+----
+
+[role=output]
+.Output
+----
+com.google.devtools.kythe.analyzers.java.JavaEntrySets
+com.google.devtools.kythe.analyzers.java.KytheTreeScanner
+com.google.devtools.kythe.analyzers.java.JavaNode
+com.google.devtools.kythe.analyzers.java.JavaIndexer.StreamFactEmitter
+com.google.devtools.kythe.analyzers.java.FilePositions
+com.google.devtools.kythe.analyzers.java.JavaIndexer
+com.google.devtools.kythe.analyzers.java.KytheJavacAnalyzer
+
+Action:fyi:kythe#c
+FileTracker:fyi:kythe#c
+ActionFactory:fyi:kythe#c
+PreprocessorHooks:fyi:kythe#c
+----
+
+There are many higher-level data that can be easily collected by using the
+Kythe.  The rest of this post gives a small collection of such use cases to
+spark the imagination, but there are many, many more (including the sample web
+UI).  We hope that the greater community helps us in creating the many tools,
+fostering a large Kythe ecosystem that supports a vast range of editors,
+refactoring tools, source browsers, code health analyzers, and everything in
+between.
+
+'''
+
+== Example Usages
+
+=== Finding a file's ticket
+
+[source,shell]
+----
+# Direct search
+$ kythe search --path kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java /kythe/node/kind file
+
+# Lookup by directory listing
+$ kythe ls --uris kythe://kythe?path=kythe/java/com/google/devtools/kythe/analyzers/base \
+  | grep EntrySet.java
+----
+
+[role=output]
+.Output
+----
+kythe://kythe?lang=java?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java#03e35c4ead4f300d85f196e988d1d0d649577c178b8d2acd38c9762693afdb1e
+Total Results: 1
+
+kythe://kythe?lang=java?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java#03e35c4ead4f300d85f196e988d1d0d649577c178b8d2acd38c9762693afdb1e
+----
+
+=== Displaying a file's decorations
+
+[source,shell]
+----
+# Get the file's ticket
+$ ticket="$(kythe search --path kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java /kythe/node/kind file)"
+
+# Display source text references from line 17 to 25
+$ kythe refs --span 17-25 "$ticket" | column -t
+
+# Display the corresponding source text
+$ kythe source --span 17-25 "$ticket"
+----
+
+[role=output]
+.Output
+----
+/kythe/edge/ref  17:8-17:48   package    kythe:?lang=java#23d9461e1b9e98e148846d9f763afea35ec1ff1fd5a8b2a53ac6d0a3b955fed4
+/kythe/edge/ref  19:30-19:43  record     kythe://third_party?lang=java?path=com/google/common/base/Preconditions.java?root=guava#e3d7e3936e1ca0e14dd144b2c808c8aa6dea41bf0bd5d7fd5064b2412d534857
+/kythe/edge/ref  20:33-20:46  record     kythe://third_party?lang=java?path=com/google/common/collect/ImmutableList.java?root=guava#a56c3e772d6b788f59bd09b07071dac5904672b5a188b7cd1c68db3f5dccbf9a
+/kythe/edge/ref  21:33-21:45  record     kythe://third_party?lang=java?path=com/google/common/collect/ImmutableMap.java?root=guava#2c303ad6afb24776d0d929b7c4f371a8181da961889ac682c8bdb75635d1819f
+/kythe/edge/ref  22:33-22:51  record     kythe://third_party?lang=java?path=com/google/common/collect/ImmutableSortedMap.java?root=guava#e3069c27a68c90e1bd1cd89ef951ac5a7b750cb8bf85cbd9acd59cd8b9478bc3
+/kythe/edge/ref  23:30-23:42  interface  kythe://third_party?lang=java?path=com/google/common/hash/HashFunction.java?root=guava#6563a67450f299c8c72644d0aa7df11cf97590c87457fcc6892247a71c1fe455
+/kythe/edge/ref  24:30-24:36  interface  kythe://third_party?lang=java?path=com/google/common/hash/Hasher.java?root=guava#9848e20c021347330cf46021309886b174594183413a67de10c98d444455da87
+
+package com.google.devtools.kythe.analyzers.base;
+
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hasher;
+----
+
+=== List all definitions in a file
+
+[source,shell]
+----
+$ ticket="$(kythe search --path kythe/cxx/common/path_utils.h /kythe/node/kind file)"
+$ kythe refs "$ticket" \
+  | awk '$1 == "/kythe/edge/defines"' \
+  | column -t
+----
+
+[role=output]
+.Output
+----
+/kythe/edge/defines  18:8-18:38   macro     kythe://kythe?lang=c%2B%2B?path=kythe/cxx/common/path_utils.h#KYTHE_CXX_COMMON_PATH_UTILS_H_%23m%40662%23kythe%23kythe%2Fcxx%2Fcommon%2Fpath_utils.h
+/kythe/edge/defines  32:12-32:26  function  kythe:?lang=c%2B%2B#RelativizePath%3Akythe%23n%401118kythe%2Fkythe%2Fcxx%2Fcommon%2Fpath_utils.h1243%40.0
+/kythe/edge/defines  32:46-32:59  variable  kythe:?lang=c%2B%2B#to_relativize%3ARelativizePath%3Akythe%23n%401145kythe%2Fkythe%2Fcxx%2Fcommon%2Fpath_utils.h1164%40.0
+/kythe/edge/defines  33:46-33:64  variable  kythe:?lang=c%2B%2B#relativize_against%3ARelativizePath%3Akythe%23n%401206kythe%2Fkythe%2Fcxx%2Fcommon%2Fpath_utils.h1225%40.0
+/kythe/edge/defines  37:12-37:33  function  kythe:?lang=c%2B%2B#MakeCleanAbsolutePath%3Akythe%23n%401363kythe%2Fkythe%2Fcxx%2Fcommon%2Fpath_utils.h1423%40.0
+/kythe/edge/defines  37:53-37:60  variable  kythe:?lang=c%2B%2B#in_path%3AMakeCleanAbsolutePath%3Akythe%23n%401397kythe%2Fkythe%2Fcxx%2Fcommon%2Fpath_utils.h1416%40.0
+/kythe/edge/defines  44:12-44:21  function  kythe:?lang=c%2B%2B#CleanPath%3Akythe%23n%401586kythe%2Fkythe%2Fcxx%2Fcommon%2Fpath_utils.h1631%40.0
+/kythe/edge/defines  44:38-44:45  variable  kythe:?lang=c%2B%2B#in_path%3ACleanPath%3Akythe%23n%401608kythe%2Fkythe%2Fcxx%2Fcommon%2Fpath_utils.h1624%40.0
+/kythe/edge/defines  47:12-47:20  function  kythe:?lang=c%2B%2B#JoinPath%3Akythe%23n%401710kythe%2Fkythe%2Fcxx%2Fcommon%2Fpath_utils.h1767%40.0
+/kythe/edge/defines  47:37-47:38  variable  kythe:?lang=c%2B%2B#a%3AJoinPath%3Akythe%23n%401731kythe%2Fkythe%2Fcxx%2Fcommon%2Fpath_utils.h1747%40.0
+/kythe/edge/defines  47:56-47:57  variable  kythe:?lang=c%2B%2B#b%3AJoinPath%3Akythe%23n%401750kythe%2Fkythe%2Fcxx%2Fcommon%2Fpath_utils.h1766%40.0
+----
+
+=== List the members of a class
+
+[source,shell]
+----
+$ java_class="com.google.devtools.kythe.analyzers.base.EntrySet"
+$ ticket="$(kythe edges --targets_only --kinds %/kythe/edge/named "kythe:?lang=java#$java_class" \
+    | head -n1)"
+
+# Display the ticket of EntrySet's members
+$ kythe edges --targets_only --kinds %/kythe/edge/childof "$ticket"
+
+# Display the names of EntrySet's members
+$ kythe edges --targets_only --kinds %/kythe/edge/childof "$ticket" \
+  | xargs kythe edges --targets_only --kinds /kythe/edge/named \
+  | awk '{ print substr($0, index($0, "#")+1) }' \
+  | parallel python -c '"import urllib, sys; print urllib.unquote(sys.argv[1])"'
+----
+
+[role=output]
+.Output
+----
+kythe://kythe?lang=java?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java#03956569bc7dc10ac1e5a0a0741d96ed2e53c530d12bd612b018dd1b295678ca
+kythe://kythe?lang=java?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java#b5a90d2374e67e6ad8ace2f68e428709fdad6b4ac36f5286f2342163f079c7d8
+kythe://kythe?lang=java?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java#bbbfed76e2abaaa205e91e1899709c3bb6a38db41dc8e8da4b5884bd3691462f
+kythe://kythe?lang=java?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java#d0d8765e65a21cbd017083f5229dc9c916f5d4b85ba2a8ee151bca27d0b87930
+kythe://kythe?lang=java?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java#d2eb72c69845bd1de760e2b93875bd5fe8c5dd93fa5d9ff75c82f60bc122eb48
+kythe://kythe?lang=java?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java#2c10b781b8bee2c8025ed19098d03421933aa3a758fa883875449a71b49b99cc
+kythe://kythe?lang=java?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java#3c7cd053fe0421c8993224faaf9ca8e91dfbe9d1fc6a8dd3051f3c01bc6fe34c
+kythe://kythe?lang=java?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java#68acb557454500d179da5c797ebd51d32a531fa29c0642afb566fdafa01c313a
+kythe://kythe?lang=java?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java#ab1b40fa4e30078a73ab9eab6f818a4d5124dfdf0940632c670ada67d54958de
+kythe://kythe?lang=java?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java#52969240cab340ec9a881af2e884e7274cd295324a6f11856a963b86265928e0
+kythe://kythe?lang=java?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java#899236dd842ccee0e9c185f492173903dcf6616ba720ea3142023ff59276e03e
+kythe://kythe?lang=java?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java#c198d5ff2b91ce95bd5283e8c29abcb69427228278762df8b5d799f090aa55cf
+kythe://kythe?lang=java?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java#0889c55a216de6ec548a0e7488a11deed63b7df53442d708232640e69dac0537
+kythe://kythe?lang=java?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java#373ee49c099b6dac68c0815f7b307b3bcb42da27f272d02b9fb77cfab1f2ddbd
+kythe://kythe?lang=java?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java#7fa73e034f622297d64d4c9d9506c4e167811440021acdc5e94603e74ccb5597
+kythe://kythe?lang=java?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java#d30c6440fe0cfe25af5c2234d30797250b7e80274b327863d7dcb1738d289ed0
+kythe://kythe?lang=java?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java#fbca931303f0057b49d4a945dea9ae9529353beb471be9e870b0b8690b61ce15
+
+com.google.devtools.kythe.analyzers.base.EntrySet.toString()
+com.google.devtools.kythe.analyzers.base.EntrySet.SIGNATURE_HASH_FUNCTION
+com.google.devtools.kythe.analyzers.base.EntrySet.buildSignature(com.google.common.collect.ImmutableList<java.lang.String>,com.google.common.collect.ImmutableSortedMap<java.lang.String,byte[]>)
+com.google.devtools.kythe.analyzers.base.EntrySet.EMPTY_PROPERTIES
+com.google.devtools.kythe.analyzers.base.EntrySet.source
+com.google.devtools.kythe.analyzers.base.EntrySet.emitted
+com.google.devtools.kythe.analyzers.base.EntrySet.finalize()
+com.google.devtools.kythe.analyzers.base.EntrySet.getVName()
+com.google.devtools.kythe.analyzers.base.EntrySet.properties
+com.google.devtools.kythe.analyzers.base.EntrySet.EntrySet(com.google.devtools.kythe.proto.Storage.VName,java.lang.String,com.google.devtools.kythe.proto.Storage.VName,com.google.common.collect.ImmutableMap<java.lang.String,byte[]>)
+com.google.devtools.kythe.analyzers.base.EntrySet.emit(com.google.devtools.kythe.analyzers.base.FactEmitter)
+com.google.devtools.kythe.analyzers.base.EntrySet.edgeKind
+com.google.devtools.kythe.analyzers.base.EntrySet.extendVName(com.google.devtools.kythe.proto.Storage.VName,com.google.devtools.kythe.proto.Storage.VName)
+com.google.devtools.kythe.analyzers.base.EntrySet.PROPERTY_VALUE_CHARSET
+com.google.devtools.kythe.analyzers.base.EntrySet.Builder
+com.google.devtools.kythe.analyzers.base.EntrySet.logger
+com.google.devtools.kythe.analyzers.base.EntrySet.target
+----
