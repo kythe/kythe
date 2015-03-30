@@ -42,6 +42,29 @@ Kythe relies on the following external dependencies:
 * [docker](https://www.docker.com/) (for release images `//kythe/release/...` and `//buildtools/docker)
 * [leiningen](http://leiningen.org/) (used to build `kythe/web/ui`)
 
+### Using the Go tool
+
+Kythe's Go sources can be directly built with the `go` tool as well as with
+`campfire`.
+
+{% highlight bash %}
+# Install LevelDB/snappy libraries for https://github.com/jmhodges/levigo
+sudo apt-get install libleveldb-dev libsnappy-dev
+
+# With an appropriate GOPATH setup
+go get kythe.io/kythe/...
+
+# Using the vendored versions of the needed third_party Go libraries
+git clone https://github.com/google/kythe.git
+GOPATH=$GOPATH:$PWD/kythe/third_party/go go get kythe.io/kythe/...
+{% endhighlight %}
+
+The additional benefits of using `campfire` are the built-in support for
+generating the Go protobuf code in `kythe/proto/` and the automatic usage of the
+checked-in `third_party/go` libraries (instead of adding to your `GOPATH`).
+However, for quick access to Kythe's Go sources (which implement most of Kythe's
+platform and language-agnostic services), using the Go tool is very convenient.
+
 ## Code review
 
 All changes to Kythe must go through code review before being submitted, and
