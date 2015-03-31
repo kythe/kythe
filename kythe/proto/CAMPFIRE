@@ -21,6 +21,7 @@
       ]
     },
     "properties": {
+      "has_services": 1,
       "java_api": true,
       "javacopts": "-source 7 -target 7",
       "cc_api": true,
@@ -78,6 +79,7 @@
       ]
     },
     "properties": {
+      "has_services": 1,
       "java_api": true,
       "javacopts": "-source 7 -target 7",
       "cc_api": true,
@@ -123,6 +125,7 @@
       ]
     },
     "properties": {
+      "has_services": 1,
       "go_api": true,
       "cc_api": true
     }
@@ -139,6 +142,7 @@
       ]
     },
     "properties": {
+      "has_services": 1,
       "go_api": true
     }
   }

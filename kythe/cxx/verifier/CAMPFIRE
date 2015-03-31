@@ -67,6 +67,9 @@
   {
     "name": "testlib",
     "kind": "cc_library",
+    "properties": {
+      "testonly": 1
+    },
     "inputs": {
       "srcs": [
         "verifier_unit_test.cc"

@@ -37,6 +37,9 @@
   {
     "name": "testlib",
     "kind": "cc_library",
+    "properties": {
+      "testonly": 1
+    },
     "inputs": {
       "srcs": [
         "KytheIndexerUnitTest.cc"

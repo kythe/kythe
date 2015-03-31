@@ -110,6 +110,9 @@
   {
     "name": "commandline_testlib",
     "kind": "cc_library",
+    "properties": {
+      "testonly": 1
+    },
     "inputs": {
       "srcs": [
         "CommandLineUtilsTest.cc"
@@ -133,6 +136,9 @@
   {
     "name": "file_vname_generator_testlib",
     "kind": "cc_library",
+    "properties": {
+      "testonly": 1
+    },
     "inputs": {
       "srcs": [
         "file_vname_generator_test.cc"
@@ -158,6 +164,9 @@
   {
     "name": "path_utils_testlib",
     "kind": "cc_library",
+    "properties": {
+      "testonly": 1
+    },
     "inputs": {
       "srcs": [
         "path_utils_test.cc"
@@ -181,6 +190,9 @@
   {
     "name": "index_pack_testlib",
     "kind": "cc_library",
+    "properties": {
+      "testonly": 1
+    },
     "inputs": {
       "srcs": [
         "index_pack_test.cc"
@@ -211,6 +223,9 @@
   {
     "name": "json_proto_testlib",
     "kind": "cc_library",
+    "properties": {
+      "testonly": 1
+    },
     "inputs": {
       "srcs": [
         "json_proto_test.cc"
@@ -237,6 +252,9 @@
   {
     "name": "net_client_testlib",
     "kind": "cc_library",
+    "properties": {
+      "testonly": 1
+    },
     "inputs": {
       "srcs": [
         "net_client_test.cc"
@@ -264,6 +282,9 @@
   {
     "name": "kythe_uri_testlib",
     "kind": "cc_library",
+    "properties": {
+      "testonly": 1
+    },
     "inputs": {
       "srcs": [
         "kythe_uri_test.cc"

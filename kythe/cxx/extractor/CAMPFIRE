@@ -53,6 +53,9 @@
   {
     "name": "testlib",
     "kind": "cc_library",
+    "properties": {
+      "testonly": 1
+    },
     "inputs": {
       "srcs": [
         "cxx_extractor_test.cc"
