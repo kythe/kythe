@@ -45,7 +45,11 @@ exports.Target = function(id, json) {
 
 exports.Target.prototype = new graphs.Node();
 exports.Target.prototype.asPath = function() {
-  return this.id.substring(2).replace(':', '/');
+  var path = this.id;
+  if (path.startsWith('//')) {
+    path = path.substring(2);
+  }
+  return path.replace(':', '/');
 };
 
 exports.Target.prototype.getRoot = function(kind) {

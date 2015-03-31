@@ -4,6 +4,7 @@ var child_process = require('child_process');
 var fs = require('fs');
 var util = require('util');
 
+var bazel = require('./bazel.js');
 var engine = require('./engine.js');
 var rule = require('./rule.js');
 var shared = require('./shared.js');
@@ -132,6 +133,9 @@ exports.commands = {
     }
   }, 'Formats CAMPFIRE files, use -n to see files to be rewritten' +
       ' without applying the rewrite.'),
+  bazel: new Command(function(engine, args) {
+    new bazel.Converter(engine).convertTargets(args);
+  }, 'Converts the given targets to the Bazel build language'),
   clean: new Command(function(engine, args) {
     if (fs.existsSync('campfire-out')) {
       shared.rmdirs('campfire-out');

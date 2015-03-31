@@ -1,0 +1,19 @@
+---
+rules:
+  java_library:
+    rule: java_library
+    srcs: "#inputsByKind.srcs"
+    deps: "#inputsByKind.jars"
+  java_external_jar:
+    rule: java_import
+    jars: "#inputsByKind.srcs"
+  proto_library:
+    rule: genproto
+    src: "*#inputsByKind.srcs"
+    deps: "#inputsByKind.proto_libs"
+translations:
+  direct:
+    "//third_party/protobuf:protobuf_jar": "//third_party:protobuf"
+  prefix: {}
+  exclude:
+    - "//third_party/protobuf:protobuf_jar"
