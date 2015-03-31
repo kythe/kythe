@@ -118,7 +118,9 @@ func VNameVal(field, val string) []byte {
 // FactVal returns an inverted index value for a node fact.
 func FactVal(name string, val []byte) []byte {
 	var buf bytes.Buffer
-	buf.Grow(len(name) + 1 + len(val))
+	buf.Grow(len(indexTablePrefix) + len(factValuePrefix) + len(name) + len(labelValSep) + len(val))
+	buf.WriteString(indexTablePrefix)
+	buf.WriteString(factValuePrefix)
 	buf.WriteString(name)
 	buf.WriteString(labelValSep)
 	buf.Write(val)
