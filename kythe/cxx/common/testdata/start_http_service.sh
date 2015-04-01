@@ -68,6 +68,7 @@ cat "${TEST_JSON:?no test json for test}" \
     | "${KYTHE_ENTRYSTREAM}" -read_json=true  \
     | "${KYTHE_WRITE_ENTRIES}" -graphstore "${OUT_DIR}/gs" 2>/dev/null
 "${KYTHE_WRITE_TABLES}" -graphstore "${OUT_DIR}/gs" -out="${OUT_DIR}/tables" 2>/dev/null
+# TODO(zarko): test against GRPC server implementation
 "${KYTHE_HTTP_SERVER}" -serving_table "${OUT_DIR}/tables" -listen="${LISTEN_TO}" 2>/dev/null &
 SERVER_PID=$!
 trap 'kill $SERVER_PID' EXIT ERR INT

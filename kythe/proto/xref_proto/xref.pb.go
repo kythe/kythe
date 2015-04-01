@@ -24,6 +24,15 @@ package xref_proto
 
 import proto "github.com/golang/protobuf/proto"
 
+import (
+	context "golang.org/x/net/context"
+	grpc "google.golang.org/grpc"
+)
+
+// Reference imports to suppress errors if they are not otherwise used.
+var _ context.Context
+var _ grpc.ClientConn
+
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
 
@@ -373,4 +382,125 @@ func (*DecorationsReply_Reference) ProtoMessage()    {}
 
 func init() {
 	proto.RegisterEnum("kythe.proto.Location_Kind", Location_Kind_name, Location_Kind_value)
+}
+
+// Client API for XRefService service
+
+type XRefServiceClient interface {
+	// Nodes returns a subset of the facts for each of the requested nodes.
+	Nodes(ctx context.Context, in *NodesRequest, opts ...grpc.CallOption) (*NodesReply, error)
+	// Edges returns a subset of the outbound edges for each of a set of
+	// requested nodes.
+	Edges(ctx context.Context, in *EdgesRequest, opts ...grpc.CallOption) (*EdgesReply, error)
+	// Decorations returns an index of the nodes and edges associated with a
+	// particular file node.
+	Decorations(ctx context.Context, in *DecorationsRequest, opts ...grpc.CallOption) (*DecorationsReply, error)
+}
+
+type xRefServiceClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewXRefServiceClient(cc *grpc.ClientConn) XRefServiceClient {
+	return &xRefServiceClient{cc}
+}
+
+func (c *xRefServiceClient) Nodes(ctx context.Context, in *NodesRequest, opts ...grpc.CallOption) (*NodesReply, error) {
+	out := new(NodesReply)
+	err := grpc.Invoke(ctx, "/kythe.proto.XRefService/Nodes", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *xRefServiceClient) Edges(ctx context.Context, in *EdgesRequest, opts ...grpc.CallOption) (*EdgesReply, error) {
+	out := new(EdgesReply)
+	err := grpc.Invoke(ctx, "/kythe.proto.XRefService/Edges", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *xRefServiceClient) Decorations(ctx context.Context, in *DecorationsRequest, opts ...grpc.CallOption) (*DecorationsReply, error) {
+	out := new(DecorationsReply)
+	err := grpc.Invoke(ctx, "/kythe.proto.XRefService/Decorations", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Server API for XRefService service
+
+type XRefServiceServer interface {
+	// Nodes returns a subset of the facts for each of the requested nodes.
+	Nodes(context.Context, *NodesRequest) (*NodesReply, error)
+	// Edges returns a subset of the outbound edges for each of a set of
+	// requested nodes.
+	Edges(context.Context, *EdgesRequest) (*EdgesReply, error)
+	// Decorations returns an index of the nodes and edges associated with a
+	// particular file node.
+	Decorations(context.Context, *DecorationsRequest) (*DecorationsReply, error)
+}
+
+func RegisterXRefServiceServer(s *grpc.Server, srv XRefServiceServer) {
+	s.RegisterService(&_XRefService_serviceDesc, srv)
+}
+
+func _XRefService_Nodes_Handler(srv interface{}, ctx context.Context, buf []byte) (proto.Message, error) {
+	in := new(NodesRequest)
+	if err := proto.Unmarshal(buf, in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(XRefServiceServer).Nodes(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func _XRefService_Edges_Handler(srv interface{}, ctx context.Context, buf []byte) (proto.Message, error) {
+	in := new(EdgesRequest)
+	if err := proto.Unmarshal(buf, in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(XRefServiceServer).Edges(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func _XRefService_Decorations_Handler(srv interface{}, ctx context.Context, buf []byte) (proto.Message, error) {
+	in := new(DecorationsRequest)
+	if err := proto.Unmarshal(buf, in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(XRefServiceServer).Decorations(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+var _XRefService_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "kythe.proto.XRefService",
+	HandlerType: (*XRefServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Nodes",
+			Handler:    _XRefService_Nodes_Handler,
+		},
+		{
+			MethodName: "Edges",
+			Handler:    _XRefService_Edges_Handler,
+		},
+		{
+			MethodName: "Decorations",
+			Handler:    _XRefService_Decorations_Handler,
+		},
+	},
+	Streams: []grpc.StreamDesc{},
 }

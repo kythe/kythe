@@ -86,7 +86,7 @@ rule protoc_java
 rule protoc_go
   command = rm -rf $outdir && $
             mkdir -p $outdir && $
-            $protocpath --plugin=$protocgengo --go_out=import_path=$package$importpath:$outdir $in && $
+            $protocpath --plugin=$protocgengo --go_out=plugins=grpc,import_path=$package$importpath:$outdir $in && $
             find $outdir -type f -name '*.go' -exec mv -f {} $outdir ';' && $
             $gotool tool 6g -p $package -complete -pack -o $archive $include $$(ls -1 $outdir/*.go)
   description = protoc_go $owner

@@ -27,6 +27,15 @@ package storage_proto
 
 import proto "github.com/golang/protobuf/proto"
 
+import (
+	context "golang.org/x/net/context"
+	grpc "google.golang.org/grpc"
+)
+
+// Reference imports to suppress errors if they are not otherwise used.
+var _ context.Context
+var _ grpc.ClientConn
+
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
 
@@ -336,4 +345,393 @@ func (m *SearchReply) String() string { return proto.CompactTextString(m) }
 func (*SearchReply) ProtoMessage()    {}
 
 func init() {
+}
+
+// Client API for GraphStore service
+
+type GraphStoreClient interface {
+	// Read responds with all Entry messages that match the given ReadRequest.
+	// The Read operation should be implemented with time complexity proportional
+	// to the size of the return set.
+	Read(ctx context.Context, in *ReadRequest, opts ...grpc.CallOption) (GraphStore_ReadClient, error)
+	// Scan responds with all Entry messages matching the given ScanRequest.  If a
+	// ScanRequest field is empty, any entry value for that field matches and will
+	// be returned.  Scan is similar to Read, but with no time complexity
+	// restrictions.
+	Scan(ctx context.Context, in *ScanRequest, opts ...grpc.CallOption) (GraphStore_ScanClient, error)
+	// Write atomically inserts or updates a collection of entries into the store.
+	// Each update is a tuple of the form (kind, target, fact, value).  For each
+	// such update, an entry (source, kind, target, fact, value) is written into
+	// the store, replacing any existing entry (source, kind, target, fact,
+	// value') that may exist.  Note that this operation cannot delete any data
+	// from the store; entries are only ever inserted or updated.  Apart from
+	// acting atomically, no other constraints are placed on the implementation.
+	Write(ctx context.Context, in *WriteRequest, opts ...grpc.CallOption) (*WriteReply, error)
+}
+
+type graphStoreClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewGraphStoreClient(cc *grpc.ClientConn) GraphStoreClient {
+	return &graphStoreClient{cc}
+}
+
+func (c *graphStoreClient) Read(ctx context.Context, in *ReadRequest, opts ...grpc.CallOption) (GraphStore_ReadClient, error) {
+	stream, err := grpc.NewClientStream(ctx, &_GraphStore_serviceDesc.Streams[0], c.cc, "/kythe.proto.GraphStore/Read", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &graphStoreReadClient{stream}
+	if err := x.ClientStream.SendProto(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type GraphStore_ReadClient interface {
+	Recv() (*Entry, error)
+	grpc.ClientStream
+}
+
+type graphStoreReadClient struct {
+	grpc.ClientStream
+}
+
+func (x *graphStoreReadClient) Recv() (*Entry, error) {
+	m := new(Entry)
+	if err := x.ClientStream.RecvProto(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *graphStoreClient) Scan(ctx context.Context, in *ScanRequest, opts ...grpc.CallOption) (GraphStore_ScanClient, error) {
+	stream, err := grpc.NewClientStream(ctx, &_GraphStore_serviceDesc.Streams[1], c.cc, "/kythe.proto.GraphStore/Scan", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &graphStoreScanClient{stream}
+	if err := x.ClientStream.SendProto(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type GraphStore_ScanClient interface {
+	Recv() (*Entry, error)
+	grpc.ClientStream
+}
+
+type graphStoreScanClient struct {
+	grpc.ClientStream
+}
+
+func (x *graphStoreScanClient) Recv() (*Entry, error) {
+	m := new(Entry)
+	if err := x.ClientStream.RecvProto(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *graphStoreClient) Write(ctx context.Context, in *WriteRequest, opts ...grpc.CallOption) (*WriteReply, error) {
+	out := new(WriteReply)
+	err := grpc.Invoke(ctx, "/kythe.proto.GraphStore/Write", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Server API for GraphStore service
+
+type GraphStoreServer interface {
+	// Read responds with all Entry messages that match the given ReadRequest.
+	// The Read operation should be implemented with time complexity proportional
+	// to the size of the return set.
+	Read(*ReadRequest, GraphStore_ReadServer) error
+	// Scan responds with all Entry messages matching the given ScanRequest.  If a
+	// ScanRequest field is empty, any entry value for that field matches and will
+	// be returned.  Scan is similar to Read, but with no time complexity
+	// restrictions.
+	Scan(*ScanRequest, GraphStore_ScanServer) error
+	// Write atomically inserts or updates a collection of entries into the store.
+	// Each update is a tuple of the form (kind, target, fact, value).  For each
+	// such update, an entry (source, kind, target, fact, value) is written into
+	// the store, replacing any existing entry (source, kind, target, fact,
+	// value') that may exist.  Note that this operation cannot delete any data
+	// from the store; entries are only ever inserted or updated.  Apart from
+	// acting atomically, no other constraints are placed on the implementation.
+	Write(context.Context, *WriteRequest) (*WriteReply, error)
+}
+
+func RegisterGraphStoreServer(s *grpc.Server, srv GraphStoreServer) {
+	s.RegisterService(&_GraphStore_serviceDesc, srv)
+}
+
+func _GraphStore_Read_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ReadRequest)
+	if err := stream.RecvProto(m); err != nil {
+		return err
+	}
+	return srv.(GraphStoreServer).Read(m, &graphStoreReadServer{stream})
+}
+
+type GraphStore_ReadServer interface {
+	Send(*Entry) error
+	grpc.ServerStream
+}
+
+type graphStoreReadServer struct {
+	grpc.ServerStream
+}
+
+func (x *graphStoreReadServer) Send(m *Entry) error {
+	return x.ServerStream.SendProto(m)
+}
+
+func _GraphStore_Scan_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ScanRequest)
+	if err := stream.RecvProto(m); err != nil {
+		return err
+	}
+	return srv.(GraphStoreServer).Scan(m, &graphStoreScanServer{stream})
+}
+
+type GraphStore_ScanServer interface {
+	Send(*Entry) error
+	grpc.ServerStream
+}
+
+type graphStoreScanServer struct {
+	grpc.ServerStream
+}
+
+func (x *graphStoreScanServer) Send(m *Entry) error {
+	return x.ServerStream.SendProto(m)
+}
+
+func _GraphStore_Write_Handler(srv interface{}, ctx context.Context, buf []byte) (proto.Message, error) {
+	in := new(WriteRequest)
+	if err := proto.Unmarshal(buf, in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(GraphStoreServer).Write(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+var _GraphStore_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "kythe.proto.GraphStore",
+	HandlerType: (*GraphStoreServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Write",
+			Handler:    _GraphStore_Write_Handler,
+		},
+	},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "Read",
+			Handler:       _GraphStore_Read_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "Scan",
+			Handler:       _GraphStore_Scan_Handler,
+			ServerStreams: true,
+		},
+	},
+}
+
+// Client API for ShardedGraphStore service
+
+type ShardedGraphStoreClient interface {
+	// Count returns the number of entries in the given shard.
+	Count(ctx context.Context, in *CountRequest, opts ...grpc.CallOption) (*CountReply, error)
+	// Shard responds with each Entry in the given shard.
+	Shard(ctx context.Context, in *ShardRequest, opts ...grpc.CallOption) (ShardedGraphStore_ShardClient, error)
+}
+
+type shardedGraphStoreClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewShardedGraphStoreClient(cc *grpc.ClientConn) ShardedGraphStoreClient {
+	return &shardedGraphStoreClient{cc}
+}
+
+func (c *shardedGraphStoreClient) Count(ctx context.Context, in *CountRequest, opts ...grpc.CallOption) (*CountReply, error) {
+	out := new(CountReply)
+	err := grpc.Invoke(ctx, "/kythe.proto.ShardedGraphStore/Count", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *shardedGraphStoreClient) Shard(ctx context.Context, in *ShardRequest, opts ...grpc.CallOption) (ShardedGraphStore_ShardClient, error) {
+	stream, err := grpc.NewClientStream(ctx, &_ShardedGraphStore_serviceDesc.Streams[0], c.cc, "/kythe.proto.ShardedGraphStore/Shard", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &shardedGraphStoreShardClient{stream}
+	if err := x.ClientStream.SendProto(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type ShardedGraphStore_ShardClient interface {
+	Recv() (*Entry, error)
+	grpc.ClientStream
+}
+
+type shardedGraphStoreShardClient struct {
+	grpc.ClientStream
+}
+
+func (x *shardedGraphStoreShardClient) Recv() (*Entry, error) {
+	m := new(Entry)
+	if err := x.ClientStream.RecvProto(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// Server API for ShardedGraphStore service
+
+type ShardedGraphStoreServer interface {
+	// Count returns the number of entries in the given shard.
+	Count(context.Context, *CountRequest) (*CountReply, error)
+	// Shard responds with each Entry in the given shard.
+	Shard(*ShardRequest, ShardedGraphStore_ShardServer) error
+}
+
+func RegisterShardedGraphStoreServer(s *grpc.Server, srv ShardedGraphStoreServer) {
+	s.RegisterService(&_ShardedGraphStore_serviceDesc, srv)
+}
+
+func _ShardedGraphStore_Count_Handler(srv interface{}, ctx context.Context, buf []byte) (proto.Message, error) {
+	in := new(CountRequest)
+	if err := proto.Unmarshal(buf, in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(ShardedGraphStoreServer).Count(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func _ShardedGraphStore_Shard_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ShardRequest)
+	if err := stream.RecvProto(m); err != nil {
+		return err
+	}
+	return srv.(ShardedGraphStoreServer).Shard(m, &shardedGraphStoreShardServer{stream})
+}
+
+type ShardedGraphStore_ShardServer interface {
+	Send(*Entry) error
+	grpc.ServerStream
+}
+
+type shardedGraphStoreShardServer struct {
+	grpc.ServerStream
+}
+
+func (x *shardedGraphStoreShardServer) Send(m *Entry) error {
+	return x.ServerStream.SendProto(m)
+}
+
+var _ShardedGraphStore_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "kythe.proto.ShardedGraphStore",
+	HandlerType: (*ShardedGraphStoreServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Count",
+			Handler:    _ShardedGraphStore_Count_Handler,
+		},
+	},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "Shard",
+			Handler:       _ShardedGraphStore_Shard_Handler,
+			ServerStreams: true,
+		},
+	},
+}
+
+// Client API for SearchService service
+
+type SearchServiceClient interface {
+	// Search responds with the set of node tickets that match the given
+	// SearchRequest.
+	Search(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*SearchReply, error)
+}
+
+type searchServiceClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewSearchServiceClient(cc *grpc.ClientConn) SearchServiceClient {
+	return &searchServiceClient{cc}
+}
+
+func (c *searchServiceClient) Search(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*SearchReply, error) {
+	out := new(SearchReply)
+	err := grpc.Invoke(ctx, "/kythe.proto.SearchService/Search", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Server API for SearchService service
+
+type SearchServiceServer interface {
+	// Search responds with the set of node tickets that match the given
+	// SearchRequest.
+	Search(context.Context, *SearchRequest) (*SearchReply, error)
+}
+
+func RegisterSearchServiceServer(s *grpc.Server, srv SearchServiceServer) {
+	s.RegisterService(&_SearchService_serviceDesc, srv)
+}
+
+func _SearchService_Search_Handler(srv interface{}, ctx context.Context, buf []byte) (proto.Message, error) {
+	in := new(SearchRequest)
+	if err := proto.Unmarshal(buf, in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(SearchServiceServer).Search(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+var _SearchService_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "kythe.proto.SearchService",
+	HandlerType: (*SearchServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Search",
+			Handler:    _SearchService_Search_Handler,
+		},
+	},
+	Streams: []grpc.StreamDesc{},
 }

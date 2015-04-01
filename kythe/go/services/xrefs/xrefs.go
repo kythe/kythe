@@ -29,6 +29,8 @@ import (
 
 	"kythe.io/kythe/go/services/web"
 
+	"golang.org/x/net/context"
+
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
@@ -62,6 +64,24 @@ type DecorationsService interface {
 	// Decorations returns an index of the nodes and edges associated with a
 	// particular file node.
 	Decorations(*xpb.DecorationsRequest) (*xpb.DecorationsReply, error)
+}
+
+// GRPCService implements the GRPC XRefs service interface.
+type GRPCService struct{ Service }
+
+// Nodes implements part of the xpb.XRefServiceServer interface.
+func (s *GRPCService) Nodes(ctx context.Context, req *xpb.NodesRequest) (*xpb.NodesReply, error) {
+	return s.Service.Nodes(req)
+}
+
+// Edges implements part of the xpb.XRefServiceServer interface.
+func (s *GRPCService) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
+	return s.Service.Edges(req)
+}
+
+// Decorations implements part of the xpb.XRefServiceServer interface.
+func (s *GRPCService) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*xpb.DecorationsReply, error) {
+	return s.Service.Decorations(req)
 }
 
 // NodesMap returns a map from each node ticket to a map of its facts.
@@ -221,6 +241,29 @@ func MatchesAny(str string, patterns []*regexp.Regexp) bool {
 	}
 	return false
 }
+
+type grpcClient struct {
+	context.Context
+	xpb.XRefServiceClient
+}
+
+// Nodes implements part of the Service interface.
+func (w *grpcClient) Nodes(req *xpb.NodesRequest) (*xpb.NodesReply, error) {
+	return w.XRefServiceClient.Nodes(w, req)
+}
+
+// Edges implements part of the Service interface.
+func (w *grpcClient) Edges(req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
+	return w.XRefServiceClient.Edges(w, req)
+}
+
+// Decorations implements part of the Service interface.
+func (w *grpcClient) Decorations(req *xpb.DecorationsRequest) (*xpb.DecorationsReply, error) {
+	return w.XRefServiceClient.Decorations(w, req)
+}
+
+// GRPC returns an xrefs Service backed by the given GRPC client and context.
+func GRPC(ctx context.Context, c xpb.XRefServiceClient) Service { return &grpcClient{ctx, c} }
 
 type webClient struct{ addr string }
 

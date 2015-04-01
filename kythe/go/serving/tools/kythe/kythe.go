@@ -53,6 +53,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"kythe.io/kythe/go/services/filetree"
 	"kythe.io/kythe/go/services/search"
@@ -62,10 +63,17 @@ import (
 	xsrv "kythe.io/kythe/go/serving/xrefs"
 	"kythe.io/kythe/go/storage/leveldb"
 	"kythe.io/kythe/go/storage/table"
+
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+
+	ftpb "kythe.io/kythe/proto/filetree_proto"
+	spb "kythe.io/kythe/proto/storage_proto"
+	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
 var (
-	remoteAPI    = flag.String("api", "https://xrefs-dot-kythe-repo.appspot.com", "Remote api server")
+	remoteAPI    = flag.String("api", "https://xrefs-dot-kythe-repo.appspot.com", "Remote API server")
 	servingTable = flag.String("serving_table", "", "LevelDB serving table")
 
 	shortHelp bool
@@ -130,9 +138,21 @@ func main() {
 	}
 
 	if *servingTable == "" {
-		xs = xrefs.WebClient(*remoteAPI)
-		ft = filetree.WebClient(*remoteAPI)
-		idx = search.WebClient(*remoteAPI)
+		if strings.HasPrefix(*remoteAPI, "http://") || strings.HasPrefix(*remoteAPI, "https://") {
+			xs = xrefs.WebClient(*remoteAPI)
+			ft = filetree.WebClient(*remoteAPI)
+			idx = search.WebClient(*remoteAPI)
+		} else {
+			conn, err := grpc.Dial(*remoteAPI)
+			if err != nil {
+				log.Fatalf("Error connecting to remote API %q: %v", *remoteAPI, err)
+			}
+			defer conn.Close()
+			ctx := context.Background()
+			xs = xrefs.GRPC(ctx, xpb.NewXRefServiceClient(conn))
+			ft = filetree.GRPC(ctx, ftpb.NewFileTreeServiceClient(conn))
+			idx = search.GRPC(ctx, spb.NewSearchServiceClient(conn))
+		}
 	} else {
 		db, err := leveldb.Open(*servingTable, nil)
 		if err != nil {

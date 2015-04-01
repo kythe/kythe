@@ -25,6 +25,8 @@ import (
 
 	"kythe.io/kythe/go/services/web"
 
+	"golang.org/x/net/context"
+
 	spb "kythe.io/kythe/proto/storage_proto"
 )
 
@@ -34,6 +36,27 @@ type Service interface {
 	// Search returns the matching set of nodes that match the given request.
 	Search(q *spb.SearchRequest) (*spb.SearchReply, error)
 }
+
+// GRPCService implements the GRPC search service interface.
+type GRPCService struct{ Service }
+
+// Search implements the spb.SearchServiceServer interface.
+func (s *GRPCService) Search(ctx context.Context, req *spb.SearchRequest) (*spb.SearchReply, error) {
+	return s.Service.Search(req)
+}
+
+type grpcClient struct {
+	context.Context
+	spb.SearchServiceClient
+}
+
+// Search implements the Service interface.
+func (c *grpcClient) Search(req *spb.SearchRequest) (*spb.SearchReply, error) {
+	return c.SearchServiceClient.Search(c, req)
+}
+
+// GRPC returns a search Service backed by the given GRPC client and context.
+func GRPC(ctx context.Context, c spb.SearchServiceClient) Service { return &grpcClient{ctx, c} }
 
 type webClient struct{ addr string }
 

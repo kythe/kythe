@@ -49,5 +49,12 @@
     "properties": {
       "go_package": "golang.org/x/net/html"
     }
+  },
+  {
+    "name": "grpc",
+    "kind": "go_external_lib",
+    "properties": {
+      "go_package": "google.golang.org/grpc"
+    }
   }
 ]

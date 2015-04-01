@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-// Binary http_server exposes an HTTP interface to the xrefs and filetree
-// services backed by either a combined serving table or a bare GraphStore.
+// Binary http_server exposes HTTP/GRPC interfaces for the search, xrefs, and
+// filetree services backed by either a combined serving table or a bare
+// GraphStore.
 package main
 
 import (
 	"flag"
 	"log"
+	"net"
 	"net/http"
 	"path/filepath"
 
@@ -35,14 +37,22 @@ import (
 	"kythe.io/kythe/go/storage/leveldb"
 	"kythe.io/kythe/go/storage/table"
 	xstore "kythe.io/kythe/go/storage/xrefs"
+
+	"google.golang.org/grpc"
+
+	ftpb "kythe.io/kythe/proto/filetree_proto"
+	spb "kythe.io/kythe/proto/storage_proto"
+	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
 var (
-	gs graphstore.Service
+	gs           graphstore.Service
+	servingTable = flag.String("serving_table", "", "LevelDB serving table")
 
-	listeningAddr   = flag.String("listen", "localhost:8080", "Listening address for API server")
-	servingTable    = flag.String("serving_table", "", "LevelDB serving table")
-	publicResources = flag.String("public_resources", "", "Path to directory of static resources to serve")
+	grpcListeningAddr = flag.String("grpc_listen", "", "Listening address for GRPC server")
+
+	httpListeningAddr = flag.String("listen", "localhost:8080", "Listening address for HTTP server")
+	publicResources   = flag.String("public_resources", "", "Path to directory of static resources to serve")
 )
 
 func init() {
@@ -53,8 +63,8 @@ func main() {
 	flag.Parse()
 	if *servingTable == "" && gs == nil {
 		log.Fatal("Missing either --serving_table or --graphstore")
-	} else if *listeningAddr == "" {
-		log.Fatal("Missing required --listen argument")
+	} else if *httpListeningAddr == "" && *grpcListeningAddr == "" {
+		log.Fatal("Missing either --listen or --grpc_listen argument")
 	} else if *servingTable != "" && gs != nil {
 		log.Fatal("--serving_table and --graphstore are mutually exclusive")
 	}
@@ -104,20 +114,49 @@ func main() {
 		}
 	}
 
-	xrefs.RegisterHTTPHandlers(xs, http.DefaultServeMux)
-	filetree.RegisterHTTPHandlers(ft, http.DefaultServeMux)
-	if sr != nil {
-		search.RegisterHTTPHandlers(sr, http.DefaultServeMux)
-	} else {
+	if sr == nil {
 		log.Println("Search API not supported")
 	}
 
+	if *grpcListeningAddr != "" {
+		srv := grpc.NewServer()
+		xpb.RegisterXRefServiceServer(srv, &xrefs.GRPCService{xs})
+		ftpb.RegisterFileTreeServiceServer(srv, &filetree.GRPCService{ft})
+		if sr != nil {
+			spb.RegisterSearchServiceServer(srv, &search.GRPCService{sr})
+		}
+		go startGRPC(srv)
+	}
+
+	if *httpListeningAddr != "" {
+		xrefs.RegisterHTTPHandlers(xs, http.DefaultServeMux)
+		filetree.RegisterHTTPHandlers(ft, http.DefaultServeMux)
+		if sr != nil {
+			search.RegisterHTTPHandlers(sr, http.DefaultServeMux)
+		}
+		go startHTTP()
+	}
+
+	select {} // block forever
+}
+
+func startGRPC(srv *grpc.Server) {
+	l, err := net.Listen("tcp", *grpcListeningAddr)
+	if err != nil {
+		log.Fatalf("Error listening on GRPC address %q: %v", *grpcListeningAddr, err)
+	}
+	log.Printf("GRPC server listening on %s", l.Addr())
+	log.Fatal(srv.Serve(l))
+}
+
+func startHTTP() {
 	if *publicResources != "" {
+		log.Println("Serving public resources at", *publicResources)
 		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			http.ServeFile(w, r, filepath.Join(*publicResources, filepath.Clean(r.URL.Path)))
 		})
 	}
 
-	log.Printf("Server listening on %q", *listeningAddr)
-	log.Fatal(http.ListenAndServe(*listeningAddr, nil))
+	log.Printf("HTTP server listening on %q", *httpListeningAddr)
+	log.Fatal(http.ListenAndServe(*httpListeningAddr, nil))
 }

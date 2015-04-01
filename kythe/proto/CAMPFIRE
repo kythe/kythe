@@ -17,6 +17,8 @@
         "//third_party/protobuf:protobuf_cc"
       ],
       "go_pkgs": [
+        "//third_party/go:context",
+        "//third_party/go:grpc",
         "//third_party/go:protobuf"
       ]
     },
@@ -75,6 +77,8 @@
         "//third_party/protobuf:protobuf_cc"
       ],
       "go_pkgs": [
+        "//third_party/go:context",
+        "//third_party/go:grpc",
         "//third_party/go:protobuf"
       ]
     },
@@ -118,6 +122,8 @@
         "xref.proto"
       ],
       "go_pkgs": [
+        "//third_party/go:context",
+        "//third_party/go:grpc",
         "//third_party/go:protobuf"
       ],
       "cc_libs": [
@@ -144,6 +150,24 @@
     "properties": {
       "has_services": 1,
       "go_api": true
+    }
+  },
+  {
+    "name": "filetree_proto",
+    "kind": "proto_library",
+    "inputs": {
+      "srcs": [
+        "filetree.proto"
+      ],
+      "go_pkgs": [
+        "//third_party/go:context",
+        "//third_party/go:grpc",
+        "//third_party/go:protobuf"
+      ]
+    },
+    "properties": {
+      "go_api": true,
+      "has_services": 1
     }
   }
 ]

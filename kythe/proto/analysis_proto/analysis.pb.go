@@ -21,6 +21,15 @@ import proto "github.com/golang/protobuf/proto"
 import kythe_proto "kythe.io/kythe/proto/any_proto"
 import kythe_proto1 "kythe.io/kythe/proto/storage_proto"
 
+import (
+	context "golang.org/x/net/context"
+	grpc "google.golang.org/grpc"
+)
+
+// Reference imports to suppress errors if they are not otherwise used.
+var _ context.Context
+var _ grpc.ClientConn
+
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
 
@@ -271,4 +280,239 @@ func (m *FileData) GetInfo() *FileInfo {
 }
 
 func init() {
+}
+
+// Client API for CompilationAnalyzer service
+
+type CompilationAnalyzerClient interface {
+	// Analyze is the main entry point for the analysis driver to send work to the
+	// analyzer.  The analysis may produce many outputs which will be streamed as
+	// framed AnalysisOutput messages.
+	//
+	// A driver may choose to retry analyses that return RPC errors.  It should
+	// not retry analyses that are reported as finished unless it is necessary to
+	// recover from an external production issue.
+	Analyze(ctx context.Context, in *AnalysisRequest, opts ...grpc.CallOption) (CompilationAnalyzer_AnalyzeClient, error)
+}
+
+type compilationAnalyzerClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewCompilationAnalyzerClient(cc *grpc.ClientConn) CompilationAnalyzerClient {
+	return &compilationAnalyzerClient{cc}
+}
+
+func (c *compilationAnalyzerClient) Analyze(ctx context.Context, in *AnalysisRequest, opts ...grpc.CallOption) (CompilationAnalyzer_AnalyzeClient, error) {
+	stream, err := grpc.NewClientStream(ctx, &_CompilationAnalyzer_serviceDesc.Streams[0], c.cc, "/kythe.proto.CompilationAnalyzer/Analyze", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &compilationAnalyzerAnalyzeClient{stream}
+	if err := x.ClientStream.SendProto(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type CompilationAnalyzer_AnalyzeClient interface {
+	Recv() (*AnalysisOutput, error)
+	grpc.ClientStream
+}
+
+type compilationAnalyzerAnalyzeClient struct {
+	grpc.ClientStream
+}
+
+func (x *compilationAnalyzerAnalyzeClient) Recv() (*AnalysisOutput, error) {
+	m := new(AnalysisOutput)
+	if err := x.ClientStream.RecvProto(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// Server API for CompilationAnalyzer service
+
+type CompilationAnalyzerServer interface {
+	// Analyze is the main entry point for the analysis driver to send work to the
+	// analyzer.  The analysis may produce many outputs which will be streamed as
+	// framed AnalysisOutput messages.
+	//
+	// A driver may choose to retry analyses that return RPC errors.  It should
+	// not retry analyses that are reported as finished unless it is necessary to
+	// recover from an external production issue.
+	Analyze(*AnalysisRequest, CompilationAnalyzer_AnalyzeServer) error
+}
+
+func RegisterCompilationAnalyzerServer(s *grpc.Server, srv CompilationAnalyzerServer) {
+	s.RegisterService(&_CompilationAnalyzer_serviceDesc, srv)
+}
+
+func _CompilationAnalyzer_Analyze_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(AnalysisRequest)
+	if err := stream.RecvProto(m); err != nil {
+		return err
+	}
+	return srv.(CompilationAnalyzerServer).Analyze(m, &compilationAnalyzerAnalyzeServer{stream})
+}
+
+type CompilationAnalyzer_AnalyzeServer interface {
+	Send(*AnalysisOutput) error
+	grpc.ServerStream
+}
+
+type compilationAnalyzerAnalyzeServer struct {
+	grpc.ServerStream
+}
+
+func (x *compilationAnalyzerAnalyzeServer) Send(m *AnalysisOutput) error {
+	return x.ServerStream.SendProto(m)
+}
+
+var _CompilationAnalyzer_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "kythe.proto.CompilationAnalyzer",
+	HandlerType: (*CompilationAnalyzerServer)(nil),
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "Analyze",
+			Handler:       _CompilationAnalyzer_Analyze_Handler,
+			ServerStreams: true,
+		},
+	},
+}
+
+// Client API for FileDataService service
+
+type FileDataServiceClient interface {
+	// Get returns the contents of one or more files needed for analysis.  It is
+	// the server implementation's responsibility to do any caching that might be
+	// necessary to make this perform well so that an analyzer does not need to
+	// implement its own caches unless it is doing something unusual.
+	//
+	// Except in case of error, the server is required to return at least one of
+	// the requested files; however, the server may also limit how much data is
+	// returned for a single request.  If this occurs, any files it does return
+	// must be complete.  The client is responsible for issuing additional
+	// requests as necessary to obtain any missing files.  For example, the
+	// following is a valid interaction:
+	//
+	//   C: Get(a, b, c)
+	//   S: FileData(a)
+	//   S: FileData(c)
+	//   C: Get(b)
+	//   S: FileData(b)
+	//
+	Get(ctx context.Context, opts ...grpc.CallOption) (FileDataService_GetClient, error)
+}
+
+type fileDataServiceClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewFileDataServiceClient(cc *grpc.ClientConn) FileDataServiceClient {
+	return &fileDataServiceClient{cc}
+}
+
+func (c *fileDataServiceClient) Get(ctx context.Context, opts ...grpc.CallOption) (FileDataService_GetClient, error) {
+	stream, err := grpc.NewClientStream(ctx, &_FileDataService_serviceDesc.Streams[0], c.cc, "/kythe.proto.FileDataService/Get", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &fileDataServiceGetClient{stream}
+	return x, nil
+}
+
+type FileDataService_GetClient interface {
+	Send(*FileInfo) error
+	Recv() (*FileData, error)
+	grpc.ClientStream
+}
+
+type fileDataServiceGetClient struct {
+	grpc.ClientStream
+}
+
+func (x *fileDataServiceGetClient) Send(m *FileInfo) error {
+	return x.ClientStream.SendProto(m)
+}
+
+func (x *fileDataServiceGetClient) Recv() (*FileData, error) {
+	m := new(FileData)
+	if err := x.ClientStream.RecvProto(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// Server API for FileDataService service
+
+type FileDataServiceServer interface {
+	// Get returns the contents of one or more files needed for analysis.  It is
+	// the server implementation's responsibility to do any caching that might be
+	// necessary to make this perform well so that an analyzer does not need to
+	// implement its own caches unless it is doing something unusual.
+	//
+	// Except in case of error, the server is required to return at least one of
+	// the requested files; however, the server may also limit how much data is
+	// returned for a single request.  If this occurs, any files it does return
+	// must be complete.  The client is responsible for issuing additional
+	// requests as necessary to obtain any missing files.  For example, the
+	// following is a valid interaction:
+	//
+	//   C: Get(a, b, c)
+	//   S: FileData(a)
+	//   S: FileData(c)
+	//   C: Get(b)
+	//   S: FileData(b)
+	//
+	Get(FileDataService_GetServer) error
+}
+
+func RegisterFileDataServiceServer(s *grpc.Server, srv FileDataServiceServer) {
+	s.RegisterService(&_FileDataService_serviceDesc, srv)
+}
+
+func _FileDataService_Get_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(FileDataServiceServer).Get(&fileDataServiceGetServer{stream})
+}
+
+type FileDataService_GetServer interface {
+	Send(*FileData) error
+	Recv() (*FileInfo, error)
+	grpc.ServerStream
+}
+
+type fileDataServiceGetServer struct {
+	grpc.ServerStream
+}
+
+func (x *fileDataServiceGetServer) Send(m *FileData) error {
+	return x.ServerStream.SendProto(m)
+}
+
+func (x *fileDataServiceGetServer) Recv() (*FileInfo, error) {
+	m := new(FileInfo)
+	if err := x.ServerStream.RecvProto(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+var _FileDataService_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "kythe.proto.FileDataService",
+	HandlerType: (*FileDataServiceServer)(nil),
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "Get",
+			Handler:       _FileDataService_Get_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+	},
 }
