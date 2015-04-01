@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 
 	"kythe.io/kythe/go/storage/keyvalue"
 
@@ -30,6 +31,8 @@ import (
 
 // Proto is a key-value direct lookup table with protobuf values.
 type Proto interface {
+	io.Closer
+
 	// Lookup unmarshals the value for the given key into msg, returning any
 	// error.  If the key was not found, ErrNoSuchKey is returned.
 	Lookup(key []byte, msg proto.Message) error
@@ -41,11 +44,18 @@ type Proto interface {
 // Inverted is an inverted index lookup table for []byte values with associated
 // []byte keys.  Keys and values should not contain \000 bytes.
 type Inverted interface {
-	// Lookup returns a slice of []byte keys associated with the given value.
-	Lookup(val []byte) ([][]byte, error)
+	io.Closer
 
-	// Contains determines whether there is an association between key and val
-	Contains(key, val []byte) (bool, error)
+	// Lookup returns a slice of []byte keys associated with the given value.  If
+	// prefix is true, all keys associated with values with val as their prefix
+	// will be returned, otherwise val is exactly matched.
+	Lookup(val []byte, prefix bool) ([][]byte, error)
+
+	// Contains determines whether there is an association between key and val.
+	// If prefix is true, if key is associated with any value with val as its
+	// prefix true will be returned, otherwise val must be exactly associated with
+	// key.
+	Contains(key, val []byte, prefix bool) (bool, error)
 
 	// Put writes an entry associating val with key.
 	Put(key, val []byte) error
@@ -96,52 +106,66 @@ func (t *KVProto) Put(key []byte, msg proto.Message) error {
 type KVInverted struct{ keyvalue.DB }
 
 // Lookup implements part of the Inverted interface.
-func (i *KVInverted) Lookup(val []byte) ([][]byte, error) {
-	prefix := invertedPrefix(val)
-	iter, err := i.ScanPrefix(prefix, nil)
-	if err != nil {
-		return nil, fmt.Errorf("table iterator error: %v", err)
-	}
-	defer iter.Close()
-
+func (i *KVInverted) Lookup(val []byte, prefixLookup bool) ([][]byte, error) {
 	var results [][]byte
-	for {
-		k, _, err := iter.Next()
-		if err == io.EOF {
-			return results, nil
-		} else if err != nil {
-			return nil, err
-		}
-
-		if !bytes.HasPrefix(k, prefix) {
-			return results, nil
-		}
-
+	if !prefixLookup {
+		val = exactInvertedPrefix(val)
+	}
+	return results, i.scan(val, func(k []byte) bool {
 		i := bytes.IndexByte(k, invertedKeySep)
 		if i == -1 {
-			return nil, fmt.Errorf("invalid index key: %q", string(k))
+			log.Printf("WARNING: skipping invalid index key: %q", string(k))
+		} else {
+			results = append(results, k[i+1:])
 		}
-		results = append(results, k[i+1:])
-	}
+		return true
+	})
 }
 
 // Contains implements part of the Inverted interface.
-func (i *KVInverted) Contains(key, val []byte) (bool, error) {
+func (i *KVInverted) Contains(key, val []byte, prefixLookup bool) (found bool, err error) {
+	if prefixLookup {
+		err = i.scan(val, func(k []byte) bool {
+			i := bytes.IndexByte(k, invertedKeySep)
+			if i == -1 {
+				log.Printf("WARNING: skipping invalid index key: %q", string(k))
+				return true
+			}
+			found = bytes.Equal(k[i+1:], key)
+			return !found
+		})
+		return
+	}
+
 	iKey := invertedKey(key, val)
-	iter, err := i.ScanPrefix(iKey, nil)
+	err = i.scan(iKey, func(k []byte) bool {
+		found = bytes.Equal(k, iKey)
+		return false
+	})
+	return
+}
+
+func (i *KVInverted) scan(v []byte, f func(k []byte) bool) error {
+	iter, err := i.ScanPrefix(v, nil)
 	if err != nil {
-		return false, fmt.Errorf("table iterator error: %v", err)
+		return fmt.Errorf("table iterator error: %v", err)
 	}
 	defer iter.Close()
 
-	k, _, err := iter.Next()
-	if err == io.EOF {
-		return false, nil
-	} else if err != nil {
-		return false, err
-	}
+	for {
+		k, _, err := iter.Next()
+		if err == io.EOF {
+			return nil
+		} else if err != nil {
+			return err
+		}
 
-	return bytes.Equal(k, iKey), nil
+		if !bytes.HasPrefix(k, v) {
+			return nil
+		} else if !f(k) {
+			return nil
+		}
+	}
 }
 
 var emptyValue = []byte{}
@@ -167,7 +191,7 @@ func invertedKey(key, val []byte) []byte {
 	return buf.Bytes()
 }
 
-func invertedPrefix(val []byte) []byte {
+func exactInvertedPrefix(val []byte) []byte {
 	var buf bytes.Buffer
 	buf.Grow(len(val) + 1)
 	buf.Write(val)

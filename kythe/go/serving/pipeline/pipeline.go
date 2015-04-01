@@ -45,10 +45,6 @@ import (
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
-// maxIndexedFactValueSize is the maximum length in bytes of fact values to
-// write to the inverted index search table.
-const maxIndexedFactValueSize = 512
-
 // Run writes the xrefs and filetree serving tables to db based on the given
 // graphstore.Service.
 func Run(gs graphstore.Service, db keyvalue.DB) error {
@@ -508,44 +504,8 @@ func readEdges(es xrefs.NodesEdgesService, files []string, edges chan<- *xpb.Edg
 
 func writeIndex(t table.Inverted, nodes <-chan *srvpb.Node) error {
 	for n := range nodes {
-		uri, err := kytheuri.Parse(n.Ticket)
-		if err != nil {
+		if err := search.IndexNode(t, n); err != nil {
 			return err
-		}
-		key := []byte(n.Ticket)
-
-		if uri.Signature != "" {
-			if err := t.Put(key, search.VNameVal("signature", uri.Signature)); err != nil {
-				return err
-			}
-		}
-		if uri.Corpus != "" {
-			if err := t.Put(key, search.VNameVal("corpus", uri.Corpus)); err != nil {
-				return err
-			}
-		}
-		if uri.Root != "" {
-			if err := t.Put(key, search.VNameVal("root", uri.Root)); err != nil {
-				return err
-			}
-		}
-		if uri.Path != "" {
-			if err := t.Put(key, search.VNameVal("path", uri.Path)); err != nil {
-				return err
-			}
-		}
-		if uri.Language != "" {
-			if err := t.Put(key, search.VNameVal("language", uri.Language)); err != nil {
-				return err
-			}
-		}
-
-		for _, f := range n.Fact {
-			if len(f.Value) <= maxIndexedFactValueSize {
-				if err := t.Put(key, search.FactVal(f.Name, f.Value)); err != nil {
-					return err
-				}
-			}
 		}
 	}
 	return nil

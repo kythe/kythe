@@ -125,6 +125,14 @@ message VName {
   // kind as facts inside the graph.
 }
 
+message VNameMask {
+  bool signature = 1;
+  bool corpus = 2;
+  bool root = 3;
+  bool path = 4;
+  bool language = 5;
+}
+
 // An Entry associates a fact with a graph object (node or edge).  This is the
 // the primary unit of storage.
 message Entry {
@@ -215,18 +223,26 @@ message ShardRequest {
 // Request for the set of node tickets matching a partial VName and collection
 // of known facts.
 message SearchRequest {
-  // partial VName to match against nodes.  Each non-empty field
-  // becomes a constraint (i.e. the signature/corpus/etc. must be exactly
-  // case-sensitively equal to the given string) on the set of returned nodes.
+  // Partial VName to match against nodes.  Each non-empty field becomes a
+  // constraint (i.e. the signature/corpus/etc. must be exactly case-sensitively
+  // equal to the given string) on the set of returned nodes.  Exact matching
+  // turns into prefix matching if the corresponding field in partial_prefix is
+  // set to true.
   VName partial = 1;
 
   message Fact {
     string name = 1;
     bytes value = 2;
+    bool prefix = 3;
   }
 
-  // Facts that a node must have to be matched.
+  // Facts that a node must have to be matched.  Exact matching turns into
+  // prefix matching if a Fact has its prefix field set to true.
   repeated Fact fact = 2;
+
+  // Setting any field in this mask to true converts exact value matching to
+  // prefix value matching for the corresponding VName component in partial.
+  VNameMask partial_prefix = 3;
 
   // TODO(schroederc): pagination for large result sets
 }

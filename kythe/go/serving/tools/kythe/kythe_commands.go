@@ -67,11 +67,12 @@ var (
 	refFormat string
 
 	// search flags
-	corpus    string
-	root      string
-	path      string
-	language  string
-	signature string
+	suffixWildcard string
+	corpus         string
+	root           string
+	path           string
+	language       string
+	signature      string
 
 	spanHelp = `Limit results to this span (e.g. "10-30", "b1462-b1847", "3:5-3:10")
       Formats:
@@ -308,6 +309,7 @@ var (
 	cmdSearch = newCommand("search", "[--corpus c] [--sig s] [--root r] [--lang l] [--path p] [factName factValue]...",
 		"Search for nodes based on partial components and fact values.",
 		func(flag *flag.FlagSet) {
+			flag.StringVar(&suffixWildcard, "suffix_wildcard", "%", "Suffix wildcard for search values (optional)")
 			flag.StringVar(&corpus, "corpus", "", "Limit results to nodes with the given corpus (optional)")
 			flag.StringVar(&root, "root", "", "Limit results to nodes with the given root (optional)")
 			flag.StringVar(&path, "path", "", "Limit results to nodes with the given path (optional)")
@@ -321,20 +323,29 @@ var (
 
 			req := &spb.SearchRequest{
 				Partial: &spb.VName{
-					Corpus:    corpus,
-					Signature: signature,
-					Root:      root,
-					Path:      path,
-					Language:  language,
+					Corpus:    strings.TrimSuffix(corpus, suffixWildcard),
+					Signature: strings.TrimSuffix(signature, suffixWildcard),
+					Root:      strings.TrimSuffix(root, suffixWildcard),
+					Path:      strings.TrimSuffix(path, suffixWildcard),
+					Language:  strings.TrimSuffix(language, suffixWildcard),
 				},
+			}
+			req.PartialPrefix = &spb.VNameMask{
+				Corpus:    req.Partial.Corpus != corpus,
+				Signature: req.Partial.Signature != signature,
+				Root:      req.Partial.Root != root,
+				Path:      req.Partial.Path != path,
+				Language:  req.Partial.Language != language,
 			}
 			for i := 0; i < len(flag.Args()); i = i + 2 {
 				if flag.Arg(i) == schema.TextFact {
 					log.Printf("WARNING: Large facts such as %s are not likely to be indexed", schema.TextFact)
 				}
+				v := strings.TrimSuffix(flag.Arg(i+1), suffixWildcard)
 				req.Fact = append(req.Fact, &spb.SearchRequest_Fact{
-					Name:  flag.Arg(i),
-					Value: []byte(flag.Arg(i + 1)),
+					Name:   flag.Arg(i),
+					Value:  []byte(v),
+					Prefix: v != flag.Arg(i+1),
 				})
 			}
 

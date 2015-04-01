@@ -10,6 +10,7 @@ It is generated from these files:
 
 It has these top-level messages:
 	VName
+	VNameMask
 	Entry
 	Entries
 	ReadRequest
@@ -80,6 +81,18 @@ type VName struct {
 func (m *VName) Reset()         { *m = VName{} }
 func (m *VName) String() string { return proto.CompactTextString(m) }
 func (*VName) ProtoMessage()    {}
+
+type VNameMask struct {
+	Signature bool `protobuf:"varint,1,opt,name=signature" json:"signature,omitempty"`
+	Corpus    bool `protobuf:"varint,2,opt,name=corpus" json:"corpus,omitempty"`
+	Root      bool `protobuf:"varint,3,opt,name=root" json:"root,omitempty"`
+	Path      bool `protobuf:"varint,4,opt,name=path" json:"path,omitempty"`
+	Language  bool `protobuf:"varint,5,opt,name=language" json:"language,omitempty"`
+}
+
+func (m *VNameMask) Reset()         { *m = VNameMask{} }
+func (m *VNameMask) String() string { return proto.CompactTextString(m) }
+func (*VNameMask) ProtoMessage()    {}
 
 // An Entry associates a fact with a graph object (node or edge).  This is the
 // the primary unit of storage.
@@ -263,12 +276,18 @@ func (*ShardRequest) ProtoMessage()    {}
 // Request for the set of node tickets matching a partial VName and collection
 // of known facts.
 type SearchRequest struct {
-	// partial VName to match against nodes.  Each non-empty field
-	// becomes a constraint (i.e. the signature/corpus/etc. must be exactly
-	// case-sensitively equal to the given string) on the set of returned nodes.
+	// Partial VName to match against nodes.  Each non-empty field becomes a
+	// constraint (i.e. the signature/corpus/etc. must be exactly case-sensitively
+	// equal to the given string) on the set of returned nodes.  Exact matching
+	// turns into prefix matching if the corresponding field in partial_prefix is
+	// set to true.
 	Partial *VName `protobuf:"bytes,1,opt,name=partial" json:"partial,omitempty"`
-	// Facts that a node must have to be matched.
+	// Facts that a node must have to be matched.  Exact matching turns into
+	// prefix matching if a Fact has its prefix field set to true.
 	Fact []*SearchRequest_Fact `protobuf:"bytes,2,rep,name=fact" json:"fact,omitempty"`
+	// Setting any field in this mask to true converts exact value matching to
+	// prefix value matching for the corresponding VName component in partial.
+	PartialPrefix *VNameMask `protobuf:"bytes,3,opt,name=partial_prefix" json:"partial_prefix,omitempty"`
 }
 
 func (m *SearchRequest) Reset()         { *m = SearchRequest{} }
@@ -289,9 +308,17 @@ func (m *SearchRequest) GetFact() []*SearchRequest_Fact {
 	return nil
 }
 
+func (m *SearchRequest) GetPartialPrefix() *VNameMask {
+	if m != nil {
+		return m.PartialPrefix
+	}
+	return nil
+}
+
 type SearchRequest_Fact struct {
-	Name  string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	Value []byte `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+	Name   string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	Value  []byte `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+	Prefix bool   `protobuf:"varint,3,opt,name=prefix" json:"prefix,omitempty"`
 }
 
 func (m *SearchRequest_Fact) Reset()         { *m = SearchRequest_Fact{} }
