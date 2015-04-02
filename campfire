@@ -22,7 +22,7 @@ if [ ! -d "$ROOT/buildtools/node_modules" ]; then
 fi
 
 case "$1" in
-  build|test|run|bench|extract)
+  build|test|run|bench|extract|package)
     "$ROOT/buildtools/check_modules.sh" \
       "$NODEDIR/node $ROOT/buildtools/main query_config"
   ;;
