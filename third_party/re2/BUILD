@@ -59,13 +59,13 @@ cc_library(
         "util/util.h",
         "util/valgrind.h",
     ],
-    includes = [
-        "include"
-    ],
     copts = [
         "-Wno-non-virtual-dtor",
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
-        "-I./third_party/re2"
+        "-I./third_party/re2",
+    ],
+    includes = [
+        "include",
     ],
 )
