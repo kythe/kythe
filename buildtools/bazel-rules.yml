@@ -1,5 +1,24 @@
 ---
 rules:
+  cc_binary:
+    rule: cc_binary
+    srcs: "#inputsByKind.srcs"
+    deps: "#inputsByKind.cc_libs"
+    testonly: "#properties.testonly"
+  cc_library:
+    rule: cc_library
+    srcs: "#inputsByKind.srcs"
+    hdrs: "#inputsByKind.hdrs"
+    deps: "#inputsByKind.cc_libs"
+    testonly: "#properties.testonly"
+    copts:
+      - "-Wno-non-virtual-dtor"
+      - "-Wno-unused-variable"
+      - "-Wno-implicit-fallthrough"
+  cc_test:
+    rule: cc_test
+    srcs: "#inputsByKind.srcs"
+    deps: "#inputsByKind.cc_libs"
   java_library:
     rule: java_library
     srcs: "#inputsByKind.srcs"
