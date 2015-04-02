@@ -27,7 +27,7 @@ kindex_contents() {
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT ERR INT
 
-$indexpack --quiet --to_archive "$tmp/archive" $test_kindex
+$indexpack --quiet --to_archive "$tmp/archive" $test_kindex >/dev/null
 $indexpack --quiet --from_archive "$tmp/archive" "$tmp/idx"
 
 kindex_file="$(find "$tmp/idx" -name "*.kindex")"

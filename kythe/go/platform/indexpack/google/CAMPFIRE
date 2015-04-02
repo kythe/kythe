@@ -1,0 +1,27 @@
+[
+  {
+    "name": "google",
+    "kind": "go_library",
+    "inputs": {
+      "srcs": [
+        "fs.go"
+      ],
+      "go_pkgs": [
+        "//third_party/go:cloud_storage",
+        "//third_party/go:context"
+      ]
+    }
+  },
+  {
+    "name": "google_test",
+    "kind": "go_test",
+    "inputs": {
+      "srcs": [
+        "fs_test.go"
+      ],
+      "go_lib": [
+        ":google"
+      ]
+    }
+  }
+]

@@ -56,5 +56,26 @@
     "properties": {
       "go_package": "google.golang.org/grpc"
     }
+  },
+  {
+    "name": "cloud",
+    "kind": "go_external_lib",
+    "properties": {
+      "go_package": "google.golang.org/cloud"
+    }
+  },
+  {
+    "name": "cloud_storage",
+    "kind": "go_external_lib",
+    "properties": {
+      "go_package": "google.golang.org/cloud/storage"
+    }
+  },
+  {
+    "name": "oauth2",
+    "kind": "go_external_lib",
+    "properties": {
+      "go_package": "golang.org/x/oauth2"
+    }
   }
 ]

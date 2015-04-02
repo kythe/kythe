@@ -13,7 +13,7 @@ rm -rf -- "${TEST_TEMP}/pack"
 "${KINDEX_TOOL_BIN}" -assemble "${TEST_TEMP}/claim_test_2.kindex" \
   "${TEST_DATA}/claim_test_2.kindex_UNIT"
 "${INDEX_PACK_BIN}" -quiet=true --to_archive "${TEST_TEMP}/pack" \
-    "${TEST_TEMP}"/claim_test_*.kindex
+    "${TEST_TEMP}"/claim_test_*.kindex >/dev/null
 # The assignment is arbitrary but should be stable, since the heuristic for
 # assigning responsibility for a claimable picks the first possible claimant
 # with the lowest claim count (and this might differ for the same index pack

@@ -65,8 +65,11 @@
       ],
       "go_pkgs": [
         "//kythe/go/platform/indexpack",
+        "//kythe/go/platform/indexpack/google",
         "//kythe/go/platform/kindex",
+        "//kythe/go/util/oauth2",
         "//kythe/proto:analysis_proto",
+        "//third_party/go:cloud_storage",
         "//third_party/go:context"
       ]
     }

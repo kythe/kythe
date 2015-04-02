@@ -35,11 +35,14 @@ import (
 	"strings"
 
 	"kythe.io/kythe/go/platform/indexpack"
+	"kythe.io/kythe/go/platform/indexpack/google"
 	"kythe.io/kythe/go/platform/kindex"
+	"kythe.io/kythe/go/util/oauth2"
 
 	apb "kythe.io/kythe/proto/analysis_proto"
 
 	"golang.org/x/net/context"
+	"google.golang.org/cloud/storage"
 )
 
 const formatKey = "kythe"
@@ -48,6 +51,10 @@ var (
 	toArchive   = flag.String("to_archive", "", "Move kindex files into the given indexpack archive")
 	fromArchive = flag.String("from_archive", "", "Move the compilation units from the given archive into separate kindex files")
 	viewArchive = flag.String("view_archive", "", "Print JSON representations of each specified compilation unit in the given archive")
+
+	printFiles = flag.Bool("files", false, "Print file contents as well as the compilation for --view_archive")
+
+	oauth2Config = oauth2.NewConfigFlags(flag.CommandLine)
 
 	quiet = flag.Bool("quiet", false, "Suppress normal log output")
 )
@@ -60,6 +67,8 @@ func init() {
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
+
+	oauth2Config.Scopes = []string{storage.ScopeFullControl}
 }
 
 func main() {
@@ -88,7 +97,25 @@ func main() {
 	}
 
 	ctx := context.Background()
-	pack, err := indexpack.CreateOrOpen(ctx, archiveRoot, indexpack.UnitType(apb.CompilationUnit{}))
+	var err error
+
+	opts := []indexpack.Option{indexpack.UnitType(apb.CompilationUnit{})}
+	if strings.HasPrefix(archiveRoot, "gs://") {
+		path := strings.Trim(strings.TrimPrefix(archiveRoot, "gs://"), "/")
+		parts := strings.SplitN(path, "/", 2)
+		ctx, err = oauth2Config.Context(ctx)
+		if err != nil {
+			log.Fatal(err)
+		}
+		opts = append(opts, indexpack.FS(google.StorageFS{parts[0]}))
+		if len(parts) == 2 {
+			archiveRoot = parts[1]
+		} else {
+			archiveRoot = "/"
+		}
+	}
+
+	pack, err := indexpack.CreateOrOpen(ctx, archiveRoot, opts...)
 	if err != nil {
 		log.Fatalf("Error opening indexpack at %q: %v", archiveRoot, err)
 	}
@@ -122,15 +149,27 @@ func main() {
 		}
 	} else {
 		en := json.NewEncoder(os.Stdout)
-		for _, digest := range flag.Args() {
-			if err := pack.ReadUnit(ctx, formatKey, digest, func(i interface{}) error {
-				cu, ok := i.(*apb.CompilationUnit)
-				if !ok {
-					return fmt.Errorf("unit (digest: %q) is not analysis.CompilationUnit", digest)
+		fetcher := pack.Fetcher(ctx)
+		displayCompilation := func(i interface{}) error {
+			cu := i.(*apb.CompilationUnit)
+			if *printFiles {
+				idx, err := kindex.FromUnit(cu, fetcher)
+				if err != nil {
+					return fmt.Errorf("error reading files for compilation: %v", err)
 				}
-				return en.Encode(cu)
-			}); err != nil {
+				return en.Encode(idx)
+			}
+			return en.Encode(cu)
+		}
+		if len(flag.Args()) == 0 {
+			if err := pack.ReadUnits(ctx, formatKey, displayCompilation); err != nil {
 				log.Fatal(err)
+			}
+		} else {
+			for _, digest := range flag.Args() {
+				if err := pack.ReadUnit(ctx, formatKey, digest, displayCompilation); err != nil {
+					log.Fatal(err)
+				}
 			}
 		}
 	}
@@ -138,8 +177,10 @@ func main() {
 
 func packIndex(ctx context.Context, pack *indexpack.Archive, idx *kindex.Compilation) error {
 	for _, data := range idx.Files {
-		if _, err := pack.WriteFile(ctx, data.Content); err != nil {
+		if path, err := pack.WriteFile(ctx, data.Content); err != nil {
 			return fmt.Errorf("error writing file %v: %v", data.Info, err)
+		} else if !*quiet {
+			log.Println("Wrote file to", path)
 		}
 	}
 
@@ -147,9 +188,7 @@ func packIndex(ctx context.Context, pack *indexpack.Archive, idx *kindex.Compila
 	if err != nil {
 		return fmt.Errorf("error writing compilation unit: %v", err)
 	}
-	if !*quiet {
-		fmt.Println(strings.TrimSuffix(path, ".unit"))
-	}
+	fmt.Println(strings.TrimSuffix(path, ".unit"))
 	return nil
 }
 

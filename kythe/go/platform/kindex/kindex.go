@@ -58,8 +58,8 @@ const Extension = ".kindex"
 
 // Compilation is a CompilationUnit with the contents for all of its required inputs.
 type Compilation struct {
-	Proto *apb.CompilationUnit
-	Files []*apb.FileData
+	Proto *apb.CompilationUnit `json:"compilation"`
+	Files []*apb.FileData      `json:"files"`
 }
 
 // Open opens a kindex file at the given path (using os.Open) and reads its
