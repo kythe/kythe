@@ -16,9 +16,9 @@ ROOT="$(readlink -e "$(dirname $0)")"
 NODEDIR="${NODEDIR:-$ROOT/third_party/node/bin/}"
 
 if [ ! -d "$ROOT/buildtools/node_modules" ]; then
-  pushd "$ROOT/buildtools"
+  cd "$ROOT/buildtools"
   "$NODEDIR/node" "$NODEDIR/npm" install
-  popd
+  cd -
 fi
 
 case "$1" in
