@@ -15,6 +15,8 @@ exports.Converter = function(engine) {
   var config = yaml.safeLoad(fs.readFileSync(configPath));
   this.translations = config['translations'];
   this.rules = config['rules'];
+  this.default_visibility =
+      config['default_visibility'] || '["//visibility:public"]';
 };
 
 exports.Converter.prototype.convertTargets = function(targets) {
@@ -40,14 +42,15 @@ exports.Converter.prototype.convertTargets = function(targets) {
       }
       for (var i = 0; i < convs.length; i++) {
         var file = path.join(path.dirname(target.asPath()), 'BUILD');
-        var bazelTarget = self.convertTarget(convs[i], target);
-        var buf = new Buffer(displayTarget(bazelTarget));
-        if (writtenBuildFiles[file]) {
-          fs.appendFileSync(file, buf);
-        } else {
-          fs.writeFileSync(file, buf);
+        if (!writtenBuildFiles[file]) {
+          fs.writeFileSync(file, new Buffer(
+              'package(default_visibility = ' + self.default_visibility +
+                  ')\n\n'));
           writtenBuildFiles[file] = true;
         }
+
+        var bazelTarget = self.convertTarget(convs[i], target);
+        fs.appendFileSync(file, new Buffer(displayTarget(bazelTarget)));
       }
       console.log(target.id);
     }
