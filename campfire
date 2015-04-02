@@ -12,12 +12,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-ROOT=$(dirname $0)
-NODEDIR=${NODEDIR:-$ROOT/third_party/node/bin/}
+ROOT="$(readlink -e "$(dirname $0)")"
+NODEDIR="${NODEDIR:-$ROOT/third_party/node/bin/}"
+
+if [ ! -d "$ROOT/buildtools/node_modules" ]; then
+  pushd "$ROOT/buildtools"
+  "$NODEDIR/node" "$NODEDIR/npm" install
+  popd
+fi
+
 case "$1" in
   build|test|run|bench|extract)
-    ${ROOT}/buildtools/check_modules.sh \
-        "${NODEDIR}/node ${ROOT}/buildtools/main query_config"
+    "$ROOT/buildtools/check_modules.sh" \
+      "$NODEDIR/node $ROOT/buildtools/main query_config"
   ;;
 esac
-${NODEDIR}/node ${ROOT}/buildtools/main "$@"
+exec "$NODEDIR/node" "$ROOT/buildtools/main" "$@"
