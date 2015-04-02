@@ -79,6 +79,7 @@ rule linker
 rule protoc_java
   command = mkdir -p $out.srcs $out.classes && $
             $protocpath --java_out=$out.srcs $in && $
+            $protocpath --plugin=protoc-gen-java_rpc=$protocgrpcjava --java_rpc_out=$out.srcs $in && $
             $javac $javacopts -cp $classpath -d $out.classes $$(find $out.srcs -name '*.java') && $
             $javajar cf $out -C $out.classes .
   description = protoc_java $owner

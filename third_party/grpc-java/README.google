@@ -1,0 +1,9 @@
+URL: https://github.com/grpc/grpc-java
+Version: a375eccbea5dac854f9786b7f37f68417d70eff1
+License: New BSD License: http://opensource.org/licenses/BSD-3-Clause
+
+Description:
+The Java gRPC implementation. HTTP/2 based RPC
+
+Local modifications:
+No Modifications.

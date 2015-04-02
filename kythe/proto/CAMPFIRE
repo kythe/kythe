@@ -11,6 +11,9 @@
         ":storage_proto"
       ],
       "jars": [
+        "//third_party/grpc-java",
+        "//third_party/guava",
+        "//third_party/jsr305_annotations:jsr305",
         "//third_party/protobuf:protobuf_jar"
       ],
       "cc_libs": [
@@ -71,6 +74,9 @@
         "storage.proto"
       ],
       "jars": [
+        "//third_party/grpc-java",
+        "//third_party/guava",
+        "//third_party/jsr305_annotations:jsr305",
         "//third_party/protobuf:protobuf_jar"
       ],
       "cc_libs": [

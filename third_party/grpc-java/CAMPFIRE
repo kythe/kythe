@@ -1,0 +1,11 @@
+[
+  {
+    "name": "grpc-java",
+    "kind": "java_external_jar",
+    "inputs": {
+      "srcs": [
+        "grpc-all-0.1.0-SNAPSHOT.jar"
+      ]
+    }
+  }
+]

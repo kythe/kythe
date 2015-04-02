@@ -662,6 +662,7 @@ function ninjaBuildHeader(engine) {
     'javacopts': (engine.settings.properties['javac_opts'] || []).join(' '),
     'javajar': engine.settings.properties['jar_path'],
     'protocgengo': engine.settings.properties['protoc_gen_go_path'],
+    'protocgrpcjava': engine.settings.properties['protoc_grpc_java_path'],
     'protocpath': engine.settings.properties['protoc_path']
   };
 
