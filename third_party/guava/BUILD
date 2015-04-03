@@ -7,6 +7,6 @@ exports_files(["LICENSE"])
 java_import(
     name = "guava",
     jars = [
-        "guava-16.0.1.jar",
+        "guava-18.0.jar",
     ],
 )
