@@ -15,7 +15,8 @@
 # limitations under the License.
 
 # Builds grpc-java, its dependencies, and places the resulting grpc-java library
-# jar and java_plugin binary in third_party/grpc-java.
+# jar and java_plugin binary in third_party/grpc-java and Netty in
+# third_party/netty.
 #
 # WARNING: installing the Netty dependency can take over an hour
 
@@ -30,6 +31,7 @@ cd "$TMP/grpc-java"
 git submodule update --init
 pushd lib/netty
 mvn install -pl codec-http2 -am -DskipTests=true
+find */target/ -name '*-SNAPSHOT.jar' -exec cp '{}' "$THIRD_PARTY/netty/" \;
 popd
 
 git clone https://github.com/google/protobuf.git
