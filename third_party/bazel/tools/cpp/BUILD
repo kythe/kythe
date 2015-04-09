@@ -1,5 +1,7 @@
 package(default_visibility = ["//visibility:public"])
 
+licenses(["unencumbered"])  # Authored by Google, Apache 2.0
+
 # TODO(bazel-team): The MacOS tools give an error if there is no object file on
 # the command line to libtool, so we use an empty .cc file here. We should find
 # a better way to handle this case.
