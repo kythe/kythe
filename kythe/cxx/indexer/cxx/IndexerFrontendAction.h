@@ -154,9 +154,9 @@ public:
   StdinAdjustSingleFrontendActionFactory(clang::FrontendAction *Action)
       : Action(Action) {}
 
-  virtual bool runInvocation(clang::CompilerInvocation *Invocation,
-                             clang::FileManager *Files,
-                             clang::DiagnosticConsumer *DiagConsumer) override {
+  bool runInvocation(clang::CompilerInvocation *Invocation,
+                     clang::FileManager *Files,
+                     clang::DiagnosticConsumer *DiagConsumer) override {
     auto &FEOpts = Invocation->getFrontendOpts();
     for (auto &Input : FEOpts.Inputs) {
       if (Input.isFile() && Input.getFile() == "-") {
