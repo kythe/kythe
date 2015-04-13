@@ -44,6 +44,11 @@ CP="$(mktemp)"
 trap 'rm -f "$CP"' EXIT
 
 mvn process-sources dependency:build-classpath -Dmdep.outputFile="$CP"
+if [[ ! -s "$CP" ]]; then
+  # Empty Maven classpath; fix up for the javac @ argument below
+  echo > "$CP"
+fi
+
 SRCS="$(find -name '*.java')"
 
 java -jar /kythe/bin/javac_extractor_deploy.jar -cp "@$CP" $SRCS
