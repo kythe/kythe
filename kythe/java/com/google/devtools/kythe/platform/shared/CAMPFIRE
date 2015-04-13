@@ -26,5 +26,21 @@
         "//third_party/protobuf:protobuf_jar"
       ]
     }
+  },
+  {
+    "name": "remote_file_data",
+    "kind": "java_library",
+    "inputs": {
+      "srcs": [
+        "RemoteFileData.java"
+      ],
+      "jars": [
+        ":file_data",
+        "//kythe/proto:analysis_proto",
+        "//third_party/grpc-java",
+        "//third_party/guava",
+        "//third_party/protobuf:protobuf_jar"
+      ]
+    }
   }
 ]

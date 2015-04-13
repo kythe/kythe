@@ -1,5 +1,26 @@
 [
   {
+    "name": "compilation_analyzer",
+    "kind": "java_library",
+    "inputs": {
+      "srcs": [
+        "AbstractCompilationAnalyzer.java"
+      ],
+      "jars": [
+        ":entryset",
+        "//kythe/java/com/google/devtools/kythe/common",
+        "//kythe/java/com/google/devtools/kythe/platform/shared",
+        "//kythe/java/com/google/devtools/kythe/platform/shared:file_data",
+        "//kythe/java/com/google/devtools/kythe/platform/shared:remote_file_data",
+        "//kythe/proto:analysis_proto",
+        "//kythe/proto:storage_proto",
+        "//third_party/grpc-java",
+        "//third_party/guava",
+        "//third_party/protobuf:protobuf_jar"
+      ]
+    }
+  },
+  {
     "name": "entryset",
     "kind": "java_library",
     "inputs": {

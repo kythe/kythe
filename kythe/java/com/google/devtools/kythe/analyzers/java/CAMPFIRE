@@ -51,6 +51,30 @@
     }
   },
   {
+    "name": "indexer_server",
+    "kind": "java_binary",
+    "inputs": {
+      "srcs": [
+        "JavaIndexerServer.java"
+      ],
+      "jars": [
+        ":analyzer",
+        "//kythe/java/com/google/devtools/kythe/analyzers/base:compilation_analyzer",
+        "//kythe/java/com/google/devtools/kythe/analyzers/base:entryset",
+        "//kythe/java/com/google/devtools/kythe/platform/java",
+        "//kythe/java/com/google/devtools/kythe/platform/shared",
+        "//kythe/java/com/google/devtools/kythe/platform/shared:file_data",
+        "//kythe/proto:analysis_proto",
+        "//third_party/grpc-java",
+        "//third_party/guava",
+        "//third_party/netty"
+      ]
+    },
+    "properties": {
+      "main_class": "com.google.devtools.kythe.analyzers.java.JavaIndexerServer"
+    }
+  },
+  {
     "name": "java_indexer_deploy",
     "kind": "java_deploy_jar",
     "inputs": {
