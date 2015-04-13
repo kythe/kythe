@@ -39,6 +39,8 @@ ENV LC_TELEPHONE en_US.UTF-8
 ENV LC_MEASUREMENT en_US.UTF-8
 ENV LC_IDENTIFICATION en_US.UTF-8
 
+VOLUME /opt/llvm
+
 # Helper script to set language tooling flags
 ADD campfire-wrapper /kythe/bin/campfire
 ADD campfire_settings /root/.campfire_settings

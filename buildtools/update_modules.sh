@@ -23,55 +23,71 @@
 #
 # If the argument `--docker` is passed, the dependencies will be fetched on
 # the host, but the build will take place using the campfire-docker toolchain.
-ROOT="$(dirname $0)/.."
-cd "${ROOT}"
-ROOT_ABS="${PWD}"
-NODEDIR=${NODEDIR:-$ROOT_ABS/third_party/node/bin/}
-QUERY_CONFIG="${NODEDIR}/node ${ROOT_ABS}/buildtools/main query_config"
-LLVM_REPO="$(${QUERY_CONFIG} root_rel_llvm_repo)"
-CAMPFIRE_CXX="$(${QUERY_CONFIG} cxx_path)"
-CAMPFIRE_CC="$(${QUERY_CONFIG} cc_path)"
-mkdir -p "${LLVM_REPO}"
-cd "${LLVM_REPO}"
-LLVM_REPO_ABS="${PWD}"
-cd "${ROOT_ABS}"
+
+git_maybe_clone() {
+  local repo="$1"
+  local dir="$2"
+  if [[ ! -d "$dir/.git" ]]; then
+    git clone "$repo" "$dir"
+  fi
+}
+
+git_checkout_sha() {
+  local repo="$1"
+  local sha="$2"
+  cd "$repo"
+  if [[ "$sha" != "$(git rev-parse HEAD)" ]]; then
+    git fetch origin master
+    git checkout -f "$sha"
+  fi
+  cd - >/dev/null
+}
+
+ROOT_REL="$(dirname $0)/.."
+cd "$ROOT_REL"
+ROOT="$PWD"
+
+NODEDIR="${NODEDIR:-"$ROOT/third_party/node/bin/"}"
+query_config() {
+  "$NODEDIR/node" "$ROOT/buildtools/main" query_config "$@"
+}
+
+CAMPFIRE_CXX="$(query_config cxx_path)"
+CAMPFIRE_CC="$(query_config cc_path)"
+
+LLVM_REPO_REL="$(query_config root_rel_llvm_repo)"
+mkdir -p "$LLVM_REPO_REL"
+LLVM_REPO="$(readlink -e "$LLVM_REPO_REL")"
+
 . "./buildtools/module_versions.sh"
 if [[ -z "$1" || "$1" == "--git_only" || "$1" == "--docker" ]]; then
-  echo "Using repository in ${LLVM_REPO_ABS} from root ${ROOT_ABS}"
-  if [ ! -d "${LLVM_REPO}/.git" ]; then
-    git clone http://llvm.org/git/llvm.git "${LLVM_REPO_ABS}"
-  fi
-  if [ ! -d "${LLVM_REPO}/tools/clang/.git" ]; then
-    git clone http://llvm.org/git/clang.git "${LLVM_REPO_ABS}/tools/clang"
-  fi
-  if [ ! -d "${LLVM_REPO}/tools/clang/tools/extra/.git" ]; then
-    git clone http://llvm.org/git/clang-tools-extra.git \
-        "${LLVM_REPO_ABS}/tools/clang/tools/extra"
-  fi
-  cd "${LLVM_REPO_ABS}"
-  git checkout master
-  git pull
-  git checkout "${MIN_LLVM_SHA}"
-  cd tools/clang
-  git checkout master
-  git pull
-  git checkout "${MIN_CLANG_SHA}"
-  cd tools/extra
-  git checkout master
-  git pull
-  git checkout "${MIN_EXTRA_SHA}"
+  echo "Using repository in $LLVM_REPO_REL (relative to $ROOT_REL)"
+
+  git_maybe_clone http://llvm.org/git/llvm.git "$LLVM_REPO"
+  git_maybe_clone http://llvm.org/git/clang.git "$LLVM_REPO/tools/clang"
+  git_maybe_clone http://llvm.org/git/clang-tools-extra.git \
+    "$LLVM_REPO/tools/clang/tools/extra"
+
+  git_checkout_sha "$LLVM_REPO" "$MIN_LLVM_SHA"
+  git_checkout_sha "$LLVM_REPO/tools/clang" "$MIN_CLANG_SHA"
+  git_checkout_sha "$LLVM_REPO/tools/clang/tools/extra" "$MIN_EXTRA_SHA"
 fi
+
 if [[ "$1" == "--docker" ]]; then
-  cd "${ROOT_ABS}"
   ./campfire-docker build_update_modules
 fi
+
 if [[ -z "$1" || "$1" == "--build_only" ]]; then
-  mkdir -p "${LLVM_REPO_ABS}/build"
-  cd "${LLVM_REPO_ABS}/build"
-  ../configure CC="${CAMPFIRE_CC}" CXX="${CAMPFIRE_CXX}" \
-                --prefix="${LLVM_REPO_ABS}/build-install" \
-                CXXFLAGS="-std=c++11" \
-                --enable-optimized --disable-bindings
-  make -j8
-  cd "${ROOT_ABS}"
+  vbuild_dir="$LLVM_REPO/build.${MIN_LLVM_SHA}.${MIN_CLANG_SHA}.${MIN_EXTRA_SHA}"
+  if [[ ! -d "$vbuild_dir" ]]; then
+    mkdir -p "$vbuild_dir"
+    trap "rm -rf '$vbuild_dir'" ERR INT
+    cd "$vbuild_dir"
+    ../configure CC="${CAMPFIRE_CC}" CXX="${CAMPFIRE_CXX}" \
+      --prefix="$LLVM_REPO/build-install" \
+      CXXFLAGS="-std=c++11" \
+      --enable-optimized --disable-bindings
+    make -j8
+  fi
+  ln -sf "$vbuild_dir" "$LLVM_REPO/build"
 fi
