@@ -29,8 +29,8 @@ rule java_deploy_jar
   command = root=$$PWD; $
             mkdir -p $out.classes && $
             for j in $in; do $
-              if [[ -d "$$j.classes" ]]; then $
-                cp -lr "$$j.classes"/* $out.classes/; $
+              if [ -d "$$j.classes" ]; then $
+                cp -lfr "$$j.classes"/* $out.classes/; $
               else $
                 cd $out.classes && '$javajar' xf "$$root/$$j"; $
                 cd "$$root"; $
