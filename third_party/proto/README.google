@@ -1,0 +1,13 @@
+URL: https://github.com/google/protobuf
+Version: f0b510ac22798cb4cd805acf5b1798fd1aee9824
+License: New BSD License: http://opensource.org/licenses/BSD-3-Clause
+License File: LICENSE
+
+Description:
+Data serialization format by Google.
+
+Local Modifications:
+Ran configure to generate config.h.
+Added BUILD file.
+Renamed .gitignore to dist.gitignore.
+Wrote a pbconfig.h.
