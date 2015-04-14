@@ -104,7 +104,7 @@ func NewFileTreeServiceClient(cc *grpc.ClientConn) FileTreeServiceClient {
 
 func (c *fileTreeServiceClient) CorpusRoots(ctx context.Context, in *CorpusRootsRequest, opts ...grpc.CallOption) (*CorpusRootsReply, error) {
 	out := new(CorpusRootsReply)
-	err := grpc.Invoke(ctx, "/.FileTreeService/CorpusRoots", in, out, c.cc, opts...)
+	err := grpc.Invoke(ctx, "/kythe.proto.FileTreeService/CorpusRoots", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +113,7 @@ func (c *fileTreeServiceClient) CorpusRoots(ctx context.Context, in *CorpusRoots
 
 func (c *fileTreeServiceClient) Directory(ctx context.Context, in *DirectoryRequest, opts ...grpc.CallOption) (*DirectoryReply, error) {
 	out := new(DirectoryReply)
-	err := grpc.Invoke(ctx, "/.FileTreeService/Directory", in, out, c.cc, opts...)
+	err := grpc.Invoke(ctx, "/kythe.proto.FileTreeService/Directory", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +158,7 @@ func _FileTreeService_Directory_Handler(srv interface{}, ctx context.Context, bu
 }
 
 var _FileTreeService_serviceDesc = grpc.ServiceDesc{
-	ServiceName: ".FileTreeService",
+	ServiceName: "kythe.proto.FileTreeService",
 	HandlerType: (*FileTreeServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

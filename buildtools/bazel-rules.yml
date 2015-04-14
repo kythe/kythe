@@ -39,9 +39,10 @@ rules:
     rule: java_import
     jars: "#inputsByKind.srcs"
   proto_library:
-    rule: genproto
+    rule: genproto_all
     src: "*#inputsByKind.srcs"
     deps: "#inputsByKind.proto_libs"
+    has_services: "#properties.has_services"
 translations:
   direct:
     "//third_party/junit:junit": "//third_party:junit4"

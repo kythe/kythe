@@ -14,14 +14,24 @@ def genproto_impl(ctx):
   java_srcs = jar_out.path + ".srcs"
   java_classes = jar_out.path + ".classes"
 
+  java_grpc_cmd = ""
+  if ctx.attr.has_services:
+    java_grpc_plugin = ctx.file._protoc_grpc_plugin_java
+    compile_time_jars += ctx.files._proto_grpc_java_libs
+    runtime_jars += ctx.files._proto_grpc_java_libs
+    java_grpc_cmd = (
+        protoc.path + " --java_rpc_out=" + java_srcs +
+        " --plugin=protoc-gen-java_rpc=" + java_grpc_plugin.path + " " + src.path + "\n")
+
   java_cmd = (
-         "set -e;" +
-         "rm -rf " + java_srcs + " " + java_classes + ";" +
-         "mkdir " + java_srcs + " " + java_classes +  ";" +
-         protoc.path + " --java_out=" + java_srcs + " " + src.path + ";" +
-         jdk_bin + "javac -encoding utf-8 -cp '" + cmd_helper.join_paths(":", compile_time_jars) +
-         "' -d " + java_classes + " $(find " + java_srcs + " -name '*.java');" +
-         jdk_bin + "jar cf " + jar_out.path + " -C " + java_classes + " .;")
+      "set -e;" +
+      "rm -rf " + java_srcs + " " + java_classes + ";" +
+      "mkdir " + java_srcs + " " + java_classes +  "\n" +
+      protoc.path + " --java_out=" + java_srcs + " " + src.path + "\n" +
+      java_grpc_cmd +
+      jdk_bin + "javac -encoding utf-8 -cp '" + cmd_helper.join_paths(":", compile_time_jars) +
+      "' -d " + java_classes + " $(find " + java_srcs + " -name '*.java')\n" +
+      jdk_bin + "jar cf " + jar_out.path + " -C " + java_classes + " .;")
   ctx.action(
       inputs = [src, protoc] + list(compile_time_jars),
       outputs = [jar_out],
@@ -34,10 +44,15 @@ def genproto_impl(ctx):
   go_srcs = go_archive.path + ".go.srcs"
   protoc_gen_go = ctx.file._protoc_gen_go
   go_pkg = ctx.attr.go_package_prefix + ctx.label.package + "/" + ctx.label.name
+
+  go_libs = ctx.targets.deps + ctx.targets._proto_go_libs
+  if ctx.attr.has_services:
+    go_libs += ctx.targets._proto_grpc_go_libs
+
   go_include_paths = ""
   go_deps = []
   go_recursive_deps = set()
-  for dep in ctx.targets.deps + ctx.targets._proto_go_libs:
+  for dep in go_libs:
     go_include_paths += " -I \"$(dirname " + dep.go_archive.path + ")/gopath\""
     go_deps += [dep.go_archive]
     go_recursive_deps += dep.go_recursive_deps
@@ -63,7 +78,7 @@ def genproto_impl(ctx):
       go_include_paths + " $(ls -1 " + go_srcs + "/*.go) ;" +
       "ln -sf " + go_symlink_content + " " + go_symlink.path + ";")
   ctx.action(
-      inputs = [src, protoc, protoc_gen_go, gotool] + ctx.files._proto_go_libs + go_deps,
+      inputs = [src, protoc, protoc_gen_go, gotool] + go_deps,
       outputs = [go_archive, go_symlink],
       mnemonic = 'ProtocGo',
       command = go_cmd,
@@ -87,6 +102,7 @@ genproto = rule(
             allow_files = False,
             providers = ["proto_src"],
         ),
+        "has_services": attr.int(),
         # TODO(schroederc): put package prefix into common configuration file
         "go_package_prefix": attr.string(default = "kythe.io/"),
         "_protoc": attr.label(
@@ -99,19 +115,35 @@ genproto = rule(
             single_file = True,
             allow_files = jar_filetype,
         ),
+        "_protoc_grpc_plugin_java": attr.label(
+            default = Label("//third_party/grpc-java:plugin"),
+            single_file = True,
+        ),
         "_protoc_gen_go": attr.label(
             default = Label("//third_party/go:protoc-gen-go"),
             single_file = True,
             allow_files = True,
         ),
         "_proto_go_libs": attr.label_list(
+            default = [Label("//third_party/go:protobuf")],
+            allow_files = False,
+            providers = ["go_archive"],
+        ),
+        "_proto_grpc_go_libs": attr.label_list(
             default = [
-                Label("//third_party/go:protobuf"),
                 Label("//third_party/go:context"),
                 Label("//third_party/go:grpc"),
             ],
             allow_files = False,
             providers = ["go_archive"],
+        ),
+        "_proto_grpc_java_libs": attr.label_list(
+            default = [
+                Label("//third_party/grpc-java"),
+                Label("//third_party/guava"),
+                Label("//third_party/jsr305_annotations:jsr305"),
+            ],
+            allow_files = jar_filetype,
         ),
         "_go": attr.label(
             default = Label("//tools/go"),
@@ -125,8 +157,8 @@ genproto = rule(
     },
 )
 
-def genproto_all(name, src, deps = []):
-  genproto(name = name, src = src, deps = deps)
+def genproto_all(name, src, deps = [], has_services = None):
+  genproto(name = name, src = src, deps = deps, has_services = has_services)
   # We'll guess that the repository is set up such that a .proto in
   # //foo/bar has the package foo.bar. `location` is substituted with the
   # relative path to its label from the workspace root.

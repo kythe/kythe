@@ -1,6 +1,15 @@
 package(default_visibility = ["//visibility:public"])
 
 java_library(
+    name = "shared",
+    srcs = [
+        "AnalysisException.java",
+        "NullStatisticsCollector.java",
+        "StatisticsCollector.java",
+    ],
+)
+
+java_library(
     name = "file_data",
     srcs = [
         "FileDataCache.java",
@@ -16,10 +25,15 @@ java_library(
 )
 
 java_library(
-    name = "shared",
+    name = "remote_file_data",
     srcs = [
-        "AnalysisException.java",
-        "NullStatisticsCollector.java",
-        "StatisticsCollector.java",
+        "RemoteFileData.java",
+    ],
+    deps = [
+        ":file_data",
+        "//kythe/proto:analysis_proto",
+        "//third_party:protobuf",
+        "//third_party/grpc-java",
+        "//third_party/guava",
     ],
 )

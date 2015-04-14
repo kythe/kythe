@@ -1,0 +1,9 @@
+URL: https://github.com/netty/netty
+Version: ba9f2143030d1b781724f04adaac254af3326930
+License: Apache License 2.0 http://www.apache.org/licenses/LICENSE-2.0
+
+Description:
+Netty project - an event-driven asynchronous network application framework http://netty.io/
+
+Local modifications:
+Built with ../grpc-java/update.sh

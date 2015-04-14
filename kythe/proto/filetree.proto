@@ -16,6 +16,9 @@
 
 syntax = "proto3";
 
+package kythe.proto;
+option java_package = "com.google.devtools.kythe.proto";
+
 // FileTreeService provides an interface to explore a tree of files.
 service FileTreeService {
   // CorpusRoots returns all known corpus/root pairs for stored files.
