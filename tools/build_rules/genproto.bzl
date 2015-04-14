@@ -145,7 +145,8 @@ def genproto_all(name, src, deps = []):
     if len(dep) > 6 and dep[-6:] == "_proto":
       cc_deps += [dep + "_cc"]
       proto_deps += [dep]
-    cc_deps += [dep]
+    else:
+      cc_deps += [dep]
   native.genrule(
     name = proto_srcgen_rule,
     outs = [proto_hdr, proto_src],

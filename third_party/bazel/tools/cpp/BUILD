@@ -1,7 +1,5 @@
 package(default_visibility = ["//visibility:public"])
 
-licenses(["unencumbered"])  # Authored by Google, Apache 2.0
-
 # TODO(bazel-team): The MacOS tools give an error if there is no object file on
 # the command line to libtool, so we use an empty .cc file here. We should find
 # a better way to handle this case.
@@ -20,6 +18,16 @@ filegroup(
     srcs = [],
 )
 
+# This is the entry point for --crosstool_top.  Toolchains are found
+# by lopping off the name of --crosstool_top and searching for
+# "cc-compiler-${CPU}" in this BUILD file, where CPU is the target CPU
+# specified in --cpu.
+#
+# This file group should include
+#   * all cc_toolchain targets supported
+#   * all file groups that said cc_toolchain might refer to,
+# including the default_grte_top setting in the CROSSTOOL
+# protobuf.
 filegroup(
     name = "toolchain",
     srcs = [
