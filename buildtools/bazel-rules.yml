@@ -27,6 +27,10 @@ rules:
     rule: java_library
     srcs: "#inputsByKind.srcs"
     deps: "#inputsByKind.jars"
+  java_test:
+    rule: java_test
+    srcs: "#inputsByKind.srcs"
+    deps: "#inputsByKind.jars"
   java_external_jar:
     rule: java_import
     jars: "#inputsByKind.srcs"
@@ -36,6 +40,7 @@ rules:
     deps: "#inputsByKind.proto_libs"
 translations:
   direct:
+    "//third_party/junit:junit": "//third_party:junit4"
     "//third_party/protobuf:protobuf_jar": "//third_party:protobuf"
   prefix: {}
   exclude:
