@@ -1,5 +1,9 @@
 ---
 rules:
+  go_library:
+    rule: go_library
+    srcs: "#inputsByKind.srcs"
+    deps: "#inputsByKind.go_pkgs"
   cc_binary:
     rule: cc_binary
     srcs: "#inputsByKind.srcs"

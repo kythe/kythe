@@ -29,10 +29,47 @@ def genproto_impl(ctx):
       command = java_cmd,
       use_default_shell_env = True)
 
-  # TODO(schroederc): C++ support
-  # TODO(schroederc): Go support
+  gotool = ctx.file._go
+  go_archive = ctx.outputs.go
+  go_srcs = go_archive.path + ".go.srcs"
+  protoc_gen_go = ctx.file._protoc_gen_go
+  go_pkg = "kythe.io/" + ctx.label.package + "/" + ctx.label.name
+  go_include_paths = ""
+  go_deps = []
+  for dep in ctx.targets.deps + ctx.targets._proto_go_libs:
+    go_include_paths += " -I \"$(dirname " + dep.go_archive.path + ")/gopath\""
+    go_deps += [dep.go_archive]
 
-  return struct(proto_defs = set([src]),
+  go_symlink = ctx.new_file(ctx.configuration.bin_dir, ctx.label.name + "/gopath/" + go_pkg + ".a")
+  go_symlink_content = ctx.label.name + ".a"
+  for component in go_pkg.split("/"):
+    go_symlink_content = "../" + go_symlink_content
+
+  go_proto_import_path = ""
+  for dep in ctx.targets.deps:
+    go_proto_import_path += ",M" + dep.proto_src.path + "=kythe.io/" + dep.label.package + "/" + dep.label.name
+
+  go_cmd = (
+      "set -e;" +
+      "rm -rf " + go_srcs + ";" +
+      "mkdir -p " + go_srcs + ";" +
+      protoc.path + " --plugin=" + protoc_gen_go.path + " --go_out=plugins=grpc,import_path=" +
+      go_pkg + go_proto_import_path + ":" + go_srcs + " " + src.path + ";" +
+      "find " + go_srcs + " -type f -name '*.go' -exec mv -f {} " + go_srcs + " ';';" +
+      gotool.path + " tool 6g -p " + go_pkg + " -complete -pack -o " + go_archive.path + " " +
+      go_include_paths + " $(ls -1 " + go_srcs + "/*.go) ;" +
+      "ln -sf " + go_symlink_content + " " + go_symlink.path + ";")
+  ctx.action(
+      inputs = [src, protoc, protoc_gen_go, gotool] + ctx.files._proto_go_libs + go_deps,
+      outputs = [go_archive, go_symlink],
+      mnemonic = 'ProtocGo',
+      command = go_cmd,
+      use_default_shell_env = True)
+
+  # TODO(zarko): C++ support
+
+  return struct(proto_src = src,
+                go_archive = go_archive,
                 compile_time_jars = set([jar_out]) + compile_time_jars,
                 runtime_jars = set([jar_out], order="link") + runtime_jars)
 
@@ -46,11 +83,7 @@ genproto = rule(
         ),
         "deps": attr.label_list(
             allow_files = False,
-            providers = [
-                "proto_defs",
-                "compile_time_jars",
-                "runtime_jars",
-            ],
+            providers = ["proto_src"],
         ),
         "_protoc": attr.label(
             default = Label("//third_party:protoc"),
@@ -62,6 +95,28 @@ genproto = rule(
             single_file = True,
             allow_files = jar_filetype,
         ),
+        "_protoc_gen_go": attr.label(
+            default = Label("//third_party/go:protoc-gen-go"),
+            single_file = True,
+            allow_files = True,
+        ),
+        "_proto_go_libs": attr.label_list(
+            default = [
+                Label("//third_party/go:protobuf"),
+                Label("//third_party/go:context"),
+                Label("//third_party/go:grpc"),
+            ],
+            allow_files = False,
+            providers = ["go_archive"],
+        ),
+        "_go": attr.label(
+            default = Label("//tools/go"),
+            allow_files = True,
+            single_file = True,
+        ),
     },
-    outputs = {"java": "lib%{name}.jar"},
+    outputs = {
+        "java": "lib%{name}.jar",
+        "go": "%{name}/%{name}.a",
+    },
 )

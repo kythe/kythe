@@ -43,3 +43,8 @@ genproto(
     name = "serving_proto",
     src = "serving.proto",
 )
+
+genproto(
+    name = "filetree_proto",
+    src = "filetree.proto",
+)
