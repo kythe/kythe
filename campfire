@@ -18,7 +18,7 @@ NODEDIR="${NODEDIR:-$ROOT/third_party/node/bin/}"
 if [ ! -d "$ROOT/buildtools/node_modules" ]; then
   cd "$ROOT/buildtools"
   "$NODEDIR/node" "$NODEDIR/npm" install >&2
-  cd -
+  cd - >/dev/null
 fi
 
 case "$1" in
