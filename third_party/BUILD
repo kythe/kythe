@@ -5,6 +5,12 @@ filegroup(
     srcs = ["protobuf/bin/protoc"],
 )
 
+cc_library(
+    name = "protobuf_cc",
+    srcs = ["protobuf/lib/libprotobuf.a"],
+    includes = ["protobuf/include"],
+)
+
 java_import(
     name = "protobuf",
     jars = ["protobuf/protobuf-java-3.0.0-alpha-1.jar"],

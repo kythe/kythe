@@ -69,8 +69,6 @@ def genproto_impl(ctx):
       command = go_cmd,
       use_default_shell_env = True)
 
-  # TODO(zarko): C++ support
-
   return struct(proto_src = src,
                 go_archive = go_archive,
                 go_recursive_deps = go_recursive_deps,
@@ -126,3 +124,37 @@ genproto = rule(
         "go": "%{name}/%{name}.a",
     },
 )
+
+def genproto_all(name, src, deps = []):
+  genproto(name = name, src = src, deps = deps)
+  # We'll guess that the repository is set up such that a .proto in
+  # //foo/bar has the package foo.bar. `location` is substituted with the
+  # relative path to its label from the workspace root.
+  if len(name) < 6 or name[-6:] != "_proto":
+    fail("genproto names should end in _proto, saw %s" % name, "name")
+  proto_path = "$(location %s)" % src
+  proto_hdr = src[0:-6] + ".pb.h"
+  proto_src = src[0:-6] + ".pb.cc"
+  proto_srcgen_rule = name + "_cc_protoc"
+  proto_lib = name + "_cc"
+  protoc = "//third_party:protoc"
+  proto_cmd = "$(location %s) --cpp_out=$(GENDIR)/ %s" % (protoc, src)
+  cc_deps = ["//third_party:protobuf_cc"]
+  proto_deps = [src, "//third_party:protoc"]
+  for dep in deps:
+    if len(dep) > 6 and dep[-6:] == "_proto":
+      cc_deps += [dep + "_cc"]
+      proto_deps += [dep]
+    cc_deps += [dep]
+  native.genrule(
+    name = proto_srcgen_rule,
+    outs = [proto_hdr, proto_src],
+    srcs = proto_deps,
+    cmd = proto_cmd
+  )
+  native.cc_library(
+    name = proto_lib,
+    hdrs = [proto_hdr],
+    srcs = [":" + proto_srcgen_rule],
+    deps = cc_deps
+  )

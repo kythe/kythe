@@ -1,18 +1,18 @@
 package(default_visibility = ["//visibility:public"])
 
-load("/tools/build_rules/genproto", "genproto")
+load("/tools/build_rules/genproto", "genproto_all")
 
-genproto(
+genproto_all(
     name = "any_proto",
     src = "any.proto",
 )
 
-genproto(
+genproto_all(
     name = "storage_proto",
     src = "storage.proto",
 )
 
-genproto(
+genproto_all(
     name = "analysis_proto",
     src = "analysis.proto",
     deps = [
@@ -21,12 +21,12 @@ genproto(
     ],
 )
 
-genproto(
+genproto_all(
     name = "cxx_proto",
     src = "cxx.proto",
 )
 
-genproto(
+genproto_all(
     name = "claim_proto",
     src = "claim.proto",
     deps = [
@@ -34,17 +34,17 @@ genproto(
     ],
 )
 
-genproto(
+genproto_all(
     name = "xref_proto",
     src = "xref.proto",
 )
 
-genproto(
+genproto_all(
     name = "serving_proto",
     src = "serving.proto",
 )
 
-genproto(
+genproto_all(
     name = "filetree_proto",
     src = "filetree.proto",
 )
