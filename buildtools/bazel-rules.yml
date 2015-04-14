@@ -8,6 +8,11 @@ rules:
     rule: go_binary
     srcs: "#inputsByKind.srcs"
     deps: "#inputsByKind.go_pkgs"
+  go_test:
+    rule: go_test
+    srcs: "#inputsByKind.srcs"
+    deps: "#inputsByKind.go_pkgs"
+    library: "*#inputsByKind.go_lib"
   cc_binary:
     rule: cc_binary
     srcs: "#inputsByKind.srcs"

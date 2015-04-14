@@ -1,4 +1,4 @@
-load("//tools/build_rules/go", "go_library")
+load("//tools/build_rules/go", "go_library", "go_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -11,5 +11,16 @@ go_library(
         "//kythe/go/services/web",
         "//kythe/proto:xref_proto",
         "//third_party/go:context",
+    ],
+)
+
+go_test(
+    name = "xrefs_test",
+    srcs = [
+        "xrefs_test.go",
+    ],
+    library = ":xrefs",
+    deps = [
+        "//kythe/go/util/schema",
     ],
 )

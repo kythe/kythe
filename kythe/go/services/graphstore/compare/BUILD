@@ -1,4 +1,4 @@
-load("//tools/build_rules/go", "go_library")
+load("//tools/build_rules/go", "go_library", "go_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -7,6 +7,17 @@ go_library(
     srcs = [
         "compare.go",
     ],
+    deps = [
+        "//kythe/proto:storage_proto",
+    ],
+)
+
+go_test(
+    name = "compare_test",
+    srcs = [
+        "compare_test.go",
+    ],
+    library = ":compare",
     deps = [
         "//kythe/proto:storage_proto",
     ],

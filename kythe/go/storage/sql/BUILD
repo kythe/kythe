@@ -1,4 +1,4 @@
-load("//tools/build_rules/go", "go_library")
+load("//tools/build_rules/go", "go_library", "go_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -17,5 +17,17 @@ go_library(
         "//kythe/proto:storage_proto",
         "//kythe/proto:xref_proto",
         "//third_party/go:go-sqlite3",
+    ],
+)
+
+go_test(
+    name = "sql_test",
+    srcs = [
+        "sql_test.go",
+    ],
+    library = ":sql",
+    deps = [
+        "//kythe/go/services/graphstore/compare",
+        "//kythe/proto:storage_proto",
     ],
 )

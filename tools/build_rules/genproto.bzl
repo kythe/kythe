@@ -53,19 +53,19 @@ def genproto_impl(ctx):
   go_deps = []
   go_recursive_deps = set()
   for dep in go_libs:
-    go_include_paths += " -I \"$(dirname " + dep.go_archive.path + ")/gopath\""
+    go_include_paths += " -I \"" + dep.go_archive.path + "_gopath\""
     go_deps += [dep.go_archive]
     go_recursive_deps += dep.go_recursive_deps
   go_recursive_deps += go_deps
 
-  go_symlink = ctx.new_file(ctx.configuration.bin_dir, ctx.label.name + "/gopath/" + go_pkg + ".a")
+  go_symlink = ctx.new_file(ctx.configuration.bin_dir, ctx.label.name + ".a_gopath/" + go_pkg + ".a")
   go_symlink_content = ctx.label.name + ".a"
   for component in go_pkg.split("/"):
     go_symlink_content = "../" + go_symlink_content
 
   go_proto_import_path = ""
   for dep in ctx.targets.deps:
-    go_proto_import_path += ",M" + dep.proto_src.path + "=kythe.io/" + dep.label.package + "/" + dep.label.name
+    go_proto_import_path += ",M" + dep.proto_src.path + "=" + ctx.attr.go_package_prefix + dep.label.package + "/" + dep.label.name
 
   go_cmd = (
       "set -e;" +
@@ -153,7 +153,7 @@ genproto = rule(
     },
     outputs = {
         "java": "lib%{name}.jar",
-        "go": "%{name}/%{name}.a",
+        "go": "%{name}.a",
     },
 )
 

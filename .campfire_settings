@@ -10,7 +10,7 @@
       "cxx_path": "clang++",
       "flex_path": "flex",
       "go_path": "go",
-      "go_testmain_generator": "//buildtools:go_testmain_generator",
+      "go_testmain_generator": "//tools/go:testmain_generator",
       "jar_path": "jar",
       "java_path": "java",
       "javac_path": "javac",

@@ -1,4 +1,4 @@
-load("//tools/build_rules/go", "go_library")
+load("//tools/build_rules/go", "go_library", "go_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -13,6 +13,22 @@ go_library(
         "//kythe/go/util/kytheuri",
         "//kythe/go/util/schema",
         "//kythe/go/util/stringset",
+        "//kythe/proto:storage_proto",
+        "//kythe/proto:xref_proto",
+    ],
+)
+
+go_test(
+    name = "xrefs_test",
+    srcs = [
+        "xrefs_test.go",
+    ],
+    library = ":xrefs",
+    deps = [
+        "//kythe/go/services/graphstore",
+        "//kythe/go/storage/inmemory",
+        "//kythe/go/util/kytheuri",
+        "//kythe/go/util/schema",
         "//kythe/proto:storage_proto",
         "//kythe/proto:xref_proto",
     ],
