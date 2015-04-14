@@ -4,6 +4,10 @@ rules:
     rule: go_library
     srcs: "#inputsByKind.srcs"
     deps: "#inputsByKind.go_pkgs"
+  go_binary:
+    rule: go_binary
+    srcs: "#inputsByKind.srcs"
+    deps: "#inputsByKind.go_pkgs"
   cc_binary:
     rule: cc_binary
     srcs: "#inputsByKind.srcs"

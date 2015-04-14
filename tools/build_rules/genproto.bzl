@@ -33,12 +33,15 @@ def genproto_impl(ctx):
   go_archive = ctx.outputs.go
   go_srcs = go_archive.path + ".go.srcs"
   protoc_gen_go = ctx.file._protoc_gen_go
-  go_pkg = "kythe.io/" + ctx.label.package + "/" + ctx.label.name
+  go_pkg = ctx.attr.go_package_prefix + ctx.label.package + "/" + ctx.label.name
   go_include_paths = ""
   go_deps = []
+  go_recursive_deps = set()
   for dep in ctx.targets.deps + ctx.targets._proto_go_libs:
     go_include_paths += " -I \"$(dirname " + dep.go_archive.path + ")/gopath\""
     go_deps += [dep.go_archive]
+    go_recursive_deps += dep.go_recursive_deps
+  go_recursive_deps += go_deps
 
   go_symlink = ctx.new_file(ctx.configuration.bin_dir, ctx.label.name + "/gopath/" + go_pkg + ".a")
   go_symlink_content = ctx.label.name + ".a"
@@ -70,6 +73,7 @@ def genproto_impl(ctx):
 
   return struct(proto_src = src,
                 go_archive = go_archive,
+                go_recursive_deps = go_recursive_deps,
                 compile_time_jars = set([jar_out]) + compile_time_jars,
                 runtime_jars = set([jar_out], order="link") + runtime_jars)
 
@@ -85,6 +89,8 @@ genproto = rule(
             allow_files = False,
             providers = ["proto_src"],
         ),
+        # TODO(schroederc): put package prefix into common configuration file
+        "go_package_prefix": attr.string(default = "kythe.io/"),
         "_protoc": attr.label(
             default = Label("//third_party:protoc"),
             allow_files = True,
