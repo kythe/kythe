@@ -36,6 +36,11 @@ rules:
     rule: java_library
     srcs: "#inputsByKind.srcs"
     deps: "#inputsByKind.jars"
+  java_binary:
+    rule: java_binary
+    srcs: "#inputsByKind.srcs"
+    deps: "#inputsByKind.jars"
+    main_class: "#properties.main_class"
   java_test:
     rule: java_test
     srcs: "#inputsByKind.srcs"
