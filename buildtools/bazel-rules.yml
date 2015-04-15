@@ -53,6 +53,12 @@ rules:
     src: "*#inputsByKind.srcs"
     deps: "#inputsByKind.proto_libs"
     has_services: "#properties.has_services"
+  genlex:
+    rule: genlex
+    srcs: "#inputsByKind.srcs"
+  genyacc:
+    rule: genyacc
+    src: "*#inputsByKind.srcs"
 translations:
   direct:
     "//third_party/gflags:gflags": "//third_party/googleflags:gflags"
