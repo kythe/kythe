@@ -1,21 +1,5 @@
 package(default_visibility = ["//visibility:public"])
 
-filegroup(
-    name = "protoc",
-    srcs = ["protobuf/bin/protoc"],
-)
-
-cc_library(
-    name = "protobuf_cc",
-    srcs = ["protobuf/lib/libprotobuf.a"],
-    includes = ["protobuf/include"],
-)
-
-java_import(
-    name = "protobuf",
-    jars = ["protobuf/protobuf-java-3.0.0-alpha-1.jar"],
-)
-
 java_import(
     name = "junit4",
     jars = [

@@ -36,6 +36,7 @@ toolchain {
   tool_path { name: "gcc" path: "/usr/bin/gcc" }
   cxx_flag: "-std=c++0x"
   linker_flag: "-lstdc++"
+  linker_flag: "-lpthread"
   linker_flag: "-B/usr/bin/"
 
   # TODO(bazel-team): In theory, the path here ought to exactly match the path
@@ -77,6 +78,7 @@ toolchain {
   ar_flag: "-s"
   ar_flag: "-o"
   linker_flag: "-lstdc++"
+  linker_flag: "-lpthread"
   cxx_builtin_include_directory: "/usr/include"
   cxx_builtin_include_directory: "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain"
   cxx_builtin_include_directory: "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs"

@@ -18,6 +18,6 @@ java_library(
     ],
     deps = [
         ":gson",
-        "//third_party:protobuf",
+        "//third_party/proto:protobuf_java",
     ],
 )

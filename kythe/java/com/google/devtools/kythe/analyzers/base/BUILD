@@ -22,8 +22,8 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/util",
         "//kythe/proto:analysis_proto",
         "//kythe/proto:storage_proto",
-        "//third_party:protobuf",
         "//third_party/guava",
+        "//third_party/proto:protobuf_java",
     ],
 )
 
@@ -40,8 +40,8 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/platform/shared:remote_file_data",
         "//kythe/proto:analysis_proto",
         "//kythe/proto:storage_proto",
-        "//third_party:protobuf",
         "//third_party/grpc-java",
         "//third_party/guava",
+        "//third_party/proto:protobuf_java",
     ],
 )

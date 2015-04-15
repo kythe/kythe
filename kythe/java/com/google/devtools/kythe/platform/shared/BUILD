@@ -19,8 +19,8 @@ java_library(
     deps = [
         "//kythe/java/com/google/devtools/kythe/common",
         "//kythe/proto:analysis_proto",
-        "//third_party:protobuf",
         "//third_party/guava",
+        "//third_party/proto:protobuf_java",
     ],
 )
 
@@ -32,8 +32,8 @@ java_library(
     deps = [
         ":file_data",
         "//kythe/proto:analysis_proto",
-        "//third_party:protobuf",
         "//third_party/grpc-java",
         "//third_party/guava",
+        "//third_party/proto:protobuf_java",
     ],
 )

@@ -55,8 +55,11 @@ rules:
     has_services: "#properties.has_services"
 translations:
   direct:
+    "//third_party/gflags:gflags": "//third_party/googleflags:gflags"
+    "//third_party/glog:glog": "//third_party/googlelog:glog"
     "//third_party/junit:junit": "//third_party:junit4"
-    "//third_party/protobuf:protobuf_jar": "//third_party:protobuf"
+    "//third_party/protobuf:protobuf_jar": "//third_party/proto:protobuf_java"
+    "//third_party/protobuf:protobuf_cc": "//third_party/proto:protobuf"
   prefix: {}
   exclude:
     - "//third_party/protobuf:protobuf_jar"

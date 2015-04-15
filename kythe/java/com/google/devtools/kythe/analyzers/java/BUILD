@@ -18,9 +18,9 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/util",
         "//kythe/proto:analysis_proto",
         "//kythe/proto:storage_proto",
-        "//third_party:protobuf",
         "//third_party/guava",
         "//third_party/openjdk/lib:tools_jar",
+        "//third_party/proto:protobuf_java",
     ],
 )
 
@@ -40,8 +40,8 @@ java_binary(
         "//kythe/java/com/google/devtools/kythe/platform/shared:file_data",
         "//kythe/proto:analysis_proto",
         "//kythe/proto:storage_proto",
-        "//third_party:protobuf",
         "//third_party/guava",
+        "//third_party/proto:protobuf_java",
     ],
 )
 

@@ -106,12 +106,12 @@ genproto = rule(
         # TODO(schroederc): put package prefix into common configuration file
         "go_package_prefix": attr.string(default = "kythe.io/"),
         "_protoc": attr.label(
-            default = Label("//third_party:protoc"),
+            default = Label("//third_party/proto:protoc"),
             allow_files = True,
             single_file = True,
         ),
         "_protoc_gen_java": attr.label(
-            default = Label("//third_party:protobuf"),
+            default = Label("//third_party/proto:protobuf_java"),
             single_file = True,
             allow_files = jar_filetype,
         ),
@@ -169,10 +169,10 @@ def genproto_all(name, src, deps = [], has_services = None):
   proto_src = src[0:-6] + ".pb.cc"
   proto_srcgen_rule = name + "_cc_protoc"
   proto_lib = name + "_cc"
-  protoc = "//third_party:protoc"
+  protoc = "//third_party/proto:protoc"
   proto_cmd = "$(location %s) --cpp_out=$(GENDIR)/ %s" % (protoc, src)
-  cc_deps = ["//third_party:protobuf_cc"]
-  proto_deps = [src, "//third_party:protoc"]
+  cc_deps = ["//third_party/proto:protobuf"]
+  proto_deps = [src, protoc]
   for dep in deps:
     if len(dep) > 6 and dep[-6:] == "_proto":
       cc_deps += [dep + "_cc"]

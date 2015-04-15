@@ -13,8 +13,8 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/common",
         "//kythe/proto:analysis_proto",
         "//kythe/proto:storage_proto",
-        "//third_party:protobuf",
         "//third_party/guava",
+        "//third_party/proto:protobuf_java",
     ],
 )
 
@@ -25,9 +25,9 @@ java_library(
     ],
     deps = [
         "//kythe/proto:storage_proto",
-        "//third_party:protobuf",
         "//third_party/gson",
         "//third_party/guava",
+        "//third_party/proto:protobuf_java",
         "//third_party/re2j",
     ],
 )
