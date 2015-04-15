@@ -3,6 +3,8 @@
 
 //- @DefaultPackage defines Class
 //- Class named vname(".DefaultPackage","","","","java")
+//- !{ Class childof AnyPackage
+//-    AnyPackage.node/kind package }
 public class DefaultPackage {
 
   //- @CONSTANT defines ConstantField

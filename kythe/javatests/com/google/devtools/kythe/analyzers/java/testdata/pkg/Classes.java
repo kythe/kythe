@@ -1,3 +1,5 @@
+//- @pkg ref Package
+//- Package.node/kind package
 package pkg;
 
 // Checks that classes are record/class nodes and enums are sum/enumClass nodes
@@ -5,6 +7,7 @@ package pkg;
 //- @Classes defines N
 //- N.node/kind record
 //- N.subkind class
+//- N childof Package
 public class Classes {
 
   //- DefaultCtor childof N

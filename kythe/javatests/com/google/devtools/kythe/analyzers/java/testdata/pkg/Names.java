@@ -1,3 +1,6 @@
+//- @pkg ref Package
+//- Package.node/kind package
+//- Package named vname("pkg","","","","java")
 package pkg;
 
 // Checks that appropriate name nodes are emitted for simple cases
