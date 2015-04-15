@@ -1,87 +1,88 @@
-package(default_visibility = ["//visibility:public"])
+load("//tools/build_rules/kythe", "java_verifier_test")
 
-java_library(
-    name = "annotations_lib",
+java_verifier_test(
+    name = "annotations_tests",
     srcs = [
         "Annotations.java",
     ],
 )
 
-java_library(
-    name = "selectors_lib",
+java_verifier_test(
+    name = "selectors_tests",
     srcs = [
         "Selectors.java",
     ],
 )
 
-java_library(
-    name = "classes_lib",
+java_verifier_test(
+    name = "classes_tests",
     srcs = [
         "Classes.java",
     ],
 )
 
-java_library(
-    name = "enums_lib",
+java_verifier_test(
+    name = "enums_tests",
     srcs = [
         "Enums.java",
     ],
 )
 
-java_library(
-    name = "interfaces_lib",
+java_verifier_test(
+    name = "interfaces_tests",
     srcs = [
         "Interfaces.java",
     ],
 )
 
-java_library(
-    name = "inheritance_lib",
+java_verifier_test(
+    name = "inheritance_tests",
     srcs = [
         "Inheritance.java",
     ],
 )
 
-java_library(
-    name = "files_lib",
+java_verifier_test(
+    name = "files_tests",
     srcs = [
         "Files.java",
     ],
 )
 
-java_library(
-    name = "cross_file_lib",
-    srcs = [
-        "CrossFile.java",
-    ],
-    deps = [
-        ":files_lib",
-    ],
-)
+# TODO(schroederc): java_verifier_test deps
+#java_verifier_test(
+#    name = "cross_file_tests",
+#    srcs = [
+#        "CrossFile.java",
+#    ],
+#    deps = [
+#        ":files_tests",
+#    ],
+#)
 
-java_library(
-    name = "generics_lib",
+java_verifier_test(
+    name = "generics_tests",
     srcs = [
         "Generics.java",
     ],
 )
 
-java_library(
-    name = "names_lib",
+java_verifier_test(
+    name = "names_tests",
     srcs = [
         "Names.java",
     ],
 )
 
-java_library(
-    name = "methods_lib",
+java_verifier_test(
+    name = "methods_tests",
     srcs = [
         "Methods.java",
     ],
 )
 
-java_library(
-    name = "variables_lib",
+java_verifier_test(
+    name = "variables_tests",
     srcs = [
         "Variables.java",
     ],

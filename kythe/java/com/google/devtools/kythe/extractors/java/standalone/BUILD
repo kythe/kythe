@@ -7,6 +7,8 @@ java_binary(
         "Javac8Wrapper.java",
     ],
     main_class = "com.google.devtools.kythe.extractors.java.standalone.Javac8Wrapper",
+    # TODO(schroederc): determine why this is needed; Bazel issue?
+    runtime_deps = ["//kythe/proto:any_proto"],
     deps = [
         "//kythe/java/com/google/devtools/kythe/common",
         "//kythe/java/com/google/devtools/kythe/extractors/java",

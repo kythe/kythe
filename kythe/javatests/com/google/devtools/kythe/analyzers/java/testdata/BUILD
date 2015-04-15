@@ -1,8 +1,6 @@
-package(default_visibility = ["//visibility:public"])
+load("//tools/build_rules/kythe", "java_verifier_test")
 
-java_library(
-    name = "default_package_lib",
-    srcs = [
-        "DefaultPackage.java",
-    ],
+java_verifier_test(
+    name = "default_package_tests",
+    srcs = ["DefaultPackage.java"],
 )
