@@ -44,18 +44,33 @@ KYTHE_WRITE_TABLES="${PWD}/campfire-out/bin/kythe/go/serving/tools/write_tables"
 KYTHE_WRITE_ENTRIES="${PWD}/campfire-out/bin/kythe/go/storage/tools/write_entries"
 KYTHE_ENTRYSTREAM="${PWD}/campfire-out/bin/kythe/go/platform/tools/entrystream"
 KYTHE_HTTP_SERVER="${PWD}/campfire-out/bin/kythe/go/serving/tools/http_server"
+RETRIES=8
 
-if grep ':/docker' /proc/1/cgroup ; then
+if grep -qe ':/docker' /proc/1/cgroup ; then
 # lsof doesn't work inside docker because of AppArmor.
 # Until that's fixed, we'll pick our own port.
   LISTEN_TO="localhost:31338"
   server_addr() {
-    echo "localhost:31338"
+    echo "${LISTEN_TO}"
   }
+  retry_config() {
+    if [[ $((RETRIES--)) -eq 0 ]]; then
+      echo "Aborting (couldn't find a port)" >&2
+      exit 1
+    fi
+    read LOWER_PORT UPPER_PORT < /proc/sys/net/ipv4/ip_local_port_range
+    RANDOM_PORT=$(($RANDOM % ($UPPER_PORT - $LOWER_PORT + 1) + $LOWER_PORT))
+    LISTEN_TO="localhost:${RANDOM_PORT}"
+  }
+  retry_config
 else
   LISTEN_TO="localhost:0"
   server_addr() {
     lsof -a -p "$1" -i -s TCP:LISTEN 2>/dev/null | grep -ohw "localhost:[0-9]*"
+  }
+  retry_config() {
+    echo "Aborting (something went wrong starting the server)" >&2
+    exit 1
   }
 fi
 
@@ -67,11 +82,23 @@ mkdir -p "${OUT_DIR}/tables"
 cat "${TEST_JSON:?no test json for test}" \
     | "${KYTHE_ENTRYSTREAM}" -read_json=true  \
     | "${KYTHE_WRITE_ENTRIES}" -graphstore "${OUT_DIR}/gs" 2>/dev/null
-"${KYTHE_WRITE_TABLES}" -graphstore "${OUT_DIR}/gs" -out="${OUT_DIR}/tables" 2>/dev/null
+"${KYTHE_WRITE_TABLES}" -graphstore "${OUT_DIR}/gs" \
+    -out="${OUT_DIR}/tables" 2>/dev/null
 # TODO(zarko): test against GRPC server implementation
-"${KYTHE_HTTP_SERVER}" -serving_table "${OUT_DIR}/tables" -listen="${LISTEN_TO}" 2>/dev/null &
-SERVER_PID=$!
-trap 'kill $SERVER_PID' EXIT ERR INT
+while :; do
+  "${KYTHE_HTTP_SERVER}" -serving_table "${OUT_DIR}/tables" \
+      -listen="${LISTEN_TO}" 2>/dev/null &
+  SERVER_PID=$!
+  # TODO(zarko): Look for something in the server output to determine if
+  # it's ready. This mechanism suffers from an obvious race condition.
+  sleep 1s
+  if kill -0 "$SERVER_PID" ; then
+    trap 'kill $SERVER_PID' EXIT ERR INT
+    break
+  else
+    retry_config
+  fi
+done
 
 COUNTDOWN=16
 while :; do

@@ -39,7 +39,6 @@ s|BASE_DIR|${BASE_DIR}|g" "${BASE_DIR}/compile_commands.json.in" > \
     "${OUT_DIR}/compile_commands.json"
 cp "${BASE_DIR}/${TEST_NAME}" "${TEST_FILE}"
 
-echo gdb --args "${FYI}" --xrefs="${XREFS_URI}" "${TEST_FILE}"
 set +e
 "${FYI}" --xrefs="${XREFS_URI}" "${TEST_FILE}" > "${TEST_FILE}.actual" 
 RESULTS=$?
@@ -56,6 +55,10 @@ else
     >&2 echo "Expected nonzero return from tool"
     HAD_ERRORS=1
   fi
+fi
+
+if [[ ${HAD_ERRORS} -ne 0 ]]; then
+  echo gdb --args "${FYI}" --xrefs="${XREFS_URI}" "${TEST_FILE}" >&2
 fi
 
 exit ${HAD_ERRORS}
