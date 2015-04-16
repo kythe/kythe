@@ -22,7 +22,7 @@ COMMIT="$(git rev-parse HEAD)"
 echo "Deploying Kythe website version $COMMIT" >&2
 
 ../../../web/site/build.sh -d "$PWD/site"
-gcloud preview app deploy --version "$COMMIT" .
+gcloud preview app deploy --version "$COMMIT" app.yaml
 
 echo >&2
 echo "Deployment location: https://$COMMIT-dot-kythe-repo.appspot.com" >&2
@@ -32,18 +32,5 @@ DEFAULT="$(gcloud preview app modules list --format=json "$MODULE" 2>/dev/null |
 
 echo "Current default version: $DEFAULT" >&2
 
-set_default() {
-  gcloud preview app modules set-default "$MODULE" --version "$COMMIT"
-
-  read -p "Would you like to remove the old default version (y/N)? " RESP
-  case "$RESP" in
-    y|Y|yes|YES|Yes|Yup|yup|ok)
-      gcloud preview app modules delete "$MODULE" --version "$DEFAULT" ;;
-  esac
-}
-
-read -p "Would you like to make version $COMMIT the default (y/N)? " RESP
-case "$RESP" in
-  y|Y|yes|YES|Yes|Yup|yup|ok) set_default ;;
-esac
-
+gcloud preview app modules set-default "$MODULE" --version "$COMMIT"
+gcloud preview app modules delete "$MODULE" --version "$DEFAULT"
