@@ -8,8 +8,8 @@ action_listener(
 
 extra_action(
     name = "extra_action",
-    cmd = "$(location :java_extractor) $(EXTRA_ACTION_FILE) $(output $(ACTION_ID).kindex)",
-    out_templates = ["$(ACTION_ID).kindex"],
+    cmd = "$(location :java_extractor) $(EXTRA_ACTION_FILE) $(output $(ACTION_ID).java.kindex)",
+    out_templates = ["$(ACTION_ID).java.kindex"],
     tools = [":java_extractor"],
 )
 
