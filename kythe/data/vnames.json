@@ -1,5 +1,12 @@
 [
   {
+    "pattern": "bazel-out/[^/]+/bin/([^/]+/javatests/.+/testdata)/.+\\.jar!/([^\\$]+)(\\$.+)?\\.class",
+    "vname": {
+      "corpus": "kythe",
+      "path": "@1@/@2@.java"
+    }
+  },
+  {
     "pattern": "campfire-out/[^/]+/([^/]+/javatests/.+/testdata)/.+\\.jar!/([^\\$]+)(\\$.+)?\\.class",
     "vname": {
       "corpus": "kythe",

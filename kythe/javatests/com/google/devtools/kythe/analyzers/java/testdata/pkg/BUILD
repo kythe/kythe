@@ -49,16 +49,15 @@ java_verifier_test(
     ],
 )
 
-# TODO(schroederc): java_verifier_test deps
-#java_verifier_test(
-#    name = "cross_file_tests",
-#    srcs = [
-#        "CrossFile.java",
-#    ],
-#    deps = [
-#        ":files_tests",
-#    ],
-#)
+java_verifier_test(
+    name = "cross_file_tests",
+    srcs = [
+        "CrossFile.java",
+    ],
+    deps = [
+        ":files_tests",
+    ],
+)
 
 java_verifier_test(
     name = "generics_tests",
