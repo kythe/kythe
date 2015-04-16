@@ -24,6 +24,9 @@ cc_library(
     hdrs = [
         ":parser",
     ],
+    copts = [
+        "-Wno-deprecated-register",
+    ],
     includes = [
         ".",
     ],

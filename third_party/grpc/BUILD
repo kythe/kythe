@@ -351,6 +351,9 @@ cc_library(
     deps = [
         ":gpr",
     ],
+    copts = [
+        "-Wno-implicit-function-declaration",
+    ],
 )
 
 

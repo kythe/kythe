@@ -6,4 +6,4 @@ Description:
 The C++ gRPC implementation. HTTP/2 based RPC
 
 Local modifications:
-No Modifications.
+Added -Wno-implicit-function-declaration to BUILD target :grpc.

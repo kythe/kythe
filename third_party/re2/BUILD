@@ -63,6 +63,10 @@ cc_library(
         "-Wno-non-virtual-dtor",
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
+        "-Wno-unknown-warning-option",
+        "-Wno-sign-compare",
+        "-Wno-tautological-undefined-compare",
+        "-Wno-unused-local-typedef",
         "-I./third_party/re2",
     ],
     includes = [

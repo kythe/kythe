@@ -141,6 +141,7 @@ cc_library(
     ],
     copts = [
         "-I./third_party/proto",
+        "-Wno-unused-function",
     ],
     deps = [
         ":protobuf_lite",

@@ -36,5 +36,6 @@ cc_library(
     ],
     copts = [
         "-Wno-unused-variable",
+        "-Wno-implicit-function-declaration",
     ],
 )

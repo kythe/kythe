@@ -36,6 +36,9 @@ toolchain {
   tool_path { name: "gcc" path: "ADD_CXX_COMPILER" }
   cxx_flag: "-std=c++11"
   cxx_flag: "-fno-rtti"
+  cxx_flag: "-Wall"
+  cxx_flag: "-Werror"
+  cxx_flag: "-Wno-unused-variable"
   linker_flag: "-lstdc++"
   linker_flag: "-lpthread"
   linker_flag: "-B/usr/bin/"
