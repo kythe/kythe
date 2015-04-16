@@ -19,8 +19,6 @@ java_binary(
         "JavaExtractor.java",
     ],
     main_class = "com.google.devtools.kythe.extractors.java.bazel.JavaExtractor",
-    # TODO(schroederc): determine why this is needed; Bazel issue?
-    runtime_deps = ["//kythe/proto:any_proto"],
     deps = [
         "//kythe/java/com/google/devtools/kythe/extractors/java",
         "//kythe/java/com/google/devtools/kythe/extractors/shared",

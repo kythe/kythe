@@ -88,7 +88,9 @@ def genproto_impl(ctx):
                 go_archive = go_archive,
                 go_recursive_deps = go_recursive_deps,
                 compile_time_jars = set([jar_out]) + compile_time_jars,
-                runtime_jars = set([jar_out], order="link") + runtime_jars)
+                runtime_jars = set([jar_out], order="link") + runtime_jars,
+                # Provide "files" as a hack to get proper runtime_deps for java_binary rules
+                files = set([jar_out, go_archive]) + compile_time_jars + go_recursive_deps)
 
 # genproto name is required for interop w/ native Bazel rules
 genproto = rule(

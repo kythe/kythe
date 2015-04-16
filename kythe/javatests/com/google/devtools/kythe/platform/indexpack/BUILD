@@ -5,8 +5,6 @@ java_test(
     srcs = [
         "ArchiveTest.java",
     ],
-    # TODO(schroederc): determine why this is needed; Bazel issue?
-    runtime_deps = ["//kythe/proto:any_proto"],
     deps = [
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
         "//kythe/java/com/google/devtools/kythe/platform/indexpack",
