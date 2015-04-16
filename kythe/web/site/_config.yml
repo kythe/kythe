@@ -1,5 +1,5 @@
 title: Kythe
-url: 'https://kythe.io'
+url: 'http://kythe.io'
 description: >
   A pluggable, (mostly) language-agnostic ecosystem for building tools that work
   with code.
