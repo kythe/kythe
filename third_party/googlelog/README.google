@@ -13,3 +13,4 @@ Ran configure to generate:
   src/glog/vlog_is_on.h
   src/glog/stl_logging.h
   src/config.h
+Amended config.h to disable RTTI.

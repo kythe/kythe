@@ -1,0 +1,1 @@
+../../third_party/bazel/tools/cpp/osx_gcc_wrapper.sh

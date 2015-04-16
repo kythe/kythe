@@ -2,7 +2,7 @@
 /* src/config.h.in.  Generated from configure.ac by autoheader.  */
 
 /* define if glog doesn't use RTTI */
-/* #undef DISABLE_RTTI */
+#define DISABLE_RTTI
 
 /* Namespace for Google classes */
 #define GOOGLE_NAMESPACE google

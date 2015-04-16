@@ -10,4 +10,4 @@ Local Modifications:
 Ran configure to generate config.h.
 Added BUILD file.
 Renamed .gitignore to dist.gitignore.
-Wrote a pbconfig.h.
+Wrote a pbconfig.h and amended it to turn off RTTI.

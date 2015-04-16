@@ -24,6 +24,7 @@ MANIFEST-*
 /compile_commands.json
 /doxygen-out
 *.ninja*
+/tools/cpp/CROSSTOOL
 
 # Misc
 node_modules

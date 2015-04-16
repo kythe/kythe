@@ -189,5 +189,6 @@ def genproto_all(name, src, deps = [], has_services = None):
     name = proto_lib,
     hdrs = [proto_hdr],
     srcs = [":" + proto_srcgen_rule],
+    defines = ["GOOGLE_PROTOBUF_NO_RTTI"],
     deps = cc_deps
   )

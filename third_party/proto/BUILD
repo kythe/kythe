@@ -98,6 +98,9 @@ cc_library(
     copts = [
         "-I./third_party/proto",
     ],
+    defines = [
+        "GOOGLE_PROTOBUF_NO_RTTI",
+    ],
     includes = [
         "src",
     ],

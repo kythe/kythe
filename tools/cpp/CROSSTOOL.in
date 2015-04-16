@@ -33,8 +33,9 @@ toolchain {
   tool_path { name: "compat-ld" path: "/usr/bin/ld" }
   tool_path { name: "cpp" path: "/usr/bin/cpp" }
   tool_path { name: "dwp" path: "/usr/bin/dwp" }
-  tool_path { name: "gcc" path: "/usr/bin/gcc" }
-  cxx_flag: "-std=c++0x"
+  tool_path { name: "gcc" path: "ADD_CXX_COMPILER" }
+  cxx_flag: "-std=c++11"
+  cxx_flag: "-fno-rtti"
   linker_flag: "-lstdc++"
   linker_flag: "-lpthread"
   linker_flag: "-B/usr/bin/"
@@ -43,9 +44,7 @@ toolchain {
   # used by gcc. That works because bazel currently doesn't track files at
   # absolute locations and has no remote execution, yet. However, this will need
   # to be fixed, maybe with auto-detection?
-  cxx_builtin_include_directory: "/usr/lib/gcc/"
-  cxx_builtin_include_directory: "/usr/local/include"
-  cxx_builtin_include_directory: "/usr/include"
+ADD_CXX_BUILTIN_INCLUDE_DIRECTORIES
   tool_path { name: "gcov" path: "/usr/bin/gcov" }
   tool_path { name: "ld" path: "/usr/bin/ld" }
   tool_path { name: "nm" path: "/usr/bin/nm" }
