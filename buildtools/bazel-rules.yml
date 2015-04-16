@@ -66,6 +66,7 @@ translations:
     "//third_party/junit:junit": "//third_party:junit4"
     "//third_party/protobuf:protobuf_jar": "//third_party/proto:protobuf_java"
     "//third_party/protobuf:protobuf_cc": "//third_party/proto:protobuf"
+    "//third_party/llvm:lib": "//third_party/llvm"
   prefix: {}
   exclude:
     - "//third_party/protobuf:protobuf_jar"

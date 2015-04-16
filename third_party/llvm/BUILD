@@ -1,5 +1,7 @@
 licenses(["notice"])
 
+load("/tools/build_rules/cc_resources", "cc_resources")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -48,4 +50,9 @@ cc_library(
     deps = [
         "//third_party/zlib",
     ],
+)
+
+cc_resources(
+    name = "clang_builtin_headers_resources",
+    data = glob(["llvm/build/Release+Asserts/lib/clang/3.7.0/include/**/*.h"]),
 )
