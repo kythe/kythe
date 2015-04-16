@@ -1,9 +1,12 @@
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
-    name = "cmdlib",
+    name = "lib",
     srcs = [
-        "kindex_tool_main.cc",
+        "cxx_extractor.cc",
+    ],
+    hdrs = [
+        "cxx_extractor.h",
     ],
     copts = [
         "-Wno-non-virtual-dtor",
@@ -11,19 +14,29 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
+        "//kythe/cxx/common:json_proto",
+        "//kythe/cxx/common:lib",
         "//kythe/proto:analysis_proto_cc",
+        "//kythe/proto:cxx_proto_cc",
         "//kythe/proto:storage_proto_cc",
         "//third_party/googleflags:gflags",
         "//third_party/googlelog:glog",
+        "//third_party/llvm",
+        "//third_party/llvm/src:clang_builtin_headers",
+        "//third_party/llvm/src:preprocessor_util_lib",
         "//third_party/proto:protobuf",
+        "//third_party/re2",
         "//third_party/zlib",
     ],
 )
 
 cc_library(
-    name = "claimcmdlib",
+    name = "cmdlib",
     srcs = [
-        "static_claim_main.cc",
+        "cxx_extractor_main.cc",
+    ],
+    hdrs = [
+        "cxx_extractor.h",
     ],
     copts = [
         "-Wno-non-virtual-dtor",
@@ -31,27 +44,22 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
-        "//kythe/cxx/common:lib",
+        ":lib",
         "//kythe/proto:analysis_proto_cc",
-        "//kythe/proto:claim_proto_cc",
+        "//kythe/proto:cxx_proto_cc",
         "//kythe/proto:storage_proto_cc",
         "//third_party/googleflags:gflags",
         "//third_party/googlelog:glog",
+        "//third_party/llvm",
         "//third_party/proto:protobuf",
+        "//third_party/re2",
         "//third_party/zlib",
     ],
 )
 
 cc_binary(
-    name = "kindex_tool",
+    name = "cxx_extractor",
     deps = [
         ":cmdlib",
-    ],
-)
-
-cc_binary(
-    name = "static_claim",
-    deps = [
-        ":claimcmdlib",
     ],
 )
