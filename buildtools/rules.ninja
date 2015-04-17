@@ -141,8 +141,11 @@ rule kythe_verifier
   description = kythe_verifier $owner
 
 rule asciidoc
-  command = bash -c "set -o pipefail; $asciidoc $args --backend=$backend -o $out $in 2>&1 | $
-                     awk '/filter non-zero exit code/ {code=1} // {print} END {exit code}'"
+  command = bash -c "set -o pipefail; $
+                     export BINDIR=$$PWD/campfire-out/bin; $
+                     export OUTDIR=$$(dirname $out); $
+                     $asciidoc $args --backend=$backend -o $out $in 2>&1 | $
+                       awk '/filter non-zero exit code/ {code=1} // {print} END {exit code}'"
   description = asciidoc $in
 
 rule genlex

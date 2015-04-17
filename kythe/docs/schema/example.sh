@@ -27,13 +27,12 @@
 #                          label describing the test.
 
 export SCHEMA_ROOT="$PWD/kythe/docs/schema"
-CAMPFIRE_OUT="$PWD/campfire-out"
-cd "$CAMPFIRE_OUT/doc/kythe/docs/schema"
+cd "$OUTDIR"
 
-export VERIFIER_BIN="$CAMPFIRE_OUT/bin/kythe/cxx/verifier/verifier"
-export KINDEX_TOOL_BIN="$CAMPFIRE_OUT/bin/kythe/cxx/tools/kindex_tool"
-export CXX_INDEXER_BIN="$CAMPFIRE_OUT/bin/kythe/cxx/indexer/cxx/indexer"
-export JAVA_INDEXER_BIN="$CAMPFIRE_OUT/bin/kythe/java/com/google/devtools/kythe/analyzers/java/indexer"
+export VERIFIER_BIN="$BINDIR/kythe/cxx/verifier/verifier"
+export KINDEX_TOOL_BIN="$BINDIR/kythe/cxx/tools/kindex_tool"
+export CXX_INDEXER_BIN="$BINDIR/kythe/cxx/indexer/cxx/indexer"
+export JAVA_INDEXER_BIN="$BINDIR/kythe/java/com/google/devtools/kythe/analyzers/java/indexer"
 
 export LANGUAGE="$3"
 export LABEL="$4"

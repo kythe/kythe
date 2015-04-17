@@ -59,6 +59,12 @@ rules:
   genyacc:
     rule: genyacc
     src: "*#inputsByKind.srcs"
+  asciidoc:
+    rule: asciidoc
+    src: "*#inputsByKind.srcs"
+    confs: "#inputsByKind.confs"
+    tools: "#inputsByKind.tools"
+    data: "#inputsByKind.data"
 translations:
   direct:
     "//third_party/gflags:gflags": "//third_party/googleflags:gflags"
