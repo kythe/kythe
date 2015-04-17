@@ -31,6 +31,7 @@
 #include "clang/Lex/Preprocessor.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
+#include "kythe/cxx/common/CommandLineUtils.h"
 #include "kythe/cxx/common/json_proto.h"
 #include "kythe/cxx/common/path_utils.h"
 #include "kythe/cxx/common/proto_conversions.h"
@@ -569,8 +570,9 @@ void ExtractorPPCallbacks::InclusionDirective(
   // we will get an error when we replay the compilation, as the virtual
   // file system is not aware of inodes.
   if (search_path_entry == current_file_parent_entry) {
-    auto parent = llvm::sys::path::parent_path(
-                      current_files_.top().file_path.c_str()).str();
+    auto parent =
+        llvm::sys::path::parent_path(current_files_.top().file_path.c_str())
+            .str();
 
     // If the file is a top level file ("file.cc"), we normalize to a path
     // relative to "./".
@@ -729,8 +731,8 @@ void KindexWriterSink::OpenIndex(const std::string& directory,
   CHECK(open_path_.empty() && fd_ < 0)
       << "Reopening a KindexWriterSink (old fd:" << fd_
       << " old path: " << open_path_ << ")";
-  std::string file_path = directory;
-  file_path.append("/" + hash + ".kindex");
+  std::string file_path =
+      force_path_.empty() ? directory + "/" + hash + ".kindex" : force_path_;
   fd_ =
       open(file_path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, S_IREAD | S_IWRITE);
   CHECK_GE(fd_, 0) << "Couldn't open output file " << file_path;
@@ -886,6 +888,101 @@ void MapCompilerResources(clang::tooling::ToolInvocation* invocation,
     llvm::sys::path::append(out_path, file->name);
     invocation->mapVirtualFile(out_path, file->data);
   }
+}
+
+/// \brief Loads all data from a file or terminates the process.
+static std::string LoadFileOrDie(const std::string& file) {
+  FILE* handle = fopen(file.c_str(), "rb");
+  CHECK(handle != nullptr) << "Couldn't open input file " << file;
+  CHECK_EQ(fseek(handle, 0, SEEK_END), 0) << "Couldn't seek " << file;
+  long size = ftell(handle);
+  CHECK_GE(size, 0) << "Bad size for " << file;
+  CHECK_EQ(fseek(handle, 0, SEEK_SET), 0) << "Couldn't seek " << file;
+  std::string content;
+  content.resize(size);
+  CHECK_EQ(fread(&content[0], size, 1, handle), 1) << "Couldn't read " << file;
+  CHECK_NE(fclose(handle), EOF) << "Couldn't close " << file;
+  return content;
+}
+
+/// When a -resource-dir is not specified, map builtin versions of compiler
+/// headers to this directory.
+constexpr char kBuiltinResourceDirectory[] = "/kythe_builtins";
+
+void ExtractorConfiguration::SetVNameConfig(const std::string& path) {
+  if (!index_writer_.SetVNameConfiguration(LoadFileOrDie(path))) {
+    fprintf(stderr, "Couldn't configure vnames from %s\n", path.c_str());
+    exit(1);
+  }
+}
+
+void ExtractorConfiguration::SetArgs(const std::vector<std::string>& args) {
+  final_args_ = args;
+  std::string actual_executable = final_args_.size() ? final_args_[0] : "";
+  if (final_args_.size() >= 3 && final_args_[1] == "--with_executable") {
+    final_args_.assign(final_args_.begin() + 2, final_args_.end());
+  }
+  final_args_ = common::GCCArgsToClangSyntaxOnlyArgs(final_args_);
+  // Check to see if an alternate resource-dir was specified; otherwise,
+  // invent one. We need this to find stddef.h and friends.
+  for (const auto& arg : final_args_) {
+    // Handle both -resource-dir=foo and -resource-dir foo.
+    if (llvm::StringRef(arg).startswith("-resource-dir")) {
+      map_builtin_resources_ = false;
+      break;
+    }
+  }
+  if (map_builtin_resources_) {
+    final_args_.insert(final_args_.begin() + 1, kBuiltinResourceDirectory);
+    final_args_.insert(final_args_.begin() + 1, "-resource-dir");
+  }
+  // Store the arguments post-filtering.
+  index_writer_.set_args(final_args_);
+}
+
+void ExtractorConfiguration::InitializeFromEnvironment() {
+  if (const char* env_corpus = getenv("KYTHE_CORPUS")) {
+    index_writer_.set_corpus(env_corpus);
+  }
+  if (const char* vname_file = getenv("KYTHE_VNAMES")) {
+    SetVNameConfig(vname_file);
+  }
+  if (const char* env_root_directory = getenv("KYTHE_ROOT_DIRECTORY")) {
+    index_writer_.set_root_directory(env_root_directory);
+    file_system_options_.WorkingDir = env_root_directory;
+  }
+  if (const char* env_index_pack = getenv("KYTHE_INDEX_PACK")) {
+    using_index_packs_ = (strlen(env_index_pack) != 0);
+  }
+  if (const char* env_output_directory = getenv("KYTHE_OUTPUT_DIRECTORY")) {
+    index_writer_.set_output_directory(env_output_directory);
+  }
+}
+
+void ExtractorConfiguration::Extract() {
+  llvm::IntrusiveRefCntPtr<clang::FileManager> file_manager(
+      new clang::FileManager(file_system_options_));
+  auto extractor = NewExtractor(
+      &index_writer_,
+      [this](const std::string& main_source_file,
+             const PreprocessorTranscript& transcript,
+             const std::unordered_map<std::string, SourceFile>& source_files,
+             const HeaderSearchInfo& header_search_info, bool had_errors) {
+        std::unique_ptr<IndexWriterSink> sink;
+        if (using_index_packs_) {
+          sink.reset(new IndexPackWriterSink());
+        } else {
+          sink.reset(new KindexWriterSink(kindex_path_));
+        }
+        index_writer_.WriteIndex(std::move(sink), main_source_file, transcript,
+                                 source_files, header_search_info, had_errors);
+      });
+  clang::tooling::ToolInvocation invocation(final_args_, extractor.release(),
+                                            file_manager.get());
+  if (map_builtin_resources_) {
+    MapCompilerResources(&invocation, kBuiltinResourceDirectory);
+  }
+  invocation.run();
 }
 
 }  // namespace kythe

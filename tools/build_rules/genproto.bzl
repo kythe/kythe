@@ -159,8 +159,8 @@ genproto = rule(
     },
 )
 
-def genproto_all(name, src, deps = [], has_services = None):
-  genproto(name = name, src = src, deps = deps, has_services = has_services)
+def genproto_all(name, src, deps = [], has_services = None, go_package_prefix = None):
+  genproto(name = name, src = src, deps = deps, has_services = has_services, go_package_prefix = go_package_prefix)
   # We'll guess that the repository is set up such that a .proto in
   # //foo/bar has the package foo.bar. `location` is substituted with the
   # relative path to its label from the workspace root.

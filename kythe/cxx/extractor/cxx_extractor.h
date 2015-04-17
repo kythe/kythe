@@ -128,6 +128,9 @@ class IndexPackWriterSink : public IndexWriterSink {
 /// \brief An `IndexWriterSink` that writes to physical .kindex files.
 class KindexWriterSink : public IndexWriterSink {
  public:
+  /// \param force_path If nonempty, will always write to this file.
+  explicit KindexWriterSink(const std::string &force_path)
+      : force_path_(force_path) {}
   void OpenIndex(const std::string &path,
                  const std::string &unit_hash) override;
   void WriteHeader(const kythe::proto::CompilationUnit &header) override;
@@ -146,6 +149,8 @@ class KindexWriterSink : public IndexWriterSink {
   std::unique_ptr<google::protobuf::io::CodedOutputStream> coded_stream_;
   /// The path to the file whose handle is held by `fd_`.
   std::string open_path_;
+  /// If nonempty, the path to use.
+  std::string force_path_;
 };
 
 /// \brief Collects information about compilation arguments and targets and
@@ -212,6 +217,35 @@ std::unique_ptr<clang::FrontendAction> NewExtractor(IndexWriter *index_writer,
 /// \param map_directory The directory to use.
 void MapCompilerResources(clang::tooling::ToolInvocation *invocation,
                           const char *map_directory);
+
+/// \brief Contains the configuration necessary for the extractor to run.
+class ExtractorConfiguration {
+ public:
+  /// \brief Set the arguments that will be passed to Clang.
+  void SetArgs(const std::vector<std::string> &args);
+  /// \brief Initialize the configuration using the process environment.
+  void InitializeFromEnvironment();
+  /// \brief Load the VName config file from `path` or terminate.
+  void SetVNameConfig(const std::string &path);
+  /// \brief If a kindex file will be written, write it here.
+  void SetKindexOutputFile(const std::string &path) { kindex_path_ = path; }
+  /// \brief Execute the extractor with this configuration.
+  void Extract();
+
+ private:
+  /// The argument list to pass to Clang.
+  std::vector<std::string> final_args_;
+  /// The FileSystemOptions to use during extraction.
+  clang::FileSystemOptions file_system_options_;
+  /// The IndexWriter to use.
+  IndexWriter index_writer_;
+  /// True if we should use our internal system headers; false if not.
+  bool map_builtin_resources_ = true;
+  /// True if we should use index packs; false if not.
+  bool using_index_packs_ = false;
+  /// If nonempty, emit kindex files to this exact path.
+  std::string kindex_path_;
+};
 
 }  // namespace kythe
 
