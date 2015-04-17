@@ -21,6 +21,7 @@ import com.google.devtools.build.lib.actions.extra.ExtraActionsBase;
 import com.google.devtools.build.lib.actions.extra.JavaCompileInfo;
 import com.google.devtools.kythe.extractors.java.JavaCompilationUnitExtractor;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
+import com.google.devtools.kythe.extractors.shared.FileVNames;
 import com.google.devtools.kythe.extractors.shared.ExtractionException;
 import com.google.devtools.kythe.extractors.shared.IndexInfoUtils;
 import com.google.protobuf.CodedInputStream;
@@ -38,6 +39,7 @@ public class JavaExtractor {
   public static void main(String[] args) throws IOException, ExtractionException {
     String extraActionPath = args[0];
     String outputPath = args[1];
+    String vNamesConfigPath = args[2];
 
     ExtensionRegistry registry = ExtensionRegistry.newInstance();
     ExtraActionsBase.registerAllExtensions(registry);
@@ -53,16 +55,17 @@ public class JavaExtractor {
     }
 
     JavaCompileInfo jInfo = info.getExtension(JavaCompileInfo.javaCompileInfo);
-    // TODO(schroederc): implement corpus/FileVNames configuration support
-    CompilationDescription description = new JavaCompilationUnitExtractor(CORPUS).extract(
-        info.getOwner(),
-        jInfo.getSourceFileList(),
-        jInfo.getClasspathList(),
-        jInfo.getSourcepathList(),
-        jInfo.getProcessorpathList(),
-        jInfo.getProcessorList(),
-        jInfo.getJavacOptList(),
-        jInfo.getOutputjar());
+    CompilationDescription description = new JavaCompilationUnitExtractor(
+        FileVNames.fromFile(vNamesConfigPath),
+        System.getProperty("user.dir")).extract(
+            info.getOwner(),
+            jInfo.getSourceFileList(),
+            jInfo.getClasspathList(),
+            jInfo.getSourcepathList(),
+            jInfo.getProcessorpathList(),
+            jInfo.getProcessorList(),
+            jInfo.getJavacOptList(),
+            jInfo.getOutputjar());
 
     IndexInfoUtils.writeIndexInfoToFile(description, outputPath);
   }

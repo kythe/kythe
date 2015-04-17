@@ -8,7 +8,8 @@ action_listener(
 
 extra_action(
     name = "extra_action",
-    cmd = "$(location :java_extractor) $(EXTRA_ACTION_FILE) $(output $(ACTION_ID).java.kindex)",
+    cmd = "$(location :java_extractor) $(EXTRA_ACTION_FILE) $(output $(ACTION_ID).java.kindex) $(location //kythe/data:vnames_config)",
+    data = ["//kythe/data:vnames_config"],
     out_templates = ["$(ACTION_ID).java.kindex"],
     tools = [":java_extractor"],
 )
@@ -22,6 +23,7 @@ java_binary(
     deps = [
         "//kythe/java/com/google/devtools/kythe/extractors/java",
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
+        "//kythe/java/com/google/devtools/kythe/extractors/shared:file_vnames",
         "//third_party/bazel:extra_actions_base_proto",
         "//third_party/proto:protobuf_java",
     ],

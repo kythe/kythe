@@ -7,6 +7,21 @@
     }
   },
   {
+    "pattern": "bazel-out/[^/]+/bin/(.*?/java|javatests)/.*\\.jar!/([^\\$]+)(\\$.+)?\\.class",
+    "vname": {
+      "corpus": "kythe",
+      "path": "@1@/@2@.java"
+    }
+  },
+  {
+    "pattern": "bazel-out/[^/]+/bin/[^/]+/proto/.*\\.jar!/([^\\$]+)(\\$.+)?\\.class",
+    "vname": {
+      "corpus": "kythe",
+      "root": "GENERATED/proto/java",
+      "path": "@1@.java"
+    }
+  },
+  {
     "pattern": "campfire-out/[^/]+/([^/]+/javatests/.+/testdata)/.+\\.jar!/([^\\$]+)(\\$.+)?\\.class",
     "vname": {
       "corpus": "kythe",
