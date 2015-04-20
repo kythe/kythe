@@ -1,6 +1,6 @@
 load("//tools/build_rules/doc", "asciidoc")
 
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//kythe:default_visibility"])
 
 asciidoc(
     name = "schema",

@@ -1,4 +1,4 @@
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//kythe:default_visibility"])
 
 cc_library(
     name = "cmdlib",

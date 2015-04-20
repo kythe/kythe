@@ -1,4 +1,4 @@
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//kythe:default_visibility"])
 
 load("/tools/build_rules/lexyacc", "genlex", "genyacc")
 

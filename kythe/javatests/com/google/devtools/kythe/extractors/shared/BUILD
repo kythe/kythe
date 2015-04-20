@@ -1,4 +1,4 @@
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//kythe:default_visibility"])
 
 java_test(
     name = "file_vnames_test",

@@ -1,4 +1,5 @@
 ---
+default_visibility: '["//kythe:default_visibility"]'
 rules:
   go_library:
     rule: go_library

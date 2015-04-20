@@ -1,4 +1,4 @@
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//kythe:default_visibility"])
 
 action_listener(
     name = "extract_kindex",

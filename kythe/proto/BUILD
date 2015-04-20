@@ -1,4 +1,4 @@
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//kythe:default_visibility"])
 
 load("/tools/build_rules/genproto", "genproto_all")
 
@@ -11,12 +11,20 @@ genproto_all(
     name = "storage_proto",
     src = "storage.proto",
     has_services = 1,
+    visibility = [
+        "//kythe:default_visibility",
+        "//third_party/llvm/src:__pkg__",
+    ],
 )
 
 genproto_all(
     name = "analysis_proto",
     src = "analysis.proto",
     has_services = 1,
+    visibility = [
+        "//kythe:default_visibility",
+        "//third_party/llvm/src:__pkg__",
+    ],
     deps = [
         ":any_proto",
         ":storage_proto",

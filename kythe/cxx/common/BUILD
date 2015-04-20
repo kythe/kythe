@@ -1,6 +1,6 @@
 licenses(["notice"])
 
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//kythe:default_visibility"])
 
 cc_library(
     name = "json_proto",
@@ -54,6 +54,10 @@ cc_library(
     ],
     linkopts = [
         "-luuid",
+    ],
+    visibility = [
+        "//kythe/cxx:__subpackages__",
+        "//third_party/llvm/src:__pkg__",
     ],
     deps = [
         ":json_proto",

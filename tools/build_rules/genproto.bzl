@@ -159,7 +159,7 @@ genproto = rule(
     },
 )
 
-def genproto_all(name, src, deps = [], has_services = None, go_package_prefix = None):
+def genproto_all(name, src, visibility=None, deps = [], has_services = None, go_package_prefix = None):
   genproto(name = name, src = src, deps = deps, has_services = has_services, go_package_prefix = go_package_prefix)
   # We'll guess that the repository is set up such that a .proto in
   # //foo/bar has the package foo.bar. `location` is substituted with the
@@ -183,12 +183,14 @@ def genproto_all(name, src, deps = [], has_services = None, go_package_prefix = 
       cc_deps += [dep]
   native.genrule(
     name = proto_srcgen_rule,
+    visibility = visibility,
     outs = [proto_hdr, proto_src],
     srcs = proto_deps,
     cmd = proto_cmd
   )
   native.cc_library(
     name = proto_lib,
+    visibility = visibility,
     hdrs = [proto_hdr],
     srcs = [":" + proto_srcgen_rule],
     defines = ["GOOGLE_PROTOBUF_NO_RTTI"],
