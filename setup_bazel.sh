@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/bin/bash -e
 
 # Copyright 2015 Google Inc. All rights reserved.
 #
@@ -14,29 +14,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Initializes the Bazel workspace.  Uses the JAVA_HOME and GOROOT environmental
+# Initializes the Bazel workspace.  Uses the JAVA_HOME and GO environmental
 # variables.  If either is unset, the paths will be determined by
-# "$(which java)/.." and "$(which go)/..", respectively.
+# "$(which java)/.." and "$(which go)", respectively.
 
 cd "$(dirname "$0")"
 
 by_bin() {
-  echo "$(readlink -e "$(dirname "$(which "$1")")/..")"
+  readlink -e "$(dirname "$(which "$1")")/.."
 }
 
-if [ -z "$JAVA_HOME" ]; then
+if [[ -z "$JAVA_HOME" ]]; then
   JAVA_HOME="$(by_bin java)"
 fi
 
-if [ -z "$GOROOT" ]; then
-  GOROOT="$(by_bin go)"
+if [[ -z "$GO" ]]; then
+  GO="$(readlink -e "$(which go)")"
 fi
 
 echo "Using jdk found in $JAVA_HOME" >&2
 ln -sTf "$JAVA_HOME" tools/jdk/jdk
 
-echo "Using go found in $GOROOT" >&2
-ln -sTf "$GOROOT" tools/go/go
+echo "Using go found at $GO" >&2
+ln -sTf "$GO" tools/go/go
 
 # This must be the same C++ compiler used to build the LLVM source.
 
