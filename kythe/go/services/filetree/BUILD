@@ -13,7 +13,6 @@ go_library(
         "//kythe/go/util/kytheuri",
         "//kythe/go/util/schema",
         "//kythe/proto:filetree_proto",
-        "//kythe/proto:serving_proto",
         "//kythe/proto:storage_proto",
         "//third_party/go:context",
     ],

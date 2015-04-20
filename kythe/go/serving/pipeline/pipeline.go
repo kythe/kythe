@@ -156,7 +156,7 @@ func writeFileTree(t table.Proto, files <-chan *spb.VName) error {
 			}
 		}
 	}
-	cr, err := tree.CorporaRoots()
+	cr, err := tree.CorpusRoots()
 	if err != nil {
 		return err
 	}

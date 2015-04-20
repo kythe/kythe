@@ -34,6 +34,7 @@ import (
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema"
 
+	ftpb "kythe.io/kythe/proto/filetree_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
@@ -92,7 +93,7 @@ var (
 			}
 
 			if len(flag.Args()) == 0 {
-				cr, err := ft.CorporaRoots()
+				cr, err := ft.CorpusRoots()
 				if err != nil {
 					return err
 				}
@@ -113,7 +114,11 @@ var (
 				os.Exit(1)
 			}
 			path = filepath.Join("/", path)
-			dir, err := ft.Dir(corpus, root, path)
+			dir, err := ft.Directory(&ftpb.DirectoryRequest{
+				Corpus: corpus,
+				Root:   root,
+				Path:   path,
+			})
 			if err != nil {
 				return err
 			} else if dir == nil {
@@ -123,7 +128,7 @@ var (
 			if filesOnly {
 				dir.Subdirectory = nil
 			} else if dirsOnly {
-				dir.FileTicket = nil
+				dir.File = nil
 			}
 
 			return displayDirectory(dir)

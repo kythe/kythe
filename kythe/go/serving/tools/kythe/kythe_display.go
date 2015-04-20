@@ -30,7 +30,7 @@ import (
 	"kythe.io/kythe/go/util/schema"
 	"kythe.io/kythe/go/util/stringset"
 
-	srvpb "kythe.io/kythe/proto/serving_proto"
+	ftpb "kythe.io/kythe/proto/filetree_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
@@ -40,7 +40,7 @@ var (
 	out         = os.Stdout
 )
 
-func displayCorpusRoots(cr *srvpb.CorpusRoots) error {
+func displayCorpusRoots(cr *ftpb.CorpusRootsReply) error {
 	if *displayJSON {
 		return json.NewEncoder(out).Encode(cr)
 	}
@@ -50,12 +50,12 @@ func displayCorpusRoots(cr *srvpb.CorpusRoots) error {
 			var err error
 			if lsURIs {
 				uri := kytheuri.URI{
-					Corpus: c.Corpus,
+					Corpus: c.Name,
 					Root:   root,
 				}
 				_, err = fmt.Fprintln(out, uri.String())
 			} else {
-				_, err = fmt.Fprintln(out, filepath.Join(c.Corpus, root))
+				_, err = fmt.Fprintln(out, filepath.Join(c.Name, root))
 			}
 			if err != nil {
 				return err
@@ -65,7 +65,7 @@ func displayCorpusRoots(cr *srvpb.CorpusRoots) error {
 	return nil
 }
 
-func displayDirectory(d *srvpb.FileDirectory) error {
+func displayDirectory(d *ftpb.DirectoryReply) error {
 	if *displayJSON {
 		return json.NewEncoder(out).Encode(d)
 	}
@@ -82,7 +82,7 @@ func displayDirectory(d *srvpb.FileDirectory) error {
 			return err
 		}
 	}
-	for _, f := range d.FileTicket {
+	for _, f := range d.File {
 		if !lsURIs {
 			uri, err := kytheuri.Parse(f)
 			if err != nil {

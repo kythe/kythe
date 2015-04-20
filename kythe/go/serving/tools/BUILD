@@ -46,7 +46,6 @@ go_binary(
         "//kythe/go/util/schema",
         "//kythe/go/util/stringset",
         "//kythe/proto:filetree_proto",
-        "//kythe/proto:serving_proto",
         "//kythe/proto:storage_proto",
         "//kythe/proto:xref_proto",
         "//third_party/go:context",

@@ -28,6 +28,7 @@ import (
 
 	"kythe.io/kythe/go/storage/table"
 
+	ftpb "kythe.io/kythe/proto/filetree_proto"
 	srvpb "kythe.io/kythe/proto/serving_proto"
 )
 
@@ -43,25 +44,40 @@ var CorpusRootsKey = []byte(dirTablePrefix + "corpusRoots")
 type Table struct{ table.Proto }
 
 // Dir implements part of the filetree Service interface.
-func (t *Table) Dir(corpus, root, path string) (*srvpb.FileDirectory, error) {
+func (t *Table) Directory(req *ftpb.DirectoryRequest) (*ftpb.DirectoryReply, error) {
 	var d srvpb.FileDirectory
-	if err := t.Lookup(DirKey(corpus, root, path), &d); err == table.ErrNoSuchKey {
+	if err := t.Lookup(DirKey(req.Corpus, req.Root, req.Path), &d); err == table.ErrNoSuchKey {
 		return nil, nil
 	} else if err != nil {
 		return nil, fmt.Errorf("lookup error: %v", err)
 	}
-	return &d, nil
+	return &ftpb.DirectoryReply{
+		Subdirectory: d.Subdirectory,
+		File:         d.FileTicket,
+	}, nil
 }
 
-// CorporaRoots implements part of the filetree Service interface.
-func (t *Table) CorporaRoots() (*srvpb.CorpusRoots, error) {
+// CorpusRoots implements part of the filetree Service interface.
+func (t *Table) CorpusRoots() (*ftpb.CorpusRootsReply, error) {
 	var cr srvpb.CorpusRoots
 	if err := t.Lookup(CorpusRootsKey, &cr); err == table.ErrNoSuchKey {
 		return nil, errors.New("missing corpusRoots in table")
 	} else if err != nil {
 		return nil, fmt.Errorf("corpusRoots lookup error: %v", err)
 	}
-	return &cr, nil
+
+	reply := &ftpb.CorpusRootsReply{
+		Corpus: make([]*ftpb.CorpusRootsReply_Corpus, len(cr.Corpus), len(cr.Corpus)),
+	}
+
+	for i, corpus := range cr.Corpus {
+		reply.Corpus[i] = &ftpb.CorpusRootsReply_Corpus{
+			Name: corpus.Corpus,
+			Root: corpus.Root,
+		}
+	}
+
+	return reply, nil
 }
 
 // DirKey returns the filetree lookup table key for the given corpus path.
