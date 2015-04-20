@@ -46,6 +46,8 @@ one_case "${BASEDIR}/auto.cc" "c++1y"
 one_case "${BASEDIR}/auto_const_ref.cc" "c++1y"
 one_case "${BASEDIR}/auto_multi.cc" "c++1y" --ignore_dups=true
 one_case "${BASEDIR}/auto_zoo.cc" "c++1y" --ignore_dups=true
+one_case "${BASEDIR}/builtin_functions.c" "gnu99"
+one_case "${BASEDIR}/builtin_functions_ctd.c" "gnu99"
 one_case "${BASEDIR}/decltype_auto.cc" "c++1y"
 one_case "${BASEDIR}/decltype.cc" "c++1y"
 one_case "${BASEDIR}/decltype_const_ref.cc" "c++1y"

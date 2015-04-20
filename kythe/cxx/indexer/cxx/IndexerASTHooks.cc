@@ -373,6 +373,15 @@ void IndexerASTVisitor::MaybeRecordDefinitionRange(
 }
 
 bool IndexerASTVisitor::TraverseFunctionDecl(clang::FunctionDecl *FD) {
+  if (unsigned BuiltinID = FD->getBuiltinID()) {
+    if (!Observer->getPreprocessor()->getBuiltinInfo().isPredefinedLibFunction(
+            BuiltinID)) {
+      // These builtins act weirdly (by, e.g., defining themselves inside the
+      // macro context where they first appeared, but then also in the global
+      // namespace). Don't traverse them.
+      return true;
+    }
+  }
   // Blame calls on actual functions, not on callables. This keeps us from
   // blurring together calls from different functions that happen to alias
   // the same callable.
@@ -1446,13 +1455,24 @@ GraphObserver::NodeId
 IndexerASTVisitor::BuildNodeIdForDecl(const clang::Decl *Decl) {
   // We assume here that no two nodes of the same Kind can appear
   // simultaneously at the same SourceLocation.
-  // TODO(zarko): How stable should NodeIds be? Here, they are as stable
-  // as the same compilation repeated over again, but one could imagine
-  // something better (eg, using a USR that distinguishes decls from defs,
-  // doing structural comparison on class bodies via member hashing, etc).
+  // NodeIds must be stable across analysis runs with the same input data.
+  // Some NodeIds are stable in the face of changes to that data, such as
+  // the IDs given to class definitions (in part because of the language rules).
+
   GraphObserver::NodeId Id(Observer->getDefaultClaimToken());
   llvm::raw_string_ostream Ostream(Id.Identity);
   Ostream << BuildNameIdForDecl(Decl);
+
+  // First, check to see if this thing is a builtin Decl. These things can
+  // pick up weird declaration locations that aren't stable enough for us.
+  if (const auto *FD = dyn_cast<FunctionDecl>(Decl)) {
+    if (unsigned BuiltinID = FD->getBuiltinID()) {
+      Id.Token = Observer->getClaimTokenForBuiltin();
+      Ostream << "#builtin";
+      return Id;
+    }
+  }
+
   // Disambiguate nodes underneath template instances.
   clang::ast_type_traits::DynTypedNode CurrentNode =
       clang::ast_type_traits::DynTypedNode::create(*Decl);

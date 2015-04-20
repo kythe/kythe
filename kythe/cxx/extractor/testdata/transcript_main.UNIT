@@ -12,21 +12,21 @@ required_input {
     digest: "7684704ae672c88bd4a656eff30a716ab29a8270e87e387d9101b32527cde498"
   }
   context {
-    source_context: "2c886012e7f9c5683fdc2d9a82dbdf594995dfbee385842eadb6587d2a05a4ed"
+    source_context: "6a4599abe93b6c88652906e84845bde8f2c39de4d3668bbfb0afedfc69c5c220"
     column {
-      linked_context: "d6d64ed67e1b08c31ff4a965ee27e974a116603e8c81d777b57e3025e8d7c762"
+      linked_context: "cc063f5d59413bdbe5596b0f25cd6ee07c0f5e5b7000e5c233731720366fc241"
     }
     column {
       offset: 26
-      linked_context: "001e57a883858ce37ccee1bb799ce45576f4bacb870f6db132fc1d309fc12247"
+      linked_context: "88d07dc9958d3d4911d5cdf4eabb44e8c7770d6a3b00f3aadb721fd0e7475224"
     }
     column {
       offset: 52
-      linked_context: "e3d0e816288477f3e6f62eda2874525f0685207706ca4f73da94553fdfc5df24"
+      linked_context: "63b32f3fd0b8ee58c928f5fb01298f4bb5e555e5b8d896fa351e60225a91f258"
     }
     column {
       offset: 78
-      linked_context: "001e57a883858ce37ccee1bb799ce45576f4bacb870f6db132fc1d309fc12247"
+      linked_context: "88d07dc9958d3d4911d5cdf4eabb44e8c7770d6a3b00f3aadb721fd0e7475224"
     }
   }
 }
@@ -40,7 +40,7 @@ required_input {
     digest: "6904079b7b9d5d0586a08dbbdac2b08d35f00c1dbb4cc63721f22a347f52e2f7"
   }
   context {
-    source_context: "001e57a883858ce37ccee1bb799ce45576f4bacb870f6db132fc1d309fc12247"
+    source_context: "88d07dc9958d3d4911d5cdf4eabb44e8c7770d6a3b00f3aadb721fd0e7475224"
   }
 }
 required_input {
@@ -53,10 +53,10 @@ required_input {
     digest: "15d3490610af31dff6f1be9948ef61e66db48a84fc8fd93a81a5433abab04309"
   }
   context {
-    source_context: "d6d64ed67e1b08c31ff4a965ee27e974a116603e8c81d777b57e3025e8d7c762"
+    source_context: "63b32f3fd0b8ee58c928f5fb01298f4bb5e555e5b8d896fa351e60225a91f258"
   }
   context {
-    source_context: "e3d0e816288477f3e6f62eda2874525f0685207706ca4f73da94553fdfc5df24"
+    source_context: "cc063f5d59413bdbe5596b0f25cd6ee07c0f5e5b7000e5c233731720366fc241"
   }
 }
 argument: "/usr/bin/g++"
@@ -67,4 +67,4 @@ argument: "./kythe/cxx/extractor/testdata/transcript_main.cc"
 argument: "-fsyntax-only"
 source_file: "./kythe/cxx/extractor/testdata/transcript_main.cc"
 working_directory: "."
-entry_context: "2c886012e7f9c5683fdc2d9a82dbdf594995dfbee385842eadb6587d2a05a4ed"
+entry_context: "6a4599abe93b6c88652906e84845bde8f2c39de4d3668bbfb0afedfc69c5c220"

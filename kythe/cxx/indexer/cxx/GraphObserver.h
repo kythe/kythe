@@ -552,6 +552,16 @@ public:
   /// It is always safe to return `true` here.
   virtual bool claimLocation(clang::SourceLocation Loc) { return true; }
 
+  /// \brief Returns a `ClaimToken` for intrinsics.
+  ///
+  /// By default, this will return the default claim token. This does not
+  /// associate the builtin with any particular location and ensures that
+  /// information for the builtin will be emitted when it is used in some
+  /// relationship.
+  virtual const ClaimToken *getClaimTokenForBuiltin() {
+    return getDefaultClaimToken();
+  }
+
   /// \brief Returns a `ClaimToken` covering a given source location.
   ///
   /// NB: FileIds represent each *inclusion* of a file. This allows us to

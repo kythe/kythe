@@ -82,6 +82,18 @@ class RunningHash {
                   "Expected a scalar type.");
     Update(&cvk, sizeof(cvk));
   }
+  /// \brief Update the hash with the relevant values from a `LanguageOptions`
+  /// \param options The options to include in the hash.
+  void Update(const clang::LangOptions& options) {
+    // These configuration options change the way definitions are interpreted
+    // (see clang::Builtin::Context::BuiltinIsSupported).
+    Update(options.NoBuiltin ? "no_builtin" : "builtin");
+    Update(options.NoMathBuiltin ? "no_math_builtin" : "math_builtin");
+    Update(options.Freestanding ? "freestanding" : "not_freestanding");
+    Update(options.GNUMode ? "GNUmode" : "not_GNUMode");
+    Update(options.MicrosoftExt ? "MSMode" : "not_MSMode");
+    Update(options.ObjC1 ? "ObjC1" : "not_ObjC1");
+  }
   /// \brief Update the hash with some unsigned integer.
   /// \param u The unsigned integer to include in the hash.
   void Update(unsigned u) { Update(&u, sizeof(u)); }
@@ -147,6 +159,8 @@ class ExtractorPPCallbacks : public clang::PPCallbacks {
 
   /// \brief Amends history to include a macro expansion.
   /// \param expansion_loc Where the expansion occurred. Must be in a file.
+  /// \param definition_loc Where the expanded macro was defined.
+  /// May be invalid.
   /// \param unexpanded The unexpanded form of the macro.
   /// \param expanded The fully expanded form of the macro.
   ///
@@ -312,6 +326,7 @@ void ExtractorPPCallbacks::FileChanged(
       current_files_.push(FileState{last_inclusion_directive_path_,
                                     ClaimDirective::NoDirectivesFound});
     }
+    history()->Update(preprocessor_->getLangOpts());
   } else if (Reason == ExitFile) {
     auto transcript = PopFile();
     if (!current_files_.empty()) {
@@ -429,6 +444,9 @@ void ExtractorPPCallbacks::MacroExpands(
 void ExtractorPPCallbacks::Defined(const clang::Token& macro_name,
                                    const clang::MacroDirective* macro_directive,
                                    clang::SourceRange range) {
+  if (macro_directive && macro_directive->getMacroInfo()) {
+    RecordSpecificLocation(macro_directive->getMacroInfo()->getDefinitionLoc());
+  }
   clang::SourceLocation macro_location = macro_name.getLocation();
   RecordMacroExpansion(macro_location, getSourceString(*preprocessor_, range),
                        macro_directive ? "1" : "0");
