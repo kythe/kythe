@@ -21,7 +21,7 @@
 (defn- unwrap-corpus-roots-response [resp]
   (into {}
     (for [corpusRoots (get resp "corpus")]
-      [(get corpusRoots "corpus") (get corpusRoots "root")])))
+      [(get corpusRoots "name") (get corpusRoots "root")])))
 
 (defn get-corpus-roots
   "Requests all of the known corpus roots"
@@ -42,7 +42,7 @@
                    (let [vname (util/ticket->vname ticket)]
                      [(util/basename (:path vname)) {:ticket ticket
                                                      :vname vname}]))
-              (get resp "file_ticket")))})
+              (get resp "file")))})
 
 (defn get-directory
   "Requests the contents of the given directory"

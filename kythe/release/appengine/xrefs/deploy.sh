@@ -59,6 +59,6 @@ rm -f appengine_generated*
 if [[ -n "$DEV" ]]; then
   dev_appserver.py app.yaml
 else
-  gcloud preview app deploy --server gcr.appengine.google.com app.yaml
+  gcloud preview app deploy --set-default --server gcr.appengine.google.com app.yaml
 fi
 

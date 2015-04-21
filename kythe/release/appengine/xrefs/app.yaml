@@ -1,7 +1,6 @@
 application: kythe-repo
 module: xrefs
 runtime: custom
-version: 1
 vm: true
 api_version: 1
 threadsafe: yes
