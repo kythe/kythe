@@ -6,3 +6,9 @@ package_group(
         "//kythe/...",
     ],
 )
+
+filegroup(
+    name = "srcs",
+    srcs = glob(["**"]),
+    visibility = ["//visibility:private"],
+)

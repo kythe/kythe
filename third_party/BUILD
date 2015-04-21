@@ -1,5 +1,11 @@
 package(default_visibility = ["//visibility:public"])
 
+filegroup(
+    name = "srcs",
+    srcs = glob(["**"]),
+    visibility = ["//visibility:private"],
+)
+
 java_import(
     name = "junit4",
     jars = [
