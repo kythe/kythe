@@ -14,8 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# campfire-docker will build/run the google/kythe-campfire Docker container,
-# passing all arguments to campfire. See ./campfire help for its commands.
+# campfire-docker will build/run the kythe-campfire Docker container, passing
+# all arguments to campfire.  See ./campfire help for its commands.
+
+IMAGE="gcr.io/kythe_repo/kythe-campfire"
 
 cd "$(dirname "$0")"
 
@@ -27,8 +29,8 @@ if ! command -v docker &>/dev/null; then
 Please see https://docs.docker.com/installation/ for installation instructions."
 fi
 
-if ! docker images | grep '^google/kythe-campfire\s' >/dev/null; then
-  info "missing campfire docker image"
+if ! docker images | grep "^$IMAGE\s" >/dev/null; then
+  info "missing campfire docker image ($IMAGE)"
   ./campfire package //buildtools/docker
 fi
 
@@ -48,4 +50,4 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
-docker run "${DOCKER_FLAGS[@]}" $INTERACTIVE google/kythe-campfire "${CAMPFIRE_ARGS[@]}"
+docker run "${DOCKER_FLAGS[@]}" $INTERACTIVE "$IMAGE" "${CAMPFIRE_ARGS[@]}"

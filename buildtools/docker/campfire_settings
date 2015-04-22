@@ -2,16 +2,7 @@
   "configurations": {
     "base": {
       "cxx_path": "clang++-3.5",
-      "cc_path": "clang-3.5",
-
-      "root_rel_llvm_repo": "/opt/llvm/llvm",
-      "third_party_llvm_rel_llvm_lib": "/opt/llvm/llvm/build/Release+Asserts/lib",
-      "root_rel_llvm_include": [
-        "/opt/llvm/llvm/include",
-        "/opt/llvm/llvm/tools/clang/include",
-        "/opt/llvm/llvm/build/include",
-        "/opt/llvm/llvm/build/tools/clang/include"
-      ]
+      "cc_path": "clang-3.5"
     }
   }
 }

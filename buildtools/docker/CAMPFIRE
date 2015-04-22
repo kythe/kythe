@@ -3,7 +3,7 @@
     "name": "docker",
     "kind": "docker_deploy",
     "properties": {
-      "docker_name": "google/kythe-campfire",
+      "docker_name": "gcr.io/kythe_repo/kythe-campfire",
       "release_version": "0.1.0"
     },
     "inputs": {
