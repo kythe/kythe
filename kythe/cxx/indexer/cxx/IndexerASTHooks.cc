@@ -1881,30 +1881,22 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::QualType &QT) {
 
 MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
     const clang::TypeLoc &Type, const clang::Type *PT, EmitRanges EmitRanges) {
-  MaybeFew<GraphObserver::NodeId> ID, AlreadyBuiltID;
+  MaybeFew<GraphObserver::NodeId> ID;
   const QualType QT = Type.getType();
   SourceRange SR = Type.getSourceRange();
   int64_t Key = ComputeKeyFromQualType(Context, QT, PT);
   const auto &Prev = TypeNodes.find(Key);
   bool TypeAlreadyBuilt = false;
   if (Prev != TypeNodes.end()) {
-    if (SR.isValid() && SR.getBegin().isFileID()) {
-      // If this is an empty SourceRange, try to expand it.
-      if (SR.getBegin() == SR.getEnd()) {
-        SR = RangeForASTEntityFromSourceLocation(SR.getBegin());
-      }
-      if (EmitRanges == IndexerASTVisitor::EmitRanges::Yes) {
-        auto RCC = RangeInCurrentContext(SR);
-        Prev->second.Iter([this, &RCC](const GraphObserver::NodeId &ID) {
-          Observer->recordTypeSpellingLocation(RCC, ID);
-        });
-      }
+    // If we're not trying to emit edges for constituent types, or if there's
+    // no chance for us to do so because we lack source location information,
+    // finish early.
+    if (EmitRanges != EmitRanges::Yes ||
+        !(SR.isValid() && SR.getBegin().isFileID())) {
+      ID = Prev->second;
+      return ID;
     }
-    AlreadyBuiltID = Prev->second;
     TypeAlreadyBuilt = true;
-    return AlreadyBuiltID; // TODO(zarko): We still need to apply
-                           // edges to types as they appear in source text
-                           // even if the type nodes have been created.
   }
   // We only care about leaves in the type hierarchy (eg, we shouldn't match
   // on Reference, but instead on LValueReference or RValueReference).
@@ -2009,6 +2001,9 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
     if (!ElementID) {
       return ElementID;
     }
+    if (TypeAlreadyBuilt) {
+      break;
+    }
     // TODO(zarko): Record size expression.
     ID = ApplyBuiltinTypeConstructor("carr", ElementID);
   } break;
@@ -2057,13 +2052,17 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
       NodeIdPtrs.push_back(&NodeIds[I]);
     }
     const char *Tycon = T.getTypePtr()->isVariadic() ? "fnvararg" : "fn";
-    ID = Observer->recordTappNode(Observer->getNodeIdForBuiltinType(Tycon),
-                                  NodeIdPtrs);
+    if (!TypeAlreadyBuilt) {
+      ID = Observer->recordTappNode(Observer->getNodeIdForBuiltinType(Tycon),
+                                    NodeIdPtrs);
+    }
   } break;
-  case TypeLoc::FunctionNoProto: {
-    const auto &T = Type.castAs<FunctionNoProtoTypeLoc>();
-    ID = Observer->getNodeIdForBuiltinType("knrfn");
-  } break;
+  case TypeLoc::FunctionNoProto:
+    if (!TypeAlreadyBuilt) {
+      const auto &T = Type.castAs<FunctionNoProtoTypeLoc>();
+      ID = Observer->getNodeIdForBuiltinType("knrfn");
+    }
+    break;
   UNSUPPORTED_CLANG_TYPE(UnresolvedUsing);
   case TypeLoc::Paren: {
     const auto &T = Type.castAs<ParenTypeLoc>();
@@ -2096,12 +2095,14 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
   UNSUPPORTED_CLANG_TYPE(Decayed);
   UNSUPPORTED_CLANG_TYPE(TypeOfExpr);
   UNSUPPORTED_CLANG_TYPE(TypeOf);
-  case TypeLoc::Decltype: {
-    const auto &T = Type.castAs<DecltypeTypeLoc>();
-    const auto *DT = dyn_cast<DecltypeType>(PT);
-    ID = BuildNodeIdForType(DT ? DT->getUnderlyingType()
-                               : T.getTypePtr()->getUnderlyingType());
-  } break;
+  case TypeLoc::Decltype:
+    if (!TypeAlreadyBuilt) {
+      const auto &T = Type.castAs<DecltypeTypeLoc>();
+      const auto *DT = dyn_cast<DecltypeType>(PT);
+      ID = BuildNodeIdForType(DT ? DT->getUnderlyingType()
+                                 : T.getTypePtr()->getUnderlyingType());
+    }
+    break;
   UNSUPPORTED_CLANG_TYPE(UnaryTransform);
   case TypeLoc::Record: { // Leaf.
     const auto &T = Type.castAs<RecordTypeLoc>();
@@ -2132,38 +2133,44 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
           return ArgA;
         }
       }
-      ID = Observer->recordTappNode(TemplateName, TemplateArgsPtrs);
-    } else if (RecordDecl *Defn = Decl->getDefinition()) {
-      // Special-case linking to a defn instead of using a tnominal.
-      if (const auto *RD = dyn_cast<CXXRecordDecl>(Defn)) {
-        if (const auto *CTD = RD->getDescribedClassTemplate()) {
-          // Link to the template binder, not the internal class.
-          ID = BuildNodeIdForDecl(CTD);
+      if (!TypeAlreadyBuilt) {
+        ID = Observer->recordTappNode(TemplateName, TemplateArgsPtrs);
+      }
+    } else if (!TypeAlreadyBuilt) {
+      if (RecordDecl *Defn = Decl->getDefinition()) {
+        // Special-case linking to a defn instead of using a tnominal.
+        if (const auto *RD = dyn_cast<CXXRecordDecl>(Defn)) {
+          if (const auto *CTD = RD->getDescribedClassTemplate()) {
+            // Link to the template binder, not the internal class.
+            ID = BuildNodeIdForDecl(CTD);
+          } else {
+            // This is an ordinary CXXRecordDecl.
+            ID = BuildNodeIdForDecl(Defn);
+          }
         } else {
-          // This is an ordinary CXXRecordDecl.
+          // This is a non-CXXRecordDecl, so it can't be templated.
           ID = BuildNodeIdForDecl(Defn);
         }
       } else {
-        // This is a non-CXXRecordDecl, so it can't be templated.
-        ID = BuildNodeIdForDecl(Defn);
+        // Thanks to the ODR, we shouldn't record multiple nominal type nodes
+        // for the same TU: given distinct names, NameIds will be distinct,
+        // there may be only one definition bound to each name, and we
+        // memoize the NodeIds we give to types.
+        ID = Observer->recordNominalTypeNode(BuildNameIdForDecl(Decl));
       }
-    } else {
-      // Thanks to the ODR, we shouldn't record multiple nominal type nodes
-      // for the same TU: given distinct names, NameIds will be distinct,
-      // there may be only one definition bound to each name, and we
-      // memoize the NodeIds we give to types.
-      ID = Observer->recordNominalTypeNode(BuildNameIdForDecl(Decl));
     }
   } break;
-  case TypeLoc::Enum: { // Leaf.
-    const auto &T = Type.castAs<EnumTypeLoc>();
-    EnumDecl *Decl = T.getDecl();
-    if (EnumDecl *Defn = Decl->getDefinition()) {
-      ID = BuildNodeIdForDecl(Defn);
-    } else {
-      ID = Observer->recordNominalTypeNode(BuildNameIdForDecl(Decl));
+  case TypeLoc::Enum:
+    if (!TypeAlreadyBuilt) { // Leaf.
+      const auto &T = Type.castAs<EnumTypeLoc>();
+      EnumDecl *Decl = T.getDecl();
+      if (EnumDecl *Defn = Decl->getDefinition()) {
+        ID = BuildNodeIdForDecl(Defn);
+      } else {
+        ID = Observer->recordNominalTypeNode(BuildNameIdForDecl(Decl));
+      }
     }
-  } break;
+    break;
   case TypeLoc::Elaborated: {
     // This one wraps a qualified (via 'struct S' | 'N::M::type') type
     // reference.
@@ -2250,7 +2257,9 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
         return ArgA;
       }
     }
-    ID = Observer->recordTappNode(TemplateName.primary(), TemplateArgsPtrs);
+    if (!TypeAlreadyBuilt) {
+      ID = Observer->recordTappNode(TemplateName.primary(), TemplateArgsPtrs);
+    }
   } break;
   case TypeLoc::Auto: {
     const auto *DT = dyn_cast<AutoType>(PT);
@@ -2270,34 +2279,38 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
     }
     ID = BuildNodeIdForType(DeducedQT);
   } break;
-  case TypeLoc::InjectedClassName: { // Leaf.
-    // TODO(zarko): Replace with logic that uses InjectedType.
-    const auto &T = Type.castAs<InjectedClassNameTypeLoc>();
-    CXXRecordDecl *Decl = T.getDecl();
-    if (RecordDecl *Defn = Decl->getDefinition()) {
-      if (const auto *RD = dyn_cast<CXXRecordDecl>(Defn)) {
-        if (const auto *CTD = RD->getDescribedClassTemplate()) {
-          // Link to the template binder, not the internal class.
-          ID = BuildNodeIdForDecl(CTD);
+  case TypeLoc::InjectedClassName:
+    if (!TypeAlreadyBuilt) { // Leaf.
+      // TODO(zarko): Replace with logic that uses InjectedType.
+      const auto &T = Type.castAs<InjectedClassNameTypeLoc>();
+      CXXRecordDecl *Decl = T.getDecl();
+      if (RecordDecl *Defn = Decl->getDefinition()) {
+        if (const auto *RD = dyn_cast<CXXRecordDecl>(Defn)) {
+          if (const auto *CTD = RD->getDescribedClassTemplate()) {
+            // Link to the template binder, not the internal class.
+            ID = BuildNodeIdForDecl(CTD);
+          } else {
+            // This is an ordinary CXXRecordDecl.
+            ID = BuildNodeIdForDecl(Defn);
+          }
         } else {
-          // This is an ordinary CXXRecordDecl.
+          // This is a non-CXXRecordDecl, so it can't be templated.
           ID = BuildNodeIdForDecl(Defn);
         }
       } else {
-        // This is a non-CXXRecordDecl, so it can't be templated.
-        ID = BuildNodeIdForDecl(Defn);
+        ID = Observer->recordNominalTypeNode(BuildNameIdForDecl(Decl));
       }
-    } else {
-      ID = Observer->recordNominalTypeNode(BuildNameIdForDecl(Decl));
     }
-  } break;
-  case TypeLoc::DependentName: {
-    const auto &T = Type.castAs<DependentNameTypeLoc>();
-    const auto &NNS = T.getQualifierLoc();
-    const auto &NameLoc = T.getNameLoc();
-    ID = BuildNodeIdForDependentName(NNS, T.getTypePtr()->getIdentifier(),
-                                     NameLoc, EmitRanges);
-  } break;
+    break;
+  case TypeLoc::DependentName:
+    if (!TypeAlreadyBuilt) {
+      const auto &T = Type.castAs<DependentNameTypeLoc>();
+      const auto &NNS = T.getQualifierLoc();
+      const auto &NameLoc = T.getNameLoc();
+      ID = BuildNodeIdForDependentName(NNS, T.getTypePtr()->getIdentifier(),
+                                       NameLoc, EmitRanges);
+    }
+    break;
   UNSUPPORTED_CLANG_TYPE(DependentTemplateSpecialization);
   UNSUPPORTED_CLANG_TYPE(PackExpansion);
   UNSUPPORTED_CLANG_TYPE(ObjCObject);
@@ -2309,7 +2322,9 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
     assert(0 && "Incomplete pattern match on type or abstract class (?)");
   }
   if (TypeAlreadyBuilt) {
-    ID = AlreadyBuiltID;
+    ID = Prev->second;
+  } else {
+    TypeNodes[Key] = ID;
   }
   if (SR.isValid() && SR.getBegin().isFileID()) {
     // If this is an empty SourceRange, try to expand it.
@@ -2323,7 +2338,6 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
       });
     }
   }
-  TypeNodes[Key] = ID;
   return ID;
 }
 

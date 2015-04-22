@@ -360,7 +360,7 @@ GraphObserver::NodeId KytheGraphObserver::nodeIdForTypeAliasNode(
 GraphObserver::NodeId KytheGraphObserver::recordTypeAliasNode(
     const NameId &alias_name, const NodeId &aliased_type) {
   NodeId type_id = nodeIdForTypeAliasNode(alias_name, aliased_type);
-  if (written_taliases_.insert(type_id.ToString()).second) {
+  if (written_types_.insert(type_id.ToString()).second) {
     kythe::proto::VName type_vname(VNameFromNodeId(type_id));
     recorder_->BeginNode(type_vname, NodeKindID::kTAlias);
     recorder_->EndNode();
@@ -405,10 +405,12 @@ GraphObserver::NodeId KytheGraphObserver::nodeIdForNominalTypeNode(
 GraphObserver::NodeId KytheGraphObserver::recordNominalTypeNode(
     const NameId &name_id) {
   NodeId id_out = nodeIdForNominalTypeNode(name_id);
-  kythe::proto::VName type_vname(VNameFromNodeId(id_out));
-  recorder_->BeginNode(type_vname, NodeKindID::kTNominal);
-  recorder_->EndNode();
-  recorder_->AddEdge(type_vname, EdgeKindID::kNamed, RecordName(name_id));
+  if (written_types_.insert(id_out.ToString()).second) {
+    kythe::proto::VName type_vname(VNameFromNodeId(id_out));
+    recorder_->BeginNode(type_vname, NodeKindID::kTNominal);
+    recorder_->EndNode();
+    recorder_->AddEdge(type_vname, EdgeKindID::kNamed, RecordName(name_id));
+  }
   return id_out;
 }
 
@@ -433,7 +435,7 @@ GraphObserver::NodeId KytheGraphObserver::recordTappNode(
     comma = true;
   }
   id_out.Identity.append(")");
-  if (written_taliases_.insert(id_out.ToString()).second) {
+  if (written_types_.insert(id_out.ToString()).second) {
     kythe::proto::VName tapp_vname(VNameFromNodeId(id_out));
     recorder_->BeginNode(tapp_vname, NodeKindID::kTApp);
     recorder_->EndNode();

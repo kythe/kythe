@@ -360,12 +360,9 @@ class KytheGraphObserver : public GraphObserver {
   /// The set of NameIds we have already emitted (identified by
   /// NameId::ToString()).
   std::unordered_set<std::string> written_name_ids_;
-  /// The set of `talias` nodes we've emitted so far (identified by
+  /// The set of type nodes we've emitted so far (identified by
   /// `NodeId::ToString()`).
-  std::unordered_set<std::string> written_taliases_;
-  /// The set of `tapp` nodes we've emitted so far (identified by
-  /// `NodeId::ToString()`).
-  std::unordered_set<std::string> written_tapps_;
+  std::unordered_set<std::string> written_types_;
   /// The virtual filesystem in use.
   llvm::IntrusiveRefCntPtr<IndexVFS> vfs_;
   /// A neutral claim token.
