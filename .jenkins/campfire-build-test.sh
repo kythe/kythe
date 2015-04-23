@@ -1,3 +1,5 @@
+#!/bin/bash -e
+#
 # Copyright 2015 Google Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,28 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-kind: !freestyle
-!key:by-name Build periodically:
-  spec: H H(9-15) * * *
-!key:by-name Poll SCM:
-  scmpoll_spec: H/5 * * * *
-  ignorePostCommitHooks: false
-builder:
-- stapler-class: !shell
-  $class: !shell
-  command: 'repo/.jenkins/get-llvm.sh "$WORKSPACE"'
-- stapler-class: !shell
-  $class: !shell
-  command: gcloud preview docker pull gcr.io/kythe_repo/kythe-campfire
-- stapler-class: !shell
-  $class: !shell
-  command: |
-    #!/bin/bash -e
+cd "$WORKSPACE/repo"
+.jenkins/get-llvm.sh "$WORKSPACE"
 
-    cd repo
-    campfire() {
-      ./campfire-docker --non-interactive "$@"
-    }
+gcloud preview docker pull gcr.io/kythe_repo/kythe-campfire
 
-    campfire build //...
-    campfire test //...
+campfire() {
+  ./campfire-docker --non-interactive "$@"
+}
+
+campfire build //...
+campfire test //...
