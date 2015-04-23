@@ -9,6 +9,7 @@ action_listener(
         "Javac",
         "CppCompile",
     ],
+    visibility = ["//visibility:public"],
 )
 
 extra_action(

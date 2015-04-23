@@ -86,6 +86,7 @@ action_listener(
     name = "extract_kindex",
     extra_actions = [":extra_action"],
     mnemonics = ["CppCompile"],
+    visibility = ["//visibility:public"],
 )
 
 extra_action(
