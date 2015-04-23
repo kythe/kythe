@@ -66,3 +66,14 @@ go_binary(
         "//third_party/go:context",
     ],
 )
+
+sh_test(
+    name = "indexpack_test",
+    srcs = ["indexpack_test.sh"],
+    data = [
+        ":indexpack",
+        ":viewindex",
+        "//kythe/testdata:test.kindex",
+        "//third_party/jq",
+    ],
+)
