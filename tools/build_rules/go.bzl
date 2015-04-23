@@ -177,3 +177,24 @@ go_test = rule(
     executable = True,
     test = True,
 )
+
+def go_package(deps=[], test_deps=[], visibility=None):
+  name = PACKAGE_NAME.split("/")[-1]
+  go_library(
+    name = name,
+    srcs = native.glob(
+        includes = ["*.go"],
+        excludes = ["*_test.go"],
+    ),
+    deps = deps,
+    visibility = visibility,
+  )
+  test_srcs = native.glob(includes = ["*_test.go"])
+  if test_srcs:
+    go_test(
+      name = name + "_test",
+      srcs = test_srcs,
+      library = ":" + name,
+      deps = test_deps,
+      visibility = ["//visibility:private"],
+    )

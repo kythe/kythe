@@ -1,12 +1,8 @@
-load("//tools/build_rules/go", "go_library")
+load("//tools/build_rules/go", "go_package")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
-go_library(
-    name = "filetree",
-    srcs = [
-        "filetree.go",
-    ],
+go_package(
     deps = [
         "//kythe/go/services/graphstore",
         "//kythe/go/services/web",

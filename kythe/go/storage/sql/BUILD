@@ -1,12 +1,11 @@
-load("//tools/build_rules/go", "go_library", "go_test")
+load("//tools/build_rules/go", "go_package")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
-go_library(
-    name = "sql",
-    srcs = [
-        "sql.go",
-        "sql_xrefs.go",
+go_package(
+    test_deps = [
+        "//kythe/go/services/graphstore/compare",
+        "//kythe/proto:storage_proto",
     ],
     deps = [
         "//kythe/go/services/graphstore",
@@ -17,17 +16,5 @@ go_library(
         "//kythe/proto:storage_proto",
         "//kythe/proto:xref_proto",
         "//third_party/go:go-sqlite3",
-    ],
-)
-
-go_test(
-    name = "sql_test",
-    srcs = [
-        "sql_test.go",
-    ],
-    library = ":sql",
-    deps = [
-        "//kythe/go/services/graphstore/compare",
-        "//kythe/proto:storage_proto",
     ],
 )

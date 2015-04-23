@@ -1,29 +1,17 @@
-load("//tools/build_rules/go", "go_library", "go_test")
+load("//tools/build_rules/go", "go_package")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
-go_library(
-    name = "leveldb",
-    srcs = [
-        "leveldb.go",
+go_package(
+    test_deps = [
+        "//kythe/go/services/graphstore",
+        "//kythe/go/services/graphstore/compare",
+        "//kythe/go/storage/keyvalue",
+        "//kythe/proto:storage_proto",
     ],
     deps = [
         "//kythe/go/services/graphstore",
         "//kythe/go/storage/keyvalue",
         "//third_party/go:levigo",
-    ],
-)
-
-go_test(
-    name = "leveldb_test",
-    srcs = [
-        "leveldb_test.go",
-    ],
-    library = ":leveldb",
-    deps = [
-        "//kythe/go/services/graphstore",
-        "//kythe/go/services/graphstore/compare",
-        "//kythe/go/storage/keyvalue",
-        "//kythe/proto:storage_proto",
     ],
 )

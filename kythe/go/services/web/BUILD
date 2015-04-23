@@ -1,12 +1,8 @@
-load("//tools/build_rules/go", "go_library")
+load("//tools/build_rules/go", "go_package")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
-go_library(
-    name = "web",
-    srcs = [
-        "web.go",
-    ],
+go_package(
     deps = [
         "//kythe/go/util/httpencoding",
         "//third_party/go:protobuf",
