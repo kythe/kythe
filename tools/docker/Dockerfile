@@ -27,10 +27,10 @@ RUN echo deb http://storage.googleapis.com/dev-con-jessie-apt/ jessie main >> /e
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-      git pkg-config zip unzip rsync patch zsh wget jq net-tools less parallel locales make \
+      git pkg-config zip unzip rsync patch zsh wget net-tools less parallel locales make \
       g++ gcc openjdk-8-jdk openjdk-8-source clang-3.5 golang-go flex asciidoc source-highlight graphviz \
       zlib1g-dev libarchive-dev libncurses-dev uuid-dev libssl-dev libleveldb-dev libsnappy-dev \
-      ca-certificates-java && \
+      ca-certificates-java libcurl4-openssl-dev && \
     apt-get clean
 
 ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
@@ -44,6 +44,6 @@ RUN wget http://archive.kernel.org/debian-archive/debian/pool/main/b/bison/bison
 RUN cd /opt && \
     git clone https://github.com/google/bazel/ && \
     cd bazel && \
-    git checkout 76023b9180d7a18defc526126a943fab684971dc && \
+    git checkout 4e09fd671bdcd27428821684d171ede6ed2eb820 && \
     ./compile.sh && \
     ln -s /opt/bazel/output/bazel /usr/bin/
