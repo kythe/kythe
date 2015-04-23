@@ -1,0 +1,6 @@
+URL: https://stedolan.github.io/jq/download/source/jq-1.4.tar.gz
+Version: 1.4
+License: MIT (code), CC-BY-3.0 (docs), includes dtoa.c and g_fmt.c by
+  David M. Gay.
+Local modifications: Added a BUILD and a CAMPFIRE file; generated version.h;
+  removed unused files.

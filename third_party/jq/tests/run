@@ -1,0 +1,9 @@
+#!/bin/sh
+
+if which valgrind > /dev/null; then
+    VALGRIND='valgrind --error-exitcode=1 -q --leak-check=full'
+else
+    VALGRIND=
+fi
+
+cat $@ | $VALGRIND ./jq --run-tests
