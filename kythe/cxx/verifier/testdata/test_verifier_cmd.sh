@@ -1,5 +1,6 @@
 #!/bin/bash
-VERIFIER=campfire-out/bin/kythe/cxx/verifier/verifier
+KYTHE_BIN="${TEST_SRCDIR:-${PWD}/campfire-out/bin}"
+VERIFIER="${KYTHE_BIN}/kythe/cxx/verifier/verifier"
 ${VERIFIER}
 HAD_ERRORS=$?
 if [ ${HAD_ERRORS} -ne 1 ]; then

@@ -16,6 +16,7 @@
 
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"
+#include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "kythe/cxx/common/net_client.h"
 #include "kythe/cxx/tools/fyi/fyi.h"

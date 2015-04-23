@@ -69,3 +69,34 @@ cc_binary(
         ":cmdlib",
     ],
 )
+
+cc_library(
+    name = "testlib",
+    testonly = 1,
+    srcs = [
+        "KytheIndexerUnitTest.cc",
+    ],
+    hdrs = [
+        "RecordingOutputStream.h",
+    ],
+    copts = [
+        "-Wno-non-virtual-dtor",
+        "-Wno-unused-variable",
+        "-Wno-implicit-fallthrough",
+    ],
+    deps = [
+        ":lib",
+        "//kythe/proto:cxx_proto_cc",
+        "//kythe/proto:storage_proto_cc",
+        "//third_party/googletest",
+        "//third_party/llvm",
+        "//third_party/proto:protobuf",
+    ],
+)
+
+cc_test(
+    name = "test",
+    deps = [
+        ":testlib",
+    ],
+)

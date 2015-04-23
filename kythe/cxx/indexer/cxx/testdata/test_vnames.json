@@ -13,5 +13,20 @@
       "corpus": "bundle",
       "path": "@1@"
     }
+  },
+  {
+    "pattern": ".*/test_bundle/(.*)_(.*)_(.*)",
+    "vname": {
+      "corpus": "@1@",
+      "root": "@2@",
+      "path": "@3@"
+    }
+  },
+  {
+    "pattern": ".*/test_bundle/(.*)",
+    "vname": {
+      "corpus": "bundle",
+      "path": "@1@"
+    }
   }
 ]

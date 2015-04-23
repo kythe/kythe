@@ -13,12 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 set -o pipefail
-BASE_DIR="${PWD}/kythe/cxx/extractor/testdata"
-OUT_DIR="${PWD}/campfire-out/test/kythe/cxx/extractor/testdata/stdin_names"
-EXTRACTOR="${PWD}/campfire-out/bin/kythe/cxx/extractor/cxx_extractor"
-VERIFIER="${PWD}/campfire-out/bin/kythe/cxx/verifier/verifier"
-INDEXER="${PWD}/campfire-out/bin/kythe/cxx/indexer/cxx/indexer"
-INDEXPACK="${PWD}/campfire-out/bin/kythe/go/platform/tools/indexpack"
+TEST_NAME="test_stdin_names"
+. ./kythe/cxx/extractor/testdata/test_common.sh
 rm -rf -- "${OUT_DIR}"
 echo '#define STDIN_OK 1\n' | KYTHE_INDEX_PACK=1 \
     KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}" \

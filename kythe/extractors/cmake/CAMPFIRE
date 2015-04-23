@@ -8,7 +8,8 @@
       ],
       "tools": [
         "//kythe/cxx/extractor:cxx_extractor",
-        "//kythe/cxx/tools:kindex_tool"
+        "//kythe/cxx/tools:kindex_tool",
+        "//third_party/jq"
       ],
       "data": [
         "extract_compilation_database.sh",

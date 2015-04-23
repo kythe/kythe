@@ -83,7 +83,8 @@
       ],
       "tools": [
         ":indexpack",
-        ":viewindex"
+        ":viewindex",
+        "//third_party/jq"
       ],
       "data": [
         "../../../testdata/test.kindex"

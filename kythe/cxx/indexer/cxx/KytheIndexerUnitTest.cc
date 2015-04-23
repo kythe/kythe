@@ -36,8 +36,8 @@
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/Twine.h"
 
-#include "third_party/protobuf/include/google/protobuf/stubs/common.h"
-#include "third_party/googletest/include/gtest/gtest.h"
+#include "google/protobuf/stubs/common.h"
+#include "gtest/gtest.h"
 
 #include "KytheGraphRecorder.h"
 #include "RecordingOutputStream.h"

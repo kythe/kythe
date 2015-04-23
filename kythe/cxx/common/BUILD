@@ -72,3 +72,225 @@ cc_library(
         "//third_party/zlib",
     ],
 )
+
+cc_library(
+    name = "net_client",
+    srcs = [
+        "net_client.cc",
+    ],
+    hdrs = [
+        "net_client.h",
+    ],
+    copts = [
+        "-Wno-non-virtual-dtor",
+        "-Wno-unused-variable",
+        "-Wno-implicit-fallthrough",
+    ],
+    linkopts = [
+        "-lcurl",
+    ],
+    deps = [
+        ":lib",
+        "//kythe/proto:storage_proto_cc",
+        "//kythe/proto:xref_proto_cc",
+        "//third_party/googleflags:gflags",
+        "//third_party/googlelog:glog",
+        "//third_party/proto:protobuf",
+        "//third_party/rapidjson",
+        "//third_party/zlib",
+    ],
+)
+
+cc_library(
+    name = "commandline_testlib",
+    testonly = 1,
+    srcs = [
+        "CommandLineUtilsTest.cc",
+    ],
+    copts = [
+        "-Wno-non-virtual-dtor",
+        "-Wno-unused-variable",
+        "-Wno-implicit-fallthrough",
+    ],
+    deps = [
+        ":lib",
+        "//third_party/googletest",
+        "//third_party/llvm",
+    ],
+)
+
+cc_test(
+    name = "commandline_test",
+    deps = [
+        ":commandline_testlib",
+    ],
+)
+
+cc_library(
+    name = "file_vname_generator_testlib",
+    testonly = 1,
+    srcs = [
+        "file_vname_generator_test.cc",
+    ],
+    copts = [
+        "-Wno-non-virtual-dtor",
+        "-Wno-unused-variable",
+        "-Wno-implicit-fallthrough",
+    ],
+    deps = [
+        ":lib",
+        "//kythe/proto:storage_proto_cc",
+        "//third_party/googletest",
+        "//third_party/proto:protobuf",
+        "//third_party/re2",
+    ],
+)
+
+cc_test(
+    name = "file_vname_generator_test",
+    deps = [
+        ":file_vname_generator_testlib",
+    ],
+)
+
+cc_library(
+    name = "path_utils_testlib",
+    testonly = 1,
+    srcs = [
+        "path_utils_test.cc",
+    ],
+    copts = [
+        "-Wno-non-virtual-dtor",
+        "-Wno-unused-variable",
+        "-Wno-implicit-fallthrough",
+    ],
+    deps = [
+        ":lib",
+        "//third_party/googletest",
+        "//third_party/llvm",
+    ],
+)
+
+cc_test(
+    name = "path_utils_test",
+    deps = [
+        ":path_utils_testlib",
+    ],
+)
+
+cc_library(
+    name = "index_pack_testlib",
+    testonly = 1,
+    srcs = [
+        "index_pack_test.cc",
+    ],
+    copts = [
+        "-Wno-non-virtual-dtor",
+        "-Wno-unused-variable",
+        "-Wno-implicit-fallthrough",
+    ],
+    deps = [
+        ":lib",
+        "//kythe/proto:analysis_proto_cc",
+        "//kythe/proto:storage_proto_cc",
+        "//third_party/googleflags:gflags",
+        "//third_party/googlelog:glog",
+        "//third_party/googletest",
+        "//third_party/llvm",
+        "//third_party/proto:protobuf",
+        "//third_party/rapidjson",
+        "//third_party/zlib",
+    ],
+)
+
+cc_test(
+    name = "index_pack_test",
+    deps = [
+        ":index_pack_testlib",
+    ],
+)
+
+cc_library(
+    name = "json_proto_testlib",
+    testonly = 1,
+    srcs = [
+        "json_proto_test.cc",
+    ],
+    copts = [
+        "-Wno-non-virtual-dtor",
+        "-Wno-unused-variable",
+        "-Wno-implicit-fallthrough",
+    ],
+    deps = [
+        ":json_proto",
+        "//kythe/proto:analysis_proto_cc",
+        "//kythe/proto:storage_proto_cc",
+        "//third_party/googletest",
+        "//third_party/proto:protobuf",
+        "//third_party/re2",
+    ],
+)
+
+cc_test(
+    name = "json_proto_test",
+    deps = [
+        ":json_proto_testlib",
+    ],
+)
+
+cc_library(
+    name = "net_client_testlib",
+    testonly = 1,
+    srcs = [
+        "net_client_test.cc",
+    ],
+    copts = [
+        "-Wno-non-virtual-dtor",
+        "-Wno-unused-variable",
+        "-Wno-implicit-fallthrough",
+    ],
+    deps = [
+        ":net_client",
+        "//kythe/proto:analysis_proto_cc",
+        "//kythe/proto:storage_proto_cc",
+        "//third_party/googleflags:gflags",
+        "//third_party/googlelog:glog",
+        "//third_party/proto:protobuf",
+        "//third_party/zlib",
+    ],
+)
+
+cc_binary(
+    name = "net_client_test",
+    deps = [
+        ":net_client_testlib",
+    ],
+)
+
+cc_library(
+    name = "kythe_uri_testlib",
+    testonly = 1,
+    srcs = [
+        "kythe_uri_test.cc",
+    ],
+    copts = [
+        "-Wno-non-virtual-dtor",
+        "-Wno-unused-variable",
+        "-Wno-implicit-fallthrough",
+    ],
+    deps = [
+        ":lib",
+        "//kythe/proto:storage_proto_cc",
+        "//third_party/googleflags:gflags",
+        "//third_party/googlelog:glog",
+        "//third_party/googletest",
+        "//third_party/proto:protobuf",
+    ],
+)
+
+cc_test(
+    name = "kythe_uri_test",
+    deps = [
+        ":kythe_uri_testlib",
+    ],
+)

@@ -15,10 +15,8 @@
 #
 # This test checks that the extractor will emit index packs.
 # It should be run from the Kythe root.
-BASE_DIR="${PWD}/kythe/cxx/extractor/testdata"
-OUT_DIR="${PWD}/campfire-out/test/kythe/cxx/extractor/testdata/index_pack"
-EXTRACTOR="${PWD}/campfire-out/bin/kythe/cxx/extractor/cxx_extractor"
-KINDEX_TOOL="${PWD}/campfire-out/bin/kythe/cxx/tools/kindex_tool"
+TEST_NAME="test_index_pack"
+. ./kythe/cxx/extractor/testdata/test_common.sh
 rm -rf -- "${OUT_DIR}"
 mkdir -p "${OUT_DIR}"
 KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}" KYTHE_INDEX_PACK="1" \

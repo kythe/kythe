@@ -4,4 +4,6 @@ License: MIT
 Local modifications: Renamed *.cpp -> *.cc; changed OpenEncodedFile in
   documenttest.cc to deal with our paths; ditto FileStreamTest::SetUp
   in filestreamtest.cc; ditto jsoncheckertest.cc; ditto encodedstreamtest.cc;
-  enabled all tests in perftest.h
+  ditto perftest.h; enabled all tests in perftest.h
+The perf tests are commented out in the BUILD file as they tend to be
+  very slow to complete.

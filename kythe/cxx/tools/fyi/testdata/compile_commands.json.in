@@ -1,7 +1,7 @@
 [
   {
     "directory": "OUT_DIR",
-    "command": "clang++ -c nothing.cc -std=c++11 -Wall -Werror -I. -ITEST_DIR",
+    "command": "clang++ -c nothing.cc -std=c++11 -Wall -Werror -I. -IBASE_DIR",
     "file": "nothing.cc"
   },
   {

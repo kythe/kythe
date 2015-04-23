@@ -1,23 +1,24 @@
 #!/bin/bash -e
 # Tests whether the indexer will read from kindex files.
-CAMPFIRE_ROOT=${PWD}
-BASEDIR="${CAMPFIRE_ROOT}/kythe/cxx/indexer/cxx/testdata"
-VERIFIER="${CAMPFIRE_ROOT}/campfire-out/bin/kythe/cxx/verifier/verifier"
-INDEXER="${CAMPFIRE_ROOT}/campfire-out/bin/kythe/cxx/indexer/cxx/indexer"
-KINDEX_TOOL="${CAMPFIRE_ROOT}/campfire-out/bin/kythe/cxx/tools/kindex_tool"
-INDEX_PACK_BIN="${CAMPFIRE_ROOT}/campfire-out/bin/kythe/go/platform/tools/indexpack"
-TEST_TEMP="${CAMPFIRE_ROOT}/campfire-out/test/kythe/cxx/indexer/cxx/testdata/test_index_pack"
-TEST_INDEX="${TEST_TEMP}/test.kindex"
-mkdir -p "${TEST_TEMP}"
-rm -rf -- "${TEST_TEMP}/pack"
+KYTHE_BIN="${TEST_SRCDIR:-${PWD}/campfire-out/bin}"
+BASE_DIR="${TEST_SRCDIR:-${PWD}}/kythe/cxx/indexer/cxx/testdata"
+OUT_DIR="${TEST_TMPDIR:-${PWD}/campfire-out/test/kythe/cxx/indexer/cxx/testdata/test_index_pack}"
+VERIFIER="${KYTHE_BIN}/kythe/cxx/verifier/verifier"
+INDEXER="${KYTHE_BIN}/kythe/cxx/indexer/cxx/indexer"
+INDEX_PACK_BIN="${KYTHE_BIN}/kythe/go/platform/tools/indexpack"
+KINDEX_TOOL="${KYTHE_BIN}/kythe/cxx/tools/kindex_tool"
+TEST_INDEX="${OUT_DIR}/test.kindex"
+REPO_TEST_INDEX="${OUT_DIR}/repo_test.kindex"
+mkdir -p "${OUT_DIR}"
+rm -rf -- "${OUT_DIR}/pack"
 "${KINDEX_TOOL}" -assemble "${TEST_INDEX}" \
-    "${BASEDIR}/kindex_test.unit" \
-    "${BASEDIR}/kindex_test.header" \
-    "${BASEDIR}/kindex_test.main"
-"${INDEX_PACK_BIN}" -quiet=true --to_archive "${TEST_TEMP}/pack" \
+    "${BASE_DIR}/kindex_test.unit" \
+    "${BASE_DIR}/kindex_test.header" \
+    "${BASE_DIR}/kindex_test.main"
+"${INDEX_PACK_BIN}" -quiet=true --to_archive "${OUT_DIR}/pack" \
     "${TEST_INDEX}"
-"${INDEXER}" -index_pack "${TEST_TEMP}/pack" \
-    "f0f3ce43c41682991103e844cfc9ed7315624ffab3784bf701cd197236805c1b" \
-    > "${TEST_TEMP}/kindex_test.entries"
-cat "${TEST_TEMP}/kindex_test.entries" \
-    | "${VERIFIER}" "${BASEDIR}/kindex_test.verify"
+"${INDEXER}" -index_pack "${OUT_DIR}/pack" \
+    "401bdc75a298d6c3a11a10f493b182032793034fddd84e9810f89b5def902309" \
+    > "${OUT_DIR}/kindex_test.entries"
+cat "${OUT_DIR}/kindex_test.entries" \
+    | "${VERIFIER}" "${BASE_DIR}/kindex_test.verify"

@@ -23,11 +23,12 @@
 
 set -o pipefail
 TEST_NAME="$1"
-BASE_DIR="${PWD}/kythe/cxx/tools/fyi/testdata"
+BASE_DIR="${TEST_SRCDIR:-${PWD}}/kythe/cxx/tools/fyi/testdata"
 TEST_JSON="${BASE_DIR}/${TEST_NAME}.json"
 TEST_EXPECTED="${BASE_DIR}/${TEST_NAME}.expected"
-FYI="${PWD}/campfire-out/bin/kythe/cxx/tools/fyi/fyi"
-OUT_DIR="${PWD}/campfire-out/test/kythe/cxx/tools/fyi/testdata/${TEST_NAME}"
+KYTHE_BIN="${TEST_SRCDIR:-${PWD}/campfire-out/bin}"
+FYI="${KYTHE_BIN}/kythe/cxx/tools/fyi/fyi"
+OUT_DIR="${TEST_TMPDIR:-${PWD}/campfire-out/test/kythe/cxx/tools/fyi/testdata/${TEST_NAME}}"
 TEST_FILE="${OUT_DIR}/${TEST_NAME}"
 HAD_ERRORS=0
 
@@ -46,7 +47,7 @@ set -e
 
 if [[ -e "${TEST_EXPECTED}" ]]; then
   if [[ ${RESULTS} -ne 0 ]]; then
-    >&2 echo "Expected zero return from tool"
+    >&2 echo "Expected zero return from tool, saw ${RESULTS}"
     HAD_ERRORS=1
   fi
   diff "${TEST_FILE}.actual" "${TEST_EXPECTED}"

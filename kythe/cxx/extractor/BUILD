@@ -109,3 +109,38 @@ cc_binary(
         ":bazelcmdlib",
     ],
 )
+
+cc_library(
+    name = "testlib",
+    testonly = 1,
+    srcs = [
+        "cxx_extractor_test.cc",
+    ],
+    hdrs = [
+        "cxx_extractor.h",
+    ],
+    copts = [
+        "-Wno-non-virtual-dtor",
+        "-Wno-unused-variable",
+        "-Wno-implicit-fallthrough",
+    ],
+    deps = [
+        ":lib",
+        "//kythe/proto:analysis_proto_cc",
+        "//kythe/proto:cxx_proto_cc",
+        "//kythe/proto:storage_proto_cc",
+        "//third_party/googlelog:glog",
+        "//third_party/googletest",
+        "//third_party/llvm",
+        "//third_party/proto:protobuf",
+        "//third_party/re2",
+        "//third_party/zlib",
+    ],
+)
+
+cc_test(
+    name = "test",
+    deps = [
+        ":testlib",
+    ],
+)

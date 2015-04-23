@@ -13,11 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 set -o pipefail
-
-BASE_DIR="${PWD}/kythe/cxx/common/testdata"
+BASE_DIR="${TEST_SRCDIR:-${PWD}}/kythe/cxx/common/testdata"
+KYTHE_BIN="${TEST_SRCDIR:-${PWD}/campfire-out/bin}"
 TEST_JSON="${BASE_DIR}/net_client_test_data.json"
-TEST_BIN="${PWD}/campfire-out/bin/kythe/cxx/common/net_client_test"
-OUT_DIR="${PWD}/campfire-out/test/kythe/cxx/common/testdata/net_client_test_runner"
+TEST_BIN="${KYTHE_BIN}/kythe/cxx/common/net_client_test"
+OUT_DIR="${TEST_TMPDIR:-${PWD}/campfire-out/test/kythe/cxx/common/testdata/net_client_test_runner}"
 
 source "kythe/cxx/common/testdata/start_http_service.sh"
 

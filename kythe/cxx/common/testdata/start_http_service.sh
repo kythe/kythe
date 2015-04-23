@@ -16,6 +16,7 @@
 # This script is expected to be inlined into another script via source.
 #
 # It expects the following variables to be set:
+#   KYTHE_BIN - where the Kythe binaries can be found
 #   OUT_DIR   - temporary output directory for the test
 #   TEST_JSON - json dump of Kythe entries for test
 #
@@ -40,10 +41,10 @@
 #   "//kythe/go/storage/tools:write_tables",
 #   "//kythe/go/storage/tools:write_entries",
 
-KYTHE_WRITE_TABLES="${PWD}/campfire-out/bin/kythe/go/serving/tools/write_tables"
-KYTHE_WRITE_ENTRIES="${PWD}/campfire-out/bin/kythe/go/storage/tools/write_entries"
-KYTHE_ENTRYSTREAM="${PWD}/campfire-out/bin/kythe/go/platform/tools/entrystream"
-KYTHE_HTTP_SERVER="${PWD}/campfire-out/bin/kythe/go/serving/tools/http_server"
+KYTHE_WRITE_TABLES="${KYTHE_BIN}/kythe/go/serving/tools/write_tables"
+KYTHE_WRITE_ENTRIES="${KYTHE_BIN}/kythe/go/storage/tools/write_entries"
+KYTHE_ENTRYSTREAM="${KYTHE_BIN}/kythe/go/platform/tools/entrystream"
+KYTHE_HTTP_SERVER="${KYTHE_BIN}/kythe/go/serving/tools/http_server"
 RETRIES=8
 
 if grep -qe ':/docker' /proc/1/cgroup ; then
@@ -78,7 +79,6 @@ rm -rf -- "${OUT_DIR:?no output directory for test}/gs"
 rm -rf -- "${OUT_DIR:?no output directory for test}/tables"
 mkdir -p "${OUT_DIR}/gs"
 mkdir -p "${OUT_DIR}/tables"
-
 cat "${TEST_JSON:?no test json for test}" \
     | "${KYTHE_ENTRYSTREAM}" -read_json=true  \
     | "${KYTHE_WRITE_ENTRIES}" -graphstore "${OUT_DIR}/gs" 2>/dev/null
@@ -99,7 +99,6 @@ while :; do
     retry_config
   fi
 done
-
 COUNTDOWN=16
 while :; do
   sleep 1s

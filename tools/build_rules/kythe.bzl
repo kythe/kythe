@@ -18,7 +18,7 @@ def extract(ctx, kindex, args, inputs=[], mnemonic=None):
 
 def index(ctx, kindex, entries, mnemonic=None):
   tools = ctx.command_helper([ctx.attr._indexer], {}).resolved_tools
-  cmd = "set -e;" + ctx.executable._indexer.path + " " + kindex.path + " >" + entries.path
+  cmd = "set -e;" + ctx.executable._indexer.path + " " + " ".join(ctx.attr.indexer_opts) + " " + kindex.path + " >" + entries.path
   ctx.action(
       inputs = [kindex] + tools,
       outputs = [entries],
@@ -39,7 +39,8 @@ def verify(ctx, entries):
         "#!/bin/bash -e",
         "set -o pipefail",
         "cat " + " ".join(cmd_helper.template(all_entries, "%{short_path}")) + " | " +
-        ctx.executable._verifier.short_path + " --ignore_dups " + cmd_helper.join_paths(" ", all_srcs),
+        ctx.executable._verifier.short_path + " " + " ".join(ctx.attr.verifier_opts) +
+        " " + cmd_helper.join_paths(" ", all_srcs),
       ]),
       executable = True,
   )
@@ -90,6 +91,32 @@ def java_verifier_test_impl(ctx):
       files = set([kindex, entries]),
   )
 
+def cc_verifier_test_impl(ctx):
+  entries = []
+  concat_entries = ctx.new_file(ctx.configuration.bin_dir, ctx.label.name + ".entries")
+  concat_entries_cmd = ""
+
+  for src in ctx.files.srcs:
+    args = ['-std=c++11', '-c', src.short_path]
+    kindex = ctx.new_file(ctx.configuration.genfiles_dir, ctx.label.name + "/compilation/" + src.short_path + ".kindex")
+    extract(ctx, kindex, args, inputs=[src], mnemonic='CcExtractor')
+    entry = ctx.new_file(ctx.configuration.genfiles_dir, ctx.label.name + "/compilation/" + src.short_path + ".entries")
+    entries += [entry]
+    index(ctx, kindex, entry, mnemonic='CcIndexer')
+    concat_entries_cmd += 'cat ' + entry.path + ' >> ' + concat_entries.path + '\n'
+
+  ctx.action(
+    inputs = ctx.files.srcs + entries,
+    outputs = [concat_entries],
+    mnemonic = 'ConcatEntries',
+    command = concat_entries_cmd,
+    use_default_shell_env = True)
+
+  runfiles = verify(ctx, concat_entries)
+  return struct(
+      runfiles = runfiles,
+  )
+
 base_attrs = {
     "vnames_config": attr.label(
         default = Label("//kythe/data:vnames_config"),
@@ -100,6 +127,8 @@ base_attrs = {
         default = Label("//kythe/cxx/verifier"),
         executable = True,
     ),
+    "indexer_opts": attr.string_list([]),
+    "verifier_opts": attr.string_list(["--ignore_dups"]),
 }
 
 java_verifier_test = rule(
@@ -122,6 +151,27 @@ java_verifier_test = rule(
             default = Label("//kythe/java/com/google/devtools/kythe/analyzers/java:indexer"),
             executable = True,
         ),
+    },
+    executable = True,
+    test = True,
+)
+
+cc_verifier_test = rule(
+    cc_verifier_test_impl,
+    attrs = base_attrs + {
+        "srcs": attr.label_list(allow_files = FileType([".cc", ".h"])),
+        "deps": attr.label_list(
+            allow_files = False,
+        ),
+        "_extractor": attr.label(
+            default = Label("//kythe/cxx/extractor:cxx_extractor"),
+            executable = True,
+        ),
+        "_indexer": attr.label(
+            default = Label("//kythe/cxx/indexer/cxx:indexer"),
+            executable = True,
+        ),
+        "indexer_opts": attr.string_list(["-ignore_unimplemented"]),
     },
     executable = True,
     test = True,

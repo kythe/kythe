@@ -71,7 +71,7 @@ public:
     PerfTest() : filename_(), json_(), length_(), whitespace_(), whitespace_length_() {}
 
     virtual void SetUp() {
-        FILE *fp = fopen(filename_ = "data/sample.json", "rb");
+        FILE *fp = fopen(filename_ = "third_party/rapidjson/data/sample.json", "rb");
         if (!fp) 
             fp = fopen(filename_ = "../../bin/data/sample.json", "rb");
         ASSERT_TRUE(fp != 0);

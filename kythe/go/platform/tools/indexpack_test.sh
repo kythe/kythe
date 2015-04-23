@@ -17,11 +17,12 @@
 # This script tests the indexpack binary. It requires the jq command (≥ 1.4).
 
 indexpack=campfire-out/bin/kythe/go/platform/tools/indexpack
+jq=campfire-out/bin/third_party/jq/jq
 viewindex=campfire-out/bin/kythe/go/platform/tools/viewindex
 test_kindex=kythe/testdata/test.kindex
 
 kindex_contents() {
-  $viewindex --files "$1" | jq -c -S .
+  $viewindex --files "$1" | $jq -c -S .
 }
 
 tmp="$(mktemp -d)"

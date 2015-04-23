@@ -87,3 +87,33 @@ cc_binary(
         ":cmd_lib",
     ],
 )
+
+cc_library(
+    name = "testlib",
+    testonly = 1,
+    srcs = [
+        "verifier_unit_test.cc",
+    ],
+    hdrs = [
+        "verifier.h",
+    ],
+    copts = [
+        "-Wno-non-virtual-dtor",
+        "-Wno-unused-variable",
+        "-Wno-implicit-fallthrough",
+    ],
+    deps = [
+        ":lib",
+        "//kythe/proto:storage_proto_cc",
+        "//third_party/googlelog:glog",
+        "//third_party/googletest",
+        "//third_party/proto:protobuf",
+    ],
+)
+
+cc_test(
+    name = "test",
+    deps = [
+        ":testlib",
+    ],
+)
