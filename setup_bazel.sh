@@ -20,16 +20,18 @@
 
 cd "$(dirname "$0")"
 
-by_bin() {
-  readlink -e "$(dirname "$(which "$1")")/.."
-}
-
 if [[ -z "$JAVA_HOME" ]]; then
-  JAVA_HOME="$(by_bin java)"
+  if ! JAVA_HOME="$(readlink -e "$(dirname "$(which java)")/..")"; then
+    echo 'ERROR: could not locate `java` binary on PATH' >&2
+    exit 1
+  fi
 fi
 
 if [[ -z "$GO" ]]; then
-  GO="$(readlink -e "$(which go)")"
+  if ! GO="$(readlink -e "$(which go)")"; then
+    echo 'ERROR: could not locate `go` binary on PATH' >&2
+    exit 1
+  fi
 fi
 
 echo "Using jdk found in $JAVA_HOME" >&2
