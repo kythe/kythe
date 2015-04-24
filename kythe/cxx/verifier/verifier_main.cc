@@ -75,6 +75,7 @@ Example:
   google::protobuf::uint32 byte_size;
   google::protobuf::io::FileInputStream raw_input(STDIN_FILENO);
   google::protobuf::io::CodedInputStream coded_input(&raw_input);
+  coded_input.SetTotalBytesLimit(INT_MAX, -1);
   while (coded_input.ReadVarint32(&byte_size)) {
     auto limit = coded_input.PushLimit(byte_size);
     if (!entry.ParseFromCodedStream(&coded_input)) {

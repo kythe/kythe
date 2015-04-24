@@ -1168,35 +1168,10 @@ IndexerASTVisitor::BuildNameEqClassForDecl(const clang::Decl *D) {
   return GraphObserver::NameId::NameEqClass::None;
 }
 
-// 64 characters that can appear in identifiers (plus $ from Java).
-static constexpr char kSafeEncodingCharacters[] =
-    "abcdefghijklmnopqrstuvwxyz012345"
-    "6789_$ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
-static constexpr size_t kBitsPerCharacter = 6;
-static_assert((1 << kBitsPerCharacter) == sizeof(kSafeEncodingCharacters) - 1,
-              "The alphabet is big enough");
-
-/// Returns a compact string representation of the `Hash`.
-static std::string HashToString(size_t Hash) {
-  if (!Hash) {
-    return "";
-  }
-  int SetBit = sizeof(Hash) * 8 - llvm::countLeadingZeros(Hash);
-  size_t Pos = (SetBit + kBitsPerCharacter - 1) / kBitsPerCharacter;
-  std::string HashOut(Pos, kSafeEncodingCharacters[0]);
-  while (Hash) {
-    HashOut[--Pos] =
-        kSafeEncodingCharacters[Hash & ((1 << kBitsPerCharacter) - 1)];
-    Hash >>= kBitsPerCharacter;
-  }
-  return HashOut;
-}
-
 /// \brief Attempts to add some representation of `ND` to `Ostream`.
 /// \return true on success; false on failure.
-static bool AddNameToStream(llvm::raw_string_ostream &Ostream,
-                            const clang::NamedDecl *ND) {
+bool IndexerASTVisitor::AddNameToStream(llvm::raw_string_ostream &Ostream,
+                                        const clang::NamedDecl *ND) {
   // NamedDecls without names exist--e.g., unnamed namespaces.
   auto Name = ND->getDeclName();
   auto II = Name.getAsIdentifierInfo();
@@ -1220,6 +1195,10 @@ static bool AddNameToStream(llvm::raw_string_ostream &Ostream,
         return false;
         break;
       }
+    } else if (const auto *RD = dyn_cast<clang::RecordDecl>(ND)) {
+      Ostream << HashToString(SemanticHash(RD));
+    } else if (const auto *ED = dyn_cast<clang::EnumDecl>(ND)) {
+      Ostream << HashToString(SemanticHash(ED));
     } else {
       // Other NamedDecls-sans-names are given parent-dependent names.
       return false;
@@ -1501,16 +1480,14 @@ IndexerASTVisitor::BuildNodeIdForDecl(const clang::Decl *Decl) {
       // instantiation types.
       // * we assume that the first parent changing, if it does change, is not
       //   semantically important; we're generating stable internal IDs.
-      if (CTSD->isImplicit()) {
-        if (CurrentNodeAsDecl != Decl) {
-          Ostream << "#" << BuildNodeIdForDecl(CTSD);
+      if (CurrentNodeAsDecl != Decl) {
+        Ostream << "#" << BuildNodeIdForDecl(CTSD);
+        if (CTSD->isImplicit()) {
           break;
-        } else {
-          Ostream << "#" << HashToString(SemanticHash(
-                                &CTSD->getTemplateInstantiationArgs()));
         }
       } else {
-        Ostream << "#explicit#";
+        Ostream << "#" << HashToString(SemanticHash(
+                              &CTSD->getTemplateInstantiationArgs()));
       }
     } else if (const auto *FD = dyn_cast<FunctionDecl>(CurrentNodeAsDecl)) {
       if (const auto *TemplateArgs = FD->getTemplateSpecializationArgs()) {
@@ -1545,6 +1522,13 @@ IndexerASTVisitor::BuildNodeIdForDecl(const clang::Decl *Decl) {
     if (Enum->getDefinition() == Enum) {
       Ostream << "#" << HashToString(SemanticHash(Enum));
       return Id;
+    }
+  } else if (const auto *ECD = dyn_cast<clang::EnumConstantDecl>(Decl)) {
+    if (const auto *E = dyn_cast<clang::EnumDecl>(ECD->getDeclContext())) {
+      if (E->getDefinition() == E) {
+        Ostream << "#" << HashToString(SemanticHash(E));
+        return Id;
+      }
     }
   } else if (const auto *FD = dyn_cast<clang::FunctionDecl>(Decl)) {
     if (IsDefinition(FD)) {

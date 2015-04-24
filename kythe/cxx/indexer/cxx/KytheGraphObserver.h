@@ -178,8 +178,7 @@ class KytheGraphObserver : public GraphObserver {
                          const NodeId &InheritedTypeId, bool IsVirtual,
                          clang::AccessSpecifier AS) override;
 
-  void recordDeclUseLocation(const Range &SourceRange,
-                             const NodeId &DeclId) override;
+  void recordDeclUseLocation(const Range &SourceRange, const NodeId &DeclId) override;
 
   void recordVariableNode(const NameId &DeclName, const NodeId &DeclNode,
                           Completeness VarCompleteness) override;
@@ -248,6 +247,8 @@ class KytheGraphObserver : public GraphObserver {
     return true;
   }
 
+  bool claimRange(const GraphObserver::Range &range) override;
+
   bool claimLocation(clang::SourceLocation Loc) override;
 
   /// A representation of the state of the preprocessor.
@@ -291,12 +292,21 @@ class KytheGraphObserver : public GraphObserver {
   void AppendFullLocationToStream(std::vector<clang::FileID> *posted_fileids,
                                   clang::SourceLocation source_location,
                                   llvm::raw_ostream &Ostream);
+
+  /// \brief Append a stable representation of `loc` to `Ostream`, even if
+  /// `loc` is in a temporary buffer.
+  void AppendFileBufferSliceHashToStream(clang::SourceLocation loc,
+                                         llvm::raw_ostream &Ostream);
+
   kythe::proto::VName VNameFromNodeId(const GraphObserver::NodeId &node_id);
-  kythe::proto::VName VNameFromFileID(const clang::FileID &file_id);
   kythe::proto::VName VNameFromFileEntry(const clang::FileEntry *file_entry);
   kythe::proto::VName ClaimableVNameFromFileID(const clang::FileID &file_id);
   kythe::proto::VName VNameFromRange(const GraphObserver::Range &range);
   kythe::proto::VName RecordName(const GraphObserver::NameId &name_id);
+  kythe::proto::VName RecordAnchor(
+      const GraphObserver::Range &source_range,
+      const GraphObserver::NodeId &primary_anchored_to,
+     EdgeKindID anchor_edge_kind);
   kythe::proto::VName RecordAnchor(
       const GraphObserver::Range &source_range,
       const kythe::proto::VName &primary_anchored_to,

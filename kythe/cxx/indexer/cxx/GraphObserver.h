@@ -28,6 +28,7 @@
 #include "clang/Lex/Preprocessor.h"
 
 #include "llvm/ADT/APSInt.h"
+#include "llvm/ADT/Hashing.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/raw_ostream.h"
@@ -82,7 +83,12 @@ public:
       return *this;
     }
     /// \brief Returns a string representation of this `NodeId`.
-    std::string ToString() const { return Token->StampIdentity(Identity); }
+    std::string ToString() const { return Identity; }
+    /// \brief Returns a string representation of this `NodeId`
+    /// annotated by its claim token.
+    std::string ToClaimedString() const {
+      return Token->StampIdentity(Identity);
+    }
     bool operator==(const NodeId &RHS) const {
       return *Token == *RHS.Token && Identity == RHS.Identity;
     }
@@ -449,14 +455,14 @@ public:
                                  clang::AccessSpecifier AS) {}
 
   /// \brief Records a use site for some decl.
-  virtual void recordDeclUseLocation(const Range &SourceRange,
-                                     const NodeId &DeclId) {}
+  virtual void
+  recordDeclUseLocation(const Range &SourceRange, const NodeId &DeclId) {}
 
   /// \brief Records that a type was spelled out at a particular location.
   /// \param SourceRange The source range covering the type spelling.
   /// \param TypeNode The identifier for the type being spelled out.
-  virtual void recordTypeSpellingLocation(const Range &SourceRange,
-                                          const NodeId &TypeId) {}
+  virtual void
+  recordTypeSpellingLocation(const Range &SourceRange, const NodeId &TypeId) {}
 
   /// \brief Records that a macro was defined.
   virtual void recordMacroNode(const NodeId &MacroNode) {}
@@ -541,7 +547,8 @@ public:
   ///
   /// \param NodeId The node to claim.
   ///
-  /// It is always safe to return `true` here.
+  /// It is always safe to return `true` here (as this will result in
+  /// redundant output instead of dropped output).
   virtual bool claimNode(const NodeId &NodeId) { return true; }
 
   /// \brief Checks whether this `GraphObserver` should emit data for
@@ -549,8 +556,18 @@ public:
   ///
   /// \param Loc The location to claim.
   ///
-  /// It is always safe to return `true` here.
+  /// It is always safe to return `true` here (as this will result in
+  /// redundant output instead of dropped output).
   virtual bool claimLocation(clang::SourceLocation Loc) { return true; }
+
+  /// \brief Checks whether this `GraphObserver` should emit data for
+  /// nodes contained by some `Range`.
+  ///
+  /// \param Range The range to claim.
+  ///
+  /// It is always safe to return `true` here (as this will result in
+  /// redundant output instead of dropped output).
+  virtual bool claimRange(const Range &R) { return true; }
 
   /// \brief Returns a `ClaimToken` for intrinsics.
   ///
@@ -590,7 +607,7 @@ public:
     Range.PhysicalRange.getEnd().print(Ostream, *SourceManager);
     if (Range.Kind == Range::RangeKind::Wraith) {
       Ostream << "@";
-      Ostream << Range.Context.ToString();
+      Ostream << Range.Context.ToClaimedString();
     }
     return true;
   }
@@ -694,7 +711,7 @@ inline llvm::raw_ostream &operator<<(llvm::raw_ostream &OS,
 /// \brief Emits a stringified representation of the given `NodeId`.
 inline llvm::raw_ostream &operator<<(llvm::raw_ostream &OS,
                                      const GraphObserver::NodeId &N) {
-  return OS << N.ToString();
+  return OS << N.ToClaimedString();
 }
 
 inline std::string GraphObserver::NameId::ToString() const {
@@ -714,6 +731,31 @@ inline bool operator==(const GraphObserver::Range &L,
 inline bool operator!=(const GraphObserver::Range &L,
                        const GraphObserver::Range &R) {
   return !(L == R);
+}
+
+// 64 characters that can appear in identifiers (plus $ from Java).
+static constexpr char kSafeEncodingCharacters[] =
+    "abcdefghijklmnopqrstuvwxyz012345"
+    "6789_$ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+static constexpr size_t kBitsPerCharacter = 6;
+static_assert((1 << kBitsPerCharacter) == sizeof(kSafeEncodingCharacters) - 1,
+              "The alphabet is big enough");
+
+/// Returns a compact string representation of the `Hash`.
+static inline std::string HashToString(size_t Hash) {
+  if (!Hash) {
+    return "";
+  }
+  int SetBit = sizeof(Hash) * CHAR_BIT - llvm::countLeadingZeros(Hash);
+  size_t Pos = (SetBit + kBitsPerCharacter - 1) / kBitsPerCharacter;
+  std::string HashOut(Pos, kSafeEncodingCharacters[0]);
+  while (Hash) {
+    HashOut[--Pos] =
+        kSafeEncodingCharacters[Hash & ((1 << kBitsPerCharacter) - 1)];
+    Hash >>= kBitsPerCharacter;
+  }
+  return HashOut;
 }
 
 } // namespace kythe

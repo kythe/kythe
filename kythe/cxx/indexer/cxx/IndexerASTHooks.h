@@ -556,6 +556,11 @@ private:
   /// to form an identifying token.
   size_t SemanticHash(const clang::EnumDecl *ED);
 
+  /// \brief Attempts to add some representation of `ND` to `Ostream`.
+  /// \return true on success; false on failure.
+  bool AddNameToStream(llvm::raw_string_ostream &Ostream,
+                       const clang::NamedDecl *ND);
+
   MaybeFew<GraphObserver::NodeId>
   ApplyBuiltinTypeConstructor(const char *BuiltinName,
                               const MaybeFew<GraphObserver::NodeId> &Param);

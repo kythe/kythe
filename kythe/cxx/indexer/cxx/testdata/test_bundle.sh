@@ -13,6 +13,7 @@ EXTRACTOR="${KYTHE_BIN}/kythe/cxx/extractor/cxx_extractor"
 function one_case {
   local BUNDLE_FILE="${1}"
   local STANDARD="${2}"
+  local VERIFIER_ARG="${3}"
   local BUNDLE_SHA=$(sha1sum "$1" | cut -f1 -d" ")
   local TEMP_PREFIX="${OUT_DIR}"/"${BUNDLE_SHA}"
   local BUNDLE_COPY="${TEMP_PREFIX}"/bundle.hcc
@@ -29,7 +30,7 @@ function one_case {
       -c -std="${STANDARD}" "${TEMP_PREFIX}"/test_bundle/test.cc
   local KINDEX_FILE=$(find ${TEMP_PREFIX} -iname *.kindex)
   "${INDEXER}" -claim_unknown=false "${KINDEX_FILE}" \
-      | "${VERIFIER}" "${TEMP_PREFIX}"/test_bundle/*
+      | "${VERIFIER}" ${VERIFIER_ARG} "${TEMP_PREFIX}"/test_bundle/*
   local RESULTS=( ${PIPESTATUS[0]} ${PIPESTATUS[1]} )
   if [ ${RESULTS[0]} -ne 0 ]; then
     echo "[ FAILED INDEX: $BUNDLE_FILE (${INDEXER} -claim_unknown=false ${KINDEX_FILE}) ]"
@@ -46,7 +47,7 @@ function one_case {
 one_case "${BASE_DIR}/bundle_self_test.cc" "c++1y"
 one_case "${BASE_DIR}/bundle_self_test_unclaimed.cc" "c++1y"
 one_case "${BASE_DIR}/bundle_self_test_mix.cc" "c++1y"
-one_case "${BASE_DIR}/bundle_self_test_multi_transcript.cc" "c++1y" "--ignore-duplicates"
+one_case "${BASE_DIR}/bundle_self_test_multi_transcript.cc" "c++1y" "--ignore_dups"
 one_case "${BASE_DIR}/bundle_self_test_vnames_json.cc" "c++1y"
 one_case "${BASE_DIR}/claim_macro_features.cc" "c++1y"
 
