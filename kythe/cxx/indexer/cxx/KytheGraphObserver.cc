@@ -245,33 +245,38 @@ void KytheGraphObserver::recordMacroNode(const NodeId &macro_id) {
 
 void KytheGraphObserver::recordExpandsRange(const Range &source_range,
                                             const NodeId &macro_id) {
-  RecordAnchor(source_range, macro_id, EdgeKindID::kRefExpands);
+  RecordAnchor(source_range, macro_id, EdgeKindID::kRefExpands,
+               Claimability::Claimable);
 }
 
 void KytheGraphObserver::recordIndirectlyExpandsRange(const Range &source_range,
                                                       const NodeId &macro_id) {
-  RecordAnchor(source_range, macro_id, EdgeKindID::kRefExpandsTransitive);
+  RecordAnchor(source_range, macro_id, EdgeKindID::kRefExpandsTransitive,
+               Claimability::Claimable);
 }
 
 void KytheGraphObserver::recordUndefinesRange(const Range &source_range,
                                               const NodeId &macro_id) {
-  RecordAnchor(source_range, macro_id, EdgeKindID::kUndefines);
+  RecordAnchor(source_range, macro_id, EdgeKindID::kUndefines,
+               Claimability::Claimable);
 }
 
 void KytheGraphObserver::recordBoundQueryRange(const Range &source_range,
                                                const NodeId &macro_id) {
-  RecordAnchor(source_range, macro_id, EdgeKindID::kRefQueries);
+  RecordAnchor(source_range, macro_id, EdgeKindID::kRefQueries,
+               Claimability::Claimable);
 }
 
 void KytheGraphObserver::recordUnboundQueryRange(const Range &source_range,
                                                  const NameId &macro_name) {
-  RecordAnchor(source_range, RecordName(macro_name), EdgeKindID::kRefQueries);
+  RecordAnchor(source_range, RecordName(macro_name), EdgeKindID::kRefQueries,
+               Claimability::Claimable);
 }
 
 void KytheGraphObserver::recordIncludesRange(const Range &source_range,
                                              const clang::FileEntry *File) {
-  RecordAnchor(source_range, VNameFromFileEntry(File),
-               EdgeKindID::kRefIncludes);
+  RecordAnchor(source_range, VNameFromFileEntry(File), EdgeKindID::kRefIncludes,
+               Claimability::Claimable);
 }
 
 void KytheGraphObserver::recordVariableNode(const NameId &name,
@@ -311,11 +316,14 @@ void KytheGraphObserver::RecordDeferredNodes() {
 KytheGraphRecorder::VName KytheGraphObserver::RecordAnchor(
     const GraphObserver::Range &source_range,
     const GraphObserver::NodeId &primary_anchored_to,
-    EdgeKindID anchor_edge_kind) {
+    EdgeKindID anchor_edge_kind, Claimability cl) {
   assert(!file_stack_.empty());
   KytheGraphRecorder::VName anchor_name(VNameFromRange(source_range));
   if (claimRange(source_range) || claimNode(primary_anchored_to)) {
     deferred_anchors_.insert(source_range);
+    cl = Claimability::Unclaimable;
+  }
+  if (cl == Claimability::Unclaimable) {
     recorder_->AddEdge(anchor_name, anchor_edge_kind,
                        VNameFromNodeId(primary_anchored_to));
   }
@@ -324,11 +332,15 @@ KytheGraphRecorder::VName KytheGraphObserver::RecordAnchor(
 
 KytheGraphRecorder::VName KytheGraphObserver::RecordAnchor(
     const GraphObserver::Range &source_range,
-    const kythe::proto::VName &primary_anchored_to, EdgeKindID anchor_edge_kind) {
+    const kythe::proto::VName &primary_anchored_to, EdgeKindID anchor_edge_kind,
+    Claimability cl) {
   assert(!file_stack_.empty());
   KytheGraphRecorder::VName anchor_name(VNameFromRange(source_range));
   if (claimRange(source_range)) {
     deferred_anchors_.insert(source_range);
+    cl = Claimability::Unclaimable;
+  }
+  if (cl == Claimability::Unclaimable) {
     recorder_->AddEdge(anchor_name, anchor_edge_kind, primary_anchored_to);
   }
   return anchor_name;
@@ -337,8 +349,8 @@ KytheGraphRecorder::VName KytheGraphObserver::RecordAnchor(
 void KytheGraphObserver::recordCallEdge(
     const GraphObserver::Range &source_range, const NodeId &caller_id,
     const NodeId &callee_id) {
-  KytheGraphRecorder::VName anchor_name(
-      RecordAnchor(source_range, caller_id, EdgeKindID::kChildOf));
+  KytheGraphRecorder::VName anchor_name(RecordAnchor(
+      source_range, caller_id, EdgeKindID::kChildOf, Claimability::Claimable));
   recorder_->AddEdge(anchor_name, EdgeKindID::kRefCall,
                      VNameFromNodeId(callee_id));
 }
@@ -430,7 +442,8 @@ GraphObserver::NodeId KytheGraphObserver::recordTypeAliasNode(
 
 void KytheGraphObserver::recordDefinitionRange(
     const GraphObserver::Range &source_range, const NodeId &node) {
-  RecordAnchor(source_range, node, EdgeKindID::kDefines);
+  RecordAnchor(source_range, node, EdgeKindID::kDefines,
+               Claimability::Claimable);
 }
 
 void KytheGraphObserver::recordCompletionRange(
@@ -438,7 +451,8 @@ void KytheGraphObserver::recordCompletionRange(
     Specificity spec) {
   RecordAnchor(source_range, node, spec == Specificity::UniquelyCompletes
                                        ? EdgeKindID::kUniquelyCompletes
-                                       : EdgeKindID::kCompletes);
+                                       : EdgeKindID::kCompletes,
+               Claimability::Unclaimable);
 }
 
 void KytheGraphObserver::recordNamedEdge(const NodeId &node,
@@ -574,8 +588,9 @@ void KytheGraphObserver::recordRecordNode(const NodeId &node_id,
 }
 
 void KytheGraphObserver::recordTypeSpellingLocation(
-    const GraphObserver::Range &type_source_range, const NodeId &type_id) {
-  RecordAnchor(type_source_range, type_id, EdgeKindID::kRef);
+    const GraphObserver::Range &type_source_range, const NodeId &type_id,
+    Claimability claimability) {
+  RecordAnchor(type_source_range, type_id, EdgeKindID::kRef, claimability);
 }
 
 void KytheGraphObserver::recordExtendsEdge(const NodeId &from, const NodeId &to,
@@ -609,8 +624,9 @@ void KytheGraphObserver::recordExtendsEdge(const NodeId &from, const NodeId &to,
 }
 
 void KytheGraphObserver::recordDeclUseLocation(
-    const GraphObserver::Range &source_range, const NodeId &node) {
-  RecordAnchor(source_range, node, EdgeKindID::kRef);
+    const GraphObserver::Range &source_range, const NodeId &node,
+    Claimability claimability) {
+  RecordAnchor(source_range, node, EdgeKindID::kRef, claimability);
 }
 
 void KytheGraphObserver::pushFile(clang::SourceLocation blame_location,

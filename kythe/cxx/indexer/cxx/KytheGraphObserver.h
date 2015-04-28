@@ -178,7 +178,8 @@ class KytheGraphObserver : public GraphObserver {
                          const NodeId &InheritedTypeId, bool IsVirtual,
                          clang::AccessSpecifier AS) override;
 
-  void recordDeclUseLocation(const Range &SourceRange, const NodeId &DeclId) override;
+  void recordDeclUseLocation(const Range &SourceRange, const NodeId &DeclId,
+                             GraphObserver::Claimability Cl) override;
 
   void recordVariableNode(const NameId &DeclName, const NodeId &DeclNode,
                           Completeness VarCompleteness) override;
@@ -192,7 +193,8 @@ class KytheGraphObserver : public GraphObserver {
   void recordNamedEdge(const NodeId &Node, const NameId &Name) override;
 
   void recordTypeSpellingLocation(const Range &SourceRange,
-                                  const NodeId &TypeId) override;
+                                  const NodeId &TypeId,
+                                  Claimability Cl) override;
 
   void recordChildOfEdge(const NodeId &ChildNodeId,
                          const NodeId &ParentNodeId) override;
@@ -306,11 +308,11 @@ class KytheGraphObserver : public GraphObserver {
   kythe::proto::VName RecordAnchor(
       const GraphObserver::Range &source_range,
       const GraphObserver::NodeId &primary_anchored_to,
-     EdgeKindID anchor_edge_kind);
+      EdgeKindID anchor_edge_kind, Claimability claimability);
   kythe::proto::VName RecordAnchor(
       const GraphObserver::Range &source_range,
       const kythe::proto::VName &primary_anchored_to,
-      EdgeKindID anchor_edge_kind);
+      EdgeKindID anchor_edge_kind, Claimability claimability);
   /// Records any deferred nodes, clearing any records of their deferral.
   void RecordDeferredNodes();
 

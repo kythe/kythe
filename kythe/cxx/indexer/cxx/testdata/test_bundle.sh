@@ -50,5 +50,4 @@ one_case "${BASE_DIR}/bundle_self_test_mix.cc" "c++1y"
 one_case "${BASE_DIR}/bundle_self_test_multi_transcript.cc" "c++1y" "--ignore_dups"
 one_case "${BASE_DIR}/bundle_self_test_vnames_json.cc" "c++1y"
 one_case "${BASE_DIR}/claim_macro_features.cc" "c++1y"
-
 exit ${HAD_ERRORS}

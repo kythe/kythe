@@ -5,7 +5,6 @@ class C;
 }
 //- @tdef defines TypeAlias
 //- @C ref NominalCBA
-//- @"B::" ref NominalCBA
 typedef B::C tdef;
 }
 //- TypeAlias named vname("tdef:A#n", "", "", "", "c++")

@@ -433,7 +433,8 @@ bool IndexerASTVisitor::VisitDeclRefExpr(const clang::DeclRefExpr *DRE) {
   if (SL.isValid()) {
     SourceRange Range = RangeForASTEntityFromSourceLocation(SL);
     Observer->recordDeclUseLocation(RangeInCurrentContext(Range),
-                                    BuildNodeIdForDecl(TargetDecl));
+                                    BuildNodeIdForDecl(TargetDecl),
+                                    GraphObserver::Claimability::Unclaimable);
   }
 
   // TODO(zarko): types (if DRE->hasQualifier()...)
@@ -831,6 +832,10 @@ bool IndexerASTVisitor::VisitRecordDecl(const clang::RecordDecl *Decl) {
     // private), so we have to ignore it here.
     return true;
   }
+  if (Decl->isEmbeddedInDeclarator() && Decl->getDefinition() != Decl) {
+    return true;
+  }
+
   SourceLocation DeclLoc = Decl->getLocation();
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
   GraphObserver::NodeId BodyDeclNode(Observer->getDefaultClaimToken());
@@ -1289,6 +1294,28 @@ IndexerASTVisitor::BuildNameIdForDecl(const clang::Decl *Decl) {
       Ostream << IP.Index;
     }
     CurrentNode = IP.Parent;
+    if (CurrentNodeAsDecl) {
+      if (const auto *DC = CurrentNodeAsDecl->getDeclContext()) {
+        if (const TagDecl *TD = dyn_cast<TagDecl>(CurrentNodeAsDecl)) {
+          const clang::Decl *DCD;
+          switch (TD->getDeclKind()) {
+          case Decl::Namespace:
+            DCD = cast<NamespaceDecl>(DC);
+            break;
+          case Decl::TranslationUnit:
+            DCD = cast<TranslationUnitDecl>(DC);
+            break;
+          default:
+            DCD = nullptr;
+          }
+          if (DCD && TD->isEmbeddedInDeclarator()) {
+            // Names for declarator-embedded decls should reflect lexical
+            // scope, not AST scope.
+            CurrentNode = clang::ast_type_traits::DynTypedNode::create(*DCD);
+          }
+        }
+      }
+    }
   }
   Ostream.flush();
   return Id;
@@ -1387,6 +1414,14 @@ size_t IndexerASTVisitor::SemanticHash(const clang::RecordDecl *RD) {
   // hash the type variable context all the way up to the root template.
   size_t hash = 0;
   for (const auto *D : RD->decls()) {
+    if (D->getDeclContext() != RD) {
+      // Some decls appear underneath RD in the AST but aren't semantically
+      // part of it. For example, in
+      //   struct S { struct T *t; };
+      // the RecordDecl for T is an AST child of S, but is a DeclContext
+      // sibling.
+      continue;
+    }
     if (const auto *ND = dyn_cast<NamedDecl>(D)) {
       if (ND->getDeclName().isIdentifier()) {
         hash ^= std::hash<std::string>()(ND->getName());
@@ -1438,7 +1473,8 @@ IndexerASTVisitor::BuildNodeIdForDecl(const clang::Decl *Decl) {
   // Some NodeIds are stable in the face of changes to that data, such as
   // the IDs given to class definitions (in part because of the language rules).
 
-  GraphObserver::NodeId Id(Observer->getDefaultClaimToken());
+  const auto *Token = Observer->getClaimTokenForLocation(Decl->getLocation());
+  GraphObserver::NodeId Id(Token);
   llvm::raw_string_ostream Ostream(Id.Identity);
   Ostream << BuildNameIdForDecl(Decl);
 
@@ -1871,6 +1907,8 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
   int64_t Key = ComputeKeyFromQualType(Context, QT, PT);
   const auto &Prev = TypeNodes.find(Key);
   bool TypeAlreadyBuilt = false;
+  GraphObserver::Claimability Claimability =
+      GraphObserver::Claimability::Claimable;
   if (Prev != TypeNodes.end()) {
     // If we're not trying to emit edges for constituent types, or if there's
     // no chance for us to do so because we lack source location information,
@@ -2098,8 +2136,11 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
       clang::ClassTemplateDecl *SpecializedTemplateDecl =
           Spec->getSpecializedTemplate();
       // Link directly to the defn if we have it; otherwise use tnominal.
+      if (SpecializedTemplateDecl->getTemplatedDecl()->getDefinition()) {
+        Claimability = GraphObserver::Claimability::Unclaimable;
+      }
       GraphObserver::NodeId TemplateName =
-          SpecializedTemplateDecl->getTemplatedDecl()->getDefinition()
+          Claimability == GraphObserver::Claimability::Unclaimable
               ? BuildNodeIdForDecl(SpecializedTemplateDecl)
               : Observer->recordNominalTypeNode(
                     BuildNameIdForDecl(SpecializedTemplateDecl));
@@ -2120,41 +2161,51 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
       if (!TypeAlreadyBuilt) {
         ID = Observer->recordTappNode(TemplateName, TemplateArgsPtrs);
       }
-    } else if (!TypeAlreadyBuilt) {
+    } else {
       if (RecordDecl *Defn = Decl->getDefinition()) {
-        // Special-case linking to a defn instead of using a tnominal.
-        if (const auto *RD = dyn_cast<CXXRecordDecl>(Defn)) {
-          if (const auto *CTD = RD->getDescribedClassTemplate()) {
-            // Link to the template binder, not the internal class.
-            ID = BuildNodeIdForDecl(CTD);
+        Claimability = GraphObserver::Claimability::Unclaimable;
+        if (!TypeAlreadyBuilt) {
+          // Special-case linking to a defn instead of using a tnominal.
+          if (const auto *RD = dyn_cast<CXXRecordDecl>(Defn)) {
+            if (const auto *CTD = RD->getDescribedClassTemplate()) {
+              // Link to the template binder, not the internal class.
+              ID = BuildNodeIdForDecl(CTD);
+            } else {
+              // This is an ordinary CXXRecordDecl.
+              ID = BuildNodeIdForDecl(Defn);
+            }
           } else {
-            // This is an ordinary CXXRecordDecl.
+            // This is a non-CXXRecordDecl, so it can't be templated.
             ID = BuildNodeIdForDecl(Defn);
           }
-        } else {
-          // This is a non-CXXRecordDecl, so it can't be templated.
-          ID = BuildNodeIdForDecl(Defn);
         }
       } else {
         // Thanks to the ODR, we shouldn't record multiple nominal type nodes
         // for the same TU: given distinct names, NameIds will be distinct,
         // there may be only one definition bound to each name, and we
         // memoize the NodeIds we give to types.
-        ID = Observer->recordNominalTypeNode(BuildNameIdForDecl(Decl));
+        if (!TypeAlreadyBuilt) {
+          ID = Observer->recordNominalTypeNode(BuildNameIdForDecl(Decl));
+        }
       }
     }
   } break;
-  case TypeLoc::Enum:
-    if (!TypeAlreadyBuilt) { // Leaf.
-      const auto &T = Type.castAs<EnumTypeLoc>();
-      EnumDecl *Decl = T.getDecl();
+  case TypeLoc::Enum: { // Leaf.
+    const auto &T = Type.castAs<EnumTypeLoc>();
+    EnumDecl *Decl = T.getDecl();
+    if (!TypeAlreadyBuilt) {
       if (EnumDecl *Defn = Decl->getDefinition()) {
+        Claimability = GraphObserver::Claimability::Unclaimable;
         ID = BuildNodeIdForDecl(Defn);
       } else {
         ID = Observer->recordNominalTypeNode(BuildNameIdForDecl(Decl));
       }
+    } else {
+      if (Decl->getDefinition()) {
+        Claimability = GraphObserver::Claimability::Unclaimable;
+      }
     }
-    break;
+  } break;
   case TypeLoc::Elaborated: {
     // This one wraps a qualified (via 'struct S' | 'N::M::type') type
     // reference.
@@ -2164,6 +2215,8 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
                             DT ? DT->getNamedType().getTypePtr()
                                : T.getNamedTypeLoc().getTypePtr(),
                             EmitRanges);
+    // Don't link 'struct'.
+    EmitRanges = EmitRanges::No;
     // TODO(zarko): Add anchors for parts of the NestedNameSpecifier.
     // We'll add an anchor for all the Elaborated type, though; otherwise decls
     // like `typedef B::C tdef;` will only anchor `C` instead of `B::C`.
@@ -2263,12 +2316,13 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
     }
     ID = BuildNodeIdForType(DeducedQT);
   } break;
-  case TypeLoc::InjectedClassName:
+  case TypeLoc::InjectedClassName: {
+    const auto &T = Type.castAs<InjectedClassNameTypeLoc>();
+    CXXRecordDecl *Decl = T.getDecl();
     if (!TypeAlreadyBuilt) { // Leaf.
       // TODO(zarko): Replace with logic that uses InjectedType.
-      const auto &T = Type.castAs<InjectedClassNameTypeLoc>();
-      CXXRecordDecl *Decl = T.getDecl();
       if (RecordDecl *Defn = Decl->getDefinition()) {
+        Claimability = GraphObserver::Claimability::Unclaimable;
         if (const auto *RD = dyn_cast<CXXRecordDecl>(Defn)) {
           if (const auto *CTD = RD->getDescribedClassTemplate()) {
             // Link to the template binder, not the internal class.
@@ -2284,8 +2338,12 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
       } else {
         ID = Observer->recordNominalTypeNode(BuildNameIdForDecl(Decl));
       }
+    } else {
+      if (Decl->getDefinition() != nullptr) {
+        Claimability = GraphObserver::Claimability::Unclaimable;
+      }
     }
-    break;
+  } break;
   case TypeLoc::DependentName:
     if (!TypeAlreadyBuilt) {
       const auto &T = Type.castAs<DependentNameTypeLoc>();
@@ -2317,8 +2375,8 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
     }
     if (EmitRanges == IndexerASTVisitor::EmitRanges::Yes) {
       auto RCC = RangeInCurrentContext(SR);
-      ID.Iter([this, &RCC](const GraphObserver::NodeId &I) {
-        Observer->recordTypeSpellingLocation(RCC, I);
+      ID.Iter([&](const GraphObserver::NodeId &I) {
+        Observer->recordTypeSpellingLocation(RCC, I, Claimability);
       });
     }
   }

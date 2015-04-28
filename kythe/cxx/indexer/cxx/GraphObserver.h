@@ -159,6 +159,16 @@ public:
     std::string ToString() const;
   };
 
+  /// \brief Determines whether an edge an opt out of claiming.
+  ///
+  /// If claiming based on the preprocessor is not enough to determine whether
+  /// an edge adds unique content to the graph, that edge may be marked as
+  /// Unclaimable.
+  enum class Claimability {
+    Claimable,  ///< This edge may be dropped by claiming.
+    Unclaimable ///< This edge must always be emitted.
+  };
+
   GraphObserver() {}
 
   /// \brief Sets the `SourceManager` that this `GraphObserver` should use.
@@ -456,13 +466,16 @@ public:
 
   /// \brief Records a use site for some decl.
   virtual void
-  recordDeclUseLocation(const Range &SourceRange, const NodeId &DeclId) {}
+  recordDeclUseLocation(const Range &SourceRange, const NodeId &DeclId,
+                        Claimability Cl = Claimability::Claimable) {}
 
   /// \brief Records that a type was spelled out at a particular location.
   /// \param SourceRange The source range covering the type spelling.
   /// \param TypeNode The identifier for the type being spelled out.
+  /// \param Cr Whether this information can be dropped by claiming.
   virtual void
-  recordTypeSpellingLocation(const Range &SourceRange, const NodeId &TypeId) {}
+  recordTypeSpellingLocation(const Range &SourceRange, const NodeId &TypeId,
+                             Claimability Cl = Claimability::Claimable) {}
 
   /// \brief Records that a macro was defined.
   virtual void recordMacroNode(const NodeId &MacroNode) {}
