@@ -19,6 +19,9 @@ cd "$WORKSPACE/repo"
 
 gcloud preview docker pull gcr.io/kythe_repo/kythe-builder
 
+docker run --rm -t -v "$PWD:/repo" -w /repo \
+  gcr.io/kythe_repo/kythe-builder ./setup_bazel.sh
+
 bazel() {
   docker run --rm -t \
     -v "$PWD:/repo" -v "$WORKSPACE/cache:/root/.cache" \
