@@ -1,5 +1,14 @@
 jar_filetype = FileType([".jar"])
 
+def java_compile_command(ctx, classdir, classpath, output):
+  java = ctx.file._java.path
+  langtools = ctx.file._java_langtools.path
+  javabuilder = ctx.file._javabuilder.path
+  return ("%s -Xbootclasspath/p:%s -jar %s " % (java, langtools, javabuilder) +
+          "--classdir %s --classpath %s " % (classdir, classpath) +
+          "--output %s " % (output) +
+          "--javacopts -encoding utf-8 -source 1.8 -target 1.8 --compress_jar --sources ${JAVA_FILES}")
+
 def genproto_impl(ctx):
   src = ctx.file.src
   protoc = ctx.file._protoc
@@ -9,7 +18,7 @@ def genproto_impl(ctx):
   for dep in ctx.targets.deps:
     compile_time_jars += dep.compile_time_jars
     runtime_jars += dep.runtime_jars
-  jdk_bin = "tools/jdk/jdk/bin/"
+  jdk_bin = "external/local-jdk/bin/"
   jar_out = ctx.outputs.java
   java_srcs = jar_out.path + ".srcs"
   java_classes = jar_out.path + ".classes"
@@ -23,15 +32,14 @@ def genproto_impl(ctx):
         protoc.path + " --java_rpc_out=" + java_srcs +
         " --plugin=protoc-gen-java_rpc=" + java_grpc_plugin.path + " " + src.path + "\n")
 
-  java_cmd = (
-      "set -e;" +
-      "rm -rf " + java_srcs + " " + java_classes + ";" +
-      "mkdir " + java_srcs + " " + java_classes +  "\n" +
-      protoc.path + " --java_out=" + java_srcs + " " + src.path + "\n" +
-      java_grpc_cmd +
-      jdk_bin + "javac -encoding utf-8 -cp '" + cmd_helper.join_paths(":", compile_time_jars) +
-      "' -d " + java_classes + " $(find " + java_srcs + " -name '*.java')\n" +
-      jdk_bin + "jar cf " + jar_out.path + " -C " + java_classes + " .;")
+  java_cmd = '\n'.join([
+      "set -e",
+      "rm -rf " + java_srcs + " " + java_classes,
+      "mkdir " + java_srcs + " " + java_classes,
+      protoc.path + " --java_out=" + java_srcs + " " + src.path,
+      java_grpc_cmd,
+      "JAVA_FILES=$(find " + java_srcs + " -name '*.java')",
+      java_compile_command(ctx, java_classes, cmd_helper.join_paths(":", compile_time_jars), jar_out.path)])
   ctx.action(
       inputs = [src, protoc] + list(compile_time_jars),
       outputs = [jar_out],
@@ -110,6 +118,18 @@ genproto = rule(
         "_protoc": attr.label(
             default = Label("//third_party/proto:protoc"),
             allow_files = True,
+            single_file = True,
+        ),
+        "_javabuilder": attr.label(
+            default = Label("//tools/defaults:javabuilder"),
+            single_file = True,
+        ),
+        "_java_langtools": attr.label(
+            default = Label("//tools/defaults:java_langtools"),
+            single_file = True,
+        ),
+        "_java": attr.label(
+            default = Label("//tools/jdk:java"),
             single_file = True,
         ),
         "_protoc_gen_java": attr.label(

@@ -14,18 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Initializes the Bazel workspace.  Uses the JAVA_HOME and GO environmental
-# variables.  If either is unset, the paths will be determined by
-# "$(which java)/.." and "$(which go)", respectively.
+# Initializes the Bazel workspace.  Uses the GO environmental variables to pick
+# the Go tool and falls back onto "$(which go)".
 
 cd "$(dirname "$0")"
-
-if [[ -z "$JAVA_HOME" ]]; then
-  if ! JAVA_HOME="$(readlink -e "$(dirname "$(which java)")/..")"; then
-    echo 'ERROR: could not locate `java` binary on PATH' >&2
-    exit 1
-  fi
-fi
 
 if [[ -z "$GO" ]]; then
   if ! GO="$(readlink -e "$(which go)")"; then
@@ -33,9 +25,6 @@ if [[ -z "$GO" ]]; then
     exit 1
   fi
 fi
-
-echo "Using jdk found in $JAVA_HOME" >&2
-ln -sTf "$JAVA_HOME" tools/jdk/jdk
 
 echo "Using go found at $GO" >&2
 ln -sTf "$GO" tools/go/go

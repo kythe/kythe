@@ -71,7 +71,7 @@ def java_verifier_test_impl(ctx):
           'set -e',
           'rm -rf ' + srcs_out,
           'mkdir ' + srcs_out,
-          'tools/jdk/jdk/bin/javac ' + ' '.join(args),
+          'external/local-jdk/bin/javac ' + ' '.join(args),
           'jar cf ' + jar.path + ' -C ' + srcs_out + ' .',
       ]),
       use_default_shell_env = True)
@@ -159,7 +159,10 @@ java_verifier_test = rule(
 cc_verifier_test = rule(
     cc_verifier_test_impl,
     attrs = base_attrs + {
-        "srcs": attr.label_list(allow_files = FileType([".cc", ".h"])),
+        "srcs": attr.label_list(allow_files = FileType([
+            ".cc",
+            ".h",
+        ])),
         "deps": attr.label_list(
             allow_files = False,
         ),
