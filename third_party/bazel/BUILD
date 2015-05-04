@@ -9,3 +9,9 @@ genproto_all(
     src = "src/main/protobuf/extra_actions_base.proto",
     go_package_prefix = "",
 )
+
+genproto_all(
+    name = "test_status_proto",
+    src = "src/main/protobuf/test_status.proto",
+    go_package_prefix = "",
+)
