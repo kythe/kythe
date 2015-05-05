@@ -13,6 +13,8 @@
 // limitations under the License.
 
 // Package storage contains a Google Cloud Storage client.
+//
+// This package is experimental and may make backwards-incompatible changes.
 package storage // import "google.golang.org/cloud/storage"
 
 import (
@@ -244,14 +246,24 @@ func DeleteObject(ctx context.Context, bucket, name string) error {
 }
 
 // CopyObject copies the source object to the destination.
-// The copied object's attributes are overwritten by those given.
-func CopyObject(ctx context.Context, bucket, name string, destBucket string, attrs ObjectAttrs) (*Object, error) {
-	destName := name
-	if attrs.Name != "" {
-		destName = attrs.Name
+// The copied object's attributes are overwritten by attrs if non-nil.
+func CopyObject(ctx context.Context, srcBucket, srcName string, destBucket, destName string, attrs *ObjectAttrs) (*Object, error) {
+	if srcBucket == "" || destBucket == "" {
+		return nil, errors.New("storage: srcBucket and destBucket must both be non-empty")
+	}
+	if srcName == "" || destName == "" {
+		return nil, errors.New("storage: srcName and destName must be non-empty")
+	}
+	var rawObject *raw.Object
+	if attrs != nil {
+		attrs.Name = destName
+		if attrs.ContentType == "" {
+			return nil, errors.New("storage: attrs.ContentType must be non-empty")
+		}
+		rawObject = attrs.toRawObject(destBucket)
 	}
 	o, err := rawService(ctx).Objects.Copy(
-		bucket, name, destBucket, destName, attrs.toRawObject(destBucket)).Projection("full").Do()
+		srcBucket, srcName, destBucket, destName, rawObject).Projection("full").Do()
 	if err != nil {
 		return nil, err
 	}

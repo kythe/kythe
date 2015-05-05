@@ -12,9 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// +build appenginevm !appengine
-
-// Package gcsdemo is an example Managed VM app using the Google Cloud Storage API.
+// Package gcsdemo is an example App Engine or Mananged VM app using the Google Cloud Storage API.
 package gcsdemo
 
 import (
@@ -26,7 +24,6 @@ import (
 	"strings"
 
 	"golang.org/x/net/context"
-
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/appengine"
@@ -172,15 +169,7 @@ func (d *demo) copyFile(fileName string) {
 	copyName := fileName + "-copy"
 	fmt.Fprintf(d.w, "Copying file /%v/%v to /%v/%v:\n", bucket, fileName, bucket, copyName)
 
-	attrs := storage.ObjectAttrs{
-		Name:        copyName,
-		ContentType: "text/plain",
-		Metadata: map[string]string{
-			"x-goog-meta-foo-copy": "foo-copy",
-			"x-goog-meta-bar-copy": "bar-copy",
-		},
-	}
-	obj, err := storage.CopyObject(d.ctx, bucket, fileName, bucket, attrs)
+	obj, err := storage.CopyObject(d.ctx, bucket, fileName, bucket, copyName, nil)
 	if err != nil {
 		d.errorf("copyFile: unable to copy /%v/%v to bucket %q, file %q: %v", bucket, fileName, bucket, copyName, err)
 		return

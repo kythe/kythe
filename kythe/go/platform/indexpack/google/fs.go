@@ -67,8 +67,7 @@ func (s StorageFS) Create(ctx context.Context, path string) (io.WriteCloser, err
 
 // Rename implements part of the VFS interface.
 func (s StorageFS) Rename(ctx context.Context, oldPath, newPath string) error {
-	if _, err := storage.CopyObject(ctx, s.Bucket, oldPath, s.Bucket, storage.ObjectAttrs{
-		Name:        newPath,
+	if _, err := storage.CopyObject(ctx, s.Bucket, oldPath, s.Bucket, newPath, &storage.ObjectAttrs{
 		ContentType: "application/octet-stream",
 	}); err != nil {
 		return fmt.Errorf("error copying file during rename: %v", err)
