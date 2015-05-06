@@ -26,9 +26,11 @@ import com.google.devtools.kythe.proto.CompilationAnalyzerGrpc;
 
 import io.grpc.transport.netty.NettyServerBuilder;
 
+import java.io.IOException;
+
 /** Binary to run Kythe's Java indexer as a CompilationAnalyzer service. */
 public class JavaIndexerServer {
-  public static void main(String[] args) {
+  public static void main(String[] args) throws IOException {
     if (args.length > 0 && ("--help".equals(args[0]) || "-h".equals(args[0]))) {
       usage(0);
     } else if (args.length > 2) {

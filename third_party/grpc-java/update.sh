@@ -34,12 +34,18 @@ mvn install -pl codec-http2 -am -DskipTests=true
 find */target/ -name '*-SNAPSHOT.jar' -exec cp '{}' "$THIRD_PARTY/netty/" \;
 popd
 
-git clone https://github.com/google/protobuf.git
+git clone https://github.com/google/protobuf.git "$TMP/protobuf"
 
 export PATH="$THIRD_PARTY/protobuf/bin:$PATH"
-export CXXFLAGS="-I$PWD/protobuf/src/"
+export CXXFLAGS="-I$TMP/protobuf/src/"
 export LDFLAGS="-L$THIRD_PARTY/protobuf/lib/"
-echo $LDFLAGS
 ./gradlew install
 
-cp compiler/build/binaries/java_pluginExecutable/java_plugin all/build/libs/grpc-*-SNAPSHOT.jar "$THIRD_PARTY/grpc-java/"
+rm -f "$THIRD_PARTY"/grpc-java/*.jar
+cp -f all/build/libs/grpc-*-SNAPSHOT.jar "$THIRD_PARTY/grpc-java/"
+
+cd compiler
+../gradlew java_pluginExecutable
+../gradlew test
+
+cp -f build/binaries/java_pluginExecutable/protoc-gen-grpc-java "$THIRD_PARTY/grpc-java/java_plugin"
