@@ -89,5 +89,5 @@ if [[ -z "$1" || "$1" == "--build_only" ]]; then
       --enable-optimized --disable-bindings
     make -j8
   fi
-  ln -sf "$vbuild_dir" "$LLVM_REPO/build"
+  ln -sfT "$vbuild_dir" "$LLVM_REPO/build"
 fi
