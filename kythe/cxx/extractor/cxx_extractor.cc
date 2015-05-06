@@ -200,7 +200,7 @@ class ExtractorPPCallbacks : public clang::PPCallbacks {
   void EndOfMainFile() override;
 
   void MacroExpands(const clang::Token& macro_name,
-                    const clang::MacroDirective* macro_directive,
+                    const clang::MacroDefinition& macro_definition,
                     clang::SourceRange range,
                     const clang::MacroArgs* macro_args) override;
 
@@ -208,10 +208,10 @@ class ExtractorPPCallbacks : public clang::PPCallbacks {
                     const clang::MacroDirective* macro_directive) override;
 
   void MacroUndefined(const clang::Token& macro_name,
-                      const clang::MacroDirective* macro_directive) override;
+                      const clang::MacroDefinition& macro_definition) override;
 
   void Defined(const clang::Token& macro_name,
-               const clang::MacroDirective* macro_directive,
+               const clang::MacroDefinition& macro_definition,
                clang::SourceRange range) override;
 
   void Elif(clang::SourceLocation location, clang::SourceRange condition_range,
@@ -222,10 +222,10 @@ class ExtractorPPCallbacks : public clang::PPCallbacks {
           clang::PPCallbacks::ConditionValueKind value) override;
 
   void Ifdef(clang::SourceLocation location, const clang::Token& macro_name,
-             const clang::MacroDirective* macro_directive) override;
+             const clang::MacroDefinition& macro_definition) override;
 
   void Ifndef(clang::SourceLocation location, const clang::Token& macro_name,
-              const clang::MacroDirective* macro_directive) override;
+              const clang::MacroDefinition& macro_definition) override;
 
   void InclusionDirective(
       clang::SourceLocation HashLoc, const clang::Token& IncludeTok,
@@ -413,12 +413,12 @@ void ExtractorPPCallbacks::RecordMacroExpansion(
 
 void ExtractorPPCallbacks::MacroExpands(
     const clang::Token& macro_name,
-    const clang::MacroDirective* macro_directive, clang::SourceRange range,
+    const clang::MacroDefinition& macro_definition, clang::SourceRange range,
     const clang::MacroArgs* macro_args) {
   // We do care about inner macro expansions: the indexer will
   // emit transitive macro expansion edges, and if we don't distinguish
   // expansion paths, we will leave edges out of the graph.
-  const auto* macro_info = macro_directive->getMacroInfo();
+  const auto* macro_info = macro_definition.getMacroInfo();
   if (macro_info) {
     clang::SourceLocation def_loc = macro_info->getDefinitionLoc();
     RecordSpecificLocation(def_loc);
@@ -441,15 +441,15 @@ void ExtractorPPCallbacks::MacroExpands(
   }
 }
 
-void ExtractorPPCallbacks::Defined(const clang::Token& macro_name,
-                                   const clang::MacroDirective* macro_directive,
-                                   clang::SourceRange range) {
-  if (macro_directive && macro_directive->getMacroInfo()) {
-    RecordSpecificLocation(macro_directive->getMacroInfo()->getDefinitionLoc());
+void ExtractorPPCallbacks::Defined(
+    const clang::Token& macro_name,
+    const clang::MacroDefinition& macro_definition, clang::SourceRange range) {
+  if (macro_definition && macro_definition.getMacroInfo()) {
+    RecordSpecificLocation(macro_definition.getMacroInfo()->getDefinitionLoc());
   }
   clang::SourceLocation macro_location = macro_name.getLocation();
   RecordMacroExpansion(macro_location, getSourceString(*preprocessor_, range),
-                       macro_directive ? "1" : "0");
+                       macro_definition ? "1" : "0");
 }
 
 void ExtractorPPCallbacks::RecordSpecificLocation(clang::SourceLocation loc) {
@@ -490,7 +490,7 @@ void ExtractorPPCallbacks::MacroDefined(
 
 void ExtractorPPCallbacks::MacroUndefined(
     const clang::Token& macro_name,
-    const clang::MacroDirective* macro_directive) {
+    const clang::MacroDefinition& macro_definition) {
   clang::SourceLocation macro_location = macro_name.getLocation();
   if (!macro_location.isFileID()) {
     return;
@@ -498,10 +498,10 @@ void ExtractorPPCallbacks::MacroUndefined(
   llvm::StringRef macro_name_string =
       macro_name.getIdentifierInfo()->getName().str();
   history()->Update(source_manager_->getFileOffset(macro_location));
-  if (macro_directive) {
+  if (macro_definition) {
     // We don't just care that a macro was undefined; we care that
     // a *specific* macro definition was undefined.
-    RecordSpecificLocation(macro_directive->getLocation());
+    RecordSpecificLocation(macro_definition.getLocalDirective()->getLocation());
   }
   history()->Update("#undef");
   history()->Update(macro_name_string);
@@ -532,11 +532,11 @@ void ExtractorPPCallbacks::If(clang::SourceLocation location,
                   getSourceString(*preprocessor_, condition_range));
 }
 
-void ExtractorPPCallbacks::Ifdef(clang::SourceLocation location,
-                                 const clang::Token& macro_name,
-                                 const clang::MacroDirective* macro_directive) {
+void ExtractorPPCallbacks::Ifdef(
+    clang::SourceLocation location, const clang::Token& macro_name,
+    const clang::MacroDefinition& macro_definition) {
   RecordCondition(location, "#ifdef",
-                  macro_directive
+                  macro_definition
                       ? clang::PPCallbacks::ConditionValueKind::CVK_True
                       : clang::PPCallbacks::ConditionValueKind::CVK_False,
                   macro_name.getIdentifierInfo()->getName().str());
@@ -544,9 +544,9 @@ void ExtractorPPCallbacks::Ifdef(clang::SourceLocation location,
 
 void ExtractorPPCallbacks::Ifndef(
     clang::SourceLocation location, const clang::Token& macro_name,
-    const clang::MacroDirective* macro_directive) {
+    const clang::MacroDefinition& macro_definition) {
   RecordCondition(location, "#ifndef",
-                  macro_directive
+                  macro_definition
                       ? clang::PPCallbacks::ConditionValueKind::CVK_False
                       : clang::PPCallbacks::ConditionValueKind::CVK_True,
                   macro_name.getIdentifierInfo()->getName().str());

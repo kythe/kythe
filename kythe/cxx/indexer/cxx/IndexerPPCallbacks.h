@@ -46,22 +46,22 @@ public:
                     const clang::MacroDirective *Macro) override;
 
   void MacroExpands(const clang::Token &Token,
-                    const clang::MacroDirective *Macro,
+                    const clang::MacroDefinition &Macro,
                     clang::SourceRange Range,
                     const clang::MacroArgs *Args) override;
 
   void Defined(const clang::Token &MacroName,
-               const clang::MacroDirective *Macro,
+               const clang::MacroDefinition &Macro,
                clang::SourceRange Range) override;
 
   void Ifdef(clang::SourceLocation Location, const clang::Token &MacroName,
-             const clang::MacroDirective *Macro) override;
+             const clang::MacroDefinition &Macro) override;
 
   void Ifndef(clang::SourceLocation Location, const clang::Token &MacroName,
-              const clang::MacroDirective *Macro) override;
+              const clang::MacroDefinition &Macro) override;
 
   void MacroUndefined(const clang::Token &MacroName,
-                      const clang::MacroDirective *Macro) override;
+                      const clang::MacroDefinition &Macro) override;
 
   void InclusionDirective(clang::SourceLocation HashLocation,
                           const clang::Token &IncludeToken,

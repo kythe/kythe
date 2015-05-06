@@ -126,25 +126,25 @@ void IndexerPPCallbacks::MacroDefined(const clang::Token &Token,
 }
 
 void IndexerPPCallbacks::MacroUndefined(const clang::Token &MacroName,
-                                        const clang::MacroDirective *Macro) {
-  if (Macro == nullptr) {
+                                        const clang::MacroDefinition &Macro) {
+  if (!Macro) {
     return;
   }
-  const clang::MacroInfo &Info = *Macro->getMacroInfo();
+  const clang::MacroInfo &Info = *Macro.getMacroInfo();
   GraphObserver::NodeId MacroId = BuildNodeIdForMacro(MacroName, Info);
   Observer.recordUndefinesRange(RangeForTokenInCurrentContext(MacroName),
                                 MacroId);
 }
 
 void IndexerPPCallbacks::MacroExpands(const clang::Token &Token,
-                                      const clang::MacroDirective *Macro,
+                                      const clang::MacroDefinition &Macro,
                                       clang::SourceRange Range,
                                       const clang::MacroArgs *Args) {
-  if (Macro == nullptr || Range.isInvalid()) {
+  if (!Macro || Range.isInvalid()) {
     return;
   }
 
-  const clang::MacroInfo &Info = *Macro->getMacroInfo();
+  const clang::MacroInfo &Info = *Macro.getMacroInfo();
   GraphObserver::NodeId MacroId = BuildNodeIdForMacro(Token, Info);
   if (!Range.getBegin().isFileID() || !Range.getEnd().isFileID()) {
     auto NewBegin =
@@ -169,23 +169,24 @@ void IndexerPPCallbacks::MacroExpands(const clang::Token &Token,
 }
 
 void IndexerPPCallbacks::Defined(const clang::Token &MacroName,
-                                 const clang::MacroDirective *Macro,
+                                 const clang::MacroDefinition &Macro,
                                  clang::SourceRange Range) {
   DeferredRecords.push_back(
-      DeferredRecord{MacroName, Macro, Macro != nullptr && Macro->isDefined(),
+      DeferredRecord{MacroName, Macro ? Macro.getLocalDirective() : nullptr,
+                     Macro && Macro.getLocalDirective()->isDefined(),
                      RangeForTokenInCurrentContext(MacroName)});
 }
 
 void IndexerPPCallbacks::Ifdef(clang::SourceLocation Location,
                                const clang::Token &MacroName,
-                               const clang::MacroDirective *Macro) {
+                               const clang::MacroDefinition &Macro) {
   // Just delegate.
   Defined(MacroName, Macro, clang::SourceRange(Location));
 }
 
 void IndexerPPCallbacks::Ifndef(clang::SourceLocation Location,
                                 const clang::Token &MacroName,
-                                const clang::MacroDirective *Macro) {
+                                const clang::MacroDefinition &Macro) {
   // Just delegate.
   Defined(MacroName, Macro, clang::SourceRange(Location));
 }
@@ -210,12 +211,12 @@ void IndexerPPCallbacks::AddMacroReferenceIfDefined(
   if (clang::IdentifierInfo *const NameII =
           MacroNameToken.getIdentifierInfo()) {
     if (NameII->hasMacroDefinition()) {
-      if (auto *Macro = Preprocessor.getMacroDirective(NameII)) {
+      if (auto *Macro = Preprocessor.getLocalMacroDirective(NameII)) {
         AddReferenceToMacro(MacroNameToken, *Macro->getMacroInfo(),
                             Macro->isDefined());
       }
     } else if (NameII->hadMacroDefinition()) {
-      if (auto *Macro = Preprocessor.getMacroDirectiveHistory(NameII)) {
+      if (auto *Macro = Preprocessor.getLocalMacroDirectiveHistory(NameII)) {
         AddReferenceToMacro(MacroNameToken, *Macro->getMacroInfo(),
                             Macro->isDefined());
       }
