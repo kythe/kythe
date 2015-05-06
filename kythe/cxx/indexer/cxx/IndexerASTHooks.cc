@@ -1322,12 +1322,12 @@ IndexerASTVisitor::BuildNameIdForDecl(const clang::Decl *Decl) {
 }
 
 template <typename TemplateDeclish>
-size_t
+uint64_t
 IndexerASTVisitor::SemanticHashTemplateDeclish(const TemplateDeclish *Decl) {
   return std::hash<std::string>()(BuildNameIdForDecl(Decl).ToString());
 }
 
-size_t IndexerASTVisitor::SemanticHash(const clang::TemplateName &TN) {
+uint64_t IndexerASTVisitor::SemanticHash(const clang::TemplateName &TN) {
   switch (TN.getKind()) {
   case TemplateName::Template:
     return SemanticHashTemplateDeclish(TN.getAsTemplateDecl());
@@ -1353,7 +1353,7 @@ size_t IndexerASTVisitor::SemanticHash(const clang::TemplateName &TN) {
   return 0;
 }
 
-size_t IndexerASTVisitor::SemanticHash(const clang::TemplateArgument &TA) {
+uint64_t IndexerASTVisitor::SemanticHash(const clang::TemplateArgument &TA) {
   switch (TA.getKind()) {
   case TemplateArgument::Null:
     return 0x1010101001010101LL; // Arbitrary constant for H(Null).
@@ -1365,9 +1365,14 @@ size_t IndexerASTVisitor::SemanticHash(const clang::TemplateArgument &TA) {
   case TemplateArgument::NullPtr:
     assert(IgnoreUnimplemented && "SemanticHash(NullPtr)");
     return 0;
-  case TemplateArgument::Integral:
-    assert(IgnoreUnimplemented && "SemanticHash(Integral)");
-    return 0;
+  case TemplateArgument::Integral: {
+    auto Val = TA.getAsIntegral();
+    if (Val.getMinSignedBits() <= sizeof(uint64_t) * CHAR_BIT) {
+      return static_cast<uint64_t>(Val.getExtValue());
+    } else {
+      return std::hash<std::string>()(Val.toString(10));
+    }
+  }
   case TemplateArgument::Template:
     return SemanticHash(TA.getAsTemplate()) ^ 0x4040404004040404LL;
   case TemplateArgument::TemplateExpansion:
@@ -1385,14 +1390,14 @@ size_t IndexerASTVisitor::SemanticHash(const clang::TemplateArgument &TA) {
   return 0;
 }
 
-size_t IndexerASTVisitor::SemanticHash(const clang::QualType &T) {
+uint64_t IndexerASTVisitor::SemanticHash(const clang::QualType &T) {
   QualType CQT(T.getCanonicalType());
   return std::hash<std::string>()(CQT.getAsString());
 }
 
-size_t IndexerASTVisitor::SemanticHash(const clang::EnumDecl *ED) {
+uint64_t IndexerASTVisitor::SemanticHash(const clang::EnumDecl *ED) {
   // TODO(zarko): Do we need a better hash function?
-  size_t hash = 0;
+  uint64_t hash = 0;
   for (auto E : ED->enumerators()) {
     if (E->getDeclName().isIdentifier()) {
       hash ^= std::hash<std::string>()(E->getName());
@@ -1401,18 +1406,19 @@ size_t IndexerASTVisitor::SemanticHash(const clang::EnumDecl *ED) {
   return hash;
 }
 
-size_t IndexerASTVisitor::SemanticHash(const clang::TemplateArgumentList *RD) {
-  size_t hash = 0;
+uint64_t
+IndexerASTVisitor::SemanticHash(const clang::TemplateArgumentList *RD) {
+  uint64_t hash = 0;
   for (const auto &A : RD->asArray()) {
     hash ^= SemanticHash(A);
   }
   return hash;
 }
 
-size_t IndexerASTVisitor::SemanticHash(const clang::RecordDecl *RD) {
+uint64_t IndexerASTVisitor::SemanticHash(const clang::RecordDecl *RD) {
   // TODO(zarko): Do we need a better hash function? We may need to
   // hash the type variable context all the way up to the root template.
-  size_t hash = 0;
+  uint64_t hash = 0;
   for (const auto *D : RD->decls()) {
     if (D->getDeclContext() != RD) {
       // Some decls appear underneath RD in the AST but aren't semantically
@@ -1449,9 +1455,43 @@ IndexerASTVisitor::BuildNodeIdForCallableDecl(const clang::Decl *Decl) {
   GraphObserver::NodeId Id(Observer->getDefaultClaimToken());
   {
     llvm::raw_string_ostream Ostream(Id.Identity);
-    Ostream << NameId;
+    Ostream << NameId << "#";
+    // Include instantiated type variables.
+    clang::ast_type_traits::DynTypedNode CurrentNode =
+        clang::ast_type_traits::DynTypedNode::create(*Decl);
+    const clang::Decl *CurrentNodeAsDecl;
+    while (!(CurrentNodeAsDecl = CurrentNode.get<clang::Decl>()) ||
+           !isa<clang::TranslationUnitDecl>(CurrentNodeAsDecl)) {
+      IndexedParentVector IPV = getIndexedParents(CurrentNode);
+      if (IPV.empty()) {
+        break;
+      }
+      IndexedParent IP = IPV[0];
+      CurrentNode = IP.Parent;
+      if (!CurrentNodeAsDecl) {
+        continue;
+      }
+      if (const auto *TD = dyn_cast<TemplateDecl>(CurrentNodeAsDecl)) {
+        // Disambiguate type abstraction IDs from abstracted type IDs.
+        if (CurrentNodeAsDecl != Decl) {
+          Ostream << "#";
+        }
+      } else if (const auto *CTSD = dyn_cast<ClassTemplateSpecializationDecl>(
+                     CurrentNodeAsDecl)) {
+        Ostream << "#" << HashToString(SemanticHash(
+                              &CTSD->getTemplateInstantiationArgs()));
+      } else if (const auto *FD = dyn_cast<FunctionDecl>(CurrentNodeAsDecl)) {
+        if (const auto *TemplateArgs = FD->getTemplateSpecializationArgs()) {
+          Ostream << "#" << HashToString(SemanticHash(TemplateArgs));
+        }
+      } else if (const auto *VD = dyn_cast<VarTemplateSpecializationDecl>(
+                     CurrentNodeAsDecl)) {
+        Ostream << "#" << HashToString(SemanticHash(
+                              &VD->getTemplateInstantiationArgs()));
+      }
+    }
     if (const auto *FT = Decl->getFunctionType()) {
-      Ostream << "#" << SemanticHash(QualType(FT, 0));
+      Ostream << HashToString(SemanticHash(QualType(FT, 0)));
     }
     Ostream << "#callable";
   }
@@ -1467,8 +1507,9 @@ IndexerASTVisitor::BuildNodeIdForDecl(const clang::Decl *Decl, unsigned Index) {
 
 GraphObserver::NodeId
 IndexerASTVisitor::BuildNodeIdForDecl(const clang::Decl *Decl) {
-  // We assume here that no two nodes of the same Kind can appear
-  // simultaneously at the same SourceLocation.
+  // We can't assume that no two nodes of the same Kind can appear
+  // simultaneously at the same SourceLocation: witness implicit overloaded
+  // operator=. We rely on names and types to disambiguate them.
   // NodeIds must be stable across analysis runs with the same input data.
   // Some NodeIds are stable in the face of changes to that data, such as
   // the IDs given to class definitions (in part because of the language rules).
@@ -1526,6 +1567,8 @@ IndexerASTVisitor::BuildNodeIdForDecl(const clang::Decl *Decl) {
                               &CTSD->getTemplateInstantiationArgs()));
       }
     } else if (const auto *FD = dyn_cast<FunctionDecl>(CurrentNodeAsDecl)) {
+      Ostream << "#"
+              << HashToString(SemanticHash(QualType(FD->getFunctionType(), 0)));
       if (const auto *TemplateArgs = FD->getTemplateSpecializationArgs()) {
         if (CurrentNodeAsDecl != Decl) {
           Ostream << "#" << BuildNodeIdForDecl(FD);
@@ -1715,8 +1758,7 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForDependentName(
     llvm::raw_string_ostream Ostream(IdOut.Identity);
     Ostream << "#nns"; // Nested name specifier.
     clang::SourceRange NNSRange(InNNSLoc.getBeginLoc(), InNNSLoc.getEndLoc());
-    auto Range = GraphObserver::Range(
-        NNSRange, Observer->getClaimTokenForRange(NNSRange));
+    auto Range = RangeInCurrentContext(NNSRange);
     Ostream << "@";
     if (!Observer->AppendRangeToStream(Ostream, Range)) {
       Ostream << "invalid";
@@ -1783,6 +1825,23 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForDependentName(
   return IdOut;
 }
 
+MaybeFew<GraphObserver::NodeId>
+IndexerASTVisitor::BuildNodeIdForExpr(const clang::Expr *Expr, EmitRanges ER) {
+  clang::Expr::EvalResult Result;
+  GraphObserver::NodeId Id(Observer->getDefaultClaimToken());
+  llvm::raw_string_ostream Ostream(Id.Identity);
+  if (!Expr->isValueDependent() && Expr->EvaluateAsRValue(Result, Context)) {
+    // TODO(zarko): Represent constant values of any type as nodes in the
+    // graph; link ranges to them.
+    Ostream << Result.Val.getAsString(Context, Expr->getType()) << "#const";
+  } else {
+    Observer->AppendRangeToStream(
+        Ostream, RangeInCurrentContext(
+                     RangeForASTEntityFromSourceLocation(Expr->getExprLoc())));
+  }
+  return Id;
+}
+
 // The duplication here is unfortunate, but `TemplateArgumentLoc` is
 // different enough from `TemplateArgument * SourceLocation` that
 // we can't factor it out.
@@ -1816,8 +1875,8 @@ IndexerASTVisitor::BuildNodeIdForTemplateArgument(
     assert(IgnoreUnimplemented && "TA.TemplateExpansion");
     return None();
   case TemplateArgument::Expression:
-    assert(IgnoreUnimplemented && "TA.Expression");
-    return None();
+    assert(Arg.getAsExpr() != nullptr);
+    return BuildNodeIdForExpr(Arg.getAsExpr(), EmitRanges::Yes);
   case TemplateArgument::Pack:
     assert(IgnoreUnimplemented && "TA.Pack");
     return None();
@@ -1856,8 +1915,8 @@ IndexerASTVisitor::BuildNodeIdForTemplateArgument(
     assert(IgnoreUnimplemented && "TA.TemplateExpansion");
     return None();
   case TemplateArgument::Expression:
-    assert(IgnoreUnimplemented && "TA.Expression");
-    return None();
+    assert(ArgLoc.getSourceExpression() != nullptr);
+    return BuildNodeIdForExpr(ArgLoc.getSourceExpression(), EmitRanges);
   case TemplateArgument::Pack:
     assert(IgnoreUnimplemented && "TA.Pack");
     return None();

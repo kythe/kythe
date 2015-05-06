@@ -75,6 +75,8 @@ one_case "${BASE_DIR}/function_defn.cc" "c++1y"
 one_case "${BASE_DIR}/function_direct_call.cc" "c++1y"
 one_case "${BASE_DIR}/function_knr_ty.c" "c99"
 one_case "${BASE_DIR}/function_lambda.cc" "c++1y" --ignore_dups=true
+one_case "${BASE_DIR}/function_operator_overload_dup_names.cc" "c++1y"
+one_case "${BASE_DIR}/function_operator_overload_enable_if.cc" "c++1y"
 one_case "${BASE_DIR}/function_operator_overload_names.cc" "c++1y" --ignore_dups=true
 one_case "${BASE_DIR}/function_operator_parens_call.cc" "c++1y" --ignore_dups=true
 one_case "${BASE_DIR}/function_operator_parens.cc" "c++1y"

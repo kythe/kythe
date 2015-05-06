@@ -267,6 +267,13 @@ public:
     Yes ///< Emit range information when it's available.
   };
 
+  /// \brief Builds a stable node ID for a compile-time expression.
+  /// \param Expr The expression to represent.
+  /// \param ER Whether to notify the `GraphObserver` about source text
+  /// ranges for expressions.
+  MaybeFew<GraphObserver::NodeId> BuildNodeIdForExpr(const clang::Expr *Expr,
+                                                     EmitRanges ER);
+
   /// \brief Builds a stable node ID for `Type`.
   /// \param Type The type that is being identified. If its location is valid
   /// and `ER` is `EmitRanges::Yes`, notifies the attached `GraphObserver` about
@@ -524,21 +531,21 @@ private:
   /// like a `TemplateDecl` (eg, a `TemplateDecl` itself or a partial
   /// specialization).
   template <typename TemplateDeclish>
-  size_t SemanticHashTemplateDeclish(const TemplateDeclish *Decl);
+  uint64_t SemanticHashTemplateDeclish(const TemplateDeclish *Decl);
 
   /// \brief Builds a semantic hash of the given `TemplateArgumentList`.
-  size_t SemanticHash(const clang::TemplateArgumentList *TAL);
+  uint64_t SemanticHash(const clang::TemplateArgumentList *TAL);
 
   /// \brief Builds a semantic hash of the given `TemplateArgument`.
-  size_t SemanticHash(const clang::TemplateArgument &TA);
+  uint64_t SemanticHash(const clang::TemplateArgument &TA);
 
   /// \brief Builds a semantic hash of the given `TemplateName`.
-  size_t SemanticHash(const clang::TemplateName &TN);
+  uint64_t SemanticHash(const clang::TemplateName &TN);
 
   /// \brief Builds a semantic hash of the given `Type`, such that
   /// if T and T' are similar types, SH(T) == SH(T'). Note that the type is
   /// always canonicalized before its hash is taken.
-  size_t SemanticHash(const clang::QualType &T);
+  uint64_t SemanticHash(const clang::QualType &T);
 
   /// \brief Builds a semantic hash of the given `RecordDecl`, such that
   /// if R and R' are similar records, SH(R) == SH(R'). This notion of
@@ -546,7 +553,7 @@ private:
   /// across different translation units. As it is at best an approximation,
   /// it should be paired with the spelled-out name of the object being declared
   /// to form an identifying token.
-  size_t SemanticHash(const clang::RecordDecl *RD);
+  uint64_t SemanticHash(const clang::RecordDecl *RD);
 
   /// \brief Builds a semantic hash of the given `EnumDecl`, such that
   /// if E and E' are similar records, SH(E) == SH(E'). This notion of
@@ -554,7 +561,7 @@ private:
   /// across different translation units. As it is at best an approximation,
   /// it should be paired with the spelled-out name of the object being declared
   /// to form an identifying token.
-  size_t SemanticHash(const clang::EnumDecl *ED);
+  uint64_t SemanticHash(const clang::EnumDecl *ED);
 
   /// \brief Attempts to add some representation of `ND` to `Ostream`.
   /// \return true on success; false on failure.
