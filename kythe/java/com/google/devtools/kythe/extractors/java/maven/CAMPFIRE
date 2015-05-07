@@ -1,0 +1,17 @@
+[
+  {
+    "name": "docker",
+    "properties": {
+      "docker_name": "gcr.io/kythe_repo/kythe-maven-extractor"
+    },
+    "kind": "docker_deploy",
+    "inputs": {
+      "srcs": [
+        "Dockerfile"
+      ],
+      "deps": [
+        "//kythe/java/com/google/devtools/kythe/extractors/java/standalone:docker"
+      ]
+    }
+  }
+]

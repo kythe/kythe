@@ -35,5 +35,22 @@
     "properties": {
       "main_class": "com.google.devtools.kythe.extractors.java.standalone.Javac8Wrapper"
     }
+  },
+  {
+    "name": "docker",
+    "properties": {
+      "docker_name": "gcr.io/kythe_repo/kythe-javac-extractor"
+    },
+    "kind": "docker_deploy",
+    "inputs": {
+      "srcs": [
+        "Dockerfile"
+      ],
+      "data": [
+        "../../../../../../../../release/base/fix_permissions.sh",
+        "javac-wrapper.sh",
+        ":javac_extractor_deploy"
+      ]
+    }
   }
 ]
