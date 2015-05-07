@@ -16,35 +16,25 @@
 readonly GCS_BUCKET="gs://kythe-builds"
 
 usage() {
-  echo "usage: $(basename "$0") cache-dir" >&2
+  echo "usage: $(basename "$0")" >&2
 }
 
-if [[ $# != 1 ]]; then
+if [[ $# != 0 ]]; then
   usage
   exit 1
 fi
-
-CACHE="$(readlink -m "$1")"
-echo "Cache Root:      $CACHE"
 
 REPO="$(readlink -e "$(dirname "$0")/..")"
 echo "Repository Root: $REPO"
 
 . buildtools/module_versions.sh
 NAME="llvm-${FULL_SHA}"
-LLVM="$CACHE/$NAME"
 
-if [[ ! -d "$LLVM" ]]; then
-  TMP="$(mktemp -d)"
-  trap "rm -rf '$TMP'" EXIT ERR INT
-  cd "$TMP"
-  gsutil cp "${GCS_BUCKET}/$NAME.tar.gz" .
-  tar xzf "$NAME.tar.gz"
-  mkdir -p "$(dirname "$LLVM")"
-  mv llvm "$LLVM"
-else
-  echo "Reusing cached LLVM version at $LLVM"
-fi
+echo "LLVM Version: $FULL_SHA"
+cd "$REPO/third_party/llvm"
 
-rm -rf "$REPO"/third_party/llvm/llvm
-cp -r "$LLVM" "$REPO"/third_party/llvm/llvm
+TMP="$(mktemp -d)"
+trap "rm -rf '$TMP'" EXIT ERR INT
+tar czf "$TMP/$NAME.tar.gz" llvm
+
+gsutil cp "$TMP/$NAME.tar.gz" "${GCS_BUCKET}/"
