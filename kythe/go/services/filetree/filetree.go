@@ -130,7 +130,7 @@ func (m *Map) CorpusRoots() (*ftpb.CorpusRootsReply, error) {
 	return cr, nil
 }
 
-// Dir implements part of the filetree.Service interface.
+// Directory implements part of the filetree.Service interface.
 func (m *Map) Directory(req *ftpb.DirectoryRequest) (*ftpb.DirectoryReply, error) {
 	roots := m.M[req.Corpus]
 	if roots == nil {
@@ -195,7 +195,7 @@ func (w *webClient) CorpusRoots() (*ftpb.CorpusRootsReply, error) {
 	return &reply, web.Call(w.addr, "corpusRoots", &ftpb.CorpusRootsRequest{}, &reply)
 }
 
-// Dir implements part of the Service interface.
+// Directory implements part of the Service interface.
 func (w *webClient) Directory(req *ftpb.DirectoryRequest) (*ftpb.DirectoryReply, error) {
 	var reply ftpb.DirectoryReply
 	return &reply, web.Call(w.addr, "dir", req, &reply)

@@ -132,7 +132,7 @@ func displayReferences(decor *xpb.DecorationsReply) error {
 			End:   &xpb.Location_Point{ByteOffset: int32(e)},
 		})
 		if err != nil {
-			return fmt.Errorf("error normalizing reference location for anchor %q: %v", ref.SourceTicket)
+			return fmt.Errorf("error normalizing reference location for anchor %q: %v", ref.SourceTicket, err)
 		}
 
 		r := strings.NewReplacer(
