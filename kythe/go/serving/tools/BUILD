@@ -54,6 +54,21 @@ go_binary(
 )
 
 go_binary(
+    name = "kwazthis",
+    srcs = glob(["kwazthis/*.go"]),
+    deps = [
+        "//kythe/go/services/search",
+        "//kythe/go/services/xrefs",
+        "//kythe/go/util/kytheuri",
+        "//kythe/go/util/schema",
+        "//kythe/proto:storage_proto",
+        "//kythe/proto:xref_proto",
+        "//third_party/go:context",
+        "//third_party/go:grpc",
+    ],
+)
+
+go_binary(
     name = "write_tables",
     srcs = [
         "write_tables/write_tables.go",

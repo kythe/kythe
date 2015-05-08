@@ -50,15 +50,16 @@ const (
 	EnumClassSubkind = "enumClass"
 )
 
+// EdgePrefix is the standard Kythe prefix for all edge kinds.
+const EdgePrefix = "/kythe/edge/"
+
 // Kythe edge kinds
 const (
-	edgePrefix = "/kythe/edge/"
-
-	ChildOfEdge = edgePrefix + "childof"
-	DefinesEdge = edgePrefix + "defines"
-	NamedEdge   = edgePrefix + "named"
-	ParamEdge   = edgePrefix + "param"
-	RefEdge     = edgePrefix + "ref"
+	ChildOfEdge = EdgePrefix + "childof"
+	DefinesEdge = EdgePrefix + "defines"
+	NamedEdge   = EdgePrefix + "named"
+	ParamEdge   = EdgePrefix + "param"
+	RefEdge     = EdgePrefix + "ref"
 )
 
 // Fact filter for anchor locations

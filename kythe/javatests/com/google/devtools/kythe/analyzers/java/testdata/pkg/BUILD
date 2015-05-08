@@ -64,6 +64,7 @@ java_verifier_test(
     srcs = [
         "Generics.java",
     ],
+    visibility = ["//kythe/go/serving/tools/testdata:__pkg__"],
 )
 
 java_verifier_test(

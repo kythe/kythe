@@ -16,9 +16,10 @@
 # This script is expected to be inlined into another script via source.
 #
 # It expects the following variables to be set:
-#   KYTHE_BIN - where the Kythe binaries can be found
-#   OUT_DIR   - temporary output directory for the test
-#   TEST_JSON - json dump of Kythe entries for test
+#   KYTHE_BIN    - where the Kythe binaries can be found
+#   OUT_DIR      - temporary output directory for the test
+#   TEST_ENTRIES - Kythe entries for test (mutually exclusive with TEST_JSON)
+#   TEST_JSON    - json dump of Kythe entries for test
 #
 # It will set or clobber the following variables:
 #   COUNTDOWN
@@ -75,13 +76,18 @@ else
   }
 fi
 
+ENTRYSTREAM_ARGS=
+if [[ -z "$TEST_ENTRIES" ]]; then
+  TEST_ENTRIES="$TEST_JSON"
+  ENTRYSTREAM_ARGS=-read_json=true
+fi
+
 rm -rf -- "${OUT_DIR:?no output directory for test}/gs"
 rm -rf -- "${OUT_DIR:?no output directory for test}/tables"
 mkdir -p "${OUT_DIR}/gs"
 mkdir -p "${OUT_DIR}/tables"
-cat "${TEST_JSON:?no test json for test}" \
-    | "${KYTHE_ENTRYSTREAM}" -read_json=true  \
-    | "${KYTHE_WRITE_ENTRIES}" -graphstore "${OUT_DIR}/gs" 2>/dev/null
+"${KYTHE_ENTRYSTREAM}" $ENTRYSTREAM_ARGS < "${TEST_ENTRIES:?no test entries for test}" \
+  | "${KYTHE_WRITE_ENTRIES}" -graphstore "${OUT_DIR}/gs" 2>/dev/null
 "${KYTHE_WRITE_TABLES}" -graphstore "${OUT_DIR}/gs" \
     -out="${OUT_DIR}/tables" 2>/dev/null
 # TODO(zarko): test against GRPC server implementation
