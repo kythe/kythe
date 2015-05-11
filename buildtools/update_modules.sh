@@ -59,6 +59,14 @@ LLVM_REPO_REL="$(query_config root_rel_llvm_repo)"
 mkdir -p "$LLVM_REPO_REL"
 LLVM_REPO="$(readlink -e "$LLVM_REPO_REL")"
 
+if [[ -d "$LLVM_REPO/build" ]]; then
+  echo "Your checkout has a directory at:"
+  echo "  $LLVM_REPO/build"
+  echo "update_modules expects this to be a symlink that it will overwrite."
+  echo "Please remove this directory if you want update_modules to manage LLVM."
+  exit 1
+fi
+
 . "./buildtools/module_versions.sh"
 if [[ -z "$1" || "$1" == "--git_only" || "$1" == "--docker" ]]; then
   echo "Using repository in $LLVM_REPO_REL (relative to $ROOT_REL)"
