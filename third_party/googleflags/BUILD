@@ -18,6 +18,8 @@ cc_library(
         "include/gflags/gflags_declare.h",
     ],
     copts = [
+        "-Wno-unused-local-typedef",
+        "-Wno-unknown-warning-option",
         "-I./third_party/googleflags/include/gflags",
     ],
     includes = [

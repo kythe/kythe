@@ -63,7 +63,6 @@ struct MakeURI {
 };
 
 TEST(KytheUri, Parse) {
-  using VName = kythe::proto::VName;
   struct {
     std::string input;
     URI expect;
