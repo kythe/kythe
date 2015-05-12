@@ -2,7 +2,10 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["unencumbered"])  # BSD
 
-exports_files(["LICENSE"])
+filegroup(
+    name = "license",
+    srcs = ["LICENSE"],
+)
 
 filegroup(
     name = "plugin",

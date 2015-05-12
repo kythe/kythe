@@ -1,3 +1,5 @@
+All third_party libraries are available at http://kythe.io/repo/third_party/
+
 To add a new component to this third_party directory, follow these steps:
 
 1) Have a discussion on kythe-dev mailing list;
@@ -10,6 +12,7 @@ To add a new component to this third_party directory, follow these steps:
      * The path to a LICENSE file (create one if it does not exist)
      * A brief Description
      * A list of Local Modifications
-5) Have the change reviewed by multiple people in the team.
+5) Ensure //third_party:licenses includes the component's license.
+6) Have the change reviewed by multiple people in the team.
 
 Thank you.

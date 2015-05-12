@@ -2,6 +2,11 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])  # BSD
 
+filegroup(
+    name = "license",
+    srcs = ["COPYING.txt"],
+)
+
 cc_library(
     name = "gflags",
     srcs = [

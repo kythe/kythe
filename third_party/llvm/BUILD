@@ -4,6 +4,11 @@ load("/tools/build_rules/cc_resources", "cc_resources")
 
 package(default_visibility = ["//visibility:public"])
 
+filegroup(
+    name = "license",
+    srcs = ["LICENSE"],
+)
+
 cc_library(
     name = "llvm",
     srcs = [

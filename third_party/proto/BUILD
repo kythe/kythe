@@ -2,6 +2,11 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])  # BSD
 
+filegroup(
+    name = "license",
+    srcs = ["LICENSE"],
+)
+
 genrule(
     name = "protobuf_descriptor_java",
     srcs = ["src/google/protobuf/descriptor.proto"],

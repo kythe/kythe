@@ -14,7 +14,7 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/util",
         "//third_party/guava",
         "//third_party/jsr305_annotations:jsr305",
-        "//third_party/openjdk/lib:tools_jar",
+        "//third_party/openjdk:tools",
         "//third_party/proto:protobuf_java",
     ],
 )

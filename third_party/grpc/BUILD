@@ -30,9 +30,14 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+package(default_visibility = ["//visibility:public"])
+
 licenses(["notice"])  # 3-clause BSD
 
-
+filegroup(
+    name = "license",
+    srcs = ["LICENSE"],
+)
 
 cc_library(
     name = "gpr",

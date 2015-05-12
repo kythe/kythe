@@ -18,7 +18,7 @@ java_binary(
         "//kythe/proto:analysis_proto",
         "//kythe/proto:storage_proto",
         "//third_party/guava",
-        "//third_party/openjdk/lib:tools_jar",
+        "//third_party/openjdk:tools",
         "//third_party/proto:protobuf_java",
     ],
 )

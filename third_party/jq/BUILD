@@ -2,6 +2,11 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])  # MIT
 
+filegroup(
+    name = "license",
+    srcs = ["COPYING"],
+)
+
 cc_library(
     name = "libjq",
     srcs = [

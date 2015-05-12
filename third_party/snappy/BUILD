@@ -2,6 +2,11 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])  # BSD 3-clause
 
+filegroup(
+    name = "license",
+    srcs = ["COPYING"],
+)
+
 cc_library(
     name = "snappy",
     srcs = [

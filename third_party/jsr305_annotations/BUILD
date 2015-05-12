@@ -2,7 +2,10 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])  # Apache 2.0
 
-exports_files(["LICENSE"])
+filegroup(
+    name = "license",
+    srcs = ["LICENSE"],
+)
 
 java_import(
     name = "jsr305",

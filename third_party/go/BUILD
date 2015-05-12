@@ -10,8 +10,19 @@ filegroup(
 
 # TODO(schroederc): split libraries into separate BUILD files once
 #     https://github.com/google/bazel/issues/118 is fixed
-
 licenses(["notice"])
+
+filegroup(
+    name = "licenses",
+    srcs = glob(
+        [
+            "**/LICENSE*",
+            "**/COPYING*",
+            "**/license*",
+            "**/copying*",
+        ],
+    ),
+)
 
 go_library(
     name = "levigo",

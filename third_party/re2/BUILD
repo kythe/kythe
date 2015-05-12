@@ -2,6 +2,11 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])  # BSD
 
+filegroup(
+    name = "license",
+    srcs = ["LICENSE"],
+)
+
 cc_library(
     name = "re2",
     srcs = [
