@@ -59,7 +59,7 @@ LLVM_REPO_REL="$(query_config root_rel_llvm_repo)"
 mkdir -p "$LLVM_REPO_REL"
 LLVM_REPO="$(readlink -e "$LLVM_REPO_REL")"
 
-if [[ -d "$LLVM_REPO/build" ]]; then
+if [[ -d "$LLVM_REPO/build" && ! -h "$LLVM_REPO/build" ]]; then
   echo "Your checkout has a directory at:"
   echo "  $LLVM_REPO/build"
   echo "update_modules expects this to be a symlink that it will overwrite."
@@ -86,16 +86,18 @@ if [[ "$1" == "--docker" ]]; then
 fi
 
 if [[ -z "$1" || "$1" == "--build_only" ]]; then
-  vbuild_dir="$LLVM_REPO/build.${MIN_LLVM_SHA}.${MIN_CLANG_SHA}.${MIN_EXTRA_SHA}"
+  cd "$LLVM_REPO"
+  vbuild_dir="build.${MIN_LLVM_SHA}.${MIN_CLANG_SHA}.${MIN_EXTRA_SHA}"
   if [[ ! -d "$vbuild_dir" ]]; then
     mkdir -p "$vbuild_dir"
-    trap "rm -rf '$vbuild_dir'" ERR INT
+    trap "rm -rf '$LLVM_REPO/$vbuild_dir'" ERR INT
     cd "$vbuild_dir"
     ../configure CC="${CAMPFIRE_CC}" CXX="${CAMPFIRE_CXX}" \
       --prefix="$LLVM_REPO/build-install" \
       CXXFLAGS="-std=c++11" \
       --enable-optimized --disable-bindings
     make -j8
+    cd ..
   fi
-  ln -sfT "$vbuild_dir" "$LLVM_REPO/build"
+  ln -sfT "$vbuild_dir" build
 fi
