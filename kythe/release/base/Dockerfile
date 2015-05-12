@@ -44,4 +44,4 @@ ENV HOME /root
 RUN mkdir -p /kythe/{bin,lib}/
 ENV PATH /kythe/bin:$PATH
 
-ADD fix_permissions.sh /kythe/bin/fix_permissions
+ADD kythe/release/base/fix_permissions.sh /kythe/bin/fix_permissions

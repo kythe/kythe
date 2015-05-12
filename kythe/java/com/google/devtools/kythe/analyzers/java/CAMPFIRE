@@ -75,7 +75,7 @@
     }
   },
   {
-    "name": "java_indexer_deploy",
+    "name": "indexer_deploy",
     "kind": "java_deploy_jar",
     "inputs": {
       "jars": [

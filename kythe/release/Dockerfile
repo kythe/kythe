@@ -30,8 +30,8 @@ VOLUME /compilations
 VOLUME /root/.m2
 
 # Maven Extractor
-ADD javac_extractor_deploy.jar /kythe/bin/javac_extractor_deploy.jar
-ADD maven_extractor.sh /kythe/bin/maven_extractor
+ADD kythe/java/com/google/devtools/kythe/extractors/java/standalone/javac_extractor_deploy.jar /kythe/bin/javac_extractor_deploy.jar
+ADD kythe/release/maven_extractor.sh /kythe/bin/maven_extractor
 
 # TODO(fromberger): Add new Go extractor.
 
@@ -40,11 +40,11 @@ RUN chmod +x /kythe/bin/*_extractor
 
 ################################## <INDEXERS>
 # C++
-ADD indexer /kythe/bin/c++_indexer.bin
+ADD kythe/cxx/indexer/cxx/indexer /kythe/bin/c++_indexer.bin
 RUN echo 'exec /kythe/bin/c++_indexer.bin --flush_after_each_entry=true --ignore_unimplemented=true --index_template_instantiations=false "$@"' > /kythe/bin/c++_indexer
 
 # Java
-ADD java_indexer_deploy.jar /kythe/bin/
+ADD kythe/java/com/google/devtools/kythe/analyzers/java/indexer_deploy.jar /kythe/bin/
 RUN echo 'exec java -jar /kythe/bin/java_indexer_deploy.jar "$@"' > /kythe/bin/java_indexer
 
 RUN chmod +x /kythe/bin/*_indexer
@@ -53,13 +53,13 @@ RUN chmod +x /kythe/bin/*_indexer
 ################################## <STORAGE>
 VOLUME /graphstore
 
-ADD write_entries /kythe/bin/
-ADD dedup_stream /kythe/bin/
+ADD kythe/go/storage/tools/write_entries /kythe/bin/
+ADD kythe/go/platform/tools/dedup_stream /kythe/bin/
 
-ADD directory_indexer /kythe/bin/index_repository
+ADD kythe/go/storage/tools/directory_indexer /kythe/bin/index_repository
 ################################## </STORAGE>
 
-ADD kythe.sh /kythe/bin/
+ADD kythe/release/kythe.sh /kythe/bin/
 RUN chmod +x /kythe/bin/*.sh
 
 ENTRYPOINT ["kythe.sh"]

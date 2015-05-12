@@ -44,6 +44,7 @@ DockerDeploy.prototype.getNinjaBuilds = function(target) {
       implicits: deps,
       outs: [buildDone],
       vars: {
+        dockerfile: srcs[0].getPath(),
         outdir: target.getRoot('gen'),
         name: localName
       }

@@ -52,8 +52,8 @@ WORKDIR /repo
 ENV KYTHE_ROOT_DIRECTORY=/repo
 ENV KYTHE_OUTPUT_DIRECTORY=/out
 
-ADD fix_permissions.sh /usr/bin/fix_permissions
-ADD javac_extractor_deploy.jar /opt/
+ADD kythe/release/base/fix_permissions.sh /usr/bin/fix_permissions
+ADD kythe/java/com/google/devtools/kythe/extractors/java/standalone/javac_extractor_deploy.jar /opt/
 
 RUN mv $JAVA_HOME/bin/javac $JAVA_HOME/bin/javac.real
-ADD javac-wrapper.sh $JAVA_HOME/bin/javac
+ADD kythe/java/com/google/devtools/kythe/extractors/java/standalone/javac-wrapper.sh $JAVA_HOME/bin/javac

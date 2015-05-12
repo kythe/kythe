@@ -40,8 +40,8 @@ ENV LC_MEASUREMENT en_US.UTF-8
 ENV LC_IDENTIFICATION en_US.UTF-8
 
 # Helper script to set language tooling flags
-ADD campfire-wrapper /kythe/bin/campfire
-ADD campfire_settings /root/.campfire_settings
+ADD buildtools/docker/campfire-wrapper /kythe/bin/campfire
+ADD buildtools/docker/campfire_settings /root/.campfire_settings
 ENV CAMPFIRE_ROOT /repo
 
 ENTRYPOINT ["campfire"]

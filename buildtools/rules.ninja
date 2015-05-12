@@ -102,9 +102,16 @@ rule protoc_cpp
   description = protoc_cpp $owner
 
 rule docker_build
-  command = mkdir -p $outdir && $
-            cp -Lr --preserve=all $in $outdir && $
-            docker build -t $name $outdir && $
+  command = rm -rf $outdir && $
+            mkdir -p $outdir && $
+            for f in $in; do $
+              dir=$$(dirname $$f) && $
+              dir=$${dir#campfire-out/bin} && $
+              dir=$${dir#campfire-out/gen} && $
+              mkdir -p $outdir/$$dir && $
+              cp -Lr --preserve=all $$f $outdir/$$dir; $
+            done && $
+            docker build -t $name -f $outdir/$dockerfile $outdir && $
             touch $out
   description = docker_build $name
   pool = console
