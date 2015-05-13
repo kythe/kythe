@@ -17,6 +17,13 @@
 // Binary kwazthis (K, what's this?) determines what references are located at a
 // particular offset within a file.  All results are printed as JSON.
 //
+// By default, kwazthis will search for a .kythe configuration file in a
+// directory above the given --path (if it exists locally relative to the
+// current working directory).  If found, --path will be made relative to this
+// directory and --root before making any Kythe service requests.  If not found,
+// --path will be passed unchanged.  --ignore_local_repo will turn off this
+// behavior.
+//
 // Usage:
 //   kwazthis --path kythe/cxx/tools/kindex_tool_main.cc --offset 2660
 //   kwazthis --path kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java --offset 2815
@@ -25,9 +32,11 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -43,8 +52,30 @@ import (
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
+func init() {
+	binary := filepath.Base(os.Args[0])
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, `Determine what references are located at a particular offset within a file.
+
+Usage: %s --offset int (--path p | --signature s) [--corpus c] [--root r] [--language l]
+       %`+strconv.Itoa(len(binary))+`s [--ignore_local_repo] [--dirty_buffer path]
+
+By default, kwazthis will search for a .kythe configuration file in a directory
+above the given --path (if it exists locally relative to the current working
+directory).  If found, --path will be made relative to this directory and --root
+before making any Kythe service requests.  If not found, --path will be passed
+unchanged.  --ignore_local_repo will turn off this behavior.
+
+Defaults flag values:
+`, binary, "")
+		flag.PrintDefaults()
+	}
+}
+
 var (
 	remoteAPI = flag.String("api", "https://xrefs-dot-kythe-repo.appspot.com", "Remote API server")
+
+	ignoreLocalRepo = flag.Bool("ignore_local_repo", false, "Ignore local repository .kythe configuration")
 
 	dirtyBuffer = flag.String("dirty_buffer", "", "Path to file with dirty buffer contents (optional)")
 
@@ -104,11 +135,27 @@ func main() {
 		idx = search.GRPC(ctx, spb.NewSearchServiceClient(conn))
 	}
 
+	relPath := *path
+	if !*ignoreLocalRepo {
+		if _, err := os.Stat(relPath); err == nil {
+			absPath, err := filepath.Abs(relPath)
+			if err != nil {
+				log.Fatal(err)
+			}
+			kytheRoot := findKytheRoot(filepath.Dir(absPath))
+			if kytheRoot != "" {
+				relPath, err = filepath.Rel(filepath.Join(kytheRoot, *root), absPath)
+				if err != nil {
+					log.Fatal(err)
+				}
+			}
+		}
+	}
 	partialFile := &spb.VName{
 		Signature: *signature,
 		Corpus:    *corpus,
 		Root:      *root,
-		Path:      *path,
+		Path:      relPath,
 		Language:  *language,
 	}
 	reply, err := idx.Search(&spb.SearchRequest{
@@ -191,4 +238,17 @@ func readDirtyBuffer() []byte {
 		log.Fatal("ERROR: could read dirty buffer at %q: %v", *dirtyBuffer, err)
 	}
 	return data
+}
+
+func findKytheRoot(dir string) string {
+	for {
+		if fi, err := os.Stat(filepath.Join(dir, ".kythe")); err == nil && fi.Mode().IsRegular() {
+			return dir
+		}
+		if dir == "/" {
+			break
+		}
+		dir = filepath.Dir(dir)
+	}
+	return ""
 }
