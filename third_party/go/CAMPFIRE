@@ -84,5 +84,12 @@
     "properties": {
       "go_package": "golang.org/x/oauth2/google"
     }
+  },
+  {
+    "name": "go_types",
+    "kind": "go_external_lib",
+    "properties": {
+      "go_package": "golang.org/x/tools/go/types"
+    }
   }
 ]

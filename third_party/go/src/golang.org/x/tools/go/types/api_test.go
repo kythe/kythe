@@ -10,12 +10,26 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"runtime"
 	"strings"
 	"testing"
 
 	_ "golang.org/x/tools/go/gcimporter"
 	. "golang.org/x/tools/go/types"
 )
+
+// skipSpecialPlatforms causes the test to be skipped for platforms where
+// builders (build.golang.org) don't have access to compiled packages for
+// import.
+func skipSpecialPlatforms(t *testing.T) {
+	switch platform := runtime.GOOS + "-" + runtime.GOARCH; platform {
+	case "nacl-amd64p32",
+		"nacl-386",
+		"darwin-arm",
+		"darwin-arm64":
+		t.Skipf("no compiled packages available for import on %s", platform)
+	}
+}
 
 func pkgFor(path, source string, info *Info) (*Package, error) {
 	fset := token.NewFileSet()
@@ -284,6 +298,8 @@ func predString(tv TypeAndValue) string {
 }
 
 func TestPredicatesInfo(t *testing.T) {
+	skipSpecialPlatforms(t)
+
 	var tests = []struct {
 		src  string
 		expr string
@@ -368,6 +384,8 @@ func TestPredicatesInfo(t *testing.T) {
 }
 
 func TestScopesInfo(t *testing.T) {
+	skipSpecialPlatforms(t)
+
 	var tests = []struct {
 		src    string
 		scopes []string // list of scope descriptors of the form kind:varlist
@@ -813,10 +831,10 @@ func main() {
 			got := sig.Recv().Type()
 			want := sel.Recv()
 			if !Identical(got, want) {
-				t.Errorf("%s: Recv() = %s, want %s", got, want)
+				t.Errorf("%s: Recv() = %s, want %s", syntax, got, want)
 			}
 		} else if sig != nil && sig.Recv() != nil {
-			t.Error("%s: signature has receiver %s", sig, sig.Recv().Type())
+			t.Errorf("%s: signature has receiver %s", sig, sig.Recv().Type())
 		}
 	}
 	// Assert that all wantOut entries were used exactly once.

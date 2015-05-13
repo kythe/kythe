@@ -20,7 +20,7 @@
 // and checks for compliance with the language specification.
 // Use Info.Types[expr].Type for the results of type inference.
 //
-package types
+package types // import "golang.org/x/tools/go/types"
 
 import (
 	"bytes"
@@ -113,6 +113,10 @@ type Config struct {
 	// If Sizes != nil, it provides the sizing functions for package unsafe.
 	// Otherwise &StdSizes{WordSize: 8, MaxAlign: 8} is used instead.
 	Sizes Sizes
+
+	// If DisableUnusedImportCheck is set, packages are not checked
+	// for unused imports.
+	DisableUnusedImportCheck bool
 }
 
 // DefaultImport is the default importer invoked if Config.Import == nil.

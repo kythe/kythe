@@ -47,7 +47,6 @@ func (check *Checker) builtin(x *operand, call *ast.CallExpr, id builtinId) (_ b
 		// make argument getter
 		arg, nargs, _ = unpack(func(x *operand, i int) { check.expr(x, call.Args[i]) }, nargs, false)
 		if arg == nil {
-			x.mode = invalid
 			return
 		}
 		// evaluate first argument, if present
@@ -608,14 +607,15 @@ func implicitArrayDeref(typ Type) Type {
 	return typ
 }
 
-// unparen removes any parentheses surrounding an expression and returns
-// the naked expression.
-//
-func unparen(x ast.Expr) ast.Expr {
-	if p, ok := x.(*ast.ParenExpr); ok {
-		return unparen(p.X)
+// unparen returns e with any enclosing parentheses stripped.
+func unparen(e ast.Expr) ast.Expr {
+	for {
+		p, ok := e.(*ast.ParenExpr)
+		if !ok {
+			return e
+		}
+		e = p.X
 	}
-	return x
 }
 
 func (check *Checker) complexArg(x *operand) bool {
