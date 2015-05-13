@@ -5,7 +5,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_package(
     test_deps = [
         "//kythe/go/services/graphstore/compare",
-        "//kythe/proto:storage_proto",
+        "//kythe/proto:storage_proto_go",
     ],
     deps = [
         "//kythe/go/services/graphstore",
@@ -13,8 +13,8 @@ go_package(
         "//kythe/go/util/kytheuri",
         "//kythe/go/util/schema",
         "//kythe/go/util/stringset",
-        "//kythe/proto:storage_proto",
-        "//kythe/proto:xref_proto",
+        "//kythe/proto:storage_proto_go",
+        "//kythe/proto:xref_proto_go",
         "//third_party/go:go-sqlite3",
     ],
 )

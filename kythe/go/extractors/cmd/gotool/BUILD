@@ -10,7 +10,7 @@ go_binary(
     deps = [
         "//kythe/go/extractors/golang",
         "//kythe/go/platform/indexpack",
-        "//kythe/proto:analysis_proto",
+        "//kythe/proto:analysis_proto_go",
         "//third_party/go:context",
     ],
 )

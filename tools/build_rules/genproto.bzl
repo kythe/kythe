@@ -1,144 +1,119 @@
-jar_filetype = FileType([".jar"])
+load("go", "go_library")
 
-def java_compile_command(ctx, classdir, classpath, output):
-  java = ctx.file._java.path
-  langtools = ctx.file._java_langtools.path
-  javabuilder = ctx.file._javabuilder.path
-  return ("%s -Xbootclasspath/p:%s -jar %s " % (java, langtools, javabuilder) +
-          "--classdir %s --classpath %s " % (classdir, classpath) +
-          "--output %s " % (output) +
-          "--javacopts -encoding utf-8 -source 1.8 -target 1.8 --compress_jar --sources ${JAVA_FILES}")
+def proto_package_impl(ctx):
+  return struct(proto_src = ctx.file.src)
 
-def genproto_impl(ctx):
+genproto_base_attrs = {
+    "src": attr.label(
+        allow_files = FileType([".proto"]),
+        single_file = True,
+    ),
+    "deps": attr.label_list(
+        allow_files = False,
+        providers = ["proto_src"],
+    ),
+    "has_services": attr.bool(),
+}
+
+proto_package = rule(
+    proto_package_impl,
+    attrs = genproto_base_attrs,
+)
+
+def genproto_java_impl(ctx):
   src = ctx.file.src
   protoc = ctx.file._protoc
 
-  compile_time_jars = set([ctx.file._protoc_gen_java], order="link")
-  runtime_jars = set([ctx.file._protoc_gen_java], order="link")
-  for dep in ctx.targets.deps:
-    compile_time_jars += dep.compile_time_jars
-    runtime_jars += dep.runtime_jars
-  jdk_bin = "external/local-jdk/bin/"
-  jar_out = ctx.outputs.java
-  java_srcs = jar_out.path + ".srcs"
-  java_classes = jar_out.path + ".classes"
+  srcjar = ctx.new_file(ctx.configuration.genfiles_dir, ctx.label.name + ".srcjar")
+  java_srcs = srcjar.path + ".srcs"
 
   java_grpc_cmd = ""
   if ctx.attr.has_services:
     java_grpc_plugin = ctx.file._protoc_grpc_plugin_java
-    compile_time_jars += ctx.files._proto_grpc_java_libs
-    runtime_jars += ctx.files._proto_grpc_java_libs
     java_grpc_cmd = (
         protoc.path + " --java_rpc_out=" + java_srcs +
-        " --plugin=protoc-gen-java_rpc=" + java_grpc_plugin.path + " " + src.path + "\n")
+        " --plugin=protoc-gen-java_rpc=" + java_grpc_plugin.path + " " + src.path)
 
   java_cmd = '\n'.join([
       "set -e",
-      "rm -rf " + java_srcs + " " + java_classes,
-      "mkdir " + java_srcs + " " + java_classes,
+      "rm -rf " + java_srcs,
+      "mkdir " + java_srcs,
       protoc.path + " --java_out=" + java_srcs + " " + src.path,
       java_grpc_cmd,
-      "JAVA_FILES=$(find " + java_srcs + " -name '*.java')",
-      java_compile_command(ctx, java_classes, cmd_helper.join_paths(":", compile_time_jars), jar_out.path)])
+      "jar cMf " + srcjar.path + " -C " + java_srcs + " .",
+      "rm -rf " + java_srcs,
+  ])
   ctx.action(
-      inputs = [src, protoc] + list(compile_time_jars),
-      outputs = [jar_out],
+      inputs = [src, protoc],
+      outputs = [srcjar],
       mnemonic = 'ProtocJava',
       command = java_cmd,
       use_default_shell_env = True)
 
-  gotool = ctx.file._go
-  go_archive = ctx.outputs.go
-  go_srcs = go_archive.path + ".go.srcs"
-  protoc_gen_go = ctx.file._protoc_gen_go
-  go_pkg = ctx.attr.go_package_prefix + ctx.label.package + "/" + ctx.label.name
+  return struct(files = set([srcjar]))
 
-  go_libs = ctx.targets.deps + ctx.targets._proto_go_libs
-  if ctx.attr.has_services:
-    go_libs += ctx.targets._proto_grpc_go_libs
-
-  go_include_paths = ""
-  go_deps = []
-  go_recursive_deps = set()
-  for dep in go_libs:
-    go_include_paths += " -I \"" + dep.go_archive.path + "_gopath\""
-    go_deps += [dep.go_archive]
-    go_recursive_deps += dep.go_recursive_deps
-  go_recursive_deps += go_deps
-
-  go_symlink = ctx.new_file(ctx.configuration.bin_dir, ctx.label.name + ".a_gopath/" + go_pkg + ".a")
-  go_symlink_content = ctx.label.name + ".a"
-  for component in go_pkg.split("/"):
-    go_symlink_content = "../" + go_symlink_content
-
-  go_proto_import_path = ""
-  for dep in ctx.targets.deps:
-    go_proto_import_path += ",M" + dep.proto_src.path + "=" + ctx.attr.go_package_prefix + dep.label.package + "/" + dep.label.name
-
-  go_cmd = (
-      "set -e;" +
-      "rm -rf " + go_srcs + ";" +
-      "mkdir -p " + go_srcs + ";" +
-      protoc.path + " --plugin=" + protoc_gen_go.path + " --go_out=plugins=grpc,import_path=" +
-      go_pkg + go_proto_import_path + ":" + go_srcs + " " + src.path + ";" +
-      "find " + go_srcs + " -type f -name '*.go' -exec mv -f {} " + go_srcs + " ';';" +
-      gotool.path + " tool 6g -p " + go_pkg + " -complete -pack -o " + go_archive.path + " " +
-      go_include_paths + " $(ls -1 " + go_srcs + "/*.go) ;" +
-      "ln -sf " + go_symlink_content + " " + go_symlink.path + ";")
-  ctx.action(
-      inputs = [src, protoc, protoc_gen_go, gotool] + go_deps,
-      outputs = [go_archive, go_symlink],
-      mnemonic = 'ProtocGo',
-      command = go_cmd,
-      use_default_shell_env = True)
-
-  return struct(proto_src = src,
-                go_archive = go_archive,
-                go_recursive_deps = go_recursive_deps,
-                compile_time_jars = set([jar_out]) + compile_time_jars,
-                runtime_jars = set([jar_out], order="link") + runtime_jars,
-                # Provide "files" as a hack to get proper runtime_deps for java_binary rules
-                files = set([jar_out, go_archive]) + compile_time_jars + go_recursive_deps)
-
-# genproto name is required for interop w/ native Bazel rules
-genproto = rule(
-    genproto_impl,
-    attrs = {
-        "src": attr.label(
-            allow_files = FileType([".proto"]),
-            single_file = True,
-        ),
-        "deps": attr.label_list(
-            allow_files = False,
-            providers = ["proto_src"],
-        ),
-        "has_services": attr.int(),
-        # TODO(schroederc): put package prefix into common configuration file
-        "go_package_prefix": attr.string(default = "kythe.io/"),
+genproto_java = rule(
+    genproto_java_impl,
+    attrs = genproto_base_attrs + {
         "_protoc": attr.label(
             default = Label("//third_party/proto:protoc"),
             allow_files = True,
             single_file = True,
         ),
-        "_javabuilder": attr.label(
-            default = Label("//tools/defaults:javabuilder"),
-            single_file = True,
-        ),
-        "_java_langtools": attr.label(
-            default = Label("//tools/defaults:java_langtools"),
-            single_file = True,
-        ),
-        "_java": attr.label(
-            default = Label("//tools/jdk:java"),
-            single_file = True,
-        ),
-        "_protoc_gen_java": attr.label(
-            default = Label("//third_party/proto:protobuf_java"),
-            single_file = True,
-            allow_files = jar_filetype,
-        ),
         "_protoc_grpc_plugin_java": attr.label(
             default = Label("//third_party/grpc-java:plugin"),
+            single_file = True,
+        ),
+    },
+)
+
+def genproto_go_impl(ctx):
+  src = ctx.file.src
+  protoc = ctx.file._protoc
+
+  srcname = ctx.label.name
+  if srcname.endswith("_go_src"):
+    srcname = srcname[:-7]
+
+  go_src = ctx.new_file(ctx.configuration.genfiles_dir, srcname + ".pb.go")
+  outdir = go_src.path + ".dir"
+  protoc_gen_go = ctx.file._protoc_gen_go
+  go_pkg = ctx.attr.go_package_prefix + ctx.label.package + "/" + ctx.label.name
+  proto_src_deps = []
+
+  go_proto_import_path = ""
+  for dep in ctx.targets.deps:
+    proto_src_deps += [dep.proto_src]
+    go_proto_import_path += ",M" + dep.proto_src.path + "=" + ctx.attr.go_package_prefix + dep.label.package + "/" + dep.label.name
+
+  grpc = ""
+  if ctx.attr.has_services:
+    grpc = "plugins=grpc,"
+
+  go_cmd = "\n".join([
+      "set -e",
+      "rm -rf " + outdir,
+      "mkdir -p " + outdir,
+      protoc.path + " --plugin=" + protoc_gen_go.path + " --go_out="+grpc+"import_path=" +
+      go_pkg + go_proto_import_path + ":" + outdir + " " + src.path,
+      "find " + outdir + " -type f -name '*.go' -exec mv -f {} " + go_src.path + " ';'",
+      "rm -rf " + outdir,
+  ])
+  ctx.action(
+      inputs = [src, protoc, protoc_gen_go] + proto_src_deps,
+      outputs = [go_src],
+      mnemonic = 'ProtocGo',
+      command = go_cmd,
+      use_default_shell_env = True)
+
+  return struct(files = set([go_src]))
+
+genproto_go = rule(
+    genproto_go_impl,
+    attrs = genproto_base_attrs + {
+        "_protoc": attr.label(
+            default = Label("//third_party/proto:protoc"),
+            allow_files = True,
             single_file = True,
         ),
         "_protoc_gen_go": attr.label(
@@ -146,73 +121,100 @@ genproto = rule(
             single_file = True,
             allow_files = True,
         ),
-        "_proto_go_libs": attr.label_list(
-            default = [Label("//third_party/go:protobuf")],
-            allow_files = False,
-            providers = ["go_archive"],
-        ),
-        "_proto_grpc_go_libs": attr.label_list(
-            default = [
-                Label("//third_party/go:context"),
-                Label("//third_party/go:grpc"),
-            ],
-            allow_files = False,
-            providers = ["go_archive"],
-        ),
-        "_proto_grpc_java_libs": attr.label_list(
-            default = [
-                Label("//third_party/grpc-java"),
-                Label("//third_party/guava"),
-                Label("//third_party/jsr305_annotations:jsr305"),
-            ],
-            allow_files = jar_filetype,
-        ),
-        "_go": attr.label(
-            default = Label("//tools/go"),
-            allow_files = True,
-            single_file = True,
-        ),
-    },
-    outputs = {
-        "java": "lib%{name}.jar",
-        "go": "%{name}.a",
+        # TODO(schroederc): put package prefix into common configuration file
+        "go_package_prefix": attr.string(default = "kythe.io/"),
     },
 )
 
-def genproto_all(name, src, visibility=None, deps = [], has_services = None, go_package_prefix = None):
-  genproto(name = name, src = src, visibility=visibility, deps = deps, has_services = has_services, go_package_prefix = go_package_prefix)
-  # We'll guess that the repository is set up such that a .proto in
-  # //foo/bar has the package foo.bar. `location` is substituted with the
-  # relative path to its label from the workspace root.
-  if len(name) < 6 or name[-6:] != "_proto":
-    fail("genproto names should end in _proto, saw %s" % name, "name")
-  proto_path = "$(location %s)" % src
-  proto_hdr = src[0:-6] + ".pb.h"
-  proto_src = src[0:-6] + ".pb.cc"
-  proto_srcgen_rule = name + "_cc_protoc"
-  proto_lib = name + "_cc"
-  protoc = "//third_party/proto:protoc"
-  proto_cmd = "$(location %s) --cpp_out=$(GENDIR)/ %s" % (protoc, src)
-  cc_deps = ["//third_party/proto:protobuf"]
-  proto_deps = [src, protoc]
-  for dep in deps:
-    if len(dep) > 6 and dep[-6:] == "_proto":
+def proto_library(name, src=None, deps=[], visibility=None,
+                  has_services=0,
+                  gen_java=False, gen_go=False, gen_cc=False,
+                  go_package=None):
+  if not src:
+    if name.endswith("_proto"):
+      src = name[:-6]+".proto"
+    else:
+      src = name+".proto"
+  proto_package(name=name, src=src, deps=deps)
+
+  if gen_java:
+    genproto_java(
+        name = name+"_java_src",
+        src = src,
+        deps = deps,
+        has_services = has_services,
+        visibility = ["//visibility:private"],
+    )
+    java_deps = ["//third_party/proto:protobuf_java"]
+    if has_services:
+      java_deps += [
+          "//third_party/grpc-java",
+          "//third_party/guava",
+          "//third_party/jsr305_annotations:jsr305",
+      ]
+    for dep in deps:
+      java_deps += [dep+"_java"]
+    native.java_library(
+        name  = name+"_java",
+        srcs = [name+"_java_src"],
+        deps = java_deps,
+        visibility = visibility,
+    )
+
+  if gen_go:
+    genproto_go(
+        name = name+"_go_src",
+        src = src,
+        deps = deps,
+        has_services = has_services,
+        visibility = ["//visibility:private"],
+    )
+    go_deps = ["//third_party/go:protobuf"]
+    if has_services:
+      go_deps += [
+        "//third_party/go:context",
+        "//third_party/go:grpc",
+      ]
+    for dep in deps:
+      go_deps += [dep+"_go"]
+    if not go_package:
+      go_package = "kythe.io/" + PACKAGE_NAME + "/" + name
+    go_library(
+        name  = name+"_go",
+        srcs = [name+"_go_src"],
+        deps = go_deps,
+        package = go_package,
+        visibility = visibility,
+    )
+
+  if gen_cc:
+    # We'll guess that the repository is set up such that a .proto in
+    # //foo/bar has the package foo.bar. `location` is substituted with the
+    # relative path to its label from the workspace root.
+    proto_path = "$(location %s)" % src
+    proto_hdr = src[:-6] + ".pb.h"
+    proto_src = src[:-6] + ".pb.cc"
+    proto_srcgen_rule = name + "_cc_src"
+    proto_lib = name + "_cc"
+    protoc = "//third_party/proto:protoc"
+    proto_cmd = "$(location %s) --cpp_out=$(GENDIR)/ %s" % (protoc, src)
+    cc_deps = ["//third_party/proto:protobuf"]
+    proto_deps = [src, protoc]
+    for dep in deps:
       cc_deps += [dep + "_cc"]
       proto_deps += [dep]
-    else:
-      cc_deps += [dep]
-  native.genrule(
-    name = proto_srcgen_rule,
-    visibility = visibility,
-    outs = [proto_hdr, proto_src],
-    srcs = proto_deps,
-    cmd = proto_cmd
-  )
-  native.cc_library(
-    name = proto_lib,
-    visibility = visibility,
-    hdrs = [proto_hdr],
-    srcs = [":" + proto_srcgen_rule],
-    defines = ["GOOGLE_PROTOBUF_NO_RTTI"],
-    deps = cc_deps
-  )
+    native.genrule(
+        name = proto_srcgen_rule,
+        visibility = visibility,
+        outs = [proto_hdr, proto_src],
+        srcs = proto_deps,
+        cmd = proto_cmd,
+    )
+    native.cc_library(
+        name = proto_lib,
+        visibility = visibility,
+        hdrs = [proto_hdr],
+        srcs = [":" + proto_srcgen_rule],
+        defines = ["GOOGLE_PROTOBUF_NO_RTTI"],
+        deps = cc_deps,
+    )

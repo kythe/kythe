@@ -16,8 +16,8 @@ go_package(
         "//kythe/go/storage/table",
         "//kythe/go/util/kytheuri",
         "//kythe/go/util/schema",
-        "//kythe/proto:serving_proto",
-        "//kythe/proto:storage_proto",
-        "//kythe/proto:xref_proto",
+        "//kythe/proto:serving_proto_go",
+        "//kythe/proto:storage_proto_go",
+        "//kythe/proto:xref_proto_go",
     ],
 )

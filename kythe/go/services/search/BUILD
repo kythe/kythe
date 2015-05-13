@@ -5,7 +5,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_package(
     deps = [
         "//kythe/go/services/web",
-        "//kythe/proto:storage_proto",
+        "//kythe/proto:storage_proto_go",
         "//third_party/go:context",
     ],
 )

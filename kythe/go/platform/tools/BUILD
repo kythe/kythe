@@ -11,7 +11,7 @@ go_binary(
         "//kythe/go/platform/delimited",
         "//kythe/go/services/graphstore/compare",
         "//kythe/go/storage/stream",
-        "//kythe/proto:storage_proto",
+        "//kythe/proto:storage_proto_go",
         "//third_party/go:protobuf",
     ],
 )
@@ -26,8 +26,8 @@ go_binary(
         "//kythe/go/services/xrefs",
         "//kythe/go/util/schema",
         "//kythe/go/util/stringset",
-        "//kythe/proto:storage_proto",
-        "//kythe/proto:xref_proto",
+        "//kythe/proto:storage_proto_go",
+        "//kythe/proto:xref_proto_go",
     ],
 )
 
@@ -61,7 +61,7 @@ go_binary(
         "//kythe/go/platform/indexpack/google",
         "//kythe/go/platform/kindex",
         "//kythe/go/util/oauth2",
-        "//kythe/proto:analysis_proto",
+        "//kythe/proto:analysis_proto_go",
         "//third_party/go:cloud_storage",
         "//third_party/go:context",
     ],

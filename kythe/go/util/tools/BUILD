@@ -22,7 +22,7 @@ go_binary(
     name = "print_extra_action",
     srcs = ["print_extra_action/print_extra_action.go"],
     deps = [
-        "//third_party/bazel:extra_actions_base_proto",
+        "//third_party/bazel:extra_actions_base_proto_go",
         "//third_party/go:protobuf",
     ],
 )
@@ -31,7 +31,7 @@ go_binary(
     name = "print_test_status",
     srcs = ["print_test_status/print_test_status.go"],
     deps = [
-        "//third_party/bazel:test_status_proto",
+        "//third_party/bazel:test_status_proto_go",
         "//third_party/go:protobuf",
     ],
 )

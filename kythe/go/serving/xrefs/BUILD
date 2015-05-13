@@ -7,8 +7,8 @@ go_package(
         "//kythe/go/services/xrefs",
         "//kythe/go/storage/table",
         "//kythe/go/util/stringset",
-        "//kythe/proto:serving_proto",
-        "//kythe/proto:xref_proto",
+        "//kythe/proto:serving_proto_go",
+        "//kythe/proto:xref_proto_go",
         "//third_party/go:protobuf",
     ],
 )

@@ -7,13 +7,13 @@ go_package(
         "//kythe/go/storage/leveldb",
         "//kythe/go/storage/table",
         "//kythe/go/util/kytheuri",
-        "//kythe/proto:serving_proto",
-        "//kythe/proto:storage_proto",
+        "//kythe/proto:serving_proto_go",
+        "//kythe/proto:storage_proto_go",
     ],
     deps = [
         "//kythe/go/storage/table",
         "//kythe/go/util/kytheuri",
-        "//kythe/proto:serving_proto",
-        "//kythe/proto:storage_proto",
+        "//kythe/proto:serving_proto_go",
+        "//kythe/proto:storage_proto_go",
     ],
 )

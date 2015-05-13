@@ -11,7 +11,7 @@ go_binary(
         "//kythe/go/services/graphstore",
         "//kythe/go/storage/gsutil",
         "//kythe/go/storage/stream",
-        "//kythe/proto:storage_proto",
+        "//kythe/proto:storage_proto_go",
     ],
 )
 
@@ -24,7 +24,7 @@ go_binary(
         "//kythe/go/platform/delimited",
         "//kythe/go/services/graphstore",
         "//kythe/go/storage/gsutil",
-        "//kythe/proto:storage_proto",
+        "//kythe/proto:storage_proto_go",
     ],
 )
 
@@ -40,7 +40,7 @@ go_binary(
         "//kythe/go/util/encoding/rdf",
         "//kythe/go/util/kytheuri",
         "//kythe/go/util/schema",
-        "//kythe/proto:storage_proto",
+        "//kythe/proto:storage_proto_go",
     ],
 )
 
@@ -52,6 +52,6 @@ go_binary(
     deps = [
         "//kythe/go/platform/delimited",
         "//kythe/go/storage/vnameutil",
-        "//kythe/proto:storage_proto",
+        "//kythe/proto:storage_proto_go",
     ],
 )

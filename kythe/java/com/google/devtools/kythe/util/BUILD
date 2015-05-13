@@ -8,7 +8,7 @@ java_library(
         "Span.java",
     ],
     deps = [
-        "//kythe/proto:storage_proto",
+        "//kythe/proto:storage_proto_java",
         "//third_party/guava",
         "//third_party/proto:protobuf_java",
     ],

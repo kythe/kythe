@@ -1,26 +1,32 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
-load("/tools/build_rules/genproto", "genproto_all")
+load("/tools/build_rules/genproto", "proto_library")
 
-genproto_all(
+proto_library(
     name = "any_proto",
-    src = "any.proto",
+    gen_cc = 1,
+    gen_go = 1,
+    gen_java = 1,
 )
 
-genproto_all(
+proto_library(
     name = "storage_proto",
-    src = "storage.proto",
     has_services = 1,
+    gen_cc = 1,
+    gen_go = 1,
+    gen_java = 1,
     visibility = [
         "//kythe:default_visibility",
         "//third_party/llvm/src:__pkg__",
     ],
 )
 
-genproto_all(
+proto_library(
     name = "analysis_proto",
-    src = "analysis.proto",
     has_services = 1,
+    gen_cc = 1,
+    gen_go = 1,
+    gen_java = 1,
     visibility = [
         "//kythe:default_visibility",
         "//third_party/llvm/src:__pkg__",
@@ -31,33 +37,32 @@ genproto_all(
     ],
 )
 
-genproto_all(
+proto_library(
     name = "cxx_proto",
-    src = "cxx.proto",
+    gen_cc = 1,
 )
 
-genproto_all(
+proto_library(
     name = "claim_proto",
-    src = "claim.proto",
-    deps = [
-        ":storage_proto",
-    ],
+    gen_cc = 1,
+    deps = [":storage_proto"],
 )
 
-genproto_all(
+proto_library(
     name = "xref_proto",
-    src = "xref.proto",
     has_services = 1,
+    gen_cc = 1,
+    gen_go = 1,
 )
 
-genproto_all(
+proto_library(
     name = "serving_proto",
-    src = "serving.proto",
     has_services = 1,
+    gen_go = 1,
 )
 
-genproto_all(
+proto_library(
     name = "filetree_proto",
-    src = "filetree.proto",
     has_services = 1,
+    gen_go = 1,
 )

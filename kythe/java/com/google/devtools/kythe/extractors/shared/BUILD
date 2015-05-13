@@ -11,8 +11,8 @@ java_library(
     ],
     deps = [
         "//kythe/java/com/google/devtools/kythe/common",
-        "//kythe/proto:analysis_proto",
-        "//kythe/proto:storage_proto",
+        "//kythe/proto:analysis_proto_java",
+        "//kythe/proto:storage_proto_java",
         "//third_party/guava",
         "//third_party/proto:protobuf_java",
     ],
@@ -24,7 +24,7 @@ java_library(
         "FileVNames.java",
     ],
     deps = [
-        "//kythe/proto:storage_proto",
+        "//kythe/proto:storage_proto_java",
         "//third_party/gson",
         "//third_party/guava",
         "//third_party/proto:protobuf_java",

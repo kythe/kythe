@@ -8,7 +8,7 @@ go_package(
     ],
     deps = [
         "//kythe/go/services/web",
-        "//kythe/proto:xref_proto",
+        "//kythe/proto:xref_proto_go",
         "//third_party/go:context",
     ],
 )

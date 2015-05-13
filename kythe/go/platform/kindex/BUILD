@@ -4,14 +4,14 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 go_package(
     test_deps = [
-        "//kythe/proto:analysis_proto",
-        "//kythe/proto:storage_proto",
+        "//kythe/proto:analysis_proto_go",
+        "//kythe/proto:storage_proto_go",
         "//third_party/go:protobuf",
     ],
     deps = [
         "//kythe/go/platform/analysis",
         "//kythe/go/platform/delimited",
-        "//kythe/proto:analysis_proto",
+        "//kythe/proto:analysis_proto_go",
         "//third_party/go:protobuf",
     ],
 )
