@@ -26,6 +26,7 @@ genrule(
     name = "release",
     srcs = [
         ":javac_extractor",
+        ":javac_wrapper",
         ":cxx_extractor",
         ":java_indexer",
         ":cxx_indexer",
@@ -46,6 +47,7 @@ genrule(
         "--cp $(location java_indexer) indexers/java_indexer.jar",
         "--cp $(location cxx_indexer) indexers/cxx_indexer",
         "--cp $(location javac_extractor) extractors/javac_extractor.jar",
+        "--cp $(location javac_wrapper) extractors/javac-wrapper.sh",
         "--cp $(location cxx_extractor) extractors/cxx_extractor",
         "--path tools/ $(locations tools)",
         "--relpaths kythe/web/ui/resources/public",
@@ -60,6 +62,11 @@ genrule(
 filegroup(
     name = "javac_extractor",
     srcs = ["//kythe/java/com/google/devtools/kythe/extractors/java/standalone:javac_extractor_deploy.jar"],
+)
+
+filegroup(
+    name = "javac_wrapper",
+    srcs = ["//kythe/java/com/google/devtools/kythe/extractors/java/standalone:javac-wrapper.sh"],
 )
 
 filegroup(

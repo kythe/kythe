@@ -14,16 +14,39 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-readonly JAR="/opt/javac_extractor_deploy.jar"
-readonly BIN="$(dirname "$(readlink -e "$0")")"
+# Wrapper for extracting compilation information from javac invocations.  It
+# requires the same environment variables as the javac extractor (see
+# AbstractJavacWrapper.java).  In particular, it needs KYTHE_ROOT_DIRECTORY and
+# KYTHE_OUTPUT_DIRECTORY set to understand where the root of the compiled source
+# repository is and where to put the resulting .kindex files, respectively.
+#
+# This script is meant as a replacement for $JAVA_HOME/bin/javac.  It assumes
+# the true javac binary is in the same directory as itself and named
+# "javac.real".  The default path for the javac extractor jar is
+# /opt/kythe/javac_extractor.jar but can be set with the JAVAC_EXTRACTOR_JAR
+# environment variable.
+#
+# If used in a Docker environment where KYTHE_ROOT_DIRECTORY and
+# KYTHE_OUTPUT_DIRECTORY are volumes, it can be useful to set the DOCKER_CLEANUP
+# environment variable so that files modified/created in either volume have
+# their owner/group set to the volume's root directory's owner/group.
 
+readonly BIN="$(dirname "$(readlink -e "$0")")"
+if [[ -z "$JAVAC_EXTRACTOR_JAR" ]]; then
+  readonly JAVAC_EXTRACTOR_JAR="/opt/kythe/javac_extractor.jar"
+fi
+
+fix_permissions() {
+  local dir="${1:?missing path}"
+  chown -R $(stat "$dir" -c %u:%g) "$dir"
+}
 cleanup() {
   fix_permissions "$KYTHE_ROOT_DIRECTORY"
   fix_permissions "$KYTHE_OUTPUT_DIRECTORY"
 }
-if [[ -z "$NO_CLEANUP" ]]; then
+if [[ -n "$DOCKER_CLEANUP" ]]; then
   trap cleanup EXIT ERR INT
 fi
 
-"$BIN/java" -jar "$JAR" "$@"
+"$BIN/java" -jar "$JAVAC_EXTRACTOR_JAR" "$@"
 "$BIN/javac.real" "$@"
