@@ -1,4 +1,4 @@
-def asciidoc(name, src, attrs={}, confs=[], partial=False, data=[], tools=[]):
+def asciidoc(name, src, attrs={}, confs=[], partial=False, data=[], tools=[], tags=None):
   args = ['--backend', 'html']
   for k, v in attrs:
     a = '--attribute=' + k
@@ -16,6 +16,7 @@ def asciidoc(name, src, attrs={}, confs=[], partial=False, data=[], tools=[]):
     name = name,
     srcs = [src] + data + confs,
     outs = [out],
+    tags = tags,
     tools = tools,
     output_to_bindir = 1,
     cmd = '\n'.join([

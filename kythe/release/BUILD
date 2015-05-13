@@ -53,6 +53,7 @@ genrule(
         "--relpaths 'third_party' --path 'third_party' $(locations //third_party:licenses)",
     ]),
     heuristic_label_expansion = False,
+    tags = ["manual"],
     tools = ["package_release.sh"],
 )
 

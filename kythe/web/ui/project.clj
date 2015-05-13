@@ -4,8 +4,8 @@
   :mailing-list {:name "Kythe Community"
                  :archive "https://groups.google.com/group/kythe"
                  :post "https://groups.google.com/group/kythe/post"
-                 :subscribe "http://groups.google.com/group/kythe-early-interest/boxsubscribe"
-                 :unsubscribe "http://groups.google.com/group/kythe-early-interest/boxsubscribe"}
+                 :subscribe "http://groups.google.com/group/kythe/boxsubscribe"
+                 :unsubscribe "http://groups.google.com/group/kythe/boxsubscribe"}
   :dependencies [[org.clojure/clojure "1.6.0"]
                  [org.clojure/clojurescript "0.0-2371"
                   :exclusions [org.apache.ant/ant]]

@@ -3,6 +3,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 filegroup(
     name = "ui",
     srcs = [":prod-js"] + glob(["resources/public/**"]),
+    tags = ["manual"],
 )
 
 genrule(
