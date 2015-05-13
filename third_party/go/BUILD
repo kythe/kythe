@@ -219,7 +219,6 @@ go_library(
         "src/google.golang.org/grpc/clientconn.go",
         "src/google.golang.org/grpc/doc.go",
         "src/google.golang.org/grpc/rpc_util.go",
-        "src/google.golang.org/grpc/rpc_util_test.go",
         "src/google.golang.org/grpc/server.go",
         "src/google.golang.org/grpc/stream.go",
     ],
