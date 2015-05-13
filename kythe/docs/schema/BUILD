@@ -15,6 +15,7 @@ asciidoc(
         "java-schema-file-data-template.FileData",
         "java-schema-unit-template.CompilationUnit",
     ],
+    tags = ["manual"],
     tools = [
         "//kythe/cxx/indexer/cxx:indexer",
         "//kythe/cxx/tools:kindex_tool",
