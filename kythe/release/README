@@ -1,0 +1,43 @@
+*WARNING:* Kythe is alpha.  Use at your own risk.
+
+Kythe is a pluggable, (mostly) language-agnostic ecosystem for building tools
+that work with code.  This release contains the core set of indexers,
+extractors, and tools directly supported by the Kythe team.
+
+*License:* Apache Licence, Version 2.0
+
+* Contents
+ - indexers
+   - cxx_indexer
+   - java_indexer.jar
+ - extractors
+   - cxx_extractor
+   - javac-wrapper.sh
+   - javac_extractor.jar
+ - tools
+   - dedup_stream
+   - directory_indexer
+   - entrystream
+   - http_server
+   - indexpack
+   - kwazthis
+   - kythe
+   - read_entries
+   - triples
+   - viewindex
+   - write_entries
+   - write_tables
+
+* Dependencies
+ - Java JDK >=7
+ - leveldb
+ - snappy
+ - libncurses
+ - libuuid
+
+** Debian Jessie Install
+`apt-get install openjdk-j-jdk libncurses5 libssl1.0.0 libsnappy1 libleveldb1`
+
+* Usage
+
+TODO(schroederc)

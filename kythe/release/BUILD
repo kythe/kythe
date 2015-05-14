@@ -32,7 +32,7 @@ genrule(
         ":java_indexer",
         ":cxx_indexer",
         ":tools",
-        "//:LICENSE",
+        ":misc",
         "//kythe/web/ui",
         "//third_party:licenses",
     ],
@@ -44,7 +44,7 @@ genrule(
         "export GENDIR=$(GENDIR);",
         "export BINDIR=$(BINDIR);",
         "$(location package_release.sh) $(location kythe-" + release_version + ".tar.gz)",
-        "$(location //:LICENSE)",
+        "$(locations misc)",
         "--cp $(location java_indexer) indexers/java_indexer.jar",
         "--cp $(location cxx_indexer) indexers/cxx_indexer",
         "--cp $(location javac_extractor) extractors/javac_extractor.jar",
@@ -58,6 +58,14 @@ genrule(
     heuristic_label_expansion = False,
     tags = ["manual"],
     tools = ["package_release.sh"],
+)
+
+filegroup(
+    name = "misc",
+    srcs = [
+        ":README",
+        "//:LICENSE",
+    ],
 )
 
 filegroup(
@@ -82,7 +90,7 @@ filegroup(
 
 filegroup(
     name = "cxx_indexer",
-    srcs = ["//kythe/java/com/google/devtools/kythe/analyzers/java:indexer_deploy.jar"],
+    srcs = ["//kythe/cxx/indexer/cxx:indexer"],
 )
 
 filegroup(
