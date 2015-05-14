@@ -33,5 +33,6 @@ docker_build(
         ":javac_extractor_deploy.jar",
     ],
     image_name = "gcr.io/kythe_repo/kythe-javac-extractor",
+    tags = ["manual"],
     use_cache = True,
 )

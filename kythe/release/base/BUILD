@@ -14,5 +14,6 @@ docker_build(
         "fix_permissions.sh",
     ],
     image_name = "google/kythe-base",
+    tags = ["manual"],
     use_cache = True,
 )

@@ -14,6 +14,7 @@ docker_build(
         "//kythe/java/com/google/devtools/kythe/extractors/java/standalone:javac_extractor_deploy.jar",
     ],
     image_name = "google/kythe",
+    tags = ["manual"],
     use_cache = True,
     deps = [
         "//kythe/release/base",
