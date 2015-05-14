@@ -2,6 +2,10 @@ URL: http://code.google.com/p/go-uuid
 License: New BSD License: http://opensource.org/licenses/BSD-3-Clause
 Local Modifications: Built using go install.
 
+URL: https://github.com/sergi/go-diff
+License: MIT: http://opensource.org/licenses/MIT
+Local Modifications: No modifications.
+
 URL: https://github.com/golang/protobuf
 License: New BSD License: http://opensource.org/licenses/BSD-3-Clause
 Local Modifications: No modifications.

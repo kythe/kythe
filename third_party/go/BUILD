@@ -16,12 +16,21 @@ filegroup(
     name = "licenses",
     srcs = glob(
         [
-            "**/LICENSE*",
+            "**/*LICENSE*",
             "**/COPYING*",
             "**/license*",
             "**/copying*",
         ],
     ),
+)
+
+go_library(
+    name = "go-diff",
+    srcs = [
+        "src/github.com/sergi/go-diff/diffmatchpatch/dmp.go",
+        "src/github.com/sergi/go-diff/diffmatchpatch/stack.go",
+    ],
+    package = "github.com/sergi/go-diff/diffmatchpatch",
 )
 
 go_library(
