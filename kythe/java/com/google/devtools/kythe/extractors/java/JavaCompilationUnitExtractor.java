@@ -509,6 +509,10 @@ public class JavaCompilationUnitExtractor {
     // We will initialize and run the Javac compiler to detect which dependencies
     // the current compilation has.
     JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+    if (compiler == null) {
+      // TODO(schroederc): provide link to further context
+      throw new IllegalStateException("Could not get system Java compiler; are you missing the JDK?");
+    }
 
     DiagnosticCollector<JavaFileObject> diagnosticsCollector =
         new DiagnosticCollector<JavaFileObject>();
