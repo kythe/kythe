@@ -14,3 +14,6 @@ Ran configure to generate:
   src/glog/stl_logging.h
   src/config.h
 Amended config.h to disable RTTI.
+Amended config.h to check for Linux before enabling <syscall.h>
+  and to define _XOPEN_SOURCE on Mach
+

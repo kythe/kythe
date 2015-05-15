@@ -85,5 +85,9 @@ if [[ -z "$1" || "$1" == "--build_only" ]]; then
     make -j8
     cd ..
   fi
-  ln -sfT "$vbuild_dir" build
+  if [[ $(uname) == 'Darwin' ]]; then
+    ln -sf "$vbuild_dir" build
+  else
+    ln -sfT "$vbuild_dir" build
+  fi
 fi

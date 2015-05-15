@@ -19,6 +19,22 @@
 
 cd "$(dirname "$0")"
 
+if [[ $(uname) == 'Darwin' ]]; then
+  LNOPTS="-sf"
+  realpath() {
+    python -c 'import os, sys; print os.path.realpath(sys.argv[2])' $@
+  }
+  readlink() {
+    if [[ -L "$2" ]]; then
+      python -c 'import os, sys; print os.readlink(sys.argv[2])' $@
+    else
+      echo $2
+    fi
+  }
+else
+  LNOPTS="-sTf"
+fi
+
 if [[ -z "$GO" ]]; then
   if ! GO="$(readlink -e "$(which go)")"; then
     echo 'ERROR: could not locate `go` binary on PATH' >&2
@@ -27,7 +43,7 @@ if [[ -z "$GO" ]]; then
 fi
 
 echo "Using go found at $GO" >&2
-ln -sTf "$GO" tools/go/go
+ln ${LNOPTS} "$GO" tools/go/go
 
 # This must be the same C++ compiler used to build the LLVM source.
 CLANG="$(realpath -s $(which clang))"
@@ -48,11 +64,15 @@ BUILTIN_INCLUDES=$(${CLANG} -E -x c++ - -v 2>&1 < /dev/null \
   | sed '/#include.*/d
 /End of search list./d' \
   | while read -r INCLUDE_PATH ; do
-  echo -n "  cxx_builtin_include_directory: \"$(realpath -s ${INCLUDE_PATH})\"\n"
-  echo -n "  cxx_builtin_include_directory: \"$(readlink -e ${INCLUDE_PATH})\"\n"
+  printf "%s" "  cxx_builtin_include_directory: \"$(realpath -s ${INCLUDE_PATH})\"__EOL__"
+if [[ $(uname) != 'Darwin' ]]; then
+  printf "%s" "  cxx_builtin_include_directory: \"$(readlink -e ${INCLUDE_PATH})\"__EOL__"
+fi
 done)
 
 sed "s|ADD_CXX_COMPILER|${CLANG}|g
 s|ADD_CXX_BUILTIN_INCLUDE_DIRECTORIES|${BUILTIN_INCLUDES}|g" \
-    tools/cpp/CROSSTOOL.in \
-    > tools/cpp/CROSSTOOL
+    tools/cpp/CROSSTOOL.in | \
+sed 's|__EOL__|\
+|g' > tools/cpp/CROSSTOOL
+

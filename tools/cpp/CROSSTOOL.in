@@ -62,7 +62,7 @@ toolchain {
   abi_version: "local"
   abi_libc_version: "local"
   builtin_sysroot: ""
-  compiler: "compiler"
+  compiler: "ADD_CXX_COMPILER"
   host_system_name: "local"
   needsPic: true
   target_libc: "macosx"
@@ -74,19 +74,22 @@ toolchain {
   tool_path { name: "compat-ld" path: "/usr/bin/ld" }
   tool_path { name: "cpp" path: "/usr/bin/cpp" }
   tool_path { name: "dwp" path: "/usr/bin/dwp" }
-  tool_path { name: "gcc" path: "osx_gcc_wrapper.sh" }
-  cxx_flag: "-std=c++0x"
+  tool_path { name: "gcc" path: "ADD_CXX_COMPILER" }
+  cxx_flag: "-std=c++11"
+  cxx_flag: "-fno-rtti"
+  cxx_flag: "-Wall"
+  cxx_flag: "-Werror"
+  cxx_flag: "-Wno-unused-variable"
+  cxx_flag: "-static"
+  cxx_flag: "-D_XOPEN_SOURCE"
   ar_flag: "-static"
   ar_flag: "-s"
   ar_flag: "-o"
   linker_flag: "-lstdc++"
   linker_flag: "-lpthread"
-  cxx_builtin_include_directory: "/usr/include"
-  cxx_builtin_include_directory: "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain"
-  cxx_builtin_include_directory: "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs"
-  cxx_builtin_include_directory: "/opt/local/include"
-  cxx_builtin_include_directory: "/usr/local/include"
-  cxx_builtin_include_directory: "/Library/Developer/CommandLineTools"
+  linker_flag: "-undefined"
+  linker_flag: "dynamic_lookup"
+ADD_CXX_BUILTIN_INCLUDE_DIRECTORIES
   tool_path { name: "gcov" path: "/usr/bin/gcov" }
   tool_path { name: "ld" path: "/usr/bin/ld" }
   tool_path { name: "nm" path: "/usr/bin/nm" }

@@ -83,7 +83,9 @@
 #define HAVE_STRING_H 1
 
 /* Define to 1 if you have the <syscall.h> header file. */
+#ifdef __linux__
 #define HAVE_SYSCALL_H 1
+#endif
 
 /* Define to 1 if you have the <syslog.h> header file. */
 #define HAVE_SYSLOG_H 1
