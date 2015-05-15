@@ -1,12 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//tools/build_rules/go", "go_library")
-
-filegroup(
-    name = "protoc-gen-go",
-    srcs = ["bin/protoc-gen-go"],
-    licenses = ["notice"],  # BSD
-)
+load("//tools/build_rules/go", "go_library", "go_binary")
 
 # TODO(schroederc): split libraries into separate BUILD files once
 #     https://github.com/google/bazel/issues/118 is fixed
@@ -81,6 +75,67 @@ go_library(
         "src/code.google.com/p/go-uuid/uuid/version4.go",
     ],
     package = "code.google.com/p/go-uuid/uuid",
+)
+
+go_binary(
+    name = "protoc-gen-go",
+    srcs = [
+        "src/github.com/golang/protobuf/protoc-gen-go/link_grpc.go",
+        "src/github.com/golang/protobuf/protoc-gen-go/main.go",
+    ],
+    deps = [
+        ":protobuf",
+        ":protoc-gen-go_generator",
+        ":protoc-gen-go_internal_grpc",
+    ],
+)
+
+go_library(
+    name = "protoc-gen-go_generator",
+    srcs = [
+        "src/github.com/golang/protobuf/protoc-gen-go/generator/generator.go",
+    ],
+    package = "github.com/golang/protobuf/protoc-gen-go/generator",
+    deps = [
+        ":protobuf",
+        ":protoc-gen-go_descriptor",
+        ":protoc-gen-go_plugin",
+    ],
+)
+
+go_library(
+    name = "protoc-gen-go_plugin",
+    srcs = [
+        "src/github.com/golang/protobuf/protoc-gen-go/plugin/plugin.pb.go",
+    ],
+    package = "github.com/golang/protobuf/protoc-gen-go/plugin",
+    deps = [
+        ":protobuf",
+        ":protoc-gen-go_descriptor",
+    ],
+)
+
+go_library(
+    name = "protoc-gen-go_descriptor",
+    srcs = [
+        "src/github.com/golang/protobuf/protoc-gen-go/descriptor/descriptor.pb.go",
+    ],
+    package = "github.com/golang/protobuf/protoc-gen-go/descriptor",
+    deps = [
+        ":protobuf",
+    ],
+)
+
+go_library(
+    name = "protoc-gen-go_internal_grpc",
+    srcs = [
+        "src/github.com/golang/protobuf/protoc-gen-go/internal/grpc/grpc.go",
+    ],
+    package = "github.com/golang/protobuf/protoc-gen-go/internal/grpc",
+    deps = [
+        ":protoc-gen-go_descriptor",
+        ":protoc-gen-go_generator",
+    ],
 )
 
 go_library(
