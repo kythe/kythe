@@ -27,9 +27,11 @@ def genproto_java_impl(ctx):
   srcjar = ctx.new_file(ctx.configuration.genfiles_dir, ctx.label.name + ".srcjar")
   java_srcs = srcjar.path + ".srcs"
 
+  inputs = [src, protoc]
   java_grpc_cmd = ""
   if ctx.attr.has_services:
     java_grpc_plugin = ctx.file._protoc_grpc_plugin_java
+    inputs += [java_grpc_plugin]
     java_grpc_cmd = (
         protoc.path + " --java_rpc_out=" + java_srcs +
         " --plugin=protoc-gen-java_rpc=" + java_grpc_plugin.path + " " + src.path)
@@ -44,7 +46,7 @@ def genproto_java_impl(ctx):
       "rm -rf " + java_srcs,
   ])
   ctx.action(
-      inputs = [src, protoc],
+      inputs = inputs,
       outputs = [srcjar],
       mnemonic = 'ProtocJava',
       command = java_cmd,
@@ -62,6 +64,7 @@ genproto_java = rule(
         ),
         "_protoc_grpc_plugin_java": attr.label(
             default = Label("//third_party/grpc-java:plugin"),
+            executable = True,
             single_file = True,
         ),
     },

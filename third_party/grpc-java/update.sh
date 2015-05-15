@@ -44,8 +44,5 @@ export LDFLAGS="-L$THIRD_PARTY/protobuf/lib/"
 rm -f "$THIRD_PARTY"/grpc-java/*.jar
 cp -f all/build/libs/grpc-*-SNAPSHOT.jar "$THIRD_PARTY/grpc-java/"
 
-cd compiler
-../gradlew java_pluginExecutable
-../gradlew test
-
-cp -f build/binaries/java_pluginExecutable/protoc-gen-grpc-java "$THIRD_PARTY/grpc-java/java_plugin"
+rm -rf "$THIRD_PARTY/grpc-java/compiler"
+cp compiler "$THIRD_PARTY/grpc-java/"

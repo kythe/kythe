@@ -6,4 +6,4 @@ Description:
 The Java gRPC implementation. HTTP/2 based RPC
 
 Local modifications:
-No Modifications.
+Only the built compiler/jar and sources for the compiler are checked in.

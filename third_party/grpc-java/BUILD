@@ -7,9 +7,16 @@ filegroup(
     srcs = ["LICENSE"],
 )
 
-filegroup(
+cc_binary(
     name = "plugin",
-    srcs = ["java_plugin"],
+    srcs = [
+        "compiler/src/java_plugin/cpp/java_generator.cpp",
+        "compiler/src/java_plugin/cpp/java_generator.h",
+        "compiler/src/java_plugin/cpp/java_plugin.cpp",
+    ],
+    deps = [
+        "//third_party/proto:libprotoc",
+    ],
 )
 
 java_import(
