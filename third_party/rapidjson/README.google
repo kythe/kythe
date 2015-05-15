@@ -7,3 +7,4 @@ Local modifications: Renamed *.cpp -> *.cc; changed OpenEncodedFile in
   ditto perftest.h; enabled all tests in perftest.h
 The perf tests are commented out in the BUILD file as they tend to be
   very slow to complete.
+Added empty.cc.

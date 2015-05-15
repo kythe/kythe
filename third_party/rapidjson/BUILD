@@ -35,6 +35,11 @@ cc_library(
         "include/rapidjson/stringbuffer.h",
         "include/rapidjson/writer.h",
     ],
+    srcs = [
+        # To satisfy the OSX toolchain
+        # See https://github.com/google/bazel/issues/61
+        "empty.cc",
+    ],
     copts = [
         "-Wno-non-virtual-dtor",
         "-Wno-unused-variable",
@@ -397,24 +402,24 @@ cc_library(
 #    ],
 #    data = glob(["data/*"]),
 #)
-cc_library(
-    name = "rapidjson_platform_perf_test_lib",
-    srcs = [
-        "test/perftest/platformtest.cc",
-    ],
-    hdrs = [
-        "test/perftest/perftest.h",
-    ],
-    copts = [
-        "-Wno-non-virtual-dtor",
-        "-Wno-unused-variable",
-        "-Wno-implicit-fallthrough",
-    ],
-    deps = [
-        ":rapidjson",
-        "//third_party/googletest",
-    ],
-)
+#cc_library(
+#    name = "rapidjson_platform_perf_test_lib",
+#    srcs = [
+#        "test/perftest/platformtest.cc",
+#    ],
+#    hdrs = [
+#        "test/perftest/perftest.h",
+#    ],
+#    copts = [
+#        "-Wno-non-virtual-dtor",
+#        "-Wno-unused-variable",
+#        "-Wno-implicit-fallthrough",
+#    ],
+#    deps = [
+#        ":rapidjson",
+#        "//third_party/googletest",
+#    ],
+#)
 #cc_test(
 #    name = "rapidjson_platform_perf_test",
 #    deps = [
