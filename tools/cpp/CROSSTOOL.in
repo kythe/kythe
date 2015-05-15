@@ -14,7 +14,7 @@ toolchain {
   abi_version: "local"
   abi_libc_version: "local"
   builtin_sysroot: ""
-  compiler: "compiler"
+  compiler: "ADD_CXX_COMPILER"
   host_system_name: "local"
   needsPic: true
   supports_gold_linker: false

@@ -30,8 +30,7 @@ echo "Using go found at $GO" >&2
 ln -sTf "$GO" tools/go/go
 
 # This must be the same C++ compiler used to build the LLVM source.
-
-CLANG="$(readlink -e $(which clang))"
+CLANG="$(realpath -s $(which clang))"
 echo "Using clang found at ${CLANG}"
 
 # The C++ compiler looks at some fixed but version-specific paths in the local

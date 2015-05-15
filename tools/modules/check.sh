@@ -13,47 +13,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# check_modules.sh config_query_cmd
-#
-# This script uses config_query_cmd to pull configuration variables from
-# .campfire_settings. It then checks that dependent libraries have been
-# checked out at the versions we expect.
-# Remember that it is possible to override .campfire_settings properties
-# with a .campfire_settings file in your home directory, like so:
-# {
-#   "configurations": {
-#     "base": {
-#       "third_party_llvm_rel_llvm_lib": "/some/path",
-#       "root_rel_llvm_include": ["/some/path", "/another/path"],
-#       "root_rel_llvm_repo": "/some/path"
-#     }
-#   }
-# }
-# third_party_llvm_rel_llvm_lib is relative to third_party/llvm.
-# root_rel_llvm_repo is relative to the campfire root.
-# root_rel_llvm_include is also relative to the campfire root.
-# Any of these properties may be set to absolute paths, as in the example
-# above.
-QUERY_CONFIG="$1"
-LLVM_LIB=$(${QUERY_CONFIG} third_party_llvm_rel_llvm_lib)
-LLVM_INCLUDE=$(${QUERY_CONFIG} root_rel_llvm_include)
-LLVM_REPO="$(${QUERY_CONFIG} root_rel_llvm_repo)"
-CWD="${PWD}"
+# This script checks that required libraries have been checked out at the
+# versions we expect.
 
-. "$(dirname $0)/../tools/modules/versions.sh"
+LLVM_REPO='third_party/llvm/llvm'
+. "$(dirname "$0")/versions.sh"
+
+cd "$(dirname "$0")/../.."
+ROOT="$PWD"
 
 # check_repo repo_path friendly_name expect_sha expect_rev
 check_repo() {
   ( cd "${1:?no repo path}" && [[ -d ".git" ]] \
           && git merge-base --is-ancestor "${3:?no SHA}" HEAD 2>/dev/null \
-          && cd "${CWD}" ) \
+          && cd "$ROOT" ) \
       || ( cd "$1" && [[ -d ".svn" ]] \
           && [[ $(svnversion) -ge "${4:?no revison}" ]] \
-          && cd "${CWD}" ) \
+          && cd "$ROOT" ) \
       || ( echo \
             "Missing ${2:-repo checkout} with ancestor $3 (rev $4) in $1
-Please see README.adoc for details (or run ./buildtools/update_modules.sh or
-./buildtools/update_modules.sh --docker from your campfire root)" \
+Please see README.adoc for details (or run $ROOT/tools/modules/update.sh)" \
           && exit 1 )
 }
 

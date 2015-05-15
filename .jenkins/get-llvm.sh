@@ -30,7 +30,7 @@ echo "Cache Root:      $CACHE"
 REPO="$(readlink -e "$(dirname "$0")/..")"
 echo "Repository Root: $REPO"
 
-. buildtools/module_versions.sh
+. tools/modules/versions.sh
 NAME="llvm-${FULL_SHA}"
 LLVM="$CACHE/$NAME"
 

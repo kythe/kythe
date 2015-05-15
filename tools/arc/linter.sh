@@ -25,6 +25,7 @@
 readonly file="$1"
 readonly name="$(basename "$1")"
 
+# TODO(schroederc): remove when campfire is removed
 lint_campfire() {
   if ! ./campfire camper -c "$file"; then
     echo 'campfire camper::error: CAMPFIRE file is not correctly formatted'

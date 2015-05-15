@@ -20,9 +20,6 @@
 # updated to the pinned versions without configuring or building them.
 # If the argument `--build_only` is passed, the script will assume that the
 # repositories are at the correct version and will configure and build them.
-#
-# If the argument `--docker` is passed, the dependencies will be fetched on
-# the host, but the build will take place using the campfire-docker toolchain.
 
 git_maybe_clone() {
   local repo="$1"
@@ -43,21 +40,14 @@ git_checkout_sha() {
   cd - >/dev/null
 }
 
-ROOT_REL="$(dirname $0)/.."
-cd "$ROOT_REL"
+cd "$(dirname $0)/../.."
 ROOT="$PWD"
 
-NODEDIR="${NODEDIR:-"$ROOT/third_party/node/bin/"}"
-query_config() {
-  "$NODEDIR/node" "$ROOT/buildtools/main" query_config "$@"
-}
+bazel build //tools/modules:compiler_info
+eval "$(<bazel-genfiles/tools/modules/compiler_info.txt)"
 
-CAMPFIRE_CXX="$(query_config cxx_path)"
-CAMPFIRE_CC="$(query_config cc_path)"
-
-LLVM_REPO_REL="$(query_config root_rel_llvm_repo)"
-mkdir -p "$LLVM_REPO_REL"
-LLVM_REPO="$(readlink -e "$LLVM_REPO_REL")"
+LLVM_REPO="$ROOT/third_party/llvm/llvm"
+mkdir -p "$LLVM_REPO"
 
 if [[ -d "$LLVM_REPO/build" && ! -h "$LLVM_REPO/build" ]]; then
   echo "Your checkout has a directory at:"
@@ -68,8 +58,8 @@ if [[ -d "$LLVM_REPO/build" && ! -h "$LLVM_REPO/build" ]]; then
 fi
 
 . ./tools/modules/versions.sh
-if [[ -z "$1" || "$1" == "--git_only" || "$1" == "--docker" ]]; then
-  echo "Using repository in $LLVM_REPO_REL (relative to $ROOT_REL)"
+if [[ -z "$1" || "$1" == "--git_only" ]]; then
+  echo "Using repository in $LLVM_REPO"
 
   git_maybe_clone http://llvm.org/git/llvm.git "$LLVM_REPO"
   git_maybe_clone http://llvm.org/git/clang.git "$LLVM_REPO/tools/clang"
@@ -81,10 +71,6 @@ if [[ -z "$1" || "$1" == "--git_only" || "$1" == "--docker" ]]; then
   git_checkout_sha "$LLVM_REPO/tools/clang/tools/extra" "$MIN_EXTRA_SHA"
 fi
 
-if [[ "$1" == "--docker" ]]; then
-  ./campfire-docker build_update_modules
-fi
-
 if [[ -z "$1" || "$1" == "--build_only" ]]; then
   cd "$LLVM_REPO"
   vbuild_dir="build.${MIN_LLVM_SHA}.${MIN_CLANG_SHA}.${MIN_EXTRA_SHA}"
@@ -92,7 +78,7 @@ if [[ -z "$1" || "$1" == "--build_only" ]]; then
     mkdir -p "$vbuild_dir"
     trap "rm -rf '$LLVM_REPO/$vbuild_dir'" ERR INT
     cd "$vbuild_dir"
-    ../configure CC="${CAMPFIRE_CC}" CXX="${CAMPFIRE_CXX}" \
+    ../configure CC="${BAZEL_C_COMPILER}" CXX="${BAZEL_CC%cc}++" \
       --prefix="$LLVM_REPO/build-install" \
       CXXFLAGS="-std=c++11" \
       --enable-optimized --disable-bindings

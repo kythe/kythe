@@ -1,5 +1,5 @@
 // Binary go_testmain_generator generates a main function for testing
-// packages. This is a retrofit of the existing "go test" command for Campfire.
+// packages. This is a retrofit of the existing "go test" command for Bazel.
 package main
 
 import (
