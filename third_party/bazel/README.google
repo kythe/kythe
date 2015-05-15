@@ -8,3 +8,5 @@ Description: Correct, reproducible, and fast builds for everyone.
 Modifications:
 Only the needed subset of bazel tools directory has been imported.
 Added necessary license declarations to BUILD files.
+
+Remove tools/jdk/ijar binary and use a filegroup instead.

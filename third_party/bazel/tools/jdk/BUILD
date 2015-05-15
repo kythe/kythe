@@ -43,9 +43,13 @@ java_toolchain(
 
 exports_files([
     "JavaBuilder_deploy.jar",
-    "ijar",
     "SingleJar_deploy.jar",
 ])
+
+filegroup(
+    name = "ijar",
+    srcs = ["//third_party/ijar"],
+)
 
 filegroup(
     name = "srcs",
