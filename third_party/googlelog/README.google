@@ -15,5 +15,5 @@ Ran configure to generate:
   src/config.h
 Amended config.h to disable RTTI.
 Amended config.h to check for Linux before enabling <syscall.h>
-  and to define _XOPEN_SOURCE on Mach
+Amended config.h to use the right PC_FROM_UCONTEXT on x64 OSX
 
