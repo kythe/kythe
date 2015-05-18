@@ -115,8 +115,20 @@ cc_library(
     ],
     defines = [
         "LEVELDB_PLATFORM_POSIX",
-    ],
+    ] + select({
+        ":darwin": ["OS_MACOSX"],
+        "//conditions:default": []
+    }),
     deps = [
         "//third_party/snappy",
     ],
+    includes = [
+        "include",
+    ],
+)
+
+config_setting(
+    name = "darwin",
+    values = {"cpu": "darwin"},
+    visibility = ["//visibility:public"],
 )

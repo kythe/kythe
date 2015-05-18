@@ -158,7 +158,7 @@
 #ifdef __linux__
 #define PC_FROM_UCONTEXT uc_mcontext.gregs[REG_RIP]
 #elif __MACH__
-#define PC_FROM_UCONTEXT uc_mcontext->ss.rip
+#define PC_FROM_UCONTEXT uc_mcontext->__ss.__rip
 #else
 #undef PC_FROM_UCONTEXT
 #endif

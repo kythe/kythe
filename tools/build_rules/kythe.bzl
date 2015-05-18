@@ -97,7 +97,11 @@ def cc_verifier_test_impl(ctx):
   concat_entries_cmd = ""
 
   for src in ctx.files.srcs:
-    args = ['-std=c++11', '-c', src.short_path]
+    args = ['-std=c++11']
+    if str(ctx.configuration).find('darwin') >= 0:
+      # TODO(zarko): This needs to be autodetected.
+      args += ['-I/usr/include/c++/4.2.1']
+    args += ['-c', src.short_path]
     kindex = ctx.new_file(ctx.configuration.genfiles_dir, ctx.label.name + "/compilation/" + src.short_path + ".kindex")
     extract(ctx, kindex, args, inputs=[src], mnemonic='CcExtractor')
     entry = ctx.new_file(ctx.configuration.genfiles_dir, ctx.label.name + "/compilation/" + src.short_path + ".entries")

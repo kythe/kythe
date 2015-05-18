@@ -35,6 +35,8 @@ cc_library(
         "llvm/build/Release+Asserts/lib/libLLVMBitReader.a",
         "llvm/build/Release+Asserts/lib/libLLVMSupport.a",
         "llvm/build/Release+Asserts/lib/libLLVMCore.a",
+        # See https://github.com/google/bazel/issues/61
+        "empty.cc",
     ],
     defines = [
         "__STDC_LIMIT_MACROS",
