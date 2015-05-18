@@ -70,3 +70,14 @@ sh_test(
         "//kythe/cxx/verifier:verifier",
     ],
 )
+
+sh_test(
+    name = "indexer_libraries",
+    srcs = [
+        "test_libraries.sh",
+    ],
+    data = glob(["libraries/*"]) + [
+        "//kythe/cxx/indexer/cxx:indexer",
+        "//kythe/cxx/verifier:verifier",
+    ],
+)

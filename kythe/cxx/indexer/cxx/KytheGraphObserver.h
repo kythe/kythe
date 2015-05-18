@@ -184,6 +184,10 @@ class KytheGraphObserver : public GraphObserver {
   void recordVariableNode(const NameId &DeclName, const NodeId &DeclNode,
                           Completeness VarCompleteness) override;
 
+  void recordUserDefinedNode(const NameId &Name, const NodeId &Id,
+                             const llvm::StringRef &NodeKind,
+                             Completeness Compl) override;
+
   void recordDefinitionRange(const Range &SourceRange,
                              const NodeId &DefnId) override;
 

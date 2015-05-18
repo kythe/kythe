@@ -30,6 +30,7 @@
 #include "clang/Index/USRGeneration.h"
 #include "clang/Sema/Template.h"
 
+#include "IndexerLibrarySupport.h"
 #include "GraphObserver.h"
 
 namespace kythe {
@@ -244,9 +245,10 @@ enum BehaviorOnTemplates : bool {
 class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
 public:
   IndexerASTVisitor(clang::ASTContext &C, BehaviorOnUnimplemented B,
-                    BehaviorOnTemplates T, GraphObserver *GO = nullptr)
+                    BehaviorOnTemplates T, const LibrarySupports &S,
+                    GraphObserver *GO = nullptr)
       : IgnoreUnimplemented(B), TemplateMode(T),
-        Observer(GO ? GO : &NullObserver), Context(C) {}
+        Observer(GO ? *GO : NullObserver), Context(C), Supports(S) {}
 
   ~IndexerASTVisitor() { deleteAllParents(); }
 
@@ -497,6 +499,13 @@ public:
   void MaybeRecordDefinitionRange(const GraphObserver::Range &R,
                                   const GraphObserver::NodeId &Id);
 
+  /// \brief Returns the attached GraphObserver.
+  GraphObserver &getGraphObserver() { return Observer; }
+
+  /// Returns `SR` as a `Range` in this `RecursiveASTVisitor`'s current
+  /// RangeContext.
+  GraphObserver::Range RangeInCurrentContext(const clang::SourceRange &SR);
+
 private:
   /// Whether we should stop on missing cases or continue on.
   BehaviorOnUnimplemented IgnoreUnimplemented;
@@ -505,7 +514,7 @@ private:
   BehaviorOnTemplates TemplateMode;
 
   NullGraphObserver NullObserver;
-  GraphObserver *const Observer;
+  GraphObserver &Observer;
   clang::ASTContext &Context;
 
   /// \brief The result of calling into the lexer.
@@ -521,8 +530,8 @@ private:
   /// \return `Failure` if there was a failure, `Success` on success.
   LexerResult getRawToken(clang::SourceLocation StartLocation,
                           clang::Token &Token) const {
-    return Observer->getPreprocessor()->getRawToken(StartLocation, Token,
-                                                    true /* ignoreWhiteSpace */)
+    return Observer.getPreprocessor()->getRawToken(StartLocation, Token,
+                                                   true /* ignoreWhiteSpace */)
                ? LexerResult::Failure
                : LexerResult::Success;
   }
@@ -662,10 +671,6 @@ private:
   /// function calls).
   std::vector<GraphObserver::NodeId> BlameStack;
 
-  /// Returns `SR` as a `Range` in the `RecursiveASTVisitor`'s current
-  /// RangeContext.
-  GraphObserver::Range RangeInCurrentContext(const clang::SourceRange &SR);
-
   /// \brief The current context for constructing `GraphObserver::Range`s.
   ///
   /// This is used whenever we enter a context where a section of source
@@ -678,18 +683,21 @@ private:
   /// write down implicit specializations (so the context must be extended to
   /// give them distinct ranges).
   std::vector<GraphObserver::NodeId> RangeContext;
+
+  /// \brief Enabled library-specific callbacks.
+  const LibrarySupports &Supports;
 };
 
 /// \brief An `ASTConsumer` that passes events to a `GraphObserver`.
 class IndexerASTConsumer : public clang::ASTConsumer {
 public:
   explicit IndexerASTConsumer(GraphObserver *GO, BehaviorOnUnimplemented B,
-                              BehaviorOnTemplates T)
-      : Observer(GO), IgnoreUnimplemented(B), TemplateMode(T) {}
+                              BehaviorOnTemplates T, const LibrarySupports &S)
+      : Observer(GO), IgnoreUnimplemented(B), TemplateMode(T), Supports(S) {}
 
   void HandleTranslationUnit(clang::ASTContext &Context) override {
     IndexerASTVisitor Visitor(Context, IgnoreUnimplemented, TemplateMode,
-                              Observer);
+                              Supports, Observer);
     Visitor.TraverseDecl(Context.getTranslationUnitDecl());
   }
 
@@ -699,6 +707,8 @@ private:
   BehaviorOnUnimplemented IgnoreUnimplemented;
   /// Whether we should visit template instantiations.
   BehaviorOnTemplates TemplateMode;
+  /// Which library supports are enabled.
+  const LibrarySupports &Supports;
 };
 
 } // namespace kythe

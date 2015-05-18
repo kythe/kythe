@@ -279,6 +279,19 @@ void KytheGraphObserver::recordIncludesRange(const Range &source_range,
                Claimability::Claimable);
 }
 
+void KytheGraphObserver::recordUserDefinedNode(const NameId &name,
+                                               const NodeId &node,
+                                               const llvm::StringRef &kind,
+                                               Completeness completeness) {
+  KytheGraphRecorder::VName name_vname(RecordName(name));
+  KytheGraphRecorder::VName node_vname(VNameFromNodeId(node));
+  recorder_->BeginNode(node_vname, kind);
+  recorder_->AddProperty(PropertyID::kComplete,
+                         CompletenessToString(completeness));
+  recorder_->EndNode();
+  recorder_->AddEdge(node_vname, EdgeKindID::kNamed, name_vname);
+}
+
 void KytheGraphObserver::recordVariableNode(const NameId &name,
                                             const NodeId &node,
                                             Completeness completeness) {

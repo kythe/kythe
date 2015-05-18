@@ -138,6 +138,10 @@ class KytheGraphRecorder {
   /// \sa AddProperty, EndNode
   void BeginNode(const VName &node_vname, NodeKindID kind_id);
 
+  /// \brief Begins recording information about a node with a user-defined kind.
+  /// \sa BeginNode
+  void BeginNode(const VName &node_vname, const llvm::StringRef &kind_id);
+
   /// \brief Record a property about the current node.
   ///
   /// It is invalid to call `AddProperty` outside of a `BeginNode`...`EndNode`

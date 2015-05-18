@@ -32,8 +32,10 @@ static const std::string *const kNodeKindSpellings[] = {
 
 static const std::string *kEdgeKindSpellings[] = {
     new std::string("/kythe/edge/defines"),
-    new std::string("/kythe/edge/named"), new std::string("/kythe/edge/typed"),
-    new std::string("/kythe/edge/ref"), new std::string("/kythe/edge/param"),
+    new std::string("/kythe/edge/named"),
+    new std::string("/kythe/edge/typed"),
+    new std::string("/kythe/edge/ref"),
+    new std::string("/kythe/edge/param"),
     new std::string("/kythe/edge/aliases"),
     new std::string("/kythe/edge/completes/uniquely"),
     new std::string("/kythe/edge/completes"),
@@ -93,14 +95,18 @@ const std::string &spelling_of(EdgeKindID edge_kind_id) {
 
 void KytheGraphRecorder::BeginNode(const VName &node_vname,
                                    NodeKindID kind_id) {
+  BeginNode(node_vname, *kNodeKindSpellings[static_cast<ptrdiff_t>(kind_id)]);
+}
+
+void KytheGraphRecorder::BeginNode(const VName &node_vname,
+                                   const llvm::StringRef &kind) {
   assert(!in_node_);
   node_vname_ = node_vname;
   in_node_ = true;
   kythe::proto::Entry node_fact;
   node_fact.mutable_source()->CopyFrom(node_vname);
   node_fact.set_fact_name(*kKindSpelling);
-  node_fact.set_fact_value(
-      *kNodeKindSpellings[static_cast<ptrdiff_t>(kind_id)]);
+  node_fact.set_fact_value(kind.str());
   stream_->Emit(node_fact);
 }
 

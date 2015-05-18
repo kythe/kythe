@@ -64,6 +64,7 @@ public:
                                  const HeaderSearchInfo &Info)
       : Observer(GO), HeaderConfig(Info) {
     assert(GO != nullptr);
+    Supports.push_back(llvm::make_unique<GoogleFlagsLibrarySupport>());
   }
 
   /// \brief Barrel through even if we don't understand part of a program?
@@ -114,7 +115,7 @@ private:
       Observer->setPreprocessor(&CI.getPreprocessor());
     }
     return llvm::make_unique<IndexerASTConsumer>(Observer, IgnoreUnimplemented,
-                                                 TemplateMode);
+                                                 TemplateMode, Supports);
   }
 
   bool BeginSourceFileAction(clang::CompilerInstance &CI,
@@ -136,6 +137,8 @@ private:
   BehaviorOnTemplates TemplateMode = BehaviorOnTemplates::VisitInstantiations;
   /// Configuration information for header search.
   HeaderSearchInfo HeaderConfig;
+  /// Library-specific callbacks.
+  LibrarySupports Supports;
 };
 
 /// \brief Allows stdin to be replaced with a mapped file.

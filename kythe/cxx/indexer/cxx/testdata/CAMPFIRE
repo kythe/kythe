@@ -61,5 +61,21 @@
         "basic"
       ]
     }
+  },
+  {
+    "name": "libraries",
+    "kind": "sh_test",
+    "inputs": {
+      "srcs": [
+        "test_libraries.sh"
+      ],
+      "tools": [
+        "//kythe/cxx/indexer/cxx:indexer",
+        "//kythe/cxx/verifier"
+      ],
+      "dir:data": [
+        "libraries"
+      ]
+    }
   }
 ]

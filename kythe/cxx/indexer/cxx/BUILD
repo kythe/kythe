@@ -5,6 +5,7 @@ cc_library(
     srcs = [
         "IndexerASTHooks.cc",
         "IndexerFrontendAction.cc",
+        "IndexerLibrarySupport.cc",
         "IndexerPPCallbacks.cc",
         "KytheClaimClient.cc",
         "KytheGraphObserver.cc",
@@ -15,6 +16,7 @@ cc_library(
         "GraphObserver.h",
         "IndexerASTHooks.h",
         "IndexerFrontendAction.h",
+        "IndexerLibrarySupport.h",
         "IndexerPPCallbacks.h",
         "KytheClaimClient.h",
         "KytheGraphObserver.h",

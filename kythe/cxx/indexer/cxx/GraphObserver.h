@@ -464,6 +464,16 @@ public:
                                  const NodeId &InheritedTypeId, bool IsVirtual,
                                  clang::AccessSpecifier AS) {}
 
+  /// \brief Records a node with a provided kind.
+  /// \param Name The name of the node to record (including a `named` edge from
+  /// `Id`).
+  /// \param Id The ID of the node to record.
+  /// \param NodeKind The kind of the node ("google/protobuf")
+  /// \param Compl Whether this node is complete.
+  virtual void recordUserDefinedNode(const NameId &Name, const NodeId &Id,
+                                     const llvm::StringRef &NodeKind,
+                                     Completeness Compl) {}
+
   /// \brief Records a use site for some decl.
   virtual void
   recordDeclUseLocation(const Range &SourceRange, const NodeId &DeclId,
