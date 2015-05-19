@@ -36,6 +36,11 @@ else
 fi
 
 if [[ -z "$GO" ]]; then
+  if [[ -z "$(which go)" ]]; then
+    echo 'You need to have go installed to build Kythe.'
+    echo 'Please see http://kythe.io/contributing for more information.'
+    exit 1
+  fi
   if ! GO="$(readlink -e "$(which go)")"; then
     echo 'ERROR: could not locate `go` binary on PATH' >&2
     exit 1
@@ -46,8 +51,19 @@ echo "Using go found at $GO" >&2
 ln ${LNOPTS} "$GO" tools/go/go
 
 # This must be the same C++ compiler used to build the LLVM source.
-CLANG="$(realpath -s $(which clang))"
-echo "Using clang found at ${CLANG}"
+if [[ -z "$CLANG" ]]; then
+  if [[ -z "$(which clang)" ]]; then
+    echo 'You need to have clang installed to build Kythe.'
+    echo 'Note: Some vendors install clang with a versioned name'
+    echo '(like /usr/bin/clang-3.5). You can set the CLANG environment'
+    echo 'variable to specify the full path to yours.'
+    echo 'Please see http://kythe.io/contributing for more information.'
+    exit 1
+  fi
+  CLANG="$(realpath -s $(which clang))"
+fi
+
+echo "Using clang found at ${CLANG}" >&2
 
 # The C++ compiler looks at some fixed but version-specific paths in the local
 # filesystem for headers. We can't predict where these will be on users'
