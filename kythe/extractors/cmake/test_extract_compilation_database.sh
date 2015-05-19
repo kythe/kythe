@@ -16,9 +16,8 @@
 
 # This script checks that extract_compilation_database.sh works on a simple
 # compilation database. It should be run from the Kythe root.
-export KYTHE_BIN="${TEST_SRCDIR:-${PWD}/campfire-out/bin}"
-BASE_DIR="${TEST_SRCDIR:-${PWD}}/kythe/extractors/cmake"
-OUT_DIR="${TEST_TMPDIR:-${PWD}/campfire-out/test/kythe/extractors/cmake}"
+BASE_DIR="$TEST_SRCDIR/kythe/extractors/cmake"
+OUT_DIR="$TEST_TMPDIR"
 EXTRACT="${BASE_DIR}/extract_compilation_database.sh"
 EXPECTED_INDEX="d09515d149b3ca237a31caa8fd58f48365e083ce2ebe57173d568d1939fae6b8.kindex"
 EXPECTED_FILE_HASH="deac66ccb79f6d31c0fa7d358de48e083c15c02ff50ec1ebd4b64314b9e6e196"

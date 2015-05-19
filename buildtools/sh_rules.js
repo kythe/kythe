@@ -27,13 +27,13 @@ ShTest.prototype.getNinjaBuilds = function(target) {
   var deps = rule.getAllOutputsFor(target.inputsByKind['tools'], 'build');
   deps.append(rule.getAllOutputsFor(target.inputsByKind['data'], 'build',
                                     rule.allFilesFilter));
-  var logFile = target.getFileNode(target.getRoot('test') + '.log', 'test_log');
+  var logFile = target.getFileNode(target.getRoot('test') + '/log', 'test_log');
   return {
     TEST: [{
       rule: 'run_test',
       inputs: srcs,
       implicits: deps,
-      outs: [target.getFileNode(target.getRoot('test') + '.done',
+      outs: [target.getFileNode(target.getRoot('test') + '/done',
                                 'done_marker')],
       vars: {
         log: logFile.getPath()

@@ -16,17 +16,16 @@
 
 # Ensures that vnames.json can be read by the //kythe/storage/go/filevnames library
 
-CAMPFIRE_ROOT="$(readlink -e "$PWD")"
-DIRECTORY_INDEXER="${CAMPFIRE_ROOT}/campfire-out/bin/kythe/go/storage/tools/directory_indexer"
-CONFIG="${CAMPFIRE_ROOT}/kythe/data/vnames.json"
-OUT="${CAMPFIRE_ROOT}/campfire-out/gen/kythe/data/file_entries"
+DIRECTORY_INDEXER="$KYTHE_BIN/kythe/go/storage/tools/directory_indexer"
+CONFIG="$TEST_SRCDIR/kythe/data/vnames.json"
+OUT="$TEST_TMPDIR/file_entries"
 
 # Directory tree with some (but not many) files
-DIR="${CAMPFIRE_ROOT}/kythe/go/platform"
+DIR="$TEST_SRCDIR/kythe/data"
 
 mkdir -p "$(dirname "$OUT")"
 cd "$DIR"
-"$DIRECTORY_INDEXER" --vnames "$CONFIG" >"$OUT"
+"$DIRECTORY_INDEXER" --emit_irregular --vnames "$CONFIG" >"$OUT"
 
 test -s "$OUT" || {
   echo "$OUT is empty" >&2

@@ -16,14 +16,10 @@
 #
 # This script tests the indexpack binary. It requires the jq command (≥ 1.4).
 
-# TODO(schroederc): remove campfire-specific workarounds
-KYTHE_BIN="${TEST_SRCDIR:-${PWD}/campfire-out/bin}"
-SRCDIR="${TEST_SRCDIR:-$PWD}"
-
 jq="$KYTHE_BIN/third_party/jq/jq"
 indexpack="$KYTHE_BIN/kythe/go/platform/tools/indexpack"
 viewindex="$KYTHE_BIN/kythe/go/platform/tools/viewindex"
-test_kindex="$SRCDIR/kythe/testdata/test.kindex"
+test_kindex="$TEST_SRCDIR/kythe/testdata/test.kindex"
 
 kindex_contents() {
   $viewindex --files "$1" | $jq -c -S .

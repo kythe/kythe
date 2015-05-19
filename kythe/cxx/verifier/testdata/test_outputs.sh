@@ -6,9 +6,8 @@
 # output with the --graphviz flag). If the output matches exactly for
 # each test case, this script returns zero.
 HAD_ERRORS=0
-KYTHE_BIN="${TEST_SRCDIR:-${PWD}/campfire-out/bin}"
-BASE_DIR="${TEST_SRCDIR:-${PWD}}/kythe/cxx/verifier/testdata"
-VERIFIER="${KYTHE_BIN}/kythe/cxx/verifier/verifier"
+BASE_DIR="$TEST_SRCDIR/kythe/cxx/verifier/testdata"
+VERIFIER="$KYTHE_BIN/kythe/cxx/verifier/verifier"
 function one_case {
   cat $1.bin | ${VERIFIER} --graphviz | diff $1.dot -
   DOT_RESULTS=( ${PIPESTATUS[1]} ${PIPESTATUS[2]} )

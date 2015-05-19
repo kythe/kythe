@@ -3,9 +3,8 @@
 # to the verifier. The test cases contain assertions for the verifier to
 # verify. Should every case succeed, this script returns zero.
 HAD_ERRORS=0
-KYTHE_BIN="${TEST_SRCDIR:-${PWD}/campfire-out/bin}"
-BASE_DIR="${TEST_SRCDIR:-${PWD}}/kythe/cxx/indexer/cxx/testdata"
-OUT_DIR="${TEST_TMPDIR:-${PWD}/campfire-out/test/kythe/cxx/indexer/cxx/testdata}"
+BASE_DIR="$TEST_SRCDIR/kythe/cxx/indexer/cxx/testdata"
+OUT_DIR="$TEST_TMPDIR"
 VERIFIER="${KYTHE_BIN}/kythe/cxx/verifier/verifier"
 INDEXER="${KYTHE_BIN}/kythe/cxx/indexer/cxx/indexer"
 EXTRACTOR="${KYTHE_BIN}/kythe/cxx/extractor/cxx_extractor"

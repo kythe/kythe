@@ -18,8 +18,8 @@
 # compilation databases, documented at
 #   <http://clang.llvm.org/docs/JSONCompilationDatabase.html>.
 # Expects to be run at the Kythe root directory.
-CXX_EXTRACTOR="${KYTHE_BIN:-./campfire-out/bin}/kythe/cxx/extractor/cxx_extractor"
-JQ="${KYTHE_BIN:-./campfire-out/bin}/third_party/jq/jq"
+CXX_EXTRACTOR="$KYTHE_BIN/kythe/cxx/extractor/cxx_extractor"
+JQ="$KYTHE_BIN/third_party/jq/jq"
 DATABASE="$1"
 FILTER=".[]|.command"
 : ${KYTHE_CORPUS:?Missing environment variable}

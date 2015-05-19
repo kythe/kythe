@@ -18,8 +18,7 @@
 # to the verifier. The test cases contain assertions for the verifier to
 # verify. Should every case succeed, this script returns zero.
 HAD_ERRORS=0
-KYTHE_BIN="${TEST_SRCDIR:-${PWD}/campfire-out/bin}"
-BASE_DIR="${TEST_SRCDIR:-${PWD}}/kythe/cxx/indexer/cxx/testdata/basic"
+BASE_DIR="$TEST_SRCDIR/kythe/cxx/indexer/cxx/testdata/basic"
 VERIFIER="${KYTHE_BIN}/kythe/cxx/verifier/verifier"
 INDEXER="${KYTHE_BIN}/kythe/cxx/indexer/cxx/indexer"
 # one_case test-file clang-standard verifier-argument indexer-argument

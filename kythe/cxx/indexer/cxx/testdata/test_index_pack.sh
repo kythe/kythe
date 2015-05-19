@@ -1,8 +1,7 @@
 #!/bin/bash -e
 # Tests whether the indexer will read from kindex files.
-KYTHE_BIN="${TEST_SRCDIR:-${PWD}/campfire-out/bin}"
-BASE_DIR="${TEST_SRCDIR:-${PWD}}/kythe/cxx/indexer/cxx/testdata"
-OUT_DIR="${TEST_TMPDIR:-${PWD}/campfire-out/test/kythe/cxx/indexer/cxx/testdata/test_index_pack}"
+BASE_DIR="$TEST_SRCDIR/kythe/cxx/indexer/cxx/testdata"
+OUT_DIR="$TEST_TMPDIR"
 VERIFIER="${KYTHE_BIN}/kythe/cxx/verifier/verifier"
 INDEXER="${KYTHE_BIN}/kythe/cxx/indexer/cxx/indexer"
 INDEX_PACK_BIN="${KYTHE_BIN}/kythe/go/platform/tools/indexpack"

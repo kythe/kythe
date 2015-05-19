@@ -10,7 +10,11 @@ rule check_version
   description = check_version $tool
 
 rule run_test
-  command = bash -c "set -o pipefail; $in $args 2>&1 | tee $log && $
+  command = bash -c "set -o pipefail; $
+                     export KYTHE_BIN=\"$$PWD/campfire-out/bin\"; $
+                     export TEST_SRCDIR=\"$$PWD\"; $
+                     export TEST_TMPDIR=\"$$PWD/$$(dirname $out)\"; $
+                     $in $args 2>&1 | tee $log && $
                      touch $out || { code=\$$?; echo Test failure code: \$$code; exit \$$code; }"
   description = test $in $args
 

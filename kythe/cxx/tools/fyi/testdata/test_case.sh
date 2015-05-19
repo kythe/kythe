@@ -23,12 +23,11 @@
 
 set -o pipefail
 TEST_NAME="$1"
-BASE_DIR="${TEST_SRCDIR:-${PWD}}/kythe/cxx/tools/fyi/testdata"
+BASE_DIR="$TEST_SRCDIR/kythe/cxx/tools/fyi/testdata"
 TEST_JSON="${BASE_DIR}/${TEST_NAME}.json"
 TEST_EXPECTED="${BASE_DIR}/${TEST_NAME}.expected"
-KYTHE_BIN="${TEST_SRCDIR:-${PWD}/campfire-out/bin}"
 FYI="${KYTHE_BIN}/kythe/cxx/tools/fyi/fyi"
-OUT_DIR="${TEST_TMPDIR:-${PWD}/campfire-out/test/kythe/cxx/tools/fyi/testdata/${TEST_NAME}}"
+OUT_DIR="$TEST_TMPDIR"
 TEST_FILE="${OUT_DIR}/${TEST_NAME}"
 HAD_ERRORS=0
 

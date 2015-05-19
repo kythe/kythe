@@ -66,6 +66,8 @@ import (
 var (
 	vnamesConfigPath = flag.String("vnames", "", "Path to JSON VNames configuration")
 	exclude          = flag.String("exclude", "", "Comma-separated list of exclude regexp patterns")
+	verbose          = flag.Bool("verbose", false, "Print verbose logging")
+	emitIrregular    = flag.Bool("emit_irregular", false, "Emit nodes for irregular files")
 )
 
 var (
@@ -87,7 +89,7 @@ var (
 )
 
 func emitPath(path string, info os.FileInfo, err error) error {
-	if !info.Mode().IsRegular() {
+	if info.IsDir() || !(*emitIrregular || info.Mode().IsRegular()) {
 		return nil
 	}
 	for _, re := range excludes {
@@ -96,7 +98,9 @@ func emitPath(path string, info os.FileInfo, err error) error {
 		}
 	}
 
-	log.Printf("Reading/emitting %s", path)
+	if *verbose {
+		log.Printf("Reading/emitting %s", path)
+	}
 	contents, err := ioutil.ReadFile(path)
 	if err != nil {
 		return err
