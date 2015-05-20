@@ -44,19 +44,19 @@ usages.
 
 == Contributing and Building Kythe
 
-link:http://kythe.io/contributing
+http://kythe.io/contributing
 
 == Documentation
 
-link:http://kythe.io/docs/
+http://kythe.io/docs/
 
 == Examples
 
-link:http://kythe.io/examples
+http://kythe.io/examples
 
 == Contributing
 
-link:http://kythe.io/contributing
+http://kythe.io/contributing
 
 == Contact
 
