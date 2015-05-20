@@ -25,7 +25,7 @@ Build the parts of Kythe we'll need:
 [source,bash]
 ----
 cd ~/kythe
-./campfire build //kythe/cxx/extractor:cxx_extractor \
+bazel build //kythe/cxx/extractor:cxx_extractor \
     //kythe/cxx/indexer/cxx:indexer \
     //kythe/go/platform/tools:dedup_stream \
     //kythe/go/storage/tools:write_entries \
@@ -34,11 +34,11 @@ git clean -fdx kythe/web/ui
 pushd kythe/web/ui
 lein cljsbuild once prod
 popd
-export KYTHE_EXTRACTOR="${PWD}/campfire-out/bin/kythe/cxx/extractor/cxx_extractor"
-export KYTHE_INDEXER="${PWD}/campfire-out/bin/kythe/cxx/indexer/cxx/indexer"
-export KYTHE_DEDUP_STREAM="${PWD}/campfire-out/bin/kythe/go/platform/tools/dedup_stream"
-export KYTHE_WRITE_ENTRIES="${PWD}/campfire-out/bin/kythe/go/storage/tools/write_entries"
-export KYTHE_HTTP_SERVER="${PWD}/campfire-out/bin/kythe/go/serving/tools/http_server"
+export KYTHE_EXTRACTOR="${PWD}/bazel-bin/kythe/cxx/extractor/cxx_extractor"
+export KYTHE_INDEXER="${PWD}/bazel-bin/kythe/cxx/indexer/cxx/indexer"
+export KYTHE_DEDUP_STREAM="${PWD}/bazel-bin/kythe/go/platform/tools/dedup_stream"
+export KYTHE_WRITE_ENTRIES="${PWD}/bazel-bin/kythe/go/storage/tools/write_entries"
+export KYTHE_HTTP_SERVER="${PWD}/bazel-bin/kythe/go/serving/tools/http_server"
 export KYTHE_WEB_UI="${PWD}/kythe/web/ui/resources/public"
 ----
 

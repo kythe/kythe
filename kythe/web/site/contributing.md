@@ -9,17 +9,17 @@ permalink: /contributing/
 
 ## Building Source Code
 
-{% comment %}
-TODO(schroederc): More about campfire and building different parts of Kythe (including special cases)
-{% endcomment %}
+Kythe uses [Bazel](http://bazel.io) to build its source code.  After
+[installing Bazel](http://bazel.io/docs/install.html), building Kythe should be
+as simple as:
 
 {% highlight bash %}
-./campfire build # Build all Kythe sources
-./campfire test  # Run all Kythe tests
-{% endhighlight %}
+./setup_bazel.sh           # Run initial Kythe+Bazel setup
+./tools/modules/update.sh  # Ensure third_party is updated
 
-See [campfire documentation]({{site.baseurl}}/docs/campfire.html) for more
-information.
+bazel build //... # Build all Kythe sources
+bazel test  //... # Run all Kythe tests
+{% endhighlight %}
 
 ### Dependencies
 
@@ -27,9 +27,8 @@ Kythe relies on the following external dependencies:
 
 * go >=1.3
 * clang-3.5
-* jdk >=7
+* jdk >=7 (Bazel requires >=8)
 * parallel
-* jq >=1.4
 * asciidoc
 * source-highlight
 * graphviz
@@ -37,15 +36,49 @@ Kythe relies on the following external dependencies:
 * libcurl4-openssl-dev
 * uuid-dev
 * libssl-dev
-* bison-2.3
+* bison-3.0.2 (2.3 is also acceptable)
 * flex-2.5
+* libleveldb-dev (see http://kythe.io/phabricator/T39)
+* libsnappy-dev  (see http://kythe.io/phabricator/T39)
 * [docker](https://www.docker.com/) (for release images `//kythe/release/...` and `//buildtools/docker)
 * [leiningen](http://leiningen.org/) (used to build `kythe/web/ui`)
+
+NOTE: All other Kythe dependencies are hosted within the repository under
+`//third_party/...`
+
+#### Installing Debian Jessie Packages
+
+{% highlight bash %}
+curl https://storage.googleapis.com/dev-con-jessie-apt/convoy.key | apt-key add -
+echo deb http://storage.googleapis.com/dev-con-jessie-apt/ jessie main >> /etc/apt/sources.list
+apt-get update
+
+apt-get install \
+    asciidoc source-highlight graphviz \
+    libleveldb-dev libsnappy-dev \
+    libssl-dev uuid-dev libncurses-dev libcurl4-openssl-dev flex clang-3.5 bison \
+    openjdk-8-jdk \
+    golang-go gcc \
+    parallel
+
+# https://docs.docker.com/installation/debian/#debian-jessie-80-64-bit for Docker installation
+{% endhighlight %}
+
+### Installing and keeping LLVM up to date
+
+When building Kythe, we assume that you have an LLVM checkout in
+third_party/llvm/llvm.  If you don't have an LLVM checkout in that directory, or
+if you fall out of date, the `./tools/modules/update.sh` script will update you
+to the exact revisions that we test against.  `./setup_bazel.sh` should be run
+before updating the modules.
+
+Note that you don't need to have a checkout of LLVM per Kythe checkout.  It's
+enough to have a symlink of the third_party/llvm/llvm directory.
 
 ### Using the Go tool
 
 Kythe's Go sources can be directly built with the `go` tool as well as with
-`campfire`.
+Bazel.
 
 {% highlight bash %}
 # Install LevelDB/snappy libraries for https://github.com/jmhodges/levigo
@@ -59,11 +92,11 @@ git clone https://github.com/google/kythe.git
 GOPATH=$GOPATH:$PWD/kythe/third_party/go go get kythe.io/kythe/...
 {% endhighlight %}
 
-The additional benefits of using `campfire` are the built-in support for
-generating the Go protobuf code in `kythe/proto/` and the automatic usage of the
-checked-in `third_party/go` libraries (instead of adding to your `GOPATH`).
-However, for quick access to Kythe's Go sources (which implement most of Kythe's
-platform and language-agnostic services), using the Go tool is very convenient.
+The additional benefits of using Bazel are the built-in support for generating
+the Go protobuf code in `kythe/proto/` and the automatic usage of the checked-in
+`third_party/go` libraries (instead of adding to your `GOPATH`).  However, for
+quick access to Kythe's Go sources (which implement most of Kythe's platform and
+language-agnostic services), using the Go tool is very convenient.
 
 ## Code review
 
@@ -143,11 +176,12 @@ languages so Kythe is always happy to
 
 In order to use Kythe's compilation extractors, they must be given precise
 information about how a compilation is processed.  Currently, Kythe has
-[built-in support]({{site.data.development.source_browser}}/kythe/extractors/campfire/extract.sh)
-for its build system, [campfire]({{site.baseurl}}/docs/campfire.html), and
-rudimentary support for both
-[Maven]({{site.data.development.source_browser}}/kythe/release/maven_extractor.sh)
-and [CMake]({{site.data.development.source_browser}}/kythe/extractors/cmake/).
+[built-in support]({{site.data.development.source_browser}}/kythe/extractors/bazel/extract.sh)
+for Bazel and rudimentary support for
+[CMake]({{site.data.development.source_browser}}/kythe/extractors/cmake/).
+Contributing support for more build systems like [Gradle](https://gradle.org)
+will greatly help the ease of use for Kythe and increase the breadth of what it
+can index.
 
 ### User Interfaces
 

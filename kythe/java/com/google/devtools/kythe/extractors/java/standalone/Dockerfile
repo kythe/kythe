@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Build: ./campfire package //kythe/java/com/google/devtools/kythe/extractors/java/standalone:docker
+# Build: bazel build //kythe/java/com/google/devtools/kythe/extractors/java/standalone:docker
 # Usage:
 #   This container has OpenJDK8 installed with a small wrapper replacing the javac executable.  When
 #   invoked, it will first extract the compilation information, placing the resulting .kindex file

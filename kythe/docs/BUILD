@@ -28,11 +28,6 @@ asciidoc(
 )
 
 asciidoc(
-    name = "campfire",
-    src = "campfire.txt",
-)
-
-asciidoc(
     name = "kythe-verifier",
     src = "kythe-verifier.txt",
 )

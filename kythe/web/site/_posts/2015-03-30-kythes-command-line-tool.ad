@@ -4,6 +4,8 @@ author: Cody Schroeder
 layout: post
 ---
 
+NOTE: This post has been edited 2015/05/19 to reflect changes in the way to build Kythe.
+
 Every good interface deserves a good command-line tool.
 
 Along with the sample web UI, Kythe also provides a basic command-line tool for
@@ -24,8 +26,8 @@ command.
 
 [source,shell]
 ----
-$ ./campfire build //kythe/go/serving/tools:kythe
-$ alias kythe="$PWD/campfire-out/bin/kythe/go/serving/tools/kythe"
+$ bazel build //kythe/go/serving/tools:kythe
+$ alias kythe="$PWD/bazel-bin/kythe/go/serving/tools/kythe"
 
 $ kythe help --short
 ----

@@ -45,15 +45,6 @@
     }
   },
   {
-    "name": "campfire",
-    "kind": "asciidoc",
-    "inputs": {
-      "srcs": [
-        "campfire.txt"
-      ]
-    }
-  },
-  {
     "name": "kythe-verifier",
     "kind": "asciidoc",
     "inputs": {

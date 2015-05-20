@@ -15,7 +15,7 @@ limitations under the License.
 ////
 
 = Kythe
-08-Dec-2014
+19-May-2015
 :toc2:
 
 == Features
@@ -29,275 +29,34 @@ limitations under the License.
 
 == Getting Started
 
-=== External Dependencies
-
-go1.3::
-clang-3.4::
-jdk7::
-lxc-docker:: used for `//kythe/release/...` and `//kythe/extractors/openjdk`
-parallel:: used for pipeline examples
-jq1.4::
-asciidoc:: used for `//kythe/docs/schema`
-source-highlight:: used for `//kythe/docs/schema`
-graphviz:: used for `//kythe/docs/schema`
-leiningen:: used for `//kythe/web/ui`
-libncurses-dev:: needed by LLVM
-libcurl4-openssl-dev::
-uuid-dev::
-libssl-dev::
-bison-2.3::
-flex-2.5::
-llvm::
-
-NOTE: All other Kythe dependencies are hosted within the repository under
-`//third_party/...`
-
-.Installing Debian Jessie Packages
-[source,shell]
-----
-apt-get install \
-    asciidoc source-highlight graphviz \
-    libssl-dev uuid-dev libncurses-dev libcurl4-openssl-dev flex clang-3.5 \
-    openjdk-7-jdk \
-    golang-go gcc \
-    docker.io \
-    parallel jq
-
-# Bison 2.3
-wget http://archive.kernel.org/debian-archive/debian/pool/main/b/bison/bison_2.3.dfsg-5_amd64.deb -O /tmp/bison_2.3.deb
-dpkg -i /tmp/bison_2.3.deb
-
-# Debian Jessie installs clang-3.5 with version suffixes; this shows campfire
-# what the binaries are named
-echo '{
-  "configurations": {
-    "base": {
-      "cxx_path": "clang++-3.5",
-      "cc_path": "clang-3.5"
-    }
-  }
-}
-' > $HOME/.campfire_settings
-----
-
-.Installing and keeping LLVM up to date
-By default, we assume that you have an LLVM checkout in //third_party/llvm/llvm.
-Whenever you run `campfire`, we check to see if the checkout is up to date.
-If you don't have an LLVM checkout in that directory, or if you fall out of
-date, the `./buildtools/update_modules.sh` script will update you to the exact
-revisions that we test against.
-
-Note that you don't need to have a checkout of LLVM per Kythe checkout.
-You can point campfire to a different path by adding a `.campfire_settings`
-file to your `HOME` directory. For example, if your LLVM checkout is located
-at the absolute path `/home/self/llvm`, your `.campfire_settings` file would
-look something like:
-
-[source,js]
-----
-{
-  "configurations": {
-    "base": {
-      "root_rel_llvm_repo": "/home/self/llvm-git",
-      "third_party_llvm_rel_llvm_lib": "/home/self/llvm-git/kythe-build/Release+Asserts/lib",
-      "root_rel_llvm_include": [
-        "/home/self/llvm-git/include",
-        "/home/self/llvm-git/tools/clang/include",
-        "/home/self/llvm-git/kythe-build/include",
-        "/home/self/llvm-git/kythe-build/tools/clang/include"
-      ]
-    }
-  }
-}
-----
-
-third_party_llvm_rel_llvm_lib is relative to third_party/llvm.
-root_rel_llvm_repo is relative to the campfire root.
-root_rel_llvm_include is also relative to the campfire root.
-Any of these properties may be set to absolute paths, as in the example
-above. See `//third_party/llvm/CAMPFIRE` for how these properties are used.
-
-=== Building
-
-To build its sources, Kythe uses its own build system named `campfire`.
-
-WARNING: campfire is a temporary solution that will be supported only for a
-limited time.  It is expected to be replaced in the near future.
+Download the latest Kythe release from https://github.com/google/kythe/releases
+and then unpack it for a snapshot of Kythe's toolset.
 
 [source,shell]
 ----
-# From the root of the repository
-./campfire help  # Show command documentation
-
-./campfire build # Build everything
-./campfire test  # Test everything
-
-# Build all of the Go platform tools
-./campfire build //kythe/go/platform/tools:all
-
-# Build and run the Java indexer
-./campfire run //kythe/java/com/google/devtools/kythe/analyzers/java:indexer
-
-# Package Kythe release images
-./campfire package //kythe/release/...
+tar xzf kythe-v*.tar.gz
+rm -rf /opt/kythe
+mv kythe-v*/ /opt/kythe
 ----
 
-To lessen the burden of dependencies when getting started, a Docker container
-has been provided that can run `campfire` to build Kythe's binaries.
+See /opt/kythe/README for a complete description of the packaged tools and their
+usages.
 
-For more information about campfire, see its source documentation in the
-`buildtools/` directory as well as its standalone documentation in
-`kythe/docs/campfire.txt`
+== Contributing and Building Kythe
 
-[source,shell]
-----
-# From the root of the repository
-./campfire-docker build
-----
+link:http://kythe.io/contributing
 
-==== Using the Go tool
+== Documentation
 
-Kythe's Go sources can be directly built with the `go` tool as well as with
-`campfire`.
+link:http://kythe.io/docs/
 
-[source,shell]
-----
-# Install LevelDB/snappy libraries for https://github.com/jmhodges/levigo
-sudo apt-get install libleveldb-dev libsnappy-dev
+== Examples
 
-# With an appropriate GOPATH setup
-go get kythe.io/kythe/...
-
-# Using the vendored versions of the needed third_party Go libraries
-git clone https://github.com/google/kythe.git
-GOPATH=$GOPATH:$PWD/kythe/third_party/go go get kythe.io/kythe/...
-----
-
-The additional benefits of using `campfire` are the built-in support for
-generating the Go protobuf code in `kythe/proto/` and the automatic usage of the
-checked-in `third_party/go` libraries (instead of adding to your `GOPATH`).
-However, for quick access to Kythe's Go sources (which implement most of Kythe's
-platform and language-agnostic services), using the Go tool is very convenient.
-
-=== Usage
-
-The Kythe repository contains multiple binaries that work together to produce a
-Kythe index. The easiest way to test Kythe is to run it on its own repository
-using the Kythe Docker containers.
-
-.Indexing Kythe using Docker containers
-[source,shell]
-----
-./campfire package //kythe/release # build the Kythe Docker container
-
-mkdir .kythe_{graphstore,compilations}
-# .kythe_graphstore is the output directory for the resulting Kythe GraphStore
-# .kythe_compilations will contain the intermediary .kindex file for each
-#   indexed compilation
-
-# Produce the .kindex files for each compilation in the Kythe repo
-./kythe/extractors/campfire/extract.sh "$PWD" .kythe_compilations
-
-# Index the compilations, producing a GraphStore containing a Kythe index
-docker run --rm \
-  -v "${PWD}:/repo" \
-  -v "${PWD}/.kythe_compilations:/compilations" \
-  -v "${PWD}/.kythe_graphstore:/graphstore" \
-  google/kythe --index
-----
-
-.Running the Sample Kythe X-Refs UI
-[source,shell]
-----
-pushd kythe/web/ui
-lein cljsbuild once prod # Build the necessary client-side code
-popd
-./campfire run //kythe/go/serving/tools:http_server \
-  --public_resources kythe/web/ui/resources/public \
-  --listen localhost:8080 --graphstore .kythe_graphstore
-----
-
-.Building the Kythe schema document
-[source,shell]
-----
-./campfire build //kythe/docs/schema
-xdg-open campfire-out/doc/kythe/docs/schema/schema.html
-----
-
-.Using Cayley to explore a GraphStore
-[source,shell]
-----
-# Convert GraphStore to nquads format
-./campfire run //kythe/go/storage/tools:triples --graphstore /path/to/graphstore | gzip >kythe.nq.gz
-
-# Install Cayley (if necessary) (or https://github.com/google/cayley/releases)
-go get -u github.com/google/cayley
-
-$GOPATH/bin/cayley repl --dbpath kythe.nq.gz # or $GOPATH/bin/cayley http --dbpath kythe.nq.gz
-----
-
-
-----
-// Get all file nodes
-cayley> g.V().Has("/kythe/node/kind", "file").All()
-
-// Get definition anchors for all record nodes
-cayley> g.V().Has("/kythe/node/kind", "record").Tag("record").In("/kythe/edge/defines").All()
-
-// Get the file(s) defining a particular node
-cayley> g.V("node_ticket").In("/kythe/edge/defines").Out("/kythe/edge/childof").Has("/kythe/node/kind", "file").All()
-----
+link:http://kythe.io/examples
 
 == Contributing
 
-All code in Kythe is required to go through code review at
-https://phabricator-dot-kythe-repo.appspot.com/. This requires setting up
-`arcanist` on your workstation.
-
-.Install arcanist
-[source,shell]
-----
-ARC_PATH=~/arc # path to install arcanist/libphutil
-
-sudo apt-get install php5 php5-curl
-mkdir "$ARC_PATH"
-pushd "$ARC_PATH"
-git clone https://github.com/phacility/libphutil.git
-git clone https://github.com/phacility/arcanist.git
-popd
-
-# add arc to the PATH
-echo "export PATH=\"${ARC_PATH}/arcanist/bin:\$PATH\"" >> ~/.bashrc
-source ~/.bashrc
-
-arc install-certificate # in Kythe repository root
-----
-
-.arcanist Usage Example
-[source,shell]
-----
-git checkout master
-arc feature feature-name # OR git checkout -b feature-name
-# do some changes
-git add ...                    # add the changes
-git commit -m "Commit message" # commit the changes
-arc diff                       # send the commit for review
-# go through code review in Phabricator UI...
-# get change accepted
-arc land                       # merge change into master
-----
-
-For core contributors with write access to the Kythe repository, `arc land` will
-merge the change into master and push it to Github.  Others should request that
-someone else land their change for them once the change has been reviewed and
-accepted.
-
-[source,bash]
-----
-# Land a reviewed change
-arc patch D1234
-arc land
-----
+link:http://kythe.io/contributing
 
 == Contact
 

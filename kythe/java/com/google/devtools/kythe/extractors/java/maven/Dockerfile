@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Build: ./campfire package //kythe/java/com/google/devtools/kythe/extractors/java/maven:docker
+# Build: bazel build //kythe/java/com/google/devtools/kythe/extractors/java/maven:docker
 # Usage:
 #   Maven normally does not use javac directly, but this container sets MAVEN_OPTS to force javac's
 #   usage.  If your build requires other MAVEN_OPTS, be sure to keep the compiler settings intact so

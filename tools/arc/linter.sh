@@ -34,7 +34,7 @@ lint_campfire() {
 
 lint_copyright() {
   case $file in
-    third_party/*|*.md|CAMPFIRE|BUILD|*/BUILD|.campfire_settings|buildtools/*|*/testdata/*|*.yaml|*.json|*.html|*.pb.go|.arclint|.gitignore|*/.gitignore|.arcconfig|*/__phutil_*|*.bzl|.kythe)
+    third_party/*|*.md|CAMPFIRE|BUILD|*/BUILD|.campfire_settings|buildtools/*|*/testdata/*|*.yaml|*.json|*.html|*.pb.go|.arclint|.gitignore|*/.gitignore|.arcconfig|*/__phutil_*|*.bzl|.kythe|kythe/web/site/*)
       ;; # skip copyright checks
     *)
       if ! grep -Pq 'Copyright 201[45] Google Inc. All rights reserved.' "$file"; then
