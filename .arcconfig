@@ -7,5 +7,5 @@
     "buildtools/arc",
     "tools/arc"
   ],
-  "unit.engine": "CampfireTestEngine"
+  "unit.engine": "BazelTestEngine"
 }
