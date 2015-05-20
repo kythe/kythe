@@ -1,4 +1,5 @@
 // Started from the calc++ example code as part of the Bison-3.0 distribution.
+// NOTE: This file must remain compatible with Bison 2.3.
 %skeleton "lalr1.cc"
 %defines
 %define "parser_class_name" "AssertionParserImpl"
