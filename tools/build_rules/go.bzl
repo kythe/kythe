@@ -4,7 +4,7 @@ def go_compile(ctx, pkg, srcs, archive, setupGOPATH=False, extra_archives=[]):
   archives = []
   recursive_deps = set()
   include_paths = ""
-  for dep in ctx.targets.deps:
+  for dep in ctx.attr.deps:
     include_paths += "-I \"" + dep.go_archive.path + "_gopath\" "
     archives += [dep.go_archive]
     recursive_deps += dep.go_recursive_deps
@@ -87,7 +87,7 @@ def go_binary_impl(ctx):
   go_compile(ctx, 'main', ctx.files.srcs, archive)
 
   recursive_deps = set()
-  for t in ctx.targets.deps:
+  for t in ctx.attr.deps:
     recursive_deps += t.go_recursive_deps + [t.go_archive]
 
   link_binary(ctx, ctx.outputs.executable, archive, recursive_deps)
@@ -96,7 +96,7 @@ def go_binary_impl(ctx):
 def go_test_impl(ctx):
   testmain_generator = ctx.file._go_testmain_generator
 
-  lib = ctx.target.library
+  lib = ctx.attr.library
   pkg = ctx.attr.go_package_prefix + lib.label.package
 
   test_srcs = ctx.files.srcs
@@ -113,15 +113,15 @@ def go_test_impl(ctx):
       use_default_shell_env = True)
 
   archive = ctx.new_file(ctx.configuration.bin_dir, ctx.label.name + ".a")
-  go_compile(ctx, pkg, ctx.files.srcs + ctx.target.library.go_sources, archive,
-             extra_archives = ctx.target.library.go_recursive_deps,
+  go_compile(ctx, pkg, ctx.files.srcs + ctx.attr.library.go_sources, archive,
+             extra_archives = ctx.attr.library.go_recursive_deps,
              setupGOPATH = True)
 
   test_archive = ctx.new_file(ctx.configuration.bin_dir, ctx.label.name + "main.a")
   go_compile(ctx, 'main', [testmain], test_archive, extra_archives=[archive])
 
   recursive_deps = lib.go_recursive_deps + [archive]
-  for t in ctx.targets.deps:
+  for t in ctx.attr.deps:
     recursive_deps += t.go_recursive_deps + [t.go_archive]
 
   binary = ctx.outputs.executable

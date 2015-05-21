@@ -85,7 +85,7 @@ def genproto_go_impl(ctx):
   proto_src_deps = []
 
   go_proto_import_path = ""
-  for dep in ctx.targets.deps:
+  for dep in ctx.attr.deps:
     proto_src_deps += [dep.proto_src]
     go_proto_import_path += ",M" + dep.proto_src.path + "=" + ctx.attr.go_package_prefix + dep.label.package + "/" + dep.label.name
 

@@ -44,6 +44,6 @@ RUN wget http://archive.kernel.org/debian-archive/debian/pool/main/b/bison/bison
 RUN cd /opt && \
     git clone https://github.com/google/bazel/ && \
     cd bazel && \
-    git checkout 4e09fd671bdcd27428821684d171ede6ed2eb820 && \
+    git checkout c4fe4ff1df7e13a5fa330fe5a6aac5aaba11ebb9 && \
     ./compile.sh && \
     ln -s /opt/bazel/output/bazel /usr/bin/
