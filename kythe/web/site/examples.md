@@ -137,7 +137,8 @@ docker run --rm \
 
 {% highlight bash %}
 # Convert GraphStore to nquads format
-./campfire run //kythe/go/storage/tools:triples --graphstore /path/to/graphstore | gzip >kythe.nq.gz
+bazel run //kythe/go/storage/tools:triples -- --graphstore /path/to/graphstore | \
+  gzip >kythe.nq.gz
 
 # Install Cayley (if necessary) (or https://github.com/google/cayley/releases)
 go get -u github.com/google/cayley
