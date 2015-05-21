@@ -125,7 +125,9 @@ you may use an offset specification. `@^tok` will become the offset of the
 the `k` on the next source line. The rules for `tok` are the same as for
 anchor specifiers; it may also be a literal string.
 
-The following snippet demonstrates the relationship between anchors and offsets:
+The following snippet demonstrates the relationship between anchors and offsets.
+`AnchorX=@x` binds `AnchorX` to the evar generated for `@x`; see the section
+below on <<subexp,naming expressions>> for details.
 
   #- AnchorX=@x.node/kind anchor
   #- AnchorX.loc/start @^x
@@ -154,12 +156,12 @@ line above can therefore be rewritten as:
 To match an edge with an ordinal component, add it after the edge name using a
 period:
 
-  #- SomeParam is_param.1 SomeNode
+  #- SomeNode param.1 SomeParam
 
 While the edge name is a literal, the ordinal is an atom: you may replace it
 with an evar:
 
-  #- SomeParam is_param.Ordinal SomeNode
+  #- SomeNode param.Ordinal SomeParam
 
 === Node goals
 
@@ -226,6 +228,7 @@ instantiated for `_`):
   _: EVar(0x7f49d8 = Path)
   Language: EVar(0x7f4a08 = Language)
 
+[[subexp]]
 === Naming expressions
 
 You may wish to name the result of an expression match. For example, a node in
@@ -234,12 +237,12 @@ one of the target nodes using a specific `vname`, then later write
 specifications about that particular node, you must write down an equality
 constraint:
 
-  #- Node is Type = vname("java.lang.Object",_,_,_,_)
+  #- Node typed Type = vname("java.lang.Object",_,_,_,_)
 
 This is distinct from these rules:
 
-  #- Node is Type
-  #- Node is vname("java.lang.Object",_,_,_,_)
+  #- Node typed Type
+  #- Node typed vname("java.lang.Object",_,_,_,_)
 
 In the latter case, `Type` may unify with a `vname` distinct from the one spelled
 in the second rule.
@@ -247,8 +250,8 @@ in the second rule.
 Take care to avoid introducing cyclic constraints. The verifier rejects tests
 that attempt to create graph structures through unification:
 
-  #- Bad is Mu = vname(_,_,Mu,_,_)
-  #- Worse is vname(_,_,Foo = Bar = Foo,_,_)
+  #- Bad typed Mu = vname(_,_,Mu,_,_)
+  #- Worse typed vname(_,_,Foo = Bar = Foo,_,_)
 
 === Checking that rules are unsatisfiable
 
