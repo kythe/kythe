@@ -72,8 +72,8 @@ echo "Using clang found at ${CLANG}" >&2
 # thankfully has a similar enough output format) for these paths.
 
 # We use realpath -s as well as readlink -e to allow compilers to employ various
-# methods for path canonicalization (and because Bazel doesn't allow paths with
-# relative arcs in its whitelist).
+# methods for path canonicalization (and because Bazel may not always allow paths
+# with relative arcs in its whitelist).
 
 BUILTIN_INCLUDES=$(${CLANG} -E -x c++ - -v 2>&1 < /dev/null \
   | sed -n '/search starts here\:/,/End of search list/p' \

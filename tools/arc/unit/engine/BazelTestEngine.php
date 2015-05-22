@@ -112,6 +112,6 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
     if (dirname($file) == ".") {
       return '//:' . $file;
     }
-    return $file;
+    return "'" . $file . "'";
   }
 }
