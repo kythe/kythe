@@ -1,4 +1,7 @@
-package(default_visibility = ["//kythe/release:__subpackages__"])
+package(default_visibility = [
+    "//kythe/extractors:__subpackages__",
+    "//kythe/release:__subpackages__",
+])
 
 load("//tools/build_rules/docker", "docker_build")
 

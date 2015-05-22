@@ -1,4 +1,19 @@
+# Copyright 2015 Google Inc. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 FROM google/kythe-base
+# TODO(schroederc): reuse //kythe/java/com/google/devtools/kythe/extractors/java/standalone:docker
 
 # Output location for .kindex files
 VOLUME /idx
@@ -25,8 +40,8 @@ RUN curl http://hg.openjdk.java.net/jdk9/dev/hotspot/raw-rev/e8d4d0db1f06 \
 # Ensure all dependencies are present
 RUN LOG= make JOBS=4 jdk
 
-ADD javac_extractor_deploy.jar /kythe/bin/
-ADD extract.sh /kythe/bin/
+ADD kythe/java/com/google/devtools/kythe/extractors/java/standalone/javac_extractor_deploy.jar /kythe/bin/
+ADD kythe/extractors/openjdk/extract.sh /kythe/bin/
 
 # Extract compilations when run
 ENTRYPOINT ["/kythe/bin/extract.sh"]
