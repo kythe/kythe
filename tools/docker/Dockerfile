@@ -45,5 +45,6 @@ RUN cd /opt && \
     git clone https://github.com/google/bazel/ && \
     cd bazel && \
     git checkout c4fe4ff1df7e13a5fa330fe5a6aac5aaba11ebb9 && \
+    sed -i '/output\/bazel fetch/d' compile.sh && \
     ./compile.sh && \
     ln -s /opt/bazel/output/bazel /usr/bin/

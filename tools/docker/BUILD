@@ -5,4 +5,5 @@ docker_build(
     src = "Dockerfile",
     image_name = "gcr.io/kythe_repo/kythe-builder",
     tags = ["manual"],
+    use_cache = True,
 )
