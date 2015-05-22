@@ -86,9 +86,18 @@ if [[ $(uname) != 'Darwin' ]]; then
 fi
 done)
 
+sed "s|ADD_CXX_COMPILER|${CLANG}|g" tools/cpp/osx_gcc_wrapper.sh.in \
+    > tools/cpp/clang
+chmod +x tools/cpp/clang
+cp tools/cpp/clang tools/cpp/clang++
+
+# This gets used in configure for LLVM, which doesn't use the same working
+# directory as bazel.
+ABS_WRAPPER_SCRIPT="$(realpath -s $(which tools/cpp/clang))"
+
 sed "s|ADD_CXX_COMPILER|${CLANG}|g
+s|ABS_WRAPPER_SCRIPT|${ABS_WRAPPER_SCRIPT}|g
 s|ADD_CXX_BUILTIN_INCLUDE_DIRECTORIES|${BUILTIN_INCLUDES}|g" \
     tools/cpp/CROSSTOOL.in | \
 sed 's|__EOL__|\
 |g' > tools/cpp/CROSSTOOL
-

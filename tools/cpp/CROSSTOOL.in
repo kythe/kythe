@@ -62,7 +62,7 @@ toolchain {
   abi_version: "local"
   abi_libc_version: "local"
   builtin_sysroot: ""
-  compiler: "ADD_CXX_COMPILER"
+  compiler: "ABS_WRAPPER_SCRIPT"
   host_system_name: "local"
   needsPic: true
   target_libc: "macosx"
@@ -74,7 +74,7 @@ toolchain {
   tool_path { name: "compat-ld" path: "/usr/bin/ld" }
   tool_path { name: "cpp" path: "/usr/bin/cpp" }
   tool_path { name: "dwp" path: "/usr/bin/dwp" }
-  tool_path { name: "gcc" path: "ADD_CXX_COMPILER" }
+  tool_path { name: "gcc" path: "ABS_WRAPPER_SCRIPT" }
   cxx_flag: "-std=c++11"
   cxx_flag: "-fno-rtti"
   cxx_flag: "-Wall"

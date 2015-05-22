@@ -10,13 +10,19 @@ filegroup(
 )
 
 cc_library(
+    alwayslink=1,
+    linkstatic=1,
     name = "llvm",
     srcs = [
         "llvm/build/Release+Asserts/lib/libclang.a",
         "llvm/build/Release+Asserts/lib/libclangTooling.a",
+        "llvm/build/Release+Asserts/lib/libclangStaticAnalyzerFrontend.a",
+        "llvm/build/Release+Asserts/lib/libclangStaticAnalyzerCore.a",
+        "llvm/build/Release+Asserts/lib/libclangRewriteFrontend.a",
         "llvm/build/Release+Asserts/lib/libclangFrontend.a",
         "llvm/build/Release+Asserts/lib/libclangDriver.a",
         "llvm/build/Release+Asserts/lib/libclangFrontendTool.a",
+        "llvm/build/Release+Asserts/lib/libclangARCMigrate.a",
         "llvm/build/Release+Asserts/lib/libclangParse.a",
         "llvm/build/Release+Asserts/lib/libclangSema.a",
         "llvm/build/Release+Asserts/lib/libclangEdit.a",
@@ -24,10 +30,12 @@ cc_library(
         "llvm/build/Release+Asserts/lib/libclangFormat.a",
         "llvm/build/Release+Asserts/lib/libclangIndex.a",
         "llvm/build/Release+Asserts/lib/libclangSerialization.a",
+        "llvm/build/Release+Asserts/lib/libclangASTMatchers.a",
         "llvm/build/Release+Asserts/lib/libclangAST.a",
         "llvm/build/Release+Asserts/lib/libclangLex.a",
         "llvm/build/Release+Asserts/lib/libclangBasic.a",
         "llvm/build/Release+Asserts/lib/libclangAnalysis.a",
+        "llvm/build/Release+Asserts/lib/libLLVMAnalysis.a",
         "llvm/build/Release+Asserts/lib/libLLVMOption.a",
         "llvm/build/Release+Asserts/lib/libLLVMTransformUtils.a",
         "llvm/build/Release+Asserts/lib/libLLVMMC.a",

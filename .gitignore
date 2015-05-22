@@ -25,6 +25,8 @@ MANIFEST-*
 /doxygen-out
 *.ninja*
 /tools/cpp/CROSSTOOL
+/tools/cpp/clang
+/tools/cpp/clang++
 
 # Misc
 node_modules
