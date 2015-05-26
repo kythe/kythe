@@ -205,11 +205,11 @@ func main() {
 				Ticket: []string{ref.TargetTicket},
 				Kind:   []string{schema.NamedEdge},
 			}); err != nil {
-				log.Println("WARNING: error getting edges for %q: %v", ref.TargetTicket, err)
+				log.Printf("WARNING: error getting edges for %q: %v", ref.TargetTicket, err)
 			} else {
 				for _, name := range xrefs.EdgesMap(eReply.EdgeSet)[ref.TargetTicket][schema.NamedEdge] {
 					if uri, err := kytheuri.Parse(name); err != nil {
-						log.Println("WARNING: named node ticket (%q) could not be parsed: %v", name, err)
+						log.Printf("WARNING: named node ticket (%q) could not be parsed: %v", name, err)
 					} else {
 						r.Node.Names = append(r.Node.Names, uri.Signature)
 					}
@@ -230,12 +230,12 @@ func readDirtyBuffer() []byte {
 
 	f, err := os.Open(*dirtyBuffer)
 	if err != nil {
-		log.Fatal("ERROR: could not open dirty buffer at %q: %v", *dirtyBuffer, err)
+		log.Fatalf("ERROR: could not open dirty buffer at %q: %v", *dirtyBuffer, err)
 	}
 	defer f.Close()
 	data, err := ioutil.ReadAll(f)
 	if err != nil {
-		log.Fatal("ERROR: could read dirty buffer at %q: %v", *dirtyBuffer, err)
+		log.Fatalf("ERROR: could read dirty buffer at %q: %v", *dirtyBuffer, err)
 	}
 	return data
 }
