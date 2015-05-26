@@ -45,13 +45,15 @@ mkdir -p "$OUTPUT"
 OUTPUT="$(readlink -e "$OUTPUT")"
 
 cd "$ROOT"
-find -L bazel-out -type d -name extra_actions -exec rm -rf '{}' \;
+if [[ -d bazel-out ]]; then
+  find -L bazel-out -type d -name extra_actions -exec rm -rf '{}' +
+fi
 bazel --blazerc=/dev/null test --test_summary=none \
   --experimental_action_listener=//kythe/java/com/google/devtools/kythe/extractors/java/bazel:extract_kindex \
   --experimental_action_listener=//kythe/cxx/extractor:extract_kindex \
   //...
 
-xad="$(find -L bazel-out -name extra_actions)"
+xad="$(find -L bazel-out -type d -name extra_actions)"
 for idx in $(find "$xad" -name '*.kindex'); do
   name="$(basename "$idx" .kindex)"
   lang="${name##*.}"

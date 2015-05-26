@@ -64,7 +64,7 @@ if [[ -n "$(find "$GRAPHSTORE" -maxdepth 0 -empty)" ]]; then
 
   if [[ -z "$(find "$COMPILATIONS" -name '*.kindex' -print -quit)" ]]; then
     echo "Extracting Kythe compilations to $COMPILATIONS" >&2
-    time ./kythe/extractors/campfire/extract.sh "$PWD" "$COMPILATIONS"
+    time ./kythe/extractors/bazel/extract.sh "$PWD" "$COMPILATIONS"
   fi
 
   echo "Writing to GraphStore at $GRAPHSTORE" >&2
@@ -91,5 +91,5 @@ fi
 echo "Writing serving tables to $TABLES"
 rm -rf "$TABLES"
 mkdir -p "$TABLES"
-time ./campfire run //kythe/go/serving/tools:write_tables \
+time bazel run //kythe/go/serving/tools:write_tables -- \
   --graphstore "$GRAPHSTORE" --out "$TABLES"

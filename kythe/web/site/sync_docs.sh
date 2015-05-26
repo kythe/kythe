@@ -24,12 +24,11 @@ export SHELL=/bin/bash
 DIR="$(readlink -e "$(dirname "$0")")"
 cd "$DIR/../../.."
 
-export DOCS_DIR=kythe/docs
-./campfire build --asciidoc_backend=html --asciidoc_partial "//$DOCS_DIR/..."
-rsync -a --delete "campfire-out/doc/$DOCS_DIR/" "$DIR"/_docs
-DOCS=($(./campfire query --print_names "files('//$DOCS_DIR/...')" | \
+bazel --blazerc=/dev/null build //kythe/docs/... //kythe/docs/schema
+rsync -Lr --chmod=a+w --delete "bazel-bin/kythe/docs/" "$DIR"/_docs
+DOCS=($(bazel query 'kind("source file", deps(//kythe/docs/..., 1))' | \
   grep -E '\.(txt|adoc|ad)$' | \
-  parallel 'x() { echo "${1#$DOCS_DIR/}"; }; x'))
+  parallel -L1 'x() { file="$(tr : / <<<"$1")"; echo ${file#//kythe/docs/}; }; x'))
 
 asciidoc_query() {
   bundle exec ruby -r asciidoctor -e 'puts Asciidoctor.load_file(ARGV[0]).'"$2" "$1" 2>/dev/null
@@ -57,10 +56,10 @@ trap 'rm -rf "$TMP"' EXIT ERR INT
 cd "$DIR"
 for doc in ${DOCS[@]}; do
   html=${doc%%.*}.html
-  abs_path="../../../$DOCS_DIR/$doc"
+  abs_path="../../../kythe/docs/$doc"
   cp "_docs/$html" "$TMP"
   { doc_header "$abs_path";
-    cat "$TMP"; } > "_docs/$html"
+    cat "$TMP"; } >"_docs/$html"
 done
 
 mv _docs/schema/{schema,index}.html

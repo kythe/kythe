@@ -29,6 +29,10 @@ VOLUME /compilations
 # Allow Maven cache to be shared
 VOLUME /root/.m2
 
+# TODO(schroederc): Remove this once http://kythe.io/phabricator/T39 is fixed
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends libleveldb1
+
 # Maven Extractor
 ADD kythe/java/com/google/devtools/kythe/extractors/java/standalone/javac_extractor_deploy.jar /kythe/bin/javac_extractor_deploy.jar
 ADD kythe/release/maven_extractor.sh /kythe/bin/maven_extractor
@@ -44,7 +48,7 @@ ADD kythe/cxx/indexer/cxx/indexer /kythe/bin/c++_indexer.bin
 RUN echo 'exec /kythe/bin/c++_indexer.bin --flush_after_each_entry=true --ignore_unimplemented=true --index_template_instantiations=false "$@"' > /kythe/bin/c++_indexer
 
 # Java
-ADD kythe/java/com/google/devtools/kythe/analyzers/java/indexer_deploy.jar /kythe/bin/
+ADD kythe/java/com/google/devtools/kythe/analyzers/java/indexer_deploy.jar /kythe/bin/java_indexer_deploy.jar
 RUN echo 'exec java -jar /kythe/bin/java_indexer_deploy.jar "$@"' > /kythe/bin/java_indexer
 
 RUN chmod +x /kythe/bin/*_indexer

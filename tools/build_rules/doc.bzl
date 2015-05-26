@@ -1,5 +1,5 @@
-def asciidoc(name, src, attrs={}, confs=[], partial=False, data=[], tools=[], tags=None):
-  args = ['--backend', 'html']
+def asciidoc(name, src, attrs={}, confs=[], data=[], tools=[], tags=None):
+  args = ['--backend', 'html', '--no-header-footer']
   for k, v in attrs:
     a = '--attribute=' + k
     if v:
@@ -8,8 +8,6 @@ def asciidoc(name, src, attrs={}, confs=[], partial=False, data=[], tools=[], ta
       args += [a + '!']
   for f in confs:
     args += ['--conf-file=$(location ' + f + ')']
-  if partial:
-    args += '--no-header-footer'
   out = name + '.html'
 
   native.genrule(

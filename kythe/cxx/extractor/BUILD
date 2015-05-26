@@ -91,9 +91,9 @@ action_listener(
 
 extra_action(
     name = "extra_action",
-    cmd = "$(location :cxx_extractor_bazel) $(EXTRA_ACTION_FILE) $(output $(ACTION_ID).cpp.kindex) $(location //kythe/data:vnames_config)",
+    cmd = "$(location :cxx_extractor_bazel) $(EXTRA_ACTION_FILE) $(output $(ACTION_ID).c++.kindex) $(location //kythe/data:vnames_config)",
     data = ["//kythe/data:vnames_config"],
-    out_templates = ["$(ACTION_ID).cpp.kindex"],
+    out_templates = ["$(ACTION_ID).c++.kindex"],
     tools = [":cxx_extractor_bazel"],
 )
 

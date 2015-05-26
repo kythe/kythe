@@ -34,20 +34,10 @@ if [[ ! -d "$DIR"/serving ]]; then
   "$DIR"/build_serving_tables.sh "$@" --out "$DIR"/serving
 fi
 
-CAMPFIRE_ROOT="$PWD"
-while [[ ! -f "${CAMPFIRE_ROOT}/.campfire_settings" ]] && [[ "$CAMPFIRE_ROOT" != "/" ]]; do
-  CAMPFIRE_ROOT="$(readlink -e "${CAMPFIRE_ROOT}/..")"
-done
-if [[ "$CAMPFIRE_ROOT" == "/" ]]; then
-  echo "Could not find campfire root!" >&2
-  exit 1
-fi
-
-cd "${CAMPFIRE_ROOT}"
+cd "$(dirname "$0")/../../../.."
 SERVER='//kythe/release/appengine/xrefs:server'
-./campfire build "$SERVER"
-./campfire query "outputs(['$SERVER'])" | \
-  jq -r '.[]' | xargs -I '{}' cp --preserve=all '{}' "$DIR"/
+bazel build "$SERVER"
+cp -f --preserve=all bazel-bin/kythe/release/appengine/xrefs/server "$DIR"/
 
 cd kythe/web/ui
 lein cljsbuild once prod
