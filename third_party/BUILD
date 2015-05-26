@@ -41,3 +41,21 @@ java_import(
         "junit/junit-4.11.jar",
     ],
 )
+
+cc_library(
+    name = "libuuid",
+    srcs = ["empty.cc"],
+    linkopts = ["-luuid"],
+)
+
+cc_library(
+    name = "libcurl",
+    srcs = ["empty.cc"],
+    linkopts = ["-lcurl"],
+)
+
+cc_library(
+    name = "libcrypto",
+    srcs = ["empty.cc"],
+    linkopts = ["-lcrypto"],
+)

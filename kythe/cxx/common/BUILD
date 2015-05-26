@@ -15,11 +15,9 @@ cc_library(
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
     ],
-    linkopts = [
-        "-lcrypto",
-    ],
     deps = [
         "//kythe/proto:any_proto_cc",
+        "//third_party:libcrypto",
         "//third_party/googleflags:gflags",
         "//third_party/googlelog:glog",
         "//third_party/proto:protobuf",
@@ -52,9 +50,6 @@ cc_library(
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
     ],
-    linkopts = [
-        "-luuid",
-    ],
     visibility = [
         "//kythe/cxx:__subpackages__",
         "//third_party/llvm/src:__pkg__",
@@ -63,6 +58,7 @@ cc_library(
         ":json_proto",
         "//kythe/proto:analysis_proto_cc",
         "//kythe/proto:storage_proto_cc",
+        "//third_party:libuuid",
         "//third_party/googleflags:gflags",
         "//third_party/googlelog:glog",
         "//third_party/llvm",
@@ -86,13 +82,11 @@ cc_library(
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
     ],
-    linkopts = [
-        "-lcurl",
-    ],
     deps = [
         ":lib",
         "//kythe/proto:storage_proto_cc",
         "//kythe/proto:xref_proto_cc",
+        "//third_party:libcurl",
         "//third_party/googleflags:gflags",
         "//third_party/googlelog:glog",
         "//third_party/proto:protobuf",
@@ -262,6 +256,7 @@ cc_library(
 
 cc_binary(
     name = "net_client_test",
+    testonly = 1,
     deps = [
         ":net_client_testlib",
     ],
