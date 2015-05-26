@@ -1,0 +1,96 @@
+---
+title: Modeling a Command-Line Flag Library
+author: zarko
+layout: post
+---
+
+We record https://gflags.github.io/gflags/[gflags]-specific information by
+defining a custom node kind.
+
+Tools can record arbitrary library- or project-specific information in the
+Kythe graph. We recently added support for the gflags command line flags parsing
+library to demonstrate this. gflags command-line flags are declared and
+defined in $$C++$$ using macros:
+
+[source,c]
+----
+DECLARE_bool(secure);
+DEFINE_string(address, "127.0.0.1", "Listen on this address.");
+
+(...)
+
+auto my_uri = (FLAGS_secure ? "https://" : "http://") + FLAGS_address + ":80";
+----
+
+The Kythe $$C++$$ indexer will record that the flag variable `FLAGS_address` is
+defined inside the macro. One can go further and treat the flag being defined as
+a first-class object. In this view, the `DEFINE_string` macro defines a new flag
+object to which `FLAGS_address` refers. The data about the underlying $$C++$$
+variables remain in the graph, but now we have added some library-specific
+semantic information.
+
+In our model of the gflags library, each flag definition or declaration gives
+rise to a node with kind `google/gflag`. We add this kind underneath the
+`google/` prefix to avoid polluting the base namespace of Kythe nodes. Like
+link:/docs/schema#variable[variables], gflags can be definitions (via `DEFINE_`)
+or incomplete (via `DECLARE_`); they are also link:/docs/schema#named[named]
+with the identifier that the programmer writes down in the macro
+invocation. This name is distinct from the name of the variable that the macro
+creates. Later references to that variable are also references to the flag with
+which it is associated.
+
+With a complete implementation, the following verifier test should pass:
+
+[source,c]
+----
+// Checks that we can complete a string flag decl.
+#include "flags_string.h"
+  // This header contains these lines:
+  // #include "gflags.h"
+  // DECLARE_string(stringflag);
+//- StringFlagDeclAnchor defines StringFlagDecl
+//- StringFlagDecl.complete incomplete
+//- StringFlagDecl.node/kind google/gflag
+//- @stringflag defines StringFlag
+//- StringFlag.complete definition
+//- StringFlag.node/kind google/gflag
+//- @stringflag completes StringFlagDecl
+DEFINE_string(stringflag, "gnirts", "rtsgni");
+//- @FLAGS_stringflag ref StringFlag
+//- @FLAGS_stringflag ref FlagVar
+//- FlagVar.node/kind variable
+auto s = FLAGS_stringflag;
+----
+
+The actual business of finding and labeling flags requires some work
+with Clang's syntax tree. We define an auxiliary function that, given
+a variable declaration (a `clang::VarDecl`), walks around in the tree
+to try to find the location of the flag identifier in the macro that
+caused that declaration. Of course, not many variables will be associated
+with flags. In that case, this routine (`GetVarDeclFlagDeclLoc` in
+`//kythe/cxx/indexer/cxx/IndexerLibrarySupport.cc`) returns a result that is
+marked invalid. Since this function will be called once per variable declaration
+discovered by the indexer as it traverses the syntax tree, we take extra care to
+quickly reject variables that could not possibly be flags (such as variables
+that do not begin with "FLAGS_" or variables that were not declared inside a
+macro).
+
+We now have our graph representation and a procedure to collect the information
+necessary to generate it. Now, by using the $$C++$$ indexer's `LibrarySupport`
+interface, we can listen for variable declarations and references to check for
+the ones for which we need to emit flag annotations. This interface differs
+from Clang's `RecursiveASTVisitor` as it provides Kythe-specific information
+as well as pointers into the AST; for example, it will provide VNames for
+the variables it encounters. Since every flag is associated with at least
+one variable definition or declaration (which is, in turn, not associated
+with any other flag), and because the VName for that variable def/decl is
+a globally-unique identifier, we can use it as a base for the name of the
+`google/gflag` node we will create. In practice, building this derived name
+requires only that we add a prefix to the `signature` component of the VName
+(and by convention, we'll use `google/gflag#`).
+
+With this logic in place, we can check our verifier test above (and write
+some other ones, too). The new data in the graph are available to any Kythe
+tool. These tools are free to ignore it, to present it as generic graph
+relationships, or to interpret it with special knowledge about what being a
+`google/gflag` implies.

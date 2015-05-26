@@ -8,3 +8,7 @@
 //- StringFlag.node/kind google/gflag
 //- @stringflag completes StringFlagDecl
 DEFINE_string(stringflag, "gnirts", "rtsgni");
+//- @FLAGS_stringflag ref StringFlag
+//- @FLAGS_stringflag ref FlagVar
+//- FlagVar.node/kind variable
+auto s = FLAGS_stringflag;
