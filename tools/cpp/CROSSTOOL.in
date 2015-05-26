@@ -39,7 +39,7 @@ toolchain {
   cxx_flag: "-Wall"
   cxx_flag: "-Werror"
   cxx_flag: "-Wno-unused-variable"
-  cxx_flag: "-Itools/cpp/include"
+  cxx_flag: "-isystem tools/cpp/include"
   linker_flag: "-lstdc++"
   linker_flag: "-lpthread"
   linker_flag: "-B/usr/bin/"
