@@ -26,6 +26,7 @@ cc_library(
     ],
     copts = [
         "-Wno-deprecated-register",
+        "-Wno-implicit-fallthrough",
     ],
     includes = [
         ".",
