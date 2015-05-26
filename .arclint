@@ -17,7 +17,9 @@
       "exclude": "(^third_party|^kythe/proto/)"
     },
     "custom": {
-      "type": "script-and-regex"
+      "type": "script-and-regex",
+      "script-and-regex.script": "tools/arc/linter.sh",
+      "script-and-regex.regex": "/^((?P<name>.+?)::)?(?P<severity>warning|error|advice):(?P<line>\\d+)? (?P<message>.*)$/m"
     }
   }
 }
