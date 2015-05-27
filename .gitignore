@@ -18,18 +18,10 @@ MANIFEST-*
 
 # Build artifacts
 /bazel-*
-/.campfire_lock
-/.campfire_state
-/campfire-out
-/compile_commands.json
 /doxygen-out
-*.ninja*
 /tools/cpp/CROSSTOOL
 /tools/cpp/clang
 /tools/cpp/clang++
-
-# Misc
-node_modules
 
 # Third-party
 /third_party/llvm/llvm

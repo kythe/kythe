@@ -1,8 +1,0 @@
-{
-  "configurations": {
-    "base": {
-      "cxx_path": "clang++-3.5",
-      "cc_path": "clang-3.5"
-    }
-  }
-}

@@ -25,16 +25,9 @@
 readonly file="$1"
 readonly name="$(basename "$1")"
 
-# TODO(schroederc): remove when campfire is removed
-lint_campfire() {
-  if ! ./campfire camper -c "$file"; then
-    echo 'campfire camper::error: CAMPFIRE file is not correctly formatted'
-  fi
-}
-
 lint_copyright() {
   case $file in
-    third_party/*|*.md|CAMPFIRE|BUILD|*/BUILD|.campfire_settings|buildtools/*|*/testdata/*|*.yaml|*.json|*.html|*.pb.go|.arclint|.gitignore|*/.gitignore|.arcconfig|*/__phutil_*|*.bzl|.kythe|kythe/web/site/*)
+    third_party/*|*.md|BUILD|*/BUILD|buildtools/*|*/testdata/*|*.yaml|*.json|*.html|*.pb.go|.arclint|.gitignore|*/.gitignore|.arcconfig|*/__phutil_*|*.bzl|.kythe|kythe/web/site/*)
       ;; # skip copyright checks
     *)
       if ! grep -Pq 'Copyright 201[45] Google Inc. All rights reserved.' "$file"; then
@@ -44,6 +37,5 @@ lint_copyright() {
 }
 
 case "$name" in
-  CAMPFIRE) lint_campfire;;
   *) lint_copyright;;
 esac

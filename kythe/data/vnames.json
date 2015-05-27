@@ -22,20 +22,6 @@
     }
   },
   {
-    "pattern": "campfire-out/[^/]+/([^/]+/javatests/.+/testdata)/.+\\.jar!/([^\\$]+)(\\$.+)?\\.class",
-    "vname": {
-      "corpus": "kythe",
-      "path": "@1@/@2@.java"
-    }
-  },
-  {
-    "pattern": "campfire-out/[^/]+/(.*?)/(java|javatests)/.*\\.jar!/([^\\$]+)(\\$.+)?\\.class",
-    "vname": {
-      "corpus": "kythe",
-      "path": "@1@/@2@/@3@.java"
-    }
-  },
-  {
     "pattern": "(third_party/llvm/lib/clang/[^/]+/include)/(.*)",
     "vname": {
       "corpus": "cstdlib",
@@ -63,14 +49,6 @@
     "pattern": "([^/]+/java|javatests/[^\\$]+)(\\$.+)?\\.(class|java)",
     "vname": {
       "corpus": "kythe",
-      "path": "@1@.java"
-    }
-  },
-  {
-    "pattern": "campfire-out/[^/]+/[^/]+/proto/.*\\.jar!/([^\\$]+)(\\$.+)?\\.class",
-    "vname": {
-      "corpus": "kythe",
-      "root": "GENERATED/proto/java",
       "path": "@1@.java"
     }
   },

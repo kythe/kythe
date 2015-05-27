@@ -1,6 +1,9 @@
 global:
   ignore:
-    - campfire-out/
+    - bazel-bin/
+    - bazel-genfiles/
+    - bazel-testlogs/
+    - bazel-out/
     - third_party/
     - shipshape/analyzers/govet/testdata/
 

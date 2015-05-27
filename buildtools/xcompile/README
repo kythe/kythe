@@ -1,2 +1,0 @@
-This directory contains resources for building a Docker image that
-cross-compiles libclang to PNaCl.
