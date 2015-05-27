@@ -12,7 +12,7 @@ required_input {
     digest: "7fc8bce46febc9e8c660fdaa7caa9e27e64a9f85769d69ca9ecfc8a2ca751335"
   }
   context {
-    source_context: "EC_HASH
+    source_context: "EC_HASH"
   }
 }
 argument: "/usr/bin/g++"
@@ -23,4 +23,4 @@ argument: "./kythe/cxx/extractor/testdata/main_source_file_env_dep.cc"
 argument: "-fsyntax-only"
 source_file: "./kythe/cxx/extractor/testdata/main_source_file_env_dep.cc"
 working_directory: "."
-entry_context: "EC_HASH
+entry_context: "EC_HASH"

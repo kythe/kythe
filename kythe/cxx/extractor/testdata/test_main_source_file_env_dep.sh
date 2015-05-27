@@ -34,12 +34,12 @@ KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}" \
     ./kythe/cxx/extractor/testdata/main_source_file_env_dep.cc
 "${KINDEX_TOOL}" -suppress_details -explode "${INDEX_PATH_WITH_MACRO}"
 "${KINDEX_TOOL}" -suppress_details -explode "${INDEX_PATH_WITHOUT_MACRO}"
-EC_HASH=$(grep -oP 'entry_context: \"\K.*\"$' \
+EC_HASH=$(sed -ne '/^entry_context:/ {s/.*entry_context: \"\(.*\)\"$/\1/; p}' \
     "${INDEX_PATH_WITH_MACRO}_UNIT")
 sed "s/EC_HASH/${EC_HASH}/g" \
     "${BASE_DIR}/main_source_file_env_dep_with.UNIT" \
     | diff - "${INDEX_PATH_WITH_MACRO}_UNIT"
-EC_HASH=$(grep -oP 'entry_context: \"\K.*\"$' \
+EC_HASH=$(sed -ne '/^entry_context:/ {s/.*entry_context: \"\(.*\)\"$/\1/; p}' \
     "${INDEX_PATH_WITHOUT_MACRO}_UNIT")
 sed "s/EC_HASH/${EC_HASH}/g" \
     "${BASE_DIR}/main_source_file_env_dep_without.UNIT" \

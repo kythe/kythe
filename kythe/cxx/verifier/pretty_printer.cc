@@ -27,7 +27,13 @@ void StringPrettyPrinter::Print(const std::string &string) { data_ << string; }
 
 void StringPrettyPrinter::Print(const char *string) { data_ << string; }
 
-void StringPrettyPrinter::Print(const void *ptr) { data_ << ptr; }
+void StringPrettyPrinter::Print(const void *ptr) {
+  if (ptr) {
+    data_ << ptr;
+  } else {
+    data_ << "0";
+  }
+}
 
 void FileHandlePrettyPrinter::Print(const std::string &string) {
   fprintf(file_, "%s", string.c_str());

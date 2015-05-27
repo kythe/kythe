@@ -25,7 +25,7 @@ kindex_contents() {
   $viewindex --files "$1" | $jq -c -S .
 }
 
-tmp="$(mktemp -d)"
+tmp="$(mktemp -d 2>/dev/null || mktemp -d -t 'kythetest')"
 trap 'rm -rf "$tmp"' EXIT ERR INT
 
 $indexpack --quiet --to_archive "$tmp/archive" $test_kindex >/dev/null

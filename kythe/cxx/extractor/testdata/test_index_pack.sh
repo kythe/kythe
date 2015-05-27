@@ -30,5 +30,5 @@ KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}" KYTHE_INDEX_PACK="1" \
     ./kythe/cxx/extractor/testdata/transcript_main.cc
 test -e "${OUT_DIR}/units" || exit 1
 test -e "${OUT_DIR}/files" || exit 1
-[[ $(ls "${OUT_DIR}"/files/*.data | wc -l) == 3 ]]
-[[ $(ls "${OUT_DIR}"/units/*.unit | wc -l) == 1 ]]
+[[ $(ls -1 "${OUT_DIR}"/files/*.data | wc -l) -eq 3 ]]
+[[ $(ls -1 "${OUT_DIR}"/units/*.unit | wc -l) -eq 1 ]]

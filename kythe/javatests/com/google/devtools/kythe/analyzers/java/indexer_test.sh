@@ -24,7 +24,7 @@ test_kindex="$TEST_SRCDIR/kythe/testdata/test.kindex"
 # Test indexing a .kindex file
 $indexer $test_kindex | $entrystream >/dev/null
 
-tmp="$(mktemp -d)"
+tmp="$(mktemp -d 2>/dev/null || mktemp -d -t 'kythetest')"
 trap 'rm -rf "$tmp"' EXIT ERR INT
 
 UNIT="$($indexpack --to_archive "$tmp/archive" $test_kindex 2>/dev/null)"

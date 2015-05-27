@@ -21,7 +21,7 @@ echo '#define STDIN_OK 1\n' | KYTHE_INDEX_PACK=1 \
     KYTHE_VNAMES="${BASE_DIR}/stdin.vnames" "${EXTRACTOR}" -x c -
 pushd "${OUT_DIR}"
 OUT_INDEX=$("${INDEXPACK}" --from_archive "${OUT_DIR}" 2>&1 | \
-    grep -Po 'Writing compilation unit to \K(.*)\.kindex')
+    sed -ne '/^.*Writing compilation unit to .*$/ { s/.*Writing compilation unit to \(.*\.kindex\)/\1/; p}')
 popd
 # Make sure that the indexer can handle <stdin:> paths.
 "${INDEXER}" --ignore_unimplemented "${OUT_DIR}/${OUT_INDEX}" | \

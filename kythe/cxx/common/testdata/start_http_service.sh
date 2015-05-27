@@ -48,9 +48,9 @@ KYTHE_ENTRYSTREAM="${KYTHE_BIN}/kythe/go/platform/tools/entrystream"
 KYTHE_HTTP_SERVER="${KYTHE_BIN}/kythe/go/serving/tools/http_server"
 RETRIES=8
 
-if grep -qe ':/docker' /proc/1/cgroup ; then
-# lsof doesn't work inside docker because of AppArmor.
-# Until that's fixed, we'll pick our own port.
+if [[ -e /proc/1/cgroup ]] && grep -qe ':/docker' /proc/1/cgroup ; then
+  # lsof doesn't work inside docker because of AppArmor.
+  # Until that's fixed, we'll pick our own port.
   LISTEN_TO="localhost:31338"
   server_addr() {
     echo "${LISTEN_TO}"
@@ -67,8 +67,13 @@ if grep -qe ':/docker' /proc/1/cgroup ; then
   retry_config
 else
   LISTEN_TO="localhost:0"
+  if [[ -e /usr/sbin/lsof ]]; then
+    LSOF=/usr/sbin/lsof
+  else
+    LSOF=lsof
+  fi
   server_addr() {
-    lsof -a -p "$1" -i -s TCP:LISTEN 2>/dev/null | grep -ohw "localhost:[0-9]*"
+    ${LSOF} -a -p "$1" -i -s TCP:LISTEN 2>/dev/null | grep -ohw "localhost:[0-9]*"
   }
   retry_config() {
     echo "Aborting (something went wrong starting the server)" >&2
