@@ -40,7 +40,7 @@ Kythe relies on the following external dependencies:
 * flex-2.5
 * libleveldb-dev (see http://kythe.io/phabricator/T39)
 * libsnappy-dev  (see http://kythe.io/phabricator/T39)
-* [docker](https://www.docker.com/) (for release images `//kythe/release/...` and `//buildtools/docker)
+* [docker](https://www.docker.com/) (for release images `//kythe/release/...` and `//buildtools/docker`)
 * [leiningen](http://leiningen.org/) (used to build `kythe/web/ui`)
 
 NOTE: All other Kythe dependencies are hosted within the repository under
