@@ -41,7 +41,7 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
       return array();
     }
 
-    $query_command = "bazel --blazerc=/dev/null --noblock_for_lock query -k %s";
+    $query_command = $this->bazelCommand(["query", "%s"]);
     $files = join(" ",
                   array_map(array('BazelTestEngine', 'fileToTarget'), $this->getPaths()));
     $future = new ExecFuture($query_command, 'rdeps(//..., set('.$files.')) except kind("docker_build", rdeps(//..., set('.$files.')))');
@@ -59,7 +59,7 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
   }
 
   private function runTests($targets) {
-    $future = new ExecFuture('bazel --blazerc=/dev/null --noblock_for_lock test --noshow_loading_progress --noshow_progress ' . join(" ", $targets));
+    $future = new ExecFuture($this->bazelCommand(array_merge(["test", "--noshow_loading_progress", "--noshow_progress"], $targets)));
     $future->setCWD($this->project_root);
     $status = $future->resolve();
     return $this->parseTestResults($targets, $status);
@@ -77,7 +77,7 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
       throw new Exception($output . "\n" . $status[2]);
     }
 
-    $query_command = "bazel --blazerc=/dev/null --noblock_for_lock query -k %s";
+    $query_command = $this->bazelCommand(["query", "-k", "%s"]);
     $future = new ExecFuture($query_command, 'tests(set('.join(" ", $targets).'))');
     $future->setCWD($this->project_root);
     $testTargets = explode("\n", trim($future->resolvex()[0]));
@@ -113,5 +113,19 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
       return '//:' . $file;
     }
     return "'" . $file . "'";
+  }
+
+  private function getWebStatusPort() {
+    $port = intval(getenv("BAZEL_WEB_STATUS_PORT"));
+    if ($port > 0) {
+      return $port;
+    }
+    return 0;
+  }
+
+  private function bazelCommand($args) {
+    return "bazel --blazerc=/dev/null --noblock_for_lock "
+        . "--use_webstatusserver=" . $this->getWebStatusPort()
+        . " " . join(" ", $args);
   }
 }
