@@ -12,8 +12,10 @@ public class Variables {
   //- V.node/kind variable
   //- V.subkind field
   //- V childof Class
-  //- V typed Str = vname("java.lang.String","","","","java")
-  //- Str.node/kind name
+  //- V typed Str = vname(_,"jdk","","","java")
+  //- Str.node/kind record
+  //- Str.subkind class
+  //- Str named vname("java.lang.String","","","","java")
   String field;
 
   //- @m defines F

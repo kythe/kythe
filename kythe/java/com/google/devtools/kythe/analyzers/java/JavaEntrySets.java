@@ -69,6 +69,10 @@ public class JavaEntrySets extends KytheEntrySets {
     }
 
     VName v = lookupVName(sym.enclClass());
+    if (v == null && fromJDK(sym)) {
+      v = VName.newBuilder().setCorpus("jdk").build();
+    }
+
     if (v == null) {
       node = getName(signature);
       // NAME node was already be emitted
@@ -182,6 +186,15 @@ public class JavaEntrySets extends KytheEntrySets {
     if (signatures.size() > 1) {
       throw new IllegalStateException("Multiple signatures found for " + sym + ": " + signatures);
     }
+  }
+
+  private static boolean fromJDK(Symbol sym) {
+    if (sym == null || sym.enclClass() == null) {
+      return false;
+    }
+    String cls = sym.enclClass().className();
+    return cls.startsWith("java.") || cls.startsWith("javax.")
+        || cls.startsWith("com.sun.") || cls.startsWith("sun.");
   }
 
   /**

@@ -34,7 +34,6 @@ jq --slurp '.[].node.ticket
         and .[].node.ticket != ""'
 jq --slurp '.[].node.kind
         and .[].node.kind != ""'
-jq --slurp '.[].node.subkind == null'
 
 JSON=$(kwazthis --path $PATH --offset 558)
 jq --slurp 'length == 1'
