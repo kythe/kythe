@@ -15,6 +15,12 @@
 FROM debian:jessie
 
 EXPOSE 8080
+
+# TODO(schroederc): Remove this once http://kythe.io/phabricator/T39 is fixed
+RUN apt-get update && \
+    apt-get install -y libleveldb1 libsnappy1 && \
+    apt-get clean
+
 ADD server /usr/local/bin/
 ENTRYPOINT ["/usr/local/bin/server"]
 CMD ["--listen", ":8080"]

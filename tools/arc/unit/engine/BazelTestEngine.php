@@ -41,7 +41,7 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
       return array();
     }
 
-    $query_command = $this->bazelCommand(["query", "%s"]);
+    $query_command = $this->bazelCommand(["query", "-k", "%s"]);
     $files = join(" ",
                   array_map(array('BazelTestEngine', 'fileToTarget'), $this->getPaths()));
     $future = new ExecFuture($query_command, 'rdeps(//..., set('.$files.')) except kind("docker_build", rdeps(//..., set('.$files.')))');
