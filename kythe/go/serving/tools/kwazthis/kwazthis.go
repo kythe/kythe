@@ -86,6 +86,8 @@ var (
 	language  = flag.String("language", "", "Language of file VName (optional)")
 
 	offset = flag.Int("offset", -1, "Non-negative offset in file to list references")
+
+	skipDefinitions = flag.Bool("skip_defs", false, "Skip listing definitions for each node")
 )
 
 var (
@@ -96,6 +98,12 @@ var (
 		{Name: schema.NodeKindFact, Value: []byte(schema.FileKind)},
 	}
 )
+
+type definition struct {
+	File  *spb.VName `json:"file"`
+	Start int        `json:"start"`
+	End   int        `json:"end"`
+}
 
 type reference struct {
 	Span struct {
@@ -110,15 +118,19 @@ type reference struct {
 		Names   []string `json:"names,omitempty"`
 		Kind    string   `json:"kind,omitempty"`
 		Subkind string   `json:"subkind,omitempty"`
+
+		Definitions []*definition `json:"definitions,omitempty"`
 	} `json:"node"`
 }
+
+var definedAtEdge = schema.MirrorEdge(schema.DefinesEdge)
 
 func main() {
 	flag.Parse()
 	if *offset < 0 {
 		log.Fatal("ERROR: non-negative --offset required")
 	} else if *signature == "" && *path == "" {
-		log.Fatal("ERROR: must provide at least -path or --signature")
+		log.Fatal("ERROR: must provide at least --path or --signature")
 	}
 
 	if strings.HasPrefix(*remoteAPI, "http://") || strings.HasPrefix(*remoteAPI, "https://") {
@@ -186,8 +198,7 @@ func main() {
 
 	en := json.NewEncoder(os.Stdout)
 	for _, ref := range decor.Reference {
-		start, _ := strconv.Atoi(string(nodes[ref.SourceTicket][schema.AnchorStartFact]))
-		end, _ := strconv.Atoi(string(nodes[ref.SourceTicket][schema.AnchorEndFact]))
+		start, end := parseAnchorSpan(nodes[ref.SourceTicket])
 
 		if start <= *offset && *offset < end {
 			var r reference
@@ -203,15 +214,27 @@ func main() {
 
 			if eReply, err := xs.Edges(&xpb.EdgesRequest{
 				Ticket: []string{ref.TargetTicket},
-				Kind:   []string{schema.NamedEdge},
+				Kind:   []string{schema.NamedEdge, definedAtEdge},
 			}); err != nil {
 				log.Printf("WARNING: error getting edges for %q: %v", ref.TargetTicket, err)
 			} else {
-				for _, name := range xrefs.EdgesMap(eReply.EdgeSet)[ref.TargetTicket][schema.NamedEdge] {
+				edges := xrefs.EdgesMap(eReply.EdgeSet)[ref.TargetTicket]
+				for _, name := range edges[schema.NamedEdge] {
 					if uri, err := kytheuri.Parse(name); err != nil {
 						log.Printf("WARNING: named node ticket (%q) could not be parsed: %v", name, err)
 					} else {
 						r.Node.Names = append(r.Node.Names, uri.Signature)
+					}
+				}
+
+				if !*skipDefinitions {
+					for _, defAnchor := range edges[definedAtEdge] {
+						def, err := completeDefinition(defAnchor)
+						if err != nil {
+							log.Printf("WARNING: failed to complete definition for %q: %v", defAnchor, err)
+						} else {
+							r.Node.Definitions = append(r.Node.Definitions, def)
+						}
 					}
 				}
 			}
@@ -221,6 +244,49 @@ func main() {
 			}
 		}
 	}
+}
+
+func completeDefinition(definesAnchor string) (*definition, error) {
+	parentReply, err := xs.Edges(&xpb.EdgesRequest{
+		Ticket: []string{definesAnchor},
+		Kind:   []string{schema.ChildOfEdge},
+		Filter: []string{schema.NodeKindFact, schema.AnchorLocFilter},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	parentNodes := xrefs.NodesMap(parentReply.Node)
+	var files []string
+	for _, parent := range xrefs.EdgesMap(parentReply.EdgeSet)[definesAnchor][schema.ChildOfEdge] {
+		if string(parentNodes[parent][schema.NodeKindFact]) == schema.FileKind {
+			files = append(files, parent)
+		}
+	}
+
+	if len(files) == 0 {
+		return nil, nil
+	} else if len(files) > 1 {
+		return nil, fmt.Errorf("anchor has multiple file parents %q: %v", definesAnchor, files)
+	}
+
+	vName, err := kytheuri.Parse(files[0])
+	if err != nil {
+		return nil, err
+	}
+	start, end := parseAnchorSpan(parentNodes[definesAnchor])
+
+	return &definition{
+		File:  vName.VName(),
+		Start: start,
+		End:   end,
+	}, nil
+}
+
+func parseAnchorSpan(anchor map[string][]byte) (start int, end int) {
+	start, _ = strconv.Atoi(string(anchor[schema.AnchorStartFact]))
+	end, _ = strconv.Atoi(string(anchor[schema.AnchorEndFact]))
+	return
 }
 
 func readDirtyBuffer() []byte {
