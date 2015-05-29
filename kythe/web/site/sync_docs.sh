@@ -28,7 +28,7 @@ bazel --blazerc=/dev/null build //kythe/docs/... //kythe/docs/schema
 rsync -Lr --chmod=a+w --delete "bazel-bin/kythe/docs/" "$DIR"/_docs
 DOCS=($(bazel query 'kind("source file", deps(//kythe/docs/..., 1))' | \
   grep -E '\.(txt|adoc|ad)$' | \
-  parallel -L1 'x() { file="$(tr : / <<<"$1")"; echo ${file#//kythe/docs/}; }; x'))
+  parallel --gnu -L1 'x() { file="$(tr : / <<<"$1")"; echo ${file#//kythe/docs/}; }; x'))
 
 asciidoc_query() {
   bundle exec ruby -r asciidoctor -e 'puts Asciidoctor.load_file(ARGV[0]).'"$2" "$1" 2>/dev/null
