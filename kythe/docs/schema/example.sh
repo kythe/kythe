@@ -43,7 +43,7 @@ error() {
 }
 export -f error
 
-export TMP="$(mktemp -d)"
+export TMP="$(mktemp -d 2>/dev/null || mktemp -d -t 'kythetest')"
 trap 'rm -rf "$TMP"' EXIT ERR INT
 
 case "$LANGUAGE" in

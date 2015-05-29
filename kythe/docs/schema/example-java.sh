@@ -36,11 +36,10 @@ tee "$TEST_FILE.orig" > "$TEST_FILE"
 FILE_SHA=$(shasum -a 256 "${TEST_FILE}.orig" | cut -c 1-64)
 
 # Convert to ascii proto format; escape backslashes, quotes, and newlines.
-sed -i 's/\\/\\\\/g' "$TEST_FILE"
-sed -i 's/\"/\\\"/g' "$TEST_FILE"
-sed -i ':a;N;$!ba;s/\n/\\n/g' "$TEST_FILE"
-printf %s "content: \"$(<${TEST_FILE})" > "${TEST_FILE}.FileData"
-echo "\\n\"" >> "${TEST_FILE}.FileData"
+python <<EOF > "${TEST_FILE}.FileData"
+print "content: '%s'" % open('${TEST_FILE}').read().encode('string_escape')
+EOF
+
 sed "s/DIGEST/${FILE_SHA}/g" "${SCHEMA_ROOT}/java-schema-file-data-template.FileData" >>"${TEST_FILE}.FileData"
 
 sed "s/DIGEST/${FILE_SHA}/g" "${SCHEMA_ROOT}/java-schema-unit-template.CompilationUnit" >"${TEST_FILE}.Unit"
