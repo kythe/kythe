@@ -41,7 +41,7 @@ if [[ -z "$GO" ]]; then
     echo 'Please see http://kythe.io/contributing for more information.'
     exit 1
   fi
-  if ! GO="$(readlink -e "$(which go)")"; then
+  if ! GO="$(realpath -s "$(which go)")"; then
     echo 'ERROR: could not locate `go` binary on PATH' >&2
     exit 1
   fi
