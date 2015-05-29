@@ -115,10 +115,15 @@ class CommandLineInterfaceTest : public testing::Test {
   // Create a subdirectory within temp_directory_.
   void CreateTempDir(const string& name);
 
+#ifdef PROTOBUF_OPENSOURCE
   // Change working directory to temp directory.
   void SwitchToTempDirectory() {
     File::ChangeWorkingDirectory(temp_directory_);
   }
+#else  // !PROTOBUF_OPENSOURCE
+  // TODO(teboring): Figure out how to change and get working directory in
+  // google3.
+#endif  // !PROTOBUF_OPENSOURCE
 
   void SetInputsAreProtoPathRelative(bool enable) {
     cli_.SetInputsAreProtoPathRelative(enable);
@@ -288,6 +293,7 @@ void CommandLineInterfaceTest::Run(const string& command) {
 
   if (!disallow_plugins_) {
     cli_.AllowPlugins("prefix-");
+#ifndef GOOGLE_THIRD_PARTY_PROTOBUF
     const char* possible_paths[] = {
       // When building with shared libraries, libtool hides the real executable
       // in .libs and puts a fake wrapper in the current directory.
@@ -316,6 +322,11 @@ void CommandLineInterfaceTest::Run(const string& command) {
     }
 
     if (plugin_path.empty()) {
+#else
+    string plugin_path = "third_party/protobuf/test_plugin";
+
+    if (access(plugin_path.c_str(), F_OK) != 0) {
+#endif  // GOOGLE_THIRD_PARTY_PROTOBUF
       GOOGLE_LOG(ERROR)
           << "Plugin executable not found.  Plugin tests are likely to fail.";
     } else {
@@ -962,6 +973,9 @@ TEST_F(CommandLineInterfaceTest, WriteTransitiveDescriptorSetWithSourceInfo) {
   EXPECT_TRUE(descriptor_set.file(1).has_source_code_info());
 }
 
+#ifdef _WIN32
+// TODO(teboring): Figure out how to write test on windows.
+#else
 TEST_F(CommandLineInterfaceTest, WriteDependencyManifestFileGivenTwoInputs) {
   CreateTempFile("foo.proto",
     "syntax = \"proto2\";\n"
@@ -980,6 +994,7 @@ TEST_F(CommandLineInterfaceTest, WriteDependencyManifestFileGivenTwoInputs) {
       "Can only process one input file when using --dependency_out=FILE.\n");
 }
 
+#ifdef PROTOBUF_OPENSOURCE
 TEST_F(CommandLineInterfaceTest, WriteDependencyManifestFile) {
   CreateTempFile("foo.proto",
     "syntax = \"proto2\";\n"
@@ -1005,6 +1020,10 @@ TEST_F(CommandLineInterfaceTest, WriteDependencyManifestFile) {
 
   File::ChangeWorkingDirectory(current_working_directory);
 }
+#else  // !PROTOBUF_OPENSOURCE
+// TODO(teboring): Figure out how to change and get working directory in
+// google3.
+#endif  // !PROTOBUF_OPENSOURCE
 
 TEST_F(CommandLineInterfaceTest, WriteDependencyManifestFileForAbsolutePath) {
   CreateTempFile("foo.proto",
@@ -1026,6 +1045,7 @@ TEST_F(CommandLineInterfaceTest, WriteDependencyManifestFileForAbsolutePath) {
                     "$tmpdir/bar.proto.MockCodeGenerator.test_generator: "
                     "$tmpdir/foo.proto\\\n $tmpdir/bar.proto");
 }
+#endif  // !_WIN32
 
 // -------------------------------------------------------------------
 

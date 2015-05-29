@@ -161,8 +161,6 @@ extern VALUE cOneofBuilderContext;
 extern VALUE cEnumBuilderContext;
 extern VALUE cBuilder;
 
-extern const char* kDescriptorInstanceVar;
-
 // We forward-declare all of the Ruby method implementations here because we
 // sometimes call the methods directly across .c files, rather than going
 // through Ruby's method dispatching (e.g. during message parse). It's cleaner
@@ -361,19 +359,20 @@ extern VALUE cRepeatedField;
 RepeatedField* ruby_to_RepeatedField(VALUE value);
 
 VALUE RepeatedField_each(VALUE _self);
-VALUE RepeatedField_index(VALUE _self, VALUE _index);
+VALUE RepeatedField_index(int argc, VALUE* argv, VALUE _self);
 void* RepeatedField_index_native(VALUE _self, int index);
 VALUE RepeatedField_index_set(VALUE _self, VALUE _index, VALUE val);
 void RepeatedField_reserve(RepeatedField* self, int new_size);
 VALUE RepeatedField_push(VALUE _self, VALUE val);
 void RepeatedField_push_native(VALUE _self, void* data);
-VALUE RepeatedField_pop(VALUE _self);
+VALUE RepeatedField_pop_one(VALUE _self);
 VALUE RepeatedField_insert(int argc, VALUE* argv, VALUE _self);
 VALUE RepeatedField_replace(VALUE _self, VALUE list);
 VALUE RepeatedField_clear(VALUE _self);
 VALUE RepeatedField_length(VALUE _self);
 VALUE RepeatedField_dup(VALUE _self);
 VALUE RepeatedField_deep_copy(VALUE _self);
+VALUE RepeatedField_to_ary(VALUE _self);
 VALUE RepeatedField_eq(VALUE _self, VALUE _other);
 VALUE RepeatedField_hash(VALUE _self);
 VALUE RepeatedField_inspect(VALUE _self);
@@ -497,11 +496,6 @@ VALUE Message_encode(VALUE klass, VALUE msg_rb);
 VALUE Message_decode_json(VALUE klass, VALUE data);
 VALUE Message_encode_json(VALUE klass, VALUE msg_rb);
 
-VALUE Google_Protobuf_encode(VALUE self, VALUE msg_rb);
-VALUE Google_Protobuf_decode(VALUE self, VALUE klass, VALUE msg_rb);
-VALUE Google_Protobuf_encode_json(VALUE self, VALUE msg_rb);
-VALUE Google_Protobuf_decode_json(VALUE self, VALUE klass, VALUE msg_rb);
-
 VALUE Google_Protobuf_deep_copy(VALUE self, VALUE obj);
 
 VALUE build_module_from_enumdesc(EnumDescriptor* enumdef);
@@ -510,6 +504,10 @@ VALUE enum_resolve(VALUE self, VALUE sym);
 
 const upb_pbdecodermethod *new_fillmsg_decodermethod(
     Descriptor* descriptor, const void *owner);
+
+// Maximum depth allowed during encoding, to avoid stack overflows due to
+// cycles.
+#define ENCODE_MAX_NESTING 63
 
 // -----------------------------------------------------------------------------
 // Global map from upb {msg,enum}defs to wrapper Descriptor/EnumDescriptor
@@ -529,5 +527,7 @@ void check_upb_status(const upb_status* status, const char* msg);
     code;                                                                     \
     check_upb_status(&status, msg);                                           \
 } while (0)
+
+extern ID descriptor_instancevar_interned;
 
 #endif  // __GOOGLE_PROTOBUF_RUBY_PROTOBUF_H__

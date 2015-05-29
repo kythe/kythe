@@ -155,7 +155,9 @@ void native_slot_set_value_and_case(upb_fieldtype_t type, VALUE type_class,
       break;
     }
     case UPB_TYPE_MESSAGE: {
-      if (CLASS_OF(value) != type_class) {
+      if (CLASS_OF(value) == CLASS_OF(Qnil)) {
+        value = Qnil;
+      } else if (CLASS_OF(value) != type_class) {
         rb_raise(rb_eTypeError,
                  "Invalid type %s to assign to submessage field.",
                  rb_class2name(CLASS_OF(value)));
@@ -413,7 +415,8 @@ MessageLayout* create_layout(const upb_msgdef* msgdef) {
     // Align current offset up to |size| granularity.
     off = align_up_to(off, field_size);
     layout->fields[upb_fielddef_index(field)].offset = off;
-    layout->fields[upb_fielddef_index(field)].case_offset = MESSAGE_FIELD_NO_CASE;
+    layout->fields[upb_fielddef_index(field)].case_offset =
+        MESSAGE_FIELD_NO_CASE;
     off += field_size;
   }
 

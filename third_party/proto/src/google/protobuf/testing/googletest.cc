@@ -65,6 +65,7 @@ namespace protobuf {
 #endif
 
 string TestSourceDir() {
+#ifndef GOOGLE_THIRD_PARTY_PROTOBUF
 #ifdef _MSC_VER
   // Look for the "src" directory.
   string prefix = ".";
@@ -88,6 +89,9 @@ string TestSourceDir() {
     return result;
   }
 #endif
+#else
+  return "third_party/protobuf/src";
+#endif  // GOOGLE_THIRD_PARTY_PROTOBUF
 }
 
 namespace {
@@ -104,6 +108,10 @@ string GetTemporaryDirectoryName() {
   if (HasPrefixString(result, "\\")) {
     result.erase(0, 1);
   }
+  // The Win32 API accepts forward slashes as a path delimiter even though
+  // backslashes are standard.  Let's avoid confusion and use only forward
+  // slashes.
+  result = StringReplace(result, "\\", "/", true);
 #endif  // _WIN32
   return result;
 }

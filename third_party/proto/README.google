@@ -1,5 +1,5 @@
 URL: https://github.com/google/protobuf
-Version: f0b510ac22798cb4cd805acf5b1798fd1aee9824
+Version: 3e2c8a5dd79481e1d36572cdf65be93514ba6581
 License: New BSD License: http://opensource.org/licenses/BSD-3-Clause
 License File: LICENSE
 
@@ -11,3 +11,4 @@ Ran configure to generate config.h.
 Added BUILD file.
 Renamed .gitignore to dist.gitignore.
 Wrote a pbconfig.h and amended it to turn off RTTI.
+Deleted testdata and python, objectivec, and csharp directories

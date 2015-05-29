@@ -181,6 +181,68 @@ bool TryCreateParentDirectory(const string& prefix, const string& filename) {
   return true;
 }
 
+// Get the absolute path of this protoc binary.
+bool GetProtocAbsolutePath(string* path) {
+#ifdef _WIN32
+  char buffer[MAX_PATH];
+  int len = GetModuleFileName(NULL, buffer, MAX_PATH);
+#else
+  char buffer[PATH_MAX];
+  int len = readlink("/proc/self/exe", buffer, PATH_MAX);
+#endif
+  if (len > 0) {
+    path->assign(buffer, len);
+    return true;
+  } else {
+    return false;
+  }
+}
+
+// Whether a path is where google/protobuf/descriptor.proto and other well-known
+// type protos are installed.
+bool IsInstalledProtoPath(const string& path) {
+  // Checking the descriptor.proto file should be good enough.
+  string file_path = path + "/google/protobuf/descriptor.proto";
+  return access(file_path.c_str(), F_OK) != -1;
+}
+
+// Add the paths where google/protobuf/descritor.proto and other well-known
+// type protos are installed.
+void AddDefaultProtoPaths(vector<pair<string, string> >* paths) {
+  // TODO(xiaofeng): The code currently only checks relative paths of where
+  // the protoc binary is installed. We probably should make it handle more
+  // cases than that.
+  string path;
+  if (!GetProtocAbsolutePath(&path)) {
+    return;
+  }
+  // Strip the binary name.
+  size_t pos = path.find_last_of("/\\");
+  if (pos == string::npos || pos == 0) {
+    return;
+  }
+  path = path.substr(0, pos);
+  // Check the binary's directory.
+  if (IsInstalledProtoPath(path)) {
+    paths->push_back(pair<string, string>("", path));
+    return;
+  }
+  // Check if there is an include subdirectory.
+  if (IsInstalledProtoPath(path + "/include")) {
+    paths->push_back(pair<string, string>("", path + "/include"));
+    return;
+  }
+  // Check if the upper level directory has an "include" subdirectory.
+  pos = path.find_last_of("/\\");
+  if (pos == string::npos || pos == 0) {
+    return;
+  }
+  path = path.substr(0, pos);
+  if (IsInstalledProtoPath(path + "/include")) {
+    paths->push_back(pair<string, string>("", path + "/include"));
+    return;
+  }
+}
 }  // namespace
 
 // A MultiFileErrorCollector that prints errors to stderr.
@@ -644,6 +706,8 @@ int CommandLineInterface::Run(int argc, const char* const argv[]) {
       break;
   }
 
+  AddDefaultProtoPaths(&proto_path_);
+
   // Set up the source tree.
   DiskSourceTree source_tree;
   for (int i = 0; i < proto_path_.size(); i++) {
@@ -898,12 +962,14 @@ CommandLineInterface::ParseArguments(int argc, const char* const argv[]) {
     return PARSE_ARGUMENT_FAIL;
   }
   if (mode_ != MODE_COMPILE && !dependency_out_name_.empty()) {
-    cerr << "Can only use --dependency_out=FILE when generating code." << endl;
+    std::cerr << "Can only use --dependency_out=FILE when generating code."
+              << std::endl;
     return PARSE_ARGUMENT_FAIL;
   }
   if (!dependency_out_name_.empty() && input_files_.size() > 1) {
-    cerr << "Can only process one input file when using --dependency_out=FILE."
-         << endl;
+    std::cerr
+        << "Can only process one input file when using --dependency_out=FILE."
+        << std::endl;
     return PARSE_ARGUMENT_FAIL;
   }
   if (imports_in_descriptor_set_ && descriptor_set_name_.empty()) {
@@ -1054,11 +1120,11 @@ CommandLineInterface::InterpretArgument(const string& name,
 
   } else if (name == "--dependency_out") {
     if (!dependency_out_name_.empty()) {
-      cerr << name << " may only be passed once." << endl;
+      std::cerr << name << " may only be passed once." << std::endl;
       return PARSE_ARGUMENT_FAIL;
     }
     if (value.empty()) {
-      cerr << name << " requires a non-empty value." << endl;
+      std::cerr << name << " requires a non-empty value." << std::endl;
       return PARSE_ARGUMENT_FAIL;
     }
     dependency_out_name_ = value;
@@ -1272,7 +1338,8 @@ void CommandLineInterface::PrintHelpText() {
 "                              defined in the given proto files. Groups share\n"
 "                              the same field number space with the parent \n"
 "                              message. Extension ranges are counted as \n"
-"                              occupied fields numbers."  << std::endl;
+"                              occupied fields numbers."
+      << std::endl;
   if (!plugin_prefix_.empty()) {
     std::cerr <<
 "  --plugin=EXECUTABLE         Specifies a plugin executable to use.\n"
@@ -1327,13 +1394,23 @@ bool CommandLineInterface::GenerateOutput(
       }
       parameters.append(generator_parameters_[output_directive.name]);
     }
-    for (int i = 0; i < parsed_files.size(); i++) {
-      if (!output_directive.generator->Generate(parsed_files[i], parameters,
-                                                generator_context, &error)) {
-        // Generator returned an error.
-        std::cerr << output_directive.name << ": " << parsed_files[i]->name()
-                  << ": " << error << std::endl;
-        return false;
+    if (output_directive.generator->HasGenerateAll()) {
+      if (!output_directive.generator->GenerateAll(
+          parsed_files, parameters, generator_context, &error)) {
+          // Generator returned an error.
+          std::cerr << output_directive.name << ": "
+                    << ": " << error << std::endl;
+          return false;
+      }
+    } else {
+      for (int i = 0; i < parsed_files.size(); i++) {
+        if (!output_directive.generator->Generate(parsed_files[i], parameters,
+                                                  generator_context, &error)) {
+          // Generator returned an error.
+          std::cerr << output_directive.name << ": " << parsed_files[i]->name()
+                    << ": " << error << std::endl;
+          return false;
+        }
       }
     }
   }
@@ -1403,7 +1480,8 @@ bool CommandLineInterface::GenerateDependencyManifestFile(
       printer.Print(" $disk_file$", "disk_file", disk_file);
       if (i < file_set.file_size() - 1) printer.Print("\\\n");
     } else {
-      cerr << "Unable to identify path for file " << virtual_file << endl;
+      std::cerr << "Unable to identify path for file " << virtual_file
+                << std::endl;
       return false;
     }
   }
@@ -1672,6 +1750,10 @@ void GatherOccupiedFieldRanges(const Descriptor* descriptor,
   for (int i = 0; i < descriptor->extension_range_count(); ++i) {
     ranges->insert(FieldRange(descriptor->extension_range(i)->start,
                               descriptor->extension_range(i)->end));
+  }
+  for (int i = 0; i < descriptor->reserved_range_count(); ++i) {
+    ranges->insert(FieldRange(descriptor->reserved_range(i)->start,
+                              descriptor->reserved_range(i)->end));
   }
   // Handle the nested messages/groups in declaration order to make it
   // post-order strict.

@@ -45,7 +45,7 @@ template <typename Key, typename T,
           WireFormatLite::FieldType key_wire_type,
           WireFormatLite::FieldType value_wire_type,
           int default_enum_value = 0>
-class LIBPROTOBUF_EXPORT MapFieldLite {
+class MapFieldLite {
   // Define message type for internal repeated field.
   typedef MapEntryLite<Key, T, key_wire_type, value_wire_type,
                        default_enum_value> EntryType;
@@ -109,7 +109,7 @@ template <typename Key, typename T,
 MapFieldLite<Key, T, key_wire_type, value_wire_type,
              default_enum_value>::MapFieldLite(Arena* arena)
   : arena_(arena) {
-  map_ = Arena::Create<Map<Key, T> >(arena, arena);
+  map_ = Arena::CreateMessage<Map<Key, T> >(arena);
   SetDefaultEnumValue();
 }
 

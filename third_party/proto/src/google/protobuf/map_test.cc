@@ -2258,13 +2258,34 @@ TEST(TextFormatMapTest, SerializeAndParse) {
   MapTestUtil::ExpectMapFieldsSet(dest);
 }
 
+TEST(TextFormatMapTest, Sorted) {
+  unittest::TestMap message;
+  MapTestUtil::MapReflectionTester tester(message.GetDescriptor());
+  tester.SetMapFieldsViaReflection(&message);
+
+  string expected_text;
+  GOOGLE_CHECK_OK(File::GetContents(
+      TestSourceDir() +
+          "/google/protobuf/"
+          "testdata/map_test_data.txt",
+      &expected_text, true));
+
+  EXPECT_EQ(message.DebugString(), expected_text);
+
+  // Test again on the reverse order.
+  unittest::TestMap message2;
+  tester.SetMapFieldsViaReflection(&message2);
+  tester.SwapMapsViaReflection(&message2);
+  EXPECT_EQ(message2.DebugString(), expected_text);
+}
+
 
 // arena support =================================================
 TEST(ArenaTest, ParsingAndSerializingNoHeapAllocation) {
   // Allocate a large initial block to avoid mallocs during hooked test.
   std::vector<char> arena_block(128 * 1024);
   ArenaOptions options;
-  options.initial_block = arena_block.data();
+  options.initial_block = &arena_block[0];
   options.initial_block_size = arena_block.size();
   Arena arena(options);
   string data;

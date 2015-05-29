@@ -43,6 +43,12 @@ Arena::ThreadCache& Arena::thread_cache() {
   static GOOGLE_THREAD_LOCAL ThreadCache thread_cache_ = { -1, NULL };
   return thread_cache_;
 }
+#elif defined(GOOGLE_PROTOBUF_OS_ANDROID) || defined(GOOGLE_PROTOBUF_OS_IPHONE)
+Arena::ThreadCache& Arena::thread_cache() {
+  static internal::ThreadLocalStorage<ThreadCache>* thread_cache_ =
+      new internal::ThreadLocalStorage<ThreadCache>();
+  return *thread_cache_->Get();
+}
 #else
 GOOGLE_THREAD_LOCAL Arena::ThreadCache Arena::thread_cache_ = { -1, NULL };
 #endif
@@ -148,9 +154,15 @@ void Arena::AddListNode(void* elem, void (*cleanup)(void*)) {
             reinterpret_cast<google::protobuf::internal::AtomicWord>(node)));
 }
 
-void* Arena::AllocateAligned(size_t n) {
+void* Arena::AllocateAligned(const std::type_info* allocated, size_t n) {
   // Align n to next multiple of 8 (from Hacker's Delight, Chapter 3.)
   n = (n + 7) & -8;
+
+  // Monitor allocation if needed.
+  if (GOOGLE_PREDICT_FALSE(hooks_cookie_ != NULL) &&
+      options_.on_arena_allocation != NULL) {
+    options_.on_arena_allocation(allocated, n, hooks_cookie_);
+  }
 
   // If this thread already owns a block in this arena then try to use that.
   // This fast path optimizes the case where multiple threads allocate from the

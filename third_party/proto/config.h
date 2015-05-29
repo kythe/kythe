@@ -96,7 +96,7 @@
 #define PACKAGE_NAME "Protocol Buffers"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "Protocol Buffers 3.0.0-alpha-3-pre"
+#define PACKAGE_STRING "Protocol Buffers 3.0.0-alpha-3"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "protobuf"
@@ -105,7 +105,7 @@
 #define PACKAGE_URL ""
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "3.0.0-alpha-3-pre"
+#define PACKAGE_VERSION "3.0.0-alpha-3"
 
 /* Define to necessary symbol if this constant uses a non-standard name on
    your system. */
@@ -140,7 +140,7 @@
 
 
 /* Version number of package */
-#define VERSION "3.0.0-alpha-3-pre"
+#define VERSION "3.0.0-alpha-3"
 
 /* Define to 1 if on MINIX. */
 /* #undef _MINIX */
