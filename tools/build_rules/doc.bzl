@@ -20,4 +20,8 @@ def asciidoc(name, src, attrs={}, confs=[], data=[], tools=[], tags=None):
     cmd = '\n'.join([
         'export BINDIR="$$PWD/bazel-out/host/bin"',
         'export OUTDIR="$$PWD/$(@D)"',
-        "asciidoc %s -o $(@) $(location %s)" % (' '.join(args), src)]))
+        'export LOGFILE="$$(mktemp -t \"XXXXXXasciidoc\")"',
+        'trap "rm \"$${LOGFILE}\"" EXIT ERR INT',
+        "asciidoc %s -o $(@) $(location %s) 2> \"$${LOGFILE}\"" % (' '.join(args), src),
+        'cat $${LOGFILE}',
+        '! grep -q -e "filter non-zero exit code" -e "no output from filter" "$${LOGFILE}"']))
