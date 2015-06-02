@@ -7,7 +7,7 @@
 # each test case, this script returns zero.
 HAD_ERRORS=0
 BASE_DIR="$TEST_SRCDIR/kythe/cxx/verifier/testdata"
-VERIFIER="$KYTHE_BIN/kythe/cxx/verifier/verifier"
+VERIFIER="kythe/cxx/verifier/verifier"
 function one_case {
   cat $1.bin | ${VERIFIER} --graphviz | diff $1.dot -
   DOT_RESULTS=( ${PIPESTATUS[1]} ${PIPESTATUS[2]} )

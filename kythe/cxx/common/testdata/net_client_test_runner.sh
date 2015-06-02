@@ -15,7 +15,7 @@
 set -o pipefail
 BASE_DIR="$TEST_SRCDIR/kythe/cxx/common/testdata"
 TEST_JSON="${BASE_DIR}/net_client_test_data.json"
-TEST_BIN="${KYTHE_BIN}/kythe/cxx/common/net_client_test"
+TEST_BIN="kythe/cxx/common/net_client_test"
 OUT_DIR="$TEST_TMPDIR"
 
 source "kythe/cxx/common/testdata/start_http_service.sh"

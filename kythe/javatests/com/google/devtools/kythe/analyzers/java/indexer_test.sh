@@ -16,9 +16,9 @@ set -o pipefail
 #
 # This script tests the java indexer's CLI.
 
-indexer="$KYTHE_BIN/kythe/java/com/google/devtools/kythe/analyzers/java/indexer"
-indexpack="$KYTHE_BIN/kythe/go/platform/tools/indexpack"
-entrystream="$KYTHE_BIN/kythe/go/platform/tools/entrystream"
+indexer="kythe/java/com/google/devtools/kythe/analyzers/java/indexer"
+indexpack="kythe/go/platform/tools/indexpack"
+entrystream="kythe/go/platform/tools/entrystream"
 test_kindex="$TEST_SRCDIR/kythe/testdata/test.kindex"
 
 # Test indexing a .kindex file

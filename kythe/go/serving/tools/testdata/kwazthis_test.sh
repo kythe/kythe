@@ -20,8 +20,8 @@ OUT_DIR="$TEST_TMPDIR"
 TEST_ENTRIES="$TEST_SRCDIR/kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/generics_tests.entries"
 source "kythe/cxx/common/testdata/start_http_service.sh"
 
-jq () { "$KYTHE_BIN/third_party/jq/jq" -e "$@" <<<"$JSON"; }
-kwazthis() { "$KYTHE_BIN/kythe/go/serving/tools/kwazthis" --ignore_local_repo --api "http://$LISTEN_AT" "$@"; }
+jq () { "third_party/jq/jq" -e "$@" <<<"$JSON"; }
+kwazthis() { "kythe/go/serving/tools/kwazthis" --ignore_local_repo --api "http://$LISTEN_AT" "$@"; }
 
 PATH=kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/Generics.java
 

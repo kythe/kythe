@@ -42,10 +42,10 @@
 #   "//kythe/go/storage/tools:write_tables",
 #   "//kythe/go/storage/tools:write_entries",
 
-KYTHE_WRITE_TABLES="${KYTHE_BIN}/kythe/go/serving/tools/write_tables"
-KYTHE_WRITE_ENTRIES="${KYTHE_BIN}/kythe/go/storage/tools/write_entries"
-KYTHE_ENTRYSTREAM="${KYTHE_BIN}/kythe/go/platform/tools/entrystream"
-KYTHE_HTTP_SERVER="${KYTHE_BIN}/kythe/go/serving/tools/http_server"
+KYTHE_WRITE_TABLES="kythe/go/serving/tools/write_tables"
+KYTHE_WRITE_ENTRIES="kythe/go/storage/tools/write_entries"
+KYTHE_ENTRYSTREAM="kythe/go/platform/tools/entrystream"
+KYTHE_HTTP_SERVER="kythe/go/serving/tools/http_server"
 RETRIES=8
 
 if [[ -e /proc/1/cgroup ]] && grep -qe ':/docker' /proc/1/cgroup ; then

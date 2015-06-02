@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if "$KYTHE_BIN/kythe/cxx/verifier/verifier"; then
+if "kythe/cxx/verifier/verifier"; then
   echo "[ FAIL: Verifier did not fail on lack of input script ]"
   exit 1
 else

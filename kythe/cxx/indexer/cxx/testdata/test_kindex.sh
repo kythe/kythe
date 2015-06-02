@@ -2,9 +2,9 @@
 # Tests whether the indexer will read from kindex files.
 BASE_DIR="$TEST_SRCDIR/kythe/cxx/indexer/cxx/testdata"
 OUT_DIR="$TEST_TMPDIR"
-VERIFIER="${KYTHE_BIN}/kythe/cxx/verifier/verifier"
-INDEXER="${KYTHE_BIN}/kythe/cxx/indexer/cxx/indexer"
-KINDEX_TOOL="${KYTHE_BIN}/kythe/cxx/tools/kindex_tool"
+VERIFIER="kythe/cxx/verifier/verifier"
+INDEXER="kythe/cxx/indexer/cxx/indexer"
+KINDEX_TOOL="kythe/cxx/tools/kindex_tool"
 TEST_INDEX="${OUT_DIR}/test.kindex"
 REPO_TEST_INDEX="${OUT_DIR}/repo_test.kindex"
 mkdir -p "${OUT_DIR}"

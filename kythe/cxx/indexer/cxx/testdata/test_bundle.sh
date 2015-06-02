@@ -5,9 +5,9 @@
 HAD_ERRORS=0
 BASE_DIR="$TEST_SRCDIR/kythe/cxx/indexer/cxx/testdata"
 OUT_DIR="$TEST_TMPDIR"
-VERIFIER="${KYTHE_BIN}/kythe/cxx/verifier/verifier"
-INDEXER="${KYTHE_BIN}/kythe/cxx/indexer/cxx/indexer"
-EXTRACTOR="${KYTHE_BIN}/kythe/cxx/extractor/cxx_extractor"
+VERIFIER="kythe/cxx/verifier/verifier"
+INDEXER="kythe/cxx/indexer/cxx/indexer"
+EXTRACTOR="kythe/cxx/extractor/cxx_extractor"
 
 function one_case {
   local BUNDLE_FILE="${1}"

@@ -19,8 +19,8 @@
 # verify. Should every case succeed, this script returns zero.
 HAD_ERRORS=0
 BASE_DIR="$TEST_SRCDIR/kythe/cxx/indexer/cxx/testdata/libraries"
-VERIFIER="$KYTHE_BIN/kythe/cxx/verifier/verifier"
-INDEXER="$KYTHE_BIN/kythe/cxx/indexer/cxx/indexer"
+VERIFIER="kythe/cxx/verifier/verifier"
+INDEXER="kythe/cxx/indexer/cxx/indexer"
 # one_case test-file clang-standard verifier-argument indexer-argument
 function one_case {
   ${INDEXER} -i $1 $4 -- -std=$2 | ${VERIFIER} $1 $3

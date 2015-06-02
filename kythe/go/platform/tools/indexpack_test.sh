@@ -16,9 +16,9 @@
 #
 # This script tests the indexpack binary. It requires the jq command (≥ 1.4).
 
-jq="$KYTHE_BIN/third_party/jq/jq"
-indexpack="$KYTHE_BIN/kythe/go/platform/tools/indexpack"
-viewindex="$KYTHE_BIN/kythe/go/platform/tools/viewindex"
+jq="third_party/jq/jq"
+indexpack="kythe/go/platform/tools/indexpack"
+viewindex="kythe/go/platform/tools/viewindex"
 test_kindex="$TEST_SRCDIR/kythe/testdata/test.kindex"
 
 kindex_contents() {

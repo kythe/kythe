@@ -11,6 +11,4 @@ echo 'exec ${PAGER:-/usr/bin/less} "$0" || exit 1'
 # have direct access to their declared dependencies.
 cd "$TEST_SRCDIR" || { echo "Could not chdir $TEST_SRCDIR"; exit 1; }
 
-export KYTHE_BIN="$TEST_SRCDIR"
-
 "$@"

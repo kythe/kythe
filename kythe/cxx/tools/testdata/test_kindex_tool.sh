@@ -3,7 +3,7 @@
 # kindex_tool -explode.
 BASE_DIR="$TEST_SRCDIR/kythe/cxx/tools/testdata"
 OUT_DIR="$TEST_TMPDIR"
-KINDEX_TOOL_BIN="${KYTHE_BIN}/kythe/cxx/tools/kindex_tool"
+KINDEX_TOOL_BIN="kythe/cxx/tools/kindex_tool"
 
 set -e
 mkdir -p "${OUT_DIR}"
