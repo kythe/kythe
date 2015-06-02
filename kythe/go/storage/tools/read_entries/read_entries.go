@@ -29,6 +29,7 @@ import (
 	"kythe.io/kythe/go/platform/delimited"
 	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/storage/gsutil"
+	"kythe.io/kythe/go/util/kytheuri"
 
 	spb "kythe.io/kythe/proto/storage_proto"
 )
@@ -41,13 +42,17 @@ var (
 	shardsToFiles = flag.String("sharded_file", "", "If given, scan the entire GraphStore, storing each shard in a separate file instead of stdout (requires --shards)")
 	shardIndex    = flag.Int64("shard_index", 0, "Index of a single shard to emit (requires --shards)")
 	shards        = flag.Int64("shards", 0, "Number of shards to split the GraphStore")
+
+	edgeKind     = flag.String("edge_kind", "", "Edge kind by which to filter a read/scan")
+	targetTicket = flag.String("target", "", "Ticket of target by which to filter a scan")
+	factPrefix   = flag.String("fact_prefix", "", "Fact prefix by which to filter a scan")
 )
 
 func init() {
 	gsutil.Flag(&gs, "graphstore", "GraphStore to read")
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, `%s - scans the entries from a GraphStore, emitting a delimited entry stream to stdout
-usage: %[1]s --graphstore spec
+		fmt.Fprintf(os.Stderr, `%s - scans/reads the entries from a GraphStore, emitting a delimited entry stream to stdout
+usage: %[1]s --graphstore spec [ticket...]
 `, filepath.Base(os.Args[0]))
 		flag.PrintDefaults()
 		os.Exit(1)
@@ -60,19 +65,31 @@ func main() {
 		log.Fatal("Missing --graphstore")
 	} else if *shardsToFiles != "" && *shards <= 0 {
 		log.Fatal("--sharded_file and --shards must be given together")
+	} else if *shards > 0 && len(flag.Args()) > 0 {
+		log.Fatal("--shards and giving tickets for reads are mutually exclusive")
 	}
 
 	wr := delimited.NewWriter(os.Stdout)
 	var total int64
 	if *shards <= 0 {
-		if err := gs.Scan(new(spb.ScanRequest), func(entry *spb.Entry) error {
+		entryFunc := func(entry *spb.Entry) error {
 			if *count {
 				total++
 				return nil
 			}
 			return wr.PutProto(entry)
-		}); err != nil {
-			log.Fatalf("GraphStore Scan error: %v", err)
+		}
+		if len(flag.Args()) > 0 {
+			if *targetTicket != "" || *factPrefix != "" {
+				log.Fatal("--target and --fact_prefix are unsupported when given tickets")
+			}
+			if err := readEntries(gs, entryFunc, *edgeKind, flag.Args()); err != nil {
+				log.Fatal(err)
+			}
+		} else {
+			if err := scanEntries(gs, entryFunc, *edgeKind, *targetTicket, *factPrefix); err != nil {
+				log.Fatal(err)
+			}
 		}
 		if *count {
 			fmt.Println(total)
@@ -129,4 +146,39 @@ func main() {
 	}); err != nil {
 		log.Fatalf("GraphStore shard scan error: %v", err)
 	}
+}
+
+func readEntries(gs graphstore.Service, entryFunc graphstore.EntryFunc, edgeKind string, tickets []string) error {
+	for _, ticket := range tickets {
+		src, err := kytheuri.ToVName(ticket)
+		if err != nil {
+			return fmt.Errorf("error parsing ticket %q: %v", ticket, err)
+		}
+		if err := gs.Read(&spb.ReadRequest{
+			Source:   src,
+			EdgeKind: edgeKind,
+		}, entryFunc); err != nil {
+			return fmt.Errorf("GraphStore Read error for ticket %q: %v", ticket, err)
+		}
+	}
+	return nil
+}
+
+func scanEntries(gs graphstore.Service, entryFunc graphstore.EntryFunc, edgeKind, targetTicket, factPrefix string) error {
+	var target *spb.VName
+	var err error
+	if targetTicket != "" {
+		target, err = kytheuri.ToVName(targetTicket)
+		if err != nil {
+			return fmt.Errorf("error parsing --target %q: %v", targetTicket, err)
+		}
+	}
+	if err := gs.Scan(&spb.ScanRequest{
+		EdgeKind:   edgeKind,
+		FactPrefix: factPrefix,
+		Target:     target,
+	}, entryFunc); err != nil {
+		return fmt.Errorf("GraphStore Scan error: %v", err)
+	}
+	return nil
 }

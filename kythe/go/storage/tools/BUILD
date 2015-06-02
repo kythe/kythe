@@ -24,6 +24,7 @@ go_binary(
         "//kythe/go/platform/delimited",
         "//kythe/go/services/graphstore",
         "//kythe/go/storage/gsutil",
+        "//kythe/go/util/kytheuri",
         "//kythe/proto:storage_proto_go",
     ],
 )
