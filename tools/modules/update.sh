@@ -78,7 +78,8 @@ if [[ -z "$1" || "$1" == "--build_only" ]]; then
     mkdir -p "$vbuild_dir"
     trap "rm -rf '$LLVM_REPO/$vbuild_dir'" ERR INT
     cd "$vbuild_dir"
-    ../configure CC="${BAZEL_C_COMPILER}" CXX="${BAZEL_CC%cc}++" \
+    CXX=$(echo "${BAZEL_CC}" | sed -E 's/(cc)?(-.*)?$/++\2/')
+    ../configure CC="${BAZEL_C_COMPILER}" CXX="${CXX}" \
       --prefix="$LLVM_REPO/build-install" \
       CXXFLAGS="-std=c++11" \
       --enable-optimized --disable-bindings
