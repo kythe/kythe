@@ -74,12 +74,12 @@ func main() {
 		unsortedEntries := entries
 		ch := make(chan *spb.Entry)
 		entries = ch
-		sorted := sortedEntries(make([]*spb.Entry, 0))
-		heap.Init(&sorted)
+		sorted := compare.ByEntries(nil)
 		go func() {
 			for entry := range unsortedEntries {
-				heap.Push(&sorted, entry)
+				sorted = append(sorted, entry)
 			}
+			heap.Init(&sorted)
 			for len(sorted) > 0 {
 				ch <- heap.Pop(&sorted).(*spb.Entry)
 			}
@@ -126,24 +126,4 @@ func failOnErr(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-}
-
-type sortedEntries []*spb.Entry
-
-func (m sortedEntries) Len() int { return len(m) }
-func (m sortedEntries) Less(i, j int) bool {
-	return compare.Entries(m[i], m[j]) == compare.LT
-}
-func (m sortedEntries) Swap(i, j int) {
-	m[i], m[j] = m[j], m[i]
-}
-func (m *sortedEntries) Push(x interface{}) {
-	*m = append(*m, x.(*spb.Entry))
-}
-func (m *sortedEntries) Pop() interface{} {
-	old := *m
-	n := len(old)
-	item := old[n-1]
-	*m = old[0 : n-1]
-	return item
 }

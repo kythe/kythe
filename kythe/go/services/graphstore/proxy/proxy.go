@@ -100,22 +100,6 @@ func (p *proxyService) foreach(f func(int, graphstore.Service) error) <-chan err
 	return errc
 }
 
-// entryHeap is a min-heap of entries, ordered by compare.Entries.
-type entryHeap []*spb.Entry
-
-func (h entryHeap) Len() int           { return len(h) }
-func (h entryHeap) Less(i, j int) bool { return compare.Entries(h[i], h[j]) == compare.LT }
-func (h entryHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
-
-func (h *entryHeap) Push(v interface{}) { *h = append(*h, v.(*spb.Entry)) }
-
-func (h *entryHeap) Pop() interface{} {
-	n := h.Len() - 1
-	out := (*h)[n]
-	*h = (*h)[:n]
-	return out
-}
-
 // invoke calls req concurrently for each delegated service in p, merges the
 // results, and delivers them to f.
 func (p *proxyService) invoke(req func(graphstore.Service, graphstore.EntryFunc) error, f graphstore.EntryFunc) error {
@@ -150,9 +134,9 @@ func (p *proxyService) invoke(req func(graphstore.Service, graphstore.EntryFunc)
 	// Accumulate and merge the results.  This is a straightforward round-robin
 	// n-finger merge of the values from the delegated requests.
 
-	var h entryHeap     // used to preserve stream order
-	var last *spb.Entry // used to deduplicate entries
-	var perr error      // error while accumulating
+	var h compare.ByEntries // used to preserve stream order
+	var last *spb.Entry     // used to deduplicate entries
+	var perr error          // error while accumulating
 	go func() {
 		defer close(stop)
 		for {

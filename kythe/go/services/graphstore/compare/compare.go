@@ -24,6 +24,24 @@ import (
 	spb "kythe.io/kythe/proto/storage_proto"
 )
 
+// ByEntries is a min-heap of entries, ordered by Entries.
+type ByEntries []*spb.Entry
+
+// Implement the sort.Interface
+func (s ByEntries) Len() int           { return len(s) }
+func (s ByEntries) Less(i, j int) bool { return Entries(s[i], s[j]) == LT }
+func (s ByEntries) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+
+// Implement the heap.Interface
+func (s *ByEntries) Push(v interface{}) { *s = append(*s, v.(*spb.Entry)) }
+func (s *ByEntries) Pop() interface{} {
+	old := *s
+	n := len(old) - 1
+	out := old[n]
+	*s = old[:n]
+	return out
+}
+
 // An Order represents an ordering relationship between values.
 type Order int
 
