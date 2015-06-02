@@ -200,7 +200,7 @@ def proto_library(name, src=None, deps=[], visibility=None,
     proto_srcgen_rule = name + "_cc_src"
     proto_lib = name + "_cc"
     protoc = "//third_party/proto:protoc"
-    proto_cmd = "$(location %s) --cpp_out=$(GENDIR)/ %s" % (protoc, src)
+    proto_cmd = "$(location %s) --cpp_out=$(GENDIR)/ %s" % (protoc, proto_path)
     cc_deps = ["//third_party/proto:protobuf"]
     proto_deps = [src, protoc]
     for dep in deps:
