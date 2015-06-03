@@ -28,12 +28,12 @@
 package main
 
 import (
-	"container/heap"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
 	"os"
+	"sort"
 
 	"kythe.io/kythe/go/platform/delimited"
 	"kythe.io/kythe/go/services/graphstore/compare"
@@ -71,20 +71,7 @@ func main() {
 		entries = stream.ReadEntries(in)
 	}
 	if *sortStream || *entrySets {
-		unsortedEntries := entries
-		ch := make(chan *spb.Entry)
-		entries = ch
-		sorted := compare.ByEntries(nil)
-		go func() {
-			for entry := range unsortedEntries {
-				sorted = append(sorted, entry)
-			}
-			heap.Init(&sorted)
-			for len(sorted) > 0 {
-				ch <- heap.Pop(&sorted).(*spb.Entry)
-			}
-			close(ch)
-		}()
+		entries = sortEntries(entries)
 	}
 
 	encoder := json.NewEncoder(os.Stdout)
@@ -120,6 +107,23 @@ func main() {
 	if *countOnly {
 		fmt.Println(entryCount)
 	}
+}
+
+func sortEntries(entries <-chan *spb.Entry) <-chan *spb.Entry {
+	unsortedEntries := entries
+	ch := make(chan *spb.Entry)
+	go func() {
+		sorted := compare.ByEntries(nil)
+		for entry := range unsortedEntries {
+			sorted = append(sorted, entry)
+		}
+		sort.Sort(&sorted)
+		for _, e := range sorted {
+			ch <- e
+		}
+		close(ch)
+	}()
+	return ch
 }
 
 func failOnErr(err error) {
