@@ -18,7 +18,6 @@
 package gsutil
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -27,12 +26,40 @@ import (
 	"strings"
 	"syscall"
 
-	"kythe.io/kythe/go/services/graphstore"
-	"kythe.io/kythe/go/services/graphstore/proxy"
 	"kythe.io/kythe/go/storage/inmemory"
-	"kythe.io/kythe/go/storage/leveldb"
-	"kythe.io/kythe/go/storage/sql"
+
+	"kythe.io/kythe/go/services/graphstore"
 )
+
+// Handler returns a graphstore.Service based on the given specification.
+// See also: Register(string, Handler).
+type Handler func(spec string) (graphstore.Service, error)
+
+var (
+	handlers = map[string]Handler{
+		"in-memory": func(_ string) (graphstore.Service, error) { return inmemory.Create(), nil },
+	}
+	defaultHandlerKind string
+)
+
+// Register exposes the given Handler to ParseGraphStore.  Each string starting
+// with kind+":" will be passed to the given Handler.  A kind can only be
+// registered once.
+func Register(kind string, h Handler) {
+	if _, exists := handlers[kind]; exists {
+		log.Fatal("gsutil Handler for kind %q already exists", kind)
+	}
+	handlers[kind] = h
+}
+
+// RegisterDefault gives ParseGraphStore a fallback kind if not given any
+// "____:" prefix.  A default can only be set once.
+func RegisterDefault(kind string) {
+	if defaultHandlerKind != "" {
+		log.Fatal("default gsutil Handler kind already registered as %q", defaultHandlerKind)
+	}
+	defaultHandlerKind = kind
+}
 
 type gsFlag struct {
 	gs *graphstore.Service
@@ -69,42 +96,18 @@ func ParseGraphStore(str string) (graphstore.Service, error) {
 		switch {
 		case spec == "" || spec == "in-memory":
 			kind = "in-memory"
-		case leveldb.ValidDB(spec):
-			kind = "leveldb"
+		case defaultHandlerKind != "":
+			kind = defaultHandlerKind
 		default:
 			return nil, fmt.Errorf("unknown GraphStore: %q", str)
 		}
 	}
 
-	switch kind {
-	case "in-memory":
-		return inmemory.Create(), nil
-	case "proxy":
-		var stores []graphstore.Service
-		for _, s := range strings.Split(spec, ",") {
-			gs, err := ParseGraphStore(s)
-			if err != nil {
-				return nil, fmt.Errorf("proxy GraphStore error for %q: %v", s, err)
-			}
-			stores = append(stores, gs)
-		}
-		if len(stores) == 0 {
-			return nil, errors.New("no proxy GraphStores specified")
-		}
-		return proxy.New(stores...), nil
-	case "leveldb":
-		gs, err := leveldb.OpenGraphStore(spec, nil)
-		if err != nil {
-			return nil, fmt.Errorf("error opening LevelDB GraphStore: %v", err)
-		}
-		return gs, nil
-	default:
-		gs, err := sql.Open(kind, spec)
-		if err != nil {
-			return nil, fmt.Errorf("error opening SQL GraphStore: %v", err)
-		}
-		return gs, nil
+	h, ok := handlers[kind]
+	if !ok {
+		return nil, fmt.Errorf("no gsutil Handler registered for kind %q", kind)
 	}
+	return h(spec)
 }
 
 // EnsureGracefulExit will try to close each gs when notified of an Interrupt,

@@ -25,10 +25,16 @@ import (
 	"os"
 
 	"kythe.io/kythe/go/services/graphstore"
+	"kythe.io/kythe/go/storage/gsutil"
 	"kythe.io/kythe/go/storage/keyvalue"
 
 	"github.com/jmhodges/levigo"
 )
+
+func init() {
+	gsutil.Register("leveldb", func(spec string) (graphstore.Service, error) { return OpenGraphStore(spec, nil) })
+	gsutil.RegisterDefault("leveldb")
+}
 
 // levelDB is a wrapper around a levigo.DB that implements keyvalue.DB
 type levelDB struct {

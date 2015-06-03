@@ -11,6 +11,7 @@ go_package(
     ],
     deps = [
         "//kythe/go/services/graphstore",
+        "//kythe/go/storage/gsutil",
         "//kythe/go/storage/keyvalue",
         "//third_party/go:levigo",
     ],

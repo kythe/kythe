@@ -27,6 +27,7 @@ import (
 	"strings"
 
 	"kythe.io/kythe/go/services/graphstore"
+	"kythe.io/kythe/go/storage/gsutil"
 
 	spb "kythe.io/kythe/proto/storage_proto"
 
@@ -35,6 +36,10 @@ import (
 
 // SQLite3 is the standard database/sql driver name for sqlite3.
 const SQLite3 = "sqlite3"
+
+func init() {
+	gsutil.Register(SQLite3, func(spec string) (graphstore.Service, error) { return Open(SQLite3, spec) })
+}
 
 const (
 	tableName     = "kythe"

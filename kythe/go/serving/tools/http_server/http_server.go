@@ -43,6 +43,10 @@ import (
 	ftpb "kythe.io/kythe/proto/filetree_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
+
+	_ "kythe.io/kythe/go/services/graphstore/grpc"
+	_ "kythe.io/kythe/go/services/graphstore/proxy"
+	_ "kythe.io/kythe/go/storage/leveldb"
 )
 
 var (

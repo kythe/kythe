@@ -40,6 +40,10 @@ import (
 	"kythe.io/kythe/go/util/schema"
 
 	spb "kythe.io/kythe/proto/storage_proto"
+
+	_ "kythe.io/kythe/go/services/graphstore/grpc"
+	_ "kythe.io/kythe/go/services/graphstore/proxy"
+	_ "kythe.io/kythe/go/storage/leveldb"
 )
 
 func usage() {

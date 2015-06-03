@@ -10,6 +10,8 @@ go_binary(
     deps = [
         "//kythe/go/services/filetree",
         "//kythe/go/services/graphstore",
+        "//kythe/go/services/graphstore/grpc",
+        "//kythe/go/services/graphstore/proxy",
         "//kythe/go/services/search",
         "//kythe/go/services/xrefs",
         "//kythe/go/serving/filetree",
@@ -75,6 +77,8 @@ go_binary(
     ],
     deps = [
         "//kythe/go/services/graphstore",
+        "//kythe/go/services/graphstore/grpc",
+        "//kythe/go/services/graphstore/proxy",
         "//kythe/go/serving/pipeline",
         "//kythe/go/storage/gsutil",
         "//kythe/go/storage/leveldb",

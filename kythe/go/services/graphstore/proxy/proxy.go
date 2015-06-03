@@ -20,14 +20,37 @@ package proxy
 
 import (
 	"container/heap"
+	"errors"
+	"fmt"
 	"io"
+	"strings"
 	"sync"
 
 	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/services/graphstore/compare"
+	"kythe.io/kythe/go/storage/gsutil"
 
 	spb "kythe.io/kythe/proto/storage_proto"
 )
+
+func init() {
+	gsutil.Register("proxy", proxyHandler)
+}
+
+func proxyHandler(spec string) (graphstore.Service, error) {
+	var stores []graphstore.Service
+	for _, s := range strings.Split(spec, ",") {
+		gs, err := gsutil.ParseGraphStore(s)
+		if err != nil {
+			return nil, fmt.Errorf("proxy GraphStore error for %q: %v", s, err)
+		}
+		stores = append(stores, gs)
+	}
+	if len(stores) == 0 {
+		return nil, errors.New("no proxy GraphStores specified")
+	}
+	return New(stores...), nil
+}
 
 type proxyService struct {
 	stores []graphstore.Service

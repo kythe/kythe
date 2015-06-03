@@ -9,7 +9,10 @@ go_binary(
     ],
     deps = [
         "//kythe/go/services/graphstore",
+        "//kythe/go/services/graphstore/grpc",
+        "//kythe/go/services/graphstore/proxy",
         "//kythe/go/storage/gsutil",
+        "//kythe/go/storage/leveldb",
         "//kythe/go/storage/stream",
         "//kythe/proto:storage_proto_go",
     ],
@@ -23,7 +26,10 @@ go_binary(
     deps = [
         "//kythe/go/platform/delimited",
         "//kythe/go/services/graphstore",
+        "//kythe/go/services/graphstore/grpc",
+        "//kythe/go/services/graphstore/proxy",
         "//kythe/go/storage/gsutil",
+        "//kythe/go/storage/leveldb",
         "//kythe/go/util/kytheuri",
         "//kythe/proto:storage_proto_go",
     ],
@@ -36,7 +42,10 @@ go_binary(
     ],
     deps = [
         "//kythe/go/services/graphstore",
+        "//kythe/go/services/graphstore/grpc",
+        "//kythe/go/services/graphstore/proxy",
         "//kythe/go/storage/gsutil",
+        "//kythe/go/storage/leveldb",
         "//kythe/go/storage/stream",
         "//kythe/go/util/encoding/rdf",
         "//kythe/go/util/kytheuri",

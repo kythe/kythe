@@ -14,45 +14,27 @@
  * limitations under the License.
  */
 
-// Binary write_tables creates a combined xrefs/filetree serving table based on
-// a given graphstore.
-package main
+// Package grpc registers the "grpc" kind to the gsutil package.
+package grpc
 
 import (
-	"flag"
-	"log"
-
 	"kythe.io/kythe/go/services/graphstore"
-	"kythe.io/kythe/go/serving/pipeline"
 	"kythe.io/kythe/go/storage/gsutil"
-	"kythe.io/kythe/go/storage/leveldb"
 
-	_ "kythe.io/kythe/go/services/graphstore/grpc"
-	_ "kythe.io/kythe/go/services/graphstore/proxy"
-)
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 
-var (
-	gs graphstore.Service
-
-	tablePath = flag.String("out", "", "Directory path to output serving table")
+	spb "kythe.io/kythe/proto/storage_proto"
 )
 
 func init() {
-	gsutil.Flag(&gs, "graphstore", "GraphStore to read")
+	gsutil.Register("grpc", handler)
 }
-func main() {
-	flag.Parse()
-	if gs == nil {
-		log.Fatal("Missing required --graphstore argument")
-	}
 
-	db, err := leveldb.Open(*tablePath, nil)
+func handler(spec string) (graphstore.Service, error) {
+	conn, err := grpc.Dial(spec)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-	defer db.Close()
-
-	if err := pipeline.Run(gs, db); err != nil {
-		log.Fatal(err)
-	}
+	return graphstore.GRPC(context.Background(), spb.NewGraphStoreClient(conn)), nil
 }

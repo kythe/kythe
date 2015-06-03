@@ -10,6 +10,7 @@ go_package(
     deps = [
         "//kythe/go/services/graphstore",
         "//kythe/go/services/xrefs",
+        "//kythe/go/storage/gsutil",
         "//kythe/go/util/kytheuri",
         "//kythe/go/util/schema",
         "//kythe/go/util/stringset",

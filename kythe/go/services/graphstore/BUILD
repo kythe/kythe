@@ -6,5 +6,6 @@ go_package(
     deps = [
         "//kythe/go/services/graphstore/compare",
         "//kythe/proto:storage_proto_go",
+        "//third_party/go:context",
     ],
 )

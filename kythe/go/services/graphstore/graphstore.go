@@ -19,9 +19,12 @@
 package graphstore
 
 import (
+	"io"
 	"strings"
 
 	"kythe.io/kythe/go/services/graphstore/compare"
+
+	"golang.org/x/net/context"
 
 	spb "kythe.io/kythe/proto/storage_proto"
 )
@@ -127,3 +130,62 @@ func BatchWrites(entries <-chan *spb.Entry, maxSize int) <-chan *spb.WriteReques
 	}()
 	return ch
 }
+
+type grpcClient struct {
+	ctx context.Context
+	spb.GraphStoreClient
+}
+
+// Read implements part of Service interface.
+func (c *grpcClient) Read(req *spb.ReadRequest, f EntryFunc) error {
+	s, err := c.GraphStoreClient.Read(c.ctx, req)
+	if err != nil {
+		return err
+	}
+	return streamEntries(s, f)
+}
+
+// Scan implements part of Service interface.
+func (c *grpcClient) Scan(req *spb.ScanRequest, f EntryFunc) error {
+	s, err := c.GraphStoreClient.Scan(c.ctx, req)
+	if err != nil {
+		return err
+	}
+	return streamEntries(s, f)
+}
+
+func streamEntries(s entryStream, f EntryFunc) error {
+	for {
+		e, err := s.Recv()
+		if err == io.EOF {
+			return nil
+		} else if err != nil {
+			return err
+		}
+
+		err = f(e)
+		if err == io.EOF {
+			return s.CloseSend()
+		} else if err != nil {
+			s.CloseSend()
+			return err
+		}
+	}
+}
+
+type entryStream interface {
+	Recv() (*spb.Entry, error)
+	CloseSend() error
+}
+
+// Write implements part of Service interface.
+func (c *grpcClient) Write(req *spb.WriteRequest) error {
+	_, err := c.GraphStoreClient.Write(c.ctx, req)
+	return err
+}
+
+// Close implements part of Service interface.
+func (c *grpcClient) Close() error { return c.Close() }
+
+// GRPC returns a GraphStore service backed by a GraphStoreClient.
+func GRPC(ctx context.Context, c spb.GraphStoreClient) Service { return &grpcClient{ctx, c} }
