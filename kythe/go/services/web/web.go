@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 
 	"kythe.io/kythe/go/util/httpencoding"
@@ -31,6 +32,13 @@ import (
 )
 
 const jsonBodyType = "application/json; charset=utf-8"
+
+// RegisterQuitHandler adds a handler for /quitquitquit that call os.Exit(0).
+func RegisterQuitHandler(mux *http.ServeMux) {
+	mux.HandleFunc("/quitquitquit", func(w http.ResponseWriter, r *http.Request) {
+		os.Exit(0)
+	})
+}
 
 // Call sends req to the given server method as a JSON-encoded body and
 // unmarshals the response body as JSON into reply.
