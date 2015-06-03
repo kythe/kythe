@@ -49,8 +49,7 @@ NOTE: All other Kythe dependencies are hosted within the repository under
 #### Installing Debian Jessie Packages
 
 {% highlight bash %}
-curl https://storage.googleapis.com/dev-con-jessie-apt/convoy.key | apt-key add -
-echo deb http://storage.googleapis.com/dev-con-jessie-apt/ jessie main >> /etc/apt/sources.list
+echo deb http://http.debian.net/debian jessie-backports main >> /etc/apt/sources.list
 apt-get update
 
 apt-get install \
