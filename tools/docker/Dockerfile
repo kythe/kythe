@@ -22,8 +22,7 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends curl ca-certificates && \
     apt-get clean
 
-RUN curl https://storage.googleapis.com/dev-con-jessie-apt/convoy.key | apt-key add -
-RUN echo deb http://storage.googleapis.com/dev-con-jessie-apt/ jessie main >> /etc/apt/sources.list
+echo deb http://http.debian.net/debian jessie-backports main >> /etc/apt/sources.list
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
