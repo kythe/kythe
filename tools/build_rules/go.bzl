@@ -1,3 +1,27 @@
+compile_args = {
+    "opt": [],
+    "fastbuild": [],
+    "dbg": ["-race"],
+}
+
+build_args = {
+    "opt": [],
+    "fastbuild": [],
+    "dbg": ["-race"],
+}
+
+link_args = {
+    "opt": [
+        "-w",
+        "-s",
+    ],
+    "fastbuild": [
+        "-w",
+        "-s",
+    ],
+    "dbg": ["-race"],
+}
+
 def go_compile(ctx, pkg, srcs, archive, setupGOPATH=False, extra_archives=[]):
   gotool = ctx.file._go
 
@@ -23,14 +47,16 @@ def go_compile(ctx, pkg, srcs, archive, setupGOPATH=False, extra_archives=[]):
   if ctx.attr.go_build:
     # Cheat and build the package non-hermetically (usually because there is a cgo dependency)
     # TODO(schroederc): add -a flag to regain some hermeticity
+    args = build_args[ctx.var['COMPILATION_MODE']]
     cmd = (
         "export PATH;" +
         "GOPATH=\"$PWD/" + ctx.label.package + "\" " +
-        gotool.path + " build -o " + archive.path + " " + ctx.attr.package)
+        gotool.path + " build " + ' '.join(args) + " -o " + archive.path + " " + ctx.attr.package)
     mnemonic = 'GoBuild'
   else:
+    args = compile_args[ctx.var['COMPILATION_MODE']]
     cmd = (
-        gotool.path + " tool 6g -p " + pkg + " -complete -pack -o " + archive.path + " " +
+        gotool.path + " tool 6g " + ' '.join(args) + " -p " + pkg + " -complete -pack -o " + archive.path + " " +
         include_paths + " " + cmd_helper.join_paths(" ", set(srcs)))
     mnemonic = 'GoCompile'
 
@@ -56,11 +82,13 @@ def link_binary(ctx, binary, archive, recursive_deps):
   for a in recursive_deps + [archive]:
     include_paths += "-L \"" + a.path + "_gopath\" "
 
+  args = link_args[ctx.var['COMPILATION_MODE']]
   cmd = (
       "set -e;" +
       "export PATH;" +
-      gotool.path + " tool 6l " + include_paths + " -o " + binary.path + " " +
-      include_paths + " " + archive.path + ";")
+      gotool.path + " tool 6l " + ' '.join(args) +
+      " " + include_paths + " -o " + binary.path + " " +
+      " " + archive.path + ";")
 
   ctx.action(
       inputs = list(recursive_deps) + [archive, gotool],
