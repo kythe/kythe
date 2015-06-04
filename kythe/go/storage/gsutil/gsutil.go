@@ -47,7 +47,7 @@ var (
 // registered once.
 func Register(kind string, h Handler) {
 	if _, exists := handlers[kind]; exists {
-		log.Fatal("gsutil Handler for kind %q already exists", kind)
+		log.Fatalf("gsutil Handler for kind %q already exists", kind)
 	}
 	handlers[kind] = h
 }
@@ -56,7 +56,7 @@ func Register(kind string, h Handler) {
 // "____:" prefix.  A default can only be set once.
 func RegisterDefault(kind string) {
 	if defaultHandlerKind != "" {
-		log.Fatal("default gsutil Handler kind already registered as %q", defaultHandlerKind)
+		log.Fatalf("default gsutil Handler kind already registered as %q", defaultHandlerKind)
 	}
 	defaultHandlerKind = kind
 }
