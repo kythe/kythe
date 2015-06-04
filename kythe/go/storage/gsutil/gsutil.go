@@ -77,7 +77,7 @@ func (f *gsFlag) Set(str string) (err error) {
 // Flag defines a GraphStore flag with the specified name and usage string.
 func Flag(gs *graphstore.Service, name, usage string) {
 	if gs == nil {
-		log.Fatalf("GraphStoreFlag given nil GraphStore pointer")
+		log.Fatal("GraphStoreFlag given nil GraphStore pointer")
 	}
 	f := gsFlag{gs: gs}
 	flag.Var(&f, name, usage)

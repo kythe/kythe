@@ -20,6 +20,7 @@ package keyvalue
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -176,7 +177,7 @@ func (s *Store) Write(req *spb.WriteRequest) (err error) {
 	}()
 	for _, update := range req.Update {
 		if update.FactName == "" {
-			return fmt.Errorf("invalid WriteRequest: Update missing FactName")
+			return errors.New("invalid WriteRequest: Update missing FactName")
 		}
 		updateKey, err := EncodeKey(req.Source, update.FactName, update.EdgeKind, update.Target)
 		if err != nil {
@@ -398,13 +399,13 @@ var (
 // EncodeKey returns a canonical encoding of an Entry (minus its value).
 func EncodeKey(source *spb.VName, factName string, edgeKind string, target *spb.VName) ([]byte, error) {
 	if source == nil {
-		return nil, fmt.Errorf("invalid Entry: missing source VName for key encoding")
+		return nil, errors.New("invalid Entry: missing source VName for key encoding")
 	} else if (edgeKind == "" || target == nil) && (edgeKind != "" || target != nil) {
-		return nil, fmt.Errorf("invalid Entry: edgeKind and target Ticket must be both non-empty or empty")
+		return nil, errors.New("invalid Entry: edgeKind and target Ticket must be both non-empty or empty")
 	} else if strings.Index(edgeKind, entryKeySepStr) != -1 {
-		return nil, fmt.Errorf("invalid Entry: edgeKind contains key separator")
+		return nil, errors.New("invalid Entry: edgeKind contains key separator")
 	} else if strings.Index(factName, entryKeySepStr) != -1 {
-		return nil, fmt.Errorf("invalid Entry: factName contains key separator")
+		return nil, errors.New("invalid Entry: factName contains key separator")
 	}
 
 	keySuffix := []byte(entryKeySepStr + edgeKind + entryKeySepStr + factName + entryKeySepStr)
@@ -419,7 +420,7 @@ func EncodeKey(source *spb.VName, factName string, edgeKind string, target *spb.
 	if err != nil {
 		return nil, fmt.Errorf("error encoding target VName: %v", err)
 	} else if bytes.Index(targetEncoding, entryKeySepBytes) != -1 {
-		return nil, fmt.Errorf("invalid Entry: target VName contains key separator")
+		return nil, errors.New("invalid Entry: target VName contains key separator")
 	}
 
 	return bytes.Join([][]byte{
@@ -434,7 +435,7 @@ func EncodeKey(source *spb.VName, factName string, edgeKind string, target *spb.
 // edgeKind. If edgeKind is "*", the prefix will match any edgeKind.
 func KeyPrefix(source *spb.VName, edgeKind string) ([]byte, error) {
 	if source == nil {
-		return nil, fmt.Errorf("missing source VName")
+		return nil, errors.New("missing source VName")
 	}
 	srcEncoding, err := encodeVName(source)
 	if err != nil {
