@@ -42,6 +42,7 @@ import (
 
 	"kythe.io/kythe/go/services/search"
 	"kythe.io/kythe/go/services/xrefs"
+	"kythe.io/kythe/go/util/flagutil"
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema"
 
@@ -53,23 +54,14 @@ import (
 )
 
 func init() {
-	binary := filepath.Base(os.Args[0])
-	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, `Determine what references are located at a particular offset within a file.
-
-Usage: %s --offset int (--path p | --signature s) [--corpus c] [--root r] [--language l]
-       %`+strconv.Itoa(len(binary))+`s [--ignore_local_repo] [--dirty_buffer path]
+	flag.Usage = flagutil.SimpleUsage(`Determine what references are located at a particular offset within a file.
 
 By default, kwazthis will search for a .kythe configuration file in a directory
 above the given --path (if it exists locally relative to the current working
 directory).  If found, --path will be made relative to this directory and --root
 before making any Kythe service requests.  If not found, --path will be passed
-unchanged.  --ignore_local_repo will turn off this behavior.
-
-Defaults flag values:
-`, binary, "")
-		flag.PrintDefaults()
-	}
+unchanged.  --ignore_local_repo will turn off this behavior.`,
+		"--offset int (--path p | --signature s) [--corpus c] [--root r] [--language l] [--ignore_local_repo] [--dirty_buffer path]")
 }
 
 var (
@@ -128,9 +120,9 @@ var definedAtEdge = schema.MirrorEdge(schema.DefinesEdge)
 func main() {
 	flag.Parse()
 	if *offset < 0 {
-		log.Fatal("ERROR: non-negative --offset required")
+		flagutil.UsageError("non-negative --offset required")
 	} else if *signature == "" && *path == "" {
-		log.Fatal("ERROR: must provide at least --path or --signature")
+		flagutil.UsageError("must provide at least --path or --signature")
 	}
 
 	if strings.HasPrefix(*remoteAPI, "http://") || strings.HasPrefix(*remoteAPI, "https://") {

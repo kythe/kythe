@@ -25,6 +25,7 @@ go_binary(
     deps = [
         "//kythe/go/services/search",
         "//kythe/go/services/xrefs",
+        "//kythe/go/util/flagutil",
         "//kythe/go/util/schema",
         "//kythe/go/util/stringset",
         "//kythe/proto:storage_proto_go",
@@ -39,6 +40,7 @@ go_binary(
     ],
     deps = [
         "//kythe/go/platform/delimited",
+        "//kythe/go/util/flagutil",
     ],
 )
 
@@ -49,6 +51,7 @@ go_binary(
     ],
     deps = [
         "//kythe/go/platform/kindex",
+        "//kythe/go/util/flagutil",
     ],
 )
 

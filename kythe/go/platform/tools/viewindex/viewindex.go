@@ -23,29 +23,26 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 
 	"kythe.io/kythe/go/platform/kindex"
+	"kythe.io/kythe/go/util/flagutil"
 )
 
 func init() {
-	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "usage: %s <kindex-file>\n", filepath.Base(os.Args[0]))
-		flag.PrintDefaults()
-	}
+	flag.Usage = flagutil.SimpleUsage("Print a .kindex archive as JSON to stdout",
+		"[--files] <kindex-file>")
 }
 
 var printFiles = flag.Bool("files", false, "Print file contents as well as the compilation")
 
 func main() {
 	flag.Parse()
-
-	if len(flag.Args()) != 1 {
-		flag.Usage()
-		os.Exit(1)
+	if len(flag.Args()) == 0 {
+		flagutil.UsageError("missing kindex-file path")
+	} else if len(flag.Args()) > 1 {
+		flagutil.UsageErrorf("unknown arguments: %v", flag.Args()[1:])
 	}
 
 	path := flag.Arg(0)

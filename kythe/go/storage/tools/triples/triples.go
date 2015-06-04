@@ -30,12 +30,12 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 
 	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/storage/gsutil"
 	"kythe.io/kythe/go/storage/stream"
 	"kythe.io/kythe/go/util/encoding/rdf"
+	"kythe.io/kythe/go/util/flagutil"
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema"
 
@@ -46,12 +46,6 @@ import (
 	_ "kythe.io/kythe/go/storage/leveldb"
 )
 
-func usage() {
-	binary := filepath.Base(os.Args[0])
-	fmt.Fprintf(os.Stderr, "Usage: %s [(--graphstore path | entries_file) [triples_out]]\n", binary)
-	flag.PrintDefaults()
-}
-
 var (
 	keepReverseEdges = flag.Bool("keep_reverse_edges", false, "Do not filter reverse edges from triples output")
 	quiet            = flag.Bool("quiet", false, "Do not emit logging messages")
@@ -61,7 +55,8 @@ var (
 
 func init() {
 	gsutil.Flag(&gs, "graphstore", "Path to GraphStore to convert to triples (instead of an entry stream)")
-	flag.Usage = usage
+	flag.Usage = flagutil.SimpleUsage("Converts an Entry stream to a stream of triples",
+		"[(--graphstore path | entries_file) [triples_out]]")
 }
 
 func main() {

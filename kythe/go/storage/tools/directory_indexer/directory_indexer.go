@@ -59,9 +59,15 @@ import (
 
 	"kythe.io/kythe/go/platform/delimited"
 	"kythe.io/kythe/go/storage/vnameutil"
+	"kythe.io/kythe/go/util/flagutil"
 
 	spb "kythe.io/kythe/proto/storage_proto"
 )
+
+func init() {
+	flag.Usage = flagutil.SimpleUsage("Produce a stream of entries representing the files in the given directories",
+		"[--verbose] [--emit_irregular] [--vnames path] [--exclude re0,re1,...,reN] [directories]")
+}
 
 var (
 	vnamesConfigPath = flag.String("vnames", "", "Path to JSON VNames configuration")

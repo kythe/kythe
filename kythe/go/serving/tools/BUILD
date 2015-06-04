@@ -21,6 +21,7 @@ go_binary(
         "//kythe/go/storage/leveldb",
         "//kythe/go/storage/table",
         "//kythe/go/storage/xrefs",
+        "//kythe/go/util/flagutil",
         "//kythe/proto:filetree_proto_go",
         "//kythe/proto:storage_proto_go",
         "//kythe/proto:xref_proto_go",
@@ -61,6 +62,7 @@ go_binary(
     deps = [
         "//kythe/go/services/search",
         "//kythe/go/services/xrefs",
+        "//kythe/go/util/flagutil",
         "//kythe/go/util/kytheuri",
         "//kythe/go/util/schema",
         "//kythe/proto:storage_proto_go",
@@ -82,5 +84,6 @@ go_binary(
         "//kythe/go/serving/pipeline",
         "//kythe/go/storage/gsutil",
         "//kythe/go/storage/leveldb",
+        "//kythe/go/util/flagutil",
     ],
 )

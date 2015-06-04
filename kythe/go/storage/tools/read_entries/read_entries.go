@@ -23,12 +23,12 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 	"sync"
 
 	"kythe.io/kythe/go/platform/delimited"
 	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/storage/gsutil"
+	"kythe.io/kythe/go/util/flagutil"
 	"kythe.io/kythe/go/util/kytheuri"
 
 	spb "kythe.io/kythe/proto/storage_proto"
@@ -54,23 +54,18 @@ var (
 
 func init() {
 	gsutil.Flag(&gs, "graphstore", "GraphStore to read")
-	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, `%s - scans/reads the entries from a GraphStore, emitting a delimited entry stream to stdout
-usage: %[1]s --graphstore spec [ticket...]
-`, filepath.Base(os.Args[0]))
-		flag.PrintDefaults()
-		os.Exit(1)
-	}
+	flag.Usage = flagutil.SimpleUsage("Scans/reads the entries from a GraphStore, emitting a delimited entry stream to stdout",
+		"--graphstore spec [--count] [--shards N [--shard_index I] --sharded_file path] [--edge_kind] ([--fact_prefix str] [--target ticket] | [ticket...])")
 }
 
 func main() {
 	flag.Parse()
 	if gs == nil {
-		log.Fatal("Missing --graphstore")
+		flagutil.UsageError("missing --graphstore")
 	} else if *shardsToFiles != "" && *shards <= 0 {
-		log.Fatal("--sharded_file and --shards must be given together")
+		flagutil.UsageError("--sharded_file and --shards must be given together")
 	} else if *shards > 0 && len(flag.Args()) > 0 {
-		log.Fatal("--shards and giving tickets for reads are mutually exclusive")
+		flagutil.UsageError("--shards and giving tickets for reads are mutually exclusive")
 	}
 
 	wr := delimited.NewWriter(os.Stdout)

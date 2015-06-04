@@ -37,6 +37,7 @@ import (
 	"kythe.io/kythe/go/storage/leveldb"
 	"kythe.io/kythe/go/storage/table"
 	xstore "kythe.io/kythe/go/storage/xrefs"
+	"kythe.io/kythe/go/util/flagutil"
 
 	"google.golang.org/grpc"
 
@@ -61,16 +62,18 @@ var (
 
 func init() {
 	gsutil.Flag(&gs, "graphstore", "GraphStore to serve xrefs")
+	flag.Usage = flagutil.SimpleUsage("Exposes HTTP/GRPC interfaces for the search, xrefs, and filetree services",
+		"(--graphstore spec | --serving_table path) [--listen addr] [--grpc_listen addr] [--public_resources dir]")
 }
 
 func main() {
 	flag.Parse()
 	if *servingTable == "" && gs == nil {
-		log.Fatal("Missing either --serving_table or --graphstore")
+		flagutil.UsageError("missing either --serving_table or --graphstore")
 	} else if *httpListeningAddr == "" && *grpcListeningAddr == "" {
-		log.Fatal("Missing either --listen or --grpc_listen argument")
+		flagutil.UsageError("missing either --listen or --grpc_listen argument")
 	} else if *servingTable != "" && gs != nil {
-		log.Fatal("--serving_table and --graphstore are mutually exclusive")
+		flagutil.UsageError("--serving_table and --graphstore are mutually exclusive")
 	}
 
 	var (

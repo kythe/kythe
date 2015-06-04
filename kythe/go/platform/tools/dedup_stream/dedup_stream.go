@@ -21,14 +21,25 @@ package main
 
 import (
 	"crypto/sha512"
+	"flag"
 	"io"
 	"log"
 	"os"
 
 	"kythe.io/kythe/go/platform/delimited"
+	"kythe.io/kythe/go/util/flagutil"
 )
 
+func init() {
+	flag.Usage = flagutil.SimpleUsage("Remove duplicate records from a delimited stream")
+}
+
 func main() {
+	flag.Parse()
+	if len(flag.Args()) != 0 {
+		flagutil.UsageErrorf("unknown arguments: %v", flag.Args())
+	}
+
 	written := make(map[[sha512.Size384]byte]struct{})
 
 	var skipped uint64

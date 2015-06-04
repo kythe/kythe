@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-// Binary write_tables creates a combined xrefs/filetree serving table based on
-// a given graphstore.
+// Binary write_tables creates a combined xrefs/filetree/search serving table
+// based on a given GraphStore.
 package main
 
 import (
@@ -26,6 +26,7 @@ import (
 	"kythe.io/kythe/go/serving/pipeline"
 	"kythe.io/kythe/go/storage/gsutil"
 	"kythe.io/kythe/go/storage/leveldb"
+	"kythe.io/kythe/go/util/flagutil"
 
 	_ "kythe.io/kythe/go/services/graphstore/grpc"
 	_ "kythe.io/kythe/go/services/graphstore/proxy"
@@ -39,11 +40,15 @@ var (
 
 func init() {
 	gsutil.Flag(&gs, "graphstore", "GraphStore to read")
+	flag.Usage = flagutil.SimpleUsage("Creates a combined xrefs/filetree/search serving table based on a given GraphStore",
+		"--graphstore spec --out path")
 }
 func main() {
 	flag.Parse()
 	if gs == nil {
-		log.Fatal("Missing required --graphstore argument")
+		flagutil.UsageError("missing required --graphstore flag")
+	} else if *tablePath == "" {
+		flagutil.UsageError("missing required --out flag")
 	}
 
 	db, err := leveldb.Open(*tablePath, nil)

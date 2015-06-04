@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// Binary ktags emits ctags-formatted lines for the definitions of the given files.
+// Binary ktags emits ctags-formatted lines for the definitions in the given files.
 package main
 
 import (
@@ -22,13 +22,12 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 
 	"kythe.io/kythe/go/services/search"
 	"kythe.io/kythe/go/services/xrefs"
+	"kythe.io/kythe/go/util/flagutil"
 	"kythe.io/kythe/go/util/schema"
 	"kythe.io/kythe/go/util/stringset"
 
@@ -39,10 +38,8 @@ import (
 var remoteAPI = flag.String("api", "https://xrefs-dot-kythe-repo.appspot.com", "Remote api server")
 
 func init() {
-	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %s [--api address] <file>...\n", filepath.Base(os.Args[0]))
-		flag.PrintDefaults()
-	}
+	flag.Usage = flagutil.SimpleUsage("Emit ctags-formatted lines for the definitions in the given files",
+		"[--api address] <file>...")
 }
 
 // TODO(schroederc): use cross-language facts to determine a node's tag name.
@@ -51,6 +48,9 @@ const identifierFact = "/kythe/identifier"
 
 func main() {
 	flag.Parse()
+	if len(flag.Args()) == 0 {
+		flagutil.UsageError("not given any files")
+	}
 
 	xs := xrefs.WebClient(*remoteAPI)
 	idx := search.WebClient(*remoteAPI)
