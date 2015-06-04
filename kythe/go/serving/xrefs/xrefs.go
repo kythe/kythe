@@ -38,6 +38,7 @@ import (
 	xpb "kythe.io/kythe/proto/xref_proto"
 
 	"github.com/golang/protobuf/proto"
+	"golang.org/x/net/context"
 )
 
 const (
@@ -52,7 +53,7 @@ const (
 type Table struct{ table.Proto }
 
 // Nodes implements part of the xrefs Service interface.
-func (t *Table) Nodes(req *xpb.NodesRequest) (*xpb.NodesReply, error) {
+func (t *Table) Nodes(ctx context.Context, req *xpb.NodesRequest) (*xpb.NodesReply, error) {
 	reply := &xpb.NodesReply{}
 	patterns := xrefs.ConvertFilters(req.Filter)
 	for _, ticket := range req.Ticket {
@@ -92,7 +93,7 @@ const (
 )
 
 // Edges implements part of the xrefs Service interface.
-func (t *Table) Edges(req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
+func (t *Table) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
 	if len(req.Ticket) == 0 {
 		return nil, errors.New("no tickets specified")
 	}
@@ -184,7 +185,7 @@ func (t *Table) Edges(req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
 	}
 
 	if len(req.Filter) > 0 {
-		nReply, err := t.Nodes(&xpb.NodesRequest{
+		nReply, err := t.Nodes(ctx, &xpb.NodesRequest{
 			Ticket: nodeTickets.Slice(),
 			Filter: req.Filter,
 		})
@@ -236,7 +237,7 @@ func (s *filterStats) filter(g *srvpb.EdgeSet_Group) *xpb.EdgeSet_Group {
 }
 
 // Decorations implements part of the xrefs Service interface.
-func (t *Table) Decorations(req *xpb.DecorationsRequest) (*xpb.DecorationsReply, error) {
+func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*xpb.DecorationsReply, error) {
 	if len(req.DirtyBuffer) > 0 {
 		log.Println("TODO: implement DecorationsRequest.DirtyBuffer")
 		return nil, errors.New("dirty buffers unimplemented")
@@ -288,7 +289,7 @@ func (t *Table) Decorations(req *xpb.DecorationsRequest) (*xpb.DecorationsReply,
 			}
 		}
 
-		nodesReply, err := t.Nodes(&xpb.NodesRequest{Ticket: nodeTickets.Slice()})
+		nodesReply, err := t.Nodes(ctx, &xpb.NodesRequest{Ticket: nodeTickets.Slice()})
 		if err != nil {
 			return nil, fmt.Errorf("error getting nodes: %v", err)
 		}

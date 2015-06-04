@@ -9,6 +9,7 @@ go_package(
         "//kythe/go/util/stringset",
         "//kythe/proto:serving_proto_go",
         "//kythe/proto:xref_proto_go",
+        "//third_party/go:context",
         "//third_party/go:protobuf",
     ],
 )

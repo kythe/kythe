@@ -49,39 +49,21 @@ type NodesEdgesService interface {
 // NodesService provides fast access to nodes in a Kythe graph.
 type NodesService interface {
 	// Nodes returns a subset of the facts for each of the requested nodes.
-	Nodes(*xpb.NodesRequest) (*xpb.NodesReply, error)
+	Nodes(context.Context, *xpb.NodesRequest) (*xpb.NodesReply, error)
 }
 
 // EdgesService provides fast access to edges in a Kythe graph.
 type EdgesService interface {
 	// Edges returns a subset of the outbound edges for each of a set of requested
 	// nodes.
-	Edges(*xpb.EdgesRequest) (*xpb.EdgesReply, error)
+	Edges(context.Context, *xpb.EdgesRequest) (*xpb.EdgesReply, error)
 }
 
 // DecorationsService provides fast access to file decorations in a Kythe graph.
 type DecorationsService interface {
 	// Decorations returns an index of the nodes and edges associated with a
 	// particular file node.
-	Decorations(*xpb.DecorationsRequest) (*xpb.DecorationsReply, error)
-}
-
-// GRPCService implements the GRPC XRefs service interface.
-type GRPCService struct{ Service }
-
-// Nodes implements part of the xpb.XRefServiceServer interface.
-func (s *GRPCService) Nodes(ctx context.Context, req *xpb.NodesRequest) (*xpb.NodesReply, error) {
-	return s.Service.Nodes(req)
-}
-
-// Edges implements part of the xpb.XRefServiceServer interface.
-func (s *GRPCService) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
-	return s.Service.Edges(req)
-}
-
-// Decorations implements part of the xpb.XRefServiceServer interface.
-func (s *GRPCService) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*xpb.DecorationsReply, error) {
-	return s.Service.Decorations(req)
+	Decorations(context.Context, *xpb.DecorationsRequest) (*xpb.DecorationsReply, error)
 }
 
 // NodesMap returns a map from each node ticket to a map of its facts.
@@ -242,45 +224,42 @@ func MatchesAny(str string, patterns []*regexp.Regexp) bool {
 	return false
 }
 
-type grpcClient struct {
-	context.Context
-	xpb.XRefServiceClient
-}
+type grpcClient struct{ xpb.XRefServiceClient }
 
 // Nodes implements part of the Service interface.
-func (w *grpcClient) Nodes(req *xpb.NodesRequest) (*xpb.NodesReply, error) {
-	return w.XRefServiceClient.Nodes(w, req)
+func (w *grpcClient) Nodes(ctx context.Context, req *xpb.NodesRequest) (*xpb.NodesReply, error) {
+	return w.XRefServiceClient.Nodes(ctx, req)
 }
 
 // Edges implements part of the Service interface.
-func (w *grpcClient) Edges(req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
-	return w.XRefServiceClient.Edges(w, req)
+func (w *grpcClient) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
+	return w.XRefServiceClient.Edges(ctx, req)
 }
 
 // Decorations implements part of the Service interface.
-func (w *grpcClient) Decorations(req *xpb.DecorationsRequest) (*xpb.DecorationsReply, error) {
-	return w.XRefServiceClient.Decorations(w, req)
+func (w *grpcClient) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*xpb.DecorationsReply, error) {
+	return w.XRefServiceClient.Decorations(ctx, req)
 }
 
 // GRPC returns an xrefs Service backed by the given GRPC client and context.
-func GRPC(ctx context.Context, c xpb.XRefServiceClient) Service { return &grpcClient{ctx, c} }
+func GRPC(c xpb.XRefServiceClient) Service { return &grpcClient{c} }
 
 type webClient struct{ addr string }
 
 // Nodes implements part of the Service interface.
-func (w *webClient) Nodes(q *xpb.NodesRequest) (*xpb.NodesReply, error) {
+func (w *webClient) Nodes(ctx context.Context, q *xpb.NodesRequest) (*xpb.NodesReply, error) {
 	var reply xpb.NodesReply
 	return &reply, web.Call(w.addr, "nodes", q, &reply)
 }
 
 // Edges implements part of the Service interface.
-func (w *webClient) Edges(q *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
+func (w *webClient) Edges(ctx context.Context, q *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
 	var reply xpb.EdgesReply
 	return &reply, web.Call(w.addr, "edges", q, &reply)
 }
 
 // Decorations implements part of the Service interface.
-func (w *webClient) Decorations(q *xpb.DecorationsRequest) (*xpb.DecorationsReply, error) {
+func (w *webClient) Decorations(ctx context.Context, q *xpb.DecorationsRequest) (*xpb.DecorationsReply, error) {
 	var reply xpb.DecorationsReply
 	return &reply, web.Call(w.addr, "decorations", q, &reply)
 }
@@ -306,6 +285,7 @@ func WebClient(addr string) Service {
 // Note: /nodes, /edges, and /decorations will return their responses as
 // serialized protobufs if the "proto" query parameter is set.
 func RegisterHTTPHandlers(xs Service, mux *http.ServeMux) {
+	ctx := context.Background()
 	mux.HandleFunc("/decorations", func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		defer func() {
@@ -316,7 +296,7 @@ func RegisterHTTPHandlers(xs Service, mux *http.ServeMux) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		reply, err := xs.Decorations(&req)
+		reply, err := xs.Decorations(ctx, &req)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -337,7 +317,7 @@ func RegisterHTTPHandlers(xs Service, mux *http.ServeMux) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		reply, err := xs.Nodes(&req)
+		reply, err := xs.Nodes(ctx, &req)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -357,7 +337,7 @@ func RegisterHTTPHandlers(xs Service, mux *http.ServeMux) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		reply, err := xs.Edges(&req)
+		reply, err := xs.Edges(ctx, &req)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

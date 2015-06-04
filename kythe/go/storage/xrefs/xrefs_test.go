@@ -70,7 +70,7 @@ var (
 func TestNodes(t *testing.T) {
 	xs := newService(t, testEntries)
 
-	reply, err := xs.Nodes(&xpb.NodesRequest{
+	reply, err := xs.Nodes(ctx, &xpb.NodesRequest{
 		Ticket: nodesToTickets(testNodes),
 	})
 	if err != nil {
@@ -85,7 +85,7 @@ func TestNodes(t *testing.T) {
 func TestEdges(t *testing.T) {
 	xs := newService(t, testEntries)
 
-	reply, err := xs.Edges(&xpb.EdgesRequest{
+	reply, err := xs.Edges(ctx, &xpb.EdgesRequest{
 		Ticket: nodesToTickets(testNodes),
 		Filter: []string{"**"}, // every fact
 	})
@@ -108,7 +108,7 @@ func TestEdges(t *testing.T) {
 func TestDecorations(t *testing.T) {
 	xs := newService(t, testEntries)
 
-	reply, err := xs.Decorations(&xpb.DecorationsRequest{
+	reply, err := xs.Decorations(ctx, &xpb.DecorationsRequest{
 		Location: &xpb.Location{
 			Ticket: kytheuri.ToString(testFileVName),
 		},

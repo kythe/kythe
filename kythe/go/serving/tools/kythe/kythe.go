@@ -64,7 +64,6 @@ import (
 	"kythe.io/kythe/go/storage/leveldb"
 	"kythe.io/kythe/go/storage/table"
 
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
 	ftpb "kythe.io/kythe/proto/filetree_proto"
@@ -148,8 +147,7 @@ func main() {
 				log.Fatalf("Error connecting to remote API %q: %v", *remoteAPI, err)
 			}
 			defer conn.Close()
-			ctx := context.Background()
-			xs = xrefs.GRPC(ctx, xpb.NewXRefServiceClient(conn))
+			xs = xrefs.GRPC(xpb.NewXRefServiceClient(conn))
 			ft = filetree.GRPC(ctx, ftpb.NewFileTreeServiceClient(conn))
 			idx = search.GRPC(ctx, spb.NewSearchServiceClient(conn))
 		}

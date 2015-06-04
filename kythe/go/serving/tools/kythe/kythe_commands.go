@@ -34,12 +34,16 @@ import (
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema"
 
+	"golang.org/x/net/context"
+
 	ftpb "kythe.io/kythe/proto/filetree_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
 var (
+	ctx = context.Background()
+
 	xs  xrefs.Service
 	ft  filetree.Service
 	idx search.Service
@@ -152,7 +156,7 @@ var (
 			if edgeKinds != "" {
 				req.Kind = strings.Split(edgeKinds, ",")
 			}
-			reply, err := xs.Edges(req)
+			reply, err := xs.Edges(ctx, req)
 			if err != nil {
 				return err
 			}
@@ -182,7 +186,7 @@ var (
 			if nodeFilters != "" {
 				req.Filter = strings.Split(nodeFilters, ",")
 			}
-			reply, err := xs.Nodes(req)
+			reply, err := xs.Nodes(ctx, req)
 			if err != nil {
 				return err
 			}
@@ -212,7 +216,7 @@ var (
 				req.Location.End = end
 			}
 
-			reply, err := xs.Decorations(req)
+			reply, err := xs.Decorations(ctx, req)
 			if err != nil {
 				return err
 			}
@@ -274,7 +278,7 @@ var (
 				req.SourceText = true // TODO(schroederc): remove need for this
 			}
 
-			reply, err := xs.Decorations(req)
+			reply, err := xs.Decorations(ctx, req)
 			if err != nil {
 				return err
 			}
@@ -285,7 +289,7 @@ var (
 				// we require a separate Nodes call.
 				// TODO(schroederc): add Locations for each DecorationsReply_Reference
 
-				fileNodeReply, err := xs.Nodes(&xpb.NodesRequest{
+				fileNodeReply, err := xs.Nodes(ctx, &xpb.NodesRequest{
 					Ticket: []string{req.Location.Ticket},
 					Filter: []string{schema.TextFact, schema.TextEncodingFact},
 				})

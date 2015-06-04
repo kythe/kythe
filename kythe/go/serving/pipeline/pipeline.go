@@ -126,7 +126,7 @@ func Run(ctx context.Context, gs graphstore.Service, db keyvalue.DB) error {
 	}
 
 	es := xrefs.NodesEdgesService(&xsrv.Table{tbl})
-	if err := writeDecorations(tbl, es, files); err != nil {
+	if err := writeDecorations(ctx, tbl, es, files); err != nil {
 		return err
 	}
 
@@ -339,13 +339,13 @@ func writeWithReverses(ctx context.Context, gs graphstore.Service, req *spb.Writ
 
 var revChildOfEdgeKind = schema.MirrorEdge(schema.ChildOfEdge)
 
-func writeDecorations(t table.Proto, es xrefs.NodesEdgesService, files []string) error {
+func writeDecorations(ctx context.Context, t table.Proto, es xrefs.NodesEdgesService, files []string) error {
 	log.Println("Writing Decorations")
 
 	edges := make(chan *xpb.EdgesReply)
 	var eErr error
 	go func() {
-		eErr = readEdges(es, files, edges,
+		eErr = readEdges(ctx, es, files, edges,
 			decorationFilters, []string{revChildOfEdgeKind})
 		close(edges)
 	}()
@@ -376,7 +376,7 @@ func writeDecorations(t table.Proto, es xrefs.NodesEdgesService, files []string)
 					}
 				}
 			} else {
-				ds, err := getDecorations(es, n)
+				ds, err := getDecorations(ctx, es, n)
 				if err != nil {
 					return err
 				}
@@ -408,7 +408,7 @@ func (s byOffset) Less(i, j int) bool {
 	return false
 }
 
-func getDecorations(es xrefs.EdgesService, anchor *xpb.NodeInfo) ([]*srvpb.FileDecorations_Decoration, error) {
+func getDecorations(ctx context.Context, es xrefs.EdgesService, anchor *xpb.NodeInfo) ([]*srvpb.FileDecorations_Decoration, error) {
 	var (
 		isAnchor   bool
 		start, end int
@@ -439,7 +439,7 @@ func getDecorations(es xrefs.EdgesService, anchor *xpb.NodeInfo) ([]*srvpb.FileD
 		return nil, nil
 	}
 
-	edges, err := es.Edges(&xpb.EdgesRequest{Ticket: []string{anchor.Ticket}})
+	edges, err := es.Edges(ctx, &xpb.EdgesRequest{Ticket: []string{anchor.Ticket}})
 	if err != nil {
 		return nil, err
 	}
@@ -474,11 +474,11 @@ var decorationFilters = []string{
 	schema.AnchorLocFilter,
 }
 
-func readEdges(es xrefs.NodesEdgesService, files []string, edges chan<- *xpb.EdgesReply, filters []string, kinds []string) error {
+func readEdges(ctx context.Context, es xrefs.NodesEdgesService, files []string, edges chan<- *xpb.EdgesReply, filters []string, kinds []string) error {
 	var eErr error
 	for _, file := range files {
 		if eErr == nil {
-			reply, err := es.Edges(&xpb.EdgesRequest{
+			reply, err := es.Edges(ctx, &xpb.EdgesRequest{
 				Ticket: []string{file},
 				Filter: filters,
 				Kind:   kinds,
@@ -489,7 +489,7 @@ func readEdges(es xrefs.NodesEdgesService, files []string, edges chan<- *xpb.Edg
 			}
 			if len(reply.EdgeSet) == 0 {
 				// File does not have any decorations, but we still want the source text/encoding.
-				nodeReply, err := es.Nodes(&xpb.NodesRequest{
+				nodeReply, err := es.Nodes(ctx, &xpb.NodesRequest{
 					Ticket: []string{file},
 					Filter: filters,
 				})

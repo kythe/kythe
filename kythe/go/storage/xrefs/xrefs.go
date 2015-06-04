@@ -123,7 +123,7 @@ func NewGraphStoreService(gs graphstore.Service) *GraphStoreService {
 }
 
 // Nodes implements part of the Service interface.
-func (g *GraphStoreService) Nodes(req *xpb.NodesRequest) (*xpb.NodesReply, error) {
+func (g *GraphStoreService) Nodes(ctx context.Context, req *xpb.NodesRequest) (*xpb.NodesReply, error) {
 	patterns := xrefs.ConvertFilters(req.Filter)
 
 	var names []*spb.VName
@@ -137,7 +137,7 @@ func (g *GraphStoreService) Nodes(req *xpb.NodesRequest) (*xpb.NodesReply, error
 	var nodes []*xpb.NodeInfo
 	for i, vname := range names {
 		info := &xpb.NodeInfo{Ticket: req.Ticket[i]}
-		if err := g.gs.Read(context.TODO(), &spb.ReadRequest{Source: vname}, func(entry *spb.Entry) error {
+		if err := g.gs.Read(ctx, &spb.ReadRequest{Source: vname}, func(entry *spb.Entry) error {
 			if len(patterns) == 0 || xrefs.MatchesAny(entry.FactName, patterns) {
 				info.Fact = append(info.Fact, entryToFact(entry))
 			}
@@ -151,7 +151,7 @@ func (g *GraphStoreService) Nodes(req *xpb.NodesRequest) (*xpb.NodesReply, error
 }
 
 // Edges implements part of the Service interface.
-func (g *GraphStoreService) Edges(req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
+func (g *GraphStoreService) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
 	if len(req.Ticket) == 0 {
 		return nil, errors.New("no tickets specified")
 	} else if req.PageToken != "" {
@@ -175,7 +175,7 @@ func (g *GraphStoreService) Edges(req *xpb.EdgesRequest) (*xpb.EdgesReply, error
 			filteredFacts []*xpb.Fact
 		)
 
-		if err := g.gs.Read(context.TODO(), &spb.ReadRequest{
+		if err := g.gs.Read(ctx, &spb.ReadRequest{
 			Source:   vname,
 			EdgeKind: "*",
 		}, func(entry *spb.Entry) error {
@@ -235,7 +235,7 @@ func (g *GraphStoreService) Edges(req *xpb.EdgesRequest) (*xpb.EdgesReply, error
 		}
 
 		// Batch request all leftover target nodes
-		nodesReply, err := g.Nodes(&xpb.NodesRequest{Ticket: targetSet.Slice(), Filter: req.Filter})
+		nodesReply, err := g.Nodes(ctx, &xpb.NodesRequest{Ticket: targetSet.Slice(), Filter: req.Filter})
 		if err != nil {
 			return nil, fmt.Errorf("failure getting target nodes: %v", err)
 		}
@@ -246,7 +246,7 @@ func (g *GraphStoreService) Edges(req *xpb.EdgesRequest) (*xpb.EdgesReply, error
 }
 
 // Decorations implements part of the Service interface.
-func (g *GraphStoreService) Decorations(req *xpb.DecorationsRequest) (*xpb.DecorationsReply, error) {
+func (g *GraphStoreService) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*xpb.DecorationsReply, error) {
 	if len(req.DirtyBuffer) > 0 {
 		return nil, errors.New("UNIMPLEMENTED: dirty buffers")
 	} else if req.GetLocation() == nil {
@@ -259,7 +259,7 @@ func (g *GraphStoreService) Decorations(req *xpb.DecorationsRequest) (*xpb.Decor
 		return nil, fmt.Errorf("invalid file ticket %q: %v", req.Location.Ticket, err)
 	}
 
-	text, encoding, err := getSourceText(g.gs, fileVName)
+	text, encoding, err := getSourceText(ctx, g.gs, fileVName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve file text: %v", err)
 	}
@@ -289,7 +289,7 @@ func (g *GraphStoreService) Decorations(req *xpb.DecorationsRequest) (*xpb.Decor
 		// Add []anchor and []target nodes to reply.Node
 		// Add all {anchor, forwardEdgeKind, target} tuples to reply.Reference
 
-		children, err := getEdges(g.gs, fileVName, func(e *spb.Entry) bool {
+		children, err := getEdges(ctx, g.gs, fileVName, func(e *spb.Entry) bool {
 			return e.EdgeKind == revChildOfEdgeKind
 		})
 		if err != nil {
@@ -300,7 +300,7 @@ func (g *GraphStoreService) Decorations(req *xpb.DecorationsRequest) (*xpb.Decor
 		for _, edge := range children {
 			anchor := edge.Target
 			ticket := kytheuri.ToString(anchor)
-			anchorNodeReply, err := g.Nodes(&xpb.NodesRequest{Ticket: []string{ticket}})
+			anchorNodeReply, err := g.Nodes(ctx, &xpb.NodesRequest{Ticket: []string{ticket}})
 			if err != nil {
 				return nil, fmt.Errorf("failure getting reference source node: %v", err)
 			} else if len(anchorNodeReply.Node) != 1 {
@@ -335,7 +335,7 @@ func (g *GraphStoreService) Decorations(req *xpb.DecorationsRequest) (*xpb.Decor
 				}
 			}
 
-			targets, err := getEdges(g.gs, anchor, func(e *spb.Entry) bool {
+			targets, err := getEdges(ctx, g.gs, anchor, func(e *spb.Entry) bool {
 				return schema.EdgeDirection(e.EdgeKind) == schema.Forward && e.EdgeKind != schema.ChildOfEdge
 			})
 			if err != nil {
@@ -364,7 +364,7 @@ func (g *GraphStoreService) Decorations(req *xpb.DecorationsRequest) (*xpb.Decor
 			targetSet.Remove(n.Ticket)
 		}
 		// Batch request all Reference target nodes
-		nodesReply, err := g.Nodes(&xpb.NodesRequest{Ticket: targetSet.Slice()})
+		nodesReply, err := g.Nodes(ctx, &xpb.NodesRequest{Ticket: targetSet.Slice()})
 		if err != nil {
 			return nil, fmt.Errorf("failure getting reference target nodes: %v", err)
 		}
@@ -412,8 +412,8 @@ func (s bySpan) Less(i, j int) bool {
 
 var revChildOfEdgeKind = schema.MirrorEdge(schema.ChildOfEdge)
 
-func getSourceText(gs graphstore.Service, fileVName *spb.VName) (text []byte, encoding string, err error) {
-	if err := gs.Read(context.TODO(), &spb.ReadRequest{Source: fileVName}, func(entry *spb.Entry) error {
+func getSourceText(ctx context.Context, gs graphstore.Service, fileVName *spb.VName) (text []byte, encoding string, err error) {
+	if err := gs.Read(ctx, &spb.ReadRequest{Source: fileVName}, func(entry *spb.Entry) error {
 		switch entry.FactName {
 		case schema.TextFact:
 			text = entry.FactValue
@@ -439,10 +439,10 @@ type edgeTarget struct {
 
 // getEdges returns edgeTargets with the given node as their source.  Only edge
 // entries that return true when applied to pred are returned.
-func getEdges(gs graphstore.Service, node *spb.VName, pred func(*spb.Entry) bool) ([]*edgeTarget, error) {
+func getEdges(ctx context.Context, gs graphstore.Service, node *spb.VName, pred func(*spb.Entry) bool) ([]*edgeTarget, error) {
 	var targets []*edgeTarget
 
-	if err := gs.Read(context.TODO(), &spb.ReadRequest{
+	if err := gs.Read(ctx, &spb.ReadRequest{
 		Source:   node,
 		EdgeKind: "*",
 	}, func(entry *spb.Entry) error {

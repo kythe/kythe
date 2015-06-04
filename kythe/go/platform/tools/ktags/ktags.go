@@ -31,11 +31,17 @@ import (
 	"kythe.io/kythe/go/util/schema"
 	"kythe.io/kythe/go/util/stringset"
 
+	"golang.org/x/net/context"
+
 	spb "kythe.io/kythe/proto/storage_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
-var remoteAPI = flag.String("api", "https://xrefs-dot-kythe-repo.appspot.com", "Remote api server")
+var (
+	ctx = context.Background()
+
+	remoteAPI = flag.String("api", "https://xrefs-dot-kythe-repo.appspot.com", "Remote api server")
+)
 
 func init() {
 	flag.Usage = flagutil.SimpleUsage("Emit ctags-formatted lines for the definitions in the given files",
@@ -73,7 +79,7 @@ func main() {
 		}
 
 		ticket := results.Ticket[0]
-		decor, err := xs.Decorations(&xpb.DecorationsRequest{
+		decor, err := xs.Decorations(ctx, &xpb.DecorationsRequest{
 			Location:   &xpb.Location{Ticket: ticket},
 			SourceText: true,
 			References: true,
@@ -114,7 +120,7 @@ func main() {
 }
 
 func getTagFields(xs xrefs.Service, ticket string) ([]string, error) {
-	reply, err := xs.Edges(&xpb.EdgesRequest{
+	reply, err := xs.Edges(ctx, &xpb.EdgesRequest{
 		Ticket: []string{ticket},
 		Kind:   []string{schema.ChildOfEdge, schema.ParamEdge},
 		Filter: []string{schema.NodeKindFact, schema.SubkindFact, identifierFact},

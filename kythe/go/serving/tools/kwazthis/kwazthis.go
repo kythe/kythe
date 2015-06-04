@@ -65,6 +65,8 @@ unchanged.  --ignore_local_repo will turn off this behavior.`,
 }
 
 var (
+	ctx = context.Background()
+
 	remoteAPI = flag.String("api", "https://xrefs-dot-kythe-repo.appspot.com", "Remote API server")
 
 	ignoreLocalRepo = flag.Bool("ignore_local_repo", false, "Ignore local repository .kythe configuration")
@@ -135,7 +137,7 @@ func main() {
 		}
 		defer conn.Close()
 		ctx := context.Background()
-		xs = xrefs.GRPC(ctx, xpb.NewXRefServiceClient(conn))
+		xs = xrefs.GRPC(xpb.NewXRefServiceClient(conn))
 		idx = search.GRPC(ctx, spb.NewSearchServiceClient(conn))
 	}
 
@@ -176,7 +178,7 @@ func main() {
 	}
 
 	fileTicket := reply.Ticket[0]
-	decor, err := xs.Decorations(&xpb.DecorationsRequest{
+	decor, err := xs.Decorations(ctx, &xpb.DecorationsRequest{
 		// TODO(schroederc): limit Location to a SPAN around *offset
 		Location:    &xpb.Location{Ticket: fileTicket},
 		References:  true,
@@ -204,7 +206,7 @@ func main() {
 			r.Node.Kind = string(node[schema.NodeKindFact])
 			r.Node.Subkind = string(node[schema.SubkindFact])
 
-			if eReply, err := xs.Edges(&xpb.EdgesRequest{
+			if eReply, err := xs.Edges(ctx, &xpb.EdgesRequest{
 				Ticket: []string{ref.TargetTicket},
 				Kind:   []string{schema.NamedEdge, definedAtEdge},
 			}); err != nil {
@@ -239,7 +241,7 @@ func main() {
 }
 
 func completeDefinition(definesAnchor string) (*definition, error) {
-	parentReply, err := xs.Edges(&xpb.EdgesRequest{
+	parentReply, err := xs.Edges(ctx, &xpb.EdgesRequest{
 		Ticket: []string{definesAnchor},
 		Kind:   []string{schema.ChildOfEdge},
 		Filter: []string{schema.NodeKindFact, schema.AnchorLocFilter},

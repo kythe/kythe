@@ -30,6 +30,7 @@ go_binary(
         "//kythe/go/util/stringset",
         "//kythe/proto:storage_proto_go",
         "//kythe/proto:xref_proto_go",
+        "//third_party/go:context",
     ],
 )
 
