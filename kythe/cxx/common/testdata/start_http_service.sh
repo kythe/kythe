@@ -23,13 +23,12 @@
 #
 # It will set or clobber the following variables:
 #   COUNTDOWN
-#   LISTEN_TO - the host/port passed to http_server
-#   server_addr
-#   SERVER_PID - the PID for http_server
+#   LISTEN_AT - the server's hostname:port
 #   KYTHE_ENTRYSTREAM   - binary path to the entrystream tool
 #   KYTHE_HTTP_SERVER   - binary path to the http_server tool
 #   KYTHE_WRITE_ENTRIES - binary path to the write_entries tool
 #   KYTHE_WRITE_TABLES  - binary path to the write_tables tool
+#   PORT_FILE - the name of a file that contains the listening port
 #   XREFS_URI - the URI of the running xrefs service
 #
 # It will destroy the following directories:
@@ -37,49 +36,16 @@
 #   "${OUT_DIR}/tables"
 #
 # It depends on the following Kythe tool targets:
-#   "//kythe/go/serving/tools:http_server",
 #   "//kythe/go/platform/tools:entrystream",
 #   "//kythe/go/storage/tools:write_tables",
 #   "//kythe/go/storage/tools:write_entries",
+#   "//kythe/go/test/tools:http_server",
 
 KYTHE_WRITE_TABLES="kythe/go/serving/tools/write_tables"
 KYTHE_WRITE_ENTRIES="kythe/go/storage/tools/write_entries"
 KYTHE_ENTRYSTREAM="kythe/go/platform/tools/entrystream"
-KYTHE_HTTP_SERVER="kythe/go/serving/tools/http_server"
-RETRIES=8
-
-if [[ -e /proc/1/cgroup ]] && grep -qe ':/docker' /proc/1/cgroup ; then
-  # lsof doesn't work inside docker because of AppArmor.
-  # Until that's fixed, we'll pick our own port.
-  LISTEN_TO="localhost:31338"
-  server_addr() {
-    echo "${LISTEN_TO}"
-  }
-  retry_config() {
-    if [[ $((RETRIES--)) -eq 0 ]]; then
-      echo "Aborting (couldn't find a port)" >&2
-      exit 1
-    fi
-    read LOWER_PORT UPPER_PORT < /proc/sys/net/ipv4/ip_local_port_range
-    RANDOM_PORT=$(($RANDOM % ($UPPER_PORT - $LOWER_PORT + 1) + $LOWER_PORT))
-    LISTEN_TO="localhost:${RANDOM_PORT}"
-  }
-  retry_config
-else
-  LISTEN_TO="localhost:0"
-  if [[ -e /usr/sbin/lsof ]]; then
-    LSOF=/usr/sbin/lsof
-  else
-    LSOF=lsof
-  fi
-  server_addr() {
-    ${LSOF} -a -p "$1" -i -s TCP:LISTEN 2>/dev/null | grep -ohw "localhost:[0-9]*"
-  }
-  retry_config() {
-    echo "Aborting (something went wrong starting the server)" >&2
-    exit 1
-  }
-fi
+KYTHE_HTTP_SERVER="kythe/go/test/tools/http_server"
+PORT_FILE="${OUT_DIR:?no output directory for test}/service_port"
 
 ENTRYSTREAM_ARGS=
 if [[ -z "$TEST_ENTRIES" ]]; then
@@ -89,6 +55,7 @@ fi
 
 rm -rf -- "${OUT_DIR:?no output directory for test}/gs"
 rm -rf -- "${OUT_DIR:?no output directory for test}/tables"
+rm -f -- "${PORT_FILE}"
 mkdir -p "${OUT_DIR}/gs"
 mkdir -p "${OUT_DIR}/tables"
 "${KYTHE_ENTRYSTREAM}" $ENTRYSTREAM_ARGS < "${TEST_ENTRIES:?no test entries for test}" \
@@ -96,27 +63,26 @@ mkdir -p "${OUT_DIR}/tables"
 "${KYTHE_WRITE_TABLES}" -graphstore "${OUT_DIR}/gs" \
     -out="${OUT_DIR}/tables" 2>/dev/null
 # TODO(zarko): test against GRPC server implementation
+COUNTDOWN=16
+"${KYTHE_HTTP_SERVER}" -serving_table "${OUT_DIR}/tables" \
+    -port_file="${PORT_FILE}" >&2 &
 while :; do
-  "${KYTHE_HTTP_SERVER}" -serving_table "${OUT_DIR}/tables" \
-      -listen="${LISTEN_TO}" 2>/dev/null &
-  SERVER_PID=$!
-  # TODO(zarko): Look for something in the server output to determine if
-  # it's ready. This mechanism suffers from an obvious race condition.
-  sleep 1s
-  if kill -0 "$SERVER_PID" ; then
-    trap 'kill $SERVER_PID' EXIT ERR INT
+  if [[ -e "${PORT_FILE}" && "$(cat ${PORT_FILE} | wc -l)" -eq 1 ]]; then
+    LISTEN_AT="localhost:$(< ${PORT_FILE})"
+    trap 'curl -s "$LISTEN_AT/quitquitquit" || true' EXIT ERR INT
     break
-  else
-    retry_config
   fi
+  if [[ $((COUNTDOWN--)) -eq 0 ]]; then
+    echo "Aborting (launching server took too long)" >&2
+    exit 1
+  fi
+  sleep 1s
 done
 COUNTDOWN=16
 while :; do
-  sleep 1s
-  LISTEN_AT=$(server_addr "$SERVER_PID") \
-    && curl -s "$LISTEN_AT" >/dev/null \
-    && break
+  curl -sf "$LISTEN_AT/alive" >/dev/null && break
   echo "Waiting for server ($COUNTDOWN seconds remaining)..." >&2
+  sleep 1s
   if [[ $((COUNTDOWN--)) -eq 0 ]]; then
     echo "Aborting (launching server took too long)" >&2
     exit 1

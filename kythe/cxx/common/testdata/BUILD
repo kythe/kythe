@@ -15,8 +15,8 @@ sh_test(
         ":start_http_service",
         "//kythe/cxx/common:net_client_test",
         "//kythe/go/platform/tools:entrystream",
-        "//kythe/go/serving/tools:http_server",
         "//kythe/go/serving/tools:write_tables",
         "//kythe/go/storage/tools:write_entries",
+        "//kythe/go/test/tools:http_server",
     ],
 )

@@ -14,9 +14,9 @@ sh_test(
         "//kythe/cxx/common/testdata:start_http_service",
         "//kythe/cxx/tools/fyi",
         "//kythe/go/platform/tools:entrystream",
-        "//kythe/go/serving/tools:http_server",
         "//kythe/go/serving/tools:write_tables",
         "//kythe/go/storage/tools:write_entries",
+        "//kythe/go/test/tools:http_server",
     ],
 )
 
@@ -35,9 +35,9 @@ sh_test(
         "//kythe/cxx/common/testdata:start_http_service",
         "//kythe/cxx/tools/fyi",
         "//kythe/go/platform/tools:entrystream",
-        "//kythe/go/serving/tools:http_server",
         "//kythe/go/serving/tools:write_tables",
         "//kythe/go/storage/tools:write_entries",
+        "//kythe/go/test/tools:http_server",
     ],
 )
 
@@ -54,8 +54,8 @@ sh_test(
         "//kythe/cxx/common/testdata:start_http_service",
         "//kythe/cxx/tools/fyi",
         "//kythe/go/platform/tools:entrystream",
-        "//kythe/go/serving/tools:http_server",
         "//kythe/go/serving/tools:write_tables",
         "//kythe/go/storage/tools:write_entries",
+        "//kythe/go/test/tools:http_server",
     ],
 )
