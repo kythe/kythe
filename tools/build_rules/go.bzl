@@ -22,6 +22,17 @@ link_args = {
     "dbg": ["-race"],
 }
 
+link_args_darwin = {
+    # https://github.com/golang/go/issues/10254
+    "opt": [
+        "-w",
+    ],
+    "fastbuild": [
+        "-w",
+    ],
+    "dbg": ["-race"],
+}
+
 def go_compile(ctx, pkg, srcs, archive, setupGOPATH=False, extra_archives=[]):
   gotool = ctx.file._go
 
@@ -82,7 +93,11 @@ def link_binary(ctx, binary, archive, recursive_deps):
   for a in recursive_deps + [archive]:
     include_paths += "-L \"" + a.path + "_gopath\" "
 
-  args = link_args[ctx.var['COMPILATION_MODE']]
+  if str(ctx.configuration).find('darwin') >= 0:
+    args = link_args_darwin[ctx.var['COMPILATION_MODE']]
+  else:
+    args = link_args[ctx.var['COMPILATION_MODE']]
+
   cmd = (
       "set -e;" +
       "export PATH;" +

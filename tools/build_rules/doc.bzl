@@ -21,6 +21,7 @@ def asciidoc(name, src, attrs={}, confs=[], data=[], tools=[], tags=None):
         'export BINDIR="$$PWD/bazel-out/host/bin"',
         'export OUTDIR="$$PWD/$(@D)"',
         'export LOGFILE="$$(mktemp -t \"XXXXXXasciidoc\")"',
+        'export PATH',
         'trap "rm \"$${LOGFILE}\"" EXIT ERR INT',
         "asciidoc %s -o $(@) $(location %s) 2> \"$${LOGFILE}\"" % (' '.join(args), src),
         'cat $${LOGFILE}',
