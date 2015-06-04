@@ -7,6 +7,7 @@ go_package(
         "//kythe/go/services/graphstore",
         "//kythe/go/services/graphstore/compare",
         "//kythe/proto:storage_proto_go",
+        "//third_party/go:context",
         "//third_party/go:protobuf",
     ],
 )

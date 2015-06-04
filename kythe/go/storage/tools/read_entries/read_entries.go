@@ -31,6 +31,8 @@ import (
 	"kythe.io/kythe/go/util/flagutil"
 	"kythe.io/kythe/go/util/kytheuri"
 
+	"golang.org/x/net/context"
+
 	spb "kythe.io/kythe/proto/storage_proto"
 
 	_ "kythe.io/kythe/go/services/graphstore/grpc"
@@ -68,6 +70,8 @@ func main() {
 		flagutil.UsageError("--shards and giving tickets for reads are mutually exclusive")
 	}
 
+	ctx := context.Background()
+
 	wr := delimited.NewWriter(os.Stdout)
 	var total int64
 	if *shards <= 0 {
@@ -82,11 +86,11 @@ func main() {
 			if *targetTicket != "" || *factPrefix != "" {
 				log.Fatal("--target and --fact_prefix are unsupported when given tickets")
 			}
-			if err := readEntries(gs, entryFunc, *edgeKind, flag.Args()); err != nil {
+			if err := readEntries(ctx, gs, entryFunc, *edgeKind, flag.Args()); err != nil {
 				log.Fatal(err)
 			}
 		} else {
-			if err := scanEntries(gs, entryFunc, *edgeKind, *targetTicket, *factPrefix); err != nil {
+			if err := scanEntries(ctx, gs, entryFunc, *edgeKind, *targetTicket, *factPrefix); err != nil {
 				log.Fatal(err)
 			}
 		}
@@ -104,7 +108,7 @@ func main() {
 	}
 
 	if *count {
-		cnt, err := sgs.Count(&spb.CountRequest{Index: *shardIndex, Shards: *shards})
+		cnt, err := sgs.Count(ctx, &spb.CountRequest{Index: *shardIndex, Shards: *shards})
 		if err != nil {
 			log.Fatalf("ERROR: %v", err)
 		}
@@ -123,7 +127,7 @@ func main() {
 				}
 				defer f.Close()
 				wr := delimited.NewWriter(f)
-				if err := sgs.Shard(&spb.ShardRequest{
+				if err := sgs.Shard(ctx, &spb.ShardRequest{
 					Index:  i,
 					Shards: *shards,
 				}, func(entry *spb.Entry) error {
@@ -137,7 +141,7 @@ func main() {
 		return
 	}
 
-	if err := sgs.Shard(&spb.ShardRequest{
+	if err := sgs.Shard(ctx, &spb.ShardRequest{
 		Index:  *shardIndex,
 		Shards: *shards,
 	}, func(entry *spb.Entry) error {
@@ -147,13 +151,13 @@ func main() {
 	}
 }
 
-func readEntries(gs graphstore.Service, entryFunc graphstore.EntryFunc, edgeKind string, tickets []string) error {
+func readEntries(ctx context.Context, gs graphstore.Service, entryFunc graphstore.EntryFunc, edgeKind string, tickets []string) error {
 	for _, ticket := range tickets {
 		src, err := kytheuri.ToVName(ticket)
 		if err != nil {
 			return fmt.Errorf("error parsing ticket %q: %v", ticket, err)
 		}
-		if err := gs.Read(&spb.ReadRequest{
+		if err := gs.Read(ctx, &spb.ReadRequest{
 			Source:   src,
 			EdgeKind: edgeKind,
 		}, entryFunc); err != nil {
@@ -163,7 +167,7 @@ func readEntries(gs graphstore.Service, entryFunc graphstore.EntryFunc, edgeKind
 	return nil
 }
 
-func scanEntries(gs graphstore.Service, entryFunc graphstore.EntryFunc, edgeKind, targetTicket, factPrefix string) error {
+func scanEntries(ctx context.Context, gs graphstore.Service, entryFunc graphstore.EntryFunc, edgeKind, targetTicket, factPrefix string) error {
 	var target *spb.VName
 	var err error
 	if targetTicket != "" {
@@ -172,7 +176,7 @@ func scanEntries(gs graphstore.Service, entryFunc graphstore.EntryFunc, edgeKind
 			return fmt.Errorf("error parsing --target %q: %v", targetTicket, err)
 		}
 	}
-	if err := gs.Scan(&spb.ScanRequest{
+	if err := gs.Scan(ctx, &spb.ScanRequest{
 		EdgeKind:   edgeKind,
 		FactPrefix: factPrefix,
 		Target:     target,

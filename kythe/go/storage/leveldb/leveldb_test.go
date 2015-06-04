@@ -27,8 +27,12 @@ import (
 	"kythe.io/kythe/go/services/graphstore/compare"
 	"kythe.io/kythe/go/storage/keyvalue"
 
+	"golang.org/x/net/context"
+
 	spb "kythe.io/kythe/proto/storage_proto"
 )
+
+var ctx = context.Background()
 
 const (
 	keySize = 16
@@ -115,7 +119,7 @@ func batchGSWriteBenchmark(b *testing.B, batchSize int) {
 	fatalOnErr(b, "tempGS error: %v", err)
 	defer os.RemoveAll(dir)
 	defer func() {
-		fatalOnErr(b, "gs close error: %v", gs.Close())
+		fatalOnErr(b, "gs close error: %v", gs.Close(ctx))
 	}()
 
 	buf := make([]byte, keySize)
@@ -132,7 +136,7 @@ func batchGSWriteBenchmark(b *testing.B, batchSize int) {
 			req.Update[j] = &updates[j]
 		}
 
-		fatalOnErr(b, "write error: %v", gs.Write(req))
+		fatalOnErr(b, "write error: %v", gs.Write(ctx, req))
 	}
 }
 
@@ -145,7 +149,7 @@ func TestGraphStoreOrder(t *testing.T) {
 	fatalOnErrT(t, "tempGS error: %v", err)
 	defer os.RemoveAll(dir)
 	defer func() {
-		fatalOnErrT(t, "gs close error: %v", gs.Close())
+		fatalOnErrT(t, "gs close error: %v", gs.Close(ctx))
 	}()
 
 	batchSize := largeBatchSize
@@ -163,12 +167,12 @@ func TestGraphStoreOrder(t *testing.T) {
 			req.Update[j] = &updates[j]
 		}
 
-		fatalOnErrT(t, "write error: %v", gs.Write(req))
+		fatalOnErrT(t, "write error: %v", gs.Write(ctx, req))
 	}
 
 	var lastEntry *spb.Entry
 	fatalOnErrT(t, "entryLess error: %v",
-		gs.Scan(new(spb.ScanRequest), func(entry *spb.Entry) error {
+		gs.Scan(ctx, new(spb.ScanRequest), func(entry *spb.Entry) error {
 			if compare.Entries(lastEntry, entry) != compare.LT {
 				return fmt.Errorf("expected {%v} < {%v}", lastEntry, entry)
 			}

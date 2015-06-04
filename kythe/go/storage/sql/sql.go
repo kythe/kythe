@@ -29,6 +29,8 @@ import (
 	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/storage/gsutil"
 
+	"golang.org/x/net/context"
+
 	spb "kythe.io/kythe/proto/storage_proto"
 
 	_ "github.com/mattn/go-sqlite3" // register the "sqlite3" driver
@@ -167,8 +169,11 @@ func Open(driverName, dataSourceName string) (*DB, error) {
 	return d, nil
 }
 
+// Close implements part of the graphstore.Service interface.
+func (db *DB) Close(ctx context.Context) error { return db.DB.Close() }
+
 // Read implements part of the graphstore.Service interface.
-func (db *DB) Read(req *spb.ReadRequest, f graphstore.EntryFunc) (err error) {
+func (db *DB) Read(ctx context.Context, req *spb.ReadRequest, f graphstore.EntryFunc) (err error) {
 	if req.GetSource() == nil {
 		return errors.New("invalid ReadRequest: missing Source")
 	}
@@ -191,7 +196,7 @@ var likeEscaper = strings.NewReplacer("%", "\t%", "_", "\t_")
 // Scan implements part of the graphstore.Service interface.
 //
 // TODO(fromberger): Maybe use prepared statements here.
-func (db *DB) Scan(req *spb.ScanRequest, f graphstore.EntryFunc) (err error) {
+func (db *DB) Scan(ctx context.Context, req *spb.ScanRequest, f graphstore.EntryFunc) (err error) {
 	var rows *sql.Rows
 	factPrefix := likeEscaper.Replace(req.FactPrefix) + "%"
 	if req.GetTarget() != nil {
@@ -216,7 +221,7 @@ func (db *DB) Scan(req *spb.ScanRequest, f graphstore.EntryFunc) (err error) {
 var emptyVName = new(spb.VName)
 
 // Write implements part of the graphstore.Service interface.
-func (db *DB) Write(req *spb.WriteRequest) error {
+func (db *DB) Write(ctx context.Context, req *spb.WriteRequest) error {
 	if req.GetSource() == nil {
 		return fmt.Errorf("missing Source in WriteRequest: {%v}", req)
 	}

@@ -6,5 +6,6 @@ go_package(
     deps = [
         "//kythe/go/services/graphstore",
         "//kythe/go/storage/inmemory",
+        "//third_party/go:context",
     ],
 )

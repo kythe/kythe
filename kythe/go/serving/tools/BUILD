@@ -25,6 +25,7 @@ go_binary(
         "//kythe/proto:filetree_proto_go",
         "//kythe/proto:storage_proto_go",
         "//kythe/proto:xref_proto_go",
+        "//third_party/go:context",
         "//third_party/go:grpc",
     ],
 )
@@ -85,5 +86,6 @@ go_binary(
         "//kythe/go/storage/gsutil",
         "//kythe/go/storage/leveldb",
         "//kythe/go/util/flagutil",
+        "//third_party/go:context",
     ],
 )

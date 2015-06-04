@@ -16,6 +16,7 @@ go_binary(
         "//kythe/go/storage/stream",
         "//kythe/go/util/flagutil",
         "//kythe/proto:storage_proto_go",
+        "//third_party/go:context",
     ],
 )
 
@@ -34,6 +35,7 @@ go_binary(
         "//kythe/go/util/flagutil",
         "//kythe/go/util/kytheuri",
         "//kythe/proto:storage_proto_go",
+        "//third_party/go:context",
     ],
 )
 
@@ -54,6 +56,7 @@ go_binary(
         "//kythe/go/util/kytheuri",
         "//kythe/go/util/schema",
         "//kythe/proto:storage_proto_go",
+        "//third_party/go:context",
     ],
 )
 

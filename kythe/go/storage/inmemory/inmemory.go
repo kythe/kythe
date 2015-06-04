@@ -28,6 +28,7 @@ import (
 	spb "kythe.io/kythe/proto/storage_proto"
 
 	"github.com/golang/protobuf/proto"
+	"golang.org/x/net/context"
 )
 
 type store struct {
@@ -39,10 +40,10 @@ type store struct {
 func Create() graphstore.Service { return &store{} }
 
 // Close implements part of the graphstore.Service interface.
-func (*store) Close() error { return nil }
+func (*store) Close(ctx context.Context) error { return nil }
 
 // Write implements part of the graphstore.Service interface.
-func (s *store) Write(req *spb.WriteRequest) error {
+func (s *store) Write(ctx context.Context, req *spb.WriteRequest) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for _, u := range req.Update {
@@ -73,7 +74,7 @@ func (s *store) insert(e *spb.Entry) {
 }
 
 // Read implements part of the graphstore.Service interface.
-func (s *store) Read(req *spb.ReadRequest, f graphstore.EntryFunc) error {
+func (s *store) Read(ctx context.Context, req *spb.ReadRequest, f graphstore.EntryFunc) error {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	start := sort.Search(len(s.entries), func(i int) bool {
@@ -95,7 +96,7 @@ func (s *store) Read(req *spb.ReadRequest, f graphstore.EntryFunc) error {
 }
 
 // Scan implements part of the graphstore.Service interface.
-func (s *store) Scan(req *spb.ScanRequest, f graphstore.EntryFunc) error {
+func (s *store) Scan(ctx context.Context, req *spb.ScanRequest, f graphstore.EntryFunc) error {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 

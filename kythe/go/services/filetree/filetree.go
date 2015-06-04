@@ -37,6 +37,7 @@ import (
 )
 
 // Service provides an interface to explore a tree of VName files.
+// TODO(schroederc): add Context argument to interface methods
 type Service interface {
 	// Directory returns the contents of the directory at the given corpus/root/path.
 	Directory(*ftpb.DirectoryRequest) (*ftpb.DirectoryReply, error)
@@ -88,11 +89,11 @@ func NewMap() *Map {
 }
 
 // Populate adds each file node in gs to m.
-func (m *Map) Populate(gs graphstore.Service) error {
+func (m *Map) Populate(ctx context.Context, gs graphstore.Service) error {
 	start := time.Now()
 	log.Println("Populating in-memory file tree")
 	var total int
-	if err := gs.Scan(&spb.ScanRequest{FactPrefix: schema.NodeKindFact},
+	if err := gs.Scan(ctx, &spb.ScanRequest{FactPrefix: schema.NodeKindFact},
 		func(entry *spb.Entry) error {
 			if entry.FactName == schema.NodeKindFact && string(entry.FactValue) == schema.FileKind {
 				m.AddFile(entry.Source)

@@ -21,7 +21,6 @@ import (
 	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/storage/gsutil"
 
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
 	spb "kythe.io/kythe/proto/storage_proto"
@@ -36,5 +35,5 @@ func handler(spec string) (graphstore.Service, error) {
 	if err != nil {
 		return nil, err
 	}
-	return graphstore.GRPC(context.Background(), spb.NewGraphStoreClient(conn)), nil
+	return graphstore.GRPC(spb.NewGraphStoreClient(conn)), nil
 }

@@ -39,6 +39,7 @@ import (
 	xstore "kythe.io/kythe/go/storage/xrefs"
 	"kythe.io/kythe/go/util/flagutil"
 
+	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
 	ftpb "kythe.io/kythe/proto/filetree_proto"
@@ -82,6 +83,7 @@ func main() {
 		sr search.Service
 	)
 
+	ctx := context.Background()
 	if *servingTable != "" {
 		db, err := leveldb.Open(*servingTable, nil)
 		if err != nil {
@@ -99,7 +101,7 @@ func main() {
 			ft = f
 		} else {
 			m := filetree.NewMap()
-			if err := m.Populate(gs); err != nil {
+			if err := m.Populate(ctx, gs); err != nil {
 				log.Fatalf("Error populating file tree from GraphStore: %v", err)
 			}
 			ft = m
@@ -109,7 +111,7 @@ func main() {
 			log.Printf("Using %T directly as xrefs service", gs)
 			xs = x
 		} else {
-			if err := xstore.EnsureReverseEdges(gs); err != nil {
+			if err := xstore.EnsureReverseEdges(ctx, gs); err != nil {
 				log.Fatalf("Error ensuring reverse edges in GraphStore: %v", err)
 			}
 			xs = xstore.NewGraphStoreService(gs)

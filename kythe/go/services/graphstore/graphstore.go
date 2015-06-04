@@ -50,14 +50,14 @@ type Service interface {
 	//
 	// Read returns when there are no more entries to send. The Read operation should be
 	// implemented with time complexity proportional to the size of the return set.
-	Read(req *spb.ReadRequest, f EntryFunc) error
+	Read(ctx context.Context, req *spb.ReadRequest, f EntryFunc) error
 
 	// Scan calls f with each entries having the specified target VName, kind,
 	// and fact label prefix. If a field is empty, any entry value for that
 	// field matches and will be returned. Scan returns when there are no more
 	// entries to send. Scan is similar to Read, but with no time complexity
 	// restrictions.
-	Scan(req *spb.ScanRequest, f EntryFunc) error
+	Scan(ctx context.Context, req *spb.ScanRequest, f EntryFunc) error
 
 	// Write atomically inserts or updates a collection of entries into the store.
 	// Each update is a tuple of the form (kind, target, fact, value). For each such
@@ -66,11 +66,11 @@ type Service interface {
 	// exist. Note that this operation cannot delete any data from the store; entries are
 	// only ever inserted or updated. Apart from acting atomically, no other constraints
 	// are placed on the implementation.
-	Write(req *spb.WriteRequest) error
+	Write(ctx context.Context, req *spb.WriteRequest) error
 
 	// Close and release any underlying resources used by the store.
 	// No operations may be used on the store after this has been called.
-	Close() error
+	Close(ctx context.Context) error
 }
 
 // Sharded represents a store that can be arbitrarily sharded for parallel
@@ -81,10 +81,10 @@ type Sharded interface {
 	Service
 
 	// Count returns the number of entries in the given shard.
-	Count(req *spb.CountRequest) (int64, error)
+	Count(ctx context.Context, req *spb.CountRequest) (int64, error)
 
 	// Shard calls f with each entry in the given shard.
-	Shard(req *spb.ShardRequest, f EntryFunc) error
+	Shard(ctx context.Context, req *spb.ShardRequest, f EntryFunc) error
 }
 
 // EntryMatchesScan reports whether entry belongs in the result set for req.
@@ -131,14 +131,11 @@ func BatchWrites(entries <-chan *spb.Entry, maxSize int) <-chan *spb.WriteReques
 	return ch
 }
 
-type grpcClient struct {
-	ctx context.Context
-	spb.GraphStoreClient
-}
+type grpcClient struct{ spb.GraphStoreClient }
 
 // Read implements part of Service interface.
-func (c *grpcClient) Read(req *spb.ReadRequest, f EntryFunc) error {
-	s, err := c.GraphStoreClient.Read(c.ctx, req)
+func (c *grpcClient) Read(ctx context.Context, req *spb.ReadRequest, f EntryFunc) error {
+	s, err := c.GraphStoreClient.Read(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -146,8 +143,8 @@ func (c *grpcClient) Read(req *spb.ReadRequest, f EntryFunc) error {
 }
 
 // Scan implements part of Service interface.
-func (c *grpcClient) Scan(req *spb.ScanRequest, f EntryFunc) error {
-	s, err := c.GraphStoreClient.Scan(c.ctx, req)
+func (c *grpcClient) Scan(ctx context.Context, req *spb.ScanRequest, f EntryFunc) error {
+	s, err := c.GraphStoreClient.Scan(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -179,13 +176,13 @@ type entryStream interface {
 }
 
 // Write implements part of Service interface.
-func (c *grpcClient) Write(req *spb.WriteRequest) error {
-	_, err := c.GraphStoreClient.Write(c.ctx, req)
+func (c *grpcClient) Write(ctx context.Context, req *spb.WriteRequest) error {
+	_, err := c.GraphStoreClient.Write(ctx, req)
 	return err
 }
 
 // Close implements part of Service interface.
-func (c *grpcClient) Close() error { return c.Close() }
+func (c *grpcClient) Close(ctx context.Context) error { return nil }
 
 // GRPC returns a GraphStore service backed by a GraphStoreClient.
-func GRPC(ctx context.Context, c spb.GraphStoreClient) Service { return &grpcClient{ctx, c} }
+func GRPC(c spb.GraphStoreClient) Service { return &grpcClient{c} }

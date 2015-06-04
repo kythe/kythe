@@ -39,6 +39,8 @@ import (
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema"
 
+	"golang.org/x/net/context"
+
 	spb "kythe.io/kythe/proto/storage_proto"
 
 	_ "kythe.io/kythe/go/services/graphstore/grpc"
@@ -66,6 +68,10 @@ func main() {
 		fmt.Fprintf(os.Stderr, "ERROR: too many arguments %v\n", flag.Args())
 		flag.Usage()
 		os.Exit(1)
+	}
+
+	if gs != nil {
+		defer gsutil.LogClose(context.Background(), gs)
 	}
 
 	in := os.Stdin
@@ -106,7 +112,7 @@ func main() {
 		entries = ch
 		go func() {
 			defer close(ch)
-			if err := gs.Scan(&spb.ScanRequest{}, func(e *spb.Entry) error {
+			if err := gs.Scan(context.Background(), &spb.ScanRequest{}, func(e *spb.Entry) error {
 				ch <- e
 				return nil
 			}); err != nil {

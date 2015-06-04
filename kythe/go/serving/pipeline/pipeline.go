@@ -40,6 +40,8 @@ import (
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema"
 
+	"golang.org/x/net/context"
+
 	srvpb "kythe.io/kythe/proto/serving_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
@@ -47,7 +49,7 @@ import (
 
 // Run writes the xrefs and filetree serving tables to db based on the given
 // graphstore.Service.
-func Run(gs graphstore.Service, db keyvalue.DB) error {
+func Run(ctx context.Context, gs graphstore.Service, db keyvalue.DB) error {
 	log.Println("Starting serving pipeline")
 	tbl := &table.KVProto{db}
 
@@ -75,7 +77,7 @@ func Run(gs graphstore.Service, db keyvalue.DB) error {
 	log.Println("Scanning GraphStore")
 	var sErr error
 	go func() {
-		sErr = gs.Scan(&spb.ScanRequest{}, func(e *spb.Entry) error {
+		sErr = gs.Scan(ctx, &spb.ScanRequest{}, func(e *spb.Entry) error {
 			entries <- e
 			return nil
 		})
@@ -101,7 +103,7 @@ func Run(gs graphstore.Service, db keyvalue.DB) error {
 	}()
 	go func() {
 		defer edgeNodeWG.Done()
-		eErr = writeEdges(tbl, eIn)
+		eErr = writeEdges(ctx, tbl, eIn)
 		log.Println("Wrote Edges")
 	}()
 
@@ -205,7 +207,7 @@ func collectNodes(nodeEntries <-chan *spb.Entry) <-chan *srvpb.Node {
 	return nodes
 }
 
-func writeEdges(t table.Proto, edges <-chan *spb.Entry) error {
+func writeEdges(ctx context.Context, t table.Proto, edges <-chan *spb.Entry) error {
 	tempDir, err := ioutil.TempDir("", "reverse.edges")
 	if err != nil {
 		return fmt.Errorf("failed to create temporary directory: %v", err)
@@ -220,13 +222,13 @@ func writeEdges(t table.Proto, edges <-chan *spb.Entry) error {
 	if err != nil {
 		return fmt.Errorf("failed to create temporary GraphStore: %v", err)
 	}
-	defer gs.Close()
+	defer gs.Close(ctx)
 
 	log.Println("Writing temporary reverse edges table")
 	var writeReq *spb.WriteRequest
 	for e := range edges {
 		if writeReq != nil && !compare.VNamesEqual(e.Source, writeReq.Source) {
-			if err := writeWithReverses(gs, writeReq); err != nil {
+			if err := writeWithReverses(ctx, gs, writeReq); err != nil {
 				return err
 			}
 			writeReq = nil
@@ -242,15 +244,15 @@ func writeEdges(t table.Proto, edges <-chan *spb.Entry) error {
 		})
 	}
 	if writeReq != nil {
-		if err := writeWithReverses(gs, writeReq); err != nil {
+		if err := writeWithReverses(ctx, gs, writeReq); err != nil {
 			return err
 		}
 	}
 
-	return writeEdgePages(t, gs)
+	return writeEdgePages(ctx, t, gs)
 }
 
-func writeEdgePages(t table.Proto, gs graphstore.Service) error {
+func writeEdgePages(ctx context.Context, t table.Proto, gs graphstore.Service) error {
 	// TODO(schroederc): spill large PagedEdgeSets into EdgePages
 	log.Println("Writing EdgeSets")
 	var (
@@ -259,7 +261,7 @@ func writeEdgePages(t table.Proto, gs graphstore.Service) error {
 		grp      *srvpb.EdgeSet_Group
 		pesTotal int
 	)
-	if err := gs.Scan(new(spb.ScanRequest), func(e *spb.Entry) error {
+	if err := gs.Scan(ctx, new(spb.ScanRequest), func(e *spb.Entry) error {
 		if e.EdgeKind == "" {
 			panic("non-edge entry")
 		}
@@ -315,12 +317,12 @@ func writeEdgePages(t table.Proto, gs graphstore.Service) error {
 	return nil
 }
 
-func writeWithReverses(gs graphstore.Service, req *spb.WriteRequest) error {
-	if err := gs.Write(req); err != nil {
+func writeWithReverses(ctx context.Context, gs graphstore.Service, req *spb.WriteRequest) error {
+	if err := gs.Write(ctx, req); err != nil {
 		return fmt.Errorf("error writing edges: %v", err)
 	}
 	for _, u := range req.Update {
-		if err := gs.Write(&spb.WriteRequest{
+		if err := gs.Write(ctx, &spb.WriteRequest{
 			Source: u.Target,
 			Update: []*spb.WriteRequest_Update{{
 				Target:    req.Source,

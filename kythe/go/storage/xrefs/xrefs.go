@@ -33,6 +33,8 @@ import (
 	"kythe.io/kythe/go/util/schema"
 	"kythe.io/kythe/go/util/stringset"
 
+	"golang.org/x/net/context"
+
 	spb "kythe.io/kythe/proto/storage_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
@@ -40,9 +42,9 @@ import (
 // EnsureReverseEdges checks if gs contains reverse edges.  If it doesn't, it
 // will scan gs for all forward edges, adding a reverse for each back into the
 // GraphStore.  This is necessary for a GraphStoreService to work properly.
-func EnsureReverseEdges(gs graphstore.Service) error {
+func EnsureReverseEdges(ctx context.Context, gs graphstore.Service) error {
 	var edge *spb.Entry
-	if err := gs.Scan(&spb.ScanRequest{}, func(e *spb.Entry) error {
+	if err := gs.Scan(ctx, &spb.ScanRequest{}, func(e *spb.Entry) error {
 		if e.EdgeKind != "" {
 			edge = e
 			return io.EOF
@@ -60,7 +62,7 @@ func EnsureReverseEdges(gs graphstore.Service) error {
 	}
 
 	var foundReverse bool
-	if err := gs.Read(&spb.ReadRequest{
+	if err := gs.Read(ctx, &spb.ReadRequest{
 		Source:   edge.Target,
 		EdgeKind: schema.MirrorEdge(edge.EdgeKind),
 	}, func(entry *spb.Entry) error {
@@ -72,20 +74,20 @@ func EnsureReverseEdges(gs graphstore.Service) error {
 	if foundReverse {
 		return nil
 	}
-	return addReverseEdges(gs)
+	return addReverseEdges(ctx, gs)
 }
 
-func addReverseEdges(gs graphstore.Service) error {
+func addReverseEdges(ctx context.Context, gs graphstore.Service) error {
 	log.Println("Adding reverse edges")
 	var (
 		totalEntries int
 		addedEdges   int
 	)
 	startTime := time.Now()
-	err := gs.Scan(new(spb.ScanRequest), func(entry *spb.Entry) error {
+	err := gs.Scan(ctx, new(spb.ScanRequest), func(entry *spb.Entry) error {
 		kind := entry.EdgeKind
 		if kind != "" && schema.EdgeDirection(kind) == schema.Forward {
-			if err := gs.Write(&spb.WriteRequest{
+			if err := gs.Write(ctx, &spb.WriteRequest{
 				Source: entry.Target,
 				Update: []*spb.WriteRequest_Update{{
 					Target:    entry.Source,
@@ -135,7 +137,7 @@ func (g *GraphStoreService) Nodes(req *xpb.NodesRequest) (*xpb.NodesReply, error
 	var nodes []*xpb.NodeInfo
 	for i, vname := range names {
 		info := &xpb.NodeInfo{Ticket: req.Ticket[i]}
-		if err := g.gs.Read(&spb.ReadRequest{Source: vname}, func(entry *spb.Entry) error {
+		if err := g.gs.Read(context.TODO(), &spb.ReadRequest{Source: vname}, func(entry *spb.Entry) error {
 			if len(patterns) == 0 || xrefs.MatchesAny(entry.FactName, patterns) {
 				info.Fact = append(info.Fact, entryToFact(entry))
 			}
@@ -173,7 +175,7 @@ func (g *GraphStoreService) Edges(req *xpb.EdgesRequest) (*xpb.EdgesReply, error
 			filteredFacts []*xpb.Fact
 		)
 
-		if err := g.gs.Read(&spb.ReadRequest{
+		if err := g.gs.Read(context.TODO(), &spb.ReadRequest{
 			Source:   vname,
 			EdgeKind: "*",
 		}, func(entry *spb.Entry) error {
@@ -411,7 +413,7 @@ func (s bySpan) Less(i, j int) bool {
 var revChildOfEdgeKind = schema.MirrorEdge(schema.ChildOfEdge)
 
 func getSourceText(gs graphstore.Service, fileVName *spb.VName) (text []byte, encoding string, err error) {
-	if err := gs.Read(&spb.ReadRequest{Source: fileVName}, func(entry *spb.Entry) error {
+	if err := gs.Read(context.TODO(), &spb.ReadRequest{Source: fileVName}, func(entry *spb.Entry) error {
 		switch entry.FactName {
 		case schema.TextFact:
 			text = entry.FactValue
@@ -440,7 +442,7 @@ type edgeTarget struct {
 func getEdges(gs graphstore.Service, node *spb.VName, pred func(*spb.Entry) bool) ([]*edgeTarget, error) {
 	var targets []*edgeTarget
 
-	if err := gs.Read(&spb.ReadRequest{
+	if err := gs.Read(context.TODO(), &spb.ReadRequest{
 		Source:   node,
 		EdgeKind: "*",
 	}, func(entry *spb.Entry) error {

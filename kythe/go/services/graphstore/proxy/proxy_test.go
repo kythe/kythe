@@ -25,9 +25,12 @@ import (
 	"kythe.io/kythe/go/services/graphstore"
 
 	"github.com/golang/protobuf/proto"
+	"golang.org/x/net/context"
 
 	spb "kythe.io/kythe/proto/storage_proto"
 )
+
+var ctx = context.Background()
 
 // Static set of Entry protos to use for testing
 var testEntries = []entry{
@@ -78,7 +81,7 @@ func TestMergeOrder(t *testing.T) {
 		result := make(chan *spb.Entry)
 		done := checkResults(t, fmt.Sprintf("Merge test %d", i), result, test.want)
 
-		if err := New(ss...).Read(new(spb.ReadRequest), func(e *spb.Entry) error {
+		if err := New(ss...).Read(ctx, new(spb.ReadRequest), func(e *spb.Entry) error {
 			result <- e
 			return nil
 		}); err != nil {
@@ -106,7 +109,7 @@ func TestProxy(t *testing.T) {
 	readRes := make(chan *spb.Entry)
 	readDone := checkResults(t, "Read", readRes, allEntries)
 
-	if err := proxy.Read(readReq, func(e *spb.Entry) error {
+	if err := proxy.Read(ctx, readReq, func(e *spb.Entry) error {
 		readRes <- e
 		return nil
 	}); err != testError {
@@ -125,7 +128,7 @@ func TestProxy(t *testing.T) {
 	scanRes := make(chan *spb.Entry)
 	scanDone := checkResults(t, "Scan", scanRes, allEntries)
 
-	if err := proxy.Scan(scanReq, func(e *spb.Entry) error {
+	if err := proxy.Scan(ctx, scanReq, func(e *spb.Entry) error {
 		scanRes <- e
 		return nil
 	}); err != testError {
@@ -141,7 +144,7 @@ func TestProxy(t *testing.T) {
 	}
 
 	writeReq := new(spb.WriteRequest)
-	if err := proxy.Write(writeReq); err != testError {
+	if err := proxy.Write(ctx, writeReq); err != testError {
 		t.Errorf("Incorrect Write error: %v", err)
 	}
 	for idx, mock := range mocks {
@@ -165,7 +168,7 @@ func TestCancellation(t *testing.T) {
 	// Check that a callback returning a non-EOF error propagates an error to
 	// the caller.
 	var numEntries int
-	if err := p.Scan(new(spb.ScanRequest), func(e *spb.Entry) error {
+	if err := p.Scan(ctx, new(spb.ScanRequest), func(e *spb.Entry) error {
 		if e.FactName == bomb.F {
 			return errors.New(bomb.V)
 		}
@@ -182,7 +185,7 @@ func TestCancellation(t *testing.T) {
 
 	// Check that a callback returning io.EOF ends without error.
 	numEntries = 0
-	if err := p.Read(new(spb.ReadRequest), func(e *spb.Entry) error {
+	if err := p.Read(ctx, new(spb.ReadRequest), func(e *spb.Entry) error {
 		if e.FactName == bomb.F {
 			return io.EOF
 		}
@@ -231,7 +234,7 @@ type mockGraphStore struct {
 	Error   error
 }
 
-func (m *mockGraphStore) Read(req *spb.ReadRequest, f graphstore.EntryFunc) error {
+func (m *mockGraphStore) Read(ctx context.Context, req *spb.ReadRequest, f graphstore.EntryFunc) error {
 	m.LastReq = req
 	for _, entry := range m.Entries {
 		if err := f(entry); err == io.EOF {
@@ -243,7 +246,7 @@ func (m *mockGraphStore) Read(req *spb.ReadRequest, f graphstore.EntryFunc) erro
 	return m.Error
 }
 
-func (m *mockGraphStore) Scan(req *spb.ScanRequest, f graphstore.EntryFunc) error {
+func (m *mockGraphStore) Scan(ctx context.Context, req *spb.ScanRequest, f graphstore.EntryFunc) error {
 	m.LastReq = req
 	for _, entry := range m.Entries {
 		if err := f(entry); err == io.EOF {
@@ -255,12 +258,12 @@ func (m *mockGraphStore) Scan(req *spb.ScanRequest, f graphstore.EntryFunc) erro
 	return m.Error
 }
 
-func (m *mockGraphStore) Write(req *spb.WriteRequest) error {
+func (m *mockGraphStore) Write(ctx context.Context, req *spb.WriteRequest) error {
 	m.LastReq = req
 	return m.Error
 }
 
-func (m *mockGraphStore) Close() error { return m.Error }
+func (m *mockGraphStore) Close(ctx context.Context) error { return m.Error }
 
 // checkResults starts a goroutine that consumes entries from results and
 // compares them to corresponding members of want.  If the corresponding values

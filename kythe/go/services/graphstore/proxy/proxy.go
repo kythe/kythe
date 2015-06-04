@@ -31,6 +31,8 @@ import (
 	"kythe.io/kythe/go/storage/gsutil"
 
 	spb "kythe.io/kythe/proto/storage_proto"
+
+	"golang.org/x/net/context"
 )
 
 func init() {
@@ -61,34 +63,34 @@ type proxyService struct {
 func New(stores ...graphstore.Service) graphstore.Service { return &proxyService{stores} }
 
 // Read implements graphstore.Service and forwards the request to the proxied stores.
-func (p *proxyService) Read(req *spb.ReadRequest, f graphstore.EntryFunc) error {
+func (p *proxyService) Read(ctx context.Context, req *spb.ReadRequest, f graphstore.EntryFunc) error {
 	return p.invoke(func(svc graphstore.Service, cb graphstore.EntryFunc) error {
-		return svc.Read(req, cb)
+		return svc.Read(ctx, req, cb)
 	}, f)
 }
 
 // Scan implements part of graphstore.Service by forwarding the request to the
 // proxied stores.
-func (p *proxyService) Scan(req *spb.ScanRequest, f graphstore.EntryFunc) error {
+func (p *proxyService) Scan(ctx context.Context, req *spb.ScanRequest, f graphstore.EntryFunc) error {
 	return p.invoke(func(svc graphstore.Service, cb graphstore.EntryFunc) error {
-		return svc.Scan(req, cb)
+		return svc.Scan(ctx, req, cb)
 	}, f)
 }
 
 // Write implements part of graphstore.Service by forwarding the request to the
 // proxied stores.
-func (p *proxyService) Write(req *spb.WriteRequest) error {
+func (p *proxyService) Write(ctx context.Context, req *spb.WriteRequest) error {
 	return waitErr(p.foreach(func(i int, s graphstore.Service) error {
-		return s.Write(req)
+		return s.Write(ctx, req)
 	}))
 }
 
 // Close implements part of graphstore.Service by calling Close on each proxied
 // store.  All the stores are given an opportunity to close, even in case of
 // error, but only one error is returned.
-func (p *proxyService) Close() error {
+func (p *proxyService) Close(ctx context.Context) error {
 	return waitErr(p.foreach(func(i int, s graphstore.Service) error {
-		return s.Close()
+		return s.Close(ctx)
 	}))
 }
 

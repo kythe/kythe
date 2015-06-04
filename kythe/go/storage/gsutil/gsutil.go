@@ -26,9 +26,10 @@ import (
 	"strings"
 	"syscall"
 
+	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/storage/inmemory"
 
-	"kythe.io/kythe/go/services/graphstore"
+	"golang.org/x/net/context"
 )
 
 // Handler returns a graphstore.Service based on the given specification.
@@ -124,15 +125,15 @@ func EnsureGracefulExit(gs ...graphstore.Service) {
 		sig := <-c
 		log.Printf("graphstore: signal %v", sig)
 		for _, g := range gs {
-			LogClose(g)
+			LogClose(context.Background(), g)
 		}
 		os.Exit(1)
 	}()
 }
 
 // LogClose closes gs and logs any resulting error.
-func LogClose(gs graphstore.Service) {
-	if err := gs.Close(); err != nil {
+func LogClose(ctx context.Context, gs graphstore.Service) {
+	if err := gs.Close(ctx); err != nil {
 		log.Printf("GraphStore failed to close: %v", err)
 	}
 }

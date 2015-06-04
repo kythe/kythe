@@ -28,6 +28,8 @@ import (
 	"kythe.io/kythe/go/storage/leveldb"
 	"kythe.io/kythe/go/util/flagutil"
 
+	"golang.org/x/net/context"
+
 	_ "kythe.io/kythe/go/services/graphstore/grpc"
 	_ "kythe.io/kythe/go/services/graphstore/proxy"
 )
@@ -57,7 +59,7 @@ func main() {
 	}
 	defer db.Close()
 
-	if err := pipeline.Run(gs, db); err != nil {
+	if err := pipeline.Run(context.Background(), gs, db); err != nil {
 		log.Fatal(err)
 	}
 }

@@ -8,6 +8,7 @@ go_package(
         "//kythe/go/services/graphstore/compare",
         "//kythe/go/storage/keyvalue",
         "//kythe/proto:storage_proto_go",
+        "//third_party/go:context",
     ],
     deps = [
         "//kythe/go/services/graphstore",

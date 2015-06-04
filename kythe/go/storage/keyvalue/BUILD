@@ -10,5 +10,6 @@ go_package(
     deps = [
         "//kythe/go/services/graphstore",
         "//kythe/proto:storage_proto_go",
+        "//third_party/go:context",
     ],
 )

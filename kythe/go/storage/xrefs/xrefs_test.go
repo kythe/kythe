@@ -26,11 +26,15 @@ import (
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema"
 
+	"golang.org/x/net/context"
+
 	spb "kythe.io/kythe/proto/storage_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
 var (
+	ctx = context.Background()
+
 	testFileVName    = sig("testFileNode")
 	testFileContent  = "file_content"
 	testFileEncoding = "UTF-8"
@@ -144,7 +148,7 @@ func newService(t *testing.T, entries []*spb.Entry) *GraphStoreService {
 	gs := inmemory.Create()
 
 	for req := range graphstore.BatchWrites(channelEntries(entries), 64) {
-		if err := gs.Write(req); err != nil {
+		if err := gs.Write(ctx, req); err != nil {
 			t.Fatalf("Failed to write entries: %v", err)
 		}
 	}

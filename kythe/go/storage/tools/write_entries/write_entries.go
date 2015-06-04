@@ -43,6 +43,8 @@ import (
 	"kythe.io/kythe/go/storage/stream"
 	"kythe.io/kythe/go/util/flagutil"
 
+	"golang.org/x/net/context"
+
 	spb "kythe.io/kythe/proto/storage_proto"
 
 	_ "kythe.io/kythe/go/services/graphstore/grpc"
@@ -76,7 +78,7 @@ func main() {
 		flagutil.UsageError("Missing --graphstore")
 	}
 
-	defer gsutil.LogClose(gs)
+	defer gsutil.LogClose(context.Background(), gs)
 	gsutil.EnsureGracefulExit(gs)
 
 	if *profCPU != "" {
@@ -99,7 +101,7 @@ func main() {
 	for i := 0; i < *numWorkers; i++ {
 		go func() {
 			defer wg.Done()
-			num, err := writeEntries(gs, writes)
+			num, err := writeEntries(context.Background(), gs, writes)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -112,12 +114,12 @@ func main() {
 	log.Printf("Wrote %d entries", numEntries)
 }
 
-func writeEntries(s graphstore.Service, reqs <-chan *spb.WriteRequest) (uint64, error) {
+func writeEntries(ctx context.Context, s graphstore.Service, reqs <-chan *spb.WriteRequest) (uint64, error) {
 	var num uint64
 
 	for req := range reqs {
 		num += uint64(len(req.Update))
-		if err := s.Write(req); err != nil {
+		if err := s.Write(ctx, req); err != nil {
 			return 0, err
 		}
 	}

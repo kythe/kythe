@@ -28,6 +28,8 @@ import (
 
 	"kythe.io/kythe/go/services/graphstore"
 
+	"golang.org/x/net/context"
+
 	spb "kythe.io/kythe/proto/storage_proto"
 )
 
@@ -126,7 +128,7 @@ type Writer interface {
 }
 
 // Read implements part of the graphstore.Service interface.
-func (s *Store) Read(req *spb.ReadRequest, f graphstore.EntryFunc) error {
+func (s *Store) Read(ctx context.Context, req *spb.ReadRequest, f graphstore.EntryFunc) error {
 	keyPrefix, err := KeyPrefix(req.Source, req.EdgeKind)
 	if err != nil {
 		return fmt.Errorf("invalid ReadRequest: %v", err)
@@ -162,7 +164,7 @@ func streamEntries(iter Iterator, f graphstore.EntryFunc) error {
 }
 
 // Write implements part of the GraphStore interface.
-func (s *Store) Write(req *spb.WriteRequest) (err error) {
+func (s *Store) Write(ctx context.Context, req *spb.WriteRequest) (err error) {
 	// TODO(schroederc): fix shardTables to include new entries
 
 	wr, err := s.db.Writer()
@@ -191,7 +193,7 @@ func (s *Store) Write(req *spb.WriteRequest) (err error) {
 }
 
 // Scan implements part of the graphstore.Service interface.
-func (s *Store) Scan(req *spb.ScanRequest, f graphstore.EntryFunc) error {
+func (s *Store) Scan(ctx context.Context, req *spb.ScanRequest, f graphstore.EntryFunc) error {
 	iter, err := s.db.ScanPrefix(entryKeyPrefixBytes, &Options{LargeRead: true})
 	if err != nil {
 		return fmt.Errorf("db seek error: %v", err)
@@ -220,10 +222,10 @@ func (s *Store) Scan(req *spb.ScanRequest, f graphstore.EntryFunc) error {
 }
 
 // Close implements part of the graphstore.Service interface.
-func (s *Store) Close() error { return s.db.Close() }
+func (s *Store) Close(ctx context.Context) error { return s.db.Close() }
 
 // Count implements part of the graphstore.Sharded interface.
-func (s *Store) Count(req *spb.CountRequest) (int64, error) {
+func (s *Store) Count(ctx context.Context, req *spb.CountRequest) (int64, error) {
 	if req.Shards < 1 {
 		return 0, fmt.Errorf("invalid number of shards: %d", req.Shards)
 	} else if req.Index < 0 || req.Index >= req.Shards {
@@ -238,7 +240,7 @@ func (s *Store) Count(req *spb.CountRequest) (int64, error) {
 }
 
 // Shard implements part of the graphstore.Sharded interface.
-func (s *Store) Shard(req *spb.ShardRequest, f graphstore.EntryFunc) error {
+func (s *Store) Shard(ctx context.Context, req *spb.ShardRequest, f graphstore.EntryFunc) error {
 	if req.Shards < 1 {
 		return fmt.Errorf("invalid number of shards: %d", req.Shards)
 	} else if req.Index < 0 || req.Index >= req.Shards {

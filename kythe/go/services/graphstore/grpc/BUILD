@@ -7,7 +7,6 @@ go_package(
         "//kythe/go/services/graphstore",
         "//kythe/go/storage/gsutil",
         "//kythe/proto:storage_proto_go",
-        "//third_party/go:context",
         "//third_party/go:grpc",
     ],
 )
