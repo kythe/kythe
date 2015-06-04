@@ -19,10 +19,3 @@ MANIFEST-*
 # Build artifacts
 /bazel-*
 /doxygen-out
-/tools/cpp/CROSSTOOL
-/tools/cpp/clang
-/tools/cpp/clang++
-
-# Third-party
-/third_party/llvm/llvm
-/third_party/llvm/include
