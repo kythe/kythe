@@ -32,10 +32,8 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 	"runtime/pprof"
 	"sync"
 	"sync/atomic"
@@ -43,6 +41,7 @@ import (
 	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/storage/gsutil"
 	"kythe.io/kythe/go/storage/stream"
+	"kythe.io/kythe/go/util/flagutil"
 
 	spb "kythe.io/kythe/proto/storage_proto"
 
@@ -50,16 +49,6 @@ import (
 	_ "kythe.io/kythe/go/services/graphstore/proxy"
 	_ "kythe.io/kythe/go/storage/leveldb"
 )
-
-func init() {
-	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, `%s - writes the entries from a delimited stream on stdin to a GraphStore
-usage: %[1]s [--batch_size entries] [--workers n] --graphstore spec
-`, filepath.Base(os.Args[0]))
-		flag.PrintDefaults()
-		os.Exit(1)
-	}
-}
 
 var (
 	batchSize  = flag.Int("batch_size", 1024, "Maximum entries per write for consecutive entries with the same source")
@@ -70,6 +59,8 @@ var (
 )
 
 func init() {
+	flag.Usage = flagutil.SimpleUsage("Write a delimited stream of entries from stdin to a GraphStore",
+		"[--batch_size entries] [--workers n] --graphstore spec")
 	gsutil.Flag(&gs, "graphstore", "GraphStore to which to write the entry stream")
 }
 
@@ -78,11 +69,11 @@ func main() {
 
 	flag.Parse()
 	if *numWorkers < 1 {
-		gsutil.UsageErrorf("Invalid number of --workers %d (must be ≥ 1)", *numWorkers)
+		flagutil.UsageErrorf("Invalid number of --workers %d (must be ≥ 1)", *numWorkers)
 	} else if *batchSize < 1 {
-		gsutil.UsageErrorf("Invalid --batch_size %d (must be ≥ 1)", *batchSize)
+		flagutil.UsageErrorf("Invalid --batch_size %d (must be ≥ 1)", *batchSize)
 	} else if gs == nil {
-		gsutil.UsageError("Missing --graphstore")
+		flagutil.UsageError("Missing --graphstore")
 	}
 
 	defer gsutil.LogClose(gs)

@@ -38,6 +38,7 @@ import (
 	"kythe.io/kythe/go/platform/delimited"
 	"kythe.io/kythe/go/services/graphstore/compare"
 	"kythe.io/kythe/go/storage/stream"
+	"kythe.io/kythe/go/util/flagutil"
 
 	spb "kythe.io/kythe/proto/storage_proto"
 
@@ -60,8 +61,16 @@ var (
 	countOnly  = flag.Bool("count", false, "Only print the count of protos streamed")
 )
 
+func init() {
+	flag.Usage = flagutil.SimpleUsage("Manipulate a stream of delimited Entry messages",
+		"[--read_json] ([--write_json] [--sort] | [--entrysets] | [--count])")
+}
+
 func main() {
 	flag.Parse()
+	if len(flag.Args()) > 0 {
+		flagutil.UsageErrorf("unknown arguments: %v", flag.Args())
+	}
 
 	in := os.Stdin
 	var entries <-chan *spb.Entry

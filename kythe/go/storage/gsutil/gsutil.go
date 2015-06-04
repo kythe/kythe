@@ -136,17 +136,3 @@ func LogClose(gs graphstore.Service) {
 		log.Printf("GraphStore failed to close: %v", err)
 	}
 }
-
-// UsageError prints msg to stderr, calls flag.Usage, and exits the program
-// unsuccessfully.
-func UsageError(msg string) {
-	fmt.Fprintln(os.Stderr, msg)
-	flag.Usage()
-	os.Exit(1)
-}
-
-// UsageErrorf prints str formatted with the given vals to stderr, calls
-// flag.Usage, and exits the program unsuccessfully.
-func UsageErrorf(str string, vals ...interface{}) {
-	UsageError(fmt.Sprintf(str, vals...))
-}

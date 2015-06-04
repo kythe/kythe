@@ -11,6 +11,7 @@ go_binary(
         "//kythe/go/platform/delimited",
         "//kythe/go/services/graphstore/compare",
         "//kythe/go/storage/stream",
+        "//kythe/go/util/flagutil",
         "//kythe/proto:storage_proto_go",
         "//third_party/go:protobuf",
     ],
