@@ -28,6 +28,8 @@ import (
 
 	"kythe.io/kythe/go/storage/table"
 
+	"golang.org/x/net/context"
+
 	ftpb "kythe.io/kythe/proto/filetree_proto"
 	srvpb "kythe.io/kythe/proto/serving_proto"
 )
@@ -44,7 +46,7 @@ var CorpusRootsKey = []byte(dirTablePrefix + "corpusRoots")
 type Table struct{ table.Proto }
 
 // Dir implements part of the filetree Service interface.
-func (t *Table) Directory(req *ftpb.DirectoryRequest) (*ftpb.DirectoryReply, error) {
+func (t *Table) Directory(ctx context.Context, req *ftpb.DirectoryRequest) (*ftpb.DirectoryReply, error) {
 	var d srvpb.FileDirectory
 	if err := t.Lookup(DirKey(req.Corpus, req.Root, req.Path), &d); err == table.ErrNoSuchKey {
 		return nil, nil
@@ -58,7 +60,7 @@ func (t *Table) Directory(req *ftpb.DirectoryRequest) (*ftpb.DirectoryReply, err
 }
 
 // CorpusRoots implements part of the filetree Service interface.
-func (t *Table) CorpusRoots() (*ftpb.CorpusRootsReply, error) {
+func (t *Table) CorpusRoots(ctx context.Context, req *ftpb.CorpusRootsRequest) (*ftpb.CorpusRootsReply, error) {
 	var cr srvpb.CorpusRoots
 	if err := t.Lookup(CorpusRootsKey, &cr); err == table.ErrNoSuchKey {
 		return nil, errors.New("missing corpusRoots in table")

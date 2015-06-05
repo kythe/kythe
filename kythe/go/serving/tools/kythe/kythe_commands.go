@@ -97,7 +97,7 @@ var (
 			}
 
 			if len(flag.Args()) == 0 {
-				cr, err := ft.CorpusRoots()
+				cr, err := ft.CorpusRoots(ctx, &ftpb.CorpusRootsRequest{})
 				if err != nil {
 					return err
 				}
@@ -118,7 +118,7 @@ var (
 				os.Exit(1)
 			}
 			path = filepath.Join("/", path)
-			dir, err := ft.Directory(&ftpb.DirectoryRequest{
+			dir, err := ft.Directory(ctx, &ftpb.DirectoryRequest{
 				Corpus: corpus,
 				Root:   root,
 				Path:   path,
@@ -358,7 +358,7 @@ var (
 				})
 			}
 
-			reply, err := idx.Search(req)
+			reply, err := idx.Search(ctx, req)
 			if err != nil {
 				return err
 			}

@@ -30,11 +30,15 @@ import (
 	"kythe.io/kythe/go/storage/table"
 	"kythe.io/kythe/go/util/kytheuri"
 
+	"golang.org/x/net/context"
+
 	srvpb "kythe.io/kythe/proto/serving_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
 )
 
 const suffixWildcard = "%*"
+
+var ctx = context.Background()
 
 var (
 	testNodes = []*srvpb.Node{
@@ -155,7 +159,7 @@ func testSearch(t *testing.T, tbl *Table, expected []string, partial *spb.VName,
 			Prefix: v != facts[i+1],
 		})
 	}
-	reply, err := tbl.Search(req)
+	reply, err := tbl.Search(ctx, req)
 	if err != nil {
 		t.Errorf("line %d: search error for {%+v}: %v", line, req, err)
 	}

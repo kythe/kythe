@@ -136,9 +136,8 @@ func main() {
 			log.Fatalf("Error connecting to remote API %q: %v", *remoteAPI, err)
 		}
 		defer conn.Close()
-		ctx := context.Background()
 		xs = xrefs.GRPC(xpb.NewXRefServiceClient(conn))
-		idx = search.GRPC(ctx, spb.NewSearchServiceClient(conn))
+		idx = search.GRPC(spb.NewSearchServiceClient(conn))
 	}
 
 	relPath := *path
@@ -164,7 +163,7 @@ func main() {
 		Path:      relPath,
 		Language:  *language,
 	}
-	reply, err := idx.Search(&spb.SearchRequest{
+	reply, err := idx.Search(ctx, &spb.SearchRequest{
 		Partial: partialFile,
 		Fact:    fileFacts,
 	})

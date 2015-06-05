@@ -15,5 +15,6 @@ go_package(
         "//kythe/go/util/kytheuri",
         "//kythe/proto:serving_proto_go",
         "//kythe/proto:storage_proto_go",
+        "//third_party/go:context",
     ],
 )

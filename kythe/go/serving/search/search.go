@@ -32,6 +32,8 @@ import (
 	"kythe.io/kythe/go/storage/table"
 	"kythe.io/kythe/go/util/kytheuri"
 
+	"golang.org/x/net/context"
+
 	srvpb "kythe.io/kythe/proto/serving_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
 )
@@ -52,7 +54,7 @@ type valQuery struct {
 }
 
 // Search implements the Service interface.
-func (t *Table) Search(q *spb.SearchRequest) (*spb.SearchReply, error) {
+func (t *Table) Search(ctx context.Context, q *spb.SearchRequest) (*spb.SearchReply, error) {
 	if q.Partial == nil {
 		q.Partial = emptyPartial
 	}

@@ -34,34 +34,23 @@ import (
 // facts.
 type Service interface {
 	// Search returns the matching set of nodes that match the given request.
-	Search(q *spb.SearchRequest) (*spb.SearchReply, error)
+	Search(context.Context, *spb.SearchRequest) (*spb.SearchReply, error)
 }
 
-// GRPCService implements the GRPC search service interface.
-type GRPCService struct{ Service }
-
-// Search implements the spb.SearchServiceServer interface.
-func (s *GRPCService) Search(ctx context.Context, req *spb.SearchRequest) (*spb.SearchReply, error) {
-	return s.Service.Search(req)
-}
-
-type grpcClient struct {
-	context.Context
-	spb.SearchServiceClient
-}
+type grpcClient struct{ spb.SearchServiceClient }
 
 // Search implements the Service interface.
-func (c *grpcClient) Search(req *spb.SearchRequest) (*spb.SearchReply, error) {
-	return c.SearchServiceClient.Search(c, req)
+func (c *grpcClient) Search(ctx context.Context, req *spb.SearchRequest) (*spb.SearchReply, error) {
+	return c.SearchServiceClient.Search(ctx, req)
 }
 
 // GRPC returns a search Service backed by the given GRPC client and context.
-func GRPC(ctx context.Context, c spb.SearchServiceClient) Service { return &grpcClient{ctx, c} }
+func GRPC(c spb.SearchServiceClient) Service { return &grpcClient{c} }
 
 type webClient struct{ addr string }
 
 // Search implements the Service interface.
-func (w *webClient) Search(q *spb.SearchRequest) (*spb.SearchReply, error) {
+func (w *webClient) Search(ctx context.Context, q *spb.SearchRequest) (*spb.SearchReply, error) {
 	var reply spb.SearchReply
 	return &reply, web.Call(w.addr, "search", q, &reply)
 }
@@ -81,6 +70,7 @@ func WebClient(addr string) Service {
 // Note: /search will return its response as serialized protobuf if the
 // "proto" query parameter is set.
 func RegisterHTTPHandlers(s Service, mux *http.ServeMux) {
+	ctx := context.Background()
 	mux.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		defer func() {
@@ -92,7 +82,7 @@ func RegisterHTTPHandlers(s Service, mux *http.ServeMux) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		reply, err := s.Search(&req)
+		reply, err := s.Search(ctx, &req)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

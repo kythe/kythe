@@ -62,7 +62,7 @@ func main() {
 	idx := search.WebClient(*remoteAPI)
 
 	for _, file := range flag.Args() {
-		results, err := idx.Search(&spb.SearchRequest{
+		results, err := idx.Search(ctx, &spb.SearchRequest{
 			Partial: &spb.VName{Path: file},
 			Fact: []*spb.SearchRequest_Fact{{
 				Name:  schema.NodeKindFact,

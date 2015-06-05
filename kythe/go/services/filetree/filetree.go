@@ -40,42 +40,26 @@ import (
 // TODO(schroederc): add Context argument to interface methods
 type Service interface {
 	// Directory returns the contents of the directory at the given corpus/root/path.
-	Directory(*ftpb.DirectoryRequest) (*ftpb.DirectoryReply, error)
+	Directory(context.Context, *ftpb.DirectoryRequest) (*ftpb.DirectoryReply, error)
 
 	// CorpusRoots returns a map from corpus to known roots.
-	CorpusRoots() (*ftpb.CorpusRootsReply, error)
+	CorpusRoots(context.Context, *ftpb.CorpusRootsRequest) (*ftpb.CorpusRootsReply, error)
 }
 
-// GRPCService implements the GRPC filetree service interface.
-type GRPCService struct{ Service }
-
-// Directory implements part of the ftpb.FileTreeServiceServer interface.
-func (s *GRPCService) Directory(ctx context.Context, req *ftpb.DirectoryRequest) (*ftpb.DirectoryReply, error) {
-	return s.Service.Directory(req)
-}
-
-// CorpusRoots implements part of the ftpb.FileTreeServiceServer interface.
-func (s *GRPCService) CorpusRoots(ctx context.Context, req *ftpb.CorpusRootsRequest) (*ftpb.CorpusRootsReply, error) {
-	return s.Service.CorpusRoots()
-}
-
-type grpcClient struct {
-	ctx context.Context
-	ftpb.FileTreeServiceClient
-}
+type grpcClient struct{ ftpb.FileTreeServiceClient }
 
 // CorpusRoots implements part of Service interface.
-func (c *grpcClient) CorpusRoots() (*ftpb.CorpusRootsReply, error) {
-	return c.FileTreeServiceClient.CorpusRoots(c.ctx, &ftpb.CorpusRootsRequest{})
+func (c *grpcClient) CorpusRoots(ctx context.Context, req *ftpb.CorpusRootsRequest) (*ftpb.CorpusRootsReply, error) {
+	return c.FileTreeServiceClient.CorpusRoots(ctx, req)
 }
 
 // Directory implements part of Service interface.
-func (c *grpcClient) Directory(req *ftpb.DirectoryRequest) (*ftpb.DirectoryReply, error) {
-	return c.FileTreeServiceClient.Directory(c.ctx, req)
+func (c *grpcClient) Directory(ctx context.Context, req *ftpb.DirectoryRequest) (*ftpb.DirectoryReply, error) {
+	return c.FileTreeServiceClient.Directory(ctx, req)
 }
 
 // GRPC returns a filetree Service backed by a FileTreeServiceClient.
-func GRPC(ctx context.Context, c ftpb.FileTreeServiceClient) Service { return &grpcClient{ctx, c} }
+func GRPC(c ftpb.FileTreeServiceClient) Service { return &grpcClient{c} }
 
 // Map is a FileTree backed by an in-memory map.
 type Map struct {
@@ -116,7 +100,7 @@ func (m *Map) AddFile(file *spb.VName) {
 }
 
 // CorpusRoots implements part of the filetree.Service interface.
-func (m *Map) CorpusRoots() (*ftpb.CorpusRootsReply, error) {
+func (m *Map) CorpusRoots(ctx context.Context, req *ftpb.CorpusRootsRequest) (*ftpb.CorpusRootsReply, error) {
 	cr := &ftpb.CorpusRootsReply{}
 	for corpus, rootDirs := range m.M {
 		var roots []string
@@ -132,7 +116,7 @@ func (m *Map) CorpusRoots() (*ftpb.CorpusRootsReply, error) {
 }
 
 // Directory implements part of the filetree.Service interface.
-func (m *Map) Directory(req *ftpb.DirectoryRequest) (*ftpb.DirectoryReply, error) {
+func (m *Map) Directory(ctx context.Context, req *ftpb.DirectoryRequest) (*ftpb.DirectoryReply, error) {
 	roots := m.M[req.Corpus]
 	if roots == nil {
 		return nil, nil
@@ -191,13 +175,13 @@ func addToSet(strs []string, str string) []string {
 type webClient struct{ addr string }
 
 // CorpusRoots implements part of the Service interface.
-func (w *webClient) CorpusRoots() (*ftpb.CorpusRootsReply, error) {
+func (w *webClient) CorpusRoots(ctx context.Context, req *ftpb.CorpusRootsRequest) (*ftpb.CorpusRootsReply, error) {
 	var reply ftpb.CorpusRootsReply
-	return &reply, web.Call(w.addr, "corpusRoots", &ftpb.CorpusRootsRequest{}, &reply)
+	return &reply, web.Call(w.addr, "corpusRoots", req, &reply)
 }
 
 // Directory implements part of the Service interface.
-func (w *webClient) Directory(req *ftpb.DirectoryRequest) (*ftpb.DirectoryReply, error) {
+func (w *webClient) Directory(ctx context.Context, req *ftpb.DirectoryRequest) (*ftpb.DirectoryReply, error) {
 	var reply ftpb.DirectoryReply
 	return &reply, web.Call(w.addr, "dir", req, &reply)
 }
@@ -217,13 +201,19 @@ func WebClient(addr string) Service { return &webClient{addr} }
 // Note: /corpusRoots and /dir will return their responses as serialized
 // protobufs if the "proto" query parameter is set.
 func RegisterHTTPHandlers(ft Service, mux *http.ServeMux) {
+	ctx := context.Background()
 	mux.HandleFunc("/corpusRoots", func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		defer func() {
 			log.Printf("filetree.CorpusRoots:\t%s", time.Since(start))
 		}()
 
-		cr, err := ft.CorpusRoots()
+		var req ftpb.CorpusRootsRequest
+		if err := web.ReadJSONBody(r, &req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		cr, err := ft.CorpusRoots(ctx, &req)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -243,7 +233,7 @@ func RegisterHTTPHandlers(ft Service, mux *http.ServeMux) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		reply, err := ft.Directory(&req)
+		reply, err := ft.Directory(ctx, &req)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

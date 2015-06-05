@@ -148,8 +148,8 @@ func main() {
 			}
 			defer conn.Close()
 			xs = xrefs.GRPC(xpb.NewXRefServiceClient(conn))
-			ft = filetree.GRPC(ctx, ftpb.NewFileTreeServiceClient(conn))
-			idx = search.GRPC(ctx, spb.NewSearchServiceClient(conn))
+			ft = filetree.GRPC(ftpb.NewFileTreeServiceClient(conn))
+			idx = search.GRPC(spb.NewSearchServiceClient(conn))
 		}
 	} else {
 		db, err := leveldb.Open(*servingTable, nil)

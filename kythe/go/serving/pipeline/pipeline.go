@@ -42,6 +42,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	ftpb "kythe.io/kythe/proto/filetree_proto"
 	srvpb "kythe.io/kythe/proto/serving_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
@@ -91,7 +92,7 @@ func Run(ctx context.Context, gs graphstore.Service, db keyvalue.DB) error {
 	ftWG.Add(1)
 	go func() {
 		defer ftWG.Done()
-		ftErr = writeFileTree(tbl, ftIn)
+		ftErr = writeFileTree(ctx, tbl, ftIn)
 		log.Println("Wrote FileTree")
 	}()
 	edgeNodeWG.Add(2)
@@ -142,7 +143,7 @@ func Run(ctx context.Context, gs graphstore.Service, db keyvalue.DB) error {
 	return sErr
 }
 
-func writeFileTree(t table.Proto, files <-chan *spb.VName) error {
+func writeFileTree(ctx context.Context, t table.Proto, files <-chan *spb.VName) error {
 	tree := filetree.NewMap()
 	for f := range files {
 		tree.AddFile(f)
@@ -158,7 +159,7 @@ func writeFileTree(t table.Proto, files <-chan *spb.VName) error {
 			}
 		}
 	}
-	cr, err := tree.CorpusRoots()
+	cr, err := tree.CorpusRoots(ctx, &ftpb.CorpusRootsRequest{})
 	if err != nil {
 		return err
 	}
