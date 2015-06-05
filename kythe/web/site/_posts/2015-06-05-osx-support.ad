@@ -1,0 +1,51 @@
+---
+title: OS X is Now Supported
+author: zarko
+layout: post
+---
+
+You can build and test Kythe on OS X.
+
+We have tested internally on 10.10.3 (Yosemite) with Xcode 6.3.1.
+
+To build Kythe, you will first need to install http://bazel.io[Bazel]. You will
+be asked to use MacPorts or Homebrew; we will use http://brew.sh/[Homebrew]. You
+may also need to install some additional third-party dependencies. It's simplest
+to install these before getting Bazel up and running. We depend on the following
+packages:
+
+[source,shell]
+----
+brew install protobuf libarchive go asciidoc leveldb ossp-uuid \
+             source-highlight graphviz parallel md5sha1sum
+----
+
+Follow the instructions at http://bazel.io/docs/install.html.
+
+Next, clone the Kythe repository:
+
+[source,shell]
+----
+git clone https://github.com/google/kythe.git
+cd kythe
+----
+
+Do some first-time setup:
+
+[source,shell]
+----
+./setup_bazel.sh
+./tools/modules/update.sh
+----
+
+And build:
+
+[source,shell]
+----
+bazel build //...
+bazel test //...
+----
+
+Please let us know if you run into any issues by opening a
+http://kythe.io/phabricator/maniphest[Phabricator task] or posting to the
+https://groups.google.com/forum/#!forum/kythe-dev[kythe-dev mailing list].
