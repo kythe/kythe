@@ -38,12 +38,29 @@ public class JavaIndexerServer {
       usage(1);
     }
 
-    if (args.length != 2 || !"--port".equals(args[0])) {
-      System.err.println("ERROR: missing --port");
-      usage(1);
+    String portArg;
+    switch (args.length) {
+      case 2:
+        if (!"--port".equals(args[0])) {
+          System.err.println("ERROR: invalid flag " + args[0]);
+          usage(1);
+        }
+        portArg = args[1];
+        break;
+      case 1:
+        if (!args[0].startsWith("--port=")) {
+          System.err.println("ERROR: invalid flag " + args[0]);
+          usage(1);
+        }
+        portArg = args[0].substring("--port=".length());
+        break;
+      default:
+        System.err.println("ERROR: missing --port flag");
+        usage(1);
+        return;
     }
 
-    int port = Integer.parseInt(args[1]);
+    int port = Integer.parseInt(portArg);
     NettyServerBuilder.forPort(port)
         .addService(CompilationAnalyzerGrpc.bindService(new JavaCompilationAnalyzer()))
         .build()
@@ -52,7 +69,7 @@ public class JavaIndexerServer {
   }
 
   private static void usage(int exitCode) {
-    System.err.println("usage: java_indexer_server --port number");
+    System.err.println("usage: java_indexer_server --port=number");
     System.exit(exitCode);
   }
 
