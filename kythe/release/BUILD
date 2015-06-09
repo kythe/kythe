@@ -63,7 +63,7 @@ genrule(
 filegroup(
     name = "misc",
     srcs = [
-        ":README",
+        ":README.md",
         "//:LICENSE",
     ],
 )
