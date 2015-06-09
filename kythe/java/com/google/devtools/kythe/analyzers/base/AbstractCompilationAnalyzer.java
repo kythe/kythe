@@ -69,7 +69,8 @@ public abstract class AbstractCompilationAnalyzer {
   }
 
   /** Returns a {@link FileDataProvider} based on the given specification. */
-  protected abstract FileDataProvider parseFileDataService(String fileDataService);
+  protected abstract FileDataProvider parseFileDataService(String fileDataService)
+      throws AnalysisException;
 
   /**
    * Analyzes the given {@link CompilationUnit}.  The given {@link FileDataProvider} and
