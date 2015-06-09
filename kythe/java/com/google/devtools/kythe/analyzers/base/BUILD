@@ -19,6 +19,7 @@ java_library(
     deps = [
         ":schema",
         "//kythe/java/com/google/devtools/kythe/common",
+        "//kythe/java/com/google/devtools/kythe/platform/shared:statistics",
         "//kythe/java/com/google/devtools/kythe/util",
         "//kythe/proto:analysis_proto_java",
         "//kythe/proto:storage_proto_java",
@@ -35,9 +36,10 @@ java_library(
     deps = [
         ":entryset",
         "//kythe/java/com/google/devtools/kythe/common",
-        "//kythe/java/com/google/devtools/kythe/platform/shared",
+        "//kythe/java/com/google/devtools/kythe/platform/shared:analysis_exception",
         "//kythe/java/com/google/devtools/kythe/platform/shared:file_data",
         "//kythe/java/com/google/devtools/kythe/platform/shared:remote_file_data",
+        "//kythe/java/com/google/devtools/kythe/platform/shared:statistics",
         "//kythe/proto:analysis_proto_java",
         "//kythe/proto:storage_proto_java",
         "//third_party/grpc-java",

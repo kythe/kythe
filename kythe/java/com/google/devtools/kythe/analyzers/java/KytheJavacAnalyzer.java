@@ -22,6 +22,7 @@ import com.google.devtools.kythe.platform.java.JavaCompilationDetails;
 import com.google.devtools.kythe.platform.java.JavacAnalyzer;
 import com.google.devtools.kythe.platform.java.helpers.SignatureGenerator;
 import com.google.devtools.kythe.platform.shared.AnalysisException;
+import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 
 import com.sun.source.tree.CompilationUnitTree;
@@ -41,7 +42,8 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
   // should be set in analyzeCompilationUnit before any call to analyzeFile
   private JavaEntrySets entrySets;
 
-  public KytheJavacAnalyzer(FactEmitter emitter) {
+  public KytheJavacAnalyzer(FactEmitter emitter, StatisticsCollector statistics) {
+    super(statistics);
     Preconditions.checkArgument(emitter != null, "FactEmitter must be non-null");
     this.emitter = emitter;
   }
@@ -51,8 +53,8 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
     Preconditions.checkState(entrySets == null,
         "JavaEntrySets is non-null (analyzeCompilationUnit was called concurrently?)");
     CompilationUnit compilation = details.getCompilationUnit();
-    entrySets =
-        new JavaEntrySets(emitter, compilation.getVName(), compilation.getRequiredInputList());
+    entrySets = new JavaEntrySets(getStatisticsCollector(),
+        emitter, compilation.getVName(), compilation.getRequiredInputList());
     try {
       super.analyzeCompilationUnit(details);
     } finally {
@@ -68,7 +70,7 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
     Context context = ((JavacTaskImpl) details.getJavac()).getContext();
     SignatureGenerator signatureGenerator = new SignatureGenerator(ast, context);
     try {
-      KytheTreeScanner.emitEntries(context, entrySets, signatureGenerator,
+      KytheTreeScanner.emitEntries(context, getStatisticsCollector(), entrySets, signatureGenerator,
           (JCCompilationUnit) ast, Charset.forName(details.getEncoding()));
     } catch (IOException e) {
       throw new AnalysisException("Exception analyzing file: " + ast.getSourceFile().getName(), e);

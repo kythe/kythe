@@ -1,9 +1,16 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
 java_library(
-    name = "shared",
+    name = "analysis_exception",
     srcs = [
         "AnalysisException.java",
+    ],
+)
+
+java_library(
+    name = "statistics",
+    srcs = [
+        "MemoryStatisticsCollector.java",
         "NullStatisticsCollector.java",
         "StatisticsCollector.java",
     ],

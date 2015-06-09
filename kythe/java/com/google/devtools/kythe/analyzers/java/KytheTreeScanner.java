@@ -26,6 +26,7 @@ import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.platform.java.helpers.JCTreeScanner;
 import com.google.devtools.kythe.platform.java.helpers.JavacUtil;
 import com.google.devtools.kythe.platform.java.helpers.SignatureGenerator;
+import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 
 import com.sun.source.tree.Tree.Kind;
 import com.sun.tools.javac.code.Symbol;
@@ -65,24 +66,26 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, Void> {
       FormattingLogger.getLogger(KytheTreeScanner.class);
 
   private final JavaEntrySets entrySets;
+  private final StatisticsCollector statistics;
   // TODO(schroederc): refactor SignatureGenerator for new schema names
   private final SignatureGenerator signatureGenerator;
   private final FilePositions filePositions;
   private final Context context;
 
-  private KytheTreeScanner(JavaEntrySets entrySets, SignatureGenerator signatureGenerator,
-      FilePositions filePositions, Context context) {
+  private KytheTreeScanner(JavaEntrySets entrySets, StatisticsCollector statistics,
+      SignatureGenerator signatureGenerator, FilePositions filePositions, Context context) {
     this.entrySets = entrySets;
+    this.statistics = statistics;
     this.signatureGenerator = signatureGenerator;
     this.filePositions = filePositions;
     this.context = context;
   }
 
-  public static void emitEntries(Context context, JavaEntrySets entrySets,
-      SignatureGenerator signatureGenerator, JCCompilationUnit compilations, Charset sourceEncoding)
-      throws IOException {
+  public static void emitEntries(Context context, StatisticsCollector statistics,
+      JavaEntrySets entrySets, SignatureGenerator signatureGenerator,
+      JCCompilationUnit compilations, Charset sourceEncoding) throws IOException {
     FilePositions filePositions = new FilePositions(context, compilations, sourceEncoding);
-    new KytheTreeScanner(entrySets, signatureGenerator, filePositions, context)
+    new KytheTreeScanner(entrySets, statistics, signatureGenerator, filePositions, context)
         .scan(compilations, null);
   }
 
@@ -170,7 +173,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, Void> {
       for (JCExpression implClass : classDef.getImplementsClause()) {
         JavaNode implNode = scan(implClass, v);
         if (implNode == null) {
-          logger.warning("Missing 'implements' node for " + implClass.getClass() + ": " + implClass);
+          statistics.incrementCounter("warning-missing-implements-node");
+          logger.warning("Missing 'implements' node for " + implClass.getClass()
+              + ": " + implClass);
           continue;
         }
         emitEdge(classNode, EdgeKind.IMPLEMENTS, implNode);
@@ -398,6 +403,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, Void> {
     }
 
     emitAnchor(tree, EdgeKind.REF, node.entries);
+    statistics.incrementCounter("symbol-usages-emitted");
     return node;
   }
 
@@ -409,6 +415,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, Void> {
     }
 
     emitAnchor(name, tree.getStartPosition(), EdgeKind.REF, node.entries);
+    statistics.incrementCounter("name-usages-emitted");
     return node;
   }
 

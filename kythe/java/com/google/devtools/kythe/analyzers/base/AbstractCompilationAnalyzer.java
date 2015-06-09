@@ -16,12 +16,15 @@
 
 package com.google.devtools.kythe.analyzers.base;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
 import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.platform.shared.AnalysisException;
 import com.google.devtools.kythe.platform.shared.FileDataProvider;
+import com.google.devtools.kythe.platform.shared.NullStatisticsCollector;
 import com.google.devtools.kythe.platform.shared.RemoteFileData;
+import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.proto.Analysis.AnalysisOutput;
 import com.google.devtools.kythe.proto.Analysis.AnalysisRequest;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
@@ -40,6 +43,22 @@ public abstract class AbstractCompilationAnalyzer implements CompilationAnalyzer
 
   private static final FormattingLogger logger =
       FormattingLogger.getLogger(AbstractCompilationAnalyzer.class);
+
+  private final StatisticsCollector statistics;
+
+  public AbstractCompilationAnalyzer() {
+    this(NullStatisticsCollector.getInstance());
+  }
+
+  public AbstractCompilationAnalyzer(StatisticsCollector statistics) {
+    Preconditions.checkNotNull(statistics);
+    this.statistics = statistics;
+  }
+
+  /** Returns the {@link StatisticsCollector} to be used during analyses. */
+  protected StatisticsCollector getStatisticsCollector() {
+    return statistics;
+  }
 
   @Override
   public void analyze(AnalysisRequest req, StreamObserver<AnalysisOutput> stream) {

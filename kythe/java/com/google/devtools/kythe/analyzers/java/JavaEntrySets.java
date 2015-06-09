@@ -22,6 +22,7 @@ import com.google.devtools.kythe.analyzers.base.EntrySet;
 import com.google.devtools.kythe.analyzers.base.FactEmitter;
 import com.google.devtools.kythe.analyzers.base.KytheEntrySets;
 import com.google.devtools.kythe.analyzers.base.NodeKind;
+import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.devtools.kythe.util.Span;
@@ -46,9 +47,9 @@ public class JavaEntrySets extends KytheEntrySets {
   private final Map<Symbol, EntrySet> symbolNodes = new HashMap<>();
   private final Map<Symbol, Set<String>> symbolSigs = new HashMap<Symbol, Set<String>>();
 
-  public JavaEntrySets(FactEmitter emitter, VName compilationVName,
+  public JavaEntrySets(StatisticsCollector statistics, FactEmitter emitter, VName compilationVName,
       List<FileInput> requiredInputs) {
-    super(emitter, compilationVName, requiredInputs);
+    super(statistics, emitter, compilationVName, requiredInputs);
   }
 
   /** Emits a NAME node and its associated edge to the given {@code node}. */

@@ -24,6 +24,8 @@ import com.google.devtools.kythe.platform.indexpack.Archive;
 import com.google.devtools.kythe.platform.java.JavacAnalysisDriver;
 import com.google.devtools.kythe.platform.shared.AnalysisException;
 import com.google.devtools.kythe.platform.shared.FileDataCache;
+import com.google.devtools.kythe.platform.shared.MemoryStatisticsCollector;
+import com.google.devtools.kythe.platform.shared.NullStatisticsCollector;
 import com.google.devtools.kythe.proto.Storage.Entry;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.protobuf.ByteString;
@@ -32,44 +34,52 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 
 /** Binary to run Kythe's Java index over a single .kindex file, emitting entries to STDOUT. */
 public class JavaIndexer {
-  public static void main(String[] args) throws AnalysisException, IOException {
-    if (args.length > 0 && ("--help".equals(args[0]) || "-h".equals(args[0]))) {
+  public static void main(String[] rawArgs) throws AnalysisException, IOException {
+    if (rawArgs.length > 0 && ("--help".equals(rawArgs[0]) || "-h".equals(rawArgs[0]))) {
       usage(0);
+    } else if (rawArgs.length == 0) {
+      usage(1);
+    }
+
+    List<String> args = new LinkedList(Arrays.asList(rawArgs));
+
+    MemoryStatisticsCollector statistics = null;
+    if ("--print_statistics".equals(args.get(0))) {
+      args.remove(0);
+      statistics = new MemoryStatisticsCollector();
     }
 
     CompilationDescription desc = null;
-    switch (args.length) {
-      case 0:
-        usage(1);
-        break;
+    switch (args.size()) {
       case 1:
         // java_indexer kindex-file
-        desc = IndexInfoUtils.readIndexInfoFromFile(args[0]);
+        desc = IndexInfoUtils.readIndexInfoFromFile(args.get(0));
         break;
       case 2: {
         // java_indexer --index_pack=archive-root unit-key
-        if (!args[0].startsWith("--index_pack=") && !args[0].startsWith("-index_pack=")) {
-          System.err.println("Expecting --index_pack as first argument; got " + args[0]);
+        if (!args.get(0).startsWith("--index_pack=") && !args.get(0).startsWith("-index_pack=")) {
+          System.err.println("Expecting --index_pack as first argument; got " + args.get(0));
           usage(1);
         }
-        String archiveRoot = args[0].substring(args[0].indexOf('=') + 1);
-        desc = new Archive(archiveRoot).readDescription(args[1]);
+        String archiveRoot = args.get(0).substring(args.get(0).indexOf('=') + 1);
+        desc = new Archive(archiveRoot).readDescription(args.get(1));
         break;
       }
       case 3:
         // java_indexer --index_pack archive-root unit-key
-        if (!args[0].equals("--index_pack") && !args[0].equals("-index_pack")) {
-          System.err.println("Expecting --index_pack as first argument; got " + args[0]);
+        if (!args.get(0).equals("--index_pack") && !args.get(0).equals("-index_pack")) {
+          System.err.println("Expecting --index_pack as first argument; got " + args.get(0));
           usage(1);
         }
-        desc = new Archive(args[1]).readDescription(args[2]);
+        desc = new Archive(args.get(1)).readDescription(args.get(2));
         break;
       default:
-        System.err.println("Java indexer received too many arguments; got "
-            + Arrays.toString(args));
+        System.err.println("Java indexer received too many arguments; got " + args);
         usage(1);
         break;
     }
@@ -81,16 +91,21 @@ public class JavaIndexer {
     try (OutputStream stream = System.out;
         OutputStreamWriter writer = new OutputStreamWriter(stream)) {
       new JavacAnalysisDriver()
-          .analyze(new KytheJavacAnalyzer(new StreamFactEmitter(writer)),
+          .analyze(new KytheJavacAnalyzer(new StreamFactEmitter(writer),
+                  statistics == null ? NullStatisticsCollector.getInstance() : statistics),
               desc.getCompilationUnit(),
               new FileDataCache(desc.getFileContents()),
               false);
     }
+
+    if (statistics != null) {
+      statistics.printStatistics(System.err);
+    }
   }
 
   private static void usage(int exitCode) {
-    System.err.println("usage: java_indexer kindex-file\n"
-        + "       java_indexer --index_pack=archive-root unit-key");
+    System.err.println("usage: java_indexer [--print_statistics] kindex-file\n"
+        + "       java_indexer [--print_statistics] --index_pack=archive-root unit-key");
     System.exit(exitCode);
   }
 

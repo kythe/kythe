@@ -79,7 +79,7 @@ public class JavaIndexerServer {
     @Override
     public void process(CompilationUnit compilation, FileDataProvider fileData, FactEmitter emitter)
         throws AnalysisException {
-      driver.analyze(new KytheJavacAnalyzer(emitter),
+      driver.analyze(new KytheJavacAnalyzer(emitter, getStatisticsCollector()),
           compilation, fileData, false);
     }
   }

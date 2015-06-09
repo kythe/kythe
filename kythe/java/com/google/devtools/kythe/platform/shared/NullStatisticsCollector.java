@@ -18,30 +18,22 @@ package com.google.devtools.kythe.platform.shared;
 
 import java.io.Serializable;
 
-/**
- * A statistics collector that ignores all statistics.
- */
+/** {@link StatisticsCollector} that ignores all statistics. */
 public class NullStatisticsCollector implements StatisticsCollector, Serializable {
   private static final long serialVersionUID = 7642617128987532613L;
 
   private static NullStatisticsCollector instance = new NullStatisticsCollector();
 
-  /**
-   * Returns the single instance of the statistics collector that
-   * ignores all statistics.
-   */
+  /** Returns the single instance of the {@link StatisticsCollector} that ignores all statistics. */
   public static NullStatisticsCollector getInstance() {
     return instance;
   }
 
-  private NullStatisticsCollector() {
-  }
+  private NullStatisticsCollector() {}
 
   @Override
-  public void incrementCounter(String name) {
-  }
+  public void incrementCounter(String name) {}
 
   @Override
-  public void incrementCounter(String name, int amount) {
-  }
+  public void incrementCounter(String name, int amount) {}
 }

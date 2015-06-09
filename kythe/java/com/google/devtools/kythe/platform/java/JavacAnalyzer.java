@@ -16,9 +16,9 @@
 
 package com.google.devtools.kythe.platform.java;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.devtools.kythe.platform.shared.AnalysisException;
-import com.google.devtools.kythe.platform.shared.NullStatisticsCollector;
 import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 
@@ -36,15 +36,12 @@ public abstract class JavacAnalyzer implements Serializable {
 
   private final StatisticsCollector collector;
 
-  public JavacAnalyzer() {
-    this(NullStatisticsCollector.getInstance());
-  }
-
   public JavacAnalyzer(StatisticsCollector collector) {
+    Preconditions.checkNotNull(collector);
     this.collector = collector;
   }
 
-  public StatisticsCollector getStatisticsCollector() {
+  protected StatisticsCollector getStatisticsCollector() {
     return collector;
   }
 
@@ -56,28 +53,32 @@ public abstract class JavacAnalyzer implements Serializable {
    */
   public void analyzeCompilationUnit(JavaCompilationDetails compilationDetails)
       throws AnalysisException {
-    for (CompilationUnitTree file : compilationDetails.getAsts()) {
-      getStatisticsCollector().incrementCounter("kythe-analyzer-file-started");
-      URI uri = file.getSourceFile().toUri();
-      String fullPath = file.getSourceFile().toUri().getRawPath();
-      if (!uri.getScheme().equals("file")) {
-        fullPath = fullPath.substring(1);
-      }
-      String compilationUnitPath = fullPath;
-
-      for (String sourceFile : compilationDetails.getCompilationUnit().getSourceFileList()) {
-        if (fullPath.endsWith(sourceFile)) {
-          compilationUnitPath = sourceFile;
-          break;
+    try {
+      for (CompilationUnitTree file : compilationDetails.getAsts()) {
+        URI uri = file.getSourceFile().toUri();
+        String fullPath = file.getSourceFile().toUri().getRawPath();
+        if (!uri.getScheme().equals("file")) {
+          fullPath = fullPath.substring(1);
         }
-      }
+        String compilationUnitPath = fullPath;
 
-      if (Strings.isNullOrEmpty(compilationUnitPath)) {
-        continue;
-      }
+        for (String sourceFile : compilationDetails.getCompilationUnit().getSourceFileList()) {
+          if (fullPath.endsWith(sourceFile)) {
+            compilationUnitPath = sourceFile;
+            break;
+          }
+        }
 
-      analyzeFile(compilationDetails, file);
-      getStatisticsCollector().incrementCounter("kythe-analyzer-file-finished");
+        if (Strings.isNullOrEmpty(compilationUnitPath)) {
+          continue;
+        }
+
+        analyzeFile(compilationDetails, file);
+        getStatisticsCollector().incrementCounter("files-analyzed");
+      }
+      getStatisticsCollector().incrementCounter("compilations-analyzed");
+    } catch (Throwable t) {
+      getStatisticsCollector().incrementCounter("analyzer-exceptions");
     }
   }
 
@@ -88,6 +89,5 @@ public abstract class JavacAnalyzer implements Serializable {
    * @throws AnalysisException if analysis has a catastrophic failure.
    */
   public void analyzeFile(JavaCompilationDetails compilationDetails, CompilationUnitTree file)
-      throws AnalysisException {
-  }
+      throws AnalysisException {}
 }

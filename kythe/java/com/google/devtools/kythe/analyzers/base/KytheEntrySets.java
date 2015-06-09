@@ -18,6 +18,7 @@ package com.google.devtools.kythe.analyzers.base;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.devtools.kythe.util.KytheURI;
@@ -42,14 +43,16 @@ public class KytheEntrySets {
 
   private final Map<String, EntrySet> nameNodes = new HashMap<>();
 
+  private final StatisticsCollector statistics;
   private final FactEmitter emitter;
   private final String language;
 
   private final VName compilationVName;
   private final Map<String, VName> inputVNames;
 
-  public KytheEntrySets(FactEmitter emitter, VName compilationVName,
+  public KytheEntrySets(StatisticsCollector statistics, FactEmitter emitter, VName compilationVName,
       List<FileInput> requiredInputs) {
+    this.statistics = statistics;
     this.emitter = emitter;
     this.language = compilationVName.getLanguage();
     this.compilationVName = compilationVName;
@@ -74,6 +77,11 @@ public class KytheEntrySets {
     return emitter;
   }
 
+  /** Return the {@link StatisticsCollector} being used. */
+  protected final StatisticsCollector getStatisticsCollector() {
+    return statistics;
+  }
+
   /**
    * Returns a new {@link NodeBuilder} with the given node kind set.
    *
@@ -81,11 +89,15 @@ public class KytheEntrySets {
    */
   @Deprecated
   public NodeBuilder newNode(String kind) {
+    getStatisticsCollector()
+        .incrementCounter("deprecated-new-node-" + kind);
     return new NodeBuilder(kind, null, language);
   }
 
   /** Returns a new {@link NodeBuilder} with the given node kind set. */
   public NodeBuilder newNode(NodeKind kind) {
+    getStatisticsCollector()
+        .incrementCounter("new-node-" + kind);
     return new NodeBuilder(kind, language);
   }
 
@@ -152,11 +164,15 @@ public class KytheEntrySets {
 
   /** Emits an edge of the given kind from {@code source} to {@code target}. */
   public void emitEdge(VName source, EdgeKind kind, VName target) {
+    getStatisticsCollector()
+        .incrementCounter("emit-edge-" + kind);
     new EdgeBuilder(source, kind, target).build().emit(emitter);
   }
 
   /** Emits an edge of the given kind and ordinal from {@code source} to {@code target}. */
   public void emitEdge(EntrySet source, EdgeKind kind, EntrySet target, int ordinal) {
+    getStatisticsCollector()
+        .incrementCounter("emit-edge-" + kind);
     new EdgeBuilder(source.getVName(), kind, target.getVName())
         .setOrdinal(ordinal)
         .build()
