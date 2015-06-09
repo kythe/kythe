@@ -16,8 +16,8 @@
 
 package com.google.devtools.kythe.analyzers.java;
 
-import com.google.devtools.kythe.analyzers.base.AbstractCompilationAnalyzer;
 import com.google.devtools.kythe.analyzers.base.FactEmitter;
+import com.google.devtools.kythe.analyzers.base.GRPCCompilationAnalyzer;
 import com.google.devtools.kythe.platform.java.JavacAnalysisDriver;
 import com.google.devtools.kythe.platform.shared.AnalysisException;
 import com.google.devtools.kythe.platform.shared.FileDataProvider;
@@ -73,12 +73,12 @@ public class JavaIndexerServer {
     System.exit(exitCode);
   }
 
-  private static class JavaCompilationAnalyzer extends AbstractCompilationAnalyzer {
+  private static class JavaCompilationAnalyzer extends GRPCCompilationAnalyzer {
     private final JavacAnalysisDriver driver = new JavacAnalysisDriver();
 
     @Override
-    public void process(CompilationUnit compilation, FileDataProvider fileData, FactEmitter emitter)
-        throws AnalysisException {
+    public void analyzeCompilation(CompilationUnit compilation,
+        FileDataProvider fileData, FactEmitter emitter) throws AnalysisException {
       driver.analyze(new KytheJavacAnalyzer(emitter, getStatisticsCollector()),
           compilation, fileData, false);
     }

@@ -38,12 +38,26 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/common",
         "//kythe/java/com/google/devtools/kythe/platform/shared:analysis_exception",
         "//kythe/java/com/google/devtools/kythe/platform/shared:file_data",
-        "//kythe/java/com/google/devtools/kythe/platform/shared:remote_file_data",
         "//kythe/java/com/google/devtools/kythe/platform/shared:statistics",
         "//kythe/proto:analysis_proto_java",
         "//kythe/proto:storage_proto_java",
-        "//third_party/grpc-java",
         "//third_party/guava",
         "//third_party/proto:protobuf_java",
+    ],
+)
+
+java_library(
+    name = "grpc_compilation_analyzer",
+    srcs = [
+        "GRPCCompilationAnalyzer.java",
+    ],
+    deps = [
+        ":compilation_analyzer",
+        ":entryset",
+        "//kythe/java/com/google/devtools/kythe/platform/shared:file_data",
+        "//kythe/java/com/google/devtools/kythe/platform/shared:remote_file_data",
+        "//kythe/java/com/google/devtools/kythe/platform/shared:statistics",
+        "//kythe/proto:analysis_proto_java",
+        "//third_party/grpc-java",
     ],
 )

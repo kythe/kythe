@@ -55,8 +55,8 @@ java_binary(
     main_class = "com.google.devtools.kythe.analyzers.java.JavaIndexerServer",
     deps = [
         ":analyzer",
-        "//kythe/java/com/google/devtools/kythe/analyzers/base:compilation_analyzer",
         "//kythe/java/com/google/devtools/kythe/analyzers/base:entryset",
+        "//kythe/java/com/google/devtools/kythe/analyzers/base:grpc_compilation_analyzer",
         "//kythe/java/com/google/devtools/kythe/platform/java",
         "//kythe/java/com/google/devtools/kythe/platform/shared:analysis_exception",
         "//kythe/java/com/google/devtools/kythe/platform/shared:file_data",
