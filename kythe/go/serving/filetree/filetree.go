@@ -45,7 +45,7 @@ var CorpusRootsKey = []byte(dirTablePrefix + "corpusRoots")
 // Table implements the FileTree interface using a static lookup table.
 type Table struct{ table.Proto }
 
-// Dir implements part of the filetree Service interface.
+// Directory implements part of the filetree Service interface.
 func (t *Table) Directory(ctx context.Context, req *ftpb.DirectoryRequest) (*ftpb.DirectoryReply, error) {
 	var d srvpb.FileDirectory
 	if err := t.Lookup(DirKey(req.Corpus, req.Root, req.Path), &d); err == table.ErrNoSuchKey {

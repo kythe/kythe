@@ -200,8 +200,7 @@ func WebClient(addr string) Service { return &webClient{addr} }
 //
 // Note: /corpusRoots and /dir will return their responses as serialized
 // protobufs if the "proto" query parameter is set.
-func RegisterHTTPHandlers(ft Service, mux *http.ServeMux) {
-	ctx := context.Background()
+func RegisterHTTPHandlers(ctx context.Context, ft Service, mux *http.ServeMux) {
 	mux.HandleFunc("/corpusRoots", func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		defer func() {

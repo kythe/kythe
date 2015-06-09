@@ -40,6 +40,8 @@ import (
 	xsrv "kythe.io/kythe/go/serving/xrefs"
 	"kythe.io/kythe/go/storage/leveldb"
 	"kythe.io/kythe/go/storage/table"
+
+	"golang.org/x/net/context"
 )
 
 var (
@@ -65,9 +67,10 @@ func main() {
 	ft := &ftsrv.Table{tbl}
 	sr := &srchsrv.Table{&table.KVInverted{db}}
 
-	xrefs.RegisterHTTPHandlers(xs, http.DefaultServeMux)
-	filetree.RegisterHTTPHandlers(ft, http.DefaultServeMux)
-	search.RegisterHTTPHandlers(sr, http.DefaultServeMux)
+	ctx := context.Background()
+	xrefs.RegisterHTTPHandlers(ctx, xs, http.DefaultServeMux)
+	filetree.RegisterHTTPHandlers(ctx, ft, http.DefaultServeMux)
+	search.RegisterHTTPHandlers(ctx, sr, http.DefaultServeMux)
 	web.RegisterQuitHandler(http.DefaultServeMux)
 	http.HandleFunc("/alive", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "ok")

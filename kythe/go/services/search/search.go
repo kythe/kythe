@@ -69,8 +69,7 @@ func WebClient(addr string) Service {
 //
 // Note: /search will return its response as serialized protobuf if the
 // "proto" query parameter is set.
-func RegisterHTTPHandlers(s Service, mux *http.ServeMux) {
-	ctx := context.Background()
+func RegisterHTTPHandlers(ctx context.Context, s Service, mux *http.ServeMux) {
 	mux.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		defer func() {

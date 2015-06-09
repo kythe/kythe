@@ -33,6 +33,8 @@ import (
 	xsrv "kythe.io/kythe/go/serving/xrefs"
 	"kythe.io/kythe/go/storage/leveldb"
 	"kythe.io/kythe/go/storage/table"
+
+	"golang.org/x/net/context"
 )
 
 var (
@@ -51,9 +53,10 @@ func main() {
 	defer db.Close()
 	tbl := &table.KVProto{db}
 
-	xrefs.RegisterHTTPHandlers(&xsrv.Table{tbl}, http.DefaultServeMux)
-	filetree.RegisterHTTPHandlers(&ftsrv.Table{tbl}, http.DefaultServeMux)
-	search.RegisterHTTPHandlers(&srchsrv.Table{&table.KVInverted{db}}, http.DefaultServeMux)
+	ctx := context.Background()
+	xrefs.RegisterHTTPHandlers(ctx, &xsrv.Table{tbl}, http.DefaultServeMux)
+	filetree.RegisterHTTPHandlers(ctx, &ftsrv.Table{tbl}, http.DefaultServeMux)
+	search.RegisterHTTPHandlers(ctx, &srchsrv.Table{&table.KVInverted{db}}, http.DefaultServeMux)
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, filepath.Join(*publicResources, filepath.Clean(r.URL.Path)))

@@ -138,10 +138,10 @@ func main() {
 	}
 
 	if *httpListeningAddr != "" {
-		xrefs.RegisterHTTPHandlers(xs, http.DefaultServeMux)
-		filetree.RegisterHTTPHandlers(ft, http.DefaultServeMux)
+		xrefs.RegisterHTTPHandlers(ctx, xs, http.DefaultServeMux)
+		filetree.RegisterHTTPHandlers(ctx, ft, http.DefaultServeMux)
 		if sr != nil {
-			search.RegisterHTTPHandlers(sr, http.DefaultServeMux)
+			search.RegisterHTTPHandlers(ctx, sr, http.DefaultServeMux)
 		}
 		go startHTTP()
 	}

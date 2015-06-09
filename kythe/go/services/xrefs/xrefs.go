@@ -284,8 +284,7 @@ func WebClient(addr string) Service {
 //
 // Note: /nodes, /edges, and /decorations will return their responses as
 // serialized protobufs if the "proto" query parameter is set.
-func RegisterHTTPHandlers(xs Service, mux *http.ServeMux) {
-	ctx := context.Background()
+func RegisterHTTPHandlers(ctx context.Context, xs Service, mux *http.ServeMux) {
 	mux.HandleFunc("/decorations", func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		defer func() {

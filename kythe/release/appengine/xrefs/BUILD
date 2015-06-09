@@ -14,5 +14,6 @@ go_binary(
         "//kythe/go/serving/xrefs",
         "//kythe/go/storage/leveldb",
         "//kythe/go/storage/table",
+        "//third_party/go:context",
     ],
 )
