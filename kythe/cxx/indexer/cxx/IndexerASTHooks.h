@@ -659,6 +659,17 @@ private:
   /// an entry at (`Depth`, `Index`).
   void DumpTypeContext(unsigned Depth, unsigned Index);
 
+  /// \brief Attempts to add a childof edge between DeclNode and its parent.
+  /// \param Decl The (outer, in the case of a template) decl.
+  /// \param DeclNode The (outer) `NodeId` for `Decl`.
+  void AddChildOfEdgeToDeclContext(const clang::Decl *Decl,
+                                   const GraphObserver::NodeId DeclNode);
+
+  /// Points at the inner node of the DeclContext, if it's a template.
+  /// Otherwise points at the DeclContext as a Decl.
+  MaybeFew<GraphObserver::NodeId>
+  BuildNodeIdForDeclContext(const clang::DeclContext *DC);
+
   /// Avoid regenerating type node IDs and keep track of where we are while
   /// generating node IDs for recursive types. The key is opaque and
   /// makes sense only within the implementation of this class.

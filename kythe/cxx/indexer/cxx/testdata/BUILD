@@ -681,6 +681,19 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "rec_fwd_struct_name",
+    srcs = ["rec/rec_fwd_struct_name.c"],
+    std = "c99",
+    tags = ["rec"],
+)
+
+cxx_indexer_test(
+    name = "rec_inner_class",
+    srcs = ["rec/rec_inner_class.cc"],
+    tags = ["rec"],
+)
+
+cxx_indexer_test(
     name = "rec_struct_c99",
     srcs = ["rec/rec_struct.c"],
     std = "c99",
@@ -743,6 +756,12 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "template_class_fn_spec",
     srcs = ["template/template_class_fn_spec.cc"],
+    tags = ["template"],
+)
+
+cxx_indexer_test(
+    name = "template_class_inner",
+    srcs = ["template/template_class_inner.cc"],
     tags = ["template"],
 )
 

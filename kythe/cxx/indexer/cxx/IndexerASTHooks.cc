@@ -415,6 +415,37 @@ bool IndexerASTVisitor::VisitCallExpr(const clang::CallExpr *E) {
   return true;
 }
 
+MaybeFew<GraphObserver::NodeId>
+IndexerASTVisitor::BuildNodeIdForDeclContext(const clang::DeclContext *DC) {
+  if (auto *DCDecl = llvm::dyn_cast<const clang::Decl>(DC)) {
+    if (llvm::isa<TranslationUnitDecl>(DCDecl)) {
+      return None();
+    }
+    if (llvm::isa<ClassTemplatePartialSpecializationDecl>(DCDecl)) {
+      return BuildNodeIdForDecl(DCDecl, 0);
+    } else if (auto *CRD = dyn_cast<const clang::CXXRecordDecl>(DCDecl)) {
+      if (const auto *CTD = CRD->getDescribedClassTemplate()) {
+        return BuildNodeIdForDecl(DCDecl, 0);
+      }
+    } else if (auto *FD = dyn_cast<const clang::FunctionDecl>(DCDecl)) {
+      if (FD->getDescribedFunctionTemplate()) {
+        return BuildNodeIdForDecl(DCDecl, 0);
+      }
+    }
+    return BuildNodeIdForDecl(DCDecl);
+  }
+  return None();
+}
+
+void IndexerASTVisitor::AddChildOfEdgeToDeclContext(
+    const clang::Decl *Decl, const GraphObserver::NodeId DeclNode) {
+  if (const DeclContext *DC = Decl->getDeclContext()) {
+    if (auto ContextId = BuildNodeIdForDeclContext(DC)) {
+      Observer.recordChildOfEdge(DeclNode, ContextId.primary());
+    }
+  }
+}
+
 bool IndexerASTVisitor::VisitDeclRefExpr(const clang::DeclRefExpr *DRE) {
   // Bail on NonTypeTemplateParmDecl for now.
   if (isa<NonTypeTemplateParmDecl>(DRE->getDecl())) {
@@ -551,6 +582,7 @@ bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl *Decl) {
   } else if (auto TyNodeId = BuildNodeIdForType(Decl->getType())) {
     Observer.recordTypeEdge(BodyDeclNode, TyNodeId.primary());
   }
+  AddChildOfEdgeToDeclContext(Decl, DeclNode);
   std::vector<LibrarySupport::Completion> Completions;
   if (!IsDefinition(Decl)) {
     Observer.recordVariableNode(VarNameId, BodyDeclNode,
@@ -604,10 +636,7 @@ bool IndexerASTVisitor::VisitEnumConstantDecl(
   MaybeRecordDefinitionRange(RangeInCurrentContext(NameRange), DeclNode);
   Observer.recordNamedEdge(DeclNode, DeclName);
   Observer.recordIntegerConstantNode(DeclNode, Decl->getInitVal());
-  if (const DeclContext *DC = Decl->getDeclContext()) {
-    const auto *ED = cast<EnumDecl>(DC);
-    Observer.recordChildOfEdge(DeclNode, BuildNodeIdForDecl(ED));
-  }
+  AddChildOfEdgeToDeclContext(Decl, DeclNode);
   return true;
 }
 
@@ -623,6 +652,7 @@ bool IndexerASTVisitor::VisitEnumDecl(const clang::EnumDecl *Decl) {
     HasSpecifiedStorageType = true;
     AscribeSpelledType(TSI->getTypeLoc(), TSI->getType(), DeclNode);
   }
+  AddChildOfEdgeToDeclContext(Decl, DeclNode);
   // TODO(zarko): Would this be clearer as !Decl->isThisDeclarationADefinition
   // or !Decl->isCompleteDefinition()? Do those calls have the same meaning
   // as Decl->getDefinition() != Decl? The Clang documentation suggests that
@@ -898,6 +928,7 @@ bool IndexerASTVisitor::VisitRecordDecl(const clang::RecordDecl *Decl) {
       (Decl->isClass() ? GraphObserver::RecordKind::Class
                        : (Decl->isStruct() ? GraphObserver::RecordKind::Struct
                                            : GraphObserver::RecordKind::Union));
+  AddChildOfEdgeToDeclContext(Decl, DeclNode);
   // TODO(zarko): Would this be clearer as !Decl->isThisDeclarationADefinition
   // or !Decl->isCompleteDefinition()? Do those calls have the same meaning
   // as Decl->getDefinition() != Decl? The Clang documentation suggests that
@@ -969,7 +1000,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
     InnerNode = BuildNodeIdForDecl(Decl, 0);
     OuterNode = RecordTemplate(FTD, InnerNode);
   } else if (auto *MSI = Decl->getMemberSpecializationInfo()) {
-    // TODO(zarko): This case.
+    // TODO(zarko): This case. Update BuildNodeIdForDeclContext.
     InnerNode = BuildNodeIdForDecl(Decl);
     OuterNode = InnerNode;
   } else if (auto *FTSI = Decl->getTemplateSpecializationInfo()) {
@@ -980,7 +1011,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
     InnerNode = BuildNodeIdForDecl(Decl);
     OuterNode = InnerNode;
   } else if (auto *DFTSI = Decl->getDependentSpecializationInfo()) {
-    // TODO(zarko): This case.
+    // TODO(zarko): This case. Update BuildNodeIdForDeclContext.
     InnerNode = BuildNodeIdForDecl(Decl);
     OuterNode = InnerNode;
   } else {
@@ -1096,7 +1127,6 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
     if (const auto *MF = dyn_cast<CXXMethodDecl>(Decl)) {
       const auto *R = MF->getParent();
       GraphObserver::NodeId ParentNode(BuildNodeIdForDecl(R));
-      Observer.recordChildOfEdge(OuterNode, ParentNode);
       // OO_Call, OO_Subscript, and OO_Equal must be member functions.
       // The dyn_cast to CXXMethodDecl above is therefore not dropping
       // (impossible) free function incarnations of these operators from
@@ -1106,6 +1136,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
       }
     }
   }
+  AddChildOfEdgeToDeclContext(Decl, OuterNode);
   if (!IsFunctionDefinition) {
     Observer.recordFunctionNode(InnerNode,
                                 GraphObserver::Completeness::Incomplete);
@@ -1148,6 +1179,7 @@ bool IndexerASTVisitor::VisitTypedefNameDecl(
     GraphObserver::NodeId AliasNodeId(
         Observer.recordTypeAliasNode(AliasNameId, AliasedTypeId.primary()));
     MaybeRecordDefinitionRange(RangeInCurrentContext(Range), AliasNodeId);
+    AddChildOfEdgeToDeclContext(Decl, AliasNodeId);
   }
   return true;
 }
