@@ -11,7 +11,9 @@ go_package(
     deps = [
         "//kythe/go/platform/analysis",
         "//kythe/go/platform/delimited",
+        "//kythe/go/platform/vfs",
         "//kythe/proto:analysis_proto_go",
+        "//third_party/go:context",
         "//third_party/go:protobuf",
     ],
 )

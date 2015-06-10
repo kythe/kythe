@@ -4,11 +4,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 go_package(
     deps = [
-        "//kythe/go/extractors/govname",
-        "//kythe/go/platform/indexpack",
         "//kythe/go/platform/vfs",
-        "//kythe/proto:analysis_proto_go",
-        "//kythe/proto:storage_proto_go",
         "//third_party/go:context",
     ],
 )

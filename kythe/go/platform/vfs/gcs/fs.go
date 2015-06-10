@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-// Package google implements an indexpack VFS backed by Google cloud storage.
-package google
+// Package gcs implements an indexpack VFS backed by Google Cloud Storage.
+package gcs
 
 import (
 	"bytes"
@@ -30,8 +30,8 @@ import (
 	"google.golang.org/cloud/storage"
 )
 
-// StorageFS implements a VFS backed by a bucket in Google Cloud Storage
-type StorageFS struct{ Bucket string }
+// FS implements a VFS backed by a bucket in Google Cloud Storage
+type FS struct{ Bucket string }
 
 type objInfo struct{ *storage.Object }
 
@@ -44,7 +44,7 @@ func (o objInfo) IsDir() bool        { return false }
 func (o objInfo) Sys() interface{}   { return o.Object }
 
 // Stat implements part of the VFS interface.
-func (s StorageFS) Stat(ctx context.Context, path string) (os.FileInfo, error) {
+func (s FS) Stat(ctx context.Context, path string) (os.FileInfo, error) {
 	obj, err := storage.StatObject(ctx, s.Bucket, path)
 	if err != nil {
 		return nil, err
@@ -53,20 +53,20 @@ func (s StorageFS) Stat(ctx context.Context, path string) (os.FileInfo, error) {
 }
 
 // MkdirAll implements part of the VFS interface.
-func (StorageFS) MkdirAll(_ context.Context, path string, mode os.FileMode) error { return nil }
+func (FS) MkdirAll(_ context.Context, path string, mode os.FileMode) error { return nil }
 
 // Open implements part of the VFS interface.
-func (s StorageFS) Open(ctx context.Context, path string) (io.ReadCloser, error) {
+func (s FS) Open(ctx context.Context, path string) (io.ReadCloser, error) {
 	return storage.NewReader(ctx, s.Bucket, path)
 }
 
 // Create implements part of the VFS interface.
-func (s StorageFS) Create(ctx context.Context, path string) (io.WriteCloser, error) {
+func (s FS) Create(ctx context.Context, path string) (io.WriteCloser, error) {
 	return storage.NewWriter(ctx, s.Bucket, path), nil
 }
 
 // Rename implements part of the VFS interface.
-func (s StorageFS) Rename(ctx context.Context, oldPath, newPath string) error {
+func (s FS) Rename(ctx context.Context, oldPath, newPath string) error {
 	if _, err := storage.CopyObject(ctx, s.Bucket, oldPath, s.Bucket, newPath, &storage.ObjectAttrs{
 		ContentType: "application/octet-stream",
 	}); err != nil {
@@ -79,12 +79,12 @@ func (s StorageFS) Rename(ctx context.Context, oldPath, newPath string) error {
 }
 
 // Remove implements part of the VFS interface.
-func (s StorageFS) Remove(ctx context.Context, path string) error {
+func (s FS) Remove(ctx context.Context, path string) error {
 	return storage.DeleteObject(ctx, s.Bucket, path)
 }
 
 // Glob implements part of the VFS interface.
-func (s StorageFS) Glob(ctx context.Context, glob string) ([]string, error) {
+func (s FS) Glob(ctx context.Context, glob string) ([]string, error) {
 	q := &storage.Query{
 		Prefix: globLiteralPrefix(glob),
 	}

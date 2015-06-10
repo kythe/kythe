@@ -8,6 +8,7 @@ go_binary(
         "write_entries/write_entries.go",
     ],
     deps = [
+        "//kythe/go/platform/vfs",
         "//kythe/go/services/graphstore",
         "//kythe/go/services/graphstore/grpc",
         "//kythe/go/services/graphstore/proxy",
@@ -27,6 +28,7 @@ go_binary(
     ],
     deps = [
         "//kythe/go/platform/delimited",
+        "//kythe/go/platform/vfs",
         "//kythe/go/services/graphstore",
         "//kythe/go/services/graphstore/grpc",
         "//kythe/go/services/graphstore/proxy",
@@ -45,6 +47,7 @@ go_binary(
         "triples/triples.go",
     ],
     deps = [
+        "//kythe/go/platform/vfs",
         "//kythe/go/services/graphstore",
         "//kythe/go/services/graphstore/grpc",
         "//kythe/go/services/graphstore/proxy",
@@ -67,8 +70,10 @@ go_binary(
     ],
     deps = [
         "//kythe/go/platform/delimited",
+        "//kythe/go/platform/vfs",
         "//kythe/go/storage/vnameutil",
         "//kythe/go/util/flagutil",
         "//kythe/proto:storage_proto_go",
+        "//third_party/go:context",
     ],
 )

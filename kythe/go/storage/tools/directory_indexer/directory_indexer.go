@@ -50,7 +50,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"flag"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -58,8 +57,11 @@ import (
 	"strings"
 
 	"kythe.io/kythe/go/platform/delimited"
+	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/storage/vnameutil"
 	"kythe.io/kythe/go/util/flagutil"
+
+	"golang.org/x/net/context"
 
 	spb "kythe.io/kythe/proto/storage_proto"
 )
@@ -107,7 +109,7 @@ func emitPath(path string, info os.FileInfo, err error) error {
 	if *verbose {
 		log.Printf("Reading/emitting %s", path)
 	}
-	contents, err := ioutil.ReadFile(path)
+	contents, err := vfs.ReadFile(context.Background(), path)
 	if err != nil {
 		return err
 	}
@@ -138,7 +140,7 @@ func main() {
 		}
 	}
 
-	if data, err := ioutil.ReadFile(*vnamesConfigPath); err != nil {
+	if data, err := vfs.ReadFile(context.Background(), *vnamesConfigPath); err != nil {
 		log.Fatalf("Unable to read VNames config file %q: %v", *vnamesConfigPath, err)
 	} else if rules, err := vnameutil.ParseRules(data); err != nil {
 		log.Fatalf("Invalid VName rules: %v", err)

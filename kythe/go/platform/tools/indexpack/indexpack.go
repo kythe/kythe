@@ -35,8 +35,9 @@ import (
 	"strings"
 
 	"kythe.io/kythe/go/platform/indexpack"
-	"kythe.io/kythe/go/platform/indexpack/google"
 	"kythe.io/kythe/go/platform/kindex"
+	"kythe.io/kythe/go/platform/vfs"
+	"kythe.io/kythe/go/platform/vfs/gcs"
 	"kythe.io/kythe/go/util/oauth2"
 
 	apb "kythe.io/kythe/proto/analysis_proto"
@@ -107,7 +108,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		opts = append(opts, indexpack.FS(google.StorageFS{parts[0]}))
+		opts = append(opts, indexpack.FS(gcs.FS{parts[0]}))
 		if len(parts) == 2 {
 			archiveRoot = parts[1]
 		} else {
@@ -125,7 +126,7 @@ func main() {
 			log.Println("WARNING: no kindex file paths given")
 		}
 		for _, path := range flag.Args() {
-			kindex, err := kindex.Open(path)
+			kindex, err := kindex.Open(ctx, path)
 			if err != nil {
 				log.Fatalf("Error opening kindex at %q: %v", path, err)
 			}
@@ -207,7 +208,7 @@ func unpackIndex(ctx context.Context, pack *indexpack.Archive, dir string) error
 		if !*quiet {
 			log.Println("Writing compilation unit to", path)
 		}
-		f, err := os.Create(path)
+		f, err := vfs.Create(ctx, path)
 		if err != nil {
 			return fmt.Errorf("error creating output file: %v", err)
 		}

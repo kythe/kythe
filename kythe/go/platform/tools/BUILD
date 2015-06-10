@@ -53,6 +53,7 @@ go_binary(
     deps = [
         "//kythe/go/platform/kindex",
         "//kythe/go/util/flagutil",
+        "//third_party/go:context",
     ],
 )
 
@@ -63,8 +64,9 @@ go_binary(
     ],
     deps = [
         "//kythe/go/platform/indexpack",
-        "//kythe/go/platform/indexpack/google",
         "//kythe/go/platform/kindex",
+        "//kythe/go/platform/vfs",
+        "//kythe/go/platform/vfs/gcs",
         "//kythe/go/util/oauth2",
         "//kythe/proto:analysis_proto_go",
         "//third_party/go:cloud_storage",

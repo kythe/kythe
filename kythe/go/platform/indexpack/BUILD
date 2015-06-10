@@ -11,6 +11,8 @@ go_package(
     ],
     deps = [
         "//kythe/go/platform/analysis",
+        "//kythe/go/platform/vfs",
+        "//kythe/go/platform/vfs/zip",
         "//third_party/go:context",
         "//third_party/go:uuid",
     ],

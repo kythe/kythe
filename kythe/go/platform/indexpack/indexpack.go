@@ -79,6 +79,8 @@ import (
 	"strings"
 
 	"kythe.io/kythe/go/platform/analysis"
+	"kythe.io/kythe/go/platform/vfs"
+	"kythe.io/kythe/go/platform/vfs/zip"
 
 	"code.google.com/p/go-uuid/uuid"
 	"golang.org/x/net/context"
@@ -116,37 +118,9 @@ func (a *Archive) Fetcher(ctx context.Context) analysis.Fetcher { return packFet
 
 // Archive represents an index pack directory.
 type Archive struct {
-	root     string       // The root path of the index pack
-	unitType reflect.Type // The concrete value type for the ReadUnits callback
-	fs       VFS          // Filesystem implementation used for file access
-}
-
-// VFS is the interface consumed by the Archive to manipulate the filesystem
-// for index pack operations.
-type VFS interface {
-	// Stat returns file status information for path, as os.Stat.
-	Stat(ctx context.Context, path string) (os.FileInfo, error)
-
-	// MkdirAll recursively creates the specified directory path with the given
-	// permissions, as os.MkdirAll.
-	MkdirAll(ctx context.Context, path string, mode os.FileMode) error
-
-	// Open opens an existing file for reading, as os.Open.
-	Open(ctx context.Context, path string) (io.ReadCloser, error)
-
-	// Create creates a new file for writing, as os.Create.
-	Create(ctx context.Context, path string) (io.WriteCloser, error)
-
-	// Rename renames oldPath to newPath, as os.Rename, overwriting newPath if
-	// it exists.
-	Rename(ctx context.Context, oldPath, newPath string) error
-
-	// Remove deletes the file specified by path, as os.Remove.
-	Remove(ctx context.Context, path string) error
-
-	// Glob returns all the paths matching the specified glob pattern, as
-	// filepath.Glob.
-	Glob(ctx context.Context, glob string) ([]string, error)
+	root     string        // The root path of the index pack
+	unitType reflect.Type  // The concrete value type for the ReadUnits callback
+	fs       vfs.Interface // Filesystem implementation used for file access
 }
 
 // An Option is a configurable setting for an Archive.
@@ -167,15 +141,20 @@ func UnitType(t interface{}) Option {
 
 // FS returns an Option that sets the filesystem interface used to implement
 // the index pack.
-func FS(fs VFS) Option {
+func FS(fs vfs.Interface) Option {
 	return func(a *Archive) error {
 		if fs == nil {
-			return errors.New("invalid VFS")
+			return errors.New("invalid vfs.Interface")
 		}
 		a.fs = fs
 		return nil
 	}
 }
+
+// FSReader returns an Option that sets the filesystem interface used to
+// implement the index pack.  The resulting index pack will be read-only;
+// methods such as WriteUnit and WriteFile will return with an error.
+func FSReader(fs vfs.Reader) Option { return FS(vfs.UnsupportedWriter{fs}) }
 
 // Create creates a new empty index pack at the specified path. It is an error
 // if the path already exists.
@@ -183,7 +162,7 @@ func FS(fs VFS) Option {
 // If unitType != nil, the interface value passed to the callback of ReadUnits
 // will be a pointer to its type.
 func Create(ctx context.Context, path string, opts ...Option) (*Archive, error) {
-	a := &Archive{root: path, fs: localFS{}}
+	a := &Archive{root: path, fs: vfs.Default}
 	for _, opt := range opts {
 		if err := opt(a); err != nil {
 			return nil, err
@@ -212,7 +191,7 @@ func Create(ctx context.Context, path string, opts ...Option) (*Archive, error) 
 // If unitType != nil, the interface value passed to the callback of ReadUnits
 // will be a pointer to its type.
 func Open(ctx context.Context, path string, opts ...Option) (*Archive, error) {
-	a := &Archive{root: path, fs: localFS{}}
+	a := &Archive{root: path, fs: vfs.Default}
 	for _, opt := range opts {
 		if err := opt(a); err != nil {
 			return nil, err
@@ -233,6 +212,26 @@ func Open(ctx context.Context, path string, opts ...Option) (*Archive, error) {
 		return nil, fmt.Errorf("path %q is missing a files subdirectory", path)
 	}
 	return a, nil
+}
+
+// OpenZip returns a read-only *Archive tied to the ZIP file at r, which is
+// expected to contain the recursive contents of an indexpack directory and its
+// subdirectories.  Operations that write to the pack will return errors.
+func OpenZip(ctx context.Context, r io.ReadSeeker, opts ...Option) (*Archive, error) {
+	fs, err := zip.Open(r)
+	if err != nil {
+		return nil, err
+	}
+	root := fs.Archive.File[0].Name
+	if i := strings.Index(root, string(filepath.Separator)); i > 0 {
+		root = root[:i]
+	}
+	opts = append(opts, FSReader(fs))
+	pack, err := Open(ctx, root, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return pack, nil
 }
 
 func (a *Archive) readFile(ctx context.Context, dir, name string) ([]byte, error) {

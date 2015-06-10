@@ -24,8 +24,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strings"
+
+	"kythe.io/kythe/go/platform/vfs"
 
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
@@ -86,7 +87,7 @@ func (c *Config) Client(ctx context.Context) (*http.Client, error) {
 	case c.GCEAccount != "":
 		return oauth2.NewClient(ctx, google.ComputeTokenSource(c.GCEAccount)), nil
 	case c.ConfigFile != "":
-		f, err := os.Open(c.ConfigFile)
+		f, err := vfs.Open(ctx, c.ConfigFile)
 		if err != nil {
 			return nil, fmt.Errorf("error opening ConfigFile: %v", err)
 		}

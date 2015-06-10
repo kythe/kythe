@@ -14,12 +14,16 @@
  * limitations under the License.
  */
 
-package google
+package gcs
 
 import (
 	"runtime"
 	"testing"
+
+	"kythe.io/kythe/go/platform/vfs"
 )
+
+var _ vfs.Interface = FS{}
 
 func TestLiteralPrefix(t *testing.T) {
 	tests := []struct {

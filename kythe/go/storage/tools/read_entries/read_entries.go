@@ -26,6 +26,7 @@ import (
 	"sync"
 
 	"kythe.io/kythe/go/platform/delimited"
+	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/storage/gsutil"
 	"kythe.io/kythe/go/util/flagutil"
@@ -121,7 +122,7 @@ func main() {
 			go func(i int64) {
 				defer wg.Done()
 				path := fmt.Sprintf("%s-%.5d-of-%.5d", *shardsToFiles, i, *shards)
-				f, err := os.Create(path)
+				f, err := vfs.Create(ctx, path)
 				if err != nil {
 					log.Fatalf("Failed to create file %q: %v", path, err)
 				}

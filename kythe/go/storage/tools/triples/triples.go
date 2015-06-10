@@ -28,9 +28,11 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 
+	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/storage/gsutil"
 	"kythe.io/kythe/go/storage/stream"
@@ -74,9 +76,9 @@ func main() {
 		defer gsutil.LogClose(context.Background(), gs)
 	}
 
-	in := os.Stdin
+	var in io.ReadCloser = os.Stdin
 	if gs == nil && len(flag.Args()) > 0 {
-		file, err := os.Open(flag.Arg(0))
+		file, err := vfs.Open(context.Background(), flag.Arg(0))
 		if err != nil {
 			log.Fatalf("Failed to open input file %q: %v", flag.Arg(0), err)
 		}
@@ -89,9 +91,9 @@ func main() {
 		outIdx = 0
 	}
 
-	out := os.Stdout
+	var out io.WriteCloser = os.Stdout
 	if len(flag.Args()) > outIdx {
-		file, err := os.Create(flag.Arg(outIdx))
+		file, err := vfs.Create(context.Background(), flag.Arg(outIdx))
 		if err != nil {
 			log.Fatalf("Failed to create output file %q: %v", flag.Arg(outIdx), err)
 		}

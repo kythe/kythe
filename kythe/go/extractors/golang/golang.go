@@ -37,13 +37,13 @@ package golang
 import (
 	"fmt"
 	"go/build"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"kythe.io/kythe/go/extractors/govname"
 	"kythe.io/kythe/go/platform/indexpack"
+	"kythe.io/kythe/go/platform/vfs"
 
 	"golang.org/x/net/context"
 
@@ -122,13 +122,13 @@ func (e *Extractor) fetchAndStore(ctx context.Context, path string, a *indexpack
 	if digest, ok := e.fmap[path]; ok {
 		return digest, nil
 	}
-	data, err := ioutil.ReadFile(path)
+	data, err := vfs.ReadFile(ctx, path)
 	if err != nil {
 		// If there's an alternative installation path, and this is a path that
 		// could potentially be there, try that.
 		if i := strings.Index(path, "/pkg/"); i >= 0 && e.AltInstallPath != "" {
 			alt := e.AltInstallPath + path[i:]
-			data, err = ioutil.ReadFile(alt)
+			data, err = vfs.ReadFile(ctx, alt)
 			// fall through to the recheck below
 		}
 	}

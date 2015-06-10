@@ -26,7 +26,10 @@ import (
 	"log"
 	"os"
 
+	"kythe.io/kythe/go/platform/vfs"
+
 	"github.com/golang/protobuf/proto"
+	"golang.org/x/net/context"
 
 	tspb "third_party/bazel/test_status_proto"
 )
@@ -34,7 +37,7 @@ import (
 func main() {
 	flag.Parse()
 
-	f, err := os.Open(flag.Arg(0))
+	f, err := vfs.Open(context.Background(), flag.Arg(0))
 	if err != nil {
 		log.Fatal(err)
 	}

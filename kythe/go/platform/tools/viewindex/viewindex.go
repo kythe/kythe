@@ -28,6 +28,8 @@ import (
 
 	"kythe.io/kythe/go/platform/kindex"
 	"kythe.io/kythe/go/util/flagutil"
+
+	"golang.org/x/net/context"
 )
 
 func init() {
@@ -46,7 +48,7 @@ func main() {
 	}
 
 	path := flag.Arg(0)
-	idx, err := kindex.Open(path)
+	idx, err := kindex.Open(context.Background(), path)
 	if err != nil {
 		log.Fatalf("Error reading %q: %v", path, err)
 	}

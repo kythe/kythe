@@ -38,6 +38,7 @@ go_binary(
         "kythe/kythe_display.go",
     ],
     deps = [
+        "//kythe/go/platform/vfs",
         "//kythe/go/services/filetree",
         "//kythe/go/services/search",
         "//kythe/go/services/xrefs",
@@ -61,6 +62,7 @@ go_binary(
     name = "kwazthis",
     srcs = glob(["kwazthis/*.go"]),
     deps = [
+        "//kythe/go/platform/vfs",
         "//kythe/go/services/search",
         "//kythe/go/services/xrefs",
         "//kythe/go/util/flagutil",

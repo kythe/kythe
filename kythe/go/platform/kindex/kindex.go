@@ -47,10 +47,12 @@ import (
 
 	"kythe.io/kythe/go/platform/analysis"
 	"kythe.io/kythe/go/platform/delimited"
+	"kythe.io/kythe/go/platform/vfs"
 
 	apb "kythe.io/kythe/proto/analysis_proto"
 
 	"github.com/golang/protobuf/proto"
+	"golang.org/x/net/context"
 )
 
 // Standard file extension for Kythe compilation index files.
@@ -62,10 +64,10 @@ type Compilation struct {
 	Files []*apb.FileData      `json:"files"`
 }
 
-// Open opens a kindex file at the given path (using os.Open) and reads its
-// contents into memory.
-func Open(path string) (*Compilation, error) {
-	f, err := os.Open(path)
+// Open opens a kindex file at the given path (using vfs.Open) and reads
+// its contents into memory.
+func Open(ctx context.Context, path string) (*Compilation, error) {
+	f, err := vfs.Open(ctx, path)
 	if err != nil {
 		return nil, err
 	}

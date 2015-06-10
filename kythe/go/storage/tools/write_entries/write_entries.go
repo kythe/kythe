@@ -38,6 +38,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/storage/gsutil"
 	"kythe.io/kythe/go/storage/stream"
@@ -82,7 +83,7 @@ func main() {
 	gsutil.EnsureGracefulExit(gs)
 
 	if *profCPU != "" {
-		f, err := os.Create(*profCPU)
+		f, err := vfs.Create(context.Background(), *profCPU)
 		if err != nil {
 			log.Fatal(err)
 		}

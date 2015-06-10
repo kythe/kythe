@@ -40,6 +40,7 @@ import (
 	"strconv"
 	"strings"
 
+	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/services/search"
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/util/flagutil"
@@ -182,7 +183,7 @@ func main() {
 		Location:    &xpb.Location{Ticket: fileTicket},
 		References:  true,
 		SourceText:  true,
-		DirtyBuffer: readDirtyBuffer(),
+		DirtyBuffer: readDirtyBuffer(ctx),
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -282,12 +283,12 @@ func parseAnchorSpan(anchor map[string][]byte) (start int, end int) {
 	return
 }
 
-func readDirtyBuffer() []byte {
+func readDirtyBuffer(ctx context.Context) []byte {
 	if *dirtyBuffer == "" {
 		return nil
 	}
 
-	f, err := os.Open(*dirtyBuffer)
+	f, err := vfs.Open(ctx, *dirtyBuffer)
 	if err != nil {
 		log.Fatalf("ERROR: could not open dirty buffer at %q: %v", *dirtyBuffer, err)
 	}

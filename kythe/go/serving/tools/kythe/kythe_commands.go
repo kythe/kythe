@@ -28,6 +28,7 @@ import (
 	"strconv"
 	"strings"
 
+	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/services/filetree"
 	"kythe.io/kythe/go/services/search"
 	"kythe.io/kythe/go/services/xrefs"
@@ -252,7 +253,7 @@ var (
 				References: true,
 			}
 			if dirtyFile != "" {
-				f, err := os.Open(dirtyFile)
+				f, err := vfs.Open(ctx, dirtyFile)
 				if err != nil {
 					return fmt.Errorf("error opening dirty buffer file at %q: %v", dirtyFile, err)
 				}
