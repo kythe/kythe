@@ -61,11 +61,48 @@ sh_test(
 )
 
 sh_test(
+    name = "all_tests",
+    srcs = [
+        "all_tests.sh",
+    ],
+    data = glob([
+        "basic/*",
+        "function/*",
+        "libraries/*",
+        "rec/*",
+        "template/*",
+    ]) + [
+        "one_case.sh",
+        "test_basic.sh",
+        "test_function.sh",
+        "test_libraries.sh",
+        "test_rec.sh",
+        "test_template.sh",
+        "//kythe/cxx/indexer/cxx:indexer",
+        "//kythe/cxx/verifier:verifier",
+    ],
+    tags = ["manual"],
+)
+
+sh_test(
     name = "indexer_basic",
     srcs = [
         "test_basic.sh",
     ],
     data = glob(["basic/*"]) + [
+        "one_case.sh",
+        "//kythe/cxx/indexer/cxx:indexer",
+        "//kythe/cxx/verifier:verifier",
+    ],
+)
+
+sh_test(
+    name = "indexer_function",
+    srcs = [
+        "test_function.sh",
+    ],
+    data = glob(["function/*"]) + [
+        "one_case.sh",
         "//kythe/cxx/indexer/cxx:indexer",
         "//kythe/cxx/verifier:verifier",
     ],
@@ -77,6 +114,31 @@ sh_test(
         "test_libraries.sh",
     ],
     data = glob(["libraries/*"]) + [
+        "one_case.sh",
+        "//kythe/cxx/indexer/cxx:indexer",
+        "//kythe/cxx/verifier:verifier",
+    ],
+)
+
+sh_test(
+    name = "indexer_rec",
+    srcs = [
+        "test_rec.sh",
+    ],
+    data = glob(["rec/*"]) + [
+        "one_case.sh",
+        "//kythe/cxx/indexer/cxx:indexer",
+        "//kythe/cxx/verifier:verifier",
+    ],
+)
+
+sh_test(
+    name = "indexer_template",
+    srcs = [
+        "test_template.sh",
+    ],
+    data = glob(["template/*"]) + [
+        "one_case.sh",
         "//kythe/cxx/indexer/cxx:indexer",
         "//kythe/cxx/verifier:verifier",
     ],

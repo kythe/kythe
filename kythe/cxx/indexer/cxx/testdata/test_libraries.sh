@@ -14,27 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This script runs the indexer on various test cases, piping the results
-# to the verifier. The test cases contain assertions for the verifier to
-# verify. Should every case succeed, this script returns zero.
-HAD_ERRORS=0
+. "${TEST_SRCDIR}/kythe/cxx/indexer/cxx/testdata/one_case.sh"
+
 BASE_DIR="$TEST_SRCDIR/kythe/cxx/indexer/cxx/testdata/libraries"
-VERIFIER="kythe/cxx/verifier/verifier"
-INDEXER="kythe/cxx/indexer/cxx/indexer"
-# one_case test-file clang-standard verifier-argument indexer-argument
-function one_case {
-  ${INDEXER} -i $1 $4 -- -std=$2 | ${VERIFIER} $1 $3
-  RESULTS=( ${PIPESTATUS[0]} ${PIPESTATUS[1]} )
-  if [ ${RESULTS[0]} -ne 0 ]; then
-    echo "[ FAILED INDEX: $1 ]"
-    HAD_ERRORS=1
-  elif [ ${RESULTS[1]} -ne 0 ]; then
-    echo "[ FAILED VERIFY: $1 ]"
-    HAD_ERRORS=1
-  else
-    echo "[ OK: $1 ]"
-  fi
-}
 
 # Duplicates appear to come from refs in the source file at definition macros.
 # The refs are to internal definitions (for example, in flags_ref_int64_defn,

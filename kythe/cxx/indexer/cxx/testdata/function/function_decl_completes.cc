@@ -8,4 +8,4 @@ void f();
 void f() { }
 //- FHAnchor defines FHDecl
 //- FHAnchor childof vname(_,_,_,
-//-                        "kythe/cxx/indexer/cxx/testdata/basic/void_f.h",_)
+//-                        "kythe/cxx/indexer/cxx/testdata/function/void_f.h",_)

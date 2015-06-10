@@ -2,7 +2,7 @@
 #include "rec_class_header_completes.h"
 //- HeaderAnchor defines HClassCFwd
 //- HeaderAnchor childof vname(_,_,_,
-//-     "kythe/cxx/indexer/cxx/testdata/basic/rec_class_header_completes.h",_)
+//-     "kythe/cxx/indexer/cxx/testdata/rec/rec_class_header_completes.h",_)
 //- @C defines ClassCFwd
 //- ClassCFwd named ClassCName
 //- ClassCName.node/kind name
