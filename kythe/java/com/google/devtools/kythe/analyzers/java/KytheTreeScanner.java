@@ -83,10 +83,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, Void> {
 
   public static void emitEntries(Context context, StatisticsCollector statistics,
       JavaEntrySets entrySets, SignatureGenerator signatureGenerator,
-      JCCompilationUnit compilations, Charset sourceEncoding) throws IOException {
-    FilePositions filePositions = new FilePositions(context, compilations, sourceEncoding);
+      JCCompilationUnit compilation, Charset sourceEncoding) throws IOException {
+    FilePositions filePositions = new FilePositions(context, compilation, sourceEncoding);
     new KytheTreeScanner(entrySets, statistics, signatureGenerator, filePositions, context)
-        .scan(compilations, null);
+        .scan(compilation, null);
   }
 
   @Override

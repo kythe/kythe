@@ -79,6 +79,7 @@ public abstract class JavacAnalyzer implements Serializable {
       getStatisticsCollector().incrementCounter("compilations-analyzed");
     } catch (Throwable t) {
       getStatisticsCollector().incrementCounter("analyzer-exceptions");
+      throw t;
     }
   }
 

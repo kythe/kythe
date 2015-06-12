@@ -43,7 +43,7 @@ public abstract class AbstractCompilationAnalyzer {
   }
 
   public AbstractCompilationAnalyzer(StatisticsCollector statistics) {
-    Preconditions.checkNotNull(statistics);
+    Preconditions.checkNotNull(statistics, "StatisticsCollector must be non-null");
     this.statistics = statistics;
   }
 
@@ -52,12 +52,17 @@ public abstract class AbstractCompilationAnalyzer {
    * {@link FactEmitter}.
    */
   public void analyzeRequest(AnalysisRequest req, FactEmitter emitter) throws AnalysisException {
+    Preconditions.checkNotNull(req, "AnalysisRequest must be non-null");
     Stopwatch timer = Stopwatch.createStarted();
     try {
       analyzeCompilation(
           req.getCompilation(),
           parseFileDataService(req.getFileDataService()),
           emitter);
+    } catch (Throwable t) {
+      logger.warningfmt("Uncaught exception: %s", t);
+      t.printStackTrace();
+      throw t;
     } finally {
       logger.infofmt("Analysis completed in %s", timer.stop());
     }
