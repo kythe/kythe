@@ -30,14 +30,12 @@ extractors, and tools directly supported by the Kythe team.
 
 # Dependencies
  - Java JDK >=7
- - leveldb
- - snappy
  - libncurses
  - libuuid
 
 ## Debian Jessie Install
 
-    apt-get install openjdk-7-jdk libncurses5 libssl1.0.0 libsnappy1 libleveldb1
+    apt-get install openjdk-7-jdk libncurses5 libssl1.0.0
 
 # End-to-end Java Example
 

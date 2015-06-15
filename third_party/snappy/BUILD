@@ -25,7 +25,5 @@ cc_library(
         "-Wno-implicit-fallthrough",
         "-Wno-unused-function",
     ],
-    includes = [
-        ".",
-    ],
+    includes = ["."],
 )

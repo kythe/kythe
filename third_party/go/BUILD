@@ -42,6 +42,7 @@ go_library(
         "src/github.com/jmhodges/levigo/options.go",
         "src/github.com/jmhodges/levigo/version.go",
     ],
+    cc_deps = ["//third_party/leveldb"],
     go_build = 1,
     package = "github.com/jmhodges/levigo",
 )

@@ -1,6 +1,10 @@
 URL: http://code.google.com/p/go-uuid
 License: New BSD License: http://opensource.org/licenses/BSD-3-Clause
-Local Modifications: Built using go install.
+Local Modifications: No modifications.
+
+URL: https://github.com/jmhodges/levigo
+License: MIT: http://opensource.org/licenses/MIT
+Local Modifications: Removed '-lleveldb' cgo flags.
 
 URL: https://github.com/sergi/go-diff
 License: MIT: http://opensource.org/licenses/MIT

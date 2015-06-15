@@ -38,8 +38,6 @@ Kythe relies on the following external dependencies:
 * libssl-dev
 * bison-3.0.2 (2.3 is also acceptable)
 * flex-2.5
-* libleveldb-dev (see http://kythe.io/phabricator/T39)
-* libsnappy-dev  (see http://kythe.io/phabricator/T39)
 * [docker](https://www.docker.com/) (for release images `//kythe/release/...` and `//buildtools/docker`)
 * [leiningen](http://leiningen.org/) (used to build `kythe/web/ui`)
 
@@ -54,7 +52,6 @@ apt-get update
 
 apt-get install \
     asciidoc source-highlight graphviz \
-    libleveldb-dev libsnappy-dev \
     libssl-dev uuid-dev libncurses-dev libcurl4-openssl-dev flex clang-3.5 bison \
     openjdk-8-jdk \
     golang-go gcc \

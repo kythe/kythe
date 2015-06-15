@@ -117,14 +117,11 @@ cc_library(
         "LEVELDB_PLATFORM_POSIX",
     ] + select({
         ":darwin": ["OS_MACOSX"],
-        "//conditions:default": []
+        "//conditions:default": [],
     }),
-    deps = [
-        "//third_party/snappy",
-    ],
-    includes = [
-        "include",
-    ],
+    includes = ["include"],
+    linkopts = ["-lstdc++"],
+    deps = ["//third_party/snappy"],
 )
 
 config_setting(
