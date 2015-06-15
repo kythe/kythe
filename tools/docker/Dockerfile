@@ -22,13 +22,13 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends curl ca-certificates && \
     apt-get clean
 
-echo deb http://http.debian.net/debian jessie-backports main >> /etc/apt/sources.list
+RUN echo deb http://http.debian.net/debian jessie-backports main >> /etc/apt/sources.list
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
       git pkg-config zip unzip rsync patch zsh wget net-tools less parallel locales make \
       g++ gcc openjdk-8-jdk openjdk-8-source clang-3.5 golang-go flex asciidoc source-highlight graphviz \
-      zlib1g-dev libarchive-dev libncurses-dev uuid-dev libssl-dev libleveldb-dev libsnappy-dev \
+      zlib1g-dev libarchive-dev libncurses-dev uuid-dev libssl-dev \
       ca-certificates-java libcurl4-openssl-dev && \
     apt-get clean
 
@@ -43,7 +43,7 @@ RUN wget http://archive.kernel.org/debian-archive/debian/pool/main/b/bison/bison
 RUN cd /opt && \
     git clone https://github.com/google/bazel/ && \
     cd bazel && \
-    git checkout c4fe4ff1df7e13a5fa330fe5a6aac5aaba11ebb9 && \
-    sed -i '/output\/bazel fetch/d' compile.sh && \
-    ./compile.sh && \
+    git checkout 43b2ea7274fe11f0d5c9f3363110da72c37da923 && \
+    sed -i '/Building Bazel with Bazel/iexit 0' compile.sh && \
+    ./compile.sh compile && \
     ln -s /opt/bazel/output/bazel /usr/bin/
