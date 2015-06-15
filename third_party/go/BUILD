@@ -1,6 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//tools/build_rules/go", "go_library", "go_binary")
+load("/tools/build_rules/go", "go_library", "go_binary")
 
 # TODO(schroederc): split libraries into separate BUILD files once
 #     https://github.com/google/bazel/issues/118 is fixed

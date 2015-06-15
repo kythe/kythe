@@ -1,4 +1,4 @@
-load("//tools/build_rules/kythe", "java_verifier_test")
+load("/tools/build_rules/kythe", "java_verifier_test")
 
 java_verifier_test(
     name = "annotations_tests",
