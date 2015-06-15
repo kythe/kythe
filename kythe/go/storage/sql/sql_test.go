@@ -17,161 +17,39 @@
 package sql
 
 import (
-	"fmt"
 	"io/ioutil"
-	"math/rand"
 	"os"
 	"path/filepath"
 	"testing"
 
-	"kythe.io/kythe/go/services/graphstore/compare"
-
-	"golang.org/x/net/context"
-
-	spb "kythe.io/kythe/proto/storage_proto"
+	"kythe.io/kythe/go/test/services/graphstore"
 )
 
-var ctx = context.Background()
-
 const (
-	keySize = 5
-
 	smallBatchSize  = 4
 	mediumBatchSize = 16
 	largeBatchSize  = 64
 )
 
-func tempGS() (*DB, string, error) {
+func tempGS() (graphstore.Service, graphstore.DestroyFunc, error) {
 	dir, err := ioutil.TempDir("", "sqlite3.benchmark")
 	if err != nil {
-		return nil, "", err
+		return nil, graphstore.NullDestroy, err
 	}
 	db, err := Open(SQLite3, filepath.Join(dir, "db"))
-	return db, dir, err
+	return db, func() error { return os.RemoveAll(dir) }, err
 }
 
-func batchGSWriteBenchmark(b *testing.B, batchSize int) {
-	gs, dir, err := tempGS()
-	fatalOnErr(b, "tempGS error: %v", err)
-	defer os.RemoveAll(dir)
-	defer func() {
-		fatalOnErr(b, "gs close error: %v", gs.Close(ctx))
-	}()
-
-	buf := make([]byte, keySize)
-	updates := make([]spb.WriteRequest_Update, batchSize)
-	req := &spb.WriteRequest{
-		Source: &spb.VName{},
-		Update: make([]*spb.WriteRequest_Update, batchSize),
-	}
-	for i := 0; i < b.N; i++ {
-		randVName(req.Source, buf)
-
-		for j := 0; j < batchSize; j++ {
-			randUpdate(&updates[j], buf)
-			req.Update[j] = &updates[j]
-		}
-
-		fatalOnErr(b, "write error: %v", gs.Write(ctx, req))
-	}
+func BenchmarkGSWriteSingleEntry(b *testing.B) {
+	graphstore.BatchWriteBenchmark(b, tempGS, 1)
+}
+func BenchmarkGSWriteBatchSml(b *testing.B) {
+	graphstore.BatchWriteBenchmark(b, tempGS, smallBatchSize)
+}
+func BenchmarkGSWriteBatchLrg(b *testing.B) {
+	graphstore.BatchWriteBenchmark(b, tempGS, largeBatchSize)
 }
 
-func BenchmarkGSWriteSingleEntry(b *testing.B) { batchGSWriteBenchmark(b, 1) }
-func BenchmarkGSWriteBatchSml(b *testing.B)    { batchGSWriteBenchmark(b, smallBatchSize) }
-func BenchmarkGSWriteBatchLrg(b *testing.B)    { batchGSWriteBenchmark(b, largeBatchSize) }
-
-func TestGraphStoreOrder(t *testing.T) {
-	gs, dir, err := tempGS()
-	fatalOnErrT(t, "tempGS error: %v", err)
-	defer os.RemoveAll(dir)
-	defer func() {
-		fatalOnErrT(t, "gs close error: %v", gs.Close(ctx))
-	}()
-
-	batchSize := smallBatchSize
-	buf := make([]byte, keySize)
-	updates := make([]spb.WriteRequest_Update, batchSize)
-	req := &spb.WriteRequest{
-		Source: &spb.VName{},
-		Update: make([]*spb.WriteRequest_Update, batchSize),
-	}
-	for i := 0; i < 10240; i++ {
-		randVName(req.Source, buf)
-
-		for j := 0; j < batchSize; j++ {
-			randUpdate(&updates[j], buf)
-			req.Update[j] = &updates[j]
-		}
-
-		fatalOnErrT(t, "write error: %v", gs.Write(ctx, req))
-	}
-
-	var lastEntry *spb.Entry
-	fatalOnErrT(t, "entryLess error: %v",
-		gs.Scan(ctx, new(spb.ScanRequest), func(entry *spb.Entry) error {
-			if compare.Entries(lastEntry, entry) != compare.LT {
-				return fmt.Errorf("expected {%v} < {%v}", lastEntry, entry)
-			}
-			return nil
-		}))
-}
-
-func fatalOnErr(b *testing.B, msg string, err error, args ...interface{}) {
-	if err != nil {
-		b.Fatalf(msg, append([]interface{}{err}, args...)...)
-	}
-}
-
-func fatalOnErrT(t *testing.T, msg string, err error, args ...interface{}) {
-	if err != nil {
-		t.Fatalf(msg, append([]interface{}{err}, args...)...)
-	}
-}
-
-var factValue = []byte("factValue")
-
-func randUpdate(u *spb.WriteRequest_Update, buf []byte) {
-	u.Target = &spb.VName{}
-	randVName(u.GetTarget(), buf)
-	u.EdgeKind = randStr(buf[:2])
-	u.FactName = randStr(buf)
-	u.FactValue = factValue
-}
-
-func randEntry(entry *spb.Entry, buf []byte) {
-	randVName(entry.GetSource(), buf)
-	entry.FactName = randStr(buf)
-	entry.FactValue = factValue
-}
-
-func randVName(v *spb.VName, buf []byte) {
-	v.Signature = randStr(buf)
-	v.Corpus = randStr(buf)
-	v.Root = randStr(buf)
-	v.Path = randStr(buf)
-	v.Language = randStr(buf)
-}
-
-func randStr(buf []byte) string {
-	const chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-	randBytes(buf)
-	for i, b := range buf {
-		buf[i] = chars[b%byte(len(chars))]
-	}
-	return string(buf)
-}
-
-func randBytes(bytes []byte) {
-	i := len(bytes) - 1
-	for {
-		n := rand.Int63()
-		for j := 0; j < 8; j++ {
-			bytes[i] = byte(n)
-			i--
-			if i == -1 {
-				return
-			}
-			n >>= 8
-		}
-	}
+func TestOrder(t *testing.T) {
+	graphstore.OrderTest(t, tempGS, largeBatchSize)
 }

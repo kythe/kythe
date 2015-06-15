@@ -4,8 +4,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 go_package(
     test_deps = [
-        "//kythe/go/services/graphstore/compare",
-        "//kythe/proto:storage_proto_go",
+        "//kythe/go/test/services/graphstore",
     ],
     deps = [
         "//kythe/go/services/graphstore",

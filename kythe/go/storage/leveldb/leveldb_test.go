@@ -19,223 +19,66 @@ package leveldb
 import (
 	"fmt"
 	"io/ioutil"
-	"math/rand"
 	"os"
 	"testing"
 
-	"kythe.io/kythe/go/services/graphstore"
-	"kythe.io/kythe/go/services/graphstore/compare"
-	"kythe.io/kythe/go/storage/keyvalue"
-
-	"golang.org/x/net/context"
-
-	spb "kythe.io/kythe/proto/storage_proto"
+	"kythe.io/kythe/go/test/services/graphstore"
+	"kythe.io/kythe/go/test/storage/keyvalue"
 )
 
-var ctx = context.Background()
-
 const (
-	keySize = 16
-	valSize = 32
-
 	smallBatchSize  = 4
 	mediumBatchSize = 16
 	largeBatchSize  = 64
 )
 
-func tempDB() (keyvalue.DB, string, error) {
+func tempDB() (keyvalue.DB, keyvalue.DestroyFunc, error) {
 	path, err := ioutil.TempDir(os.TempDir(), "levelDB.benchmark")
 	if err != nil {
-		return nil, path, err
+		return nil, keyvalue.NullDestroy, err
 	}
 	db, err := Open(path, nil)
-	return db, path, err
+	return db, func() error { return os.RemoveAll(path) }, err
 }
 
-func batchWriteBenchmark(b *testing.B, batchSize int) {
-	db, dir, err := tempDB()
-	fatalOnErr(b, "tempDB error: %v", err)
-	defer os.RemoveAll(dir)
-	defer func() {
-		fatalOnErr(b, "db close error: %v", db.Close())
-	}()
-
-	keyBuf := make([]byte, keySize)
-	valBuf := make([]byte, valSize)
-	for i := 0; i < b.N; i++ {
-		wr, err := db.Writer()
-		fatalOnErr(b, "writer error: %v", err)
-		for j := 0; j < batchSize; j++ {
-			randBytes(keyBuf)
-			randBytes(valBuf)
-			fatalOnErr(b, "write error: %v", wr.Write(keyBuf, valBuf))
-		}
-		fatalOnErr(b, "writer close error: %v", wr.Close())
-	}
-}
-
-func batchWriteParallelBenchmark(b *testing.B, batchSize int) {
-	db, dir, err := tempDB()
-	fatalOnErr(b, "tempDB error: %v", err)
-	defer os.RemoveAll(dir)
-	defer func() {
-		fatalOnErr(b, "db close error: %v", db.Close())
-	}()
-
-	b.RunParallel(func(pb *testing.PB) {
-		keyBuf := make([]byte, keySize)
-		valBuf := make([]byte, valSize)
-		for pb.Next() {
-			wr, err := db.Writer()
-			fatalOnErr(b, "writer error: %v", err)
-			for j := 0; j < batchSize; j++ {
-				randBytes(keyBuf)
-				randBytes(valBuf)
-				fatalOnErr(b, "write error: %v", wr.Write(keyBuf, valBuf))
-			}
-			fatalOnErr(b, "writer close error: %v", wr.Close())
-		}
-	})
-}
-
-func BenchmarkWriteSingle(b *testing.B)   { batchWriteBenchmark(b, 1) }
-func BenchmarkWriteBatchSml(b *testing.B) { batchWriteBenchmark(b, smallBatchSize) }
-func BenchmarkWriteBatchMed(b *testing.B) { batchWriteBenchmark(b, mediumBatchSize) }
-func BenchmarkWriteBatchLrg(b *testing.B) { batchWriteBenchmark(b, largeBatchSize) }
-
-func BenchmarkWriteParallelSingle(b *testing.B)   { batchWriteParallelBenchmark(b, 1) }
-func BenchmarkWriteParallelBatchLrg(b *testing.B) { batchWriteParallelBenchmark(b, largeBatchSize) }
-
-func tempGS() (graphstore.Service, string, error) {
-	db, path, err := tempDB()
+func tempGS() (graphstore.Service, graphstore.DestroyFunc, error) {
+	db, destroy, err := tempDB()
 	if err != nil {
-		return nil, "", fmt.Errorf("error creating temporary DB: %v", err)
+		return nil, graphstore.DestroyFunc(destroy), fmt.Errorf("error creating temporary DB: %v", err)
 	}
-	return keyvalue.NewGraphStore(db), path, err
+	return keyvalue.NewGraphStore(db), graphstore.DestroyFunc(destroy), err
 }
 
-func batchGSWriteBenchmark(b *testing.B, batchSize int) {
-	gs, dir, err := tempGS()
-	fatalOnErr(b, "tempGS error: %v", err)
-	defer os.RemoveAll(dir)
-	defer func() {
-		fatalOnErr(b, "gs close error: %v", gs.Close(ctx))
-	}()
+func destroy(i interface{}) error { return os.RemoveAll(i.(string)) }
 
-	buf := make([]byte, keySize)
-	updates := make([]spb.WriteRequest_Update, batchSize)
-	req := &spb.WriteRequest{
-		Source: &spb.VName{},
-		Update: make([]*spb.WriteRequest_Update, batchSize),
-	}
-	for i := 0; i < b.N; i++ {
-		randVName(req.Source, buf)
-
-		for j := 0; j < batchSize; j++ {
-			randUpdate(&updates[j], buf)
-			req.Update[j] = &updates[j]
-		}
-
-		fatalOnErr(b, "write error: %v", gs.Write(ctx, req))
-	}
+func BenchmarkWriteSingle(b *testing.B) { keyvalue.BatchWriteBenchmark(b, tempDB, 1) }
+func BenchmarkWriteBatchSml(b *testing.B) {
+	keyvalue.BatchWriteBenchmark(b, tempDB, smallBatchSize)
+}
+func BenchmarkWriteBatchMed(b *testing.B) {
+	keyvalue.BatchWriteBenchmark(b, tempDB, mediumBatchSize)
+}
+func BenchmarkWriteBatchLrg(b *testing.B) {
+	keyvalue.BatchWriteBenchmark(b, tempDB, largeBatchSize)
 }
 
-func BenchmarkGSWriteSingleEntry(b *testing.B) { batchGSWriteBenchmark(b, 1) }
-func BenchmarkGSWriteBatchSml(b *testing.B)    { batchGSWriteBenchmark(b, smallBatchSize) }
-func BenchmarkGSWriteBatchLrg(b *testing.B)    { batchGSWriteBenchmark(b, largeBatchSize) }
-
-func TestGraphStoreOrder(t *testing.T) {
-	gs, dir, err := tempGS()
-	fatalOnErrT(t, "tempGS error: %v", err)
-	defer os.RemoveAll(dir)
-	defer func() {
-		fatalOnErrT(t, "gs close error: %v", gs.Close(ctx))
-	}()
-
-	batchSize := largeBatchSize
-	buf := make([]byte, keySize)
-	updates := make([]spb.WriteRequest_Update, batchSize)
-	req := &spb.WriteRequest{
-		Source: &spb.VName{},
-		Update: make([]*spb.WriteRequest_Update, batchSize),
-	}
-	for i := 0; i < 1024; i++ {
-		randVName(req.Source, buf)
-
-		for j := 0; j < batchSize; j++ {
-			randUpdate(&updates[j], buf)
-			req.Update[j] = &updates[j]
-		}
-
-		fatalOnErrT(t, "write error: %v", gs.Write(ctx, req))
-	}
-
-	var lastEntry *spb.Entry
-	fatalOnErrT(t, "entryLess error: %v",
-		gs.Scan(ctx, new(spb.ScanRequest), func(entry *spb.Entry) error {
-			if compare.Entries(lastEntry, entry) != compare.LT {
-				return fmt.Errorf("expected {%v} < {%v}", lastEntry, entry)
-			}
-			return nil
-		}))
+func BenchmarkWriteParallelSingle(b *testing.B) {
+	keyvalue.BatchWriteParallelBenchmark(b, tempDB, 1)
+}
+func BenchmarkWriteParallelBatchLrg(b *testing.B) {
+	keyvalue.BatchWriteParallelBenchmark(b, tempDB, largeBatchSize)
 }
 
-func fatalOnErr(b *testing.B, msg string, err error, args ...interface{}) {
-	if err != nil {
-		b.Fatalf(msg, append([]interface{}{err}, args...)...)
-	}
+func BenchmarkGSWriteSingleEntry(b *testing.B) {
+	graphstore.BatchWriteBenchmark(b, tempGS, 1)
+}
+func BenchmarkGSWriteBatchSml(b *testing.B) {
+	graphstore.BatchWriteBenchmark(b, tempGS, smallBatchSize)
+}
+func BenchmarkGSWriteBatchLrg(b *testing.B) {
+	graphstore.BatchWriteBenchmark(b, tempGS, largeBatchSize)
 }
 
-func fatalOnErrT(t *testing.T, msg string, err error, args ...interface{}) {
-	if err != nil {
-		t.Fatalf(msg, append([]interface{}{err}, args...)...)
-	}
-}
-
-var factValue = []byte("factValue")
-
-func randUpdate(u *spb.WriteRequest_Update, buf []byte) {
-	u.Target = &spb.VName{}
-	randVName(u.GetTarget(), buf)
-	u.EdgeKind = randStr(buf[:2])
-	u.FactName = randStr(buf)
-	u.FactValue = factValue
-}
-
-func randEntry(entry *spb.Entry, buf []byte) {
-	randVName(entry.GetSource(), buf)
-	entry.FactName = randStr(buf)
-	entry.FactValue = factValue
-}
-
-func randVName(v *spb.VName, buf []byte) {
-	v.Signature = randStr(buf)
-	v.Corpus = randStr(buf)
-	v.Root = randStr(buf)
-	v.Path = randStr(buf)
-	v.Language = randStr(buf)
-}
-
-func randStr(buf []byte) string {
-	const chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-	randBytes(buf)
-	for i, b := range buf {
-		buf[i] = chars[b%byte(len(chars))]
-	}
-	return string(buf)
-}
-
-func randBytes(bytes []byte) {
-	i := len(bytes) - 1
-	for {
-		n := rand.Int63()
-		for j := 0; j < 8; j++ {
-			bytes[i] = byte(n)
-			i--
-			if i == -1 {
-				return
-			}
-			n >>= 8
-		}
-	}
+func TestOrder(t *testing.T) {
+	graphstore.OrderTest(t, tempGS, largeBatchSize)
 }
