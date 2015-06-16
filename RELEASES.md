@@ -2,7 +2,10 @@
 
 ## Upcoming version
 
-Nothing yet.
+Notable changes:
+ - Go binaries no longer require shared libraries for libsnappy or libleveldb
+ - kythe tool: --log_requests global flag
+ - Java indexer: --print_statistics flag
 
 ## v0.0.2
 

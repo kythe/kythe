@@ -98,7 +98,9 @@ var (
 			}
 
 			if len(flag.Args()) == 0 {
-				cr, err := ft.CorpusRoots(ctx, &ftpb.CorpusRootsRequest{})
+				req := &ftpb.CorpusRootsRequest{}
+				logRequest(req)
+				cr, err := ft.CorpusRoots(ctx, req)
 				if err != nil {
 					return err
 				}
@@ -119,11 +121,13 @@ var (
 				os.Exit(1)
 			}
 			path = filepath.Join("/", path)
-			dir, err := ft.Directory(ctx, &ftpb.DirectoryRequest{
+			req := &ftpb.DirectoryRequest{
 				Corpus: corpus,
 				Root:   root,
 				Path:   path,
-			})
+			}
+			logRequest(req)
+			dir, err := ft.Directory(ctx, req)
 			if err != nil {
 				return err
 			} else if dir == nil {
@@ -157,6 +161,7 @@ var (
 			if edgeKinds != "" {
 				req.Kind = strings.Split(edgeKinds, ",")
 			}
+			logRequest(req)
 			reply, err := xs.Edges(ctx, req)
 			if err != nil {
 				return err
@@ -187,6 +192,7 @@ var (
 			if nodeFilters != "" {
 				req.Filter = strings.Split(nodeFilters, ",")
 			}
+			logRequest(req)
 			reply, err := xs.Nodes(ctx, req)
 			if err != nil {
 				return err
@@ -217,6 +223,7 @@ var (
 				req.Location.End = end
 			}
 
+			logRequest(req)
 			reply, err := xs.Decorations(ctx, req)
 			if err != nil {
 				return err
@@ -279,6 +286,7 @@ var (
 				req.SourceText = true // TODO(schroederc): remove need for this
 			}
 
+			logRequest(req)
 			reply, err := xs.Decorations(ctx, req)
 			if err != nil {
 				return err
@@ -290,10 +298,12 @@ var (
 				// we require a separate Nodes call.
 				// TODO(schroederc): add Locations for each DecorationsReply_Reference
 
-				fileNodeReply, err := xs.Nodes(ctx, &xpb.NodesRequest{
+				nodesReq := &xpb.NodesRequest{
 					Ticket: []string{req.Location.Ticket},
 					Filter: []string{schema.TextFact, schema.TextEncodingFact},
-				})
+				}
+				logRequest(nodesReq)
+				fileNodeReply, err := xs.Nodes(ctx, nodesReq)
 				if err != nil {
 					return err
 				}
@@ -359,6 +369,7 @@ var (
 				})
 			}
 
+			logRequest(req)
 			reply, err := idx.Search(ctx, req)
 			if err != nil {
 				return err

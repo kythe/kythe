@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -36,9 +37,28 @@ import (
 )
 
 var (
+	logRequests = flag.Bool("log_requests", false, "Log all requests to stderr as JSON")
 	displayJSON = flag.Bool("json", false, "Display results as JSON")
 	out         = os.Stdout
 )
+
+func logRequest(req interface{}) {
+	if *logRequests {
+		str, err := json.MarshalIndent(req, "", "  ")
+		if err != nil {
+			log.Fatalf("Failed to encode request for logging %v: %v", req, err)
+		}
+		log.Printf("%s: %s", baseTypeName(req), string(str))
+	}
+}
+
+func baseTypeName(x interface{}) string {
+	ss := strings.SplitN(fmt.Sprintf("%T", x), ".", 2)
+	if len(ss) == 2 {
+		return ss[1]
+	}
+	return ss[0]
+}
 
 func displayCorpusRoots(cr *ftpb.CorpusRootsReply) error {
 	if *displayJSON {
