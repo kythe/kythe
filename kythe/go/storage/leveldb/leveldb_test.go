@@ -33,7 +33,7 @@ const (
 )
 
 func tempDB() (keyvalue.DB, keyvalue.DestroyFunc, error) {
-	path, err := ioutil.TempDir(os.TempDir(), "levelDB.benchmark")
+	path, err := ioutil.TempDir("", "levelDB.benchmark")
 	if err != nil {
 		return nil, keyvalue.NullDestroy, err
 	}
