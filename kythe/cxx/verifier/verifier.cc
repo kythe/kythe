@@ -55,8 +55,10 @@ static std::string *kStandardIn = new std::string("-");
 // look at deferring to a pre-existing system.
 class Solver {
  public:
+  using Inspection = AssertionParser::Inspection;
+
   Solver(Verifier *context, Database &database,
-         std::function<bool(Verifier *, const std::string &, EVar *)> &inspect)
+         std::function<bool(Verifier *, const Inspection &)> &inspect)
       : context_(*context), database_(database), inspect_(inspect) {}
 
   ThunkRet UnifyTuple(Tuple *st, Tuple *tt, size_t ofs, size_t max,
@@ -196,7 +198,7 @@ class Solver {
 
   bool PerformInspection() {
     for (const auto &inspection : context_.parser()->inspections()) {
-      if (!inspect_(&context_, inspection.first, inspection.second)) {
+      if (!inspect_(&context_, inspection)) {
         return false;
       }
     }
@@ -244,7 +246,7 @@ class Solver {
  private:
   Verifier &context_;
   Database &database_;
-  std::function<bool(Verifier *, const std::string &, EVar *)> &inspect_;
+  std::function<bool(Verifier *, const Inspection &)> &inspect_;
   size_t highest_group_reached_ = 0;
   size_t highest_goal_reached_ = 0;
 };
@@ -291,6 +293,11 @@ bool Verifier::LoadInlineRuleFile(const std::string &filename) {
 }
 
 void Verifier::IgnoreDuplicateFacts() { ignore_dups_ = true; }
+
+void Verifier::SaveEVarAssignments() {
+  saving_assignments_ = true;
+  parser_.InspectAllEVars();
+}
 
 void Verifier::ShowGoals() {
   FileHandlePrettyPrinter printer(stdout);
@@ -408,7 +415,7 @@ void Verifier::DumpErrorGoal(size_t group, size_t index) {
 }
 
 bool Verifier::VerifyAllGoals(
-    std::function<bool(Verifier *, const std::string &, EVar *)> inspect) {
+    std::function<bool(Verifier *, const Solver::Inspection &)> inspect) {
   if (!PrepareDatabase()) {
     return false;
   }
@@ -420,15 +427,20 @@ bool Verifier::VerifyAllGoals(
 }
 
 bool Verifier::VerifyAllGoals() {
-  return VerifyAllGoals(
-      [this](Verifier *context, const std::string &tag, EVar *evar) {
-        FileHandlePrettyPrinter printer(stdout);
-        printer.Print(tag);
-        printer.Print(": ");
-        evar->Dump(symbol_table_, &printer);
-        printer.Print("\n");
-        return true;
-      });
+  return VerifyAllGoals([this](Verifier *context,
+                               const Solver::Inspection &inspection) {
+    if (inspection.kind == Solver::Inspection::Kind::EXPLICIT) {
+      FileHandlePrettyPrinter printer(saving_assignments_ ? stderr : stdout);
+      printer.Print(inspection.label);
+      printer.Print(": ");
+      inspection.evar->Dump(symbol_table_, &printer);
+      printer.Print("\n");
+    }
+    if (inspection.evar->current()) {
+      saved_assignments_[inspection.label] = inspection.evar->current();
+    }
+    return true;
+  });
 }
 
 Identifier *Verifier::IdentifierFor(const yy::location &location,
@@ -752,34 +764,34 @@ void Verifier::DumpAsJson() {
   FileHandlePrettyPrinter printer(stdout);
   QuoteEscapingPrettyPrinter escaping_printer(printer);
   FileHandlePrettyPrinter dprinter(stderr);
-  auto DumpAsJson =
-      [this, &printer, &escaping_printer](const char *label, AstNode *node) {
-        printer.Print(label);
-        if (node == empty_string_id()) {
-          // Canonicalize "" as null in the JSON output.
-          printer.Print("null");
-        } else {
-          printer.Print("\"");
-          node->Dump(symbol_table_, &escaping_printer);
-          printer.Print("\"");
-        }
-      };
-  auto DumpVName =
-      [this, &printer, &DumpAsJson](const char *label, AstNode *node) {
-        printer.Print(label);
-        if (node == empty_string_id()) {
-          printer.Print("null");
-        } else {
-          Tuple *vname = node->AsApp()->rhs()->AsTuple();
-          printer.Print("{");
-          DumpAsJson("\"signature\":", vname->element(0));
-          DumpAsJson(",\"corpus\":", vname->element(1));
-          DumpAsJson(",\"root\":", vname->element(2));
-          DumpAsJson(",\"path\":", vname->element(3));
-          DumpAsJson(",\"language\":", vname->element(4));
-          printer.Print("}");
-        }
-      };
+  auto DumpAsJson = [this, &printer, &escaping_printer](const char *label,
+                                                        AstNode *node) {
+    printer.Print(label);
+    if (node == empty_string_id()) {
+      // Canonicalize "" as null in the JSON output.
+      printer.Print("null");
+    } else {
+      printer.Print("\"");
+      node->Dump(symbol_table_, &escaping_printer);
+      printer.Print("\"");
+    }
+  };
+  auto DumpVName = [this, &printer, &DumpAsJson](const char *label,
+                                                 AstNode *node) {
+    printer.Print(label);
+    if (node == empty_string_id()) {
+      printer.Print("null");
+    } else {
+      Tuple *vname = node->AsApp()->rhs()->AsTuple();
+      printer.Print("{");
+      DumpAsJson("\"signature\":", vname->element(0));
+      DumpAsJson(",\"corpus\":", vname->element(1));
+      DumpAsJson(",\"root\":", vname->element(2));
+      DumpAsJson(",\"path\":", vname->element(3));
+      DumpAsJson(",\"language\":", vname->element(4));
+      printer.Print("}");
+    }
+  };
   printer.Print("[");
   for (size_t i = 0; i < facts_.size(); ++i) {
     AstNode *fact = facts_[i];
@@ -799,6 +811,39 @@ void Verifier::DumpAsDot() {
   if (!PrepareDatabase()) {
     return;
   }
+  std::map<std::string, std::string> vname_labels;
+  for (const auto &label_vname : saved_assignments_) {
+    if (!label_vname.second) {
+      continue;
+    }
+    if (App *a = label_vname.second->AsApp()) {
+      if (Tuple *t = a->rhs()->AsTuple()) {
+        StringPrettyPrinter printer;
+        QuoteEscapingPrettyPrinter quote_printer(printer);
+        label_vname.second->Dump(symbol_table_, &printer);
+        auto old_label = vname_labels.find(printer.str());
+        if (old_label == vname_labels.end()) {
+          vname_labels[printer.str()] = label_vname.first;
+        } else {
+          old_label->second += ", " + label_vname.first;
+        }
+      }
+    }
+  }
+  auto GetLabel = [&](AstNode *node) {
+    if (!node) {
+      return std::string();
+    }
+    StringPrettyPrinter id_string;
+    QuoteEscapingPrettyPrinter id_quote(id_string);
+    node->Dump(symbol_table_, &id_string);
+    const auto &label = vname_labels.find(id_string.str());
+    if (label != vname_labels.end()) {
+      return label->second;
+    } else {
+      return std::string();
+    }
+  };
   AstNode *kind_id = IdentifierFor(builtin_location_, "/kythe/node/kind");
   AstNode *anchor_id = IdentifierFor(builtin_location_, "anchor");
   AstNode *file_id = IdentifierFor(builtin_location_, "file");
@@ -816,6 +861,7 @@ void Verifier::DumpAsDot() {
     t->element(0)->Dump(symbol_table_, &quote_printer);
     printer.Print("\"");
     if (t->element(1) == empty_string_id()) {
+      std::string label = GetLabel(t->element(0));
       // Node. We sorted these above st all the facts should come subsequent.
       // Figure out if the node is an anchor.
       bool is_anchor_node = false;
@@ -839,13 +885,22 @@ void Verifier::DumpAsDot() {
         }
       }
       if (is_anchor_node) {
-        printer.Print(" [ shape=circle, label=\"@\" ];\n");
+        printer.Print(" [ shape=circle, label=\"@");
+        printer.Print(label);
+        if (!label.empty()) {
+          printer.Print("\", color=\"blue");
+        }
+        printer.Print("\" ];\n");
       } else {
         printer.Print(" [ label=<<TABLE>");
         printer.Print("<TR><TD COLSPAN=\"2\">");
         Tuple *nt = facts_[first_fact]->AsApp()->rhs()->AsTuple();
         // Since all of our facts are well-formed, we know this is a vname.
         nt->element(0)->AsApp()->rhs()->Dump(symbol_table_, &html_printer);
+        if (!label.empty()) {
+          html_printer.Print(" = ");
+          html_printer.Print(label);
+        }
         printer.Print("</TD></TR>");
         for (i = first_fact; i < last_fact; ++i) {
           Tuple *nt = facts_[i]->AsApp()->rhs()->AsTuple();
@@ -860,7 +915,11 @@ void Verifier::DumpAsDot() {
           }
           printer.Print("</TD></TR>");
         }
-        printer.Print("</TABLE>> shape=plaintext ];\n");
+        printer.Print("</TABLE>> shape=plaintext ");
+        if (!label.empty()) {
+          printer.Print(" color=blue ");
+        }
+        printer.Print("];\n");
       }
       --i;  // Don't skip the fact following the block.
     } else {

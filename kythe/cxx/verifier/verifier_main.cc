@@ -33,6 +33,7 @@ DEFINE_bool(show_protos, false, "Show protocol buffers read from standard in");
 DEFINE_bool(show_goals, false, "Show goals after parsing");
 DEFINE_bool(ignore_dups, false, "Ignore duplicate facts during verification");
 DEFINE_bool(graphviz, false, "Only dump facts as a GraphViz-compatible graph");
+DEFINE_bool(annotated_graphviz, false, "Solve and annotate a GraphViz graph.");
 
 int main(int argc, char **argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -52,6 +53,10 @@ Example:
 
   if (FLAGS_ignore_dups) {
     v.IgnoreDuplicateFacts();
+  }
+
+  if (FLAGS_annotated_graphviz) {
+    v.SaveEVarAssignments();
   }
 
   if (!FLAGS_graphviz) {
@@ -94,16 +99,18 @@ Example:
     v.ShowGoals();
   }
 
-  if (FLAGS_graphviz) {
-    v.DumpAsDot();
-  }
+  int result = 0;
 
   if (!v.VerifyAllGoals()) {
     fprintf(stderr,
             "Could not verify all goals. The furthest we reached was:\n  ");
     v.DumpErrorGoal(v.highest_group_reached(), v.highest_goal_reached());
-    return 1;
+    result = 1;
   }
 
-  return 0;
+  if (FLAGS_graphviz || FLAGS_annotated_graphviz) {
+    v.DumpAsDot();
+  }
+
+  return result;
 }

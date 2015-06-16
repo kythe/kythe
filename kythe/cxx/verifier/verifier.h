@@ -51,6 +51,9 @@ class Verifier {
   /// \brief During verification, ignore duplicate facts.
   void IgnoreDuplicateFacts();
 
+  /// \brief Save results of verification keyed by inspection label.
+  void SaveEVarAssignments();
+
   /// \brief Dump all goals to standard out.
   void ShowGoals();
 
@@ -70,8 +73,9 @@ class Verifier {
   /// \brief Attempts to satisfy all goals from all loaded rule files and facts.
   /// \param inspect function to call on any inspection request
   /// \return true if all goals could be satisfied.
-  bool VerifyAllGoals(std::function<bool(Verifier *context, const std::string &,
-                                         EVar *)> inspect);
+  bool VerifyAllGoals(
+      std::function<bool(Verifier *context,
+                         const AssertionParser::Inspection &)> inspect);
 
   /// \brief Attempts to satisfy all goals from all loaded rule files and facts.
   /// \return true if all goals could be satisfied.
@@ -206,6 +210,16 @@ class Verifier {
   /// The highest goal reached during solving (often the culprit for why
   /// the solution failed).
   size_t highest_goal_reached_ = 0;
+
+  /// Whether we save assignments to EVars (by inspection label).
+  bool saving_assignments_ = false;
+
+  /// A map from inspection label to saved assignment. Note that
+  /// duplicate labels will overwrite one another. This means that
+  /// it's important to disambiguate cases where this is likely
+  /// (e.g., we add line and column information to labels we generate
+  /// for anchors).
+  std::map<std::string, AstNode *> saved_assignments_;
 };
 
 }  // namespace verifier

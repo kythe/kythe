@@ -82,10 +82,21 @@ class AssertionParser {
   /// \brief All of the goal groups in this `AssertionParser`.
   std::vector<GoalGroup> &groups() { return groups_; }
 
+  /// An EVar whose assignment is interesting to display.
+  struct Inspection {
+    enum class Kind {
+      EXPLICIT,  ///< The user requested this inspection (with "?").
+      IMPLICIT   ///< This inspection was added by default.
+    };
+    std::string label;  ///< A label for user reference.
+    EVar *evar;         ///< The EVar to inspect.
+    Kind kind;          ///< Whether this inspection was added by default.
+    Inspection(const std::string &label, EVar *evar, Kind kind)
+        : label(label), evar(evar), kind(kind) {}
+  };
+
   /// \brief All of the inspections in this `AssertionParser`.
-  std::vector<std::pair<std::string, EVar *>> &inspections() {
-    return inspections_;
-  }
+  std::vector<Inspection> &inspections() { return inspections_; }
 
   /// \brief Unescapes a string literal (which is expected to include
   /// terminating quotes).
@@ -93,6 +104,9 @@ class AssertionParser {
   /// \param out pointer to a string to overwrite with `yytext` unescaped.
   /// \return true if `yytext` was a valid literal string; false otherwise.
   static bool Unescape(const char *yytext, std::string *out);
+
+  /// Should every EVar be added by default to the inspection list?
+  void InspectAllEVars() { default_inspect_ = true; }
 
  private:
   friend class yy::AssertionParserImpl;
@@ -285,7 +299,7 @@ class AssertionParser {
   yy::location last_eof_;
   size_t last_eof_ofs_;
   /// Inspections to be performed after the verifier stops.
-  std::vector<std::pair<std::string, EVar *>> inspections_;
+  std::vector<Inspection> inspections_;
   /// Context mapping symbols to AST nodes.
   std::unordered_map<Symbol, Identifier *> identifier_context_;
   std::unordered_map<Symbol, EVar *> evar_context_;
@@ -293,6 +307,8 @@ class AssertionParser {
   bool trace_lex_;
   /// Are we dumping parser trace information?
   bool trace_parse_;
+  /// Should we inspect every user-provided EVar?
+  bool default_inspect_ = false;
 };
 
 }  // namespace verifier

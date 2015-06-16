@@ -201,7 +201,7 @@ AstNode *AssertionParser::CreateInspect(const yy::location &location,
                                         const std::string &inspect_id,
                                         AstNode *to_inspect) {
   if (EVar *evar = to_inspect->AsEVar()) {
-    inspections_.emplace_back(inspect_id, evar);
+    inspections_.emplace_back(inspect_id, evar, Inspection::Kind::EXPLICIT);
     return to_inspect;
   } else {
     Error(location, "Inspecting something that's not an EVar.");
@@ -242,6 +242,10 @@ EVar *AssertionParser::CreateEVar(const yy::location &location,
   if (old_binding == evar_context_.end()) {
     EVar *new_evar = new (verifier_.arena()) EVar(location);
     evar_context_.emplace(symbol, new_evar);
+    if (default_inspect_) {
+      inspections_.emplace_back(for_token, new_evar,
+                                Inspection::Kind::IMPLICIT);
+    }
     return new_evar;
   } else {
     return old_binding->second;
@@ -321,6 +325,12 @@ bool AssertionParser::ResolveLocations(const yy::location &end_of_line,
             location, std::to_string(line_start + col + token.size())));
         break;
       case UnresolvedLocation::Kind::kAnchor:
+        if (default_inspect_) {
+          inspections_.emplace_back(token + ":" +
+                                        std::to_string(location.begin.line) +
+                                        "." + std::to_string(col),
+                                    evar, Inspection::Kind::IMPLICIT);
+        }
         AppendGoal(
             group_id,
             verifier_.MakePredicate(
