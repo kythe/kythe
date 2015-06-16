@@ -372,31 +372,36 @@ void IndexerASTVisitor::MaybeRecordDefinitionRange(
   }
 }
 
-bool IndexerASTVisitor::TraverseFunctionDecl(clang::FunctionDecl *FD) {
-  if (unsigned BuiltinID = FD->getBuiltinID()) {
-    if (!Observer.getPreprocessor()->getBuiltinInfo().isPredefinedLibFunction(
-            BuiltinID)) {
-      // These builtins act weirdly (by, e.g., defining themselves inside the
-      // macro context where they first appeared, but then also in the global
-      // namespace). Don't traverse them.
-      return true;
+bool IndexerASTVisitor::TraverseDecl(clang::Decl *Decl) {
+  // For clang::FunctionDecl and all subclasses thereof push blame data.
+  if (auto* FD = dyn_cast_or_null<clang::FunctionDecl>(Decl)) {
+    if (unsigned BuiltinID = FD->getBuiltinID()) {
+      if (!Observer.getPreprocessor()->getBuiltinInfo().isPredefinedLibFunction(
+              BuiltinID)) {
+        // These builtins act weirdly (by, e.g., defining themselves inside the
+        // macro context where they first appeared, but then also in the global
+        // namespace). Don't traverse them.
+        return true;
+      }
     }
+    // Blame calls on actual functions, not on callables. This keeps us from
+    // blurring together calls from different functions that happen to alias
+    // the same callable.
+    auto R = RestoreStack(BlameStack);
+    auto S = RestoreStack(RangeContext);
+    if (FD->isTemplateInstantiation() &&
+        FD->getTemplateSpecializationKind() !=
+            clang::TSK_ExplicitSpecialization) {
+      // Explicit specializations have ranges.
+      RangeContext.push_back(BuildNodeIdForDecl(FD));
+    }
+    BlameStack.push_back(BuildNodeIdForDecl(FD));
+
+    // Dispatch the remaining logic to the base class TraverseDecl() which will
+    // call TraverseX(X*) for the most-derived X.
+    return RecursiveASTVisitor::TraverseDecl(Decl);
   }
-  // Blame calls on actual functions, not on callables. This keeps us from
-  // blurring together calls from different functions that happen to alias
-  // the same callable.
-  auto R = RestoreStack(BlameStack);
-  auto S = RestoreStack(RangeContext);
-  if (FD->isTemplateInstantiation() &&
-      FD->getTemplateSpecializationKind() !=
-          clang::TSK_ExplicitSpecialization) {
-    // Explicit specializations have ranges.
-    RangeContext.push_back(BuildNodeIdForDecl(FD));
-  }
-  BlameStack.push_back(BuildNodeIdForDecl(FD));
-  bool Result =
-      clang::RecursiveASTVisitor<IndexerASTVisitor>::TraverseFunctionDecl(FD);
-  return Result;
+  return RecursiveASTVisitor::TraverseDecl(Decl);
 }
 
 bool IndexerASTVisitor::VisitCallExpr(const clang::CallExpr *E) {

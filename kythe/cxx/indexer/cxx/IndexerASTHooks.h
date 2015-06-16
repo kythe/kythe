@@ -260,7 +260,7 @@ public:
   bool VisitEnumDecl(const clang::EnumDecl *Decl);
   bool VisitEnumConstantDecl(const clang::EnumConstantDecl *Decl);
   bool VisitFunctionDecl(clang::FunctionDecl *Decl);
-  bool TraverseFunctionDecl(clang::FunctionDecl *Decl);
+  bool TraverseDecl(clang::Decl *Decl);
 
   /// \brief For functions that support it, controls the emission of range
   /// information.
