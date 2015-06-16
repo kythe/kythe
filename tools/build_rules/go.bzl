@@ -255,6 +255,10 @@ go_binary = rule(
 go_test = rule(
     go_test_impl,
     attrs = base_attrs + {
+        "data": attr.label_list(
+            allow_files = True,
+            cfg = DATA_CFG,
+        ),
         "library": attr.label(providers = [
             "go_sources",
             "go_recursive_deps",
@@ -268,7 +272,7 @@ go_test = rule(
     test = True,
 )
 
-def go_package(deps=[], test_deps=[], visibility=None):
+def go_package(deps=[], test_deps=[], test_data=[], visibility=None):
   name = PACKAGE_NAME.split("/")[-1]
   go_library(
     name = name,
@@ -286,5 +290,6 @@ def go_package(deps=[], test_deps=[], visibility=None):
       srcs = test_srcs,
       library = ":" + name,
       deps = test_deps,
+      data = test_data,
       visibility = ["//visibility:private"],
     )
