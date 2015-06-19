@@ -156,6 +156,13 @@ def go_library_impl(ctx):
       transitive_cc_libs = transitive_cc_libs,
   )
 
+def binary_struct(ctx):
+  runfiles = ctx.runfiles(files = [ctx.outputs.executable], collect_data = True)
+  return struct(
+      args = ctx.attr.args,
+      runfiles = runfiles,
+  )
+
 def go_binary_impl(ctx):
   gotool = ctx.file._go
 
@@ -174,8 +181,7 @@ def go_binary_impl(ctx):
               extldflags=link_flags,
               transitive_cc_libs=transitive_cc_libs)
 
-  runfiles = ctx.runfiles(files = [ctx.outputs.executable], collect_data = True)
-  return struct(runfiles = runfiles)
+  return binary_struct(ctx)
 
 def go_test_impl(ctx):
   testmain_generator = ctx.file._go_testmain_generator
@@ -213,13 +219,11 @@ def go_test_impl(ctx):
     transitive_cc_libs += t.transitive_cc_libs
     link_flags += t.link_flags
 
-  binary = ctx.outputs.executable
-  link_binary(ctx, binary, test_archive, recursive_deps,
+  link_binary(ctx, ctx.outputs.executable, test_archive, recursive_deps,
               extldflags = link_flags,
               transitive_cc_libs = transitive_cc_libs)
 
-  runfiles = ctx.runfiles(files = [binary], collect_data = True)
-  return struct(runfiles = runfiles)
+  return binary_struct(ctx)
 
 base_attrs = {
     "srcs": attr.label_list(allow_files = FileType([".go"])),
@@ -250,6 +254,7 @@ go_library = rule(
 )
 
 binary_attrs = base_attrs + {
+    "args": attr.string_list(),
     "data": attr.label_list(
         allow_files = True,
         cfg = DATA_CFG,
@@ -282,7 +287,7 @@ go_test = rule(
     test = True,
 )
 
-def go_package(deps=[], test_deps=[], test_data=[], visibility=None):
+def go_package(deps=[], test_deps=[], test_args=[], test_data=[], visibility=None):
   name = PACKAGE_NAME.split("/")[-1]
   go_library(
     name = name,
@@ -300,6 +305,7 @@ def go_package(deps=[], test_deps=[], test_data=[], visibility=None):
       srcs = test_srcs,
       library = ":" + name,
       deps = test_deps,
+      args = test_args,
       data = test_data,
       visibility = ["//visibility:private"],
     )
