@@ -177,6 +177,7 @@ def go_binary_impl(ctx):
 
 def go_test_impl(ctx):
   testmain_generator = ctx.file._go_testmain_generator
+  testmain_srcs = ctx.files._go_testmain_srcs
 
   lib = ctx.attr.library
   pkg = ctx.attr.go_package_prefix + lib.label.package
@@ -200,7 +201,7 @@ def go_test_impl(ctx):
              setupGOPATH = True)
 
   test_archive = ctx.new_file(ctx.configuration.bin_dir, ctx.label.name + "main.a")
-  go_compile(ctx, 'main', [testmain], test_archive, extra_archives=[archive])
+  go_compile(ctx, 'main', [testmain] + testmain_srcs, test_archive, extra_archives=[archive])
 
   recursive_deps = lib.go_recursive_deps + [archive]
   transitive_cc_libs = lib.transitive_cc_libs
@@ -266,6 +267,10 @@ go_test = rule(
         "_go_testmain_generator": attr.label(
             default = Label("//tools/go:testmain_generator"),
             single_file = True,
+        ),
+        "_go_testmain_srcs": attr.label(
+            default = Label("//tools/go:testmain_srcs"),
+            allow_files = FileType([".go"]),
         ),
     },
     executable = True,

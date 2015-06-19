@@ -8,3 +8,8 @@ go_binary(
     name = "testmain_generator",
     srcs = ["testmain_generator.go"],
 )
+
+filegroup(
+    name = "testmain_srcs",
+    srcs = ["testmain.go"],
+)
