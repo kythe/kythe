@@ -567,7 +567,7 @@ bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl *Decl) {
             Observer.recordTappNode(SpecializedNode.primary(), NIDPS));
       }
     }
-    if (const clang::VarTemplatePartialSpecializationDecl *Partial =
+    if (const auto *Partial =
             PrimaryOrPartial
                 .dyn_cast<clang::VarTemplatePartialSpecializationDecl *>()) {
       if (BuildTemplateArgumentList(
@@ -911,20 +911,36 @@ bool IndexerASTVisitor::VisitRecordDecl(const clang::RecordDecl *Decl) {
     // If this is a partial specialization, we've already recorded the newly
     // abstracted parameters above. We can now record the type arguments passed
     // to the template we're specializing. Synthesize the type we need.
-    TemplateName TN(CTSD->getSpecializedTemplate());
-    TypeSourceInfo *TSI;
-    if (ArgsAsWritten) {
-      TemplateArgumentListInfo TALI;
-      ArgsAsWritten->copyInto(TALI);
-      TSI = Context.getTemplateSpecializationTypeInfo(TN, DeclLoc, TALI);
-    } else {
-      assert(CTSD->getTypeForDecl() != nullptr);
-      QualType QT(CTSD->getTypeForDecl(), 0);
-      TSI = Context.getTrivialTypeSourceInfo(QT, DeclLoc);
+    std::vector<GraphObserver::NodeId> NIDS;
+    std::vector<const GraphObserver::NodeId *> NIDPS;
+    auto PrimaryOrPartial = CTSD->getSpecializedTemplateOrPartial();
+    if (BuildTemplateArgumentList(ArgsAsWritten, &CTSD->getTemplateArgs(), NIDS,
+                                  NIDPS)) {
+      if (auto SpecializedNode = BuildNodeIdForTemplateName(
+              clang::TemplateName(CTSD->getSpecializedTemplate()),
+              CTSD->getPointOfInstantiation())) {
+        if (PrimaryOrPartial.is<clang::ClassTemplateDecl *>() &&
+            !isa<const clang::ClassTemplatePartialSpecializationDecl>(Decl)) {
+          // This is both an instance and a specialization of the primary
+          // template. We use the same arguments list for both.
+          Observer.recordInstEdge(
+              DeclNode,
+              Observer.recordTappNode(SpecializedNode.primary(), NIDPS));
+        }
+        Observer.recordSpecEdge(
+            DeclNode,
+            Observer.recordTappNode(SpecializedNode.primary(), NIDPS));
+      }
     }
-    if (auto SpecializedType =
-            BuildNodeIdForType(TSI->getTypeLoc(), EmitRanges::No)) {
-      Observer.recordSpecEdge(DeclNode, SpecializedType.primary());
+    if (const auto *Partial =
+            PrimaryOrPartial
+                .dyn_cast<clang::ClassTemplatePartialSpecializationDecl *>()) {
+      if (BuildTemplateArgumentList(
+              nullptr, &CTSD->getTemplateInstantiationArgs(), NIDS, NIDPS)) {
+        Observer.recordInstEdge(
+            DeclNode,
+            Observer.recordTappNode(BuildNodeIdForDecl(Partial), NIDPS));
+      }
     }
   }
   MaybeRecordDefinitionRange(RangeInCurrentContext(NameRange), DeclNode);
@@ -1059,6 +1075,12 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
         for (const auto &NID : NIDS) {
           NIDPS.push_back(&NID);
         }
+        // Because partial specialization of function templates is forbidden,
+        // instantiates edges will always choose the same type (a tapp with
+        // the primary template as its first argument) as specializes edges.
+        Observer.recordInstEdge(
+            OuterNode,
+            Observer.recordTappNode(SpecializedNode.primary(), NIDPS));
         Observer.recordSpecEdge(
             OuterNode,
             Observer.recordTappNode(SpecializedNode.primary(), NIDPS));

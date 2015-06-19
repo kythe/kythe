@@ -790,6 +790,12 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "template_class_inst_vs_spec",
+    srcs = ["template/template_class_inst_vs_spec.cc"],
+    tags = ["template"],
+)
+
+cxx_indexer_test(
     name = "template_class_ref_ps",
     srcs = ["template/template_class_ref_ps.cc"],
     tags = ["template"],
@@ -853,6 +859,13 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "template_fn_implicit_spec",
     srcs = ["template/template_fn_implicit_spec.cc"],
+    tags = ["template"],
+)
+
+cxx_indexer_test(
+    name = "template_fn_inst_vs_spec",
+    srcs = ["template/template_fn_inst_vs_spec.cc"],
+    ignore_dups = True,
     tags = ["template"],
 )
 
@@ -991,6 +1004,12 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "template_var_implicit_spec",
     srcs = ["template/template_var_implicit_spec.cc"],
+    tags = ["template"],
+)
+
+cxx_indexer_test(
+    name = "template_var_inst_total_spec",
+    srcs = ["template/template_var_inst_total_spec.cc"],
     tags = ["template"],
 )
 

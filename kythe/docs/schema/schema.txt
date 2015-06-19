@@ -253,7 +253,7 @@ Ordinals are used::
   never
 Notes::
   An indexer may emit more descriptive edges with the *extends* prefix.
-  For example, C++ will emit *extends/public*, *extends/public/virtual*,
+  For example, $$C++$$ will emit *extends/public*, *extends/public/virtual*,
   *extends/protected*, *extends/protected/virtual*, *extends/private*,
   *extends/private/virtual*, and *extends/virtual*.
 
@@ -295,7 +295,7 @@ Ordinals are used::
 See also::
   <<specializes>>
 
-In C++, *specialization* and *instantiation* capture distinct relationships.
+In $$C++$$, *specialization* and *instantiation* capture distinct relationships.
 Every template `T` has a primary template, which defines the number and kind
 of template parameters that are written down whenever `T` is (normally)
 expressed. Other templates *specialize* `T` by specifying alternate bodies
@@ -307,9 +307,9 @@ attempt to model a subtyping relationship between template specializations.
 When `T<...>` is written down, an element from the set of *T* and its
 specializations must be chosen for manifestation. This element may have free
 type parameters. These are deduced during the process of *instantiating* the
-chosen specialization of *T*. Some C++ _total specializations_ do not bind any
-template parameters. Other C++ _partial specializations_ do, and may bind
-different numbers of type parameters than the primary template. The
+chosen specialization of *T*. Some $$C++$$ _total specializations_ do not bind
+any template parameters. Other $$C++$$ _partial specializations_ do, and may
+bind different numbers of type parameters than the primary template. The
 *instantiates* relationship records which total or partial specialization was
 chosen (or if the primary template was chosen), and the template arguments that
 were matched to that specialization's parameters. In contrast, the *specializes*
@@ -760,7 +760,7 @@ See also::
   <<absvar>>, <<specializes>>, <<tapp>>
 
 It is not necessarily the case that the child of the abs node be a type;
-for example, in C++, it may be a variable or a function.
+for example, in $$C++$$, it may be a variable or a function.
 
 [kythe,C++,"Templates are abs nodes."]
 --------------------------------------------------------------------------------
@@ -843,7 +843,7 @@ callable
 Brief description::
   A *callable* is the target of a <<refcall,ref/call>> edge.
 Notes::
-  Callables abstract different notions of call targets. For example, in C++,
+  Callables abstract different notions of call targets. For example, in $$C++$$,
   a struct may define an `operator()`. That struct and its operator are both
   <<callableas,callable as>> the same callable. If the struct defines more
   than one `operator()`, the struct will be callable as multiple callables. The
@@ -969,7 +969,7 @@ Facts::
   text:::
     The deferred name to be resolved.
 Notes::
-  Name resolution can be a complicated problem. In C++ templates, the
+  Name resolution can be a complicated problem. In $$C++$$ templates, the
   meaning of a dependent name cannot be determined until the template
   parameters it depends upon are supplied. Similarly, in dynamic languages
   like Python, name resolution may depend on the runtime context.
@@ -1310,15 +1310,15 @@ public class E {
 Language-specific rules
 -----------------------
 
-C++
-~~~
+$$C++$$
+~~~~~~~
 
-C++'s source language is spelled "`c++`".
+$$C++$$'s source language is spelled "`c++`".
 
 Builtin types
 ^^^^^^^^^^^^^
 
-C++ supplies the following <<tbuiltin>> nodes by default:
+$$C++$$ supplies the following <<tbuiltin>> nodes by default:
 
 [kythe,C++,"Builtin type nodes"]
 --------------------------------------------------------------------------------
@@ -1351,7 +1351,7 @@ using RestrictPtrVoid = void * __restrict__;
 Record and sum subkinds
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-C++ defines the following subkinds for <<record>> nodes:
+$$C++$$ defines the following subkinds for <<record>> nodes:
 
 [kythe,C++,"Record subkinds"]
 --------------------------------------------------------------------------------
@@ -1368,7 +1368,7 @@ struct S;
 union U;
 --------------------------------------------------------------------------------
 
-C++ defines the following subkinds for <<sum>> nodes:
+$$C++$$ defines the following subkinds for <<sum>> nodes:
 
 [kythe,C++,"Sum subkinds"]
 --------------------------------------------------------------------------------
@@ -1384,15 +1384,15 @@ enum class EC;
 Names
 ^^^^^
 
-C++ defines the following language-specific tags for lexically scoped names:
+$$C++$$ defines the following language-specific tags for lexically scoped names:
 
   * `m`: macros (see <<macro>>)
   * `c`: class or struct (see <<record>>)
   * `u`: union (see <<record>>)
   * `n`: any other name
 
-A C++ lexically-scoped name is stored as a colon-delimited path, starting with
-the most specific name and ending with the most general.
+A $$C++$$ lexically-scoped name is stored as a colon-delimited path, starting
+with the most specific name and ending with the most general.
 
 [kythe,C++,"Lexically scoped names"]
 --------------------------------------------------------------------------------
@@ -1444,7 +1444,7 @@ void foo() {
 References to definitions and declarations of types
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If the indexer has available a *definition* of a C++ node, edges should
+If the indexer has available a *definition* of a $$C++$$ node, edges should
 be drawn directly to that node:
 
 [kythe,C++,"Refer to definitions directly."]
@@ -1456,8 +1456,8 @@ class C { };
 using Alias = C;
 --------------------------------------------------------------------------------
 
-If the indexer only has a *complete* C++ node, or if the node is *incomplete*,
-edges should be drawn to a <<tnominal>> node:
+If the indexer only has a *complete* $$C++$$ node, or if the node is
+*incomplete*, edges should be drawn to a <<tnominal>> node:
 
 [kythe,C++,"Refer to complete or incomplete declarations indirectly."]
 --------------------------------------------------------------------------------
@@ -1471,7 +1471,7 @@ enum class E : int;
 using Alias = E;
 --------------------------------------------------------------------------------
 
-When spelling out the name of a C++ type, the rules for *ID*(*edge*) are
+When spelling out the name of a $$C++$$ type, the rules for *ID*(*edge*) are
 refined as follows:
 
   * If there are multiple possible nodes connected by *edge*, consistently
