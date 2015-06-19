@@ -13,3 +13,11 @@ filegroup(
     name = "testmain_srcs",
     srcs = ["testmain.go"],
 )
+
+go_binary(
+    name = "parse_test_output",
+    srcs = ["parse_test_output.go"],
+    deps = [
+        "//third_party/go:benchmark_parse",
+    ],
+)
