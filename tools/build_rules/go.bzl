@@ -173,7 +173,9 @@ def go_binary_impl(ctx):
   link_binary(ctx, ctx.outputs.executable, archive, recursive_deps,
               extldflags=link_flags,
               transitive_cc_libs=transitive_cc_libs)
-  return struct()
+
+  runfiles = ctx.runfiles(files = [ctx.outputs.executable], collect_data = True)
+  return struct(runfiles = runfiles)
 
 def go_test_impl(ctx):
   testmain_generator = ctx.file._go_testmain_generator
@@ -247,19 +249,22 @@ go_library = rule(
     outputs = {"archive": "%{name}.a"},
 )
 
+binary_attrs = base_attrs + {
+    "data": attr.label_list(
+        allow_files = True,
+        cfg = DATA_CFG,
+    ),
+}
+
 go_binary = rule(
     go_binary_impl,
-    attrs = base_attrs,
+    attrs = binary_attrs,
     executable = True,
 )
 
 go_test = rule(
     go_test_impl,
-    attrs = base_attrs + {
-        "data": attr.label_list(
-            allow_files = True,
-            cfg = DATA_CFG,
-        ),
+    attrs = binary_attrs + {
         "library": attr.label(providers = [
             "go_sources",
             "go_recursive_deps",
