@@ -66,10 +66,14 @@ func Call(server, method string, req, reply interface{}) error {
 }
 
 // ReadJSONBody reads the entire body of r and unmarshals it from JSON into v.
+// If the request body is empty, no error is returned and v is unchanged.
 func ReadJSONBody(r *http.Request, v interface{}) error {
 	rec, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		return fmt.Errorf("body read error: %v", err)
+	}
+	if len(rec) == 0 {
+		return nil
 	}
 	return json.Unmarshal(rec, v)
 }

@@ -2,7 +2,8 @@
 
 ## Upcoming version
 
-No changes so far...
+Notable fixes:
+ - Allow empty requests in `http_server`'s `/corpusRoots` handler
 
 ## v0.0.3
 
