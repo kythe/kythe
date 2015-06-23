@@ -2,6 +2,9 @@
 
 ## Upcoming version
 
+Notable changes:
+ - `kythe` tool: merge `--serving_table` flag into `--api` flag
+
 Notable fixes:
  - Allow empty requests in `http_server`'s `/corpusRoots` handler
 

@@ -22,28 +22,28 @@
 //   kythe
 //
 //   # List all corpus root uris
-//   kythe --serving_table /path/to/table ls --uris
+//   kythe --api /path/to/table ls --uris
 //
 //   # List root directory contents for corpus named 'somecorpus'
-//   kythe --serving_table /path/to/table ls kythe://somecorpus
+//   kythe --api /path/to/table ls kythe://somecorpus
 //
 //   # List Kythe's kythe/cxx/common directory (as URIs)
-//   kythe --serving_table /path/to/table ls --uris kythe://kythe?path=kythe/cxx/common
+//   kythe --api /path/to/table ls --uris kythe://kythe?path=kythe/cxx/common
 //
 //   # Display all file anchors references for kythe/cxx/common/CommandLineUtils.cc
-//   kythe --serving_table /path/to/table refs kythe://kythe?lang=c%2B%2B?path=kythe/cxx/common/CommandLineUtils.cc
+//   kythe --api /path/to/table refs kythe://kythe?lang=c%2B%2B?path=kythe/cxx/common/CommandLineUtils.cc
 //
 //   # Show all outward edges for a particular node
-//   kythe --serving_table /path/to/table edges kythe:?lang=java#java.util.List
+//   kythe --api /path/to/table edges kythe:?lang=java#java.util.List
 //
 //   # Show reverse /kythe/edge/defines edges for a node
-//   kythe --serving_table /path/to/table edges --kinds '%/kythe/edge/defines' kythe://kythe?lang=java?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java#1887f665ee4c77287d1022c151000a489e17147215309818cf4150c601442cc5
+//   kythe --api /path/to/table edges --kinds '%/kythe/edge/defines' kythe://kythe?lang=java?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java#1887f665ee4c77287d1022c151000a489e17147215309818cf4150c601442cc5
 //
 //   # Show all facts (except /kythe/text) for a node
-//   kythe --serving_table /path/to/table node kythe:?lang=c%2B%2B#StripPrefix%3Acommon%3Akythe%23n%23D%40kythe%2Fcxx%2Fcommon%2FCommandLineUtils.cc%3A167%3A1
+//   kythe --api /path/to/table node kythe:?lang=c%2B%2B#StripPrefix%3Acommon%3Akythe%23n%23D%40kythe%2Fcxx%2Fcommon%2FCommandLineUtils.cc%3A167%3A1
 //
 //   # Search for all Java class nodes with the given VName path
-//   kythe --serving_table /path/to/table search --lang java --path kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java /kythe/node/kind record /kythe/subkind class
+//   kythe --api /path/to/table search --lang java --path kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java /kythe/node/kind record /kythe/subkind class
 package main
 
 import (
@@ -72,8 +72,7 @@ import (
 )
 
 var (
-	remoteAPI    = flag.String("api", "https://xrefs-dot-kythe-repo.appspot.com", "Remote API server")
-	servingTable = flag.String("serving_table", "", "LevelDB serving table")
+	apiSpec = flag.String("api", "https://xrefs-dot-kythe-repo.appspot.com", "Backing API specification (e.g. JSON HTTP server: https://xrefs-dot-kythe-repo.appspot.com or GRPC server: localhost:1003 or local serving table path: /var/kythe_serving)")
 
 	shortHelp bool
 )
@@ -132,29 +131,18 @@ func main() {
 	if len(flag.Args()) == 0 {
 		flag.Usage()
 		os.Exit(0)
-	} else if *servingTable == "" && *remoteAPI == "" {
-		log.Fatal("One of --serving_table or --api is required")
+	} else if *apiSpec == "" {
+		log.Fatal("--api specification is required")
 	}
 
-	if *servingTable == "" {
-		if strings.HasPrefix(*remoteAPI, "http://") || strings.HasPrefix(*remoteAPI, "https://") {
-			xs = xrefs.WebClient(*remoteAPI)
-			ft = filetree.WebClient(*remoteAPI)
-			idx = search.WebClient(*remoteAPI)
-		} else {
-			conn, err := grpc.Dial(*remoteAPI)
-			if err != nil {
-				log.Fatalf("Error connecting to remote API %q: %v", *remoteAPI, err)
-			}
-			defer conn.Close()
-			xs = xrefs.GRPC(xpb.NewXRefServiceClient(conn))
-			ft = filetree.GRPC(ftpb.NewFileTreeServiceClient(conn))
-			idx = search.GRPC(spb.NewSearchServiceClient(conn))
-		}
-	} else {
-		db, err := leveldb.Open(*servingTable, nil)
+	if strings.HasPrefix(*apiSpec, "http://") || strings.HasPrefix(*apiSpec, "https://") {
+		xs = xrefs.WebClient(*apiSpec)
+		ft = filetree.WebClient(*apiSpec)
+		idx = search.WebClient(*apiSpec)
+	} else if _, err := os.Stat(*apiSpec); err == nil {
+		db, err := leveldb.Open(*apiSpec, nil)
 		if err != nil {
-			log.Fatalf("Error opening db at %q: %v", *servingTable, err)
+			log.Fatalf("Error opening local DB at %q: %v", *apiSpec, err)
 		}
 		defer db.Close()
 
@@ -162,6 +150,15 @@ func main() {
 		xs = &xsrv.Table{tbl}
 		ft = &ftsrv.Table{tbl}
 		idx = &srchsrv.Table{&table.KVInverted{db}}
+	} else {
+		conn, err := grpc.Dial(*apiSpec)
+		if err != nil {
+			log.Fatalf("Error connecting to remote API %q: %v", *apiSpec, err)
+		}
+		defer conn.Close()
+		xs = xrefs.GRPC(xpb.NewXRefServiceClient(conn))
+		ft = filetree.GRPC(ftpb.NewFileTreeServiceClient(conn))
+		idx = search.GRPC(spb.NewSearchServiceClient(conn))
 	}
 
 	if err := getCommand(flag.Arg(0)).run(); err != nil {
