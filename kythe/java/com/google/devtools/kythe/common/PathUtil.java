@@ -25,6 +25,7 @@ import com.google.common.base.CharMatcher;
  * Mind that this class does not work on Windows due to / to \ and
  * different root (C: etc) issues.
  */
+// TODO(schroederc): replace all usages with nio package
 public final class PathUtil {
 
   private static final CharMatcher SLASH_MATCHER = CharMatcher.is('/');
