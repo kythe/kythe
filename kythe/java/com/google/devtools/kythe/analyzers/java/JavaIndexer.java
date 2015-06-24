@@ -17,6 +17,7 @@
 package com.google.devtools.kythe.analyzers.java;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.Lists;
 import com.google.devtools.kythe.analyzers.base.FactEmitter;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.google.devtools.kythe.extractors.shared.IndexInfoUtils;
@@ -34,7 +35,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 
 /** Binary to run Kythe's Java index over a single .kindex file, emitting entries to STDOUT. */
@@ -46,7 +46,7 @@ public class JavaIndexer {
       usage(1);
     }
 
-    List<String> args = new LinkedList(Arrays.asList(rawArgs));
+    List<String> args = Lists.newLinkedList(Arrays.asList(rawArgs));
 
     MemoryStatisticsCollector statistics = null;
     if ("--print_statistics".equals(args.get(0))) {
