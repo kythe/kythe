@@ -100,12 +100,12 @@ public class ExtractorUtilsTest extends TestCase {
 
   public void testTryMakeRelative() {
     String cwd = System.getProperty("user.dir");
-    assertEquals(cwd+"/relative", ExtractorUtils.tryMakeRelative("/root", "relative"));
-    assertEquals(cwd+"/relative/sd", ExtractorUtils.tryMakeRelative("/root", "relative/sd"));
-    assertEquals("rootrelative", ExtractorUtils.tryMakeRelative("/root", "/root/rootrelative"));
-    assertEquals("rootrelative", ExtractorUtils.tryMakeRelative("/root/", "/root/rootrelative"));
-    assertEquals(cwd+"/cwd_sub", ExtractorUtils.tryMakeRelative("/root/", "./cwd_sub"));
-    assertEquals("/one_up", ExtractorUtils.tryMakeRelative("/root/", "/root/../one_up"));
+    assertEquals(cwd+"/relative", ExtractorUtils.tryMakeRelative("/someroot", "relative"));
+    assertEquals(cwd+"/relative/sd", ExtractorUtils.tryMakeRelative("/someroot", "relative/sd"));
+    assertEquals("rootrelative", ExtractorUtils.tryMakeRelative("/someroot", "/someroot/rootrelative"));
+    assertEquals("rootrelative", ExtractorUtils.tryMakeRelative("/someroot/", "/someroot/rootrelative"));
+    assertEquals(cwd+"/cwd_sub", ExtractorUtils.tryMakeRelative("/someroot/", "./cwd_sub"));
+    assertEquals("/one_up", ExtractorUtils.tryMakeRelative("/someroot/", "/someroot/../one_up"));
 
     assertEquals("relative", ExtractorUtils.tryMakeRelative(cwd, "relative"));
     assertEquals("relative/sd", ExtractorUtils.tryMakeRelative(cwd, "relative/sd"));
