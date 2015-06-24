@@ -20,15 +20,23 @@ cd "$WORKSPACE/repo"
 gcloud preview docker pull gcr.io/kythe_repo/kythe-builder
 
 docker run --rm -t -v "$PWD:/repo" -w /repo \
-  gcr.io/kythe_repo/kythe-builder ./setup_bazel.sh
+ gcr.io/kythe_repo/kythe-builder ./setup_bazel.sh
 
 bazel() {
-  docker run --rm -t \
-    -v "$PWD:/repo" -v "$WORKSPACE/cache:/root/.cache" \
-    -w /repo \
-    --privileged --entrypoint /usr/bin/bazel \
-    gcr.io/kythe_repo/kythe-builder "$@"
+ docker run --rm -t \
+   -v "$PWD:/repo" -v "$WORKSPACE/cache:/root/.cache" \
+   -w /repo \
+   --privileged --entrypoint /usr/bin/bazel \
+   gcr.io/kythe_repo/kythe-builder "$@"
 }
 
-bazel build //...
-bazel test //...
+ARGS=(
+  --color=no
+  --noshow_loading_progress
+  --noshow_progress
+  --verbose_failures
+  --test_output=errors
+  --test_summary=terse
+)
+
+bazel test "${ARGS[@]}" //kythe/docs/schema //...
