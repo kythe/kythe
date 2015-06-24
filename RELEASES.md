@@ -1,6 +1,6 @@
 # Release Notes
 
-## Upcoming version
+## v0.0.4
 
 Notable changes:
  - `kythe` tool: merge `--serving_table` flag into `--api` flag

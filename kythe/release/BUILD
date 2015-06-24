@@ -21,7 +21,7 @@ docker_build(
     ],
 )
 
-release_version = "v0.0.3"
+release_version = "v0.0.4"
 
 genrule(
     name = "release",
@@ -65,6 +65,7 @@ filegroup(
     srcs = [
         ":README.md",
         "//:LICENSE",
+        "//:RELEASES.md",
     ],
 )
 
