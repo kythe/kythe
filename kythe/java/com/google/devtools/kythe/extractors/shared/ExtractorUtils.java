@@ -27,7 +27,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import com.google.common.util.concurrent.SettableFuture;
-import com.google.devtools.kythe.common.PathUtil;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
 import com.google.devtools.kythe.proto.Analysis.FileData;
@@ -37,6 +36,8 @@ import com.google.protobuf.ByteString;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collections;
 import java.util.List;
@@ -138,17 +139,12 @@ public class ExtractorUtils {
    * Returns the fullpath otherwise.
    */
   public static String tryMakeRelative(String rootDir, String path) {
-    if (!path.startsWith("/")) {
-      path = PathUtil.join(getCurrentWorkingDirectory(), path);
-    }
-    path = Files.simplifyPath(path);
-    if (path.startsWith(rootDir)) {
-      path = PathUtil.makeRelative(rootDir, path);
-    }
-    if (Strings.isNullOrEmpty(path)) {
+    Path absPath = Paths.get(path).toAbsolutePath().normalize();
+    Path relPath = Paths.get(rootDir).toAbsolutePath().relativize(absPath).normalize();
+    if (relPath.toString().isEmpty()) {
       return ".";
     }
-    return path;
+    return (relPath.startsWith("..") ? absPath : relPath).toString();
   }
 
   public static String getCurrentWorkingDirectory() {

@@ -135,21 +135,24 @@ public class JavaCompilationUnitExtractor {
       boolean trackUnusedDependencies) throws ExtractionException {
     this.fileVNames = fileVNames;
     this.trackUnusedDependencies = trackUnusedDependencies;
-    this.rootDirectory = rootDirectory;
 
-    // Remove trailing dots.  Interesting trivia: in some build systems,
-    // the java.home variable is terminated with "/bin/..".
-    // However, this is not the case for the class files
-    // that we are trying to filter.
-    String tmpjdkJar = null;
     try {
-      tmpjdkJar = "file:" + new File(
+      // Remove trailing dots.  Interesting trivia: in some build systems,
+      // the java.home variable is terminated with "/bin/..".
+      // However, this is not the case for the class files
+      // that we are trying to filter.
+      this.jdkJar = "file:" + new File(
           PathUtil.dirname(System.getProperty("java.home"))).getCanonicalPath();
     } catch (IOException e) {
       throw new ExtractionException(
           "JDK path not found: " + PathUtil.dirname(System.getProperty("java.home")), e, false);
     }
-    jdkJar = tmpjdkJar;
+
+    try {
+      this.rootDirectory = Paths.get(rootDirectory).toRealPath().toString();
+    } catch (IOException ioe) {
+      throw new ExtractionException("Root directory does not exist", ioe, false);
+    }
   }
 
   public String getRootDirectory() {
@@ -176,14 +179,6 @@ public class JavaCompilationUnitExtractor {
     }
     unit.setOutputKey(outputPath);
     return unit.build();
-  }
-
-  @Deprecated
-  public CompilationDescription extract(String target, Iterable<String> sources,
-      Iterable<String> classpath, Iterable<String> sourcepath, Iterable<String> options,
-      String outputPath) throws ExtractionException {
-    Iterable<String> empty = Collections.emptyList();
-    return extract(target, sources, classpath, sourcepath, empty, empty, options, outputPath);
   }
 
   /**

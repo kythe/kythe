@@ -7,6 +7,7 @@ Notable changes:
 
 Notable fixes:
  - Allow empty requests in `http_server`'s `/corpusRoots` handler
+ - Java extractor: correctly handle symlinks in KYTHE_ROOT_DIRECTORY
 
 ## v0.0.3
 

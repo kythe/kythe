@@ -34,10 +34,6 @@
 # environment variable so that files modified/created in either volume have
 # their owner/group set to the volume's root directory's owner/group.
 
-echo "$@" >> /tmp/javac-wrapper.log
-exec 1> /tmp/javac-wrapper.out
-exec 2> /tmp/javac-wrapper.err
-
 if [[ -z "$REAL_JAVAC" ]]; then
   readonly REAL_JAVAC="$(dirname "$(readlink -e "$0")")/javac.real"
 fi
@@ -57,5 +53,5 @@ if [[ -n "$DOCKER_CLEANUP" ]]; then
   trap cleanup EXIT ERR INT
 fi
 
-java -jar "$JAVAC_EXTRACTOR_JAR" "$@"
+java -jar "$JAVAC_EXTRACTOR_JAR" "$@" >>/tmp/javac-extractor.out 2>> /tmp/javac-extractor.err
 "$REAL_JAVAC" "$@"
