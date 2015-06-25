@@ -124,7 +124,7 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
   }
 
   private function bazelCommand($args) {
-    return "bazel --blazerc=/dev/null --noblock_for_lock "
+    return "bazel --bazelrc=/dev/null --noblock_for_lock "
         . "--use_webstatusserver=" . $this->getWebStatusPort()
         . " " . join(" ", $args);
   }
