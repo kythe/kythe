@@ -4,6 +4,11 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])  # Apache 2.0
 
+filegroup(
+    name = "license",
+    srcs = ["LICENSE"],
+)
+
 proto_library(
     name = "extra_actions_base_proto",
     src = "src/main/protobuf/extra_actions_base.proto",

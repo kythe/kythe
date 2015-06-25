@@ -26,6 +26,8 @@ release_version = "v0.0.4"
 genrule(
     name = "release",
     srcs = [
+        ":bazel_java_extractor",
+        ":bazel_cxx_extractor",
         ":javac_extractor",
         ":javac_wrapper",
         ":cxx_extractor",
@@ -48,6 +50,8 @@ genrule(
         "--cp $(location java_indexer) indexers/java_indexer.jar",
         "--cp $(location cxx_indexer) indexers/cxx_indexer",
         "--cp $(location javac_extractor) extractors/javac_extractor.jar",
+        "--cp $(location bazel_cxx_extractor) extractors/bazel_cxx_extractor",
+        "--cp $(location bazel_java_extractor) extractors/bazel_java_extractor.jar",
         "--cp $(location javac_wrapper) extractors/javac-wrapper.sh",
         "--cp $(location cxx_extractor) extractors/cxx_extractor",
         "--path tools/ $(locations tools)",
@@ -80,8 +84,18 @@ filegroup(
 )
 
 filegroup(
+    name = "bazel_java_extractor",
+    srcs = ["//kythe/java/com/google/devtools/kythe/extractors/java/bazel:java_extractor_deploy.jar"],
+)
+
+filegroup(
     name = "cxx_extractor",
     srcs = ["//kythe/cxx/extractor:cxx_extractor"],
+)
+
+filegroup(
+    name = "bazel_cxx_extractor",
+    srcs = ["//kythe/cxx/extractor:cxx_extractor_bazel"],
 )
 
 filegroup(

@@ -16,6 +16,7 @@ filegroup(
         "//third_party/googlelog:license",
         "//third_party/googletest:license",
         "//third_party/grpc:license",
+        "//third_party/bazel:license",
         "//third_party/grpc-java:license",
         "//third_party/gson:license",
         "//third_party/guava:license",
