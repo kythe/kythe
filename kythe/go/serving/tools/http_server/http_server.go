@@ -24,6 +24,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"path/filepath"
 
 	"kythe.io/kythe/go/services/filetree"
@@ -161,6 +162,11 @@ func startGRPC(srv *grpc.Server) {
 func startHTTP() {
 	if *publicResources != "" {
 		log.Println("Serving public resources at", *publicResources)
+		if s, err := os.Stat(*publicResources); err != nil {
+			log.Fatalf("ERROR: could not get FileInfo for %q: %v", *publicResources, err)
+		} else if !s.IsDir() {
+			log.Fatalf("ERROR: %q is not a directory", *publicResources)
+		}
 		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			http.ServeFile(w, r, filepath.Join(*publicResources, filepath.Clean(r.URL.Path)))
 		})
