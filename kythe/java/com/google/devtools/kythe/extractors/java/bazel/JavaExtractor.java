@@ -37,6 +37,11 @@ public class JavaExtractor {
   private static final String CORPUS = "kythe";
 
   public static void main(String[] args) throws IOException, ExtractionException {
+    if (args.length != 3) {
+      System.err.println("Usage: java_extractor extra-action-file output-file vname-config");
+      System.exit(1);
+    }
+
     String extraActionPath = args[0];
     String outputPath = args[1];
     String vNamesConfigPath = args[2];
