@@ -137,10 +137,12 @@ func main() {
 
 func makeTestSuite(tests []*testCase, benchmarks []*parse.Benchmark) *testsuite.Suite {
 	s := &testsuite.Suite{}
+	var totalTime time.Duration
 	for _, t := range tests {
+		totalTime += t.Duration
 		c := testsuite.TestCase{
 			Name: t.Name,
-			Time: float64(t.Duration.Nanoseconds()) / float64(time.Millisecond),
+			Time: durationToMillis(t.Duration),
 		}
 		switch t.Status {
 		case Skip:
@@ -157,5 +159,10 @@ func makeTestSuite(tests []*testCase, benchmarks []*parse.Benchmark) *testsuite.
 		}
 		s.TestCase = append(s.TestCase, c)
 	}
+	s.Time = durationToMillis(totalTime)
 	return s
+}
+
+func durationToMillis(d time.Duration) float64 {
+	return float64(d.Nanoseconds()) / float64(time.Millisecond)
 }

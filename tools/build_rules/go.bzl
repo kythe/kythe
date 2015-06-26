@@ -156,8 +156,11 @@ def go_library_impl(ctx):
       transitive_cc_libs = transitive_cc_libs,
   )
 
-def binary_struct(ctx):
-  runfiles = ctx.runfiles(files = [ctx.outputs.executable], collect_data = True)
+def binary_struct(ctx, extra_runfiles=[]):
+  runfiles = ctx.runfiles(
+      files = [ctx.outputs.executable] + extra_runfiles,
+      collect_data = True,
+  )
   return struct(
       args = ctx.attr.args,
       runfiles = runfiles,
@@ -219,11 +222,27 @@ def go_test_impl(ctx):
     transitive_cc_libs += t.transitive_cc_libs
     link_flags += t.link_flags
 
-  link_binary(ctx, ctx.outputs.executable, test_archive, recursive_deps,
+  link_binary(ctx, ctx.outputs.bin, test_archive, recursive_deps,
               extldflags = link_flags,
               transitive_cc_libs = transitive_cc_libs)
 
-  return binary_struct(ctx)
+  test_parser = ctx.file._go_test_parser
+  ctx.file_action(
+      output = ctx.outputs.executable,
+      content = "\n".join([
+        "#!/bin/bash -e",
+        'set -o pipefail',
+        'if [[ -n "$XML_OUTPUT_FILE" ]]; then',
+        '  %s -test.v "$@" | \\' % (ctx.outputs.bin.short_path),
+        '    %s --format xml --out "$XML_OUTPUT_FILE"' % (test_parser.short_path),
+        'else',
+        '  exec %s "$@"' % (ctx.outputs.bin.short_path),
+        'fi'
+      ]),
+      executable = True,
+  )
+
+  return binary_struct(ctx, extra_runfiles=[ctx.outputs.bin, test_parser])
 
 base_attrs = {
     "srcs": attr.label_list(allow_files = FileType([".go"])),
@@ -278,12 +297,17 @@ go_test = rule(
             default = Label("//tools/go:testmain_generator"),
             single_file = True,
         ),
+        "_go_test_parser": attr.label(
+            default = Label("//tools/go:parse_test_output"),
+            single_file = True,
+        ),
         "_go_testmain_srcs": attr.label(
             default = Label("//tools/go:testmain_srcs"),
             allow_files = FileType([".go"]),
         ),
     },
     executable = True,
+    outputs = {"bin": "%{name}.bin"},
     test = True,
 )
 

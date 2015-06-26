@@ -87,6 +87,12 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
       $data = $this->parseTestResultFile($test);
       $result = new ArcanistUnitTestResult();
       $result->setName($test);
+      if (property_exists($data, "test_case")) {
+        $testCase = $data->{"test_case"};
+        if (property_exists($testCase, "run_duration_millis")) {
+          $result->setDuration($testCase->{"run_duration_millis"} / 1000);
+        }
+      }
       if ($data->{"test_passed"}) {
         $result->setResult(ArcanistUnitTestResult::RESULT_PASS);
       } else if ($data->{"status"} == 4) {

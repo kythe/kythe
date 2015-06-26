@@ -46,5 +46,6 @@ type TestCase struct {
 // Suite is a named set of test cases.
 type Suite struct {
 	Name     string     `xml:"name,attr,omitempty"`
+	Time     float64    `xml:"time,attr,omitempty"`
 	TestCase []TestCase `xml:"testcase"`
 }
