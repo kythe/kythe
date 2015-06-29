@@ -315,14 +315,12 @@ def go_package(deps=[], test_deps=[], test_args=[], test_data=[], visibility=Non
   name = PACKAGE_NAME.split("/")[-1]
   go_library(
     name = name,
-    srcs = native.glob(
-        includes = ["*.go"],
-        excludes = ["*_test.go"],
-    ),
+    # TODO(schroederc): replace "excludes" with "exclude"
+    srcs = native.glob(["*.go"], excludes = ["*_test.go"]),
     deps = deps,
     visibility = visibility,
   )
-  test_srcs = native.glob(includes = ["*_test.go"])
+  test_srcs = native.glob(["*_test.go"])
   if test_srcs:
     go_test(
       name = name + "_test",
