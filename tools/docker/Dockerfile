@@ -22,15 +22,17 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends curl ca-certificates && \
     apt-get clean
 
+RUN echo deb http://http.debian.net/debian jessie-backports main >> /etc/apt/sources.list
+
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
       git pkg-config zip unzip rsync patch zsh wget net-tools less parallel locales make \
-      g++ gcc openjdk-7-jdk openjdk-7-source clang-3.5 golang-go flex asciidoc source-highlight graphviz \
+      g++ gcc openjdk-8-jdk openjdk-8-source clang-3.5 golang-go flex asciidoc source-highlight graphviz \
       zlib1g-dev libarchive-dev libncurses-dev uuid-dev libssl-dev \
       ca-certificates-java libcurl4-openssl-dev && \
     apt-get clean
 
-ENV JAVA_HOME=/usr/lib/jvm/java-7-openjdk-amd64
+ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
 RUN ln -Ts /usr/bin/clang-3.5 /usr/bin/clang
 
 # Bison
