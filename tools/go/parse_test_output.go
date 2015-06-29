@@ -82,6 +82,13 @@ func main() {
 
 		ss := testCaseRE.FindStringSubmatch(s.Text())
 		if len(ss) > 0 {
+			if fixed := strings.TrimSuffix(ss[3], " seconds"); fixed != ss[3] {
+				// Before
+				// https://github.com/golang/go/commit/0e92b538a9f6e337b8e48f47f38803e8245c03cc,
+				// this duration format wasn't compatible with time.ParseDuration.  This
+				// works around the difference.
+				ss[3] = fixed + "s"
+			}
 			dur, err := time.ParseDuration(ss[3])
 			if err != nil {
 				log.Fatal(err)
