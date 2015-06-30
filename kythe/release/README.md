@@ -8,25 +8,27 @@ extractors, and tools directly supported by the Kythe team.
 
 # Contents
  - indexers
-   - cxx_indexer         :: C++ indexer
-   - java_indexer.jar    :: Java indexer
+   - cxx_indexer              :: C++ indexer
+   - java_indexer.jar         :: Java indexer
  - extractors
-   - cxx_extractor       :: C++ extractor
-   - javac_extractor.jar :: Java extractor
-   - javac-wrapper.sh    :: javac wrapper script for extractor
+   - bazel_cxx_extractor      :: C++ extractor for Bazel extra_actions
+   - bazel_java_extractor.jar :: Java extractor for Bazel extra_actions
+   - cxx_extractor            :: C++ extractor
+   - javac_extractor.jar      :: Java extractor
+   - javac-wrapper.sh         :: javac wrapper script for extractor
  - tools
-   - dedup_stream        :: Removes duplicates entries from a delimited stream
-   - directory_indexer   :: Emits Kythe file nodes for some local paths
-   - entrystream         :: Generic Kythe entry stream processor
-   - http_server         :: HTTP/GRPC server for Kythe service APIs (xrefs, filetree, search)
-   - indexpack           :: Converts between .kindex archives and indexpacks
-   - kwazthis            :: Determine what Kythe node(s) are at a particular point in a file
-   - kythe               :: CLI for the service APIs exposed by http_server
-   - read_entries        :: Dumps a GraphStore's contents as an entry stream
-   - triples             :: Converts an entry stream (or GraphStore) to N-Triples
-   - viewindex           :: Dumps a .kindex file as JSON
-   - write_entries       :: Writes an entry stream to a GraphStore
-   - write_tables        :: Processes a GraphStore into efficient serving tables for http_server
+   - dedup_stream             :: Removes duplicates entries from a delimited stream
+   - directory_indexer        :: Emits Kythe file nodes for some local paths
+   - entrystream              :: Generic Kythe entry stream processor
+   - http_server              :: HTTP/GRPC server for Kythe service APIs (xrefs, filetree, search)
+   - indexpack                :: Converts between .kindex archives and indexpacks
+   - kwazthis                 :: Determine what Kythe node(s) are at a particular point in a file
+   - kythe                    :: CLI for the service APIs exposed by http_server
+   - read_entries             :: Dumps a GraphStore's contents as an entry stream
+   - triples                  :: Converts an entry stream (or GraphStore) to N-Triples
+   - viewindex                :: Dumps a .kindex file as JSON
+   - write_entries            :: Writes an entry stream to a GraphStore
+   - write_tables             :: Processes a GraphStore into efficient serving tables for http_server
 
 # Dependencies
  - Java JDK >=7
