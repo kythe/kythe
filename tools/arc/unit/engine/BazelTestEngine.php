@@ -19,6 +19,8 @@
  * bazel wrapper.
  */
 final class BazelTestEngine extends ArcanistUnitTestEngine {
+  private $project_root;
+
   public function run() {
     $this->project_root = $this->getWorkingCopy()->getProjectRoot();
     $targets = $this->getTargets();
