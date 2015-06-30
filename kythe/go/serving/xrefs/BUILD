@@ -7,6 +7,7 @@ go_package(
     deps = [
         "//kythe/go/services/xrefs",
         "//kythe/go/storage/table",
+        "//kythe/go/util/schema",
         "//kythe/go/util/stringset",
         "//kythe/proto:serving_proto_go",
         "//kythe/proto:xref_proto_go",

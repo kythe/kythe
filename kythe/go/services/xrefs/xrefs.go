@@ -29,6 +29,7 @@ import (
 
 	"kythe.io/kythe/go/services/web"
 
+	"github.com/sergi/go-diff/diffmatchpatch"
 	"golang.org/x/net/context"
 
 	xpb "kythe.io/kythe/proto/xref_proto"
@@ -90,6 +91,56 @@ func EdgesMap(edges []*xpb.EdgeSet) map[string]map[string][]string {
 		m[es.SourceTicket] = kinds
 	}
 	return m
+}
+
+// Patcher uses a computed diff between two texts to map spans from the original
+// text to the new text.
+type Patcher struct {
+	dmp  *diffmatchpatch.DiffMatchPatch
+	diff []diffmatchpatch.Diff
+}
+
+// NewPatcher returns a Patcher based on the diff between oldText and newText.
+func NewPatcher(oldText, newText []byte) *Patcher {
+	dmp := diffmatchpatch.New()
+	return &Patcher{dmp, dmp.DiffCleanupEfficiency(dmp.DiffMain(string(oldText), string(newText), true))}
+}
+
+// Patch returns the resulting span of mapping the given span from the Patcher's
+// constructed oldText to its newText.  If the span no longer exists in newText
+// or is invalid, the returned bool will be false.  As a convenience, if p==nil,
+// the original span will be returned.
+func (p *Patcher) Patch(spanStart, spanEnd int32) (newStart, newEnd int32, exists bool) {
+	if spanStart > spanEnd {
+		return 0, 0, false
+	} else if p == nil {
+		return spanStart, spanEnd, true
+	}
+
+	var old, new int32
+	for _, d := range p.diff {
+		l := int32(len(d.Text))
+		if old > spanStart {
+			return 0, 0, false
+		}
+		switch d.Type {
+		case diffmatchpatch.DiffEqual:
+			if old <= spanStart && spanEnd <= old+l {
+				newStart = new + (spanStart - old)
+				newEnd = new + (spanEnd - old)
+				exists = true
+				return
+			}
+			old += l
+			new += l
+		case diffmatchpatch.DiffDelete:
+			old += l
+		case diffmatchpatch.DiffInsert:
+			new += l
+		}
+	}
+
+	return 0, 0, false
 }
 
 // Normalizer fixes xref.Locations within a given source text so that each point

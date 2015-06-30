@@ -10,5 +10,6 @@ go_package(
         "//kythe/go/services/web",
         "//kythe/proto:xref_proto_go",
         "//third_party/go:context",
+        "//third_party/go:go-diff",
     ],
 )

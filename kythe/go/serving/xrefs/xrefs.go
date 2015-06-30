@@ -29,9 +29,11 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strconv"
 
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/storage/table"
+	"kythe.io/kythe/go/util/schema"
 	"kythe.io/kythe/go/util/stringset"
 
 	srvpb "kythe.io/kythe/proto/serving_proto"
@@ -238,11 +240,7 @@ func (s *filterStats) filter(g *srvpb.EdgeSet_Group) *xpb.EdgeSet_Group {
 
 // Decorations implements part of the xrefs Service interface.
 func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*xpb.DecorationsReply, error) {
-	if len(req.DirtyBuffer) > 0 {
-		log.Println("TODO: implement DecorationsRequest.DirtyBuffer")
-		return nil, errors.New("dirty buffers unimplemented")
-	} else if req.GetLocation() == nil {
-		// TODO(schroederc): allow empty location when given dirty buffer
+	if req.GetLocation() == nil || req.GetLocation().Ticket == "" {
 		return nil, errors.New("missing location")
 	}
 
@@ -254,7 +252,11 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 		return nil, fmt.Errorf("lookup error for file decorations %q: %v", ticket, err)
 	}
 
-	loc, err := xrefs.NewNormalizer(decor.SourceText).Location(req.GetLocation())
+	text := decor.SourceText
+	if len(req.DirtyBuffer) > 0 {
+		text = req.DirtyBuffer
+	}
+	loc, err := xrefs.NewNormalizer(text).Location(req.GetLocation())
 	if err != nil {
 		return nil, err
 	}
@@ -264,24 +266,46 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 	if req.SourceText {
 		reply.Encoding = decor.Encoding
 		if loc.Kind == xpb.Location_FILE {
-			reply.SourceText = decor.SourceText
+			reply.SourceText = text
 		} else {
-			reply.SourceText = decor.SourceText[loc.Start.ByteOffset:loc.End.ByteOffset]
+			reply.SourceText = text[loc.Start.ByteOffset:loc.End.ByteOffset]
 		}
 	}
 
 	if req.References {
+		// Set of node tickets for which to retrieve facts.  These are the nodes
+		// used in the returned references (both anchor sources and node targets).
 		nodeTickets := stringset.New()
+
+		var patcher *xrefs.Patcher
+		var offsetMapping map[string]span // Map from anchor ticket to patched span
+		if len(req.DirtyBuffer) > 0 {
+			patcher = xrefs.NewPatcher(decor.SourceText, req.DirtyBuffer)
+			offsetMapping = make(map[string]span)
+		}
+
+		// The span with which to constrain the set of returned anchor references.
+		var startBoundary, endBoundary int32
 		if loc.Kind == xpb.Location_FILE {
-			reply.Reference = make([]*xpb.DecorationsReply_Reference, len(decor.Decoration))
-			for i, d := range decor.Decoration {
-				reply.Reference[i] = decorationToReference(d)
-				nodeTickets.Add(d.Anchor.Ticket)
-				nodeTickets.Add(d.TargetTicket)
-			}
+			startBoundary = 0
+			endBoundary = int32(len(text))
 		} else {
-			for _, d := range decor.Decoration {
-				if d.Anchor.StartOffset >= loc.Start.ByteOffset && d.Anchor.EndOffset <= loc.End.ByteOffset {
+			startBoundary = loc.Start.ByteOffset
+			endBoundary = loc.End.ByteOffset
+		}
+
+		reply.Reference = make([]*xpb.DecorationsReply_Reference, 0, len(decor.Decoration))
+		for _, d := range decor.Decoration {
+			start, end, exists := patcher.Patch(d.Anchor.StartOffset, d.Anchor.EndOffset)
+			// Filter non-existent anchor.  Anchors can no longer exist if we were
+			// given a dirty buffer and the anchor was inside a changed region.
+			if exists {
+				if start >= startBoundary && end <= endBoundary {
+					if offsetMapping != nil {
+						// Save the patched span to update the corresponding facts of the
+						// anchor node in reply.Node.
+						offsetMapping[d.Anchor.Ticket] = span{start, end}
+					}
 					reply.Reference = append(reply.Reference, decorationToReference(d))
 					nodeTickets.Add(d.Anchor.Ticket)
 					nodeTickets.Add(d.TargetTicket)
@@ -289,15 +313,34 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 			}
 		}
 
+		// Retrieve facts for all nodes referenced in the file decorations.
 		nodesReply, err := t.Nodes(ctx, &xpb.NodesRequest{Ticket: nodeTickets.Slice()})
 		if err != nil {
 			return nil, fmt.Errorf("error getting nodes: %v", err)
 		}
 		reply.Node = nodesReply.Node
+
+		// Patch anchor node facts in reply to match dirty buffer
+		if len(offsetMapping) > 0 {
+			for _, n := range reply.Node {
+				if span, ok := offsetMapping[n.Ticket]; ok {
+					for _, f := range n.Fact {
+						switch f.Name {
+						case schema.AnchorStartFact:
+							f.Value = []byte(strconv.Itoa(int(span.start)))
+						case schema.AnchorEndFact:
+							f.Value = []byte(strconv.Itoa(int(span.end)))
+						}
+					}
+				}
+			}
+		}
 	}
 
 	return reply, nil
 }
+
+type span struct{ start, end int32 }
 
 // DecorationsKey returns the decorations lookup table key for the given ticket.
 func DecorationsKey(ticket string) []byte {

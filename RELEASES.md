@@ -4,6 +4,7 @@
 
 Notable additions:
  - Bazel `extra_action` extractors for C++ and Java
+ - Implementation of DecorationsRequest.dirty_buffer in xrefs serving table
 
 ## v0.0.4
 

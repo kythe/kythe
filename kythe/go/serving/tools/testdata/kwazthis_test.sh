@@ -23,9 +23,9 @@ source "kythe/cxx/common/testdata/start_http_service.sh"
 jq () { "third_party/jq/jq" -e "$@" <<<"$JSON"; }
 kwazthis() { "kythe/go/serving/tools/kwazthis" --ignore_local_repo --api "http://$LISTEN_AT" "$@"; }
 
-PATH=kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/Generics.java
+FILE_PATH=kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/Generics.java
 
-JSON=$(kwazthis --path $PATH --offset 783)
+JSON=$(kwazthis --path $FILE_PATH --offset 783)
 jq --slurp 'length == 2'
 jq --slurp '.[0].span.text == "Generics<String>"'
 jq --slurp '.[1].span.text == "String"'
@@ -35,7 +35,7 @@ jq --slurp '.[].node.ticket
 jq --slurp '.[].node.kind
         and .[].node.kind != ""'
 
-JSON=$(kwazthis --path $PATH --offset 558)
+JSON=$(kwazthis --path $FILE_PATH --offset 558)
 jq --slurp 'length == 1'
 jq '.kind == "defines"'
 jq '.span.text == "g"'

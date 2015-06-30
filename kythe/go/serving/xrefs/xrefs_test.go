@@ -24,6 +24,7 @@ import (
 	"strings"
 	"testing"
 
+	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/storage/table"
 	"kythe.io/kythe/go/test/testutil"
 	"kythe.io/kythe/go/util/stringset"
@@ -66,6 +67,40 @@ var (
 					"/kythe/node/kind", "file",
 					"/kythe/text", "; some file content here\nfinal line\n",
 					"/kythe/text/encoding", "utf-8",
+				),
+			}, {
+				Ticket: "kythe://c?lang=otpl?path=/a/path#6-9",
+				Fact: makeFactList(
+					"/kythe/node/kind", "anchor",
+					"/kythe/loc/start", "6",
+					"/kythe/loc/end", "9",
+				),
+			}, {
+				Ticket: "kythe://c?lang=otpl?path=/a/path#27-33",
+				Fact: makeFactList(
+					"/kythe/node/kind", "anchor",
+					"/kythe/loc/start", "27",
+					"/kythe/loc/end", "33",
+				),
+			}, {
+				Ticket: "kythe://c?lang=otpl?path=/a/path#map",
+				Fact:   makeFactList("/kythe/node/kind", "function"),
+			}, {
+				Ticket: "kythe://core?lang=otpl#empty?",
+				Fact:   makeFactList("/kythe/node/kind", "function"),
+			}, {
+				Ticket: "kythe://c?lang=otpl?path=/a/path#51-55",
+				Fact: makeFactList(
+					"/kythe/node/kind", "anchor",
+					"/kythe/loc/start", "51",
+					"/kythe/loc/end", "55",
+				),
+			}, {
+				Ticket: "kythe://core?lang=otpl#cons",
+				Fact: makeFactList(
+					"/kythe/node/kind", "function",
+					// Canary to ensure we don't patch anchor facts in non-anchor nodes
+					"/kythe/loc/start", "51",
 				),
 			},
 		},
@@ -150,6 +185,24 @@ var (
 						},
 						Kind:         "/kythe/defines",
 						TargetTicket: "kythe://c?lang=otpl?path=/a/path#map",
+					},
+					{
+						Anchor: &srvpb.FileDecorations_Decoration_Anchor{
+							Ticket:      "kythe://c?lang=otpl?path=/a/path#27-33",
+							StartOffset: 27,
+							EndOffset:   33,
+						},
+						Kind:         "/kythe/refs",
+						TargetTicket: "kythe://core?lang=otpl#empty?",
+					},
+					{
+						Anchor: &srvpb.FileDecorations_Decoration_Anchor{
+							Ticket:      "kythe://c?lang=otpl?path=/a/path#51-55",
+							StartOffset: 51,
+							EndOffset:   55,
+						},
+						Kind:         "/kythe/refs",
+						TargetTicket: "kythe://core?lang=otpl#cons",
 					},
 				},
 			},
@@ -315,6 +368,70 @@ func TestDecorationsRefs(t *testing.T) {
 	if !reflect.DeepEqual(expected, reply.Reference) {
 		t.Fatalf("Expected references %v; found %v", expected, reply.Reference)
 	}
+
+	expectedNodes := nodeInfos(tbl.Nodes[7:13])
+
+	sort.Sort(byNodeTicket(expectedNodes))
+	sort.Sort(byNodeTicket(reply.Node))
+
+	if !reflect.DeepEqual(expectedNodes, reply.Node) {
+		t.Fatalf("Expected nodes %v; found %v", expected, reply.Node)
+	}
+}
+
+func TestDecorationsDirtyBuffer(t *testing.T) {
+	d := tbl.Decorations[1]
+
+	st := tbl.Construct(t)
+	dirty := []byte(`(defn map [f coll]
+  (if (seq coll)
+    []
+    (cons (f (first coll)) (map f (rest coll)))))
+`)
+	reply, err := st.Decorations(ctx, &xpb.DecorationsRequest{
+		Location:    &xpb.Location{Ticket: d.FileTicket},
+		DirtyBuffer: dirty,
+		References:  true,
+	})
+	testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
+
+	if len(reply.SourceText) != 0 {
+		t.Errorf("Unexpected source text: %q", string(d.SourceText))
+	}
+	if reply.Encoding != "" {
+		t.Errorf("Unexpected encoding: %q", d.Encoding)
+	}
+
+	p := xrefs.NewPatcher(d.SourceText, dirty)
+	var expected []*xpb.DecorationsReply_Reference
+	for _, d := range d.Decoration {
+		if _, _, exists := p.Patch(d.Anchor.StartOffset, d.Anchor.EndOffset); exists {
+			expected = append(expected, ref(d))
+		}
+	}
+	if !reflect.DeepEqual(expected, reply.Reference) {
+		t.Fatalf("Expected references %v; found %v", expected, reply.Reference)
+	}
+
+	// These are a subset of the anchor nodes in tbl.Decorations[1].  tbl.Nodes[8]
+	// and tbl.Nodes[10] are missing because [8] was an anchor in the edited
+	// region and [10] was its target.
+	expectedNodes := nodeInfos([]*srvpb.Node{
+		tbl.Nodes[7], tbl.Nodes[9], tbl.Nodes[11], tbl.Nodes[12],
+	})
+
+	// Ensure patching affects the anchor node facts
+	mapFacts(expectedNodes[2], map[string]string{
+		"/kythe/loc/start": "48",
+		"/kythe/loc/end":   "52",
+	})
+
+	sort.Sort(byNodeTicket(expectedNodes))
+	sort.Sort(byNodeTicket(reply.Node))
+
+	if !reflect.DeepEqual(expectedNodes, reply.Node) {
+		t.Fatalf("Expected nodes %v; found %v", expected, reply.Node)
+	}
 }
 
 func TestDecorationsNotFound(t *testing.T) {
@@ -375,6 +492,13 @@ func (s byNodeTicket) Len() int           { return len(s) }
 func (s byNodeTicket) Less(i, j int) bool { return s[i].Ticket < s[j].Ticket }
 func (s byNodeTicket) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 
+func nodeInfos(ns []*srvpb.Node) (infos []*xpb.NodeInfo) {
+	for _, n := range ns {
+		infos = append(infos, nodeInfo(n))
+	}
+	return
+}
+
 func nodeInfo(n *srvpb.Node) *xpb.NodeInfo {
 	ni := &xpb.NodeInfo{Ticket: n.Ticket}
 	for _, fact := range n.Fact {
@@ -394,6 +518,14 @@ func makeFactList(keyVals ...string) (facts []*srvpb.Node_Fact) {
 		})
 	}
 	return
+}
+
+func mapFacts(n *xpb.NodeInfo, facts map[string]string) {
+	for _, f := range n.Fact {
+		if val, ok := facts[f.Name]; ok {
+			f.Value = []byte(val)
+		}
+	}
 }
 
 func edgeSet(kinds []string, pes *srvpb.PagedEdgeSet, pages []*srvpb.EdgePage) *xpb.EdgeSet {
@@ -424,13 +556,17 @@ func edgeSet(kinds []string, pes *srvpb.PagedEdgeSet, pages []*srvpb.EdgePage) *
 
 func refs(ds []*srvpb.FileDecorations_Decoration) (refs []*xpb.DecorationsReply_Reference) {
 	for _, d := range ds {
-		refs = append(refs, &xpb.DecorationsReply_Reference{
-			SourceTicket: d.Anchor.Ticket,
-			TargetTicket: d.TargetTicket,
-			Kind:         d.Kind,
-		})
+		refs = append(refs, ref(d))
 	}
 	return
+}
+
+func ref(d *srvpb.FileDecorations_Decoration) *xpb.DecorationsReply_Reference {
+	return &xpb.DecorationsReply_Reference{
+		SourceTicket: d.Anchor.Ticket,
+		TargetTicket: d.TargetTicket,
+		Kind:         d.Kind,
+	}
 }
 
 type testTable struct {

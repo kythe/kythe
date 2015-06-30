@@ -178,15 +178,19 @@ func main() {
 	}
 
 	fileTicket := reply.Ticket[0]
+	text := readDirtyBuffer(ctx)
 	decor, err := xs.Decorations(ctx, &xpb.DecorationsRequest{
 		// TODO(schroederc): limit Location to a SPAN around *offset
 		Location:    &xpb.Location{Ticket: fileTicket},
 		References:  true,
 		SourceText:  true,
-		DirtyBuffer: readDirtyBuffer(ctx),
+		DirtyBuffer: text,
 	})
 	if err != nil {
 		log.Fatal(err)
+	}
+	if text == nil {
+		text = decor.SourceText
 	}
 	nodes := xrefs.NodesMap(decor.Node)
 
@@ -198,7 +202,7 @@ func main() {
 			var r reference
 			r.Span.Start = start
 			r.Span.End = end
-			r.Span.Text = string(decor.SourceText[start:end])
+			r.Span.Text = string(text[start:end])
 			r.Kind = strings.TrimPrefix(ref.Kind, schema.EdgePrefix)
 			r.Node.Ticket = ref.TargetTicket
 
