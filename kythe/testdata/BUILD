@@ -9,5 +9,5 @@ genrule(
         "//kythe/java/com/google/devtools/kythe/analyzers/java:indexer_deploy.jar",
     ],
     outs = ["test.entries"],
-    cmd = "$(location //kythe/java/com/google/devtools/kythe/analyzers/java:indexer_deploy.jar) $(location test.kindex) > $@",
+    cmd = "$(JAVA) -jar $(location //kythe/java/com/google/devtools/kythe/analyzers/java:indexer_deploy.jar) $(location test.kindex) > $@",
 )
