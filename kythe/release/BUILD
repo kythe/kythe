@@ -73,6 +73,22 @@ filegroup(
     ],
 )
 
+sh_test(
+    name = "release_test",
+    timeout = "short",
+    srcs = ["release_test.sh"],
+    data = [
+        ":release",
+        "//kythe/testdata:entries",
+        "//kythe/testdata:test.kindex",
+        "//third_party/jq",
+    ],
+    tags = [
+        "local",
+        "manual",
+    ],
+)
+
 filegroup(
     name = "javac_extractor",
     srcs = ["//kythe/java/com/google/devtools/kythe/extractors/java/standalone:javac_extractor_deploy.jar"],
