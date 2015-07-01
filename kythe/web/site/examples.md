@@ -158,14 +158,12 @@ $GOPATH/bin/cayley repl --dbpath kythe.nq.gz # or $GOPATH/bin/cayley http --dbpa
 ## Visualizing Cross-References
 
 As part of Kythe's first release, a sample UI has been made to show Kythe's
-basic cross-reference capabilities.
+basic cross-reference capabilities.  The following command can be run over the
+serving table created with the `write_tables` binary (see above).
 
 {% highlight bash %}
-pushd kythe/web/ui
-lein cljsbuild once prod # Build the necessary client-side code
-popd
-
 /opt/kythe/tools/http_server \
   --public_resources /opt/kythe/web/ui \
-  --listen localhost:8080 --serving_table .kythe_serving
+  --listen localhost:8080 \
+  --serving_table .kythe_serving
 {% endhighlight %}
