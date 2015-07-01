@@ -21,7 +21,7 @@ docker_build(
     ],
 )
 
-release_version = "v0.0.4"
+release_version = "v0.0.5"
 
 genrule(
     name = "release",

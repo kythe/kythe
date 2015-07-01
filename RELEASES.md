@@ -1,6 +1,6 @@
 # Release Notes
 
-## Upcoming
+## v0.0.5
 
 Notable additions:
  - Bazel `extra_action` extractors for C++ and Java
