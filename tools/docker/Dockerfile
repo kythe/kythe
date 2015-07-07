@@ -43,7 +43,7 @@ RUN wget http://archive.kernel.org/debian-archive/debian/pool/main/b/bison/bison
 RUN cd /opt && \
     git clone https://github.com/google/bazel/ && \
     cd bazel && \
-    git checkout 087df302dbda12212788d59162cc946fda037081 && \
+    git checkout 8e36c422255a99c8b3a7aac10b2d105294c7fa64 && \
     sed -i '/Building Bazel with Bazel/iexit 0' compile.sh && \
     ./compile.sh compile && \
     ln -s /opt/bazel/output/bazel /usr/bin/
