@@ -347,14 +347,14 @@ bool MergeJsonWithMessage(const std::string &in, std::string *format_key,
 }
 
 void PackAny(const google::protobuf::Message &message, const char *type_uri,
-             kythe::proto::Any *out) {
-  out->set_type_uri(type_uri);
+             google::protobuf::Any *out) {
+  out->set_type_url(type_uri);
   google::protobuf::io::StringOutputStream stream(out->mutable_value());
   google::protobuf::io::CodedOutputStream coded_output_stream(&stream);
   message.SerializeToCodedStream(&coded_output_stream);
 }
 
-bool UnpackAny(const kythe::proto::Any &any,
+bool UnpackAny(const google::protobuf::Any &any,
                google::protobuf::Message *result) {
   google::protobuf::io::ArrayInputStream stream(any.value().data(),
                                                 any.value().size());

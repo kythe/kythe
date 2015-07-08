@@ -19,7 +19,7 @@ syntax = "proto3";
 package kythe.proto;
 option java_package = "com.google.devtools.kythe.proto";
 
-import "kythe/proto/any.proto";
+import "google/protobuf/any.proto";
 import "kythe/proto/storage.proto";
 
 // CompilationAnalyzer services are exposed by any program that wants to plug
@@ -182,7 +182,7 @@ message CompilationUnit {
   repeated Env environment = 10;
 
   // Per-language or -tool details.
-  repeated Any details = 11;
+  repeated google.protobuf.Any details = 11;
 }
 
 // A FileInfo specifies metadata for a file under analysis.

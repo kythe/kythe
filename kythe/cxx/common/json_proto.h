@@ -20,7 +20,7 @@
 #include <string>
 
 #include "google/protobuf/message.h"
-#include "kythe/proto/any.pb.h"
+#include "google/protobuf/any.pb.h"
 #include "rapidjson/document.h"
 
 namespace kythe {
@@ -63,13 +63,14 @@ bool WriteMessageAsJsonToString(const google::protobuf::Message &message,
 /// \param type_uri The URI of the message type.
 /// \param out The resulting Any.
 void PackAny(const google::protobuf::Message &message, const char *type_uri,
-             kythe::proto::Any *out);
+             google::protobuf::Any *out);
 
 /// \brief Unpack a protobuf from an Any.
 /// \param any The Any to unpack.
 /// \param result The message to unpack it over.
 /// \return false if unpacking failed
-bool UnpackAny(const kythe::proto::Any &any, google::protobuf::Message *result);
+bool UnpackAny(const google::protobuf::Any &any,
+               google::protobuf::Message *result);
 
 /// \brief Decodes a base64-encoded string.
 /// \param data The string to decode.

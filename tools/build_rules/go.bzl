@@ -146,8 +146,10 @@ def go_library_impl(ctx):
   pkg = ctx.attr.go_package_prefix + ctx.label.package
   if ctx.attr.package != "":
     pkg = ctx.attr.package
+  # TODO(shahms): Figure out why protocol buffer .jar files are being included.
+  srcs = FileType([".go"]).filter(ctx.files.srcs)
 
-  recursive_deps, transitive_cc_libs, link_flags = go_compile(ctx, pkg, ctx.files.srcs, archive, setupGOPATH=True)
+  recursive_deps, transitive_cc_libs, link_flags = go_compile(ctx, pkg, srcs, archive, setupGOPATH=True)
   return struct(
       go_sources = ctx.files.srcs,
       go_archive = archive,

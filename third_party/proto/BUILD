@@ -1,10 +1,26 @@
 package(default_visibility = ["//visibility:public"])
 
+load("/tools/build_rules/genproto", "proto_library")
+
 licenses(["notice"])  # BSD
 
 filegroup(
     name = "license",
     srcs = ["LICENSE"],
+)
+
+exports_files(["src/google/protobuf/any.proto"])
+
+proto_library(
+    name = "any_proto",
+    src = "src/google/protobuf/any.proto",
+    # We cannot generate the C++ version as it is depended on, in source form,
+    # by the protocol buffer library iteself.
+    gen_cc = 0,
+    gen_go = 1,
+    gen_java = 1,
+    # TODO(shahms): Remove this if/when we get more robust go package mapping.
+    go_package = "google/protobuf/any.pb",
 )
 
 genrule(
@@ -60,11 +76,20 @@ cc_library(
     ],
 )
 
+# This is a hack to support the non-generated any.pb.{cc,h} files as a
+# proto_library() and resolve the circular dependency.
+cc_library(
+    name = "any_proto_cc",
+    srcs = ["src/google/protobuf/any.pb.cc"],
+    hdrs = ["src/google/protobuf/any.pb.h"],
+    includes = ["src"],
+    deps = [":protobuf_lite"],
+)
+
 cc_library(
     name = "protobuf",
     srcs = [
         "src/google/protobuf/any.cc",
-        "src/google/protobuf/any.pb.cc",
         "src/google/protobuf/api.pb.cc",
         "src/google/protobuf/compiler/importer.cc",
         "src/google/protobuf/compiler/parser.cc",
@@ -106,6 +131,7 @@ cc_library(
         "-Wno-unused-function",
     ],
     deps = [
+        ":any_proto_cc",
         ":protobuf_lite",
     ],
 )

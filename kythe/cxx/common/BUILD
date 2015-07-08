@@ -16,10 +16,10 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
-        "//kythe/proto:any_proto_cc",
         "//third_party:libcrypto",
         "//third_party/googleflags:gflags",
         "//third_party/googlelog:glog",
+        "//third_party/proto:any_proto_cc",
         "//third_party/proto:protobuf",
         "//third_party/rapidjson",
     ],

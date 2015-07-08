@@ -3,13 +3,6 @@ package(default_visibility = ["//kythe:default_visibility"])
 load("/tools/build_rules/genproto", "proto_library")
 
 proto_library(
-    name = "any_proto",
-    gen_cc = 1,
-    gen_go = 1,
-    gen_java = 1,
-)
-
-proto_library(
     name = "storage_proto",
     has_services = 1,
     gen_cc = 1,
@@ -32,8 +25,8 @@ proto_library(
         "//third_party/llvm/src:__pkg__",
     ],
     deps = [
-        ":any_proto",
         ":storage_proto",
+        "//third_party/proto:any_proto",
     ],
 )
 

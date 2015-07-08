@@ -152,7 +152,7 @@ static void DecodeHeaderSearchInformation(const proto::CompilationUnit &unit,
   info->is_valid = false;
   kythe::proto::CxxCompilationUnitDetails details;
   for (const auto &any : unit.details()) {
-    if (any.type_uri() == kCxxCompilationUnitDetailsURI) {
+    if (any.type_url() == kCxxCompilationUnitDetailsURI) {
       info->is_valid = UnpackAny(any, &details);
       break;
     }
