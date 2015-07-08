@@ -1,0 +1,81 @@
+diff --git a/third_party/flow/src/commands/dumpKytheCommand.ml b/third_party/flow/src/commands/dumpKytheCommand.ml
+new file mode 120000
+index 0000000..839798c
+--- /dev/null
++++ b/third_party/flow/src/commands/dumpKytheCommand.ml
+@@ -0,0 +1 @@
++../../../../kythe/ocaml/js_indexer/dumpKytheCommand.ml
+\ No newline at end of file
+diff --git a/third_party/flow/src/common/b64.ml b/third_party/flow/src/common/b64.ml
+new file mode 120000
+index 0000000..d7f7d1a
+--- /dev/null
++++ b/third_party/flow/src/common/b64.ml
+@@ -0,0 +1 @@
++../../../ocaml_b64/b64.ml
+\ No newline at end of file
+diff --git a/third_party/flow/src/common/b64.mli b/third_party/flow/src/common/b64.mli
+new file mode 120000
+index 0000000..08d0e50
+--- /dev/null
++++ b/third_party/flow/src/common/b64.mli
+@@ -0,0 +1 @@
++../../../ocaml_b64/b64.mli
+\ No newline at end of file
+diff --git a/third_party/flow/src/flow.ml b/third_party/flow/src/flow.ml
+index 1645b4e..454f440 100644
+--- a/third_party/flow/src/flow.ml
++++ b/third_party/flow/src/flow.ml
+@@ -37,6 +37,7 @@ end = struct
+     SuggestCommand.command;
+     TypeAtPosCommand.command;
+     DumpTypesCommand.command;
++    DumpKytheCommand.command;
+   ]
+ 
+   (* status commands, which need a list of other commands *)
+diff --git a/third_party/flow/src/server/dumpKytheService_js.ml b/third_party/flow/src/server/dumpKytheService_js.ml
+new file mode 120000
+index 0000000..6e22611
+--- /dev/null
++++ b/third_party/flow/src/server/dumpKytheService_js.ml
+@@ -0,0 +1 @@
++../../../../kythe/ocaml/js_indexer/dumpKytheService_js.ml
+\ No newline at end of file
+diff --git a/third_party/flow/src/server/server.ml b/third_party/flow/src/server/server.ml
+index ccb2e08..a01582e 100644
+--- a/third_party/flow/src/server/server.ml
++++ b/third_party/flow/src/server/server.ml
+@@ -193,6 +193,11 @@ struct
+     Marshal.to_channel oc (err, resp) [];
+     flush oc
+ 
++  let dump_kythe file_input oc =
++    let resp : DumpKytheService_js.resp_t = DumpKytheService_js.query file_input in
++    Marshal.to_channel oc resp [];
++    flush oc
++
+   let dump_types file_input oc =
+     let file = ServerProt.file_input_get_filename file_input in
+     let (err, resp) =
+@@ -400,6 +405,8 @@ struct
+         check_file fn oc
+     | ServerProt.DUMP_TYPES fn ->
+         dump_types fn oc
++    | ServerProt.DUMP_KYTHE fn ->
++        dump_kythe fn oc
+     | ServerProt.ERROR_OUT_OF_DATE ->
+         incorrect_hash oc
+     | ServerProt.FIND_MODULES module_names ->
+diff --git a/third_party/flow/src/server/serverProt.ml b/third_party/flow/src/server/serverProt.ml
+index 1b04f75..aeabd85 100644
+--- a/third_party/flow/src/server/serverProt.ml
++++ b/third_party/flow/src/server/serverProt.ml
+@@ -30,6 +30,7 @@ type command =
+ | AUTOCOMPLETE of file_input
+ | CHECK_FILE of file_input
+ | DUMP_TYPES of file_input
++| DUMP_KYTHE of file_input
+ | ERROR_OUT_OF_DATE
+ | FIND_MODULES of string list
+ | GET_DEF of file_input * int * int (* filename, line, char *)

@@ -1,0 +1,10 @@
+URL: https://github.com/mirage/ocaml-base64
+Version: ed444d33e98f5fac921bfb01c36f25753963c287
+License: ISC https://www.isc.org/downloads/software-support-policy/isc-license/
+
+Local Modifications:
+  Only pulled relevant files.
+  To build with 4.01.0:
+    Added "module Bytes = String" to the top of b64.ml;
+      commented out Bytes.unsafe_to_string calls;
+      commented out Bytes.sub_string and added String.sub.

@@ -1,0 +1,19 @@
+
+annot.js:1:9,34: ./unknown_class
+Required module not found
+
+annot.js:5:7,7: parameter x
+Missing annotation
+
+fun.js:8:21,21: return
+Missing annotation
+
+fun.js:8:31,31: number
+This type is incompatible with
+fun.js:11:7,12: string
+
+obj.js:10:16,18: number
+This type is incompatible with
+obj.js:10:7,12: string
+
+Found 5 errors

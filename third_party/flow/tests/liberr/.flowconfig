@@ -1,0 +1,9 @@
+[ignore]
+
+[include]
+
+[libs]
+libs/
+
+[options]
+strip_root=true
