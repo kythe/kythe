@@ -1,5 +1,10 @@
 # Release Notes
 
+## Upcoming
+
+Notable fixes:
+ - Java indexer: don't generate anchors for implicit constructors
+
 ## v0.0.5
 
 Notable additions:

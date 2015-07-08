@@ -151,10 +151,6 @@ public class JCTreeScanner<R, P> implements TreeVisitor<R, P> {
     return r;
   }
 
-  public R scan(P p, JCTree... trees) {
-    return scan(Arrays.asList(trees), p);
-  }
-
   public R reduce(R r1, R r2) {
     return r1;
   }

@@ -15,14 +15,21 @@ public class Classes {
   //- DefaultCtor typed DefaultCtorType
   //- DefaultCtorType param.0 FnBuiltin
   //- DefaultCtorType param.1 N
-  // TODO(schroederc): Don't emit an anchor for the default constructor
-  // !{ DefaultCtorAnchor defines DefaultCtor }
+  //- !{ DefaultCtorAnchor defines DefaultCtor }
 
   //- @StaticInner defines SI
   //- SI.node/kind record
   //- SI.subkind class
   //- SI childof N
-  private static class StaticInner {}
+  private static class StaticInner {
+    //- Ctor childof SI
+    //- Ctor.node/kind function
+    //- Ctor typed CtorType
+    //- CtorType param.0 FnBuiltin
+    //- CtorType param.1 SI
+    //- @StaticInner defines Ctor
+    public StaticInner() {}
+  }
 
   //- @Inner defines I
   //- I.node/kind record
