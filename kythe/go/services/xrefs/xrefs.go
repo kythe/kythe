@@ -216,16 +216,19 @@ func (n *Normalizer) Point(p *xpb.Location_Point) *xpb.Location_Point {
 
 		if totalLines := int32(len(n.lineLen)); p.LineNumber > totalLines {
 			np.LineNumber = totalLines
+			np.ColumnOffset = n.lineLen[np.LineNumber-1] - 1
 		}
-		if p.ColumnOffset < 0 {
+		if np.ColumnOffset < 0 {
 			np.ColumnOffset = 0
-		} else if p.ColumnOffset > 0 {
-			if lineLen := n.lineLen[np.LineNumber-1]; p.ColumnOffset > lineLen {
+		} else if np.ColumnOffset > 0 {
+			if lineLen := n.lineLen[np.LineNumber-1] - 1; p.ColumnOffset > lineLen {
 				np.ColumnOffset = lineLen
 			}
 		}
 
 		np.ByteOffset = n.prefixLen[np.LineNumber-1] + np.ColumnOffset
+	} else {
+		np.LineNumber = 1
 	}
 
 	return np

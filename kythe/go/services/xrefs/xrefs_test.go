@@ -18,10 +18,13 @@ package xrefs
 
 import (
 	"fmt"
+	"reflect"
 	"regexp"
 	"testing"
 
 	"kythe.io/kythe/go/util/schema"
+
+	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
 func TestFilterRegexp(t *testing.T) {
@@ -52,6 +55,94 @@ func TestFilterRegexp(t *testing.T) {
 		res := filterToRegexp(test.filter)
 		if res.String() != test.regexp {
 			t.Errorf(" Filter %q; Got %q; Expected regexp %q", test.filter, res, test.regexp)
+		}
+	}
+}
+
+func TestNormalizerPoint(t *testing.T) {
+	const text = `line 1
+line 2
+last line without newline`
+
+	tests := []struct{ p, expected *xpb.Location_Point }{
+		{
+			&xpb.Location_Point{},
+			&xpb.Location_Point{ByteOffset: 0, LineNumber: 1, ColumnOffset: 0},
+		},
+		{
+			&xpb.Location_Point{LineNumber: 1},
+			&xpb.Location_Point{ByteOffset: 0, LineNumber: 1, ColumnOffset: 0},
+		},
+		{
+			&xpb.Location_Point{ByteOffset: 1},
+			&xpb.Location_Point{ByteOffset: 1, LineNumber: 1, ColumnOffset: 1},
+		},
+		{
+			&xpb.Location_Point{ByteOffset: 6},
+			&xpb.Location_Point{ByteOffset: 6, LineNumber: 1, ColumnOffset: 6},
+		},
+		{
+			&xpb.Location_Point{LineNumber: 1, ColumnOffset: 6},
+			&xpb.Location_Point{ByteOffset: 6, LineNumber: 1, ColumnOffset: 6},
+		},
+		{
+			&xpb.Location_Point{ByteOffset: 7},
+			&xpb.Location_Point{ByteOffset: 7, LineNumber: 2, ColumnOffset: 0},
+		},
+		{
+			&xpb.Location_Point{LineNumber: 2},
+			&xpb.Location_Point{ByteOffset: 7, LineNumber: 2, ColumnOffset: 0},
+		},
+		{
+			&xpb.Location_Point{ByteOffset: 10},
+			&xpb.Location_Point{ByteOffset: 10, LineNumber: 2, ColumnOffset: 3},
+		},
+		{
+			&xpb.Location_Point{ByteOffset: 13},
+			&xpb.Location_Point{ByteOffset: 13, LineNumber: 2, ColumnOffset: 6},
+		},
+		{
+			&xpb.Location_Point{LineNumber: 2, ColumnOffset: 6},
+			&xpb.Location_Point{ByteOffset: 13, LineNumber: 2, ColumnOffset: 6},
+		},
+		{
+			&xpb.Location_Point{LineNumber: 2, ColumnOffset: 7}, // past end of column
+			&xpb.Location_Point{ByteOffset: 13, LineNumber: 2, ColumnOffset: 6},
+		},
+		{
+			&xpb.Location_Point{LineNumber: 3},
+			&xpb.Location_Point{ByteOffset: 14, LineNumber: 3, ColumnOffset: 0},
+		},
+		{
+			&xpb.Location_Point{LineNumber: 3, ColumnOffset: 5},
+			&xpb.Location_Point{ByteOffset: 19, LineNumber: 3, ColumnOffset: 5},
+		},
+		{
+			&xpb.Location_Point{ByteOffset: 39},
+			&xpb.Location_Point{ByteOffset: 39, LineNumber: 3, ColumnOffset: 25},
+		},
+		{
+			&xpb.Location_Point{ByteOffset: 40}, // past end of text
+			&xpb.Location_Point{ByteOffset: 39, LineNumber: 3, ColumnOffset: 25},
+		},
+		{
+			&xpb.Location_Point{LineNumber: 5, ColumnOffset: 5}, // past end of text
+			&xpb.Location_Point{ByteOffset: 39, LineNumber: 3, ColumnOffset: 25},
+		},
+		{
+			&xpb.Location_Point{ByteOffset: -1}, // before start of text
+			&xpb.Location_Point{ByteOffset: 0, LineNumber: 1, ColumnOffset: 0},
+		},
+		{
+			&xpb.Location_Point{LineNumber: -1, ColumnOffset: 5}, // before start of text
+			&xpb.Location_Point{LineNumber: 1},
+		},
+	}
+
+	n := NewNormalizer([]byte(text))
+	for _, test := range tests {
+		if p := n.Point(test.p); !reflect.DeepEqual(p, test.expected) {
+			t.Errorf("n.Point({%v}): expected {%v}; found {%v}", test.p, test.expected, p)
 		}
 	}
 }
