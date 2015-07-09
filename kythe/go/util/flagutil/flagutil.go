@@ -35,11 +35,20 @@ import (
 //  <flag.PrintDefaults()>
 func SimpleUsage(description string, args ...string) func() {
 	return func() {
-		fmt.Fprintf(os.Stderr, `Usage: %s %s
+		prefix := fmt.Sprintf("Usage: %s ", filepath.Base(os.Args[0]))
+		alignArgs(len(prefix), args)
+		fmt.Fprintf(os.Stderr, `%s%s
 %s
 
-`, filepath.Base(os.Args[0]), strings.Join(args, " "), description)
+`, prefix, strings.Join(args, " "), description)
 		flag.PrintDefaults()
+	}
+}
+
+func alignArgs(col int, args []string) {
+	s := strings.Repeat(" ", col)
+	for i, arg := range args {
+		args[i] = strings.Replace(arg, "\n", "\n"+s, -1)
 	}
 }
 

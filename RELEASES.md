@@ -2,6 +2,9 @@
 
 ## Upcoming
 
+Notable additions:
+ - kwazthis: allow `--line` and `--column` info in place of a byte `--offset`
+
 Notable fixes:
  - Java indexer: don't generate anchors for implicit constructors
 

@@ -15,7 +15,8 @@
  */
 
 // Binary kwazthis (K, what's this?) determines what references are located at a
-// particular offset within a file.  All results are printed as JSON.
+// particular offset (or line and column) within a file.  All results are
+// printed as JSON.
 //
 // By default, kwazthis will search for a .kythe configuration file in a
 // directory above the given --path (if it exists locally relative to the
@@ -26,6 +27,7 @@
 //
 // Usage:
 //   kwazthis --path kythe/cxx/tools/kindex_tool_main.cc --offset 2660
+//   kwazthis --path kythe/cxx/common/CommandLineUtils.cc --line 81 --column 27
 //   kwazthis --path kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java --offset 2815
 package main
 
@@ -55,14 +57,16 @@ import (
 )
 
 func init() {
-	flag.Usage = flagutil.SimpleUsage(`Determine what references are located at a particular offset within a file.
+	flag.Usage = flagutil.SimpleUsage(`Determine what references are located at a particular offset (or line and column) within a file.
 
 By default, kwazthis will search for a .kythe configuration file in a directory
 above the given --path (if it exists locally relative to the current working
 directory).  If found, --path will be made relative to this directory and --root
 before making any Kythe service requests.  If not found, --path will be passed
 unchanged.  --ignore_local_repo will turn off this behavior.`,
-		"--offset int (--path p | --signature s) [--corpus c] [--root r] [--language l] [--ignore_local_repo] [--dirty_buffer path]")
+		`(--offset int | --line int --column int) (--path p | --signature s)
+[--corpus c] [--root r] [--language l]
+[--ignore_local_repo] [--dirty_buffer path]`)
 }
 
 var (
@@ -80,7 +84,9 @@ var (
 	root      = flag.String("root", "", "Root of file VName (optional)")
 	language  = flag.String("language", "", "Language of file VName (optional)")
 
-	offset = flag.Int("offset", -1, "Non-negative offset in file to list references")
+	offset       = flag.Int("offset", -1, "Non-negative offset in file to list references (mutually exclusive with --line and --column)")
+	lineNumber   = flag.Int("line", -1, "1-based line number in file to list references (must be given with --column)")
+	columnOffset = flag.Int("column", -1, "Non-negative column offset in file to list references (must be given with --line)")
 
 	skipDefinitions = flag.Bool("skip_defs", false, "Skip listing definitions for each node")
 )
@@ -122,8 +128,10 @@ var definedAtEdge = schema.MirrorEdge(schema.DefinesEdge)
 
 func main() {
 	flag.Parse()
-	if *offset < 0 {
-		flagutil.UsageError("non-negative --offset required")
+	if flag.NArg() > 0 {
+		flagutil.UsageErrorf("unknown non-flag argument(s): %v", flag.Args())
+	} else if *offset < 0 && (*lineNumber < 0 || *columnOffset < 0) {
+		flagutil.UsageError("non-negative --offset (or --line and --column) required")
 	} else if *signature == "" && *path == "" {
 		flagutil.UsageError("must provide at least --path or --signature")
 	}
@@ -194,11 +202,14 @@ func main() {
 	}
 	nodes := xrefs.NodesMap(decor.Node)
 
+	// Normalize point within source text
+	point := normalizedPoint(text)
+
 	en := json.NewEncoder(os.Stdout)
 	for _, ref := range decor.Reference {
 		start, end := parseAnchorSpan(nodes[ref.SourceTicket])
 
-		if start <= *offset && *offset < end {
+		if start <= point && point < end {
 			var r reference
 			r.Span.Start = start
 			r.Span.End = end
@@ -315,4 +326,20 @@ func findKytheRoot(dir string) string {
 		dir = filepath.Dir(dir)
 	}
 	return ""
+}
+
+func normalizedPoint(text []byte) int {
+	p := xrefs.NewNormalizer(text).Point(&xpb.Location_Point{
+		ByteOffset:   max(*offset, 0),
+		LineNumber:   max(*lineNumber, 0),
+		ColumnOffset: max(*columnOffset, 0),
+	})
+	return int(p.ByteOffset)
+}
+
+func max(a, b int) int32 {
+	if a > b {
+		return int32(a)
+	}
+	return int32(b)
 }
