@@ -45,12 +45,12 @@ import (
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/services/search"
 	"kythe.io/kythe/go/services/xrefs"
+	"kythe.io/kythe/go/serving/api"
 	"kythe.io/kythe/go/util/flagutil"
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema"
 
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
 
 	spb "kythe.io/kythe/proto/storage_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
@@ -66,13 +66,13 @@ before making any Kythe service requests.  If not found, --path will be passed
 unchanged.  --ignore_local_repo will turn off this behavior.`,
 		`(--offset int | --line int --column int) (--path p | --signature s)
 [--corpus c] [--root r] [--language l]
-[--ignore_local_repo] [--dirty_buffer path]`)
+[--api spec] [--ignore_local_repo] [--dirty_buffer path] [--skip_defs]`)
 }
 
 var (
 	ctx = context.Background()
 
-	remoteAPI = flag.String("api", "https://xrefs-dot-kythe-repo.appspot.com", "Remote API server")
+	apiFlag = api.Flag("api", api.CommonDefault, api.CommonFlagUsage)
 
 	ignoreLocalRepo = flag.Bool("ignore_local_repo", false, "Ignore local repository .kythe configuration")
 
@@ -136,18 +136,8 @@ func main() {
 		flagutil.UsageError("must provide at least --path or --signature")
 	}
 
-	if strings.HasPrefix(*remoteAPI, "http://") || strings.HasPrefix(*remoteAPI, "https://") {
-		xs = xrefs.WebClient(*remoteAPI)
-		idx = search.WebClient(*remoteAPI)
-	} else {
-		conn, err := grpc.Dial(*remoteAPI)
-		if err != nil {
-			log.Fatalf("Error connecting to remote API %q: %v", *remoteAPI, err)
-		}
-		defer conn.Close()
-		xs = xrefs.GRPC(xpb.NewXRefServiceClient(conn))
-		idx = search.GRPC(spb.NewSearchServiceClient(conn))
-	}
+	defer (*apiFlag).Close()
+	xs, idx = *apiFlag, *apiFlag
 
 	relPath := *path
 	if !*ignoreLocalRepo {

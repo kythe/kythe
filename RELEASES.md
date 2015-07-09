@@ -4,6 +4,7 @@
 
 Notable additions:
  - kwazthis: allow `--line` and `--column` info in place of a byte `--offset`
+ - kwazthis: the `--api` flag can now handle a local path to a serving table
 
 Notable fixes:
  - Java indexer: don't generate anchors for implicit constructors

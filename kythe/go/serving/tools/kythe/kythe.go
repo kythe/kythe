@@ -53,26 +53,12 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 
-	"kythe.io/kythe/go/services/filetree"
-	"kythe.io/kythe/go/services/search"
-	"kythe.io/kythe/go/services/xrefs"
-	ftsrv "kythe.io/kythe/go/serving/filetree"
-	srchsrv "kythe.io/kythe/go/serving/search"
-	xsrv "kythe.io/kythe/go/serving/xrefs"
-	"kythe.io/kythe/go/storage/leveldb"
-	"kythe.io/kythe/go/storage/table"
-
-	"google.golang.org/grpc"
-
-	ftpb "kythe.io/kythe/proto/filetree_proto"
-	spb "kythe.io/kythe/proto/storage_proto"
-	xpb "kythe.io/kythe/proto/xref_proto"
+	"kythe.io/kythe/go/serving/api"
 )
 
 var (
-	apiSpec = flag.String("api", "https://xrefs-dot-kythe-repo.appspot.com", "Backing API specification (e.g. JSON HTTP server: https://xrefs-dot-kythe-repo.appspot.com or GRPC server: localhost:1003 or local serving table path: /var/kythe_serving)")
+	apiFlag = api.Flag("api", api.CommonDefault, api.CommonFlagUsage)
 
 	shortHelp bool
 )
@@ -131,35 +117,10 @@ func main() {
 	if len(flag.Args()) == 0 {
 		flag.Usage()
 		os.Exit(0)
-	} else if *apiSpec == "" {
-		log.Fatal("--api specification is required")
 	}
 
-	if strings.HasPrefix(*apiSpec, "http://") || strings.HasPrefix(*apiSpec, "https://") {
-		xs = xrefs.WebClient(*apiSpec)
-		ft = filetree.WebClient(*apiSpec)
-		idx = search.WebClient(*apiSpec)
-	} else if _, err := os.Stat(*apiSpec); err == nil {
-		db, err := leveldb.Open(*apiSpec, nil)
-		if err != nil {
-			log.Fatalf("Error opening local DB at %q: %v", *apiSpec, err)
-		}
-		defer db.Close()
-
-		tbl := &table.KVProto{db}
-		xs = &xsrv.Table{tbl}
-		ft = &ftsrv.Table{tbl}
-		idx = &srchsrv.Table{&table.KVInverted{db}}
-	} else {
-		conn, err := grpc.Dial(*apiSpec)
-		if err != nil {
-			log.Fatalf("Error connecting to remote API %q: %v", *apiSpec, err)
-		}
-		defer conn.Close()
-		xs = xrefs.GRPC(xpb.NewXRefServiceClient(conn))
-		ft = filetree.GRPC(ftpb.NewFileTreeServiceClient(conn))
-		idx = search.GRPC(spb.NewSearchServiceClient(conn))
-	}
+	defer (*apiFlag).Close()
+	xs, ft, idx = *apiFlag, *apiFlag, *apiFlag
 
 	if err := getCommand(flag.Arg(0)).run(); err != nil {
 		log.Fatal("ERROR: ", err)

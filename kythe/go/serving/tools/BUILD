@@ -42,11 +42,7 @@ go_binary(
         "//kythe/go/services/filetree",
         "//kythe/go/services/search",
         "//kythe/go/services/xrefs",
-        "//kythe/go/serving/filetree",
-        "//kythe/go/serving/search",
-        "//kythe/go/serving/xrefs",
-        "//kythe/go/storage/leveldb",
-        "//kythe/go/storage/table",
+        "//kythe/go/serving/api",
         "//kythe/go/util/kytheuri",
         "//kythe/go/util/schema",
         "//kythe/go/util/stringset",
@@ -54,7 +50,6 @@ go_binary(
         "//kythe/proto:storage_proto_go",
         "//kythe/proto:xref_proto_go",
         "//third_party/go:context",
-        "//third_party/go:grpc",
     ],
 )
 
@@ -65,13 +60,13 @@ go_binary(
         "//kythe/go/platform/vfs",
         "//kythe/go/services/search",
         "//kythe/go/services/xrefs",
+        "//kythe/go/serving/api",
         "//kythe/go/util/flagutil",
         "//kythe/go/util/kytheuri",
         "//kythe/go/util/schema",
         "//kythe/proto:storage_proto_go",
         "//kythe/proto:xref_proto_go",
         "//third_party/go:context",
-        "//third_party/go:grpc",
     ],
 )
 
