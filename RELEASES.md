@@ -1,6 +1,6 @@
 # Release Notes
 
-## Upcoming
+## v0.0.6
 
 Notable additions:
  - kwazthis: allow `--line` and `--column` info in place of a byte `--offset`
