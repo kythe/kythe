@@ -14,5 +14,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-. "$(dirname "$0")/bazel-common.sh"
-bazel test "${BAZEL_ARGS[@]}" //kythe/docs/schema //...
+cd "$WORKSPACE/repo"
+.jenkins/get-llvm.sh "$WORKSPACE"
+
+gcloud preview docker pull gcr.io/kythe_repo/kythe-builder
+
+docker run --rm -t -v "$PWD:/repo" -w /repo \
+ gcr.io/kythe_repo/kythe-builder ./setup_bazel.sh
+
+bazel() {
+ docker run --rm -t \
+   -v "$PWD:/repo" -v "$WORKSPACE/cache:/root/.cache" \
+   -w /repo \
+   --privileged --entrypoint /usr/bin/bazel \
+   gcr.io/kythe_repo/kythe-builder "$@"
+}
+
+BAZEL_ARGS=(
+  --color=no
+  --noshow_loading_progress
+  --noshow_progress
+  --verbose_failures
+  --test_output=errors
+  --test_summary=terse
+)

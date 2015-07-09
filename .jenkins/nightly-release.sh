@@ -15,4 +15,18 @@
 # limitations under the License.
 
 . "$(dirname "$0")/bazel-common.sh"
-bazel test "${BAZEL_ARGS[@]}" //kythe/docs/schema //...
+
+VERSION="nightly-$(date +%F)-$(git rev-parse --short @)"
+BAZEL_ARGS+=(-c opt)
+BUCKET=kythe-releases
+
+sed -ri "s/^release_version = .+\$/release_version = \"${VERSION}\"/" \
+  kythe/release/BUILD
+
+bazel test "${BAZEL_ARGS[@]}" //kythe/release:release_test
+
+GENFILES="$(bazel info "${BAZEL_ARGS[@]}" | \
+  awk '/^bazel-genfiles: / { print $2 }' | tr --delete '\r')"
+GENFILES="${GENFILES//\/root\/.cache/$WORKSPACE\/cache}"
+
+gsutil cp "$GENFILES"/kythe/release/kythe-$VERSION.tar.gz{,.md5} gs://$BUCKET/

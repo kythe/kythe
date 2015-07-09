@@ -29,14 +29,14 @@ fi
 
 cd kythe/release
 
-md5sum -c kythe-v*.tar.gz.md5
+md5sum -c kythe-*.tar.gz.md5
 
 rm -rf "$TMPDIR/release"
 mkdir "$TMPDIR/release"
-tar xzf kythe-v*.tar.gz -C "$TMPDIR/release"
+tar xzf kythe-*.tar.gz -C "$TMPDIR/release"
 cd "$TMPDIR/release"
 
-cd kythe-v*
+cd kythe-*
 
 # Ensure the various tools work on test inputs
 tools/viewindex "$TEST_SRCDIR/kythe/testdata/test.kindex" | \
@@ -49,7 +49,7 @@ tools/triples < "$TEST_SRCDIR/kythe/testdata/test.entries" >/dev/null
 # TODO(schroederc): add extractor tests
 
 # Ensure the Java indexer works on a curated test compilation
-indexers/java_indexer.jar "$TEST_SRCDIR/kythe/testdata/test.kindex" > entries
+java -jar indexers/java_indexer.jar "$TEST_SRCDIR/kythe/testdata/test.kindex" > entries
 # TODO(zarko): add C++ test kindex entries
 
 # Ensure basic Kythe pipeline toolset works
