@@ -119,6 +119,7 @@ type reference struct {
 		Names   []string `json:"names,omitempty"`
 		Kind    string   `json:"kind,omitempty"`
 		Subkind string   `json:"subkind,omitempty"`
+		Typed   string   `json:"typed,omitempty"`
 
 		Definitions []*definition `json:"definitions,omitempty"`
 	} `json:"node"`
@@ -213,7 +214,7 @@ func main() {
 
 			if eReply, err := xs.Edges(ctx, &xpb.EdgesRequest{
 				Ticket: []string{ref.TargetTicket},
-				Kind:   []string{schema.NamedEdge, definedAtEdge},
+				Kind:   []string{schema.NamedEdge, schema.TypedEdge, definedAtEdge},
 			}); err != nil {
 				log.Printf("WARNING: error getting edges for %q: %v", ref.TargetTicket, err)
 			} else {
@@ -224,6 +225,10 @@ func main() {
 					} else {
 						r.Node.Names = append(r.Node.Names, uri.Signature)
 					}
+				}
+
+				if typed := edges[schema.TypedEdge]; len(typed) > 0 {
+					r.Node.Typed = typed[0]
 				}
 
 				if !*skipDefinitions {

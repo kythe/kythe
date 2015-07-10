@@ -1,5 +1,10 @@
 # Release Notes
 
+## Upcoming
+
+Notable additions:
+ - kwazthis: return `/kythe/edge/typed` target ticket for each node
+
 ## v0.0.6
 
 Notable additions:

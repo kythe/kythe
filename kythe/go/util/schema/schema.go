@@ -60,6 +60,7 @@ const (
 	NamedEdge   = EdgePrefix + "named"
 	ParamEdge   = EdgePrefix + "param"
 	RefEdge     = EdgePrefix + "ref"
+	TypedEdge   = EdgePrefix + "typed"
 )
 
 // Fact filter for anchor locations
