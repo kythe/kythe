@@ -109,6 +109,9 @@ func (u *URI) Equal(v *URI) bool { return u.String() == v.String() }
 
 // FromVName returns a Kythe URI for the given Kythe VName protobuf message.
 func FromVName(v *spb.VName) *URI {
+	if v == nil {
+		return &URI{}
+	}
 	return &URI{
 		Signature: v.Signature,
 		Corpus:    v.Corpus,
