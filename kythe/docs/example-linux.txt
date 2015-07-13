@@ -29,6 +29,7 @@ bazel build //kythe/cxx/extractor:cxx_extractor \
     //kythe/cxx/indexer/cxx:indexer \
     //kythe/go/platform/tools:dedup_stream \
     //kythe/go/storage/tools:write_entries \
+    //kythe/go/serving/tools:write_tables \
     //kythe/go/serving/tools:http_server
 git clean -fdx kythe/web/ui
 pushd kythe/web/ui
@@ -38,6 +39,7 @@ export KYTHE_EXTRACTOR="${PWD}/bazel-bin/kythe/cxx/extractor/cxx_extractor"
 export KYTHE_INDEXER="${PWD}/bazel-bin/kythe/cxx/indexer/cxx/indexer"
 export KYTHE_DEDUP_STREAM="${PWD}/bazel-bin/kythe/go/platform/tools/dedup_stream"
 export KYTHE_WRITE_ENTRIES="${PWD}/bazel-bin/kythe/go/storage/tools/write_entries"
+export KYTHE_WRITE_TABLES="${PWD}/bazel-bin/kythe/go/serving/tools/write_tables"
 export KYTHE_HTTP_SERVER="${PWD}/bazel-bin/kythe/go/serving/tools/http_server"
 export KYTHE_WEB_UI="${PWD}/kythe/web/ui/resources/public"
 ----
@@ -133,8 +135,7 @@ make CC="${KERNEL_SOURCES}/extract_compile.sh" \
      HOSTCC="${KERNEL_SOURCES}/extract_compile.sh" -j 12
 ----
 
-Index the kernel. This part takes a fair amount of time (several minutes,
-typically).
+Index the kernel. This part takes a fair amount of time.
 
 [source,bash]
 ----
@@ -148,12 +149,20 @@ find "${KYTHE_OUTPUT_DIRECTORY}/units" -name '*.unit' -printf '%f\n' |
       --graphstore ${KERNEL_SOURCES}/graphstore
 ----
 
-Host the index (without generating experimental serving tables):
+Generate serving tables:
+
+[source,bash]
+----
+"${KYTHE_WRITE_TABLES}" -graphstore "${KERNEL_SOURCES}/graphstore" \
+    -out "${KERNEL_SOURCES}/tables"
+----
+
+Host the index:
 
 [source,bash]
 ----
 "${KYTHE_HTTP_SERVER}" -public_resources="${KYTHE_WEB_UI}" \
-    -graphstore "${KERNEL_SOURCES}/graphstore"
+    -serving_table "${KERNEL_SOURCES}/tables"
 ----
 
 The demonstration UI listens by default on http://localhost:8080
