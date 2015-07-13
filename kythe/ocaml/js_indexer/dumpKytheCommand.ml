@@ -22,7 +22,7 @@
  * LICENSE file in the "flow" directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
- *)
+*)
 
 (***********************************************************************)
 (* flow dump-kythe command *)
@@ -38,33 +38,32 @@ let spec = {
   name = "dump-kythe";
   doc = "Dumps Flow data using Kythe format";
   usage = Printf.sprintf
-    "Usage: %s dump-kythe [OPTION]... [FILE]\n\n\
-      e.g. %s dump-kythe foo.js\n\
-      or   %s dump-kythe < foo.js\n"
+      "Usage: %s dump-kythe [OPTION]... [FILE]\n\n\
+       e.g. %s dump-kythe foo.js\n\
+       or   %s dump-kythe < foo.js\n"
       CommandUtils.exe_name
       CommandUtils.exe_name
       CommandUtils.exe_name;
   args = CommandSpec.ArgSpec.(
-    empty
-    |> server_flags
-    |> json_flags
-    |> flag "--path" (optional string)
+      empty
+      |> server_flags
+      |> flag "--path" (optional string)
         ~doc:"Specify (fake) path to file when reading data from stdin"
-    |> anon "file" (optional string) ~doc:"[FILE]"
-  )
+      |> anon "file" (optional string) ~doc:"[FILE]"
+    )
 }
 
 let get_file path = function
   | Some filename ->
-      ServerProt.FileName (expand_path filename)
+    ServerProt.FileName (expand_path filename)
   | None ->
-      let contents = Sys_utils.read_stdin_to_string () in
-      let filename = (match path with
+    let contents = Sys_utils.read_stdin_to_string () in
+    let filename = (match path with
         | Some ""
         | None -> None
         | Some str -> Some (get_path_of_file str)
       ) in
-      ServerProt.FileContent (filename, contents)
+    ServerProt.FileContent (filename, contents)
 
 let string_of_pos pos =
   let file = Pos.filename pos in
@@ -81,28 +80,21 @@ let string_of_pos pos =
       Utils.spf "%s:%d:%d-%d"
         (Relative_path.to_absolute file) line start end_
 
-let handle_error (pos, err) json =
-  if json
-  then (
-    let pos = Errors_js.pos_to_json pos in
-    let json = JAssoc (("error", JString err) :: pos) in
-    output_string stderr ((json_to_string json)^"\n");
-  ) else (
-    let pos = Reason_js.string_of_pos pos in
-    output_string stderr (Utils.spf "%s:\n%s\n" pos err);
-  );
+let handle_error (pos, err) =
+  let pos = Reason_js.string_of_pos pos in
+  output_string stderr (Utils.spf "%s:\n%s\n" pos err);
   flush stderr
 
-let main option_values json path filename () =
+let main option_values path filename () =
   let file = get_file path filename in
   let root = guess_root (ServerProt.path_of_input file) in
   let ic, oc = connect_with_autostart option_values root in
   ServerProt.cmd_to_channel oc (ServerProt.DUMP_KYTHE file);
 
   match (Marshal.from_channel ic : DKS.resp_t) with
-  | (Some err, None) -> handle_error err json
+  | (Some err, None) -> handle_error err
   | (None, Some jsons) -> List.iter 
-      (fun j -> print_endline (json_to_string j)) jsons
+                            (fun j -> print_endline (json_to_string j)) jsons
   | (_, _) -> assert false
 
 let command = CommandSpec.command spec (collect_server_flags main)
