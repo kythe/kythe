@@ -3,9 +3,42 @@ package(default_visibility = ["//visibility:public"])
 licenses(["unencumbered"])  # Authored by Google, Apache 2.0
 
 filegroup(
+    name = "jni_header",
+    srcs = ["//external:jni_header"],
+)
+
+filegroup(
+    name = "jni_md_header-darwin",
+    srcs = ["//external:jni_md_header-darwin"],
+)
+
+filegroup(
+    name = "jni_md_header-linux",
+    srcs = ["//external:jni_md_header-linux"],
+)
+
+filegroup(
     name = "java",
     srcs = ["//external:java"],
 )
+
+filegroup(
+    name = "jar",
+    srcs = ["//external:jar"],
+)
+
+filegroup(
+    name = "javac",
+    srcs = ["//external:javac"],
+)
+
+BOOTCLASS_JARS = [
+    "rt.jar",
+    "resources.jar",
+    "jsse.jar",
+    "jce.jar",
+    "charsets.jar",
+]
 
 filegroup(
     name = "bootclasspath",
@@ -19,12 +52,12 @@ filegroup(
 
 filegroup(
     name = "langtools",
-    srcs = ["//external:langtools"],
+    srcs = ["//third_party/java/jdk/langtools:javac_jar"],
 )
 
 java_import(
     name = "langtools-neverlink",
-    jars = ["//external:langtools"],
+    jars = [":langtools"],
     neverlink = 1,
 )
 
@@ -42,6 +75,7 @@ filegroup(
 java_toolchain(
     name = "toolchain",
     encoding = "UTF-8",
+    jvm_opts = ["-client"],
     source_version = "7",
     target_version = "7",
 )
@@ -49,6 +83,7 @@ java_toolchain(
 exports_files([
     "JavaBuilder_deploy.jar",
     "SingleJar_deploy.jar",
+    "GenClass_deploy.jar",
 ])
 
 filegroup(
