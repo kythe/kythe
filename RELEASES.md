@@ -2,7 +2,11 @@
 
 ## Upcoming
 
+Notable changes:
+ - kwazthis: replace `--ignore_local_repo` behavior with `--local_repo=NONE`
+
 Notable additions:
+ - kwazthis: if found, automatically send local file as `--dirty_buffer`
  - kwazthis: return `/kythe/edge/typed` target ticket for each node
 
 ## v0.0.6

@@ -59,14 +59,22 @@ import (
 func init() {
 	flag.Usage = flagutil.SimpleUsage(`Determine what references are located at a particular offset (or line and column) within a file.
 
-By default, kwazthis will search for a .kythe configuration file in a directory
-above the given --path (if it exists locally relative to the current working
+kwazthis normally searches for a .kythe configuration file in a directory above
+the given --path (if it exists locally relative to the current working
 directory).  If found, --path will be made relative to this directory and --root
 before making any Kythe service requests.  If not found, --path will be passed
-unchanged.  --ignore_local_repo will turn off this behavior.`,
+unchanged.
+
+If the given --path file is found locally and --dirty_buffer is unset,
+--dirty_buffer is automatically set to found local file and sent to the server .
+
+--local_repo supplies kwazthis with the corpus root without searching the
+filesystem for the .kythe file and --local_repo=NONE will turn off all local
+filesystem behavior completely (including the automatic --dirty_buffer
+feature).`,
 		`(--offset int | --line int --column int) (--path p | --signature s)
 [--corpus c] [--root r] [--language l]
-[--api spec] [--ignore_local_repo] [--dirty_buffer path] [--skip_defs]`)
+[--api spec] [--local_repo root] [--dirty_buffer path] [--skip_defs]`)
 }
 
 var (
@@ -74,7 +82,8 @@ var (
 
 	apiFlag = api.Flag("api", api.CommonDefault, api.CommonFlagUsage)
 
-	ignoreLocalRepo = flag.Bool("ignore_local_repo", false, "Ignore local repository .kythe configuration")
+	localRepoRoot = flag.String("local_repo", "",
+		`Path to local repository root ("" indicates to search for a .kythe configuration file in a directory about the given --path; "NONE" completely disables all local repository behavior)`)
 
 	dirtyBuffer = flag.String("dirty_buffer", "", "Path to file with dirty buffer contents (optional)")
 
@@ -141,13 +150,20 @@ func main() {
 	xs, idx = *apiFlag, *apiFlag
 
 	relPath := *path
-	if !*ignoreLocalRepo {
+	if *localRepoRoot != "NONE" {
 		if _, err := os.Stat(relPath); err == nil {
 			absPath, err := filepath.Abs(relPath)
 			if err != nil {
 				log.Fatal(err)
 			}
-			kytheRoot := findKytheRoot(filepath.Dir(absPath))
+			if *dirtyBuffer == "" {
+				*dirtyBuffer = absPath
+			}
+
+			kytheRoot := *localRepoRoot
+			if kytheRoot == "" {
+				kytheRoot = findKytheRoot(filepath.Dir(absPath))
+			}
 			if kytheRoot != "" {
 				relPath, err = filepath.Rel(filepath.Join(kytheRoot, *root), absPath)
 				if err != nil {
