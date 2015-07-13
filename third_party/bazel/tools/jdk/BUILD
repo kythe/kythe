@@ -3,21 +3,6 @@ package(default_visibility = ["//visibility:public"])
 licenses(["unencumbered"])  # Authored by Google, Apache 2.0
 
 filegroup(
-    name = "jni_header",
-    srcs = ["//external:jni_header"],
-)
-
-filegroup(
-    name = "jni_md_header-darwin",
-    srcs = ["//external:jni_md_header-darwin"],
-)
-
-filegroup(
-    name = "jni_md_header-linux",
-    srcs = ["//external:jni_md_header-linux"],
-)
-
-filegroup(
     name = "java",
     srcs = ["//external:java"],
 )
@@ -31,14 +16,6 @@ filegroup(
     name = "javac",
     srcs = ["//external:javac"],
 )
-
-BOOTCLASS_JARS = [
-    "rt.jar",
-    "resources.jar",
-    "jsse.jar",
-    "jce.jar",
-    "charsets.jar",
-]
 
 filegroup(
     name = "bootclasspath",
