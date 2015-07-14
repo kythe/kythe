@@ -64,7 +64,7 @@ public:
 
   /// \brief Returns the primary element (the first one provided during
   /// construction).
-  const T &primary() {
+  const T &primary() const {
     assert(!Content.empty());
     return Content[0];
   }
@@ -252,9 +252,13 @@ public:
 
   ~IndexerASTVisitor() { deleteAllParents(); }
 
+  bool VisitFieldDecl(const clang::FieldDecl *Decl);
   bool VisitVarDecl(const clang::VarDecl *Decl);
   bool VisitDeclRefExpr(const clang::DeclRefExpr *DRE);
   bool VisitCallExpr(const clang::CallExpr *Expr);
+  bool VisitMemberExpr(const clang::MemberExpr *Expr);
+  bool VisitCXXDependentScopeMemberExpr(
+      const clang::CXXDependentScopeMemberExpr *Expr);
   bool VisitTypedefNameDecl(const clang::TypedefNameDecl *Decl);
   bool VisitRecordDecl(const clang::RecordDecl *Decl);
   bool VisitEnumDecl(const clang::EnumDecl *Decl);
@@ -388,11 +392,13 @@ public:
   /// \param NNS The qualifier on the name.
   /// \param Id The name itself.
   /// \param IdLoc The name's location.
+  /// \param Root If provided, the primary NodeId is morally prepended to `NNS`
+  /// such that the dependent name is lookup(lookup*(Root, NNS), Id).
   /// \param ER If `EmitRanges::Yes`, records ranges for syntactic elements.
-  MaybeFew<GraphObserver::NodeId>
-  BuildNodeIdForDependentName(const clang::NestedNameSpecifierLoc &NNS,
-                              const clang::IdentifierInfo *Id,
-                              const clang::SourceLocation IdLoc, EmitRanges ER);
+  MaybeFew<GraphObserver::NodeId> BuildNodeIdForDependentName(
+      const clang::NestedNameSpecifierLoc &NNS,
+      const clang::DeclarationName &Id, const clang::SourceLocation IdLoc,
+      const MaybeFew<GraphObserver::NodeId> &Root, EmitRanges ER);
 
   /// \brief Is `VarDecl` a definition?
   ///

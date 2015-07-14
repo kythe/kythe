@@ -254,6 +254,14 @@ public:
     Incomplete
   };
 
+  /// \brief Selects from among different flavors of variable.
+  enum class VariableSubkind {
+    /// This variable has no specific subkind.
+    None,
+    /// This is a field.
+    Field
+  };
+
   /// \brief Records a node representing a record type (such as a class or
   /// struct).
   /// \param Node The NodeId of the record.
@@ -348,11 +356,13 @@ public:
   /// \param DeclName The name to which this element is being bound.
   /// \param DeclNode The identifier for this particular element.
   /// \param Compl The completeness of this variable declaration.
+  /// \param Subkind Which kind of variable declaration this is.
   // TODO(zarko): We should make note of the storage-class-specifier (dcl.stc)
   // of the variable, which is a property the variable itself and not of its
   // type.
   virtual void recordVariableNode(const NameId &DeclName,
-                                  const NodeId &DeclNode, Completeness Compl) {}
+                                  const NodeId &DeclNode, Completeness Compl,
+                                  VariableSubkind Subkind) {}
 
   // TODO(zarko): recordExpandedTypeEdge -- records that a type was seen
   // to have some canonical type during a compilation. (This is a 'canonical'

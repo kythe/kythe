@@ -404,6 +404,68 @@ bool IndexerASTVisitor::TraverseDecl(clang::Decl *Decl) {
   return RecursiveASTVisitor::TraverseDecl(Decl);
 }
 
+bool IndexerASTVisitor::VisitMemberExpr(const clang::MemberExpr *E) {
+  if (E->getMemberLoc().isInvalid()) {
+    return true;
+  }
+  if (const auto *FieldDecl = E->getMemberDecl()) {
+    auto FieldId = BuildNodeIdForDecl(FieldDecl);
+    auto Range = RangeForASTEntityFromSourceLocation(E->getMemberLoc());
+    auto RCC = RangeInCurrentContext(Range);
+    Observer.recordDeclUseLocation(RCC, FieldId,
+                                   GraphObserver::Claimability::Unclaimable);
+    // TODO(zarko): where do non-explicit template arguments come up?
+    if (E->hasExplicitTemplateArgs()) {
+      std::vector<GraphObserver::NodeId> ArgIds;
+      std::vector<const GraphObserver::NodeId *> ArgNodeIds;
+      if (BuildTemplateArgumentList(&E->getExplicitTemplateArgs(), nullptr,
+                                    ArgIds, ArgNodeIds)) {
+        auto TappNodeId = Observer.recordTappNode(FieldId, ArgNodeIds);
+        auto Range = clang::SourceRange(E->getMemberLoc(),
+                                        E->getLocEnd().getLocWithOffset(1));
+        auto RCC = RangeInCurrentContext(Range);
+        Observer.recordDeclUseLocation(
+            RCC, TappNodeId, GraphObserver::Claimability::Unclaimable);
+      }
+    }
+  }
+  return true;
+}
+
+bool IndexerASTVisitor::VisitCXXDependentScopeMemberExpr(
+    const clang::CXXDependentScopeMemberExpr *E) {
+  MaybeFew<GraphObserver::NodeId> Root = None();
+  auto BaseType = E->getBaseType();
+  if (BaseType.getTypePtrOrNull()) {
+    auto *Builtin = dyn_cast<BuiltinType>(BaseType.getTypePtr());
+    // The "Dependent" builtin type is not useful, so we'll keep this lookup
+    // rootless. We could alternately invent a singleton type for the range of
+    // the lhs expression.
+    if (!Builtin || Builtin->getKind() != BuiltinType::Dependent) {
+      Root = BuildNodeIdForType(BaseType);
+    }
+  }
+  // EmitRanges::Yes causes the use location to be recorded.
+  auto DepNodeId =
+      BuildNodeIdForDependentName(E->getQualifierLoc(), E->getMember(),
+                                  E->getMemberLoc(), Root, EmitRanges::Yes);
+  if (DepNodeId && E->hasExplicitTemplateArgs()) {
+    std::vector<GraphObserver::NodeId> ArgIds;
+    std::vector<const GraphObserver::NodeId *> ArgNodeIds;
+    if (BuildTemplateArgumentList(&E->getExplicitTemplateArgs(), nullptr,
+                                  ArgIds, ArgNodeIds)) {
+      auto TappNodeId =
+          Observer.recordTappNode(DepNodeId.primary(), ArgNodeIds);
+      auto Range = clang::SourceRange(E->getMemberLoc(),
+                                      E->getLocEnd().getLocWithOffset(1));
+      auto RCC = RangeInCurrentContext(Range);
+      Observer.recordDeclUseLocation(RCC, TappNodeId,
+                                     GraphObserver::Claimability::Unclaimable);
+    }
+  }
+  return true;
+}
+
 bool IndexerASTVisitor::VisitCallExpr(const clang::CallExpr *E) {
   if (const auto *Callee = E->getCalleeDecl()) {
     if (!BlameStack.empty()) {
@@ -591,7 +653,8 @@ bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl *Decl) {
   std::vector<LibrarySupport::Completion> Completions;
   if (!IsDefinition(Decl)) {
     Observer.recordVariableNode(VarNameId, BodyDeclNode,
-                                GraphObserver::Completeness::Incomplete);
+                                GraphObserver::Completeness::Incomplete,
+                                GraphObserver::VariableSubkind::None);
     for (const auto &S : Supports) {
       S->InspectVariable(*this, DeclNode, BodyDeclNode, Decl,
                          GraphObserver::Completeness::Incomplete, Completions);
@@ -623,11 +686,34 @@ bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl *Decl) {
     }
   }
   Observer.recordVariableNode(VarNameId, BodyDeclNode,
-                              GraphObserver::Completeness::Definition);
+                              GraphObserver::Completeness::Definition,
+                              GraphObserver::VariableSubkind::None);
   for (const auto &S : Supports) {
     S->InspectVariable(*this, DeclNode, BodyDeclNode, Decl,
                        GraphObserver::Completeness::Definition, Completions);
   }
+  return true;
+}
+
+bool IndexerASTVisitor::VisitFieldDecl(const clang::FieldDecl *Decl) {
+  GraphObserver::NameId DeclName(BuildNameIdForDecl(Decl));
+  GraphObserver::NodeId DeclNode(BuildNodeIdForDecl(Decl));
+  SourceLocation DeclLoc = Decl->getLocation();
+  SourceRange NameRange = RangeForNameOfDeclaration(Decl);
+  MaybeRecordDefinitionRange(RangeInCurrentContext(NameRange), DeclNode);
+  // TODO(zarko): Record completeness data. This is relevant for static fields,
+  // which may be declared along with a complete class definition but later
+  // defined in a separate translation unit.
+  Observer.recordVariableNode(DeclName, DeclNode,
+                              GraphObserver::Completeness::Definition,
+                              GraphObserver::VariableSubkind::Field);
+  if (const auto *TSI = Decl->getTypeSourceInfo()) {
+    // TODO(zarko): Record storage classes for fields.
+    AscribeSpelledType(TSI->getTypeLoc(), Decl->getType(), DeclNode);
+  } else if (auto TyNodeId = BuildNodeIdForType(Decl->getType())) {
+    Observer.recordTypeEdge(DeclNode, TyNodeId.primary());
+  }
+  AddChildOfEdgeToDeclContext(Decl, DeclNode);
   return true;
 }
 
@@ -1107,7 +1193,8 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
     Observer.recordVariableNode(VarNameId, VarNodeId,
                                 IsFunctionDefinition
                                     ? GraphObserver::Completeness::Definition
-                                    : GraphObserver::Completeness::Incomplete);
+                                    : GraphObserver::Completeness::Incomplete,
+                                GraphObserver::VariableSubkind::None);
     MaybeRecordDefinitionRange(RangeInCurrentContext(Range), VarNodeId);
     Observer.recordParamEdge(InnerNode, ParamNumber++, VarNodeId);
     MaybeFew<GraphObserver::NodeId> ParamType;
@@ -1366,12 +1453,12 @@ IndexerASTVisitor::BuildNameIdForDecl(const clang::Decl *Decl) {
       if (const auto *DC = CurrentNodeAsDecl->getDeclContext()) {
         if (const TagDecl *TD = dyn_cast<TagDecl>(CurrentNodeAsDecl)) {
           const clang::Decl *DCD;
-          switch (TD->getDeclKind()) {
+          switch (DC->getDeclKind()) {
           case Decl::Namespace:
-            DCD = cast<NamespaceDecl>(DC);
+            DCD = dyn_cast<NamespaceDecl>(DC);
             break;
           case Decl::TranslationUnit:
-            DCD = cast<TranslationUnitDecl>(DC);
+            DCD = dyn_cast<TranslationUnitDecl>(DC);
             break;
           default:
             DCD = nullptr;
@@ -1814,8 +1901,8 @@ IndexerASTVisitor::BuildNodeIdForTemplateName(const clang::TemplateName &Name,
 
 MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForDependentName(
     const clang::NestedNameSpecifierLoc &InNNSLoc,
-    const clang::IdentifierInfo *Id, const clang::SourceLocation IdLoc,
-    EmitRanges ER) {
+    const clang::DeclarationName &Id, const clang::SourceLocation IdLoc,
+    const MaybeFew<GraphObserver::NodeId> &Root, EmitRanges ER) {
   GraphObserver::NodeId IdOut(Observer.getDefaultClaimToken());
   // TODO(zarko): Need a better way to generate stablish names here.
   // In particular, it would be nice if a dependent name A::B::C
@@ -1831,26 +1918,30 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForDependentName(
     if (!Observer.AppendRangeToStream(Ostream, Range)) {
       Ostream << "invalid";
     }
+    Ostream << "@";
+    if (!Observer.AppendRangeToStream(
+            Ostream, RangeInCurrentContext(
+                         RangeForASTEntityFromSourceLocation(IdLoc)))) {
+      Ostream << "invalid";
+    }
   }
   bool HandledRecursively = false;
   unsigned SubIdCount = 0;
   clang::NestedNameSpecifierLoc NNSLoc = InNNSLoc;
+  if (!NNSLoc && Root) {
+    Observer.recordParamEdge(IdOut, SubIdCount++, Root.primary());
+  }
   while (NNSLoc && !HandledRecursively) {
     GraphObserver::NodeId SubId(Observer.getDefaultClaimToken());
     auto *NNS = NNSLoc.getNestedNameSpecifier();
     switch (NNS->getKind()) {
     case NestedNameSpecifier::Identifier: {
       // Hashcons the identifiers.
-      if (clang::NestedNameSpecifierLoc NNSPrefix = NNSLoc.getPrefix()) {
-        if (auto Subtree =
-                BuildNodeIdForDependentName(NNSPrefix, NNS->getAsIdentifier(),
-                                            NNSLoc.getLocalBeginLoc(), ER)) {
-          SubId = Subtree.primary();
-          HandledRecursively = true;
-        } else {
-          assert(IgnoreUnimplemented && "NNS::Identifier");
-          return None();
-        }
+      if (auto Subtree = BuildNodeIdForDependentName(
+              NNSLoc.getPrefix(), NNS->getAsIdentifier(),
+              NNSLoc.getLocalBeginLoc(), Root, ER)) {
+        SubId = Subtree.primary();
+        HandledRecursively = true;
       } else {
         assert(IgnoreUnimplemented && "NNS::Identifier");
         return None();
@@ -1883,7 +1974,26 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForDependentName(
     Observer.recordParamEdge(IdOut, SubIdCount++, SubId);
     NNSLoc = NNSLoc.getPrefix();
   }
-  Observer.recordLookupNode(IdOut, Id->getNameStart());
+  switch (Id.getNameKind()) {
+  case clang::DeclarationName::Identifier:
+    Observer.recordLookupNode(IdOut, Id.getAsIdentifierInfo()->getNameStart());
+    break;
+// TODO(zarko): Fill in the remaining relevant DeclarationName cases.
+#define UNEXPECTED_DECLARATION_NAME_KIND(kind)                                 \
+  case clang::DeclarationName::kind:                                           \
+    assert(IgnoreUnimplemented && "Unexpected DeclaraionName::" #kind);        \
+    return None();
+  UNEXPECTED_DECLARATION_NAME_KIND(ObjCZeroArgSelector);
+  UNEXPECTED_DECLARATION_NAME_KIND(ObjCOneArgSelector);
+  UNEXPECTED_DECLARATION_NAME_KIND(ObjCMultiArgSelector);
+  UNEXPECTED_DECLARATION_NAME_KIND(CXXConstructorName);
+  UNEXPECTED_DECLARATION_NAME_KIND(CXXDestructorName);
+  UNEXPECTED_DECLARATION_NAME_KIND(CXXConversionFunctionName);
+  UNEXPECTED_DECLARATION_NAME_KIND(CXXOperatorName);
+  UNEXPECTED_DECLARATION_NAME_KIND(CXXLiteralOperatorName);
+  UNEXPECTED_DECLARATION_NAME_KIND(CXXUsingDirective);
+#undef UNEXPECTED_DECLARATION_NAME_KIND
+  }
   if (ER == EmitRanges::Yes) {
     clang::SourceRange Range = RangeForASTEntityFromSourceLocation(IdLoc);
     if (Range.isValid()) {
@@ -2475,8 +2585,9 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
       const auto &T = Type.castAs<DependentNameTypeLoc>();
       const auto &NNS = T.getQualifierLoc();
       const auto &NameLoc = T.getNameLoc();
-      ID = BuildNodeIdForDependentName(NNS, T.getTypePtr()->getIdentifier(),
-                                       NameLoc, EmitRanges);
+      ID = BuildNodeIdForDependentName(
+          NNS, clang::DeclarationName(T.getTypePtr()->getIdentifier()), NameLoc,
+          None(), EmitRanges);
     }
     break;
   UNSUPPORTED_CLANG_TYPE(DependentTemplateSpecialization);

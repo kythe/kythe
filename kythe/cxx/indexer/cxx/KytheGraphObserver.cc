@@ -294,12 +294,20 @@ void KytheGraphObserver::recordUserDefinedNode(const NameId &name,
 
 void KytheGraphObserver::recordVariableNode(const NameId &name,
                                             const NodeId &node,
-                                            Completeness completeness) {
+                                            Completeness completeness,
+                                            VariableSubkind subkind) {
   KytheGraphRecorder::VName name_vname(RecordName(name));
   KytheGraphRecorder::VName node_vname(VNameFromNodeId(node));
   recorder_->BeginNode(node_vname, NodeKindID::kVariable);
   recorder_->AddProperty(PropertyID::kComplete,
                          CompletenessToString(completeness));
+  switch (subkind) {
+    case VariableSubkind::Field:
+      recorder_->AddProperty(PropertyID::kSubkind, "field");
+      break;
+    case VariableSubkind::None:
+      break;
+  }
   recorder_->EndNode();
   recorder_->AddEdge(node_vname, EdgeKindID::kNamed, name_vname);
 }

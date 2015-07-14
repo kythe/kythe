@@ -182,7 +182,8 @@ class KytheGraphObserver : public GraphObserver {
                              GraphObserver::Claimability Cl) override;
 
   void recordVariableNode(const NameId &DeclName, const NodeId &DeclNode,
-                          Completeness VarCompleteness) override;
+                          Completeness VarCompleteness,
+                          VariableSubkind Subkind) override;
 
   void recordUserDefinedNode(const NameId &Name, const NodeId &Id,
                              const llvm::StringRef &NodeKind,

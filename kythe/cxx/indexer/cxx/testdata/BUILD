@@ -380,6 +380,18 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "vardecl_field",
+    srcs = ["basic/vardecl_field.cc"],
+    tags = ["basic"],
+)
+
+cxx_indexer_test(
+    name = "vardecl_field_ref",
+    srcs = ["basic/vardecl_field_ref.cc"],
+    tags = ["basic"],
+)
+
+cxx_indexer_test(
     name = "vardecl_global_anchor",
     srcs = ["basic/vardecl_global_anchor.cc"],
     tags = ["basic"],
@@ -412,6 +424,13 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "wild_std_allocator",
     srcs = ["basic/wild_std_allocator.cc"],
+    tags = ["basic"],
+)
+
+cxx_indexer_test(
+    name = "wild_struct_field",
+    srcs = ["basic/wild_struct_field.c"],
+    std = "c99",
     tags = ["basic"],
 )
 
@@ -809,8 +828,38 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "template_depbase_field_ref",
+    srcs = ["template/template_depbase_field_ref.cc"],
+    tags = ["template"],
+)
+
+cxx_indexer_test(
+    name = "template_depexpr_field_ref",
+    srcs = ["template/template_depexpr_field_ref.cc"],
+    tags = ["template"],
+)
+
+cxx_indexer_test(
+    name = "template_depname_field_ref",
+    srcs = ["template/template_depname_field_ref.cc"],
+    tags = ["template"],
+)
+
+cxx_indexer_test(
+    name = "template_depname_template_field_ref",
+    srcs = ["template/template_depname_template_field_ref.cc"],
+    tags = ["template"],
+)
+
+cxx_indexer_test(
     name = "template_depname_class",
     srcs = ["template/template_depname_class.cc"],
+    tags = ["template"],
+)
+
+cxx_indexer_test(
+    name = "template_depname_implicit",
+    srcs = ["template/template_depname_implicit.cc"],
     tags = ["template"],
 )
 
@@ -823,6 +872,12 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "template_depname_path_graph",
     srcs = ["template/template_depname_path_graph.cc"],
+    tags = ["template"],
+)
+
+cxx_indexer_test(
+    name = "template_field",
+    srcs = ["template/template_field.cc"],
     tags = ["template"],
 )
 
@@ -962,6 +1017,13 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "template_redundant_constituents_anchored",
     srcs = ["template/template_redundant_constituents_anchored.cc"],
+    tags = ["template"],
+)
+
+cxx_indexer_test(
+    name = "template_static_member",
+    srcs = ["template/template_static_member.cc"],
+    ignore_dups = True,
     tags = ["template"],
 )
 
