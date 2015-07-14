@@ -255,6 +255,10 @@ public:
   bool VisitFieldDecl(const clang::FieldDecl *Decl);
   bool VisitVarDecl(const clang::VarDecl *Decl);
   bool VisitDeclRefExpr(const clang::DeclRefExpr *DRE);
+  bool VisitCXXConstructExpr(const clang::CXXConstructExpr *E);
+  bool VisitCXXDeleteExpr(const clang::CXXDeleteExpr *E);
+  bool VisitCXXPseudoDestructorExpr(const clang::CXXPseudoDestructorExpr *E);
+  bool VisitCXXUnresolvedConstructExpr(const clang::CXXUnresolvedConstructExpr *E);
   bool VisitCallExpr(const clang::CallExpr *Expr);
   bool VisitMemberExpr(const clang::MemberExpr *Expr);
   bool VisitCXXDependentScopeMemberExpr(
@@ -684,9 +688,17 @@ private:
   /// The current type variable context for the visitor (indexed by depth).
   std::vector<clang::TemplateParameterList *> TypeContext;
 
-  /// A stack of IDs to use when assigning blame for references (such as
+  /// At least 1 NodeId.
+  using SomeNodes = llvm::SmallVector<GraphObserver::NodeId, 1>;
+
+  /// A stack of ID groups to use when assigning blame for references (such as
   /// function calls).
-  std::vector<GraphObserver::NodeId> BlameStack;
+  std::vector<SomeNodes> BlameStack;
+
+  /// Blames a call to `Callee` at `Range` on everything at the top of
+  /// `BlameStack` (or does nothing if there's nobody to blame).
+  void RecordCallEdges(const GraphObserver::Range &Range,
+                       const GraphObserver::NodeId &Callee);
 
   /// \brief The current context for constructing `GraphObserver::Range`s.
   ///

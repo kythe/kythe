@@ -61,6 +61,20 @@ static const char *CompletenessToString(
   return "invalid-completeness";
 }
 
+static const char *FunctionSubkindToString(
+    KytheGraphObserver::FunctionSubkind subkind) {
+  switch (subkind) {
+    case KytheGraphObserver::FunctionSubkind::None:
+      return "none";
+    case KytheGraphObserver::FunctionSubkind::Constructor:
+      return "constructor";
+    case KytheGraphObserver::FunctionSubkind::Destructor:
+      return "destructor";
+  }
+  assert(0 && "Invalid enumerator passed to FunctionSubkindToString.");
+  return "invalid-fn-subkind";
+}
+
 kythe::proto::VName KytheGraphObserver::VNameFromFileEntry(
     const clang::FileEntry *file_entry) {
   kythe::proto::VName out_name;
@@ -427,15 +441,35 @@ void KytheGraphObserver::recordCallableAsEdge(const NodeId &from_id,
 }
 
 void KytheGraphObserver::recordSpecEdge(const NodeId &term_id,
-                                        const NodeId &type_id) {
-  recorder_->AddEdge(VNameFromNodeId(term_id), EdgeKindID::kSpecializes,
-                     VNameFromNodeId(type_id));
+                                        const NodeId &type_id,
+                                        Confidence conf) {
+  switch (conf) {
+    case Confidence::NonSpeculative:
+      recorder_->AddEdge(VNameFromNodeId(term_id), EdgeKindID::kSpecializes,
+                         VNameFromNodeId(type_id));
+      break;
+    case Confidence::Speculative:
+      recorder_->AddEdge(VNameFromNodeId(term_id),
+                         EdgeKindID::kSpecializesSpeculative,
+                         VNameFromNodeId(type_id));
+      break;
+  }
 }
 
 void KytheGraphObserver::recordInstEdge(const NodeId &term_id,
-                                        const NodeId &type_id) {
-  recorder_->AddEdge(VNameFromNodeId(term_id), EdgeKindID::kInstantiates,
-                     VNameFromNodeId(type_id));
+                                        const NodeId &type_id,
+                                        Confidence conf) {
+  switch (conf) {
+    case Confidence::NonSpeculative:
+      recorder_->AddEdge(VNameFromNodeId(term_id), EdgeKindID::kInstantiates,
+                         VNameFromNodeId(type_id));
+      break;
+    case Confidence::Speculative:
+      recorder_->AddEdge(VNameFromNodeId(term_id),
+                         EdgeKindID::kInstantiatesSpeculative,
+                         VNameFromNodeId(type_id));
+      break;
+  }
 }
 
 GraphObserver::NodeId KytheGraphObserver::nodeIdForTypeAliasNode(
@@ -559,10 +593,15 @@ void KytheGraphObserver::recordIntegerConstantNode(const NodeId &node_id,
 }
 
 void KytheGraphObserver::recordFunctionNode(const NodeId &node_id,
-                                            Completeness completeness) {
+                                            Completeness completeness,
+                                            FunctionSubkind subkind) {
   recorder_->BeginNode(VNameFromNodeId(node_id), NodeKindID::kFunction);
   recorder_->AddProperty(PropertyID::kComplete,
                          CompletenessToString(completeness));
+  if (subkind != FunctionSubkind::None) {
+    recorder_->AddProperty(PropertyID::kSubkind,
+                           FunctionSubkindToString(subkind));
+  }
   recorder_->EndNode();
 }
 

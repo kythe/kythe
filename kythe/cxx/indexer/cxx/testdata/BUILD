@@ -458,6 +458,38 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "function_ctor",
+    srcs = ["function/function_ctor.cc"],
+    tags = ["function"],
+)
+
+cxx_indexer_test(
+    name = "function_ctor_default_value",
+    srcs = ["function/function_ctor_default_value.cc"],
+    ignore_dups = True,
+    tags = ["function"],
+)
+
+cxx_indexer_test(
+    name = "function_ctor_default_and_init",
+    srcs = ["function/function_ctor_default_and_init.cc"],
+    ignore_dups = True,
+    tags = ["function"],
+)
+
+cxx_indexer_test(
+    name = "function_ctor_init_list",
+    srcs = ["function/function_ctor_init_list.cc"],
+    tags = ["function"],
+)
+
+cxx_indexer_test(
+    name = "function_ctor_new",
+    srcs = ["function/function_ctor_new.cc"],
+    tags = ["function"],
+)
+
+cxx_indexer_test(
     name = "function_decl",
     srcs = ["function/function_decl.cc"],
     tags = ["function"],
@@ -489,6 +521,30 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "function_dtor",
+    srcs = ["function/function_dtor.cc"],
+    tags = ["function"],
+)
+
+cxx_indexer_test(
+    name = "function_dtor_delete",
+    srcs = ["function/function_dtor_delete.cc"],
+    tags = ["function"],
+)
+
+cxx_indexer_test(
+    name = "function_dtor_explicit_call",
+    srcs = ["function/function_dtor_explicit_call.cc"],
+    tags = ["function"],
+)
+
+cxx_indexer_test(
+    name = "function_dtor_implicit_call",
+    srcs = ["function/function_dtor_implicit_call.cc"],
+    tags = ["function"],
+)
+
+cxx_indexer_test(
     name = "function_knr_ty",
     srcs = ["function/function_knr_ty.c"],
     std = "c99",
@@ -499,6 +555,24 @@ cxx_indexer_test(
     name = "function_lambda",
     srcs = ["function/function_lambda.cc"],
     ignore_dups = True,
+    tags = ["function"],
+)
+
+cxx_indexer_test(
+    name = "function_member",
+    srcs = ["function/function_member.cc"],
+    tags = ["function"],
+)
+
+cxx_indexer_test(
+    name = "function_member_conversion",
+    srcs = ["function/function_member_conversion.cc"],
+    tags = ["function"],
+)
+
+cxx_indexer_test(
+    name = "function_member_operator",
+    srcs = ["function/function_member_operator.cc"],
     tags = ["function"],
 )
 
@@ -568,6 +642,12 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "function_ty",
     srcs = ["function/function_ty.cc"],
+    tags = ["function"],
+)
+
+cxx_indexer_test(
+    name = "function_static_member",
+    srcs = ["function/function_static_member.cc"],
     tags = ["function"],
 )
 
@@ -773,6 +853,20 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "template_class_template_ctor",
+    srcs = ["template/template_class_template_ctor.cc"],
+    ignore_dups = True,
+    tags = ["template"],
+)
+
+cxx_indexer_test(
+    name = "template_class_ctor_default_and_init",
+    srcs = ["template/template_class_ctor_default_and_init.cc"],
+    ignore_dups = True,
+    tags = ["template"],
+)
+
+cxx_indexer_test(
     name = "template_class_defn",
     srcs = ["template/template_class_defn.cc"],
     tags = ["template"],
@@ -830,6 +924,34 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "template_depbase_field_ref",
     srcs = ["template/template_depbase_field_ref.cc"],
+    tags = ["template"],
+)
+
+cxx_indexer_test(
+    name = "template_dependent_ctor",
+    srcs = ["template/template_dependent_ctor.cc"],
+    ignore_dups = True,
+    tags = ["template"],
+)
+
+cxx_indexer_test(
+    name = "template_dependent_ctor_small",
+    srcs = ["template/template_dependent_ctor_small.cc"],
+    ignore_dups = True,
+    tags = ["template"],
+)
+
+cxx_indexer_test(
+    name = "template_dependent_dtor",
+    srcs = ["template/template_dependent_dtor.cc"],
+    ignore_dups = True,
+    tags = ["template"],
+)
+
+cxx_indexer_test(
+    name = "template_dependent_dtor_qualified",
+    srcs = ["template/template_dependent_dtor_qualified.cc"],
+    ignore_dups = True,
     tags = ["template"],
 )
 
@@ -900,6 +1022,12 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "template_fn_dependent_spec_defn",
+    srcs = ["template/template_fn_dependent_spec_defn.cc"],
+    tags = ["template"],
+)
+
+cxx_indexer_test(
     name = "template_fn_explicit_spec_completes",
     srcs = ["template/template_fn_explicit_spec_completes.cc"],
     tags = ["template"],
@@ -921,6 +1049,12 @@ cxx_indexer_test(
     name = "template_fn_inst_vs_spec",
     srcs = ["template/template_fn_inst_vs_spec.cc"],
     ignore_dups = True,
+    tags = ["template"],
+)
+
+cxx_indexer_test(
+    name = "template_fn_member_spec_defn",
+    srcs = ["template/template_fn_member_spec_defn.cc"],
     tags = ["template"],
 )
 
@@ -1036,6 +1170,12 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "template_ty_typename",
     srcs = ["template/template_ty_typename.cc"],
+    tags = ["template"],
+)
+
+cxx_indexer_test(
+    name = "template_unresolved_ctor_expr",
+    srcs = ["template/template_unresolved_ctor_expr.cc"],
     tags = ["template"],
 )
 

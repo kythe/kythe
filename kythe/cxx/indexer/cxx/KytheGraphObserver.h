@@ -146,8 +146,8 @@ class KytheGraphObserver : public GraphObserver {
   NodeId recordTypeAliasNode(const NameId &DeclName,
                              const NodeId &DeclNode) override;
 
-  void recordFunctionNode(const NodeId &Node,
-                          Completeness FunctionCompleteness) override;
+  void recordFunctionNode(const NodeId &Node, Completeness FunctionCompleteness,
+                          FunctionSubkind Subkind) override;
 
   void recordCallableNode(const NodeId &Node) override;
 
@@ -207,11 +207,11 @@ class KytheGraphObserver : public GraphObserver {
   void recordTypeEdge(const NodeId &TermNodeId,
                       const NodeId &TypeNodeId) override;
 
-  void recordSpecEdge(const NodeId &TermNodeId,
-                      const NodeId &TypeNodeId) override;
+  void recordSpecEdge(const NodeId &TermNodeId, const NodeId &TypeNodeId,
+                      Confidence Conf) override;
 
-  void recordInstEdge(const NodeId &TermNodeId,
-                      const NodeId &TypeNodeId) override;
+  void recordInstEdge(const NodeId &TermNodeId, const NodeId &TypeNodeId,
+                      Confidence Conf) override;
 
   void recordCallableAsEdge(const NodeId &ToCallId,
                             const NodeId &CallableAsId) override;

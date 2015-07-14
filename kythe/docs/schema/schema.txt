@@ -157,7 +157,7 @@ Points from::
 Points toward::
   semantic nodes with `complete` facts set to `incomplete` or `complete`
 See also::
-  <<record>>, <<sum>>, <<completesuniquely>>
+  <<record>>, <<sum>>, <<completesuniquely,[completes/uniquely]>>
 
 [kythe,C++,"Definitions complete forward declarations in headers."]
 --------------------------------------------------------------------------------
@@ -280,7 +280,7 @@ class B : public A { };
 
 [[instantiates]]
 instantiates
-~~~~~~~~~~~
+~~~~~~~~~~~~
 
 Brief description::
   A *instantiates* B if A is the result of monomorphizing B.
@@ -293,7 +293,7 @@ Points toward::
 Ordinals are used::
   never
 See also::
-  <<specializes>>
+  <<instantiatesspeculative,[instantiates/speculative]>>, <<specializes>>
 
 In $$C++$$, *specialization* and *instantiation* capture distinct relationships.
 Every template `T` has a primary template, which defines the number and kind
@@ -379,6 +379,50 @@ float w = v<int, float, long>;
 //- TAppPartialSpecialization param.1 vname("float#builtin",_,_,_,_)
 --------------------------------------------------------------------------------
 
+[[instantiatesspeculative]]
+instantiates/speculative
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Brief description::
+  A *instantiates/speculative* B if A could be the result of monomorphizing B.
+Commonly arises from::
+  implicit template application
+Points from::
+  semantic nodes
+Points toward::
+  semantic nodes (<<tapp>>)
+Ordinals are used::
+  never
+See also::
+  <<instantiates>>, <<specializes>>
+
+It may not be possible to decide whether a type instantiation actually occurs,
+especially when dependent types are involved. The *instantiates/speculative*
+and *specializes/speculative* edges are like the *instantiates* and
+*specializes* edges, but they also record the fact that the instantiation
+(specialization) did not occur when the code was indexed.
+
+[kythe,C++,"Speculative instantiation and specialization."]
+--------------------------------------------------------------------------------
+// Checks indexing refs and defs of dependent function specializations.
+//- @f defines AbsF1
+template <typename S> long f(S s) { return 0; }
+//- @f defines AbsF2
+template <typename S> int f(S s) { return 0; }
+template <typename T> struct S {
+  // Note that C++ doesn't even check the kindedness of these type applications.
+  friend
+  //- @f defines DepSpecFT
+  //- DepSpecFT instantiates/speculative TAppAbsF1T
+  //- DepSpecFT specializes/speculative TAppAbsF1T
+  //- TAppAbsF1T param.0 AbsF1
+  //- DepSpecFT instantiates/speculative TAppAbsF2T
+  //- DepSpecFT specializes/speculative TAppAbsF2T
+  //- TAppAbsF2T param.0 AbsF2
+  long f<int, short>(T t) { return 1; }
+};
+--------------------------------------------------------------------------------
+
 [[named]]
 named
 ~~~~~
@@ -425,7 +469,7 @@ Points toward::
 Ordinals are used::
   never
 See also::
-  <<overridestransitive>>
+  <<overridestransitive,[overrides/transitive]>>
 
 [kythe,Java,"Methods have overrides edges."]
 --------------------------------------------------------------------------------
@@ -572,7 +616,7 @@ Ordinals are used::
 Notes::
   This edge is used only for first-level macro expansions (where the macro
   being expanded is spelled out in the source file). Subsequent expansions are
-  recorded using the <<refexpandstransitive,ref/expands/transitive>> edge.
+  recorded using the <<refexpandstransitive,[ref/expands/transitive]>> edge.
 
 [kythe,C++,"Uttering the name of a macro expands it."]
 --------------------------------------------------------------------------------
@@ -597,7 +641,7 @@ Ordinals are used::
   never
 Notes::
   First-level macro expansions (like those written down in the source file)
-  are recorded with the <<refexpands,ref/expands>> edge.
+  are recorded with the <<refexpands,[ref/expands]>> edge.
 
 [kythe,C++,"Macros can expand other macros."]
 --------------------------------------------------------------------------------
@@ -676,7 +720,7 @@ Points toward::
 Ordinals are used::
   never
 See also::
-  <<instantiates>>
+  <<instantiates>>, <<instantiatesspeculative,[instantiates/speculative]>>
 
 [kythe,C++,"Template specializations specialize."]
 --------------------------------------------------------------------------------
@@ -701,6 +745,13 @@ template <> bool id(bool x) { return !(!x); }
 //- TAppIdFnBool param.0 IdFn
 //- TAppIdFnBool param.1 vname("bool#builtin",_,_,_,_)
 --------------------------------------------------------------------------------
+
+
+[[specializesspeculative]]
+specializes/speculative
+~~~~~~~~~~~~~~~~~~~~~~~
+See <<instantiatesspeculative,[instantiates/speculative]>>.
+
 
 [[typed]]
 typed
@@ -841,7 +892,7 @@ callable
 ~~~~~~~~
 
 Brief description::
-  A *callable* is the target of a <<refcall,ref/call>> edge.
+  A *callable* is the target of a <<refcall,[ref/call]>> edge.
 Notes::
   Callables abstract different notions of call targets. For example, in $$C++$$,
   a struct may define an `operator()`. That struct and its operator are both
@@ -851,7 +902,7 @@ Notes::
   An instance member function with type `int -> string` will be callable as a
   callable with the same type as a free function typed as `int -> string`.
 See also::
-  <<callableas>>, <<function>>, <<refcall,ref/call>>
+  <<callableas>>, <<function>>, <<refcall,[ref/call]>>
 
 [kythe,C++,"Functions are callable as callables."]
 --------------------------------------------------------------------------------
@@ -908,7 +959,7 @@ Facts::
   text:::
     Uninterpreted content as an array of bytes.
 See also::
-  <<anchor>>, <<refincludes,ref/includes>>
+  <<anchor>>, <<refincludes,[ref/includes]>>
 
 [kythe,C++,"Anchors are children of files."]
 --------------------------------------------------------------------------------
@@ -944,6 +995,9 @@ Facts::
   complete:::
     `incomplete` if this is only a declaration; `definition` if it is a
     definition.
+  subkind:::
+    `constructor` for constructors; `destructor` for destructors;
+    `none` or unspecified for normal or member functions
 See also::
   <<callable>>
 
@@ -1023,8 +1077,8 @@ Notes::
   participate in the programming language proper. Instead, they are evaluated
   separately, usually before semantic analysis takes place.
 See also::
-  <<refexpands,ref/expands>>, <<refexpandstransitive,ref/expands/transitive>>,
-  <<refqueries,ref/queries>>, <<undefines,undefines>>
+  <<refexpands,[ref/expands]>>, <<refexpandstransitive,[ref/expands/transitive]>>,
+  <<refqueries,[ref/queries]>>, <<undefines,[undefines]>>
 
 [kythe,C++,"Defines define macros."]
 --------------------------------------------------------------------------------
@@ -1554,6 +1608,33 @@ template <template <typename A> class B> class C;
 //- NestedAbs.node/kind abs
 //- NestedAbsvar childof NestedAbs
 //- NestedAbs param.0 AbsvarA
+--------------------------------------------------------------------------------
+
+Special values for dependent lookups
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Sometimes, the indexer must synthesize a <<lookup>> node to a constructor or
+destructor without knowing the name of the type being constructed or destroyed.
+In this case, the constructor (or destructor) is named `#ctor` (or `#dtor`):
+
+[kythe,C++,"Dependent ctors and dtors"]
+--------------------------------------------------------------------------------
+//- @T defines TyvarT
+template <typename T>
+class C : T {
+  //- @"T()" ref/call LookupTCtor
+  //- LookupTCtor.node/kind lookup
+  //- LookupTCtor param.0 TyvarT
+  //- LookupTCtor.text "#ctor"
+  C() : T() { }
+
+  T *t;
+  //- @"delete t" ref/call LookupTDtor
+  //- LookupTDtor.node/kind lookup
+  //- LookupTDtor param.0 TyvarT
+  //- LookupTDtor.text "#dtor"
+  void f() { delete t; }
+};
 --------------------------------------------------------------------------------
 
 Java

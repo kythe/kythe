@@ -262,6 +262,15 @@ public:
     Field
   };
 
+  enum class FunctionSubkind {
+    /// This function has no specific subkind.
+    None,
+    /// This is a constructor.
+    Constructor,
+    /// This is a destructor.
+    Destructor
+  };
+
   /// \brief Records a node representing a record type (such as a class or
   /// struct).
   /// \param Node The NodeId of the record.
@@ -273,8 +282,10 @@ public:
   /// \brief Records a node representing a function.
   /// \param Node The NodeId of the function.
   /// \param FunctionCompleteness Whether the function is complete.
+  /// \param Subkind The subkind of the function.
   virtual void recordFunctionNode(const NodeId &Node,
-                                  Completeness FunctionCompleteness) {}
+                                  Completeness FunctionCompleteness,
+                                  FunctionSubkind Subkind) {}
 
   /// \brief Records a node representing a callable, an object that can
   /// appear as the target of a call expression.
@@ -322,7 +333,7 @@ public:
 
   /// \brief Records a node representing a deferred lookup.
   /// \param Node The `NodeId` of the lookup.
-  /// \param Name The `Name` for which resolution has been deferred.
+  /// \param Name The `Name` for which resolution has been deferred
   virtual void recordLookupNode(const NodeId &Node,
                                 const llvm::StringRef &Name) {}
 
@@ -389,6 +400,15 @@ public:
     Completes
   };
 
+  /// \brief Describes how much of a guess an edge is.
+  enum class Confidence {
+    /// This relationship definitely exists.
+    NonSpeculative,
+    /// There is not enough information to determine whether this relationship
+    /// actually exists.
+    Speculative
+  };
+
   /// \brief Records that a particular `Range` contains a completion
   /// for the node named `DefnId`.
   /// \param SourceRange The source range containing the completion.
@@ -429,15 +449,17 @@ public:
   /// abstraction.
   /// \param TypeNodeId The identifier for the node representing the specialized
   /// abstraction.
-  virtual void recordSpecEdge(const NodeId &TermNodeId,
-                              const NodeId &AbsNodeId) {}
+  /// \param Conf Whether we're sure that this relationship exists.
+  virtual void recordSpecEdge(const NodeId &TermNodeId, const NodeId &AbsNodeId,
+                              Confidence Conf) {}
 
   /// \brief Records that some term instantiates some abstraction.
   /// \param TermNodeId The identifier for the node instantiating the type.
   /// \param TypeNodeId The identifier for the node representing the
   /// instantiated abstraction.
-  virtual void recordInstEdge(const NodeId &TermNodeId,
-                              const NodeId &AbsNodeId) {}
+  /// \param Conf Whether we're sure that this relationship exists.
+  virtual void recordInstEdge(const NodeId &TermNodeId, const NodeId &AbsNodeId,
+                              Confidence Conf) {}
 
   /// \brief Records that one node participates in the call graph as a
   /// particular `Callable`.
