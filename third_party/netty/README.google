@@ -1,9 +1,8 @@
-URL: https://github.com/netty/netty
-Version: a3cea186ce559037b8cf04ea272f09908657e9e3
+URL: https://search.maven.org/remotecontent?filepath=io/netty/netty-all/4.1.0.Beta5/netty-all-4.1.0.Beta5.jar
+Version: 4.1.0.Beta5
 License: Apache License 2.0 http://www.apache.org/licenses/LICENSE-2.0
 
 Description:
 Netty project - an event-driven asynchronous network application framework http://netty.io/
 
-Local modifications:
-Built with ../grpc-java/update.sh
+Local modifications: None.

@@ -19,6 +19,7 @@ filegroup(
         "//third_party/bazel:license",
         "//third_party/grpc-java:license",
         "//third_party/gson:license",
+        "//third_party/hpack:license",
         "//third_party/guava:license",
         "//third_party/jsr305_annotations:license",
         "//third_party/leveldb:license",

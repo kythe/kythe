@@ -19,9 +19,11 @@ cc_binary(
     ],
 )
 
-java_import(
+java_library(
     name = "grpc-java",
-    jars = [
-        "grpc-all-0.1.0-SNAPSHOT.jar",
+    srcs = ["grpc-all-0.7.2.jar"],
+    runtime_deps = [
+        "//third_party/hpack",
+        "//third_party/netty",
     ],
 )

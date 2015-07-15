@@ -64,6 +64,5 @@ java_binary(
         "//kythe/proto:analysis_proto_java",
         "//third_party/grpc-java",
         "//third_party/guava",
-        "//third_party/netty",
     ],
 )

@@ -1,9 +1,11 @@
-URL: https://github.com/grpc/grpc-java
-Version: 041cdb11ed5889becbfaa08b00a7b247bb9700b2
+URL: https://search.maven.org/remotecontent?filepath=io/grpc/grpc-all/0.7.2/grpc-all-0.7.2.jar
+URL: https://github.com/grpc/grpc-java/archive/v0.7.2.zip
+Version: 0.7.2
 License: New BSD License: http://opensource.org/licenses/BSD-3-Clause
 
 Description:
 The Java gRPC implementation. HTTP/2 based RPC
 
 Local modifications:
-Only the built compiler/jar and sources for the compiler are checked in.
+Downloaded only the library jar from Maven.  The checked-in protoc plugin sources are from Github.
+Neither the jar nor the compiler sources are modified.
