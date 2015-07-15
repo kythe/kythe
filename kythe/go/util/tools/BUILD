@@ -8,6 +8,7 @@ action_listener(
     mnemonics = [
         "Javac",
         "CppCompile",
+        "GoCompile",
     ],
     visibility = ["//visibility:public"],
 )
