@@ -66,7 +66,7 @@ def java_verifier_test_impl(ctx):
   ctx.action(
       inputs = ctx.files.srcs + inputs,
       outputs = [jar],
-      mnemonic = 'Javac',
+      mnemonic = 'MockJavac',
       command = '\n'.join([
           'set -e',
           'rm -rf ' + srcs_out,
