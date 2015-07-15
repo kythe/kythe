@@ -1,4 +1,4 @@
-load("/tools/build_rules/genproto", "proto_library")
+load("/tools/build_rules/proto", "proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
