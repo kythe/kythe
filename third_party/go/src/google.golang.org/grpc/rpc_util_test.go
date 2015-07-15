@@ -44,6 +44,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
+	perfpb "google.golang.org/grpc/test/codec_perf"
 	"google.golang.org/grpc/transport"
 )
 
@@ -111,9 +112,9 @@ func TestEncode(t *testing.T) {
 	}{
 		{nil, compressionNone, []byte{0, 0, 0, 0, 0}, nil},
 	} {
-		b, err := encode(test.msg, test.pt)
+		b, err := encode(protoCodec{}, test.msg, test.pt)
 		if err != test.err || !bytes.Equal(b, test.b) {
-			t.Fatalf("encode(_, %d) = %v, %v\nwant %v, %v", test.pt, b, err, test.b, test.err)
+			t.Fatalf("encode(_, _, %d) = %v, %v\nwant %v, %v", test.pt, b, err, test.b, test.err)
 		}
 	}
 }
@@ -169,4 +170,42 @@ func TestBackoff(t *testing.T) {
 			t.Errorf("backoff(%d) = %v outside [0, %v]", test.retries, delay, test.maxResult)
 		}
 	}
+}
+
+// bmEncode benchmarks encoding a Protocol Buffer message containing mSize
+// bytes.
+func bmEncode(b *testing.B, mSize int) {
+	msg := &perfpb.Buffer{Body: make([]byte, mSize)}
+	encoded, _ := encode(protoCodec{}, msg, compressionNone)
+	encodedSz := int64(len(encoded))
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		encode(protoCodec{}, msg, compressionNone)
+	}
+	b.SetBytes(encodedSz)
+}
+
+func BenchmarkEncode1B(b *testing.B) {
+	bmEncode(b, 1)
+}
+
+func BenchmarkEncode1KiB(b *testing.B) {
+	bmEncode(b, 1024)
+}
+
+func BenchmarkEncode8KiB(b *testing.B) {
+	bmEncode(b, 8*1024)
+}
+
+func BenchmarkEncode64KiB(b *testing.B) {
+	bmEncode(b, 64*1024)
+}
+
+func BenchmarkEncode512KiB(b *testing.B) {
+	bmEncode(b, 512*1024)
+}
+
+func BenchmarkEncode1MiB(b *testing.B) {
+	bmEncode(b, 1024*1024)
 }

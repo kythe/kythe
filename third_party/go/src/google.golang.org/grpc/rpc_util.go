@@ -49,6 +49,32 @@ import (
 	"google.golang.org/grpc/transport"
 )
 
+// Codec defines the interface gRPC uses to encode and decode messages.
+type Codec interface {
+	// Marshal returns the wire format of v.
+	Marshal(v interface{}) ([]byte, error)
+	// Unmarshal parses the wire format into v.
+	Unmarshal(data []byte, v interface{}) error
+	// String returns the name of the Codec implementation. The returned
+	// string will be used as part of content type in transmission.
+	String() string
+}
+
+// protoCodec is a Codec implemetation with protobuf. It is the default codec for gRPC.
+type protoCodec struct{}
+
+func (protoCodec) Marshal(v interface{}) ([]byte, error) {
+	return proto.Marshal(v.(proto.Message))
+}
+
+func (protoCodec) Unmarshal(data []byte, v interface{}) error {
+	return proto.Unmarshal(data, v.(proto.Message))
+}
+
+func (protoCodec) String() string {
+	return "proto"
+}
+
 // CallOption configures a Call before it starts or extracts information from
 // a Call after it completes.
 type CallOption interface {
@@ -131,40 +157,36 @@ func (p *parser) recvMsg() (pf payloadFormat, msg []byte, err error) {
 
 // encode serializes msg and prepends the message header. If msg is nil, it
 // generates the message header of 0 message length.
-func encode(msg proto.Message, pf payloadFormat) ([]byte, error) {
+func encode(c Codec, msg interface{}, pf payloadFormat) ([]byte, error) {
 	var buf bytes.Buffer
 	// Write message fixed header.
-	if err := buf.WriteByte(uint8(pf)); err != nil {
-		return nil, err
-	}
+	buf.WriteByte(uint8(pf))
 	var b []byte
 	var length uint32
 	if msg != nil {
 		var err error
 		// TODO(zhaoq): optimize to reduce memory alloc and copying.
-		b, err = proto.Marshal(msg)
+		b, err = c.Marshal(msg)
 		if err != nil {
 			return nil, err
 		}
 		length = uint32(len(b))
 	}
-	if err := binary.Write(&buf, binary.BigEndian, length); err != nil {
-		return nil, err
-	}
-	if _, err := buf.Write(b); err != nil {
-		return nil, err
-	}
+	var szHdr [4]byte
+	binary.BigEndian.PutUint32(szHdr[:], length)
+	buf.Write(szHdr[:])
+	buf.Write(b)
 	return buf.Bytes(), nil
 }
 
-func recvProto(p *parser, m proto.Message) error {
+func recv(p *parser, c Codec, m interface{}) error {
 	pf, d, err := p.recvMsg()
 	if err != nil {
 		return err
 	}
 	switch pf {
 	case compressionNone:
-		if err := proto.Unmarshal(d, m); err != nil {
+		if err := c.Unmarshal(d, m); err != nil {
 			return Errorf(codes.Internal, "grpc: %v", err)
 		}
 	default:
@@ -186,6 +208,9 @@ func (e rpcError) Error() string {
 // Code returns the error code for err if it was produced by the rpc system.
 // Otherwise, it returns codes.Unknown.
 func Code(err error) codes.Code {
+	if err == nil {
+		return codes.OK
+	}
 	if e, ok := err.(rpcError); ok {
 		return e.code
 	}
@@ -193,7 +218,6 @@ func Code(err error) codes.Code {
 }
 
 // Errorf returns an error containing an error code and a description;
-// CodeOf extracts the Code.
 // Errorf returns nil if c is OK.
 func Errorf(c codes.Code, format string, a ...interface{}) error {
 	if c == codes.OK {
@@ -205,7 +229,7 @@ func Errorf(c codes.Code, format string, a ...interface{}) error {
 	}
 }
 
-// toRPCErr converts a transport error into a rpcError if possible.
+// toRPCErr converts an error into a rpcError.
 func toRPCErr(err error) error {
 	switch e := err.(type) {
 	case transport.StreamError:
@@ -219,7 +243,7 @@ func toRPCErr(err error) error {
 			desc: e.Desc,
 		}
 	}
-	return Errorf(codes.Unknown, "grpc: failed to convert %v to rpcErr", err)
+	return Errorf(codes.Unknown, "%v", err)
 }
 
 // convertCode converts a standard Go error into its canonical code. Note that

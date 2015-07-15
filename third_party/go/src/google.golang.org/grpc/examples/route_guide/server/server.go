@@ -43,7 +43,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"math"
 	"net"
 	"time"
@@ -52,17 +51,18 @@ import (
 	"google.golang.org/grpc"
 
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/grpclog"
 
-	proto "github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 
 	pb "google.golang.org/grpc/examples/route_guide/proto"
 )
 
 var (
-	tls        = flag.Bool("use_tls", false, "Connection uses TLS if true, else plain TCP")
-	certFile   = flag.String("tls_cert_file", "testdata/server1.pem", "The TLS cert file")
-	keyFile    = flag.String("tls_key_file", "testdata/server1.key", "The TLS key file")
-	jsonDBFile = flag.String("route_guide_db", "testdata/route_guide_db.json", "A json file containing a list of features")
+	tls        = flag.Bool("tls", false, "Connection uses TLS if true, else plain TCP")
+	certFile   = flag.String("cert_file", "testdata/server1.pem", "The TLS cert file")
+	keyFile    = flag.String("key_file", "testdata/server1.key", "The TLS key file")
+	jsonDBFile = flag.String("json_db_file", "testdata/route_guide_db.json", "A json file containing a list of features")
 	port       = flag.Int("port", 10000, "The server port")
 )
 
@@ -144,7 +144,6 @@ func (s *routeGuideServer) RouteChat(stream pb.RouteGuide_RouteChatServer) error
 		key := serialize(in.Location)
 		if _, present := s.routeNotes[key]; !present {
 			s.routeNotes[key] = []*pb.RouteNote{in}
-
 		} else {
 			s.routeNotes[key] = append(s.routeNotes[key], in)
 		}
@@ -160,10 +159,10 @@ func (s *routeGuideServer) RouteChat(stream pb.RouteGuide_RouteChatServer) error
 func (s *routeGuideServer) loadFeatures(filePath string) {
 	file, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		log.Fatalf("Failed to load default features: %v", err)
+		grpclog.Fatalf("Failed to load default features: %v", err)
 	}
-	if err := json.Unmarshal(file, &(s.savedFeatures)); err != nil {
-		log.Fatalf("Failed to load default features: %v", err)
+	if err := json.Unmarshal(file, &s.savedFeatures); err != nil {
+		grpclog.Fatalf("Failed to load default features: %v", err)
 	}
 }
 
@@ -216,7 +215,7 @@ func serialize(point *pb.Point) string {
 func newServer() *routeGuideServer {
 	s := new(routeGuideServer)
 	s.loadFeatures(*jsonDBFile)
-	s.routeNotes = make(map[string][]*pb.RouteNote, 0)
+	s.routeNotes = make(map[string][]*pb.RouteNote)
 	return s
 }
 
@@ -224,17 +223,17 @@ func main() {
 	flag.Parse()
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		grpclog.Fatalf("failed to listen: %v", err)
 	}
-	grpcServer := grpc.NewServer()
-	pb.RegisterRouteGuideServer(grpcServer, newServer())
+	var opts []grpc.ServerOption
 	if *tls {
 		creds, err := credentials.NewServerTLSFromFile(*certFile, *keyFile)
 		if err != nil {
-			log.Fatalf("Failed to generate credentials %v", err)
+			grpclog.Fatalf("Failed to generate credentials %v", err)
 		}
-		grpcServer.Serve(creds.NewListener(lis))
-	} else {
-		grpcServer.Serve(lis)
+		opts = []grpc.ServerOption{grpc.Creds(creds)}
 	}
+	grpcServer := grpc.NewServer(opts...)
+	pb.RegisterRouteGuideServer(grpcServer, newServer())
+	grpcServer.Serve(lis)
 }

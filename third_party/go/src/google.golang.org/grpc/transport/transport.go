@@ -44,6 +44,7 @@ import (
 	"io"
 	"net"
 	"sync"
+	"time"
 
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
@@ -172,8 +173,15 @@ type Stream struct {
 	buf    *recvBuffer
 	dec    io.Reader
 
-	// Inbound quota for flow control
-	recvQuota int
+	// updateStreams indicates whether the transport's streamsQuota needed
+	// to be updated when this stream is closed. It is false when the transport
+	// sticks to the initial infinite value of the number of concurrent streams.
+	// Ture otherwise.
+	updateStreams bool
+	fc            *inFlow
+	recvQuota     uint32
+	// The accumulated inbound quota pending for window update.
+	updateQuota uint32
 	// The handler to control the window update procedure for both this
 	// particular stream and the associated transport.
 	windowHandler func(int)
@@ -310,10 +318,17 @@ func NewServerTransport(protocol string, conn net.Conn, maxStreams uint32) (Serv
 	return newHTTP2Server(conn, maxStreams)
 }
 
-// NewClientTransport establishes the transport with the required protocol
+// ConnectOptions covers all relevant options for dialing a server.
+type ConnectOptions struct {
+	Dialer      func(string, time.Duration) (net.Conn, error)
+	AuthOptions []credentials.Credentials
+	Timeout     time.Duration
+}
+
+// NewClientTransport establishes the transport with the required ConnectOptions
 // and returns it to the caller.
-func NewClientTransport(protocol, target string, authOpts []credentials.Credentials) (ClientTransport, error) {
-	return newHTTP2Client(target, authOpts)
+func NewClientTransport(target string, opts *ConnectOptions) (ClientTransport, error) {
+	return newHTTP2Client(target, opts)
 }
 
 // Options provides additional hints and information for message

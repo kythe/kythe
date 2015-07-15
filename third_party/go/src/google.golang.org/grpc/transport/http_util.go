@@ -34,14 +34,18 @@
 package transport
 
 import (
+	"bufio"
 	"fmt"
-	"log"
+	"io"
+	"net"
 	"strconv"
+	"sync/atomic"
 	"time"
 
 	"github.com/bradfitz/http2"
 	"github.com/bradfitz/http2/hpack"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -50,6 +54,8 @@ const (
 	http2MaxFrameLen = 16384 // 16KB frame
 	// http://http2.github.io/http2-spec/#SettingValues
 	http2InitHeaderTableSize = 4096
+	// http2IOBufSize specifies the buffer size for sending frames.
+	http2IOBufSize = 32 * 1024
 )
 
 var (
@@ -160,7 +166,7 @@ func newHPACKDecoder() *hpackDecoder {
 				}
 				k, v, err := metadata.DecodeKeyValue(f.Name, f.Value)
 				if err != nil {
-					log.Printf("Failed to decode (%q, %q): %v", f.Name, f.Value, err)
+					grpclog.Printf("Failed to decode (%q, %q): %v", f.Name, f.Value, err)
 					return
 				}
 				d.state.mdata[k] = v
@@ -170,7 +176,7 @@ func newHPACKDecoder() *hpackDecoder {
 	return d
 }
 
-func (d *hpackDecoder) decodeClientHTTP2Headers(s *Stream, frame headerFrame) (endHeaders bool, err error) {
+func (d *hpackDecoder) decodeClientHTTP2Headers(frame headerFrame) (endHeaders bool, err error) {
 	d.err = nil
 	_, err = d.h.Write(frame.HeaderBlockFragment())
 	if err != nil {
@@ -190,7 +196,7 @@ func (d *hpackDecoder) decodeClientHTTP2Headers(s *Stream, frame headerFrame) (e
 	return
 }
 
-func (d *hpackDecoder) decodeServerHTTP2Headers(s *Stream, frame headerFrame) (endHeaders bool, err error) {
+func (d *hpackDecoder) decodeServerHTTP2Headers(frame headerFrame) (endHeaders bool, err error) {
 	d.err = nil
 	_, err = d.h.Write(frame.HeaderBlockFragment())
 	if err != nil {
@@ -287,4 +293,145 @@ func timeoutDecode(s string) (time.Duration, error) {
 		return 0, err
 	}
 	return d * time.Duration(t), nil
+}
+
+type framer struct {
+	numWriters int32
+	reader     io.Reader
+	writer     *bufio.Writer
+	fr         *http2.Framer
+}
+
+func newFramer(conn net.Conn) *framer {
+	f := &framer{
+		reader: conn,
+		writer: bufio.NewWriterSize(conn, http2IOBufSize),
+	}
+	f.fr = http2.NewFramer(f.writer, f.reader)
+	return f
+}
+
+func (f *framer) adjustNumWriters(i int32) int32 {
+	return atomic.AddInt32(&f.numWriters, i)
+}
+
+// The following writeXXX functions can only be called when the caller gets
+// unblocked from writableChan channel (i.e., owns the privilege to write).
+
+func (f *framer) writeContinuation(forceFlush bool, streamID uint32, endHeaders bool, headerBlockFragment []byte) error {
+	if err := f.fr.WriteContinuation(streamID, endHeaders, headerBlockFragment); err != nil {
+		return err
+	}
+	if forceFlush {
+		return f.writer.Flush()
+	}
+	return nil
+}
+
+func (f *framer) writeData(forceFlush bool, streamID uint32, endStream bool, data []byte) error {
+	if err := f.fr.WriteData(streamID, endStream, data); err != nil {
+		return err
+	}
+	if forceFlush {
+		return f.writer.Flush()
+	}
+	return nil
+}
+
+func (f *framer) writeGoAway(forceFlush bool, maxStreamID uint32, code http2.ErrCode, debugData []byte) error {
+	if err := f.fr.WriteGoAway(maxStreamID, code, debugData); err != nil {
+		return err
+	}
+	if forceFlush {
+		return f.writer.Flush()
+	}
+	return nil
+}
+
+func (f *framer) writeHeaders(forceFlush bool, p http2.HeadersFrameParam) error {
+	if err := f.fr.WriteHeaders(p); err != nil {
+		return err
+	}
+	if forceFlush {
+		return f.writer.Flush()
+	}
+	return nil
+}
+
+func (f *framer) writePing(forceFlush, ack bool, data [8]byte) error {
+	if err := f.fr.WritePing(ack, data); err != nil {
+		return err
+	}
+	if forceFlush {
+		return f.writer.Flush()
+	}
+	return nil
+}
+
+func (f *framer) writePriority(forceFlush bool, streamID uint32, p http2.PriorityParam) error {
+	if err := f.fr.WritePriority(streamID, p); err != nil {
+		return err
+	}
+	if forceFlush {
+		return f.writer.Flush()
+	}
+	return nil
+}
+
+func (f *framer) writePushPromise(forceFlush bool, p http2.PushPromiseParam) error {
+	if err := f.fr.WritePushPromise(p); err != nil {
+		return err
+	}
+	if forceFlush {
+		return f.writer.Flush()
+	}
+	return nil
+}
+
+func (f *framer) writeRSTStream(forceFlush bool, streamID uint32, code http2.ErrCode) error {
+	if err := f.fr.WriteRSTStream(streamID, code); err != nil {
+		return err
+	}
+	if forceFlush {
+		return f.writer.Flush()
+	}
+	return nil
+}
+
+func (f *framer) writeSettings(forceFlush bool, settings ...http2.Setting) error {
+	if err := f.fr.WriteSettings(settings...); err != nil {
+		return err
+	}
+	if forceFlush {
+		return f.writer.Flush()
+	}
+	return nil
+}
+
+func (f *framer) writeSettingsAck(forceFlush bool) error {
+	if err := f.fr.WriteSettingsAck(); err != nil {
+		return err
+	}
+	if forceFlush {
+		return f.writer.Flush()
+	}
+	return nil
+}
+
+func (f *framer) writeWindowUpdate(forceFlush bool, streamID, incr uint32) error {
+	if err := f.fr.WriteWindowUpdate(streamID, incr); err != nil {
+		return err
+	}
+	if forceFlush {
+		return f.writer.Flush()
+	}
+	return nil
+}
+
+func (f *framer) flushWrite() error {
+	return f.writer.Flush()
+}
+
+func (f *framer) readFrame() (http2.Frame, error) {
+	return f.fr.ReadFrame()
 }

@@ -20,7 +20,7 @@ proto_library(
     gen_go = 1,
     gen_java = 1,
     # TODO(shahms): Remove this if/when we get more robust go package mapping.
-    go_package = "google/protobuf/any.pb",
+    go_package = "google/protobuf",
 )
 
 genrule(

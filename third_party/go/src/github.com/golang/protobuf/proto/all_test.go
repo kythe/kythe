@@ -44,8 +44,8 @@ import (
 	"testing"
 	"time"
 
-	. "./testdata"
 	. "github.com/golang/protobuf/proto"
+	. "github.com/golang/protobuf/proto/testdata"
 )
 
 var globalO *Buffer
@@ -1252,7 +1252,8 @@ func TestProto1RepeatedGroup(t *testing.T) {
 	}
 
 	o := old()
-	if err := o.Marshal(pb); err != ErrRepeatedHasNil {
+	err := o.Marshal(pb)
+	if err == nil || !strings.Contains(err.Error(), "repeated field Message has nil") {
 		t.Fatalf("unexpected or no error when marshaling: %v", err)
 	}
 }
@@ -1435,6 +1436,17 @@ func TestSetDefaultsWithRepeatedSubMessage(t *testing.T) {
 			Port: Int32(4000),
 		}},
 	}
+	SetDefaults(m)
+	if !Equal(m, expected) {
+		t.Errorf("\n got %v\nwant %v", m, expected)
+	}
+}
+
+func TestSetDefaultWithRepeatedNonMessage(t *testing.T) {
+	m := &MyMessage{
+		Pet: []string{"turtle", "wombat"},
+	}
+	expected := Clone(m)
 	SetDefaults(m)
 	if !Equal(m, expected) {
 		t.Errorf("\n got %v\nwant %v", m, expected)
@@ -1910,6 +1922,18 @@ func TestMapFieldRoundTrips(t *testing.T) {
 		if !reflect.DeepEqual(pair[0], pair[1]) {
 			t.Errorf("Map did not survive a round trip.\ninitial: %v\n  final: %v", pair[0], pair[1])
 		}
+	}
+}
+
+func TestMapFieldWithNil(t *testing.T) {
+	m := &MessageWithMap{
+		MsgMapping: map[int64]*FloatingPoint{
+			1: nil,
+		},
+	}
+	b, err := Marshal(m)
+	if err == nil {
+		t.Fatalf("Marshal of bad map should have failed, got these bytes: %v", b)
 	}
 }
 

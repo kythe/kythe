@@ -41,8 +41,8 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
-	proto3pb "./proto3_proto"
-	pb "./testdata"
+	proto3pb "github.com/golang/protobuf/proto/proto3_proto"
+	pb "github.com/golang/protobuf/proto/testdata"
 )
 
 // textMessage implements the methods that allow it to marshal and unmarshal
@@ -425,6 +425,11 @@ func TestProto3Text(t *testing.T) {
 		{
 			&pb.MessageWithMap{NameMapping: map[int32]string{1234: "Feist"}},
 			`name_mapping:<key:1234 value:"Feist" >`,
+		},
+		// map with nil value; not well-defined, but we shouldn't crash
+		{
+			&pb.MessageWithMap{MsgMapping: map[int64]*pb.FloatingPoint{7: nil}},
+			`msg_mapping:<key:7 >`,
 		},
 	}
 	for _, test := range tests {

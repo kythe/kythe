@@ -164,6 +164,28 @@ go_library(
 )
 
 go_library(
+    name = "net_internal_timeseries",
+    srcs = glob(
+        ["src/golang.org/x/net/internal/timeseries/*.go"],
+        exclude = ["src/golang.org/x/net/internal/timeseries/*_test.go"],
+    ),
+    package = "golang.org/x/net/internal/timeseries",
+)
+
+go_library(
+    name = "trace",
+    srcs = glob(
+        ["src/golang.org/x/net/trace/*.go"],
+        exclude = ["src/golang.org/x/net/trace/*_test.go"],
+    ),
+    package = "golang.org/x/net/trace",
+    deps = [
+        ":context",
+        ":net_internal_timeseries",
+    ],
+)
+
+go_library(
     name = "html",
     srcs = [
         "src/golang.org/x/net/html/const.go",
@@ -279,22 +301,20 @@ go_library(
 
 go_library(
     name = "grpc",
-    srcs = [
-        "src/google.golang.org/grpc/call.go",
-        "src/google.golang.org/grpc/clientconn.go",
-        "src/google.golang.org/grpc/doc.go",
-        "src/google.golang.org/grpc/rpc_util.go",
-        "src/google.golang.org/grpc/server.go",
-        "src/google.golang.org/grpc/stream.go",
-    ],
+    srcs = glob(
+        ["src/google.golang.org/grpc/*.go"],
+        exclude = ["src/google.golang.org/grpc/*_test.go"],
+    ),
     package = "google.golang.org/grpc",
     deps = [
         ":context",
         ":grpc_codes",
         ":grpc_credentials",
+        ":grpc_grpclog",
         ":grpc_metadata",
         ":grpc_transport",
         ":protobuf",
+        ":trace",
     ],
 )
 
@@ -331,10 +351,17 @@ go_library(
         ":context",
         ":grpc_codes",
         ":grpc_credentials",
+        ":grpc_grpclog",
         ":grpc_metadata",
         ":http2",
         ":http2_hpack",
     ],
+)
+
+go_library(
+    name = "grpc_grpclog",
+    srcs = ["src/google.golang.org/grpc/grpclog/logger.go"],
+    package = "google.golang.org/grpc/grpclog",
 )
 
 go_library(
@@ -394,19 +421,22 @@ go_library(
     package = "golang.org/x/oauth2",
     deps = [
         ":context",
+        ":oauth2_internal",
     ],
 )
 
 go_library(
     name = "oauth2_google",
     srcs = [
+        "src/golang.org/x/oauth2/google/appengine.go",
+        "src/golang.org/x/oauth2/google/default.go",
         "src/golang.org/x/oauth2/google/google.go",
         "src/golang.org/x/oauth2/google/sdk.go",
-        "src/golang.org/x/oauth2/google/source_appengine.go",
     ],
     package = "golang.org/x/oauth2/google",
     deps = [
         ":cloud_compute_metadata",
+        ":context",
         ":oauth2",
         ":oauth2_internal",
         ":oauth2_jwt",
@@ -420,6 +450,7 @@ go_library(
     ],
     package = "golang.org/x/oauth2/jwt",
     deps = [
+        ":context",
         ":oauth2",
         ":oauth2_internal",
         ":oauth2_jws",
@@ -432,15 +463,16 @@ go_library(
         "src/golang.org/x/oauth2/jws/jws.go",
     ],
     package = "golang.org/x/oauth2/jws",
-    deps = [],
 )
 
 go_library(
     name = "oauth2_internal",
-    srcs = [
-        "src/golang.org/x/oauth2/internal/oauth2.go",
-    ],
+    srcs = glob(
+        ["src/golang.org/x/oauth2/internal/*.go"],
+        exclude = ["src/golang.org/x/oauth2/internal/*_test.go"],
+    ),
     package = "golang.org/x/oauth2/internal",
+    deps = [":context"],
 )
 
 go_library(

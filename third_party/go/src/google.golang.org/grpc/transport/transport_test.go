@@ -36,7 +36,6 @@ package transport
 import (
 	"bytes"
 	"io"
-	"log"
 	"math"
 	"net"
 	"reflect"
@@ -45,9 +44,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bradfitz/http2"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/grpclog"
 )
 
 type server struct {
@@ -60,7 +60,6 @@ type server struct {
 }
 
 var (
-	tlsDir                = "testdata/"
 	expectedRequest       = []byte("ping")
 	expectedResponse      = []byte("pong")
 	expectedRequestLarge  = make([]byte, initialWindowSize*2)
@@ -70,6 +69,14 @@ var (
 type testStreamHandler struct {
 	t ServerTransport
 }
+
+type hType int
+
+const (
+	normal hType = iota
+	suspended
+	misbehaved
+)
 
 func (h *testStreamHandler) handleStream(s *Stream) {
 	req := expectedRequest
@@ -84,7 +91,7 @@ func (h *testStreamHandler) handleStream(s *Stream) {
 		if err == ErrConnClosing {
 			return
 		}
-		log.Fatalf("handleStream got error: %v, want <nil>; result: %v, want %v", err, p, req)
+		grpclog.Fatalf("handleStream got error: %v, want <nil>; result: %v, want %v", err, p, req)
 	}
 	// send a response back to the client.
 	h.t.Write(s, resp, &Options{})
@@ -97,7 +104,30 @@ func (h *testStreamHandler) handleStreamSuspension(s *Stream) {
 	<-s.ctx.Done()
 }
 
-func (s *server) Start(useTLS bool, port int, maxStreams uint32, suspend bool) {
+func (h *testStreamHandler) handleStreamMisbehave(s *Stream) {
+	conn, ok := s.ServerTransport().(*http2Server)
+	if !ok {
+		grpclog.Fatalf("Failed to convert %v to *http2Server", s.ServerTransport())
+	}
+	size := 1
+	if s.Method() == "foo.MaxFrame" {
+		size = http2MaxFrameLen
+	}
+	// Drain the client side stream flow control window.
+	var sent int
+	for sent <= initialWindowSize {
+		<-conn.writableChan
+		if err := conn.framer.writeData(true, s.id, false, make([]byte, size)); err != nil {
+			conn.writableChan <- 0
+			break
+		}
+		conn.writableChan <- 0
+		sent += size
+	}
+}
+
+// start starts server. Other goroutines should block on s.readyChan for futher operations.
+func (s *server) start(port int, maxStreams uint32, ht hType) {
 	var err error
 	if port == 0 {
 		s.lis, err = net.Listen("tcp", ":0")
@@ -105,24 +135,17 @@ func (s *server) Start(useTLS bool, port int, maxStreams uint32, suspend bool) {
 		s.lis, err = net.Listen("tcp", ":"+strconv.Itoa(port))
 	}
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
-	}
-	if useTLS {
-		creds, err := credentials.NewServerTLSFromFile(tlsDir+"server1.pem", tlsDir+"server1.key")
-		if err != nil {
-			log.Fatalf("Failed to generate credentials %v", err)
-		}
-		s.lis = creds.NewListener(s.lis)
+		grpclog.Fatalf("failed to listen: %v", err)
 	}
 	_, p, err := net.SplitHostPort(s.lis.Addr().String())
 	if err != nil {
-		log.Fatalf("failed to parse listener address: %v", err)
+		grpclog.Fatalf("failed to parse listener address: %v", err)
 	}
 	s.port = p
+	s.conns = make(map[ServerTransport]bool)
 	if s.readyChan != nil {
 		close(s.readyChan)
 	}
-	s.conns = make(map[ServerTransport]bool)
 	for {
 		conn, err := s.lis.Accept()
 		if err != nil {
@@ -141,15 +164,18 @@ func (s *server) Start(useTLS bool, port int, maxStreams uint32, suspend bool) {
 		s.conns[t] = true
 		s.mu.Unlock()
 		h := &testStreamHandler{t}
-		if suspend {
+		switch ht {
+		case suspended:
 			go t.HandleStreams(h.handleStreamSuspension)
-		} else {
+		case misbehaved:
+			go t.HandleStreams(h.handleStreamMisbehave)
+		default:
 			go t.HandleStreams(h.handleStream)
 		}
 	}
 }
 
-func (s *server) Wait(t *testing.T, timeout time.Duration) {
+func (s *server) wait(t *testing.T, timeout time.Duration) {
 	select {
 	case <-s.readyChan:
 	case <-time.After(timeout):
@@ -157,34 +183,26 @@ func (s *server) Wait(t *testing.T, timeout time.Duration) {
 	}
 }
 
-func (s *server) Close() {
-	// Keep consistent with closeServer().
+func (s *server) stop() {
 	s.lis.Close()
 	s.mu.Lock()
 	for c := range s.conns {
 		c.Close()
 	}
+	s.conns = nil
 	s.mu.Unlock()
 }
 
-func setUp(t *testing.T, useTLS bool, port int, maxStreams uint32, suspend bool) (*server, ClientTransport) {
+func setUp(t *testing.T, port int, maxStreams uint32, ht hType) (*server, ClientTransport) {
 	server := &server{readyChan: make(chan bool)}
-	go server.Start(useTLS, port, maxStreams, suspend)
-	server.Wait(t, 2*time.Second)
+	go server.start(port, maxStreams, ht)
+	server.wait(t, 2*time.Second)
 	addr := "localhost:" + server.port
 	var (
 		ct      ClientTransport
 		connErr error
 	)
-	if useTLS {
-		creds, err := credentials.NewClientTLSFromFile(tlsDir+"ca.pem", "x.test.youtube.com")
-		if err != nil {
-			t.Fatalf("Failed to create credentials %v", err)
-		}
-		ct, connErr = NewClientTransport("http2", addr, []credentials.Credentials{creds})
-	} else {
-		ct, connErr = NewClientTransport("http2", addr, nil)
-	}
+	ct, connErr = NewClientTransport(addr, &ConnectOptions{})
 	if connErr != nil {
 		t.Fatalf("failed to create transport: %v", connErr)
 	}
@@ -192,7 +210,7 @@ func setUp(t *testing.T, useTLS bool, port int, maxStreams uint32, suspend bool)
 }
 
 func TestClientSendAndReceive(t *testing.T) {
-	server, ct := setUp(t, true, 0, math.MaxUint32, false)
+	server, ct := setUp(t, 0, math.MaxUint32, normal)
 	callHdr := &CallHdr{
 		Host:   "localhost",
 		Method: "foo.Small",
@@ -227,28 +245,16 @@ func TestClientSendAndReceive(t *testing.T) {
 	if recvErr != io.EOF {
 		t.Fatalf("Error: %v; want <EOF>", recvErr)
 	}
-	closeClient(ct, t)
-	closeServer(server, t)
+	ct.Close()
+	server.stop()
 }
 
 func TestClientErrorNotify(t *testing.T) {
-	server, ct := setUp(t, true, 0, math.MaxUint32, false)
-	callHdr := &CallHdr{
-		Host:   "localhost",
-		Method: "foo.Small",
-	}
-	s, err := ct.NewStream(context.Background(), callHdr)
-	if err != nil {
-		t.Fatalf("failed to open stream: %v", err)
-	}
-	if s.id != 1 {
-		t.Fatalf("wrong stream id: %d", s.id)
-	}
-	// Tear down the server.
-	go closeServer(server, t)
+	server, ct := setUp(t, 0, math.MaxUint32, normal)
+	go server.stop()
 	// ct.reader should detect the error and activate ct.Error().
 	<-ct.Error()
-	closeClient(ct, t)
+	ct.Close()
 }
 
 func performOneRPC(ct ClientTransport) {
@@ -278,14 +284,14 @@ func performOneRPC(ct ClientTransport) {
 }
 
 func TestClientMix(t *testing.T) {
-	s, ct := setUp(t, true, 0, math.MaxUint32, false)
+	s, ct := setUp(t, 0, math.MaxUint32, normal)
 	go func(s *server) {
 		time.Sleep(5 * time.Second)
-		closeServer(s, t)
+		s.stop()
 	}(s)
 	go func(ct ClientTransport) {
 		<-ct.Error()
-		closeClient(ct, t)
+		ct.Close()
 	}(ct)
 	for i := 0; i < 1000; i++ {
 		time.Sleep(10 * time.Millisecond)
@@ -293,56 +299,8 @@ func TestClientMix(t *testing.T) {
 	}
 }
 
-func TestExceedMaxStreamsLimit(t *testing.T) {
-	server, ct := setUp(t, true, 0, 1, false)
-	defer func() {
-		closeClient(ct, t)
-		closeServer(server, t)
-	}()
-	callHdr := &CallHdr{
-		Host:   "localhost",
-		Method: "foo.Small",
-	}
-	// Creates the 1st stream and keep it alive.
-	_, err1 := ct.NewStream(context.Background(), callHdr)
-	if err1 != nil {
-		t.Fatalf("failed to open stream: %v", err1)
-	}
-	// Creates the 2nd stream. It has chance to succeed when the settings
-	// frame from the server has not received at the client.
-	s, err2 := ct.NewStream(context.Background(), callHdr)
-	if err2 != nil {
-		se, ok := err2.(StreamError)
-		if !ok {
-			t.Fatalf("Received unexpected error %v", err2)
-		}
-		if se.Code != codes.Unavailable {
-			t.Fatalf("Got error code: %d, want: %d", se.Code, codes.Unavailable)
-		}
-		return
-	}
-	// If the 2nd stream is created successfully, sends the request.
-	if err := ct.Write(s, expectedRequest, &Options{Last: true, Delay: false}); err != nil {
-		t.Fatalf("failed to send data: %v", err)
-	}
-	// The 2nd stream was rejected by the server via a reset.
-	p := make([]byte, len(expectedResponse))
-	_, recvErr := io.ReadFull(s, p)
-	if recvErr != io.EOF || s.StatusCode() != codes.Unavailable {
-		t.Fatalf("Error: %v, StatusCode: %d; want <EOF>, %d", recvErr, s.StatusCode(), codes.Unavailable)
-	}
-	// Server's setting has been received. From now on, new stream will be rejected instantly.
-	_, err3 := ct.NewStream(context.Background(), callHdr)
-	if err3 == nil {
-		t.Fatalf("Received unexpected <nil>, want an error with code %d", codes.Unavailable)
-	}
-	if se, ok := err3.(StreamError); !ok || se.Code != codes.Unavailable {
-		t.Fatalf("Got: %v, want a StreamError with error code %d", err3, codes.Unavailable)
-	}
-}
-
 func TestLargeMessage(t *testing.T) {
-	server, ct := setUp(t, true, 0, math.MaxUint32, false)
+	server, ct := setUp(t, 0, math.MaxUint32, normal)
 	callHdr := &CallHdr{
 		Host:   "localhost",
 		Method: "foo.Large",
@@ -351,32 +309,32 @@ func TestLargeMessage(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			s, err := ct.NewStream(context.Background(), callHdr)
 			if err != nil {
-				t.Fatalf("failed to open stream: %v", err)
+				t.Errorf("failed to open stream: %v", err)
 			}
 			if err := ct.Write(s, expectedRequestLarge, &Options{Last: true, Delay: false}); err != nil {
-				t.Fatalf("failed to send data: %v", err)
+				t.Errorf("failed to send data: %v", err)
 			}
 			p := make([]byte, len(expectedResponseLarge))
 			_, recvErr := io.ReadFull(s, p)
 			if recvErr != nil || !bytes.Equal(p, expectedResponseLarge) {
-				t.Fatalf("Error: %v, want <nil>; Result len: %d, want len %d", recvErr, len(p), len(expectedResponseLarge))
+				t.Errorf("Error: %v, want <nil>; Result len: %d, want len %d", recvErr, len(p), len(expectedResponseLarge))
 			}
 			_, recvErr = io.ReadFull(s, p)
 			if recvErr != io.EOF {
-				t.Fatalf("Error: %v; want <EOF>", recvErr)
+				t.Errorf("Error: %v; want <EOF>", recvErr)
 			}
-			wg.Done()
 		}()
 	}
 	wg.Wait()
-	closeClient(ct, t)
-	closeServer(server, t)
+	ct.Close()
+	server.stop()
 }
 
 func TestLargeMessageSuspension(t *testing.T) {
-	server, ct := setUp(t, true, 0, math.MaxUint32, true)
+	server, ct := setUp(t, 0, math.MaxUint32, suspended)
 	callHdr := &CallHdr{
 		Host:   "localhost",
 		Method: "foo.Large",
@@ -393,8 +351,165 @@ func TestLargeMessageSuspension(t *testing.T) {
 	if err == nil || err != expectedErr {
 		t.Fatalf("Write got %v, want %v", err, expectedErr)
 	}
-	closeClient(ct, t)
-	closeServer(server, t)
+	ct.Close()
+	server.stop()
+}
+
+func TestServerWithMisbehavedClient(t *testing.T) {
+	server, ct := setUp(t, 0, math.MaxUint32, suspended)
+	callHdr := &CallHdr{
+		Host:   "localhost",
+		Method: "foo",
+	}
+	var sc *http2Server
+	// Wait until the server transport is setup.
+	for {
+		server.mu.Lock()
+		if len(server.conns) == 0 {
+			server.mu.Unlock()
+			time.Sleep(time.Millisecond)
+			continue
+		}
+		for k := range server.conns {
+			var ok bool
+			sc, ok = k.(*http2Server)
+			if !ok {
+				t.Fatalf("Failed to convert %v to *http2Server", k)
+			}
+		}
+		server.mu.Unlock()
+		break
+	}
+	cc, ok := ct.(*http2Client)
+	if !ok {
+		t.Fatalf("Failed to convert %v to *http2Client", ct)
+	}
+	// Test server behavior for violation of stream flow control window size restriction.
+	s, err := ct.NewStream(context.Background(), callHdr)
+	if err != nil {
+		t.Fatalf("Failed to open stream: %v", err)
+	}
+	var sent int
+	// Drain the stream flow control window
+	<-cc.writableChan
+	if err = cc.framer.writeData(true, s.id, false, make([]byte, http2MaxFrameLen)); err != nil {
+		t.Fatalf("Failed to write data: %v", err)
+	}
+	cc.writableChan <- 0
+	sent += http2MaxFrameLen
+	// Wait until the server creates the corresponding stream and receive some data.
+	var ss *Stream
+	for {
+		time.Sleep(time.Millisecond)
+		sc.mu.Lock()
+		if len(sc.activeStreams) == 0 {
+			sc.mu.Unlock()
+			continue
+		}
+		ss = sc.activeStreams[s.id]
+		sc.mu.Unlock()
+		ss.fc.mu.Lock()
+		if ss.fc.pendingData > 0 {
+			ss.fc.mu.Unlock()
+			break
+		}
+		ss.fc.mu.Unlock()
+	}
+	if ss.fc.pendingData != http2MaxFrameLen || ss.fc.pendingUpdate != 0 || sc.fc.pendingData != http2MaxFrameLen || sc.fc.pendingUpdate != 0 {
+		t.Fatalf("Server mistakenly updates inbound flow control params: got %d, %d, %d, %d; want %d, %d, %d, %d", ss.fc.pendingData, ss.fc.pendingUpdate, sc.fc.pendingData, sc.fc.pendingUpdate, http2MaxFrameLen, 0, http2MaxFrameLen, 0)
+	}
+	// Keep sending until the server inbound window is drained for that stream.
+	for sent <= initialWindowSize {
+		<-cc.writableChan
+		if err = cc.framer.writeData(true, s.id, false, make([]byte, 1)); err != nil {
+			t.Fatalf("Failed to write data: %v", err)
+		}
+		cc.writableChan <- 0
+		sent++
+	}
+	// Server sent a resetStream for s already.
+	code := http2RSTErrConvTab[http2.ErrCodeFlowControl]
+	if _, err := io.ReadFull(s, make([]byte, 1)); err != io.EOF || s.statusCode != code {
+		t.Fatalf("%v got err %v with statusCode %d, want err <EOF> with statusCode %d", s, err, s.statusCode, code)
+	}
+
+	if ss.fc.pendingData != 0 || ss.fc.pendingUpdate != 0 || sc.fc.pendingData != 0 || sc.fc.pendingUpdate != initialWindowSize {
+		t.Fatalf("Server mistakenly resets inbound flow control params: got %d, %d, %d, %d; want 0, 0, 0, %d", ss.fc.pendingData, ss.fc.pendingUpdate, sc.fc.pendingData, sc.fc.pendingUpdate, initialWindowSize)
+	}
+	ct.CloseStream(s, nil)
+	// Test server behavior for violation of connection flow control window size restriction.
+	//
+	// Keep creating new streams until the connection window is drained on the server and
+	// the server tears down the connection.
+	for {
+		s, err := ct.NewStream(context.Background(), callHdr)
+		if err != nil {
+			// The server tears down the connection.
+			break
+		}
+		<-cc.writableChan
+		cc.framer.writeData(true, s.id, true, make([]byte, http2MaxFrameLen))
+		cc.writableChan <- 0
+	}
+	ct.Close()
+	server.stop()
+}
+
+func TestClientWithMisbehavedServer(t *testing.T) {
+	server, ct := setUp(t, 0, math.MaxUint32, misbehaved)
+	callHdr := &CallHdr{
+		Host:   "localhost",
+		Method: "foo",
+	}
+	conn, ok := ct.(*http2Client)
+	if !ok {
+		t.Fatalf("Failed to convert %v to *http2Client", ct)
+	}
+	// Test the logic for the violation of stream flow control window size restriction.
+	s, err := ct.NewStream(context.Background(), callHdr)
+	if err != nil {
+		t.Fatalf("Failed to open stream: %v", err)
+	}
+	if err := ct.Write(s, expectedRequest, &Options{Last: true, Delay: false}); err != nil {
+		t.Fatalf("Failed to write: %v", err)
+	}
+	// Read without window update.
+	for {
+		p := make([]byte, http2MaxFrameLen)
+		if _, err = s.dec.Read(p); err != nil {
+			break
+		}
+	}
+	if s.fc.pendingData != initialWindowSize || s.fc.pendingUpdate != 0 || conn.fc.pendingData != initialWindowSize || conn.fc.pendingUpdate != 0 {
+		t.Fatalf("Client mistakenly updates inbound flow control params: got %d, %d, %d, %d; want %d, %d, %d, %d", s.fc.pendingData, s.fc.pendingUpdate, conn.fc.pendingData, conn.fc.pendingUpdate, initialWindowSize, 0, initialWindowSize, 0)
+	}
+	if err != io.EOF || s.statusCode != codes.Internal {
+		t.Fatalf("Got err %v and the status code %d, want <EOF> and the code %d", err, s.statusCode, codes.Internal)
+	}
+	conn.CloseStream(s, err)
+	if s.fc.pendingData != 0 || s.fc.pendingUpdate != 0 || conn.fc.pendingData != 0 || conn.fc.pendingUpdate != initialWindowSize {
+		t.Fatalf("Client mistakenly resets inbound flow control params: got %d, %d, %d, %d; want 0, 0, 0, %d", s.fc.pendingData, s.fc.pendingUpdate, conn.fc.pendingData, conn.fc.pendingUpdate, initialWindowSize)
+	}
+	// Test the logic for the violation of the connection flow control window size restriction.
+	//
+	// Generate enough streams to drain the connection window.
+	callHdr = &CallHdr{
+		Host:   "localhost",
+		Method: "foo.MaxFrame",
+	}
+	for i := 0; i < int(initialConnWindowSize/initialWindowSize+10); i++ {
+		s, err := ct.NewStream(context.Background(), callHdr)
+		if err != nil {
+			break
+		}
+		if err := ct.Write(s, expectedRequest, &Options{Last: true, Delay: false}); err != nil {
+			break
+		}
+	}
+	// http2Client.errChan is closed due to connection flow control window size violation.
+	<-conn.Error()
+	ct.Close()
+	server.stop()
 }
 
 func TestStreamContext(t *testing.T) {
@@ -403,55 +518,5 @@ func TestStreamContext(t *testing.T) {
 	s, ok := StreamFromContext(ctx)
 	if !ok || !reflect.DeepEqual(expectedStream, *s) {
 		t.Fatalf("GetStreamFromContext(%v) = %v, %t, want: %v, true", ctx, *s, ok, expectedStream)
-	}
-}
-
-// closeClient shuts down the ClientTransport and reports any errors to the
-// test framework and terminates the current test case.
-func closeClient(ct ClientTransport, t *testing.T) {
-	if err := ct.Close(); err != nil {
-		t.Fatalf("ct.Close() = %v, want <nil>", err)
-	}
-}
-
-// closeServerWithErr shuts down the testing server, closing the associated
-// transports.  It returns the first error it encounters, if any.
-func closeServerWithErr(s *server) error {
-	// Keep consistent with s.Close().
-	s.lis.Close()
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for c := range s.conns {
-		if err := c.Close(); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// closeServer shuts down the and testing server, closing the associated
-// transport.  It reports any errors to the test framework and terminates the
-// current test case.
-func closeServer(s *server, t *testing.T) {
-	if err := closeServerWithErr(s); err != nil {
-		t.Fatalf("server.Close() = %v, want <nil>", err)
-	}
-}
-
-func TestClientServerDuplicatedClose(t *testing.T) {
-	server, ct := setUp(t, true, 0, math.MaxUint32, false)
-	if err := ct.Close(); err != nil {
-		t.Fatalf("ct.Close() = %v, want <nil>", err)
-	}
-	if err := ct.Close(); err == nil {
-		// Duplicated closes should gracefully issue an error.
-		t.Fatalf("ct.Close() = <nil>, want non-nil")
-	}
-	if err := closeServerWithErr(server); err != nil {
-		t.Fatalf("closeServerWithErr(server) = %v, want <nil>", err)
-	}
-	if err := closeServerWithErr(server); err == nil {
-		// Duplicated closes should gracefully issue an error.
-		t.Fatalf("closeServerWithErr(server) = <nil>, want non-nil")
 	}
 }
