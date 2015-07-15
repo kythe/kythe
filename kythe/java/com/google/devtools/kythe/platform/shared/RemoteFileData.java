@@ -25,6 +25,7 @@ import com.google.devtools.kythe.proto.FileDataServiceGrpc.FileDataServiceStub;
 
 import io.grpc.ChannelImpl;
 import io.grpc.stub.StreamObserver;
+import io.grpc.transport.netty.NegotiationType;
 import io.grpc.transport.netty.NettyChannelBuilder;
 
 import java.net.InetSocketAddress;
@@ -36,7 +37,9 @@ public class RemoteFileData implements FileDataProvider {
 
   public RemoteFileData(String addr) {
     HostAndPort hp = HostAndPort.fromString(addr);
-    ChannelImpl channel = NettyChannelBuilder.forAddress(new InetSocketAddress(hp.getHostText(), hp.getPort()))
+    ChannelImpl channel = NettyChannelBuilder
+        .forAddress(new InetSocketAddress(hp.getHostText(), hp.getPort()))
+        .negotiationType(NegotiationType.PLAINTEXT)
         .build();
     stub = FileDataServiceGrpc.newStub(channel);
   }
