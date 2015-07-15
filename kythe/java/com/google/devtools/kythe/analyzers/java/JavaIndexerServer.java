@@ -30,7 +30,7 @@ import java.io.IOException;
 
 /** Binary to run Kythe's Java indexer as a CompilationAnalyzer service. */
 public class JavaIndexerServer {
-  public static void main(String[] args) throws IOException {
+  public static void main(String[] args) {
     if (args.length > 0 && ("--help".equals(args[0]) || "-h".equals(args[0]))) {
       usage(0);
     } else if (args.length > 2) {
@@ -61,10 +61,15 @@ public class JavaIndexerServer {
     }
 
     int port = Integer.parseInt(portArg);
-    NettyServerBuilder.forPort(port)
-        .addService(CompilationAnalyzerGrpc.bindService(new JavaCompilationAnalyzer()))
-        .build()
-        .start();
+    try {
+      NettyServerBuilder.forPort(port)
+          .addService(CompilationAnalyzerGrpc.bindService(new JavaCompilationAnalyzer()))
+          .build()
+          .start();
+    } catch (IOException ioe) {
+      ioe.printStackTrace();
+      System.exit(1);
+    }
     System.err.println("Started Java CompilationAnalyzer server on port " + port);
   }
 
