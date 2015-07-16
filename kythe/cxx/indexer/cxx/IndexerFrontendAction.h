@@ -157,9 +157,10 @@ public:
   StdinAdjustSingleFrontendActionFactory(clang::FrontendAction *Action)
       : Action(Action) {}
 
-  bool runInvocation(clang::CompilerInvocation *Invocation,
-                     clang::FileManager *Files,
-                     clang::DiagnosticConsumer *DiagConsumer) override {
+  bool runInvocation(
+      clang::CompilerInvocation *Invocation, clang::FileManager *Files,
+      std::shared_ptr<clang::PCHContainerOperations> PCHContainerOps,
+      clang::DiagnosticConsumer *DiagConsumer) override {
     auto &FEOpts = Invocation->getFrontendOpts();
     for (auto &Input : FEOpts.Inputs) {
       if (Input.isFile() && Input.getFile() == "-") {
@@ -168,7 +169,7 @@ public:
       }
     }
     return clang::tooling::FrontendActionFactory::runInvocation(
-        Invocation, Files, DiagConsumer);
+        Invocation, Files, PCHContainerOps, DiagConsumer);
   }
 
   /// Note that FrontendActionFactory::create() specifies that the

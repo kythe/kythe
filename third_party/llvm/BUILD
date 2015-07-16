@@ -15,6 +15,7 @@ cc_library(
     name = "llvm",
     srcs = [
         "llvm/build/Release+Asserts/lib/libclang.a",
+        "llvm/build/Release+Asserts/lib/libclangCodeGen.a",
         "llvm/build/Release+Asserts/lib/libclangTooling.a",
         "llvm/build/Release+Asserts/lib/libclangStaticAnalyzerFrontend.a",
         "llvm/build/Release+Asserts/lib/libclangStaticAnalyzerCore.a",
@@ -44,7 +45,7 @@ cc_library(
         "llvm/build/Release+Asserts/lib/libLLVMSupport.a",
         "llvm/build/Release+Asserts/lib/libLLVMCore.a",
         # See https://github.com/google/bazel/issues/61
-        "empty.cc",
+        "//tools/modules:check_modules",
     ],
     defines = [
         "__STDC_LIMIT_MACROS",
@@ -69,5 +70,5 @@ cc_library(
 
 cc_resources(
     name = "clang_builtin_headers_resources",
-    data = glob(["llvm/build/Release+Asserts/lib/clang/3.7.0/include/**/*.h"]),
+    data = glob(["llvm/build/Release+Asserts/lib/clang/3.8.0/include/**/*.h"]),
 )

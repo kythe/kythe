@@ -571,9 +571,10 @@ void ActionFactory::BeginNextIteration() {
 
 bool ActionFactory::ShouldRunAgain() { return iterations_ > 0; }
 
-bool ActionFactory::runInvocation(clang::CompilerInvocation *invocation,
-                                  clang::FileManager *files,
-                                  clang::DiagnosticConsumer *diagnostics) {
+bool ActionFactory::runInvocation(
+    clang::CompilerInvocation *invocation, clang::FileManager *files,
+    std::shared_ptr<clang::PCHContainerOperations> pch_container_ops,
+    clang::DiagnosticConsumer *diagnostics) {
   // ASTUnit::LoadFromCompilerInvocationAction complains about this too, but
   // we'll leave in our own assert to document the assumption.
   assert(invocation->getFrontendOpts().Inputs.size() == 1);
@@ -596,7 +597,7 @@ bool ActionFactory::runInvocation(clang::CompilerInvocation *invocation,
     BeginNextIteration();
     if (!ast_unit) {
       ast_unit = clang::ASTUnit::LoadFromCompilerInvocationAction(
-          invocation, diags, action.get(), ast_unit,
+          invocation, pch_container_ops, diags, action.get(), ast_unit,
           /*Persistent*/ false, llvm::StringRef(),
           /*OnlyLocalDecls*/ false,
           /*CaptureDiagnostics*/ true,
@@ -628,7 +629,7 @@ bool ActionFactory::runInvocation(clang::CompilerInvocation *invocation,
       // invocation entirely. ActionFactory (and FileTracker) are built the
       // way they are to permit them to persist beyond SourceManager/FileID
       // churn.
-      ast_unit->Reparse(buffers);
+      ast_unit->Reparse(pch_container_ops, buffers);
       clang::SourceLocation old_begin = action->tracker()->file_begin();
       clang::FileID old_id = ast_unit->getSourceManager().getFileID(old_begin);
       action->tracker()->BeginPass();

@@ -32,7 +32,7 @@ check_repo() {
           && cd "$ROOT" ) \
       || ( echo \
             "Missing ${2:-repo checkout} with ancestor $3 (rev $4) in $1
-Please see README.adoc for details (or run $ROOT/tools/modules/update.sh)" \
+Please run //tools/modules/update.sh." \
           && exit 1 )
 }
 

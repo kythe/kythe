@@ -374,8 +374,9 @@ Examples:
     std::unique_ptr<kythe::StdinAdjustSingleFrontendActionFactory> tool(
         new kythe::StdinAdjustSingleFrontendActionFactory(action.release()));
     // ToolInvocation doesn't take ownership of ToolActions.
-    clang::tooling::ToolInvocation invocation(final_args, tool.get(),
-                                              file_manager.get());
+    clang::tooling::ToolInvocation invocation(
+        final_args, tool.get(), file_manager.get(),
+        std::make_shared<clang::RawPCHContainerOperations>());
     had_no_errors = invocation.run();
   }
 

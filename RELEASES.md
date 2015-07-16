@@ -3,6 +3,7 @@
 ## Upcoming
 
 Notable changes:
+ - Dependencies: updated minimum LLVM revision. Run tools/modules/update.sh.
  - C++ indexer: index definitions and references to member variables.
  - kwazthis: replace `--ignore_local_repo` behavior with `--local_repo=NONE`
 

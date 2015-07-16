@@ -48,9 +48,10 @@ class ActionFactory : public clang::tooling::ToolAction {
   size_t iterations() const { return iterations_; }
 
   /// \copydoc clang::tooling::ToolAction::runInvocation
-  bool runInvocation(clang::CompilerInvocation *invocation,
-                     clang::FileManager *files,
-                     clang::DiagnosticConsumer *diagnostics) override;
+  bool runInvocation(
+      clang::CompilerInvocation *invocation, clang::FileManager *files,
+      std::shared_ptr<clang::PCHContainerOperations> pch_container_ops,
+      clang::DiagnosticConsumer *diagnostics) override;
 
  private:
   friend class Action;
