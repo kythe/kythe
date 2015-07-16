@@ -36,6 +36,13 @@ func FatalOnErrT(t *testing.T, msg string, err error, args ...interface{}) {
 	}
 }
 
+// Errorf calls t.Errorf(msg, err, args...) if err != nil
+func Errorf(t *testing.T, msg string, err error, args ...interface{}) {
+	if err != nil {
+		t.Errorf(msg, append([]interface{}{err}, args...)...)
+	}
+}
+
 // RandStr returns a random string of the given length
 func RandStr(size int) string {
 	const chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
