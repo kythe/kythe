@@ -1,6 +1,6 @@
 # Release Notes
 
-## Upcoming
+## v0.0.7
 
 Notable changes:
  - Dependencies: updated minimum LLVM revision. Run tools/modules/update.sh.
