@@ -19,6 +19,7 @@ package com.google.devtools.kythe.analyzers.base;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
+import com.google.common.base.Throwables;
 import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.platform.shared.AnalysisException;
 import com.google.devtools.kythe.platform.shared.FileDataProvider;
@@ -54,15 +55,13 @@ public abstract class AbstractCompilationAnalyzer {
   public void analyzeRequest(AnalysisRequest req, FactEmitter emitter) throws AnalysisException {
     Preconditions.checkNotNull(req, "AnalysisRequest must be non-null");
     Stopwatch timer = Stopwatch.createStarted();
-    try {
-      analyzeCompilation(
-          req.getCompilation(),
-          parseFileDataService(req.getFileDataService()),
-          emitter);
+    try (FileDataProvider fileData = parseFileDataService(req.getFileDataService())) {
+      analyzeCompilation(req.getCompilation(), fileData, emitter);
     } catch (Throwable t) {
       logger.warningfmt("Uncaught exception: %s", t);
       t.printStackTrace();
-      throw t;
+      Throwables.propagateIfInstanceOf(t, AnalysisException.class);
+      throw new AnalysisException(t);
     } finally {
       logger.infofmt("Analysis completed in %s", timer.stop());
     }

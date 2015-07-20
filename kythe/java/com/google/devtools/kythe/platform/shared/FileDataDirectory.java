@@ -43,4 +43,7 @@ public class FileDataDirectory implements FileDataProvider {
       return Futures.immediateFailedFuture(t);
     }
   }
+
+  @Override
+  public void close() {}
 }

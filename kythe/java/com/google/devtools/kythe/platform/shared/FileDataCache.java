@@ -45,4 +45,7 @@ public class FileDataCache implements FileDataProvider {
         : Futures.<byte[]>immediateFailedFuture(new RuntimeException(
               "Cache does not contain file for digest: " + digest));
   }
+
+  @Override
+  public void close() {}
 }

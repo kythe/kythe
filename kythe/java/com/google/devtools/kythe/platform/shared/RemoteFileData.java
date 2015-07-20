@@ -55,6 +55,9 @@ public class RemoteFileData implements FileDataProvider {
     return future;
   }
 
+  @Override
+  public void close() {}
+
   private static class SingletonLookup implements StreamObserver<FileData> {
     private final SettableFuture<byte[]> future;
 
