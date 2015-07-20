@@ -192,6 +192,12 @@ class KytheGraphObserver : public GraphObserver {
   void recordDefinitionRange(const Range &SourceRange,
                              const NodeId &DefnId) override;
 
+  void recordDocumentationRange(const Range &SourceRange,
+                                const NodeId &DocId) override;
+
+  void recordDeclUseLocationInDocumentation(const Range &SourceRange,
+                                            const NodeId &DeclId) override;
+
   void recordCompletionRange(const Range &SourceRange, const NodeId &DefnId,
                              Specificity Spec) override;
 

@@ -34,6 +34,7 @@ DEFINE_bool(show_goals, false, "Show goals after parsing");
 DEFINE_bool(ignore_dups, false, "Ignore duplicate facts during verification");
 DEFINE_bool(graphviz, false, "Only dump facts as a GraphViz-compatible graph");
 DEFINE_bool(annotated_graphviz, false, "Solve and annotate a GraphViz graph.");
+DEFINE_string(goal_prefix, "//-", "Denote goals with this string.");
 
 int main(int argc, char **argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -50,6 +51,7 @@ Example:
   ::google::InitGoogleLogging(argv[0]);
 
   kythe::verifier::Verifier v;
+  v.set_goal_comment_marker(FLAGS_goal_prefix);
 
   if (FLAGS_ignore_dups) {
     v.IgnoreDuplicateFacts();

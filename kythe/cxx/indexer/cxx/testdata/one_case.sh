@@ -23,7 +23,7 @@ VERIFIER="kythe/cxx/verifier/verifier"
 INDEXER="kythe/cxx/indexer/cxx/indexer"
 # one_case test-file clang-standard verifier-argument indexer-argument
 function one_case {
-  ${INDEXER} -i $1 $4 $5 -- -std=$2 | ${VERIFIER} $1 $3
+  ${INDEXER} -i $1 $4 $5 -- -std=$2 | ${VERIFIER} $1 $3 $6
   RESULTS=( ${PIPESTATUS[0]} ${PIPESTATUS[1]} )
   if [ ${RESULTS[0]} -ne 0 ]; then
     echo "[ FAILED INDEX: $1 ]"

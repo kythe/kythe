@@ -56,17 +56,17 @@ class AssertionParser {
   explicit AssertionParser(Verifier *verifier, bool trace_lex = false,
                            bool trace_parse = false);
 
-  /// \brief Loads a file containing rules in magic comments.
+  /// \brief Loads a file containing rules in marked comments.
   /// \param filename The filename of the file to load
-  /// \param comment_prefix Lines starting with this prefix are magic (eg "//-")
+  /// \param comment_prefix Lines starting with this prefix are goals (eg "//-")
   /// \return true if there were no errors
   bool ParseInlineRuleFile(const std::string &filename,
                            const char *comment_prefix);
 
-  /// \brief Loads a string containing rules in magic comments.
+  /// \brief Loads a string containing rules in marked comments.
   /// \param content The content to parse and load
   /// \param fake_filename Some string to use when printing errors and locations
-  /// \param comment_prefix Lines starting with this prefix are magic (eg "//-")
+  /// \param comment_prefix Lines starting with this prefix are goals (eg "//-")
   /// \return true if there were no errors
   bool ParseInlineRuleString(const std::string &content,
                              const std::string &fake_filename,
@@ -111,26 +111,26 @@ class AssertionParser {
  private:
   friend class yy::AssertionParserImpl;
 
-  /// \brief Resets the magic comment token check.
+  /// \brief Resets the goal comment token check.
   /// \sa NextLexCheck
   void ResetLexCheck();
 
-  /// \brief Advances the magic comment token check.
+  /// \brief Advances the goal comment token check.
   ///
-  /// It isn't possible to bake magic comments into the lexer because there is
+  /// It isn't possible to bake goal comments into the lexer because there is
   /// not a single supported comment syntax across all languages; while many
   /// do allow BCPL-style // comments, some (like Python) do not. The lexer
   /// starts each line by calling `NextLexCheck` on each character until
-  /// it determines whether the line begins with a magic comment or not.
+  /// it determines whether the line begins with a goal comment or not.
   /// Whitespace (\t ) is ignored.
   ///
   /// \param yytext A 1-length string containing the character to check.
-  /// \return 0 on inconclusive; 1 if this is a magic comment; -1 if this is
+  /// \return 0 on inconclusive; 1 if this is a goal comment; -1 if this is
   /// an ordinary source line.
   int NextLexCheck(const char *yytext);
 
   /// \brief Records source text after determining that it does not
-  /// begin with a magic comment marker.
+  /// begin with a goal comment marker.
   /// \param yytext A 1-length string containing the character to append.
   /// \sa NextLexCheck
   void AppendToLine(const char *yytext);

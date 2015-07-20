@@ -388,6 +388,15 @@ public:
   virtual void recordDefinitionRange(const Range &SourceRange,
                                      const NodeId &DefnId) {}
 
+  /// \brief Records that a particular `Range` contains some documentation
+  /// for the node called `DocId`.
+  virtual void recordDocumentationRange(const Range &SourceRange,
+                                        const NodeId &DocId) {}
+
+  /// \brief Records a use site for a decl inside some documentation.
+  virtual void recordDeclUseLocationInDocumentation(const Range &SourceRange,
+                                                    const NodeId &DeclId) {}
+
   /// \brief Describes how specific a completion relationship is.
   enum class Specificity {
     /// This relationship is the only possible relationship given its context.

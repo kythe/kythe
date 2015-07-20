@@ -23,11 +23,11 @@
 #include <memory>
 #include <unordered_map>
 
-#include "clang/AST/ASTConsumer.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/ASTTypeTraits.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Index/USRGeneration.h"
+#include "clang/Sema/SemaConsumer.h"
 #include "clang/Sema/Template.h"
 
 #include "IndexerLibrarySupport.h"
@@ -246,12 +246,14 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
 public:
   IndexerASTVisitor(clang::ASTContext &C, BehaviorOnUnimplemented B,
                     BehaviorOnTemplates T, const LibrarySupports &S,
-                    GraphObserver *GO = nullptr)
+                    clang::Sema &Sema, GraphObserver *GO = nullptr)
       : IgnoreUnimplemented(B), TemplateMode(T),
-        Observer(GO ? *GO : NullObserver), Context(C), Supports(S) {}
+        Observer(GO ? *GO : NullObserver), Context(C), Supports(S), Sema(Sema) {
+  }
 
   ~IndexerASTVisitor() { deleteAllParents(); }
 
+  bool VisitDecl(const clang::Decl *Decl);
   bool VisitFieldDecl(const clang::FieldDecl *Decl);
   bool VisitVarDecl(const clang::VarDecl *Decl);
   bool VisitDeclRefExpr(const clang::DeclRefExpr *DRE);
@@ -715,20 +717,28 @@ private:
 
   /// \brief Enabled library-specific callbacks.
   const LibrarySupports &Supports;
+
+  /// \brief The `Sema` instance to use.
+  clang::Sema &Sema;
 };
 
 /// \brief An `ASTConsumer` that passes events to a `GraphObserver`.
-class IndexerASTConsumer : public clang::ASTConsumer {
+class IndexerASTConsumer : public clang::SemaConsumer {
 public:
   explicit IndexerASTConsumer(GraphObserver *GO, BehaviorOnUnimplemented B,
                               BehaviorOnTemplates T, const LibrarySupports &S)
       : Observer(GO), IgnoreUnimplemented(B), TemplateMode(T), Supports(S) {}
 
   void HandleTranslationUnit(clang::ASTContext &Context) override {
+    assert(Sema != nullptr);
     IndexerASTVisitor Visitor(Context, IgnoreUnimplemented, TemplateMode,
-                              Supports, Observer);
+                              Supports, *Sema, Observer);
     Visitor.TraverseDecl(Context.getTranslationUnitDecl());
   }
+
+  void InitializeSema(clang::Sema &S) override { Sema = &S; }
+
+  void ForgetSema() { Sema = nullptr; }
 
 private:
   GraphObserver *const Observer;
@@ -738,6 +748,8 @@ private:
   BehaviorOnTemplates TemplateMode;
   /// Which library supports are enabled.
   const LibrarySupports &Supports;
+  /// The active Sema instance.
+  clang::Sema *Sema;
 };
 
 } // namespace kythe

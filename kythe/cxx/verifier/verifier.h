@@ -38,12 +38,12 @@ class Verifier {
   /// \param trace_parse Dump parsing debug information
   explicit Verifier(bool trace_lex = false, bool trace_parse = false);
 
-  /// \brief Loads a source file with magic comments indicating rules and data.
+  /// \brief Loads a source file with goal comments indicating rules and data.
   /// \param filename The filename to load
   /// \return false if we failed
   bool LoadInlineRuleFile(const std::string &filename);
 
-  /// \brief Loads a text proto with magic comments indicating rules and data.
+  /// \brief Loads a text proto with goal comments indicating rules and data.
   /// \param file_data The data to load
   /// \return false if we failed
   bool LoadInlineProtoFile(const std::string &file_data);
@@ -153,6 +153,11 @@ class Verifier {
   /// solving.
   size_t highest_goal_reached() const { return highest_goal_reached_; }
 
+  /// \brief Change the prefix used to identify goals in source text.
+  void set_goal_comment_marker(const std::string &it) {
+    goal_comment_marker_ = it;
+  }
+
  private:
   /// \brief Converts a VName proto to its AST representation.
   AstNode *ConvertVName(const yy::location &location,
@@ -220,6 +225,9 @@ class Verifier {
   /// (e.g., we add line and column information to labels we generate
   /// for anchors).
   std::map<std::string, AstNode *> saved_assignments_;
+
+  /// The string to look for at the beginning of a goal comment.
+  std::string goal_comment_marker_ = "//-";
 };
 
 }  // namespace verifier

@@ -237,6 +237,37 @@ Notes::
 int x;
 --------------------------------------------------------------------------------
 
+[[documents]]
+documents
+~~~~~~~~~
+
+Brief description::
+  A *documents* B if A describes (in possibly marked up natural language) the
+  semantic object B.
+Commonly arises from::
+  documentation comments
+Points from::
+  anchors
+Points toward::
+  semantic nodes
+Ordinals are used::
+  never
+Notes::
+  Kythe does not specify a particular flavor of markup. Documentation comment
+  anchors include all of the characters of the comment, including (e.g.) the
+  $$///$$s. It is up to the language indexer to determine which comments to
+  treat as documentation comments.
+See also::
+  <<refdoc,ref/doc>>
+
+[kythe,C++,"Comments document objects."]
+--------------------------------------------------------------------------------
+//- @"/// An empty class." documents ClassC
+//- ClassC.node/kind record
+/// An empty class.
+class C { };
+--------------------------------------------------------------------------------
+
 [[extends]]
 extends
 ~~~~~~~
@@ -599,6 +630,31 @@ void A() { }
 //- ACall.node/kind anchor
 //- ACall ref/call CallableA
 void B() { A(); }
+--------------------------------------------------------------------------------
+
+[[refdoc]]
+ref/doc
+~~~~~~~
+
+Brief description::
+  A *ref/doc* C if A is an anchor inside a block of documentation that refers
+  to C.
+Points from::
+  anchors
+Points toward::
+  semantic nodes
+Ordinals are used::
+  never
+See also::
+  <<documents,documents>>
+
+[kythe,C++,"Anchors in documentation can refer to semantic nodes."]
+--------------------------------------------------------------------------------
+//- @param_a ref/doc FooParamA
+//- FnFoo param.0 FooParamA
+//- FnFoo.node/kind function
+/// `param_a` is the first parameter.
+void foo(int param_a) { }
 --------------------------------------------------------------------------------
 
 [[refexpands]]

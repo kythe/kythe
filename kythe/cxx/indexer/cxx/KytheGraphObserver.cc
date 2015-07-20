@@ -495,6 +495,12 @@ GraphObserver::NodeId KytheGraphObserver::recordTypeAliasNode(
   return type_id;
 }
 
+void KytheGraphObserver::recordDocumentationRange(
+    const GraphObserver::Range &source_range, const NodeId &node) {
+  RecordAnchor(source_range, node, EdgeKindID::kDocuments,
+               Claimability::Claimable);
+}
+
 void KytheGraphObserver::recordDefinitionRange(
     const GraphObserver::Range &source_range, const NodeId &node) {
   RecordAnchor(source_range, node, EdgeKindID::kDefines,
@@ -681,6 +687,12 @@ void KytheGraphObserver::recordExtendsEdge(const NodeId &from, const NodeId &to,
           is_virtual ? EdgeKindID::kExtendsVirtual : EdgeKindID::kExtends,
           VNameFromNodeId(to));
   }
+}
+
+void KytheGraphObserver::recordDeclUseLocationInDocumentation(
+    const GraphObserver::Range &source_range, const NodeId &node) {
+  RecordAnchor(source_range, node, EdgeKindID::kRefDoc,
+               Claimability::Claimable);
 }
 
 void KytheGraphObserver::recordDeclUseLocation(

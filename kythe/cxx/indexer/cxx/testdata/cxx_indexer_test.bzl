@@ -5,13 +5,15 @@ def _empty_unless(condition, value):
 def cxx_indexer_test(name, srcs, deps=[], tags=[], size="small",
                      std="c++1y", ignore_dups=False,
                      ignore_unimplemented=False,
-                     index_template_instantiations=True):
+                     index_template_instantiations=True,
+                     goal_prefix="//-"):
   if len(srcs) != 1:
     fail("A single source file is required.", "srcs")
   dups = _empty_unless(ignore_dups, "--ignore_dups=true")
   unimplemented = _empty_unless(ignore_unimplemented, "--ignore_unimplemented")
   templates = _empty_unless(not index_template_instantiations,
                             "--index_template_instantiations=false")
+  goal_prefix_flag = "--goal_prefix=\"" + goal_prefix + "\""
   native.sh_test(
       name = name,
       srcs = ["//kythe/cxx/indexer/cxx/testdata:run_case.sh"],
@@ -20,7 +22,8 @@ def cxx_indexer_test(name, srcs, deps=[], tags=[], size="small",
           "//kythe/cxx/indexer/cxx:indexer",
           "//kythe/cxx/verifier",
       ],
-      args = ["$(location %s)" % srcs[0], std, dups, unimplemented, templates],
+      args = ["$(location %s)" % srcs[0], std, dups, unimplemented, templates,
+              goal_prefix_flag],
       tags = tags,
       size = size,
   )

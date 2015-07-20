@@ -58,7 +58,9 @@ static const std::string *kEdgeKindSpellings[] = {
     new std::string("/kythe/edge/extends/private/virtual"),
     new std::string("/kythe/edge/extends/virtual"),
     new std::string("/kythe/edge/specializes/speculative"),
-    new std::string("/kythe/edge/instantiates/speculative")};
+    new std::string("/kythe/edge/instantiates/speculative"),
+    new std::string("/kythe/edge/documents"),
+    new std::string("/kythe/edge/ref/doc")};
 
 static const std::string *const kPropertySpellings[] = {
     new std::string("/kythe/loc"),

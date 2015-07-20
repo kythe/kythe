@@ -285,7 +285,8 @@ bool Verifier::LoadInlineProtoFile(const std::string &file_data) {
 
 bool Verifier::LoadInlineRuleFile(const std::string &filename) {
   // TODO(zarko): figure out comment prefix from file extension
-  bool parsed = parser_.ParseInlineRuleFile(filename, "//-");
+  bool parsed =
+      parser_.ParseInlineRuleFile(filename, goal_comment_marker_.c_str());
   if (!parsed) {
     return false;
   }

@@ -669,6 +669,84 @@ test_suite(
 )
 
 cxx_indexer_test(
+    name = "docs_bcpl_block",
+    srcs = ["docs/docs_bcpl_block.cc"],
+    tags = ["docs"],
+)
+
+cxx_indexer_test(
+    name = "docs_bcpl_block_multiline",
+    srcs = ["docs/docs_bcpl_block_multiline.cc"],
+    goal_prefix = "///-",
+    tags = ["docs"],
+)
+
+cxx_indexer_test(
+    name = "docs_block",
+    srcs = ["docs/docs_block.cc"],
+    tags = ["docs"],
+)
+
+cxx_indexer_test(
+    name = "docs_block_multiline",
+    srcs = ["docs/docs_block_multiline.cc"],
+    tags = ["docs"],
+)
+
+cxx_indexer_test(
+    name = "docs_juxtaposed",
+    srcs = ["docs/docs_juxtaposed.cc"],
+    tags = ["docs"],
+)
+
+cxx_indexer_test(
+    name = "docs_juxtaposed_multiline",
+    srcs = ["docs/docs_juxtaposed_multiline.cc"],
+    goal_prefix = "///<-",
+    tags = ["docs"],
+)
+
+cxx_indexer_test(
+    name = "docs_ref_gen_backtick",
+    srcs = ["docs/docs_ref_gen_backtick.cc"],
+    goal_prefix = "///-",
+    tags = ["docs"],
+)
+
+cxx_indexer_test(
+    name = "docs_ref_gen_doxycommand",
+    srcs = ["docs/docs_ref_gen_doxycommand.cc"],
+    goal_prefix = "///-",
+    tags = ["docs"],
+)
+
+cxx_indexer_test(
+    name = "docs_ref_gen_param",
+    srcs = ["docs/docs_ref_gen_param.cc"],
+    goal_prefix = "///-",
+    tags = ["docs"],
+)
+
+cxx_indexer_test(
+    name = "docs_ref_gen_quote",
+    srcs = ["docs/docs_ref_gen_quote.cc"],
+    goal_prefix = "///-",
+    tags = ["docs"],
+)
+
+cxx_indexer_test(
+    name = "docs_ref_gen_tparam",
+    srcs = ["docs/docs_ref_gen_tparam.cc"],
+    goal_prefix = "///-",
+    tags = ["docs"],
+)
+
+test_suite(
+    name = "indexer_docs",
+    tags = ["docs"],
+)
+
+cxx_indexer_test(
     name = "flags_bool",
     srcs = ["libraries/flags_bool.cc"],
     ignore_dups = True,

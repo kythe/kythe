@@ -19,6 +19,7 @@
 #include "IndexerASTHooks.h"
 
 #include "clang/AST/Attr.h"
+#include "clang/AST/CommentLexer.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclFriend.h"
@@ -38,6 +39,7 @@
 #include "clang/AST/Type.h"
 #include "clang/AST/TypeLoc.h"
 #include "clang/Lex/Lexer.h"
+#include "clang/Sema/Lookup.h"
 
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/raw_ostream.h"
@@ -379,6 +381,338 @@ void IndexerASTVisitor::RecordCallEdges(const GraphObserver::Range &Range,
       Observer.recordCallEdge(Range, Caller, Callee);
     }
   }
+}
+
+/// Decides whether `Tok` can be used to quote an identifier.
+static bool TokenQuotesIdentifier(const clang::SourceManager &SM,
+                                  const clang::Token &Tok) {
+  switch (Tok.getKind()) {
+  case tok::TokenKind::pipe:
+    return true;
+  case tok::TokenKind::unknown: {
+    bool Invalid = false;
+    if (const char *TokChar =
+            SM.getCharacterData(Tok.getLocation(), &Invalid)) {
+      if (!Invalid && Tok.getLength() > 0) {
+        return *TokChar == '`';
+      }
+    }
+    return false;
+  }
+  default:
+    return false;
+  }
+}
+
+/// \brief Attempt to find the template parameters bound immediately by `DC`.
+/// \return null if no parameters could be found.
+static clang::TemplateParameterList *
+GetTypeParameters(const clang::DeclContext *DC) {
+  if (!DC) {
+    return nullptr;
+  }
+  if (const auto *TemplateContext = dyn_cast<clang::TemplateDecl>(DC)) {
+    return TemplateContext->getTemplateParameters();
+  } else if (const auto *CTPSD =
+                 dyn_cast<ClassTemplatePartialSpecializationDecl>(DC)) {
+    return CTPSD->getTemplateParameters();
+  } else if (const auto *RD = dyn_cast<CXXRecordDecl>(DC)) {
+    if (const auto *TD = RD->getDescribedClassTemplate()) {
+      return TD->getTemplateParameters();
+    }
+  } else if (const auto *VTPSD =
+                 dyn_cast<VarTemplatePartialSpecializationDecl>(DC)) {
+    return VTPSD->getTemplateParameters();
+  } else if (const auto *VD = dyn_cast<VarDecl>(DC)) {
+    if (const auto *TD = VD->getDescribedVarTemplate()) {
+      return TD->getTemplateParameters();
+    }
+  } else if (const auto *AD = dyn_cast<TypeAliasDecl>(DC)) {
+    if (const auto *TD = AD->getDescribedAliasTemplate()) {
+      return TD->getTemplateParameters();
+    }
+  }
+  return nullptr;
+}
+
+/// Make sure `DC` won't cause Sema::LookupQualifiedName to fail an assertion.
+static bool IsContextSafeForLookup(const clang::DeclContext *DC) {
+  return !isa<clang::TagDecl>(DC) || DC->isDependentContext() ||
+         cast<TagDecl>(DC)->isCompleteDefinition() ||
+         cast<TagDecl>(DC)->isBeingDefined();
+}
+
+/// An in-flight possible lookup result used to approximate qualified lookup.
+struct PossibleLookup {
+  clang::LookupResult Result;
+  const clang::DeclContext *Context;
+};
+
+/// Greedily consumes tokens to try and find the longest qualified name that
+/// results in a nonempty lookup result.
+class PossibleLookups {
+public:
+  /// \param RC The most specific context to start searching in.
+  /// \param TC The translation unit context.
+  PossibleLookups(clang::ASTContext &C, clang::Sema &S,
+                  const clang::DeclContext *RC, const clang::DeclContext *TC)
+      : Context(C), Sema(S), RootContext(RC), TUContext(TC) {
+    StartIdentifier();
+  }
+
+  /// Describes what happened after we added the last token to the lookup state.
+  enum class LookupResult {
+    Done,    ///< Lookup is terminated; don't add any more tokens.
+    Updated, ///< The last token narrowed down the lookup.
+    Progress ///< The last token didn't narrow anything down.
+  };
+
+  /// Try to use `Tok` to narrow down the lookup.
+  LookupResult AdvanceLookup(const clang::Token &Tok) {
+    if (Tok.is(clang::tok::coloncolon)) {
+      // This flag only matters if the possible lookup list is empty.
+      // Just drop ::s on the floor otherwise.
+      ForceTUContext = true;
+      return LookupResult::Progress;
+    } else if (Tok.is(clang::tok::raw_identifier)) {
+      bool Invalid = false;
+      const char *TokChar = Context.getSourceManager().getCharacterData(
+          Tok.getLocation(), &Invalid);
+      if (Invalid || !TokChar) {
+        return LookupResult::Done;
+      }
+      llvm::StringRef TokText(TokChar, Tok.getLength());
+      const auto &Id = Context.Idents.get(TokText);
+      clang::DeclarationNameInfo DeclName(
+          Context.DeclarationNames.getIdentifier(&Id), Tok.getLocation());
+      if (Lookups.empty()) {
+        return StartLookups(DeclName);
+      } else {
+        return AdvanceLookups(DeclName);
+      }
+    }
+    return LookupResult::Done;
+  }
+
+  /// Start a new identifier.
+  void StartIdentifier() {
+    Lookups.clear();
+    ForceTUContext = false;
+  }
+
+  /// Retrieve a vector of plausible lookup results with the most specific
+  /// ones first.
+  const std::vector<PossibleLookup> &LookupState() { return Lookups; }
+
+private:
+  /// Start a new lookup from `DeclName`.
+  LookupResult StartLookups(const clang::DeclarationNameInfo &DeclName) {
+    assert(Lookups.empty());
+    const clang::DeclContext *Context =
+        ForceTUContext ? TUContext : RootContext;
+    do {
+      clang::LookupResult FirstLookup(
+          Sema, DeclName, clang::Sema::LookupNameKind::LookupAnyName);
+      if (IsContextSafeForLookup(Context) &&
+          Sema.LookupQualifiedName(
+              FirstLookup, const_cast<clang::DeclContext *>(Context), false)) {
+        Lookups.push_back({FirstLookup, Context});
+      } else {
+        assert(FirstLookup.empty());
+        // We could be looking at a (type) parameter here. Note that this
+        // may still be part of a qualified (dependent) name.
+        if (const auto *FunctionContext =
+                dyn_cast_or_null<clang::FunctionDecl>(Context)) {
+          for (const auto &Param : FunctionContext->params()) {
+            if (Param->getDeclName() == DeclName.getName()) {
+              clang::LookupResult DerivedResult(FirstLookup);
+              DerivedResult.addDecl(Param);
+              Lookups.push_back({DerivedResult, Context});
+            }
+          }
+        } else if (const auto *TemplateParams = GetTypeParameters(Context)) {
+          for (const auto &TParam : *TemplateParams) {
+            if (TParam->getDeclName() == DeclName.getName()) {
+              clang::LookupResult DerivedResult(FirstLookup);
+              DerivedResult.addDecl(TParam);
+              Lookups.push_back({DerivedResult, Context});
+            }
+          }
+        }
+      }
+      Context = Context->getParent();
+    } while (Context != nullptr);
+    return Lookups.empty() ? LookupResult::Done : LookupResult::Updated;
+  }
+  /// Continue each in-flight lookup using `DeclName`.
+  LookupResult AdvanceLookups(const clang::DeclarationNameInfo &DeclName) {
+    // Try to advance each lookup we have stored.
+    std::vector<PossibleLookup> ResultLookups;
+    for (auto &Lookup : Lookups) {
+      for (const clang::NamedDecl *Result : Lookup.Result) {
+        const auto *Context = dyn_cast<clang::DeclContext>(Result);
+        if (!Context) {
+          Context = Lookup.Context;
+        }
+        clang::LookupResult NextResult(
+            Sema, DeclName, clang::Sema::LookupNameKind::LookupAnyName);
+        if (IsContextSafeForLookup(Context) &&
+            Sema.LookupQualifiedName(
+                NextResult, const_cast<clang::DeclContext *>(Context), false)) {
+          ResultLookups.push_back({NextResult, Context});
+        }
+      }
+    }
+    if (!ResultLookups.empty()) {
+      Lookups = std::move(ResultLookups);
+      return LookupResult::Updated;
+    } else {
+      return LookupResult::Done;
+    }
+  }
+  /// All the plausible lookup results so far. This is sorted with the most
+  /// specific results first (i.e., the ones that came from the closest
+  /// DeclContext).
+  std::vector<PossibleLookup> Lookups;
+  /// The ASTContext we're under.
+  clang::ASTContext &Context;
+  /// The Sema instance we're using.
+  clang::Sema &Sema;
+  /// The nearest declaration context.
+  const clang::DeclContext *RootContext;
+  /// The translation unit's declaration context.
+  const clang::DeclContext *TUContext;
+  /// Set if the current lookup is unambiguously in TUContext.
+  bool ForceTUContext = false;
+};
+
+/// The state for heuristic parsing of identifiers in comment bodies.
+enum class RefParserState {
+  WaitingForMark, ///< We're waiting for something that might denote an
+                  ///< embedded identifier.
+  SawCommand      ///< We saw something Clang identifies as a comment command.
+};
+
+bool IndexerASTVisitor::VisitDecl(const clang::Decl *Decl) {
+  const auto &SM = *Observer.getSourceManager();
+  const auto *Comment = Context.getRawCommentForDeclNoCache(Decl);
+  if (!Comment) {
+    // Fast path: if there are no attached documentation comments, bail.
+    return true;
+  }
+  const auto *DC = dyn_cast<DeclContext>(Decl);
+  if (!DC) {
+    DC = Decl->getDeclContext();
+    if (!DC) {
+      DC = Context.getTranslationUnitDecl();
+    }
+  }
+  std::string Text = Comment->getRawText(SM).str();
+  clang::comments::Lexer Lexer(Context.getAllocator(), Context.getDiagnostics(),
+                               Context.getCommentCommandTraits(),
+                               Comment->getSourceRange().getBegin(),
+                               Text.data(), Text.data() + Text.size());
+  clang::comments::Token Tok;
+  std::vector<clang::Token> IdentifierTokens;
+  PossibleLookups Lookups(Context, Sema, DC, Context.getTranslationUnitDecl());
+  // Attribute all tokens on [FirstToken,LastToken] to every possible lookup
+  // result inside PossibleLookups.
+  auto HandleLookupResult = [&](int FirstToken, int LastToken) {
+    for (auto Results : Lookups.LookupState()) {
+      for (auto Result : Results.Result) {
+        auto ResultId = BuildNodeIdForDecl(Result);
+        for (int Token = FirstToken; Token <= LastToken; ++Token) {
+          Observer.recordDeclUseLocationInDocumentation(
+              RangeInCurrentContext(
+                  clang::SourceRange(IdentifierTokens[Token].getLocation(),
+                                     IdentifierTokens[Token].getEndLoc())),
+              ResultId);
+        }
+      }
+    }
+  };
+  auto State = RefParserState::WaitingForMark;
+  // FoundEndingDelimiter will be called whenever we're sure that no more
+  // tokens can be added to IdentifierTokens that could be related to the same
+  // identifier. (IdentifierTokens might still contain multiple identifiers,
+  // as in the doc text "`foo`, `bar`, or `baz`".)
+  // TODO(zarko): Deal with template arguments (`foo<int>::bar`), balanced
+  // delimiters (`foo::bar(int, c<int>)`), and dtors (which are troubling
+  // because they have ~s out in front). The goal here is not to completely
+  // reimplement a C/C++ parser, but instead to build just enough to make good
+  // guesses.
+  auto FoundEndingDelimiter = [&]() {
+    int IdentifierStart = -1;
+    int CurrentIndex = 0;
+    if (State == RefParserState::SawCommand) {
+      // Start as though we've seen a quote and consume tokens until we're not
+      // making progress.
+      IdentifierStart = 0;
+      Lookups.StartIdentifier();
+    }
+    for (const auto &Tok : IdentifierTokens) {
+      if (IdentifierStart >= 0) {
+        if (Lookups.AdvanceLookup(Tok) == PossibleLookups::LookupResult::Done) {
+          // We can't match an identifier using this token. Either it's the
+          // matching close-quote or it's some other weirdness.
+          if (IdentifierStart != CurrentIndex) {
+            HandleLookupResult(IdentifierStart, CurrentIndex - 1);
+          }
+          IdentifierStart = -1;
+        }
+      } else if (TokenQuotesIdentifier(SM, Tok)) {
+        // We found a signal to start an identifier.
+        IdentifierStart = CurrentIndex + 1;
+        Lookups.StartIdentifier();
+      }
+      ++CurrentIndex;
+    }
+    State = RefParserState::WaitingForMark;
+    IdentifierTokens.clear();
+  };
+  do {
+    Lexer.lex(Tok);
+    switch (Tok.getKind()) {
+    case clang::comments::tok::text: {
+      auto TokText = Tok.getText().str();
+      clang::Lexer LookupLexer(Tok.getLocation(), *Observer.getLangOptions(),
+                               TokText.data(), TokText.data(),
+                               TokText.data() + TokText.size());
+      do {
+        IdentifierTokens.emplace_back();
+        LookupLexer.LexFromRawLexer(IdentifierTokens.back());
+      } while (!IdentifierTokens.back().is(clang::tok::eof));
+      IdentifierTokens.pop_back();
+    } break;
+    case clang::comments::tok::newline:
+      break;
+    case clang::comments::tok::unknown_command:
+    case clang::comments::tok::backslash_command:
+    case clang::comments::tok::at_command:
+      FoundEndingDelimiter();
+      State = RefParserState::SawCommand;
+      break;
+    case clang::comments::tok::verbatim_block_begin:
+    case clang::comments::tok::verbatim_block_line:
+    case clang::comments::tok::verbatim_block_end:
+    case clang::comments::tok::verbatim_line_name:
+    case clang::comments::tok::verbatim_line_text:
+    case clang::comments::tok::html_start_tag:
+    case clang::comments::tok::html_ident:
+    case clang::comments::tok::html_equals:
+    case clang::comments::tok::html_quoted_string:
+    case clang::comments::tok::html_greater:
+    case clang::comments::tok::html_slash_greater:
+    case clang::comments::tok::html_end_tag:
+    case clang::comments::tok::eof:
+      FoundEndingDelimiter();
+      break;
+    }
+  } while (Tok.getKind() != clang::comments::tok::eof);
+  // Attribute the raw comment text to its associated decl.
+  auto RCC = RangeInCurrentContext(Comment->getSourceRange());
+  Observer.recordDocumentationRange(RCC, BuildNodeIdForDecl(Decl));
+  return true;
 }
 
 /// \brief Returns whether `Ctor` would override the in-class initializer for
