@@ -323,7 +323,7 @@ var (
 				}
 			}
 
-			return displayReferences(reply)
+			return displayReferences(req.DirtyBuffer, reply)
 		})
 
 	cmdSearch = newCommand("search", "[--corpus c] [--sig s] [--root r] [--lang l] [--path p] [factName factValue]...",

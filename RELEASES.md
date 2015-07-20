@@ -1,5 +1,10 @@
 # Release Notes
 
+## Upcoming
+
+Notable fixes:
+ - kythe refs command: normalize locations within dirty buffer, if given one
+
 ## v0.0.7
 
 Notable changes:

@@ -126,15 +126,17 @@ func displaySource(decor *xpb.DecorationsReply) error {
 	return err
 }
 
-func displayReferences(decor *xpb.DecorationsReply) error {
+func displayReferences(text []byte, decor *xpb.DecorationsReply) error {
 	if *displayJSON {
 		return json.NewEncoder(out).Encode(decor)
 	}
 
 	nodes := xrefs.NodesMap(decor.Node)
 
-	// TODO(schroederc): return anchor locations from server
-	norm := xrefs.NewNormalizer(decor.SourceText)
+	if text == nil {
+		text = decor.SourceText
+	}
+	norm := xrefs.NewNormalizer(text)
 
 	for _, ref := range decor.Reference {
 		nodeKind := factValue(nodes, ref.TargetTicket, schema.NodeKindFact, "UNKNOWN")
