@@ -120,7 +120,6 @@ message CompilationUnit {
   // FileInput F' at offset O (perhaps because F has an #include directive at O)
   // the context in which F' should be processed is the linked context derived
   // from this table.
-  // TODO(zarko): Revisit the use of "column".
   message ContextDependentVersionColumn {
     // The byte offset into the file resource.
     int32 offset = 1;
