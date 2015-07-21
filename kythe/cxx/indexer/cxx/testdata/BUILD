@@ -694,8 +694,50 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "docs_implicit_block",
+    srcs = ["docs/docs_implicit_block.cc"],
+    tags = ["docs"],
+)
+
+cxx_indexer_test(
+    name = "docs_implicit_block_multiline",
+    srcs = ["docs/docs_implicit_block_multiline.cc"],
+    tags = ["docs"],
+)
+
+cxx_indexer_test(
+    name = "docs_implicit_unrelated_block",
+    srcs = ["docs/docs_implicit_unrelated_block.cc"],
+    tags = ["docs"],
+)
+
+cxx_indexer_test(
+    name = "docs_implicit_unrelated_block_decl",
+    srcs = ["docs/docs_implicit_unrelated_block_decl.cc"],
+    tags = ["docs"],
+)
+
+cxx_indexer_test(
+    name = "docs_implicit_unrelated_block_newline",
+    srcs = ["docs/docs_implicit_unrelated_block_newline.cc"],
+    tags = ["docs"],
+)
+
+cxx_indexer_test(
     name = "docs_juxtaposed",
     srcs = ["docs/docs_juxtaposed.cc"],
+    tags = ["docs"],
+)
+
+cxx_indexer_test(
+    name = "docs_juxtaposed_implicit",
+    srcs = ["docs/docs_juxtaposed_implicit.cc"],
+    tags = ["docs"],
+)
+
+cxx_indexer_test(
+    name = "docs_juxtaposed_implicit_multiline",
+    srcs = ["docs/docs_juxtaposed_implicit_multiline.cc"],
     tags = ["docs"],
 )
 

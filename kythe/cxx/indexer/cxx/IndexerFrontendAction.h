@@ -124,6 +124,7 @@ private:
       CI.getPreprocessor().addPPCallbacks(llvm::make_unique<IndexerPPCallbacks>(
           CI.getPreprocessor(), *Observer));
     }
+    CI.getLangOpts().CommentOpts.ParseAllComments = true;
     return true;
   }
 

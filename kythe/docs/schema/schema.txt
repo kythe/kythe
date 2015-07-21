@@ -260,10 +260,15 @@ Notes::
 See also::
   <<refdoc,ref/doc>>
 
+In the $$C++$$ example below, there are really two documentation blocks: the
+first comes from merging together the verification annotations; the second is
+the Doxygen-style $$///$$ line. The Doxygen line is not merged with the verifier
+lines owing to heuristics in Clang's comment parser.
+
 [kythe,C++,"Comments document objects."]
 --------------------------------------------------------------------------------
-//- @"/// An empty class." documents ClassC
-//- ClassC.node/kind record
+int v;   //- @"/// An empty class." documents ClassC
+         //- ClassC.node/kind record
 /// An empty class.
 class C { };
 --------------------------------------------------------------------------------
