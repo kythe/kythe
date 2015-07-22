@@ -29,6 +29,8 @@ import com.google.devtools.kythe.extractors.shared.ExtractorUtils;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
 import com.google.devtools.kythe.proto.Analysis.FileInfo;
+import com.google.devtools.kythe.proto.Java.JavaDetails;
+import com.google.protobuf.InvalidProtocolBufferException;
 
 import junit.framework.TestCase;
 
@@ -81,6 +83,7 @@ public class JavaExtractorTest extends TestCase {
     JavaArguments args = JavaArguments.parseArguments(unit);
     assertThat(args.getSourcepath()).containsExactly(TEST_DATA_DIR);
     assertThat(args.getClasspath()).isEmpty();
+    assertThatArgumentsMatch(args, unit);
   }
 
   /** Tests indexing within a symlink root. */
@@ -118,6 +121,7 @@ public class JavaExtractorTest extends TestCase {
     JavaArguments args = JavaArguments.parseArguments(unit);
     assertThat(args.getSourcepath()).containsExactly(TEST_DATA_DIR);
     assertThat(args.getClasspath()).isEmpty();
+    assertThatArgumentsMatch(args, unit);
   }
 
   /**
@@ -152,6 +156,7 @@ public class JavaExtractorTest extends TestCase {
     assertThat(args.getSourcepath())
         .containsExactly(PathUtil.join(TEST_DATA_DIR, "one"), PathUtil.join(TEST_DATA_DIR, "two"));
     assertThat(args.getClasspath()).isEmpty();
+    assertThatArgumentsMatch(args, unit);
   }
 
   /**
@@ -188,6 +193,7 @@ public class JavaExtractorTest extends TestCase {
     assertThat(args.getSourcepath()).containsExactly(PathUtil.join(TEST_DATA_DIR, "child"));
     // Ensure the classpath is set for replay.
     assertThat(args.getClasspath()).containsExactly(parentCp);
+    assertThatArgumentsMatch(args, unit);
   }
 
   /**
@@ -229,6 +235,7 @@ public class JavaExtractorTest extends TestCase {
     assertEquals(1, args.getClasspath().size());
     // Ensure the magic !jar! classpath is added.
     assertEquals(JavaCompilationUnitExtractor.JAR_ROOT, args.getClasspath().get(0));
+    assertThatArgumentsMatch(args, unit);
   }
 
   /**
@@ -258,6 +265,7 @@ public class JavaExtractorTest extends TestCase {
     assertEquals(1, args.getSourcepath().size());
     assertEquals(TEST_DATA_DIR, args.getSourcepath().get(0));
     assertEquals(0, args.getClasspath().size());
+    assertThatArgumentsMatch(args, unit);
   }
 
   /**
@@ -319,6 +327,7 @@ public class JavaExtractorTest extends TestCase {
     assertEquals(1, args.getSourcepath().size());
     assertEquals(TEST_DATA_DIR, args.getSourcepath().get(0));
     assertEquals(0, args.getClasspath().size());
+    assertThatArgumentsMatch(args, unit);
   }
 
   /**
@@ -349,6 +358,7 @@ public class JavaExtractorTest extends TestCase {
     JavaArguments args = JavaArguments.parseArguments(unit);
     assertThat(args.getSourcepath()).containsExactly(TEST_DATA_DIR);
     assertThat(args.getClasspath()).isEmpty();
+    assertThatArgumentsMatch(args, unit);
   }
 
   /**
@@ -406,6 +416,7 @@ public class JavaExtractorTest extends TestCase {
     assertEquals(2, args.getSourcepath().size());
     assertThat(args.getSourcepath()).containsExactly(TEST_DATA_DIR, "output-gensrc.jar.files");
     assertEquals(0, args.getClasspath().size());
+    assertThatArgumentsMatch(args, unit);
   }
 
   /**
@@ -438,9 +449,10 @@ public class JavaExtractorTest extends TestCase {
 
     // And the correct classpath set to replay the compilation.
     JavaArguments args = JavaArguments.parseArguments(unit);
-    assertEquals(1, args.getSourcepath().size());
+    assertEquals(0, args.getSourcepath().size());
     assertEquals(1, args.getClasspath().size());
     assertEquals("!jar!", args.getClasspath().get(0));
+    assertThatArgumentsMatch(args, unit);
   }
 
   private List<String> testFiles(String... files) {
@@ -491,6 +503,21 @@ public class JavaExtractorTest extends TestCase {
     }
   }
 
+  private void assertThatArgumentsMatch(JavaArguments args, CompilationUnit unit)
+      throws InvalidProtocolBufferException {
+    assertThat(unit.getDetailsList()).hasSize(1);
+    assertThat(unit.getDetails(0).getTypeUrl())
+        .isEqualTo(JavaCompilationUnitExtractor.JAVA_DETAILS_URL);
+
+    JavaDetails details = JavaDetails.parseFrom(unit.getDetails(0).getValue());
+    assertThat(details.getClasspathList())
+        .containsExactlyElementsIn(args.getClasspath())
+        .inOrder();
+    assertThat(details.getSourcepathList())
+        .containsExactlyElementsIn(args.getSourcepath())
+        .inOrder();
+  }
+
   private static class JavaArguments {
     private final List<String> sourcepath, classpath;
 
@@ -510,9 +537,6 @@ public class JavaExtractorTest extends TestCase {
         if (args.get(i).equals("-sourcepath")) {
           i++;
           sourcepath.addAll(parsePathList(args.get(i)));
-          if (args.get(i).isEmpty()) {
-            sourcepath.add(".");
-          }
         } else if (args.get(i).equals("-cp") || args.get(i).equals("-classpath")) {
           i++;
           classpath.addAll(parsePathList(args.get(i)));

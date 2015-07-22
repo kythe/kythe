@@ -8,6 +8,7 @@ java_test(
         "//kythe/java/com/google/devtools/kythe/extractors/java",
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
         "//kythe/proto:analysis_proto_java",
+        "//kythe/proto:java_proto_java",
         "//kythe/proto:storage_proto_java",
         "//third_party:junit4",
         "//third_party/guava",

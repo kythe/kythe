@@ -38,8 +38,10 @@ import com.google.devtools.kythe.extractors.shared.FileVNames;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
 import com.google.devtools.kythe.proto.Analysis.FileData;
+import com.google.devtools.kythe.proto.Java.JavaDetails;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.devtools.kythe.util.DeleteRecursively;
+import com.google.protobuf.Any;
 
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.ExpressionTree;
@@ -89,6 +91,8 @@ import javax.tools.ToolProvider;
  * Compiler takes too long to do this.
  */
 public class JavaCompilationUnitExtractor {
+  public static final String JAVA_DETAILS_URL = "kythe.io/proto/kythe.proto.JavaDetails";
+
   private static final FormattingLogger logger =
       FormattingLogger.getLogger(JavaCompilationUnitExtractor.class);
 
@@ -178,6 +182,13 @@ public class JavaCompilationUnitExtractor {
       unit.addSourceFile(sourceFile);
     }
     unit.setOutputKey(outputPath);
+    unit.addDetails(Any.newBuilder()
+        .setTypeUrl(JAVA_DETAILS_URL)
+        .setValue(JavaDetails.newBuilder()
+            .addAllClasspath(newClassPath)
+            .addAllSourcepath(newSourcePath)
+            .build()
+            .toByteString()));
     return unit.build();
   }
 

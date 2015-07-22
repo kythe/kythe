@@ -15,9 +15,11 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/extractors/shared:file_vnames",
         "//kythe/java/com/google/devtools/kythe/util",
         "//kythe/proto:analysis_proto_java",
+        "//kythe/proto:java_proto_java",
         "//kythe/proto:storage_proto_java",
         "//third_party/guava",
         "//third_party/openjdk:tools",
+        "//third_party/proto:any_proto_java",
         "//third_party/proto:protobuf_java",
     ],
 )

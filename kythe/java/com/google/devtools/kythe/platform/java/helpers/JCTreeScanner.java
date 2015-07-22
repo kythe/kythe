@@ -126,8 +126,6 @@ import com.sun.tools.javac.tree.JCTree.JCWildcard;
 import com.sun.tools.javac.tree.JCTree.LetExpr;
 import com.sun.tools.javac.tree.JCTree.TypeBoundKind;
 
-import java.util.Arrays;
-
 /** A {@link TreeScanner} with the scan/reduce semantics of a {@link TreeVisitor}. */
 public class JCTreeScanner<R, P> implements TreeVisitor<R, P> {
 

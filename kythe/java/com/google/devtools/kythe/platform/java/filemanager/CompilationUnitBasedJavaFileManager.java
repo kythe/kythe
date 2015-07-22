@@ -16,8 +16,12 @@
 
 package com.google.devtools.kythe.platform.java.filemanager;
 
+import com.google.devtools.kythe.extractors.java.JavaCompilationUnitExtractor;
 import com.google.devtools.kythe.platform.shared.FileDataProvider;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
+import com.google.devtools.kythe.proto.Java.JavaDetails;
+import com.google.protobuf.Any;
+import com.google.protobuf.InvalidProtocolBufferException;
 
 import java.util.HashSet;
 import java.util.List;
@@ -48,11 +52,19 @@ public class CompilationUnitBasedJavaFileManager extends JavaFileStoreBasedFileM
   public CompilationUnitBasedJavaFileManager(FileDataProvider contentProvider,
       CompilationUnit unit, StandardJavaFileManager fileManager, String encoding) {
     super(new CompilationUnitBasedJavaFileStore(unit, contentProvider, encoding), fileManager);
+
+    // TODO(schroederc): determine if we want to keep around legacy argument parsing support
     classpath.add("");
     classpath.addAll(getPathSet(unit.getArgumentList(), "-cp"));
     classpath.addAll(getPathSet(unit.getArgumentList(), "-classpath"));
     sourcepath.add("");
     sourcepath.addAll(getPathSet(unit.getArgumentList(), "-sourcepath"));
+
+    JavaDetails details = getDetails(unit);
+    if (details != null) {
+      classpath.addAll(details.getClasspathList());
+      sourcepath.addAll(details.getSourcepathList());
+    }
   }
 
   @Override
@@ -80,5 +92,19 @@ public class CompilationUnitBasedJavaFileManager extends JavaFileStoreBasedFileM
       }
     }
     return new HashSet<String>();
+  }
+
+  private static JavaDetails getDetails(CompilationUnit unit) {
+    for (Any details : unit.getDetailsList()) {
+      if (details.getTypeUrl().equals(JavaCompilationUnitExtractor.JAVA_DETAILS_URL)) {
+        try {
+          return JavaDetails.parseFrom(details.getValue());
+        } catch (InvalidProtocolBufferException ipbe) {
+          System.err.println("WARNING: "
+              + "CompilationUnit contains JavaDetails that could not be parsed: " + ipbe);
+        }
+      }
+    }
+    return null;
   }
 }

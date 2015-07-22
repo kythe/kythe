@@ -2,6 +2,9 @@
 
 ## Upcoming
 
+Notable additions:
+ - Java extractor: add JavaDetails to each CompilationUnit
+
 Notable fixes:
  - kythe refs command: normalize locations within dirty buffer, if given one
 

@@ -36,6 +36,11 @@ proto_library(
 )
 
 proto_library(
+    name = "java_proto",
+    gen_java = 1,
+)
+
+proto_library(
     name = "claim_proto",
     gen_cc = 1,
     deps = [":storage_proto"],
