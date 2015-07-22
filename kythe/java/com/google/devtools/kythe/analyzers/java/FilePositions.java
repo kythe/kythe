@@ -16,6 +16,7 @@
 
 package com.google.devtools.kythe.analyzers.java;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.devtools.kythe.platform.java.helpers.SyntaxPreservingScanner;
 import com.google.devtools.kythe.util.Span;
@@ -29,6 +30,8 @@ import com.sun.tools.javac.util.Context;
 import com.sun.tools.javac.util.Name;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.List;
@@ -42,7 +45,8 @@ public final class FilePositions {
   private final EndPosTable endPositions;
   private final Map<Name, List<Span>> identTable = new HashMap<>();
 
-  private final String text;
+  private final CharSequence text;
+  private final int[] byteOffsets;
   private final Charset encoding;
 
   public FilePositions(Context context, JCCompilationUnit compilation, Charset sourceEncoding)
@@ -50,11 +54,12 @@ public final class FilePositions {
     sourceFile = compilation.getSourceFile();
     endPositions = compilation.endPositions;
     // Assume content has been decoded correctly by kythe.platform.java.filemanager.CustomFileObject
-    text = sourceFile.getCharContent(true).toString();
+    text = sourceFile.getCharContent(true);
     encoding = sourceEncoding;
+    byteOffsets = memoizeByteOffsets(encoding, text);
 
     // Filling up the identifier lookup table:
-    SyntaxPreservingScanner scanner = SyntaxPreservingScanner.create(context, text);
+    SyntaxPreservingScanner scanner = SyntaxPreservingScanner.create(context, getSourceText());
     for (Token token = scanner.readToken(); token.kind != TokenKind.EOF;
         token = scanner.readToken()) {
       if (token.kind == TokenKind.IDENTIFIER) {
@@ -76,7 +81,7 @@ public final class FilePositions {
   }
 
   public String getSourceText() {
-    return text;
+    return text.toString();
   }
 
   public byte[] getData() {
@@ -121,9 +126,11 @@ public final class FilePositions {
   private int charToByteOffset(int charOffset) {
     if (charOffset < 0) {
       return -1;
+    } else if (charOffset > text.length()) {
+      System.err.printf("WARNING: offset past end of source: %d > %d\n", charOffset, text.length());
+      return -1;
     }
-    // TODO(schroederc): determine if this is a memory bottle-neck
-    return text.substring(0, charOffset).getBytes(encoding).length;
+    return byteOffsets[charOffset];
   }
 
   // Adds an identifier location to the lookup table for findIdentifier().
@@ -134,5 +141,40 @@ public final class FilePositions {
       identTable.put(name, spans);
     }
     spans.add(new Span(charToByteOffset(position.getStart()), charToByteOffset(position.getEnd())));
+  }
+
+  @VisibleForTesting
+  static int[] memoizeByteOffsets(Charset encoding, CharSequence text) {
+    int[] offsets = new int[text.length()+1];
+
+    CountingOutputStream counter = new CountingOutputStream();
+    OutputStreamWriter writer = new OutputStreamWriter(counter, encoding);
+
+    for (int i = 0; i < text.length(); i++) {
+      offsets[i] = counter.getCount();
+      try {
+        writer.append(text.charAt(i));
+        writer.flush();
+      } catch (IOException ioe) {
+        throw new IllegalStateException(ioe);
+      }
+    }
+    offsets[text.length()] = counter.getCount();
+    return offsets;
+  }
+
+  /** {@link OutputStream} that only counts each {@code byte} that should be written. */
+  private static class CountingOutputStream extends OutputStream {
+    private int count;
+
+    /** Returns the count of bytes that have been requested to be written. */
+    public int getCount() {
+      return count;
+    }
+
+    @Override
+    public void write(int b) {
+      count++;
+    }
   }
 }
