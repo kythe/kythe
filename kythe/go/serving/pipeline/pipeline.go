@@ -440,7 +440,7 @@ func getDecorations(ctx context.Context, es xrefs.EdgesService, anchor *xpb.Node
 		return nil, nil
 	}
 
-	edges, err := es.Edges(ctx, &xpb.EdgesRequest{Ticket: []string{anchor.Ticket}})
+	edges, err := xrefs.AllEdges(ctx, es, &xpb.EdgesRequest{Ticket: []string{anchor.Ticket}})
 	if err != nil {
 		return nil, err
 	}
@@ -479,7 +479,7 @@ func readEdges(ctx context.Context, es xrefs.NodesEdgesService, files []string, 
 	var eErr error
 	for _, file := range files {
 		if eErr == nil {
-			reply, err := es.Edges(ctx, &xpb.EdgesRequest{
+			reply, err := xrefs.AllEdges(ctx, es, &xpb.EdgesRequest{
 				Ticket: []string{file},
 				Filter: filters,
 				Kind:   kinds,

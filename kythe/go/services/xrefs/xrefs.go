@@ -22,6 +22,7 @@ import (
 	"bytes"
 	"fmt"
 	"log"
+	"math"
 	"net/http"
 	"regexp"
 	"sort"
@@ -67,30 +68,103 @@ type DecorationsService interface {
 	Decorations(context.Context, *xpb.DecorationsRequest) (*xpb.DecorationsReply, error)
 }
 
+// AllEdges returns all edges for a particular EdgesRequest.  This means that
+// the returned reply will not have a next page token.  WARNING: the paging API
+// exists for a reason; using this can lead to very large memory consumption
+// depending on the request.
+func AllEdges(ctx context.Context, es EdgesService, req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
+	req.PageSize = math.MaxInt32
+	reply, err := es.Edges(ctx, req)
+	if err != nil || reply.NextPageToken == "" {
+		return reply, err
+	}
+
+	nodes, edges := NodesMap(reply.Node), EdgesMap(reply.EdgeSet)
+
+	for reply.NextPageToken != "" && err == nil {
+		req.PageToken = reply.NextPageToken
+		reply, err = es.Edges(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+		nodesMapInto(reply.Node, nodes)
+		edgesMapInto(reply.EdgeSet, edges)
+	}
+
+	reply = &xpb.EdgesReply{
+		Node:    make([]*xpb.NodeInfo, 0, len(nodes)),
+		EdgeSet: make([]*xpb.EdgeSet, 0, len(edges)),
+	}
+
+	for ticket, facts := range nodes {
+		info := &xpb.NodeInfo{
+			Ticket: ticket,
+			Fact:   make([]*xpb.Fact, 0, len(facts)),
+		}
+		for name, val := range facts {
+			info.Fact = append(info.Fact, &xpb.Fact{
+				Name:  name,
+				Value: val,
+			})
+		}
+		reply.Node = append(reply.Node, info)
+	}
+
+	for source, kinds := range edges {
+		set := &xpb.EdgeSet{
+			SourceTicket: source,
+			Group:        make([]*xpb.EdgeSet_Group, 0, len(kinds)),
+		}
+		for kind, targets := range kinds {
+			set.Group = append(set.Group, &xpb.EdgeSet_Group{
+				Kind:         kind,
+				TargetTicket: targets,
+			})
+		}
+		reply.EdgeSet = append(reply.EdgeSet, set)
+	}
+
+	return reply, err
+}
+
 // NodesMap returns a map from each node ticket to a map of its facts.
 func NodesMap(nodes []*xpb.NodeInfo) map[string]map[string][]byte {
 	m := make(map[string]map[string][]byte, len(nodes))
+	nodesMapInto(nodes, m)
+	return m
+}
+
+func nodesMapInto(nodes []*xpb.NodeInfo, m map[string]map[string][]byte) {
 	for _, n := range nodes {
-		facts := make(map[string][]byte, len(n.Fact))
+		facts, ok := m[n.Ticket]
+		if !ok {
+			facts = make(map[string][]byte, len(n.Fact))
+			m[n.Ticket] = facts
+		}
 		for _, f := range n.Fact {
 			facts[f.Name] = f.Value
 		}
-		m[n.Ticket] = facts
 	}
-	return m
 }
 
 // EdgesMap returns a map from each node ticket to a map of its outward edge kinds.
 func EdgesMap(edges []*xpb.EdgeSet) map[string]map[string][]string {
 	m := make(map[string]map[string][]string, len(edges))
-	for _, es := range edges {
-		kinds := make(map[string][]string, len(es.Group))
-		for _, g := range es.Group {
-			kinds[g.Kind] = g.TargetTicket
-		}
-		m[es.SourceTicket] = kinds
-	}
+	edgesMapInto(edges, m)
 	return m
+}
+
+func edgesMapInto(edges []*xpb.EdgeSet, m map[string]map[string][]string) {
+	for _, es := range edges {
+		kinds, ok := m[es.SourceTicket]
+		if !ok {
+			kinds = make(map[string][]string, len(es.Group))
+			m[es.SourceTicket] = kinds
+		}
+		for _, g := range es.Group {
+			kinds[g.Kind] = append(kinds[g.Kind], g.TargetTicket...)
+		}
+	}
 }
 
 // Patcher uses a computed diff between two texts to map spans from the original

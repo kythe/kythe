@@ -6,6 +6,7 @@ Notable additions:
  - Java extractor: add JavaDetails to each CompilationUnit
 
 Notable fixes:
+ - write_tables: ensure that all edges are scanned for FileDecorations
  - kythe refs command: normalize locations within dirty buffer, if given one
 
 ## v0.0.7
