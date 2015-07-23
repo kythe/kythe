@@ -37,4 +37,5 @@ BAZEL_ARGS=(
   --verbose_failures
   --test_output=errors
   --test_summary=terse
+  --test_tag_filters=-flaky
 )

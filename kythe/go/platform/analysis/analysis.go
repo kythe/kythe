@@ -17,17 +17,49 @@
 // Package analysis defines interfaces used to locate and analyze compilation
 // units and their inputs.
 //
-// Implementations of the Fetcher interface express the ability to read file
-// contents from index files, local files, index packs, and other storage.
+// Package analysis contains the CompilationAnalyzer and Fetcher interfaces.
+// CompilationAnalyzers are a generic interface to a process that analyzes
+// apb.CompilationUnits, gathering their needed file data from a
+// FileDataService.  Fetchers express the ability to read file contents from
+// index files, local files, index packs, and other storage.
 package analysis
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"sync"
 
+	"github.com/golang/protobuf/proto"
+	"golang.org/x/net/context"
+
 	apb "kythe.io/kythe/proto/analysis_proto"
+	spb "kythe.io/kythe/proto/storage_proto"
 )
+
+// OutputFunc handles a single AnalysisOutput.
+type OutputFunc func(out *apb.AnalysisOutput) error
+
+// A CompilationAnalyzer analyzes compilations, retrieving all necessary file
+// data from a FileDataService, and returns a stream arbitrary outputs.
+type CompilationAnalyzer interface {
+	// Analyze calls f on each analysis output resulting from the analysis of the
+	// given apb.CompilationUnit.  If f returns an error, f is no longer called
+	// and Analyze returns with the same error.
+	Analyze(ctx context.Context, req *apb.AnalysisRequest, f OutputFunc) error
+}
+
+// EntryOutput returns an OutputFunc that unmarshals each output's value as an
+// Entry and calls f on it.
+func EntryOutput(f func(*spb.Entry) error) OutputFunc {
+	return func(out *apb.AnalysisOutput) error {
+		var entry spb.Entry
+		if err := proto.Unmarshal(out.Value, &entry); err != nil {
+			return fmt.Errorf("error unmarshaling Entry from AnalysisOutput: %v", err)
+		}
+		return f(&entry)
+	}
+}
 
 // A Fetcher provides the ability to fetch file contents from storage.
 type Fetcher interface {

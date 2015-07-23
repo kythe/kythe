@@ -3,6 +3,43 @@ load("/tools/build_rules/go", "go_binary")
 package(default_visibility = ["//kythe:default_visibility"])
 
 go_binary(
+    name = "analyzer_driver",
+    srcs = glob(["analyzer_driver/*.go"]),
+    deps = [
+        "//kythe/go/platform/analysis",
+        "//kythe/go/platform/analysis/driver",
+        "//kythe/go/platform/analysis/local",
+        "//kythe/go/platform/analysis/remote",
+        "//kythe/go/platform/delimited",
+        "//kythe/go/platform/indexpack",
+        "//kythe/go/platform/kindex",
+        "//kythe/go/util/flagutil",
+        "//kythe/go/util/netutil",
+        "//kythe/go/util/process",
+        "//kythe/proto:analysis_proto_go",
+        "//kythe/proto:storage_proto_go",
+        "//third_party/go:context",
+        "//third_party/go:grpc",
+        "//third_party/go:protobuf",
+    ],
+)
+
+sh_test(
+    name = "analyzer_driver_test",
+    srcs = ["testdata/analyzer_driver_test.sh"],
+    data = [
+        ":analyzer_driver",
+        "//kythe/go/platform/tools:entrystream",
+        "//kythe/java/com/google/devtools/kythe/analyzers/java:indexer_server",
+        "//kythe/testdata:test.kindex",
+    ],
+    tags = [
+        "flaky",  # flaky due to port picking
+        "local",
+    ],
+)
+
+go_binary(
     name = "entrystream",
     srcs = [
         "entrystream/entrystream.go",
