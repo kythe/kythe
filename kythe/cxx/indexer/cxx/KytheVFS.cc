@@ -33,7 +33,8 @@ IndexVFS::IndexVFS(const std::string &working_directory,
     if (auto *record = FileRecordForPath(ToStringRef(data.info().path()),
                                          BehaviorOnMissing::kCreateFile,
                                          data.content().size())) {
-      record->data = llvm::StringRef(data.content());
+      record->data = llvm::StringRef(data.content().data(),
+                                     data.content().size());
     }
   }
 }
