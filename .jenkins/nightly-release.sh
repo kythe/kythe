@@ -16,7 +16,7 @@
 
 . "$(dirname "$0")/bazel-common.sh"
 
-VERSION="nightly-$(date +%F)-$(git rev-parse --short @)"
+VERSION="nightly-$(date +%F-%H)-$(git rev-parse --short @)"
 BAZEL_ARGS+=(-c opt)
 BUCKET=kythe-releases
 
