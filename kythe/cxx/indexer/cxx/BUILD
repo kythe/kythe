@@ -32,10 +32,12 @@ cc_library(
     deps = [
         "//kythe/cxx/common:json_proto",
         "//kythe/cxx/common:lib",
+        "//kythe/proto:analysis_proto_cc",
         "//kythe/proto:cxx_proto_cc",
         "//kythe/proto:storage_proto_cc",
         "//third_party/googleflags:gflags",
         "//third_party/llvm",
+        "//third_party/llvm/src:clang_builtin_headers",
         "//third_party/proto:protobuf",
     ],
 )

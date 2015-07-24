@@ -34,8 +34,9 @@ class CxxExtractorTest : public testing::Test {
   CxxExtractorTest() {
     // We use the real filesystem here so that we can test real filesystem
     // features, like symlinks.
-    CHECK_EQ(0, llvm::sys::fs::createUniqueDirectory("cxx_extractor_test",
-                                                     root_).value());
+    CHECK_EQ(0,
+             llvm::sys::fs::createUniqueDirectory("cxx_extractor_test", root_)
+                 .value());
     directories_to_remove_.insert(root_.str());
   }
 
@@ -98,8 +99,9 @@ class CxxExtractorTest : public testing::Test {
     int write_fd;
     UndoableCreateDirectories(path);
     ASSERT_EQ(0, llvm::sys::fs::remove(path).value());
-    ASSERT_EQ(0, llvm::sys::fs::openFileForWrite(
-                     path, write_fd, llvm::sys::fs::F_Text).value());
+    ASSERT_EQ(0, llvm::sys::fs::openFileForWrite(path, write_fd,
+                                                 llvm::sys::fs::F_Text)
+                     .value());
     ASSERT_EQ(code.size(), ::write(write_fd, code.c_str(), code.size()));
     ASSERT_EQ(0, ::close(write_fd));
     files_to_remove_.insert(path);
@@ -203,7 +205,7 @@ class CxxExtractorTest : public testing::Test {
             const std::string &main_source_file,
             const PreprocessorTranscript &transcript,
             const std::unordered_map<std::string, SourceFile> &source_files,
-            const HeaderSearchInfo &header_search_info, bool had_errors) {
+            const HeaderSearchInfo *header_search_info, bool had_errors) {
           index_writer.WriteIndex(std::unique_ptr<kythe::IndexWriterSink>(
                                       new ForwardingIndexWriterSink(sink)),
                                   main_source_file, transcript, source_files,

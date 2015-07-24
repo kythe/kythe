@@ -63,12 +63,13 @@ DEFINE_bool(index_template_instantiations, true,
 DEFINE_string(index_pack, "", "Mount an index pack rooted at this directory.");
 
 namespace kythe {
+namespace {
 /// \brief Reads the output of the static claim tool.
 ///
 /// `path` should be a file that contains a GZip-compressed sequence of
 /// varint-prefixed wire format ClaimAssignment protobuf messages.
-static void DecodeStaticClaimTable(const std::string &path,
-                                   kythe::StaticClaimClient *client) {
+void DecodeStaticClaimTable(const std::string &path,
+                            kythe::StaticClaimClient *client) {
   using namespace google::protobuf::io;
   int fd = open(path.c_str(), O_RDONLY, S_IREAD | S_IWRITE);
   CHECK_GE(fd, 0) << "Couldn't open input file " << path;
@@ -94,9 +95,9 @@ static void DecodeStaticClaimTable(const std::string &path,
 /// \param path The path from which the file should be read.
 /// \param virtual_files A vector to be filled with FileData.
 /// \param unit A `CompilationUnit` to be decoded from the .kindex.
-static void DecodeIndexFile(const std::string &path,
-                            std::vector<proto::FileData> *virtual_files,
-                            proto::CompilationUnit *unit) {
+void DecodeIndexFile(const std::string &path,
+                     std::vector<proto::FileData> *virtual_files,
+                     proto::CompilationUnit *unit) {
   using namespace google::protobuf::io;
   int fd = open(path.c_str(), O_RDONLY, S_IREAD | S_IWRITE);
   CHECK_GE(fd, 0) << "Couldn't open input file " << path;
@@ -123,10 +124,10 @@ static void DecodeIndexFile(const std::string &path,
   close(fd);
 }
 
-static void DecodeIndexPack(const std::string &cu_hash,
-                            std::unique_ptr<IndexPack> index_pack,
-                            std::vector<proto::FileData> *virtual_files,
-                            proto::CompilationUnit *unit) {
+void DecodeIndexPack(const std::string &cu_hash,
+                     std::unique_ptr<IndexPack> index_pack,
+                     std::vector<proto::FileData> *virtual_files,
+                     proto::CompilationUnit *unit) {
   std::string error_text;
   CHECK(index_pack->ReadCompilationUnit(cu_hash, unit, &error_text))
       << "Could not read " << cu_hash << ": " << error_text;
@@ -147,46 +148,12 @@ static void DecodeIndexPack(const std::string &cu_hash,
   }
 }
 
-static void DecodeHeaderSearchInformation(const proto::CompilationUnit &unit,
-                                          HeaderSearchInfo *info) {
-  info->is_valid = false;
-  kythe::proto::CxxCompilationUnitDetails details;
-  for (const auto &any : unit.details()) {
-    if (any.type_url() == kCxxCompilationUnitDetailsURI) {
-      info->is_valid = UnpackAny(any, &details);
-      break;
-    }
-  }
-  if (!info->is_valid) {
-    return;
-  }
-  const auto &info_proto = details.header_search_info();
-  info->angled_dir_idx = info_proto.first_angled_dir();
-  info->system_dir_idx = info_proto.first_system_dir();
-  for (const auto &dir : info_proto.dir()) {
-    info->paths.push_back(std::make_pair(
-        dir.path(), static_cast<clang::SrcMgr::CharacteristicKind>(
-                        dir.characteristic_kind())));
-  }
-  for (const auto &prefix : details.system_header_prefix()) {
-    info->system_prefixes.push_back(
-        std::make_pair(prefix.prefix(), prefix.is_system_header()));
-  }
-  if (!(info->angled_dir_idx <= info->system_dir_idx &&
-        info->system_dir_idx <= info->paths.size())) {
-    fprintf(stderr,
-            "Warning: unit has header search info, but it is ill-formed.\n");
-    info->is_valid = false;
-    return;
-  }
-  info->is_valid = true;
-}
-
 /// \brief Does `input` end with `suffix`?
-static bool EndsWith(const std::string &input, const std::string &suffix) {
+bool EndsWith(const std::string &input, const std::string &suffix) {
   return input.size() >= suffix.size() &&
          !input.compare(input.size() - suffix.size(), suffix.size(), suffix);
 }
+}  // anonymous namespace
 
 int main(int argc, char *argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -250,8 +217,8 @@ Examples:
   }
 
   std::vector<proto::FileData> virtual_files;
-  clang::FileSystemOptions file_system_options;
   proto::CompilationUnit unit;
+  std::string working_dir;
 
   if (!kindex_file_or_cu.empty()) {
     if (index_pack) {
@@ -260,22 +227,20 @@ Examples:
     } else {
       DecodeIndexFile(kindex_file_or_cu, &virtual_files, &unit);
     }
-    // CompilationUnit's arguments field includes the names of source files.
-    final_args.assign(unit.argument().begin(), unit.argument().end());
     // We presently handle kindex files with only one main source file.
     CHECK_EQ(1, unit.source_file_size());
-    file_system_options.WorkingDir = unit.working_directory();
-    if (!llvm::sys::path::is_absolute(file_system_options.WorkingDir)) {
+    working_dir = unit.working_directory();
+    if (!llvm::sys::path::is_absolute(working_dir)) {
       llvm::SmallString<1024> stored_wd;
       CHECK(!llvm::sys::fs::make_absolute(stored_wd));
-      file_system_options.WorkingDir = stored_wd.str();
+      working_dir = stored_wd.str();
     }
   } else {
     int read_fd = STDIN_FILENO;
     std::string source_file_name = "stdin.cc";
     llvm::SmallString<1024> cwd;
     CHECK(!llvm::sys::fs::current_path(cwd));
-    file_system_options.WorkingDir = cwd.str();
+    working_dir = cwd.str();
 
     if (FLAGS_i != "-") {
       read_fd = open(FLAGS_i.c_str(), O_RDONLY);
@@ -305,6 +270,9 @@ Examples:
     file_data.mutable_info()->set_path(source_file_name);
     file_data.set_content(source_data.str());
     virtual_files.push_back(std::move(file_data));
+    for (const auto &arg : final_args) {
+      unit.add_argument(arg);
+    }
   }
 
   kythe::StaticClaimClient claim_client;
@@ -323,61 +291,20 @@ Examples:
     }
   }
 
-  bool had_no_errors;
+  std::string result;
+
   {
-    llvm::IntrusiveRefCntPtr<IndexVFS> virtual_file_system(
-        new IndexVFS(file_system_options.WorkingDir, virtual_files));
     google::protobuf::io::FileOutputStream raw_output(write_fd);
     kythe::FileOutputStream kythe_output(&raw_output);
-    kythe::KytheGraphRecorder kythe_recorder(&kythe_output);
-    kythe::KytheGraphObserver observer(&kythe_recorder, &claim_client,
-                                       virtual_file_system);
-    observer.set_claimant(unit.v_name());
-    observer.set_starting_context(unit.entry_context());
-    kythe::HeaderSearchInfo header_search_info;
-    DecodeHeaderSearchInformation(unit, &header_search_info);
 
-    for (const auto &input : unit.required_input()) {
-      if (input.has_info() && !input.info().path().empty() &&
-          input.has_v_name()) {
-        virtual_file_system->SetVName(input.info().path(), input.v_name());
-      }
-      const std::string &file_path = input.info().path();
-      for (const auto &row : input.context()) {
-        if (row.always_process()) {
-          auto claimable_vname = input.v_name();
-          claimable_vname.set_signature(row.source_context() +
-                                        claimable_vname.signature());
-          claim_client.AssignClaim(claimable_vname, unit.v_name());
-        }
-        for (const auto &col : row.column()) {
-          observer.AddContextInformation(file_path, row.source_context(),
-                                         col.offset(), col.linked_context());
-        }
-      }
-    }
-
-    std::unique_ptr<kythe::IndexerFrontendAction> action(
-        new kythe::IndexerFrontendAction(&observer, header_search_info));
-    action->setIgnoreUnimplemented(
+    result = IndexCompilationUnit(
+        unit, working_dir, virtual_files, claim_client,
+        FLAGS_index_template_instantiations
+            ? BehaviorOnTemplates::VisitInstantiations
+            : BehaviorOnTemplates::SkipInstantiations,
         FLAGS_ignore_unimplemented ? kythe::BehaviorOnUnimplemented::Continue
-                                   : kythe::BehaviorOnUnimplemented::Abort);
-    action->setTemplateMode(FLAGS_index_template_instantiations
-                                ? BehaviorOnTemplates::VisitInstantiations
-                                : BehaviorOnTemplates::SkipInstantiations);
-    llvm::IntrusiveRefCntPtr<clang::FileManager> file_manager(
-        new clang::FileManager(file_system_options, kindex_file_or_cu.empty()
-                                                        ? nullptr
-                                                        : virtual_file_system));
-    final_args.insert(final_args.begin() + 1, "-fsyntax-only");
-    // StdinAdjustSingleFrontendActionFactory takes ownership of its action.
-    std::unique_ptr<kythe::StdinAdjustSingleFrontendActionFactory> tool(
-        new kythe::StdinAdjustSingleFrontendActionFactory(action.release()));
-    // ToolInvocation doesn't take ownership of ToolActions.
-    clang::tooling::ToolInvocation invocation(
-        final_args, tool.get(), file_manager.get(),
-        std::make_shared<clang::RawPCHContainerOperations>());
-    had_no_errors = invocation.run();
+                                   : kythe::BehaviorOnUnimplemented::Abort,
+        kindex_file_or_cu.empty() /* AllowFSAccess */, kythe_output);
   }
 
   if (close(write_fd) != 0) {
@@ -385,7 +312,11 @@ Examples:
     exit(1);
   }
 
-  return had_no_errors == false;
+  if (!result.empty()) {
+    fprintf(stderr, "Error: %s\n", result.c_str());
+  }
+
+  return !result.empty();
 }
 
 }  // namespace kythe

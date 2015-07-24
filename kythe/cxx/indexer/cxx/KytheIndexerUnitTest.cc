@@ -157,10 +157,8 @@ TEST(KytheIndexerUnitTest, GraphRecorderEdgeOrdinal) {
 
 TEST(KytheIndexerUnitTest, TrivialHappyCase) {
   NullGraphObserver observer;
-  HeaderSearchInfo info;
-  info.is_valid = false;
   std::unique_ptr<clang::FrontendAction> Action(
-      new IndexerFrontendAction(&observer, info));
+      new IndexerFrontendAction(&observer, nullptr));
   ASSERT_TRUE(
       RunToolOnCode(std::move(Action), "int main() {}", "valid_main.cc"));
 }
@@ -215,10 +213,8 @@ class PushPopLintingGraphObserver : public NullGraphObserver {
 
 TEST(KytheIndexerUnitTest, PushFilePopFileTracking) {
   PushPopLintingGraphObserver Observer;
-  HeaderSearchInfo info;
-  info.is_valid = false;
   std::unique_ptr<clang::FrontendAction> Action(
-      new IndexerFrontendAction(&Observer, info));
+      new IndexerFrontendAction(&Observer, nullptr));
   ASSERT_TRUE(RunToolOnCode(std::move(Action), "int i;", "main.cc"));
   ASSERT_FALSE(Observer.hadUnderrun());
   ASSERT_EQ(0, Observer.getFileNameStackSize());

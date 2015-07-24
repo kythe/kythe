@@ -24,8 +24,6 @@
 namespace kythe {
 /// \brief Reproduces Clang's internal header search state.
 struct HeaderSearchInfo {
-  /// Whether this record is valid. If false, it should not be used.
-  bool is_valid = false;
   /// The first of the paths that is an <include>.
   unsigned angled_dir_idx = 0;
   /// The first of the system include paths. Must be >= angled_dir_idx.

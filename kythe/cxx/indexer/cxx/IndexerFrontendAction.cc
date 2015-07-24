@@ -23,8 +23,16 @@
 
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Tooling/Tooling.h"
-
+#include "kythe/cxx/common/json_proto.h"
+#include "kythe/proto/analysis.pb.h"
+#include "kythe/proto/cxx.pb.h"
+#include "third_party/llvm/src/clang_builtin_headers.h"
 #include "llvm/ADT/Twine.h"
+
+#include "KytheClaimClient.h"
+#include "KytheGraphObserver.h"
+#include "KytheGraphRecorder.h"
+#include "KytheVFS.h"
 
 namespace kythe {
 
@@ -33,6 +41,125 @@ bool RunToolOnCode(std::unique_ptr<clang::FrontendAction> tool_action,
   if (tool_action == nullptr)
     return false;
   return clang::tooling::runToolOnCode(tool_action.release(), code, filename);
+}
+
+namespace {
+
+bool DecodeHeaderSearchInformation(const proto::CompilationUnit &Unit,
+                                   HeaderSearchInfo &Info) {
+  bool FoundDetails = false;
+  proto::CxxCompilationUnitDetails Details;
+  for (const auto &Any : Unit.details()) {
+    if (Any.type_url() == kCxxCompilationUnitDetailsURI) {
+      FoundDetails = UnpackAny(Any, &Details);
+      break;
+    }
+  }
+  if (!FoundDetails) {
+    return false;
+  }
+  const auto &InfoProto = Details.header_search_info();
+  Info.angled_dir_idx = InfoProto.first_angled_dir();
+  Info.system_dir_idx = InfoProto.first_system_dir();
+  for (const auto &Dir : InfoProto.dir()) {
+    Info.paths.emplace_back(Dir.path(),
+                            static_cast<clang::SrcMgr::CharacteristicKind>(
+                                Dir.characteristic_kind()));
+  }
+  for (const auto &Prefix : Details.system_header_prefix()) {
+    Info.system_prefixes.emplace_back(Prefix.prefix(),
+                                      Prefix.is_system_header());
+  }
+  if (!(Info.angled_dir_idx <= Info.system_dir_idx &&
+        Info.system_dir_idx <= Info.paths.size())) {
+    fprintf(stderr,
+            "Warning: unit has header search info, but it is ill-formed.\n");
+    return false;
+  }
+  return true;
+}
+
+std::string ConfigureSystemHeaders(const proto::CompilationUnit &Unit,
+                                   std::vector<proto::FileData> &Files) {
+  const std::string HeaderPath = "/kythe_builtins/include/";
+  for (const auto *Header = builtin_headers_create(); Header->name != nullptr;
+       ++Header) {
+    auto Path = HeaderPath + Header->name;
+    auto Data = Header->data;
+    proto::FileData NewFile;
+    NewFile.mutable_info()->set_path(Path);
+    NewFile.mutable_info()->set_digest("");
+    *NewFile.mutable_content() = Data;
+    Files.push_back(NewFile);
+  }
+  return "-resource-dir=/kythe_builtins";
+}
+} // anonymous namespace
+
+std::string IndexCompilationUnit(const proto::CompilationUnit &Unit,
+                                 const std::string &EffectiveWorkingDirectory,
+                                 std::vector<proto::FileData> &Files,
+                                 KytheClaimClient &Client,
+                                 BehaviorOnTemplates BOT,
+                                 BehaviorOnUnimplemented BOU,
+                                 bool AllowFSAccess,
+                                 KytheOutputStream &Output) {
+  HeaderSearchInfo HSI;
+  bool HSIValid = DecodeHeaderSearchInformation(Unit, HSI);
+  std::string FixupArgument;
+  if (!HSIValid) {
+    FixupArgument = ConfigureSystemHeaders(Unit, Files);
+  }
+  clang::FileSystemOptions FSO;
+  FSO.WorkingDir = EffectiveWorkingDirectory;
+  llvm::IntrusiveRefCntPtr<IndexVFS> VFS(new IndexVFS(FSO.WorkingDir, Files));
+  KytheGraphRecorder Recorder(&Output);
+  KytheGraphObserver Observer(&Recorder, &Client, VFS);
+  Observer.set_claimant(Unit.v_name());
+  Observer.set_starting_context(Unit.entry_context());
+  for (const auto &Input : Unit.required_input()) {
+    if (Input.has_info() && !Input.info().path().empty() &&
+        Input.has_v_name()) {
+      VFS->SetVName(Input.info().path(), Input.v_name());
+    }
+    const std::string &FilePath = Input.info().path();
+    for (const auto &Row : Input.context()) {
+      if (Row.always_process()) {
+        auto ClaimableVname = Input.v_name();
+        ClaimableVname.set_signature(Row.source_context() +
+                                     ClaimableVname.signature());
+        Client.AssignClaim(ClaimableVname, Unit.v_name());
+      }
+      for (const auto &Col : Row.column()) {
+        Observer.AddContextInformation(FilePath, Row.source_context(),
+                                       Col.offset(), Col.linked_context());
+      }
+    }
+  }
+  std::unique_ptr<IndexerFrontendAction> Action(
+      new IndexerFrontendAction(&Observer, HSIValid ? &HSI : nullptr));
+  Action->setIgnoreUnimplemented(BOU);
+  Action->setTemplateMode(BOT);
+  llvm::IntrusiveRefCntPtr<clang::FileManager> FileManager(
+      new clang::FileManager(FSO, AllowFSAccess ? nullptr : VFS));
+  std::vector<std::string> Args(Unit.argument().begin(), Unit.argument().end());
+  Args.insert(Args.begin() + 1, "-fsyntax-only");
+  Args.insert(Args.begin() + 1, "-w");
+  if (!FixupArgument.empty()) {
+    Args.insert(Args.begin() + 1, FixupArgument);
+  }
+  // StdinAdjustSingleFrontendActionFactory takes ownership of its action.
+  std::unique_ptr<StdinAdjustSingleFrontendActionFactory> Tool(
+      new StdinAdjustSingleFrontendActionFactory(std::move(Action)));
+  // ToolInvocation doesn't take ownership of ToolActions.
+  clang::tooling::ToolInvocation Invocation(
+      Args, Tool.get(), FileManager.get(),
+      std::make_shared<clang::RawPCHContainerOperations>());
+  if (!Invocation.run()) {
+    return "Errors during indexing.";
+  }
+
+  return "";
 }
 
 } // namespace kythe

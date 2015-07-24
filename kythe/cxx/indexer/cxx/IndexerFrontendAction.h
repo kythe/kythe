@@ -45,6 +45,11 @@
 #include "IndexerPPCallbacks.h"
 
 namespace kythe {
+namespace proto {
+class CompilationUnit;
+class FileData;
+} // namespace proto
+class KytheClaimClient;
 
 /// \brief Runs a given tool on a piece of code with a given assumed filename.
 /// \returns true on success, false on failure.
@@ -61,9 +66,12 @@ bool RunToolOnCode(std::unique_ptr<clang::FrontendAction> tool_action,
 class IndexerFrontendAction : public clang::ASTFrontendAction {
 public:
   explicit IndexerFrontendAction(GraphObserver *GO,
-                                 const HeaderSearchInfo &Info)
-      : Observer(GO), HeaderConfig(Info) {
+                                 const HeaderSearchInfo *Info)
+      : Observer(GO), HeaderConfigValid(Info != nullptr) {
     assert(GO != nullptr);
+    if (HeaderConfigValid) {
+      HeaderConfig = *Info;
+    }
     Supports.push_back(llvm::make_unique<GoogleFlagsLibrarySupport>());
   }
 
@@ -81,7 +89,7 @@ private:
   std::unique_ptr<clang::ASTConsumer>
   CreateASTConsumer(clang::CompilerInstance &CI,
                     llvm::StringRef Filename) override {
-    if (HeaderConfig.is_valid) {
+    if (HeaderConfigValid) {
       auto &HeaderSearch = CI.getPreprocessor().getHeaderSearchInfo();
       auto &FileManager = CI.getFileManager();
       std::vector<clang::DirectoryLookup> Lookups;
@@ -138,6 +146,8 @@ private:
   BehaviorOnTemplates TemplateMode = BehaviorOnTemplates::VisitInstantiations;
   /// Configuration information for header search.
   HeaderSearchInfo HeaderConfig;
+  /// Whether to use HeaderConfig.
+  bool HeaderConfigValid;
   /// Library-specific callbacks.
   LibrarySupports Supports;
 };
@@ -151,17 +161,19 @@ private:
 /// which is a token used elsewhere in the compiler to refer to standard input.
 class StdinAdjustSingleFrontendActionFactory
     : public clang::tooling::FrontendActionFactory {
-  clang::FrontendAction *Action;
+  std::unique_ptr<clang::FrontendAction> Action;
 
 public:
   /// \param Action The single FrontendAction to run once. Takes ownership.
-  StdinAdjustSingleFrontendActionFactory(clang::FrontendAction *Action)
-      : Action(Action) {}
+  StdinAdjustSingleFrontendActionFactory(
+      std::unique_ptr<clang::FrontendAction> Action)
+      : Action(std::move(Action)) {}
 
-  bool runInvocation(
-      clang::CompilerInvocation *Invocation, clang::FileManager *Files,
-      std::shared_ptr<clang::PCHContainerOperations> PCHContainerOps,
-      clang::DiagnosticConsumer *DiagConsumer) override {
+  bool
+  runInvocation(clang::CompilerInvocation *Invocation,
+                clang::FileManager *Files,
+                std::shared_ptr<clang::PCHContainerOperations> PCHContainerOps,
+                clang::DiagnosticConsumer *DiagConsumer) override {
     auto &FEOpts = Invocation->getFrontendOpts();
     for (auto &Input : FEOpts.Inputs) {
       if (Input.isFile() && Input.getFile() == "-") {
@@ -175,8 +187,29 @@ public:
 
   /// Note that FrontendActionFactory::create() specifies that the
   /// returned action is owned by the caller.
-  clang::FrontendAction *create() override { return Action; }
+  clang::FrontendAction *create() override { return Action.release(); }
 };
+
+/// \brief Indexes `Unit`, reading from `Files` in the assumed
+/// `EffectiveWorkingDirectory` and writing entries to `Output`.
+/// \param Unit The CompilationUnit to index
+/// \param EffectiveWorkingDirectory The directory to normalize paths against.
+/// Must be absolute.
+/// \param Files A vector of files to read from. May be modified if the Unit
+/// does not contain a proper header search table.
+/// \param ClaimClient The claim client to use.
+/// \param BOT What to do with template expansions.
+/// \param BOU What to do when we don't know what to do.
+/// \param AllowFSAccess Whether to allow access to the raw filesystem.
+/// \param Output The output stream to use.
+/// \return empty if OK; otherwise, an error description.
+std::string IndexCompilationUnit(const proto::CompilationUnit &Unit,
+                                 const std::string &EffectiveWorkingDirectory,
+                                 std::vector<proto::FileData> &Files,
+                                 KytheClaimClient &ClaimClient,
+                                 BehaviorOnTemplates BOT,
+                                 BehaviorOnUnimplemented BOU,
+                                 bool AllowFSAccess, KytheOutputStream &Output);
 
 } // namespace kythe
 

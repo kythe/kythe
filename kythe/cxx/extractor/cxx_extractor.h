@@ -87,13 +87,14 @@ struct SourceFile {
 /// \param source_files All files, including the `main_source_file`, that will
 /// be touched during the compilation action. The keys are the paths used by
 /// Clang to refer to each file.
-/// \param header_search_info The header search information to use.
+/// \param header_search_info The header search information to use (or null
+/// if none).
 /// \param had_errors Whether we encountered any errors so far.
 using ExtractorCallback = std::function<void(
     const std::string &main_source_file,
     const PreprocessorTranscript &main_source_file_transcript,
     const std::unordered_map<std::string, SourceFile> &source_files,
-    const HeaderSearchInfo &header_search_info, bool had_errors)>;
+    const HeaderSearchInfo *header_search_info, bool had_errors)>;
 
 /// \brief Called by the `IndexWriter` once it has finished building protobufs.
 ///
@@ -178,7 +179,7 @@ class IndexWriter {
       std::unique_ptr<IndexWriterSink> sink,
       const std::string &main_source_file, const std::string &entry_context,
       const std::unordered_map<std::string, SourceFile> &source_files,
-      const HeaderSearchInfo &header_search_info, bool had_errors);
+      const HeaderSearchInfo *header_search_info, bool had_errors);
   /// \brief Set the fields of `file_input` for the given file.
   /// \param clang_path A path to the file as seen by clang.
   /// \param source_file The `SourceFile` to configure `file_input` with.
