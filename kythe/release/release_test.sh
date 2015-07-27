@@ -60,6 +60,13 @@ tools/write_tables --graphstore gs --out srv
 tools/read_entries --graphstore gs | \
   tools/entrystream --sort >/dev/null
 
+# Smoke test the verifier
+tools/verifier --ignore_dups --show_goals <(echo "//- Any childof Any2") < entries
+if tools/verifier --ignore_dups <(echo "//- Any noSuchEdge Any2") < entries; then
+  echo "ERROR: verifier found a non-existent edge" >&2
+  exit 1
+fi
+
 # Ensure kythe tool is functional
 tools/kythe --api srv search /kythe/node/kind file | \
   grep -q 'kythe://kythe?lang=java?path=kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/Names.java#7571dfe62c239daa2caaeed97638184533b0526f4ab16c872311c954100d11e3'

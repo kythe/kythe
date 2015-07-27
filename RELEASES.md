@@ -4,6 +4,7 @@
 
 Notable additions:
  - Java extractor: add JavaDetails to each CompilationUnit
+ - Release the indexer verifier tool (see http://www.kythe.io/docs/kythe-verifier.html)
 
 Notable fixes:
  - write_tables: ensure that all edges are scanned for FileDecorations
