@@ -449,9 +449,9 @@ func RegisterXRefServiceServer(s *grpc.Server, srv XRefServiceServer) {
 	s.RegisterService(&_XRefService_serviceDesc, srv)
 }
 
-func _XRefService_Nodes_Handler(srv interface{}, ctx context.Context, buf []byte) (proto.Message, error) {
+func _XRefService_Nodes_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
 	in := new(NodesRequest)
-	if err := proto.Unmarshal(buf, in); err != nil {
+	if err := codec.Unmarshal(buf, in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(XRefServiceServer).Nodes(ctx, in)
@@ -461,9 +461,9 @@ func _XRefService_Nodes_Handler(srv interface{}, ctx context.Context, buf []byte
 	return out, nil
 }
 
-func _XRefService_Edges_Handler(srv interface{}, ctx context.Context, buf []byte) (proto.Message, error) {
+func _XRefService_Edges_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
 	in := new(EdgesRequest)
-	if err := proto.Unmarshal(buf, in); err != nil {
+	if err := codec.Unmarshal(buf, in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(XRefServiceServer).Edges(ctx, in)
@@ -473,9 +473,9 @@ func _XRefService_Edges_Handler(srv interface{}, ctx context.Context, buf []byte
 	return out, nil
 }
 
-func _XRefService_Decorations_Handler(srv interface{}, ctx context.Context, buf []byte) (proto.Message, error) {
+func _XRefService_Decorations_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
 	in := new(DecorationsRequest)
-	if err := proto.Unmarshal(buf, in); err != nil {
+	if err := codec.Unmarshal(buf, in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(XRefServiceServer).Decorations(ctx, in)

@@ -250,6 +250,3 @@ type PageToken struct {
 func (m *PageToken) Reset()         { *m = PageToken{} }
 func (m *PageToken) String() string { return proto.CompactTextString(m) }
 func (*PageToken) ProtoMessage()    {}
-
-func init() {
-}

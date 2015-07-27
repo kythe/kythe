@@ -82,9 +82,6 @@ func (m *DirectoryReply) Reset()         { *m = DirectoryReply{} }
 func (m *DirectoryReply) String() string { return proto.CompactTextString(m) }
 func (*DirectoryReply) ProtoMessage()    {}
 
-func init() {
-}
-
 // Client API for FileTreeService service
 
 type FileTreeServiceClient interface {
@@ -133,9 +130,9 @@ func RegisterFileTreeServiceServer(s *grpc.Server, srv FileTreeServiceServer) {
 	s.RegisterService(&_FileTreeService_serviceDesc, srv)
 }
 
-func _FileTreeService_CorpusRoots_Handler(srv interface{}, ctx context.Context, buf []byte) (proto.Message, error) {
+func _FileTreeService_CorpusRoots_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
 	in := new(CorpusRootsRequest)
-	if err := proto.Unmarshal(buf, in); err != nil {
+	if err := codec.Unmarshal(buf, in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(FileTreeServiceServer).CorpusRoots(ctx, in)
@@ -145,9 +142,9 @@ func _FileTreeService_CorpusRoots_Handler(srv interface{}, ctx context.Context, 
 	return out, nil
 }
 
-func _FileTreeService_Directory_Handler(srv interface{}, ctx context.Context, buf []byte) (proto.Message, error) {
+func _FileTreeService_Directory_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
 	in := new(DirectoryRequest)
-	if err := proto.Unmarshal(buf, in); err != nil {
+	if err := codec.Unmarshal(buf, in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(FileTreeServiceServer).Directory(ctx, in)

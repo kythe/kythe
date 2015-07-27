@@ -18,8 +18,8 @@ It has these top-level messages:
 package analysis_proto
 
 import proto "github.com/golang/protobuf/proto"
-import kythe_proto "kythe.io/kythe/proto/any_proto"
-import kythe_proto1 "kythe.io/kythe/proto/storage_proto"
+import google_protobuf "google/protobuf"
+import kythe_proto "kythe.io/kythe/proto/storage_proto"
 
 import (
 	context "golang.org/x/net/context"
@@ -72,7 +72,7 @@ type CompilationUnit struct {
 	// The base VName for the compilation and any generated VNames from its
 	// analysis. Generally, the `language` component designates the language of
 	// the compilation's sources.
-	VName *kythe_proto1.VName `protobuf:"bytes,1,opt,name=v_name" json:"v_name,omitempty"`
+	VName *kythe_proto.VName `protobuf:"bytes,1,opt,name=v_name" json:"v_name,omitempty"`
 	// The revision of the compilation.
 	Revision string `protobuf:"bytes,2,opt,name=revision" json:"revision,omitempty"`
 	// All files that might be touched in the course of this compilation.
@@ -111,14 +111,14 @@ type CompilationUnit struct {
 	// TODO(fromberger): When we move to NWP, use a map instead.
 	Environment []*CompilationUnit_Env `protobuf:"bytes,10,rep,name=environment" json:"environment,omitempty"`
 	// Per-language or -tool details.
-	Details []*kythe_proto.Any `protobuf:"bytes,11,rep,name=details" json:"details,omitempty"`
+	Details []*google_protobuf.Any `protobuf:"bytes,11,rep,name=details" json:"details,omitempty"`
 }
 
 func (m *CompilationUnit) Reset()         { *m = CompilationUnit{} }
 func (m *CompilationUnit) String() string { return proto.CompactTextString(m) }
 func (*CompilationUnit) ProtoMessage()    {}
 
-func (m *CompilationUnit) GetVName() *kythe_proto1.VName {
+func (m *CompilationUnit) GetVName() *kythe_proto.VName {
 	if m != nil {
 		return m.VName
 	}
@@ -139,7 +139,7 @@ func (m *CompilationUnit) GetEnvironment() []*CompilationUnit_Env {
 	return nil
 }
 
-func (m *CompilationUnit) GetDetails() []*kythe_proto.Any {
+func (m *CompilationUnit) GetDetails() []*google_protobuf.Any {
 	if m != nil {
 		return m.Details
 	}
@@ -153,7 +153,6 @@ func (m *CompilationUnit) GetDetails() []*kythe_proto.Any {
 // FileInput F' at offset O (perhaps because F has an #include directive at O)
 // the context in which F' should be processed is the linked context derived
 // from this table.
-// TODO(zarko): Revisit the use of "column".
 type CompilationUnit_ContextDependentVersionColumn struct {
 	// The byte offset into the file resource.
 	Offset int32 `protobuf:"varint,1,opt,name=offset" json:"offset,omitempty"`
@@ -201,7 +200,7 @@ func (m *CompilationUnit_ContextDependentVersionRow) GetColumn() []*CompilationU
 type CompilationUnit_FileInput struct {
 	// If set, overrides the `v_name` in the `CompilationUnit` for deriving
 	// VNames during analysis.
-	VName *kythe_proto1.VName `protobuf:"bytes,1,opt,name=v_name" json:"v_name,omitempty"`
+	VName *kythe_proto.VName `protobuf:"bytes,1,opt,name=v_name" json:"v_name,omitempty"`
 	// The file's metadata. It is invalid to provide a FileInput without both
 	// the file's path and digest.
 	Info *FileInfo `protobuf:"bytes,2,opt,name=info" json:"info,omitempty"`
@@ -213,7 +212,7 @@ func (m *CompilationUnit_FileInput) Reset()         { *m = CompilationUnit_FileI
 func (m *CompilationUnit_FileInput) String() string { return proto.CompactTextString(m) }
 func (*CompilationUnit_FileInput) ProtoMessage()    {}
 
-func (m *CompilationUnit_FileInput) GetVName() *kythe_proto1.VName {
+func (m *CompilationUnit_FileInput) GetVName() *kythe_proto.VName {
 	if m != nil {
 		return m.VName
 	}
@@ -279,9 +278,6 @@ func (m *FileData) GetInfo() *FileInfo {
 	return nil
 }
 
-func init() {
-}
-
 // Client API for CompilationAnalyzer service
 
 type CompilationAnalyzerClient interface {
@@ -309,7 +305,7 @@ func (c *compilationAnalyzerClient) Analyze(ctx context.Context, in *AnalysisReq
 		return nil, err
 	}
 	x := &compilationAnalyzerAnalyzeClient{stream}
-	if err := x.ClientStream.SendProto(in); err != nil {
+	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
 	if err := x.ClientStream.CloseSend(); err != nil {
@@ -329,7 +325,7 @@ type compilationAnalyzerAnalyzeClient struct {
 
 func (x *compilationAnalyzerAnalyzeClient) Recv() (*AnalysisOutput, error) {
 	m := new(AnalysisOutput)
-	if err := x.ClientStream.RecvProto(m); err != nil {
+	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
@@ -354,7 +350,7 @@ func RegisterCompilationAnalyzerServer(s *grpc.Server, srv CompilationAnalyzerSe
 
 func _CompilationAnalyzer_Analyze_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(AnalysisRequest)
-	if err := stream.RecvProto(m); err != nil {
+	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
 	return srv.(CompilationAnalyzerServer).Analyze(m, &compilationAnalyzerAnalyzeServer{stream})
@@ -370,7 +366,7 @@ type compilationAnalyzerAnalyzeServer struct {
 }
 
 func (x *compilationAnalyzerAnalyzeServer) Send(m *AnalysisOutput) error {
-	return x.ServerStream.SendProto(m)
+	return x.ServerStream.SendMsg(m)
 }
 
 var _CompilationAnalyzer_serviceDesc = grpc.ServiceDesc{
@@ -438,12 +434,12 @@ type fileDataServiceGetClient struct {
 }
 
 func (x *fileDataServiceGetClient) Send(m *FileInfo) error {
-	return x.ClientStream.SendProto(m)
+	return x.ClientStream.SendMsg(m)
 }
 
 func (x *fileDataServiceGetClient) Recv() (*FileData, error) {
 	m := new(FileData)
-	if err := x.ClientStream.RecvProto(m); err != nil {
+	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
@@ -492,12 +488,12 @@ type fileDataServiceGetServer struct {
 }
 
 func (x *fileDataServiceGetServer) Send(m *FileData) error {
-	return x.ServerStream.SendProto(m)
+	return x.ServerStream.SendMsg(m)
 }
 
 func (x *fileDataServiceGetServer) Recv() (*FileInfo, error) {
 	m := new(FileInfo)
-	if err := x.ServerStream.RecvProto(m); err != nil {
+	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil

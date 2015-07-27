@@ -344,9 +344,6 @@ func (m *SearchReply) Reset()         { *m = SearchReply{} }
 func (m *SearchReply) String() string { return proto.CompactTextString(m) }
 func (*SearchReply) ProtoMessage()    {}
 
-func init() {
-}
-
 // Client API for GraphStore service
 
 type GraphStoreClient interface {
@@ -383,7 +380,7 @@ func (c *graphStoreClient) Read(ctx context.Context, in *ReadRequest, opts ...gr
 		return nil, err
 	}
 	x := &graphStoreReadClient{stream}
-	if err := x.ClientStream.SendProto(in); err != nil {
+	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
 	if err := x.ClientStream.CloseSend(); err != nil {
@@ -403,7 +400,7 @@ type graphStoreReadClient struct {
 
 func (x *graphStoreReadClient) Recv() (*Entry, error) {
 	m := new(Entry)
-	if err := x.ClientStream.RecvProto(m); err != nil {
+	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
@@ -415,7 +412,7 @@ func (c *graphStoreClient) Scan(ctx context.Context, in *ScanRequest, opts ...gr
 		return nil, err
 	}
 	x := &graphStoreScanClient{stream}
-	if err := x.ClientStream.SendProto(in); err != nil {
+	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
 	if err := x.ClientStream.CloseSend(); err != nil {
@@ -435,7 +432,7 @@ type graphStoreScanClient struct {
 
 func (x *graphStoreScanClient) Recv() (*Entry, error) {
 	m := new(Entry)
-	if err := x.ClientStream.RecvProto(m); err != nil {
+	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
@@ -478,7 +475,7 @@ func RegisterGraphStoreServer(s *grpc.Server, srv GraphStoreServer) {
 
 func _GraphStore_Read_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(ReadRequest)
-	if err := stream.RecvProto(m); err != nil {
+	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
 	return srv.(GraphStoreServer).Read(m, &graphStoreReadServer{stream})
@@ -494,12 +491,12 @@ type graphStoreReadServer struct {
 }
 
 func (x *graphStoreReadServer) Send(m *Entry) error {
-	return x.ServerStream.SendProto(m)
+	return x.ServerStream.SendMsg(m)
 }
 
 func _GraphStore_Scan_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(ScanRequest)
-	if err := stream.RecvProto(m); err != nil {
+	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
 	return srv.(GraphStoreServer).Scan(m, &graphStoreScanServer{stream})
@@ -515,12 +512,12 @@ type graphStoreScanServer struct {
 }
 
 func (x *graphStoreScanServer) Send(m *Entry) error {
-	return x.ServerStream.SendProto(m)
+	return x.ServerStream.SendMsg(m)
 }
 
-func _GraphStore_Write_Handler(srv interface{}, ctx context.Context, buf []byte) (proto.Message, error) {
+func _GraphStore_Write_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
 	in := new(WriteRequest)
-	if err := proto.Unmarshal(buf, in); err != nil {
+	if err := codec.Unmarshal(buf, in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(GraphStoreServer).Write(ctx, in)
@@ -585,7 +582,7 @@ func (c *shardedGraphStoreClient) Shard(ctx context.Context, in *ShardRequest, o
 		return nil, err
 	}
 	x := &shardedGraphStoreShardClient{stream}
-	if err := x.ClientStream.SendProto(in); err != nil {
+	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
 	if err := x.ClientStream.CloseSend(); err != nil {
@@ -605,7 +602,7 @@ type shardedGraphStoreShardClient struct {
 
 func (x *shardedGraphStoreShardClient) Recv() (*Entry, error) {
 	m := new(Entry)
-	if err := x.ClientStream.RecvProto(m); err != nil {
+	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
@@ -624,9 +621,9 @@ func RegisterShardedGraphStoreServer(s *grpc.Server, srv ShardedGraphStoreServer
 	s.RegisterService(&_ShardedGraphStore_serviceDesc, srv)
 }
 
-func _ShardedGraphStore_Count_Handler(srv interface{}, ctx context.Context, buf []byte) (proto.Message, error) {
+func _ShardedGraphStore_Count_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
 	in := new(CountRequest)
-	if err := proto.Unmarshal(buf, in); err != nil {
+	if err := codec.Unmarshal(buf, in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(ShardedGraphStoreServer).Count(ctx, in)
@@ -638,7 +635,7 @@ func _ShardedGraphStore_Count_Handler(srv interface{}, ctx context.Context, buf 
 
 func _ShardedGraphStore_Shard_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(ShardRequest)
-	if err := stream.RecvProto(m); err != nil {
+	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
 	return srv.(ShardedGraphStoreServer).Shard(m, &shardedGraphStoreShardServer{stream})
@@ -654,7 +651,7 @@ type shardedGraphStoreShardServer struct {
 }
 
 func (x *shardedGraphStoreShardServer) Send(m *Entry) error {
-	return x.ServerStream.SendProto(m)
+	return x.ServerStream.SendMsg(m)
 }
 
 var _ShardedGraphStore_serviceDesc = grpc.ServiceDesc{
@@ -712,9 +709,9 @@ func RegisterSearchServiceServer(s *grpc.Server, srv SearchServiceServer) {
 	s.RegisterService(&_SearchService_serviceDesc, srv)
 }
 
-func _SearchService_Search_Handler(srv interface{}, ctx context.Context, buf []byte) (proto.Message, error) {
+func _SearchService_Search_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
 	in := new(SearchRequest)
-	if err := proto.Unmarshal(buf, in); err != nil {
+	if err := codec.Unmarshal(buf, in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(SearchServiceServer).Search(ctx, in)
