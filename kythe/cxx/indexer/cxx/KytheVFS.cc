@@ -187,6 +187,31 @@ IndexVFS::FileRecord *IndexVFS::FileRecordForPath(const llvm::StringRef path,
   return current_record;
 }
 
+static const char *NameOfFileType(const llvm::sys::fs::file_type type) {
+  switch (type) {
+    case llvm::sys::fs::file_type::status_error:
+      return "status_error";
+    case llvm::sys::fs::file_type::file_not_found:
+      return "file_not_found";
+    case llvm::sys::fs::file_type::regular_file:
+      return "regular_file";
+    case llvm::sys::fs::file_type::directory_file:
+      return "directory_file";
+    case llvm::sys::fs::file_type::symlink_file:
+      return "symlink_file";
+    case llvm::sys::fs::file_type::block_file:
+      return "block_file";
+    case llvm::sys::fs::file_type::character_file:
+      return "character_file";
+    case llvm::sys::fs::file_type::fifo_file:
+      return "fifo_file";
+    case llvm::sys::fs::file_type::socket_file:
+      return "socket_file";
+    case llvm::sys::fs::file_type::type_unknown:
+      return "type_unknown";
+  }
+}
+
 IndexVFS::FileRecord *IndexVFS::AllocOrReturnFileRecord(
     FileRecord *parent, bool create_if_missing, llvm::StringRef label,
     llvm::sys::fs::file_type type, size_t size) {
@@ -195,9 +220,9 @@ IndexVFS::FileRecord *IndexVFS::AllocOrReturnFileRecord(
     if (record->label == label) {
       if (create_if_missing && (record->status.getSize() != size ||
                                 record->status.getType() != type)) {
-        fprintf(stderr, "Warning: path %s/%s: defined inconsistently (%d/%d)\n",
+        fprintf(stderr, "Warning: path %s/%s: defined inconsistently (%s/%s)\n",
                 parent->status.getName().str().c_str(), label.str().c_str(),
-                type, record->status.getType());
+                NameOfFileType(type), NameOfFileType(record->status.getType()));
         return nullptr;
       }
       return record;

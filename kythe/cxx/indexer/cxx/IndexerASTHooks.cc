@@ -2782,7 +2782,7 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
     // If we're not trying to emit edges for constituent types, or if there's
     // no chance for us to do so because we lack source location information,
     // finish early.
-    if (EmitRanges != EmitRanges::Yes ||
+    if (EmitRanges != IndexerASTVisitor::EmitRanges::Yes ||
         !(SR.isValid() && SR.getBegin().isFileID())) {
       ID = Prev->second;
       return ID;
@@ -3084,7 +3084,7 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
                                : T.getNamedTypeLoc().getTypePtr(),
                             EmitRanges);
     // Don't link 'struct'.
-    EmitRanges = EmitRanges::No;
+    EmitRanges = IndexerASTVisitor::EmitRanges::No;
     // TODO(zarko): Add anchors for parts of the NestedNameSpecifier.
     // We'll add an anchor for all the Elaborated type, though; otherwise decls
     // like `typedef B::C tdef;` will only anchor `C` instead of `B::C`.

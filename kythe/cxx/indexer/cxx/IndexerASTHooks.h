@@ -738,7 +738,7 @@ public:
 
   void InitializeSema(clang::Sema &S) override { Sema = &S; }
 
-  void ForgetSema() { Sema = nullptr; }
+  void ForgetSema() override { Sema = nullptr; }
 
 private:
   GraphObserver *const Observer;
