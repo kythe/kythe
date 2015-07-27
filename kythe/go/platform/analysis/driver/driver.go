@@ -19,6 +19,7 @@
 package driver
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -43,6 +44,11 @@ type Driver struct {
 	Analyzer        analysis.CompilationAnalyzer
 	FileDataService string
 
+	// AnalysisError is called for each non-nil err returned from the Analyzer
+	// (before Teardown is called).  The error returned from AnalysisError
+	// replaces the analysis error that would normally be returned from Run.
+	AnalysisError func(context.Context, *apb.CompilationUnit, error) error
+
 	// Compilations is a queue of compilations to be sent for analysis.
 	Compilations Queue
 
@@ -55,9 +61,24 @@ type Driver struct {
 	Teardown CompilationFunc
 }
 
+func (d *Driver) validate() error {
+	if d.Analyzer == nil {
+		return errors.New("missing Analyzer")
+	} else if d.Compilations == nil {
+		return errors.New("missing Compilations Queue")
+	} else if d.Output == nil {
+		return errors.New("missing Output function")
+	}
+	return nil
+}
+
 // Run sends each compilation received from the driver's Queue to the driver's
-// Analyzer.  All outputs are passed to Output in turn.
+// Analyzer.  All outputs are passed to Output in turn.  An error is immediately
+// returned if the Analyzer, Output, or Compilations fields are unset.
 func (d *Driver) Run(ctx context.Context) error {
+	if err := d.validate(); err != nil {
+		return err
+	}
 	for {
 		if err := d.Compilations.Next(ctx, func(ctx context.Context, cu *apb.CompilationUnit) error {
 			if d.Setup != nil {
@@ -69,6 +90,9 @@ func (d *Driver) Run(ctx context.Context) error {
 				Compilation:     cu,
 				FileDataService: d.FileDataService,
 			}, d.Output)
+			if d.AnalysisError != nil && err != nil {
+				err = d.AnalysisError(ctx, cu, err)
+			}
 			if d.Teardown != nil {
 				if tErr := d.Teardown(ctx, cu); tErr != nil {
 					if err == nil {

@@ -38,7 +38,7 @@ import (
 )
 
 // OutputFunc handles a single AnalysisOutput.
-type OutputFunc func(out *apb.AnalysisOutput) error
+type OutputFunc func(context.Context, *apb.AnalysisOutput) error
 
 // A CompilationAnalyzer analyzes compilations, retrieving all necessary file
 // data from a FileDataService, and returns a stream arbitrary outputs.
@@ -51,13 +51,13 @@ type CompilationAnalyzer interface {
 
 // EntryOutput returns an OutputFunc that unmarshals each output's value as an
 // Entry and calls f on it.
-func EntryOutput(f func(*spb.Entry) error) OutputFunc {
-	return func(out *apb.AnalysisOutput) error {
+func EntryOutput(f func(context.Context, *spb.Entry) error) OutputFunc {
+	return func(ctx context.Context, out *apb.AnalysisOutput) error {
 		var entry spb.Entry
 		if err := proto.Unmarshal(out.Value, &entry); err != nil {
 			return fmt.Errorf("error unmarshaling Entry from AnalysisOutput: %v", err)
 		}
-		return f(&entry)
+		return f(ctx, &entry)
 	}
 }
 

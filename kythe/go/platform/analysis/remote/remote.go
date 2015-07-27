@@ -48,7 +48,7 @@ func (a *Analyzer) Analyze(ctx context.Context, req *apb.AnalysisRequest, f anal
 			return fmt.Errorf("error receiving AnalysisOutput: %v", err)
 		}
 
-		if err := f(out); err != nil {
+		if err := f(ctx, out); err != nil {
 			return err
 		}
 	}
