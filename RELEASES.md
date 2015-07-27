@@ -1,6 +1,6 @@
 # Release Notes
 
-## Upcoming
+## v0.0.8
 
 Notable additions:
  - Java extractor: add JavaDetails to each CompilationUnit
