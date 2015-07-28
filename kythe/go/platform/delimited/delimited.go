@@ -24,10 +24,11 @@ package delimited
 
 import (
 	"bufio"
-	"crypto/sha512"
 	"encoding/binary"
 	"fmt"
 	"io"
+
+	"kythe.io/kythe/go/util/dedup"
 
 	"github.com/golang/protobuf/proto"
 )
@@ -101,28 +102,17 @@ func NewReader(r io.Reader) Reader { return &reader{buf: bufio.NewReader(r)} }
 // quick-and-dirty method of removing duplicates; it will not be perfect.
 type UniqReader struct {
 	r Reader
-
-	pri, sec map[[uniqHashSize]byte]struct{}
-	maxSize  int // maximum number of entries in each half of the hash cache
-
-	skipped uint64
+	d *dedup.Deduper
 }
-
-const uniqHashSize = sha512.Size384
 
 // NewUniqReader returns a UniqReader over the given Reader.  maxSize is the
 // maximum byte size of the cache of known record hashes.
 func NewUniqReader(r Reader, maxSize int) (*UniqReader, error) {
-	max := maxSize / uniqHashSize / 2
-	if max <= 0 {
-		return nil, fmt.Errorf("invalid cache size: %d (must be at least %d)", maxSize, uniqHashSize)
+	d, err := dedup.New(maxSize)
+	if err != nil {
+		return nil, fmt.Errorf("error creating Deduper: %v", err)
 	}
-	return &UniqReader{
-		r:       r,
-		pri:     make(map[[uniqHashSize]byte]struct{}),
-		sec:     make(map[[uniqHashSize]byte]struct{}),
-		maxSize: max,
-	}, nil
+	return &UniqReader{r, d}, nil
 }
 
 // Next implements part of the Reader interface.
@@ -133,32 +123,10 @@ func (u *UniqReader) Next() ([]byte, error) {
 			return nil, err
 		}
 
-		hash := sha512.Sum384(rec)
-		if u.seen(hash) {
-			u.skipped++
-			continue
+		if u.d.IsUnique(rec) {
+			return rec, nil
 		}
-
-		if len(u.sec) == u.maxSize {
-			u.pri = u.sec
-			u.sec = make(map[[uniqHashSize]byte]struct{})
-		}
-		if len(u.pri) == u.maxSize {
-			u.sec[hash] = struct{}{}
-		} else {
-			u.pri[hash] = struct{}{}
-		}
-
-		return rec, err
 	}
-}
-
-func (u *UniqReader) seen(hash [uniqHashSize]byte) bool {
-	if _, ok := u.pri[hash]; ok {
-		return true
-	}
-	_, ok := u.sec[hash]
-	return ok
 }
 
 // NextProto implements part of the Reader interface.
@@ -171,7 +139,7 @@ func (u *UniqReader) NextProto(pb proto.Message) error {
 }
 
 // Skipped returns the number of skipped records.
-func (u *UniqReader) Skipped() uint64 { return u.skipped }
+func (u *UniqReader) Skipped() uint64 { return u.d.Duplicates() }
 
 // Copy writes each record read from rd to wr until rd returns io.EOF or an
 // error occurs.
