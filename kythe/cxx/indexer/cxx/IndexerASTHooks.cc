@@ -437,9 +437,10 @@ GetTypeParameters(const clang::DeclContext *DC) {
 
 /// Make sure `DC` won't cause Sema::LookupQualifiedName to fail an assertion.
 static bool IsContextSafeForLookup(const clang::DeclContext *DC) {
-  return !isa<clang::TagDecl>(DC) || DC->isDependentContext() ||
-         cast<TagDecl>(DC)->isCompleteDefinition() ||
-         cast<TagDecl>(DC)->isBeingDefined();
+  if (const auto *TD = dyn_cast<clang::TagDecl>(DC)) {
+    return TD->isCompleteDefinition() || TD->isBeingDefined();
+  }
+  return DC->isDependentContext() || !isa<clang::LinkageSpecDecl>(DC);
 }
 
 /// An in-flight possible lookup result used to approximate qualified lookup.
@@ -513,6 +514,7 @@ private:
     do {
       clang::LookupResult FirstLookup(
           Sema, DeclName, clang::Sema::LookupNameKind::LookupAnyName);
+      FirstLookup.suppressDiagnostics();
       if (IsContextSafeForLookup(Context) &&
           Sema.LookupQualifiedName(
               FirstLookup, const_cast<clang::DeclContext *>(Context), false)) {
@@ -526,6 +528,7 @@ private:
           for (const auto &Param : FunctionContext->params()) {
             if (Param->getDeclName() == DeclName.getName()) {
               clang::LookupResult DerivedResult(FirstLookup);
+              DerivedResult.suppressDiagnostics();
               DerivedResult.addDecl(Param);
               Lookups.push_back({DerivedResult, Context});
             }
@@ -534,6 +537,7 @@ private:
           for (const auto &TParam : *TemplateParams) {
             if (TParam->getDeclName() == DeclName.getName()) {
               clang::LookupResult DerivedResult(FirstLookup);
+              DerivedResult.suppressDiagnostics();
               DerivedResult.addDecl(TParam);
               Lookups.push_back({DerivedResult, Context});
             }
@@ -556,6 +560,7 @@ private:
         }
         clang::LookupResult NextResult(
             Sema, DeclName, clang::Sema::LookupNameKind::LookupAnyName);
+        NextResult.suppressDiagnostics();
         if (IsContextSafeForLookup(Context) &&
             Sema.LookupQualifiedName(
                 NextResult, const_cast<clang::DeclContext *>(Context), false)) {

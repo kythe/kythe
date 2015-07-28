@@ -749,6 +749,12 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "docs_linkage_spec",
+    srcs = ["docs/docs_linkage_spec.cc"],
+    tags = ["docs"],
+)
+
+cxx_indexer_test(
     name = "docs_ref_gen_backtick",
     srcs = ["docs/docs_ref_gen_backtick.cc"],
     goal_prefix = "///-",
@@ -780,6 +786,12 @@ cxx_indexer_test(
     name = "docs_ref_gen_tparam",
     srcs = ["docs/docs_ref_gen_tparam.cc"],
     goal_prefix = "///-",
+    tags = ["docs"],
+)
+
+cxx_indexer_test(
+    name = "docs_visibility",
+    srcs = ["docs/docs_visibility.cc"],
     tags = ["docs"],
 )
 
