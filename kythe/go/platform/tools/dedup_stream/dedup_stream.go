@@ -32,13 +32,18 @@ func init() {
 	flag.Usage = flagutil.SimpleUsage("Remove duplicate records from a delimited stream")
 }
 
+var cacheSize = flag.Int("cache_size", 3*1024*1024*1024 /* 3 GB */, "Maximum size (in bytes) of the cache of known record hashes")
+
 func main() {
 	flag.Parse()
 	if flag.NArg() != 0 {
 		flagutil.UsageErrorf("unknown arguments: %v", flag.Args())
 	}
 
-	rd := delimited.NewUniqReader(delimited.NewReader(os.Stdin))
+	rd, err := delimited.NewUniqReader(delimited.NewReader(os.Stdin), *cacheSize)
+	if err != nil {
+		log.Fatalf("Error creating UniqReader: %v", err)
+	}
 	wr := delimited.NewWriter(os.Stdout)
 	if err := delimited.Copy(wr, rd); err != nil {
 		log.Fatal(err)

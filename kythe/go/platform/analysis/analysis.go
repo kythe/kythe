@@ -30,6 +30,8 @@ import (
 	"io"
 	"sync"
 
+	"kythe.io/kythe/go/platform/delimited"
+
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
 
@@ -137,4 +139,28 @@ func (s *FileDataService) Get(srv apb.FileDataService_GetServer) error {
 		s.mu.RUnlock()
 	}
 	return nil
+}
+
+type outputReader struct{ outs <-chan *apb.AnalysisOutput }
+
+// OutputReader returns a delimited.Reader of each AnalysisOutput's value.
+func OutputReader(outs <-chan *apb.AnalysisOutput) delimited.Reader { return &outputReader{outs} }
+
+// Next implements part of the delimited.Reader interface.  Next does not return
+// an error except io.EOF once the channel is closed or returns nil.
+func (r *outputReader) Next() ([]byte, error) {
+	out := <-r.outs
+	if out == nil {
+		return nil, io.EOF
+	}
+	return out.Value, nil
+}
+
+// NextProto implements part of the delimited.Reader interface.
+func (r *outputReader) NextProto(pb proto.Message) error {
+	rec, err := r.Next()
+	if err != nil {
+		return err
+	}
+	return proto.Unmarshal(rec, pb)
 }

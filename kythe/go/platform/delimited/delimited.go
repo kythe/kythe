@@ -100,14 +100,29 @@ func NewReader(r io.Reader) Reader { return &reader{buf: bufio.NewReader(r)} }
 // hashing each and checking against a set of known record hashes.  This is a
 // quick-and-dirty method of removing duplicates; it will not be perfect.
 type UniqReader struct {
-	r       Reader
-	known   map[[sha512.Size384]byte]struct{}
+	r Reader
+
+	pri, sec map[[uniqHashSize]byte]struct{}
+	maxSize  int // maximum number of entries in each half of the hash cache
+
 	skipped uint64
 }
 
-// NewUniqReader returns a UniqReader over the given Reader.
-func NewUniqReader(r Reader) *UniqReader {
-	return &UniqReader{r: r, known: make(map[[sha512.Size384]byte]struct{})}
+const uniqHashSize = sha512.Size384
+
+// NewUniqReader returns a UniqReader over the given Reader.  maxSize is the
+// maximum byte size of the cache of known record hashes.
+func NewUniqReader(r Reader, maxSize int) (*UniqReader, error) {
+	max := maxSize / uniqHashSize / 2
+	if max <= 0 {
+		return nil, fmt.Errorf("invalid cache size: %d (must be at least %d)", maxSize, uniqHashSize)
+	}
+	return &UniqReader{
+		r:       r,
+		pri:     make(map[[uniqHashSize]byte]struct{}),
+		sec:     make(map[[uniqHashSize]byte]struct{}),
+		maxSize: max,
+	}, nil
 }
 
 // Next implements part of the Reader interface.
@@ -119,14 +134,31 @@ func (u *UniqReader) Next() ([]byte, error) {
 		}
 
 		hash := sha512.Sum384(rec)
-		if _, ok := u.known[hash]; ok {
+		if u.seen(hash) {
 			u.skipped++
 			continue
 		}
-		u.known[hash] = struct{}{}
+
+		if len(u.sec) == u.maxSize {
+			u.pri = u.sec
+			u.sec = make(map[[uniqHashSize]byte]struct{})
+		}
+		if len(u.pri) == u.maxSize {
+			u.sec[hash] = struct{}{}
+		} else {
+			u.pri[hash] = struct{}{}
+		}
 
 		return rec, err
 	}
+}
+
+func (u *UniqReader) seen(hash [uniqHashSize]byte) bool {
+	if _, ok := u.pri[hash]; ok {
+		return true
+	}
+	_, ok := u.sec[hash]
+	return ok
 }
 
 // NextProto implements part of the Reader interface.

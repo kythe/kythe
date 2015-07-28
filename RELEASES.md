@@ -1,5 +1,10 @@
 # Release Notes
 
+## Upcoming release
+
+Notable additions:
+ - dedup_stream: add `--cache_size` flag to limit memory usage
+
 ## v0.0.8
 
 Notable additions:
