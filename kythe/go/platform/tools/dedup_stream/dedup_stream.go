@@ -20,9 +20,7 @@
 package main
 
 import (
-	"crypto/sha512"
 	"flag"
-	"io"
 	"log"
 	"os"
 
@@ -36,32 +34,14 @@ func init() {
 
 func main() {
 	flag.Parse()
-	if len(flag.Args()) != 0 {
+	if flag.NArg() != 0 {
 		flagutil.UsageErrorf("unknown arguments: %v", flag.Args())
 	}
 
-	written := make(map[[sha512.Size384]byte]struct{})
-
-	var skipped uint64
-	rd := delimited.NewReader(os.Stdin)
+	rd := delimited.NewUniqReader(delimited.NewReader(os.Stdin))
 	wr := delimited.NewWriter(os.Stdout)
-	for {
-		rec, err := rd.Next()
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			log.Fatal(err)
-		}
-
-		hash := sha512.Sum384(rec)
-		if _, ok := written[hash]; ok {
-			skipped++
-			continue
-		}
-		if err := wr.Put(rec); err != nil {
-			log.Fatal(err)
-		}
-		written[hash] = struct{}{}
+	if err := delimited.Copy(wr, rd); err != nil {
+		log.Fatal(err)
 	}
-	log.Printf("dedup_stream: skipped %d records", skipped)
+	log.Printf("dedup_stream: skipped %d records", rd.Skipped())
 }

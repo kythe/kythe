@@ -78,7 +78,7 @@ func Open(ctx context.Context, path string) (*Compilation, error) {
 // New reads a kindex file from r, which is expected to be positioned at the
 // beginning of an index file or a data source of equivalent format.
 func New(r io.Reader) (*Compilation, error) {
-	var rd *delimited.Reader
+	var rd delimited.Reader
 	if gz, err := gzip.NewReader(r); err != nil {
 		return nil, err
 	} else {

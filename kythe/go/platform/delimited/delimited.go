@@ -24,6 +24,7 @@ package delimited
 
 import (
 	"bufio"
+	"crypto/sha512"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -31,7 +32,7 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
-// A Reader consumes delimited records from an io.Reader.
+// Reader consumes length-delimited records from a byte source.
 //
 // Usage:
 //   rd := delimited.NewReader(r)
@@ -45,19 +46,28 @@ import (
 //     doStuffWith(rec)
 //   }
 //
-type Reader struct {
+type Reader interface {
+	// Next returns the next length-delimited record from the input, or io.EOF if
+	// there are no more records available.  Returns io.ErrUnexpectedEOF if a
+	// short record is found, with a length of n but fewer than n bytes of data.
+	// Because there is no resynchronization mechanism, it is generally not
+	// possible to recover from a short record in this format.
+	//
+	// The slice returned is valid only until a subsequent call to Next.
+	Next() ([]byte, error)
+
+	// NextProto reads a record using Next and decodes it into the given
+	// proto.Message.
+	NextProto(pb proto.Message) error
+}
+
+type reader struct {
 	buf  *bufio.Reader
 	data []byte
 }
 
-// Next returns the next length-delimited record from the input, or io.EOF if
-// there are no more records available.  Returns io.ErrUnexpectedEOF if a short
-// record is found, with a length of n but fewer than n bytes of data.  Because
-// there is no resynchronization mechanism, it is generally not possible to
-// recover from a short record in this format.
-//
-// The slice returned is valid only until a subsequent call to Next.
-func (r *Reader) Next() ([]byte, error) {
+// Next implements part of the Reader interface.
+func (r *reader) Next() ([]byte, error) {
 	size, err := binary.ReadUvarint(r.buf)
 	if err != nil {
 		return nil, err
@@ -74,9 +84,8 @@ func (r *Reader) Next() ([]byte, error) {
 	return r.data, nil
 }
 
-// NextProto reads a record using Next and decodes it into the given
-// proto.Message.
-func (r *Reader) NextProto(pb proto.Message) error {
+// NextProto implements part of the Reader interface.
+func (r *reader) NextProto(pb proto.Message) error {
 	rec, err := r.Next()
 	if err != nil {
 		return err
@@ -85,8 +94,68 @@ func (r *Reader) NextProto(pb proto.Message) error {
 }
 
 // NewReader constructs a new delimited Reader for the records in r.
-func NewReader(r io.Reader) *Reader {
-	return &Reader{buf: bufio.NewReader(r)}
+func NewReader(r io.Reader) Reader { return &reader{buf: bufio.NewReader(r)} }
+
+// UniqReader implements the Reader interface.  Duplicate records are removed by
+// hashing each and checking against a set of known record hashes.  This is a
+// quick-and-dirty method of removing duplicates; it will not be perfect.
+type UniqReader struct {
+	r       Reader
+	known   map[[sha512.Size384]byte]struct{}
+	skipped uint64
+}
+
+// NewUniqReader returns a UniqReader over the given Reader.
+func NewUniqReader(r Reader) *UniqReader {
+	return &UniqReader{r: r, known: make(map[[sha512.Size384]byte]struct{})}
+}
+
+// Next implements part of the Reader interface.
+func (u *UniqReader) Next() ([]byte, error) {
+	for {
+		rec, err := u.r.Next()
+		if err != nil {
+			return nil, err
+		}
+
+		hash := sha512.Sum384(rec)
+		if _, ok := u.known[hash]; ok {
+			u.skipped++
+			continue
+		}
+		u.known[hash] = struct{}{}
+
+		return rec, err
+	}
+}
+
+// NextProto implements part of the Reader interface.
+func (u *UniqReader) NextProto(pb proto.Message) error {
+	rec, err := u.Next()
+	if err != nil {
+		return err
+	}
+	return proto.Unmarshal(rec, pb)
+}
+
+// Skipped returns the number of skipped records.
+func (u *UniqReader) Skipped() uint64 { return u.skipped }
+
+// Copy writes each record read from rd to wr until rd returns io.EOF or an
+// error occurs.
+func Copy(wr Writer, rd Reader) error {
+	for {
+		rec, err := rd.Next()
+		if err == io.EOF {
+			return nil
+		} else if err != nil {
+			return fmt.Errorf("read error: %v", err)
+		}
+
+		if err := wr.Put(rec); err != nil {
+			return fmt.Errorf("write error: %v", err)
+		}
+	}
 }
 
 // A Writer outputs delimited records to an io.Writer.
@@ -99,12 +168,21 @@ func NewReader(r io.Reader) *Reader {
 //      }
 //   }
 //
-type Writer struct {
-	w io.Writer
+type Writer interface {
+	io.Writer
+
+	// Put writes the specified record to the writer.  It equivalent to Write, but
+	// discards the number of bytes written.
+	Put(record []byte) error
+
+	// PutProto encodes and writes the specified proto.Message to the writer.
+	PutProto(msg proto.Message) error
 }
 
-// PutProto encodes and writes the specified proto.Message to the writer.
-func (w *Writer) PutProto(msg proto.Message) error {
+type writer struct{ w io.Writer }
+
+// PutProto implements part of the Writer interface.
+func (w *writer) PutProto(msg proto.Message) error {
 	rec, err := proto.Marshal(msg)
 	if err != nil {
 		return fmt.Errorf("error encoding proto: %v", err)
@@ -112,9 +190,8 @@ func (w *Writer) PutProto(msg proto.Message) error {
 	return w.Put(rec)
 }
 
-// Put writes the specified record to the writer.  It equivalent to Write,
-// but discards the number of bytes written.
-func (w *Writer) Put(record []byte) error {
+// Put implements part of the Writer interface.
+func (w *writer) Put(record []byte) error {
 	_, err := w.Write(record)
 	return err
 }
@@ -122,7 +199,7 @@ func (w *Writer) Put(record []byte) error {
 // Write writes the specified record to the underlying writer, returning the
 // total number of bytes written including the length tag.  This method also
 // satisfies io.Writer.
-func (w *Writer) Write(record []byte) (int, error) {
+func (w *writer) Write(record []byte) (int, error) {
 	var buf [binary.MaxVarintLen64]byte
 	v := binary.PutUvarint(buf[:], uint64(len(record)))
 
@@ -138,6 +215,4 @@ func (w *Writer) Write(record []byte) (int, error) {
 }
 
 // NewWriter constructs a new delimited Writer that writes records to w.
-func NewWriter(w io.Writer) *Writer {
-	return &Writer{w: w}
-}
+func NewWriter(w io.Writer) Writer { return &writer{w: w} }
