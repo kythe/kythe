@@ -78,6 +78,7 @@ go_binary(
     ],
     deps = [
         "//kythe/go/platform/delimited",
+        "//kythe/go/util/datasize",
         "//kythe/go/util/flagutil",
     ],
 )

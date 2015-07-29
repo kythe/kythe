@@ -25,6 +25,7 @@ import (
 	"os"
 
 	"kythe.io/kythe/go/platform/delimited"
+	"kythe.io/kythe/go/util/datasize"
 	"kythe.io/kythe/go/util/flagutil"
 )
 
@@ -32,7 +33,7 @@ func init() {
 	flag.Usage = flagutil.SimpleUsage("Remove duplicate records from a delimited stream")
 }
 
-var cacheSize = flag.Int("cache_size", 3*1024*1024*1024 /* 3 GB */, "Maximum size (in bytes) of the cache of known record hashes")
+var cacheSize = datasize.Flag("cache_size", "3GiB", `Maximum size of the cache of known record hashes (e.g. "10B", "12KB", "3GiB", etc.)`)
 
 func main() {
 	flag.Parse()
@@ -40,7 +41,7 @@ func main() {
 		flagutil.UsageErrorf("unknown arguments: %v", flag.Args())
 	}
 
-	rd, err := delimited.NewUniqReader(delimited.NewReader(os.Stdin), *cacheSize)
+	rd, err := delimited.NewUniqReader(delimited.NewReader(os.Stdin), int(cacheSize.Bytes()))
 	if err != nil {
 		log.Fatalf("Error creating UniqReader: %v", err)
 	}
