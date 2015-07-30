@@ -46,6 +46,10 @@ usages.
 
 http://kythe.io/contributing
 
+== Issue Tracker
+
+http://kythe.io/phabricator/maniphest
+
 == Documentation
 
 http://kythe.io/docs/
@@ -53,10 +57,6 @@ http://kythe.io/docs/
 == Examples
 
 http://kythe.io/examples
-
-== Contributing
-
-http://kythe.io/contributing
 
 == Contact
 

@@ -8,8 +8,10 @@ menu:
     href: '{{ site.baseurl }}/contributing'
   - title: Github
     href: '{{ site.data.development.github }}'
-  - title: Phabricator
+  - title: Code reviews
     href: '{{ site.data.development.phabricator }}'
+  - title: Issue tracker
+    href: '{{ site.data.development.issue_tracker }}'
   - title: kythe-dev@
     href: '{{ site.data.development.mailing_list }}'
 ---
