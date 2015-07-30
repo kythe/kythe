@@ -5,6 +5,9 @@
 Notable additions:
  - dedup_stream: add `--cache_size` flag to limit memory usage
 
+Notable fixes:
+ - write_tables: avoid deadlock in case of errors
+
 ## v0.0.8
 
 Notable additions:

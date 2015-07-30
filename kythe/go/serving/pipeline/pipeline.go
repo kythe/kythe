@@ -82,6 +82,9 @@ func Run(ctx context.Context, gs graphstore.Service, db keyvalue.DB) error {
 			entries <- e
 			return nil
 		})
+		if sErr != nil {
+			sErr = fmt.Errorf("error scanning GraphStore: %v", sErr)
+		}
 		close(entries)
 	}()
 
@@ -93,19 +96,31 @@ func Run(ctx context.Context, gs graphstore.Service, db keyvalue.DB) error {
 	go func() {
 		defer ftWG.Done()
 		ftErr = writeFileTree(ctx, tbl, ftIn)
-		log.Println("Wrote FileTree")
+		if ftErr != nil {
+			ftErr = fmt.Errorf("error writing FileTree: %v", ftErr)
+		} else {
+			log.Println("Wrote FileTree")
+		}
 	}()
 	edgeNodeWG.Add(2)
 	nodes := make(chan *srvpb.Node)
 	go func() {
 		defer edgeNodeWG.Done()
 		nErr = writeNodes(tbl, nIn, nodes)
-		log.Println("Wrote Nodes")
+		if nErr != nil {
+			nErr = fmt.Errorf("error writing Nodes: %v", nErr)
+		} else {
+			log.Println("Wrote Nodes")
+		}
 	}()
 	go func() {
 		defer edgeNodeWG.Done()
 		eErr = writeEdges(ctx, tbl, eIn)
-		log.Println("Wrote Edges")
+		if eErr != nil {
+			eErr = fmt.Errorf("error writing Edges: %v", eErr)
+		} else {
+			log.Println("Wrote Edges")
+		}
 	}()
 
 	var (
@@ -116,7 +131,11 @@ func Run(ctx context.Context, gs graphstore.Service, db keyvalue.DB) error {
 	go func() {
 		defer idxWG.Done()
 		idxErr = writeIndex(&table.KVInverted{db}, nodes)
-		log.Println("Wrote Search Index")
+		if idxErr != nil {
+			idxErr = fmt.Errorf("error writing Search Index: %v", idxErr)
+		} else {
+			log.Println("Wrote Search Index")
+		}
 	}()
 
 	edgeNodeWG.Wait()
@@ -128,7 +147,7 @@ func Run(ctx context.Context, gs graphstore.Service, db keyvalue.DB) error {
 
 	es := xrefs.NodesEdgesService(&xsrv.Table{tbl})
 	if err := writeDecorations(ctx, tbl, es, files); err != nil {
-		return err
+		return fmt.Errorf("error writing FileDecorations: %v", err)
 	}
 
 	ftWG.Wait()
@@ -168,6 +187,7 @@ func writeFileTree(ctx context.Context, t table.Proto, files <-chan *spb.VName) 
 
 func writeNodes(t table.Proto, nodeEntries <-chan *spb.Entry, nodes chan<- *srvpb.Node) error {
 	defer close(nodes)
+	defer drainEntries(nodeEntries) // ensure channel is drained on errors
 	for node := range collectNodes(nodeEntries) {
 		nodes <- node
 		if err := t.Put(xsrv.NodeKey(node.Ticket), node); err != nil {
@@ -214,6 +234,7 @@ func writeEdges(ctx context.Context, t table.Proto, edges <-chan *spb.Entry) err
 		return fmt.Errorf("failed to create temporary directory: %v", err)
 	}
 	defer func() {
+		drainEntries(edges) // ensure channel is drained on errors
 		log.Println("Removing temporary edges table", tempDir)
 		if err := os.RemoveAll(tempDir); err != nil {
 			log.Printf("Failed to remove temporary directory %q: %v", tempDir, err)
@@ -303,7 +324,7 @@ func writeEdgePages(ctx context.Context, t table.Proto, gs graphstore.Service) e
 		lastSrc = e.Source
 		return nil
 	}); err != nil {
-		return err
+		return fmt.Errorf("error scanning reverse edges table: %v", err)
 	}
 	if pes != nil {
 		if grp != nil {
@@ -512,4 +533,9 @@ func writeIndex(t table.Inverted, nodes <-chan *srvpb.Node) error {
 		}
 	}
 	return nil
+}
+
+func drainEntries(entries <-chan *spb.Entry) {
+	for _ = range entries {
+	}
 }

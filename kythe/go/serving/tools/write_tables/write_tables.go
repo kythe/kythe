@@ -64,6 +64,6 @@ func main() {
 	defer db.Close()
 
 	if err := pipeline.Run(context.Background(), gs, db); err != nil {
-		log.Fatal(err)
+		log.Fatal("FATAL ERROR: ", err)
 	}
 }
