@@ -227,8 +227,6 @@ Examples:
     } else {
       DecodeIndexFile(kindex_file_or_cu, &virtual_files, &unit);
     }
-    // We presently handle kindex files with only one main source file.
-    CHECK_EQ(1, unit.source_file_size());
     working_dir = unit.working_directory();
     if (!llvm::sys::path::is_absolute(working_dir)) {
       llvm::SmallString<1024> stored_wd;
