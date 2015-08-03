@@ -2299,6 +2299,13 @@ IndexerASTVisitor::BuildNodeIdForDecl(const clang::Decl *Decl) {
   // Some NodeIds are stable in the face of changes to that data, such as
   // the IDs given to class definitions (in part because of the language rules).
 
+  // find, not insert, since we might generate other IDs in the process of
+  // generating this one (thus invalidating the iterator insert returns).
+  const auto Cached = DeclToNodeId.find(Decl);
+  if (Cached != DeclToNodeId.end()) {
+    return Cached->second;
+  }
+
   const auto *Token = Observer.getClaimTokenForLocation(Decl->getLocation());
   GraphObserver::NodeId Id(Token);
   llvm::raw_string_ostream Ostream(Id.Identity);
@@ -2310,6 +2317,8 @@ IndexerASTVisitor::BuildNodeIdForDecl(const clang::Decl *Decl) {
     if (unsigned BuiltinID = FD->getBuiltinID()) {
       Id.Token = Observer.getClaimTokenForBuiltin();
       Ostream << "#builtin";
+      Ostream.flush();
+      DeclToNodeId.insert(std::make_pair(Decl, Id));
       return Id;
     }
   }
@@ -2380,17 +2389,23 @@ IndexerASTVisitor::BuildNodeIdForDecl(const clang::Decl *Decl) {
   if (const auto *Rec = dyn_cast<clang::RecordDecl>(Decl)) {
     if (Rec->getDefinition() == Rec) {
       Ostream << "#" << HashToString(SemanticHash(Rec));
+      Ostream.flush();
+      DeclToNodeId.insert(std::make_pair(Decl, Id));
       return Id;
     }
   } else if (const auto *Enum = dyn_cast<clang::EnumDecl>(Decl)) {
     if (Enum->getDefinition() == Enum) {
       Ostream << "#" << HashToString(SemanticHash(Enum));
+      Ostream.flush();
+      DeclToNodeId.insert(std::make_pair(Decl, Id));
       return Id;
     }
   } else if (const auto *ECD = dyn_cast<clang::EnumConstantDecl>(Decl)) {
     if (const auto *E = dyn_cast<clang::EnumDecl>(ECD->getDeclContext())) {
       if (E->getDefinition() == E) {
         Ostream << "#" << HashToString(SemanticHash(E));
+        Ostream.flush();
+        DeclToNodeId.insert(std::make_pair(Decl, Id));
         return Id;
       }
     }
@@ -2416,6 +2431,8 @@ IndexerASTVisitor::BuildNodeIdForDecl(const clang::Decl *Decl) {
   if (!Observer.AppendRangeToStream(Ostream, Range)) {
     Ostream << "invalid";
   }
+  Ostream.flush();
+  DeclToNodeId.insert(std::make_pair(Decl, Id));
   return Id;
 }
 

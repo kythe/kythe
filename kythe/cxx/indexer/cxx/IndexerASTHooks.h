@@ -260,7 +260,8 @@ public:
   bool VisitCXXConstructExpr(const clang::CXXConstructExpr *E);
   bool VisitCXXDeleteExpr(const clang::CXXDeleteExpr *E);
   bool VisitCXXPseudoDestructorExpr(const clang::CXXPseudoDestructorExpr *E);
-  bool VisitCXXUnresolvedConstructExpr(const clang::CXXUnresolvedConstructExpr *E);
+  bool
+  VisitCXXUnresolvedConstructExpr(const clang::CXXUnresolvedConstructExpr *E);
   bool VisitCallExpr(const clang::CallExpr *Expr);
   bool VisitMemberExpr(const clang::MemberExpr *Expr);
   bool VisitCXXDependentScopeMemberExpr(
@@ -714,6 +715,9 @@ private:
   /// write down implicit specializations (so the context must be extended to
   /// give them distinct ranges).
   std::vector<GraphObserver::NodeId> RangeContext;
+
+  /// \brief Maps known Decls to their NodeIds.
+  llvm::DenseMap<const clang::Decl *, GraphObserver::NodeId> DeclToNodeId;
 
   /// \brief Enabled library-specific callbacks.
   const LibrarySupports &Supports;
