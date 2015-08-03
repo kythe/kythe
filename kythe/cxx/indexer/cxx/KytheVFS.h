@@ -134,7 +134,7 @@ class IndexVFS : public clang::vfs::FileSystem {
   /// environments, there will be only one root name (the empty string).
   std::map<std::string, FileRecord *> root_name_to_root_map_;
   /// Maps unique IDs to file records.
-  std::map<llvm::sys::fs::UniqueID, FileRecord *> uid_to_record_map_;
+  std::map<std::pair<uint64_t, uint64_t>, FileRecord *> uid_to_record_map_;
 };
 
 }  // namespace kythe

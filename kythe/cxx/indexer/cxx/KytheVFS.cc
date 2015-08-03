@@ -24,6 +24,11 @@
 
 namespace kythe {
 
+static inline std::pair<uint64_t, uint64_t> PairFromUid(
+    const llvm::sys::fs::UniqueID &uid) {
+  return std::make_pair(uid.getDevice(), uid.getFile());
+}
+
 IndexVFS::IndexVFS(const std::string &working_directory,
                    const std::vector<proto::FileData> &virtual_files)
     : virtual_files_(virtual_files), working_directory_(working_directory) {
@@ -33,8 +38,8 @@ IndexVFS::IndexVFS(const std::string &working_directory,
     if (auto *record = FileRecordForPath(ToStringRef(data.info().path()),
                                          BehaviorOnMissing::kCreateFile,
                                          data.content().size())) {
-      record->data = llvm::StringRef(data.content().data(),
-                                     data.content().size());
+      record->data =
+          llvm::StringRef(data.content().data(), data.content().size());
     }
   }
 }
@@ -81,7 +86,7 @@ void IndexVFS::SetVName(const std::string &path, const proto::VName &vname) {
 
 bool IndexVFS::get_vname(const clang::FileEntry *entry,
                          proto::VName *merge_with) {
-  auto record = uid_to_record_map_.find(entry->getUniqueID());
+  auto record = uid_to_record_map_.find(PairFromUid(entry->getUniqueID()));
   if (record != uid_to_record_map_.end()) {
     if (record->second->status.getType() ==
             llvm::sys::fs::file_type::regular_file &&
@@ -94,7 +99,7 @@ bool IndexVFS::get_vname(const clang::FileEntry *entry,
 }
 
 std::string IndexVFS::get_debug_uid_string(const llvm::sys::fs::UniqueID &uid) {
-  auto record = uid_to_record_map_.find(uid);
+  auto record = uid_to_record_map_.find(PairFromUid(uid));
   if (record != uid_to_record_map_.end()) {
     return record->second->status.getName();
   }
@@ -141,7 +146,8 @@ IndexVFS::FileRecord *IndexVFS::FileRecordForPathRoot(const llvm::Twine &path,
              llvm::sys::fs::file_type::directory_file, llvm::sys::fs::all_read),
          false, root_name});
     root_name_to_root_map_[root_name] = name_record;
-    uid_to_record_map_[name_record->status.getUniqueID()] = name_record;
+    uid_to_record_map_[PairFromUid(name_record->status.getUniqueID())] =
+        name_record;
   }
   return AllocOrReturnFileRecord(name_record, create_if_missing, root_dir,
                                  llvm::sys::fs::file_type::directory_file, 0);
@@ -239,7 +245,8 @@ IndexVFS::FileRecord *IndexVFS::AllocOrReturnFileRecord(
           llvm::sys::TimeValue(), 0, 0, size, type, llvm::sys::fs::all_read),
       false, label};
   parent->children.push_back(new_record);
-  uid_to_record_map_[new_record->status.getUniqueID()] = new_record;
+  uid_to_record_map_[PairFromUid(new_record->status.getUniqueID())] =
+      new_record;
   return new_record;
 }
 
