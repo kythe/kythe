@@ -43,6 +43,53 @@ import (
 	"golang.org/x/net/context"
 )
 
+type staticLookupTables interface {
+	node(ctx context.Context, ticket string) (*srvpb.Node, error)
+	pagedEdgeSet(ctx context.Context, ticket string) (*srvpb.PagedEdgeSet, error)
+	edgePage(ctx context.Context, key string) (*srvpb.EdgePage, error)
+	fileDecorations(ctx context.Context, ticket string) (*srvpb.FileDecorations, error)
+}
+
+// SplitTable implements the xrefs Service interface using separate static
+// lookup tables for each API component.
+type SplitTable struct {
+	// Nodes is a table of srvpb.Nodes keyed by their tickets.
+	Nodes table.Proto
+
+	// Edges is a table of srvpb.PagedEdgeSets keyed by their source tickets.
+	Edges table.Proto
+
+	// EdgePages is a table of srvpb.EdgePages keyed by their page keys.
+	EdgePages table.Proto
+
+	// Decorations is a table of srvpb.FileDecorations keyed by their source
+	// location tickets.
+	Decorations table.Proto
+}
+
+func (s *SplitTable) node(ctx context.Context, ticket string) (*srvpb.Node, error) {
+	var n srvpb.Node
+	err := s.Nodes.Lookup([]byte(ticket), &n)
+	return &n, err
+}
+func (s *SplitTable) pagedEdgeSet(ctx context.Context, ticket string) (*srvpb.PagedEdgeSet, error) {
+	var pes srvpb.PagedEdgeSet
+	err := s.Edges.Lookup([]byte(ticket), &pes)
+	return &pes, err
+}
+
+func (s *SplitTable) edgePage(ctx context.Context, key string) (*srvpb.EdgePage, error) {
+	var ep srvpb.EdgePage
+	err := s.Edges.Lookup([]byte(key), &ep)
+	return &ep, err
+}
+func (s *SplitTable) fileDecorations(ctx context.Context, ticket string) (*srvpb.FileDecorations, error) {
+	var fd srvpb.FileDecorations
+	err := s.Edges.Lookup([]byte(ticket), &fd)
+	return &fd, err
+}
+
+// Key prefixed for the combinedTable implementation.
 const (
 	nodesTablePrefix     = "nodes:"
 	decorTablePrefix     = "decor:"
@@ -50,16 +97,69 @@ const (
 	edgePagesTablePrefix = "edgePages:"
 )
 
-// Table implements the xrefs Service interface using a static lookup table.
-// TODO(schroederc): parallelize multiple Table.DB lookup requests
-type Table struct{ table.Proto }
+type combinedTable struct{ table.Proto }
+
+func (c *combinedTable) node(ctx context.Context, ticket string) (*srvpb.Node, error) {
+	var n srvpb.Node
+	err := c.Lookup(NodeKey(ticket), &n)
+	return &n, err
+}
+func (c *combinedTable) pagedEdgeSet(ctx context.Context, ticket string) (*srvpb.PagedEdgeSet, error) {
+	var pes srvpb.PagedEdgeSet
+	err := c.Lookup(EdgeSetKey(ticket), &pes)
+	return &pes, err
+}
+func (c *combinedTable) edgePage(ctx context.Context, key string) (*srvpb.EdgePage, error) {
+	var ep srvpb.EdgePage
+	err := c.Lookup(EdgePageKey(key), &ep)
+	return &ep, err
+}
+func (c *combinedTable) fileDecorations(ctx context.Context, ticket string) (*srvpb.FileDecorations, error) {
+	var fd srvpb.FileDecorations
+	err := c.Lookup(DecorationsKey(ticket), &fd)
+	return &fd, err
+}
+
+// NewSplitTable returns an xrefs.Service based on the given serving tables for
+// each API component.
+func NewSplitTable(c *SplitTable) xrefs.Service { return &tableImpl{c} }
+
+// NewCombinedTable returns an xrefs.Service for the given combined xrefs
+// serving table.  The table's keys are expected to be constructed using only
+// the NodeKey, EdgeSetKey, EdgePageKey, and DecorationsKey functions.
+func NewCombinedTable(t table.Proto) xrefs.Service { return &tableImpl{&combinedTable{t}} }
+
+// NodeKey returns the nodes CombinedTable key for the given ticket.
+func NodeKey(ticket string) []byte {
+	return []byte(nodesTablePrefix + ticket)
+}
+
+// EdgeSetKey returns the edgeset CombinedTable key for the given source ticket.
+func EdgeSetKey(ticket string) []byte {
+	return []byte(edgeSetsTablePrefix + ticket)
+}
+
+// EdgePageKey returns the edgepage CombinedTable key for the given key.
+func EdgePageKey(key string) []byte {
+	return []byte(edgePagesTablePrefix + key)
+}
+
+// DecorationsKey returns the decorations CombinedTable key for the given source
+// location ticket.
+func DecorationsKey(ticket string) []byte {
+	return []byte(decorTablePrefix + ticket)
+}
+
+// tableImpl implements the xrefs Service interface using static lookup tables.
+// TODO(schroederc): parallelize multiple lookup requests
+type tableImpl struct{ staticLookupTables }
 
 // Nodes implements part of the xrefs Service interface.
-func (t *Table) Nodes(ctx context.Context, req *xpb.NodesRequest) (*xpb.NodesReply, error) {
+func (t *tableImpl) Nodes(ctx context.Context, req *xpb.NodesRequest) (*xpb.NodesReply, error) {
 	reply := &xpb.NodesReply{}
 	patterns := xrefs.ConvertFilters(req.Filter)
 	for _, ticket := range req.Ticket {
-		n, err := t.rawNode(ticket)
+		n, err := t.node(ctx, ticket)
 		if err == table.ErrNoSuchKey {
 			continue
 		} else if err != nil {
@@ -78,24 +178,13 @@ func (t *Table) Nodes(ctx context.Context, req *xpb.NodesRequest) (*xpb.NodesRep
 	return reply, nil
 }
 
-func (t *Table) rawNode(ticket string) (*srvpb.Node, error) {
-	var n srvpb.Node
-	err := t.Lookup(NodeKey(ticket), &n)
-	return &n, err
-}
-
-// NodeKey returns the nodes lookup table key for the given ticket.
-func NodeKey(ticket string) []byte {
-	return []byte(nodesTablePrefix + ticket)
-}
-
 const (
 	defaultPageSize = 2048
 	maxPageSize     = 10000
 )
 
 // Edges implements part of the xrefs Service interface.
-func (t *Table) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
+func (t *tableImpl) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
 	if len(req.Ticket) == 0 {
 		return nil, errors.New("no tickets specified")
 	}
@@ -130,8 +219,8 @@ func (t *Table) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.EdgesRep
 
 	reply := &xpb.EdgesReply{}
 	for _, ticket := range req.Ticket {
-		var pes srvpb.PagedEdgeSet
-		if err := t.Lookup(EdgeSetKey(ticket), &pes); err == table.ErrNoSuchKey {
+		pes, err := t.pagedEdgeSet(ctx, ticket)
+		if err == table.ErrNoSuchKey {
 			continue
 		} else if err != nil {
 			return nil, fmt.Errorf("lookup error for node edges %q: %v", ticket, err)
@@ -154,8 +243,8 @@ func (t *Table) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.EdgesRep
 
 		for _, idx := range pes.PageIndex {
 			if len(allowedKinds) == 0 || allowedKinds.Contains(idx.EdgeKind) {
-				var ep srvpb.EdgePage
-				if err := t.Lookup([]byte(edgePagesTablePrefix+idx.PageKey), &ep); err == table.ErrNoSuchKey {
+				ep, err := t.edgePage(ctx, idx.PageKey)
+				if err == table.ErrNoSuchKey {
 					return nil, fmt.Errorf("missing edge page: %q", idx.PageKey)
 				} else if err != nil {
 					return nil, fmt.Errorf("lookup error for node edges %q: %v", ticket, err)
@@ -208,11 +297,6 @@ func (t *Table) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.EdgesRep
 	return reply, nil
 }
 
-// EdgeSetKey returns the edgeset lookup table key for the given ticket.
-func EdgeSetKey(ticket string) []byte {
-	return []byte(edgeSetsTablePrefix + ticket)
-}
-
 type filterStats struct {
 	skip, total, max int
 }
@@ -239,14 +323,14 @@ func (s *filterStats) filter(g *srvpb.EdgeSet_Group) *xpb.EdgeSet_Group {
 }
 
 // Decorations implements part of the xrefs Service interface.
-func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*xpb.DecorationsReply, error) {
+func (t *tableImpl) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*xpb.DecorationsReply, error) {
 	if req.GetLocation() == nil || req.GetLocation().Ticket == "" {
 		return nil, errors.New("missing location")
 	}
 
-	var decor srvpb.FileDecorations
 	ticket := req.GetLocation().Ticket
-	if err := t.Lookup(DecorationsKey(ticket), &decor); err == table.ErrNoSuchKey {
+	decor, err := t.fileDecorations(ctx, ticket)
+	if err == table.ErrNoSuchKey {
 		return nil, fmt.Errorf("decorations not found for file %q", ticket)
 	} else if err != nil {
 		return nil, fmt.Errorf("lookup error for file decorations %q: %v", ticket, err)
@@ -341,11 +425,6 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 }
 
 type span struct{ start, end int32 }
-
-// DecorationsKey returns the decorations lookup table key for the given ticket.
-func DecorationsKey(ticket string) []byte {
-	return []byte(decorTablePrefix + ticket)
-}
 
 func decorationToReference(d *srvpb.FileDecorations_Decoration) *xpb.DecorationsReply_Reference {
 	return &xpb.DecorationsReply_Reference{

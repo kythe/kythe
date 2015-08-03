@@ -145,7 +145,7 @@ func Run(ctx context.Context, gs graphstore.Service, db keyvalue.DB) error {
 		return nErr
 	}
 
-	es := xrefs.NodesEdgesService(&xsrv.Table{tbl})
+	es := xrefs.NodesEdgesService(xsrv.NewCombinedTable(tbl))
 	if err := writeDecorations(ctx, tbl, es, files); err != nil {
 		return fmt.Errorf("error writing FileDecorations: %v", err)
 	}

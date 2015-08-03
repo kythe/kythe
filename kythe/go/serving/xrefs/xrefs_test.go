@@ -576,7 +576,7 @@ type testTable struct {
 	Decorations []*srvpb.FileDecorations
 }
 
-func (tbl *testTable) Construct(t *testing.T) *Table {
+func (tbl *testTable) Construct(t *testing.T) xrefs.Service {
 	p := make(testProtoTable)
 	for _, n := range tbl.Nodes {
 		testutil.FatalOnErrT(t, "Error writing node: %v", p.Put(NodeKey(n.Ticket), n))
@@ -590,7 +590,7 @@ func (tbl *testTable) Construct(t *testing.T) *Table {
 	for _, d := range tbl.Decorations {
 		testutil.FatalOnErrT(t, "Error writing file decorations: %v", p.Put(DecorationsKey(d.FileTicket), d))
 	}
-	return &Table{p}
+	return NewCombinedTable(p)
 }
 
 type testProtoTable map[string]proto.Message

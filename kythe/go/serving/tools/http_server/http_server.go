@@ -92,7 +92,7 @@ func main() {
 		}
 		defer db.Close()
 		tbl := &table.KVProto{db}
-		xs = &xsrv.Table{tbl}
+		xs = xsrv.NewCombinedTable(tbl)
 		ft = &ftsrv.Table{tbl}
 		sr = &srchsrv.Table{&table.KVInverted{db}}
 	} else {

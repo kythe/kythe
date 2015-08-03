@@ -54,7 +54,7 @@ func main() {
 	tbl := &table.KVProto{db}
 
 	ctx := context.Background()
-	xrefs.RegisterHTTPHandlers(ctx, &xsrv.Table{tbl}, http.DefaultServeMux)
+	xrefs.RegisterHTTPHandlers(ctx, xsrv.NewCombinedTable(tbl), http.DefaultServeMux)
 	filetree.RegisterHTTPHandlers(ctx, &ftsrv.Table{tbl}, http.DefaultServeMux)
 	search.RegisterHTTPHandlers(ctx, &srchsrv.Table{&table.KVInverted{db}}, http.DefaultServeMux)
 
