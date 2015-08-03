@@ -48,7 +48,7 @@
 //
 //   // The value passed to the callback will have the concrete type of
 //   // the third parameter to Open (or Create).
-//   err := pack.ReadUnits(ctx, "kythe", func(cu interface{}) error {
+//   err := pack.ReadUnits(ctx, "kythe", func(digest string, cu interface{}) error {
 //     for _, input := range cu.(*cpb.CompilationUnit).RequiredInput {
 //       bits, err := pack.ReadFile(ctx, input.Digest)
 //       if err != nil {
@@ -288,20 +288,24 @@ func (a *Archive) writeFile(ctx context.Context, dir, name string, data []byte) 
 	return a.fs.Rename(ctx, tmp, filepath.Join(dir, name))
 }
 
-// ReadUnits calls f with each of the compilation units stored in the units
-// subdirectory of the index pack whose format key equals formatKey.  The
-// concrete type of the value passed to f will be the same as the concrete type
-// of the unitType argument that was passed to Open or Create.
+// ReadUnits calls f with the digest and content of each compilation unit
+// stored in the units subdirectory of the index pack whose format key equals
+// formatKey.  The concrete type of the value passed to f will be the same as
+// the concrete type of the unitType argument that was passed to Open or
+// Create.
 //
 // If f returns a non-nil error, no further compilations are read and the error
 // is propagated back to the caller of ReadUnits.
-func (a *Archive) ReadUnits(ctx context.Context, formatKey string, f func(interface{}) error) error {
+func (a *Archive) ReadUnits(ctx context.Context, formatKey string, f func(string, interface{}) error) error {
 	fss, err := a.fs.Glob(ctx, filepath.Join(filepath.Join(a.root, unitDir), "*"+unitSuffix))
 	if err != nil {
 		return err
 	}
 	for _, fs := range fss {
-		if err := a.ReadUnit(ctx, formatKey, strings.TrimSuffix(filepath.Base(fs), unitSuffix), f); err != nil {
+		digest := strings.TrimSuffix(filepath.Base(fs), unitSuffix)
+		if err := a.ReadUnit(ctx, formatKey, digest, func(unit interface{}) error {
+			return f(digest, unit)
+		}); err != nil {
 			return err
 		}
 	}

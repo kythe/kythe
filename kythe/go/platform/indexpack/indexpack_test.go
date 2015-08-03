@@ -181,7 +181,7 @@ func TestCompilationsRoundTrip(t *testing.T) {
 	// Verify that we can read the same data back out.
 	sort.Sort(byTarget(testUnits))
 	var gotUnits []*cpb.CompilationUnit
-	err := testArchive.ReadUnits(context.Background(), "kythe", func(unit interface{}) error {
+	err := testArchive.ReadUnits(context.Background(), "kythe", func(_ string, unit interface{}) error {
 		gotUnits = append(gotUnits, unit.(*cpb.CompilationUnit))
 		return nil
 	})
@@ -271,7 +271,7 @@ func TestFilter(t *testing.T) {
 
 	// Read all the units with key "alpha".
 	got := make(map[string]string)
-	if err := pack.ReadUnits(ctx, "alpha", func(unit interface{}) error {
+	if err := pack.ReadUnits(ctx, "alpha", func(_ string, unit interface{}) error {
 		got[unit.(*cpb.CompilationUnit).GetVName().Signature] = "alpha"
 		return nil
 	}); err != nil {
@@ -328,7 +328,7 @@ func TestZipReader(t *testing.T) {
 
 	var numUnits int
 	digests := make(map[string]bool)
-	if err := pack.ReadUnits(ctx, "kythe", func(v interface{}) error {
+	if err := pack.ReadUnits(ctx, "kythe", func(_ string, v interface{}) error {
 		numUnits++
 		for _, ri := range v.(*cpb.CompilationUnit).RequiredInput {
 			digests[ri.GetInfo().Digest] = true

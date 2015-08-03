@@ -163,7 +163,9 @@ func main() {
 			return en.Encode(cu)
 		}
 		if len(flag.Args()) == 0 {
-			if err := pack.ReadUnits(ctx, formatKey, displayCompilation); err != nil {
+			if err := pack.ReadUnits(ctx, formatKey, func(_ string, i interface{}) error {
+				return displayCompilation(i)
+			}); err != nil {
 				log.Fatal(err)
 			}
 		} else {
@@ -195,7 +197,7 @@ func packIndex(ctx context.Context, pack *indexpack.Archive, idx *kindex.Compila
 
 func unpackIndex(ctx context.Context, pack *indexpack.Archive, dir string) error {
 	fetcher := pack.Fetcher(ctx)
-	return pack.ReadUnits(ctx, formatKey, func(u interface{}) error {
+	return pack.ReadUnits(ctx, formatKey, func(_ string, u interface{}) error {
 		unit, ok := u.(*apb.CompilationUnit)
 		if !ok {
 			return fmt.Errorf("%T is not a CompilationUnit", u)
