@@ -48,7 +48,7 @@ type Table struct{ table.Proto }
 // Directory implements part of the filetree Service interface.
 func (t *Table) Directory(ctx context.Context, req *ftpb.DirectoryRequest) (*ftpb.DirectoryReply, error) {
 	var d srvpb.FileDirectory
-	if err := t.Lookup(DirKey(req.Corpus, req.Root, req.Path), &d); err == table.ErrNoSuchKey {
+	if err := t.Lookup(ctx, DirKey(req.Corpus, req.Root, req.Path), &d); err == table.ErrNoSuchKey {
 		return nil, nil
 	} else if err != nil {
 		return nil, fmt.Errorf("lookup error: %v", err)
@@ -62,7 +62,7 @@ func (t *Table) Directory(ctx context.Context, req *ftpb.DirectoryRequest) (*ftp
 // CorpusRoots implements part of the filetree Service interface.
 func (t *Table) CorpusRoots(ctx context.Context, req *ftpb.CorpusRootsRequest) (*ftpb.CorpusRootsReply, error) {
 	var cr srvpb.CorpusRoots
-	if err := t.Lookup(CorpusRootsKey, &cr); err == table.ErrNoSuchKey {
+	if err := t.Lookup(ctx, CorpusRootsKey, &cr); err == table.ErrNoSuchKey {
 		return nil, errors.New("missing corpusRoots in table")
 	} else if err != nil {
 		return nil, fmt.Errorf("corpusRoots lookup error: %v", err)

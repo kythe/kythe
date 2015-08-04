@@ -27,6 +27,7 @@ import (
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/storage/table"
 	"kythe.io/kythe/go/test/testutil"
+	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/stringset"
 
 	"github.com/golang/protobuf/proto"
@@ -220,7 +221,7 @@ func TestNodes(t *testing.T) {
 		testutil.FatalOnErrT(t, "NodesRequest error: %v", err)
 
 		if len(reply.Node) != 1 {
-			t.Fatalf("Expected 1 node in reply; found %d: {%v}", len(reply.Node), reply)
+			t.Fatalf("Expected 1 node for %q; found %d: {%v}", node.Ticket, len(reply.Node), reply)
 		} else if expected := nodeInfo(node); !reflect.DeepEqual(reply.Node[0], expected) {
 			t.Fatalf("Expected {%v}; received {%v}", expected, reply.Node[0])
 		}
@@ -246,7 +247,7 @@ func TestNodes(t *testing.T) {
 func TestNodesMissing(t *testing.T) {
 	st := tbl.Construct(t)
 	reply, err := st.Nodes(ctx, &xpb.NodesRequest{
-		Ticket: []string{"someMissingTicket"},
+		Ticket: []string{"kythe:#someMissingTicket"},
 	})
 	testutil.FatalOnErrT(t, "NodesRequest error: %v", err)
 
@@ -338,7 +339,7 @@ func TestEdgesMultiPage(t *testing.T) {
 func TestEdgesMissing(t *testing.T) {
 	st := tbl.Construct(t)
 	reply, err := st.Edges(ctx, &xpb.EdgesRequest{
-		Ticket: []string{"someMissingTicket"},
+		Ticket: []string{"kythe:#someMissingTicket"},
 	})
 	testutil.FatalOnErrT(t, "EdgesRequest error: %v", err)
 
@@ -438,7 +439,7 @@ func TestDecorationsNotFound(t *testing.T) {
 	st := tbl.Construct(t)
 	reply, err := st.Decorations(ctx, &xpb.DecorationsRequest{
 		Location: &xpb.Location{
-			Ticket: "someMissingFileTicket",
+			Ticket: "kythe:#someMissingFileTicket",
 		},
 	})
 
@@ -579,25 +580,36 @@ type testTable struct {
 func (tbl *testTable) Construct(t *testing.T) xrefs.Service {
 	p := make(testProtoTable)
 	for _, n := range tbl.Nodes {
-		testutil.FatalOnErrT(t, "Error writing node: %v", p.Put(NodeKey(n.Ticket), n))
+		testutil.FatalOnErrT(t, "Error writing node: %v", p.Put(ctx, NodeKey(mustFix(t, n.Ticket)), n))
 	}
 	for _, es := range tbl.EdgeSets {
-		testutil.FatalOnErrT(t, "Error writing edge set: %v", p.Put(EdgeSetKey(es.EdgeSet.SourceTicket), es))
+		testutil.FatalOnErrT(t, "Error writing edge set: %v", p.Put(ctx, EdgeSetKey(mustFix(t, es.EdgeSet.SourceTicket)), es))
 	}
 	for _, ep := range tbl.EdgePages {
-		testutil.FatalOnErrT(t, "Error writing edge page: %v", p.Put([]byte(edgePagesTablePrefix+ep.PageKey), ep))
+		testutil.FatalOnErrT(t, "Error writing edge page: %v", p.Put(ctx, []byte(edgePagesTablePrefix+ep.PageKey), ep))
 	}
 	for _, d := range tbl.Decorations {
-		testutil.FatalOnErrT(t, "Error writing file decorations: %v", p.Put(DecorationsKey(d.FileTicket), d))
+		testutil.FatalOnErrT(t, "Error writing file decorations: %v", p.Put(ctx, DecorationsKey(mustFix(t, d.FileTicket)), d))
 	}
 	return NewCombinedTable(p)
 }
 
+func mustFix(t *testing.T, ticket string) string {
+	ft, err := kytheuri.Fix(ticket)
+	if err != nil {
+		t.Fatalf("Error fixing ticket %q: %v", ticket, err)
+	}
+	return ft
+}
+
 type testProtoTable map[string]proto.Message
 
-func (t testProtoTable) Put(key []byte, val proto.Message) error { t[string(key)] = val; return nil }
+func (t testProtoTable) Put(_ context.Context, key []byte, val proto.Message) error {
+	t[string(key)] = val
+	return nil
+}
 
-func (t testProtoTable) Lookup(key []byte, msg proto.Message) error {
+func (t testProtoTable) Lookup(_ context.Context, key []byte, msg proto.Message) error {
 	m, ok := t[string(key)]
 	if !ok {
 		log.Println("Failed to find key", string(key))
@@ -607,4 +619,4 @@ func (t testProtoTable) Lookup(key []byte, msg proto.Message) error {
 	return nil
 }
 
-func (t testProtoTable) Close() error { return nil }
+func (t testProtoTable) Close(_ context.Context) error { return nil }

@@ -19,27 +19,40 @@ package testutil
 
 import (
 	"math/rand"
+	"path/filepath"
+	"runtime"
 	"testing"
 )
+
+func caller() (file string, line int) {
+	_, file, line, ok := runtime.Caller(2)
+	if !ok {
+		panic("could not get runtime.Caller")
+	}
+	return filepath.Base(file), line
+}
 
 // FatalOnErr calls b.Fatalf(msg, err, args...) if err != nil
 func FatalOnErr(b *testing.B, msg string, err error, args ...interface{}) {
 	if err != nil {
-		b.Fatalf(msg, append([]interface{}{err}, args...)...)
+		file, line := caller()
+		b.Fatalf("%s:%d: "+msg, append([]interface{}{file, line, err}, args...)...)
 	}
 }
 
 // FatalOnErrT calls t.Fatalf(msg, err, args...) if err != nil
 func FatalOnErrT(t *testing.T, msg string, err error, args ...interface{}) {
 	if err != nil {
-		t.Fatalf(msg, append([]interface{}{err}, args...)...)
+		file, line := caller()
+		t.Fatalf("%s:%d: "+msg, append([]interface{}{file, line, err}, args...)...)
 	}
 }
 
 // Errorf calls t.Errorf(msg, err, args...) if err != nil
 func Errorf(t *testing.T, msg string, err error, args ...interface{}) {
 	if err != nil {
-		t.Errorf(msg, append([]interface{}{err}, args...)...)
+		file, line := caller()
+		t.Errorf("%s:%d: "+msg, append([]interface{}{file, line, err}, args...)...)
 	}
 }
 

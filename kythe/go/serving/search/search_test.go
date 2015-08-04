@@ -204,7 +204,7 @@ func withTempTable(t *testing.T, f func(*Table)) {
 
 	tbl := &Table{&table.KVInverted{db}}
 	for _, n := range testNodes {
-		if err := IndexNode(tbl, n); err != nil {
+		if err := IndexNode(ctx, tbl, n); err != nil {
 			t.Error(err)
 		}
 	}

@@ -106,7 +106,7 @@ func Run(ctx context.Context, gs graphstore.Service, db keyvalue.DB) error {
 	nodes := make(chan *srvpb.Node)
 	go func() {
 		defer edgeNodeWG.Done()
-		nErr = writeNodes(tbl, nIn, nodes)
+		nErr = writeNodes(ctx, tbl, nIn, nodes)
 		if nErr != nil {
 			nErr = fmt.Errorf("error writing Nodes: %v", nErr)
 		} else {
@@ -130,7 +130,7 @@ func Run(ctx context.Context, gs graphstore.Service, db keyvalue.DB) error {
 	idxWG.Add(1)
 	go func() {
 		defer idxWG.Done()
-		idxErr = writeIndex(&table.KVInverted{db}, nodes)
+		idxErr = writeIndex(ctx, &table.KVInverted{db}, nodes)
 		if idxErr != nil {
 			idxErr = fmt.Errorf("error writing Search Index: %v", idxErr)
 		} else {
@@ -172,7 +172,7 @@ func writeFileTree(ctx context.Context, t table.Proto, files <-chan *spb.VName) 
 	for corpus, roots := range tree.M {
 		for root, dirs := range roots {
 			for path, dir := range dirs {
-				if err := t.Put(ftsrv.DirKey(corpus, root, path), dir); err != nil {
+				if err := t.Put(ctx, ftsrv.DirKey(corpus, root, path), dir); err != nil {
 					return err
 				}
 			}
@@ -182,15 +182,15 @@ func writeFileTree(ctx context.Context, t table.Proto, files <-chan *spb.VName) 
 	if err != nil {
 		return err
 	}
-	return t.Put(ftsrv.CorpusRootsKey, cr)
+	return t.Put(ctx, ftsrv.CorpusRootsKey, cr)
 }
 
-func writeNodes(t table.Proto, nodeEntries <-chan *spb.Entry, nodes chan<- *srvpb.Node) error {
+func writeNodes(ctx context.Context, t table.Proto, nodeEntries <-chan *spb.Entry, nodes chan<- *srvpb.Node) error {
 	defer close(nodes)
 	defer drainEntries(nodeEntries) // ensure channel is drained on errors
 	for node := range collectNodes(nodeEntries) {
 		nodes <- node
-		if err := t.Put(xsrv.NodeKey(node.Ticket), node); err != nil {
+		if err := t.Put(ctx, xsrv.NodeKey(node.Ticket), node); err != nil {
 			return err
 		}
 	}
@@ -294,7 +294,7 @@ func writeEdgePages(ctx context.Context, t table.Proto, gs graphstore.Service) e
 				pesTotal += len(grp.TargetTicket)
 			}
 			pes.TotalEdges = int32(pesTotal)
-			if err := t.Put(xsrv.EdgeSetKey(pes.EdgeSet.SourceTicket), pes); err != nil {
+			if err := t.Put(ctx, xsrv.EdgeSetKey(pes.EdgeSet.SourceTicket), pes); err != nil {
 				return err
 			}
 			pes = nil
@@ -332,7 +332,7 @@ func writeEdgePages(ctx context.Context, t table.Proto, gs graphstore.Service) e
 			pesTotal += len(grp.TargetTicket)
 		}
 		pes.TotalEdges = int32(pesTotal)
-		if err := t.Put(xsrv.EdgeSetKey(pes.EdgeSet.SourceTicket), pes); err != nil {
+		if err := t.Put(ctx, xsrv.EdgeSetKey(pes.EdgeSet.SourceTicket), pes); err != nil {
 			return err
 		}
 	}
@@ -407,7 +407,7 @@ func writeDecorations(ctx context.Context, t table.Proto, es xrefs.NodesEdgesSer
 		}
 
 		sort.Sort(byOffset(decor.Decoration))
-		if err := t.Put(xsrv.DecorationsKey(decor.FileTicket), decor); err != nil {
+		if err := t.Put(ctx, xsrv.DecorationsKey(decor.FileTicket), decor); err != nil {
 			return err
 		}
 	}
@@ -526,9 +526,9 @@ func readEdges(ctx context.Context, es xrefs.NodesEdgesService, files []string, 
 	return eErr
 }
 
-func writeIndex(t table.Inverted, nodes <-chan *srvpb.Node) error {
+func writeIndex(ctx context.Context, t table.Inverted, nodes <-chan *srvpb.Node) error {
 	for n := range nodes {
-		if err := search.IndexNode(t, n); err != nil {
+		if err := search.IndexNode(ctx, t, n); err != nil {
 			return err
 		}
 	}

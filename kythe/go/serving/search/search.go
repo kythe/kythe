@@ -90,7 +90,7 @@ func (t *Table) Search(ctx context.Context, q *spb.SearchRequest) (*spb.SearchRe
 		return &spb.SearchReply{}, nil
 	}
 
-	keys, err := t.Lookup(vals[0].value, vals[0].prefix)
+	keys, err := t.Lookup(ctx, vals[0].value, vals[0].prefix)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +101,7 @@ func (t *Table) Search(ctx context.Context, q *spb.SearchRequest) (*spb.SearchRe
 		}
 
 		for i := len(keys) - 1; i >= 0; i-- {
-			if exists, err := t.Contains(keys[i], v.value, v.prefix); err != nil {
+			if exists, err := t.Contains(ctx, keys[i], v.value, v.prefix); err != nil {
 				return nil, err
 			} else if !exists {
 				keys = append(keys[:i], keys[i+1:]...)
@@ -122,7 +122,7 @@ var MaxIndexedFactValueSize = 512
 
 // IndexNode writes each of n's VName components and facts to t as search index
 // entries.  MaxIndexedFactValueSize limits fact values written to the index.
-func IndexNode(t table.Inverted, n *srvpb.Node) error {
+func IndexNode(ctx context.Context, t table.Inverted, n *srvpb.Node) error {
 	uri, err := kytheuri.Parse(n.Ticket)
 	if err != nil {
 		return err
@@ -130,34 +130,34 @@ func IndexNode(t table.Inverted, n *srvpb.Node) error {
 	key := []byte(n.Ticket)
 
 	if uri.Signature != "" {
-		if err := t.Put(key, vNameVal("signature", uri.Signature)); err != nil {
+		if err := t.Put(ctx, key, vNameVal("signature", uri.Signature)); err != nil {
 			return err
 		}
 	}
 	if uri.Corpus != "" {
-		if err := t.Put(key, vNameVal("corpus", uri.Corpus)); err != nil {
+		if err := t.Put(ctx, key, vNameVal("corpus", uri.Corpus)); err != nil {
 			return err
 		}
 	}
 	if uri.Root != "" {
-		if err := t.Put(key, vNameVal("root", uri.Root)); err != nil {
+		if err := t.Put(ctx, key, vNameVal("root", uri.Root)); err != nil {
 			return err
 		}
 	}
 	if uri.Path != "" {
-		if err := t.Put(key, vNameVal("path", uri.Path)); err != nil {
+		if err := t.Put(ctx, key, vNameVal("path", uri.Path)); err != nil {
 			return err
 		}
 	}
 	if uri.Language != "" {
-		if err := t.Put(key, vNameVal("language", uri.Language)); err != nil {
+		if err := t.Put(ctx, key, vNameVal("language", uri.Language)); err != nil {
 			return err
 		}
 	}
 
 	for _, f := range n.Fact {
 		if len(f.Value) <= MaxIndexedFactValueSize {
-			if err := t.Put(key, factVal(f.Name, f.Value)); err != nil {
+			if err := t.Put(ctx, key, factVal(f.Name, f.Value)); err != nil {
 				return err
 			}
 		}

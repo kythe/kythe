@@ -33,6 +33,7 @@ import (
 
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/storage/table"
+	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema"
 	"kythe.io/kythe/go/util/stringset"
 
@@ -69,23 +70,23 @@ type SplitTable struct {
 
 func (s *SplitTable) node(ctx context.Context, ticket string) (*srvpb.Node, error) {
 	var n srvpb.Node
-	err := s.Nodes.Lookup([]byte(ticket), &n)
+	err := s.Nodes.Lookup(ctx, []byte(ticket), &n)
 	return &n, err
 }
 func (s *SplitTable) pagedEdgeSet(ctx context.Context, ticket string) (*srvpb.PagedEdgeSet, error) {
 	var pes srvpb.PagedEdgeSet
-	err := s.Edges.Lookup([]byte(ticket), &pes)
+	err := s.Edges.Lookup(ctx, []byte(ticket), &pes)
 	return &pes, err
 }
 
 func (s *SplitTable) edgePage(ctx context.Context, key string) (*srvpb.EdgePage, error) {
 	var ep srvpb.EdgePage
-	err := s.Edges.Lookup([]byte(key), &ep)
+	err := s.EdgePages.Lookup(ctx, []byte(key), &ep)
 	return &ep, err
 }
 func (s *SplitTable) fileDecorations(ctx context.Context, ticket string) (*srvpb.FileDecorations, error) {
 	var fd srvpb.FileDecorations
-	err := s.Edges.Lookup([]byte(ticket), &fd)
+	err := s.Decorations.Lookup(ctx, []byte(ticket), &fd)
 	return &fd, err
 }
 
@@ -101,22 +102,22 @@ type combinedTable struct{ table.Proto }
 
 func (c *combinedTable) node(ctx context.Context, ticket string) (*srvpb.Node, error) {
 	var n srvpb.Node
-	err := c.Lookup(NodeKey(ticket), &n)
+	err := c.Lookup(ctx, NodeKey(ticket), &n)
 	return &n, err
 }
 func (c *combinedTable) pagedEdgeSet(ctx context.Context, ticket string) (*srvpb.PagedEdgeSet, error) {
 	var pes srvpb.PagedEdgeSet
-	err := c.Lookup(EdgeSetKey(ticket), &pes)
+	err := c.Lookup(ctx, EdgeSetKey(ticket), &pes)
 	return &pes, err
 }
 func (c *combinedTable) edgePage(ctx context.Context, key string) (*srvpb.EdgePage, error) {
 	var ep srvpb.EdgePage
-	err := c.Lookup(EdgePageKey(key), &ep)
+	err := c.Lookup(ctx, EdgePageKey(key), &ep)
 	return &ep, err
 }
 func (c *combinedTable) fileDecorations(ctx context.Context, ticket string) (*srvpb.FileDecorations, error) {
 	var fd srvpb.FileDecorations
-	err := c.Lookup(DecorationsKey(ticket), &fd)
+	err := c.Lookup(ctx, DecorationsKey(ticket), &fd)
 	return &fd, err
 }
 
@@ -158,7 +159,12 @@ type tableImpl struct{ staticLookupTables }
 func (t *tableImpl) Nodes(ctx context.Context, req *xpb.NodesRequest) (*xpb.NodesReply, error) {
 	reply := &xpb.NodesReply{}
 	patterns := xrefs.ConvertFilters(req.Filter)
-	for _, ticket := range req.Ticket {
+	for _, rawTicket := range req.Ticket {
+		ticket, err := kytheuri.Fix(rawTicket)
+		if err != nil {
+			return nil, fmt.Errorf("invalid ticket %q: %v", rawTicket, err)
+		}
+
 		n, err := t.node(ctx, ticket)
 		if err == table.ErrNoSuchKey {
 			continue
@@ -218,7 +224,12 @@ func (t *tableImpl) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.Edge
 	nodeTickets := stringset.New()
 
 	reply := &xpb.EdgesReply{}
-	for _, ticket := range req.Ticket {
+	for _, rawTicket := range req.Ticket {
+		ticket, err := kytheuri.Fix(rawTicket)
+		if err != nil {
+			return nil, fmt.Errorf("invalid ticket %q: %v", rawTicket, err)
+		}
+
 		pes, err := t.pagedEdgeSet(ctx, ticket)
 		if err == table.ErrNoSuchKey {
 			continue
@@ -328,7 +339,11 @@ func (t *tableImpl) Decorations(ctx context.Context, req *xpb.DecorationsRequest
 		return nil, errors.New("missing location")
 	}
 
-	ticket := req.GetLocation().Ticket
+	ticket, err := kytheuri.Fix(req.GetLocation().Ticket)
+	if err != nil {
+		return nil, fmt.Errorf("invalid ticket %q: %v", req.GetLocation().Ticket, err)
+	}
+
 	decor, err := t.fileDecorations(ctx, ticket)
 	if err == table.ErrNoSuchKey {
 		return nil, fmt.Errorf("decorations not found for file %q", ticket)

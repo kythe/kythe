@@ -27,38 +27,43 @@ import (
 	"kythe.io/kythe/go/storage/keyvalue"
 
 	"github.com/golang/protobuf/proto"
+	"golang.org/x/net/context"
 )
+
+// TODO add Contexts
 
 // Proto is a key-value direct lookup table with protobuf values.
 type Proto interface {
-	io.Closer
-
 	// Lookup unmarshals the value for the given key into msg, returning any
 	// error.  If the key was not found, ErrNoSuchKey is returned.
-	Lookup(key []byte, msg proto.Message) error
+	Lookup(ctx context.Context, key []byte, msg proto.Message) error
 
 	// Put marshals msg and writes it as the value for the given key.
-	Put(key []byte, msg proto.Message) error
+	Put(ctx context.Context, key []byte, msg proto.Message) error
+
+	// Close release the underlying resources for the table.
+	Close(context.Context) error
 }
 
 // Inverted is an inverted index lookup table for []byte values with associated
 // []byte keys.  Keys and values should not contain \000 bytes.
 type Inverted interface {
-	io.Closer
-
 	// Lookup returns a slice of []byte keys associated with the given value.  If
 	// prefix is true, all keys associated with values with val as their prefix
 	// will be returned, otherwise val is exactly matched.
-	Lookup(val []byte, prefix bool) ([][]byte, error)
+	Lookup(ctx context.Context, val []byte, prefix bool) ([][]byte, error)
 
 	// Contains determines whether there is an association between key and val.
 	// If prefix is true, if key is associated with any value with val as its
 	// prefix true will be returned, otherwise val must be exactly associated with
 	// key.
-	Contains(key, val []byte, prefix bool) (bool, error)
+	Contains(ctx context.Context, key, val []byte, prefix bool) (bool, error)
 
 	// Put writes an entry associating val with key.
-	Put(key, val []byte) error
+	Put(ctx context.Context, key, val []byte) error
+
+	// Close release the underlying resources for the table.
+	Close(context.Context) error
 }
 
 // KVProto implements a Proto table using a keyvalue.DB.
@@ -68,7 +73,7 @@ type KVProto struct{ keyvalue.DB }
 var ErrNoSuchKey = errors.New("no such key")
 
 // Lookup implements part of the Proto interface.
-func (t *KVProto) Lookup(key []byte, msg proto.Message) error {
+func (t *KVProto) Lookup(_ context.Context, key []byte, msg proto.Message) error {
 	iter, err := t.ScanPrefix(key, nil)
 	if err != nil {
 		return fmt.Errorf("table iterator error: %v", err)
@@ -89,7 +94,7 @@ func (t *KVProto) Lookup(key []byte, msg proto.Message) error {
 }
 
 // Put implements part of the Proto interface.
-func (t *KVProto) Put(key []byte, msg proto.Message) error {
+func (t *KVProto) Put(_ context.Context, key []byte, msg proto.Message) error {
 	rec, err := proto.Marshal(msg)
 	if err != nil {
 		return err
@@ -102,11 +107,14 @@ func (t *KVProto) Put(key []byte, msg proto.Message) error {
 	return wr.Write(key, rec)
 }
 
+// Close implements part of the Proto interface.
+func (t *KVProto) Close(_ context.Context) error { return t.DB.Close() }
+
 // KVInverted implements an Inverted table in a keyvalue.DB.
 type KVInverted struct{ keyvalue.DB }
 
 // Lookup implements part of the Inverted interface.
-func (i *KVInverted) Lookup(val []byte, prefixLookup bool) ([][]byte, error) {
+func (i *KVInverted) Lookup(_ context.Context, val []byte, prefixLookup bool) ([][]byte, error) {
 	var results [][]byte
 	if !prefixLookup {
 		val = exactInvertedPrefix(val)
@@ -123,7 +131,7 @@ func (i *KVInverted) Lookup(val []byte, prefixLookup bool) ([][]byte, error) {
 }
 
 // Contains implements part of the Inverted interface.
-func (i *KVInverted) Contains(key, val []byte, prefixLookup bool) (found bool, err error) {
+func (i *KVInverted) Contains(_ context.Context, key, val []byte, prefixLookup bool) (found bool, err error) {
 	if prefixLookup {
 		err = i.scan(val, func(k []byte) bool {
 			i := bytes.IndexByte(k, invertedKeySep)
@@ -171,7 +179,7 @@ func (i *KVInverted) scan(v []byte, f func(k []byte) bool) error {
 var emptyValue = []byte{}
 
 // Put implements part of the Inverted interface.
-func (i *KVInverted) Put(key, val []byte) error {
+func (i *KVInverted) Put(_ context.Context, key, val []byte) error {
 	wr, err := i.Writer()
 	if err != nil {
 		return err
@@ -179,6 +187,9 @@ func (i *KVInverted) Put(key, val []byte) error {
 	defer wr.Close()
 	return wr.Write(invertedKey(key, val), emptyValue)
 }
+
+// Close implements part of the Inverted interface.
+func (i *KVInverted) Close(_ context.Context) error { return i.DB.Close() }
 
 const invertedKeySep = '\000'
 
