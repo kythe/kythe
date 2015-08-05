@@ -62,26 +62,20 @@ can read. Put it in your Kythe root; it will clobber the directories
 #!/bin/bash -e
 set -o pipefail
 BROWSE_PORT="${BROWSE_PORT:-8080}"
-# Make sure the relevant Kythe components are up to date.
-bazel build //kythe/go/serving/tools:http_server \
-            //kythe/go/platform/tools:entrystream \
-            //kythe/go/serving/tools:write_tables \
-            //kythe/go/storage/tools:write_entries
-# Ensure the browser UI's resources have been built.
-cd kythe/web/ui/resources/public
-lein cljsbuild once < /dev/null
-cd -
+# You can find prebuilt binaries at https://github.com/google/kythe/releases.
+# This script assumes that they are installed to /opt/kythe.
+# If you build the tools yourself or install them to a different location,
+# make sure to pass the correct public_resources directory to http_server.
 rm -f -- graphstore/* tables/*
 mkdir -p graphstore tables
 # Read JSON entries from standard in to a graphstore.
-./bazel-bin/kythe/go/platform/tools/entrystream -read_json=true \
-  | ./bazel-bin/kythe/go/storage/tools/write_entries -graphstore graphstore
+/opt/kythe/tools/entrystream --read_json \
+  | /opt/kythe/tools/write_entries -graphstore graphstore
 # Convert the graphstore to serving tables.
-./bazel-bin/kythe/go/serving/tools/write_tables -graphstore graphstore \
-  -out=tables
+/opt/kythe/tools/write_tables -graphstore graphstore -out=tables
 # Host the browser UI.
-./bazel-bin/kythe/go/serving/tools/http_server -serving_table tables \
-  -public_resources="kythe/web/ui/resources/public" \
+/opt/kythe/tools/http_server -serving_table tables \
+  -public_resources="/opt/kythe/web/ui" \
   -listen="localhost:${BROWSE_PORT}"
 ----
 
@@ -110,7 +104,7 @@ extracting those data from Flow.
 == Dumping Flow information
 
 If you want to follow along, we'll be talking about the version of the source
-file https://github.com/google/kythe/blob/master/kythe/ocaml/js_indexer/dumpKytheService_js.ml[`//kythe/ocaml/js_indexer/dumpKytheService_js.ml`] that was committed
+file https://github.com/google/kythe/blob/5366105b457da219ebf8a017aece890dea9d9115/kythe/ocaml/js_indexer/dumpKytheService_js.ml[`//kythe/ocaml/js_indexer/dumpKytheService_js.ml`] that was committed
 along with this blog post. Future posts will follow the indexer as it develops.
 
 Flow usually runs in two parts. The first starts up in the background and
@@ -118,7 +112,7 @@ does the heavy lifting involved with making sense of JavaScript programs.
 This stays resident until it's terminated. The second part will start up the
 Flow service if it's not already started; it will then issue a query to the
 background task, collect the results, return them and exit. The code for the
-`dump-kythe` client is in https://github.com/google/kythe/blob/master/kythe/ocaml/js_indexer/dumpKytheCommand.ml[`//kythe/ocaml/js_indexer/dumpKytheCommand.ml`], but
+`dump-kythe` client is in https://github.com/google/kythe/blob/5366105b457da219ebf8a017aece890dea9d9115/kythe/ocaml/js_indexer/dumpKytheCommand.ml[`//kythe/ocaml/js_indexer/dumpKytheCommand.ml`], but
 we won't be looking at that again here.
 
 While we can use Flow's builtin support for JSON serialization, we still need
