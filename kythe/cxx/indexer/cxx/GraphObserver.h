@@ -84,6 +84,12 @@ public:
     }
     /// \brief Returns a string representation of this `NodeId`.
     std::string ToString() const { return Identity; }
+    /// \brief Returns a string reference representation of this `NodeId`'s
+    /// Identity.
+    /// This `NodeId` must outlive the `StringRef`.
+    llvm::StringRef IdentityRef() const {
+      return llvm::StringRef(Identity.data(), Identity.size());
+    }
     /// \brief Returns a string representation of this `NodeId`
     /// annotated by its claim token.
     std::string ToClaimedString() const {

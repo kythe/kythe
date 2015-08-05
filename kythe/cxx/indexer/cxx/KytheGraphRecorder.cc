@@ -73,10 +73,8 @@ static const std::string *const kPropertySpellings[] = {
     new std::string("/kythe/loc/end"),
     new std::string("/kythe/text"),
     new std::string("/kythe/complete"),
-    new std::string("/kythe/subkind")};
-
-static const std::string *const kKindSpelling =
-    new std::string("/kythe/node/kind");
+    new std::string("/kythe/subkind"),
+    new std::string("/kythe/node/kind")};
 
 static const std::string *const kEdgePropertySpelling =
     new std::string("/kythe/ordinal");
@@ -85,89 +83,53 @@ static const std::string *const kEmptyStringSpelling = new std::string("");
 
 static const std::string *const kRootPropertySpelling = new std::string("/");
 
-const std::string &spelling_of(PropertyID property_id) {
-  return *kPropertySpellings[static_cast<ptrdiff_t>(property_id)];
+llvm::StringRef spelling_of(PropertyID property_id) {
+  const auto *str = kPropertySpellings[static_cast<ptrdiff_t>(property_id)];
+  return llvm::StringRef(str->data(), str->size());
 }
 
-const std::string &spelling_of(NodeKindID node_kind_id) {
-  return *kNodeKindSpellings[static_cast<ptrdiff_t>(node_kind_id)];
+llvm::StringRef spelling_of(NodeKindID node_kind_id) {
+  const auto *str = kNodeKindSpellings[static_cast<ptrdiff_t>(node_kind_id)];
+  return llvm::StringRef(str->data(), str->size());
 }
 
-const std::string &spelling_of(EdgeKindID edge_kind_id) {
-  return *kEdgeKindSpellings[static_cast<ptrdiff_t>(edge_kind_id)];
+llvm::StringRef spelling_of(EdgeKindID edge_kind_id) {
+  const auto *str = kEdgeKindSpellings[static_cast<ptrdiff_t>(edge_kind_id)];
+  return llvm::StringRef(str->data(), str->size());
 }
 
-void KytheGraphRecorder::BeginNode(const VName &node_vname,
-                                   NodeKindID kind_id) {
-  BeginNode(node_vname, *kNodeKindSpellings[static_cast<ptrdiff_t>(kind_id)]);
-}
-
-void KytheGraphRecorder::BeginNode(const VName &node_vname,
-                                   const llvm::StringRef &kind) {
-  assert(!in_node_);
-  node_vname_ = node_vname;
-  in_node_ = true;
-  kythe::proto::Entry node_fact;
-  node_fact.mutable_source()->CopyFrom(node_vname);
-  node_fact.set_fact_name(*kKindSpelling);
-  node_fact.set_fact_value(kind.str());
-  stream_->Emit(node_fact);
-}
-
-void KytheGraphRecorder::AddProperty(PropertyID property_id,
+void KytheGraphRecorder::AddProperty(const VNameRef &node_vname,
+                                     PropertyID property_id,
                                      const std::string &property_value) {
-  assert(in_node_);
-  kythe::proto::Entry node_fact;
-  node_fact.mutable_source()->CopyFrom(node_vname_);
-  node_fact.set_fact_name(
-      *kPropertySpellings[static_cast<ptrdiff_t>(property_id)]);
-  node_fact.set_fact_value(property_value);
-  stream_->Emit(node_fact);
+  stream_->Emit(
+      FactRef{&node_vname, spelling_of(property_id),
+              llvm::StringRef(property_value.data(), property_value.size())});
 }
 
-void KytheGraphRecorder::AddProperty(PropertyID property_id,
+void KytheGraphRecorder::AddProperty(const VNameRef &node_vname,
+                                     PropertyID property_id,
                                      const size_t property_value) {
-  AddProperty(property_id, std::to_string(property_value));
+  AddProperty(node_vname, property_id, std::to_string(property_value));
 }
 
-void KytheGraphRecorder::EndNode() {
-  assert(in_node_);
-  in_node_ = false;
-}
-
-void KytheGraphRecorder::AddEdge(const VName &edge_from,
+void KytheGraphRecorder::AddEdge(const VNameRef &edge_from,
                                  EdgeKindID edge_kind_id,
-                                 const VName &edge_to) {
-  assert(!in_node_);
-  kythe::proto::Entry edge_fact;
-  edge_fact.mutable_source()->CopyFrom(edge_from);
-  edge_fact.set_edge_kind(
-      *kEdgeKindSpellings[static_cast<ptrdiff_t>(edge_kind_id)]);
-  edge_fact.mutable_target()->CopyFrom(edge_to);
-  edge_fact.set_fact_name(*kRootPropertySpelling);
-  edge_fact.set_fact_value(*kEmptyStringSpelling);
-  stream_->Emit(edge_fact);
+                                 const VNameRef &edge_to) {
+  stream_->Emit(EdgeRef{&edge_from, spelling_of(edge_kind_id), &edge_to});
 }
 
-void KytheGraphRecorder::AddEdge(const VName &edge_from,
-                                 EdgeKindID edge_kind_id, const VName &edge_to,
-                                 uint32_t ordinal) {
-  assert(!in_node_);
-  kythe::proto::Entry edge_fact;
-  edge_fact.mutable_source()->CopyFrom(edge_from);
-  edge_fact.set_edge_kind(
-      *kEdgeKindSpellings[static_cast<ptrdiff_t>(edge_kind_id)]);
-  edge_fact.mutable_target()->CopyFrom(edge_to);
-  edge_fact.set_fact_name(*kEdgePropertySpelling);
-  edge_fact.set_fact_value(std::to_string(ordinal));
-  stream_->Emit(edge_fact);
+void KytheGraphRecorder::AddEdge(const VNameRef &edge_from,
+                                 EdgeKindID edge_kind_id,
+                                 const VNameRef &edge_to, uint32_t ordinal) {
+  stream_->Emit(
+      OrdinalEdgeRef{&edge_from, spelling_of(edge_kind_id), &edge_to, ordinal});
 }
 
-void KytheGraphRecorder::AddFileContent(const VName &file_vname,
+void KytheGraphRecorder::AddFileContent(const VNameRef &file_vname,
                                         const llvm::StringRef &file_content) {
-  BeginNode(file_vname, NodeKindID::kFile);
-  AddProperty(PropertyID::kText, file_content.str());
-  EndNode();
+  AddProperty(file_vname, PropertyID::kNodeKind,
+              spelling_of(NodeKindID::kFile));
+  AddProperty(file_vname, PropertyID::kText, file_content.str());
 }
 
 }  // namespace kythe

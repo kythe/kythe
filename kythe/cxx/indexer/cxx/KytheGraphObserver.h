@@ -60,11 +60,13 @@ class KytheClaimToken : public GraphObserver::ClaimToken {
 
   static bool classof(const ClaimToken *t) { return t->GetClass() == &clazz_; }
 
-  /// \brief Marks a VName as belonging to this token.
-  void DecorateVName(kythe::proto::VName *target) const {
-    target->set_corpus(vname_.corpus());
-    target->set_root(vname_.root());
-    target->set_path(vname_.path());
+  /// \brief Marks a VNameRef as belonging to this token.
+  /// This token must outlive the VNameRef.
+  void DecorateVName(VNameRef *target) const {
+    target->corpus =
+        llvm::StringRef(vname_.corpus().data(), vname_.corpus().size());
+    target->root = llvm::StringRef(vname_.root().data(), vname_.root().size());
+    target->path = llvm::StringRef(vname_.path().data(), vname_.path().size());
   }
 
   /// \brief Sets a VName that controls the corpus, root and path of claimed
@@ -295,7 +297,8 @@ class KytheGraphObserver : public GraphObserver {
                            const Range &Range) override;
 
  private:
-  void RecordSourceLocation(clang::SourceLocation source_location,
+  void RecordSourceLocation(const VNameRef &vname,
+                            clang::SourceLocation source_location,
                             PropertyID offset_id);
 
   /// \brief Called by `AppendRangeToStream` to recur down a `SourceLocation`.
@@ -311,7 +314,7 @@ class KytheGraphObserver : public GraphObserver {
   void AppendFileBufferSliceHashToStream(clang::SourceLocation loc,
                                          llvm::raw_ostream &Ostream);
 
-  kythe::proto::VName VNameFromNodeId(const GraphObserver::NodeId &node_id);
+  VNameRef VNameRefFromNodeId(const GraphObserver::NodeId &node_id);
   kythe::proto::VName VNameFromFileEntry(const clang::FileEntry *file_entry);
   kythe::proto::VName ClaimableVNameFromFileID(const clang::FileID &file_id);
   kythe::proto::VName VNameFromRange(const GraphObserver::Range &range);
@@ -324,8 +327,9 @@ class KytheGraphObserver : public GraphObserver {
       const GraphObserver::Range &source_range,
       const kythe::proto::VName &primary_anchored_to,
       EdgeKindID anchor_edge_kind, Claimability claimability);
-  /// Records any deferred nodes, clearing any records of their deferral.
-  void RecordDeferredNodes();
+  /// Records a Range.
+  void RecordRange(const proto::VName &range_vname,
+                   const GraphObserver::Range &range);
 
   struct RangeHash {
     size_t operator()(const GraphObserver::Range &range) const {

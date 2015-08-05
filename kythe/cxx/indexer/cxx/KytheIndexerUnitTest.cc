@@ -57,8 +57,7 @@ TEST(KytheIndexerUnitTest, GraphRecorderNodeKind) {
   vname.set_language("lang1");
   vname.set_path("path1");
   vname.set_root("root1");
-  recorder.BeginNode(vname, NodeKindID::kFile);
-  recorder.EndNode();
+  recorder.AddProperty(VNameRef(vname), NodeKindID::kFile);
   ASSERT_EQ(1, stream.entries().size());
   const auto& entry = stream.entries()[0];
   ASSERT_EQ("file", entry.fact_value());
@@ -78,9 +77,9 @@ TEST(KytheIndexerUnitTest, GraphRecorderNodeProperty) {
   vname.set_language("lang1");
   vname.set_path("path1");
   vname.set_root("root1");
-  recorder.BeginNode(vname, NodeKindID::kAnchor);
-  recorder.AddProperty(PropertyID::kLocationUri, "test://file");
-  recorder.EndNode();
+  recorder.AddProperty(VNameRef(vname), NodeKindID::kAnchor);
+  recorder.AddProperty(VNameRef(vname), PropertyID::kLocationUri,
+                       "test://file");
   ASSERT_EQ(2, stream.entries().size());
   bool found_kind_fact = false, found_property_fact = false;
   for (const auto& entry : stream.entries()) {
@@ -117,7 +116,8 @@ TEST(KytheIndexerUnitTest, GraphRecorderEdge) {
   vname_target.set_language("lang2");
   vname_target.set_path("path2");
   vname_target.set_root("root2");
-  recorder.AddEdge(vname_source, EdgeKindID::kDefines, vname_target);
+  recorder.AddEdge(VNameRef(vname_source), EdgeKindID::kDefines,
+                   VNameRef(vname_target));
   ASSERT_EQ(1, stream.entries().size());
   const auto& entry = stream.entries()[0];
   EXPECT_TRUE(entry.fact_value().empty());
@@ -143,7 +143,8 @@ TEST(KytheIndexerUnitTest, GraphRecorderEdgeOrdinal) {
   vname_target.set_language("lang2");
   vname_target.set_path("path2");
   vname_target.set_root("root2");
-  recorder.AddEdge(vname_source, EdgeKindID::kDefines, vname_target, 42);
+  recorder.AddEdge(VNameRef(vname_source), EdgeKindID::kDefines,
+                   VNameRef(vname_target), 42);
   ASSERT_EQ(1, stream.entries().size());
   const auto& entry = stream.entries()[0];
   ASSERT_EQ("42", entry.fact_value());

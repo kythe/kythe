@@ -26,9 +26,22 @@ namespace kythe {
 /// This is intended to be used for testing only.
 class RecordingOutputStream : public KytheOutputStream {
  public:
-  /// \brief Append an entry to this stream's history.
-  void Emit(const kythe::proto::Entry &entry) override {
-    entries_.push_back(entry);
+  void Emit(const FactRef &fact) override {
+    proto::Entry entry;
+    fact.Expand(&entry);
+    Emit(entry);
+  }
+  void Emit(const EdgeRef &edge) override {
+    proto::Entry entry;
+    edge.Expand(&entry);
+    entry.set_fact_name("/");
+    Emit(entry);
+  }
+  void Emit(const OrdinalEdgeRef &edge) override {
+    proto::Entry entry;
+    edge.Expand(&entry);
+    entry.set_fact_name("/kythe/ordinal");
+    Emit(entry);
   }
 
   /// \brief All entries that were emitted to this stream, in order.
@@ -36,6 +49,9 @@ class RecordingOutputStream : public KytheOutputStream {
 
  private:
   std::vector<kythe::proto::Entry> entries_;
+
+  /// \brief Append an entry to this stream's history.
+  void Emit(const kythe::proto::Entry &entry) { entries_.push_back(entry); }
 };
 
 }  // namespace kythe
