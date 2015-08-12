@@ -45,7 +45,7 @@ import (
 func EnsureReverseEdges(ctx context.Context, gs graphstore.Service) error {
 	var edge *spb.Entry
 	if err := gs.Scan(ctx, &spb.ScanRequest{}, func(e *spb.Entry) error {
-		if e.EdgeKind != "" {
+		if graphstore.IsEdge(e) {
 			edge = e
 			return io.EOF
 		}
@@ -446,7 +446,7 @@ func getEdges(ctx context.Context, gs graphstore.Service, node *spb.VName, pred 
 		Source:   node,
 		EdgeKind: "*",
 	}, func(entry *spb.Entry) error {
-		if entry.EdgeKind != "" && pred(entry) {
+		if graphstore.IsEdge(entry) && pred(entry) {
 			targets = append(targets, &edgeTarget{entry.EdgeKind, entry.Target})
 		}
 		return nil

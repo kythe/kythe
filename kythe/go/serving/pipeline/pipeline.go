@@ -61,7 +61,7 @@ func Run(ctx context.Context, gs graphstore.Service, db keyvalue.DB) error {
 	ftIn, nIn, eIn := make(chan *spb.VName), make(chan *spb.Entry), make(chan *spb.Entry)
 	go func() {
 		for entry := range entries {
-			if entry.EdgeKind == "" {
+			if graphstore.IsNodeFact(entry) {
 				nIn <- entry
 				if entry.FactName == schema.NodeKindFact && string(entry.FactValue) == "file" {
 					ftIn <- entry.Source
@@ -284,7 +284,7 @@ func writeEdgePages(ctx context.Context, t table.Proto, gs graphstore.Service) e
 		pesTotal int
 	)
 	if err := gs.Scan(ctx, new(spb.ScanRequest), func(e *spb.Entry) error {
-		if e.EdgeKind == "" {
+		if graphstore.IsNodeFact(e) {
 			panic("non-edge entry")
 		}
 

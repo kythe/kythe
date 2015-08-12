@@ -280,7 +280,7 @@ func scanEntries(rows *sql.Rows, f graphstore.EntryFunc) error {
 			rows.Close() // ignore errors
 			return err
 		}
-		if entry.EdgeKind == "" {
+		if graphstore.IsNodeFact(entry) {
 			entry.Target = nil
 		}
 		if err := f(entry); err == io.EOF {

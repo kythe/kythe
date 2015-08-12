@@ -148,14 +148,14 @@ func main() {
 // toTriple converts an Entry to the triple file format. Returns an error if
 // the entry is not valid.
 func toTriple(entry *spb.Entry) (*rdf.Triple, error) {
-	if entry.Source == nil || (entry.Target == nil) != (entry.EdgeKind == "") {
-		return nil, fmt.Errorf("invalid entry: %v", entry)
+	if err := graphstore.ValidEntry(entry); err != nil {
+		return nil, fmt.Errorf("invalid entry {%+v}: %v", entry, err)
 	}
 
 	t := &rdf.Triple{
 		Subject: kytheuri.FromVName(entry.Source).String(),
 	}
-	if entry.EdgeKind != "" {
+	if graphstore.IsEdge(entry) {
 		t.Predicate = entry.EdgeKind
 		t.Object = kytheuri.FromVName(entry.Target).String()
 	} else {

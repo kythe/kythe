@@ -19,6 +19,7 @@
 package graphstore
 
 import (
+	"errors"
 	"io"
 	"strings"
 
@@ -130,6 +131,28 @@ func BatchWrites(entries <-chan *spb.Entry, maxSize int) <-chan *spb.WriteReques
 	}()
 	return ch
 }
+
+// ValidEntry determines if the given Entry is correctly constructed.
+func ValidEntry(e *spb.Entry) error {
+	if e.Source == nil {
+		return errors.New("entry missing source")
+	} else if e.FactName == "" {
+		return errors.New("entry missing fact name")
+	} else if IsEdge(e) {
+		if e.Target == nil {
+			return errors.New("edge entry missing target")
+		}
+	} else if e.Target != nil {
+		return errors.New("node fact entry has extraneous target")
+	}
+	return nil
+}
+
+// IsNodeFact determines if the Entry is a node fact; implies !IsEdge(e).
+func IsNodeFact(e *spb.Entry) bool { return e.EdgeKind == "" }
+
+// IsEdge determines if the Entry describes an edge; implies !IsNodeFact(e).
+func IsEdge(e *spb.Entry) bool { return e.EdgeKind != "" }
 
 type grpcClient struct{ spb.GraphStoreClient }
 
