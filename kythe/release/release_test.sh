@@ -96,6 +96,10 @@ curl -sf $ADDR/edges -d '{"ticket": ["kythe:?lang=java#pkg.Names"]}' | \
   jq -e '(.edge_set | length) > 0'
 curl -sf $ADDR/decorations -d '{"location": {"ticket": "kythe://kythe?lang=java?path=kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/Names.java#7571dfe62c239daa2caaeed97638184533b0526f4ab16c872311c954100d11e3"}, "source_text": true, "references": true}' | \
   jq -e '(.reference | length) > 0
-     and (.node | length) > 0
+     and (.node | length) == 0
      and (.source_text | type) == "string"
      and (.source_text | length) > 0'
+curl -sf $ADDR/decorations -d '{"location": {"ticket": "kythe://kythe?lang=java?path=kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/Names.java#7571dfe62c239daa2caaeed97638184533b0526f4ab16c872311c954100d11e3"}, "references": true, "filter": ["**"]}' | \
+  jq -e '(.reference | length) > 0
+     and (.node | length) > 0
+     and (.source_text | length) == 0'

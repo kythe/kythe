@@ -23,6 +23,7 @@ import (
 
 	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/storage/inmemory"
+	"kythe.io/kythe/go/test/testutil"
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema"
 
@@ -56,7 +57,11 @@ var (
 		{sig("signature"), facts(schema.NodeKindFact, "test"), map[string][]*spb.VName{
 			schema.MirrorEdge("someEdgeKind"): {sig("sig2")},
 		}},
-		{testAnchorVName, facts(schema.NodeKindFact, schema.AnchorKind), map[string][]*spb.VName{
+		{testAnchorVName, facts(
+			schema.AnchorEndFact, "4",
+			schema.AnchorStartFact, "1",
+			schema.NodeKindFact, schema.AnchorKind,
+		), map[string][]*spb.VName{
 			schema.ChildOfEdge: {testFileVName},
 			schema.RefEdge:     {testAnchorTargetVName},
 		}},
@@ -77,8 +82,8 @@ func TestNodes(t *testing.T) {
 		t.Fatalf("Error fetching nodes for %+v: %v", nodesToTickets(testNodes), err)
 	}
 	expected := nodesToInfos(testNodes)
-	if !reflect.DeepEqual(sortInfos(reply.Node), expected) {
-		t.Errorf("Got %v; Expected %v", reply.Node, expected)
+	if err := testutil.DeepEqual(expected, sortInfos(reply.Node)); err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -114,6 +119,7 @@ func TestDecorations(t *testing.T) {
 		},
 		SourceText: true,
 		References: true,
+		Filter:     []string{"**"},
 	})
 	if err != nil {
 		t.Fatalf("Error fetching decorations for %+v: %v", testFileVName, err)
@@ -131,16 +137,25 @@ func TestDecorations(t *testing.T) {
 			SourceTicket: kytheuri.ToString(testAnchorVName),
 			TargetTicket: kytheuri.ToString(testAnchorTargetVName),
 			Kind:         schema.RefEdge,
+			AnchorStart: &xpb.Location_Point{
+				ByteOffset:   1,
+				LineNumber:   1,
+				ColumnOffset: 1,
+			},
+			AnchorEnd: &xpb.Location_Point{
+				ByteOffset:   4,
+				LineNumber:   1,
+				ColumnOffset: 4,
+			},
 		},
 	}
-	if !reflect.DeepEqual(sortRefs(reply.Reference), sortRefs(expectedRefs)) {
-		t.Errorf("Got %v; Expected references %v", reply.Reference, expectedRefs)
+	if err := testutil.DeepEqual(sortRefs(expectedRefs), sortRefs(reply.Reference)); err != nil {
+		t.Error(err)
 	}
 
-	refNodes := testNodes[4:6]
-	expectedNodes := nodesToInfos(refNodes)
-	if !reflect.DeepEqual(sortInfos(reply.Node), expectedNodes) {
-		t.Errorf("Got %v; Expected nodes %v", reply.Node, expectedNodes)
+	expectedNodes := nodesToInfos(testNodes[4:6])
+	if err := testutil.DeepEqual(expectedNodes, sortInfos(reply.Node)); err != nil {
+		t.Error(err)
 	}
 }
 

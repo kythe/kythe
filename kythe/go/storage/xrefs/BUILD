@@ -8,6 +8,7 @@ go_package(
         "//kythe/go/storage/inmemory",
         "//kythe/go/util/kytheuri",
         "//kythe/go/util/schema",
+        "//kythe/go/test/testutil",
         "//kythe/proto:storage_proto_go",
         "//kythe/proto:xref_proto_go",
         "//third_party/go:context",

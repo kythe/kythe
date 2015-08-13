@@ -18,24 +18,64 @@
 package testutil
 
 import (
+	"fmt"
 	"math/rand"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"testing"
 )
 
-func caller() (file string, line int) {
-	_, file, line, ok := runtime.Caller(2)
+func caller(up int) (file string, line int) {
+	_, file, line, ok := runtime.Caller(up + 2)
 	if !ok {
 		panic("could not get runtime.Caller")
 	}
 	return filepath.Base(file), line
 }
 
+// DeepEqual determines if expected is deeply equal to got, returning a detailed
+// error if not.
+func DeepEqual(expected, got interface{}) error {
+	et, gt := reflect.TypeOf(expected), reflect.TypeOf(got)
+	if et.Kind() == reflect.Slice && gt.Kind() == reflect.Slice {
+		return expectSliceEqual(reflect.ValueOf(expected), reflect.ValueOf(got))
+	}
+
+	if !reflect.DeepEqual(expected, got) {
+		return expectError(expected, got, "")
+	}
+	return nil
+}
+
+func expectError(expected, got interface{}, msg string, args ...interface{}) error {
+	if msg != "" {
+		msg = fmt.Sprintf(": "+msg, args...)
+	}
+
+	return fmt.Errorf("expected %v; found %v%s", expected, got, msg)
+}
+
+func expectSliceEqual(expected reflect.Value, got reflect.Value) error {
+	el, gl := expected.Len(), got.Len()
+	if el != gl {
+		return expectError(expected.Interface(), got.Interface(), "expected length: %d; found length: %d", el, gl)
+	}
+
+	for i := 0; i < el; i++ {
+		ev := expected.Index(i).Interface()
+		gv := got.Index(i).Interface()
+		if !reflect.DeepEqual(ev, gv) {
+			return expectError(expected.Interface(), got.Interface(), "values at index %d differ: expected: %v; found: %v", i, ev, gv)
+		}
+	}
+	return nil
+}
+
 // FatalOnErr calls b.Fatalf(msg, err, args...) if err != nil
 func FatalOnErr(b *testing.B, msg string, err error, args ...interface{}) {
 	if err != nil {
-		file, line := caller()
+		file, line := caller(0)
 		b.Fatalf("%s:%d: "+msg, append([]interface{}{file, line, err}, args...)...)
 	}
 }
@@ -43,7 +83,7 @@ func FatalOnErr(b *testing.B, msg string, err error, args ...interface{}) {
 // FatalOnErrT calls t.Fatalf(msg, err, args...) if err != nil
 func FatalOnErrT(t *testing.T, msg string, err error, args ...interface{}) {
 	if err != nil {
-		file, line := caller()
+		file, line := caller(0)
 		t.Fatalf("%s:%d: "+msg, append([]interface{}{file, line, err}, args...)...)
 	}
 }
@@ -51,7 +91,7 @@ func FatalOnErrT(t *testing.T, msg string, err error, args ...interface{}) {
 // Errorf calls t.Errorf(msg, err, args...) if err != nil
 func Errorf(t *testing.T, msg string, err error, args ...interface{}) {
 	if err != nil {
-		file, line := caller()
+		file, line := caller(0)
 		t.Errorf("%s:%d: "+msg, append([]interface{}{file, line, err}, args...)...)
 	}
 }

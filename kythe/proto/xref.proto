@@ -277,6 +277,12 @@ message DecorationsRequest {
   // If true, return reference edges whose source nodes are located in the
   // selected window.  References are affected by patching.
   bool references = 4;
+
+  // A collection of filter globs that specify which facts (by name) should be
+  // returned for each node.  If filter is empty or unset, no node facts are
+  // returned.  The filter applies to ALL referenced nodes.  See EdgesRequest
+  // for the format of the filter globs.
+  repeated string filter = 5;
 }
 
 message DecorationsReply {
@@ -287,20 +293,24 @@ message DecorationsReply {
   bytes source_text = 2;
   string encoding = 3;
 
-  // Represents a reference edge source ---KIND---> target.
+  // Represents a reference edge source ---KIND---> target.  Each source is an
+  // anchor within the requested source location.
   message Reference {
     string source_ticket = 1;
     string target_ticket = 2;
     string kind = 3;
 
-    // TODO(schroederc): Location anchor_location = 10;
+    // Starting byte offset of this references's anchor (source_ticket) span.
+    Location.Point anchor_start = 10;
+    // Ending byte offset of this references's anchor (source_ticket) span.
+    Location.Point anchor_end = 11;
   }
 
   // The reference edges located in the specified window.
   repeated Reference reference = 4;
 
   // This field will contain one entry for each distinct node referenced by a
-  // reference edge.
+  // reference edge that has at least 1 non-filtered fact.
   repeated NodeInfo node = 15;
 
   // TODO(fromberger): Patch diff information.

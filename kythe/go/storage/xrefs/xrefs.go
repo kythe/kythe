@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"regexp"
 	"sort"
 	"strconv"
 	"time"
@@ -145,7 +146,9 @@ func (g *GraphStoreService) Nodes(ctx context.Context, req *xpb.NodesRequest) (*
 		}); err != nil {
 			return nil, err
 		}
-		nodes = append(nodes, info)
+		if len(info.Fact) > 0 {
+			nodes = append(nodes, info)
+		}
 	}
 	return &xpb.NodesReply{Node: nodes}, nil
 }
@@ -235,7 +238,10 @@ func (g *GraphStoreService) Edges(ctx context.Context, req *xpb.EdgesRequest) (*
 		}
 
 		// Batch request all leftover target nodes
-		nodesReply, err := g.Nodes(ctx, &xpb.NodesRequest{Ticket: targetSet.Slice(), Filter: req.Filter})
+		nodesReply, err := g.Nodes(ctx, &xpb.NodesRequest{
+			Ticket: targetSet.Slice(),
+			Filter: req.Filter,
+		})
 		if err != nil {
 			return nil, fmt.Errorf("failure getting target nodes: %v", err)
 		}
@@ -263,8 +269,9 @@ func (g *GraphStoreService) Decorations(ctx context.Context, req *xpb.Decoration
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve file text: %v", err)
 	}
+	norm := xrefs.NewNormalizer(text)
 
-	loc, err := xrefs.NewNormalizer(text).Location(req.GetLocation())
+	loc, err := norm.Location(req.GetLocation())
 	if err != nil {
 		return nil, err
 	}
@@ -289,6 +296,8 @@ func (g *GraphStoreService) Decorations(ctx context.Context, req *xpb.Decoration
 		// Add []anchor and []target nodes to reply.Node
 		// Add all {anchor, forwardEdgeKind, target} tuples to reply.Reference
 
+		patterns := xrefs.ConvertFilters(req.Filter)
+
 		children, err := getEdges(ctx, g.gs, fileVName, func(e *spb.Entry) bool {
 			return e.EdgeKind == revChildOfEdgeKind
 		})
@@ -300,7 +309,9 @@ func (g *GraphStoreService) Decorations(ctx context.Context, req *xpb.Decoration
 		for _, edge := range children {
 			anchor := edge.Target
 			ticket := kytheuri.ToString(anchor)
-			anchorNodeReply, err := g.Nodes(ctx, &xpb.NodesRequest{Ticket: []string{ticket}})
+			anchorNodeReply, err := g.Nodes(ctx, &xpb.NodesRequest{
+				Ticket: []string{ticket},
+			})
 			if err != nil {
 				return nil, fmt.Errorf("failure getting reference source node: %v", err)
 			} else if len(anchorNodeReply.Node) != 1 {
@@ -313,24 +324,25 @@ func (g *GraphStoreService) Decorations(ctx context.Context, req *xpb.Decoration
 			} else if string(node[schema.NodeKindFact]) != schema.AnchorKind {
 				// Skip child if it isn't an anchor node
 				continue
-			} else if loc.Kind == xpb.Location_SPAN {
-				// Check if anchor fits within request source text window
+			}
 
-				anchorStart, err := strconv.Atoi(string(node[schema.AnchorStartFact]))
-				if err != nil {
-					log.Printf("Invalid anchor start offset %q for node %q: %v", node[schema.AnchorStartFact], ticket, err)
-					continue
-				} else if int32(anchorStart) < loc.Start.ByteOffset {
-					continue
-				}
-				anchorEnd, err := strconv.Atoi(string(node[schema.AnchorEndFact]))
-				if err != nil {
-					log.Printf("Invalid anchor end offset %q for node %q: %v", node[schema.AnchorEndFact], ticket, err)
+			anchorStart, err := strconv.Atoi(string(node[schema.AnchorStartFact]))
+			if err != nil {
+				log.Printf("Invalid anchor start offset %q for node %q: %v", node[schema.AnchorStartFact], ticket, err)
+				continue
+			}
+			anchorEnd, err := strconv.Atoi(string(node[schema.AnchorEndFact]))
+			if err != nil {
+				log.Printf("Invalid anchor end offset %q for node %q: %v", node[schema.AnchorEndFact], ticket, err)
+				continue
+			}
+
+			if loc.Kind == xpb.Location_SPAN {
+				// Check if anchor fits within requested source text window
+				if int32(anchorStart) < loc.Start.ByteOffset || int32(anchorEnd) > loc.End.ByteOffset {
 					continue
 				} else if anchorStart > anchorEnd {
 					log.Printf("Invalid anchor offset span %d:%d", anchorStart, anchorEnd)
-					continue
-				} else if int32(anchorEnd) > loc.End.ByteOffset {
 					continue
 				}
 			}
@@ -346,7 +358,9 @@ func (g *GraphStoreService) Decorations(ctx context.Context, req *xpb.Decoration
 				continue
 			}
 
-			reply.Node = append(reply.Node, anchorNodeReply.Node[0])
+			if node := filterNode(patterns, anchorNodeReply.Node[0]); node != nil {
+				reply.Node = append(reply.Node, node)
+			}
 			for _, edge := range targets {
 				targetTicket := kytheuri.ToString(edge.Target)
 				targetSet.Add(targetTicket)
@@ -354,60 +368,33 @@ func (g *GraphStoreService) Decorations(ctx context.Context, req *xpb.Decoration
 					SourceTicket: ticket,
 					Kind:         edge.Kind,
 					TargetTicket: targetTicket,
+					AnchorStart:  norm.ByteOffset(int32(anchorStart)),
+					AnchorEnd:    norm.ByteOffset(int32(anchorEnd)),
 				})
 			}
 		}
-		sortReferences(reply)
+		sort.Sort(bySpan(reply.Reference))
 
-		// Ensure returned nodes are not duplicated.
-		for _, n := range reply.Node {
-			targetSet.Remove(n.Ticket)
+		// Only request Nodes when there are fact filters given.
+		if len(req.Filter) > 0 {
+			// Ensure returned nodes are not duplicated.
+			for _, n := range reply.Node {
+				targetSet.Remove(n.Ticket)
+			}
+
+			// Batch request all Reference target nodes
+			nodesReply, err := g.Nodes(ctx, &xpb.NodesRequest{
+				Ticket: targetSet.Slice(),
+				Filter: req.Filter,
+			})
+			if err != nil {
+				return nil, fmt.Errorf("failure getting reference target nodes: %v", err)
+			}
+			reply.Node = append(reply.Node, nodesReply.Node...)
 		}
-		// Batch request all Reference target nodes
-		nodesReply, err := g.Nodes(ctx, &xpb.NodesRequest{Ticket: targetSet.Slice()})
-		if err != nil {
-			return nil, fmt.Errorf("failure getting reference target nodes: %v", err)
-		}
-		reply.Node = append(reply.Node, nodesReply.Node...)
 	}
 
 	return reply, nil
-}
-
-func sortReferences(d *xpb.DecorationsReply) {
-	refs := d.Reference
-	spans := make([]struct{ start, end int }, len(refs))
-	nodes := xrefs.NodesMap(d.Node)
-	for i, r := range refs {
-		if n, ok := nodes[r.SourceTicket]; ok {
-			// Ignore errors; 0 works fine for sorting purposes
-			start, _ := strconv.Atoi(string(n[schema.AnchorStartFact]))
-			end, _ := strconv.Atoi(string(n[schema.AnchorEndFact]))
-			spans[i] = struct{ start, end int }{start, end}
-		}
-	}
-	sort.Sort(bySpan{refs, spans})
-}
-
-type bySpan struct {
-	refs  []*xpb.DecorationsReply_Reference
-	spans []struct{ start, end int }
-}
-
-func (s bySpan) Len() int { return len(s.refs) }
-func (s bySpan) Swap(i, j int) {
-	s.refs[i], s.refs[j] = s.refs[j], s.refs[i]
-	s.spans[i], s.spans[j] = s.spans[j], s.spans[i]
-}
-func (s bySpan) Less(i, j int) bool {
-	if s.spans[i].start < s.spans[j].start {
-		return true
-	} else if s.spans[i].start > s.spans[j].start {
-		return false
-	} else if s.spans[i].end < s.spans[j].end {
-		return true
-	}
-	return false
 }
 
 var revChildOfEdgeKind = schema.MirrorEdge(schema.ChildOfEdge)
@@ -461,4 +448,47 @@ func entryToFact(entry *spb.Entry) *xpb.Fact {
 		Name:  entry.FactName,
 		Value: entry.FactValue,
 	}
+}
+
+func filterNode(patterns []*regexp.Regexp, node *xpb.NodeInfo) *xpb.NodeInfo {
+	if len(patterns) == 0 {
+		return nil
+	}
+
+	var filteredFacts []*xpb.Fact
+	for _, f := range node.Fact {
+		if xrefs.MatchesAny(f.Name, patterns) {
+			filteredFacts = append(filteredFacts, f)
+		}
+	}
+
+	if len(filteredFacts) == 0 {
+		return nil
+	}
+	return &xpb.NodeInfo{
+		Ticket: node.Ticket,
+		Fact:   filteredFacts,
+	}
+}
+
+// bySpan implements the sort.Interface, ordering by each reference's anchor
+// span.
+type bySpan []*xpb.DecorationsReply_Reference
+
+// Len implements part of the sort.Interface.
+func (s bySpan) Len() int { return len(s) }
+
+// Swap implements part of the sort.Interface.
+func (s bySpan) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
+
+// Less implements part of the sort.Interface.
+func (s bySpan) Less(i, j int) bool {
+	if s[i].AnchorStart.ByteOffset < s[j].AnchorStart.ByteOffset {
+		return true
+	} else if s[i].AnchorStart.ByteOffset > s[j].AnchorStart.ByteOffset {
+		return false
+	} else if s[i].AnchorEnd.ByteOffset < s[j].AnchorEnd.ByteOffset {
+		return true
+	}
+	return false
 }

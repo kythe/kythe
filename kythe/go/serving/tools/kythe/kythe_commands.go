@@ -258,6 +258,11 @@ var (
 					Ticket: flag.Arg(0),
 				},
 				References: true,
+				Filter: []string{
+					schema.NodeKindFact,
+					schema.SubkindFact,
+					schema.AnchorLocFilter, // TODO(schroederc): remove this backwards-compatibility fix
+				},
 			}
 			if dirtyFile != "" {
 				f, err := vfs.Open(ctx, dirtyFile)

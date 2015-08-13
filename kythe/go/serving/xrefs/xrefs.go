@@ -286,6 +286,7 @@ func (t *tableImpl) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.Edge
 		log.Panicf("pageToken+totalEdges greater than totalEdgesPossible: %d+%d > %d", pageToken, stats.total, totalEdgesPossible)
 	}
 
+	// Only request Nodes when there are fact filters given.
 	if len(req.Filter) > 0 {
 		nReply, err := t.Nodes(ctx, &xpb.NodesRequest{
 			Ticket: nodeTickets.Slice(),
@@ -355,7 +356,9 @@ func (t *tableImpl) Decorations(ctx context.Context, req *xpb.DecorationsRequest
 	if len(req.DirtyBuffer) > 0 {
 		text = req.DirtyBuffer
 	}
-	loc, err := xrefs.NewNormalizer(text).Location(req.GetLocation())
+	norm := xrefs.NewNormalizer(text)
+
+	loc, err := norm.Location(req.GetLocation())
 	if err != nil {
 		return nil, err
 	}
@@ -405,19 +408,25 @@ func (t *tableImpl) Decorations(ctx context.Context, req *xpb.DecorationsRequest
 						// anchor node in reply.Node.
 						offsetMapping[d.Anchor.Ticket] = span{start, end}
 					}
-					reply.Reference = append(reply.Reference, decorationToReference(d))
+					reply.Reference = append(reply.Reference, decorationToReference(norm, d))
 					nodeTickets.Add(d.Anchor.Ticket)
 					nodeTickets.Add(d.TargetTicket)
 				}
 			}
 		}
 
-		// Retrieve facts for all nodes referenced in the file decorations.
-		nodesReply, err := t.Nodes(ctx, &xpb.NodesRequest{Ticket: nodeTickets.Slice()})
-		if err != nil {
-			return nil, fmt.Errorf("error getting nodes: %v", err)
+		// Only request Nodes when there are fact filters given.
+		if len(req.Filter) > 0 {
+			// Retrieve facts for all nodes referenced in the file decorations.
+			nodesReply, err := t.Nodes(ctx, &xpb.NodesRequest{
+				Ticket: nodeTickets.Slice(),
+				Filter: req.Filter,
+			})
+			if err != nil {
+				return nil, fmt.Errorf("error getting nodes: %v", err)
+			}
+			reply.Node = nodesReply.Node
 		}
-		reply.Node = nodesReply.Node
 
 		// Patch anchor node facts in reply to match dirty buffer
 		if len(offsetMapping) > 0 {
@@ -441,10 +450,12 @@ func (t *tableImpl) Decorations(ctx context.Context, req *xpb.DecorationsRequest
 
 type span struct{ start, end int32 }
 
-func decorationToReference(d *srvpb.FileDecorations_Decoration) *xpb.DecorationsReply_Reference {
+func decorationToReference(norm *xrefs.Normalizer, d *srvpb.FileDecorations_Decoration) *xpb.DecorationsReply_Reference {
 	return &xpb.DecorationsReply_Reference{
 		SourceTicket: d.Anchor.Ticket,
 		TargetTicket: d.TargetTicket,
 		Kind:         d.Kind,
+		AnchorStart:  norm.ByteOffset(d.Anchor.StartOffset),
+		AnchorEnd:    norm.ByteOffset(d.Anchor.EndOffset),
 	}
 }

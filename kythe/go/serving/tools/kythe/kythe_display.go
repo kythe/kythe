@@ -141,20 +141,33 @@ func displayReferences(text []byte, decor *xpb.DecorationsReply) error {
 	for _, ref := range decor.Reference {
 		nodeKind := factValue(nodes, ref.TargetTicket, schema.NodeKindFact, "UNKNOWN")
 		subkind := factValue(nodes, ref.TargetTicket, schema.SubkindFact, "")
-		startOffset := factValue(nodes, ref.SourceTicket, schema.AnchorStartFact, "_")
-		endOffset := factValue(nodes, ref.SourceTicket, schema.AnchorEndFact, "_")
 
-		// ignore errors (locations will be 0)
-		s, _ := strconv.Atoi(startOffset)
-		e, _ := strconv.Atoi(endOffset)
+		var loc *xpb.Location
+		if ref.AnchorStart != nil && ref.AnchorEnd != nil {
+			loc = &xpb.Location{
+				Kind:  xpb.Location_SPAN,
+				Start: ref.AnchorStart,
+				End:   ref.AnchorEnd,
+			}
+		} else {
+			// TODO(schroederc): remove this backwards-compatibility branch
 
-		loc, err := norm.Location(&xpb.Location{
-			Kind:  xpb.Location_SPAN,
-			Start: &xpb.Location_Point{ByteOffset: int32(s)},
-			End:   &xpb.Location_Point{ByteOffset: int32(e)},
-		})
-		if err != nil {
-			return fmt.Errorf("error normalizing reference location for anchor %q: %v", ref.SourceTicket, err)
+			startOffset := factValue(nodes, ref.SourceTicket, schema.AnchorStartFact, "_")
+			endOffset := factValue(nodes, ref.SourceTicket, schema.AnchorEndFact, "_")
+
+			// ignore errors (locations will be 0)
+			s, _ := strconv.Atoi(startOffset)
+			e, _ := strconv.Atoi(endOffset)
+
+			var err error
+			loc, err = norm.Location(&xpb.Location{
+				Kind:  xpb.Location_SPAN,
+				Start: &xpb.Location_Point{ByteOffset: int32(s)},
+				End:   &xpb.Location_Point{ByteOffset: int32(e)},
+			})
+			if err != nil {
+				return fmt.Errorf("error normalizing reference location for anchor %q: %v", ref.SourceTicket, err)
+			}
 		}
 
 		r := strings.NewReplacer(
@@ -163,12 +176,12 @@ func displayReferences(text []byte, decor *xpb.DecorationsReply) error {
 			"@edgeKind@", ref.Kind,
 			"@nodeKind@", nodeKind,
 			"@subkind@", subkind,
-			"@^offset@", startOffset,
-			"@^line@", strconv.Itoa(int(loc.Start.LineNumber)),
-			"@^col@", strconv.Itoa(int(loc.Start.ColumnOffset)),
-			"@$offset@", endOffset,
-			"@$line@", strconv.Itoa(int(loc.End.LineNumber)),
-			"@$col@", strconv.Itoa(int(loc.End.ColumnOffset)),
+			"@^offset@", itoa(loc.Start.ByteOffset),
+			"@^line@", itoa(loc.Start.LineNumber),
+			"@^col@", itoa(loc.Start.ColumnOffset),
+			"@$offset@", itoa(loc.End.ByteOffset),
+			"@$line@", itoa(loc.End.LineNumber),
+			"@$col@", itoa(loc.End.ColumnOffset),
 		)
 		if _, err := r.WriteString(out, refFormat+"\n"); err != nil {
 			return err
@@ -177,6 +190,8 @@ func displayReferences(text []byte, decor *xpb.DecorationsReply) error {
 
 	return nil
 }
+
+func itoa(n int32) string { return strconv.Itoa(int(n)) }
 
 func displayEdges(edges *xpb.EdgesReply) error {
 	if *displayJSON {

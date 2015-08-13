@@ -83,7 +83,7 @@ func (s *store) Read(ctx context.Context, req *spb.ReadRequest, f graphstore.Ent
 	})
 	end := sort.Search(len(s.entries), func(i int) bool {
 		comp := compare.VNames(s.entries[i].Source, req.Source)
-		return comp == compare.GT || (req.EdgeKind != "*" && s.entries[i].EdgeKind > req.EdgeKind)
+		return comp == compare.GT || (comp != compare.LT && req.EdgeKind != "*" && s.entries[i].EdgeKind > req.EdgeKind)
 	})
 	for i := start; i < end; i++ {
 		if err := f(s.entries[i]); err == io.EOF {

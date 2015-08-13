@@ -2,6 +2,10 @@
 
 ## Upcoming release
 
+Notable changes:
+ - xrefs.Decorations: nodes will not be populated unless given a fact filter
+ - xrefs.Decorations: each reference has its associated anchor start/end byte offsets
+
 Notable additions:
  - dedup_stream: add `--cache_size` flag to limit memory usage
 

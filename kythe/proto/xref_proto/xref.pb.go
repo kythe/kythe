@@ -318,6 +318,11 @@ type DecorationsRequest struct {
 	// If true, return reference edges whose source nodes are located in the
 	// selected window.  References are affected by patching.
 	References bool `protobuf:"varint,4,opt,name=references" json:"references,omitempty"`
+	// A collection of filter globs that specify which facts (by name) should be
+	// returned for each node.  If filter is empty or unset, no node facts are
+	// returned.  The filter applies to ALL referenced nodes.  See EdgesRequest
+	// for the format of the filter globs.
+	Filter []string `protobuf:"bytes,5,rep,name=filter" json:"filter,omitempty"`
 }
 
 func (m *DecorationsRequest) Reset()         { *m = DecorationsRequest{} }
@@ -340,7 +345,7 @@ type DecorationsReply struct {
 	// The reference edges located in the specified window.
 	Reference []*DecorationsReply_Reference `protobuf:"bytes,4,rep,name=reference" json:"reference,omitempty"`
 	// This field will contain one entry for each distinct node referenced by a
-	// reference edge.
+	// reference edge that has at least 1 non-filtered fact.
 	Node []*NodeInfo `protobuf:"bytes,15,rep,name=node" json:"node,omitempty"`
 }
 
@@ -369,16 +374,35 @@ func (m *DecorationsReply) GetNode() []*NodeInfo {
 	return nil
 }
 
-// Represents a reference edge source ---KIND---> target.
+// Represents a reference edge source ---KIND---> target.  Each source is an
+// anchor within the requested source location.
 type DecorationsReply_Reference struct {
 	SourceTicket string `protobuf:"bytes,1,opt,name=source_ticket" json:"source_ticket,omitempty"`
 	TargetTicket string `protobuf:"bytes,2,opt,name=target_ticket" json:"target_ticket,omitempty"`
 	Kind         string `protobuf:"bytes,3,opt,name=kind" json:"kind,omitempty"`
+	// Starting byte offset of this references's anchor (source_ticket) span.
+	AnchorStart *Location_Point `protobuf:"bytes,10,opt,name=anchor_start" json:"anchor_start,omitempty"`
+	// Ending byte offset of this references's anchor (source_ticket) span.
+	AnchorEnd *Location_Point `protobuf:"bytes,11,opt,name=anchor_end" json:"anchor_end,omitempty"`
 }
 
 func (m *DecorationsReply_Reference) Reset()         { *m = DecorationsReply_Reference{} }
 func (m *DecorationsReply_Reference) String() string { return proto.CompactTextString(m) }
 func (*DecorationsReply_Reference) ProtoMessage()    {}
+
+func (m *DecorationsReply_Reference) GetAnchorStart() *Location_Point {
+	if m != nil {
+		return m.AnchorStart
+	}
+	return nil
+}
+
+func (m *DecorationsReply_Reference) GetAnchorEnd() *Location_Point {
+	if m != nil {
+		return m.AnchorEnd
+	}
+	return nil
+}
 
 func init() {
 	proto.RegisterEnum("kythe.proto.Location_Kind", Location_Kind_name, Location_Kind_value)

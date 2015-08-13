@@ -270,23 +270,15 @@ var lineEnd = []byte("\n")
 // point has all of its fields set consistently and clamped within the range
 // [0,len(text)).
 func (n *Normalizer) Point(p *xpb.Location_Point) *xpb.Location_Point {
-	np := &xpb.Location_Point{}
-
 	if p == nil {
-		return np
+		return nil
 	} else if p.ByteOffset > 0 {
-		np.ByteOffset = p.ByteOffset
-		if np.ByteOffset > n.textLen {
-			np.ByteOffset = n.textLen
-		}
-
-		np.LineNumber = int32(sort.Search(len(n.lineLen), func(i int) bool {
-			return n.prefixLen[i] > np.ByteOffset
-		}))
-		np.ColumnOffset = np.ByteOffset - n.prefixLen[np.LineNumber-1]
+		return n.ByteOffset(p.ByteOffset)
 	} else if p.LineNumber > 0 {
-		np.LineNumber = p.LineNumber
-		np.ColumnOffset = p.ColumnOffset
+		np := &xpb.Location_Point{
+			LineNumber:   p.LineNumber,
+			ColumnOffset: p.ColumnOffset,
+		}
 
 		if totalLines := int32(len(n.lineLen)); p.LineNumber > totalLines {
 			np.LineNumber = totalLines
@@ -301,9 +293,26 @@ func (n *Normalizer) Point(p *xpb.Location_Point) *xpb.Location_Point {
 		}
 
 		np.ByteOffset = n.prefixLen[np.LineNumber-1] + np.ColumnOffset
+
+		return np
 	} else {
-		np.LineNumber = 1
+		return &xpb.Location_Point{LineNumber: 1}
 	}
+}
+
+// ByteOffset returns a normalized point based on the given offset within the
+// Normalizer's text.  A normalized point has all of its fields set consistently
+// and clamped within the range [0,len(text)).
+func (n *Normalizer) ByteOffset(offset int32) *xpb.Location_Point {
+	np := &xpb.Location_Point{ByteOffset: offset}
+	if np.ByteOffset > n.textLen {
+		np.ByteOffset = n.textLen
+	}
+
+	np.LineNumber = int32(sort.Search(len(n.lineLen), func(i int) bool {
+		return n.prefixLen[i] > np.ByteOffset
+	}))
+	np.ColumnOffset = np.ByteOffset - n.prefixLen[np.LineNumber-1]
 
 	return np
 }

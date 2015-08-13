@@ -355,6 +355,7 @@ func TestDecorationsRefs(t *testing.T) {
 	reply, err := st.Decorations(ctx, &xpb.DecorationsRequest{
 		Location:   &xpb.Location{Ticket: d.FileTicket},
 		References: true,
+		Filter:     []string{"**"},
 	})
 	testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
 
@@ -365,7 +366,7 @@ func TestDecorationsRefs(t *testing.T) {
 		t.Errorf("Unexpected encoding: %q", d.Encoding)
 	}
 
-	expected := refs(d.Decoration)
+	expected := refs(xrefs.NewNormalizer(d.SourceText), d.Decoration)
 	if !reflect.DeepEqual(expected, reply.Reference) {
 		t.Fatalf("Expected references %v; found %v", expected, reply.Reference)
 	}
@@ -375,8 +376,8 @@ func TestDecorationsRefs(t *testing.T) {
 	sort.Sort(byNodeTicket(expectedNodes))
 	sort.Sort(byNodeTicket(reply.Node))
 
-	if !reflect.DeepEqual(expectedNodes, reply.Node) {
-		t.Fatalf("Expected nodes %v; found %v", expected, reply.Node)
+	if err := testutil.DeepEqual(expectedNodes, reply.Node); err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -393,6 +394,7 @@ func TestDecorationsDirtyBuffer(t *testing.T) {
 		Location:    &xpb.Location{Ticket: d.FileTicket},
 		DirtyBuffer: dirty,
 		References:  true,
+		Filter:      []string{"**"},
 	})
 	testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
 
@@ -404,10 +406,11 @@ func TestDecorationsDirtyBuffer(t *testing.T) {
 	}
 
 	p := xrefs.NewPatcher(d.SourceText, dirty)
+	norm := xrefs.NewNormalizer(dirty)
 	var expected []*xpb.DecorationsReply_Reference
 	for _, d := range d.Decoration {
 		if _, _, exists := p.Patch(d.Anchor.StartOffset, d.Anchor.EndOffset); exists {
-			expected = append(expected, ref(d))
+			expected = append(expected, decorationToReference(norm, d))
 		}
 	}
 	if !reflect.DeepEqual(expected, reply.Reference) {
@@ -555,19 +558,11 @@ func edgeSet(kinds []string, pes *srvpb.PagedEdgeSet, pages []*srvpb.EdgePage) *
 	return es
 }
 
-func refs(ds []*srvpb.FileDecorations_Decoration) (refs []*xpb.DecorationsReply_Reference) {
+func refs(norm *xrefs.Normalizer, ds []*srvpb.FileDecorations_Decoration) (refs []*xpb.DecorationsReply_Reference) {
 	for _, d := range ds {
-		refs = append(refs, ref(d))
+		refs = append(refs, decorationToReference(norm, d))
 	}
 	return
-}
-
-func ref(d *srvpb.FileDecorations_Decoration) *xpb.DecorationsReply_Reference {
-	return &xpb.DecorationsReply_Reference{
-		SourceTicket: d.Anchor.Ticket,
-		TargetTicket: d.TargetTicket,
-		Kind:         d.Kind,
-	}
 }
 
 type testTable struct {
