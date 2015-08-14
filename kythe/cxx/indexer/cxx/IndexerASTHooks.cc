@@ -2661,15 +2661,17 @@ MaybeFew<GraphObserver::NodeId>
 IndexerASTVisitor::BuildNodeIdForExpr(const clang::Expr *Expr, EmitRanges ER) {
   clang::Expr::EvalResult Result;
   GraphObserver::NodeId Id(Observer.getDefaultClaimToken());
-  llvm::raw_string_ostream Ostream(Id.Identity);
-  if (!Expr->isValueDependent() && Expr->EvaluateAsRValue(Result, Context)) {
-    // TODO(zarko): Represent constant values of any type as nodes in the
-    // graph; link ranges to them.
-    Ostream << Result.Val.getAsString(Context, Expr->getType()) << "#const";
-  } else {
-    Observer.AppendRangeToStream(
-        Ostream, RangeInCurrentContext(
-                     RangeForASTEntityFromSourceLocation(Expr->getExprLoc())));
+  {
+    llvm::raw_string_ostream Ostream(Id.Identity);
+    if (!Expr->isValueDependent() && Expr->EvaluateAsRValue(Result, Context)) {
+      // TODO(zarko): Represent constant values of any type as nodes in the
+      // graph; link ranges to them.
+      Ostream << Result.Val.getAsString(Context, Expr->getType()) << "#const";
+    } else {
+      Observer.AppendRangeToStream(
+          Ostream, RangeInCurrentContext(RangeForASTEntityFromSourceLocation(
+                       Expr->getExprLoc())));
+    }
   }
   return Id;
 }
