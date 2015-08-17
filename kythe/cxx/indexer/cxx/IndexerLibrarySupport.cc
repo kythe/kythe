@@ -156,9 +156,8 @@ GetVarDeclFlagDeclLoc(const clang::LangOptions &LO, const clang::VarDecl *Decl,
 /// returns a NodeId for the flag itself.
 /// \param VarId the NodeId for the flag's primary variable (not a _no or _nono)
 static GraphObserver::NodeId NodeIdForFlag(const GraphObserver::NodeId &VarId) {
-  GraphObserver::NodeId NewId = VarId;
-  NewId.Identity = "google/gflag#" + NewId.Identity;
-  return NewId;
+  return GraphObserver::NodeId(VarId.getToken(),
+                               "google/gflag#" + VarId.getRawIdentity());
 }
 
 void GoogleFlagsLibrarySupport::InspectVariable(

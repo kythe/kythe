@@ -258,8 +258,8 @@ IndexerPPCallbacks::BuildNodeIdForMacro(const clang::Token &Spelling,
   // location information to stably unique them. However, we must be careful
   // to select canonical paths.
   clang::SourceLocation Loc = Info.getDefinitionLoc();
-  GraphObserver::NodeId Id(Observer.getClaimTokenForLocation(Loc));
-  llvm::raw_string_ostream Ostream(Id.Identity);
+  std::string IdString;
+  llvm::raw_string_ostream Ostream(IdString);
   Ostream << BuildNameIdForMacro(Spelling);
   auto &SM = *Observer.getSourceManager();
   if (Loc.isInvalid()) {
@@ -279,7 +279,8 @@ IndexerPPCallbacks::BuildNodeIdForMacro(const clang::Token &Spelling,
     // cases should contain canonical source file information).
     Ostream << "@" << SM.getFileOffset(Loc);
   }
-  return Id;
+  return GraphObserver::NodeId(Observer.getClaimTokenForLocation(Loc),
+                               Ostream.str());
 }
 
 } // namespace kythe

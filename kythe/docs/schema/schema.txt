@@ -41,14 +41,15 @@ following rules:
     the input.
 
 Additional rules govern the generation of VNames for certain kinds of nodes,
-most notably types and <<name,names>>. These nodes are frequently used as points
+most notably <<name,names>>. These nodes are frequently used as points
 for linking together the output of discrete indexer runs and may have greater
-stability properties than may be derived using the preceding VName rules. These
-additional rules may be specified using the following functions:
+stability properties than may be derived using the preceding VName rules.
 
-  * *ID*(*edge*): the `signature` of the node at the other end of *edge*.
-    If there are multiple edges with the same kind (and ordinal), prefer one
-    consistently. For an example, see <<tapp>>.
+Absent additional rules, an indexer is permitted to encode the `signature` field
+arbitrarily, as long as the chance of this encoding causing distinct field
+values to become indistinguishable is vanishingly small. This is meant to permit
+implementations to use one-way hash functions to crunch large `signature` values
+down to manageable fingerprints.
 
 Edge kinds
 ----------
@@ -1282,9 +1283,6 @@ Brief description::
   A *talias* gives a new name to an existing type.
 Expected out-edges::
   <<aliases>>, <<named>>
-Naming convention::
-  Signature:::
-    talias(*ID*(*named*),*ID*(*aliases*))
 Notes::
   A *talias* may be virtually removed from the graph. Some languages may have
   additional reduction rules.
@@ -1304,14 +1302,10 @@ Brief description::
   A *tapp* applies a type constructor or <<abs>> to zero or more parameters.
 Expected out-edges::
   <<param>> (at least ordinal 0)
-Naming convention::
-  Signature:::
-    *ID*(*param.0*)(*ID*(*param.1*),...,*ID*(*param.N*))
 
 [kythe,C++,"Pointers are type constructors."]
 --------------------------------------------------------------------------------
 //- @"int*" ref IntPtrType
-//- @"int*" ref vname("ptr#builtin(int#builtin)",_,_,_,"c++")
 using PtrInt = int*;
 //- IntPtrType.node/kind tapp
 //- IntPtrType param.0 vname("ptr#builtin",_,_,_,"c++")
@@ -1350,9 +1344,6 @@ tnominal
 
 Brief description::
   A *tnominal* is a type that may be purely identified by its name.
-Naming convention::
-  Signature:::
-    *ID*(*named*)#t
 Expected out-edges::
   <<named>>
 Notes::
@@ -1586,14 +1577,12 @@ enum class E : int;
 using Alias = E;
 --------------------------------------------------------------------------------
 
-When spelling out the name of a $$C++$$ type, the rules for *ID*(*edge*) are
-refined as follows:
-
-  * If there are multiple possible nodes connected by *edge*, consistently
-    prefer one that has a `complete` fact set to `definition`; failing that,
-    prefer one that has a `complete` fact set to `complete`; failing that,
-    consistently prefer an arbitrary node from the *edge*-connected set
-    (see <<record>>, <<sum>>).
+When generating the name of a $$C++$$ type that requires looking down some
+edge, the following should be kept in mind. If there are multiple possible
+nodes connected by *edge*, consistently prefer one that has a `complete`
+fact set to `definition`; failing that, prefer one that has a `complete`
+fact set to `complete`; failing that, consistently prefer an arbitrary
+node from the *edge*-connected set (see <<record>>, <<sum>>).
 
 Qualifiers on types
 ^^^^^^^^^^^^^^^^^^^
@@ -1608,9 +1597,6 @@ collapses redundant qualifiers should they arise (`const const` becomes
 [kythe,C++,"Qualifiers have canonical order."]
 --------------------------------------------------------------------------------
 //- @U defines VRCAlias
-//- VRCAlias aliases vname(
-//-"volatile#builtin(restrict#builtin(const#builtin(ptr#builtin(int#builtin))))"
-//- ,_,_,_,_)
 //- VRCAlias aliases VRCInt
 using U = int * __restrict__ const volatile;
 //- @V defines AnotherAlias
@@ -1622,8 +1608,11 @@ using V = int * volatile __restrict__ const;
 --------------------------------------------------------------------------------
 #arguments -Wno-duplicate-decl-specifier
 //- @U defines CIAlias
-//- CIAlias aliases vname("const#builtin(int#builtin)",_,_,_,_)
+//- CIAlias aliases CIType
 using U = const const int;
+//- @V defines AnotherCIAlias
+//- AnotherCIAlias aliases CIType
+using V = const int;
 --------------------------------------------------------------------------------
 
 Function types

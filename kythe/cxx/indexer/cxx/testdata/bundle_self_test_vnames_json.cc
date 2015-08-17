@@ -3,6 +3,7 @@
 #include "acorpus_aroot_apath.h"
 #include "bcorpus__bpath.h"
 #include "_croot_cpath.h"
+#include "long_path.h"
 //- @main_v childof vname("","bundle","","test.cc","c++")
 #define main_v macromainv
 
@@ -23,3 +24,11 @@
 #pragma kythe_claim
 //- @c_v childof vname("","","croot","cpath.h","c++")
 #define c_v macrocv
+
+#example long_path.h
+#pragma kythe_claim
+//- @long_path_v childof vname("",
+//-     "012345678901234567890123456789012345678901234567890123456789",
+//-     "012345678901234567890123456789012345678901234567890123456789",
+//-     "012345678901234567890123456789012345678901234567890123456789", "c++")
+#define long_path_v macrolongpathv

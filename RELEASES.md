@@ -5,9 +5,11 @@
 Notable changes:
  - xrefs.Decorations: nodes will not be populated unless given a fact filter
  - xrefs.Decorations: each reference has its associated anchor start/end byte offsets
+ - Schema: loosened restrictions on VNames to permit hashing
 
 Notable additions:
  - dedup_stream: add `--cache_size` flag to limit memory usage
+ - C++ indexer: hash VNames whenever permitted to reduce output size
 
 Notable fixes:
  - write_tables: avoid deadlock in case of errors

@@ -22,6 +22,8 @@
 /// \file
 /// \brief Defines the class kythe::GraphObserver
 
+#include <openssl/sha.h> // for SHA256
+
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Basic/Specifiers.h"
@@ -33,9 +35,29 @@
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/raw_ostream.h"
 
+#include "kythe/cxx/common/json_proto.h" // for EncodeBase64
+
 namespace kythe {
 
 // TODO(zarko): Most of the documentation for this interface belongs here.
+
+// base64 has a 4:3 overhead and SHA256_DIGEST_LENGTH is 32. 32*4/3 = 42.
+constexpr size_t kSha256DigestBase64MaxEncodingLength = 42;
+
+/// \brief A one-way hash for `InString`.
+template <typename String> String CompressString(const String &InString) {
+  if (InString.size() <= kSha256DigestBase64MaxEncodingLength) {
+    return InString;
+  }
+  ::SHA256_CTX Sha;
+  ::SHA256_Init(&Sha);
+  ::SHA256_Update(&Sha,
+                  reinterpret_cast<const unsigned char *>(InString.data()),
+                  InString.size());
+  String Hash(SHA256_DIGEST_LENGTH, '\0');
+  ::SHA256_Final(reinterpret_cast<unsigned char *>(&Hash[0]), &Sha);
+  return EncodeBase64(Hash);
+}
 
 /// \brief An interface for processing elements discovered as part of a
 /// compilation unit.
@@ -75,12 +97,19 @@ public:
   /// determined by the `IndexerASTHooks` and `GraphObserver` override.
   class NodeId {
   public:
-    explicit NodeId(const ClaimToken *Token) : Token(Token) {}
+    NodeId(const ClaimToken *Token, const std::string &Identity)
+        : Token(Token), Identity(CompressString(Identity)) {}
     NodeId(const NodeId &C) { *this = C; }
     NodeId &operator=(const NodeId *C) {
       Token = C->Token;
       Identity = C->Identity;
       return *this;
+    }
+    static NodeId CreateUncompressed(const ClaimToken *Token,
+                                     const std::string &Identity) {
+      NodeId NewId(Token, "");
+      NewId.Identity = Identity;
+      return NewId;
     }
     /// \brief Returns a string representation of this `NodeId`.
     std::string ToString() const { return Identity; }
@@ -101,6 +130,10 @@ public:
     bool operator!=(const NodeId &RHS) const {
       return *Token != *RHS.Token || Identity != RHS.Identity;
     }
+    const std::string &getRawIdentity() const { return Identity; }
+    const ClaimToken *getToken() const { return Token; }
+
+  private:
     const ClaimToken *Token;
     std::string Identity;
   };
@@ -128,7 +161,7 @@ public:
     };
     /// \brief Constructs a physical `Range` for the given `clang::SourceRange`.
     Range(const clang::SourceRange &R, const ClaimToken *T)
-        : Kind(RangeKind::Physical), PhysicalRange(R), Context(T) {}
+        : Kind(RangeKind::Physical), PhysicalRange(R), Context(T, "") {}
     /// \brief Constructs a `Range` with some physical location, but specific to
     /// the context of some semantic node.
     Range(const clang::SourceRange &R, const NodeId &C)
@@ -720,30 +753,30 @@ public:
   };
 
   NodeId getNodeIdForBuiltinType(const llvm::StringRef &Spelling) override {
-    return NodeId(getDefaultClaimToken());
+    return NodeId(getDefaultClaimToken(), "");
   }
 
   NodeId nodeIdForTypeAliasNode(const NameId &AliasName,
                                 const NodeId &AliasedType) override {
-    return NodeId(getDefaultClaimToken());
+    return NodeId(getDefaultClaimToken(), "");
   }
 
   NodeId recordTypeAliasNode(const NameId &AliasName,
                              const NodeId &AliasedType) override {
-    return NodeId(getDefaultClaimToken());
+    return NodeId(getDefaultClaimToken(), "");
   }
 
   NodeId nodeIdForNominalTypeNode(const NameId &type_name) override {
-    return NodeId(getDefaultClaimToken());
+    return NodeId(getDefaultClaimToken(), "");
   }
 
   NodeId recordNominalTypeNode(const NameId &TypeName) override {
-    return NodeId(getDefaultClaimToken());
+    return NodeId(getDefaultClaimToken(), "");
   }
 
   NodeId recordTappNode(const NodeId &TyconId,
                         const std::vector<const NodeId *> &Params) override {
-    return NodeId(getDefaultClaimToken());
+    return NodeId(getDefaultClaimToken(), "");
   }
 
   const ClaimToken *getDefaultClaimToken() const override {

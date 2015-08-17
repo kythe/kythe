@@ -129,10 +129,8 @@ class KytheGraphObserver : public GraphObserver {
   }
 
   NodeId getNodeIdForBuiltinType(const llvm::StringRef &spelling) override {
-    NodeId id(getDefaultClaimToken());
-    id.Identity = spelling.str();
-    id.Identity.append("#builtin");
-    return id;
+    return NodeId::CreateUncompressed(getDefaultClaimToken(),
+                                      spelling.str() + "#builtin");
   }
 
   const ClaimToken *getDefaultClaimToken() const override {
@@ -256,7 +254,8 @@ class KytheGraphObserver : public GraphObserver {
   void set_claimant(const kythe::proto::VName &vname) { claimant_ = vname; }
 
   bool claimNode(const NodeId &NodeId) override {
-    if (const auto *token = clang::dyn_cast<KytheClaimToken>(NodeId.Token)) {
+    if (const auto *token =
+            clang::dyn_cast<KytheClaimToken>(NodeId.getToken())) {
       return token->rough_claimed();
     }
     return true;
@@ -338,7 +337,7 @@ class KytheGraphObserver : public GraphObserver {
              (std::hash<unsigned>()(
                   range.PhysicalRange.getEnd().getRawEncoding())
               << 1) ^
-             (std::hash<std::string>()(range.Context.Identity)) ^
+             (std::hash<std::string>()(range.Context.getRawIdentity())) ^
              (range.Kind == Range::RangeKind::Wraith ? 1 : 0);
     }
   };

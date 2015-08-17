@@ -12,6 +12,3 @@ using alias_alias = builtin_alias;
 //- BuiltinAlias aliases vname("int#builtin", "", "", "", "c++")
 //- BuiltinAlias named vname("builtin_alias#n", "", "", "", "c++")
 //- AliasAlias named vname("alias_alias#n", "", "", "", "c++")
-//- vname("talias(alias_alias#n,talias(builtin_alias#n,int#builtin))",
-//-     "", "", "", "c++")
-//-   aliases vname("talias(builtin_alias#n,int#builtin)", "", "", "", "c++")

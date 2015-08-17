@@ -1133,8 +1133,8 @@ bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl *Decl) {
   }
   SourceLocation DeclLoc = Decl->getLocation();
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
-  GraphObserver::NodeId BodyDeclNode(Observer.getDefaultClaimToken());
-  GraphObserver::NodeId DeclNode(Observer.getDefaultClaimToken());
+  GraphObserver::NodeId BodyDeclNode(Observer.getDefaultClaimToken(), "");
+  GraphObserver::NodeId DeclNode(Observer.getDefaultClaimToken(), "");
   const clang::ASTTemplateArgumentListInfo *ArgsAsWritten = nullptr;
   if (const auto *VTPSD =
           dyn_cast<const clang::VarTemplatePartialSpecializationDecl>(Decl)) {
@@ -1473,7 +1473,7 @@ IndexerASTVisitor::RecordTemplate(const TemplateDeclish *Decl,
   Observer.recordChildOfEdge(BodyDeclNode, DeclNode);
   Observer.recordAbsNode(DeclNode);
   for (const auto *ND : *Decl->getTemplateParameters()) {
-    GraphObserver::NodeId ParamId(Observer.getDefaultClaimToken());
+    GraphObserver::NodeId ParamId(Observer.getDefaultClaimToken(), "");
     unsigned ParamIndex = 0;
     if (const auto *TTPD = dyn_cast<clang::TemplateTypeParmDecl>(ND)) {
       ParamId = BuildNodeIdForDecl(ND);
@@ -1517,8 +1517,8 @@ bool IndexerASTVisitor::VisitRecordDecl(const clang::RecordDecl *Decl) {
 
   SourceLocation DeclLoc = Decl->getLocation();
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
-  GraphObserver::NodeId BodyDeclNode(Observer.getDefaultClaimToken());
-  GraphObserver::NodeId DeclNode(Observer.getDefaultClaimToken());
+  GraphObserver::NodeId BodyDeclNode(Observer.getDefaultClaimToken(), "");
+  GraphObserver::NodeId DeclNode(Observer.getDefaultClaimToken(), "");
   const clang::ASTTemplateArgumentListInfo *ArgsAsWritten = nullptr;
   if (const auto *CTPSD =
           dyn_cast<const clang::ClassTemplatePartialSpecializationDecl>(Decl)) {
@@ -1643,8 +1643,8 @@ IndexerASTVisitor::BuildNodeIdForCallableType(const clang::FunctionDecl *Decl) {
 }
 
 bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
-  GraphObserver::NodeId InnerNode(Observer.getDefaultClaimToken());
-  GraphObserver::NodeId OuterNode(Observer.getDefaultClaimToken());
+  GraphObserver::NodeId InnerNode(Observer.getDefaultClaimToken(), "");
+  GraphObserver::NodeId OuterNode(Observer.getDefaultClaimToken(), "");
   // There are five flavors of function (see TemplateOrSpecialization in
   // FunctionDecl).
   const clang::TemplateArgumentLoc *ArgsAsWritten = nullptr;
@@ -2237,57 +2237,55 @@ IndexerASTVisitor::BuildNodeIdForCallableDecl(const clang::Decl *Decl) {
   // for the defn of that function. A postprocessing step must determine
   // which defns are available to a given callsite based on linkage information.
   GraphObserver::NameId NameId(BuildNameIdForDecl(Decl));
-  GraphObserver::NodeId Id(Observer.getDefaultClaimToken());
-  {
-    llvm::raw_string_ostream Ostream(Id.Identity);
-    Ostream << NameId << "#";
-    // Include instantiated type variables.
-    clang::ast_type_traits::DynTypedNode CurrentNode =
-        clang::ast_type_traits::DynTypedNode::create(*Decl);
-    const clang::Decl *CurrentNodeAsDecl;
-    while (!(CurrentNodeAsDecl = CurrentNode.get<clang::Decl>()) ||
-           !isa<clang::TranslationUnitDecl>(CurrentNodeAsDecl)) {
-      IndexedParentVector IPV = getIndexedParents(CurrentNode);
-      if (IPV.empty()) {
-        break;
-      }
-      IndexedParent IP = IPV[0];
-      CurrentNode = IP.Parent;
-      if (!CurrentNodeAsDecl) {
-        continue;
-      }
-      if (const auto *TD = dyn_cast<TemplateDecl>(CurrentNodeAsDecl)) {
-        // Disambiguate type abstraction IDs from abstracted type IDs.
-        if (CurrentNodeAsDecl != Decl) {
-          Ostream << "#";
-        }
-      } else if (const auto *CTSD = dyn_cast<ClassTemplateSpecializationDecl>(
-                     CurrentNodeAsDecl)) {
-        Ostream << "#" << HashToString(SemanticHash(
-                              &CTSD->getTemplateInstantiationArgs()));
-      } else if (const auto *FD = dyn_cast<FunctionDecl>(CurrentNodeAsDecl)) {
-        if (const auto *TemplateArgs = FD->getTemplateSpecializationArgs()) {
-          Ostream << "#" << HashToString(SemanticHash(TemplateArgs));
-        }
-      } else if (const auto *VD = dyn_cast<VarTemplateSpecializationDecl>(
-                     CurrentNodeAsDecl)) {
-        Ostream << "#" << HashToString(SemanticHash(
-                              &VD->getTemplateInstantiationArgs()));
-      }
+  std::string Identity;
+  llvm::raw_string_ostream Ostream(Identity);
+  Ostream << NameId << "#";
+  // Include instantiated type variables.
+  clang::ast_type_traits::DynTypedNode CurrentNode =
+      clang::ast_type_traits::DynTypedNode::create(*Decl);
+  const clang::Decl *CurrentNodeAsDecl;
+  while (!(CurrentNodeAsDecl = CurrentNode.get<clang::Decl>()) ||
+         !isa<clang::TranslationUnitDecl>(CurrentNodeAsDecl)) {
+    IndexedParentVector IPV = getIndexedParents(CurrentNode);
+    if (IPV.empty()) {
+      break;
     }
-    if (const auto *FT = Decl->getFunctionType()) {
-      Ostream << HashToString(SemanticHash(QualType(FT, 0)));
+    IndexedParent IP = IPV[0];
+    CurrentNode = IP.Parent;
+    if (!CurrentNodeAsDecl) {
+      continue;
     }
-    Ostream << "#callable";
+    if (const auto *TD = dyn_cast<TemplateDecl>(CurrentNodeAsDecl)) {
+      // Disambiguate type abstraction IDs from abstracted type IDs.
+      if (CurrentNodeAsDecl != Decl) {
+        Ostream << "#";
+      }
+    } else if (const auto *CTSD = dyn_cast<ClassTemplateSpecializationDecl>(
+                   CurrentNodeAsDecl)) {
+      Ostream << "#" << HashToString(SemanticHash(
+                            &CTSD->getTemplateInstantiationArgs()));
+    } else if (const auto *FD = dyn_cast<FunctionDecl>(CurrentNodeAsDecl)) {
+      if (const auto *TemplateArgs = FD->getTemplateSpecializationArgs()) {
+        Ostream << "#" << HashToString(SemanticHash(TemplateArgs));
+      }
+    } else if (const auto *VD =
+                   dyn_cast<VarTemplateSpecializationDecl>(CurrentNodeAsDecl)) {
+      Ostream << "#" << HashToString(
+                            SemanticHash(&VD->getTemplateInstantiationArgs()));
+    }
   }
-  return Id;
+  if (const auto *FT = Decl->getFunctionType()) {
+    Ostream << HashToString(SemanticHash(QualType(FT, 0)));
+  }
+  Ostream << "#callable";
+  return GraphObserver::NodeId(Observer.getDefaultClaimToken(), Ostream.str());
 }
 
 GraphObserver::NodeId
 IndexerASTVisitor::BuildNodeIdForDecl(const clang::Decl *Decl, unsigned Index) {
   GraphObserver::NodeId BaseId(BuildNodeIdForDecl(Decl));
-  BaseId.Identity.append("." + std::to_string(Index));
-  return BaseId;
+  return GraphObserver::NodeId(
+      BaseId.getToken(), BaseId.getRawIdentity() + "." + std::to_string(Index));
 }
 
 GraphObserver::NodeId
@@ -2307,17 +2305,17 @@ IndexerASTVisitor::BuildNodeIdForDecl(const clang::Decl *Decl) {
   }
 
   const auto *Token = Observer.getClaimTokenForLocation(Decl->getLocation());
-  GraphObserver::NodeId Id(Token);
-  llvm::raw_string_ostream Ostream(Id.Identity);
+  std::string Identity;
+  llvm::raw_string_ostream Ostream(Identity);
   Ostream << BuildNameIdForDecl(Decl);
 
   // First, check to see if this thing is a builtin Decl. These things can
   // pick up weird declaration locations that aren't stable enough for us.
   if (const auto *FD = dyn_cast<FunctionDecl>(Decl)) {
     if (unsigned BuiltinID = FD->getBuiltinID()) {
-      Id.Token = Observer.getClaimTokenForBuiltin();
       Ostream << "#builtin";
-      Ostream.flush();
+      GraphObserver::NodeId Id(Observer.getClaimTokenForBuiltin(),
+                               Ostream.str());
       DeclToNodeId.insert(std::make_pair(Decl, Id));
       return Id;
     }
@@ -2389,14 +2387,14 @@ IndexerASTVisitor::BuildNodeIdForDecl(const clang::Decl *Decl) {
   if (const auto *Rec = dyn_cast<clang::RecordDecl>(Decl)) {
     if (Rec->getDefinition() == Rec) {
       Ostream << "#" << HashToString(SemanticHash(Rec));
-      Ostream.flush();
+      GraphObserver::NodeId Id(Token, Ostream.str());
       DeclToNodeId.insert(std::make_pair(Decl, Id));
       return Id;
     }
   } else if (const auto *Enum = dyn_cast<clang::EnumDecl>(Decl)) {
     if (Enum->getDefinition() == Enum) {
       Ostream << "#" << HashToString(SemanticHash(Enum));
-      Ostream.flush();
+      GraphObserver::NodeId Id(Token, Ostream.str());
       DeclToNodeId.insert(std::make_pair(Decl, Id));
       return Id;
     }
@@ -2404,7 +2402,7 @@ IndexerASTVisitor::BuildNodeIdForDecl(const clang::Decl *Decl) {
     if (const auto *E = dyn_cast<clang::EnumDecl>(ECD->getDeclContext())) {
       if (E->getDefinition() == E) {
         Ostream << "#" << HashToString(SemanticHash(E));
-        Ostream.flush();
+        GraphObserver::NodeId Id(Token, Ostream.str());
         DeclToNodeId.insert(std::make_pair(Decl, Id));
         return Id;
       }
@@ -2431,7 +2429,7 @@ IndexerASTVisitor::BuildNodeIdForDecl(const clang::Decl *Decl) {
   if (!Observer.AppendRangeToStream(Ostream, Range)) {
     Ostream << "invalid";
   }
-  Ostream.flush();
+  GraphObserver::NodeId Id(Token, Ostream.str());
   DeclToNodeId.insert(std::make_pair(Decl, Id));
   return Id;
 }
@@ -2550,28 +2548,27 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForDependentName(
     const clang::NestedNameSpecifierLoc &InNNSLoc,
     const clang::DeclarationName &Id, const clang::SourceLocation IdLoc,
     const MaybeFew<GraphObserver::NodeId> &Root, EmitRanges ER) {
-  GraphObserver::NodeId IdOut(Observer.getDefaultClaimToken());
   // TODO(zarko): Need a better way to generate stablish names here.
   // In particular, it would be nice if a dependent name A::B::C
   // and a dependent name A::B::D were represented as ::C and ::D off
   // of the same dependent root A::B. (Does this actually make sense,
   // though? Could A::B resolve to a different entity in each case?)
-  {
-    llvm::raw_string_ostream Ostream(IdOut.Identity);
-    Ostream << "#nns"; // Nested name specifier.
-    clang::SourceRange NNSRange(InNNSLoc.getBeginLoc(), InNNSLoc.getEndLoc());
-    auto Range = RangeInCurrentContext(NNSRange);
-    Ostream << "@";
-    if (!Observer.AppendRangeToStream(Ostream, Range)) {
-      Ostream << "invalid";
-    }
-    Ostream << "@";
-    if (!Observer.AppendRangeToStream(
-            Ostream, RangeInCurrentContext(
-                         RangeForASTEntityFromSourceLocation(IdLoc)))) {
-      Ostream << "invalid";
-    }
+  std::string Identity;
+  llvm::raw_string_ostream Ostream(Identity);
+  Ostream << "#nns"; // Nested name specifier.
+  clang::SourceRange NNSRange(InNNSLoc.getBeginLoc(), InNNSLoc.getEndLoc());
+  auto Range = RangeInCurrentContext(NNSRange);
+  Ostream << "@";
+  if (!Observer.AppendRangeToStream(Ostream, Range)) {
+    Ostream << "invalid";
   }
+  Ostream << "@";
+  if (!Observer.AppendRangeToStream(
+          Ostream,
+          RangeInCurrentContext(RangeForASTEntityFromSourceLocation(IdLoc)))) {
+    Ostream << "invalid";
+  }
+  GraphObserver::NodeId IdOut(Observer.getDefaultClaimToken(), Ostream.str());
   bool HandledRecursively = false;
   unsigned SubIdCount = 0;
   clang::NestedNameSpecifierLoc NNSLoc = InNNSLoc;
@@ -2579,7 +2576,7 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForDependentName(
     Observer.recordParamEdge(IdOut, SubIdCount++, Root.primary());
   }
   while (NNSLoc && !HandledRecursively) {
-    GraphObserver::NodeId SubId(Observer.getDefaultClaimToken());
+    GraphObserver::NodeId SubId(Observer.getDefaultClaimToken(), "");
     auto *NNS = NNSLoc.getNestedNameSpecifier();
     switch (NNS->getKind()) {
     case NestedNameSpecifier::Identifier: {
@@ -2660,20 +2657,18 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForDependentName(
 MaybeFew<GraphObserver::NodeId>
 IndexerASTVisitor::BuildNodeIdForExpr(const clang::Expr *Expr, EmitRanges ER) {
   clang::Expr::EvalResult Result;
-  GraphObserver::NodeId Id(Observer.getDefaultClaimToken());
-  {
-    llvm::raw_string_ostream Ostream(Id.Identity);
-    if (!Expr->isValueDependent() && Expr->EvaluateAsRValue(Result, Context)) {
-      // TODO(zarko): Represent constant values of any type as nodes in the
-      // graph; link ranges to them.
-      Ostream << Result.Val.getAsString(Context, Expr->getType()) << "#const";
-    } else {
-      Observer.AppendRangeToStream(
-          Ostream, RangeInCurrentContext(RangeForASTEntityFromSourceLocation(
-                       Expr->getExprLoc())));
-    }
+  std::string Identity;
+  llvm::raw_string_ostream Ostream(Identity);
+  if (!Expr->isValueDependent() && Expr->EvaluateAsRValue(Result, Context)) {
+    // TODO(zarko): Represent constant values of any type as nodes in the
+    // graph; link ranges to them.
+    Ostream << Result.Val.getAsString(Context, Expr->getType()) << "#const";
+  } else {
+    Observer.AppendRangeToStream(
+        Ostream, RangeInCurrentContext(
+                     RangeForASTEntityFromSourceLocation(Expr->getExprLoc())));
   }
-  return Id;
+  return GraphObserver::NodeId(Observer.getDefaultClaimToken(), Ostream.str());
 }
 
 // The duplication here is unfortunate, but `TemplateArgumentLoc` is

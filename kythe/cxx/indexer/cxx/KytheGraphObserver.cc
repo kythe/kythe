@@ -242,6 +242,7 @@ kythe::proto::VName KytheGraphObserver::VNameFromRange(
     signature->append("@");
     signature->append(range.Context.ToClaimedString());
   }
+  out_name.set_signature(CompressString(out_name.signature()));
   return out_name;
 }
 
@@ -396,7 +397,8 @@ VNameRef KytheGraphObserver::VNameRefFromNodeId(
     const GraphObserver::NodeId &node_id) {
   VNameRef out_ref;
   out_ref.language = llvm::StringRef(kLangCpp, 3);
-  if (const auto *token = clang::dyn_cast<KytheClaimToken>(node_id.Token)) {
+  if (const auto *token =
+          clang::dyn_cast<KytheClaimToken>(node_id.getToken())) {
     token->DecorateVName(&out_ref);
   }
   out_ref.signature = node_id.IdentityRef();
@@ -475,10 +477,8 @@ void KytheGraphObserver::recordInstEdge(const NodeId &term_id,
 
 GraphObserver::NodeId KytheGraphObserver::nodeIdForTypeAliasNode(
     const NameId &alias_name, const NodeId &aliased_type) {
-  NodeId id_out(&type_token_);
-  id_out.Identity = "talias(" + alias_name.ToString() + "," +
-                    aliased_type.ToClaimedString() + ")";
-  return id_out;
+  return NodeId(&type_token_, "talias(" + alias_name.ToString() + "," +
+                                  aliased_type.ToClaimedString() + ")");
 }
 
 GraphObserver::NodeId KytheGraphObserver::recordTypeAliasNode(
@@ -526,12 +526,10 @@ void KytheGraphObserver::recordNamedEdge(const NodeId &node,
 
 GraphObserver::NodeId KytheGraphObserver::nodeIdForNominalTypeNode(
     const NameId &name_id) {
-  NodeId id_out(&type_token_);
   // Appending #t to a name produces the VName signature of the nominal
   // type node referring to that name. For example, the VName for a
   // forward-declared class type will look like "C#c#t".
-  id_out.Identity = name_id.ToString() + "#t";
-  return id_out;
+  return NodeId(&type_token_, name_id.ToString() + "#t");
 }
 
 GraphObserver::NodeId KytheGraphObserver::recordNominalTypeNode(
@@ -548,7 +546,6 @@ GraphObserver::NodeId KytheGraphObserver::recordNominalTypeNode(
 
 GraphObserver::NodeId KytheGraphObserver::recordTappNode(
     const NodeId &tycon_id, const std::vector<const NodeId *> &params) {
-  GraphObserver::NodeId id_out(&type_token_);
   // We can't just use juxtaposition here because it leads to ambiguity
   // as we can't assume that we have kind information, eg
   //   foo bar baz
@@ -556,17 +553,20 @@ GraphObserver::NodeId KytheGraphObserver::recordTappNode(
   //   foo (bar baz)
   // We'll turn it into a C-style function application:
   //   foo(bar,baz) || foo(bar(baz))
+  std::string identity;
+  llvm::raw_string_ostream ostream(identity);
   bool comma = false;
-  id_out.Identity = tycon_id.ToClaimedString();
-  id_out.Identity.append("(");
+  ostream << tycon_id.ToClaimedString();
+  ostream << "(";
   for (const auto *next_id : params) {
     if (comma) {
-      id_out.Identity.append(",");
+      ostream << ",";
     }
-    id_out.Identity.append(next_id->ToClaimedString());
+    ostream << next_id->ToClaimedString();
     comma = true;
   }
-  id_out.Identity.append(")");
+  ostream << ")";
+  GraphObserver::NodeId id_out(&type_token_, ostream.str());
   if (written_types_.insert(id_out.ToClaimedString()).second) {
     VNameRef tapp_vname(VNameRefFromNodeId(id_out));
     recorder_->AddProperty(tapp_vname, NodeKindID::kTApp);
