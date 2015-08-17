@@ -30,6 +30,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/storage/table"
@@ -44,9 +45,21 @@ import (
 	"golang.org/x/net/context"
 )
 
+type nodeResult struct {
+	Node *srvpb.Node
+
+	Err error
+}
+
+type edgeSetResult struct {
+	PagedEdgeSet *srvpb.PagedEdgeSet
+
+	Err error
+}
+
 type staticLookupTables interface {
-	node(ctx context.Context, ticket string) (*srvpb.Node, error)
-	pagedEdgeSet(ctx context.Context, ticket string) (*srvpb.PagedEdgeSet, error)
+	nodes(ctx context.Context, tickets []string) (<-chan nodeResult, error)
+	pagedEdgeSets(ctx context.Context, tickets []string) (<-chan edgeSetResult, error)
 	edgePage(ctx context.Context, key string) (*srvpb.EdgePage, error)
 	fileDecorations(ctx context.Context, ticket string) (*srvpb.FileDecorations, error)
 }
@@ -55,10 +68,10 @@ type staticLookupTables interface {
 // lookup tables for each API component.
 type SplitTable struct {
 	// Nodes is a table of srvpb.Nodes keyed by their tickets.
-	Nodes table.Proto
+	Nodes table.ProtoBatch
 
 	// Edges is a table of srvpb.PagedEdgeSets keyed by their source tickets.
-	Edges table.Proto
+	Edges table.ProtoBatch
 
 	// EdgePages is a table of srvpb.EdgePages keyed by their page keys.
 	EdgePages table.Proto
@@ -68,26 +81,79 @@ type SplitTable struct {
 	Decorations table.Proto
 }
 
-func (s *SplitTable) node(ctx context.Context, ticket string) (*srvpb.Node, error) {
-	var n srvpb.Node
-	err := s.Nodes.Lookup(ctx, []byte(ticket), &n)
-	return &n, err
-}
-func (s *SplitTable) pagedEdgeSet(ctx context.Context, ticket string) (*srvpb.PagedEdgeSet, error) {
-	var pes srvpb.PagedEdgeSet
-	err := s.Edges.Lookup(ctx, []byte(ticket), &pes)
-	return &pes, err
+func lookupNodes(ctx context.Context, tbl table.ProtoBatch, keys [][]byte) (<-chan nodeResult, error) {
+	rs, err := tbl.LookupBatch(ctx, keys, (*srvpb.Node)(nil))
+	if err != nil {
+		return nil, err
+	}
+	ch := make(chan nodeResult)
+	go func() {
+		defer close(ch)
+		for r := range rs {
+			if r.Err == table.ErrNoSuchKey {
+				ch <- nodeResult{Err: r.Err}
+				continue
+			} else if r.Err != nil {
+				ticket := strings.TrimPrefix(string(r.Key), nodesTablePrefix)
+				ch <- nodeResult{
+					Err: fmt.Errorf("lookup error for node %q: %v", ticket, r.Err),
+				}
+				continue
+			}
+
+			ch <- nodeResult{Node: r.Value.(*srvpb.Node)}
+		}
+	}()
+	return ch, nil
 }
 
+func lookupPagedEdgeSets(ctx context.Context, tbl table.ProtoBatch, keys [][]byte) (<-chan edgeSetResult, error) {
+	rs, err := tbl.LookupBatch(ctx, keys, (*srvpb.PagedEdgeSet)(nil))
+	if err != nil {
+		return nil, err
+	}
+	ch := make(chan edgeSetResult)
+	go func() {
+		defer close(ch)
+		for r := range rs {
+			if r.Err == table.ErrNoSuchKey {
+				ch <- edgeSetResult{Err: r.Err}
+				continue
+			} else if r.Err != nil {
+				ticket := strings.TrimPrefix(string(r.Key), edgeSetsTablePrefix)
+				ch <- edgeSetResult{
+					Err: fmt.Errorf("lookup error for node edges %q: %v", ticket, r.Err),
+				}
+				continue
+			}
+
+			ch <- edgeSetResult{PagedEdgeSet: r.Value.(*srvpb.PagedEdgeSet)}
+		}
+	}()
+	return ch, nil
+}
+
+func toKeys(ss []string) [][]byte {
+	keys := make([][]byte, len(ss), len(ss))
+	for i, s := range ss {
+		keys[i] = []byte(s)
+	}
+	return keys
+}
+
+func (s *SplitTable) nodes(ctx context.Context, tickets []string) (<-chan nodeResult, error) {
+	return lookupNodes(ctx, s.Nodes, toKeys(tickets))
+}
+func (s *SplitTable) pagedEdgeSets(ctx context.Context, tickets []string) (<-chan edgeSetResult, error) {
+	return lookupPagedEdgeSets(ctx, s.Edges, toKeys(tickets))
+}
 func (s *SplitTable) edgePage(ctx context.Context, key string) (*srvpb.EdgePage, error) {
 	var ep srvpb.EdgePage
-	err := s.EdgePages.Lookup(ctx, []byte(key), &ep)
-	return &ep, err
+	return &ep, s.EdgePages.Lookup(ctx, []byte(key), &ep)
 }
 func (s *SplitTable) fileDecorations(ctx context.Context, ticket string) (*srvpb.FileDecorations, error) {
 	var fd srvpb.FileDecorations
-	err := s.Decorations.Lookup(ctx, []byte(ticket), &fd)
-	return &fd, err
+	return &fd, s.Decorations.Lookup(ctx, []byte(ticket), &fd)
 }
 
 // Key prefixed for the combinedTable implementation.
@@ -98,27 +164,29 @@ const (
 	edgePagesTablePrefix = "edgePages:"
 )
 
-type combinedTable struct{ table.Proto }
+type combinedTable struct{ table.ProtoBatch }
 
-func (c *combinedTable) node(ctx context.Context, ticket string) (*srvpb.Node, error) {
-	var n srvpb.Node
-	err := c.Lookup(ctx, NodeKey(ticket), &n)
-	return &n, err
+func (c *combinedTable) nodes(ctx context.Context, tickets []string) (<-chan nodeResult, error) {
+	keys := make([][]byte, len(tickets), len(tickets))
+	for i, ticket := range tickets {
+		keys[i] = NodeKey(ticket)
+	}
+	return lookupNodes(ctx, c, keys)
 }
-func (c *combinedTable) pagedEdgeSet(ctx context.Context, ticket string) (*srvpb.PagedEdgeSet, error) {
-	var pes srvpb.PagedEdgeSet
-	err := c.Lookup(ctx, EdgeSetKey(ticket), &pes)
-	return &pes, err
+func (c *combinedTable) pagedEdgeSets(ctx context.Context, tickets []string) (<-chan edgeSetResult, error) {
+	keys := make([][]byte, len(tickets), len(tickets))
+	for i, ticket := range tickets {
+		keys[i] = EdgeSetKey(ticket)
+	}
+	return lookupPagedEdgeSets(ctx, c, keys)
 }
 func (c *combinedTable) edgePage(ctx context.Context, key string) (*srvpb.EdgePage, error) {
 	var ep srvpb.EdgePage
-	err := c.Lookup(ctx, EdgePageKey(key), &ep)
-	return &ep, err
+	return &ep, c.Lookup(ctx, EdgePageKey(key), &ep)
 }
 func (c *combinedTable) fileDecorations(ctx context.Context, ticket string) (*srvpb.FileDecorations, error) {
 	var fd srvpb.FileDecorations
-	err := c.Lookup(ctx, DecorationsKey(ticket), &fd)
-	return &fd, err
+	return &fd, c.Lookup(ctx, DecorationsKey(ticket), &fd)
 }
 
 // NewSplitTable returns an xrefs.Service based on the given serving tables for
@@ -128,7 +196,7 @@ func NewSplitTable(c *SplitTable) xrefs.Service { return &tableImpl{c} }
 // NewCombinedTable returns an xrefs.Service for the given combined xrefs
 // serving table.  The table's keys are expected to be constructed using only
 // the NodeKey, EdgeSetKey, EdgePageKey, and DecorationsKey functions.
-func NewCombinedTable(t table.Proto) xrefs.Service { return &tableImpl{&combinedTable{t}} }
+func NewCombinedTable(t table.ProtoBatch) xrefs.Service { return &tableImpl{&combinedTable{t}} }
 
 // NodeKey returns the nodes CombinedTable key for the given ticket.
 func NodeKey(ticket string) []byte {
@@ -152,27 +220,47 @@ func DecorationsKey(ticket string) []byte {
 }
 
 // tableImpl implements the xrefs Service interface using static lookup tables.
-// TODO(schroederc): parallelize multiple lookup requests
 type tableImpl struct{ staticLookupTables }
 
-// Nodes implements part of the xrefs Service interface.
-func (t *tableImpl) Nodes(ctx context.Context, req *xpb.NodesRequest) (*xpb.NodesReply, error) {
-	reply := &xpb.NodesReply{}
-	patterns := xrefs.ConvertFilters(req.Filter)
-	for _, rawTicket := range req.Ticket {
+func fixTickets(rawTickets []string) ([]string, error) {
+	if len(rawTickets) == 0 {
+		return nil, errors.New("no tickets specified")
+	}
+
+	var tickets []string
+	for _, rawTicket := range rawTickets {
 		ticket, err := kytheuri.Fix(rawTicket)
 		if err != nil {
 			return nil, fmt.Errorf("invalid ticket %q: %v", rawTicket, err)
 		}
+		tickets = append(tickets, ticket)
+	}
+	return tickets, nil
+}
 
-		n, err := t.node(ctx, ticket)
-		if err == table.ErrNoSuchKey {
+// Nodes implements part of the xrefs Service interface.
+func (t *tableImpl) Nodes(ctx context.Context, req *xpb.NodesRequest) (*xpb.NodesReply, error) {
+	tickets, err := fixTickets(req.Ticket)
+	if err != nil {
+		return nil, err
+	}
+
+	rs, err := t.nodes(ctx, tickets)
+	if err != nil {
+		return nil, err
+	}
+
+	reply := &xpb.NodesReply{}
+	patterns := xrefs.ConvertFilters(req.Filter)
+
+	for r := range rs {
+		if r.Err == table.ErrNoSuchKey {
 			continue
-		} else if err != nil {
-			return nil, fmt.Errorf("lookup error for node %q: %v", ticket, err)
+		} else if r.Err != nil {
+			return nil, r.Err
 		}
-		ni := &xpb.NodeInfo{Ticket: n.Ticket}
-		for _, fact := range n.Fact {
+		ni := &xpb.NodeInfo{Ticket: r.Node.Ticket}
+		for _, fact := range r.Node.Fact {
 			if len(patterns) == 0 || xrefs.MatchesAny(fact.Name, patterns) {
 				ni.Fact = append(ni.Fact, &xpb.Fact{Name: fact.Name, Value: fact.Value})
 			}
@@ -191,9 +279,11 @@ const (
 
 // Edges implements part of the xrefs Service interface.
 func (t *tableImpl) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
-	if len(req.Ticket) == 0 {
-		return nil, errors.New("no tickets specified")
+	tickets, err := fixTickets(req.Ticket)
+	if err != nil {
+		return nil, err
 	}
+
 	stats := filterStats{
 		max: int(req.PageSize),
 	}
@@ -223,19 +313,20 @@ func (t *tableImpl) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.Edge
 	allowedKinds := stringset.New(req.Kind...)
 	nodeTickets := stringset.New()
 
-	reply := &xpb.EdgesReply{}
-	for _, rawTicket := range req.Ticket {
-		ticket, err := kytheuri.Fix(rawTicket)
-		if err != nil {
-			return nil, fmt.Errorf("invalid ticket %q: %v", rawTicket, err)
-		}
+	rs, err := t.pagedEdgeSets(ctx, tickets)
+	if err != nil {
+		return nil, err
+	}
 
-		pes, err := t.pagedEdgeSet(ctx, ticket)
-		if err == table.ErrNoSuchKey {
+	reply := &xpb.EdgesReply{}
+	for r := range rs {
+		if r.Err == table.ErrNoSuchKey {
 			continue
-		} else if err != nil {
-			return nil, fmt.Errorf("lookup error for node edges %q: %v", ticket, err)
+		} else if r.Err != nil {
+			return nil, r.Err
 		}
+		pes := r.PagedEdgeSet
+		ticket := pes.EdgeSet.SourceTicket
 		totalEdgesPossible += int(pes.TotalEdges)
 
 		var groups []*xpb.EdgeSet_Group
@@ -287,7 +378,7 @@ func (t *tableImpl) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.Edge
 	}
 
 	// Only request Nodes when there are fact filters given.
-	if len(req.Filter) > 0 {
+	if len(req.Filter) > 0 && len(nodeTickets) > 0 {
 		nReply, err := t.Nodes(ctx, &xpb.NodesRequest{
 			Ticket: nodeTickets.Slice(),
 			Filter: req.Filter,
@@ -416,7 +507,7 @@ func (t *tableImpl) Decorations(ctx context.Context, req *xpb.DecorationsRequest
 		}
 
 		// Only request Nodes when there are fact filters given.
-		if len(req.Filter) > 0 {
+		if len(req.Filter) > 0 && len(nodeTickets) > 0 {
 			// Retrieve facts for all nodes referenced in the file decorations.
 			nodesReply, err := t.Nodes(ctx, &xpb.NodesRequest{
 				Ticket: nodeTickets.Slice(),

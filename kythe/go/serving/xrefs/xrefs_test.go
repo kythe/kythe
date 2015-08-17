@@ -586,7 +586,7 @@ func (tbl *testTable) Construct(t *testing.T) xrefs.Service {
 	for _, d := range tbl.Decorations {
 		testutil.FatalOnErrT(t, "Error writing file decorations: %v", p.Put(ctx, DecorationsKey(mustFix(t, d.FileTicket)), d))
 	}
-	return NewCombinedTable(p)
+	return NewCombinedTable(table.ProtoBatchParallel{p})
 }
 
 func mustFix(t *testing.T, ticket string) string {

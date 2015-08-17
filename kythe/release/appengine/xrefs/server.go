@@ -51,7 +51,7 @@ func main() {
 		log.Fatalf("Error opening db at %q: %v", *servingTable, err)
 	}
 	defer db.Close()
-	tbl := &table.KVProto{db}
+	tbl := table.ProtoBatchParallel{&table.KVProto{db}}
 
 	ctx := context.Background()
 	xrefs.RegisterHTTPHandlers(ctx, xsrv.NewCombinedTable(tbl), http.DefaultServeMux)

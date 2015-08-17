@@ -52,7 +52,7 @@ import (
 // graphstore.Service.
 func Run(ctx context.Context, gs graphstore.Service, db keyvalue.DB) error {
 	log.Println("Starting serving pipeline")
-	tbl := &table.KVProto{db}
+	tbl := table.ProtoBatchParallel{&table.KVProto{db}}
 
 	// TODO(schroederc): for large corpora, this won't fit in memory
 	var files []string

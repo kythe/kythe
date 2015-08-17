@@ -23,14 +23,14 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"reflect"
+	"sync"
 
 	"kythe.io/kythe/go/storage/keyvalue"
 
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
 )
-
-// TODO add Contexts
 
 // Proto is a key-value direct lookup table with protobuf values.
 type Proto interface {
@@ -43,6 +43,54 @@ type Proto interface {
 
 	// Close release the underlying resources for the table.
 	Close(context.Context) error
+}
+
+// ProtoResult is a result for a single key given to a LookupBatch call.
+type ProtoResult struct {
+	Key   []byte
+	Value proto.Message
+	Err   error
+}
+
+// ProtoBatch is a key-value lookup table with batch retrieval.
+type ProtoBatch interface {
+	Proto
+
+	// LookupBatch retrieves the values for the given slice of keys, unmarshaling
+	// each value into a new proto.Message of the same type as msg, and sending it
+	// as a ProtoResult to the returned channel.
+	LookupBatch(ctx context.Context, keys [][]byte, msg proto.Message) (<-chan ProtoResult, error)
+}
+
+// ProtoBatchParallel implements the ProtoBatch interface by parallelizing calls
+// to Lookup.
+type ProtoBatchParallel struct{ Proto }
+
+// LookupBatch implements the ProtoBatch interface.
+func (p ProtoBatchParallel) LookupBatch(ctx context.Context, keys [][]byte, msg proto.Message) (<-chan ProtoResult, error) {
+	typ := reflect.TypeOf(msg)
+	if typ.Kind() == reflect.Ptr {
+		typ = typ.Elem()
+	}
+	ch := make(chan ProtoResult, len(keys))
+
+	var wg sync.WaitGroup
+	wg.Add(len(keys))
+	for _, key := range keys {
+		go func(key []byte) {
+			msg := reflect.New(typ).Interface().(proto.Message)
+			err := p.Lookup(ctx, key, msg)
+			ch <- ProtoResult{Key: key, Value: msg, Err: err}
+			wg.Done()
+		}(key)
+	}
+
+	go func() {
+		wg.Wait()
+		close(ch)
+	}()
+
+	return ch, nil
 }
 
 // Inverted is an inverted index lookup table for []byte values with associated
