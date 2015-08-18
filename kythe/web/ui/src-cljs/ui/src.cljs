@@ -17,7 +17,6 @@
             [goog.crypt.base64 :as b64]
             [om.core :as om :include-macros true]
             [om.dom :as dom :include-macros true]
-            [ui.schema :as schema]
             [ui.service :as service]
             [ui.util :refer [fix-encoding handle-ch]]))
 
@@ -78,37 +77,22 @@
                   overlaps
                   (conj overlaps leftover)))))
 
-(defn- facts->map
-  "Converts the service NodeInfo into a map from fact name to value"
-  [facts]
-  (into {} (map (fn [f] [(:name f) (b64/decodeString (:value f))]) facts)))
-
 (defn- count-lines [text] (count (.split text "\n")))
 
 (defn construct-decorations
   "Returns a seq of precomputed text/anchors to display as the source-text"
   [decorations]
   (let [src (b64/decodeString (:source_text decorations))
-        nodes (into {}
-                (map (fn [{ticket :ticket
-                           facts :fact}]
-                       [ticket (facts->map facts)])
-                  (:node decorations)))
-        refs (into {}
-               (map (fn [{:keys [source_ticket target_ticket kind]}]
-                      [source_ticket {:kind kind :ticket target_ticket}])
-                 (:reference decorations)))
         anchors (mapcat overlay-anchors
                   (group-overlapping-anchors
                     (filter (fn [{:keys [:start :end]}]
                               (and start end (< start end)))
-                      (map (fn [[ticket {start schema/anchor-start
-                                         end schema/anchor-end}]]
-                             {:start (js/parseInt start)
-                              :end (js/parseInt end)
-                              :anchor-ticket ticket
-                              :target-ticket (:ticket (get refs ticket))})
-                        (schema/filter-nodes-by-kind "anchor" nodes)))))]
+                      (map (fn [{:keys [source_ticket target_ticket anchor_start anchor_end]}]
+                             {:start (:byte_offset anchor_start)
+                              :end (:byte_offset anchor_end)
+                              :anchor-ticket source_ticket
+                              :target-ticket target_ticket})
+                        (:reference decorations)))))]
     {:source-text src
      :num-lines (count-lines src)
      :nodes
