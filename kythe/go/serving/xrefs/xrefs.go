@@ -122,7 +122,7 @@ func lookupPagedEdgeSets(ctx context.Context, tbl table.ProtoBatch, keys [][]byt
 			} else if r.Err != nil {
 				ticket := strings.TrimPrefix(string(r.Key), edgeSetsTablePrefix)
 				ch <- edgeSetResult{
-					Err: fmt.Errorf("lookup error for node edges %q: %v", ticket, r.Err),
+					Err: fmt.Errorf("edges lookup error (ticket %q): %v", ticket, r.Err),
 				}
 				continue
 			}
@@ -249,6 +249,11 @@ func (t *tableImpl) Nodes(ctx context.Context, req *xpb.NodesRequest) (*xpb.Node
 	if err != nil {
 		return nil, err
 	}
+	defer func() {
+		// drain channel in case of errors
+		for _ = range rs {
+		}
+	}()
 
 	reply := &xpb.NodesReply{}
 	patterns := xrefs.ConvertFilters(req.Filter)
@@ -317,6 +322,11 @@ func (t *tableImpl) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.Edge
 	if err != nil {
 		return nil, err
 	}
+	defer func() {
+		// drain channel in case of errors or early return
+		for _ = range rs {
+		}
+	}()
 
 	reply := &xpb.EdgesReply{}
 	for r := range rs {
@@ -326,7 +336,6 @@ func (t *tableImpl) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.Edge
 			return nil, r.Err
 		}
 		pes := r.PagedEdgeSet
-		ticket := pes.EdgeSet.SourceTicket
 		totalEdgesPossible += int(pes.TotalEdges)
 
 		var groups []*xpb.EdgeSet_Group
@@ -345,11 +354,17 @@ func (t *tableImpl) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.Edge
 
 		for _, idx := range pes.PageIndex {
 			if len(allowedKinds) == 0 || allowedKinds.Contains(idx.EdgeKind) {
+				if stats.skipPage(idx) {
+					log.Printf("Skipping EdgePage: %s", idx.PageKey)
+					continue
+				}
+
+				log.Printf("Retrieving EdgePage: %s", idx.PageKey)
 				ep, err := t.edgePage(ctx, idx.PageKey)
 				if err == table.ErrNoSuchKey {
 					return nil, fmt.Errorf("missing edge page: %q", idx.PageKey)
 				} else if err != nil {
-					return nil, fmt.Errorf("lookup error for node edges %q: %v", ticket, err)
+					return nil, fmt.Errorf("edge page lookup error (page key: %q): %v", idx.PageKey, err)
 				}
 
 				ng := stats.filter(ep.EdgesGroup)
@@ -402,6 +417,14 @@ func (t *tableImpl) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.Edge
 
 type filterStats struct {
 	skip, total, max int
+}
+
+func (s *filterStats) skipPage(idx *srvpb.PageIndex) bool {
+	if int(idx.EdgeCount) <= s.skip {
+		s.skip -= int(idx.EdgeCount)
+		return true
+	}
+	return false
 }
 
 func (s *filterStats) filter(g *srvpb.EdgeSet_Group) *xpb.EdgeSet_Group {
