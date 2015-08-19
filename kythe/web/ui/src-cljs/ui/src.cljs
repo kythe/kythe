@@ -17,6 +17,7 @@
             [goog.crypt.base64 :as b64]
             [om.core :as om :include-macros true]
             [om.dom :as dom :include-macros true]
+            [ui.schema :as schema]
             [ui.service :as service]
             [ui.util :refer [fix-encoding handle-ch]]))
 
@@ -87,9 +88,10 @@
                   (group-overlapping-anchors
                     (filter (fn [{:keys [:start :end]}]
                               (and start end (< start end)))
-                      (map (fn [{:keys [source_ticket target_ticket anchor_start anchor_end]}]
+                      (map (fn [{:keys [source_ticket target_ticket anchor_start anchor_end kind]}]
                              {:start (:byte_offset anchor_start)
                               :end (:byte_offset anchor_end)
+                              :kind (schema/trim-edge-prefix kind)
                               :anchor-ticket source_ticket
                               :target-ticket target_ticket})
                         (:reference decorations)))))]
@@ -116,9 +118,9 @@
   (reify
     om/IRenderState
     (render-state [_ {:keys [xrefs-to-view hover]}]
-      (let [{:keys [:start :end :anchor-ticket :target-ticket :text :background]} state]
+      (let [{:keys [start end anchor-ticket target-ticket kind text background]} state]
         (if anchor-ticket
-          (dom/a #js {:title target-ticket
+          (dom/a #js {:title (str kind " => " target-ticket)
                       :href "#"
                       :onClick (fn [e]
                                  (put! xrefs-to-view target-ticket)

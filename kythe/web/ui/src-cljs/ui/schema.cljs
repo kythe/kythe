@@ -13,12 +13,19 @@
 ;; limitations under the License.
 (ns ui.schema)
 
-(def node-kind-fact "/kythe/node/kind")
+(def ^:const edge-prefix "/kythe/edge/")
 
-(def anchor-loc-filter "/kythe/loc/*")
-(def anchor-start "/kythe/loc/start")
-(def anchor-end "/kythe/loc/end")
+(defn trim-edge-prefix [kind]
+  (if (= 0 (.indexOf kind edge-prefix))
+    (subs kind (count edge-prefix))
+    kind))
 
-(def text-fact "/kythe/text")
+(def ^:const node-kind-fact "/kythe/node/kind")
 
-(def childof-edge "/kythe/edge/childof")
+(def ^:const anchor-loc-filter "/kythe/loc/*")
+(def ^:const anchor-start "/kythe/loc/start")
+(def ^:const anchor-end "/kythe/loc/end")
+
+(def ^:const text-fact "/kythe/text")
+
+(def ^:const childof-edge "/kythe/edge/childof")
