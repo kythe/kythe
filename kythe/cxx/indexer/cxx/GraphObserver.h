@@ -89,6 +89,22 @@ public:
     virtual bool operator!=(const ClaimToken &RHS) const = 0;
   };
 
+  /// \brief Takes care of balancing calls to `Delimit` and `Undelimit`.
+  class Delimiter {
+  public:
+    Delimiter(GraphObserver &Self) : S(Self) { S.Delimit(); }
+    ~Delimiter() { S.Undelimit(); }
+
+  private:
+    GraphObserver &S;
+  };
+
+  /// \brief Push another group onto the group stack, assigning
+  /// any observations that follow to it.
+  virtual void Delimit() {}
+  /// \brief Pop the last group from the group stack.
+  virtual void Undelimit() {}
+
   /// \brief The identifier for an object in the graph being observed.
   ///
   /// A node is identified uniquely in the graph by its `Token`, which

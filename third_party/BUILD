@@ -61,3 +61,9 @@ cc_library(
     srcs = ["empty.cc"],
     linkopts = ["-lcrypto"],
 )
+
+cc_library(
+    name = "libmemcached",
+    srcs = ["empty.cc"],
+    linkopts = ["-lmemcached"],
+)

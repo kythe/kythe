@@ -128,17 +128,16 @@ class KytheGraphRecorder {
   /// \param node_vname The vname of the node to modify.
   /// \param property_id The `PropertyID` of the property to record.
   /// \param property_value The value of the property to set.
-  /// \pre `BeginNode` has been called, but a matching call to `EndNode` has not
-  /// yet been made.
-  /// \sa BeginNode, EndNode
   void AddProperty(const VNameRef &node_vname, PropertyID property_id,
                    const std::string &property_value);
 
-  /// \copydoc KytheGraphRecorder::AddProperty(const VNameRef&,PropertyID,std::string&)
+  /// \copydoc KytheGraphRecorder::AddProperty(const
+  /// VNameRef&,PropertyID,std::string&)
   void AddProperty(const VNameRef &node_vname, PropertyID property_id,
                    size_t property_value);
 
-  /// \copydoc KytheGraphRecorder::AddProperty(const VNameRef&,PropertyID,std::string&)
+  /// \copydoc KytheGraphRecorder::AddProperty(const
+  /// VNameRef&,PropertyID,std::string&)
   void AddProperty(const VNameRef &node_vname, NodeKindID node_kind_value) {
     AddProperty(node_vname, PropertyID::kNodeKind,
                 spelling_of(node_kind_value));
@@ -166,6 +165,16 @@ class KytheGraphRecorder {
   /// \param file_content The buffer of this file's content.
   void AddFileContent(const VNameRef &file_vname,
                       const llvm::StringRef &file_content);
+
+  /// \brief Stop using the last entry group pushed to the stack.
+  void PopEntryGroup() { stream_->PopBuffer(); }
+
+  /// \brief Push a new entry group to the group stack.
+  ///
+  /// Subsequent entries and groups will be attributed to this group.
+  /// Various output stream policies determine when a group is ready to be
+  /// released. Every PushEntryGroup should be paired with a PopEntryGroup.
+  void PushEntryGroup() { stream_->PushBuffer(); }
 
  private:
   /// The `KytheOutputStream` to which new graph elements are written.

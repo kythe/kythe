@@ -198,6 +198,7 @@ public:
 /// \param Files A vector of files to read from. May be modified if the Unit
 /// does not contain a proper header search table.
 /// \param ClaimClient The claim client to use.
+/// \param Cache The hash cache to use, or nullptr if none.
 /// \param BOT What to do with template expansions.
 /// \param BOU What to do when we don't know what to do.
 /// \param AllowFSAccess Whether to allow access to the raw filesystem.
@@ -207,7 +208,7 @@ std::string IndexCompilationUnit(const proto::CompilationUnit &Unit,
                                  const std::string &EffectiveWorkingDirectory,
                                  std::vector<proto::FileData> &Files,
                                  KytheClaimClient &ClaimClient,
-                                 BehaviorOnTemplates BOT,
+                                 HashCache *Cache, BehaviorOnTemplates BOT,
                                  BehaviorOnUnimplemented BOU,
                                  bool AllowFSAccess, KytheOutputStream &Output);
 

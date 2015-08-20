@@ -99,7 +99,7 @@ std::string ConfigureSystemHeaders(const proto::CompilationUnit &Unit,
 std::string IndexCompilationUnit(const proto::CompilationUnit &Unit,
                                  const std::string &EffectiveWorkingDirectory,
                                  std::vector<proto::FileData> &Files,
-                                 KytheClaimClient &Client,
+                                 KytheClaimClient &Client, HashCache *Cache,
                                  BehaviorOnTemplates BOT,
                                  BehaviorOnUnimplemented BOU,
                                  bool AllowFSAccess,
@@ -115,6 +115,10 @@ std::string IndexCompilationUnit(const proto::CompilationUnit &Unit,
   llvm::IntrusiveRefCntPtr<IndexVFS> VFS(new IndexVFS(FSO.WorkingDir, Files));
   KytheGraphRecorder Recorder(&Output);
   KytheGraphObserver Observer(&Recorder, &Client, VFS);
+  if (Cache != nullptr) {
+    Output.UseHashCache(Cache);
+    Observer.StopDeferringNodes();
+  }
   Observer.set_claimant(Unit.v_name());
   Observer.set_starting_context(Unit.entry_context());
   for (const auto &Input : Unit.required_input()) {

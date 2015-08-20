@@ -61,6 +61,10 @@ DEFINE_bool(claim_unknown, true, "Process files with unknown claim status.");
 DEFINE_bool(index_template_instantiations, true,
             "Index template instantiations.");
 DEFINE_string(index_pack, "", "Mount an index pack rooted at this directory.");
+DEFINE_string(cache, "", "Use a memcache instance (ex: \"--SERVER=foo:1234\")");
+DEFINE_int32(min_size, 4096, "Minimum size of an entry bundle");
+DEFINE_int32(max_size, 1024 * 32, "Maximum size of an entry bundle");
+DEFINE_bool(cache_stats, false, "Show cache stats");
 
 namespace kythe {
 namespace {
@@ -177,9 +181,7 @@ Examples:
   indexer -index_pack path/to/pack/root 660f1f840000000000
   indexer some/index.kindex
   indexer -i foo.cc -o foo.bin -- -DINDEXING
-  indexer -i foo.cc | verifier foo.cc
-  indexer -i foo.cc | gqui from rawproto:- proto \
-      storage.proto:kythe.proto.Entry")");
+  indexer -i foo.cc | verifier foo.cc")");
   google::ParseCommandLineFlags(&argc, &argv, true);
 
   std::vector<std::string> final_args(argv, argv + argc);
@@ -294,9 +296,20 @@ Examples:
   {
     google::protobuf::io::FileOutputStream raw_output(write_fd);
     kythe::FileOutputStream kythe_output(&raw_output);
+    kythe_output.set_show_stats(FLAGS_cache_stats);
+    kythe_output.set_flush_after_each_entry(FLAGS_flush_after_each_entry);
+    kythe::MemcachedHashCache MHashCache;
+    if (!FLAGS_cache.empty()) {
+      if (!MHashCache.OpenMemcache(FLAGS_cache)) {
+        fprintf(stderr, "Can't open memcached\n");
+        exit(1);
+      }
+      MHashCache.SetSizeLimits(FLAGS_min_size, FLAGS_max_size);
+    }
 
     result = IndexCompilationUnit(
         unit, working_dir, virtual_files, claim_client,
+        FLAGS_cache.empty() ? nullptr : &MHashCache,
         FLAGS_index_template_instantiations
             ? BehaviorOnTemplates::VisitInstantiations
             : BehaviorOnTemplates::SkipInstantiations,

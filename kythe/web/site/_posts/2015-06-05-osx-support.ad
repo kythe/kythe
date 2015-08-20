@@ -17,7 +17,7 @@ packages:
 [source,shell]
 ----
 brew install protobuf libarchive go asciidoc leveldb ossp-uuid \
-             source-highlight graphviz parallel md5sha1sum
+             source-highlight graphviz parallel md5sha1sum libmemcached
 ----
 
 Follow the instructions at http://bazel.io/docs/install.html.

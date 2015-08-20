@@ -10,6 +10,7 @@ cc_library(
         "KytheClaimClient.cc",
         "KytheGraphObserver.cc",
         "KytheGraphRecorder.cc",
+        "KytheOutputStream.cc",
         "KytheVFS.cc",
     ],
     hdrs = [
@@ -35,6 +36,7 @@ cc_library(
         "//kythe/proto:analysis_proto_cc",
         "//kythe/proto:cxx_proto_cc",
         "//kythe/proto:storage_proto_cc",
+        "//third_party:libmemcached",
         "//third_party/googleflags:gflags",
         "//third_party/llvm",
         "//third_party/llvm/src:clang_builtin_headers",

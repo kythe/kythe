@@ -738,6 +738,7 @@ ConstructorOverridesInitializer(const clang::CXXConstructorDecl *Ctor,
 }
 
 bool IndexerASTVisitor::TraverseDecl(clang::Decl *Decl) {
+  GraphObserver::Delimiter Del(Observer);
   // For clang::FunctionDecl and all subclasses thereof push blame data.
   if (auto *FD = dyn_cast_or_null<clang::FunctionDecl>(Decl)) {
     if (unsigned BuiltinID = FD->getBuiltinID()) {

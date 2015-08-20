@@ -22,7 +22,7 @@ RUN apt-get update && \
       curl ca-certificates \
       less parallel jq net-tools locales zsh wget unzip libssl-dev \
       openjdk-7-jdk clang-3.5 ca-certificates-java uuid-dev flex \
-      golang-go && \
+      golang-go libmemcached-dev && \
     apt-get clean
 
 # Maven

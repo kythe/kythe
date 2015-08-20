@@ -137,6 +137,10 @@ class KytheGraphObserver : public GraphObserver {
     return &default_token_;
   }
 
+  void StopDeferringNodes() { deferring_nodes_ = false; }
+  void Delimit() override { recorder_->PushEntryGroup(); }
+  void Undelimit() override { recorder_->PopEntryGroup(); }
+
   NodeId recordTappNode(const NodeId &TyconId,
                         const std::vector<const NodeId *> &Params) override;
 
@@ -389,6 +393,8 @@ class KytheGraphObserver : public GraphObserver {
   /// The set of type nodes we've emitted so far (identified by
   /// `NodeId::ToString()`).
   std::unordered_set<std::string> written_types_;
+  /// Whether to try and locally deduplicate nodes.
+  bool deferring_nodes_ = true;
   /// The virtual filesystem in use.
   llvm::IntrusiveRefCntPtr<IndexVFS> vfs_;
   /// A neutral claim token.

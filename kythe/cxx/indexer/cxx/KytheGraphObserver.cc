@@ -329,7 +329,7 @@ void KytheGraphObserver::recordVariableNode(const NameId &name,
 
 void KytheGraphObserver::RecordRange(const proto::VName &anchor_name,
                                      const GraphObserver::Range &range) {
-  if (deferred_anchors_.insert(range).second) {
+  if (!deferring_nodes_ || deferred_anchors_.insert(range).second) {
     VNameRef anchor_name_ref(anchor_name);
     recorder_->AddProperty(anchor_name_ref, NodeKindID::kAnchor);
     RecordSourceLocation(anchor_name_ref, range.PhysicalRange.getBegin(),
@@ -412,7 +412,7 @@ kythe::proto::VName KytheGraphObserver::RecordName(
   out_vname.set_language("c++");
   const std::string name_id_string = name_id.ToString();
   out_vname.set_signature(name_id_string);
-  if (written_name_ids_.insert(name_id_string).second) {
+  if (!deferring_nodes_ || written_name_ids_.insert(name_id_string).second) {
     recorder_->AddProperty(VNameRef(out_vname), NodeKindID::kName);
   }
   return out_vname;
@@ -484,7 +484,8 @@ GraphObserver::NodeId KytheGraphObserver::nodeIdForTypeAliasNode(
 GraphObserver::NodeId KytheGraphObserver::recordTypeAliasNode(
     const NameId &alias_name, const NodeId &aliased_type) {
   NodeId type_id = nodeIdForTypeAliasNode(alias_name, aliased_type);
-  if (written_types_.insert(type_id.ToClaimedString()).second) {
+  if (!deferring_nodes_ ||
+      written_types_.insert(type_id.ToClaimedString()).second) {
     VNameRef type_vname(VNameRefFromNodeId(type_id));
     recorder_->AddProperty(type_vname, NodeKindID::kTAlias);
     kythe::proto::VName alias_name_vname(RecordName(alias_name));
@@ -535,7 +536,8 @@ GraphObserver::NodeId KytheGraphObserver::nodeIdForNominalTypeNode(
 GraphObserver::NodeId KytheGraphObserver::recordNominalTypeNode(
     const NameId &name_id) {
   NodeId id_out = nodeIdForNominalTypeNode(name_id);
-  if (written_types_.insert(id_out.ToClaimedString()).second) {
+  if (!deferring_nodes_ ||
+      written_types_.insert(id_out.ToClaimedString()).second) {
     VNameRef type_vname(VNameRefFromNodeId(id_out));
     recorder_->AddProperty(type_vname, NodeKindID::kTNominal);
     recorder_->AddEdge(type_vname, EdgeKindID::kNamed,
@@ -567,7 +569,8 @@ GraphObserver::NodeId KytheGraphObserver::recordTappNode(
   }
   ostream << ")";
   GraphObserver::NodeId id_out(&type_token_, ostream.str());
-  if (written_types_.insert(id_out.ToClaimedString()).second) {
+  if (!deferring_nodes_ ||
+      written_types_.insert(id_out.ToClaimedString()).second) {
     VNameRef tapp_vname(VNameRefFromNodeId(id_out));
     recorder_->AddProperty(tapp_vname, NodeKindID::kTApp);
     recorder_->AddEdge(tapp_vname, EdgeKindID::kParam,
