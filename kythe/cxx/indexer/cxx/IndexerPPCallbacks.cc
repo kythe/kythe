@@ -23,7 +23,7 @@
 #include "clang/Basic/FileManager.h"
 #include "clang/Lex/PPCallbacks.h"
 #include "clang/Lex/Preprocessor.h"
-
+#include "kythe/cxx/common/path_utils.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/Debug.h"
 
@@ -43,9 +43,25 @@
 
 namespace kythe {
 
-IndexerPPCallbacks::IndexerPPCallbacks(const clang::Preprocessor &PP,
+IndexerPPCallbacks::IndexerPPCallbacks(clang::Preprocessor &PP,
                                        GraphObserver &GO)
-    : Preprocessor(PP), Observer(GO) {}
+    : Preprocessor(PP), Observer(GO) {
+  class MetadataPragmaHandlerWrapper : public clang::PragmaHandler {
+  public:
+    MetadataPragmaHandlerWrapper(IndexerPPCallbacks *context)
+        : PragmaHandler("kythe_metadata"), context_(context) {}
+    void HandlePragma(clang::Preprocessor &Preprocessor,
+                      clang::PragmaIntroducerKind Introducer,
+                      clang::Token &FirstToken) override {
+      context_->HandleKytheMetadataPragma(Preprocessor, Introducer, FirstToken);
+    }
+
+  private:
+    IndexerPPCallbacks *context_;
+  };
+  // Clang takes ownership.
+  PP.AddPragmaHandler(new MetadataPragmaHandlerWrapper(this));
+}
 
 IndexerPPCallbacks::~IndexerPPCallbacks() {}
 
@@ -281,6 +297,27 @@ IndexerPPCallbacks::BuildNodeIdForMacro(const clang::Token &Spelling,
   }
   return GraphObserver::NodeId(Observer.getClaimTokenForLocation(Loc),
                                Ostream.str());
+}
+
+void IndexerPPCallbacks::HandleKytheMetadataPragma(
+    clang::Preprocessor &preprocessor, clang::PragmaIntroducerKind introducer,
+    clang::Token &first_token) {
+  llvm::SmallString<1024> search_path;
+  llvm::SmallString<1024> relative_path;
+  llvm::SmallString<1024> filename;
+  const auto *file = LookupFileForIncludePragma(&preprocessor, &search_path,
+                                                &relative_path, &filename);
+  if (!file) {
+    fprintf(stderr, "Missing metadata file: %s\n", filename.c_str());
+    return;
+  }
+  clang::FileID pragma_file_id =
+      Observer.getSourceManager()->getFileID(first_token.getLocation());
+  if (!pragma_file_id.isInvalid()) {
+    Observer.applyMetadataFile(pragma_file_id, file);
+  } else {
+    fprintf(stderr, "Metadata pragma was in an impossible place\n");
+  }
 }
 
 } // namespace kythe

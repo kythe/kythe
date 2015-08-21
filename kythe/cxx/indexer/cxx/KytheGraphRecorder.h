@@ -90,7 +90,8 @@ enum class EdgeKindID {
   kSpecializesSpeculative,
   kInstantiatesSpeculative,
   kDocuments,
-  kRefDoc
+  kRefDoc,
+  kGenerates
 };
 
 /// \brief Returns the Kythe spelling of `node_kind_id`
@@ -113,6 +114,10 @@ llvm::StringRef spelling_of(PropertyID property_id);
 /// spelling_of(kDefines) == "/kythe/defines"
 /// ~~~
 llvm::StringRef spelling_of(EdgeKindID edge_kind_id);
+
+/// Returns true and sets `out_edge` to the enumerator corresponding to
+/// `spelling` (or returns false if there is no such correspondence).
+bool of_spelling(llvm::StringRef spelling, EdgeKindID *out_edge);
 
 /// \brief Records Kythe nodes and edges to a provided `KytheOutputStream`.
 class KytheGraphRecorder {

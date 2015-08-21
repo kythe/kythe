@@ -60,7 +60,20 @@ static const std::string *kEdgeKindSpellings[] = {
     new std::string("/kythe/edge/specializes/speculative"),
     new std::string("/kythe/edge/instantiates/speculative"),
     new std::string("/kythe/edge/documents"),
-    new std::string("/kythe/edge/ref/doc")};
+    new std::string("/kythe/edge/ref/doc"),
+    new std::string("/kythe/edge/generates")};
+
+bool of_spelling(llvm::StringRef str, EdgeKindID *edge_id) {
+  size_t edge_index = 0;
+  for (auto *edge : kEdgeKindSpellings) {
+    if (*edge == str) {
+      *edge_id = static_cast<kythe::EdgeKindID>(edge_index);
+      return true;
+    }
+    ++edge_index;
+  }
+  return false;
+}
 
 static const std::string *const kPropertySpellings[] = {
     new std::string("/kythe/loc"),

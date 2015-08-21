@@ -34,7 +34,7 @@ class GraphObserver;
 /// use and definition.
 class IndexerPPCallbacks : public clang::PPCallbacks {
 public:
-  IndexerPPCallbacks(const clang::Preprocessor &PP, GraphObserver &GO);
+  IndexerPPCallbacks(clang::Preprocessor &PP, GraphObserver &GO);
   ~IndexerPPCallbacks() override;
 
   void FileChanged(clang::SourceLocation Loc,
@@ -71,6 +71,18 @@ public:
                           llvm::StringRef SearchPath,
                           llvm::StringRef RelativePath,
                           const clang::Module *Imported) override;
+
+  /// \brief Run by a `clang::PragmaHandler` to handle the `kythe_metadata`
+  /// pragma.
+  ///
+  /// This has the same semantics as `clang::PragmaHandler::HandlePragma`.
+  /// We pass Clang a throwaway `PragmaHandler` instance that delegates to
+  /// this member function.
+  ///
+  /// \sa clang::PragmaHandler::HandlePragma
+  void HandleKytheMetadataPragma(clang::Preprocessor &Preprocessor,
+                                 clang::PragmaIntroducerKind Introducer,
+                                 clang::Token &FirstToken);
 
   void EndOfMainFile() override;
 

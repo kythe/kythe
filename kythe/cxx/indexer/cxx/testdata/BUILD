@@ -669,6 +669,25 @@ test_suite(
 )
 
 cxx_indexer_test(
+    name = "metadata_generates_rule",
+    srcs = ["metadata/metadata_generates_rule.cc"],
+    tags = ["metadata"],
+    deps = ["metadata/single.meta"],
+)
+
+cxx_indexer_test(
+    name = "metadata_pragma",
+    srcs = ["metadata/metadata_pragma.cc"],
+    tags = ["metadata"],
+    deps = ["metadata/empty.meta"],
+)
+
+test_suite(
+    name = "indexer_metadata",
+    tags = ["metadata"],
+)
+
+cxx_indexer_test(
     name = "docs_bcpl_block",
     srcs = ["docs/docs_bcpl_block.cc"],
     tags = ["docs"],

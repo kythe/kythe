@@ -348,6 +348,29 @@ void KytheGraphObserver::RecordRange(const proto::VName &anchor_name,
   }
 }
 
+void KytheGraphObserver::MetaHookDefines(const MetadataFile &meta,
+                                         const VNameRef &anchor,
+                                         unsigned range_begin,
+                                         unsigned range_end,
+                                         const VNameRef &def) {
+  auto rules = meta.rules().equal_range(range_begin);
+  for (auto rule = rules.first; rule != rules.second; ++rule) {
+    if (rule->second.begin == range_begin && rule->second.end == range_end &&
+        rule->second.edge_in == "/kythe/edge/defines") {
+      EdgeKindID edge_kind;
+      if (of_spelling(rule->second.edge_out, &edge_kind)) {
+        if (rule->second.reverse_edge) {
+          recorder_->AddEdge(VNameRef(rule->second.vname), edge_kind, def);
+        } else {
+          recorder_->AddEdge(def, edge_kind, VNameRef(rule->second.vname));
+        }
+      } else {
+        fprintf(stderr, "Unknown edge kind %s from metadata\n",
+                rule->second.edge_out.c_str());
+      }
+    }
+  }
+}
 proto::VName KytheGraphObserver::RecordAnchor(
     const GraphObserver::Range &source_range,
     const GraphObserver::NodeId &primary_anchored_to,
@@ -361,6 +384,29 @@ proto::VName KytheGraphObserver::RecordAnchor(
   if (cl == Claimability::Unclaimable) {
     recorder_->AddEdge(VNameRef(anchor_name), anchor_edge_kind,
                        VNameRefFromNodeId(primary_anchored_to));
+    if (source_range.Kind == Range::RangeKind::Physical) {
+      if (anchor_edge_kind == EdgeKindID::kDefines) {
+        clang::FileID def_file =
+            SourceManager->getFileID(source_range.PhysicalRange.getBegin());
+        const auto metas = meta_.equal_range(def_file);
+        if (metas.first != metas.second) {
+          auto begin = source_range.PhysicalRange.getBegin();
+          if (begin.isMacroID()) {
+            begin = SourceManager->getExpansionLoc(begin);
+          }
+          auto end = source_range.PhysicalRange.getEnd();
+          if (end.isMacroID()) {
+            end = SourceManager->getExpansionLoc(end);
+          }
+          unsigned range_begin = SourceManager->getFileOffset(begin);
+          unsigned range_end = SourceManager->getFileOffset(end);
+          for (auto meta = metas.first; meta != metas.second; ++meta) {
+            MetaHookDefines(*meta->second, VNameRef(anchor_name), range_begin,
+                            range_end, VNameRefFromNodeId(primary_anchored_to));
+          }
+        }
+      }
+    }
   }
   return anchor_name;
 }
@@ -700,6 +746,23 @@ void KytheGraphObserver::recordDeclUseLocation(
     const GraphObserver::Range &source_range, const NodeId &node,
     Claimability claimability) {
   RecordAnchor(source_range, node, EdgeKindID::kRef, claimability);
+}
+
+void KytheGraphObserver::applyMetadataFile(clang::FileID id,
+                                           const clang::FileEntry *file) {
+  const llvm::MemoryBuffer *buffer =
+      SourceManager->getMemoryBufferForFile(file);
+  if (!buffer) {
+    fprintf(stderr, "Couldn't get content for %s\n", file->getName());
+    return;
+  }
+  std::string error;
+  auto metadata = MetadataFile::LoadFromJSON(buffer->getBuffer(), &error);
+  if (metadata) {
+    meta_.emplace(id, std::move(metadata));
+  } else {
+    fprintf(stderr, "Couldn't load %s: %s\n", file->getName(), error.c_str());
+  }
 }
 
 void KytheGraphObserver::pushFile(clang::SourceLocation blame_location,

@@ -236,6 +236,10 @@ public:
     SourceManager = SM;
   }
 
+  /// \brief Loads and applies the metadata file `FE` to the given FileId.
+  virtual void applyMetadataFile(clang::FileID ID, const clang::FileEntry *FE) {
+  }
+
   /// \param LO the language options in use.
   virtual void setLangOptions(clang::LangOptions *LO) { LangOptions = LO; }
 

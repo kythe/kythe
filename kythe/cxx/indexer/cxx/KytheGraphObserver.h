@@ -25,6 +25,7 @@
 #include "KytheClaimClient.h"
 #include "KytheGraphRecorder.h"
 #include "KytheVFS.h"
+#include "kythe/cxx/common/kythe_metadata_file.h"
 #include "kythe/proto/storage.pb.h"
 
 namespace kythe {
@@ -137,6 +138,7 @@ class KytheGraphObserver : public GraphObserver {
     return &default_token_;
   }
 
+  void applyMetadataFile(clang::FileID ID, const clang::FileEntry *FE) override;
   void StopDeferringNodes() { deferring_nodes_ = false; }
   void Delimit() override { recorder_->PushEntryGroup(); }
   void Undelimit() override { recorder_->PopEntryGroup(); }
@@ -333,6 +335,10 @@ class KytheGraphObserver : public GraphObserver {
   /// Records a Range.
   void RecordRange(const proto::VName &range_vname,
                    const GraphObserver::Range &range);
+  /// Execute metadata actions for `defines` edges.
+  void MetaHookDefines(const MetadataFile &meta, const VNameRef &anchor,
+                       unsigned range_begin, unsigned range_end,
+                       const VNameRef &def);
 
   struct RangeHash {
     size_t operator()(const GraphObserver::Range &range) const {
@@ -355,6 +361,8 @@ class KytheGraphObserver : public GraphObserver {
   };
   /// The files we have entered but not left.
   std::vector<FileState> file_stack_;
+  /// A map from FileIDs to associated metadata.
+  std::multimap<clang::FileID, std::shared_ptr<MetadataFile>> meta_;
   /// Files we have previously inspected for claiming. When they refer to
   /// FileEntries, a FileID represents a specific file being included from a
   /// given include position. There will therefore be many FileIDs that map to
