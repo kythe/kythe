@@ -17,9 +17,15 @@
 #ifndef KYTHE_CXX_COMMON_PATH_UTILS_H_
 #define KYTHE_CXX_COMMON_PATH_UTILS_H_
 
+#include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/StringRef.h"
 
 #include <string>
+
+namespace clang {
+class FileEntry;
+class Preprocessor;
+}
 
 namespace kythe {
 /// \brief Relativize `to_relativize` with respect to `relativize_against`.
@@ -45,6 +51,17 @@ std::string CleanPath(llvm::StringRef in_path);
 
 /// \brief Append path `b` to path `a`, cleaning and returning the result.
 std::string JoinPath(llvm::StringRef a, llvm::StringRef b);
+
+/// \brief Looks up a file for an #include-ish pragma.
+/// \param preprocessor The preprocessor to use to consume the filename tokens.
+/// \param search_path The path used to find the file in the filesystem.
+/// \param relative_path The path to the file, relative to search_path.
+/// \param filename The filename used to consult the filesystem.
+/// \return The FileEntry we found or null if we didn't find one.
+const clang::FileEntry *LookupFileForIncludePragma(
+    clang::Preprocessor *preprocessor, llvm::SmallVectorImpl<char> *search_path,
+    llvm::SmallVectorImpl<char> *relative_path,
+    llvm::SmallVectorImpl<char> *filename);
 }
 
 #endif  // KYTHE_CXX_COMMON_PATH_UTILS_H_

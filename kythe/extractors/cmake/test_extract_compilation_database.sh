@@ -19,7 +19,7 @@
 BASE_DIR="$TEST_SRCDIR/kythe/extractors/cmake"
 OUT_DIR="$TEST_TMPDIR"
 EXTRACT="${BASE_DIR}/extract_compilation_database.sh"
-EXPECTED_INDEX="d09515d149b3ca237a31caa8fd58f48365e083ce2ebe57173d568d1939fae6b8.kindex"
+EXPECTED_INDEX="2cd4afa6aba0e40df0a4de8a6c8f9952790abf9161e2436a9a58498bce5d673f.kindex"
 EXPECTED_FILE_HASH="deac66ccb79f6d31c0fa7d358de48e083c15c02ff50ec1ebd4b64314b9e6e196"
 KINDEX_TOOL="kythe/cxx/tools/kindex_tool"
 rm -f "${OUT_DIR}/*.kindex*"

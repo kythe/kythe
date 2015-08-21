@@ -1,5 +1,5 @@
 v_name {
-  signature: "cu#4a9aa76e4ce8a7d496e9c24d1ef114887292b86e014c60c4b774c2c19224bdcf"
+  signature: "cu#bf6996536fa134e8bbe2c1afb7937e8d47b79e0a135b0c6e4cfdae4707cac00a"
   language: "c++"
 }
 required_input {
@@ -12,7 +12,7 @@ required_input {
     digest: "7684704ae672c88bd4a656eff30a716ab29a8270e87e387d9101b32527cde498"
   }
   context {
-    source_context: "6a4599abe93b6c88652906e84845bde8f2c39de4d3668bbfb0afedfc69c5c220"
+    source_context: "8583d6eae83ed0a95cc7390dce6c148f7ab58c920f649b58590a801d83bc3bd4"
     column {
       linked_context: "cc063f5d59413bdbe5596b0f25cd6ee07c0f5e5b7000e5c233731720366fc241"
     }
@@ -60,6 +60,7 @@ required_input {
   }
 }
 argument: "/usr/bin/g++"
+argument: "-DKYTHE_IS_RUNNING=1"
 argument: "-resource-dir"
 argument: "/kythe_builtins"
 argument: "-I./kythe/cxx/extractor/testdata"
@@ -67,4 +68,4 @@ argument: "./kythe/cxx/extractor/testdata/transcript_main.cc"
 argument: "-fsyntax-only"
 source_file: "./kythe/cxx/extractor/testdata/transcript_main.cc"
 working_directory: "."
-entry_context: "6a4599abe93b6c88652906e84845bde8f2c39de4d3668bbfb0afedfc69c5c220"
+entry_context: "8583d6eae83ed0a95cc7390dce6c148f7ab58c920f649b58590a801d83bc3bd4"

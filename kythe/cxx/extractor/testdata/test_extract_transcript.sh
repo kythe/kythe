@@ -17,7 +17,7 @@
 # It should be run from the Kythe root.
 TEST_NAME="test_extract_transcript"
 . ./kythe/cxx/extractor/testdata/test_common.sh
-EXPECTED_INDEX="4a9aa76e4ce8a7d496e9c24d1ef114887292b86e014c60c4b774c2c19224bdcf.kindex"
+EXPECTED_INDEX="bf6996536fa134e8bbe2c1afb7937e8d47b79e0a135b0c6e4cfdae4707cac00a.kindex"
 INDEX_PATH="${OUT_DIR}"/"${EXPECTED_INDEX}"
 rm -f -- "${INDEX_PATH}_UNIT"
 KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}" \

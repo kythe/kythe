@@ -157,6 +157,11 @@ class ExtractorPPCallbacks : public clang::PPCallbacks {
   /// if it has not already been recorded.
   void AddFile(const clang::FileEntry* file, const std::string& path);
 
+  /// \brief Records the content of `file` if it has not already been recorded.
+  std::string AddFile(const clang::FileEntry* file, llvm::StringRef file_name,
+                      llvm::StringRef search_path,
+                      llvm::StringRef relative_path);
+
   /// \brief Amends history to include a macro expansion.
   /// \param expansion_loc Where the expansion occurred. Must be in a file.
   /// \param definition_loc Where the expanded macro was defined.
@@ -240,9 +245,21 @@ class ExtractorPPCallbacks : public clang::PPCallbacks {
   /// this member function.
   ///
   /// \sa clang::PragmaHandler::HandlePragma
-  void HandlePragma(clang::Preprocessor& preprocessor,
-                    clang::PragmaIntroducerKind introducer,
-                    clang::Token& first_token);
+  void HandleKytheClaimPragma(clang::Preprocessor& preprocessor,
+                              clang::PragmaIntroducerKind introducer,
+                              clang::Token& first_token);
+
+  /// \brief Run by a `clang::PragmaHandler` to handle the `kythe_metadata`
+  /// pragma.
+  ///
+  /// This has the same semantics as `clang::PragmaHandler::HandlePragma`.
+  /// We pass Clang a throwaway `PragmaHandler` instance that delegates to
+  /// this member function.
+  ///
+  /// \sa clang::PragmaHandler::HandlePragma
+  void HandleKytheMetadataPragma(clang::Preprocessor& preprocessor,
+                                 clang::PragmaIntroducerKind introducer,
+                                 clang::Token& first_token);
 
  private:
   /// \brief Returns the main file for this compile action.
@@ -296,21 +313,38 @@ ExtractorPPCallbacks::ExtractorPPCallbacks(ExtractorState state)
       index_writer_(state.index_writer),
       main_source_file_stdin_alternate_(
           state.main_source_file_stdin_alternate) {
-  class PragmaHandlerWrapper : public clang::PragmaHandler {
+  class ClaimPragmaHandlerWrapper : public clang::PragmaHandler {
    public:
-    PragmaHandlerWrapper(ExtractorPPCallbacks* context)
+    ClaimPragmaHandlerWrapper(ExtractorPPCallbacks* context)
         : PragmaHandler("kythe_claim"), context_(context) {}
     void HandlePragma(clang::Preprocessor& preprocessor,
                       clang::PragmaIntroducerKind introducer,
                       clang::Token& first_token) override {
-      context_->HandlePragma(preprocessor, introducer, first_token);
+      context_->HandleKytheClaimPragma(preprocessor, introducer, first_token);
     }
 
    private:
     ExtractorPPCallbacks* context_;
   };
   // Clang takes ownership.
-  preprocessor_->AddPragmaHandler(new PragmaHandlerWrapper(this));
+  preprocessor_->AddPragmaHandler(new ClaimPragmaHandlerWrapper(this));
+
+  class MetadataPragmaHandlerWrapper : public clang::PragmaHandler {
+   public:
+    MetadataPragmaHandlerWrapper(ExtractorPPCallbacks* context)
+        : PragmaHandler("kythe_metadata"), context_(context) {}
+    void HandlePragma(clang::Preprocessor& preprocessor,
+                      clang::PragmaIntroducerKind introducer,
+                      clang::Token& first_token) override {
+      context_->HandleKytheMetadataPragma(preprocessor, introducer,
+                                          first_token);
+    }
+
+   private:
+    ExtractorPPCallbacks* context_;
+  };
+  // Clang takes ownership.
+  preprocessor_->AddPragmaHandler(new MetadataPragmaHandlerWrapper(this));
 }
 
 void ExtractorPPCallbacks::FileChanged(
@@ -574,9 +608,18 @@ void ExtractorPPCallbacks::InclusionDirective(
     LOG(WARNING) << "Sysroot set to " << options->Sysroot;
     return;
   }
+  last_inclusion_directive_path_ =
+      AddFile(File, FileName, SearchPath, RelativePath);
+  last_inclusion_offset_ = source_manager_->getFileOffset(HashLoc);
+}
+
+std::string ExtractorPPCallbacks::AddFile(const clang::FileEntry* file,
+                                          llvm::StringRef file_name,
+                                          llvm::StringRef search_path,
+                                          llvm::StringRef relative_path) {
   CHECK(!current_files_.top().file_path.empty());
   const auto* search_path_entry =
-      source_manager_->getFileManager().getDirectory(SearchPath);
+      source_manager_->getFileManager().getDirectory(search_path);
   const auto* current_file_parent_entry =
       source_manager_->getFileManager()
           .getFile(current_files_.top().file_path.c_str())
@@ -587,6 +630,7 @@ void ExtractorPPCallbacks::InclusionDirective(
   // and always returns that path afterwards. If we do not normalize this
   // we will get an error when we replay the compilation, as the virtual
   // file system is not aware of inodes.
+  llvm::SmallString<1024> out_name;
   if (search_path_entry == current_file_parent_entry) {
     auto parent =
         llvm::sys::path::parent_path(current_files_.top().file_path.c_str())
@@ -600,16 +644,18 @@ void ExtractorPPCallbacks::InclusionDirective(
 
     // Otherwise we take the literal path as we stored it for the current
     // file, and append the relative path.
-    last_inclusion_directive_path_ = parent + "/" + RelativePath.str();
-  } else if (!SearchPath.empty()) {
-    last_inclusion_directive_path_ =
-        SearchPath.str() + "/" + RelativePath.str();
+    out_name = parent;
+    llvm::sys::path::append(out_name, relative_path);
+  } else if (!search_path.empty()) {
+    out_name = search_path;
+    llvm::sys::path::append(out_name, relative_path);
   } else {
-    CHECK(llvm::sys::path::is_absolute(FileName)) << FileName.str();
-    last_inclusion_directive_path_ = FileName.str();
+    CHECK(llvm::sys::path::is_absolute(file_name)) << file_name.str();
+    out_name = file_name;
   }
-  last_inclusion_offset_ = source_manager_->getFileOffset(HashLoc);
-  AddFile(File, last_inclusion_directive_path_);
+  std::string out_name_string = out_name.str();
+  AddFile(file, out_name_string);
+  return out_name_string;
 }
 
 const clang::FileEntry* ExtractorPPCallbacks::GetMainFile() {
@@ -621,11 +667,24 @@ RunningHash* ExtractorPPCallbacks::history() {
   return &current_files_.top().history;
 }
 
-void ExtractorPPCallbacks::HandlePragma(clang::Preprocessor& preprocessor,
-                                        clang::PragmaIntroducerKind introducer,
-                                        clang::Token& first_token) {
+void ExtractorPPCallbacks::HandleKytheClaimPragma(
+    clang::Preprocessor& preprocessor, clang::PragmaIntroducerKind introducer,
+    clang::Token& first_token) {
   CHECK(!current_files_.empty());
   current_files_.top().default_behavior = ClaimDirective::AlwaysClaim;
+}
+
+void ExtractorPPCallbacks::HandleKytheMetadataPragma(
+    clang::Preprocessor& preprocessor, clang::PragmaIntroducerKind introducer,
+    clang::Token& first_token) {
+  CHECK(!current_files_.empty());
+  llvm::SmallString<1024> search_path;
+  llvm::SmallString<1024> relative_path;
+  llvm::SmallString<1024> filename;
+  if (const clang::FileEntry* file = LookupFileForIncludePragma(
+          &preprocessor, &search_path, &relative_path, &filename)) {
+    AddFile(file, filename, search_path, relative_path);
+  }
 }
 
 class ExtractorAction : public clang::PreprocessorFrontendAction {
@@ -955,6 +1014,7 @@ void ExtractorConfiguration::SetArgs(const std::vector<std::string>& args) {
     final_args_.insert(final_args_.begin() + 1, kBuiltinResourceDirectory);
     final_args_.insert(final_args_.begin() + 1, "-resource-dir");
   }
+  final_args_.insert(final_args_.begin() + 1, "-DKYTHE_IS_RUNNING=1");
   // Store the arguments post-filtering.
   index_writer_.set_args(final_args_);
 }

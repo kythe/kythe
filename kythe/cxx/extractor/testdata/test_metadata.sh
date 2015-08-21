@@ -13,16 +13,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# This test checks that the extractor handles #pragma kythe_claim.
+# This test checks that the extractor handles transcripts.
 # It should be run from the Kythe root.
-TEST_NAME="test_claim_pragma"
+TEST_NAME="test_metadata"
 . ./kythe/cxx/extractor/testdata/test_common.sh
-EXPECTED_INDEX="c530488209e8ddf999ae178cfbdb13b15ed1cf29318de240244f7c96befc2c89.kindex"
+EXPECTED_INDEX="4b27c5e4da3151b3c6bdd3858901568202e161dda81fb4385f3137d60f09cdfa.kindex"
 INDEX_PATH="${OUT_DIR}"/"${EXPECTED_INDEX}"
 rm -f -- "${INDEX_PATH}_UNIT"
 KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}" \
     "${EXTRACTOR}" --with_executable "/usr/bin/g++" \
-    -I./kythe/cxx/extractor/testdata \
-    ./kythe/cxx/extractor/testdata/claim_main.cc
+    -I./kythe/cxx/extractor \
+    ./kythe/cxx/extractor/testdata/metadata.cc
 "${KINDEX_TOOL}" -suppress_details -explode "${INDEX_PATH}"
-diff "${BASE_DIR}/claim_main.UNIT" "${INDEX_PATH}_UNIT"
+diff "${BASE_DIR}/metadata.UNIT" "${INDEX_PATH}_UNIT"

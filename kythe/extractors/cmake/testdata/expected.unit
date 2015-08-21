@@ -1,5 +1,5 @@
 v_name {
-  signature: "cu#d09515d149b3ca237a31caa8fd58f48365e083ce2ebe57173d568d1939fae6b8"
+  signature: "cu#2cd4afa6aba0e40df0a4de8a6c8f9952790abf9161e2436a9a58498bce5d673f"
   corpus: "test_corpus"
   language: "c++"
 }
@@ -14,14 +14,15 @@ required_input {
     digest: "deac66ccb79f6d31c0fa7d358de48e083c15c02ff50ec1ebd4b64314b9e6e196"
   }
   context {
-    source_context: "0a88cd153c731f057a736944d9e2c0f8fb5143085abeb0afc092c3fa6edddd8b"
+    source_context: "accaea4df1d4e81f6f6b485034e10380f8fb70246d35e899369ada0c68e60d79"
   }
 }
 argument: "/usr/bin/g++"
+argument: "-DKYTHE_IS_RUNNING=1"
 argument: "-resource-dir"
 argument: "/kythe_builtins"
 argument: "test_file.cc"
 argument: "-fsyntax-only"
 source_file: "test_file.cc"
 working_directory: "BASE_DIR/testdata"
-entry_context: "0a88cd153c731f057a736944d9e2c0f8fb5143085abeb0afc092c3fa6edddd8b"
+entry_context: "accaea4df1d4e81f6f6b485034e10380f8fb70246d35e899369ada0c68e60d79"

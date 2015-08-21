@@ -95,6 +95,21 @@ sh_test(
     ],
 )
 
+sh_test(
+    name = "metadata",
+    srcs = [
+        "test_metadata.sh",
+    ],
+    data = [
+        "test_common.sh",
+        "metadata.cc",
+        "metadata.cc.meta",
+        "metadata.UNIT",
+        "//kythe/cxx/extractor:cxx_extractor",
+        "//kythe/cxx/tools:kindex_tool",
+    ],
+)
+
 cc_verifier_test(
     name = "recursish_macro_test",
     srcs = [

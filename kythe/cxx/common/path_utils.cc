@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+#include "clang/Lex/HeaderSearch.h"
+#include "clang/Lex/LexDiagnostic.h"
+#include "clang/Lex/Preprocessor.h"
 #include "clang/Tooling/Tooling.h"
 #include "llvm/Support/Path.h"
 #include "path_utils.h"
@@ -46,7 +49,8 @@ static void LexicallyEliminateRelativePathNodes(
 
 std::string CleanPath(llvm::StringRef in_path) {
   std::string root_part = (llvm::sys::path::root_name(in_path) +
-                           llvm::sys::path::root_directory(in_path)).str();
+                           llvm::sys::path::root_directory(in_path))
+                              .str();
   llvm::SmallString<1024> out_path = llvm::StringRef(root_part);
   LexicallyEliminateRelativePathNodes(&out_path, llvm::StringRef(in_path));
   return out_path.str();
@@ -76,6 +80,72 @@ std::string RelativizePath(const std::string& to_relativize,
                                      llvm::sys::path::get_separator().size())
           : to_relativize_abs;
   return ret;
+}
+
+const clang::FileEntry* LookupFileForIncludePragma(
+    clang::Preprocessor* preprocessor, llvm::SmallVectorImpl<char>* search_path,
+    llvm::SmallVectorImpl<char>* relative_path,
+    llvm::SmallVectorImpl<char>* result_filename) {
+  clang::Token filename_token;
+  clang::SourceLocation filename_end;
+  llvm::StringRef filename;
+  llvm::SmallString<128> filename_buffer;
+  preprocessor->getCurrentLexer()->LexIncludeFilename(filename_token);
+  switch (filename_token.getKind()) {
+    case clang::tok::eod:
+      return nullptr;
+    case clang::tok::angle_string_literal:
+    case clang::tok::string_literal:
+      filename = preprocessor->getSpelling(filename_token, filename_buffer);
+      break;
+    case clang::tok::less:
+      filename_buffer.push_back('<');
+      if (preprocessor->ConcatenateIncludeName(filename_buffer, filename_end))
+        return nullptr;
+      filename = filename_buffer;
+      break;
+    default:
+      preprocessor->DiscardUntilEndOfDirective();
+      fprintf(stderr, "Bad include-style pragma.\n");
+      return nullptr;
+  }
+  bool is_angled = preprocessor->GetIncludeFilenameSpelling(
+      filename_token.getLocation(), filename);
+  if (filename.empty()) {
+    preprocessor->DiscardUntilEndOfDirective();
+    return nullptr;
+  }
+  preprocessor->CheckEndOfDirective("pragma", true);
+  if (preprocessor->getHeaderSearchInfo().HasIncludeAliasMap()) {
+    auto mapped =
+        preprocessor->getHeaderSearchInfo().MapHeaderToIncludeAlias(filename);
+    if (!mapped.empty()) {
+      filename = mapped;
+    }
+  }
+  const clang::DirectoryLookup* cur_dir = nullptr;
+  llvm::SmallString<1024> normalized_path;
+  if (preprocessor->getLangOpts().MSVCCompat) {
+    normalized_path = filename.str();
+#ifndef LLVM_ON_WIN32
+    llvm::sys::path::native(normalized_path);
+#endif
+    *result_filename = normalized_path;
+  } else {
+    result_filename->append(filename.begin(), filename.end());
+  }
+  const clang::FileEntry* file = preprocessor->LookupFile(
+      filename_token.getLocation(),
+      preprocessor->getLangOpts().MSVCCompat ? normalized_path.c_str()
+                                             : filename,
+      is_angled, nullptr /* FromDir */, nullptr /* FromFile */, cur_dir,
+      search_path, relative_path, nullptr /* SuggestedModule */,
+      false /* SkipCache */);
+  if (!file) {
+    preprocessor->Diag(filename_token, clang::diag::err_pp_file_not_found)
+        << filename;
+  }
+  return file;
 }
 
 }  // namespace kythe

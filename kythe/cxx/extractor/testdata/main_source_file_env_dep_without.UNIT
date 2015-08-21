@@ -1,5 +1,5 @@
 v_name {
-  signature: "cu#dffcbf93cf2aa88c7a32245e36e0645c481edcfbfb6484bb6ee0d2b0363439a7"
+  signature: "cu#948f1f4087b8cd2ea83ee3a13a8f7e8dcdf9d6bb08f4b2731e8f904f7f678d42"
   language: "c++"
 }
 required_input {
@@ -16,6 +16,7 @@ required_input {
   }
 }
 argument: "/usr/bin/g++"
+argument: "-DKYTHE_IS_RUNNING=1"
 argument: "-resource-dir"
 argument: "/kythe_builtins"
 argument: "-I./kythe/cxx/extractor/testdata"
