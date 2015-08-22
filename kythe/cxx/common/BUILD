@@ -53,7 +53,7 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     visibility = [
-        "//kythe/cxx:__subpackages__",
+        "//kythe:default_visibility",
         "//third_party/llvm/src:__pkg__",
     ],
     deps = [
