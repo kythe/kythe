@@ -22,6 +22,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"kythe.io/kythe/go/test/testutil"
 )
 
 func init() {
@@ -43,8 +45,7 @@ func find(t *testing.T, file string) string {
 
 func TestAsyncSuccess(t *testing.T) {
 	done := make(chan struct{}, 1)
-	a := &Async{
-		Command: exec.Command(find(t, "true")),
+	err := StartAsync(exec.Command(find(t, "true")), &Callbacks{
 		OnStart: func(p *os.Process) {
 			if p == nil {
 				t.Error("Process was nil")
@@ -69,8 +70,8 @@ func TestAsyncSuccess(t *testing.T) {
 		OnError: func(state *os.ProcessState, err error) {
 			t.Errorf("Process exited with unknown error: %v (%v)", err, state)
 		},
-	}
-	a.Start()
+	})
+	testutil.FatalOnErrT(t, "Error starting async: %v", err)
 
 	timeout := time.After(5 * time.Second)
 	for i := 0; i < 3; i++ {
@@ -84,8 +85,7 @@ func TestAsyncSuccess(t *testing.T) {
 
 func TestAsyncError(t *testing.T) {
 	done := make(chan struct{}, 1)
-	a := &Async{
-		Command: exec.Command(find(t, "false")),
+	err := StartAsync(exec.Command(find(t, "false")), &Callbacks{
 		OnStart: func(p *os.Process) {
 			if p == nil {
 				t.Error("Process was nil")
@@ -110,8 +110,8 @@ func TestAsyncError(t *testing.T) {
 			}
 			done <- struct{}{}
 		},
-	}
-	a.Start()
+	})
+	testutil.FatalOnErrT(t, "Error starting async: %v", err)
 
 	timeout := time.After(5 * time.Second)
 	for i := 0; i < 3; i++ {
@@ -123,12 +123,36 @@ func TestAsyncError(t *testing.T) {
 	}
 }
 
-func TestAsyncNilHandlers(t *testing.T) {
-	bt := &Async{Command: exec.Command(find(t, "true"))}
-	bt.Start()
-	bt.Command.Wait()
+func TestAsyncNilCallbacks(t *testing.T) {
+	done := make(chan struct{}, 1)
 
-	bf := &Async{Command: exec.Command(find(t, "false"))}
-	bf.Start()
-	bf.Command.Wait()
+	err := StartAsync(exec.Command(find(t, "true")), &Callbacks{
+		OnExit: func(state *os.ProcessState, err error) {
+			done <- struct{}{}
+		},
+	})
+	testutil.FatalOnErrT(t, "Error starting async: %v", err)
+
+	err = StartAsync(exec.Command(find(t, "false")), &Callbacks{
+		OnExit: func(state *os.ProcessState, err error) {
+			done <- struct{}{}
+		},
+	})
+	testutil.FatalOnErrT(t, "Error starting async: %v", err)
+
+	err = StartAsync(exec.Command(find(t, "true")), &Callbacks{
+		OnSuccess: func(state *os.ProcessState) {
+			done <- struct{}{}
+		},
+	})
+	testutil.FatalOnErrT(t, "Error starting async: %v", err)
+
+	timeout := time.After(5 * time.Second)
+	for i := 0; i < 3; i++ {
+		select {
+		case <-done:
+		case <-timeout:
+			t.Fatal("Process did not finish before timeout")
+		}
+	}
 }

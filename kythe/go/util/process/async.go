@@ -23,12 +23,9 @@ import (
 	"os/exec"
 )
 
-// Async controls an asynchronous process with callbacks to handle its exit.
+// Callbacks is a set of callbacks to be called throughout a process' lifetime.
 // Each callback can be nil to ignore that particular process state.
-type Async struct {
-	// Command to run asynchronously
-	Command *exec.Cmd
-
+type Callbacks struct {
 	// OnStart is called once the process has been started.
 	OnStart func(p *os.Process)
 	// OnExit will be called, if non-nil, once the process exits (with or without
@@ -43,34 +40,37 @@ type Async struct {
 	OnError func(state *os.ProcessState, err error)
 }
 
-// Start runs the specified command in the background and calls the provided
-// handlers once the command exits.
-func (a *Async) Start() {
-	err := a.Command.Start()
-	if a.OnStart != nil {
-		a.OnStart(a.Command.Process)
+// StartAsync runs the specified command in the background and calls the
+// provided handlers during the proccess' lifetime.  If there is an error
+// starting the process, it is returned and none of the callbacks are
+// called.
+func StartAsync(cmd *exec.Cmd, c *Callbacks) error {
+	if err := cmd.Start(); err != nil {
+		return err
 	}
-	go func() {
-		if err != nil {
-			a.runHandlers(err)
-			return
+
+	if c != nil {
+		if c.OnStart != nil {
+			c.OnStart(cmd.Process)
 		}
-		a.runHandlers(a.Command.Wait())
-	}()
+		go func() { c.run(cmd, cmd.Wait()) }()
+	}
+
+	return nil
 }
 
-func (a *Async) runHandlers(err error) {
-	state := a.Command.ProcessState
+func (c *Callbacks) run(cmd *exec.Cmd, err error) {
+	state := cmd.ProcessState
 	if err == nil {
-		if a.OnSuccess != nil {
-			a.OnSuccess(state)
+		if c.OnSuccess != nil {
+			c.OnSuccess(state)
 		}
 	} else {
-		if a.OnError != nil {
-			a.OnError(state, err)
+		if c.OnError != nil {
+			c.OnError(state, err)
 		}
 	}
-	if a.OnExit != nil {
-		a.OnExit(state, err)
+	if c.OnExit != nil {
+		c.OnExit(state, err)
 	}
 }

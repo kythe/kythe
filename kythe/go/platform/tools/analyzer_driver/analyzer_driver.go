@@ -78,10 +78,11 @@ func main() {
 	cmd := exec.Command(analyzerBin, analyzerArgs...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	p := &process.Async{
-		Command: cmd,
+	var proc *os.Process
+	if err := process.StartAsync(cmd, &process.Callbacks{
 		OnStart: func(p *os.Process) {
 			log.Printf("Starting analyzer subprocess: %s", strings.Join(cmd.Args, " "))
+			proc = p
 		},
 		OnExit: func(state *os.ProcessState, err error) {
 			select {
@@ -90,8 +91,9 @@ func main() {
 				log.Fatalf("Analyzer subprocess exited unexpectedly (state:%v; error:%v)", state, err)
 			}
 		},
+	}); err != nil {
+		log.Fatalf("Error starting analyzer: %v", err)
 	}
-	p.Start()
 
 	addr := fmt.Sprintf("localhost:%d", *analyzerPort)
 	conn, err := grpc.Dial(addr)
@@ -119,7 +121,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if err := p.Command.Process.Signal(os.Interrupt); err != nil {
+	if err := proc.Signal(os.Interrupt); err != nil {
 		log.Fatalf("Failed to send interrupt to analyzer: %v", err)
 	}
 }
