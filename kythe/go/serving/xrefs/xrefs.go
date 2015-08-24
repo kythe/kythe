@@ -91,6 +91,7 @@ func lookupNodes(ctx context.Context, tbl table.ProtoBatch, keys [][]byte) (<-ch
 		defer close(ch)
 		for r := range rs {
 			if r.Err == table.ErrNoSuchKey {
+				log.Printf("Could not locate node with key %q", r.Key)
 				ch <- nodeResult{Err: r.Err}
 				continue
 			} else if r.Err != nil {
@@ -117,6 +118,7 @@ func lookupPagedEdgeSets(ctx context.Context, tbl table.ProtoBatch, keys [][]byt
 		defer close(ch)
 		for r := range rs {
 			if r.Err == table.ErrNoSuchKey {
+				log.Printf("Could not locate edges with key %q", r.Key)
 				ch <- edgeSetResult{Err: r.Err}
 				continue
 			} else if r.Err != nil {
@@ -352,27 +354,29 @@ func (t *tableImpl) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.Edge
 			}
 		}
 
-		for _, idx := range pes.PageIndex {
-			if len(allowedKinds) == 0 || allowedKinds.Contains(idx.EdgeKind) {
-				if stats.skipPage(idx) {
-					log.Printf("Skipping EdgePage: %s", idx.PageKey)
-					continue
-				}
+		if stats.total != stats.max {
+			for _, idx := range pes.PageIndex {
+				if len(allowedKinds) == 0 || allowedKinds.Contains(idx.EdgeKind) {
+					if stats.skipPage(idx) {
+						log.Printf("Skipping EdgePage: %s", idx.PageKey)
+						continue
+					}
 
-				log.Printf("Retrieving EdgePage: %s", idx.PageKey)
-				ep, err := t.edgePage(ctx, idx.PageKey)
-				if err == table.ErrNoSuchKey {
-					return nil, fmt.Errorf("missing edge page: %q", idx.PageKey)
-				} else if err != nil {
-					return nil, fmt.Errorf("edge page lookup error (page key: %q): %v", idx.PageKey, err)
-				}
+					log.Printf("Retrieving EdgePage: %s", idx.PageKey)
+					ep, err := t.edgePage(ctx, idx.PageKey)
+					if err == table.ErrNoSuchKey {
+						return nil, fmt.Errorf("missing edge page: %q", idx.PageKey)
+					} else if err != nil {
+						return nil, fmt.Errorf("edge page lookup error (page key: %q): %v", idx.PageKey, err)
+					}
 
-				ng := stats.filter(ep.EdgesGroup)
-				if ng != nil {
-					nodeTickets.Add(ng.TargetTicket...)
-					groups = append(groups, ng)
-					if stats.total == stats.max {
-						break
+					ng := stats.filter(ep.EdgesGroup)
+					if ng != nil {
+						nodeTickets.Add(ng.TargetTicket...)
+						groups = append(groups, ng)
+						if stats.total == stats.max {
+							break
+						}
 					}
 				}
 			}
@@ -384,6 +388,10 @@ func (t *tableImpl) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.Edge
 				SourceTicket: pes.EdgeSet.SourceTicket,
 				Group:        groups,
 			})
+		}
+
+		if stats.total == stats.max {
+			break
 		}
 	}
 	if stats.total > stats.max {

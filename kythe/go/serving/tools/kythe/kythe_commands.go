@@ -166,6 +166,9 @@ var (
 			if err != nil {
 				return err
 			}
+			if reply.NextPageToken != "" {
+				defer log.Printf("Next page token: %s", reply.NextPageToken)
+			}
 			if countOnly {
 				return displayEdgeCounts(reply)
 			} else if targetsOnly {
