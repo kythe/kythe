@@ -1,6 +1,6 @@
 # Release Notes
 
-## Upcoming release
+## v0.0.9
 
 Notable changes:
  - xrefs.Decorations: nodes will not be populated unless given a fact filter
