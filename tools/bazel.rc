@@ -1,0 +1,2 @@
+# TODO: http://kythe.io/phabricator/T57
+build --spawn_strategy=standalone --genrule_strategy=standalone
