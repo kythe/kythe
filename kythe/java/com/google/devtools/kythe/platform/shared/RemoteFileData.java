@@ -24,9 +24,9 @@ import com.google.devtools.kythe.proto.FileDataServiceGrpc;
 import com.google.devtools.kythe.proto.FileDataServiceGrpc.FileDataServiceStub;
 
 import io.grpc.ChannelImpl;
+import io.grpc.netty.NegotiationType;
+import io.grpc.netty.NettyChannelBuilder;
 import io.grpc.stub.StreamObserver;
-import io.grpc.transport.netty.NegotiationType;
-import io.grpc.transport.netty.NettyChannelBuilder;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.Future;

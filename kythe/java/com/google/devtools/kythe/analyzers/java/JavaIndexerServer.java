@@ -24,7 +24,7 @@ import com.google.devtools.kythe.platform.shared.FileDataProvider;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.CompilationAnalyzerGrpc;
 
-import io.grpc.transport.netty.NettyServerBuilder;
+import io.grpc.netty.NettyServerBuilder;
 
 import java.io.IOException;
 

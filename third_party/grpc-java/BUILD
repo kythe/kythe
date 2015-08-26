@@ -14,14 +14,12 @@ cc_binary(
         "compiler/src/java_plugin/cpp/java_generator.h",
         "compiler/src/java_plugin/cpp/java_plugin.cpp",
     ],
-    deps = [
-        "//third_party/proto:libprotoc",
-    ],
+    deps = ["//third_party/proto:libprotoc"],
 )
 
 java_library(
     name = "grpc-java",
-    srcs = ["grpc-all-0.7.2.jar"],
+    srcs = ["grpc-all-0.8.0.jar"],
     runtime_deps = [
         "//third_party/hpack",
         "//third_party/netty",
