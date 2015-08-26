@@ -65,5 +65,5 @@ cc_library(
 cc_library(
     name = "libmemcached",
     srcs = ["empty.cc"],
-    linkopts = ["-lmemcached"],
+    linkopts = ["-Wl,-Bstatic", "-lmemcached", "-Wl,-Bdynamic"],
 )
