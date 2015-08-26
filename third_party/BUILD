@@ -65,5 +65,18 @@ cc_library(
 cc_library(
     name = "libmemcached",
     srcs = ["empty.cc"],
-    linkopts = ["-Wl,-Bstatic", "-lmemcached", "-Wl,-Bdynamic"],
+    linkopts = select({
+        ":darwin": ["-lmemcached"],
+        "//conditions:default": [
+            "-Wl,-Bstatic",
+            "-lmemcached",
+            "-Wl,-Bdynamic",
+        ],
+    }),
+)
+
+config_setting(
+    name = "darwin",
+    values = {"cpu": "darwin"},
+    visibility = ["//visibility:public"],
 )

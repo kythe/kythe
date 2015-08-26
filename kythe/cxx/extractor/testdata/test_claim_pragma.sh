@@ -25,4 +25,4 @@ KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}" \
     -I./kythe/cxx/extractor/testdata \
     ./kythe/cxx/extractor/testdata/claim_main.cc
 "${KINDEX_TOOL}" -suppress_details -explode "${INDEX_PATH}"
-diff "${BASE_DIR}/claim_main.UNIT" "${INDEX_PATH}_UNIT"
+diff "${BASE_DIR}/claim_main.UNIT${PF_SUFFIX}" "${INDEX_PATH}_UNIT"

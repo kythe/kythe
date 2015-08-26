@@ -19,6 +19,7 @@
 BASE_DIR="$TEST_SRCDIR/kythe/extractors/cmake"
 OUT_DIR="$TEST_TMPDIR"
 EXTRACT="${BASE_DIR}/extract_compilation_database.sh"
+PF_SUFFIX=$(if [[ $(uname) == 'Darwin' ]]; then echo '.Darwin'; fi)
 EXPECTED_INDEX="2cd4afa6aba0e40df0a4de8a6c8f9952790abf9161e2436a9a58498bce5d673f.kindex"
 EXPECTED_FILE_HASH="deac66ccb79f6d31c0fa7d358de48e083c15c02ff50ec1ebd4b64314b9e6e196"
 KINDEX_TOOL="kythe/cxx/tools/kindex_tool"
@@ -27,7 +28,7 @@ KYTHE_CORPUS=test_corpus KYTHE_ROOT_DIRECTORY="${BASE_DIR}/testdata" \
     KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}" \
     "${EXTRACT}" "${BASE_DIR}/testdata/compilation_database.json"
 "${KINDEX_TOOL}" -suppress_details -explode "${OUT_DIR}/${EXPECTED_INDEX}"
-sed "s:BASE_DIR:${BASE_DIR}:g" "${BASE_DIR}/testdata/expected.unit" \
+sed "s:BASE_DIR:${BASE_DIR}:g" "${BASE_DIR}/testdata/expected.unit${PF_SUFFIX}" \
     > "${OUT_DIR}/expected.unit"
 sed "s:BASE_DIR:${BASE_DIR}:g" "${BASE_DIR}/testdata/expected.file" \
     > "${OUT_DIR}/expected.file"

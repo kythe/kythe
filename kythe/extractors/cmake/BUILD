@@ -10,6 +10,7 @@ sh_test(
         "testdata/compilation_database.json",
         "testdata/expected.file",
         "testdata/expected.unit",
+        "testdata/expected.unit.Darwin",
         "testdata/test_file.cc",
         "//kythe/cxx/extractor:cxx_extractor",
         "//kythe/cxx/tools:kindex_tool",
