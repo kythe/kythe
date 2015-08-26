@@ -149,7 +149,7 @@ public:
     std::unique_ptr<IndexedParentMap> ParentMap(new IndexedParentMap);
     IndexedParentASTVisitor Visitor(ParentMap.get());
     Visitor.TraverseDecl(&TU);
-    return std::move(ParentMap);
+    return ParentMap;
   }
 
 private:
