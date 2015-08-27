@@ -26,12 +26,34 @@ cc_library(
 )
 
 cc_library(
+    name = "index_pack",
+    srcs = ["index_pack.cc"],
+    hdrs = ["index_pack.h"],
+    copts = [
+        "-Wno-non-virtual-dtor",
+        "-Wno-unused-variable",
+        "-Wno-implicit-fallthrough",
+    ],
+    visibility = [
+        "//kythe:default_visibility",
+        "//third_party/llvm/src:__pkg__",
+    ],
+    deps = [
+        ":lib",
+        "//kythe/proto:analysis_proto_cc",
+        "//kythe/proto:storage_proto_cc",
+        "//third_party:libuuid",
+        "//third_party/proto:protobuf",
+        "//third_party/zlib",
+    ],
+)
+
+cc_library(
     name = "lib",
     srcs = [
         "CommandLineUtils.cc",
         "cxx_details.cc",
         "file_vname_generator.cc",
-        "index_pack.cc",
         "kythe_metadata_file.cc",
         "kythe_uri.cc",
         "path_utils.cc",
@@ -40,7 +62,6 @@ cc_library(
         "CommandLineUtils.h",
         "cxx_details.h",
         "file_vname_generator.h",
-        "index_pack.h",
         "kythe_metadata_file.h",
         "kythe_uri.h",
         "path_utils.h",
@@ -60,7 +81,6 @@ cc_library(
         ":json_proto",
         "//kythe/proto:analysis_proto_cc",
         "//kythe/proto:storage_proto_cc",
-        "//third_party:libuuid",
         "//third_party/googleflags:gflags",
         "//third_party/googlelog:glog",
         "//third_party/llvm",
@@ -186,7 +206,7 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
-        ":lib",
+        ":index_pack",
         "//kythe/proto:analysis_proto_cc",
         "//kythe/proto:storage_proto_cc",
         "//third_party/googleflags:gflags",

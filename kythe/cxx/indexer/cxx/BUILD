@@ -31,6 +31,7 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
+        "//kythe/cxx/common:index_pack",
         "//kythe/cxx/common:json_proto",
         "//kythe/cxx/common:lib",
         "//kythe/proto:analysis_proto_cc",
