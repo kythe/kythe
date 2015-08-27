@@ -28,6 +28,7 @@ import (
 	"kythe.io/kythe/go/storage/gsutil"
 	"kythe.io/kythe/go/storage/leveldb"
 	"kythe.io/kythe/go/util/flagutil"
+	"kythe.io/kythe/go/util/profile"
 
 	"golang.org/x/net/context"
 
@@ -63,7 +64,14 @@ func main() {
 	}
 	defer db.Close()
 
-	if err := pipeline.Run(context.Background(), gs, db); err != nil {
+	ctx := context.Background()
+
+	if err := profile.Start(ctx); err != nil {
+		log.Fatal(err)
+	}
+	defer profile.Stop()
+
+	if err := pipeline.Run(ctx, gs, db); err != nil {
 		log.Fatal("FATAL ERROR: ", err)
 	}
 }

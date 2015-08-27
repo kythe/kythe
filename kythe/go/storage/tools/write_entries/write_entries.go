@@ -35,15 +35,14 @@ import (
 	"log"
 	"os"
 	"runtime"
-	"runtime/pprof"
 	"sync"
 	"sync/atomic"
 
-	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/storage/gsutil"
 	"kythe.io/kythe/go/storage/stream"
 	"kythe.io/kythe/go/util/flagutil"
+	"kythe.io/kythe/go/util/profile"
 
 	"golang.org/x/net/context"
 
@@ -57,7 +56,6 @@ import (
 var (
 	batchSize  = flag.Int("batch_size", 1024, "Maximum entries per write for consecutive entries with the same source")
 	numWorkers = flag.Int("workers", 1, "Number of concurrent workers writing to the GraphStore")
-	profCPU    = flag.String("cpu_profile", "", "Write CPU profile to the specified file (if nonempty)")
 
 	gs graphstore.Service
 )
@@ -83,18 +81,15 @@ func main() {
 		flagutil.UsageError("Missing --graphstore")
 	}
 
-	defer gsutil.LogClose(context.Background(), gs)
+	ctx := context.Background()
+
+	defer gsutil.LogClose(ctx, gs)
 	gsutil.EnsureGracefulExit(gs)
 
-	if *profCPU != "" {
-		f, err := vfs.Create(context.Background(), *profCPU)
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer f.Close()
-		pprof.StartCPUProfile(f)
-		defer pprof.StopCPUProfile()
+	if err := profile.Start(ctx); err != nil {
+		log.Fatal(err)
 	}
+	defer profile.Stop()
 
 	writes := graphstore.BatchWrites(stream.ReadEntries(os.Stdin), *batchSize)
 
@@ -106,7 +101,7 @@ func main() {
 	for i := 0; i < *numWorkers; i++ {
 		go func() {
 			defer wg.Done()
-			num, err := writeEntries(context.Background(), gs, writes)
+			num, err := writeEntries(ctx, gs, writes)
 			if err != nil {
 				log.Fatal(err)
 			}

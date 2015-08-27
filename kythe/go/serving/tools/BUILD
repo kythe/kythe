@@ -84,6 +84,7 @@ go_binary(
         "//kythe/go/storage/gsutil",
         "//kythe/go/storage/leveldb",
         "//kythe/go/util/flagutil",
+        "//kythe/go/util/profile",
         "//third_party/go:context",
     ],
 )

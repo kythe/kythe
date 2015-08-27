@@ -8,7 +8,6 @@ go_binary(
         "write_entries/write_entries.go",
     ],
     deps = [
-        "//kythe/go/platform/vfs",
         "//kythe/go/services/graphstore",
         "//kythe/go/services/graphstore/grpc",
         "//kythe/go/services/graphstore/proxy",
@@ -16,6 +15,7 @@ go_binary(
         "//kythe/go/storage/leveldb",
         "//kythe/go/storage/stream",
         "//kythe/go/util/flagutil",
+        "//kythe/go/util/profile",
         "//kythe/proto:storage_proto_go",
         "//third_party/go:context",
     ],
