@@ -29,7 +29,7 @@ RUN apt-get update && \
       git pkg-config zip unzip rsync patch zsh wget net-tools less parallel locales make \
       g++ gcc openjdk-8-jdk openjdk-8-source clang-3.5 golang-go flex asciidoc source-highlight graphviz \
       zlib1g-dev libarchive-dev libncurses-dev uuid-dev libssl-dev \
-      ca-certificates-java libcurl4-openssl-dev libmemcached-dev && \
+      ca-certificates-java libcurl4-openssl-dev libmemcached-dev libsasl2-dev && \
     apt-get clean
 
 ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64

@@ -70,6 +70,7 @@ cc_library(
         "//conditions:default": [
             "-Wl,-Bstatic",
             "-lmemcached",
+            "-lsasl2",
             "-Wl,-Bdynamic",
         ],
     }),
