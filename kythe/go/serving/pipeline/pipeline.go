@@ -25,7 +25,6 @@ import (
 	"log"
 	"os"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -35,6 +34,7 @@ import (
 	ftsrv "kythe.io/kythe/go/serving/filetree"
 	"kythe.io/kythe/go/serving/search"
 	"kythe.io/kythe/go/serving/xrefs"
+	"kythe.io/kythe/go/serving/xrefs/build"
 	"kythe.io/kythe/go/storage/keyvalue"
 	"kythe.io/kythe/go/storage/leveldb"
 	"kythe.io/kythe/go/storage/table"
@@ -226,10 +226,7 @@ func collectNodes(nodeEntries <-chan *spb.Entry) <-chan *srvpb.Node {
 				ticket := kytheuri.ToString(vname)
 				node = &srvpb.Node{Ticket: ticket}
 			}
-			node.Fact = append(node.Fact, &srvpb.Node_Fact{
-				Name:  e.FactName,
-				Value: e.FactValue,
-			})
+			node.Fact = append(node.Fact, build.NodeFact(e))
 		}
 		if node != nil {
 			nodes <- node
@@ -320,12 +317,11 @@ func writeEdgePages(ctx context.Context, t table.Proto, edgeGroups *table.KVProt
 	defer it.Close()
 
 	log.Println("Writing EdgeSets")
-	var (
-		lastSrc  string
-		pes      *srvpb.PagedEdgeSet
-		grp      *srvpb.EdgeSet_Group
-		pesTotal int
-	)
+	esb := &build.EdgeSetBuilder{
+		Output: func(ctx context.Context, pes *srvpb.PagedEdgeSet) error {
+			return t.Put(ctx, xrefs.EdgeSetKey(pes.EdgeSet.SourceTicket), pes)
+		},
+	}
 	for {
 		k, v, err := it.Next()
 		if err == io.EOF {
@@ -338,57 +334,18 @@ func writeEdgePages(ctx context.Context, t table.Proto, edgeGroups *table.KVProt
 		if len(ss) != 3 {
 			return fmt.Errorf("invalid edge groups table key: %q", string(k))
 		}
-		curSrc := ss[0]
+		src := ss[0]
 
-		if pes != nil && lastSrc != curSrc {
-			if grp != nil {
-				pes.EdgeSet.Group = append(pes.EdgeSet.Group, grp)
-				pesTotal += len(grp.TargetTicket)
-			}
-			pes.TotalEdges = int32(pesTotal)
-			if err := t.Put(ctx, xrefs.EdgeSetKey(pes.EdgeSet.SourceTicket), pes); err != nil {
-				return err
-			}
-			pes = nil
-			grp = nil
-			pesTotal = 0
-		}
-		if pes == nil {
-			pes = &srvpb.PagedEdgeSet{
-				EdgeSet: &srvpb.EdgeSet{
-					SourceTicket: curSrc,
-				},
-			}
-		}
-
-		var cur srvpb.EdgeSet_Group
-		if err := proto.Unmarshal(v, &cur); err != nil {
+		var eg srvpb.EdgeSet_Group
+		if err := proto.Unmarshal(v, &eg); err != nil {
 			return fmt.Errorf("invalid edge groups table value: %v", err)
 		}
 
-		if grp != nil && grp.Kind != cur.Kind {
-			pes.EdgeSet.Group = append(pes.EdgeSet.Group, grp)
-			pesTotal += len(grp.TargetTicket)
-			grp = nil
-		}
-		if grp == nil {
-			grp = &cur
-		} else {
-			grp.TargetTicket = append(grp.TargetTicket, cur.TargetTicket...)
-		}
-		lastSrc = curSrc
-	}
-	if pes != nil {
-		if grp != nil {
-			pes.EdgeSet.Group = append(pes.EdgeSet.Group, grp)
-			pesTotal += len(grp.TargetTicket)
-		}
-		pes.TotalEdges = int32(pesTotal)
-		if err := t.Put(ctx, xrefs.EdgeSetKey(pes.EdgeSet.SourceTicket), pes); err != nil {
+		if err := esb.AddGroup(ctx, src, &eg); err != nil {
 			return err
 		}
 	}
-	return nil
+	return esb.Flush(ctx)
 }
 
 func writeWithReverses(ctx context.Context, tbl *table.KVProto, src, kind string, targets []string) error {
@@ -432,8 +389,8 @@ func createFragmentsTable(ctx context.Context, entries <-chan *spb.Entry) (t *ta
 		}
 	}()
 
-	for src := range collectSources(entries) {
-		for _, fragment := range decorationFragments(src) {
+	for src := range build.Sources(entries) {
+		for _, fragment := range build.DecorationFragments(src) {
 			fileTicket := fragment.FileTicket
 			var anchorTicket string
 			if len(fragment.Decoration) != 0 {
@@ -517,26 +474,8 @@ func writeDecorations(ctx context.Context, t table.Proto, entries <-chan *spb.En
 }
 
 func writeDecor(ctx context.Context, t table.Proto, decor *srvpb.FileDecorations) error {
-	sort.Sort(byOffset(decor.Decoration))
+	sort.Sort(build.ByOffset(decor.Decoration))
 	return t.Put(ctx, xrefs.DecorationsKey(decor.FileTicket), decor)
-}
-
-type byOffset []*srvpb.FileDecorations_Decoration
-
-func (s byOffset) Len() int      { return len(s) }
-func (s byOffset) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
-func (s byOffset) Less(i, j int) bool {
-	if s[i].Anchor.StartOffset < s[j].Anchor.StartOffset {
-		return true
-	} else if s[i].Anchor.StartOffset > s[j].Anchor.StartOffset {
-		return false
-	} else if s[i].Anchor.EndOffset == s[j].Anchor.EndOffset {
-		if s[i].Kind == s[j].Kind {
-			return s[i].TargetTicket < s[j].TargetTicket
-		}
-		return s[i].Kind < s[j].Kind
-	}
-	return s[i].Anchor.EndOffset < s[j].Anchor.EndOffset
 }
 
 func writeIndex(ctx context.Context, t table.Inverted, nodes <-chan *srvpb.Node) error {
@@ -550,134 +489,5 @@ func writeIndex(ctx context.Context, t table.Inverted, nodes <-chan *srvpb.Node)
 
 func drainEntries(entries <-chan *spb.Entry) {
 	for _ = range entries {
-	}
-}
-
-// Source is a collection of facts and edges with a common source.
-type Source struct {
-	Ticket string
-
-	Facts map[string][]byte
-	Edges map[string][]string
-}
-
-func collectSources(entries <-chan *spb.Entry) <-chan *Source {
-	ch := make(chan *Source, 1)
-
-	go func() {
-		defer close(ch)
-
-		var es []*spb.Entry
-		for entry := range entries {
-			if len(es) > 0 && compare.VNames(es[0].Source, entry.Source) != compare.EQ {
-				ch <- toSource(es)
-				es = nil
-			}
-
-			es = append(es, entry)
-		}
-		if len(es) > 0 {
-			ch <- toSource(es)
-		}
-	}()
-
-	return ch
-}
-
-func toSource(entries []*spb.Entry) *Source {
-	if len(entries) == 0 {
-		return nil
-	}
-
-	src := &Source{
-		Ticket: kytheuri.ToString(entries[0].Source),
-		Facts:  make(map[string][]byte),
-		Edges:  make(map[string][]string),
-	}
-
-	edgeTargets := make(map[string]stringset.Set)
-
-	for _, e := range entries {
-		if graphstore.IsEdge(e) {
-			tgts, ok := edgeTargets[e.EdgeKind]
-			if !ok {
-				tgts = stringset.New()
-				edgeTargets[e.EdgeKind] = tgts
-			}
-			tgts.Add(kytheuri.ToString(e.Target))
-		} else {
-			src.Facts[e.FactName] = e.FactValue
-		}
-	}
-	for kind, targets := range edgeTargets {
-		src.Edges[kind] = targets.Slice()
-		sort.Strings(src.Edges[kind])
-	}
-
-	return src
-}
-
-func decorationFragments(src *Source) []*srvpb.FileDecorations {
-	switch string(src.Facts[schema.NodeKindFact]) {
-	default:
-		return nil
-	case schema.FileKind:
-		return []*srvpb.FileDecorations{{
-			FileTicket: src.Ticket,
-			SourceText: src.Facts[schema.TextFact],
-			Encoding:   string(src.Facts[schema.TextEncodingFact]),
-		}}
-	case schema.AnchorKind:
-		anchorStart, err := strconv.Atoi(string(src.Facts[schema.AnchorStartFact]))
-		if err != nil {
-			log.Printf("Error parsing anchor start offset %q: %v", string(src.Facts[schema.AnchorStartFact]), err)
-			return nil
-		}
-		anchorEnd, err := strconv.Atoi(string(src.Facts[schema.AnchorEndFact]))
-		if err != nil {
-			log.Printf("Error parsing anchor end offset %q: %v", string(src.Facts[schema.AnchorEndFact]), err)
-			return nil
-		}
-
-		anchor := &srvpb.FileDecorations_Decoration_Anchor{
-			Ticket:      src.Ticket,
-			StartOffset: int32(anchorStart),
-			EndOffset:   int32(anchorEnd),
-		}
-
-		kinds := make([]string, len(src.Edges)-1)
-		for kind := range src.Edges {
-			if kind == schema.ChildOfEdge {
-				continue
-			}
-			kinds = append(kinds, kind)
-		}
-		sort.Strings(kinds) // to ensure consistency
-
-		var decor []*srvpb.FileDecorations_Decoration
-		for _, kind := range kinds {
-			for _, tgt := range src.Edges[kind] {
-				decor = append(decor, &srvpb.FileDecorations_Decoration{
-					Anchor:       anchor,
-					Kind:         kind,
-					TargetTicket: tgt,
-				})
-			}
-		}
-		if len(decor) == 0 {
-			return nil
-		}
-
-		// Assume each anchor parent is a file
-		parents := src.Edges[schema.ChildOfEdge]
-		dm := make([]*srvpb.FileDecorations, len(parents))
-
-		for i, parent := range parents {
-			dm[i] = &srvpb.FileDecorations{
-				FileTicket: parent,
-				Decoration: decor,
-			}
-		}
-		return dm
 	}
 }
