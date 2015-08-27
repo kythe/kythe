@@ -41,6 +41,7 @@ import (
 	xstore "kythe.io/kythe/go/storage/xrefs"
 	"kythe.io/kythe/go/util/flagutil"
 
+	"github.com/bradfitz/http2"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
@@ -61,6 +62,10 @@ var (
 
 	httpListeningAddr = flag.String("listen", "localhost:8080", "Listening address for HTTP server")
 	publicResources   = flag.String("public_resources", "", "Path to directory of static resources to serve")
+
+	tlsListeningAddr = flag.String("tls_listen", "", "Listening address for TLS HTTP server")
+	tlsCertFile      = flag.String("tls_cert_file", "", "Path to file with concatenation of TLS certificates")
+	tlsKeyFile       = flag.String("tls_key_file", "", "Path to file with TLS private key")
 )
 
 func init() {
@@ -76,10 +81,12 @@ func main() {
 	flag.Parse()
 	if *servingTable == "" && gs == nil {
 		flagutil.UsageError("missing either --serving_table or --graphstore")
-	} else if *httpListeningAddr == "" && *grpcListeningAddr == "" {
-		flagutil.UsageError("missing either --listen or --grpc_listen argument")
+	} else if *httpListeningAddr == "" && *grpcListeningAddr == "" && *tlsListeningAddr == "" {
+		flagutil.UsageError("missing either --listen, --tls_listen, or --grpc_listen argument")
 	} else if *servingTable != "" && gs != nil {
 		flagutil.UsageError("--serving_table and --graphstore are mutually exclusive")
+	} else if *tlsListeningAddr != "" && (*tlsCertFile == "" || *tlsKeyFile == "") {
+		flagutil.UsageError("--tls_cert_file and --tls_key_file are required if given --tls_listen")
 	}
 
 	var (
@@ -142,13 +149,29 @@ func main() {
 		go startGRPC(srv)
 	}
 
-	if *httpListeningAddr != "" {
+	if *httpListeningAddr != "" || *tlsListeningAddr != "" {
 		xrefs.RegisterHTTPHandlers(ctx, xs, http.DefaultServeMux)
 		filetree.RegisterHTTPHandlers(ctx, ft, http.DefaultServeMux)
 		if sr != nil {
 			search.RegisterHTTPHandlers(ctx, sr, http.DefaultServeMux)
 		}
+		if *publicResources != "" {
+			log.Println("Serving public resources at", *publicResources)
+			if s, err := os.Stat(*publicResources); err != nil {
+				log.Fatalf("ERROR: could not get FileInfo for %q: %v", *publicResources, err)
+			} else if !s.IsDir() {
+				log.Fatalf("ERROR: %q is not a directory", *publicResources)
+			}
+			http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+				http.ServeFile(w, r, filepath.Join(*publicResources, filepath.Clean(r.URL.Path)))
+			})
+		}
+	}
+	if *httpListeningAddr != "" {
 		go startHTTP()
+	}
+	if *tlsListeningAddr != "" {
+		go startTLS()
 	}
 
 	select {} // block forever
@@ -164,18 +187,14 @@ func startGRPC(srv *grpc.Server) {
 }
 
 func startHTTP() {
-	if *publicResources != "" {
-		log.Println("Serving public resources at", *publicResources)
-		if s, err := os.Stat(*publicResources); err != nil {
-			log.Fatalf("ERROR: could not get FileInfo for %q: %v", *publicResources, err)
-		} else if !s.IsDir() {
-			log.Fatalf("ERROR: %q is not a directory", *publicResources)
-		}
-		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			http.ServeFile(w, r, filepath.Join(*publicResources, filepath.Clean(r.URL.Path)))
-		})
-	}
-
 	log.Printf("HTTP server listening on %q", *httpListeningAddr)
 	log.Fatal(http.ListenAndServe(*httpListeningAddr, nil))
+}
+
+func startTLS() {
+	srv := &http.Server{Addr: *tlsListeningAddr}
+	http2.ConfigureServer(srv, nil)
+
+	log.Printf("TLS HTTP2 server listening on %q", *tlsListeningAddr)
+	log.Fatal(srv.ListenAndServeTLS(*tlsCertFile, *tlsKeyFile))
 }

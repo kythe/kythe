@@ -27,6 +27,7 @@ go_binary(
         "//kythe/proto:xref_proto_go",
         "//third_party/go:context",
         "//third_party/go:grpc",
+        "//third_party/go:http2",
     ],
 )
 

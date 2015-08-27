@@ -1,5 +1,10 @@
 # Release Notes
 
+## Upcoming release
+
+Notable additions:
+ - `http_server`: support TLS HTTP2 server interface
+
 ## v0.0.9
 
 Notable changes:
