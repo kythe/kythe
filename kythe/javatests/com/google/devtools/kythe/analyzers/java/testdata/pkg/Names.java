@@ -12,6 +12,18 @@ public class Names {
   //- @Inner defines I
   //- I named vname("pkg.Names.Inner","","","","java")
   private static class Inner {
+    //- @Inner defines ICtor
+    //- ICtor named vname("pkg.Names.Inner.Inner()","","","","java")
+    //- ICtor typed ICtorType
+    //- ICtorType named vname("()","","","","java")
+    private Inner() {}
+
+    //- @Inner defines ICtorStr
+    //- ICtorStr named vname("pkg.Names.Inner.Inner(java.lang.String)","","","","java")
+    //- ICtorStr typed ICtorStrType
+    //- ICtorStrType named vname("(java.lang.String)","","","","java")
+    private Inner(String s) {}
+
     //- @Innerception defines Innerception
     //- Innerception named vname("pkg.Names.Inner.Innerception","","","","java")
     private static class Innerception { // is this still funny?
@@ -23,6 +35,8 @@ public class Names {
 
   //- @func defines F
   //- F named vname("pkg.Names.func(int,java.lang.String)","","","","java")
+  //- F typed FType
+  //- FType named vname("int(int,java.lang.String)","","","","java")
   //- @arg0 defines P0
   //- P0 named vname("pkg.Names.func(int,java.lang.String)#arg0","","","","java")
   //- @arg1 defines P1
@@ -49,5 +63,16 @@ public class Names {
 
   //- @varArgsFunc defines VarArgsFunc
   //- VarArgsFunc named vname("pkg.Names.varArgsFunc(int...)","","","","java")
+  //- VarArgsFunc typed VarArgsFuncType
+  //- VarArgsFuncType named vname("void(int[])","","","","java")
   private static void varArgsFunc(int... varArgsParam) {}
+
+  static class Generic<T> {}
+
+  //- @gFunc defines GFunc
+  //- GFunc typed GFuncType
+  //- GFuncType named vname("pkg.Names.Generic<java.lang.String>()","","","","java")
+  //- @"Generic<String>" ref GType
+  //- GType named vname("pkg.Names.Generic<java.lang.String>","","","","java")
+  static Generic<String> gFunc() { return null; }
 }

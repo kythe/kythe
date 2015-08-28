@@ -200,9 +200,11 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
 
     JavaNode returnType = scan(methodDef.getReturnType(), methodDef);
     List<JavaNode> params = scanList(methodDef.getParameters(), methodDef);
-    List<EntrySet> paramTypes = Lists.newLinkedList();
+    List<JavaNode> paramTypes = Lists.newLinkedList();
+    List<String> paramTypeNames = Lists.newLinkedList();
     for (JavaNode n : params) {
       paramTypes.add(n.typeNode);
+      paramTypeNames.add(n.typeNode.qualifiedName);
     }
 
     Optional<String> signature = signatureGenerator.getSignature(methodDef.sym);
@@ -213,6 +215,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
       EntrySet absNode = defineTypeParameters(methodNode, methodDef.getTypeParameters());
 
       EntrySet ret, anchor = null;
+      String fnTypeName = "(" + Joiner.on(",").join(paramTypeNames) + ")";
       if (methodDef.sym.isConstructor()) {
         // Implicit constructors (those without syntactic definition locations) share the same
         // preferred position as their owned class.  Since implicit constructors don't exist in the
@@ -232,6 +235,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
         anchor = emitAnchor(methodDef.name, methodDef.getPreferredPosition(),
             EdgeKind.DEFINES, methodNode);
         ret = returnType.entries;
+        fnTypeName = returnType.qualifiedName + fnTypeName;
       }
 
       if (anchor != null && absNode != null) {
@@ -239,8 +243,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
       }
 
       emitOrdinalEdges(methodNode, EdgeKind.PARAM, params);
-      EntrySet fnTypeNode = entrySets.newFunctionType(ret, paramTypes);
+      EntrySet fnTypeNode = entrySets.newFunctionType(ret, toEntries(paramTypes));
       entrySets.emitEdge(methodNode, EdgeKind.TYPED, fnTypeNode);
+      entrySets.emitName(fnTypeNode, fnTypeName);
 
       ClassSymbol ownerClass = (ClassSymbol) methodDef.sym.owner;
       Set<Type> ownerDirectSupertypes = new HashSet<>(ownerClass.getInterfaces());
@@ -254,7 +259,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
         }
       }
 
-      return new JavaNode(methodNode, signature.get(), fnTypeNode);
+      return new JavaNode(methodNode, signature.get(),
+          new JavaNode(fnTypeNode, fnTypeName));
     }
     return todoNode("MethodDef: " + methodDef);
   }
@@ -331,7 +337,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
     String name = primitiveType.getPrimitiveTypeKind().toString().toLowerCase();
     EntrySet node = entrySets.getBuiltin(name);
     emitAnchor(primitiveType, EdgeKind.REF, node);
-    return new JavaNode(node, name, node);
+    return new JavaNode(node, name);
   }
 
   @Override
@@ -340,7 +346,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
     EntrySet node = entrySets
         .newTApply(entrySets.getBuiltin("array"), Arrays.asList(typeNode.entries));
     emitAnchor(arrayType, EdgeKind.REF, node);
-    return new JavaNode(node, typeNode.qualifiedName + "[]", node);
+    return new JavaNode(node, typeNode.qualifiedName + "[]");
   }
 
   @Override
@@ -364,6 +370,14 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
   }
 
   //// Utility methods ////
+
+  private static List<EntrySet> toEntries(Iterable<JavaNode> nodes) {
+    List<EntrySet> entries = Lists.newLinkedList();
+    for (JavaNode n : nodes) {
+      entries.add(n.entries);
+    }
+    return entries;
+  }
 
   private EntrySet defineTypeParameters(EntrySet owner, List<JCTypeParameter> params) {
     if (params.isEmpty()) {
@@ -472,8 +486,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
 
   @Deprecated
   private JavaNode todoNode(String message) {
-    EntrySet node = entrySets.todoNode(message);
-    return new JavaNode(node, "TODO", node);
+    return new JavaNode(entrySets.todoNode(message), "TODO",
+        new JavaNode(entrySets.todoNode("type:"+message), "TODO:type"));
   }
 
   private <T extends JCTree> List<JavaNode> scanList(List<T> trees, JCTree owner) {
@@ -488,18 +502,14 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
 class JavaNode {
   // TODO(schroederc): clearly separate semantic/type nodes
   final EntrySet entries;
-  final EntrySet typeNode;
+  final JavaNode typeNode;
   final String qualifiedName;
 
   public JavaNode(EntrySet entries, String qualifiedName) {
-    this(entries, qualifiedName, (EntrySet) null);
+    this(entries, qualifiedName, null);
   }
 
   public JavaNode(EntrySet entries, String qualifiedName, JavaNode typeNode) {
-    this(entries, qualifiedName, typeNode == null ? null : typeNode.entries);
-  }
-
-  public JavaNode(EntrySet entries, String qualifiedName, EntrySet typeNode) {
     this.entries = entries;
     this.qualifiedName = qualifiedName;
     this.typeNode = typeNode;
