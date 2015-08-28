@@ -4,6 +4,8 @@
 
 Notable additions:
  - `http_server`: support TLS HTTP2 server interface
+ - `write_table`: add `--max_edge_page_size` flag to control the sizes of each
+                  PagedEdgeSet and EdgePage written to the output table
 
 ## v0.0.9
 

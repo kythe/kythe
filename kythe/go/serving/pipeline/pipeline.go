@@ -50,11 +50,23 @@ import (
 	spb "kythe.io/kythe/proto/storage_proto"
 )
 
+// Options controls the behavior of pipeline.Run.
+type Options struct {
+	// MaxEdgePageSize is maximum number of edges that are allowed in the
+	// PagedEdgeSet and any EdgePage.  If MaxEdgePageSize <= 0, no paging is
+	// attempted.
+	MaxEdgePageSize int
+}
+
 const chBuf = 512
 
 // Run writes the xrefs and filetree serving tables to db based on the given
 // graphstore.Service.
-func Run(ctx context.Context, gs graphstore.Service, db keyvalue.DB) error {
+func Run(ctx context.Context, gs graphstore.Service, db keyvalue.DB, opts *Options) error {
+	if opts == nil {
+		opts = new(Options)
+	}
+
 	log.Println("Starting serving pipeline")
 	tbl := table.ProtoBatchParallel{&table.KVProto{db}}
 
@@ -120,7 +132,7 @@ func Run(ctx context.Context, gs graphstore.Service, db keyvalue.DB) error {
 	}()
 	go func() {
 		defer xrefsWG.Done()
-		eErr = writeEdges(ctx, tbl, eIn)
+		eErr = writeEdges(ctx, tbl, eIn, opts.MaxEdgePageSize)
 		if eErr != nil {
 			eErr = fmt.Errorf("error writing Edges: %v", eErr)
 		} else {
@@ -263,7 +275,7 @@ func tempTable(name string) (keyvalue.DB, error) {
 	return &deleteOnClose{tbl, tempDir}, nil
 }
 
-func writeEdges(ctx context.Context, t table.Proto, edges <-chan *spb.Entry) error {
+func writeEdges(ctx context.Context, t table.Proto, edges <-chan *spb.Entry, maxEdgePageSize int) error {
 	defer drainEntries(edges) // ensure channel is drained on errors
 
 	temp, err := tempTable("edge.groups")
@@ -304,10 +316,10 @@ func writeEdges(ctx context.Context, t table.Proto, edges <-chan *spb.Entry) err
 		}
 	}
 
-	return writeEdgePages(ctx, t, edgeGroups)
+	return writeEdgePages(ctx, t, edgeGroups, maxEdgePageSize)
 }
 
-func writeEdgePages(ctx context.Context, t table.Proto, edgeGroups *table.KVProto) error {
+func writeEdgePages(ctx context.Context, t table.Proto, edgeGroups *table.KVProto, maxEdgePageSize int) error {
 	// TODO(schroederc): spill large PagedEdgeSets into EdgePages
 
 	it, err := edgeGroups.ScanPrefix(nil, &keyvalue.Options{LargeRead: true})
@@ -318,8 +330,12 @@ func writeEdgePages(ctx context.Context, t table.Proto, edgeGroups *table.KVProt
 
 	log.Println("Writing EdgeSets")
 	esb := &build.EdgeSetBuilder{
+		MaxEdgePageSize: maxEdgePageSize,
 		Output: func(ctx context.Context, pes *srvpb.PagedEdgeSet) error {
 			return t.Put(ctx, xrefs.EdgeSetKey(pes.EdgeSet.SourceTicket), pes)
+		},
+		OutputPage: func(ctx context.Context, ep *srvpb.EdgePage) error {
+			return t.Put(ctx, xrefs.EdgePageKey(ep.PageKey), ep)
 		},
 	}
 	for {

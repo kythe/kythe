@@ -40,6 +40,8 @@ var (
 	gs graphstore.Service
 
 	tablePath = flag.String("out", "", "Directory path to output serving table")
+
+	maxEdgePageSize = flag.Int("max_edge_page_size", 4000, "If positive, edge pages are restricted to under this size")
 )
 
 func init() {
@@ -71,7 +73,9 @@ func main() {
 	}
 	defer profile.Stop()
 
-	if err := pipeline.Run(ctx, gs, db); err != nil {
+	if err := pipeline.Run(ctx, gs, db, &pipeline.Options{
+		MaxEdgePageSize: *maxEdgePageSize,
+	}); err != nil {
 		log.Fatal("FATAL ERROR: ", err)
 	}
 }

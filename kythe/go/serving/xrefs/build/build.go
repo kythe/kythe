@@ -19,6 +19,7 @@
 package build
 
 import (
+	"container/heap"
 	"fmt"
 	"log"
 	"sort"
@@ -206,29 +207,42 @@ func (s ByOffset) Less(i, j int) bool {
 	return s[i].Anchor.EndOffset < s[j].Anchor.EndOffset
 }
 
-// EdgeSetBuilder constructs a set of PagedEdgeSets from a sequence of
-// EdgeSet_Groups.  All EdgeSet_Groups for the same source are assumed to be
-// given sequentially to AddGroup, secondarily ordered by the group's edge kind.
-// If given in this order, Output will be given exactly 1 PagedEdgeSet per
-// source with exactly 1 EdgeSet_Group per edge kind.  If not given in this
-// order, no guarantees can be made.  Flush must be called after the final call
-// to AddGroup.
+// EdgeSetBuilder constructs a set of PagedEdgeSets and EdgePages from a
+// sequence of EdgeSet_Groups.  All EdgeSet_Groups for the same source are
+// assumed to be given sequentially to AddGroup, secondarily ordered by the
+// group's edge kind.  If given in this order, Output will be given exactly 1
+// PagedEdgeSet per source with as few EdgeSet_Group per edge kind as to satisfy
+// MaxEdgePageSize (MaxEdgePageSize == 0 indicates that there will be exactly 1
+// edge group per edge kind).  If not given in this order, no guarantees can be
+// made.  Flush must be called after the final call to AddGroup.
 type EdgeSetBuilder struct {
-	Output func(context.Context, *srvpb.PagedEdgeSet) error
+	// MaxEdgePageSize is maximum number of edges that are allowed in the
+	// PagedEdgeSet and any EdgePage.  If MaxEdgePageSize <= 0, no paging is
+	// attempted.
+	MaxEdgePageSize int
 
-	curPES *srvpb.PagedEdgeSet
-	curEG  *srvpb.EdgeSet_Group
+	// Output is used to emit each PagedEdgeSet constructed.
+	Output func(context.Context, *srvpb.PagedEdgeSet) error
+	// OutputPage is used to emit each EdgePage constructed.
+	OutputPage func(context.Context, *srvpb.EdgePage) error
+
+	curPES   *srvpb.PagedEdgeSet
+	curEG    *srvpb.EdgeSet_Group
+	groups   byEdgeCount
+	resident int
 }
 
 // AddGroup adds the given EdgeSet_Group to the builder, possibly emitting a new
-// PagedEdgeSet.  See EdgeSetBuilder's documentation for the assumed order of
-// the groups.
+// PagedEdgeSet and/or EdgePage.  See EdgeSetBuilder's documentation for the
+// assumed order of the groups.
 func (b *EdgeSetBuilder) AddGroup(ctx context.Context, src string, eg *srvpb.EdgeSet_Group) error {
 	if b.curPES != nil && b.curPES.EdgeSet.SourceTicket != src {
 		if err := b.Flush(ctx); err != nil {
 			return fmt.Errorf("error flushing previous PagedEdgeSet: %v", err)
 		}
 	}
+
+	// Setup b.curPES and b.curEG; ensuring both are non-nil
 	if b.curPES == nil {
 		b.curPES = &srvpb.PagedEdgeSet{
 			EdgeSet: &srvpb.EdgeSet{
@@ -236,34 +250,94 @@ func (b *EdgeSetBuilder) AddGroup(ctx context.Context, src string, eg *srvpb.Edg
 			},
 		}
 		b.curEG = eg
-		return nil
-	}
-
-	if b.curEG.Kind != eg.Kind {
-		b.flushGroup()
+	} else if b.curEG == nil {
+		b.curEG = eg
+	} else if b.curEG.Kind != eg.Kind {
+		heap.Push(&b.groups, b.curEG)
 		b.curEG = eg
 	} else {
 		b.curEG.TargetTicket = append(b.curEG.TargetTicket, eg.TargetTicket...)
+	}
+	// Update edge counters
+	b.resident += len(eg.TargetTicket)
+	b.curPES.TotalEdges += int32(len(eg.TargetTicket))
+
+	// Handling creation of EdgePages, when # of resident edges passes config value
+	for b.MaxEdgePageSize > 0 && b.resident > b.MaxEdgePageSize {
+		var eviction *srvpb.EdgeSet_Group
+		if b.curEG != nil {
+			if len(b.curEG.TargetTicket) > b.MaxEdgePageSize {
+				// Split the large page; evict page exactly sized b.MaxEdgePageSize
+				eviction = &srvpb.EdgeSet_Group{
+					Kind:         b.curEG.Kind,
+					TargetTicket: b.curEG.TargetTicket[:b.MaxEdgePageSize],
+				}
+				b.curEG.TargetTicket = b.curEG.TargetTicket[b.MaxEdgePageSize:]
+			} else if len(b.groups) == 0 || len(b.curEG.TargetTicket) > len(b.groups[0].TargetTicket) {
+				// Evict b.curEG, it's larger than any other group we have
+				eviction, b.curEG = b.curEG, nil
+			}
+		}
+		if eviction == nil {
+			// Evict the largest group we have
+			eviction = heap.Pop(&b.groups).(*srvpb.EdgeSet_Group)
+		}
+
+		key := newPageKey(src, len(b.curPES.PageIndex))
+		count := len(eviction.TargetTicket)
+
+		// Output the EdgePage and add it to the page indices
+		if err := b.OutputPage(ctx, &srvpb.EdgePage{
+			PageKey:      key,
+			SourceTicket: src,
+			EdgesGroup:   eviction,
+		}); err != nil {
+			return fmt.Errorf("error emitting EdgePage: %v", err)
+		}
+		b.curPES.PageIndex = append(b.curPES.PageIndex, &srvpb.PageIndex{
+			PageKey:   key,
+			EdgeKind:  eviction.Kind,
+			EdgeCount: int32(count),
+		})
+		b.resident -= count // update edge counter
 	}
 
 	return nil
 }
 
-func (b *EdgeSetBuilder) flushGroup() {
-	b.curPES.EdgeSet.Group = append(b.curPES.EdgeSet.Group, b.curEG)
-	b.curPES.TotalEdges += int32(len(b.curEG.TargetTicket))
-}
-
-// Flush signals the end of the current PagedEdgeSet being built and flushes it
+// Flush signals the end of the current PagedEdgeSet being built, flushing it,
 // and its EdgeSet_Groups to the output function.  This should be called after
-// the final call to AddGroup, but manually calling Flush at any other time is
+// the final call to AddGroup.  Manually calling Flush at any other time is
 // unnecessary.
 func (b *EdgeSetBuilder) Flush(ctx context.Context) error {
 	if b.curPES == nil {
 		return nil
 	}
-	b.flushGroup()
+	if b.curEG != nil {
+		b.groups = append(b.groups, b.curEG)
+	}
+	b.curPES.EdgeSet.Group = b.groups
 	err := b.Output(ctx, b.curPES)
-	b.curPES, b.curEG = nil, nil
+	b.curPES, b.curEG, b.groups, b.resident = nil, nil, nil, 0
 	return err
+}
+
+func newPageKey(src string, n int) string { return fmt.Sprintf("%s.%.10d", src, n) }
+
+// byEdgeCount implements the heap.Interface (largest group of edges first)
+type byEdgeCount []*srvpb.EdgeSet_Group
+
+// Implement the sort.Interface
+func (s byEdgeCount) Len() int           { return len(s) }
+func (s byEdgeCount) Less(i, j int) bool { return len(s[i].TargetTicket) > len(s[j].TargetTicket) }
+func (s byEdgeCount) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+
+// Implement the heap.Interface
+func (s *byEdgeCount) Push(v interface{}) { *s = append(*s, v.(*srvpb.EdgeSet_Group)) }
+func (s *byEdgeCount) Pop() interface{} {
+	old := *s
+	n := len(old) - 1
+	out := old[n]
+	*s = old[:n]
+	return out
 }
