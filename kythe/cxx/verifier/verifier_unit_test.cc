@@ -263,6 +263,84 @@ TEST(VerifierUnitTest, GenerateAnchorEvarFailsOnEmptyDB) {
   ASSERT_FALSE(v.VerifyAllGoals());
 }
 
+TEST(VerifierUnitTest, OffsetsVersusRuleBlocks) {
+  Verifier v;
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(
+#- @text defines SomeNode
+#- @+2text defines SomeNode
+#- @+1text defines SomeNode
+# text
+)"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_FALSE(v.VerifyAllGoals());
+}
+
+TEST(VerifierUnitTest, ZeroRelativeLineReferencesDontWork) {
+  Verifier v;
+  ASSERT_FALSE(v.LoadInlineProtoFile(R"(
+#- @+0text defines SomeNode
+# text
+)"));
+}
+
+TEST(VerifierUnitTest, NoMatchingInsideGoalComments) {
+  Verifier v;
+  ASSERT_FALSE(v.LoadInlineProtoFile(R"(
+#- @+1text defines SomeNode
+#- @text defines SomeNode
+# text
+)"));
+}
+
+TEST(VerifierUnitTest, OutOfBoundsRelativeLineReferencesDontWork) {
+  Verifier v;
+  ASSERT_FALSE(v.LoadInlineProtoFile(R"(
+#- @+2text defines SomeNode
+# text
+)"));
+}
+
+TEST(VerifierUnitTest, EndOfFileAbsoluteLineReferencesWork) {
+  Verifier v;
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(
+#- @:3text defines SomeNode
+# text
+)"));
+}
+
+TEST(VerifierUnitTest, OutOfBoundsAbsoluteLineReferencesDontWork) {
+  Verifier v;
+  ASSERT_FALSE(v.LoadInlineProtoFile(R"(
+#- @:4text defines SomeNode
+# text
+)"));
+}
+
+TEST(VerifierUnitTest, ZeroAbsoluteLineReferencesDontWork) {
+  Verifier v;
+  ASSERT_FALSE(v.LoadInlineProtoFile(R"(
+#- @:0text defines SomeNode
+# text
+)"));
+}
+
+TEST(VerifierUnitTest, SameAbsoluteLineReferencesDontWork) {
+  Verifier v;
+  ASSERT_FALSE(v.LoadInlineProtoFile(R"(
+#- @:1text defines SomeNode
+# text
+)"));
+}
+
+TEST(VerifierUnitTest, HistoricalAbsoluteLineReferencesDontWork) {
+  Verifier v;
+  ASSERT_FALSE(v.LoadInlineProtoFile(R"(
+#
+#- @:1text defines SomeNode
+# text
+)"));
+}
+
 TEST(VerifierUnitTest, ParseLiteralString) {
   Verifier v;
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(
@@ -323,6 +401,66 @@ fact_value: ""
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
+TEST(VerifierUnitTest, GenerateStartOffsetEVarRelativeLine) {
+  Verifier v;
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+#- ANode.loc/start @^+22text
+source { root:"1" }
+fact_name: "/kythe/node/kind"
+fact_value: "anchor"
+}
+entries {
+source { root:"1" }
+fact_name: "/kythe/loc/start"
+fact_value: "387"
+}
+entries {
+source { root:"1" }
+fact_name: "/kythe/loc/end"
+fact_value: "391"
+}
+entries {
+source { root:"1" }
+edge_kind: "/kythe/edge/defines"
+target { root:"2" }
+fact_name: "/"
+fact_value: ""
+}
+##text (line 24 column 2 offset 387-391))"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_TRUE(v.VerifyAllGoals());
+}
+
+TEST(VerifierUnitTest, GenerateEndOffsetEVarAbsoluteLine) {
+  Verifier v;
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+#-   ANode.loc/end @$:24text
+source { root:"1" }
+fact_name: "/kythe/node/kind"
+fact_value: "anchor"
+}
+entries {
+source { root:"1" }
+fact_name: "/kythe/loc/start"
+fact_value: "387"
+}
+entries {
+source { root:"1" }
+fact_name: "/kythe/loc/end"
+fact_value: "391"
+}
+entries {
+source { root:"1" }
+edge_kind: "/kythe/edge/defines"
+target { root:"2" }
+fact_name: "/"
+fact_value: ""
+}
+##text (line 24 column 2 offset 387-391))"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_TRUE(v.VerifyAllGoals());
+}
+
 TEST(VerifierUnitTest, GenerateEndOffsetEVar) {
   Verifier v;
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
@@ -379,6 +517,66 @@ target { root:"2" }
 fact_name: "/"
 fact_value: ""
 })"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_TRUE(v.VerifyAllGoals());
+}
+
+TEST(VerifierUnitTest, GenerateAnchorEvarAbsoluteLine) {
+  Verifier v;
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+#- @:24text defines SomeNode
+source { root:"1" }
+fact_name: "/kythe/node/kind"
+fact_value: "anchor"
+}
+entries {
+source { root:"1" }
+fact_name: "/kythe/loc/start"
+fact_value: "387"
+}
+entries {
+source { root:"1" }
+fact_name: "/kythe/loc/end"
+fact_value: "391"
+}
+entries {
+source { root:"1" }
+edge_kind: "/kythe/edge/defines"
+target { root:"2" }
+fact_name: "/"
+fact_value: ""
+}
+##text (line 24 column 2 offset 387-391))"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_TRUE(v.VerifyAllGoals());
+}
+
+TEST(VerifierUnitTest, GenerateAnchorEvarRelativeLine) {
+  Verifier v;
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+#- @+22text defines SomeNode
+source { root:"1" }
+fact_name: "/kythe/node/kind"
+fact_value: "anchor"
+}
+entries {
+source { root:"1" }
+fact_name: "/kythe/loc/start"
+fact_value: "387"
+}
+entries {
+source { root:"1" }
+fact_name: "/kythe/loc/end"
+fact_value: "391"
+}
+entries {
+source { root:"1" }
+edge_kind: "/kythe/edge/defines"
+target { root:"2" }
+fact_name: "/"
+fact_value: ""
+}
+##text (line 24 column 2 offset 387-391))"));
   ASSERT_TRUE(v.PrepareDatabase());
   ASSERT_TRUE(v.VerifyAllGoals());
 }

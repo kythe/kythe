@@ -59,6 +59,8 @@ class AssertionParser;
   DOT "."
   WHAT "?"
   EQUALS "="
+  COLON ":"
+  PLUS "+"
 ;
 %token <string> IDENTIFIER "identifier"
 %token <string> STRING "string"
@@ -139,6 +141,12 @@ exp_tuple_star:
 
 location_spec:
     string_or_identifier { context.PushLocationSpec($1); $$ = 0; }
+  | ":" "number" string_or_identifier {
+    context.PushAbsoluteLocationSpec($3, $2); $$ = 0;
+  }
+  | "+" "number" string_or_identifier {
+    context.PushRelativeLocationSpec($3, $2); $$ = 0;
+  }
 
 %%
 void yy::AssertionParserImpl::error(const location_type &l,

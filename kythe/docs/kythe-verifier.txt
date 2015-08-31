@@ -1,3 +1,17 @@
+// Copyright 2014 Google Inc. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 Kythe Indexer Verification
 ==========================
 
@@ -136,6 +150,37 @@ below on <<subexp,naming expressions>> for details.
 NOTE: Offset specifications are equivalent to the atomic string literal
 containing the decimal stringification of the relevant byte offset. They are
 manifested as evars that are unified before solving begins.
+
+==== Anchors that refer to lines far in the future
+
+It may not be possible to place a goal string on the line directly before the
+text you want to match. In this case, you can specify that the match should take
+place on either an absolute line number or a relative line number. For example,
+the existing anchor specifier `@x` could (almost) be written with a relative
+offset as:
+
+  #- @+1x defines Foo
+
+It is easier to read as a string literal:
+
+  #- @+1"x" defines Foo
+
+If `x` should appear on line 3, you can use an absolute line number:
+
+  #- @:3"x" defines Foo
+
+Relative offsets are calculated from the line on which the anchor specifier
+begins. (This is the way that `@x` and `@+1x` differ: the former matches on the
+first subsequent non-goal line, while the latter always matches on the next
+line.) Text matching may only occur on lines following the one on which the
+match is ordered. Matches will not be resolved inside goals.
+
+For completeness, you may use line references together with offset
+specifications:
+
+  #- AnchorX=@x.node/kind anchor
+  #- AnchorX.loc/start @^+2x
+  #- AnchorX.loc/end @$:4x
 
 === Edge goals
 

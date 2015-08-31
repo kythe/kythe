@@ -62,7 +62,7 @@ blank [ \t]
 <IGNORED>{
 \n       {
             // Resolve locations after the first endline.
-            if (!context.ResolveLocations(*yylloc, loc_ofs)) {
+            if (!context.ResolveLocations(*yylloc, loc_ofs, false)) {
               context.Error(*yylloc, "could not resolve all locations");
             }
             yylloc->lines(yyleng);
@@ -94,6 +94,8 @@ blank [ \t]
 "{"      return yy::AssertionParserImpl::token::LBRACE;
 "}"      return yy::AssertionParserImpl::token::RBRACE;
 "!"      return yy::AssertionParserImpl::token::BANG;
+":"      return yy::AssertionParserImpl::token::COLON;
+"+"      return yy::AssertionParserImpl::token::PLUS;
 {int}    yylval->string = yytext; return yy::AssertionParserImpl::token::NUMBER;
 {id}     yylval->string = yytext; return yy::AssertionParserImpl::token::IDENTIFIER;
 \"(\\.|[^\\"])*\" {
@@ -143,7 +145,7 @@ void AssertionParser::ScanBeginFile(bool trace_scanning) {
 void AssertionParser::ScanEnd(const yy::location &eof_loc,
                               size_t eof_loc_ofs) {
   // Imagine that all files end with an endline.
-  if (!ResolveLocations(eof_loc, eof_loc_ofs + 1)) {
+  if (!ResolveLocations(eof_loc, eof_loc_ofs + 1, true)) {
     Error(eof_loc, "could not resolve all locations at end of file");
   }
   if (stringBufferState) {

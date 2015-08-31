@@ -145,7 +145,7 @@ class AssertionParser {
   ///
   /// \return true if all locations could be resolved
   bool ResolveLocations(const yy::location &end_of_line,
-                        size_t offset_after_endline);
+                        size_t offset_after_endline, bool end_of_file);
 
   /// \brief Called by the lexer to save the end location of the current file
   /// or buffer.
@@ -167,15 +167,15 @@ class AssertionParser {
   void Error(const std::string &message);
 
   /// \brief Initializes the lexer to scan from file_.
-  /// \note Implemented in `Assertions.ll`.
+  /// \note Implemented in `assertions.lex`.
   void ScanBeginFile(bool trace_scanning);
 
   /// \brief Initializes the lexer to scan from a string.
-  /// \note Implemented in `Assertions.ll`.
+  /// \note Implemented in `assertions.lex`.
   void ScanBeginString(const std::string &data, bool trace_scanning);
 
   /// \brief Handles end-of-scan actions and destroys any buffers.
-  /// \note Implemented in `Assertions.ll`.
+  /// \note Implemented in `assertions.lex`.
   void ScanEnd(const yy::location &eof_loc, size_t eof_loc_ofs);
   AstNode **PopNodes(size_t node_count);
   void PushNode(AstNode *node);
@@ -226,6 +226,14 @@ class AssertionParser {
                          const std::string &inspect_id, AstNode *to_inspect);
 
   void PushLocationSpec(const std::string &for_token);
+
+  /// \brief Pushes a relative location spec (@token:+2).
+  void PushRelativeLocationSpec(const std::string &for_token,
+                                const std::string &relative_spec);
+
+  /// \brief Pushes an absolute location spec (@token:1234).
+  void PushAbsoluteLocationSpec(const std::string &for_token,
+                                const std::string &abs_spec);
 
   AstNode *CreateAnchorSpec(const yy::location &location);
 
@@ -279,12 +287,22 @@ class AssertionParser {
     };
     EVar *anchor_evar;        ///< The EVar to be solved.
     std::string anchor_text;  ///< The text to match.
+    size_t line_number;       ///< The line to match text on.
+    bool use_line_number;     ///< Whether to match with `line_number` or
+                              ///< on the next possible non-goal line.
     size_t group_id;  ///< The group that will own the offset goals, if any.
     Kind kind;        ///< The flavor of UnresolvedLocation we are.
   };
   std::vector<UnresolvedLocation> unresolved_locations_;
   std::vector<AstNode *> node_stack_;
-  std::vector<std::string> location_spec_stack_;
+  struct LocationSpec {
+    std::string spec;
+    int line_offset;
+    bool is_absolute;
+  };
+  std::vector<LocationSpec> location_spec_stack_;
+  bool ValidateTopLocationSpec(const yy::location &location,
+                               size_t *line_number, bool *use_line_number);
   /// Files we've parsed or are parsing (pushed onto the back).
   /// Note that location records will have internal pointers to these strings.
   std::deque<std::string> files_;

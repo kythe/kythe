@@ -150,7 +150,19 @@ void AssertionParser::ResetLexCheck() {
 }
 
 void AssertionParser::PushLocationSpec(const std::string &for_token) {
-  location_spec_stack_.push_back(for_token);
+  location_spec_stack_.emplace_back(LocationSpec{for_token, -1, false});
+}
+
+void AssertionParser::PushRelativeLocationSpec(const std::string &for_token,
+                                               const std::string &relative) {
+  location_spec_stack_.emplace_back(
+      LocationSpec{for_token, atoi(relative.c_str()), false});
+}
+
+void AssertionParser::PushAbsoluteLocationSpec(const std::string &for_token,
+                                               const std::string &absolute) {
+  location_spec_stack_.emplace_back(
+      LocationSpec{for_token, atoi(absolute.c_str()), true});
 }
 
 Identifier *AssertionParser::PathIdentifierFor(
@@ -252,15 +264,43 @@ EVar *AssertionParser::CreateEVar(const yy::location &location,
   }
 }
 
-AstNode *AssertionParser::CreateAnchorSpec(const yy::location &location) {
+bool AssertionParser::ValidateTopLocationSpec(const yy::location &location,
+                                              size_t *line_number,
+                                              bool *use_line_number) {
   if (!location_spec_stack_.size()) {
     Error(location, "No locations on location stack.");
     return verifier_.empty_string_id();
   }
+  const auto &spec = location_spec_stack_.back();
+  if (spec.line_offset == 0) {
+    Error(location, "This line offset is invalid.");
+    return verifier_.empty_string_id();
+  } else if (spec.line_offset < 0) {
+    *use_line_number = false;
+    *line_number = 0;
+    return true;
+  }
+  *use_line_number = true;
+  *line_number = spec.is_absolute ? spec.line_offset
+                                  : spec.line_offset + location.begin.line;
+  if (*line_number <= location.begin.line) {
+    Error(location, "This line offset points to a previous or equal line.");
+    return false;
+  }
+  return true;
+}
+
+AstNode *AssertionParser::CreateAnchorSpec(const yy::location &location) {
+  size_t line_number;
+  bool use_line_number;
+  if (!ValidateTopLocationSpec(location, &line_number, &use_line_number)) {
+    return verifier_.empty_string_id();
+  }
+  const auto &spec = location_spec_stack_.back();
   EVar *new_evar = new (verifier_.arena()) EVar(location);
   unresolved_locations_.push_back(
-      UnresolvedLocation{new_evar, location_spec_stack_.back(), group_id(),
-                         UnresolvedLocation::Kind::kAnchor});
+      UnresolvedLocation{new_evar, spec.spec, line_number, use_line_number,
+                         group_id(), UnresolvedLocation::Kind::kAnchor});
   location_spec_stack_.pop_back();
   AppendGoal(group_id(), verifier_.MakePredicate(
                              location, verifier_.fact_id(),
@@ -272,27 +312,42 @@ AstNode *AssertionParser::CreateAnchorSpec(const yy::location &location) {
 
 AstNode *AssertionParser::CreateOffsetSpec(const yy::location &location,
                                            bool at_end) {
-  if (!location_spec_stack_.size()) {
-    Error(location, "No locations on location stack.");
+  size_t line_number;
+  bool use_line_number;
+  if (!ValidateTopLocationSpec(location, &line_number, &use_line_number)) {
     return verifier_.empty_string_id();
   }
+  const auto &spec = location_spec_stack_.back();
   EVar *new_evar = new (verifier_.arena()) EVar(location);
-  unresolved_locations_.push_back(
-      UnresolvedLocation{new_evar, location_spec_stack_.back(), group_id(),
-                         at_end ? UnresolvedLocation::Kind::kOffsetEnd
-                                : UnresolvedLocation::Kind::kOffsetBegin});
+  unresolved_locations_.push_back(UnresolvedLocation{
+      new_evar, spec.spec, line_number, use_line_number, group_id(),
+      at_end ? UnresolvedLocation::Kind::kOffsetEnd
+             : UnresolvedLocation::Kind::kOffsetBegin});
   location_spec_stack_.pop_back();
   return new_evar;
 }
 
 bool AssertionParser::ResolveLocations(const yy::location &end_of_line,
-                                       size_t offset_after_endline) {
+                                       size_t offset_after_endline,
+                                       bool end_of_file) {
   bool was_ok = true;
+  std::vector<UnresolvedLocation> succ_lines;
   for (auto &record : unresolved_locations_) {
-    size_t group_id = record.group_id;
     EVar *evar = record.anchor_evar;
     std::string &token = record.anchor_text;
     yy::location location = evar->location();
+    if (record.use_line_number &&
+        (record.line_number != end_of_line.begin.line)) {
+      if (end_of_file) {
+        Error(location, token + ":" + std::to_string(record.line_number) +
+                            " not found before end of file.");
+        was_ok = false;
+      } else {
+        succ_lines.push_back(record);
+      }
+      continue;
+    }
+    size_t group_id = record.group_id;
     auto col = line_.find(token);
     if (col == std::string::npos) {
       Error(location, token + " not found.");
@@ -349,7 +404,7 @@ bool AssertionParser::ResolveLocations(const yy::location &end_of_line,
         break;
     }
   }
-  unresolved_locations_.clear();
+  unresolved_locations_.swap(succ_lines);
   ResetLexCheck();
   return was_ok;
 }
