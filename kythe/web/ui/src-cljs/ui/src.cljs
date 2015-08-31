@@ -86,7 +86,7 @@
   (let [src (b64/decodeString (:source_text decorations))
         anchors (mapcat overlay-anchors
                   (group-overlapping-anchors
-                    (filter (fn [{:keys [:start :end]}]
+                    (filter (fn [{:keys [start end kind]}]
                               (and start end (< start end)))
                       (map (fn [{:keys [source_ticket target_ticket anchor_start anchor_end kind]}]
                              {:start (:byte_offset anchor_start)
@@ -94,7 +94,8 @@
                               :kind (schema/trim-edge-prefix kind)
                               :anchor-ticket source_ticket
                               :target-ticket target_ticket})
-                        (:reference decorations)))))]
+                        (filter #(not= schema/documents-edge (:kind %))
+                          (:reference decorations))))))]
     {:source-text src
      :num-lines (count-lines src)
      :nodes
