@@ -15,6 +15,13 @@ java_verifier_test(
 )
 
 java_verifier_test(
+    name = "comments_tests",
+    srcs = [
+        "Comments.java",
+    ],
+)
+
+java_verifier_test(
     name = "classes_tests",
     srcs = [
         "Classes.java",

@@ -22,6 +22,7 @@ import com.google.devtools.kythe.analyzers.base.EntrySet;
 import com.google.devtools.kythe.analyzers.base.FactEmitter;
 import com.google.devtools.kythe.analyzers.base.KytheEntrySets;
 import com.google.devtools.kythe.analyzers.base.NodeKind;
+import com.google.devtools.kythe.analyzers.java.SourceText.Positions;
 import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
 import com.google.devtools.kythe.proto.Storage.VName;
@@ -96,7 +97,7 @@ public class JavaEntrySets extends KytheEntrySets {
   }
 
   /** Emits and returns a new {@link EntrySet} representing the Java file. */
-  public EntrySet getFileNode(FilePositions file) {
+  public EntrySet getFileNode(Positions file) {
     return getFileNode(
         getDigest(file.getSourceFile()), file.getData(), file.getEncoding().toString());
   }
@@ -116,17 +117,17 @@ public class JavaEntrySets extends KytheEntrySets {
   }
 
   /** Returns and emits a Java anchor for the given {@link JCTree}. */
-  public EntrySet getAnchor(FilePositions filePositions, JCTree tree) {
+  public EntrySet getAnchor(Positions filePositions, JCTree tree) {
     return getAnchor(filePositions, filePositions.getStart(tree), filePositions.getEnd(tree));
   }
 
   /** Returns and emits a Java anchor for the given offset span. */
-  public EntrySet getAnchor(FilePositions filePositions, int start, int end) {
+  public EntrySet getAnchor(Positions filePositions, int start, int end) {
     return getAnchor(lookupVName(getDigest(filePositions.getSourceFile())), start, end);
   }
 
   /** Returns and emits a Java anchor for the given identifier. */
-  public EntrySet getAnchor(FilePositions filePositions, Name name, int startOffset) {
+  public EntrySet getAnchor(Positions filePositions, Name name, int startOffset) {
     Span span = filePositions.findIdentifier(name, startOffset);
     return span == null
         ? null

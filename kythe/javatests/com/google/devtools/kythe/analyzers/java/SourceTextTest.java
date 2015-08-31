@@ -17,7 +17,7 @@
 package com.google.devtools.kythe.analyzers.java;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.devtools.kythe.analyzers.java.FilePositions.memoizeByteOffsets;
+import static com.google.devtools.kythe.analyzers.java.SourceText.PositionMappings;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_16;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -26,19 +26,19 @@ import junit.framework.TestCase;
 
 import java.nio.charset.Charset;
 
-/** Tests {@link FilePositions} */
-public class FilePositionsTest extends TestCase {
+/** Tests {@link SourceText} */
+public class SourceTextTest extends TestCase {
   public void testASCII() {
     String text = "Hello\nWorld!";
     assertOffsetsMatchSubstrings(US_ASCII, text);
 
-    int[] ao = memoizeByteOffsets(US_ASCII, text);
+    int[] ao = new PositionMappings(US_ASCII, text).byteOffsets;
     assertThat(ao).hasLength(text.length()+1);
     for (int i = 0; i < ao.length; i++) {
       assertThat(ao[i]).named("ao["+i+"]").isEqualTo(i);
     }
 
-    int[] au = memoizeByteOffsets(UTF_8, text);
+    int[] au = new PositionMappings(UTF_8, text).byteOffsets;
     assertThat(ao).isEqualTo(au);
   }
 
@@ -58,7 +58,7 @@ public class FilePositionsTest extends TestCase {
   }
 
   private static void assertOffsetsMatchSubstrings(Charset charset, String text) {
-    int[] offsets = memoizeByteOffsets(charset, text);
+    int[] offsets = new PositionMappings(charset, text).byteOffsets;
 
     // Check edges first
     assertThat(offsets[0]).isEqualTo(0);

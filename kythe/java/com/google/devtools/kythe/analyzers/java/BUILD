@@ -3,10 +3,10 @@ package(default_visibility = ["//kythe:default_visibility"])
 java_library(
     name = "analyzer",
     srcs = [
-        "FilePositions.java",
         "JavaEntrySets.java",
         "KytheJavacAnalyzer.java",
         "KytheTreeScanner.java",
+        "SourceText.java",
     ],
     deps = [
         "//kythe/java/com/google/devtools/kythe/analyzers/base:entryset",

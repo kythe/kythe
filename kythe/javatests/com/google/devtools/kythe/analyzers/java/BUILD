@@ -10,8 +10,8 @@ sh_test(
 )
 
 java_test(
-    name = "file_positions_test",
-    srcs = ["FilePositionsTest.java"],
+    name = "source_text_test",
+    srcs = ["SourceTextTest.java"],
     deps = [
         "//kythe/java/com/google/devtools/kythe/analyzers/java:analyzer",
         "//third_party:junit4",

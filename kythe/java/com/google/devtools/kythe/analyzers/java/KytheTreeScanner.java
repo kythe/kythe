@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.devtools.kythe.analyzers.base.EdgeKind;
 import com.google.devtools.kythe.analyzers.base.EntrySet;
+import com.google.devtools.kythe.analyzers.java.SourceText.Positions;
 import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.platform.java.helpers.JCTreeScanner;
 import com.google.devtools.kythe.platform.java.helpers.JavacUtil;
@@ -56,9 +57,13 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+
+import javax.lang.model.element.ElementKind;
 
 /** {@link JCTreeScanner} that emits Kythe nodes and edges. */
 public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
@@ -69,23 +74,35 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
   private final StatisticsCollector statistics;
   // TODO(schroederc): refactor SignatureGenerator for new schema names
   private final SignatureGenerator signatureGenerator;
-  private final FilePositions filePositions;
+  private final Positions filePositions;
+  private final Map<Integer, List<SourceText.Comment>> comments = new HashMap<>();
   private final Context context;
 
   private KytheTreeScanner(JavaEntrySets entrySets, StatisticsCollector statistics,
-      SignatureGenerator signatureGenerator, FilePositions filePositions, Context context) {
+      SignatureGenerator signatureGenerator, SourceText src, Context context) {
     this.entrySets = entrySets;
     this.statistics = statistics;
     this.signatureGenerator = signatureGenerator;
-    this.filePositions = filePositions;
+    this.filePositions = src.getPositions();
     this.context = context;
+
+    for (SourceText.Comment comment : src.getComments()) {
+      int end = comment.lineSpan.getEnd();
+      if (end > 0) {
+        if (comments.containsKey(end)) {
+          comments.get(end).add(comment);
+        } else {
+          comments.put(end, Arrays.asList(comment));
+        }
+      }
+    }
   }
 
   public static void emitEntries(Context context, StatisticsCollector statistics,
       JavaEntrySets entrySets, SignatureGenerator signatureGenerator,
       JCCompilationUnit compilation, Charset sourceEncoding) throws IOException {
-    FilePositions filePositions = new FilePositions(context, compilation, sourceEncoding);
-    new KytheTreeScanner(entrySets, statistics, signatureGenerator, filePositions, context)
+    SourceText src = new SourceText(context, compilation, sourceEncoding);
+    new KytheTreeScanner(entrySets, statistics, signatureGenerator, src, context)
         .scan(compilation, null);
   }
 
@@ -157,10 +174,12 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
       EntrySet classNode = entrySets.getNode(classDef.sym, signature.get());
       EntrySet anchor =
           emitAnchor(classDef.name, classDef.getStartPosition(), EdgeKind.DEFINES, classNode);
+      emitComment(classDef.getStartPosition(), classNode);
 
       EntrySet absNode = defineTypeParameters(classNode, classDef.getTypeParameters());
       if (absNode != null) {
         emitAnchor(anchor, EdgeKind.DEFINES, absNode);
+        emitComment(classDef.getStartPosition(), absNode);
       }
 
       visitAnnotations(classNode, classDef.getModifiers().getAnnotations(), classDef);
@@ -238,8 +257,12 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
         fnTypeName = returnType.qualifiedName + fnTypeName;
       }
 
-      if (anchor != null && absNode != null) {
-        emitAnchor(anchor, EdgeKind.DEFINES, absNode);
+      if (anchor != null) {
+        emitComment(methodDef.getPreferredPosition(), methodNode);
+        if (absNode != null) {
+          emitAnchor(anchor, EdgeKind.DEFINES, absNode);
+          emitComment(methodDef.getPreferredPosition(), absNode);
+        }
       }
 
       emitOrdinalEdges(methodNode, EdgeKind.PARAM, params);
@@ -271,6 +294,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
     if (signature.isPresent()) {
       EntrySet varNode = entrySets.getNode(varDef.sym, signature.get());
       emitAnchor(varDef.name, varDef.getStartPosition(), EdgeKind.DEFINES, varNode);
+      if (varDef.sym.getKind() == ElementKind.FIELD) {
+        emitComment(varDef.getStartPosition(), varNode);
+      }
 
       visitAnnotations(varNode, varDef.getModifiers().getAnnotations(), varDef);
 
@@ -468,6 +494,30 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
     }
     entrySets.emitEdge(anchor, kind, node);
     return anchor;
+  }
+
+  private void emitComment(int defPosition, EntrySet node) {
+    int defLine = filePositions.charToLine(defPosition);
+    List<SourceText.Comment> inlineComments = comments.get(defLine);
+    if (inlineComments != null) {
+      for (SourceText.Comment inlineComment : inlineComments) {
+        commentAnchor(inlineComment, node);
+      }
+    }
+
+    List<SourceText.Comment> leadComments = comments.get(defLine - 1);
+    if (leadComments != null) {
+      for (SourceText.Comment leadComment : leadComments) {
+        commentAnchor(leadComment, node);
+      }
+    }
+  }
+
+  private EntrySet commentAnchor(SourceText.Comment comment, EntrySet node) {
+    return emitAnchor(
+        entrySets.getAnchor(filePositions, comment.byteSpan.getStart(), comment.byteSpan.getEnd()),
+        EdgeKind.DOCUMENTS,
+        node);
   }
 
   // Unwraps the target EntrySet and emits an edge to it from the sourceNode

@@ -5,6 +5,7 @@
 Notable additions:
  - `http_server`: support TLS HTTP2 server interface
  - Java indexer: broader `name` node coverage
+ - Java indexer: add anchors for method/field/class definition comments
  - `write_table`: add `--max_edge_page_size` flag to control the sizes of each
                   PagedEdgeSet and EdgePage written to the output table
 
