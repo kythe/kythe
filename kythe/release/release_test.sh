@@ -43,7 +43,8 @@ tools/viewindex "$TEST_SRCDIR/kythe/testdata/test.kindex" | \
   jq . >/dev/null
 tools/indexpack --to_archive indexpack.test "$TEST_SRCDIR/kythe/testdata/test.kindex"
 tools/entrystream < "$TEST_SRCDIR/kythe/testdata/test.entries" | \
-  tools/entrystream --write_json >/dev/null
+  tools/entrystream --write_json | \
+  tools/entrystream --read_json --entrysets >/dev/null
 tools/triples < "$TEST_SRCDIR/kythe/testdata/test.entries" >/dev/null
 
 # TODO(schroederc): add extractor tests

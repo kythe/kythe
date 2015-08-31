@@ -92,7 +92,7 @@ func main() {
 		if *countOnly {
 			entryCount++
 		} else if *entrySets {
-			if compare.VNamesEqual(set.Source, entry.Source) || !compare.VNamesEqual(set.Target, entry.Target) || set.EdgeKind != entry.EdgeKind {
+			if !compare.VNamesEqual(set.Source, entry.Source) || !compare.VNamesEqual(set.Target, entry.Target) || set.EdgeKind != entry.EdgeKind {
 				if len(set.Properties) != 0 {
 					failOnErr(encoder.Encode(set))
 				}

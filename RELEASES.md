@@ -9,6 +9,9 @@ Notable additions:
  - `write_table`: add `--max_edge_page_size` flag to control the sizes of each
                   PagedEdgeSet and EdgePage written to the output table
 
+Notable fixes:
+ - `entrystream`: prevent panic when given `--entrysets` flag
+
 ## v0.0.9
 
 Notable changes:
