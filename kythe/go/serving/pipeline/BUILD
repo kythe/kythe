@@ -10,7 +10,7 @@ go_package(
         "//kythe/go/serving/filetree",
         "//kythe/go/serving/search",
         "//kythe/go/serving/xrefs",
-        "//kythe/go/serving/xrefs/build",
+        "//kythe/go/serving/xrefs/assemble",
         "//kythe/go/storage/keyvalue",
         "//kythe/go/storage/leveldb",
         "//kythe/go/storage/table",

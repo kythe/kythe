@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-// Package build provides functions to build the various components (nodes,
+// Package assemble provides functions to build the various components (nodes,
 // edges, and decorations) of an xrefs serving table.
-package build
+package assemble
 
 import (
 	"container/heap"

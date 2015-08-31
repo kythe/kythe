@@ -34,7 +34,7 @@ import (
 	ftsrv "kythe.io/kythe/go/serving/filetree"
 	"kythe.io/kythe/go/serving/search"
 	"kythe.io/kythe/go/serving/xrefs"
-	"kythe.io/kythe/go/serving/xrefs/build"
+	"kythe.io/kythe/go/serving/xrefs/assemble"
 	"kythe.io/kythe/go/storage/keyvalue"
 	"kythe.io/kythe/go/storage/leveldb"
 	"kythe.io/kythe/go/storage/table"
@@ -238,7 +238,7 @@ func collectNodes(nodeEntries <-chan *spb.Entry) <-chan *srvpb.Node {
 				ticket := kytheuri.ToString(vname)
 				node = &srvpb.Node{Ticket: ticket}
 			}
-			node.Fact = append(node.Fact, build.NodeFact(e))
+			node.Fact = append(node.Fact, assemble.NodeFact(e))
 		}
 		if node != nil {
 			nodes <- node
@@ -329,7 +329,7 @@ func writeEdgePages(ctx context.Context, t table.Proto, edgeGroups *table.KVProt
 	defer it.Close()
 
 	log.Println("Writing EdgeSets")
-	esb := &build.EdgeSetBuilder{
+	esb := &assemble.EdgeSetBuilder{
 		MaxEdgePageSize: maxEdgePageSize,
 		Output: func(ctx context.Context, pes *srvpb.PagedEdgeSet) error {
 			return t.Put(ctx, xrefs.EdgeSetKey(pes.EdgeSet.SourceTicket), pes)
@@ -405,8 +405,8 @@ func createFragmentsTable(ctx context.Context, entries <-chan *spb.Entry) (t *ta
 		}
 	}()
 
-	for src := range build.Sources(entries) {
-		for _, fragment := range build.DecorationFragments(src) {
+	for src := range assemble.Sources(entries) {
+		for _, fragment := range assemble.DecorationFragments(src) {
 			fileTicket := fragment.FileTicket
 			var anchorTicket string
 			if len(fragment.Decoration) != 0 {
@@ -490,7 +490,7 @@ func writeDecorations(ctx context.Context, t table.Proto, entries <-chan *spb.En
 }
 
 func writeDecor(ctx context.Context, t table.Proto, decor *srvpb.FileDecorations) error {
-	sort.Sort(build.ByOffset(decor.Decoration))
+	sort.Sort(assemble.ByOffset(decor.Decoration))
 	return t.Put(ctx, xrefs.DecorationsKey(decor.FileTicket), decor)
 }
 

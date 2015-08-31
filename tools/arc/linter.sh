@@ -24,6 +24,7 @@
 
 readonly file="$1"
 readonly name="$(basename "$1")"
+readonly dir="$(dirname "$1")"
 
 lint_copyright() {
   case $file in
@@ -39,3 +40,11 @@ lint_copyright() {
 case "$name" in
   *) lint_copyright;;
 esac
+
+# Ensure filenames/paths do not clash on case-insensitive file systems.
+if grep -q [A-Z] <<<"$dir"; then
+  echo "case-insensitivity::error: $dir directory contains an uppercase letter"
+fi
+if [[ $(find "$dir" -maxdepth 1 -iname "$name" | wc -l) -gt 1 ]]; then
+  echo "case-insensitivity::error: $name filename clashes on case-insensitive file systems"
+fi
