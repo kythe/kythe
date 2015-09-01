@@ -75,4 +75,10 @@ public class Names {
   //- @"Generic<String>" ref GType
   //- GType named vname("pkg.Names.Generic<java.lang.String>","","","","java")
   static Generic<String> gFunc() { return null; }
+
+  //- @"Generic<String[]>[]" ref GenericStringArrayType
+  //- GenericStringArrayType named vname("pkg.Names.Generic<java.lang.String[]>[]","","","","java")
+  //- @"String[]" ref StringArrayType
+  //- StringArrayType named vname("java.lang.String[]","","","","java")
+  static final Generic<String[]>[] arry = null;
 }

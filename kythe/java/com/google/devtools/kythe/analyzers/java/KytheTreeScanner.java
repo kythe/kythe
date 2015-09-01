@@ -372,7 +372,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
     EntrySet node = entrySets
         .newTApply(entrySets.getBuiltin("array"), Arrays.asList(typeNode.entries));
     emitAnchor(arrayType, EdgeKind.REF, node);
-    return new JavaNode(node, typeNode.qualifiedName + "[]");
+    JavaNode arrayNode = new JavaNode(node, typeNode.qualifiedName + "[]");
+    entrySets.emitName(node, arrayNode.qualifiedName);
+    return arrayNode;
   }
 
   @Override

@@ -1,5 +1,10 @@
 # Release Notes
 
+## Upcoming release
+
+Notable additions:
+ - Java indexer: emit name nodes for array types
+
 ## v0.0.10
 
 Notable additions:
