@@ -1,5 +1,5 @@
-URL: https://github.com/google/bazel/tree/5fe79331f9160ae8b37f907ddbaa5f080dfc8185/third_party/ijar
-Version: 5fe79331f9160ae8b37f907ddbaa5f080dfc8185
+URL: https://github.com/bazelbuild/bazel/tree/6db6eba6b2e1a0368e79da47a8cafd5dd9b6d63e/third_party/ijar
+Version: 6db6eba6b2e1a0368e79da47a8cafd5dd9b6d63e
 License: Apache 2.0
 License File: LICENSE
 
