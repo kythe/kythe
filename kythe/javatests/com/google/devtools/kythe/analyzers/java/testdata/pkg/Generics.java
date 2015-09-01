@@ -1,7 +1,7 @@
 package pkg;
 
 //- @Generics defines Class
-//- @Generics defines GAbs
+//- @"Generics<T>" defines GAbs
 //- Class childof GAbs
 //- GAbs.node/kind abs
 //- GAbs param.0 TVar

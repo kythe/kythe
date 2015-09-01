@@ -3,7 +3,7 @@
 ## Upcoming release
 
 Notable additions:
- - Java indexer: emit name nodes for array types
+ - Java indexer: name node support for array types, builtins, files, and generics
 
 ## v0.0.10
 

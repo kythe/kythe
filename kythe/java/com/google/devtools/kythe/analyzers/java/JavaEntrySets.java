@@ -17,7 +17,6 @@
 package com.google.devtools.kythe.analyzers.java;
 
 import com.google.devtools.kythe.analyzers.base.CorpusPath;
-import com.google.devtools.kythe.analyzers.base.EdgeKind;
 import com.google.devtools.kythe.analyzers.base.EntrySet;
 import com.google.devtools.kythe.analyzers.base.FactEmitter;
 import com.google.devtools.kythe.analyzers.base.KytheEntrySets;
@@ -51,11 +50,6 @@ public class JavaEntrySets extends KytheEntrySets {
   public JavaEntrySets(StatisticsCollector statistics, FactEmitter emitter, VName compilationVName,
       List<FileInput> requiredInputs) {
     super(statistics, emitter, compilationVName, requiredInputs);
-  }
-
-  /** Emits a NAME node and its associated edge to the given {@code node}. */
-  public void emitName(EntrySet node, String name) {
-    emitEdge(node, EdgeKind.NAMED, getName(name));
   }
 
   /**

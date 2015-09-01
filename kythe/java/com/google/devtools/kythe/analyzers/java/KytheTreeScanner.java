@@ -28,6 +28,7 @@ import com.google.devtools.kythe.platform.java.helpers.JCTreeScanner;
 import com.google.devtools.kythe.platform.java.helpers.JavacUtil;
 import com.google.devtools.kythe.platform.java.helpers.SignatureGenerator;
 import com.google.devtools.kythe.platform.shared.StatisticsCollector;
+import com.google.devtools.kythe.util.Span;
 
 import com.sun.source.tree.Tree.Kind;
 import com.sun.tools.javac.code.Symbol;
@@ -172,14 +173,34 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
     Optional<String> signature = signatureGenerator.getSignature(classDef.sym);
     if (signature.isPresent()) {
       EntrySet classNode = entrySets.getNode(classDef.sym, signature.get());
-      EntrySet anchor =
-          emitAnchor(classDef.name, classDef.getStartPosition(), EdgeKind.DEFINES, classNode);
-      emitComment(classDef.getStartPosition(), classNode);
+
+      Span classIdent =
+          filePositions.findIdentifier(classDef.name, classDef.getPreferredPosition());
+      if (classIdent != null) {
+        EntrySet anchor =
+            entrySets.getAnchor(filePositions, classIdent.getStart(), classIdent.getEnd());
+        emitAnchor(anchor, EdgeKind.DEFINES, classNode);
+      }
+      emitComment(classDef.getPreferredPosition(), classNode);
 
       EntrySet absNode = defineTypeParameters(classNode, classDef.getTypeParameters());
       if (absNode != null) {
-        emitAnchor(anchor, EdgeKind.DEFINES, absNode);
+        List<String> tParamNames = Lists.newLinkedList();
+        for (JCTypeParameter tParam : classDef.getTypeParameters()) {
+          tParamNames.add(tParam.getName().toString());
+        }
+        Span bracketGroup = filePositions.findBracketGroup(classDef.getPreferredPosition());
+        if (bracketGroup != null) {
+          if (classIdent != null) {
+            EntrySet absAnchor =
+                entrySets.getAnchor(filePositions, classIdent.getStart(), bracketGroup.getEnd());
+            emitAnchor(absAnchor, EdgeKind.DEFINES, absNode);
+          }
+        } else {
+          logger.warning("Missing bracket group for generic class definition: " + classDef.sym);
+        }
         emitComment(classDef.getStartPosition(), absNode);
+        entrySets.emitName(absNode, signature.get() + "<" + Joiner.on(",").join(tParamNames) + ">");
       }
 
       visitAnnotations(classNode, classDef.getModifiers().getAnnotations(), classDef);

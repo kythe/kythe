@@ -25,7 +25,7 @@ kwazthis() { "kythe/go/serving/tools/kwazthis" --local_repo=NONE --api "http://$
 
 FILE_PATH=kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/Generics.java
 
-JSON=$(kwazthis --path $FILE_PATH --offset 783)
+JSON=$(kwazthis --path $FILE_PATH --offset 788)
 jq --slurp 'length == 2'
 jq --slurp '.[0].span.text == "Generics<String>"'
 jq --slurp '.[1].span.text == "String"'
@@ -35,12 +35,12 @@ jq --slurp '.[].node.ticket
 jq --slurp '.[].node.kind
         and .[].node.kind != ""'
 
-JSON=$(kwazthis --path $FILE_PATH --offset 558)
+JSON=$(kwazthis --path $FILE_PATH --offset 563)
 jq --slurp 'length == 1'
 jq '.kind == "defines"'
 jq '.span.text == "g"'
-jq '.span.start == 558'
-jq '.span.end == 559'
+jq '.span.start == 563'
+jq '.span.end == 564'
 jq '.node.ticket'
 jq '.node.ticket != ""'
 jq '.node.kind == "function"'

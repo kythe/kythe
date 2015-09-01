@@ -34,9 +34,13 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import javax.tools.JavaFileObject;
 
@@ -54,10 +58,19 @@ public final class SourceText {
 
     // Filling up the positions identifier lookup table
     SyntaxPreservingScanner scanner = SyntaxPreservingScanner.create(context, text);
+    Deque<Token> starts = new ArrayDeque<>();
     for (Token token = scanner.readToken(); token.kind != TokenKind.EOF;
          token = scanner.readToken()) {
       if (token.kind == TokenKind.IDENTIFIER) {
         positions.addIdentifier(token.name(), scanner.spanForToken(token));
+      } else if (token.kind == TokenKind.LT) {
+        starts.addFirst(token);
+      } else if (token.kind == TokenKind.GT) {
+        if (!starts.isEmpty()) {
+          int start = scanner.spanForToken(starts.removeFirst()).getStart();
+          int end = scanner.spanForToken(token).getEnd();
+          positions.addBracketGroup(new Span(start, end));
+        }
       }
     }
 
@@ -87,10 +100,11 @@ public final class SourceText {
   }
 
   /** Utility class to provide ANCHOR positions in Java sources. */
-  public final class Positions {
+  public static final class Positions {
     private final JavaFileObject sourceFile;
     private final EndPosTable endPositions;
     private final Map<Name, List<Span>> identTable = new HashMap<>();
+    private final SortedSet<Span> bracketGroups = new TreeSet<>();
 
     private final CharSequence text;
     private final PositionMappings mappings;
@@ -143,6 +157,12 @@ public final class SourceText {
       return null;
     }
 
+    public Span findBracketGroup(int startCharOffset) {
+      int startOffset = charToByteOffset(startCharOffset);
+      SortedSet<Span> grps = bracketGroups.tailSet(new Span(startOffset, startOffset));
+      return grps.isEmpty() ? null : grps.first();
+    }
+
     /**
      * Returns the starting byte offset for the given tree in the source text. If {@code tree} is
      * {@code null} or no position is known, -1 is returned.
@@ -168,6 +188,11 @@ public final class SourceText {
         identTable.put(name, spans);
       }
       spans.add(new Span(charToByteOffset(position.getStart()), charToByteOffset(position.getEnd())));
+    }
+
+    // Adds a bracket group for findBracketGroup lookups.
+    private void addBracketGroup(Span bracketGroup) {
+      bracketGroups.add(bracketGroup);
     }
 
     int charToLine(int charOffset) { return mappings.charToLine(charOffset); }

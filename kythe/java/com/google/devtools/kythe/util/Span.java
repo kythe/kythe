@@ -17,7 +17,7 @@
 package com.google.devtools.kythe.util;
 
 /** Structure representing some arbitrary offset span. */
-public class Span {
+public class Span implements Comparable<Span> {
   private final int start, end;
 
   public Span(int startOffset, int endOffset) {
@@ -31,6 +31,14 @@ public class Span {
 
   public int getEnd() {
     return end;
+  }
+
+  @Override
+  public int compareTo(Span other) {
+    if (other.start == this.start) {
+      return this.end - other.end;
+    }
+    return this.start - other.start;
   }
 
   @Override

@@ -23,6 +23,8 @@ import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.devtools.kythe.util.KytheURI;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -103,8 +105,10 @@ public class KytheEntrySets {
 
   /** Returns (and emits) a new builtin node. */
   public EntrySet getBuiltin(String name) {
-    return emitAndReturn(newNode(NodeKind.TBUILTIN)
+    EntrySet node = emitAndReturn(newNode(NodeKind.TBUILTIN)
         .setSignature(name + "#builtin"));
+    emitName(node, name);
+    return node;
   }
 
   /** Returns (and emits) a new anchor node at the given location in the file. */
@@ -136,11 +140,16 @@ public class KytheEntrySets {
   /** Emits and returns a new {@link EntrySet} representing a file. */
   public EntrySet getFileNode(String digest, byte[] contents, String encoding) {
     VName name = lookupVName(digest);
-    return emitAndReturn(newNode(NodeKind.FILE)
+    EntrySet node = emitAndReturn(newNode(NodeKind.FILE)
         .setCorpusPath(CorpusPath.fromVName(name))
         .setSignature(name.getSignature())
         .setProperty("text", contents)
         .setProperty("text/encoding", encoding));
+    Path fileName = Paths.get(name.getPath()).getFileName();
+    if (fileName != null) {
+      emitName(node, fileName.toString());
+    }
+    return node;
   }
 
   /**
@@ -153,6 +162,11 @@ public class KytheEntrySets {
       builder.addSignatureSalt(e.getVName());
     };
     return builder;
+  }
+
+  /** Emits a NAME node and its associated edge to the given {@code node}. */
+  public void emitName(EntrySet node, String name) {
+    emitEdge(node, EdgeKind.NAMED, getName(name));
   }
 
   /** Emits an edge of the given kind from {@code source} to {@code target}. */

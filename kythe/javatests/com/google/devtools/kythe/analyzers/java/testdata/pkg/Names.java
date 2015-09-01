@@ -1,3 +1,6 @@
+//- File.node/kind file
+//- File named vname("Names.java","","","","java")
+
 //- @pkg ref Package
 //- Package.node/kind package
 //- Package named vname("pkg","","","","java")
@@ -55,6 +58,8 @@ public class Names {
 
   //- @classField defines ClassField
   //- ClassField named vname("pkg.Names.classField","","","","java")
+  //- @int ref IntType
+  //- IntType named vname("int","","","","java")
   private static int classField;
 
   //- @instanceField defines InstanceField
@@ -67,7 +72,17 @@ public class Names {
   //- VarArgsFuncType named vname("void(int[])","","","","java")
   private static void varArgsFunc(int... varArgsParam) {}
 
-  static class Generic<T> {}
+  //- @Generic defines GenericClass
+  //- GenericClass.node/kind record
+  //- GenericClass named vname("pkg.Names.Generic","","","","java")
+  //- @"Generic<T>" defines GenericAbs
+  //- GenericAbs.node/kind abs
+  //- GenericAbs named vname("pkg.Names.Generic<T>","","","","java")
+  static class Generic<T> {
+    //- @T ref TVar
+    //- TVar named vname("pkg.Names.Generic~T","","","","java")
+    T get() { return null; }
+  }
 
   //- @gFunc defines GFunc
   //- GFunc typed GFuncType
