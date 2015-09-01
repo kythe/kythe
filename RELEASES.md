@@ -1,6 +1,6 @@
 # Release Notes
 
-## Upcoming release
+## v0.0.11
 
 Notable additions:
  - Java indexer: name node support for array types, builtins, files, and generics
