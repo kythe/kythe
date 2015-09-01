@@ -5,6 +5,9 @@
 Notable additions:
  - Java indexer: name node support for array types, builtins, files, and generics
 
+Notable fixes:
+ - Java indexer: stop an exception from being thrown when a line contains multiple comments
+
 ## v0.0.10
 
 Notable additions:

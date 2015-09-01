@@ -29,11 +29,13 @@ public class Comments {
   // This comments the Inner class.
   public static class Inner {}
 
+  //- @+5"// a second, weirdly-placed comment" documents InnerI
+  //- @+5"// this also comments the interface" documents InnerI
   //- @+3"/* This comments the InnerI interface. */" documents InnerI
   //- @+3InnerI defines InnerI
 
-  /* This comments the InnerI interface. */
-  static interface InnerI {}
+  /* This comments the InnerI interface. */ // a second, weirdly-placed comment
+  static interface InnerI {} // this also comments the interface
 
   //- @+3"/** This comments the {@link InnerE} enum. */" documents InnerE
   //- @+3InnerE defines InnerE

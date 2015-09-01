@@ -93,7 +93,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
         if (comments.containsKey(end)) {
           comments.get(end).add(comment);
         } else {
-          comments.put(end, Arrays.asList(comment));
+          comments.put(end, Lists.newArrayList(comment));
         }
       }
     }
