@@ -1,8 +1,11 @@
 /// Multiline BCPL-flavored block comments are indexed.
-///- Doc.loc/start 0
+
 ///- Doc documents ClassC
-///- Doc.loc/end @$c
-/// doc
-class C { };
+///- Doc.loc/start @^:8"///"
+///- Doc.loc/end @$:10"doc3"
 ///- ClassC.node/kind record
-//- goal_prefix should be ///-
+
+/// doc1
+/// doc2
+/// doc3
+class C { };

@@ -696,7 +696,6 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "docs_bcpl_block_multiline",
     srcs = ["docs/docs_bcpl_block_multiline.cc"],
-    goal_prefix = "///-",
     tags = ["docs"],
 )
 
@@ -763,7 +762,6 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "docs_juxtaposed_multiline",
     srcs = ["docs/docs_juxtaposed_multiline.cc"],
-    goal_prefix = "///<-",
     tags = ["docs"],
 )
 

@@ -1,10 +1,12 @@
 // Multiline documentation can be placed next to documented elements.
+
+//- @:9Cr defines EnumeratorCr
+//- JxDoc documents EnumeratorCr
+//- JxDoc.loc/start @^:9"///"
+//- JxDoc.loc/end @$:11"enumerator"
+
 enum class C {
-///<- @Cr defines EnumeratorCr
-///<- JxDoc documents EnumeratorCr
-///<- JxDoc.loc/start @^"///"
-  Cr ///< an
-     ///<- JxDoc.loc/end @$tor
+  Cr ///< a
+     ///< single
      ///< enumerator
 };
-//- goal_prefix should be ///<-
