@@ -23,7 +23,6 @@ import (
 	"flag"
 	"fmt"
 	"go/build"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -40,13 +39,12 @@ import (
 var (
 	bc = build.Default // A shallow copy of the default build settings
 
-	campfireMode = flag.Bool("campfire", false, "Enable support for the campfire build system")
-	corpus       = flag.String("corpus", "", "Default corpus name to use")
-	localPath    = flag.String("local_path", "", "Directory where relative imports are resolved")
-	outputDir    = flag.String("output_dir", "", "Directory where output should be written")
-	byDir        = flag.Bool("bydir", false, "Import by directory rather than import path")
-	keepGoing    = flag.Bool("continue", false, "Continue past errors")
-	verbose      = flag.Bool("v", false, "Enable verbose logging")
+	corpus    = flag.String("corpus", "", "Default corpus name to use")
+	localPath = flag.String("local_path", "", "Directory where relative imports are resolved")
+	outputDir = flag.String("output_dir", "", "Directory where output should be written")
+	byDir     = flag.Bool("bydir", false, "Import by directory rather than import path")
+	keepGoing = flag.Bool("continue", false, "Continue past errors")
+	verbose   = flag.Bool("v", false, "Enable verbose logging")
 )
 
 func init() {
@@ -55,9 +53,6 @@ func init() {
 		fmt.Fprintln(os.Stderr, `
 Extract Kythe compilation records from Go import paths specified on the command line.
 Outputs are written to an index pack directory.
-
-If the -campfire flag is set, the extractor assumes the working directory is
-the root of the Kythe repository, and sets up extra paths to handle that.
 
 Options:`)
 		flag.PrintDefaults()
@@ -88,40 +83,6 @@ func maybeLog(msg string, args ...interface{}) {
 	}
 }
 
-// setupCampfire modifies the build configurations to support the Kythe
-// campfire build environment.  It adds entries to GOPATH for generated files
-// in campfire-out and third_party packages, and the working directory so that
-// "kythe/..." import paths will work.
-//
-// On success, returns a function to clean up leftover state, which the caller
-// should defer so it occurs before exit.
-func setupCampfire(ext *golang.Extractor) (func(), error) {
-	if !*campfireMode {
-		return func() {}, nil
-	}
-
-	maybeLog("Enabling campfire compatibility mode")
-	tp, err := ioutil.ReadDir("third_party/go")
-	if err != nil {
-		return nil, err
-	}
-	goPath := os.ExpandEnv(":$PWD:campfire-out/gen/go")
-	for _, elt := range tp {
-		if elt.IsDir() {
-			goPath += filepath.Join(":third_party/go", elt.Name())
-		}
-	}
-	ext.BuildContext.GOPATH += goPath
-	ext.AltInstallPath = "campfire-out/go"
-	if err := os.Symlink(".", "src"); err != nil {
-		if os.IsExist(err) {
-			return func() {}, nil
-		}
-		return nil, err
-	}
-	return func() { os.Remove("src") }, nil
-}
-
 func main() {
 	flag.Parse()
 
@@ -133,11 +94,6 @@ func main() {
 		BuildContext: bc,
 		Corpus:       *corpus,
 		LocalPath:    *localPath,
-	}
-	if cleanup, err := setupCampfire(&ext); err != nil {
-		log.Fatalf("Error enabling campfire support: %v", err)
-	} else {
-		defer cleanup()
 	}
 	locate := ext.Locate
 	if *byDir {

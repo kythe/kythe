@@ -17,7 +17,7 @@
 // Binary directory_indexer produces a set of Entry protos representing the
 // files in the given directories.
 //
-// For instance, a file 'kythe/javatests/com/google/devtools/kythe/util/CAMPFIRE' would produce two entries:
+// For instance, a file 'kythe/javatests/com/google/devtools/kythe/util/BUILD' would produce two entries:
 //   {
 //     "fact_name": "/kythe/node/kind",
 //     "fact_value": "file",
@@ -25,7 +25,7 @@
 //       "signature": "c2b0d93b83c1b0e22fd564278be1b0373b1dcb67ff3bb77c2f29df7c393fe580",
 //       "corpus": "kythe",
 //       "root": "",
-//       "path": "kythe/javatests/com/google/devtools/kythe/util/CAMPFIRE",
+//       "path": "kythe/javatests/com/google/devtools/kythe/util/BUILD",
 //       "language": ""
 //     }
 //   }
@@ -36,14 +36,14 @@
 //       "signature": "c2b0d93b83c1b0e22fd564278be1b0373b1dcb67ff3bb77c2f29df7c393fe580",
 //       "corpus": "kythe",
 //       "root": "",
-//       "path": "kythe/javatests/com/google/devtools/kythe/util/CAMPFIRE",
+//       "path": "kythe/javatests/com/google/devtools/kythe/util/BUILD",
 //       "language": ""
 //     }
 //   }
 //
 // Usage:
 //   directory_indexer --corpus kythe --root kythe ~/repo/kythe/ \
-//     --exclude '^buildtools,^campfire-out,^third_party,~$,#$,(^|/)\.'
+//     --exclude '^buildtools,^bazel-,^third_party,~$,#$,(^|/)\.'
 package main
 
 import (

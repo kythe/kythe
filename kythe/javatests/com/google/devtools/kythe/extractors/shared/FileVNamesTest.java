@@ -54,7 +54,7 @@ public class FileVNamesTest extends TestCase {
     "    }",
     "  },",
     "  {",
-    "    \"pattern\": \"campfire-out/[^/]+/([^/]+)/java/.*[.]jar!/.*\",",
+    "    \"pattern\": \"bazel-bin/([^/]+)/java/.*[.]jar!/.*\",",
     "    \"vname\": {",
     "      \"root\": \"java\",",
     "      \"corpus\": \"@1@\"",
@@ -116,7 +116,7 @@ public class FileVNamesTest extends TestCase {
         f.lookupBaseVName("grp1/12345/endingGroup"));
 
     assertEquals(VName.newBuilder().setCorpus("kythe").setRoot("java").build(),
-        f.lookupBaseVName("campfire-out/bin/kythe/java/some/path/A.jar!/some/path/A.class"));
+        f.lookupBaseVName("bazel-bin/kythe/java/some/path/A.jar!/some/path/A.class"));
     assertEquals(VName.newBuilder().setCorpus("kythe").setRoot("java").build(),
         f.lookupBaseVName("kythe/java/com/google/devtools/kythe/util/KytheURI.java"));
     assertEquals(VName.newBuilder().setCorpus("otherCorpus").setRoot("java").build(),

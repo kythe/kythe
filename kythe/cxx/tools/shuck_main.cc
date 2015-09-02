@@ -15,7 +15,7 @@
  */
 // shuck: a tool to slice an index pack using a claim database
 //
-// ./campfire run //kythe/cxx/tools:shuck \
+// bazel run //kythe/cxx/tools:shuck -- \
 //     -index_pack ~/linux/linux-3.19-rc6/kernel-pack
 //     -static_claim ~/linux/linux-3.19-rc6/kernel.claims
 //     include/linux/hid-debug.h

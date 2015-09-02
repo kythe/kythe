@@ -15,4 +15,4 @@ required_input {
 argument: "-sourcepath"
 argument: "kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata"
 source_file: "kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/Names.java"
-output_key: "campfire-out/gen/kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/names_lib"
+output_key: "bazel-genfiles/kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/names_lib"

@@ -93,7 +93,7 @@ TEST(FileVNameGenerator, LookupGroups) {
       kythe_java_vname.DebugString(),
       generator
           .LookupBaseVName(
-               "campfire-out/bin/kythe/java/some/path/A.jar!/some/path/A.class")
+               "bazel-bin/kythe/java/some/path/A.jar!/some/path/A.class")
           .DebugString());
   EXPECT_EQ(
       kythe_java_vname.DebugString(),
@@ -155,14 +155,14 @@ int main(int argc, char **argv) {
 
 const char kTestFile[] = R"d([
   {
-    "pattern": "campfire-out/[^/]+/([^/]+/javatests/.+/testdata)/.+\\.jar!/([^\\$]+)(\\$.+)?\\.class",
+    "pattern": "bazel-bin/([^/]+/javatests/.+/testdata)/.+\\.jar!/([^\\$]+)(\\$.+)?\\.class",
     "vname": {
       "corpus": "kythe",
       "path": "@1@/@2@.java"
     }
   },
   {
-    "pattern": "campfire-out/[^/]+/(.*)/(java|javatests)/.*\\.jar!/([^\\$]+)(\\$.+)?\\.class",
+    "pattern": "bazel-bin/(.*)/(java|javatests)/.*\\.jar!/([^\\$]+)(\\$.+)?\\.class",
     "vname": {
       "corpus": "kythe",
       "path": "@1@/@2@/@3@.java"
@@ -192,7 +192,7 @@ const char kTestFile[] = R"d([
     }
   },
   {
-    "pattern": "campfire-out/[^/]+/[^/]+/proto/.*\\.jar!/([^\\$]+)(\\$.+)?\\.class",
+    "pattern": "bazel-bin/[^/]+/proto/.*\\.jar!/([^\\$]+)(\\$.+)?\\.class",
     "vname": {
       "corpus": "kythe",
       "root": "GENERATED/proto/java",
@@ -253,7 +253,7 @@ const char kSharedTestFile[] = R"d([
     }
   },
   {
-    "pattern": "campfire-out/[^/]+/([^/]+)/java/.*[.]jar!/.*",
+    "pattern": "bazel-bin/([^/]+)/java/.*[.]jar!/.*",
     "vname": {
       "root": "java",
       "corpus": "@1@"

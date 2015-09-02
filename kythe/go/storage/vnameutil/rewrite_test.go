@@ -58,7 +58,7 @@ var testConfig = strings.Join([]string{
 	"    }",
 	"  },",
 	"  {",
-	"    \"pattern\": \"campfire-out/[^/]+/([^/]+)/java/.*[.]jar!/.*\",",
+	"    \"pattern\": \"bazel-bin/([^/]+)/java/.*[.]jar!/.*\",",
 	"    \"vname\": {",
 	"      \"root\": \"java\",",
 	"      \"corpus\": \"@1@\"",
@@ -139,7 +139,7 @@ func TestFileRewrites(t *testing.T) {
 		// groups
 		{"corpus/some/path/here", V{Corpus: "corpus"}.pb()},
 		{"grp1/12345/endingGroup", V{Corpus: "grp1/endingGroup", Root: "12345"}.pb()},
-		{"campfire-out/bin/kythe/java/some/path/A.jar!/some/path/A.class", V{Corpus: "kythe", Root: "java"}.pb()},
+		{"bazel-bin/kythe/java/some/path/A.jar!/some/path/A.class", V{Corpus: "kythe", Root: "java"}.pb()},
 		{"kythe/java/com/google/devtools/kythe/util/KytheURI.java", V{Corpus: "kythe", Root: "java"}.pb()},
 		{"otherCorpus/java/com/google/devtools/kythe/util/KytheURI.java", V{Corpus: "otherCorpus", Root: "java"}.pb()},
 	}

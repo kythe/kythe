@@ -16,4 +16,4 @@ has_compile_errors: false
 argument: "-sourcepath"
 argument: "kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata"
 source_file: "kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/E.java"
-output_key: "campfire-out/gen/kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/example_lib"
+output_key: "bazel-genfiles/kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/example_lib"

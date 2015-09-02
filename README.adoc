@@ -22,7 +22,7 @@ limitations under the License.
 
 * Extensive documentation of the Kythe schema
 * Indexer implementations for C++ and Java
-* Compilation extractors for javac, Maven, cmake, Go, and Campfire
+* Compilation extractors for javac, Maven, cmake, Go, and link:http://bazel.io/[Bazel]
 * Generic verifier for indexers
 * Sample cross-reference service and accompanying web UI
 * Many useful utility commands to work with Kythe artifacts

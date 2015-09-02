@@ -42,7 +42,6 @@ function one_case {
   fi
 }
 
-# Remember to add these files to CAMPFIRE as well.
 one_case "${BASE_DIR}/bundle_self_test.cc" "c++1y"
 one_case "${BASE_DIR}/bundle_self_test_unclaimed.cc" "c++1y"
 one_case "${BASE_DIR}/bundle_self_test_mix.cc" "c++1y"
