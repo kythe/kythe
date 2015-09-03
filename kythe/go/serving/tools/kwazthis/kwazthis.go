@@ -134,7 +134,10 @@ type reference struct {
 	} `json:"node"`
 }
 
-var definedAtEdge = schema.MirrorEdge(schema.DefinesEdge)
+var (
+	definedAtEdge        = schema.MirrorEdge(schema.DefinesEdge)
+	definedBindingAtEdge = schema.MirrorEdge(schema.DefinesBindingEdge)
+)
 
 func main() {
 	flag.Parse()
@@ -239,9 +242,9 @@ func main() {
 			r.Node.Kind = string(node[schema.NodeKindFact])
 			r.Node.Subkind = string(node[schema.SubkindFact])
 
-			if eReply, err := xs.Edges(ctx, &xpb.EdgesRequest{
+			if eReply, err := xrefs.AllEdges(ctx, xs, &xpb.EdgesRequest{
 				Ticket: []string{ref.TargetTicket},
-				Kind:   []string{schema.NamedEdge, schema.TypedEdge, definedAtEdge},
+				Kind:   []string{schema.NamedEdge, schema.TypedEdge, definedAtEdge, definedBindingAtEdge},
 			}); err != nil {
 				log.Printf("WARNING: error getting edges for %q: %v", ref.TargetTicket, err)
 			} else {
@@ -259,7 +262,11 @@ func main() {
 				}
 
 				if !*skipDefinitions {
-					for _, defAnchor := range edges[definedAtEdge] {
+					defs := edges[definedAtEdge]
+					if len(defs) == 0 {
+						defs = edges[definedBindingAtEdge]
+					}
+					for _, defAnchor := range defs {
 						def, err := completeDefinition(defAnchor)
 						if err != nil {
 							log.Printf("WARNING: failed to complete definition for %q: %v", defAnchor, err)
@@ -277,9 +284,9 @@ func main() {
 	}
 }
 
-func completeDefinition(definesAnchor string) (*definition, error) {
-	parentReply, err := xs.Edges(ctx, &xpb.EdgesRequest{
-		Ticket: []string{definesAnchor},
+func completeDefinition(defAnchor string) (*definition, error) {
+	parentReply, err := xrefs.AllEdges(ctx, xs, &xpb.EdgesRequest{
+		Ticket: []string{defAnchor},
 		Kind:   []string{schema.ChildOfEdge},
 		Filter: []string{schema.NodeKindFact, schema.AnchorLocFilter},
 	})
@@ -289,7 +296,7 @@ func completeDefinition(definesAnchor string) (*definition, error) {
 
 	parentNodes := xrefs.NodesMap(parentReply.Node)
 	var files []string
-	for _, parent := range xrefs.EdgesMap(parentReply.EdgeSet)[definesAnchor][schema.ChildOfEdge] {
+	for _, parent := range xrefs.EdgesMap(parentReply.EdgeSet)[defAnchor][schema.ChildOfEdge] {
 		if string(parentNodes[parent][schema.NodeKindFact]) == schema.FileKind {
 			files = append(files, parent)
 		}
@@ -298,14 +305,14 @@ func completeDefinition(definesAnchor string) (*definition, error) {
 	if len(files) == 0 {
 		return nil, nil
 	} else if len(files) > 1 {
-		return nil, fmt.Errorf("anchor has multiple file parents %q: %v", definesAnchor, files)
+		return nil, fmt.Errorf("anchor has multiple file parents %q: %v", defAnchor, files)
 	}
 
 	vName, err := kytheuri.Parse(files[0])
 	if err != nil {
 		return nil, err
 	}
-	start, end := parseAnchorSpan(parentNodes[definesAnchor])
+	start, end := parseAnchorSpan(parentNodes[defAnchor])
 
 	return &definition{
 		File:  vName.VName(),

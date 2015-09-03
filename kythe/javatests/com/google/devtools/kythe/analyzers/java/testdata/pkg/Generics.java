@@ -1,19 +1,19 @@
 package pkg;
 
-//- @Generics defines Class
-//- @"Generics<T>" defines GAbs
+//- @Generics defines/binding Class
+//- @"Generics<T>" defines/binding GAbs
 //- Class childof GAbs
 //- GAbs.node/kind abs
 //- GAbs param.0 TVar
-//- @T defines TVar
+//- @T defines/binding TVar
 //- TVar.node/kind absvar
 public class Generics<T> {
 
-  //- @print defines PrintMethod
-  //- @print defines PrintAbs
+  //- @print defines/binding PrintMethod
+  //- @print defines/binding PrintAbs
   //- PrintMethod childof PrintAbs
   //- PrintAbs.node/kind abs
-  //- @P defines PVar
+  //- @P defines/binding PVar
   //- PrintAbs param.0 PVar
   //- PVar.node/kind absvar
   public static <P> void print(
@@ -27,7 +27,7 @@ public class Generics<T> {
 
   public static void f() {
     //- @"Generics<String>" ref GType
-    //- @gs defines GVar
+    //- @gs defines/binding GVar
     //- GVar typed GType
     //- GType.node/kind tapp
     //- GType param.0 Class
@@ -40,7 +40,7 @@ public class Generics<T> {
     //- OType.node/kind tapp
     //- OType param.0 Optional
     //- OType param.1 GType
-    //- @opt defines OVar
+    //- @opt defines/binding OVar
     //- OVar typed OType
     Optional<Generics<String>> opt;
   }
@@ -66,12 +66,12 @@ public class Generics<T> {
   //- OptionalWildString named vname("pkg.Generics.Optional<? extends java.lang.String>","","","","java")
   private static void wildcardBound(Optional<? extends String> o) {}
 
-  //- @Optional defines OptionalClass
-  //- @T defines OptionalTVar
+  //- @Optional defines/binding OptionalClass
+  //- @T defines/binding OptionalTVar
   //- OptionalTVar.node/kind absvar
   private static class Optional<T> {}
 
-  //- @BV defines BVar
+  //- @BV defines/binding BVar
   //- BVar.node/kind absvar
   //- @List ref List
   //- @Inter ref Inter
@@ -79,6 +79,6 @@ public class Generics<T> {
   //- BV bounded/upper Inter
   private static class Bounded<BV extends java.util.List & Inter> {}
 
-  //- @Inter defines Inter
+  //- @Inter defines/binding Inter
   private static interface Inter {}
 }

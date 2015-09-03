@@ -92,7 +92,7 @@ Ordinals are used::
 [kythe,Java,"Classes can be annotated."]
 --------------------------------------------------------------------------------
 //- @Deprecated ref Deprecated
-//- @E defines Class
+//- @E defines/binding Class
 //- Class annotatedby Deprecated
 @Deprecated public class E {}
 --------------------------------------------------------------------------------
@@ -228,6 +228,8 @@ Points toward::
   semantic nodes
 Ordinals are used::
   never
+See also::
+  <<definesbinding,[defines/binding]>>
 Notes::
   It is valid for multiple anchors to define the same semantic object. These
   anchors may even overlap.
@@ -236,6 +238,37 @@ Notes::
 --------------------------------------------------------------------------------
 //- @x defines VariableX
 int x;
+--------------------------------------------------------------------------------
+
+[[definesbinding]]
+defines/binding
+~~~~~~~~~~~~~~~
+
+Brief description::
+  A *defines/binding* B when A covers an identifier bound to B when that binding is established.
+Commonly arises from::
+  definitions
+Points from::
+  anchors
+Points toward::
+  semantic nodes
+Ordinals are used::
+  never
+See also::
+  <<defines>>
+
+[kythe,Java,"Class names bind their definitions."]
+--------------------------------------------------------------------------------
+//- @E defines/binding ClassE
+public class E {}
+--------------------------------------------------------------------------------
+
+[kythe,Java,"Method names bind their definitions."]
+--------------------------------------------------------------------------------
+public class E {
+  //- @main defines/binding MethodMain
+  public static void main(String[] args) {}
+}
 --------------------------------------------------------------------------------
 
 [[documents]]
@@ -298,9 +331,9 @@ Notes::
 --------------------------------------------------------------------------------
 package pkg;
 public class E {
-  //- @A defines ClassA
+  //- @A defines/binding ClassA
   static class A { }
-  //- @B defines ClassB
+  //- @B defines/binding ClassB
   //- ClassB extends ClassA
   static class B extends A { }
 }
@@ -487,7 +520,7 @@ int x;
 [kythe,Java,"Classes have names."]
 --------------------------------------------------------------------------------
 package pkg;
-//- @E defines ClassE
+//- @E defines/binding ClassE
 //- ClassE named vname("pkg.E","","","","java")
 public class E {
 }
@@ -513,18 +546,18 @@ See also::
 package pkg;
 public class E {
   static class A implements I {
-    //- @method defines AMethod
+    //- @method defines/binding AMethod
     //- AMethod overrides IMethod
     public void method() {}
   }
   static class B extends A implements I {
-    //- @method defines BMethod
+    //- @method defines/binding BMethod
     //- BMethod overrides AMethod
     //- BMethod overrides IMethod
     public void method() {}
   }
   static interface I {
-    //- @method defines IMethod
+    //- @method defines/binding IMethod
     public void method();
   }
 }
@@ -551,16 +584,16 @@ See also::
 package pkg;
 public class E {
   static class A {
-    //- @method defines AMethod
+    //- @method defines/binding AMethod
     public void method() {}
   }
   static class B extends A {
-    //- @method defines BMethod
+    //- @method defines/binding BMethod
     //- !{ BMethod overrides/transitive AMethod }
     public void method() {}
   }
   static class C extends B {
-    //- @method defines CMethod
+    //- @method defines/binding CMethod
     //- !{ CMethod overrides/transitive BMethod }
     //- CMethod overrides/transitive AMethod
     public void method() {}
@@ -999,7 +1032,7 @@ enum E {
 [kythe,Java,"Enumeration values are constants."]
 --------------------------------------------------------------------------------
 public enum E {
-  //- @A defines A
+  //- @A defines/binding A
   //- A.node/kind constant
   A;
 }
@@ -1042,7 +1075,7 @@ Brief description::
 
 [kythe,Java,"Interfaces are interfaces."]
 --------------------------------------------------------------------------------
-//- @I defines Interface
+//- @I defines/binding Interface
 //- Interface.node/kind interface
 public interface I {}
 --------------------------------------------------------------------------------
@@ -1185,7 +1218,7 @@ Brief description::
 //- Pkg named vname("pkg","","","","java")
 //- Pkg.node/kind package
 package pkg;
-//- @E defines ClassE
+//- @E defines/binding ClassE
 //- ClassE childof Pkg
 public class E {}
 --------------------------------------------------------------------------------
@@ -1222,7 +1255,7 @@ class C { };
 [kythe,Java,"Classes are records."]
 --------------------------------------------------------------------------------
 package pkg;
-//- @E defines ClassE
+//- @E defines/binding ClassE
 //- ClassE.node/kind record
 //- ClassE.subkind class
 public class E {
@@ -1269,7 +1302,7 @@ enum class E : int { };
 
 [kythe,Java,"Enums are sum/enumClasses."]
 --------------------------------------------------------------------------------
-//- @E defines EnumE
+//- @E defines/binding EnumE
 //- E.node/kind sum
 //- E.subkind enumClass
 public enum E {}
@@ -1316,7 +1349,7 @@ using PtrInt = int*;
 --------------------------------------------------------------------------------
 import java.util.Optional;
 public class E {
-  //- @f defines Field
+  //- @f defines/binding Field
   //- Field typed TSpecClass
   //- TSpecClass.node/kind tapp
   //- TSpecClass param.0 OptClass
@@ -1386,7 +1419,7 @@ int x;
 [kythe,Java,"Fields are variables."]
 --------------------------------------------------------------------------------
 public class E {
-  //- @f defines Field
+  //- @f defines/binding Field
   //- Field.node/kind variable
   Optional<String> f;
 }
@@ -1395,7 +1428,7 @@ public class E {
 [kythe,Java,"Parameters are variables."]
 --------------------------------------------------------------------------------
 public class E {
-  //- @arg defines Param
+  //- @arg defines/binding Param
   //- Param.node/kind variable
   void f(String arg) {}
 }
@@ -1405,7 +1438,7 @@ public class E {
 --------------------------------------------------------------------------------
 public class E {
   void f() {
-    //- @var defines Local
+    //- @var defines/binding Local
     //- Local.node/kind variable
     String var;
   }
@@ -1700,7 +1733,7 @@ Java supplies the following <<tbuiltin>> nodes by default:
 [kythe,Java,"Builtin type nodes"]
 --------------------------------------------------------------------------------
 public class E {
-  //- @f defines F
+  //- @f defines/binding F
   //- F typed FnType
   //- FnType.node/kind tapp
   //- FnType param.0 FnBuiltin = vname("fn#builtin","","","","java")
@@ -1742,12 +1775,12 @@ classes are [[sum]] nodes with a subkind of 'enumClass'.
 
 [kythe,Java,"Classes and enums"]
 --------------------------------------------------------------------------------
-//- @E defines EClass
+//- @E defines/binding EClass
 //- EClass.node/kind record
 //- EClass.subkind class
 public class E {
 
-  //- @Enum defines Enum
+  //- @Enum defines/binding Enum
   //- Enum.node/kind sum
   //- Enum.subkind enumClass
   static enum Enum {}
@@ -1765,16 +1798,16 @@ constructors have the subkind 'constructor'.
 --------------------------------------------------------------------------------
 public class E {
 
-  //- @E defines ECtor
+  //- @E defines/binding ECtor
   //- ECtor.node/kind function
   //- ECtor.subkind constructor
   public E() {}
 
-  //- @staticMethod defines StaticMethod
+  //- @staticMethod defines/binding StaticMethod
   //- StaticMethod.node/kind function
   public static void staticMethod() {}
 
-  //- @instanceMethod defines InstanceMethod
+  //- @instanceMethod defines/binding InstanceMethod
   //- InstanceMethod.node/kind function
   public void instanceMethod() {}
 }
@@ -1798,28 +1831,28 @@ import java.io.OutputStream;
 
 public class E {
 
-  //- @field defines Field
+  //- @field defines/binding Field
   //- Field.node/kind variable
   //- Field.subkind field
   private final Object field = null;
 
-  //- @param defines Parmeter
+  //- @param defines/binding Parmeter
   //- Parameter.node/kind variable
   //- Parameter.subkind local/parameter
   public static void m(String param) throws IOException {
 
-    //- @local defines Local
+    //- @local defines/binding Local
     //- Local.node/kind variable
     //- Local.subkind local
     int local = 42;
 
-    //- @resource defines ResourceVar
+    //- @resource defines/binding ResourceVar
     //- ResourceVar.node/kind variable
     //- ResourceVar.subkind local/resource
     try (OutputStream resource = System.out) {
       resource.write("hello");
 
-      //- @exception defines ExceptionVar
+      //- @exception defines/binding ExceptionVar
       //- ExceptionVar.node/kind variable
       //- ExceptionVar.subkind local/exception
     } catch (IOException exception) {}

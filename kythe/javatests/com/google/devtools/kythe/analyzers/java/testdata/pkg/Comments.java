@@ -4,7 +4,7 @@ package pkg;
 //- DocComment documents CommentsClass
 //- DocComment.loc/start @^+4"/**"
 //- DocComment.loc/end @$+6"*/"
-//- @+6Comments defines CommentsClass
+//- @+6Comments defines/binding CommentsClass
 
 /**
  * This is a Javadoc comment with links to {@link String}, {@link java.lang.Integer}, and
@@ -13,18 +13,18 @@ package pkg;
 public class Comments {
 
   //- @+3"// inline comment here" documents FieldOne
-  //- @+2fieldOne defines FieldOne
+  //- @+2fieldOne defines/binding FieldOne
 
   private static int fieldOne; // inline comment here
 
   //- @+3"// fieldTwo represents the universe" documents FieldTwo
-  //- @+3fieldTwo defines FieldTwo
+  //- @+3fieldTwo defines/binding FieldTwo
 
   // fieldTwo represents the universe
   private static String fieldTwo;
 
   //- @+3"// This comments the Inner class." documents InnerClass
-  //- @+3Inner defines InnerClass
+  //- @+3Inner defines/binding InnerClass
 
   // This comments the Inner class.
   public static class Inner {}
@@ -32,13 +32,13 @@ public class Comments {
   //- @+5"// a second, weirdly-placed comment" documents InnerI
   //- @+5"// this also comments the interface" documents InnerI
   //- @+3"/* This comments the InnerI interface. */" documents InnerI
-  //- @+3InnerI defines InnerI
+  //- @+3InnerI defines/binding InnerI
 
   /* This comments the InnerI interface. */ // a second, weirdly-placed comment
   static interface InnerI {} // this also comments the interface
 
   //- @+3"/** This comments the {@link InnerE} enum. */" documents InnerE
-  //- @+3InnerE defines InnerE
+  //- @+3InnerE defines/binding InnerE
 
   /** This comments the {@link InnerE} enum. */
   static enum InnerE {}

@@ -1,11 +1,11 @@
 package pkg;
 
 public class Selectors {
-  //- @field defines Field
+  //- @field defines/binding Field
   String field;
 
   //- @Optional ref Optional
-  //- @maybe defines Param
+  //- @maybe defines/binding Param
   public String m(Optional<String> maybe) {
     //- @maybe ref Param
     //- @isPresent ref IsPresentMethod
@@ -22,14 +22,14 @@ public class Selectors {
     return this.m2().toString();
   }
 
-  //- @m2 defines M2Method
+  //- @m2 defines/binding M2Method
   private String m2() {
     //- @field ref Field
     //- @this ref This
     return this.field;
   }
 
-  //- @Optional defines Optional
+  //- @Optional defines/binding Optional
   private static interface Optional<T> {
     public T get();
     public boolean isPresent();

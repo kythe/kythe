@@ -1,19 +1,19 @@
 package pkg;
 
-//- @Enums defines Enum
+//- @Enums defines/binding Enum
 //- Enum.node/kind sum
 //- Enum.subkind enumClass
 public enum Enums {
 
-  //- @A defines A
+  //- @A defines/binding A
   //- A.node/kind constant
   //- A childof Enum
-  //- @B defines B
+  //- @B defines/binding B
   //- B childof Enum
   //- B.node/kind constant
   A, B,
 
-  //- @C defines C
+  //- @C defines/binding C
   //- C childof Enum
   //- C.node/kind constant
   C("hello");

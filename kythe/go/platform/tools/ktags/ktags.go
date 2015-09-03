@@ -92,7 +92,7 @@ func main() {
 		emitted := stringset.New()
 
 		for _, r := range decor.Reference {
-			if r.Kind != schema.DefinesEdge || emitted.Contains(r.TargetTicket) {
+			if r.Kind != schema.DefinesBindingEdge || emitted.Contains(r.TargetTicket) {
 				continue
 			}
 

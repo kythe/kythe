@@ -55,12 +55,13 @@ const EdgePrefix = "/kythe/edge/"
 
 // Kythe edge kinds
 const (
-	ChildOfEdge = EdgePrefix + "childof"
-	DefinesEdge = EdgePrefix + "defines"
-	NamedEdge   = EdgePrefix + "named"
-	ParamEdge   = EdgePrefix + "param"
-	RefEdge     = EdgePrefix + "ref"
-	TypedEdge   = EdgePrefix + "typed"
+	ChildOfEdge        = EdgePrefix + "childof"
+	DefinesEdge        = EdgePrefix + "defines"
+	DefinesBindingEdge = EdgePrefix + "defines/binding"
+	NamedEdge          = EdgePrefix + "named"
+	ParamEdge          = EdgePrefix + "param"
+	RefEdge            = EdgePrefix + "ref"
+	TypedEdge          = EdgePrefix + "typed"
 )
 
 // Fact filter for anchor locations

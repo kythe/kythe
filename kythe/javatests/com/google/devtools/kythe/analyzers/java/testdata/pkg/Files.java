@@ -1,23 +1,23 @@
 package pkg;
 
-//- @Files defines FilesClass
+//- @Files defines/binding FilesClass
 public class Files {
 
-  //- @"錨" defines UV
+  //- @"錨" defines/binding UV
   int 錨;
-  //- Anchor defines UV
+  //- Anchor defines/binding UV
   //- Anchor.node/kind anchor
-  //- Anchor.loc/start 96
-  //- Anchor.loc/end 99
+  //- Anchor.loc/start 112
+  //- Anchor.loc/end 115
 
-  //- @Inner defines InnerClass
+  //- @Inner defines/binding InnerClass
   //- InnerClass childof FilesClass
   public static class Inner {}
 
-  //- @staticMethod defines StaticMethod
+  //- @staticMethod defines/binding StaticMethod
   public static void staticMethod() {}
 
-  //- @CONSTANT defines ConstantMember
+  //- @CONSTANT defines/binding ConstantMember
   public static final int CONSTANT = 42;
 }
 //- Anchor childof File =
@@ -27,10 +27,10 @@ public class Files {
 //- File.node/kind file
 //- File.text/encoding "UTF-8"
 
-//- @OtherDecl defines ODecl
+//- @OtherDecl defines/binding ODecl
 //- ODecl childof File
 enum OtherDecl {}
 
-//- @Inter defines Inter
+//- @Inter defines/binding Inter
 //- Inter childof File
 interface Inter {}

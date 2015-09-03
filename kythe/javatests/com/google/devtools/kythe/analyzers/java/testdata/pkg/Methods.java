@@ -3,10 +3,10 @@ package pkg;
 //- @IOException ref IOE
 import java.io.IOException;
 
-//- @Methods defines Class
+//- @Methods defines/binding Class
 public class Methods {
 
-  //- @Methods defines Ctor
+  //- @Methods defines/binding Ctor
   //- Ctor.node/kind function
   //- Ctor childof Class
   //- Ctor typed CtorType
@@ -21,20 +21,20 @@ public class Methods {
     return new Methods();
   }
 
-  //- @noop defines NoOp
+  //- @noop defines/binding NoOp
   //- NoOp typed NullFunc
   //- NullFunc param.0 FnBuiltin = vname("fn#builtin", "", "", "", "java")
   //- NullFunc param.1 VoidBuiltin = vname("void#builtin", "", "", "", "java")
   private void noop() {}
 
-  //- @f defines F
+  //- @f defines/binding F
   //- F.node/kind function
   //- F childof Class
   public static int f(int a) {
     return 0;
   }
 
-  //- @f2 defines F2
+  //- @f2 defines/binding F2
   //- F2.node/kind function
   //- F2 childof Class
   //- F2 typed StrFunc
@@ -42,7 +42,7 @@ public class Methods {
     return null;
   }
 
-  //- @f3 defines F3
+  //- @f3 defines/binding F3
   //- F3 typed StrFunc
   //- StrFunc.node/kind tapp
   //- StrFunc param.0 FnBuiltin
@@ -51,7 +51,7 @@ public class Methods {
     return null;
   }
 
-  //- @repeat defines Repeat
+  //- @repeat defines/binding Repeat
   //- Repeat typed StrStrIntFunc
   //- StrStrIntFunc param.0 FnBuiltin
   //- StrStrIntFunc param.1 String
@@ -65,7 +65,7 @@ public class Methods {
     return b.toString();
   }
 
-  //- @main defines Main
+  //- @main defines/binding Main
   //- @"String[]" ref StrArray
   //- Main param.0 Args
   //- Args typed StrArray

@@ -2,24 +2,24 @@ package pkg;
 
 /** Tests Kythe inheritance-related nodes/edges. */
 public class Inheritance {
-  //- @A defines AClass
+  //- @A defines/binding AClass
   static class A {
-    //- @method1 defines AM1
-    //- !{ @method1 defines AM1Overloaded }
+    //- @method1 defines/binding AM1
+    //- !{ @method1 defines/binding AM1Overloaded }
     public void method1() {}
 
-    //- @method1 defines AM1Overloaded
-    //- !{ @method1 defines AM1 }
+    //- @method1 defines/binding AM1Overloaded
+    //- !{ @method1 defines/binding AM1 }
     public void method1(String overloaded) {}
   }
 
-  //- @B defines BClass
+  //- @B defines/binding BClass
   //- @A ref AClass
   //- BClass extends AClass
   //- !{ BClass implements AnyInterface }
   static class B extends A {
     @Override
-    //- @method1 defines BM1
+    //- @method1 defines/binding BM1
     //- BM1 overrides AM1
     //- !{ BM1 overrides AM1Overloaded
     //-    BM1 overrides/transitive AM1
@@ -28,7 +28,7 @@ public class Inheritance {
     public void method1() {}
   }
 
-  //- @C defines CClass
+  //- @C defines/binding CClass
   //- @B ref BClass
   //- CClass extends BClass
   //- CClass implements IInterface
@@ -37,7 +37,7 @@ public class Inheritance {
   //-    CClass implements BClass }
   static class C extends B implements I {
     @Override
-    //- @method1 defines CM1
+    //- @method1 defines/binding CM1
     //- CM1 overrides IM1
     //- CM1 overrides BM1
     //- !{ CM1 overrides AM1
@@ -47,9 +47,9 @@ public class Inheritance {
     public void method1() {}
   }
 
-  //- @I defines IInterface
+  //- @I defines/binding IInterface
   static interface I {
-    //- @method1 defines IM1
+    //- @method1 defines/binding IM1
     public void method1();
   }
 }

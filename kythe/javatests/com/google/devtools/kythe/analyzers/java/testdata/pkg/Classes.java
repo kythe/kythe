@@ -4,7 +4,7 @@ package pkg;
 
 // Checks that classes are record/class nodes and enums are sum/enumClass nodes
 
-//- @Classes defines N
+//- @Classes defines/binding N
 //- N.node/kind record
 //- N.subkind class
 //- N childof Package
@@ -15,9 +15,9 @@ public class Classes {
   //- DefaultCtor typed DefaultCtorType
   //- DefaultCtorType param.0 FnBuiltin
   //- DefaultCtorType param.1 N
-  //- !{ DefaultCtorAnchor defines DefaultCtor }
+  //- !{ DefaultCtorAnchor defines/binding DefaultCtor }
 
-  //- @StaticInner defines SI
+  //- @StaticInner defines/binding SI
   //- SI.node/kind record
   //- SI.subkind class
   //- SI childof N
@@ -27,17 +27,17 @@ public class Classes {
     //- Ctor typed CtorType
     //- CtorType param.0 FnBuiltin
     //- CtorType param.1 SI
-    //- @StaticInner defines Ctor
+    //- @StaticInner defines/binding Ctor
     public StaticInner() {}
   }
 
-  //- @Inner defines I
+  //- @Inner defines/binding I
   //- I.node/kind record
   //- I.subkind class
   //- I childof N
   private class Inner {}
 
-  //- @Enum defines E
+  //- @Enum defines/binding E
   //- E.node/kind sum
   //- E.subkind enumClass
   //- E childof N

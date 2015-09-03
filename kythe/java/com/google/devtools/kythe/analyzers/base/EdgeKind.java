@@ -19,6 +19,7 @@ package com.google.devtools.kythe.analyzers.base;
 /** Schema-defined Kythe edge kinds. */
 public enum EdgeKind {
   DEFINES(true, "defines"),
+  DEFINES_BINDING(true, "defines/binding"),
   DOCUMENTS(true, "documents"),
   REF(true, "ref"),
 

@@ -1,5 +1,5 @@
 package pkg;
 
-//- @Interfaces defines Inter
+//- @Interfaces defines/binding Inter
 //- Inter.node/kind interface
 public interface Interfaces {}

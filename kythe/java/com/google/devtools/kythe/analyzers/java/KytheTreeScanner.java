@@ -179,7 +179,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
       if (classIdent != null) {
         EntrySet anchor =
             entrySets.getAnchor(filePositions, classIdent.getStart(), classIdent.getEnd());
-        emitAnchor(anchor, EdgeKind.DEFINES, classNode);
+        emitAnchor(anchor, EdgeKind.DEFINES_BINDING, classNode);
       }
       emitComment(classDef.getPreferredPosition(), classNode);
 
@@ -194,7 +194,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
           if (classIdent != null) {
             EntrySet absAnchor =
                 entrySets.getAnchor(filePositions, classIdent.getStart(), bracketGroup.getEnd());
-            emitAnchor(absAnchor, EdgeKind.DEFINES, absNode);
+            emitAnchor(absAnchor, EdgeKind.DEFINES_BINDING, absNode);
           }
         } else {
           logger.warning("Missing bracket group for generic class definition: " + classDef.sym);
@@ -265,7 +265,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
           // Use the owner's name (the class name) to find the definition anchor's
           // location because constructors are internally named "<init>".
           anchor = emitAnchor(methodDef.sym.owner.name, methodDef.getPreferredPosition(),
-              EdgeKind.DEFINES, methodNode);
+              EdgeKind.DEFINES_BINDING, methodNode);
         }
         // Likewise, constructors don't have return types in the Java AST, but
         // Kythe models all functions with return types.  As a solution, we use
@@ -273,7 +273,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
         ret = getNode(methodDef.sym.owner);
       } else {
         anchor = emitAnchor(methodDef.name, methodDef.getPreferredPosition(),
-            EdgeKind.DEFINES, methodNode);
+            EdgeKind.DEFINES_BINDING, methodNode);
         ret = returnType.entries;
         fnTypeName = returnType.qualifiedName + fnTypeName;
       }
@@ -281,7 +281,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
       if (anchor != null) {
         emitComment(methodDef.getPreferredPosition(), methodNode);
         if (absNode != null) {
-          emitAnchor(anchor, EdgeKind.DEFINES, absNode);
+          emitAnchor(anchor, EdgeKind.DEFINES_BINDING, absNode);
           emitComment(methodDef.getPreferredPosition(), absNode);
         }
       }
@@ -314,7 +314,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
     Optional<String> signature = signatureGenerator.getSignature(varDef.sym);
     if (signature.isPresent()) {
       EntrySet varNode = entrySets.getNode(varDef.sym, signature.get());
-      emitAnchor(varDef.name, varDef.getStartPosition(), EdgeKind.DEFINES, varNode);
+      emitAnchor(varDef.name, varDef.getStartPosition(), EdgeKind.DEFINES_BINDING, varNode);
       if (varDef.sym.getKind() == ElementKind.FIELD) {
         emitComment(varDef.getStartPosition(), varNode);
       }
@@ -436,7 +436,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
     List<EntrySet> typeParams = Lists.newLinkedList();
     for (JCTypeParameter tParam : params) {
       EntrySet node = getNode(tParam.type.asElement());
-      emitAnchor(tParam.name, tParam.getStartPosition(), EdgeKind.DEFINES, node);
+      emitAnchor(tParam.name, tParam.getStartPosition(), EdgeKind.DEFINES_BINDING, node);
       visitAnnotations(node, tParam.getAnnotations(), tParam);
       typeParams.add(node);
 

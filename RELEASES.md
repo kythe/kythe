@@ -1,5 +1,10 @@
 # Release Notes
 
+## Upcoming release
+
+Notable changes:
+ - Java indexer: rename /kythe/edge/defines to /kythe/edge/defines/binding
+
 ## v0.0.11
 
 Notable additions:
