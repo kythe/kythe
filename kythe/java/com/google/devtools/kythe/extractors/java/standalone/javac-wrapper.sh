@@ -38,7 +38,7 @@ if [[ -z "$REAL_JAVAC" ]]; then
   readonly REAL_JAVAC="$(dirname "$(readlink -e "$0")")/javac.real"
 fi
 if [[ -z "$JAVAC_EXTRACTOR_JAR" ]]; then
-  readonly JAVAC_EXTRACTOR_JAR="/opt/kythe/javac_extractor.jar"
+  readonly JAVAC_EXTRACTOR_JAR="/opt/kythe/extractors/javac_extractor.jar"
 fi
 
 fix_permissions() {

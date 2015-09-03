@@ -55,4 +55,4 @@ RUN mv $JAVA_HOME/bin/javac $JAVA_HOME/bin/javac.real
 ENV DOCKER_CLEANUP=1
 
 ADD kythe/java/com/google/devtools/kythe/extractors/java/standalone/javac-wrapper.sh $JAVA_HOME/bin/javac
-ADD kythe/java/com/google/devtools/kythe/extractors/java/standalone/javac_extractor_deploy.jar /opt/kythe/javac_extractor.jar
+ADD kythe/java/com/google/devtools/kythe/extractors/java/standalone/javac_extractor_deploy.jar /opt/kythe/extractors/javac_extractor.jar
