@@ -1,5 +1,5 @@
 // Tests that we index implicit specializations of template variables.
-//- @v defines PrimaryTemplateV
+//- @v defines/binding PrimaryTemplateV
 template <typename T> T v;
 //- @v ref SpecIntV
 //- SpecIntV instantiates AppPTInt

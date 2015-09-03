@@ -1,10 +1,10 @@
 // Tests basic macro definitions.
-//- @ID defines MacroID
+//- @ID defines/binding MacroID
 //- MacroID named vname("ID#m",_,_,_,_)
 #define ID(x) (x)
-//- @SYMBOL defines MacroSymbol
+//- @SYMBOL defines/binding MacroSymbol
 //- MacroSymbol named vname("SYMBOL#m",_,_,_,_)
 #define SYMBOL 1
-//- @SYMBOL defines OtherMacroSymbol
+//- @SYMBOL defines/binding OtherMacroSymbol
 //- OtherMacroSymbol named vname("SYMBOL#m",_,_,_,_)
 #define SYMBOL 2

@@ -1,7 +1,7 @@
 // Checks that we can refer to dependent fields under other templates.
-//- @C defines ClassC
+//- @C defines/binding ClassC
 class C { };
-//- @T defines TyvarT
+//- @T defines/binding TyvarT
 template <typename T> struct S {
   T t;
   //- @f ref DepF

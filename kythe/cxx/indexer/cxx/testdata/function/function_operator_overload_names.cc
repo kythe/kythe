@@ -1,130 +1,130 @@
 // Checks how we name operator overload functions.
 // Needs --ignore_dups=true because of noncanonicalized function types.
 struct S {
-//- @"operator=" defines OpEq
+//- @"operator=" defines/binding OpEq
 //- OpEq named vname("OO#Equal:S#n",_,_,_,_)
   void operator=(int);
-//- @"operator()" defines OpCall
+//- @"operator()" defines/binding OpCall
 //- OpCall named vname("OO#Call:S#n",_,_,_,_)
   void operator()();
-//- @"operator[]" defines OpIndex
+//- @"operator[]" defines/binding OpIndex
 //- OpIndex named vname("OO#Subscript:S#n",_,_,_,_)
   void operator[](int);
-//- @"operator->" defines OpArrow
+//- @"operator->" defines/binding OpArrow
 //- OpArrow named vname("OO#Arrow:S#n",_,_,_,_)
   void operator->();
 };
-//- @"operator" defines OpNew
+//- @"operator" defines/binding OpNew
 //- OpNew named vname("OO#New#n",_,_,_,_)
 void* operator new(unsigned long);
-//- @"operator" defines OpDelete
+//- @"operator" defines/binding OpDelete
 //- OpDelete named vname("OO#Delete#n",_,_,_,_)
 void operator delete(void*);
-//- @"operator" defines OpNewArray
+//- @"operator" defines/binding OpNewArray
 //- OpNewArray named vname("OO#Array_New#n",_,_,_,_)
 void* operator new[](unsigned long);
-//- @"operator" defines OpDeleteArray
+//- @"operator" defines/binding OpDeleteArray
 //- OpDeleteArray named vname("OO#Array_Delete#n",_,_,_,_)
 void operator delete[](void*);
-//- @"operator+" defines OpPlus
+//- @"operator+" defines/binding OpPlus
 //- OpPlus named vname("OO#Plus#n",_,_,_,_)
 void operator+(S a, S b);
-//- @"operator-" defines OpMinus
+//- @"operator-" defines/binding OpMinus
 //- OpMinus named vname("OO#Minus#n",_,_,_,_)
 void operator-(S a, S b);
-//-  @"operator*" defines OpStar
+//-  @"operator*" defines/binding OpStar
 //-  OpStar named vname("OO#Star#n",_,_,_,_)
 void operator*(S a, S b);
-//-  @"operator/" defines OpSlash
+//-  @"operator/" defines/binding OpSlash
 //-  OpSlash named vname("OO#Slash#n",_,_,_,_)
 void operator/(S a, S b);
-//-  @"operator%" defines OpPercent
+//-  @"operator%" defines/binding OpPercent
 //-  OpPercent named vname("OO#Percent#n",_,_,_,_)
 void operator%(S a, S b);
-//-  @"operator^" defines OpCaret
+//-  @"operator^" defines/binding OpCaret
 //-  OpCaret named vname("OO#Caret#n",_,_,_,_)
 void operator^(S a, S b);
-//-  @"operator&" defines OpAmp
+//-  @"operator&" defines/binding OpAmp
 //-  OpAmp named vname("OO#Amp#n",_,_,_,_)
 void operator&(S a, S b);
-//-  @"operator|" defines OpPipe
+//-  @"operator|" defines/binding OpPipe
 //-  OpPipe named vname("OO#Pipe#n",_,_,_,_)
 void operator|(S a, S b);
-//-  @"operator~" defines OpTilde
+//-  @"operator~" defines/binding OpTilde
 //-  OpTilde named vname("OO#Tilde#n",_,_,_,_)
 void operator~(S a);
-//-  @"operator!" defines OpExclaim
+//-  @"operator!" defines/binding OpExclaim
 //-  OpExclaim named vname("OO#Exclaim#n",_,_,_,_)
 void operator!(S a);
-//-  @"operator<" defines OpLess
+//-  @"operator<" defines/binding OpLess
 //-  OpLess named vname("OO#Less#n",_,_,_,_)
 void operator<(S a, S b);
-//-  @"operator>" defines OpGreater
+//-  @"operator>" defines/binding OpGreater
 //-  OpGreater named vname("OO#Greater#n",_,_,_,_)
 void operator>(S a, S b);
-//-  @"operator+=" defines OpPlusEqual
+//-  @"operator+=" defines/binding OpPlusEqual
 //-  OpPlusEqual named vname("OO#PlusEqual#n",_,_,_,_)
 void operator+=(S a, S b);
-//-  @"operator-=" defines OpMinusEqual
+//-  @"operator-=" defines/binding OpMinusEqual
 //-  OpMinusEqual named vname("OO#MinusEqual#n",_,_,_,_)
 void operator-=(S a, S b);
-//-  @"operator*=" defines OpStarEqual
+//-  @"operator*=" defines/binding OpStarEqual
 //-  OpStarEqual named vname("OO#StarEqual#n",_,_,_,_)
 void operator*=(S a, S b);
-//-  @"operator/=" defines OpSlashEqual
+//-  @"operator/=" defines/binding OpSlashEqual
 //-  OpSlashEqual named vname("OO#SlashEqual#n",_,_,_,_)
 void operator/=(S a, S b);
-//-  @"operator%=" defines OpPercentEqual
+//-  @"operator%=" defines/binding OpPercentEqual
 //-  OpPercentEqual named vname("OO#PercentEqual#n",_,_,_,_)
 void operator%=(S a, S b);
-//-  @"operator^=" defines OpCaretEqual
+//-  @"operator^=" defines/binding OpCaretEqual
 //-  OpCaretEqual named vname("OO#CaretEqual#n",_,_,_,_)
 void operator^=(S a, S b);
-//-  @"operator&=" defines OpAmpEqual
+//-  @"operator&=" defines/binding OpAmpEqual
 //-  OpAmpEqual named vname("OO#AmpEqual#n",_,_,_,_)
 void operator&=(S a, S b);
-//-  @"operator|=" defines OpPipeEqual
+//-  @"operator|=" defines/binding OpPipeEqual
 //-  OpPipeEqual named vname("OO#PipeEqual#n",_,_,_,_)
 void operator|=(S a, S b);
-//-  @"operator<<" defines OpLessLess
+//-  @"operator<<" defines/binding OpLessLess
 //-  OpLessLess named vname("OO#LessLess#n",_,_,_,_)
 void operator<<(S a, S b);
-//-  @"operator>>" defines OpGreaterGreater
+//-  @"operator>>" defines/binding OpGreaterGreater
 //-  OpGreaterGreater named vname("OO#GreaterGreater#n",_,_,_,_)
 void operator>>(S a, S b);
-//-  @"operator<<=" defines OpLessLessEqual
+//-  @"operator<<=" defines/binding OpLessLessEqual
 //-  OpLessLessEqual named vname("OO#LessLessEqual#n",_,_,_,_)
 void operator<<=(S a, S b);
-//-  @"operator>>=" defines OpGreaterGreaterEqual
+//-  @"operator>>=" defines/binding OpGreaterGreaterEqual
 //-  OpGreaterGreaterEqual named vname("OO#GreaterGreaterEqual#n",_,_,_,_)
 void operator>>=(S a, S b);
-//-  @"operator==" defines OpEqualEqual
+//-  @"operator==" defines/binding OpEqualEqual
 //-  OpEqualEqual named vname("OO#EqualEqual#n",_,_,_,_)
 void operator==(S a, S b);
-//-  @"operator!=" defines OpExclaimEqual
+//-  @"operator!=" defines/binding OpExclaimEqual
 //-  OpExclaimEqual named vname("OO#ExclaimEqual#n",_,_,_,_)
 void operator!=(S a, S b);
-//-  @"operator<=" defines OpLessEqual
+//-  @"operator<=" defines/binding OpLessEqual
 //-  OpLessEqual named vname("OO#LessEqual#n",_,_,_,_)
 void operator<=(S a, S b);
-//-  @"operator>=" defines OpGreaterEqual
+//-  @"operator>=" defines/binding OpGreaterEqual
 //-  OpGreaterEqual named vname("OO#GreaterEqual#n",_,_,_,_)
 void operator>=(S a, S b);
-//-  @"operator&&" defines OpAmpAmp
+//-  @"operator&&" defines/binding OpAmpAmp
 //-  OpAmpAmp named vname("OO#AmpAmp#n",_,_,_,_)
 void operator&&(S a, S b);
-//-  @"operator||" defines OpPipePipe
+//-  @"operator||" defines/binding OpPipePipe
 //-  OpPipePipe named vname("OO#PipePipe#n",_,_,_,_)
 void operator||(S a, S b);
-//-  @"operator++" defines OpPlusPlus
+//-  @"operator++" defines/binding OpPlusPlus
 //-  OpPlusPlus named vname("OO#PlusPlus#n",_,_,_,_)
 void operator++(S a, int b);
-//-  @"operator--" defines OpMinusMinus
+//-  @"operator--" defines/binding OpMinusMinus
 //-  OpMinusMinus named vname("OO#MinusMinus#n",_,_,_,_)
 void operator--(S a, int b);
-//-  @"operator," defines OpComma
+//-  @"operator," defines/binding OpComma
 //-  OpComma named vname("OO#Comma#n",_,_,_,_)
 void operator,(S a, S b);
-//-  @"operator->*" defines OpArrowStar
+//-  @"operator->*" defines/binding OpArrowStar
 //-  OpArrowStar named vname("OO#ArrowStar#n",_,_,_,_)
 void operator->*(S a, S b);

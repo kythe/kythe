@@ -1,13 +1,13 @@
 // Tests that declarations of template specializations are recorded.
-//- @id defines IdDecl
+//- @id defines/binding IdDecl
 template <typename T> T id(T x);
-//- @id defines IdSpecDecl
+//- @id defines/binding IdSpecDecl
 //- IdSpecDecl specializes TApp
 //- TApp param.0 IdDecl
 template <> int id(int x);
-//- @id defines IdDecl2
+//- @id defines/binding IdDecl2
 template <typename T> T id(T x);
-//- @id defines IdSpecDecl2
+//- @id defines/binding IdSpecDecl2
 //- IdSpecDecl2 specializes TApp2
 //- TApp2 param.0 IdDecl
 template <> int id(int x);

@@ -1,13 +1,13 @@
 // Checks the representation of resolved dependent names.
 template
 <template <typename> class T>
-//- @C defines AbsC
+//- @C defines/binding AbsC
 struct C {
 using S = typename T<int>::D;
 };
 template
 <typename Q>
-//- @Z defines AbsZ
+//- @Z defines/binding AbsZ
 struct Z {
 using D = Q;
 };

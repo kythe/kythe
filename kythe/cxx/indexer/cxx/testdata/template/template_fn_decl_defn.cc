@@ -1,12 +1,12 @@
 // Tests basic support for function template declarations and definitions.
 template <typename T>
 T
-//- @id defines AbsDecl
+//- @id defines/binding AbsDecl
 id(T x);
 
 template <typename T>
 T
-//- @id defines AbsDefn
+//- @id defines/binding AbsDefn
 //- @id completes/uniquely AbsDecl
 id(T x)
 { return x; }

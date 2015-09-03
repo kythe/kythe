@@ -1,6 +1,6 @@
 // Checks that arguments to function declarations are correctly recorded.
-//- @F defines FnF
-//- @A defines ArgA
+//- @F defines/binding FnF
+//- @A defines/binding ArgA
 //- FnF param.0 ArgA
 //- FnF param.1 Arg1
 //- Arg1 named vname("1:F#n",_,_,_,_)

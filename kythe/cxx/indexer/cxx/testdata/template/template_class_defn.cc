@@ -1,10 +1,10 @@
 // Checks that references to a complete template class point to the right node.
 template
 <typename X>
-//- @C defines Abs
+//- @C defines/binding Abs
 class C {};
 
-//- @U defines AliasNode
+//- @U defines/binding AliasNode
 using U =
 C<int>;
 

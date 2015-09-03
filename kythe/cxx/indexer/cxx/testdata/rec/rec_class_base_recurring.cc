@@ -3,17 +3,17 @@
 //   ClassB extends/public InstAB
 // After T27 is finished, `specializes` will become
 // `instantiates`.
-//- @T defines TyvarT
+//- @T defines/binding TyvarT
 template <typename T>
-//- @A defines AbsA
+//- @A defines/binding AbsA
 //- ClassA childof AbsA
 class A {
-//- @C defines AliasC
+//- @C defines/binding AliasC
 //- AliasC aliases TyvarT
   using C = T;
 };
 
-//- @B defines ClassB
+//- @B defines/binding ClassB
 //- ClassB extends/public InstAB
 //- InstAB.node/kind tapp
 //- InstAB param.0 AbsA

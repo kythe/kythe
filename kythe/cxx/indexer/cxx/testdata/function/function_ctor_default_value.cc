@@ -1,5 +1,5 @@
 // We index default values for record members.
-//- @f defines FnF
+//- @f defines/binding FnF
 //- FnF callableas FnFC
 int f() { return 0; }
 class C {

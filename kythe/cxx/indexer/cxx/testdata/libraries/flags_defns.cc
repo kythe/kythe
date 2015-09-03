@@ -1,21 +1,21 @@
 // Defines flags of every type supported by gflags.
 #include "gflags.h"
-//- @boolflag defines BoolFlag
+//- @boolflag defines/binding BoolFlag
 //- BoolFlag.node/kind google/gflag
 DEFINE_bool(boolflag, true, "a");
-//- @int32flag defines Int32Flag
+//- @int32flag defines/binding Int32Flag
 //- Int32Flag.node/kind google/gflag
 DEFINE_int32(int32flag, 1, "b");
-//- @int64flag defines Int64Flag
+//- @int64flag defines/binding Int64Flag
 //- Int64Flag.node/kind google/gflag
 DEFINE_int64(int64flag, 2, "c");
-//- @uint64flag defines UInt64Flag
+//- @uint64flag defines/binding UInt64Flag
 //- UInt64Flag.node/kind google/gflag
 DEFINE_uint64(uint64flag, 3, "d");
-//- @doubleflag defines DoubleFlag
+//- @doubleflag defines/binding DoubleFlag
 //- DoubleFlag.node/kind google/gflag
 DEFINE_double(doubleflag, 4.0, "e");
-//- @stringflag defines StringFlag
+//- @stringflag defines/binding StringFlag
 //- StringFlag.node/kind google/gflag
 DEFINE_string(stringflag, "five", "f");
 //- @FLAGS_boolflag ref BoolFlag

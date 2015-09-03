@@ -1,7 +1,7 @@
 // We don't record calls to destructors when objects go out of scope.
 class C {
  public:
-  //- @"~C" defines CDtor
+  //- @"~C" defines/binding CDtor
   //- CDtor callableas CDtorC
   ~C() { }
 };

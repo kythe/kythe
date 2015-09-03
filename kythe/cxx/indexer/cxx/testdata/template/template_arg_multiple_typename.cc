@@ -1,24 +1,24 @@
 // Checks that templates can accept multiple typename arguments.
 
 template
-//- @T defines AbsT
-//- @S defines AbsS
+//- @T defines/binding AbsT
+//- @S defines/binding AbsS
 <typename T, typename S>
-//- @C defines CDecl1
+//- @C defines/binding CDecl1
 class C;
 
 template
-//- @N defines AbsN
-//- @V defines AbsV
+//- @N defines/binding AbsN
+//- @V defines/binding AbsV
 <typename N, typename V>
-//- @C defines CDecl2
+//- @C defines/binding CDecl2
 class C;
 
 template
-//- @W defines AbsW
-//- @X defines AbsX
+//- @W defines/binding AbsW
+//- @X defines/binding AbsX
 <typename W, typename X>
-//- @C defines CDefn
+//- @C defines/binding CDefn
 //- @C completes/uniquely CDecl2
 //- @C completes/uniquely CDecl1
 class C { };

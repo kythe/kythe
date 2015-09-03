@@ -1,19 +1,19 @@
 // Checks that multiple declarations of a partial specialization are recorded.
 template
 <typename T, typename S>
-//- @C defines CDecl
+//- @C defines/binding CDecl
 class C;
 
 template
 //- 
 <typename V>
-//- @C defines CVDecl
+//- @C defines/binding CVDecl
 class C
 <int, V>;
 
 template
 <typename W>
-//- @C defines CWDecl
+//- @C defines/binding CWDecl
 class C
 <int, W>;
 

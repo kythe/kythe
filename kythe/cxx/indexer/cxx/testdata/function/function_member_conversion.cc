@@ -1,7 +1,7 @@
 // Checks that we index conversion functions.
 class C {
  public:
-  //- @operator defines OperatorInt
+  //- @operator defines/binding OperatorInt
   //- OperatorInt callableas OperatorIntC
   operator int() { return 42; }
 };

@@ -1,7 +1,7 @@
 // Checks that we can refer to implicit dependent fields.
-//- @A defines AbsA
+//- @A defines/binding AbsA
 template <typename T> class A { };
-//- @T defines TyvarT
+//- @T defines/binding TyvarT
 template <typename T> class C {
 //- @Dep ref Dep
 //- Dep param.0 At

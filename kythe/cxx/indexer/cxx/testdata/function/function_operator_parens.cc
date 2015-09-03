@@ -1,7 +1,7 @@
 // Checks that a struct with operator() is recorded as a callable.
-//- @S defines StructS
+//- @S defines/binding StructS
 struct S {
-//- @"operator()" defines FnC
+//- @"operator()" defines/binding FnC
   void operator()(int A) { }
 };
 //- FnC childof StructS

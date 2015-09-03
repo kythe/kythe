@@ -1,7 +1,7 @@
 // Checks that function overloads are recorded.
-//- @F defines FnFI
+//- @F defines/binding FnFI
 void F(int X) { }
-//- @F defines FnFF
+//- @F defines/binding FnFF
 void F(float Y) { }
 //- FnFI param.0 IntX
 //- FnFF param.0 FloatY

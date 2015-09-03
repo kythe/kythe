@@ -1,5 +1,5 @@
 // Checks that function defns are recorded.
-//- @f defines FDefn
+//- @f defines/binding FDefn
 void f() { }
 //- FDefn.node/kind function
 //- FDefn.complete definition

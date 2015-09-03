@@ -1,11 +1,11 @@
 // Constructors are indexed.
-//- @f defines FnF
+//- @f defines/binding FnF
 //- FnF callableas CFnF
 void f() { }
-//- @C defines ClassC
+//- @C defines/binding ClassC
 class C {
  public:
-  //- @C defines CtorC
+  //- @C defines/binding CtorC
   //- CtorC childof ClassC
   //- CtorC.node/kind function
   //- CtorC.subkind constructor
@@ -14,13 +14,13 @@ class C {
   //- CtorC callableas CtorCC
   //- CtorC named vname("C:C#n",_,_,_,_)
   C() { f(); }
-  //- @C defines CtorC2
+  //- @C defines/binding CtorC2
   //- CtorC2 childof ClassC
   //- CtorC2 callableas CtorC2C
   //- CtorC2 named vname("C:C#n",_,_,_,_)
   C(int) { }
 };
-//- @g defines FnG
+//- @g defines/binding FnG
 void g() {
   //- CallC ref/call CtorCC
   //- CallC.loc/start @^"c"

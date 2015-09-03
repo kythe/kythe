@@ -1,5 +1,5 @@
 // Checks that function pointer types are correctly recorded.
-//- @A defines AliasA
+//- @A defines/binding AliasA
 //- AliasA aliases FnFTy
 //- FnFTy.node/kind TApp
 //- FnFTy param.0 vname("fn#builtin",_,_,_,_)
@@ -7,7 +7,7 @@
 //- FnFTy param.2 vname("float#builtin",_,_,_,_)
 //- FnFTy param.3 vname("short#builtin",_,_,_,_)
 using A = int (float, short);
-//- @T defines AliasT
+//- @T defines/binding AliasT
 //- AliasT aliases PFnFTy
 //- PFnFTy.node/kind TApp
 //- PFnFTy param.0 vname("ptr#builtin",_,_,_,_)

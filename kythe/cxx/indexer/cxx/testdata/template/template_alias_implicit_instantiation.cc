@@ -1,6 +1,6 @@
 // Checks that specialization decls (not defns) generate specializes edges.
 template <typename T> struct S { };
-//- @T defines TAlias
+//- @T defines/binding TAlias
 using T = S<float>;
 //- TAlias aliases SFloatTy
 //- SFloatSpec specializes SFloatTy

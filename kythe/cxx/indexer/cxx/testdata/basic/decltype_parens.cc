@@ -2,15 +2,15 @@
 void f3() {
   //- @float ref FloatType
   float x;
-  //- @r defines VarR VarR typed RefFloat
+  //- @r defines/binding VarR VarR typed RefFloat
   float &r = x;
-  //- @cr defines VarCR VarCR typed ConstRefFloat
+  //- @cr defines/binding VarCR VarCR typed ConstRefFloat
   const float &cr = x;
   (void) [=] {
     // x, r are not captured ("appearance in a decltype operand is not an
     // odr-use")
     //- @decltype ref FloatType
-    //- @y1 defines VarY1 VarY1 typed FloatType
+    //- @y1 defines/binding VarY1 VarY1 typed FloatType
     decltype(x) y1;
     // ("because this lambda is not mutable and x is an lvalue")
     //- @decltype ref ConstRefFloat

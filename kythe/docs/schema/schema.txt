@@ -71,7 +71,7 @@ Ordinals are used::
 
 [kythe,C++,"Typedefs are aliases."]
 --------------------------------------------------------------------------------
-//- @Counter defines TAlias
+//- @Counter defines/binding TAlias
 //- TAlias aliases TInt
 typedef int Counter;
 --------------------------------------------------------------------------------
@@ -112,7 +112,7 @@ Points toward::
 
 [kythe,C++,"Functions can become callables."]
 --------------------------------------------------------------------------------
-//- @F defines FnF
+//- @F defines/binding FnF
 //- FnF.node/kind function
 //- FnF callableas CF
 //- CF.node/kind callable
@@ -136,9 +136,9 @@ Ordinals are used::
 
 [kythe,C++,"Enumerators are children of enumerations."]
 --------------------------------------------------------------------------------
-//- @Enum defines Enumeration
+//- @Enum defines/binding Enumeration
 enum class Enum {
-//- @Etor defines Enumerator
+//- @Etor defines/binding Enumerator
   Etor
 };
 //- Enumerator childof Enumeration
@@ -165,13 +165,13 @@ See also::
 #include "test.h"
 //- @C completes Decl1
 //- @C completes Decl2
-//- @C defines Defn
+//- @C defines/binding Defn
 class C { };
 
 #example test.h
-//- @C defines Decl1
+//- @C defines/binding Decl1
 class C;
-//- @C defines Decl2
+//- @C defines/binding Decl2
 class C;
 --------------------------------------------------------------------------------
 
@@ -193,21 +193,21 @@ See also::
 
 [kythe,C++,"Definitions uniquely complete same-file forward declarations."]
 --------------------------------------------------------------------------------
-//- @C defines Decl1
+//- @C defines/binding Decl1
 class C;
-//- @C defines Decl2
+//- @C defines/binding Decl2
 class C;
 //- @C completes/uniquely Decl1
 //- @C completes/uniquely Decl2
-//- @C defines Defn
+//- @C defines/binding Defn
 class C { };
 --------------------------------------------------------------------------------
 
 [kythe,C++,"Completeness links abs nodes for function templates."]
 --------------------------------------------------------------------------------
-//- @id defines Decl
+//- @id defines/binding Decl
 template <typename T> T id(T x);
-//- @id defines Defn
+//- @id defines/binding Defn
 //- @id completes/uniquely Decl
 template <typename T> T id(T x) { return x; }
 //- Defn.node/kind abs
@@ -234,11 +234,6 @@ Notes::
   It is valid for multiple anchors to define the same semantic object. These
   anchors may even overlap.
 
-[kythe,C++,"Variable definitions define variables."]
---------------------------------------------------------------------------------
-//- @x defines VariableX
-int x;
---------------------------------------------------------------------------------
 
 [[definesbinding]]
 defines/binding
@@ -256,6 +251,10 @@ Ordinals are used::
   never
 See also::
   <<defines>>
+Notes::
+  Source anchors are not necessarily identifiers. For example, the $$C++$$
+  indexer will start a *defines/binding* edge from an anchor spanning
+  the text `operator()`.
 
 [kythe,Java,"Class names bind their definitions."]
 --------------------------------------------------------------------------------
@@ -269,6 +268,12 @@ public class E {
   //- @main defines/binding MethodMain
   public static void main(String[] args) {}
 }
+--------------------------------------------------------------------------------
+
+[kythe,C++,"Variable definitions define bindings for variables."]
+--------------------------------------------------------------------------------
+//- @x defines/binding VariableX
+int x;
 --------------------------------------------------------------------------------
 
 [[documents]]
@@ -341,9 +346,9 @@ public class E {
 
 [kythe,C++,"Classes extend classes."]
 --------------------------------------------------------------------------------
-//- @A defines ClassA
+//- @A defines/binding ClassA
 class A { };
-//- @B defines ClassB
+//- @B defines/binding ClassB
 //- ClassB extends/public ClassA
 class B : public A { };
 --------------------------------------------------------------------------------
@@ -391,7 +396,7 @@ When the primary template is chosen for the *instantiates* relationship, the
 
 [kythe,C++,"Instantiating the primary template"]
 --------------------------------------------------------------------------------
-//- @t_equals_float defines PrimaryTemplate
+//- @t_equals_float defines/binding PrimaryTemplate
 template<typename T, typename S> bool t_equals_float = false;
 
 //- @t_equals_float ref TEqualsFloatForLongLong
@@ -410,12 +415,12 @@ specialization. Note in the below example how we *specialize*
 
 [kythe,C++,"Instantiating a partial specialization"]
 --------------------------------------------------------------------------------
-//- @t_equals_float defines PrimaryTemplate
+//- @t_equals_float defines/binding PrimaryTemplate
 template<typename T, typename S> bool t_equals_float = false;
 //- @int ref IntType @long ref LongType
 int i; long l;
 
-//- @t_equals_float defines SpecificTemplate
+//- @t_equals_float defines/binding SpecificTemplate
 template <typename S> bool t_equals_float<float, S> = true;
 //- @t_equals_float ref TEqualsFloatForFloatLong
 //- TEqualsFloatForFloatLong instantiates TAppSpecificFloatLong
@@ -432,10 +437,10 @@ Here is another similar example:
 
 [kythe,C++,"Instantiation versus specialization."]
 --------------------------------------------------------------------------------
-//- @v defines PrimaryTemplate
+//- @v defines/binding PrimaryTemplate
 template <typename T, typename S, typename V> T v;
 template <typename U>
-//- @v defines PartialSpecialization
+//- @v defines/binding PartialSpecialization
 U v<int, U, long>;
 //- @v ref ImplicitSpecialization
 float w = v<int, float, long>;
@@ -475,14 +480,14 @@ and *specializes/speculative* edges are like the *instantiates* and
 [kythe,C++,"Speculative instantiation and specialization."]
 --------------------------------------------------------------------------------
 // Checks indexing refs and defs of dependent function specializations.
-//- @f defines AbsF1
+//- @f defines/binding AbsF1
 template <typename S> long f(S s) { return 0; }
-//- @f defines AbsF2
+//- @f defines/binding AbsF2
 template <typename S> int f(S s) { return 0; }
 template <typename T> struct S {
   // Note that C++ doesn't even check the kindedness of these type applications.
   friend
-  //- @f defines DepSpecFT
+  //- @f defines/binding DepSpecFT
   //- DepSpecFT instantiates/speculative TAppAbsF1T
   //- DepSpecFT specializes/speculative TAppAbsF1T
   //- TAppAbsF1T param.0 AbsF1
@@ -512,7 +517,7 @@ See also::
 
 [kythe,C++,"Variables have names."]
 --------------------------------------------------------------------------------
-//- @x defines VariableX
+//- @x defines/binding VariableX
 //- VariableX named NameX
 int x;
 --------------------------------------------------------------------------------
@@ -639,9 +644,9 @@ Points toward::
 
 [kythe,C++,"Mentions of variables are refs."]
 --------------------------------------------------------------------------------
-//- @x defines VariableX
+//- @x defines/binding VariableX
 int x;
-//- @y defines VariableY
+//- @y defines/binding VariableY
 //- @x ref VariableX
 int y = x;
 --------------------------------------------------------------------------------
@@ -661,10 +666,10 @@ Ordinals are used::
 
 [kythe,C++,"Anchors inside functions call callables."]
 --------------------------------------------------------------------------------
-//- @A defines FnA
+//- @A defines/binding FnA
 //- FnA callableas CallableA
 void A() { }
-//- @B defines FnB
+//- @B defines/binding FnB
 //- ACall childof FnB
 //- ACall.node/kind anchor
 //- ACall ref/call CallableA
@@ -715,7 +720,7 @@ Notes::
 
 [kythe,C++,"Uttering the name of a macro expands it."]
 --------------------------------------------------------------------------------
-//- @FOO defines MacroFoo
+//- @FOO defines/binding MacroFoo
 #define FOO BAR
 //- @FOO ref/expands MacroFoo
 int FOO;
@@ -740,9 +745,9 @@ Notes::
 
 [kythe,C++,"Macros can expand other macros."]
 --------------------------------------------------------------------------------
-//- @MB defines MacroB
+//- @MB defines/binding MacroB
 #define MB x
-//- @MA defines MacroA
+//- @MA defines/binding MacroA
 #define MA MB
 //- @MA ref/expands/transitive MacroB
 //- @MA ref/expands MacroA
@@ -788,7 +793,7 @@ Ordinals are used::
 
 [kythe,C++,"Queries can be bound or unbound."]
 --------------------------------------------------------------------------------
-//- @FOO defines MacroFoo
+//- @FOO defines/binding MacroFoo
 #define FOO BAR
 //- @FOO ref/queries MacroFoo
 //- MacroFoo named vname("FOO#m",_,_,_,_)
@@ -819,9 +824,9 @@ See also::
 
 [kythe,C++,"Template specializations specialize."]
 --------------------------------------------------------------------------------
-//- @C defines TemplateClassC
+//- @C defines/binding TemplateClassC
 template <typename T> class C { };
-//- @C defines SpecializedClassC
+//- @C defines/binding SpecializedClassC
 template <> class C<int> { };
 //- SpecializedClassC specializes TAppCInt
 //- TAppCInt.node/kind tapp
@@ -831,9 +836,9 @@ template <> class C<int> { };
 
 [kythe,C++,"Function templates specialize."]
 --------------------------------------------------------------------------------
-//- @id defines IdFn
+//- @id defines/binding IdFn
 template <typename T> T id(T x) { return x; }
-//- @id defines IdSpecFn
+//- @id defines/binding IdSpecFn
 template <> bool id(bool x) { return !(!x); }
 //- IdSpecFn specializes TAppIdFnBool
 //- TAppIdFnBool.node/kind tapp
@@ -865,7 +870,7 @@ Ordinals are used::
 
 [kythe,C++,"Enumerations can be ascribed types."]
 --------------------------------------------------------------------------------
-//- @E defines EnumE
+//- @E defines/binding EnumE
 //- EnumE typed IntType
 enum E : int;
 --------------------------------------------------------------------------------
@@ -885,11 +890,11 @@ Points toward::
 
 [kythe,C++,"Undef undefines macros."]
 --------------------------------------------------------------------------------
-//- @FOO defines MacroFoo
+//- @FOO defines/binding MacroFoo
 #define FOO BAR
 //- @FOO undefines MacroFoo
 #undef FOO
-//- @FOO defines DifferentMacroFoo
+//- @FOO defines/binding DifferentMacroFoo
 #define FOO BAZ
 --------------------------------------------------------------------------------
 
@@ -910,17 +915,17 @@ for example, in $$C++$$, it may be a variable or a function.
 
 [kythe,C++,"Templates are abs nodes."]
 --------------------------------------------------------------------------------
-//- @C defines TemplateC
+//- @C defines/binding TemplateC
 //- TemplateC.node/kind abs
 //- TemplaceCBody childof TemplateC
 //- TemplaceCBody.node/kind record
 template <typename T, typename S> class C { };
 
-//- @C defines PartialSpecializationC
+//- @C defines/binding PartialSpecializationC
 //- PartialSpecializationC.node/kind abs
 template <typename U> class C<int, U> { };
 
-//- @C defines TotalSpecializationC
+//- @C defines/binding TotalSpecializationC
 //- TotalSpecializationC.node/kind record
 template <> class C<int, float> { };
 --------------------------------------------------------------------------------
@@ -936,8 +941,8 @@ See also::
 
 [kythe,C++,"Type variables are absvars."]
 --------------------------------------------------------------------------------
-//- @C defines TemplateC
-//- @T defines AbsVarT
+//- @C defines/binding TemplateC
+//- @T defines/binding AbsVarT
 //- AbsVarT.node/kind absvar
 //- TemplateC param.0 AbsVarT
 template <typename T> class C {
@@ -1001,7 +1006,7 @@ See also::
 
 [kythe,C++,"Functions are callable as callables."]
 --------------------------------------------------------------------------------
-//- @F defines FnF
+//- @F defines/binding FnF
 //- FnF callableas CF
 //- CF.node/kind callable
 void F(int X);
@@ -1022,7 +1027,7 @@ See also::
 [kythe,C++,"Enumerators are constants."]
 --------------------------------------------------------------------------------
 enum E {
-//- @EM defines Enumerator
+//- @EM defines/binding Enumerator
   EM = 42
 };
 //- Enumerator.node/kind constant
@@ -1098,10 +1103,10 @@ See also::
 
 [kythe,C++,"Functions are functions."]
 --------------------------------------------------------------------------------
-//- @F defines FnF
+//- @F defines/binding FnF
 //- FnF.node/kind function
 //- FnF.complete incomplete
-//- @X defines VarX
+//- @X defines/binding VarX
 //- VarX.complete incomplete
 //- FnF param.0 VarX
 void F(int X);
@@ -1131,7 +1136,7 @@ Notes::
 [kythe,C++,"Dependent names are lookups."]
 --------------------------------------------------------------------------------
 template
-//- @T defines DepT
+//- @T defines/binding DepT
 <template <typename> class T>
 struct C {
 //- @D ref DepTIntD
@@ -1177,7 +1182,7 @@ See also::
 
 [kythe,C++,"Defines define macros."]
 --------------------------------------------------------------------------------
-//- @FOO defines MacroFoo
+//- @FOO defines/binding MacroFoo
 //- MacroFoo.node/kind macro
 #define FOO BAR
 --------------------------------------------------------------------------------
@@ -1197,9 +1202,9 @@ Notes::
 
 [kythe,C++,"Declarations and definitions share the same name."]
 --------------------------------------------------------------------------------
-//- @C defines CDecl
+//- @C defines/binding CDecl
 class C;
-//- @C defines CDefn
+//- @C defines/binding CDefn
 class C { };
 //- CDecl named CName
 //- CDefn named CName
@@ -1241,12 +1246,12 @@ Notes::
 
 [kythe,C++,"Classes are records."]
 --------------------------------------------------------------------------------
-//- @C defines ClassCDecl
+//- @C defines/binding ClassCDecl
 //- ClassCDecl.node/kind record
 //- ClassCDecl.complete incomplete
 class C;
 
-//- @C defines ClassCDefn
+//- @C defines/binding ClassCDefn
 //- ClassCDefn.node/kind record
 //- ClassCDefn.complete definition
 class C { };
@@ -1279,22 +1284,22 @@ Facts::
 
 [kythe,C++,"Enums are sums."]
 --------------------------------------------------------------------------------
-//- @CE defines EnumCE
+//- @CE defines/binding EnumCE
 //- EnumCE.node/kind sum
 //- EnumCE.complete definition
 enum CE { };
 
-//- @E defines EnumE
+//- @E defines/binding EnumE
 //- EnumE.node/kind sum
 //- EnumE.complete incomplete
 enum class E;
 
-//- @E defines EnumETyped
+//- @E defines/binding EnumETyped
 //- EnumETyped.node/kind sum
 //- EnumETyped.complete complete
 enum class E : int;
 
-//- @E defines EnumEDefn
+//- @E defines/binding EnumEDefn
 //- EnumEDefn.node/kind sum
 //- EnumEDefn.complete definition
 enum class E : int { };
@@ -1322,7 +1327,7 @@ Notes::
 
 [kythe,C++,"Type aliases are taliases."]
 --------------------------------------------------------------------------------
-//- @Counter defines TAlias
+//- @Counter defines/binding TAlias
 //- TAlias.node/kind talias
 using Counter = int;
 --------------------------------------------------------------------------------
@@ -1386,7 +1391,7 @@ Notes::
 
 [kythe,C++,"Forward-declared classes are tnominals."]
 --------------------------------------------------------------------------------
-//- @C defines ClassC
+//- @C defines/binding ClassC
 //- ClassC.node/kind record
 //- ClassC named ClassCName
 class C;
@@ -1411,7 +1416,7 @@ Facts::
 
 [kythe,C++,"Variables are variables."]
 --------------------------------------------------------------------------------
-//- @x defines VariableX
+//- @x defines/binding VariableX
 //- VariableX.node/kind variable
 int x;
 --------------------------------------------------------------------------------
@@ -1471,17 +1476,17 @@ using PtrVoid = void*;
 //- @"int" ref vname("int#builtin","","","","c++")
 using Int = int;
 
-//- @ConstVoid defines TappConstVoidAlias
+//- @ConstVoid defines/binding TappConstVoidAlias
 //- TappConstVoidAlias aliases TAppConstVoid
 //- TAppConstVoid param.0 vname("const#builtin","","","","c++")
 using ConstVoid = const void;
 
-//- @VolatileVoid defines TappVolatileVoidAlias
+//- @VolatileVoid defines/binding TappVolatileVoidAlias
 //- TappVolatileVoidAlias aliases TAppVolatileVoid
 //- TAppVolatileVoid param.0 vname("volatile#builtin","","","","c++")
 using VolatileVoid = volatile void;
 
-///- @RestrictPtrVoid defines TappRestrictPtrVoidAlias
+///- @RestrictPtrVoid defines/binding TappRestrictPtrVoidAlias
 ///- TappRestrictPtrVoidAlias aliases TAppRestrictPtrVoid
 ///- TAppRestrictPtrVoid param.0 vname("restrict#builtin","","","","c++")
 using RestrictPtrVoid = void * __restrict__;
@@ -1494,15 +1499,15 @@ $$C++$$ defines the following subkinds for <<record>> nodes:
 
 [kythe,C++,"Record subkinds"]
 --------------------------------------------------------------------------------
-//- @C defines ClassC
+//- @C defines/binding ClassC
 //- C.subkind class
 class C;
 
-//- @S defines StructS
+//- @S defines/binding StructS
 //- S.subkind struct
 struct S;
 
-//- @U defines UnionU
+//- @U defines/binding UnionU
 //- U.subkind union
 union U;
 --------------------------------------------------------------------------------
@@ -1511,11 +1516,11 @@ $$C++$$ defines the following subkinds for <<sum>> nodes:
 
 [kythe,C++,"Sum subkinds"]
 --------------------------------------------------------------------------------
-//- @E defines EnumE
+//- @E defines/binding EnumE
 //- E.subkind enum
 enum E { };
 
-//- @EC defines EnumClassEC
+//- @EC defines/binding EnumClassEC
 //- EnumClassEC.subkind enumClass
 enum class EC;
 --------------------------------------------------------------------------------
@@ -1535,15 +1540,15 @@ with the most specific name and ending with the most general.
 
 [kythe,C++,"Lexically scoped names"]
 --------------------------------------------------------------------------------
-//- @C defines ClassC
+//- @C defines/binding ClassC
 //- ClassC named vname("C#c",_,_,_,_)
 class C;
 namespace A {
-//- @D defines ClassD
+//- @D defines/binding ClassD
 //- ClassD named vname("D:A#c",_,_,_,_)
   class D;
   namespace B {
-//- @E defines ClassE
+//- @E defines/binding ClassE
 //- ClassE named vname("E:B:A#c",_,_,_,_)
     class E;
   }
@@ -1554,9 +1559,9 @@ Anonymous namespaces are represented using `@`:
 
 [kythe,C++,"Anonymous namespaces"]
 --------------------------------------------------------------------------------
-//- @A defines UnionA
+//- @A defines/binding UnionA
 namespace { union A; }
-//- @B defines UnionB
+//- @B defines/binding UnionB
 namespace { union B; }
 //- UnionA named vname("A:@#u",_,_,_,_)
 //- UnionB named vname("B:@#u",_,_,_,_)
@@ -1568,13 +1573,13 @@ consistent ordering between syntactic elements:
 [kythe,C++,"Ordinal path nodes in names"]
 --------------------------------------------------------------------------------
 void foo() {
-//- @x defines VarNode
+//- @x defines/binding VarNode
 //- VarNode named vname("x:0:0:foo#n",_,_,_,_)
   int x;
-//- @x defines VarNode2
+//- @x defines/binding VarNode2
 //- VarNode2 named vname("x:0:1:0:foo#n",_,_,_,_)
   { int x; }
-//- @x defines VarNode3
+//- @x defines/binding VarNode3
 //- VarNode3 named vname("x:0:2:0:foo#n",_,_,_,_)
   { int x; }
 }
@@ -1588,9 +1593,9 @@ be drawn directly to that node:
 
 [kythe,C++,"Refer to definitions directly."]
 --------------------------------------------------------------------------------
-//- @C defines ClassCDefn
+//- @C defines/binding ClassCDefn
 class C { };
-//- @Alias defines CAlias
+//- @Alias defines/binding CAlias
 //- CAlias aliases ClassCDefn
 using Alias = C;
 --------------------------------------------------------------------------------
@@ -1600,10 +1605,10 @@ If the indexer only has a *complete* $$C++$$ node, or if the node is
 
 [kythe,C++,"Refer to complete or incomplete declarations indirectly."]
 --------------------------------------------------------------------------------
-//- @E defines CompleteEnumE
+//- @E defines/binding CompleteEnumE
 //- CompleteEnumE named EnumEName
 enum class E : int;
-//- @Alias defines EAlias
+//- @Alias defines/binding EAlias
 //- EAlias aliases EnumETNominal
 //- EnumETNominal.node/kind tnominal
 //- EnumETNominal named EnumEName
@@ -1629,10 +1634,10 @@ collapses redundant qualifiers should they arise (`const const` becomes
 
 [kythe,C++,"Qualifiers have canonical order."]
 --------------------------------------------------------------------------------
-//- @U defines VRCAlias
+//- @U defines/binding VRCAlias
 //- VRCAlias aliases VRCInt
 using U = int * __restrict__ const volatile;
-//- @V defines AnotherAlias
+//- @V defines/binding AnotherAlias
 //- AnotherAlias aliases VRCInt
 using V = int * volatile __restrict__ const;
 --------------------------------------------------------------------------------
@@ -1640,10 +1645,10 @@ using V = int * volatile __restrict__ const;
 [kythe,C++,"Redundant CVR-qualifiers are dropped."]
 --------------------------------------------------------------------------------
 #arguments -Wno-duplicate-decl-specifier
-//- @U defines CIAlias
+//- @U defines/binding CIAlias
 //- CIAlias aliases CIType
 using U = const const int;
-//- @V defines AnotherCIAlias
+//- @V defines/binding AnotherCIAlias
 //- AnotherCIAlias aliases CIType
 using V = const int;
 --------------------------------------------------------------------------------
@@ -1656,7 +1661,7 @@ Its first parameter is the return type; subsequent parameters are arguments.
 
 [kythe,C++,"Function types use a builtin type constructor."]
 --------------------------------------------------------------------------------
-//- @U defines UAlias
+//- @U defines/binding UAlias
 //- UAlias aliases TAppFn
 //- TAppFn param.0 vname("fn#builtin",_,_,_,_)
 //- TAppFn param.1 vname("int#builtin",_,_,_,_)
@@ -1683,9 +1688,9 @@ parameter is given to the inner <<abs>>.
 
 [kythe,C++,"We do not represent higher kinds"]
 --------------------------------------------------------------------------------
-//- @A defines AbsvarA
-//- @B defines NestedAbs
-//- @C defines TemplateC
+//- @A defines/binding AbsvarA
+//- @B defines/binding NestedAbs
+//- @C defines/binding TemplateC
 template <template <typename A> class B> class C;
 //- TemplateC param.0 NestedAbs
 //- NestedAbs.node/kind abs
@@ -1702,7 +1707,7 @@ In this case, the constructor (or destructor) is named `#ctor` (or `#dtor`):
 
 [kythe,C++,"Dependent ctors and dtors"]
 --------------------------------------------------------------------------------
-//- @T defines TyvarT
+//- @T defines/binding TyvarT
 template <typename T>
 class C : T {
   //- @"T()" ref/call LookupTCtor

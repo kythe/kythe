@@ -1,9 +1,9 @@
 // Checks that we can complete a string flag decl.
 #include "flags_string.h"
-//- StringFlagDeclAnchor defines StringFlagDecl
+//- StringFlagDeclAnchor defines/binding StringFlagDecl
 //- StringFlagDecl.complete incomplete
 //- StringFlagDecl.node/kind google/gflag
-//- @stringflag defines StringFlag
+//- @stringflag defines/binding StringFlag
 //- StringFlag.complete definition
 //- StringFlag.node/kind google/gflag
 //- @stringflag completes StringFlagDecl

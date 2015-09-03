@@ -441,11 +441,31 @@ public:
   /// \brief Records that a particular `Range` contains the definition
   /// of the node called `DefnId`.
   ///
-  /// Generally the `Range` provided will be small and limited only to
+  /// The provided `Range` should cover the full syntactic definition of the
+  /// identified node.
+  virtual void recordFullDefinitionRange(const Range &SourceRange,
+                                         const NodeId &DefnId) {}
+
+  /// \brief Records that a particular `Range` contains the definition
+  /// of the node called `DefnId`.
+  ///
+  /// Generally the `BindingRange` provided will be small and limited only to
   /// the part of the declaration that binds a name. For example, in `class C`,
-  /// we would `recordDefinitionRange` on the range for `C`.
-  virtual void recordDefinitionRange(const Range &SourceRange,
-                                     const NodeId &DefnId) {}
+  /// we would `recordDefinitionBindingRange` on the range for `C`.
+  virtual void recordDefinitionBindingRange(const Range &BindingRange,
+                                            const NodeId &DefnId) {}
+
+  /// \brief Records that a particular `Range` contains the definition
+  /// of the node called `DefnId`.
+  ///
+  /// Generally the `BindingRange` provided will be small and limited only to
+  /// the part of the declaration that binds a name. For example, in `class C`,
+  /// we would `recordDefinitionRangeWithBinding` on the range for `C`.
+  /// The `SourceRange` should cover the full syntactic definition of the
+  /// identified node.
+  virtual void recordDefinitionRangeWithBinding(const Range &SourceRange,
+                                                const Range &BindingRange,
+                                                const NodeId &DefnId) {}
 
   /// \brief Records that a particular `Range` contains some documentation
   /// for the node called `DocId`.

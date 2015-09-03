@@ -1,8 +1,8 @@
 // Checks that we handle type-dependent maybe-ctor callish sites.
 //   see also CXXUnresolvedConstructExpr.
-//- @T defines TyvarT
+//- @T defines/binding TyvarT
 template<typename T, typename A1>
-//- @make_a defines AbsMakeA
+//- @make_a defines/binding AbsMakeA
 //- MakeA childof AbsMakeA
 //- MakeA.node/kind function
 inline T make_a(const A1& a1) {

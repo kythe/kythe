@@ -2,7 +2,7 @@
 namespace {
 class C;
 //- @C ref NominalC
-//- @tdef defines TypeAlias
+//- @tdef defines/binding TypeAlias
 typedef C tdef;
 //- TypeAlias named vname("tdef:@#n", "", "", "", "c++")
 //- TypeAlias aliases NominalC

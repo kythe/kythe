@@ -1,6 +1,6 @@
 // Checks the representation of dependent names.
 template
-//- @T defines DepT
+//- @T defines/binding DepT
 <template <typename> class T>
 struct C {
 //- @D ref DepTIntD

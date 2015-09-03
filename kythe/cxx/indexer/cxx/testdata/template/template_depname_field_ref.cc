@@ -1,5 +1,5 @@
 // Checks that we can refer to dependent fields.
-//- @T defines TyvarT
+//- @T defines/binding TyvarT
 template <typename T> struct Sz {
   T t;
   //- @f ref DepF

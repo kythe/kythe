@@ -61,7 +61,7 @@ enum class PropertyID {
 
 /// \brief Known edge kinds. See the schema for details.
 enum class EdgeKindID {
-  kDefines,
+  kDefinesFull,
   kNamed,
   kHasType,
   kRef,
@@ -91,7 +91,8 @@ enum class EdgeKindID {
   kInstantiatesSpeculative,
   kDocuments,
   kRefDoc,
-  kGenerates
+  kGenerates,
+  kDefinesBinding
 };
 
 /// \brief Returns the Kythe spelling of `node_kind_id`

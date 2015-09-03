@@ -1,8 +1,8 @@
 // Tests the behavior of alias definitions combined with tycons.
-//- @ptr_alias defines PtrAlias
+//- @ptr_alias defines/binding PtrAlias
 //- @int ref IntType
 using ptr_alias = int*;
-//- @alias_alias defines AliasAlias
+//- @alias_alias defines/binding AliasAlias
 //- @ptr_alias ref PtrAlias
 using alias_alias = ptr_alias;
 //- PtrAlias aliases PtrIntType

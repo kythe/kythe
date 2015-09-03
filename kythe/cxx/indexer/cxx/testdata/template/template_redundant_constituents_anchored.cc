@@ -1,6 +1,6 @@
 // Checks that repeated structured types have their constituents marked.
 template <typename T> class C { };
-//- @D defines ClassD
+//- @D defines/binding ClassD
 class D { };
 //- @D ref ClassD
 C<D> x;

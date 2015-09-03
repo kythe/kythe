@@ -1,7 +1,7 @@
 // We associate `new Foo` with Foo's ctor.
 class C {
  public:
-  //- @C defines Ctor
+  //- @C defines/binding Ctor
   //- Ctor callableas CtorC
   C() { }
 };

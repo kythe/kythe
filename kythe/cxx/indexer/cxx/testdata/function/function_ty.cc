@@ -1,5 +1,5 @@
 // Checks that function types are correctly recorded.
-//- @F defines FnF
+//- @F defines/binding FnF
 //- FnF typed FnFTy
 //- FnFTy.node/kind TApp
 //- FnFTy param.0 vname("fn#builtin",_,_,_,_)

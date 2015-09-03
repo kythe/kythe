@@ -1,6 +1,6 @@
 // Basic static member function decls are indexed.
-//- @f defines MemberF
-//- @S defines StructS
+//- @f defines/binding MemberF
+//- @S defines/binding StructS
 //- MemberF childof StructS
 //- MemberF callableas CF
 struct S { static int f() { return 0; } };

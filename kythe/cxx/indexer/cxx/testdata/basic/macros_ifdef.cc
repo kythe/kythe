@@ -1,5 +1,5 @@
 // Tests #ifdef guards.
-//- @M0 defines M0
+//- @M0 defines/binding M0
 //- M0 named Name0
 #define M0 1
 //- @M0 ref/queries M0

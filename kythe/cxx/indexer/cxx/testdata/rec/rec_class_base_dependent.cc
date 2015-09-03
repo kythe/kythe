@@ -1,7 +1,7 @@
 // We index dependent base classes.
-//- @T defines TyvarT
+//- @T defines/binding TyvarT
 template <typename T>
-//- @A defines AbsA
+//- @A defines/binding AbsA
 //- ClassA childof AbsA
 //- ClassA extends/public TyvarT
 //- ClassA extends/private DepTS

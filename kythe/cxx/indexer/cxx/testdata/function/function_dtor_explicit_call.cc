@@ -1,7 +1,7 @@
 // Checks that we index explicit destructor calls.
 class C {
  public:
-  //- @"~C" defines CDtor
+  //- @"~C" defines/binding CDtor
   //- CDtor callableas CDtorC
   //- CDtor named vname("~C:C#n",_,_,_,_)
   ~C() { }

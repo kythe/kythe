@@ -3,9 +3,9 @@
 // still see instantiates edges, but they will point to either the primary
 // template or to the total specialization used.
 
-//- @f defines PrimaryF
+//- @f defines/binding PrimaryF
 template <typename T> bool f(T* arg);
-//- @f defines TotalF
+//- @f defines/binding TotalF
 template <> bool f(int* arg);
 
 //- @f ref TotalF

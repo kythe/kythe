@@ -1,8 +1,8 @@
 // Checks that calls to function overloads are recorded.
-//- @F defines FnFI
+//- @F defines/binding FnFI
 //- FnFI callableas FnFIC
 void F(int X) { }
-//- @F defines FnFF
+//- @F defines/binding FnFF
 //- FnFF callableas FnFFC
 void F(float X) {
 //- @"F((int)X)" ref/call FnFIC

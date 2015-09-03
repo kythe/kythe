@@ -1,10 +1,10 @@
 // Tests basic support for function templates.
 // TODO(zarko): check type of AbsCallable
-//- @T defines TyvarT
+//- @T defines/binding TyvarT
 //- TyvarT.node/kind absvar
 template <typename T>
 T
-//- @id defines Abs
+//- @id defines/binding Abs
 id(T x)
 { return x; }
 //- Abs.node/kind abs

@@ -1,8 +1,8 @@
 // Tests that we index instances of partial specializations of template vars.
-//- @v defines Prim
+//- @v defines/binding Prim
 template <typename T, typename S, typename V> T v;
 template <typename U>
-//- @v defines Ps
+//- @v defines/binding Ps
 U v<int, U, long>;
 //- Ps.node/kind abs
 //- @v ref Spec

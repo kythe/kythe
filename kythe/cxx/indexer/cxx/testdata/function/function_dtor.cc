@@ -1,6 +1,6 @@
 // Destructors are indexed.
 class C {
-  //- @"~C" defines CDtor
+  //- @"~C" defines/binding CDtor
   //- CDtor callableas CDtorC
   //- CDtor named vname("~C:C#n",_,_,_,_)
   //- CDtor.node/kind function

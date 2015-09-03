@@ -1,7 +1,7 @@
 // Tests that we index explicit specializations of template variables.
-//- @v defines PrimaryTemplateV
+//- @v defines/binding PrimaryTemplateV
 template <typename T> T v;
-//- @v defines SpecIntV
+//- @v defines/binding SpecIntV
 //- SpecIntV specializes AppPTInt
 //- AppPTInt.node/kind tapp
 //- AppPTInt param.0 PrimaryTemplateV

@@ -3,7 +3,7 @@
 /// \c bar
 ///- @bar ref/doc FnBar
 /// \unknown bar
-///- @bar defines FnBar
+///- @bar defines/binding FnBar
 int bar() {
   return 0;
 }

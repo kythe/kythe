@@ -1,7 +1,7 @@
 // Checks that enumeration class elements are modeled as constant members.
-//- @E defines EEnum
+//- @E defines/binding EEnum
 enum class E {
-//- @EM defines EMElt
+//- @EM defines/binding EMElt
   EM
 };
 //- EMElt childof EEnum

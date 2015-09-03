@@ -2,7 +2,7 @@
 class C {
   class D;
 //- @D ref NominalD
-//- @tdef defines TypeAlias
+//- @tdef defines/binding TypeAlias
   typedef D tdef;
 };
 // Note that the tag at the end of a stringified NameId refers to the whole

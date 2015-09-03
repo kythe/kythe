@@ -195,8 +195,15 @@ class KytheGraphObserver : public GraphObserver {
                              const llvm::StringRef &NodeKind,
                              Completeness Compl) override;
 
-  void recordDefinitionRange(const Range &SourceRange,
-                             const NodeId &DefnId) override;
+  void recordFullDefinitionRange(const Range &SourceRange,
+                                 const NodeId &DefnId) override;
+
+  void recordDefinitionBindingRange(const Range &BindingRange,
+                                    const NodeId &DefnId) override;
+
+  void recordDefinitionRangeWithBinding(const Range &SourceRange,
+                                        const Range &BindingRange,
+                                        const NodeId &DefnId) override;
 
   void recordDocumentationRange(const Range &SourceRange,
                                 const NodeId &DocId) override;

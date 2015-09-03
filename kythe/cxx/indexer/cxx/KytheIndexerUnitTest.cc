@@ -116,13 +116,13 @@ TEST(KytheIndexerUnitTest, GraphRecorderEdge) {
   vname_target.set_language("lang2");
   vname_target.set_path("path2");
   vname_target.set_root("root2");
-  recorder.AddEdge(VNameRef(vname_source), EdgeKindID::kDefines,
+  recorder.AddEdge(VNameRef(vname_source), EdgeKindID::kDefinesBinding,
                    VNameRef(vname_target));
   ASSERT_EQ(1, stream.entries().size());
   const auto& entry = stream.entries()[0];
   EXPECT_TRUE(entry.fact_value().empty());
   EXPECT_EQ("/", entry.fact_name());
-  ASSERT_EQ("/kythe/edge/defines", entry.edge_kind());
+  ASSERT_EQ("/kythe/edge/defines/binding", entry.edge_kind());
   ASSERT_TRUE(entry.has_target());
   ASSERT_TRUE(entry.has_source());
   ASSERT_EQ(vname_source.DebugString(), entry.source().DebugString());
@@ -143,13 +143,13 @@ TEST(KytheIndexerUnitTest, GraphRecorderEdgeOrdinal) {
   vname_target.set_language("lang2");
   vname_target.set_path("path2");
   vname_target.set_root("root2");
-  recorder.AddEdge(VNameRef(vname_source), EdgeKindID::kDefines,
+  recorder.AddEdge(VNameRef(vname_source), EdgeKindID::kDefinesBinding,
                    VNameRef(vname_target), 42);
   ASSERT_EQ(1, stream.entries().size());
   const auto& entry = stream.entries()[0];
   ASSERT_EQ("42", entry.fact_value());
   ASSERT_EQ("/kythe/ordinal", entry.fact_name());
-  ASSERT_EQ("/kythe/edge/defines", entry.edge_kind());
+  ASSERT_EQ("/kythe/edge/defines/binding", entry.edge_kind());
   ASSERT_TRUE(entry.has_target());
   ASSERT_TRUE(entry.has_source());
   ASSERT_EQ(vname_source.DebugString(), entry.source().DebugString());

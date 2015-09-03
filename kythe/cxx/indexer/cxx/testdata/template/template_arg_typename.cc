@@ -1,21 +1,21 @@
 // Checks that templates can accept typename arguments.
 
 template
-//- @T defines AbsT
+//- @T defines/binding AbsT
 <typename T>
-//- @C defines CDecl1
+//- @C defines/binding CDecl1
 class C;
 
 template
-//- @S defines AbsS
+//- @S defines/binding AbsS
 <typename S>
-//- @C defines CDecl2
+//- @C defines/binding CDecl2
 class C;
 
 template
-//- @V defines AbsV
+//- @V defines/binding AbsV
 <typename V>
-//- @C defines CDefn
+//- @C defines/binding CDefn
 //- @C completes/uniquely CDecl1
 //- @C completes/uniquely CDecl2
 class C { };

@@ -1,5 +1,5 @@
 // Tests the `using Name = ty` syntactic form.
-//- @alias defines TypeAlias
+//- @alias defines/binding TypeAlias
 //- @"int" ref IntType
 //- TypeAlias.node/kind talias
 //- TypeAlias aliases IntType

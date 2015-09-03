@@ -1,8 +1,8 @@
 // Tests the behavior of alias definitions.
-//- @builtin_alias defines BuiltinAlias
+//- @builtin_alias defines/binding BuiltinAlias
 //- @int ref IntType
 using builtin_alias = int;
-//- @alias_alias defines AliasAlias
+//- @alias_alias defines/binding AliasAlias
 //- @builtin_alias ref BuiltinAlias
 using alias_alias = builtin_alias;
 //- BuiltinAlias.node/kind talias

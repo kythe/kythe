@@ -1,6 +1,6 @@
 // Checks that DEFINE_int64 creates a flag.
 #include "gflags.h"
-//- @defnflag defines FlagNode
+//- @defnflag defines/binding FlagNode
 //- FlagNode.node/kind google/gflag
 //- FlagNode.complete definition
 DEFINE_int64(defnflag, 0, "adef");

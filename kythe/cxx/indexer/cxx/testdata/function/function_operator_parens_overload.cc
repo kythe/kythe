@@ -1,9 +1,9 @@
 // Checks that a struct with operator()s is recorded as multiple callables.
-//- @S defines StructS
+//- @S defines/binding StructS
 struct S {
-//- @"operator()" defines FnCI
+//- @"operator()" defines/binding FnCI
   void operator()(int A) { }
-//- @"operator()" defines FnCF
+//- @"operator()" defines/binding FnCF
   void operator()(float F) { }
 };
 //- FnCI childof StructS
@@ -12,4 +12,3 @@ struct S {
 //- FnCF childof StructS
 //- FnCF callableas CCF
 //- StructS callableas CCF
-

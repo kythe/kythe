@@ -370,7 +370,7 @@ clang::SourceRange IndexerASTVisitor::RangeForASTEntityFromSourceLocation(
 void IndexerASTVisitor::MaybeRecordDefinitionRange(
     const GraphObserver::Range &R, const GraphObserver::NodeId &Id) {
   if (R.PhysicalRange.isValid()) {
-    Observer.recordDefinitionRange(R, Id);
+    Observer.recordDefinitionBindingRange(R, Id);
   }
 }
 

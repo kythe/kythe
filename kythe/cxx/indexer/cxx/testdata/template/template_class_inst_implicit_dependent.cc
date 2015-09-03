@@ -1,7 +1,7 @@
 // Checks the behavior of implicit class template instantiations.
-//- @T defines TemplateT
+//- @T defines/binding TemplateT
 template <typename C> struct T {
-//- @X defines XAlias
+//- @X defines/binding XAlias
 //- XAlias aliases Lookup
 //- Lookup.node/kind lookup
   using X = typename C::Y;

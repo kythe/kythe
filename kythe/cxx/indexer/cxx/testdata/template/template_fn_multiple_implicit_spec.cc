@@ -1,5 +1,5 @@
 // Tests support for implicit specializations of function templates.
-//- @id defines AbsId
+//- @id defines/binding AbsId
 template <typename T> T id(T x) { return x; }
 //- @id ref IntSpecId
 int y = id(42);

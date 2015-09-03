@@ -1,16 +1,16 @@
 // Checks that declarations and definitions of templates are distinguished.
 
-//- @C defines FwdTemplate
+//- @C defines/binding FwdTemplate
 template <typename T> class C;
 
-//- @C defines FwdSpec
+//- @C defines/binding FwdSpec
 template <> class C <int>;
 
-//- @C defines Template
+//- @C defines/binding Template
 //- @C completes/uniquely FwdTemplate
 template <typename T> class C { };
 
-//- @C defines Spec
+//- @C defines/binding Spec
 //- @C completes/uniquely FwdSpec
 template <> class C <int> { };
 

@@ -1,9 +1,9 @@
 // Checks indexing refs and defs of dependent function specializations.
-//- @f defines AbsF
+//- @f defines/binding AbsF
 template <typename S> long f(S s) { return 0; }
 template <typename T> struct S {
   friend
-  //- @f defines DepSpecFT
+  //- @f defines/binding DepSpecFT
   //- DepSpecFT specializes/speculative TAppAbsFT
   //- TAppAbsFT param.0 AbsF
   //- TAppAbsFT param.1 BuiltinInt

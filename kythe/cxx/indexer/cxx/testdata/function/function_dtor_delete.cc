@@ -1,7 +1,7 @@
 // We index `delete Foo` as a call to Foo's dtor.
 class C {
  public:
-  //- @"~C" defines Dtor
+  //- @"~C" defines/binding Dtor
   //- Dtor callableas DtorC
   ~C() { }
 };

@@ -1,9 +1,9 @@
 // The indexer handles redundant typedefs-to-typedefs reasonably.
-//- @T defines TypedefIT
+//- @T defines/binding TypedefIT
 typedef int T;
-//- @S defines TypedefIS
+//- @S defines/binding TypedefIS
 typedef int S;
-//- @S defines TypedefTS
+//- @S defines/binding TypedefTS
 typedef T S;
 //- TypedefIT aliases Int
 //- TypedefIS aliases Int

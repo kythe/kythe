@@ -4,10 +4,10 @@
 //- VarNode2.node/kind variable
 //- VarNode2 named vname("x:0:1:0:foo#n", "", "", "", "c++")
 void foo() {
-//- @x defines VarNode
+//- @x defines/binding VarNode
   int x;
   {
-//- @x defines VarNode2
+//- @x defines/binding VarNode2
     int x;
   }
 }

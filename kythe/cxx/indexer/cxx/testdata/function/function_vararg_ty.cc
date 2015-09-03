@@ -1,5 +1,5 @@
 // Checks how we record the types of functions with varargs.
-//- @F defines AliasF
+//- @F defines/binding AliasF
 using F = void(int, ...);
 //- AliasF aliases TApp
 //- TApp.node/kind tapp

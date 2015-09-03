@@ -1,11 +1,11 @@
 // Tests overloads of template functions.
-//- @T defines FNoPtrT
+//- @T defines/binding FNoPtrT
 template <typename T>
-//- @f defines FNoPtr
+//- @f defines/binding FNoPtr
 void f(T t) { }
-//- @T defines FPtrT
+//- @T defines/binding FPtrT
 template <typename T>
-//- @f defines FPtr
+//- @f defines/binding FPtr
 void f(T* t) { }
 //- FNoPtrFn childof FNoPtr
 //- FPtrFn childof FPtr

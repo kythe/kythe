@@ -1,7 +1,7 @@
 // Checks that structs with fields that point to other structs are indexed.
-//- @rat defines StructRat
+//- @rat defines/binding StructRat
 struct rat {
-//- @dev defines FieldDev
+//- @dev defines/binding FieldDev
 //- FieldDev childof StructRat
 //- FieldDev.node/kind variable
 //- FieldDev.subkind field

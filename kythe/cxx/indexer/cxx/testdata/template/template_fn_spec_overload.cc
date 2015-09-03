@@ -1,10 +1,10 @@
 // Tests the combination of overloading and specialization on function
 // templates.
-//- @f defines FnF
+//- @f defines/binding FnF
 template <typename T> void f(T t) { }
-//- @f defines FnFInt
+//- @f defines/binding FnFInt
 template <> void f(int) { }
-//- @f defines FnFPtr
+//- @f defines/binding FnFPtr
 template <typename T> void f(T* t) { }
 //- FnFInt specializes TAppFnF
 //- TAppFnF param.0 FnF

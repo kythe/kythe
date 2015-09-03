@@ -1,5 +1,5 @@
 // Checks that the indexer finds and emits nodes for types and typedefs.
-//- @tdef defines TypeAlias
+//- @tdef defines/binding TypeAlias
 //- TypeAlias.node/kind talias
 //- TypeAlias named vname("tdef#n", "", "", "", "c++")
 //- @int ref IntType

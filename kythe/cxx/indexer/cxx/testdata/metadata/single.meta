@@ -3,8 +3,8 @@
   "meta": [
     {
       "type": "anchor_defines",
-      "begin": 171,
-      "end": 174,
+      "begin": 179,
+      "end": 182,
       "edge": "%/kythe/edge/generates",
       "vname": {
         "signature": "gsig",

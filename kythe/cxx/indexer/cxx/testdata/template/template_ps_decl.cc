@@ -1,12 +1,12 @@
 // Checks that single-variable specialization decls are recorded.
 template
 <typename T>
-//- @C defines CDecl
+//- @C defines/binding CDecl
 class C;
 
 template
 <>
-//- @C defines PCDecl
+//- @C defines/binding PCDecl
 class C
 <int>;
 

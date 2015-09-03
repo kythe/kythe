@@ -3,7 +3,7 @@ namespace A {
 namespace B {
 class C;
 }
-//- @tdef defines TypeAlias
+//- @tdef defines/binding TypeAlias
 //- @C ref NominalCBA
 typedef B::C tdef;
 }

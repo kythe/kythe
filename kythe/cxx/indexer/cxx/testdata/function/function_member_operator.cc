@@ -1,7 +1,7 @@
 // Checks that we index operator overload members.
 class C {
  public:
-  //- @"operator+" defines OperatorPlus
+  //- @"operator+" defines/binding OperatorPlus
   //- OperatorPlus callableas OperatorPlusC
   //- OperatorPlus named vname("OO#Plus:C#n",_,_,_,_)
   int operator+(int q) { return 0; }

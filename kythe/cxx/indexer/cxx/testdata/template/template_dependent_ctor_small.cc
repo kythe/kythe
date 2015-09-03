@@ -1,5 +1,5 @@
 // Checks indexing dependent constructors.
-//- @T defines TyvarT
+//- @T defines/binding TyvarT
 template <typename T>
 struct S : T::Q {
   //- @"Q()" ref/call LookupTQCtor

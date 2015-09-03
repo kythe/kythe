@@ -1,5 +1,5 @@
 // We index constexpr variable templates.
-//- VariableTemplate defines VTAbs
+//- VariableTemplate defines/binding VTAbs
 //- VTAbs.node/kind abs
 template <typename T> constexpr T VariableTemplate{};
 //- @VariableTemplate ref VTVar

@@ -132,8 +132,8 @@ void IndexerPPCallbacks::MacroDefined(const clang::Token &Token,
   GraphObserver::NodeId MacroId = BuildNodeIdForMacro(Token, Info);
   if (Observer.claimNode(MacroId)) {
     GraphObserver::NameId MacroName = BuildNameIdForMacro(Token);
-    Observer.recordDefinitionRange(RangeForTokenInCurrentContext(Token),
-                                   MacroId);
+    Observer.recordDefinitionBindingRange(RangeForTokenInCurrentContext(Token),
+                                          MacroId);
     Observer.recordMacroNode(MacroId);
     Observer.recordNamedEdge(MacroId, MacroName);
   }

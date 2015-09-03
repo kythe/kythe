@@ -3,10 +3,10 @@
 ///- !{ @bar ref/doc FnBar }
 ///- @baz ref/doc FnBaz
 /// `foo` bar `baz`
-///- @bar defines FnBar
+///- @bar defines/binding FnBar
 int bar() { return 0; }
-///- @foo defines FnFoo
+///- @foo defines/binding FnFoo
 int foo() { return 0; }
-///- @baz defines FnBaz
+///- @baz defines/binding FnBaz
 int baz() { return 0; }
 //- goal_prefix should be ///-

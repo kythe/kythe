@@ -1,7 +1,7 @@
 // Checks that specialization decls are given the right names.
-//- @S defines TemplateS
+//- @S defines/binding TemplateS
 template <typename T> struct S;
-//- @T defines NominalAlias
+//- @T defines/binding NominalAlias
 using T = S<float>;
 //- TemplateS named TemplateSName
 //- NominalAlias aliases TApp

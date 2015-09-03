@@ -1,11 +1,11 @@
 // Tests the behavior of multiple levels of template arguments.
-//- @T defines AbsT
+//- @T defines/binding AbsT
 template <typename T>
 struct X {
-//- @S defines AbsS
+//- @S defines/binding AbsS
   template<typename S>
   struct Y {
-//- @U defines AliasU
+//- @U defines/binding AliasU
     using U = T;
   };
 };

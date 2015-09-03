@@ -3,7 +3,7 @@
 ## Upcoming release
 
 Notable changes:
- - Java indexer: rename /kythe/edge/defines to /kythe/edge/defines/binding
+ - C++, Java indexers: rename /kythe/edge/defines to /kythe/edge/defines/binding
  - Java extractor: change failure to warning on detection of non-java sources
 
 Notable additions:

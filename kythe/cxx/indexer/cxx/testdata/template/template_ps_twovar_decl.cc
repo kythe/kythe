@@ -1,13 +1,13 @@
 // Checks that multi-variable partial specialization decls are recorded.
 template
 <typename T, typename S>
-//- @C defines CDecl
+//- @C defines/binding CDecl
 class C;
 
 template
-//- @U defines AbsU
+//- @U defines/binding AbsU
 <typename U>
-//- @C defines PCDecl
+//- @C defines/binding PCDecl
 class C
 <int, U>;
 

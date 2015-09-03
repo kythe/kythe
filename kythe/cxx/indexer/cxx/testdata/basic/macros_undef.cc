@@ -1,10 +1,10 @@
 // Tests undefining macros.
-//- @M defines MacroM
+//- @M defines/binding MacroM
 #define M
 //- @M undefines MacroM
 #undef M
 #undef NEVER_DEFINED
-//- @M defines OtherMacroM
+//- @M defines/binding OtherMacroM
 #define M
 //- @M undefines OtherMacroM
 #undef M

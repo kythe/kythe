@@ -8,17 +8,17 @@
 //- VarNode4.node/kind variable
 //- VarNode4 named vname("x:0:2:1:0:foo#n", "", "", "", "c++")
 void foo() {                         // foo[0]
-//- @x defines VarNode
+//- @x defines/binding VarNode
   int x;                             // foo[0][0]
   {                                  // foo[0][1]
-//- @x defines VarNode2
+//- @x defines/binding VarNode2
     int x;                           // foo[0][1][0]
     {                                // foo[0][1][1]
-//- @x defines VarNode3
+//- @x defines/binding VarNode3
       int x;                         // foo[0][1][1][0]
     }
     {                                // foo[0][1][2]
-//- @x defines VarNode4
+//- @x defines/binding VarNode4
       int x;                         // foo[0][1][2][0]
     }
   }

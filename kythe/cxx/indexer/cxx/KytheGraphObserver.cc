@@ -385,7 +385,7 @@ proto::VName KytheGraphObserver::RecordAnchor(
     recorder_->AddEdge(VNameRef(anchor_name), anchor_edge_kind,
                        VNameRefFromNodeId(primary_anchored_to));
     if (source_range.Kind == Range::RangeKind::Physical) {
-      if (anchor_edge_kind == EdgeKindID::kDefines) {
+      if (anchor_edge_kind == EdgeKindID::kDefinesBinding) {
         clang::FileID def_file =
             SourceManager->getFileID(source_range.PhysicalRange.getBegin());
         const auto metas = meta_.equal_range(def_file);
@@ -550,9 +550,24 @@ void KytheGraphObserver::recordDocumentationRange(
                Claimability::Claimable);
 }
 
-void KytheGraphObserver::recordDefinitionRange(
+void KytheGraphObserver::recordFullDefinitionRange(
     const GraphObserver::Range &source_range, const NodeId &node) {
-  RecordAnchor(source_range, node, EdgeKindID::kDefines,
+  RecordAnchor(source_range, node, EdgeKindID::kDefinesFull,
+               Claimability::Claimable);
+}
+
+void KytheGraphObserver::recordDefinitionBindingRange(
+    const GraphObserver::Range &binding_range, const NodeId &node) {
+  RecordAnchor(binding_range, node, EdgeKindID::kDefinesBinding,
+               Claimability::Claimable);
+}
+
+void KytheGraphObserver::recordDefinitionRangeWithBinding(
+    const GraphObserver::Range &source_range,
+    const GraphObserver::Range &binding_range, const NodeId &node) {
+  RecordAnchor(source_range, node, EdgeKindID::kDefinesFull,
+               Claimability::Claimable);
+  RecordAnchor(binding_range, node, EdgeKindID::kDefinesBinding,
                Claimability::Claimable);
 }
 

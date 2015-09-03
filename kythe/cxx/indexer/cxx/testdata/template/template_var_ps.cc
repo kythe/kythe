@@ -1,9 +1,9 @@
 // Tests that we index partial specializations of template variables.
-//- @v defines VarV
+//- @v defines/binding VarV
 template <typename T, typename S> T v;
-//- @U defines TyvarU
+//- @U defines/binding TyvarU
 template <typename U>
-//- @v defines VarPSU
+//- @v defines/binding VarPSU
 U v<U, int>;
 //- VarPSU.node/kind abs
 //- VarPSU specializes TAppVarV

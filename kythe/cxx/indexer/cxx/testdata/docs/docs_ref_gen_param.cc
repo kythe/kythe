@@ -2,8 +2,8 @@
 ///- @a ref/doc ParamA
 ///- @b ref/doc ParamB
 /// Adds `a` to `b`.
-///- @a defines ParamA
-///- @b defines ParamB
+///- @a defines/binding ParamA
+///- @b defines/binding ParamB
 int f(int a, int b) {
   return a + b;
 }

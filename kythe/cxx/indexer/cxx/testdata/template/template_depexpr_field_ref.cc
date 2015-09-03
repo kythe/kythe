@@ -1,5 +1,5 @@
 // Checks that we don't fall over on fields that depend on expressions.
-//- @T defines TyvarT
+//- @T defines/binding TyvarT
 template <typename T> struct S {
   T t;
   //- @f ref DepF

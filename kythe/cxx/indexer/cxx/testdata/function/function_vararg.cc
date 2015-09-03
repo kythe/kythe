@@ -1,5 +1,5 @@
 // Checks how we record functions with varargs.
-//- @F defines VarargFn
+//- @F defines/binding VarargFn
 //- VarargFn typed TAppVarargFn
 //- TAppVarargFn.node/kind tapp
 //- TAppVarargFn param.0 vname("fnvararg#builtin",_,_,_,_)
