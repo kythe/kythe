@@ -663,9 +663,9 @@ public class JavaCompilationUnitExtractor {
     Map<URI, String> sourceBaseNames = Maps.newHashMap();
     for (ClassSymbol sym : syms.classes.values()) {
       if (sym.sourcefile != null && sym.classfile != null) {
-        String basename = new File(sym.sourcefile.toUri().getPath()).getName();
+        String basename = Paths.get(sym.sourcefile.toUri().getPath()).getFileName().toString();
         if (!basename.endsWith(".java")) {
-          throw new IllegalStateException("Invalid sourcefile name: '" + basename + "'");
+          logger.warning("Invalid sourcefile name: '" + basename + "'");
         }
         sourceBaseNames.put(sym.classfile.toUri(), basename);
       }

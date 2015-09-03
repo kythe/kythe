@@ -4,6 +4,7 @@
 
 Notable changes:
  - Java indexer: rename /kythe/edge/defines to /kythe/edge/defines/binding
+ - Java extractor: change failure to warning on detection of non-java sources
 
 Notable additions:
  - Java indexer: `ref` anchors span import packages
