@@ -98,7 +98,11 @@ public class JavaEntrySets extends KytheEntrySets {
 
   /** Emits and returns a new {@link EntrySet} representing a Java package. */
   public EntrySet getPackageNode(PackageSymbol sym) {
-    String name = sym.getQualifiedName().toString();
+    return getPackageNode(sym.getQualifiedName().toString());
+  }
+
+  /** Emits and returns a new {@link EntrySet} representing a Java package. */
+  public EntrySet getPackageNode(String name) {
     EntrySet node = emitAndReturn(newNode(NodeKind.PACKAGE).addSignatureSalt(name));
     emitName(node, name);
     return node;

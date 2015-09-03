@@ -50,6 +50,13 @@ java_verifier_test(
 )
 
 java_verifier_test(
+    name = "imports_tests",
+    srcs = [
+        "Imports.java",
+    ],
+)
+
+java_verifier_test(
     name = "files_tests",
     srcs = [
         "Files.java",

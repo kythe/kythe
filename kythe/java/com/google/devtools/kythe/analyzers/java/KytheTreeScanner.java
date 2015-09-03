@@ -134,7 +134,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
   public JavaNode visitImport(JCImport imprt, JCTree owner) {
     if (imprt.qualid instanceof JCFieldAccess) {
       JCFieldAccess imprtField = (JCFieldAccess) imprt.qualid;
-      // TODO(schroeder): emit package node for imprtField.selected
+      emitAnchor(imprtField.selected, EdgeKind.REF,
+          entrySets.getPackageNode(imprtField.selected.toString()));
 
       if (imprtField.name.toString().equals("*")) {
         return null;

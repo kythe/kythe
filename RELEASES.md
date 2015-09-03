@@ -5,6 +5,9 @@
 Notable changes:
  - Java indexer: rename /kythe/edge/defines to /kythe/edge/defines/binding
 
+Notable additions:
+ - Java indexer: `ref` anchors span import packages
+
 ## v0.0.11
 
 Notable additions:
