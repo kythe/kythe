@@ -4,7 +4,6 @@ java_test(
     data = glob(["testdata/**"]) + [":SillyProcessor_deploy.jar"],
     javacopts = ["-Xlint:all"],
     deps = [
-        "//kythe/java/com/google/devtools/kythe/common",
         "//kythe/java/com/google/devtools/kythe/extractors/java",
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
         "//kythe/proto:analysis_proto_java",

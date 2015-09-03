@@ -21,7 +21,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
-import com.google.devtools.kythe.common.PathUtil;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Analysis.FileData;
 import com.google.protobuf.CodedInputStream;
@@ -31,6 +30,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -87,7 +88,7 @@ public class IndexInfoUtils {
       writeIndexInfoToStream(description, new FileOutputStream(path));
   }
 
-  public static String getIndexFilename(String rootDirectory, String basename) {
-    return PathUtil.join(rootDirectory, basename + INDEX_FILE_EXT);
+  public static Path getIndexPath(String rootDirectory, String basename) {
+    return Paths.get(rootDirectory, basename + INDEX_FILE_EXT);
   }
 }

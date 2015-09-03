@@ -16,6 +16,8 @@
 
 package com.google.devtools.kythe.extractors.java;
 
+import static java.nio.file.LinkOption.NOFOLLOW_LINKS;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
@@ -29,7 +31,6 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import com.google.common.io.ByteStreams;
 import com.google.devtools.kythe.common.FormattingLogger;
-import com.google.devtools.kythe.common.PathUtil;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.google.devtools.kythe.extractors.shared.CompilationFileInputComparator;
 import com.google.devtools.kythe.extractors.shared.ExtractionException;
@@ -140,16 +141,15 @@ public class JavaCompilationUnitExtractor {
     this.fileVNames = fileVNames;
     this.trackUnusedDependencies = trackUnusedDependencies;
 
+    Path javaHome = Paths.get(System.getProperty("java.home")).getParent();
     try {
       // Remove trailing dots.  Interesting trivia: in some build systems,
       // the java.home variable is terminated with "/bin/..".
       // However, this is not the case for the class files
       // that we are trying to filter.
-      this.jdkJar = "file:" + new File(
-          PathUtil.dirname(System.getProperty("java.home"))).getCanonicalPath();
+      this.jdkJar = "file:" + javaHome.toRealPath(NOFOLLOW_LINKS);
     } catch (IOException e) {
-      throw new ExtractionException(
-          "JDK path not found: " + PathUtil.dirname(System.getProperty("java.home")), e, false);
+      throw new ExtractionException("JDK path not found: " + javaHome, e, false);
     }
 
     try {

@@ -154,7 +154,7 @@ public abstract class AbstractJavacWrapper {
         .trim()
         .replaceAll("^/+|/+$", "")
         .replace('/', '_');
-    String path = IndexInfoUtils.getIndexFilename(rootDirectory, name);
+    String path = IndexInfoUtils.getIndexPath(rootDirectory, name).toString();
     IndexInfoUtils.writeIndexInfoToFile(indexInfo, path);
   }
 

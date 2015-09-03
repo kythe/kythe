@@ -16,7 +16,6 @@
 
 package com.google.devtools.kythe.platform.java.filemanager;
 
-import com.google.devtools.kythe.common.PathUtil;
 import com.google.devtools.kythe.platform.shared.FileDataProvider;
 
 import java.io.ByteArrayInputStream;
@@ -28,6 +27,8 @@ import java.io.Reader;
 import java.io.Writer;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -38,7 +39,7 @@ import javax.tools.FileObject;
  * A custom file object.
  */
 public class CustomFileObject implements FileObject {
-  protected final String path;
+  protected final Path path;
   protected final String digest;
   protected final Future<byte[]> future;
 
@@ -46,7 +47,7 @@ public class CustomFileObject implements FileObject {
 
   public CustomFileObject(FileDataProvider contentProvider, String path, String digest,
       String encoding) {
-    this.path = path;
+    this.path = Paths.get(path);
     this.digest = digest;
     this.encoding = encoding;
 
@@ -64,7 +65,7 @@ public class CustomFileObject implements FileObject {
 
   @Override
   public String getName() {
-    return PathUtil.basename(path);
+    return path.getFileName().toString();
   }
 
   @Override

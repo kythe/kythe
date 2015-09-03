@@ -23,7 +23,6 @@ import com.google.common.base.Function;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.devtools.kythe.common.PathUtil;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.google.devtools.kythe.extractors.shared.ExtractorUtils;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
@@ -60,8 +59,8 @@ public class JavaExtractorTest extends TestCase {
   public void testJavaExtractorSimple() throws Exception {
     JavaCompilationUnitExtractor java = new JavaCompilationUnitExtractor(CORPUS);
 
-    List<String> sources = Lists.newArrayList(PathUtil.join(TEST_DATA_DIR,  "/pkg/A.java"),
-        PathUtil.join(TEST_DATA_DIR, "/pkg/B.java"));
+    List<String> sources = Lists.newArrayList(join(TEST_DATA_DIR,  "/pkg/A.java"),
+        join(TEST_DATA_DIR, "/pkg/B.java"));
 
     // Index the specified sources
     CompilationDescription description =
@@ -97,8 +96,8 @@ public class JavaExtractorTest extends TestCase {
         new JavaCompilationUnitExtractor(CORPUS, symlinkRoot.toString());
 
     List<String> sources = Lists.newArrayList(
-        PathUtil.join(TEST_DATA_DIR, "/pkg/A.java"),
-        PathUtil.join(TEST_DATA_DIR, "/pkg/B.java"));
+        join(TEST_DATA_DIR, "/pkg/A.java"),
+        join(TEST_DATA_DIR, "/pkg/B.java"));
 
     // Index the specified sources
     CompilationDescription description =
@@ -132,8 +131,8 @@ public class JavaExtractorTest extends TestCase {
     JavaCompilationUnitExtractor java = new JavaCompilationUnitExtractor(CORPUS);
 
     // Pick two sources in the same package that live in different directories.
-    List<String> sources = Lists.newArrayList(PathUtil.join(TEST_DATA_DIR,  "one/pkg/A.java"),
-        PathUtil.join(TEST_DATA_DIR, "two/pkg/B.java"));
+    List<String> sources = Lists.newArrayList(join(TEST_DATA_DIR,  "one/pkg/A.java"),
+        join(TEST_DATA_DIR, "two/pkg/B.java"));
 
 
     // Index the specified sources
@@ -154,7 +153,7 @@ public class JavaExtractorTest extends TestCase {
     // And the correct sourcepath set to replay the compilation for both sources.
     JavaArguments args = JavaArguments.parseArguments(unit);
     assertThat(args.getSourcepath())
-        .containsExactly(PathUtil.join(TEST_DATA_DIR, "one"), PathUtil.join(TEST_DATA_DIR, "two"));
+        .containsExactly(join(TEST_DATA_DIR, "one"), join(TEST_DATA_DIR, "two"));
     assertThat(args.getClasspath()).isEmpty();
     assertThatArgumentsMatch(args, unit);
   }
@@ -168,11 +167,11 @@ public class JavaExtractorTest extends TestCase {
 
     // Index the specified sources
     List<String> sources = Lists.newArrayList(
-        PathUtil.join(TEST_DATA_DIR, "child/derived/B.java"));
+        join(TEST_DATA_DIR, "child/derived/B.java"));
 
-    String parentCp = PathUtil.join(TEST_DATA_DIR,  "parent/");
+    String parentCp = join(TEST_DATA_DIR,  "parent") + "/";
     List<String> classpath = Lists.newArrayList(parentCp);
-    String classFile = PathUtil.join(parentCp, "base/A.class");
+    String classFile = join(parentCp, "base/A.class");
 
     // Index the specified sources and classes from the classpath
     CompilationDescription description =
@@ -190,7 +189,7 @@ public class JavaExtractorTest extends TestCase {
             Arrays.asList(sources.get(0), classFile)));
 
     JavaArguments args = JavaArguments.parseArguments(unit);
-    assertThat(args.getSourcepath()).containsExactly(PathUtil.join(TEST_DATA_DIR, "child"));
+    assertThat(args.getSourcepath()).containsExactly(join(TEST_DATA_DIR, "child"));
     // Ensure the classpath is set for replay.
     assertThat(args.getClasspath()).containsExactly(parentCp);
     assertThatArgumentsMatch(args, unit);
@@ -205,9 +204,9 @@ public class JavaExtractorTest extends TestCase {
 
     // Index the specified sources.
     List<String> sources = Lists.newArrayList(
-        PathUtil.join(TEST_DATA_DIR, "child/derived/B.java"));
+        join(TEST_DATA_DIR, "child/derived/B.java"));
 
-    String parentCp = PathUtil.join(TEST_DATA_DIR,  "jarred.jar");
+    String parentCp = join(TEST_DATA_DIR,  "jarred.jar");
     List<String> classpath = Lists.newArrayList(parentCp);
 
     // Index the specified sources and classes from inside jar on the classpath.
@@ -222,16 +221,16 @@ public class JavaExtractorTest extends TestCase {
         .inOrder();
 
     // The classpath is adjusted to start wit !jar!
-    String classFile = PathUtil.join(JavaCompilationUnitExtractor.JAR_ROOT, "base/A.class");
+    String classFile = join(JavaCompilationUnitExtractor.JAR_ROOT, "base/A.class");
 
     // Ensure the right class files are picked up from the classpath from within the jar.
     assertThat(getInfos(unit.getRequiredInputList())).containsExactly(
         makeFileInfo(sources.get(0)),
-        makeFileInfo(classFile, PathUtil.join(TEST_DATA_DIR, "parent/base/A.class")));
+        makeFileInfo(classFile, join(TEST_DATA_DIR, "parent/base/A.class")));
 
     JavaArguments args = JavaArguments.parseArguments(unit);
     assertEquals(1, args.getSourcepath().size());
-    assertEquals(PathUtil.join(TEST_DATA_DIR, "child"), args.getSourcepath().get(0));
+    assertEquals(join(TEST_DATA_DIR, "child"), args.getSourcepath().get(0));
     assertEquals(1, args.getClasspath().size());
     // Ensure the magic !jar! classpath is added.
     assertEquals(JavaCompilationUnitExtractor.JAR_ROOT, args.getClasspath().get(0));
@@ -245,7 +244,7 @@ public class JavaExtractorTest extends TestCase {
   public void testJavaExtractorCompileError() throws Exception {
     JavaCompilationUnitExtractor java = new JavaCompilationUnitExtractor(CORPUS);
 
-    List<String> sources = Lists.newArrayList(PathUtil.join(TEST_DATA_DIR, "/error/Crash.java"));
+    List<String> sources = Lists.newArrayList(join(TEST_DATA_DIR, "/error/Crash.java"));
 
     // Index the specified sources, reporting compilation failure.
     CompilationDescription description =
@@ -275,9 +274,9 @@ public class JavaExtractorTest extends TestCase {
     JavaCompilationUnitExtractor java = new JavaCompilationUnitExtractor(CORPUS);
 
     List<String> sources = Lists.newArrayList(
-        PathUtil.join(TEST_DATA_DIR,  "/deps/A.java"),
-        PathUtil.join(TEST_DATA_DIR,  "/deps/C.java"),
-        PathUtil.join(TEST_DATA_DIR, "/deps/B.java"));
+        join(TEST_DATA_DIR,  "/deps/A.java"),
+        join(TEST_DATA_DIR,  "/deps/C.java"),
+        join(TEST_DATA_DIR, "/deps/B.java"));
 
     // Index the specified sources
     CompilationDescription description =
@@ -305,8 +304,8 @@ public class JavaExtractorTest extends TestCase {
   public void testJavaExtractorNonConformingPath() throws Exception {
     JavaCompilationUnitExtractor java = new JavaCompilationUnitExtractor(CORPUS);
 
-    List<String> sources = Lists.newArrayList(PathUtil.join(TEST_DATA_DIR,  "/path/sub/A.java"),
-        PathUtil.join(TEST_DATA_DIR, "/path/B.java"));
+    List<String> sources = Lists.newArrayList(join(TEST_DATA_DIR,  "/path/sub/A.java"),
+        join(TEST_DATA_DIR, "/path/B.java"));
 
     // Index the specified sources
     CompilationDescription description =
@@ -337,8 +336,8 @@ public class JavaExtractorTest extends TestCase {
   public void testJavaExtractorAdditionalTypeDefinitions() throws Exception {
     JavaCompilationUnitExtractor java = new JavaCompilationUnitExtractor(CORPUS);
 
-    List<String> sources = Lists.newArrayList(PathUtil.join(TEST_DATA_DIR, "/hitchhikers/A.java"),
-        PathUtil.join(TEST_DATA_DIR, "/hitchhikers/B.java"));
+    List<String> sources = Lists.newArrayList(join(TEST_DATA_DIR, "/hitchhikers/A.java"),
+        join(TEST_DATA_DIR, "/hitchhikers/B.java"));
 
     // Index the specified sources
     CompilationDescription description =
@@ -458,7 +457,7 @@ public class JavaExtractorTest extends TestCase {
   private List<String> testFiles(String... files) {
     List<String> res = new ArrayList<String>();
     for (String file : files) {
-      res.add(PathUtil.join(TEST_DATA_DIR, file));
+      res.add(join(TEST_DATA_DIR, file));
     }
     return res;
   }
@@ -559,5 +558,9 @@ public class JavaExtractorTest extends TestCase {
       }
       return ImmutableList.copyOf(paths.split(File.pathSeparator));
     }
+  }
+
+  private static String join(String base, String... paths) {
+    return Paths.get(base, paths).toString();
   }
 }

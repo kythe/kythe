@@ -18,9 +18,9 @@ package com.google.devtools.kythe.platform.shared;
 
 import com.google.common.io.Files;
 import com.google.common.util.concurrent.Futures;
-import com.google.devtools.kythe.common.PathUtil;
 
-import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.concurrent.Future;
 
 /**
@@ -28,9 +28,13 @@ import java.util.concurrent.Future;
  * uses the path (not the digest) and prefixes the path with a given root directory.
  */
 public class FileDataDirectory implements FileDataProvider {
-  private final String rootDirectory;
+  private final Path rootDirectory;
 
   public FileDataDirectory(String rootDirectory) {
+    this(Paths.get(rootDirectory));
+  }
+
+  public FileDataDirectory(Path rootDirectory) {
     this.rootDirectory = rootDirectory;
   }
 
@@ -38,7 +42,7 @@ public class FileDataDirectory implements FileDataProvider {
   public Future<byte[]> startLookup(String path, String digest) {
     try {
       return Futures.immediateFuture(
-          Files.asByteSource(new File(PathUtil.join(rootDirectory, path))).read());
+          Files.asByteSource(rootDirectory.resolve(path).toFile()).read());
     } catch (Throwable t) {
       return Futures.immediateFailedFuture(t);
     }

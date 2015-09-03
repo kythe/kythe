@@ -16,10 +16,11 @@
 
 package com.google.devtools.kythe.platform.java.filemanager;
 
-import com.google.devtools.kythe.common.PathUtil;
 import com.google.devtools.kythe.platform.shared.FileDataProvider;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -45,15 +46,15 @@ public class CompilationUnitBasedJavaFileStore implements JavaFileStore {
 
   @Override
   public CustomJavaFileObject find(String className, Kind kind, Set<String> pathPrefixes) {
-    String file = className.replace('.', '/') + kind.extension;
-    String dirname = PathUtil.dirname(file);
-    String basename = PathUtil.basename(file);
+    Path file = Paths.get(className.replace('.', '/') + kind.extension);
+    String dirname = file.getParent().toString();
+    String basename = file.getFileName().toString();
     for (String prefix : pathPrefixes) {
-      String dirToLookIn = PathUtil.join(prefix, dirname);
+      String dirToLookIn = join(prefix, dirname);
       String digest = fileTree.lookup(dirToLookIn, basename);
       if (digest != null) {
         return new CustomJavaFileObject(contentProvider,
-            PathUtil.join(prefix, file),
+            join(prefix, file.toString()),
             digest,
             className,
             kind,
@@ -76,11 +77,11 @@ public class CompilationUnitBasedJavaFileStore implements JavaFileStore {
   public CustomFileObject find(String packageName, String relativeName, Set<String> pathPrefixes) {
     String packagePath = packageName.replace('.', '/');
     for (String prefix : pathPrefixes) {
-      String dirToLookIn = PathUtil.join(prefix, packagePath);
+      String dirToLookIn = Paths.get(prefix, packagePath).toString();
       String digest = fileTree.lookup(dirToLookIn, relativeName);
       if (digest != null) {
         return new CustomFileObject(contentProvider,
-            PathUtil.join(prefix, packagePath, relativeName), digest, encoding);
+            join(prefix, packagePath, relativeName), digest, encoding);
       }
     }
     return null;
@@ -101,7 +102,7 @@ public class CompilationUnitBasedJavaFileStore implements JavaFileStore {
     }
     String packagePath = packageName.replace('.', '/');
     for (String prefix : pathPrefixes) {
-      String dirToLookIn = PathUtil.join(prefix, packagePath);
+      String dirToLookIn = join(prefix, packagePath);
       Map<String, String> dir = fileTree.list(dirToLookIn);
       if (dir != null) {
         matchingFiles.addAll(getFiles(dirToLookIn, dir, kinds, packageName));
@@ -123,7 +124,7 @@ public class CompilationUnitBasedJavaFileStore implements JavaFileStore {
           int lastDot = fileName.lastIndexOf('.');
           String clsName = packageName + "." + fileName.substring(0, lastDot);
           files.add(new CustomJavaFileObject(contentProvider,
-              PathUtil.join(dirToLookIn, entry.getKey()),
+              join(dirToLookIn, entry.getKey()),
               entry.getValue(),
               clsName,
               kind,
@@ -133,5 +134,9 @@ public class CompilationUnitBasedJavaFileStore implements JavaFileStore {
       }
     }
     return files;
+  }
+
+  private static String join(String root, String... paths) {
+    return Paths.get(root, paths).toString();
   }
 }

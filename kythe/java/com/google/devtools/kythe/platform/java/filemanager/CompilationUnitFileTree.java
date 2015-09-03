@@ -16,10 +16,10 @@
 
 package com.google.devtools.kythe.platform.java.filemanager;
 
-import com.google.common.base.Splitter;
-import com.google.devtools.kythe.common.PathUtil;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -40,20 +40,25 @@ public class CompilationUnitFileTree {
     for (CompilationUnit.FileInput input : inputs) {
       String path = input.getInfo().getPath();
       String digest = input.getInfo().getDigest();
-      putDigest(path, digest);
 
-      StringBuilder pathBuilder = new StringBuilder();
-      for (String dir : Splitter.on('/').split(PathUtil.dirname(path))) {
-        pathBuilder.append(dir);
-        putDigest(pathBuilder.toString(), DIRECTORY_DIGEST);
-        pathBuilder.append('/');
+      Path curPath = Paths.get(path);
+      putDigest(curPath, digest);
+
+      while ((curPath = curPath.getParent()) != null) {
+        putDigest(curPath, DIRECTORY_DIGEST);
       }
     }
   }
 
-  private void putDigest(String path, String digest) {
-    String dirname = PathUtil.dirname(path);
-    String basename = PathUtil.basename(path);
+  private void putDigest(Path path, String digest) {
+    Path parent = path.getParent();
+    String dirname;
+    if (parent != null) {
+      dirname = parent.toString();
+    } else {
+      dirname = path.isAbsolute() ? "/" : ".";
+    }
+    String basename = path.getFileName().toString();
     Map<String, String> dir = dirs.get(dirname);
     if (dir == null) {
       dir = new HashMap<>();
@@ -88,9 +93,8 @@ public class CompilationUnitFileTree {
    * @return the digest or null if no such file is present.
    */
   public String lookup(String path) {
-    String dirname = PathUtil.dirname(path);
-    String basename = PathUtil.basename(path);
-    return lookup(dirname, basename);
+    Path p = Paths.get(path);
+    return lookup(p.getParent().toString(), p.getFileName().toString());
   }
 
   /**
