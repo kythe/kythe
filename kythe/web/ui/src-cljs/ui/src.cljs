@@ -94,7 +94,7 @@
                               :kind (schema/trim-edge-prefix kind)
                               :anchor-ticket source_ticket
                               :target-ticket target_ticket})
-                        (filter #(not= schema/documents-edge (:kind %))
+                        (filter #(not (contains? #{schema/documents-edge schema/defines-edge} (:kind %)))
                           (:reference decorations))))))]
     {:source-text src
      :num-lines (count-lines src)

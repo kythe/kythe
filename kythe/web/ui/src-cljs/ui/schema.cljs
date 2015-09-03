@@ -29,4 +29,5 @@
 (def ^:const text-fact "/kythe/text")
 
 (def ^:const childof-edge "/kythe/edge/childof")
+(def ^:const defines-edge "/kythe/edge/defines")
 (def ^:const documents-edge "/kythe/edge/documents")
