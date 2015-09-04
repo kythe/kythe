@@ -8,6 +8,13 @@ java_verifier_test(
 )
 
 java_verifier_test(
+    name = "definitions_tests",
+    srcs = [
+        "Definitions.java",
+    ],
+)
+
+java_verifier_test(
     name = "selectors_tests",
     srcs = [
         "Selectors.java",

@@ -26,22 +26,14 @@ kwazthis() { "kythe/go/serving/tools/kwazthis" --local_repo=NONE --api "http://$
 FILE_PATH=kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/Generics.java
 
 JSON=$(kwazthis --path $FILE_PATH --offset 844)
-jq --slurp 'length == 2'
-jq --slurp '.[0].span.text == "Generics<String>"'
-jq --slurp '.[1].span.text == "String"'
-jq --slurp '.[].kind == "ref"'
+jq --slurp 'length == 5'
+# .[0] is Generics class def
+# .[1] is f method def
+jq --slurp '.[2].span.text == "Generics<String>"' # ref to Generics<String> type
+# .[3] is gs variable def
+jq --slurp '.[4].span.text == "String"'           # ref to String type
+jq --slurp '.[] | (.kind == "ref" or .kind == "defines" or .kind == "defines/binding")'
 jq --slurp '.[].node.ticket
         and .[].node.ticket != ""'
 jq --slurp '.[].node.kind
         and .[].node.kind != ""'
-
-JSON=$(kwazthis --path $FILE_PATH --offset 611)
-jq --slurp 'length == 1'
-jq '.kind == "defines/binding"'
-jq '.span.text == "g"'
-jq '.span.start == 611'
-jq '.span.end == 612'
-jq '.node.ticket'
-jq '.node.ticket != ""'
-jq '.node.kind == "function"'
-jq '(.node.names | length) == 1'

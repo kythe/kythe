@@ -235,6 +235,30 @@ Notes::
   anchors may even overlap.
 
 
+[kythe,Java,"Class definitions span their entire body."]
+--------------------------------------------------------------------------------
+//- ClassEDef defines ClassE
+//- ClassEDef.node/kind anchor
+//- ClassEDef.loc/start @^public
+//- ClassEDef.loc/end @$+3"}"
+public class E {
+  // class contents here...
+}
+--------------------------------------------------------------------------------
+
+[kythe,Java,"Method definitions span their entire body."]
+--------------------------------------------------------------------------------
+public class E {
+  //- MethodDef defines Method
+  //- MethodDef.node/kind anchor
+  //- MethodDef.loc/start @^public
+  //- MethodDef.loc/end @$+3"}"
+  public int methodName(int param) {
+    return 42;
+  }
+}
+--------------------------------------------------------------------------------
+
 [[definesbinding]]
 defines/binding
 ~~~~~~~~~~~~~~~

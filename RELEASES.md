@@ -3,11 +3,15 @@
 ## Upcoming release
 
 Notable changes:
- - C++, Java indexers: rename /kythe/edge/defines to /kythe/edge/defines/binding
+ - C++ indexer: rename /kythe/edge/defines to /kythe/edge/defines/binding
  - Java extractor: change failure to warning on detection of non-java sources
+ - Java indexer: `defines` anchors span an entire class/method/var definition (instead of
+                 just their identifier; see below for `defines/binding` anchors)
 
 Notable additions:
  - Java indexer: `ref` anchors span import packages
+ - Java indexer: `defines/binding` anchors span a definition's identifier (identical
+                  behavior to previous `defines` anchors)
  - `http_server`: add `--http_allow_origin` flag that adds the `Access-Control-Allow-Origin` header to each HTTP response
 
 ## v0.0.11
