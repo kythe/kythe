@@ -1,5 +1,7 @@
 def extract(ctx, kindex, args, inputs=[], mnemonic=None):
-  tools = ctx.command_helper([ctx.attr._extractor], {}).resolved_tools
+  cmd_helper = ctx.command_helper([ctx.attr._extractor], {})
+  tools = cmd_helper.resolved_tools
+  input_manifests = cmd_helper.runfiles_manifests
   cmd = '\n'.join([
       "set -e",
       'export KYTHE_ROOT_DIRECTORY="$PWD"',
@@ -14,16 +16,20 @@ def extract(ctx, kindex, args, inputs=[], mnemonic=None):
       outputs = [kindex],
       mnemonic = mnemonic,
       command = cmd,
+      input_manifests = input_manifests,
       use_default_shell_env = True)
 
 def index(ctx, kindex, entries, mnemonic=None):
-  tools = ctx.command_helper([ctx.attr._indexer], {}).resolved_tools
+  cmd_helper = ctx.command_helper([ctx.attr._indexer], {})
+  tools = cmd_helper.resolved_tools
+  input_manifests = cmd_helper.runfiles_manifests
   cmd = "set -e;" + ctx.executable._indexer.path + " " + " ".join(ctx.attr.indexer_opts) + " " + kindex.path + " >" + entries.path
   ctx.action(
       inputs = [kindex] + tools,
       outputs = [entries],
       mnemonic = mnemonic,
       command = cmd,
+      input_manifests = input_manifests,
       use_default_shell_env = True)
 
 def verify(ctx, entries):
@@ -64,15 +70,15 @@ def java_verifier_test_impl(ctx):
     args += [src.short_path]
 
   ctx.action(
-      inputs = ctx.files.srcs + inputs,
+      inputs = ctx.files.srcs + inputs + [ctx.file._jar, ctx.file._javac] + ctx.files._jdk,
       outputs = [jar],
       mnemonic = 'MockJavac',
       command = '\n'.join([
           'set -e',
           'rm -rf ' + srcs_out,
           'mkdir ' + srcs_out,
-          'external/local-jdk/bin/javac ' + ' '.join(args),
-          'jar cf ' + jar.path + ' -C ' + srcs_out + ' .',
+          ctx.file._javac.path + '  ' + ' '.join(args),
+          ctx.file._jar.path + ' cf ' + jar.path + ' -C ' + srcs_out + ' .',
       ]),
       use_default_shell_env = True)
 
@@ -154,6 +160,18 @@ java_verifier_test = rule(
         "_indexer": attr.label(
             default = Label("//kythe/java/com/google/devtools/kythe/analyzers/java:indexer"),
             executable = True,
+        ),
+        "_javac": attr.label(
+            default = Label("//tools/jdk:javac"),
+            single_file = True,
+        ),
+        "_jar": attr.label(
+            default = Label("//tools/jdk:jar"),
+            single_file = True,
+        ),
+        "_jdk": attr.label(
+            default = Label("//tools/jdk:jdk"),
+            allow_files = True,
         ),
     },
     executable = True,
