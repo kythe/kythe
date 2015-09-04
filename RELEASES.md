@@ -8,6 +8,7 @@ Notable changes:
 
 Notable additions:
  - Java indexer: `ref` anchors span import packages
+ - `http_server`: add `--http_allow_origin` flag that adds the `Access-Control-Allow-Origin` header to each HTTP response
 
 ## v0.0.11
 

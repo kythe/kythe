@@ -61,6 +61,7 @@ var (
 	grpcListeningAddr = flag.String("grpc_listen", "", "Listening address for GRPC server")
 
 	httpListeningAddr = flag.String("listen", "localhost:8080", "Listening address for HTTP server")
+	httpAllowOrigin   = flag.String("http_allow_origin", "", "If set, each HTTP response will contain a Access-Control-Allow-Origin header with the given value")
 	publicResources   = flag.String("public_resources", "", "Path to directory of static resources to serve")
 
 	tlsListeningAddr = flag.String("tls_listen", "", "Listening address for TLS HTTP server")
@@ -87,6 +88,8 @@ func main() {
 		flagutil.UsageError("--serving_table and --graphstore are mutually exclusive")
 	} else if *tlsListeningAddr != "" && (*tlsCertFile == "" || *tlsKeyFile == "") {
 		flagutil.UsageError("--tls_cert_file and --tls_key_file are required if given --tls_listen")
+	} else if flag.NArg() > 0 {
+		flagutil.UsageErrorf("unknown non-flag arguments given: %v", flag.Args())
 	}
 
 	var (
@@ -150,10 +153,18 @@ func main() {
 	}
 
 	if *httpListeningAddr != "" || *tlsListeningAddr != "" {
-		xrefs.RegisterHTTPHandlers(ctx, xs, http.DefaultServeMux)
-		filetree.RegisterHTTPHandlers(ctx, ft, http.DefaultServeMux)
+		apiMux := http.NewServeMux()
+		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			if *httpAllowOrigin != "" {
+				w.Header().Set("Access-Control-Allow-Origin", *httpAllowOrigin)
+			}
+			apiMux.ServeHTTP(w, r)
+		})
+
+		xrefs.RegisterHTTPHandlers(ctx, xs, apiMux)
+		filetree.RegisterHTTPHandlers(ctx, ft, apiMux)
 		if sr != nil {
-			search.RegisterHTTPHandlers(ctx, sr, http.DefaultServeMux)
+			search.RegisterHTTPHandlers(ctx, sr, apiMux)
 		}
 		if *publicResources != "" {
 			log.Println("Serving public resources at", *publicResources)
@@ -162,7 +173,7 @@ func main() {
 			} else if !s.IsDir() {
 				log.Fatalf("ERROR: %q is not a directory", *publicResources)
 			}
-			http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			apiMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 				http.ServeFile(w, r, filepath.Join(*publicResources, filepath.Clean(r.URL.Path)))
 			})
 		}
