@@ -13,6 +13,7 @@ genrule(
     tools = [
         "check.sh",
         "versions.sh",
+        "//third_party/llvm:git",
     ],
     visibility = ["//visibility:public"],
 )

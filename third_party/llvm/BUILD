@@ -9,9 +9,12 @@ filegroup(
     srcs = ["LICENSE"],
 )
 
+filegroup(
+    name = "git",
+    srcs = glob(["llvm/**/.git/**"]),
+)
+
 cc_library(
-    alwayslink=1,
-    linkstatic=1,
     name = "llvm",
     srcs = [
         "llvm/build/Release+Asserts/lib/libclang.a",
@@ -63,9 +66,11 @@ cc_library(
         "-lm",
         "-lpthread",
     ],
+    linkstatic = 1,
     deps = [
         "//third_party/zlib",
     ],
+    alwayslink = 1,
 )
 
 cc_resources(
