@@ -1,3 +1,6 @@
+# ./setup_bazel.sh configuration files
+/WORKSPACE
+
 # Kythe artifacts
 *.kindex
 *.ldb

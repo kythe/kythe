@@ -26,19 +26,13 @@ readonly file="$1"
 readonly name="$(basename "$1")"
 readonly dir="$(dirname "$1")"
 
-lint_copyright() {
-  case $file in
-    third_party/*|tools/*|*.md|BUILD|*/BUILD|*/testdata/*|*.yaml|*.json|*.html|*.pb.go|.arclint|.gitignore|*/.gitignore|.arcconfig|*/__phutil_*|*.bzl|.kythe|kythe/web/site/*)
-      ;; # skip copyright checks
-    *)
-      if ! grep -Pq 'Copyright 201[45] Google Inc. All rights reserved.' "$file"; then
-        echo 'copyright header::error: File missing copyright header'
-      fi ;;
-  esac
-}
-
-case "$name" in
-  *) lint_copyright;;
+case $file in
+  WORKSPACE|third_party/*|tools/*|*.md|BUILD|*/BUILD|*/testdata/*|*.yaml|*.json|*.html|*.pb.go|.arclint|.gitignore|*/.gitignore|.arcconfig|*/__phutil_*|*.bzl|.kythe|kythe/web/site/*)
+    ;; # skip copyright checks
+  *)
+    if ! grep -Pq 'Copyright 201[45] Google Inc. All rights reserved.' "$file"; then
+      echo 'copyright header::error: File missing copyright header'
+    fi ;;
 esac
 
 # Ensure filenames/paths do not clash on case-insensitive file systems.

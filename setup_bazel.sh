@@ -14,8 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Initializes the Bazel workspace.  Uses the GO environmental variables to pick
-# the Go tool and falls back onto "$(which go)".
+# Initializes the Bazel workspace.  Uses the GOROOT environmental variable to
+# pick the Go tool and falls back onto "$(go env GOROOT)".
 
 cd "$(dirname "$0")"
 
@@ -35,20 +35,20 @@ else
   LNOPTS="-sTf"
 fi
 
-if [[ -z "$GO" ]]; then
-  if [[ -z "$(which go)" ]]; then
+if [[ -z "$GOROOT" ]]; then
+  if [[ -z "$(go env GOROOT)" ]]; then
     echo 'You need to have go installed to build Kythe.'
     echo 'Please see http://kythe.io/contributing for more information.'
     exit 1
   fi
-  if ! GO="$(realpath -s "$(which go)")"; then
-    echo 'ERROR: could not locate `go` binary on PATH' >&2
+  if ! GOROOT="$(realpath -s "$(go env GOROOT)")"; then
+    echo 'ERROR: could not locate GOROOT' >&2
     exit 1
   fi
 fi
 
-echo "Using go found at $GO" >&2
-ln ${LNOPTS} "$GO" tools/go/go
+echo "Using GOROOT found at $GOROOT" >&2
+sed "s#/usr/local/go#$GOROOT#" tools/WORKSPACE.template > WORKSPACE
 
 # This must be the same C++ compiler used to build the LLVM source.
 if [[ -z "$CLANG" ]]; then

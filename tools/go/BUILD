@@ -2,7 +2,15 @@ load("/tools/build_rules/go", "go_binary", "go_library")
 
 package(default_visibility = ["//visibility:public"])
 
-exports_files(["go"])
+filegroup(
+    name = "goroot",
+    srcs = ["//external:goroot"],
+)
+
+filegroup(
+    name = "go",
+    srcs = ["//external:gotool"],
+)
 
 go_binary(
     name = "testmain_generator",

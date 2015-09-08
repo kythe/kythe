@@ -35,6 +35,7 @@ link_args_darwin = {
 
 def go_compile(ctx, pkg, srcs, archive, setupGOPATH=False, extra_archives=[]):
   gotool = ctx.file._go
+  goroot = ctx.files._goroot
 
   archives = []
   recursive_deps = set()
@@ -104,13 +105,17 @@ def go_compile(ctx, pkg, srcs, archive, setupGOPATH=False, extra_archives=[]):
     mnemonic = 'GoCompile'
 
   outs = [archive]
-  cmd = "set -e;" + cmd + "\n"
+  cmd = "\n".join([
+      'set -e',
+      'export GOROOT=$PWD/external/local-goroot',
+      cmd + "\n",
+  ])
   if setupGOPATH:
     cmd += "ln -sf " + symlink_content + " " + symlink.path + ";"
     outs += [symlink]
 
   ctx.action(
-      inputs = srcs + archives + [gotool] + list(cc_inputs),
+      inputs = srcs + archives + list(cc_inputs) + goroot,
       outputs = outs,
       mnemonic = mnemonic,
       command = cmd,
@@ -120,6 +125,7 @@ def go_compile(ctx, pkg, srcs, archive, setupGOPATH=False, extra_archives=[]):
 
 def link_binary(ctx, binary, archive, recursive_deps, extldflags=[], transitive_cc_libs=[]):
   gotool = ctx.file._go
+  goroot = ctx.files._goroot
 
   include_paths = ""
   for a in recursive_deps + [archive]:
@@ -147,7 +153,7 @@ def link_binary(ctx, binary, archive, recursive_deps, extldflags=[], transitive_
   ])
 
   ctx.action(
-      inputs = list(recursive_deps) + [archive, gotool] + list(transitive_cc_libs),
+      inputs = list(recursive_deps) + [archive] + list(transitive_cc_libs) + goroot,
       outputs = [binary],
       mnemonic = 'GoLink',
       command = cmd,
@@ -271,6 +277,10 @@ base_attrs = {
         default = Label("//tools/go"),
         allow_files = True,
         single_file = True,
+    ),
+    "_goroot": attr.label(
+        default = Label("//tools/go:goroot"),
+        allow_files = True,
     ),
 }
 

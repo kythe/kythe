@@ -1,0 +1,15 @@
+new_local_repository(
+    name = "local-goroot",
+    build_file = "tools/go/goroot.BUILD",
+    path = "/usr/local/go",
+)
+
+bind(
+    name = "goroot",
+    actual = "@local-goroot//:default-goroot",
+)
+
+bind(
+    name = "gotool",
+    actual = "@local-goroot//:gotool",
+)
