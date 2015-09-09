@@ -16,6 +16,6 @@
 
 cd "$(dirname "$0")"
 
-bundle install --quiet
+bundle install --quiet --path _vendor/bundle
 ./sync_docs.sh
 bundle exec jekyll build "$@"
