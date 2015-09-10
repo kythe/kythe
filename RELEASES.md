@@ -1,9 +1,9 @@
 # Release Notes
 
-## Upcoming release
+## v0.0.12
 
 Notable changes:
- - C++ indexer: rename /kythe/edge/defines to /kythe/edge/defines/binding
+ - C++ indexer: rename `/kythe/edge/defines` to `/kythe/edge/defines/binding`
  - Java extractor: change failure to warning on detection of non-java sources
  - Java indexer: `defines` anchors span an entire class/method/var definition (instead of
                  just their identifier; see below for `defines/binding` anchors)
