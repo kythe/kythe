@@ -7,6 +7,7 @@ Notable changes:
  - Java extractor: change failure to warning on detection of non-java sources
  - Java indexer: `defines` anchors span an entire class/method/var definition (instead of
                  just their identifier; see below for `defines/binding` anchors)
+ - Add public protocol buffer API/message definitions
 
 Notable additions:
  - Java indexer: `ref` anchors span import packages

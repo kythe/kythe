@@ -16,6 +16,7 @@ extractors, and tools directly supported by the Kythe team.
    - cxx_extractor            :: C++ extractor
    - javac_extractor.jar      :: Java extractor
    - javac-wrapper.sh         :: javac wrapper script for extractor
+ - proto                      :: Protocol buffer definitions of public APIs
  - tools
    - dedup_stream             :: Removes duplicates entries from a delimited stream
    - directory_indexer        :: Emits Kythe file nodes for some local paths

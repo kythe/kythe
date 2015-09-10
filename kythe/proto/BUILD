@@ -2,6 +2,18 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 load("/tools/build_rules/proto", "proto_library")
 
+filegroup(
+    name = "public",
+    srcs = [
+        "analysis.proto",
+        "cxx.proto",
+        "filetree.proto",
+        "java.proto",
+        "storage.proto",
+        "xref.proto",
+    ],
+)
+
 proto_library(
     name = "storage_proto",
     has_services = 1,
