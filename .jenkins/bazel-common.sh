@@ -17,7 +17,7 @@
 cd "$WORKSPACE/repo"
 .jenkins/get-llvm.sh "$WORKSPACE"
 
-gcloud preview docker pull gcr.io/kythe_repo/kythe-builder
+gcloud docker pull gcr.io/kythe_repo/kythe-builder
 
 docker run --rm -t -v "$PWD:/repo" -w /repo \
  gcr.io/kythe_repo/kythe-builder ./setup_bazel.sh

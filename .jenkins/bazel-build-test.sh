@@ -14,5 +14,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+## Jenkins job configuration:
+##   Source Code Management:
+##     https://github.com/google/kythe.git
+##     Clean before checkout
+##     Check out to a sub-directory: repo
+##   Build triggers:
+##     Build periodically: H H(10-14) * * *
+##     Poll SCM: H/5 * * * *
+##   Build:
+##     Execute shell: repo/.jenkins/bazel-build-test.sh
+##   Post-build Actions:
+##     E-mail Notification: kythe-ci@google.com
+
 . "$(dirname "$0")/bazel-common.sh"
 bazel test "${BAZEL_ARGS[@]}" //kythe/docs/schema //...

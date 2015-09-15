@@ -14,6 +14,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+## Jenkins job configuration:
+##   Source Code Management:
+##     https://github.com/google/kythe.git
+##     Clean before checkout
+##     Check out to a sub-directory: repo
+##   Build triggers:
+##     Poll SCM: H H/8 * * *
+##   Build:
+##     Execute shell: repo/.jenkins/nightly-release.sh
+##   Post-build Actions:
+##     E-mail Notification: kythe-ci@google.com
+
 . "$(dirname "$0")/bazel-common.sh"
 
 VERSION="nightly-$(date +%F-%H)-$(git rev-parse --short @)"
