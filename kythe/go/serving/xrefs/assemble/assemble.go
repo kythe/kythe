@@ -317,12 +317,68 @@ func (b *EdgeSetBuilder) Flush(ctx context.Context) error {
 		b.groups = append(b.groups, b.curEG)
 	}
 	b.curPES.EdgeSet.Group = b.groups
+	sort.Sort(byEdgeKind(b.curPES.EdgeSet.Group))
+	sort.Sort(byPageKind(b.curPES.PageIndex))
 	err := b.Output(ctx, b.curPES)
 	b.curPES, b.curEG, b.groups, b.resident = nil, nil, nil, 0
 	return err
 }
 
 func newPageKey(src string, n int) string { return fmt.Sprintf("%s.%.10d", src, n) }
+
+var edgeOrdering = []string{
+	schema.DefinesEdge,
+	schema.DocumentsEdge,
+	schema.RefEdge,
+	schema.NamedEdge,
+	schema.TypedEdge,
+}
+
+func edgeKindLess(kind1, kind2 string) bool {
+	// General ordering:
+	//   anchor edge kinds before non-anchor edge kinds
+	//   forward edges before reverse edges
+	//   edgeOrdering[i] (and variants) before edgeOrdering[i+1:]
+	//   edge variants after root edge kind (ordered lexicographically)
+	//   otherwise, order lexicographically
+
+	if kind1 == kind2 {
+		return false
+	} else if a1, a2 := schema.IsAnchorEdge(kind1), schema.IsAnchorEdge(kind2); a1 != a2 {
+		return a1
+	} else if d1, d2 := schema.EdgeDirection(kind1), schema.EdgeDirection(kind2); d1 != d2 {
+		return d1 == schema.Forward
+	}
+	kind1, kind2 = schema.Canonicalize(kind1), schema.Canonicalize(kind2)
+	for _, kind := range edgeOrdering {
+		if kind1 == kind {
+			return true
+		} else if kind2 == kind {
+			return false
+		} else if v1, v2 := schema.IsEdgeVariant(kind1, kind), schema.IsEdgeVariant(kind2, kind); v1 != v2 {
+			return v1
+		} else if v1 {
+			return kind1 < kind2
+		}
+	}
+	return kind1 < kind2
+}
+
+// byPageKind implements the sort.Interface
+type byPageKind []*srvpb.PageIndex
+
+// Implement the sort.Interface using edgeKindLess
+func (s byPageKind) Len() int           { return len(s) }
+func (s byPageKind) Less(i, j int) bool { return edgeKindLess(s[i].EdgeKind, s[j].EdgeKind) }
+func (s byPageKind) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+
+// byEdgeKind implements the sort.Interface
+type byEdgeKind []*srvpb.EdgeSet_Group
+
+// Implement the sort.Interface using edgeKindLess
+func (s byEdgeKind) Len() int           { return len(s) }
+func (s byEdgeKind) Less(i, j int) bool { return edgeKindLess(s[i].Kind, s[j].Kind) }
+func (s byEdgeKind) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 
 // byEdgeCount implements the heap.Interface (largest group of edges first)
 type byEdgeCount []*srvpb.EdgeSet_Group

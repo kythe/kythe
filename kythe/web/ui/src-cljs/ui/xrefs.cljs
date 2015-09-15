@@ -160,5 +160,5 @@
                                               (:offset (get anchor-info t))
                                               (node-kind (:nodes state) t)])
                                     (:target_ticket grp))))))
-                       (sort-by :kind (:group (:edge_set state)))))
+                       (:group (:edge_set state))))
                    (page-navigation xrefs-to-view (cons "" (:pages state)) (or (:current-page-token state) "") (:source_ticket (:edge_set state)))]))))))

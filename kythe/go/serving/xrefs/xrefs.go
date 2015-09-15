@@ -354,6 +354,9 @@ func (t *tableImpl) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.Edge
 			}
 		}
 
+		// TODO(schroederc): ensure that pes.EdgeSet.Groups and pes.PageIndexes of
+		// the same kind are grouped together in the EdgesReply
+
 		if stats.total != stats.max {
 			for _, idx := range pes.PageIndex {
 				if len(allowedKinds) == 0 || allowedKinds.Contains(idx.EdgeKind) {
