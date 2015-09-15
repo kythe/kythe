@@ -22,6 +22,7 @@ public enum EdgeKind {
   DEFINES_BINDING(true, "defines/binding"),
   DOCUMENTS(true, "documents"),
   REF(true, "ref"),
+  REF_DOC(true, "ref/doc"),
 
   ANNOTATED_BY("annotatedby"),
   BOUNDED_LOWER("bounded/lower"),

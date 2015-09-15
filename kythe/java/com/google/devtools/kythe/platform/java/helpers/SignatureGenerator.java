@@ -125,6 +125,9 @@ public class SignatureGenerator
 
   /** Returns a Java signature for the specified Symbol. */
   public Optional<String> getSignature(Symbol symbol) {
+    if (symbol == null) {
+      return Optional.absent();
+    }
     try {
       StringBuilder sb = getStringBuilder();
       if (symbol instanceof TypeVariableSymbol) {

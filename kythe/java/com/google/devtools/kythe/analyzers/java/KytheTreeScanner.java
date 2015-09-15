@@ -34,6 +34,7 @@ import com.sun.source.tree.Tree.Kind;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Symbol.MethodSymbol;
+import com.sun.tools.javac.code.Symtab;
 import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCAnnotation;
@@ -79,6 +80,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
   private final Map<Integer, List<SourceText.Comment>> comments = new HashMap<>();
   private final Context context;
 
+  private KytheDocTreeScanner docScanner;
+
   private KytheTreeScanner(JavaEntrySets entrySets, StatisticsCollector statistics,
       SignatureGenerator signatureGenerator, SourceText src, Context context) {
     this.entrySets = entrySets;
@@ -107,8 +110,17 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
         .scan(compilation, null);
   }
 
+  /** Returns the {@link Symtab} (symbol table) for the compilation currently being processed. */
+  public Symtab getSymbols() {
+    return Symtab.instance(context);
+  }
+
   @Override
   public JavaNode visitTopLevel(JCCompilationUnit compilation, JCTree owner) {
+    if (compilation.docComments != null) {
+      docScanner = new KytheDocTreeScanner(this, compilation.docComments);
+    }
+
     EntrySet fileNode = entrySets.getFileNode(filePositions);
 
     List<JavaNode> decls = scanList(compilation.getTypeDecls(), compilation);
@@ -171,6 +183,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
 
   @Override
   public JavaNode visitClassDef(JCClassDecl classDef, JCTree owner) {
+    visitDocComment(classDef);
     Optional<String> signature = signatureGenerator.getSignature(classDef.sym);
     if (signature.isPresent()) {
       EntrySet classNode = entrySets.getNode(classDef.sym, signature.get());
@@ -183,7 +196,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
         emitAnchor(anchor, EdgeKind.DEFINES_BINDING, classNode);
       }
       emitAnchor(classDef, EdgeKind.DEFINES, classNode);
-      emitComment(classDef.getPreferredPosition(), classNode);
+      emitComment(classDef, classNode);
 
       EntrySet absNode = defineTypeParameters(classNode, classDef.getTypeParameters());
       if (absNode != null) {
@@ -201,7 +214,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
         } else {
           logger.warning("Missing bracket group for generic class definition: " + classDef.sym);
         }
-        emitComment(classDef.getStartPosition(), absNode);
+        emitComment(classDef, absNode);
         entrySets.emitName(absNode, signature.get() + "<" + Joiner.on(",").join(tParamNames) + ">");
       }
 
@@ -237,6 +250,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
 
   @Override
   public JavaNode visitMethodDef(JCMethodDecl methodDef, JCTree owner) {
+    visitDocComment(methodDef);
     scan(methodDef.getBody(), methodDef);
     scan(methodDef.getThrows(), methodDef);
 
@@ -281,10 +295,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
       }
 
       if (bindingAnchor != null) {
-        emitComment(methodDef.getPreferredPosition(), methodNode);
+        emitComment(methodDef, methodNode);
         if (absNode != null) {
           emitAnchor(bindingAnchor, EdgeKind.DEFINES_BINDING, absNode);
-          emitComment(methodDef.getPreferredPosition(), absNode);
+          emitComment(methodDef, absNode);
         }
         emitAnchor(methodDef, EdgeKind.DEFINES, methodNode);
       }
@@ -314,13 +328,14 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
 
   @Override
   public JavaNode visitVarDef(JCVariableDecl varDef, JCTree owner) {
+    visitDocComment(varDef);
     Optional<String> signature = signatureGenerator.getSignature(varDef.sym);
     if (signature.isPresent()) {
       EntrySet varNode = entrySets.getNode(varDef.sym, signature.get());
       emitAnchor(varDef.name, varDef.getStartPosition(), EdgeKind.DEFINES_BINDING, varNode);
       emitAnchor(varDef, EdgeKind.DEFINES, varNode);
       if (varDef.sym.getKind() == ElementKind.FIELD) {
-        emitComment(varDef.getStartPosition(), varNode);
+        emitComment(varDef, varNode);
       }
 
       visitAnnotations(varNode, varDef.getModifiers().getAnnotations(), varDef);
@@ -422,7 +437,26 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
     return new JavaNode(node, signature);
   }
 
+  private void visitDocComment(JCTree tree) {
+    if (docScanner == null) {
+      return;
+    }
+    docScanner.visitDocComment(tree);
+  }
+
   //// Utility methods ////
+
+  void emitDocReference(Symbol sym, int startChar, int endChar) {
+    EntrySet node = getNode(sym);
+    if (node == null) {
+      return;
+    }
+
+    EntrySet anchor = entrySets.getAnchor(filePositions, startChar, endChar);
+    if (anchor != null) {
+      emitAnchor(anchor, EdgeKind.REF_DOC, node);
+    }
+  }
 
   private static List<EntrySet> toEntries(Iterable<JavaNode> nodes) {
     List<EntrySet> entries = Lists.newLinkedList();
@@ -523,7 +557,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
     return anchor;
   }
 
-  private void emitComment(int defPosition, EntrySet node) {
+  private void emitComment(JCTree defTree, EntrySet node) {
+    int defPosition = defTree.getPreferredPosition();
     int defLine = filePositions.charToLine(defPosition);
     List<SourceText.Comment> inlineComments = comments.get(defLine);
     if (inlineComments != null) {

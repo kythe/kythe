@@ -1,5 +1,9 @@
 package pkg;
 
+//- @+11"java.lang.Integer" ref/doc IntegerClass
+//- @+10String ref/doc StringClass
+//- @+10Inner ref/doc InnerClass
+
 //- DocComment.node/kind anchor
 //- DocComment documents CommentsClass
 //- DocComment.loc/start @^+4"/**"
@@ -36,6 +40,8 @@ public class Comments {
 
   /* This comments the InnerI interface. */ // a second, weirdly-placed comment
   static interface InnerI {} // this also comments the interface
+
+  //- @+5InnerE ref/doc InnerE
 
   //- @+3"/** This comments the {@link InnerE} enum. */" documents InnerE
   //- @+3InnerE defines/binding InnerE

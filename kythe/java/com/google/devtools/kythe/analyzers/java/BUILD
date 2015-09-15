@@ -4,6 +4,7 @@ java_library(
     name = "analyzer",
     srcs = [
         "JavaEntrySets.java",
+        "KytheDocTreeScanner.java",
         "KytheJavacAnalyzer.java",
         "KytheTreeScanner.java",
         "SourceText.java",

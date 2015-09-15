@@ -33,6 +33,11 @@ public class Span implements Comparable<Span> {
     return end;
   }
 
+  /** Determines if the given integer is contained within {@code this} {@link Span}. */
+  public boolean contains(int n) {
+    return getStart() <= n && n < getEnd();
+  }
+
   @Override
   public int compareTo(Span other) {
     if (other.start == this.start) {
