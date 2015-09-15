@@ -38,8 +38,21 @@ func caller(up int) (file string, line int) {
 // error if not.
 func DeepEqual(expected, got interface{}) error {
 	et, gt := reflect.TypeOf(expected), reflect.TypeOf(got)
+	ev, gv := reflect.ValueOf(expected), reflect.ValueOf(got)
+
+	for et.Kind() == reflect.Ptr && gt.Kind() == reflect.Ptr {
+		ev, gv = ev.Elem(), gv.Elem()
+		et, gt = ev.Type(), gv.Type()
+	}
+
+	if et != gt {
+		return expectError(expected, got, "types differ: expected %T; found %T", expected, got)
+	}
+
 	if et.Kind() == reflect.Slice && gt.Kind() == reflect.Slice {
-		return expectSliceEqual(reflect.ValueOf(expected), reflect.ValueOf(got))
+		return expectSliceEqual(ev, gv)
+	} else if et.Kind() == reflect.Struct && gt.Kind() == reflect.Struct {
+		return expectStructEqual(ev, gv)
 	}
 
 	if !reflect.DeepEqual(expected, got) {
@@ -65,10 +78,22 @@ func expectSliceEqual(expected reflect.Value, got reflect.Value) error {
 	for i := 0; i < el; i++ {
 		ev := expected.Index(i).Interface()
 		gv := got.Index(i).Interface()
-		if !reflect.DeepEqual(ev, gv) {
-			return expectError(expected.Interface(), got.Interface(), "values at index %d differ: expected: %v; found: %v", i, ev, gv)
+		if err := DeepEqual(ev, gv); err != nil {
+			return expectError(expected.Interface(), got.Interface(), "values at index %d differ: %s", i, err)
 		}
 	}
+	return nil
+}
+
+func expectStructEqual(expected, got reflect.Value) error {
+	for i := 0; i < expected.NumField(); i++ {
+		ef, gf := expected.Field(i), got.Field(i)
+		if err := DeepEqual(ef.Interface(), gf.Interface()); err != nil {
+			field := expected.Type().Field(i)
+			return expectError(expected.Interface(), got.Interface(), "%s fields differ: %s", field.Name, err)
+		}
+	}
+
 	return nil
 }
 

@@ -94,6 +94,7 @@ var cmds = map[string]command{
 	"refs":   cmdRefs,
 	"source": cmdSource,
 	"search": cmdSearch,
+	"xrefs":  cmdXRefs,
 }
 
 func init() {

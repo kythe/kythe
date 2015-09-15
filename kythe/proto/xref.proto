@@ -50,6 +50,9 @@ package kythe.proto;
 // facts/edges for node".  A node is extensionally defined by its facts and
 // edges, so a node without any facts or edges is not considered to exist.
 service XRefService {
+
+  // TODO(schroederc): break off Nodes/Edges into a separate service
+
   // Nodes returns a subset of the facts for each of the requested nodes.
   rpc Nodes(NodesRequest) returns (NodesReply) {}
 
@@ -60,6 +63,10 @@ service XRefService {
   // Decorations returns an index of the nodes and edges associated with a
   // particular file node.
   rpc Decorations(DecorationsRequest) returns (DecorationsReply) {}
+
+	// CrossReferences returns the global references, definitions, and
+	// documentation of a set of requested nodes.
+  rpc CrossReferences(CrossReferencesRequest) returns (CrossReferencesReply) {}
 }
 
 message NodesRequest {
@@ -314,4 +321,147 @@ message DecorationsReply {
   repeated NodeInfo node = 15;
 
   // TODO(fromberger): Patch diff information.
+}
+
+message CrossReferencesRequest {
+  // Set of nodes for which to return their cross-references.  Must be
+  // non-empty.
+  repeated string ticket = 1;
+
+  enum DefinitionKind {
+    // No definitions will be populated in the CrossReferencesReply.
+    NO_DEFINITIONS = 0;
+
+    // All known definition anchors reached by the "/kythe/edge/defines" edge
+    // kind (or its variants) will be populated in the CrossReferencesReply.
+    ALL_DEFINITIONS = 1;
+
+    // Only definition anchors reached by the "/kythe/edge/defines" edge kind
+    // will be populated in the CrossReferencesReply.
+    FULL_DEFINITIONS = 2;
+
+    // Only definition anchors reached by the "/kythe/edge/defines/binding" edge
+    // kind will be populated in the CrossReferencesReply.
+    BINDING_DEFINITIONS = 3;
+  }
+
+  // Determines what kind of definition anchors, if any, should be returned in
+  // the response.  See the documentation for each DefinitionKind for more
+  // information.
+  DefinitionKind definition_kind = 2;
+
+  enum ReferenceKind {
+    // No references will be populated in the CrossReferencesReply.
+    NO_REFERENCES = 0;
+    // All known reference anchors reached by the "/kythe/edge/ref" edge kind
+    // (or its variants) will be populated in the CrossReferencesReply.
+    ALL_REFERENCES = 1;
+  }
+
+  // Determines what kind of reference anchors, if any, should be returned in
+  // the response.  See the documentation for each ReferenceKind for more
+  // information.
+  ReferenceKind reference_kind = 3;
+
+  enum DocumentationKind {
+    // No documentation will be populated in the CrossReferencesReply.
+    NO_DOCUMENTATION = 0;
+    // All known documentation reached by the "/kythe/edge/documentation" edge
+    // kind (or its variants) will be populated in the CrossReferencesReply.
+    ALL_DOCUMENTATION = 1;
+  }
+
+  // Determines what kind of documentation anchors, if any, should be returned
+  // in the response.  See the documentation for each DocumentationKind for more
+  // information.
+  DocumentationKind documentation_kind = 4;
+
+  // Collection of filter globs that determines which facts will be returned for
+  // the related nodes of each requested node.  If filter is empty or unset, no
+  // node facts or related nodes are returned.  See EdgesRequest for the format
+  // of the filter globs.
+  repeated string filter = 5;
+
+  // Determines whether each Anchor in the response should have its text field
+  // populated.
+  bool anchor_text = 6;
+
+  // The cross-references matching a request are organized into logical pages.
+  // The size of each page is a number of distinct cross-references
+  // (definitions, references, documentation, and related nodes).
+  //
+  // If page_token is empty, cross-references will be returned starting at the
+  // beginning of the sequence; otherwise the starting point named by the
+  // page_token will be used.  Legal values of page_token are returned by the
+  // server in the next_page_token field of the CrossReferencesReply.  A page
+  // token should be treated as an opaque value by the client, and is valid only
+  // relative to a particular CrossReferencesRequest.  If an invalid page token
+  // is requested, the server will return an error.
+  //
+  // If page_size > 0, at most that number of cross-references will be returned
+  // by the service for this request (see ReferenceSet and CrossReferencesReply
+  // below).  If page_size = 0, the default, the server will assume a reasonable
+  // default page size.  The server will return an error if page_size < 0.
+  //
+  // The server is allowed to return fewer cross-references than the requested
+  // page_size, even if more are available, save that it must return at least 1
+  // edge if any are available at all.
+  int32 page_size = 10;
+  string page_token = 11;
+}
+
+message Anchor {
+  // Ticket of the anchor node
+  string ticket = 1;
+  // Edge kind describing the anchor's relationship with its referenced node
+  string kind = 2;
+
+  // Parent ticket of the anchor; this is the file containing the anchor
+  string parent = 3;
+
+  // Starting location of the anchor within its parent's text
+  Location.Point start = 4;
+  // Ending location of the anchor within its parent's text
+  Location.Point end = 5;
+  // The anchor's spanning text within the anchor parent's text
+  string text = 6;
+
+  // User-readable snippet of the anchor parent's text at the location of this
+  // anchor
+  string snippet = 7;
+}
+
+message CrossReferencesReply {
+  message RelatedNode {
+    // Ticket of the node
+    string ticket = 1;
+    // Edge kind describing the node's relation
+    string relation_kind = 2;
+  }
+
+  message CrossReferenceSet {
+    string ticket = 1;
+
+    // The set of definitions for the given node.
+    repeated Anchor definition = 2;
+    // The set of simple references for the given node.
+    repeated Anchor reference = 3;
+    // The set of documentation for the given node.
+    repeated Anchor documentation = 4;
+
+    // The set of related nodes to the given node.
+    repeated RelatedNode related_node = 10;
+  }
+
+  // Sets of cross-references for each requested node
+  map<string, CrossReferenceSet> cross_references = 1;
+
+  // The facts left from the requested filters of the related node facts
+  map<string, NodeInfo> nodes = 2;
+
+  // If there are additional pages of cross-references after the ones returned
+  // in this reply, next_page_token is the page token that may be passed to
+  // fetch the next page in sequence after this one.  If there are no additional
+  // cross-references, this field will be empty.
+  string next_page_token = 10;
 }

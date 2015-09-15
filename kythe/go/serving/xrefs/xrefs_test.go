@@ -103,6 +103,12 @@ var (
 					// Canary to ensure we don't patch anchor facts in non-anchor nodes
 					"/kythe/loc/start", "51",
 				),
+			}, {
+				Ticket: "kythe://someCorpus?path=some/path#aFileNode",
+				Fact: makeFactList(
+					"/kythe/node/kind", "file",
+					"/kythe/text", "some random text\nhere and  \n  there\nsome random text\nhere and  \n  there\n",
+				),
 			},
 		},
 		EdgeSets: []*srvpb.PagedEdgeSet{
@@ -127,9 +133,16 @@ var (
 					},
 				},
 			}, {
-				TotalEdges: 3,
+				TotalEdges: 5,
 				EdgeSet: &srvpb.EdgeSet{
 					SourceTicket: "kythe://someCorpus?lang=otpl#signature",
+					Group: []*srvpb.EdgeSet_Group{{
+						Kind:         "%/kythe/edge/ref",
+						TargetTicket: []string{"kythe://c?lang=otpl?path=/a/path#51-55"},
+					}, {
+						Kind:         "%/kythe/edge/defines/binding",
+						TargetTicket: []string{"kythe://c?lang=otpl?path=/a/path#27-33"},
+					}},
 				},
 				PageIndex: []*srvpb.PageIndex{{
 					PageKey:   "firstPage",
@@ -140,6 +153,30 @@ var (
 					EdgeKind:  "anotherEdge",
 					EdgeCount: 1,
 				}},
+			}, {
+				TotalEdges: 2,
+				EdgeSet: &srvpb.EdgeSet{
+					SourceTicket: "kythe://c?lang=otpl?path=/a/path#51-55",
+					Group: []*srvpb.EdgeSet_Group{{
+						Kind:         "/kythe/edge/ref",
+						TargetTicket: []string{"kythe://someCorpus?lang=otpl#signature"},
+					}, {
+						Kind:         "/kythe/edge/childof",
+						TargetTicket: []string{"kythe://someCorpus?path=some/path#aFileNode"},
+					}},
+				},
+			}, {
+				TotalEdges: 2,
+				EdgeSet: &srvpb.EdgeSet{
+					SourceTicket: "kythe://c?lang=otpl?path=/a/path#27-33",
+					Group: []*srvpb.EdgeSet_Group{{
+						Kind:         "/kythe/edge/defines/binding",
+						TargetTicket: []string{"kythe://someCorpus?lang=otpl#signature"},
+					}, {
+						Kind:         "/kythe/edge/childof",
+						TargetTicket: []string{"kythe://someCorpus?path=some/path#aFileNode"},
+					}},
+				},
 			},
 		},
 		EdgePages: []*srvpb.EdgePage{
@@ -486,6 +523,84 @@ func TestDecorationsSourceText(t *testing.T) {
 	}
 	if len(reply.Reference) > 0 {
 		t.Errorf("Unexpected references in DecorationsReply %v", reply.Reference)
+	}
+}
+
+func TestCrossReferencesNone(t *testing.T) {
+	st := tbl.Construct(t)
+	reply, err := st.CrossReferences(ctx, &xpb.CrossReferencesRequest{
+		Ticket:            []string{"kythe://someCorpus?lang=otpl#sig2"},
+		DocumentationKind: xpb.CrossReferencesRequest_ALL_DOCUMENTATION,
+		DefinitionKind:    xpb.CrossReferencesRequest_ALL_DEFINITIONS,
+		ReferenceKind:     xpb.CrossReferencesRequest_ALL_REFERENCES,
+	})
+	testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
+
+	if len(reply.CrossReferences) > 0 || len(reply.Nodes) > 0 {
+		t.Fatalf("Expected empty CrossReferencesReply; found %v", reply)
+	}
+}
+
+func TestCrossReferences(t *testing.T) {
+	ticket := "kythe://someCorpus?lang=otpl#signature"
+
+	st := tbl.Construct(t)
+	reply, err := st.CrossReferences(ctx, &xpb.CrossReferencesRequest{
+		Ticket:         []string{ticket},
+		DefinitionKind: xpb.CrossReferencesRequest_BINDING_DEFINITIONS,
+		ReferenceKind:  xpb.CrossReferencesRequest_ALL_REFERENCES,
+	})
+	testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
+
+	expected := &xpb.CrossReferencesReply_CrossReferenceSet{
+		Ticket: ticket,
+
+		Reference: []*xpb.Anchor{{
+			Ticket: "kythe://c?lang=otpl?path=/a/path#51-55",
+			Kind:   "/kythe/edge/ref",
+			Parent: "kythe://someCorpus?path=some/path#aFileNode",
+
+			Start: &xpb.Location_Point{
+				ByteOffset:   51,
+				LineNumber:   4,
+				ColumnOffset: 15,
+			},
+			End: &xpb.Location_Point{
+				ByteOffset:   55,
+				LineNumber:   5,
+				ColumnOffset: 2,
+			},
+
+			Snippet: "some random text",
+		}},
+
+		Definition: []*xpb.Anchor{{
+			Ticket: "kythe://c?lang=otpl?path=/a/path#27-33",
+			Kind:   "/kythe/edge/defines/binding",
+			Parent: "kythe://someCorpus?path=some/path#aFileNode",
+
+			Start: &xpb.Location_Point{
+				ByteOffset:   27,
+				LineNumber:   2,
+				ColumnOffset: 10,
+			},
+			End: &xpb.Location_Point{
+				ByteOffset:   33,
+				LineNumber:   3,
+				ColumnOffset: 5,
+			},
+
+			Snippet: "here and  ",
+		}},
+	}
+
+	xr := reply.CrossReferences[ticket]
+	if xr == nil {
+		log.Fatal("Missing expected CrossReferences")
+	}
+
+	if err := testutil.DeepEqual(expected, xr); err != nil {
+		t.Fatal(err)
 	}
 }
 

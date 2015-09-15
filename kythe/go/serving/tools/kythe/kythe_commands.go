@@ -72,6 +72,10 @@ var (
 	dirtyFile string
 	refFormat string
 
+	// xrefs flags
+	defKind, refKind, docKind string
+	relatedNodes              bool
+
 	// search flags
 	suffixWildcard string
 	corpus         string
@@ -175,6 +179,67 @@ var (
 				return displayTargets(reply.EdgeSet)
 			}
 			return displayEdges(reply)
+		})
+
+	cmdXRefs = newCommand("xrefs", "[--definitions kind] [--references kind] [--documentation kind] [--related_nodes] [--page_token token] [--page_size num] <ticket>",
+		"Retrieve the global cross-references of the given node",
+		func(flag *flag.FlagSet) {
+			flag.StringVar(&defKind, "definitions", "all", "Kind of definitions to return (kinds: all, binding, full, or none)")
+			flag.StringVar(&refKind, "references", "all", "Kind of references to return (kinds: all or none)")
+			flag.StringVar(&docKind, "documentation", "all", "Kind of documentation to return (kinds: all or none)")
+			flag.BoolVar(&relatedNodes, "related_nodes", false, "Whether to request related nodes")
+
+			flag.StringVar(&pageToken, "page_token", "", "CrossReferences page token")
+			flag.IntVar(&pageSize, "page_size", 0, "Maximum number of cross-references returned (0 lets the service use a sensible default)")
+		},
+		func(flag *flag.FlagSet) error {
+			log.Println("WARNING: this API is currently experimental")
+
+			req := &xpb.CrossReferencesRequest{
+				Ticket:    flag.Args(),
+				PageToken: pageToken,
+				PageSize:  int32(pageSize),
+			}
+			if relatedNodes {
+				req.Filter = []string{schema.NodeKindFact}
+			}
+			switch defKind {
+			case "all":
+				req.DefinitionKind = xpb.CrossReferencesRequest_ALL_DEFINITIONS
+			case "none":
+				req.DefinitionKind = xpb.CrossReferencesRequest_NO_DEFINITIONS
+			case "binding":
+				req.DefinitionKind = xpb.CrossReferencesRequest_BINDING_DEFINITIONS
+			case "full":
+				req.DefinitionKind = xpb.CrossReferencesRequest_FULL_DEFINITIONS
+			default:
+				return fmt.Errorf("unknown definition kind: %q", defKind)
+			}
+			switch refKind {
+			case "all":
+				req.ReferenceKind = xpb.CrossReferencesRequest_ALL_REFERENCES
+			case "none":
+				req.ReferenceKind = xpb.CrossReferencesRequest_NO_REFERENCES
+			default:
+				return fmt.Errorf("unknown reference kind: %q", refKind)
+			}
+			switch docKind {
+			case "all":
+				req.DocumentationKind = xpb.CrossReferencesRequest_ALL_DOCUMENTATION
+			case "none":
+				req.DocumentationKind = xpb.CrossReferencesRequest_NO_DOCUMENTATION
+			default:
+				return fmt.Errorf("unknown documentation kind: %q", docKind)
+			}
+			logRequest(req)
+			reply, err := xs.CrossReferences(ctx, req)
+			if err != nil {
+				return err
+			}
+			if reply.NextPageToken != "" {
+				defer log.Printf("Next page token: %s", reply.NextPageToken)
+			}
+			return displayXRefs(reply)
 		})
 
 	cmdNode = newCommand("node", "[--filters factFilter1,factFilter2,...] [--max_fact_size] <ticket>",

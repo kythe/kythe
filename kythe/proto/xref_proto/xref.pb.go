@@ -19,6 +19,9 @@ It has these top-level messages:
 	Location
 	DecorationsRequest
 	DecorationsReply
+	CrossReferencesRequest
+	Anchor
+	CrossReferencesReply
 */
 package xref_proto
 
@@ -56,6 +59,85 @@ var Location_Kind_value = map[string]int32{
 
 func (x Location_Kind) String() string {
 	return proto.EnumName(Location_Kind_name, int32(x))
+}
+
+type CrossReferencesRequest_DefinitionKind int32
+
+const (
+	// No definitions will be populated in the CrossReferencesReply.
+	CrossReferencesRequest_NO_DEFINITIONS CrossReferencesRequest_DefinitionKind = 0
+	// All known definition anchors reached by the "/kythe/edge/defines" edge
+	// kind (or its variants) will be populated in the CrossReferencesReply.
+	CrossReferencesRequest_ALL_DEFINITIONS CrossReferencesRequest_DefinitionKind = 1
+	// Only definition anchors reached by the "/kythe/edge/defines" edge kind
+	// will be populated in the CrossReferencesReply.
+	CrossReferencesRequest_FULL_DEFINITIONS CrossReferencesRequest_DefinitionKind = 2
+	// Only definition anchors reached by the "/kythe/edge/defines/binding" edge
+	// kind will be populated in the CrossReferencesReply.
+	CrossReferencesRequest_BINDING_DEFINITIONS CrossReferencesRequest_DefinitionKind = 3
+)
+
+var CrossReferencesRequest_DefinitionKind_name = map[int32]string{
+	0: "NO_DEFINITIONS",
+	1: "ALL_DEFINITIONS",
+	2: "FULL_DEFINITIONS",
+	3: "BINDING_DEFINITIONS",
+}
+var CrossReferencesRequest_DefinitionKind_value = map[string]int32{
+	"NO_DEFINITIONS":      0,
+	"ALL_DEFINITIONS":     1,
+	"FULL_DEFINITIONS":    2,
+	"BINDING_DEFINITIONS": 3,
+}
+
+func (x CrossReferencesRequest_DefinitionKind) String() string {
+	return proto.EnumName(CrossReferencesRequest_DefinitionKind_name, int32(x))
+}
+
+type CrossReferencesRequest_ReferenceKind int32
+
+const (
+	// No references will be populated in the CrossReferencesReply.
+	CrossReferencesRequest_NO_REFERENCES CrossReferencesRequest_ReferenceKind = 0
+	// All known reference anchors reached by the "/kythe/edge/ref" edge kind
+	// (or its variants) will be populated in the CrossReferencesReply.
+	CrossReferencesRequest_ALL_REFERENCES CrossReferencesRequest_ReferenceKind = 1
+)
+
+var CrossReferencesRequest_ReferenceKind_name = map[int32]string{
+	0: "NO_REFERENCES",
+	1: "ALL_REFERENCES",
+}
+var CrossReferencesRequest_ReferenceKind_value = map[string]int32{
+	"NO_REFERENCES":  0,
+	"ALL_REFERENCES": 1,
+}
+
+func (x CrossReferencesRequest_ReferenceKind) String() string {
+	return proto.EnumName(CrossReferencesRequest_ReferenceKind_name, int32(x))
+}
+
+type CrossReferencesRequest_DocumentationKind int32
+
+const (
+	// No documentation will be populated in the CrossReferencesReply.
+	CrossReferencesRequest_NO_DOCUMENTATION CrossReferencesRequest_DocumentationKind = 0
+	// All known documentation reached by the "/kythe/edge/documentation" edge
+	// kind (or its variants) will be populated in the CrossReferencesReply.
+	CrossReferencesRequest_ALL_DOCUMENTATION CrossReferencesRequest_DocumentationKind = 1
+)
+
+var CrossReferencesRequest_DocumentationKind_name = map[int32]string{
+	0: "NO_DOCUMENTATION",
+	1: "ALL_DOCUMENTATION",
+}
+var CrossReferencesRequest_DocumentationKind_value = map[string]int32{
+	"NO_DOCUMENTATION":  0,
+	"ALL_DOCUMENTATION": 1,
+}
+
+func (x CrossReferencesRequest_DocumentationKind) String() string {
+	return proto.EnumName(CrossReferencesRequest_DocumentationKind_name, int32(x))
 }
 
 type NodesRequest struct {
@@ -404,8 +486,186 @@ func (m *DecorationsReply_Reference) GetAnchorEnd() *Location_Point {
 	return nil
 }
 
+type CrossReferencesRequest struct {
+	// Set of nodes for which to return their cross-references.  Must be
+	// non-empty.
+	Ticket []string `protobuf:"bytes,1,rep,name=ticket" json:"ticket,omitempty"`
+	// Determines what kind of definition anchors, if any, should be returned in
+	// the response.  See the documentation for each DefinitionKind for more
+	// information.
+	DefinitionKind CrossReferencesRequest_DefinitionKind `protobuf:"varint,2,opt,name=definition_kind,enum=kythe.proto.CrossReferencesRequest_DefinitionKind" json:"definition_kind,omitempty"`
+	// Determines what kind of reference anchors, if any, should be returned in
+	// the response.  See the documentation for each ReferenceKind for more
+	// information.
+	ReferenceKind CrossReferencesRequest_ReferenceKind `protobuf:"varint,3,opt,name=reference_kind,enum=kythe.proto.CrossReferencesRequest_ReferenceKind" json:"reference_kind,omitempty"`
+	// Determines what kind of documentation anchors, if any, should be returned
+	// in the response.  See the documentation for each DocumentationKind for more
+	// information.
+	DocumentationKind CrossReferencesRequest_DocumentationKind `protobuf:"varint,4,opt,name=documentation_kind,enum=kythe.proto.CrossReferencesRequest_DocumentationKind" json:"documentation_kind,omitempty"`
+	// Collection of filter globs that determines which facts will be returned for
+	// the related nodes of each requested node.  If filter is empty or unset, no
+	// node facts or related nodes are returned.  See EdgesRequest for the format
+	// of the filter globs.
+	Filter []string `protobuf:"bytes,5,rep,name=filter" json:"filter,omitempty"`
+	// Determines whether each Anchor in the response should have its text field
+	// populated.
+	AnchorText bool `protobuf:"varint,6,opt,name=anchor_text" json:"anchor_text,omitempty"`
+	// The cross-references matching a request are organized into logical pages.
+	// The size of each page is a number of distinct cross-references
+	// (definitions, references, documentation, and related nodes).
+	//
+	// If page_token is empty, cross-references will be returned starting at the
+	// beginning of the sequence; otherwise the starting point named by the
+	// page_token will be used.  Legal values of page_token are returned by the
+	// server in the next_page_token field of the CrossReferencesReply.  A page
+	// token should be treated as an opaque value by the client, and is valid only
+	// relative to a particular CrossReferencesRequest.  If an invalid page token
+	// is requested, the server will return an error.
+	//
+	// If page_size > 0, at most that number of cross-references will be returned
+	// by the service for this request (see ReferenceSet and CrossReferencesReply
+	// below).  If page_size = 0, the default, the server will assume a reasonable
+	// default page size.  The server will return an error if page_size < 0.
+	//
+	// The server is allowed to return fewer cross-references than the requested
+	// page_size, even if more are available, save that it must return at least 1
+	// edge if any are available at all.
+	PageSize  int32  `protobuf:"varint,10,opt,name=page_size" json:"page_size,omitempty"`
+	PageToken string `protobuf:"bytes,11,opt,name=page_token" json:"page_token,omitempty"`
+}
+
+func (m *CrossReferencesRequest) Reset()         { *m = CrossReferencesRequest{} }
+func (m *CrossReferencesRequest) String() string { return proto.CompactTextString(m) }
+func (*CrossReferencesRequest) ProtoMessage()    {}
+
+type Anchor struct {
+	// Ticket of the anchor node
+	Ticket string `protobuf:"bytes,1,opt,name=ticket" json:"ticket,omitempty"`
+	// Edge kind describing the anchor's relationship with its referenced node
+	Kind string `protobuf:"bytes,2,opt,name=kind" json:"kind,omitempty"`
+	// Parent ticket of the anchor; this is the file containing the anchor
+	Parent string `protobuf:"bytes,3,opt,name=parent" json:"parent,omitempty"`
+	// Starting location of the anchor within its parent's text
+	Start *Location_Point `protobuf:"bytes,4,opt,name=start" json:"start,omitempty"`
+	// Ending location of the anchor within its parent's text
+	End *Location_Point `protobuf:"bytes,5,opt,name=end" json:"end,omitempty"`
+	// The anchor's spanning text within the anchor parent's text
+	Text string `protobuf:"bytes,6,opt,name=text" json:"text,omitempty"`
+	// User-readable snippet of the anchor parent's text at the location of this
+	// anchor
+	Snippet string `protobuf:"bytes,7,opt,name=snippet" json:"snippet,omitempty"`
+}
+
+func (m *Anchor) Reset()         { *m = Anchor{} }
+func (m *Anchor) String() string { return proto.CompactTextString(m) }
+func (*Anchor) ProtoMessage()    {}
+
+func (m *Anchor) GetStart() *Location_Point {
+	if m != nil {
+		return m.Start
+	}
+	return nil
+}
+
+func (m *Anchor) GetEnd() *Location_Point {
+	if m != nil {
+		return m.End
+	}
+	return nil
+}
+
+type CrossReferencesReply struct {
+	// Sets of cross-references for each requested node
+	CrossReferences map[string]*CrossReferencesReply_CrossReferenceSet `protobuf:"bytes,1,rep,name=cross_references" json:"cross_references,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// The facts left from the requested filters of the related node facts
+	Nodes map[string]*NodeInfo `protobuf:"bytes,2,rep,name=nodes" json:"nodes,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// If there are additional pages of cross-references after the ones returned
+	// in this reply, next_page_token is the page token that may be passed to
+	// fetch the next page in sequence after this one.  If there are no additional
+	// cross-references, this field will be empty.
+	NextPageToken string `protobuf:"bytes,10,opt,name=next_page_token" json:"next_page_token,omitempty"`
+}
+
+func (m *CrossReferencesReply) Reset()         { *m = CrossReferencesReply{} }
+func (m *CrossReferencesReply) String() string { return proto.CompactTextString(m) }
+func (*CrossReferencesReply) ProtoMessage()    {}
+
+func (m *CrossReferencesReply) GetCrossReferences() map[string]*CrossReferencesReply_CrossReferenceSet {
+	if m != nil {
+		return m.CrossReferences
+	}
+	return nil
+}
+
+func (m *CrossReferencesReply) GetNodes() map[string]*NodeInfo {
+	if m != nil {
+		return m.Nodes
+	}
+	return nil
+}
+
+type CrossReferencesReply_RelatedNode struct {
+	// Ticket of the node
+	Ticket string `protobuf:"bytes,1,opt,name=ticket" json:"ticket,omitempty"`
+	// Edge kind describing the node's relation
+	RelationKind string `protobuf:"bytes,2,opt,name=relation_kind" json:"relation_kind,omitempty"`
+}
+
+func (m *CrossReferencesReply_RelatedNode) Reset()         { *m = CrossReferencesReply_RelatedNode{} }
+func (m *CrossReferencesReply_RelatedNode) String() string { return proto.CompactTextString(m) }
+func (*CrossReferencesReply_RelatedNode) ProtoMessage()    {}
+
+type CrossReferencesReply_CrossReferenceSet struct {
+	Ticket string `protobuf:"bytes,1,opt,name=ticket" json:"ticket,omitempty"`
+	// The set of definitions for the given node.
+	Definition []*Anchor `protobuf:"bytes,2,rep,name=definition" json:"definition,omitempty"`
+	// The set of simple references for the given node.
+	Reference []*Anchor `protobuf:"bytes,3,rep,name=reference" json:"reference,omitempty"`
+	// The set of documentation for the given node.
+	Documentation []*Anchor `protobuf:"bytes,4,rep,name=documentation" json:"documentation,omitempty"`
+	// The set of related nodes to the given node.
+	RelatedNode []*CrossReferencesReply_RelatedNode `protobuf:"bytes,10,rep,name=related_node" json:"related_node,omitempty"`
+}
+
+func (m *CrossReferencesReply_CrossReferenceSet) Reset() {
+	*m = CrossReferencesReply_CrossReferenceSet{}
+}
+func (m *CrossReferencesReply_CrossReferenceSet) String() string { return proto.CompactTextString(m) }
+func (*CrossReferencesReply_CrossReferenceSet) ProtoMessage()    {}
+
+func (m *CrossReferencesReply_CrossReferenceSet) GetDefinition() []*Anchor {
+	if m != nil {
+		return m.Definition
+	}
+	return nil
+}
+
+func (m *CrossReferencesReply_CrossReferenceSet) GetReference() []*Anchor {
+	if m != nil {
+		return m.Reference
+	}
+	return nil
+}
+
+func (m *CrossReferencesReply_CrossReferenceSet) GetDocumentation() []*Anchor {
+	if m != nil {
+		return m.Documentation
+	}
+	return nil
+}
+
+func (m *CrossReferencesReply_CrossReferenceSet) GetRelatedNode() []*CrossReferencesReply_RelatedNode {
+	if m != nil {
+		return m.RelatedNode
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterEnum("kythe.proto.Location_Kind", Location_Kind_name, Location_Kind_value)
+	proto.RegisterEnum("kythe.proto.CrossReferencesRequest_DefinitionKind", CrossReferencesRequest_DefinitionKind_name, CrossReferencesRequest_DefinitionKind_value)
+	proto.RegisterEnum("kythe.proto.CrossReferencesRequest_ReferenceKind", CrossReferencesRequest_ReferenceKind_name, CrossReferencesRequest_ReferenceKind_value)
+	proto.RegisterEnum("kythe.proto.CrossReferencesRequest_DocumentationKind", CrossReferencesRequest_DocumentationKind_name, CrossReferencesRequest_DocumentationKind_value)
 }
 
 // Client API for XRefService service
@@ -419,6 +679,9 @@ type XRefServiceClient interface {
 	// Decorations returns an index of the nodes and edges associated with a
 	// particular file node.
 	Decorations(ctx context.Context, in *DecorationsRequest, opts ...grpc.CallOption) (*DecorationsReply, error)
+	// CrossReferences returns the global references, definitions, and
+	// documentation of a set of requested nodes.
+	CrossReferences(ctx context.Context, in *CrossReferencesRequest, opts ...grpc.CallOption) (*CrossReferencesReply, error)
 }
 
 type xRefServiceClient struct {
@@ -456,6 +719,15 @@ func (c *xRefServiceClient) Decorations(ctx context.Context, in *DecorationsRequ
 	return out, nil
 }
 
+func (c *xRefServiceClient) CrossReferences(ctx context.Context, in *CrossReferencesRequest, opts ...grpc.CallOption) (*CrossReferencesReply, error) {
+	out := new(CrossReferencesReply)
+	err := grpc.Invoke(ctx, "/kythe.proto.XRefService/CrossReferences", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for XRefService service
 
 type XRefServiceServer interface {
@@ -467,6 +739,9 @@ type XRefServiceServer interface {
 	// Decorations returns an index of the nodes and edges associated with a
 	// particular file node.
 	Decorations(context.Context, *DecorationsRequest) (*DecorationsReply, error)
+	// CrossReferences returns the global references, definitions, and
+	// documentation of a set of requested nodes.
+	CrossReferences(context.Context, *CrossReferencesRequest) (*CrossReferencesReply, error)
 }
 
 func RegisterXRefServiceServer(s *grpc.Server, srv XRefServiceServer) {
@@ -509,6 +784,18 @@ func _XRefService_Decorations_Handler(srv interface{}, ctx context.Context, code
 	return out, nil
 }
 
+func _XRefService_CrossReferences_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+	in := new(CrossReferencesRequest)
+	if err := codec.Unmarshal(buf, in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(XRefServiceServer).CrossReferences(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 var _XRefService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "kythe.proto.XRefService",
 	HandlerType: (*XRefServiceServer)(nil),
@@ -524,6 +811,10 @@ var _XRefService_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Decorations",
 			Handler:    _XRefService_Decorations_Handler,
+		},
+		{
+			MethodName: "CrossReferences",
+			Handler:    _XRefService_CrossReferences_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{},

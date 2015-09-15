@@ -156,6 +156,11 @@ func (api apiCloser) Decorations(ctx context.Context, req *xpb.DecorationsReques
 	return api.xs.Decorations(ctx, req)
 }
 
+// CrossReferences implements part of the xrefs Service interface.
+func (api apiCloser) CrossReferences(ctx context.Context, req *xpb.CrossReferencesRequest) (*xpb.CrossReferencesReply, error) {
+	return api.xs.CrossReferences(ctx, req)
+}
+
 // Search implements part of the search Service interface.
 func (api apiCloser) Search(ctx context.Context, req *spb.SearchRequest) (*spb.SearchReply, error) {
 	return api.idx.Search(ctx, req)

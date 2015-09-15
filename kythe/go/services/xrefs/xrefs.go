@@ -20,15 +20,19 @@ package xrefs
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"log"
 	"math"
 	"net/http"
 	"regexp"
 	"sort"
+	"strconv"
 	"time"
 
 	"kythe.io/kythe/go/services/web"
+	"kythe.io/kythe/go/util/schema"
+	"kythe.io/kythe/go/util/stringset"
 
 	"github.com/sergi/go-diff/diffmatchpatch"
 	"golang.org/x/net/context"
@@ -40,6 +44,7 @@ import (
 type Service interface {
 	NodesEdgesService
 	DecorationsService
+	CrossReferencesService
 }
 
 // NodesEdgesService provides fast access to nodes and edges in a Kythe graph.
@@ -66,6 +71,282 @@ type DecorationsService interface {
 	// Decorations returns an index of the nodes and edges associated with a
 	// particular file node.
 	Decorations(context.Context, *xpb.DecorationsRequest) (*xpb.DecorationsReply, error)
+}
+
+// CrossReferencesService provides fast access to cross-references in a Kythe graph.
+type CrossReferencesService interface {
+	// CrossReferences returns the global references of the given nodes.
+	CrossReferences(context.Context, *xpb.CrossReferencesRequest) (*xpb.CrossReferencesReply, error)
+}
+
+const defaultXRefPageSize = 1024
+
+// CrossReferences returns the cross-references for the given tickets using the
+// given NodesEdgesService.
+func CrossReferences(ctx context.Context, xs NodesEdgesService, req *xpb.CrossReferencesRequest) (*xpb.CrossReferencesReply, error) {
+	log.Println("WARNING: using experimental CrossReferences API")
+	if len(req.Ticket) == 0 {
+		return nil, errors.New("no cross-references requested")
+	}
+
+	requestedPageSize := int(req.PageSize)
+	if requestedPageSize == 0 {
+		requestedPageSize = defaultXRefPageSize
+	}
+
+	eReply, err := xs.Edges(ctx, &xpb.EdgesRequest{
+		Ticket:    req.Ticket,
+		PageSize:  int32(requestedPageSize),
+		PageToken: req.PageToken,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error getting edges for cross-references: %v", err)
+	}
+
+	reply := &xpb.CrossReferencesReply{
+		CrossReferences: make(map[string]*xpb.CrossReferencesReply_CrossReferenceSet),
+
+		NextPageToken: eReply.NextPageToken,
+	}
+	var allRelatedNodes stringset.Set
+	if len(req.Filter) > 0 {
+		reply.Nodes = make(map[string]*xpb.NodeInfo)
+		allRelatedNodes = stringset.New()
+	}
+
+	// Cache location Normalizers for parent files across all anchors
+	normalizers := make(map[string]*Normalizer)
+
+	var totalXRefs int
+	for {
+		for _, es := range eReply.EdgeSet {
+			xr, ok := reply.CrossReferences[es.SourceTicket]
+			if !ok {
+				xr = &xpb.CrossReferencesReply_CrossReferenceSet{Ticket: es.SourceTicket}
+				reply.CrossReferences[es.SourceTicket] = xr
+			}
+
+			var count int
+			for _, g := range es.Group {
+				switch {
+				case isDefKind(req.DefinitionKind, g.Kind):
+					anchors, err := completeAnchors(ctx, xs, req.AnchorText, normalizers, g.Kind, g.TargetTicket)
+					if err != nil {
+						return nil, fmt.Errorf("error resolving definition anchors: %v", err)
+					}
+					count += len(anchors)
+					xr.Definition = append(xr.Definition, anchors...)
+				case isRefKind(req.ReferenceKind, g.Kind):
+					anchors, err := completeAnchors(ctx, xs, req.AnchorText, normalizers, g.Kind, g.TargetTicket)
+					if err != nil {
+						return nil, fmt.Errorf("error resolving reference anchors: %v", err)
+					}
+					count += len(anchors)
+					xr.Reference = append(xr.Reference, anchors...)
+				case isDocKind(req.DocumentationKind, g.Kind):
+					anchors, err := completeAnchors(ctx, xs, req.AnchorText, normalizers, g.Kind, g.TargetTicket)
+					if err != nil {
+						return nil, fmt.Errorf("error resolving documentation anchors: %v", err)
+					}
+					count += len(anchors)
+					xr.Documentation = append(xr.Documentation, anchors...)
+				case allRelatedNodes != nil && !schema.IsAnchorEdge(g.Kind):
+					count += len(g.TargetTicket)
+					for _, target := range g.TargetTicket {
+						xr.RelatedNode = append(xr.RelatedNode, &xpb.CrossReferencesReply_RelatedNode{
+							Ticket:       target,
+							RelationKind: g.Kind,
+						})
+					}
+					allRelatedNodes.Add(g.TargetTicket...)
+				}
+			}
+
+			if count > 0 {
+				reply.CrossReferences[xr.Ticket] = xr
+				totalXRefs += count
+			}
+		}
+
+		if reply.NextPageToken == "" || totalXRefs > 0 {
+			break
+		}
+
+		// We need to return at least 1 xref, if there are any
+		log.Println("Extra CrossReferences Edges call: ", reply.NextPageToken)
+		eReply, err = xs.Edges(ctx, &xpb.EdgesRequest{
+			Ticket:    req.Ticket,
+			PageSize:  int32(requestedPageSize),
+			PageToken: reply.NextPageToken,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("error getting edges for cross-references: %v", err)
+		}
+		reply.NextPageToken = eReply.NextPageToken
+	}
+
+	if len(allRelatedNodes) > 0 {
+		nReply, err := xs.Nodes(ctx, &xpb.NodesRequest{
+			Ticket: allRelatedNodes.Slice(),
+			Filter: req.Filter,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("error retrieving related nodes: %v", err)
+		}
+		for _, n := range nReply.Node {
+			reply.Nodes[n.Ticket] = n
+		}
+	}
+
+	return reply, nil
+}
+
+var (
+	revDefinesEdge        = schema.MirrorEdge(schema.DefinesEdge)
+	revDefinesBindingEdge = schema.MirrorEdge(schema.DefinesBindingEdge)
+
+	revRefEdge = schema.MirrorEdge(schema.RefEdge)
+
+	revDocumentsEdge = schema.MirrorEdge(schema.DocumentsEdge)
+)
+
+func isDefKind(requestedKind xpb.CrossReferencesRequest_DefinitionKind, edgeKind string) bool {
+	switch requestedKind {
+	case xpb.CrossReferencesRequest_NO_DEFINITIONS:
+		return false
+	case xpb.CrossReferencesRequest_FULL_DEFINITIONS:
+		return edgeKind == revDefinesEdge
+	case xpb.CrossReferencesRequest_BINDING_DEFINITIONS:
+		return edgeKind == revDefinesBindingEdge
+	case xpb.CrossReferencesRequest_ALL_DEFINITIONS:
+		return schema.IsEdgeVariant(edgeKind, revDefinesEdge)
+	default:
+		panic("unhandled CrossReferencesRequest_DefinitionKind")
+	}
+}
+
+func isRefKind(requestedKind xpb.CrossReferencesRequest_ReferenceKind, edgeKind string) bool {
+	switch requestedKind {
+	case xpb.CrossReferencesRequest_NO_REFERENCES:
+		return false
+	case xpb.CrossReferencesRequest_ALL_REFERENCES:
+		return schema.IsEdgeVariant(edgeKind, revRefEdge)
+	default:
+		panic("unhandled CrossReferencesRequest_ReferenceKind")
+	}
+}
+
+func isDocKind(requestedKind xpb.CrossReferencesRequest_DocumentationKind, edgeKind string) bool {
+	switch requestedKind {
+	case xpb.CrossReferencesRequest_NO_DOCUMENTATION:
+		return false
+	case xpb.CrossReferencesRequest_ALL_DOCUMENTATION:
+		return schema.IsEdgeVariant(edgeKind, revDocumentsEdge)
+	default:
+		panic("unhandled CrossDocumentationRequest_DocumentationKind")
+	}
+}
+
+func completeAnchors(ctx context.Context, xs NodesEdgesService, retrieveText bool, normalizers map[string]*Normalizer, edgeKind string, anchors []string) ([]*xpb.Anchor, error) {
+	edgeKind = schema.Canonicalize(edgeKind)
+
+	// AllEdges is relatively safe because each anchor will have very few parents (almost always 1)
+	reply, err := AllEdges(ctx, xs, &xpb.EdgesRequest{
+		Ticket: anchors,
+		Kind:   []string{schema.ChildOfEdge},
+		Filter: []string{schema.TextFact, schema.NodeKindFact, schema.AnchorLocFilter},
+	})
+	if err != nil {
+		return nil, err
+	}
+	nodes := NodesMap(reply.Node)
+
+	var result []*xpb.Anchor
+	for _, es := range reply.EdgeSet {
+		ticket := es.SourceTicket
+
+		if nodeKind := string(nodes[ticket][schema.NodeKindFact]); nodeKind != schema.AnchorKind {
+			log.Printf("Found non-anchor target to %q edge: %q (kind: %q)", edgeKind, ticket, nodeKind)
+			continue
+		}
+
+		// Parse anchor location start/end facts
+		start := string(nodes[ticket][schema.AnchorStartFact])
+		end := string(nodes[ticket][schema.AnchorEndFact])
+		if start == "" || end == "" {
+			log.Printf("Anchor %q missing location facts; found: %s=%q and %s=%q", ticket,
+				schema.AnchorStartFact, start, schema.AnchorEndFact, end)
+			continue
+		}
+		so, err := strconv.Atoi(start)
+		if err != nil {
+			log.Printf("Error parsing anchor %q location start %q: %v", ticket, start, err)
+			continue
+		}
+		eo, err := strconv.Atoi(end)
+		if err != nil {
+			log.Printf("Error parsing anchor %q location end %q: %v", ticket, end, err)
+			continue
+		}
+		if so > eo {
+			log.Printf("Invalid anchor %q span: %d-%d", ticket, so, eo)
+			continue
+		}
+
+		// For each file parent to the anchor, add an Anchor to the result.
+		for _, g := range es.Group {
+			if g.Kind != schema.ChildOfEdge {
+				continue
+			}
+
+			for _, parent := range g.TargetTicket {
+				if parentKind := string(nodes[parent][schema.NodeKindFact]); parentKind != schema.FileKind {
+					log.Printf("Found non-file parent to anchor: %q (kind: %q)", parent, parentKind)
+					continue
+				}
+
+				a := &xpb.Anchor{
+					Ticket: ticket,
+					Kind:   edgeKind,
+					Parent: parent,
+				}
+
+				text := nodes[a.Parent][schema.TextFact]
+				norm, ok := normalizers[a.Parent]
+				if !ok {
+					norm = NewNormalizer(text)
+					normalizers[a.Parent] = norm
+				}
+
+				a.Start = norm.ByteOffset(int32(so))
+				a.End = norm.ByteOffset(int32(eo))
+
+				if a.Start.ByteOffset != int32(so) {
+					log.Printf("Anchor %q has inconsistent start location in file %q; expected: %d; found; %d",
+						ticket, parent, so, a.Start.ByteOffset)
+					continue
+				} else if a.End.ByteOffset != int32(eo) {
+					log.Printf("Anchor %q has inconsistent end location in file %q; expected: %d; found; %d",
+						ticket, parent, so, a.End.ByteOffset)
+					continue
+				}
+
+				if retrieveText && a.Start.ByteOffset < a.End.ByteOffset {
+					// TODO(schroederc): handle non-UTF8 encodings
+					a.Text = string(text[a.Start.ByteOffset:a.End.ByteOffset])
+				}
+
+				nextLine := norm.Point(&xpb.Location_Point{LineNumber: a.Start.LineNumber + 1})
+				a.Snippet = string(text[a.Start.ByteOffset-a.Start.ColumnOffset : nextLine.ByteOffset-1])
+
+				result = append(result, a)
+			}
+
+			break // we've handled the only /kythe/edge/childof group
+		}
+	}
+
+	return result, nil
 }
 
 // AllEdges returns all edges for a particular EdgesRequest.  This means that
@@ -378,6 +659,11 @@ func (w *grpcClient) Decorations(ctx context.Context, req *xpb.DecorationsReques
 	return w.XRefServiceClient.Decorations(ctx, req)
 }
 
+// CrossReferences implements part of the Service interface.
+func (w *grpcClient) CrossReferences(ctx context.Context, req *xpb.CrossReferencesRequest) (*xpb.CrossReferencesReply, error) {
+	return w.XRefServiceClient.CrossReferences(ctx, req)
+}
+
 // GRPC returns an xrefs Service backed by the given GRPC client and context.
 func GRPC(c xpb.XRefServiceClient) Service { return &grpcClient{c} }
 
@@ -401,6 +687,12 @@ func (w *webClient) Decorations(ctx context.Context, q *xpb.DecorationsRequest) 
 	return &reply, web.Call(w.addr, "decorations", q, &reply)
 }
 
+// CrossReferences implements part of the Service interface.
+func (w *webClient) CrossReferences(ctx context.Context, q *xpb.CrossReferencesRequest) (*xpb.CrossReferencesReply, error) {
+	var reply xpb.CrossReferencesReply
+	return &reply, web.Call(w.addr, "xrefs", q, &reply)
+}
+
 // WebClient returns an xrefs Service based on a remote web server.
 func WebClient(addr string) Service {
 	return &webClient{addr}
@@ -418,10 +710,33 @@ func WebClient(addr string) Service {
 //   GET /decorations
 //     Request: JSON encoded xrefs.DecorationsRequest
 //     Response: JSON encoded xrefs.DecorationsResponse
+//   GET /xrefs
+//     Request: JSON encoded xrefs.CrossReferencesRequest
+//     Response: JSON encoded xrefs.CrossReferencesResponse
 //
-// Note: /nodes, /edges, and /decorations will return their responses as
+// Note: /nodes, /edges, /decorations, and /xrefs will return their responses as
 // serialized protobufs if the "proto" query parameter is set.
 func RegisterHTTPHandlers(ctx context.Context, xs Service, mux *http.ServeMux) {
+	mux.HandleFunc("/xrefs", func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		defer func() {
+			log.Printf("xrefs.CrossReferences:\t%s", time.Since(start))
+		}()
+		var req xpb.CrossReferencesRequest
+		if err := web.ReadJSONBody(r, &req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		reply, err := CrossReferences(ctx, xs, &req)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if err := web.WriteResponse(w, r, reply); err != nil {
+			log.Println(err)
+		}
+	})
 	mux.HandleFunc("/decorations", func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		defer func() {

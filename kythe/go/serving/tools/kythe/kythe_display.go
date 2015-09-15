@@ -299,3 +299,63 @@ func factValue(m map[string]map[string][]byte, ticket, factName, def string) str
 	}
 	return def
 }
+
+func displayXRefs(reply *xpb.CrossReferencesReply) error {
+	if *displayJSON {
+		return json.NewEncoder(os.Stdout).Encode(reply)
+	}
+
+	for _, xr := range reply.CrossReferences {
+		if _, err := fmt.Fprintln(out, "Cross-References for", xr.Ticket); err != nil {
+			return err
+		}
+		if err := displayAnchors("Definitions", xr.Definition); err != nil {
+			return err
+		}
+		if err := displayAnchors("Documentation", xr.Documentation); err != nil {
+			return err
+		}
+		if err := displayAnchors("References", xr.Reference); err != nil {
+			return err
+		}
+		if len(xr.RelatedNode) > 0 {
+			if _, err := fmt.Fprintln(out, "  Related Nodes:"); err != nil {
+				return err
+			}
+			for _, n := range xr.RelatedNode {
+				nodeKind := "UNKNOWN"
+				if node, ok := reply.Nodes[n.Ticket]; ok && len(node.Fact) == 1 {
+					nodeKind = string(node.Fact[0].Value)
+				}
+				if _, err := fmt.Fprintf(out, "    %s %s [%s]\n", n.Ticket, n.RelationKind, nodeKind); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func displayAnchors(kind string, anchors []*xpb.Anchor) error {
+	if len(anchors) > 0 {
+		if _, err := fmt.Fprintf(out, "  %s:\n", kind); err != nil {
+			return err
+		}
+
+		for _, a := range anchors {
+			pURI, err := kytheuri.Parse(a.Parent)
+			if err != nil {
+				return err
+			}
+			if _, err := fmt.Fprintf(out, "    %s\t[%d:%d-%d:%d)\n      %q\n",
+				pURI.Path,
+				a.Start.LineNumber, a.Start.ColumnOffset, a.End.LineNumber, a.End.ColumnOffset,
+				string(a.Snippet)); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}

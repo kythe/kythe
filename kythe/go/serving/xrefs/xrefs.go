@@ -581,3 +581,8 @@ func decorationToReference(norm *xrefs.Normalizer, d *srvpb.FileDecorations_Deco
 		AnchorEnd:    norm.ByteOffset(d.Anchor.EndOffset),
 	}
 }
+
+// CrossReferences implements part of the xrefs.Service interface.
+func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReferencesRequest) (*xpb.CrossReferencesReply, error) {
+	return xrefs.CrossReferences(ctx, t, req)
+}

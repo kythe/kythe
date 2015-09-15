@@ -55,13 +55,18 @@ const EdgePrefix = "/kythe/edge/"
 
 // Kythe edge kinds
 const (
-	ChildOfEdge        = EdgePrefix + "childof"
+	ChildOfEdge = EdgePrefix + "childof"
+	NamedEdge   = EdgePrefix + "named"
+	ParamEdge   = EdgePrefix + "param"
+	TypedEdge   = EdgePrefix + "typed"
+)
+
+// Kythe edge kinds associated with anchors
+const (
 	DefinesEdge        = EdgePrefix + "defines"
 	DefinesBindingEdge = EdgePrefix + "defines/binding"
-	NamedEdge          = EdgePrefix + "named"
-	ParamEdge          = EdgePrefix + "param"
+	DocumentsEdge      = EdgePrefix + "documents"
 	RefEdge            = EdgePrefix + "ref"
-	TypedEdge          = EdgePrefix + "typed"
 )
 
 // Fact filter for anchor locations
@@ -80,6 +85,19 @@ const (
 	Forward EdgeDir = true
 	Reverse EdgeDir = false
 )
+
+// IsEdgeVariant returns if k1 is the same edge kind as k2 or a more specific
+// variant
+// (i.e. IsEdgeVariant("/kythe/edge/defines/binding", "/kythe/edge/defines") == true).
+// Note that
+// IsEdgeVariant(k1, k2) == IsEdgeVariant(MirrorEdge(k1), MirrorEdge(k2)).
+func IsEdgeVariant(k1, k2 string) bool { return k1 == k2 || strings.HasPrefix(k1, k2+"/") }
+
+// IsAnchorEdge returns if the given edge kind is associated with anchors.
+func IsAnchorEdge(kind string) bool {
+	kind = Canonicalize(kind)
+	return IsEdgeVariant(kind, DefinesEdge) || IsEdgeVariant(kind, DocumentsEdge) || IsEdgeVariant(kind, RefEdge)
+}
 
 // EdgeDirection returns the edge direction of the given edge kind
 func EdgeDirection(kind string) EdgeDir {

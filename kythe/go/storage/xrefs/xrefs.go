@@ -492,3 +492,8 @@ func (s bySpan) Less(i, j int) bool {
 	}
 	return false
 }
+
+// CrossReferences implements part of the xrefs Service interface.
+func (g *GraphStoreService) CrossReferences(ctx context.Context, req *xpb.CrossReferencesRequest) (*xpb.CrossReferencesReply, error) {
+	return xrefs.CrossReferences(ctx, g, req)
+}
