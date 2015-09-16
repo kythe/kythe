@@ -17,17 +17,20 @@
 cd "$WORKSPACE/repo"
 .jenkins/get-llvm.sh "$WORKSPACE"
 
-gcloud docker pull gcr.io/kythe_repo/kythe-builder
+readonly IMAGE=gcr.io/kythe_repo/kythe-builder
+
+gcloud docker --server=beta.gcr.io pull beta.$IMAGE
+docker tag beta.$IMAGE $IMAGE
 
 docker run --rm -t -v "$PWD:/repo" -w /repo \
- gcr.io/kythe_repo/kythe-builder ./setup_bazel.sh
+ $IMAGE ./setup_bazel.sh
 
 bazel() {
  docker run --rm -t \
    -v "$PWD:/repo" -v "$WORKSPACE/cache:/root/.cache" \
    -w /repo \
    --privileged --entrypoint /usr/bin/bazel \
-   gcr.io/kythe_repo/kythe-builder "$@"
+   $IMAGE "$@"
 }
 
 BAZEL_ARGS=(
