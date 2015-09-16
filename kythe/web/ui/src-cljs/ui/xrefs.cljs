@@ -14,45 +14,14 @@
 (ns ui.xrefs
   "View for XRefs pane"
   (:require [cljs.core.async :refer [put!]]
+            [goog.crypt.base64 :as b64]
+            [goog.string :as gstring]
+            [goog.string.format]
             [om.core :as om :include-macros true]
             [om.dom :as dom :include-macros true]
             [ui.schema :as schema]
             [ui.service :as service]
-            [ui.util :refer [fix-encoding]]))
-
-(defn- fact-value [nodes ticket fact-name]
-  (get (get nodes ticket) fact-name))
-
-(defn- node-kind [nodes ticket]
-  (or (fact-value nodes ticket schema/node-kind-fact) "UNKNOWN"))
-
-(defn- line-for-offset [text offset]
-  (let [i (inc (.lastIndexOf text "\n" offset))]
-    [(count (.split (.substr text 0 i) "\n"))
-     (fix-encoding (.substr text i (- (.indexOf text "\n" offset) i)))]))
-
-(defn- display-node [file-to-view xrefs-to-view nodes anchor-info ticket with-link]
-  (dom/div nil
-    (let [kind (node-kind nodes ticket)
-          file-ticket (:file (get anchor-info ticket))]
-      (if (and (= kind "anchor") file-ticket)
-        (dom/a #js {:href "#"
-                    :onClick (fn [e]
-                               (.preventDefault e)
-                               (put! file-to-view
-                                 {:ticket file-ticket
-                                  :anchor ticket
-                                  :offset (fact-value nodes ticket schema/anchor-start)}))}
-          kind)
-        kind))
-    " "
-    (if with-link
-      (dom/a #js {:href "#"
-                  :onClick (fn [e]
-                             (.preventDefault e)
-                             (put! xrefs-to-view ticket))}
-        ticket)
-      ticket)))
+            [ui.util :refer [fix-encoding ticket->vname]]))
 
 (defn- page-navigation [xrefs-to-view pages current-page-token ticket]
   (let [current-page (first (first (filter #(= (second %) current-page-token) (map-indexed (fn [i t] [i t]) pages))))
@@ -92,6 +61,43 @@
                                                           :page_token next-page})))}
               ">"))])))))
 
+(defn- collect-anchors [anchors]
+  (into {}
+    (for [[file anchors] (group-by :parent anchors)]
+      [file (sort-by (comp :byte_offset :start) anchors)])))
+
+(defn- display-anchor [file anchor file-to-view]
+  (let [line (:line_number (:start anchor))
+        snippet (:snippet anchor)]
+    (when (and line snippet)
+     (dom/p #js {:className "snippet"}
+       (dom/a #js {:href "#"
+                   :title (gstring/format "[%d:%d-%d:%d) %s %s"
+                            line (:column_offset (:start anchor))
+                            (:line_number (:end anchor)) (:column_offset (:end anchor))
+                            (:kind anchor)
+                            (:text anchor))
+                   :onClick (fn [e]
+                              (.preventDefault e)
+                              (put! file-to-view
+                                {:ticket file
+                                 :anchor (:ticket anchor)
+                                 :line line}))}
+         (str line))
+       (str ": " snippet)))))
+
+(defn- display-anchors [title anchors file-to-view]
+  (when anchors
+    (dom/ul nil
+      (dom/li nil
+        (dom/strong nil title)
+        (apply dom/ul nil
+          (map (fn [[file anchors]]
+                 (apply dom/li nil
+                   (:path (ticket->vname file))
+                   (filter identity (map (fn [anchor] (display-anchor file anchor file-to-view)) anchors))))
+            (collect-anchors anchors)))))))
+
 (defn- xrefs-view [state owner]
   (reify
     om/IRenderState
@@ -111,54 +117,32 @@
           (:loading state) [(dom/span #js {:title (:loading state)}
                               "Loading xrefs... ")
                             (dom/span #js {:className "glyphicon glyphicon-repeat spinner"})]
-          :else (do
-                  (let [nodes (:nodes state)
-                        anchors (for [grp (:group (:edge_set state))
-                                      ticket (:target_ticket grp)
-                                      :when (= (node-kind nodes ticket) "anchor")]
-                                  ticket)
-                        anchor-info-id (str
-                                      (:source_ticket (:edge_set state))
-                                      (:current-page-token state))]
-                    (when (and (not= (:id anchor-info) anchor-info-id) (seq anchors))
-                      (service/get-edges anchors
-                        {:kind [schema/childof-edge]
-                         :filter [schema/text-fact
-                                  schema/anchor-start
-                                  schema/node-kind-fact]
-                         :page_size 64}
-                        (fn [edges]
-                          (let [anchor-info  (into {}
-                                            (for [es (:edge_set edges)
-                                                  :let [nodes (:nodes edges)
-                                                        file (first (:target_ticket (first (:group es))))]
-                                                  :when (= (node-kind nodes file) "file")
-                                                  :let [text (fact-value nodes file schema/text-fact)
-                                                        anchor (:source_ticket es)
-                                                        offset (js/parseInt (fact-value nodes anchor schema/anchor-start))
-                                                        [line-num snippet] (line-for-offset text offset)]]
-                                              [anchor {:line line-num
-                                                       :offset offset
-                                                       :snippet snippet
-                                                       :file file}]))]
-                            (om/set-state! owner :anchor-info (assoc anchor-info :id anchor-info-id))))
-                        #(.log js/console (str "Error getting childof edges " %)))))
-
-                  [(dom/strong nil (display-node file-to-view xrefs-to-view (:nodes state) anchor-info (:source_ticket (:edge_set state)) false))
-                   (apply dom/ul nil
-                     (map (fn [grp]
-                            (dom/li nil
-                              (dom/strong nil (:kind grp))
-                              (apply dom/ul nil
-                                (map (fn [target]
-                                       (dom/li nil
-                                         (display-node file-to-view xrefs-to-view (:nodes state) anchor-info target true)
-                                         (when-let [{:keys [line snippet]} (get anchor-info target)]
-                                           (dom/p #js {:className "snippet"} (str line ": " snippet)))))
-                                  (sort-by (fn [t]
-                                             [(:file (get anchor-info t))
-                                              (:offset (get anchor-info t))
-                                              (node-kind (:nodes state) t)])
-                                    (:target_ticket grp))))))
-                       (:group (:edge_set state))))
-                   (page-navigation xrefs-to-view (cons "" (:pages state)) (or (:current-page-token state) "") (:source_ticket (:edge_set state)))]))))))
+          :else
+          [(dom/strong nil (:ticket (:cross-references state)))
+           (display-anchors "Definitions:" (:definition (:cross-references state)) file-to-view)
+           (display-anchors "Documentation:" (:documentation (:cross-references state)) file-to-view)
+           (display-anchors "References:" (:reference (:cross-references state)) file-to-view)
+           (when (:related_node (:cross-references state))
+             (dom/ul nil
+               (dom/li nil
+                 (dom/strong nil "Related Nodes:")
+                 (apply dom/ul nil
+                   (map (fn [[relation nodes]]
+                          (dom/li nil
+                            (dom/strong nil relation) " "
+                            (apply dom/ul nil
+                              (map (fn [{:keys [ticket]}]
+                                     (dom/li nil
+                                       (str
+                                         (if-let [kind (get (into {} (map (juxt :name :value) (:fact (get @(:nodes state) (keyword ticket)))))
+                                                         schema/node-kind-fact)]
+                                           (fix-encoding (b64/decodeString kind))
+                                           "UNKNOWN") " ")
+                                       (dom/a #js {:href "#"
+                                                   :onClick (fn [e]
+                                                              (.preventDefault e)
+                                                              (put! xrefs-to-view ticket))}
+                                         ticket)))
+                                nodes))))
+                     (group-by :relation_kind (:related_node (:cross-references state))))))))
+           (page-navigation xrefs-to-view (cons "" (:pages state)) (or (:current-page-token state) "") (:ticket (:cross-references state)))])))))

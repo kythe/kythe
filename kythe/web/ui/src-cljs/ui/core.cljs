@@ -78,14 +78,14 @@
                                                            :decorations decorations}))
                       (put! (om/get-state owner :hover) {:xref-jump anchor})))
                   (replace-state! state :current-file)))
-              offset (do
-                      (set-url-state
-                        (assoc (ticket->vname ticket) :offset offset))
-                       (om/transact! state :current-file
-                         (fn [file]
-                           (assoc file
-                             :line (line-in-string (:source-text (:decorations file)) offset))))
-                       (put! (om/get-state owner :hover) {:xref-jump anchor})))
+              (or line offset)
+              (do
+                (set-url-state
+                  (assoc (ticket->vname ticket) :offset offset :line line))
+                (om/transact! state :current-file
+                  (fn [file]
+                    (assoc file :line (or line (line-in-string (:source-text (:decorations file)) offset)))))
+                (put! (om/get-state owner :hover) {:xref-jump anchor})))
             ticket)))
 
       ;; Handle all requests for the xrefs pane
@@ -94,24 +94,23 @@
           (let [target (if (:ticket target) target {:ticket target})
                 page-token (:page_token target)]
             (om/transact! state :current-xrefs #(assoc % :loading (:ticket target)))
-            (service/get-edges (:ticket target) target
-              (fn [edges]
-                (let [edges (assoc edges :edge_set (first (:edge_set edges)))]
-                  (om/transact! state :current-xrefs
-                    (fn [prev]
-                      (let [prev-pages (if (= (:source_ticket (:edge_set prev)) (:source_ticket (:edge_set edges)))
-                                         (:pages prev)
-                                         [])]
-                        (assoc edges :current-page-token page-token
-                          :pages
-                          (cond
-                            (not (:next edges)) prev-pages
-                            (and page-token (= (last prev-pages) page-token))
-                            (conj prev-pages (:next edges))
-                            (some #{(:next edges)} prev-pages)
-                            prev-pages
-                            :else
-                            [(:next edges)])))))))
+            (service/get-xrefs (:ticket target) target
+              (fn [xrefs]
+                (om/transact! state :current-xrefs
+                  (fn [prev]
+                    (let [prev-pages (if (= (:ticket (:cross-references prev)) (:ticket (:cross-references xrefs)))
+                                       (:pages prev)
+                                       [])]
+                      (assoc xrefs :current-page-token page-token
+                        :pages
+                        (cond
+                          (not (:next xrefs)) prev-pages
+                          (and page-token (= (last prev-pages) page-token))
+                          (conj prev-pages (:next xrefs))
+                          (some #{(:next xrefs)} prev-pages)
+                          prev-pages
+                          :else
+                          [(:next xrefs)]))))))
               (replace-state! state :current-xrefs)))))
 
       ;; Populate the initial filetree data

@@ -80,6 +80,33 @@
       :handler (comp handler unwrap-edges-response)
       :error-handler error-handler})))
 
+(defn- unwrap-xrefs-response [resp]
+  {:cross-references (if (= 1 (count (:cross_references resp)))
+                       (second (first (:cross_references resp)))
+                       (:cross_references resp))
+   :nodes (:nodes resp)
+   :next (:next_page_token resp)})
+
+(defn get-xrefs
+  "Requests the global references, definitions, and documentation of the given node ticket."
+  ([ticket handler error-handler]
+   (get-xrefs ticket {} handler error-handler))
+  ([ticket opts handler error-handler]
+   (POST "xrefs"
+     {:params (merge {:definition_kind 3    ;; BINDING_DEFINITIONS
+                      :reference_kind 1     ;; ALL_REFERENCES
+                      :documentation_kind 1 ;; ALL_DOCUMENTATION
+                      :filter [schema/node-kind-fact]
+                      :anchor_text true
+                      :page_size 20}
+                opts
+                {:ticket (if (seq? ticket) ticket [ticket])})
+      :format :json
+      :response-format :json
+      :keywords? true
+      :handler (comp handler unwrap-xrefs-response)
+      :error-handler error-handler})))
+
 (defn get-file
   "Requests the source text and decorations of the given file"
   [ticket handler error-handler]
