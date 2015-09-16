@@ -20,7 +20,7 @@ cd "$WORKSPACE/repo"
 readonly IMAGE=gcr.io/kythe_repo/kythe-builder
 
 gcloud docker --server=beta.gcr.io pull beta.$IMAGE
-docker tag beta.$IMAGE $IMAGE
+docker tag -f beta.$IMAGE $IMAGE
 
 docker run --rm -t -v "$PWD:/repo" -w /repo \
  $IMAGE ./setup_bazel.sh
