@@ -247,6 +247,42 @@ func isDocKind(requestedKind xpb.CrossReferencesRequest_DocumentationKind, edgeK
 	}
 }
 
+func getSpan(facts map[string][]byte, startFact, endFact string) (startOffset, endOffset int, err error) {
+	start := string(facts[startFact])
+	end := string(facts[endFact])
+	if start == "" || end == "" {
+		return 0, 0, fmt.Errorf("missing location facts; found: %s=%q and %s=%q",
+			startFact, start, endFact, end)
+	}
+	so, err := strconv.Atoi(start)
+	if err != nil {
+		return 0, 0, fmt.Errorf("error parsing %s value %q: %v", startFact, start, err)
+	}
+	eo, err := strconv.Atoi(end)
+	if err != nil {
+		return 0, 0, fmt.Errorf("error parsing %s value %q: %v", endFact, end, err)
+	}
+	if so > eo {
+		return 0, 0, fmt.Errorf("invalid %s/%s span: %d-%d", startFact, endFact, so, eo)
+	}
+
+	return so, eo, nil
+}
+
+func normalizeSpan(norm *Normalizer, startOffset, endOffset int32) (start, end *xpb.Location_Point, err error) {
+	start = norm.ByteOffset(startOffset)
+	end = norm.ByteOffset(endOffset)
+
+	if start.ByteOffset != startOffset {
+		err = fmt.Errorf("inconsistent start location; expected: %d; found; %d",
+			startOffset, start.ByteOffset)
+	} else if end.ByteOffset != endOffset {
+		err = fmt.Errorf("inconsistent end location; expected: %d; found; %d",
+			endOffset, end.ByteOffset)
+	}
+	return
+}
+
 func completeAnchors(ctx context.Context, xs NodesEdgesService, retrieveText bool, normalizers map[string]*Normalizer, edgeKind string, anchors []string) ([]*xpb.Anchor, error) {
 	edgeKind = schema.Canonicalize(edgeKind)
 
@@ -254,7 +290,12 @@ func completeAnchors(ctx context.Context, xs NodesEdgesService, retrieveText boo
 	reply, err := AllEdges(ctx, xs, &xpb.EdgesRequest{
 		Ticket: anchors,
 		Kind:   []string{schema.ChildOfEdge},
-		Filter: []string{schema.TextFact, schema.NodeKindFact, schema.AnchorLocFilter},
+		Filter: []string{
+			schema.NodeKindFact,
+			schema.TextFact,
+			schema.AnchorLocFilter,
+			schema.SnippetLocFilter,
+		},
 	})
 	if err != nil {
 		return nil, err
@@ -271,25 +312,9 @@ func completeAnchors(ctx context.Context, xs NodesEdgesService, retrieveText boo
 		}
 
 		// Parse anchor location start/end facts
-		start := string(nodes[ticket][schema.AnchorStartFact])
-		end := string(nodes[ticket][schema.AnchorEndFact])
-		if start == "" || end == "" {
-			log.Printf("Anchor %q missing location facts; found: %s=%q and %s=%q", ticket,
-				schema.AnchorStartFact, start, schema.AnchorEndFact, end)
-			continue
-		}
-		so, err := strconv.Atoi(start)
+		so, eo, err := getSpan(nodes[ticket], schema.AnchorStartFact, schema.AnchorEndFact)
 		if err != nil {
-			log.Printf("Error parsing anchor %q location start %q: %v", ticket, start, err)
-			continue
-		}
-		eo, err := strconv.Atoi(end)
-		if err != nil {
-			log.Printf("Error parsing anchor %q location end %q: %v", ticket, end, err)
-			continue
-		}
-		if so > eo {
-			log.Printf("Invalid anchor %q span: %d-%d", ticket, so, eo)
+			log.Printf("Invalid anchor span for %q: %v", ticket, err)
 			continue
 		}
 
@@ -318,16 +343,9 @@ func completeAnchors(ctx context.Context, xs NodesEdgesService, retrieveText boo
 					normalizers[a.Parent] = norm
 				}
 
-				a.Start = norm.ByteOffset(int32(so))
-				a.End = norm.ByteOffset(int32(eo))
-
-				if a.Start.ByteOffset != int32(so) {
-					log.Printf("Anchor %q has inconsistent start location in file %q; expected: %d; found; %d",
-						ticket, parent, so, a.Start.ByteOffset)
-					continue
-				} else if a.End.ByteOffset != int32(eo) {
-					log.Printf("Anchor %q has inconsistent end location in file %q; expected: %d; found; %d",
-						ticket, parent, so, a.End.ByteOffset)
+				a.Start, a.End, err = normalizeSpan(norm, int32(so), int32(eo))
+				if err != nil {
+					log.Printf("Invalid anchor span %q in file %q: %v", ticket, parent, err)
 					continue
 				}
 
@@ -336,8 +354,20 @@ func completeAnchors(ctx context.Context, xs NodesEdgesService, retrieveText boo
 					a.Text = string(text[a.Start.ByteOffset:a.End.ByteOffset])
 				}
 
-				nextLine := norm.Point(&xpb.Location_Point{LineNumber: a.Start.LineNumber + 1})
-				a.Snippet = string(text[a.Start.ByteOffset-a.Start.ColumnOffset : nextLine.ByteOffset-1])
+				if snippetStart, snippetEnd, err := getSpan(nodes[ticket], schema.SnippetStartFact, schema.SnippetEndFact); err == nil {
+					startPoint, endPoint, err := normalizeSpan(norm, int32(snippetStart), int32(snippetEnd))
+					if err != nil {
+						log.Printf("Invalid snippet span %q in file %q: %v", ticket, parent, err)
+					} else {
+						a.Snippet = string(text[startPoint.ByteOffset:endPoint.ByteOffset])
+					}
+				}
+
+				// fallback to a line-based snippet if the indexer did not provide its own snippet offsets
+				if a.Snippet == "" {
+					nextLine := norm.Point(&xpb.Location_Point{LineNumber: a.Start.LineNumber + 1})
+					a.Snippet = string(text[a.Start.ByteOffset-a.Start.ColumnOffset : nextLine.ByteOffset-1])
+				}
 
 				result = append(result, a)
 			}

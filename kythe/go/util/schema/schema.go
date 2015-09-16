@@ -27,6 +27,9 @@ const (
 	AnchorStartFact = "/kythe/loc/start"
 	AnchorEndFact   = "/kythe/loc/end"
 
+	SnippetStartFact = "/kythe/snippet/start"
+	SnippetEndFact   = "/kythe/snippet/end"
+
 	TextFact         = "/kythe/text"
 	TextEncodingFact = "/kythe/text/encoding"
 )
@@ -69,8 +72,13 @@ const (
 	RefEdge            = EdgePrefix + "ref"
 )
 
-// Fact filter for anchor locations
-const AnchorLocFilter = "/kythe/loc/*"
+const (
+	// AnchorLocFilter is a fact filter for anchor locations
+	AnchorLocFilter = "/kythe/loc/*"
+
+	// SnippetLocFilter is a fact filter for snippet locations
+	SnippetLocFilter = "/kythe/snippet/*"
+)
 
 // reverseEdgePrefix is the Kythe edgeKind prefix for reverse edges.  Edge kinds
 // must be prefixed at most once with this string.
