@@ -30,8 +30,8 @@
 //   # List Kythe's kythe/cxx/common directory (as URIs)
 //   kythe --api /path/to/table ls --uris kythe://kythe?path=kythe/cxx/common
 //
-//   # Display all file anchors references for kythe/cxx/common/CommandLineUtils.cc
-//   kythe --api /path/to/table refs kythe://kythe?lang=c%2B%2B?path=kythe/cxx/common/CommandLineUtils.cc
+//   # Display all file anchor decorations for kythe/cxx/common/CommandLineUtils.cc
+//   kythe --api /path/to/table decor kythe://kythe?lang=c%2B%2B?path=kythe/cxx/common/CommandLineUtils.cc
 //
 //   # Show all outward edges for a particular node
 //   kythe --api /path/to/table edges kythe:?lang=java#java.util.List
@@ -91,10 +91,18 @@ var cmds = map[string]command{
 	"edges":  cmdEdges,
 	"ls":     cmdLS,
 	"node":   cmdNode,
-	"refs":   cmdRefs,
+	"decor":  cmdDecor,
 	"source": cmdSource,
 	"search": cmdSearch,
 	"xrefs":  cmdXRefs,
+}
+
+var cmdSynonymns = map[string]string{
+	"edge":             "edges",
+	"nodes":            "node",
+	"decorations":      "decor",
+	"refs":             "decor", // for backwards-compatibility
+	"cross-references": "xrefs",
 }
 
 func init() {
@@ -130,6 +138,12 @@ func main() {
 
 func getCommand(name string) command {
 	c, ok := cmds[name]
+	if !ok {
+		synonymn, found := cmdSynonymns[name]
+		if found {
+			c, ok = cmds[synonymn]
+		}
+	}
 	if !ok {
 		fmt.Fprintf(os.Stderr, "ERROR: unknown command %q\n", name)
 		globalUsage()

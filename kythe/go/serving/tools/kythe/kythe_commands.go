@@ -65,10 +65,10 @@ var (
 	pageToken   string
 	pageSize    int
 
-	// source/refs flags
+	// source/decor flags
 	decorSpan string
 
-	// refs flags
+	// decor flags
 	dirtyFile string
 	refFormat string
 
@@ -299,8 +299,8 @@ var (
 			return displaySource(reply)
 		})
 
-	cmdRefs = newCommand("refs", "[--format spec] [--dirty file] [--span span] <file-ticket>",
-		"List a file's anchor references",
+	cmdDecor = newCommand("decor", "[--format spec] [--dirty file] [--span span] <file-ticket>",
+		"List a file's anchor decorations",
 		func(flag *flag.FlagSet) {
 			// TODO(schroederc): add option to look for dirty files based on file-ticket path and a directory root
 			flag.StringVar(&dirtyFile, "dirty", "", "Send the given file as the dirty buffer for patching references")
@@ -396,7 +396,7 @@ var (
 				}
 			}
 
-			return displayReferences(req.DirtyBuffer, reply)
+			return displayDecorations(req.DirtyBuffer, reply)
 		})
 
 	cmdSearch = newCommand("search", "[--corpus c] [--sig s] [--root r] [--lang l] [--path p] [factName factValue]...",

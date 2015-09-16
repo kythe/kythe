@@ -126,7 +126,7 @@ func displaySource(decor *xpb.DecorationsReply) error {
 	return err
 }
 
-func displayReferences(text []byte, decor *xpb.DecorationsReply) error {
+func displayDecorations(text []byte, decor *xpb.DecorationsReply) error {
 	if *displayJSON {
 		return json.NewEncoder(out).Encode(decor)
 	}
