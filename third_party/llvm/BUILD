@@ -11,7 +11,11 @@ filegroup(
 
 filegroup(
     name = "git",
-    srcs = glob(["llvm/**/.git/**"]),
+    srcs = glob([
+        "llvm/tools/clang/tools/extra/.git/**",
+        "llvm/tools/clang/.git/**",
+        "llvm/.git/**",
+    ]),
 )
 
 cc_library(

@@ -33,6 +33,18 @@ link_args_darwin = {
     "dbg": ["-race"],
 }
 
+def replace_prefix(s, prefixes):
+  for p in prefixes:
+    if s.startswith(p):
+      return s.replace(p, prefixes[p], 1)
+  return s
+
+include_prefix_replacements = {
+    "-isystem ": "-isystem $PWD/",
+    "-iquote ": "-iquote $PWD/",
+    "-I ": "-I $PWD/",
+}
+
 def go_compile(ctx, pkg, srcs, archive, setupGOPATH=False, extra_archives=[]):
   gotool = ctx.file._go
   goroot = ctx.files._goroot
@@ -53,17 +65,12 @@ def go_compile(ctx, pkg, srcs, archive, setupGOPATH=False, extra_archives=[]):
   cgo_compile_flags = []
   if hasattr(ctx.attr, "cc_deps"):
     for dep in ctx.attr.cc_deps:
-      if not hasattr(dep.cc, "compile_flags"):
-        fail('Newer Bazel version with CcSkylarkApiProvider.compile_flags support needed')
       cc_inputs += dep.cc.transitive_headers
       cc_inputs += dep.cc.libs
       cgo_link_flags += dep.cc.link_flags
 
       for flag in dep.cc.compile_flags:
-        cgo_compile_flags += [flag
-                              .replace('-isystem ', '-isystem $PWD/')
-                              .replace('-iquote ', '-iquote $PWD/')
-                              .replace('-I ', '-I $PWD/')]
+        cgo_compile_flags += [replace_prefix(flag, include_prefix_replacements)]
 
       transitive_cc_libs += dep.cc.libs
       for lib in dep.cc.libs:
@@ -335,17 +342,38 @@ go_test = rule(
     test = True,
 )
 
-def go_package(deps=[], test_deps=[], test_args=[], test_data=[], visibility=None):
-  name = PACKAGE_NAME.split("/")[-1]
+def go_package(name=None, package=None,
+               srcs="", deps=[], test_deps=[], test_args=[], test_data=[], cc_deps=[],
+               tests=True, exclude_srcs=[], go_build=False,
+               visibility=None):
+  if not name:
+    name = PACKAGE_NAME.split("/")[-1]
+
+  if srcs and not srcs.endswith("/"):
+    srcs += "/"
+
+  exclude = []
+  for src in exclude_srcs:
+    exclude += [srcs+src]
+
+  lib_srcs, test_srcs = [], []
+  for src in native.glob([srcs+"*.go"], exclude=exclude, exclude_directories=1):
+    if src.endswith("_test.go"):
+      test_srcs += [src]
+    else:
+      lib_srcs += [src]
+
   go_library(
     name = name,
-    # TODO(schroederc): replace "excludes" with "exclude"
-    srcs = native.glob(["*.go"], excludes = ["*_test.go"]),
+    srcs = lib_srcs,
     deps = deps,
+    go_build = go_build,
+    cc_deps = cc_deps,
+    package = package,
     visibility = visibility,
   )
-  test_srcs = native.glob(["*_test.go"])
-  if test_srcs:
+
+  if tests and test_srcs:
     go_test(
       name = name + "_test",
       srcs = test_srcs,
