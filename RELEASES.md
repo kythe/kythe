@@ -1,6 +1,6 @@
 # Release Notes
 
-## Upcoming release
+## v0.0.13
 
 Notable additions:
  - Java indexer: add `ref/doc` anchors for simple class references in JavaDoc
