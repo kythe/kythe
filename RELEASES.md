@@ -4,6 +4,7 @@
 
 Notable additions:
  - Java indexer: add `ref/doc` anchors for simple class references in JavaDoc
+ - Java indexer: emit JavaDoc comments more consistently; emit enum documentation
 
 ## v0.0.12
 

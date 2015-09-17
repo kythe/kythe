@@ -91,12 +91,11 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
     this.context = context;
 
     for (SourceText.Comment comment : src.getComments()) {
-      int end = comment.lineSpan.getEnd();
-      if (end > 0) {
-        if (comments.containsKey(end)) {
-          comments.get(end).add(comment);
+      for (int line = comment.lineSpan.getStart(); line <= comment.lineSpan.getEnd(); line++) {
+        if (comments.containsKey(line)) {
+          comments.get(line).add(comment);
         } else {
-          comments.put(end, Lists.newArrayList(comment));
+          comments.put(line, Lists.newArrayList(comment));
         }
       }
     }
@@ -183,10 +182,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
 
   @Override
   public JavaNode visitClassDef(JCClassDecl classDef, JCTree owner) {
-    visitDocComment(classDef);
     Optional<String> signature = signatureGenerator.getSignature(classDef.sym);
     if (signature.isPresent()) {
       EntrySet classNode = entrySets.getNode(classDef.sym, signature.get());
+      boolean documented = visitDocComment(classDef, classNode);
 
       Span classIdent =
           filePositions.findIdentifier(classDef.name, classDef.getPreferredPosition());
@@ -196,7 +195,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
         emitAnchor(anchor, EdgeKind.DEFINES_BINDING, classNode);
       }
       emitAnchor(classDef, EdgeKind.DEFINES, classNode);
-      emitComment(classDef, classNode);
+      if (!documented) {
+        emitComment(classDef, classNode);
+      }
 
       EntrySet absNode = defineTypeParameters(classNode, classDef.getTypeParameters());
       if (absNode != null) {
@@ -214,7 +215,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
         } else {
           logger.warning("Missing bracket group for generic class definition: " + classDef.sym);
         }
-        emitComment(classDef, absNode);
+        if (!documented) {
+          emitComment(classDef, absNode);
+        }
         entrySets.emitName(absNode, signature.get() + "<" + Joiner.on(",").join(tParamNames) + ">");
       }
 
@@ -250,7 +253,6 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
 
   @Override
   public JavaNode visitMethodDef(JCMethodDecl methodDef, JCTree owner) {
-    visitDocComment(methodDef);
     scan(methodDef.getBody(), methodDef);
     scan(methodDef.getThrows(), methodDef);
 
@@ -266,6 +268,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
     Optional<String> signature = signatureGenerator.getSignature(methodDef.sym);
     if (signature.isPresent()) {
       EntrySet methodNode = entrySets.getNode(methodDef.sym, signature.get());
+      boolean documented = visitDocComment(methodDef, methodNode);
       visitAnnotations(methodNode, methodDef.getModifiers().getAnnotations(), methodDef);
 
       EntrySet absNode = defineTypeParameters(methodNode, methodDef.getTypeParameters());
@@ -295,10 +298,14 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
       }
 
       if (bindingAnchor != null) {
-        emitComment(methodDef, methodNode);
+        if (!documented) {
+          emitComment(methodDef, methodNode);
+        }
         if (absNode != null) {
           emitAnchor(bindingAnchor, EdgeKind.DEFINES_BINDING, absNode);
-          emitComment(methodDef, absNode);
+          if (!documented) {
+            emitComment(methodDef, absNode);
+          }
         }
         emitAnchor(methodDef, EdgeKind.DEFINES, methodNode);
       }
@@ -328,13 +335,14 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
 
   @Override
   public JavaNode visitVarDef(JCVariableDecl varDef, JCTree owner) {
-    visitDocComment(varDef);
     Optional<String> signature = signatureGenerator.getSignature(varDef.sym);
     if (signature.isPresent()) {
       EntrySet varNode = entrySets.getNode(varDef.sym, signature.get());
+      boolean documented = visitDocComment(varDef, varNode);
       emitAnchor(varDef.name, varDef.getStartPosition(), EdgeKind.DEFINES_BINDING, varNode);
       emitAnchor(varDef, EdgeKind.DEFINES, varNode);
-      if (varDef.sym.getKind() == ElementKind.FIELD) {
+      if (varDef.sym.getKind().isField() && !documented) {
+        // emit comments for fields and enumeration constants
         emitComment(varDef, varNode);
       }
 
@@ -437,11 +445,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
     return new JavaNode(node, signature);
   }
 
-  private void visitDocComment(JCTree tree) {
-    if (docScanner == null) {
-      return;
-    }
-    docScanner.visitDocComment(tree);
+  private boolean visitDocComment(JCTree tree, EntrySet node) {
+    return docScanner != null && docScanner.visitDocComment(tree, node);
   }
 
   //// Utility methods ////
@@ -456,6 +461,21 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
     if (anchor != null) {
       emitAnchor(anchor, EdgeKind.REF_DOC, node);
     }
+  }
+
+  int charToLine(int charPosition) {
+    return filePositions.charToLine(charPosition);
+  }
+
+  boolean emitCommentsOnLine(int line, EntrySet node) {
+    List<SourceText.Comment> lst = comments.get(line);
+    if (lst != null) {
+      for (SourceText.Comment comment : lst) {
+        commentAnchor(comment, node);
+      }
+      return !lst.isEmpty();
+    }
+    return false;
   }
 
   private static List<EntrySet> toEntries(Iterable<JavaNode> nodes) {
@@ -560,19 +580,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
   private void emitComment(JCTree defTree, EntrySet node) {
     int defPosition = defTree.getPreferredPosition();
     int defLine = filePositions.charToLine(defPosition);
-    List<SourceText.Comment> inlineComments = comments.get(defLine);
-    if (inlineComments != null) {
-      for (SourceText.Comment inlineComment : inlineComments) {
-        commentAnchor(inlineComment, node);
-      }
-    }
-
-    List<SourceText.Comment> leadComments = comments.get(defLine - 1);
-    if (leadComments != null) {
-      for (SourceText.Comment leadComment : leadComments) {
-        commentAnchor(leadComment, node);
-      }
-    }
+    emitCommentsOnLine(defLine, node);
+    emitCommentsOnLine(defLine - 1, node);
   }
 
   private EntrySet commentAnchor(SourceText.Comment comment, EntrySet node) {

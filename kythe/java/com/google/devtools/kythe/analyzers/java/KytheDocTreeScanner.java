@@ -17,6 +17,7 @@
 package com.google.devtools.kythe.analyzers.java;
 
 import com.google.common.collect.Lists;
+import com.google.devtools.kythe.analyzers.base.EntrySet;
 
 import com.sun.source.doctree.ReferenceTree;
 import com.sun.source.util.DocTreeScanner;
@@ -41,11 +42,16 @@ public class KytheDocTreeScanner extends DocTreeScanner<Void, DCDocComment> {
     this.table = table;
   }
 
-  public void visitDocComment(JCTree tree) {
+  public boolean visitDocComment(JCTree tree, EntrySet node) {
     DCDocComment doc = table.getCommentTree(tree);
-    if (doc != null) {
-      doc.accept(this, doc);
+    if (doc == null) {
+      return false;
     }
+
+    doc.accept(this, doc);
+    int startChar = (int) doc.getSourcePosition(doc);
+
+    return treeScanner.emitCommentsOnLine(treeScanner.charToLine(startChar), node);
   }
 
   @Override
