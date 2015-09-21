@@ -1,5 +1,10 @@
 # Release Notes
 
+## Upcoming release
+
+Notable fixes:
+ - Bazel Java extractor: filter out Bazel-specific flags
+
 ## v0.0.13
 
 Notable additions:

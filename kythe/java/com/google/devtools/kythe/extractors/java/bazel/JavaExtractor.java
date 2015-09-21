@@ -16,6 +16,8 @@
 
 package com.google.devtools.kythe.extractors.java.bazel;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
 import com.google.devtools.build.lib.actions.extra.ExtraActionInfo;
 import com.google.devtools.build.lib.actions.extra.ExtraActionsBase;
 import com.google.devtools.build.lib.actions.extra.JavaCompileInfo;
@@ -69,9 +71,21 @@ public class JavaExtractor {
             jInfo.getSourcepathList(),
             jInfo.getProcessorpathList(),
             jInfo.getProcessorList(),
-            jInfo.getJavacOptList(),
+            Iterables.filter(jInfo.getJavacOptList(), JAVAC_OPT_FILTER),
             jInfo.getOutputjar());
 
     IndexInfoUtils.writeIndexInfoToFile(description, outputPath);
   }
+
+  // Predicate that filters out Bazel-specific flags.  Bazel adds its own flags (such as error-prone
+  // flags) to the javac_opt list that cannot be handled by the standard javac compiler, or in turn,
+  // by this extractor.
+  private static final Predicate<String> JAVAC_OPT_FILTER = new Predicate<String>() {
+    @Override
+    public boolean apply(String opt) {
+      return !(opt.startsWith("-Werror:")
+          || opt.startsWith("-extra_checks")
+          || opt.startsWith("-Xep"));
+    }
+  };
 }
