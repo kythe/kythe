@@ -38,14 +38,18 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
   private static final long serialVersionUID = 7458181626939870354L;
 
   private final FactEmitter emitter;
+  private final IndexerConfig config;
 
   // should be set in analyzeCompilationUnit before any call to analyzeFile
   private JavaEntrySets entrySets;
 
-  public KytheJavacAnalyzer(FactEmitter emitter, StatisticsCollector statistics) {
+  public KytheJavacAnalyzer(IndexerConfig config, FactEmitter emitter,
+      StatisticsCollector statistics) {
     super(statistics);
     Preconditions.checkArgument(emitter != null, "FactEmitter must be non-null");
+    Preconditions.checkArgument(config != null, "IndexerConfig must be non-null");
     this.emitter = emitter;
+    this.config = config;
   }
 
   @Override
@@ -54,7 +58,8 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
         "JavaEntrySets is non-null (analyzeCompilationUnit was called concurrently?)");
     CompilationUnit compilation = details.getCompilationUnit();
     entrySets = new JavaEntrySets(getStatisticsCollector(),
-        emitter, compilation.getVName(), compilation.getRequiredInputList());
+        emitter, compilation.getVName(), compilation.getRequiredInputList(),
+        config.getIgnoreVNamePaths());
     try {
       super.analyzeCompilationUnit(details);
     } finally {

@@ -24,6 +24,8 @@ import com.google.devtools.kythe.platform.shared.FileDataProvider;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.CompilationAnalyzerGrpc;
 
+import com.beust.jcommander.Parameter;
+
 import io.grpc.netty.NettyServerBuilder;
 
 import java.io.IOException;
@@ -31,46 +33,19 @@ import java.io.IOException;
 /** Binary to run Kythe's Java indexer as a CompilationAnalyzer service. */
 public class JavaIndexerServer {
   public static void main(String[] args) {
-    if (args.length > 0 && ("--help".equals(args[0]) || "-h".equals(args[0]))) {
-      usage(0);
-    } else if (args.length > 2) {
-      System.err.println("ERROR: too many arguments: " + java.util.Arrays.toString(args));
-      usage(1);
-    }
+    ServerConfig config = new ServerConfig();
+    config.parseCommandLine(args);
 
-    String portArg;
-    switch (args.length) {
-      case 2:
-        if (!"--port".equals(args[0])) {
-          System.err.println("ERROR: invalid flag " + args[0]);
-          usage(1);
-        }
-        portArg = args[1];
-        break;
-      case 1:
-        if (!args[0].startsWith("--port=")) {
-          System.err.println("ERROR: invalid flag " + args[0]);
-          usage(1);
-        }
-        portArg = args[0].substring("--port=".length());
-        break;
-      default:
-        System.err.println("ERROR: missing --port flag");
-        usage(1);
-        return;
-    }
-
-    int port = Integer.parseInt(portArg);
     try {
-      NettyServerBuilder.forPort(port)
-          .addService(CompilationAnalyzerGrpc.bindService(new JavaCompilationAnalyzer()))
+      NettyServerBuilder.forPort(config.getPort())
+          .addService(CompilationAnalyzerGrpc.bindService(new JavaCompilationAnalyzer(config)))
           .build()
           .start();
     } catch (IOException ioe) {
       ioe.printStackTrace();
       System.exit(1);
     }
-    System.err.println("Started Java CompilationAnalyzer server on port " + port);
+    System.err.println("Started Java CompilationAnalyzer server on port " + config.getPort());
   }
 
   private static void usage(int exitCode) {
@@ -80,12 +55,29 @@ public class JavaIndexerServer {
 
   private static class JavaCompilationAnalyzer extends GRPCCompilationAnalyzer {
     private final JavacAnalysisDriver driver = new JavacAnalysisDriver();
+    private final IndexerConfig config;
+
+    public JavaCompilationAnalyzer(IndexerConfig config) {
+      this.config = config;
+    }
 
     @Override
     public void analyzeCompilation(CompilationUnit compilation,
         FileDataProvider fileData, FactEmitter emitter) throws AnalysisException {
-      driver.analyze(new KytheJavacAnalyzer(emitter, getStatisticsCollector()),
+      driver.analyze(new KytheJavacAnalyzer(config, emitter, getStatisticsCollector()),
           compilation, fileData, false);
     }
+  }
+
+  private static class ServerConfig extends IndexerConfig {
+    @Parameter(names = { "-p", "--port" }, required = true,
+        description = "Port for GRPC listening server")
+    private int port;
+
+    public ServerConfig() {
+      super("java-indexer-server");
+    }
+
+    public final int getPort() { return port; }
   }
 }

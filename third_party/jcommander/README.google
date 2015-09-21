@@ -1,0 +1,10 @@
+URL: http://search.maven.org/remotecontent?filepath=com/beust/jcommander/1.35/jcommander-1.35.jar
+Version: 1.35
+License: Apache 2.0 http://www.apache.org/licenses/LICENSE-2.0
+License File: LICENSE
+
+Description:
+Command line parsing framework for Java
+
+Local Modifications:
+No modifications.

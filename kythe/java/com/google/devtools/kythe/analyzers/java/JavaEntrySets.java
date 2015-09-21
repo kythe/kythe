@@ -46,10 +46,12 @@ import javax.tools.JavaFileObject;
 public class JavaEntrySets extends KytheEntrySets {
   private final Map<Symbol, EntrySet> symbolNodes = new HashMap<>();
   private final Map<Symbol, Set<String>> symbolSigs = new HashMap<Symbol, Set<String>>();
+  private final boolean ignoreVNamePaths;
 
   public JavaEntrySets(StatisticsCollector statistics, FactEmitter emitter, VName compilationVName,
-      List<FileInput> requiredInputs) {
+      List<FileInput> requiredInputs, boolean ignoreVNamePaths) {
     super(statistics, emitter, compilationVName, requiredInputs);
+    this.ignoreVNamePaths = ignoreVNamePaths;
   }
 
   /**
@@ -64,7 +66,8 @@ public class JavaEntrySets extends KytheEntrySets {
       return node;
     }
 
-    VName v = lookupVName(sym.enclClass());
+    ClassSymbol enclClass = sym.enclClass();
+    VName v = lookupVName(enclClass);
     if (v == null && fromJDK(sym)) {
       v = VName.newBuilder().setCorpus("jdk").build();
     }
@@ -73,6 +76,12 @@ public class JavaEntrySets extends KytheEntrySets {
       node = getName(signature);
       // NAME node was already be emitted
     } else {
+      if (ignoreVNamePaths) {
+        v = v.toBuilder()
+            .setPath(enclClass != null ? enclClass.toString() : "")
+            .build();
+      }
+
       NodeKind kind = elementNodeKind(sym.getKind());
       NodeBuilder builder = kind != null
           ? newNode(kind)

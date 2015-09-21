@@ -16,6 +16,7 @@
 
 package com.google.devtools.kythe.analyzers.java;
 
+import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.devtools.kythe.analyzers.base.FactEmitter;
@@ -31,59 +32,38 @@ import com.google.devtools.kythe.proto.Storage.Entry;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.protobuf.ByteString;
 
+import com.beust.jcommander.Parameter;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.util.Arrays;
 import java.util.List;
 
 /** Binary to run Kythe's Java index over a single .kindex file, emitting entries to STDOUT. */
 public class JavaIndexer {
-  public static void main(String[] rawArgs) throws AnalysisException, IOException {
-    if (rawArgs.length > 0 && ("--help".equals(rawArgs[0]) || "-h".equals(rawArgs[0]))) {
-      usage(0);
-    } else if (rawArgs.length == 0) {
-      usage(1);
-    }
-
-    List<String> args = Lists.newLinkedList(Arrays.asList(rawArgs));
+  public static void main(String[] args) throws AnalysisException, IOException {
+    StandaloneConfig config = new StandaloneConfig();
+    config.parseCommandLine(args);
 
     MemoryStatisticsCollector statistics = null;
-    if ("--print_statistics".equals(args.get(0))) {
-      args.remove(0);
+    if (config.getPrintStatistics()) {
       statistics = new MemoryStatisticsCollector();
     }
 
-    CompilationDescription desc = null;
-    switch (args.size()) {
-      case 1:
-        // java_indexer kindex-file
-        desc = IndexInfoUtils.readIndexInfoFromFile(args.get(0));
-        break;
-      case 2: {
-        // java_indexer --index_pack=archive-root unit-key
-        if (!args.get(0).startsWith("--index_pack=") && !args.get(0).startsWith("-index_pack=")) {
-          System.err.println("Expecting --index_pack as first argument; got " + args.get(0));
-          usage(1);
-        }
-        String archiveRoot = args.get(0).substring(args.get(0).indexOf('=') + 1);
-        desc = new Archive(archiveRoot).readDescription(args.get(1));
-        break;
-      }
-      case 3:
-        // java_indexer --index_pack archive-root unit-key
-        if (!args.get(0).equals("--index_pack") && !args.get(0).equals("-index_pack")) {
-          System.err.println("Expecting --index_pack as first argument; got " + args.get(0));
-          usage(1);
-        }
-        desc = new Archive(args.get(1)).readDescription(args.get(2));
-        break;
-      default:
-        System.err.println("Java indexer received too many arguments; got " + args);
-        usage(1);
-        break;
+    List<String> compilation = config.getCompilation();
+    if (compilation.size() > 1) {
+      System.err.println("Java indexer received too many arguments; got " + compilation);
+      usage(1);
     }
 
+    CompilationDescription desc = null;
+    if (!Strings.isNullOrEmpty(config.getIndexPackRoot())) {
+      // java_indexer --index_pack=archive-root unit-key
+      desc = new Archive(config.getIndexPackRoot()).readDescription(compilation.get(0));
+    } else {
+      // java_indexer kindex-file
+      desc = IndexInfoUtils.readIndexInfoFromFile(compilation.get(0));
+    }
     if (desc == null) {
       throw new IllegalStateException("Unknown error reading CompilationDescription");
     }
@@ -91,7 +71,7 @@ public class JavaIndexer {
     try (OutputStream stream = System.out;
         OutputStreamWriter writer = new OutputStreamWriter(stream)) {
       new JavacAnalysisDriver()
-          .analyze(new KytheJavacAnalyzer(new StreamFactEmitter(writer),
+          .analyze(new KytheJavacAnalyzer(config, new StreamFactEmitter(writer),
                   statistics == null ? NullStatisticsCollector.getInstance() : statistics),
               desc.getCompilationUnit(),
               new FileDataCache(desc.getFileContents()),
@@ -134,5 +114,26 @@ public class JavaIndexer {
         Throwables.propagate(ioe);
       }
     }
+  }
+
+  private static class StandaloneConfig extends IndexerConfig {
+    @Parameter(description = "<compilation to analyze>", required = true)
+    private List<String> compilation = Lists.newArrayList();;
+
+    @Parameter(names = { "--print_statistics" },
+        description = "Print final analyzer statistics to stderr")
+    private boolean printStatistics;
+
+    @Parameter(names = { "--index_pack", "-index_pack" },
+        description = "Retrieve the specified compilation from the given index pack")
+    private String indexPackRoot;
+
+    public StandaloneConfig() {
+      super("java-indexer");
+    }
+
+    public final boolean getPrintStatistics() { return printStatistics; }
+    public final String getIndexPackRoot() { return indexPackRoot; }
+    public final List<String> getCompilation() { return compilation; }
   }
 }
