@@ -37,13 +37,13 @@ import javax.tools.StandardLocation;
  * TODO(schroederc) Refactor this code to not use Forwarding to avoid picking up spurious files from
  * the local file system. We do this today as we need to pick up the JDK etc...
  */
-public class JavaFileStoreBasedFileManager extends
-    ForwardingJavaFileManager<StandardJavaFileManager> implements StandardJavaFileManager {
+public class JavaFileStoreBasedFileManager
+    extends ForwardingJavaFileManager<StandardJavaFileManager> implements StandardJavaFileManager {
 
   protected JavaFileStore javaFileStore;
 
-  public JavaFileStoreBasedFileManager(JavaFileStore javaFileStore,
-      StandardJavaFileManager fileManager) {
+  public JavaFileStoreBasedFileManager(
+      JavaFileStore javaFileStore, StandardJavaFileManager fileManager) {
     super(fileManager);
     this.javaFileStore = javaFileStore;
   }
@@ -64,8 +64,8 @@ public class JavaFileStoreBasedFileManager extends
    * underlying filemanager.
    */
   @Override
-  public Iterable<JavaFileObject> list(Location location, String packageName, Set<Kind> kinds,
-      boolean recurse) throws IOException {
+  public Iterable<JavaFileObject> list(
+      Location location, String packageName, Set<Kind> kinds, boolean recurse) throws IOException {
     Set<String> dirsToLookIn = getSearchPaths(location);
     Set<CustomJavaFileObject> matchingFiles =
         javaFileStore.list(packageName, kinds, dirsToLookIn, recurse);
@@ -77,8 +77,9 @@ public class JavaFileStoreBasedFileManager extends
       }
       Set<Kind> sourceKinds = new HashSet<>();
       sourceKinds.add(Kind.SOURCE);
-      Set<CustomJavaFileObject> matchedSources = javaFileStore.list(packageName, sourceKinds,
-          getSearchPaths(StandardLocation.SOURCE_PATH), recurse);
+      Set<CustomJavaFileObject> matchedSources =
+          javaFileStore.list(
+              packageName, sourceKinds, getSearchPaths(StandardLocation.SOURCE_PATH), recurse);
       for (CustomJavaFileObject source : matchedSources) {
         if (classNameToFile.containsKey(source.getClassName())) {
           classNameToFile.put(source.getClassName(), source);
@@ -103,8 +104,8 @@ public class JavaFileStoreBasedFileManager extends
     return matchedFiles;
   }
 
-  private JavaFileObject getJavaFileForInputFromCustomLocation(final Location location,
-      final String className, final Kind kind) {
+  private JavaFileObject getJavaFileForInputFromCustomLocation(
+      final Location location, final String className, final Kind kind) {
     return javaFileStore.find(className, kind, getSearchPaths(location));
   }
 
@@ -112,8 +113,8 @@ public class JavaFileStoreBasedFileManager extends
    * Gets file for classname, from local filemanager before directing to the underlying filemanager.
    */
   @Override
-  public JavaFileObject getJavaFileForInput(final Location location, final String className,
-      final Kind kind) throws IOException {
+  public JavaFileObject getJavaFileForInput(
+      final Location location, final String className, final Kind kind) throws IOException {
     JavaFileObject customJavaFile =
         getJavaFileForInputFromCustomLocation(location, className, kind);
     if (customJavaFile != null) {
@@ -136,8 +137,9 @@ public class JavaFileStoreBasedFileManager extends
   }
 
   @Override
-  public JavaFileObject getJavaFileForOutput(Location location, String className,
-      JavaFileObject.Kind kind, FileObject sibling) throws IOException {
+  public JavaFileObject getJavaFileForOutput(
+      Location location, String className, JavaFileObject.Kind kind, FileObject sibling)
+      throws IOException {
     return fileManager.getJavaFileForOutput(location, className, kind, sibling);
   }
 
@@ -158,7 +160,6 @@ public class JavaFileStoreBasedFileManager extends
   public Iterable<? extends JavaFileObject> getJavaFileObjects(File... files) {
     return getJavaFileObjectsFromFiles(Arrays.asList(files));
   }
-
 
   @Override
   public FileObject getFileForInput(Location location, String packageName, String relativeName)

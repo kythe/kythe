@@ -43,8 +43,8 @@ class UsageAsInputReportingJavaFileObject implements JavaFileObject {
   protected JavaFileObject underlyingFileObject;
   protected InputUsageRecord usageRecord;
 
-  public UsageAsInputReportingJavaFileObject(JavaFileObject underlyingFileObject,
-      InputUsageRecord usageRecord) {
+  public UsageAsInputReportingJavaFileObject(
+      JavaFileObject underlyingFileObject, InputUsageRecord usageRecord) {
     this.underlyingFileObject = underlyingFileObject;
     this.usageRecord = usageRecord;
   }
@@ -121,5 +121,4 @@ class UsageAsInputReportingJavaFileObject implements JavaFileObject {
   public String toString() {
     return toUri().toString() + "@" + getKind().name();
   }
-
 }

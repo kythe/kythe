@@ -36,8 +36,8 @@ public class CompilationUnitBasedJavaFileStore implements JavaFileStore {
   private FileDataProvider contentProvider;
   private String encoding;
 
-  public CompilationUnitBasedJavaFileStore(CompilationUnit unit,
-      FileDataProvider contentProvider, String encoding) {
+  public CompilationUnitBasedJavaFileStore(
+      CompilationUnit unit, FileDataProvider contentProvider, String encoding) {
     this.contentProvider = contentProvider;
     this.encoding = encoding;
 
@@ -53,12 +53,8 @@ public class CompilationUnitBasedJavaFileStore implements JavaFileStore {
       String dirToLookIn = join(prefix, dirname);
       String digest = fileTree.lookup(dirToLookIn, basename);
       if (digest != null) {
-        return new CustomJavaFileObject(contentProvider,
-            join(prefix, file.toString()),
-            digest,
-            className,
-            kind,
-            encoding);
+        return new CustomJavaFileObject(
+            contentProvider, join(prefix, file.toString()), digest, className, kind, encoding);
       }
     }
     return null;
@@ -80,8 +76,8 @@ public class CompilationUnitBasedJavaFileStore implements JavaFileStore {
       String dirToLookIn = Paths.get(prefix, packagePath).toString();
       String digest = fileTree.lookup(dirToLookIn, relativeName);
       if (digest != null) {
-        return new CustomFileObject(contentProvider,
-            join(prefix, packagePath, relativeName), digest, encoding);
+        return new CustomFileObject(
+            contentProvider, join(prefix, packagePath, relativeName), digest, encoding);
       }
     }
     return null;
@@ -94,8 +90,8 @@ public class CompilationUnitBasedJavaFileStore implements JavaFileStore {
    * {@code packageName} and ignores the sub-packages.
    */
   @Override
-  public Set<CustomJavaFileObject> list(String packageName, Set<Kind> kinds,
-      Set<String> pathPrefixes, boolean recurse) {
+  public Set<CustomJavaFileObject> list(
+      String packageName, Set<Kind> kinds, Set<String> pathPrefixes, boolean recurse) {
     Set<CustomJavaFileObject> matchingFiles = new HashSet<>();
     if (pathPrefixes == null) {
       return matchingFiles;
@@ -114,8 +110,8 @@ public class CompilationUnitBasedJavaFileStore implements JavaFileStore {
   /**
    * Uses the map built from the required inputs to build a list of files per directory.
    */
-  private Set<CustomJavaFileObject> getFiles(String dirToLookIn, Map<String, String> entries,
-      Set<Kind> kinds, String packageName) {
+  private Set<CustomJavaFileObject> getFiles(
+      String dirToLookIn, Map<String, String> entries, Set<Kind> kinds, String packageName) {
     Set<CustomJavaFileObject> files = new HashSet<>();
     for (Entry<String, String> entry : entries.entrySet()) {
       String fileName = entry.getKey();
@@ -123,12 +119,14 @@ public class CompilationUnitBasedJavaFileStore implements JavaFileStore {
         if (fileName.endsWith(kind.extension)) {
           int lastDot = fileName.lastIndexOf('.');
           String clsName = packageName + "." + fileName.substring(0, lastDot);
-          files.add(new CustomJavaFileObject(contentProvider,
-              join(dirToLookIn, entry.getKey()),
-              entry.getValue(),
-              clsName,
-              kind,
-              encoding));
+          files.add(
+              new CustomJavaFileObject(
+                  contentProvider,
+                  join(dirToLookIn, entry.getKey()),
+                  entry.getValue(),
+                  clsName,
+                  kind,
+                  encoding));
           break;
         }
       }

@@ -62,17 +62,18 @@ public class JavaExtractor {
     }
 
     JavaCompileInfo jInfo = info.getExtension(JavaCompileInfo.javaCompileInfo);
-    CompilationDescription description = new JavaCompilationUnitExtractor(
-        FileVNames.fromFile(vNamesConfigPath),
-        System.getProperty("user.dir")).extract(
-            info.getOwner(),
-            jInfo.getSourceFileList(),
-            jInfo.getClasspathList(),
-            jInfo.getSourcepathList(),
-            jInfo.getProcessorpathList(),
-            jInfo.getProcessorList(),
-            Iterables.filter(jInfo.getJavacOptList(), JAVAC_OPT_FILTER),
-            jInfo.getOutputjar());
+    CompilationDescription description =
+        new JavaCompilationUnitExtractor(
+                FileVNames.fromFile(vNamesConfigPath), System.getProperty("user.dir"))
+            .extract(
+                info.getOwner(),
+                jInfo.getSourceFileList(),
+                jInfo.getClasspathList(),
+                jInfo.getSourcepathList(),
+                jInfo.getProcessorpathList(),
+                jInfo.getProcessorList(),
+                Iterables.filter(jInfo.getJavacOptList(), JAVAC_OPT_FILTER),
+                jInfo.getOutputjar());
 
     IndexInfoUtils.writeIndexInfoToFile(description, outputPath);
   }
@@ -80,12 +81,13 @@ public class JavaExtractor {
   // Predicate that filters out Bazel-specific flags.  Bazel adds its own flags (such as error-prone
   // flags) to the javac_opt list that cannot be handled by the standard javac compiler, or in turn,
   // by this extractor.
-  private static final Predicate<String> JAVAC_OPT_FILTER = new Predicate<String>() {
-    @Override
-    public boolean apply(String opt) {
-      return !(opt.startsWith("-Werror:")
-          || opt.startsWith("-extra_checks")
-          || opt.startsWith("-Xep"));
-    }
-  };
+  private static final Predicate<String> JAVAC_OPT_FILTER =
+      new Predicate<String>() {
+        @Override
+        public boolean apply(String opt) {
+          return !(opt.startsWith("-Werror:")
+              || opt.startsWith("-extra_checks")
+              || opt.startsWith("-Xep"));
+        }
+      };
 }

@@ -65,14 +65,15 @@ public class ExtractorUtils {
       final Map<String, byte[]> filePathToFileContents) throws ExtractionException {
     checkNotNull(filePathToFileContents);
 
-    return Lists.newArrayList(Iterables.transform(
-        filePathToFileContents.keySet(),
-        new Function<String, FileData>() {
-          @Override
-          public FileData apply(String path) {
-            return createFileData(path, filePathToFileContents.get(path));
-          }
-        }));
+    return Lists.newArrayList(
+        Iterables.transform(
+            filePathToFileContents.keySet(),
+            new Function<String, FileData>() {
+              @Override
+              public FileData apply(String path) {
+                return createFileData(path, filePathToFileContents.get(path));
+              }
+            }));
   }
 
   public static FileData createFileData(String path, byte[] content) {
@@ -80,28 +81,32 @@ public class ExtractorUtils {
   }
 
   public static List<FileData> processRequiredInputs(Iterable<String> files)
-      throws ExtractionException{
+      throws ExtractionException {
     final SettableFuture<ExtractionException> exception = SettableFuture.create();
 
-    List<FileData> result = Lists.newArrayList(Iterables.transform(files,
-        new Function<String, FileData>() {
-          @Override
-          public FileData apply(String path) {
-            byte[] content = new byte[0];
-            try {
-              content = Files.toByteArray(new File(path));
-            } catch (IOException e) {
-              exception.set(new ExtractionException(e, false));
-            }
-            if (content == null) {
-              exception.set(new ExtractionException(
-                  String.format("Unable to locate required input %s", path), false));
-              return null;
-            }
-            String digest = getContentDigest(content);
-            return createFileData(path, digest, content);
-          }
-        }));
+    List<FileData> result =
+        Lists.newArrayList(
+            Iterables.transform(
+                files,
+                new Function<String, FileData>() {
+                  @Override
+                  public FileData apply(String path) {
+                    byte[] content = new byte[0];
+                    try {
+                      content = Files.toByteArray(new File(path));
+                    } catch (IOException e) {
+                      exception.set(new ExtractionException(e, false));
+                    }
+                    if (content == null) {
+                      exception.set(
+                          new ExtractionException(
+                              String.format("Unable to locate required input %s", path), false));
+                      return null;
+                    }
+                    String digest = getContentDigest(content);
+                    return createFileData(path, digest, content);
+                  }
+                }));
     if (exception.isDone()) {
       try {
         throw exception.get();
@@ -114,19 +119,20 @@ public class ExtractorUtils {
     return result;
   }
 
-  private static final Function<FileData, FileInput>
-      FILE_DATA_TO_COMPILATION_FILE_INPUT = new Function<FileData, FileInput>() {
+  private static final Function<FileData, FileInput> FILE_DATA_TO_COMPILATION_FILE_INPUT =
+      new Function<FileData, FileInput>() {
         @Override
         public FileInput apply(FileData fileData) {
           return FileInput.newBuilder()
               .setInfo(fileData.getInfo())
-              .setVName(VName.newBuilder()
-                  // TODO(schroederc): VName path should be corpus+root relative
-                  .setPath(fileData.getInfo().getPath()).build())
+              .setVName(
+                  VName.newBuilder()
+                      // TODO(schroederc): VName path should be corpus+root relative
+                      .setPath(fileData.getInfo().getPath())
+                      .build())
               .build();
         }
-  };
-
+      };
 
   public static List<FileInput> toFileInputs(Iterable<FileData> fileDatas) {
     return ImmutableList.copyOf(
@@ -168,8 +174,7 @@ public class ExtractorUtils {
 
   public static CompilationUnit normalizeCompilationUnit(CompilationUnit existingCompilationUnit) {
     CompilationUnit.Builder builder = CompilationUnit.newBuilder(existingCompilationUnit);
-    List<FileInput> oldRequiredInputs =
-        Lists.newArrayList(builder.getRequiredInputList());
+    List<FileInput> oldRequiredInputs = Lists.newArrayList(builder.getRequiredInputList());
     Collections.sort(oldRequiredInputs, CompilationFileInputComparator.getComparator());
     builder.clearRequiredInput();
     builder.addAllRequiredInput(oldRequiredInputs);
@@ -180,9 +185,7 @@ public class ExtractorUtils {
   private static FileData createFileData(String path, String digest, byte[] content) {
     return FileData.newBuilder()
         .setContent(ByteString.copyFrom(content))
-        .setInfo(FileInfo.newBuilder()
-            .setDigest(digest)
-            .setPath(path))
+        .setInfo(FileInfo.newBuilder().setDigest(digest).setPath(path))
         .build();
   }
 }

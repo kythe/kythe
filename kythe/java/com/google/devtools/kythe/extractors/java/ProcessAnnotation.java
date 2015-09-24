@@ -44,6 +44,7 @@ public class ProcessAnnotation extends AbstractProcessor {
       FormattingLogger.getLogger(ProcessAnnotation.class);
 
   UsageAsInputReportingFileManager fileManager;
+
   public ProcessAnnotation(UsageAsInputReportingFileManager fileManager) {
     this.fileManager = fileManager;
   }
@@ -53,16 +54,21 @@ public class ProcessAnnotation extends AbstractProcessor {
     for (TypeElement e : annotations) {
       TypeSymbol s = (TypeSymbol) e;
       try {
-        UsageAsInputReportingJavaFileObject jfo = (UsageAsInputReportingJavaFileObject)
-          fileManager.getJavaFileForInput(StandardLocation.CLASS_OUTPUT, s.flatName().toString(),
-            Kind.CLASS);
+        UsageAsInputReportingJavaFileObject jfo =
+            (UsageAsInputReportingJavaFileObject)
+                fileManager.getJavaFileForInput(
+                    StandardLocation.CLASS_OUTPUT, s.flatName().toString(), Kind.CLASS);
         if (jfo == null) {
-          jfo = (UsageAsInputReportingJavaFileObject) fileManager.getJavaFileForInput(
-            StandardLocation.CLASS_PATH, s.flatName().toString(), Kind.CLASS);
+          jfo =
+              (UsageAsInputReportingJavaFileObject)
+                  fileManager.getJavaFileForInput(
+                      StandardLocation.CLASS_PATH, s.flatName().toString(), Kind.CLASS);
         }
         if (jfo == null) {
-          jfo = (UsageAsInputReportingJavaFileObject) fileManager.getJavaFileForInput(
-            StandardLocation.SOURCE_PATH, s.flatName().toString(), Kind.CLASS);
+          jfo =
+              (UsageAsInputReportingJavaFileObject)
+                  fileManager.getJavaFileForInput(
+                      StandardLocation.SOURCE_PATH, s.flatName().toString(), Kind.CLASS);
         }
         if (jfo != null) {
           jfo.markUsed();

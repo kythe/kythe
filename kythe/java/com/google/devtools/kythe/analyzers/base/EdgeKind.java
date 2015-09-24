@@ -36,10 +36,11 @@ public enum EdgeKind {
   PARAM("param"),
   TYPED("typed");
 
-  private  static final String EDGE_PREFIX = "/kythe/edge/";
+  private static final String EDGE_PREFIX = "/kythe/edge/";
 
   private final boolean isAnchorEdge;
   private final String kind;
+
   EdgeKind(boolean isAnchorEdge, String kind) {
     this.isAnchorEdge = isAnchorEdge;
     this.kind = EDGE_PREFIX + kind;

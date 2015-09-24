@@ -16,7 +16,6 @@
 
 package com.google.devtools.kythe.platform.java;
 
-
 import com.google.common.collect.ImmutableList;
 import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.platform.shared.AnalysisException;
@@ -56,9 +55,14 @@ public class JavacAnalysisDriver {
     return JavacTool.create();
   }
 
-  public void analyze(JavacAnalyzer analyzer, CompilationUnit compilationUnit,
-      FileDataProvider fileDataProvider, boolean isLocalAnalysis) throws AnalysisException {
-    analyzer.analyzeCompilationUnit(JavaCompilationDetails
-        .createDetails(compilationUnit, fileDataProvider, isLocalAnalysis, processors));
+  public void analyze(
+      JavacAnalyzer analyzer,
+      CompilationUnit compilationUnit,
+      FileDataProvider fileDataProvider,
+      boolean isLocalAnalysis)
+      throws AnalysisException {
+    analyzer.analyzeCompilationUnit(
+        JavaCompilationDetails.createDetails(
+            compilationUnit, fileDataProvider, isLocalAnalysis, processors));
   }
 }

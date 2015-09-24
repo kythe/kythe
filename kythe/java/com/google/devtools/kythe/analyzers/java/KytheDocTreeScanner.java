@@ -92,7 +92,7 @@ public class KytheDocTreeScanner extends DocTreeScanner<Void, DCDocComment> {
       List<Name> matches = Lists.newLinkedList();
       for (Name clsName : syms.classes.keySet()) {
         String[] parts = clsName.toString().split("[$.]");
-        if (parts[parts.length-1].equals(name.toString())) {
+        if (parts[parts.length - 1].equals(name.toString())) {
           matches.add(clsName);
         }
       }

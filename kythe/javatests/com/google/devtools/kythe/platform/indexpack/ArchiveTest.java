@@ -43,15 +43,18 @@ import java.util.Set;
 public class ArchiveTest extends TestCase {
 
   private static final HashFunction DIGEST_FUNCTION = Hashing.sha256();
-  private static final CompilationDescription[] TEST_COMPILATIONS = new CompilationDescription[] {
-    compilation(vname("signature", "corpus", "language"),
-        file("file1", "contents1"),
-        file("file2", "contents2")),
-    compilation(vname("another_compilation", "", "java"),
-        file("file", "contents1"),
-        file("some/other/file", "contents1"),
-        file("some/empty/file", ""))
-  };
+  private static final CompilationDescription[] TEST_COMPILATIONS =
+      new CompilationDescription[] {
+        compilation(
+            vname("signature", "corpus", "language"),
+            file("file1", "contents1"),
+            file("file2", "contents2")),
+        compilation(
+            vname("another_compilation", "", "java"),
+            file("file", "contents1"),
+            file("some/other/file", "contents1"),
+            file("some/empty/file", ""))
+      };
 
   private Archive archive;
 
@@ -171,17 +174,14 @@ public class ArchiveTest extends TestCase {
   }
 
   private static byte[] createTestData(int i) {
-    return (""+(""+i).intern().hashCode()).getBytes(Archive.DATA_CHARSET);
+    return ("" + ("" + i).intern().hashCode()).getBytes(Archive.DATA_CHARSET);
   }
 
   private static FileData file(String path, String contents) {
     byte[] data = contents.getBytes(Archive.DATA_CHARSET);
     String digest = DIGEST_FUNCTION.hashBytes(data).toString();
     return FileData.newBuilder()
-        .setInfo(FileInfo.newBuilder()
-            .setPath(path)
-            .setDigest(digest)
-            .build())
+        .setInfo(FileInfo.newBuilder().setPath(path).setDigest(digest).build())
         .setContent(ByteString.copyFrom(data))
         .build();
   }
@@ -191,10 +191,11 @@ public class ArchiveTest extends TestCase {
     List<FileData> fileList = Arrays.asList(files);
     for (FileData file : fileList) {
       String path = file.getInfo().getPath();
-      unit.addRequiredInput(CompilationUnit.FileInput.newBuilder()
-          .setVName(VName.newBuilder().setPath(path))
-          .setInfo(file.getInfo())
-          .build());
+      unit.addRequiredInput(
+          CompilationUnit.FileInput.newBuilder()
+              .setVName(VName.newBuilder().setPath(path))
+              .setInfo(file.getInfo())
+              .build());
       unit.addSourceFile(path);
     }
     return new CompilationDescription(unit.build(), fileList);

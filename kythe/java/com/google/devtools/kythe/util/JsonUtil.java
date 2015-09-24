@@ -55,8 +55,9 @@ public class JsonUtil {
     }
 
     @Override
-    public ByteString deserialize(JsonElement json, Type typeOfT,
-          JsonDeserializationContext context) throws JsonParseException {
+    public ByteString deserialize(
+        JsonElement json, Type typeOfT, JsonDeserializationContext context)
+        throws JsonParseException {
       return ByteString.copyFrom((byte[]) context.deserialize(json, byte[].class));
     }
   }
@@ -71,8 +72,8 @@ public class JsonUtil {
     }
 
     @Override
-    public byte[] deserialize(JsonElement json, Type typeOfT,
-          JsonDeserializationContext context) throws JsonParseException {
+    public byte[] deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+        throws JsonParseException {
       return ENCODING.decode((String) context.deserialize(json, String.class));
     }
   }
@@ -87,8 +88,8 @@ public class JsonUtil {
 
     @Override
     @SuppressWarnings("unchecked")
-    public ProtocolMessageEnum deserialize(JsonElement json, Type t,
-          JsonDeserializationContext ctx) throws JsonParseException {
+    public ProtocolMessageEnum deserialize(JsonElement json, Type t, JsonDeserializationContext ctx)
+        throws JsonParseException {
       int num = json.getAsJsonPrimitive().getAsInt();
       Class<? extends ProtocolMessageEnum> enumClass = (Class<? extends ProtocolMessageEnum>) t;
       try {

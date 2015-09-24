@@ -71,7 +71,10 @@ public class JavaIndexer {
     try (OutputStream stream = System.out;
         OutputStreamWriter writer = new OutputStreamWriter(stream)) {
       new JavacAnalysisDriver()
-          .analyze(new KytheJavacAnalyzer(config, new StreamFactEmitter(writer),
+          .analyze(
+              new KytheJavacAnalyzer(
+                  config,
+                  new StreamFactEmitter(writer),
                   statistics == null ? NullStatisticsCollector.getInstance() : statistics),
               desc.getCompilationUnit(),
               new FileDataCache(desc.getFileContents()),
@@ -84,8 +87,9 @@ public class JavaIndexer {
   }
 
   private static void usage(int exitCode) {
-    System.err.println("usage: java_indexer [--print_statistics] kindex-file\n"
-        + "       java_indexer [--print_statistics] --index_pack=archive-root unit-key");
+    System.err.println(
+        "usage: java_indexer [--print_statistics] kindex-file\n"
+            + "       java_indexer [--print_statistics] --index_pack=archive-root unit-key");
     System.exit(exitCode);
   }
 
@@ -98,12 +102,13 @@ public class JavaIndexer {
     }
 
     @Override
-    public void emit(VName source, String edgeKind, VName target,
-        String factName, byte[] factValue) {
-      Entry.Builder entry = Entry.newBuilder()
-          .setSource(source)
-          .setFactName(factName)
-          .setFactValue(ByteString.copyFrom(factValue));
+    public void emit(
+        VName source, String edgeKind, VName target, String factName, byte[] factValue) {
+      Entry.Builder entry =
+          Entry.newBuilder()
+              .setSource(source)
+              .setFactName(factName)
+              .setFactValue(ByteString.copyFrom(factValue));
       if (edgeKind != null) {
         entry.setEdgeKind(edgeKind).setTarget(target);
       }
@@ -120,7 +125,7 @@ public class JavaIndexer {
     @Parameter(description = "<compilation to analyze>", required = true)
     private List<String> compilation = Lists.newArrayList();;
 
-    @Parameter(names = { "--print_statistics" },
+    @Parameter(names = "--print_statistics",
         description = "Print final analyzer statistics to stderr")
     private boolean printStatistics;
 
@@ -132,8 +137,16 @@ public class JavaIndexer {
       super("java-indexer");
     }
 
-    public final boolean getPrintStatistics() { return printStatistics; }
-    public final String getIndexPackRoot() { return indexPackRoot; }
-    public final List<String> getCompilation() { return compilation; }
+    public final boolean getPrintStatistics() {
+      return printStatistics;
+    }
+
+    public final String getIndexPackRoot() {
+      return indexPackRoot;
+    }
+
+    public final List<String> getCompilation() {
+      return compilation;
+    }
   }
 }

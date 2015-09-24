@@ -56,9 +56,8 @@ import java.util.Stack;
  * NOTE: regex syntax is RE2: https://code.google.com/p/re2/wiki/Syntax
  */
 public class FileVNames {
-  private static final Gson GSON = new GsonBuilder()
-      .registerTypeAdapter(Pattern.class, new PatternDeserializer())
-      .create();
+  private static final Gson GSON =
+      new GsonBuilder().registerTypeAdapter(Pattern.class, new PatternDeserializer()).create();
   private static final Type CONFIG_TYPE = new TypeToken<List<BaseFileVName>>() {}.getType();
 
   private final List<BaseFileVName> baseVNames;
@@ -77,12 +76,14 @@ public class FileVNames {
    * {@link #lookupBaseVName(String)}.
    */
   public static FileVNames staticCorpus(String corpus) {
-    return new FileVNames(Arrays.asList(
-        new BaseFileVName(Pattern.compile(".*"), new VNameTemplate(corpus, null, null))));
+    return new FileVNames(
+        Arrays.asList(
+            new BaseFileVName(Pattern.compile(".*"), new VNameTemplate(corpus, null, null))));
   }
 
   public static FileVNames fromFile(String configFile) throws IOException {
-    return new FileVNames(GSON.<List<BaseFileVName>>fromJson(new FileReader(configFile), CONFIG_TYPE));
+    return new FileVNames(
+        GSON.<List<BaseFileVName>>fromJson(new FileReader(configFile), CONFIG_TYPE));
   }
 
   public static FileVNames fromJson(String json) {
@@ -144,13 +145,15 @@ public class FileVNames {
       return b.build();
     }
 
-    private static final Pattern replacerMatcher  = Pattern.compile("@(\\d+)@");
+    private static final Pattern replacerMatcher = Pattern.compile("@(\\d+)@");
+
     private static String fillIn(String tmpl, Matcher m) {
       Matcher replacers = replacerMatcher.matcher(tmpl);
       Stack<ReplacementMarker> matches = new Stack<ReplacementMarker>();
       while (replacers.find()) {
-        matches.push(new ReplacementMarker(replacers.start(), replacers.end(),
-                Integer.parseInt(replacers.group(1))));
+        matches.push(
+            new ReplacementMarker(
+                replacers.start(), replacers.end(), Integer.parseInt(replacers.group(1))));
       }
       StringBuilder builder = new StringBuilder(tmpl);
       while (!matches.isEmpty()) {

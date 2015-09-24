@@ -62,7 +62,7 @@ import java.util.zip.GZIPOutputStream;
 /**
  * Collection of compilation units stored as an index pack directory. The index pack format is
  * defined in kythe/docs/kythe-index-pack.txt.
-*/
+ */
 public class Archive {
   /** {@link Charset} to encode {@link String} file contents. */
   public static final Charset DATA_CHARSET = StandardCharsets.UTF_8;
@@ -129,7 +129,9 @@ public class Archive {
    * each unit's required inputs.
    */
   public Iterator<CompilationDescription> readDescriptions() throws IOException {
-    return Iterators.transform(readUnits(), new Function<CompilationUnit, CompilationDescription>() {
+    return Iterators.transform(
+        readUnits(),
+        new Function<CompilationUnit, CompilationDescription>() {
           @Override
           public CompilationDescription apply(CompilationUnit unit) {
             return completeDescription(unit);
@@ -139,7 +141,10 @@ public class Archive {
 
   /** Returns a complete {@link CompilationDescription} of the given {@link CompilationUnit}. */
   public CompilationDescription completeDescription(CompilationUnit unit) {
-    return new CompilationDescription(unit, Iterables.transform(unit.getRequiredInputList(),
+    return new CompilationDescription(
+        unit,
+        Iterables.transform(
+            unit.getRequiredInputList(),
             new Function<FileInput, FileData>() {
               @Override
               public FileData apply(FileInput input) {
@@ -181,7 +186,8 @@ public class Archive {
   public <T> Iterator<T> readUnits(final String formatKey, final Class<T> cls) throws IOException {
     Preconditions.checkNotNull(formatKey);
     return Iterators.filter(
-        Iterators.transform(Files.newDirectoryStream(unitDir, "*" + UNIT_SUFFIX).iterator(),
+        Iterators.transform(
+            Files.newDirectoryStream(unitDir, "*" + UNIT_SUFFIX).iterator(),
             new Function<Path, T>() {
               @Override
               public T apply(Path path) {
@@ -212,8 +218,8 @@ public class Archive {
   public <T> T readUnit(String digestKey, String formatKey, Class<T> cls) throws IOException {
     Path path = unitDir.resolve(digestKey + UNIT_SUFFIX);
     try (InputStream raw = Files.newInputStream(path);
-         InputStream uncompressed = new GZIPInputStream(raw);
-         Reader reader = new InputStreamReader(uncompressed, DATA_CHARSET)) {
+        InputStream uncompressed = new GZIPInputStream(raw);
+        Reader reader = new InputStreamReader(uncompressed, DATA_CHARSET)) {
       UnitWrapper wrapper = gson.fromJson(reader, UnitWrapper.class);
       return formatKey.equals(wrapper.formatKey) ? gson.fromJson(wrapper.content, cls) : null;
     }
@@ -225,8 +231,8 @@ public class Archive {
    * @throws java.io.FileNotFoundException if the given file does not exist
    */
   public byte[] readFile(String key) throws IOException {
-    return ByteStreams.toByteArray(new GZIPInputStream(
-        new FileInputStream(dataDir.resolve(key + DATA_SUFFIX).toFile())));
+    return ByteStreams.toByteArray(
+        new GZIPInputStream(new FileInputStream(dataDir.resolve(key + DATA_SUFFIX).toFile())));
   }
 
   /** Writes a {@link CompilationUnit} along with all of its required inputs to the archive. */
@@ -244,8 +250,8 @@ public class Archive {
 
   /** Writes a compilation unit to the archive with the given format key. */
   public String writeUnit(String formatKey, Object unit) throws IOException {
-    return writeData(unitDir, UNIT_SUFFIX,
-        gson.toJson(new UnitWrapper(formatKey, gson.toJsonTree(unit))));
+    return writeData(
+        unitDir, UNIT_SUFFIX, gson.toJson(new UnitWrapper(formatKey, gson.toJsonTree(unit))));
   }
 
   /** Writes a given file's contents to the {@link Archive} as {@link DATA_CHARSET}. */
@@ -265,7 +271,7 @@ public class Archive {
   private static String writeData(Path dir, String suffix, byte[] data) throws IOException {
     File tempFile = dir.resolve(UUID.randomUUID().toString() + NEW_SUFFIX).toFile();
     try (OutputStream intermediary = new FileOutputStream(tempFile);
-         OutputStream output = new GZIPOutputStream(intermediary)) {
+        OutputStream output = new GZIPOutputStream(intermediary)) {
       output.write(data);
       String key = DATA_DIGEST.hashBytes(data).toString();
       tempFile.renameTo(dir.resolve(key + suffix).toFile());
@@ -309,8 +315,7 @@ public class Archive {
     public UnitWrapper deserialize(JsonElement json, Type t, JsonDeserializationContext ctx) {
       JsonObject obj = json.getAsJsonObject();
       return new UnitWrapper(
-          ctx.<String>deserialize(obj.get(FORMAT_KEY_LABEL), String.class),
-          obj.get(CONTENT_LABEL));
+          ctx.<String>deserialize(obj.get(FORMAT_KEY_LABEL), String.class), obj.get(CONTENT_LABEL));
     }
   }
 }

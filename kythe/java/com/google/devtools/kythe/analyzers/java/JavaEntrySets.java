@@ -53,8 +53,12 @@ public class JavaEntrySets extends KytheEntrySets {
   private final Map<Symbol, Set<String>> symbolSigs = new HashMap<Symbol, Set<String>>();
   private final boolean ignoreVNamePaths;
 
-  public JavaEntrySets(StatisticsCollector statistics, FactEmitter emitter, VName compilationVName,
-      List<FileInput> requiredInputs, boolean ignoreVNamePaths) {
+  public JavaEntrySets(
+      StatisticsCollector statistics,
+      FactEmitter emitter,
+      VName compilationVName,
+      List<FileInput> requiredInputs,
+      boolean ignoreVNamePaths) {
     super(statistics, emitter, compilationVName, requiredInputs);
     this.ignoreVNamePaths = ignoreVNamePaths;
   }
@@ -82,21 +86,18 @@ public class JavaEntrySets extends KytheEntrySets {
       // NAME node was already be emitted
     } else {
       if (ignoreVNamePaths) {
-        v = v.toBuilder()
-            .setPath(enclClass != null ? enclClass.toString() : "")
-            .build();
+        v = v.toBuilder().setPath(enclClass != null ? enclClass.toString() : "").build();
       }
 
       NodeKind kind = elementNodeKind(sym.getKind());
-      NodeBuilder builder = kind != null
-          ? newNode(kind)
-          : newNode(sym.getKind().toString());
-      node = builder
-          .setCorpusPath(CorpusPath.fromVName(v))
-          .addSignatureSalt(signature)
-          .addSignatureSalt("" + hashSymbol(sym))
-          .setProperty("identifier", sym.getSimpleName().toString())
-          .build();
+      NodeBuilder builder = kind != null ? newNode(kind) : newNode(sym.getKind().toString());
+      node =
+          builder
+              .setCorpusPath(CorpusPath.fromVName(v))
+              .addSignatureSalt(signature)
+              .addSignatureSalt("" + hashSymbol(sym))
+              .setProperty("identifier", sym.getSimpleName().toString())
+              .build();
       emitName(node, signature);
       node.emit(getEmitter());
     }
@@ -125,8 +126,7 @@ public class JavaEntrySets extends KytheEntrySets {
 
   /** Emits and returns a new {@link EntrySet} for the given wildcard. */
   public EntrySet getWildcardNode(JCTree.JCWildcard wild) {
-    return emitAndReturn(newNode(NodeKind.ABS_VAR)
-        .addSignatureSalt("" + wild.hashCode()));
+    return emitAndReturn(newNode(NodeKind.ABS_VAR).addSignatureSalt("" + wild.hashCode()));
   }
 
   /** Returns and emits a Java anchor for the given {@link JCTree}. */
@@ -144,28 +144,40 @@ public class JavaEntrySets extends KytheEntrySets {
     Span span = filePositions.findIdentifier(name, startOffset);
     return span == null
         ? null
-        : getAnchor(lookupVName(getDigest(filePositions.getSourceFile())),
-            span.getStart(), span.getEnd());
+        : getAnchor(
+            lookupVName(getDigest(filePositions.getSourceFile())), span.getStart(), span.getEnd());
   }
 
   /** Returns the equivalent {@link NodeKind} for the given {@link ElementKind}. */
   public static NodeKind elementNodeKind(ElementKind kind) {
     switch (kind) {
-      case CLASS: return NodeKind.RECORD_CLASS;
-      case ENUM: return NodeKind.SUM_ENUM_CLASS;
-      case ENUM_CONSTANT: return NodeKind.CONSTANT;
-      case ANNOTATION_TYPE: case INTERFACE:
+      case CLASS:
+        return NodeKind.RECORD_CLASS;
+      case ENUM:
+        return NodeKind.SUM_ENUM_CLASS;
+      case ENUM_CONSTANT:
+        return NodeKind.CONSTANT;
+      case ANNOTATION_TYPE:
+      case INTERFACE:
         return NodeKind.INTERFACE;
 
-      case EXCEPTION_PARAMETER: return NodeKind.VARIABLE_EXCEPTION;
-      case FIELD: return NodeKind.VARIABLE_FIELD;
-      case LOCAL_VARIABLE: return NodeKind.VARIABLE_LOCAL;
-      case PARAMETER: return NodeKind.VARIABLE_PARAMETER;
-      case RESOURCE_VARIABLE: return NodeKind.VARIABLE_RESOURCE;
+      case EXCEPTION_PARAMETER:
+        return NodeKind.VARIABLE_EXCEPTION;
+      case FIELD:
+        return NodeKind.VARIABLE_FIELD;
+      case LOCAL_VARIABLE:
+        return NodeKind.VARIABLE_LOCAL;
+      case PARAMETER:
+        return NodeKind.VARIABLE_PARAMETER;
+      case RESOURCE_VARIABLE:
+        return NodeKind.VARIABLE_RESOURCE;
 
-      case CONSTRUCTOR: return NodeKind.FUNCTION_CONSTRUCTOR;
-      case METHOD: return NodeKind.FUNCTION;
-      case TYPE_PARAMETER: return NodeKind.ABS_VAR;
+      case CONSTRUCTOR:
+        return NodeKind.FUNCTION_CONSTRUCTOR;
+      case METHOD:
+        return NodeKind.FUNCTION;
+      case TYPE_PARAMETER:
+        return NodeKind.ABS_VAR;
       default:
         // TODO(schroederc): handle all cases, make this exceptional, and remove all null checks
         return null;
@@ -215,9 +227,7 @@ public class JavaEntrySets extends KytheEntrySets {
       return null;
     }
     VName clsVName = lookupVName(getDigest(cls.classfile));
-    return clsVName != null
-        ? clsVName
-        : lookupVName(getDigest(cls.sourcefile));
+    return clsVName != null ? clsVName : lookupVName(getDigest(cls.sourcefile));
   }
 
   private static String getDigest(JavaFileObject sourceFile) {
@@ -246,8 +256,10 @@ public class JavaEntrySets extends KytheEntrySets {
       return false;
     }
     String cls = sym.enclClass().className();
-    return cls.startsWith("java.") || cls.startsWith("javax.")
-        || cls.startsWith("com.sun.") || cls.startsWith("sun.");
+    return cls.startsWith("java.")
+        || cls.startsWith("javax.")
+        || cls.startsWith("com.sun.")
+        || cls.startsWith("sun.");
   }
 
   /**
@@ -256,8 +268,9 @@ public class JavaEntrySets extends KytheEntrySets {
    */
   @Deprecated
   EntrySet todoNode(String message) {
-    return emitAndReturn(newNode("TODO")
-        .addSignatureSalt("" + System.nanoTime()) // Ensure unique TODOs
-        .setProperty("todo", message));
+    return emitAndReturn(
+        newNode("TODO")
+            .addSignatureSalt("" + System.nanoTime()) // Ensure unique TODOs
+            .setProperty("todo", message));
   }
 }

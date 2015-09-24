@@ -32,9 +32,10 @@ import javax.annotation.Nullable;
  */
 public class JavacOptionsUtils {
 
-  private static final String[] JRE_JARS = new String[] {
-    "lib/rt.jar", "lib/resources.jar", "lib/jsse.jar", "lib/jce.jar", "lib/charsets.jar"
-  };
+  private static final String[] JRE_JARS =
+      new String[] {
+        "lib/rt.jar", "lib/resources.jar", "lib/jsse.jar", "lib/jce.jar", "lib/charsets.jar"
+      };
 
   /**
    * Extract the encoding flag from the list of javac options. If the flag is specified more than
@@ -77,7 +78,7 @@ public class JavacOptionsUtils {
 
     for (int i = 0; i < arguments.size(); i++) {
       if (arguments.get(i).equals("-cp")) {
-        if (i+1 >= arguments.size()) {
+        if (i + 1 >= arguments.size()) {
           throw new IllegalArgumentException("Malformed -cp argument: " + arguments);
         }
         arguments.remove(i);

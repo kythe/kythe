@@ -48,7 +48,9 @@ public class SyntaxPreservingScanner extends JavaTokenizer {
   public abstract static class CustomToken {
     public Span span;
     public String text;
+
     public abstract boolean isComment();
+
     public CustomToken(Span span, String text) {
       super();
       this.span = span;
@@ -86,8 +88,9 @@ public class SyntaxPreservingScanner extends JavaTokenizer {
 
   @Override
   protected Tokens.Comment processComment(int pos, int endPos, CommentStyle style) {
-    customTokens.add(new CommentToken(new Span(pos, endPos),
-                     new String(reader.getRawCharacters(pos, endPos)), style));
+    customTokens.add(
+        new CommentToken(
+            new Span(pos, endPos), new String(reader.getRawCharacters(pos, endPos)), style));
     return super.processComment(pos, endPos, style);
   }
 

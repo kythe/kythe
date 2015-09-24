@@ -26,6 +26,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 /** DeleteRecursively is a {@link SimpleFileVisitor} that deletes every visited file/directory. */
 public class DeleteRecursively extends SimpleFileVisitor<Path> {
   private static final DeleteRecursively INSTANCE = new DeleteRecursively();
+
   private DeleteRecursively() {}
 
   /** Deletes {@code path}, and if a {@code path} is a directory, all contained files. */

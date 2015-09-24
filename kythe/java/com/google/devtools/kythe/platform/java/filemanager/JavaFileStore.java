@@ -79,6 +79,6 @@ public interface JavaFileStore {
    * @param recurse
    * @return all the found Java file objects or an empty set if none can be found
    */
-  public Set<CustomJavaFileObject> list(String packageName, Set<Kind> kinds,
-      Set<String> pathPrefixes, boolean recurse);
+  public Set<CustomJavaFileObject> list(
+      String packageName, Set<Kind> kinds, Set<String> pathPrefixes, boolean recurse);
 }

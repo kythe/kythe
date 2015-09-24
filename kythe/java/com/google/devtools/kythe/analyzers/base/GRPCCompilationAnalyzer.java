@@ -26,8 +26,8 @@ import com.google.devtools.kythe.proto.CompilationAnalyzerGrpc.CompilationAnalyz
 import io.grpc.stub.StreamObserver;
 
 /** GRPC-based {@link AbstractCompilationAnalyzer} implementation. */
-public abstract class GRPCCompilationAnalyzer
-    extends AbstractCompilationAnalyzer implements CompilationAnalyzer {
+public abstract class GRPCCompilationAnalyzer extends AbstractCompilationAnalyzer
+    implements CompilationAnalyzer {
   public GRPCCompilationAnalyzer() {
     super();
   }

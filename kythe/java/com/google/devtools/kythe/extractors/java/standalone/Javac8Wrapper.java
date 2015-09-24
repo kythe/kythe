@@ -37,8 +37,9 @@ import java.util.List;
  */
 public class Javac8Wrapper extends AbstractJavacWrapper {
   @Override
-  protected CompilationDescription processCompilation(String[] cleanedUpArguments,
-      JavaCompilationUnitExtractor javaCompilationUnitExtractor) throws Exception {
+  protected CompilationDescription processCompilation(
+      String[] cleanedUpArguments, JavaCompilationUnitExtractor javaCompilationUnitExtractor)
+      throws Exception {
     Main main = new Main("kythe_javac8");
     Context context = new Context();
     JavacFileManager.preRegister(context);
@@ -62,9 +63,10 @@ public class Javac8Wrapper extends AbstractJavacWrapper {
     // Retrieve the list of processors provided by the -processor argument.
     List<String> processors = splitPaths(options.get(Option.PROCESSOR));
 
-    EnumSet<Option> claimed = EnumSet.of(
-        Option.CLASSPATH, Option.SOURCEPATH,
-        Option.PROCESSORPATH, Option.PROCESSOR);
+    EnumSet<Option> claimed =
+        EnumSet.of(
+            Option.CLASSPATH, Option.SOURCEPATH,
+            Option.PROCESSORPATH, Option.PROCESSOR);
 
     // Retrieve all other javac options.
     List<String> completeOptions = Lists.newArrayList();
@@ -92,8 +94,15 @@ public class Javac8Wrapper extends AbstractJavacWrapper {
 
     String analysisTarget =
         readEnvironmentVariable("KYTHE_ANALYSIS_TARGET", createTargetFromSourceFiles(sources));
-    return javaCompilationUnitExtractor.extract(analysisTarget, sources,
-        classPaths, sourcePaths, processorPaths, processors, completeOptions, outputDirectory);
+    return javaCompilationUnitExtractor.extract(
+        analysisTarget,
+        sources,
+        classPaths,
+        sourcePaths,
+        processorPaths,
+        processors,
+        completeOptions,
+        outputDirectory);
   }
 
   @Override

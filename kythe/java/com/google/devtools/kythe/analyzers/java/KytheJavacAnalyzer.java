@@ -43,8 +43,8 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
   // should be set in analyzeCompilationUnit before any call to analyzeFile
   private JavaEntrySets entrySets;
 
-  public KytheJavacAnalyzer(IndexerConfig config, FactEmitter emitter,
-      StatisticsCollector statistics) {
+  public KytheJavacAnalyzer(
+      IndexerConfig config, FactEmitter emitter, StatisticsCollector statistics) {
     super(statistics);
     Preconditions.checkArgument(emitter != null, "FactEmitter must be non-null");
     Preconditions.checkArgument(config != null, "IndexerConfig must be non-null");
@@ -54,12 +54,17 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
 
   @Override
   public void analyzeCompilationUnit(JavaCompilationDetails details) throws AnalysisException {
-    Preconditions.checkState(entrySets == null,
+    Preconditions.checkState(
+        entrySets == null,
         "JavaEntrySets is non-null (analyzeCompilationUnit was called concurrently?)");
     CompilationUnit compilation = details.getCompilationUnit();
-    entrySets = new JavaEntrySets(getStatisticsCollector(),
-        emitter, compilation.getVName(), compilation.getRequiredInputList(),
-        config.getIgnoreVNamePaths());
+    entrySets =
+        new JavaEntrySets(
+            getStatisticsCollector(),
+            emitter,
+            compilation.getVName(),
+            compilation.getRequiredInputList(),
+            config.getIgnoreVNamePaths());
     try {
       super.analyzeCompilationUnit(details);
     } finally {
@@ -70,13 +75,18 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
   @Override
   public void analyzeFile(JavaCompilationDetails details, CompilationUnitTree ast)
       throws AnalysisException {
-    Preconditions.checkState(entrySets != null,
-        "analyzeCompilationUnit must be called to analyze each file");
+    Preconditions.checkState(
+        entrySets != null, "analyzeCompilationUnit must be called to analyze each file");
     Context context = ((JavacTaskImpl) details.getJavac()).getContext();
     SignatureGenerator signatureGenerator = new SignatureGenerator(ast, context);
     try {
-      KytheTreeScanner.emitEntries(context, getStatisticsCollector(), entrySets, signatureGenerator,
-          (JCCompilationUnit) ast, Charset.forName(details.getEncoding()));
+      KytheTreeScanner.emitEntries(
+          context,
+          getStatisticsCollector(),
+          entrySets,
+          signatureGenerator,
+          (JCCompilationUnit) ast,
+          Charset.forName(details.getEncoding()));
     } catch (IOException e) {
       throw new AnalysisException("Exception analyzing file: " + ast.getSourceFile().getName(), e);
     }

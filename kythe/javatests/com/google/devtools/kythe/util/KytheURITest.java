@@ -36,46 +36,48 @@ public class KytheURITest extends TestCase {
     assertEquals(builder().setSignature("sig").build(), parse("kythe:#sig"));
     assertEquals(builder().setCorpus("corpus").build(), parse("kythe://corpus"));
     assertEquals(builder().setCorpus("corpus").build(), parse("kythe://corpus/"));
-    assertEquals(builder().setCorpus("corpus/with/path").build(),
-        parse("kythe://corpus/with/path"));
-    assertEquals(builder().setCorpus("corpus/with/path").build(),
-        parse("//corpus/with/path"));
+    assertEquals(
+        builder().setCorpus("corpus/with/path").build(), parse("kythe://corpus/with/path"));
+    assertEquals(builder().setCorpus("corpus/with/path").build(), parse("//corpus/with/path"));
     assertEquals(builder().setRoot("R").build(), parse("kythe:?root=R"));
     assertEquals(builder().setPath("P").build(), parse("kythe:?path=P"));
     assertEquals(builder().setLanguage("L").build(), parse("kythe:?lang=L"));
 
     // Multiple attributes, with permutation of order.
-    assertEquals(builder().setRoot("R").setLanguage("L").build(),
-        parse("kythe:?lang=L?root=R"));
-    assertEquals(builder().setRoot("R").setLanguage("L").setPath("P").build(),
+    assertEquals(builder().setRoot("R").setLanguage("L").build(), parse("kythe:?lang=L?root=R"));
+    assertEquals(
+        builder().setRoot("R").setLanguage("L").setPath("P").build(),
         parse("kythe:?lang=L?path=P?root=R"));
-    assertEquals(builder().setRoot("R").setLanguage("L").setPath("P").build(),
+    assertEquals(
+        builder().setRoot("R").setLanguage("L").setPath("P").build(),
         parse("kythe:?root=R?path=P?lang=L"));
 
     // Everything.
-    assertEquals(new KytheURI("sig", "bitbucket.org/creachadair/stringset", "blah", "stringset.go", "go"),
-        parse("kythe://bitbucket.org/creachadair/stringset?path=stringset.go?lang=go?root=blah#sig"));
-    assertEquals(new KytheURI("", "libstdc++", "/usr/include/c++/4.8", "bits/basic_string.h", "c++"),
-        parse("kythe://libstdc%2B%2B?lang=c%2B%2B?path=bits/basic_string.h?root=/usr/include/c%2B%2B/4.8"));
+    assertEquals(
+        new KytheURI("sig", "bitbucket.org/creachadair/stringset", "blah", "stringset.go", "go"),
+        parse(
+            "kythe://bitbucket.org/creachadair/stringset?path=stringset.go?lang=go?root=blah#sig"));
+    assertEquals(
+        new KytheURI("", "libstdc++", "/usr/include/c++/4.8", "bits/basic_string.h", "c++"),
+        parse(
+            "kythe://libstdc%2B%2B?lang=c%2B%2B?path=bits/basic_string.h?root=/usr/include/c%2B%2B/4.8"));
   }
 
   public void testToString() throws URISyntaxException {
     // Empty URIs
-    checkToString("kythe:",
-        "",
-        "kythe:",
-        "kythe://",
-        "kythe://#");
+    checkToString("kythe:", "", "kythe:", "kythe://", "kythe://#");
 
     // Order of attributes is normalized (lang, path, root)
-    checkToString("kythe:?lang=L?path=P?root=R",
+    checkToString(
+        "kythe:?lang=L?path=P?root=R",
         "kythe:?root=R?path=P?lang=L",
         "kythe:?root=R?lang=L?path=P",
         "kythe:?lang=L?path=P?root=R",
         "kythe://?lang=L?path=P?root=R#");
 
     // Test various characters in the hostname
-    checkToString("kythe://com.crazyTown-1.20_PROTOTYPE/blah?path=P",
+    checkToString(
+        "kythe://com.crazyTown-1.20_PROTOTYPE/blah?path=P",
         "kythe://com.crazyTown-1.20_PROTOTYPE/blah?path=P");
 
     // Check escaping
@@ -88,13 +90,12 @@ public class KytheURITest extends TestCase {
     checkToString(hairyUri, hairyUri);
 
     // Path cleaning
-    checkToString("kythe://corpus/name/with/path",
+    checkToString(
+        "kythe://corpus/name/with/path",
         "kythe://corpus/name/with/path",
         "kythe://corpus/name///with//path",
         "kythe://corpus/name///with/./../with/path");
-    checkToString("kythe://a/c#sig",
-        "kythe://a/b/../c#sig",
-        "kythe://a/./d/.././c#sig");
+    checkToString("kythe://a/c#sig", "kythe://a/b/../c#sig", "kythe://a/./d/.././c#sig");
   }
 
   private void checkToString(String expected, String... cases) throws URISyntaxException {
@@ -104,7 +105,8 @@ public class KytheURITest extends TestCase {
   }
 
   public void testGetters() throws URISyntaxException {
-    String signature = "magic school truck",
+    String
+        signature = "magic school truck",
         corpus = "com.crazyTown-1.20_PROTOTYPE",
         path = "usa/2.0",
         root = null,
@@ -118,7 +120,8 @@ public class KytheURITest extends TestCase {
   }
 
   public void testToVName() throws URISyntaxException {
-    String signature = "magic school truck",
+    String
+        signature = "magic school truck",
         corpus = "crazyTown",
         path = "usa/2.0",
         root = null,

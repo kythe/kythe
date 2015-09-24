@@ -39,8 +39,7 @@ import javax.tools.StandardJavaFileManager;
  * Wraps the StandardJavaFileManager to track which .java and .class files
  * Javac touches for a given compilation.
  */
-class UsageAsInputReportingFileManager
-    extends ForwardingJavaFileManager<StandardJavaFileManager> {
+class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<StandardJavaFileManager> {
 
   private final Map<URI, InputUsageRecord> inputUsageRecords = new HashMap<>();
 
@@ -67,12 +66,11 @@ class UsageAsInputReportingFileManager
   }
 
   @Override
-  public Iterable<JavaFileObject> list(Location location,
-                                       String packageName,
-                                       Set<Kind> kinds,
-                                       boolean recurse) throws IOException {
-    return Iterables.transform(fileManager.list(location, packageName, kinds, recurse),
-        new Function<JavaFileObject, JavaFileObject>(){
+  public Iterable<JavaFileObject> list(
+      Location location, String packageName, Set<Kind> kinds, boolean recurse) throws IOException {
+    return Iterables.transform(
+        fileManager.list(location, packageName, kinds, recurse),
+        new Function<JavaFileObject, JavaFileObject>() {
           @Override
           public JavaFileObject apply(JavaFileObject input) {
             return map(input);
@@ -104,8 +102,9 @@ class UsageAsInputReportingFileManager
     String[] sourceArray = new String[sourceList.size()];
     sourceList.toArray(sourceArray);
 
-    return  Iterables.transform(fileManager.getJavaFileObjects(sourceArray),
-        new Function<JavaFileObject, JavaFileObject>(){
+    return Iterables.transform(
+        fileManager.getJavaFileObjects(sourceArray),
+        new Function<JavaFileObject, JavaFileObject>() {
           @Override
           public JavaFileObject apply(JavaFileObject input) {
             return map(input);
@@ -114,23 +113,23 @@ class UsageAsInputReportingFileManager
   }
 
   @Override
-  public JavaFileObject getJavaFileForInput(final Location location,
-                                            final String className,
-                                            final Kind kind) throws IOException {
+  public JavaFileObject getJavaFileForInput(
+      final Location location, final String className, final Kind kind) throws IOException {
     return map(fileManager.getJavaFileForInput(location, className, kind));
   }
 
   @Override
-  public JavaFileObject getJavaFileForOutput(Location location, String className, Kind kind,
-      FileObject sibling) throws IOException {
+  public JavaFileObject getJavaFileForOutput(
+      Location location, String className, Kind kind, FileObject sibling) throws IOException {
     // A java file opened initially for output might later get reopened for input (e.g.,
     // source files generated during annotation processing), so we need to track them too.
     return map(fileManager.getJavaFileForOutput(location, className, kind, unwrap(sibling)));
   }
 
   @Override
-  public FileObject getFileForOutput(Location location, String packageName,
-      String relativeName, FileObject sibling) throws IOException {
+  public FileObject getFileForOutput(
+      Location location, String packageName, String relativeName, FileObject sibling)
+      throws IOException {
     return fileManager.getFileForOutput(location, packageName, relativeName, unwrap(sibling));
   }
 

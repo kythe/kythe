@@ -37,21 +37,19 @@ public class RemoteFileData implements FileDataProvider {
 
   public RemoteFileData(String addr) {
     HostAndPort hp = HostAndPort.fromString(addr);
-    ChannelImpl channel = NettyChannelBuilder
-        .forAddress(new InetSocketAddress(hp.getHostText(), hp.getPort()))
-        .negotiationType(NegotiationType.PLAINTEXT)
-        .build();
+    ChannelImpl channel =
+        NettyChannelBuilder.forAddress(new InetSocketAddress(hp.getHostText(), hp.getPort()))
+            .negotiationType(NegotiationType.PLAINTEXT)
+            .build();
     stub = FileDataServiceGrpc.newStub(channel);
   }
 
   @Override
   public Future<byte[]> startLookup(String path, String digest) {
     SettableFuture<byte[]> future = SettableFuture.create();
-    stub.get(new SingletonLookup(future))
-        .onValue(FileInfo.newBuilder()
-            .setPath(path)
-            .setDigest(digest)
-            .build());
+    stub
+        .get(new SingletonLookup(future))
+        .onValue(FileInfo.newBuilder().setPath(path).setDigest(digest).build());
     return future;
   }
 

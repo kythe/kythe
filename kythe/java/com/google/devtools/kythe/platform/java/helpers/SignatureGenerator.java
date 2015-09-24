@@ -225,8 +225,8 @@ public class SignatureGenerator
   }
 
   //////////////////////////// helper functions ////////////////////////////
-  private void visitTypeParameters(List<? extends TypeParameterElement> typeParams,
-      StringBuilder sb) {
+  private void visitTypeParameters(
+      List<? extends TypeParameterElement> typeParams, StringBuilder sb) {
     if (!typeParams.isEmpty()) {
       Set<TypeVar> typeVars = Sets.newHashSet();
       for (TypeParameterElement aType : typeParams) {

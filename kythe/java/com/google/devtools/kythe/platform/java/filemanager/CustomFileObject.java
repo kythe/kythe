@@ -45,8 +45,8 @@ public class CustomFileObject implements FileObject {
 
   protected final String encoding;
 
-  public CustomFileObject(FileDataProvider contentProvider, String path, String digest,
-      String encoding) {
+  public CustomFileObject(
+      FileDataProvider contentProvider, String path, String digest, String encoding) {
     this.path = Paths.get(path);
     this.digest = digest;
     this.encoding = encoding;

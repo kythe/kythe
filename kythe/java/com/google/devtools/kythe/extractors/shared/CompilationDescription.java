@@ -54,8 +54,8 @@ public class CompilationDescription {
       return true;
     } else if (o instanceof CompilationDescription) {
       CompilationDescription oDesc = (CompilationDescription) o;
-      return Objects.equals(this.compilationUnit, oDesc.compilationUnit) &&
-          Sets.newHashSet(this.fileContents).equals(Sets.newHashSet(oDesc.fileContents));
+      return Objects.equals(this.compilationUnit, oDesc.compilationUnit)
+          && Sets.newHashSet(this.fileContents).equals(Sets.newHashSet(oDesc.fileContents));
     }
     return false;
   }

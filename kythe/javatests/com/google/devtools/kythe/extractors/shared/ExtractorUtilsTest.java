@@ -44,7 +44,6 @@ public class ExtractorUtilsTest extends TestCase {
       "e12e115acf4552b2568b55e93cbd39394c4ef81c82447fafc997882a02d23677";
   public static final byte[] ABCD = ByteString.copyFromUtf8("ABCD").toByteArray();
 
-
   public void testCreateFileData() {
     FileData fd = ExtractorUtils.createFileData("a/b/c", ABCD);
     assertNotNull(fd);
@@ -55,8 +54,8 @@ public class ExtractorUtilsTest extends TestCase {
 
   public void testConvertBytesToFileDatas() throws Exception {
     Map<String, byte[]> data = Maps.newHashMap();
-    data.put("a/b/c", new byte[] { 1, 2, 3 });
-    data.put("d/e/f", new byte[] { 4, 5, 6 });
+    data.put("a/b/c", new byte[] {1, 2, 3});
+    data.put("d/e/f", new byte[] {4, 5, 6});
     List<FileData> results = ExtractorUtils.convertBytesToFileDatas(data);
     assertEquals(2, results.size());
     for (FileData entry : results) {
@@ -69,8 +68,7 @@ public class ExtractorUtilsTest extends TestCase {
 
   public void testProcessRequiredInputs() throws Exception {
     String path = Paths.get(TEST_DATA_DIR, "sample.txt").toString();
-    List<FileData> fds =
-        ExtractorUtils.processRequiredInputs(Lists.newArrayList(path));
+    List<FileData> fds = ExtractorUtils.processRequiredInputs(Lists.newArrayList(path));
 
     byte[] content = Files.toByteArray(new File(path));
 
@@ -86,13 +84,12 @@ public class ExtractorUtilsTest extends TestCase {
     final String content = "CONTENT";
     final String path = "a/b/c";
     List<CompilationUnit.FileInput> cfis =
-        ExtractorUtils.toFileInputs(Lists.newArrayList(FileData.newBuilder()
-                .setContent(ByteString.copyFromUtf8(content))
-                .setInfo(FileInfo.newBuilder()
-                    .setDigest(digest)
-                    .setPath(path)
-                    .build())
-                .build()));
+        ExtractorUtils.toFileInputs(
+            Lists.newArrayList(
+                FileData.newBuilder()
+                    .setContent(ByteString.copyFromUtf8(content))
+                    .setInfo(FileInfo.newBuilder().setDigest(digest).setPath(path).build())
+                    .build()));
     assertEquals(1, cfis.size());
     assertEquals(digest, cfis.get(0).getInfo().getDigest());
     assertEquals(path, cfis.get(0).getInfo().getPath());
@@ -100,11 +97,13 @@ public class ExtractorUtilsTest extends TestCase {
 
   public void testTryMakeRelative() {
     String cwd = System.getProperty("user.dir");
-    assertEquals(cwd+"/relative", ExtractorUtils.tryMakeRelative("/someroot", "relative"));
-    assertEquals(cwd+"/relative/sd", ExtractorUtils.tryMakeRelative("/someroot", "relative/sd"));
-    assertEquals("rootrelative", ExtractorUtils.tryMakeRelative("/someroot", "/someroot/rootrelative"));
-    assertEquals("rootrelative", ExtractorUtils.tryMakeRelative("/someroot/", "/someroot/rootrelative"));
-    assertEquals(cwd+"/cwd_sub", ExtractorUtils.tryMakeRelative("/someroot/", "./cwd_sub"));
+    assertEquals(cwd + "/relative", ExtractorUtils.tryMakeRelative("/someroot", "relative"));
+    assertEquals(cwd + "/relative/sd", ExtractorUtils.tryMakeRelative("/someroot", "relative/sd"));
+    assertEquals(
+        "rootrelative", ExtractorUtils.tryMakeRelative("/someroot", "/someroot/rootrelative"));
+    assertEquals(
+        "rootrelative", ExtractorUtils.tryMakeRelative("/someroot/", "/someroot/rootrelative"));
+    assertEquals(cwd + "/cwd_sub", ExtractorUtils.tryMakeRelative("/someroot/", "./cwd_sub"));
     assertEquals("/one_up", ExtractorUtils.tryMakeRelative("/someroot/", "/someroot/../one_up"));
 
     assertEquals("relative", ExtractorUtils.tryMakeRelative(cwd, "relative"));
@@ -124,26 +123,21 @@ public class ExtractorUtilsTest extends TestCase {
   }
 
   public void testNormalizeCompilationUnit() {
-    CompilationUnit unit = CompilationUnit.newBuilder()
-        .setVName(VName.newBuilder()
-            .setSignature("//target:target")
-            .build())
-        .addArgument("arg1")
-        .addArgument("arg2")
-        .setOutputKey("output")
-        .addSourceFile("b.java")
-        .addSourceFile("c.java")
-        .addRequiredInput(CompilationUnit.FileInput.newBuilder()
-            .setInfo(FileInfo.newBuilder()
-                .setDigest("DIGEST1")
-                .setPath("d/e/f")
-                .build()))
-        .addRequiredInput(CompilationUnit.FileInput.newBuilder()
-            .setInfo(FileInfo.newBuilder()
-                .setDigest("DIGEST2")
-                .setPath("a/b/c")
-                .build()))
-        .build();
+    CompilationUnit unit =
+        CompilationUnit.newBuilder()
+            .setVName(VName.newBuilder().setSignature("//target:target").build())
+            .addArgument("arg1")
+            .addArgument("arg2")
+            .setOutputKey("output")
+            .addSourceFile("b.java")
+            .addSourceFile("c.java")
+            .addRequiredInput(
+                CompilationUnit.FileInput.newBuilder()
+                    .setInfo(FileInfo.newBuilder().setDigest("DIGEST1").setPath("d/e/f").build()))
+            .addRequiredInput(
+                CompilationUnit.FileInput.newBuilder()
+                    .setInfo(FileInfo.newBuilder().setDigest("DIGEST2").setPath("a/b/c").build()))
+            .build();
 
     CompilationUnit output = ExtractorUtils.normalizeCompilationUnit(unit);
     assertEquals(unit.getVName().getSignature(), output.getVName().getSignature());

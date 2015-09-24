@@ -37,8 +37,7 @@ import java.util.Map;
  * properties in the {@link EntrySet} along with a set of salts.
  */
 public class EntrySet {
-  private static final FormattingLogger logger =
-      FormattingLogger.getLogger(EntrySet.class);
+  private static final FormattingLogger logger = FormattingLogger.getLogger(EntrySet.class);
 
   /** {@link Charset} used to encode {@link String} property values. */
   public static final Charset PROPERTY_VALUE_CHARSET = StandardCharsets.UTF_8;
@@ -61,9 +60,10 @@ public class EntrySet {
   /** Used to detect when an {@link EntrySet} was not emitted exactly once. */
   private boolean emitted;
 
-  protected EntrySet(VName source, String edgeKind, VName target,
-      ImmutableMap<String, byte[]> properties) {
-    Preconditions.checkArgument((edgeKind == null) == (target == null),
+  protected EntrySet(
+      VName source, String edgeKind, VName target, ImmutableMap<String, byte[]> properties) {
+    Preconditions.checkArgument(
+        (edgeKind == null) == (target == null),
         "edgeKind and target must be both non-null or both null");
     this.source = source;
     this.edgeKind = edgeKind;
@@ -108,8 +108,9 @@ public class EntrySet {
       builder.append("EdgeKind: " + edgeKind);
     }
     for (Map.Entry<String, byte[]> entry : properties.entrySet()) {
-      builder.append(String.format("%s %s\n",
-              entry.getKey(), new String(entry.getValue(), PROPERTY_VALUE_CHARSET)));
+      builder.append(
+          String.format(
+              "%s %s\n", entry.getKey(), new String(entry.getValue(), PROPERTY_VALUE_CHARSET)));
     }
     return builder.append("}").toString();
   }
@@ -201,8 +202,8 @@ public class EntrySet {
         if (!sourceBuilder.getSignature().isEmpty()) {
           source = sourceBuilder.build();
         } else {
-          source = sourceBuilder.clone()
-              .setSignature(buildSignature(salts.build(), properties)).build();
+          source =
+              sourceBuilder.clone().setSignature(buildSignature(salts.build(), properties)).build();
         }
       }
       return new EntrySet(source, edgeKind, target, properties);
@@ -211,16 +212,14 @@ public class EntrySet {
 
   private static final HashFunction SIGNATURE_HASH_FUNCTION = Hashing.sha256();
 
-  protected static String buildSignature(ImmutableList<String> salts,
-      ImmutableSortedMap<String, byte[]> properties) {
+  protected static String buildSignature(
+      ImmutableList<String> salts, ImmutableSortedMap<String, byte[]> properties) {
     Hasher signature = SIGNATURE_HASH_FUNCTION.newHasher();
     for (String salt : salts) {
       signature.putString(salt, PROPERTY_VALUE_CHARSET);
     }
     for (Map.Entry<String, byte[]> property : properties.entrySet()) {
-      signature
-          .putString(property.getKey(), PROPERTY_VALUE_CHARSET)
-          .putBytes(property.getValue());
+      signature.putString(property.getKey(), PROPERTY_VALUE_CHARSET).putBytes(property.getValue());
     }
     return signature.hash().toString();
   }

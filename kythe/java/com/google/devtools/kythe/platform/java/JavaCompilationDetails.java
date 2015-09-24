@@ -64,22 +64,28 @@ public class JavaCompilationDetails {
         public boolean apply(Diagnostic<?> diag) {
           return diag.getKind() == Kind.ERROR;
         }
-  };
+      };
 
-  public static JavaCompilationDetails createDetails(CompilationUnit compilationUnit,
-    FileDataProvider fileDataProvider, boolean useStdErr) {
+  public static JavaCompilationDetails createDetails(
+      CompilationUnit compilationUnit, FileDataProvider fileDataProvider, boolean useStdErr) {
     return createDetails(
         compilationUnit, fileDataProvider, false, ImmutableList.<Processor>of(), useStdErr);
   }
 
-  public static JavaCompilationDetails createDetails(CompilationUnit compilationUnit,
-    FileDataProvider fileDataProvider, boolean isLocalAnalysis, List<Processor> processors) {
+  public static JavaCompilationDetails createDetails(
+      CompilationUnit compilationUnit,
+      FileDataProvider fileDataProvider,
+      boolean isLocalAnalysis,
+      List<Processor> processors) {
     return createDetails(compilationUnit, fileDataProvider, isLocalAnalysis, processors, false);
   }
 
-  public static JavaCompilationDetails createDetails(CompilationUnit compilationUnit,
-    FileDataProvider fileDataProvider, boolean isLocalAnalysis, List<Processor> processors,
-    boolean useStdErr) {
+  public static JavaCompilationDetails createDetails(
+      CompilationUnit compilationUnit,
+      FileDataProvider fileDataProvider,
+      boolean isLocalAnalysis,
+      List<Processor> processors,
+      boolean useStdErr) {
 
     JavaCompiler compiler = JavacAnalysisDriver.getCompiler();
     DiagnosticCollector<JavaFileObject> diagnosticsCollector = new DiagnosticCollector<>();
@@ -89,9 +95,12 @@ public class JavaCompilationDetails {
     String encoding = JavacOptionsUtils.getEncodingOption(options);
 
     // Create a StandardFileManager that uses the fileDataProvider and compilationUnit
-    StandardJavaFileManager fileManager = new CompilationUnitBasedJavaFileManager(
-        fileDataProvider, compilationUnit,
-        compiler.getStandardFileManager(diagnosticsCollector, null, null), encoding);
+    StandardJavaFileManager fileManager =
+        new CompilationUnitBasedJavaFileManager(
+            fileDataProvider,
+            compilationUnit,
+            compiler.getStandardFileManager(diagnosticsCollector, null, null),
+            encoding);
 
     Iterable<? extends JavaFileObject> sources =
         fileManager.getJavaFileObjectsFromStrings(compilationUnit.getSourceFileList());
@@ -100,8 +109,9 @@ public class JavaCompilationDetails {
     Writer javacOut = useStdErr ? null : NullWriter.getInstance();
 
     // Get a task for compiling the current CompilationUnit.
-    JavacTaskImpl javacTask = (JavacTaskImpl)
-        compiler.getTask(javacOut, fileManager, diagnosticsCollector, options, null, sources);
+    JavacTaskImpl javacTask =
+        (JavacTaskImpl)
+            compiler.getTask(javacOut, fileManager, diagnosticsCollector, options, null, sources);
 
     if (!processors.isEmpty()) {
       javacTask.setProcessors(processors);
@@ -117,13 +127,22 @@ public class JavaCompilationDetails {
       analysisCrash = e;
     }
 
-    return new JavaCompilationDetails(javacTask, diagnosticsCollector, compilationUnits,
-      compilationUnit, analysisCrash, encoding);
+    return new JavaCompilationDetails(
+        javacTask,
+        diagnosticsCollector,
+        compilationUnits,
+        compilationUnit,
+        analysisCrash,
+        encoding);
   }
 
-  private JavaCompilationDetails(JavacTask javac, DiagnosticCollector<JavaFileObject> diagnostics,
-      Iterable<? extends CompilationUnitTree> asts, CompilationUnit compilationUnit,
-      Throwable analysisCrash, String encoding) {
+  private JavaCompilationDetails(
+      JavacTask javac,
+      DiagnosticCollector<JavaFileObject> diagnostics,
+      Iterable<? extends CompilationUnitTree> asts,
+      CompilationUnit compilationUnit,
+      Throwable analysisCrash,
+      String encoding) {
     this.javac = javac;
     this.diagnostics = diagnostics;
     this.asts = asts;
@@ -198,8 +217,8 @@ public class JavaCompilationDetails {
    *        {@link com.google.devtools.kythe.platform.java.local.LocalJavacAnalysisDriver}
    *        will cause the analysis to fail.
    */
-  private static List<String> optionsFromCompilationUnit(CompilationUnit compilationUnit,
-      List<Processor> processors, boolean isLocalAnalysis) {
+  private static List<String> optionsFromCompilationUnit(
+      CompilationUnit compilationUnit, List<Processor> processors, boolean isLocalAnalysis) {
     // Start with the default options, and then add in source
     // Turn on all warnings as well.
     List<String> options = Lists.newArrayList(compilationUnit.getArgumentList());
@@ -219,6 +238,7 @@ public class JavaCompilationDetails {
   /** Writes nothing, used to reduce noise from the javac analysis output. */
   private static class NullWriter extends Writer {
     private static NullWriter instance = null;
+
     private NullWriter() {}
 
     public static NullWriter getInstance() {

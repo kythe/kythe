@@ -42,9 +42,11 @@ public enum NodeKind {
   VARIABLE_RESOURCE("variable", "local/resource");
 
   private final String kind, subkind;
+
   NodeKind(String kind) {
     this(kind, null);
   }
+
   NodeKind(String kind, String subkind) {
     this.kind = kind;
     this.subkind = subkind;

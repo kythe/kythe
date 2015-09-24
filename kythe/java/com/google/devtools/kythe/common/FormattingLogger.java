@@ -174,7 +174,10 @@ public class FormattingLogger {
       record.setSourceClassName(sourceClass);
     }
 
-    @Override public void flush() {}
-    @Override public void close() {}
+    @Override
+    public void flush() {}
+
+    @Override
+    public void close() {}
   }
 }

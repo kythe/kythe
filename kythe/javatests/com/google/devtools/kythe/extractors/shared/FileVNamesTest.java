@@ -25,62 +25,66 @@ import junit.framework.TestCase;
 public class FileVNamesTest extends TestCase {
 
   // Mirror of test config in kythe/storage/go/filevnames/filevnames_test.go
-  private static final String TEST_CONFIG = Joiner.on('\n').join(new String[]{
-    "[",
-    "  {",
-    "    \"pattern\": \"static/path\",",
-    "    \"vname\": {",
-    "      \"root\": \"root\",",
-    "      \"corpus\": \"static\"",
-    "    }",
-    "  },",
-    "  {",
-    "    \"pattern\": \"dup/path\",",
-    "    \"vname\": {",
-    "      \"corpus\": \"first\"",
-    "    }",
-    "  },",
-    "  {",
-    "    \"pattern\": \"dup/path2\",",
-    "    \"vname\": {",
-    "      \"corpus\": \"second\"",
-    "    }",
-    "  },",
-    "  {",
-    "    \"pattern\": \"(grp1)/(\\\\d+)/(.*)\",",
-    "    \"vname\": {",
-    "      \"root\": \"@2@\",",
-    "      \"corpus\": \"@1@/@3@\"",
-    "    }",
-    "  },",
-    "  {",
-    "    \"pattern\": \"bazel-bin/([^/]+)/java/.*[.]jar!/.*\",",
-    "    \"vname\": {",
-    "      \"root\": \"java\",",
-    "      \"corpus\": \"@1@\"",
-    "    }",
-    "  },",
-    "  {",
-    "    \"pattern\": \"third_party/([^/]+)/.*[.]jar!/.*\",",
-    "    \"vname\": {",
-    "      \"root\": \"@1@\",",
-    "      \"corpus\": \"third_party\"",
-    "    }",
-    "  },",
-    "  {",
-    "    \"pattern\": \"([^/]+)/java/.*\",",
-    "    \"vname\": {",
-    "      \"root\": \"java\",",
-    "      \"corpus\": \"@1@\"",
-    "    }",
-    "  },",
-    "  {",
-    "    \"pattern\": \"([^/]+)/.*\",",
-    "    \"vname\": {",
-    "      \"corpus\": \"@1@\"",
-    "    }",
-    "  }",
-    "]"});
+  private static final String TEST_CONFIG =
+      Joiner.on('\n')
+          .join(
+              new String[] {
+                "[",
+                "  {",
+                "    \"pattern\": \"static/path\",",
+                "    \"vname\": {",
+                "      \"root\": \"root\",",
+                "      \"corpus\": \"static\"",
+                "    }",
+                "  },",
+                "  {",
+                "    \"pattern\": \"dup/path\",",
+                "    \"vname\": {",
+                "      \"corpus\": \"first\"",
+                "    }",
+                "  },",
+                "  {",
+                "    \"pattern\": \"dup/path2\",",
+                "    \"vname\": {",
+                "      \"corpus\": \"second\"",
+                "    }",
+                "  },",
+                "  {",
+                "    \"pattern\": \"(grp1)/(\\\\d+)/(.*)\",",
+                "    \"vname\": {",
+                "      \"root\": \"@2@\",",
+                "      \"corpus\": \"@1@/@3@\"",
+                "    }",
+                "  },",
+                "  {",
+                "    \"pattern\": \"bazel-bin/([^/]+)/java/.*[.]jar!/.*\",",
+                "    \"vname\": {",
+                "      \"root\": \"java\",",
+                "      \"corpus\": \"@1@\"",
+                "    }",
+                "  },",
+                "  {",
+                "    \"pattern\": \"third_party/([^/]+)/.*[.]jar!/.*\",",
+                "    \"vname\": {",
+                "      \"root\": \"@1@\",",
+                "      \"corpus\": \"third_party\"",
+                "    }",
+                "  },",
+                "  {",
+                "    \"pattern\": \"([^/]+)/java/.*\",",
+                "    \"vname\": {",
+                "      \"root\": \"java\",",
+                "      \"corpus\": \"@1@\"",
+                "    }",
+                "  },",
+                "  {",
+                "    \"pattern\": \"([^/]+)/.*\",",
+                "    \"vname\": {",
+                "      \"corpus\": \"@1@\"",
+                "    }",
+                "  }",
+                "]"
+              });
 
   private FileVNames f;
 
@@ -98,28 +102,31 @@ public class FileVNamesTest extends TestCase {
   }
 
   public void testLookup_static() {
-    assertEquals(VName.newBuilder().setRoot("root").setCorpus("static").build(),
+    assertEquals(
+        VName.newBuilder().setRoot("root").setCorpus("static").build(),
         f.lookupBaseVName("static/path"));
   }
 
   public void testLookup_ordered() {
-    assertEquals(VName.newBuilder().setCorpus("first").build(),
-        f.lookupBaseVName("dup/path"));
-    assertEquals(VName.newBuilder().setCorpus("second").build(),
-        f.lookupBaseVName("dup/path2"));
+    assertEquals(VName.newBuilder().setCorpus("first").build(), f.lookupBaseVName("dup/path"));
+    assertEquals(VName.newBuilder().setCorpus("second").build(), f.lookupBaseVName("dup/path2"));
   }
 
   public void testLookup_groups() {
-    assertEquals(VName.newBuilder().setCorpus("corpus").build(),
-        f.lookupBaseVName("corpus/some/path/here"));
-    assertEquals(VName.newBuilder().setCorpus("grp1/endingGroup").setRoot("12345").build(),
+    assertEquals(
+        VName.newBuilder().setCorpus("corpus").build(), f.lookupBaseVName("corpus/some/path/here"));
+    assertEquals(
+        VName.newBuilder().setCorpus("grp1/endingGroup").setRoot("12345").build(),
         f.lookupBaseVName("grp1/12345/endingGroup"));
 
-    assertEquals(VName.newBuilder().setCorpus("kythe").setRoot("java").build(),
+    assertEquals(
+        VName.newBuilder().setCorpus("kythe").setRoot("java").build(),
         f.lookupBaseVName("bazel-bin/kythe/java/some/path/A.jar!/some/path/A.class"));
-    assertEquals(VName.newBuilder().setCorpus("kythe").setRoot("java").build(),
+    assertEquals(
+        VName.newBuilder().setCorpus("kythe").setRoot("java").build(),
         f.lookupBaseVName("kythe/java/com/google/devtools/kythe/util/KytheURI.java"));
-    assertEquals(VName.newBuilder().setCorpus("otherCorpus").setRoot("java").build(),
+    assertEquals(
+        VName.newBuilder().setCorpus("otherCorpus").setRoot("java").build(),
         f.lookupBaseVName("otherCorpus/java/com/google/devtools/kythe/util/KytheURI.java"));
   }
 }

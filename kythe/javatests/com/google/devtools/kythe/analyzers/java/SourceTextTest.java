@@ -33,9 +33,9 @@ public class SourceTextTest extends TestCase {
     assertOffsetsMatchSubstrings(US_ASCII, text);
 
     int[] ao = new PositionMappings(US_ASCII, text).byteOffsets;
-    assertThat(ao).hasLength(text.length()+1);
+    assertThat(ao).hasLength(text.length() + 1);
     for (int i = 0; i < ao.length; i++) {
-      assertThat(ao[i]).named("ao["+i+"]").isEqualTo(i);
+      assertThat(ao[i]).named("ao[" + i + "]").isEqualTo(i);
     }
 
     int[] au = new PositionMappings(UTF_8, text).byteOffsets;
@@ -66,9 +66,7 @@ public class SourceTextTest extends TestCase {
 
     for (int i = 0; i < offsets.length; i++) {
       String ss = text.substring(0, i);
-      assertThat(offsets[i])
-          .named("offsets["+i+"]")
-          .isEqualTo(ss.getBytes(charset).length);
+      assertThat(offsets[i]).named("offsets[" + i + "]").isEqualTo(ss.getBytes(charset).length);
     }
   }
 }

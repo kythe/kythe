@@ -58,8 +58,10 @@ import java.util.List;
 public abstract class AbstractJavacWrapper {
   public static final String DEFAULT_CORPUS = "kythe";
 
-  protected abstract CompilationDescription processCompilation(String[] arguments,
-      JavaCompilationUnitExtractor javaCompilationUnitExtractor) throws Exception;
+  protected abstract CompilationDescription processCompilation(
+      String[] arguments, JavaCompilationUnitExtractor javaCompilationUnitExtractor)
+      throws Exception;
+
   protected abstract void passThrough(String[] args) throws Exception;
 
   /**
@@ -75,11 +77,12 @@ public abstract class AbstractJavacWrapper {
         if (Strings.isNullOrEmpty(vnamesConfig)) {
           String corpus = readEnvironmentVariable("KYTHE_CORPUS", DEFAULT_CORPUS);
           extractor =
-              new JavaCompilationUnitExtractor(corpus,
-                  readEnvironmentVariable("KYTHE_ROOT_DIRECTORY"));
+              new JavaCompilationUnitExtractor(
+                  corpus, readEnvironmentVariable("KYTHE_ROOT_DIRECTORY"));
         } else {
           extractor =
-              new JavaCompilationUnitExtractor(FileVNames.fromFile(vnamesConfig),
+              new JavaCompilationUnitExtractor(
+                  FileVNames.fromFile(vnamesConfig),
                   readEnvironmentVariable("KYTHE_ROOT_DIRECTORY"));
         }
 
@@ -94,19 +97,21 @@ public abstract class AbstractJavacWrapper {
         }
 
         CompilationUnit compilationUnit = indexInfo.getCompilationUnit();
-        if(compilationUnit.getHasCompileErrors()) {
+        if (compilationUnit.getHasCompileErrors()) {
           System.err.println("Errors encountered during compilation");
           System.exit(1);
         }
       }
     } catch (IOException e) {
-      System.err.println(String.format(
-          "Unexpected IO error (probably while writing to index file): %s", e.toString()));
+      System.err.println(
+          String.format(
+              "Unexpected IO error (probably while writing to index file): %s", e.toString()));
       System.err.println(Throwables.getStackTraceAsString(e));
       System.exit(2);
     } catch (Exception e) {
-      System.err.println(String.format(
-          "Unexpected error compiling and indexing java compilation: %s", e.toString()));
+      System.err.println(
+          String.format(
+              "Unexpected error compiling and indexing java compilation: %s", e.toString()));
       System.err.println(Throwables.getStackTraceAsString(e));
       System.exit(2);
     }
@@ -138,8 +143,10 @@ public abstract class AbstractJavacWrapper {
       if (arg.equals("-target")) {
         skipArg = true;
         continue;
-      } else if (!(skipArg || arg.startsWith("-J") ||
-              arg.startsWith("-XD") || arg.startsWith("-Werror"))) {
+      } else if (!(skipArg
+          || arg.startsWith("-J")
+          || arg.startsWith("-XD")
+          || arg.startsWith("-Werror"))) {
         cleanedUpArgs.add(arg);
       }
       skipArg = false;
@@ -148,12 +155,16 @@ public abstract class AbstractJavacWrapper {
     return cleanedUpArgs.toArray(cleanedUpArgsArray);
   }
 
-  private static void writeIndexInfoToFile(
-      String rootDirectory, CompilationDescription indexInfo) throws IOException {
-    String name = indexInfo.getCompilationUnit().getVName().getSignature()
-        .trim()
-        .replaceAll("^/+|/+$", "")
-        .replace('/', '_');
+  private static void writeIndexInfoToFile(String rootDirectory, CompilationDescription indexInfo)
+      throws IOException {
+    String name =
+        indexInfo
+            .getCompilationUnit()
+            .getVName()
+            .getSignature()
+            .trim()
+            .replaceAll("^/+|/+$", "")
+            .replace('/', '_');
     String path = IndexInfoUtils.getIndexPath(rootDirectory, name).toString();
     IndexInfoUtils.writeIndexInfoToFile(indexInfo, path);
   }

@@ -82,8 +82,9 @@ public abstract class AbstractCompilationAnalyzer {
    * respectively, as a result of the compilation unit's processing.  After returning, the given
    * {@link FileDataProvider} and {@link FactEmitter} should no longer be used.
    */
-  protected abstract void analyzeCompilation(CompilationUnit compilationUnit,
-      FileDataProvider fileDataProvider, FactEmitter emitter) throws AnalysisException;
+  protected abstract void analyzeCompilation(
+      CompilationUnit compilationUnit, FileDataProvider fileDataProvider, FactEmitter emitter)
+      throws AnalysisException;
 
   /**
    * {@link FactEmitter} that emits an {@link AnalysisOutput} with an embedded {@link Entry} for
@@ -91,19 +92,18 @@ public abstract class AbstractCompilationAnalyzer {
    */
   public static abstract class AnalysisOutputEmitter implements FactEmitter {
     @Override
-    public void emit(VName source, String edgeKind, VName target,
-        String factName, byte[] factValue) {
-      Entry.Builder entry = Entry.newBuilder()
-          .setSource(source)
-          .setFactName(factName)
-          .setFactValue(ByteString.copyFrom(factValue));
+    public void emit(
+        VName source, String edgeKind, VName target, String factName, byte[] factValue) {
+      Entry.Builder entry =
+          Entry.newBuilder()
+              .setSource(source)
+              .setFactName(factName)
+              .setFactValue(ByteString.copyFrom(factValue));
       if (!Strings.isNullOrEmpty(edgeKind)) {
         entry.setEdgeKind(edgeKind);
         entry.setTarget(target);
       }
-      emitOutput(AnalysisOutput.newBuilder()
-          .setValue(entry.build().toByteString())
-          .build());
+      emitOutput(AnalysisOutput.newBuilder().setValue(entry.build().toByteString()).build());
     }
 
     /** Emits the given {@link AnalysisOutput}. */

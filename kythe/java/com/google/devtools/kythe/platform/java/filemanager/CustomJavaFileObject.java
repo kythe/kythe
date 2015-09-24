@@ -30,8 +30,13 @@ public class CustomJavaFileObject extends CustomFileObject implements JavaFileOb
   private final String className;
   private Kind kind;
 
-  public CustomJavaFileObject(FileDataProvider contentProvider,
-      String path, String digest, String className, Kind kind, String encoding) {
+  public CustomJavaFileObject(
+      FileDataProvider contentProvider,
+      String path,
+      String digest,
+      String className,
+      Kind kind,
+      String encoding) {
     super(contentProvider, path, digest, encoding);
     this.className = className;
     this.kind = kind;
@@ -51,6 +56,7 @@ public class CustomJavaFileObject extends CustomFileObject implements JavaFileOb
   public NestingKind getNestingKind() {
     return null;
   }
+
   @Override
   public Modifier getAccessLevel() {
     return null;

@@ -59,8 +59,9 @@ public final class SourceText {
     // Filling up the positions identifier lookup table
     SyntaxPreservingScanner scanner = SyntaxPreservingScanner.create(context, text);
     Deque<Token> starts = new ArrayDeque<>();
-    for (Token token = scanner.readToken(); token.kind != TokenKind.EOF;
-         token = scanner.readToken()) {
+    for (Token token = scanner.readToken();
+        token.kind != TokenKind.EOF;
+        token = scanner.readToken()) {
       if (token.kind == TokenKind.IDENTIFIER) {
         positions.addIdentifier(token.name(), scanner.spanForToken(token));
       } else if (token.kind == TokenKind.LT) {
@@ -82,8 +83,13 @@ public final class SourceText {
     }
   }
 
-  public Positions getPositions() { return positions; }
-  public List<Comment> getComments() { return comments; }
+  public Positions getPositions() {
+    return positions;
+  }
+
+  public List<Comment> getComments() {
+    return comments;
+  }
 
   public static final class Comment {
     public final Span charSpan, lineSpan, byteSpan;
@@ -92,10 +98,12 @@ public final class SourceText {
     private Comment(Positions pos, CommentToken token) {
       text = token.text;
       charSpan = token.span;
-      lineSpan = new Span(pos.charToLine(token.span.getStart()),
-          pos.charToLine(token.span.getEnd()));
-      byteSpan = new Span(pos.charToByteOffset(token.span.getStart()),
-          pos.charToByteOffset(token.span.getEnd()));
+      lineSpan =
+          new Span(pos.charToLine(token.span.getStart()), pos.charToLine(token.span.getEnd()));
+      byteSpan =
+          new Span(
+              pos.charToByteOffset(token.span.getStart()),
+              pos.charToByteOffset(token.span.getEnd()));
     }
   }
 
@@ -110,8 +118,8 @@ public final class SourceText {
     private final PositionMappings mappings;
     private final Charset encoding;
 
-    private Positions(JavaFileObject sourceFile, EndPosTable endPositions,
-        CharSequence text, Charset encoding) {
+    private Positions(
+        JavaFileObject sourceFile, EndPosTable endPositions, CharSequence text, Charset encoding) {
       this.sourceFile = sourceFile;
       this.endPositions = endPositions;
       this.text = text;
@@ -187,7 +195,8 @@ public final class SourceText {
         spans = Lists.newArrayList();
         identTable.put(name, spans);
       }
-      spans.add(new Span(charToByteOffset(position.getStart()), charToByteOffset(position.getEnd())));
+      spans.add(
+          new Span(charToByteOffset(position.getStart()), charToByteOffset(position.getEnd())));
     }
 
     // Adds a bracket group for findBracketGroup lookups.
@@ -195,8 +204,13 @@ public final class SourceText {
       bracketGroups.add(bracketGroup);
     }
 
-    int charToLine(int charOffset) { return mappings.charToLine(charOffset); }
-    int charToByteOffset(int charOffset) { return mappings.charToByteOffset(charOffset); }
+    int charToLine(int charOffset) {
+      return mappings.charToLine(charOffset);
+    }
+
+    int charToByteOffset(int charOffset) {
+      return mappings.charToByteOffset(charOffset);
+    }
   }
 
   @VisibleForTesting
@@ -204,14 +218,14 @@ public final class SourceText {
     final int[] byteOffsets, lineNumbers;
 
     public PositionMappings(Charset encoding, CharSequence text) {
-      byteOffsets = new int[text.length()+1];
-      lineNumbers = new int[text.length()+1];
+      byteOffsets = new int[text.length() + 1];
+      lineNumbers = new int[text.length() + 1];
 
       CountingOutputStream counter = new CountingOutputStream();
       OutputStreamWriter writer = new OutputStreamWriter(counter, encoding);
       for (int i = 0; i < text.length(); i++) {
         byteOffsets[i] = counter.getCount();
-        lineNumbers[i] = counter.getLines()+1;
+        lineNumbers[i] = counter.getLines() + 1;
         try {
           writer.append(text.charAt(i));
           writer.flush();
@@ -220,14 +234,15 @@ public final class SourceText {
         }
       }
       byteOffsets[text.length()] = counter.getCount();
-      lineNumbers[text.length()] = counter.getLines()+1;
+      lineNumbers[text.length()] = counter.getLines() + 1;
     }
 
     public int charToLine(int charOffset) {
       if (charOffset < 0) {
         return -1;
       } else if (charOffset > lineNumbers.length) {
-        System.err.printf("WARNING: offset past end of source: %d > %d\n", charOffset, lineNumbers.length);
+        System.err.printf(
+            "WARNING: offset past end of source: %d > %d\n", charOffset, lineNumbers.length);
         return -1;
       }
       return lineNumbers[charOffset];
@@ -237,7 +252,8 @@ public final class SourceText {
       if (charOffset < 0) {
         return -1;
       } else if (charOffset > byteOffsets.length) {
-        System.err.printf("WARNING: offset past end of source: %d > %d\n", charOffset, byteOffsets.length);
+        System.err.printf(
+            "WARNING: offset past end of source: %d > %d\n", charOffset, byteOffsets.length);
         return -1;
       }
       return byteOffsets[charOffset];

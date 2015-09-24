@@ -44,13 +44,14 @@ public class KytheURI implements Serializable {
 
   /** Construct a new {@link KytheURI}. */
   public KytheURI(String signature, String corpus, String root, String path, String language) {
-    this(VName.newBuilder()
-        .setSignature(nullToEmpty(signature))
-        .setCorpus(nullToEmpty(corpus))
-        .setRoot(nullToEmpty(root))
-        .setPath(nullToEmpty(path))
-        .setLanguage(nullToEmpty(language))
-        .build());
+    this(
+        VName.newBuilder()
+            .setSignature(nullToEmpty(signature))
+            .setCorpus(nullToEmpty(corpus))
+            .setRoot(nullToEmpty(root))
+            .setPath(nullToEmpty(path))
+            .setLanguage(nullToEmpty(language))
+            .build());
   }
 
   /** Constructs an empty {@link KytheURI}. */
@@ -94,11 +95,13 @@ public class KytheURI implements Serializable {
    * @throw URISyntaxException when the corpus/path/root/language are all empty
    */
   public URI toURI() throws URISyntaxException {
-    String query = Joiner.on("?").skipNulls()
-        .join(
-            attr("lang", vName.getLanguage()),
-            attr("path", vName.getPath()),
-            attr("root", vName.getRoot()));
+    String query =
+        Joiner.on("?")
+            .skipNulls()
+            .join(
+                attr("lang", vName.getLanguage()),
+                attr("path", vName.getPath()),
+                attr("root", vName.getRoot()));
     String corpus = vName.getCorpus();
     String authority = corpus, path = null;
     int slash = corpus.indexOf('/');
@@ -106,8 +109,12 @@ public class KytheURI implements Serializable {
       authority = corpus.substring(0, slash);
       path = corpus.substring(slash);
     }
-    return new URI(SCHEME_LABEL,
-        emptyToNull(authority), path, emptyToNull(query), emptyToNull(vName.getSignature()))
+    return new URI(
+            SCHEME_LABEL,
+            emptyToNull(authority),
+            path,
+            emptyToNull(query),
+            emptyToNull(vName.getSignature()))
         .normalize();
   }
 
@@ -118,7 +125,9 @@ public class KytheURI implements Serializable {
 
   @Override
   public String toString() {
-    if (vName.getCorpus().isEmpty() && vName.getPath().isEmpty() && vName.getRoot().isEmpty()
+    if (vName.getCorpus().isEmpty()
+        && vName.getPath().isEmpty()
+        && vName.getRoot().isEmpty()
         && vName.getLanguage().isEmpty()) {
       // java.net.URI does not handle an empty scheme-specific-part well...
       return vName.getSignature().isEmpty()
@@ -139,8 +148,7 @@ public class KytheURI implements Serializable {
 
   @Override
   public boolean equals(Object o) {
-    return this == o ||
-        (o instanceof KytheURI && vName.equals(((KytheURI) o).vName));
+    return this == o || (o instanceof KytheURI && vName.equals(((KytheURI) o).vName));
   }
 
   /** Parses the given string to produce a new {@link KytheURI}. */
@@ -154,7 +162,8 @@ public class KytheURI implements Serializable {
     }
 
     URI uri = new URI(str).normalize();
-    checkArgument(SCHEME_LABEL.equals(uri.getScheme()) || isNullOrEmpty(uri.getScheme()),
+    checkArgument(
+        SCHEME_LABEL.equals(uri.getScheme()) || isNullOrEmpty(uri.getScheme()),
         "URI Scheme must be " + SCHEME_LABEL + "; was " + uri.getScheme());
     String root = null, path = null, lang = null;
     if (!isNullOrEmpty(uri.getQuery())) {
@@ -179,10 +188,10 @@ public class KytheURI implements Serializable {
       }
     }
     String signature = uri.getFragment();
-    String corpus = ((uri.getHost() == null
-            ? nullToEmpty(uri.getAuthority())
-            : nullToEmpty(uri.getHost()))
-        + nullToEmpty(uri.getPath())).replaceAll("/+$", "");
+    String corpus =
+        ((uri.getHost() == null ? nullToEmpty(uri.getAuthority()) : nullToEmpty(uri.getHost()))
+                + nullToEmpty(uri.getPath()))
+            .replaceAll("/+$", "");
     return new KytheURI(signature, corpus, root, path, lang);
   }
 

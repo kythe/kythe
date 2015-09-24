@@ -69,7 +69,6 @@ public class IndexInfoUtils {
     return new CompilationDescription(compilationUnit, fileContents);
   }
 
-
   public static void writeIndexInfoToStream(CompilationDescription description, OutputStream stream)
       throws IOException {
     OutputStream indexOutputStream = new GZIPOutputStream(stream);
@@ -85,7 +84,7 @@ public class IndexInfoUtils {
 
   public static void writeIndexInfoToFile(CompilationDescription description, String path)
       throws IOException {
-      writeIndexInfoToStream(description, new FileOutputStream(path));
+    writeIndexInfoToStream(description, new FileOutputStream(path));
   }
 
   public static Path getIndexPath(String rootDirectory, String basename) {

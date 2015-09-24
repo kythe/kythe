@@ -62,22 +62,31 @@ public class JavaIndexerServer {
     }
 
     @Override
-    public void analyzeCompilation(CompilationUnit compilation,
-        FileDataProvider fileData, FactEmitter emitter) throws AnalysisException {
-      driver.analyze(new KytheJavacAnalyzer(config, emitter, getStatisticsCollector()),
-          compilation, fileData, false);
+    public void analyzeCompilation(
+        CompilationUnit compilation, FileDataProvider fileData, FactEmitter emitter)
+        throws AnalysisException {
+      driver.analyze(
+          new KytheJavacAnalyzer(config, emitter, getStatisticsCollector()),
+          compilation,
+          fileData,
+          false);
     }
   }
 
   private static class ServerConfig extends IndexerConfig {
-    @Parameter(names = { "-p", "--port" }, required = true,
-        description = "Port for GRPC listening server")
+    @Parameter(
+      names = {"-p", "--port"},
+      required = true,
+      description = "Port for GRPC listening server"
+    )
     private int port;
 
     public ServerConfig() {
       super("java-indexer-server");
     }
 
-    public final int getPort() { return port; }
+    public final int getPort() {
+      return port;
+    }
   }
 }

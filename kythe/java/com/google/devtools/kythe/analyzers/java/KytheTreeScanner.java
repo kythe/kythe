@@ -67,8 +67,7 @@ import java.util.Set;
 
 /** {@link JCTreeScanner} that emits Kythe nodes and edges. */
 public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
-  private static final FormattingLogger logger =
-      FormattingLogger.getLogger(KytheTreeScanner.class);
+  private static final FormattingLogger logger = FormattingLogger.getLogger(KytheTreeScanner.class);
 
   private final JavaEntrySets entrySets;
   private final StatisticsCollector statistics;
@@ -80,8 +79,12 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
 
   private KytheDocTreeScanner docScanner;
 
-  private KytheTreeScanner(JavaEntrySets entrySets, StatisticsCollector statistics,
-      SignatureGenerator signatureGenerator, SourceText src, Context context) {
+  private KytheTreeScanner(
+      JavaEntrySets entrySets,
+      StatisticsCollector statistics,
+      SignatureGenerator signatureGenerator,
+      SourceText src,
+      Context context) {
     this.entrySets = entrySets;
     this.statistics = statistics;
     this.signatureGenerator = signatureGenerator;
@@ -99,9 +102,14 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
     }
   }
 
-  public static void emitEntries(Context context, StatisticsCollector statistics,
-      JavaEntrySets entrySets, SignatureGenerator signatureGenerator,
-      JCCompilationUnit compilation, Charset sourceEncoding) throws IOException {
+  public static void emitEntries(
+      Context context,
+      StatisticsCollector statistics,
+      JavaEntrySets entrySets,
+      SignatureGenerator signatureGenerator,
+      JCCompilationUnit compilation,
+      Charset sourceEncoding)
+      throws IOException {
     SourceText src = new SourceText(context, compilation, sourceEncoding);
     new KytheTreeScanner(entrySets, statistics, signatureGenerator, src, context)
         .scan(compilation, null);
@@ -143,7 +151,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
   public JavaNode visitImport(JCImport imprt, JCTree owner) {
     if (imprt.qualid instanceof JCFieldAccess) {
       JCFieldAccess imprtField = (JCFieldAccess) imprt.qualid;
-      emitAnchor(imprtField.selected, EdgeKind.REF,
+      emitAnchor(
+          imprtField.selected,
+          EdgeKind.REF,
           entrySets.getPackageNode(imprtField.selected.toString()));
 
       if (imprtField.name.toString().equals("*")) {
@@ -230,8 +240,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
         JavaNode implNode = scan(implClass, classDef);
         if (implNode == null) {
           statistics.incrementCounter("warning-missing-implements-node");
-          logger.warning("Missing 'implements' node for " + implClass.getClass()
-              + ": " + implClass);
+          logger.warning(
+              "Missing 'implements' node for " + implClass.getClass() + ": " + implClass);
           continue;
         }
         emitEdge(classNode, EdgeKind.IMPLEMENTS, implNode);
@@ -281,16 +291,24 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
         if (methodDef.getPreferredPosition() > owner.getPreferredPosition()) {
           // Use the owner's name (the class name) to find the definition anchor's
           // location because constructors are internally named "<init>".
-          bindingAnchor = emitAnchor(methodDef.sym.owner.name, methodDef.getPreferredPosition(),
-              EdgeKind.DEFINES_BINDING, methodNode);
+          bindingAnchor =
+              emitAnchor(
+                  methodDef.sym.owner.name,
+                  methodDef.getPreferredPosition(),
+                  EdgeKind.DEFINES_BINDING,
+                  methodNode);
         }
         // Likewise, constructors don't have return types in the Java AST, but
         // Kythe models all functions with return types.  As a solution, we use
         // the class type as the return type for all constructors.
         ret = getNode(methodDef.sym.owner);
       } else {
-        bindingAnchor = emitAnchor(methodDef.name, methodDef.getPreferredPosition(),
-            EdgeKind.DEFINES_BINDING, methodNode);
+        bindingAnchor =
+            emitAnchor(
+                methodDef.name,
+                methodDef.getPreferredPosition(),
+                EdgeKind.DEFINES_BINDING,
+                methodNode);
         ret = returnType.entries;
         fnTypeName = returnType.qualifiedName + fnTypeName;
       }
@@ -325,8 +343,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
         }
       }
 
-      return new JavaNode(methodNode, signature.get(),
-          new JavaNode(fnTypeNode, fnTypeName));
+      return new JavaNode(methodNode, signature.get(), new JavaNode(fnTypeNode, fnTypeName));
     }
     return todoNode("MethodDef: " + methodDef);
   }
@@ -372,8 +389,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
     EntrySet typeNode = entrySets.newTApply(typeCtorNode.entries, argEntries);
     emitAnchor(tApply, EdgeKind.REF, typeNode);
 
-    String qualifiedName = typeCtorNode.qualifiedName
-        + "<" + Joiner.on(',').join(argNames) + ">";
+    String qualifiedName = typeCtorNode.qualifiedName + "<" + Joiner.on(',').join(argNames) + ">";
     entrySets.emitName(typeNode, qualifiedName);
 
     return new JavaNode(typeNode, qualifiedName);
@@ -390,9 +406,11 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
     EntrySet ctorNode = getNode(newClass.constructor);
     if (ctorNode != null) {
       // Span over "new Class"
-      EntrySet anchor = entrySets.getAnchor(filePositions,
-          filePositions.getStart(newClass),
-          filePositions.getEnd(newClass.getIdentifier()));
+      EntrySet anchor =
+          entrySets.getAnchor(
+              filePositions,
+              filePositions.getStart(newClass),
+              filePositions.getEnd(newClass.getIdentifier()));
       emitAnchor(anchor, EdgeKind.REF, ctorNode);
 
       scanList(newClass.getTypeArguments(), newClass);
@@ -415,8 +433,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
   @Override
   public JavaNode visitTypeArray(JCArrayTypeTree arrayType, JCTree owner) {
     JavaNode typeNode = scan(arrayType.getType(), arrayType);
-    EntrySet node = entrySets
-        .newTApply(entrySets.getBuiltin("array"), Arrays.asList(typeNode.entries));
+    EntrySet node =
+        entrySets.newTApply(entrySets.getBuiltin("array"), Arrays.asList(typeNode.entries));
     emitAnchor(arrayType, EdgeKind.REF, node);
     JavaNode arrayNode = new JavaNode(node, typeNode.qualifiedName + "[]");
     entrySets.emitName(node, arrayNode.qualifiedName);
@@ -566,8 +584,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
 
   // Creates/emits an anchor and an associated edge
   private EntrySet emitAnchor(EntrySet anchor, EdgeKind kind, EntrySet node) {
-    Preconditions.checkArgument(kind.isAnchorEdge(),
-        "EdgeKind was not intended for ANCHORs: " + kind);
+    Preconditions.checkArgument(
+        kind.isAnchorEdge(), "EdgeKind was not intended for ANCHORs: " + kind);
     if (anchor == null) {
       return null;
     }
@@ -605,8 +623,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
 
   @Deprecated
   private JavaNode todoNode(String message) {
-    return new JavaNode(entrySets.todoNode(message), "TODO",
-        new JavaNode(entrySets.todoNode("type:"+message), "TODO:type"));
+    return new JavaNode(
+        entrySets.todoNode(message),
+        "TODO",
+        new JavaNode(entrySets.todoNode("type:" + message), "TODO:type"));
   }
 
   private <T extends JCTree> List<JavaNode> scanList(List<T> trees, JCTree owner) {

@@ -25,6 +25,7 @@ public class ExtractionException extends Exception {
   private static final long serialVersionUID = 6211661316721501831L;
 
   private final boolean shouldRetry;
+
   public ExtractionException(String message, boolean shouldRetry) {
     super(message);
     this.shouldRetry = shouldRetry;
