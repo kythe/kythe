@@ -16,6 +16,8 @@
 
 package com.google.devtools.kythe.analyzers.java;
 
+import com.google.common.collect.HashMultiset;
+import com.google.common.collect.Multiset;
 import com.google.devtools.kythe.analyzers.base.CorpusPath;
 import com.google.devtools.kythe.analyzers.base.EntrySet;
 import com.google.devtools.kythe.analyzers.base.FactEmitter;
@@ -29,6 +31,7 @@ import com.google.devtools.kythe.util.Span;
 
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
+import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import com.sun.tools.javac.code.Symbol.PackageSymbol;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.util.Name;
@@ -40,11 +43,13 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.Modifier;
 import javax.tools.JavaFileObject;
 
 /** Specialization of {@link KytheEntrySets} for Java. */
 public class JavaEntrySets extends KytheEntrySets {
   private final Map<Symbol, EntrySet> symbolNodes = new HashMap<>();
+  private final Map<Symbol, Integer> symbolHashes = new HashMap<>();
   private final Map<Symbol, Set<String>> symbolSigs = new HashMap<Symbol, Set<String>>();
   private final boolean ignoreVNamePaths;
 
@@ -89,6 +94,7 @@ public class JavaEntrySets extends KytheEntrySets {
       node = builder
           .setCorpusPath(CorpusPath.fromVName(v))
           .addSignatureSalt(signature)
+          .addSignatureSalt("" + hashSymbol(sym))
           .setProperty("identifier", sym.getSimpleName().toString())
           .build();
       emitName(node, signature);
@@ -164,6 +170,44 @@ public class JavaEntrySets extends KytheEntrySets {
         // TODO(schroederc): handle all cases, make this exceptional, and remove all null checks
         return null;
     }
+  }
+
+  // Returns a consistent hash for the given symbol across separate compilations and JVM instances.
+  private int hashSymbol(Symbol sym) {
+    // This method is necessary because Symbol, and most other javac internals, do not overload the
+    // Object#hashCode() method and the default implementation, System#identityHashCode(Object), is
+    // practically useless because it can change across JVM instances.  This method instead only
+    // uses stable hashing methods such as String#hashCode(), Multiset#hashCode(), and
+    // Integer#hashCode().
+
+    if (symbolHashes.containsKey(sym)) {
+      return symbolHashes.get(sym);
+    }
+
+    Multiset<Integer> hashes = HashMultiset.create();
+    if (sym.members() != null) {
+      for (Symbol member : sym.members().getElements()) {
+        if (member instanceof MethodSymbol && ((MethodSymbol) member).isStaticOrInstanceInit()) {
+          // Ignore initializers.  These normally do not appear in the symbol's scope outside of its
+          // .java source compilation (i.e. they do not appear in dependent compilations).
+          continue;
+        }
+        // We can't recursively get the result of hashSymbol(member) since the extractor removes all
+        // .class files not directly used by a compilation meaning that member may not be complete.
+        hashes.add(member.getSimpleName().toString().hashCode());
+        hashes.add(member.kind);
+      }
+    }
+
+    hashes.add(sym.getQualifiedName().toString().hashCode());
+    hashes.add(sym.getKind().ordinal());
+    for (Modifier mod : sym.getModifiers()) {
+      hashes.add(mod.ordinal());
+    }
+
+    int h = hashes.hashCode();
+    symbolHashes.put(sym, h);
+    return h;
   }
 
   private VName lookupVName(ClassSymbol cls) {

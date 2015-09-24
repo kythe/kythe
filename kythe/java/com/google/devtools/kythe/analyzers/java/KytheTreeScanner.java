@@ -65,8 +65,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.lang.model.element.ElementKind;
-
 /** {@link JCTreeScanner} that emits Kythe nodes and edges. */
 public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
   private static final FormattingLogger logger =
