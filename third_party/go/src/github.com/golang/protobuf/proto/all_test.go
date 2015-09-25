@@ -401,17 +401,18 @@ type fakeMarshaler struct {
 	err error
 }
 
-func (f fakeMarshaler) Marshal() ([]byte, error) {
-	return f.b, f.err
+func (f *fakeMarshaler) Marshal() ([]byte, error) { return f.b, f.err }
+func (f *fakeMarshaler) String() string           { return fmt.Sprintf("Bytes: %v Error: %v", f.b, f.err) }
+func (f *fakeMarshaler) ProtoMessage()            {}
+func (f *fakeMarshaler) Reset()                   {}
+
+type msgWithFakeMarshaler struct {
+	M *fakeMarshaler `protobuf:"bytes,1,opt,name=fake"`
 }
 
-func (f fakeMarshaler) String() string {
-	return fmt.Sprintf("Bytes: %v Error: %v", f.b, f.err)
-}
-
-func (f fakeMarshaler) ProtoMessage() {}
-
-func (f fakeMarshaler) Reset() {}
+func (m *msgWithFakeMarshaler) String() string { return CompactTextString(m) }
+func (m *msgWithFakeMarshaler) ProtoMessage()  {}
+func (m *msgWithFakeMarshaler) Reset()         {}
 
 // Simple tests for proto messages that implement the Marshaler interface.
 func TestMarshalerEncoding(t *testing.T) {
@@ -423,7 +424,7 @@ func TestMarshalerEncoding(t *testing.T) {
 	}{
 		{
 			name: "Marshaler that fails",
-			m: fakeMarshaler{
+			m: &fakeMarshaler{
 				err: errors.New("some marshal err"),
 				b:   []byte{5, 6, 7},
 			},
@@ -432,8 +433,24 @@ func TestMarshalerEncoding(t *testing.T) {
 			wantErr: errors.New("some marshal err"),
 		},
 		{
+			name: "Marshaler that fails with RequiredNotSetError",
+			m: &msgWithFakeMarshaler{
+				M: &fakeMarshaler{
+					err: &RequiredNotSetError{},
+					b:   []byte{5, 6, 7},
+				},
+			},
+			// Since there's an error that can be continued after,
+			// the buffer should be written.
+			want: []byte{
+				10, 3, // for &msgWithFakeMarshaler
+				5, 6, 7, // for &fakeMarshaler
+			},
+			wantErr: &RequiredNotSetError{},
+		},
+		{
 			name: "Marshaler that succeeds",
-			m: fakeMarshaler{
+			m: &fakeMarshaler{
 				b: []byte{0, 1, 2, 3, 4, 127, 255},
 			},
 			want:    []byte{0, 1, 2, 3, 4, 127, 255},
@@ -443,6 +460,10 @@ func TestMarshalerEncoding(t *testing.T) {
 	for _, test := range tests {
 		b := NewBuffer(nil)
 		err := b.Marshal(test.m)
+		if _, ok := err.(*RequiredNotSetError); ok {
+			// We're not in package proto, so we can only assert the type in this case.
+			err = &RequiredNotSetError{}
+		}
 		if !reflect.DeepEqual(test.wantErr, err) {
 			t.Errorf("%s: got err %v wanted %v", test.name, err, test.wantErr)
 		}
@@ -1934,6 +1955,58 @@ func TestMapFieldWithNil(t *testing.T) {
 	b, err := Marshal(m)
 	if err == nil {
 		t.Fatalf("Marshal of bad map should have failed, got these bytes: %v", b)
+	}
+}
+
+func TestOneof(t *testing.T) {
+	m := &Communique{}
+	b, err := Marshal(m)
+	if err != nil {
+		t.Fatalf("Marshal of empty message with oneof: %v", err)
+	}
+	if len(b) != 0 {
+		t.Errorf("Marshal of empty message yielded too many bytes: %v", b)
+	}
+
+	m = &Communique{
+		Union: &Communique_Name{"Barry"},
+	}
+
+	// Round-trip.
+	b, err = Marshal(m)
+	if err != nil {
+		t.Fatalf("Marshal of message with oneof: %v", err)
+	}
+	if len(b) != 7 { // name tag/wire (1) + name len (1) + name (5)
+		t.Errorf("Incorrect marshal of message with oneof: %v", b)
+	}
+	m.Reset()
+	if err := Unmarshal(b, m); err != nil {
+		t.Fatalf("Unmarshal of message with oneof: %v", err)
+	}
+	if x, ok := m.Union.(*Communique_Name); !ok || x.Name != "Barry" {
+		t.Errorf("After round trip, Union = %+v", m.Union)
+	}
+	if name := m.GetName(); name != "Barry" {
+		t.Errorf("After round trip, GetName = %q, want %q", name, "Barry")
+	}
+
+	// Let's try with a message in the oneof.
+	m.Union = &Communique_Msg{&Strings{StringField: String("deep deep string")}}
+	b, err = Marshal(m)
+	if err != nil {
+		t.Fatalf("Marshal of message with oneof set to message: %v", err)
+	}
+	if len(b) != 20 { // msg tag/wire (1) + msg len (1) + msg (1 + 1 + 16)
+		t.Errorf("Incorrect marshal of message with oneof set to message: %v", b)
+	}
+	m.Reset()
+	if err := Unmarshal(b, m); err != nil {
+		t.Fatalf("Unmarshal of message with oneof set to message: %v", err)
+	}
+	ss, ok := m.Union.(*Communique_Msg)
+	if !ok || ss.Msg.GetStringField() != "deep deep string" {
+		t.Errorf("After round trip with oneof set to message, Union = %+v", m.Union)
 	}
 }
 

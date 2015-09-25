@@ -30,7 +30,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /*
-Package jsonpb provides marshalling/unmarshalling functionality between
+Package jsonpb provides marshaling/unmarshaling functionality between
 protocol buffer and JSON objects.
 
 Compared to encoding/json, this library:
@@ -56,9 +56,9 @@ var (
 	byteArrayType = reflect.TypeOf([]byte{})
 )
 
-// Marshaller is a configurable object for converting between
+// Marshaler is a configurable object for converting between
 // protocol buffer objects and a JSON representation for them
-type Marshaller struct {
+type Marshaler struct {
 	// Use string values for enums (as opposed to integer values)
 	EnumsAsString bool
 
@@ -70,13 +70,13 @@ type Marshaller struct {
 }
 
 // Marshal marshals a protocol buffer into JSON.
-func (m *Marshaller) Marshal(out io.Writer, pb proto.Message) error {
+func (m *Marshaler) Marshal(out io.Writer, pb proto.Message) error {
 	writer := &errWriter{writer: out}
 	return m.marshalObject(writer, pb, "")
 }
 
 // MarshalToString converts a protocol buffer object to JSON string.
-func (m *Marshaller) MarshalToString(pb proto.Message) (string, error) {
+func (m *Marshaler) MarshalToString(pb proto.Message) (string, error) {
 	var buf bytes.Buffer
 	if err := m.Marshal(&buf, pb); err != nil {
 		return "", err
@@ -85,7 +85,7 @@ func (m *Marshaller) MarshalToString(pb proto.Message) (string, error) {
 }
 
 // marshalObject writes a struct to the Writer.
-func (m *Marshaller) marshalObject(out *errWriter, v proto.Message, indent string) error {
+func (m *Marshaler) marshalObject(out *errWriter, v proto.Message, indent string) error {
 	out.write("{")
 	if m.Indent != "" {
 		out.write("\n")
@@ -96,22 +96,31 @@ func (m *Marshaller) marshalObject(out *errWriter, v proto.Message, indent strin
 	for i := 0; i < s.NumField(); i++ {
 		value := s.Field(i)
 		valueField := s.Type().Field(i)
-		fieldName, omitFieldIfNil := parseFieldOptions(valueField)
-
-		// Fields which should not be serialized will specify a json tag with '-'
-		// TODO: proto3 objects should have default values omitted.
-		if fieldName == "-" {
+		if strings.HasPrefix(valueField.Name, "XXX_") {
 			continue
-		} else if omitFieldIfNil {
-			// IsNil will panic on most value kinds.
-			skip := false
-			switch value.Kind() {
-			case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice:
-				skip = value.IsNil()
-			}
-			if skip {
+		}
+		fieldName := jsonFieldName(valueField)
+
+		// TODO: proto3 objects should have default values omitted.
+
+		// IsNil will panic on most value kinds.
+		switch value.Kind() {
+		case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice:
+			if value.IsNil() {
 				continue
 			}
+		}
+
+		// Oneof fields need special handling.
+		if valueField.Tag.Get("protobuf_oneof") != "" {
+			// value is an interface containing &T{real_value}.
+			sv := value.Elem().Elem() // interface -> *T -> T
+			value = sv.Field(0)
+			valueField = sv.Type().Field(0)
+
+			var p proto.Properties
+			p.Parse(sv.Type().Field(0).Tag.Get("protobuf"))
+			fieldName = p.OrigName
 		}
 
 		out.write(writeBeforeField)
@@ -146,7 +155,7 @@ func (m *Marshaller) marshalObject(out *errWriter, v proto.Message, indent strin
 }
 
 // marshalValue writes the value to the Writer.
-func (m *Marshaller) marshalValue(out *errWriter, v reflect.Value,
+func (m *Marshaler) marshalValue(out *errWriter, v reflect.Value,
 	structField reflect.StructField, indent string) error {
 
 	var err error
@@ -207,7 +216,7 @@ func (m *Marshaller) marshalValue(out *errWriter, v reflect.Value,
 	}
 
 	// Handle maps.
-	// NOTE: Since Go randomizes map iteration, we sort keys for stable output.
+	// Since Go randomizes map iteration, we sort keys for stable output.
 	if v.Kind() == reflect.Map {
 		out.write(`{`)
 		keys := v.MapKeys()
@@ -275,7 +284,7 @@ func (m *Marshaller) marshalValue(out *errWriter, v reflect.Value,
 
 // Unmarshal unmarshals a JSON object stream into a protocol
 // buffer. This function is lenient and will decode any options
-// permutations of the related Marshaller.
+// permutations of the related Marshaler.
 func Unmarshal(r io.Reader, pb proto.Message) error {
 	inputValue := json.RawMessage{}
 	if err := json.NewDecoder(r).Decode(&inputValue); err != nil {
@@ -286,7 +295,7 @@ func Unmarshal(r io.Reader, pb proto.Message) error {
 
 // UnmarshalString will populate the fields of a protocol buffer based
 // on a JSON string. This function is lenient and will decode any options
-// permutations of the related Marshaller.
+// permutations of the related Marshaler.
 func UnmarshalString(str string, pb proto.Message) error {
 	return Unmarshal(bytes.NewReader([]byte(str)), pb)
 }
@@ -309,18 +318,39 @@ func unmarshalValue(target reflect.Value, inputValue json.RawMessage) error {
 		}
 
 		for i := 0; i < target.NumField(); i++ {
-			fieldName, _ := parseFieldOptions(target.Type().Field(i))
-
-			// Fields which should not be serialized will specify a json tag with '-'
-			if fieldName == "-" {
+			ft := target.Type().Field(i)
+			if strings.HasPrefix(ft.Name, "XXX_") {
 				continue
 			}
+			fieldName := jsonFieldName(ft)
 
 			if valueForField, ok := jsonFields[fieldName]; ok {
 				if err := unmarshalValue(target.Field(i), valueForField); err != nil {
 					return err
 				}
+				delete(jsonFields, fieldName)
 			}
+		}
+		// Check for any oneof fields.
+		sprops := proto.GetProperties(targetType)
+		for fname, raw := range jsonFields {
+			if oop, ok := sprops.OneofTypes[fname]; ok {
+				nv := reflect.New(oop.Type.Elem())
+				target.Field(oop.Field).Set(nv)
+				if err := unmarshalValue(nv.Elem().Field(0), raw); err != nil {
+					return err
+				}
+				delete(jsonFields, fname)
+			}
+		}
+		if len(jsonFields) > 0 {
+			// Pick any field to be the scapegoat.
+			var f string
+			for fname := range jsonFields {
+				f = fname
+				break
+			}
+			return fmt.Errorf("unknown field %q in %v", f, targetType)
 		}
 		return nil
 	}
@@ -387,20 +417,11 @@ type hasUnmarshalJSON interface {
 	UnmarshalJSON(data []byte) error
 }
 
-// parseFieldOptions returns the field name and if it should be omited.
-func parseFieldOptions(f reflect.StructField) (string, bool) {
-	name := f.Name
-	omitEmpty := false
-	tag := f.Tag.Get("json")
-	tagParts := strings.Split(tag, ",")
-	for i := range tagParts {
-		if tagParts[i] == "omitempty" || tagParts[i] == "" {
-			omitEmpty = true
-		} else {
-			name = tagParts[i]
-		}
-	}
-	return name, omitEmpty
+// jsonFieldName returns the field name to use.
+func jsonFieldName(f reflect.StructField) string {
+	var prop proto.Properties
+	prop.Init(f.Type, f.Name, f.Tag.Get("protobuf"), &f)
+	return prop.OrigName
 }
 
 // Writer wrapper inspired by https://blog.golang.org/errors-are-values

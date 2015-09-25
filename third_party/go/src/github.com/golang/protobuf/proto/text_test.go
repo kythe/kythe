@@ -208,6 +208,30 @@ func TestMarshalTextUnknownEnum(t *testing.T) {
 	}
 }
 
+func TestTextOneof(t *testing.T) {
+	tests := []struct {
+		m    proto.Message
+		want string
+	}{
+		// zero message
+		{&pb.Communique{}, ``},
+		// scalar field
+		{&pb.Communique{Union: &pb.Communique_Number{4}}, `number:4`},
+		// message field
+		{&pb.Communique{Union: &pb.Communique_Msg{
+			&pb.Strings{StringField: proto.String("why hello!")},
+		}}, `msg:<string_field:"why hello!" >`},
+		// bad oneof (should not panic)
+		{&pb.Communique{Union: &pb.Communique_Msg{nil}}, `msg:/* nil */`},
+	}
+	for _, test := range tests {
+		got := strings.TrimSpace(test.m.String())
+		if got != test.want {
+			t.Errorf("\n got %s\nwant %s", got, test.want)
+		}
+	}
+}
+
 func BenchmarkMarshalTextBuffered(b *testing.B) {
 	buf := new(bytes.Buffer)
 	m := newTestMessage()
@@ -421,10 +445,19 @@ func TestProto3Text(t *testing.T) {
 		{&proto3pb.Message{Name: "Rob", HeightInCm: 175}, `name:"Rob" height_in_cm:175`},
 		// empty map
 		{&pb.MessageWithMap{}, ``},
-		// non-empty map; current map format is the same as a repeated struct
+		// non-empty map; map format is the same as a repeated struct,
+		// and they are sorted by key (numerically for numeric keys).
 		{
-			&pb.MessageWithMap{NameMapping: map[int32]string{1234: "Feist"}},
-			`name_mapping:<key:1234 value:"Feist" >`,
+			&pb.MessageWithMap{NameMapping: map[int32]string{
+				-1:      "Negatory",
+				7:       "Lucky",
+				1234:    "Feist",
+				6345789: "Otis",
+			}},
+			`name_mapping:<key:-1 value:"Negatory" > ` +
+				`name_mapping:<key:7 value:"Lucky" > ` +
+				`name_mapping:<key:1234 value:"Feist" > ` +
+				`name_mapping:<key:6345789 value:"Otis" >`,
 		},
 		// map with nil value; not well-defined, but we shouldn't crash
 		{
