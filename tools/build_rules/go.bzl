@@ -304,7 +304,6 @@ go_library = rule(
 )
 
 binary_attrs = base_attrs + {
-    "args": attr.string_list(),
     "data": attr.label_list(
         allow_files = True,
         cfg = DATA_CFG,
