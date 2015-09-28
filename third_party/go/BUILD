@@ -294,12 +294,6 @@ package(
 )
 
 package(
-    name = "go_types",
-    go_build = 1,
-    package = "golang.org/x/tools/go/types",
-)
-
-package(
     name = "benchmark_parse",
     package = "golang.org/x/tools/benchmark/parse",
 )
