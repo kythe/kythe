@@ -19,6 +19,9 @@ public class Files {
 
   //- @CONSTANT defines/binding ConstantMember
   public static final int CONSTANT = 42;
+
+  // Ensure this private member does not affect the class node across compilations.
+  private int PRIVATE_MEMBER = -42;
 }
 //- Anchor childof File =
 //-   vname(_,"kythe","","kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/Files.java","java")

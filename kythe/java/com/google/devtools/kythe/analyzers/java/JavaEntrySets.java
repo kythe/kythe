@@ -199,9 +199,11 @@ public class JavaEntrySets extends KytheEntrySets {
     Multiset<Integer> hashes = HashMultiset.create();
     if (sym.members() != null) {
       for (Symbol member : sym.members().getElements()) {
-        if (member instanceof MethodSymbol && ((MethodSymbol) member).isStaticOrInstanceInit()) {
-          // Ignore initializers.  These normally do not appear in the symbol's scope outside of its
-          // .java source compilation (i.e. they do not appear in dependent compilations).
+        if (member.isPrivate()
+            || member instanceof MethodSymbol && ((MethodSymbol) member).isStaticOrInstanceInit()) {
+          // Ignore initializers and private members.  It's possible these do not appear in the
+          // symbol's scope outside of its .java source compilation (i.e. they do not appear in
+          // dependent compilations for Bazel's java rules).
           continue;
         }
         // We can't recursively get the result of hashSymbol(member) since the extractor removes all
