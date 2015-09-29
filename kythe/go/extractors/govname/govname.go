@@ -29,8 +29,9 @@ import (
 )
 
 const (
-	pathTail   = `(?:/(?P<path>.+))?$`
-	packageSig = ":pkg:${path}"
+	pathTail     = `(?:/(?P<path>.+))?$`
+	packageSig   = ":pkg:"
+	golangCorpus = "golang.org"
 )
 
 // VCSRules defines rewriting rules for Go import paths, using rules loosely
@@ -39,27 +40,27 @@ const (
 var VCSRules = vnameutil.Rules{{
 	// Google code, new syntax
 	regexp.MustCompile(`^(?i)(?P<corpus>code\.google\.com/p/[-a-z0-9]+)(?:\.(?P<subrepo>\w+))?` + pathTail),
-	&spb.VName{Corpus: "${corpus}", Signature: packageSig, Root: "${subrepo}"},
+	&spb.VName{Corpus: "${corpus}", Path: "${path}", Signature: packageSig, Root: "${subrepo}"},
 }, {
 	// Google code, old syntax
 	regexp.MustCompile(`^(?i)(?P<corpus>[-._a-z0-9]+\.googlecode\.com)` + pathTail),
-	&spb.VName{Corpus: "${corpus}", Signature: packageSig},
+	&spb.VName{Corpus: "${corpus}", Path: "${path}", Signature: packageSig},
 }, {
 	// GitHub
 	regexp.MustCompile(`^(?P<corpus>github\.com(?:/[-.\w]+){2})` + pathTail),
-	&spb.VName{Corpus: "${corpus}", Signature: packageSig},
+	&spb.VName{Corpus: "${corpus}", Path: "${path}", Signature: packageSig},
 }, {
 	// Bitbucket
 	regexp.MustCompile(`^(?P<corpus>bitbucket\.org(?:/[-.\w]+){2})` + pathTail),
-	&spb.VName{Corpus: "${corpus}", Signature: packageSig},
+	&spb.VName{Corpus: "${corpus}", Path: "${path}", Signature: packageSig},
 }, {
 	// Launchpad
 	regexp.MustCompile(`^(?P<corpus>launchpad\.net/(?:[-.\w]+|~[-.\w]+/[-.\w]+))` + pathTail),
-	&spb.VName{Corpus: "${corpus}", Signature: packageSig},
+	&spb.VName{Corpus: "${corpus}", Path: "${path}", Signature: packageSig},
 }, {
 	// Go extension repositories
 	regexp.MustCompile(`(?P<corpus>golang\.org(?:/x/\w+))` + pathTail),
-	&spb.VName{Corpus: "${corpus}", Signature: packageSig},
+	&spb.VName{Corpus: "${corpus}", Path: "${path}", Signature: packageSig},
 },
 }
 
@@ -68,31 +69,33 @@ const Language = "go"
 
 // ForPackage returns a VName for a Go package.
 //
-// The implicit default rule is to take the first path component of the path as
-// the corpus name, except for packages under GOROOT.
+// A package VName has the fixed signature ":pkg:", and the VName path holds
+// the import path relative to the corpus root.  The VCSRules are used to
+// identify the corpus; if none apply then by default the first path component
+// of the import path is used as the corpus name, except for packages under
+// GOROOT which are attributed to the special corpus "golang.org".
 func ForPackage(corpus string, pkg *build.Package) *spb.VName {
 	ip := pkg.ImportPath
 	v, ok := VCSRules.Apply(ip)
 	if !ok {
-		v = &spb.VName{Signature: ":pkg:" + ip}
+		v = &spb.VName{Path: ip, Signature: packageSig}
 		if pkg.Goroot {
 			// This is a Go standard library package; the corpus is implicit.
-			v.Corpus = "golang.org"
+			v.Corpus = golangCorpus
 		} else if strings.HasPrefix(ip, ".") {
 			// Local import; no corpus
 		} else if i := strings.Index(ip, "/"); i > 0 {
 			// Take the first slash-delimited component to be the corpus.
 			// e.g., import "foo/bar/baz" ⇒ corpus "foo", signature "bar/baz".
 			v.Corpus = ip[:i]
-			v.Signature = ":pkg:" + ip[i+1:]
+			v.Path = ip[i+1:]
+			v.Signature = packageSig
 		} else if corpus != "" {
 			// Default: Assume the package is in "this" corpus, if defined.
 			v.Corpus = corpus
 		}
 	}
-	if v != nil {
-		v.Language = Language
-	}
+	v.Language = Language
 	return v
 }
 
@@ -100,5 +103,5 @@ func ForPackage(corpus string, pkg *build.Package) *spb.VName {
 // This includes the "golang.org" corpus but excludes the "golang.org/x/..."
 // extension repositories.  If v == nil, the answer is false.
 func IsStandardLibrary(v *spb.VName) bool {
-	return v != nil && v.Language == "go" && v.Corpus == "golang.org"
+	return v != nil && v.Language == "go" && v.Corpus == golangCorpus
 }
