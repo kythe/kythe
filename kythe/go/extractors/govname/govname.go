@@ -46,7 +46,7 @@ var VCSRules = vnameutil.Rules{{
 	&spb.VName{Corpus: "${corpus}", Signature: packageSig},
 }, {
 	// GitHub
-	regexp.MustCompile(`^(?P<corpus>github\.com/(?:[-.\w]+){2})` + pathTail),
+	regexp.MustCompile(`^(?P<corpus>github\.com(?:/[-.\w]+){2})` + pathTail),
 	&spb.VName{Corpus: "${corpus}", Signature: packageSig},
 }, {
 	// Bitbucket
@@ -94,4 +94,11 @@ func ForPackage(corpus string, pkg *build.Package) *spb.VName {
 		v.Language = Language
 	}
 	return v
+}
+
+// IsStandardLibrary reports whether v names part of the Go standard library.
+// This includes the "golang.org" corpus but excludes the "golang.org/x/..."
+// extension repositories.  If v == nil, the answer is false.
+func IsStandardLibrary(v *spb.VName) bool {
+	return v != nil && v.Language == "go" && v.Corpus == "golang.org"
 }
