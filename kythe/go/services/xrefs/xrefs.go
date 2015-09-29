@@ -123,7 +123,6 @@ func CrossReferences(ctx context.Context, xs NodesEdgesService, req *xpb.CrossRe
 			xr, ok := reply.CrossReferences[es.SourceTicket]
 			if !ok {
 				xr = &xpb.CrossReferencesReply_CrossReferenceSet{Ticket: es.SourceTicket}
-				reply.CrossReferences[es.SourceTicket] = xr
 			}
 
 			var count int
