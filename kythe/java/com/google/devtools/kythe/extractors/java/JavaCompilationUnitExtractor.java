@@ -51,6 +51,7 @@ import com.sun.source.util.JavacTask;
 import com.sun.tools.javac.api.JavacTaskImpl;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Symtab;
+import com.sun.tools.javac.main.Option;
 
 import java.io.File;
 import java.io.IOException;
@@ -64,6 +65,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -175,9 +177,9 @@ public class JavaCompilationUnitExtractor {
     CompilationUnit.Builder unit = CompilationUnit.newBuilder();
     unit.setVName(VName.newBuilder().setSignature(target).setLanguage("java"));
     unit.addAllArgument(options);
-    unit.addArgument("-sourcepath");
+    unit.addArgument(Option.SOURCEPATH.getText());
     unit.addArgument(Joiner.on(":").join(newSourcePath));
-    unit.addArgument("-cp");
+    unit.addArgument(Option.CP.getText());
     unit.addArgument(Joiner.on(":").join(newClassPath));
     unit.setHasCompileErrors(hasErrors);
     unit.addAllRequiredInput(requiredInputs);
@@ -263,7 +265,7 @@ public class JavaCompilationUnitExtractor {
     CompilationUnit compilationUnit =
         buildCompilationUnit(
             target,
-            removeOutputDirOption(options),
+            removeDestDirOptions(options),
             compilationFileInputs,
             results.hasErrors,
             results.newSourcePath,
@@ -274,20 +276,16 @@ public class JavaCompilationUnitExtractor {
     return new CompilationDescription(compilationUnit, fileContents);
   }
 
-  /**
-   * Removing -d option before we build the compilation unit data for storing.
-   *
-   * @return a new list of options which does not contain {@code -d} and its argument
-   */
-  private static List<String> removeOutputDirOption(Iterable<String> options) {
+  /** Returns a new list with the same options except any destination directory options. */
+  private static List<String> removeDestDirOptions(Iterable<String> options) {
     List<String> newOptions = Lists.newArrayList(options);
-    int dashDIndex = newOptions.indexOf("-d");
-    if (dashDIndex >= 0 && (dashDIndex + 1 < newOptions.size())) {
-      newOptions.subList(dashDIndex, dashDIndex + 2).clear();
-    }
-    int dashSIndex = newOptions.indexOf("-s");
-    if (dashSIndex >= 0 && (dashSIndex + 1 < newOptions.size())) {
-      newOptions.subList(dashSIndex, dashSIndex + 2).clear();
+    for (int i = 0; i < newOptions.size();) {
+      String opt = newOptions.get(i);
+      if (Option.D.matches(opt) || Option.S.matches(opt) || Option.H.matches(opt)) {
+        newOptions.subList(i, i + 2).clear();
+      } else {
+        i++;
+      }
     }
     return newOptions;
   }
@@ -583,26 +581,6 @@ public class JavaCompilationUnitExtractor {
 
     Iterable<? extends JavaFileObject> sourceFiles = fileManager.getJavaFileForSources(sources);
 
-    // We need to modify the options to the compiler to pass in -classpath and
-    // -sourcepath arguments.
-    List<String> completeOptions = Lists.newArrayList(options);
-
-    if (!hasEncodingOption(completeOptions)) {
-      completeOptions.add("-encoding");
-      completeOptions.add(Charsets.UTF_8.name());
-    }
-
-    String classPathJoined = Joiner.on(":").join(classpath);
-    String sourcePathJoined = Joiner.on(":").join(sourcepath);
-    if (!Strings.isNullOrEmpty(classPathJoined)) {
-      completeOptions.add("-cp");
-      completeOptions.add(classPathJoined);
-    }
-    if (!Strings.isNullOrEmpty(sourcePathJoined)) {
-      completeOptions.add("-sourcepath");
-      completeOptions.add(sourcePathJoined);
-    }
-
     // Generate class files in a temporary directory
     Path tempDir;
     try {
@@ -611,14 +589,7 @@ public class JavaCompilationUnitExtractor {
       throw new ExtractionException(
           "Unable to create temporary .class output directory", ioe, true);
     }
-    for (int i = 0; i < completeOptions.size(); i++) {
-      if ("-d".equals(completeOptions.get(i))) {
-        completeOptions.remove(i);
-        completeOptions.remove(i);
-      }
-    }
-    completeOptions.add("-d");
-    completeOptions.add(tempDir.toString());
+    List<String> completeOptions = completeCompilerOptions(options, classpath, sourcepath, tempDir);
 
     Iterable<? extends CompilationUnitTree> compilationUnits;
     Symtab syms;
@@ -712,6 +683,70 @@ public class JavaCompilationUnitExtractor {
     return results;
   }
 
+  /**
+   * Completes the given raw compiler options with the given classpath,
+   * sourcepath, and temporary destination directory.  Only options supported by
+   * the Java compiler will be within the returned {@link List}.
+   */
+  private static List<String> completeCompilerOptions(
+      Iterable<String> rawOptions,
+      Iterable<String> classpath,
+      Iterable<String> sourcepath,
+      Path tempDestinationDir) {
+    List<String> rawOpts = Lists.newArrayList(rawOptions);
+    List<String> completeOptions = Lists.newArrayList();
+
+    Set<Option> supportedOptions = EnumSet.allOf(Option.class);
+
+    boolean foundEncodingOption = false;
+    for (int i = 0; i < rawOpts.size(); i++) {
+      String opt = rawOpts.get(i);
+
+      if (Option.D.matches(opt)) {
+        // Skip the -d option and its argument.  We'll replace it with a
+        // temporary directory below.
+        i++;
+        continue;
+      } else if (Option.ENCODING.matches(opt)) {
+        foundEncodingOption = true;
+      }
+
+      // Add only supported options and their arguments
+      for (Option o : supportedOptions) {
+        if (o.matches(opt)) {
+          completeOptions.add(opt);
+          if (o.hasArg()) {
+            completeOptions.add(rawOpts.get(++i));
+          }
+          break;
+        }
+      }
+    }
+
+    if (!foundEncodingOption) {
+      completeOptions.add(Option.ENCODING.getText());
+      completeOptions.add(Charsets.UTF_8.name());
+    }
+
+    // We need to modify the options to the compiler to pass in -classpath and
+    // -sourcepath arguments.
+    String classPathJoined = Joiner.on(":").join(classpath);
+    String sourcePathJoined = Joiner.on(":").join(sourcepath);
+    if (!Strings.isNullOrEmpty(classPathJoined)) {
+      completeOptions.add(Option.CP.getText());
+      completeOptions.add(classPathJoined);
+    }
+    if (!Strings.isNullOrEmpty(sourcePathJoined)) {
+      completeOptions.add(Option.SOURCEPATH.getText());
+      completeOptions.add(sourcePathJoined);
+    }
+
+    completeOptions.add(Option.D.getText());
+    completeOptions.add(tempDestinationDir.toString());
+
+    return completeOptions;
+  }
+
   /** Returns a map from a classfile's {@link URI} to its sourcefile path's basename. */
   private static Map<URI, String> mapClassesToSources(Symtab syms) {
     Map<URI, String> sourceBaseNames = Maps.newHashMap();
@@ -753,9 +788,5 @@ public class JavaCompilationUnitExtractor {
       }
     }
     results.unusedJars.addAll(jars);
-  }
-
-  private boolean hasEncodingOption(List<String> options) {
-    return options.contains("-encoding");
   }
 }

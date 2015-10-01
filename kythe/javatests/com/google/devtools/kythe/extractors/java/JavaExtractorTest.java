@@ -31,6 +31,8 @@ import com.google.devtools.kythe.proto.Analysis.FileInfo;
 import com.google.devtools.kythe.proto.Java.JavaDetails;
 import com.google.protobuf.InvalidProtocolBufferException;
 
+import com.sun.tools.javac.main.Option;
+
 import junit.framework.TestCase;
 
 import java.io.File;
@@ -358,6 +360,74 @@ public class JavaExtractorTest extends TestCase {
   }
 
   /**
+   * Tests that unsupported flags do not crash the extractor and destination options are not present
+   * in the resulting {@link CompilationUnit}.
+   */
+  public void testJavaExtractorArguments() throws Exception {
+    String testDir = System.getenv("TEST_TMPDIR");
+    JavaCompilationUnitExtractor java = new JavaCompilationUnitExtractor(CORPUS, testDir);
+
+    File processorFile =
+        Paths.get(
+                "kythe/javatests/com/google/devtools/kythe/extractors/java/SillyProcessor_deploy.jar")
+            .toFile();
+    if (!processorFile.exists()) {
+      throw new AssertionError("SillyProcessor_deploy.jar does not exist");
+    }
+
+    List<String> origSources = testFiles("processor/Silly.java", "processor/SillyUser.java");
+
+    List<Path> outputDirs =
+        Arrays.asList(
+            Paths.get(testDir, "output-gensrc.jar.files"),
+            Paths.get(testDir, "output-genhdr.jar.files"),
+            Paths.get(testDir, "classes"));
+
+    List<String> processorpath = Arrays.asList(processorFile.getPath());
+    List<String> processors = Arrays.asList("processor.SillyProcessor");
+    List<String> options =
+        Arrays.asList(
+            "-Xdoclint:-Xdoclint:all/private", // ensure this unsupported flag is saved
+            "-s",
+            outputDirs.get(0).toString(),
+            "-h",
+            outputDirs.get(1).toString(),
+            "-d",
+            outputDirs.get(2).toString());
+
+    for (Path dir : outputDirs) {
+      dir.toFile().mkdir();
+    }
+
+    // Copy sources from runfiles into test dir
+    List<String> testSources = new ArrayList<String>();
+    for (String source : origSources) {
+      Path destFile = Paths.get(testDir).resolve(source);
+      Files.createDirectories(destFile.getParent());
+      Files.copy(Paths.get(source), destFile, REPLACE_EXISTING);
+      testSources.add(destFile.toString());
+    }
+
+    // Index the specified sources
+    CompilationDescription description =
+        java.extract(
+            TARGET1, testSources, EMPTY, EMPTY, processorpath, processors, options, "output");
+
+    CompilationUnit unit = description.getCompilationUnit();
+    assertNotNull(unit);
+
+    // Check that the -d, -s, and -h flags have been removed from the compilation's arguments
+    assertThat(unit.getArgumentList())
+        .containsExactly(
+            "-Xdoclint:-Xdoclint:all/private",
+            "-sourcepath",
+            outputDirs.get(0).getFileName() + ":" + TEST_DATA_DIR,
+            "-cp",
+            "")
+        .inOrder();
+  }
+
+  /**
    * Tests that targets that contain annotation processors are indexed correctly.
    */
   public void testJavaExtractorAnnotationProcessing() throws Exception {
@@ -537,10 +607,10 @@ public class JavaExtractorTest extends TestCase {
       List<String> sourcepath = Lists.newLinkedList();
       List<String> classpath = Lists.newLinkedList();
       for (int i = 0; i < args.size(); i++) {
-        if (args.get(i).equals("-sourcepath")) {
+        if (args.get(i).equals(Option.SOURCEPATH.getText())) {
           i++;
           sourcepath.addAll(parsePathList(args.get(i)));
-        } else if (args.get(i).equals("-cp") || args.get(i).equals("-classpath")) {
+        } else if (Option.CP.matches(args.get(i)) || Option.CLASSPATH.matches(args.get(i))) {
           i++;
           classpath.addAll(parsePathList(args.get(i)));
         }

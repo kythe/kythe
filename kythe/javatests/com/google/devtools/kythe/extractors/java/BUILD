@@ -11,6 +11,7 @@ java_test(
         "//kythe/proto:storage_proto_java",
         "//third_party:junit4",
         "//third_party/guava",
+        "//third_party/openjdk:tools",
         "//third_party/proto:protobuf_java",
         "//third_party/truth",
     ],
