@@ -32,6 +32,9 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
+	"golang.org/x/text/encoding"
+	"golang.org/x/text/encoding/unicode"
+	"golang.org/x/text/transform"
 
 	srvpb "kythe.io/kythe/proto/serving_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
@@ -107,7 +110,22 @@ var (
 				Ticket: "kythe://someCorpus?path=some/path#aFileNode",
 				Fact: makeFactList(
 					"/kythe/node/kind", "file",
+					"/kythe/text/encoding", "utf-8",
 					"/kythe/text", "some random text\nhere and  \n  there\nsome random text\nhere and  \n  there\n",
+				),
+			}, {
+				Ticket: "kythe://someCorpus?path=some/utf16/file#utf16FTW",
+				Fact: []*srvpb.Node_Fact{
+					{Name: "/kythe/text/encoding", Value: []byte("utf-16le")},
+					{Name: "/kythe/node/kind", Value: []byte("file")},
+					{Name: "/kythe/text", Value: encodeText(utf16LE, "これはいくつかのテキストです\n")},
+				},
+			}, {
+				Ticket: "kythe:?path=some/utf16/file#0-4",
+				Fact: makeFactList(
+					"/kythe/node/kind", "anchor",
+					"/kythe/loc/start", "0",
+					"/kythe/loc/end", "4",
 				),
 			},
 		},
@@ -133,12 +151,15 @@ var (
 					},
 				},
 			}, {
-				TotalEdges: 5,
+				TotalEdges: 6,
 				EdgeSet: &srvpb.EdgeSet{
 					SourceTicket: "kythe://someCorpus?lang=otpl#signature",
 					Group: []*srvpb.EdgeSet_Group{{
-						Kind:         "%/kythe/edge/ref",
-						TargetTicket: []string{"kythe://c?lang=otpl?path=/a/path#51-55"},
+						Kind: "%/kythe/edge/ref",
+						TargetTicket: []string{
+							"kythe://c?lang=otpl?path=/a/path#51-55",
+							"kythe:?path=some/utf16/file#0-4",
+						},
 					}, {
 						Kind:         "%/kythe/edge/defines/binding",
 						TargetTicket: []string{"kythe://c?lang=otpl?path=/a/path#27-33"},
@@ -153,6 +174,27 @@ var (
 					EdgeKind:  "anotherEdge",
 					EdgeCount: 1,
 				}},
+			}, {
+				TotalEdges: 2,
+				EdgeSet: &srvpb.EdgeSet{
+					SourceTicket: "kythe:?path=some/utf16/file#0-4",
+					Group: []*srvpb.EdgeSet_Group{{
+						Kind:         "/kythe/edge/ref",
+						TargetTicket: []string{"kythe://someCorpus?lang=otpl#signature"},
+					}, {
+						Kind:         "/kythe/edge/childof",
+						TargetTicket: []string{"kythe://someCorpus?path=some/utf16/file#utf16FTW"},
+					}},
+				},
+			}, {
+				TotalEdges: 1,
+				EdgeSet: &srvpb.EdgeSet{
+					SourceTicket: "kythe://someCorpus?path=some/utf16/file#utf16FTW",
+					Group: []*srvpb.EdgeSet_Group{{
+						Kind:         "%/kythe/edge/childof",
+						TargetTicket: []string{"kythe:?path=some/utf16/file#0-4"},
+					}},
+				},
 			}, {
 				TotalEdges: 2,
 				EdgeSet: &srvpb.EdgeSet{
@@ -247,6 +289,16 @@ var (
 		},
 	}
 )
+
+var utf16LE = unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM)
+
+func encodeText(e encoding.Encoding, text string) []byte {
+	res, _, err := transform.Bytes(e.NewEncoder(), []byte(text))
+	if err != nil {
+		panic(err)
+	}
+	return res
+}
 
 func TestNodes(t *testing.T) {
 	st := tbl.Construct(t)
@@ -556,6 +608,15 @@ func TestCrossReferences(t *testing.T) {
 		Ticket: ticket,
 
 		Reference: []*xpb.Anchor{{
+			Ticket: "kythe:?path=some/utf16/file#0-4",
+			Kind:   "/kythe/edge/ref",
+			Parent: "kythe://someCorpus?path=some/utf16/file#utf16FTW",
+
+			Start: &xpb.Location_Point{LineNumber: 1},
+			End:   &xpb.Location_Point{ByteOffset: 4, LineNumber: 1, ColumnOffset: 4},
+
+			Snippet: "これはいくつかのテキストです",
+		}, {
 			Ticket: "kythe://c?lang=otpl?path=/a/path#51-55",
 			Kind:   "/kythe/edge/ref",
 			Parent: "kythe://someCorpus?path=some/path#aFileNode",
@@ -598,6 +659,7 @@ func TestCrossReferences(t *testing.T) {
 	if xr == nil {
 		log.Fatal("Missing expected CrossReferences")
 	}
+	sort.Sort(byOffset(xr.Reference))
 
 	if err := testutil.DeepEqual(expected, xr); err != nil {
 		t.Fatal(err)
@@ -617,6 +679,14 @@ func nodeInfos(ns []*srvpb.Node) (infos []*xpb.NodeInfo) {
 	}
 	return
 }
+
+// byOffset implements the sort.Interface for *xpb.Anchors.
+type byOffset []*xpb.Anchor
+
+// Implement the sort.Interface.
+func (s byOffset) Len() int           { return len(s) }
+func (s byOffset) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (s byOffset) Less(i, j int) bool { return s[i].Start.ByteOffset < s[j].Start.ByteOffset }
 
 func nodeInfo(n *srvpb.Node) *xpb.NodeInfo {
 	ni := &xpb.NodeInfo{Ticket: n.Ticket}

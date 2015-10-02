@@ -96,6 +96,137 @@ package(
 )
 
 package(
+    name = "encoding_htmlindex",
+    exclude_srcs = ["gen.go"],
+    package = "golang.org/x/text/encoding/htmlindex",
+    deps = [
+        ":encoding",
+        ":encoding_charmap",
+        ":encoding_internal",
+        ":encoding_internal_identifier",
+        ":encoding_japanese",
+        ":encoding_korean",
+        ":encoding_simplifiedchinese",
+        ":encoding_traditionalchinese",
+        ":encoding_unicode",
+        ":text_language",
+    ],
+)
+
+package(
+    name = "text_language",
+    exclude_srcs = [
+        "gen_*.go",
+        "go1_1.go",
+        "maketables.go",
+    ],
+    package = "golang.org/x/text/language",
+    deps = [":text_internal_tag"],
+)
+
+package(
+    name = "text_internal_tag",
+    package = "golang.org/x/text/internal/tag",
+)
+
+package(
+    name = "encoding",
+    package = "golang.org/x/text/encoding",
+    deps = [":transform"],
+)
+
+package(
+    name = "encoding_charmap",
+    exclude_srcs = ["maketables.go"],
+    package = "golang.org/x/text/encoding/charmap",
+    deps = [
+        ":encoding",
+        ":encoding_internal",
+        ":encoding_internal_identifier",
+        ":transform",
+    ],
+)
+
+package(
+    name = "transform",
+    package = "golang.org/x/text/transform",
+)
+
+package(
+    name = "encoding_unicode",
+    package = "golang.org/x/text/encoding/unicode",
+    deps = [
+        ":encoding",
+        ":encoding_internal_identifier",
+        ":transform",
+    ],
+)
+
+package(
+    name = "encoding_japanese",
+    exclude_srcs = ["maketables.go"],
+    package = "golang.org/x/text/encoding/japanese",
+    deps = [
+        ":encoding",
+        ":encoding_internal",
+        ":encoding_internal_identifier",
+        ":transform",
+    ],
+)
+
+package(
+    name = "encoding_korean",
+    exclude_srcs = ["maketables.go"],
+    package = "golang.org/x/text/encoding/korean",
+    deps = [
+        ":encoding",
+        ":encoding_internal",
+        ":encoding_internal_identifier",
+        ":transform",
+    ],
+)
+
+package(
+    name = "encoding_simplifiedchinese",
+    exclude_srcs = ["maketables.go"],
+    package = "golang.org/x/text/encoding/simplifiedchinese",
+    deps = [
+        ":encoding",
+        ":encoding_internal",
+        ":encoding_internal_identifier",
+        ":transform",
+    ],
+)
+
+package(
+    name = "encoding_traditionalchinese",
+    exclude_srcs = ["maketables.go"],
+    package = "golang.org/x/text/encoding/traditionalchinese",
+    deps = [
+        ":encoding",
+        ":encoding_internal",
+        ":encoding_internal_identifier",
+        ":transform",
+    ],
+)
+
+package(
+    name = "encoding_internal_identifier",
+    exclude_srcs = ["gen.go"],
+    package = "golang.org/x/text/encoding/internal/identifier",
+)
+
+package(
+    name = "encoding_internal",
+    package = "golang.org/x/text/encoding/internal",
+    deps = [
+        ":encoding",
+        ":encoding_internal_identifier",
+        ":transform",
+    ],
+)
+
+package(
     name = "context",
     package = "golang.org/x/net/context",
 )

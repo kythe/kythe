@@ -31,6 +31,7 @@ import (
 	"time"
 
 	"kythe.io/kythe/go/services/web"
+	"kythe.io/kythe/go/util/encoding/text"
 	"kythe.io/kythe/go/util/schema"
 	"kythe.io/kythe/go/util/stringset"
 
@@ -292,6 +293,7 @@ func completeAnchors(ctx context.Context, xs NodesEdgesService, retrieveText boo
 		Filter: []string{
 			schema.NodeKindFact,
 			schema.TextFact,
+			schema.TextEncodingFact,
 			schema.AnchorLocFilter,
 			schema.SnippetLocFilter,
 		},
@@ -335,10 +337,11 @@ func completeAnchors(ctx context.Context, xs NodesEdgesService, retrieveText boo
 					Parent: parent,
 				}
 
-				text := nodes[a.Parent][schema.TextFact]
+				parentText := nodes[a.Parent][schema.TextFact]
+				parentTextEncoding := string(nodes[a.Parent][schema.TextEncodingFact])
 				norm, ok := normalizers[a.Parent]
 				if !ok {
-					norm = NewNormalizer(text)
+					norm = NewNormalizer(parentText)
 					normalizers[a.Parent] = norm
 				}
 
@@ -349,8 +352,10 @@ func completeAnchors(ctx context.Context, xs NodesEdgesService, retrieveText boo
 				}
 
 				if retrieveText && a.Start.ByteOffset < a.End.ByteOffset {
-					// TODO(schroederc): handle non-UTF8 encodings
-					a.Text = string(text[a.Start.ByteOffset:a.End.ByteOffset])
+					a.Text, err = text.ToUTF8(parentTextEncoding, parentText[a.Start.ByteOffset:a.End.ByteOffset])
+					if err != nil {
+						log.Printf("Error decoding anchor text: %v", err)
+					}
 				}
 
 				if snippetStart, snippetEnd, err := getSpan(nodes[ticket], schema.SnippetStartFact, schema.SnippetEndFact); err == nil {
@@ -358,14 +363,20 @@ func completeAnchors(ctx context.Context, xs NodesEdgesService, retrieveText boo
 					if err != nil {
 						log.Printf("Invalid snippet span %q in file %q: %v", ticket, parent, err)
 					} else {
-						a.Snippet = string(text[startPoint.ByteOffset:endPoint.ByteOffset])
+						a.Snippet, err = text.ToUTF8(parentTextEncoding, parentText[startPoint.ByteOffset:endPoint.ByteOffset])
+						if err != nil {
+							log.Printf("Error decoding snippet text: %v", err)
+						}
 					}
 				}
 
 				// fallback to a line-based snippet if the indexer did not provide its own snippet offsets
 				if a.Snippet == "" {
 					nextLine := norm.Point(&xpb.Location_Point{LineNumber: a.Start.LineNumber + 1})
-					a.Snippet = string(text[a.Start.ByteOffset-a.Start.ColumnOffset : nextLine.ByteOffset-1])
+					a.Snippet, err = text.ToUTF8(parentTextEncoding, parentText[a.Start.ByteOffset-a.Start.ColumnOffset:nextLine.ByteOffset-1])
+					if err != nil {
+						log.Printf("Error decoding snippet text: %v", err)
+					}
 				}
 
 				result = append(result, a)
