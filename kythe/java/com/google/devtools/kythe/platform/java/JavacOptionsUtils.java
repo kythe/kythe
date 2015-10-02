@@ -20,10 +20,14 @@ import com.google.common.base.Joiner;
 import com.google.common.base.StandardSystemProperty;
 import com.google.common.collect.Lists;
 
+import com.sun.tools.javac.main.Option;
+
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -37,20 +41,58 @@ public class JavacOptionsUtils {
         "lib/rt.jar", "lib/resources.jar", "lib/jsse.jar", "lib/jce.jar", "lib/charsets.jar"
       };
 
+  /** Returns a new list of options with only javac compiler supported options. */
+  public static List<String> removeUnsupportedOptions(List<String> rawOptions) {
+    Set<Option> supportedOptions = EnumSet.allOf(Option.class);
+    List<String> options = Lists.newArrayList();
+    for (int i = 0; i < rawOptions.size(); i++) {
+      String opt = rawOptions.get(i);
+      for (Option o : supportedOptions) {
+        if (o.matches(opt)) {
+          options.add(opt);
+          if (o.hasArg()) {
+            options.add(rawOptions.get(++i));
+          }
+          break;
+        }
+      }
+    }
+    return options;
+  }
+
+  /** Removes the given {@link Option}s (and their arguments) from {@code options}. */
+  public static List<String> removeOptions(List<String> options, Set<Option> opts) {
+    for (int i = 0; i < options.size(); ) {
+      String opt = options.get(i);
+      boolean matched = false;
+      for (Option o : opts) {
+        if (o.matches(opt)) {
+          matched = true;
+          options.subList(i, i + (o.hasArg() ? 2 : 1)).clear();
+          break;
+        }
+      }
+      if (!matched) {
+        i++;
+      }
+    }
+    return options;
+  }
+
   /**
    * Extract the encoding flag from the list of javac options. If the flag is specified more than
    * once, returns the last copy, which matches javac's behavior.  If the flag is not specified,
    * returns null.
    */
   public static @Nullable String getEncodingOption(List<String> options) {
-    int i = options.lastIndexOf("-encoding");
+    int i = options.lastIndexOf(Option.ENCODING.getText());
     return (i >= 0) ? options.get(i + 1) : null;
   }
 
   /** If there is no encoding set, make sure to set the default encoding.*/
   public static List<String> ensureEncodingSet(List<String> options, String defaultEncoding) {
     if (getEncodingOption(options) == null) {
-      options.add("-encoding");
+      options.add(Option.ENCODING.getText());
       options.add(defaultEncoding);
     }
     return options;
@@ -77,7 +119,7 @@ public class JavacOptionsUtils {
     }
 
     for (int i = 0; i < arguments.size(); i++) {
-      if (arguments.get(i).equals("-cp")) {
+      if (Option.CP.matches(arguments.get(i))) {
         if (i + 1 >= arguments.size()) {
           throw new IllegalArgumentException("Malformed -cp argument: " + arguments);
         }
@@ -89,7 +131,7 @@ public class JavacOptionsUtils {
       }
     }
 
-    arguments.add("-cp");
+    arguments.add(Option.CP.getText());
     arguments.add(Joiner.on(":").join(paths));
   }
 }

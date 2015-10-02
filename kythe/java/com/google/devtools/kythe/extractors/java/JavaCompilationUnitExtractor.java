@@ -36,6 +36,7 @@ import com.google.devtools.kythe.extractors.shared.CompilationFileInputComparato
 import com.google.devtools.kythe.extractors.shared.ExtractionException;
 import com.google.devtools.kythe.extractors.shared.ExtractorUtils;
 import com.google.devtools.kythe.extractors.shared.FileVNames;
+import com.google.devtools.kythe.platform.java.JavacOptionsUtils;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
 import com.google.devtools.kythe.proto.Analysis.FileData;
@@ -278,16 +279,8 @@ public class JavaCompilationUnitExtractor {
 
   /** Returns a new list with the same options except any destination directory options. */
   private static List<String> removeDestDirOptions(Iterable<String> options) {
-    List<String> newOptions = Lists.newArrayList(options);
-    for (int i = 0; i < newOptions.size();) {
-      String opt = newOptions.get(i);
-      if (Option.D.matches(opt) || Option.S.matches(opt) || Option.H.matches(opt)) {
-        newOptions.subList(i, i + 2).clear();
-      } else {
-        i++;
-      }
-    }
-    return newOptions;
+    return JavacOptionsUtils.removeOptions(
+        Lists.newArrayList(options), EnumSet.of(Option.D, Option.S, Option.H));
   }
 
   /**
@@ -693,40 +686,11 @@ public class JavaCompilationUnitExtractor {
       Iterable<String> classpath,
       Iterable<String> sourcepath,
       Path tempDestinationDir) {
-    List<String> rawOpts = Lists.newArrayList(rawOptions);
-    List<String> completeOptions = Lists.newArrayList();
 
-    Set<Option> supportedOptions = EnumSet.allOf(Option.class);
-
-    boolean foundEncodingOption = false;
-    for (int i = 0; i < rawOpts.size(); i++) {
-      String opt = rawOpts.get(i);
-
-      if (Option.D.matches(opt)) {
-        // Skip the -d option and its argument.  We'll replace it with a
-        // temporary directory below.
-        i++;
-        continue;
-      } else if (Option.ENCODING.matches(opt)) {
-        foundEncodingOption = true;
-      }
-
-      // Add only supported options and their arguments
-      for (Option o : supportedOptions) {
-        if (o.matches(opt)) {
-          completeOptions.add(opt);
-          if (o.hasArg()) {
-            completeOptions.add(rawOpts.get(++i));
-          }
-          break;
-        }
-      }
-    }
-
-    if (!foundEncodingOption) {
-      completeOptions.add(Option.ENCODING.getText());
-      completeOptions.add(Charsets.UTF_8.name());
-    }
+    List<String> completeOptions =
+        JavacOptionsUtils.ensureEncodingSet(
+            JavacOptionsUtils.removeUnsupportedOptions(Lists.newArrayList(rawOptions)),
+            Charsets.UTF_8.name());
 
     // We need to modify the options to the compiler to pass in -classpath and
     // -sourcepath arguments.
@@ -741,6 +705,7 @@ public class JavaCompilationUnitExtractor {
       completeOptions.add(sourcePathJoined);
     }
 
+    JavacOptionsUtils.removeOptions(completeOptions, EnumSet.of(Option.D));
     completeOptions.add(Option.D.getText());
     completeOptions.add(tempDestinationDir.toString());
 

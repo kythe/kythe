@@ -224,6 +224,7 @@ public class JavaCompilationDetails {
     List<String> options = Lists.newArrayList(compilationUnit.getArgumentList());
     options = JavacOptionsUtils.useAllWarnings(options);
     options = JavacOptionsUtils.ensureEncodingSet(options, DEFAULT_ENCODING.name());
+    options = JavacOptionsUtils.removeUnsupportedOptions(options);
 
     if (!isLocalAnalysis) {
       JavacOptionsUtils.appendJREJarsToClasspath(options);

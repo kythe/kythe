@@ -4,7 +4,7 @@
 
 Notable fixes:
  - Bazel Java extractor: filter out Bazel-specific flags
- - Java extractor: filter all unsupported options before yielding to the compiler
+ - Java extractor/indexer: filter all unsupported options before yielding to the compiler
 
 ## v0.0.13
 
