@@ -123,17 +123,8 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
     return "'" . $file . "'";
   }
 
-  private function getWebStatusPort() {
-    $port = intval(getenv("BAZEL_WEB_STATUS_PORT"));
-    if ($port > 0) {
-      return $port;
-    }
-    return 0;
-  }
-
   private function bazelCommand($args) {
     return "bazel --bazelrc=/dev/null --noblock_for_lock "
-        . "--use_webstatusserver=" . $this->getWebStatusPort()
         . " " . join(" ", $args);
   }
 }
