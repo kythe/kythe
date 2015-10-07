@@ -18,6 +18,8 @@ It has these top-level messages:
 package analysis_proto
 
 import proto "github.com/golang/protobuf/proto"
+import fmt "fmt"
+import math "math"
 import google_protobuf "google/protobuf"
 import kythe_proto "kythe.io/kythe/proto/storage_proto"
 
@@ -27,11 +29,9 @@ import (
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
-var _ context.Context
-var _ grpc.ClientConn
-
-// Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
+var _ = fmt.Errorf
+var _ = math.Inf
 
 // An AnalysisRequest instructs an analyzer to perform an analysis on a single
 // CompilationUnit.
@@ -277,6 +277,10 @@ func (m *FileData) GetInfo() *FileInfo {
 	}
 	return nil
 }
+
+// Reference imports to suppress errors if they are not otherwise used.
+var _ context.Context
+var _ grpc.ClientConn
 
 // Client API for CompilationAnalyzer service
 

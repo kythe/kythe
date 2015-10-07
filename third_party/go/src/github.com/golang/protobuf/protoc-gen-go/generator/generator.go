@@ -136,10 +136,6 @@ func (d *Descriptor) TypeName() []string {
 	return s
 }
 
-func (d *Descriptor) allowOneof() bool {
-	return true
-}
-
 // EnumDescriptor describes an enum. If it's at top level, its parent will be nil.
 // Otherwise it will be the descriptor of the message in which it is defined.
 type EnumDescriptor struct {
@@ -1463,6 +1459,7 @@ func (g *Generator) goTag(message *Descriptor, field *descriptor.FieldDescriptor
 		if *field.Type == descriptor.FieldDescriptorProto_TYPE_BYTES {
 			name += ",proto3"
 		}
+
 	}
 	oneof := ""
 	if field.OneofIndex != nil {
@@ -1556,7 +1553,7 @@ func (g *Generator) GoType(message *Descriptor, field *descriptor.FieldDescripto
 		typ = "[]" + typ
 	} else if message != nil && message.proto3() {
 		return
-	} else if field.OneofIndex != nil && message != nil && message.allowOneof() {
+	} else if field.OneofIndex != nil && message != nil {
 		return
 	} else if needsStar(*field.Type) {
 		typ = "*" + typ
@@ -1610,18 +1607,36 @@ func (g *Generator) generateMessage(message *Descriptor) {
 	g.P("type ", ccTypeName, " struct {")
 	g.In()
 
-	allocName := func(basis string) string {
-		n := CamelCase(basis)
-		for usedNames[n] {
-			n += "_"
+	// allocNames finds a conflict-free variation of the given strings,
+	// consistently mutating their suffixes.
+	// It returns the same number of strings.
+	allocNames := func(ns ...string) []string {
+	Loop:
+		for {
+			for _, n := range ns {
+				if usedNames[n] {
+					for i := range ns {
+						ns[i] += "_"
+					}
+					continue Loop
+				}
+			}
+			for _, n := range ns {
+				usedNames[n] = true
+			}
+			return ns
 		}
-		usedNames[n] = true
-		return n
 	}
 
 	for i, field := range message.Field {
-		fieldName := allocName(*field.Name)
-		fieldGetterName := fieldName
+		// Allocate the getter and the field at the same time so name
+		// collisions create field/method consistent names.
+		// TODO: This allocation occurs based on the order of the fields
+		// in the proto file, meaning that a change in the field
+		// ordering can change generated Method/Field names.
+		base := CamelCase(*field.Name)
+		ns := allocNames(base, "Get"+base)
+		fieldName, fieldGetterName := ns[0], ns[1]
 		typename, wiretype := g.GoType(message, field)
 		jsonName := *field.Name
 		tag := fmt.Sprintf("protobuf:%s json:%q", g.goTag(message, field, wiretype), jsonName+",omitempty")
@@ -1629,10 +1644,10 @@ func (g *Generator) generateMessage(message *Descriptor) {
 		fieldNames[field] = fieldName
 		fieldGetterNames[field] = fieldGetterName
 
-		oneof := field.OneofIndex != nil && message.allowOneof()
+		oneof := field.OneofIndex != nil
 		if oneof && oneofFieldName[*field.OneofIndex] == "" {
 			odp := message.OneofDecl[int(*field.OneofIndex)]
-			fname := allocName(odp.GetName())
+			fname := allocNames(CamelCase(odp.GetName()))[0]
 
 			// This is the first field of a oneof we haven't seen before.
 			// Generate the union field.
@@ -1864,54 +1879,53 @@ func (g *Generator) generateMessage(message *Descriptor) {
 	g.P()
 
 	// Oneof per-field types, discriminants and getters.
-	if message.allowOneof() {
-		// Generate unexported named types for the discriminant interfaces.
-		// We shouldn't have to do this, but there was (~19 Aug 2015) a compiler/linker bug
-		// that was triggered by using anonymous interfaces here.
-		// TODO: Revisit this and consider reverting back to anonymous interfaces.
-		for oi := range message.OneofDecl {
-			dname := oneofDisc[int32(oi)]
-			g.P("type ", dname, " interface { ", dname, "() }")
-		}
-		g.P()
-		for _, field := range message.Field {
-			if field.OneofIndex == nil {
-				continue
-			}
-			_, wiretype := g.GoType(message, field)
-			tag := "protobuf:" + g.goTag(message, field, wiretype)
-			g.P("type ", oneofTypeName[field], " struct{ ", fieldNames[field], " ", fieldTypes[field], " `", tag, "` }")
-			g.RecordTypeUse(field.GetTypeName())
-		}
-		g.P()
-		for _, field := range message.Field {
-			if field.OneofIndex == nil {
-				continue
-			}
-			g.P("func (*", oneofTypeName[field], ") ", oneofDisc[*field.OneofIndex], "() {}")
-		}
-		g.P()
-		for oi := range message.OneofDecl {
-			fname := oneofFieldName[int32(oi)]
-			g.P("func (m *", ccTypeName, ") Get", fname, "() ", oneofDisc[int32(oi)], " {")
-			g.P("if m != nil { return m.", fname, " }")
-			g.P("return nil")
-			g.P("}")
-		}
-		g.P()
+	//
+	// Generate unexported named types for the discriminant interfaces.
+	// We shouldn't have to do this, but there was (~19 Aug 2015) a compiler/linker bug
+	// that was triggered by using anonymous interfaces here.
+	// TODO: Revisit this and consider reverting back to anonymous interfaces.
+	for oi := range message.OneofDecl {
+		dname := oneofDisc[int32(oi)]
+		g.P("type ", dname, " interface { ", dname, "() }")
 	}
+	g.P()
+	for _, field := range message.Field {
+		if field.OneofIndex == nil {
+			continue
+		}
+		_, wiretype := g.GoType(message, field)
+		tag := "protobuf:" + g.goTag(message, field, wiretype)
+		g.P("type ", oneofTypeName[field], " struct{ ", fieldNames[field], " ", fieldTypes[field], " `", tag, "` }")
+		g.RecordTypeUse(field.GetTypeName())
+	}
+	g.P()
+	for _, field := range message.Field {
+		if field.OneofIndex == nil {
+			continue
+		}
+		g.P("func (*", oneofTypeName[field], ") ", oneofDisc[*field.OneofIndex], "() {}")
+	}
+	g.P()
+	for oi := range message.OneofDecl {
+		fname := oneofFieldName[int32(oi)]
+		g.P("func (m *", ccTypeName, ") Get", fname, "() ", oneofDisc[int32(oi)], " {")
+		g.P("if m != nil { return m.", fname, " }")
+		g.P("return nil")
+		g.P("}")
+	}
+	g.P()
 
 	// Field getters
 	var getters []getterSymbol
 	for _, field := range message.Field {
-		oneof := field.OneofIndex != nil && message.allowOneof()
+		oneof := field.OneofIndex != nil
 
 		fname := fieldNames[field]
 		typename, _ := g.GoType(message, field)
 		if t, ok := mapFieldTypes[field]; ok {
 			typename = t
 		}
-		mname := "Get" + fieldGetterNames[field]
+		mname := fieldGetterNames[field]
 		star := ""
 		if needsStar(*field.Type) && typename[0] == '*' {
 			typename = typename[1:]
@@ -2048,7 +2062,7 @@ func (g *Generator) generateMessage(message *Descriptor) {
 	}
 
 	// Oneof functions
-	if len(message.OneofDecl) > 0 && message.allowOneof() {
+	if len(message.OneofDecl) > 0 {
 		fieldWire := make(map[*descriptor.FieldDescriptorProto]string)
 
 		// method

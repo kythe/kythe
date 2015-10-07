@@ -349,6 +349,7 @@ package(
         ":grpc_metadata",
         ":http2",
         ":http2_hpack",
+        ":trace",
     ],
 )
 
@@ -359,13 +360,13 @@ package(
 
 package(
     name = "http2",
-    package = "github.com/bradfitz/http2",
+    package = "golang.org/x/net/http2",
     deps = [":http2_hpack"],
 )
 
 package(
     name = "http2_hpack",
-    package = "github.com/bradfitz/http2/hpack",
+    package = "golang.org/x/net/http2/hpack",
 )
 
 package(

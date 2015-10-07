@@ -26,6 +26,8 @@ It has these top-level messages:
 package storage_proto
 
 import proto "github.com/golang/protobuf/proto"
+import fmt "fmt"
+import math "math"
 
 import (
 	context "golang.org/x/net/context"
@@ -33,11 +35,9 @@ import (
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
-var _ context.Context
-var _ grpc.ClientConn
-
-// Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
+var _ = fmt.Errorf
+var _ = math.Inf
 
 // VName is a proto representation of a vector name.
 //
@@ -344,6 +344,10 @@ func (m *SearchReply) Reset()         { *m = SearchReply{} }
 func (m *SearchReply) String() string { return proto.CompactTextString(m) }
 func (*SearchReply) ProtoMessage()    {}
 
+// Reference imports to suppress errors if they are not otherwise used.
+var _ context.Context
+var _ grpc.ClientConn
+
 // Client API for GraphStore service
 
 type GraphStoreClient interface {
@@ -515,9 +519,9 @@ func (x *graphStoreScanServer) Send(m *Entry) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func _GraphStore_Write_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+func _GraphStore_Write_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(WriteRequest)
-	if err := codec.Unmarshal(buf, in); err != nil {
+	if err := dec(in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(GraphStoreServer).Write(ctx, in)
@@ -621,9 +625,9 @@ func RegisterShardedGraphStoreServer(s *grpc.Server, srv ShardedGraphStoreServer
 	s.RegisterService(&_ShardedGraphStore_serviceDesc, srv)
 }
 
-func _ShardedGraphStore_Count_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+func _ShardedGraphStore_Count_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(CountRequest)
-	if err := codec.Unmarshal(buf, in); err != nil {
+	if err := dec(in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(ShardedGraphStoreServer).Count(ctx, in)
@@ -709,9 +713,9 @@ func RegisterSearchServiceServer(s *grpc.Server, srv SearchServiceServer) {
 	s.RegisterService(&_SearchService_serviceDesc, srv)
 }
 
-func _SearchService_Search_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+func _SearchService_Search_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(SearchRequest)
-	if err := codec.Unmarshal(buf, in); err != nil {
+	if err := dec(in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(SearchServiceServer).Search(ctx, in)

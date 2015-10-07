@@ -26,6 +26,8 @@ It has these top-level messages:
 package xref_proto
 
 import proto "github.com/golang/protobuf/proto"
+import fmt "fmt"
+import math "math"
 
 import (
 	context "golang.org/x/net/context"
@@ -33,11 +35,9 @@ import (
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
-var _ context.Context
-var _ grpc.ClientConn
-
-// Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
+var _ = fmt.Errorf
+var _ = math.Inf
 
 type Location_Kind int32
 
@@ -668,6 +668,10 @@ func init() {
 	proto.RegisterEnum("kythe.proto.CrossReferencesRequest_DocumentationKind", CrossReferencesRequest_DocumentationKind_name, CrossReferencesRequest_DocumentationKind_value)
 }
 
+// Reference imports to suppress errors if they are not otherwise used.
+var _ context.Context
+var _ grpc.ClientConn
+
 // Client API for XRefService service
 
 type XRefServiceClient interface {
@@ -748,9 +752,9 @@ func RegisterXRefServiceServer(s *grpc.Server, srv XRefServiceServer) {
 	s.RegisterService(&_XRefService_serviceDesc, srv)
 }
 
-func _XRefService_Nodes_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+func _XRefService_Nodes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(NodesRequest)
-	if err := codec.Unmarshal(buf, in); err != nil {
+	if err := dec(in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(XRefServiceServer).Nodes(ctx, in)
@@ -760,9 +764,9 @@ func _XRefService_Nodes_Handler(srv interface{}, ctx context.Context, codec grpc
 	return out, nil
 }
 
-func _XRefService_Edges_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+func _XRefService_Edges_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(EdgesRequest)
-	if err := codec.Unmarshal(buf, in); err != nil {
+	if err := dec(in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(XRefServiceServer).Edges(ctx, in)
@@ -772,9 +776,9 @@ func _XRefService_Edges_Handler(srv interface{}, ctx context.Context, codec grpc
 	return out, nil
 }
 
-func _XRefService_Decorations_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+func _XRefService_Decorations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(DecorationsRequest)
-	if err := codec.Unmarshal(buf, in); err != nil {
+	if err := dec(in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(XRefServiceServer).Decorations(ctx, in)
@@ -784,9 +788,9 @@ func _XRefService_Decorations_Handler(srv interface{}, ctx context.Context, code
 	return out, nil
 }
 
-func _XRefService_CrossReferences_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+func _XRefService_CrossReferences_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(CrossReferencesRequest)
-	if err := codec.Unmarshal(buf, in); err != nil {
+	if err := dec(in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(XRefServiceServer).CrossReferences(ctx, in)

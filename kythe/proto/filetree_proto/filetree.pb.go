@@ -17,6 +17,8 @@ It has these top-level messages:
 package filetree_proto
 
 import proto "github.com/golang/protobuf/proto"
+import fmt "fmt"
+import math "math"
 
 import (
 	context "golang.org/x/net/context"
@@ -24,11 +26,9 @@ import (
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
-var _ context.Context
-var _ grpc.ClientConn
-
-// Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
+var _ = fmt.Errorf
+var _ = math.Inf
 
 type CorpusRootsRequest struct {
 }
@@ -82,6 +82,10 @@ func (m *DirectoryReply) Reset()         { *m = DirectoryReply{} }
 func (m *DirectoryReply) String() string { return proto.CompactTextString(m) }
 func (*DirectoryReply) ProtoMessage()    {}
 
+// Reference imports to suppress errors if they are not otherwise used.
+var _ context.Context
+var _ grpc.ClientConn
+
 // Client API for FileTreeService service
 
 type FileTreeServiceClient interface {
@@ -130,9 +134,9 @@ func RegisterFileTreeServiceServer(s *grpc.Server, srv FileTreeServiceServer) {
 	s.RegisterService(&_FileTreeService_serviceDesc, srv)
 }
 
-func _FileTreeService_CorpusRoots_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+func _FileTreeService_CorpusRoots_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(CorpusRootsRequest)
-	if err := codec.Unmarshal(buf, in); err != nil {
+	if err := dec(in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(FileTreeServiceServer).CorpusRoots(ctx, in)
@@ -142,9 +146,9 @@ func _FileTreeService_CorpusRoots_Handler(srv interface{}, ctx context.Context, 
 	return out, nil
 }
 
-func _FileTreeService_Directory_Handler(srv interface{}, ctx context.Context, codec grpc.Codec, buf []byte) (interface{}, error) {
+func _FileTreeService_Directory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(DirectoryRequest)
-	if err := codec.Unmarshal(buf, in); err != nil {
+	if err := dec(in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(FileTreeServiceServer).Directory(ctx, in)

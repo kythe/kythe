@@ -96,7 +96,7 @@ func main() {
 	}
 
 	addr := fmt.Sprintf("localhost:%d", *analyzerPort)
-	conn, err := grpc.Dial(addr)
+	conn, err := grpc.Dial(addr, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("Error dialing analyzer %q: %v", addr, err)
 	}
