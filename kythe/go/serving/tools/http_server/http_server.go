@@ -41,8 +41,8 @@ import (
 	xstore "kythe.io/kythe/go/storage/xrefs"
 	"kythe.io/kythe/go/util/flagutil"
 
-	"github.com/bradfitz/http2"
 	"golang.org/x/net/context"
+	"golang.org/x/net/http2"
 	"google.golang.org/grpc"
 
 	ftpb "kythe.io/kythe/proto/filetree_proto"

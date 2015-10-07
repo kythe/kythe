@@ -39,7 +39,7 @@ package(
 
 package(
     name = "uuid",
-    package = "code.google.com/p/go-uuid/uuid",
+    package = "github.com/pborman/uuid",
 )
 
 go_binary(
