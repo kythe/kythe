@@ -386,6 +386,8 @@ message CrossReferencesRequest {
   // populated.
   bool anchor_text = 6;
 
+  // TODO(schroederc): snippet kinds (none, indexer-default, or always line-based)
+
   // The cross-references matching a request are organized into logical pages.
   // The size of each page is a number of distinct cross-references
   // (definitions, references, documentation, and related nodes).
@@ -429,6 +431,10 @@ message Anchor {
   // User-readable snippet of the anchor parent's text at the location of this
   // anchor
   string snippet = 7;
+  // Starting location of the anchor's snippet within its parent's text
+  Location.Point snippet_start = 8;
+  // Ending location of the anchor's snippet within its parent's text
+  Location.Point snippet_end = 9;
 }
 
 message CrossReferencesReply {

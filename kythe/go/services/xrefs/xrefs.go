@@ -367,13 +367,24 @@ func completeAnchors(ctx context.Context, xs NodesEdgesService, retrieveText boo
 						if err != nil {
 							log.Printf("Error decoding snippet text: %v", err)
 						}
+						a.SnippetStart = startPoint
+						a.SnippetEnd = endPoint
 					}
 				}
 
 				// fallback to a line-based snippet if the indexer did not provide its own snippet offsets
 				if a.Snippet == "" {
+					a.SnippetStart = &xpb.Location_Point{
+						ByteOffset: a.Start.ByteOffset - a.Start.ColumnOffset,
+						LineNumber: a.Start.LineNumber,
+					}
 					nextLine := norm.Point(&xpb.Location_Point{LineNumber: a.Start.LineNumber + 1})
-					a.Snippet, err = text.ToUTF8(parentTextEncoding, parentText[a.Start.ByteOffset-a.Start.ColumnOffset:nextLine.ByteOffset-1])
+					a.SnippetEnd = &xpb.Location_Point{
+						ByteOffset:   nextLine.ByteOffset - 1,
+						LineNumber:   a.Start.LineNumber,
+						ColumnOffset: a.Start.ColumnOffset + (nextLine.ByteOffset - a.Start.ByteOffset - 1),
+					}
+					a.Snippet, err = text.ToUTF8(parentTextEncoding, parentText[a.SnippetStart.ByteOffset:a.SnippetEnd.ByteOffset])
 					if err != nil {
 						log.Printf("Error decoding snippet text: %v", err)
 					}

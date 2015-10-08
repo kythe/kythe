@@ -14,6 +14,7 @@
 (ns ui.xrefs
   "View for XRefs pane"
   (:require [cljs.core.async :refer [put!]]
+            [clojure.string :refer [trim]]
             [goog.crypt.base64 :as b64]
             [goog.string :as gstring]
             [goog.string.format]
@@ -67,7 +68,7 @@
       [file (sort-by (comp :byte_offset :start) anchors)])))
 
 (defn- display-anchor [file anchor file-to-view]
-  (let [line (:line_number (:start anchor))
+  (let [line (:line_number (:snippet_start anchor))
         snippet (:snippet anchor)]
     (when (and line snippet)
      (dom/p #js {:className "snippet"}
@@ -84,7 +85,8 @@
                                  :anchor (:ticket anchor)
                                  :line line}))}
          (str line))
-       (str ": " snippet)))))
+       ;; TODO(schroederc): narrow/expand multi-line snippets
+       ": " (dom/span nil (trim snippet))))))
 
 (defn- display-anchors [title anchors file-to-view]
   (when anchors

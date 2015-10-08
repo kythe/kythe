@@ -615,6 +615,14 @@ func TestCrossReferences(t *testing.T) {
 			Start: &xpb.Location_Point{LineNumber: 1},
 			End:   &xpb.Location_Point{ByteOffset: 4, LineNumber: 1, ColumnOffset: 4},
 
+			SnippetStart: &xpb.Location_Point{
+				LineNumber: 1,
+			},
+			SnippetEnd: &xpb.Location_Point{
+				ByteOffset:   28,
+				LineNumber:   1,
+				ColumnOffset: 28,
+			},
 			Snippet: "これはいくつかのテキストです",
 		}, {
 			Ticket: "kythe://c?lang=otpl?path=/a/path#51-55",
@@ -632,6 +640,15 @@ func TestCrossReferences(t *testing.T) {
 				ColumnOffset: 2,
 			},
 
+			SnippetStart: &xpb.Location_Point{
+				ByteOffset: 36,
+				LineNumber: 4,
+			},
+			SnippetEnd: &xpb.Location_Point{
+				ByteOffset:   52,
+				LineNumber:   4,
+				ColumnOffset: 16,
+			},
 			Snippet: "some random text",
 		}},
 
@@ -651,6 +668,15 @@ func TestCrossReferences(t *testing.T) {
 				ColumnOffset: 5,
 			},
 
+			SnippetStart: &xpb.Location_Point{
+				ByteOffset: 17,
+				LineNumber: 2,
+			},
+			SnippetEnd: &xpb.Location_Point{
+				ByteOffset:   27,
+				LineNumber:   2,
+				ColumnOffset: 10,
+			},
 			Snippet: "here and  ",
 		}},
 	}

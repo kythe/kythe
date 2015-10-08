@@ -81,6 +81,11 @@ html, body, #kythe, #container, #container div {
   color: gray;
   margin-left: 2em;
   margin-bottom: 0;
+  white-space: pre;
+}
+
+.snippet span {
+  display: inline-flex;
 }
 
 .spinner {

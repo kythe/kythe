@@ -41,6 +41,9 @@ func DeepEqual(expected, got interface{}) error {
 	ev, gv := reflect.ValueOf(expected), reflect.ValueOf(got)
 
 	for et.Kind() == reflect.Ptr && gt.Kind() == reflect.Ptr {
+		if ev.Elem().IsValid() != gv.Elem().IsValid() {
+			return fmt.Errorf("expected: %v; found %v", expected, got)
+		}
 		ev, gv = ev.Elem(), gv.Elem()
 		et, gt = ev.Type(), gv.Type()
 	}
