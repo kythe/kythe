@@ -20,7 +20,7 @@ package analysis_proto
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
-import google_protobuf "google/protobuf"
+import google_protobuf "kythe.io/third_party/proto/any_proto"
 import kythe_proto "kythe.io/kythe/proto/storage_proto"
 
 import (

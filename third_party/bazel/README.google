@@ -11,3 +11,5 @@ Added necessary license declarations to BUILD files.
 Built tools/jdk/*_deploy.jar
 
 Remove tools/jdk/ijar binary and use a filegroup instead.
+
+The extra_actions_base and test_status protos have their generated Go source code checked-in.

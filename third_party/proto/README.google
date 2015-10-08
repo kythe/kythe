@@ -12,3 +12,4 @@ Added BUILD file.
 Renamed .gitignore to dist.gitignore.
 Wrote a pbconfig.h and amended it to turn off RTTI.
 Deleted testdata and python, objectivec, and csharp directories
+Checked-in generated Go source code for any.proto

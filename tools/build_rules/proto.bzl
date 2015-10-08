@@ -1,5 +1,7 @@
 load("go", "go_library")
 
+standard_proto_path = "third_party/proto/src/"
+
 def _genproto_impl(ctx):
   proto_src_deps = [src.proto_src for src in ctx.attr.deps]
   inputs, outputs, arguments = [ctx.file.src] + proto_src_deps, [], [
@@ -7,7 +9,7 @@ def _genproto_impl(ctx):
       # Until we can do this correctly, we will assume any proto file may
       # depend on a "builtin" protocol buffer under third_party/proto/src.
       # TODO(shahms): Do this correctly.
-      "--proto_path=third_party/proto/src/",
+      "--proto_path=" + standard_proto_path,
   ]
   if ctx.attr.gen_cc:
     outputs += [ctx.outputs.cc_hdr, ctx.outputs.cc_src]
@@ -64,7 +66,6 @@ def _genproto_impl(ctx):
                 go_package=go_package,
                 proto_src=ctx.file.src)
 
-
 _genproto_attrs = {
     "src": attr.label(
         allow_files = FileType([".proto"]),
@@ -78,15 +79,15 @@ _genproto_attrs = {
     "_protoc": attr.label(
         default = Label("//third_party/proto:protoc"),
         executable = True,
-        ),
+    ),
     "_protoc_gen_go": attr.label(
         default = Label("//third_party/go:protoc-gen-go"),
         executable = True,
-        ),
+    ),
     "_protoc_grpc_plugin_java": attr.label(
         default = Label("//third_party/grpc-java:plugin"),
         executable = True,
-        ),
+    ),
     "gen_cc": attr.bool(),
     "gen_java": attr.bool(),
     "gen_go": attr.bool(),
@@ -110,12 +111,11 @@ def _genproto_outputs(attrs):
     }
   return outputs
 
-
 genproto = rule(
     _genproto_impl,
-    attrs=_genproto_attrs,
-    output_to_genfiles=True,
-    outputs=_genproto_outputs,
+    attrs = _genproto_attrs,
+    output_to_genfiles = True,
+    outputs = _genproto_outputs,
 )
 
 def proto_library(name, src=None, deps=[], visibility=None,
@@ -190,9 +190,11 @@ def proto_library(name, src=None, deps=[], visibility=None,
         deps = cc_deps,
     )
 
-
 def _go_import_path(deps):
   import_map = {}
   for dep in deps:
-    import_map += {dep.proto_src.path: dep.go_package}
+    if dep.proto_src.path.startswith(standard_proto_path):
+      import_map += {dep.proto_src.path[len(standard_proto_path):]: dep.go_package}
+    else:
+      import_map += {dep.proto_src.path: dep.go_package}
   return ",".join(["M%s=%s" % i for i in import_map.items()])

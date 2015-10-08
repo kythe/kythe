@@ -31,7 +31,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
 
-	xapb "third_party/bazel/extra_actions_base_proto"
+	xapb "kythe.io/third_party/bazel/extra_actions_base_proto"
 )
 
 var knownExtensions = []*proto.ExtensionDesc{

@@ -11,6 +11,7 @@ filegroup(
 
 exports_files(["src/google/protobuf/any.proto"])
 
+# TODO(schroederc): have a single Go library for all standard protos
 proto_library(
     name = "any_proto",
     src = "src/google/protobuf/any.proto",
@@ -19,8 +20,6 @@ proto_library(
     gen_cc = 0,
     gen_go = 1,
     gen_java = 1,
-    # TODO(shahms): Remove this if/when we get more robust go package mapping.
-    go_package = "google/protobuf",
 )
 
 genrule(
