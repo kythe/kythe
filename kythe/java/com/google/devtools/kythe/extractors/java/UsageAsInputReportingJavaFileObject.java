@@ -34,6 +34,7 @@ import javax.tools.JavaFileObject;
  * already knows it needs a specific one. This is probably done for caching
  * optimization (especially reading from .jar files). In our case, less is better.
  */
+@com.sun.tools.javac.api.ClientCodeWrapper.Trusted
 class UsageAsInputReportingJavaFileObject implements JavaFileObject {
 
   protected void markUsed() {

@@ -35,9 +35,8 @@ import java.util.concurrent.Future;
 
 import javax.tools.FileObject;
 
-/**
- * A custom file object.
- */
+/** File object backed by a {@link Future}. */
+@com.sun.tools.javac.api.ClientCodeWrapper.Trusted
 public class CustomFileObject implements FileObject {
   protected final Path path;
   protected final String digest;
@@ -125,6 +124,8 @@ public class CustomFileObject implements FileObject {
 
   @Override
   public boolean equals(Object other) {
+    // This implementation relies on the Trusted annotation on this class to opt out of using the
+    // WrappedJavaFileObject wrapper class.
     if (this == other) {
       return true;
     } else if (!(other instanceof CustomFileObject)) {

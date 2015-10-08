@@ -39,6 +39,7 @@ import javax.tools.StandardJavaFileManager;
  * Wraps the StandardJavaFileManager to track which .java and .class files
  * Javac touches for a given compilation.
  */
+@com.sun.tools.javac.api.ClientCodeWrapper.Trusted
 class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<StandardJavaFileManager> {
 
   private final Map<URI, InputUsageRecord> inputUsageRecords = new HashMap<>();

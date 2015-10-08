@@ -35,6 +35,7 @@ import javax.tools.StandardLocation;
  * e.g. from datastores or .index files. All users of this class have to do is provide a
  * {@link FileDataProvider} that will feed the actual content in as a future.
  */
+@com.sun.tools.javac.api.ClientCodeWrapper.Trusted
 public class CompilationUnitBasedJavaFileManager extends JavaFileStoreBasedFileManager {
 
   /**

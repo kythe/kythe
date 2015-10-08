@@ -25,6 +25,7 @@ import javax.tools.JavaFileObject;
 /**
  * JavaFileObject that can be provided a body at a future time.
  */
+@com.sun.tools.javac.api.ClientCodeWrapper.Trusted
 public class CustomJavaFileObject extends CustomFileObject implements JavaFileObject {
 
   private final String className;
