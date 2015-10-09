@@ -68,4 +68,9 @@ public class IndexerConfig {
   public final boolean getIgnoreVNamePaths() {
     return ignoreVNamePaths;
   }
+
+  public IndexerConfig setIgnoreVNamePaths(boolean ignoreVNamePaths) {
+    this.ignoreVNamePaths = ignoreVNamePaths;
+    return this;
+  }
 }
