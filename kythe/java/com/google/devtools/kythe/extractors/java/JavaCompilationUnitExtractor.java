@@ -239,9 +239,9 @@ public class JavaCompilationUnitExtractor {
     Preconditions.checkNotNull(options);
     Preconditions.checkNotNull(outputPath);
 
-    final AnalysisResults results =
+    AnalysisResults results =
         runJavaAnalysisToExtractCompilationDetails(
-            sources, classpath, sourcepath, processorpath, processors, options, outputPath);
+            sources, classpath, sourcepath, processorpath, processors, options);
 
     List<FileData> fileContents = ExtractorUtils.convertBytesToFileDatas(results.fileContents);
     List<FileInput> compilationFileInputs = Lists.newLinkedList();
@@ -546,8 +546,7 @@ public class JavaCompilationUnitExtractor {
       Iterable<String> sourcepath,
       Iterable<String> processorpath,
       Iterable<String> processors,
-      Iterable<String> options,
-      String outputPath)
+      Iterable<String> options)
       throws ExtractionException {
 
     AnalysisResults results = new AnalysisResults();
