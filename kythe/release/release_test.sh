@@ -17,6 +17,8 @@ set -o pipefail
 #
 # Test the Kythe release package for basic functionality.
 
+TMPDIR=${TEST_TMPDIR:?}
+
 TEST_PORT=9898
 ADDR=localhost:$TEST_PORT
 

@@ -124,6 +124,10 @@ func Sources(entries <-chan *spb.Entry) <-chan *Source {
 // file's source text and encoding populated.  All other nodes return 0
 // decoration fragments.
 func DecorationFragments(src *Source) []*srvpb.FileDecorations {
+	if len(src.Edges) == 0 {
+		return nil
+	}
+
 	switch string(src.Facts[schema.NodeKindFact]) {
 	default:
 		return nil
