@@ -1,5 +1,10 @@
 # Release Notes
 
+## Upcoming release
+
+Notable fixes:
+ - `write_tables`: don't crash when given a node without any edges
+
 ## v0.0.14
 
 Notable fixes:
