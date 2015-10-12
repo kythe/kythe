@@ -84,6 +84,7 @@ public class IndexInfoUtils {
 
   public static void writeIndexInfoToFile(CompilationDescription description, String path)
       throws IOException {
+    Paths.get(path).getParent().toFile().mkdirs();
     writeIndexInfoToStream(description, new FileOutputStream(path));
   }
 
