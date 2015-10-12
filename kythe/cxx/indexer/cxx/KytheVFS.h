@@ -111,7 +111,7 @@ class IndexVFS : public clang::vfs::FileSystem {
   /// \param behavior What to do if `path` does not exist.
   /// \param size The size of the file to use if kCreateFile is relevant.
   /// \return A `FileRecord` or nullptr on abort.
-  FileRecord *FileRecordForPath(const llvm::StringRef path,
+  FileRecord *FileRecordForPath(llvm::StringRef path,
                                 BehaviorOnMissing behavior, size_t size);
 
   /// \brief Creates a new or returns an existing `FileRecord`.

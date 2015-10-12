@@ -17,12 +17,23 @@ required_input {
 }
 required_input {
   v_name {
+    path: "arbitrary/path.h"
+    corpus: "arbitrary_corpus"
+    language: "c++"
+  }
+  info {
+    path: "../../x/y/z.h"
+    digest: "uncheckedh2"
+  }
+}
+required_input {
+  v_name {
     path: "fake/test.cc"
     corpus: "fake_corpus"
     language: "c++"
   }
   info {
-    path: "/repo/fake/test.cc"
+    path: "/repo/a/b/c/fake/test.cc"
     digest: "uncheckedcc"
   }
 }
@@ -32,4 +43,4 @@ argument: "fake/test.cc"
 has_compile_errors: false
 source_file: "fake/test.cc"
 output_key: "/fake-out/test.o"
-working_directory: "/repo"
+working_directory: "/repo/a/b/c"

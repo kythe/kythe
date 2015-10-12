@@ -153,7 +153,7 @@ IndexVFS::FileRecord *IndexVFS::FileRecordForPathRoot(const llvm::Twine &path,
                                  llvm::sys::fs::file_type::directory_file, 0);
 }
 
-IndexVFS::FileRecord *IndexVFS::FileRecordForPath(const llvm::StringRef path,
+IndexVFS::FileRecord *IndexVFS::FileRecordForPath(llvm::StringRef path,
                                                   BehaviorOnMissing behavior,
                                                   size_t size) {
   using namespace llvm::sys::path;
@@ -166,6 +166,13 @@ IndexVFS::FileRecord *IndexVFS::FileRecordForPath(const llvm::StringRef path,
   bool create_if_missing = (behavior != BehaviorOnMissing::kReturnError);
   size_t eventual_size =
       (behavior == BehaviorOnMissing::kCreateFile ? size : 0);
+
+  llvm::SmallString<1024> path_storage;
+  if (llvm::sys::path::is_relative(path)) {
+    llvm::sys::path::append(path_storage, ToStringRef(working_directory_),
+                            path);
+    path = llvm::StringRef(path_storage);
+  }
 
   for (auto node = llvm::sys::path::rbegin(path), node_end = rend(path);
        node != node_end; ++node) {

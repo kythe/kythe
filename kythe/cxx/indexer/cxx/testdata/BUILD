@@ -9,6 +9,7 @@ sh_test(
     ],
     data = [
         "kindex_repo_test.header",
+        "kindex_repo_test.header2",
         "kindex_repo_test.main",
         "kindex_repo_test.unit",
         "kindex_repo_test.verify",

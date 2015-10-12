@@ -20,6 +20,7 @@ cat "${OUT_DIR}/kindex_test.entries" \
 "${KINDEX_TOOL}" -assemble "${REPO_TEST_INDEX}" \
     "${BASE_DIR}/kindex_repo_test.unit" \
     "${BASE_DIR}/kindex_repo_test.header" \
+    "${BASE_DIR}/kindex_repo_test.header2" \
     "${BASE_DIR}/kindex_repo_test.main"
 "${INDEXER}" "${REPO_TEST_INDEX}" > "${OUT_DIR}/kindex_repo_test.entries"
 cat "${OUT_DIR}/kindex_repo_test.entries" \

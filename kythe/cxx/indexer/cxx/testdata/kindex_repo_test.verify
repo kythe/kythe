@@ -2,5 +2,8 @@
 //- MainClass named vname("Main#c",_,_,_,_)
 //- HeaderAnchor defines/binding HeaderClass
 //- HeaderClass named vname("Header#c",_,_,_,_)
+//- HeaderAnchor2 defines/binding HeaderClass2
+//- HeaderClass2 named vname("Header2#c",_,_,_,_)
 //- CcFile=vname("","fake_corpus","","fake/test.cc","c++").node/kind file
 //- HFile=vname("","absolute_corpus","absolute_root","/absolute/test.h","c++").node/kind file
+//- H2File=vname("","arbitrary_corpus","","arbitrary/path.h","c++").node/kind file
