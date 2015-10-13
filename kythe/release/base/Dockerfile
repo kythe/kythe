@@ -16,12 +16,14 @@ FROM debian:jessie
 
 ENV DEBIAN_FRONTEND noninteractive
 
+RUN echo "deb http://http.debian.net/debian jessie-backports main" >> /etc/apt/sources.list
+
 RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \
       curl ca-certificates \
       less parallel jq net-tools locales zsh wget unzip libssl-dev \
-      openjdk-7-jdk clang-3.5 ca-certificates-java uuid-dev flex \
+      openjdk-8-jdk clang-3.5 ca-certificates-java uuid-dev flex \
       golang-go libmemcached-dev libsasl2-dev && \
     apt-get clean
 

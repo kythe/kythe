@@ -33,13 +33,14 @@ extractors, and tools directly supported by the Kythe team.
    - write_tables             :: Processes a GraphStore into efficient serving tables for http_server
 
 # Dependencies
- - Java JDK >=7
+ - Java JDK >=8
  - libncurses
  - libuuid
 
 ## Debian Jessie Install
 
-    apt-get install openjdk-7-jdk libncurses5 libssl1.0.0
+    echo "deb http://http.debian.net/debian jessie-backports main" >> /etc/apt/sources.list
+    apt-get install openjdk-8-jdk libncurses5 libssl1.0.0
 
 # End-to-end Java Example
 

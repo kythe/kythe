@@ -2,6 +2,9 @@
 
 ## Upcoming release
 
+Notable changes:
+ - Java 8 is required for the Java extractor/indexer
+
 Notable fixes:
  - `write_tables`: don't crash when given a node without any edges
  - Java extractor: ensure output directory exists before writing kindex
