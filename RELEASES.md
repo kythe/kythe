@@ -1,6 +1,6 @@
 # Release Notes
 
-## Upcoming release
+## v0.0.15
 
 Notable changes:
  - Java 8 is required for the Java extractor/indexer
