@@ -533,10 +533,10 @@ public class JavaCompilationUnitExtractor {
     // We build a new sourcepath & classpath that contain the minimum set of paths
     // as well as the modified set of paths that are needed to analyze the single compilation unit.
     // This is done to speed up analysis.
-    final Set<String> newSourcePath = Sets.newHashSet();
-    final Set<String> newClassPath = Sets.newHashSet();
+    final Set<String> newSourcePath = Sets.newLinkedHashSet();
+    final Set<String> newClassPath = Sets.newLinkedHashSet();
     final List<String> explicitSources = Lists.newArrayList();
-    final Set<String> unusedJars = Sets.newHashSet();
+    final Set<String> unusedJars = Sets.newLinkedHashSet();
     boolean hasErrors = false;
   }
 

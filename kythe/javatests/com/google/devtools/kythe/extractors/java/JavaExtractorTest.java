@@ -421,7 +421,7 @@ public class JavaExtractorTest extends TestCase {
         .containsExactly(
             "-Xdoclint:-Xdoclint:all/private",
             "-sourcepath",
-            outputDirs.get(0).getFileName() + ":" + TEST_DATA_DIR,
+            TEST_DATA_DIR + ":" + outputDirs.get(0).getFileName(),
             "-cp",
             "")
         .inOrder();
