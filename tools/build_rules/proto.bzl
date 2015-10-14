@@ -2,6 +2,9 @@ load("go", "go_library")
 
 standard_proto_path = "third_party/proto/src/"
 
+def go_package_name(go_prefix, label):
+  return "%s%s/%s" % (go_prefix.go_prefix, label.package, label.name)
+
 def _genproto_impl(ctx):
   proto_src_deps = [src.proto_src for src in ctx.attr.deps]
   inputs, outputs, arguments = [ctx.file.src] + proto_src_deps, [], [
@@ -28,9 +31,8 @@ def _genproto_impl(ctx):
           "--plugin=protoc-gen-java_rpc=" + java_grpc_plugin.path,
           "--java_rpc_out=" + srcjar.path
       ]
-  go_package = ctx.attr.go_package
-  if not go_package:
-    go_package = "%s/%s" % (ctx.label.package, ctx.label.name)
+
+  go_package = go_package_name(ctx.attr._go_package_prefix, ctx.label)
   if ctx.attr.gen_go:
     inputs += [ctx.executable._protoc_gen_go]
     outputs += [ctx.outputs.go_src]
@@ -80,6 +82,11 @@ _genproto_attrs = {
         default = Label("//third_party/proto:protoc"),
         executable = True,
     ),
+    "_go_package_prefix": attr.label(
+        default = Label("//external:go_package_prefix"),
+        providers = ["go_prefix"],
+        allow_files = False,
+    ),
     "_protoc_gen_go": attr.label(
         default = Label("//third_party/go:protoc-gen-go"),
         executable = True,
@@ -91,7 +98,6 @@ _genproto_attrs = {
     "gen_cc": attr.bool(),
     "gen_java": attr.bool(),
     "gen_go": attr.bool(),
-    "go_package": attr.string(),
 }
 
 def _genproto_outputs(attrs):
@@ -120,20 +126,16 @@ genproto = rule(
 
 def proto_library(name, src=None, deps=[], visibility=None,
                   has_services=False,
-                  gen_java=False, gen_go=False, gen_cc=False,
-                  go_package=None):
+                  gen_java=False, gen_go=False, gen_cc=False):
   if not src:
     if name.endswith("_proto"):
       src = name[:-6] + ".proto"
     else:
       src = name + ".proto"
-  if not go_package:
-    go_package = "kythe.io/" + PACKAGE_NAME + "/" + name
   proto_pkg = genproto(name=name,
                        src=src,
                        deps=deps,
                        has_services=has_services,
-                       go_package=go_package,
                        gen_java=gen_java,
                        gen_go=gen_go,
                        gen_cc=gen_cc)
@@ -173,7 +175,7 @@ def proto_library(name, src=None, deps=[], visibility=None,
         name  = name + "_go",
         srcs = [proto_pkg.label()],
         deps = go_deps,
-        package = go_package,
+        multi_package = 1,
         visibility = visibility,
     )
 

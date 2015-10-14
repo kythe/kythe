@@ -45,6 +45,14 @@ include_prefix_replacements = {
     "-I ": "-I $PWD/",
 }
 
+def _package_name(ctx):
+  pkg = ctx.attr._go_package_prefix.go_prefix + ctx.label.package
+  if ctx.attr.multi_package:
+    pkg += "/" + ctx.label.name
+  if pkg.endswith("_go"):
+    pkg = pkg[:-3]
+  return pkg
+
 def go_compile(ctx, pkg, srcs, archive, setupGOPATH=False, extra_archives=[]):
   gotool = ctx.file._go
   goroot = ctx.files._goroot
@@ -168,8 +176,9 @@ def link_binary(ctx, binary, archive, recursive_deps, extldflags=[], transitive_
 
 def go_library_impl(ctx):
   archive = ctx.outputs.archive
-  pkg = ctx.attr.go_package_prefix + ctx.label.package
-  if ctx.attr.package != "":
+  if ctx.attr.package == "":
+    pkg = _package_name(ctx)
+  else:
     pkg = ctx.attr.package
   # TODO(shahms): Figure out why protocol buffer .jar files are being included.
   srcs = FileType([".go"]).filter(ctx.files.srcs)
@@ -218,7 +227,7 @@ def go_test_impl(ctx):
   testmain_srcs = ctx.files._go_testmain_srcs
 
   lib = ctx.attr.library
-  pkg = ctx.attr.go_package_prefix + lib.label.package
+  pkg = _package_name(ctx)
 
   test_srcs = ctx.files.srcs
   testmain = ctx.new_file(ctx.configuration.genfiles_dir, ctx.label.name + "main.go")
@@ -278,8 +287,12 @@ base_attrs = {
         providers = ["go_archive"],
     ),
     "go_build": attr.bool(),
-    # TODO(schroederc): put package prefix into common configuration file
-    "go_package_prefix": attr.string(default = "kythe.io/"),
+    "multi_package": attr.bool(),
+    "_go_package_prefix": attr.label(
+        default = Label("//external:go_package_prefix"),
+        providers = ["go_prefix"],
+        allow_files = False,
+    ),
     "_go": attr.label(
         default = Label("//tools/go"),
         allow_files = True,
@@ -382,3 +395,21 @@ def go_package(name=None, package=None,
       data = test_data,
       visibility = ["//visibility:private"],
     )
+
+# Configuration rule for go packages
+def _go_prefix_impl(ctx):
+    return struct(go_prefix = ctx.attr.prefix)
+
+go_prefix = rule(
+    _go_prefix_impl,
+    attrs = {"prefix": attr.string()},
+)
+
+def go_package_prefix(prefix):
+  if not prefix.endswith("/"):
+    prefix = prefix + "/"
+  go_prefix(
+    name = "go_package_prefix",
+    prefix = prefix,
+    visibility = ["//visibility:public"],
+  )
