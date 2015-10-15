@@ -554,6 +554,10 @@ type Anchor struct {
 	// User-readable snippet of the anchor parent's text at the location of this
 	// anchor
 	Snippet string `protobuf:"bytes,7,opt,name=snippet" json:"snippet,omitempty"`
+	// Starting location of the anchor's snippet within its parent's text
+	SnippetStart *Location_Point `protobuf:"bytes,8,opt,name=snippet_start" json:"snippet_start,omitempty"`
+	// Ending location of the anchor's snippet within its parent's text
+	SnippetEnd *Location_Point `protobuf:"bytes,9,opt,name=snippet_end" json:"snippet_end,omitempty"`
 }
 
 func (m *Anchor) Reset()         { *m = Anchor{} }
@@ -570,6 +574,20 @@ func (m *Anchor) GetStart() *Location_Point {
 func (m *Anchor) GetEnd() *Location_Point {
 	if m != nil {
 		return m.End
+	}
+	return nil
+}
+
+func (m *Anchor) GetSnippetStart() *Location_Point {
+	if m != nil {
+		return m.SnippetStart
+	}
+	return nil
+}
+
+func (m *Anchor) GetSnippetEnd() *Location_Point {
+	if m != nil {
+		return m.SnippetEnd
 	}
 	return nil
 }
