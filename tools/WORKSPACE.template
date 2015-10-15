@@ -13,3 +13,9 @@ bind(
     name = "gotool",
     actual = "@local-goroot//:gotool",
 )
+
+bind(
+    name = "go_package_prefix",
+    actual = "//:go_package_prefix",
+)
+
