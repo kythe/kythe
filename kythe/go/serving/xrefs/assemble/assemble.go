@@ -124,10 +124,6 @@ func Sources(entries <-chan *spb.Entry) <-chan *Source {
 // file's source text and encoding populated.  All other nodes return 0
 // decoration fragments.
 func DecorationFragments(src *Source) []*srvpb.FileDecorations {
-	if len(src.Edges) == 0 {
-		return nil
-	}
-
 	switch string(src.Facts[schema.NodeKindFact]) {
 	default:
 		return nil
@@ -138,6 +134,12 @@ func DecorationFragments(src *Source) []*srvpb.FileDecorations {
 			Encoding:   string(src.Facts[schema.TextEncodingFact]),
 		}}
 	case schema.AnchorKind:
+		if len(src.Edges) == 0 {
+			// No edges indicates that we can't reach any parent file or any targets.
+			log.Printf("WARNING: found anchor without any edges: %q", src.Ticket)
+			return nil
+		}
+
 		anchorStart, err := strconv.Atoi(string(src.Facts[schema.AnchorStartFact]))
 		if err != nil {
 			log.Printf("Error parsing anchor start offset %q: %v", string(src.Facts[schema.AnchorStartFact]), err)
