@@ -66,7 +66,7 @@ import java.util.Map;
 import java.util.Set;
 
 /** {@link JCTreeScanner} that emits Kythe nodes and edges. */
-public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
+public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   private static final FormattingLogger logger = FormattingLogger.getLogger(KytheTreeScanner.class);
 
   private final JavaEntrySets entrySets;
@@ -75,7 +75,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
   private final SignatureGenerator signatureGenerator;
   private final Positions filePositions;
   private final Map<Integer, List<SourceText.Comment>> comments = new HashMap<>();
-  private final Context context;
+  private final Context javaContext;
 
   private KytheDocTreeScanner docScanner;
 
@@ -84,12 +84,12 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
       StatisticsCollector statistics,
       SignatureGenerator signatureGenerator,
       SourceText src,
-      Context context) {
+      Context javaContext) {
     this.entrySets = entrySets;
     this.statistics = statistics;
     this.signatureGenerator = signatureGenerator;
     this.filePositions = src.getPositions();
-    this.context = context;
+    this.javaContext = javaContext;
 
     for (SourceText.Comment comment : src.getComments()) {
       for (int line = comment.lineSpan.getStart(); line <= comment.lineSpan.getEnd(); line++) {
@@ -103,32 +103,33 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
   }
 
   public static void emitEntries(
-      Context context,
+      Context javaContext,
       StatisticsCollector statistics,
       JavaEntrySets entrySets,
       SignatureGenerator signatureGenerator,
       JCCompilationUnit compilation,
       Charset sourceEncoding)
       throws IOException {
-    SourceText src = new SourceText(context, compilation, sourceEncoding);
-    new KytheTreeScanner(entrySets, statistics, signatureGenerator, src, context)
+    SourceText src = new SourceText(javaContext, compilation, sourceEncoding);
+    new KytheTreeScanner(entrySets, statistics, signatureGenerator, src, javaContext)
         .scan(compilation, null);
   }
 
   /** Returns the {@link Symtab} (symbol table) for the compilation currently being processed. */
   public Symtab getSymbols() {
-    return Symtab.instance(context);
+    return Symtab.instance(javaContext);
   }
 
   @Override
-  public JavaNode visitTopLevel(JCCompilationUnit compilation, JCTree owner) {
+  public JavaNode visitTopLevel(JCCompilationUnit compilation, TreeContext owner) {
     if (compilation.docComments != null) {
       docScanner = new KytheDocTreeScanner(this, compilation.docComments);
     }
+    TreeContext ctx = new TreeContext(compilation);
 
     EntrySet fileNode = entrySets.getFileNode(filePositions);
 
-    List<JavaNode> decls = scanList(compilation.getTypeDecls(), compilation);
+    List<JavaNode> decls = scanList(compilation.getTypeDecls(), ctx);
     decls.removeAll(Collections.singleton(null));
     for (JavaNode n : decls) {
       entrySets.emitEdge(n.entries, EdgeKind.CHILDOF, fileNode);
@@ -142,13 +143,15 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
       }
     }
 
-    scan(compilation.getImports(), compilation);
-    scan(compilation.getPackageAnnotations(), compilation);
+    scan(compilation.getImports(), ctx);
+    scan(compilation.getPackageAnnotations(), ctx);
     return new JavaNode(fileNode, filePositions.getFilename());
   }
 
   @Override
-  public JavaNode visitImport(JCImport imprt, JCTree owner) {
+  public JavaNode visitImport(JCImport imprt, TreeContext owner) {
+    TreeContext ctx = owner.down(imprt);
+
     if (imprt.qualid instanceof JCFieldAccess) {
       JCFieldAccess imprtField = (JCFieldAccess) imprt.qualid;
       emitAnchor(
@@ -165,12 +168,12 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
         // Static imports don't have their symbol populated so we search for the symbol.
 
         ClassSymbol cls =
-            JavacUtil.getClassSymbol(context, imprtField.selected + "." + imprtField.name);
+            JavacUtil.getClassSymbol(javaContext, imprtField.selected + "." + imprtField.name);
         if (cls != null) {
           // Import was a inner class import
           sym = cls;
         } else {
-          cls = JavacUtil.getClassSymbol(context, imprtField.selected.toString());
+          cls = JavacUtil.getClassSymbol(javaContext, imprtField.selected.toString());
           if (cls != null) {
             // Import may be a class member
             sym = cls.members().lookup(imprtField.name).sym;
@@ -180,16 +183,18 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
 
       return emitNameUsage(imprtField, sym, imprtField.name);
     }
-    return scan(imprt.qualid, imprt);
+    return scan(imprt.qualid, ctx);
   }
 
   @Override
-  public JavaNode visitIdent(JCIdent ident, JCTree owner) {
+  public JavaNode visitIdent(JCIdent ident, TreeContext owner) {
     return emitSymUsage(ident, ident.sym);
   }
 
   @Override
-  public JavaNode visitClassDef(JCClassDecl classDef, JCTree owner) {
+  public JavaNode visitClassDef(JCClassDecl classDef, TreeContext owner) {
+    TreeContext ctx = owner.down(classDef);
+
     Optional<String> signature = signatureGenerator.getSignature(classDef.sym);
     if (signature.isPresent()) {
       EntrySet classNode = entrySets.getNode(classDef.sym, signature.get());
@@ -207,7 +212,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
         emitComment(classDef, classNode);
       }
 
-      EntrySet absNode = defineTypeParameters(classNode, classDef.getTypeParameters());
+      EntrySet absNode = defineTypeParameters(ctx, classNode, classDef.getTypeParameters());
       if (absNode != null) {
         List<String> tParamNames = Lists.newLinkedList();
         for (JCTypeParameter tParam : classDef.getTypeParameters()) {
@@ -229,15 +234,15 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
         entrySets.emitName(absNode, signature.get() + "<" + Joiner.on(",").join(tParamNames) + ">");
       }
 
-      visitAnnotations(classNode, classDef.getModifiers().getAnnotations(), classDef);
+      visitAnnotations(classNode, classDef.getModifiers().getAnnotations(), ctx);
 
-      JavaNode superClassNode = scan(classDef.getExtendsClause(), classDef);
+      JavaNode superClassNode = scan(classDef.getExtendsClause(), ctx);
       if (superClassNode != null) {
         emitEdge(classNode, EdgeKind.EXTENDS, superClassNode);
       }
 
       for (JCExpression implClass : classDef.getImplementsClause()) {
-        JavaNode implNode = scan(implClass, classDef);
+        JavaNode implNode = scan(implClass, ctx);
         if (implNode == null) {
           statistics.incrementCounter("warning-missing-implements-node");
           logger.warning(
@@ -248,7 +253,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
       }
 
       for (JCTree member : classDef.getMembers()) {
-        JavaNode n = scan(member, classDef);
+        JavaNode n = scan(member, ctx);
         if (n != null) {
           entrySets.emitEdge(n.entries, EdgeKind.CHILDOF, classNode);
         }
@@ -260,12 +265,14 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
   }
 
   @Override
-  public JavaNode visitMethodDef(JCMethodDecl methodDef, JCTree owner) {
-    scan(methodDef.getBody(), methodDef);
-    scan(methodDef.getThrows(), methodDef);
+  public JavaNode visitMethodDef(JCMethodDecl methodDef, TreeContext owner) {
+    TreeContext ctx = owner.down(methodDef);
 
-    JavaNode returnType = scan(methodDef.getReturnType(), methodDef);
-    List<JavaNode> params = scanList(methodDef.getParameters(), methodDef);
+    scan(methodDef.getBody(), ctx);
+    scan(methodDef.getThrows(), ctx);
+
+    JavaNode returnType = scan(methodDef.getReturnType(), ctx);
+    List<JavaNode> params = scanList(methodDef.getParameters(), ctx);
     List<JavaNode> paramTypes = Lists.newLinkedList();
     List<String> paramTypeNames = Lists.newLinkedList();
     for (JavaNode n : params) {
@@ -277,9 +284,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
     if (signature.isPresent()) {
       EntrySet methodNode = entrySets.getNode(methodDef.sym, signature.get());
       boolean documented = visitDocComment(methodDef, methodNode);
-      visitAnnotations(methodNode, methodDef.getModifiers().getAnnotations(), methodDef);
+      visitAnnotations(methodNode, methodDef.getModifiers().getAnnotations(), ctx);
 
-      EntrySet absNode = defineTypeParameters(methodNode, methodDef.getTypeParameters());
+      EntrySet absNode = defineTypeParameters(ctx, methodNode, methodDef.getTypeParameters());
 
       EntrySet ret, bindingAnchor = null;
       String fnTypeName = "(" + Joiner.on(",").join(paramTypeNames) + ")";
@@ -288,7 +295,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
         // preferred position as their owned class.  Since implicit constructors don't exist in the
         // file's text, don't generate anchors them by ensuring the constructor's position is ahead
         // of the owner's position.
-        if (methodDef.getPreferredPosition() > owner.getPreferredPosition()) {
+        if (methodDef.getPreferredPosition() > owner.getTree().getPreferredPosition()) {
           // Use the owner's name (the class name) to find the definition anchor's
           // location because constructors are internally named "<init>".
           bindingAnchor =
@@ -334,7 +341,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
       ClassSymbol ownerClass = (ClassSymbol) methodDef.sym.owner;
       Set<Type> ownerDirectSupertypes = new HashSet<>(ownerClass.getInterfaces());
       ownerDirectSupertypes.add(ownerClass.getSuperclass());
-      for (MethodSymbol superMethod : JavacUtil.superMethods(context, methodDef.sym)) {
+      for (MethodSymbol superMethod : JavacUtil.superMethods(javaContext, methodDef.sym)) {
         EntrySet superNode = getNode(superMethod);
         if (ownerDirectSupertypes.contains(superMethod.owner.asType())) {
           entrySets.emitEdge(methodNode, EdgeKind.OVERRIDES, superNode);
@@ -349,7 +356,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
   }
 
   @Override
-  public JavaNode visitVarDef(JCVariableDecl varDef, JCTree owner) {
+  public JavaNode visitVarDef(JCVariableDecl varDef, TreeContext owner) {
+    TreeContext ctx = owner.down(varDef);
+
     Optional<String> signature = signatureGenerator.getSignature(varDef.sym);
     if (signature.isPresent()) {
       EntrySet varNode = entrySets.getNode(varDef.sym, signature.get());
@@ -361,24 +370,26 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
         emitComment(varDef, varNode);
       }
 
-      visitAnnotations(varNode, varDef.getModifiers().getAnnotations(), varDef);
+      visitAnnotations(varNode, varDef.getModifiers().getAnnotations(), ctx);
 
-      JavaNode typeNode = scan(varDef.getType(), varDef);
+      JavaNode typeNode = scan(varDef.getType(), ctx);
       if (typeNode != null) {
         emitEdge(varNode, EdgeKind.TYPED, typeNode);
       }
 
-      scan(varDef.getInitializer(), varDef);
+      scan(varDef.getInitializer(), ctx);
       return new JavaNode(varNode, signature.get(), typeNode);
     }
     return todoNode("VarDef: " + varDef);
   }
 
   @Override
-  public JavaNode visitTypeApply(JCTypeApply tApply, JCTree owner) {
-    JavaNode typeCtorNode = scan(tApply.getType(), tApply);
+  public JavaNode visitTypeApply(JCTypeApply tApply, TreeContext owner) {
+    TreeContext ctx = owner.down(tApply);
 
-    List<JavaNode> arguments = scanList(tApply.getTypeArguments(), tApply);
+    JavaNode typeCtorNode = scan(tApply.getType(), ctx);
+
+    List<JavaNode> arguments = scanList(tApply.getTypeArguments(), ctx);
     List<EntrySet> argEntries = Lists.newLinkedList();
     List<String> argNames = Lists.newLinkedList();
     for (JavaNode n : arguments) {
@@ -396,13 +407,17 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
   }
 
   @Override
-  public JavaNode visitSelect(JCFieldAccess field, JCTree owner) {
-    scan(field.getExpression(), field);
+  public JavaNode visitSelect(JCFieldAccess field, TreeContext owner) {
+    TreeContext ctx = owner.down(field);
+
+    scan(field.getExpression(), ctx);
     return emitNameUsage(field, field.sym, field.name);
   }
 
   @Override
-  public JavaNode visitNewClass(JCNewClass newClass, JCTree owner) {
+  public JavaNode visitNewClass(JCNewClass newClass, TreeContext owner) {
+    TreeContext ctx = owner.down(newClass);
+
     EntrySet ctorNode = getNode(newClass.constructor);
     if (ctorNode != null) {
       // Span over "new Class"
@@ -413,17 +428,17 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
               filePositions.getEnd(newClass.getIdentifier()));
       emitAnchor(anchor, EdgeKind.REF, ctorNode);
 
-      scanList(newClass.getTypeArguments(), newClass);
-      scanList(newClass.getArguments(), newClass);
-      scan(newClass.getEnclosingExpression(), newClass);
-      scan(newClass.getClassBody(), newClass);
-      return scan(newClass.getIdentifier(), newClass);
+      scanList(newClass.getTypeArguments(), ctx);
+      scanList(newClass.getArguments(), ctx);
+      scan(newClass.getEnclosingExpression(), ctx);
+      scan(newClass.getClassBody(), ctx);
+      return scan(newClass.getIdentifier(), ctx);
     }
     return todoNode("NewClass: " + newClass);
   }
 
   @Override
-  public JavaNode visitTypeIdent(JCPrimitiveTypeTree primitiveType, JCTree owner) {
+  public JavaNode visitTypeIdent(JCPrimitiveTypeTree primitiveType, TreeContext owner) {
     String name = primitiveType.getPrimitiveTypeKind().toString().toLowerCase();
     EntrySet node = entrySets.getBuiltin(name);
     emitAnchor(primitiveType, EdgeKind.REF, node);
@@ -431,8 +446,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
   }
 
   @Override
-  public JavaNode visitTypeArray(JCArrayTypeTree arrayType, JCTree owner) {
-    JavaNode typeNode = scan(arrayType.getType(), arrayType);
+  public JavaNode visitTypeArray(JCArrayTypeTree arrayType, TreeContext owner) {
+    TreeContext ctx = owner.down(arrayType);
+
+    JavaNode typeNode = scan(arrayType.getType(), ctx);
     EntrySet node =
         entrySets.newTApply(entrySets.getBuiltin("array"), Arrays.asList(typeNode.entries));
     emitAnchor(arrayType, EdgeKind.REF, node);
@@ -442,16 +459,20 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
   }
 
   @Override
-  public JavaNode visitAnnotation(JCAnnotation annotation, JCTree owner) {
-    return scan(annotation.getAnnotationType(), annotation);
+  public JavaNode visitAnnotation(JCAnnotation annotation, TreeContext owner) {
+    TreeContext ctx = owner.down(annotation);
+
+    return scan(annotation.getAnnotationType(), ctx);
   }
 
   @Override
-  public JavaNode visitWildcard(JCWildcard wild, JCTree owner) {
+  public JavaNode visitWildcard(JCWildcard wild, TreeContext owner) {
+    TreeContext ctx = owner.down(wild);
+
     EntrySet node = entrySets.getWildcardNode(wild);
     String signature = wild.kind.kind.toString();
     if (wild.getKind() != Kind.UNBOUNDED_WILDCARD) {
-      JavaNode bound = scan(wild.getBound(), wild);
+      JavaNode bound = scan(wild.getBound(), ctx);
       signature += bound.qualifiedName;
       emitEdge(
           node,
@@ -502,20 +523,22 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
     return entries;
   }
 
-  private EntrySet defineTypeParameters(EntrySet owner, List<JCTypeParameter> params) {
+  private EntrySet defineTypeParameters(
+      TreeContext ownerContext, EntrySet owner, List<JCTypeParameter> params) {
     if (params.isEmpty()) {
       return null;
     }
 
     List<EntrySet> typeParams = Lists.newLinkedList();
     for (JCTypeParameter tParam : params) {
+      TreeContext ctx = ownerContext.down(tParam);
       EntrySet node = getNode(tParam.type.asElement());
       emitAnchor(tParam.name, tParam.getStartPosition(), EdgeKind.DEFINES_BINDING, node);
-      visitAnnotations(node, tParam.getAnnotations(), tParam);
+      visitAnnotations(node, tParam.getAnnotations(), ctx);
       typeParams.add(node);
 
       for (JCExpression expr : tParam.getBounds()) {
-        emitEdge(node, EdgeKind.BOUNDED_UPPER, scan(expr, tParam));
+        emitEdge(node, EdgeKind.BOUNDED_UPPER, scan(expr, ctx));
       }
     }
 
@@ -537,8 +560,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
     return new JavaNode(entrySets.getNode(sym, signature.get()), signature.get());
   }
 
-  private void visitAnnotations(EntrySet owner, List<JCAnnotation> annotations, JCTree treeOwner) {
-    for (JavaNode node : scanList(annotations, treeOwner)) {
+  private void visitAnnotations(
+      EntrySet owner, List<JCAnnotation> annotations, TreeContext ownerContext) {
+    for (JavaNode node : scanList(annotations, ownerContext)) {
       entrySets.emitEdge(owner, EdgeKind.ANNOTATED_BY, node.entries);
     }
   }
@@ -629,12 +653,39 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, JCTree> {
         new JavaNode(entrySets.todoNode("type:" + message), "TODO:type"));
   }
 
-  private <T extends JCTree> List<JavaNode> scanList(List<T> trees, JCTree owner) {
+  private <T extends JCTree> List<JavaNode> scanList(List<T> trees, TreeContext owner) {
     List<JavaNode> nodes = Lists.newLinkedList();
     for (T t : trees) {
       nodes.add(scan(t, owner));
     }
     return nodes;
+  }
+}
+
+class TreeContext {
+  private final TreeContext up;
+  private final JCTree tree;
+
+  public TreeContext(JCCompilationUnit topLevel) {
+    this.up = null;
+    this.tree = topLevel;
+  }
+
+  private TreeContext(TreeContext up, JCTree tree) {
+    this.up = up;
+    this.tree = tree;
+  }
+
+  public TreeContext down(JCTree tree) {
+    return new TreeContext(this, tree);
+  }
+
+  public TreeContext up() {
+    return up;
+  }
+
+  public JCTree getTree() {
+    return tree;
   }
 }
 
