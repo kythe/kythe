@@ -14,3 +14,5 @@ Local Modifications:
   git archive --format=tar 07931a3a57293c8f690c95d77961bc794bcad3c9 | \
     (cd ~/kythe/third_party/typescript && tar xf -)
   cd ~/kythe/third_party/typescript && rm -rf tests
+
+  Changed the characters (, ), and space to _s in filenames in doc/.
