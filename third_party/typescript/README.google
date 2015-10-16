@@ -1,0 +1,16 @@
+URL: https://github.com/Microsoft/TypeScript/archive/07931a3a57293c8f690c95d77961bc794bcad3c9.zip
+Version: 07931a3a57293c8f690c95d77961bc794bcad3c9
+License: Apache 2
+License File: LICENSE.txt
+
+Description:
+  JavaScript and TypeScript language support.
+
+Local Modifications:
+  git clone https://github.com/Microsoft/TypeScript.git typescript
+  cd typescript
+  git checkout JSDocAndJSModules # 07931a3a57293c8f690c95d77961bc794bcad3c9
+  mkdir ~/kythe/third_party/typescript
+  git archive --format=tar 07931a3a57293c8f690c95d77961bc794bcad3c9 | \
+    (cd ~/kythe/third_party/typescript && tar xf -)
+  cd ~/kythe/third_party/typescript && rm -rf tests
