@@ -41,7 +41,7 @@ RUN wget http://archive.kernel.org/debian-archive/debian/pool/main/b/bison/bison
     rm -f /tmp/bison_2.3.deb
 
 # Go
-RUN wget https://storage.googleapis.com/golang/go1.3.3.linux-amd64.tar.gz -O /tmp/go.tar.gz && \
+RUN wget https://storage.googleapis.com/golang/go1.4.linux-amd64.tar.gz -O /tmp/go.tar.gz && \
     tar xzf /tmp/go.tar.gz -C /usr/local/ && \
     rm -f /tmp/go.tar.gz
 ENV PATH=/usr/local/go/bin:$PATH
@@ -49,7 +49,7 @@ ENV PATH=/usr/local/go/bin:$PATH
 RUN cd /opt && \
     git clone https://github.com/google/bazel/ && \
     cd bazel && \
-    git checkout fe87155b7154f7ef64c7ab095071b148980f035f && \
+    git checkout f87a414a6bf50613a2c419e53a96f76154f44ae && \
     sed -i '/Building Bazel with Bazel/iexit 0' compile.sh && \
     ./compile.sh compile && \
     ln -s /opt/bazel/output/bazel /usr/bin/

@@ -4,20 +4,21 @@ def docker_build_impl(ctx):
     args += ['--force-rm', '--no-cache']
   cmd = '\n'.join([
       "set -e",
-      "rm -rf _docker_ctx",
-      "mkdir _docker_ctx",
+      "CTX=" + ctx.outputs.done_marker.path + ".ctx",
+      'rm -rf "$CTX"',
+      'mkdir "$CTX"',
       "srcs=(%s)" % (cmd_helper.join_paths(" ", set(ctx.files.data))),
       "for src in ${srcs[@]}; do",
       "  dir=$(dirname $src)",
       "  dir=${dir#%s}" % (ctx.configuration.bin_dir.path),
       "  dir=${dir#%s}" % (ctx.configuration.genfiles_dir.path),
-      "  mkdir -p _docker_ctx/$dir",
-      "  cp -L --preserve=all $src _docker_ctx/$dir",
+      '  mkdir -p "$CTX/$dir"',
+      '  cp -L --preserve=all $src "$CTX/$dir"',
       "done",
-      "cp %s _docker_ctx" % (ctx.file.src.path),
-      "cd _docker_ctx",
+      "cp %s \"$CTX\"" % (ctx.file.src.path),
+      'cd "$CTX"',
       "docker build -t %s %s ." % (ctx.attr.image_name, ' '.join(args)),
-      "touch ../" + ctx.outputs.done_marker.path,
+      "touch ../$(basename " + ctx.outputs.done_marker.path + ")",
     ])
   ctx.action(
       inputs = [ctx.file.src] + ctx.files.deps + ctx.files.data,

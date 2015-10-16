@@ -24,7 +24,7 @@ RUN apt-get update && \
       curl ca-certificates \
       less parallel jq net-tools locales zsh wget unzip libssl-dev \
       openjdk-8-jdk clang-3.5 ca-certificates-java uuid-dev flex \
-      golang-go libmemcached-dev libsasl2-dev && \
+      libmemcached-dev libsasl2-dev && \
     apt-get clean
 
 # Maven
@@ -38,6 +38,12 @@ ENV PATH /apache-maven-$MAVEN_VERSION/bin:$PATH
 RUN wget http://archive.kernel.org/debian-archive/debian/pool/main/b/bison/bison_2.3.dfsg-5_amd64.deb -O /tmp/bison_2.3.deb && \
     dpkg -i /tmp/bison_2.3.deb && \
     rm -f /tmp/bison_2.3.deb
+
+# Go
+RUN wget https://storage.googleapis.com/golang/go1.4.linux-amd64.tar.gz -O /tmp/go.tar.gz && \
+    tar xzf /tmp/go.tar.gz -C /usr/local/ && \
+    rm -f /tmp/go.tar.gz
+ENV PATH=/usr/local/go/bin:$PATH
 
 # fix HOME=/ issue in old Docker versions
 ENV HOME /root
