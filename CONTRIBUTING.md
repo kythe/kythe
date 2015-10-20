@@ -59,10 +59,10 @@ of your first [Differential][] code review.
   1. Land the change with [arcanist][] to push it to the Kythe repository.
 
 For more information on contributing, see
-[http://kythe.io/contributing](http://kythe.io/contributing).
+[https://kythe.io/contributing](https://kythe.io/contributing).
 
-[Maniphest]: http://kythe.io/phabricator/maniphest
-[Differential]: http://kythe.io/phabricator/differential
+[Maniphest]: https://kythe.io/phabricator/maniphest
+[Differential]: https://kythe.io/phabricator/differential
 [arcanist]: https://secure.phabricator.com/book/phabricator/article/arcanist/
 [forking]: https://help.github.com/articles/fork-a-repo
 [well-formed commit messages]: http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html

@@ -144,7 +144,7 @@ with any interested contributors:
    compiler, and for clients to consume.
 
  * *Graph schema*. Kythe provides a simple, extensible
-   http://kythe.io/schema/[graph schema] for a variety of
+   https://kythe.io/schema/[graph schema] for a variety of
    interesting semantic cross-reference data in various languages, including
    C++, Java, and (soon) Go.  We also provide some simple, open-source tools
    that make it easy to add new elements to the schema, and test whether an

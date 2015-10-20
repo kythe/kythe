@@ -47,5 +47,5 @@ bazel test //...
 ----
 
 Please let us know if you run into any issues by opening a
-http://kythe.io/phabricator/maniphest[Phabricator task] or posting to the
+https://kythe.io/phabricator/maniphest[Phabricator task] or posting to the
 https://groups.google.com/forum/#!forum/kythe-dev[kythe-dev mailing list].

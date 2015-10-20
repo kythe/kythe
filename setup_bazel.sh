@@ -38,7 +38,7 @@ fi
 if [[ -z "$GOROOT" ]]; then
   if [[ -z "$(go env GOROOT)" ]]; then
     echo 'You need to have go installed to build Kythe.'
-    echo 'Please see http://kythe.io/contributing for more information.'
+    echo 'Please see https://kythe.io/contributing for more information.'
     exit 1
   fi
   if ! GOROOT="$(realpath -s "$(go env GOROOT)")"; then
@@ -57,7 +57,7 @@ if [[ -z "$CLANG" ]]; then
     echo 'Note: Some vendors install clang with a versioned name'
     echo '(like /usr/bin/clang-3.5). You can set the CLANG environment'
     echo 'variable to specify the full path to yours.'
-    echo 'Please see http://kythe.io/contributing for more information.'
+    echo 'Please see https://kythe.io/contributing for more information.'
     exit 1
   fi
   CLANG="$(realpath -s $(which clang))"

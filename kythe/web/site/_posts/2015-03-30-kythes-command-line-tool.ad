@@ -18,7 +18,7 @@ manually which can lead to stale data over time.] index of Kythe's own sources.
 All of the information surfaced by the sample web UI, and *more*, can be
 retrieved with the Kythe command-line tool.  It's simply a wrapper around the
 protobuf service APIs that exist in
-http://kythe.io/repo/kythe/go/services/[kythe/go/services] with some extra
+https://kythe.io/repo/kythe/go/services/[kythe/go/services] with some extra
 usability features.
 
 So, what _exactly_ can the tool do?  Let's build it and then check its `help`

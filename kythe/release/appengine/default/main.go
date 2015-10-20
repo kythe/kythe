@@ -31,10 +31,10 @@ const (
   <head>
     <meta charset="utf-8">
     <meta name="go-import" content="kythe.io git https://github.com/google/kythe">
-    <meta name="go-source" content="kythe.io http://kythe.io http://kythe.io/repo{/dir} http://kythe.io/repo{/dir}/{file}${line}">
+    <meta name="go-source" content="kythe.io https://kythe.io https://kythe.io/repo{/dir} https://kythe.io/repo{/dir}/{file}${line}">
   </head>
   <body>
-    <a href="http://kythe.io">kythe.io</a>
+    <a href="https://kythe.io">kythe.io</a>
   </body>
 </html>`
 )

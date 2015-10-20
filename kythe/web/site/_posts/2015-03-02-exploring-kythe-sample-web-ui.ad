@@ -16,7 +16,7 @@ https://code.google.com/p/chromium/codesearch#chromium/src/chrome/browser/devtoo
 Search] browser is another example of a UI using similar data from Google's
 internal version of Kythe.]
 
-We currently host our http://kythe.io/repo/kythe/web/ui[sample web UI] at
+We currently host our https://kythe.io/repo/kythe/web/ui[sample web UI] at
 https://xrefs-dot-kythe-repo.appspot.com/ based on Kythe's own Java and C++
 source code and would like to invite everyone to explore it.  We trust that this
 UI example will help show the depth of analysis that Kythe can provide and how
@@ -32,8 +32,8 @@ programming languages] (including web UIs).
 ** No cheating by browsing the Kythe git repository directly or calling out to
    other tools
 ** Data is
-   http://kythe.io/repo/kythe/go/serving/pipeline/pipeline.go[transformed] into
-   http://kythe.io/repo/kythe/proto/serving.proto[protobuf] lookup tables to
+   https://kythe.io/repo/kythe/go/serving/pipeline/pipeline.go[transformed] into
+   https://kythe.io/repo/kythe/proto/serving.proto[protobuf] lookup tables to
    provide efficient access
 * Filetree pane to browse all files by path, separated by their corpus roots
 * Source code decorated with links for each known
@@ -100,6 +100,6 @@ http://www.kythe.io/docs/schema/#param[/kythe/edge/param]:: declared parameters
 
 These examples are just a taste of the data exposed in our sample web UI.  With
 other specialized interfaces such as the
-http://kythe.io/repo/kythe/go/serving/tools/kythe.go[Kythe command-line],
+https://kythe.io/repo/kythe/go/serving/tools/kythe.go[Kythe command-line],
 Kythe's data can lead to some very useful tools for viewing, editing, and
 grokking source code across multiple languages.

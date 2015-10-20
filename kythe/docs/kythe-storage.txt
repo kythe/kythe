@@ -396,7 +396,7 @@ relationship; otherwise `foo` is considered a reverse relationship.
 By convention, Kythe tools use a fixed lexical convention for generating names
 for ``reverse'' edges -- generally synthesized for serving purposes -- from the
 edges specified in the schema (refer to the
-link:http://kythe.io/schema/[Kythe graph schema]).
+link:https://kythe.io/schema/[Kythe graph schema]).
 
 === [[TermGraphStore]] Graph Store
 

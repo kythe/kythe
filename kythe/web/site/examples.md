@@ -100,7 +100,7 @@ java -jar /opt/kythe/indexers/java_indexer.jar \
 # java -jar /opt/kythe/indexers/java_indexer.jar --index_path=<root> <unit-hash> > entries
 java -jar /opt/kythe/indexers/java_indexer.jar \
   --index_pack=$PWD/.kythe_indexpack b3759d74b6ee8ba97312cf8b1b47c4263504a56ca9ab63e8f3af98298ccf9fd6 > entries
-# NOTE: http://kythe.io/phabricator/T40 -- the Java indexer should not be run in
+# NOTE: https://kythe.io/phabricator/T40 -- the Java indexer should not be run in
 #       the KYTHE_ROOT_DIRECTORY used during extraction
 
 # View indexer's output entry stream as JSON

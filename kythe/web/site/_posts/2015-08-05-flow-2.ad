@@ -100,8 +100,8 @@ Could not verify all goals. The furthest we reached was:
 
 For more examples of the goal language, take a look at the code listings in the
 http://www.kythe.io/docs/schema[schema document]. There are also lots more in
-the $$C++$$ indexer's http://kythe.io/repo/kythe/cxx/indexer/cxx/testdata[testdata]
-and the Java indexer's http://kythe.io/repo/kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata[testdata]
+the $$C++$$ indexer's https://kythe.io/repo/kythe/cxx/indexer/cxx/testdata[testdata]
+and the Java indexer's https://kythe.io/repo/kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata[testdata]
 directories.
 
 == Verifying JavaScript

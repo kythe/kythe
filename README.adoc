@@ -44,19 +44,19 @@ usages.
 
 == Contributing and Building Kythe
 
-http://kythe.io/contributing
+https://kythe.io/contributing
 
 == Issue Tracker
 
-http://kythe.io/phabricator/maniphest
+https://kythe.io/phabricator/maniphest
 
 == Documentation
 
-http://kythe.io/docs/
+https://kythe.io/docs/
 
 == Examples
 
-http://kythe.io/examples
+https://kythe.io/examples
 
 == Contact
 
