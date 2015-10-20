@@ -149,7 +149,7 @@ def link_binary(ctx, binary, archive, recursive_deps, extldflags=[], transitive_
   for a in transitive_cc_libs:
     extldflags += [a.path]
 
-  if str(ctx.configuration).find('darwin') >= 0:
+  if ctx.var['TARGET_CPU'] == 'darwin':
     args = link_args_darwin[ctx.var['COMPILATION_MODE']]
   else:
     args = link_args[ctx.var['COMPILATION_MODE']]
