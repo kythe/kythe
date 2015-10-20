@@ -158,7 +158,7 @@ std::string IndexCompilationUnit(const proto::CompilationUnit &Unit,
   // ToolInvocation doesn't take ownership of ToolActions.
   clang::tooling::ToolInvocation Invocation(
       Args, Tool.get(), FileManager.get(),
-      std::make_shared<clang::RawPCHContainerOperations>());
+      std::make_shared<clang::PCHContainerOperations>());
   if (!Invocation.run()) {
     return "Errors during indexing.";
   }

@@ -12,7 +12,7 @@ required_input {
     digest: "7684704ae672c88bd4a656eff30a716ab29a8270e87e387d9101b32527cde498"
   }
   context {
-    source_context: "8583d6eae83ed0a95cc7390dce6c148f7ab58c920f649b58590a801d83bc3bd4"
+    source_context: "61ae90ae7e7cb847148fc2f6bc17213069228651e91972f9131fd86594bc090e"
     column {
       linked_context: "cc063f5d59413bdbe5596b0f25cd6ee07c0f5e5b7000e5c233731720366fc241"
     }
@@ -68,4 +68,4 @@ argument: "./kythe/cxx/extractor/testdata/transcript_main.cc"
 argument: "-fsyntax-only"
 source_file: "./kythe/cxx/extractor/testdata/transcript_main.cc"
 working_directory: "."
-entry_context: "8583d6eae83ed0a95cc7390dce6c148f7ab58c920f649b58590a801d83bc3bd4"
+entry_context: "61ae90ae7e7cb847148fc2f6bc17213069228651e91972f9131fd86594bc090e"

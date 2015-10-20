@@ -12,7 +12,7 @@ required_input {
     digest: "72269be69625ca9015a59bf7342dce1a30e96ddda51196c9f6ae6c4cbdefb7ea"
   }
   context {
-    source_context: "ae7add6eac413370bec1b04d7ccca5a30fc2e17ad71c8bb94d72b6efe08c79e9"
+    source_context: "8959c0d1d8aa222d454f4f6743ae3bdb088464b1946465bf1b3a05adc3e94e7a"
   }
 }
 required_input {
@@ -34,4 +34,4 @@ argument: "./kythe/cxx/extractor/testdata/metadata.cc"
 argument: "-fsyntax-only"
 source_file: "./kythe/cxx/extractor/testdata/metadata.cc"
 working_directory: "."
-entry_context: "ae7add6eac413370bec1b04d7ccca5a30fc2e17ad71c8bb94d72b6efe08c79e9"
+entry_context: "8959c0d1d8aa222d454f4f6743ae3bdb088464b1946465bf1b3a05adc3e94e7a"

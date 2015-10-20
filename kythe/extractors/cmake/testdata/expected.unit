@@ -14,7 +14,7 @@ required_input {
     digest: "deac66ccb79f6d31c0fa7d358de48e083c15c02ff50ec1ebd4b64314b9e6e196"
   }
   context {
-    source_context: "accaea4df1d4e81f6f6b485034e10380f8fb70246d35e899369ada0c68e60d79"
+    source_context: "f83d749bae2b1bc0954b06f625fbcd2d6c0b4c344b1f2ec9bd42049ca96b0415"
   }
 }
 argument: "/usr/bin/g++"
@@ -25,4 +25,4 @@ argument: "test_file.cc"
 argument: "-fsyntax-only"
 source_file: "test_file.cc"
 working_directory: "BASE_DIR/testdata"
-entry_context: "accaea4df1d4e81f6f6b485034e10380f8fb70246d35e899369ada0c68e60d79"
+entry_context: "f83d749bae2b1bc0954b06f625fbcd2d6c0b4c344b1f2ec9bd42049ca96b0415"

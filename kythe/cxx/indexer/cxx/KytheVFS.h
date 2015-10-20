@@ -53,6 +53,13 @@ class IndexVFS : public clang::vfs::FileSystem {
   /// \brief Returns a string representation of `uid` for error messages.
   std::string get_debug_uid_string(const llvm::sys::fs::UniqueID &uid);
   const std::string &working_directory() const { return working_directory_; }
+  llvm::ErrorOr<std::string> getCurrentWorkingDirectory() const override {
+    return working_directory_;
+  }
+  std::error_code setCurrentWorkingDirectory(const llvm::Twine &Path) override {
+    working_directory_ = Path.str();
+    return std::error_code();
+  }
 
  private:
   /// \brief Information kept on a file being tracked.
@@ -79,7 +86,6 @@ class IndexVFS : public clang::vfs::FileSystem {
       return record_->status;
     }
     std::error_code close() override { return std::error_code(); }
-    void setName(llvm::StringRef name) override {}
     llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> getBuffer(
         const llvm::Twine &Name, int64_t FileSize, bool RequiresNullTerminator,
         bool IsVolatile) override {

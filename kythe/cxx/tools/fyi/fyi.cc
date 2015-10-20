@@ -133,7 +133,6 @@ class FileTracker {
     store->clear();
     llvm::raw_svector_ostream buffer_stream(*store);
     buffer->write(buffer_stream);
-    buffer_stream.flush();
     // Required null terminator.
     store->push_back(0);
     const char *start = store->data();

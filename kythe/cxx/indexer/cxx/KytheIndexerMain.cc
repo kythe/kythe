@@ -42,7 +42,6 @@
 #include "kythe/cxx/common/json_proto.h"
 #include "kythe/proto/analysis.pb.h"
 #include "kythe/proto/claim.pb.h"
-#include "kythe/proto/cxx.pb.h"
 
 #include "IndexerFrontendAction.h"
 #include "KytheGraphObserver.h"

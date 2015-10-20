@@ -141,7 +141,7 @@ IndexVFS::FileRecord *IndexVFS::FileRecordForPathRoot(const llvm::Twine &path,
   } else {
     name_record = new FileRecord(
         {clang::vfs::Status(
-             root_name, root_name, clang::vfs::getNextVirtualUniqueID(),
+             root_name, clang::vfs::getNextVirtualUniqueID(),
              llvm::sys::TimeValue(), 0, 0, 0,
              llvm::sys::fs::file_type::directory_file, llvm::sys::fs::all_read),
          false, root_name});
@@ -248,7 +248,7 @@ IndexVFS::FileRecord *IndexVFS::AllocOrReturnFileRecord(
   llvm::sys::path::append(out_path, label);
   FileRecord *new_record = new FileRecord{
       clang::vfs::Status(
-          out_path, out_path, clang::vfs::getNextVirtualUniqueID(),
+          out_path, clang::vfs::getNextVirtualUniqueID(),
           llvm::sys::TimeValue(), 0, 0, size, type, llvm::sys::fs::all_read),
       false, label};
   parent->children.push_back(new_record);
