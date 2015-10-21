@@ -61,7 +61,7 @@ public abstract class GRPCCompilationAnalyzer extends AbstractCompilationAnalyze
 
     @Override
     public void emitOutput(AnalysisOutput output) {
-      stream.onValue(output);
+      stream.onNext(output);
     }
   }
 }

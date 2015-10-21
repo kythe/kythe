@@ -40,7 +40,6 @@
 
 #include <google/protobuf/compiler/csharp/csharp_helpers.h>
 #include <google/protobuf/compiler/csharp/csharp_repeated_primitive_field.h>
-#include <google/protobuf/compiler/csharp/csharp_writer.h>
 
 namespace google {
 namespace protobuf {
@@ -56,161 +55,66 @@ RepeatedPrimitiveFieldGenerator::~RepeatedPrimitiveFieldGenerator() {
 
 }
 
-void RepeatedPrimitiveFieldGenerator::GenerateMembers(Writer* writer) {
-  if (descriptor_->is_packed() && optimize_speed()) {
-    writer->WriteLine("private int $0$MemoizedSerializedSize;", name());
-  }
-  writer->WriteLine(
-      "private pbc::PopsicleList<$0$> $1$_ = new pbc::PopsicleList<$0$>();",
-      type_name(), name());
-  AddPublicMemberAttributes(writer);
-  writer->WriteLine("public scg::IList<$0$> $1$List {", type_name(),
-                    property_name());
-  writer->WriteLine("  get { return pbc::Lists.AsReadOnly($0$_); }", name());
-  writer->WriteLine("}");
-
-  // TODO(jonskeet): Redundant API calls? Possibly - include for portability though. Maybe create an option.
-  AddDeprecatedFlag(writer);
-  writer->WriteLine("public int $0$Count {", property_name());
-  writer->WriteLine("  get { return $0$_.Count; }", name());
-  writer->WriteLine("}");
-
-  AddPublicMemberAttributes(writer);
-  writer->WriteLine("public $0$ Get$1$(int index) {", type_name(),
-                    property_name());
-  writer->WriteLine("  return $0$_[index];", name());
-  writer->WriteLine("}");
+void RepeatedPrimitiveFieldGenerator::GenerateMembers(io::Printer* printer) {
+  printer->Print(
+    variables_,
+    "private static readonly pb::FieldCodec<$type_name$> _repeated_$name$_codec\n"
+    "    = pb::FieldCodec.For$capitalized_type_name$($tag$);\n");
+  printer->Print(variables_,
+    "private readonly pbc::RepeatedField<$type_name$> $name$_ = new pbc::RepeatedField<$type_name$>();\n");
+  AddDeprecatedFlag(printer);
+  printer->Print(
+    variables_,
+    "$access_level$ pbc::RepeatedField<$type_name$> $property_name$ {\n"
+    "  get { return $name$_; }\n"
+    "}\n");
 }
 
-void RepeatedPrimitiveFieldGenerator::GenerateBuilderMembers(Writer* writer) {
-  // Note:  We can return the original list here, because we make it unmodifiable when we build
-  // We return it via IPopsicleList so that collection initializers work more pleasantly.
-  AddPublicMemberAttributes(writer);
-  writer->WriteLine("public pbc::IPopsicleList<$0$> $1$List {", type_name(),
-                    property_name());
-  writer->WriteLine("  get { return PrepareBuilder().$0$_; }", name());
-  writer->WriteLine("}");
-  AddDeprecatedFlag(writer);
-  writer->WriteLine("public int $0$Count {", property_name());
-  writer->WriteLine("  get { return result.$0$Count; }", property_name());
-  writer->WriteLine("}");
-  AddPublicMemberAttributes(writer);
-  writer->WriteLine("public $0$ Get$1$(int index) {", type_name(),
-                    property_name());
-  writer->WriteLine("  return result.Get$0$(index);", property_name());
-  writer->WriteLine("}");
-  AddPublicMemberAttributes(writer);
-  writer->WriteLine("public Builder Set$0$(int index, $1$ value) {",
-                    property_name(), type_name());
-  AddNullCheck(writer);
-  writer->WriteLine("  PrepareBuilder();");
-  writer->WriteLine("  result.$0$_[index] = value;", name());
-  writer->WriteLine("  return this;");
-  writer->WriteLine("}");
-  AddPublicMemberAttributes(writer);
-  writer->WriteLine("public Builder Add$0$($1$ value) {", property_name(),
-                    type_name());
-  AddNullCheck(writer);
-  writer->WriteLine("  PrepareBuilder();");
-  writer->WriteLine("  result.$0$_.Add(value);", name(), type_name());
-  writer->WriteLine("  return this;");
-  writer->WriteLine("}");
-  AddPublicMemberAttributes(writer);
-  writer->WriteLine(
-      "public Builder AddRange$0$(scg::IEnumerable<$1$> values) {",
-      property_name(), type_name());
-  writer->WriteLine("  PrepareBuilder();");
-  writer->WriteLine("  result.$0$_.Add(values);", name());
-  writer->WriteLine("  return this;");
-  writer->WriteLine("}");
-  AddDeprecatedFlag(writer);
-  writer->WriteLine("public Builder Clear$0$() {", property_name());
-  writer->WriteLine("  PrepareBuilder();");
-  writer->WriteLine("  result.$0$_.Clear();", name());
-  writer->WriteLine("  return this;");
-  writer->WriteLine("}");
+void RepeatedPrimitiveFieldGenerator::GenerateMergingCode(io::Printer* printer) {
+  printer->Print(
+    variables_,
+    "$name$_.Add(other.$name$_);\n");
 }
 
-void RepeatedPrimitiveFieldGenerator::GenerateMergingCode(Writer* writer) {
-  writer->WriteLine("if (other.$0$_.Count != 0) {", name());
-  writer->WriteLine("  result.$0$_.Add(other.$0$_);", name());
-  writer->WriteLine("}");
+void RepeatedPrimitiveFieldGenerator::GenerateParsingCode(io::Printer* printer) {
+  printer->Print(
+    variables_,
+    "$name$_.AddEntriesFrom(input, _repeated_$name$_codec);\n");
 }
 
-void RepeatedPrimitiveFieldGenerator::GenerateBuildingCode(Writer* writer) {
-  writer->WriteLine("$0$_.MakeReadOnly();", name());
+void RepeatedPrimitiveFieldGenerator::GenerateSerializationCode(io::Printer* printer) {
+  printer->Print(
+    variables_,
+    "$name$_.WriteTo(output, _repeated_$name$_codec);\n");
 }
 
-void RepeatedPrimitiveFieldGenerator::GenerateParsingCode(Writer* writer) {
-  writer->WriteLine("input.Read$0$Array(tag, field_name, result.$1$_);",
-                    capitalized_type_name(), name());
+void RepeatedPrimitiveFieldGenerator::GenerateSerializedSizeCode(io::Printer* printer) {
+  printer->Print(
+    variables_,
+    "size += $name$_.CalculateSize(_repeated_$name$_codec);\n");
 }
 
-void RepeatedPrimitiveFieldGenerator::GenerateSerializationCode(
-    Writer* writer) {
-  writer->WriteLine("if ($0$_.Count > 0) {", name());
-  writer->Indent();
-  if (descriptor_->is_packed()) {
-    writer->WriteLine(
-        "output.WritePacked$0$Array($1$, field_names[$3$], $2$MemoizedSerializedSize, $2$_);",
-        capitalized_type_name(), number(), name(), field_ordinal());
-  } else {
-    writer->WriteLine("output.Write$0$Array($1$, field_names[$3$], $2$_);",
-                      capitalized_type_name(), number(), name(),
-                      field_ordinal());
-  }
-  writer->Outdent();
-  writer->WriteLine("}");
+void RepeatedPrimitiveFieldGenerator::WriteHash(io::Printer* printer) {
+  printer->Print(
+    variables_,
+    "hash ^= $name$_.GetHashCode();\n");
+}
+void RepeatedPrimitiveFieldGenerator::WriteEquals(io::Printer* printer) {
+  printer->Print(
+    variables_,
+    "if(!$name$_.Equals(other.$name$_)) return false;\n");
+}
+void RepeatedPrimitiveFieldGenerator::WriteToString(io::Printer* printer) {
+  printer->Print(variables_,
+    "PrintField(\"$descriptor_name$\", $name$_, writer);\n");
 }
 
-void RepeatedPrimitiveFieldGenerator::GenerateSerializedSizeCode(
-    Writer* writer) {
-  writer->WriteLine("{");
-  writer->Indent();
-  writer->WriteLine("int dataSize = 0;");
-  int fixedSize = GetFixedSize(descriptor_->type());
-  if (fixedSize == -1) {
-    writer->WriteLine("foreach ($0$ element in $1$List) {", type_name(),
-                      property_name());
-    writer->WriteLine(
-        "  dataSize += pb::CodedOutputStream.Compute$0$SizeNoTag(element);",
-        capitalized_type_name(), number());
-    writer->WriteLine("}");
-  } else {
-    writer->WriteLine("dataSize = $0$ * $1$_.Count;", SimpleItoa(fixedSize), name());
-  }
-  writer->WriteLine("size += dataSize;");
-  int tagSize = internal::WireFormat::TagSize(descriptor_->number(), descriptor_->type());
-  if (descriptor_->is_packed()) {
-    writer->WriteLine("if ($0$_.Count != 0) {", name());
-    writer->WriteLine(
-        "  size += $0$ + pb::CodedOutputStream.ComputeInt32SizeNoTag(dataSize);",
-        SimpleItoa(tagSize));
-    writer->WriteLine("}");
-  } else {
-    writer->WriteLine("size += $0$ * $1$_.Count;", SimpleItoa(tagSize), name());
-  }
-  // cache the data size for packed fields.
-  if (descriptor_->is_packed()) {
-    writer->WriteLine("$0$MemoizedSerializedSize = dataSize;", name());
-  }
-  writer->Outdent();
-  writer->WriteLine("}");
+void RepeatedPrimitiveFieldGenerator::GenerateCloningCode(io::Printer* printer) {
+  printer->Print(variables_,
+    "$name$_ = other.$name$_.Clone();\n");
 }
 
-void RepeatedPrimitiveFieldGenerator::WriteHash(Writer* writer) {
-  writer->WriteLine("foreach($0$ i in $1$_)", type_name(), name());
-  writer->WriteLine("  hash ^= i.GetHashCode();");
-}
-void RepeatedPrimitiveFieldGenerator::WriteEquals(Writer* writer) {
-  writer->WriteLine("if($0$_.Count != other.$0$_.Count) return false;", name());
-  writer->WriteLine("for(int ix=0; ix < $0$_.Count; ix++)", name());
-  writer->WriteLine("  if(!$0$_[ix].Equals(other.$0$_[ix])) return false;",
-                    name());
-}
-void RepeatedPrimitiveFieldGenerator::WriteToString(Writer* writer) {
-  writer->WriteLine("PrintField(\"$0$\", $1$_, writer);", descriptor_->name(),
-                    name());
+void RepeatedPrimitiveFieldGenerator::GenerateFreezingCode(io::Printer* printer) {
 }
 
 }  // namespace csharp

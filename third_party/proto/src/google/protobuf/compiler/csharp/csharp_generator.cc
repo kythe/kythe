@@ -40,7 +40,6 @@
 #include <google/protobuf/compiler/csharp/csharp_generator.h>
 #include <google/protobuf/compiler/csharp/csharp_umbrella_class.h>
 #include <google/protobuf/compiler/csharp/csharp_helpers.h>
-#include <google/protobuf/compiler/csharp/csharp_writer.h>
 
 using google::protobuf::internal::scoped_ptr;
 
@@ -51,13 +50,13 @@ namespace csharp {
 
 std::string GetOutputFile(const google::protobuf::FileDescriptor* file, const std::string file_extension)
 {
-  return GetFileUmbrellaClassname(file) + file_extension;
+  return GetUmbrellaClassUnqualifiedName(file) + file_extension;
 }
 
 void GenerateFile(const google::protobuf::FileDescriptor* file,
-                  Writer* writer) {
+                  io::Printer* printer) {
   UmbrellaClassGenerator umbrellaGenerator(file);
-  umbrellaGenerator.Generate(writer);
+  umbrellaGenerator.Generate(printer);
 }
 
 bool Generator::Generate(
@@ -68,6 +67,12 @@ bool Generator::Generate(
 
   vector<pair<string, string> > options;
   ParseGeneratorParameter(parameter, &options);
+
+  // We only support proto3 - but we make an exception for descriptor.proto.
+  if (file->syntax() != FileDescriptor::SYNTAX_PROTO3 && !IsDescriptorProto(file)) {
+    *error = "C# code generation only supports proto3 syntax";
+    return false;
+  }
 
   std::string file_extension = ".cs";
   for (int i = 0; i < options.size(); i++) {
@@ -83,9 +88,8 @@ bool Generator::Generate(
   scoped_ptr<io::ZeroCopyOutputStream> output(
       generator_context->Open(filename));
   io::Printer printer(output.get(), '$');
-  Writer writer(&printer);
 
-  GenerateFile(file, &writer);
+  GenerateFile(file, &printer);
 
   return true;
 }

@@ -43,7 +43,6 @@ namespace protobuf {
 namespace compiler {
 namespace csharp {
 
-class Writer;
 class FieldGeneratorBase;
 
 class MessageGenerator : public SourceGeneratorBase {
@@ -51,31 +50,24 @@ class MessageGenerator : public SourceGeneratorBase {
   MessageGenerator(const Descriptor* descriptor);
   ~MessageGenerator();
 
-  void GenerateStaticVariables(Writer* printer);
-  void GenerateStaticVariableInitializers(Writer* printer);
-  void GenerateExtensionRegistrationCode(Writer* printer);
-  void Generate(Writer* printer);
+  void GenerateCloningCode(io::Printer* printer);
+  void GenerateFreezingCode(io::Printer* printer);
+  void GenerateFrameworkMethods(io::Printer* printer);
+  void Generate(io::Printer* printer);
 
  private:
   const Descriptor* descriptor_;
   std::vector<std::string> field_names_;
   std::vector<const FieldDescriptor*> fields_by_number_;
 
-  void GenerateLiteRuntimeMethods(Writer* writer);
-  void GenerateMessageSerializationMethods(Writer* writer);
-  void GenerateSerializeOneField(Writer* writer,
-                                 const FieldDescriptor* fieldDescriptor);
-  void GenerateSerializeOneExtensionRange(
-      Writer* writer, const Descriptor::ExtensionRange* extendsionRange);
-  void GenerateParseFromMethods(Writer* writer);
-  void GenerateBuilder(Writer* writer);
-  void GenerateCommonBuilderMethods(Writer* writer);
-  void GenerateBuilderParsingMethods(Writer* writer);
-  void GenerateIsInitialized(Writer* writer);
+  void GenerateMessageSerializationMethods(io::Printer* printer);
+  void GenerateMergingMethods(io::Printer* printer);
 
   int GetFieldOrdinal(const FieldDescriptor* descriptor);
   FieldGeneratorBase* CreateFieldGeneratorInternal(
       const FieldDescriptor* descriptor);
+
+  bool HasNestedGeneratedTypes();
 
   std::string class_name();
   std::string full_class_name();
@@ -95,4 +87,3 @@ class MessageGenerator : public SourceGeneratorBase {
 }  // namespace google
 
 #endif  // GOOGLE_PROTOBUF_COMPILER_CSHARP_MESSAGE_H__
-

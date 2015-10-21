@@ -3,6 +3,7 @@
 #include <iostream>
 #include <map>
 #include <google/protobuf/compiler/java/java_names.h>
+#include <google/protobuf/descriptor.pb.h>
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/io/zero_copy_stream.h>
 
@@ -55,8 +56,18 @@ static inline string MethodPropertiesFieldName(const MethodDescriptor* method) {
   return "METHOD_" + ToAllUpperCase(method->name());
 }
 
-static inline string MessageFullJavaName(const Descriptor* desc) {
-  return google::protobuf::compiler::java::ClassName(desc);
+static inline string MessageFullJavaName(bool nano, const Descriptor* desc) {
+  string name = google::protobuf::compiler::java::ClassName(desc);
+  if (nano && !desc->file()->options().javanano_use_deprecated_package()) {
+    // XXX: Add "nano" to the original package
+    // (https://github.com/grpc/grpc-java/issues/900)
+    for (int i = 0; i < name.size(); ++i) {
+      if ((name[i] == '.') && (i < (name.size() - 1)) && isupper(name[i + 1])) {
+        return name.substr(0, i + 1) + "nano." + name.substr(i + 1);
+      }
+    }
+  }
+  return name;
 }
 
 static void PrintMethodFields(
@@ -67,8 +78,10 @@ static void PrintMethodFields(
   for (int i = 0; i < service->method_count(); ++i) {
     const MethodDescriptor* method = service->method(i);
     (*vars)["method_name"] = method->name();
-    (*vars)["input_type"] = MessageFullJavaName(method->input_type());
-    (*vars)["output_type"] = MessageFullJavaName(method->output_type());
+    (*vars)["input_type"] = MessageFullJavaName(generate_nano,
+                                                method->input_type());
+    (*vars)["output_type"] = MessageFullJavaName(generate_nano,
+                                                 method->output_type());
     (*vars)["method_field_name"] = MethodPropertiesFieldName(method);
     bool client_streaming = method->client_streaming();
     bool server_streaming = method->server_streaming();
@@ -92,37 +105,39 @@ static void PrintMethodFields(
       // share the same request or response messages.
       p->Print(
           *vars,
+          "@$ExperimentalApi$\n"
           "public static final $MethodDescriptor$<$input_type$,\n"
           "    $output_type$> $method_field_name$ =\n"
           "    $MethodDescriptor$.create(\n"
           "        $MethodType$.$method_type$,\n"
-          "        \"$Package$$service_name$\", \"$method_name$\",\n"
+          "        generateFullMethodName(\n"
+          "            \"$Package$$service_name$\", \"$method_name$\"),\n"
           "        $NanoUtils$.<$input_type$>marshaller(\n"
-          "            new io.grpc.protobuf.nano.Parser<$input_type$>() {\n"
+          "            new io.grpc.protobuf.nano.MessageNanoFactory<$input_type$>() {\n"
           "                @Override\n"
-          "                public $input_type$ parse("
-          "$CodedInputByteBufferNano$ input) throws IOException {\n"
-          "                    return $input_type$.parseFrom(input);\n"
+          "                public $input_type$ newInstance() {\n"
+          "                    return new $input_type$();\n"
           "                }\n"
           "        }),\n"
           "        $NanoUtils$.<$output_type$>marshaller(\n"
-          "            new io.grpc.protobuf.nano.Parser<$output_type$>() {\n"
+          "            new io.grpc.protobuf.nano.MessageNanoFactory<$output_type$>() {\n"
           "                @Override\n"
-          "                public $output_type$ parse("
-          "$CodedInputByteBufferNano$ input) throws IOException {\n"
-          "                    return $output_type$.parseFrom(input);\n"
+          "                public $output_type$ newInstance() {\n"
+          "                    return new $output_type$();\n"
           "                }\n"
           "        }));\n");
     } else {
       p->Print(
           *vars,
+          "@$ExperimentalApi$\n"
           "public static final $MethodDescriptor$<$input_type$,\n"
           "    $output_type$> $method_field_name$ =\n"
           "    $MethodDescriptor$.create(\n"
           "        $MethodType$.$method_type$,\n"
-          "        \"$Package$$service_name$\", \"$method_name$\",\n"
-          "        $ProtoUtils$.marshaller($input_type$.parser()),\n"
-          "        $ProtoUtils$.marshaller($output_type$.parser()));\n");
+          "        generateFullMethodName(\n"
+          "            \"$Package$$service_name$\", \"$method_name$\"),\n"
+          "        $ProtoUtils$.marshaller($input_type$.getDefaultInstance()),\n"
+          "        $ProtoUtils$.marshaller($output_type$.getDefaultInstance()));\n");
     }
   }
   p->Print("\n");
@@ -145,9 +160,10 @@ enum CallType {
 };
 
 // Prints a client interface or implementation class, or a server interface.
-static void PrintStub(const google::protobuf::ServiceDescriptor* service,
-                        map<string, string>* vars,
-                        Printer* p, StubType type) {
+static void PrintStub(
+    const ServiceDescriptor* service,
+    map<string, string>* vars,
+    Printer* p, StubType type, bool generate_nano) {
   (*vars)["service_name"] = service->name();
   string interface_name = service->name();
   string impl_name = service->name();
@@ -170,7 +186,7 @@ static void PrintStub(const google::protobuf::ServiceDescriptor* service,
       interface_name += "BlockingServer";
       break;
     default:
-      FAIL << "Cannot determine class name for StubType: " << type;
+      GRPC_CODEGEN_FAIL << "Cannot determine class name for StubType: " << type;
   }
   bool impl;
   CallType call_type;
@@ -201,7 +217,7 @@ static void PrintStub(const google::protobuf::ServiceDescriptor* service,
       impl = true;
       break;
     default:
-      FAIL << "Cannot determine call type for StubType: " << type;
+      GRPC_CODEGEN_FAIL << "Cannot determine call type for StubType: " << type;
   }
   (*vars)["interface_name"] = interface_name;
   (*vars)["impl_name"] = impl_name;
@@ -252,8 +268,10 @@ static void PrintStub(const google::protobuf::ServiceDescriptor* service,
   // RPC methods
   for (int i = 0; i < service->method_count(); ++i) {
     const MethodDescriptor* method = service->method(i);
-    (*vars)["input_type"] = MessageFullJavaName(method->input_type());
-    (*vars)["output_type"] = MessageFullJavaName(method->output_type());
+    (*vars)["input_type"] = MessageFullJavaName(generate_nano,
+                                                method->input_type());
+    (*vars)["output_type"] = MessageFullJavaName(generate_nano,
+                                                 method->output_type());
     (*vars)["lower_method_name"] = LowerMethodName(method);
     (*vars)["method_field_name"] = MethodPropertiesFieldName(method);
     bool client_streaming = method->client_streaming();
@@ -280,9 +298,9 @@ static void PrintStub(const google::protobuf::ServiceDescriptor* service,
     switch (call_type) {
       case BLOCKING_CALL:
         // TODO(zhangkun83): decide the blocking server interface
-        CHECK(type != BLOCKING_SERVER_INTERFACE)
+        GRPC_CODEGEN_CHECK(type != BLOCKING_SERVER_INTERFACE)
             << "Blocking server interface is not available";
-        CHECK(!client_streaming)
+        GRPC_CODEGEN_CHECK(!client_streaming)
             << "Blocking client interface with client streaming is unavailable";
         if (server_streaming) {
           // Server streaming
@@ -313,7 +331,7 @@ static void PrintStub(const google::protobuf::ServiceDescriptor* service,
         }
         break;
       case FUTURE_CALL:
-        CHECK(!client_streaming && !server_streaming)
+        GRPC_CODEGEN_CHECK(!client_streaming && !server_streaming)
             << "Future interface doesn't support streaming. "
             << "client_streaming=" << client_streaming << ", "
             << "server_streaming=" << server_streaming;
@@ -329,7 +347,7 @@ static void PrintStub(const google::protobuf::ServiceDescriptor* service,
       p->Indent();
       switch (call_type) {
         case BLOCKING_CALL:
-          CHECK(!client_streaming)
+          GRPC_CODEGEN_CHECK(!client_streaming)
               << "Blocking client streaming interface is not available";
           if (server_streaming) {
             (*vars)["calls_method"] = "blockingServerStreamingCall";
@@ -341,7 +359,7 @@ static void PrintStub(const google::protobuf::ServiceDescriptor* service,
           p->Print(
               *vars,
               "return $calls_method$(\n"
-              "    channel.newCall($method_field_name$, callOptions), $params$);\n");
+              "    getChannel().newCall($method_field_name$, getCallOptions()), $params$);\n");
           break;
         case ASYNC_CALL:
           if (server_streaming) {
@@ -365,10 +383,10 @@ static void PrintStub(const google::protobuf::ServiceDescriptor* service,
           p->Print(
               *vars,
               "$last_line_prefix$$calls_method$(\n"
-              "    channel.newCall($method_field_name$, callOptions), $params$);\n");
+              "    getChannel().newCall($method_field_name$, getCallOptions()), $params$);\n");
           break;
         case FUTURE_CALL:
-          CHECK(!client_streaming && !server_streaming)
+          GRPC_CODEGEN_CHECK(!client_streaming && !server_streaming)
               << "Future interface doesn't support streaming. "
               << "client_streaming=" << client_streaming << ", "
               << "server_streaming=" << server_streaming;
@@ -376,7 +394,7 @@ static void PrintStub(const google::protobuf::ServiceDescriptor* service,
           p->Print(
               *vars,
               "return $calls_method$(\n"
-              "    channel.newCall($method_field_name$, callOptions), request);\n");
+              "    getChannel().newCall($method_field_name$, getCallOptions()), request);\n");
           break;
       }
       p->Outdent();
@@ -391,7 +409,8 @@ static void PrintStub(const google::protobuf::ServiceDescriptor* service,
 
 static void PrintBindServiceMethod(const ServiceDescriptor* service,
                                    map<string, string>* vars,
-                                   Printer* p) {
+                                   Printer* p,
+                                   bool generate_nano) {
   (*vars)["service_name"] = service->name();
   p->Print(
       *vars,
@@ -400,14 +419,16 @@ static void PrintBindServiceMethod(const ServiceDescriptor* service,
   p->Indent();
   p->Print(*vars,
            "return "
-           "$ServerServiceDefinition$.builder(\"$Package$$service_name$\")\n");
+           "$ServerServiceDefinition$.builder(SERVICE_NAME)\n");
   p->Indent();
   for (int i = 0; i < service->method_count(); ++i) {
     const MethodDescriptor* method = service->method(i);
     (*vars)["lower_method_name"] = LowerMethodName(method);
     (*vars)["method_field_name"] = MethodPropertiesFieldName(method);
-    (*vars)["input_type"] = MessageFullJavaName(method->input_type());
-    (*vars)["output_type"] = MessageFullJavaName(method->output_type());
+    (*vars)["input_type"] = MessageFullJavaName(generate_nano,
+                                                method->input_type());
+    (*vars)["output_type"] = MessageFullJavaName(generate_nano,
+                                                 method->output_type());
     bool client_streaming = method->client_streaming();
     bool server_streaming = method->server_streaming();
     if (client_streaming) {
@@ -431,8 +452,7 @@ static void PrintBindServiceMethod(const ServiceDescriptor* service,
             "io.grpc.stub.ServerCalls.UnaryMethod";
       }
     }
-    p->Print(*vars, ".addMethod($ServerMethodDefinition$.create(\n");
-    p->Indent();
+    p->Print(*vars, ".addMethod(\n");
     p->Indent();
     p->Print(
         *vars,
@@ -465,12 +485,11 @@ static void PrintBindServiceMethod(const ServiceDescriptor* service,
           "}\n");
     }
     p->Outdent();
-    p->Print("})))");
+    p->Print("}))");
     if (i == service->method_count() - 1) {
       p->Print(".build();");
     }
     p->Print("\n");
-    p->Outdent();
     p->Outdent();
     p->Outdent();
   }
@@ -490,6 +509,14 @@ static void PrintService(const ServiceDescriptor* service,
       "@$Generated$(\"by gRPC proto compiler\")\n"
       "public class $service_class_name$ {\n\n");
   p->Indent();
+  p->Print(
+      *vars,
+      "private $service_class_name$() {}\n\n");
+
+  p->Print(
+      *vars,
+      "public static final String SERVICE_NAME = "
+      "\"$Package$$service_name$\";\n\n");
 
   PrintMethodFields(service, vars, p, generate_nano);
 
@@ -523,13 +550,13 @@ static void PrintService(const ServiceDescriptor* service,
   p->Outdent();
   p->Print("}\n\n");
 
-  PrintStub(service, vars, p, ASYNC_INTERFACE);
-  PrintStub(service, vars, p, BLOCKING_CLIENT_INTERFACE);
-  PrintStub(service, vars, p, FUTURE_CLIENT_INTERFACE);
-  PrintStub(service, vars, p, ASYNC_CLIENT_IMPL);
-  PrintStub(service, vars, p, BLOCKING_CLIENT_IMPL);
-  PrintStub(service, vars, p, FUTURE_CLIENT_IMPL);
-  PrintBindServiceMethod(service, vars, p);
+  PrintStub(service, vars, p, ASYNC_INTERFACE, generate_nano);
+  PrintStub(service, vars, p, BLOCKING_CLIENT_INTERFACE, generate_nano);
+  PrintStub(service, vars, p, FUTURE_CLIENT_INTERFACE, generate_nano);
+  PrintStub(service, vars, p, ASYNC_CLIENT_IMPL, generate_nano);
+  PrintStub(service, vars, p, BLOCKING_CLIENT_IMPL, generate_nano);
+  PrintStub(service, vars, p, FUTURE_CLIENT_IMPL, generate_nano);
+  PrintBindServiceMethod(service, vars, p, generate_nano);
   p->Outdent();
   p->Print("}\n");
 }
@@ -550,6 +577,8 @@ void PrintImports(Printer* p, bool generate_nano) {
       "io.grpc.stub.ClientCalls.blockingServerStreamingCall;\n"
       "import static "
       "io.grpc.stub.ClientCalls.futureUnaryCall;\n"
+      "import static "
+      "io.grpc.MethodDescriptor.generateFullMethodName;\n"
       "import static "
       "io.grpc.stub.ServerCalls.asyncUnaryCall;\n"
       "import static "
@@ -592,8 +621,7 @@ void GenerateService(const ServiceDescriptor* service,
   vars["Immutable"] = "javax.annotation.concurrent.Immutable";
   vars["ListenableFuture"] =
       "com.google.common.util.concurrent.ListenableFuture";
-  vars["CodedInputByteBufferNano"] = 
-      "com.google.protobuf.nano.CodedInputByteBufferNano";
+  vars["ExperimentalApi"] = "io.grpc.ExperimentalApi";
 
   Printer printer(out, '$');
   string package_name = ServiceJavaPackage(service->file());

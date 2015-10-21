@@ -1,7 +1,7 @@
 Protocol Buffers - Google's data interchange format
 ===================================================
 
-[![Build Status](https://travis-ci.org/google/protobuf.svg?branch=master)](https://travis-ci.org/google/protobuf)
+[![Build Status](https://travis-ci.org/google/protobuf.svg?branch=master)](https://travis-ci.org/google/protobuf) [![Build status](https://ci.appveyor.com/api/projects/status/73ctee6ua4w2ruin?svg=true)](https://ci.appveyor.com/project/protobuf/protobuf)
 
 Copyright 2008 Google Inc.
 
@@ -15,12 +15,12 @@ first:
 
     $ ./autogen.sh
 
-This will download gtest source (which is used for C++ Protocol Buffer
+This will download gmock source (which is used for C++ Protocol Buffer
 unit-tests) to the current directory and run automake, autoconf, etc.
 to generate the configure script and various template makefiles.
 
 You can skip this step if you are using a release package (which already
-contains gtest and the configure script).
+contains gmock and the configure script).
 
 To build and install the C++ Protocol Buffer runtime and the Protocol
 Buffer compiler (protoc) execute the following:
@@ -156,7 +156,7 @@ For advanced usage information on configure and make, see INSTALL.txt.
 C++ Installation - Windows
 --------------------------
 
-If you are using Microsoft Visual C++, see vsprojects/readme.txt.
+If you are using Microsoft Visual C++, see cmake/README.md.
 
 If you are using Cygwin or MinGW, follow the Unix installation
 instructions, above.

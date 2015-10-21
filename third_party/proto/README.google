@@ -1,5 +1,6 @@
-URL: https://github.com/google/protobuf/archive/v3.0.0-alpha-3.1.zip
-Version: v3.0.0-alpha-3.1
+URL: https://github.com/google/protobuf/releases/download/v3.0.0-beta-1/protobuf-cpp-3.0.0-beta-1.tar.gz
+URL: https://github.com/google/protobuf/releases/download/v3.0.0-beta-1/protobuf-java-3.0.0-beta-1.tar.gz
+Version: v-3.0.0-beta-1
 License: New BSD License: http://opensource.org/licenses/BSD-3-Clause
 License File: LICENSE
 
@@ -7,9 +8,6 @@ Description:
 Data serialization format by Google.
 
 Local Modifications:
-Ran configure to generate config.h.
-Added BUILD file.
-Renamed .gitignore to dist.gitignore.
-Wrote a pbconfig.h and amended it to turn off RTTI.
-Deleted testdata and python, objectivec, and csharp directories
+Merge BUILD file; add DEFINES and dep to //third_party/zlib
+Deleted tests
 Checked-in generated Go source code for any.proto

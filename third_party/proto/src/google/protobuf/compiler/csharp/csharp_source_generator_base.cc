@@ -39,7 +39,6 @@
 
 #include <google/protobuf/compiler/csharp/csharp_source_generator_base.h>
 #include <google/protobuf/compiler/csharp/csharp_helpers.h>
-#include <google/protobuf/compiler/csharp/csharp_writer.h>
 
 namespace google {
 namespace protobuf {
@@ -48,25 +47,17 @@ namespace csharp {
 
 SourceGeneratorBase::SourceGeneratorBase(const FileDescriptor* descriptor)
     : descriptor_(descriptor) {
-  optimizeSize_ = (descriptor->options().optimize_for()
-      == FileOptions::CODE_SIZE);
-  optimizeSpeed_ = (descriptor->options().optimize_for() == FileOptions::SPEED);
-  useLiteRuntime_ = (descriptor->options().optimize_for()
-      == FileOptions::LITE_RUNTIME);
-
-  optimizeSpeed_ |= useLiteRuntime_;
-  runtimeSuffix_ = useLiteRuntime_ ? "Lite" : "";
 }
 
 SourceGeneratorBase::~SourceGeneratorBase() {
 }
 
-void SourceGeneratorBase::WriteGeneratedCodeAttributes(Writer* writer) {
+void SourceGeneratorBase::WriteGeneratedCodeAttributes(io::Printer* printer) {
   // This hook can be used to reintroduce generated code attributes in the future.
 }
 
 std::string SourceGeneratorBase::class_access_level() {
-  return "public";  // public_classes is always on.
+  return IsDescriptorProto(descriptor_) ? "internal" : "public";  // public_classes is always on.
 }
 
 }  // namespace csharp

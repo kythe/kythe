@@ -55,6 +55,11 @@
 #include <google/protobuf/unittest.pb.h>
 #include <google/protobuf/unittest_optimize_for.pb.h>
 #include <google/protobuf/unittest_embed_optimize_for.pb.h>
+#if !defined(GOOGLE_PROTOBUF_CMAKE_BUILD) && !defined(_MSC_VER)
+// We exclude this large proto from cmake build because it's too large for
+// visual studio to compile (report internal errors).
+#include <google/protobuf/unittest_enormous_descriptor.pb.h>
+#endif
 #include <google/protobuf/unittest_no_generic_services.pb.h>
 #include <google/protobuf/test_util.h>
 #include <google/protobuf/compiler/cpp/cpp_helpers.h>
@@ -66,7 +71,9 @@
 #include <google/protobuf/descriptor.pb.h>
 #include <google/protobuf/dynamic_message.h>
 
+#include <google/protobuf/stubs/callback.h>
 #include <google/protobuf/stubs/common.h>
+#include <google/protobuf/stubs/logging.h>
 #include <google/protobuf/stubs/strutil.h>
 #include <google/protobuf/stubs/substitute.h>
 #include <google/protobuf/testing/googletest.h>
@@ -129,6 +136,19 @@ TEST(GeneratedDescriptorTest, IdenticalDescriptors) {
   EXPECT_EQ(parsed_descriptor_proto.DebugString(),
             generated_decsriptor_proto.DebugString());
 }
+
+#if !defined(GOOGLE_PROTOBUF_CMAKE_BUILD) && !defined(_MSC_VER)
+// Test that generated code has proper descriptors:
+// Touch a descriptor generated from an enormous message to validate special
+// handling for descriptors exceeding the C++ standard's recommended minimum
+// limit for string literal size
+TEST(GeneratedDescriptorTest, EnormousDescriptor) {
+  const Descriptor* generated_descriptor =
+    TestEnormousDescriptor::descriptor();
+
+  EXPECT_TRUE(generated_descriptor != NULL);
+}
+#endif
 
 #endif  // !PROTOBUF_TEST_NO_DESCRIPTORS
 

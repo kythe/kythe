@@ -23,7 +23,7 @@ import com.google.devtools.kythe.proto.Analysis.FileInfo;
 import com.google.devtools.kythe.proto.FileDataServiceGrpc;
 import com.google.devtools.kythe.proto.FileDataServiceGrpc.FileDataServiceStub;
 
-import io.grpc.ChannelImpl;
+import io.grpc.ManagedChannel;
 import io.grpc.netty.NegotiationType;
 import io.grpc.netty.NettyChannelBuilder;
 import io.grpc.stub.StreamObserver;
@@ -37,7 +37,7 @@ public class RemoteFileData implements FileDataProvider {
 
   public RemoteFileData(String addr) {
     HostAndPort hp = HostAndPort.fromString(addr);
-    ChannelImpl channel =
+    ManagedChannel channel =
         NettyChannelBuilder.forAddress(new InetSocketAddress(hp.getHostText(), hp.getPort()))
             .negotiationType(NegotiationType.PLAINTEXT)
             .build();
@@ -49,7 +49,7 @@ public class RemoteFileData implements FileDataProvider {
     SettableFuture<byte[]> future = SettableFuture.create();
     stub
         .get(new SingletonLookup(future))
-        .onValue(FileInfo.newBuilder().setPath(path).setDigest(digest).build());
+        .onNext(FileInfo.newBuilder().setPath(path).setDigest(digest).build());
     return future;
   }
 
@@ -64,7 +64,7 @@ public class RemoteFileData implements FileDataProvider {
     }
 
     @Override
-    public void onValue(FileData data) {
+    public void onNext(FileData data) {
       future.set(data.getContent().toByteArray());
     }
 

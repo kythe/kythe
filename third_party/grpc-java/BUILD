@@ -19,7 +19,7 @@ cc_binary(
 
 java_library(
     name = "grpc-java",
-    srcs = ["grpc-all-0.8.0.jar"],
+    srcs = ["grpc-all-0.9.0.jar"],
     runtime_deps = [
         "//third_party/hpack",
         "//third_party/netty",

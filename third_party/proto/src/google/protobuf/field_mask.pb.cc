@@ -81,8 +81,9 @@ void protobuf_AddDesc_google_2fprotobuf_2ffield_5fmask_2eproto() {
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
     "\n google/protobuf/field_mask.proto\022\017goog"
     "le.protobuf\"\032\n\tFieldMask\022\r\n\005paths\030\001 \003(\tB"
-    "F\n\023com.google.protobufB\016FieldMaskProtoP\001"
-    "\242\002\003GPB\252\002\026Google.ProtocolBuffersb\006proto3", 159);
+    "Q\n\023com.google.protobufB\016FieldMaskProtoP\001"
+    "\240\001\001\242\002\003GPB\252\002\036Google.Protobuf.WellKnownTyp"
+    "esb\006proto3", 170);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "google/protobuf/field_mask.proto", &protobuf_RegisterTypes);
   FieldMask::default_instance_ = new FieldMask();
@@ -192,11 +193,11 @@ bool FieldMask::MergePartialFromCodedStream(
          parse_paths:
           DO_(::google::protobuf::internal::WireFormatLite::ReadString(
                 input, this->add_paths()));
-          ::google::protobuf::internal::WireFormat::VerifyUTF8StringNamedField(
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
             this->paths(this->paths_size() - 1).data(),
             this->paths(this->paths_size() - 1).length(),
-            ::google::protobuf::internal::WireFormat::PARSE,
-            "google.protobuf.FieldMask.paths");
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "google.protobuf.FieldMask.paths"));
         } else {
           goto handle_unusual;
         }
@@ -231,10 +232,10 @@ void FieldMask::SerializeWithCachedSizes(
   // @@protoc_insertion_point(serialize_start:google.protobuf.FieldMask)
   // repeated string paths = 1;
   for (int i = 0; i < this->paths_size(); i++) {
-  ::google::protobuf::internal::WireFormat::VerifyUTF8StringNamedField(
-    this->paths(i).data(), this->paths(i).length(),
-    ::google::protobuf::internal::WireFormat::SERIALIZE,
-    "google.protobuf.FieldMask.paths");
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->paths(i).data(), this->paths(i).length(),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "google.protobuf.FieldMask.paths");
     ::google::protobuf::internal::WireFormatLite::WriteString(
       1, this->paths(i), output);
   }
@@ -247,9 +248,9 @@ void FieldMask::SerializeWithCachedSizes(
   // @@protoc_insertion_point(serialize_to_array_start:google.protobuf.FieldMask)
   // repeated string paths = 1;
   for (int i = 0; i < this->paths_size(); i++) {
-    ::google::protobuf::internal::WireFormat::VerifyUTF8StringNamedField(
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
       this->paths(i).data(), this->paths(i).length(),
-      ::google::protobuf::internal::WireFormat::SERIALIZE,
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
       "google.protobuf.FieldMask.paths");
     target = ::google::protobuf::internal::WireFormatLite::
       WriteStringToArray(1, this->paths(i), target);

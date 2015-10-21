@@ -8,28 +8,29 @@ AUTOMAKE_OPTIONS = foreign
 # the right time.
 SUBDIRS = . src
 
-# Always include gtest in distributions.
+# Always include gmock in distributions.
 DIST_SUBDIRS = $(subdirs) src conformance
 
-# Build gtest before we build protobuf tests.  We don't add gtest to SUBDIRS
-# because then "make check" would also build and run all of gtest's own tests,
+# Build gmock before we build protobuf tests.  We don't add gmock to SUBDIRS
+# because then "make check" would also build and run all of gmock's own tests,
 # which takes a lot of time and is generally not useful to us.  Also, we don't
-# want "make install" to recurse into gtest since we don't want to overwrite
-# the installed version of gtest if there is one.
+# want "make install" to recurse into gmock since we don't want to overwrite
+# the installed version of gmock if there is one.
 check-local:
-	@echo "Making lib/libgtest.a lib/libgtest_main.a in gtest"
-	@cd gtest && $(MAKE) $(AM_MAKEFLAGS) lib/libgtest.la lib/libgtest_main.la
+	@echo "Making lib/libgmock.a lib/libgmock_main.a in gmock"
+	@cd gmock && $(MAKE) $(AM_MAKEFLAGS) lib/libgmock.la lib/libgmock_main.la
+	@cd gmock/gtest && $(MAKE) $(AM_MAKEFLAGS) lib/libgtest.la lib/libgtest_main.la
 
-# We would like to clean gtest when "make clean" is invoked.  But we have to
+# We would like to clean gmock when "make clean" is invoked.  But we have to
 # be careful because clean-local is also invoked during "make distclean", but
-# "make distclean" already recurses into gtest because it's listed among the
-# DIST_SUBDIRS.  distclean will delete gtest/Makefile, so if we then try to
+# "make distclean" already recurses into gmock because it's listed among the
+# DIST_SUBDIRS.  distclean will delete gmock/Makefile, so if we then try to
 # cd to the directory again and "make clean" it will fail.  So, check that the
 # Makefile exists before recursing.
 clean-local:
-	@if test -e gtest/Makefile; then \
-	  echo "Making clean in gtest"; \
-	  cd gtest && $(MAKE) $(AM_MAKEFLAGS) clean; \
+	@if test -e gmock/Makefile; then \
+	  echo "Making clean in gmock"; \
+	  cd gmock && $(MAKE) $(AM_MAKEFLAGS) clean; \
 	fi; \
 	if test -e conformance/Makefile; then \
 	  echo "Making clean in conformance"; \
@@ -39,254 +40,129 @@ clean-local:
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = protobuf.pc protobuf-lite.pc
 
-csharp_EXTRA_DIST=                                                                  \
-  csharp/src/ProtocolBuffers.sln                                                    \
-  csharp/src/ProtocolBuffersLite.Test/TestProtos/UnittestImportPublicLite.cs        \
-  csharp/src/ProtocolBuffersLite.Test/TestProtos/UnittestExtrasLite.cs              \
-  csharp/src/ProtocolBuffersLite.Test/TestProtos/UnittestExtrasFull.cs              \
-  csharp/src/ProtocolBuffersLite.Test/TestProtos/UnittestImport.cs                  \
-  csharp/src/ProtocolBuffersLite.Test/TestProtos/UnittestLiteImportsNonlite.cs      \
-  csharp/src/ProtocolBuffersLite.Test/TestProtos/UnittestImportLite.cs              \
-  csharp/src/ProtocolBuffersLite.Test/TestProtos/Unittest.cs                        \
-  csharp/src/ProtocolBuffersLite.Test/TestProtos/UnittestLite.cs                    \
-  csharp/src/ProtocolBuffersLite.Test/TestProtos/UnittestImportPublic.cs            \
-  csharp/src/ProtocolBuffersLite.Test/ExtendableMessageLiteTest.cs                  \
-  csharp/src/ProtocolBuffersLite.Test/packages.config                               \
-  csharp/src/ProtocolBuffersLite.Test/LiteTest.cs                                   \
-  csharp/src/ProtocolBuffersLite.Test/AbstractMessageLiteTest.cs                    \
-  csharp/src/ProtocolBuffersLite.Test/MissingFieldAndExtensionTest.cs               \
-  csharp/src/ProtocolBuffersLite.Test/ProtocolBuffersLite.Test.csproj               \
-  csharp/src/ProtocolBuffersLite.Test/App.xaml.cs                                   \
-  csharp/src/ProtocolBuffersLite.Test/InteropLiteTest.cs                            \
-  csharp/src/ProtocolBuffersLite.Test/ExtendableBuilderLiteTest.cs                  \
-  csharp/src/ProtocolBuffersLite.Test/App.xaml                                      \
-  csharp/src/ProtocolBuffersLite.Test/TestLiteByApi.cs                              \
-  csharp/src/ProtocolBuffersLite.Test/Properties/AppManifest.xml                    \
-  csharp/src/ProtocolBuffersLite.Test/Properties/OutOfBrowserSettings.xml           \
-  csharp/src/ProtocolBuffersLite.Test/ProtocolBuffersLiteMixed.Test.csproj          \
-  csharp/src/ProtocolBuffersLite.Test/AbstractBuilderLiteTest.cs                    \
-  csharp/src/ProtoDump/ProtoDump.csproj                                             \
-  csharp/src/ProtoDump/app.config                                                   \
-  csharp/src/ProtoDump/Program.cs                                                   \
-  csharp/src/ProtoDump/Properties/AssemblyInfo.cs                                   \
-  csharp/src/ProtocolBuffers.Serialization/AbstractReader.cs                        \
-  csharp/src/ProtocolBuffers.Serialization/JsonFormatReader.cs                      \
-  csharp/src/ProtocolBuffers.Serialization/JsonTextCursor.cs                        \
-  csharp/src/ProtocolBuffers.Serialization/ProtocolBuffers.Serialization.csproj     \
-  csharp/src/ProtocolBuffers.Serialization/DictionaryWriter.cs                      \
-  csharp/src/ProtocolBuffers.Serialization/AbstractWriter.cs                        \
-  csharp/src/ProtocolBuffers.Serialization/ProtocolBuffersLite.Serialization.csproj \
-  csharp/src/ProtocolBuffers.Serialization/XmlReaderOptions.cs                      \
-  csharp/src/ProtocolBuffers.Serialization/AbstractTextReader.cs                    \
-  csharp/src/ProtocolBuffers.Serialization/XmlWriterOptions.cs                      \
-  csharp/src/ProtocolBuffers.Serialization/JsonFormatWriter.cs                      \
-  csharp/src/ProtocolBuffers.Serialization/Properties/AssemblyInfo.cs               \
-  csharp/src/ProtocolBuffers.Serialization/DictionaryReader.cs                      \
-  csharp/src/ProtocolBuffers.Serialization/Extensions.cs                            \
-  csharp/src/ProtocolBuffers.Serialization/AbstractTextWriter.cs                    \
-  csharp/src/ProtocolBuffers.Serialization/XmlFormatWriter.cs                       \
-  csharp/src/ProtocolBuffers.Serialization/Http/FormUrlEncodedReader.cs             \
-  csharp/src/ProtocolBuffers.Serialization/Http/MessageFormatOptions.cs             \
-  csharp/src/ProtocolBuffers.Serialization/Http/MessageFormatFactory.cs             \
-  csharp/src/ProtocolBuffers.Serialization/XmlFormatReader.cs                       \
-  csharp/src/ProtocolBuffers.Serialization/RecursionLimitExceeded.cs                \
-  csharp/src/ProtoBench/GoogleSize.cs                                               \
-  csharp/src/ProtoBench/GoogleSpeed.cs                                              \
-  csharp/src/ProtoBench/UnittestImport.cs                                           \
-  csharp/src/ProtoBench/google_message1.dat                                         \
-  csharp/src/ProtoBench/ProtoBench.csproj                                           \
-  csharp/src/ProtoBench/app.config                                                  \
-  csharp/src/ProtoBench/Program.cs                                                  \
-  csharp/src/ProtoBench/google_message2.dat                                         \
-  csharp/src/ProtoBench/Properties/AssemblyInfo.cs                                  \
-  csharp/src/ProtoBench/Unittest.cs                                                 \
-  csharp/src/ProtoBench/UnittestImportPublic.cs                                     \
-  csharp/src/ProtoMunge/app.config                                                  \
-  csharp/src/ProtoMunge/Program.cs                                                  \
-  csharp/src/ProtoMunge/Properties/AssemblyInfo.cs                                  \
-  csharp/src/ProtoMunge/ProtoMunge.csproj                                           \
-  csharp/src/ProtocolBuffers/GeneratedMessage.cs                                    \
-  csharp/src/ProtocolBuffers/ICodedInputStream.cs                                   \
-  csharp/src/ProtocolBuffers/AbstractBuilder.cs                                     \
-  csharp/src/ProtocolBuffers/FieldSet.cs                                            \
-  csharp/src/ProtocolBuffers/TextGenerator.cs                                       \
-  csharp/src/ProtocolBuffers/CodedInputStream.cs                                    \
-  csharp/src/ProtocolBuffers/GeneratedExtensionLite.cs                              \
-  csharp/src/ProtocolBuffers/FrameworkPortability.cs                                \
-  csharp/src/ProtocolBuffers/SortedList.cs                                          \
-  csharp/src/ProtocolBuffers/CodedOutputStream.ComputeSize.cs                       \
-  csharp/src/ProtocolBuffers/ExtendableMessage.cs                                   \
-  csharp/src/ProtocolBuffers/Descriptors/ServiceDescriptor.cs                       \
-  csharp/src/ProtocolBuffers/Descriptors/DescriptorBase.cs                          \
-  csharp/src/ProtocolBuffers/Descriptors/EnumDescriptor.cs                          \
-  csharp/src/ProtocolBuffers/Descriptors/PackageDescriptor.cs                       \
-  csharp/src/ProtocolBuffers/Descriptors/FileDescriptor.cs                          \
-  csharp/src/ProtocolBuffers/Descriptors/DescriptorValidationException.cs           \
-  csharp/src/ProtocolBuffers/Descriptors/IndexedDescriptorBase.cs                   \
-  csharp/src/ProtocolBuffers/Descriptors/MessageDescriptor.cs                       \
-  csharp/src/ProtocolBuffers/Descriptors/MethodDescriptor.cs                        \
-  csharp/src/ProtocolBuffers/Descriptors/DescriptorUtil.cs                          \
-  csharp/src/ProtocolBuffers/Descriptors/MappedType.cs                              \
-  csharp/src/ProtocolBuffers/Descriptors/FieldType.cs                               \
-  csharp/src/ProtocolBuffers/Descriptors/FieldMappingAttribute.cs                   \
-  csharp/src/ProtocolBuffers/Descriptors/IDescriptor.cs                             \
-  csharp/src/ProtocolBuffers/Descriptors/EnumValueDescriptor.cs                     \
-  csharp/src/ProtocolBuffers/Descriptors/FieldDescriptor.cs                         \
-  csharp/src/ProtocolBuffers/Descriptors/DescriptorPool.cs                          \
-  csharp/src/ProtocolBuffers/Delegates.cs                                           \
-  csharp/src/ProtocolBuffers/AbstractMessageLite.cs                                 \
-  csharp/src/ProtocolBuffers/IMessageLite.cs                                        \
-  csharp/src/ProtocolBuffers/TextFormat.cs                                          \
-  csharp/src/ProtocolBuffers/Collections/Enumerables.cs                             \
-  csharp/src/ProtocolBuffers/Collections/PopsicleList.cs                            \
-  csharp/src/ProtocolBuffers/Collections/IPopsicleList.cs                           \
-  csharp/src/ProtocolBuffers/Collections/ReadOnlyDictionary.cs                      \
-  csharp/src/ProtocolBuffers/Collections/Dictionaries.cs                            \
-  csharp/src/ProtocolBuffers/Collections/Lists.cs                                   \
-  csharp/src/ProtocolBuffers/IMessage.cs                                            \
-  csharp/src/ProtocolBuffers/TextTokenizer.cs                                       \
-  csharp/src/ProtocolBuffers/ByteString.cs                                          \
-  csharp/src/ProtocolBuffers/AbstractBuilderLite.cs                                 \
-  csharp/src/ProtocolBuffers/GeneratedExtensionBase.cs                              \
-  csharp/src/ProtocolBuffers/EnumLite.cs                                            \
-  csharp/src/ProtocolBuffers/ByteArray.cs                                           \
-  csharp/src/ProtocolBuffers/ExtensionInfo.cs                                       \
-  csharp/src/ProtocolBuffers/MessageStreamIterator.cs                               \
-  csharp/src/ProtocolBuffers/DynamicMessage.cs                                      \
-  csharp/src/ProtocolBuffers/ExtendableMessageLite.cs                               \
-  csharp/src/ProtocolBuffers/ICodedOutputStream.cs                                  \
-  csharp/src/ProtocolBuffers/GeneratedRepeatExtension.cs                            \
-  csharp/src/ProtocolBuffers/IBuilderLite.cs                                        \
-  csharp/src/ProtocolBuffers/UnknownField.cs                                        \
-  csharp/src/ProtocolBuffers/ThrowHelper.cs                                         \
-  csharp/src/ProtocolBuffers/UnknownFieldSet.cs                                     \
-  csharp/src/ProtocolBuffers/AbstractMessage.cs                                     \
-  csharp/src/ProtocolBuffers/GeneratedBuilderLite.cs                                \
-  csharp/src/ProtocolBuffers/NameHelpers.cs                                         \
-  csharp/src/ProtocolBuffers/DescriptorProtos/PartialClasses.cs                     \
-  csharp/src/ProtocolBuffers/DescriptorProtos/IDescriptorProto.cs                   \
-  csharp/src/ProtocolBuffers/DescriptorProtos/DescriptorProtoFile.cs                \
-  csharp/src/ProtocolBuffers/ExtendableBuilder.cs                                   \
-  csharp/src/ProtocolBuffers/FieldAccess/IFieldAccessor.cs                          \
-  csharp/src/ProtocolBuffers/FieldAccess/SinglePrimitiveAccessor.cs                 \
-  csharp/src/ProtocolBuffers/FieldAccess/SingleEnumAccessor.cs                      \
-  csharp/src/ProtocolBuffers/FieldAccess/RepeatedPrimitiveAccessor.cs               \
-  csharp/src/ProtocolBuffers/FieldAccess/FieldAccessorTable.cs                      \
-  csharp/src/ProtocolBuffers/FieldAccess/RepeatedMessageAccessor.cs                 \
-  csharp/src/ProtocolBuffers/FieldAccess/RepeatedEnumAccessor.cs                    \
-  csharp/src/ProtocolBuffers/FieldAccess/ReflectionUtil.cs                          \
-  csharp/src/ProtocolBuffers/FieldAccess/SingleMessageAccessor.cs                   \
-  csharp/src/ProtocolBuffers/Properties/AssemblyInfo.cs                             \
-  csharp/src/ProtocolBuffers/IBuilder.cs                                            \
-  csharp/src/ProtocolBuffers/ExtensionRegistry.cs                                   \
-  csharp/src/ProtocolBuffers/CodedOutputStream.cs                                   \
-  csharp/src/ProtocolBuffers/MessageStreamWriter.cs                                 \
-  csharp/src/ProtocolBuffers/MessageUtil.cs                                         \
-  csharp/src/ProtocolBuffers/UninitializedMessageException.cs                       \
-  csharp/src/ProtocolBuffers/ProtocolBuffersLite.csproj                             \
-  csharp/src/ProtocolBuffers/InvalidProtocolBufferException.cs                      \
-  csharp/src/ProtocolBuffers/ProtocolBuffers.csproj                                 \
-  csharp/src/ProtocolBuffers/ExtendableBuilderLite.cs                               \
-  csharp/src/ProtocolBuffers/GeneratedMessageLite.cs                                \
-  csharp/src/ProtocolBuffers/GeneratedSingleExtension.cs                            \
-  csharp/src/ProtocolBuffers/ExtensionRegistryLite.cs                               \
-  csharp/src/ProtocolBuffers/WireFormat.cs                                          \
-  csharp/src/ProtocolBuffers/GeneratedBuilder.cs                                    \
-  csharp/src/AddressBook/ListPeople.cs                                              \
-  csharp/src/AddressBook/Addressbook.cs                                             \
-  csharp/src/AddressBook/AddPerson.cs                                               \
-  csharp/src/AddressBook/AddressBook.csproj                                         \
-  csharp/src/AddressBook/SampleUsage.cs                                             \
-  csharp/src/AddressBook/app.config                                                 \
-  csharp/src/AddressBook/Program.cs                                                 \
-  csharp/src/AddressBook/Properties/AssemblyInfo.cs                                 \
-  csharp/src/packages/repositories.config                                           \
-  csharp/src/ProtocolBuffers.Test/AbstractMessageTest.cs                            \
-  csharp/src/ProtocolBuffers.Test/TestProtos/GoogleSize.cs                          \
-  csharp/src/ProtocolBuffers.Test/TestProtos/GoogleSpeed.cs                         \
-  csharp/src/ProtocolBuffers.Test/TestProtos/UnittestEnormousDescriptor.cs          \
-  csharp/src/ProtocolBuffers.Test/TestProtos/UnknownEnumTest.cs                     \
-  csharp/src/ProtocolBuffers.Test/TestProtos/UnittestMset.cs                        \
-  csharp/src/ProtocolBuffers.Test/TestProtos/UnittestImport.cs                      \
-  csharp/src/ProtocolBuffers.Test/TestProtos/UnittestCustomOptions.cs               \
-  csharp/src/ProtocolBuffers.Test/TestProtos/UnittestOptimizeFor.cs                 \
-  csharp/src/ProtocolBuffers.Test/TestProtos/UnittestNoFieldPresence.cs             \
-  csharp/src/ProtocolBuffers.Test/TestProtos/Unittest.cs                            \
-  csharp/src/ProtocolBuffers.Test/TestProtos/UnittestIssues.cs                      \
-  csharp/src/ProtocolBuffers.Test/TestProtos/UnittestExtrasXmltest.cs               \
-  csharp/src/ProtocolBuffers.Test/TestProtos/UnittestImportPublic.cs                \
-  csharp/src/ProtocolBuffers.Test/TestProtos/UnittestDropUnknownFields.cs           \
-  csharp/src/ProtocolBuffers.Test/CodedInputStreamTest.cs                           \
-  csharp/src/ProtocolBuffers.Test/packages.config                                   \
-  csharp/src/ProtocolBuffers.Test/TestReaderForUrlEncoded.cs                        \
-  csharp/src/ProtocolBuffers.Test/ByteStringTest.cs                                 \
-  csharp/src/ProtocolBuffers.Test/ReusableBuilderTest.cs                            \
-  csharp/src/ProtocolBuffers.Test/TestUtil.cs                                       \
-  csharp/src/ProtocolBuffers.Test/TestResources.cs                                  \
-  csharp/src/ProtocolBuffers.Test/Collections/PopsicleListTest.cs                   \
-  csharp/src/ProtocolBuffers.Test/ProtocolBuffers.Test.csproj                       \
-  csharp/src/ProtocolBuffers.Test/IssuesTest.cs                                     \
-  csharp/src/ProtocolBuffers.Test/UnknownFieldSetTest.cs                            \
-  csharp/src/ProtocolBuffers.Test/TestMimeMessageFormats.cs                         \
-  csharp/src/ProtocolBuffers.Test/App.xaml.cs                                       \
-  csharp/src/ProtocolBuffers.Test/DeprecatedMemberTest.cs                           \
-  csharp/src/ProtocolBuffers.Test/DynamicMessageTest.cs                             \
-  csharp/src/ProtocolBuffers.Test/MessageStreamWriterTest.cs                        \
-  csharp/src/ProtocolBuffers.Test/NameHelpersTest.cs                                \
-  csharp/src/ProtocolBuffers.Test/GeneratedMessageTest.cs                           \
-  csharp/src/ProtocolBuffers.Test/TestWriterFormatXml.cs                            \
-  csharp/src/ProtocolBuffers.Test/ExtendableMessageTest.cs                          \
-  csharp/src/ProtocolBuffers.Test/WireFormatTest.cs                                 \
-  csharp/src/ProtocolBuffers.Test/TestWriterFormatJson.cs                           \
-  csharp/src/ProtocolBuffers.Test/MessageUtilTest.cs                                \
-  csharp/src/ProtocolBuffers.Test/App.xaml                                          \
-  csharp/src/ProtocolBuffers.Test/Properties/AppManifest.xml                        \
-  csharp/src/ProtocolBuffers.Test/Properties/AssemblyInfo.cs                        \
-  csharp/src/ProtocolBuffers.Test/Properties/OutOfBrowserSettings.xml               \
-  csharp/src/ProtocolBuffers.Test/TextFormatTest.cs                                 \
-  csharp/src/ProtocolBuffers.Test/CodedOutputStreamTest.cs                          \
-  csharp/src/ProtocolBuffers.Test/MessageTest.cs                                    \
-  csharp/src/ProtocolBuffers.Test/DescriptorsTest.cs                                \
-  csharp/src/ProtocolBuffers.Test/Compatibility/DictionaryCompatibilityTests.cs     \
-  csharp/src/ProtocolBuffers.Test/Compatibility/JsonCompatibilityTests.cs           \
-  csharp/src/ProtocolBuffers.Test/Compatibility/TextCompatibilityTests.cs           \
-  csharp/src/ProtocolBuffers.Test/Compatibility/TestResources.cs                    \
-  csharp/src/ProtocolBuffers.Test/Compatibility/google_message1.dat                 \
-  csharp/src/ProtocolBuffers.Test/Compatibility/CompatibilityTests.cs               \
-  csharp/src/ProtocolBuffers.Test/Compatibility/google_message2.dat                 \
-  csharp/src/ProtocolBuffers.Test/Compatibility/XmlCompatibilityTests.cs            \
-  csharp/src/ProtocolBuffers.Test/Compatibility/BinaryCompatibilityTests.cs         \
-  csharp/src/ProtocolBuffers.Test/GeneratedBuilderTest.cs                           \
-  csharp/src/ProtocolBuffers.Test/ReflectionTester.cs                               \
-  csharp/src/ProtocolBuffers.Test/FieldPresenceTest.cs                              \
-  csharp/src/ProtocolBuffers.Test/TestCornerCases.cs                                \
-  csharp/src/ProtocolBuffers.Test/MessageStreamIteratorTest.cs                      \
-  csharp/buildall.sh                                                                \
-  csharp/README.md                                                                  \
-  csharp/.gitignore                                                                 \
-  csharp/protos/extest/unittest_extras_lite.proto                                   \
-  csharp/protos/extest/unittest_extras_xmltest.proto                                \
-  csharp/protos/extest/unittest_extras_full.proto                                   \
-  csharp/protos/extest/unittest_issues.proto                                        \
-  csharp/generate_protos.sh                                                         \
-  csharp/CHANGES.txt                                                                \
-  csharp/keys/generate_new_key.bat                                                  \
-  csharp/keys/Google.ProtocolBuffers.snk                                            \
-  csharp/testdata/golden_message                                                    \
-  csharp/testdata/text_format_unittest_data.txt                                     \
-  csharp/testdata/golden_packed_fields_message                                      \
-  csharp/testdata/text_format_unittest_extensions_data.txt                          \
-  csharp/build/build.bat                                                            \
-  csharp/build/googlecode_upload.py                                                 \
-  csharp/build/build.csproj                                                         \
-  csharp/build/Google.ProtocolBuffersLite.nuspec                                    \
-  csharp/build/Common.targets                                                       \
-  csharp/build/Google.ProtocolBuffers.nuspec                                        \
-  csharp/build/target.csproj                                                        \
-  csharp/build/nuspec.xsd                                                           \
-  csharp/build/BuildAll.bat                                                         \
-  csharp/build/RunBenchmarks.bat                                                    \
-  csharp/build/publish.csproj
+csharp_EXTRA_DIST=                                                           \
+  csharp/.gitignore                                                          \
+  csharp/CHANGES.txt                                                         \
+  csharp/README.md                                                           \
+  csharp/build_packages.bat                                                  \
+  csharp/buildall.sh                                                         \
+  csharp/generate_protos.sh                                                  \
+  csharp/keys/Google.Protobuf.public.snk                                     \
+  csharp/keys/README.md                                                      \
+  csharp/protos/unittest_issues.proto                                        \
+  csharp/src/AddressBook/AddPerson.cs                                        \
+  csharp/src/AddressBook/AddressBook.csproj                                  \
+  csharp/src/AddressBook/Addressbook.cs                                      \
+  csharp/src/AddressBook/ListPeople.cs                                       \
+  csharp/src/AddressBook/Program.cs                                          \
+  csharp/src/AddressBook/Properties/AssemblyInfo.cs                          \
+  csharp/src/AddressBook/SampleUsage.cs                                      \
+  csharp/src/AddressBook/app.config                                          \
+  csharp/src/Google.Protobuf.Conformance/App.config                          \
+  csharp/src/Google.Protobuf.Conformance/Conformance.cs                      \
+  csharp/src/Google.Protobuf.Conformance/Google.Protobuf.Conformance.csproj  \
+  csharp/src/Google.Protobuf.Conformance/Program.cs                          \
+  csharp/src/Google.Protobuf.Conformance/Properties/AssemblyInfo.cs          \
+  csharp/src/Google.Protobuf.JsonDump/Google.Protobuf.JsonDump.csproj        \
+  csharp/src/Google.Protobuf.JsonDump/Program.cs                             \
+  csharp/src/Google.Protobuf.JsonDump/Properties/AssemblyInfo.cs             \
+  csharp/src/Google.Protobuf.JsonDump/app.config                             \
+  csharp/src/Google.Protobuf.Test/ByteStringTest.cs                          \
+  csharp/src/Google.Protobuf.Test/CodedInputStreamExtensions.cs              \
+  csharp/src/Google.Protobuf.Test/CodedInputStreamTest.cs                    \
+  csharp/src/Google.Protobuf.Test/CodedOutputStreamTest.cs                   \
+  csharp/src/Google.Protobuf.Test/Collections/MapFieldTest.cs                \
+  csharp/src/Google.Protobuf.Test/Collections/RepeatedFieldTest.cs           \
+  csharp/src/Google.Protobuf.Test/Compatibility/PropertyInfoExtensionsTest.cs \
+  csharp/src/Google.Protobuf.Test/Compatibility/TypeExtensionsTest.cs        \
+  csharp/src/Google.Protobuf.Test/DeprecatedMemberTest.cs                    \
+  csharp/src/Google.Protobuf.Test/EqualityTester.cs                          \
+  csharp/src/Google.Protobuf.Test/FieldCodecTest.cs                          \
+  csharp/src/Google.Protobuf.Test/GeneratedMessageTest.cs                    \
+  csharp/src/Google.Protobuf.Test/Google.Protobuf.Test.csproj                \
+  csharp/src/Google.Protobuf.Test/IssuesTest.cs                              \
+  csharp/src/Google.Protobuf.Test/JsonFormatterTest.cs                       \
+  csharp/src/Google.Protobuf.Test/Properties/AppManifest.xml                 \
+  csharp/src/Google.Protobuf.Test/Properties/AssemblyInfo.cs                 \
+  csharp/src/Google.Protobuf.Test/Reflection/DescriptorsTest.cs              \
+  csharp/src/Google.Protobuf.Test/Reflection/FieldAccessTest.cs              \
+  csharp/src/Google.Protobuf.Test/SampleEnum.cs                              \
+  csharp/src/Google.Protobuf.Test/SampleMessages.cs                          \
+  csharp/src/Google.Protobuf.Test/TestCornerCases.cs                         \
+  csharp/src/Google.Protobuf.Test/TestProtos/MapUnittestProto3.cs            \
+  csharp/src/Google.Protobuf.Test/TestProtos/UnittestImportProto3.cs         \
+  csharp/src/Google.Protobuf.Test/TestProtos/UnittestImportPublicProto3.cs   \
+  csharp/src/Google.Protobuf.Test/TestProtos/UnittestIssues.cs               \
+  csharp/src/Google.Protobuf.Test/TestProtos/UnittestProto3.cs               \
+  csharp/src/Google.Protobuf.Test/TestProtos/UnittestWellKnownTypes.cs       \
+  csharp/src/Google.Protobuf.Test/WellKnownTypes/DurationTest.cs             \
+  csharp/src/Google.Protobuf.Test/WellKnownTypes/TimestampTest.cs            \
+  csharp/src/Google.Protobuf.Test/WellKnownTypes/WrappersTest.cs             \
+  csharp/src/Google.Protobuf.Test/packages.config                            \
+  csharp/src/Google.Protobuf.sln                                             \
+  csharp/src/Google.Protobuf/ByteArray.cs                                    \
+  csharp/src/Google.Protobuf/ByteString.cs                                   \
+  csharp/src/Google.Protobuf/CodedInputStream.cs                             \
+  csharp/src/Google.Protobuf/CodedOutputStream.ComputeSize.cs                \
+  csharp/src/Google.Protobuf/CodedOutputStream.cs                            \
+  csharp/src/Google.Protobuf/Collections/MapField.cs                         \
+  csharp/src/Google.Protobuf/Collections/ReadOnlyDictionary.cs               \
+  csharp/src/Google.Protobuf/Collections/RepeatedField.cs                    \
+  csharp/src/Google.Protobuf/Compatibility/PropertyInfoExtensions.cs         \
+  csharp/src/Google.Protobuf/Compatibility/TypeExtensions.cs                 \
+  csharp/src/Google.Protobuf/FieldCodec.cs                                   \
+  csharp/src/Google.Protobuf/FrameworkPortability.cs                         \
+  csharp/src/Google.Protobuf/Google.Protobuf.csproj                          \
+  csharp/src/Google.Protobuf/Google.Protobuf.nuspec                          \
+  csharp/src/Google.Protobuf/IDeepCloneable.cs                               \
+  csharp/src/Google.Protobuf/IMessage.cs                                     \
+  csharp/src/Google.Protobuf/InvalidProtocolBufferException.cs               \
+  csharp/src/Google.Protobuf/JsonFormatter.cs                                \
+  csharp/src/Google.Protobuf/LimitedInputStream.cs                           \
+  csharp/src/Google.Protobuf/MessageExtensions.cs                            \
+  csharp/src/Google.Protobuf/MessageParser.cs                                \
+  csharp/src/Google.Protobuf/Preconditions.cs                                \
+  csharp/src/Google.Protobuf/Properties/AssemblyInfo.cs                      \
+  csharp/src/Google.Protobuf/Reflection/DescriptorBase.cs                    \
+  csharp/src/Google.Protobuf/Reflection/DescriptorPool.cs                    \
+  csharp/src/Google.Protobuf/Reflection/DescriptorProtoFile.cs               \
+  csharp/src/Google.Protobuf/Reflection/DescriptorUtil.cs                    \
+  csharp/src/Google.Protobuf/Reflection/DescriptorValidationException.cs     \
+  csharp/src/Google.Protobuf/Reflection/EnumDescriptor.cs                    \
+  csharp/src/Google.Protobuf/Reflection/EnumValueDescriptor.cs               \
+  csharp/src/Google.Protobuf/Reflection/FieldAccessorBase.cs                 \
+  csharp/src/Google.Protobuf/Reflection/FieldDescriptor.cs                   \
+  csharp/src/Google.Protobuf/Reflection/FieldType.cs                         \
+  csharp/src/Google.Protobuf/Reflection/FileDescriptor.cs                    \
+  csharp/src/Google.Protobuf/Reflection/GeneratedCodeInfo.cs                 \
+  csharp/src/Google.Protobuf/Reflection/IDescriptor.cs                       \
+  csharp/src/Google.Protobuf/Reflection/IFieldAccessor.cs                    \
+  csharp/src/Google.Protobuf/Reflection/MapFieldAccessor.cs                  \
+  csharp/src/Google.Protobuf/Reflection/MessageDescriptor.cs                 \
+  csharp/src/Google.Protobuf/Reflection/MethodDescriptor.cs                  \
+  csharp/src/Google.Protobuf/Reflection/OneofAccessor.cs                     \
+  csharp/src/Google.Protobuf/Reflection/OneofDescriptor.cs                   \
+  csharp/src/Google.Protobuf/Reflection/PackageDescriptor.cs                 \
+  csharp/src/Google.Protobuf/Reflection/PartialClasses.cs                    \
+  csharp/src/Google.Protobuf/Reflection/ReflectionUtil.cs                    \
+  csharp/src/Google.Protobuf/Reflection/RepeatedFieldAccessor.cs             \
+  csharp/src/Google.Protobuf/Reflection/ServiceDescriptor.cs                 \
+  csharp/src/Google.Protobuf/Reflection/SingleFieldAccessor.cs               \
+  csharp/src/Google.Protobuf/WellKnownTypes/Any.cs                           \
+  csharp/src/Google.Protobuf/WellKnownTypes/Api.cs                           \
+  csharp/src/Google.Protobuf/WellKnownTypes/Duration.cs                      \
+  csharp/src/Google.Protobuf/WellKnownTypes/DurationPartial.cs               \
+  csharp/src/Google.Protobuf/WellKnownTypes/Empty.cs                         \
+  csharp/src/Google.Protobuf/WellKnownTypes/FieldMask.cs                     \
+  csharp/src/Google.Protobuf/WellKnownTypes/SourceContext.cs                 \
+  csharp/src/Google.Protobuf/WellKnownTypes/Struct.cs                        \
+  csharp/src/Google.Protobuf/WellKnownTypes/TimeExtensions.cs                \
+  csharp/src/Google.Protobuf/WellKnownTypes/Timestamp.cs                     \
+  csharp/src/Google.Protobuf/WellKnownTypes/TimestampPartial.cs              \
+  csharp/src/Google.Protobuf/WellKnownTypes/Type.cs                          \
+  csharp/src/Google.Protobuf/WellKnownTypes/Wrappers.cs                      \
+  csharp/src/Google.Protobuf/WireFormat.cs                                   \
+  csharp/src/packages/repositories.config
 
 java_EXTRA_DIST=                                                             \
   java/src/main/java/com/google/protobuf/AbstractMessage.java                \
@@ -295,8 +171,8 @@ java_EXTRA_DIST=                                                             \
   java/src/main/java/com/google/protobuf/AbstractProtobufList.java           \
   java/src/main/java/com/google/protobuf/BlockingRpcChannel.java             \
   java/src/main/java/com/google/protobuf/BlockingService.java                \
-  java/src/main/java/com/google/protobuf/BoundedByteString.java              \
   java/src/main/java/com/google/protobuf/BooleanArrayList.java               \
+  java/src/main/java/com/google/protobuf/BoundedByteString.java              \
   java/src/main/java/com/google/protobuf/ByteString.java                     \
   java/src/main/java/com/google/protobuf/CodedInputStream.java               \
   java/src/main/java/com/google/protobuf/CodedOutputStream.java              \
@@ -311,8 +187,8 @@ java_EXTRA_DIST=                                                             \
   java/src/main/java/com/google/protobuf/FloatArrayList.java                 \
   java/src/main/java/com/google/protobuf/GeneratedMessage.java               \
   java/src/main/java/com/google/protobuf/GeneratedMessageLite.java           \
-  java/src/main/java/com/google/protobuf/Internal.java                       \
   java/src/main/java/com/google/protobuf/IntArrayList.java                   \
+  java/src/main/java/com/google/protobuf/Internal.java                       \
   java/src/main/java/com/google/protobuf/InvalidProtocolBufferException.java \
   java/src/main/java/com/google/protobuf/LazyField.java                      \
   java/src/main/java/com/google/protobuf/LazyFieldLite.java                  \
@@ -340,8 +216,8 @@ java_EXTRA_DIST=                                                             \
   java/src/main/java/com/google/protobuf/RpcChannel.java                     \
   java/src/main/java/com/google/protobuf/RpcController.java                  \
   java/src/main/java/com/google/protobuf/RpcUtil.java                        \
-  java/src/main/java/com/google/protobuf/ServiceException.java               \
   java/src/main/java/com/google/protobuf/Service.java                        \
+  java/src/main/java/com/google/protobuf/ServiceException.java               \
   java/src/main/java/com/google/protobuf/SingleFieldBuilder.java             \
   java/src/main/java/com/google/protobuf/SmallSortedMap.java                 \
   java/src/main/java/com/google/protobuf/TextFormat.java                     \
@@ -350,11 +226,11 @@ java_EXTRA_DIST=                                                             \
   java/src/main/java/com/google/protobuf/UnknownFieldSetLite.java            \
   java/src/main/java/com/google/protobuf/UnmodifiableLazyStringList.java     \
   java/src/main/java/com/google/protobuf/Utf8.java                           \
-  java/src/test/java/com/google/protobuf/WellKnownTypesTest.java             \
   java/src/main/java/com/google/protobuf/WireFormat.java                     \
   java/src/test/java/com/google/protobuf/AbstractMessageTest.java            \
-  java/src/test/java/com/google/protobuf/BoundedByteStringTest.java          \
+  java/src/test/java/com/google/protobuf/AnyTest.java                        \
   java/src/test/java/com/google/protobuf/BooleanArrayListTest.java           \
+  java/src/test/java/com/google/protobuf/BoundedByteStringTest.java          \
   java/src/test/java/com/google/protobuf/ByteStringTest.java                 \
   java/src/test/java/com/google/protobuf/CheckUtf8Test.java                  \
   java/src/test/java/com/google/protobuf/CodedInputStreamTest.java           \
@@ -376,8 +252,8 @@ java_EXTRA_DIST=                                                             \
   java/src/test/java/com/google/protobuf/LazyStringArrayListTest.java        \
   java/src/test/java/com/google/protobuf/LazyStringEndToEndTest.java         \
   java/src/test/java/com/google/protobuf/LiteEqualsAndHashTest.java          \
-  java/src/test/java/com/google/protobuf/LiteralByteStringTest.java          \
   java/src/test/java/com/google/protobuf/LiteTest.java                       \
+  java/src/test/java/com/google/protobuf/LiteralByteStringTest.java          \
   java/src/test/java/com/google/protobuf/LongArrayListTest.java              \
   java/src/test/java/com/google/protobuf/MapForProto2LiteTest.java           \
   java/src/test/java/com/google/protobuf/MapForProto2Test.java               \
@@ -399,7 +275,9 @@ java_EXTRA_DIST=                                                             \
   java/src/test/java/com/google/protobuf/UnknownFieldSetLiteTest.java        \
   java/src/test/java/com/google/protobuf/UnknownFieldSetTest.java            \
   java/src/test/java/com/google/protobuf/UnmodifiableLazyStringListTest.java \
+  java/src/test/java/com/google/protobuf/WellKnownTypesTest.java             \
   java/src/test/java/com/google/protobuf/WireFormatTest.java                 \
+  java/src/test/java/com/google/protobuf/any_test.proto                      \
   java/src/test/java/com/google/protobuf/field_presence_test.proto           \
   java/src/test/java/com/google/protobuf/lazy_fields_lite.proto              \
   java/src/test/java/com/google/protobuf/lite_equals_and_hash.proto          \
@@ -409,18 +287,28 @@ java_EXTRA_DIST=                                                             \
   java/src/test/java/com/google/protobuf/map_test.proto                      \
   java/src/test/java/com/google/protobuf/multiple_files_test.proto           \
   java/src/test/java/com/google/protobuf/nested_builders_test.proto          \
-  java/src/test/java/com/google/protobuf/nested_extension_lite.proto         \
   java/src/test/java/com/google/protobuf/nested_extension.proto              \
-  java/src/test/java/com/google/protobuf/non_nested_extension_lite.proto     \
+  java/src/test/java/com/google/protobuf/nested_extension_lite.proto         \
   java/src/test/java/com/google/protobuf/non_nested_extension.proto          \
+  java/src/test/java/com/google/protobuf/non_nested_extension_lite.proto     \
+  java/src/test/java/com/google/protobuf/outer_class_name_test.proto         \
   java/src/test/java/com/google/protobuf/outer_class_name_test2.proto        \
   java/src/test/java/com/google/protobuf/outer_class_name_test3.proto        \
-  java/src/test/java/com/google/protobuf/outer_class_name_test.proto         \
   java/src/test/java/com/google/protobuf/test_bad_identifiers.proto          \
   java/src/test/java/com/google/protobuf/test_check_utf8.proto               \
   java/src/test/java/com/google/protobuf/test_check_utf8_size.proto          \
   java/src/test/java/com/google/protobuf/test_custom_options.proto           \
   java/src/test/java/com/google/protobuf/test_extra_interfaces.proto         \
+  java/util/pom.xml                                                          \
+  java/util/src/main/java/com/google/protobuf/util/FieldMaskTree.java        \
+  java/util/src/main/java/com/google/protobuf/util/FieldMaskUtil.java        \
+  java/util/src/main/java/com/google/protobuf/util/JsonFormat.java           \
+  java/util/src/main/java/com/google/protobuf/util/TimeUtil.java             \
+  java/util/src/test/java/com/google/protobuf/util/FieldMaskTreeTest.java    \
+  java/util/src/test/java/com/google/protobuf/util/FieldMaskUtilTest.java    \
+  java/util/src/test/java/com/google/protobuf/util/JsonFormatTest.java       \
+  java/util/src/test/java/com/google/protobuf/util/TimeUtilTest.java         \
+  java/util/src/test/java/com/google/protobuf/util/json_test.proto           \
   java/pom.xml                                                               \
   java/README.md
 
@@ -465,6 +353,7 @@ javanano_EXTRA_DIST=                                                            
 
 objectivec_EXTRA_DIST=                                                       \
   objectivec/DevTools/check_version_stamps.sh                                \
+  objectivec/DevTools/compile_testing_protos.sh                              \
   objectivec/DevTools/full_mac_build.sh                                      \
   objectivec/DevTools/pddm.py                                                \
   objectivec/DevTools/pddm_tests.py                                          \
@@ -506,14 +395,10 @@ objectivec_EXTRA_DIST=                                                       \
   objectivec/GPBDictionary.h                                                 \
   objectivec/GPBDictionary.m                                                 \
   objectivec/GPBDictionary_PackagePrivate.h                                  \
-  objectivec/GPBExtensionField.h                                             \
-  objectivec/GPBExtensionField.m                                             \
-  objectivec/GPBExtensionField_PackagePrivate.h                              \
+  objectivec/GPBExtensionInternals.h                                         \
+  objectivec/GPBExtensionInternals.m                                         \
   objectivec/GPBExtensionRegistry.h                                          \
   objectivec/GPBExtensionRegistry.m                                          \
-  objectivec/GPBField.h                                                      \
-  objectivec/GPBField.m                                                      \
-  objectivec/GPBField_PackagePrivate.h                                       \
   objectivec/GPBMessage.h                                                    \
   objectivec/GPBMessage.m                                                    \
   objectivec/GPBMessage_PackagePrivate.h                                     \
@@ -523,7 +408,10 @@ objectivec_EXTRA_DIST=                                                       \
   objectivec/GPBRootObject.h                                                 \
   objectivec/GPBRootObject.m                                                 \
   objectivec/GPBRootObject_PackagePrivate.h                                  \
-  objectivec/GPBTypes.h                                                      \
+  objectivec/GPBRuntimeTypes.h                                               \
+  objectivec/GPBUnknownField.h                                               \
+  objectivec/GPBUnknownField.m                                               \
+  objectivec/GPBUnknownField_PackagePrivate.h                                \
   objectivec/GPBUnknownFieldSet.h                                            \
   objectivec/GPBUnknownFieldSet.m                                            \
   objectivec/GPBUnknownFieldSet_PackagePrivate.h                             \
@@ -547,8 +435,6 @@ objectivec_EXTRA_DIST=                                                       \
   objectivec/ProtocolBuffers_OSX.xcodeproj/xcshareddata/xcschemes/PerformanceTests.xcscheme \
   objectivec/ProtocolBuffers_OSX.xcodeproj/xcshareddata/xcschemes/ProtocolBuffers.xcscheme \
   objectivec/README.md                                                       \
-  objectivec/Tests/Filter1.txt                                               \
-  objectivec/Tests/Filter2.txt                                               \
   objectivec/Tests/golden_message                                            \
   objectivec/Tests/golden_packed_fields_message                              \
   objectivec/Tests/GPBARCUnittestProtos.m                                    \
@@ -564,7 +450,6 @@ objectivec_EXTRA_DIST=                                                       \
   objectivec/Tests/GPBDictionaryTests+UInt32.m                               \
   objectivec/Tests/GPBDictionaryTests+UInt64.m                               \
   objectivec/Tests/GPBDictionaryTests.pddm                                   \
-  objectivec/Tests/GPBFilteredMessageTests.m                                 \
   objectivec/Tests/GPBMessageTests+Merge.m                                   \
   objectivec/Tests/GPBMessageTests+Runtime.m                                 \
   objectivec/Tests/GPBMessageTests+Serialization.m                           \
@@ -583,22 +468,21 @@ objectivec_EXTRA_DIST=                                                       \
   objectivec/Tests/iOSTestHarness/en.lproj/InfoPlist.strings                 \
   objectivec/Tests/iOSTestHarness/Images.xcassets/AppIcon.appiconset/Contents.json      \
   objectivec/Tests/iOSTestHarness/Images.xcassets/AppIcon.appiconset/iPad6.png          \
-  objectivec/Tests/iOSTestHarness/Images.xcassets/AppIcon.appiconset/iPad6@2x.png       \
+  objectivec/Tests/iOSTestHarness/Images.xcassets/AppIcon.appiconset/iPad6_2x.png       \
   objectivec/Tests/iOSTestHarness/Images.xcassets/AppIcon.appiconset/iPad7.png          \
-  objectivec/Tests/iOSTestHarness/Images.xcassets/AppIcon.appiconset/iPad7@2x.png       \
+  objectivec/Tests/iOSTestHarness/Images.xcassets/AppIcon.appiconset/iPad7_2x.png       \
   objectivec/Tests/iOSTestHarness/Images.xcassets/AppIcon.appiconset/iPhone6.png        \
-  objectivec/Tests/iOSTestHarness/Images.xcassets/AppIcon.appiconset/iPhone6@2x.png     \
-  objectivec/Tests/iOSTestHarness/Images.xcassets/AppIcon.appiconset/iPhone7@2x.png     \
-  objectivec/Tests/iOSTestHarness/Images.xcassets/AppIcon.appiconset/iPhone7@3x.png     \
+  objectivec/Tests/iOSTestHarness/Images.xcassets/AppIcon.appiconset/iPhone6_2x.png     \
+  objectivec/Tests/iOSTestHarness/Images.xcassets/AppIcon.appiconset/iPhone7_2x.png     \
+  objectivec/Tests/iOSTestHarness/Images.xcassets/AppIcon.appiconset/iPhone7_3x.png     \
   objectivec/Tests/iOSTestHarness/Images.xcassets/LaunchImage.launchimage/Contents.json \
   objectivec/Tests/iOSTestHarness/Info.plist                                  \
   objectivec/Tests/iOSTestHarness/LaunchScreen.xib                            \
   objectivec/Tests/text_format_map_unittest_data.txt                          \
   objectivec/Tests/text_format_unittest_data.txt                              \
   objectivec/Tests/unittest_cycle.proto                                       \
-  objectivec/Tests/unittest_filter.proto                                      \
-  objectivec/Tests/unittest_name_mangling.proto                               \
   objectivec/Tests/unittest_objc.proto                                        \
+  objectivec/Tests/unittest_objc_startup.proto                                \
   objectivec/Tests/unittest_runtime_proto2.proto                              \
   objectivec/Tests/unittest_runtime_proto3.proto                              \
   objectivec/Tests/UnitTests-Bridging-Header.h                                \
@@ -623,11 +507,13 @@ python_EXTRA_DIST=                                                           \
   python/google/protobuf/internal/generator_test.py                          \
   python/google/protobuf/internal/message_factory_test.py                    \
   python/google/protobuf/internal/message_listener.py                        \
+  python/google/protobuf/internal/message_set_extensions.proto               \
   python/google/protobuf/internal/message_test.py                            \
   python/google/protobuf/internal/missing_enum_values.proto                  \
-  python/google/protobuf/internal/more_extensions.proto                      \
   python/google/protobuf/internal/more_extensions_dynamic.proto              \
+  python/google/protobuf/internal/more_extensions.proto                      \
   python/google/protobuf/internal/more_messages.proto                        \
+  python/google/protobuf/internal/packed_field_test.proto                    \
   python/google/protobuf/internal/_parameterized.py                          \
   python/google/protobuf/internal/proto_builder_test.py                      \
   python/google/protobuf/internal/python_message.py                          \
@@ -685,10 +571,10 @@ python_EXTRA_DIST=                                                           \
   python/google/protobuf/text_format.py                                      \
   python/google/protobuf/__init__.py                                         \
   python/google/__init__.py                                                  \
-  python/ez_setup.py                                                         \
-  python/setup.py                                                            \
   python/mox.py                                                              \
+  python/setup.py                                                            \
   python/stubout.py                                                          \
+  python/tox.ini                                                             \
   python/README.md
 
 ruby_EXTRA_DIST=                                                             \
@@ -741,39 +627,41 @@ ruby_EXTRA_DIST=                                                             \
 
 all_EXTRA_DIST=$(csharp_EXTRA_DIST) $(java_EXTRA_DIST) $(javanano_EXTRA_DIST) $(objectivec_EXTRA_DIST) $(python_EXTRA_DIST) $(ruby_EXTRA_DIST)
 
-EXTRA_DIST = $(@DIST_LANG@_EXTRA_DIST)                                       \
-  autogen.sh                                                                 \
-  generate_descriptor_proto.sh                                               \
-  README.md                                                                  \
-  INSTALL.txt                                                                \
-  LICENSE                                                                    \
-  CONTRIBUTORS.txt                                                           \
-  CHANGES.txt                                                                \
-  config.h.include                                                           \
-  editors/README.txt                                                         \
-  editors/proto.vim                                                          \
-  editors/protobuf-mode.el                                                   \
-  vsprojects/config.h                                                        \
-  vsprojects/google/protobuf/stubs/pbconfig.h                                \
-  vsprojects/extract_includes.bat                                            \
-  vsprojects/libprotobuf.vcproj                                              \
-  vsprojects/libprotobuf-lite.vcproj                                         \
-  vsprojects/libprotoc.vcproj                                                \
-  vsprojects/protobuf.sln                                                    \
-  vsprojects/protoc.vcproj                                                   \
-  vsprojects/readme.txt                                                      \
-  vsprojects/test_plugin.vcproj                                              \
-  vsprojects/tests.vcproj                                                    \
-  vsprojects/lite-test.vcproj                                                \
-  vsprojects/convert2008to2005.sh                                            \
-  examples/README.txt                                                        \
-  examples/Makefile                                                          \
-  examples/addressbook.proto                                                 \
-  examples/add_person.cc                                                     \
-  examples/list_people.cc                                                    \
-  examples/AddPerson.java                                                    \
-  examples/ListPeople.java                                                   \
-  examples/add_person.py                                                     \
+EXTRA_DIST = $(@DIST_LANG@_EXTRA_DIST)   \
+  autogen.sh                             \
+  generate_descriptor_proto.sh           \
+  README.md                              \
+  INSTALL.txt                            \
+  LICENSE                                \
+  CONTRIBUTORS.txt                       \
+  CHANGES.txt                            \
+  update_file_lists.sh                   \
+  BUILD                                  \
+  gmock.BUILD                            \
+  WORKSPACE                              \
+  cmake/CMakeLists.txt                   \
+  cmake/README.md                        \
+  cmake/extract_includes.bat.in          \
+  cmake/install.cmake                    \
+  cmake/libprotobuf.cmake                \
+  cmake/libprotobuf-lite.cmake           \
+  cmake/libprotoc.cmake                  \
+  cmake/protobuf-config-version.cmake.in \
+  cmake/protobuf-config.cmake.in         \
+  cmake/protobuf-module.cmake.in         \
+  cmake/protoc.cmake                     \
+  cmake/tests.cmake                      \
+  editors/README.txt                     \
+  editors/proto.vim                      \
+  editors/protobuf-mode.el               \
+  examples/README.txt                    \
+  examples/Makefile                      \
+  examples/addressbook.proto             \
+  examples/add_person.cc                 \
+  examples/list_people.cc                \
+  examples/AddPerson.java                \
+  examples/ListPeople.java               \
+  examples/add_person.py                 \
   examples/list_people.py
 
 # Deletes all the files generated by autogen.sh.

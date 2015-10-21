@@ -38,14 +38,17 @@
 #include <stdlib.h>
 #include <limits>
 
+#include <google/protobuf/stubs/logging.h>
 #include <google/protobuf/stubs/common.h>
 #include <google/protobuf/testing/file.h>
 #include <google/protobuf/test_util.h>
 #include <google/protobuf/unittest.pb.h>
 #include <google/protobuf/unittest_mset.pb.h>
+#include <google/protobuf/unittest_mset_wire_format.pb.h>
 #include <google/protobuf/io/tokenizer.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <google/protobuf/stubs/strutil.h>
+#include <google/protobuf/stubs/mathlimits.h>
 #include <google/protobuf/stubs/substitute.h>
 #include <google/protobuf/testing/googletest.h>
 #include <gtest/gtest.h>
@@ -56,11 +59,6 @@ namespace protobuf {
 
 // Can't use an anonymous namespace here due to brokenness of Tru64 compiler.
 namespace text_format_unittest {
-
-inline bool IsNaN(double value) {
-  // NaN is never equal to anything, even itself.
-  return value != value;
-}
 
 // A basic string with different escapable characters for testing.
 const string kEscapeTestString =
@@ -898,8 +896,8 @@ TEST_F(TextFormatTest, ParseExotic) {
   EXPECT_EQ(message.repeated_double(8), numeric_limits<double>::infinity());
   EXPECT_EQ(message.repeated_double(9), -numeric_limits<double>::infinity());
   EXPECT_EQ(message.repeated_double(10), -numeric_limits<double>::infinity());
-  EXPECT_TRUE(IsNaN(message.repeated_double(11)));
-  EXPECT_TRUE(IsNaN(message.repeated_double(12)));
+  EXPECT_TRUE(MathLimits<double>::IsNaN(message.repeated_double(11)));
+  EXPECT_TRUE(MathLimits<double>::IsNaN(message.repeated_double(12)));
 
   // Note:  Since these string literals have \0's in them, we must explicitly
   //   pass their sizes to string's constructor.

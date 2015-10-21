@@ -35,17 +35,33 @@
 #include "conformance_test.h"
 #include <google/protobuf/stubs/common.h>
 #include <google/protobuf/stubs/stringprintf.h>
+#include <google/protobuf/text_format.h>
+#include <google/protobuf/util/json_util.h>
+#include <google/protobuf/util/message_differencer.h>
+#include <google/protobuf/util/type_resolver_util.h>
 #include <google/protobuf/wire_format_lite.h>
 
 using conformance::ConformanceRequest;
 using conformance::ConformanceResponse;
 using conformance::TestAllTypes;
+using conformance::WireFormat;
 using google::protobuf::Descriptor;
 using google::protobuf::FieldDescriptor;
 using google::protobuf::internal::WireFormatLite;
+using google::protobuf::TextFormat;
+using google::protobuf::util::JsonToBinaryString;
+using google::protobuf::util::MessageDifferencer;
+using google::protobuf::util::NewTypeResolverForDescriptorPool;
+using google::protobuf::util::Status;
 using std::string;
 
 namespace {
+
+static const char kTypeUrlPrefix[] = "type.googleapis.com";
+
+static string GetTypeUrl(const Descriptor* message) {
+  return string(kTypeUrlPrefix) + "/" + message->full_name();
+}
 
 /* Routines for building arbitrary protos *************************************/
 
@@ -126,12 +142,11 @@ string submsg(uint32_t fn, const string& buf) {
 
 #define UNKNOWN_FIELD 666
 
-uint32_t GetFieldNumberForType(WireFormatLite::FieldType type, bool repeated) {
+uint32_t GetFieldNumberForType(FieldDescriptor::Type type, bool repeated) {
   const Descriptor* d = TestAllTypes().GetDescriptor();
   for (int i = 0; i < d->field_count(); i++) {
     const FieldDescriptor* f = d->field(i);
-    if (static_cast<WireFormatLite::FieldType>(f->type()) == type &&
-        f->is_repeated() == repeated) {
+    if (f->type() == type && f->is_repeated() == repeated) {
       return f->number();
     }
   }
@@ -139,25 +154,68 @@ uint32_t GetFieldNumberForType(WireFormatLite::FieldType type, bool repeated) {
   return 0;
 }
 
+string UpperCase(string str) {
+  for (int i = 0; i < str.size(); i++) {
+    str[i] = toupper(str[i]);
+  }
+  return str;
+}
+
 }  // anonymous namespace
 
 namespace google {
 namespace protobuf {
 
-void ConformanceTestSuite::ReportSuccess() {
+void ConformanceTestSuite::ReportSuccess(const string& test_name) {
+  if (expected_to_fail_.erase(test_name) != 0) {
+    StringAppendF(&output_,
+                  "ERROR: test %s is in the failure list, but test succeeded.  "
+                  "Remove it from the failure list.\n",
+                  test_name.c_str());
+    unexpected_succeeding_tests_.insert(test_name);
+  }
   successes_++;
 }
 
-void ConformanceTestSuite::ReportFailure(const char *fmt, ...) {
+void ConformanceTestSuite::ReportFailure(const string& test_name,
+                                         const ConformanceRequest& request,
+                                         const ConformanceResponse& response,
+                                         const char* fmt, ...) {
+  if (expected_to_fail_.erase(test_name) == 1) {
+    expected_failures_++;
+    if (!verbose_)
+      return;
+  } else {
+    StringAppendF(&output_, "ERROR, test=%s: ", test_name.c_str());
+    unexpected_failing_tests_.insert(test_name);
+  }
   va_list args;
   va_start(args, fmt);
   StringAppendV(&output_, fmt, args);
   va_end(args);
-  failures_++;
+  StringAppendF(&output_, " request=%s, response=%s\n",
+                request.ShortDebugString().c_str(),
+                response.ShortDebugString().c_str());
 }
 
-void ConformanceTestSuite::RunTest(const ConformanceRequest& request,
+void ConformanceTestSuite::ReportSkip(const string& test_name,
+                                      const ConformanceRequest& request,
+                                      const ConformanceResponse& response) {
+  if (verbose_) {
+    StringAppendF(&output_, "SKIPPED, test=%s request=%s, response=%s\n",
+                  test_name.c_str(), request.ShortDebugString().c_str(),
+                  response.ShortDebugString().c_str());
+  }
+  skipped_.insert(test_name);
+}
+
+void ConformanceTestSuite::RunTest(const string& test_name,
+                                   const ConformanceRequest& request,
                                    ConformanceResponse* response) {
+  if (test_names_.insert(test_name).second == false) {
+    GOOGLE_LOG(FATAL) << "Duplicated test name: " << test_name;
+  }
+
   string serialized_request;
   string serialized_response;
   request.SerializeToString(&serialized_request);
@@ -170,47 +228,148 @@ void ConformanceTestSuite::RunTest(const ConformanceRequest& request,
   }
 
   if (verbose_) {
-    StringAppendF(&output_, "conformance test: request=%s, response=%s\n",
+    StringAppendF(&output_, "conformance test: name=%s, request=%s, response=%s\n",
+                  test_name.c_str(),
                   request.ShortDebugString().c_str(),
                   response->ShortDebugString().c_str());
   }
 }
 
-void ConformanceTestSuite::DoExpectParseFailureForProto(const string& proto,
-                                                        int line) {
+void ConformanceTestSuite::RunValidInputTest(
+    const string& test_name, const string& input, WireFormat input_format,
+    const string& equivalent_text_format, WireFormat requested_output) {
+  TestAllTypes reference_message;
+  GOOGLE_CHECK(
+      TextFormat::ParseFromString(equivalent_text_format, &reference_message));
+
   ConformanceRequest request;
   ConformanceResponse response;
-  request.set_protobuf_payload(proto);
 
-  // We don't expect output, but if the program erroneously accepts the protobuf
-  // we let it send its response as this.  We must not leave it unspecified.
-  request.set_requested_output(ConformanceRequest::PROTOBUF);
+  switch (input_format) {
+    case conformance::PROTOBUF:
+      request.set_protobuf_payload(input);
+      break;
 
-  RunTest(request, &response);
-  if (response.result_case() == ConformanceResponse::kParseError) {
-    ReportSuccess();
+    case conformance::JSON:
+      request.set_json_payload(input);
+      break;
+
+    case conformance::UNSPECIFIED:
+      GOOGLE_LOG(FATAL) << "Unspecified input format";
+
+  }
+
+  request.set_requested_output_format(requested_output);
+
+  RunTest(test_name, request, &response);
+
+  TestAllTypes test_message;
+
+  switch (response.result_case()) {
+    case ConformanceResponse::kParseError:
+    case ConformanceResponse::kRuntimeError:
+      ReportFailure(test_name, request, response,
+                    "Failed to parse valid JSON input.");
+      return;
+
+    case ConformanceResponse::kSkipped:
+      ReportSkip(test_name, request, response);
+      return;
+
+    case ConformanceResponse::kJsonPayload: {
+      if (requested_output != conformance::JSON) {
+        ReportFailure(
+            test_name, request, response,
+            "Test was asked for protobuf output but provided JSON instead.");
+        return;
+      }
+      string binary_protobuf;
+      Status status =
+          JsonToBinaryString(type_resolver_.get(), type_url_,
+                             response.json_payload(), &binary_protobuf);
+      if (!status.ok()) {
+        ReportFailure(test_name, request, response,
+                      "JSON output we received from test was unparseable.");
+        return;
+      }
+
+      GOOGLE_CHECK(test_message.ParseFromString(binary_protobuf));
+      break;
+    }
+
+    case ConformanceResponse::kProtobufPayload: {
+      if (requested_output != conformance::PROTOBUF) {
+        ReportFailure(
+            test_name, request, response,
+            "Test was asked for JSON output but provided protobuf instead.");
+        return;
+      }
+
+      if (!test_message.ParseFromString(response.protobuf_payload())) {
+        ReportFailure(test_name, request, response,
+                      "Protobuf output we received from test was unparseable.");
+        return;
+      }
+
+      break;
+    }
+  }
+
+  MessageDifferencer differencer;
+  string differences;
+  differencer.ReportDifferencesToString(&differences);
+
+  if (differencer.Equals(reference_message, test_message)) {
+    ReportSuccess(test_name);
   } else {
-    ReportFailure("Should have failed, but didn't. Line: %d, Request: %s, "
-                  "response: %s\n",
-                  line,
-                  request.ShortDebugString().c_str(),
-                  response.ShortDebugString().c_str());
+    ReportFailure(test_name, request, response,
+                  "Output was not equivalent to reference message: %s.",
+                  differences.c_str());
   }
 }
 
 // Expect that this precise protobuf will cause a parse error.
-#define ExpectParseFailureForProto(proto) DoExpectParseFailureForProto(proto, __LINE__)
+void ConformanceTestSuite::ExpectParseFailureForProto(
+    const string& proto, const string& test_name) {
+  ConformanceRequest request;
+  ConformanceResponse response;
+  request.set_protobuf_payload(proto);
+  string effective_test_name = "ProtobufInput." + test_name;
+
+  // We don't expect output, but if the program erroneously accepts the protobuf
+  // we let it send its response as this.  We must not leave it unspecified.
+  request.set_requested_output_format(conformance::PROTOBUF);
+
+  RunTest(effective_test_name, request, &response);
+  if (response.result_case() == ConformanceResponse::kParseError) {
+    ReportSuccess(effective_test_name);
+  } else {
+    ReportFailure(effective_test_name, request, response,
+                  "Should have failed to parse, but didn't.");
+  }
+}
 
 // Expect that this protobuf will cause a parse error, even if it is followed
 // by valid protobuf data.  We can try running this twice: once with this
 // data verbatim and once with this data followed by some valid data.
 //
 // TODO(haberman): implement the second of these.
-#define ExpectHardParseFailureForProto(proto) DoExpectParseFailureForProto(proto, __LINE__)
+void ConformanceTestSuite::ExpectHardParseFailureForProto(
+    const string& proto, const string& test_name) {
+  return ExpectParseFailureForProto(proto, test_name);
+}
 
+void ConformanceTestSuite::RunValidJsonTest(
+    const string& test_name, const string& input_json,
+    const string& equivalent_text_format) {
+  RunValidInputTest("JsonInput." + test_name + ".JsonOutput", input_json,
+                    conformance::JSON, equivalent_text_format,
+                    conformance::PROTOBUF);
+  RunValidInputTest("JsonInput." + test_name + ".ProtobufOutput", input_json, conformance::JSON,
+                    equivalent_text_format, conformance::JSON);
+}
 
-void ConformanceTestSuite::TestPrematureEOFForType(
-    WireFormatLite::FieldType type) {
+void ConformanceTestSuite::TestPrematureEOFForType(FieldDescriptor::Type type) {
   // Incomplete values for each wire type.
   static const string incompletes[6] = {
     string("\x80"),     // VARINT
@@ -223,45 +382,51 @@ void ConformanceTestSuite::TestPrematureEOFForType(
 
   uint32_t fieldnum = GetFieldNumberForType(type, false);
   uint32_t rep_fieldnum = GetFieldNumberForType(type, true);
-  WireFormatLite::WireType wire_type =
-      WireFormatLite::WireTypeForFieldType(type);
+  WireFormatLite::WireType wire_type = WireFormatLite::WireTypeForFieldType(
+      static_cast<WireFormatLite::FieldType>(type));
   const string& incomplete = incompletes[wire_type];
+  const string type_name =
+      UpperCase(string(".") + FieldDescriptor::TypeName(type));
 
-  // EOF before a known non-repeated value.
-  ExpectParseFailureForProto(tag(fieldnum, wire_type));
-
-  // EOF before a known repeated value.
-  ExpectParseFailureForProto(tag(rep_fieldnum, wire_type));
-
-  // EOF before an unknown value.
-  ExpectParseFailureForProto(tag(UNKNOWN_FIELD, wire_type));
-
-  // EOF inside a known non-repeated value.
   ExpectParseFailureForProto(
-      cat( tag(fieldnum, wire_type), incomplete ));
+      tag(fieldnum, wire_type),
+      "PrematureEofBeforeKnownNonRepeatedValue" + type_name);
 
-  // EOF inside a known repeated value.
   ExpectParseFailureForProto(
-      cat( tag(rep_fieldnum, wire_type), incomplete ));
+      tag(rep_fieldnum, wire_type),
+      "PrematureEofBeforeKnownRepeatedValue" + type_name);
 
-  // EOF inside an unknown value.
   ExpectParseFailureForProto(
-      cat( tag(UNKNOWN_FIELD, wire_type), incomplete ));
+      tag(UNKNOWN_FIELD, wire_type),
+      "PrematureEofBeforeUnknownValue" + type_name);
+
+  ExpectParseFailureForProto(
+      cat( tag(fieldnum, wire_type), incomplete ),
+      "PrematureEofInsideKnownNonRepeatedValue" + type_name);
+
+  ExpectParseFailureForProto(
+      cat( tag(rep_fieldnum, wire_type), incomplete ),
+      "PrematureEofInsideKnownRepeatedValue" + type_name);
+
+  ExpectParseFailureForProto(
+      cat( tag(UNKNOWN_FIELD, wire_type), incomplete ),
+      "PrematureEofInsideUnknownValue" + type_name);
 
   if (wire_type == WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
-    // EOF in the middle of delimited data for known non-repeated value.
     ExpectParseFailureForProto(
-        cat( tag(fieldnum, wire_type), varint(1) ));
+        cat( tag(fieldnum, wire_type), varint(1) ),
+        "PrematureEofInDelimitedDataForKnownNonRepeatedValue" + type_name);
 
-    // EOF in the middle of delimited data for known repeated value.
     ExpectParseFailureForProto(
-        cat( tag(rep_fieldnum, wire_type), varint(1) ));
+        cat( tag(rep_fieldnum, wire_type), varint(1) ),
+        "PrematureEofInDelimitedDataForKnownRepeatedValue" + type_name);
 
     // EOF in the middle of delimited data for unknown value.
     ExpectParseFailureForProto(
-        cat( tag(UNKNOWN_FIELD, wire_type), varint(1) ));
+        cat( tag(UNKNOWN_FIELD, wire_type), varint(1) ),
+        "PrematureEofInDelimitedDataForUnknownValue" + type_name);
 
-    if (type == WireFormatLite::TYPE_MESSAGE) {
+    if (type == FieldDescriptor::TYPE_MESSAGE) {
       // Submessage ends in the middle of a value.
       string incomplete_submsg =
           cat( tag(WireFormatLite::TYPE_INT32, WireFormatLite::WIRETYPE_VARINT),
@@ -269,42 +434,100 @@ void ConformanceTestSuite::TestPrematureEOFForType(
       ExpectHardParseFailureForProto(
           cat( tag(fieldnum, WireFormatLite::WIRETYPE_LENGTH_DELIMITED),
                varint(incomplete_submsg.size()),
-               incomplete_submsg ));
+               incomplete_submsg ),
+          "PrematureEofInSubmessageValue" + type_name);
     }
-  } else if (type != WireFormatLite::TYPE_GROUP) {
+  } else if (type != FieldDescriptor::TYPE_GROUP) {
     // Non-delimited, non-group: eligible for packing.
 
     // Packed region ends in the middle of a value.
     ExpectHardParseFailureForProto(
         cat( tag(rep_fieldnum, WireFormatLite::WIRETYPE_LENGTH_DELIMITED),
              varint(incomplete.size()),
-             incomplete ));
+             incomplete ),
+        "PrematureEofInPackedFieldValue" + type_name);
 
     // EOF in the middle of packed region.
     ExpectParseFailureForProto(
         cat( tag(rep_fieldnum, WireFormatLite::WIRETYPE_LENGTH_DELIMITED),
-             varint(1) ));
+             varint(1) ),
+        "PrematureEofInPackedField" + type_name);
   }
 }
 
-void ConformanceTestSuite::RunSuite(ConformanceTestRunner* runner,
+void ConformanceTestSuite::SetFailureList(const vector<string>& failure_list) {
+  expected_to_fail_.clear();
+  std::copy(failure_list.begin(), failure_list.end(),
+            std::inserter(expected_to_fail_, expected_to_fail_.end()));
+}
+
+bool ConformanceTestSuite::CheckSetEmpty(const set<string>& set_to_check,
+                                         const char* msg) {
+  if (set_to_check.empty()) {
+    return true;
+  } else {
+    StringAppendF(&output_, "\n");
+    StringAppendF(&output_, "%s:\n", msg);
+    for (set<string>::const_iterator iter = set_to_check.begin();
+         iter != set_to_check.end(); ++iter) {
+      StringAppendF(&output_, "  %s\n", iter->c_str());
+    }
+    StringAppendF(&output_, "\n");
+    return false;
+  }
+}
+
+bool ConformanceTestSuite::RunSuite(ConformanceTestRunner* runner,
                                     std::string* output) {
   runner_ = runner;
-  output_.clear();
   successes_ = 0;
-  failures_ = 0;
+  expected_failures_ = 0;
+  skipped_.clear();
+  test_names_.clear();
+  unexpected_failing_tests_.clear();
+  unexpected_succeeding_tests_.clear();
+  type_resolver_.reset(NewTypeResolverForDescriptorPool(
+      kTypeUrlPrefix, DescriptorPool::generated_pool()));
+  type_url_ = GetTypeUrl(TestAllTypes::descriptor());
+
+  output_ = "\nCONFORMANCE TEST BEGIN ====================================\n\n";
 
   for (int i = 1; i <= FieldDescriptor::MAX_TYPE; i++) {
     if (i == FieldDescriptor::TYPE_GROUP) continue;
-    TestPrematureEOFForType(static_cast<WireFormatLite::FieldType>(i));
+    TestPrematureEOFForType(static_cast<FieldDescriptor::Type>(i));
   }
 
+  RunValidJsonTest("HelloWorld", "{\"optionalString\":\"Hello, World!\"}",
+                   "optional_string: 'Hello, World!'");
+
+  bool ok =
+      CheckSetEmpty(expected_to_fail_,
+                    "These tests were listed in the failure list, but they "
+                    "don't exist.  Remove them from the failure list") &&
+
+      CheckSetEmpty(unexpected_failing_tests_,
+                    "These tests failed.  If they can't be fixed right now, "
+                    "you can add them to the failure list so the overall "
+                    "suite can succeed") &&
+
+      CheckSetEmpty(unexpected_succeeding_tests_,
+                    "These tests succeeded, even though they were listed in "
+                    "the failure list.  Remove them from the failure list");
+
+  CheckSetEmpty(skipped_,
+                "These tests were skipped (probably because support for some "
+                "features is not implemented)");
+
   StringAppendF(&output_,
-                "CONFORMANCE SUITE FINISHED: completed %d tests, %d successes, "
-                "%d failures.\n",
-                successes_ + failures_, successes_, failures_);
+                "CONFORMANCE SUITE %s: %d successes, %d skipped, "
+                "%d expected failures, %d unexpected failures.\n",
+                ok ? "PASSED" : "FAILED", successes_, skipped_.size(),
+                expected_failures_, unexpected_failing_tests_.size());
+  StringAppendF(&output_, "\n");
 
   output->assign(output_);
+
+  return ok;
 }
 
 }  // namespace protobuf
