@@ -97,13 +97,10 @@ std::string ConfigureSystemHeaders(const proto::CompilationUnit &Unit,
 } // anonymous namespace
 
 std::string IndexCompilationUnit(const proto::CompilationUnit &Unit,
-                                 const std::string &EffectiveWorkingDirectory,
                                  std::vector<proto::FileData> &Files,
-                                 KytheClaimClient &Client, HashCache *Cache,
-                                 BehaviorOnTemplates BOT,
-                                 BehaviorOnUnimplemented BOU,
-                                 bool AllowFSAccess,
-                                 KytheOutputStream &Output) {
+                                 KytheClaimClient &Client,
+                                 HashCache *Cache, KytheOutputStream &Output,
+                                 const IndexerOptions &Options) {
   HeaderSearchInfo HSI;
   bool HSIValid = DecodeHeaderSearchInformation(Unit, HSI);
   std::string FixupArgument;
@@ -111,7 +108,7 @@ std::string IndexCompilationUnit(const proto::CompilationUnit &Unit,
     FixupArgument = ConfigureSystemHeaders(Unit, Files);
   }
   clang::FileSystemOptions FSO;
-  FSO.WorkingDir = EffectiveWorkingDirectory;
+  FSO.WorkingDir = Options.EffectiveWorkingDirectory;
   llvm::IntrusiveRefCntPtr<IndexVFS> VFS(new IndexVFS(FSO.WorkingDir, Files));
   KytheGraphRecorder Recorder(&Output);
   KytheGraphObserver Observer(&Recorder, &Client, VFS);
@@ -121,6 +118,7 @@ std::string IndexCompilationUnit(const proto::CompilationUnit &Unit,
   }
   Observer.set_claimant(Unit.v_name());
   Observer.set_starting_context(Unit.entry_context());
+  Observer.set_lossy_claiming(Options.EnableLossyClaiming);
   for (const auto &Input : Unit.required_input()) {
     if (Input.has_info() && !Input.info().path().empty() &&
         Input.has_v_name()) {
@@ -142,10 +140,10 @@ std::string IndexCompilationUnit(const proto::CompilationUnit &Unit,
   }
   std::unique_ptr<IndexerFrontendAction> Action(
       new IndexerFrontendAction(&Observer, HSIValid ? &HSI : nullptr));
-  Action->setIgnoreUnimplemented(BOU);
-  Action->setTemplateMode(BOT);
+  Action->setIgnoreUnimplemented(Options.UnimplementedBehavior);
+  Action->setTemplateMode(Options.TemplateBehavior);
   llvm::IntrusiveRefCntPtr<clang::FileManager> FileManager(
-      new clang::FileManager(FSO, AllowFSAccess ? nullptr : VFS));
+      new clang::FileManager(FSO, Options.AllowFSAccess ? nullptr : VFS));
   std::vector<std::string> Args(Unit.argument().begin(), Unit.argument().end());
   Args.insert(Args.begin() + 1, "-fsyntax-only");
   Args.insert(Args.begin() + 1, "-w");

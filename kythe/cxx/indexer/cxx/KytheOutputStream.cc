@@ -134,6 +134,9 @@ void FileOutputStream::EmitAndReleaseTopBuffer() {
   buffers_.HashTop(&hash);
   if (!cache_->SawHash(hash)) {
     buffers_.CopyTopToStream(stream_);
+    if (flush_after_each_entry_) {
+      stream_->Flush();
+    }
     cache_->RegisterHash(hash);
   } else {
     ++stats_.hashes_matched_;

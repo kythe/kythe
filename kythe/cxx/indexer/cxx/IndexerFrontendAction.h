@@ -190,27 +190,37 @@ public:
   clang::FrontendAction *create() override { return Action.release(); }
 };
 
-/// \brief Indexes `Unit`, reading from `Files` in the assumed
-/// `EffectiveWorkingDirectory` and writing entries to `Output`.
+/// \brief Options that control how the indexer behaves.
+struct IndexerOptions {
+  /// \brief The directory to normalize paths against. Must be absolute.
+  std::string EffectiveWorkingDirectory = "/";
+  /// \brief What to do with template expansions.
+  BehaviorOnTemplates TemplateBehavior =
+      BehaviorOnTemplates::VisitInstantiations;
+  /// \brief What to do when we don't know what to do.
+  BehaviorOnUnimplemented UnimplementedBehavior =
+      BehaviorOnUnimplemented::Abort;
+  /// \brief Enable experimental lossy claiming if true.
+  bool EnableLossyClaiming = false;
+  /// \brief Whether to allow access to the raw filesystem.
+  bool AllowFSAccess = false;
+};
+
+/// \brief Indexes `Unit`, reading from `Files` in the assumed and writing
+/// entries to `Output`.
 /// \param Unit The CompilationUnit to index
-/// \param EffectiveWorkingDirectory The directory to normalize paths against.
-/// Must be absolute.
 /// \param Files A vector of files to read from. May be modified if the Unit
 /// does not contain a proper header search table.
 /// \param ClaimClient The claim client to use.
 /// \param Cache The hash cache to use, or nullptr if none.
-/// \param BOT What to do with template expansions.
-/// \param BOU What to do when we don't know what to do.
-/// \param AllowFSAccess Whether to allow access to the raw filesystem.
 /// \param Output The output stream to use.
+/// \param Options Configuration settings for this run.
 /// \return empty if OK; otherwise, an error description.
 std::string IndexCompilationUnit(const proto::CompilationUnit &Unit,
-                                 const std::string &EffectiveWorkingDirectory,
                                  std::vector<proto::FileData> &Files,
                                  KytheClaimClient &ClaimClient,
-                                 HashCache *Cache, BehaviorOnTemplates BOT,
-                                 BehaviorOnUnimplemented BOU,
-                                 bool AllowFSAccess, KytheOutputStream &Output);
+                                 HashCache *Cache, KytheOutputStream &Output,
+                                 const IndexerOptions &Options);
 
 } // namespace kythe
 

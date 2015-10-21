@@ -65,6 +65,17 @@ DEFINE_int32(min_size, 4096, "Minimum size of an entry bundle");
 DEFINE_int32(max_size, 1024 * 32, "Maximum size of an entry bundle");
 DEFINE_bool(cache_stats, false, "Show cache stats");
 
+DEFINE_string(experimental_dynamic_claim_cache, "",
+              "Use a memcache instance for dynamic claims (EXPERIMENTAL)");
+// Setting this to a value > 1 allows the same object (e.g., a transcript of
+// an include file) to be claimed multiple times. In the absence of transcript
+// labels, setting this value to 1 means that only one environment will be
+// considered when indexing a vname. This may result in (among other effects)
+// conditionally included code never being indexed if the symbols checked differ
+// between translation units.
+DEFINE_uint64(experimental_dynamic_overclaim, 1,
+              "Maximum number of dynamic claims per claimable (EXPERIMENTAL)");
+
 namespace kythe {
 namespace {
 /// \brief Reads the output of the static claim tool.
@@ -274,11 +285,26 @@ Examples:
     }
   }
 
-  kythe::StaticClaimClient claim_client;
-  if (!FLAGS_static_claim.empty()) {
-    DecodeStaticClaimTable(FLAGS_static_claim, &claim_client);
+  std::unique_ptr<kythe::KytheClaimClient> claim_client;
+  if (!FLAGS_experimental_dynamic_claim_cache.empty()) {
+    auto dynamic_claims = std::unique_ptr<kythe::DynamicClaimClient>(
+        new kythe::DynamicClaimClient());
+    dynamic_claims->set_max_redundant_claims(
+        FLAGS_experimental_dynamic_overclaim);
+    if (!dynamic_claims->OpenMemcache(FLAGS_experimental_dynamic_claim_cache)) {
+      fprintf(stderr, "Can't open memcached\n");
+      exit(1);
+    }
+    claim_client.reset(dynamic_claims.release());
+  } else {
+    auto static_claims = std::unique_ptr<kythe::StaticClaimClient>(
+        new kythe::StaticClaimClient());
+    if (!FLAGS_static_claim.empty()) {
+      DecodeStaticClaimTable(FLAGS_static_claim, static_claims.get());
+    }
+    static_claims->set_process_unknown_status(FLAGS_claim_unknown);
+    claim_client.reset(static_claims.release());
   }
-  claim_client.set_process_unknown_status(FLAGS_claim_unknown);
 
   int write_fd = STDOUT_FILENO;
   if (FLAGS_o != "-") {
@@ -306,15 +332,21 @@ Examples:
       MHashCache.SetSizeLimits(FLAGS_min_size, FLAGS_max_size);
     }
 
-    result = IndexCompilationUnit(
-        unit, working_dir, virtual_files, claim_client,
-        FLAGS_cache.empty() ? nullptr : &MHashCache,
-        FLAGS_index_template_instantiations
-            ? BehaviorOnTemplates::VisitInstantiations
-            : BehaviorOnTemplates::SkipInstantiations,
+    IndexerOptions options;
+    options.TemplateBehavior = FLAGS_index_template_instantiations
+                                   ? BehaviorOnTemplates::VisitInstantiations
+                                   : BehaviorOnTemplates::SkipInstantiations;
+    options.UnimplementedBehavior =
         FLAGS_ignore_unimplemented ? kythe::BehaviorOnUnimplemented::Continue
-                                   : kythe::BehaviorOnUnimplemented::Abort,
-        kindex_file_or_cu.empty() /* AllowFSAccess */, kythe_output);
+                                   : kythe::BehaviorOnUnimplemented::Abort;
+    options.AllowFSAccess = kindex_file_or_cu.empty();
+    options.EnableLossyClaiming =
+        FLAGS_experimental_dynamic_claim_cache.empty() ? false : true;
+    options.EffectiveWorkingDirectory = working_dir;
+
+    result = IndexCompilationUnit(unit, virtual_files, *claim_client,
+                                  FLAGS_cache.empty() ? nullptr : &MHashCache,
+                                  kythe_output, options);
   }
 
   if (close(write_fd) != 0) {
