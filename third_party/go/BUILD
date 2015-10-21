@@ -227,6 +227,12 @@ package(
 )
 
 package(
+    name = "jsonpb",
+    package = "github.com/golang/protobuf/jsonpb",
+    deps = [":protobuf"],
+)
+
+package(
     name = "context",
     package = "golang.org/x/net/context",
 )

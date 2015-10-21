@@ -1,5 +1,10 @@
 # Release Notes
 
+## Upcoming release
+
+Notable changes:
+ - Use proto3 JSON mapping for web requests: https://developers.google.com/protocol-buffers/docs/proto3#json
+
 ## v0.0.15
 
 Notable changes:

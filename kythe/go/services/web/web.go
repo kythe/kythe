@@ -28,10 +28,14 @@ import (
 
 	"kythe.io/kythe/go/util/httpencoding"
 
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 )
 
 const jsonBodyType = "application/json; charset=utf-8"
+
+// JSONMarshaler is the marshaler used to encode all JSON web requests.
+var JSONMarshaler = jsonpb.Marshaler{}
 
 // RegisterQuitHandler adds a handler for /quitquitquit that call os.Exit(0).
 func RegisterQuitHandler(mux *http.ServeMux) {
@@ -42,13 +46,13 @@ func RegisterQuitHandler(mux *http.ServeMux) {
 
 // Call sends req to the given server method as a JSON-encoded body and
 // unmarshals the response body as JSON into reply.
-func Call(server, method string, req, reply interface{}) error {
-	body, err := json.Marshal(req)
-	if err != nil {
+func Call(server, method string, req, reply proto.Message) error {
+	body := new(bytes.Buffer)
+	if err := JSONMarshaler.Marshal(body, req); err != nil {
 		return fmt.Errorf("error marshaling %T: %v", req, err)
 	}
 	resp, err := http.Post(strings.TrimSuffix(server, "/")+"/"+strings.Trim(method, "/"),
-		jsonBodyType, bytes.NewBuffer(body))
+		jsonBodyType, body)
 	if err != nil {
 		return fmt.Errorf("http error: %v", err)
 	}
@@ -59,15 +63,15 @@ func Call(server, method string, req, reply interface{}) error {
 	} else if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("remote method error (code %d): %s", resp.StatusCode, string(rec))
 	}
-	if err := json.Unmarshal(rec, &reply); err != nil {
+	if err := jsonpb.UnmarshalString(string(rec), reply); err != nil {
 		return fmt.Errorf("error unmarshaling %T: %v", reply, err)
 	}
 	return nil
 }
 
-// ReadJSONBody reads the entire body of r and unmarshals it from JSON into v.
-// If the request body is empty, no error is returned and v is unchanged.
-func ReadJSONBody(r *http.Request, v interface{}) error {
+// ReadJSONBody reads the entire body of r and unmarshals it from JSON into msg.
+// If the request body is empty, no error is returned and msg is unchanged.
+func ReadJSONBody(r *http.Request, msg proto.Message) error {
 	rec, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		return fmt.Errorf("body read error: %v", err)
@@ -75,7 +79,7 @@ func ReadJSONBody(r *http.Request, v interface{}) error {
 	if len(rec) == 0 {
 		return nil
 	}
-	return json.Unmarshal(rec, v)
+	return jsonpb.UnmarshalString(string(rec), msg)
 }
 
 // WriteResponse writes msg to w as a serialized protobuf if the "proto" query

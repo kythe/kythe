@@ -26,10 +26,13 @@ import (
 	"strconv"
 	"strings"
 
+	"kythe.io/kythe/go/services/web"
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema"
 	"kythe.io/kythe/go/util/stringset"
+
+	"github.com/golang/protobuf/proto"
 
 	ftpb "kythe.io/kythe/proto/filetree_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
@@ -42,9 +45,13 @@ var (
 	out         = os.Stdout
 )
 
-func logRequest(req interface{}) {
+var jsonMarshaler = web.JSONMarshaler
+
+func init() { jsonMarshaler.Indent = "  " }
+
+func logRequest(req proto.Message) {
 	if *logRequests {
-		str, err := json.MarshalIndent(req, "", "  ")
+		str, err := jsonMarshaler.MarshalToString(req)
 		if err != nil {
 			log.Fatalf("Failed to encode request for logging %v: %v", req, err)
 		}
@@ -62,7 +69,7 @@ func baseTypeName(x interface{}) string {
 
 func displayCorpusRoots(cr *ftpb.CorpusRootsReply) error {
 	if *displayJSON {
-		return json.NewEncoder(out).Encode(cr)
+		return jsonMarshaler.Marshal(out, cr)
 	}
 
 	for _, c := range cr.Corpus {
@@ -87,7 +94,7 @@ func displayCorpusRoots(cr *ftpb.CorpusRootsReply) error {
 
 func displayDirectory(d *ftpb.DirectoryReply) error {
 	if *displayJSON {
-		return json.NewEncoder(out).Encode(d)
+		return jsonMarshaler.Marshal(out, d)
 	}
 
 	for _, d := range d.Subdirectory {
@@ -119,7 +126,7 @@ func displayDirectory(d *ftpb.DirectoryReply) error {
 
 func displaySource(decor *xpb.DecorationsReply) error {
 	if *displayJSON {
-		return json.NewEncoder(out).Encode(decor)
+		return jsonMarshaler.Marshal(out, decor)
 	}
 
 	_, err := out.Write(decor.SourceText)
@@ -128,7 +135,7 @@ func displaySource(decor *xpb.DecorationsReply) error {
 
 func displayDecorations(text []byte, decor *xpb.DecorationsReply) error {
 	if *displayJSON {
-		return json.NewEncoder(out).Encode(decor)
+		return jsonMarshaler.Marshal(out, decor)
 	}
 
 	nodes := xrefs.NodesMap(decor.Node)
@@ -195,7 +202,7 @@ func itoa(n int32) string { return strconv.Itoa(int(n)) }
 
 func displayEdges(edges *xpb.EdgesReply) error {
 	if *displayJSON {
-		return json.NewEncoder(out).Encode(edges)
+		return jsonMarshaler.Marshal(out, edges)
 	}
 
 	for _, es := range edges.EdgeSet {
@@ -279,7 +286,7 @@ func displayNodes(nodes []*xpb.NodeInfo) error {
 
 func displaySearch(reply *spb.SearchReply) error {
 	if *displayJSON {
-		return json.NewEncoder(out).Encode(reply)
+		return jsonMarshaler.Marshal(out, reply)
 	}
 
 	for _, t := range reply.Ticket {
