@@ -40,9 +40,10 @@ public class JavaIndexerServer {
       NettyServerBuilder.forPort(config.getPort())
           .addService(CompilationAnalyzerGrpc.bindService(new JavaCompilationAnalyzer(config)))
           .build()
-          .start();
-    } catch (IOException ioe) {
-      ioe.printStackTrace();
+          .start()
+          .awaitTermination();
+    } catch (InterruptedException|IOException e) {
+      e.printStackTrace();
       System.exit(1);
     }
     System.err.println("Started Java CompilationAnalyzer server on port " + config.getPort());
