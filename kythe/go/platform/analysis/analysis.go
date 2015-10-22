@@ -104,39 +104,40 @@ func (s *FileDataService) Clear() {
 }
 
 // Get implements the apb.FileDataServiceServer interface.
-func (s *FileDataService) Get(srv apb.FileDataService_GetServer) error {
-	var foundFile, receivedRequest bool
-	for {
-		info, err := srv.Recv()
-		if err == io.EOF {
-			if !receivedRequest {
-				return errors.New("no FileData request given")
-			} else if !foundFile {
-				return errors.New("none of the requested files found")
-			}
-			break
-		} else if err != nil {
-			return err
+func (s *FileDataService) Get(req *apb.FilesRequest, srv apb.FileDataService_GetServer) error {
+	for _, info := range req.Files {
+		if info.Path == "" && info.Digest == "" {
+			return errors.New("file request missing both path and digest")
 		}
-		receivedRequest = true
-
+	}
+	for _, info := range req.Files {
 		s.mu.RLock()
+		found := false
 		for _, f := range s.fetchers {
 			data, err := f.Fetch(info.Path, info.Digest)
 			if err == nil {
 				if err := srv.Send(&apb.FileData{
-					Info:    info,
 					Content: data,
+					Info:    info,
 				}); err != nil {
 					s.mu.RUnlock()
 					return err
 				}
-				foundFile = true
+				found = true
 				break
 			}
 		}
-		// we didn't find the file; don't send anything
 		s.mu.RUnlock()
+
+		// If we did not find anything, report the file as missing.
+		if !found {
+			if err := srv.Send(&apb.FileData{
+				Info:    info,
+				Missing: true,
+			}); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }

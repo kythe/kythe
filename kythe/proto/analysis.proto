@@ -39,24 +39,17 @@ service CompilationAnalyzer {
 // input files required for analysis.
 service FileDataService {
   // Get returns the contents of one or more files needed for analysis.  It is
-  // the server implementation's responsibility to do any caching that might be
-  // necessary to make this perform well so that an analyzer does not need to
-  // implement its own caches unless it is doing something unusual.
+  // the server's responsibility to do any caching necessary to make this
+  // perform well, so that an analyzer does not need to implement its own
+  // caches unless it is doing something unusual.
   //
-  // Except in case of error, the server is required to return at least one of
-  // the requested files; however, the server may also limit how much data is
-  // returned for a single request.  If this occurs, any files it does return
-  // must be complete.  The client is responsible for issuing additional
-  // requests as necessary to obtain any missing files.  For example, the
-  // following is a valid interaction:
+  // For each distinct path/digest pair in the request, the server must return
+  // exactly one response.  The order of the responses is arbitrary.
   //
-  //   C: Get(a, b, c)
-  //   S: FileData(a)
-  //   S: FileData(c)
-  //   C: Get(b)
-  //   S: FileData(b)
-  //
-  rpc Get(stream FileInfo) returns (stream FileData) {}
+  // For each requested file, one or both of the path and digest fields must be
+  // nonempty, otherwise an error is returned.  It is not an error for there to
+  // be no requested files, however.
+  rpc Get(FilesRequest) returns (stream FileData) {}
 }
 
 // An AnalysisRequest instructs an analyzer to perform an analysis on a single
@@ -184,22 +177,42 @@ message CompilationUnit {
   repeated google.protobuf.Any details = 11;
 }
 
-// A FileInfo specifies metadata for a file under analysis.
+// A FilesRequest specifies a collection of files to be fetched from a
+// FileDataService.
+message FilesRequest {
+  repeated FileInfo files = 1;
+}
+
+// A FileInfo identifies a file used for analysis.
+// At least one of the path and digest fields must be non-empty.
 message FileInfo {
-  // This path should be relative to the working directory of the compilation
-  // command -- typically the root of the build.
-  // i.e. file/base/file.cc or ../../base/atomic_ref_count.h
+  // The path of the file relative to the working directory of the compilation
+  // command, which is typically the root of the build.
+  // For example:
+  //  file/base/file.cc
+  //  ../../base/atomic_ref_count.h
   string path = 1;
 
   // The lowercase ascii hex SHA-256 digest of the file contents.
   string digest = 2;
 }
 
-// A FileData describes the content of a single file.  A server responding to a
-// FileDataRequest must populate the same path and digest in the reply that were
-// provided by the client in the request, if any.  If either field was empty in
-// the request, the server may leave it empty or fill in its value.
+// A FileData carries the content of a single file, as returned from the Get
+// method of a FileDataService.
 message FileData {
+  // The content of the file, if known.  If missing == true, this field must be
+  // empty.
   bytes content = 1;
+
+  // A (possibly normalized) copy of the non-empty fields of the FileInfo
+  // message from the Get request.  If either field from the original request
+  // was empty, the server may optionally fill in that field in the reply if it
+  // is known.  For example, if the client requested a file by path only and
+  // the server found it, the reply MAY fill in the digest.
   FileInfo info = 2;
+
+  // If true, no data are available for the requested file, and the content
+  // field must be empty.  If false, the content field contains the complete
+  // file content (which may be empty).
+  bool missing = 3;
 }

@@ -12,6 +12,7 @@ It has these top-level messages:
 	AnalysisRequest
 	AnalysisOutput
 	CompilationUnit
+	FilesRequest
 	FileInfo
 	FileData
 */
@@ -244,11 +245,31 @@ func (m *CompilationUnit_Env) Reset()         { *m = CompilationUnit_Env{} }
 func (m *CompilationUnit_Env) String() string { return proto.CompactTextString(m) }
 func (*CompilationUnit_Env) ProtoMessage()    {}
 
-// A FileInfo specifies metadata for a file under analysis.
+// A FilesRequest specifies a collection of files to be fetched from a
+// FileDataService.
+type FilesRequest struct {
+	Files []*FileInfo `protobuf:"bytes,1,rep,name=files" json:"files,omitempty"`
+}
+
+func (m *FilesRequest) Reset()         { *m = FilesRequest{} }
+func (m *FilesRequest) String() string { return proto.CompactTextString(m) }
+func (*FilesRequest) ProtoMessage()    {}
+
+func (m *FilesRequest) GetFiles() []*FileInfo {
+	if m != nil {
+		return m.Files
+	}
+	return nil
+}
+
+// A FileInfo identifies a file used for analysis.
+// At least one of the path and digest fields must be non-empty.
 type FileInfo struct {
-	// This path should be relative to the working directory of the compilation
-	// command -- typically the root of the build.
-	// i.e. file/base/file.cc or ../../base/atomic_ref_count.h
+	// The path of the file relative to the working directory of the compilation
+	// command, which is typically the root of the build.
+	// For example:
+	//  file/base/file.cc
+	//  ../../base/atomic_ref_count.h
 	Path string `protobuf:"bytes,1,opt,name=path" json:"path,omitempty"`
 	// The lowercase ascii hex SHA-256 digest of the file contents.
 	Digest string `protobuf:"bytes,2,opt,name=digest" json:"digest,omitempty"`
@@ -258,13 +279,22 @@ func (m *FileInfo) Reset()         { *m = FileInfo{} }
 func (m *FileInfo) String() string { return proto.CompactTextString(m) }
 func (*FileInfo) ProtoMessage()    {}
 
-// A FileData describes the content of a single file.  A server responding to a
-// FileDataRequest must populate the same path and digest in the reply that were
-// provided by the client in the request, if any.  If either field was empty in
-// the request, the server may leave it empty or fill in its value.
+// A FileData carries the content of a single file, as returned from the Get
+// method of a FileDataService.
 type FileData struct {
-	Content []byte    `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"`
-	Info    *FileInfo `protobuf:"bytes,2,opt,name=info" json:"info,omitempty"`
+	// The content of the file, if known.  If missing == true, this field must be
+	// empty.
+	Content []byte `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"`
+	// A (possibly normalized) copy of the non-empty fields of the FileInfo
+	// message from the Get request.  If either field from the original request
+	// was empty, the server may optionally fill in that field in the reply if it
+	// is known.  For example, if the client requested a file by path only and
+	// the server found it, the reply MAY fill in the digest.
+	Info *FileInfo `protobuf:"bytes,2,opt,name=info" json:"info,omitempty"`
+	// If true, no data are available for the requested file, and the content
+	// field must be empty.  If false, the content field contains the complete
+	// file content (which may be empty).
+	Missing bool `protobuf:"varint,3,opt,name=missing" json:"missing,omitempty"`
 }
 
 func (m *FileData) Reset()         { *m = FileData{} }
@@ -390,24 +420,17 @@ var _CompilationAnalyzer_serviceDesc = grpc.ServiceDesc{
 
 type FileDataServiceClient interface {
 	// Get returns the contents of one or more files needed for analysis.  It is
-	// the server implementation's responsibility to do any caching that might be
-	// necessary to make this perform well so that an analyzer does not need to
-	// implement its own caches unless it is doing something unusual.
+	// the server's responsibility to do any caching necessary to make this
+	// perform well, so that an analyzer does not need to implement its own
+	// caches unless it is doing something unusual.
 	//
-	// Except in case of error, the server is required to return at least one of
-	// the requested files; however, the server may also limit how much data is
-	// returned for a single request.  If this occurs, any files it does return
-	// must be complete.  The client is responsible for issuing additional
-	// requests as necessary to obtain any missing files.  For example, the
-	// following is a valid interaction:
+	// For each distinct path/digest pair in the request, the server must return
+	// exactly one response.  The order of the responses is arbitrary.
 	//
-	//   C: Get(a, b, c)
-	//   S: FileData(a)
-	//   S: FileData(c)
-	//   C: Get(b)
-	//   S: FileData(b)
-	//
-	Get(ctx context.Context, opts ...grpc.CallOption) (FileDataService_GetClient, error)
+	// For each requested file, one or both of the path and digest fields must be
+	// nonempty, otherwise an error is returned.  It is not an error for there to
+	// be no requested files, however.
+	Get(ctx context.Context, in *FilesRequest, opts ...grpc.CallOption) (FileDataService_GetClient, error)
 }
 
 type fileDataServiceClient struct {
@@ -418,27 +441,28 @@ func NewFileDataServiceClient(cc *grpc.ClientConn) FileDataServiceClient {
 	return &fileDataServiceClient{cc}
 }
 
-func (c *fileDataServiceClient) Get(ctx context.Context, opts ...grpc.CallOption) (FileDataService_GetClient, error) {
+func (c *fileDataServiceClient) Get(ctx context.Context, in *FilesRequest, opts ...grpc.CallOption) (FileDataService_GetClient, error) {
 	stream, err := grpc.NewClientStream(ctx, &_FileDataService_serviceDesc.Streams[0], c.cc, "/kythe.proto.FileDataService/Get", opts...)
 	if err != nil {
 		return nil, err
 	}
 	x := &fileDataServiceGetClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
 	return x, nil
 }
 
 type FileDataService_GetClient interface {
-	Send(*FileInfo) error
 	Recv() (*FileData, error)
 	grpc.ClientStream
 }
 
 type fileDataServiceGetClient struct {
 	grpc.ClientStream
-}
-
-func (x *fileDataServiceGetClient) Send(m *FileInfo) error {
-	return x.ClientStream.SendMsg(m)
 }
 
 func (x *fileDataServiceGetClient) Recv() (*FileData, error) {
@@ -453,24 +477,17 @@ func (x *fileDataServiceGetClient) Recv() (*FileData, error) {
 
 type FileDataServiceServer interface {
 	// Get returns the contents of one or more files needed for analysis.  It is
-	// the server implementation's responsibility to do any caching that might be
-	// necessary to make this perform well so that an analyzer does not need to
-	// implement its own caches unless it is doing something unusual.
+	// the server's responsibility to do any caching necessary to make this
+	// perform well, so that an analyzer does not need to implement its own
+	// caches unless it is doing something unusual.
 	//
-	// Except in case of error, the server is required to return at least one of
-	// the requested files; however, the server may also limit how much data is
-	// returned for a single request.  If this occurs, any files it does return
-	// must be complete.  The client is responsible for issuing additional
-	// requests as necessary to obtain any missing files.  For example, the
-	// following is a valid interaction:
+	// For each distinct path/digest pair in the request, the server must return
+	// exactly one response.  The order of the responses is arbitrary.
 	//
-	//   C: Get(a, b, c)
-	//   S: FileData(a)
-	//   S: FileData(c)
-	//   C: Get(b)
-	//   S: FileData(b)
-	//
-	Get(FileDataService_GetServer) error
+	// For each requested file, one or both of the path and digest fields must be
+	// nonempty, otherwise an error is returned.  It is not an error for there to
+	// be no requested files, however.
+	Get(*FilesRequest, FileDataService_GetServer) error
 }
 
 func RegisterFileDataServiceServer(s *grpc.Server, srv FileDataServiceServer) {
@@ -478,12 +495,15 @@ func RegisterFileDataServiceServer(s *grpc.Server, srv FileDataServiceServer) {
 }
 
 func _FileDataService_Get_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(FileDataServiceServer).Get(&fileDataServiceGetServer{stream})
+	m := new(FilesRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(FileDataServiceServer).Get(m, &fileDataServiceGetServer{stream})
 }
 
 type FileDataService_GetServer interface {
 	Send(*FileData) error
-	Recv() (*FileInfo, error)
 	grpc.ServerStream
 }
 
@@ -495,14 +515,6 @@ func (x *fileDataServiceGetServer) Send(m *FileData) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *fileDataServiceGetServer) Recv() (*FileInfo, error) {
-	m := new(FileInfo)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
 var _FileDataService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "kythe.proto.FileDataService",
 	HandlerType: (*FileDataServiceServer)(nil),
@@ -512,7 +524,6 @@ var _FileDataService_serviceDesc = grpc.ServiceDesc{
 			StreamName:    "Get",
 			Handler:       _FileDataService_Get_Handler,
 			ServerStreams: true,
-			ClientStreams: true,
 		},
 	},
 }

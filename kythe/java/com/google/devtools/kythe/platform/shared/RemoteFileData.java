@@ -20,6 +20,7 @@ import com.google.common.net.HostAndPort;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.devtools.kythe.proto.Analysis.FileData;
 import com.google.devtools.kythe.proto.Analysis.FileInfo;
+import com.google.devtools.kythe.proto.Analysis.FilesRequest;
 import com.google.devtools.kythe.proto.FileDataServiceGrpc;
 import com.google.devtools.kythe.proto.FileDataServiceGrpc.FileDataServiceStub;
 
@@ -47,9 +48,10 @@ public class RemoteFileData implements FileDataProvider {
   @Override
   public Future<byte[]> startLookup(String path, String digest) {
     SettableFuture<byte[]> future = SettableFuture.create();
-    stub
-        .get(new SingletonLookup(future))
-        .onNext(FileInfo.newBuilder().setPath(path).setDigest(digest).build());
+
+    FilesRequest.Builder req = FilesRequest.newBuilder();
+    req.addFilesBuilder().setPath(path).setDigest(digest);
+    stub.get(req.build(), new SingletonLookup(future));
     return future;
   }
 
@@ -65,6 +67,9 @@ public class RemoteFileData implements FileDataProvider {
 
     @Override
     public void onNext(FileData data) {
+      if (data.getMissing()) {
+        throw new IllegalStateException("no FileData returned");
+      }
       future.set(data.getContent().toByteArray());
     }
 
