@@ -1,0 +1,11 @@
+URL: https://github.com/KirillOsenkov/SourceBrowser/archive/5292d55cab3bb61790254163cb63a906f87cddbf.zip
+Version: 5292d55cab3bb61790254163cb63a906f87cddbf
+License: Apache 2
+License File: LICENSE
+
+Description:
+  Extracted utilities for indexing TypeScript code.
+
+Local Modifications:
+  Extracted utility functions to sbutilities.ts.
+  Adapted utility functions to use tsutilities module.

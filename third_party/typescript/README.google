@@ -16,3 +16,5 @@ Local Modifications:
   cd ~/kythe/third_party/typescript && rm -rf tests
 
   Changed the characters (, ), and space to _s in filenames in doc/.
+
+  Extracted some utility functions to tsutilities.ts.

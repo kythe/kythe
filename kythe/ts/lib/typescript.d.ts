@@ -1,0 +1,1 @@
+../../../third_party/typescript/lib/typescript.d.ts
