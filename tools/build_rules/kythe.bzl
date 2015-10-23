@@ -23,7 +23,12 @@ def index(ctx, kindex, entries, mnemonic=None):
   cmd_helper = ctx.command_helper([ctx.attr._indexer], {})
   tools = cmd_helper.resolved_tools
   input_manifests = cmd_helper.runfiles_manifests
-  cmd = "set -e;" + ctx.executable._indexer.path + " " + " ".join(ctx.attr.indexer_opts) + " " + kindex.path + " >" + entries.path
+  cmd = "\n".join([
+      "set -e",
+      'CWD="$PWD"',
+      "cd /tmp",
+      '"$CWD"/' + ctx.executable._indexer.path + " " + " ".join(ctx.attr.indexer_opts) + ' "$CWD"/' + kindex.path + ' > "$CWD"/' + entries.path,
+  ])
   ctx.action(
       inputs = [kindex] + tools,
       outputs = [entries],

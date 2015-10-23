@@ -16,6 +16,7 @@
 
 package com.google.devtools.kythe.platform.java;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.platform.shared.AnalysisException;
@@ -24,6 +25,7 @@ import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 
 import com.sun.tools.javac.api.JavacTool;
 
+import java.io.File;
 import java.util.List;
 
 import javax.annotation.processing.Processor;
@@ -61,8 +63,24 @@ public class JavacAnalysisDriver {
       FileDataProvider fileDataProvider,
       boolean isLocalAnalysis)
       throws AnalysisException {
+    checkEnvironment(compilationUnit);
+
     analyzer.analyzeCompilationUnit(
         JavaCompilationDetails.createDetails(
             compilationUnit, fileDataProvider, isLocalAnalysis, processors));
+  }
+
+  private static void checkEnvironment(CompilationUnit compilation) throws AnalysisException {
+    Preconditions.checkArgument(
+        !compilation.getSourceFileList().isEmpty(), "CompilationUnit has no source files");
+    String sourcePath = compilation.getSourceFileList().get(0);
+    if (new File(sourcePath).canRead()) {
+      throw new AnalysisException(
+          String.format(
+              "can read source file: '%s'; "
+                  + "indexer must be run outside of the compilation's source root "
+                  + "(see https://kythe.io/phabricator/T70 for more details)",
+              sourcePath));
+    }
   }
 }
