@@ -61,7 +61,11 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
   }
 
   private function runTests($targets) {
-    $future = new ExecFuture($this->bazelCommand(array_merge(["test", "--noshow_loading_progress", "--noshow_progress"], $targets)));
+    $future = new ExecFuture($this->bazelCommand(array_merge([
+        "test",
+        "--test_tag_filters=-broken",
+        "--noshow_loading_progress",
+        "--noshow_progress"], $targets)));
     $future->setCWD($this->project_root);
     $status = $future->resolve();
     return $this->parseTestResults($targets, $status);

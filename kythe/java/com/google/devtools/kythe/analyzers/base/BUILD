@@ -61,3 +61,12 @@ java_library(
         "//third_party/grpc-java",
     ],
 )
+
+# //kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata:corner_case.kindex is derived
+# based on the sources in //kythe/java/com/google/devtools/kythe/analyzers/java:analyzer which
+# depend on this class.
+filegroup(
+    name = "corner_case_srcs",
+    srcs = ["KytheEntrySets.java"],
+    visibility = ["//kythe/javatests/com/google/devtools/kythe/analyzers/java:__subpackages__"],
+)
