@@ -108,3 +108,8 @@ java_verifier_test(
         "Variables.java",
     ],
 )
+
+java_verifier_test(
+    name = "snippets_tests",
+    srcs = ["Snippets.java",],
+)

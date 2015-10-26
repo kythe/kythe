@@ -131,21 +131,25 @@ public class JavaEntrySets extends KytheEntrySets {
 
   /** Returns and emits a Java anchor for the given {@link JCTree}. */
   public EntrySet getAnchor(Positions filePositions, JCTree tree) {
-    return getAnchor(filePositions, filePositions.getStart(tree), filePositions.getEnd(tree));
+    return getAnchor(filePositions, filePositions.getSpan(tree));
   }
 
   /** Returns and emits a Java anchor for the given offset span. */
-  public EntrySet getAnchor(Positions filePositions, int start, int end) {
-    return getAnchor(lookupVName(getDigest(filePositions.getSourceFile())), start, end);
+  public EntrySet getAnchor(Positions filePositions, Span loc) {
+    return getAnchor(filePositions, loc, null);
+  }
+
+  /** Returns and emits a Java anchor for the given offset span. */
+  public EntrySet getAnchor(Positions filePositions, Span loc, Span snippet) {
+    return getAnchor(lookupVName(getDigest(filePositions.getSourceFile())), loc, snippet);
   }
 
   /** Returns and emits a Java anchor for the given identifier. */
-  public EntrySet getAnchor(Positions filePositions, Name name, int startOffset) {
+  public EntrySet getAnchor(Positions filePositions, Name name, int startOffset, Span snippet) {
     Span span = filePositions.findIdentifier(name, startOffset);
     return span == null
         ? null
-        : getAnchor(
-            lookupVName(getDigest(filePositions.getSourceFile())), span.getStart(), span.getEnd());
+        : getAnchor(lookupVName(getDigest(filePositions.getSourceFile())), span, snippet);
   }
 
   /** Returns the equivalent {@link NodeKind} for the given {@link ElementKind}. */

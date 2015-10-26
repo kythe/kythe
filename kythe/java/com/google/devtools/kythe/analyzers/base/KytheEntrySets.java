@@ -22,6 +22,7 @@ import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.devtools.kythe.util.KytheURI;
+import com.google.devtools.kythe.util.Span;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -112,18 +113,31 @@ public class KytheEntrySets {
   }
 
   /** Returns (and emits) a new anchor node at the given location in the file. */
-  public EntrySet getAnchor(VName fileVName, int start, int end) {
-    if (start > end || start < 0) {
+  public EntrySet getAnchor(VName fileVName, Span loc) {
+    return getAnchor(fileVName, loc, null);
+  }
+
+  /**
+   * Returns (and emits) a new anchor node at the given location in the file with an optional
+   * snippet span.
+   */
+  public EntrySet getAnchor(VName fileVName, Span loc, Span snippet) {
+    if (loc == null || !loc.valid()) {
       // TODO(schroederc): reduce number of invalid anchors
       return null;
     }
-    EntrySet anchor =
+    EntrySet.Builder builder =
         newNode(NodeKind.ANCHOR)
             .setCorpusPath(CorpusPath.fromVName(fileVName))
             .addSignatureSalt(fileVName)
-            .setProperty("loc/start", "" + start)
-            .setProperty("loc/end", "" + end)
-            .build();
+            .setProperty("loc/start", "" + loc.getStart())
+            .setProperty("loc/end", "" + loc.getEnd());
+    if (snippet != null && snippet.valid()) {
+      builder
+          .setProperty("snippet/start", "" + snippet.getStart())
+          .setProperty("snippet/end", "" + snippet.getEnd());
+    }
+    EntrySet anchor = builder.build();
     emitEdge(anchor.getVName(), EdgeKind.CHILDOF, fileVName);
     return emitAndReturn(anchor);
   }

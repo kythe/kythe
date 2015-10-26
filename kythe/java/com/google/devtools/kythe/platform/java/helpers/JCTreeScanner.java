@@ -16,6 +16,8 @@
 
 package com.google.devtools.kythe.platform.java.helpers;
 
+import com.google.common.collect.Lists;
+
 import com.sun.source.tree.AnnotatedTypeTree;
 import com.sun.source.tree.AnnotationTree;
 import com.sun.source.tree.ArrayAccessTree;
@@ -135,6 +137,10 @@ public class JCTreeScanner<R, P> implements TreeVisitor<R, P> {
       return null;
     }
     return tree == null ? null : tree.accept(this, p);
+  }
+
+  public R scanAll(P p, JCTree tree, JCTree... others) {
+    return scan(Lists.asList(tree, others), p);
   }
 
   public R scan(Iterable<? extends JCTree> trees, P p) {
@@ -475,10 +481,10 @@ public class JCTreeScanner<R, P> implements TreeVisitor<R, P> {
 
   @Override
   public final R visitCompoundAssignment(CompoundAssignmentTree tree, P p) {
-    return visitAssignop((JCAssignOp) tree, p);
+    return visitAssignOp((JCAssignOp) tree, p);
   }
 
-  public R visitAssignop(JCAssignOp tree, P p) {
+  public R visitAssignOp(JCAssignOp tree, P p) {
     R r = scan(tree.lhs, p);
     return scanAndReduce(tree.rhs, p, r);
   }

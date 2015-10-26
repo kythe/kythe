@@ -171,6 +171,11 @@ public final class SourceText {
       return grps.isEmpty() ? null : grps.first();
     }
 
+    /** Returns the byte span for the given tree in the source text. */
+    public Span getSpan(JCTree tree) {
+      return new Span(getStart(tree), getEnd(tree));
+    }
+
     /**
      * Returns the starting byte offset for the given tree in the source text. If {@code tree} is
      * {@code null} or no position is known, -1 is returned.
