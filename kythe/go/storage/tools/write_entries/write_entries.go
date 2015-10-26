@@ -34,7 +34,6 @@ import (
 	"flag"
 	"log"
 	"os"
-	"runtime"
 	"sync"
 	"sync/atomic"
 
@@ -61,9 +60,6 @@ var (
 )
 
 func init() {
-	if runtime.GOMAXPROCS(0) == 1 {
-		runtime.GOMAXPROCS(runtime.NumCPU())
-	}
 	flag.Usage = flagutil.SimpleUsage("Write a delimited stream of entries from stdin to a GraphStore",
 		"[--batch_size entries] [--workers n] --graphstore spec")
 	gsutil.Flag(&gs, "graphstore", "GraphStore to which to write the entry stream")

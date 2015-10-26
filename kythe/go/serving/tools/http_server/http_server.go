@@ -26,7 +26,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"runtime"
 
 	"kythe.io/kythe/go/services/filetree"
 	"kythe.io/kythe/go/services/graphstore"
@@ -70,9 +69,6 @@ var (
 )
 
 func init() {
-	if runtime.GOMAXPROCS(0) == 1 {
-		runtime.GOMAXPROCS(runtime.NumCPU())
-	}
 	gsutil.Flag(&gs, "graphstore", "GraphStore to serve xrefs")
 	flag.Usage = flagutil.SimpleUsage("Exposes HTTP/GRPC interfaces for the search, xrefs, and filetree services",
 		"(--graphstore spec | --serving_table path) [--listen addr] [--grpc_listen addr] [--public_resources dir]")

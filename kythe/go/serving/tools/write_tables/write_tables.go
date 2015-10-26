@@ -21,7 +21,6 @@ package main
 import (
 	"flag"
 	"log"
-	"runtime"
 
 	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/serving/pipeline"
@@ -45,9 +44,6 @@ var (
 )
 
 func init() {
-	if runtime.GOMAXPROCS(0) == 1 {
-		runtime.GOMAXPROCS(runtime.NumCPU())
-	}
 	gsutil.Flag(&gs, "graphstore", "GraphStore to read")
 	flag.Usage = flagutil.SimpleUsage("Creates a combined xrefs/filetree/search serving table based on a given GraphStore",
 		"--graphstore spec --out path")
