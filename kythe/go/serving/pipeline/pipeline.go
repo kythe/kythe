@@ -236,9 +236,9 @@ func collectNodes(nodeEntries <-chan *spb.Entry) <-chan *srvpb.Node {
 			if node == nil {
 				vname = e.Source
 				ticket := kytheuri.ToString(vname)
-				node = &srvpb.Node{Ticket: ticket}
+				node = &srvpb.Node{Ticket: ticket, Facts: make(map[string][]byte)}
 			}
-			node.Fact = append(node.Fact, assemble.NodeFact(e))
+			node.Facts[e.FactName] = e.FactValue
 		}
 		if node != nil {
 			nodes <- node
@@ -298,7 +298,7 @@ func writeEdges(ctx context.Context, t table.Proto, edges <-chan *spb.Entry, max
 	)
 	for e := range edges {
 		if src != nil && (!compare.VNamesEqual(e.Source, src) || kind != e.EdgeKind) {
-			if err := writeWithReverses(ctx, edgeGroups, kytheuri.ToString(src), kind, targets.Slice()); err != nil {
+			if err := writeWithReversesT(ctx, edgeGroups, kytheuri.ToString(src), kind, targets.Slice()); err != nil {
 				return err
 			}
 			src = nil
@@ -311,7 +311,7 @@ func writeEdges(ctx context.Context, t table.Proto, edges <-chan *spb.Entry, max
 		targets.Add(kytheuri.ToString(e.Target))
 	}
 	if src != nil {
-		if err := writeWithReverses(ctx, edgeGroups, kytheuri.ToString(src), kind, targets.Slice()); err != nil {
+		if err := writeWithReversesT(ctx, edgeGroups, kytheuri.ToString(src), kind, targets.Slice()); err != nil {
 			return err
 		}
 	}
@@ -320,8 +320,6 @@ func writeEdges(ctx context.Context, t table.Proto, edges <-chan *spb.Entry, max
 }
 
 func writeEdgePages(ctx context.Context, t table.Proto, edgeGroups *table.KVProto, maxEdgePageSize int) error {
-	// TODO(schroederc): spill large PagedEdgeSets into EdgePages
-
 	it, err := edgeGroups.ScanPrefix(nil, &keyvalue.Options{LargeRead: true})
 	if err != nil {
 		return err
@@ -332,7 +330,7 @@ func writeEdgePages(ctx context.Context, t table.Proto, edgeGroups *table.KVProt
 	esb := &assemble.EdgeSetBuilder{
 		MaxEdgePageSize: maxEdgePageSize,
 		Output: func(ctx context.Context, pes *srvpb.PagedEdgeSet) error {
-			return t.Put(ctx, xrefs.EdgeSetKey(pes.EdgeSet.SourceTicket), pes)
+			return t.Put(ctx, xrefs.EdgeSetKey(pes.EdgeSet.Source.Ticket), pes)
 		},
 		OutputPage: func(ctx context.Context, ep *srvpb.EdgePage) error {
 			return t.Put(ctx, xrefs.EdgePageKey(ep.PageKey), ep)
@@ -357,26 +355,36 @@ func writeEdgePages(ctx context.Context, t table.Proto, edgeGroups *table.KVProt
 			return fmt.Errorf("invalid edge groups table value: %v", err)
 		}
 
-		if err := esb.AddGroup(ctx, src, &eg); err != nil {
+		// TODO(schroederc): populate source facts
+		if err := esb.AddGroup(ctx, &srvpb.Node{Ticket: src}, &eg); err != nil {
 			return err
 		}
 	}
 	return esb.Flush(ctx)
 }
 
-func writeWithReverses(ctx context.Context, tbl *table.KVProto, src, kind string, targets []string) error {
-	if err := tbl.Put(ctx, []byte(src+tempTableKeySep+kind+tempTableKeySep), &srvpb.EdgeSet_Group{
-		Kind:         kind,
-		TargetTicket: targets,
+func writeWithReversesT(ctx context.Context, tbl *table.KVProto, src, kind string, targetTickets []string) error {
+	// TODO(schroederc): remove this function; populate facts in targets
+	targets := make([]*srvpb.Node, len(targetTickets))
+	for i, t := range targetTickets {
+		targets[i] = &srvpb.Node{Ticket: t}
+	}
+	return writeWithReverses(ctx, tbl, &srvpb.Node{Ticket: src}, kind, targets)
+}
+
+func writeWithReverses(ctx context.Context, tbl *table.KVProto, src *srvpb.Node, kind string, targets []*srvpb.Node) error {
+	if err := tbl.Put(ctx, []byte(src.Ticket+tempTableKeySep+kind+tempTableKeySep), &srvpb.EdgeSet_Group{
+		Kind:   kind,
+		Target: targets,
 	}); err != nil {
 		return fmt.Errorf("error writing edges group: %v", err)
 	}
 	revGroup := &srvpb.EdgeSet_Group{
-		Kind:         schema.MirrorEdge(kind),
-		TargetTicket: []string{src},
+		Kind:   schema.MirrorEdge(kind),
+		Target: []*srvpb.Node{src},
 	}
 	for _, tgt := range targets {
-		if err := tbl.Put(ctx, []byte(tgt+tempTableKeySep+revGroup.Kind+tempTableKeySep+src), revGroup); err != nil {
+		if err := tbl.Put(ctx, []byte(tgt.Ticket+tempTableKeySep+revGroup.Kind+tempTableKeySep+src.Ticket), revGroup); err != nil {
 			return fmt.Errorf("error writing rev edges group: %v", err)
 		}
 	}

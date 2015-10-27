@@ -155,9 +155,9 @@ func IndexNode(ctx context.Context, t table.Inverted, n *srvpb.Node) error {
 		}
 	}
 
-	for _, f := range n.Fact {
-		if len(f.Value) <= MaxIndexedFactValueSize {
-			if err := t.Put(ctx, key, factVal(f.Name, f.Value)); err != nil {
+	for fact, value := range n.Facts {
+		if len(value) <= MaxIndexedFactValueSize {
+			if err := t.Put(ctx, key, factVal(fact, value)); err != nil {
 				return err
 			}
 		}

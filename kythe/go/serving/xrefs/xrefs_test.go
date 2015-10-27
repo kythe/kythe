@@ -42,127 +42,130 @@ import (
 
 var (
 	ctx = context.Background()
-	tbl = &testTable{
-		Nodes: []*srvpb.Node{
-			{
-				Ticket: "kythe://someCorpus?lang=otpl#signature",
-				Fact:   makeFactList("/kythe/node/kind", "testNode"),
-			}, {
-				Ticket: "kythe://someCorpus#aTicketSig",
-				Fact:   makeFactList("/kythe/node/kind", "testNode"),
-			}, {
-				Ticket: "kythe://someCorpus?lang=otpl#something",
-				Fact: makeFactList(
-					"/kythe/node/kind", "name",
-					"/some/other/fact", "value",
-				),
-			}, {
-				Ticket: "kythe://someCorpus?lang=otpl#sig2",
-				Fact:   makeFactList("/kythe/node/kind", "name"),
-			}, {
-				Ticket: "kythe://someCorpus?lang=otpl#sig3",
-				Fact:   makeFactList("/kythe/node/kind", "name"),
-			}, {
-				Ticket: "kythe://someCorpus?lang=otpl#sig4",
-				Fact:   makeFactList("/kythe/node/kind", "name"),
-			}, {
-				Ticket: "kythe://someCorpus?lang=otpl?path=/some/valid/path#a83md71",
-				Fact: makeFactList(
-					"/kythe/node/kind", "file",
-					"/kythe/text", "; some file content here\nfinal line\n",
-					"/kythe/text/encoding", "utf-8",
-				),
-			}, {
-				Ticket: "kythe://c?lang=otpl?path=/a/path#6-9",
-				Fact: makeFactList(
-					"/kythe/node/kind", "anchor",
-					"/kythe/loc/start", "6",
-					"/kythe/loc/end", "9",
-				),
-			}, {
-				Ticket: "kythe://c?lang=otpl?path=/a/path#27-33",
-				Fact: makeFactList(
-					"/kythe/node/kind", "anchor",
-					"/kythe/loc/start", "27",
-					"/kythe/loc/end", "33",
-				),
-			}, {
-				Ticket: "kythe://c?lang=otpl?path=/a/path#map",
-				Fact:   makeFactList("/kythe/node/kind", "function"),
-			}, {
-				Ticket: "kythe://core?lang=otpl#empty?",
-				Fact:   makeFactList("/kythe/node/kind", "function"),
-			}, {
-				Ticket: "kythe://c?lang=otpl?path=/a/path#51-55",
-				Fact: makeFactList(
-					"/kythe/node/kind", "anchor",
-					"/kythe/loc/start", "51",
-					"/kythe/loc/end", "55",
-				),
-			}, {
-				Ticket: "kythe://core?lang=otpl#cons",
-				Fact: makeFactList(
-					"/kythe/node/kind", "function",
-					// Canary to ensure we don't patch anchor facts in non-anchor nodes
-					"/kythe/loc/start", "51",
-				),
-			}, {
-				Ticket: "kythe://someCorpus?path=some/path#aFileNode",
-				Fact: makeFactList(
-					"/kythe/node/kind", "file",
-					"/kythe/text/encoding", "utf-8",
-					"/kythe/text", "some random text\nhere and  \n  there\nsome random text\nhere and  \n  there\n",
-				),
-			}, {
-				Ticket: "kythe://someCorpus?path=some/utf16/file#utf16FTW",
-				Fact: []*srvpb.Node_Fact{
-					{Name: "/kythe/text/encoding", Value: []byte("utf-16le")},
-					{Name: "/kythe/node/kind", Value: []byte("file")},
-					{Name: "/kythe/text", Value: encodeText(utf16LE, "これはいくつかのテキストです\n")},
-				},
-			}, {
-				Ticket: "kythe:?path=some/utf16/file#0-4",
-				Fact: makeFactList(
-					"/kythe/node/kind", "anchor",
-					"/kythe/loc/start", "0",
-					"/kythe/loc/end", "4",
-				),
+
+	nodes = []*srvpb.Node{
+		{
+			Ticket: "kythe://someCorpus?lang=otpl#signature",
+			Facts:  makeFactMap("/kythe/node/kind", "testNode"),
+		}, {
+			Ticket: "kythe://someCorpus#aTicketSig",
+			Facts:  makeFactMap("/kythe/node/kind", "testNode"),
+		}, {
+			Ticket: "kythe://someCorpus?lang=otpl#something",
+			Facts: makeFactMap(
+				"/kythe/node/kind", "name",
+				"/some/other/fact", "value",
+			),
+		}, {
+			Ticket: "kythe://someCorpus?lang=otpl#sig2",
+			Facts:  makeFactMap("/kythe/node/kind", "name"),
+		}, {
+			Ticket: "kythe://someCorpus?lang=otpl#sig3",
+			Facts:  makeFactMap("/kythe/node/kind", "name"),
+		}, {
+			Ticket: "kythe://someCorpus?lang=otpl#sig4",
+			Facts:  makeFactMap("/kythe/node/kind", "name"),
+		}, {
+			Ticket: "kythe://someCorpus?lang=otpl?path=/some/valid/path#a83md71",
+			Facts: makeFactMap(
+				"/kythe/node/kind", "file",
+				"/kythe/text", "; some file content here\nfinal line\n",
+				"/kythe/text/encoding", "utf-8",
+			),
+		}, {
+			Ticket: "kythe://c?lang=otpl?path=/a/path#6-9",
+			Facts: makeFactMap(
+				"/kythe/node/kind", "anchor",
+				"/kythe/loc/start", "6",
+				"/kythe/loc/end", "9",
+			),
+		}, {
+			Ticket: "kythe://c?lang=otpl?path=/a/path#27-33",
+			Facts: makeFactMap(
+				"/kythe/node/kind", "anchor",
+				"/kythe/loc/start", "27",
+				"/kythe/loc/end", "33",
+			),
+		}, {
+			Ticket: "kythe://c?lang=otpl?path=/a/path#map",
+			Facts:  makeFactMap("/kythe/node/kind", "function"),
+		}, {
+			Ticket: "kythe://core?lang=otpl#empty?",
+			Facts:  makeFactMap("/kythe/node/kind", "function"),
+		}, {
+			Ticket: "kythe://c?lang=otpl?path=/a/path#51-55",
+			Facts: makeFactMap(
+				"/kythe/node/kind", "anchor",
+				"/kythe/loc/start", "51",
+				"/kythe/loc/end", "55",
+			),
+		}, {
+			Ticket: "kythe://core?lang=otpl#cons",
+			Facts: makeFactMap(
+				"/kythe/node/kind", "function",
+				// Canary to ensure we don't patch anchor facts in non-anchor nodes
+				"/kythe/loc/start", "51",
+			),
+		}, {
+			Ticket: "kythe://someCorpus?path=some/path#aFileNode",
+			Facts: makeFactMap(
+				"/kythe/node/kind", "file",
+				"/kythe/text/encoding", "utf-8",
+				"/kythe/text", "some random text\nhere and  \n  there\nsome random text\nhere and  \n  there\n",
+			),
+		}, {
+			Ticket: "kythe://someCorpus?path=some/utf16/file#utf16FTW",
+			Facts: map[string][]byte{
+				"/kythe/text/encoding": []byte("utf-16le"),
+				"/kythe/node/kind":     []byte("file"),
+				"/kythe/text":          encodeText(utf16LE, "これはいくつかのテキストです\n"),
 			},
+		}, {
+			Ticket: "kythe:?path=some/utf16/file#0-4",
+			Facts: makeFactMap(
+				"/kythe/node/kind", "anchor",
+				"/kythe/loc/start", "0",
+				"/kythe/loc/end", "4",
+			),
 		},
+	}
+
+	tbl = &testTable{
+		Nodes: nodes,
 		EdgeSets: []*srvpb.PagedEdgeSet{
 			{
 				TotalEdges: 3,
 				EdgeSet: &srvpb.EdgeSet{
-					SourceTicket: "kythe://someCorpus?lang=otpl#something",
+					Source: getNode("kythe://someCorpus?lang=otpl#something"),
 					Group: []*srvpb.EdgeSet_Group{
 						{
 							Kind: "someEdgeKind",
-							TargetTicket: []string{
+							Target: getNodes(
 								"kythe://someCorpus#aTicketSig",
-							},
+							),
 						},
 						{
 							Kind: "anotherEdge",
-							TargetTicket: []string{
+							Target: getNodes(
 								"kythe://someCorpus#aTicketSig",
 								"kythe://someCorpus?lang=otpl#signature",
-							},
+							),
 						},
 					},
 				},
 			}, {
 				TotalEdges: 6,
 				EdgeSet: &srvpb.EdgeSet{
-					SourceTicket: "kythe://someCorpus?lang=otpl#signature",
+					Source: getNode("kythe://someCorpus?lang=otpl#signature"),
 					Group: []*srvpb.EdgeSet_Group{{
 						Kind: "%/kythe/edge/ref",
-						TargetTicket: []string{
+						Target: getNodes(
 							"kythe://c?lang=otpl?path=/a/path#51-55",
 							"kythe:?path=some/utf16/file#0-4",
-						},
+						),
 					}, {
-						Kind:         "%/kythe/edge/defines/binding",
-						TargetTicket: []string{"kythe://c?lang=otpl?path=/a/path#27-33"},
+						Kind:   "%/kythe/edge/defines/binding",
+						Target: getNodes("kythe://c?lang=otpl?path=/a/path#27-33"),
 					}},
 				},
 				PageIndex: []*srvpb.PageIndex{{
@@ -177,46 +180,46 @@ var (
 			}, {
 				TotalEdges: 2,
 				EdgeSet: &srvpb.EdgeSet{
-					SourceTicket: "kythe:?path=some/utf16/file#0-4",
+					Source: getNode("kythe:?path=some/utf16/file#0-4"),
 					Group: []*srvpb.EdgeSet_Group{{
-						Kind:         "/kythe/edge/ref",
-						TargetTicket: []string{"kythe://someCorpus?lang=otpl#signature"},
+						Kind:   "/kythe/edge/ref",
+						Target: getNodes("kythe://someCorpus?lang=otpl#signature"),
 					}, {
-						Kind:         "/kythe/edge/childof",
-						TargetTicket: []string{"kythe://someCorpus?path=some/utf16/file#utf16FTW"},
+						Kind:   "/kythe/edge/childof",
+						Target: getNodes("kythe://someCorpus?path=some/utf16/file#utf16FTW"),
 					}},
 				},
 			}, {
 				TotalEdges: 1,
 				EdgeSet: &srvpb.EdgeSet{
-					SourceTicket: "kythe://someCorpus?path=some/utf16/file#utf16FTW",
+					Source: getNode("kythe://someCorpus?path=some/utf16/file#utf16FTW"),
 					Group: []*srvpb.EdgeSet_Group{{
-						Kind:         "%/kythe/edge/childof",
-						TargetTicket: []string{"kythe:?path=some/utf16/file#0-4"},
+						Kind:   "%/kythe/edge/childof",
+						Target: getNodes("kythe:?path=some/utf16/file#0-4"),
 					}},
 				},
 			}, {
 				TotalEdges: 2,
 				EdgeSet: &srvpb.EdgeSet{
-					SourceTicket: "kythe://c?lang=otpl?path=/a/path#51-55",
+					Source: getNode("kythe://c?lang=otpl?path=/a/path#51-55"),
 					Group: []*srvpb.EdgeSet_Group{{
-						Kind:         "/kythe/edge/ref",
-						TargetTicket: []string{"kythe://someCorpus?lang=otpl#signature"},
+						Kind:   "/kythe/edge/ref",
+						Target: getNodes("kythe://someCorpus?lang=otpl#signature"),
 					}, {
-						Kind:         "/kythe/edge/childof",
-						TargetTicket: []string{"kythe://someCorpus?path=some/path#aFileNode"},
+						Kind:   "/kythe/edge/childof",
+						Target: getNodes("kythe://someCorpus?path=some/path#aFileNode"),
 					}},
 				},
 			}, {
 				TotalEdges: 2,
 				EdgeSet: &srvpb.EdgeSet{
-					SourceTicket: "kythe://c?lang=otpl?path=/a/path#27-33",
+					Source: getNode("kythe://c?lang=otpl?path=/a/path#27-33"),
 					Group: []*srvpb.EdgeSet_Group{{
-						Kind:         "/kythe/edge/defines/binding",
-						TargetTicket: []string{"kythe://someCorpus?lang=otpl#signature"},
+						Kind:   "/kythe/edge/defines/binding",
+						Target: getNodes("kythe://someCorpus?lang=otpl#signature"),
 					}, {
-						Kind:         "/kythe/edge/childof",
-						TargetTicket: []string{"kythe://someCorpus?path=some/path#aFileNode"},
+						Kind:   "/kythe/edge/childof",
+						Target: getNodes("kythe://someCorpus?path=some/path#aFileNode"),
 					}},
 				},
 			},
@@ -230,19 +233,19 @@ var (
 				SourceTicket: "kythe://someCorpus?lang=otpl#signature",
 				EdgesGroup: &srvpb.EdgeSet_Group{
 					Kind: "someEdgeKind",
-					TargetTicket: []string{
+					Target: getNodes(
 						"kythe://someCorpus?lang=otpl#sig3",
 						"kythe://someCorpus?lang=otpl#sig4",
-					},
+					),
 				},
 			}, {
 				PageKey:      "secondPage",
 				SourceTicket: "kythe://someCorpus?lang=otpl#signature",
 				EdgesGroup: &srvpb.EdgeSet_Group{
 					Kind: "anotherEdge",
-					TargetTicket: []string{
+					Target: getNodes(
 						"kythe://someCorpus?lang=otpl#sig2",
-					},
+					),
 				},
 			},
 		},
@@ -263,8 +266,8 @@ var (
 							StartOffset: 6,
 							EndOffset:   9,
 						},
-						Kind:         "/kythe/defines",
-						TargetTicket: "kythe://c?lang=otpl?path=/a/path#map",
+						Kind:   "/kythe/defines",
+						Target: getNode("kythe://c?lang=otpl?path=/a/path#map"),
 					},
 					{
 						Anchor: &srvpb.FileDecorations_Decoration_Anchor{
@@ -272,8 +275,8 @@ var (
 							StartOffset: 27,
 							EndOffset:   33,
 						},
-						Kind:         "/kythe/refs",
-						TargetTicket: "kythe://core?lang=otpl#empty?",
+						Kind:   "/kythe/refs",
+						Target: getNode("kythe://core?lang=otpl#empty?"),
 					},
 					{
 						Anchor: &srvpb.FileDecorations_Decoration_Anchor{
@@ -281,14 +284,31 @@ var (
 							StartOffset: 51,
 							EndOffset:   55,
 						},
-						Kind:         "/kythe/refs",
-						TargetTicket: "kythe://core?lang=otpl#cons",
+						Kind:   "/kythe/refs",
+						Target: getNode("kythe://core?lang=otpl#cons"),
 					},
 				},
 			},
 		},
 	}
 )
+
+func getNodes(tickets ...string) []*srvpb.Node {
+	ns := make([]*srvpb.Node, len(tickets))
+	for i, t := range tickets {
+		ns[i] = getNode(t)
+	}
+	return ns
+}
+
+func getNode(t string) *srvpb.Node {
+	for _, n := range nodes {
+		if n.Ticket == t {
+			return n
+		}
+	}
+	return &srvpb.Node{Ticket: t}
+}
 
 var utf16LE = unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM)
 
@@ -352,10 +372,10 @@ func TestEdgesSinglePage(t *testing.T) {
 
 		EdgeSet *srvpb.PagedEdgeSet
 	}{{
-		Tickets: []string{tbl.EdgeSets[0].EdgeSet.SourceTicket},
+		Tickets: []string{tbl.EdgeSets[0].EdgeSet.Source.Ticket},
 		EdgeSet: tbl.EdgeSets[0],
 	}, {
-		Tickets: []string{tbl.EdgeSets[0].EdgeSet.SourceTicket},
+		Tickets: []string{tbl.EdgeSets[0].EdgeSet.Source.Ticket},
 		Kinds:   []string{"someEdgeKind", "anotherEdge"},
 		EdgeSet: tbl.EdgeSets[0],
 	}}
@@ -394,7 +414,7 @@ func TestEdgesMultiPage(t *testing.T) {
 		EdgeSet *srvpb.PagedEdgeSet
 		Pages   []*srvpb.EdgePage
 	}{{
-		Tickets: []string{tbl.EdgeSets[1].EdgeSet.SourceTicket},
+		Tickets: []string{tbl.EdgeSets[1].EdgeSet.Source.Ticket},
 		EdgeSet: tbl.EdgeSets[1],
 		Pages:   []*srvpb.EdgePage{tbl.EdgePages[1], tbl.EdgePages[2]},
 	}}
@@ -716,23 +736,22 @@ func (s byOffset) Less(i, j int) bool { return s[i].Start.ByteOffset < s[j].Star
 
 func nodeInfo(n *srvpb.Node) *xpb.NodeInfo {
 	ni := &xpb.NodeInfo{Ticket: n.Ticket}
-	for _, fact := range n.Fact {
-		ni.Fact = append(ni.Fact, &xpb.Fact{Name: fact.Name, Value: fact.Value})
+	for fact, value := range n.Facts {
+		ni.Fact = append(ni.Fact, &xpb.Fact{Name: fact, Value: value})
 	}
+	sort.Sort(xrefs.ByName(ni.Fact))
 	return ni
 }
 
-func makeFactList(keyVals ...string) (facts []*srvpb.Node_Fact) {
+func makeFactMap(keyVals ...string) map[string][]byte {
 	if len(keyVals)%2 != 0 {
-		panic("makeFactList: odd number of key values")
+		panic("makeFactMap: odd number of key values")
 	}
+	facts := make(map[string][]byte, len(keyVals)/2)
 	for i := 0; i < len(keyVals); i += 2 {
-		facts = append(facts, &srvpb.Node_Fact{
-			Name:  keyVals[i],
-			Value: []byte(keyVals[i+1]),
-		})
+		facts[keyVals[i]] = []byte(keyVals[i+1])
 	}
-	return
+	return facts
 }
 
 func mapFacts(n *xpb.NodeInfo, facts map[string]string) {
@@ -747,13 +766,13 @@ func edgeSet(kinds []string, pes *srvpb.PagedEdgeSet, pages []*srvpb.EdgePage) *
 	set := stringset.New(kinds...)
 
 	es := &xpb.EdgeSet{
-		SourceTicket: pes.EdgeSet.SourceTicket,
+		SourceTicket: pes.EdgeSet.Source.Ticket,
 	}
 	for _, g := range pes.EdgeSet.Group {
 		if set.Contains(g.Kind) || len(set) == 0 {
 			es.Group = append(es.Group, &xpb.EdgeSet_Group{
 				Kind:         g.Kind,
-				TargetTicket: g.TargetTicket,
+				TargetTicket: nodeTickets(g.Target),
 			})
 		}
 	}
@@ -762,7 +781,7 @@ func edgeSet(kinds []string, pes *srvpb.PagedEdgeSet, pages []*srvpb.EdgePage) *
 		if set.Contains(g.Kind) || len(set) == 0 {
 			es.Group = append(es.Group, &xpb.EdgeSet_Group{
 				Kind:         g.Kind,
-				TargetTicket: g.TargetTicket,
+				TargetTicket: nodeTickets(g.Target),
 			})
 		}
 	}
@@ -789,7 +808,7 @@ func (tbl *testTable) Construct(t *testing.T) xrefs.Service {
 		testutil.FatalOnErrT(t, "Error writing node: %v", p.Put(ctx, NodeKey(mustFix(t, n.Ticket)), n))
 	}
 	for _, es := range tbl.EdgeSets {
-		testutil.FatalOnErrT(t, "Error writing edge set: %v", p.Put(ctx, EdgeSetKey(mustFix(t, es.EdgeSet.SourceTicket)), es))
+		testutil.FatalOnErrT(t, "Error writing edge set: %v", p.Put(ctx, EdgeSetKey(mustFix(t, es.EdgeSet.Source.Ticket)), es))
 	}
 	for _, ep := range tbl.EdgePages {
 		testutil.FatalOnErrT(t, "Error writing edge page: %v", p.Put(ctx, []byte(edgePagesTablePrefix+ep.PageKey), ep))

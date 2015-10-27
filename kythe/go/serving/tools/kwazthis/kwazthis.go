@@ -206,7 +206,6 @@ func main() {
 		Filter: []string{
 			schema.NodeKindFact,
 			schema.SubkindFact,
-			schema.AnchorLocFilter, // TODO(schroederc): remove once backwards-compatibility fix below is removed
 		},
 	})
 	if err != nil {
@@ -222,13 +221,7 @@ func main() {
 
 	en := json.NewEncoder(os.Stdout)
 	for _, ref := range decor.Reference {
-		var start, end int
-		if ref.AnchorStart == nil || ref.AnchorEnd == nil {
-			// TODO(schroederc): remove this backwards-compatibility fix
-			start, end = parseAnchorSpan(nodes[ref.SourceTicket])
-		} else {
-			start, end = int(ref.AnchorStart.ByteOffset), int(ref.AnchorEnd.ByteOffset)
-		}
+		start, end := int(ref.AnchorStart.ByteOffset), int(ref.AnchorEnd.ByteOffset)
 
 		if start <= point && point < end {
 			var r reference

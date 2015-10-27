@@ -37,18 +37,6 @@ import (
 	spb "kythe.io/kythe/proto/storage_proto"
 )
 
-// NodeFact returns a Node_Fact from the given Entry.  If e == nil or e is not a
-// node fact, nil is returned.
-func NodeFact(e *spb.Entry) *srvpb.Node_Fact {
-	if e == nil || graphstore.IsEdge(e) {
-		return nil
-	}
-	return &srvpb.Node_Fact{
-		Name:  e.FactName,
-		Value: e.FactValue,
-	}
-}
-
 // Source is a collection of facts and edges with a common source.
 type Source struct {
 	Ticket string
@@ -170,9 +158,10 @@ func DecorationFragments(src *Source) []*srvpb.FileDecorations {
 		for _, kind := range kinds {
 			for _, tgt := range src.Edges[kind] {
 				decor = append(decor, &srvpb.FileDecorations_Decoration{
-					Anchor:       anchor,
-					Kind:         kind,
-					TargetTicket: tgt,
+					Anchor: anchor,
+					Kind:   kind,
+					// TODO(schroederc): populate target node facts
+					Target: &srvpb.Node{Ticket: tgt},
 				})
 			}
 		}
@@ -206,7 +195,7 @@ func (s ByOffset) Less(i, j int) bool {
 		return false
 	} else if s[i].Anchor.EndOffset == s[j].Anchor.EndOffset {
 		if s[i].Kind == s[j].Kind {
-			return s[i].TargetTicket < s[j].TargetTicket
+			return s[i].Target.Ticket < s[j].Target.Ticket
 		}
 		return s[i].Kind < s[j].Kind
 	}
@@ -241,8 +230,8 @@ type EdgeSetBuilder struct {
 // AddGroup adds the given EdgeSet_Group to the builder, possibly emitting a new
 // PagedEdgeSet and/or EdgePage.  See EdgeSetBuilder's documentation for the
 // assumed order of the groups.
-func (b *EdgeSetBuilder) AddGroup(ctx context.Context, src string, eg *srvpb.EdgeSet_Group) error {
-	if b.curPES != nil && b.curPES.EdgeSet.SourceTicket != src {
+func (b *EdgeSetBuilder) AddGroup(ctx context.Context, src *srvpb.Node, eg *srvpb.EdgeSet_Group) error {
+	if b.curPES != nil && b.curPES.EdgeSet.Source.Ticket != src.Ticket {
 		if err := b.Flush(ctx); err != nil {
 			return fmt.Errorf("error flushing previous PagedEdgeSet: %v", err)
 		}
@@ -251,9 +240,7 @@ func (b *EdgeSetBuilder) AddGroup(ctx context.Context, src string, eg *srvpb.Edg
 	// Setup b.curPES and b.curEG; ensuring both are non-nil
 	if b.curPES == nil {
 		b.curPES = &srvpb.PagedEdgeSet{
-			EdgeSet: &srvpb.EdgeSet{
-				SourceTicket: src,
-			},
+			EdgeSet: &srvpb.EdgeSet{Source: src},
 		}
 		b.curEG = eg
 	} else if b.curEG == nil {
@@ -262,24 +249,24 @@ func (b *EdgeSetBuilder) AddGroup(ctx context.Context, src string, eg *srvpb.Edg
 		heap.Push(&b.groups, b.curEG)
 		b.curEG = eg
 	} else {
-		b.curEG.TargetTicket = append(b.curEG.TargetTicket, eg.TargetTicket...)
+		b.curEG.Target = append(b.curEG.Target, eg.Target...)
 	}
 	// Update edge counters
-	b.resident += len(eg.TargetTicket)
-	b.curPES.TotalEdges += int32(len(eg.TargetTicket))
+	b.resident += len(eg.Target)
+	b.curPES.TotalEdges += int32(len(eg.Target))
 
 	// Handling creation of EdgePages, when # of resident edges passes config value
 	for b.MaxEdgePageSize > 0 && b.resident > b.MaxEdgePageSize {
 		var eviction *srvpb.EdgeSet_Group
 		if b.curEG != nil {
-			if len(b.curEG.TargetTicket) > b.MaxEdgePageSize {
+			if len(b.curEG.Target) > b.MaxEdgePageSize {
 				// Split the large page; evict page exactly sized b.MaxEdgePageSize
 				eviction = &srvpb.EdgeSet_Group{
-					Kind:         b.curEG.Kind,
-					TargetTicket: b.curEG.TargetTicket[:b.MaxEdgePageSize],
+					Kind:   b.curEG.Kind,
+					Target: b.curEG.Target[:b.MaxEdgePageSize],
 				}
-				b.curEG.TargetTicket = b.curEG.TargetTicket[b.MaxEdgePageSize:]
-			} else if len(b.groups) == 0 || len(b.curEG.TargetTicket) > len(b.groups[0].TargetTicket) {
+				b.curEG.Target = b.curEG.Target[b.MaxEdgePageSize:]
+			} else if len(b.groups) == 0 || len(b.curEG.Target) > len(b.groups[0].Target) {
 				// Evict b.curEG, it's larger than any other group we have
 				eviction, b.curEG = b.curEG, nil
 			}
@@ -289,13 +276,13 @@ func (b *EdgeSetBuilder) AddGroup(ctx context.Context, src string, eg *srvpb.Edg
 			eviction = heap.Pop(&b.groups).(*srvpb.EdgeSet_Group)
 		}
 
-		key := newPageKey(src, len(b.curPES.PageIndex))
-		count := len(eviction.TargetTicket)
+		key := newPageKey(src.Ticket, len(b.curPES.PageIndex))
+		count := len(eviction.Target)
 
 		// Output the EdgePage and add it to the page indices
 		if err := b.OutputPage(ctx, &srvpb.EdgePage{
 			PageKey:      key,
-			SourceTicket: src,
+			SourceTicket: src.Ticket,
 			EdgesGroup:   eviction,
 		}); err != nil {
 			return fmt.Errorf("error emitting EdgePage: %v", err)
@@ -391,7 +378,7 @@ type byEdgeCount []*srvpb.EdgeSet_Group
 
 // Implement the sort.Interface
 func (s byEdgeCount) Len() int           { return len(s) }
-func (s byEdgeCount) Less(i, j int) bool { return len(s[i].TargetTicket) > len(s[j].TargetTicket) }
+func (s byEdgeCount) Less(i, j int) bool { return len(s[i].Target) > len(s[j].Target) }
 func (s byEdgeCount) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 
 // Implement the heap.Interface

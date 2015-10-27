@@ -3,6 +3,7 @@
 ## Upcoming release
 
 Notable changes:
+ - Denormalize the serving table format
  - Use proto3 JSON mapping for web requests: https://developers.google.com/protocol-buffers/docs/proto3#json
  - Java indexer: report error when indexing from compilation's source root
 

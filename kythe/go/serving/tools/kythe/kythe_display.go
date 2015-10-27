@@ -133,48 +133,21 @@ func displaySource(decor *xpb.DecorationsReply) error {
 	return err
 }
 
-func displayDecorations(text []byte, decor *xpb.DecorationsReply) error {
+func displayDecorations(decor *xpb.DecorationsReply) error {
 	if *displayJSON {
 		return jsonMarshaler.Marshal(out, decor)
 	}
 
 	nodes := xrefs.NodesMap(decor.Node)
 
-	if text == nil {
-		text = decor.SourceText
-	}
-	norm := xrefs.NewNormalizer(text)
-
 	for _, ref := range decor.Reference {
 		nodeKind := factValue(nodes, ref.TargetTicket, schema.NodeKindFact, "UNKNOWN")
 		subkind := factValue(nodes, ref.TargetTicket, schema.SubkindFact, "")
 
-		var loc *xpb.Location
-		if ref.AnchorStart != nil && ref.AnchorEnd != nil {
-			loc = &xpb.Location{
-				Kind:  xpb.Location_SPAN,
-				Start: ref.AnchorStart,
-				End:   ref.AnchorEnd,
-			}
-		} else {
-			// TODO(schroederc): remove this backwards-compatibility branch
-
-			startOffset := factValue(nodes, ref.SourceTicket, schema.AnchorStartFact, "_")
-			endOffset := factValue(nodes, ref.SourceTicket, schema.AnchorEndFact, "_")
-
-			// ignore errors (locations will be 0)
-			s, _ := strconv.Atoi(startOffset)
-			e, _ := strconv.Atoi(endOffset)
-
-			var err error
-			loc, err = norm.Location(&xpb.Location{
-				Kind:  xpb.Location_SPAN,
-				Start: &xpb.Location_Point{ByteOffset: int32(s)},
-				End:   &xpb.Location_Point{ByteOffset: int32(e)},
-			})
-			if err != nil {
-				return fmt.Errorf("error normalizing reference location for anchor %q: %v", ref.SourceTicket, err)
-			}
+		loc := &xpb.Location{
+			Kind:  xpb.Location_SPAN,
+			Start: ref.AnchorStart,
+			End:   ref.AnchorEnd,
 		}
 
 		r := strings.NewReplacer(

@@ -220,12 +220,12 @@ func node(v *spb.VName, facts ...string) *srvpb.Node {
 	if len(facts)%2 != 0 {
 		panic("odd number of facts")
 	}
-	n := &srvpb.Node{Ticket: kytheuri.ToString(v)}
+	n := &srvpb.Node{
+		Ticket: kytheuri.ToString(v),
+		Facts:  make(map[string][]byte, len(facts)/2),
+	}
 	for i := 0; i < len(facts); i += 2 {
-		n.Fact = append(n.Fact, &srvpb.Node_Fact{
-			Name:  facts[i],
-			Value: []byte(facts[i+1]),
-		})
+		n.Facts[facts[i]] = []byte(facts[i+1])
 	}
 	return n
 }

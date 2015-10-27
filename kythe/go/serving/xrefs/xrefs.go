@@ -29,6 +29,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -267,12 +268,13 @@ func (t *tableImpl) Nodes(ctx context.Context, req *xpb.NodesRequest) (*xpb.Node
 			return nil, r.Err
 		}
 		ni := &xpb.NodeInfo{Ticket: r.Node.Ticket}
-		for _, fact := range r.Node.Fact {
-			if len(patterns) == 0 || xrefs.MatchesAny(fact.Name, patterns) {
-				ni.Fact = append(ni.Fact, &xpb.Fact{Name: fact.Name, Value: fact.Value})
+		for fact, value := range r.Node.Facts {
+			if len(patterns) == 0 || xrefs.MatchesAny(fact, patterns) {
+				ni.Fact = append(ni.Fact, &xpb.Fact{Name: fact, Value: value})
 			}
 		}
 		if len(ni.Fact) > 0 {
+			sort.Sort(xrefs.ByName(ni.Fact))
 			reply.Node = append(reply.Node, ni)
 		}
 	}
@@ -386,9 +388,9 @@ func (t *tableImpl) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.Edge
 		}
 
 		if len(groups) > 0 {
-			nodeTickets.Add(pes.EdgeSet.SourceTicket)
+			nodeTickets.Add(pes.EdgeSet.Source.Ticket)
 			reply.EdgeSet = append(reply.EdgeSet, &xpb.EdgeSet{
-				SourceTicket: pes.EdgeSet.SourceTicket,
+				SourceTicket: pes.EdgeSet.Source.Ticket,
 				Group:        groups,
 			})
 		}
@@ -404,6 +406,7 @@ func (t *tableImpl) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.Edge
 	}
 
 	// Only request Nodes when there are fact filters given.
+	// TODO(schroederc): use facts from serving EdgeSets; don't call Nodes
 	if len(req.Filter) > 0 && len(nodeTickets) > 0 {
 		nReply, err := t.Nodes(ctx, &xpb.NodesRequest{
 			Ticket: nodeTickets.Slice(),
@@ -439,9 +442,9 @@ func (s *filterStats) skipPage(idx *srvpb.PageIndex) bool {
 }
 
 func (s *filterStats) filter(g *srvpb.EdgeSet_Group) *xpb.EdgeSet_Group {
-	targets := g.TargetTicket
-	if len(g.TargetTicket) <= s.skip {
-		s.skip -= len(g.TargetTicket)
+	targets := g.Target
+	if len(targets) <= s.skip {
+		s.skip -= len(targets)
 		return nil
 	} else if s.skip > 0 {
 		targets = targets[s.skip:]
@@ -453,10 +456,20 @@ func (s *filterStats) filter(g *srvpb.EdgeSet_Group) *xpb.EdgeSet_Group {
 	}
 
 	s.total += len(targets)
+
+	// TODO(schroederc): return target facts
 	return &xpb.EdgeSet_Group{
 		Kind:         g.Kind,
-		TargetTicket: targets,
+		TargetTicket: nodeTickets(targets),
 	}
+}
+
+func nodeTickets(ns []*srvpb.Node) []string {
+	tickets := make([]string, len(ns))
+	for i, n := range ns {
+		tickets[i] = n.Ticket
+	}
+	return tickets
 }
 
 // Decorations implements part of the xrefs Service interface.
@@ -534,13 +547,14 @@ func (t *tableImpl) Decorations(ctx context.Context, req *xpb.DecorationsRequest
 						offsetMapping[d.Anchor.Ticket] = span{start, end}
 					}
 					reply.Reference = append(reply.Reference, decorationToReference(norm, d))
-					nodeTickets.Add(d.Anchor.Ticket)
-					nodeTickets.Add(d.TargetTicket)
+					nodeTickets.Add(d.Anchor.Ticket) // TODO(schroederc): don't return anchor nodes
+					nodeTickets.Add(d.Target.Ticket)
 				}
 			}
 		}
 
 		// Only request Nodes when there are fact filters given.
+		// TODO(schroederc): use facts from serving data; don't call Nodes
 		if len(req.Filter) > 0 && len(nodeTickets) > 0 {
 			// Retrieve facts for all nodes referenced in the file decorations.
 			nodesReply, err := t.Nodes(ctx, &xpb.NodesRequest{
@@ -578,7 +592,7 @@ type span struct{ start, end int32 }
 func decorationToReference(norm *xrefs.Normalizer, d *srvpb.FileDecorations_Decoration) *xpb.DecorationsReply_Reference {
 	return &xpb.DecorationsReply_Reference{
 		SourceTicket: d.Anchor.Ticket,
-		TargetTicket: d.TargetTicket,
+		TargetTicket: d.Target.Ticket,
 		Kind:         d.Kind,
 		AnchorStart:  norm.ByteOffset(d.Anchor.StartOffset),
 		AnchorEnd:    norm.ByteOffset(d.Anchor.EndOffset),

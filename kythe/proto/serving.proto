@@ -20,13 +20,17 @@ package kythe.proto;
 
 // A derivative of xref.NodeInfo for serving.
 message Node {
-  message Fact {
-    string name = 1;
-    bytes value = 2;
-  }
-
   string ticket = 1;
-  repeated Fact fact = 2;
+  map<string, bytes> facts = 2;
+}
+
+// Full representation of a Kythe edge; useful during post-processing.
+message Edge {
+  Node source = 1;
+  string kind = 2;
+  Node target = 3;
+
+  map<string, bytes> facts = 4;
 }
 
 // An EdgeSet represents a collection of edges from a single node.  The edges
@@ -40,11 +44,11 @@ message Node {
 message EdgeSet {
   message Group {
     string kind = 1;
-    repeated string target_ticket = 2;
+    repeated Node target = 2;
   }
 
-  // The ticket of the source node for all the edges in the edge set.
-  string source_ticket = 1;
+  // The source node for all the edges in the edge set.
+  Node source = 1;
 
   // Each group is a collection of outbound edges from source node sharing a
   // given kind.  In a given EdgeSet, the server will not send more than one
@@ -124,7 +128,7 @@ message FileDecorations {
     }
 
     Anchor anchor = 1;
-    string target_ticket = 2;
+    Node target = 2;
     string kind = 3;
   }
 

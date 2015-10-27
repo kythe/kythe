@@ -329,7 +329,6 @@ var (
 				Filter: []string{
 					schema.NodeKindFact,
 					schema.SubkindFact,
-					schema.AnchorLocFilter, // TODO(schroederc): remove this backwards-compatibility fix
 				},
 			}
 			if dirtyFile != "" {
@@ -355,8 +354,6 @@ var (
 				req.Location.Kind = xpb.Location_SPAN
 				req.Location.Start = start
 				req.Location.End = end
-			} else {
-				req.SourceText = true // TODO(schroederc): remove need for this
 			}
 
 			logRequest(req)
@@ -365,38 +362,7 @@ var (
 				return err
 			}
 
-			if !req.SourceText {
-				// We need to grab the full SourceText to normalize each anchor's
-				// location, but when given a --span, we don't receive the full text and
-				// we require a separate Nodes call.
-				// TODO(schroederc): add Locations for each DecorationsReply_Reference
-
-				nodesReq := &xpb.NodesRequest{
-					Ticket: []string{req.Location.Ticket},
-					Filter: []string{schema.TextFact, schema.TextEncodingFact},
-				}
-				logRequest(nodesReq)
-				fileNodeReply, err := xs.Nodes(ctx, nodesReq)
-				if err != nil {
-					return err
-				}
-				for _, n := range fileNodeReply.Node {
-					if n.Ticket != req.Location.Ticket {
-						log.Printf("WARNING: received unrequested node: %q", n.Ticket)
-						continue
-					}
-					for _, f := range n.Fact {
-						switch f.Name {
-						case schema.TextFact:
-							reply.SourceText = f.Value
-						case schema.TextEncodingFact:
-							reply.Encoding = string(f.Value)
-						}
-					}
-				}
-			}
-
-			return displayDecorations(req.DirtyBuffer, reply)
+			return displayDecorations(reply)
 		})
 
 	cmdSearch = newCommand("search", "[--corpus c] [--sig s] [--root r] [--lang l] [--path p] [factName factValue]...",
