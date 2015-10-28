@@ -43,10 +43,11 @@ DEFINE_bool(canonicalize_hashes, false,
 DEFINE_bool(suppress_details, false, "Suppress CU details.");
 
 /// \brief Gives each `hash` a unique, shorter ID based on visitation order.
-static void CanonicalizeHash(std::map<std::string, size_t>* hashes,
-                             std::string* hash) {
+static void CanonicalizeHash(std::map<google::protobuf::string, size_t>* hashes,
+                             google::protobuf::string* hash) {
   auto inserted = hashes->insert(std::make_pair(*hash, hashes->size()));
-  *hash = "hash" + std::to_string(inserted.first->second);
+  *hash =
+      google::protobuf::string("hash" + std::to_string(inserted.first->second));
 }
 
 static void DumpIndexFile(const std::string& path) {
@@ -58,7 +59,7 @@ static void DumpIndexFile(const std::string& path) {
   CodedInputStream coded_input_stream(&gzip_input_stream);
   google::protobuf::uint32 byte_size;
   bool decoded_unit = false;
-  std::map<std::string, size_t> hash_table;
+  std::map<google::protobuf::string, size_t> hash_table;
   while (coded_input_stream.ReadVarint32(&byte_size)) {
     auto limit = coded_input_stream.PushLimit(byte_size);
     if (!decoded_unit) {
