@@ -2,7 +2,6 @@ load("/tools/build_rules/docker", "docker_build")
 
 docker_build(
     name = "docker",
-    src = "Dockerfile",
     data = [
         "kythe.sh",
         "maven_extractor.sh",
@@ -16,9 +15,7 @@ docker_build(
     image_name = "google/kythe",
     tags = ["manual"],
     use_cache = True,
-    deps = [
-        "//kythe/release/base",
-    ],
+    deps = ["//kythe/release/base"],
 )
 
 release_version = "v0.0.15"

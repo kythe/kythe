@@ -1,4 +1,2 @@
-# TODO: https://kythe.io/phabricator/T57
-build --spawn_strategy=standalone
 # TODO: https://kythe.io/phabricator/T65
 build --crosstool_top //tools/cpp:toolchain

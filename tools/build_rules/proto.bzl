@@ -59,7 +59,7 @@ def _genproto_impl(ctx):
         inputs = [srcjar],
         outputs = [ctx.outputs.java_src],
         arguments = [srcjar.path, ctx.outputs.java_src.path],
-        command = "mv $1 $2")
+        command = "cp $1 $2")
     # Fixup the resulting outputs to keep the source-only .jar out of the result.
     outputs += [ctx.outputs.java_src]
     outputs = [e for e in outputs if e != srcjar]

@@ -29,6 +29,7 @@ genrule(
         "mv kythe/web/ui/licenses.txt $(location resources/public/js/licenses.txt)",
     ]),
     heuristic_label_expansion = False,
+    local = 1,
     tags = ["manual"],
     tools = ["//third_party/leiningen:lein"],
 )

@@ -1,14 +1,14 @@
-def extract(ctx, kindex, args, inputs=[], mnemonic=None):
+def extract(ctx, kindex, args, inputs=[], mnemonic=None, mkdir='.'):
   cmd_helper = ctx.command_helper([ctx.attr._extractor], {})
   tools = cmd_helper.resolved_tools
   input_manifests = cmd_helper.runfiles_manifests
   cmd = '\n'.join([
-      "set -e",
+      'set -e',
       'export KYTHE_ROOT_DIRECTORY="$PWD"',
       'export KYTHE_OUTPUT_DIRECTORY="$(dirname ' + kindex.path + ')"',
       'export KYTHE_VNAMES="' + ctx.file.vnames_config.path + '"',
-      'rm -rf "$KYTHE_OUTPUT_DIRECTORY"',
       'mkdir -p "$KYTHE_OUTPUT_DIRECTORY"',
+      'mkdir -p "' + mkdir + '"',
       ctx.executable._extractor.path + " " + ' '.join(args),
       'mv "$KYTHE_OUTPUT_DIRECTORY"/*.kindex ' + kindex.path])
   ctx.action(
@@ -88,7 +88,7 @@ def java_verifier_test_impl(ctx):
       use_default_shell_env = True)
 
   kindex = ctx.new_file(ctx.configuration.genfiles_dir, ctx.label.name + "/compilation.kindex")
-  extract(ctx, kindex, args, inputs=inputs+[jar], mnemonic='JavacExtractor')
+  extract(ctx, kindex, args, inputs=inputs+[jar], mnemonic='JavacExtractor', mkdir=srcs_out)
 
   entries = ctx.new_file(ctx.configuration.bin_dir, ctx.label.name + ".entries")
   index(ctx, kindex, entries, mnemonic='JavaIndexer')
