@@ -32,12 +32,6 @@ package(
 )
 
 package(
-    name = "go-sqlite3",
-    go_build = 1,
-    package = "github.com/mattn/go-sqlite3",
-)
-
-package(
     name = "uuid",
     package = "github.com/pborman/uuid",
 )
