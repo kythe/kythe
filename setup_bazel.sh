@@ -17,6 +17,9 @@
 # Initializes the Bazel workspace.  Uses the GOROOT environmental variable to
 # pick the Go tool and falls back onto "$(go env GOROOT)".
 
+# The current version of Bazel we support is
+# f87a414a6bf50613a2c419e53a96f76154f44ae3
+
 cd "$(dirname "$0")"
 
 if [[ $(uname) == 'Darwin' ]]; then
@@ -31,6 +34,30 @@ if [[ $(uname) == 'Darwin' ]]; then
       echo $2
     fi
   }
+  : ${OPENSSL_HOME:=/usr/local/opt/openssl}
+  : ${UUID_HOME:=/usr/local/opt/ossp-uuid}
+  : ${MEMCACHED_HOME:=/usr/local/opt/libmemcached}
+  if [[ -d "${OPENSSL_HOME}/include" ]]; then
+    ln -fsh "${OPENSSL_HOME}" third_party/openssl
+  else
+    echo 'Could not find OpenSSL.'
+    echo 'Set the OPENSSL_HOME variable and try again.'
+    exit 1
+  fi
+  if [[ -d "${UUID_HOME}/include" ]]; then
+    ln -fsh "${UUID_HOME}" third_party/ossp-uuid
+  else
+    echo 'Could not find ossp-uuid.'
+    echo 'Set the UUID_HOME variable and try again.'
+    exit 1
+  fi
+  if [[ -d "${MEMCACHED_HOME}/include" ]]; then
+    ln -fsh "${MEMCACHED_HOME}" third_party/libmemcached
+  else
+    echo 'Could not find libmemcached.'
+    echo 'Set the MEMCACHED_HOME variable and try again.'
+    exit 1
+  fi
 else
   LNOPTS="-sTf"
 fi

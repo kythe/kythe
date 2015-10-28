@@ -1,17 +1,17 @@
 [
   {
     "directory": "OUT_DIR",
-    "command": "clang++ -c nothing.cc -std=c++11 -Wall -Werror -I. -IBASE_DIR",
+    "command": "clang++ -c nothing.cc -std=c++11 -Wall -Werror -I. -IBASE_DIR -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/usr/include",
     "file": "nothing.cc"
   },
   {
     "directory": "OUT_DIR",
-    "command": "clang++ -c basic.cc -std=c++11 -Wall -Werror -I. -IBASE_DIR",
+    "command": "clang++ -c basic.cc -std=c++11 -Wall -Werror -I. -IBASE_DIR -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/usr/include",
     "file": "basic.cc"
   },
   {
     "directory": "OUT_DIR",
-    "command": "clang++ -c hopeless.cc -std=c++11 -Wall -Werror -I. -IBASE_DIR",
+    "command": "clang++ -c hopeless.cc -std=c++11 -Wall -Werror -I. -IBASE_DIR -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/usr/include",
     "file": "hopeless.cc"
   }
 ]

@@ -594,6 +594,7 @@ cxx_indexer_test(
     srcs = ["function/function_operator_overload_names.cc"],
     ignore_dups = True,
     tags = ["function"],
+    size = "large",
 )
 
 cxx_indexer_test(

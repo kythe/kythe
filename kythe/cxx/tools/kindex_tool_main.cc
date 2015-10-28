@@ -38,7 +38,16 @@
 
 DEFINE_string(assemble, "", "Assemble positional args into output file");
 DEFINE_string(explode, "", "Explode this kindex file into its constituents");
+DEFINE_bool(canonicalize_hashes, false,
+            "Replace transcripts with sequence numbers");
 DEFINE_bool(suppress_details, false, "Suppress CU details.");
+
+/// \brief Gives each `hash` a unique, shorter ID based on visitation order.
+static void CanonicalizeHash(std::map<std::string, size_t>* hashes,
+                             std::string* hash) {
+  auto inserted = hashes->insert(std::make_pair(*hash, hashes->size()));
+  *hash = "hash" + std::to_string(inserted.first->second);
+}
 
 static void DumpIndexFile(const std::string& path) {
   using namespace google::protobuf::io;
@@ -49,6 +58,7 @@ static void DumpIndexFile(const std::string& path) {
   CodedInputStream coded_input_stream(&gzip_input_stream);
   google::protobuf::uint32 byte_size;
   bool decoded_unit = false;
+  std::map<std::string, size_t> hash_table;
   while (coded_input_stream.ReadVarint32(&byte_size)) {
     auto limit = coded_input_stream.PushLimit(byte_size);
     if (!decoded_unit) {
@@ -60,6 +70,20 @@ static void DumpIndexFile(const std::string& path) {
       CHECK_GE(out_fd, 0) << "Couldn't open " << out_path << " for writing.";
       if (FLAGS_suppress_details) {
         unit.clear_details();
+      }
+      if (FLAGS_canonicalize_hashes) {
+        CanonicalizeHash(&hash_table, unit.mutable_entry_context());
+        for (int i = 0; i < unit.required_input_size(); ++i) {
+          auto* input = unit.mutable_required_input(i);
+          for (int r = 0; r < input->context_size(); ++r) {
+            auto* row = input->mutable_context(r);
+            CanonicalizeHash(&hash_table, row->mutable_source_context());
+            for (int c = 0; c < row->column_size(); ++c) {
+              auto* col = row->mutable_column(c);
+              CanonicalizeHash(&hash_table, col->mutable_linked_context());
+            }
+          }
+        }
       }
       FileOutputStream file_output_stream(out_fd);
       CHECK(google::protobuf::TextFormat::Print(unit, &file_output_stream));

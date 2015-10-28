@@ -24,5 +24,5 @@ KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}" \
     "${EXTRACTOR}" --with_executable "/usr/bin/g++" \
     -I./kythe/cxx/extractor \
     ./kythe/cxx/extractor/testdata/metadata.cc
-"${KINDEX_TOOL}" -suppress_details -explode "${INDEX_PATH}"
+"${KINDEX_TOOL}" -canonicalize_hashes -suppress_details -explode "${INDEX_PATH}"
 diff "${BASE_DIR}/metadata.UNIT${PF_SUFFIX}" "${INDEX_PATH}_UNIT"

@@ -14,6 +14,7 @@ MANIFEST-*
 *~
 .#*
 \#*#
+.DS_Store
 
 # Binary files
 *.class
@@ -22,3 +23,8 @@ MANIFEST-*
 # Build artifacts
 /bazel-*
 /doxygen-out
+
+# Symlinks
+third_party/libmemcached
+third_party/openssl
+third_party/ossp-uuid

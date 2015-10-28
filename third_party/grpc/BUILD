@@ -355,6 +355,7 @@ cc_library(
     ],
     deps = [
         ":gpr",
+        "//third_party:libcrypto",
     ],
     copts = [
         "-Wno-implicit-function-declaration",

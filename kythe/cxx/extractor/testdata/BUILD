@@ -42,7 +42,6 @@ sh_test(
         "transcript_a.h",
         "transcript_b.h",
         "transcript_main.UNIT",
-        "transcript_main.UNIT.Darwin",
         "transcript_main.cc",
         "//kythe/cxx/extractor:cxx_extractor",
         "//kythe/cxx/tools:kindex_tool",
@@ -58,7 +57,6 @@ sh_test(
         "claim_a.h",
         "claim_b.h",
         "claim_main.UNIT",
-        "claim_main.UNIT.Darwin",
         "claim_main.cc",
         "test_common.sh",
         "//kythe/cxx/extractor:cxx_extractor",
@@ -104,7 +102,6 @@ sh_test(
     ],
     data = [
         "metadata.UNIT",
-        "metadata.UNIT.Darwin",
         "metadata.cc",
         "metadata.cc.meta",
         "test_common.sh",

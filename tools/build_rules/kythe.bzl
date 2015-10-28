@@ -109,9 +109,11 @@ def cc_verifier_test_impl(ctx):
 
   for src in ctx.files.srcs:
     args = ['-std=c++11']
-    if str(ctx.configuration).find('darwin') >= 0:
-      # TODO(zarko): This needs to be autodetected.
-      args += ['-I/usr/include/c++/4.2.1']
+    if ctx.var['TARGET_CPU'] == 'darwin':
+      # TODO(zarko): This needs to be autodetected (or does doing so even make
+      # sense?)
+      args += ['-I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1']
+      args += ['-I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/usr/include']
     args += ['-c', src.short_path]
     kindex = ctx.new_file(ctx.configuration.genfiles_dir, ctx.label.name + "/compilation/" + src.short_path + ".kindex")
     extract(ctx, kindex, args, inputs=[src], mnemonic='CcExtractor')

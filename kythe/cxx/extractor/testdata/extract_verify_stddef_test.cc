@@ -1,5 +1,3 @@
 #include <stddef.h>
-#if defined(__STDDEF_H)
-//- @StddefDefined defines/binding SomeAlias
-using StddefDefined = int;
-#endif
+//- @wchar_t ref StddefWcharT
+using StddefDefined = wchar_t;

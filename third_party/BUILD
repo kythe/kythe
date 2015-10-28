@@ -48,7 +48,14 @@ java_import(
 cc_library(
     name = "libuuid",
     srcs = ["empty.cc"],
-    linkopts = ["-luuid"],
+    linkopts = select({
+        ":darwin": ["-Lthird_party/ossp-uuid/lib", "-luuid"],
+        "//conditions:default": ["-luuid"]
+    }),
+    includes = select({
+        ":darwin": ["ossp-uuid/include"],
+        "//conditions:default": []
+    }),
 )
 
 cc_library(
@@ -60,20 +67,31 @@ cc_library(
 cc_library(
     name = "libcrypto",
     srcs = ["empty.cc"],
-    linkopts = ["-lcrypto"],
+    linkopts = select({
+        ":darwin": ["-Lthird_party/openssl/lib", "-lcrypto"],
+        "//conditions:default": ["-lcrypto"]
+    }),
+    includes = select({
+        ":darwin": ["openssl/include"],
+        "//conditions:default": []
+    }),
 )
 
 cc_library(
     name = "libmemcached",
     srcs = ["empty.cc"],
     linkopts = select({
-        ":darwin": ["-lmemcached"],
+        ":darwin": ["-Lthird_party/libmemcached/lib", "-lmemcached"],
         "//conditions:default": [
             "-Wl,-Bstatic",
             "-lmemcached",
             "-Wl,-Bdynamic",
             "-lsasl2",
         ],
+    }),
+    includes = select({
+        ":darwin": ["libmemcached/include"],
+        "//conditions:default": []
     }),
 )
 
