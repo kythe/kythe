@@ -75,6 +75,16 @@ def _construct_package_map(packages):
 
   return archives, package_map
 
+# TODO(schroederc): remove this if https://github.com/bazelbuild/bazel/issues/539 is ever fixed
+def _dedup_packages(packages):
+  seen = set()
+  filtered = []
+  for pkg in packages:
+    if pkg.name not in seen:
+      seen += [pkg.name]
+      filtered += [pkg]
+  return filtered
+
 def _go_compile(ctx, pkg, srcs, archive, extra_packages=[]):
   cgo_link_flags = set([], order="link")
   transitive_deps = []
@@ -85,6 +95,7 @@ def _go_compile(ctx, pkg, srcs, archive, extra_packages=[]):
     transitive_cc_libs += dep.go.transitive_cc_libs
   transitive_deps += extra_packages
 
+  transitive_deps = _dedup_packages(transitive_deps)
   archives, package_map = _construct_package_map(transitive_deps)
 
   cc_inputs = set()
@@ -118,7 +129,6 @@ def _go_compile(ctx, pkg, srcs, archive, extra_packages=[]):
     args = compile_args[ctx.var['COMPILATION_MODE']]
     go_path = archive.path + '.gopath/'
     cmd = "\n".join(_construct_go_path(go_path, package_map) + [
-        # XXX 'tree -ap ' + go_path,
         'if ' + gotool.path + ' tool | grep -q 6g; then TOOL=6g; else TOOL=compile; fi',
         gotool.path + " tool $TOOL " + ' '.join(args) + " -p " + pkg + " -complete -pack -o " + archive.path + " " +
         '-I "' + go_path + '" ' + cmd_helper.join_paths(" ", set(srcs)),
@@ -181,7 +191,6 @@ def _link_binary(ctx, binary, archive, transitive_deps, extldflags=[], cc_libs=[
   cmd = ['set -e'] + _construct_go_path(go_path, package_map) + [
       'export GOROOT=$PWD/external/local-goroot',
       'export PATH',
-      # XXX 'tree --prune -ap bazel-out',
       'if ' + gotool.path + ' tool | grep -q 6l; then TOOL=6l; else TOOL=link; fi',
       gotool.path + ' tool $TOOL -extldflags="' + ' '.join(list(extldflags)) + '"'
       + ' ' + ' '.join(args) + ' -L "' + go_path + '"'
