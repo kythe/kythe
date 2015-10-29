@@ -18,7 +18,6 @@ package xrefs
 
 import (
 	"bytes"
-	"log"
 	"reflect"
 	"sort"
 	"strings"
@@ -480,7 +479,7 @@ func TestDecorationsRefs(t *testing.T) {
 		t.Fatalf("Expected references %v; found %v", expected, reply.Reference)
 	}
 
-	expectedNodes := nodeInfos(tbl.Nodes[7:13])
+	expectedNodes := nodeInfos(tbl.Nodes[9:11], tbl.Nodes[12:13])
 
 	sort.Sort(byNodeTicket(expectedNodes))
 	sort.Sort(byNodeTicket(reply.Node))
@@ -526,24 +525,15 @@ func TestDecorationsDirtyBuffer(t *testing.T) {
 		t.Fatalf("Expected references %v; found %v", expected, reply.Reference)
 	}
 
-	// These are a subset of the anchor nodes in tbl.Decorations[1].  tbl.Nodes[8]
-	// and tbl.Nodes[10] are missing because [8] was an anchor in the edited
-	// region and [10] was its target.
-	expectedNodes := nodeInfos([]*srvpb.Node{
-		tbl.Nodes[7], tbl.Nodes[9], tbl.Nodes[11], tbl.Nodes[12],
-	})
-
-	// Ensure patching affects the anchor node facts
-	mapFacts(expectedNodes[2], map[string]string{
-		"/kythe/loc/start": "48",
-		"/kythe/loc/end":   "52",
-	})
+	// These are a subset of the anchor nodes in tbl.Decorations[1].  tbl.Nodes[10] is missing because
+	// it is the target of an anchor in the edited region.
+	expectedNodes := nodeInfos([]*srvpb.Node{tbl.Nodes[9], tbl.Nodes[12]})
 
 	sort.Sort(byNodeTicket(expectedNodes))
 	sort.Sort(byNodeTicket(reply.Node))
 
-	if !reflect.DeepEqual(expectedNodes, reply.Node) {
-		t.Fatalf("Expected nodes %v; found %v", expected, reply.Node)
+	if err := testutil.DeepEqual(expectedNodes, reply.Node); err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -703,7 +693,7 @@ func TestCrossReferences(t *testing.T) {
 
 	xr := reply.CrossReferences[ticket]
 	if xr == nil {
-		log.Fatal("Missing expected CrossReferences")
+		t.Fatal("Missing expected CrossReferences")
 	}
 	sort.Sort(byOffset(xr.Reference))
 
@@ -719,9 +709,11 @@ func (s byNodeTicket) Len() int           { return len(s) }
 func (s byNodeTicket) Less(i, j int) bool { return s[i].Ticket < s[j].Ticket }
 func (s byNodeTicket) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 
-func nodeInfos(ns []*srvpb.Node) (infos []*xpb.NodeInfo) {
-	for _, n := range ns {
-		infos = append(infos, nodeInfo(n))
+func nodeInfos(nss ...[]*srvpb.Node) (infos []*xpb.NodeInfo) {
+	for _, ns := range nss {
+		for _, n := range ns {
+			infos = append(infos, nodeInfo(n))
+		}
 	}
 	return
 }
@@ -837,7 +829,6 @@ func (t testProtoTable) Put(_ context.Context, key []byte, val proto.Message) er
 func (t testProtoTable) Lookup(_ context.Context, key []byte, msg proto.Message) error {
 	m, ok := t[string(key)]
 	if !ok {
-		log.Println("Failed to find key", string(key))
 		return table.ErrNoSuchKey
 	}
 	proto.Merge(msg, m)

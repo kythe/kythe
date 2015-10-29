@@ -6,7 +6,6 @@ go_package(
     test_deps = ["//kythe/go/test/testutil"],
     deps = [
         "//kythe/go/services/graphstore",
-        "//kythe/go/services/graphstore/compare",
         "//kythe/go/util/kytheuri",
         "//kythe/go/util/schema",
         "//kythe/go/util/stringset",

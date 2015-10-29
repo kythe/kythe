@@ -26,7 +26,6 @@ import (
 	"strconv"
 
 	"kythe.io/kythe/go/services/graphstore"
-	"kythe.io/kythe/go/services/graphstore/compare"
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema"
 	"kythe.io/kythe/go/util/stringset"
@@ -80,107 +79,136 @@ func SourceFromEntries(entries []*spb.Entry) *Source {
 	return src
 }
 
-// Sources returns a channel of Sources derived from a channel of entries in
-// GraphStore order.
-func Sources(entries <-chan *spb.Entry) <-chan *Source {
-	ch := make(chan *Source, 1)
+// PartialEdges returns the set of partial edges from the given source.  Each Edge has its Source
+// fully populated and its Target will have no facts.  To ensure every node has at least 1 Edge, the
+// first Edge will be a self-edge without a Kind or Target.
+func PartialEdges(src *Source) []*srvpb.Edge {
+	node := &srvpb.Node{
+		Ticket: src.Ticket,
+		Facts:  src.Facts,
+	}
 
-	go func() {
-		defer close(ch)
+	edges := []*srvpb.Edge{{
+		Source: node, // self-edge to ensure every node has at least 1 edge
+	}}
 
-		var es []*spb.Entry
-		for entry := range entries {
-			if len(es) > 0 && compare.VNames(es[0].Source, entry.Source) != compare.EQ {
-				ch <- SourceFromEntries(es)
-				es = nil
-			}
-
-			es = append(es, entry)
+	for kind, targets := range src.Edges {
+		rev := schema.MirrorEdge(kind)
+		for _, target := range targets {
+			edges = append(edges, &srvpb.Edge{
+				Source: &srvpb.Node{Ticket: target},
+				Kind:   rev,
+				Target: node,
+			})
 		}
-		if len(es) > 0 {
-			ch <- SourceFromEntries(es)
-		}
-	}()
+	}
 
-	return ch
+	return edges
 }
 
-// DecorationFragments returns 0 or more FileDecorations fragments from the
-// given Source, depending on its node kind.  If given an anchor, decoration
-// fragments will be returned for each of the anchor's parents (assumed to be
-// files).  If given a file, 1 decoration fragment will be returned with the
-// file's source text and encoding populated.  All other nodes return 0
-// decoration fragments.
-func DecorationFragments(src *Source) []*srvpb.FileDecorations {
-	switch string(src.Facts[schema.NodeKindFact]) {
-	default:
+// DecorationFragmentBuilder builds pieces of FileDecorations given an ordered (see AddEdge) stream
+// of completed Edges.  Each fragment constructed (either by AddEdge or Flush) will be emitted using
+// the Output function in the builder.  There are two types of fragments: file fragments (which have
+// their SourceText, FileTicket, and Encoding set) and decoration fragments (which have only
+// Decoration set).
+type DecorationFragmentBuilder struct {
+	Output func(ctx context.Context, file string, fragment *srvpb.FileDecorations) error
+
+	anchor  *srvpb.FileDecorations_Decoration_Anchor
+	decor   []*srvpb.FileDecorations_Decoration
+	parents []string
+}
+
+// AddEdge adds the given edge to the current fragment (or emits some fragments and starts a new
+// fragment with e).  AddEdge must be called in GraphStore sorted order of the Edges with the
+// beginning to every set of edges with the same Source having a signaling Edge with only its Source
+// set (no Kind or Target).  Otherwise, every Edge must have a completed Source, Kind, and Target.
+// Flush must be called after every call to AddEdge in order to output any remaining fragments.
+func (b *DecorationFragmentBuilder) AddEdge(ctx context.Context, e *srvpb.Edge) error {
+	if e.Target == nil {
+		// Beginning of a set of edges with a new Source
+		if err := b.Flush(ctx); err != nil {
+			return err
+		}
+
+		switch string(e.Source.Facts[schema.NodeKindFact]) {
+		case schema.FileKind:
+			if err := b.Output(ctx, e.Source.Ticket, &srvpb.FileDecorations{
+				FileTicket: e.Source.Ticket,
+				SourceText: e.Source.Facts[schema.TextFact],
+				Encoding:   string(e.Source.Facts[schema.TextEncodingFact]),
+			}); err != nil {
+				return err
+			}
+		case schema.AnchorKind:
+			anchorStart, err := strconv.Atoi(string(e.Source.Facts[schema.AnchorStartFact]))
+			if err != nil {
+				log.Printf("Error parsing anchor start offset %q: %v",
+					string(e.Source.Facts[schema.AnchorStartFact]), err)
+				return nil
+			}
+			anchorEnd, err := strconv.Atoi(string(e.Source.Facts[schema.AnchorEndFact]))
+			if err != nil {
+				log.Printf("Error parsing anchor end offset %q: %v",
+					string(e.Source.Facts[schema.AnchorEndFact]), err)
+				return nil
+			}
+
+			b.anchor = &srvpb.FileDecorations_Decoration_Anchor{
+				Ticket:      e.Source.Ticket,
+				StartOffset: int32(anchorStart),
+				EndOffset:   int32(anchorEnd),
+			}
+		}
 		return nil
-	case schema.FileKind:
-		return []*srvpb.FileDecorations{{
-			FileTicket: src.Ticket,
-			SourceText: src.Facts[schema.TextFact],
-			Encoding:   string(src.Facts[schema.TextEncodingFact]),
-		}}
-	case schema.AnchorKind:
-		if len(src.Edges) == 0 {
-			// No edges indicates that we can't reach any parent file or any targets.
-			log.Printf("WARNING: found anchor without any edges: %q", src.Ticket)
-			return nil
-		}
-
-		anchorStart, err := strconv.Atoi(string(src.Facts[schema.AnchorStartFact]))
-		if err != nil {
-			log.Printf("Error parsing anchor start offset %q: %v", string(src.Facts[schema.AnchorStartFact]), err)
-			return nil
-		}
-		anchorEnd, err := strconv.Atoi(string(src.Facts[schema.AnchorEndFact]))
-		if err != nil {
-			log.Printf("Error parsing anchor end offset %q: %v", string(src.Facts[schema.AnchorEndFact]), err)
-			return nil
-		}
-
-		anchor := &srvpb.FileDecorations_Decoration_Anchor{
-			Ticket:      src.Ticket,
-			StartOffset: int32(anchorStart),
-			EndOffset:   int32(anchorEnd),
-		}
-
-		kinds := make([]string, len(src.Edges)-1)
-		for kind := range src.Edges {
-			if kind == schema.ChildOfEdge {
-				continue
-			}
-			kinds = append(kinds, kind)
-		}
-		sort.Strings(kinds) // to ensure consistency
-
-		var decor []*srvpb.FileDecorations_Decoration
-		for _, kind := range kinds {
-			for _, tgt := range src.Edges[kind] {
-				decor = append(decor, &srvpb.FileDecorations_Decoration{
-					Anchor: anchor,
-					Kind:   kind,
-					// TODO(schroederc): populate target node facts
-					Target: &srvpb.Node{Ticket: tgt},
-				})
-			}
-		}
-		if len(decor) == 0 {
-			return nil
-		}
-
-		// Assume each anchor parent is a file
-		parents := src.Edges[schema.ChildOfEdge]
-		dm := make([]*srvpb.FileDecorations, len(parents))
-
-		for i, parent := range parents {
-			dm[i] = &srvpb.FileDecorations{
-				FileTicket: parent,
-				Decoration: decor,
-			}
-		}
-		return dm
+	} else if b.anchor == nil {
+		// We don't care about edges for non-anchors
+		return nil
 	}
+
+	if e.Kind == schema.ChildOfEdge && string(e.Target.Facts[schema.NodeKindFact]) == schema.FileKind {
+		b.parents = append(b.parents, e.Target.Ticket)
+	} else {
+		b.decor = append(b.decor, &srvpb.FileDecorations_Decoration{
+			Anchor: b.anchor,
+			Kind:   e.Kind,
+			Target: e.Target,
+		})
+
+		if len(b.parents) > 0 {
+			fd := &srvpb.FileDecorations{Decoration: b.decor}
+			for _, parent := range b.parents {
+				if err := b.Output(ctx, parent, fd); err != nil {
+					return err
+				}
+			}
+			b.decor = nil
+		}
+	}
+
+	return nil
+}
+
+// Flush outputs any remaining fragments that are being built.  It is safe, but usually unnecessary,
+// to call Flush in between sets of Edges with the same Source.  This also means that
+// DecorationFragmentBuilder can be used to construct decoration fragments in parallel by
+// partitioning edges along the same boundaries.
+func (b *DecorationFragmentBuilder) Flush(ctx context.Context) error {
+	defer func() {
+		b.anchor = nil
+		b.decor = nil
+		b.parents = nil
+	}()
+
+	if len(b.decor) > 0 && len(b.parents) > 0 {
+		fd := &srvpb.FileDecorations{Decoration: b.decor}
+		for _, parent := range b.parents {
+			if err := b.Output(ctx, parent, fd); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // ByOffset sorts file decorations by their byte offsets.

@@ -24,19 +24,20 @@
 //   decor:<ticket>         -> srvpb.FileDecorations
 package xrefs
 
+// TODO(schroederc): remove separate Nodes table; reuse edgeSets table
+
 import (
 	"encoding/base64"
 	"errors"
 	"fmt"
 	"log"
+	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/storage/table"
 	"kythe.io/kythe/go/util/kytheuri"
-	"kythe.io/kythe/go/util/schema"
 	"kythe.io/kythe/go/util/stringset"
 
 	srvpb "kythe.io/kythe/proto/serving_proto"
@@ -332,6 +333,8 @@ func (t *tableImpl) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.Edge
 		}
 	}()
 
+	patterns := xrefs.ConvertFilters(req.Filter)
+
 	reply := &xpb.EdgesReply{}
 	for r := range rs {
 		if r.Err == table.ErrNoSuchKey {
@@ -345,9 +348,14 @@ func (t *tableImpl) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.Edge
 		var groups []*xpb.EdgeSet_Group
 		for _, grp := range pes.EdgeSet.Group {
 			if len(allowedKinds) == 0 || allowedKinds.Contains(grp.Kind) {
-				ng := stats.filter(grp)
+				ng, ns := stats.filter(grp)
 				if ng != nil {
-					nodeTickets.Add(ng.TargetTicket...)
+					for _, n := range ns {
+						if len(patterns) > 0 && !nodeTickets.Contains(n.Ticket) {
+							nodeTickets.Add(n.Ticket)
+							reply.Node = append(reply.Node, nodeToInfo(patterns, n))
+						}
+					}
 					groups = append(groups, ng)
 					if stats.total == stats.max {
 						break
@@ -375,9 +383,14 @@ func (t *tableImpl) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.Edge
 						return nil, fmt.Errorf("edge page lookup error (page key: %q): %v", idx.PageKey, err)
 					}
 
-					ng := stats.filter(ep.EdgesGroup)
+					ng, ns := stats.filter(ep.EdgesGroup)
 					if ng != nil {
-						nodeTickets.Add(ng.TargetTicket...)
+						for _, n := range ns {
+							if len(patterns) > 0 && !nodeTickets.Contains(n.Ticket) {
+								nodeTickets.Add(n.Ticket)
+								reply.Node = append(reply.Node, nodeToInfo(patterns, n))
+							}
+						}
 						groups = append(groups, ng)
 						if stats.total == stats.max {
 							break
@@ -388,11 +401,15 @@ func (t *tableImpl) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.Edge
 		}
 
 		if len(groups) > 0 {
-			nodeTickets.Add(pes.EdgeSet.Source.Ticket)
 			reply.EdgeSet = append(reply.EdgeSet, &xpb.EdgeSet{
 				SourceTicket: pes.EdgeSet.Source.Ticket,
 				Group:        groups,
 			})
+
+			if len(patterns) > 0 && !nodeTickets.Contains(pes.EdgeSet.Source.Ticket) {
+				nodeTickets.Add(pes.EdgeSet.Source.Ticket)
+				reply.Node = append(reply.Node, nodeToInfo(patterns, pes.EdgeSet.Source))
+			}
 		}
 
 		if stats.total == stats.max {
@@ -403,19 +420,6 @@ func (t *tableImpl) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.Edge
 		log.Panicf("totalEdges greater than maxEdges: %d > %d", stats.total, stats.max)
 	} else if pageToken+stats.total > totalEdgesPossible && pageToken <= totalEdgesPossible {
 		log.Panicf("pageToken+totalEdges greater than totalEdgesPossible: %d+%d > %d", pageToken, stats.total, totalEdgesPossible)
-	}
-
-	// Only request Nodes when there are fact filters given.
-	// TODO(schroederc): use facts from serving EdgeSets; don't call Nodes
-	if len(req.Filter) > 0 && len(nodeTickets) > 0 {
-		nReply, err := t.Nodes(ctx, &xpb.NodesRequest{
-			Ticket: nodeTickets.Slice(),
-			Filter: req.Filter,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("error getting nodes: %v", err)
-		}
-		reply.Node = nReply.Node
 	}
 
 	if pageToken+stats.total != totalEdgesPossible && stats.total != 0 {
@@ -441,11 +445,11 @@ func (s *filterStats) skipPage(idx *srvpb.PageIndex) bool {
 	return false
 }
 
-func (s *filterStats) filter(g *srvpb.EdgeSet_Group) *xpb.EdgeSet_Group {
+func (s *filterStats) filter(g *srvpb.EdgeSet_Group) (*xpb.EdgeSet_Group, []*srvpb.Node) {
 	targets := g.Target
 	if len(targets) <= s.skip {
 		s.skip -= len(targets)
-		return nil
+		return nil, nil
 	} else if s.skip > 0 {
 		targets = targets[s.skip:]
 		s.skip = 0
@@ -456,12 +460,10 @@ func (s *filterStats) filter(g *srvpb.EdgeSet_Group) *xpb.EdgeSet_Group {
 	}
 
 	s.total += len(targets)
-
-	// TODO(schroederc): return target facts
 	return &xpb.EdgeSet_Group{
 		Kind:         g.Kind,
 		TargetTicket: nodeTickets(targets),
-	}
+	}, targets
 }
 
 func nodeTickets(ns []*srvpb.Node) []string {
@@ -470,6 +472,17 @@ func nodeTickets(ns []*srvpb.Node) []string {
 		tickets[i] = n.Ticket
 	}
 	return tickets
+}
+
+func nodeToInfo(patterns []*regexp.Regexp, n *srvpb.Node) *xpb.NodeInfo {
+	ni := &xpb.NodeInfo{Ticket: n.Ticket}
+	for fact, value := range n.Facts {
+		if xrefs.MatchesAny(fact, patterns) {
+			ni.Fact = append(ni.Fact, &xpb.Fact{Name: fact, Value: value})
+		}
+	}
+	sort.Sort(xrefs.ByName(ni.Fact))
+	return ni
 }
 
 // Decorations implements part of the xrefs Service interface.
@@ -513,8 +526,7 @@ func (t *tableImpl) Decorations(ctx context.Context, req *xpb.DecorationsRequest
 	}
 
 	if req.References {
-		// Set of node tickets for which to retrieve facts.  These are the nodes
-		// used in the returned references (both anchor sources and node targets).
+		patterns := xrefs.ConvertFilters(req.Filter)
 		nodeTickets := stringset.New()
 
 		var patcher *xrefs.Patcher
@@ -547,37 +559,10 @@ func (t *tableImpl) Decorations(ctx context.Context, req *xpb.DecorationsRequest
 						offsetMapping[d.Anchor.Ticket] = span{start, end}
 					}
 					reply.Reference = append(reply.Reference, decorationToReference(norm, d))
-					nodeTickets.Add(d.Anchor.Ticket) // TODO(schroederc): don't return anchor nodes
-					nodeTickets.Add(d.Target.Ticket)
-				}
-			}
-		}
 
-		// Only request Nodes when there are fact filters given.
-		// TODO(schroederc): use facts from serving data; don't call Nodes
-		if len(req.Filter) > 0 && len(nodeTickets) > 0 {
-			// Retrieve facts for all nodes referenced in the file decorations.
-			nodesReply, err := t.Nodes(ctx, &xpb.NodesRequest{
-				Ticket: nodeTickets.Slice(),
-				Filter: req.Filter,
-			})
-			if err != nil {
-				return nil, fmt.Errorf("error getting nodes: %v", err)
-			}
-			reply.Node = nodesReply.Node
-		}
-
-		// Patch anchor node facts in reply to match dirty buffer
-		if len(offsetMapping) > 0 {
-			for _, n := range reply.Node {
-				if span, ok := offsetMapping[n.Ticket]; ok {
-					for _, f := range n.Fact {
-						switch f.Name {
-						case schema.AnchorStartFact:
-							f.Value = []byte(strconv.Itoa(int(span.start)))
-						case schema.AnchorEndFact:
-							f.Value = []byte(strconv.Itoa(int(span.end)))
-						}
+					if len(patterns) > 0 && !nodeTickets.Contains(d.Target.Ticket) {
+						nodeTickets.Add(d.Target.Ticket)
+						reply.Node = append(reply.Node, nodeToInfo(patterns, d.Target))
 					}
 				}
 			}
