@@ -64,6 +64,8 @@ DEFINES = [
 # Bazel should provide portable link_opts for pthread.
 LINK_OPTS = ["-lpthread"]
 
+hdrs = glob(["src/**/*.h"])
+
 cc_library(
     name = "protobuf_lite",
     srcs = [
@@ -92,6 +94,7 @@ cc_library(
         "src/google/protobuf/stubs/time.cc",
         "src/google/protobuf/wire_format_lite.cc",
     ],
+    hdrs = hdrs,
     copts = COPTS,
     defines = DEFINES,
     includes = ["src/"],
@@ -166,6 +169,7 @@ cc_library(
         "src/google/protobuf/wire_format.cc",
         "src/google/protobuf/wrappers.pb.cc",
     ],
+    hdrs = hdrs,
     copts = COPTS,
     includes = ["src/"],
     linkopts = LINK_OPTS,
