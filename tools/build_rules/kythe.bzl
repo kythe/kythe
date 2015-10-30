@@ -1,7 +1,5 @@
 def extract(ctx, kindex, args, inputs=[], mnemonic=None, mkdir='.'):
-  cmd_helper = ctx.command_helper([ctx.attr._extractor], {})
-  tools = cmd_helper.resolved_tools
-  input_manifests = cmd_helper.runfiles_manifests
+  inputs, _, input_manifests = ctx.resolve_command(tools=[ctx.attr._extractor])
   cmd = '\n'.join([
       'set -e',
       'export KYTHE_ROOT_DIRECTORY="$PWD"',
@@ -12,7 +10,7 @@ def extract(ctx, kindex, args, inputs=[], mnemonic=None, mkdir='.'):
       ctx.executable._extractor.path + " " + ' '.join(args),
       'mv "$KYTHE_OUTPUT_DIRECTORY"/*.kindex ' + kindex.path])
   ctx.action(
-      inputs = ctx.files.srcs + tools + inputs + [ctx.file.vnames_config],
+      inputs = ctx.files.srcs + inputs + inputs + [ctx.file.vnames_config],
       outputs = [kindex],
       mnemonic = mnemonic,
       command = cmd,
@@ -20,9 +18,7 @@ def extract(ctx, kindex, args, inputs=[], mnemonic=None, mkdir='.'):
       use_default_shell_env = True)
 
 def index(ctx, kindex, entries, mnemonic=None):
-  cmd_helper = ctx.command_helper([ctx.attr._indexer], {})
-  tools = cmd_helper.resolved_tools
-  input_manifests = cmd_helper.runfiles_manifests
+  inputs, _, input_manifests = ctx.resolve_command(tools=[ctx.attr._indexer])
   cmd = "\n".join([
       "set -e",
       'CWD="$PWD"',
@@ -30,7 +26,7 @@ def index(ctx, kindex, entries, mnemonic=None):
       '"$CWD"/' + ctx.executable._indexer.path + " " + " ".join(ctx.attr.indexer_opts) + ' "$CWD"/' + kindex.path + ' > "$CWD"/' + entries.path,
   ])
   ctx.action(
-      inputs = [kindex] + tools,
+      inputs = [kindex] + inputs,
       outputs = [entries],
       mnemonic = mnemonic,
       command = cmd,
