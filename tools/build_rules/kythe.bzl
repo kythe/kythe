@@ -1,5 +1,5 @@
 def extract(ctx, kindex, args, inputs=[], mnemonic=None, mkdir='.'):
-  inputs, _, input_manifests = ctx.resolve_command(tools=[ctx.attr._extractor])
+  tool_inputs, _, input_manifests = ctx.resolve_command(tools=[ctx.attr._extractor])
   cmd = '\n'.join([
       'set -e',
       'export KYTHE_ROOT_DIRECTORY="$PWD"',
@@ -10,7 +10,7 @@ def extract(ctx, kindex, args, inputs=[], mnemonic=None, mkdir='.'):
       ctx.executable._extractor.path + " " + ' '.join(args),
       'mv "$KYTHE_OUTPUT_DIRECTORY"/*.kindex ' + kindex.path])
   ctx.action(
-      inputs = ctx.files.srcs + inputs + inputs + [ctx.file.vnames_config],
+      inputs = ctx.files.srcs + inputs + tool_inputs + [ctx.file.vnames_config],
       outputs = [kindex],
       mnemonic = mnemonic,
       command = cmd,
