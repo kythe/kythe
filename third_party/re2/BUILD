@@ -38,6 +38,9 @@ cc_library(
         "util/valgrind.cc",
     ],
     hdrs = [
+        "include/re2/re2.h",
+        "include/re2/stringpiece.h",
+        "include/re2/variadic_function.h",
         "re2/filtered_re2.h",
         "re2/prefilter.h",
         "re2/prefilter_tree.h",

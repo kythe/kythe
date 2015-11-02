@@ -54,6 +54,12 @@ cc_library(
         # See https://github.com/google/bazel/issues/61
         "//tools/modules:check_modules",
     ],
+    hdrs = glob([
+        "llvm/include/**",
+        "llvm/build/include/**",
+        "llvm/build/tools/clang/include/**",
+        "llvm/tools/clang/include/**",
+    ]),
     defines = [
         "__STDC_LIMIT_MACROS",
         "__STDC_CONSTANT_MACROS",

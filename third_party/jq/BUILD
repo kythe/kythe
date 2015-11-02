@@ -41,6 +41,11 @@ cc_library(
         "parser.c",
         "parser.h",
     ],
+    hdrs = [
+        "jq.h",
+        "jv.h",
+        "version.h",
+    ],
     copts = [
         "-Ithird_party/jq",
     ],

@@ -16,6 +16,10 @@ cc_library(
         "snappy-stubs-internal.cc",
     ],
     hdrs = [
+        "snappy.h",
+        "snappy-c.h",
+        "snappy-internal.h",
+        "snappy-sinksource.h",
         "snappy-stubs-internal.h",
         "snappy-stubs-public.h",
     ],

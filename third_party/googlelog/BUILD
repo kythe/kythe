@@ -32,6 +32,7 @@ cc_library(
         "src/vlog_is_on.cc",
     ],
     hdrs = [
+        "src/config.h",
         "src/glog/log_severity.h",
         "src/glog/logging.h",
         "src/glog/raw_logging.h",

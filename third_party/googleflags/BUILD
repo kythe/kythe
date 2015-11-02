@@ -21,6 +21,7 @@ cc_library(
         "include/gflags/gflags.h",
         "include/gflags/gflags_completions.h",
         "include/gflags/gflags_declare.h",
+        "include/gflags/gflags_gflags.h",
     ],
     copts = [
         "-Wno-unused-local-typedef",

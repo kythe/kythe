@@ -22,6 +22,9 @@ cc_library(
         ":parser",
     ],
     hdrs = [
+        "assertion_ast.h",
+        "assertions.h",
+        "pretty_printer.h",
         ":parser",
     ],
     copts = [
