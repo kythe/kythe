@@ -7,13 +7,11 @@ def go_package_name(go_prefix, label):
 
 def _genproto_impl(ctx):
   proto_src_deps = [src.proto_src for src in ctx.attr.deps]
-  inputs, outputs, arguments = [ctx.file.src] + proto_src_deps, [], [
-      "--proto_path=.",
-      # Until we can do this correctly, we will assume any proto file may
-      # depend on a "builtin" protocol buffer under third_party/proto/src.
-      # TODO(shahms): Do this correctly.
-      "--proto_path=" + standard_proto_path,
-  ]
+  inputs, outputs, arguments = [ctx.file.src] + proto_src_deps, [], ["--proto_path=."]
+  for src in proto_src_deps:
+    if src.path.startswith(standard_proto_path):
+      arguments += ["--proto_path=" + standard_proto_path]
+      break
   if ctx.attr.gen_cc:
     outputs += [ctx.outputs.cc_hdr, ctx.outputs.cc_src]
     arguments += ["--cpp_out=" + ctx.configuration.genfiles_dir.path]
