@@ -59,7 +59,7 @@ func TestIsUnique(t *testing.T) {
 	for _, test := range tests {
 		uniq := d.IsUnique([]byte(test.val))
 		if uniq != test.uniq {
-			t.Fatalf("Expected IsUnique(%q) to be %s; found it wasn't", test.uniq, test.val)
+			t.Fatalf("Expected IsUnique(%v) to be %s; found it wasn't", test.uniq, test.val)
 		}
 		if uniq {
 			unique++

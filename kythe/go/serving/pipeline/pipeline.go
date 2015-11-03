@@ -80,7 +80,7 @@ func Run(ctx context.Context, gs graphstore.Service, db keyvalue.DB, opts *Optio
 	}
 	defer func() {
 		if err := edges.Close(); err != nil {
-			log.Println("Error closing edges table: %v", err)
+			log.Printf("Error closing edges table: %v", err)
 		}
 	}()
 
@@ -98,7 +98,7 @@ func Run(ctx context.Context, gs graphstore.Service, db keyvalue.DB, opts *Optio
 	go func() {
 		cErr = combineNodesAndEdges(ctx, out, entries)
 		if cErr != nil {
-			cErr = fmt.Errorf("error combining nodes and edges", cErr)
+			cErr = fmt.Errorf("error combining nodes and edges: %v", cErr)
 		}
 		wg.Done()
 	}()
@@ -395,7 +395,7 @@ func writeFileDecorations(ctx context.Context, edges <-chan *srvpb.Edge, out *se
 	fragments := &table.KVProto{temp}
 	defer func() {
 		if err := fragments.Close(ctx); err != nil {
-			log.Println("Error closing fragments table: %v", err)
+			log.Printf("Error closing fragments table: %v", err)
 		}
 	}()
 

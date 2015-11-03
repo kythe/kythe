@@ -60,7 +60,7 @@ func Start(ctx context.Context) error {
 
 		f, err := vfs.Create(ctx, *profCPU)
 		if err != nil {
-			return fmt.Errorf("error creating profile file %q: %v", *profCPU)
+			return fmt.Errorf("error creating profile file %q: %v", *profCPU, err)
 		}
 		file = f
 		pprof.StartCPUProfile(f)
