@@ -44,13 +44,17 @@ type Source struct {
 	Edges map[string][]string
 }
 
-// FactSlice returns the Source's facts in a new slice.
-func (s *Source) FactSlice() []*srvpb.Fact {
+// Node returns the Source as a srvpb.Node.
+func (s *Source) Node() *srvpb.Node {
 	facts := make([]*srvpb.Fact, 0, len(s.Facts))
 	for name, value := range s.Facts {
 		facts = append(facts, &srvpb.Fact{Name: name, Value: value})
 	}
-	return facts
+	sort.Sort(ByName(facts))
+	return &srvpb.Node{
+		Ticket: s.Ticket,
+		Fact:   facts,
+	}
 }
 
 // SourceFromEntries returns a new Source from the given a set of entries with
@@ -111,10 +115,7 @@ func GetFact(facts []*srvpb.Fact, name string) []byte {
 // fully populated and its Target will have no facts.  To ensure every node has at least 1 Edge, the
 // first Edge will be a self-edge without a Kind or Target.
 func PartialEdges(src *Source) []*srvpb.Edge {
-	node := &srvpb.Node{
-		Ticket: src.Ticket,
-		Fact:   src.FactSlice(),
-	}
+	node := src.Node()
 
 	edges := []*srvpb.Edge{{
 		Source: node, // self-edge to ensure every node has at least 1 edge
@@ -448,3 +449,11 @@ func (s *byEdgeCount) Pop() interface{} {
 	*s = old[:n]
 	return out
 }
+
+// ByName implements the sort.Interface for srvpb.Facts
+type ByName []*srvpb.Fact
+
+// Implement the sort.Interface
+func (s ByName) Len() int           { return len(s) }
+func (s ByName) Less(i, j int) bool { return s[i].Name < s[j].Name }
+func (s ByName) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
