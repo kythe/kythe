@@ -44,6 +44,15 @@ type Source struct {
 	Edges map[string][]string
 }
 
+// FactSlice returns the Source's facts in a new slice.
+func (s *Source) FactSlice() []*srvpb.Fact {
+	facts := make([]*srvpb.Fact, 0, len(s.Facts))
+	for name, value := range s.Facts {
+		facts = append(facts, &srvpb.Fact{Name: name, Value: value})
+	}
+	return facts
+}
+
 // SourceFromEntries returns a new Source from the given a set of entries with
 // the same source VName.
 func SourceFromEntries(entries []*spb.Entry) *Source {
@@ -79,13 +88,32 @@ func SourceFromEntries(entries []*spb.Entry) *Source {
 	return src
 }
 
+// FactsToMap returns a map from fact name to value.
+func FactsToMap(facts []*srvpb.Fact) map[string][]byte {
+	m := make(map[string][]byte, len(facts))
+	for _, f := range facts {
+		m[f.Name] = f.Value
+	}
+	return m
+}
+
+// GetFact returns the value of the first fact in facts with the given name; otherwise returns nil.
+func GetFact(facts []*srvpb.Fact, name string) []byte {
+	for _, f := range facts {
+		if f.Name == name {
+			return f.Value
+		}
+	}
+	return nil
+}
+
 // PartialEdges returns the set of partial edges from the given source.  Each Edge has its Source
 // fully populated and its Target will have no facts.  To ensure every node has at least 1 Edge, the
 // first Edge will be a self-edge without a Kind or Target.
 func PartialEdges(src *Source) []*srvpb.Edge {
 	node := &srvpb.Node{
 		Ticket: src.Ticket,
-		Facts:  src.Facts,
+		Fact:   src.FactSlice(),
 	}
 
 	edges := []*srvpb.Edge{{
@@ -131,26 +159,28 @@ func (b *DecorationFragmentBuilder) AddEdge(ctx context.Context, e *srvpb.Edge) 
 			return err
 		}
 
-		switch string(e.Source.Facts[schema.NodeKindFact]) {
+		srcFacts := FactsToMap(e.Source.Fact)
+
+		switch string(srcFacts[schema.NodeKindFact]) {
 		case schema.FileKind:
 			if err := b.Output(ctx, e.Source.Ticket, &srvpb.FileDecorations{
 				FileTicket: e.Source.Ticket,
-				SourceText: e.Source.Facts[schema.TextFact],
-				Encoding:   string(e.Source.Facts[schema.TextEncodingFact]),
+				SourceText: srcFacts[schema.TextFact],
+				Encoding:   string(srcFacts[schema.TextEncodingFact]),
 			}); err != nil {
 				return err
 			}
 		case schema.AnchorKind:
-			anchorStart, err := strconv.Atoi(string(e.Source.Facts[schema.AnchorStartFact]))
+			anchorStart, err := strconv.Atoi(string(srcFacts[schema.AnchorStartFact]))
 			if err != nil {
 				log.Printf("Error parsing anchor start offset %q: %v",
-					string(e.Source.Facts[schema.AnchorStartFact]), err)
+					string(srcFacts[schema.AnchorStartFact]), err)
 				return nil
 			}
-			anchorEnd, err := strconv.Atoi(string(e.Source.Facts[schema.AnchorEndFact]))
+			anchorEnd, err := strconv.Atoi(string(srcFacts[schema.AnchorEndFact]))
 			if err != nil {
 				log.Printf("Error parsing anchor end offset %q: %v",
-					string(e.Source.Facts[schema.AnchorEndFact]), err)
+					string(srcFacts[schema.AnchorEndFact]), err)
 				return nil
 			}
 
@@ -166,7 +196,7 @@ func (b *DecorationFragmentBuilder) AddEdge(ctx context.Context, e *srvpb.Edge) 
 		return nil
 	}
 
-	if e.Kind == schema.ChildOfEdge && string(e.Target.Facts[schema.NodeKindFact]) == schema.FileKind {
+	if e.Kind == schema.ChildOfEdge && string(GetFact(e.Target.Fact, schema.NodeKindFact)) == schema.FileKind {
 		b.parents = append(b.parents, e.Target.Ticket)
 	} else {
 		b.decor = append(b.decor, &srvpb.FileDecorations_Decoration{

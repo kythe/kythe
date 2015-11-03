@@ -18,10 +18,16 @@ syntax = "proto3";
 
 package kythe.proto;
 
+// Kythe fact (i.e. from a storage.Entry).  Can belong to either a Node or Edge.
+message Fact {
+  string name = 1;
+  bytes value = 2;
+}
+
 // A derivative of xref.NodeInfo for serving.
 message Node {
   string ticket = 1;
-  map<string, bytes> facts = 2;
+  repeated Fact fact = 2;
 }
 
 // Full representation of a Kythe edge; useful during post-processing.
@@ -30,7 +36,7 @@ message Edge {
   string kind = 2;
   Node target = 3;
 
-  map<string, bytes> facts = 4;
+  repeated Fact fact = 4;
 }
 
 // An EdgeSet represents a collection of edges from a single node.  The edges

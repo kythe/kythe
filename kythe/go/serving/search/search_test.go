@@ -222,10 +222,13 @@ func node(v *spb.VName, facts ...string) *srvpb.Node {
 	}
 	n := &srvpb.Node{
 		Ticket: kytheuri.ToString(v),
-		Facts:  make(map[string][]byte, len(facts)/2),
+		Fact:   make([]*srvpb.Fact, 0, len(facts)/2),
 	}
 	for i := 0; i < len(facts); i += 2 {
-		n.Facts[facts[i]] = []byte(facts[i+1])
+		n.Fact = append(n.Fact, &srvpb.Fact{
+			Name:  facts[i],
+			Value: []byte(facts[i+1]),
+		})
 	}
 	return n
 }

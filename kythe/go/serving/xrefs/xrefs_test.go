@@ -45,83 +45,88 @@ var (
 	nodes = []*srvpb.Node{
 		{
 			Ticket: "kythe://someCorpus?lang=otpl#signature",
-			Facts:  makeFactMap("/kythe/node/kind", "testNode"),
+			Fact:   makeFactList("/kythe/node/kind", "testNode"),
 		}, {
 			Ticket: "kythe://someCorpus#aTicketSig",
-			Facts:  makeFactMap("/kythe/node/kind", "testNode"),
+			Fact:   makeFactList("/kythe/node/kind", "testNode"),
 		}, {
 			Ticket: "kythe://someCorpus?lang=otpl#something",
-			Facts: makeFactMap(
+			Fact: makeFactList(
 				"/kythe/node/kind", "name",
 				"/some/other/fact", "value",
 			),
 		}, {
 			Ticket: "kythe://someCorpus?lang=otpl#sig2",
-			Facts:  makeFactMap("/kythe/node/kind", "name"),
+			Fact:   makeFactList("/kythe/node/kind", "name"),
 		}, {
 			Ticket: "kythe://someCorpus?lang=otpl#sig3",
-			Facts:  makeFactMap("/kythe/node/kind", "name"),
+			Fact:   makeFactList("/kythe/node/kind", "name"),
 		}, {
 			Ticket: "kythe://someCorpus?lang=otpl#sig4",
-			Facts:  makeFactMap("/kythe/node/kind", "name"),
+			Fact:   makeFactList("/kythe/node/kind", "name"),
 		}, {
 			Ticket: "kythe://someCorpus?lang=otpl?path=/some/valid/path#a83md71",
-			Facts: makeFactMap(
+			Fact: makeFactList(
 				"/kythe/node/kind", "file",
 				"/kythe/text", "; some file content here\nfinal line\n",
 				"/kythe/text/encoding", "utf-8",
 			),
 		}, {
 			Ticket: "kythe://c?lang=otpl?path=/a/path#6-9",
-			Facts: makeFactMap(
+			Fact: makeFactList(
 				"/kythe/node/kind", "anchor",
 				"/kythe/loc/start", "6",
 				"/kythe/loc/end", "9",
 			),
 		}, {
 			Ticket: "kythe://c?lang=otpl?path=/a/path#27-33",
-			Facts: makeFactMap(
+			Fact: makeFactList(
 				"/kythe/node/kind", "anchor",
 				"/kythe/loc/start", "27",
 				"/kythe/loc/end", "33",
 			),
 		}, {
 			Ticket: "kythe://c?lang=otpl?path=/a/path#map",
-			Facts:  makeFactMap("/kythe/node/kind", "function"),
+			Fact:   makeFactList("/kythe/node/kind", "function"),
 		}, {
 			Ticket: "kythe://core?lang=otpl#empty?",
-			Facts:  makeFactMap("/kythe/node/kind", "function"),
+			Fact:   makeFactList("/kythe/node/kind", "function"),
 		}, {
 			Ticket: "kythe://c?lang=otpl?path=/a/path#51-55",
-			Facts: makeFactMap(
+			Fact: makeFactList(
 				"/kythe/node/kind", "anchor",
 				"/kythe/loc/start", "51",
 				"/kythe/loc/end", "55",
 			),
 		}, {
 			Ticket: "kythe://core?lang=otpl#cons",
-			Facts: makeFactMap(
+			Fact: makeFactList(
 				"/kythe/node/kind", "function",
 				// Canary to ensure we don't patch anchor facts in non-anchor nodes
 				"/kythe/loc/start", "51",
 			),
 		}, {
 			Ticket: "kythe://someCorpus?path=some/path#aFileNode",
-			Facts: makeFactMap(
+			Fact: makeFactList(
 				"/kythe/node/kind", "file",
 				"/kythe/text/encoding", "utf-8",
 				"/kythe/text", "some random text\nhere and  \n  there\nsome random text\nhere and  \n  there\n",
 			),
 		}, {
 			Ticket: "kythe://someCorpus?path=some/utf16/file#utf16FTW",
-			Facts: map[string][]byte{
-				"/kythe/text/encoding": []byte("utf-16le"),
-				"/kythe/node/kind":     []byte("file"),
-				"/kythe/text":          encodeText(utf16LE, "これはいくつかのテキストです\n"),
-			},
+			Fact: []*srvpb.Fact{{
+				Name:  "/kythe/text/encoding",
+				Value: []byte("utf-16le"),
+			}, {
+				Name:  "/kythe/node/kind",
+				Value: []byte("file"),
+			}, {
+				Name:  "/kythe/text",
+				Value: encodeText(utf16LE, "これはいくつかのテキストです\n"),
+			}},
 		}, {
 			Ticket: "kythe:?path=some/utf16/file#0-4",
-			Facts: makeFactMap(
+			Fact: makeFactList(
 				"/kythe/node/kind", "anchor",
 				"/kythe/loc/start", "0",
 				"/kythe/loc/end", "4",
@@ -728,20 +733,23 @@ func (s byOffset) Less(i, j int) bool { return s[i].Start.ByteOffset < s[j].Star
 
 func nodeInfo(n *srvpb.Node) *xpb.NodeInfo {
 	ni := &xpb.NodeInfo{Ticket: n.Ticket}
-	for fact, value := range n.Facts {
-		ni.Fact = append(ni.Fact, &xpb.Fact{Name: fact, Value: value})
+	for _, f := range n.Fact {
+		ni.Fact = append(ni.Fact, &xpb.Fact{Name: f.Name, Value: f.Value})
 	}
 	sort.Sort(xrefs.ByName(ni.Fact))
 	return ni
 }
 
-func makeFactMap(keyVals ...string) map[string][]byte {
+func makeFactList(keyVals ...string) []*srvpb.Fact {
 	if len(keyVals)%2 != 0 {
-		panic("makeFactMap: odd number of key values")
+		panic("makeFactList: odd number of key values")
 	}
-	facts := make(map[string][]byte, len(keyVals)/2)
+	facts := make([]*srvpb.Fact, 0, len(keyVals)/2)
 	for i := 0; i < len(keyVals); i += 2 {
-		facts[keyVals[i]] = []byte(keyVals[i+1])
+		facts = append(facts, &srvpb.Fact{
+			Name:  keyVals[i],
+			Value: []byte(keyVals[i+1]),
+		})
 	}
 	return facts
 }

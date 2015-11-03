@@ -269,9 +269,9 @@ func (t *tableImpl) Nodes(ctx context.Context, req *xpb.NodesRequest) (*xpb.Node
 			return nil, r.Err
 		}
 		ni := &xpb.NodeInfo{Ticket: r.Node.Ticket}
-		for fact, value := range r.Node.Facts {
-			if len(patterns) == 0 || xrefs.MatchesAny(fact, patterns) {
-				ni.Fact = append(ni.Fact, &xpb.Fact{Name: fact, Value: value})
+		for _, f := range r.Node.Fact {
+			if len(patterns) == 0 || xrefs.MatchesAny(f.Name, patterns) {
+				ni.Fact = append(ni.Fact, &xpb.Fact{Name: f.Name, Value: f.Value})
 			}
 		}
 		if len(ni.Fact) > 0 {
@@ -476,9 +476,9 @@ func nodeTickets(ns []*srvpb.Node) []string {
 
 func nodeToInfo(patterns []*regexp.Regexp, n *srvpb.Node) *xpb.NodeInfo {
 	ni := &xpb.NodeInfo{Ticket: n.Ticket}
-	for fact, value := range n.Facts {
-		if xrefs.MatchesAny(fact, patterns) {
-			ni.Fact = append(ni.Fact, &xpb.Fact{Name: fact, Value: value})
+	for _, f := range n.Fact {
+		if xrefs.MatchesAny(f.Name, patterns) {
+			ni.Fact = append(ni.Fact, &xpb.Fact{Name: f.Name, Value: f.Value})
 		}
 	}
 	sort.Sort(xrefs.ByName(ni.Fact))
