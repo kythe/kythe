@@ -774,7 +774,12 @@ bool IndexerASTVisitor::TraverseDecl(clang::Decl *Decl) {
 
     // Dispatch the remaining logic to the base class TraverseDecl() which will
     // call TraverseX(X*) for the most-derived X.
-    return RecursiveASTVisitor::TraverseDecl(Decl);
+    if (!Observer.lossy_claiming() ||
+        Observer.claimNode(BuildNodeIdForDecl(FD))) {
+      return RecursiveASTVisitor::TraverseDecl(FD);
+    } else {
+      return true;
+    }
   } else if (auto *ID = dyn_cast_or_null<clang::FieldDecl>(Decl)) {
     if (ID->hasInClassInitializer()) {
       // Blame calls from in-class initializers I on all ctors C of the
@@ -814,10 +819,20 @@ bool IndexerASTVisitor::TraverseDecl(clang::Decl *Decl) {
           }
         }
       }
-      return RecursiveASTVisitor::TraverseDecl(Decl);
+      if (!Observer.lossy_claiming() ||
+          Observer.claimNode(BuildNodeIdForDecl(ID))) {
+        return RecursiveASTVisitor::TraverseDecl(ID);
+      } else {
+        return true;
+      }
     }
   }
-  return RecursiveASTVisitor::TraverseDecl(Decl);
+  if (Decl != nullptr && (!Observer.lossy_claiming() ||
+                          Observer.claimNode(BuildNodeIdForDecl(Decl)))) {
+    return RecursiveASTVisitor::TraverseDecl(Decl);
+  } else {
+    return true;
+  }
 }
 
 bool IndexerASTVisitor::VisitCXXDependentScopeMemberExpr(

@@ -45,6 +45,10 @@ class KytheClaimClient {
   /// \brief Assigns responsibility for `claimable` to `claimant`.
   virtual void AssignClaim(const kythe::proto::VName &claimable,
                            const kythe::proto::VName &claimant) = 0;
+
+  /// \brief Resets any cached state, including any claims made by
+  /// `AssignClaim`.
+  virtual void Reset() {}
 };
 
 /// \brief A client that makes static decisions about resources when possible.
@@ -63,6 +67,8 @@ class StaticClaimClient : public KytheClaimClient {
 
   void AssignClaim(const kythe::proto::VName &claimable,
                    const kythe::proto::VName &claimant) override;
+
+  void Reset() override { claim_table_.clear(); }
 
  private:
   /// Maps from claimables to claimants.
@@ -92,6 +98,8 @@ class DynamicClaimClient : public KytheClaimClient {
 
   /// Change how many times the same VName can be claimed.
   void set_max_redundant_claims(size_t value) { max_redundant_claims_ = value; }
+
+  void Reset() override { claim_table_.clear(); }
 
  private:
   /// A local map from claimables to claimants.

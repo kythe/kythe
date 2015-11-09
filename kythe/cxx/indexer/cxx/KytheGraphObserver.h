@@ -316,6 +316,8 @@ class KytheGraphObserver : public GraphObserver {
   /// indexed.
   void set_lossy_claiming(bool value) { lossy_claiming_ = value; }
 
+  bool lossy_claiming() const override { return lossy_claiming_; }
+
  private:
   void RecordSourceLocation(const VNameRef &vname,
                             clang::SourceLocation source_location,

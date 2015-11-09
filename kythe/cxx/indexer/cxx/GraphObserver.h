@@ -249,6 +249,9 @@ public:
   /// \brief Returns a claim token that provides no additional information.
   virtual const ClaimToken *getDefaultClaimToken() const = 0;
 
+  /// \brief Returns whether experimental lossy claiming is enabled.
+  virtual bool lossy_claiming() const { return false; }
+
   /// \brief Returns the `NodeId` for the builtin type or type constructor named
   /// by `Spelling`.
   ///
