@@ -85,7 +85,7 @@ package(
 
 package(
     name = "protobuf",
-    exclude_srcs = ["*_unsafe.go"],
+    exclude_srcs = ["pointer_reflect.go"],
     package = "github.com/golang/protobuf/proto",
 )
 

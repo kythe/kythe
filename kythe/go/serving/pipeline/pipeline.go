@@ -194,6 +194,7 @@ func combineNodesAndEdges(ctx context.Context, out *servingOutput, gsEntries <-c
 	defer it.Close()
 
 	var n *srvpb.Node
+	var e srvpb.Edge
 	for {
 		k, v, err := it.Next()
 		if err == io.EOF {
@@ -207,7 +208,6 @@ func combineNodesAndEdges(ctx context.Context, out *servingOutput, gsEntries <-c
 			return fmt.Errorf("invalid partial edge table key: %q", string(k))
 		}
 
-		var e srvpb.Edge
 		if err := proto.Unmarshal(v, &e); err != nil {
 			return fmt.Errorf("invalid partial edge table value: %v", err)
 		}
@@ -264,11 +264,15 @@ func writeNodeAndPartialEdges(ctx context.Context, out *servingOutput, src *asse
 }
 
 func writeCompletedEdges(ctx context.Context, edges *table.KVProto, e *srvpb.Edge) error {
-	if err := writeEdge(ctx, edges, e); err != nil {
+	if err := writeEdge(ctx, edges, &srvpb.Edge{
+		Source: &srvpb.Node{Ticket: e.Source.Ticket},
+		Kind:   e.Kind,
+		Target: e.Target,
+	}); err != nil {
 		return fmt.Errorf("error writing complete edge: %v", err)
 	}
 	if err := writeEdge(ctx, edges, &srvpb.Edge{
-		Source: e.Target,
+		Source: &srvpb.Node{Ticket: e.Target.Ticket},
 		Kind:   schema.MirrorEdge(e.Kind),
 		Target: e.Source,
 	}); err != nil {
@@ -335,19 +339,19 @@ func writePagedEdges(ctx context.Context, edges <-chan *srvpb.Edge, out table.Pr
 	var src *srvpb.Node
 	var grp *srvpb.EdgeSet_Group
 	for e := range edges {
-		if e.Target == nil {
-			// Skip head-only Edge (signals a set of edges with a different Source)
-			continue
-		} else if src == nil || src.Ticket != e.Source.Ticket || grp.Kind != e.Kind {
-			if src != nil {
-				if err := esb.AddGroup(ctx, src, grp); err != nil {
-					for range edges {
-					} // drain input channel
-					return err
-				}
+		if grp != nil && (e.Target == nil || grp.Kind != e.Kind) {
+			if err := esb.AddGroup(ctx, src, grp); err != nil {
+				for range edges {
+				} // drain input channel
+				return err
 			}
+			grp = nil
+		}
 
+		if e.Target == nil {
+			// Head-only edge: signals a new set of edges with the same Source
 			src = e.Source
+		} else if grp == nil {
 			grp = &srvpb.EdgeSet_Group{
 				Kind:   e.Kind,
 				Target: []*srvpb.Node{e.Target},
@@ -356,6 +360,7 @@ func writePagedEdges(ctx context.Context, edges <-chan *srvpb.Edge, out table.Pr
 			grp.Target = append(grp.Target, e.Target)
 		}
 	}
+
 	if grp != nil {
 		if err := esb.AddGroup(ctx, src, grp); err != nil {
 			return err
@@ -416,6 +421,7 @@ func writeFileDecorations(ctx context.Context, edges <-chan *srvpb.Edge, out *se
 
 	var curFile string
 	var decor *srvpb.FileDecorations
+	var fragment srvpb.FileDecorations
 	for {
 		k, v, err := it.Next()
 		if err == io.EOF {
@@ -443,7 +449,6 @@ func writeFileDecorations(ctx context.Context, edges <-chan *srvpb.Edge, out *se
 			decor = &srvpb.FileDecorations{}
 		}
 
-		var fragment srvpb.FileDecorations
 		if err := proto.Unmarshal(v, &fragment); err != nil {
 			return fmt.Errorf("invalid temporary table value: %v", err)
 		}
