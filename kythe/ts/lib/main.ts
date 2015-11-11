@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import fs = require('fs');
 import ts = require('typescript');
 import tsu = require('./tsutilities');
 import kythe = require('./kythe');
@@ -80,8 +81,6 @@ function index(job : jobs.Job) {
   });
 
   checkForErrors(program);
-
-  return;
 
   const neverCancelledToken : ts.CancellationToken = {
     isCancellationRequested: () => false,
@@ -263,19 +262,28 @@ function index(job : jobs.Job) {
 }
 
 if (require.main === module) {
-  var args = require('minimist')(process.argv.slice(2), {base: 'string'});
+  var args = require('minimist')(process.argv.slice(2));
   // TODO(zarko): detect these externally.
   var options : ts.CompilerOptions = {
     target : ts.ScriptTarget.ES5,
     module: ts.ModuleKind.CommonJS,
-    moduleResolution: ts.ModuleResolutionKind.Classic,
+    moduleResolution: ts.ModuleResolutionKind.NodeJs,
     allowNonTsExtensions: true,
     experimentalDecorators: true,
     rootDir: args.rootDir
   };
+  var files : string[] = [];
+  var implicits : string[] = [];
+  for (var i = 0; i < args._.length; ++i) {
+    if (args._[i].startsWith('implicit=')) {
+      implicits.push(fs.realpathSync(args._[i].substr(9)));
+    } else if (args._[i].length != 0) {
+      files.push(fs.realpathSync(args._[i]));
+    }
+  }
   var job = {
     lib: ts.getDefaultLibFilePath(options),
-    files: args._,
+    files: files,
     options: options,
     dontIndexDefaultLib: !!args.skipDefaultLib
   };

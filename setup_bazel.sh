@@ -23,7 +23,7 @@
 cd "$(dirname "$0")"
 
 if [[ $(uname) == 'Darwin' ]]; then
-  LNOPTS="-sf"
+  LNOPTS="-fsh"
   realpath() {
     python -c 'import os, sys; print os.path.realpath(sys.argv[2])' $@
   }
@@ -45,7 +45,7 @@ if [[ $(uname) == 'Darwin' ]]; then
     exit 1
   fi
   if [[ -d "${UUID_HOME}/include" ]]; then
-    ln -fsh "${UUID_HOME}" third_party/ossp-uuid
+    ln "${LNOPTS}" "${UUID_HOME}" third_party/ossp-uuid
   else
     echo 'Could not find ossp-uuid.'
     echo 'Set the UUID_HOME variable and try again.'
@@ -76,6 +76,19 @@ fi
 
 echo "Using GOROOT found at $GOROOT" >&2
 sed "s#/usr/local/go#$GOROOT#" tools/WORKSPACE.template > WORKSPACE
+
+if [[ -z "${NODEJS}" ]]; then
+  if [[ -z "$(which node)" ]]; then
+    echo 'No node.js installation found.'
+    ln "${LNOPTS}" /bin/false "${NODEJS}"
+  fi
+  NODEJS="$(realpath -s $(which node))"
+fi
+
+if [[ ! -z "${NODEJS}" ]]; then
+  echo "Using node.js found at ${NODEJS}" >&2
+  ln "${LNOPTS}" "${NODEJS}" tools/node
+fi
 
 # This must be the same C++ compiler used to build the LLVM source.
 if [[ -z "$CLANG" ]]; then

@@ -28,3 +28,4 @@ MANIFEST-*
 third_party/libmemcached
 third_party/openssl
 third_party/ossp-uuid
+tools/node

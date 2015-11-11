@@ -1,0 +1,23 @@
+[
+  {
+    "pattern": ".*/kythe/ts/testdata/repo/node_modules/([^/]+)/(.+)",
+    "vname": {
+      "corpus": "@1@",
+      "path": "@2@"
+    }
+  },
+  {
+    "pattern": ".*/kythe/ts/testdata/([^/]+)/(.+)",
+    "vname": {
+      "corpus": "@1@",
+      "path": "@2@"
+    }
+  },
+  {
+    "pattern": "(.*)",
+    "vname": {
+      "corpus": "unassigned",
+      "path": "@1@"
+    }
+  }
+]
