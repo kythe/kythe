@@ -1,0 +1,74 @@
+diff --git a/src/compiler/checker.ts b/src/compiler/checker.ts
+index 36756ab..88fed29 100644
+--- a/src/compiler/checker.ts
++++ b/src/compiler/checker.ts
+@@ -860,12 +860,17 @@ namespace ts {
+             if (!links.target) {
+                 links.target = resolvingSymbol;
+                 const node = getDeclarationOfAliasSymbol(symbol);
+-                const target = getTargetOfAliasDeclaration(node);
+-                if (links.target === resolvingSymbol) {
+-                    links.target = target || unknownSymbol;
++                if (node) {
++                  const target = getTargetOfAliasDeclaration(node);
++                  if (links.target === resolvingSymbol) {
++                      links.target = target || unknownSymbol;
++                  }
++                  else {
++                      error(node, Diagnostics.Circular_definition_of_import_alias_0, symbolToString(symbol));
++                  }
+                 }
+                 else {
+-                    error(node, Diagnostics.Circular_definition_of_import_alias_0, symbolToString(symbol));
++                    links.target = unknownSymbol;
+                 }
+             }
+             else if (links.target === resolvingSymbol) {
+diff --git a/src/compiler/program.ts b/src/compiler/program.ts
+index 08321da..fcff2ab 100644
+--- a/src/compiler/program.ts
++++ b/src/compiler/program.ts
+@@ -88,11 +88,11 @@ namespace ts {
+         const packageJsonPath = combinePaths(candidate, "package.json");
+         if (host.fileExists(packageJsonPath)) {
+ 
+-            let jsonContent: { typings?: string };
++            let jsonContent: { typings?: string, main?: string };
+ 
+             try {
+                 const jsonText = host.readFile(packageJsonPath);
+-                jsonContent = jsonText ? <{ typings?: string }>JSON.parse(jsonText) : { typings: undefined };
++                jsonContent = jsonText ? <{ typings?: string, main?: string }>JSON.parse(jsonText) : { typings: undefined, main: undefined };
+             }
+             catch (e) {
+                 // gracefully handle if readFile fails or returns not JSON 
+@@ -105,6 +105,13 @@ namespace ts {
+                     return result;
+                 }
+             }
++
++            if (jsonContent.main) {
++                let result = loadNodeModuleFromFile(extensions, normalizePath(combinePaths(candidate, jsonContent.main)), failedLookupLocation, host);
++                if (result) {
++                    return result;
++                }
++            }
+         }
+         else {
+             // record package json as one of failed lookup locations - in the future if this file will appear it will invalidate resolution results
+@@ -122,12 +129,13 @@ namespace ts {
+             if (baseName !== "node_modules") {
+                 const nodeModulesFolder = combinePaths(directory, "node_modules");
+                 const candidate = normalizePath(combinePaths(nodeModulesFolder, moduleName));
+-                let result = loadNodeModuleFromFile(supportedExtensions, candidate, failedLookupLocations, host);
++
++                let result = loadNodeModuleFromFile(supportedJsExtensions, candidate, failedLookupLocations, host);
+                 if (result) {
+                     return { resolvedModule: { resolvedFileName: result, isExternalLibraryImport: true }, failedLookupLocations };
+                 }
+ 
+-                result = loadNodeModuleFromDirectory(supportedExtensions, candidate, failedLookupLocations, host);
++                result = loadNodeModuleFromDirectory(supportedJsExtensions, candidate, failedLookupLocations, host);
+                 if (result) {
+                     return { resolvedModule: { resolvedFileName: result, isExternalLibraryImport: true }, failedLookupLocations };
+                 }

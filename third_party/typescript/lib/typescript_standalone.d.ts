@@ -13,7 +13,7 @@ See the Apache Version 2.0 License for specific language governing permissions
 and limitations under the License.
 ***************************************************************************** */
 
-declare namespace ts {
+declare module "typescript" {
     interface Map<T> {
         [index: string]: T;
     }
@@ -1438,7 +1438,7 @@ declare namespace ts {
         newLength: number;
     }
 }
-declare namespace ts {
+declare module "typescript" {
     interface System {
         args: string[];
         newLine: string;
@@ -1463,7 +1463,7 @@ declare namespace ts {
     }
     var sys: System;
 }
-declare namespace ts {
+declare module "typescript" {
     interface ErrorCallback {
         (message: DiagnosticMessage, length: number): void;
     }
@@ -1508,7 +1508,7 @@ declare namespace ts {
     function isIdentifierPart(ch: number, languageVersion: ScriptTarget): boolean;
     function createScanner(languageVersion: ScriptTarget, skipTrivia: boolean, languageVariant?: LanguageVariant, text?: string, onError?: ErrorCallback, start?: number, length?: number): Scanner;
 }
-declare namespace ts {
+declare module "typescript" {
     function getDefaultLibFileName(options: CompilerOptions): string;
     function textSpanEnd(span: TextSpan): number;
     function textSpanIsEmpty(span: TextSpan): boolean;
@@ -1538,13 +1538,13 @@ declare namespace ts {
     function collapseTextChangeRangesAcrossMultipleVersions(changes: TextChangeRange[]): TextChangeRange;
     function getTypeParameterOwner(d: Declaration): Declaration;
 }
-declare namespace ts {
+declare module "typescript" {
     function createNode(kind: SyntaxKind, pos?: number, end?: number): Node;
     function forEachChild<T>(node: Node, cbNode: (node: Node) => T, cbNodeArray?: (nodes: Node[]) => T): T;
     function createSourceFile(fileName: string, sourceText: string, languageVersion: ScriptTarget, setParentNodes?: boolean): SourceFile;
     function updateSourceFile(sourceFile: SourceFile, newText: string, textChangeRange: TextChangeRange, aggressiveChecks?: boolean): SourceFile;
 }
-declare namespace ts {
+declare module "typescript" {
     const version: string;
     function findConfigFile(searchPath: string): string;
     function resolveTripleslashReference(moduleName: string, containingFile: string): string;
@@ -1556,7 +1556,7 @@ declare namespace ts {
     function flattenDiagnosticMessageText(messageText: string | DiagnosticMessageChain, newLine: string): string;
     function createProgram(rootNames: string[], options: CompilerOptions, host?: CompilerHost, oldProgram?: Program): Program;
 }
-declare namespace ts {
+declare module "typescript" {
     function parseCommandLine(commandLine: string[], readFile?: (path: string) => string): ParsedCommandLine;
     /**
       * Read tsconfig.json file
@@ -1588,7 +1588,7 @@ declare namespace ts {
         errors: Diagnostic[];
     };
 }
-declare namespace ts {
+declare module "typescript" {
     /** The version of the language service API */
     let servicesVersion: string;
     interface Node {

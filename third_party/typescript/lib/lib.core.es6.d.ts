@@ -1198,39 +1198,6 @@ interface PromiseLike<T> {
     then<TResult>(onfulfilled?: (value: T) => TResult | PromiseLike<TResult>, onrejected?: (reason: any) => void): PromiseLike<TResult>;
 }
 
-declare namespace AMD {
-    interface Require {
-        (moduleName: string): any;
-        (moduleList: string[], callback: (...resolvedModules: any[]) => void): any;
-    }
-
-    export var require: Require;
-
-    interface Define {
-        (dependencies: string[], callback: (...resolvedModules: any[]) => any): void;
-        (moduleName: string, dependencies: string[], callback: (...resolvedModules: any[]) => any): void;
-        (func: (require: Require, module: { exports: any }, exports: any) => any): void;
-        (moduleName: string, object: {}): void;
-    }
-
-    export var define: Define;
-}
-
-declare namespace CommonJS {
-    export var require: Require;
-
-    export var exports: any;
-
-    interface Exports { }
-    interface Module {
-      exports: Exports;
-    }
-
-    interface Require {
-        (moduleName: string): any;
-    }
-}
-
 interface ArrayLike<T> {
     length: number;
     [n: number]: T;
@@ -1258,7 +1225,7 @@ interface ArrayBuffer {
 interface ArrayBufferConstructor {
     prototype: ArrayBuffer;
     new (byteLength: number): ArrayBuffer;
-    isView(arg: any): boolean;
+    isView(arg: any): arg is ArrayBufferView;
 }
 declare var ArrayBuffer: ArrayBufferConstructor;
 
