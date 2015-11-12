@@ -778,7 +778,7 @@ func RegisterHTTPHandlers(ctx context.Context, xs Service, mux *http.ServeMux) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		reply, err := CrossReferences(ctx, xs, &req)
+		reply, err := xs.CrossReferences(ctx, &req)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
