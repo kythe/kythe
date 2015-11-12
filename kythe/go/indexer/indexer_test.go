@@ -19,6 +19,8 @@ package indexer
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"go/ast"
+	"go/token"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -53,6 +55,20 @@ func hexDigest(data []byte) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
+// oneFileCompilation constructs a compilation unit with a single source file
+// attributed to path and package pkg, whose content is given. The compilation
+// is returned along with the digest of the file's content.
+func oneFileCompilation(path, pkg, content string) (*apb.CompilationUnit, string) {
+	digest := hexDigest([]byte(content))
+	return &apb.CompilationUnit{
+		VName: &spb.VName{Language: "go", Corpus: "test", Path: pkg, Signature: ":pkg:"},
+		RequiredInput: []*apb.CompilationUnit_FileInput{{
+			Info: &apb.FileInfo{Path: path, Digest: digest},
+		}},
+		SourceFile: []string{path},
+	}, digest
+}
+
 func TestResolve(t *testing.T) { // are you function enough not to back down?
 	// Test resolution on a simple two-package system:
 	//
@@ -72,20 +88,16 @@ import "test/foo"
 
 func init() { println(foo.Foo()) }
 `
+	unit, digest := oneFileCompilation("testdata/bar.go", "bar", bar)
 	fetcher := memFetcher{
-		hexDigest(foo):         string(foo),
-		hexDigest([]byte(bar)): bar,
+		hexDigest(foo): string(foo),
+		digest:         bar,
 	}
-	unit := &apb.CompilationUnit{
-		VName: &spb.VName{Language: "go", Corpus: "test", Path: "bar", Signature: ":pkg:"},
-		RequiredInput: []*apb.CompilationUnit_FileInput{{
-			VName: &spb.VName{Language: "go", Corpus: "test", Path: "foo", Signature: ":pkg:"},
-			Info:  &apb.FileInfo{Path: "testdata/foo.a", Digest: hexDigest(foo)},
-		}, {
-			Info: &apb.FileInfo{Path: "testdata/bar.go", Digest: hexDigest([]byte(bar))},
-		}},
-		SourceFile: []string{"testdata/bar.go"},
-	}
+	unit.RequiredInput = append(unit.RequiredInput, &apb.CompilationUnit_FileInput{
+		VName: &spb.VName{Language: "go", Corpus: "test", Path: "foo", Signature: ":pkg:"},
+		Info:  &apb.FileInfo{Path: "testdata/foo.a", Digest: hexDigest(foo)},
+	})
+
 	pi, err := Resolve(unit, fetcher, nil)
 	if err != nil {
 		t.Fatalf("Resolve failed: %v\nInput unit:\n%s", err, proto.MarshalTextString(unit))
@@ -108,3 +120,42 @@ func init() { println(foo.Foo()) }
 		t.Errorf("Unexpected resolution error: %v", err)
 	}
 }
+
+func TestSpan(t *testing.T) {
+	const input = `package main
+
+import "fmt"
+func main() { fmt.Println("Hello, world") }`
+
+	unit, digest := oneFileCompilation("main.go", "main", input)
+	fetcher := memFetcher{digest: input}
+	pi, err := Resolve(unit, fetcher, nil)
+	if err != nil {
+		t.Fatalf("Resolve failed: %v\nInput unit:\n%s", err, proto.MarshalTextString(unit))
+	}
+
+	tests := []struct {
+		key      func(*ast.File) ast.Node // return a node to compute a span for
+		pos, end int                      // the expected span for the node
+	}{
+		{func(*ast.File) ast.Node { return nil }, -1, -1},                  // invalid node
+		{func(*ast.File) ast.Node { return fakeNode{0, 2} }, -1, -1},       // invalid pos
+		{func(*ast.File) ast.Node { return fakeNode{5, 0} }, 4, 4},         // invalid end
+		{func(f *ast.File) ast.Node { return f.Name }, 8, 12},              // main
+		{func(f *ast.File) ast.Node { return f.Imports[0].Path }, 21, 26},  // "fmt"
+		{func(f *ast.File) ast.Node { return f.Decls[0] }, 14, 26},         // import "fmt"
+		{func(f *ast.File) ast.Node { return f.Decls[1] }, 27, len(input)}, // func main() { ... }
+	}
+	for _, test := range tests {
+		node := test.key(pi.Files[0])
+		pos, end := pi.Span(node)
+		if pos != test.pos || end != test.end {
+			t.Errorf("Span(%v): got pos=%d, end=%v; want pos=%d, end=%d", node, pos, end, test.pos, test.end)
+		}
+	}
+}
+
+type fakeNode struct{ pos, end token.Pos }
+
+func (f fakeNode) Pos() token.Pos { return f.pos }
+func (f fakeNode) End() token.Pos { return f.end }

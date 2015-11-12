@@ -72,6 +72,7 @@ type PackageInfo struct {
 	VNames       map[*types.Package]*spb.VName // Resolved package to vname
 	FileSet      *token.FileSet                // Location info for the source files
 	Files        []*ast.File                   // The parsed ASTs of the source files
+	SourceText   map[string]string             // The text of the source files, by path
 
 	Info   *types.Info // If non-nil, contains type-checker results
 	Errors []error     // All errors reported by the type checker
@@ -109,6 +110,7 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 
 	deps := make(map[string]*types.Package) // import path → package
 	imap := make(map[string]*spb.VName)     // import path → vname
+	srcs := make(map[string]string)         // file path → text
 	fset := token.NewFileSet()              // location info for the parser
 	var files []*ast.File                   // parsed sources
 
@@ -131,6 +133,7 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 		// Source inputs need to be parsed, so we can give their ASTs to the
 		// type checker later on.
 		if isSource[fpath] {
+			srcs[fpath] = string(data)
 			parsed, err := parser.ParseFile(fset, fpath, data, parser.AllErrors)
 			if err != nil {
 				return nil, fmt.Errorf("parsing %q: %v", fpath, err)
@@ -174,6 +177,7 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 		VNames:       vmap,
 		FileSet:      fset,
 		Files:        files,
+		SourceText:   srcs,
 		Dependencies: deps,
 		Info:         info,
 
@@ -245,6 +249,25 @@ func (pi *PackageInfo) VName(obj types.Object) *spb.VName {
 	vname := proto.Clone(base).(*spb.VName)
 	vname.Signature = sig
 	return vname
+}
+
+// Span returns the 0-based offset range of the given AST node.
+// The range is half-open, including the start position but excluding the end.
+// If node == nil or lacks a valid start position, Span returns -1, -1.
+// If the end position of node is invalid, start == end.
+func (pi *PackageInfo) Span(node ast.Node) (start, end int) {
+	if node == nil {
+		return -1, -1
+	} else if pos := node.Pos(); pos == token.NoPos {
+		return -1, -1
+	} else {
+		start = pi.FileSet.Position(pos).Offset
+		end = start
+	}
+	if pos := node.End(); pos != token.NoPos {
+		end = pi.FileSet.Position(pos).Offset
+	}
+	return
 }
 
 const (
