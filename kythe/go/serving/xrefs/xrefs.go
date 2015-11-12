@@ -18,13 +18,10 @@
 // xrefs.Service.
 //
 // Table format:
-//   nodes:<ticket>         -> srvpb.Node
 //   edgeSets:<ticket>      -> srvpb.PagedEdgeSet
 //   edgePages:<page_token> -> srvpb.EdgePage
 //   decor:<ticket>         -> srvpb.FileDecorations
 package xrefs
-
-// TODO(schroederc): remove separate Nodes table; reuse edgeSets table
 
 import (
 	"encoding/base64"
@@ -47,12 +44,6 @@ import (
 	"golang.org/x/net/context"
 )
 
-type nodeResult struct {
-	Node *srvpb.Node
-
-	Err error
-}
-
 type edgeSetResult struct {
 	PagedEdgeSet *srvpb.PagedEdgeSet
 
@@ -60,7 +51,6 @@ type edgeSetResult struct {
 }
 
 type staticLookupTables interface {
-	nodes(ctx context.Context, tickets []string) (<-chan nodeResult, error)
 	pagedEdgeSets(ctx context.Context, tickets []string) (<-chan edgeSetResult, error)
 	edgePage(ctx context.Context, key string) (*srvpb.EdgePage, error)
 	fileDecorations(ctx context.Context, ticket string) (*srvpb.FileDecorations, error)
@@ -69,9 +59,6 @@ type staticLookupTables interface {
 // SplitTable implements the xrefs Service interface using separate static
 // lookup tables for each API component.
 type SplitTable struct {
-	// Nodes is a table of srvpb.Nodes keyed by their tickets.
-	Nodes table.ProtoBatch
-
 	// Edges is a table of srvpb.PagedEdgeSets keyed by their source tickets.
 	Edges table.ProtoBatch
 
@@ -81,33 +68,6 @@ type SplitTable struct {
 	// Decorations is a table of srvpb.FileDecorations keyed by their source
 	// location tickets.
 	Decorations table.Proto
-}
-
-func lookupNodes(ctx context.Context, tbl table.ProtoBatch, keys [][]byte) (<-chan nodeResult, error) {
-	rs, err := tbl.LookupBatch(ctx, keys, (*srvpb.Node)(nil))
-	if err != nil {
-		return nil, err
-	}
-	ch := make(chan nodeResult)
-	go func() {
-		defer close(ch)
-		for r := range rs {
-			if r.Err == table.ErrNoSuchKey {
-				log.Printf("Could not locate node with key %q", r.Key)
-				ch <- nodeResult{Err: r.Err}
-				continue
-			} else if r.Err != nil {
-				ticket := strings.TrimPrefix(string(r.Key), nodesTablePrefix)
-				ch <- nodeResult{
-					Err: fmt.Errorf("lookup error for node %q: %v", ticket, r.Err),
-				}
-				continue
-			}
-
-			ch <- nodeResult{Node: r.Value.(*srvpb.Node)}
-		}
-	}()
-	return ch, nil
 }
 
 func lookupPagedEdgeSets(ctx context.Context, tbl table.ProtoBatch, keys [][]byte) (<-chan edgeSetResult, error) {
@@ -145,9 +105,6 @@ func toKeys(ss []string) [][]byte {
 	return keys
 }
 
-func (s *SplitTable) nodes(ctx context.Context, tickets []string) (<-chan nodeResult, error) {
-	return lookupNodes(ctx, s.Nodes, toKeys(tickets))
-}
 func (s *SplitTable) pagedEdgeSets(ctx context.Context, tickets []string) (<-chan edgeSetResult, error) {
 	return lookupPagedEdgeSets(ctx, s.Edges, toKeys(tickets))
 }
@@ -160,9 +117,8 @@ func (s *SplitTable) fileDecorations(ctx context.Context, ticket string) (*srvpb
 	return &fd, s.Decorations.Lookup(ctx, []byte(ticket), &fd)
 }
 
-// Key prefixed for the combinedTable implementation.
+// Key prefixes for the combinedTable implementation.
 const (
-	nodesTablePrefix     = "nodes:"
 	decorTablePrefix     = "decor:"
 	edgeSetsTablePrefix  = "edgeSets:"
 	edgePagesTablePrefix = "edgePages:"
@@ -170,13 +126,6 @@ const (
 
 type combinedTable struct{ table.ProtoBatch }
 
-func (c *combinedTable) nodes(ctx context.Context, tickets []string) (<-chan nodeResult, error) {
-	keys := make([][]byte, len(tickets), len(tickets))
-	for i, ticket := range tickets {
-		keys[i] = NodeKey(ticket)
-	}
-	return lookupNodes(ctx, c, keys)
-}
 func (c *combinedTable) pagedEdgeSets(ctx context.Context, tickets []string) (<-chan edgeSetResult, error) {
 	keys := make([][]byte, len(tickets), len(tickets))
 	for i, ticket := range tickets {
@@ -199,13 +148,8 @@ func NewSplitTable(c *SplitTable) xrefs.Service { return &tableImpl{c} }
 
 // NewCombinedTable returns an xrefs.Service for the given combined xrefs
 // serving table.  The table's keys are expected to be constructed using only
-// the NodeKey, EdgeSetKey, EdgePageKey, and DecorationsKey functions.
+// the EdgeSetKey, EdgePageKey, and DecorationsKey functions.
 func NewCombinedTable(t table.ProtoBatch) xrefs.Service { return &tableImpl{&combinedTable{t}} }
-
-// NodeKey returns the nodes CombinedTable key for the given ticket.
-func NodeKey(ticket string) []byte {
-	return []byte(nodesTablePrefix + ticket)
-}
 
 // EdgeSetKey returns the edgeset CombinedTable key for the given source ticket.
 func EdgeSetKey(ticket string) []byte {
@@ -249,7 +193,7 @@ func (t *tableImpl) Nodes(ctx context.Context, req *xpb.NodesRequest) (*xpb.Node
 		return nil, err
 	}
 
-	rs, err := t.nodes(ctx, tickets)
+	rs, err := t.pagedEdgeSets(ctx, tickets)
 	if err != nil {
 		return nil, err
 	}
@@ -268,8 +212,9 @@ func (t *tableImpl) Nodes(ctx context.Context, req *xpb.NodesRequest) (*xpb.Node
 		} else if r.Err != nil {
 			return nil, r.Err
 		}
-		ni := &xpb.NodeInfo{Ticket: r.Node.Ticket}
-		for _, f := range r.Node.Fact {
+		node := r.PagedEdgeSet.EdgeSet.Source
+		ni := &xpb.NodeInfo{Ticket: node.Ticket}
+		for _, f := range node.Fact {
 			if len(patterns) == 0 || xrefs.MatchesAny(f.Name, patterns) {
 				ni.Fact = append(ni.Fact, &xpb.Fact{Name: f.Name, Value: f.Value})
 			}

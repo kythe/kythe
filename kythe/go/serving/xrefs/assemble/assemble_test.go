@@ -88,6 +88,7 @@ func TestEdgeSetBuilder(t *testing.T) {
 		edgePages []*srvpb.EdgePage
 	}{{
 		src: getNode("someSource"),
+	}, {
 		grp: &srvpb.EdgeSet_Group{
 			Kind:   "someEdgeKind",
 			Target: getNodes("kythe:#aTarget"),
@@ -106,6 +107,7 @@ func TestEdgeSetBuilder(t *testing.T) {
 		},
 	}, {
 		src: getNode("someOtherSource"),
+	}, {
 		grp: &srvpb.EdgeSet_Group{
 			Kind: "someEdgeKind",
 			Target: getNodes(
@@ -114,7 +116,6 @@ func TestEdgeSetBuilder(t *testing.T) {
 			),
 		},
 	}, {
-		src: getNode("someOtherSource"),
 		grp: &srvpb.EdgeSet_Group{
 			Kind: "someEdgeKind",
 			Target: getNodes(
@@ -123,10 +124,6 @@ func TestEdgeSetBuilder(t *testing.T) {
 		},
 	}, {
 		src: getNode("aThirdSource"),
-		grp: &srvpb.EdgeSet_Group{
-			Kind:   "edgeKind123",
-			Target: getNodes("kythe:#aTarget"),
-		},
 
 		// forced flush due to new source
 		edgeSet: &srvpb.PagedEdgeSet{
@@ -144,7 +141,11 @@ func TestEdgeSetBuilder(t *testing.T) {
 			TotalEdges: 3, // fits exactly MaxEdgePageSize
 		},
 	}, {
-		src: getNode("aThirdSource"),
+		grp: &srvpb.EdgeSet_Group{
+			Kind:   "edgeKind123",
+			Target: getNodes("kythe:#aTarget"),
+		},
+	}, {
 		grp: &srvpb.EdgeSet_Group{
 			Kind: "edgeKind123",
 			Target: getNodes(
@@ -168,7 +169,6 @@ func TestEdgeSetBuilder(t *testing.T) {
 			},
 		}},
 	}, {
-		src: getNode("aThirdSource"),
 		grp: &srvpb.EdgeSet_Group{
 			Kind: "edgeKind123",
 			Target: getNodes(
@@ -196,7 +196,6 @@ func TestEdgeSetBuilder(t *testing.T) {
 			},
 		}},
 	}, {
-		src: getNode("aThirdSource"),
 		grp: &srvpb.EdgeSet_Group{
 			Kind: "edgeKind123",
 			Target: getNodes(
@@ -204,7 +203,6 @@ func TestEdgeSetBuilder(t *testing.T) {
 			),
 		},
 	}, {
-		src: getNode("aThirdSource"),
 		grp: &srvpb.EdgeSet_Group{
 			Kind: "edgeKindFinal",
 			Target: getNodes(
@@ -223,7 +221,6 @@ func TestEdgeSetBuilder(t *testing.T) {
 			},
 		}},
 	}, {
-		src: getNode("aThirdSource"),
 		grp: &srvpb.EdgeSet_Group{
 			Kind: "edgeKindFinal",
 			Target: getNodes(
@@ -231,7 +228,6 @@ func TestEdgeSetBuilder(t *testing.T) {
 			),
 		},
 	}, {
-		src: getNode("aThirdSource"),
 		// flush
 
 		edgeSet: &srvpb.PagedEdgeSet{
@@ -270,12 +266,15 @@ func TestEdgeSetBuilder(t *testing.T) {
 	})
 	var edgeSets, edgePages int
 	for _, test := range tests {
-		if test.grp == nil {
+		if test.src != nil {
+			testutil.FatalOnErrT(t, "Failure to StartEdgeSet: %v",
+				tESB.StartEdgeSet(ctx, test.src))
+		} else if test.grp != nil {
+			testutil.FatalOnErrT(t, "Failure to AddGroup: %v",
+				tESB.AddGroup(ctx, test.grp))
+		} else {
 			testutil.FatalOnErrT(t, "Failure to Flush: %v",
 				tESB.Flush(ctx))
-		} else {
-			testutil.FatalOnErrT(t, "Failure to AddGroup: %v",
-				tESB.AddGroup(ctx, test.src, test.grp))
 		}
 
 		if test.edgeSet != nil {

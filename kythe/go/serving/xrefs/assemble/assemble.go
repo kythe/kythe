@@ -20,6 +20,7 @@ package assemble
 
 import (
 	"container/heap"
+	"errors"
 	"fmt"
 	"log"
 	"sort"
@@ -262,13 +263,15 @@ func (s ByOffset) Less(i, j int) bool {
 }
 
 // EdgeSetBuilder constructs a set of PagedEdgeSets and EdgePages from a
-// sequence of EdgeSet_Groups.  All EdgeSet_Groups for the same source are
-// assumed to be given sequentially to AddGroup, secondarily ordered by the
-// group's edge kind.  If given in this order, Output will be given exactly 1
-// PagedEdgeSet per source with as few EdgeSet_Group per edge kind as to satisfy
-// MaxEdgePageSize (MaxEdgePageSize == 0 indicates that there will be exactly 1
-// edge group per edge kind).  If not given in this order, no guarantees can be
-// made.  Flush must be called after the final call to AddGroup.
+// sequence of Nodes and EdgeSet_Groups.  For each set of groups with the same
+// source, a call to StartEdgeSet must precede.  All EdgeSet_Groups for the same
+// source are then assumed to be given sequentially to AddGroup, secondarily
+// ordered by the group's edge kind.  If given in this order, Output will be
+// given exactly 1 PagedEdgeSet per source with as few EdgeSet_Group per edge
+// kind as to satisfy MaxEdgePageSize (MaxEdgePageSize == 0 indicates that there
+// will be exactly 1 edge group per edge kind).  If not given in this order, no
+// guarantees can be made.  Flush must be called after the final call to
+// AddGroup.
 type EdgeSetBuilder struct {
 	// MaxEdgePageSize is maximum number of edges that are allowed in the
 	// PagedEdgeSet and any EdgePage.  If MaxEdgePageSize <= 0, no paging is
@@ -286,22 +289,34 @@ type EdgeSetBuilder struct {
 	resident int
 }
 
-// AddGroup adds the given EdgeSet_Group to the builder, possibly emitting a new
-// PagedEdgeSet and/or EdgePage.  See EdgeSetBuilder's documentation for the
-// assumed order of the groups.
-func (b *EdgeSetBuilder) AddGroup(ctx context.Context, src *srvpb.Node, eg *srvpb.EdgeSet_Group) error {
-	if b.curPES != nil && b.curPES.EdgeSet.Source.Ticket != src.Ticket {
+// StartEdgeSet begins a new EdgeSet for the given source node, possibly
+// emitting a PagedEdgeSet for the previous EdgeSet.  Each following call to
+// AddGroup adds the group to this new EdgeSet until another call to
+// StartEdgeSet is made.
+func (b *EdgeSetBuilder) StartEdgeSet(ctx context.Context, src *srvpb.Node) error {
+	if b.curPES != nil {
+		if b.curPES.EdgeSet.Source.Ticket == src.Ticket {
+			return fmt.Errorf("starting new EdgeSet for same node as previous EdgeSet: %q", src.Ticket)
+		}
 		if err := b.Flush(ctx); err != nil {
 			return fmt.Errorf("error flushing previous PagedEdgeSet: %v", err)
 		}
 	}
 
+	b.curPES = &srvpb.PagedEdgeSet{
+		EdgeSet: &srvpb.EdgeSet{Source: src},
+	}
+	return nil
+}
+
+// AddGroup adds a EdgeSet_Group to current EdgeSet being built, possibly
+// emitting a new PagedEdgeSet and/or EdgePage.  StartEdgeSet must be called
+// before any calls to this method.  See EdgeSetBuilder's documentation for the
+// assumed order of the groups and this method's relation to StartEdgeSet.
+func (b *EdgeSetBuilder) AddGroup(ctx context.Context, eg *srvpb.EdgeSet_Group) error {
 	// Setup b.curPES and b.curEG; ensuring both are non-nil
 	if b.curPES == nil {
-		b.curPES = &srvpb.PagedEdgeSet{
-			EdgeSet: &srvpb.EdgeSet{Source: src},
-		}
-		b.curEG = eg
+		return errors.New("no EdgeSet currently being built")
 	} else if b.curEG == nil {
 		b.curEG = eg
 	} else if b.curEG.Kind != eg.Kind {
@@ -335,13 +350,14 @@ func (b *EdgeSetBuilder) AddGroup(ctx context.Context, src *srvpb.Node, eg *srvp
 			eviction = heap.Pop(&b.groups).(*srvpb.EdgeSet_Group)
 		}
 
-		key := newPageKey(src.Ticket, len(b.curPES.PageIndex))
+		src := b.curPES.EdgeSet.Source.Ticket
+		key := newPageKey(src, len(b.curPES.PageIndex))
 		count := len(eviction.Target)
 
 		// Output the EdgePage and add it to the page indices
 		if err := b.OutputPage(ctx, &srvpb.EdgePage{
 			PageKey:      key,
-			SourceTicket: src.Ticket,
+			SourceTicket: src,
 			EdgesGroup:   eviction,
 		}); err != nil {
 			return fmt.Errorf("error emitting EdgePage: %v", err)

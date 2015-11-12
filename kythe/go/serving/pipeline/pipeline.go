@@ -160,7 +160,7 @@ func combineNodesAndEdges(ctx context.Context, out *servingOutput, gsEntries <-c
 		if src == nil {
 			src = e.Source
 		} else if !compare.VNamesEqual(e.Source, src) {
-			if err := writeNodeAndPartialEdges(ctx, out, assemble.SourceFromEntries(entries)); err != nil {
+			if err := writePartialEdges(ctx, out, assemble.SourceFromEntries(entries)); err != nil {
 				drainEntries(gsEntries)
 				return err
 			}
@@ -171,7 +171,7 @@ func combineNodesAndEdges(ctx context.Context, out *servingOutput, gsEntries <-c
 		entries = append(entries, e)
 	}
 	if len(entries) > 0 {
-		if err := writeNodeAndPartialEdges(ctx, out, assemble.SourceFromEntries(entries)); err != nil {
+		if err := writePartialEdges(ctx, out, assemble.SourceFromEntries(entries)); err != nil {
 			return err
 		}
 	}
@@ -242,7 +242,7 @@ func writeFileTree(ctx context.Context, tree *filetree.Map, out table.Proto) err
 	return out.Put(ctx, ftsrv.CorpusRootsKey, cr)
 }
 
-func writeNodeAndPartialEdges(ctx context.Context, out *servingOutput, src *assemble.Source) error {
+func writePartialEdges(ctx context.Context, out *servingOutput, src *assemble.Source) error {
 	edges := assemble.PartialEdges(src)
 	for _, pe := range edges {
 		var target string
@@ -253,9 +253,6 @@ func writeNodeAndPartialEdges(ctx context.Context, out *servingOutput, src *asse
 			[]byte(pe.Source.Ticket+tempTableKeySep+pe.Kind+tempTableKeySep+target), pe); err != nil {
 			return fmt.Errorf("error writing partial edge: %v", err)
 		}
-	}
-	if err := out.xs.Put(ctx, xrefs.NodeKey(src.Ticket), edges[0].Source); err != nil {
-		return err
 	}
 	if err := search.IndexNode(ctx, out.idx, edges[0].Source); err != nil {
 		return err
@@ -336,11 +333,10 @@ func writePagedEdges(ctx context.Context, edges <-chan *srvpb.Edge, out table.Pr
 		},
 	}
 
-	var src *srvpb.Node
 	var grp *srvpb.EdgeSet_Group
 	for e := range edges {
 		if grp != nil && (e.Target == nil || grp.Kind != e.Kind) {
-			if err := esb.AddGroup(ctx, src, grp); err != nil {
+			if err := esb.AddGroup(ctx, grp); err != nil {
 				for range edges {
 				} // drain input channel
 				return err
@@ -350,7 +346,9 @@ func writePagedEdges(ctx context.Context, edges <-chan *srvpb.Edge, out table.Pr
 
 		if e.Target == nil {
 			// Head-only edge: signals a new set of edges with the same Source
-			src = e.Source
+			if err := esb.StartEdgeSet(ctx, e.Source); err != nil {
+				return err
+			}
 		} else if grp == nil {
 			grp = &srvpb.EdgeSet_Group{
 				Kind:   e.Kind,
@@ -362,7 +360,7 @@ func writePagedEdges(ctx context.Context, edges <-chan *srvpb.Edge, out table.Pr
 	}
 
 	if grp != nil {
-		if err := esb.AddGroup(ctx, src, grp); err != nil {
+		if err := esb.AddGroup(ctx, grp); err != nil {
 			return err
 		}
 	}

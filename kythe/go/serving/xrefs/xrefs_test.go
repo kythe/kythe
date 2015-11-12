@@ -804,10 +804,21 @@ type testTable struct {
 
 func (tbl *testTable) Construct(t *testing.T) xrefs.Service {
 	p := make(testProtoTable)
+	tickets := stringset.New()
 	for _, n := range tbl.Nodes {
-		testutil.FatalOnErrT(t, "Error writing node: %v", p.Put(ctx, NodeKey(mustFix(t, n.Ticket)), n))
+		tickets.Add(n.Ticket)
 	}
 	for _, es := range tbl.EdgeSets {
+		tickets.Remove(es.EdgeSet.Source.Ticket)
+		testutil.FatalOnErrT(t, "Error writing edge set: %v", p.Put(ctx, EdgeSetKey(mustFix(t, es.EdgeSet.Source.Ticket)), es))
+	}
+	// Fill in EdgeSets for zero-degree nodes
+	for ticket := range tickets {
+		es := &srvpb.PagedEdgeSet{
+			EdgeSet: &srvpb.EdgeSet{
+				Source: getNode(ticket),
+			},
+		}
 		testutil.FatalOnErrT(t, "Error writing edge set: %v", p.Put(ctx, EdgeSetKey(mustFix(t, es.EdgeSet.Source.Ticket)), es))
 	}
 	for _, ep := range tbl.EdgePages {
