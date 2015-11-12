@@ -80,9 +80,10 @@ sed "s#/usr/local/go#$GOROOT#" tools/WORKSPACE.template > WORKSPACE
 if [[ -z "${NODEJS}" ]]; then
   if [[ -z "$(which node)" ]]; then
     echo 'No node.js installation found.'
-    ln "${LNOPTS}" /bin/false "${NODEJS}"
+    ln "${LNOPTS}" /bin/false tools/node
+  else
+    NODEJS="$(realpath -s $(which node))"
   fi
-  NODEJS="$(realpath -s $(which node))"
 fi
 
 if [[ ! -z "${NODEJS}" ]]; then
