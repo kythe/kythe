@@ -21,6 +21,7 @@ import kythe = require('./kythe');
 import jobs = require('./job');
 import au = require('./astutilities');
 import su = require('./sbutilities');
+import enc = require('./encoding');
 
 function index(job : jobs.Job) {
   // Dump the job without the classifier object.
@@ -31,9 +32,9 @@ function index(job : jobs.Job) {
 
   const sourceFileVersion = "1";
 
+  let snapshots : ts.Map<ts.IScriptSnapshot> = {};
   let program = createFilesystemProgram();
   let filenames = program.getSourceFiles().map(file => file.fileName);
-  let snapshots : ts.Map<ts.IScriptSnapshot> = {};
   let typechecker = program.getTypeChecker();
 
   program.getSourceFiles().forEach(file =>
@@ -107,7 +108,9 @@ function index(job : jobs.Job) {
             if (resolvedFileName && importPos && importEnd) {
               // These should appear as references like everything else below,
               // but they're not showing up?
-              let refAnchorVName = kythe.anchor(vname, importPos, importEnd);
+              let refAnchorVName = kythe.anchor(vname,
+                  enc.getUtf8PositionOfSourcePosition(file, importPos),
+                  enc.getUtf8PositionOfSourcePosition(file, importEnd));
               let targetVName = job.classifier.classify(resolvedFileName);
               kythe.write(kythe.edge(refAnchorVName, "ref/includes",
                                      targetVName));
@@ -166,7 +169,13 @@ function index(job : jobs.Job) {
       writeFile: (filename, data, writeBOM) => { throw new Error("write?"); },
       getCurrentDirectory: () => ts.sys.getCurrentDirectory(),
       fileExists: filename => ts.sys.fileExists(filename),
-      readFile: filename => ts.sys.readFile(filename)
+      readFile: filename => {
+        let fileBuf = ts.sys.readFile(filename);
+        // If we don't do this, non-source files (e.g., package.json) won't
+        // be available during later phases.
+        snapshots[filename] = ts.ScriptSnapshot.fromString(fileBuf);
+        return fileBuf;
+      }
     };
     return ts.createProgram(job.files, job.options, host);
   }
@@ -197,7 +206,7 @@ function index(job : jobs.Job) {
                                ref : ts.FileReference) {
     let defs = visitReferencesAt(vname, file, ref.pos);
     if (defs && defs.length !== 0) {
-      let refAnchorVName = textRangeAnchor(vname, ref);
+      let refAnchorVName = textRangeAnchor(file, vname, ref);
       defs.forEach(def => {
         kythe.write(kythe.edge(refAnchorVName, "ref/includes", def));
       });
@@ -232,8 +241,9 @@ function index(job : jobs.Job) {
             && tsu.declarationNameToString(declaration.name);
         let definitionKind = au.getDeclarationKind(declaration);
         let fullName = su.getQualifiedName(declaration);
-        let defSiteAnchor = kythe.anchor(vname, spanStart,
-            spanStart + spanLength);
+        let defSiteAnchor = kythe.anchor(vname,
+            enc.getUtf8PositionOfSourcePosition(file, spanStart),
+            enc.getUtf8PositionOfSourcePosition(file, spanStart + spanLength));
         let defVName = vnameForNode(vname, declaration);
         kythe.write(kythe.edge(defSiteAnchor, "defines/binding", defVName));
         kythe.write(kythe.fact(defVName, "node/kind", definitionKind));
@@ -246,8 +256,10 @@ function index(job : jobs.Job) {
         if (exportInfo && exportInfo.length != 0) {
           for (let xi = 0, xn = exportInfo.length; xi < xn; ++xi) {
             let xport = exportInfo[xi];
-            let defSiteAnchor = kythe.anchor(vname, spanStart,
-                spanStart + spanLength);
+            let defSiteAnchor = kythe.anchor(vname,
+                enc.getUtf8PositionOfSourcePosition(file, spanStart),
+                enc.getUtf8PositionOfSourcePosition(file,
+                                                    spanStart + spanLength));
             let exportVName = vnameForNode(vname, token);
             kythe.write(kythe.edge(defSiteAnchor, "defines/binding",
                 exportVName));
@@ -257,7 +269,9 @@ function index(job : jobs.Job) {
           vnames = visitReferencesAt(vname, file, spanStart);
           if (vnames && vnames.length != 0) {
             let refSiteAnchor = kythe.anchor(vname,
-                spanStart, spanStart + spanLength);
+                enc.getUtf8PositionOfSourcePosition(file, spanStart),
+                enc.getUtf8PositionOfSourcePosition(file,
+                                                    spanStart + spanLength));
             for (let vi = 0, vn = vnames.length; vi < vn; ++vi) {
               kythe.write(kythe.edge(refSiteAnchor, "ref", vnames[vi]));
             }
@@ -303,12 +317,18 @@ function index(job : jobs.Job) {
     return vnames;
   }
 
-  function textRangeAnchor(fileVName : kythe.VName, range : ts.TextRange) {
-    return kythe.anchor(fileVName, range.pos, range.end);
+  function textRangeAnchor(file : ts.SourceFile, fileVName : kythe.VName,
+                           range : ts.TextRange) {
+    return kythe.anchor(fileVName,
+        enc.getUtf8PositionOfSourcePosition(file, range.pos),
+        enc.getUtf8PositionOfSourcePosition(file, range.end));
   }
 
-  function textSpanAnchor(fileVName : kythe.VName, span : ts.TextSpan) {
-    return kythe.anchor(fileVName, span.start, span.start + span.length);
+  function textSpanAnchor(file : ts.SourceFile, fileVName : kythe.VName,
+                          span : ts.TextSpan) {
+    return kythe.anchor(fileVName,
+        enc.getUtf8PositionOfSourcePosition(file, span.start),
+        enc.getUtf8PositionOfSourcePosition(file, span.start + span.length));
   }
 
   function fileVName(file : ts.SourceFile) : kythe.VName {

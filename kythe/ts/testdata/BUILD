@@ -35,6 +35,18 @@ ts_indexer_test(
     tags = ["basic"],
 )
 
+ts_indexer_test(
+    name = "utf8_comments",
+    srcs = ["basic/utf8_comments.js"],
+    tags = ["basic"],
+)
+
+ts_indexer_test(
+    name = "utf8_comments_surrogate_pair",
+    srcs = ["basic/utf8_comments_surrogate_pair.js"],
+    tags = ["basic"],
+)
+
 test_suite(
     name = "commonjs_tests",
     tags = ["commonjs"],
@@ -59,4 +71,19 @@ ts_indexer_test(
       "commonjs/node_modules/mod_from_npm/mod_from_npm_main.js",
     ],
     tags = ["commonjs"],
+)
+
+test_suite(
+    name = "repo_tests",
+    tags = ["repo"],
+)
+
+ts_indexer_test(
+    name = "repo_index",
+    needs_node = True,
+    srcs = [
+      "repo/index.js",
+    ],
+    deps = [":repo_files"],
+    tags = ["repo"],
 )

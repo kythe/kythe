@@ -1,0 +1,9 @@
+{
+  "name": "world",
+  "version": "1.0.0",
+  "dependencies": {
+    "depone": "~1.0.0",
+    "deptwo": "~1.0.0"
+  },
+  "main": "index.js"
+}

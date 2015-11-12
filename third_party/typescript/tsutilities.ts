@@ -1,8 +1,40 @@
+import ts = require('typescript')
+
+// from src/compiler/core.ts
+// of https://github.com/Microsoft/TypeScript
+// version 07931a3a57293c8f690c95d77961bc794bcad3c9
+/**
+ * Performs a binary search, finding the index at which 'value' occurs in 'array'.
+ * If no such index is found, returns the 2's-complement of first index at which
+ * number[index] exceeds number.
+ * @param array A sorted array whose first element must be no larger than number
+ * @param number The value to be searched for in the array.
+ */
+export function binarySearch(array: number[], value: number): number {
+    let low = 0;
+    let high = array.length - 1;
+
+    while (low <= high) {
+        let middle = low + ((high - low) >> 1);
+        let midValue = array[middle];
+
+        if (midValue === value) {
+            return middle;
+        }
+        else if (midValue > value) {
+            high = middle - 1;
+        }
+        else {
+            low = middle + 1;
+        }
+    }
+
+    return ~low;
+}
+
 // from src/services/utilities.ts
 // of https://github.com/Microsoft/TypeScript
 // version cbe2f3df64d6ceb3a6d928094e6ecb436010ca40
-
-import ts = require('typescript')
 
 function nodeHasTokens(n: ts.Node): boolean {
     // If we have a token or node that has a non-zero width, it must have tokens.
