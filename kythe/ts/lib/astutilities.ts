@@ -34,8 +34,9 @@ export function tokenIsExports(lang : ts.LanguageService, job : jobs.Job,
     let sourceFile = tsu.getSourceFileOfNode(token);
     let defs =
         lang.getDefinitionAtPosition(sourceFile.fileName, ident.getStart());
-    return defs && defs.length == 1 && defs[0].kind == 'var' &&
-           fileNameCanProvideExportIdentifier(defs[0].fileName);
+    return defs && defs.length == 1
+           && (defs[0].kind == 'var' || defs[0].kind == 'property')
+           && fileNameCanProvideExportIdentifier(defs[0].fileName);
   }
   return false;
 }
@@ -115,6 +116,7 @@ export function extractExportFromToken(lang : ts.LanguageService,
       token.parent.kind == ts.SyntaxKind.PropertyAccessExpression &&
       token.parent.parent.kind == ts.SyntaxKind.BinaryExpression) {
     // exports.foo = bar;
+    // module.exports = baz;
     let assignment = <ts.BinaryExpression>token.parent.parent;
     let propAccess = <ts.PropertyAccessExpression>token.parent;
     info.exportName = propAccess.name.text;

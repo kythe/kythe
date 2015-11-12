@@ -24,7 +24,39 @@ test_suite(
 )
 
 ts_indexer_test(
+    name = "test_test",
+    srcs = ["basic/test_test.js"],
+    tags = ["basic"],
+)
+
+ts_indexer_test(
     name = "var_ref",
     srcs = ["basic/var_ref.js"],
     tags = ["basic"],
+)
+
+test_suite(
+    name = "commonjs_tests",
+    tags = ["commonjs"],
+)
+
+ts_indexer_test(
+    name = "require_object",
+    needs_node = True,
+    srcs = [
+      "commonjs/export_object.js",
+      "commonjs/require_object.js",
+    ],
+    tags = ["commonjs"],
+)
+
+ts_indexer_test(
+    name = "require_npm",
+    needs_node = True,
+    srcs = [
+      "commonjs/require_npm.js",
+      "commonjs/node_modules/mod_from_npm/package.json",
+      "commonjs/node_modules/mod_from_npm/mod_from_npm_main.js",
+    ],
+    tags = ["commonjs"],
 )

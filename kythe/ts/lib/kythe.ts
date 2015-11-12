@@ -70,3 +70,85 @@ export function anchor(fileName : VName, begin : number, end : number) : VName {
   write(edge(anchorVName, "childof", fileName));
   return anchorVName;
 }
+
+// A rule from a vnames.json file.
+interface ClassifierRule {
+  pattern : RegExp;
+  rootTemplate : (string | number)[];
+  corpusTemplate : (string | number)[];
+  pathTemplate : (string | number)[];
+}
+
+// Matches a single "text@sub-ref@" pair.
+let subMatcher : RegExp = /([^@]*)@([^@]+)@/g;
+
+// Parses a template string into an array of template actions
+// (strings for string pastes; numbers for capture references)
+function parseTemplate(template : string) : (string | number)[] {
+  if (!template) {
+    return [];
+  }
+  var outArray : (string | number)[] = [];
+  var matchResult = subMatcher.exec(template);
+  var lastIndex = 0;
+  while (matchResult !== null) {
+    lastIndex = subMatcher.lastIndex;
+    outArray.push(matchResult[1]);
+    outArray.push(Number(matchResult[2]));
+    matchResult = subMatcher.exec(template);
+  }
+  outArray.push(template.substr(lastIndex));
+  return outArray;
+}
+
+// Applies a template string using an array of capture references.
+function applyTemplate(template : (string | number)[], subs : string[])
+    : string {
+  var result : string = "";
+  for (var v = 0; v < template.length; ++v) {
+    if (typeof template[v] === 'number') {
+      let index = <number>(template[v]);
+      if (index > 0 && index < subs.length) {
+        result += subs[index];
+      } else {
+        result += "@" + index + "@";
+      }
+    } else {
+      result += template[v];
+    }
+  }
+  return result;
+}
+
+// The type of an unparsed vnames.json record.
+export interface VNamesConfigFileEntry {
+  pattern : string;
+  vname : VName;
+}
+
+// Maps paths to VNames using vnames.json data.
+export class PathClassifier {
+  constructor(config: VNamesConfigFileEntry[]) {
+    this.rules = [];
+    for (var i = 0; i < config.length; ++i) {
+      this.rules.push({
+        pattern: new RegExp(config[i].pattern),
+        rootTemplate: parseTemplate(config[i].vname.root),
+        corpusTemplate: parseTemplate(config[i].vname.corpus),
+        pathTemplate: parseTemplate(config[i].vname.path)
+      });
+    }
+  }
+  classify(path : string) : VName {
+    for (var i = 0; i < this.rules.length; ++i) {
+      var matches = this.rules[i].pattern.exec(path);
+      if (matches != null) {
+        return vname("", applyTemplate(this.rules[i].pathTemplate, matches),
+            "ts", applyTemplate(this.rules[i].rootTemplate, matches),
+            applyTemplate(this.rules[i].corpusTemplate, matches));
+      }
+    }
+    return vname("", path, "ts", "", "no_corpus");
+  }
+  private rules : ClassifierRule[];
+}

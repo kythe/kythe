@@ -27,5 +27,7 @@ fi
 
 ./node_modules/.bin/gulp 1>&2
 
-node build/lib/main.js --rootDir ./lib -- typings/**/*.d.ts lib/*.ts \
+KYTHE_VNAMES=./../data/vnames.json \
+node build/lib/main.js --rootDir ./lib --skipDefaultLib \
+    -- typings/**/*.d.ts lib/*.ts \
     > self-entries.json

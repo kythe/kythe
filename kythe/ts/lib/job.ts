@@ -14,11 +14,17 @@
  * limitations under the License.
  */
 
+import kythe = require('./kythe');
 import ts = require('typescript');
 
 export interface Job {
+  // Files required for compliation that we are indexing.
   files : string[];
+  // Files required for compilation but that we aren't indexing.
+  implicits : string[];
   lib : string;
   options : ts.CompilerOptions;
   dontIndexDefaultLib : boolean;
+  // Maps path names to VNames.
+  classifier : kythe.PathClassifier;
 }

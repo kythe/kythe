@@ -23,7 +23,12 @@ import au = require('./astutilities');
 import su = require('./sbutilities');
 
 function index(job : jobs.Job) {
+  // Dump the job without the classifier object.
+  var saved_classifier = job.classifier;
+  job.classifier = new kythe.PathClassifier([]);
   console.warn('indexing', job);
+  job.classifier = saved_classifier;
+
   const sourceFileVersion = "1";
 
   let program = createFilesystemProgram();
@@ -68,6 +73,17 @@ function index(job : jobs.Job) {
     if (job.dontIndexDefaultLib && file.fileName == defaultLibFileName) {
       return;
     }
+    var isRequestedFile = false;
+    for (var i = 0; i < job.files.length; ++i) {
+      if (job.files[i] == file.fileName) {
+        isRequestedFile = true;
+        break;
+      }
+    }
+    if (!isRequestedFile) {
+      console.warn('implicit dependency on', file.fileName);
+      return;
+    }
     console.warn('processing', file.fileName);
     let vname = fileVName(file);
     kythe.write(kythe.fact(vname, "node/kind", "file"));
@@ -76,6 +92,30 @@ function index(job : jobs.Job) {
     let syntax = lang.getEncodedSyntacticClassifications(file.fileName, span);
     let sema = lang.getEncodedSemanticClassifications(file.fileName, span);
     file.referencedFiles.forEach(ref => indexReferencedFile(vname, file, ref));
+    // TODO(zarko): this is not a very polite thing to do.
+    let imports = (<any>file).imports;
+    let resolvedModules = (<any>file).resolvedModules;
+    if (imports && resolvedModules) {
+      for (var n = 0; n < imports.length; ++n) {
+        let importPos = imports[n].pos;
+        let importEnd = imports[n].end;
+        let importText = imports[n].text;
+        if (importText && resolvedModules.hasOwnProperty(importText)) {
+          let resolvedModule = resolvedModules[importText];
+          if (resolvedModule) {
+            let resolvedFileName = resolvedModule.resolvedFileName;
+            if (resolvedFileName && importPos && importEnd) {
+              // These should appear as references like everything else below,
+              // but they're not showing up?
+              let refAnchorVName = kythe.anchor(vname, importPos, importEnd);
+              let targetVName = job.classifier.classify(resolvedFileName);
+              kythe.write(kythe.edge(refAnchorVName, "ref/includes",
+                                     targetVName));
+            }
+          }
+        }
+      }
+    }
     classify(vname, file, syntax);
     classify(vname, file, sema);
   });
@@ -99,6 +139,21 @@ function index(job : jobs.Job) {
           let text = ts.sys.readFile(filename);
           let sourceFile = ts.createSourceFile(filename, text, languageVersion,
               /* setParentNodes=*/true);
+          var realpath = fs.realpathSync(filename);
+          var isImplicit = false;
+          for (var i = 0; i < job.implicits.length; ++i) {
+            if (job.implicits[i] == realpath) {
+              isImplicit = true;
+              break;
+            }
+          }
+          if (!isImplicit) {
+            for (var i = 0; i < job.implicits.length; ++i) {
+              sourceFile.referencedFiles.push({
+                  fileName: job.implicits[i], pos: 0, end: 0
+              });
+            }
+          }
           return sourceFile;
         }
       },
@@ -200,10 +255,12 @@ function index(job : jobs.Job) {
           }
         } else {
           vnames = visitReferencesAt(vname, file, spanStart);
-          let refSiteAnchor = kythe.anchor(vname, spanStart,
-              spanStart + spanLength);
-          for (let vi = 0, vn = vnames.length; vi < vn; ++vi) {
-            kythe.write(kythe.edge(refSiteAnchor, "ref", vnames[vi]));
+          if (vnames && vnames.length != 0) {
+            let refSiteAnchor = kythe.anchor(vname,
+                spanStart, spanStart + spanLength);
+            for (let vi = 0, vn = vnames.length; vi < vn; ++vi) {
+              kythe.write(kythe.edge(refSiteAnchor, "ref", vnames[vi]));
+            }
           }
         }
       }
@@ -255,9 +312,7 @@ function index(job : jobs.Job) {
   }
 
   function fileVName(file : ts.SourceFile) : kythe.VName {
-    // TODO(zarko): set a proper corpus.
-    return kythe.vname('', file.fileName, 'ts', '',
-        file.moduleName ? file.moduleName : 'nocorpus');
+    return job.classifier.classify(file.fileName);
   }
 }
 
@@ -272,6 +327,17 @@ if (require.main === module) {
     experimentalDecorators: true,
     rootDir: args.rootDir
   };
+  var vnames : kythe.VNamesConfigFileEntry[] = [];
+  if (process.env.KYTHE_VNAMES) {
+    let vnamesText = fs.readFileSync(process.env.KYTHE_VNAMES,
+        {encoding: 'utf8'});
+    vnames = <kythe.VNamesConfigFileEntry[]>(JSON.parse(vnamesText));
+    if (!vnames) {
+      console.warn("can't understand ", process.env.KYTHE_VNAMES);
+      process.exit(1);
+    }
+  }
+  var classifier = new kythe.PathClassifier(vnames);
   var files : string[] = [];
   var implicits : string[] = [];
   for (var i = 0; i < args._.length; ++i) {
@@ -284,8 +350,10 @@ if (require.main === module) {
   var job = {
     lib: ts.getDefaultLibFilePath(options),
     files: files,
+    implicits: implicits,
     options: options,
-    dontIndexDefaultLib: !!args.skipDefaultLib
+    dontIndexDefaultLib: !!args.skipDefaultLib,
+    classifier: classifier
   };
   index(job);
 }
