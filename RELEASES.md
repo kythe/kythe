@@ -10,6 +10,7 @@ Notable changes:
 
 Notable additions:
  - Java indexer: emit (possibly multi-line) snippets over entire surrounding statement
+ - Java indexer: emit class node for static imports
 
 ## v0.0.15
 

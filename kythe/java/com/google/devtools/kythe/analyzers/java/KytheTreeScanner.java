@@ -160,10 +160,30 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     if (imprt.qualid instanceof JCFieldAccess) {
       JCFieldAccess imprtField = (JCFieldAccess) imprt.qualid;
-      emitAnchor(
-          ctx.down(imprtField.selected),
-          EdgeKind.REF,
-          entrySets.getPackageNode(imprtField.selected.toString()));
+
+      if (imprt.staticImport) {
+        // In static imports, the "field access" is of the form "import static <class>.<method>;".
+        // This branch tries to discover the class symbol for "<class>" and emit a reference for it.
+
+        ClassSymbol cls = JavacUtil.getClassSymbol(javaContext, imprtField.selected.toString());
+        if (cls != null) {
+          Name className = cls.fullname;
+          if (className != null) {
+            int dotIdx = cls.fullname.lastIndexOf((byte) '.');
+            if (dotIdx >= 0) {
+              className = className.subName(dotIdx + 1, className.length());
+            }
+            emitNameUsage(ctx.down(imprtField.selected), cls, className);
+          }
+        }
+      } else {
+        // In non-static imports, the "field access" is of the form "import <package>.<class>;".
+        // This branch emits a node for the referenced package.
+        emitAnchor(
+            ctx.down(imprtField.selected),
+            EdgeKind.REF,
+            entrySets.getPackageNode(imprtField.selected.toString()));
+      }
 
       if (imprtField.name.toString().equals("*")) {
         return null;
