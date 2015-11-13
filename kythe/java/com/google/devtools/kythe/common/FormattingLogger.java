@@ -16,10 +16,14 @@
 
 package com.google.devtools.kythe.common;
 
+import com.google.common.collect.ImmutableSet;
+
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
+
+import java.util.Set;
 
 public class FormattingLogger {
   private Logger logger;
@@ -38,7 +42,7 @@ public class FormattingLogger {
       cls = cls.getEnclosingClass();
     }
     this.logger = Logger.getLogger(cls.getCanonicalName() + suffix);
-    this.logger.addHandler(new SetSourceClassHandler(cls.getCanonicalName()));
+    this.logger.addHandler(SetSourceHandler.INSTANCE);
   }
 
   public FormattingLogger(Logger logger) {
@@ -161,17 +165,36 @@ public class FormattingLogger {
     logger.severe(message);
   }
 
-  /** Simple handler that sets the sourceClassName of each {@link LogRecord}. */
-  private static class SetSourceClassHandler extends Handler {
-    private final String sourceClass;
+  /** Simple handler that sets the class and method name of each {@link LogRecord}. */
+  private static class SetSourceHandler extends Handler {
+    private static final SetSourceHandler INSTANCE = new SetSourceHandler();
 
-    public SetSourceClassHandler(String sourceClass) {
-      this.sourceClass = sourceClass;
-    }
+    // Classes that appear at the tail of a stack trace coming from #publish(LogRecord).
+    private static final Set<String> LOGGER_CLASSES =
+        ImmutableSet.<String>builder()
+            .add("com.google.devtools.kythe.common.FormattingLogger$SetSourceHandler")
+            .add("java.util.logging.Logger")
+            .add("com.google.devtools.kythe.common.FormattingLogger")
+            .build();
 
     @Override
     public void publish(LogRecord record) {
-      record.setSourceClassName(sourceClass);
+      if (record.getSourceClassName() == null
+          || record.getSourceMethodName() == null
+          || LOGGER_CLASSES.contains(record.getSourceClassName())) {
+        Throwable t = record.getThrown();
+        if (t == null) {
+          t = new Throwable();
+        }
+        for (StackTraceElement e : t.getStackTrace()) {
+          String className = e.getClassName();
+          if (!LOGGER_CLASSES.contains(className)) {
+            record.setSourceClassName(className);
+            record.setSourceMethodName(e.getMethodName());
+            break;
+          }
+        }
+      }
     }
 
     @Override

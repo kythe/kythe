@@ -84,7 +84,7 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
     }
 
     $query_command = $this->bazelCommand(["query", "-k", "%s"]);
-    $future = new ExecFuture($query_command, 'tests(set('.join(" ", $targets).'))');
+    $future = new ExecFuture($query_command, 'tests(set('.join(" ", $targets).')) except attr(tags, "broken", //...)');
     $future->setCWD($this->project_root);
     $testTargets = explode("\n", trim($future->resolvex()[0]));
 
@@ -111,7 +111,7 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
     }
 
     return $results;
-  }
+          }
 
   private function parseTestResultFile($target) {
     $path = "bazel-testlogs/".str_replace(":", "/", substr($target, 2))."/test.cache_status";
