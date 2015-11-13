@@ -115,8 +115,8 @@ func CrossReferences(ctx context.Context, xs NodesEdgesService, req *xpb.CrossRe
 		allRelatedNodes = stringset.New()
 	}
 
-	// Cache location Normalizers for parent files across all anchors
-	normalizers := make(map[string]*Normalizer)
+	// Cache parent files across all anchors
+	files := make(map[string]*fileNode)
 
 	var totalXRefs int
 	for {
@@ -130,21 +130,21 @@ func CrossReferences(ctx context.Context, xs NodesEdgesService, req *xpb.CrossRe
 			for _, g := range es.Group {
 				switch {
 				case isDefKind(req.DefinitionKind, g.Kind):
-					anchors, err := completeAnchors(ctx, xs, req.AnchorText, normalizers, g.Kind, g.TargetTicket)
+					anchors, err := completeAnchors(ctx, xs, req.AnchorText, files, g.Kind, g.TargetTicket)
 					if err != nil {
 						return nil, fmt.Errorf("error resolving definition anchors: %v", err)
 					}
 					count += len(anchors)
 					xr.Definition = append(xr.Definition, anchors...)
 				case isRefKind(req.ReferenceKind, g.Kind):
-					anchors, err := completeAnchors(ctx, xs, req.AnchorText, normalizers, g.Kind, g.TargetTicket)
+					anchors, err := completeAnchors(ctx, xs, req.AnchorText, files, g.Kind, g.TargetTicket)
 					if err != nil {
 						return nil, fmt.Errorf("error resolving reference anchors: %v", err)
 					}
 					count += len(anchors)
 					xr.Reference = append(xr.Reference, anchors...)
 				case isDocKind(req.DocumentationKind, g.Kind):
-					anchors, err := completeAnchors(ctx, xs, req.AnchorText, normalizers, g.Kind, g.TargetTicket)
+					anchors, err := completeAnchors(ctx, xs, req.AnchorText, files, g.Kind, g.TargetTicket)
 					if err != nil {
 						return nil, fmt.Errorf("error resolving documentation anchors: %v", err)
 					}
@@ -283,7 +283,13 @@ func normalizeSpan(norm *Normalizer, startOffset, endOffset int32) (start, end *
 	return
 }
 
-func completeAnchors(ctx context.Context, xs NodesEdgesService, retrieveText bool, normalizers map[string]*Normalizer, edgeKind string, anchors []string) ([]*xpb.Anchor, error) {
+type fileNode struct {
+	text     []byte
+	encoding string
+	norm     *Normalizer
+}
+
+func completeAnchors(ctx context.Context, xs NodesEdgesService, retrieveText bool, files map[string]*fileNode, edgeKind string, anchors []string) ([]*xpb.Anchor, error) {
 	edgeKind = schema.Canonicalize(edgeKind)
 
 	// AllEdges is relatively safe because each anchor will have very few parents (almost always 1)
@@ -292,8 +298,6 @@ func completeAnchors(ctx context.Context, xs NodesEdgesService, retrieveText boo
 		Kind:   []string{schema.ChildOfEdge},
 		Filter: []string{
 			schema.NodeKindFact,
-			schema.TextFact,
-			schema.TextEncodingFact,
 			schema.AnchorLocFilter,
 			schema.SnippetLocFilter,
 		},
@@ -337,33 +341,41 @@ func completeAnchors(ctx context.Context, xs NodesEdgesService, retrieveText boo
 					Parent: parent,
 				}
 
-				parentText := nodes[a.Parent][schema.TextFact]
-				parentTextEncoding := string(nodes[a.Parent][schema.TextEncodingFact])
-				norm, ok := normalizers[a.Parent]
+				file, ok := files[a.Parent]
 				if !ok {
-					norm = NewNormalizer(parentText)
-					normalizers[a.Parent] = norm
+					nReply, err := xs.Nodes(ctx, &xpb.NodesRequest{Ticket: []string{a.Parent}})
+					if err != nil {
+						return nil, fmt.Errorf("error getting file contents for %q: %v", a.Parent, err)
+					}
+					nMap := NodesMap(nReply.Node)
+					text := nMap[a.Parent][schema.TextFact]
+					file = &fileNode{
+						text:     text,
+						encoding: string(nMap[a.Parent][schema.TextEncodingFact]),
+						norm:     NewNormalizer(text),
+					}
+					files[a.Parent] = file
 				}
 
-				a.Start, a.End, err = normalizeSpan(norm, int32(so), int32(eo))
+				a.Start, a.End, err = normalizeSpan(file.norm, int32(so), int32(eo))
 				if err != nil {
-					log.Printf("Invalid anchor span %q in file %q: %v", ticket, parent, err)
+					log.Printf("Invalid anchor span %q in file %q: %v", ticket, a.Parent, err)
 					continue
 				}
 
 				if retrieveText && a.Start.ByteOffset < a.End.ByteOffset {
-					a.Text, err = text.ToUTF8(parentTextEncoding, parentText[a.Start.ByteOffset:a.End.ByteOffset])
+					a.Text, err = text.ToUTF8(file.encoding, file.text[a.Start.ByteOffset:a.End.ByteOffset])
 					if err != nil {
 						log.Printf("Error decoding anchor text: %v", err)
 					}
 				}
 
 				if snippetStart, snippetEnd, err := getSpan(nodes[ticket], schema.SnippetStartFact, schema.SnippetEndFact); err == nil {
-					startPoint, endPoint, err := normalizeSpan(norm, int32(snippetStart), int32(snippetEnd))
+					startPoint, endPoint, err := normalizeSpan(file.norm, int32(snippetStart), int32(snippetEnd))
 					if err != nil {
-						log.Printf("Invalid snippet span %q in file %q: %v", ticket, parent, err)
+						log.Printf("Invalid snippet span %q in file %q: %v", ticket, a.Parent, err)
 					} else {
-						a.Snippet, err = text.ToUTF8(parentTextEncoding, parentText[startPoint.ByteOffset:endPoint.ByteOffset])
+						a.Snippet, err = text.ToUTF8(file.encoding, file.text[startPoint.ByteOffset:endPoint.ByteOffset])
 						if err != nil {
 							log.Printf("Error decoding snippet text: %v", err)
 						}
@@ -378,13 +390,13 @@ func completeAnchors(ctx context.Context, xs NodesEdgesService, retrieveText boo
 						ByteOffset: a.Start.ByteOffset - a.Start.ColumnOffset,
 						LineNumber: a.Start.LineNumber,
 					}
-					nextLine := norm.Point(&xpb.Location_Point{LineNumber: a.Start.LineNumber + 1})
+					nextLine := file.norm.Point(&xpb.Location_Point{LineNumber: a.Start.LineNumber + 1})
 					a.SnippetEnd = &xpb.Location_Point{
 						ByteOffset:   nextLine.ByteOffset - 1,
 						LineNumber:   a.Start.LineNumber,
 						ColumnOffset: a.Start.ColumnOffset + (nextLine.ByteOffset - a.Start.ByteOffset - 1),
 					}
-					a.Snippet, err = text.ToUTF8(parentTextEncoding, parentText[a.SnippetStart.ByteOffset:a.SnippetEnd.ByteOffset])
+					a.Snippet, err = text.ToUTF8(file.encoding, file.text[a.SnippetStart.ByteOffset:a.SnippetEnd.ByteOffset])
 					if err != nil {
 						log.Printf("Error decoding snippet text: %v", err)
 					}

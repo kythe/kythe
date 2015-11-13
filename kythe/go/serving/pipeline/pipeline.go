@@ -243,7 +243,7 @@ func writeFileTree(ctx context.Context, tree *filetree.Map, out table.Proto) err
 }
 
 func writePartialEdges(ctx context.Context, out *servingOutput, src *assemble.Source) error {
-	edges := assemble.PartialEdges(src)
+	edges := assemble.PartialReverseEdges(src)
 	for _, pe := range edges {
 		var target string
 		if pe.Target != nil {
@@ -271,7 +271,7 @@ func writeCompletedEdges(ctx context.Context, edges *table.KVProto, e *srvpb.Edg
 	if err := writeEdge(ctx, edges, &srvpb.Edge{
 		Source: &srvpb.Node{Ticket: e.Target.Ticket},
 		Kind:   schema.MirrorEdge(e.Kind),
-		Target: e.Source,
+		Target: assemble.FilterTextFacts(e.Source),
 	}); err != nil {
 		return fmt.Errorf("error writing complete edge mirror: %v", err)
 	}

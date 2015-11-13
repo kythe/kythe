@@ -112,15 +112,18 @@ func GetFact(facts []*srvpb.Fact, name string) []byte {
 	return nil
 }
 
-// PartialEdges returns the set of partial edges from the given source.  Each Edge has its Source
-// fully populated and its Target will have no facts.  To ensure every node has at least 1 Edge, the
-// first Edge will be a self-edge without a Kind or Target.
-func PartialEdges(src *Source) []*srvpb.Edge {
+// PartialReverseEdges returns the set of partial reverse edges from the given source.  Each
+// reversed Edge has its Target fully populated and its Source will have no facts.  To ensure every
+// node has at least 1 Edge, the first Edge will be a self-edge without a Kind or Target.  To reduce
+// the size of edge sets, each Target will have any text facts filtered (see FilterTextFacts).
+func PartialReverseEdges(src *Source) []*srvpb.Edge {
 	node := src.Node()
 
 	edges := []*srvpb.Edge{{
 		Source: node, // self-edge to ensure every node has at least 1 edge
 	}}
+
+	targetNode := FilterTextFacts(node)
 
 	for kind, targets := range src.Edges {
 		rev := schema.MirrorEdge(kind)
@@ -128,12 +131,29 @@ func PartialEdges(src *Source) []*srvpb.Edge {
 			edges = append(edges, &srvpb.Edge{
 				Source: &srvpb.Node{Ticket: target},
 				Kind:   rev,
-				Target: node,
+				Target: targetNode,
 			})
 		}
 	}
 
 	return edges
+}
+
+// FilterTextFacts returns a new Node without any text facts.
+func FilterTextFacts(n *srvpb.Node) *srvpb.Node {
+	res := &srvpb.Node{
+		Ticket: n.Ticket,
+		Fact:   make([]*srvpb.Fact, 0, len(n.Fact)),
+	}
+	for _, f := range n.Fact {
+		switch f.Name {
+		case schema.TextFact, schema.TextEncodingFact:
+			// Skip large text facts for targets
+		default:
+			res.Fact = append(res.Fact, f)
+		}
+	}
+	return res
 }
 
 // DecorationFragmentBuilder builds pieces of FileDecorations given an ordered (see AddEdge) stream
