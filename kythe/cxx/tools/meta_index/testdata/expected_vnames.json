@@ -1,0 +1,23 @@
+[
+  {
+    "pattern": "/kythe/ts/testdata/repo/node_modules/deptwo/(.*)",
+    "vname": {
+      "corpus": "git+https___github.com_deptwouser_deptwo.git_deptwov1sha",
+      "path": "@1@"
+    }
+  },
+  {
+    "pattern": "/kythe/ts/testdata/repo/node_modules/depone/(.*)",
+    "vname": {
+      "corpus": "git+https___github.com_deponeuser_depone.git_deponev1sha",
+      "path": "@1@"
+    }
+  },
+  {
+    "pattern": "/kythe/ts/testdata/repo/(.*)",
+    "vname": {
+      "corpus": "_localsha",
+      "path": "@1@"
+    }
+  }
+]

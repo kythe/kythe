@@ -1,0 +1,7 @@
+{
+  "git+https://github.com/deptwouser/deptwo.git": {
+    "tags": {
+      "refs/tags/v1.0.0": "deptwov1sha"
+    }
+  }
+}

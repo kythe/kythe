@@ -25,6 +25,17 @@
 
 namespace kythe {
 
+/// \brief Determines the behavior of URI escaping.
+enum class UriEscapeMode {
+  kEscapeAll,   ///< Escape all reserved characters.
+  kEscapePaths  ///< Escape all reserved characters except '/'.
+};
+
+/// \brief URI-escapes a string.
+/// \param mode The escaping mode to use.
+/// \param string The string to escape.
+std::string UriEscape(UriEscapeMode mode, llvm::StringRef uri);
+
 /// \brief A Kythe URI.
 ///
 /// URIs are not in 1:1 correspondence with VNames--particularly because

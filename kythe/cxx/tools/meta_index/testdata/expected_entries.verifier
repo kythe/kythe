@@ -1,0 +1,19 @@
+//- LocalRepo=vname("","_localsha","","","").node/kind vcs
+//- RepoOne=vname("","git+https___github.com_deponeuser_depone.git_deponev1sha","","","").node/kind vcs
+//- RepoTwo=vname("","git+https___github.com_deptwouser_deptwo.git_deptwov1sha","","","").node/kind vcs
+
+//- !{RepoOne.vcs/path Exists}
+//- !{RepoTwo.vcs/path Exists}
+//- !{LocalRepo.vcs/path Exists}
+
+//- RepoOne.vcs/type git
+//- RepoTwo.vcs/type git
+//- LocalRepo.vcs/type ""
+
+//- RepoOne.vcs/uri "git+https://github.com/deponeuser/depone.git"
+//- RepoTwo.vcs/uri "git+https://github.com/deptwouser/deptwo.git"
+//- LocalRepo.vcs/uri ""
+
+//- RepoOne.vcs/id "deponev1sha"
+//- RepoTwo.vcs/id "deptwov1sha"
+//- LocalRepo.vcs/id "localsha"

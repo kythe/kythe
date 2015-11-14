@@ -20,12 +20,6 @@
 
 namespace kythe {
 
-/// \brief Determines the behavior of URI escaping.
-enum class UriEscapeMode {
-  kEscapeAll,   ///< Escape all reserved characters.
-  kEscapePaths  ///< Escape all reserved characters except '/'.
-};
-
 /// \brief Returns whether a byte should be escaped.
 /// \param mode The escaping mode to use.
 /// \param c The byte to examine.
@@ -51,9 +45,6 @@ inline int value_for_hex_digit(char c) {
 
 static constexpr char kHexDigits[] = "0123456789ABCDEF";
 
-/// \brief URI-escapes a string.
-/// \param mode The escaping mode to use.
-/// \param string The string to escape.
 std::string UriEscape(UriEscapeMode mode, llvm::StringRef uri) {
   size_t num_escapes = 0;
   for (char c : uri) {

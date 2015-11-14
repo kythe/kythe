@@ -1,0 +1,15 @@
+{
+  "name": "depone",
+  "versions": {
+    "1.0.0": {
+      "name": "depone",
+      "version": "1.0.0",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/deponeuser/depone.git"
+      },
+      "gitHead": "deponev1sha"
+    }
+  }
+}
+
