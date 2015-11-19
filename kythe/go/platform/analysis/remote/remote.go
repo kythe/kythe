@@ -19,7 +19,6 @@
 package remote
 
 import (
-	"fmt"
 	"io"
 
 	"kythe.io/kythe/go/platform/analysis"
@@ -37,7 +36,7 @@ type Analyzer struct{ Client apb.CompilationAnalyzerClient }
 func (a *Analyzer) Analyze(ctx context.Context, req *apb.AnalysisRequest, f analysis.OutputFunc) error {
 	c, err := a.Client.Analyze(ctx, req)
 	if err != nil {
-		return fmt.Errorf("error sending AnalysisRequest: %v", err)
+		return err
 	}
 
 	for {
@@ -45,7 +44,7 @@ func (a *Analyzer) Analyze(ctx context.Context, req *apb.AnalysisRequest, f anal
 		if err == io.EOF {
 			return nil
 		} else if err != nil {
-			return fmt.Errorf("error receiving AnalysisOutput: %v", err)
+			return err
 		}
 
 		if err := f(ctx, out); err != nil {
