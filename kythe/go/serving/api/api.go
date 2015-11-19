@@ -89,7 +89,7 @@ func ParseSpec(apiSpec string) (Interface, error) {
 
 		tbl := table.ProtoBatchParallel{&table.KVProto{db}}
 		api.xs = xsrv.NewCombinedTable(tbl)
-		api.ft = &ftsrv.Table{tbl}
+		api.ft = &ftsrv.Table{tbl, true}
 		api.idx = &srchsrv.Table{&table.KVInverted{db}}
 	} else {
 		conn, err := grpc.Dial(apiSpec)

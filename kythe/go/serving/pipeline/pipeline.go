@@ -229,7 +229,7 @@ func writeFileTree(ctx context.Context, tree *filetree.Map, out table.Proto) err
 	for corpus, roots := range tree.M {
 		for root, dirs := range roots {
 			for path, dir := range dirs {
-				if err := out.Put(ctx, ftsrv.DirKey(corpus, root, path), dir); err != nil {
+				if err := out.Put(ctx, ftsrv.PrefixedDirKey(corpus, root, path), dir); err != nil {
 					return err
 				}
 			}
@@ -239,7 +239,7 @@ func writeFileTree(ctx context.Context, tree *filetree.Map, out table.Proto) err
 	if err != nil {
 		return err
 	}
-	return out.Put(ctx, ftsrv.CorpusRootsKey, cr)
+	return out.Put(ctx, ftsrv.CorpusRootsPrefixedKey, cr)
 }
 
 func writePartialEdges(ctx context.Context, out *servingOutput, src *assemble.Source) error {

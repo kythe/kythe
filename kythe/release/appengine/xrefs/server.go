@@ -55,7 +55,7 @@ func main() {
 
 	ctx := context.Background()
 	xrefs.RegisterHTTPHandlers(ctx, xsrv.NewCombinedTable(tbl), http.DefaultServeMux)
-	filetree.RegisterHTTPHandlers(ctx, &ftsrv.Table{tbl}, http.DefaultServeMux)
+	filetree.RegisterHTTPHandlers(ctx, &ftsrv.Table{tbl, true}, http.DefaultServeMux)
 	search.RegisterHTTPHandlers(ctx, &srchsrv.Table{&table.KVInverted{db}}, http.DefaultServeMux)
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

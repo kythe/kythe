@@ -64,7 +64,7 @@ func main() {
 	defer db.Close()
 	tbl := table.ProtoBatchParallel{&table.KVProto{db}}
 	xs := xsrv.NewCombinedTable(tbl)
-	ft := &ftsrv.Table{tbl}
+	ft := &ftsrv.Table{Proto: tbl, PrefixedKeys: true}
 	sr := &srchsrv.Table{&table.KVInverted{db}}
 
 	ctx := context.Background()

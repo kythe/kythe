@@ -35,20 +35,40 @@ import (
 )
 
 const (
-	dirTablePrefix = "dirs:"
-	dirKeySep      = "\n"
+	// DirTablePrefix is used as the prefix of the keys of a combined serving
+	// table.  CorpusRootsPrefixedKey and PrefixedDirKey use this prefix to
+	// construct their keys.  Table uses this prefix when PrefixedKeys is true.
+	DirTablePrefix = "dirs:"
+
+	dirKeySep = "\n"
 )
 
 // CorpusRootsKey is the filetree lookup key for the tree's srvpb.CorpusRoots.
-var CorpusRootsKey = []byte(dirTablePrefix + "corpusRoots")
+var CorpusRootsKey = []byte("corpusRoots")
+
+// CorpusRootsKey is the filetree lookup key for the tree's srvpb.CorpusRoots
+// when using PrefixedKeys.
+var CorpusRootsPrefixedKey = []byte(DirTablePrefix + "corpusRoots")
 
 // Table implements the FileTree interface using a static lookup table.
-type Table struct{ table.Proto }
+type Table struct {
+	table.Proto
+
+	// PrefixedKeys indicates whether all keys are prefixed by DirTablePrefix
+	// (i.e. when using a combined serving table).
+	PrefixedKeys bool
+}
 
 // Directory implements part of the filetree Service interface.
 func (t *Table) Directory(ctx context.Context, req *ftpb.DirectoryRequest) (*ftpb.DirectoryReply, error) {
+	var key []byte
+	if t.PrefixedKeys {
+		key = PrefixedDirKey(req.Corpus, req.Root, req.Path)
+	} else {
+		key = DirKey(req.Corpus, req.Root, req.Path)
+	}
 	var d srvpb.FileDirectory
-	if err := t.Lookup(ctx, DirKey(req.Corpus, req.Root, req.Path), &d); err == table.ErrNoSuchKey {
+	if err := t.Lookup(ctx, key, &d); err == table.ErrNoSuchKey {
 		return nil, nil
 	} else if err != nil {
 		return nil, fmt.Errorf("lookup error: %v", err)
@@ -61,8 +81,12 @@ func (t *Table) Directory(ctx context.Context, req *ftpb.DirectoryRequest) (*ftp
 
 // CorpusRoots implements part of the filetree Service interface.
 func (t *Table) CorpusRoots(ctx context.Context, req *ftpb.CorpusRootsRequest) (*ftpb.CorpusRootsReply, error) {
+	key := CorpusRootsKey
+	if t.PrefixedKeys {
+		key = CorpusRootsPrefixedKey
+	}
 	var cr srvpb.CorpusRoots
-	if err := t.Lookup(ctx, CorpusRootsKey, &cr); err == table.ErrNoSuchKey {
+	if err := t.Lookup(ctx, key, &cr); err == table.ErrNoSuchKey {
 		return nil, errors.New("missing corpusRoots in table")
 	} else if err != nil {
 		return nil, fmt.Errorf("corpusRoots lookup error: %v", err)
@@ -84,5 +108,11 @@ func (t *Table) CorpusRoots(ctx context.Context, req *ftpb.CorpusRootsRequest) (
 
 // DirKey returns the filetree lookup table key for the given corpus path.
 func DirKey(corpus, root, path string) []byte {
-	return []byte(dirTablePrefix + strings.Join([]string{corpus, root, path}, dirKeySep))
+	return []byte(strings.Join([]string{corpus, root, path}, dirKeySep))
+}
+
+// PrefixedDirKey returns the filetree lookup table key for the given corpus
+// path, prefixed by DirTablePrefix.
+func PrefixedDirKey(corpus, root, path string) []byte {
+	return []byte(DirTablePrefix + strings.Join([]string{corpus, root, path}, dirKeySep))
 }

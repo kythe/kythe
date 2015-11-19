@@ -103,7 +103,7 @@ func main() {
 		defer db.Close()
 		tbl := table.ProtoBatchParallel{&table.KVProto{db}}
 		xs = xsrv.NewCombinedTable(tbl)
-		ft = &ftsrv.Table{tbl}
+		ft = &ftsrv.Table{Proto: tbl, PrefixedKeys: true}
 		sr = &srchsrv.Table{&table.KVInverted{db}}
 	} else {
 		log.Println("WARNING: serving directly from a GraphStore can be slow; you may want to use a --serving_table")
