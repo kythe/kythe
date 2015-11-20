@@ -90,6 +90,6 @@
             (map (fn [[{:keys [corpus root]} root-dir]]
                    (om/build dir-view root-dir {:opts {:corpus corpus
                                                        :root root
-                                                       :path "/"}
+                                                       :path ""}
                                                 :init-state {:file-to-view file-to-view}}))
               state)))))))

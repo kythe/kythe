@@ -23,7 +23,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -124,7 +123,7 @@ var (
 				flag.Usage()
 				os.Exit(1)
 			}
-			path = filepath.Join("/", path)
+			path = filetree.CleanDirPath(path)
 			req := &ftpb.DirectoryRequest{
 				Corpus: corpus,
 				Root:   root,

@@ -22,7 +22,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"path"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"kythe.io/kythe/go/services/graphstore"
@@ -44,6 +46,12 @@ type Service interface {
 
 	// CorpusRoots returns a map from corpus to known roots.
 	CorpusRoots(context.Context, *ftpb.CorpusRootsRequest) (*ftpb.CorpusRootsReply, error)
+}
+
+// CleanDirPath returns a clean, corpus root relative equivalent to path.
+func CleanDirPath(path string) string {
+	const sep = string(filepath.Separator)
+	return strings.TrimPrefix(filepath.Join(sep, path), sep)
 }
 
 type grpcClient struct{ ftpb.FileTreeServiceClient }
@@ -94,8 +102,8 @@ func (m *Map) Populate(ctx context.Context, gs graphstore.Service) error {
 // AddFile adds the given file VName to m.
 func (m *Map) AddFile(file *spb.VName) {
 	ticket := kytheuri.ToString(file)
-	path := filepath.Join("/", file.Path)
-	dir := m.ensureDir(file.Corpus, file.Root, filepath.Dir(path))
+	dirPath := CleanDirPath(path.Dir(file.Path))
+	dir := m.ensureDir(file.Corpus, file.Root, dirPath)
 	dir.File = addToSet(dir.File, ticket)
 }
 
@@ -144,13 +152,16 @@ func (m *Map) ensureCorpusRoot(corpus, root string) map[string]*ftpb.DirectoryRe
 }
 
 func (m *Map) ensureDir(corpus, root, path string) *ftpb.DirectoryReply {
+	if path == "." {
+		path = ""
+	}
 	dirs := m.ensureCorpusRoot(corpus, root)
 	dir := dirs[path]
 	if dir == nil {
 		dir = &ftpb.DirectoryReply{}
 		dirs[path] = dir
 
-		if path != "/" {
+		if path != "" {
 			parent := m.ensureDir(corpus, root, filepath.Dir(path))
 			uri := kytheuri.URI{
 				Corpus: corpus,
