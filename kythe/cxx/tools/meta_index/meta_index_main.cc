@@ -68,17 +68,18 @@ int main(int argc, char *argv[]) {
     repos.AddRepositoryRoot(argv[arg]);
   }
   if (!FLAGS_vnames.empty()) {
-    repos.ExportVNamesJson(FLAGS_vnames);
+    repos.ExportVNamesJson(FLAGS_vnames.c_str());
   }
   if (!FLAGS_repo_subgraph.empty()) {
-    repos.ExportRepoSubgraph(FLAGS_repo_subgraph);
+    repos.ExportRepoSubgraph(FLAGS_repo_subgraph.c_str());
   }
   if (!FLAGS_shout.empty()) {
     if (FLAGS_repo_subgraph.empty() || FLAGS_vnames.empty()) {
       ::fprintf(stderr, "Need the repo subgraph and vnames files.\n");
       return 1;
     }
-    repos.ExportIndexScript(FLAGS_shout, FLAGS_vnames, FLAGS_repo_subgraph);
+    repos.ExportIndexScript(FLAGS_shout.c_str(), FLAGS_vnames.c_str(),
+                            FLAGS_repo_subgraph.c_str());
   }
   return 0;
 }
