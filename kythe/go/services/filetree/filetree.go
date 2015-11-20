@@ -127,13 +127,17 @@ func (m *Map) CorpusRoots(ctx context.Context, req *ftpb.CorpusRootsRequest) (*f
 func (m *Map) Directory(ctx context.Context, req *ftpb.DirectoryRequest) (*ftpb.DirectoryReply, error) {
 	roots := m.M[req.Corpus]
 	if roots == nil {
-		return nil, nil
+		return &ftpb.DirectoryReply{}, nil
 	}
 	dirs := roots[req.Root]
 	if dirs == nil {
-		return nil, nil
+		return &ftpb.DirectoryReply{}, nil
 	}
-	return dirs[req.Path], nil
+	d := dirs[req.Path]
+	if d == nil {
+		return &ftpb.DirectoryReply{}, nil
+	}
+	return d, nil
 }
 
 func (m *Map) ensureCorpusRoot(corpus, root string) map[string]*ftpb.DirectoryReply {

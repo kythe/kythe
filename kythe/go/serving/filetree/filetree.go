@@ -69,7 +69,7 @@ func (t *Table) Directory(ctx context.Context, req *ftpb.DirectoryRequest) (*ftp
 	}
 	var d srvpb.FileDirectory
 	if err := t.Lookup(ctx, key, &d); err == table.ErrNoSuchKey {
-		return nil, nil
+		return &ftpb.DirectoryReply{}, nil
 	} else if err != nil {
 		return nil, fmt.Errorf("lookup error: %v", err)
 	}

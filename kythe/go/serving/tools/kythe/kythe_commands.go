@@ -133,8 +133,6 @@ var (
 			dir, err := ft.Directory(ctx, req)
 			if err != nil {
 				return err
-			} else if dir == nil {
-				return fmt.Errorf("no such directory: %q in corpus %q (root %q)", path, corpus, root)
 			}
 
 			if filesOnly {
