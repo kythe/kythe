@@ -1474,6 +1474,38 @@ public class E {
 }
 --------------------------------------------------------------------------------
 
+
+[[vcs]]
+vcs
+~~~
+
+Brief description::
+  A *vcs* is a reference to a particular revision stored in a version control
+  system.
+Facts::
+  vcs/id:::
+    A stable identifier for a revision in the repository. For example, a
+    Git repository uses commit hashes as identifiers.
+  vcs/type:::
+    * `darcs`: this is a Darcs repository.
+    * `git`: this is a Git repository.
+    * `hg`: this is a Mercurial repository.
+    * `perforce`: this is a Perforce repository.
+    * `svn`: this is a Subversion repository.
+  vcs/uri:::
+    A URI that points to the repository root. Acceptable values for this fact
+    depend on the `vcs/type`.
+Naming convention::
+  When naming a `vcs` node, it is a good idea to use only the `corpus` field
+  of a VName. You can then use that `corpus` value in the VNames of all nodes
+  that are generated from that revision.
+Notes::
+  It is important that the `vcs` uses a stable reference to a revision. For
+  example, using the name of a Git branch would not be a good idea, since
+  Git branches point to different commits over time. It is better to use the
+  (full) hash of the commit.
+
+
 [[lsr]]
 Language-specific rules
 -----------------------
