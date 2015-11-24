@@ -1088,7 +1088,13 @@ bool IndexerASTVisitor::VisitDeclRefExpr(const clang::DeclRefExpr *DRE) {
   // TODO(zarko): Point at the capture as well as the thing being captured;
   // port over RemapDeclIfCaptured.
   // const NamedDecl* const TargetDecl = RemapDeclIfCaptured(FoundDecl);
-  const NamedDecl *const TargetDecl = FoundDecl;
+  const NamedDecl *TargetDecl = FoundDecl;
+  if (const auto* IFD = dyn_cast<clang::IndirectFieldDecl>(FoundDecl)) {
+    // An IndirectFieldDecl is just an alias; we want to record this as a
+    // reference to the underlying entity.
+    // TODO(jdennett): Would this be better done in BuildNodeIdForDecl?
+    TargetDecl = IFD->getAnonField();
+  }
   SourceLocation SL = DRE->getLocation();
   if (SL.isValid()) {
     SourceRange Range = RangeForASTEntityFromSourceLocation(SL);

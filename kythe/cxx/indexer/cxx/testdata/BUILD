@@ -591,10 +591,10 @@ cxx_indexer_test(
 
 cxx_indexer_test(
     name = "function_operator_overload_names",
+    size = "large",
     srcs = ["function/function_operator_overload_names.cc"],
     ignore_dups = True,
     tags = ["function"],
-    size = "large",
 )
 
 cxx_indexer_test(
@@ -889,6 +889,12 @@ cxx_indexer_test(
     name = "rec_anon_struct",
     srcs = ["rec/rec_anon_struct.cc"],
     ignore_dups = True,
+    tags = ["rec"],
+)
+
+cxx_indexer_test(
+    name = "gnu_anon_struct",
+    srcs = ["rec/rec_gnu_anon_struct.cc"],
     tags = ["rec"],
 )
 
