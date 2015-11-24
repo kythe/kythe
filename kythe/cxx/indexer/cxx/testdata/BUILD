@@ -899,6 +899,12 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "rec_anon_union",
+    srcs = ["rec/rec_anon_union.cc"],
+    tags = ["rec"],
+)
+
+cxx_indexer_test(
     name = "rec_class",
     srcs = ["rec/rec_class.cc"],
     tags = ["rec"],
