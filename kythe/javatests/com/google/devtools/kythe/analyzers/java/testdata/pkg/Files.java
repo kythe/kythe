@@ -24,7 +24,7 @@ public class Files {
   private int PRIVATE_MEMBER = -42;
 }
 //- Anchor childof File =
-//-   vname(_,"kythe","","kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/Files.java","java")
+//-   vname("","kythe","","kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/Files.java","")
 //- FilesClass childof File
 
 //- File.node/kind file

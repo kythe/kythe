@@ -152,14 +152,25 @@ public class KytheEntrySets {
     return node;
   }
 
+  /**
+   * Returns the {@link VName} of the {@link NodeKind.FILE} node with the given contents digest. If
+   * none is found, return {@code null}.
+   */
+  public VName getFileVName(String digest) {
+    VName name = lookupVName(digest);
+    if (name == null) {
+      return null;
+    }
+    // https://www.kythe.io/docs/schema/#file
+    return name.toBuilder().setLanguage("").setSignature("").build();
+  }
+
   /** Emits and returns a new {@link EntrySet} representing a file. */
   public EntrySet getFileNode(String digest, byte[] contents, String encoding) {
-    VName name = lookupVName(digest);
+    VName name = getFileVName(digest);
     EntrySet node =
         emitAndReturn(
-            newNode(NodeKind.FILE)
-                .setCorpusPath(CorpusPath.fromVName(name))
-                .setSignature(name.getSignature())
+            newNode(NodeKind.FILE, name)
                 .setProperty("text", contents)
                 .setProperty("text/encoding", encoding));
     Path fileName = Paths.get(name.getPath()).getFileName();
@@ -259,9 +270,14 @@ public class KytheEntrySets {
     return newNode(kind, dependencies).addSignatureSalt(head.getVName());
   }
 
+  private NodeBuilder newNode(NodeKind kind, VName name) {
+    getStatisticsCollector().incrementCounter("new-node-" + kind);
+    return new NodeBuilder(kind, name);
+  }
+
   /**
    * Returns the {@link FileInput}'s {@link VName} with the given digest. If none is found, return
-   * {@code null}.
+   * {@code null}.  This is the raw form of {@link #getFileName(String)}.
    */
   protected VName lookupVName(String digest) {
     VName inputVName = inputVNames.get(digest);
@@ -286,8 +302,17 @@ public class KytheEntrySets {
       this(kind.getKind(), kind.getSubkind(), language);
     }
 
+    public NodeBuilder(NodeKind kind, VName name) {
+      super(name, null, null);
+      setupNode(kind.getKind(), kind.getSubkind());
+    }
+
     private NodeBuilder(String kind, String subkind, String language) {
       super(VName.newBuilder().setLanguage(language));
+      setupNode(kind, subkind);
+    }
+
+    private void setupNode(String kind, String subkind) {
       setPropertyPrefix(NODE_PREFIX);
       setProperty(NODE_KIND_LABEL, kind);
       if (subkind != null) {
@@ -348,3 +373,4 @@ public class KytheEntrySets {
     }
   }
 }
+

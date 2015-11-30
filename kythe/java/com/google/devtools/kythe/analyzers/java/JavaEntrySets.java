@@ -141,7 +141,7 @@ public class JavaEntrySets extends KytheEntrySets {
 
   /** Returns and emits a Java anchor for the given offset span. */
   public EntrySet getAnchor(Positions filePositions, Span loc, Span snippet) {
-    return getAnchor(lookupVName(getDigest(filePositions.getSourceFile())), loc, snippet);
+    return getAnchor(getFileVName(getDigest(filePositions.getSourceFile())), loc, snippet);
   }
 
   /** Returns and emits a Java anchor for the given identifier. */
@@ -149,7 +149,7 @@ public class JavaEntrySets extends KytheEntrySets {
     Span span = filePositions.findIdentifier(name, startOffset);
     return span == null
         ? null
-        : getAnchor(lookupVName(getDigest(filePositions.getSourceFile())), span, snippet);
+        : getAnchor(getFileVName(getDigest(filePositions.getSourceFile())), span, snippet);
   }
 
   /** Returns the equivalent {@link NodeKind} for the given {@link ElementKind}. */

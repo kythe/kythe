@@ -8,6 +8,7 @@ Notable changes:
  - Use proto3 JSON mapping for web requests: https://developers.google.com/protocol-buffers/docs/proto3#json
  - Java indexer: report error when indexing from compilation's source root
  - Consistently use corpus root relative paths in filetree API
+ - Java indexer: ensure file node VNames to be schema compliant
 
 Notable additions:
  - Java indexer: emit (possibly multi-line) snippets over entire surrounding statement
