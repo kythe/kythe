@@ -85,10 +85,10 @@ func Run(ctx context.Context, gs graphstore.Service, db keyvalue.DB, opts *Optio
 	}()
 
 	out := &servingOutput{
-		xs:  table.ProtoBatchParallel{&table.KVProto{db}},
-		idx: &table.KVInverted{db},
+		xs:  table.ProtoBatchParallel{&table.KVProto{DB: db}},
+		idx: &table.KVInverted{DB: db},
 
-		completeEdges: &table.KVProto{edges},
+		completeEdges: &table.KVProto{DB: edges},
 	}
 	entries := make(chan *spb.Entry, chBuf)
 
@@ -149,6 +149,8 @@ func combineNodesAndEdges(ctx context.Context, out *servingOutput, gsEntries <-c
 
 	tree := filetree.NewMap()
 
+	bEdges := out.completeEdges.Buffered()
+	bIdx := out.idx.Buffered()
 	var src *spb.VName
 	var entries []*spb.Entry
 	for e := range gsEntries {
@@ -160,7 +162,7 @@ func combineNodesAndEdges(ctx context.Context, out *servingOutput, gsEntries <-c
 		if src == nil {
 			src = e.Source
 		} else if !compare.VNamesEqual(e.Source, src) {
-			if err := writePartialEdges(ctx, out, assemble.SourceFromEntries(entries)); err != nil {
+			if err := writePartialEdges(ctx, bEdges, bIdx, assemble.SourceFromEntries(entries)); err != nil {
 				drainEntries(gsEntries)
 				return err
 			}
@@ -171,9 +173,12 @@ func combineNodesAndEdges(ctx context.Context, out *servingOutput, gsEntries <-c
 		entries = append(entries, e)
 	}
 	if len(entries) > 0 {
-		if err := writePartialEdges(ctx, out, assemble.SourceFromEntries(entries)); err != nil {
+		if err := writePartialEdges(ctx, bEdges, bIdx, assemble.SourceFromEntries(entries)); err != nil {
 			return err
 		}
+	}
+	if err := firstError(bEdges.Flush(ctx), bIdx.Flush(ctx)); err != nil {
+		return err
 	}
 
 	if err := writeFileTree(ctx, tree, out.xs); err != nil {
@@ -216,20 +221,21 @@ func combineNodesAndEdges(ctx context.Context, out *servingOutput, gsEntries <-c
 			n = e.Source
 		} else if e.Target != nil {
 			e.Source = n
-			if err := writeCompletedEdges(ctx, out.completeEdges, &e); err != nil {
+			if err := writeCompletedEdges(ctx, bEdges, &e); err != nil {
 				return fmt.Errorf("error writing complete edge: %v", err)
 			}
 		}
 	}
 
-	return nil
+	return bEdges.Flush(ctx)
 }
 
 func writeFileTree(ctx context.Context, tree *filetree.Map, out table.Proto) error {
+	buffer := out.Buffered()
 	for corpus, roots := range tree.M {
 		for root, dirs := range roots {
 			for path, dir := range dirs {
-				if err := out.Put(ctx, ftsrv.PrefixedDirKey(corpus, root, path), dir); err != nil {
+				if err := buffer.Put(ctx, ftsrv.PrefixedDirKey(corpus, root, path), dir); err != nil {
 					return err
 				}
 			}
@@ -239,28 +245,31 @@ func writeFileTree(ctx context.Context, tree *filetree.Map, out table.Proto) err
 	if err != nil {
 		return err
 	}
-	return out.Put(ctx, ftsrv.CorpusRootsPrefixedKey, cr)
+	if err := buffer.Put(ctx, ftsrv.CorpusRootsPrefixedKey, cr); err != nil {
+		return err
+	}
+	return buffer.Flush(ctx)
 }
 
-func writePartialEdges(ctx context.Context, out *servingOutput, src *assemble.Source) error {
+func writePartialEdges(ctx context.Context, out table.BufferedProto, idx table.BufferedInverted, src *assemble.Source) error {
 	edges := assemble.PartialReverseEdges(src)
 	for _, pe := range edges {
 		var target string
 		if pe.Target != nil {
 			target = pe.Target.Ticket
 		}
-		if err := out.completeEdges.Put(ctx,
+		if err := out.Put(ctx,
 			[]byte(pe.Source.Ticket+tempTableKeySep+pe.Kind+tempTableKeySep+target), pe); err != nil {
 			return fmt.Errorf("error writing partial edge: %v", err)
 		}
 	}
-	if err := search.IndexNode(ctx, out.idx, edges[0].Source); err != nil {
+	if err := search.IndexNode(ctx, idx, edges[0].Source); err != nil {
 		return err
 	}
 	return nil
 }
 
-func writeCompletedEdges(ctx context.Context, edges *table.KVProto, e *srvpb.Edge) error {
+func writeCompletedEdges(ctx context.Context, edges table.BufferedProto, e *srvpb.Edge) error {
 	if err := writeEdge(ctx, edges, &srvpb.Edge{
 		Source: &srvpb.Node{Ticket: e.Source.Ticket},
 		Kind:   e.Kind,
@@ -278,7 +287,7 @@ func writeCompletedEdges(ctx context.Context, edges *table.KVProto, e *srvpb.Edg
 	return nil
 }
 
-func writeEdge(ctx context.Context, edges *table.KVProto, e *srvpb.Edge) error {
+func writeEdge(ctx context.Context, edges table.BufferedProto, e *srvpb.Edge) error {
 	return edges.Put(ctx, []byte(e.Source.Ticket+tempTableKeySep+e.Kind+tempTableKeySep+e.Target.Ticket), e)
 }
 
@@ -322,14 +331,15 @@ func readCompletedEdges(ctx context.Context, edges *table.KVProto, outs ...chan<
 }
 
 func writePagedEdges(ctx context.Context, edges <-chan *srvpb.Edge, out table.Proto, maxEdgePageSize int) error {
+	buffer := out.Buffered()
 	log.Println("Writing EdgeSets")
 	esb := &assemble.EdgeSetBuilder{
 		MaxEdgePageSize: maxEdgePageSize,
 		Output: func(ctx context.Context, pes *srvpb.PagedEdgeSet) error {
-			return out.Put(ctx, xrefs.EdgeSetKey(pes.EdgeSet.Source.Ticket), pes)
+			return buffer.Put(ctx, xrefs.EdgeSetKey(pes.EdgeSet.Source.Ticket), pes)
 		},
 		OutputPage: func(ctx context.Context, ep *srvpb.EdgePage) error {
-			return out.Put(ctx, xrefs.EdgePageKey(ep.PageKey), ep)
+			return buffer.Put(ctx, xrefs.EdgePageKey(ep.PageKey), ep)
 		},
 	}
 
@@ -365,17 +375,21 @@ func writePagedEdges(ctx context.Context, edges <-chan *srvpb.Edge, out table.Pr
 		}
 	}
 
-	return esb.Flush(ctx)
+	if err := esb.Flush(ctx); err != nil {
+		return err
+	}
+	return buffer.Flush(ctx)
 }
 
 func createDecorationFragments(ctx context.Context, edges <-chan *srvpb.Edge, fragments *table.KVProto) error {
+	buffer := fragments.Buffered()
 	fdb := &assemble.DecorationFragmentBuilder{
 		Output: func(ctx context.Context, file string, fragment *srvpb.FileDecorations) error {
 			key := file + tempTableKeySep
 			if len(fragment.Decoration) != 0 {
 				key += fragment.Decoration[0].Anchor.Ticket
 			}
-			return fragments.Put(ctx, []byte(key), fragment)
+			return buffer.Put(ctx, []byte(key), fragment)
 		},
 	}
 
@@ -387,7 +401,10 @@ func createDecorationFragments(ctx context.Context, edges <-chan *srvpb.Edge, fr
 		}
 	}
 
-	return fdb.Flush(ctx)
+	if err := fdb.Flush(ctx); err != nil {
+		return err
+	}
+	return buffer.Flush(ctx)
 }
 
 func writeFileDecorations(ctx context.Context, edges <-chan *srvpb.Edge, out *servingOutput) error {
@@ -395,7 +412,7 @@ func writeFileDecorations(ctx context.Context, edges <-chan *srvpb.Edge, out *se
 	if err != nil {
 		return fmt.Errorf("failed to create temporary table: %v", err)
 	}
-	fragments := &table.KVProto{temp}
+	fragments := &table.KVProto{DB: temp}
 	defer func() {
 		if err := fragments.Close(ctx); err != nil {
 			log.Printf("Error closing fragments table: %v", err)
@@ -417,6 +434,7 @@ func writeFileDecorations(ctx context.Context, edges <-chan *srvpb.Edge, out *se
 
 	log.Println("Writing Decorations")
 
+	buffer := out.xs.Buffered()
 	var curFile string
 	var decor *srvpb.FileDecorations
 	var fragment srvpb.FileDecorations
@@ -436,7 +454,7 @@ func writeFileDecorations(ctx context.Context, edges <-chan *srvpb.Edge, out *se
 
 		if decor != nil && curFile != fileTicket {
 			if decor.FileTicket != "" {
-				if err := writeDecor(ctx, out.xs, decor); err != nil {
+				if err := writeDecor(ctx, buffer, decor); err != nil {
 					return err
 				}
 			}
@@ -461,12 +479,12 @@ func writeFileDecorations(ctx context.Context, edges <-chan *srvpb.Edge, out *se
 	}
 
 	if decor != nil && decor.FileTicket != "" {
-		if err := writeDecor(ctx, out.xs, decor); err != nil {
+		if err := writeDecor(ctx, buffer, decor); err != nil {
 			return err
 		}
 	}
 
-	return nil
+	return buffer.Flush(ctx)
 }
 
 type deleteOnClose struct {
@@ -498,7 +516,7 @@ func tempTable(name string) (keyvalue.DB, error) {
 
 const tempTableKeySep = "\000"
 
-func writeDecor(ctx context.Context, t table.Proto, decor *srvpb.FileDecorations) error {
+func writeDecor(ctx context.Context, t table.BufferedProto, decor *srvpb.FileDecorations) error {
 	sort.Sort(assemble.ByOffset(decor.Decoration))
 	return t.Put(ctx, xrefs.DecorationsKey(decor.FileTicket), decor)
 }
@@ -506,4 +524,13 @@ func writeDecor(ctx context.Context, t table.Proto, decor *srvpb.FileDecorations
 func drainEntries(entries <-chan *spb.Entry) {
 	for _ = range entries {
 	}
+}
+
+func firstError(es ...error) error {
+	for _, e := range es {
+		if e != nil {
+			return e
+		}
+	}
+	return nil
 }

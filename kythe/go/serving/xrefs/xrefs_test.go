@@ -854,4 +854,6 @@ func (t testProtoTable) Lookup(_ context.Context, key []byte, msg proto.Message)
 	return nil
 }
 
+func (t testProtoTable) Buffered() table.BufferedProto { panic("UNIMPLEMENTED") }
+
 func (t testProtoTable) Close(_ context.Context) error { return nil }

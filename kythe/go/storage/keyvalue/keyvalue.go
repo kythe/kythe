@@ -23,15 +23,20 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"strings"
 	"sync"
 
 	"kythe.io/kythe/go/services/graphstore"
+	"kythe.io/kythe/go/util/datasize"
 
 	"golang.org/x/net/context"
 
 	spb "kythe.io/kythe/proto/storage_proto"
 )
+
+// debug controls whether debugging information is emitted
+const debug = false
 
 // A Store implements the graphstore.Service interface for a keyvalue DB
 type Store struct {
@@ -125,6 +130,84 @@ type Writer interface {
 	// Write writes a key-value entry to the DB. Writes may be batched until the
 	// Writer is Closed.
 	Write(key, val []byte) error
+}
+
+// WritePool is a wrapper around a DB that automatically creates and flushes
+// Writers as data size is written, creating a simple buffered interface for
+// writing to a DB.  This interface is not thread-safe.
+type WritePool struct {
+	db   DB
+	opts *PoolOptions
+
+	wr     Writer
+	writes int
+	size   uint64
+}
+
+// PoolOptions is a set of options used by WritePools.
+type PoolOptions struct {
+	// MaxWrites is the number of calls to Write before the WritePool
+	// automatically flushes the underlying Writer.  This defaults to 32000
+	// writes.
+	MaxWrites int
+
+	// MaxSize is the total size of the keys and values given to Write before the
+	// WritePool automatically flushes the underlying Writer.  This defaults to
+	// 32MiB.
+	MaxSize datasize.Size
+}
+
+func (o *PoolOptions) maxWrites() int {
+	if o == nil || o.MaxWrites <= 0 {
+		return 32000
+	}
+	return o.MaxWrites
+}
+
+func (o *PoolOptions) maxSize() uint64 {
+	if o == nil || o.MaxSize <= 0 {
+		return (datasize.Mebibyte * 32).Bytes()
+	}
+	return o.MaxSize.Bytes()
+}
+
+// NewPool returns a new WritePool for the given DB.  If opts==nil, its defaults
+// are used.
+func NewPool(db DB, opts *PoolOptions) *WritePool { return &WritePool{db: db, opts: opts} }
+
+// Write buffers the given write until the pool becomes to large or Flush is
+// called.
+func (p *WritePool) Write(key, val []byte) error {
+	if p.wr == nil {
+		wr, err := p.db.Writer()
+		if err != nil {
+			return err
+		}
+		p.wr = wr
+	}
+	if err := p.wr.Write(key, val); err != nil {
+		return err
+	}
+	p.size += uint64(len(key)) + uint64(len(val))
+	p.writes++
+	if p.opts.maxWrites() <= p.writes || p.opts.maxSize() <= p.size {
+		return p.Flush()
+	}
+	return nil
+}
+
+// Flush ensures that all buffered writes are applied to the underlying DB.
+func (p *WritePool) Flush() error {
+	if p.wr == nil {
+		return nil
+	}
+	if debug {
+		log.Printf("Flushing (%d) %s", p.writes, datasize.Size(p.size))
+	}
+	err := p.wr.Close()
+	p.wr = nil
+	p.size, p.writes = 0, 0
+	return err
 }
 
 // Read implements part of the graphstore.Service interface.

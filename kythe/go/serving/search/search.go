@@ -120,9 +120,15 @@ func (t *Table) Search(ctx context.Context, q *spb.SearchRequest) (*spb.SearchRe
 // write to the inverted index search table.
 var MaxIndexedFactValueSize = 512
 
+// IndexWriter is a strict write interface subset of table.Inverted.
+type IndexWriter interface {
+	// Put writes an entry associating val with key.
+	Put(ctx context.Context, key, val []byte) error
+}
+
 // IndexNode writes each of n's VName components and facts to t as search index
 // entries.  MaxIndexedFactValueSize limits fact values written to the index.
-func IndexNode(ctx context.Context, t table.Inverted, n *srvpb.Node) error {
+func IndexNode(ctx context.Context, t IndexWriter, n *srvpb.Node) error {
 	uri, err := kytheuri.Parse(n.Ticket)
 	if err != nil {
 		return err

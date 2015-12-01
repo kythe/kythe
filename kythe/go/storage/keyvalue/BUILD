@@ -9,6 +9,7 @@ go_package(
     ],
     deps = [
         "//kythe/go/services/graphstore",
+        "//kythe/go/util/datasize",
         "//kythe/proto:storage_proto_go",
         "//third_party/go:context",
     ],
