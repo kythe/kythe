@@ -19,3 +19,7 @@ bind(
     actual = "//:go_package_prefix",
 )
 
+bind(
+    name = "android/sdk",
+    actual = "//:nothing",
+)
