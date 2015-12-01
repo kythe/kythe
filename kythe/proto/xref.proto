@@ -23,11 +23,7 @@ package kythe.proto;
 // service interface, based on Kythe data.  Its main consumer is Acropolis, but
 // the goal is to provide an interface that will be useful to other tools also.
 
-// TODO(fromberger): For now I have used tickets to identify nodes instead of
-// VNames.  We may choose to replace those with VNames.  Otherwise, define and
-// link to the preferred ticket encoding.
-// Strawman: Lightly canonicalized proto wire format encoded base64.
-// Strawman: Kythe URI scheme, a cleaned-up version of the Kythe scheme.
+// Tickets are Kythe URIs (http://www.kythe.io/docs/kythe-uri-spec.html).
 
 // XRefService provides access to a Kythe graph for fast read-only access to
 // cross-reference relationships.  What constitutes a "Cross-reference" is not
