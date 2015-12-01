@@ -857,7 +857,6 @@ bool IndexWriter::SetVNameConfiguration(const std::string& json) {
 
 kythe::proto::VName IndexWriter::VNameForPath(const std::string& path) {
   kythe::proto::VName out = vname_generator_.LookupVName(path);
-  out.set_language("c++");
   if (out.corpus().empty()) {
     out.set_corpus(corpus_);
   }
@@ -867,7 +866,7 @@ kythe::proto::VName IndexWriter::VNameForPath(const std::string& path) {
 void IndexWriter::FillFileInput(
     const std::string& clang_path, const SourceFile& source_file,
     kythe::proto::CompilationUnit_FileInput* file_input) {
-  CHECK(!source_file.vname.language().empty());
+  CHECK(source_file.vname.language().empty());
   file_input->mutable_v_name()->CopyFrom(source_file.vname);
   // This path is distinct from the VName path. It is used by analysis tools
   // to configure Clang's virtual filesystem.
@@ -911,6 +910,7 @@ void IndexWriter::WriteIndex(
 
   kythe::proto::VName main_vname = VNameForPath(main_source_file);
   unit_vname->CopyFrom(main_vname);
+  unit_vname->set_language("c++");
   unit_vname->set_signature("cu#" + identifying_blob_digest);
   unit_vname->clear_path();
 

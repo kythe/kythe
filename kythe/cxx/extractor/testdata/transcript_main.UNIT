@@ -5,7 +5,6 @@ v_name {
 required_input {
   v_name {
     path: "kythe/cxx/extractor/testdata/transcript_main.cc"
-    language: "c++"
   }
   info {
     path: "./kythe/cxx/extractor/testdata/transcript_main.cc"
@@ -33,7 +32,6 @@ required_input {
 required_input {
   v_name {
     path: "kythe/cxx/extractor/testdata/transcript_b.h"
-    language: "c++"
   }
   info {
     path: "./kythe/cxx/extractor/testdata/transcript_b.h"
@@ -46,7 +44,6 @@ required_input {
 required_input {
   v_name {
     path: "kythe/cxx/extractor/testdata/transcript_a.h"
-    language: "c++"
   }
   info {
     path: "./kythe/cxx/extractor/testdata/transcript_a.h"

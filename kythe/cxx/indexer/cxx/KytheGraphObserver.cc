@@ -79,7 +79,6 @@ kythe::proto::VName KytheGraphObserver::VNameFromFileEntry(
     const clang::FileEntry *file_entry) {
   kythe::proto::VName out_name;
   if (!vfs_->get_vname(file_entry, &out_name)) {
-    out_name.set_language("c++");
     llvm::StringRef working_directory = vfs_->working_directory();
     llvm::StringRef file_name(file_entry->getName());
     if (file_name.startswith(working_directory)) {
@@ -228,9 +227,8 @@ kythe::proto::VName KytheGraphObserver::VNameFromRange(
     out_name.CopyFrom(VNameFromFileEntry(file_entry));
   } else if (range.Kind == GraphObserver::Range::RangeKind::Wraith) {
     VNameRefFromNodeId(range.Context).Expand(&out_name);
-  } else {
-    out_name.set_language("c++");
   }
+  out_name.set_language("c++");
   size_t begin_offset = SourceManager->getFileOffset(begin);
   size_t end_offset = SourceManager->getFileOffset(end);
   auto *const signature = out_name.mutable_signature();

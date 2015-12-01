@@ -7,7 +7,6 @@ required_input {
   v_name {
     corpus: "test_corpus"
     path: "test_file.cc"
-    language: "c++"
   }
   info {
     path: "BASE_DIR/testdata/test_file.cc"

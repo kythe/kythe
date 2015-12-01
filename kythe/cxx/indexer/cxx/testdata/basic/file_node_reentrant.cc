@@ -5,5 +5,5 @@
 #endif
 //- FileNode.node/kind file
 //- vname("", "", "",
-//-   "kythe/cxx/indexer/cxx/testdata/basic/file_node_reentrant.cc", "c++")
+//-   "kythe/cxx/indexer/cxx/testdata/basic/file_node_reentrant.cc", "")
 //-   .node/kind file

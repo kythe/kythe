@@ -1,2 +1,2 @@
-//- vname(_, "stdintest_pass", _, _, "c++").node/kind file
+//- vname(_, "stdintest_pass", _, _, "").node/kind file
 //- MacroDef.node/kind macro

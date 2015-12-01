@@ -1074,6 +1074,8 @@ file
 Brief description::
   A *file* is an array of bytes with a significant external name.
 Naming convention::
+  Language:::
+    *empty*
   Path:::
     *External path to this file (or some other unique ID if this file is
     virtual)*

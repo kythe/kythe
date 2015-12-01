@@ -3,10 +3,10 @@
 // test.cc.
 #include "a.h"
 //- AnchorC.node/kind anchor
-//- AnchorC childof vname("","bundle","","test.cc","c++")
+//- AnchorC childof vname("","bundle","","test.cc","")
 #define C macroc
 #example a.h
 // This is now a header file called a.h. It is unclaimed.
 //- !{ @A=AnchorA.node/kind anchor
-//-    AnchorA childof vname("","bundle","","a.h","c++") }
+//-    AnchorA childof vname("","bundle","","a.h","") }
 #define A macroa
