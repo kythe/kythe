@@ -71,7 +71,7 @@ llvm::ErrorOr<std::unique_ptr<clang::vfs::File>> IndexVFS::openFileForRead(
 
 clang::vfs::directory_iterator IndexVFS::dir_begin(
     const llvm::Twine &dir, std::error_code &error_code) {
-  llvm_unreachable("unimplemented");
+  return clang::vfs::directory_iterator();
 }
 
 void IndexVFS::SetVName(const std::string &path, const proto::VName &vname) {
@@ -258,3 +258,4 @@ IndexVFS::FileRecord *IndexVFS::AllocOrReturnFileRecord(
 }
 
 }  // namespace kythe
+
