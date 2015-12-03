@@ -448,7 +448,7 @@ func (t *tableImpl) Decorations(ctx context.Context, req *xpb.DecorationsRequest
 		return nil, fmt.Errorf("lookup error for file decorations %q: %v", ticket, err)
 	}
 
-	text := decor.SourceText
+	text := decor.File.Text
 	if len(req.DirtyBuffer) > 0 {
 		text = req.DirtyBuffer
 	}
@@ -462,7 +462,7 @@ func (t *tableImpl) Decorations(ctx context.Context, req *xpb.DecorationsRequest
 	reply := &xpb.DecorationsReply{Location: loc}
 
 	if req.SourceText {
-		reply.Encoding = decor.Encoding
+		reply.Encoding = decor.File.Encoding
 		if loc.Kind == xpb.Location_FILE {
 			reply.SourceText = text
 		} else {
@@ -477,7 +477,7 @@ func (t *tableImpl) Decorations(ctx context.Context, req *xpb.DecorationsRequest
 		var patcher *xrefs.Patcher
 		var offsetMapping map[string]span // Map from anchor ticket to patched span
 		if len(req.DirtyBuffer) > 0 {
-			patcher = xrefs.NewPatcher(decor.SourceText, req.DirtyBuffer)
+			patcher = xrefs.NewPatcher(decor.File.Text, req.DirtyBuffer)
 			offsetMapping = make(map[string]span)
 		}
 

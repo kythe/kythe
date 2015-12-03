@@ -164,7 +164,7 @@ func FilterTextFacts(n *srvpb.Node) *srvpb.Node {
 type DecorationFragmentBuilder struct {
 	Output func(ctx context.Context, file string, fragment *srvpb.FileDecorations) error
 
-	anchor  *srvpb.FileDecorations_Decoration_Anchor
+	anchor  *srvpb.Anchor
 	decor   []*srvpb.FileDecorations_Decoration
 	parents []string
 }
@@ -186,9 +186,11 @@ func (b *DecorationFragmentBuilder) AddEdge(ctx context.Context, e *srvpb.Edge) 
 		switch string(srcFacts[schema.NodeKindFact]) {
 		case schema.FileKind:
 			if err := b.Output(ctx, e.Source.Ticket, &srvpb.FileDecorations{
-				FileTicket: e.Source.Ticket,
-				SourceText: srcFacts[schema.TextFact],
-				Encoding:   string(srcFacts[schema.TextEncodingFact]),
+				File: &srvpb.File{
+					Ticket:   e.Source.Ticket,
+					Text:     srcFacts[schema.TextFact],
+					Encoding: string(srcFacts[schema.TextEncodingFact]),
+				},
 			}); err != nil {
 				return err
 			}
@@ -206,7 +208,7 @@ func (b *DecorationFragmentBuilder) AddEdge(ctx context.Context, e *srvpb.Edge) 
 				return nil
 			}
 
-			b.anchor = &srvpb.FileDecorations_Decoration_Anchor{
+			b.anchor = &srvpb.Anchor{
 				Ticket:      e.Source.Ticket,
 				StartOffset: int32(anchorStart),
 				EndOffset:   int32(anchorEnd),

@@ -118,28 +118,60 @@ message CorpusRoots {
   repeated Corpus corpus = 1;
 }
 
+// A File is a specialized Node structure for file nodes.
+message File {
+  string ticket = 1;
+  bytes text = 2;
+  string encoding = 3;
+}
+
+// An Anchor is a specialized Node structure for anchor nodes.
+message Anchor {
+  string ticket = 1;
+  int32 start_offset = 2;
+  int32 end_offset = 3;
+}
+
 // FileDecorations stores a file's contents and all contained anchor edges.
 message FileDecorations {
-  string file_ticket = 1;
-
-  bytes source_text = 2;
-  string encoding = 3;
+  File file = 1;
 
   // Represents an edge from an anchor contained within the file to some target.
   message Decoration {
-    message Anchor {
-      string ticket = 1;
-      int32 start_offset = 2;
-      int32 end_offset = 3;
-    }
-
     Anchor anchor = 1;
-    Node target = 2;
-    string kind = 3;
+    string kind = 2;
+    Node target = 3;
   }
 
   // The decorations located in the file, sorted by starting offset.
-  repeated Decoration decoration = 4;
+  repeated Decoration decoration = 2;
+}
+
+// TODO(schroederc): pre-cached structure for CrossReferences reply
+
+// A CrossReference represents a path between two anchors, crossing between a
+// single common node.  Abstractly this a
+// (file, anchor, kind, node, kind', anchor', file') tuple where the two
+// (file, anchor, kind) sub-components have been named Decorations.
+//
+// This structure can be used to represent the intermediary* structures needed
+// to build pre-cached responses to the Decorations and CrossReferences service
+// methods.
+//
+// * where only a subset of this structure is known at that moment in time
+message CrossReference {
+  // A Decoration is specialized partial edge with an anchor on one end, stored
+  // along side its parent file node.  The partial edge's other end is stored in
+  // the referent field of the parent CrossReference.
+  message Decoration {
+    File file = 1;
+    Anchor anchor = 2;
+    string kind = 3;
+  }
+
+  Decoration source_decoration = 1;
+  Node referent = 2;
+  Decoration target_decoration = 3;
 }
 
 // Internal encoding for an EdgesReply page_token

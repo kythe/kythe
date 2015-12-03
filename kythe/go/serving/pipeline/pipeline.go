@@ -453,7 +453,7 @@ func writeFileDecorations(ctx context.Context, edges <-chan *srvpb.Edge, out *se
 		fileTicket := ss[0]
 
 		if decor != nil && curFile != fileTicket {
-			if decor.FileTicket != "" {
+			if decor.File != nil {
 				if err := writeDecor(ctx, buffer, decor); err != nil {
 					return err
 				}
@@ -469,16 +469,14 @@ func writeFileDecorations(ctx context.Context, edges <-chan *srvpb.Edge, out *se
 			return fmt.Errorf("invalid temporary table value: %v", err)
 		}
 
-		if fragment.FileTicket == "" {
+		if fragment.File == nil {
 			decor.Decoration = append(decor.Decoration, fragment.Decoration...)
 		} else {
-			decor.FileTicket = fragment.FileTicket
-			decor.SourceText = fragment.SourceText
-			decor.Encoding = fragment.Encoding
+			decor.File = fragment.File
 		}
 	}
 
-	if decor != nil && decor.FileTicket != "" {
+	if decor != nil && decor.File != nil {
 		if err := writeDecor(ctx, buffer, decor); err != nil {
 			return err
 		}
@@ -518,7 +516,7 @@ const tempTableKeySep = "\000"
 
 func writeDecor(ctx context.Context, t table.BufferedProto, decor *srvpb.FileDecorations) error {
 	sort.Sort(assemble.ByOffset(decor.Decoration))
-	return t.Put(ctx, xrefs.DecorationsKey(decor.FileTicket), decor)
+	return t.Put(ctx, xrefs.DecorationsKey(decor.File.Ticket), decor)
 }
 
 func drainEntries(entries <-chan *spb.Entry) {

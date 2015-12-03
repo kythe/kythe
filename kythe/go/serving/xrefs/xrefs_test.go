@@ -255,17 +255,21 @@ var (
 		},
 		Decorations: []*srvpb.FileDecorations{
 			{
-				FileTicket: "kythe://someCorpus?lang=otpl?path=/some/valid/path#a83md71",
-				SourceText: []byte("; some file content here\nfinal line\n"),
-				Encoding:   "utf-8",
+				File: &srvpb.File{
+					Ticket:   "kythe://someCorpus?lang=otpl?path=/some/valid/path#a83md71",
+					Text:     []byte("; some file content here\nfinal line\n"),
+					Encoding: "utf-8",
+				},
 			},
 			{
-				FileTicket: "kythe://someCorpus?lang=otpl?path=/a/path#b7te37tn4",
-				SourceText: []byte("(defn map [f coll]\n  (if (empty? coll)\n    []\n    (cons (f (first coll)) (map f (rest coll)))))\n"),
-				Encoding:   "utf-8",
+				File: &srvpb.File{
+					Ticket:   "kythe://someCorpus?lang=otpl?path=/a/path#b7te37tn4",
+					Text:     []byte("(defn map [f coll]\n  (if (empty? coll)\n    []\n    (cons (f (first coll)) (map f (rest coll)))))\n"),
+					Encoding: "utf-8",
+				},
 				Decoration: []*srvpb.FileDecorations_Decoration{
 					{
-						Anchor: &srvpb.FileDecorations_Decoration_Anchor{
+						Anchor: &srvpb.Anchor{
 							Ticket:      "kythe://c?lang=otpl?path=/a/path#6-9",
 							StartOffset: 6,
 							EndOffset:   9,
@@ -274,7 +278,7 @@ var (
 						Target: getNode("kythe://c?lang=otpl?path=/a/path#map"),
 					},
 					{
-						Anchor: &srvpb.FileDecorations_Decoration_Anchor{
+						Anchor: &srvpb.Anchor{
 							Ticket:      "kythe://c?lang=otpl?path=/a/path#27-33",
 							StartOffset: 27,
 							EndOffset:   33,
@@ -283,7 +287,7 @@ var (
 						Target: getNode("kythe://core?lang=otpl#empty?"),
 					},
 					{
-						Anchor: &srvpb.FileDecorations_Decoration_Anchor{
+						Anchor: &srvpb.Anchor{
 							Ticket:      "kythe://c?lang=otpl?path=/a/path#51-55",
 							StartOffset: 51,
 							EndOffset:   55,
@@ -466,20 +470,20 @@ func TestDecorationsRefs(t *testing.T) {
 
 	st := tbl.Construct(t)
 	reply, err := st.Decorations(ctx, &xpb.DecorationsRequest{
-		Location:   &xpb.Location{Ticket: d.FileTicket},
+		Location:   &xpb.Location{Ticket: d.File.Ticket},
 		References: true,
 		Filter:     []string{"**"},
 	})
 	testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
 
 	if len(reply.SourceText) != 0 {
-		t.Errorf("Unexpected source text: %q", string(d.SourceText))
+		t.Errorf("Unexpected source text: %q", string(reply.SourceText))
 	}
 	if reply.Encoding != "" {
-		t.Errorf("Unexpected encoding: %q", d.Encoding)
+		t.Errorf("Unexpected encoding: %q", reply.Encoding)
 	}
 
-	expected := refs(xrefs.NewNormalizer(d.SourceText), d.Decoration)
+	expected := refs(xrefs.NewNormalizer(d.File.Text), d.Decoration)
 	if !reflect.DeepEqual(expected, reply.Reference) {
 		t.Fatalf("Expected references %v; found %v", expected, reply.Reference)
 	}
@@ -504,7 +508,7 @@ func TestDecorationsDirtyBuffer(t *testing.T) {
     (cons (f (first coll)) (map f (rest coll)))))
 `)
 	reply, err := st.Decorations(ctx, &xpb.DecorationsRequest{
-		Location:    &xpb.Location{Ticket: d.FileTicket},
+		Location:    &xpb.Location{Ticket: d.File.Ticket},
 		DirtyBuffer: dirty,
 		References:  true,
 		Filter:      []string{"**"},
@@ -512,13 +516,13 @@ func TestDecorationsDirtyBuffer(t *testing.T) {
 	testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
 
 	if len(reply.SourceText) != 0 {
-		t.Errorf("Unexpected source text: %q", string(d.SourceText))
+		t.Errorf("Unexpected source text: %q", string(reply.SourceText))
 	}
 	if reply.Encoding != "" {
-		t.Errorf("Unexpected encoding: %q", d.Encoding)
+		t.Errorf("Unexpected encoding: %q", reply.Encoding)
 	}
 
-	p := xrefs.NewPatcher(d.SourceText, dirty)
+	p := xrefs.NewPatcher(d.File.Text, dirty)
 	norm := xrefs.NewNormalizer(dirty)
 	var expected []*xpb.DecorationsReply_Reference
 	for _, d := range d.Decoration {
@@ -561,7 +565,7 @@ func TestDecorationsEmpty(t *testing.T) {
 	st := tbl.Construct(t)
 	reply, err := st.Decorations(ctx, &xpb.DecorationsRequest{
 		Location: &xpb.Location{
-			Ticket: tbl.Decorations[0].FileTicket,
+			Ticket: tbl.Decorations[0].File.Ticket,
 		},
 		References: true,
 	})
@@ -577,16 +581,16 @@ func TestDecorationsSourceText(t *testing.T) {
 
 	st := tbl.Construct(t)
 	reply, err := st.Decorations(ctx, &xpb.DecorationsRequest{
-		Location:   &xpb.Location{Ticket: expected.FileTicket},
+		Location:   &xpb.Location{Ticket: expected.File.Ticket},
 		SourceText: true,
 	})
 	testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
 
-	if !bytes.Equal(reply.SourceText, expected.SourceText) {
-		t.Errorf("Expected source text %q; found %q", string(expected.SourceText), string(reply.SourceText))
+	if !bytes.Equal(reply.SourceText, expected.File.Text) {
+		t.Errorf("Expected source text %q; found %q", string(expected.File.Text), string(reply.SourceText))
 	}
-	if reply.Encoding != expected.Encoding {
-		t.Errorf("Expected source text %q; found %q", expected.Encoding, reply.Encoding)
+	if reply.Encoding != expected.File.Encoding {
+		t.Errorf("Expected source text %q; found %q", expected.File.Encoding, reply.Encoding)
 	}
 	if len(reply.Reference) > 0 {
 		t.Errorf("Unexpected references in DecorationsReply %v", reply.Reference)
@@ -825,7 +829,7 @@ func (tbl *testTable) Construct(t *testing.T) xrefs.Service {
 		testutil.FatalOnErrT(t, "Error writing edge page: %v", p.Put(ctx, []byte(edgePagesTablePrefix+ep.PageKey), ep))
 	}
 	for _, d := range tbl.Decorations {
-		testutil.FatalOnErrT(t, "Error writing file decorations: %v", p.Put(ctx, DecorationsKey(mustFix(t, d.FileTicket)), d))
+		testutil.FatalOnErrT(t, "Error writing file decorations: %v", p.Put(ctx, DecorationsKey(mustFix(t, d.File.Ticket)), d))
 	}
 	return NewCombinedTable(table.ProtoBatchParallel{p})
 }
