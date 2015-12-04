@@ -39,8 +39,8 @@
 #include "google/protobuf/stubs/common.h"
 #include "gtest/gtest.h"
 
-#include "KytheGraphRecorder.h"
-#include "RecordingOutputStream.h"
+#include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
+#include "kythe/cxx/common/indexing/RecordingOutputStream.h"
 
 namespace kythe {
 namespace {

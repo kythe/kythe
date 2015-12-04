@@ -24,15 +24,15 @@
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Tooling/Tooling.h"
 #include "kythe/cxx/common/json_proto.h"
+#include "kythe/cxx/common/indexing/KytheClaimClient.h"
+#include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
+#include "kythe/cxx/common/indexing/KytheVFS.h"
 #include "kythe/proto/analysis.pb.h"
 #include "kythe/proto/cxx.pb.h"
 #include "third_party/llvm/src/clang_builtin_headers.h"
 #include "llvm/ADT/Twine.h"
 
-#include "KytheClaimClient.h"
 #include "KytheGraphObserver.h"
-#include "KytheGraphRecorder.h"
-#include "KytheVFS.h"
 
 namespace kythe {
 

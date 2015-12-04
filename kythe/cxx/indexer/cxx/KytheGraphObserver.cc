@@ -37,9 +37,9 @@
 #include "clang/AST/TypeLoc.h"
 #include "clang/Basic/SourceManager.h"
 #include "kythe/cxx/common/path_utils.h"
+#include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
 
 #include "IndexerASTHooks.h"
-#include "KytheGraphRecorder.h"
 
 namespace kythe {
 

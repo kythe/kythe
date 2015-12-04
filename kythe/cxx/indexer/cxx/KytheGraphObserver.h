@@ -22,9 +22,9 @@
 #include <unordered_set>
 
 #include "GraphObserver.h"
-#include "KytheClaimClient.h"
-#include "KytheGraphRecorder.h"
-#include "KytheVFS.h"
+#include "kythe/cxx/common/indexing/KytheClaimClient.h"
+#include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
+#include "kythe/cxx/common/indexing/KytheVFS.h"
 #include "kythe/cxx/common/kythe_metadata_file.h"
 #include "kythe/proto/storage.pb.h"
 

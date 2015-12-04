@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-#ifndef KYTHE_CXX_INDEXER_CXX_KYTHE_CLAIM_CLIENT_H_
-#define KYTHE_CXX_INDEXER_CXX_KYTHE_CLAIM_CLIENT_H_
+#ifndef KYTHE_CXX_COMMON_INDEXING_KYTHE_CLAIM_CLIENT_H_
+#define KYTHE_CXX_COMMON_INDEXING_KYTHE_CLAIM_CLIENT_H_
 
 #include <map>
 
 #include "kythe/cxx/common/vname_ordering.h"
 #include "kythe/proto/storage.pb.h"
-#include "GraphObserver.h"
 
 extern "C" {
 struct memcached_st;

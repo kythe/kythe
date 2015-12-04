@@ -21,8 +21,9 @@
 
 #include "clang/AST/Decl.h"
 
+#include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
+
 #include "GraphObserver.h"
-#include "KytheGraphRecorder.h"
 
 namespace kythe {
 

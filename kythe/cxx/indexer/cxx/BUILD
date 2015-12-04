@@ -7,11 +7,7 @@ cc_library(
         "IndexerFrontendAction.cc",
         "IndexerLibrarySupport.cc",
         "IndexerPPCallbacks.cc",
-        "KytheClaimClient.cc",
         "KytheGraphObserver.cc",
-        "KytheGraphRecorder.cc",
-        "KytheOutputStream.cc",
-        "KytheVFS.cc",
     ],
     hdrs = [
         "GraphObserver.h",
@@ -19,11 +15,7 @@ cc_library(
         "IndexerFrontendAction.h",
         "IndexerLibrarySupport.h",
         "IndexerPPCallbacks.h",
-        "KytheClaimClient.h",
         "KytheGraphObserver.h",
-        "KytheGraphRecorder.h",
-        "KytheOutputStream.h",
-        "KytheVFS.h",
     ],
     copts = [
         "-Wno-non-virtual-dtor",
@@ -34,6 +26,7 @@ cc_library(
         "//kythe/cxx/common:index_pack",
         "//kythe/cxx/common:json_proto",
         "//kythe/cxx/common:lib",
+        "//kythe/cxx/common/indexing:lib",
         "//kythe/proto:analysis_proto_cc",
         "//kythe/proto:cxx_proto_cc",
         "//kythe/proto:storage_proto_cc",
@@ -83,9 +76,6 @@ cc_library(
     srcs = [
         "KytheIndexerUnitTest.cc",
     ],
-    hdrs = [
-        "RecordingOutputStream.h",
-    ],
     copts = [
         "-Wno-non-virtual-dtor",
         "-Wno-unused-variable",
@@ -93,6 +83,7 @@ cc_library(
     ],
     deps = [
         ":lib",
+        "//kythe/cxx/common/indexing:testlib",
         "//kythe/proto:cxx_proto_cc",
         "//kythe/proto:storage_proto_cc",
         "//third_party/googletest",

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef KYTHE_CXX_INDEXER_CXX_RECORDING_OUTPUT_STREAM_H_
-#define KYTHE_CXX_INDEXER_CXX_RECORDING_OUTPUT_STREAM_H_
+#ifndef KYTHE_CXX_COMMON_INDEXING_RECORDING_OUTPUT_STREAM_H_
+#define KYTHE_CXX_COMMON_INDEXING_RECORDING_OUTPUT_STREAM_H_
 
 #include "KytheOutputStream.h"
 
@@ -56,4 +56,4 @@ class RecordingOutputStream : public KytheOutputStream {
 
 }  // namespace kythe
 
-#endif  // KYTHE_CXX_INDEXER_CXX_RECORDING_OUTPUT_STREAM_H_
+#endif  // KYTHE_CXX_COMMON_INDEXING_RECORDING_OUTPUT_STREAM_H_

@@ -40,14 +40,14 @@
 #include "google/protobuf/stubs/common.h"
 #include "kythe/cxx/common/index_pack.h"
 #include "kythe/cxx/common/json_proto.h"
+#include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
+#include "kythe/cxx/common/indexing/KytheOutputStream.h"
+#include "kythe/cxx/common/indexing/KytheVFS.h"
 #include "kythe/proto/analysis.pb.h"
 #include "kythe/proto/claim.pb.h"
 
 #include "IndexerFrontendAction.h"
 #include "KytheGraphObserver.h"
-#include "KytheGraphRecorder.h"
-#include "KytheOutputStream.h"
-#include "KytheVFS.h"
 
 DEFINE_string(o, "-", "Output filename");
 DEFINE_string(i, "-", "Input filename");
