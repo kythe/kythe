@@ -104,7 +104,9 @@ func Run(ctx context.Context, gs graphstore.Service, db keyvalue.DB, opts *Optio
 	}()
 
 	err = gs.Scan(ctx, &spb.ScanRequest{}, func(e *spb.Entry) error {
-		entries <- e
+		if graphstore.IsNodeFact(e) || schema.EdgeDirection(e.EdgeKind) == schema.Forward {
+			entries <- e
+		}
 		return nil
 	})
 	close(entries)
