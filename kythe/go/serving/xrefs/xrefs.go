@@ -475,10 +475,8 @@ func (t *tableImpl) Decorations(ctx context.Context, req *xpb.DecorationsRequest
 		nodeTickets := stringset.New()
 
 		var patcher *xrefs.Patcher
-		var offsetMapping map[string]span // Map from anchor ticket to patched span
 		if len(req.DirtyBuffer) > 0 {
 			patcher = xrefs.NewPatcher(decor.File.Text, req.DirtyBuffer)
-			offsetMapping = make(map[string]span)
 		}
 
 		// The span with which to constrain the set of returned anchor references.
@@ -498,11 +496,8 @@ func (t *tableImpl) Decorations(ctx context.Context, req *xpb.DecorationsRequest
 			// given a dirty buffer and the anchor was inside a changed region.
 			if exists {
 				if start >= startBoundary && end <= endBoundary {
-					if offsetMapping != nil {
-						// Save the patched span to update the corresponding facts of the
-						// anchor node in reply.Node.
-						offsetMapping[d.Anchor.Ticket] = span{start, end}
-					}
+					d.Anchor.StartOffset = start
+					d.Anchor.EndOffset = end
 					reply.Reference = append(reply.Reference, decorationToReference(norm, d))
 
 					if len(patterns) > 0 && !nodeTickets.Contains(d.Target.Ticket) {

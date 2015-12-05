@@ -263,8 +263,12 @@ var (
 			},
 			{
 				File: &srvpb.File{
-					Ticket:   "kythe://someCorpus?lang=otpl?path=/a/path#b7te37tn4",
-					Text:     []byte("(defn map [f coll]\n  (if (empty? coll)\n    []\n    (cons (f (first coll)) (map f (rest coll)))))\n"),
+					Ticket: "kythe://someCorpus?lang=otpl?path=/a/path#b7te37tn4",
+					Text: []byte(`(defn map [f coll]
+  (if (empty? coll)
+    []
+    (cons (f (first coll)) (map f (rest coll)))))
+`),
 					Encoding: "utf-8",
 				},
 				Decoration: []*srvpb.FileDecorations_Decoration{
@@ -274,7 +278,7 @@ var (
 							StartOffset: 6,
 							EndOffset:   9,
 						},
-						Kind:   "/kythe/defines",
+						Kind:   "/kythe/defines/binding",
 						Target: getNode("kythe://c?lang=otpl?path=/a/path#map"),
 					},
 					{
@@ -502,6 +506,7 @@ func TestDecorationsDirtyBuffer(t *testing.T) {
 	d := tbl.Decorations[1]
 
 	st := tbl.Construct(t)
+	// s/empty?/seq/
 	dirty := []byte(`(defn map [f coll]
   (if (seq coll)
     []
@@ -522,16 +527,44 @@ func TestDecorationsDirtyBuffer(t *testing.T) {
 		t.Errorf("Unexpected encoding: %q", reply.Encoding)
 	}
 
-	p := xrefs.NewPatcher(d.File.Text, dirty)
-	norm := xrefs.NewNormalizer(dirty)
-	var expected []*xpb.DecorationsReply_Reference
-	for _, d := range d.Decoration {
-		if _, _, exists := p.Patch(d.Anchor.StartOffset, d.Anchor.EndOffset); exists {
-			expected = append(expected, decorationToReference(norm, d))
-		}
+	expected := []*xpb.DecorationsReply_Reference{
+		{
+			// Unpatched anchor for "map"
+			SourceTicket: "kythe://c?lang=otpl?path=/a/path#6-9",
+			TargetTicket: "kythe://c?lang=otpl?path=/a/path#map",
+			Kind:         "/kythe/defines/binding",
+
+			AnchorStart: &xpb.Location_Point{
+				ByteOffset:   6,
+				LineNumber:   1,
+				ColumnOffset: 6,
+			},
+			AnchorEnd: &xpb.Location_Point{
+				ByteOffset:   9,
+				LineNumber:   1,
+				ColumnOffset: 9,
+			},
+		},
+		// Skipped anchor for "empty?" (inside edit region)
+		{
+			// Patched anchor for "cons" (moved backwards by 3 bytes)
+			SourceTicket: "kythe://c?lang=otpl?path=/a/path#51-55",
+			TargetTicket: "kythe://core?lang=otpl#cons",
+			Kind:         "/kythe/refs",
+			AnchorStart: &xpb.Location_Point{
+				ByteOffset:   48,
+				LineNumber:   4,
+				ColumnOffset: 5,
+			},
+			AnchorEnd: &xpb.Location_Point{
+				ByteOffset:   52,
+				LineNumber:   4,
+				ColumnOffset: 9,
+			},
+		},
 	}
-	if !reflect.DeepEqual(expected, reply.Reference) {
-		t.Fatalf("Expected references %v; found %v", expected, reply.Reference)
+	if err := testutil.DeepEqual(expected, reply.Reference); err != nil {
+		t.Fatal(err)
 	}
 
 	// These are a subset of the anchor nodes in tbl.Decorations[1].  tbl.Nodes[10] is missing because
