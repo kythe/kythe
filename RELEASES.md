@@ -15,6 +15,9 @@ Notable additions:
  - Java indexer: emit (possibly multi-line) snippets over entire surrounding statement
  - Java indexer: emit class node for static imports
 
+Notable fixes:
+ - Java extractor: correctly parse @file arguments using javac CommandLine parser
+
 ## v0.0.15
 
 Notable changes:

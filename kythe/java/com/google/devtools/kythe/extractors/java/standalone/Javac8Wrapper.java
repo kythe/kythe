@@ -22,7 +22,6 @@ import com.google.devtools.kythe.extractors.java.JavaCompilationUnitExtractor;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 
 import com.sun.tools.javac.file.JavacFileManager;
-import com.sun.tools.javac.main.CommandLine;
 import com.sun.tools.javac.main.Main;
 import com.sun.tools.javac.main.Option;
 import com.sun.tools.javac.util.Context;
@@ -49,7 +48,7 @@ public class Javac8Wrapper extends AbstractJavacWrapper {
     main.classnames = new ListBuffer<String>();
 
     // Use javac's argument parser to get the list of source files
-    List<String> sources = getSourceList(main.processArgs(CommandLine.parse(cleanedUpArguments)));
+    List<String> sources = getSourceList(main.processArgs(cleanedUpArguments));
 
     // Retrieve the list of class paths provided by the -classpath argument.
     List<String> classPaths = splitPaths(options.get(Option.CLASSPATH));

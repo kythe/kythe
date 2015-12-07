@@ -21,7 +21,6 @@ import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.hash.Hashing;
-import com.google.common.io.Files;
 import com.google.devtools.kythe.extractors.java.JavaCompilationUnitExtractor;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.google.devtools.kythe.extractors.shared.FileVNames;
@@ -30,9 +29,10 @@ import com.google.devtools.kythe.platform.indexpack.Archive;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Analysis.FileData;
 
+import com.sun.tools.javac.main.CommandLine;
+
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -119,17 +119,7 @@ public abstract class AbstractJavacWrapper {
 
   private static String[] getCleanedUpArguments(String[] args) throws IOException {
     // Expand all @file arguments
-    List<String> expandedArgs = Lists.newArrayList();
-    for (String arg : args) {
-      if (arg.startsWith("@")) {
-        File file = new File(arg.substring(1));
-        for (String line : Files.readLines(file, StandardCharsets.UTF_8)) {
-          expandedArgs.add(line.replaceAll("^\"(.*)\"$", "$1"));
-        }
-      } else {
-        expandedArgs.add(arg);
-      }
-    }
+    List<String> expandedArgs = Lists.newArrayList(CommandLine.parse(args));
 
     // We skip some arguments that would normally be passed to javac:
     // -J, these are flags to the java environment running javac.
