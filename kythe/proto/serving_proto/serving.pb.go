@@ -9,14 +9,19 @@ It is generated from these files:
 	kythe/proto/serving.proto
 
 It has these top-level messages:
+	Fact
 	Node
+	Edge
 	EdgeSet
 	PagedEdgeSet
 	PageIndex
 	EdgePage
 	FileDirectory
 	CorpusRoots
+	File
+	Anchor
 	FileDecorations
+	CrossReference
 	PageToken
 */
 package serving_proto
@@ -30,31 +35,65 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// Kythe fact (i.e. from a storage.Entry).  Can belong to either a Node or Edge.
+type Fact struct {
+	Name  string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	Value []byte `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+}
+
+func (m *Fact) Reset()         { *m = Fact{} }
+func (m *Fact) String() string { return proto.CompactTextString(m) }
+func (*Fact) ProtoMessage()    {}
+
 // A derivative of xref.NodeInfo for serving.
 type Node struct {
-	Ticket string       `protobuf:"bytes,1,opt,name=ticket" json:"ticket,omitempty"`
-	Fact   []*Node_Fact `protobuf:"bytes,2,rep,name=fact" json:"fact,omitempty"`
+	Ticket string  `protobuf:"bytes,1,opt,name=ticket" json:"ticket,omitempty"`
+	Fact   []*Fact `protobuf:"bytes,2,rep,name=fact" json:"fact,omitempty"`
 }
 
 func (m *Node) Reset()         { *m = Node{} }
 func (m *Node) String() string { return proto.CompactTextString(m) }
 func (*Node) ProtoMessage()    {}
 
-func (m *Node) GetFact() []*Node_Fact {
+func (m *Node) GetFact() []*Fact {
 	if m != nil {
 		return m.Fact
 	}
 	return nil
 }
 
-type Node_Fact struct {
-	Name  string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	Value []byte `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+// Full representation of a Kythe edge; useful during post-processing.
+type Edge struct {
+	Source *Node   `protobuf:"bytes,1,opt,name=source" json:"source,omitempty"`
+	Kind   string  `protobuf:"bytes,2,opt,name=kind" json:"kind,omitempty"`
+	Target *Node   `protobuf:"bytes,3,opt,name=target" json:"target,omitempty"`
+	Fact   []*Fact `protobuf:"bytes,4,rep,name=fact" json:"fact,omitempty"`
 }
 
-func (m *Node_Fact) Reset()         { *m = Node_Fact{} }
-func (m *Node_Fact) String() string { return proto.CompactTextString(m) }
-func (*Node_Fact) ProtoMessage()    {}
+func (m *Edge) Reset()         { *m = Edge{} }
+func (m *Edge) String() string { return proto.CompactTextString(m) }
+func (*Edge) ProtoMessage()    {}
+
+func (m *Edge) GetSource() *Node {
+	if m != nil {
+		return m.Source
+	}
+	return nil
+}
+
+func (m *Edge) GetTarget() *Node {
+	if m != nil {
+		return m.Target
+	}
+	return nil
+}
+
+func (m *Edge) GetFact() []*Fact {
+	if m != nil {
+		return m.Fact
+	}
+	return nil
+}
 
 // An EdgeSet represents a collection of edges from a single node.  The edges
 // are organized into groups, each sharing a common edge kind.
@@ -65,8 +104,8 @@ func (*Node_Fact) ProtoMessage()    {}
 //
 // Note: this is a derivative of xref.EdgeSet
 type EdgeSet struct {
-	// The ticket of the source node for all the edges in the edge set.
-	SourceTicket string `protobuf:"bytes,1,opt,name=source_ticket" json:"source_ticket,omitempty"`
+	// The source node for all the edges in the edge set.
+	Source *Node `protobuf:"bytes,1,opt,name=source" json:"source,omitempty"`
 	// Each group is a collection of outbound edges from source node sharing a
 	// given kind.  In a given EdgeSet, the server will not send more than one
 	// group with the same kind label.
@@ -77,6 +116,13 @@ func (m *EdgeSet) Reset()         { *m = EdgeSet{} }
 func (m *EdgeSet) String() string { return proto.CompactTextString(m) }
 func (*EdgeSet) ProtoMessage()    {}
 
+func (m *EdgeSet) GetSource() *Node {
+	if m != nil {
+		return m.Source
+	}
+	return nil
+}
+
 func (m *EdgeSet) GetGroup() []*EdgeSet_Group {
 	if m != nil {
 		return m.Group
@@ -85,13 +131,20 @@ func (m *EdgeSet) GetGroup() []*EdgeSet_Group {
 }
 
 type EdgeSet_Group struct {
-	Kind         string   `protobuf:"bytes,1,opt,name=kind" json:"kind,omitempty"`
-	TargetTicket []string `protobuf:"bytes,2,rep,name=target_ticket" json:"target_ticket,omitempty"`
+	Kind   string  `protobuf:"bytes,1,opt,name=kind" json:"kind,omitempty"`
+	Target []*Node `protobuf:"bytes,2,rep,name=target" json:"target,omitempty"`
 }
 
 func (m *EdgeSet_Group) Reset()         { *m = EdgeSet_Group{} }
 func (m *EdgeSet_Group) String() string { return proto.CompactTextString(m) }
 func (*EdgeSet_Group) ProtoMessage()    {}
+
+func (m *EdgeSet_Group) GetTarget() []*Node {
+	if m != nil {
+		return m.Target
+	}
+	return nil
+}
 
 // PagedEdgeSets are used for efficiently storing EdgeSets, all originating from
 // the same source ticket, in order to handle pagination requests.
@@ -197,18 +250,45 @@ func (m *CorpusRoots_Corpus) Reset()         { *m = CorpusRoots_Corpus{} }
 func (m *CorpusRoots_Corpus) String() string { return proto.CompactTextString(m) }
 func (*CorpusRoots_Corpus) ProtoMessage()    {}
 
+// A File is a specialized Node structure for file nodes.
+type File struct {
+	Ticket   string `protobuf:"bytes,1,opt,name=ticket" json:"ticket,omitempty"`
+	Text     []byte `protobuf:"bytes,2,opt,name=text,proto3" json:"text,omitempty"`
+	Encoding string `protobuf:"bytes,3,opt,name=encoding" json:"encoding,omitempty"`
+}
+
+func (m *File) Reset()         { *m = File{} }
+func (m *File) String() string { return proto.CompactTextString(m) }
+func (*File) ProtoMessage()    {}
+
+// An Anchor is a specialized Node structure for anchor nodes.
+type Anchor struct {
+	Ticket      string `protobuf:"bytes,1,opt,name=ticket" json:"ticket,omitempty"`
+	StartOffset int32  `protobuf:"varint,2,opt,name=start_offset" json:"start_offset,omitempty"`
+	EndOffset   int32  `protobuf:"varint,3,opt,name=end_offset" json:"end_offset,omitempty"`
+}
+
+func (m *Anchor) Reset()         { *m = Anchor{} }
+func (m *Anchor) String() string { return proto.CompactTextString(m) }
+func (*Anchor) ProtoMessage()    {}
+
 // FileDecorations stores a file's contents and all contained anchor edges.
 type FileDecorations struct {
-	FileTicket string `protobuf:"bytes,1,opt,name=file_ticket" json:"file_ticket,omitempty"`
-	SourceText []byte `protobuf:"bytes,2,opt,name=source_text,proto3" json:"source_text,omitempty"`
-	Encoding   string `protobuf:"bytes,3,opt,name=encoding" json:"encoding,omitempty"`
+	File *File `protobuf:"bytes,1,opt,name=file" json:"file,omitempty"`
 	// The decorations located in the file, sorted by starting offset.
-	Decoration []*FileDecorations_Decoration `protobuf:"bytes,4,rep,name=decoration" json:"decoration,omitempty"`
+	Decoration []*FileDecorations_Decoration `protobuf:"bytes,2,rep,name=decoration" json:"decoration,omitempty"`
 }
 
 func (m *FileDecorations) Reset()         { *m = FileDecorations{} }
 func (m *FileDecorations) String() string { return proto.CompactTextString(m) }
 func (*FileDecorations) ProtoMessage()    {}
+
+func (m *FileDecorations) GetFile() *File {
+	if m != nil {
+		return m.File
+	}
+	return nil
+}
 
 func (m *FileDecorations) GetDecoration() []*FileDecorations_Decoration {
 	if m != nil {
@@ -219,31 +299,96 @@ func (m *FileDecorations) GetDecoration() []*FileDecorations_Decoration {
 
 // Represents an edge from an anchor contained within the file to some target.
 type FileDecorations_Decoration struct {
-	Anchor       *FileDecorations_Decoration_Anchor `protobuf:"bytes,1,opt,name=anchor" json:"anchor,omitempty"`
-	TargetTicket string                             `protobuf:"bytes,2,opt,name=target_ticket" json:"target_ticket,omitempty"`
-	Kind         string                             `protobuf:"bytes,3,opt,name=kind" json:"kind,omitempty"`
+	Anchor *Anchor `protobuf:"bytes,1,opt,name=anchor" json:"anchor,omitempty"`
+	Kind   string  `protobuf:"bytes,2,opt,name=kind" json:"kind,omitempty"`
+	Target *Node   `protobuf:"bytes,3,opt,name=target" json:"target,omitempty"`
 }
 
 func (m *FileDecorations_Decoration) Reset()         { *m = FileDecorations_Decoration{} }
 func (m *FileDecorations_Decoration) String() string { return proto.CompactTextString(m) }
 func (*FileDecorations_Decoration) ProtoMessage()    {}
 
-func (m *FileDecorations_Decoration) GetAnchor() *FileDecorations_Decoration_Anchor {
+func (m *FileDecorations_Decoration) GetAnchor() *Anchor {
 	if m != nil {
 		return m.Anchor
 	}
 	return nil
 }
 
-type FileDecorations_Decoration_Anchor struct {
-	Ticket      string `protobuf:"bytes,1,opt,name=ticket" json:"ticket,omitempty"`
-	StartOffset int32  `protobuf:"varint,2,opt,name=start_offset" json:"start_offset,omitempty"`
-	EndOffset   int32  `protobuf:"varint,3,opt,name=end_offset" json:"end_offset,omitempty"`
+func (m *FileDecorations_Decoration) GetTarget() *Node {
+	if m != nil {
+		return m.Target
+	}
+	return nil
 }
 
-func (m *FileDecorations_Decoration_Anchor) Reset()         { *m = FileDecorations_Decoration_Anchor{} }
-func (m *FileDecorations_Decoration_Anchor) String() string { return proto.CompactTextString(m) }
-func (*FileDecorations_Decoration_Anchor) ProtoMessage()    {}
+// A CrossReference represents a path between two anchors, crossing between a
+// single common node.  Abstractly this a
+// (file, anchor, kind, node, kind', anchor', file') tuple where the two
+// (file, anchor, kind) sub-components have been named Decorations.
+//
+// This structure can be used to represent the intermediary* structures needed
+// to build pre-cached responses to the Decorations and CrossReferences service
+// methods.
+//
+// * where only a subset of this structure is known at that moment in time
+type CrossReference struct {
+	SourceDecoration *CrossReference_Decoration `protobuf:"bytes,1,opt,name=source_decoration" json:"source_decoration,omitempty"`
+	Referent         *Node                      `protobuf:"bytes,2,opt,name=referent" json:"referent,omitempty"`
+	TargetDecoration *CrossReference_Decoration `protobuf:"bytes,3,opt,name=target_decoration" json:"target_decoration,omitempty"`
+}
+
+func (m *CrossReference) Reset()         { *m = CrossReference{} }
+func (m *CrossReference) String() string { return proto.CompactTextString(m) }
+func (*CrossReference) ProtoMessage()    {}
+
+func (m *CrossReference) GetSourceDecoration() *CrossReference_Decoration {
+	if m != nil {
+		return m.SourceDecoration
+	}
+	return nil
+}
+
+func (m *CrossReference) GetReferent() *Node {
+	if m != nil {
+		return m.Referent
+	}
+	return nil
+}
+
+func (m *CrossReference) GetTargetDecoration() *CrossReference_Decoration {
+	if m != nil {
+		return m.TargetDecoration
+	}
+	return nil
+}
+
+// A Decoration is specialized partial edge with an anchor on one end, stored
+// along side its parent file node.  The partial edge's other end is stored in
+// the referent field of the parent CrossReference.
+type CrossReference_Decoration struct {
+	File   *File   `protobuf:"bytes,1,opt,name=file" json:"file,omitempty"`
+	Anchor *Anchor `protobuf:"bytes,2,opt,name=anchor" json:"anchor,omitempty"`
+	Kind   string  `protobuf:"bytes,3,opt,name=kind" json:"kind,omitempty"`
+}
+
+func (m *CrossReference_Decoration) Reset()         { *m = CrossReference_Decoration{} }
+func (m *CrossReference_Decoration) String() string { return proto.CompactTextString(m) }
+func (*CrossReference_Decoration) ProtoMessage()    {}
+
+func (m *CrossReference_Decoration) GetFile() *File {
+	if m != nil {
+		return m.File
+	}
+	return nil
+}
+
+func (m *CrossReference_Decoration) GetAnchor() *Anchor {
+	if m != nil {
+		return m.Anchor
+	}
+	return nil
+}
 
 // Internal encoding for an EdgesReply page_token
 type PageToken struct {
