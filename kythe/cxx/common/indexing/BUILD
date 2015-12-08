@@ -34,7 +34,7 @@ cc_library(
 cc_library(
     name = "testlib",
     hdrs = [
-        "RecordingOutputStream.h"
+        "RecordingOutputStream.h",
     ],
     deps = [
         ":lib",

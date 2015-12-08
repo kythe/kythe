@@ -86,7 +86,7 @@ _genproto_attrs = {
         allow_files = False,
     ),
     "_protoc_gen_go": attr.label(
-        default = Label("//third_party/go:protoc-gen-go"),
+        default = Label("//third_party/go/src/github.com/golang/protobuf/protoc-gen-go"),
         executable = True,
     ),
     "_protoc_grpc_plugin_java": attr.label(
@@ -161,11 +161,11 @@ def proto_library(name, src=None, deps=[], visibility=None,
     )
 
   if gen_go:
-    go_deps = ["//third_party/go:protobuf"]
+    go_deps = ["//third_party/go/src/github.com/golang/protobuf/proto"]
     if has_services:
       go_deps += [
-        "//third_party/go:context",
-        "//third_party/go:grpc",
+        "//third_party/go/src/golang.org/x/net/context",
+        "//third_party/go/src/google.golang.org/grpc",
       ]
     for dep in deps:
       go_deps += [dep + "_go"]

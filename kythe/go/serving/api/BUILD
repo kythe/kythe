@@ -15,7 +15,7 @@ go_package(
         "//kythe/proto:filetree_proto_go",
         "//kythe/proto:storage_proto_go",
         "//kythe/proto:xref_proto_go",
-        "//third_party/go:context",
-        "//third_party/go:grpc",
+        "//third_party/go/src/golang.org/x/net/context",
+        "//third_party/go/src/google.golang.org/grpc",
     ],
 )

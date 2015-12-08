@@ -25,9 +25,9 @@ go_binary(
         "//kythe/proto:filetree_proto_go",
         "//kythe/proto:storage_proto_go",
         "//kythe/proto:xref_proto_go",
-        "//third_party/go:context",
-        "//third_party/go:grpc",
-        "//third_party/go:http2",
+        "//third_party/go/src/golang.org/x/net/context",
+        "//third_party/go/src/golang.org/x/net/http2",
+        "//third_party/go/src/google.golang.org/grpc",
     ],
 )
 
@@ -51,8 +51,8 @@ go_binary(
         "//kythe/proto:filetree_proto_go",
         "//kythe/proto:storage_proto_go",
         "//kythe/proto:xref_proto_go",
-        "//third_party/go:context",
-        "//third_party/go:protobuf",
+        "//third_party/go/src/github.com/golang/protobuf/proto",
+        "//third_party/go/src/golang.org/x/net/context",
     ],
 )
 
@@ -69,7 +69,7 @@ go_binary(
         "//kythe/go/util/schema",
         "//kythe/proto:storage_proto_go",
         "//kythe/proto:xref_proto_go",
-        "//third_party/go:context",
+        "//third_party/go/src/golang.org/x/net/context",
     ],
 )
 
@@ -87,6 +87,6 @@ go_binary(
         "//kythe/go/storage/leveldb",
         "//kythe/go/util/flagutil",
         "//kythe/go/util/profile",
-        "//third_party/go:context",
+        "//third_party/go/src/golang.org/x/net/context",
     ],
 )

@@ -158,6 +158,9 @@ def _go_library_impl(ctx):
   # TODO(shahms): Figure out why protocol buffer .jar files are being included.
   srcs = FileType([".go"]).filter(ctx.files.srcs)
 
+  if len(srcs) == 0:
+    fail('ERROR: ' + str(ctx.label) + ' missing .go srcs')
+
   package = struct(
     name = pkg,
     archive = archive,

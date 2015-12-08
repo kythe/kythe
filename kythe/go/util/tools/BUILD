@@ -25,8 +25,8 @@ go_binary(
     deps = [
         "//kythe/go/platform/vfs",
         "//third_party/bazel:extra_actions_base_proto_go",
-        "//third_party/go:context",
-        "//third_party/go:protobuf",
+        "//third_party/go/src/github.com/golang/protobuf/proto",
+        "//third_party/go/src/golang.org/x/net/context",
     ],
 )
 
@@ -36,7 +36,7 @@ go_binary(
     deps = [
         "//kythe/go/platform/vfs",
         "//third_party/bazel:test_status_proto_go",
-        "//third_party/go:context",
-        "//third_party/go:protobuf",
+        "//third_party/go/src/github.com/golang/protobuf/proto",
+        "//third_party/go/src/golang.org/x/net/context",
     ],
 )

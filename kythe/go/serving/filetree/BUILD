@@ -7,6 +7,6 @@ go_package(
         "//kythe/go/storage/table",
         "//kythe/proto:filetree_proto_go",
         "//kythe/proto:serving_proto_go",
-        "//third_party/go:context",
+        "//third_party/go/src/golang.org/x/net/context",
     ],
 )

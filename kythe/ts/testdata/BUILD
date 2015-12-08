@@ -11,10 +11,10 @@ sh_binary(
     name = "run_case",
     srcs = ["run_case.sh"],
     data = [
-        "//kythe/ts:ts_indexer",
-        "//kythe/go/platform/tools:entrystream",
-        "//tools:node",
         "//kythe/cxx/verifier",
+        "//kythe/go/platform/tools:entrystream",
+        "//kythe/ts:ts_indexer",
+        "//tools:node",
     ],
 )
 
@@ -54,22 +54,22 @@ test_suite(
 
 ts_indexer_test(
     name = "require_object",
-    needs_node = True,
     srcs = [
-      "commonjs/export_object.js",
-      "commonjs/require_object.js",
+        "commonjs/export_object.js",
+        "commonjs/require_object.js",
     ],
+    needs_node = True,
     tags = ["commonjs"],
 )
 
 ts_indexer_test(
     name = "require_npm",
-    needs_node = True,
     srcs = [
-      "commonjs/require_npm.js",
-      "commonjs/node_modules/mod_from_npm/package.json",
-      "commonjs/node_modules/mod_from_npm/mod_from_npm_main.js",
+        "commonjs/node_modules/mod_from_npm/mod_from_npm_main.js",
+        "commonjs/node_modules/mod_from_npm/package.json",
+        "commonjs/require_npm.js",
     ],
+    needs_node = True,
     tags = ["commonjs"],
 )
 
@@ -80,10 +80,10 @@ test_suite(
 
 ts_indexer_test(
     name = "repo_index",
-    needs_node = True,
     srcs = [
-      "repo/index.js",
+        "repo/index.js",
     ],
-    deps = [":repo_files"],
+    needs_node = True,
     tags = ["repo"],
+    deps = [":repo_files"],
 )

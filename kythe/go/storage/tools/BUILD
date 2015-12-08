@@ -17,7 +17,7 @@ go_binary(
         "//kythe/go/util/flagutil",
         "//kythe/go/util/profile",
         "//kythe/proto:storage_proto_go",
-        "//third_party/go:context",
+        "//third_party/go/src/golang.org/x/net/context",
     ],
 )
 
@@ -37,7 +37,7 @@ go_binary(
         "//kythe/go/util/flagutil",
         "//kythe/go/util/kytheuri",
         "//kythe/proto:storage_proto_go",
-        "//third_party/go:context",
+        "//third_party/go/src/golang.org/x/net/context",
     ],
 )
 
@@ -59,7 +59,7 @@ go_binary(
         "//kythe/go/util/kytheuri",
         "//kythe/go/util/schema",
         "//kythe/proto:storage_proto_go",
-        "//third_party/go:context",
+        "//third_party/go/src/golang.org/x/net/context",
     ],
 )
 
@@ -74,6 +74,6 @@ go_binary(
         "//kythe/go/storage/vnameutil",
         "//kythe/go/util/flagutil",
         "//kythe/proto:storage_proto_go",
-        "//third_party/go:context",
+        "//third_party/go/src/golang.org/x/net/context",
     ],
 )

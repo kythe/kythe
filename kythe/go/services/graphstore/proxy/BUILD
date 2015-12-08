@@ -6,13 +6,13 @@ go_package(
     test_deps = [
         "//kythe/go/services/graphstore",
         "//kythe/proto:storage_proto_go",
-        "//third_party/go:protobuf",
+        "//third_party/go/src/github.com/golang/protobuf/proto",
     ],
     deps = [
         "//kythe/go/services/graphstore",
         "//kythe/go/services/graphstore/compare",
         "//kythe/go/storage/gsutil",
         "//kythe/proto:storage_proto_go",
-        "//third_party/go:context",
+        "//third_party/go/src/golang.org/x/net/context",
     ],
 )

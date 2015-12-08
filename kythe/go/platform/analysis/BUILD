@@ -7,7 +7,7 @@ go_package(
         "//kythe/go/platform/delimited",
         "//kythe/proto:analysis_proto_go",
         "//kythe/proto:storage_proto_go",
-        "//third_party/go:context",
-        "//third_party/go:protobuf",
+        "//third_party/go/src/github.com/golang/protobuf/proto",
+        "//third_party/go/src/golang.org/x/net/context",
     ],
 )

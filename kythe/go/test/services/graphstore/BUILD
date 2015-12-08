@@ -7,5 +7,5 @@ go_package(deps = [
     "//kythe/go/services/graphstore/compare",
     "//kythe/go/test/testutil",
     "//kythe/proto:storage_proto_go",
-    "//third_party/go:context",
+    "//third_party/go/src/golang.org/x/net/context",
 ])

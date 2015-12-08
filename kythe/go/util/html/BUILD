@@ -4,9 +4,9 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 go_package(
     test_deps = [
-        "//third_party/go:html",
+        "//third_party/go/src/golang.org/x/net/html",
     ],
     deps = [
-        "//third_party/go:html",
+        "//third_party/go/src/golang.org/x/net/html",
     ],
 )

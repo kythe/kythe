@@ -111,5 +111,5 @@ java_verifier_test(
 
 java_verifier_test(
     name = "snippets_tests",
-    srcs = ["Snippets.java",],
+    srcs = ["Snippets.java"],
 )

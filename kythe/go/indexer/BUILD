@@ -9,7 +9,7 @@ go_library(
         "//kythe/go/extractors/govname",
         "//kythe/proto:analysis_proto_go",
         "//kythe/proto:storage_proto_go",
-        "//third_party/go:context",
+        "//third_party/go/src/golang.org/x/net/context",
     ],
 )
 
@@ -19,5 +19,5 @@ go_test(
     # TODO(fromberger): Build this with a library rule.
     data = [":testdata/foo.a"],
     library = ":indexer",
-    deps = ["//third_party/go:protobuf"],
+    deps = ["//third_party/go/src/github.com/golang/protobuf/proto"],
 )
