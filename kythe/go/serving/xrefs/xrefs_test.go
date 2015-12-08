@@ -418,6 +418,43 @@ func TestEdgesSinglePage(t *testing.T) {
 	}
 }
 
+func TestEdgesLastPage(t *testing.T) {
+	tests := [][]string{
+		nil, // all kinds
+		{"%/kythe/edge/ref"},
+		{"%/kythe/edge/defines/binding"},
+	}
+
+	tickets := []string{tbl.EdgeSets[1].EdgeSet.Source.Ticket}
+	es := tbl.EdgeSets[1]
+	pages := []*srvpb.EdgePage{tbl.EdgePages[1], tbl.EdgePages[2]}
+
+	st := tbl.Construct(t)
+
+	for _, kinds := range tests {
+		reply, err := st.Edges(ctx, &xpb.EdgesRequest{
+			Ticket: tickets,
+			Kind:   kinds,
+		})
+		testutil.FatalOnErrT(t, "EdgesRequest error: %v", err)
+
+		if len(reply.Node) > 0 {
+			t.Errorf("Received unexpected nodes in EdgesReply: {%v}", reply)
+		}
+		if reply.NextPageToken != "" {
+			t.Errorf("Received unexpected next_page_token in EdgesReply: {%v}", reply)
+		}
+		if len(reply.EdgeSet) != 1 {
+			t.Fatalf("Expected 1 EdgeSet in EdgesReply; found %d: {%v}", len(reply.EdgeSet), reply)
+		}
+
+		expected := edgeSet(kinds, es, pages)
+		if !reflect.DeepEqual(reply.EdgeSet[0], expected) {
+			t.Errorf("Expected {%v}; found {%v}", expected, reply.EdgeSet)
+		}
+	}
+}
+
 func TestEdgesMultiPage(t *testing.T) {
 	tests := []struct {
 		Tickets []string

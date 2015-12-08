@@ -288,7 +288,12 @@ func (t *tableImpl) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.Edge
 			return nil, r.Err
 		}
 		pes := r.PagedEdgeSet
-		totalEdgesPossible += int(pes.TotalEdges)
+		totalEdgesPossible += totalEdgesWithKinds(pes, allowedKinds)
+
+		// Don't scan the EdgeSet_Groups if we're already at the specified page_size.
+		if stats.total == stats.max {
+			continue
+		}
 
 		var groups []*xpb.EdgeSet_Group
 		for _, grp := range pes.EdgeSet.Group {
@@ -356,10 +361,6 @@ func (t *tableImpl) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.Edge
 				reply.Node = append(reply.Node, nodeToInfo(patterns, pes.EdgeSet.Source))
 			}
 		}
-
-		if stats.total == stats.max {
-			break
-		}
 	}
 	if stats.total > stats.max {
 		log.Panicf("totalEdges greater than maxEdges: %d > %d", stats.total, stats.max)
@@ -368,7 +369,6 @@ func (t *tableImpl) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.Edge
 	}
 
 	if pageToken+stats.total != totalEdgesPossible && stats.total != 0 {
-		// TODO: take into account an empty last page (due to kind filters)
 		rec, err := proto.Marshal(&srvpb.PageToken{Index: int32(pageToken + stats.total)})
 		if err != nil {
 			return nil, fmt.Errorf("error marshalling page token: %v", err)
@@ -376,6 +376,24 @@ func (t *tableImpl) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.Edge
 		reply.NextPageToken = base64.StdEncoding.EncodeToString(rec)
 	}
 	return reply, nil
+}
+
+func totalEdgesWithKinds(pes *srvpb.PagedEdgeSet, kinds stringset.Set) int {
+	if len(kinds) == 0 {
+		return int(pes.TotalEdges)
+	}
+	var total int
+	for _, grp := range pes.EdgeSet.Group {
+		if kinds.Contains(grp.Kind) {
+			total += len(grp.Target)
+		}
+	}
+	for _, page := range pes.PageIndex {
+		if kinds.Contains(page.EdgeKind) {
+			total += int(page.EdgeCount)
+		}
+	}
+	return total
 }
 
 type filterStats struct {
