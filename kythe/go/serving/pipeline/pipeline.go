@@ -19,13 +19,11 @@
 package pipeline
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"log"
-	"os"
 	"sort"
-	"strings"
 	"sync"
 
 	"kythe.io/kythe/go/services/filetree"
@@ -36,8 +34,8 @@ import (
 	"kythe.io/kythe/go/serving/xrefs"
 	"kythe.io/kythe/go/serving/xrefs/assemble"
 	"kythe.io/kythe/go/storage/keyvalue"
-	"kythe.io/kythe/go/storage/leveldb"
 	"kythe.io/kythe/go/storage/table"
+	"kythe.io/kythe/go/util/disksort"
 	"kythe.io/kythe/go/util/schema"
 
 	"github.com/golang/protobuf/proto"
@@ -61,8 +59,6 @@ const chBuf = 512
 type servingOutput struct {
 	xs  table.Proto
 	idx table.Inverted
-
-	completeEdges *table.KVProto
 }
 
 // Run writes the xrefs and filetree serving tables to db based on the given
@@ -74,36 +70,25 @@ func Run(ctx context.Context, gs graphstore.Service, db keyvalue.DB, opts *Optio
 
 	log.Println("Starting serving pipeline")
 
-	edges, err := tempTable("complete.edges")
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if err := edges.Close(); err != nil {
-			log.Printf("Error closing edges table: %v", err)
-		}
-	}()
-
 	out := &servingOutput{
 		xs:  table.ProtoBatchParallel{&table.KVProto{DB: db}},
 		idx: &table.KVInverted{DB: db},
-
-		completeEdges: &table.KVProto{DB: edges},
 	}
 	entries := make(chan *spb.Entry, chBuf)
 
 	var cErr error
 	var wg sync.WaitGroup
+	var sortedEdges disksort.Interface
 	wg.Add(1)
 	go func() {
-		cErr = combineNodesAndEdges(ctx, out, entries)
+		sortedEdges, cErr = combineNodesAndEdges(ctx, out, entries)
 		if cErr != nil {
 			cErr = fmt.Errorf("error combining nodes and edges: %v", cErr)
 		}
 		wg.Done()
 	}()
 
-	err = gs.Scan(ctx, &spb.ScanRequest{}, func(e *spb.Entry) error {
+	err := gs.Scan(ctx, &spb.ScanRequest{}, func(e *spb.Entry) error {
 		if graphstore.IsNodeFact(e) || schema.EdgeDirection(e.EdgeKind) == schema.Forward {
 			entries <- e
 		}
@@ -135,7 +120,15 @@ func Run(ctx context.Context, gs graphstore.Service, db keyvalue.DB, opts *Optio
 		}
 	}()
 
-	if err := readCompletedEdges(ctx, out.completeEdges, pesIn, dIn); err != nil {
+	err = sortedEdges.Read(func(x interface{}) error {
+		e := x.(*srvpb.Edge)
+		pesIn <- e
+		dIn <- e
+		return nil
+	})
+	close(pesIn)
+	close(dIn)
+	if err != nil {
 		return fmt.Errorf("error reading edges table: %v", err)
 	}
 
@@ -145,13 +138,16 @@ func Run(ctx context.Context, gs graphstore.Service, db keyvalue.DB, opts *Optio
 	}
 	return fErr
 }
-
-func combineNodesAndEdges(ctx context.Context, out *servingOutput, gsEntries <-chan *spb.Entry) error {
+func combineNodesAndEdges(ctx context.Context, out *servingOutput, gsEntries <-chan *spb.Entry) (disksort.Interface, error) {
 	log.Println("Writing partial edges")
 
 	tree := filetree.NewMap()
 
-	bEdges := out.completeEdges.Buffered()
+	partialSorter, err := disksort.NewMergeSorter(edgeSorterOptions)
+	if err != nil {
+		return nil, err
+	}
+
 	bIdx := out.idx.Buffered()
 	var src *spb.VName
 	var entries []*spb.Entry
@@ -164,9 +160,9 @@ func combineNodesAndEdges(ctx context.Context, out *servingOutput, gsEntries <-c
 		if src == nil {
 			src = e.Source
 		} else if !compare.VNamesEqual(e.Source, src) {
-			if err := writePartialEdges(ctx, bEdges, bIdx, assemble.SourceFromEntries(entries)); err != nil {
+			if err := writePartialEdges(ctx, partialSorter, bIdx, assemble.SourceFromEntries(entries)); err != nil {
 				drainEntries(gsEntries)
-				return err
+				return nil, err
 			}
 			src = e.Source
 			entries = nil
@@ -175,61 +171,44 @@ func combineNodesAndEdges(ctx context.Context, out *servingOutput, gsEntries <-c
 		entries = append(entries, e)
 	}
 	if len(entries) > 0 {
-		if err := writePartialEdges(ctx, bEdges, bIdx, assemble.SourceFromEntries(entries)); err != nil {
-			return err
+		if err := writePartialEdges(ctx, partialSorter, bIdx, assemble.SourceFromEntries(entries)); err != nil {
+			return nil, err
 		}
 	}
-	if err := firstError(bEdges.Flush(ctx), bIdx.Flush(ctx)); err != nil {
-		return err
+	if err := bIdx.Flush(ctx); err != nil {
+		return nil, err
 	}
 
 	if err := writeFileTree(ctx, tree, out.xs); err != nil {
-		return fmt.Errorf("error writing file tree: %v", err)
+		return nil, fmt.Errorf("error writing file tree: %v", err)
 	}
 	tree = nil
 
 	log.Println("Writing complete edges")
-	snapshot := out.completeEdges.NewSnapshot()
-	defer snapshot.Close()
-	it, err := out.completeEdges.ScanPrefix(nil, &keyvalue.Options{
-		LargeRead: true,
-		Snapshot:  snapshot,
-	})
+
+	cSorter, err := disksort.NewMergeSorter(edgeSorterOptions)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	defer it.Close()
 
 	var n *srvpb.Node
-	var e srvpb.Edge
-	for {
-		k, v, err := it.Next()
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			return fmt.Errorf("error scanning partial edges table: %v", err)
-		}
-
-		ss := strings.Split(string(k), tempTableKeySep)
-		if len(ss) != 3 {
-			return fmt.Errorf("invalid partial edge table key: %q", string(k))
-		}
-
-		if err := proto.Unmarshal(v, &e); err != nil {
-			return fmt.Errorf("invalid partial edge table value: %v", err)
-		}
-
-		if n == nil || n.Ticket != ss[0] {
+	if err := partialSorter.Read(func(i interface{}) error {
+		e := i.(*srvpb.Edge)
+		if n == nil || n.Ticket != e.Source.Ticket {
 			n = e.Source
+			return cSorter.Add(e)
 		} else if e.Target != nil {
 			e.Source = n
-			if err := writeCompletedEdges(ctx, bEdges, &e); err != nil {
+			if err := writeCompletedEdges(ctx, cSorter, e); err != nil {
 				return fmt.Errorf("error writing complete edge: %v", err)
 			}
 		}
+		return nil
+	}); err != nil {
+		return nil, fmt.Errorf("error reading/writing edges: %v", err)
 	}
 
-	return bEdges.Flush(ctx)
+	return cSorter, nil
 }
 
 func writeFileTree(ctx context.Context, tree *filetree.Map, out table.Proto) error {
@@ -253,16 +232,11 @@ func writeFileTree(ctx context.Context, tree *filetree.Map, out table.Proto) err
 	return buffer.Flush(ctx)
 }
 
-func writePartialEdges(ctx context.Context, out table.BufferedProto, idx table.BufferedInverted, src *assemble.Source) error {
+func writePartialEdges(ctx context.Context, sorter disksort.Interface, idx table.BufferedInverted, src *assemble.Source) error {
 	edges := assemble.PartialReverseEdges(src)
 	for _, pe := range edges {
-		var target string
-		if pe.Target != nil {
-			target = pe.Target.Ticket
-		}
-		if err := out.Put(ctx,
-			[]byte(pe.Source.Ticket+tempTableKeySep+pe.Kind+tempTableKeySep+target), pe); err != nil {
-			return fmt.Errorf("error writing partial edge: %v", err)
+		if err := sorter.Add(pe); err != nil {
+			return err
 		}
 	}
 	if err := search.IndexNode(ctx, idx, edges[0].Source); err != nil {
@@ -271,64 +245,21 @@ func writePartialEdges(ctx context.Context, out table.BufferedProto, idx table.B
 	return nil
 }
 
-func writeCompletedEdges(ctx context.Context, edges table.BufferedProto, e *srvpb.Edge) error {
-	if err := writeEdge(ctx, edges, &srvpb.Edge{
+func writeCompletedEdges(ctx context.Context, edges disksort.Interface, e *srvpb.Edge) error {
+	if err := edges.Add(&srvpb.Edge{
 		Source: &srvpb.Node{Ticket: e.Source.Ticket},
 		Kind:   e.Kind,
 		Target: e.Target,
 	}); err != nil {
 		return fmt.Errorf("error writing complete edge: %v", err)
 	}
-	if err := writeEdge(ctx, edges, &srvpb.Edge{
+	if err := edges.Add(&srvpb.Edge{
 		Source: &srvpb.Node{Ticket: e.Target.Ticket},
 		Kind:   schema.MirrorEdge(e.Kind),
 		Target: assemble.FilterTextFacts(e.Source),
 	}); err != nil {
 		return fmt.Errorf("error writing complete edge mirror: %v", err)
 	}
-	return nil
-}
-
-func writeEdge(ctx context.Context, edges table.BufferedProto, e *srvpb.Edge) error {
-	return edges.Put(ctx, []byte(e.Source.Ticket+tempTableKeySep+e.Kind+tempTableKeySep+e.Target.Ticket), e)
-}
-
-func readCompletedEdges(ctx context.Context, edges *table.KVProto, outs ...chan<- *srvpb.Edge) error {
-	defer func() {
-		for _, out := range outs {
-			close(out)
-		}
-	}()
-
-	snapshot := edges.NewSnapshot()
-	defer snapshot.Close()
-	it, err := edges.ScanPrefix(nil, &keyvalue.Options{
-		LargeRead: true,
-		Snapshot:  snapshot,
-	})
-	if err != nil {
-		return err
-	}
-	defer it.Close()
-
-	for {
-		_, v, err := it.Next()
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			return fmt.Errorf("error scanning edges table: %v", err)
-		}
-
-		var e srvpb.Edge
-		if err := proto.Unmarshal(v, &e); err != nil {
-			return fmt.Errorf("invalid edge table value: %v", err)
-		}
-
-		for _, out := range outs {
-			out <- &e
-		}
-	}
-
 	return nil
 }
 
@@ -383,15 +314,29 @@ func writePagedEdges(ctx context.Context, edges <-chan *srvpb.Edge, out table.Pr
 	return buffer.Flush(ctx)
 }
 
-func createDecorationFragments(ctx context.Context, edges <-chan *srvpb.Edge, fragments *table.KVProto) error {
-	buffer := fragments.Buffered()
+// TODO(schroederc): use srvpb.CrossReference for fragments
+type decorationFragment struct {
+	fileTicket string
+	decoration *srvpb.FileDecorations
+}
+
+type fragmentLesser struct{}
+
+func (fragmentLesser) Less(a, b interface{}) bool {
+	x, y := a.(*decorationFragment), b.(*decorationFragment)
+	if x.fileTicket == y.fileTicket {
+		if len(x.decoration.Decoration) == 0 || len(y.decoration.Decoration) == 0 {
+			return len(x.decoration.Decoration) == 0
+		}
+		return x.decoration.Decoration[0].Anchor.Ticket < y.decoration.Decoration[0].Anchor.Ticket
+	}
+	return x.fileTicket < y.fileTicket
+}
+
+func createDecorationFragments(ctx context.Context, edges <-chan *srvpb.Edge, fragments disksort.Interface) error {
 	fdb := &assemble.DecorationFragmentBuilder{
 		Output: func(ctx context.Context, file string, fragment *srvpb.FileDecorations) error {
-			key := file + tempTableKeySep
-			if len(fragment.Decoration) != 0 {
-				key += fragment.Decoration[0].Anchor.Ticket
-			}
-			return buffer.Put(ctx, []byte(key), fragment)
+			return fragments.Add(&decorationFragment{fileTicket: file, decoration: fragment})
 		},
 	}
 
@@ -403,23 +348,18 @@ func createDecorationFragments(ctx context.Context, edges <-chan *srvpb.Edge, fr
 		}
 	}
 
-	if err := fdb.Flush(ctx); err != nil {
-		return err
-	}
-	return buffer.Flush(ctx)
+	return fdb.Flush(ctx)
 }
 
 func writeFileDecorations(ctx context.Context, edges <-chan *srvpb.Edge, out *servingOutput) error {
-	temp, err := tempTable("decor.fragments")
+	fragments, err := disksort.NewMergeSorter(disksort.MergeOptions{
+		Lesser:      fragmentLesser{},
+		Marshaler:   fragmentMarshaler{},
+		MaxInMemory: 64000,
+	})
 	if err != nil {
-		return fmt.Errorf("failed to create temporary table: %v", err)
+		return err
 	}
-	fragments := &table.KVProto{DB: temp}
-	defer func() {
-		if err := fragments.Close(ctx); err != nil {
-			log.Printf("Error closing fragments table: %v", err)
-		}
-	}()
 
 	log.Println("Writing decoration fragments")
 	if err := createDecorationFragments(ctx, edges, fragments); err != nil {
@@ -428,31 +368,13 @@ func writeFileDecorations(ctx context.Context, edges <-chan *srvpb.Edge, out *se
 
 	log.Println("Writing completed FileDecorations")
 
-	it, err := fragments.ScanPrefix(nil, &keyvalue.Options{LargeRead: true})
-	if err != nil {
-		return err
-	}
-	defer it.Close()
-
-	log.Println("Writing Decorations")
-
 	buffer := out.xs.Buffered()
 	var curFile string
 	var decor *srvpb.FileDecorations
-	var fragment srvpb.FileDecorations
-	for {
-		k, v, err := it.Next()
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			return fmt.Errorf("error scanning temporary table: %v", err)
-		}
-
-		ss := strings.Split(string(k), tempTableKeySep)
-		if len(ss) != 2 {
-			return fmt.Errorf("invalid temporary table key: %q", string(k))
-		}
-		fileTicket := ss[0]
+	if err := fragments.Read(func(x interface{}) error {
+		df := x.(*decorationFragment)
+		fileTicket := df.fileTicket
+		fragment := df.decoration
 
 		if decor != nil && curFile != fileTicket {
 			if decor.File != nil {
@@ -467,15 +389,15 @@ func writeFileDecorations(ctx context.Context, edges <-chan *srvpb.Edge, out *se
 			decor = &srvpb.FileDecorations{}
 		}
 
-		if err := proto.Unmarshal(v, &fragment); err != nil {
-			return fmt.Errorf("invalid temporary table value: %v", err)
-		}
-
 		if fragment.File == nil {
 			decor.Decoration = append(decor.Decoration, fragment.Decoration...)
 		} else {
 			decor.File = fragment.File
 		}
+
+		return nil
+	}); err != nil {
+		return fmt.Errorf("error reading decoration fragments: %v", err)
 	}
 
 	if decor != nil && decor.File != nil {
@@ -487,35 +409,6 @@ func writeFileDecorations(ctx context.Context, edges <-chan *srvpb.Edge, out *se
 	return buffer.Flush(ctx)
 }
 
-type deleteOnClose struct {
-	keyvalue.DB
-	path string
-}
-
-// Close implements part of the keyvalue.DB interface.
-func (d *deleteOnClose) Close() error {
-	err := d.DB.Close()
-	log.Println("Removing temporary table", d.path)
-	if err := os.RemoveAll(d.path); err != nil {
-		log.Printf("Failed to remove temporary directory %q: %v", d.path, err)
-	}
-	return err
-}
-
-func tempTable(name string) (keyvalue.DB, error) {
-	tempDir, err := ioutil.TempDir("", "kythe.pipeline."+name)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create temporary directory: %v", err)
-	}
-	tbl, err := leveldb.Open(tempDir, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create temporary table: %v", err)
-	}
-	return &deleteOnClose{tbl, tempDir}, nil
-}
-
-const tempTableKeySep = "\000"
-
 func writeDecor(ctx context.Context, t table.BufferedProto, decor *srvpb.FileDecorations) error {
 	sort.Sort(assemble.ByOffset(decor.Decoration))
 	return t.Put(ctx, xrefs.DecorationsKey(decor.File.Ticket), decor)
@@ -526,11 +419,59 @@ func drainEntries(entries <-chan *spb.Entry) {
 	}
 }
 
-func firstError(es ...error) error {
-	for _, e := range es {
-		if e != nil {
-			return e
+type edgeLesser struct{}
+
+func (edgeLesser) Less(a, b interface{}) bool {
+	x, y := a.(*srvpb.Edge), b.(*srvpb.Edge)
+	if x.Source.Ticket == y.Source.Ticket {
+		if x.Kind == y.Kind {
+			if x.Target == nil || y.Target == nil {
+				return x.Target != nil
+			}
+			return x.Target.Ticket < y.Target.Ticket
 		}
+		return x.Kind < y.Kind
 	}
-	return nil
+	return x.Source.Ticket < y.Source.Ticket
+}
+
+type edgeMarshaler struct{}
+
+func (edgeMarshaler) Marshal(x interface{}) ([]byte, error) { return proto.Marshal(x.(proto.Message)) }
+
+func (edgeMarshaler) Unmarshal(rec []byte) (interface{}, error) {
+	var e srvpb.Edge
+	return &e, proto.Unmarshal(rec, &e)
+}
+
+var edgeSorterOptions = disksort.MergeOptions{
+	Lesser:      edgeLesser{},
+	Marshaler:   edgeMarshaler{},
+	MaxInMemory: 16000,
+}
+
+type fragmentMarshaler struct{}
+
+func (fragmentMarshaler) Marshal(x interface{}) ([]byte, error) {
+	f := x.(*decorationFragment)
+	rec, err := proto.Marshal(f.decoration)
+	if err != nil {
+		return nil, err
+	}
+	return bytes.Join([][]byte{[]byte(f.fileTicket), rec}, []byte("\000")), nil
+}
+
+func (fragmentMarshaler) Unmarshal(rec []byte) (interface{}, error) {
+	ss := bytes.SplitN(rec, []byte("\000"), 2)
+	if len(ss) != 2 {
+		return nil, errors.New("invalid decorationFragment encoding")
+	}
+	var d srvpb.FileDecorations
+	if err := proto.Unmarshal(ss[1], &d); err != nil {
+		return nil, err
+	}
+	return &decorationFragment{
+		fileTicket: string(ss[0]),
+		decoration: &d,
+	}, nil
 }
