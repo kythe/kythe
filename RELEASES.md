@@ -1,6 +1,6 @@
 # Release Notes
 
-## Upcoming release
+## v0.0.16
 
 Notable changes:
  - Denormalize the serving table format
