@@ -60,7 +60,7 @@ public class Javac8Wrapper extends AbstractJavacWrapper {
     List<String> processorPaths = splitPaths(options.get(Option.PROCESSORPATH));
 
     // Retrieve the list of processors provided by the -processor argument.
-    List<String> processors = splitPaths(options.get(Option.PROCESSOR));
+    List<String> processors = splitCSV(options.get(Option.PROCESSOR));
 
     EnumSet<Option> claimed =
         EnumSet.of(

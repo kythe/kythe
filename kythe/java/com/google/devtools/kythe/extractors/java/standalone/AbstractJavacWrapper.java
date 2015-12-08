@@ -17,6 +17,7 @@
 package com.google.devtools.kythe.extractors.java.standalone;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
@@ -184,13 +185,11 @@ public abstract class AbstractJavacWrapper {
   }
 
   protected static List<String> splitPaths(String path) {
-    List<String> paths = Lists.newArrayList();
-    if (path != null) {
-      for (String cp : path.split(":")) {
-        paths.add(cp);
-      }
-    }
-    return paths;
+    return path == null ? Collections.<String>emptyList() : Splitter.on(":").splitToList(path);
+  }
+
+  protected static List<String> splitCSV(String lst) {
+    return lst == null ? Collections.<String>emptyList() : Splitter.on(",").splitToList(lst);
   }
 
   static String readEnvironmentVariable(String variableName) {

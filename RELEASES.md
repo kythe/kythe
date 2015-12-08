@@ -17,6 +17,7 @@ Notable additions:
 
 Notable fixes:
  - Java extractor: correctly parse @file arguments using javac CommandLine parser
+ - Java extractor: correctly parse/load -processor classes
  - xrefs.Edges: correctly return empty page_token on last page (when filtering by edge kinds)
 
 ## v0.0.15

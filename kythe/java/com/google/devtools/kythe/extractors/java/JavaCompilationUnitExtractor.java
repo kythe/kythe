@@ -593,17 +593,7 @@ public class JavaCompilationUnitExtractor {
 
       List<Processor> procs = Lists.<Processor>newArrayList(new ProcessAnnotation(fileManager));
       if (!Iterables.isEmpty(processors)) {
-        List<URL> urls = Lists.newArrayList();
-        for (String path : processorpath) {
-          try {
-            urls.add(new File(path).toURI().toURL());
-          } catch (MalformedURLException e) {
-            throw new ExtractionException("Bad processorpath entry", e, false);
-          }
-        }
-        // TODO: Use a more restricted ClassLoader to prevent class path skew?
-        ClassLoader parent = getClass().getClassLoader();
-        ClassLoader loader = new URLClassLoader(urls.toArray(new URL[0]), parent);
+        ClassLoader loader = processingClassloader(classpath, processorpath);
         for (String processor : processors) {
           try {
             procs.add(loader.loadClass(processor).asSubclass(Processor.class).newInstance());
@@ -673,6 +663,67 @@ public class JavaCompilationUnitExtractor {
       findUnusedDependencies(classpath, fileManager, results);
     }
     return results;
+  }
+
+  /** Create the ClassLoader to use for annotation processors. */
+  private static ClassLoader processingClassloader(
+      Iterable<String> classpath, Iterable<String> processorpath) throws ExtractionException {
+    // If javac is run with -processor set and -processorpath *unset*, it will fall back to
+    // searching the regular classpath for annotation processors.
+    if (Iterables.isEmpty(processorpath)) {
+      processorpath = classpath;
+    }
+
+    List<URL> urls = Lists.newArrayList();
+    for (String path : processorpath) {
+      try {
+        urls.add(new File(path).toURI().toURL());
+      } catch (MalformedURLException e) {
+        throw new ExtractionException("Bad processorpath entry", e, false);
+      }
+    }
+    ClassLoader parent = new MaskedClassLoader();
+    return new URLClassLoader(Iterables.toArray(urls, URL.class), parent);
+  }
+
+  /** Isolated classloader for annotation processors, to avoid skew with the ambient classpath. */
+  private static class MaskedClassLoader extends ClassLoader {
+    private MaskedClassLoader() {
+      // delegate only to the bootclasspath
+      super(null);
+    }
+
+    @Override
+    protected Class<?> findClass(String name) throws ClassNotFoundException {
+      if (name.startsWith("com.sun.source.") || name.startsWith("com.sun.tools.")) {
+        return JavaCompilationUnitExtractor.class.getClassLoader().loadClass(name);
+      }
+      throw new ClassNotFoundException(name);
+    }
+  }
+
+  /** Sets the given location using command-line flags and the FileManager API. */
+  private static void setLocation(
+      List<String> options,
+      StandardJavaFileManager fileManager,
+      Iterable<String> searchpath,
+      String flag,
+      StandardLocation location)
+      throws ExtractionException {
+    String joined = Joiner.on(":").join(searchpath);
+    if (!joined.isEmpty()) {
+      options.add(flag);
+      options.add(joined);
+      try {
+        List<File> files = Lists.newArrayList();
+        for (String elt : searchpath) {
+          files.add(new File(elt));
+        }
+        fileManager.setLocation(location, files);
+      } catch (IOException e) {
+        throw new ExtractionException(String.format("Couldn't set %s", location), e, false);
+      }
+    }
   }
 
   /**
