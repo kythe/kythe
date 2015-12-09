@@ -213,6 +213,48 @@ function index(job : jobs.Job) {
     }
   }
 
+  function visitFunctionDeclaration(
+      fn : ts.FunctionDeclaration, fullName : string, searchString : string,
+      file : ts.SourceFile, fileVName : kythe.VName, spanStart : number,
+      spanLength : number) {
+    let vname = vnameForNode(fileVName, fn);
+    let defSiteAnchor = kythe.anchor(fileVName,
+        enc.getUtf8PositionOfSourcePosition(file, spanStart),
+        enc.getUtf8PositionOfSourcePosition(file, spanStart + spanLength));
+    kythe.write(kythe.edge(defSiteAnchor, "defines/binding", vname));
+    kythe.write(kythe.fact(vname, "node/kind", "function"));
+    kythe.write(kythe.edge(vname, "named",
+        kythe.nameFromQualifiedName(fullName, "n")));
+    if (searchString != fullName) {
+      kythe.write(kythe.edge(vname, "named", kythe.name([searchString], "n")));
+    }
+    // TODO(zarko): completes edges.
+    kythe.write(kythe.fact(vname, "complete",
+        fn.body ? "definition" : "incomplete"));
+  }
+
+  function visitDeclaration(declaration : ts.Declaration,
+      file : ts.SourceFile, fileVName : kythe.VName, spanStart : number,
+      spanLength : number) {
+    let searchString = declaration.name
+        && tsu.declarationNameToString(declaration.name);
+    let definitionKind = au.getDeclarationKind(declaration);
+    let fullName = su.getQualifiedName(declaration);
+
+    switch (declaration.kind) {
+      case ts.SyntaxKind.FunctionDeclaration:
+        return visitFunctionDeclaration(<ts.FunctionDeclaration>declaration,
+            fullName, searchString, file, fileVName, spanStart, spanLength);
+    }
+
+    let defSiteAnchor = kythe.anchor(fileVName,
+        enc.getUtf8PositionOfSourcePosition(file, spanStart),
+        enc.getUtf8PositionOfSourcePosition(file, spanStart + spanLength));
+    let defVName = vnameForNode(fileVName, declaration);
+    kythe.write(kythe.edge(defSiteAnchor, "defines/binding", defVName));
+    kythe.write(kythe.fact(defVName, "node/kind", definitionKind));
+  }
+
   function classify(vname : kythe.VName, file : ts.SourceFile,
                     classifications : ts.Classifications) {
     let spans = classifications.spans;
@@ -235,18 +277,7 @@ function index(job : jobs.Job) {
       let declaration = su.getDeclarationForName(token);
       let vnames : kythe.VName[] = [];
       if (declaration) {
-        // TODO(zarko): Emit and connect name nodes for searchString and
-        // fullName.
-        let searchString = declaration.name
-            && tsu.declarationNameToString(declaration.name);
-        let definitionKind = au.getDeclarationKind(declaration);
-        let fullName = su.getQualifiedName(declaration);
-        let defSiteAnchor = kythe.anchor(vname,
-            enc.getUtf8PositionOfSourcePosition(file, spanStart),
-            enc.getUtf8PositionOfSourcePosition(file, spanStart + spanLength));
-        let defVName = vnameForNode(vname, declaration);
-        kythe.write(kythe.edge(defSiteAnchor, "defines/binding", defVName));
-        kythe.write(kythe.fact(defVName, "node/kind", definitionKind));
+        visitDeclaration(declaration, file, vname, spanStart, spanLength);
       } else if (token.kind == ts.SyntaxKind.Identifier
                  && token.parent
                  && token.parent.kind === ts.SyntaxKind.LabeledStatement) {
@@ -291,10 +322,11 @@ function index(job : jobs.Job) {
     let copyName = kythe.copyVName(defFileVName);
     if (target) {
       let defStart = target.getStart();
-      copyName.signature = au.getDeclarationKind(target) + defStart;
+      copyName.signature = target.kind + "_" + defStart;
     } else {
       copyName.signature = "_Missing";
     }
+    copyName.language = "ts";
     return copyName;
   }
 

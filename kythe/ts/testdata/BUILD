@@ -36,6 +36,12 @@ ts_indexer_test(
 )
 
 ts_indexer_test(
+    name = "function_def",
+    srcs = ["basic/function_def.js"],
+    tags = ["basic"],
+)
+
+ts_indexer_test(
     name = "utf8_comments",
     srcs = ["basic/utf8_comments.js"],
     tags = ["basic"],
@@ -45,6 +51,20 @@ ts_indexer_test(
     name = "utf8_comments_surrogate_pair",
     srcs = ["basic/utf8_comments_surrogate_pair.js"],
     tags = ["basic"],
+)
+
+test_suite(
+    name = "ts_tests",
+    tags = ["ts"],
+)
+
+ts_indexer_test(
+    name = "function_def_d",
+    srcs = [
+        "ts/function_def.d.ts",
+        "ts/function_def.js",
+    ],
+    tags = ["ts"],
 )
 
 test_suite(

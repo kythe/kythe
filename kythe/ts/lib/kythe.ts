@@ -64,11 +64,29 @@ export function copyVName(v : VName) : VName {
 export function anchor(fileName : VName, begin : number, end : number) : VName {
   var anchorVName = copyVName(fileName);
   anchorVName.signature = begin + "," + end;
+  anchorVName.language = "ts";
   write(fact(anchorVName, "node/kind", "anchor"));
   write(fact(anchorVName, "loc/start", "" + begin));
   write(fact(anchorVName, "loc/end", "" + end));
   write(edge(anchorVName, "childof", fileName));
   return anchorVName;
+}
+
+var exportedNames : {[index:string]:boolean} = {};
+
+export function name(path : string[], tag : string) : VName {
+  let signature = path.reverse().join(":") + "#" + tag;
+  let nameVName = vname(signature, "", "ts", "", "");
+  if (!exportedNames[signature]) {
+    exportedNames[signature] = true;
+    write(fact(nameVName, "node/kind", "name"));
+  }
+  return nameVName;
+}
+
+export function nameFromQualifiedName(qualified : string,
+    tag : string) : VName {
+  return name(qualified.split("."), tag);
 }
 
 // A rule from a vnames.json file.
@@ -144,11 +162,11 @@ export class PathClassifier {
       var matches = this.rules[i].pattern.exec(path);
       if (matches != null) {
         return vname("", applyTemplate(this.rules[i].pathTemplate, matches),
-            "ts", applyTemplate(this.rules[i].rootTemplate, matches),
+            "", applyTemplate(this.rules[i].rootTemplate, matches),
             applyTemplate(this.rules[i].corpusTemplate, matches));
       }
     }
-    return vname("", path, "ts", "", "no_corpus");
+    return vname("", path, "", "", "no_corpus");
   }
   private rules : ClassifierRule[];
 }
