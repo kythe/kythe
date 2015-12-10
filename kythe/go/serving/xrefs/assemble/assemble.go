@@ -19,8 +19,6 @@
 package assemble
 
 import (
-	"container/heap"
-	"errors"
 	"fmt"
 	"log"
 	"sort"
@@ -28,6 +26,7 @@ import (
 
 	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/util/kytheuri"
+	"kythe.io/kythe/go/util/pager"
 	"kythe.io/kythe/go/util/schema"
 	"kythe.io/kythe/go/util/stringset"
 
@@ -305,10 +304,78 @@ type EdgeSetBuilder struct {
 	// OutputPage is used to emit each EdgePage constructed.
 	OutputPage func(context.Context, *srvpb.EdgePage) error
 
-	curPES   *srvpb.PagedEdgeSet
-	curEG    *srvpb.EdgeSet_Group
-	groups   byEdgeCount
-	resident int
+	pager *pager.SetPager
+}
+
+func (b *EdgeSetBuilder) constructPager() *pager.SetPager {
+	// Head:  *srvpb.Node
+	// Set:   *srvpb.PagedEdgeSet
+	// Group: *srvpb.EdgeSet_Group
+	return &pager.SetPager{
+		MaxPageSize: b.MaxEdgePageSize,
+
+		NewSet: func(hd pager.Head) pager.Set {
+			return &srvpb.PagedEdgeSet{
+				EdgeSet: &srvpb.EdgeSet{Source: hd.(*srvpb.Node)},
+			}
+		},
+		Combine: func(l, r pager.Group) pager.Group {
+			lg, rg := l.(*srvpb.EdgeSet_Group), r.(*srvpb.EdgeSet_Group)
+			if lg.Kind != rg.Kind {
+				return nil
+			}
+			lg.Target = append(lg.Target, rg.Target...)
+			return lg
+		},
+		Split: func(sz int, g pager.Group) (l, r pager.Group) {
+			eg := g.(*srvpb.EdgeSet_Group)
+			neg := &srvpb.EdgeSet_Group{
+				Kind:   eg.Kind,
+				Target: eg.Target[:sz],
+			}
+			eg.Target = eg.Target[sz:]
+			return neg, eg
+		},
+		Size: func(g pager.Group) int { return len(g.(*srvpb.EdgeSet_Group).Target) },
+
+		OutputSet: func(ctx context.Context, total int, s pager.Set, grps []pager.Group) error {
+			pes := s.(*srvpb.PagedEdgeSet)
+
+			// pes.EdgeSet.Group = []*srvpb.EdgeSet_Group(grps)
+			pes.EdgeSet.Group = make([]*srvpb.EdgeSet_Group, len(grps))
+			for i, g := range grps {
+				pes.EdgeSet.Group[i] = g.(*srvpb.EdgeSet_Group)
+			}
+
+			sort.Sort(byEdgeKind(pes.EdgeSet.Group))
+			sort.Sort(byPageKind(pes.PageIndex))
+			pes.TotalEdges = int32(total)
+
+			return b.Output(ctx, pes)
+		},
+		OutputPage: func(ctx context.Context, s pager.Set, g pager.Group) error {
+			pes := s.(*srvpb.PagedEdgeSet)
+			eviction := g.(*srvpb.EdgeSet_Group)
+
+			src := pes.EdgeSet.Source.Ticket
+			key := newPageKey(src, len(pes.PageIndex))
+
+			// Output the EdgePage and add it to the page indices
+			if err := b.OutputPage(ctx, &srvpb.EdgePage{
+				PageKey:      key,
+				SourceTicket: src,
+				EdgesGroup:   eviction,
+			}); err != nil {
+				return fmt.Errorf("error emitting EdgePage: %v", err)
+			}
+			pes.PageIndex = append(pes.PageIndex, &srvpb.PageIndex{
+				PageKey:   key,
+				EdgeKind:  eviction.Kind,
+				EdgeCount: int32(len(eviction.Target)),
+			})
+			return nil
+		},
+	}
 }
 
 // StartEdgeSet begins a new EdgeSet for the given source node, possibly
@@ -316,19 +383,10 @@ type EdgeSetBuilder struct {
 // AddGroup adds the group to this new EdgeSet until another call to
 // StartEdgeSet is made.
 func (b *EdgeSetBuilder) StartEdgeSet(ctx context.Context, src *srvpb.Node) error {
-	if b.curPES != nil {
-		if b.curPES.EdgeSet.Source.Ticket == src.Ticket {
-			return fmt.Errorf("starting new EdgeSet for same node as previous EdgeSet: %q", src.Ticket)
-		}
-		if err := b.Flush(ctx); err != nil {
-			return fmt.Errorf("error flushing previous PagedEdgeSet: %v", err)
-		}
+	if b.pager == nil {
+		b.pager = b.constructPager()
 	}
-
-	b.curPES = &srvpb.PagedEdgeSet{
-		EdgeSet: &srvpb.EdgeSet{Source: src},
-	}
-	return nil
+	return b.pager.StartSet(ctx, src)
 }
 
 // AddGroup adds a EdgeSet_Group to current EdgeSet being built, possibly
@@ -336,83 +394,14 @@ func (b *EdgeSetBuilder) StartEdgeSet(ctx context.Context, src *srvpb.Node) erro
 // before any calls to this method.  See EdgeSetBuilder's documentation for the
 // assumed order of the groups and this method's relation to StartEdgeSet.
 func (b *EdgeSetBuilder) AddGroup(ctx context.Context, eg *srvpb.EdgeSet_Group) error {
-	// Setup b.curPES and b.curEG; ensuring both are non-nil
-	if b.curPES == nil {
-		return errors.New("no EdgeSet currently being built")
-	} else if b.curEG == nil {
-		b.curEG = eg
-	} else if b.curEG.Kind != eg.Kind {
-		heap.Push(&b.groups, b.curEG)
-		b.curEG = eg
-	} else {
-		b.curEG.Target = append(b.curEG.Target, eg.Target...)
-	}
-	// Update edge counters
-	b.resident += len(eg.Target)
-	b.curPES.TotalEdges += int32(len(eg.Target))
-
-	// Handling creation of EdgePages, when # of resident edges passes config value
-	for b.MaxEdgePageSize > 0 && b.resident > b.MaxEdgePageSize {
-		var eviction *srvpb.EdgeSet_Group
-		if b.curEG != nil {
-			if len(b.curEG.Target) > b.MaxEdgePageSize {
-				// Split the large page; evict page exactly sized b.MaxEdgePageSize
-				eviction = &srvpb.EdgeSet_Group{
-					Kind:   b.curEG.Kind,
-					Target: b.curEG.Target[:b.MaxEdgePageSize],
-				}
-				b.curEG.Target = b.curEG.Target[b.MaxEdgePageSize:]
-			} else if len(b.groups) == 0 || len(b.curEG.Target) > len(b.groups[0].Target) {
-				// Evict b.curEG, it's larger than any other group we have
-				eviction, b.curEG = b.curEG, nil
-			}
-		}
-		if eviction == nil {
-			// Evict the largest group we have
-			eviction = heap.Pop(&b.groups).(*srvpb.EdgeSet_Group)
-		}
-
-		src := b.curPES.EdgeSet.Source.Ticket
-		key := newPageKey(src, len(b.curPES.PageIndex))
-		count := len(eviction.Target)
-
-		// Output the EdgePage and add it to the page indices
-		if err := b.OutputPage(ctx, &srvpb.EdgePage{
-			PageKey:      key,
-			SourceTicket: src,
-			EdgesGroup:   eviction,
-		}); err != nil {
-			return fmt.Errorf("error emitting EdgePage: %v", err)
-		}
-		b.curPES.PageIndex = append(b.curPES.PageIndex, &srvpb.PageIndex{
-			PageKey:   key,
-			EdgeKind:  eviction.Kind,
-			EdgeCount: int32(count),
-		})
-		b.resident -= count // update edge counter
-	}
-
-	return nil
+	return b.pager.AddGroup(ctx, eg)
 }
 
 // Flush signals the end of the current PagedEdgeSet being built, flushing it,
 // and its EdgeSet_Groups to the output function.  This should be called after
 // the final call to AddGroup.  Manually calling Flush at any other time is
 // unnecessary.
-func (b *EdgeSetBuilder) Flush(ctx context.Context) error {
-	if b.curPES == nil {
-		return nil
-	}
-	if b.curEG != nil {
-		b.groups = append(b.groups, b.curEG)
-	}
-	b.curPES.EdgeSet.Group = b.groups
-	sort.Sort(byEdgeKind(b.curPES.EdgeSet.Group))
-	sort.Sort(byPageKind(b.curPES.PageIndex))
-	err := b.Output(ctx, b.curPES)
-	b.curPES, b.curEG, b.groups, b.resident = nil, nil, nil, 0
-	return err
-}
+func (b *EdgeSetBuilder) Flush(ctx context.Context) error { return b.pager.Flush(ctx) }
 
 func newPageKey(src string, n int) string { return fmt.Sprintf("%s.%.10d", src, n) }
 
@@ -469,24 +458,6 @@ type byEdgeKind []*srvpb.EdgeSet_Group
 func (s byEdgeKind) Len() int           { return len(s) }
 func (s byEdgeKind) Less(i, j int) bool { return edgeKindLess(s[i].Kind, s[j].Kind) }
 func (s byEdgeKind) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
-
-// byEdgeCount implements the heap.Interface (largest group of edges first)
-type byEdgeCount []*srvpb.EdgeSet_Group
-
-// Implement the sort.Interface
-func (s byEdgeCount) Len() int           { return len(s) }
-func (s byEdgeCount) Less(i, j int) bool { return len(s[i].Target) > len(s[j].Target) }
-func (s byEdgeCount) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
-
-// Implement the heap.Interface
-func (s *byEdgeCount) Push(v interface{}) { *s = append(*s, v.(*srvpb.EdgeSet_Group)) }
-func (s *byEdgeCount) Pop() interface{} {
-	old := *s
-	n := len(old) - 1
-	out := old[n]
-	*s = old[:n]
-	return out
-}
 
 // ByName implements the sort.Interface for srvpb.Facts
 type ByName []*srvpb.Fact

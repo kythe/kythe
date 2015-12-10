@@ -293,8 +293,8 @@ func TestEdgeSetBuilder(t *testing.T) {
 		for i := 0; i < len(test.edgePages); i++ {
 			if edgePages >= len(tESB.EdgePages) {
 				t.Fatalf("Missing expected EdgePages: %v", test.edgePages[i])
-			} else if found := tESB.EdgePages[edgePages]; !reflect.DeepEqual(test.edgePages[i], found) {
-				t.Fatalf("Expected EdgePage: %v; found: %v", test.edgePages[i], found)
+			} else if err := testutil.DeepEqual(test.edgePages[i], tESB.EdgePages[edgePages]); err != nil {
+				t.Error(err)
 			}
 			edgePages++
 		}

@@ -30,6 +30,7 @@ import (
 	"path/filepath"
 
 	"kythe.io/kythe/go/platform/delimited"
+	"kythe.io/kythe/go/util/sortutil"
 )
 
 // Interface is the standard interface for disk sorting algorithms.  Each
@@ -48,12 +49,6 @@ type Interface interface {
 	Read(f func(interface{}) error) error
 }
 
-// Lesser is an interface to a comparison function.
-type Lesser interface {
-	// Less returns true if a < b.
-	Less(a, b interface{}) bool
-}
-
 // Marshaler is an interface to functions that can binary encode/decode
 // elements.
 type Marshaler interface {
@@ -65,7 +60,7 @@ type Marshaler interface {
 }
 
 type mergeSorter struct {
-	lesser    Lesser
+	lesser    sortutil.Lesser
 	marshaler Marshaler
 
 	buffer      heap.Interface
@@ -82,7 +77,7 @@ const DefaultMaxInMemory = 32000
 // MergeOptions specifies how to sort elements.
 type MergeOptions struct {
 	// Lesser is the comparison function for sorting the given elements.
-	Lesser Lesser
+	Lesser sortutil.Lesser
 	// Marshaler is used for encoding/decoding elements in temporary file shards.
 	Marshaler Marshaler
 
@@ -108,7 +103,7 @@ func NewMergeSorter(opts MergeOptions) (Interface, error) {
 	}
 
 	return &mergeSorter{
-		buffer: &lesserSort{Lesser: opts.Lesser},
+		buffer: &sortutil.ByLesser{Lesser: opts.Lesser},
 
 		lesser:      opts.Lesser,
 		marshaler:   opts.Marshaler,
@@ -165,7 +160,7 @@ func (m *mergeSorter) Read(f func(i interface{}) error) (err error) {
 
 	// This is a heap storing the head of each shard.
 	// TODO(schroederc): parallel merge
-	merger := &lesserSort{Lesser: &mergeElementLesser{Lesser: m.lesser}}
+	merger := &sortutil.ByLesser{Lesser: &mergeElementLesser{Lesser: m.lesser}}
 
 	defer func() {
 		// Try to cleanup on errors
@@ -272,34 +267,15 @@ func replaceErrIfNil(err *error, s string, newError error) {
 	}
 }
 
-// lesserSort implements the heap.Interface using a Lesser over a slice.
-type lesserSort struct {
-	Lesser
-	xs []interface{}
-}
-
-// Implement the sort.Interface.
-func (s lesserSort) Len() int           { return len(s.xs) }
-func (s lesserSort) Swap(i, j int)      { s.xs[i], s.xs[j] = s.xs[j], s.xs[i] }
-func (s lesserSort) Less(i, j int) bool { return s.Lesser.Less(s.xs[i], s.xs[j]) }
-
-// Implement the heap.Interface
-func (s *lesserSort) Push(v interface{}) { s.xs = append(s.xs, v) }
-func (s *lesserSort) Pop() interface{} {
-	n := len(s.xs) - 1
-	out := s.xs[n]
-	s.xs = s.xs[:n]
-	return out
-}
-
 type mergeElement struct {
 	el interface{}
 	rd delimited.Reader
 	f  *os.File
 }
 
-type mergeElementLesser struct{ Lesser }
+type mergeElementLesser struct{ sortutil.Lesser }
 
+// Less implements the sortutil.Lesser interface.
 func (m *mergeElementLesser) Less(a, b interface{}) bool {
 	x, y := a.(*mergeElement), b.(*mergeElement)
 	return m.Lesser.Less(x.el, y.el)

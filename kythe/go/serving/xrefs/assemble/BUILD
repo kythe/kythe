@@ -7,6 +7,7 @@ go_package(
     deps = [
         "//kythe/go/services/graphstore",
         "//kythe/go/util/kytheuri",
+        "//kythe/go/util/pager",
         "//kythe/go/util/schema",
         "//kythe/go/util/stringset",
         "//kythe/proto:serving_proto_go",
