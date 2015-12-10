@@ -24,8 +24,7 @@ package my_test
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
-
-// discarding unused import multitest2 "multi"
+import _ "github.com/golang/protobuf/protoc-gen-go/testdata/multi"
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -624,8 +623,8 @@ func (m *Communique) GetSomegroup() *Communique_SomeGroup {
 }
 
 // XXX_OneofFuncs is for the internal use of the proto package.
-func (*Communique) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), []interface{}) {
-	return _Communique_OneofMarshaler, _Communique_OneofUnmarshaler, []interface{}{
+func (*Communique) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _Communique_OneofMarshaler, _Communique_OneofUnmarshaler, _Communique_OneofSizer, []interface{}{
 		(*Communique_Number)(nil),
 		(*Communique_Name)(nil),
 		(*Communique_Data)(nil),
@@ -769,6 +768,52 @@ func _Communique_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buf
 	}
 }
 
+func _Communique_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*Communique)
+	// union
+	switch x := m.Union.(type) {
+	case *Communique_Number:
+		n += proto.SizeVarint(5<<3 | proto.WireVarint)
+		n += proto.SizeVarint(uint64(x.Number))
+	case *Communique_Name:
+		n += proto.SizeVarint(6<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(len(x.Name)))
+		n += len(x.Name)
+	case *Communique_Data:
+		n += proto.SizeVarint(7<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(len(x.Data)))
+		n += len(x.Data)
+	case *Communique_TempC:
+		n += proto.SizeVarint(8<<3 | proto.WireFixed64)
+		n += 8
+	case *Communique_Height:
+		n += proto.SizeVarint(9<<3 | proto.WireFixed32)
+		n += 4
+	case *Communique_Today:
+		n += proto.SizeVarint(10<<3 | proto.WireVarint)
+		n += proto.SizeVarint(uint64(x.Today))
+	case *Communique_Maybe:
+		n += proto.SizeVarint(11<<3 | proto.WireVarint)
+		n += 1
+	case *Communique_Delta_:
+		n += proto.SizeVarint(12<<3 | proto.WireVarint)
+		n += proto.SizeVarint(uint64((uint32(x.Delta) << 1) ^ uint32((int32(x.Delta) >> 31))))
+	case *Communique_Msg:
+		s := proto.Size(x.Msg)
+		n += proto.SizeVarint(13<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Communique_Somegroup:
+		n += proto.SizeVarint(14<<3 | proto.WireStartGroup)
+		n += proto.Size(x.Somegroup)
+		n += proto.SizeVarint(14<<3 | proto.WireEndGroup)
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
+}
+
 type Communique_SomeGroup struct {
 	Member           *string `protobuf:"bytes,15,opt,name=member" json:"member,omitempty"`
 	XXX_unrecognized []byte  `json:"-"`
@@ -810,6 +855,17 @@ var E_Donut = &proto.ExtensionDesc{
 }
 
 func init() {
+	proto.RegisterType((*Request)(nil), "my.test.Request")
+	proto.RegisterType((*Request_SomeGroup)(nil), "my.test.Request.SomeGroup")
+	proto.RegisterType((*Reply)(nil), "my.test.Reply")
+	proto.RegisterType((*Reply_Entry)(nil), "my.test.Reply.Entry")
+	proto.RegisterType((*OtherBase)(nil), "my.test.OtherBase")
+	proto.RegisterType((*ReplyExtensions)(nil), "my.test.ReplyExtensions")
+	proto.RegisterType((*OtherReplyExtensions)(nil), "my.test.OtherReplyExtensions")
+	proto.RegisterType((*OldReply)(nil), "my.test.OldReply")
+	proto.RegisterType((*Communique)(nil), "my.test.Communique")
+	proto.RegisterType((*Communique_SomeGroup)(nil), "my.test.Communique.SomeGroup")
+	proto.RegisterType((*Communique_Delta)(nil), "my.test.Communique.Delta")
 	proto.RegisterEnum("my.test.HatType", HatType_name, HatType_value)
 	proto.RegisterEnum("my.test.Days", Days_name, Days_value)
 	proto.RegisterEnum("my.test.Request_Color", Request_Color_name, Request_Color_value)
