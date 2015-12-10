@@ -213,21 +213,81 @@ function index(job : jobs.Job) {
     }
   }
 
-  function visitFunctionDeclaration(
-      fn : ts.FunctionDeclaration, fullName : string, searchString : string,
-      file : ts.SourceFile, fileVName : kythe.VName, spanStart : number,
-      spanLength : number) {
-    let vname = vnameForNode(fileVName, fn);
+  // Find the nearest parent above node that would be a valid Kythe parent.
+  // One may not exist (e.g. if this is a top-level definition).
+  function findKytheParent(node : ts.Node) {
+    while (node.parent) {
+      switch (node.parent.kind) {
+        case ts.SyntaxKind.FunctionDeclaration:
+          return node.parent;
+      }
+      node = node.parent;
+    }
+    return undefined;
+  }
+
+  function findParentVName(fileVName : kythe.VName, node : ts.Node) {
+    let parent = findKytheParent(node);
+    return parent ? vnameForNode(fileVName, parent) : undefined;
+  }
+
+  function emitCommonDeclarationEntries(vbl : ts.Node, fullName : string,
+      searchString : string, file : ts.SourceFile, fileVName : kythe.VName,
+      spanStart : number, spanLength : number) : kythe.VName {
+    let vname = vnameForNode(fileVName, vbl);
     let defSiteAnchor = kythe.anchor(fileVName,
         enc.getUtf8PositionOfSourcePosition(file, spanStart),
         enc.getUtf8PositionOfSourcePosition(file, spanStart + spanLength));
     kythe.write(kythe.edge(defSiteAnchor, "defines/binding", vname));
-    kythe.write(kythe.fact(vname, "node/kind", "function"));
     kythe.write(kythe.edge(vname, "named",
         kythe.nameFromQualifiedName(fullName, "n")));
     if (searchString != fullName) {
       kythe.write(kythe.edge(vname, "named", kythe.name([searchString], "n")));
     }
+    return vname;
+  }
+
+  function visitParameterDeclaration(
+      vbl : ts.ParameterDeclaration, fullName : string, searchString : string,
+      file : ts.SourceFile, fileVName : kythe.VName, spanStart : number,
+      spanLength : number) {
+    let vname = emitCommonDeclarationEntries(vbl, fullName, searchString,
+        file, fileVName, spanStart, spanLength);
+    kythe.write(kythe.fact(vname, "node/kind", "variable"));
+    if (vbl.parent && vbl.parent.kind == ts.SyntaxKind.FunctionDeclaration) {
+      let parentFn = <any>(vbl.parent);
+      for (var i = 0; i < parentFn.parameters.length; ++i) {
+        if (parentFn.parameters[i] == vbl) {
+          kythe.write(kythe.paramEdge(vnameForNode(fileVName, vbl.parent),
+              vname, i));
+          break;
+        }
+      }
+    }
+    // TODO(zarko): completes edges and completeness facts.
+  }
+
+  function visitVariableDeclaration(
+      vbl : ts.VariableDeclaration, fullName : string, searchString : string,
+      file : ts.SourceFile, fileVName : kythe.VName, spanStart : number,
+      spanLength : number) {
+    let vname = emitCommonDeclarationEntries(vbl, fullName, searchString,
+        file, fileVName, spanStart, spanLength);
+    kythe.write(kythe.fact(vname, "node/kind", "variable"));
+    let parentVName = findParentVName(fileVName, vbl);
+    if (parentVName) {
+      kythe.write(kythe.edge(vname, "childof", parentVName));
+    }
+    // TODO(zarko): completes edges and completeness facts.
+  }
+
+  function visitFunctionDeclaration(
+      fn : ts.FunctionDeclaration, fullName : string, searchString : string,
+      file : ts.SourceFile, fileVName : kythe.VName, spanStart : number,
+      spanLength : number) {
+    let vname = emitCommonDeclarationEntries(fn, fullName, searchString,
+        file, fileVName, spanStart, spanLength);
+    kythe.write(kythe.fact(vname, "node/kind", "function"));
     // TODO(zarko): completes edges.
     kythe.write(kythe.fact(vname, "complete",
         fn.body ? "definition" : "incomplete"));
@@ -244,6 +304,12 @@ function index(job : jobs.Job) {
     switch (declaration.kind) {
       case ts.SyntaxKind.FunctionDeclaration:
         return visitFunctionDeclaration(<ts.FunctionDeclaration>declaration,
+            fullName, searchString, file, fileVName, spanStart, spanLength);
+      case ts.SyntaxKind.VariableDeclaration:
+        return visitVariableDeclaration(<ts.VariableDeclaration>declaration,
+            fullName, searchString, file, fileVName, spanStart, spanLength);
+      case ts.SyntaxKind.Parameter:
+        return visitParameterDeclaration(<ts.ParameterDeclaration>declaration,
             fullName, searchString, file, fileVName, spanStart, spanLength);
     }
 

@@ -53,6 +53,24 @@ ts_indexer_test(
     tags = ["basic"],
 )
 
+ts_indexer_test(
+    name = "local_var_def",
+    srcs = ["basic/local_var_def.js"],
+    tags = ["basic"],
+)
+
+ts_indexer_test(
+    name = "var_def",
+    srcs = ["basic/var_def.js"],
+    tags = ["basic"],
+)
+
+ts_indexer_test(
+    name = "param_def",
+    srcs = ["basic/param_def.js"],
+    tags = ["basic"],
+)
+
 test_suite(
     name = "ts_tests",
     tags = ["ts"],

@@ -50,6 +50,12 @@ export function edge(source : VName, edgeKind : string, target : VName)
       fact_name: "/", fact_value: "" }
 }
 
+export function paramEdge(source : VName, target : VName, index : number)
+    : Entry {
+  return { source: source, target: target, edge_kind: "/kythe/edge/param",
+      fact_name: "/kythe/ordinal", fact_value: "" + index }
+}
+
 export function write(entry : Entry) : void {
   var oldFactVal = entry.fact_value;
   entry.fact_value = (new Buffer(oldFactVal)).toString('base64');
