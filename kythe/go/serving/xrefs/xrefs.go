@@ -19,8 +19,10 @@
 //
 // Table format:
 //   edgeSets:<ticket>      -> srvpb.PagedEdgeSet
-//   edgePages:<page_token> -> srvpb.EdgePage
+//   edgePages:<page_key>   -> srvpb.EdgePage
 //   decor:<ticket>         -> srvpb.FileDecorations
+//   xrefs:<ticket>         -> srvpb.CrossReferences
+//   xrefPages:<page_key>   -> srvpb.CrossReferences_Page
 package xrefs
 
 import (
@@ -119,9 +121,11 @@ func (s *SplitTable) fileDecorations(ctx context.Context, ticket string) (*srvpb
 
 // Key prefixes for the combinedTable implementation.
 const (
-	decorTablePrefix     = "decor:"
-	edgeSetsTablePrefix  = "edgeSets:"
-	edgePagesTablePrefix = "edgePages:"
+	crossRefTablePrefix     = "xrefs:"
+	crossRefPageTablePrefix = "xrefPages:"
+	decorTablePrefix        = "decor:"
+	edgeSetsTablePrefix     = "edgeSets:"
+	edgePagesTablePrefix    = "edgePages:"
 )
 
 type combinedTable struct{ table.ProtoBatch }
@@ -165,6 +169,18 @@ func EdgePageKey(key string) []byte {
 // location ticket.
 func DecorationsKey(ticket string) []byte {
 	return []byte(decorTablePrefix + ticket)
+}
+
+// CrossReferencesKey returns the cross-references CombinedTable key for the
+// given node ticket.
+func CrossReferencesKey(ticket string) []byte {
+	return []byte(crossRefTablePrefix + ticket)
+}
+
+// CrossReferencesPageKey returns the cross-references page CombinedTable key
+// for the given key.
+func CrossReferencesPageKey(key string) []byte {
+	return []byte(crossRefPageTablePrefix + key)
 }
 
 // tableImpl implements the xrefs Service interface using static lookup tables.
@@ -544,5 +560,6 @@ func decorationToReference(norm *xrefs.Normalizer, d *srvpb.FileDecorations_Deco
 
 // CrossReferences implements part of the xrefs.Service interface.
 func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReferencesRequest) (*xpb.CrossReferencesReply, error) {
+	// TODO(schroederc): read from serving data
 	return xrefs.CrossReferences(ctx, t, req)
 }

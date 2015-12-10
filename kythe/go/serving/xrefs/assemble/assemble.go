@@ -207,10 +207,16 @@ func (b *DecorationFragmentBuilder) AddEdge(ctx context.Context, e *srvpb.Edge) 
 				return nil
 			}
 
+			// Ignore errors; offsets will just be zero
+			snippetStart, _ := strconv.Atoi(string(srcFacts[schema.SnippetStartFact]))
+			snippetEnd, _ := strconv.Atoi(string(srcFacts[schema.SnippetEndFact]))
+
 			b.anchor = &srvpb.Anchor{
-				Ticket:      e.Source.Ticket,
-				StartOffset: int32(anchorStart),
-				EndOffset:   int32(anchorEnd),
+				Ticket:       e.Source.Ticket,
+				StartOffset:  int32(anchorStart),
+				EndOffset:    int32(anchorEnd),
+				SnippetStart: int32(snippetStart),
+				SnippetEnd:   int32(snippetEnd),
 			}
 		}
 		return nil
@@ -403,6 +409,108 @@ func (b *EdgeSetBuilder) AddGroup(ctx context.Context, eg *srvpb.EdgeSet_Group) 
 // unnecessary.
 func (b *EdgeSetBuilder) Flush(ctx context.Context) error { return b.pager.Flush(ctx) }
 
+// CrossReferencesBuilder is a type wrapper around a pager.SetPager that emits
+// *srvpb.PagedCrossReferences and *srvpb.PagedCrossReferences_Pages.  Each
+// PagedCrossReferences_Group added the builder should be in sorted order so
+// that groups of the same kind are added sequentially.  Before each set of
+// like-kinded groups, StartSet should be called with the source ticket of the
+// proceeding groups.  See also EdgeSetBuilder.
+type CrossReferencesBuilder struct {
+	MaxPageSize int
+
+	Output     func(context.Context, *srvpb.PagedCrossReferences) error
+	OutputPage func(context.Context, *srvpb.PagedCrossReferences_Page) error
+
+	pager *pager.SetPager
+}
+
+func (b *CrossReferencesBuilder) constructPager() *pager.SetPager {
+	// Head:  string (Kythe ticket)
+	// Set:   *srvpb.PagedCrossReferences
+	// Group: *srvpb.PagedCrossReferences_Group
+	// Page:  *srvpb.PagedCrossReferences_Page
+	return &pager.SetPager{
+		MaxPageSize: b.MaxPageSize,
+
+		NewSet: func(hd pager.Head) pager.Set {
+			return &srvpb.PagedCrossReferences{
+				SourceTicket: hd.(string),
+			}
+		},
+		Combine: func(l, r pager.Group) pager.Group {
+			lg, rg := l.(*srvpb.PagedCrossReferences_Group), r.(*srvpb.PagedCrossReferences_Group)
+			if lg.Kind != rg.Kind {
+				return nil
+			}
+			lg.Anchor = append(lg.Anchor, rg.Anchor...)
+			return lg
+		},
+		Split: func(sz int, g pager.Group) (l, r pager.Group) {
+			og := g.(*srvpb.PagedCrossReferences_Group)
+			ng := &srvpb.PagedCrossReferences_Group{
+				Kind:   og.Kind,
+				Anchor: og.Anchor[:sz],
+			}
+			og.Anchor = og.Anchor[sz:]
+			return ng, og
+		},
+		Size: func(g pager.Group) int { return len(g.(*srvpb.PagedCrossReferences_Group).Anchor) },
+
+		OutputSet: func(ctx context.Context, total int, s pager.Set, grps []pager.Group) error {
+			xs := s.(*srvpb.PagedCrossReferences)
+
+			// xs.Group = grps.([]*srvpb.PagedCrossReferences_Group)
+			xs.Group = make([]*srvpb.PagedCrossReferences_Group, len(grps))
+			for i, g := range grps {
+				xs.Group[i] = g.(*srvpb.PagedCrossReferences_Group)
+			}
+
+			sort.Sort(byRefKind(xs.Group))
+			sort.Sort(byRefPageKind(xs.PageIndex))
+			xs.TotalReferences = int32(total)
+
+			return b.Output(ctx, xs)
+		},
+		OutputPage: func(ctx context.Context, s pager.Set, g pager.Group) error {
+			xs, xg := s.(*srvpb.PagedCrossReferences), g.(*srvpb.PagedCrossReferences_Group)
+
+			key := newPageKey(xs.SourceTicket, len(xs.PageIndex))
+
+			pg := &srvpb.PagedCrossReferences_Page{
+				PageKey:      key,
+				SourceTicket: xs.SourceTicket,
+				Group:        xg,
+			}
+			xs.PageIndex = append(xs.PageIndex, &srvpb.PagedCrossReferences_PageIndex{
+				PageKey: key,
+				Kind:    xg.Kind,
+				Count:   int32(len(xg.Anchor)),
+			})
+			return b.OutputPage(ctx, pg)
+		},
+	}
+}
+
+// StartSet begins a new *srvpb.PagedCrossReferences.  As a side-effect, a
+// previously-built srvpb.PagedCrossReferences may be emitted.
+func (b *CrossReferencesBuilder) StartSet(ctx context.Context, src string) error {
+	if b.pager == nil {
+		b.pager = b.constructPager()
+	}
+	return b.pager.StartSet(ctx, src)
+}
+
+// AddGroup add the given group of cross-references to the currently being built
+// *srvpb.PagedCrossReferences.  The group should share the same source ticket
+// as given to the mostly recent invocation to StartSet.
+func (b *CrossReferencesBuilder) AddGroup(ctx context.Context, g *srvpb.PagedCrossReferences_Group) error {
+	return b.pager.AddGroup(ctx, g)
+}
+
+// Flush emits any *srvpb.PagedCrossReferences and
+// *srvpb.PagedCrossReferences_Page currently being built.
+func (b *CrossReferencesBuilder) Flush(ctx context.Context) error { return b.pager.Flush(ctx) }
+
 func newPageKey(src string, n int) string { return fmt.Sprintf("%s.%.10d", src, n) }
 
 var edgeOrdering = []string{
@@ -466,3 +574,19 @@ type ByName []*srvpb.Fact
 func (s ByName) Len() int           { return len(s) }
 func (s ByName) Less(i, j int) bool { return s[i].Name < s[j].Name }
 func (s ByName) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+
+// byRefPageKind implements the sort.Interface
+type byRefPageKind []*srvpb.PagedCrossReferences_PageIndex
+
+// Implement the sort.Interface using edgeKindLess
+func (s byRefPageKind) Len() int           { return len(s) }
+func (s byRefPageKind) Less(i, j int) bool { return edgeKindLess(s[i].Kind, s[j].Kind) }
+func (s byRefPageKind) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+
+// byRefKind implements the sort.Interface
+type byRefKind []*srvpb.PagedCrossReferences_Group
+
+// Implement the sort.Interface using edgeKindLess
+func (s byRefKind) Len() int           { return len(s) }
+func (s byRefKind) Less(i, j int) bool { return edgeKindLess(s[i].Kind, s[j].Kind) }
+func (s byRefKind) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }

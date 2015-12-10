@@ -40,7 +40,7 @@ var (
 
 	tablePath = flag.String("out", "", "Directory path to output serving table")
 
-	maxEdgePageSize = flag.Int("max_edge_page_size", 4000, "If positive, edge pages are restricted to under this size")
+	maxPageSize = flag.Int("max_page_size", 4000, "If positive, edge/cross-reference pages are restricted to under this size")
 )
 
 func init() {
@@ -70,7 +70,7 @@ func main() {
 	defer profile.Stop()
 
 	if err := pipeline.Run(ctx, gs, db, &pipeline.Options{
-		MaxEdgePageSize: *maxEdgePageSize,
+		MaxPageSize: *maxPageSize,
 	}); err != nil {
 		log.Fatal("FATAL ERROR: ", err)
 	}

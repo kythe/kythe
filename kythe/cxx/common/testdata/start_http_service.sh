@@ -60,8 +60,7 @@ mkdir -p "${OUT_DIR}/gs"
 mkdir -p "${OUT_DIR}/tables"
 "${KYTHE_ENTRYSTREAM}" $ENTRYSTREAM_ARGS < "${TEST_ENTRIES:?no test entries for test}" \
   | "${KYTHE_WRITE_ENTRIES}" -graphstore "${OUT_DIR}/gs" 2>/dev/null
-"${KYTHE_WRITE_TABLES}" -graphstore "${OUT_DIR}/gs" \
-    -out="${OUT_DIR}/tables" 2>/dev/null
+"${KYTHE_WRITE_TABLES}" --graphstore "${OUT_DIR}/gs" --out "${OUT_DIR}/tables"
 # TODO(zarko): test against GRPC server implementation
 COUNTDOWN=16
 "${KYTHE_HTTP_SERVER}" -serving_table "${OUT_DIR}/tables" \

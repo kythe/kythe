@@ -29,13 +29,15 @@ import (
 	"kythe.io/kythe/go/services/filetree"
 	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/services/graphstore/compare"
+	"kythe.io/kythe/go/services/xrefs"
 	ftsrv "kythe.io/kythe/go/serving/filetree"
 	"kythe.io/kythe/go/serving/search"
-	"kythe.io/kythe/go/serving/xrefs"
+	xsrv "kythe.io/kythe/go/serving/xrefs"
 	"kythe.io/kythe/go/serving/xrefs/assemble"
 	"kythe.io/kythe/go/storage/keyvalue"
 	"kythe.io/kythe/go/storage/table"
 	"kythe.io/kythe/go/util/disksort"
+	"kythe.io/kythe/go/util/encoding/text"
 	"kythe.io/kythe/go/util/schema"
 
 	"github.com/golang/protobuf/proto"
@@ -44,14 +46,15 @@ import (
 	ftpb "kythe.io/kythe/proto/filetree_proto"
 	srvpb "kythe.io/kythe/proto/serving_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
+	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
 // Options controls the behavior of pipeline.Run.
 type Options struct {
-	// MaxEdgePageSize is maximum number of edges that are allowed in the
-	// PagedEdgeSet and any EdgePage.  If MaxEdgePageSize <= 0, no paging is
-	// attempted.
-	MaxEdgePageSize int
+	// MaxPageSize is maximum number of edges/cross-references that are allowed in
+	// PagedEdgeSets, CrossReferences, EdgePages, and CrossReferences_Pages.  If
+	// MaxPageSize <= 0, no paging is attempted.
+	MaxPageSize int
 }
 
 const chBuf = 512
@@ -109,13 +112,13 @@ func Run(ctx context.Context, gs graphstore.Service, db keyvalue.DB, opts *Optio
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		if err := writePagedEdges(ctx, pesIn, out.xs, opts.MaxEdgePageSize); err != nil {
+		if err := writePagedEdges(ctx, pesIn, out.xs, opts.MaxPageSize); err != nil {
 			pErr = fmt.Errorf("error writing paged edge sets: %v", err)
 		}
 	}()
 	go func() {
 		defer wg.Done()
-		if err := writeFileDecorations(ctx, dIn, out); err != nil {
+		if err := writeDecorAndRefs(ctx, opts.MaxPageSize, dIn, out); err != nil {
 			fErr = fmt.Errorf("error writing file decorations: %v", err)
 		}
 	}()
@@ -269,10 +272,10 @@ func writePagedEdges(ctx context.Context, edges <-chan *srvpb.Edge, out table.Pr
 	esb := &assemble.EdgeSetBuilder{
 		MaxEdgePageSize: maxEdgePageSize,
 		Output: func(ctx context.Context, pes *srvpb.PagedEdgeSet) error {
-			return buffer.Put(ctx, xrefs.EdgeSetKey(pes.EdgeSet.Source.Ticket), pes)
+			return buffer.Put(ctx, xsrv.EdgeSetKey(pes.EdgeSet.Source.Ticket), pes)
 		},
 		OutputPage: func(ctx context.Context, ep *srvpb.EdgePage) error {
-			return buffer.Put(ctx, xrefs.EdgePageKey(ep.PageKey), ep)
+			return buffer.Put(ctx, xsrv.EdgePageKey(ep.PageKey), ep)
 		},
 	}
 
@@ -351,7 +354,7 @@ func createDecorationFragments(ctx context.Context, edges <-chan *srvpb.Edge, fr
 	return fdb.Flush(ctx)
 }
 
-func writeFileDecorations(ctx context.Context, edges <-chan *srvpb.Edge, out *servingOutput) error {
+func writeDecorAndRefs(ctx context.Context, maxPageSize int, edges <-chan *srvpb.Edge, out *servingOutput) error {
 	fragments, err := disksort.NewMergeSorter(disksort.MergeOptions{
 		Lesser:      fragmentLesser{},
 		Marshaler:   fragmentMarshaler{},
@@ -368,9 +371,23 @@ func writeFileDecorations(ctx context.Context, edges <-chan *srvpb.Edge, out *se
 
 	log.Println("Writing completed FileDecorations")
 
+	// refSorter stores a *srvpb.CrossReference for each Decoration from fragments
+	refSorter, err := disksort.NewMergeSorter(disksort.MergeOptions{
+		Lesser:      refLesser{},
+		Marshaler:   refMarshaler{},
+		MaxInMemory: 16000,
+	})
+	if err != nil {
+		return fmt.Errorf("error creating sorter: %v", err)
+	}
+
 	buffer := out.xs.Buffered()
-	var curFile string
-	var decor *srvpb.FileDecorations
+	var (
+		curFile string
+		file    *srvpb.File
+		norm    *xrefs.Normalizer
+		decor   *srvpb.FileDecorations
+	)
 	if err := fragments.Read(func(x interface{}) error {
 		df := x.(*decorationFragment)
 		fileTicket := df.fileTicket
@@ -381,6 +398,7 @@ func writeFileDecorations(ctx context.Context, edges <-chan *srvpb.Edge, out *se
 				if err := writeDecor(ctx, buffer, decor); err != nil {
 					return err
 				}
+				file = nil
 			}
 			decor = nil
 		}
@@ -391,8 +409,28 @@ func writeFileDecorations(ctx context.Context, edges <-chan *srvpb.Edge, out *se
 
 		if fragment.File == nil {
 			decor.Decoration = append(decor.Decoration, fragment.Decoration...)
+			if file == nil {
+				return errors.New("missing file for anchors")
+			}
+
+			// Reverse each fragment.Decoration to create a *srvpb.CrossReference
+			for _, d := range fragment.Decoration {
+				ea, err := expandAnchor(d.Anchor, file, norm, schema.MirrorEdge(d.Kind))
+				if err != nil {
+					return fmt.Errorf("error expanding anchor: %v", err)
+				}
+				if err := refSorter.Add(&srvpb.CrossReference{
+					// Throw away the referent's facts.  They are not needed.
+					Referent:     &srvpb.Node{Ticket: d.Target.Ticket},
+					TargetAnchor: ea,
+				}); err != nil {
+					return fmt.Errorf("error adding CrossReference to sorter: %v", err)
+				}
+			}
 		} else {
 			decor.File = fragment.File
+			file = fragment.File
+			norm = xrefs.NewNormalizer(file.Text)
 		}
 
 		return nil
@@ -406,12 +444,117 @@ func writeFileDecorations(ctx context.Context, edges <-chan *srvpb.Edge, out *se
 		}
 	}
 
+	log.Println("Writing CrossReferences")
+
+	xb := &assemble.CrossReferencesBuilder{
+		MaxPageSize: maxPageSize,
+		Output: func(ctx context.Context, s *srvpb.PagedCrossReferences) error {
+			return buffer.Put(ctx, xsrv.CrossReferencesKey(s.SourceTicket), s)
+		},
+		OutputPage: func(ctx context.Context, p *srvpb.PagedCrossReferences_Page) error {
+			return buffer.Put(ctx, xsrv.CrossReferencesPageKey(p.PageKey), p)
+		},
+	}
+	var curTicket string
+	if err := refSorter.Read(func(i interface{}) error {
+		cr := i.(*srvpb.CrossReference)
+
+		if curTicket != cr.Referent.Ticket {
+			curTicket = cr.Referent.Ticket
+			if err := xb.StartSet(ctx, curTicket); err != nil {
+				return fmt.Errorf("error starting cross-references set: %v", err)
+			}
+		}
+
+		g := &srvpb.PagedCrossReferences_Group{
+			Kind:   cr.TargetAnchor.Kind,
+			Anchor: []*srvpb.ExpandedAnchor{cr.TargetAnchor},
+		}
+		if err := xb.AddGroup(ctx, g); err != nil {
+			return fmt.Errorf("error adding cross-reference: %v", err)
+		}
+
+		return nil
+	}); err != nil {
+		return fmt.Errorf("error reading xrefs: %v", err)
+	}
+
+	if err := xb.Flush(ctx); err != nil {
+		return fmt.Errorf("error flushing cross-references: %v", err)
+	}
+
 	return buffer.Flush(ctx)
+}
+
+func expandAnchor(anchor *srvpb.Anchor, file *srvpb.File, norm *xrefs.Normalizer, kind string) (*srvpb.ExpandedAnchor, error) {
+	if file == nil {
+		return nil, errors.New("anchor missing file")
+	} else if anchor == nil {
+		return nil, errors.New("nil anchor")
+	}
+
+	sp := norm.ByteOffset(anchor.StartOffset)
+	ep := norm.ByteOffset(anchor.EndOffset)
+	txt, err := text.ToUTF8(file.Encoding, file.Text[sp.ByteOffset:ep.ByteOffset])
+	if err != nil {
+		return nil, err
+	}
+
+	ssp := norm.ByteOffset(anchor.SnippetStart)
+	sep := norm.ByteOffset(anchor.SnippetEnd)
+	snippet, err := text.ToUTF8(file.Encoding, file.Text[ssp.ByteOffset:sep.ByteOffset])
+	if err != nil {
+		return nil, err
+	}
+
+	// fallback to a line-based snippet if the indexer did not provide its own snippet offsets
+	if snippet == "" {
+		ssp = &xpb.Location_Point{
+			ByteOffset: sp.ByteOffset - sp.ColumnOffset,
+			LineNumber: sp.LineNumber,
+		}
+		nextLine := norm.Point(&xpb.Location_Point{LineNumber: sp.LineNumber + 1})
+		sep = &xpb.Location_Point{
+			ByteOffset:   nextLine.ByteOffset - 1,
+			LineNumber:   sp.LineNumber,
+			ColumnOffset: sp.ColumnOffset + (nextLine.ByteOffset - sp.ByteOffset - 1),
+		}
+		snippet, err = text.ToUTF8(file.Encoding, file.Text[ssp.ByteOffset:sep.ByteOffset])
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &srvpb.ExpandedAnchor{
+		Ticket: anchor.Ticket,
+		Kind:   kind,
+		Parent: file.Ticket,
+
+		Text: txt,
+		Span: &srvpb.Span{
+			Start: p2p(sp),
+			End:   p2p(ep),
+		},
+
+		Snippet: snippet,
+		SnippetSpan: &srvpb.Span{
+			Start: p2p(ssp),
+			End:   p2p(sep),
+		},
+	}, nil
+}
+
+func p2p(p *xpb.Location_Point) *srvpb.Point {
+	return &srvpb.Point{
+		ByteOffset:   p.ByteOffset,
+		LineNumber:   p.LineNumber,
+		ColumnOffset: p.ColumnOffset,
+	}
 }
 
 func writeDecor(ctx context.Context, t table.BufferedProto, decor *srvpb.FileDecorations) error {
 	sort.Sort(assemble.ByOffset(decor.Decoration))
-	return t.Put(ctx, xrefs.DecorationsKey(decor.File.Ticket), decor)
+	return t.Put(ctx, xsrv.DecorationsKey(decor.File.Ticket), decor)
 }
 
 func drainEntries(entries <-chan *spb.Entry) {
@@ -474,4 +617,28 @@ func (fragmentMarshaler) Unmarshal(rec []byte) (interface{}, error) {
 		fileTicket: string(ss[0]),
 		decoration: &d,
 	}, nil
+}
+
+type refMarshaler struct{}
+
+func (refMarshaler) Marshal(x interface{}) ([]byte, error) { return proto.Marshal(x.(proto.Message)) }
+
+func (refMarshaler) Unmarshal(rec []byte) (interface{}, error) {
+	var e srvpb.CrossReference
+	return &e, proto.Unmarshal(rec, &e)
+}
+
+type refLesser struct{}
+
+func (refLesser) Less(a, b interface{}) bool {
+	x, y := a.(*srvpb.CrossReference), b.(*srvpb.CrossReference)
+	if x.Referent.Ticket == y.Referent.Ticket {
+		if x.TargetAnchor == nil || y.TargetAnchor == nil {
+			return x.TargetAnchor == nil
+		} else if x.TargetAnchor.Kind == y.TargetAnchor.Kind {
+			return x.TargetAnchor.Span.Start.ByteOffset < y.TargetAnchor.Span.Start.ByteOffset
+		}
+		return x.TargetAnchor.Kind < y.TargetAnchor.Kind
+	}
+	return x.Referent.Ticket < y.Referent.Ticket
 }
