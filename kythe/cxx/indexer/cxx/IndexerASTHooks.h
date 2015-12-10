@@ -164,8 +164,13 @@ private:
   // are not triggered during data recursion.
   bool shouldUseDataRecursionFor(clang::Stmt *S) const { return false; }
 
-  template <typename T>
-  bool TraverseNode(T *Node, bool (VisitorBase::*traverse)(T *)) {
+  // Traverse an arbitrary AST node type and record the node used to get to
+  // it as that node's parent. `T` is the type of the node and
+  // `BaseTraverseFn` is the type of a function (or other value with
+  // an operator()) that invokes the base RecursiveASTVisitor traversal logic
+  // on values of type `T*` and returns a boolean traversal result.
+  template <typename T, typename BaseTraverseFn>
+  bool TraverseNode(T *Node, BaseTraverseFn traverse) {
     if (!Node)
       return true;
     if (!ParentStack.empty()) {
@@ -205,7 +210,7 @@ private:
     }
     ParentStack.push_back(
         {clang::ast_type_traits::DynTypedNode::create(*Node), 0});
-    bool Result = (this->*traverse)(Node);
+    bool Result = traverse(Node);
     ParentStack.pop_back();
     if (!ParentStack.empty()) {
       ParentStack.back().Index++;
@@ -214,11 +219,15 @@ private:
   }
 
   bool TraverseDecl(clang::Decl *DeclNode) {
-    return TraverseNode(DeclNode, &VisitorBase::TraverseDecl);
+    return TraverseNode(DeclNode, [this](clang::Decl *Node) {
+      return VisitorBase::TraverseDecl(Node);
+    });
   }
 
   bool TraverseStmt(clang::Stmt *StmtNode) {
-    return TraverseNode(StmtNode, &VisitorBase::TraverseStmt);
+    return TraverseNode(StmtNode, [this](clang::Stmt *Node) {
+      return VisitorBase::TraverseStmt(Node);
+    });
   }
 
   IndexedParentMap *Parents;
