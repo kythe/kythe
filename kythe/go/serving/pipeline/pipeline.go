@@ -37,7 +37,6 @@ import (
 	"kythe.io/kythe/go/storage/keyvalue"
 	"kythe.io/kythe/go/storage/table"
 	"kythe.io/kythe/go/util/disksort"
-	"kythe.io/kythe/go/util/encoding/text"
 	"kythe.io/kythe/go/util/schema"
 
 	"github.com/golang/protobuf/proto"
@@ -46,7 +45,6 @@ import (
 	ftpb "kythe.io/kythe/proto/filetree_proto"
 	srvpb "kythe.io/kythe/proto/serving_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
-	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
 // Options controls the behavior of pipeline.Run.
@@ -415,15 +413,11 @@ func writeDecorAndRefs(ctx context.Context, maxPageSize int, edges <-chan *srvpb
 
 			// Reverse each fragment.Decoration to create a *srvpb.CrossReference
 			for _, d := range fragment.Decoration {
-				ea, err := expandAnchor(d.Anchor, file, norm, schema.MirrorEdge(d.Kind))
+				cr, err := assemble.CrossReference(file, norm, d)
 				if err != nil {
-					return fmt.Errorf("error expanding anchor: %v", err)
+					return fmt.Errorf("error assembling cross-reference: %v", err)
 				}
-				if err := refSorter.Add(&srvpb.CrossReference{
-					// Throw away the referent's facts.  They are not needed.
-					Referent:     &srvpb.Node{Ticket: d.Target.Ticket},
-					TargetAnchor: ea,
-				}); err != nil {
+				if err := refSorter.Add(cr); err != nil {
 					return fmt.Errorf("error adding CrossReference to sorter: %v", err)
 				}
 			}
@@ -484,72 +478,6 @@ func writeDecorAndRefs(ctx context.Context, maxPageSize int, edges <-chan *srvpb
 	}
 
 	return buffer.Flush(ctx)
-}
-
-func expandAnchor(anchor *srvpb.Anchor, file *srvpb.File, norm *xrefs.Normalizer, kind string) (*srvpb.ExpandedAnchor, error) {
-	if file == nil {
-		return nil, errors.New("anchor missing file")
-	} else if anchor == nil {
-		return nil, errors.New("nil anchor")
-	}
-
-	sp := norm.ByteOffset(anchor.StartOffset)
-	ep := norm.ByteOffset(anchor.EndOffset)
-	txt, err := text.ToUTF8(file.Encoding, file.Text[sp.ByteOffset:ep.ByteOffset])
-	if err != nil {
-		return nil, err
-	}
-
-	ssp := norm.ByteOffset(anchor.SnippetStart)
-	sep := norm.ByteOffset(anchor.SnippetEnd)
-	snippet, err := text.ToUTF8(file.Encoding, file.Text[ssp.ByteOffset:sep.ByteOffset])
-	if err != nil {
-		return nil, err
-	}
-
-	// fallback to a line-based snippet if the indexer did not provide its own snippet offsets
-	if snippet == "" {
-		ssp = &xpb.Location_Point{
-			ByteOffset: sp.ByteOffset - sp.ColumnOffset,
-			LineNumber: sp.LineNumber,
-		}
-		nextLine := norm.Point(&xpb.Location_Point{LineNumber: sp.LineNumber + 1})
-		sep = &xpb.Location_Point{
-			ByteOffset:   nextLine.ByteOffset - 1,
-			LineNumber:   sp.LineNumber,
-			ColumnOffset: sp.ColumnOffset + (nextLine.ByteOffset - sp.ByteOffset - 1),
-		}
-		snippet, err = text.ToUTF8(file.Encoding, file.Text[ssp.ByteOffset:sep.ByteOffset])
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return &srvpb.ExpandedAnchor{
-		Ticket: anchor.Ticket,
-		Kind:   kind,
-		Parent: file.Ticket,
-
-		Text: txt,
-		Span: &srvpb.Span{
-			Start: p2p(sp),
-			End:   p2p(ep),
-		},
-
-		Snippet: snippet,
-		SnippetSpan: &srvpb.Span{
-			Start: p2p(ssp),
-			End:   p2p(sep),
-		},
-	}, nil
-}
-
-func p2p(p *xpb.Location_Point) *srvpb.Point {
-	return &srvpb.Point{
-		ByteOffset:   p.ByteOffset,
-		LineNumber:   p.LineNumber,
-		ColumnOffset: p.ColumnOffset,
-	}
 }
 
 func writeDecor(ctx context.Context, t table.BufferedProto, decor *srvpb.FileDecorations) error {

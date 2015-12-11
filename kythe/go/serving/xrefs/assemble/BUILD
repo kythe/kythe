@@ -6,12 +6,15 @@ go_package(
     test_deps = ["//kythe/go/test/testutil"],
     deps = [
         "//kythe/go/services/graphstore",
+        "//kythe/go/services/xrefs",
+        "//kythe/go/util/encoding/text",
         "//kythe/go/util/kytheuri",
         "//kythe/go/util/pager",
         "//kythe/go/util/schema",
         "//kythe/go/util/stringset",
         "//kythe/proto:serving_proto_go",
         "//kythe/proto:storage_proto_go",
+        "//kythe/proto:xref_proto_go",
         "//third_party/go/src/golang.org/x/net/context",
     ],
 )
