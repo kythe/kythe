@@ -32,16 +32,23 @@ def _genproto_impl(ctx):
 
   go_package = go_package_name(ctx.attr._go_package_prefix, ctx.label)
   if ctx.attr.gen_go:
-    inputs += [ctx.executable._protoc_gen_go]
     outputs += [ctx.outputs.go_src]
     go_cfg = ["import_path=" + go_package, _go_import_path(ctx.attr.deps)]
     if ctx.attr.has_services:
       go_cfg += ["plugins=grpc"]
     genfiles_path = ctx.configuration.genfiles_dir.path
-    arguments += [
-        "--plugin=" + ctx.executable._protoc_gen_go.path,
-        "--go_out=%s:%s" % (",".join(go_cfg), genfiles_path)
-    ]
+    if ctx.attr.gofast:
+      inputs += [ctx.executable._protoc_gen_gofast]
+      arguments += [
+          "--plugin=" + ctx.executable._protoc_gen_gofast.path,
+          "--gofast_out=%s:%s" % (",".join(go_cfg), genfiles_path)
+      ]
+    else:
+      inputs += [ctx.executable._protoc_gen_go]
+      arguments += [
+          "--plugin=" + ctx.executable._protoc_gen_go.path,
+          "--go_out=%s:%s" % (",".join(go_cfg), genfiles_path)
+      ]
 
   ctx.action(
       mnemonic = "GenProto",
@@ -76,6 +83,7 @@ _genproto_attrs = {
         providers = ["proto_src"],
     ),
     "has_services": attr.bool(),
+    "gofast": attr.bool(),
     "_protoc": attr.label(
         default = Label("//third_party/proto:protoc"),
         executable = True,
@@ -87,6 +95,10 @@ _genproto_attrs = {
     ),
     "_protoc_gen_go": attr.label(
         default = Label("//third_party/go/src/github.com/golang/protobuf/protoc-gen-go"),
+        executable = True,
+    ),
+    "_protoc_gen_gofast": attr.label(
+        default = Label("//third_party/go/src/github.com/gogo/protobuf/protoc-gen-gofast"),
         executable = True,
     ),
     "_protoc_grpc_plugin_java": attr.label(
@@ -124,7 +136,8 @@ genproto = rule(
 
 def proto_library(name, src=None, deps=[], visibility=None,
                   has_services=False,
-                  gen_java=False, gen_go=False, gen_cc=False):
+                  gen_java=False, gen_go=False, gen_cc=False,
+                  gofast=True):
   if not src:
     if name.endswith("_proto"):
       src = name[:-6] + ".proto"
@@ -136,7 +149,8 @@ def proto_library(name, src=None, deps=[], visibility=None,
                        has_services=has_services,
                        gen_java=gen_java,
                        gen_go=gen_go,
-                       gen_cc=gen_cc)
+                       gen_cc=gen_cc,
+                       gofast=gofast)
 
   # TODO(shahms): These should probably not be separate libraries, but
   # allowing upstream *_library and *_binary targets to depend on the

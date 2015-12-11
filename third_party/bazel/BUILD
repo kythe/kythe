@@ -15,6 +15,7 @@ proto_library(
     gen_cc = 1,
     gen_go = 1,
     gen_java = 1,
+    gofast = 0,  # protoc-gen-gofast fails due the extensions in this proto
 )
 
 proto_library(
