@@ -539,14 +539,14 @@ func CrossReference(file *srvpb.File, norm *xrefs.Normalizer, d *srvpb.FileDecor
 func expandAnchor(anchor *srvpb.Anchor, file *srvpb.File, norm *xrefs.Normalizer, kind string) (*srvpb.ExpandedAnchor, error) {
 	sp := norm.ByteOffset(anchor.StartOffset)
 	ep := norm.ByteOffset(anchor.EndOffset)
-	txt, err := text.ToUTF8(file.Encoding, file.Text[sp.ByteOffset:ep.ByteOffset])
+	txt, err := getText(sp, ep, file)
 	if err != nil {
 		return nil, err
 	}
 
 	ssp := norm.ByteOffset(anchor.SnippetStart)
 	sep := norm.ByteOffset(anchor.SnippetEnd)
-	snippet, err := text.ToUTF8(file.Encoding, file.Text[ssp.ByteOffset:sep.ByteOffset])
+	snippet, err := getText(ssp, sep, file)
 	if err != nil {
 		return nil, err
 	}
@@ -563,7 +563,7 @@ func expandAnchor(anchor *srvpb.Anchor, file *srvpb.File, norm *xrefs.Normalizer
 			LineNumber:   sp.LineNumber,
 			ColumnOffset: sp.ColumnOffset + (nextLine.ByteOffset - sp.ByteOffset - 1),
 		}
-		snippet, err = text.ToUTF8(file.Encoding, file.Text[ssp.ByteOffset:sep.ByteOffset])
+		snippet, err = getText(ssp, sep, file)
 		if err != nil {
 			return nil, err
 		}
@@ -586,6 +586,17 @@ func expandAnchor(anchor *srvpb.Anchor, file *srvpb.File, norm *xrefs.Normalizer
 			End:   p2p(sep),
 		},
 	}, nil
+}
+
+func getText(sp, ep *xpb.Location_Point, file *srvpb.File) (string, error) {
+	if sp.ByteOffset < 0 || sp.ByteOffset > ep.ByteOffset || int(ep.ByteOffset) > len(file.Text) {
+		return "", fmt.Errorf("invalid span [%v,%v) for file text (len: %d)", sp, ep, len(file.Text))
+	}
+	txt, err := text.ToUTF8(file.Encoding, file.Text[sp.ByteOffset:ep.ByteOffset])
+	if err != nil {
+		return "", fmt.Errorf("unable to decode file text: %v", err)
+	}
+	return txt, nil
 }
 
 func p2p(p *xpb.Location_Point) *srvpb.Point {
