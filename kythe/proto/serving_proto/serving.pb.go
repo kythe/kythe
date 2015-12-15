@@ -481,10 +481,12 @@ func (m *PagedCrossReferences_PageIndex) Reset()         { *m = PagedCrossRefere
 func (m *PagedCrossReferences_PageIndex) String() string { return proto.CompactTextString(m) }
 func (*PagedCrossReferences_PageIndex) ProtoMessage()    {}
 
-// Internal encoding for an EdgesReply page_token
+// Internal encoding for an EdgesReply/CrossReferencesReply page_token
 type PageToken struct {
-	// Index into sequence of edges to return in EdgesReply.
+	// Index into the primary reply sequence.
 	Index int32 `protobuf:"varint,1,opt,name=index,proto3" json:"index,omitempty"`
+	// Secondary page token for reply sub-query.
+	SecondaryToken string `protobuf:"bytes,2,opt,name=secondary_token,proto3" json:"secondary_token,omitempty"`
 }
 
 func (m *PageToken) Reset()         { *m = PageToken{} }
@@ -1421,6 +1423,12 @@ func (m *PageToken) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintServing(data, i, uint64(m.Index))
 	}
+	if len(m.SecondaryToken) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintServing(data, i, uint64(len(m.SecondaryToken)))
+		i += copy(data[i:], m.SecondaryToken)
+	}
 	return i, nil
 }
 
@@ -1848,6 +1856,10 @@ func (m *PageToken) Size() (n int) {
 	_ = l
 	if m.Index != 0 {
 		n += 1 + sovServing(uint64(m.Index))
+	}
+	l = len(m.SecondaryToken)
+	if l > 0 {
+		n += 1 + l + sovServing(uint64(l))
 	}
 	return n
 }
@@ -4747,6 +4759,35 @@ func (m *PageToken) Unmarshal(data []byte) error {
 					break
 				}
 			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SecondaryToken", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowServing
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthServing
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SecondaryToken = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipServing(data[iNdEx:])
