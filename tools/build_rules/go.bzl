@@ -15,21 +15,14 @@ link_args = {
         "-w",
         "-s",
     ],
-    "fastbuild": [
-        "-w",
-        "-s",
-    ],
+    "fastbuild": [],
     "dbg": ["-race"],
 }
 
 link_args_darwin = {
-    # https://github.com/golang/go/issues/10254
-    "opt": [
-        "-w",
-    ],
-    "fastbuild": [
-        "-w",
-    ],
+    # https://github.com/golang/go/issues/10254 (fixed in >=1.5)
+    "opt": ["-w"],
+    "fastbuild": [],
     "dbg": ["-race"],
 }
 
