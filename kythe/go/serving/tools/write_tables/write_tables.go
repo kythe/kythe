@@ -41,6 +41,8 @@ var (
 	tablePath = flag.String("out", "", "Directory path to output serving table")
 
 	maxPageSize = flag.Int("max_page_size", 4000, "If positive, edge/cross-reference pages are restricted to under this size")
+
+	compressShards = flag.Bool("compress_shards", false, "Determines whether intermediate data written to disk should be compressed.")
 )
 
 func init() {
@@ -70,7 +72,8 @@ func main() {
 	defer profile.Stop()
 
 	if err := pipeline.Run(ctx, gs, db, &pipeline.Options{
-		MaxPageSize: *maxPageSize,
+		MaxPageSize:    *maxPageSize,
+		CompressShards: *compressShards,
 	}); err != nil {
 		log.Fatal("FATAL ERROR: ", err)
 	}

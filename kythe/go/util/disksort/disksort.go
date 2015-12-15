@@ -31,6 +31,8 @@ import (
 
 	"kythe.io/kythe/go/platform/delimited"
 	"kythe.io/kythe/go/util/sortutil"
+
+	"github.com/golang/snappy"
 )
 
 // Interface is the standard interface for disk sorting algorithms.  Each
@@ -60,12 +62,9 @@ type Marshaler interface {
 }
 
 type mergeSorter struct {
-	lesser    sortutil.Lesser
-	marshaler Marshaler
+	opts MergeOptions
 
-	buffer      heap.Interface
-	maxInMemory int
-
+	buffer  heap.Interface
 	workDir string
 	shards  []string
 }
@@ -73,6 +72,10 @@ type mergeSorter struct {
 // DefaultMaxInMemory is the default number of elements to keep in-memory during
 // a merge sort.
 const DefaultMaxInMemory = 32000
+
+// DefaultIOBufferSize is the default size of the reading/writing buffers for
+// the temporary file shards.
+const DefaultIOBufferSize = 2 << 13
 
 // MergeOptions specifies how to sort elements.
 type MergeOptions struct {
@@ -89,26 +92,39 @@ type MergeOptions struct {
 	// paging them to a temporary file shard.  If non-positive, DefaultMaxInMemory
 	// is used.
 	MaxInMemory int
+
+	// CompressShards determines whether the temporary file shards should be
+	// compressed.
+	CompressShards bool
+
+	// IOBufferSize is the size of the reading/writing buffers for the temporary
+	// file shards.  If non-positive, DefaultIOBufferSize is used.
+	IOBufferSize int
 }
 
 // NewMergeSorter returns a new disk sorter using a mergesort algorithm.
 func NewMergeSorter(opts MergeOptions) (Interface, error) {
+	if opts.Lesser == nil {
+		return nil, errors.New("missing Lesser")
+	} else if opts.Marshaler == nil {
+		return nil, errors.New("missing Marshaler")
+	}
+
 	dir, err := ioutil.TempDir(opts.WorkDir, "external.merge.sort")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating temporary work directory: %v", err)
 	}
 
 	if opts.MaxInMemory <= 0 {
 		opts.MaxInMemory = DefaultMaxInMemory
 	}
+	if opts.IOBufferSize <= 0 {
+		opts.IOBufferSize = DefaultIOBufferSize
+	}
 
 	return &mergeSorter{
-		buffer: &sortutil.ByLesser{Lesser: opts.Lesser},
-
-		lesser:      opts.Lesser,
-		marshaler:   opts.Marshaler,
-		maxInMemory: opts.MaxInMemory,
-
+		opts:    opts,
+		buffer:  &sortutil.ByLesser{Lesser: opts.Lesser},
 		workDir: dir,
 	}, nil
 }
@@ -130,7 +146,7 @@ func (m *mergeSorter) Add(i interface{}) error {
 	}
 
 	m.buffer.Push(i)
-	if m.buffer.Len() > m.maxInMemory {
+	if m.buffer.Len() > m.opts.MaxInMemory {
 		return m.dumpShard()
 	}
 	return nil
@@ -159,8 +175,9 @@ func (m *mergeSorter) Read(f func(i interface{}) error) (err error) {
 	m.buffer = nil // signal that further operations should fail
 
 	// This is a heap storing the head of each shard.
-	// TODO(schroederc): parallel merge
-	merger := &sortutil.ByLesser{Lesser: &mergeElementLesser{Lesser: m.lesser}}
+	merger := &sortutil.ByLesser{
+		Lesser: &mergeElementLesser{Lesser: m.opts.Lesser},
+	}
 
 	defer func() {
 		// Try to cleanup on errors
@@ -176,13 +193,17 @@ func (m *mergeSorter) Read(f func(i interface{}) error) (err error) {
 		if err != nil {
 			return fmt.Errorf("error opening shard %q: %v", shard, err)
 		}
-		rd := delimited.NewReader(bufio.NewReader(f))
+		var r io.Reader = f
+		if m.opts.CompressShards {
+			r = snappy.NewReader(r)
+		}
+		rd := delimited.NewReader(bufio.NewReaderSize(r, m.opts.IOBufferSize))
 		first, err := rd.Next()
 		if err != nil {
 			f.Close()
 			return fmt.Errorf("error reading beginning of shard %q: %v", shard, err)
 		}
-		el, err := m.marshaler.Unmarshal(first)
+		el, err := m.opts.Marshaler.Unmarshal(first)
 		if err != nil {
 			f.Close()
 			return fmt.Errorf("error unmarshaling beginning of shard %q: %v", shard, err)
@@ -212,7 +233,7 @@ func (m *mergeSorter) Read(f func(i interface{}) error) (err error) {
 				return fmt.Errorf("error reading shard: %v", err)
 			}
 		}
-		next, err := m.marshaler.Unmarshal(rec)
+		next, err := m.opts.Marshaler.Unmarshal(rec)
 		if err != nil {
 			return fmt.Errorf("error unmarshaling element: %v", err)
 		}
@@ -239,8 +260,13 @@ func (m *mergeSorter) dumpShard() (err error) {
 		replaceErrIfNil(&err, "error closing shard: %v", file.Close())
 	}()
 
+	var w io.Writer = file
+	if m.opts.CompressShards {
+		w = snappy.NewWriter(w)
+	}
+
 	// Buffer writing to the shard
-	buf := bufio.NewWriter(file) // TODO(schroederc): use snappy compression
+	buf := bufio.NewWriterSize(w, m.opts.IOBufferSize)
 	defer func() {
 		replaceErrIfNil(&err, "error flushing shard: %v", buf.Flush())
 	}()
@@ -248,7 +274,7 @@ func (m *mergeSorter) dumpShard() (err error) {
 	// Write each element of the in-memory to shard file, in sorted order
 	wr := delimited.NewWriter(buf)
 	for m.buffer.Len() != 0 {
-		rec, err := m.marshaler.Marshal(heap.Pop(m.buffer))
+		rec, err := m.opts.Marshaler.Marshal(heap.Pop(m.buffer))
 		if err != nil {
 			return fmt.Errorf("marshaling error: %v", err)
 		}

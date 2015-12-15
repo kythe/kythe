@@ -1,5 +1,10 @@
 # Release Notes
 
+## Upcoming release
+
+Notable additions:
+ - `write_tables`: add `--compress_shards` flag to reduce size of intermediate data
+
 ## v0.0.16
 
 Notable changes:

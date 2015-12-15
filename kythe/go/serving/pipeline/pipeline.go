@@ -53,6 +53,10 @@ type Options struct {
 	// PagedEdgeSets, CrossReferences, EdgePages, and CrossReferences_Pages.  If
 	// MaxPageSize <= 0, no paging is attempted.
 	MaxPageSize int
+
+	// CompressShards determines whether intermediate data written to disk should
+	// be compressed.
+	CompressShards bool
 }
 
 const chBuf = 512
@@ -82,7 +86,7 @@ func Run(ctx context.Context, gs graphstore.Service, db keyvalue.DB, opts *Optio
 	var sortedEdges disksort.Interface
 	wg.Add(1)
 	go func() {
-		sortedEdges, cErr = combineNodesAndEdges(ctx, out, entries)
+		sortedEdges, cErr = combineNodesAndEdges(ctx, opts, out, entries)
 		if cErr != nil {
 			cErr = fmt.Errorf("error combining nodes and edges: %v", cErr)
 		}
@@ -110,13 +114,13 @@ func Run(ctx context.Context, gs graphstore.Service, db keyvalue.DB, opts *Optio
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		if err := writePagedEdges(ctx, pesIn, out.xs, opts.MaxPageSize); err != nil {
+		if err := writePagedEdges(ctx, pesIn, out.xs, opts); err != nil {
 			pErr = fmt.Errorf("error writing paged edge sets: %v", err)
 		}
 	}()
 	go func() {
 		defer wg.Done()
-		if err := writeDecorAndRefs(ctx, opts.MaxPageSize, dIn, out); err != nil {
+		if err := writeDecorAndRefs(ctx, opts, dIn, out); err != nil {
 			fErr = fmt.Errorf("error writing file decorations: %v", err)
 		}
 	}()
@@ -139,12 +143,17 @@ func Run(ctx context.Context, gs graphstore.Service, db keyvalue.DB, opts *Optio
 	}
 	return fErr
 }
-func combineNodesAndEdges(ctx context.Context, out *servingOutput, gsEntries <-chan *spb.Entry) (disksort.Interface, error) {
+func combineNodesAndEdges(ctx context.Context, opts *Options, out *servingOutput, gsEntries <-chan *spb.Entry) (disksort.Interface, error) {
 	log.Println("Writing partial edges")
 
 	tree := filetree.NewMap()
 
-	partialSorter, err := disksort.NewMergeSorter(edgeSorterOptions)
+	partialSorter, err := disksort.NewMergeSorter(disksort.MergeOptions{
+		Lesser:         edgeLesser{},
+		Marshaler:      edgeMarshaler{},
+		MaxInMemory:    16000,
+		CompressShards: opts.CompressShards,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +196,12 @@ func combineNodesAndEdges(ctx context.Context, out *servingOutput, gsEntries <-c
 
 	log.Println("Writing complete edges")
 
-	cSorter, err := disksort.NewMergeSorter(edgeSorterOptions)
+	cSorter, err := disksort.NewMergeSorter(disksort.MergeOptions{
+		Lesser:         edgeLesser{},
+		Marshaler:      edgeMarshaler{},
+		MaxInMemory:    16000,
+		CompressShards: opts.CompressShards,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -264,11 +278,11 @@ func writeCompletedEdges(ctx context.Context, edges disksort.Interface, e *srvpb
 	return nil
 }
 
-func writePagedEdges(ctx context.Context, edges <-chan *srvpb.Edge, out table.Proto, maxEdgePageSize int) error {
+func writePagedEdges(ctx context.Context, edges <-chan *srvpb.Edge, out table.Proto, opts *Options) error {
 	buffer := out.Buffered()
 	log.Println("Writing EdgeSets")
 	esb := &assemble.EdgeSetBuilder{
-		MaxEdgePageSize: maxEdgePageSize,
+		MaxEdgePageSize: opts.MaxPageSize,
 		Output: func(ctx context.Context, pes *srvpb.PagedEdgeSet) error {
 			return buffer.Put(ctx, xsrv.EdgeSetKey(pes.EdgeSet.Source.Ticket), pes)
 		},
@@ -352,11 +366,12 @@ func createDecorationFragments(ctx context.Context, edges <-chan *srvpb.Edge, fr
 	return fdb.Flush(ctx)
 }
 
-func writeDecorAndRefs(ctx context.Context, maxPageSize int, edges <-chan *srvpb.Edge, out *servingOutput) error {
+func writeDecorAndRefs(ctx context.Context, opts *Options, edges <-chan *srvpb.Edge, out *servingOutput) error {
 	fragments, err := disksort.NewMergeSorter(disksort.MergeOptions{
-		Lesser:      fragmentLesser{},
-		Marshaler:   fragmentMarshaler{},
-		MaxInMemory: 64000,
+		Lesser:         fragmentLesser{},
+		Marshaler:      fragmentMarshaler{},
+		MaxInMemory:    64000,
+		CompressShards: opts.CompressShards,
 	})
 	if err != nil {
 		return err
@@ -371,9 +386,10 @@ func writeDecorAndRefs(ctx context.Context, maxPageSize int, edges <-chan *srvpb
 
 	// refSorter stores a *srvpb.CrossReference for each Decoration from fragments
 	refSorter, err := disksort.NewMergeSorter(disksort.MergeOptions{
-		Lesser:      refLesser{},
-		Marshaler:   refMarshaler{},
-		MaxInMemory: 16000,
+		Lesser:         refLesser{},
+		Marshaler:      refMarshaler{},
+		MaxInMemory:    16000,
+		CompressShards: opts.CompressShards,
 	})
 	if err != nil {
 		return fmt.Errorf("error creating sorter: %v", err)
@@ -441,7 +457,7 @@ func writeDecorAndRefs(ctx context.Context, maxPageSize int, edges <-chan *srvpb
 	log.Println("Writing CrossReferences")
 
 	xb := &assemble.CrossReferencesBuilder{
-		MaxPageSize: maxPageSize,
+		MaxPageSize: opts.MaxPageSize,
 		Output: func(ctx context.Context, s *srvpb.PagedCrossReferences) error {
 			return buffer.Put(ctx, xsrv.CrossReferencesKey(s.SourceTicket), s)
 		},
@@ -513,12 +529,6 @@ func (edgeMarshaler) Marshal(x interface{}) ([]byte, error) { return proto.Marsh
 func (edgeMarshaler) Unmarshal(rec []byte) (interface{}, error) {
 	var e srvpb.Edge
 	return &e, proto.Unmarshal(rec, &e)
-}
-
-var edgeSorterOptions = disksort.MergeOptions{
-	Lesser:      edgeLesser{},
-	Marshaler:   edgeMarshaler{},
-	MaxInMemory: 16000,
 }
 
 type fragmentMarshaler struct{}

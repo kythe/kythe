@@ -14,6 +14,7 @@ filegroup(
             "**/copying*",
         ],
     ) + [
+        "//third_party/go/src/github.com/golang/snappy:LICENSE",
         "//third_party/go/src/github.com/pborman/uuid:LICENSE",
         "//third_party/go/src/golang.org/x/oauth2:LICENSE",
         "//third_party/go/src/google.golang.org/grpc:LICENSE",

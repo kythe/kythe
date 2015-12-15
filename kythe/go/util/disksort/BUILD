@@ -6,5 +6,6 @@ go_package(
     deps = [
         "//kythe/go/platform/delimited",
         "//kythe/go/util/sortutil",
+        "//third_party/go/src/github.com/golang/snappy",
     ],
 )
