@@ -3,7 +3,15 @@
 ## Upcoming release
 
 Notable additions:
- - `write_tables`: add `--compress_shards` flag to reduce size of intermediate data
+ - `write_tables`: produce serving data for xrefs.CrossReferences method
+ - `write_tables`: add flags to tweak performance
+     - `--compress_shards`: determines whether intermediate data written to disk
+       should be compressed
+     - `--max_shard_size`: maximum number of elements (edges, decoration
+       fragments, etc.) to keep in-memory before flushing an intermediary data
+       shard to disk
+     - `--shard_io_buffer`: size of the reading/writing buffers for the
+       intermediary data shards
 
 ## v0.0.16
 
