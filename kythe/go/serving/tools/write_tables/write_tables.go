@@ -26,6 +26,7 @@ import (
 	"kythe.io/kythe/go/serving/pipeline"
 	"kythe.io/kythe/go/storage/gsutil"
 	"kythe.io/kythe/go/storage/leveldb"
+	"kythe.io/kythe/go/util/datasize"
 	"kythe.io/kythe/go/util/flagutil"
 	"kythe.io/kythe/go/util/profile"
 
@@ -40,9 +41,14 @@ var (
 
 	tablePath = flag.String("out", "", "Directory path to output serving table")
 
-	maxPageSize = flag.Int("max_page_size", 4000, "If positive, edge/cross-reference pages are restricted to under this size")
-
-	compressShards = flag.Bool("compress_shards", false, "Determines whether intermediate data written to disk should be compressed.")
+	maxPageSize = flag.Int("max_page_size", 4000,
+		"If positive, edge/cross-reference pages are restricted to under this number of edges/references")
+	compressShards = flag.Bool("compress_shards", false,
+		"Determines whether intermediate data written to disk should be compressed.")
+	maxShardSize = flag.Int("max_shard_size", 32000,
+		"Maximum number of elements (edges, decoration fragments, etc.) to keep in-memory before flushing an intermediary data shard to disk.")
+	shardIOBufferSize = datasize.Flag("shard_io_buffer", "16KiB",
+		"Size of the reading/writing buffers for the intermediary data shards.")
 )
 
 func init() {
@@ -74,6 +80,8 @@ func main() {
 	if err := pipeline.Run(ctx, gs, db, &pipeline.Options{
 		MaxPageSize:    *maxPageSize,
 		CompressShards: *compressShards,
+		MaxShardSize:   *maxShardSize,
+		IOBufferSize:   int(shardIOBufferSize.Bytes()),
 	}); err != nil {
 		log.Fatal("FATAL ERROR: ", err)
 	}

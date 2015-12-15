@@ -16,6 +16,7 @@ go_package(
         "//kythe/go/storage/table",
         "//kythe/go/util/disksort",
         "//kythe/go/util/schema",
+        "//kythe/go/util/sortutil",
         "//kythe/proto:filetree_proto_go",
         "//kythe/proto:serving_proto_go",
         "//kythe/proto:storage_proto_go",

@@ -28,6 +28,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sort"
 
 	"kythe.io/kythe/go/platform/delimited"
 	"kythe.io/kythe/go/util/sortutil"
@@ -64,7 +65,7 @@ type Marshaler interface {
 type mergeSorter struct {
 	opts MergeOptions
 
-	buffer  heap.Interface
+	buffer  *sortutil.ByLesser
 	workDir string
 	shards  []string
 }
@@ -158,6 +159,20 @@ func (m *mergeSorter) Read(f func(i interface{}) error) (err error) {
 		return ErrAlreadyRead
 	}
 
+	if len(m.shards) == 0 {
+		// Fast path for a single, in-memory shard
+		defer func() {
+			m.buffer = nil // signal that further operations should fail
+		}()
+		sort.Sort(m.buffer)
+		for _, x := range m.buffer.Slice {
+			if err := f(x); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
 	// Ensure that the working directory is always cleaned up.
 	defer func() {
 		cleanupErr := os.RemoveAll(m.workDir)
@@ -247,8 +262,7 @@ func (m *mergeSorter) Read(f func(i interface{}) error) (err error) {
 }
 
 func (m *mergeSorter) dumpShard() (err error) {
-	// Initialize the heap ordering in in-memory buffer of elements
-	heap.Init(m.buffer)
+	defer m.buffer.Clear()
 
 	// Create a new shard file
 	shardPath := filepath.Join(m.workDir, fmt.Sprintf("shard.%.6d", len(m.shards)))
@@ -271,10 +285,13 @@ func (m *mergeSorter) dumpShard() (err error) {
 		replaceErrIfNil(&err, "error flushing shard: %v", buf.Flush())
 	}()
 
+	// Sort the in-memory buffer of elements
+	sort.Sort(m.buffer)
+
 	// Write each element of the in-memory to shard file, in sorted order
 	wr := delimited.NewWriter(buf)
-	for m.buffer.Len() != 0 {
-		rec, err := m.opts.Marshaler.Marshal(heap.Pop(m.buffer))
+	for _, x := range m.buffer.Slice {
+		rec, err := m.opts.Marshaler.Marshal(x)
 		if err != nil {
 			return fmt.Errorf("marshaling error: %v", err)
 		}

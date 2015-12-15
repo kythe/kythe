@@ -85,6 +85,7 @@ go_binary(
         "//kythe/go/serving/pipeline",
         "//kythe/go/storage/gsutil",
         "//kythe/go/storage/leveldb",
+        "//kythe/go/util/datasize",
         "//kythe/go/util/flagutil",
         "//kythe/go/util/profile",
         "//third_party/go/src/golang.org/x/net/context",

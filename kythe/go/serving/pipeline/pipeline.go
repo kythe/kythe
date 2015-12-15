@@ -38,6 +38,7 @@ import (
 	"kythe.io/kythe/go/storage/table"
 	"kythe.io/kythe/go/util/disksort"
 	"kythe.io/kythe/go/util/schema"
+	"kythe.io/kythe/go/util/sortutil"
 
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
@@ -57,6 +58,24 @@ type Options struct {
 	// CompressShards determines whether intermediate data written to disk should
 	// be compressed.
 	CompressShards bool
+
+	// MaxShardSize is the maximum number of elements to keep in-memory before
+	// flushing an intermediary data shard to disk.
+	MaxShardSize int
+
+	// IOBufferSize is the size of the reading/writing buffers for the temporary
+	// file shards.
+	IOBufferSize int
+}
+
+func (o *Options) diskSorter(l sortutil.Lesser, m disksort.Marshaler) (disksort.Interface, error) {
+	return disksort.NewMergeSorter(disksort.MergeOptions{
+		Lesser:         l,
+		Marshaler:      m,
+		MaxInMemory:    o.MaxShardSize,
+		CompressShards: o.CompressShards,
+		IOBufferSize:   o.IOBufferSize,
+	})
 }
 
 const chBuf = 512
@@ -148,12 +167,7 @@ func combineNodesAndEdges(ctx context.Context, opts *Options, out *servingOutput
 
 	tree := filetree.NewMap()
 
-	partialSorter, err := disksort.NewMergeSorter(disksort.MergeOptions{
-		Lesser:         edgeLesser{},
-		Marshaler:      edgeMarshaler{},
-		MaxInMemory:    16000,
-		CompressShards: opts.CompressShards,
-	})
+	partialSorter, err := opts.diskSorter(edgeLesser{}, edgeMarshaler{})
 	if err != nil {
 		return nil, err
 	}
@@ -196,12 +210,7 @@ func combineNodesAndEdges(ctx context.Context, opts *Options, out *servingOutput
 
 	log.Println("Writing complete edges")
 
-	cSorter, err := disksort.NewMergeSorter(disksort.MergeOptions{
-		Lesser:         edgeLesser{},
-		Marshaler:      edgeMarshaler{},
-		MaxInMemory:    16000,
-		CompressShards: opts.CompressShards,
-	})
+	cSorter, err := opts.diskSorter(edgeLesser{}, edgeMarshaler{})
 	if err != nil {
 		return nil, err
 	}
@@ -367,12 +376,7 @@ func createDecorationFragments(ctx context.Context, edges <-chan *srvpb.Edge, fr
 }
 
 func writeDecorAndRefs(ctx context.Context, opts *Options, edges <-chan *srvpb.Edge, out *servingOutput) error {
-	fragments, err := disksort.NewMergeSorter(disksort.MergeOptions{
-		Lesser:         fragmentLesser{},
-		Marshaler:      fragmentMarshaler{},
-		MaxInMemory:    64000,
-		CompressShards: opts.CompressShards,
-	})
+	fragments, err := opts.diskSorter(fragmentLesser{}, fragmentMarshaler{})
 	if err != nil {
 		return err
 	}
@@ -385,12 +389,7 @@ func writeDecorAndRefs(ctx context.Context, opts *Options, edges <-chan *srvpb.E
 	log.Println("Writing completed FileDecorations")
 
 	// refSorter stores a *srvpb.CrossReference for each Decoration from fragments
-	refSorter, err := disksort.NewMergeSorter(disksort.MergeOptions{
-		Lesser:         refLesser{},
-		Marshaler:      refMarshaler{},
-		MaxInMemory:    16000,
-		CompressShards: opts.CompressShards,
-	})
+	refSorter, err := opts.diskSorter(refLesser{}, refMarshaler{})
 	if err != nil {
 		return fmt.Errorf("error creating sorter: %v", err)
 	}

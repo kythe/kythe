@@ -29,6 +29,9 @@ type ByLesser struct {
 	Slice []interface{}
 }
 
+// Clear removes all elements from the underlying slice.
+func (s *ByLesser) Clear() { s.Slice = nil }
+
 // Len implements part of the sort.Interface
 func (s ByLesser) Len() int { return len(s.Slice) }
 
