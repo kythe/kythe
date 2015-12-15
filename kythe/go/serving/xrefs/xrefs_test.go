@@ -298,6 +298,109 @@ var (
 				},
 			},
 		},
+
+		RefSets: []*srvpb.PagedCrossReferences{{
+			SourceTicket: "kythe://someCorpus?lang=otpl#signature",
+
+			Group: []*srvpb.PagedCrossReferences_Group{{
+				Kind: "%/kythe/edge/defines/binding",
+				Anchor: []*srvpb.ExpandedAnchor{{
+					Ticket: "kythe://c?lang=otpl?path=/a/path#27-33",
+					Kind:   "/kythe/edge/defines/binding",
+					Parent: "kythe://someCorpus?path=some/path#aFileNode",
+
+					Span: &cpb.Span{
+						Start: &cpb.Point{
+							ByteOffset:   27,
+							LineNumber:   2,
+							ColumnOffset: 10,
+						},
+						End: &cpb.Point{
+							ByteOffset:   33,
+							LineNumber:   3,
+							ColumnOffset: 5,
+						},
+					},
+
+					SnippetSpan: &cpb.Span{
+						Start: &cpb.Point{
+							ByteOffset: 17,
+							LineNumber: 2,
+						},
+						End: &cpb.Point{
+							ByteOffset:   27,
+							LineNumber:   2,
+							ColumnOffset: 10,
+						},
+					},
+					Snippet: "here and  ",
+				}},
+			}},
+
+			PageIndex: []*srvpb.PagedCrossReferences_PageIndex{{
+				PageKey: "aBcDeFg",
+				Kind:    "%/kythe/edge/ref",
+				Count:   2,
+			}},
+		}},
+		RefPages: []*srvpb.PagedCrossReferences_Page{{
+			PageKey: "aBcDeFg",
+			Group: &srvpb.PagedCrossReferences_Group{
+				Kind: "%/kythe/edge/ref",
+				Anchor: []*srvpb.ExpandedAnchor{{
+					Ticket: "kythe:?path=some/utf16/file#0-4",
+					Kind:   "/kythe/edge/ref",
+					Parent: "kythe://someCorpus?path=some/utf16/file#utf16FTW",
+
+					Span: &cpb.Span{
+						Start: &cpb.Point{LineNumber: 1},
+						End:   &cpb.Point{ByteOffset: 4, LineNumber: 1, ColumnOffset: 4},
+					},
+
+					SnippetSpan: &cpb.Span{
+						Start: &cpb.Point{
+							LineNumber: 1,
+						},
+						End: &cpb.Point{
+							ByteOffset:   28,
+							LineNumber:   1,
+							ColumnOffset: 28,
+						},
+					},
+					Snippet: "これはいくつかのテキストです",
+				}, {
+					Ticket: "kythe://c?lang=otpl?path=/a/path#51-55",
+					Kind:   "/kythe/edge/ref",
+					Parent: "kythe://someCorpus?path=some/path#aFileNode",
+
+					Span: &cpb.Span{
+						Start: &cpb.Point{
+							ByteOffset:   51,
+							LineNumber:   4,
+							ColumnOffset: 15,
+						},
+						End: &cpb.Point{
+							ByteOffset:   55,
+							LineNumber:   5,
+							ColumnOffset: 2,
+						},
+					},
+
+					SnippetSpan: &cpb.Span{
+						Start: &cpb.Point{
+							ByteOffset: 36,
+							LineNumber: 4,
+						},
+						End: &cpb.Point{
+							ByteOffset:   52,
+							LineNumber:   4,
+							ColumnOffset: 16,
+						},
+					},
+					Snippet: "some random text",
+				}},
+			},
+		}},
 	}
 )
 
@@ -768,7 +871,7 @@ func TestCrossReferences(t *testing.T) {
 
 	xr := reply.CrossReferences[ticket]
 	if xr == nil {
-		t.Fatal("Missing expected CrossReferences")
+		t.Fatalf("Missing expected CrossReferences; found: %#v", reply)
 	}
 	sort.Sort(byOffset(xr.Reference))
 
@@ -870,6 +973,8 @@ type testTable struct {
 	EdgePages   []*srvpb.EdgePage
 	EdgeSets    []*srvpb.PagedEdgeSet
 	Decorations []*srvpb.FileDecorations
+	RefSets     []*srvpb.PagedCrossReferences
+	RefPages    []*srvpb.PagedCrossReferences_Page
 }
 
 func (tbl *testTable) Construct(t *testing.T) xrefs.Service {
@@ -890,10 +995,16 @@ func (tbl *testTable) Construct(t *testing.T) xrefs.Service {
 		testutil.FatalOnErrT(t, "Error writing edge set: %v", p.Put(ctx, EdgeSetKey(mustFix(t, es.Source.Ticket)), es))
 	}
 	for _, ep := range tbl.EdgePages {
-		testutil.FatalOnErrT(t, "Error writing edge page: %v", p.Put(ctx, []byte(edgePagesTablePrefix+ep.PageKey), ep))
+		testutil.FatalOnErrT(t, "Error writing edge page: %v", p.Put(ctx, EdgePageKey(ep.PageKey), ep))
 	}
 	for _, d := range tbl.Decorations {
 		testutil.FatalOnErrT(t, "Error writing file decorations: %v", p.Put(ctx, DecorationsKey(mustFix(t, d.File.Ticket)), d))
+	}
+	for _, cr := range tbl.RefSets {
+		testutil.FatalOnErrT(t, "Error writing cross-references: %v", p.Put(ctx, CrossReferencesKey(mustFix(t, cr.SourceTicket)), cr))
+	}
+	for _, crp := range tbl.RefPages {
+		testutil.FatalOnErrT(t, "Error writing cross-references: %v", p.Put(ctx, CrossReferencesPageKey(crp.PageKey), crp))
 	}
 	return NewCombinedTable(table.ProtoBatchParallel{p})
 }

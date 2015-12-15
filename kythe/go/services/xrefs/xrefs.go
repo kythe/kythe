@@ -20,20 +20,16 @@ package xrefs
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"log"
 	"math"
 	"net/http"
 	"regexp"
 	"sort"
-	"strconv"
 	"time"
 
 	"kythe.io/kythe/go/services/web"
-	"kythe.io/kythe/go/util/encoding/text"
 	"kythe.io/kythe/go/util/schema"
-	"kythe.io/kythe/go/util/stringset"
 
 	"github.com/sergi/go-diff/diffmatchpatch"
 	"golang.org/x/net/context"
@@ -81,127 +77,6 @@ type CrossReferencesService interface {
 	CrossReferences(context.Context, *xpb.CrossReferencesRequest) (*xpb.CrossReferencesReply, error)
 }
 
-const defaultXRefPageSize = 1024
-
-// CrossReferences returns the cross-references for the given tickets using the
-// given NodesEdgesService.
-func CrossReferences(ctx context.Context, xs NodesEdgesService, req *xpb.CrossReferencesRequest) (*xpb.CrossReferencesReply, error) {
-	log.Println("WARNING: using experimental CrossReferences API")
-	if len(req.Ticket) == 0 {
-		return nil, errors.New("no cross-references requested")
-	}
-
-	requestedPageSize := int(req.PageSize)
-	if requestedPageSize == 0 {
-		requestedPageSize = defaultXRefPageSize
-	}
-
-	eReply, err := xs.Edges(ctx, &xpb.EdgesRequest{
-		Ticket:    req.Ticket,
-		PageSize:  int32(requestedPageSize),
-		PageToken: req.PageToken,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("error getting edges for cross-references: %v", err)
-	}
-
-	reply := &xpb.CrossReferencesReply{
-		CrossReferences: make(map[string]*xpb.CrossReferencesReply_CrossReferenceSet),
-
-		NextPageToken: eReply.NextPageToken,
-	}
-	var allRelatedNodes stringset.Set
-	if len(req.Filter) > 0 {
-		reply.Nodes = make(map[string]*xpb.NodeInfo)
-		allRelatedNodes = stringset.New()
-	}
-
-	// Cache parent files across all anchors
-	files := make(map[string]*fileNode)
-
-	var totalXRefs int
-	for {
-		for _, es := range eReply.EdgeSet {
-			xr, ok := reply.CrossReferences[es.SourceTicket]
-			if !ok {
-				xr = &xpb.CrossReferencesReply_CrossReferenceSet{Ticket: es.SourceTicket}
-			}
-
-			var count int
-			for _, g := range es.Group {
-				switch {
-				case isDefKind(req.DefinitionKind, g.Kind):
-					anchors, err := completeAnchors(ctx, xs, req.AnchorText, files, g.Kind, g.TargetTicket)
-					if err != nil {
-						return nil, fmt.Errorf("error resolving definition anchors: %v", err)
-					}
-					count += len(anchors)
-					xr.Definition = append(xr.Definition, anchors...)
-				case isRefKind(req.ReferenceKind, g.Kind):
-					anchors, err := completeAnchors(ctx, xs, req.AnchorText, files, g.Kind, g.TargetTicket)
-					if err != nil {
-						return nil, fmt.Errorf("error resolving reference anchors: %v", err)
-					}
-					count += len(anchors)
-					xr.Reference = append(xr.Reference, anchors...)
-				case isDocKind(req.DocumentationKind, g.Kind):
-					anchors, err := completeAnchors(ctx, xs, req.AnchorText, files, g.Kind, g.TargetTicket)
-					if err != nil {
-						return nil, fmt.Errorf("error resolving documentation anchors: %v", err)
-					}
-					count += len(anchors)
-					xr.Documentation = append(xr.Documentation, anchors...)
-				case allRelatedNodes != nil && !schema.IsAnchorEdge(g.Kind):
-					count += len(g.TargetTicket)
-					for _, target := range g.TargetTicket {
-						xr.RelatedNode = append(xr.RelatedNode, &xpb.CrossReferencesReply_RelatedNode{
-							Ticket:       target,
-							RelationKind: g.Kind,
-						})
-					}
-					allRelatedNodes.Add(g.TargetTicket...)
-				}
-			}
-
-			if count > 0 {
-				reply.CrossReferences[xr.Ticket] = xr
-				totalXRefs += count
-			}
-		}
-
-		if reply.NextPageToken == "" || totalXRefs > 0 {
-			break
-		}
-
-		// We need to return at least 1 xref, if there are any
-		log.Println("Extra CrossReferences Edges call: ", reply.NextPageToken)
-		eReply, err = xs.Edges(ctx, &xpb.EdgesRequest{
-			Ticket:    req.Ticket,
-			PageSize:  int32(requestedPageSize),
-			PageToken: reply.NextPageToken,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("error getting edges for cross-references: %v", err)
-		}
-		reply.NextPageToken = eReply.NextPageToken
-	}
-
-	if len(allRelatedNodes) > 0 {
-		nReply, err := xs.Nodes(ctx, &xpb.NodesRequest{
-			Ticket: allRelatedNodes.Slice(),
-			Filter: req.Filter,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("error retrieving related nodes: %v", err)
-		}
-		for _, n := range nReply.Node {
-			reply.Nodes[n.Ticket] = n
-		}
-	}
-
-	return reply, nil
-}
-
 var (
 	revDefinesEdge        = schema.MirrorEdge(schema.DefinesEdge)
 	revDefinesBindingEdge = schema.MirrorEdge(schema.DefinesBindingEdge)
@@ -211,7 +86,9 @@ var (
 	revDocumentsEdge = schema.MirrorEdge(schema.DocumentsEdge)
 )
 
-func isDefKind(requestedKind xpb.CrossReferencesRequest_DefinitionKind, edgeKind string) bool {
+// IsDefKind determines whether the given edgeKind matches the requested
+// definition kind.
+func IsDefKind(requestedKind xpb.CrossReferencesRequest_DefinitionKind, edgeKind string) bool {
 	switch requestedKind {
 	case xpb.CrossReferencesRequest_NO_DEFINITIONS:
 		return false
@@ -226,7 +103,9 @@ func isDefKind(requestedKind xpb.CrossReferencesRequest_DefinitionKind, edgeKind
 	}
 }
 
-func isRefKind(requestedKind xpb.CrossReferencesRequest_ReferenceKind, edgeKind string) bool {
+// IsRefKind determines whether the given edgeKind matches the requested
+// reference kind.
+func IsRefKind(requestedKind xpb.CrossReferencesRequest_ReferenceKind, edgeKind string) bool {
 	switch requestedKind {
 	case xpb.CrossReferencesRequest_NO_REFERENCES:
 		return false
@@ -237,7 +116,9 @@ func isRefKind(requestedKind xpb.CrossReferencesRequest_ReferenceKind, edgeKind 
 	}
 }
 
-func isDocKind(requestedKind xpb.CrossReferencesRequest_DocumentationKind, edgeKind string) bool {
+// IsDocKind determines whether the given edgeKind matches the requested
+// documentation kind.
+func IsDocKind(requestedKind xpb.CrossReferencesRequest_DocumentationKind, edgeKind string) bool {
 	switch requestedKind {
 	case xpb.CrossReferencesRequest_NO_DOCUMENTATION:
 		return false
@@ -246,171 +127,6 @@ func isDocKind(requestedKind xpb.CrossReferencesRequest_DocumentationKind, edgeK
 	default:
 		panic("unhandled CrossDocumentationRequest_DocumentationKind")
 	}
-}
-
-func getSpan(facts map[string][]byte, startFact, endFact string) (startOffset, endOffset int, err error) {
-	start := string(facts[startFact])
-	end := string(facts[endFact])
-	if start == "" || end == "" {
-		return 0, 0, fmt.Errorf("missing location facts; found: %s=%q and %s=%q",
-			startFact, start, endFact, end)
-	}
-	so, err := strconv.Atoi(start)
-	if err != nil {
-		return 0, 0, fmt.Errorf("error parsing %s value %q: %v", startFact, start, err)
-	}
-	eo, err := strconv.Atoi(end)
-	if err != nil {
-		return 0, 0, fmt.Errorf("error parsing %s value %q: %v", endFact, end, err)
-	}
-	if so > eo {
-		return 0, 0, fmt.Errorf("invalid %s/%s span: %d-%d", startFact, endFact, so, eo)
-	}
-
-	return so, eo, nil
-}
-
-func normalizeSpan(norm *Normalizer, startOffset, endOffset int32) (start, end *xpb.Location_Point, err error) {
-	start = norm.ByteOffset(startOffset)
-	end = norm.ByteOffset(endOffset)
-
-	if start.ByteOffset != startOffset {
-		err = fmt.Errorf("inconsistent start location; expected: %d; found; %d",
-			startOffset, start.ByteOffset)
-	} else if end.ByteOffset != endOffset {
-		err = fmt.Errorf("inconsistent end location; expected: %d; found; %d",
-			endOffset, end.ByteOffset)
-	}
-	return
-}
-
-type fileNode struct {
-	text     []byte
-	encoding string
-	norm     *Normalizer
-}
-
-func completeAnchors(ctx context.Context, xs NodesEdgesService, retrieveText bool, files map[string]*fileNode, edgeKind string, anchors []string) ([]*xpb.Anchor, error) {
-	edgeKind = schema.Canonicalize(edgeKind)
-
-	// AllEdges is relatively safe because each anchor will have very few parents (almost always 1)
-	reply, err := AllEdges(ctx, xs, &xpb.EdgesRequest{
-		Ticket: anchors,
-		Kind:   []string{schema.ChildOfEdge},
-		Filter: []string{
-			schema.NodeKindFact,
-			schema.AnchorLocFilter,
-			schema.SnippetLocFilter,
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-	nodes := NodesMap(reply.Node)
-
-	var result []*xpb.Anchor
-	for _, es := range reply.EdgeSet {
-		ticket := es.SourceTicket
-
-		if nodeKind := string(nodes[ticket][schema.NodeKindFact]); nodeKind != schema.AnchorKind {
-			log.Printf("Found non-anchor target to %q edge: %q (kind: %q)", edgeKind, ticket, nodeKind)
-			continue
-		}
-
-		// Parse anchor location start/end facts
-		so, eo, err := getSpan(nodes[ticket], schema.AnchorStartFact, schema.AnchorEndFact)
-		if err != nil {
-			log.Printf("Invalid anchor span for %q: %v", ticket, err)
-			continue
-		}
-
-		// For each file parent to the anchor, add an Anchor to the result.
-		for _, g := range es.Group {
-			if g.Kind != schema.ChildOfEdge {
-				continue
-			}
-
-			for _, parent := range g.TargetTicket {
-				if parentKind := string(nodes[parent][schema.NodeKindFact]); parentKind != schema.FileKind {
-					log.Printf("Found non-file parent to anchor: %q (kind: %q)", parent, parentKind)
-					continue
-				}
-
-				a := &xpb.Anchor{
-					Ticket: ticket,
-					Kind:   edgeKind,
-					Parent: parent,
-				}
-
-				file, ok := files[a.Parent]
-				if !ok {
-					nReply, err := xs.Nodes(ctx, &xpb.NodesRequest{Ticket: []string{a.Parent}})
-					if err != nil {
-						return nil, fmt.Errorf("error getting file contents for %q: %v", a.Parent, err)
-					}
-					nMap := NodesMap(nReply.Node)
-					text := nMap[a.Parent][schema.TextFact]
-					file = &fileNode{
-						text:     text,
-						encoding: string(nMap[a.Parent][schema.TextEncodingFact]),
-						norm:     NewNormalizer(text),
-					}
-					files[a.Parent] = file
-				}
-
-				a.Start, a.End, err = normalizeSpan(file.norm, int32(so), int32(eo))
-				if err != nil {
-					log.Printf("Invalid anchor span %q in file %q: %v", ticket, a.Parent, err)
-					continue
-				}
-
-				if retrieveText && a.Start.ByteOffset < a.End.ByteOffset {
-					a.Text, err = text.ToUTF8(file.encoding, file.text[a.Start.ByteOffset:a.End.ByteOffset])
-					if err != nil {
-						log.Printf("Error decoding anchor text: %v", err)
-					}
-				}
-
-				if snippetStart, snippetEnd, err := getSpan(nodes[ticket], schema.SnippetStartFact, schema.SnippetEndFact); err == nil {
-					startPoint, endPoint, err := normalizeSpan(file.norm, int32(snippetStart), int32(snippetEnd))
-					if err != nil {
-						log.Printf("Invalid snippet span %q in file %q: %v", ticket, a.Parent, err)
-					} else {
-						a.Snippet, err = text.ToUTF8(file.encoding, file.text[startPoint.ByteOffset:endPoint.ByteOffset])
-						if err != nil {
-							log.Printf("Error decoding snippet text: %v", err)
-						}
-						a.SnippetStart = startPoint
-						a.SnippetEnd = endPoint
-					}
-				}
-
-				// fallback to a line-based snippet if the indexer did not provide its own snippet offsets
-				if a.Snippet == "" {
-					a.SnippetStart = &xpb.Location_Point{
-						ByteOffset: a.Start.ByteOffset - a.Start.ColumnOffset,
-						LineNumber: a.Start.LineNumber,
-					}
-					nextLine := file.norm.Point(&xpb.Location_Point{LineNumber: a.Start.LineNumber + 1})
-					a.SnippetEnd = &xpb.Location_Point{
-						ByteOffset:   nextLine.ByteOffset - 1,
-						LineNumber:   a.Start.LineNumber,
-						ColumnOffset: a.Start.ColumnOffset + (nextLine.ByteOffset - a.Start.ByteOffset - 1),
-					}
-					a.Snippet, err = text.ToUTF8(file.encoding, file.text[a.SnippetStart.ByteOffset:a.SnippetEnd.ByteOffset])
-					if err != nil {
-						log.Printf("Error decoding snippet text: %v", err)
-					}
-				}
-
-				result = append(result, a)
-			}
-
-			break // we've handled the only /kythe/edge/childof group
-		}
-	}
-
-	return result, nil
 }
 
 // AllEdges returns all edges for a particular EdgesRequest.  This means that

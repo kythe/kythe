@@ -204,8 +204,11 @@ message PagedCrossReferences {
   int32 total_references = 4;
 }
 
-// Internal encoding for an EdgesReply page_token
+// Internal encoding for an EdgesReply/CrossReferencesReply page_token
 message PageToken {
-  // Index into sequence of edges to return in EdgesReply.
+  // Index into the primary reply sequence.
   int32 index = 1;
+
+  // Secondary page token for reply sub-query.
+  string secondary_token = 2;
 }
