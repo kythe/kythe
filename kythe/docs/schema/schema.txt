@@ -1084,6 +1084,10 @@ Naming convention::
 Facts::
   text:::
     Uninterpreted content as an array of bytes.
+  text/encoding:::
+    Encoding of the text fact.  See
+    http://www.w3.org/TR/encoding/#names-and-labels for standard values.  If
+    empty, "utf8" is assumed.
 See also::
   <<anchor>>, <<refincludes,[ref/includes]>>
 
