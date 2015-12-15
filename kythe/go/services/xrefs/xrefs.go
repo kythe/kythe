@@ -38,6 +38,7 @@ import (
 	"github.com/sergi/go-diff/diffmatchpatch"
 	"golang.org/x/net/context"
 
+	cpb "kythe.io/kythe/proto/common_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
@@ -443,10 +444,10 @@ func AllEdges(ctx context.Context, es EdgesService, req *xpb.EdgesRequest) (*xpb
 	for ticket, facts := range nodes {
 		info := &xpb.NodeInfo{
 			Ticket: ticket,
-			Fact:   make([]*xpb.Fact, 0, len(facts)),
+			Fact:   make([]*cpb.Fact, 0, len(facts)),
 		}
 		for name, val := range facts {
-			info.Fact = append(info.Fact, &xpb.Fact{
+			info.Fact = append(info.Fact, &cpb.Fact{
 				Name:  name,
 				Value: val,
 			})
@@ -862,8 +863,8 @@ func RegisterHTTPHandlers(ctx context.Context, xs Service, mux *http.ServeMux) {
 	})
 }
 
-// ByName implements the sort.Interface for xpb.Facts
-type ByName []*xpb.Fact
+// ByName implements the sort.Interface for cpb.Facts
+type ByName []*cpb.Fact
 
 // Implement the sort.Interface
 func (s ByName) Len() int           { return len(s) }

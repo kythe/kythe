@@ -1,0 +1,48 @@
+/*
+ * Copyright 2015 Google Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+package kythe.proto.common;
+
+// Fact represents a single key/value fact from the graph.
+message Fact {
+  string name = 1;
+  bytes value = 2;
+}
+
+// A Point represents a location within a file or buffer.
+//
+// If line_number ≤ 0, the line number and column offset are considered
+// unknown and will be ignored.
+//
+// A point with line_number > 0 is said to be _normalized_ if it satisfies
+// the constraint 0 ≤ column_offset ≤ bytelen(line_number); that is, if the
+// column_offset is within the actual range of the corresponding line.  A
+// point can be normalized by adjusting line_number and column_offset so that
+// this constraint is satisfied.  This may be impossible if the column offset
+// exceeds the bounds of the file.
+message Point {
+  int32 byte_offset = 1;
+  int32 line_number = 2;
+  int32 column_offset = 3;
+}
+
+// A Span represents an inclusive-exclusive range inside of a file or buffer.
+message Span {
+  Point start = 1;
+  Point end = 2;
+}

@@ -83,32 +83,30 @@ func getNode(t string) *srvpb.Node {
 func TestEdgeSetBuilder(t *testing.T) {
 	tests := []struct {
 		src       *srvpb.Node
-		grp       *srvpb.EdgeSet_Group
+		grp       *srvpb.EdgeGroup
 		edgeSet   *srvpb.PagedEdgeSet
 		edgePages []*srvpb.EdgePage
 	}{{
 		src: getNode("someSource"),
 	}, {
-		grp: &srvpb.EdgeSet_Group{
+		grp: &srvpb.EdgeGroup{
 			Kind:   "someEdgeKind",
 			Target: getNodes("kythe:#aTarget"),
 		},
 	}, {
 		// flush
 		edgeSet: &srvpb.PagedEdgeSet{
-			EdgeSet: &srvpb.EdgeSet{
-				Source: getNode("someSource"),
-				Group: []*srvpb.EdgeSet_Group{{
-					Kind:   "someEdgeKind",
-					Target: getNodes("kythe:#aTarget"),
-				}},
-			},
+			Source: getNode("someSource"),
+			Group: []*srvpb.EdgeGroup{{
+				Kind:   "someEdgeKind",
+				Target: getNodes("kythe:#aTarget"),
+			}},
 			TotalEdges: 1,
 		},
 	}, {
 		src: getNode("someOtherSource"),
 	}, {
-		grp: &srvpb.EdgeSet_Group{
+		grp: &srvpb.EdgeGroup{
 			Kind: "someEdgeKind",
 			Target: getNodes(
 				"kythe:#aTarget",
@@ -116,7 +114,7 @@ func TestEdgeSetBuilder(t *testing.T) {
 			),
 		},
 	}, {
-		grp: &srvpb.EdgeSet_Group{
+		grp: &srvpb.EdgeGroup{
 			Kind: "someEdgeKind",
 			Target: getNodes(
 				"kythe:#onceMoreWithFeeling",
@@ -127,26 +125,25 @@ func TestEdgeSetBuilder(t *testing.T) {
 
 		// forced flush due to new source
 		edgeSet: &srvpb.PagedEdgeSet{
-			EdgeSet: &srvpb.EdgeSet{
-				Source: getNode("someOtherSource"),
-				Group: []*srvpb.EdgeSet_Group{{
-					Kind: "someEdgeKind",
-					Target: getNodes(
-						"kythe:#aTarget",
-						"kythe:#anotherTarget",
-						"kythe:#onceMoreWithFeeling",
-					),
-				}},
-			},
+			Source: getNode("someOtherSource"),
+			Group: []*srvpb.EdgeGroup{{
+				Kind: "someEdgeKind",
+				Target: getNodes(
+					"kythe:#aTarget",
+					"kythe:#anotherTarget",
+					"kythe:#onceMoreWithFeeling",
+				),
+			}},
+
 			TotalEdges: 3, // fits exactly MaxEdgePageSize
 		},
 	}, {
-		grp: &srvpb.EdgeSet_Group{
+		grp: &srvpb.EdgeGroup{
 			Kind:   "edgeKind123",
 			Target: getNodes("kythe:#aTarget"),
 		},
 	}, {
-		grp: &srvpb.EdgeSet_Group{
+		grp: &srvpb.EdgeGroup{
 			Kind: "edgeKind123",
 			Target: getNodes(
 				"kythe:#bTarget",
@@ -159,7 +156,7 @@ func TestEdgeSetBuilder(t *testing.T) {
 		edgePages: []*srvpb.EdgePage{{
 			SourceTicket: "aThirdSource",
 			PageKey:      "aThirdSource.0000000000",
-			EdgesGroup: &srvpb.EdgeSet_Group{
+			EdgesGroup: &srvpb.EdgeGroup{
 				Kind: "edgeKind123",
 				Target: getNodes(
 					"kythe:#aTarget",
@@ -169,7 +166,7 @@ func TestEdgeSetBuilder(t *testing.T) {
 			},
 		}},
 	}, {
-		grp: &srvpb.EdgeSet_Group{
+		grp: &srvpb.EdgeGroup{
 			Kind: "edgeKind123",
 			Target: getNodes(
 				"kythe:#five", "kythe:#six", "kythe:#seven", "kythe:#eight", "kythe:#nine",
@@ -179,7 +176,7 @@ func TestEdgeSetBuilder(t *testing.T) {
 		edgePages: []*srvpb.EdgePage{{
 			SourceTicket: "aThirdSource",
 			PageKey:      "aThirdSource.0000000001",
-			EdgesGroup: &srvpb.EdgeSet_Group{
+			EdgesGroup: &srvpb.EdgeGroup{
 				Kind: "edgeKind123",
 				Target: getNodes(
 					"kythe:#threeTarget", "kythe:#fourTarget", "kythe:#five",
@@ -188,7 +185,7 @@ func TestEdgeSetBuilder(t *testing.T) {
 		}, {
 			SourceTicket: "aThirdSource",
 			PageKey:      "aThirdSource.0000000002",
-			EdgesGroup: &srvpb.EdgeSet_Group{
+			EdgesGroup: &srvpb.EdgeGroup{
 				Kind: "edgeKind123",
 				Target: getNodes(
 					"kythe:#six", "kythe:#seven", "kythe:#eight",
@@ -196,14 +193,14 @@ func TestEdgeSetBuilder(t *testing.T) {
 			},
 		}},
 	}, {
-		grp: &srvpb.EdgeSet_Group{
+		grp: &srvpb.EdgeGroup{
 			Kind: "edgeKind123",
 			Target: getNodes(
 				"kythe:#ten", "kythe:#eleven",
 			),
 		},
 	}, {
-		grp: &srvpb.EdgeSet_Group{
+		grp: &srvpb.EdgeGroup{
 			Kind: "edgeKindFinal",
 			Target: getNodes(
 				"kythe:#ten",
@@ -213,7 +210,7 @@ func TestEdgeSetBuilder(t *testing.T) {
 		edgePages: []*srvpb.EdgePage{{
 			SourceTicket: "aThirdSource",
 			PageKey:      "aThirdSource.0000000003",
-			EdgesGroup: &srvpb.EdgeSet_Group{
+			EdgesGroup: &srvpb.EdgeGroup{
 				Kind: "edgeKind123",
 				Target: getNodes(
 					"kythe:#nine", "kythe:#ten", "kythe:#eleven",
@@ -221,7 +218,7 @@ func TestEdgeSetBuilder(t *testing.T) {
 			},
 		}},
 	}, {
-		grp: &srvpb.EdgeSet_Group{
+		grp: &srvpb.EdgeGroup{
 			Kind: "edgeKindFinal",
 			Target: getNodes(
 				"kythe:#two", "kythe:#three",
@@ -232,15 +229,15 @@ func TestEdgeSetBuilder(t *testing.T) {
 
 		edgeSet: &srvpb.PagedEdgeSet{
 			TotalEdges: 15,
-			EdgeSet: &srvpb.EdgeSet{
-				Source: getNode("aThirdSource"),
-				Group: []*srvpb.EdgeSet_Group{{
-					Kind: "edgeKindFinal",
-					Target: getNodes(
-						"kythe:#ten", "kythe:#two", "kythe:#three",
-					),
-				}},
-			},
+
+			Source: getNode("aThirdSource"),
+			Group: []*srvpb.EdgeGroup{{
+				Kind: "edgeKindFinal",
+				Target: getNodes(
+					"kythe:#ten", "kythe:#two", "kythe:#three",
+				),
+			}},
+
 			PageIndex: []*srvpb.PageIndex{{
 				PageKey:   "aThirdSource.0000000000",
 				EdgeKind:  "edgeKind123",

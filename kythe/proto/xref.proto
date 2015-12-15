@@ -18,6 +18,8 @@ syntax = "proto3";
 
 package kythe.proto;
 
+import "kythe/proto/common.proto";
+
 // Design document: <link when written>
 // This proto represents a very preliminary attempt to define a cross-reference
 // service interface, based on Kythe data.  Its main consumer is Acropolis, but
@@ -86,8 +88,11 @@ message NodesRequest {
 // not couple the reply to the request in this way.
 
 message NodeInfo {
-  string ticket = 1;       // The ticket for a matching node.
-  repeated Fact fact = 2;  // The matching facts known for that node.
+  // The ticket for a matching node.
+  string ticket = 1;
+
+  // The matching facts known for that node.
+  repeated kythe.proto.common.Fact fact = 2;
 }
 
 message NodesReply {
@@ -198,17 +203,13 @@ message EdgesReply {
   string next_page_token = 9;
 }
 
-// Fact represents a single key/value fact from the graph.
-message Fact {
-  string name = 1;
-  bytes value = 2;
-}
-
 // A Location represents a single span of zero or more contiguous bytes of a
 // file or buffer.  An empty LOCATION denotes the entirety of the referenced
 // file or buffer.
 //
 message Location {
+  // TODO(schroederc): reuse Span from common.proto
+
   // The ticket of the file this location belongs to.  If the location
   // represents a memory buffer, the ticket should be omitted.
   string ticket = 1;
@@ -407,6 +408,8 @@ message CrossReferencesRequest {
   int32 page_size = 10;
   string page_token = 11;
 }
+
+// TODO(schroederc): eliminate duplicate serving.ExpandedAnchor message defintion
 
 message Anchor {
   // Ticket of the anchor node

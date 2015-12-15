@@ -35,6 +35,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	cpb "kythe.io/kythe/proto/common_proto"
 	srvpb "kythe.io/kythe/proto/serving_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
@@ -50,11 +51,11 @@ type Source struct {
 
 // Node returns the Source as a srvpb.Node.
 func (s *Source) Node() *srvpb.Node {
-	facts := make([]*srvpb.Fact, 0, len(s.Facts))
+	facts := make([]*cpb.Fact, 0, len(s.Facts))
 	for name, value := range s.Facts {
-		facts = append(facts, &srvpb.Fact{Name: name, Value: value})
+		facts = append(facts, &cpb.Fact{Name: name, Value: value})
 	}
-	sort.Sort(ByName(facts))
+	sort.Sort(xrefs.ByName(facts))
 	return &srvpb.Node{
 		Ticket: s.Ticket,
 		Fact:   facts,
@@ -97,7 +98,7 @@ func SourceFromEntries(entries []*spb.Entry) *Source {
 }
 
 // FactsToMap returns a map from fact name to value.
-func FactsToMap(facts []*srvpb.Fact) map[string][]byte {
+func FactsToMap(facts []*cpb.Fact) map[string][]byte {
 	m := make(map[string][]byte, len(facts))
 	for _, f := range facts {
 		m[f.Name] = f.Value
@@ -106,7 +107,7 @@ func FactsToMap(facts []*srvpb.Fact) map[string][]byte {
 }
 
 // GetFact returns the value of the first fact in facts with the given name; otherwise returns nil.
-func GetFact(facts []*srvpb.Fact, name string) []byte {
+func GetFact(facts []*cpb.Fact, name string) []byte {
 	for _, f := range facts {
 		if f.Name == name {
 			return f.Value
@@ -146,7 +147,7 @@ func PartialReverseEdges(src *Source) []*srvpb.Edge {
 func FilterTextFacts(n *srvpb.Node) *srvpb.Node {
 	res := &srvpb.Node{
 		Ticket: n.Ticket,
-		Fact:   make([]*srvpb.Fact, 0, len(n.Fact)),
+		Fact:   make([]*cpb.Fact, 0, len(n.Fact)),
 	}
 	for _, f := range n.Fact {
 		switch f.Name {
@@ -167,7 +168,7 @@ func FilterTextFacts(n *srvpb.Node) *srvpb.Node {
 type DecorationFragmentBuilder struct {
 	Output func(ctx context.Context, file string, fragment *srvpb.FileDecorations) error
 
-	anchor  *srvpb.Anchor
+	anchor  *srvpb.RawAnchor
 	decor   []*srvpb.FileDecorations_Decoration
 	parents []string
 }
@@ -215,7 +216,7 @@ func (b *DecorationFragmentBuilder) AddEdge(ctx context.Context, e *srvpb.Edge) 
 			snippetStart, _ := strconv.Atoi(string(srcFacts[schema.SnippetStartFact]))
 			snippetEnd, _ := strconv.Atoi(string(srcFacts[schema.SnippetEndFact]))
 
-			b.anchor = &srvpb.Anchor{
+			b.anchor = &srvpb.RawAnchor{
 				Ticket:       e.Source.Ticket,
 				StartOffset:  int32(anchorStart),
 				EndOffset:    int32(anchorEnd),
@@ -320,17 +321,17 @@ type EdgeSetBuilder struct {
 func (b *EdgeSetBuilder) constructPager() *pager.SetPager {
 	// Head:  *srvpb.Node
 	// Set:   *srvpb.PagedEdgeSet
-	// Group: *srvpb.EdgeSet_Group
+	// Group: *srvpb.EdgeGroup
 	return &pager.SetPager{
 		MaxPageSize: b.MaxEdgePageSize,
 
 		NewSet: func(hd pager.Head) pager.Set {
 			return &srvpb.PagedEdgeSet{
-				EdgeSet: &srvpb.EdgeSet{Source: hd.(*srvpb.Node)},
+				Source: hd.(*srvpb.Node),
 			}
 		},
 		Combine: func(l, r pager.Group) pager.Group {
-			lg, rg := l.(*srvpb.EdgeSet_Group), r.(*srvpb.EdgeSet_Group)
+			lg, rg := l.(*srvpb.EdgeGroup), r.(*srvpb.EdgeGroup)
 			if lg.Kind != rg.Kind {
 				return nil
 			}
@@ -338,26 +339,26 @@ func (b *EdgeSetBuilder) constructPager() *pager.SetPager {
 			return lg
 		},
 		Split: func(sz int, g pager.Group) (l, r pager.Group) {
-			eg := g.(*srvpb.EdgeSet_Group)
-			neg := &srvpb.EdgeSet_Group{
+			eg := g.(*srvpb.EdgeGroup)
+			neg := &srvpb.EdgeGroup{
 				Kind:   eg.Kind,
 				Target: eg.Target[:sz],
 			}
 			eg.Target = eg.Target[sz:]
 			return neg, eg
 		},
-		Size: func(g pager.Group) int { return len(g.(*srvpb.EdgeSet_Group).Target) },
+		Size: func(g pager.Group) int { return len(g.(*srvpb.EdgeGroup).Target) },
 
 		OutputSet: func(ctx context.Context, total int, s pager.Set, grps []pager.Group) error {
 			pes := s.(*srvpb.PagedEdgeSet)
 
-			// pes.EdgeSet.Group = []*srvpb.EdgeSet_Group(grps)
-			pes.EdgeSet.Group = make([]*srvpb.EdgeSet_Group, len(grps))
+			// pes.Group = []*srvpb.EdgeGroup(grps)
+			pes.Group = make([]*srvpb.EdgeGroup, len(grps))
 			for i, g := range grps {
-				pes.EdgeSet.Group[i] = g.(*srvpb.EdgeSet_Group)
+				pes.Group[i] = g.(*srvpb.EdgeGroup)
 			}
 
-			sort.Sort(byEdgeKind(pes.EdgeSet.Group))
+			sort.Sort(byEdgeKind(pes.Group))
 			sort.Sort(byPageKind(pes.PageIndex))
 			pes.TotalEdges = int32(total)
 
@@ -365,9 +366,9 @@ func (b *EdgeSetBuilder) constructPager() *pager.SetPager {
 		},
 		OutputPage: func(ctx context.Context, s pager.Set, g pager.Group) error {
 			pes := s.(*srvpb.PagedEdgeSet)
-			eviction := g.(*srvpb.EdgeSet_Group)
+			eviction := g.(*srvpb.EdgeGroup)
 
-			src := pes.EdgeSet.Source.Ticket
+			src := pes.Source.Ticket
 			key := newPageKey(src, len(pes.PageIndex))
 
 			// Output the EdgePage and add it to the page indices
@@ -403,7 +404,7 @@ func (b *EdgeSetBuilder) StartEdgeSet(ctx context.Context, src *srvpb.Node) erro
 // emitting a new PagedEdgeSet and/or EdgePage.  StartEdgeSet must be called
 // before any calls to this method.  See EdgeSetBuilder's documentation for the
 // assumed order of the groups and this method's relation to StartEdgeSet.
-func (b *EdgeSetBuilder) AddGroup(ctx context.Context, eg *srvpb.EdgeSet_Group) error {
+func (b *EdgeSetBuilder) AddGroup(ctx context.Context, eg *srvpb.EdgeGroup) error {
 	return b.pager.AddGroup(ctx, eg)
 }
 
@@ -536,7 +537,7 @@ func CrossReference(file *srvpb.File, norm *xrefs.Normalizer, d *srvpb.FileDecor
 	}, nil
 }
 
-func expandAnchor(anchor *srvpb.Anchor, file *srvpb.File, norm *xrefs.Normalizer, kind string) (*srvpb.ExpandedAnchor, error) {
+func expandAnchor(anchor *srvpb.RawAnchor, file *srvpb.File, norm *xrefs.Normalizer, kind string) (*srvpb.ExpandedAnchor, error) {
 	sp := norm.ByteOffset(anchor.StartOffset)
 	ep := norm.ByteOffset(anchor.EndOffset)
 	txt, err := getText(sp, ep, file)
@@ -575,13 +576,13 @@ func expandAnchor(anchor *srvpb.Anchor, file *srvpb.File, norm *xrefs.Normalizer
 		Parent: file.Ticket,
 
 		Text: txt,
-		Span: &srvpb.Span{
+		Span: &cpb.Span{
 			Start: p2p(sp),
 			End:   p2p(ep),
 		},
 
 		Snippet: snippet,
-		SnippetSpan: &srvpb.Span{
+		SnippetSpan: &cpb.Span{
 			Start: p2p(ssp),
 			End:   p2p(sep),
 		},
@@ -599,8 +600,8 @@ func getText(sp, ep *xpb.Location_Point, file *srvpb.File) (string, error) {
 	return txt, nil
 }
 
-func p2p(p *xpb.Location_Point) *srvpb.Point {
-	return &srvpb.Point{
+func p2p(p *xpb.Location_Point) *cpb.Point {
+	return &cpb.Point{
 		ByteOffset:   p.ByteOffset,
 		LineNumber:   p.LineNumber,
 		ColumnOffset: p.ColumnOffset,
@@ -654,20 +655,12 @@ func (s byPageKind) Less(i, j int) bool { return edgeKindLess(s[i].EdgeKind, s[j
 func (s byPageKind) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 
 // byEdgeKind implements the sort.Interface
-type byEdgeKind []*srvpb.EdgeSet_Group
+type byEdgeKind []*srvpb.EdgeGroup
 
 // Implement the sort.Interface using edgeKindLess
 func (s byEdgeKind) Len() int           { return len(s) }
 func (s byEdgeKind) Less(i, j int) bool { return edgeKindLess(s[i].Kind, s[j].Kind) }
 func (s byEdgeKind) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
-
-// ByName implements the sort.Interface for srvpb.Facts
-type ByName []*srvpb.Fact
-
-// Implement the sort.Interface
-func (s ByName) Len() int           { return len(s) }
-func (s ByName) Less(i, j int) bool { return s[i].Name < s[j].Name }
-func (s ByName) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 
 // byRefPageKind implements the sort.Interface
 type byRefPageKind []*srvpb.PagedCrossReferences_PageIndex

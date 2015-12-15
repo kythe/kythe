@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"kythe.io/kythe/go/services/graphstore"
+	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/storage/inmemory"
 	"kythe.io/kythe/go/test/testutil"
 	"kythe.io/kythe/go/util/kytheuri"
@@ -29,6 +30,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	cpb "kythe.io/kythe/proto/common_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
@@ -194,7 +196,7 @@ func (n *node) Info() *xpb.NodeInfo {
 		Ticket: kytheuri.ToString(n.Source),
 	}
 	for name, val := range n.Facts {
-		info.Fact = append(info.Fact, &xpb.Fact{
+		info.Fact = append(info.Fact, &cpb.Fact{
 			Name:  name,
 			Value: []byte(val),
 		})
@@ -294,16 +296,6 @@ func edgeFact(source *spb.VName, kind string, target *spb.VName) *spb.Entry {
 
 ////// Everything below is for sorting results to ensure order doesn't matter
 
-type sortedFacts []*xpb.Fact
-
-func (h sortedFacts) Len() int { return len(h) }
-func (h sortedFacts) Less(i, j int) bool {
-	return h[i].Name < h[j].Name
-}
-func (h sortedFacts) Swap(i, j int) {
-	h[i], h[j] = h[j], h[i]
-}
-
 type sortedGroups []*xpb.EdgeSet_Group
 
 func (h sortedGroups) Len() int { return len(h) }
@@ -365,7 +357,7 @@ func sortEdgeSets(sets []*xpb.EdgeSet) []*xpb.EdgeSet {
 func sortInfos(infos []*xpb.NodeInfo) []*xpb.NodeInfo {
 	sort.Sort(sortedNodeInfos(infos))
 	for _, info := range infos {
-		sort.Sort(sortedFacts(info.Fact))
+		sort.Sort(xrefs.ByName(info.Fact))
 	}
 	return infos
 }

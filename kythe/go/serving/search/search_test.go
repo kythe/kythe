@@ -32,6 +32,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	cpb "kythe.io/kythe/proto/common_proto"
 	srvpb "kythe.io/kythe/proto/serving_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
 )
@@ -222,10 +223,10 @@ func node(v *spb.VName, facts ...string) *srvpb.Node {
 	}
 	n := &srvpb.Node{
 		Ticket: kytheuri.ToString(v),
-		Fact:   make([]*srvpb.Fact, 0, len(facts)/2),
+		Fact:   make([]*cpb.Fact, 0, len(facts)/2),
 	}
 	for i := 0; i < len(facts); i += 2 {
-		n.Fact = append(n.Fact, &srvpb.Fact{
+		n.Fact = append(n.Fact, &cpb.Fact{
 			Name:  facts[i],
 			Value: []byte(facts[i+1]),
 		})

@@ -36,6 +36,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	cpb "kythe.io/kythe/proto/common_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
@@ -175,7 +176,7 @@ func (g *GraphStoreService) Edges(ctx context.Context, req *xpb.EdgesRequest) (*
 		var (
 			// EdgeKind -> StringSet<TargetTicket>
 			filteredEdges = make(map[string]stringset.Set)
-			filteredFacts []*xpb.Fact
+			filteredFacts []*cpb.Fact
 		)
 
 		if err := g.gs.Read(ctx, &spb.ReadRequest{
@@ -443,8 +444,8 @@ func getEdges(ctx context.Context, gs graphstore.Service, node *spb.VName, pred 
 	return targets, nil
 }
 
-func entryToFact(entry *spb.Entry) *xpb.Fact {
-	return &xpb.Fact{
+func entryToFact(entry *spb.Entry) *cpb.Fact {
+	return &cpb.Fact{
 		Name:  entry.FactName,
 		Value: entry.FactValue,
 	}
@@ -455,7 +456,7 @@ func filterNode(patterns []*regexp.Regexp, node *xpb.NodeInfo) *xpb.NodeInfo {
 		return nil
 	}
 
-	var filteredFacts []*xpb.Fact
+	var filteredFacts []*cpb.Fact
 	for _, f := range node.Fact {
 		if xrefs.MatchesAny(f.Name, patterns) {
 			filteredFacts = append(filteredFacts, f)

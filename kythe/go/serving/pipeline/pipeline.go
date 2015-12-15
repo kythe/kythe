@@ -284,14 +284,14 @@ func writePagedEdges(ctx context.Context, edges <-chan *srvpb.Edge, out table.Pr
 	esb := &assemble.EdgeSetBuilder{
 		MaxEdgePageSize: opts.MaxPageSize,
 		Output: func(ctx context.Context, pes *srvpb.PagedEdgeSet) error {
-			return buffer.Put(ctx, xsrv.EdgeSetKey(pes.EdgeSet.Source.Ticket), pes)
+			return buffer.Put(ctx, xsrv.EdgeSetKey(pes.Source.Ticket), pes)
 		},
 		OutputPage: func(ctx context.Context, ep *srvpb.EdgePage) error {
 			return buffer.Put(ctx, xsrv.EdgePageKey(ep.PageKey), ep)
 		},
 	}
 
-	var grp *srvpb.EdgeSet_Group
+	var grp *srvpb.EdgeGroup
 	for e := range edges {
 		if grp != nil && (e.Target == nil || grp.Kind != e.Kind) {
 			if err := esb.AddGroup(ctx, grp); err != nil {
@@ -308,7 +308,7 @@ func writePagedEdges(ctx context.Context, edges <-chan *srvpb.Edge, out table.Pr
 				return err
 			}
 		} else if grp == nil {
-			grp = &srvpb.EdgeSet_Group{
+			grp = &srvpb.EdgeGroup{
 				Kind:   e.Kind,
 				Target: []*srvpb.Node{e.Target},
 			}

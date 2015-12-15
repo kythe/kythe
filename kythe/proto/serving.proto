@@ -16,18 +16,14 @@
 
 syntax = "proto3";
 
-package kythe.proto;
+package kythe.proto.serving;
 
-// Kythe fact (i.e. from a storage.Entry).  Can belong to either a Node or Edge.
-message Fact {
-  string name = 1;
-  bytes value = 2;
-}
+import "kythe/proto/common.proto";
 
 // A derivative of xref.NodeInfo for serving.
 message Node {
   string ticket = 1;
-  repeated Fact fact = 2;
+  repeated kythe.proto.common.Fact fact = 2;
 }
 
 // Full representation of a Kythe edge; useful during post-processing.
@@ -36,45 +32,32 @@ message Edge {
   string kind = 2;
   Node target = 3;
 
-  repeated Fact fact = 4;
+  repeated kythe.proto.common.Fact fact = 4;
 }
 
-// An EdgeSet represents a collection of edges from a single node.  The edges
-// are organized into groups, each sharing a common edge kind.
+// An EdgeGroup represents a set of edges with the same kind and source.
 //
-// The number of edges represented by an EdgeSet es, denoted len(es), is the
-// sum of the lengths of the repeated target_ticket fields for all the groups
-// in the EdgeSet.  This count is used to determine page size in a request.
-//
-// Note: this is a derivative of xref.EdgeSet
-message EdgeSet {
-  message Group {
-    string kind = 1;
-    repeated Node target = 2;
-  }
-
-  // The source node for all the edges in the edge set.
-  Node source = 1;
-
-  // Each group is a collection of outbound edges from source node sharing a
-  // given kind.  In a given EdgeSet, the server will not send more than one
-  // group with the same kind label.
-  repeated Group group = 2;
+// Note: this is a derivative of xref.EdgeSet_Group
+message EdgeGroup {
+  string kind = 1;
+  repeated Node target = 2;
 }
 
 // PagedEdgeSets are used for efficiently storing EdgeSets, all originating from
 // the same source ticket, in order to handle pagination requests.
 message PagedEdgeSet {
-  // Collection of edges on the first page.  If the number of edges for a
-  // particular source_ticket is small, this may contain all known edges and
-  // no page_index will exist.
-  EdgeSet edge_set = 1;
+  // The source node for all the edges in the edge set.
+  Node source = 1;
+
+  // Each group is a collection of outbound edges from source node sharing a
+  // given kind.
+  repeated EdgeGroup group = 2;
 
   // Total number of edges in all of the EdgePages, including this one.
-  int32 total_edges = 2;
+  int32 total_edges = 3;
 
   // Page indices for other EdgePages, sorted by edge kind.
-  repeated PageIndex page_index = 3;
+  repeated PageIndex page_index = 4;
 }
 
 // PageIndex is a pointer to an EdgePage.  In order to keep the PagedEdgeSet
@@ -96,7 +79,7 @@ message EdgePage {
   // Corresponding PageIndex key that can be used to lookup this page.
   string page_key = 1;
   string source_ticket = 2;
-  EdgeSet.Group edges_group = 3;
+  EdgeGroup edges_group = 3;
 }
 
 // FileDirectory describes a virtual directory of file nodes.
@@ -125,8 +108,8 @@ message File {
   string encoding = 3;
 }
 
-// An Anchor is a specialized Node structure for anchor nodes.
-message Anchor {
+// A RawAnchor is a specialized Node structure for anchor nodes.
+message RawAnchor {
   string ticket = 1;
   int32 start_offset = 2;
   int32 end_offset = 3;
@@ -135,31 +118,19 @@ message Anchor {
   int32 snippet_end = 5;
 }
 
-// TODO(schroederc): reuse Location from xref.proto (common.proto?)
-message Point {
-  int32 byte_offset = 1;
-  int32 line_number = 2;
-  int32 column_offset = 3;
-}
-
-message Span {
-  Point start = 1;
-  Point end = 2;
-}
-
-// ExpandedAnchors are constructed from an Anchor and its associated File.  They
-// contain normalized Spans based on their parent file's text as well as the
-// UTF8-encoded text for both the anchor's span and its snippet span.
+// ExpandedAnchors are constructed from an RawAnchor and its associated File.
+// They contain normalized Spans based on their parent file's text as well as
+// the UTF8-encoded text for both the anchor's span and its snippet span.
 message ExpandedAnchor {
   string ticket = 1;
   string kind = 2;
   string parent = 3;
 
   string text = 4;
-  Span span = 5;
+  kythe.proto.common.Span span = 5;
 
   string snippet = 6;
-  Span snippet_span = 7;
+  kythe.proto.common.Span snippet_span = 7;
 }
 
 // FileDecorations stores a file's contents and all contained anchor edges.
@@ -168,7 +139,7 @@ message FileDecorations {
 
   // Represents an edge from an anchor contained within the file to some target.
   message Decoration {
-    Anchor anchor = 1;
+    RawAnchor anchor = 1;
     string kind = 2;
     Node target = 3;
   }
@@ -193,7 +164,7 @@ message CrossReference {
   // the referent field of the parent CrossReference.
   message Decoration {
     File file = 1;
-    Anchor anchor = 2;
+    RawAnchor anchor = 2;
     string kind = 3;
   }
 

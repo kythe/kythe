@@ -228,11 +228,11 @@ func (t *tableImpl) Nodes(ctx context.Context, req *xpb.NodesRequest) (*xpb.Node
 		} else if r.Err != nil {
 			return nil, r.Err
 		}
-		node := r.PagedEdgeSet.EdgeSet.Source
+		node := r.PagedEdgeSet.Source
 		ni := &xpb.NodeInfo{Ticket: node.Ticket}
 		for _, f := range node.Fact {
 			if len(patterns) == 0 || xrefs.MatchesAny(f.Name, patterns) {
-				ni.Fact = append(ni.Fact, &xpb.Fact{Name: f.Name, Value: f.Value})
+				ni.Fact = append(ni.Fact, f)
 			}
 		}
 		if len(ni.Fact) > 0 {
@@ -312,7 +312,7 @@ func (t *tableImpl) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.Edge
 		}
 
 		var groups []*xpb.EdgeSet_Group
-		for _, grp := range pes.EdgeSet.Group {
+		for _, grp := range pes.Group {
 			if len(allowedKinds) == 0 || allowedKinds.Contains(grp.Kind) {
 				ng, ns := stats.filter(grp)
 				if ng != nil {
@@ -368,13 +368,13 @@ func (t *tableImpl) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.Edge
 
 		if len(groups) > 0 {
 			reply.EdgeSet = append(reply.EdgeSet, &xpb.EdgeSet{
-				SourceTicket: pes.EdgeSet.Source.Ticket,
+				SourceTicket: pes.Source.Ticket,
 				Group:        groups,
 			})
 
-			if len(patterns) > 0 && !nodeTickets.Contains(pes.EdgeSet.Source.Ticket) {
-				nodeTickets.Add(pes.EdgeSet.Source.Ticket)
-				reply.Node = append(reply.Node, nodeToInfo(patterns, pes.EdgeSet.Source))
+			if len(patterns) > 0 && !nodeTickets.Contains(pes.Source.Ticket) {
+				nodeTickets.Add(pes.Source.Ticket)
+				reply.Node = append(reply.Node, nodeToInfo(patterns, pes.Source))
 			}
 		}
 	}
@@ -399,7 +399,7 @@ func totalEdgesWithKinds(pes *srvpb.PagedEdgeSet, kinds stringset.Set) int {
 		return int(pes.TotalEdges)
 	}
 	var total int
-	for _, grp := range pes.EdgeSet.Group {
+	for _, grp := range pes.Group {
 		if kinds.Contains(grp.Kind) {
 			total += len(grp.Target)
 		}
@@ -424,7 +424,7 @@ func (s *filterStats) skipPage(idx *srvpb.PageIndex) bool {
 	return false
 }
 
-func (s *filterStats) filter(g *srvpb.EdgeSet_Group) (*xpb.EdgeSet_Group, []*srvpb.Node) {
+func (s *filterStats) filter(g *srvpb.EdgeGroup) (*xpb.EdgeSet_Group, []*srvpb.Node) {
 	targets := g.Target
 	if len(targets) <= s.skip {
 		s.skip -= len(targets)
@@ -457,7 +457,7 @@ func nodeToInfo(patterns []*regexp.Regexp, n *srvpb.Node) *xpb.NodeInfo {
 	ni := &xpb.NodeInfo{Ticket: n.Ticket}
 	for _, f := range n.Fact {
 		if xrefs.MatchesAny(f.Name, patterns) {
-			ni.Fact = append(ni.Fact, &xpb.Fact{Name: f.Name, Value: f.Value})
+			ni.Fact = append(ni.Fact, f)
 		}
 	}
 	sort.Sort(xrefs.ByName(ni.Fact))

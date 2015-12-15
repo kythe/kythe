@@ -15,7 +15,6 @@
 		EdgesRequest
 		EdgeSet
 		EdgesReply
-		Fact
 		Location
 		DecorationsRequest
 		DecorationsReply
@@ -28,6 +27,7 @@ package xref_proto
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
+import kythe_proto_common "kythe.io/kythe/proto/common_proto"
 
 import (
 	context "golang.org/x/net/context"
@@ -160,15 +160,17 @@ func (m *NodesRequest) String() string { return proto.CompactTextString(m) }
 func (*NodesRequest) ProtoMessage()    {}
 
 type NodeInfo struct {
-	Ticket string  `protobuf:"bytes,1,opt,name=ticket,proto3" json:"ticket,omitempty"`
-	Fact   []*Fact `protobuf:"bytes,2,rep,name=fact" json:"fact,omitempty"`
+	// The ticket for a matching node.
+	Ticket string `protobuf:"bytes,1,opt,name=ticket,proto3" json:"ticket,omitempty"`
+	// The matching facts known for that node.
+	Fact []*kythe_proto_common.Fact `protobuf:"bytes,2,rep,name=fact" json:"fact,omitempty"`
 }
 
 func (m *NodeInfo) Reset()         { *m = NodeInfo{} }
 func (m *NodeInfo) String() string { return proto.CompactTextString(m) }
 func (*NodeInfo) ProtoMessage()    {}
 
-func (m *NodeInfo) GetFact() []*Fact {
+func (m *NodeInfo) GetFact() []*kythe_proto_common.Fact {
 	if m != nil {
 		return m.Fact
 	}
@@ -317,16 +319,6 @@ func (m *EdgesReply) GetNode() []*NodeInfo {
 	}
 	return nil
 }
-
-// Fact represents a single key/value fact from the graph.
-type Fact struct {
-	Name  string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Value []byte `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
-}
-
-func (m *Fact) Reset()         { *m = Fact{} }
-func (m *Fact) String() string { return proto.CompactTextString(m) }
-func (*Fact) ProtoMessage()    {}
 
 // A Location represents a single span of zero or more contiguous bytes of a
 // file or buffer.  An empty LOCATION denotes the entirety of the referenced
@@ -691,7 +683,6 @@ func init() {
 	proto.RegisterType((*EdgeSet)(nil), "kythe.proto.EdgeSet")
 	proto.RegisterType((*EdgeSet_Group)(nil), "kythe.proto.EdgeSet.Group")
 	proto.RegisterType((*EdgesReply)(nil), "kythe.proto.EdgesReply")
-	proto.RegisterType((*Fact)(nil), "kythe.proto.Fact")
 	proto.RegisterType((*Location)(nil), "kythe.proto.Location")
 	proto.RegisterType((*Location_Point)(nil), "kythe.proto.Location.Point")
 	proto.RegisterType((*DecorationsRequest)(nil), "kythe.proto.DecorationsRequest")
@@ -1171,38 +1162,6 @@ func (m *EdgesReply) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintXref(data, i, uint64(len(m.NextPageToken)))
 		i += copy(data[i:], m.NextPageToken)
-	}
-	return i, nil
-}
-
-func (m *Fact) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *Fact) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if len(m.Name) > 0 {
-		data[i] = 0xa
-		i++
-		i = encodeVarintXref(data, i, uint64(len(m.Name)))
-		i += copy(data[i:], m.Name)
-	}
-	if m.Value != nil {
-		if len(m.Value) > 0 {
-			data[i] = 0x12
-			i++
-			i = encodeVarintXref(data, i, uint64(len(m.Value)))
-			i += copy(data[i:], m.Value)
-		}
 	}
 	return i, nil
 }
@@ -1988,22 +1947,6 @@ func (m *EdgesReply) Size() (n int) {
 	return n
 }
 
-func (m *Fact) Size() (n int) {
-	var l int
-	_ = l
-	l = len(m.Name)
-	if l > 0 {
-		n += 1 + l + sovXref(uint64(l))
-	}
-	if m.Value != nil {
-		l = len(m.Value)
-		if l > 0 {
-			n += 1 + l + sovXref(uint64(l))
-		}
-	}
-	return n
-}
-
 func (m *Location) Size() (n int) {
 	var l int
 	_ = l
@@ -2492,7 +2435,7 @@ func (m *NodeInfo) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Fact = append(m.Fact, &Fact{})
+			m.Fact = append(m.Fact, &kythe_proto_common.Fact{})
 			if err := m.Fact[len(m.Fact)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -3121,113 +3064,6 @@ func (m *EdgesReply) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.NextPageToken = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipXref(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthXref
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *Fact) Unmarshal(data []byte) error {
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowXref
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Fact: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Fact: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowXref
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthXref
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Name = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Value", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowXref
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				byteLen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthXref
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Value = append([]byte{}, data[iNdEx:postIndex]...)
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

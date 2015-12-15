@@ -6,12 +6,19 @@ filegroup(
     name = "public",
     srcs = [
         "analysis.proto",
+        "common.proto",
         "cxx.proto",
         "filetree.proto",
         "java.proto",
         "storage.proto",
         "xref.proto",
     ],
+)
+
+proto_library(
+    name = "common_proto",
+    gen_cc = 1,
+    gen_go = 1,
 )
 
 proto_library(
@@ -63,12 +70,14 @@ proto_library(
     has_services = 1,
     gen_cc = 1,
     gen_go = 1,
+    deps = [":common_proto"],
 )
 
 proto_library(
     name = "serving_proto",
     has_services = 1,
     gen_go = 1,
+    deps = [":common_proto"],
 )
 
 proto_library(
