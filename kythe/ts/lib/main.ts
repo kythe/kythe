@@ -202,15 +202,28 @@ function index(job : jobs.Job) {
     }
   }
 
+  // Used to find a VName for a definition referenced by an otherwise
+  // unremarkable reference (like one that isn't part of a function call and
+  // thus would need to point to something other than the canonical node for
+  // tok).
+  // defFile is the file in which tok is defined (or is the file
+  // being referenced if tok is null).
+  function translateSimpleReference(defFile : kythe.VName, tok : ts.Node) {
+    if (tok && tok.kind !== ts.SyntaxKind.SourceFile) {
+      return vnameForNode(defFile, tok);
+    } else {
+      return defFile;
+    }
+  }
+
   function indexReferencedFile(vname : kythe.VName, file : ts.SourceFile,
                                ref : ts.FileReference) {
-    let defs = visitReferencesAt(vname, file, ref.pos);
-    if (defs && defs.length !== 0) {
-      let refAnchorVName = textRangeAnchor(file, vname, ref);
-      defs.forEach(def => {
-        kythe.write(kythe.edge(refAnchorVName, "ref/includes", def));
-      });
-    }
+    var refAnchorVName : kythe.VName = null;
+    let defs = visitReferencesAt(file, ref.pos, (defFile, tok) => {
+      refAnchorVName = refAnchorVName || textRangeAnchor(file, vname, ref);
+      kythe.write(kythe.edge(refAnchorVName, "ref/includes",
+          translateSimpleReference(defFile, tok)));
+    });
   }
 
   // Find the nearest parent above node that would be a valid Kythe parent.
@@ -287,7 +300,10 @@ function index(job : jobs.Job) {
       spanLength : number) {
     let vname = emitCommonDeclarationEntries(fn, fullName, searchString,
         file, fileVName, spanStart, spanLength);
+    let callable = vnameForCallable(fileVName, fn);
     kythe.write(kythe.fact(vname, "node/kind", "function"));
+    kythe.write(kythe.fact(callable, "node/kind", "callable"));
+    kythe.write(kythe.edge(vname, "callableas", callable));
     // TODO(zarko): completes edges.
     kythe.write(kythe.fact(vname, "complete",
         fn.body ? "definition" : "incomplete"));
@@ -363,16 +379,31 @@ function index(job : jobs.Job) {
             kythe.write(kythe.fact(exportVName, "node/kind", "js/export"));
           }
         } else {
-          vnames = visitReferencesAt(vname, file, spanStart);
-          if (vnames && vnames.length != 0) {
-            let refSiteAnchor = kythe.anchor(vname,
+          var refSiteAnchor : kythe.VName = null;
+          var refParent : ts.Node = null;
+          visitReferencesAt(file, spanStart, (defFile, tok) => {
+            refSiteAnchor = refSiteAnchor || kythe.anchor(vname,
                 enc.getUtf8PositionOfSourcePosition(file, spanStart),
                 enc.getUtf8PositionOfSourcePosition(file,
                                                     spanStart + spanLength));
-            for (let vi = 0, vn = vnames.length; vi < vn; ++vi) {
-              kythe.write(kythe.edge(refSiteAnchor, "ref", vnames[vi]));
+            let canTok = au.getCanonicalNode(tok);
+            if (canTok.parent) {
+              if (canTok.parent.kind == ts.SyntaxKind.FunctionDeclaration) {
+                refParent = refParent
+                    || tsu.getTokenAtPosition(file, spanStart);
+                if (refParent.parent && refParent.parent.kind
+                    == ts.SyntaxKind.CallExpression) {
+                  kythe.write(kythe.edge(refSiteAnchor, "ref/call",
+                      vnameForCallable(defFile, canTok.parent)));
+                  kythe.write(kythe.edge(refSiteAnchor, "childof",
+                      findParentVName(vname, refParent)));
+                  return;
+                }
+              }
             }
-          }
+            kythe.write(kythe.edge(refSiteAnchor, "ref",
+                translateSimpleReference(defFile, tok)));
+          });
         }
       }
     }
@@ -382,11 +413,18 @@ function index(job : jobs.Job) {
     return vnameForNode(fileVName(tsu.getSourceFileOfNode(node)), node);
   }
 
+  function vnameForCallable(defFileVName : kythe.VName, node : ts.Node) {
+    let vname = kythe.copyVName(vnameForNode(defFileVName, node));
+    vname.signature += "#callable";
+    return vname;
+  }
+
   function vnameForNode(defFileVName : kythe.VName, node : ts.Node)
       : kythe.VName {
     let target = au.getCanonicalNode(node);
     let copyName = kythe.copyVName(defFileVName);
     if (target) {
+      // TODO(zarko): do not use source locations for semantic objects
       let defStart = target.getStart();
       copyName.signature = target.kind + "_" + defStart;
     } else {
@@ -396,9 +434,11 @@ function index(job : jobs.Job) {
     return copyName;
   }
 
-  function visitReferencesAt(vname : kythe.VName, file : ts.SourceFile,
-                             pos : number) : kythe.VName[] {
-    let vnames : kythe.VName[] = [];
+  // For each definition D referenced from file at pos, calls fn with the VName
+  // of D's containing file as well as the node for D itself.
+  function visitReferencesAt(file : ts.SourceFile,
+                             pos : number,
+                             fn : (defFile:kythe.VName, tok:ts.Node) => void) {
     let defs = lang.getDefinitionAtPosition(file.fileName, pos);
     (defs ? defs : []).forEach((def : ts.DefinitionInfo) => {
       let defStart = def.textSpan.start;
@@ -406,13 +446,8 @@ function index(job : jobs.Job) {
       let token = tsu.getTouchingToken(defFile, defStart,
           /* includeItemAtEndPosition */ undefined);
       let defFileVName = fileVName(defFile);
-      if (token && token.kind !== ts.SyntaxKind.SourceFile) {
-        vnames.push(vnameForNode(defFileVName, token));
-      } else {
-        vnames.push(defFileVName);
-      }
+      fn(defFileVName, token);
     });
-    return vnames;
   }
 
   function textRangeAnchor(file : ts.SourceFile, fileVName : kythe.VName,

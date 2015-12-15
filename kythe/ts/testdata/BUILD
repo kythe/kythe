@@ -71,6 +71,12 @@ ts_indexer_test(
     tags = ["basic"],
 )
 
+ts_indexer_test(
+    name = "call_ref",
+    srcs = ["basic/call_ref.js"],
+    tags = ["basic"],
+)
+
 test_suite(
     name = "ts_tests",
     tags = ["ts"],
