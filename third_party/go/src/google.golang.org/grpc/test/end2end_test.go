@@ -263,45 +263,6 @@ func (s *testServer) HalfDuplexCall(stream testpb.TestService_HalfDuplexCallServ
 
 const tlsDir = "testdata/"
 
-func TestDialTimeout(t *testing.T) {
-	conn, err := grpc.Dial("Non-Existent.Server:80", grpc.WithTimeout(time.Millisecond), grpc.WithBlock(), grpc.WithInsecure())
-	if err == nil {
-		conn.Close()
-	}
-	if err != grpc.ErrClientConnTimeout {
-		t.Fatalf("grpc.Dial(_, _) = %v, %v, want %v", conn, err, grpc.ErrClientConnTimeout)
-	}
-}
-
-func TestTLSDialTimeout(t *testing.T) {
-	creds, err := credentials.NewClientTLSFromFile(tlsDir+"ca.pem", "x.test.youtube.com")
-	if err != nil {
-		t.Fatalf("Failed to create credentials %v", err)
-	}
-	conn, err := grpc.Dial("Non-Existent.Server:80", grpc.WithTransportCredentials(creds), grpc.WithTimeout(time.Millisecond), grpc.WithBlock())
-	if err == nil {
-		conn.Close()
-	}
-	if err != grpc.ErrClientConnTimeout {
-		t.Fatalf("grpc.Dial(_, _) = %v, %v, want %v", conn, err, grpc.ErrClientConnTimeout)
-	}
-}
-
-func TestCredentialsMisuse(t *testing.T) {
-	creds, err := credentials.NewClientTLSFromFile(tlsDir+"ca.pem", "x.test.youtube.com")
-	if err != nil {
-		t.Fatalf("Failed to create credentials %v", err)
-	}
-	// Two conflicting credential configurations
-	if _, err := grpc.Dial("Non-Existent.Server:80", grpc.WithTransportCredentials(creds), grpc.WithTimeout(time.Millisecond), grpc.WithBlock(), grpc.WithInsecure()); err != grpc.ErrCredentialsMisuse {
-		t.Fatalf("grpc.Dial(_, _) = _, %v, want _, %v", err, grpc.ErrCredentialsMisuse)
-	}
-	// security info on insecure connection
-	if _, err := grpc.Dial("Non-Existent.Server:80", grpc.WithPerRPCCredentials(creds), grpc.WithTimeout(time.Millisecond), grpc.WithBlock(), grpc.WithInsecure()); err != grpc.ErrCredentialsMisuse {
-		t.Fatalf("grpc.Dial(_, _) = _, %v, want _, %v", err, grpc.ErrCredentialsMisuse)
-	}
-}
-
 func TestReconnectTimeout(t *testing.T) {
 	lis, err := net.Listen("tcp", ":0")
 	if err != nil {
@@ -427,32 +388,35 @@ func TestTimeoutOnDeadServer(t *testing.T) {
 func testTimeoutOnDeadServer(t *testing.T, e env) {
 	s, cc := setUp(t, nil, math.MaxUint32, "", e)
 	tc := testpb.NewTestServiceClient(cc)
-	if ok := cc.WaitForStateChange(time.Second, grpc.Idle); !ok {
-		t.Fatalf("cc.WaitForStateChange(_, %s) = %t, want true", grpc.Idle, ok)
+	ctx, _ := context.WithTimeout(context.Background(), time.Second)
+	if _, err := cc.WaitForStateChange(ctx, grpc.Idle); err != nil {
+		t.Fatalf("cc.WaitForStateChange(_, %s) = _, %v, want _, <nil>", grpc.Idle, err)
 	}
-	if ok := cc.WaitForStateChange(time.Second, grpc.Connecting); !ok {
-		t.Fatalf("cc.WaitForStateChange(_, %s) = %t, want true", grpc.Connecting, ok)
+	ctx, _ = context.WithTimeout(context.Background(), time.Second)
+	if _, err := cc.WaitForStateChange(ctx, grpc.Connecting); err != nil {
+		t.Fatalf("cc.WaitForStateChange(_, %s) = _, %v, want _, <nil>", grpc.Connecting, err)
 	}
-	if cc.State() != grpc.Ready {
-		t.Fatalf("cc.State() = %s, want %s", cc.State(), grpc.Ready)
+	if state, err := cc.State(); err != nil || state != grpc.Ready {
+		t.Fatalf("cc.State() = %s, %v, want %s, <nil>", state, err, grpc.Ready)
 	}
-	if ok := cc.WaitForStateChange(time.Millisecond, grpc.Ready); ok {
-		t.Fatalf("cc.WaitForStateChange(_, %s) = %t, want false", grpc.Ready, ok)
+	ctx, _ = context.WithTimeout(context.Background(), time.Second)
+	if _, err := cc.WaitForStateChange(ctx, grpc.Ready); err != context.DeadlineExceeded {
+		t.Fatalf("cc.WaitForStateChange(_, %s) = _, %v, want _, %v", grpc.Ready, err, context.DeadlineExceeded)
 	}
 	s.Stop()
 	// Set -1 as the timeout to make sure if transportMonitor gets error
 	// notification in time the failure path of the 1st invoke of
 	// ClientConn.wait hits the deadline exceeded error.
-	ctx, _ := context.WithTimeout(context.Background(), -1)
+	ctx, _ = context.WithTimeout(context.Background(), -1)
 	if _, err := tc.EmptyCall(ctx, &testpb.Empty{}); grpc.Code(err) != codes.DeadlineExceeded {
 		t.Fatalf("TestService/EmptyCall(%v, _) = _, error %v, want _, error code: %d", ctx, err, codes.DeadlineExceeded)
 	}
-	if ok := cc.WaitForStateChange(time.Second, grpc.Ready); !ok {
-		t.Fatalf("cc.WaitForStateChange(_, %s) = %t, want true", grpc.Ready, ok)
+	ctx, _ = context.WithTimeout(context.Background(), time.Second)
+	if _, err := cc.WaitForStateChange(ctx, grpc.Ready); err != nil {
+		t.Fatalf("cc.WaitForStateChange(_, %s) = _, %v, want _, <nil>", grpc.Ready, err)
 	}
-	state := cc.State()
-	if state != grpc.Connecting && state != grpc.TransientFailure {
-		t.Fatalf("cc.State() = %s, want %s or %s", state, grpc.Connecting, grpc.TransientFailure)
+	if state, err := cc.State(); err != nil || (state != grpc.Connecting && state != grpc.TransientFailure) {
+		t.Fatalf("cc.State() = %s, %v, want %s or %s, <nil>", state, err, grpc.Connecting, grpc.TransientFailure)
 	}
 	cc.Close()
 }
@@ -560,17 +524,20 @@ func TestEmptyUnaryWithUserAgent(t *testing.T) {
 func testEmptyUnaryWithUserAgent(t *testing.T, e env) {
 	s, cc := setUp(t, nil, math.MaxUint32, testAppUA, e)
 	// Wait until cc is connected.
-	if ok := cc.WaitForStateChange(time.Second, grpc.Idle); !ok {
-		t.Fatalf("cc.WaitForStateChange(_, %s) = %t, want true", grpc.Idle, ok)
+	ctx, _ := context.WithTimeout(context.Background(), time.Second)
+	if _, err := cc.WaitForStateChange(ctx, grpc.Idle); err != nil {
+		t.Fatalf("cc.WaitForStateChange(_, %s) = _, %v, want _, <nil>", grpc.Idle, err)
 	}
-	if ok := cc.WaitForStateChange(10*time.Second, grpc.Connecting); !ok {
-		t.Fatalf("cc.WaitForStateChange(_, %s) = %t, want true", grpc.Connecting, ok)
+	ctx, _ = context.WithTimeout(context.Background(), time.Second)
+	if _, err := cc.WaitForStateChange(ctx, grpc.Connecting); err != nil {
+		t.Fatalf("cc.WaitForStateChange(_, %s) = _, %v, want _, <nil>", grpc.Connecting, err)
 	}
-	if cc.State() != grpc.Ready {
-		t.Fatalf("cc.State() = %s, want %s", cc.State(), grpc.Ready)
+	if state, err := cc.State(); err != nil || state != grpc.Ready {
+		t.Fatalf("cc.State() = %s, %v, want %s, <nil>", state, err, grpc.Ready)
 	}
-	if ok := cc.WaitForStateChange(time.Second, grpc.Ready); ok {
-		t.Fatalf("cc.WaitForStateChange(_, %s) = %t, want false", grpc.Ready, ok)
+	ctx, _ = context.WithTimeout(context.Background(), time.Second)
+	if _, err := cc.WaitForStateChange(ctx, grpc.Ready); err == nil {
+		t.Fatalf("cc.WaitForStateChange(_, %s) = _, %v, want _, %v", grpc.Ready, context.DeadlineExceeded)
 	}
 	tc := testpb.NewTestServiceClient(cc)
 	var header metadata.MD
@@ -582,11 +549,12 @@ func testEmptyUnaryWithUserAgent(t *testing.T, e env) {
 		t.Fatalf("header[\"ua\"] = %q, %t, want %q, true", v, ok, testAppUA)
 	}
 	tearDown(s, cc)
-	if ok := cc.WaitForStateChange(5*time.Second, grpc.Ready); !ok {
-		t.Fatalf("cc.WaitForStateChange(_, %s) = %t, want true", grpc.Ready, ok)
+	ctx, _ = context.WithTimeout(context.Background(), 5 * time.Second)
+	if _, err := cc.WaitForStateChange(ctx, grpc.Ready); err != nil {
+		t.Fatalf("cc.WaitForStateChange(_, %s) = _, %v, want _, <nil>", grpc.Ready, err)
 	}
-	if cc.State() != grpc.Shutdown {
-		t.Fatalf("cc.State() = %s, want %s", cc.State(), grpc.Shutdown)
+	if state, err := cc.State(); err != nil || state != grpc.Shutdown {
+		t.Fatalf("cc.State() = %s, %v, want %s, <nil>", state, err, grpc.Shutdown)
 	}
 }
 
@@ -796,6 +764,51 @@ func testCancel(t *testing.T, e env) {
 	if grpc.Code(err) != codes.Canceled {
 		t.Fatalf(`TestService/UnaryCall(_, _) = %v, %v; want <nil>, error code: %d`, reply, err, codes.Canceled)
 	}
+}
+
+func TestCancelNoIO(t *testing.T) {
+	for _, e := range listTestEnv() {
+		testCancelNoIO(t, e)
+	}
+}
+
+func testCancelNoIO(t *testing.T, e env) {
+	// Only allows 1 live stream per server transport.
+	s, cc := setUp(t, nil, 1, "", e)
+	tc := testpb.NewTestServiceClient(cc)
+	defer tearDown(s, cc)
+	ctx, cancel := context.WithCancel(context.Background())
+	_, err := tc.StreamingInputCall(ctx)
+	if err != nil {
+		t.Fatalf("%v.StreamingInputCall(_) = _, %v, want _, <nil>", tc, err)
+	}
+	// Loop until receiving the new max stream setting from the server.
+	for {
+		ctx, _ := context.WithTimeout(context.Background(), time.Second)
+		_, err := tc.StreamingInputCall(ctx)
+		if err == nil {
+			time.Sleep(time.Second)
+			continue
+		}
+		if grpc.Code(err) == codes.DeadlineExceeded {
+			break
+		}
+		t.Fatalf("%v.StreamingInputCall(_) = _, %v, want _, %d", tc, err, codes.DeadlineExceeded)
+	}
+	// If there are any RPCs slipping before the client receives the max streams setting,
+	// let them be expired.
+	time.Sleep(2 * time.Second)
+	ch := make(chan struct{})
+	go func() {
+		defer close(ch)
+		// This should be blocked until the 1st is canceled.
+		ctx, _ := context.WithTimeout(context.Background(), 2 * time.Second)
+		if _, err := tc.StreamingInputCall(ctx); err != nil {
+			t.Errorf("%v.StreamingInputCall(_) = _, %v, want _, <nil>", tc, err)
+		}
+	}()
+	cancel();
+	<-ch
 }
 
 // The following tests the gRPC streaming RPC implementations.
@@ -1060,32 +1073,21 @@ func testExceedMaxStreamsLimit(t *testing.T, e env) {
 	s, cc := setUp(t, nil, 1, "", e)
 	tc := testpb.NewTestServiceClient(cc)
 	defer tearDown(s, cc)
-	done := make(chan struct{})
-	ch := make(chan int)
-	go func() {
-		for {
-			select {
-			case <-time.After(5 * time.Millisecond):
-				ch <- 0
-			case <-time.After(5 * time.Second):
-				close(done)
-				return
-			}
-		}
-	}()
-	// Loop until a stream creation hangs due to the new max stream setting.
+	_, err := tc.StreamingInputCall(context.Background())
+	if err != nil {
+		t.Fatalf("%v.StreamingInputCall(_) = _, %v, want _, <nil>", tc, err)
+	}
+	// Loop until receiving the new max stream setting from the server.
 	for {
-		select {
-		case <-ch:
-			ctx, _ := context.WithTimeout(context.Background(), time.Second)
-			if _, err := tc.StreamingInputCall(ctx); err != nil {
-				if grpc.Code(err) == codes.DeadlineExceeded {
-					return
-				}
-				t.Fatalf("%v.StreamingInputCall(_) = %v, want <nil>", tc, err)
-			}
-		case <-done:
-			t.Fatalf("Client has not received the max stream setting in 5 seconds.")
+		ctx, _ := context.WithTimeout(context.Background(), time.Second)
+		_, err := tc.StreamingInputCall(ctx)
+		if err == nil {
+			time.Sleep(time.Second)
+			continue
 		}
+		if grpc.Code(err) == codes.DeadlineExceeded {
+			break
+		}
+		t.Fatalf("%v.StreamingInputCall(_) = _, %v, want _, %d", tc, err, codes.DeadlineExceeded)
 	}
 }

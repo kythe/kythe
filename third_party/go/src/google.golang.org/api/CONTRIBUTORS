@@ -11,10 +11,12 @@
 # the individual or the individual's organization has agreed to
 # the appropriate Contributor License Agreement, found here:
 #
-#     http://code.google.com/legal/individual-cla-v1.0.html
-#     http://code.google.com/legal/corporate-cla-v1.0.html
+#     https://cla.developers.google.com/about/google-individual
+#     https://cla.developers.google.com/about/google-corporate
 #
-# The agreement for individuals can be filled out on the web.
+# The CLA can be filled out on the web:
+#
+#     https://cla.developers.google.com/
 #
 # When adding J Random Contributor's name to this file,
 # either J's name or J's organization's name should be
@@ -34,6 +36,7 @@
 Alain Vongsouvanhalainv <alainv@google.com>
 Andrew Gerrand <adg@golang.org>
 Brad Fitzpatrick <bradfitz@golang.org>
+Eric Koleda <ekoleda+devrel@googlers.com>
 Francesc Campoy <campoy@golang.org>
 Garrick Evans <garrick@google.com>
 Glenn Lewis <gmlewis@google.com>
@@ -41,6 +44,7 @@ Ivan Krasin <krasin@golang.org>
 Jason Hall <jasonhall@google.com>
 Johan Euphrosine <proppy@google.com>
 Kostik Shtoyk <kostik@google.com>
+Michael McGreevy <mcgreevy@golang.org>
 Nick Craig-Wood <nickcw@gmail.com>
 Scott Van Woudenberg <scottvw@google.com>
 Takashi Matsuo <tmatsuo@google.com>

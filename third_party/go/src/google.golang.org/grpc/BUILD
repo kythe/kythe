@@ -15,6 +15,7 @@ gopath_package(
         "//third_party/go/src/google.golang.org/grpc/credentials",
         "//third_party/go/src/google.golang.org/grpc/grpclog",
         "//third_party/go/src/google.golang.org/grpc/metadata",
+        "//third_party/go/src/google.golang.org/grpc/naming",
         "//third_party/go/src/google.golang.org/grpc/transport",
     ],
 )

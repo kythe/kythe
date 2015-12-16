@@ -108,7 +108,11 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		opts = append(opts, indexpack.FS(gcs.FS{parts[0]}))
+		fs, err := gcs.NewFS(ctx, parts[0])
+		if err != nil {
+			log.Fatal(err)
+		}
+		opts = append(opts, indexpack.FS(fs))
 		if len(parts) == 2 {
 			archiveRoot = parts[1]
 		} else {

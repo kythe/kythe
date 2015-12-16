@@ -424,16 +424,17 @@ type testTransport struct {
 
 var statusTests = []*testTransport{
 	&testTransport{statusCode: 308, want: 0},
-	&testTransport{statusCode: 308, rangeVal: "0-0", want: 1},
-	&testTransport{statusCode: 308, rangeVal: "0-42", want: 43},
+	&testTransport{statusCode: 308, rangeVal: "bytes=0-0", want: 1},
+	&testTransport{statusCode: 308, rangeVal: "bytes=0-42", want: 43},
 }
 
 func TestTransferStatus(t *testing.T) {
+	ctx := context.Background()
 	for _, tr := range statusTests {
 		rx := &ResumableUpload{
 			Client: &http.Client{Transport: tr},
 		}
-		g, _, err := rx.transferStatus()
+		g, _, err := rx.transferStatus(ctx)
 		if err != nil {
 			t.Error(err)
 		}
@@ -452,7 +453,7 @@ func (t *interruptedTransport) RoundTrip(req *http.Request) (*http.Response, err
 				StatusCode: http.StatusServiceUnavailable,
 				Header:     http.Header{},
 			}
-			t.rangeVal = fmt.Sprintf("0-%v", len(t.buf)-1) // Set the response for next time
+			t.rangeVal = fmt.Sprintf("bytes=0-%v", len(t.buf)-1) // Set the response for next time
 			return res, nil
 		}
 		m := contentRangeRE.FindStringSubmatch(rng)
@@ -545,7 +546,7 @@ func TestInterruptedTransferChunks(t *testing.T) {
 		}
 	}
 	if len(tr.buf) != len(slurp) || bytes.Compare(tr.buf, slurp) != 0 {
-		t.Errorf("transfered file corrupted:\ngot %s\nwant %s", tr.buf, slurp)
+		t.Errorf("transferred file corrupted:\ngot %s\nwant %s", tr.buf, slurp)
 	}
 	w := ""
 	for i := chunkSize; i <= st.Size(); i += chunkSize {

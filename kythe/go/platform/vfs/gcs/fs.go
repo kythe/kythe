@@ -26,14 +26,33 @@ import (
 	"runtime"
 	"time"
 
+	"kythe.io/kythe/go/platform/vfs"
+
 	"golang.org/x/net/context"
 	"google.golang.org/cloud/storage"
 )
 
-// FS implements a VFS backed by a bucket in Google Cloud Storage
-type FS struct{ Bucket string }
+// fs implements a VFS backed by a bucket in Google Cloud Storage
+type fs struct {
+	client     *storage.Client
+	bucketName string
+	bucket     *storage.BucketHandle
+}
 
-type objInfo struct{ *storage.Object }
+// NewFS creates a new VFS backed by the given Google Cloud Storage bucket.
+func NewFS(ctx context.Context, bucket string) (vfs.Interface, error) {
+	c, err := storage.NewClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &fs{
+		client:     c,
+		bucketName: bucket,
+		bucket:     c.Bucket(bucket),
+	}, nil
+}
+
+type objInfo struct{ *storage.ObjectAttrs }
 
 // These methods implement the os.FileInfo interface
 func (o objInfo) Name() string       { return filepath.Base(o.Name()) }
@@ -41,56 +60,56 @@ func (o objInfo) Size() int64        { return int64(o.Size()) }
 func (o objInfo) Mode() os.FileMode  { return os.ModePerm }
 func (o objInfo) ModTime() time.Time { return time.Time{} }
 func (o objInfo) IsDir() bool        { return false }
-func (o objInfo) Sys() interface{}   { return o.Object }
+func (o objInfo) Sys() interface{}   { return o.ObjectAttrs }
 
 // Stat implements part of the VFS interface.
-func (s FS) Stat(ctx context.Context, path string) (os.FileInfo, error) {
-	obj, err := storage.StatObject(ctx, s.Bucket, path)
+func (s *fs) Stat(ctx context.Context, path string) (os.FileInfo, error) {
+	attrs, err := s.bucket.Object(path).Attrs(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return objInfo{obj}, os.ErrNotExist
+	return objInfo{attrs}, nil
 }
 
 // MkdirAll implements part of the VFS interface.
-func (FS) MkdirAll(_ context.Context, path string, mode os.FileMode) error { return nil }
+func (fs) MkdirAll(_ context.Context, path string, mode os.FileMode) error { return nil }
 
 // Open implements part of the VFS interface.
-func (s FS) Open(ctx context.Context, path string) (io.ReadCloser, error) {
-	return storage.NewReader(ctx, s.Bucket, path)
+func (s *fs) Open(ctx context.Context, path string) (io.ReadCloser, error) {
+	return s.bucket.Object(path).NewReader(ctx)
 }
 
 // Create implements part of the VFS interface.
-func (s FS) Create(ctx context.Context, path string) (io.WriteCloser, error) {
-	return storage.NewWriter(ctx, s.Bucket, path), nil
+func (s *fs) Create(ctx context.Context, path string) (io.WriteCloser, error) {
+	return s.bucket.Object(path).NewWriter(ctx), nil
 }
 
 // Rename implements part of the VFS interface.
-func (s FS) Rename(ctx context.Context, oldPath, newPath string) error {
-	if _, err := storage.CopyObject(ctx, s.Bucket, oldPath, s.Bucket, newPath, &storage.ObjectAttrs{
+func (s *fs) Rename(ctx context.Context, oldPath, newPath string) error {
+	if _, err := s.client.CopyObject(ctx, s.bucketName, oldPath, s.bucketName, newPath, &storage.ObjectAttrs{
 		ContentType: "application/octet-stream",
 	}); err != nil {
 		return fmt.Errorf("error copying file during rename: %v", err)
 	}
-	if err := storage.DeleteObject(ctx, s.Bucket, oldPath); err != nil {
+	if err := s.bucket.Object(oldPath).Delete(ctx); err != nil {
 		return fmt.Errorf("error deleting old file during rename: %v", err)
 	}
 	return nil
 }
 
 // Remove implements part of the VFS interface.
-func (s FS) Remove(ctx context.Context, path string) error {
-	return storage.DeleteObject(ctx, s.Bucket, path)
+func (s *fs) Remove(ctx context.Context, path string) error {
+	return s.bucket.Object(path).Delete(ctx)
 }
 
 // Glob implements part of the VFS interface.
-func (s FS) Glob(ctx context.Context, glob string) ([]string, error) {
+func (s *fs) Glob(ctx context.Context, glob string) ([]string, error) {
 	q := &storage.Query{
 		Prefix: globLiteralPrefix(glob),
 	}
 	var paths []string
 	for q != nil {
-		objs, err := storage.ListObjects(ctx, s.Bucket, q)
+		objs, err := s.bucket.List(ctx, q)
 		if err != nil {
 			return nil, err
 		}
