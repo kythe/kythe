@@ -67,14 +67,20 @@ export function copyVName(v : VName) : VName {
   return vname(v.signature, v.path, v.language, v.root, v.corpus);
 }
 
+var exportedAnchors : {[index:string]:boolean} = {};
+
 export function anchor(fileName : VName, begin : number, end : number) : VName {
   var anchorVName = copyVName(fileName);
   anchorVName.signature = begin + "," + end;
   anchorVName.language = "ts";
-  write(fact(anchorVName, "node/kind", "anchor"));
-  write(fact(anchorVName, "loc/start", "" + begin));
-  write(fact(anchorVName, "loc/end", "" + end));
-  write(edge(anchorVName, "childof", fileName));
+  let anchorString = JSON.stringify(anchorVName);
+  if (!exportedAnchors[anchorString]) {
+    write(fact(anchorVName, "node/kind", "anchor"));
+    write(fact(anchorVName, "loc/start", "" + begin));
+    write(fact(anchorVName, "loc/end", "" + end));
+    write(edge(anchorVName, "childof", fileName));
+    exportedAnchors[anchorString] = true;
+  }
   return anchorVName;
 }
 

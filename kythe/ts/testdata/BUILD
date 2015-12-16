@@ -77,6 +77,12 @@ ts_indexer_test(
     tags = ["basic"],
 )
 
+ts_indexer_test(
+    name = "dict_fn",
+    srcs = ["basic/dict_fn.js"],
+    tags = ["basic"],
+)
+
 test_suite(
     name = "ts_tests",
     tags = ["ts"],
