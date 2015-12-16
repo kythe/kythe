@@ -78,22 +78,31 @@ GetVarDeclFlagDeclLoc(const clang::LangOptions &LO, const clang::VarDecl *Decl,
     return clang::SourceLocation();
   }
   // Now check to see where the token paste came from. As it turns out, the
-  // spelling location of the VarDecl's source range will point into
+  // spelling location of the VarDecl's spelling source range will point into
   // the gflags headers:
-  auto SourceRange = Decl->getSourceRange();
-  auto SRSpellingLoc = SM.getSpellingLoc(SourceRange.getBegin());
-  // Did this come from a googleflags header file?
-  auto MaybeFlagsFileId = SM.getFileID(SRSpellingLoc);
-  if (MaybeFlagsFileId.isInvalid()) {
-    return clang::SourceLocation();
-  }
-  const auto *MaybeFlagsFileEntry = SM.getFileEntryForID(MaybeFlagsFileId);
-  if (!MaybeFlagsFileEntry) {
-    return clang::SourceLocation();
-  }
-  llvm::StringRef MaybeFlagsFilename(MaybeFlagsFileEntry->getName());
-  if (!MaybeFlagsFilename.endswith("gflags.h") &&
-      !MaybeFlagsFilename.endswith("gflags_declare.h")) {
+  auto IsDefinedInGflagsHeader = [&SM](clang::SourceLocation SRBegin) {
+    if (!SRBegin.isValid()) {
+      return false;
+    }
+    auto SRSpellingLoc = SM.getSpellingLoc(SRBegin);
+    // Did this come from a googleflags header file?
+    auto MaybeFlagsFileId = SM.getFileID(SRSpellingLoc);
+    if (MaybeFlagsFileId.isInvalid()) {
+      return false;
+    }
+    const auto *MaybeFlagsFileEntry = SM.getFileEntryForID(MaybeFlagsFileId);
+    if (!MaybeFlagsFileEntry) {
+      return false;
+    }
+    llvm::StringRef MaybeFlagsFilename(MaybeFlagsFileEntry->getName());
+    return MaybeFlagsFilename.endswith("gflags.h") ||
+           MaybeFlagsFilename.endswith("gflags_declare.h");
+  };
+  auto SRBegin = Decl->getSourceRange().getBegin();
+  if (!SRBegin.isValid() ||
+      (!IsDefinedInGflagsHeader(SRBegin) &&
+       !IsDefinedInGflagsHeader(
+           SM.getImmediateExpansionRange(SRBegin).first))) {
     return clang::SourceLocation();
   }
   // This VarDecl's name (which starts with FLAGS_) came from a token paste

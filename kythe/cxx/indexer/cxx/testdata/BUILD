@@ -828,6 +828,14 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "flags_bool_stdbool",
+    srcs = ["libraries/flags_bool_stdbool.cc"],
+    ignore_dups = True,
+    tags = ["libraries"],
+    deps = ["libraries/stdbool.h"] + glob(["libraries/gflags*.h"]),
+)
+
+cxx_indexer_test(
     name = "flags_decls",
     srcs = ["libraries/flags_decls.cc"],
     tags = ["libraries"],
