@@ -1,6 +1,6 @@
 # Release Notes
 
-## Upcoming release
+## v0.0.17
 
 Notable additions:
  - `write_tables`: produce serving data for xrefs.CrossReferences method
