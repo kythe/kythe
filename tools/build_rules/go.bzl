@@ -82,14 +82,16 @@ def _go_compile(ctx, pkg, srcs, archive, extra_packages=[]):
   cgo_link_flags = set([], order="link")
   transitive_deps = []
   transitive_cc_libs = set()
+  deps = []
   for dep in ctx.attr.deps:
+    deps += [dep.go.package]
     transitive_deps += dep.go.transitive_deps
     cgo_link_flags += dep.go.cgo_link_flags
     transitive_cc_libs += dep.go.transitive_cc_libs
-  transitive_deps += extra_packages
 
+  transitive_deps += extra_packages
+  deps += extra_packages
   transitive_deps = _dedup_packages(transitive_deps)
-  archives, package_map = _construct_package_map(transitive_deps)
 
   cc_inputs = set()
   cgo_compile_flags = set([], order="compile")
@@ -105,6 +107,8 @@ def _go_compile(ctx, pkg, srcs, archive, extra_packages=[]):
 
       for flag in dep.cc.compile_flags:
         cgo_compile_flags += [replace_prefix(flag, include_prefix_replacements)]
+
+  archives, package_map = _construct_package_map(deps)
 
   gotool = ctx.file._go
   if ctx.attr.go_build:

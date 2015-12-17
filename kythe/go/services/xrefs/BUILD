@@ -6,6 +6,7 @@ go_package(
     deps = [
         "//kythe/go/services/web",
         "//kythe/go/util/schema",
+        "//kythe/proto:common_proto_go",
         "//kythe/proto:xref_proto_go",
         "//third_party/go/src/github.com/sergi/go-diff/diffmatchpatch",
         "//third_party/go/src/golang.org/x/net/context",

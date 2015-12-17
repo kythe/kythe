@@ -7,6 +7,7 @@ licenses(["notice"])
 gopath_package(
     exclude_srcs = ["cancelreq_legacy.go"],
     deps = [
+        "//third_party/go/src/github.com/golang/protobuf/proto",
         "//third_party/go/src/golang.org/x/net/context",
         "//third_party/go/src/golang.org/x/oauth2",
         "//third_party/go/src/golang.org/x/oauth2/google",

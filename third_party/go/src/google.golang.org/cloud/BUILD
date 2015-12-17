@@ -12,5 +12,6 @@ gopath_package(
         "//third_party/go/src/golang.org/x/oauth2",
         "//third_party/go/src/google.golang.org/cloud/internal",
         "//third_party/go/src/google.golang.org/cloud/internal/opts",
+        "//third_party/go/src/google.golang.org/grpc",
     ],
 )
