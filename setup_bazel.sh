@@ -18,7 +18,7 @@
 # pick the Go tool and falls back onto "$(go env GOROOT)".
 
 # The current version of Bazel we support is
-# f87a414a6bf50613a2c419e53a96f76154f44ae3
+# 53f407608ef6547bd690fa4420418aa6b6991b22
 
 cd "$(dirname "$0")"
 

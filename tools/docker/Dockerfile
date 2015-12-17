@@ -49,7 +49,7 @@ ENV PATH=/usr/local/go/bin:$PATH
 RUN cd /opt && \
     git clone https://github.com/google/bazel/ && \
     cd bazel && \
-    git checkout f87a414a6bf50613a2c419e53a96f76154f44ae && \
+    git checkout 53f407608ef6547bd690fa4420418aa6b6991b22 && \
     sed -i '/Building Bazel with Bazel/iexit 0' compile.sh && \
     ./compile.sh compile && \
     ln -s /opt/bazel/output/bazel /usr/bin/
