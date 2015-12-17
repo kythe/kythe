@@ -26,9 +26,9 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
-	"sort"
 
 	"kythe.io/kythe/go/platform/delimited"
 	"kythe.io/kythe/go/util/sortutil"
@@ -65,9 +65,11 @@ type Marshaler interface {
 type mergeSorter struct {
 	opts MergeOptions
 
-	buffer  *sortutil.ByLesser
+	buffer  []interface{}
 	workDir string
 	shards  []string
+
+	finalized bool
 }
 
 // DefaultMaxInMemory is the default number of elements to keep in-memory during
@@ -125,29 +127,25 @@ func NewMergeSorter(opts MergeOptions) (Interface, error) {
 
 	return &mergeSorter{
 		opts:    opts,
-		buffer:  &sortutil.ByLesser{Lesser: opts.Lesser},
+		buffer:  make([]interface{}, 0, opts.MaxInMemory),
 		workDir: dir,
 	}, nil
 }
 
 var (
-	// ErrAlreadyFinalized is returned from Interface#Add when Interface#Read has
-	// already been called, freezing the sort's inputs.
+	// ErrAlreadyFinalized is returned from Interface#Add and Interface#Read when
+	// Interface#Read has already been called, freezing the sort's inputs/outputs.
 	ErrAlreadyFinalized = errors.New("sorter already finalized")
-
-	// ErrAlreadyRead is returned from Interface#Read when Interface#Read has
-	// already been called.
-	ErrAlreadyRead = errors.New("sorter already read")
 )
 
 // Add implements part of the Interface interface.
 func (m *mergeSorter) Add(i interface{}) error {
-	if m.buffer == nil {
+	if m.finalized {
 		return ErrAlreadyFinalized
 	}
 
-	m.buffer.Push(i)
-	if m.buffer.Len() > m.opts.MaxInMemory {
+	m.buffer = append(m.buffer, i)
+	if len(m.buffer) >= m.opts.MaxInMemory {
 		return m.dumpShard()
 	}
 	return nil
@@ -155,39 +153,42 @@ func (m *mergeSorter) Add(i interface{}) error {
 
 // Read implements part of the Interface interface.
 func (m *mergeSorter) Read(f func(i interface{}) error) (err error) {
-	if m.buffer == nil {
-		return ErrAlreadyRead
+	if m.finalized {
+		return ErrAlreadyFinalized
 	}
-
-	if len(m.shards) == 0 {
-		// Fast path for a single, in-memory shard
-		defer func() {
-			m.buffer = nil // signal that further operations should fail
-		}()
-		sort.Sort(m.buffer)
-		for _, x := range m.buffer.Slice {
-			if err := f(x); err != nil {
-				return err
-			}
-		}
-		return nil
-	}
+	m.finalized = true // signal that further operations should fail
 
 	// Ensure that the working directory is always cleaned up.
 	defer func() {
 		cleanupErr := os.RemoveAll(m.workDir)
 		if err == nil {
 			err = cleanupErr
+		} else {
+			log.Println("WARNING: error removing temporary directory:", m.workDir)
 		}
 	}()
 
-	if m.buffer.Len() != 0 {
+	if len(m.shards) == 0 {
+		// Fast path for a single, in-memory shard
+		defer func() { m.buffer = nil }()
+		sortutil.Sort(m.opts.Lesser, m.buffer)
+		for len(m.buffer) > 0 {
+			if err := f(m.buffer[0]); err != nil {
+				return err
+			}
+			m.buffer = m.buffer[1:]
+		}
+		return nil
+	}
+
+	if len(m.buffer) != 0 {
 		// To make the merging algorithm simpler, dump the last shard to disk.
 		if err := m.dumpShard(); err != nil {
+			m.buffer = nil
 			return fmt.Errorf("error dumping final shard: %v", err)
 		}
 	}
-	m.buffer = nil // signal that further operations should fail
+	m.buffer = nil
 
 	// This is a heap storing the head of each shard.
 	merger := &sortutil.ByLesser{
@@ -204,14 +205,16 @@ func (m *mergeSorter) Read(f func(i interface{}) error) (err error) {
 
 	// Initialize the merger heap by reading the first element of each shard.
 	for _, shard := range m.shards {
-		f, err := os.Open(shard)
+		f, err := os.OpenFile(shard, os.O_RDONLY, shardFileMode)
 		if err != nil {
 			return fmt.Errorf("error opening shard %q: %v", shard, err)
 		}
-		var r io.Reader = f
+
+		r := io.Reader(f)
 		if m.opts.CompressShards {
 			r = snappy.NewReader(r)
 		}
+
 		rd := delimited.NewReader(bufio.NewReaderSize(r, m.opts.IOBufferSize))
 		first, err := rd.Next()
 		if err != nil {
@@ -223,6 +226,7 @@ func (m *mergeSorter) Read(f func(i interface{}) error) (err error) {
 			f.Close()
 			return fmt.Errorf("error unmarshaling beginning of shard %q: %v", shard, err)
 		}
+
 		heap.Push(merger, &mergeElement{el: el, rd: rd, f: f})
 	}
 
@@ -241,7 +245,8 @@ func (m *mergeSorter) Read(f func(i interface{}) error) (err error) {
 		// Read and parse the next value on the same shard
 		rec, err := x.rd.Next()
 		if err != nil {
-			_ = x.f.Close() // ignore errors (file is only open for reading)
+			_ = x.f.Close()           // ignore errors (file is only open for reading)
+			_ = os.Remove(x.f.Name()) // ignore errors (os.RemoveAll used in defer)
 			if err == io.EOF {
 				continue
 			} else {
@@ -261,12 +266,16 @@ func (m *mergeSorter) Read(f func(i interface{}) error) (err error) {
 	return nil
 }
 
+const shardFileMode = 0600 | os.ModeExclusive | os.ModeAppend | os.ModeTemporary | os.ModeSticky
+
 func (m *mergeSorter) dumpShard() (err error) {
-	defer m.buffer.Clear()
+	defer func() {
+		m.buffer = make([]interface{}, 0, m.opts.MaxInMemory)
+	}()
 
 	// Create a new shard file
 	shardPath := filepath.Join(m.workDir, fmt.Sprintf("shard.%.6d", len(m.shards)))
-	file, err := os.OpenFile(shardPath, os.O_WRONLY|os.O_CREATE, 0666)
+	file, err := os.OpenFile(shardPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, shardFileMode)
 	if err != nil {
 		return fmt.Errorf("error creating shard: %v", err)
 	}
@@ -274,7 +283,7 @@ func (m *mergeSorter) dumpShard() (err error) {
 		replaceErrIfNil(&err, "error closing shard: %v", file.Close())
 	}()
 
-	var w io.Writer = file
+	w := io.Writer(file)
 	if m.opts.CompressShards {
 		w = snappy.NewWriter(w)
 	}
@@ -286,18 +295,19 @@ func (m *mergeSorter) dumpShard() (err error) {
 	}()
 
 	// Sort the in-memory buffer of elements
-	sort.Sort(m.buffer)
+	sortutil.Sort(m.opts.Lesser, m.buffer)
 
 	// Write each element of the in-memory to shard file, in sorted order
 	wr := delimited.NewWriter(buf)
-	for _, x := range m.buffer.Slice {
-		rec, err := m.opts.Marshaler.Marshal(x)
+	for len(m.buffer) > 0 {
+		rec, err := m.opts.Marshaler.Marshal(m.buffer[0])
 		if err != nil {
 			return fmt.Errorf("marshaling error: %v", err)
 		}
 		if _, err := wr.Write(rec); err != nil {
 			return fmt.Errorf("writing error: %v", err)
 		}
+		m.buffer = m.buffer[1:]
 	}
 
 	m.shards = append(m.shards, shardPath)

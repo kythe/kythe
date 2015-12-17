@@ -17,16 +17,26 @@
 // Package sortutil implements utilities for sorting.
 package sortutil
 
+import "sort"
+
 // Lesser is an interface to a comparison function.
 type Lesser interface {
 	// Less returns true if a < b.
 	Less(a, b interface{}) bool
 }
 
+// Sort uses l to sort the given slice.
+func Sort(l Lesser, a []interface{}) {
+	sort.Sort(&ByLesser{
+		Lesser: l,
+		Slice:  a,
+	})
+}
+
 // ByLesser implements the heap.Interface using a Lesser over a slice.
 type ByLesser struct {
-	Lesser
-	Slice []interface{}
+	Lesser Lesser
+	Slice  []interface{}
 }
 
 // Clear removes all elements from the underlying slice.
