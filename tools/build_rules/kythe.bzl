@@ -165,15 +165,15 @@ java_verifier_test = rule(
             executable = True,
         ),
         "_javac": attr.label(
-            default = Label("//tools/jdk:javac"),
+            default = Label("@bazel_tools//tools/jdk:javac"),
             single_file = True,
         ),
         "_jar": attr.label(
-            default = Label("//tools/jdk:jar"),
+            default = Label("@bazel_tools//tools/jdk:jar"),
             single_file = True,
         ),
         "_jdk": attr.label(
-            default = Label("//tools/jdk:jdk"),
+            default = Label("@bazel_tools//tools/jdk:jdk"),
             allow_files = True,
         ),
     },

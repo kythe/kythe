@@ -1,1 +1,3 @@
-../third_party/bazel/tools/BUILD
+package(default_visibility = ["//visibility:public"])
+
+exports_files(["node"])

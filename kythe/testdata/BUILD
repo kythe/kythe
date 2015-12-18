@@ -7,7 +7,7 @@ genrule(
     srcs = [
         "test.kindex",
         "//kythe/java/com/google/devtools/kythe/analyzers/java:indexer_deploy.jar",
-        "//tools/jdk",
+        "@bazel_tools//tools/jdk",
     ],
     outs = ["test.entries"],
     # TODO(https://kythe.io/phabricator/T70)

@@ -25,6 +25,6 @@ java_binary(
     ],
     create_executable = 0,
     deps = [
-        "//tools/jdk:langtools-neverlink",
+        "@bazel_tools//tools/jdk:langtools-neverlink",
     ],
 )
