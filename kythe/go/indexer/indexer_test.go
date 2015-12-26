@@ -27,6 +27,7 @@ import (
 	"testing"
 
 	"github.com/golang/protobuf/proto"
+	"golang.org/x/net/context"
 
 	apb "kythe.io/kythe/proto/analysis_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
@@ -159,3 +160,76 @@ type fakeNode struct{ pos, end token.Pos }
 
 func (f fakeNode) Pos() token.Pos { return f.pos }
 func (f fakeNode) End() token.Pos { return f.end }
+
+func TestSink(t *testing.T) {
+	var facts, edges []*spb.Entry
+
+	sink := Sink(func(_ context.Context, e *spb.Entry) error {
+		if isEdge(e) {
+			edges = append(edges, e)
+		} else {
+			facts = append(facts, e)
+		}
+		return nil
+	})
+
+	hasFact := func(who *spb.VName, name, value string) bool {
+		for _, fact := range facts {
+			if proto.Equal(fact.Source, who) && fact.FactName == name && string(fact.FactValue) == value {
+				return true
+			}
+		}
+		return false
+	}
+	hasEdge := func(src, tgt *spb.VName, kind string) bool {
+		for _, edge := range edges {
+			if proto.Equal(edge.Source, src) && proto.Equal(edge.Target, tgt) && edge.EdgeKind == kind {
+				return true
+			}
+		}
+		return false
+	}
+
+	// Verify that the entries we push into the sink are preserved in encoding.
+	him := &spb.VName{Language: "peeps", Signature: "him"}
+	her := &spb.VName{Language: "peeps", Signature: "her"}
+	ctx := context.Background()
+	sink.writeFact(ctx, him, "/name", "John")
+	sink.writeEdge(ctx, him, her, "/friendof")
+	sink.writeFact(ctx, her, "/name", "Mary")
+	sink.writeEdge(ctx, him, him, "/loves")
+	sink.writeEdge(ctx, her, him, "/suspiciousof")
+	sink.writeFact(ctx, him, "/name/full", "Jonathan Q. Public")
+	sink.writeFact(ctx, her, "/name/full", "Mary M. Q. Contrary")
+
+	for _, want := range []struct {
+		who         *spb.VName
+		name, value string
+	}{
+		{him, "/name", "John"},
+		{him, "/name/full", "Jonathan Q. Public"},
+		{her, "/name", "Mary"},
+		{her, "/name/full", "Mary M. Q. Contrary"},
+	} {
+		if !hasFact(want.who, want.name, want.value) {
+			t.Errorf("Missing fact %q=%q for %+v", want.name, want.value, want.who)
+		}
+	}
+
+	for _, want := range []struct {
+		src, tgt *spb.VName
+		kind     string
+	}{
+		{him, her, "/friendof"},
+		{her, him, "/suspiciousof"},
+		{him, him, "/loves"},
+	} {
+
+		if !hasEdge(want.src, want.tgt, want.kind) {
+			t.Errorf("Missing edge %+v ―%s→ %+v", want.src, want.kind, want.tgt)
+		}
+	}
+}
+
+// isEdge reports whether e represents an edge.
+func isEdge(e *spb.Entry) bool { return e.Target != nil && e.EdgeKind != "" }
