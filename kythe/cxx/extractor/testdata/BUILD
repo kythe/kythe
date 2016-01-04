@@ -144,3 +144,10 @@ cc_verifier_test(
         "extract_verify_std_vector_test.cc",
     ],
 )
+
+cc_verifier_test(
+    name = "extract_verify_iostream_test",
+    srcs = [
+        "extract_verify_iostream_test.cc",
+    ],
+)
