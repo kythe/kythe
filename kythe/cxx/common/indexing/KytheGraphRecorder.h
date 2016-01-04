@@ -40,7 +40,9 @@ enum class NodeKindID {
   kFunction,
   kCallable,
   kLookup,
-  kMacro
+  kMacro,
+  kInterface,
+  kPackage
 };
 
 /// \brief Known properties of nodes. See the schema for details.

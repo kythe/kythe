@@ -21,14 +21,15 @@
 namespace kythe {
 
 static const std::string *const kNodeKindSpellings[] = {
-    new std::string("anchor"),   new std::string("file"),
-    new std::string("variable"), new std::string("talias"),
-    new std::string("tapp"),     new std::string("tnominal"),
-    new std::string("record"),   new std::string("sum"),
-    new std::string("constant"), new std::string("abs"),
-    new std::string("absvar"),   new std::string("name"),
-    new std::string("function"), new std::string("callable"),
-    new std::string("lookup"),   new std::string("macro")};
+    new std::string("anchor"),    new std::string("file"),
+    new std::string("variable"),  new std::string("talias"),
+    new std::string("tapp"),      new std::string("tnominal"),
+    new std::string("record"),    new std::string("sum"),
+    new std::string("constant"),  new std::string("abs"),
+    new std::string("absvar"),    new std::string("name"),
+    new std::string("function"),  new std::string("callable"),
+    new std::string("lookup"),    new std::string("macro"),
+    new std::string("interface"), new std::string("package")};
 
 static const std::string *kEdgeKindSpellings[] = {
     new std::string("/kythe/edge/defines"),
