@@ -64,6 +64,20 @@ sh_test(
 )
 
 cxx_indexer_test(
+    name = "fail_index",
+    srcs = ["test_fail_index.cc"],
+    tags = ["basic"],
+    expect_fail_index=True,
+)
+
+cxx_indexer_test(
+    name = "fail_verify",
+    srcs = ["test_fail_verify.cc"],
+    tags = ["basic"],
+    expect_fail_verify=True,
+)
+
+cxx_indexer_test(
     name = "alias_alias_int",
     srcs = ["basic/alias_alias_int.cc"],
     tags = ["basic"],
@@ -1420,20 +1434,4 @@ cxx_indexer_test(
 test_suite(
     name = "indexer_template",
     tags = ["template"],
-)
-
-# Required by cxx_indexer_test macro.
-sh_library(
-    name = "one_case",
-    srcs = ["one_case.sh"],
-    data = [
-        "//kythe/cxx/indexer/cxx:indexer",
-        "//kythe/cxx/verifier",
-    ],
-)
-
-sh_binary(
-    name = "run_case",
-    srcs = ["run_case.sh"],
-    deps = [":one_case"],
 )

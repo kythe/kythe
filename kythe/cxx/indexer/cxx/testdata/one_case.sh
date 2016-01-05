@@ -14,25 +14,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This script defines one_case, a function that runs the indexer and verifier
-# on a single file test case. The test case contains assertions for the
-# verifier to verify. If a test fails, the variable HAD_ERRORS will be set to 1.
-
-HAD_ERRORS=0
 VERIFIER="kythe/cxx/verifier/verifier"
 INDEXER="kythe/cxx/indexer/cxx/indexer"
-# one_case test-file clang-standard verifier-argument indexer-argument
-function one_case {
-  ${INDEXER} -i $1 $4 $5 -- -std=$2 | ${VERIFIER} $1 $3 $6
-  RESULTS=( ${PIPESTATUS[0]} ${PIPESTATUS[1]} )
-  if [ ${RESULTS[0]} -ne 0 ]; then
-    echo "[ FAILED INDEX: $1 ]"
-    HAD_ERRORS=1
-  elif [ ${RESULTS[1]} -ne 0 ]; then
-    echo "[ FAILED VERIFY: $1 ]"
-    HAD_ERRORS=1
-  else
-    echo "[ OK: $1 ]"
+# one_case test-file clang-standard indexer-argument1 indexer-argument2
+#          verifier-argument1 verifier-argument2
+#          [expectfailindex | expectfailverify]
+${INDEXER} -i $1 $3 $4 -- -std=$2 | ${VERIFIER} $1 $5 $6
+RESULTS=( ${PIPESTATUS[0]} ${PIPESTATUS[1]} )
+if [ ${RESULTS[1]} -eq 2 ]; then
+  echo "[ BAD VERIFIER SCRIPT: $1 ]"
+  exit 1
+elif [ ${RESULTS[0]} -ne 0 ]; then
+  echo "[ FAILED INDEX: $1 ]"
+  if [ "$7" == 'expectfailindex' ]; then
+    exit 0
   fi
-  return $HAD_ERRORS
-}
+elif [ ${RESULTS[1]} -ne 0 ]; then
+  echo "[ FAILED VERIFY: $1 ]"
+  if [ "$7" == 'expectfailverify' ]; then
+    exit 0
+  fi
+else
+  echo "[ OK: $1 ]"
+  if [ -z "$7" ]; then
+    exit 0
+  fi
+fi
+exit 1
