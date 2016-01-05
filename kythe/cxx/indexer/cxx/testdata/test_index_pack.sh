@@ -16,7 +16,7 @@ rm -rf -- "${OUT_DIR}/pack"
     "${BASE_DIR}/kindex_test.main"
 "${INDEX_PACK_BIN}" -quiet=true --to_archive "${OUT_DIR}/pack" \
     "${TEST_INDEX}"
-"${INDEXER}" -index_pack "${OUT_DIR}/pack" \
+"${INDEXER}" --ignore_unimplemented=false -index_pack "${OUT_DIR}/pack" \
     "401bdc75a298d6c3a11a10f493b182032793034fddd84e9810f89b5def902309" \
     > "${OUT_DIR}/kindex_test.entries"
 cat "${OUT_DIR}/kindex_test.entries" \

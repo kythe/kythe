@@ -76,7 +76,8 @@ RAW_EXAMPLE="$TMP/raw.hcc"
 CXX_ARGS="-std=c++1y $(cat "$ARGS_FILE")"
 
 set +e # Handle these error separately below
-"$CXX_INDEXER_BIN" -i "$TEST_MAIN" -- $CXX_ARGS | "$VERIFIER_BIN" "$SRCS"/*
+"$CXX_INDEXER_BIN" --ignore_unimplemented=false -i "$TEST_MAIN" -- $CXX_ARGS \
+  | "$VERIFIER_BIN" "$SRCS"/*
 RESULTS=( ${PIPESTATUS[0]} ${PIPESTATUS[1]} )
 set -e
 
@@ -89,7 +90,7 @@ fi
 trap 'error FORMAT' ERR
 EXAMPLE_ID=$(sha1sum "$RAW_EXAMPLE" | cut -c 1-40)
 
-"$CXX_INDEXER_BIN" -i "$TEST_MAIN" -- $CXX_ARGS \
+"$CXX_INDEXER_BIN" --ignore_unimplemented=false -i "$TEST_MAIN" -- $CXX_ARGS \
   | "$VERIFIER_BIN" --graphviz > "$TMP/EXAMPLE_ID.dot"
 dot -Tsvg -o "$EXAMPLE_ID.svg" "$TMP/EXAMPLE_ID.dot"
 

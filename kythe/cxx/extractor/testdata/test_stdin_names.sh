@@ -24,5 +24,5 @@ OUT_INDEX=$("${INDEXPACK}" --from_archive "${OUT_DIR}" 2>&1 | \
     sed -ne '/^.*Writing compilation unit to .*$/ { s/.*Writing compilation unit to \(.*\.kindex\)/\1/; p;}')
 popd
 # Make sure that the indexer can handle <stdin:> paths.
-"${INDEXER}" --ignore_unimplemented "${OUT_DIR}/${OUT_INDEX}" | \
+"${INDEXER}" --ignore_unimplemented=true "${OUT_DIR}/${OUT_INDEX}" | \
   "${VERIFIER}" "${BASE_DIR}/test_stdin_names_verify.cc"

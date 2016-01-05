@@ -51,7 +51,7 @@
 
 DEFINE_string(o, "-", "Output filename");
 DEFINE_string(i, "-", "Input filename");
-DEFINE_bool(ignore_unimplemented, false,
+DEFINE_bool(ignore_unimplemented, true,
             "Continue indexing even if we find something we don't support.");
 DEFINE_bool(flush_after_each_entry, false,
             "Flush output after writing each entry.");

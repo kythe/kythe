@@ -199,7 +199,7 @@ cc_verifier_test = rule(
             default = Label("//kythe/cxx/indexer/cxx:indexer"),
             executable = True,
         ),
-        "indexer_opts": attr.string_list(["-ignore_unimplemented"]),
+        "indexer_opts": attr.string_list(["--ignore_unimplemented=true"]),
     },
     executable = True,
     test = True,

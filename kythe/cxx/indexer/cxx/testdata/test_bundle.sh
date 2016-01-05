@@ -28,7 +28,8 @@ function one_case {
       KYTHE_VNAMES="${BASE_DIR}"/test_vnames.json "${EXTRACTOR}" \
       -c -std="${STANDARD}" "${TEMP_PREFIX}"/test_bundle/test.cc
   local KINDEX_FILE=$(find ${TEMP_PREFIX} -iname *.kindex)
-  "${INDEXER}" -claim_unknown=false "${KINDEX_FILE}" \
+  "${INDEXER}" --ignore_unimplemented=false -claim_unknown=false \
+        "${KINDEX_FILE}" \
       | "${VERIFIER}" ${VERIFIER_ARG} "${TEMP_PREFIX}"/test_bundle/*
   local RESULTS=( ${PIPESTATUS[0]} ${PIPESTATUS[1]} )
   if [ ${RESULTS[0]} -ne 0 ]; then

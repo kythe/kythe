@@ -10,7 +10,11 @@ def cxx_indexer_test(name, srcs, deps=[], tags=[], size="small",
   if len(srcs) != 1:
     fail("A single source file is required.", "srcs")
   dups = _empty_unless(ignore_dups, "--ignore_dups=true")
-  unimplemented = _empty_unless(ignore_unimplemented, "--ignore_unimplemented")
+  unimplemented = "--ignore_unimplemented="
+  if ignore_unimplemented:
+    unimplemented += "true"
+  else:
+    unimplemented += "false"
   templates = _empty_unless(not index_template_instantiations,
                             "--index_template_instantiations=false")
   goal_prefix_flag = "--goal_prefix=\"" + goal_prefix + "\""
