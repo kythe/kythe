@@ -44,37 +44,61 @@ sh_test(
     ],
 )
 
-sh_test(
-    name = "bundle",
-    srcs = [
-        "test_bundle.sh",
-    ],
-    data = [
-        "bundle_self_test.cc",
-        "bundle_self_test_mix.cc",
-        "bundle_self_test_multi_transcript.cc",
-        "bundle_self_test_unclaimed.cc",
-        "bundle_self_test_vnames_json.cc",
-        "claim_macro_features.cc",
-        "test_vnames.json",
-        "//kythe/cxx/extractor:cxx_extractor",
-        "//kythe/cxx/indexer/cxx:indexer",
-        "//kythe/cxx/verifier",
-    ],
+cxx_indexer_test(
+    name = "bundle_self_test",
+    srcs = ["bundle_self_test.cc"],
+    bundled = True,
+    tags = ["basic"],
+)
+
+cxx_indexer_test(
+    name = "bundle_self_test_mix",
+    srcs = ["bundle_self_test_mix.cc"],
+    bundled = True,
+    tags = ["basic"],
+)
+
+cxx_indexer_test(
+    name = "bundle_self_test_multi_transcript",
+    srcs = ["bundle_self_test_multi_transcript.cc"],
+    bundled = True,
+    ignore_dups = True,
+    tags = ["basic"],
+)
+
+cxx_indexer_test(
+    name = "bundle_self_test_unclaimed",
+    srcs = ["bundle_self_test_unclaimed.cc"],
+    bundled = True,
+    tags = ["basic"],
+)
+
+cxx_indexer_test(
+    name = "bundle_self_test_vnames_json",
+    srcs = ["bundle_self_test_vnames_json.cc"],
+    bundled = True,
+    tags = ["basic"],
+)
+
+cxx_indexer_test(
+    name = "claim_macro_features",
+    srcs = ["claim_macro_features.cc"],
+    bundled = True,
+    tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "fail_index",
     srcs = ["test_fail_index.cc"],
+    expect_fail_index = True,
     tags = ["basic"],
-    expect_fail_index=True,
 )
 
 cxx_indexer_test(
     name = "fail_verify",
     srcs = ["test_fail_verify.cc"],
+    expect_fail_verify = True,
     tags = ["basic"],
-    expect_fail_verify=True,
 )
 
 cxx_indexer_test(

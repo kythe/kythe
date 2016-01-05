@@ -33,16 +33,16 @@
 
 #include "gflags/gflags.h"
 #include "glog/logging.h"
-#include "google/protobuf/io/zero_copy_stream.h"
-#include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/gzip_stream.h"
+#include "google/protobuf/io/zero_copy_stream.h"
+#include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "google/protobuf/stubs/common.h"
 #include "kythe/cxx/common/index_pack.h"
-#include "kythe/cxx/common/json_proto.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
 #include "kythe/cxx/common/indexing/KytheOutputStream.h"
 #include "kythe/cxx/common/indexing/KytheVFS.h"
+#include "kythe/cxx/common/json_proto.h"
 #include "kythe/proto/analysis.pb.h"
 #include "kythe/proto/claim.pb.h"
 
@@ -218,6 +218,10 @@ Examples:
       }
     }
   }
+
+  final_args.erase(
+      std::remove(final_args.begin(), final_args.end(), std::string()),
+      final_args.end());
 
   if (!kindex_file_or_cu.empty()) {
     CHECK_EQ(2, final_args.size())

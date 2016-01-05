@@ -16,28 +16,12 @@
 
 VERIFIER="kythe/cxx/verifier/verifier"
 INDEXER="kythe/cxx/indexer/cxx/indexer"
+RESULTS_EXPECTED="${7}"
+TEST_FILE="${1}"
 # one_case test-file clang-standard indexer-argument1 indexer-argument2
 #          verifier-argument1 verifier-argument2
 #          [expectfailindex | expectfailverify]
-${INDEXER} -i $1 $3 $4 -- -std=$2 | ${VERIFIER} $1 $5 $6
+"${INDEXER}" -i "${TEST_FILE}" "${3}" "${4}" -- -std="${2}" \
+    | "${VERIFIER}" "${TEST_FILE}" "${5}" "${6}"
 RESULTS=( ${PIPESTATUS[0]} ${PIPESTATUS[1]} )
-if [ ${RESULTS[1]} -eq 2 ]; then
-  echo "[ BAD VERIFIER SCRIPT: $1 ]"
-  exit 1
-elif [ ${RESULTS[0]} -ne 0 ]; then
-  echo "[ FAILED INDEX: $1 ]"
-  if [ "$7" == 'expectfailindex' ]; then
-    exit 0
-  fi
-elif [ ${RESULTS[1]} -ne 0 ]; then
-  echo "[ FAILED VERIFY: $1 ]"
-  if [ "$7" == 'expectfailverify' ]; then
-    exit 0
-  fi
-else
-  echo "[ OK: $1 ]"
-  if [ -z "$7" ]; then
-    exit 0
-  fi
-fi
-exit 1
+source kythe/cxx/indexer/cxx/testdata/handle_results.sh
