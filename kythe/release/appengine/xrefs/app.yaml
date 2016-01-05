@@ -1,4 +1,3 @@
-application: kythe-repo
 module: xrefs
 runtime: custom
 vm: true

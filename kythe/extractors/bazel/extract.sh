@@ -48,7 +48,8 @@ cd "$ROOT"
 if [[ -d bazel-out ]]; then
   find -L bazel-out -type d -name extra_actions -exec rm -rf '{}' +
 fi
-bazel --bazelrc=/dev/null test --test_summary=none \
+bazel --bazelrc=/dev/null build \
+  --spawn_strategy=standalone \
   --experimental_action_listener=//kythe/java/com/google/devtools/kythe/extractors/java/bazel:extract_kindex \
   --experimental_action_listener=//kythe/cxx/extractor:extract_kindex \
   //...
