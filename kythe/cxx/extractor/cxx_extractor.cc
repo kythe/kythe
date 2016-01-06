@@ -49,7 +49,7 @@ static constexpr char kHexDigits[] = "0123456789abcdef";
 /// \brief Lowercase-string-hex-encodes the array sha_buf.
 /// \param sha_buf The bytes of the hash.
 static std::string LowercaseStringHexEncodeSha(
-    const unsigned char(&sha_buf)[SHA256_DIGEST_LENGTH]) {
+    const unsigned char (&sha_buf)[SHA256_DIGEST_LENGTH]) {
   std::string sha_text(SHA256_DIGEST_LENGTH * 2, '\0');
   for (unsigned i = 0; i < SHA256_DIGEST_LENGTH; ++i) {
     sha_text[i * 2] = kHexDigits[(sha_buf[i] >> 4) & 0xF];
@@ -722,9 +722,7 @@ class ExtractorAction : public clang::PreprocessorFrontendAction {
     bool info_valid = true;
     info.angled_dir_idx = header_search_info.search_dir_size();
     info.system_dir_idx = header_search_info.search_dir_size();
-    // TODO(zarko): Record module flags (::DisableModuleHash, ::ModuleMaps)
-    // from HeaderSearchOptions; support "apple-style headermaps" (see
-    // Clang's InitHeaderSearch.cpp.)
+    RecordModuleInfo(&header_search_info.getModuleMap());
     unsigned cur_dir_idx = 0;
     // Clang never sets no_cur_dir_search to true? (see InitHeaderSearch.cpp)
     bool no_cur_dir_search = false;
@@ -762,6 +760,45 @@ class ExtractorAction : public clang::PreprocessorFrontendAction {
   }
 
  private:
+  void RecordModuleInfo(clang::ModuleMap* module_map) {
+    // TODO(zarko): Record module flags (::DisableModuleHash, ::ModuleMaps)
+    // from HeaderSearchOptions; support "apple-style headermaps" (see
+    // Clang's InitHeaderSearch.cpp.)
+    auto* source_manager = &getCompilerInstance().getSourceManager();
+    for (auto modules = module_map->module_begin(),
+              modules_end = module_map->module_end();
+         modules != modules_end; ++modules) {
+      auto* module = modules->second;
+      if (module->DefinitionLoc.isInvalid() ||
+          !module->DefinitionLoc.isFileID()) {
+        LOG(WARNING) << "Module " << module->Name
+                     << " has an invalid or non-file definition location.";
+        continue;
+      }
+      auto file_id = source_manager->getFileID(module->DefinitionLoc);
+      if (file_id.isInvalid()) {
+        LOG(WARNING) << "Module " << module->Name << " has an invalid file ID.";
+        continue;
+      }
+      if (const auto* file = source_manager->getFileEntryForID(file_id)) {
+        auto contents = source_files_.insert(
+            std::make_pair(file->getName(), SourceFile{std::string()}));
+        if (contents.second) {
+          const llvm::MemoryBuffer* buffer =
+              source_manager->getMemoryBufferForFile(file);
+          contents.first->second.file_content.assign(buffer->getBufferStart(),
+                                                     buffer->getBufferEnd());
+          contents.first->second.vname.CopyFrom(
+              index_writer_->VNameForPath(RelativizePath(
+                  file->getName(), index_writer_->root_directory())));
+          LOG(INFO) << "added module map content for " << file->getName();
+        }
+      } else {
+        LOG(WARNING) << "Module " << module->Name << " is missing a FileEntry.";
+      }
+    }
+  }
+
   ExtractorCallback callback_;
   /// The main source file for the compilation (assuming only one).
   std::string main_source_file_;

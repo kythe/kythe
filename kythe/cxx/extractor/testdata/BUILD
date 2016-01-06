@@ -110,6 +110,22 @@ sh_test(
     ],
 )
 
+sh_test(
+    name = "modules",
+    srcs = [
+        "test_modules.sh",
+    ],
+    data = [
+        "modfoo.h",
+        "modfoo.modulemap",
+        "modules.UNIT",
+        "modules.cc",
+        "test_common.sh",
+        "//kythe/cxx/extractor:cxx_extractor",
+        "//kythe/cxx/tools:kindex_tool",
+    ],
+)
+
 cc_verifier_test(
     name = "recursish_macro_test",
     srcs = [
