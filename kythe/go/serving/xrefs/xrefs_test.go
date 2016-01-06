@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"reflect"
 	"sort"
-	"strings"
 	"testing"
 
 	"kythe.io/kythe/go/services/xrefs"
@@ -725,7 +724,7 @@ func TestDecorationsNotFound(t *testing.T) {
 
 	if err == nil {
 		t.Fatalf("Unexpected DecorationsReply: {%v}", reply)
-	} else if !strings.Contains(err.Error(), "decorations not found for file") {
+	} else if err != xrefs.ErrDecorationsNotFound {
 		t.Fatalf("Unexpected Decorations error: %v", err)
 	}
 }

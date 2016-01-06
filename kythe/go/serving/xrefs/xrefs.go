@@ -394,7 +394,7 @@ func (t *tableImpl) edges(ctx context.Context, req edgesRequest) (*xpb.EdgesRepl
 					log.Printf("Retrieving EdgePage: %s", idx.PageKey)
 					ep, err := t.edgePage(ctx, idx.PageKey)
 					if err == table.ErrNoSuchKey {
-						return nil, fmt.Errorf("missing edge page: %q", idx.PageKey)
+						return nil, fmt.Errorf("internal error: missing edge page: %q", idx.PageKey)
 					} else if err != nil {
 						return nil, fmt.Errorf("edge page lookup error (page key: %q): %v", idx.PageKey, err)
 					}
@@ -437,7 +437,7 @@ func (t *tableImpl) edges(ctx context.Context, req edgesRequest) (*xpb.EdgesRepl
 	if pageToken+stats.total != totalEdgesPossible && stats.total != 0 {
 		rec, err := proto.Marshal(&srvpb.PageToken{Index: int32(pageToken + stats.total)})
 		if err != nil {
-			return nil, fmt.Errorf("error marshalling page token: %v", err)
+			return nil, fmt.Errorf("internal error: error marshalling page token: %v", err)
 		}
 		reply.NextPageToken = base64.StdEncoding.EncodeToString(rec)
 	}
@@ -527,7 +527,7 @@ func (t *tableImpl) Decorations(ctx context.Context, req *xpb.DecorationsRequest
 
 	decor, err := t.fileDecorations(ctx, ticket)
 	if err == table.ErrNoSuchKey {
-		return nil, fmt.Errorf("decorations not found for file %q", ticket)
+		return nil, xrefs.ErrDecorationsNotFound
 	} else if err != nil {
 		return nil, fmt.Errorf("lookup error for file decorations %q: %v", ticket, err)
 	}
@@ -691,7 +691,7 @@ func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReference
 					// TODO(schroederc): skip entire read if s.skip >= idx.Count
 					p, err := t.crossReferencesPage(ctx, idx.PageKey)
 					if err != nil {
-						return nil, fmt.Errorf("error retrieving cross-references page: %v", idx.PageKey)
+						return nil, fmt.Errorf("internal error: error retrieving cross-references page: %v", idx.PageKey)
 					}
 
 					if xrefs.IsDefKind(req.DefinitionKind, p.Group.Kind) {
@@ -775,7 +775,7 @@ func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReference
 	if nextToken != nil {
 		rec, err := proto.Marshal(nextToken)
 		if err != nil {
-			return nil, fmt.Errorf("error marshalling page token: %v", err)
+			return nil, fmt.Errorf("internal error: error marshalling page token: %v", err)
 		}
 		reply.NextPageToken = base64.StdEncoding.EncodeToString(rec)
 	}

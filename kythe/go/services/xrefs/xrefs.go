@@ -20,6 +20,7 @@ package xrefs
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"log"
 	"math"
@@ -76,6 +77,12 @@ type CrossReferencesService interface {
 	// CrossReferences returns the global references of the given nodes.
 	CrossReferences(context.Context, *xpb.CrossReferencesRequest) (*xpb.CrossReferencesReply, error)
 }
+
+var (
+	// ErrDecorationsNotFound is returned from Decorations when decorations for
+	// the given file cannot be found.
+	ErrDecorationsNotFound = errors.New("file decorations not found")
+)
 
 var (
 	revDefinesEdge        = schema.MirrorEdge(schema.DefinesEdge)

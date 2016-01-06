@@ -87,7 +87,7 @@ func (t *Table) CorpusRoots(ctx context.Context, req *ftpb.CorpusRootsRequest) (
 	}
 	var cr srvpb.CorpusRoots
 	if err := t.Lookup(ctx, key, &cr); err == table.ErrNoSuchKey {
-		return nil, errors.New("missing corpusRoots in table")
+		return nil, errors.New("internal error: missing corpusRoots in table")
 	} else if err != nil {
 		return nil, fmt.Errorf("corpusRoots lookup error: %v", err)
 	}
