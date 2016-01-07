@@ -28,6 +28,7 @@ cc_library(
         ":parser",
     ],
     copts = [
+        "-Wno-non-virtual-dtor",
         "-Wno-deprecated-register",
         "-Wno-implicit-fallthrough",
     ],
