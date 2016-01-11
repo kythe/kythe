@@ -66,7 +66,7 @@ class URI {
   std::string ToString() const;
 
   /// \return This URI as a VName.
-  const kythe::proto::VName &v_name() { return vname_; }
+  const kythe::proto::VName &v_name() const { return vname_; }
 
  private:
   /// \brief Attempts to overwrite vname_ using the provided URI string.
