@@ -499,7 +499,6 @@ const defaultXRefPageSize = 1024
 
 // CrossReferences implements part of the xrefs Service interface.
 func (g *GraphStoreService) CrossReferences(ctx context.Context, req *xpb.CrossReferencesRequest) (*xpb.CrossReferencesReply, error) {
-	log.Println("WARNING: using experimental CrossReferences API")
 	if len(req.Ticket) == 0 {
 		return nil, errors.New("no cross-references requested")
 	}

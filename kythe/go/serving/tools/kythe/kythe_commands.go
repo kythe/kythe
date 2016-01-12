@@ -190,8 +190,6 @@ var (
 			flag.IntVar(&pageSize, "page_size", 0, "Maximum number of cross-references returned (0 lets the service use a sensible default)")
 		},
 		func(flag *flag.FlagSet) error {
-			log.Println("WARNING: this API is currently experimental")
-
 			req := &xpb.CrossReferencesRequest{
 				Ticket:    flag.Args(),
 				PageToken: pageToken,
