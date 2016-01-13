@@ -2,9 +2,8 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 java_test(
     name = "archive_test",
-    srcs = [
-        "ArchiveTest.java",
-    ],
+    srcs = ["ArchiveTest.java"],
+    test_class = "com.google.devtools.kythe.platform.indexpack.ArchiveTest",
     deps = [
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
         "//kythe/java/com/google/devtools/kythe/platform/indexpack",

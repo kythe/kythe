@@ -33,6 +33,7 @@ sh_test(
 java_test(
     name = "source_text_test",
     srcs = ["SourceTextTest.java"],
+    test_class = "com.google.devtools.kythe.analyzers.java.SourceTextTest",
     deps = [
         "//kythe/java/com/google/devtools/kythe/analyzers/java:analyzer",
         "//third_party:junit4",
