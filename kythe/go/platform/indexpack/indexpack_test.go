@@ -18,6 +18,7 @@ package indexpack
 
 import (
 	"archive/zip"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -191,6 +192,31 @@ func TestCompilationsRoundTrip(t *testing.T) {
 	sort.Sort(byTarget(gotUnits))
 	if !unitsEqual(gotUnits, testUnits) {
 		t.Errorf("Compilation units did not round-trip:\ngot:  %+v\nwant: %+v", gotUnits, testUnits)
+	}
+}
+
+func TestDefaultUnitType(t *testing.T) {
+	if testArchive == nil {
+		t.Fatal("No test archive is present; test cannot proceed")
+	}
+
+	// Test plan: Open the existing pack without a unit type set, and read out
+	// the compilations.  Each should be delivered with the default type.
+	ctx := context.Background()
+	path := testArchive.Root()
+	pack, err := Open(ctx, path) // no unit type specified
+	if err != nil {
+		t.Fatalf("Unable to create index pack %q: %v", path, err)
+	}
+	t.Logf("Opened index pack: %#v", pack)
+
+	if err := pack.ReadUnits(ctx, "kythe", func(digest string, unit interface{}) error {
+		if _, ok := unit.(*json.RawMessage); !ok {
+			return fmt.Errorf("wrong value type for %q: got %T, want *json.RawMessage", digest, unit)
+		}
+		return nil
+	}); err != nil {
+		t.Errorf("Reading stored compilations failed: %v", err)
 	}
 }
 

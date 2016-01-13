@@ -158,11 +158,9 @@ func FSReader(fs vfs.Reader) Option { return FS(vfs.UnsupportedWriter{fs}) }
 
 // Create creates a new empty index pack at the specified path. It is an error
 // if the path already exists.
-//
-// If unitType != nil, the interface value passed to the callback of ReadUnits
-// will be a pointer to its type.
 func Create(ctx context.Context, path string, opts ...Option) (*Archive, error) {
 	a := &Archive{root: path, fs: vfs.Default}
+	UnitType((json.RawMessage)(nil))(a) // set default unit type; overridden below
 	for _, opt := range opts {
 		if err := opt(a); err != nil {
 			return nil, err
@@ -187,11 +185,9 @@ func Create(ctx context.Context, path string, opts ...Option) (*Archive, error) 
 // Open returns a handle for an existing valid index pack at the specified
 // path.  It is an error if path does not exist, or does not have the correct
 // format.
-//
-// If unitType != nil, the interface value passed to the callback of ReadUnits
-// will be a pointer to its type.
 func Open(ctx context.Context, path string, opts ...Option) (*Archive, error) {
 	a := &Archive{root: path, fs: vfs.Default}
+	UnitType((json.RawMessage)(nil))(a) // set default unit type; overridden below
 	for _, opt := range opts {
 		if err := opt(a); err != nil {
 			return nil, err
@@ -291,8 +287,8 @@ func (a *Archive) writeFile(ctx context.Context, dir, name string, data []byte) 
 // ReadUnits calls f with the digest and content of each compilation unit
 // stored in the units subdirectory of the index pack whose format key equals
 // formatKey.  The concrete type of the value passed to f will be the same as
-// the concrete type of the unitType argument that was passed to Open or
-// Create.
+// the concrete type of the UnitType option that was passed to Open or Create.
+// If no UnitType was specified, the value is a json.RawMessage.
 //
 // If f returns a non-nil error, no further compilations are read and the error
 // is propagated back to the caller of ReadUnits.
@@ -314,8 +310,9 @@ func (a *Archive) ReadUnits(ctx context.Context, formatKey string, f func(string
 
 // ReadUnit calls f with the compilation unit stored in the units subdirectory
 // with the given formatKey and digest.  The concrete type of the value passed
-// to f will be the same as the concrete type of the unitType argument that was
-// passed to Open or Create.
+// to f will be the same as the concrete type of the UnitType option that was
+// passed to Open or Create.  If no UnitType was specified, the value is a
+// json.RawMessage.
 //
 // If f returns a non-nil error, it is returned.
 func (a *Archive) ReadUnit(ctx context.Context, formatKey, digest string, f func(interface{}) error) error {
