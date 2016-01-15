@@ -67,6 +67,10 @@ func NewGraphStore(db DB) *Store {
 type DB interface {
 	io.Closer
 
+	// Get returns the value associated with the given key.  An io.EOF will be
+	// returned if the key is not found.
+	Get([]byte, *Options) ([]byte, error)
+
 	// ScanPrefix returns an Iterator for all key-values starting with the given
 	// key prefix.  Options may be nil to use the defaults.
 	ScanPrefix([]byte, *Options) (Iterator, error)

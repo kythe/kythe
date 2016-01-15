@@ -146,6 +146,21 @@ func (s *levelDB) Writer() (keyvalue.Writer, error) {
 	return &writer{s, levigo.NewWriteBatch()}, nil
 }
 
+// Get implements part of the keyvalue.DB interface.
+func (s *levelDB) Get(key []byte, opts *keyvalue.Options) ([]byte, error) {
+	ro := s.readOptions(opts)
+	if ro != s.largeReadOpts && ro != s.readOpts {
+		defer ro.Close()
+	}
+	v, err := s.db.Get(ro, key)
+	if err != nil {
+		return nil, err
+	} else if v == nil {
+		return nil, io.EOF
+	}
+	return v, nil
+}
+
 // ScanPrefix implements part of the keyvalue.DB interface.
 func (s *levelDB) ScanPrefix(prefix []byte, opts *keyvalue.Options) (keyvalue.Iterator, error) {
 	iter, ro := s.iterator(opts)
@@ -164,19 +179,28 @@ func (s *levelDB) ScanRange(r *keyvalue.Range, opts *keyvalue.Options) (keyvalue
 	return &iterator{iter, ro, nil, r}, nil
 }
 
-// iterator creates a new levigo Iterator based on the given options.  It also
-// returns any ReadOptions that should be Closed once the Iterator is Closed.
-func (s *levelDB) iterator(opts *keyvalue.Options) (*levigo.Iterator, *levigo.ReadOptions) {
+func (s *levelDB) readOptions(opts *keyvalue.Options) *levigo.ReadOptions {
 	if snap := opts.GetSnapshot(); snap != nil {
 		ro := levigo.NewReadOptions()
 		ro.SetSnapshot(snap.(*snapshot).s)
 		ro.SetFillCache(!opts.IsLargeRead())
-		return s.db.NewIterator(ro), ro
+		return ro
 	}
 	if opts.IsLargeRead() {
-		return s.db.NewIterator(s.largeReadOpts), nil
+		return s.largeReadOpts
 	}
-	return s.db.NewIterator(s.readOpts), nil
+	return s.readOpts
+}
+
+// iterator creates a new levigo Iterator based on the given options.  It also
+// returns any ReadOptions that should be Closed once the Iterator is Closed.
+func (s *levelDB) iterator(opts *keyvalue.Options) (*levigo.Iterator, *levigo.ReadOptions) {
+	ro := s.readOptions(opts)
+	it := s.db.NewIterator(ro)
+	if ro == s.largeReadOpts || ro == s.readOpts {
+		ro = nil
+	}
+	return it, ro
 }
 
 type writer struct {

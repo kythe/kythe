@@ -148,17 +148,8 @@ var ErrNoSuchKey = errors.New("no such key")
 
 // Lookup implements part of the Proto interface.
 func (t *KVProto) Lookup(_ context.Context, key []byte, msg proto.Message) error {
-	iter, err := t.ScanPrefix(key, nil)
-	if err != nil {
-		return fmt.Errorf("table iterator error: %v", err)
-	}
-	defer iter.Close()
-	k, v, err := iter.Next()
+	v, err := t.Get(key, nil)
 	if err == io.EOF {
-		return ErrNoSuchKey
-	} else if err != nil {
-		return err
-	} else if !bytes.Equal(key, k) {
 		return ErrNoSuchKey
 	}
 	if err := proto.Unmarshal(v, msg); err != nil {
