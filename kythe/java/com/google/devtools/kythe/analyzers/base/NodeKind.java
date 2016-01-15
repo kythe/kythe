@@ -22,6 +22,7 @@ public enum NodeKind {
   ABS("abs"),
   ABS_VAR("absvar"),
   ANCHOR("anchor"),
+  CALLABLE("callable"),
   CONSTANT("constant"),
   FILE("file"),
   FUNCTION("function"),

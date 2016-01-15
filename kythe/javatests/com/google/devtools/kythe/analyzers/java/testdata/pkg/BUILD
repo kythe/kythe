@@ -8,6 +8,13 @@ java_verifier_test(
 )
 
 java_verifier_test(
+    name = "callgraph_tests",
+    srcs = [
+        "Callgraph.java",
+    ],
+)
+
+java_verifier_test(
     name = "definitions_tests",
     srcs = [
         "Definitions.java",

@@ -31,8 +31,8 @@ import com.google.devtools.kythe.platform.java.helpers.SignatureGenerator;
 import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.util.Span;
 
-import com.sun.source.tree.Tree.Kind;
 import com.sun.source.tree.MemberReferenceTree.ReferenceMode;
+import com.sun.source.tree.Tree.Kind;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Symbol.MethodSymbol;
@@ -54,6 +54,7 @@ import com.sun.tools.javac.tree.JCTree.JCIdent;
 import com.sun.tools.javac.tree.JCTree.JCImport;
 import com.sun.tools.javac.tree.JCTree.JCMemberReference;
 import com.sun.tools.javac.tree.JCTree.JCMethodDecl;
+import com.sun.tools.javac.tree.JCTree.JCMethodInvocation;
 import com.sun.tools.javac.tree.JCTree.JCNewClass;
 import com.sun.tools.javac.tree.JCTree.JCPrimitiveTypeTree;
 import com.sun.tools.javac.tree.JCTree.JCReturn;
@@ -302,7 +303,6 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   public JavaNode visitMethodDef(JCMethodDecl methodDef, TreeContext owner) {
     TreeContext ctx = owner.down(methodDef);
 
-    scan(methodDef.getBody(), ctx);
     scan(methodDef.getThrows(), ctx);
 
     JavaNode returnType = scan(methodDef.getReturnType(), ctx);
@@ -320,6 +320,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       boolean documented = visitDocComment(methodDef, methodNode);
       visitAnnotations(methodNode, methodDef.getModifiers().getAnnotations(), ctx);
 
+      EntrySet callable = entrySets.getCallable(methodNode.getVName());
       EntrySet absNode = defineTypeParameters(ctx, methodNode, methodDef.getTypeParameters());
 
       EntrySet ret, bindingAnchor = null;
@@ -372,6 +373,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       emitOrdinalEdges(methodNode, EdgeKind.PARAM, params);
       EntrySet fnTypeNode = entrySets.newFunctionType(ret, toEntries(paramTypes));
       entrySets.emitEdge(methodNode, EdgeKind.TYPED, fnTypeNode);
+      entrySets.emitEdge(callable, EdgeKind.TYPED, fnTypeNode);
       entrySets.emitName(fnTypeNode, fnTypeName);
 
       ClassSymbol ownerClass = (ClassSymbol) methodDef.sym.owner;
@@ -386,7 +388,15 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         }
       }
 
-      return new JavaNode(methodNode, signature.get(), new JavaNode(fnTypeNode, fnTypeName));
+      // Set the resulting node for the method and then recurse through its body.  Setting the node
+      // first is necessary to correctly add childof edges in the callgraph.
+      JavaNode node = ctx.setNode(new JavaNode(methodNode, signature.get(), new JavaNode(fnTypeNode, fnTypeName)));
+      scan(methodDef.getBody(), ctx);
+
+      return node;
+    } else {
+      // Try to scan method body even if signature could not be generated.
+      scan(methodDef.getBody(), ctx);
     }
     return todoNode("MethodDef: " + methodDef);
   }
@@ -466,6 +476,20 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     scan(reference.getQualifierExpression(), ctx);
     return emitNameUsage(ctx, reference.sym,
         reference.getMode() == ReferenceMode.NEW ? Keyword.of("new") : reference.name);
+  }
+
+  @Override
+  public JavaNode visitApply(JCMethodInvocation invoke, TreeContext owner) {
+    TreeContext ctx = owner.down(invoke);
+    JavaNode method = scan(invoke.getMethodSelect(), ctx);
+    if (method != null){
+      EntrySet anchor = emitAnchor(ctx, EdgeKind.REF_CALL, entrySets.getCallable(method.entries.getVName()));
+      TreeContext parentContext = owner.getMethodParent();
+      if (anchor != null && parentContext != null && parentContext.getNode() != null) {
+        emitEdge(anchor, EdgeKind.CHILDOF, parentContext.getNode());
+      }
+    }
+    return super.visitApply(invoke, owner);
   }
 
   @Override
@@ -760,6 +784,7 @@ class TreeContext {
   private final TreeContext up;
   private final JCTree tree;
   private final Span snippet;
+  private JavaNode node;
 
   public TreeContext(Positions filePositions, JCCompilationUnit topLevel) {
     this(filePositions, null, topLevel, null);
@@ -786,6 +811,26 @@ class TreeContext {
 
   public JCTree getTree() {
     return tree;
+  }
+
+  public JavaNode setNode(JavaNode node) {
+    if (this.node != null) {
+      throw new IllegalStateException("cannot call setNode() twice on same TreeContext");
+    }
+    this.node = node;
+    return node;
+  }
+
+  public JavaNode getNode() {
+    return node;
+  }
+
+  public TreeContext getMethodParent() {
+    TreeContext parent = up();
+    while (parent != null && !(parent.getTree() instanceof JCMethodDecl)) {
+      parent = parent.up();
+    }
+    return parent;
   }
 
   public Span getTreeSpan() {

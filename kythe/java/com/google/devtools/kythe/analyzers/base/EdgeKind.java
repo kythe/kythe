@@ -21,12 +21,15 @@ public enum EdgeKind {
   DEFINES(true, "defines"),
   DEFINES_BINDING(true, "defines/binding"),
   DOCUMENTS(true, "documents"),
+
   REF(true, "ref"),
+  REF_CALL(true, "ref/call"),
   REF_DOC(true, "ref/doc"),
 
   ANNOTATED_BY("annotatedby"),
   BOUNDED_LOWER("bounded/lower"),
   BOUNDED_UPPER("bounded/upper"),
+  CALLABLE_AS("callableas"),
   CHILDOF("childof"),
   EXTENDS("extends"),
   IMPLEMENTS("implements"),

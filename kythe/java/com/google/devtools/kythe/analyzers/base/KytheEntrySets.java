@@ -112,6 +112,13 @@ public class KytheEntrySets {
     return node;
   }
 
+  /** Returns a {@link NodeKind.CALLABLE} node for the given node. */
+  public EntrySet getCallable(VName node) {
+    EntrySet callable = emitAndReturn(newNode(NodeKind.CALLABLE).addSignatureSalt(node));
+    emitEdge(node, EdgeKind.CALLABLE_AS, callable.getVName());
+    return callable;
+  }
+
   /** Returns (and emits) a new anchor node at the given location in the file. */
   public EntrySet getAnchor(VName fileVName, Span loc) {
     return getAnchor(fileVName, loc, null);
@@ -373,4 +380,3 @@ public class KytheEntrySets {
     }
   }
 }
-

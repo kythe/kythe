@@ -5,6 +5,9 @@
 Notable changes:
  - C++ indexer: `--ignore_unimplemented` now defaults to `true`
  - Java indexer: emit single anchor for package in qualified identifiers
+
+Notable additions:
+ - Java indexer: add callgraph edges
  - Java indexer: add Java 8 member reference support
 
 ## v0.0.17
