@@ -1002,6 +1002,12 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "rec_override",
+    srcs = ["rec/rec_override.cc"],
+    tags = ["rec"],
+)
+
+cxx_indexer_test(
     name = "rec_struct_c99",
     srcs = ["rec/rec_struct.c"],
     std = "c99",
@@ -1354,6 +1360,13 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "template_ps_twovar_decl",
     srcs = ["template/template_ps_twovar_decl.cc"],
+    tags = ["template"],
+)
+
+
+cxx_indexer_test(
+    name = "template_rec_override",
+    srcs = ["template/template_rec_override.cc"],
     tags = ["template"],
 )
 

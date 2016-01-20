@@ -1089,7 +1089,7 @@ bool IndexerASTVisitor::VisitDeclRefExpr(const clang::DeclRefExpr *DRE) {
   // port over RemapDeclIfCaptured.
   // const NamedDecl* const TargetDecl = RemapDeclIfCaptured(FoundDecl);
   const NamedDecl *TargetDecl = FoundDecl;
-  if (const auto* IFD = dyn_cast<clang::IndirectFieldDecl>(FoundDecl)) {
+  if (const auto *IFD = dyn_cast<clang::IndirectFieldDecl>(FoundDecl)) {
     // An IndirectFieldDecl is just an alias; we want to record this as a
     // reference to the underlying entity.
     // TODO(jdennett): Would this be better done in BuildNodeIdForDecl?
@@ -1855,6 +1855,11 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
       // consideration in the following.
       if (MF->getOverloadedOperator() == clang::OO_Call && CallableDeclNode) {
         Observer.recordCallableAsEdge(ParentNode, CallableDeclNode.primary());
+      }
+      for (auto O = MF->begin_overridden_methods(),
+                E = MF->end_overridden_methods();
+           O != E; ++O) {
+        Observer.recordOverridesEdge(InnerNode, BuildNodeIdForDecl(*O));
       }
     }
   }

@@ -232,6 +232,9 @@ class KytheGraphObserver : public GraphObserver {
   void recordInstEdge(const NodeId &TermNodeId, const NodeId &TypeNodeId,
                       Confidence Conf) override;
 
+  void recordOverridesEdge(const NodeId &Overrider,
+                           const NodeId &BaseObject) override;
+
   void recordCallableAsEdge(const NodeId &ToCallId,
                             const NodeId &CallableAsId) override;
 

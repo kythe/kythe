@@ -94,7 +94,8 @@ enum class EdgeKindID {
   kDocuments,
   kRefDoc,
   kGenerates,
-  kDefinesBinding
+  kDefinesBinding,
+  kOverrides
 };
 
 /// \brief Returns the Kythe spelling of `node_kind_id`

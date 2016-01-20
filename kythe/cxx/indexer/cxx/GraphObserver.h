@@ -552,6 +552,12 @@ public:
   virtual void recordInstEdge(const NodeId &TermNodeId, const NodeId &AbsNodeId,
                               Confidence Conf) {}
 
+  /// \brief Records that some overrider overrides a base object.
+  /// \param Overrider the object doing the overriding
+  /// \param BaseObject the object being overridden
+  virtual void recordOverridesEdge(const NodeId &Overrider,
+                                   const NodeId &BaseObject) {}
+
   /// \brief Records that one node participates in the call graph as a
   /// particular `Callable`.
   ///

@@ -36,8 +36,8 @@
 #include "clang/AST/Type.h"
 #include "clang/AST/TypeLoc.h"
 #include "clang/Basic/SourceManager.h"
-#include "kythe/cxx/common/path_utils.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
+#include "kythe/cxx/common/path_utils.h"
 
 #include "IndexerASTHooks.h"
 
@@ -538,6 +538,14 @@ void KytheGraphObserver::recordInstEdge(const NodeId &term_id,
                            VNameRefFromNodeId(type_id));
         break;
     }
+  }
+}
+
+void KytheGraphObserver::recordOverridesEdge(const NodeId &overrider,
+                                             const NodeId &base_object) {
+  if (!lossy_claiming_ || claimNode(overrider) || claimNode(base_object)) {
+    recorder_->AddEdge(VNameRefFromNodeId(overrider), EdgeKindID::kOverrides,
+                       VNameRefFromNodeId(base_object));
   }
 }
 
