@@ -6,16 +6,17 @@ void a();
 struct S {
   //- @Inline defines/binding MemInline
   //- InlAAnchor childof MemInline
-  //- InlAAnchor ref/call CADefn
+  //- InlAAnchor ref/call CADecl
   void Inline() { a(); }
   void External();
 };
 
 //- @External defines/binding MemExternal
 //- ExtAAnchor childof MemExternal
-//- ExtAAnchor ref/call CADefn
+//- ExtAAnchor ref/call CADecl
 void S::External() { a(); }
 
 //- @a defines/binding FnADefn
-//- FnADefn callableas CADefn=CADecl
+//- FnADefn callableas CADefn
+//- !{ FnADefn callableas CADecl }
 void a() {}

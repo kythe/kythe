@@ -4,8 +4,10 @@
 void a();
 //- @b defines/binding FnB
 //- AAnchor childof FnB
-//- AAnchor ref/call CADefn
+//- AAnchor ref/call CADecl
 void b() { a(); }
 //- @a defines/binding FnADefn
-//- FnADefn callableas CADefn=CADecl
+//- FnADefn callableas CADefn
 void a() { }
+//- !{ FnADefn callableas CADecl }
+//- !{ FnADecl callableas CADefn }

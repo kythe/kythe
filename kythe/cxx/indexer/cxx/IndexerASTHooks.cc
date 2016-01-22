@@ -1835,34 +1835,31 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
     Observer.recordTypeEdge(InnerNode, FunctionType.primary());
   }
 
-  // TODO(zarko): Don't generate the callable node redundantly. (This might
-  // be a TODO for other calls to BuildNodeIdForCallableDecl--maybe these can
-  // assume that the CallableDeclNode will be generated elsewhere.)
-  if (Decl->isFirstDecl()) {
-    if (CallableDeclNode) {
-      Observer.recordCallableNode(CallableDeclNode.primary());
-      if (auto CallableType = BuildNodeIdForCallableType(Decl)) {
-        Observer.recordTypeEdge(CallableDeclNode.primary(),
-                                CallableType.primary());
-      }
-    }
-    if (const auto *MF = dyn_cast<CXXMethodDecl>(Decl)) {
-      const auto *R = MF->getParent();
-      GraphObserver::NodeId ParentNode(BuildNodeIdForDecl(R));
-      // OO_Call, OO_Subscript, and OO_Equal must be member functions.
-      // The dyn_cast to CXXMethodDecl above is therefore not dropping
-      // (impossible) free function incarnations of these operators from
-      // consideration in the following.
-      if (MF->getOverloadedOperator() == clang::OO_Call && CallableDeclNode) {
-        Observer.recordCallableAsEdge(ParentNode, CallableDeclNode.primary());
-      }
-      for (auto O = MF->begin_overridden_methods(),
-                E = MF->end_overridden_methods();
-           O != E; ++O) {
-        Observer.recordOverridesEdge(InnerNode, BuildNodeIdForDecl(*O));
-      }
+  if (CallableDeclNode) {
+    Observer.recordCallableNode(CallableDeclNode.primary());
+    if (auto CallableType = BuildNodeIdForCallableType(Decl)) {
+      Observer.recordTypeEdge(CallableDeclNode.primary(),
+                              CallableType.primary());
     }
   }
+
+  if (const auto *MF = dyn_cast<CXXMethodDecl>(Decl)) {
+    const auto *R = MF->getParent();
+    GraphObserver::NodeId ParentNode(BuildNodeIdForDecl(R));
+    // OO_Call, OO_Subscript, and OO_Equal must be member functions.
+    // The dyn_cast to CXXMethodDecl above is therefore not dropping
+    // (impossible) free function incarnations of these operators from
+    // consideration in the following.
+    if (MF->getOverloadedOperator() == clang::OO_Call && CallableDeclNode) {
+      Observer.recordCallableAsEdge(ParentNode, CallableDeclNode.primary());
+    }
+    for (auto O = MF->begin_overridden_methods(),
+              E = MF->end_overridden_methods();
+         O != E; ++O) {
+      Observer.recordOverridesEdge(InnerNode, BuildNodeIdForDecl(*O));
+    }
+  }
+
   AddChildOfEdgeToDeclContext(Decl, OuterNode);
   GraphObserver::FunctionSubkind Subkind = GraphObserver::FunctionSubkind::None;
   if (const auto *CC = dyn_cast<CXXConstructorDecl>(Decl)) {
@@ -2260,52 +2257,9 @@ uint64_t IndexerASTVisitor::SemanticHash(const clang::RecordDecl *RD) {
 
 MaybeFew<GraphObserver::NodeId>
 IndexerASTVisitor::BuildNodeIdForCallableDecl(const clang::Decl *Decl) {
-  // The callable for a function decl should have the same ID as the callable
-  // for the defn of that function. A postprocessing step must determine
-  // which defns are available to a given callsite based on linkage information.
-  GraphObserver::NameId NameId(BuildNameIdForDecl(Decl));
-  std::string Identity;
-  llvm::raw_string_ostream Ostream(Identity);
-  Ostream << NameId << "#";
-  // Include instantiated type variables.
-  clang::ast_type_traits::DynTypedNode CurrentNode =
-      clang::ast_type_traits::DynTypedNode::create(*Decl);
-  const clang::Decl *CurrentNodeAsDecl;
-  while (!(CurrentNodeAsDecl = CurrentNode.get<clang::Decl>()) ||
-         !isa<clang::TranslationUnitDecl>(CurrentNodeAsDecl)) {
-    IndexedParentVector IPV = getIndexedParents(CurrentNode);
-    if (IPV.empty()) {
-      break;
-    }
-    IndexedParent IP = IPV[0];
-    CurrentNode = IP.Parent;
-    if (!CurrentNodeAsDecl) {
-      continue;
-    }
-    if (const auto *TD = dyn_cast<TemplateDecl>(CurrentNodeAsDecl)) {
-      // Disambiguate type abstraction IDs from abstracted type IDs.
-      if (CurrentNodeAsDecl != Decl) {
-        Ostream << "#";
-      }
-    } else if (const auto *CTSD = dyn_cast<ClassTemplateSpecializationDecl>(
-                   CurrentNodeAsDecl)) {
-      Ostream << "#" << HashToString(SemanticHash(
-                            &CTSD->getTemplateInstantiationArgs()));
-    } else if (const auto *FD = dyn_cast<FunctionDecl>(CurrentNodeAsDecl)) {
-      if (const auto *TemplateArgs = FD->getTemplateSpecializationArgs()) {
-        Ostream << "#" << HashToString(SemanticHash(TemplateArgs));
-      }
-    } else if (const auto *VD =
-                   dyn_cast<VarTemplateSpecializationDecl>(CurrentNodeAsDecl)) {
-      Ostream << "#" << HashToString(
-                            SemanticHash(&VD->getTemplateInstantiationArgs()));
-    }
-  }
-  if (const auto *FT = Decl->getFunctionType()) {
-    Ostream << HashToString(SemanticHash(QualType(FT, 0)));
-  }
-  Ostream << "#callable";
-  return GraphObserver::NodeId(Observer.getDefaultClaimToken(), Ostream.str());
+  GraphObserver::NodeId BaseId(BuildNodeIdForDecl(Decl));
+  return GraphObserver::NodeId(
+      BaseId.getToken(), BaseId.getRawIdentity() + "#callable");
 }
 
 GraphObserver::NodeId

@@ -529,6 +529,12 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "function_dangling_callable",
+    srcs = ["function/function_dangling_callable.cc"],
+    tags = ["function"],
+)
+
+cxx_indexer_test(
     name = "function_decl",
     srcs = ["function/function_decl.cc"],
     tags = ["function"],
@@ -556,6 +562,12 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "function_direct_call",
     srcs = ["function/function_direct_call.cc"],
+    tags = ["function"],
+)
+
+cxx_indexer_test(
+    name = "function_distinct_decl_def_callable",
+    srcs = ["function/function_distinct_decl_def_callable.cc"],
     tags = ["function"],
 )
 
