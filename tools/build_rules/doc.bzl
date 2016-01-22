@@ -14,6 +14,7 @@ def asciidoc(name, src, attrs={}, confs=[], data=[], tools=[], tags=None):
     name = name,
     srcs = [src] + data + confs,
     outs = [out],
+    local = 1,
     tags = tags,
     tools = tools,
     output_to_bindir = 1,

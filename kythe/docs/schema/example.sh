@@ -36,6 +36,7 @@ export JAVA_INDEXER_BIN="$BINDIR/kythe/java/com/google/devtools/kythe/analyzers/
 
 export LANGUAGE="$3"
 export LABEL="$4"
+export SHOWGRAPH="$5"
 
 error() {
   echo "[ FAILED $1: $LABEL ]" >&2
@@ -51,6 +52,8 @@ case "$LANGUAGE" in
     "$SCHEMA_ROOT/example-java.sh" ;;
   C++)
     "$SCHEMA_ROOT/example-cxx.sh" ;;
+  dot)
+    "$SCHEMA_ROOT/example-dot.sh" ;;
   *)
     echo "ERROR: unsupported language specified for example: $LANGUAGE"
     exit 1 ;;

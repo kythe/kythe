@@ -1,0 +1,239 @@
+// Copyright 2016 Google Inc. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+Callgraphs
+==========
+:Revision: 1.0
+:toc2:
+:toclevels: 3
+:priority: 999
+
+The Kythe graph contains information about link:schema.html#callable[callables]
+and link:schema.html#refcall[ref/call] edges that target them. This information
+can be used to satisfy queries about the locations at which different functions
+are called:
+
+[kythe,C++,"foo calls bar.",0]
+--------------------------------------------------------------------------------
+//- @bar defines/binding FnBar
+//- FnBar callableas CallableBar
+void bar() { }
+//- @"bar()" ref/call CallableBar
+//- @"bar()" childof FnFoo
+//- @foo defines/binding FnFoo
+void foo() { bar(); }
+--------------------------------------------------------------------------------
+
+In this example, function `foo` makes a single call to function `bar`. The
+callsite is the expression `bar()`. This is spanned by an anchor that has a
+`ref/call` edge pointing to a `callable` node that is associated with `bar`.
+The anchor also has a `childof` edge that points to function `foo`. This edge
+indicates that the effects of the anchor should be blamed on `foo`. There will
+be up to one such blame `childof` edge with an anchor source and a semantic
+target.
+
+The assertions in the example trace a possible set of queries made against
+a Kythe graph:
+
+. Identify the semantic object for the definition in question (`FnBar`).
+. Find the object's `callable`. There may be more than one callable node
+  associated with each semantic object. For example, a C++ struct with multiple
+  `operator()` overloads will have a `callableas` relationship for each
+  unique operator.
+. Find the locations at which that `callable` is called. These will be
+  `ref/call` edges with `anchor` sources and `callable` targets.
+. Find the semantic objects associated with each callsite anchor. These will
+  be attached by `childof` edges.
+. Finally, we can show the binding location for the caller by looking up its
+  `defines/binding` edge.
+
+These queries will not capture the full set of traditional callsites. We will
+fix this by first finding calls to forward declarations; then we will consider
+overrides.
+
+== Forward declarations
+
+The `callable` for a forward declaration may not be the same as the `callable`
+for the definition that link:schema.html#completes[completes] that declaration.
+This allows the Kythe graph to model a set of programs (where different
+programs link against different implementations for the same declaration)
+rather than a single program (where linking different implementations in this
+way would result in undefined behavior). In order to build a complete call
+graph, one must therefore also look along `completes` edges to find alternate
+possible `callable` nodes for a given declaration or definition.
+
+[kythe,C++,"foo calls a forward-declared bar.",0]
+--------------------------------------------------------------------------------
+#include "bardecl.h"
+//- @"c.bar()" ref/call BarDeclCallable
+void foo(C& c) { c.bar(); }
+
+#example bardecl.h
+//- @bar defines/binding BarDecl
+//- BarDecl callableas BarDeclCallable
+struct C { void bar(); };
+
+#example barimpl.cc
+#include "bardecl.h"
+//- @bar defines/binding BarImpl
+//- BarImpl callableas BarImplCallable
+void C::bar() { }
+
+// Imagine that we only had BarDeclCallable and BarDecl (by looking up the
+// ref/call from c.bar() in foo()). We can find the implementation BarImpl of
+// C::bar by taking the following trip:
+//- BarImplAnchor completes BarDecl
+//- BarImplAnchor defines/binding BarImpl
+--------------------------------------------------------------------------------
+
+Note that this overestimates the possible set of `callable` nodes for a given
+callee: for example, in a given program a forward declaration might never be
+linked (in the joining-together-object-files sense) with a definition. In order
+to filter these extra associations out, one would need to consider both which
+program is in focus by the user and which modules went into building that
+program. This is out of scope for this document.
+
+`completes` relationships should only be established when an indexer observes
+that a completion has actually occurred. This allows users of the graph to
+avoid connecting implementations to signatures that those implementations
+never observe:
+
+[kythe,C++,"Unrelated defs and decls can be distinguished.",0]
+--------------------------------------------------------------------------------
+#example foo1.h
+// A header that declares a global foo().
+//- @foo defines/binding Foo1Decl
+void foo();
+#example foo2.h
+// An unrelated header that also declares a foo().
+//- @foo defines/binding Foo2Decl
+void foo();
+#example foo1.cc
+#include "foo1.h"
+// This definition sees the first declaration (but never the second).
+//- @foo completes Foo1Decl
+//- !{ @foo completes Foo2Decl }
+void foo() { }
+#example foo2.cc
+#include "foo2.h"
+// This definition sees only the second declaration.
+//- !{ @foo completes Foo1Decl }
+//- @foo completes Foo2Decl
+void foo() { }
+--------------------------------------------------------------------------------
+
+Finally, be careful to follow the `completes` relationship in both directions,
+since the Kythe graph records specifically *which* declaration is used in a
+function call.
+
+[kythe,C++,"Make sure to reach every callsite.",0]
+--------------------------------------------------------------------------------
+#include "foo.h"
+//- @"foo()"=FooDeclCall ref/call FooDeclCallable
+void baz() { foo(); }
+//- @foo=FooImplAnchor defines/binding FooImpl
+//- !{ FooImpl callableas FooDeclCallable }
+void foo() { }
+//- @"foo()"=FooImplCall ref/call FooImplCallable
+void bar() { foo(); }
+#example foo.h
+//- @foo=FooDeclAnchor defines/binding FooDecl
+void foo();
+
+// Finding all callsites for foo() follows the same query pattern. Depending
+// on your starting point, different VNames are unknown: if you begin with
+// FooImplAnchor, you'll need to search forward along the completes edge for
+// FooDecl.
+//- FooImplAnchor completes FooDecl
+
+// If you start with FooDeclAnchor, you first need to find FooDecl,
+// then you can search backward for all of the nodes that complete it.
+//- FooImplAnchor defines/binding FooImpl
+//- FooDeclAnchor defines/binding FooDecl
+
+// Collect all the callables:
+//- FooImpl callableas FooImplCallable
+//- FooDecl callableas FooDeclCallable
+
+// Then look for all the ref/call edges terminating at those callables:
+//- FooDeclCall ref/call FooDeclCallable
+//- FooImplCall ref/call FooImplCallable
+--------------------------------------------------------------------------------
+
+== Overrides
+
+For callsites that involve dynamic binding, Kythe indexers should emit
+`ref/call` edges to the most specific possible `callable` node.
+
+[kythe,C++,"Use the most specific static overrides.",0]
+--------------------------------------------------------------------------------
+//- @f defines/binding DefSF
+//- DefSF callableas DefSFCallable
+struct S { virtual void f() { } };
+//- @f defines/binding DefTF
+//- DefTF overrides DefSF
+//- DefTF callableas DefTFCallable
+struct T : public S { void f() override { } };
+//- @"s->f()" ref/call DefSFCallable
+void CallSF(S* s) { s->f(); }
+//- @"t->f()" ref/call DefTFCallable
+void CallTF(T* t) { t->f(); }
+--------------------------------------------------------------------------------
+
+Depending on the semantics of the query you want to make, you may need to walk
+up or down the override chain. For example, to find all of the calls to `S::f`
+in the example above, including those calls that are made to functions that
+override the implementation in `S`:
+
+[kythe,C++,"Follow the override chain downward.",0]
+--------------------------------------------------------------------------------
+//- @f defines/binding DefSF
+struct S { virtual void f() { } };
+struct T : public S { void f() override { } };
+void CallSF(S* s) { s->f(); }
+void CallTF(T* t) { t->f(); }
+
+// Starting with DefSF, find all callers (and callers of overrides):
+// Build a set of overrides.
+//- DefTF overrides DefSF
+// Find all relevant callables.
+//- DefSF callableas DefSFCallable
+//- DefTF callableas DefTFCallable
+// Find callsites.
+//- DefSFCall ref/call DefSFCallable
+//- DefTFCall ref/call DefTFCallable
+--------------------------------------------------------------------------------
+
+== Final query
+
+We can now build a single query that will unify defs and decls and search up and
+down the override chain. This query starts with some semantic object `Fn` and
+yields the various anchors that call `Fn` in the broadest sense.
+
+. Add `Fn` to set `O`.
+. Repeat until fixed point:
+.. For every `o` in `O`, for all nodes `o'` such that `o' overrides o` or
+   `o overrides o'`, add `o'` to `O`.
+.. For every `o` in `O`, for all nodes `o'` such that (for some `a`)
+   `a defines/binding o'` and (`a completes o` or `a completes/uniquely o`),
+   add `o'` to `O`.
+.. For every `o` in `O`, for all nodes `o'` such that (for some `a`)
+   `a defines/binding o` and (`a completes o'` or `a completes/uniquely o'`),
+   add `o'` to `O`.
+. Add all callables of `O` to set `C`.
+. Return the set of all `a` such that there is some `c` in `C` such that
+  `a ref/call c`.
+
+Since this query is expensive in practice, we (intend to) precompute it as part
+of building serving tables.

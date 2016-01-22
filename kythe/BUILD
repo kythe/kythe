@@ -9,6 +9,6 @@ package_group(
 
 filegroup(
     name = "srcs",
-    srcs = glob(["**"]),
+    srcs = glob(["**"], exclude=["web/site/.bundle/**", "web/site/_vendor/**"]),
     visibility = ["//visibility:private"],
 )

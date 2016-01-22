@@ -18,7 +18,7 @@ set -o pipefail
 # This script verifies and formats a single Kythe example, which is expected
 # to be piped in on standard input from example.sh.
 #
-# The script assumes it's working directory is the schema output directory and
+# The script assumes its working directory is the schema output directory and
 # requires the following environment variables:
 #   TMP
 #   LANGUAGE
@@ -26,6 +26,7 @@ set -o pipefail
 #   JAVA_INDEXER_BIN
 #   VERIFIER_BIN
 #   KINDEX_TOOL_BIN
+#   SHOWGRAPH
 #
 # TODO(zarko): Provide alternate templates to avoid unnecessary boilerplate
 # (eg, text within class scope, text within method scope, ...).
@@ -60,11 +61,15 @@ fi
 # Format the output.
 trap 'error FORMAT' ERR
 
-"$VERIFIER_BIN" --ignore_dups --graphviz >"$TMP/${FILE_SHA}.dot" <"${TEST_FILE}.entries"
-dot -Tsvg -o "${FILE_SHA}.svg" "$TMP/${FILE_SHA}.dot"
-
 echo "<div><h5 id=\"_${LABEL}\">${LABEL}"
-echo "(<a href=\"${FILE_SHA}.svg\" target=\"_blank\">${LANGUAGE}</a>)</h5>"
+
+if [[ "${SHOWGRAPH}" == 1 ]]; then
+  "$VERIFIER_BIN" --ignore_dups --graphviz >"$TMP/${FILE_SHA}.dot" <"${TEST_FILE}.entries"
+  dot -Tsvg -o "${FILE_SHA}.svg" "$TMP/${FILE_SHA}.dot"
+  echo "(<a href=\"${FILE_SHA}.svg\" target=\"_blank\">${LANGUAGE}</a>)</h5>"
+else
+  echo " (${LANGUAGE})</h5>"
+fi
 
 source-highlight --failsafe --output=STDOUT --src-lang java -i "${TEST_FILE}.orig"
 echo "</div>"

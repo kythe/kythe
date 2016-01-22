@@ -30,7 +30,7 @@ case $file in
   WORKSPACE|third_party/*|tools/*|*.md|BUILD|*/BUILD|*/testdata/*|*.yaml|*.json|*.html|*.pb.go|.arclint|.gitignore|*/.gitignore|.arcconfig|*/__phutil_*|*.bzl|.kythe|kythe/web/site/*)
     ;; # skip copyright checks
   *)
-    if ! grep -q 'Copyright 201[45] Google Inc. All rights reserved.' "$file"; then
+    if ! grep -q 'Copyright 201[4-9] Google Inc. All rights reserved.' "$file"; then
       echo 'copyright header::error: File missing copyright header'
     fi ;;
 esac
