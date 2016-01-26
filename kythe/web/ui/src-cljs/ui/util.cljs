@@ -62,6 +62,18 @@
       :corpus (.getDomain uri)
       :signature (.getFragment uri))))
 
+(defn- maybe-encode-with-prefix [prefix s]
+  (if s (str prefix (js/encodeURIComponent s)) ""))
+
+(defn vname->ticket [vname]
+  (str
+    "kythe:"
+    (maybe-encode-with-prefix "//" (:corpus vname))
+    (maybe-encode-with-prefix "?lang=" (:language vname))
+    (maybe-encode-with-prefix "?path=" (:path vname))
+    (maybe-encode-with-prefix "?root=" (:root vname))
+    (maybe-encode-with-prefix "#" (:signature vname))))
+
 (def ^:private abbreviations
   {:lang :language
    :sig :signature})

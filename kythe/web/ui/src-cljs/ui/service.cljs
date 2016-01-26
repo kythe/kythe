@@ -119,17 +119,3 @@
      :keywords? true
      :handler handler
      :error-handler error-handler}))
-
-(defn get-search
-  "Searches for nodes by partial VName and known fact values"
-  [query handler error-handler]
-  (POST "search"
-    {:params (assoc query :fact
-               (for [{:keys [name value]} (:fact query)]
-                 {:name name
-                  :value (b64/encodeString value)}))
-     :format :json
-     :response-format :json
-     :keywords? true
-     :handler (comp handler :ticket)
-     :error-handler error-handler}))

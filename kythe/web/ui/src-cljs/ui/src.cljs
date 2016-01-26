@@ -183,7 +183,8 @@
       (cond
         (empty? state) (dom/span nil "Please select a file to your left!")
         (:failure state) (dom/div nil
-                           (dom/p nil "Sorry, an error occurred!")
+                           (dom/p nil (str "Sorry, an error occurred while requesting file decorations for ticket: "
+                                        "\"" (:requested-file state) "\""))
                            (dom/p nil (:original-text (:parse-error state))))
         (:loading state) (dom/div nil
                            (dom/span nil "Loading...")
