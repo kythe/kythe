@@ -41,7 +41,7 @@ components=(${previous_version//./ })
 ((components[2]++))
 
 join() { local IFS="$1"; shift; echo "$*"; }
-version="v$(join . ${components[@]})"
+version="v$(join . "${components[@]}")"
 echo "Marking release $version"
 
 sed -i "s/Upcoming release/$version/" RELEASES.md

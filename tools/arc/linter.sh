@@ -19,6 +19,8 @@
 #
 # Usage: linter.sh <file>
 #
+# Optionally uses shellcheck if it is found on PATH along with jq.
+#
 # Arcanist Documentation:
 #   https://secure.phabricator.com/book/phabricator/article/arcanist_lint_script_and_regex/
 
@@ -29,6 +31,11 @@ readonly dir="$(dirname "$1")"
 case $file in
   WORKSPACE|third_party/*|tools/*|*.md|BUILD|*/BUILD|*/testdata/*|*.yaml|*.json|*.html|*.pb.go|.arclint|.gitignore|*/.gitignore|.arcconfig|*/__phutil_*|*.bzl|.kythe|kythe/web/site/*)
     ;; # skip copyright checks
+  *.sh|*.bash)
+    if command -v shellcheck jq &>/dev/null; then
+      shellcheck -f json "$file" | \
+        jq -r '.[] | "shellcheck::" + (if .level == "info" then "advice" else .level end) + ":" + (.line | tostring) + " " + .message'
+    fi ;;
   *)
     if ! grep -q 'Copyright 201[4-9] Google Inc. All rights reserved.' "$file"; then
       echo 'copyright header::error: File missing copyright header'

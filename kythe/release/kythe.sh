@@ -51,13 +51,13 @@ EOF
 }
 
 usage_error() {
-  echo "ERROR: $@" >&2
+  echo "ERROR: $*" >&2
   usage
   exit 1
 }
 
 error() {
-  echo "ERROR: $@" >&2
+  echo "ERROR: $*" >&2
   exit 1
 }
 
@@ -138,7 +138,7 @@ drive_indexer_indexpack() {
     if [[ -n "$IGNORE_UNHANDLED" ]]; then
       return 0
     else
-      echo "Unhandled index file for '$lang': $@" >&2
+      echo "Unhandled index file for '$lang': $*" >&2
       return 1
     fi
   fi
@@ -153,11 +153,11 @@ drive_indexer_kindex() {
     if [[ -n "$IGNORE_UNHANDLED" ]]; then
       return 0
     else
-      echo "Unhandled index file for '$lang': $@" >&2
+      echo "Unhandled index file for '$lang': $*" >&2
       return 1
     fi
   fi
-  echo "Indexing $@" >&2
+  echo "Indexing $*" >&2
   "$analyzer" "$@"
 }
 export -f drive_indexer_kindex drive_indexer_indexpack

@@ -4,6 +4,9 @@
       "type": "spelling",
       "exclude": "(^third_party)"
     },
+    "chmod": {
+      "type": "chmod"
+    },
     "merge-conflict": {
       "type": "merge-conflict"
     },
