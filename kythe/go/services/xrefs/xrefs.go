@@ -30,6 +30,7 @@ import (
 	"time"
 
 	"kythe.io/kythe/go/services/web"
+	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema"
 
 	"github.com/sergi/go-diff/diffmatchpatch"
@@ -92,27 +93,36 @@ var (
 	ErrDecorationsNotFound = errors.New("file decorations not found")
 )
 
-var (
-	revDefinesEdge        = schema.MirrorEdge(schema.DefinesEdge)
-	revDefinesBindingEdge = schema.MirrorEdge(schema.DefinesBindingEdge)
+// FixTickets returns an equivalent slice of normalized tickets.
+func FixTickets(rawTickets []string) ([]string, error) {
+	if len(rawTickets) == 0 {
+		return nil, errors.New("no tickets specified")
+	}
 
-	revRefEdge = schema.MirrorEdge(schema.RefEdge)
-
-	revDocumentsEdge = schema.MirrorEdge(schema.DocumentsEdge)
-)
+	var tickets []string
+	for _, rawTicket := range rawTickets {
+		ticket, err := kytheuri.Fix(rawTicket)
+		if err != nil {
+			return nil, fmt.Errorf("invalid ticket %q: %v", rawTicket, err)
+		}
+		tickets = append(tickets, ticket)
+	}
+	return tickets, nil
+}
 
 // IsDefKind determines whether the given edgeKind matches the requested
 // definition kind.
 func IsDefKind(requestedKind xpb.CrossReferencesRequest_DefinitionKind, edgeKind string) bool {
+	edgeKind = schema.Canonicalize(edgeKind)
 	switch requestedKind {
 	case xpb.CrossReferencesRequest_NO_DEFINITIONS:
 		return false
 	case xpb.CrossReferencesRequest_FULL_DEFINITIONS:
-		return edgeKind == revDefinesEdge
+		return edgeKind == schema.DefinesEdge
 	case xpb.CrossReferencesRequest_BINDING_DEFINITIONS:
-		return edgeKind == revDefinesBindingEdge
+		return edgeKind == schema.DefinesBindingEdge
 	case xpb.CrossReferencesRequest_ALL_DEFINITIONS:
-		return schema.IsEdgeVariant(edgeKind, revDefinesEdge)
+		return schema.IsEdgeVariant(edgeKind, schema.DefinesEdge)
 	default:
 		panic("unhandled CrossReferencesRequest_DefinitionKind")
 	}
@@ -121,11 +131,12 @@ func IsDefKind(requestedKind xpb.CrossReferencesRequest_DefinitionKind, edgeKind
 // IsRefKind determines whether the given edgeKind matches the requested
 // reference kind.
 func IsRefKind(requestedKind xpb.CrossReferencesRequest_ReferenceKind, edgeKind string) bool {
+	edgeKind = schema.Canonicalize(edgeKind)
 	switch requestedKind {
 	case xpb.CrossReferencesRequest_NO_REFERENCES:
 		return false
 	case xpb.CrossReferencesRequest_ALL_REFERENCES:
-		return schema.IsEdgeVariant(edgeKind, revRefEdge)
+		return schema.IsEdgeVariant(edgeKind, schema.RefEdge)
 	default:
 		panic("unhandled CrossReferencesRequest_ReferenceKind")
 	}
@@ -134,11 +145,12 @@ func IsRefKind(requestedKind xpb.CrossReferencesRequest_ReferenceKind, edgeKind 
 // IsDocKind determines whether the given edgeKind matches the requested
 // documentation kind.
 func IsDocKind(requestedKind xpb.CrossReferencesRequest_DocumentationKind, edgeKind string) bool {
+	edgeKind = schema.Canonicalize(edgeKind)
 	switch requestedKind {
 	case xpb.CrossReferencesRequest_NO_DOCUMENTATION:
 		return false
 	case xpb.CrossReferencesRequest_ALL_DOCUMENTATION:
-		return schema.IsEdgeVariant(edgeKind, revDocumentsEdge)
+		return schema.IsEdgeVariant(edgeKind, schema.DocumentsEdge)
 	default:
 		panic("unhandled CrossDocumentationRequest_DocumentationKind")
 	}

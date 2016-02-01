@@ -214,25 +214,9 @@ func CrossReferencesPageKey(key string) []byte {
 // tableImpl implements the xrefs Service interface using static lookup tables.
 type tableImpl struct{ staticLookupTables }
 
-func fixTickets(rawTickets []string) ([]string, error) {
-	if len(rawTickets) == 0 {
-		return nil, errors.New("no tickets specified")
-	}
-
-	var tickets []string
-	for _, rawTicket := range rawTickets {
-		ticket, err := kytheuri.Fix(rawTicket)
-		if err != nil {
-			return nil, fmt.Errorf("invalid ticket %q: %v", rawTicket, err)
-		}
-		tickets = append(tickets, ticket)
-	}
-	return tickets, nil
-}
-
 // Nodes implements part of the xrefs Service interface.
 func (t *tableImpl) Nodes(ctx context.Context, req *xpb.NodesRequest) (*xpb.NodesReply, error) {
-	tickets, err := fixTickets(req.Ticket)
+	tickets, err := xrefs.FixTickets(req.Ticket)
 	if err != nil {
 		return nil, err
 	}
@@ -278,7 +262,7 @@ const (
 
 // Edges implements part of the xrefs Service interface.
 func (t *tableImpl) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
-	tickets, err := fixTickets(req.Ticket)
+	tickets, err := xrefs.FixTickets(req.Ticket)
 	if err != nil {
 		return nil, err
 	}
@@ -610,7 +594,7 @@ func decorationToReference(norm *xrefs.Normalizer, d *srvpb.FileDecorations_Deco
 
 // CrossReferences implements part of the xrefs.Service interface.
 func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReferencesRequest) (*xpb.CrossReferencesReply, error) {
-	tickets, err := fixTickets(req.Ticket)
+	tickets, err := xrefs.FixTickets(req.Ticket)
 	if err != nil {
 		return nil, err
 	}

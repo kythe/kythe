@@ -526,7 +526,7 @@ func CrossReference(file *srvpb.File, norm *xrefs.Normalizer, d *srvpb.FileDecor
 		return nil, errors.New("missing decoration's parent file")
 	}
 
-	ea, err := expandAnchor(d.Anchor, file, norm, schema.MirrorEdge(d.Kind))
+	ea, err := ExpandAnchor(d.Anchor, file, norm, schema.MirrorEdge(d.Kind))
 	if err != nil {
 		return nil, fmt.Errorf("error expanding anchor {%+v}: %v", d.Anchor, err)
 	}
@@ -537,7 +537,9 @@ func CrossReference(file *srvpb.File, norm *xrefs.Normalizer, d *srvpb.FileDecor
 	}, nil
 }
 
-func expandAnchor(anchor *srvpb.RawAnchor, file *srvpb.File, norm *xrefs.Normalizer, kind string) (*srvpb.ExpandedAnchor, error) {
+// ExpandAnchor returns the ExpandedAnchor equivalent of the given RawAnchor
+// where file (and its associated Normalizer) must be the anchor's parent file.
+func ExpandAnchor(anchor *srvpb.RawAnchor, file *srvpb.File, norm *xrefs.Normalizer, kind string) (*srvpb.ExpandedAnchor, error) {
 	sp := norm.ByteOffset(anchor.StartOffset)
 	ep := norm.ByteOffset(anchor.EndOffset)
 	txt, err := getText(sp, ep, file)

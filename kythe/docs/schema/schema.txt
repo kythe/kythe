@@ -1087,7 +1087,7 @@ Facts::
   text/encoding:::
     Encoding of the text fact.  See
     http://www.w3.org/TR/encoding/#names-and-labels for standard values.  If
-    empty, "utf8" is assumed.
+    empty, "UTF-8" is assumed.
 See also::
   <<anchor>>, <<refincludes,[ref/includes]>>
 

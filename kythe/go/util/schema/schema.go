@@ -34,6 +34,10 @@ const (
 	TextEncodingFact = "/kythe/text/encoding"
 )
 
+// DefaultTextEncoding is the assumed value of the TextEncodingFact if it is
+// empty or missing from a node with a TextFact.
+const DefaultTextEncoding = "UTF-8"
+
 // Kythe node kinds
 const (
 	AnchorKind = "anchor"
@@ -87,7 +91,7 @@ const reverseEdgePrefix = "%"
 // EdgeDir represents the inherent direction of an edge kind.
 type EdgeDir bool
 
-// Forward edges are generally depedency edges and ensure that each node has a
+// Forward edges are generally dependency edges and ensure that each node has a
 // small out-degree in the Kythe graph.  Reverse edges are the opposite.
 const (
 	Forward EdgeDir = true
