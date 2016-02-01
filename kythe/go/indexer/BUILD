@@ -4,7 +4,10 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 go_library(
     name = "indexer",
-    srcs = ["indexer.go"],
+    srcs = [
+        "export15.go",
+        "indexer.go",
+    ],
     deps = [
         "//kythe/go/extractors/govname",
         "//kythe/proto:analysis_proto_go",

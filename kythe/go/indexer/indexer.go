@@ -40,7 +40,6 @@ import (
 	"errors"
 	"fmt"
 	"go/ast"
-	"go/internal/gcimporter"
 	"go/parser"
 	"go/token"
 	"go/types"
@@ -144,7 +143,7 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 			return nil, fmt.Errorf("missing vname for %q", fpath)
 		}
 		hdr := bufio.NewReader(bytes.NewReader(data))
-		if err := gcimporter.FindExportData(hdr); err != nil {
+		if err := findExportData(hdr); err != nil {
 			return nil, fmt.Errorf("scanning export data in %q: %v", fpath, err)
 		}
 
@@ -154,7 +153,7 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 		}
 		imap[ipath] = ri.VName
 
-		if _, err := gcimporter.ImportData(deps, fpath, ipath, hdr); err != nil {
+		if _, err := gcImportData(deps, fpath, ipath, hdr); err != nil {
 			return nil, fmt.Errorf("importing %q: %v", ipath, err)
 		}
 	}
