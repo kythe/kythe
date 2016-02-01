@@ -133,7 +133,7 @@ def _go_compile(ctx, pkg, srcs, archive, extra_packages=[]):
     mnemonic = 'GoCompile'
   cmd = "\n".join([
       'set -e',
-      'export GOROOT=$PWD/external/local-goroot',
+      'export GOROOT=$PWD/external/local_goroot',
       cmd,
   ])
 
@@ -189,7 +189,7 @@ def _link_binary(ctx, binary, archive, transitive_deps, extldflags=[], cc_libs=[
     args = link_args[ctx.var['COMPILATION_MODE']]
 
   cmd = ['set -e'] + _construct_go_path(go_path, package_map) + [
-      'export GOROOT=$PWD/external/local-goroot',
+      'export GOROOT=$PWD/external/local_goroot',
       'export PATH',
       'if ' + gotool.path + ' tool | grep -q 6l; then TOOL=6l; else TOOL=link; fi',
       gotool.path + ' tool $TOOL -extldflags="' + ' '.join(list(extldflags)) + '"'
