@@ -38,14 +38,14 @@ case $file in
     fi ;;
   *)
     if ! grep -q 'Copyright 201[4-9] Google Inc. All rights reserved.' "$file"; then
-      echo 'copyright header::error: File missing copyright header'
+      echo 'copyright header::error:1 File missing copyright header'
     fi ;;
 esac
 
 # Ensure filenames/paths do not clash on case-insensitive file systems.
 if grep -q [A-Z] <<<"$dir"; then
-  echo "case-insensitivity::error: $dir directory contains an uppercase letter"
+  echo "case-insensitivity::error:1 $dir directory contains an uppercase letter"
 fi
 if [[ $(find "$dir" -maxdepth 1 -iname "$name" | wc -l) -gt 1 ]]; then
-  echo "case-insensitivity::error: $name filename clashes on case-insensitive file systems"
+  echo "case-insensitivity::error:1 $name filename clashes on case-insensitive file systems"
 fi
