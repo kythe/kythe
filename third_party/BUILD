@@ -27,7 +27,6 @@ filegroup(
         "//third_party/leveldb:license",
         "//third_party/llvm:license",
         "//third_party/netty:license",
-        "//third_party/openjdk:license",
         "//third_party/proto:license",
         "//third_party/rapidjson:license",
         "//third_party/re2:license",

@@ -202,7 +202,7 @@ public class JavaEntrySets extends KytheEntrySets {
 
     Multiset<Integer> hashes = HashMultiset.create();
     if (sym.members() != null) {
-      for (Symbol member : sym.members().getElements()) {
+      for (Symbol member : sym.members().getSymbols()) {
         if (member.isPrivate()
             || member instanceof MethodSymbol && ((MethodSymbol) member).isStaticOrInstanceInit()) {
           // Ignore initializers and private members.  It's possible these do not appear in the
@@ -213,7 +213,7 @@ public class JavaEntrySets extends KytheEntrySets {
         // We can't recursively get the result of hashSymbol(member) since the extractor removes all
         // .class files not directly used by a compilation meaning that member may not be complete.
         hashes.add(member.getSimpleName().toString().hashCode());
-        hashes.add(member.kind);
+        hashes.add(member.kind.ordinal());
       }
     }
 

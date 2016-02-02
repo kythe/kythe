@@ -55,6 +55,7 @@ import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.ModifiersTree;
 import com.sun.source.tree.NewArrayTree;
 import com.sun.source.tree.NewClassTree;
+import com.sun.source.tree.PackageTree;
 import com.sun.source.tree.ParameterizedTypeTree;
 import com.sun.source.tree.ParenthesizedTree;
 import com.sun.source.tree.PrimitiveTypeTree;
@@ -107,6 +108,7 @@ import com.sun.tools.javac.tree.JCTree.JCMethodDecl;
 import com.sun.tools.javac.tree.JCTree.JCMethodInvocation;
 import com.sun.tools.javac.tree.JCTree.JCModifiers;
 import com.sun.tools.javac.tree.JCTree.JCNewArray;
+import com.sun.tools.javac.tree.JCTree.JCPackageDecl;
 import com.sun.tools.javac.tree.JCTree.JCNewClass;
 import com.sun.tools.javac.tree.JCTree.JCParens;
 import com.sun.tools.javac.tree.JCTree.JCPrimitiveTypeTree;
@@ -173,9 +175,7 @@ public class JCTreeScanner<R, P> implements TreeVisitor<R, P> {
   }
 
   public R visitTopLevel(JCCompilationUnit tree, P p) {
-    R r = scan(tree.packageAnnotations, p);
-    r = scanAndReduce(tree.pid, p, r);
-    return scanAndReduce(tree.defs, p, r);
+    return scan(tree.defs, p);
   }
 
   @Override
@@ -697,5 +697,15 @@ public class JCTreeScanner<R, P> implements TreeVisitor<R, P> {
   public R visitAnnotatedType(JCAnnotatedType tree, P p) {
     R r = scan(tree.annotations, p);
     return scanAndReduce(tree.underlyingType, p, r);
+  }
+
+  @Override
+  public final R visitPackage(PackageTree tree, P p) {
+    return visitPackage((JCPackageDecl) tree, p);
+  }
+
+  public final R visitPackage(JCPackageDecl tree, P p) {
+    R r = scan(tree.annotations, p);
+    return scanAndReduce(tree.pid, p, r);
   }
 }

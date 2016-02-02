@@ -16,7 +16,7 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/platform/shared:file_data",
         "//kythe/proto:analysis_proto_java",
         "//kythe/proto:java_proto_java",
-        "//third_party/openjdk:tools",
+        "//third_party/java/jdk/langtools:javac",
         "//third_party/proto:any_proto_java",
         "//third_party/proto:protobuf_java",
     ],

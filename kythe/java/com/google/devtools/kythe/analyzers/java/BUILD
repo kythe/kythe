@@ -28,7 +28,7 @@ java_library(
         "//kythe/proto:analysis_proto_java",
         "//kythe/proto:storage_proto_java",
         "//third_party/guava",
-        "//third_party/openjdk:tools",
+        "//third_party/java/jdk/langtools:javac",
         "//third_party/proto:protobuf_java",
     ],
 )

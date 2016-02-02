@@ -13,8 +13,8 @@ java_library(
     deps = [
         "//kythe/java/com/google/devtools/kythe/util",
         "//third_party/guava",
+        "//third_party/java/jdk/langtools:javac",
         "//third_party/jsr305_annotations:jsr305",
-        "//third_party/openjdk:tools",
         "//third_party/proto:protobuf_java",
     ],
 )

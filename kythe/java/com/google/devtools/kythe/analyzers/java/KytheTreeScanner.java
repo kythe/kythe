@@ -143,7 +143,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     if (compilation.getPackageName() != null) {
       EntrySet pkgNode = entrySets.getPackageNode(compilation.packge);
-      emitAnchor(ctx.down(compilation.getPackageName()), EdgeKind.REF, pkgNode);
+      emitAnchor(ctx.down((JCTree) compilation.getPackageName()), EdgeKind.REF, pkgNode);
       for (JavaNode n : decls) {
         entrySets.emitEdge(n.entries, EdgeKind.CHILDOF, pkgNode);
       }
@@ -202,7 +202,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
           cls = JavacUtil.getClassSymbol(javaContext, imprtField.selected.toString());
           if (cls != null) {
             // Import may be a class member
-            sym = cls.members().lookup(imprtField.name).sym;
+            sym = cls.members().findFirst(imprtField.name);
           }
         }
       }

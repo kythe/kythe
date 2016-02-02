@@ -7,7 +7,20 @@ filegroup(
     srcs = glob(["**"]),
 )
 
+java_import(
+    name = "javac",
+    jars = [":javac_jar"],
+)
+
+java_library(
+    name = "javac-neverlink",
+    neverlink = 1,
+    exports = [":javac"],
+)
+
 filegroup(
     name = "javac_jar",
-    srcs = ["javac.jar"],
+    srcs = [
+        "@bazel_tools//tools/jdk:langtools-neverlink",
+    ],
 )

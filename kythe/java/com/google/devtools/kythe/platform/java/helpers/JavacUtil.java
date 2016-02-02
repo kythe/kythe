@@ -17,6 +17,7 @@
 package com.google.devtools.kythe.platform.java.helpers;
 
 import com.sun.tools.javac.code.Scope;
+import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import com.sun.tools.javac.code.Symbol.TypeSymbol;
@@ -47,11 +48,11 @@ public class JavacUtil {
         }
 
         Scope scope = sup.tsym.members();
-        for (Scope.Entry e = scope.lookup(methodSymbol.name); e.scope != null; e = e.next()) {
-          if (e.sym != null
-              && !e.sym.isStatic()
-              && methodSymbol.overrides(e.sym, owner, types, true)) {
-            supers.add((MethodSymbol) e.sym);
+        for (Symbol sym : scope.getSymbolsByName(methodSymbol.name)) {
+          if (sym != null
+              && !sym.isStatic()
+              && methodSymbol.overrides(sym, owner, types, true)) {
+            supers.add((MethodSymbol) sym);
             break;
           }
         }

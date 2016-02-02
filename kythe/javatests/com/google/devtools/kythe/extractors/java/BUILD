@@ -1,8 +1,14 @@
 java_test(
     name = "java_extractor_test",
     srcs = ["JavaExtractorTest.java"],
-    data = glob(["testdata/**"]) + [":SillyProcessor_deploy.jar"],
+    data = glob(["testdata/**"]) + [
+        ":SillyProcessor_deploy.jar",
+        "//third_party/java/jdk/langtools:javac_jar",
+    ],
     javacopts = ["-Xlint:all"],
+    jvm_flags = [
+        "-Xbootclasspath/p:$$JAVA_RUNFILES/external/bazel_tools/third_party/java/jdk/langtools/javac.jar",
+    ],
     deps = [
         "//kythe/java/com/google/devtools/kythe/extractors/java",
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
@@ -11,7 +17,7 @@ java_test(
         "//kythe/proto:storage_proto_java",
         "//third_party:junit4",
         "//third_party/guava",
-        "//third_party/openjdk:tools",
+        "//third_party/java/jdk/langtools:javac",
         "//third_party/proto:protobuf_java",
         "//third_party/truth",
     ],
@@ -25,6 +31,6 @@ java_binary(
     ],
     create_executable = 0,
     deps = [
-        "@bazel_tools//tools/jdk:langtools-neverlink",
+        "//third_party/java/jdk/langtools:javac-neverlink",
     ],
 )

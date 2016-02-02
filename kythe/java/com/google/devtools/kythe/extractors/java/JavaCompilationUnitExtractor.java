@@ -55,12 +55,15 @@ import com.sun.tools.javac.code.Symtab;
 import com.sun.tools.javac.main.Option;
 
 import java.io.File;
+import java.io.IOError;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.JarURLConnection;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -149,7 +152,7 @@ public class JavaCompilationUnitExtractor {
       // the java.home variable is terminated with "/bin/..".
       // However, this is not the case for the class files
       // that we are trying to filter.
-      this.jdkJar = "file:" + javaHome.toRealPath(NOFOLLOW_LINKS);
+      this.jdkJar = javaHome.toRealPath(NOFOLLOW_LINKS).toString();
     } catch (IOException e) {
       throw new ExtractionException("JDK path not found: " + javaHome, e, false);
     }
@@ -409,7 +412,30 @@ public class JavaCompilationUnitExtractor {
       AnalysisResults results)
       throws ExtractionException {
     URI uri = requiredInput.toUri();
+    String entryPath;
+    String jarPath = null;
     boolean isJarPath = false;
+
+    {
+      URLConnection conn;
+      URL url;
+      try {
+        url = uri.toURL();
+        conn = url.openConnection();
+      } catch (IOException e) {
+        throw new IOError(e);
+      }
+      if (conn instanceof JarURLConnection) {
+        isJarPath = true;
+        JarURLConnection jarConn = ((JarURLConnection) conn);
+        jarPath = jarConn.getJarFileURL().getFile().toString();
+        // jar entries don't have a leading '/', and we expect
+        // paths like "!JAR!/com/foo/Bar.class"
+        entryPath = "/" + jarConn.getEntryName();
+      } else {
+        entryPath = url.getFile().toString();
+      }
+    }
 
     if (uri.getScheme().equals(JAR_SCHEME)) {
       isJarPath = true;
@@ -429,7 +455,7 @@ public class JavaCompilationUnitExtractor {
 
     // If the file was part of the JDK we do not store it as the JDK is tied
     // to the analyzer we'll run on this information later on.
-    if (isJarPath && uri.toString().startsWith(jdkJar)) {
+    if (isJarPath && jarPath.startsWith(jdkJar)) {
       return;
     }
 
@@ -446,8 +472,6 @@ public class JavaCompilationUnitExtractor {
       // This is done so we do not need to download the entire jar file for each
       // file's compilation (e.g. instead of downloading 200MB we only download 60K
       // for analyzing the kythe java indexer).
-      int splitIndex = strippedPath.indexOf('!');
-      String rest = strippedPath.substring(splitIndex + 1);
       switch (requiredInput.getKind()) {
         case CLASS:
           results.newClassPath.add(JAR_ROOT);
@@ -456,7 +480,7 @@ public class JavaCompilationUnitExtractor {
           results.newSourcePath.add(JAR_ROOT);
           break;
       }
-      strippedPath = JAR_ROOT + rest;
+      strippedPath = JAR_ROOT + entryPath;
     }
     if (!isJarPath && requiredInput.getKind() == Kind.CLASS) {
       // If the class file was on disk, we need to infer the correct classpath to add.

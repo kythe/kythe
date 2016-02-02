@@ -29,7 +29,6 @@ import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import com.sun.tools.javac.code.Symbol.TypeSymbol;
 import com.sun.tools.javac.code.Symbol.TypeVariableSymbol;
 import com.sun.tools.javac.code.Type;
-import com.sun.tools.javac.code.Type.AnnotatedType;
 import com.sun.tools.javac.code.Type.ArrayType;
 import com.sun.tools.javac.code.Type.CapturedType;
 import com.sun.tools.javac.code.Type.ClassType;
@@ -481,11 +480,5 @@ public class SignatureGenerator
     e.getEnclosingElement().accept(this, sb);
     sb.append(".").append(e.getEnclosingElement().getSimpleName()).append("()");
     return null;
-  }
-
-  @Override
-  public Void visitAnnotatedType(AnnotatedType t, StringBuilder sb) {
-    // TODO: java 8.
-    throw new IllegalStateException();
   }
 }
