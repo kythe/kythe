@@ -44,7 +44,7 @@ type Service interface {
 	NodesEdgesService
 	DecorationsService
 	CrossReferencesService
-	FindCallersService
+	CallersService
 }
 
 // NodesEdgesService provides fast access to nodes and edges in a Kythe graph.
@@ -79,11 +79,11 @@ type CrossReferencesService interface {
 	CrossReferences(context.Context, *xpb.CrossReferencesRequest) (*xpb.CrossReferencesReply, error)
 }
 
-// FindCallersService provides fast access to the callgraph implied by a Kythe graph.
-type FindCallersService interface {
-	// FindCallers takes a set of tickets for semantic objects and returns the set
+// CallersService provides fast access to the callgraph implied by a Kythe graph.
+type CallersService interface {
+	// Callers takes a set of tickets for semantic objects and returns the set
 	// of places where those objects were called.
-	FindCallers(context.Context, *xpb.FindCallersRequest) (*xpb.FindCallersReply, error)
+	Callers(context.Context, *xpb.CallersRequest) (*xpb.CallersReply, error)
 }
 
 var (
@@ -459,9 +459,9 @@ func (w *grpcClient) CrossReferences(ctx context.Context, req *xpb.CrossReferenc
 	return w.XRefServiceClient.CrossReferences(ctx, req)
 }
 
-// FindCallers implements part of the Service interface.
-func (w *grpcClient) FindCallers(ctx context.Context, req *xpb.FindCallersRequest) (*xpb.FindCallersReply, error) {
-	return w.XRefServiceClient.FindCallers(ctx, req)
+// Callers implements part of the Service interface.
+func (w *grpcClient) Callers(ctx context.Context, req *xpb.CallersRequest) (*xpb.CallersReply, error) {
+	return w.XRefServiceClient.Callers(ctx, req)
 }
 
 // GRPC returns an xrefs Service backed by the given GRPC client and context.
@@ -493,9 +493,9 @@ func (w *webClient) CrossReferences(ctx context.Context, q *xpb.CrossReferencesR
 	return &reply, web.Call(w.addr, "xrefs", q, &reply)
 }
 
-// FindCallers implements part of the Service interface.
-func (w *webClient) FindCallers(ctx context.Context, q *xpb.FindCallersRequest) (*xpb.FindCallersReply, error) {
-	var reply xpb.FindCallersReply
+// Callers implements part of the Service interface.
+func (w *webClient) Callers(ctx context.Context, q *xpb.CallersRequest) (*xpb.CallersReply, error) {
+	var reply xpb.CallersReply
 	return &reply, web.Call(w.addr, "callers", q, &reply)
 }
 
@@ -520,8 +520,8 @@ func WebClient(addr string) Service {
 //     Request: JSON encoded xrefs.CrossReferencesRequest
 //     Response: JSON encoded xrefs.CrossReferencesReply
 //   GET /callers
-//     Request: JSON encoded xrefs.FindCallersRequest
-//     Response: JSON encoded xrefs.FindCallersReply
+//     Request: JSON encoded xrefs.CallersRequest
+//     Response: JSON encoded xrefs.CallersReply
 //
 // Note: /nodes, /edges, /decorations, and /xrefs will return their responses as
 // serialized protobufs if the "proto" query parameter is set.
@@ -569,14 +569,14 @@ func RegisterHTTPHandlers(ctx context.Context, xs Service, mux *http.ServeMux) {
 	mux.HandleFunc("/callers", func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		defer func() {
-			log.Printf("xrefs.FindCallers:\t%s", time.Since(start))
+			log.Printf("xrefs.Callers:\t%s", time.Since(start))
 		}()
-		var req xpb.FindCallersRequest
+		var req xpb.CallersRequest
 		if err := web.ReadJSONBody(r, &req); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		reply, err := xs.FindCallers(ctx, &req)
+		reply, err := xs.Callers(ctx, &req)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

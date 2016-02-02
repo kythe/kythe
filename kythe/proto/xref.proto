@@ -66,19 +66,19 @@ service XRefService {
   // documentation of a set of requested nodes.
   rpc CrossReferences(CrossReferencesRequest) returns (CrossReferencesReply) {}
 
-  // FindCallers takes a set of tickets for semantic objects and returns the set
+  // Callers takes a set of tickets for semantic objects and returns the set
   // of places where those objects were called. For example, in the program
   //   void bar() { foo(); foo(); } void baz() { foo(); } void foo() { }
-  // `FindCallers({foo})` would return:
+  // `Callers({foo})` would return:
   //   {(bar, {first-call-anchor, second-call-anchor}),
   //    (baz, {first-call-anchor})}
   // To walk further up the call graph, you can project the first field of
   // each tuple in the result set ({bar, baz}) and feed that set back in
-  // to a new FindCallers request.
+  // to a new Callers request.
   //
   // The core of this query is specified in terms of graph operations in the
   // Kythe repository at //kythe/docs/schema/callgraph.txt.
-  rpc FindCallers(FindCallersRequest) returns (FindCallersReply) {}
+  rpc Callers(CallersRequest) returns (CallersReply) {}
 }
 
 message NodesRequest {
@@ -485,7 +485,7 @@ message CrossReferencesReply {
   string next_page_token = 10;
 }
 
-message FindCallersRequest {
+message CallersRequest {
   // A set of semantic tickets. These may refer to nodes that are `callableas`
   // other nodes or they may refer to those specific `callable` nodes. This
   // means that you can use both the target nodes of `ref/call` edges and
@@ -526,7 +526,7 @@ message FindCallersRequest {
   bool include_overrides = 2;
 }
 
-message FindCallersReply {
+message CallersReply {
   // Details common to all objects that participate in the call graph.
   message CallableDetail {
     // The definition site of the object called or being blamed for a call.
@@ -575,9 +575,9 @@ message FindCallersReply {
     // parameters will not be capriciously reordered).
     repeated Parameter parameter = 6;
   }
-  // An object that was blamed for making a call to an object in the
-  // set passed to FindCallers, along with the syntactic locations that
-  // caused that blame to be cast.
+  // An object that was blamed for making a call to an object in the set passed
+  // to Callers, along with the syntactic locations that caused that blame to
+  // be cast.
   message Caller {
     // The object (e.g., a function) responsible for making a call.
     CallableDetail detail = 1;
@@ -585,13 +585,13 @@ message FindCallersReply {
       // The location where a call was found inside the blamed object.
       Anchor anchor = 1;
       // This field will be set to true iff this call site was included in the
-      // results because include_overrides was true in FindCallersRequest.
+      // results because include_overrides was true in CallersRequest.
       bool call_to_override = 2;
     }
     repeated CallSite call_site = 2;
   }
   // All objects that were blamed for making calls.
   repeated Caller caller = 1;
-  // Details for the semantic objects that were passed via a FindCallersRequest.
+  // Details for the semantic objects that were passed via a CallersRequest.
   repeated CallableDetail callee = 2;
 }

@@ -161,12 +161,12 @@ func TestDecorations(t *testing.T) {
 	}
 }
 
-func TestFindCallers(t *testing.T) {
+func TestCallers(t *testing.T) {
 	xs := newService(t, testEntries)
 
-	reply, err := xs.FindCallers(ctx, &xpb.FindCallersRequest{})
+	reply, err := xs.Callers(ctx, &xpb.CallersRequest{})
 	if reply != nil || err == nil {
-		t.Fatalf("FindCallers expected to fail")
+		t.Fatalf("Callers expected to fail")
 	}
 }
 

@@ -895,11 +895,11 @@ func nodeInfos(nss ...[]*srvpb.Node) (infos []*xpb.NodeInfo) {
 	return
 }
 
-func TestFindCallers(t *testing.T) {
+func TestCallers(t *testing.T) {
 	st := tbl.Construct(t)
-	reply, err := st.FindCallers(ctx, &xpb.FindCallersRequest{})
+	reply, err := st.Callers(ctx, &xpb.CallersRequest{})
 	if reply != nil || err == nil {
-		t.Fatalf("FindCallers expected to fail")
+		t.Fatalf("Callers expected to fail")
 	}
 }
 

@@ -834,7 +834,7 @@ func p2p(p *cpb.Point) *xpb.Location_Point {
 	}
 }
 
-// FindCallers implements part of the xrefs Service interface.
-func (t *tableImpl) FindCallers(ctx context.Context, req *xpb.FindCallersRequest) (*xpb.FindCallersReply, error) {
-	return nil, errors.New("UNIMPLEMENTED: tableImpl.FindCallers")
+// Callers implements part of the xrefs Service interface.
+func (t *tableImpl) Callers(ctx context.Context, req *xpb.CallersRequest) (*xpb.CallersReply, error) {
+	return nil, errors.New("UNIMPLEMENTED: tableImpl.Callers")
 }
