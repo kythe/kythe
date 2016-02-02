@@ -62,9 +62,23 @@ service XRefService {
   // particular file node.
   rpc Decorations(DecorationsRequest) returns (DecorationsReply) {}
 
-	// CrossReferences returns the global references, definitions, and
-	// documentation of a set of requested nodes.
+  // CrossReferences returns the global references, definitions, and
+  // documentation of a set of requested nodes.
   rpc CrossReferences(CrossReferencesRequest) returns (CrossReferencesReply) {}
+
+  // FindCallers takes a set of tickets for semantic objects and returns the set
+  // of places where those objects were called. For example, in the program
+  //   void bar() { foo(); foo(); } void baz() { foo(); } void foo() { }
+  // `FindCallers({foo})` would return:
+  //   {(bar, {first-call-anchor, second-call-anchor}),
+  //    (baz, {first-call-anchor})}
+  // To walk further up the call graph, you can project the first field of
+  // each tuple in the result set ({bar, baz}) and feed that set back in
+  // to a new FindCallers request.
+  //
+  // The core of this query is specified in terms of graph operations in the
+  // Kythe repository at //kythe/docs/schema/callgraph.txt.
+  rpc FindCallers(FindCallersRequest) returns (FindCallersReply) {}
 }
 
 message NodesRequest {
@@ -469,4 +483,115 @@ message CrossReferencesReply {
   // fetch the next page in sequence after this one.  If there are no additional
   // cross-references, this field will be empty.
   string next_page_token = 10;
+}
+
+message FindCallersRequest {
+  // A set of semantic tickets. These may refer to nodes that are `callableas`
+  // other nodes or they may refer to those specific `callable` nodes. This
+  // means that you can use both the target nodes of `ref/call` edges and
+  // more common reference or definition edges (like `ref` or
+  // `defines/binding`).
+  //
+  // The Kythe data model defines a `callable` as something that can be the
+  // target of a `ref/call` edge. A `callable` has its own identity in the
+  // graph and is connected to the nodes it can be called through by a
+  // `callableas` edge. A `function` is the most typical node kind that
+  // participates in this `callableas` relationship. Other language-level
+  // objects that may be sources of `callableas` edges include C++
+  // struct/class types that define an operator(), Python classes that
+  // define __call__, and so forth.
+  //
+  // A given node may be `callableas` several different `callable` nodes.
+  // For example, if a struct S defines multiple overrides for
+  // operator(), it will be `callableas` multiple nodes C0...CN. These
+  // nodes will be distinguished by their type signatures. It's better to
+  // use `callable` nodes in this set because they make the query more
+  // specific.
+  repeated string semantic_object = 1;
+  // Expand the semantic_object set by including nodes that participate in
+  // an `overrides` relationship (in either direction) with nodes in the set.
+  //
+  // In the program:
+  //   struct A { virtual void f(); };
+  //   struct B : public A { void f() override; };
+  //   struct C : public B { void f() override; };
+  //   void g(B* b) { b->f(); }
+  //
+  // we would return the following results (for queries on the singleton
+  // semantic_object set containing A::f, B::f, or C::f):
+  //
+  // include_overrides  A::f  B::f  C::f
+  //             false    {}   {g}    {}
+  //              true   {g}   {g}   {g}
+  bool include_overrides = 2;
+}
+
+message FindCallersReply {
+  // Details common to all objects that participate in the call graph.
+  message CallableDetail {
+    // The definition site of the object called or being blamed for a call.
+    // This would be the "bar" in "void bar()" for calls blamed on bar above
+    // and the "foo" in "void foo()" if it refers to foo as a callee.
+    Anchor definition = 1;
+    // The ticket of the object that is `callableas` some C. This would refer
+    // to the function node for "bar" or "foo". This object may be the target
+    // of a `completes` edge (e.g., if the call was made to a definition
+    // rather than a declaration).
+    string semantic_object = 2;
+    // The ticket of the callable C for semantic_object that was used to service
+    // the query.
+    string semantic_object_callable = 3;
+    // The unqualified identifier for this object ("bar" or "foo" above,
+    // even if they were defined in some namespace or record). This field
+    // should be human-readable and can be displayed in a UI.
+    string identifier = 4;
+    // An unambiguous (as possible) identifier for this object ("bar()" or
+    // "foo()" above; if it was defined in a namespace, "ns::bar()";
+    // if it took arguments, "ns::bar(int *, void *)"). This field should
+    // be human-readable and can be displayed in a UI.
+    string display_name = 5;
+    // A parameter bound by the object referred to by `definition` above.
+    message Parameter {
+      enum Kind {
+        // A term-level binding (like the `x` in `void foo(int x)`).
+        TERM = 0;
+        // A type-level binding (like the `T` in
+        // `template <typename T> void foo()`).
+        TYPE = 1;
+      }
+      // The parameter's kind.
+      Kind kind = 1;
+      // The parameter's (unqualified) human-readable and displayable name.
+      // May be empty. May also be non-unique; for example, the identifiers for
+      // the (unnamed in the source language) parameters for the function
+      // `void ignore_pair(int, int)` may be "int" and "int".
+      string identifier = 2;
+      // The ticket that refers to the parameter.
+      string ticket = 3;
+    }
+    // The parameters bound by the object referred to by `definition` above.
+    // There is no semantic meaning to the order of this array, but it should
+    // be reasonable to surface the ordering in a UI (for example, term-level
+    // parameters will not be capriciously reordered).
+    repeated Parameter parameter = 6;
+  }
+  // An object that was blamed for making a call to an object in the
+  // set passed to FindCallers, along with the syntactic locations that
+  // caused that blame to be cast.
+  message Caller {
+    // The object (e.g., a function) responsible for making a call.
+    CallableDetail detail = 1;
+    message CallSite {
+      // The location where a call was found inside the blamed object.
+      Anchor anchor = 1;
+      // This field will be set to true iff this call site was included in the
+      // results because include_overrides was true in FindCallersRequest.
+      bool call_to_override = 2;
+    }
+    repeated CallSite call_site = 2;
+  }
+  // All objects that were blamed for making calls.
+  repeated Caller caller = 1;
+  // Details for the semantic objects that were passed via a FindCallersRequest.
+  repeated CallableDetail callee = 2;
 }

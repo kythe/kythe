@@ -833,3 +833,8 @@ func p2p(p *cpb.Point) *xpb.Location_Point {
 		ColumnOffset: p.ColumnOffset,
 	}
 }
+
+// FindCallers implements part of the xrefs Service interface.
+func (t *tableImpl) FindCallers(ctx context.Context, req *xpb.FindCallersRequest) (*xpb.FindCallersReply, error) {
+	return nil, errors.New("UNIMPLEMENTED: tableImpl.FindCallers")
+}

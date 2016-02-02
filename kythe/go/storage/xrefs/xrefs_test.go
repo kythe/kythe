@@ -161,6 +161,15 @@ func TestDecorations(t *testing.T) {
 	}
 }
 
+func TestFindCallers(t *testing.T) {
+	xs := newService(t, testEntries)
+
+	reply, err := xs.FindCallers(ctx, &xpb.FindCallersRequest{})
+	if reply != nil || err == nil {
+		t.Fatalf("FindCallers expected to fail")
+	}
+}
+
 func newService(t *testing.T, entries []*spb.Entry) *GraphStoreService {
 	gs := inmemory.Create()
 

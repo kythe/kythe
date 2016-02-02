@@ -161,6 +161,11 @@ func (api apiCloser) CrossReferences(ctx context.Context, req *xpb.CrossReferenc
 	return api.xs.CrossReferences(ctx, req)
 }
 
+// FindCallers implements part of the xrefs Service interface.
+func (api apiCloser) FindCallers(ctx context.Context, req *xpb.FindCallersRequest) (*xpb.FindCallersReply, error) {
+	return api.xs.FindCallers(ctx, req)
+}
+
 // Search implements part of the search Service interface.
 func (api apiCloser) Search(ctx context.Context, req *spb.SearchRequest) (*spb.SearchReply, error) {
 	return api.idx.Search(ctx, req)
