@@ -4,15 +4,13 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 go_library(
     name = "indexer",
-    srcs = [
-        "export15.go",
-        "indexer.go",
-    ],
+    srcs = ["indexer.go"],
     deps = [
         "//kythe/go/extractors/govname",
         "//kythe/proto:analysis_proto_go",
         "//kythe/proto:storage_proto_go",
         "//third_party/go/src/golang.org/x/net/context",
+        "//third_party/go/src/golang.org/x/tools/go/gcimporter15",
     ],
 )
 

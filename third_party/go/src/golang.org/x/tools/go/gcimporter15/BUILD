@@ -1,0 +1,12 @@
+package(default_visibility = ["//visibility:public"])
+
+load("/third_party/go/build", "gopath_package")
+
+licenses(["notice"])
+
+gopath_package(
+    exclude_srcs = [
+        "setname16.go",
+        "gcimporter16_test.go",
+    ],
+)
