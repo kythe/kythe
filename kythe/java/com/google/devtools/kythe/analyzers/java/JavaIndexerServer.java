@@ -42,16 +42,11 @@ public class JavaIndexerServer {
           .build()
           .start()
           .awaitTermination();
-    } catch (InterruptedException|IOException e) {
+    } catch (InterruptedException | IOException e) {
       e.printStackTrace();
       System.exit(1);
     }
     System.err.println("Started Java CompilationAnalyzer server on port " + config.getPort());
-  }
-
-  private static void usage(int exitCode) {
-    System.err.println("usage: java_indexer_server --port=number");
-    System.exit(exitCode);
   }
 
   private static class JavaCompilationAnalyzer extends GRPCCompilationAnalyzer {

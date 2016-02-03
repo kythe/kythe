@@ -55,7 +55,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-// Standard file extension for Kythe compilation index files.
+// Extension is the standard file extension for Kythe compilation index files.
 const Extension = ".kindex"
 
 // Compilation is a CompilationUnit with the contents for all of its required inputs.
@@ -78,12 +78,11 @@ func Open(ctx context.Context, path string) (*Compilation, error) {
 // New reads a kindex file from r, which is expected to be positioned at the
 // beginning of an index file or a data source of equivalent format.
 func New(r io.Reader) (*Compilation, error) {
-	var rd delimited.Reader
-	if gz, err := gzip.NewReader(r); err != nil {
+	gz, err := gzip.NewReader(r)
+	if err != nil {
 		return nil, err
-	} else {
-		rd = delimited.NewReader(gz)
 	}
+	rd := delimited.NewReader(gz)
 
 	// The first block is the CompilationUnit message.
 	cu := new(apb.CompilationUnit)

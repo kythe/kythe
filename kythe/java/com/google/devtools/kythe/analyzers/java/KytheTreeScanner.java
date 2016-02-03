@@ -624,13 +624,13 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     return entrySets.newAbstract(owner, typeParams);
   }
 
-  /** Returns the node associated with a {@link Symbol} or {@link null}. */
+  /** Returns the node associated with a {@link Symbol} or {@code null}. */
   private EntrySet getNode(Symbol sym) {
     JavaNode node = getJavaNode(sym);
     return node == null ? null : node.entries;
   }
 
-  /** Returns the {@link JavaNode} associated with a {@link Symbol} or {@link null}. */
+  /** Returns the {@link JavaNode} associated with a {@link Symbol} or {@code null}. */
   private JavaNode getJavaNode(Symbol sym) {
     Optional<String> signature = signatureGenerator.getSignature(sym);
     if (!signature.isPresent()) {

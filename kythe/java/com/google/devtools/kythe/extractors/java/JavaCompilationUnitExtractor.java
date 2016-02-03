@@ -726,30 +726,6 @@ public class JavaCompilationUnitExtractor {
     }
   }
 
-  /** Sets the given location using command-line flags and the FileManager API. */
-  private static void setLocation(
-      List<String> options,
-      StandardJavaFileManager fileManager,
-      Iterable<String> searchpath,
-      String flag,
-      StandardLocation location)
-      throws ExtractionException {
-    String joined = Joiner.on(":").join(searchpath);
-    if (!joined.isEmpty()) {
-      options.add(flag);
-      options.add(joined);
-      try {
-        List<File> files = Lists.newArrayList();
-        for (String elt : searchpath) {
-          files.add(new File(elt));
-        }
-        fileManager.setLocation(location, files);
-      } catch (IOException e) {
-        throw new ExtractionException(String.format("Couldn't set %s", location), e, false);
-      }
-    }
-  }
-
   /**
    * Completes the given raw compiler options with the given classpath,
    * sourcepath, and temporary destination directory.  Only options supported by

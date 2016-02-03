@@ -100,9 +100,6 @@ public class SignatureGenerator
   // of the method or class.
   private final Set<TypeVar> boundedVars = Sets.newHashSet();
 
-  // Compilation unit for which we want to get the signatures.
-  private final CompilationUnitTree compilationUnit;
-
   private final MemoizedTreePathScanner memoizedTreePathScanner;
 
   public TreePath getPath(Element e) {
@@ -118,7 +115,6 @@ public class SignatureGenerator
 
   public SignatureGenerator(CompilationUnitTree compilationUnit, Context context) {
     this.javacTrees = JavacTrees.instance(context);
-    this.compilationUnit = compilationUnit;
     this.memoizedTreePathScanner = new MemoizedTreePathScanner(compilationUnit, context);
   }
 

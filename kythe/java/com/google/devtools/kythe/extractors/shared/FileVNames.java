@@ -181,6 +181,7 @@ public class FileVNames {
   }
 
   private static class PatternDeserializer implements JsonDeserializer<Pattern> {
+    @Override
     public Pattern deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
         throws JsonParseException {
       return Pattern.compile(json.getAsJsonPrimitive().getAsString());

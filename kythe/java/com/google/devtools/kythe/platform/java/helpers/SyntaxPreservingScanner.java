@@ -37,9 +37,6 @@ import java.util.List;
  */
 public class SyntaxPreservingScanner extends JavaTokenizer {
   public List<CustomToken> customTokens = Lists.newArrayList();
-  private int customStart;
-  private int customEnd;
-  private int inputLength;
   private final Position.LineMap lineMap;
 
   /**
@@ -109,13 +106,11 @@ public class SyntaxPreservingScanner extends JavaTokenizer {
 
   private SyntaxPreservingScanner(ScannerFactory factory, CharBuffer input) {
     super(factory, input);
-    this.inputLength = input.length();
     this.lineMap = super.getLineMap();
   }
 
   private SyntaxPreservingScanner(ScannerFactory factory, char[] input) {
     super(factory, input, input.length);
-    this.inputLength = input.length;
     this.lineMap = super.getLineMap();
   }
 }

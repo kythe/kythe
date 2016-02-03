@@ -36,7 +36,6 @@ import com.beust.jcommander.Parameter;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.util.List;
 
 /** Binary to run Kythe's Java index over a single .kindex file, emitting entries to STDOUT. */
@@ -68,13 +67,12 @@ public class JavaIndexer {
       throw new IllegalStateException("Unknown error reading CompilationDescription");
     }
 
-    try (OutputStream stream = System.out;
-        OutputStreamWriter writer = new OutputStreamWriter(stream)) {
+    try (OutputStream stream = System.out) {
       new JavacAnalysisDriver()
           .analyze(
               new KytheJavacAnalyzer(
                   config,
-                  new StreamFactEmitter(writer),
+                  new StreamFactEmitter(stream),
                   statistics == null ? NullStatisticsCollector.getInstance() : statistics),
               desc.getCompilationUnit(),
               new FileDataCache(desc.getFileContents()),
@@ -95,10 +93,10 @@ public class JavaIndexer {
 
   /** {@link FactEmitter} directly streaming to an {@link OutputValueStream}. */
   private static class StreamFactEmitter implements FactEmitter {
-    private final OutputStreamWriter writer;
+    private final OutputStream stream;
 
-    public StreamFactEmitter(OutputStreamWriter writer) {
-      this.writer = writer;
+    public StreamFactEmitter(OutputStream stream) {
+      this.stream = stream;
     }
 
     @Override
@@ -114,7 +112,7 @@ public class JavaIndexer {
       }
 
       try {
-        entry.build().writeDelimitedTo(System.out);
+        entry.build().writeDelimitedTo(stream);
       } catch (IOException ioe) {
         Throwables.propagate(ioe);
       }
@@ -125,12 +123,16 @@ public class JavaIndexer {
     @Parameter(description = "<compilation to analyze>", required = true)
     private List<String> compilation = Lists.newArrayList();;
 
-    @Parameter(names = "--print_statistics",
-        description = "Print final analyzer statistics to stderr")
+    @Parameter(
+      names = "--print_statistics",
+      description = "Print final analyzer statistics to stderr"
+    )
     private boolean printStatistics;
 
-    @Parameter(names = { "--index_pack", "-index_pack" },
-        description = "Retrieve the specified compilation from the given index pack")
+    @Parameter(
+      names = {"--index_pack", "-index_pack"},
+      description = "Retrieve the specified compilation from the given index pack"
+    )
     private String indexPackRoot;
 
     public StandaloneConfig() {

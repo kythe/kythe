@@ -644,6 +644,7 @@ public class JCTreeScanner<R, P> implements TreeVisitor<R, P> {
     return scanAndReduce(tree.args, p, r);
   }
 
+  @Override
   public final R visitOther(Tree tree, P p) {
     if (tree instanceof TypeBoundKind) {
       return visitTypeBoundKind((TypeBoundKind) tree, p);

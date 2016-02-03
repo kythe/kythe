@@ -348,7 +348,9 @@ var lineEnd = []byte("\n")
 func (n *Normalizer) Point(p *xpb.Location_Point) *xpb.Location_Point {
 	if p == nil {
 		return nil
-	} else if p.ByteOffset > 0 {
+	}
+
+	if p.ByteOffset > 0 {
 		return n.ByteOffset(p.ByteOffset)
 	} else if p.LineNumber > 0 {
 		np := &xpb.Location_Point{
@@ -371,9 +373,9 @@ func (n *Normalizer) Point(p *xpb.Location_Point) *xpb.Location_Point {
 		np.ByteOffset = n.prefixLen[np.LineNumber-1] + np.ColumnOffset
 
 		return np
-	} else {
-		return &xpb.Location_Point{LineNumber: 1}
 	}
+
+	return &xpb.Location_Point{LineNumber: 1}
 }
 
 // ByteOffset returns a normalized point based on the given offset within the

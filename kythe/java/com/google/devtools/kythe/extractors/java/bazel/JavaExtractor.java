@@ -36,8 +36,6 @@ import java.nio.file.Paths;
 
 /** Java CompilationUnit extractor using Bazel's extra_action feature. */
 public class JavaExtractor {
-  private static final String CORPUS = "kythe";
-
   public static void main(String[] args) throws IOException, ExtractionException {
     if (args.length != 3) {
       System.err.println("Usage: java_extractor extra-action-file output-file vname-config");
@@ -52,7 +50,7 @@ public class JavaExtractor {
     ExtraActionsBase.registerAllExtensions(registry);
 
     ExtraActionInfo info;
-    try (InputStream stream = Files.newInputStream(Paths.get(args[0]))) {
+    try (InputStream stream = Files.newInputStream(Paths.get(extraActionPath))) {
       CodedInputStream coded = CodedInputStream.newInstance(stream);
       info = ExtraActionInfo.parseFrom(coded, registry);
     }

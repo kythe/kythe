@@ -46,8 +46,8 @@ const (
 // CorpusRootsKey is the filetree lookup key for the tree's srvpb.CorpusRoots.
 var CorpusRootsKey = []byte("corpusRoots")
 
-// CorpusRootsKey is the filetree lookup key for the tree's srvpb.CorpusRoots
-// when using PrefixedKeys.
+// CorpusRootsPrefixedKey is the filetree lookup key for the tree's
+// srvpb.CorpusRoots when using PrefixedKeys.
 var CorpusRootsPrefixedKey = []byte(DirTablePrefix + "corpusRoots")
 
 // Table implements the FileTree interface using a static lookup table.

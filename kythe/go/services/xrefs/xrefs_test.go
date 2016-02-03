@@ -177,9 +177,9 @@ func TestPatcher(t *testing.T) {
 			if ns := test.newSpans[i]; ns == nil && exists {
 				t.Errorf("Expected span not to exist in new text; received (%d, %d]", start, end)
 			} else if ns != nil && !exists {
-				t.Errorf("Expected span %s to exist in new text as %s; did not exist", s, ns)
+				t.Errorf("Expected span %v to exist in new text as %v; did not exist", s, ns)
 			} else if ns != nil && exists && (start != ns.start || end != ns.end) {
-				t.Errorf("Expected %s; received (%d, %d]", ns, start, end)
+				t.Errorf("Expected %v; received (%d, %d]", ns, start, end)
 			}
 		}
 	}
