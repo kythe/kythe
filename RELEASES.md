@@ -1,9 +1,10 @@
 # Release Notes
 
-## Upcoming
+## Upcoming release
 
 Notable changes:
- - C++ indexer: `--ignore_unimplemented` now defaults to `true`.
+ - C++ indexer: `--ignore_unimplemented` now defaults to `true`
+ - Java indexer: emit single anchor for package in qualified identifiers
 
 ## v0.0.17
 

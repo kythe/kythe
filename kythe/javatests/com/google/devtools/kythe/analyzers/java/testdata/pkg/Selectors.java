@@ -29,6 +29,12 @@ public class Selectors {
     return this.field;
   }
 
+  //- @String ref String
+  //- @"java.lang" ref JavaLangPackage
+  java.lang.String m3() {
+    return null;
+  }
+
   //- @Optional defines/binding Optional
   private static interface Optional<T> {
     public T get();

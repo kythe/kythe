@@ -34,6 +34,7 @@ import com.sun.source.tree.Tree.Kind;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Symbol.MethodSymbol;
+import com.sun.tools.javac.code.Symbol.PackageSymbol;
 import com.sun.tools.javac.code.Symtab;
 import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.tree.JCTree;
@@ -70,6 +71,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import javax.lang.model.element.ElementKind;
 
 /** {@link JCTreeScanner} that emits Kythe nodes and edges. */
 public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
@@ -444,8 +447,14 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   @Override
   public JavaNode visitSelect(JCFieldAccess field, TreeContext owner) {
     TreeContext ctx = owner.down(field);
-    scan(field.getExpression(), ctx);
-    return emitNameUsage(ctx, field.sym, field.name);
+    if (field.sym.getKind() == ElementKind.PACKAGE) {
+      EntrySet pkgNode = entrySets.getPackageNode((PackageSymbol) field.sym);
+      emitAnchor(ctx, EdgeKind.REF, pkgNode);
+      return new JavaNode(pkgNode, field.sym.toString());
+    } else {
+      scan(field.getExpression(), ctx);
+      return emitNameUsage(ctx, field.sym, field.name);
+    }
   }
 
   @Override
