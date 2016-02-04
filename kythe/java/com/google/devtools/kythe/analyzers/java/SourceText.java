@@ -28,7 +28,6 @@ import com.sun.tools.javac.tree.EndPosTable;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCCompilationUnit;
 import com.sun.tools.javac.util.Context;
-import com.sun.tools.javac.util.Name;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -42,6 +41,7 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import javax.lang.model.element.Name;
 import javax.tools.JavaFileObject;
 
 public final class SourceText {
@@ -64,6 +64,8 @@ public final class SourceText {
         token = scanner.readToken()) {
       if (token.kind == TokenKind.IDENTIFIER) {
         positions.addIdentifier(token.name(), scanner.spanForToken(token));
+      } else if (token.kind == TokenKind.NEW) {
+        positions.addIdentifier(Keyword.of("new"), scanner.spanForToken(token));
       } else if (token.kind == TokenKind.LT) {
         starts.addFirst(token);
       } else if (token.kind == TokenKind.GT) {
@@ -104,6 +106,59 @@ public final class SourceText {
           new Span(
               pos.charToByteOffset(token.span.getStart()),
               pos.charToByteOffset(token.span.getEnd()));
+    }
+  }
+
+  /** Names for keywords that must act as anchors. */
+  public static final class Keyword implements Name {
+    private final String keyword;
+
+    /** Factory method that can do something smarter if/when we need it to. */
+    public static Keyword of(String keyword) {
+      return new Keyword(keyword);
+    }
+
+    private Keyword(String keyword) {
+      this.keyword = keyword;
+    }
+
+    @Override
+    public boolean contentEquals(CharSequence cs) {
+      return keyword.equals(cs.toString());
+    }
+
+    @Override
+    public char charAt(int index) {
+      return keyword.charAt(index);
+    }
+
+    @Override
+    public int length() {
+      return keyword.length();
+    }
+
+    @Override
+    public CharSequence subSequence(int start, int end) {
+      return keyword.subSequence(start, end);
+    }
+
+    @Override
+    public String toString() {
+      return keyword;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (obj instanceof Keyword) {
+        return ((Keyword) obj).contentEquals(keyword);
+      } else {
+        return false;
+      }
+    }
+
+    @Override
+    public int hashCode() {
+      return 1 + keyword.hashCode();
     }
   }
 

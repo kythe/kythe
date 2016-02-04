@@ -113,3 +113,8 @@ java_verifier_test(
     name = "snippets_tests",
     srcs = ["Snippets.java"],
 )
+
+java_verifier_test(
+    name = "member_references_tests",
+    srcs = ["MemberReferences.java"],
+)

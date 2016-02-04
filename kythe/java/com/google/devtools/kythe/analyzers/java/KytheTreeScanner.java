@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.devtools.kythe.analyzers.base.EdgeKind;
 import com.google.devtools.kythe.analyzers.base.EntrySet;
+import com.google.devtools.kythe.analyzers.java.SourceText.Keyword;
 import com.google.devtools.kythe.analyzers.java.SourceText.Positions;
 import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.platform.java.helpers.JCTreeScanner;
@@ -31,6 +32,7 @@ import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.util.Span;
 
 import com.sun.source.tree.Tree.Kind;
+import com.sun.source.tree.MemberReferenceTree.ReferenceMode;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Symbol.MethodSymbol;
@@ -50,6 +52,7 @@ import com.sun.tools.javac.tree.JCTree.JCExpressionStatement;
 import com.sun.tools.javac.tree.JCTree.JCFieldAccess;
 import com.sun.tools.javac.tree.JCTree.JCIdent;
 import com.sun.tools.javac.tree.JCTree.JCImport;
+import com.sun.tools.javac.tree.JCTree.JCMemberReference;
 import com.sun.tools.javac.tree.JCTree.JCMethodDecl;
 import com.sun.tools.javac.tree.JCTree.JCNewClass;
 import com.sun.tools.javac.tree.JCTree.JCPrimitiveTypeTree;
@@ -60,7 +63,6 @@ import com.sun.tools.javac.tree.JCTree.JCTypeParameter;
 import com.sun.tools.javac.tree.JCTree.JCVariableDecl;
 import com.sun.tools.javac.tree.JCTree.JCWildcard;
 import com.sun.tools.javac.util.Context;
-import com.sun.tools.javac.util.Name;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -73,6 +75,7 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.Name;
 
 /** {@link JCTreeScanner} that emits Kythe nodes and edges. */
 public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
@@ -170,7 +173,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
         ClassSymbol cls = JavacUtil.getClassSymbol(javaContext, imprtField.selected.toString());
         if (cls != null) {
-          Name className = cls.fullname;
+          com.sun.tools.javac.util.Name className = cls.fullname;
           if (className != null) {
             int dotIdx = cls.fullname.lastIndexOf((byte) '.');
             if (dotIdx >= 0) {
@@ -455,6 +458,14 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       scan(field.getExpression(), ctx);
       return emitNameUsage(ctx, field.sym, field.name);
     }
+  }
+
+  @Override
+  public JavaNode visitReference(JCMemberReference reference, TreeContext owner) {
+    TreeContext ctx = owner.down(reference);
+    scan(reference.getQualifierExpression(), ctx);
+    return emitNameUsage(ctx, reference.sym,
+        reference.getMode() == ReferenceMode.NEW ? Keyword.of("new") : reference.name);
   }
 
   @Override
