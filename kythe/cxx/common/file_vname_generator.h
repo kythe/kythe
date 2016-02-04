@@ -39,10 +39,10 @@ class FileVNameGenerator {
 
   /// \brief Returns a base VName for a given file path (or an empty VName if
   /// no configuration rule matches the path).
-  kythe::proto::VName LookupBaseVName(const std::string &path);
+  kythe::proto::VName LookupBaseVName(const std::string &path) const;
 
   /// \brief Returns a VName for the given file path.
-  kythe::proto::VName LookupVName(const std::string &path);
+  kythe::proto::VName LookupVName(const std::string &path) const;
 
  private:
   /// \brief A command to use when building a result string.
@@ -62,7 +62,7 @@ class FileVNameGenerator {
   /// \param argv The `RE2::Arg` results from the regex match.
   /// \param argc The length of the array `argv`.
   std::string ApplyRule(const StringConsRule &rule,
-                        const re2::StringPiece *argv, int argc);
+                        const re2::StringPiece *argv, int argc) const;
   /// \brief Parses `rule` into a `StringConsRule`.
   /// \param rule The rule to parse.
   /// \param max_capture_index The maximum utterable capture index.

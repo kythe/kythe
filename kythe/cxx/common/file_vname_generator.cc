@@ -31,7 +31,7 @@ FileVNameGenerator::FileVNameGenerator() {
 
 std::string FileVNameGenerator::ApplyRule(const StringConsRule &rule,
                                           const re2::StringPiece *argv,
-                                          int argc) {
+                                          int argc) const {
   std::string ret;
   for (const auto &node : rule) {
     switch (node.kind) {
@@ -84,7 +84,7 @@ bool FileVNameGenerator::ParseRule(const std::string &rule, int max_capture,
 }
 
 kythe::proto::VName FileVNameGenerator::LookupBaseVName(
-    const std::string &path) {
+    const std::string &path) const {
   re2::StringPiece argv[kMaxRegexArgs];
   RE2::Arg args[kMaxRegexArgs];
   RE2::Arg *arg_pointers[kMaxRegexArgs];
@@ -114,7 +114,8 @@ kythe::proto::VName FileVNameGenerator::LookupBaseVName(
   return kythe::proto::VName();
 }
 
-kythe::proto::VName FileVNameGenerator::LookupVName(const std::string &path) {
+kythe::proto::VName FileVNameGenerator::LookupVName(
+    const std::string &path) const {
   kythe::proto::VName vname = LookupBaseVName(path);
   if (vname.path().empty()) {
     vname.set_path(path);
