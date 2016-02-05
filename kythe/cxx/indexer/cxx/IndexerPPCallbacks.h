@@ -20,15 +20,12 @@
 #define KYTHE_CXX_INDEXER_CXX_PP_CALLBACKS_H_
 
 #include "clang/Basic/SourceManager.h"
+#include "clang/Lex/Token.h"
 #include "clang/Lex/PPCallbacks.h"
 
-namespace clang {
-class Preprocessor;
-} // namespace clang
+#include "GraphObserver.h"
 
 namespace kythe {
-
-class GraphObserver;
 
 /// \brief Listener for preprocessor events, handling file tracking and macro
 /// use and definition.

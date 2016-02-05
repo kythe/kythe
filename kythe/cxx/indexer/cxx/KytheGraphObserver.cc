@@ -57,7 +57,7 @@ static const char *CompletenessToString(
     case KytheGraphObserver::Completeness::Incomplete:
       return "incomplete";
   }
-  assert(0 && "Invalid enumerator passed to CompletenessToString.");
+  LOG(FATAL) << "Invalid enumerator passed to CompletenessToString.";
   return "invalid-completeness";
 }
 
@@ -71,7 +71,7 @@ static const char *FunctionSubkindToString(
     case KytheGraphObserver::FunctionSubkind::Destructor:
       return "destructor";
   }
-  assert(0 && "Invalid enumerator passed to FunctionSubkindToString.");
+  LOG(FATAL) << "Invalid enumerator passed to FunctionSubkindToString.";
   return "invalid-fn-subkind";
 }
 
@@ -211,7 +211,7 @@ kythe::proto::VName KytheGraphObserver::VNameFromRange(
   const clang::SourceRange &source_range = range.PhysicalRange;
   clang::SourceLocation begin = source_range.getBegin();
   clang::SourceLocation end = source_range.getEnd();
-  assert(begin.isValid());
+  CHECK(begin.isValid());
   if (!end.isValid()) {
     begin = end;
   }
@@ -381,7 +381,7 @@ proto::VName KytheGraphObserver::RecordAnchor(
     const GraphObserver::Range &source_range,
     const GraphObserver::NodeId &primary_anchored_to,
     EdgeKindID anchor_edge_kind, Claimability cl) {
-  assert(!file_stack_.empty());
+  CHECK(!file_stack_.empty());
   proto::VName anchor_name = VNameFromRange(source_range);
   if (claimRange(source_range) || claimNode(primary_anchored_to)) {
     RecordRange(anchor_name, source_range);
@@ -421,7 +421,7 @@ proto::VName KytheGraphObserver::RecordAnchor(
     const GraphObserver::Range &source_range,
     const kythe::proto::VName &primary_anchored_to, EdgeKindID anchor_edge_kind,
     Claimability cl) {
-  assert(!file_stack_.empty());
+  CHECK(!file_stack_.empty());
   proto::VName anchor_name = VNameFromRange(source_range);
   if (claimRange(source_range)) {
     RecordRange(anchor_name, source_range);
@@ -853,7 +853,7 @@ void KytheGraphObserver::pushFile(clang::SourceLocation blame_location,
     if (source_location.isMacroID()) {
       source_location = SourceManager->getExpansionLoc(source_location);
     }
-    assert(source_location.isFileID());
+    CHECK(source_location.isFileID());
     clang::FileID file = SourceManager->getFileID(source_location);
     if (file.isInvalid()) {
       // An actually invalid location.
@@ -929,7 +929,7 @@ void KytheGraphObserver::pushFile(clang::SourceLocation blame_location,
 }
 
 void KytheGraphObserver::popFile() {
-  assert(!file_stack_.empty());
+  CHECK(!file_stack_.empty());
   FileState state = file_stack_.back();
   file_stack_.pop_back();
   if (file_stack_.empty()) {
@@ -950,7 +950,7 @@ bool KytheGraphObserver::claimLocation(clang::SourceLocation source_location) {
   if (source_location.isMacroID()) {
     source_location = SourceManager->getExpansionLoc(source_location);
   }
-  assert(source_location.isFileID());
+  CHECK(source_location.isFileID());
   clang::FileID file = SourceManager->getFileID(source_location);
   if (file.isInvalid()) {
     return true;
@@ -981,7 +981,7 @@ const GraphObserver::ClaimToken *KytheGraphObserver::getClaimTokenForLocation(
   if (source_location.isMacroID()) {
     source_location = SourceManager->getExpansionLoc(source_location);
   }
-  assert(source_location.isFileID());
+  CHECK(source_location.isFileID());
   clang::FileID file = SourceManager->getFileID(source_location);
   if (file.isInvalid()) {
     return getDefaultClaimToken();

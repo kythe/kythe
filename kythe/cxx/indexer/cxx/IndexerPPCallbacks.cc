@@ -16,16 +16,17 @@
 
 // This file uses the Clang style conventions.
 
-#include "GraphObserver.h"
 #include "IndexerPPCallbacks.h"
+#include "GraphObserver.h"
 
-#include "clang/Basic/SourceManager.h"
+#include "glog/logging.h"
+#include "kythe/cxx/common/path_utils.h"
 #include "clang/Basic/FileManager.h"
+#include "clang/Basic/SourceManager.h"
 #include "clang/Lex/PPCallbacks.h"
 #include "clang/Lex/Preprocessor.h"
-#include "kythe/cxx/common/path_utils.h"
-#include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/Debug.h"
+#include "llvm/Support/raw_ostream.h"
 
 // TODO(zarko): IndexerASTHooks::RangeInCurrentContext should query the macro
 // context. IndexerPPCallbacks doesn't need to query for the template context,
@@ -245,7 +246,7 @@ void IndexerPPCallbacks::AddMacroReferenceIfDefined(
     // they have the names of tokens, rather than following the Standard's
     // formal phases of translation which would have them all be just
     // identifiers during preprocessing.
-    assert(0 && "No IdentifierInfo in AddMacroReferenceIfDefined.");
+    LOG(FATAL) << "No IdentifierInfo in AddMacroReferenceIfDefined.";
   }
 }
 
@@ -259,7 +260,7 @@ void IndexerPPCallbacks::AddReferenceToMacro(const clang::Token &MacroNameToken,
 
 GraphObserver::NameId
 IndexerPPCallbacks::BuildNameIdForMacro(const clang::Token &Spelling) {
-  assert(Spelling.getIdentifierInfo() && "Macro spelling lacks IdentifierInfo");
+  CHECK(Spelling.getIdentifierInfo()) << "Macro spelling lacks IdentifierInfo";
   GraphObserver::NameId Id;
   Id.EqClass = GraphObserver::NameId::NameEqClass::Macro;
   Id.Path = Spelling.getIdentifierInfo()->getName();

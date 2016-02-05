@@ -23,6 +23,7 @@
 #include <memory>
 #include <unordered_map>
 
+#include "glog/logging.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/ASTTypeTraits.h"
 #include "clang/AST/RecursiveASTVisitor.h"
@@ -30,8 +31,8 @@
 #include "clang/Sema/SemaConsumer.h"
 #include "clang/Sema/Template.h"
 
-#include "IndexerLibrarySupport.h"
 #include "GraphObserver.h"
+#include "IndexerLibrarySupport.h"
 
 namespace kythe {
 
@@ -49,8 +50,7 @@ public:
   /// \brief Constructs a new `MaybeFew` holding zero or more elements.
   /// If there are more than zero elements, the first one provided is primary.
   template <typename... Ts>
-  MaybeFew(Ts &&... Init)
-      : Content({std::forward<T>(Init)...}) {}
+  MaybeFew(Ts &&... Init) : Content({std::forward<T>(Init)...}) {}
 
   /// \brief Constructs an empty `MaybeFew`.
   ///
@@ -65,7 +65,7 @@ public:
   /// \brief Returns the primary element (the first one provided during
   /// construction).
   const T &primary() const {
-    assert(!Content.empty());
+    CHECK(!Content.empty());
     return Content[0];
   }
 
@@ -194,7 +194,7 @@ private:
           NodeOrVector = Vector;
           delete Node;
         }
-        assert(NodeOrVector.template is<IndexedParentVector *>());
+        CHECK(NodeOrVector.template is<IndexedParentVector *>());
 
         auto *Vector = NodeOrVector.template get<IndexedParentVector *>();
         // Skip duplicates for types that have memoization data.
@@ -745,7 +745,7 @@ public:
       : Observer(GO), IgnoreUnimplemented(B), TemplateMode(T), Supports(S) {}
 
   void HandleTranslationUnit(clang::ASTContext &Context) override {
-    assert(Sema != nullptr);
+    CHECK(Sema != nullptr);
     IndexerASTVisitor Visitor(Context, IgnoreUnimplemented, TemplateMode,
                               Supports, *Sema, Observer);
     Visitor.TraverseDecl(Context.getTranslationUnitDecl());

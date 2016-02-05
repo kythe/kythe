@@ -31,12 +31,13 @@
 #include <string>
 #include <utility>
 
+#include "glog/logging.h"
+#include "kythe/cxx/common/cxx_details.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Lex/HeaderSearch.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Tooling/Tooling.h"
-#include "kythe/cxx/common/cxx_details.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/Twine.h"
 
@@ -67,8 +68,7 @@ class IndexerFrontendAction : public clang::ASTFrontendAction {
 public:
   explicit IndexerFrontendAction(GraphObserver *GO,
                                  const HeaderSearchInfo *Info)
-      : Observer(GO), HeaderConfigValid(Info != nullptr) {
-    assert(GO != nullptr);
+      : Observer(CHECK_NOTNULL(GO)), HeaderConfigValid(Info != nullptr) {
     if (HeaderConfigValid) {
       HeaderConfig = *Info;
     }

@@ -21,6 +21,8 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include "glog/logging.h"
+
 #include "GraphObserver.h"
 #include "kythe/cxx/common/indexing/KytheClaimClient.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
@@ -122,9 +124,9 @@ class KytheGraphObserver : public GraphObserver {
  public:
   KytheGraphObserver(KytheGraphRecorder *recorder, KytheClaimClient *client,
                      const llvm::IntrusiveRefCntPtr<IndexVFS> vfs)
-      : recorder_(recorder), client_(client), vfs_(vfs) {
-    assert(recorder_ != nullptr);
-    assert(client_ != nullptr);
+      : recorder_(CHECK_NOTNULL(recorder)),
+        client_(CHECK_NOTNULL(client)),
+        vfs_(vfs) {
     default_token_.set_rough_claimed(true);
     type_token_.set_rough_claimed(true);
   }

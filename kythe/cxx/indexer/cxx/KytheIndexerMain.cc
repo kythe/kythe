@@ -171,6 +171,7 @@ bool EndsWith(const std::string &input, const std::string &suffix) {
 
 int main(int argc, char *argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
+  google::InitGoogleLogging(argv[0]);
   google::SetVersionString("0.1");
   google::SetUsageMessage(R"(Command-line frontend for the Kythe C++ indexer.
 Invokes the Kythe C++ indexer on a single compilation unit. By default reads

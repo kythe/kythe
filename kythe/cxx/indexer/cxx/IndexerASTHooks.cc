@@ -63,7 +63,7 @@ public:
   }
   ~StackSizeRestorer() {
     if (Target) {
-      assert(Size <= Target->size());
+      CHECK_LE(Size, Target->size());
       while (Size < Target->size()) {
         Target->pop_back();
       }
@@ -102,9 +102,9 @@ void IndexerASTVisitor::deleteAllParents() {
 
 IndexedParentVector IndexerASTVisitor::getIndexedParents(
     const ast_type_traits::DynTypedNode &Node) {
-  assert(Node.getMemoizationData() &&
-         "Invariant broken: only nodes that support memoization may be "
-         "used in the parent map.");
+  CHECK(Node.getMemoizationData() != nullptr)
+      << "Invariant broken: only nodes that support memoization may be "
+         "used in the parent map.";
   if (!AllParents) {
     // We always need to run over the whole translation unit, as
     // hasAncestor can escape any subtree.
@@ -175,7 +175,7 @@ static bool IsTopLevelNonMacroMacroArgument(const clang::SourceManager &SM,
 ///
 /// TODO(jdennett): Delete this if/when we replace its uses with sane lexing.
 void SkipWhitespace(const SourceManager &SM, SourceLocation *Loc) {
-  assert(Loc != nullptr);
+  CHECK(Loc != nullptr);
 
   while (clang::isWhitespace(*SM.getCharacterData(*Loc))) {
     *Loc = Loc->getLocWithOffset(1);
@@ -256,7 +256,7 @@ clang::SourceRange IndexerASTVisitor::RangeForOperatorName(
 
 clang::SourceRange IndexerASTVisitor::RangeForSingleTokenFromSourceLocation(
     SourceLocation Start) const {
-  assert(Start.isFileID());
+  CHECK(Start.isFileID());
   const SourceLocation End = clang::Lexer::getLocForEndOfToken(
       Start, 0, /* offset from end of token */
       *Observer.getSourceManager(), *Observer.getLangOptions());
@@ -508,7 +508,7 @@ public:
 private:
   /// Start a new lookup from `DeclName`.
   LookupResult StartLookups(const clang::DeclarationNameInfo &DeclName) {
-    assert(Lookups.empty());
+    CHECK(Lookups.empty());
     const clang::DeclContext *Context =
         ForceTUContext ? TUContext : RootContext;
     do {
@@ -520,7 +520,7 @@ private:
               FirstLookup, const_cast<clang::DeclContext *>(Context), false)) {
         Lookups.push_back({FirstLookup, Context});
       } else {
-        assert(FirstLookup.empty());
+        CHECK(FirstLookup.empty());
         // We could be looking at a (type) parameter here. Note that this
         // may still be part of a qualified (dependent) name.
         if (const auto *FunctionContext =
@@ -1000,7 +1000,7 @@ bool IndexerASTVisitor::VisitCXXUnresolvedConstructExpr(
     if (QTCan.isNull()) {
       return true;
     }
-    assert(E->getTypeSourceInfo() != nullptr);
+    CHECK(E->getTypeSourceInfo() != nullptr);
     auto TyId = BuildNodeIdForType(
         E->getTypeSourceInfo()->getTypeLoc(),
         E->getTypeSourceInfo()->getTypeLoc().getType(), EmitRanges::Yes);
@@ -1164,7 +1164,7 @@ bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl *Decl) {
     BodyDeclNode = BuildNodeIdForDecl(Decl, 0);
     DeclNode = RecordTemplate(VTPSD, BodyDeclNode);
   } else if (const auto *VTD = Decl->getDescribedVarTemplate()) {
-    assert(!isa<clang::VarTemplateSpecializationDecl>(VTD));
+    CHECK(!isa<clang::VarTemplateSpecializationDecl>(VTD));
     BodyDeclNode = BuildNodeIdForDecl(Decl, 0);
     DeclNode = RecordTemplate(VTD, BodyDeclNode);
   } else {
@@ -1524,7 +1524,7 @@ IndexerASTVisitor::RecordTemplate(const TemplateDeclish *Decl,
       ParamId = RecordTemplate(TTPD, ParamBodyId);
       ParamIndex = TTPD->getIndex();
     } else {
-      assert(0 && "Unknown entry in TemplateParameterList");
+      LOG(FATAL) << "Unknown entry in TemplateParameterList";
     }
     SourceRange Range = RangeForNameOfDeclaration(ND);
     MaybeRecordDefinitionRange(RangeInCurrentContext(Range), ParamId);
@@ -1557,7 +1557,7 @@ bool IndexerASTVisitor::VisitRecordDecl(const clang::RecordDecl *Decl) {
     DeclNode = RecordTemplate(CTPSD, BodyDeclNode);
   } else if (auto *CRD = dyn_cast<const clang::CXXRecordDecl>(Decl)) {
     if (const auto *CTD = CRD->getDescribedClassTemplate()) {
-      assert(!isa<clang::ClassTemplateSpecializationDecl>(CRD));
+      CHECK(!isa<clang::ClassTemplateSpecializationDecl>(CRD));
       BodyDeclNode = BuildNodeIdForDecl(Decl, 0);
       DeclNode = RecordTemplate(CTD, BodyDeclNode);
     } else {
@@ -1668,7 +1668,7 @@ IndexerASTVisitor::BuildNodeIdForCallableType(const clang::FunctionDecl *Decl) {
   // would preclude its use as the type of the callable. If we add things like
   // linkage or calling convention to the function type, this may change.
   const auto *FT = Decl->getFunctionType();
-  assert(FT != nullptr);
+  CHECK(FT != nullptr);
   return BuildNodeIdForType(QualType(FT, 0));
 }
 
@@ -1817,7 +1817,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
     if (auto *TSI = Param->getTypeSourceInfo()) {
       ParamType = BuildNodeIdForType(TSI->getTypeLoc(), EmitRanges::No);
     } else {
-      assert(!Param->getType().isNull());
+      CHECK(!Param->getType().isNull());
       ParamType = BuildNodeIdForType(
           Context.getTrivialTypeSourceInfo(Param->getType(), Range.getBegin())
               ->getTypeLoc(),
@@ -1953,7 +1953,7 @@ void IndexerASTVisitor::AscribeSpelledType(
 
 GraphObserver::NameId::NameEqClass
 IndexerASTVisitor::BuildNameEqClassForDecl(const clang::Decl *D) {
-  assert(D != nullptr);
+  CHECK(D != nullptr);
   if (const auto *T = dyn_cast<clang::TagDecl>(D)) {
     switch (T->getTagKind()) {
     case clang::TTK_Struct:
@@ -2149,23 +2149,22 @@ uint64_t IndexerASTVisitor::SemanticHash(const clang::TemplateName &TN) {
   case TemplateName::Template:
     return SemanticHashTemplateDeclish(TN.getAsTemplateDecl());
   case TemplateName::OverloadedTemplate:
-    assert(IgnoreUnimplemented && "SemanticHash(OverloadedTemplate)");
+    CHECK(IgnoreUnimplemented) << "SemanticHash(OverloadedTemplate)";
     return 0;
   case TemplateName::QualifiedTemplate:
-    assert(IgnoreUnimplemented && "SemanticHash(QualifiedTemplate)");
+    CHECK(IgnoreUnimplemented) << "SemanticHash(QualifiedTemplate)";
     return 0;
   case TemplateName::DependentTemplate:
-    assert(IgnoreUnimplemented && "SemanticHash(DependentTemplate)");
+    CHECK(IgnoreUnimplemented) << "SemanticHash(DependentTemplate)";
     return 0;
   case TemplateName::SubstTemplateTemplateParm:
-    assert(IgnoreUnimplemented && "SemanticHash(SubstTemplateTemplateParm)");
+    CHECK(IgnoreUnimplemented) << "SemanticHash(SubstTemplateTemplateParm)";
     return 0;
   case TemplateName::SubstTemplateTemplateParmPack:
-    assert(IgnoreUnimplemented &&
-           "SemanticHash(SubstTemplateTemplateParmPack)");
+    CHECK(IgnoreUnimplemented) << "SemanticHash(SubstTemplateTemplateParmPack)";
     return 0;
   default:
-    assert(0 && "Unexpected TemplateName Kind");
+    LOG(FATAL) << "Unexpected TemplateName Kind";
   }
   return 0;
 }
@@ -2177,10 +2176,10 @@ uint64_t IndexerASTVisitor::SemanticHash(const clang::TemplateArgument &TA) {
   case TemplateArgument::Type:
     return SemanticHash(TA.getAsType()) ^ 0x2020202002020202LL;
   case TemplateArgument::Declaration:
-    assert(IgnoreUnimplemented && "SemanticHash(Declaration)");
+    CHECK(IgnoreUnimplemented) << "SemanticHash(Declaration)";
     return 0;
   case TemplateArgument::NullPtr:
-    assert(IgnoreUnimplemented && "SemanticHash(NullPtr)");
+    CHECK(IgnoreUnimplemented) << "SemanticHash(NullPtr)";
     return 0;
   case TemplateArgument::Integral: {
     auto Val = TA.getAsIntegral();
@@ -2193,16 +2192,16 @@ uint64_t IndexerASTVisitor::SemanticHash(const clang::TemplateArgument &TA) {
   case TemplateArgument::Template:
     return SemanticHash(TA.getAsTemplate()) ^ 0x4040404004040404LL;
   case TemplateArgument::TemplateExpansion:
-    assert(IgnoreUnimplemented && "SemanticHash(TemplateExpansion)");
+    CHECK(IgnoreUnimplemented) << "SemanticHash(TemplateExpansion)";
     return 0;
   case TemplateArgument::Expression:
-    assert(IgnoreUnimplemented && "SemanticHash(Expression)");
+    CHECK(IgnoreUnimplemented) << "SemanticHash(Expression)";
     return 0;
   case TemplateArgument::Pack:
-    assert(IgnoreUnimplemented && "SemanticHash(Pack)");
+    CHECK(IgnoreUnimplemented) << "SemanticHash(Pack)";
     return 0;
   default:
-    assert(0 && "Unexpected TemplateArgument Kind");
+    LOG(FATAL) << "Unexpected TemplateArgument Kind";
   }
   return 0;
 }
@@ -2266,8 +2265,8 @@ uint64_t IndexerASTVisitor::SemanticHash(const clang::RecordDecl *RD) {
 MaybeFew<GraphObserver::NodeId>
 IndexerASTVisitor::BuildNodeIdForCallableDecl(const clang::Decl *Decl) {
   GraphObserver::NodeId BaseId(BuildNodeIdForDecl(Decl));
-  return GraphObserver::NodeId(
-      BaseId.getToken(), BaseId.getRawIdentity() + "#callable");
+  return GraphObserver::NodeId(BaseId.getToken(),
+                               BaseId.getRawIdentity() + "#callable");
 }
 
 GraphObserver::NodeId
@@ -2456,7 +2455,7 @@ static int64_t ComputeKeyFromQualType(const ASTContext &Context,
     if (IgnoreUnimplemented) {                                                 \
       return None();                                                           \
     } else {                                                                   \
-      assert(0 && "TypeLoc::" #t " unsupported");                              \
+      LOG(FATAL) << "TypeLoc::" #t " unsupported";                             \
     }                                                                          \
     break
 
@@ -2488,7 +2487,7 @@ IndexerASTVisitor::BuildNodeIdForTemplateName(const clang::TemplateName &Name,
         // BuildNodeIdForDecl() all the time makes sense. We aren't even
         // emitting ranges.
         const auto *TDType = TD->getTypeForDecl();
-        assert(IgnoreUnimplemented || TDType != nullptr);
+        CHECK(IgnoreUnimplemented || TDType != nullptr);
         if (TDType) {
           QualType QT(TDType, 0);
           TypeSourceInfo *TSI = Context.getTrivialTypeSourceInfo(QT, L);
@@ -2506,29 +2505,29 @@ IndexerASTVisitor::BuildNodeIdForTemplateName(const clang::TemplateName &Name,
         // primary template).
         return Some(BuildNodeIdForDecl(Name.getAsTemplateDecl()));
       } else {
-        assert(0 && "Unexpected UnderlyingDecl");
+        LOG(FATAL) << "Unexpected UnderlyingDecl";
       }
     } else {
-      assert(0 && "BuildNodeIdForTemplateName can't identify TemplateDecl");
+      LOG(FATAL) << "BuildNodeIdForTemplateName can't identify TemplateDecl";
     }
   }
   case TemplateName::OverloadedTemplate:
-    assert(IgnoreUnimplemented && "TN.OverloadedTemplate");
+    CHECK(IgnoreUnimplemented) << "TN.OverloadedTemplate";
     break;
   case TemplateName::QualifiedTemplate:
-    assert(IgnoreUnimplemented && "TN.QualifiedTemplate");
+    CHECK(IgnoreUnimplemented) << "TN.QualifiedTemplate";
     break;
   case TemplateName::DependentTemplate:
-    assert(IgnoreUnimplemented && "TN.DependentTemplate");
+    CHECK(IgnoreUnimplemented) << "TN.DependentTemplate";
     break;
   case TemplateName::SubstTemplateTemplateParm:
-    assert(IgnoreUnimplemented && "TN.SubstTemplateTemplateParmParm");
+    CHECK(IgnoreUnimplemented) << "TN.SubstTemplateTemplateParmParm";
     break;
   case TemplateName::SubstTemplateTemplateParmPack:
-    assert(IgnoreUnimplemented && "TN.SubstTemplateTemplateParmPack");
+    CHECK(IgnoreUnimplemented) << "TN.SubstTemplateTemplateParmPack";
     break;
   default:
-    assert(0 && "Unexpected TemplateName kind!");
+    LOG(FATAL) << "Unexpected TemplateName kind!";
   }
   return None();
 }
@@ -2576,15 +2575,15 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForDependentName(
         SubId = Subtree.primary();
         HandledRecursively = true;
       } else {
-        assert(IgnoreUnimplemented && "NNS::Identifier");
+        CHECK(IgnoreUnimplemented) << "NNS::Identifier";
         return None();
       }
     } break;
     case NestedNameSpecifier::Namespace:
-      assert(IgnoreUnimplemented && "NNS::Namespace");
+      CHECK(IgnoreUnimplemented) << "NNS::Namespace";
       return None();
     case NestedNameSpecifier::NamespaceAlias:
-      assert(IgnoreUnimplemented && "NNS::NamespaceAlias");
+      CHECK(IgnoreUnimplemented) << "NNS::NamespaceAlias";
       return None();
     case NestedNameSpecifier::TypeSpec: {
       const TypeLoc &TL = NNSLoc.getTypeLoc();
@@ -2598,13 +2597,13 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForDependentName(
       }
     } break;
     case NestedNameSpecifier::TypeSpecWithTemplate:
-      assert(IgnoreUnimplemented && "NNS::TypeSpecWithTemplate");
+      CHECK(IgnoreUnimplemented) << "NNS::TypeSpecWithTemplate";
       return None();
     case NestedNameSpecifier::Global:
-      assert(IgnoreUnimplemented && "NNS::Global");
+      CHECK(IgnoreUnimplemented) << "NNS::Global";
       return None();
     default:
-      assert(IgnoreUnimplemented && "Unexpected NestedNameSpecifier kind.");
+      CHECK(IgnoreUnimplemented) << "Unexpected NestedNameSpecifier kind.";
       return None();
     }
     Observer.recordParamEdge(IdOut, SubIdCount++, SubId);
@@ -2623,7 +2622,7 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForDependentName(
 // TODO(zarko): Fill in the remaining relevant DeclarationName cases.
 #define UNEXPECTED_DECLARATION_NAME_KIND(kind)                                 \
   case clang::DeclarationName::kind:                                           \
-    assert(IgnoreUnimplemented && "Unexpected DeclaraionName::" #kind);        \
+    CHECK(IgnoreUnimplemented) << "Unexpected DeclaraionName::" #kind;         \
     return None();
   UNEXPECTED_DECLARATION_NAME_KIND(ObjCZeroArgSelector);
   UNEXPECTED_DECLARATION_NAME_KIND(ObjCOneArgSelector);
@@ -2671,35 +2670,35 @@ IndexerASTVisitor::BuildNodeIdForTemplateArgument(
   // Maybe with Context.getCanonicalTemplateArgument()?
   switch (Arg.getKind()) {
   case TemplateArgument::Null:
-    assert(IgnoreUnimplemented && "TA.Null");
+    CHECK(IgnoreUnimplemented) << "TA.Null";
     return None();
   case TemplateArgument::Type:
-    assert(!Arg.getAsType().isNull());
+    CHECK(!Arg.getAsType().isNull());
     return BuildNodeIdForType(
         Context.getTrivialTypeSourceInfo(Arg.getAsType(), L)->getTypeLoc(),
         EmitRanges::No);
   case TemplateArgument::Declaration:
-    assert(IgnoreUnimplemented && "TA.Declaration");
+    CHECK(IgnoreUnimplemented) << "TA.Declaration";
     return None();
   case TemplateArgument::NullPtr:
-    assert(IgnoreUnimplemented && "TA.NullPtr");
+    CHECK(IgnoreUnimplemented) << "TA.NullPtr";
     return None();
   case TemplateArgument::Integral:
-    assert(IgnoreUnimplemented && "TA.Integral");
+    CHECK(IgnoreUnimplemented) << "TA.Integral";
     return None();
   case TemplateArgument::Template:
     return BuildNodeIdForTemplateName(Arg.getAsTemplate(), L);
   case TemplateArgument::TemplateExpansion:
-    assert(IgnoreUnimplemented && "TA.TemplateExpansion");
+    CHECK(IgnoreUnimplemented) << "TA.TemplateExpansion";
     return None();
   case TemplateArgument::Expression:
-    assert(Arg.getAsExpr() != nullptr);
+    CHECK(Arg.getAsExpr() != nullptr);
     return BuildNodeIdForExpr(Arg.getAsExpr(), EmitRanges::Yes);
   case TemplateArgument::Pack:
-    assert(IgnoreUnimplemented && "TA.Pack");
+    CHECK(IgnoreUnimplemented) << "TA.Pack";
     return None();
   default:
-    assert(IgnoreUnimplemented && "Unexpected TemplateArgument kind!");
+    CHECK(IgnoreUnimplemented) << "Unexpected TemplateArgument kind!";
   }
   return None();
 }
@@ -2712,34 +2711,34 @@ IndexerASTVisitor::BuildNodeIdForTemplateArgument(
   const TemplateArgument &Arg = ArgLoc.getArgument();
   switch (Arg.getKind()) {
   case TemplateArgument::Null:
-    assert(IgnoreUnimplemented && "TA.Null");
+    CHECK(IgnoreUnimplemented) << "TA.Null";
     return None();
   case TemplateArgument::Type:
     return BuildNodeIdForType(ArgLoc.getTypeSourceInfo()->getTypeLoc(),
                               EmitRanges);
   case TemplateArgument::Declaration:
-    assert(IgnoreUnimplemented && "TA.Declaration");
+    CHECK(IgnoreUnimplemented) << "TA.Declaration";
     return None();
   case TemplateArgument::NullPtr:
-    assert(IgnoreUnimplemented && "TA.NullPtr");
+    CHECK(IgnoreUnimplemented) << "TA.NullPtr";
     return None();
   case TemplateArgument::Integral:
-    assert(IgnoreUnimplemented && "TA.Integral");
+    CHECK(IgnoreUnimplemented) << "TA.Integral";
     return None();
   case TemplateArgument::Template:
     return BuildNodeIdForTemplateName(Arg.getAsTemplate(),
                                       ArgLoc.getTemplateNameLoc());
   case TemplateArgument::TemplateExpansion:
-    assert(IgnoreUnimplemented && "TA.TemplateExpansion");
+    CHECK(IgnoreUnimplemented) << "TA.TemplateExpansion";
     return None();
   case TemplateArgument::Expression:
-    assert(ArgLoc.getSourceExpression() != nullptr);
+    CHECK(ArgLoc.getSourceExpression() != nullptr);
     return BuildNodeIdForExpr(ArgLoc.getSourceExpression(), EmitRanges);
   case TemplateArgument::Pack:
-    assert(IgnoreUnimplemented && "TA.Pack");
+    CHECK(IgnoreUnimplemented) << "TA.Pack";
     return None();
   default:
-    assert(IgnoreUnimplemented && "Unexpected TemplateArgument kind!");
+    CHECK(IgnoreUnimplemented) << "Unexpected TemplateArgument kind!";
   }
   return None();
 }
@@ -2771,7 +2770,7 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &Type,
 
 MaybeFew<GraphObserver::NodeId>
 IndexerASTVisitor::BuildNodeIdForType(const clang::QualType &QT) {
-  assert(!QT.isNull());
+  CHECK(!QT.isNull());
   TypeSourceInfo *TSI = Context.getTrivialTypeSourceInfo(QT, SourceLocation());
   return BuildNodeIdForType(TSI->getTypeLoc(), EmitRanges::No);
 }
@@ -3110,14 +3109,14 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
     if (!IgnoreUnimplemented) {
       // TODO(zarko): Remove sanity checks. If things go poorly here,
       // dump with DumpTypeContext(T->getDepth(), T->getIndex());
-      assert(TypeParm->getDepth() < TypeContext.size() &&
-             "Decl for type parameter missing from context.");
-      assert(TypeParm->getIndex() < TypeContext[TypeParm->getDepth()]->size() &&
-             "Decl for type parameter missing at specified depth.");
+      CHECK_LT(TypeParm->getDepth(), TypeContext.size())
+          << "Decl for type parameter missing from context.";
+      CHECK_LT(TypeParm->getIndex(), TypeContext[TypeParm->getDepth()]->size())
+          << "Decl for type parameter missing at specified depth.";
       const auto *ND =
           TypeContext[TypeParm->getDepth()]->getParam(TypeParm->getIndex());
       TD = cast<TemplateTypeParmDecl>(ND);
-      assert(TypeParm->getDecl() == nullptr || TypeParm->getDecl() == TD);
+      CHECK(TypeParm->getDecl() == nullptr || TypeParm->getDecl() == TD);
     } else if (!TD) {
       return None();
     }
@@ -3131,7 +3130,7 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
     const auto &T = Type.castAs<SubstTemplateTypeParmTypeLoc>();
     const SubstTemplateTypeParmType *STTPT = T.getTypePtr();
     // TODO(zarko): Record both the replaced parameter and the replacement type.
-    assert(!STTPT->getReplacementType().isNull());
+    CHECK(!STTPT->getReplacementType().isNull());
     ID = BuildNodeIdForType(STTPT->getReplacementType());
   } break;
   // "When a pack expansion in the source code contains multiple parameter packs
@@ -3238,7 +3237,7 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
   UNSUPPORTED_CLANG_TYPE(Atomic);
   default:
     // Reference, Array, Function
-    assert(0 && "Incomplete pattern match on type or abstract class (?)");
+    LOG(FATAL) << "Incomplete pattern match on type or abstract class (?)";
   }
   if (TypeAlreadyBuilt) {
     ID = Prev->second;
