@@ -508,6 +508,8 @@ public:
 
   bool TraverseFunctionTemplateDecl(clang::FunctionTemplateDecl *FTD);
 
+  bool TraverseTypeAliasTemplateDecl(clang::TypeAliasTemplateDecl *TATD);
+
   bool shouldVisitTemplateInstantiations() const {
     return TemplateMode == BehaviorOnTemplates::VisitInstantiations;
   }

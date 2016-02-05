@@ -1056,6 +1056,12 @@ test_suite(
 )
 
 cxx_indexer_test(
+    name = "template_type_alias_param",
+    srcs = ["template/template_type_alias_param.cc"],
+    tags = ["template"],
+)
+
+cxx_indexer_test(
     name = "template_alias_implicit_instantiation",
     srcs = ["template/template_alias_implicit_instantiation.cc"],
     tags = ["template"],

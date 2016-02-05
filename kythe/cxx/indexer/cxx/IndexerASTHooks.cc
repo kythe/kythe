@@ -1458,6 +1458,14 @@ bool IndexerASTVisitor::TraverseVarTemplatePartialSpecializationDecl(
   return Result;
 }
 
+bool IndexerASTVisitor::TraverseTypeAliasTemplateDecl(
+    clang::TypeAliasTemplateDecl *TATD) {
+  TypeContext.push_back(TATD->getTemplateParameters());
+  TraverseDecl(TATD->getTemplatedDecl());
+  TypeContext.pop_back();
+  return true;
+}
+
 bool IndexerASTVisitor::TraverseFunctionTemplateDecl(
     clang::FunctionTemplateDecl *FTD) {
   TypeContext.push_back(FTD->getTemplateParameters());
