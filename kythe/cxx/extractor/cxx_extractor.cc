@@ -29,6 +29,8 @@
 #include "clang/Lex/MacroArgs.h"
 #include "clang/Lex/PPCallbacks.h"
 #include "clang/Lex/Preprocessor.h"
+#include "clang/Tooling/Tooling.h"
+
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "kythe/cxx/common/CommandLineUtils.h"
@@ -37,6 +39,7 @@
 #include "kythe/cxx/common/proto_conversions.h"
 #include "kythe/proto/analysis.pb.h"
 #include "kythe/proto/cxx.pb.h"
+#include "llvm/Support/TargetSelect.h"
 #include "third_party/llvm/src/clang_builtin_headers.h"
 #include "third_party/llvm/src/cxx_extractor_preprocessor_utils.h"
 
@@ -1033,10 +1036,15 @@ void ExtractorConfiguration::SetVNameConfig(const std::string& path) {
 
 void ExtractorConfiguration::SetArgs(const std::vector<std::string>& args) {
   final_args_ = args;
-  std::string actual_executable = final_args_.size() ? final_args_[0] : "";
+  std::string executable = final_args_.size() ? final_args_[0] : "";
   if (final_args_.size() >= 3 && final_args_[1] == "--with_executable") {
-    final_args_.assign(final_args_.begin() + 2, final_args_.end());
+    executable = final_args_[2];
+    final_args_.erase(final_args_.begin() + 1, final_args_.begin() + 3);
   }
+  // TODO(zarko): Does this really need to be InitializeAllTargets()?
+  // We may have made the precondition too strict.
+  llvm::InitializeAllTargetInfos();
+  clang::tooling::addTargetAndModeForProgramName(final_args_, executable);
   final_args_ = common::GCCArgsToClangSyntaxOnlyArgs(final_args_);
   // Check to see if an alternate resource-dir was specified; otherwise,
   // invent one. We need this to find stddef.h and friends.

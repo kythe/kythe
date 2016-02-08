@@ -17,12 +17,11 @@
 # It should be run from the Kythe root.
 TEST_NAME="test_metadata"
 . ./kythe/cxx/extractor/testdata/test_common.sh
-EXPECTED_INDEX="4b27c5e4da3151b3c6bdd3858901568202e161dda81fb4385f3137d60f09cdfa.kindex"
-INDEX_PATH="${OUT_DIR}"/"${EXPECTED_INDEX}"
-rm -f -- "${INDEX_PATH}_UNIT"
 KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}" \
     "${EXTRACTOR}" --with_executable "/usr/bin/g++" \
     -I./kythe/cxx/extractor \
     ./kythe/cxx/extractor/testdata/metadata.cc
+[[ $(ls -1 "${OUT_DIR}"/*.kindex | wc -l) -eq 1 ]]
+INDEX_PATH=$(ls -1 "${OUT_DIR}"/*.kindex)
 "${KINDEX_TOOL}" -canonicalize_hashes -suppress_details -explode "${INDEX_PATH}"
 diff "${BASE_DIR}/metadata.UNIT${PF_SUFFIX}" "${INDEX_PATH}_UNIT"

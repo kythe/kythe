@@ -17,12 +17,11 @@
 # It should be run from the Kythe root.
 TEST_NAME="test_claim_pragma"
 . ./kythe/cxx/extractor/testdata/test_common.sh
-EXPECTED_INDEX="c530488209e8ddf999ae178cfbdb13b15ed1cf29318de240244f7c96befc2c89.kindex"
-INDEX_PATH="${OUT_DIR}"/"${EXPECTED_INDEX}"
-rm -f -- "${INDEX_PATH}_UNIT"
 KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}" \
     "${EXTRACTOR}" --with_executable "/usr/bin/g++" \
     -I./kythe/cxx/extractor/testdata \
     ./kythe/cxx/extractor/testdata/claim_main.cc
+[[ $(ls -1 "${OUT_DIR}"/*.kindex | wc -l) -eq 1 ]]
+INDEX_PATH=$(ls -1 "${OUT_DIR}"/*.kindex)
 "${KINDEX_TOOL}" -canonicalize_hashes -suppress_details -explode "${INDEX_PATH}"
 diff "${BASE_DIR}/claim_main.UNIT" "${INDEX_PATH}_UNIT"

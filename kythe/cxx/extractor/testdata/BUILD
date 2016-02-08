@@ -3,6 +3,20 @@ load("/tools/build_rules/kythe", "cc_verifier_test")
 package(default_visibility = ["//kythe:default_visibility"])
 
 sh_test(
+    name = "alternate_platform",
+    srcs = [
+        "test_alternate_platform.sh",
+    ],
+    data = [
+        "arm.cc",
+        "arm.UNIT",
+        "test_common.sh",
+        "//kythe/cxx/extractor:cxx_extractor",
+        "//kythe/cxx/tools:kindex_tool",
+    ],
+)
+
+sh_test(
     name = "main_source_file_no_env_dep",
     srcs = [
         "test_main_source_file_no_env_dep.sh",

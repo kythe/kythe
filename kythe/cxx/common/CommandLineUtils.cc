@@ -187,6 +187,7 @@ GCCArgsToClangArgs(const std::vector<std::string> &gcc_args) {
       "|-W(no-)?(error=)?maybe-uninitialized"
       "|-W(no-)?(error=)?thread-safety"
       "|-W(no-)?(error=)?thread-unsupported-lock-name"
+      "|-W(no-)?(error=)?unused-but-set-parameter"
       "|-W(no-)?(error=)?unused-but-set-variable"
       "|-W(no-)?(error=)?unused-local-typedefs"
       "|-Xgcc-only=.*"
@@ -196,6 +197,7 @@ GCCArgsToClangArgs(const std::vector<std::string> &gcc_args) {
       "|-f(no-)?builtin-.*"
       "|-f(no-)?callgraph-profiles-sections"
       "|-f(no-)?float-store"
+      "|-f(no-)?canonical-system-headers"
       "|-f(no-)?eliminate-unused-debug-types"
       "|-f(no-)?gcse"
       "|-f(no-)?ident"
@@ -230,6 +232,11 @@ GCCArgsToClangArgs(const std::vector<std::string> &gcc_args) {
       "|-m(no-)?cld"
       "|-m(no-)?red-zone"
       "|--param=.*"
+      "|-mcpu=.*"  // For -mcpu=armv7-a, this leads to an assertion failure
+                   // in llvm::ARM::getSubArch (and an error about an
+                   // unsupported -mcpu); for cortex-a15, we get no such
+                   // failure. TODO(zarko): Leave this filtered out for now,
+                   // but figure out what to do to make this work properly.
       "|-pass-exit-codes");
   const FullMatchRegex unsupported_args_with_values_re("-wrapper");
 

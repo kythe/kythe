@@ -1,5 +1,5 @@
 v_name {
-  signature: "cu#be71c80ea633c2f436b999028095c96313375b35229b78d613c686fb993cb837"
+  signature: "cu#d34c5cc97ff3f35a9b7856b2dcc900684af618b3a4400d7bfa4e603bea86c21f"
   language: "c++"
 }
 required_input {
@@ -14,10 +14,11 @@ required_input {
     source_context: "EC_HASH"
   }
 }
-argument: "/usr/bin/g++"
+argument: "./kythe/cxx/extractor/cxx_extractor"
 argument: "-DKYTHE_IS_RUNNING=1"
 argument: "-resource-dir"
 argument: "/kythe_builtins"
+argument: "--driver-mode=g++"
 argument: "-I./kythe/cxx/extractor/testdata"
 argument: "-DMACRO"
 argument: "./kythe/cxx/extractor/testdata/main_source_file_env_dep.cc"

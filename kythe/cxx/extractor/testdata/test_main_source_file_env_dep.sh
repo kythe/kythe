@@ -19,19 +19,20 @@
 # It should be run from the Kythe root.
 TEST_NAME="test_main_source_file_env_dep"
 . ./kythe/cxx/extractor/testdata/test_common.sh
-INDEX_WITH_MACRO="be71c80ea633c2f436b999028095c96313375b35229b78d613c686fb993cb837.kindex"
-INDEX_WITHOUT_MACRO="948f1f4087b8cd2ea83ee3a13a8f7e8dcdf9d6bb08f4b2731e8f904f7f678d42.kindex"
-INDEX_PATH_WITH_MACRO="${OUT_DIR}"/"${INDEX_WITH_MACRO}"
-INDEX_PATH_WITHOUT_MACRO="${OUT_DIR}"/"${INDEX_WITHOUT_MACRO}"
-rm -f -- "${INDEX_PATH_WITH_MACRO}_UNIT" "${INDEX_PATH_WITHOUT_MACRO}_UNIT"
-KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}" \
+mkdir -p "${OUT_DIR}/with"
+mkdir -p "${OUT_DIR}/without"
+KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}/without" \
     "${EXTRACTOR}" --with_executable "/usr/bin/g++" \
     -I./kythe/cxx/extractor/testdata \
     ./kythe/cxx/extractor/testdata/main_source_file_env_dep.cc
-KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}" \
+KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}/with" \
     "${EXTRACTOR}" --with_executable "/usr/bin/g++" \
     -I./kythe/cxx/extractor/testdata -DMACRO \
     ./kythe/cxx/extractor/testdata/main_source_file_env_dep.cc
+[[ $(ls -1 "${OUT_DIR}"/with/*.kindex | wc -l) -eq 1 ]]
+INDEX_PATH_WITH_MACRO=$(ls -1 "${OUT_DIR}"/with/*.kindex)
+[[ $(ls -1 "${OUT_DIR}"/without/*.kindex | wc -l) -eq 1 ]]
+INDEX_PATH_WITHOUT_MACRO=$(ls -1 "${OUT_DIR}"/without/*.kindex)
 "${KINDEX_TOOL}" -suppress_details -explode "${INDEX_PATH_WITH_MACRO}"
 "${KINDEX_TOOL}" -suppress_details -explode "${INDEX_PATH_WITHOUT_MACRO}"
 EC_HASH=$(sed -ne '/^entry_context:/ {s/.*entry_context: \"\(.*\)\"$/\1/; p;}' \
