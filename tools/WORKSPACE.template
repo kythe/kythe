@@ -1,3 +1,15 @@
+new_git_repository(
+    name = "googleflags",
+    build_file = "third_party/googleflags.BUILD",
+    commit = "58345b18d92892a170d61a76c5dd2d290413bdd7",
+    remote = "https://github.com/gflags/gflags.git",
+)
+
+bind(
+    name = "gflags",
+    actual = "@googleflags//:gflags",
+)
+
 new_local_repository(
     name = "local_goroot",
     build_file = "tools/go/goroot.BUILD",

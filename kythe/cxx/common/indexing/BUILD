@@ -20,13 +20,13 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
+        "//external:gflags",
         "//kythe/cxx/common:index_pack",
         "//kythe/cxx/common:json_proto",
         "//kythe/cxx/common:lib",
         "//kythe/proto:analysis_proto_cc",
         "//kythe/proto:storage_proto_cc",
         "//third_party:libmemcached",
-        "//third_party/googleflags:gflags",
         "//third_party/proto:protobuf",
     ],
 )

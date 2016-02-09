@@ -60,8 +60,8 @@ cc_library(
     ],
     deps = [
         ":lexparse",
+        "//external:gflags",
         "//kythe/proto:storage_proto_cc",
-        "//third_party/googleflags:gflags",
         "//third_party/googlelog:glog",
         "//third_party/proto:protobuf",
     ],
@@ -79,8 +79,8 @@ cc_library(
     ],
     deps = [
         ":lib",
+        "//external:gflags",
         "//kythe/proto:storage_proto_cc",
-        "//third_party/googleflags:gflags",
         "//third_party/googlelog:glog",
         "//third_party/proto:protobuf",
     ],

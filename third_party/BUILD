@@ -13,7 +13,7 @@ filegroup(
     srcs = ["README"] + [
         "//third_party/bazel:license",
         "//third_party/go:licenses",
-        "//third_party/googleflags:license",
+        "@googleflags//:license",
         "//third_party/googlelog:license",
         "//third_party/googletest:license",
         "//third_party/grpc-java:license",

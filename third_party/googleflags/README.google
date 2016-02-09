@@ -1,8 +1,0 @@
-URL: https://github.com/gflags/gflags
-Version: 58345b18d92892a170d61a76c5dd2d290413bdd7
-License: BSD 3 http://opensource.org/licenses/BSD-3-Clause
-
-Local Modifications:
-Ran cmake to generate include/*.
-Renamed .gitignore to dist.gitignore.
-Added BUILD file.
