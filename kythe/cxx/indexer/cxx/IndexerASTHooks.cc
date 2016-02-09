@@ -716,7 +716,26 @@ bool IndexerASTVisitor::VisitDecl(const clang::Decl *Decl) {
   } while (Tok.getKind() != clang::comments::tok::eof);
   // Attribute the raw comment text to its associated decl.
   auto RCC = RangeInCurrentContext(Comment->getSourceRange());
-  Observer.recordDocumentationRange(RCC, BuildNodeIdForDecl(Decl));
+  if (const auto* DC = dyn_cast_or_null<DeclContext>(Decl)) {
+    if (auto DCID = BuildNodeIdForDeclContext(DC)) {
+      Observer.recordDocumentationRange(RCC, DCID.primary());
+    }
+    if (const auto* CTPSD = dyn_cast_or_null<ClassTemplatePartialSpecializationDecl>(Decl)) {
+      Observer.recordDocumentationRange(RCC, BuildNodeIdForDecl(CTPSD));
+    }
+    if (const auto* FD = dyn_cast_or_null<FunctionDecl>(Decl)) {
+      if (const auto* FTD = FD->getDescribedFunctionTemplate()) {
+        Observer.recordDocumentationRange(RCC, BuildNodeIdForDecl(FTD));
+      }
+    }
+  } else if (const auto* VD = dyn_cast_or_null<VarDecl>(Decl)) {
+    if (const auto* VTD = VD->getDescribedVarTemplate()) {
+      Observer.recordDocumentationRange(RCC, BuildNodeIdForDecl(VTD));
+    }
+    Observer.recordDocumentationRange(RCC, BuildNodeIdForDecl(VD));
+  } else {
+    Observer.recordDocumentationRange(RCC, BuildNodeIdForDecl(Decl));
+  }
   return true;
 }
 
@@ -1165,7 +1184,7 @@ bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl *Decl) {
     DeclNode = RecordTemplate(VTPSD, BodyDeclNode);
   } else if (const auto *VTD = Decl->getDescribedVarTemplate()) {
     CHECK(!isa<clang::VarTemplateSpecializationDecl>(VTD));
-    BodyDeclNode = BuildNodeIdForDecl(Decl, 0);
+    BodyDeclNode = BuildNodeIdForDecl(Decl);
     DeclNode = RecordTemplate(VTD, BodyDeclNode);
   } else {
     BodyDeclNode = BuildNodeIdForDecl(Decl);

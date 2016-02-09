@@ -859,6 +859,54 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "docs_template_function",
+    srcs = ["docs/docs_template_function.cc"],
+    tags = ["docs"],
+)
+
+cxx_indexer_test(
+    name = "docs_template_function_spec",
+    srcs = ["docs/docs_template_function_spec.cc"],
+    tags = ["docs"],
+)
+
+cxx_indexer_test(
+    name = "docs_template_record",
+    srcs = ["docs/docs_template_record.cc"],
+    tags = ["docs"],
+)
+
+cxx_indexer_test(
+    name = "docs_template_var",
+    srcs = ["docs/docs_template_var.cc"],
+    tags = ["docs"],
+)
+
+cxx_indexer_test(
+    name = "docs_template_partial_spec_record",
+    srcs = ["docs/docs_template_partial_spec_record.cc"],
+    tags = ["docs"],
+)
+
+cxx_indexer_test(
+    name = "docs_template_partial_spec_var",
+    srcs = ["docs/docs_template_partial_spec_record.cc"],
+    tags = ["docs"],
+)
+
+cxx_indexer_test(
+    name = "docs_template_total_spec_record",
+    srcs = ["docs/docs_template_total_spec_record.cc"],
+    tags = ["docs"],
+)
+
+cxx_indexer_test(
+    name = "docs_template_total_spec_var",
+    srcs = ["docs/docs_template_total_spec_var.cc"],
+    tags = ["docs"],
+)
+
+cxx_indexer_test(
     name = "docs_visibility",
     srcs = ["docs/docs_visibility.cc"],
     tags = ["docs"],
@@ -1483,6 +1531,7 @@ cxx_indexer_test(
     name = "template_var_constexpr",
     srcs = ["template/template_var_constexpr.cc"],
     std = "c++14",
+    ignore_dups = True,
     tags = ["template"],
 )
 
