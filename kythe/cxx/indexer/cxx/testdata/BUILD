@@ -859,6 +859,12 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "docs_template_alias",
+    srcs = ["docs/docs_template_alias.cc"],
+    tags = ["docs"],
+)
+
+cxx_indexer_test(
     name = "docs_template_function",
     srcs = ["docs/docs_template_function.cc"],
     tags = ["docs"],
@@ -1101,6 +1107,12 @@ cxx_indexer_test(
 test_suite(
     name = "indexer_rec",
     tags = ["rec"],
+)
+
+cxx_indexer_test(
+    name = "template_alias",
+    srcs = ["template/template_alias.cc"],
+    tags = ["template"],
 )
 
 cxx_indexer_test(

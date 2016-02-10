@@ -716,23 +716,29 @@ bool IndexerASTVisitor::VisitDecl(const clang::Decl *Decl) {
   } while (Tok.getKind() != clang::comments::tok::eof);
   // Attribute the raw comment text to its associated decl.
   auto RCC = RangeInCurrentContext(Comment->getSourceRange());
-  if (const auto* DC = dyn_cast_or_null<DeclContext>(Decl)) {
+  if (const auto *DC = dyn_cast_or_null<DeclContext>(Decl)) {
     if (auto DCID = BuildNodeIdForDeclContext(DC)) {
       Observer.recordDocumentationRange(RCC, DCID.primary());
     }
-    if (const auto* CTPSD = dyn_cast_or_null<ClassTemplatePartialSpecializationDecl>(Decl)) {
+    if (const auto *CTPSD =
+            dyn_cast_or_null<ClassTemplatePartialSpecializationDecl>(Decl)) {
       Observer.recordDocumentationRange(RCC, BuildNodeIdForDecl(CTPSD));
     }
-    if (const auto* FD = dyn_cast_or_null<FunctionDecl>(Decl)) {
-      if (const auto* FTD = FD->getDescribedFunctionTemplate()) {
+    if (const auto *FD = dyn_cast_or_null<FunctionDecl>(Decl)) {
+      if (const auto *FTD = FD->getDescribedFunctionTemplate()) {
         Observer.recordDocumentationRange(RCC, BuildNodeIdForDecl(FTD));
       }
     }
-  } else if (const auto* VD = dyn_cast_or_null<VarDecl>(Decl)) {
-    if (const auto* VTD = VD->getDescribedVarTemplate()) {
+  } else if (const auto *VD = dyn_cast_or_null<VarDecl>(Decl)) {
+    if (const auto *VTD = VD->getDescribedVarTemplate()) {
       Observer.recordDocumentationRange(RCC, BuildNodeIdForDecl(VTD));
     }
     Observer.recordDocumentationRange(RCC, BuildNodeIdForDecl(VD));
+  } else if (const auto *AD = dyn_cast_or_null<TypeAliasDecl>(Decl)) {
+    if (const auto *TATD = AD->getDescribedAliasTemplate()) {
+      Observer.recordDocumentationRange(RCC, BuildNodeIdForDecl(TATD));
+    }
+    Observer.recordDocumentationRange(RCC, BuildNodeIdForDecl(Decl));
   } else {
     Observer.recordDocumentationRange(RCC, BuildNodeIdForDecl(Decl));
   }
@@ -1942,6 +1948,23 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
   return true;
 }
 
+MaybeFew<GraphObserver::NodeId>
+IndexerASTVisitor::BuildNodeIdForTypedefNameDecl(
+    const clang::TypedefNameDecl *Decl) {
+  const auto Cached = DeclToNodeId.find(Decl);
+  if (Cached != DeclToNodeId.end()) {
+    return Cached->second;
+  }
+
+  clang::TypeSourceInfo *TSI = Decl->getTypeSourceInfo();
+  if (auto AliasedTypeId =
+          BuildNodeIdForType(TSI->getTypeLoc(), EmitRanges::Yes)) {
+    GraphObserver::NameId AliasNameId(BuildNameIdForDecl(Decl));
+    return Observer.recordTypeAliasNode(AliasNameId, AliasedTypeId.primary());
+  }
+  return None();
+}
+
 bool IndexerASTVisitor::VisitTypedefNameDecl(
     const clang::TypedefNameDecl *Decl) {
   if (Decl == Context.getBuiltinVaListDecl() ||
@@ -1949,15 +1972,17 @@ bool IndexerASTVisitor::VisitTypedefNameDecl(
     // Don't index __uint128_t, __builtin_va_list, __int128_t
     return true;
   }
-  SourceRange Range = RangeForNameOfDeclaration(Decl);
-  clang::TypeSourceInfo *TSI = Decl->getTypeSourceInfo();
-  if (auto AliasedTypeId =
-          BuildNodeIdForType(TSI->getTypeLoc(), EmitRanges::Yes)) {
-    GraphObserver::NameId AliasNameId(BuildNameIdForDecl(Decl));
-    GraphObserver::NodeId AliasNodeId(
-        Observer.recordTypeAliasNode(AliasNameId, AliasedTypeId.primary()));
-    MaybeRecordDefinitionRange(RangeInCurrentContext(Range), AliasNodeId);
-    AddChildOfEdgeToDeclContext(Decl, AliasNodeId);
+  if (auto InnerNodeId = BuildNodeIdForTypedefNameDecl(Decl)) {
+    GraphObserver::NodeId OuterNodeId = InnerNodeId.primary();
+    // If this is a template, we need to emit an abs node for it.
+    if (auto *TA = dyn_cast_or_null<TypeAliasDecl>(Decl)) {
+      if (auto *TATD = TA->getDescribedAliasTemplate()) {
+        OuterNodeId = RecordTemplate(TATD, InnerNodeId.primary());
+      }
+    }
+    SourceRange Range = RangeForNameOfDeclaration(Decl);
+    MaybeRecordDefinitionRange(RangeInCurrentContext(Range), OuterNodeId);
+    AddChildOfEdgeToDeclContext(Decl, OuterNodeId);
   }
   return true;
 }
@@ -2325,6 +2350,14 @@ IndexerASTVisitor::BuildNodeIdForDecl(const clang::Decl *Decl) {
                                Ostream.str());
       DeclToNodeId.insert(std::make_pair(Decl, Id));
       return Id;
+    }
+  }
+
+  // There's a special way to name type aliases.
+  if (const auto *TND = dyn_cast<TypedefNameDecl>(Decl)) {
+    if (auto TypedefNameId = BuildNodeIdForTypedefNameDecl(TND)) {
+      DeclToNodeId.insert(std::make_pair(Decl, TypedefNameId.primary()));
+      return TypedefNameId.primary();
     }
   }
 

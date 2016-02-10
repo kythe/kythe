@@ -360,6 +360,12 @@ public:
   /// \return The node for `Decl`.
   GraphObserver::NodeId BuildNodeIdForDecl(const clang::Decl *Decl);
 
+  /// \brief Builds a stable node ID for `TND`.
+  ///
+  /// \param Decl The declaration that is being identified.
+  MaybeFew<GraphObserver::NodeId>
+  BuildNodeIdForTypedefNameDecl(const clang::TypedefNameDecl *TND);
+
   /// \brief Builds a stable node ID for `Decl` as a callable.
   ///
   /// \param Decl The callable declaration that is being identified.
