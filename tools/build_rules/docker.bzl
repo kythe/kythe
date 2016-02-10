@@ -40,6 +40,6 @@ def docker_build(name, image_name,
       cmd = "\n".join(cmd),
       srcs = [src] + data + deps,
       outs = [done_marker],
-      tags = tags,
+      tags = tags + ["docker"],
       local = 1,
   )

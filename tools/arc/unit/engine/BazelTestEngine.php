@@ -19,9 +19,16 @@
  * bazel wrapper.
  */
 final class BazelTestEngine extends ArcanistUnitTestEngine {
+  private $debug;
+
   private $project_root;
 
   public function run() {
+    if (getenv("DEBUG")) {
+      $this->debug = true;
+    }
+    $this->debugPrint("run");
+
     $this->project_root = $this->getWorkingCopy()->getProjectRoot();
     $targets = $this->getTargets();
     if (empty($targets)) {
@@ -36,17 +43,24 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
   }
 
   private function getTargets() {
+    $this->debugPrint("getTargets");
+
     if ($this->getRunAllTests()) {
       return array('//...');
-    } else if (empty($this->getPaths())) {
+    }
+
+    $files = $this->getFileTargets();
+    if (empty($files)) {
       print("No files affected\n");
       return array();
     }
+    $files = join($files, ",");
+    $this->debugPrint("files: " . $files);
 
-    $query_command = $this->bazelCommand(["query", "-k", "%s"]);
-    $files = join(" ",
-                  array_map(array('BazelTestEngine', 'fileToTarget'), $this->getPaths()));
-    $future = new ExecFuture($query_command, 'rdeps(//..., set('.$files.')) except kind("docker_build", rdeps(//..., set('.$files.')))');
+    $cmd = $this->bazelCommand(["query", "%s"]);
+    $query = 'rdeps(//..., set('.$files.')) except attr(tags, "docker", //...)';
+    $this->debugPrint($query);
+    $future = new ExecFuture($cmd, $query);
     $future->setCWD($this->project_root);
     $status = $future->resolve();
     if ($status[0] != 3 && $status[0] != 0) {
@@ -60,7 +74,31 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
     return explode("\n", $output);
   }
 
+  private function getFileTargets() {
+    if (empty($this->getPaths())) {
+      return array();
+    }
+    $files = join(" ",
+                  array_map(array('BazelTestEngine', 'fileToTarget'), $this->getPaths()));
+    $future = new ExecFuture($this->bazelCommand(["query", "-k", "%s"]), 'set('.$files.')');
+    $future->setCWD($this->project_root);
+
+    $status = $future->resolve();
+    if ($status[0] != 3 && $status[0] != 0) {
+      throw new Exception("Bazel query error (".$status[0]."): ".$status[2]);
+    }
+
+    $output = trim($status[1]);
+    if ($output === "") {
+      return array();
+    }
+
+    return explode("\n", $output);
+  }
+
   private function runTests($targets) {
+    $this->debugPrint("runTests(" . join($targets, ", ") . ")");
+
     $future = new ExecFuture($this->bazelCommand(array_merge([
         "test",
         "--test_tag_filters=-broken",
@@ -72,6 +110,8 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
   }
 
   private function parseTestResults($targets, $status) {
+    $this->debugPrint("parseTestResults");
+
     $code = $status[0];
     $output = $status[1];
     $lines = explode("\n", $output);
@@ -83,8 +123,10 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
       throw new Exception($output . "\n" . $status[2]);
     }
 
-    $query_command = $this->bazelCommand(["query", "-k", "%s"]);
-    $future = new ExecFuture($query_command, 'tests(set('.join(" ", $targets).')) except attr(tags, "broken", //...)');
+    $cmd = $this->bazelCommand(["query", "-k", "%s"]);
+    $query = 'tests(set('.join(" ", $targets).')) except attr(tags, "broken", //...)';
+    $this->debugPrint($query);
+    $future = new ExecFuture($cmd, $query);
     $future->setCWD($this->project_root);
     $testTargets = explode("\n", trim($future->resolvex()[0]));
 
@@ -111,7 +153,7 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
     }
 
     return $results;
-          }
+  }
 
   private function parseTestResultFile($target) {
     $path = "bazel-testlogs/".str_replace(":", "/", substr($target, 2))."/test.cache_status";
@@ -128,7 +170,15 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
   }
 
   private function bazelCommand($args) {
-    return "bazel --bazelrc=/dev/null --noblock_for_lock "
+    $cmd = "bazel --bazelrc=/dev/null --noblock_for_lock "
         . " " . join(" ", $args);
+    $this->debugPrint($cmd);
+    return $cmd;
+  }
+
+  private function debugPrint($msg) {
+    if ($this->debug) {
+      print("DEBUG: " . $msg . "\n");
+    }
   }
 }

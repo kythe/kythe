@@ -242,6 +242,10 @@ public class JavaCompilationUnitExtractor {
     Preconditions.checkNotNull(options);
     Preconditions.checkNotNull(outputPath);
 
+    if (!sources.iterator().hasNext()) {
+      throw new ExtractionException("no sources to analyze", false);
+    }
+
     AnalysisResults results =
         runJavaAnalysisToExtractCompilationDetails(
             sources, classpath, sourcepath, processorpath, processors, options);
