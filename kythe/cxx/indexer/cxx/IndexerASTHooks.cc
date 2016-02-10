@@ -1101,10 +1101,6 @@ void IndexerASTVisitor::AddChildOfEdgeToDeclContext(
 }
 
 bool IndexerASTVisitor::VisitDeclRefExpr(const clang::DeclRefExpr *DRE) {
-  // Bail on NonTypeTemplateParmDecl for now.
-  if (isa<NonTypeTemplateParmDecl>(DRE->getDecl())) {
-    return true;
-  }
   // TODO(zarko): check to see if this DeclRefExpr has already been indexed.
   // (Use a simple N=1 cache.)
   // Use FoundDecl to get to template defs; use getDecl to get to template
@@ -2538,13 +2534,16 @@ IndexerASTVisitor::BuildNodeIdForTemplateName(const clang::TemplateName &Name,
         // definitions directly (in place of nominal nodes), so calling
         // BuildNodeIdForDecl() all the time makes sense. We aren't even
         // emitting ranges.
-        const auto *TDType = TD->getTypeForDecl();
-        CHECK(IgnoreUnimplemented || TDType != nullptr);
-        if (TDType) {
+        if (const auto *TDType = TD->getTypeForDecl()) {
           QualType QT(TDType, 0);
           TypeSourceInfo *TSI = Context.getTrivialTypeSourceInfo(QT, L);
           return BuildNodeIdForType(TSI->getTypeLoc(), EmitRanges::No);
+        } else if (const auto *TAlias = dyn_cast<TypeAliasDecl>(TD)) {
+          // The names for type alias types are the same for type alias nodes.
+          return BuildNodeIdForTypedefNameDecl(TAlias);
         } else {
+          CHECK(IgnoreUnimplemented)
+              << "Unknown case in BuildNodeIdForTemplateName";
           return None();
         }
       } else if (const auto *FD = dyn_cast<FunctionDecl>(UnderlyingDecl)) {
@@ -2704,6 +2703,7 @@ IndexerASTVisitor::BuildNodeIdForExpr(const clang::Expr *Expr, EmitRanges ER) {
     // graph; link ranges to them.
     Ostream << Result.Val.getAsString(Context, Expr->getType()) << "#const";
   } else {
+    // TODO(zarko): Define and emit a node kind for opaque expressions.
     Observer.AppendRangeToStream(
         Ostream, RangeInCurrentContext(
                      RangeForASTEntityFromSourceLocation(Expr->getExprLoc())));
@@ -2957,9 +2957,43 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
     // TODO(zarko): Record size expression.
     ID = ApplyBuiltinTypeConstructor("carr", ElementID);
   } break;
-  UNSUPPORTED_CLANG_TYPE(IncompleteArray);
+  case TypeLoc::IncompleteArray: {
+    const auto &T = Type.castAs<IncompleteArrayTypeLoc>();
+    const auto *DT = dyn_cast<IncompleteArrayType>(PT);
+    auto ElementID(BuildNodeIdForType(T.getElementLoc(),
+                                      DT ? DT->getElementType().getTypePtr()
+                                         : T.getElementLoc().getTypePtr(),
+                                      EmitRanges));
+    if (!ElementID) {
+      return ElementID;
+    }
+    if (TypeAlreadyBuilt) {
+      break;
+    }
+    ID = ApplyBuiltinTypeConstructor("iarr", ElementID);
+  } break;
   UNSUPPORTED_CLANG_TYPE(VariableArray);
-  UNSUPPORTED_CLANG_TYPE(DependentSizedArray);
+  case TypeLoc::DependentSizedArray: {
+    const auto &T = Type.castAs<DependentSizedArrayTypeLoc>();
+    const auto *DT = dyn_cast<DependentSizedArrayType>(PT);
+    auto ElementID(BuildNodeIdForType(T.getElementLoc(),
+                                      DT ? DT->getElementType().getTypePtr()
+                                         : T.getElementLoc().getTypePtr(),
+                                      EmitRanges));
+    if (!ElementID) {
+      return ElementID;
+    }
+    if (TypeAlreadyBuilt) {
+      break;
+    }
+    if (auto ExpressionID = BuildNodeIdForExpr(DT->getSizeExpr(), EmitRanges)) {
+      ID = Observer.recordTappNode(
+          Observer.getNodeIdForBuiltinType("darr"),
+          {{&ElementID.primary(), &ExpressionID.primary()}});
+    } else {
+      ID = ApplyBuiltinTypeConstructor("darr", ElementID);
+    }
+  } break;
   UNSUPPORTED_CLANG_TYPE(DependentSizedExtVector);
   UNSUPPORTED_CLANG_TYPE(Vector);
   UNSUPPORTED_CLANG_TYPE(ExtVector);

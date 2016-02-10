@@ -1249,6 +1249,12 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "template_dependent_sized_array",
+    srcs = ["template/template_dependent_sized_array.cc"],
+    tags = ["template"],
+)
+
+cxx_indexer_test(
     name = "template_depexpr_field_ref",
     srcs = ["template/template_depexpr_field_ref.cc"],
     tags = ["template"],
@@ -1396,6 +1402,12 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "template_fn_spec_overload",
     srcs = ["template/template_fn_spec_overload.cc"],
+    tags = ["template"],
+)
+
+cxx_indexer_test(
+    name = "template_incomplete_array",
+    srcs = ["template/template_incomplete_array.cc"],
     tags = ["template"],
 )
 
