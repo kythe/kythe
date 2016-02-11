@@ -1,5 +1,7 @@
 package(default_visibility = ["//visibility:public"])
 
+load("@//tools:build_rules/cmake.bzl", "cmake_generate")
+
 licenses(["notice"])  # BSD
 
 filegroup(
@@ -7,7 +9,7 @@ filegroup(
     srcs = ["COPYING.txt"],
 )
 
-genrule(
+cmake_generate(
     name = "headers",
     srcs =
         glob([
@@ -22,15 +24,11 @@ genrule(
         ],
     outs = [
         "include/gflags/config.h",
+        "include/gflags/gflags.h",
         "include/gflags/gflags_completions.h",
         "include/gflags/gflags_declare.h",
         "include/gflags/gflags_gflags.h",
-        "include/gflags/gflags.h",
     ],
-    # `yes` will always fail, so only fail if cmake does.
-    # TODO(shahms): Pull this out into a macro/rule.
-    cmd = "ROOT=`pwd`; (cd $(@D); set +o pipefail; " +
-          "yes \"\" | cmake -i $$ROOT/$$(dirname $(location :CMakeLists.txt)))",
     visibility = ["//visibility:private"],
 )
 
