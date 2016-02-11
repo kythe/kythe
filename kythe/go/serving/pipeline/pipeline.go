@@ -430,7 +430,8 @@ func writeDecorAndRefs(ctx context.Context, opts *Options, edges <-chan *srvpb.E
 			for _, d := range fragment.Decoration {
 				cr, err := assemble.CrossReference(file, norm, d)
 				if err != nil {
-					return fmt.Errorf("error assembling cross-reference: %v", err)
+					log.Printf("WARNING: error assembling cross-reference: %v", err)
+					continue
 				}
 				if err := refSorter.Add(cr); err != nil {
 					return fmt.Errorf("error adding CrossReference to sorter: %v", err)

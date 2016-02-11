@@ -20,6 +20,7 @@
  */
 final class BazelTestEngine extends ArcanistUnitTestEngine {
   private $debug;
+  private $useConfig;
 
   private $project_root;
 
@@ -28,6 +29,10 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
       $this->debug = true;
     }
     $this->debugPrint("run");
+    if (getenv("USE_BAZELRC")) {
+      $this->useConfig = true;
+      print("WARNING: using default bazelrc\n");
+    }
 
     $this->project_root = $this->getWorkingCopy()->getProjectRoot();
     $targets = $this->getTargets();
@@ -54,7 +59,7 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
       print("No files affected\n");
       return array();
     }
-    $files = join($files, ",");
+    $files = join($files, " ");
     $this->debugPrint("files: " . $files);
 
     $cmd = $this->bazelCommand(["query", "%s"]);
@@ -170,8 +175,11 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
   }
 
   private function bazelCommand($args) {
-    $cmd = "bazel --bazelrc=/dev/null --noblock_for_lock "
-        . " " . join(" ", $args);
+    $cmd = "bazel ";
+    if (!$this->useConfig) {
+      $cmd = $cmd . "--bazelrc=/dev/null ";
+    }
+    $cmd = $cmd . "--noblock_for_lock " . " " . join(" ", $args);
     $this->debugPrint($cmd);
     return $cmd;
   }

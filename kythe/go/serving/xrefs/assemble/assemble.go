@@ -540,6 +540,10 @@ func CrossReference(file *srvpb.File, norm *xrefs.Normalizer, d *srvpb.FileDecor
 // ExpandAnchor returns the ExpandedAnchor equivalent of the given RawAnchor
 // where file (and its associated Normalizer) must be the anchor's parent file.
 func ExpandAnchor(anchor *srvpb.RawAnchor, file *srvpb.File, norm *xrefs.Normalizer, kind string) (*srvpb.ExpandedAnchor, error) {
+	if err := checkSpan(len(file.Text), anchor.StartOffset, anchor.EndOffset); err != nil {
+		return nil, fmt.Errorf("invalid text offsets: %v", err)
+	}
+
 	sp := norm.ByteOffset(anchor.StartOffset)
 	ep := norm.ByteOffset(anchor.EndOffset)
 	txt, err := getText(sp, ep, file)
@@ -547,28 +551,36 @@ func ExpandAnchor(anchor *srvpb.RawAnchor, file *srvpb.File, norm *xrefs.Normali
 		return nil, fmt.Errorf("error getting anchor text: %v", err)
 	}
 
-	ssp := norm.ByteOffset(anchor.SnippetStart)
-	sep := norm.ByteOffset(anchor.SnippetEnd)
-	snippet, err := getText(ssp, sep, file)
-	if err != nil {
-		return nil, fmt.Errorf("error getting text for snippet: %v", err)
-	}
+	var snippet string
+	var ssp, sep *xpb.Location_Point
+	if anchor.SnippetStart != 0 || anchor.SnippetEnd != 0 {
+		if err := checkSpan(len(file.Text), anchor.SnippetStart, anchor.SnippetEnd); err != nil {
+			return nil, fmt.Errorf("invalid snippet offsets: %v", err)
+		}
 
-	// fallback to a line-based snippet if the indexer did not provide its own snippet offsets
-	if snippet == "" {
+		ssp = norm.ByteOffset(anchor.SnippetStart)
+		sep = norm.ByteOffset(anchor.SnippetEnd)
+		snippet, err = getText(ssp, sep, file)
+		if err != nil {
+			return nil, fmt.Errorf("error getting text for snippet: %v", err)
+		}
+	} else {
+		// fallback to a line-based snippet if the indexer did not provide its own snippet offsets
 		ssp = &xpb.Location_Point{
 			ByteOffset: sp.ByteOffset - sp.ColumnOffset,
 			LineNumber: sp.LineNumber,
 		}
 		nextLine := norm.Point(&xpb.Location_Point{LineNumber: sp.LineNumber + 1})
-		sep = &xpb.Location_Point{
-			ByteOffset:   nextLine.ByteOffset - 1,
-			LineNumber:   sp.LineNumber,
-			ColumnOffset: sp.ColumnOffset + (nextLine.ByteOffset - sp.ByteOffset - 1),
-		}
-		snippet, err = getText(ssp, sep, file)
-		if err != nil {
-			return nil, fmt.Errorf("error getting text for line snippet: %v", err)
+		if nextLine.ByteOffset > ssp.ByteOffset { // double-check ssp != EOF
+			sep = &xpb.Location_Point{
+				ByteOffset:   nextLine.ByteOffset - 1,
+				LineNumber:   sp.LineNumber,
+				ColumnOffset: sp.ColumnOffset + (nextLine.ByteOffset - sp.ByteOffset - 1),
+			}
+			snippet, err = getText(ssp, sep, file)
+			if err != nil {
+				return nil, fmt.Errorf("error getting text for line snippet: %v", err)
+			}
 		}
 	}
 
@@ -591,10 +603,18 @@ func ExpandAnchor(anchor *srvpb.RawAnchor, file *srvpb.File, norm *xrefs.Normali
 	}, nil
 }
 
-func getText(sp, ep *xpb.Location_Point, file *srvpb.File) (string, error) {
-	if sp.ByteOffset < 0 || sp.ByteOffset > ep.ByteOffset || int(ep.ByteOffset) > len(file.Text) {
-		return "", fmt.Errorf("invalid span [%v, %v) for file text (len: %d)", sp, ep, len(file.Text))
+func checkSpan(textLen int, start, end int32) error {
+	if int(end) > textLen {
+		return fmt.Errorf("span past EOF %d: [%d, %d)", textLen, start, end)
+	} else if start < 0 {
+		return fmt.Errorf("negative span: [%d, %d)", start, end)
+	} else if start > end {
+		return fmt.Errorf("crossed span: [%d, %d)", start, end)
 	}
+	return nil
+}
+
+func getText(sp, ep *xpb.Location_Point, file *srvpb.File) (string, error) {
 	txt, err := text.ToUTF8(file.Encoding, file.Text[sp.ByteOffset:ep.ByteOffset])
 	if err != nil {
 		return "", fmt.Errorf("unable to decode file text: %v", err)
