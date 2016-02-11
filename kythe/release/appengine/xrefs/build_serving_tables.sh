@@ -1,4 +1,5 @@
 #!/bin/bash -e
+set -o pipefail
 # Copyright 2015 Google Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,6 +22,12 @@
 #
 # The default --out directory is ./serving.  This script is expected to be in
 # the ./kythe/release/appengine/xrefs directory of the Kythe repository.
+
+: "${INDEXERS:=/opt/kythe/indexers}"
+: "${TOOLS:=/opt/kythe/tools}"
+
+echo "TOOLS=$TOOLS"
+echo "INDEXERS=$INDEXERS"
 
 COMPILATIONS=
 GRAPHSTORE=
@@ -68,6 +75,10 @@ if [[ -n "$(find "$GRAPHSTORE" -maxdepth 0 -empty)" ]]; then
   fi
 
   echo "Writing to GraphStore at $GRAPHSTORE" >&2
+  "$(dirname "$0")/run_indexers.sh" "$COMPILATIONS" | \
+    "$TOOLS/dedup_stream" | \
+    "$TOOLS/write_entries" --graphstore "$GRAPHSTORE"
+
   if [[ -n "$INDEX_FILES" ]]; then
     TMP_REPO="$(mktemp -d)"
     trap "rm -rf '$TMP_REPO'" EXIT ERR INT
@@ -75,21 +86,13 @@ if [[ -n "$(find "$GRAPHSTORE" -maxdepth 0 -empty)" ]]; then
     echo "Checking out $COMMIT to $TMP_REPO for file indexing" >&2
     git --work-tree="$TMP_REPO" checkout -f $COMMIT
 
-    time docker run --rm -ti \
-      -v "$COMPILATIONS:/compilations" \
-      -v "$GRAPHSTORE:/graphstore" \
-      -v "$TMP_REPO:/repo" \
-      google/kythe --index --files kythe/data/vnames.json
-  else
-    time docker run --rm -ti \
-      -v "$COMPILATIONS:/compilations" \
-      -v "$GRAPHSTORE:/graphstore" \
-      google/kythe --index
+    cd "$TMP_REPO"
+    "$TOOLS/directory_indexer" --vnames kythe/data/vnames.json | \
+      "$TOOLS/write_entries" --graphstore "$GRAPHSTORE"
   fi
 fi
 
 echo "Writing serving tables to $TABLES"
 rm -rf "$TABLES"
 mkdir -p "$TABLES"
-time bazel run //kythe/go/serving/tools:write_tables -- \
-  --graphstore "$GRAPHSTORE" --out "$TABLES"
+time "$TOOLS/write_tables" --graphstore "$GRAPHSTORE" --out "$TABLES"
