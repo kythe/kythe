@@ -1,6 +1,6 @@
 # Release Notes
 
-## Upcoming release
+## v0.0.18
 
 Notable changes:
  - C++ indexer: `--ignore_unimplemented` now defaults to `true`
