@@ -52,13 +52,18 @@ if [[ -z "$TEST_ENTRIES" ]]; then
   TEST_ENTRIES="$TEST_JSON"
   ENTRYSTREAM_ARGS=-read_json=true
 fi
+CAT=cat
+if [[ "$TEST_ENTRIES" == *.gz ]]; then
+  CAT=zcat
+fi
 
 rm -rf -- "${OUT_DIR:?no output directory for test}/gs"
 rm -rf -- "${OUT_DIR:?no output directory for test}/tables"
 rm -f -- "${PORT_FILE}"
 mkdir -p "${OUT_DIR}/gs"
 mkdir -p "${OUT_DIR}/tables"
-"${KYTHE_ENTRYSTREAM}" $ENTRYSTREAM_ARGS < "${TEST_ENTRIES:?no test entries for test}" \
+"$CAT" "${TEST_ENTRIES:?no test entries for test}" | \
+  "${KYTHE_ENTRYSTREAM}" $ENTRYSTREAM_ARGS \
   | "${KYTHE_WRITE_ENTRIES}" -graphstore "${OUT_DIR}/gs" 2>/dev/null
 "${KYTHE_WRITE_TABLES}" --graphstore "${OUT_DIR}/gs" --out "${OUT_DIR}/tables"
 # TODO(zarko): test against GRPC server implementation

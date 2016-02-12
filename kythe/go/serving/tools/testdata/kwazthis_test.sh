@@ -17,7 +17,7 @@ set -o pipefail
 BASE_DIR="$TEST_SRCDIR/kythe/go/serving/tools/testdata"
 OUT_DIR="$TEST_TMPDIR"
 
-TEST_ENTRIES="$TEST_SRCDIR/kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/generics_tests.entries"
+TEST_ENTRIES="$TEST_SRCDIR/kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/generics_tests.entries.gz"
 source "kythe/cxx/common/testdata/start_http_service.sh"
 
 jq () { "third_party/jq/jq" -e "$@" <<<"$JSON"; }

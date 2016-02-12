@@ -23,7 +23,7 @@ def index(ctx, kindex, entries, mnemonic=None):
       "set -e",
       'CWD="$PWD"',
       "cd /tmp",
-      '"$CWD"/' + ctx.executable._indexer.path + " " + " ".join(ctx.attr.indexer_opts) + ' "$CWD"/' + kindex.path + ' > "$CWD"/' + entries.path,
+      '"$CWD"/' + ctx.executable._indexer.path + " " + " ".join(ctx.attr.indexer_opts) + ' "$CWD"/' + kindex.path + ' | gzip > "$CWD"/' + entries.path,
   ])
   ctx.action(
       inputs = [kindex] + inputs,
@@ -35,7 +35,7 @@ def index(ctx, kindex, entries, mnemonic=None):
 
 def verify(ctx, entries):
   all_srcs = set(ctx.files.srcs)
-  all_entries = set([entries])
+  all_entries = set(entries)
   for dep in ctx.attr.deps:
     all_srcs += dep.sources
     all_entries += [dep.entries]
@@ -45,7 +45,7 @@ def verify(ctx, entries):
       content = '\n'.join([
         "#!/bin/bash -e",
         "set -o pipefail",
-        "cat " + " ".join(cmd_helper.template(all_entries, "%{short_path}")) + " | " +
+        "zcat " + " ".join(cmd_helper.template(all_entries, "%{short_path}")) + " | " +
         ctx.executable._verifier.short_path + " " + " ".join(ctx.attr.verifier_opts) +
         " " + cmd_helper.join_paths(" ", all_srcs),
       ]),
@@ -86,10 +86,10 @@ def java_verifier_test_impl(ctx):
   kindex = ctx.new_file(ctx.configuration.genfiles_dir, ctx.label.name + "/compilation.kindex")
   extract(ctx, kindex, args, inputs=inputs+[jar], mnemonic='JavacExtractor', mkdir=srcs_out)
 
-  entries = ctx.new_file(ctx.configuration.bin_dir, ctx.label.name + ".entries")
+  entries = ctx.new_file(ctx.configuration.bin_dir, ctx.label.name + ".entries.gz")
   index(ctx, kindex, entries, mnemonic='JavaIndexer')
 
-  runfiles = verify(ctx, entries)
+  runfiles = verify(ctx, [entries])
   return struct(
       runfiles = runfiles,
       jar = jar,
@@ -100,8 +100,6 @@ def java_verifier_test_impl(ctx):
 
 def cc_verifier_test_impl(ctx):
   entries = []
-  concat_entries = ctx.new_file(ctx.configuration.bin_dir, ctx.label.name + ".entries")
-  concat_entries_cmd = ""
 
   for src in ctx.files.srcs:
     args = ['-std=c++11']
@@ -111,21 +109,13 @@ def cc_verifier_test_impl(ctx):
       args += ['-I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1']
       args += ['-I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/usr/include']
     args += ['-c', src.short_path]
-    kindex = ctx.new_file(ctx.configuration.genfiles_dir, ctx.label.name + "/compilation/" + src.short_path + ".kindex")
+    kindex = ctx.new_file(ctx.configuration.genfiles_dir, ctx.label.name + ".compilation/" + src.short_path + ".kindex")
     extract(ctx, kindex, args, inputs=[src], mnemonic='CcExtractor')
-    entry = ctx.new_file(ctx.configuration.genfiles_dir, ctx.label.name + "/compilation/" + src.short_path + ".entries")
+    entry = ctx.new_file(ctx.configuration.genfiles_dir, ctx.label.name + ".compilation/" + src.short_path + ".entries.gz")
     entries += [entry]
     index(ctx, kindex, entry, mnemonic='CcIndexer')
-    concat_entries_cmd += 'cat ' + entry.path + ' >> ' + concat_entries.path + '\n'
 
-  ctx.action(
-    inputs = ctx.files.srcs + entries,
-    outputs = [concat_entries],
-    mnemonic = 'ConcatEntries',
-    command = concat_entries_cmd,
-    use_default_shell_env = True)
-
-  runfiles = verify(ctx, concat_entries)
+  runfiles = verify(ctx, entries)
   return struct(
       runfiles = runfiles,
   )
