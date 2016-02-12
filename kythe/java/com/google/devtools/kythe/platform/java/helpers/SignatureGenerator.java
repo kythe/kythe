@@ -22,7 +22,6 @@ import com.google.common.collect.Sets;
 
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.util.TreePath;
-import com.sun.tools.javac.api.JavacTrees;
 import com.sun.tools.javac.code.BoundKind;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.MethodSymbol;
@@ -83,8 +82,6 @@ public class SignatureGenerator
   // Constant used to prepend to the beginning of error type names.
   private static final String ERROR_TYPE = "ERROR-TYPE";
 
-  private final JavacTrees javacTrees;
-
   private final BlockAnonymousSignatureGenerator blockNumber =
       new BlockAnonymousSignatureGenerator(this);
 
@@ -114,7 +111,6 @@ public class SignatureGenerator
   }
 
   public SignatureGenerator(CompilationUnitTree compilationUnit, Context context) {
-    this.javacTrees = JavacTrees.instance(context);
     this.memoizedTreePathScanner = new MemoizedTreePathScanner(compilationUnit, context);
   }
 
@@ -317,7 +313,7 @@ public class SignatureGenerator
               }
             }
           } else {
-            if (!extendsType.tsym.getQualifiedName().toString().equals(Object.class.getName())) {
+            if (!extendsType.tsym.getQualifiedName().contentEquals(Object.class.getName())) {
               sb.append(" extends ");
               extendsType.accept(this, sb);
             }
