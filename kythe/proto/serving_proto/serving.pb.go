@@ -485,6 +485,8 @@ func (*PagedCrossReferences_PageIndex) ProtoMessage()    {}
 type PageToken struct {
 	// Index into the primary reply sequence.
 	Index int32 `protobuf:"varint,1,opt,name=index,proto3" json:"index,omitempty"`
+	// Secondary index into the reply sequence.
+	SecondaryIndex int32 `protobuf:"varint,3,opt,name=secondary_index,proto3" json:"secondary_index,omitempty"`
 	// Secondary page token for reply sub-query.
 	SecondaryToken string `protobuf:"bytes,2,opt,name=secondary_token,proto3" json:"secondary_token,omitempty"`
 }
@@ -1429,6 +1431,11 @@ func (m *PageToken) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintServing(data, i, uint64(len(m.SecondaryToken)))
 		i += copy(data[i:], m.SecondaryToken)
 	}
+	if m.SecondaryIndex != 0 {
+		data[i] = 0x18
+		i++
+		i = encodeVarintServing(data, i, uint64(m.SecondaryIndex))
+	}
 	return i, nil
 }
 
@@ -1860,6 +1867,9 @@ func (m *PageToken) Size() (n int) {
 	l = len(m.SecondaryToken)
 	if l > 0 {
 		n += 1 + l + sovServing(uint64(l))
+	}
+	if m.SecondaryIndex != 0 {
+		n += 1 + sovServing(uint64(m.SecondaryIndex))
 	}
 	return n
 }
@@ -4788,6 +4798,25 @@ func (m *PageToken) Unmarshal(data []byte) error {
 			}
 			m.SecondaryToken = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SecondaryIndex", wireType)
+			}
+			m.SecondaryIndex = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowServing
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.SecondaryIndex |= (int32(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipServing(data[iNdEx:])

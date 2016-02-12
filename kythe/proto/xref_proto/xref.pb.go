@@ -21,6 +21,8 @@
 		CrossReferencesRequest
 		Anchor
 		CrossReferencesReply
+		CallersRequest
+		CallersReply
 */
 package xref_proto
 
@@ -142,6 +144,29 @@ var CrossReferencesRequest_DocumentationKind_value = map[string]int32{
 
 func (x CrossReferencesRequest_DocumentationKind) String() string {
 	return proto.EnumName(CrossReferencesRequest_DocumentationKind_name, int32(x))
+}
+
+type CallersReply_CallableDetail_Parameter_Kind int32
+
+const (
+	// A term-level binding (like the `x` in `void foo(int x)`).
+	CallersReply_CallableDetail_Parameter_TERM CallersReply_CallableDetail_Parameter_Kind = 0
+	// A type-level binding (like the `T` in
+	// `template <typename T> void foo()`).
+	CallersReply_CallableDetail_Parameter_TYPE CallersReply_CallableDetail_Parameter_Kind = 1
+)
+
+var CallersReply_CallableDetail_Parameter_Kind_name = map[int32]string{
+	0: "TERM",
+	1: "TYPE",
+}
+var CallersReply_CallableDetail_Parameter_Kind_value = map[string]int32{
+	"TERM": 0,
+	"TYPE": 1,
+}
+
+func (x CallersReply_CallableDetail_Parameter_Kind) String() string {
+	return proto.EnumName(CallersReply_CallableDetail_Parameter_Kind_name, int32(x))
 }
 
 type NodesRequest struct {
@@ -675,6 +700,187 @@ func (m *CrossReferencesReply_CrossReferenceSet) GetRelatedNode() []*CrossRefere
 	return nil
 }
 
+type CallersRequest struct {
+	// A set of semantic tickets. These may refer to nodes that are `callableas`
+	// other nodes or they may refer to those specific `callable` nodes. This
+	// means that you can use both the target nodes of `ref/call` edges and
+	// more common reference or definition edges (like `ref` or
+	// `defines/binding`).
+	//
+	// The Kythe data model defines a `callable` as something that can be the
+	// target of a `ref/call` edge. A `callable` has its own identity in the
+	// graph and is connected to the nodes it can be called through by a
+	// `callableas` edge. A `function` is the most typical node kind that
+	// participates in this `callableas` relationship. Other language-level
+	// objects that may be sources of `callableas` edges include C++
+	// struct/class types that define an operator(), Python classes that
+	// define __call__, and so forth.
+	//
+	// A given node may be `callableas` several different `callable` nodes.
+	// For example, if a struct S defines multiple overrides for
+	// operator(), it will be `callableas` multiple nodes C0...CN. These
+	// nodes will be distinguished by their type signatures. It's better to
+	// use `callable` nodes in this set because they make the query more
+	// specific.
+	SemanticObject []string `protobuf:"bytes,1,rep,name=semantic_object" json:"semantic_object,omitempty"`
+	// Expand the semantic_object set by including nodes that participate in
+	// an `overrides` relationship (in either direction) with nodes in the set.
+	//
+	// In the program:
+	//   struct A { virtual void f(); };
+	//   struct B : public A { void f() override; };
+	//   struct C : public B { void f() override; };
+	//   void g(B* b) { b->f(); }
+	//
+	// we would return the following results (for queries on the singleton
+	// semantic_object set containing A::f, B::f, or C::f):
+	//
+	// include_overrides  A::f  B::f  C::f
+	//             false    {}   {g}    {}
+	//              true   {g}   {g}   {g}
+	IncludeOverrides bool `protobuf:"varint,2,opt,name=include_overrides,proto3" json:"include_overrides,omitempty"`
+}
+
+func (m *CallersRequest) Reset()         { *m = CallersRequest{} }
+func (m *CallersRequest) String() string { return proto.CompactTextString(m) }
+func (*CallersRequest) ProtoMessage()    {}
+
+type CallersReply struct {
+	// All objects that were blamed for making calls.
+	Caller []*CallersReply_Caller `protobuf:"bytes,1,rep,name=caller" json:"caller,omitempty"`
+	// Details for the semantic objects that were passed via a CallersRequest.
+	Callee []*CallersReply_CallableDetail `protobuf:"bytes,2,rep,name=callee" json:"callee,omitempty"`
+}
+
+func (m *CallersReply) Reset()         { *m = CallersReply{} }
+func (m *CallersReply) String() string { return proto.CompactTextString(m) }
+func (*CallersReply) ProtoMessage()    {}
+
+func (m *CallersReply) GetCaller() []*CallersReply_Caller {
+	if m != nil {
+		return m.Caller
+	}
+	return nil
+}
+
+func (m *CallersReply) GetCallee() []*CallersReply_CallableDetail {
+	if m != nil {
+		return m.Callee
+	}
+	return nil
+}
+
+// Details common to all objects that participate in the call graph.
+type CallersReply_CallableDetail struct {
+	// The definition site of the object called or being blamed for a call.
+	// This would be the "bar" in "void bar()" for calls blamed on bar above
+	// and the "foo" in "void foo()" if it refers to foo as a callee.
+	Definition *Anchor `protobuf:"bytes,1,opt,name=definition" json:"definition,omitempty"`
+	// The ticket of the object that is `callableas` some C. This would refer
+	// to the function node for "bar" or "foo". This object may be the target
+	// of a `completes` edge (e.g., if the call was made to a definition
+	// rather than a declaration).
+	SemanticObject string `protobuf:"bytes,2,opt,name=semantic_object,proto3" json:"semantic_object,omitempty"`
+	// The ticket of the callable C for semantic_object that was used to service
+	// the query.
+	SemanticObjectCallable string `protobuf:"bytes,3,opt,name=semantic_object_callable,proto3" json:"semantic_object_callable,omitempty"`
+	// The unqualified identifier for this object ("bar" or "foo" above,
+	// even if they were defined in some namespace or record). This field
+	// should be human-readable and can be displayed in a UI.
+	Identifier string `protobuf:"bytes,4,opt,name=identifier,proto3" json:"identifier,omitempty"`
+	// An unambiguous (as possible) identifier for this object ("bar()" or
+	// "foo()" above; if it was defined in a namespace, "ns::bar()";
+	// if it took arguments, "ns::bar(int *, void *)"). This field should
+	// be human-readable and can be displayed in a UI.
+	DisplayName string `protobuf:"bytes,5,opt,name=display_name,proto3" json:"display_name,omitempty"`
+	// The parameters bound by the object referred to by `definition` above.
+	// There is no semantic meaning to the order of this array, but it should
+	// be reasonable to surface the ordering in a UI (for example, term-level
+	// parameters will not be capriciously reordered).
+	Parameter []*CallersReply_CallableDetail_Parameter `protobuf:"bytes,6,rep,name=parameter" json:"parameter,omitempty"`
+}
+
+func (m *CallersReply_CallableDetail) Reset()         { *m = CallersReply_CallableDetail{} }
+func (m *CallersReply_CallableDetail) String() string { return proto.CompactTextString(m) }
+func (*CallersReply_CallableDetail) ProtoMessage()    {}
+
+func (m *CallersReply_CallableDetail) GetDefinition() *Anchor {
+	if m != nil {
+		return m.Definition
+	}
+	return nil
+}
+
+func (m *CallersReply_CallableDetail) GetParameter() []*CallersReply_CallableDetail_Parameter {
+	if m != nil {
+		return m.Parameter
+	}
+	return nil
+}
+
+// A parameter bound by the object referred to by `definition` above.
+type CallersReply_CallableDetail_Parameter struct {
+	// The parameter's kind.
+	Kind CallersReply_CallableDetail_Parameter_Kind `protobuf:"varint,1,opt,name=kind,proto3,enum=kythe.proto.CallersReply_CallableDetail_Parameter_Kind" json:"kind,omitempty"`
+	// The parameter's (unqualified) human-readable and displayable name.
+	// May be empty. May also be non-unique; for example, the identifiers for
+	// the (unnamed in the source language) parameters for the function
+	// `void ignore_pair(int, int)` may be "int" and "int".
+	Identifier string `protobuf:"bytes,2,opt,name=identifier,proto3" json:"identifier,omitempty"`
+	// The ticket that refers to the parameter.
+	Ticket string `protobuf:"bytes,3,opt,name=ticket,proto3" json:"ticket,omitempty"`
+}
+
+func (m *CallersReply_CallableDetail_Parameter) Reset()         { *m = CallersReply_CallableDetail_Parameter{} }
+func (m *CallersReply_CallableDetail_Parameter) String() string { return proto.CompactTextString(m) }
+func (*CallersReply_CallableDetail_Parameter) ProtoMessage()    {}
+
+// An object that was blamed for making a call to an object in the set passed
+// to Callers, along with the syntactic locations that caused that blame to
+// be cast.
+type CallersReply_Caller struct {
+	// The object (e.g., a function) responsible for making a call.
+	Detail   *CallersReply_CallableDetail    `protobuf:"bytes,1,opt,name=detail" json:"detail,omitempty"`
+	CallSite []*CallersReply_Caller_CallSite `protobuf:"bytes,2,rep,name=call_site" json:"call_site,omitempty"`
+}
+
+func (m *CallersReply_Caller) Reset()         { *m = CallersReply_Caller{} }
+func (m *CallersReply_Caller) String() string { return proto.CompactTextString(m) }
+func (*CallersReply_Caller) ProtoMessage()    {}
+
+func (m *CallersReply_Caller) GetDetail() *CallersReply_CallableDetail {
+	if m != nil {
+		return m.Detail
+	}
+	return nil
+}
+
+func (m *CallersReply_Caller) GetCallSite() []*CallersReply_Caller_CallSite {
+	if m != nil {
+		return m.CallSite
+	}
+	return nil
+}
+
+type CallersReply_Caller_CallSite struct {
+	// The location where a call was found inside the blamed object.
+	Anchor *Anchor `protobuf:"bytes,1,opt,name=anchor" json:"anchor,omitempty"`
+	// This field will be set to true iff this call site was included in the
+	// results because include_overrides was true in CallersRequest.
+	CallToOverride bool `protobuf:"varint,2,opt,name=call_to_override,proto3" json:"call_to_override,omitempty"`
+}
+
+func (m *CallersReply_Caller_CallSite) Reset()         { *m = CallersReply_Caller_CallSite{} }
+func (m *CallersReply_Caller_CallSite) String() string { return proto.CompactTextString(m) }
+func (*CallersReply_Caller_CallSite) ProtoMessage()    {}
+
+func (m *CallersReply_Caller_CallSite) GetAnchor() *Anchor {
+	if m != nil {
+		return m.Anchor
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*NodesRequest)(nil), "kythe.proto.NodesRequest")
 	proto.RegisterType((*NodeInfo)(nil), "kythe.proto.NodeInfo")
@@ -693,10 +899,17 @@ func init() {
 	proto.RegisterType((*CrossReferencesReply)(nil), "kythe.proto.CrossReferencesReply")
 	proto.RegisterType((*CrossReferencesReply_RelatedNode)(nil), "kythe.proto.CrossReferencesReply.RelatedNode")
 	proto.RegisterType((*CrossReferencesReply_CrossReferenceSet)(nil), "kythe.proto.CrossReferencesReply.CrossReferenceSet")
+	proto.RegisterType((*CallersRequest)(nil), "kythe.proto.CallersRequest")
+	proto.RegisterType((*CallersReply)(nil), "kythe.proto.CallersReply")
+	proto.RegisterType((*CallersReply_CallableDetail)(nil), "kythe.proto.CallersReply.CallableDetail")
+	proto.RegisterType((*CallersReply_CallableDetail_Parameter)(nil), "kythe.proto.CallersReply.CallableDetail.Parameter")
+	proto.RegisterType((*CallersReply_Caller)(nil), "kythe.proto.CallersReply.Caller")
+	proto.RegisterType((*CallersReply_Caller_CallSite)(nil), "kythe.proto.CallersReply.Caller.CallSite")
 	proto.RegisterEnum("kythe.proto.Location_Kind", Location_Kind_name, Location_Kind_value)
 	proto.RegisterEnum("kythe.proto.CrossReferencesRequest_DefinitionKind", CrossReferencesRequest_DefinitionKind_name, CrossReferencesRequest_DefinitionKind_value)
 	proto.RegisterEnum("kythe.proto.CrossReferencesRequest_ReferenceKind", CrossReferencesRequest_ReferenceKind_name, CrossReferencesRequest_ReferenceKind_value)
 	proto.RegisterEnum("kythe.proto.CrossReferencesRequest_DocumentationKind", CrossReferencesRequest_DocumentationKind_name, CrossReferencesRequest_DocumentationKind_value)
+	proto.RegisterEnum("kythe.proto.CallersReply_CallableDetail_Parameter_Kind", CallersReply_CallableDetail_Parameter_Kind_name, CallersReply_CallableDetail_Parameter_Kind_value)
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -717,6 +930,19 @@ type XRefServiceClient interface {
 	// CrossReferences returns the global references, definitions, and
 	// documentation of a set of requested nodes.
 	CrossReferences(ctx context.Context, in *CrossReferencesRequest, opts ...grpc.CallOption) (*CrossReferencesReply, error)
+	// Callers takes a set of tickets for semantic objects and returns the set
+	// of places where those objects were called. For example, in the program
+	//   void bar() { foo(); foo(); } void baz() { foo(); } void foo() { }
+	// `Callers({foo})` would return:
+	//   {(bar, {first-call-anchor, second-call-anchor}),
+	//    (baz, {first-call-anchor})}
+	// To walk further up the call graph, you can project the first field of
+	// each tuple in the result set ({bar, baz}) and feed that set back in
+	// to a new Callers request.
+	//
+	// The core of this query is specified in terms of graph operations in the
+	// Kythe repository at //kythe/docs/schema/callgraph.txt.
+	Callers(ctx context.Context, in *CallersRequest, opts ...grpc.CallOption) (*CallersReply, error)
 }
 
 type xRefServiceClient struct {
@@ -763,6 +989,15 @@ func (c *xRefServiceClient) CrossReferences(ctx context.Context, in *CrossRefere
 	return out, nil
 }
 
+func (c *xRefServiceClient) Callers(ctx context.Context, in *CallersRequest, opts ...grpc.CallOption) (*CallersReply, error) {
+	out := new(CallersReply)
+	err := grpc.Invoke(ctx, "/kythe.proto.XRefService/Callers", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for XRefService service
 
 type XRefServiceServer interface {
@@ -777,6 +1012,19 @@ type XRefServiceServer interface {
 	// CrossReferences returns the global references, definitions, and
 	// documentation of a set of requested nodes.
 	CrossReferences(context.Context, *CrossReferencesRequest) (*CrossReferencesReply, error)
+	// Callers takes a set of tickets for semantic objects and returns the set
+	// of places where those objects were called. For example, in the program
+	//   void bar() { foo(); foo(); } void baz() { foo(); } void foo() { }
+	// `Callers({foo})` would return:
+	//   {(bar, {first-call-anchor, second-call-anchor}),
+	//    (baz, {first-call-anchor})}
+	// To walk further up the call graph, you can project the first field of
+	// each tuple in the result set ({bar, baz}) and feed that set back in
+	// to a new Callers request.
+	//
+	// The core of this query is specified in terms of graph operations in the
+	// Kythe repository at //kythe/docs/schema/callgraph.txt.
+	Callers(context.Context, *CallersRequest) (*CallersReply, error)
 }
 
 func RegisterXRefServiceServer(s *grpc.Server, srv XRefServiceServer) {
@@ -831,6 +1079,18 @@ func _XRefService_CrossReferences_Handler(srv interface{}, ctx context.Context, 
 	return out, nil
 }
 
+func _XRefService_Callers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(CallersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(XRefServiceServer).Callers(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 var _XRefService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "kythe.proto.XRefService",
 	HandlerType: (*XRefServiceServer)(nil),
@@ -850,6 +1110,10 @@ var _XRefService_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CrossReferences",
 			Handler:    _XRefService_CrossReferences_Handler,
+		},
+		{
+			MethodName: "Callers",
+			Handler:    _XRefService_Callers_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{},
@@ -1789,6 +2053,268 @@ func (m *CrossReferencesReply_CrossReferenceSet) MarshalTo(data []byte) (int, er
 	return i, nil
 }
 
+func (m *CallersRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CallersRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.SemanticObject) > 0 {
+		for _, s := range m.SemanticObject {
+			data[i] = 0xa
+			i++
+			l = len(s)
+			for l >= 1<<7 {
+				data[i] = uint8(uint64(l)&0x7f | 0x80)
+				l >>= 7
+				i++
+			}
+			data[i] = uint8(l)
+			i++
+			i += copy(data[i:], s)
+		}
+	}
+	if m.IncludeOverrides {
+		data[i] = 0x10
+		i++
+		if m.IncludeOverrides {
+			data[i] = 1
+		} else {
+			data[i] = 0
+		}
+		i++
+	}
+	return i, nil
+}
+
+func (m *CallersReply) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CallersReply) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Caller) > 0 {
+		for _, msg := range m.Caller {
+			data[i] = 0xa
+			i++
+			i = encodeVarintXref(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	if len(m.Callee) > 0 {
+		for _, msg := range m.Callee {
+			data[i] = 0x12
+			i++
+			i = encodeVarintXref(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	return i, nil
+}
+
+func (m *CallersReply_CallableDetail) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CallersReply_CallableDetail) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Definition != nil {
+		data[i] = 0xa
+		i++
+		i = encodeVarintXref(data, i, uint64(m.Definition.Size()))
+		n13, err := m.Definition.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n13
+	}
+	if len(m.SemanticObject) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintXref(data, i, uint64(len(m.SemanticObject)))
+		i += copy(data[i:], m.SemanticObject)
+	}
+	if len(m.SemanticObjectCallable) > 0 {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintXref(data, i, uint64(len(m.SemanticObjectCallable)))
+		i += copy(data[i:], m.SemanticObjectCallable)
+	}
+	if len(m.Identifier) > 0 {
+		data[i] = 0x22
+		i++
+		i = encodeVarintXref(data, i, uint64(len(m.Identifier)))
+		i += copy(data[i:], m.Identifier)
+	}
+	if len(m.DisplayName) > 0 {
+		data[i] = 0x2a
+		i++
+		i = encodeVarintXref(data, i, uint64(len(m.DisplayName)))
+		i += copy(data[i:], m.DisplayName)
+	}
+	if len(m.Parameter) > 0 {
+		for _, msg := range m.Parameter {
+			data[i] = 0x32
+			i++
+			i = encodeVarintXref(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	return i, nil
+}
+
+func (m *CallersReply_CallableDetail_Parameter) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CallersReply_CallableDetail_Parameter) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Kind != 0 {
+		data[i] = 0x8
+		i++
+		i = encodeVarintXref(data, i, uint64(m.Kind))
+	}
+	if len(m.Identifier) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintXref(data, i, uint64(len(m.Identifier)))
+		i += copy(data[i:], m.Identifier)
+	}
+	if len(m.Ticket) > 0 {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintXref(data, i, uint64(len(m.Ticket)))
+		i += copy(data[i:], m.Ticket)
+	}
+	return i, nil
+}
+
+func (m *CallersReply_Caller) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CallersReply_Caller) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Detail != nil {
+		data[i] = 0xa
+		i++
+		i = encodeVarintXref(data, i, uint64(m.Detail.Size()))
+		n14, err := m.Detail.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n14
+	}
+	if len(m.CallSite) > 0 {
+		for _, msg := range m.CallSite {
+			data[i] = 0x12
+			i++
+			i = encodeVarintXref(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	return i, nil
+}
+
+func (m *CallersReply_Caller_CallSite) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CallersReply_Caller_CallSite) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Anchor != nil {
+		data[i] = 0xa
+		i++
+		i = encodeVarintXref(data, i, uint64(m.Anchor.Size()))
+		n15, err := m.Anchor.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n15
+	}
+	if m.CallToOverride {
+		data[i] = 0x10
+		i++
+		if m.CallToOverride {
+			data[i] = 1
+		} else {
+			data[i] = 0
+		}
+		i++
+	}
+	return i, nil
+}
+
 func encodeFixed64Xref(data []byte, offset int, v uint64) int {
 	data[offset] = uint8(v)
 	data[offset+1] = uint8(v >> 8)
@@ -2226,6 +2752,117 @@ func (m *CrossReferencesReply_CrossReferenceSet) Size() (n int) {
 			l = e.Size()
 			n += 1 + l + sovXref(uint64(l))
 		}
+	}
+	return n
+}
+
+func (m *CallersRequest) Size() (n int) {
+	var l int
+	_ = l
+	if len(m.SemanticObject) > 0 {
+		for _, s := range m.SemanticObject {
+			l = len(s)
+			n += 1 + l + sovXref(uint64(l))
+		}
+	}
+	if m.IncludeOverrides {
+		n += 2
+	}
+	return n
+}
+
+func (m *CallersReply) Size() (n int) {
+	var l int
+	_ = l
+	if len(m.Caller) > 0 {
+		for _, e := range m.Caller {
+			l = e.Size()
+			n += 1 + l + sovXref(uint64(l))
+		}
+	}
+	if len(m.Callee) > 0 {
+		for _, e := range m.Callee {
+			l = e.Size()
+			n += 1 + l + sovXref(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *CallersReply_CallableDetail) Size() (n int) {
+	var l int
+	_ = l
+	if m.Definition != nil {
+		l = m.Definition.Size()
+		n += 1 + l + sovXref(uint64(l))
+	}
+	l = len(m.SemanticObject)
+	if l > 0 {
+		n += 1 + l + sovXref(uint64(l))
+	}
+	l = len(m.SemanticObjectCallable)
+	if l > 0 {
+		n += 1 + l + sovXref(uint64(l))
+	}
+	l = len(m.Identifier)
+	if l > 0 {
+		n += 1 + l + sovXref(uint64(l))
+	}
+	l = len(m.DisplayName)
+	if l > 0 {
+		n += 1 + l + sovXref(uint64(l))
+	}
+	if len(m.Parameter) > 0 {
+		for _, e := range m.Parameter {
+			l = e.Size()
+			n += 1 + l + sovXref(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *CallersReply_CallableDetail_Parameter) Size() (n int) {
+	var l int
+	_ = l
+	if m.Kind != 0 {
+		n += 1 + sovXref(uint64(m.Kind))
+	}
+	l = len(m.Identifier)
+	if l > 0 {
+		n += 1 + l + sovXref(uint64(l))
+	}
+	l = len(m.Ticket)
+	if l > 0 {
+		n += 1 + l + sovXref(uint64(l))
+	}
+	return n
+}
+
+func (m *CallersReply_Caller) Size() (n int) {
+	var l int
+	_ = l
+	if m.Detail != nil {
+		l = m.Detail.Size()
+		n += 1 + l + sovXref(uint64(l))
+	}
+	if len(m.CallSite) > 0 {
+		for _, e := range m.CallSite {
+			l = e.Size()
+			n += 1 + l + sovXref(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *CallersReply_Caller_CallSite) Size() (n int) {
+	var l int
+	_ = l
+	if m.Anchor != nil {
+		l = m.Anchor.Size()
+		n += 1 + l + sovXref(uint64(l))
+	}
+	if m.CallToOverride {
+		n += 2
 	}
 	return n
 }
@@ -5103,6 +5740,791 @@ func (m *CrossReferencesReply_CrossReferenceSet) Unmarshal(data []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipXref(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthXref
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CallersRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowXref
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CallersRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CallersRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SemanticObject", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthXref
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SemanticObject = append(m.SemanticObject, string(data[iNdEx:postIndex]))
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field IncludeOverrides", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.IncludeOverrides = bool(v != 0)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipXref(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthXref
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CallersReply) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowXref
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CallersReply: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CallersReply: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Caller", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthXref
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Caller = append(m.Caller, &CallersReply_Caller{})
+			if err := m.Caller[len(m.Caller)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Callee", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthXref
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Callee = append(m.Callee, &CallersReply_CallableDetail{})
+			if err := m.Callee[len(m.Callee)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipXref(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthXref
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CallersReply_CallableDetail) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowXref
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CallableDetail: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CallableDetail: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Definition", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthXref
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Definition == nil {
+				m.Definition = &Anchor{}
+			}
+			if err := m.Definition.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SemanticObject", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthXref
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SemanticObject = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SemanticObjectCallable", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthXref
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SemanticObjectCallable = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Identifier", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthXref
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Identifier = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DisplayName", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthXref
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.DisplayName = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Parameter", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthXref
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Parameter = append(m.Parameter, &CallersReply_CallableDetail_Parameter{})
+			if err := m.Parameter[len(m.Parameter)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipXref(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthXref
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CallersReply_CallableDetail_Parameter) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowXref
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Parameter: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Parameter: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Kind", wireType)
+			}
+			m.Kind = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.Kind |= (CallersReply_CallableDetail_Parameter_Kind(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Identifier", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthXref
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Identifier = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Ticket", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthXref
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Ticket = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipXref(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthXref
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CallersReply_Caller) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowXref
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Caller: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Caller: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Detail", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthXref
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Detail == nil {
+				m.Detail = &CallersReply_CallableDetail{}
+			}
+			if err := m.Detail.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CallSite", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthXref
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.CallSite = append(m.CallSite, &CallersReply_Caller_CallSite{})
+			if err := m.CallSite[len(m.CallSite)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipXref(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthXref
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CallersReply_Caller_CallSite) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowXref
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CallSite: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CallSite: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Anchor", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthXref
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Anchor == nil {
+				m.Anchor = &Anchor{}
+			}
+			if err := m.Anchor.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CallToOverride", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.CallToOverride = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipXref(data[iNdEx:])

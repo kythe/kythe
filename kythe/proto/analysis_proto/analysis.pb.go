@@ -79,6 +79,8 @@ type CompilationUnit struct {
 	// The revision of the compilation.
 	Revision string `protobuf:"bytes,2,opt,name=revision,proto3" json:"revision,omitempty"`
 	// All files that might be touched in the course of this compilation.
+	// Consumers of the CompilationUnit may not assume anything about the order
+	// of the elements of this field.
 	RequiredInput []*CompilationUnit_FileInput `protobuf:"bytes,3,rep,name=required_input" json:"required_input,omitempty"`
 	// Set by the extractor to indicate that the original input had compile
 	// errors. This is used to check validity of the sharded analysis.
@@ -93,9 +95,8 @@ type CompilationUnit struct {
 	// CUs/packages, if any).
 	SourceFile []string `protobuf:"bytes,6,rep,name=source_file" json:"source_file,omitempty"`
 	// The output key of the CompilationUnit; for example, the object file that
-	// it writes.
-	// TODO(zarko): should this be a VName? Are there uniqueness requirements?
-	// How is this used in the pipeline?
+	// it writes.  The output key for a compilation should match the path in the
+	// FileInfo message of a dependent compilation that consumes its output.
 	OutputKey string `protobuf:"bytes,7,opt,name=output_key,proto3" json:"output_key,omitempty"`
 	// The absolute path of the current working directory where the build tool
 	// was invoked.  During analysis, a file whose path has working_directory
@@ -110,10 +111,11 @@ type CompilationUnit struct {
 	EntryContext string `protobuf:"bytes,9,opt,name=entry_context,proto3" json:"entry_context,omitempty"`
 	// A collection of environment variables that the build environment expects
 	// to be set.  As a rule, we only record variables here that must be set to
-	// specific values for the build to work.
-	// TODO(fromberger): When we move to NWP, use a map instead.
+	// specific values for the build to work.  Users of this field may not assume
+	// anything about the order of values; in particular the pipeline is free to
+	// sort by name in order to canonicalize the message.
 	Environment []*CompilationUnit_Env `protobuf:"bytes,10,rep,name=environment" json:"environment,omitempty"`
-	// Per-language or -tool details.
+	// Per-language or per-tool details.
 	Details []*google_protobuf.Any `protobuf:"bytes,11,rep,name=details" json:"details,omitempty"`
 }
 
