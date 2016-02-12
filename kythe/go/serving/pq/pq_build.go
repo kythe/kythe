@@ -92,7 +92,7 @@ JOIN Nodes fileNode    ON childofEdge.target = fileNode.ticket
 WHERE fileNode.node_kind = 'file'
 AND anchorNode.node_kind = 'anchor'
 AND childofEdge.kind = '/kythe/edge/childof'
-AND (edge.kind <> '/kythe/edge/childof' OR edge.target <> fileNode.ticket);`
+AND edge.kind <> '/kythe/edge/childof';`
 
 	// Table of wire-encoded xpb.Anchor protos for CrossReferences.
 	createCrossReferencesTable = `

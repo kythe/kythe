@@ -230,8 +230,10 @@ func (b *DecorationFragmentBuilder) AddEdge(ctx context.Context, e *srvpb.Edge) 
 		return nil
 	}
 
-	if e.Kind == schema.ChildOfEdge && string(GetFact(e.Target.Fact, schema.NodeKindFact)) == schema.FileKind {
-		b.parents = append(b.parents, e.Target.Ticket)
+	if e.Kind == schema.ChildOfEdge {
+		if string(GetFact(e.Target.Fact, schema.NodeKindFact)) == schema.FileKind {
+			b.parents = append(b.parents, e.Target.Ticket)
+		}
 	} else {
 		b.decor = append(b.decor, &srvpb.FileDecorations_Decoration{
 			Anchor: b.anchor,

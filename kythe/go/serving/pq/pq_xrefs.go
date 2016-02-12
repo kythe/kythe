@@ -27,6 +27,7 @@ import (
 	"strings"
 
 	"kythe.io/kythe/go/services/xrefs"
+	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema"
 	"kythe.io/kythe/go/util/stringset"
 
@@ -255,8 +256,13 @@ func (d *DB) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*xpb
 	// TODO(schroederc): dirty buffers
 	// TODO(schroederc): span locations
 
+	fileTicket, err := kytheuri.Fix(req.Location.Ticket)
+	if err != nil {
+		return nil, fmt.Errorf("invalid location ticket: %v", err)
+	}
+	req.Location.Ticket = fileTicket
+
 	decor := &xpb.DecorationsReply{Location: req.Location}
-	fileTicket := req.Location.Ticket
 
 	r := d.selectText.QueryRow(fileTicket)
 	var text []byte
