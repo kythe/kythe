@@ -390,7 +390,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
       // Set the resulting node for the method and then recurse through its body.  Setting the node
       // first is necessary to correctly add childof edges in the callgraph.
-      JavaNode node = ctx.setNode(new JavaNode(methodNode, signature.get(), new JavaNode(fnTypeNode, fnTypeName)));
+      JavaNode node =
+          ctx.setNode(
+              new JavaNode(methodNode, signature.get(), new JavaNode(fnTypeNode, fnTypeName)));
       scan(methodDef.getBody(), ctx);
 
       return node;
@@ -460,7 +462,11 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   @Override
   public JavaNode visitSelect(JCFieldAccess field, TreeContext owner) {
     TreeContext ctx = owner.down(field);
-    if (field.sym.getKind() == ElementKind.PACKAGE) {
+    if (field.sym == null) {
+      // TODO(schroederc): determine exactly why this occurs
+      scan(field.getExpression(), ctx);
+      return null;
+    } else if (field.sym.getKind() == ElementKind.PACKAGE) {
       EntrySet pkgNode = entrySets.getPackageNode((PackageSymbol) field.sym);
       emitAnchor(ctx, EdgeKind.REF, pkgNode);
       return new JavaNode(pkgNode, field.sym.toString());
@@ -474,7 +480,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   public JavaNode visitReference(JCMemberReference reference, TreeContext owner) {
     TreeContext ctx = owner.down(reference);
     scan(reference.getQualifierExpression(), ctx);
-    return emitNameUsage(ctx, reference.sym,
+    return emitNameUsage(
+        ctx,
+        reference.sym,
         reference.getMode() == ReferenceMode.NEW ? Keyword.of("new") : reference.name);
   }
 
@@ -482,8 +490,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   public JavaNode visitApply(JCMethodInvocation invoke, TreeContext owner) {
     TreeContext ctx = owner.down(invoke);
     JavaNode method = scan(invoke.getMethodSelect(), ctx);
-    if (method != null){
-      EntrySet anchor = emitAnchor(ctx, EdgeKind.REF_CALL, entrySets.getCallable(method.entries.getVName()));
+    if (method != null) {
+      EntrySet anchor =
+          emitAnchor(ctx, EdgeKind.REF_CALL, entrySets.getCallable(method.entries.getVName()));
       TreeContext parentContext = owner.getMethodParent();
       if (anchor != null && parentContext != null && parentContext.getNode() != null) {
         emitEdge(anchor, EdgeKind.CHILDOF, parentContext.getNode());

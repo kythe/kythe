@@ -21,6 +21,7 @@
 final class BazelTestEngine extends ArcanistUnitTestEngine {
   private $debug;
   private $useConfig;
+  private $waitForBazel;
 
   private $project_root;
 
@@ -32,6 +33,9 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
     if (getenv("USE_BAZELRC")) {
       $this->useConfig = true;
       print("WARNING: using default bazelrc\n");
+    }
+    if (getenv("WAIT_FOR_BAZEL")) {
+      $this->waitForBazel = true;
     }
 
     $this->project_root = $this->getWorkingCopy()->getProjectRoot();
@@ -179,7 +183,10 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
     if (!$this->useConfig) {
       $cmd = $cmd . "--bazelrc=/dev/null ";
     }
-    $cmd = $cmd . "--noblock_for_lock " . " " . join(" ", $args);
+    if (!$this->waitForBazel) {
+      $cmd = $cmd . "--noblock_for_lock ";
+    }
+    $cmd = $cmd . join(" ", $args);
     $this->debugPrint($cmd);
     return $cmd;
   }
