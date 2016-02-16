@@ -1,5 +1,12 @@
 # Release Notes
 
+## Upcoming release
+
+Notable changes:
+ - C++ extractor: `KYTHE_ROOT_DIRECTORY` no longer changes the working
+   directory during extraction, but does still change the root for path
+   normalization.
+
 ## v0.0.18
 
 Notable changes:

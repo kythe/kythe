@@ -209,7 +209,7 @@ class CxxExtractorTest : public testing::Test {
           index_writer.WriteIndex(std::unique_ptr<kythe::IndexWriterSink>(
                                       new ForwardingIndexWriterSink(sink)),
                                   main_source_file, transcript, source_files,
-                                  header_search_info, had_errors);
+                                  header_search_info, had_errors, ".");
         });
     clang::tooling::ToolInvocation invocation(
         final_arguments, extractor.release(), file_manager.get());

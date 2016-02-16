@@ -436,7 +436,8 @@ void ExtractorPPCallbacks::AddFile(const clang::FileEntry* file,
                                                buffer->getBufferEnd());
     contents.first->second.vname.CopyFrom(index_writer_->VNameForPath(
         RelativizePath(path, index_writer_->root_directory())));
-    LOG(INFO) << "added content for " << path << "\n";
+    LOG(INFO) << "added content for " << path << ": mapped to "
+              << contents.first->second.vname.DebugString() << "\n";
   }
 }
 
@@ -935,7 +936,8 @@ void IndexWriter::WriteIndex(
     std::unique_ptr<IndexWriterSink> sink, const std::string& main_source_file,
     const std::string& entry_context,
     const std::unordered_map<std::string, SourceFile>& source_files,
-    const HeaderSearchInfo* header_search_info, bool had_errors) {
+    const HeaderSearchInfo* header_search_info, bool had_errors,
+    const std::string& clang_working_dir) {
   kythe::proto::CompilationUnit unit;
   std::string identifying_blob;
   identifying_blob.append(corpus_);
@@ -978,7 +980,15 @@ void IndexWriter::WriteIndex(
   unit.set_entry_context(entry_context);
   unit.set_has_compile_errors(had_errors);
   unit.add_source_file(main_source_file);
-  unit.set_working_directory(root_directory_);
+  llvm::SmallString<256> absolute_working_directory(
+      llvm::StringRef(clang_working_dir.data(), clang_working_dir.size()));
+  std::error_code err =
+      llvm::sys::fs::make_absolute(absolute_working_directory);
+  if (err) {
+    LOG(WARNING) << "Can't get working directory: " << err.message();
+  } else {
+    unit.set_working_directory(absolute_working_directory.c_str());
+  }
   sink->OpenIndex(output_directory_, identifying_blob_digest);
   sink->WriteHeader(unit);
   unsigned info_index = 0;
@@ -1073,7 +1083,6 @@ void ExtractorConfiguration::InitializeFromEnvironment() {
   }
   if (const char* env_root_directory = getenv("KYTHE_ROOT_DIRECTORY")) {
     index_writer_.set_root_directory(env_root_directory);
-    file_system_options_.WorkingDir = env_root_directory;
   }
   if (const char* env_index_pack = getenv("KYTHE_INDEX_PACK")) {
     using_index_packs_ = (strlen(env_index_pack) != 0);
@@ -1099,7 +1108,8 @@ void ExtractorConfiguration::Extract() {
           sink.reset(new KindexWriterSink(kindex_path_));
         }
         index_writer_.WriteIndex(std::move(sink), main_source_file, transcript,
-                                 source_files, header_search_info, had_errors);
+                                 source_files, header_search_info, had_errors,
+                                 file_system_options_.WorkingDir);
       });
   clang::tooling::ToolInvocation invocation(final_args_, extractor.release(),
                                             file_manager.get());

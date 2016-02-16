@@ -15,22 +15,23 @@
 # limitations under the License.
 
 # This script checks that extract_compilation_database.sh works on a simple
-# compilation database. It should be run from the Kythe root.
+# compilation database.
 BASE_DIR="$TEST_SRCDIR/kythe/extractors/cmake"
 OUT_DIR="$TEST_TMPDIR"
 EXTRACT="${BASE_DIR}/extract_compilation_database.sh"
 EXPECTED_FILE_HASH="deac66ccb79f6d31c0fa7d358de48e083c15c02ff50ec1ebd4b64314b9e6e196"
-KINDEX_TOOL="kythe/cxx/tools/kindex_tool"
-KYTHE_CORPUS=test_corpus KYTHE_ROOT_DIRECTORY="${BASE_DIR}/testdata" \
+KINDEX_TOOL="${TEST_SRCDIR}/kythe/cxx/tools/kindex_tool"
+export KYTHE_EXTRACTOR="${TEST_SRCDIR}/kythe/cxx/extractor/cxx_extractor"
+export JQ="${TEST_SRCDIR}/third_party/jq/jq"
+cd "${BASE_DIR}/testdata"
+KYTHE_CORPUS=test_corpus KYTHE_ROOT_DIRECTORY="${BASE_DIR}" \
     KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}" \
     "${EXTRACT}" "${BASE_DIR}/testdata/compilation_database.json"
 [[ $(ls -1 "${OUT_DIR}"/*.kindex | wc -l) -eq 1 ]]
 INDEX_PATH=$(ls -1 "${OUT_DIR}"/*.kindex)
 "${KINDEX_TOOL}" -canonicalize_hashes -suppress_details -explode \
     "${INDEX_PATH}"
-sed "s:BASE_DIR:${BASE_DIR}:g" "${BASE_DIR}/testdata/expected.unit" \
-    > "${OUT_DIR}/expected.unit"
-sed "s:BASE_DIR:${BASE_DIR}:g" "${BASE_DIR}/testdata/expected.file" \
-    > "${OUT_DIR}/expected.file"
-diff "${OUT_DIR}/expected.unit" "${INDEX_PATH}_UNIT"
-diff "${OUT_DIR}/expected.file" "${INDEX_PATH}_${EXPECTED_FILE_HASH}"
+sed "s:TEST_CWD:${PWD}/:
+s:TEST_EXTRACTOR:${KYTHE_EXTRACTOR}:" "${BASE_DIR}/testdata/expected.unit" | \
+    diff - "${INDEX_PATH}_UNIT"
+diff "${BASE_DIR}/testdata/expected.file" "${INDEX_PATH}_${EXPECTED_FILE_HASH}"

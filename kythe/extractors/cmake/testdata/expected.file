@@ -1,5 +1,5 @@
 content: "int main() { return 0; }\n"
 info {
-  path: "BASE_DIR/testdata/test_file.cc"
+  path: "test_file.cc"
   digest: "deac66ccb79f6d31c0fa7d358de48e083c15c02ff50ec1ebd4b64314b9e6e196"
 }

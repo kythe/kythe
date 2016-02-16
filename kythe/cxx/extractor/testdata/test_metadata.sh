@@ -24,4 +24,5 @@ KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}" \
 [[ $(ls -1 "${OUT_DIR}"/*.kindex | wc -l) -eq 1 ]]
 INDEX_PATH=$(ls -1 "${OUT_DIR}"/*.kindex)
 "${KINDEX_TOOL}" -canonicalize_hashes -suppress_details -explode "${INDEX_PATH}"
-diff "${BASE_DIR}/metadata.UNIT${PF_SUFFIX}" "${INDEX_PATH}_UNIT"
+sed "s|TEST_CWD|${PWD}/|" "${BASE_DIR}/metadata.UNIT${PF_SUFFIX}" | \
+  diff - "${INDEX_PATH}_UNIT"

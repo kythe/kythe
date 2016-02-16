@@ -237,6 +237,7 @@ GCCArgsToClangArgs(const std::vector<std::string> &gcc_args) {
                    // unsupported -mcpu); for cortex-a15, we get no such
                    // failure. TODO(zarko): Leave this filtered out for now,
                    // but figure out what to do to make this work properly.
+      "|-mapcs-frame"
       "|-pass-exit-codes");
   const FullMatchRegex unsupported_args_with_values_re("-wrapper");
 

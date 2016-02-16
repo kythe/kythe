@@ -1,0 +1,26 @@
+v_name {
+  signature: "cu#ef4b9099d07e834ed542b8593bda109cb9c258d32f8674679c3afb9f0f539241"
+  language: "c++"
+}
+required_input {
+  v_name {
+    path: "altpath/file.cc"
+  }
+  info {
+    path: "file.cc"
+    digest: "a24091884bc15b53e380fe5b874d1bb52d89269fdf2592808ac70ba189204730"
+  }
+  context {
+    source_context: "hash0"
+  }
+}
+argument: "../../../cxx_extractor"
+argument: "-DKYTHE_IS_RUNNING=1"
+argument: "-resource-dir"
+argument: "/kythe_builtins"
+argument: "--driver-mode=g++"
+argument: "file.cc"
+argument: "-fsyntax-only"
+source_file: "file.cc"
+working_directory: "TEST_CWD"
+entry_context: "hash0"

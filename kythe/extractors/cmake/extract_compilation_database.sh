@@ -17,14 +17,14 @@
 # extract_compilation_database.sh will run available Kythe extractors on
 # compilation databases, documented at
 #   <http://clang.llvm.org/docs/JSONCompilationDatabase.html>.
-# Expects to be run at the Kythe root directory.
-CXX_EXTRACTOR="kythe/cxx/extractor/cxx_extractor"
-JQ="third_party/jq/jq"
+
+: "${JQ:=jq}"
+: "${KYTHE_EXTRACTOR:=cxx_extractor}"
+QUOTED_EXTRACTOR="$(echo "${KYTHE_EXTRACTOR}" | sed -e 's|"|\\"|g')"
 DATABASE="$1"
-FILTER=".[]|.command"
+FILTER=".[]|\"cd \" + .directory + \" && \\\"${QUOTED_EXTRACTOR}\\\" --with_executable \" + .command"
 : ${KYTHE_CORPUS:?Missing environment variable}
 : ${KYTHE_ROOT_DIRECTORY:?Missing environment variable}
 : ${KYTHE_OUTPUT_DIRECTORY:?Missing environment variable}
 : ${DATABASE:?Missing database (use: ${0} path/to/compile_commands.json)}
-${JQ} -r "${FILTER}" "${DATABASE}" \
-    | sed "s:^:${CXX_EXTRACTOR} --with_executable :" | parallel --gnu
+"${JQ}" -r "${FILTER}" "${DATABASE}" | parallel --gnu

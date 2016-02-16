@@ -37,11 +37,13 @@ INDEX_PATH_WITHOUT_MACRO=$(ls -1 "${OUT_DIR}"/without/*.kindex)
 "${KINDEX_TOOL}" -suppress_details -explode "${INDEX_PATH_WITHOUT_MACRO}"
 EC_HASH=$(sed -ne '/^entry_context:/ {s/.*entry_context: \"\(.*\)\"$/\1/; p;}' \
     "${INDEX_PATH_WITH_MACRO}_UNIT")
-sed "s/EC_HASH/${EC_HASH}/g" \
+sed "s/EC_HASH/${EC_HASH}/g
+s|TEST_CWD|${PWD}/|" \
     "${BASE_DIR}/main_source_file_env_dep_with.UNIT" \
     | diff - "${INDEX_PATH_WITH_MACRO}_UNIT"
 EC_HASH=$(sed -ne '/^entry_context:/ {s/.*entry_context: \"\(.*\)\"$/\1/; p;}' \
     "${INDEX_PATH_WITHOUT_MACRO}_UNIT")
-sed "s/EC_HASH/${EC_HASH}/g" \
+sed "s/EC_HASH/${EC_HASH}/g
+s|TEST_CWD|${PWD}/|" \
     "${BASE_DIR}/main_source_file_env_dep_without.UNIT" \
     | diff - "${INDEX_PATH_WITHOUT_MACRO}_UNIT"

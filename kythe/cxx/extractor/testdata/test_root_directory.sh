@@ -15,14 +15,15 @@
 #
 # This test checks that the extractor handles transcripts.
 # It should be run from the Kythe root.
-TEST_NAME="test_extract_transcript"
+TEST_NAME="test_root_directory"
 . ./kythe/cxx/extractor/testdata/test_common.sh
+cd kythe/cxx/extractor/testdata/altroot/altpath
 KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}" \
-    "${EXTRACTOR}" --with_executable "/usr/bin/g++" \
-    -I./kythe/cxx/extractor/testdata \
-    ./kythe/cxx/extractor/testdata/transcript_main.cc
+KYTHE_ROOT_DIRECTORY="${BASE_DIR}/altroot" \
+    "../../../cxx_extractor" --with_executable "/usr/bin/g++" \
+    file.cc
 [[ $(ls -1 "${OUT_DIR}"/*.kindex | wc -l) -eq 1 ]]
 INDEX_PATH=$(ls -1 "${OUT_DIR}"/*.kindex)
 "${KINDEX_TOOL}" -canonicalize_hashes -suppress_details -explode "${INDEX_PATH}"
-sed "s|TEST_CWD|${PWD}/|" "${BASE_DIR}/transcript_main.UNIT" | \
+sed "s|TEST_CWD|${PWD}/|" "${BASE_DIR}/altroot_altpath_file.UNIT" | \
     diff - "${INDEX_PATH}_UNIT"
