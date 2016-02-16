@@ -9,6 +9,7 @@ Notable changes:
 
 Notable additions:
  - `entrystream`: add `--unique` flag
+ - `write_tables`: add `--entries` flag
 
 ## v0.0.18
 

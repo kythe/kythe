@@ -21,9 +21,7 @@ go_binary(
 
 go_binary(
     name = "http_server",
-    srcs = [
-        "http_server/http_server.go",
-    ],
+    srcs = ["http_server/http_server.go"],
     deps = [
         "//kythe/go/services/filetree",
         "//kythe/go/services/graphstore",
@@ -92,19 +90,20 @@ go_binary(
 
 go_binary(
     name = "write_tables",
-    srcs = [
-        "write_tables/write_tables.go",
-    ],
+    srcs = ["write_tables/write_tables.go"],
     deps = [
+        "//kythe/go/platform/vfs",
         "//kythe/go/services/graphstore",
         "//kythe/go/services/graphstore/grpc",
         "//kythe/go/services/graphstore/proxy",
         "//kythe/go/serving/pipeline",
         "//kythe/go/storage/gsutil",
         "//kythe/go/storage/leveldb",
+        "//kythe/go/storage/stream",
         "//kythe/go/util/datasize",
         "//kythe/go/util/flagutil",
         "//kythe/go/util/profile",
+        "//kythe/proto:storage_proto_go",
         "//third_party/go/src/golang.org/x/net/context",
     ],
 )

@@ -22,22 +22,27 @@ import (
 	"flag"
 	"log"
 
+	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/serving/pipeline"
 	"kythe.io/kythe/go/storage/gsutil"
 	"kythe.io/kythe/go/storage/leveldb"
+	"kythe.io/kythe/go/storage/stream"
 	"kythe.io/kythe/go/util/datasize"
 	"kythe.io/kythe/go/util/flagutil"
 	"kythe.io/kythe/go/util/profile"
 
 	"golang.org/x/net/context"
 
+	spb "kythe.io/kythe/proto/storage_proto"
+
 	_ "kythe.io/kythe/go/services/graphstore/grpc"
 	_ "kythe.io/kythe/go/services/graphstore/proxy"
 )
 
 var (
-	gs graphstore.Service
+	gs          graphstore.Service
+	entriesFile = flag.String("entries", "", "Path to GraphStore-ordered entries file (mutually exclusive with --graphstore)")
 
 	tablePath = flag.String("out", "", "Directory path to output serving table")
 
@@ -52,14 +57,17 @@ var (
 )
 
 func init() {
-	gsutil.Flag(&gs, "graphstore", "GraphStore to read")
-	flag.Usage = flagutil.SimpleUsage("Creates a combined xrefs/filetree/search serving table based on a given GraphStore",
-		"--graphstore spec --out path")
+	gsutil.Flag(&gs, "graphstore", "GraphStore to read (mutually exclusive with --entries)")
+	flag.Usage = flagutil.SimpleUsage(
+		"Creates a combined xrefs/filetree/search serving table based on a given GraphStore or stream of GraphStore-ordered entries",
+		"(--graphstore spec | --entries path) --out path")
 }
 func main() {
 	flag.Parse()
-	if gs == nil {
-		flagutil.UsageError("missing required --graphstore flag")
+	if gs == nil && *entriesFile == "" {
+		flagutil.UsageError("missing --graphstore or --entries")
+	} else if gs != nil && *entriesFile != "" {
+		flagutil.UsageError("--graphstore and --entries are mutually exclusive")
 	} else if *tablePath == "" {
 		flagutil.UsageError("missing required --out flag")
 	}
@@ -77,7 +85,31 @@ func main() {
 	}
 	defer profile.Stop()
 
-	if err := pipeline.Run(ctx, gs, db, &pipeline.Options{
+	var entries <-chan *spb.Entry
+
+	if gs != nil {
+		ch := make(chan *spb.Entry)
+		go func() {
+			defer close(ch)
+			defer gs.Close(ctx)
+			if err := gs.Scan(ctx, &spb.ScanRequest{}, func(e *spb.Entry) error {
+				ch <- e
+				return nil
+			}); err != nil {
+				log.Fatalf("Error scanning GraphStore: %v", err)
+			}
+		}()
+		entries = ch
+	} else {
+		f, err := vfs.Open(ctx, *entriesFile)
+		if err != nil {
+			log.Fatalf("Error opening %q: %v", *entriesFile, err)
+		}
+		defer f.Close()
+		entries = stream.ReadEntries(f)
+	}
+
+	if err := pipeline.Run(ctx, entries, db, &pipeline.Options{
 		MaxPageSize:    *maxPageSize,
 		CompressShards: *compressShards,
 		MaxShardSize:   *maxShardSize,

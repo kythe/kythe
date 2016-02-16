@@ -15,7 +15,7 @@
  */
 
 // Package pipeline implements an in-process pipeline to create a combined
-// filetree and xrefs serving table from a graphstore Service.
+// filetree and xrefs serving table from a stream of GraphStore-ordered entries.
 package pipeline
 
 import (
@@ -86,8 +86,8 @@ type servingOutput struct {
 }
 
 // Run writes the xrefs and filetree serving tables to db based on the given
-// graphstore.Service.
-func Run(ctx context.Context, gs graphstore.Service, db keyvalue.DB, opts *Options) error {
+// entries (in GraphStore-order).
+func Run(ctx context.Context, entries <-chan *spb.Entry, db keyvalue.DB, opts *Options) error {
 	if opts == nil {
 		opts = new(Options)
 	}
@@ -98,7 +98,7 @@ func Run(ctx context.Context, gs graphstore.Service, db keyvalue.DB, opts *Optio
 		xs:  table.ProtoBatchParallel{&table.KVProto{DB: db}},
 		idx: &table.KVInverted{DB: db},
 	}
-	entries := make(chan *spb.Entry, chBuf)
+	entries = filterReverses(entries)
 
 	var cErr error
 	var wg sync.WaitGroup
@@ -111,17 +111,6 @@ func Run(ctx context.Context, gs graphstore.Service, db keyvalue.DB, opts *Optio
 		}
 		wg.Done()
 	}()
-
-	err := gs.Scan(ctx, &spb.ScanRequest{}, func(e *spb.Entry) error {
-		if graphstore.IsNodeFact(e) || schema.EdgeDirection(e.EdgeKind) == schema.Forward {
-			entries <- e
-		}
-		return nil
-	})
-	close(entries)
-	if err != nil {
-		return fmt.Errorf("error scanning GraphStore: %v", err)
-	}
 
 	wg.Wait()
 	if cErr != nil {
@@ -144,7 +133,7 @@ func Run(ctx context.Context, gs graphstore.Service, db keyvalue.DB, opts *Optio
 		}
 	}()
 
-	err = sortedEdges.Read(func(x interface{}) error {
+	err := sortedEdges.Read(func(x interface{}) error {
 		e := x.(*srvpb.Edge)
 		pesIn <- e
 		dIn <- e
@@ -254,6 +243,19 @@ func writeFileTree(ctx context.Context, tree *filetree.Map, out table.Proto) err
 		return err
 	}
 	return buffer.Flush(ctx)
+}
+
+func filterReverses(entries <-chan *spb.Entry) <-chan *spb.Entry {
+	ch := make(chan *spb.Entry, chBuf)
+	go func() {
+		defer close(ch)
+		for e := range entries {
+			if graphstore.IsNodeFact(e) || schema.EdgeDirection(e.EdgeKind) == schema.Forward {
+				ch <- e
+			}
+		}
+	}()
+	return ch
 }
 
 func writePartialEdges(ctx context.Context, sorter disksort.Interface, idx table.BufferedInverted, src *assemble.Source) error {
