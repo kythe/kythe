@@ -25,27 +25,31 @@ import (
 	"os"
 	"path/filepath"
 
+	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/services/filetree"
 	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/serving/pq"
 	"kythe.io/kythe/go/storage/gsutil"
+	"kythe.io/kythe/go/storage/stream"
 	"kythe.io/kythe/go/util/flagutil"
 	"kythe.io/kythe/go/util/profile"
 
 	"golang.org/x/net/context"
 
-	_ "kythe.io/kythe/go/storage/leveldb"
+	spb "kythe.io/kythe/proto/storage_proto"
 )
 
 func init() {
-	gsutil.Flag(&gs, "copy_graphstore", "GraphStore from which to copy into the Postgres --db")
+	gsutil.Flag(&gs, "copy_graphstore", "GraphStore from which to copy into the Postgres --db (mutually exclusive with --copy_entries)")
 	flag.Usage = flagutil.SimpleUsage("Experimental tools to populate a Postgres database with Kythe serving data and serve it",
-		"--db connection-string [--copy_graphstore spec] [--public_resources dir] [--listen addr]")
+		"--db connection-string [--copy_graphstore spec | --copy_entries path] [--public_resources dir] [--listen addr]")
 }
 
 var (
 	gs graphstore.Service
+
+	entriesFile = flag.String("copy_entries", "", "Path to GraphStore-ordered entries file (mutually exclusive with --copy_graphstore)")
 
 	dbSpec = flag.String("db", "", "Postgres connection specification (see https://godoc.org/github.com/lib/pq#hdr-Connection_String_Parameters for details)")
 
@@ -56,9 +60,11 @@ var (
 func main() {
 	flag.Parse()
 	if flag.NArg() > 0 {
-		flagutil.UsageErrorf("Unexpected non-flag arguments: %v", flag.Args())
+		flagutil.UsageErrorf("unexpected non-flag arguments: %v", flag.Args())
 	} else if *dbSpec == "" {
-		flagutil.UsageError("Missing required --db connection string")
+		flagutil.UsageError("missing required --db connection string")
+	} else if *entriesFile != "" && gs != nil {
+		flagutil.UsageError("flags --copy_graphstore and --copy_entries are mutually exclusive")
 	}
 
 	log.Println("Connecting to db...")
@@ -75,9 +81,32 @@ func main() {
 	}
 	defer profile.Stop()
 
+	var entries <-chan *spb.Entry
 	if gs != nil {
-		log.Println("Copying GraphStore")
-		fatalOnErr("error copying GraphStore: %v", db.CopyGraphStore(ctx, gs))
+		ch := make(chan *spb.Entry)
+		go func() {
+			defer close(ch)
+			defer gs.Close(ctx)
+			log.Println("Scanning GraphStore")
+			fatalOnErr("error scanning GraphStore: %v",
+				gs.Scan(ctx, &spb.ScanRequest{}, func(e *spb.Entry) error {
+					ch <- e
+					return nil
+				}))
+		}()
+		entries = ch
+	} else if *entriesFile != "" {
+		f, err := vfs.Open(ctx, *entriesFile)
+		if err != nil {
+			log.Fatalf("Error opening %q: %v", *entriesFile, err)
+		}
+		defer f.Close()
+		log.Println("Reading entries from", *entriesFile)
+		entries = stream.ReadEntries(f)
+	}
+
+	if entries != nil {
+		fatalOnErr("error copying entries: %v", db.CopyEntries(entries))
 	}
 
 	if *httpListeningAddr != "" {

@@ -33,7 +33,6 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/lib/pq"
-	"golang.org/x/net/context"
 
 	cpb "kythe.io/kythe/proto/common_proto"
 	srvpb "kythe.io/kythe/proto/serving_proto"
@@ -120,9 +119,9 @@ CREATE INDEX decorations_lookup_index ON decorations (file_ticket);
 CREATE INDEX cross_references_lookup_index ON crossreferences (ticket, kind);`
 )
 
-// CopyGraphStore completely recreates the database using the entries from the
-// given GraphStore.
-func (d *DB) CopyGraphStore(ctx context.Context, gs graphstore.Service) error {
+// CopyEntries completely recreates the database using the given stream of
+// GraphStore-ordered entries.
+func (d *DB) CopyEntries(entries <-chan *spb.Entry) error {
 	allStart := time.Now()
 
 	start := time.Now()
@@ -132,10 +131,10 @@ func (d *DB) CopyGraphStore(ctx context.Context, gs graphstore.Service) error {
 	log.Printf("Dropped existing tables in %v", time.Since(start))
 
 	start = time.Now()
-	if err := d.copyGraphStore(ctx, gs); err != nil {
+	if err := d.copyEntries(entries); err != nil {
 		return err
 	}
-	log.Printf("Completed GraphStore copy in %v", time.Since(start))
+	log.Printf("Completed entries copy in %v", time.Since(start))
 
 	start = time.Now()
 	if _, err := d.Exec(createNodeEdgeIndices); err != nil {
@@ -177,7 +176,7 @@ func (d *DB) CopyGraphStore(ctx context.Context, gs graphstore.Service) error {
 	return nil
 }
 
-func (d *DB) copyGraphStore(ctx context.Context, gs graphstore.Service) error {
+func (d *DB) copyEntries(entries <-chan *spb.Entry) error {
 	// Start a transaction for a COPY statement per table
 	nodesTx, err := d.Begin()
 	if err != nil {
@@ -228,7 +227,7 @@ func (d *DB) copyGraphStore(ctx context.Context, gs graphstore.Service) error {
 	var subkind, textEncoding *string
 	var text *[]byte
 	var startOffset, endOffset, snippetStart, snippetEnd *int64
-	if err := gs.Scan(ctx, &spb.ScanRequest{}, func(e *spb.Entry) error {
+	for e := range entries {
 		if graphstore.IsNodeFact(e) {
 			ticket := kytheuri.ToString(e.Source)
 			if node.Ticket != "" && node.Ticket != ticket {
@@ -308,9 +307,6 @@ func (d *DB) copyGraphStore(ctx context.Context, gs graphstore.Service) error {
 				return fmt.Errorf("error copying edge: %v", err)
 			}
 		}
-		return nil
-	}); err != nil {
-		return fmt.Errorf("error during GraphStore.Scan: %v", err)
 	}
 
 	if _, err := copyNode.Exec(); err != nil {
