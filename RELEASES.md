@@ -7,6 +7,9 @@ Notable changes:
    directory during extraction, but does still change the root for path
    normalization.
 
+Notable additions:
+ - `entrystream`: add `--unique` flag
+
 ## v0.0.18
 
 Notable changes:

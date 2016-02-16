@@ -54,16 +54,17 @@ type entrySet struct {
 }
 
 var (
-	readJSON   = flag.Bool("read_json", false, "Assume stdin is a stream of JSON entries instead of protobufs")
-	writeJSON  = flag.Bool("write_json", false, "Print JSON stream as output")
-	sortStream = flag.Bool("sort", false, "Sort entry stream into GraphStore order")
-	entrySets  = flag.Bool("entrysets", false, "Print Entry protos as JSON EntrySets (implies --sort and --write_json)")
-	countOnly  = flag.Bool("count", false, "Only print the count of protos streamed")
+	readJSON    = flag.Bool("read_json", false, "Assume stdin is a stream of JSON entries instead of protobufs")
+	writeJSON   = flag.Bool("write_json", false, "Print JSON stream as output")
+	sortStream  = flag.Bool("sort", false, "Sort entry stream into GraphStore order")
+	uniqEntries = flag.Bool("unique", false, "Print only unique entries (implies --sort)")
+	entrySets   = flag.Bool("entrysets", false, "Print Entry protos as JSON EntrySets (implies --sort and --write_json)")
+	countOnly   = flag.Bool("count", false, "Only print the count of protos streamed")
 )
 
 func init() {
 	flag.Usage = flagutil.SimpleUsage("Manipulate a stream of delimited Entry messages",
-		"[--read_json] ([--write_json] [--sort] | [--entrysets] | [--count])")
+		"[--read_json] [--unique] ([--write_json] [--sort] | [--entrysets] | [--count])")
 }
 
 func main() {
@@ -79,8 +80,12 @@ func main() {
 	} else {
 		entries = stream.ReadEntries(in)
 	}
-	if *sortStream || *entrySets {
+	if *sortStream || *entrySets || *uniqEntries {
 		entries = sortEntries(entries)
+	}
+
+	if *uniqEntries {
+		entries = dedupEntries(entries)
 	}
 
 	encoder := json.NewEncoder(os.Stdout)
@@ -159,6 +164,25 @@ func (entryMarshaler) Marshal(x interface{}) ([]byte, error) { return proto.Mars
 func (entryMarshaler) Unmarshal(rec []byte) (interface{}, error) {
 	var e spb.Entry
 	return &e, proto.Unmarshal(rec, &e)
+}
+
+func dedupEntries(entries <-chan *spb.Entry) <-chan *spb.Entry {
+	ch := make(chan *spb.Entry)
+	go func() {
+		defer close(ch)
+		var last *spb.Entry
+		var duplicates int
+		for e := range entries {
+			if compare.Entries(last, e) == compare.EQ {
+				duplicates++
+			} else {
+				last = e
+				ch <- e
+			}
+		}
+		log.Printf("entrystream: removed %d duplicate entries", duplicates)
+	}()
+	return ch
 }
 
 func failOnErr(err error) {
