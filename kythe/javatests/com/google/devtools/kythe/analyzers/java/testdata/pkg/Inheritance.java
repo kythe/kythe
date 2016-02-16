@@ -16,7 +16,8 @@ public class Inheritance {
   //- @B defines/binding BClass
   //- @A ref AClass
   //- BClass extends AClass
-  //- !{ BClass implements AnyInterface }
+  //- !{ AnyInterface.node/kind interface
+  //-    BClass extends AnyInterface }
   static class B extends A {
     @Override
     //- @method1 defines/binding BM1
@@ -31,10 +32,10 @@ public class Inheritance {
   //- @C defines/binding CClass
   //- @B ref BClass
   //- CClass extends BClass
-  //- CClass implements IInterface
+  //- CClass extends IInterface
   //- !{ CClass extends AClass
   //-    CCLass extends IInterface
-  //-    CClass implements BClass }
+  //-    CClass extends BClass }
   static class C extends B implements I {
     @Override
     //- @method1 defines/binding CM1

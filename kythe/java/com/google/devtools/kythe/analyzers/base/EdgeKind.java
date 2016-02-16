@@ -32,7 +32,6 @@ public enum EdgeKind {
   CALLABLE_AS("callableas"),
   CHILDOF("childof"),
   EXTENDS("extends"),
-  IMPLEMENTS("implements"),
   NAMED("named"),
   OVERRIDES("overrides"),
   OVERRIDES_TRANSITIVE("overrides/transitive"),

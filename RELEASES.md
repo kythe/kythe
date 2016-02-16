@@ -7,6 +7,7 @@ Notable changes:
    directory during extraction, but does still change the root for path
    normalization.
  - `http_server`: ensure the given `--serving_table` exists (do not create, if missing)
+ - Java indexer: fixes/tests for interfaces, which now have `extends` edges
 
 Notable additions:
  - `entrystream`: add `--unique` flag
