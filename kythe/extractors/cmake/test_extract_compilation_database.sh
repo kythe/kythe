@@ -31,7 +31,9 @@ KYTHE_CORPUS=test_corpus KYTHE_ROOT_DIRECTORY="${BASE_DIR}" \
 INDEX_PATH=$(ls -1 "${OUT_DIR}"/*.kindex)
 "${KINDEX_TOOL}" -canonicalize_hashes -suppress_details -explode \
     "${INDEX_PATH}"
+sed "s|signature: \"cu.*\"|signature: \"\"|" "${INDEX_PATH}_UNIT" > \
+    "${INDEX_PATH}_UNIT_NS"
 sed "s:TEST_CWD:${PWD}/:
 s:TEST_EXTRACTOR:${KYTHE_EXTRACTOR}:" "${BASE_DIR}/testdata/expected.unit" | \
-    diff - "${INDEX_PATH}_UNIT"
+    diff - "${INDEX_PATH}_UNIT_NS"
 diff "${BASE_DIR}/testdata/expected.file" "${INDEX_PATH}_${EXPECTED_FILE_HASH}"
