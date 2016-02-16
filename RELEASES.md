@@ -6,6 +6,7 @@ Notable changes:
  - C++ extractor: `KYTHE_ROOT_DIRECTORY` no longer changes the working
    directory during extraction, but does still change the root for path
    normalization.
+ - `http_server`: ensure the given `--serving_table` exists (do not create, if missing)
 
 Notable additions:
  - `entrystream`: add `--unique` flag

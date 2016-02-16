@@ -96,7 +96,7 @@ func main() {
 
 	ctx := context.Background()
 	if *servingTable != "" {
-		db, err := leveldb.Open(*servingTable, nil)
+		db, err := leveldb.Open(*servingTable, &leveldb.Options{MustExist: true})
 		if err != nil {
 			log.Fatalf("Error opening db at %q: %v", *servingTable, err)
 		}

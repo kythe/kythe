@@ -67,6 +67,10 @@ type Options struct {
 	// WriteBufferSize is the number of bytes the database will build up in memory
 	// (backed by a disk log) before writing to the on-disk table.
 	WriteBufferSize int
+
+	// MustExist ensures that the given database exists before opening it.  If
+	// false and the database does not exist, it will be created.
+	MustExist bool
 }
 
 // ValidDB determines if the given path could be a LevelDB database.
@@ -96,7 +100,7 @@ func Open(path string, opts *Options) (keyvalue.DB, error) {
 	defer options.Close()
 	cache := levigo.NewLRUCache(opts.CacheCapacity)
 	options.SetCache(cache)
-	options.SetCreateIfMissing(true)
+	options.SetCreateIfMissing(!opts.MustExist)
 	if opts.WriteBufferSize > 0 {
 		options.SetWriteBufferSize(opts.WriteBufferSize)
 	}
