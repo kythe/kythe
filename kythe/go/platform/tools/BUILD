@@ -41,13 +41,12 @@ sh_test(
 
 go_binary(
     name = "entrystream",
-    srcs = [
-        "entrystream/entrystream.go",
-    ],
+    srcs = ["entrystream/entrystream.go"],
     deps = [
         "//kythe/go/platform/delimited",
         "//kythe/go/services/graphstore/compare",
         "//kythe/go/storage/stream",
+        "//kythe/go/util/disksort",
         "//kythe/go/util/flagutil",
         "//kythe/proto:storage_proto_go",
         "//third_party/go/src/github.com/golang/protobuf/proto",
@@ -56,9 +55,7 @@ go_binary(
 
 go_binary(
     name = "ktags",
-    srcs = [
-        "ktags/ktags.go",
-    ],
+    srcs = ["ktags/ktags.go"],
     deps = [
         "//kythe/go/services/search",
         "//kythe/go/services/xrefs",
@@ -73,9 +70,7 @@ go_binary(
 
 go_binary(
     name = "dedup_stream",
-    srcs = [
-        "dedup_stream/dedup_stream.go",
-    ],
+    srcs = ["dedup_stream/dedup_stream.go"],
     deps = [
         "//kythe/go/platform/delimited",
         "//kythe/go/util/datasize",
@@ -85,9 +80,7 @@ go_binary(
 
 go_binary(
     name = "viewindex",
-    srcs = [
-        "viewindex/viewindex.go",
-    ],
+    srcs = ["viewindex/viewindex.go"],
     deps = [
         "//kythe/go/platform/kindex",
         "//kythe/go/util/flagutil",
@@ -97,9 +90,7 @@ go_binary(
 
 go_binary(
     name = "indexpack",
-    srcs = [
-        "indexpack/indexpack.go",
-    ],
+    srcs = ["indexpack/indexpack.go"],
     deps = [
         "//kythe/go/platform/indexpack",
         "//kythe/go/platform/kindex",

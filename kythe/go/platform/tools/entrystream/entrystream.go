@@ -33,11 +33,11 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"sort"
 
 	"kythe.io/kythe/go/platform/delimited"
 	"kythe.io/kythe/go/services/graphstore/compare"
 	"kythe.io/kythe/go/storage/stream"
+	"kythe.io/kythe/go/util/disksort"
 	"kythe.io/kythe/go/util/flagutil"
 
 	spb "kythe.io/kythe/proto/storage_proto"
@@ -119,20 +119,46 @@ func main() {
 }
 
 func sortEntries(entries <-chan *spb.Entry) <-chan *spb.Entry {
-	unsortedEntries := entries
+	sorter, err := disksort.NewMergeSorter(disksort.MergeOptions{
+		Lesser:    entryLesser{},
+		Marshaler: entryMarshaler{},
+	})
+	if err != nil {
+		log.Fatal("Error creating entries sorter: %v", err)
+	}
+
+	for e := range entries {
+		if err := sorter.Add(e); err != nil {
+			log.Fatal("Error sorting entries: %v", err)
+		}
+	}
+
 	ch := make(chan *spb.Entry)
 	go func() {
-		sorted := compare.ByEntries(nil)
-		for entry := range unsortedEntries {
-			sorted = append(sorted, entry)
+		defer close(ch)
+		if err := sorter.Read(func(i interface{}) error {
+			ch <- i.(*spb.Entry)
+			return nil
+		}); err != nil {
+			log.Fatal("error sorting entries: %v", err)
 		}
-		sort.Sort(&sorted)
-		for _, e := range sorted {
-			ch <- e
-		}
-		close(ch)
 	}()
 	return ch
+}
+
+type entryLesser struct{}
+
+func (entryLesser) Less(a, b interface{}) bool {
+	return compare.Entries(a.(*spb.Entry), b.(*spb.Entry)) == compare.LT
+}
+
+type entryMarshaler struct{}
+
+func (entryMarshaler) Marshal(x interface{}) ([]byte, error) { return proto.Marshal(x.(proto.Message)) }
+
+func (entryMarshaler) Unmarshal(rec []byte) (interface{}, error) {
+	var e spb.Entry
+	return &e, proto.Unmarshal(rec, &e)
 }
 
 func failOnErr(err error) {
