@@ -52,7 +52,7 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
   }
 
   private function getTargets() {
-    $this->debugPrint("getTargets");
+    $this->debugPrint("getTargets()");
 
     if ($this->getRunAllTests()) {
       return array('//...');
@@ -66,7 +66,7 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
     $files = join($files, " ");
     $this->debugPrint("files: " . $files);
 
-    $cmd = $this->bazelCommand(["query", "%s"]);
+    $cmd = $this->bazelCommand("query", ["%s"]);
     $query = 'rdeps(//..., set('.$files.')) except attr(tags, "docker", //...)';
     $this->debugPrint($query);
     $future = new ExecFuture($cmd, $query);
@@ -89,7 +89,7 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
     }
     $files = join(" ",
                   array_map(array('BazelTestEngine', 'fileToTarget'), $this->getPaths()));
-    $future = new ExecFuture($this->bazelCommand(["query", "-k", "%s"]), 'set('.$files.')');
+    $future = new ExecFuture($this->bazelCommand("query", ["-k", "%s"]), 'set('.$files.')');
     $future->setCWD($this->project_root);
 
     $status = $future->resolve();
@@ -108,8 +108,7 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
   private function runTests($targets) {
     $this->debugPrint("runTests(" . join($targets, ", ") . ")");
 
-    $future = new ExecFuture($this->bazelCommand(array_merge([
-        "test",
+    $future = new ExecFuture($this->bazelCommand("test", array_merge([
         "--test_tag_filters=-broken",
         "--noshow_loading_progress",
         "--noshow_progress"], $targets)));
@@ -132,7 +131,7 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
       throw new Exception($output . "\n" . $status[2]);
     }
 
-    $cmd = $this->bazelCommand(["query", "-k", "%s"]);
+    $cmd = $this->bazelCommand("query", ["-k", "%s"]);
     $query = 'tests(set('.join(" ", $targets).')) except attr(tags, "broken", //...)';
     $this->debugPrint($query);
     $future = new ExecFuture($cmd, $query);
@@ -178,7 +177,7 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
     return "'" . $file . "'";
   }
 
-  private function bazelCommand($args) {
+  private function bazelCommand($subcommand, $args) {
     $cmd = "bazel ";
     if (!$this->useConfig) {
       $cmd = $cmd . "--bazelrc=/dev/null ";
@@ -186,6 +185,7 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
     if (!$this->waitForBazel) {
       $cmd = $cmd . "--noblock_for_lock ";
     }
+    $cmd = $cmd . $subcommand . " --tool_tag=arcanist ";
     $cmd = $cmd . join(" ", $args);
     $this->debugPrint($cmd);
     return $cmd;
