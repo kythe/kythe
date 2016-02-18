@@ -941,8 +941,8 @@ for example, in $$C++$$, it may be a variable or a function.
 --------------------------------------------------------------------------------
 //- @C defines/binding TemplateC
 //- TemplateC.node/kind abs
-//- TemplaceCBody childof TemplateC
-//- TemplaceCBody.node/kind record
+//- TemplateCBody childof TemplateC
+//- TemplateCBody.node/kind record
 template <typename T, typename S> class C { };
 
 //- @C defines/binding PartialSpecializationC
