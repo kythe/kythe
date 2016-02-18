@@ -19,6 +19,10 @@ package kytheuri
 import (
 	"reflect"
 	"testing"
+
+	"github.com/golang/protobuf/proto"
+
+	spb "kythe.io/kythe/proto/storage_proto"
 )
 
 func TestParse(t *testing.T) {
@@ -147,7 +151,9 @@ func TestEqual(t *testing.T) {
 	}
 }
 
-func TestProto(t *testing.T) {
+func TestRoundTripURI(t *testing.T) {
+	// Test that converting a Kythe URI to a VName and then back preserves
+	// equivalence.
 	u := &URI{
 		Signature: "magic carpet ride",
 		Corpus:    "code.google.com/p/go.tools",
@@ -173,7 +179,25 @@ func TestProto(t *testing.T) {
 	}
 	w := FromVName(v)
 	if got, want := w.String(), u.String(); got != want {
-		t.Errorf("VName did not round-trip: got %q, want %q", got, want)
+		t.Errorf("URI did not round-trip: got %q, want %q", got, want)
+	}
+}
+
+func TestRoundTripVName(t *testing.T) {
+	// Verify that converting a VName to a Kythe URI and then back preserves
+	// equivalence.
+	tests := []*spb.VName{
+		{}, // empty
+		{Corpus: "//Users/foo", Path: "/Users/foo/bar", Language: "go", Signature: "∴"},
+		{Corpus: "//////", Root: "←", Language: "c++"},
+	}
+	for _, test := range tests {
+		uri := FromVName(test)
+		t.Logf("VName: %+v\nURI:   %#q", test, uri)
+		got := uri.VName()
+		if !proto.Equal(got, test) {
+			t.Errorf("VName did not round-trip: got %+v, want %+v", got, test)
+		}
 	}
 }
 
