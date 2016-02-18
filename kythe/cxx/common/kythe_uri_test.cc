@@ -51,15 +51,19 @@ struct MakeURI {
     return *this;
   }
 
-  operator URI() const {
-    kythe::proto::VName vname;
-    vname.set_signature(signature);
-    vname.set_corpus(corpus);
-    vname.set_root(root);
-    vname.set_path(path);
-    vname.set_language(language);
-    return URI(vname);
+  kythe::proto::VName v_name() const {
+    kythe::proto::VName v_name;
+    v_name.set_signature(signature);
+    v_name.set_corpus(corpus);
+    v_name.set_root(root);
+    v_name.set_path(path);
+    v_name.set_language(language);
+    return v_name;
   }
+
+  URI uri() const { return URI(v_name()); }
+
+  operator URI() const { return URI(v_name()); }
 };
 
 TEST(KytheUri, Parse) {
@@ -95,6 +99,10 @@ TEST(KytheUri, Parse) {
        MakeURI().Root("R").Language("L").Path("P")},
       {"kythe:?root=R?path=P?lang=L",
        MakeURI().Root("R").Language("L").Path("P")},
+
+      // Corpora with slashes.
+      {"kythe:///Users/foo", MakeURI().Corpus("/Users/foo")},
+      {"kythe:///", MakeURI().Corpus("/")},
 
       // Everything.
       {"kythe://bitbucket.org/creachadair/"
@@ -186,18 +194,46 @@ TEST(KytheUri, Equality) {
 }
 
 TEST(KytheUri, RoundTrip) {
-  URI uri = MakeURI()
-                .Signature("magic carpet ride")
-                .Corpus("code.google.com/p/go.tools")
-                .Path("cmd/godoc/doc.go")
-                .Language("go");
-  const auto &vname = uri.v_name();
-  auto uri_roundtrip = URI::FromString(uri.ToString());
+  auto uri = MakeURI()
+                 .Signature("magic carpet ride")
+                 .Corpus("code.google.com/p/go.tools")
+                 .Path("cmd/godoc/doc.go")
+                 .Language("go");
+  auto uri_roundtrip = URI::FromString(uri.uri().ToString());
   EXPECT_TRUE(uri_roundtrip.first);
   const auto &other_vname = uri_roundtrip.second.v_name();
-  EXPECT_TRUE(VNameEquals(vname, other_vname))
-      << vname.DebugString() << " versus " << other_vname.DebugString();
+  EXPECT_TRUE(VNameEquals(uri.v_name(), other_vname))
+      << uri.v_name().DebugString() << " versus " << other_vname.DebugString();
 }
+
+TEST(KytheUri, OneSlashRoundTrip) {
+  auto uri = MakeURI()
+                 .Signature("/")
+                 .Corpus("/Users/foo")
+                 .Path("/Users/foo/bar")
+                 .Language("go");
+  auto uri_roundtrip = URI::FromString(uri.uri().ToString());
+  EXPECT_TRUE(uri_roundtrip.first);
+  const auto &other_vname = uri_roundtrip.second.v_name();
+  EXPECT_TRUE(VNameEquals(uri.v_name(), other_vname))
+      << uri.v_name().DebugString() << " versus " << other_vname.DebugString();
+}
+
+TEST(KytheUri, TwoSlashRoundTrip) {
+  auto uri = MakeURI()
+                 .Signature("/")
+                 .Corpus("//Users/foo")
+                 .Path("/Users/foo/bar")
+                 .Language("go");
+  auto uri_roundtrip = URI::FromString(uri.uri().ToString());
+  EXPECT_TRUE(uri_roundtrip.first);
+  const auto &other_vname = uri_roundtrip.second.v_name();
+  EXPECT_TRUE(VNameEquals(uri.v_name(), other_vname))
+      << uri.v_name().DebugString() << " versus " << other_vname.DebugString();
+}
+
+// TODO(zarko): Check the "////////" corpus once we settle whether corpus
+// names should be path-cleaned.
 
 TEST(KytheUri, Strings) {
   constexpr char empty[] = "kythe:";

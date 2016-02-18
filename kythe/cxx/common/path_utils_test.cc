@@ -74,6 +74,10 @@ TEST(PathUtilsTest, CleanPath) {
   EXPECT_EQ("a/c", CleanPath("a/c/b/.."));
   EXPECT_EQ("/a/c", CleanPath("/../a/c"));
   EXPECT_EQ("/a/c", CleanPath("/../a/b/../././/c"));
+  EXPECT_EQ("/Users", CleanPath("/Users"));
+  // "//Users" denotes a path with the root name "//Users"
+  EXPECT_EQ("//Users", CleanPath("//Users"));
+  EXPECT_EQ("/Users", CleanPath("///Users"));
 }
 
 TEST(PathUtilsTest, JoinPath) {

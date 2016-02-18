@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "clang/Basic/FileManager.h"
 #include "clang/Lex/HeaderSearch.h"
 #include "clang/Lex/LexDiagnostic.h"
 #include "clang/Lex/Preprocessor.h"
@@ -22,37 +23,10 @@
 #include "path_utils.h"
 
 namespace kythe {
-
-static void LexicallyEliminateRelativePathNodes(
-    llvm::SmallString<1024>* out_path, llvm::StringRef path) {
-  std::vector<llvm::StringRef> path_components;
-  int skip_count = 0;
-  for (auto node = llvm::sys::path::rbegin(path),
-            node_end = llvm::sys::path::rend(path);
-       node != node_end; ++node) {
-    if (*node == "..") {
-      ++skip_count;
-    } else if (*node != ".") {
-      if (skip_count > 0) {
-        --skip_count;
-      } else {
-        path_components.push_back(*node);
-      }
-    }
-  }
-  for (auto node = path_components.crbegin(),
-            node_end = path_components.crend();
-       node != node_end; ++node) {
-    llvm::sys::path::append(*out_path, *node);
-  }
-}
-
 std::string CleanPath(llvm::StringRef in_path) {
-  std::string root_part = (llvm::sys::path::root_name(in_path) +
-                           llvm::sys::path::root_directory(in_path))
-                              .str();
-  llvm::SmallString<1024> out_path = llvm::StringRef(root_part);
-  LexicallyEliminateRelativePathNodes(&out_path, llvm::StringRef(in_path));
+  llvm::SmallString<1024> out_path = in_path;
+  // NB: This becomes llvm::sys::path::remove_dots.
+  clang::FileManager::removeDotPaths(out_path, true);
   return out_path.str();
 }
 
