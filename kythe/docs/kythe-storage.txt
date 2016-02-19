@@ -15,7 +15,7 @@
 Kythe Storage Model
 ===================
 Michael J. Fromberger <fromberger@google.com>
-v.0.1.0, 31-Oct-2014: Draft
+v.0.1.1, 18-Feb-2016: Draft
 :toc:
 :priority: 750
 
@@ -189,19 +189,54 @@ The initial definition of a VName will include the following 5 fields:
 
  * *Corpus.* The corpus of source code this VName belongs to.  Loosely, a
    corpus is a collection of related files, such as the contents of a given
-   sourc repository.  Corpora are generally be identified by URLs or other
-   string labels.
-   Examples: "chromium", "aosp", "github.com/creachadair/imath".
+   source repository.  Corpora accessible via the Internet should generally
+   prefer labels shaped like URLs or other address-like strings.
+   +
+   +
+   Examples: "chromium", "aosp", "bitbucket.org/creachadair/stringset".
+   +
+   +
    We reserve the corpus name `kythe` for the Kythe open-source project itself.
+   +
+   +
+   _Note:_ It is possible, though not recommended, to use a local directory
+   path as a corpus label. In such cases the label should also be _cleaned_ as
+   described under *Path* below. However, a path label will generally not work
+   well with corpora defined elsewhere, so avoid this formulation unless you
+   don't require your data to interoperate with other corpora.
 
  * *Root.* A corpus-specific root label, typically a directory path or project
    identifier, denoting a distinct subset of the corpus. This may also be used
    to designate virtual collections like generated files.
+   +
+   +
+   _Rationale:_ Usually a corpus will comprise a single rooted tree of files,
+   such as a Git repository -- in which case the Root field can be left empty.
+   In some cases, though, a corpus may have more than one tree -- for example,
+   if the build tool stores generated code in a separate directory structure
+   during the build process. In that case, the Root field can be used to
+   distinguish generated paths from checked-in source.
+   +
+   +
+   The interpretation of the Root field is always specific to the corpus.  A
+   root _may_ be shaped like a path (say, if it names a directory), but it is
+   not required to; it can be an opaque label like `generated` or `branch_name`
+   if that makes sense for the corpus in question.  If the Root is intended to
+   denote a directory path, it should be _cleaned_ as described under *Path*.
 
  * *Path.* A path-structured label describing the ``location'' of the named
    object relative to the corpus and the root. For code, this will typically be
-   the relative path of the file containing the code under analysis, _e.g._,
+   the relative path of the file containing the code under analysis, such as
    `kythe/cxx/tools/kindex_tool_main.cc` in the `kythe` corpus.
+   +
+   +
+   Paths should be normalized to be relative to a root directory of their
+   corpus, and are
+   link:https://www.usenix.org/legacy/event/usenix2000/general/full_papers/pikelex/pikelex.pdf[cleaned]
+   so as to be free of relative markers such as "." and "..".  If a VName's
+   path can't be represented without "escaping" from its designated root
+   directory, it's usually a good sign that a separate Root label should be
+   assigned.
 
  * *Language.* The language this name belongs to. The schema defines specific
    labels for each supported language, so we don't wind up with a confusion of
