@@ -981,6 +981,18 @@ anchor
 
 Brief description::
   An *anchor* connects concrete syntax to abstract syntax.
+Naming convention::
+  Language:::
+    No special rules.
+  Path:::
+    The *Path* of the <<file>> this anchor is <<childof>> (or empty if there is
+    no such file).
+  Root:::
+    The *Root* of the <<file>> this anchor is <<childof>>.
+  Corpus:::
+    The *Corpus* of the <<file>> this anchor is <<childof>>.
+  Signature:::
+    No special rules.
 Expected out-edges::
   <<childof>>
 Facts::
@@ -992,12 +1004,22 @@ Facts::
 See also::
   <<file>>
 
+Anchor VNames are specified such that one may determine the VName of the
+<<file>> an anchor is <<childof>> by dropping the anchor VName's *Language*
+and *Signature* fields.
+
 [kythe,C++,"Anchors have byte offsets."]
 --------------------------------------------------------------------------------
 int 錨;
 //- VarNameAnchor.loc/start 4
 //- VarNameAnchor.loc/end 7
 // Note that the glyph 錨 is encoded in UTF-8 as [e9 8c a8].
+--------------------------------------------------------------------------------
+
+[kythe,C++,"Anchors have VName rules."]
+--------------------------------------------------------------------------------
+//- @foo=vname(_,Corpus,Root,Path,"c++") childof vname("",Corpus,Root,Path,"")
+int foo;
 --------------------------------------------------------------------------------
 
 [kythe,Java,"Anchors can overlap."]
@@ -1008,6 +1030,14 @@ public class E {
   //- @Optional ref OptClass
   //- @String ref StrClass
   Optional<String> f;
+}
+--------------------------------------------------------------------------------
+
+[kythe,Java,"Anchors have VName rules."]
+--------------------------------------------------------------------------------
+public class E {
+  //- @foo=vname(_,Corpus,Root,Path,"java") childof vname("",Corpus,Root,Path,"")
+  int foo;
 }
 --------------------------------------------------------------------------------
 

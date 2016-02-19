@@ -4,13 +4,15 @@
 #include "bcorpus__bpath.h"
 #include "_croot_cpath.h"
 #include "long_path.h"
-//- @main_v childof vname("","bundle","","test.cc","")
+//- @main_v=vname(_,"bundle","","test.cc","c++")
+//-     childof vname("","bundle","","test.cc","")
 #define main_v macromainv
 
 
 #example acorpus_aroot_apath.h
 #pragma kythe_claim
-//- @a_v childof vname("","acorpus","aroot","apath.h","")
+//- @a_v=vname(_,"acorpus","aroot","apath.h","c++") childof
+//-     vname("","acorpus","aroot","apath.h","")
 #define a_v macroav
 
 
