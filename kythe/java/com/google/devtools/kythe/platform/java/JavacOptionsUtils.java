@@ -22,6 +22,7 @@ import com.google.common.collect.Lists;
 
 import com.sun.tools.javac.main.Option;
 
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -84,16 +85,16 @@ public class JavacOptionsUtils {
    * once, returns the last copy, which matches javac's behavior.  If the flag is not specified,
    * returns null.
    */
-  public static @Nullable String getEncodingOption(List<String> options) {
+  public static @Nullable Charset getEncodingOption(List<String> options) {
     int i = options.lastIndexOf(Option.ENCODING.getText());
-    return (i >= 0) ? options.get(i + 1) : null;
+    return (i >= 0) ? Charset.forName(options.get(i + 1)) : null;
   }
 
   /** If there is no encoding set, make sure to set the default encoding.*/
-  public static List<String> ensureEncodingSet(List<String> options, String defaultEncoding) {
+  public static List<String> ensureEncodingSet(List<String> options, Charset defaultEncoding) {
     if (getEncodingOption(options) == null) {
       options.add(Option.ENCODING.getText());
-      options.add(defaultEncoding);
+      options.add(defaultEncoding.name());
     }
     return options;
   }

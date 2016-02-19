@@ -27,6 +27,7 @@ import java.io.Reader;
 import java.io.Writer;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
@@ -42,10 +43,10 @@ public class CustomFileObject implements FileObject {
   protected final String digest;
   protected final Future<byte[]> future;
 
-  protected final String encoding;
+  protected final Charset encoding;
 
   public CustomFileObject(
-      FileDataProvider contentProvider, String path, String digest, String encoding) {
+      FileDataProvider contentProvider, String path, String digest, Charset encoding) {
     this.path = Paths.get(path);
     this.digest = digest;
     this.encoding = encoding;

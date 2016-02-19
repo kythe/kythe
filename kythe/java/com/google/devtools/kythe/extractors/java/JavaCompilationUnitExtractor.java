@@ -744,7 +744,7 @@ public class JavaCompilationUnitExtractor {
     List<String> completeOptions =
         JavacOptionsUtils.ensureEncodingSet(
             JavacOptionsUtils.removeUnsupportedOptions(Lists.newArrayList(rawOptions)),
-            Charsets.UTF_8.name());
+            Charsets.UTF_8);
 
     // We need to modify the options to the compiler to pass in -classpath and
     // -sourcepath arguments.

@@ -18,6 +18,8 @@ package com.google.devtools.kythe.platform.java.filemanager;
 
 import com.google.devtools.kythe.platform.shared.FileDataProvider;
 
+import java.nio.charset.Charset;
+
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.NestingKind;
 import javax.tools.JavaFileObject;
@@ -37,7 +39,7 @@ public class CustomJavaFileObject extends CustomFileObject implements JavaFileOb
       String digest,
       String className,
       Kind kind,
-      String encoding) {
+      Charset encoding) {
     super(contentProvider, path, digest, encoding);
     this.className = className;
     this.kind = kind;

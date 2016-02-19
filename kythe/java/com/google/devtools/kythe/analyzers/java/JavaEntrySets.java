@@ -108,8 +108,7 @@ public class JavaEntrySets extends KytheEntrySets {
 
   /** Emits and returns a new {@link EntrySet} representing the Java file. */
   public EntrySet getFileNode(Positions file) {
-    return getFileNode(
-        getDigest(file.getSourceFile()), file.getData(), file.getEncoding().toString());
+    return getFileNode(getDigest(file.getSourceFile()), file.getData(), file.getEncoding());
   }
 
   /** Emits and returns a new {@link EntrySet} representing a Java package. */

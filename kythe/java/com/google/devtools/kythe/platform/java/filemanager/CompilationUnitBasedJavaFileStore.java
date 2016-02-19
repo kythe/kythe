@@ -19,6 +19,7 @@ package com.google.devtools.kythe.platform.java.filemanager;
 import com.google.devtools.kythe.platform.shared.FileDataProvider;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashSet;
@@ -34,10 +35,10 @@ import javax.tools.JavaFileObject.Kind;
 public class CompilationUnitBasedJavaFileStore implements JavaFileStore {
   private final CompilationUnitFileTree fileTree;
   private FileDataProvider contentProvider;
-  private String encoding;
+  private Charset encoding;
 
   public CompilationUnitBasedJavaFileStore(
-      CompilationUnit unit, FileDataProvider contentProvider, String encoding) {
+      CompilationUnit unit, FileDataProvider contentProvider, Charset encoding) {
     this.contentProvider = contentProvider;
     this.encoding = encoding;
 

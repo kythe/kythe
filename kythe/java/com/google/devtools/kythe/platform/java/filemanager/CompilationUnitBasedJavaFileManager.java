@@ -23,6 +23,7 @@ import com.google.devtools.kythe.proto.Java.JavaDetails;
 import com.google.protobuf.Any;
 import com.google.protobuf.InvalidProtocolBufferException;
 
+import java.nio.charset.Charset;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -54,7 +55,7 @@ public class CompilationUnitBasedJavaFileManager extends JavaFileStoreBasedFileM
       FileDataProvider contentProvider,
       CompilationUnit unit,
       StandardJavaFileManager fileManager,
-      String encoding) {
+      Charset encoding) {
     super(new CompilationUnitBasedJavaFileStore(unit, contentProvider, encoding), fileManager);
 
     // TODO(schroederc): determine if we want to keep around legacy argument parsing support

@@ -51,7 +51,7 @@ public class JavaCompilationDetails {
   private final Iterable<? extends CompilationUnitTree> asts;
   private final CompilationUnit compilationUnit;
   private final Throwable analysisCrash;
-  private final String encoding;
+  private final Charset encoding;
 
   private static final FormattingLogger logger =
       FormattingLogger.getLogger(JavaCompilationDetails.class);
@@ -92,7 +92,7 @@ public class JavaCompilationDetails {
 
     // Get the compilation options
     List<String> options = optionsFromCompilationUnit(compilationUnit, processors, isLocalAnalysis);
-    String encoding = JavacOptionsUtils.getEncodingOption(options);
+    Charset encoding = JavacOptionsUtils.getEncodingOption(options);
 
     // Create a StandardFileManager that uses the fileDataProvider and compilationUnit
     StandardJavaFileManager fileManager =
@@ -142,7 +142,7 @@ public class JavaCompilationDetails {
       Iterable<? extends CompilationUnitTree> asts,
       CompilationUnit compilationUnit,
       Throwable analysisCrash,
-      String encoding) {
+      Charset encoding) {
     this.javac = javac;
     this.diagnostics = diagnostics;
     this.asts = asts;
@@ -204,7 +204,7 @@ public class JavaCompilationDetails {
   /**
    * @return The encoding for the source files in this compilation
    */
-  public String getEncoding() {
+  public Charset getEncoding() {
     return encoding;
   }
 
@@ -223,7 +223,7 @@ public class JavaCompilationDetails {
     // Turn on all warnings as well.
     List<String> options = Lists.newArrayList(compilationUnit.getArgumentList());
     options = JavacOptionsUtils.useAllWarnings(options);
-    options = JavacOptionsUtils.ensureEncodingSet(options, DEFAULT_ENCODING.name());
+    options = JavacOptionsUtils.ensureEncodingSet(options, DEFAULT_ENCODING);
     options = JavacOptionsUtils.removeUnsupportedOptions(options);
 
     if (!isLocalAnalysis) {

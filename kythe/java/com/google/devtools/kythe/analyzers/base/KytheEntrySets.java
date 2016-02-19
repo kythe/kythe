@@ -24,6 +24,7 @@ import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.devtools.kythe.util.KytheURI;
 import com.google.devtools.kythe.util.Span;
 
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -173,13 +174,13 @@ public class KytheEntrySets {
   }
 
   /** Emits and returns a new {@link EntrySet} representing a file. */
-  public EntrySet getFileNode(String digest, byte[] contents, String encoding) {
+  public EntrySet getFileNode(String digest, byte[] contents, Charset encoding) {
     VName name = getFileVName(digest);
     EntrySet node =
         emitAndReturn(
             newNode(NodeKind.FILE, name)
                 .setProperty("text", contents)
-                .setProperty("text/encoding", encoding));
+                .setProperty("text/encoding", encoding.name()));
     Path fileName = Paths.get(name.getPath()).getFileName();
     if (fileName != null) {
       emitName(node, fileName.toString());
