@@ -122,6 +122,11 @@ java_verifier_test(
 )
 
 java_verifier_test(
+    name = "lambdas_tests",
+    srcs = ["Lambdas.java"],
+)
+
+java_verifier_test(
     name = "member_references_tests",
     srcs = ["MemberReferences.java"],
 )

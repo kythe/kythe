@@ -13,7 +13,7 @@ public class Selectors {
       //- @maybe ref Param
       //- @get ref GetMethod
       //- @field ref Field
-      //- @this ref ThisM
+      //- @this ref This
       this.field = maybe.get();
     }
     //- @this ref This
