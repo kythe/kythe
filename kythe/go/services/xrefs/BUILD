@@ -5,10 +5,13 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_package(
     deps = [
         "//kythe/go/services/web",
+        "//kythe/go/test/testutil",
         "//kythe/go/util/kytheuri",
         "//kythe/go/util/schema",
+        "//kythe/go/util/stringset",
         "//kythe/proto:common_proto_go",
         "//kythe/proto:xref_proto_go",
+        "//third_party/go/src/github.com/golang/protobuf/proto",
         "//third_party/go/src/github.com/sergi/go-diff/diffmatchpatch",
         "//third_party/go/src/golang.org/x/net/context",
     ],

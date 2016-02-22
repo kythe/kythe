@@ -32,7 +32,9 @@ import (
 	"kythe.io/kythe/go/services/web"
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema"
+	"kythe.io/kythe/go/util/stringset"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/sergi/go-diff/diffmatchpatch"
 	"golang.org/x/net/context"
 
@@ -449,6 +451,246 @@ func MatchesAny(str string, patterns []*regexp.Regexp) bool {
 		}
 	}
 	return false
+}
+
+func forAllEdges(ctx context.Context, service Service, source stringset.Set, edge []string, f func(source string, target string) error) error {
+	req := &xpb.EdgesRequest{
+		Ticket: source.Slice(),
+		Kind:   edge,
+	}
+	edges, err := AllEdges(ctx, service, req)
+	if err != nil {
+		return err
+	}
+	for set := range edges.EdgeSet {
+		for group := range edges.EdgeSet[set].Group {
+			for target := range edges.EdgeSet[set].Group[group].TargetTicket {
+				err = f(edges.EdgeSet[set].SourceTicket, edges.EdgeSet[set].Group[group].TargetTicket[target])
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+const (
+	// The maximum number of times Callers can expand its frontier.
+	maxCallersExpansions = 10
+	// The maximum size of the node set Callers will consider. This includes ref/call anchors and functions.
+	maxCallersNodeSetSize = 1024
+)
+
+// findCallableDetail returns a map from non-callable semantic object tickets to CallableDetail,
+// where the CallableDetail does not have the SemanticObject or SemanticObjectCallable fields set.
+func findCallableDetail(ctx context.Context, service Service, tickets stringset.Set) (map[string]*xpb.CallersReply_CallableDetail, error) {
+	ticketToDetail := make(map[string]*xpb.CallersReply_CallableDetail)
+	xreq := &xpb.CrossReferencesRequest{
+		Ticket:            tickets.Slice(),
+		DefinitionKind:    xpb.CrossReferencesRequest_BINDING_DEFINITIONS,
+		ReferenceKind:     xpb.CrossReferencesRequest_NO_REFERENCES,
+		DocumentationKind: xpb.CrossReferencesRequest_NO_DOCUMENTATION,
+		AnchorText:        true,
+		PageSize:          math.MaxInt32,
+	}
+	xrefs, err := service.CrossReferences(ctx, xreq)
+	if err != nil {
+		log.Printf("Can't get CrossReferences for Callers set: %v", err)
+		return nil, err
+	}
+	if xrefs.NextPageToken != "" {
+		return nil, errors.New("UNIMPLEMENTED: Paged CrossReferences reply")
+	}
+	for _, xrefSet := range xrefs.CrossReferences {
+		detail := &xpb.CallersReply_CallableDetail{}
+		// Just pick the first definition.
+		if len(xrefSet.Definition) >= 1 {
+			detail.Definition = xrefSet.Definition[0]
+			// ... and assume its text is the identifier of the function.
+			detail.Identifier = detail.Definition.Text
+			// ... and is also a fully-qualified name for it.
+			detail.DisplayName = detail.Identifier
+		}
+		// TODO(zarko): Fill in parameters (and proper DisplayName/Identifier values.)
+		ticketToDetail[xrefSet.Ticket] = detail
+	}
+	return ticketToDetail, nil
+}
+
+// SlowCallers is an implementation of the Callers API built from other APIs.
+func SlowCallers(ctx context.Context, service Service, req *xpb.CallersRequest) (*xpb.CallersReply, error) {
+	tickets, err := FixTickets(req.SemanticObject)
+	// TODO(zarko): Map callable tickets back to function tickets; support CallToOverride.
+	if err != nil {
+		return nil, err
+	}
+	var edges []string
+	// From the schema, we know the source of a defines* or completes* edge should be an anchor. Because of this,
+	// we don't have to partition our set/queries on node kind.
+	if req.IncludeOverrides {
+		edges = []string{
+			schema.OverridesEdge,
+			schema.MirrorEdge(schema.OverridesEdge),
+			schema.DefinesBindingEdge,
+			schema.MirrorEdge(schema.DefinesBindingEdge),
+			schema.CompletesEdge,
+			schema.MirrorEdge(schema.CompletesEdge),
+			schema.CompletesUniquelyEdge,
+			schema.MirrorEdge(schema.CompletesUniquelyEdge),
+		}
+	} else {
+		edges = []string{
+			schema.DefinesBindingEdge,
+			schema.MirrorEdge(schema.DefinesBindingEdge),
+			schema.CompletesEdge,
+			schema.MirrorEdge(schema.CompletesEdge),
+			schema.CompletesUniquelyEdge,
+			schema.MirrorEdge(schema.CompletesUniquelyEdge),
+		}
+	}
+	// We keep a worklist of anchors and semantic nodes that are reachable from undirected edges
+	// marked [overrides,] defines/binding, completes, or completes/uniquely. This overestimates
+	// possible calls because it ignores link structure. This set *excludes* callables.
+	// TODO(zarko): We need to mark nodes we reached through overrides.
+	// All nodes that we've visited.
+	retired := stringset.New()
+	// Nodes that we haven't visited yet, but will this time around the loop.
+	frontier := stringset.New(tickets...)
+	iterations := 0
+	for len(retired) < maxCallersNodeSetSize && len(frontier) != 0 && iterations < maxCallersExpansions {
+		iterations++
+		// Nodes that we haven't visited yet but will the next time around the loop.
+		next := stringset.New()
+		err = forAllEdges(ctx, service, frontier, edges, func(_, target string) error {
+			if !retired.Contains(target) && !frontier.Contains(target) {
+				next.Add(target)
+			}
+			return nil
+		})
+		for old := range frontier {
+			retired.Add(old)
+		}
+		frontier = next
+		if err != nil {
+			return nil, err
+		}
+	}
+	if len(retired) > maxCallersNodeSetSize {
+		log.Printf("Callers iteration truncated (set too big)")
+	}
+	if iterations >= maxCallersExpansions {
+		log.Printf("Callers iteration truncated (too many expansions)")
+	}
+	log.Printf("Finding callables for %d node(s) after %d iteration(s)", len(retired), iterations)
+	// Now frontier is empty. The schema dictates that only semantic nodes in retired will have callableas edges.
+	// callableToNode maps callables to nodes they're %callableas.
+	callableToNode := make(map[string][]string)
+	err = forAllEdges(ctx, service, retired, []string{schema.CallableAsEdge}, func(source string, target string) error {
+		callableToNode[target] = append(callableToNode[target], source)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	// We can use CrossReferences to get detailed information about anchors that ref/call our callables. This unfortunately excludes blame information.
+	xrefTickets := []string{}
+	for callable := range callableToNode {
+		xrefTickets = append(xrefTickets, callable)
+	}
+	xreq := &xpb.CrossReferencesRequest{
+		Ticket:            xrefTickets,
+		DefinitionKind:    xpb.CrossReferencesRequest_NO_DEFINITIONS,
+		ReferenceKind:     xpb.CrossReferencesRequest_ALL_REFERENCES,
+		DocumentationKind: xpb.CrossReferencesRequest_NO_DOCUMENTATION,
+		AnchorText:        true,
+		PageSize:          math.MaxInt32,
+	}
+	xrefs, err := service.CrossReferences(ctx, xreq)
+	if err != nil {
+		log.Printf("Can't get CrossReferences for Callers set: %v", err)
+		return nil, err
+	}
+	if xrefs.NextPageToken != "" {
+		return nil, errors.New("UNIMPLEMENTED: Paged CrossReferences reply")
+	}
+	// Now we've got a bunch of call site anchors. We need to figure out which functions they belong to.
+	// anchors is the set of all callsite anchor tickets.
+	anchors := stringset.New()
+	// expandedAnchors maps callsite anchor tickets to anchor details.
+	expandedAnchors := make(map[string]*xpb.Anchor)
+	// parentToAnchor maps semantic node tickets to the callsite anchor tickets they own.
+	parentToAnchor := make(map[string][]string)
+	for _, refSet := range xrefs.CrossReferences {
+		for _, ref := range refSet.Reference {
+			if ref.Kind == schema.RefCallEdge {
+				anchors.Add(ref.Ticket)
+				expandedAnchors[ref.Ticket] = ref
+			}
+		}
+	}
+	err = forAllEdges(ctx, service, anchors, []string{schema.ChildOfEdge}, func(source string, target string) error {
+		anchor, ok := expandedAnchors[source]
+		if !ok {
+			return errors.New("missing expanded anchor")
+		}
+		// anchor.Parent is the syntactic parent of the anchor; we want the semantic parent.
+		if target != anchor.Parent {
+			parentToAnchor[target] = append(parentToAnchor[target], source)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	// Now begin filling out the response.
+	reply := &xpb.CallersReply{}
+	// We'll fetch CallableDetail only once for each interesting ticket, then add it to the response later.
+	detailToFetch := stringset.New()
+	for calleeCallable, calleeNodes := range callableToNode {
+		for _, calleeNode := range calleeNodes {
+			rCalleeNode := &xpb.CallersReply_CallableDetail{
+				SemanticObject:         calleeNode,
+				SemanticObjectCallable: calleeCallable,
+			}
+			reply.Callee = append(reply.Callee, rCalleeNode)
+			detailToFetch.Add(calleeNode)
+		}
+	}
+	for caller, calls := range parentToAnchor {
+		rCaller := &xpb.CallersReply_Caller{
+			Detail: &xpb.CallersReply_CallableDetail{
+				SemanticObject: caller,
+			},
+		}
+		detailToFetch.Add(caller)
+		for _, callsite := range calls {
+			rCallsite := &xpb.CallersReply_Caller_CallSite{}
+			rCallsite.Anchor = expandedAnchors[callsite]
+			// TODO(zarko): Set rCallsite.CallToOverride.
+			rCaller.CallSite = append(rCaller.CallSite, rCallsite)
+		}
+		reply.Caller = append(reply.Caller, rCaller)
+	}
+	// Gather CallableDetail for each of our semantic nodes.
+	details, err := findCallableDetail(ctx, service, detailToFetch)
+	if err != nil {
+		return nil, err
+	}
+	// ... and merge it back into the response.
+	for _, detail := range reply.Callee {
+		msg, found := details[detail.SemanticObject]
+		if found {
+			proto.Merge(detail, msg)
+		}
+	}
+	for _, caller := range reply.Caller {
+		msg, found := details[caller.Detail.SemanticObject]
+		if found {
+			proto.Merge(caller.Detail, msg)
+		}
+	}
+	return reply, nil
 }
 
 type grpcClient struct{ xpb.XRefServiceClient }

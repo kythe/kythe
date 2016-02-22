@@ -43,6 +43,7 @@
 #include "kythe/cxx/common/indexing/KytheOutputStream.h"
 #include "kythe/cxx/common/indexing/KytheVFS.h"
 #include "kythe/cxx/common/json_proto.h"
+#include "kythe/cxx/common/path_utils.h"
 #include "kythe/proto/analysis.pb.h"
 #include "kythe/proto/claim.pb.h"
 
@@ -64,6 +65,8 @@ DEFINE_string(cache, "", "Use a memcache instance (ex: \"--SERVER=foo:1234\")");
 DEFINE_int32(min_size, 4096, "Minimum size of an entry bundle");
 DEFINE_int32(max_size, 1024 * 32, "Maximum size of an entry bundle");
 DEFINE_bool(cache_stats, false, "Show cache stats");
+DEFINE_string(icorpus, "", "Corpus to use for files specified with -i");
+DEFINE_bool(normalize_file_vnames, false, "Normalize incoming file vnames.");
 
 DEFINE_string(experimental_dynamic_claim_cache, "",
               "Use a memcache instance for dynamic claims (EXPERIMENTAL)");
@@ -288,6 +291,7 @@ Examples:
     for (const auto &arg : final_args) {
       unit.add_argument(arg);
     }
+    unit.mutable_v_name()->set_corpus(FLAGS_icorpus);
   }
 
   std::unique_ptr<kythe::KytheClaimClient> claim_client;
@@ -348,6 +352,13 @@ Examples:
     options.EnableLossyClaiming =
         FLAGS_experimental_dynamic_claim_cache.empty() ? false : true;
     options.EffectiveWorkingDirectory = working_dir;
+
+    if (FLAGS_normalize_file_vnames) {
+      for (auto& input : *unit.mutable_required_input()) {
+        input.mutable_v_name()->set_path(CleanPath(input.v_name().path()));
+        input.mutable_v_name()->clear_signature();
+      }
+    }
 
     result = IndexCompilationUnit(unit, virtual_files, *claim_client,
                                   FLAGS_cache.empty() ? nullptr : &MHashCache,

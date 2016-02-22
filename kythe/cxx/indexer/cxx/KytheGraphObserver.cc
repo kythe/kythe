@@ -86,6 +86,7 @@ kythe::proto::VName KytheGraphObserver::VNameFromFileEntry(
     } else {
       out_name.set_path(file_entry->getName());
     }
+    out_name.set_corpus(claimant_.corpus());
   }
   return out_name;
 }

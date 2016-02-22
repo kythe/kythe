@@ -88,13 +88,14 @@ Examples:
 }
 
 var cmds = map[string]command{
-	"edges":  cmdEdges,
-	"ls":     cmdLS,
-	"node":   cmdNode,
-	"decor":  cmdDecor,
-	"source": cmdSource,
-	"search": cmdSearch,
-	"xrefs":  cmdXRefs,
+	"edges":   cmdEdges,
+	"ls":      cmdLS,
+	"node":    cmdNode,
+	"decor":   cmdDecor,
+	"source":  cmdSource,
+	"search":  cmdSearch,
+	"xrefs":   cmdXRefs,
+	"callers": cmdCallers,
 }
 
 var cmdSynonymns = map[string]string{

@@ -64,6 +64,9 @@ var (
 	pageToken   string
 	pageSize    int
 
+	// callers flags
+	includeOverrides bool
+
 	// source/decor flags
 	decorSpan string
 
@@ -176,6 +179,25 @@ var (
 				return displayTargets(reply.EdgeSet)
 			}
 			return displayEdges(reply)
+		})
+
+	cmdCallers = newCommand("callers", "[--include_overrides] <ticket>",
+		"Retrieve callers of the given node",
+		func(flag *flag.FlagSet) {
+			flag.BoolVar(&includeOverrides, "include_overrides", false, "Whether to include overrides")
+		},
+		func(flag *flag.FlagSet) error {
+			fmt.Fprintf(os.Stderr, "Warning: The Callers API is experimental and may be slow.")
+			req := &xpb.CallersRequest{
+				SemanticObject:   flag.Args(),
+				IncludeOverrides: includeOverrides,
+			}
+			logRequest(req)
+			reply, err := xs.Callers(ctx, req)
+			if err != nil {
+				return err
+			}
+			return displayCallers(reply)
 		})
 
 	cmdXRefs = newCommand("xrefs", "[--definitions kind] [--references kind] [--documentation kind] [--related_nodes] [--page_token token] [--page_size num] <ticket>",

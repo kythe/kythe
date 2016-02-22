@@ -271,6 +271,11 @@ func displaySearch(reply *spb.SearchReply) error {
 	return nil
 }
 
+func displayCallers(reply *xpb.CallersReply) error {
+	// TODO(zarko): Emit formatted data for -json=false.
+	return json.NewEncoder(out).Encode(reply)
+}
+
 func factValue(m map[string]map[string][]byte, ticket, factName, def string) string {
 	if n, ok := m[ticket]; ok {
 		if val, ok := n[factName]; ok {

@@ -44,6 +44,9 @@ func DeepEqual(expected, got interface{}) error {
 		if ev.Elem().IsValid() != gv.Elem().IsValid() {
 			return fmt.Errorf("expected: %v; found %v", expected, got)
 		}
+		if !ev.Elem().IsValid() {
+			return nil
+		}
 		ev, gv = ev.Elem(), gv.Elem()
 		et, gt = ev.Type(), gv.Type()
 	}

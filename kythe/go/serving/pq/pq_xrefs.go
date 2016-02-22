@@ -19,7 +19,6 @@ package pq
 import (
 	"database/sql"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"reflect"
 	"sort"
@@ -240,7 +239,7 @@ OFFSET $%d;`, setQ, len(tickets)+1, len(tickets)+2), args...)
 
 // Callers implements part of the xrefs.Interface.
 func (d *DB) Callers(ctx context.Context, req *xpb.CallersRequest) (*xpb.CallersReply, error) {
-	return nil, errors.New("Callers unsupported")
+	return xrefs.SlowCallers(ctx, d, req)
 }
 
 // Decorations implements part of the xrefs.Interface.
