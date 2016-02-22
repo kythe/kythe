@@ -1,6 +1,6 @@
 # Release Notes
 
-## Upcoming release
+## v0.0.19
 
 Notable changes:
  - C++ extractor: `KYTHE_ROOT_DIRECTORY` no longer changes the working
