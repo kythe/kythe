@@ -646,6 +646,33 @@ GraphObserver::NodeId KytheGraphObserver::recordNominalTypeNode(
   return id_out;
 }
 
+GraphObserver::NodeId KytheGraphObserver::recordTsigmaNode(
+    const std::vector<const NodeId *> &params) {
+  std::string identity;
+  llvm::raw_string_ostream ostream(identity);
+  bool comma = false;
+  ostream << "#sigma(";
+  for (const auto *next_id : params) {
+    if (comma) {
+      ostream << ",";
+    }
+    ostream << next_id->ToClaimedString();
+    comma = true;
+  }
+  ostream << ")";
+  GraphObserver::NodeId id_out(&type_token_, ostream.str());
+  if (!deferring_nodes_ ||
+      written_types_.insert(id_out.ToClaimedString()).second) {
+    VNameRef tsigma_vname(VNameRefFromNodeId(id_out));
+    recorder_->AddProperty(tsigma_vname, NodeKindID::kTSigma);
+    for (uint32_t param_index = 0; param_index < params.size(); ++param_index) {
+      recorder_->AddEdge(tsigma_vname, EdgeKindID::kParam,
+                         VNameRefFromNodeId(*params[param_index]), param_index);
+    }
+  }
+  return id_out;
+}
+
 GraphObserver::NodeId KytheGraphObserver::recordTappNode(
     const NodeId &tycon_id, const std::vector<const NodeId *> &params) {
   // We can't just use juxtaposition here because it leads to ambiguity

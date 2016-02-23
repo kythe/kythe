@@ -1424,6 +1424,34 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "template_pack_fn_decl",
+    srcs = ["template/template_pack_fn_decl.cc"],
+    ignore_dups = True,
+    tags = ["template"],
+)
+
+cxx_indexer_test(
+    name = "template_pack_fn_mono_call",
+    srcs = ["template/template_pack_fn_mono_call.cc"],
+    ignore_dups = True,
+    tags = ["template"],
+)
+
+cxx_indexer_test(
+    name = "template_pack_fn_pack_call",
+    srcs = ["template/template_pack_fn_pack_call.cc"],
+    ignore_dups = True,
+    tags = ["template"],
+)
+
+cxx_indexer_test(
+    name = "template_pack_rec_pack_call",
+    srcs = ["template/template_pack_rec_pack_call.cc"],
+    ignore_dups = True,
+    tags = ["template"],
+)
+
+cxx_indexer_test(
     name = "template_ps_completes",
     srcs = ["template/template_ps_completes.cc"],
     tags = ["template"],
@@ -1452,7 +1480,6 @@ cxx_indexer_test(
     srcs = ["template/template_ps_twovar_decl.cc"],
     tags = ["template"],
 )
-
 
 cxx_indexer_test(
     name = "template_rec_override",
@@ -1554,8 +1581,8 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "template_var_constexpr",
     srcs = ["template/template_var_constexpr.cc"],
-    std = "c++14",
     ignore_dups = True,
+    std = "c++14",
     tags = ["template"],
 )
 

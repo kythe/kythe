@@ -373,6 +373,20 @@ public:
   MaybeFew<GraphObserver::NodeId>
   BuildNodeIdForCallableDecl(const clang::Decl *Decl);
 
+  /// \brief Builds a stable node ID for `Node` as a callable.
+  ///
+  /// \param Node The node that is being used in a callable context.
+  /// \return The callable node for `Node`.
+  GraphObserver::NodeId
+  BuildNodeIdForCallableNode(const GraphObserver::NodeId &Id);
+
+  /// \brief Builds a stable node ID for `Decl` as a callable.
+  ///
+  /// \param Decl The callable declaration that is being identified.
+  /// \return The node for `Decl`.
+  MaybeFew<GraphObserver::NodeId>
+  BuildNodeIdForCallableExpr(const clang::Expr *Expr);
+
   /// \brief Builds an abstracted function type to ascribe to the callable
   /// node for `Decl`.
   ///

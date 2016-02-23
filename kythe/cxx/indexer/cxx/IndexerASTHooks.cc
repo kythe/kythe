@@ -975,9 +975,15 @@ bool IndexerASTVisitor::VisitCXXDeleteExpr(const clang::CXXDeleteExpr *E) {
     }
     auto DtorName = Context.DeclarationNames.getCXXDestructorName(
         CanQualType::CreateUnsafe(QTCan));
-    DDId =
-        BuildNodeIdForDependentName(clang::NestedNameSpecifierLoc(), DtorName,
-                                    E->getLocStart(), TyId, EmitRanges::No);
+    if (auto DepName = BuildNodeIdForDependentName(
+            clang::NestedNameSpecifierLoc(), DtorName, E->getLocStart(), TyId,
+            EmitRanges::No)) {
+      DDId = BuildNodeIdForCallableNode(DepName.primary());
+      if (DDId) {
+        Observer.recordCallableNode(DDId.primary());
+        Observer.recordCallableAsEdge(DepName.primary(), DDId.primary());
+      }
+    }
   }
   if (DDId) {
     clang::SourceRange SR = E->getSourceRange();
@@ -1013,7 +1019,10 @@ bool IndexerASTVisitor::VisitCXXPseudoDestructorExpr(
     clang::SourceRange SR = E->getSourceRange();
     SR.setEnd(RangeForASTEntityFromSourceLocation(SR.getEnd()).getEnd());
     GraphObserver::Range RCC = RangeInCurrentContext(SR);
-    RecordCallEdges(RCC, DDId.primary());
+    auto CallableId = BuildNodeIdForCallableNode(DDId.primary());
+    Observer.recordCallableNode(CallableId);
+    Observer.recordCallableAsEdge(DDId.primary(), CallableId);
+    RecordCallEdges(RCC, CallableId);
   }
   return true;
 }
@@ -1044,26 +1053,34 @@ bool IndexerASTVisitor::VisitCXXUnresolvedConstructExpr(
       SR.setEnd(RPL.getLocWithOffset(1));
     }
     GraphObserver::Range RCC = RangeInCurrentContext(SR);
-    RecordCallEdges(RCC, LookupId.primary());
+    auto CallableID = BuildNodeIdForCallableNode(LookupId.primary());
+    Observer.recordCallableNode(CallableID);
+    Observer.recordCallableAsEdge(LookupId.primary(), CallableID);
+    RecordCallEdges(RCC, CallableID);
   }
   return true;
 }
 
 bool IndexerASTVisitor::VisitCallExpr(const clang::CallExpr *E) {
-  if (const auto *Callee = E->getCalleeDecl()) {
+  if (BlameStack.empty()) {
     // TODO(zarko): What about static initializers? Do we blame these on the
     // translation unit?
-    if (!BlameStack.empty()) {
-      clang::SourceLocation RPL = E->getRParenLoc();
-      clang::SourceRange SR = E->getSourceRange();
-      if (RPL.isValid()) {
-        // This loses the right paren without the offset.
-        SR.setEnd(RPL.getLocWithOffset(1));
-      }
-      GraphObserver::Range RCC = RangeInCurrentContext(SR);
-      if (auto CalleeId = BuildNodeIdForCallableDecl(Callee)) {
-        RecordCallEdges(RCC, CalleeId.primary());
-      }
+    return true;
+  }
+  clang::SourceLocation RPL = E->getRParenLoc();
+  clang::SourceRange SR = E->getSourceRange();
+  if (RPL.isValid()) {
+    // This loses the right paren without the offset.
+    SR.setEnd(RPL.getLocWithOffset(1));
+  }
+  GraphObserver::Range RCC = RangeInCurrentContext(SR);
+  if (const auto *Callee = E->getCalleeDecl()) {
+    if (auto CalleeId = BuildNodeIdForCallableDecl(Callee)) {
+      RecordCallEdges(RCC, CalleeId.primary());
+    }
+  } else if (const auto *CE = E->getCallee()) {
+    if (auto CalleeId = BuildNodeIdForCallableExpr(CE)) {
+      RecordCallEdges(RCC, CalleeId.primary());
     }
   }
   return true;
@@ -1908,7 +1925,10 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
               clang::SourceRange SR = Init->getSourceRange();
               SR.setEnd(SR.getEnd().getLocWithOffset(1));
               GraphObserver::Range RCC = RangeInCurrentContext(SR);
-              RecordCallEdges(RCC, LookupId.primary());
+              auto CallableID = BuildNodeIdForCallableNode(LookupId.primary());
+              Observer.recordCallableNode(CallableID);
+              Observer.recordCallableAsEdge(LookupId.primary(), CallableID);
+              RecordCallEdges(RCC, CallableID);
             }
           }
         }
@@ -2237,9 +2257,13 @@ uint64_t IndexerASTVisitor::SemanticHash(const clang::TemplateArgument &TA) {
   case TemplateArgument::Expression:
     CHECK(IgnoreUnimplemented) << "SemanticHash(Expression)";
     return 0;
-  case TemplateArgument::Pack:
-    CHECK(IgnoreUnimplemented) << "SemanticHash(Pack)";
-    return 0;
+  case TemplateArgument::Pack: {
+    uint64_t out = 0x8080808008080808LL;
+    for (const auto &Element : TA.pack_elements()) {
+      out = SemanticHash(Element) ^ ((out << 1) | (out >> 63));
+    }
+    return out;
+  }
   default:
     LOG(FATAL) << "Unexpected TemplateArgument Kind";
   }
@@ -2304,9 +2328,24 @@ uint64_t IndexerASTVisitor::SemanticHash(const clang::RecordDecl *RD) {
 
 MaybeFew<GraphObserver::NodeId>
 IndexerASTVisitor::BuildNodeIdForCallableDecl(const clang::Decl *Decl) {
-  GraphObserver::NodeId BaseId(BuildNodeIdForDecl(Decl));
-  return GraphObserver::NodeId(BaseId.getToken(),
-                               BaseId.getRawIdentity() + "#callable");
+  return BuildNodeIdForCallableNode(BuildNodeIdForDecl(Decl));
+}
+
+GraphObserver::NodeId
+IndexerASTVisitor::BuildNodeIdForCallableNode(const GraphObserver::NodeId &Id) {
+  return GraphObserver::NodeId(Id.getToken(),
+                               Id.getRawIdentity() + "#callable");
+}
+
+MaybeFew<GraphObserver::NodeId>
+IndexerASTVisitor::BuildNodeIdForCallableExpr(const clang::Expr *Expr) {
+  if (auto BaseId = BuildNodeIdForExpr(Expr, EmitRanges::Yes)) {
+    auto CallableID = BuildNodeIdForCallableNode(BaseId.primary());
+    Observer.recordCallableNode(CallableID);
+    Observer.recordCallableAsEdge(BaseId.primary(), CallableID);
+    return CallableID;
+  }
+  return None();
 }
 
 GraphObserver::NodeId
@@ -2631,11 +2670,12 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForDependentName(
       }
     } break;
     case NestedNameSpecifier::Namespace:
-      CHECK(IgnoreUnimplemented) << "NNS::Namespace";
-      return None();
+      // TODO(zarko): Emit some representation to back this node ID.
+      SubId = BuildNodeIdForDecl(NNS->getAsNamespace());
+      break;
     case NestedNameSpecifier::NamespaceAlias:
-      CHECK(IgnoreUnimplemented) << "NNS::NamespaceAlias";
-      return None();
+      SubId = BuildNodeIdForDecl(NNS->getAsNamespaceAlias());
+      break;
     case NestedNameSpecifier::TypeSpec: {
       const TypeLoc &TL = NNSLoc.getTypeLoc();
       if (auto MaybeSubId = BuildNodeIdForType(TL, ER)) {
@@ -2698,17 +2738,38 @@ IndexerASTVisitor::BuildNodeIdForExpr(const clang::Expr *Expr, EmitRanges ER) {
   clang::Expr::EvalResult Result;
   std::string Identity;
   llvm::raw_string_ostream Ostream(Identity);
+  std::string Text;
+  llvm::raw_string_ostream TOstream(Text);
+  bool IsBindingSite = false;
+  auto RCC = RangeInCurrentContext(
+      RangeForASTEntityFromSourceLocation(Expr->getExprLoc()));
   if (!Expr->isValueDependent() && Expr->EvaluateAsRValue(Result, Context)) {
     // TODO(zarko): Represent constant values of any type as nodes in the
-    // graph; link ranges to them.
-    Ostream << Result.Val.getAsString(Context, Expr->getType()) << "#const";
+    // graph; link ranges to them. Right now we don't emit any node data for
+    // #const signatures.
+    TOstream << Result.Val.getAsString(Context, Expr->getType());
+    Ostream << TOstream.str() << "#const";
   } else {
-    // TODO(zarko): Define and emit a node kind for opaque expressions.
-    Observer.AppendRangeToStream(
-        Ostream, RangeInCurrentContext(
-                     RangeForASTEntityFromSourceLocation(Expr->getExprLoc())));
+    // This includes expressions like UnresolvedLookupExpr, which can appear
+    // in primary templates.
+    Observer.AppendRangeToStream(Ostream, RCC);
+    Expr->printPretty(TOstream, nullptr,
+                      clang::PrintingPolicy(*Observer.getLangOptions()));
+    Ostream << TOstream.str();
+    IsBindingSite = true;
   }
-  return GraphObserver::NodeId(Observer.getDefaultClaimToken(), Ostream.str());
+  auto ResultId =
+      GraphObserver::NodeId(Observer.getDefaultClaimToken(), Ostream.str());
+  if (ER == EmitRanges::Yes) {
+    if (IsBindingSite) {
+      Observer.recordDefinitionBindingRange(RCC, ResultId);
+      Observer.recordLookupNode(ResultId, TOstream.str());
+    } else {
+      Observer.recordDeclUseLocation(RCC, ResultId,
+                                     GraphObserver::Claimability::Claimable);
+    }
+  }
+  return ResultId;
 }
 
 // The duplication here is unfortunate, but `TemplateArgumentLoc` is
@@ -2746,9 +2807,23 @@ IndexerASTVisitor::BuildNodeIdForTemplateArgument(
   case TemplateArgument::Expression:
     CHECK(Arg.getAsExpr() != nullptr);
     return BuildNodeIdForExpr(Arg.getAsExpr(), EmitRanges::Yes);
-  case TemplateArgument::Pack:
-    CHECK(IgnoreUnimplemented) << "TA.Pack";
-    return None();
+  case TemplateArgument::Pack: {
+    std::vector<GraphObserver::NodeId> Nodes;
+    Nodes.reserve(Arg.pack_size());
+    for (const auto &Element : Arg.pack_elements()) {
+      auto Id(BuildNodeIdForTemplateArgument(Element, L));
+      if (!Id) {
+        return Id;
+      }
+      Nodes.push_back(Id.primary());
+    }
+    std::vector<const GraphObserver::NodeId *> NodePointers;
+    NodePointers.reserve(Arg.pack_size());
+    for (const auto &Id : Nodes) {
+      NodePointers.push_back(&Id);
+    }
+    return Observer.recordTsigmaNode(NodePointers);
+  }
   default:
     CHECK(IgnoreUnimplemented) << "Unexpected TemplateArgument kind!";
   }
@@ -2787,8 +2862,7 @@ IndexerASTVisitor::BuildNodeIdForTemplateArgument(
     CHECK(ArgLoc.getSourceExpression() != nullptr);
     return BuildNodeIdForExpr(ArgLoc.getSourceExpression(), EmitRanges);
   case TemplateArgument::Pack:
-    CHECK(IgnoreUnimplemented) << "TA.Pack";
-    return None();
+    return BuildNodeIdForTemplateArgument(Arg, ArgLoc.getLocation());
   default:
     CHECK(IgnoreUnimplemented) << "Unexpected TemplateArgument kind!";
   }
@@ -3316,7 +3390,21 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
     }
     break;
   UNSUPPORTED_CLANG_TYPE(DependentTemplateSpecialization);
-  UNSUPPORTED_CLANG_TYPE(PackExpansion);
+  case TypeLoc::PackExpansion: {
+    const auto &T = Type.castAs<PackExpansionTypeLoc>();
+    const auto *DT = dyn_cast<PackExpansionType>(PT);
+    auto PatternID(BuildNodeIdForType(T.getPatternLoc(),
+                   DT ? DT->getPattern().getTypePtr()
+                      : T.getPatternLoc().getTypePtr(),
+                   EmitRanges));
+    if (!PatternID) {
+      return PatternID;
+    }
+    if (TypeAlreadyBuilt) {
+      break;
+    }
+    ID = PatternID;
+  } break;
   UNSUPPORTED_CLANG_TYPE(ObjCObject);
   UNSUPPORTED_CLANG_TYPE(ObjCInterface); // Leaf.
   UNSUPPORTED_CLANG_TYPE(ObjCObjectPointer);

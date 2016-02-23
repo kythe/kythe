@@ -6,7 +6,8 @@ template<typename T, typename A1>
 //- MakeA childof AbsMakeA
 //- MakeA.node/kind function
 inline T make_a(const A1& a1) {
-  //- CallAnchor=@"T(a1)" ref/call LookupCtorT
+  //- CallAnchor=@"T(a1)" ref/call LookupCtorTC
+  //- LookupCtorT callableas LookupCtorTC
   //- CallAnchor childof MakeA
   //- LookupCtorT.node/kind lookup
   //- LookupCtorT.text "#ctor"

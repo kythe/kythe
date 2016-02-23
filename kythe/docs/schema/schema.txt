@@ -1463,6 +1463,35 @@ using Alias = C*;
 --------------------------------------------------------------------------------
 
 
+[[tsigma]]
+tsigma
+~~~~
+
+Brief description::
+  A *tsigma* is an ordered list of types that is unpacked on substitution.
+Expected out-edges::
+  <<param>> (at least ordinal 0)
+
+[kythe,C++,"Parameter packs unpack tsigmas."]
+--------------------------------------------------------------------------------
+template <typename... Ts>
+//- @f defines/binding FnTF
+void f(Ts... ts) { }
+
+//- @int ref IntType
+//- @double ref DoubleType
+//- @f ref FnF
+int g(double x) { f(1, x); }
+
+//- FnF instantiates AppFnTFSigma
+//- AppFnTFSigma param.0 FnTF
+//- AppFnTFSigma param.1 Sigma
+//- Sigma.node/kind tsigma
+//- Sigma param.0 IntType
+//- Sigma param.1 DoubleType
+--------------------------------------------------------------------------------
+
+
 [[variable]]
 variable
 ~~~~~~~~
@@ -1802,14 +1831,16 @@ In this case, the constructor (or destructor) is named `#ctor` (or `#dtor`):
 //- @T defines/binding TyvarT
 template <typename T>
 class C : T {
-  //- @"T()" ref/call LookupTCtor
+  //- @"T()" ref/call LookupTCtorCallable
+  //- LookupTCtor callableas LookupTCtorCallable
   //- LookupTCtor.node/kind lookup
   //- LookupTCtor param.0 TyvarT
   //- LookupTCtor.text "#ctor"
   C() : T() { }
 
   T *t;
-  //- @"delete t" ref/call LookupTDtor
+  //- @"delete t" ref/call LookupTDtorCallable
+  //- LookupTDtor callableas LookupTDtorCallable
   //- LookupTDtor.node/kind lookup
   //- LookupTDtor param.0 TyvarT
   //- LookupTDtor.text "#dtor"

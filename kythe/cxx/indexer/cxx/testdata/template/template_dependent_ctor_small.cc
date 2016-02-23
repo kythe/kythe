@@ -2,7 +2,8 @@
 //- @T defines/binding TyvarT
 template <typename T>
 struct S : T::Q {
-  //- @"Q()" ref/call LookupTQCtor
+  //- @"Q()" ref/call LookupTQCtorC
+  //- LookupTQCtor callableas LookupTQCtorC
   //- LookupTQCtor.node/kind lookup
   //- LookupTQCtor.text "#ctor"
   //- LookupTQCtor param.0 LookupTQ

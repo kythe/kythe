@@ -302,6 +302,12 @@ public:
   virtual NodeId recordTappNode(const NodeId &TyconId,
                                 const std::vector<const NodeId *> &Params) = 0;
 
+  /// \brief Records a sigma node, returning its ID.
+  /// \param Params The `NodeId`s of the types to include.
+  /// \return The result's ID.
+  virtual NodeId
+  recordTsigmaNode(const std::vector<const NodeId *> &Params) = 0;
+
   enum class RecordKind { Struct, Class, Union };
 
   /// \brief Describes how autological a given declaration is.
@@ -820,6 +826,10 @@ public:
   }
 
   NodeId recordNominalTypeNode(const NameId &TypeName) override {
+    return NodeId(getDefaultClaimToken(), "");
+  }
+
+  NodeId recordTsigmaNode(const std::vector<const NodeId *> &Params) override {
     return NodeId(getDefaultClaimToken(), "");
   }
 

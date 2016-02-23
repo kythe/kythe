@@ -4,7 +4,8 @@ template <typename T>
 class C {
   T *t;
   void f() {
-    //- @"t->SomeId::Base::~Base" ref/call Dtor
+    //- @"t->SomeId::Base::~Base" ref/call DtorC
+    //- Dtor callableas DtorC
     //- Dtor.node/kind lookup
     //- Dtor.text "#dtor"
     //- Dtor param.0 BaseInT
