@@ -209,9 +209,6 @@ message PageToken {
   // Index into the primary reply sequence.
   int32 index = 1;
 
-  // Secondary index into the reply sequence.
-  int32 secondary_index = 3;
-
   // Secondary page token for reply sub-query.
   string secondary_token = 2;
 }

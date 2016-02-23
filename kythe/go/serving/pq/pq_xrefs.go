@@ -20,6 +20,7 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"fmt"
+	"log"
 	"reflect"
 	"sort"
 	"strconv"
@@ -52,6 +53,7 @@ func (d *DB) Nodes(ctx context.Context, req *xpb.NodesRequest) (*xpb.NodesReply,
 	if err != nil {
 		return nil, fmt.Errorf("error querying for nodes: %v", err)
 	}
+	defer closeRows(rs)
 
 	var reply xpb.NodesReply
 	for rs.Next() {
@@ -143,6 +145,10 @@ func (d *DB) Nodes(ctx context.Context, req *xpb.NodesRequest) (*xpb.NodesReply,
 
 // Edges implements part of the xrefs.Interface.
 func (d *DB) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
+	return d.edges(ctx, req, nil)
+}
+
+func (d *DB) edges(ctx context.Context, req *xpb.EdgesRequest, edgeFilter func(kind string) bool) (*xpb.EdgesReply, error) {
 	tickets, err := xrefs.FixTickets(req.Ticket)
 	if err != nil {
 		return nil, err
@@ -182,23 +188,32 @@ AND kind IN %s`, kSetQ)
 		args = append(args, kArgs...)
 	}
 
-	// Page the resulting edge sets
-	query += fmt.Sprintf(`
-LIMIT $%d
-OFFSET $%d;`, len(args)+1, len(args)+2)
-	args = append(args, pageSize+1, pageOffset)
+	// Scan edge sets/groups in order; necessary for CrossReferences
+	query += " ORDER BY source, kind"
+
+	// Seek to the requested page offset (req.PageToken.Index).  We don't use
+	// LIMIT here because we don't yet know how many edges will be filtered by
+	// edgeFilter.
+	query += fmt.Sprintf(" OFFSET $%d", len(args)+1)
+	args = append(args, pageOffset)
 
 	rs, err := d.Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("error querying for edges: %v", err)
 	}
+	defer closeRows(rs)
 
+	var scanned int
 	edges := make(map[string]map[string][]string, len(tickets))
-	for i := 0; i < pageSize && rs.Next(); i++ {
+	for count := 0; count < pageSize && rs.Next(); scanned++ {
 		var source, kind, target string
 		if err := rs.Scan(&source, &kind, &target); err != nil {
 			return nil, fmt.Errorf("edges scan error: %v", err)
 		}
+		if edgeFilter != nil && !edgeFilter(kind) {
+			continue
+		}
+		count++
 
 		groups, ok := edges[source]
 		if !ok {
@@ -226,8 +241,9 @@ OFFSET $%d;`, len(args)+1, len(args)+2)
 		})
 	}
 
+	// If there is another row, there is a NextPageToken.
 	if rs.Next() {
-		rec, err := proto.Marshal(&srvpb.PageToken{Index: int32(pageOffset + pageSize)})
+		rec, err := proto.Marshal(&srvpb.PageToken{Index: int32(pageOffset + scanned)})
 		if err != nil {
 			return nil, fmt.Errorf("internal error: error marshalling page token: %v", err)
 		}
@@ -334,7 +350,8 @@ func (d *DB) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReques
 		pageSize = maxPageSize
 	}
 
-	var pageOffset, edgesOffset int
+	var pageOffset int
+	var edgesToken string
 	if req.PageToken != "" {
 		rec, err := base64.StdEncoding.DecodeString(req.PageToken)
 		if err != nil {
@@ -345,7 +362,7 @@ func (d *DB) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReques
 			return nil, fmt.Errorf("invalid page_token: %q", req.PageToken)
 		}
 		pageOffset = int(t.Index)
-		edgesOffset = int(t.SecondaryIndex)
+		edgesToken = t.SecondaryToken
 	}
 
 	reply := &xpb.CrossReferencesReply{
@@ -356,13 +373,14 @@ func (d *DB) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReques
 	setQ, ticketArgs := sqlSetQuery(1, tickets)
 
 	var count int
-	if edgesOffset == 0 {
+	if edgesToken == "" {
 		args := append(ticketArgs, pageSize+1, pageOffset) // +1 to check for next page
 
 		rs, err := d.Query(fmt.Sprintf("SELECT ticket, kind, proto FROM CrossReferences WHERE ticket IN %s ORDER BY ticket LIMIT $%d OFFSET $%d;", setQ, len(tickets)+1, len(tickets)+2), args...)
 		if err != nil {
 			return nil, err
 		}
+		defer closeRows(rs)
 
 		var xrs *xpb.CrossReferencesReply_CrossReferenceSet
 		for rs.Next() {
@@ -416,48 +434,55 @@ func (d *DB) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReques
 		}
 	}
 
-	if count <= pageSize {
-		requestedEdges := pageSize - count
-		args := append(ticketArgs, requestedEdges+1, edgesOffset) // +1 to check for next page
-
-		// TODO(schroederc): reuse db.Edges (get reverses); filter anchor edges
-		rs, err := d.Query(fmt.Sprintf("SELECT source, kind, target FROM Edges WHERE source IN %s ORDER BY source LIMIT $%d OFFSET $%d", setQ, len(tickets)+1, len(tickets)+2), args...)
+	if len(req.Filter) > 0 && count <= pageSize {
+		// TODO(schroederc): consolidate w/ LevelDB implementation
+		er, err := d.edges(ctx, &xpb.EdgesRequest{
+			Ticket:    tickets,
+			Filter:    req.Filter,
+			PageSize:  int32(pageSize - count),
+			PageToken: edgesToken,
+		}, func(kind string) bool {
+			return !schema.IsAnchorEdge(kind)
+		})
 		if err != nil {
 			return nil, fmt.Errorf("error getting related nodes: %v", err)
 		}
 
-		nodeTickets := stringset.New()
-		for i := 0; i < requestedEdges && rs.Next(); i++ {
-			var source string
-			var node xpb.CrossReferencesReply_RelatedNode
-			if err := rs.Scan(&source, &node.RelationKind, &node.Ticket); err != nil {
-				return nil, err
-			}
-			xrs, ok := reply.CrossReferences[source]
+		for _, es := range er.EdgeSet {
+			ticket := es.SourceTicket
+			nodes := stringset.New()
+			crs, ok := reply.CrossReferences[ticket]
 			if !ok {
-				xrs = &xpb.CrossReferencesReply_CrossReferenceSet{Ticket: source}
-				reply.CrossReferences[xrs.Ticket] = xrs
+				crs = &xpb.CrossReferencesReply_CrossReferenceSet{
+					Ticket: ticket,
+				}
+			}
+			for _, g := range es.Group {
+				if !schema.IsAnchorEdge(g.Kind) {
+					nodes.Add(g.TargetTicket...)
+					for _, t := range g.TargetTicket {
+						crs.RelatedNode = append(crs.RelatedNode, &xpb.CrossReferencesReply_RelatedNode{
+							RelationKind: g.Kind,
+							Ticket:       t,
+						})
+					}
+				}
+			}
+			if len(nodes) > 0 {
+				for _, n := range er.Node {
+					if nodes.Contains(n.Ticket) {
+						reply.Nodes[n.Ticket] = n
+					}
+				}
 			}
 
-			xrs.RelatedNode = append(xrs.RelatedNode, &node)
-			nodeTickets.Add(node.Ticket)
+			if !ok && len(crs.RelatedNode) > 0 {
+				reply.CrossReferences[ticket] = crs
+			}
 		}
 
-		if len(req.Filter) > 0 && len(nodeTickets) > 0 {
-			nodes, err := d.Nodes(ctx, &xpb.NodesRequest{
-				Ticket: nodeTickets.Slice(),
-				Filter: req.Filter,
-			})
-			if err != nil {
-				return nil, fmt.Errorf("error getting related node facts: %v", err)
-			}
-			for _, n := range nodes.Node {
-				reply.Nodes[n.Ticket] = n
-			}
-		}
-
-		if rs.Next() {
-			rec, err := proto.Marshal(&srvpb.PageToken{SecondaryIndex: int32(edgesOffset + requestedEdges)})
+		if er.NextPageToken != "" {
+			rec, err := proto.Marshal(&srvpb.PageToken{SecondaryToken: er.NextPageToken})
 			if err != nil {
 				return nil, fmt.Errorf("internal error: error marshalling page token: %v", err)
 			}
@@ -484,7 +509,7 @@ func (d *DB) scanReferences(fileTicket string, norm *xrefs.Normalizer) ([]*xpb.D
 	if err != nil {
 		return nil, fmt.Errorf("error retrieving decorations: %v", err)
 	}
-	defer rs.Close()
+	defer closeRows(rs)
 
 	var references []*xpb.DecorationsReply_Reference
 	for rs.Next() {
@@ -513,4 +538,10 @@ func sqlSetQuery(n int, items interface{}) (query string, args []interface{}) {
 		n++
 	}
 	return fmt.Sprintf("(%s)", strings.Join(qs, ",")), args
+}
+
+func closeRows(rs *sql.Rows) {
+	if err := rs.Close(); err != nil {
+		log.Printf("WARNING: error closing SQL scanner: %v", err)
+	}
 }
