@@ -148,8 +148,6 @@ func (d *DB) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.EdgesReply,
 		return nil, err
 	}
 
-	// TODO(schroederc): filter by Kind
-
 	pageSize := int(req.PageSize)
 	if pageSize <= 0 {
 		pageSize = defaultPageSize
@@ -170,13 +168,27 @@ func (d *DB) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.EdgesReply,
 		pageOffset = int(t.Index)
 	}
 
+	// Select only the edges from the given source tickets
 	setQ, args := sqlSetQuery(1, tickets)
-	args = append(args, pageSize+1, pageOffset)
-	rs, err := d.Query(fmt.Sprintf(`
+	query := fmt.Sprintf(`
 SELECT * FROM AllEdges
-WHERE source IN %s
+WHERE source IN %s`, setQ)
+
+	// Filter by edges kinds, if given
+	if len(req.Kind) > 0 {
+		kSetQ, kArgs := sqlSetQuery(1+len(args), req.Kind)
+		query += fmt.Sprintf(`
+AND kind IN %s`, kSetQ)
+		args = append(args, kArgs...)
+	}
+
+	// Page the resulting edge sets
+	query += fmt.Sprintf(`
 LIMIT $%d
-OFFSET $%d;`, setQ, len(tickets)+1, len(tickets)+2), args...)
+OFFSET $%d;`, len(args)+1, len(args)+2)
+	args = append(args, pageSize+1, pageOffset)
+
+	rs, err := d.Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("error querying for edges: %v", err)
 	}
