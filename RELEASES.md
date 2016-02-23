@@ -8,6 +8,7 @@ Notable changes:
    normalization.
  - `http_server`: ensure the given `--serving_table` exists (do not create, if missing)
  - Java indexer: fixes/tests for interfaces, which now have `extends` edges
+ - `kythe` tool: display subkinds for related nodes in xrefs subcommand
 
 Notable additions:
  - `entrystream`: add `--unique` flag

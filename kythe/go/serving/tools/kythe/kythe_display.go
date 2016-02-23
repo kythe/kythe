@@ -308,9 +308,21 @@ func displayXRefs(reply *xpb.CrossReferencesReply) error {
 				return err
 			}
 			for _, n := range xr.RelatedNode {
-				nodeKind := "UNKNOWN"
-				if node, ok := reply.Nodes[n.Ticket]; ok && len(node.Fact) == 1 {
-					nodeKind = string(node.Fact[0].Value)
+				var nodeKind, subkind string
+				if node, ok := reply.Nodes[n.Ticket]; ok {
+					for _, f := range node.Fact {
+						switch f.Name {
+						case schema.NodeKindFact:
+							nodeKind = string(f.Value)
+						case schema.SubkindFact:
+							subkind = string(f.Value)
+						}
+					}
+				}
+				if nodeKind == "" {
+					nodeKind = "UNKNOWN"
+				} else if subkind != "" {
+					nodeKind += "/" + subkind
 				}
 				if _, err := fmt.Fprintf(out, "    %s %s [%s]\n", n.Ticket, n.RelationKind, nodeKind); err != nil {
 					return err

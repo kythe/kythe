@@ -218,7 +218,7 @@ var (
 				PageSize:  int32(pageSize),
 			}
 			if relatedNodes {
-				req.Filter = []string{schema.NodeKindFact}
+				req.Filter = []string{schema.NodeKindFact, schema.SubkindFact}
 			}
 			switch defKind {
 			case "all":
