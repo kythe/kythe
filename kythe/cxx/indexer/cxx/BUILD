@@ -97,4 +97,16 @@ cc_test(
     deps = [
         ":testlib",
     ],
+    linkopts = select({
+        ":darwin": ["-headerpad_max_install_names"],
+        "//conditions:default": [],
+    }),
 )
+
+
+config_setting(
+    name = "darwin",
+    values = {"cpu": "darwin"},
+    visibility = ["//visibility:public"],
+)
+
