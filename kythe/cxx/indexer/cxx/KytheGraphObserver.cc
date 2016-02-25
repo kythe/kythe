@@ -856,12 +856,12 @@ void KytheGraphObserver::applyMetadataFile(clang::FileID id,
     fprintf(stderr, "Couldn't get content for %s\n", file->getName());
     return;
   }
-  std::string error;
-  auto metadata = MetadataFile::LoadFromJSON(buffer->getBuffer(), &error);
-  if (metadata) {
-    meta_.emplace(id, std::move(metadata));
-  } else {
-    fprintf(stderr, "Couldn't load %s: %s\n", file->getName(), error.c_str());
+  for (auto &support : *meta_supports_) {
+    auto metadata = support->ParseFile(file->getName(), buffer);
+    if (metadata) {
+      meta_.emplace(id, std::move(metadata));
+      break;
+    }
   }
 }
 

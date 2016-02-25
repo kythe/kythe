@@ -33,6 +33,7 @@
 
 #include "glog/logging.h"
 #include "kythe/cxx/common/cxx_details.h"
+#include "kythe/cxx/common/kythe_metadata_file.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Lex/HeaderSearch.h"
@@ -66,8 +67,7 @@ bool RunToolOnCode(std::unique_ptr<clang::FrontendAction> tool_action,
 // TODO(jdennett): Consider moving/renaming this to kythe::ExtractIndexAction.
 class IndexerFrontendAction : public clang::ASTFrontendAction {
 public:
-  explicit IndexerFrontendAction(GraphObserver *GO,
-                                 const HeaderSearchInfo *Info)
+  IndexerFrontendAction(GraphObserver *GO, const HeaderSearchInfo *Info)
       : Observer(CHECK_NOTNULL(GO)), HeaderConfigValid(Info != nullptr) {
     if (HeaderConfigValid) {
       HeaderConfig = *Info;
@@ -215,12 +215,14 @@ struct IndexerOptions {
 /// \param Cache The hash cache to use, or nullptr if none.
 /// \param Output The output stream to use.
 /// \param Options Configuration settings for this run.
+/// \param MetaSupports Metadata support for this run.
 /// \return empty if OK; otherwise, an error description.
 std::string IndexCompilationUnit(const proto::CompilationUnit &Unit,
                                  std::vector<proto::FileData> &Files,
                                  KytheClaimClient &ClaimClient,
                                  HashCache *Cache, KytheOutputStream &Output,
-                                 const IndexerOptions &Options);
+                                 const IndexerOptions &Options,
+                                 const MetadataSupports *MetaSupports);
 
 } // namespace kythe
 

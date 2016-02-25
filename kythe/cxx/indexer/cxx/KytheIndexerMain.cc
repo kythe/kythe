@@ -354,15 +354,18 @@ Examples:
     options.EffectiveWorkingDirectory = working_dir;
 
     if (FLAGS_normalize_file_vnames) {
-      for (auto& input : *unit.mutable_required_input()) {
+      for (auto &input : *unit.mutable_required_input()) {
         input.mutable_v_name()->set_path(CleanPath(input.v_name().path()));
         input.mutable_v_name()->clear_signature();
       }
     }
 
+    kythe::MetadataSupports meta_supports;
+    meta_supports.push_back(llvm::make_unique<KytheMetadataSupport>());
+
     result = IndexCompilationUnit(unit, virtual_files, *claim_client,
                                   FLAGS_cache.empty() ? nullptr : &MHashCache,
-                                  kythe_output, options);
+                                  kythe_output, options, &meta_supports);
   }
 
   if (close(write_fd) != 0) {

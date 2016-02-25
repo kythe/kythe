@@ -123,9 +123,11 @@ class KytheClaimToken : public GraphObserver::ClaimToken {
 class KytheGraphObserver : public GraphObserver {
  public:
   KytheGraphObserver(KytheGraphRecorder *recorder, KytheClaimClient *client,
+                     const MetadataSupports *meta_supports,
                      const llvm::IntrusiveRefCntPtr<IndexVFS> vfs)
       : recorder_(CHECK_NOTNULL(recorder)),
         client_(CHECK_NOTNULL(client)),
+        meta_supports_(CHECK_NOTNULL(meta_supports)),
         vfs_(vfs) {
     default_token_.set_rough_claimed(true);
     type_token_.set_rough_claimed(true);
@@ -427,6 +429,8 @@ class KytheGraphObserver : public GraphObserver {
   std::unordered_set<std::string> written_types_;
   /// Whether to try and locally deduplicate nodes.
   bool deferring_nodes_ = true;
+  /// \brief Enabled metadata import support.
+  const MetadataSupports *const meta_supports_;
   /// The virtual filesystem in use.
   llvm::IntrusiveRefCntPtr<IndexVFS> vfs_;
   /// A neutral claim token.

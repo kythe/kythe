@@ -142,4 +142,15 @@ std::unique_ptr<MetadataFile> MetadataFile::LoadFromJSON(
   }
   return meta_file;
 }
+
+std::unique_ptr<kythe::MetadataFile> KytheMetadataSupport::ParseFile(
+    const std::string &filename, const llvm::MemoryBuffer *buffer) {
+  std::string error;
+  auto metadata = MetadataFile::LoadFromJSON(buffer->getBuffer(), &error);
+  if (!metadata) {
+    fprintf(stderr, "Couldn't load %s: %s\n", filename.c_str(), error.c_str());
+  }
+  return metadata;
 }
+
+}  // namespace kythe
