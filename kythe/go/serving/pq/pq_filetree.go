@@ -42,7 +42,7 @@ func (d *DB) Directory(ctx context.Context, req *ftpb.DirectoryRequest) (*ftpb.D
 
 	rs, err := d.selectDirectory.Query(req.Corpus, req.Root, path)
 	if err != nil {
-		return nil, fmt.Errorf("query error: %v")
+		return nil, fmt.Errorf("query error: %v", err)
 	}
 
 	reply := &ftpb.DirectoryReply{}

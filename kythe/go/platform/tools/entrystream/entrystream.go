@@ -129,12 +129,12 @@ func sortEntries(entries <-chan *spb.Entry) <-chan *spb.Entry {
 		Marshaler: entryMarshaler{},
 	})
 	if err != nil {
-		log.Fatal("Error creating entries sorter: %v", err)
+		log.Fatalf("Error creating entries sorter: %v", err)
 	}
 
 	for e := range entries {
 		if err := sorter.Add(e); err != nil {
-			log.Fatal("Error sorting entries: %v", err)
+			log.Fatalf("Error sorting entries: %v", err)
 		}
 	}
 
@@ -145,7 +145,7 @@ func sortEntries(entries <-chan *spb.Entry) <-chan *spb.Entry {
 			ch <- i.(*spb.Entry)
 			return nil
 		}); err != nil {
-			log.Fatal("error sorting entries: %v", err)
+			log.Fatalf("error sorting entries: %v", err)
 		}
 	}()
 	return ch
