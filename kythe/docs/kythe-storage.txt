@@ -644,21 +644,8 @@ directory_indexer::
   A tool to generate Kythe entries representing a directory tree.
   [link:/repo/kythe/go/storage/tools/directory_indexer.go[source]]
 
-There are several implementations of graph stores using various storage
-formats:
-
 leveldb::
   An implementation of a graph store using link:http://leveldb.org[LevelDB]
   (via link:http://github.com/jmjodges/levigo[levigo]).
   [link:/repo/kythe/go/storage/leveldb/leveldb.go[source]]
 
-sql::
-  An implementation of a graph store using a SQL database, specifically
-  link:http://sqlite.org[SQLite3] (via
-  link:http://github.com/mattn/go-sqlite3[go-sqlite3]).
-  [link:/repo/kythe/go/storage/sql/sql.go[source]]
-
-client::
-  An implementation of a graph store using a network-accessible remote graph
-  store as a delegate.
-  [link:/repo/kythe/go/storage/client/client.go[source]]
