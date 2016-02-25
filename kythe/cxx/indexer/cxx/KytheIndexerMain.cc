@@ -44,6 +44,7 @@
 #include "kythe/cxx/common/indexing/KytheVFS.h"
 #include "kythe/cxx/common/json_proto.h"
 #include "kythe/cxx/common/path_utils.h"
+#include "kythe/cxx/common/proto_conversions.h"
 #include "kythe/proto/analysis.pb.h"
 #include "kythe/proto/claim.pb.h"
 
@@ -355,7 +356,8 @@ Examples:
 
     if (FLAGS_normalize_file_vnames) {
       for (auto &input : *unit.mutable_required_input()) {
-        input.mutable_v_name()->set_path(CleanPath(input.v_name().path()));
+        input.mutable_v_name()->set_path(
+            CleanPath(ToStringRef(input.v_name().path())));
         input.mutable_v_name()->clear_signature();
       }
     }
