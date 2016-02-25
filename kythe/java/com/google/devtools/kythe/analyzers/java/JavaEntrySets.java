@@ -272,10 +272,16 @@ public class JavaEntrySets extends KytheEntrySets {
    * schema-compliant node.
    */
   @Deprecated
-  EntrySet todoNode(String message) {
+  EntrySet todoNode(String sourceName, JCTree tree, String message) {
     return emitAndReturn(
         newNode("TODO")
             .addSignatureSalt("" + System.nanoTime()) // Ensure unique TODOs
-            .setProperty("todo", message));
+            .setProperty("todo", message)
+            .setProperty("sourcename", sourceName)
+            .setProperty("jctree/class", tree.getClass().toString())
+            .setProperty("jctree/tag", "" + tree.getTag())
+            .setProperty("jctree/type", "" + tree.type)
+            .setProperty("jctree/pos", "" + tree.pos)
+            .setProperty("jctree/start", "" + tree.getStartPosition()));
   }
 }

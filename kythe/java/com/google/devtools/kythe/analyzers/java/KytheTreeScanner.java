@@ -298,7 +298,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
       return new JavaNode(classNode, signature.get());
     }
-    return todoNode("JCClass: " + classDef);
+    return todoNode(ctx, "JCClass: " + classDef);
   }
 
   @Override
@@ -405,7 +405,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       // Try to scan method body even if signature could not be generated.
       scan(methodDef.getBody(), ctx);
     }
-    return todoNode("MethodDef: " + methodDef);
+    return todoNode(ctx, "MethodDef: " + methodDef);
   }
 
   @Override
@@ -438,7 +438,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       scan(varDef.getInitializer(), ctx);
       return new JavaNode(varNode, signature.get(), typeNode);
     }
-    return todoNode("VarDef: " + varDef);
+    return todoNode(ctx, "VarDef: " + varDef);
   }
 
   @Override
@@ -527,7 +527,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       scan(newClass.getClassBody(), ctx);
       return scan(newClass.getIdentifier(), ctx);
     }
-    return todoNode("NewClass: " + newClass);
+    return todoNode(ctx, "NewClass: " + newClass);
   }
 
   @Override
@@ -699,7 +699,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   private JavaNode emitSymUsage(TreeContext ctx, Symbol sym) {
     JavaNode node = getJavaNode(sym);
     if (node == null) {
-      return todoNode("ExprUsage: " + ctx.getTree());
+      return todoNode(ctx, "ExprUsage: " + ctx.getTree());
     }
 
     emitAnchor(ctx, EdgeKind.REF, node.entries);
@@ -711,7 +711,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   private JavaNode emitNameUsage(TreeContext ctx, Symbol sym, Name name) {
     JavaNode node = getJavaNode(sym);
     if (node == null) {
-      return todoNode("NameUsage: " + ctx.getTree() + " -- " + name);
+      return todoNode(ctx, "NameUsage: " + ctx.getTree() + " -- " + name);
     }
 
     emitAnchor(
@@ -777,11 +777,13 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   }
 
   @Deprecated
-  private JavaNode todoNode(String message) {
+  private JavaNode todoNode(TreeContext ctx, String message) {
     return new JavaNode(
-        entrySets.todoNode(message),
+        entrySets.todoNode(ctx.getSourceName(), ctx.getTree(), message),
         "TODO",
-        new JavaNode(entrySets.todoNode("type:" + message), "TODO:type"));
+        new JavaNode(
+            entrySets.todoNode(ctx.getSourceName(), ctx.getTree(), "type:" + message),
+            "TODO:type"));
   }
 
   private <T extends JCTree> List<JavaNode> scanList(List<T> trees, TreeContext owner) {
@@ -809,6 +811,10 @@ class TreeContext {
     this.up = up;
     this.tree = tree;
     this.snippet = snippet;
+  }
+
+  public String getSourceName() {
+    return filePositions.getFilename();
   }
 
   public TreeContext down(JCTree tree) {
