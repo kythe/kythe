@@ -16,7 +16,9 @@ filegroup(
 
 filegroup(
     name = "bin",
-    srcs = glob(["bin/**"]),
+    srcs = [
+        "bin/go",
+    ],
 )
 
 filegroup(
