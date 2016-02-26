@@ -16,8 +16,8 @@
 
 #include "kythe_metadata_file.h"
 
+#include "glog/logging.h"
 #include "kythe/proto/storage.pb.h"
-
 #include "rapidjson/document.h"
 #include "rapidjson/error/en.h"
 
@@ -26,7 +26,7 @@ namespace kythe {
 #define JSON_SAFE_LOAD(key, type)                                         \
   const auto key##_pair = value.FindMember(#key);                         \
   if (key##_pair == value.MemberEnd() || !key##_pair->value.Is##type()) { \
-    *error_text = "Unexpected or missing key " #key " : " #type;          \
+    LOG(WARNING) << "Unexpected or missing key " #key " : " #type;        \
     return false;                                                         \
   }                                                                       \
   const auto &key = key##_pair->value;
@@ -37,8 +37,8 @@ namespace kythe {
     dest = key##_pair->value.GetString();                                \
   }
 
-static bool LoadVName(const rapidjson::Value &value, proto::VName *vname_out,
-                      std::string *error_text) {
+namespace {
+bool LoadVName(const rapidjson::Value &value, proto::VName *vname_out) {
   JSON_SAFE_LOAD_STRING(*(vname_out->mutable_signature()), signature);
   JSON_SAFE_LOAD_STRING(*(vname_out->mutable_root()), root);
   JSON_SAFE_LOAD_STRING(*(vname_out->mutable_path()), path);
@@ -47,20 +47,21 @@ static bool LoadVName(const rapidjson::Value &value, proto::VName *vname_out,
   if (vname_out->corpus().empty() && vname_out->path().empty() &&
       vname_out->root().empty() && vname_out->signature().empty() &&
       vname_out->language().empty()) {
-    *error_text = "Empty vname.";
+    LOG(WARNING) << "When loading metadata: empty vname.";
     return false;
   }
   return true;
 }
+}  // anonymous namespace
 
-bool MetadataFile::LoadMetaElement(const rapidjson::Value &value,
-                                   std::string *error_text) {
+bool KytheMetadataSupport::LoadMetaElement(const rapidjson::Value &value,
+                                           MetadataFile::Rule *rule) {
   JSON_SAFE_LOAD(type, String);
   if (type == "nop") {
     return true;
   }
   if (type != "anchor_defines") {
-    *error_text = "Unknown meta type.";
+    LOG(WARNING) << "When loading metadata: unknown meta type.";
     return false;
   }
   JSON_SAFE_LOAD(begin, Number);
@@ -68,7 +69,7 @@ bool MetadataFile::LoadMetaElement(const rapidjson::Value &value,
   JSON_SAFE_LOAD(edge, String);
   JSON_SAFE_LOAD(vname, Object);
   proto::VName vname_out;
-  if (!LoadVName(vname, &vname_out, error_text)) {
+  if (!LoadVName(vname, &vname_out)) {
     return false;
   }
   if (!begin.IsUint() || !end.IsUint()) {
@@ -78,7 +79,7 @@ bool MetadataFile::LoadMetaElement(const rapidjson::Value &value,
   unsigned end_int = end.GetUint();
   llvm::StringRef edge_string = edge.GetString();
   if (edge_string.empty()) {
-    *error_text = "Empty edge.";
+    LOG(WARNING) << "When loading metadata: empty edge.";
     return false;
   }
   bool reverse_edge = false;
@@ -86,69 +87,67 @@ bool MetadataFile::LoadMetaElement(const rapidjson::Value &value,
     edge_string = edge_string.drop_front(1);
     reverse_edge = true;
   }
-
-  rules_.emplace(begin_int, Rule{begin_int, end_int, "/kythe/edge/defines",
-                                 edge_string, vname_out, reverse_edge});
-
+  *rule =
+      MetadataFile::Rule{begin_int,   end_int,   "/kythe/edge/defines/binding",
+                         edge_string, vname_out, reverse_edge};
   return true;
 }
 
 #undef JSON_SAFE_LOAD
 #undef JSON_SAFE_LOAD_STRING
 
-std::unique_ptr<MetadataFile> MetadataFile::LoadFromJSON(
-    llvm::StringRef json, std::string *error_text) {
-  assert(error_text != nullptr);
+std::unique_ptr<MetadataFile> KytheMetadataSupport::LoadFromJSON(
+    llvm::StringRef json) {
   rapidjson::Document document;
   document.Parse(json.str().c_str());
   if (document.HasParseError()) {
-    if (error_text) {
-      *error_text = rapidjson::GetParseError_En(document.GetParseError());
-      error_text->append(" near offset ");
-      error_text->append(std::to_string(document.GetErrorOffset()));
-    }
+    LOG(WARNING) << rapidjson::GetParseError_En(document.GetParseError())
+                 << " near offset " << document.GetErrorOffset();
     return nullptr;
   }
   if (!document.IsObject()) {
-    *error_text = "Root element in JSON was not an object.";
+    LOG(WARNING)
+        << "When loading metadata: root element in JSON was not an object.";
     return nullptr;
   }
   const auto doc_type = document.FindMember("type");
   if (doc_type == document.MemberEnd() || !doc_type->value.IsString()) {
-    *error_text = "JSON element is missing type.";
+    LOG(WARNING) << "When loading metadata: JSON element is missing type.";
     return nullptr;
   }
   const auto doc_type_val = llvm::StringRef(doc_type->value.GetString());
   if (doc_type_val != "kythe0") {
-    *error_text = "JSON element has unexpected type ";
-    error_text->append(doc_type_val);
+    LOG(WARNING) << "When loading metadata: JSON element has unexpected type "
+                 << doc_type_val.str();
     return nullptr;
   }
   const auto meta = document.FindMember("meta");
   if (meta == document.MemberEnd() || !meta->value.IsArray()) {
-    *error_text = "kythe0.meta missing or not an array";
+    LOG(WARNING)
+        << "When loading metadata: kythe0.meta missing or not an array";
     return nullptr;
   }
-  std::unique_ptr<MetadataFile> meta_file(new MetadataFile());
+  std::vector<MetadataFile::Rule> rules;
   for (rapidjson::Value::ConstValueIterator meta_element = meta->value.Begin();
        meta_element != meta->value.End(); ++meta_element) {
     if (!meta_element->IsObject()) {
-      *error_text = "kythe0.meta[i] not an object";
+      LOG(WARNING) << "When loading metadata: kythe0.meta[i] not an object";
       return nullptr;
     }
-    if (!meta_file->LoadMetaElement(*meta_element, error_text)) {
+    MetadataFile::Rule rule;
+    if (!LoadMetaElement(*meta_element, &rule)) {
       return nullptr;
     }
+    rules.push_back(rule);
   }
-  return meta_file;
+  return MetadataFile::LoadFromRules(rules.begin(), rules.end());
 }
 
 std::unique_ptr<kythe::MetadataFile> KytheMetadataSupport::ParseFile(
     const std::string &filename, const llvm::MemoryBuffer *buffer) {
-  std::string error;
-  auto metadata = MetadataFile::LoadFromJSON(buffer->getBuffer(), &error);
+  auto metadata = LoadFromJSON(buffer->getBuffer());
   if (!metadata) {
-    fprintf(stderr, "Couldn't load %s: %s\n", filename.c_str(), error.c_str());
+    LOG(WARNING) << "Failed loading " << filename;
   }
   return metadata;
 }

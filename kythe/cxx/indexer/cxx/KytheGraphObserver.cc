@@ -363,7 +363,8 @@ void KytheGraphObserver::MetaHookDefines(const MetadataFile &meta,
   auto rules = meta.rules().equal_range(range_begin);
   for (auto rule = rules.first; rule != rules.second; ++rule) {
     if (rule->second.begin == range_begin && rule->second.end == range_end &&
-        rule->second.edge_in == "/kythe/edge/defines") {
+        (rule->second.edge_in == "/kythe/edge/defines" ||
+         rule->second.edge_in == "/kythe/edge/defines/binding")) {
       EdgeKindID edge_kind;
       if (of_spelling(rule->second.edge_out, &edge_kind)) {
         if (rule->second.reverse_edge) {
