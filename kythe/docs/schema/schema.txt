@@ -377,6 +377,32 @@ class A { };
 class B : public A { };
 --------------------------------------------------------------------------------
 
+
+[[generates]]
+generates
+~~~~~~~~~
+Brief description::
+  A *generates* B if A is related to B through some extralingual process.
+Commonly arises from::
+  code generation
+Points from::
+  semantic nodes
+Points toward::
+  semantic nodes
+Ordinals are used::
+  never
+See also::
+  <<replacement>>, <<replaces>>
+
+Tools like RPC interface generators read specification languages and emit
+code in one or more target languages. Although the specification language
+and target languages do not share Kythe indexers, it is still semantically
+useful to connect the nodes they emit. For example, one might want to list
+all the $$C++$$ and Java uses of a particular service call, starting at the
+specification of that service. The specification and its generated artifacts
+may be joined by the *generates* edge.
+
+
 [[instantiates]]
 instantiates
 ~~~~~~~~~~~~
@@ -827,6 +853,27 @@ Ordinals are used::
 #ifdef BAZ
 #endif
 --------------------------------------------------------------------------------
+
+
+[[replaces]]
+replaces
+~~~~~~~~
+Brief description::
+  A *replaces* B if A's VName should be substituted everywhere for B's.
+Commonly arises from::
+  code generation
+Points from::
+  semantic nodes
+Points toward::
+  semantic nodes; never another *replacement*
+Ordinals are used::
+  never
+See also::
+  <<generates>>, <<replacement>>
+
+A Kythe graph is not complete until (for all nodes N) for every edge N to B
+(or B to N), there exists an edge from N to A (or A to N) with the same kind
+and facts as the original edge.
 
 
 [[specializes]]
@@ -1326,6 +1373,85 @@ package pkg;
 public class E {
 }
 --------------------------------------------------------------------------------
+
+
+[[replacement]]
+replacement
+~~~~~~~~~~~
+
+Brief description::
+  A *replacement* node gives another VName to a node in the graph.
+Expected out-edges::
+  <<replaces>>
+See also::
+  <<generates>>
+Notes::
+  *Replacement* nodes are useful when linking between the output of different
+  indexers. For example, a tool may take an interface specification and emit
+  skeleton code for that interface in a different language. This tool also
+  annotates its generated code with references back to encoded identifiers in
+  the original specification. An indexer for the specification language can
+  generate *replacement* nodes with these identifiers encoded as VNames and
+  can connect its own semantic nodes up to them using <<replaces>> edges.
+  An indexer for the generated code can then attach other edges, like
+  <<generates>>, to the *replacement* nodes. When the *replacement* nodes
+  are eliminated, the specification indexer's nodes will *generate* the
+  target language indexer's nodes.
+
+In this example, `MetadataRecordM` is a node whose VName can be generated using
+annotations from an RPC interface generator. The indexer for the source files
+for that generator emit Kythe data that describe syntactic and semantic
+relationships with regard to the interface generator's source language. This
+indexer also associates some of the nodes involved in these relationships with
+*replacement* nodes like `MetadataRecordM`.
+
+[kythe,clike,"Output from interface generator"]
+--------------------------------------------------------------------------------
+//- @M defines/binding MessageM
+//- MessageM.node/kind record
+//- MessageM replaces MetadataRecordM
+//- MetadataRecordM.node/kind replacement
+message M { }
+--------------------------------------------------------------------------------
+
+The indexer for the interface generator's target language is able to import
+the annotations. It uses them to add new edges to connect target language
+objects up to the externally-nameable *replacement* nodes.
+
+[kythe,clike,"Output from indexer using metadata from interface generator"]
+--------------------------------------------------------------------------------
+// These relationships are derived only from the target language:
+//- @MImpl defines/binding MessageMImpl
+//- MessageMImpl.node/kind record
+class MImpl { };
+// This relationship is established because of imported annotations:
+//- MetadataRecordM generates MessageMImpl
+--------------------------------------------------------------------------------
+
+In a complete Kythe graph, all edges that include a *replacement* node are
+duplicated with the *replacement* node changed out for the node that *replaces*
+it. The original *replaces* edge and *replacement* node (and the other edges
+that name it) may or may not remain.
+
+[kythe,clike,"Graph after replacement elaboration"]
+--------------------------------------------------------------------------------
+//- MessageM replaces MetadataRecordM
+//- MetadataRecordM generates MessageMImpl
+
+// When we apply the replacement rule described above with the replacement node
+// MetadataRecordM, we can derive the following edge:
+//- MessageM generates MessageMImpl
+
+// In other words, we cut one hop out of:
+//     MessageM --replaces-> MetadataRecordM --generates-> MessageMImpl
+// by using the replacement rule to add the new edge:
+//                   MessageM --generates-> MessageMImpl
+
+//- @MImpl defines/binding MessageMImpl
+//- MessageMImpl.node/kind record
+class MImpl { };
+--------------------------------------------------------------------------------
+
 
 [[sum]]
 sum

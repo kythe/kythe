@@ -9,6 +9,7 @@ def asciidoc_with_verifier(name, src):
     ],
     data = [
         "example.sh",
+        "example-clike.sh",
         "example-cxx.sh",
         "example-dot.sh",
         "example-java.sh",

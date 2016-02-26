@@ -54,6 +54,8 @@ case "$LANGUAGE" in
     "$SCHEMA_ROOT/example-cxx.sh" ;;
   dot)
     "$SCHEMA_ROOT/example-dot.sh" ;;
+  clike)
+    "$SCHEMA_ROOT/example-clike.sh" ;;
   *)
     echo "ERROR: unsupported language specified for example: $LANGUAGE"
     exit 1 ;;
