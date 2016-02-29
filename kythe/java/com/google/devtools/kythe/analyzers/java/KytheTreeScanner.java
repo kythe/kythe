@@ -494,6 +494,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   @Override
   public JavaNode visitApply(JCMethodInvocation invoke, TreeContext owner) {
     TreeContext ctx = owner.down(invoke);
+    scan(invoke.getArguments(), ctx);
+    scan(invoke.getTypeArguments(), ctx);
+
     JavaNode method = scan(invoke.getMethodSelect(), ctx);
     if (method != null) {
       EntrySet anchor =
@@ -502,8 +505,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       if (anchor != null && parentContext != null && parentContext.getNode() != null) {
         emitEdge(anchor, EdgeKind.CHILDOF, parentContext.getNode());
       }
+      return method;
     }
-    return super.visitApply(invoke, owner);
+
+    return todoNode(ctx, "Apply: " + invoke);
   }
 
   @Override
