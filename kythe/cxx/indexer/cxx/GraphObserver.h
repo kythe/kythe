@@ -24,11 +24,11 @@
 
 #include <openssl/sha.h> // for SHA256
 
+#include "glog/logging.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Basic/Specifiers.h"
 #include "clang/Lex/Preprocessor.h"
-
 #include "llvm/ADT/APSInt.h"
 #include "llvm/ADT/Hashing.h"
 #include "llvm/ADT/StringRef.h"
@@ -177,15 +177,21 @@ public:
     };
     /// \brief Constructs a physical `Range` for the given `clang::SourceRange`.
     Range(const clang::SourceRange &R, const ClaimToken *T)
-        : Kind(RangeKind::Physical), PhysicalRange(R), Context(T, "") {}
+        : Kind(RangeKind::Physical), PhysicalRange(R), Context(T, "") {
+      CHECK(R.getBegin().isValid());
+    }
     /// \brief Constructs a `Range` with some physical location, but specific to
     /// the context of some semantic node.
     Range(const clang::SourceRange &R, const NodeId &C)
-        : Kind(RangeKind::Wraith), PhysicalRange(R), Context(C) {}
+        : Kind(RangeKind::Wraith), PhysicalRange(R), Context(C) {
+      CHECK(R.getBegin().isValid());
+    }
     /// \brief Constructs a new `Range` in the context of an existing
     /// `Range`, but with a different physical location.
     Range(const Range &R, const clang::SourceRange &NR)
-        : Kind(R.Kind), PhysicalRange(NR), Context(R.Context) {}
+        : Kind(R.Kind), PhysicalRange(NR), Context(R.Context) {
+      CHECK(NR.getBegin().isValid());
+    }
 
     RangeKind Kind;
     clang::SourceRange PhysicalRange;
@@ -754,12 +760,8 @@ public:
   }
 
   /// \brief Append a string representation of `Range` to `Ostream`.
-  /// \return true on success, false if the range was invalid.
-  virtual bool AppendRangeToStream(llvm::raw_ostream &Ostream,
+  virtual void AppendRangeToStream(llvm::raw_ostream &Ostream,
                                    const Range &Range) {
-    if (Range.PhysicalRange.isInvalid()) {
-      return false;
-    }
     Range.PhysicalRange.getBegin().print(Ostream, *SourceManager);
     Ostream << "@";
     Range.PhysicalRange.getEnd().print(Ostream, *SourceManager);
@@ -767,7 +769,6 @@ public:
       Ostream << "@";
       Ostream << Range.Context.ToClaimedString();
     }
-    return true;
   }
 
   virtual ~GraphObserver() = 0;

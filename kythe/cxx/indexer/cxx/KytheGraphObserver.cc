@@ -159,14 +159,11 @@ void KytheGraphObserver::AppendFullLocationToStream(
   }
 }
 
-bool KytheGraphObserver::AppendRangeToStream(llvm::raw_ostream &Ostream,
+void KytheGraphObserver::AppendRangeToStream(llvm::raw_ostream &Ostream,
                                              const Range &Range) {
   std::vector<clang::FileID> posted_fileids;
   // We want to override this here so that the names we use are filtered
   // through the vname definitions we got from the compilation unit.
-  if (Range.PhysicalRange.isInvalid()) {
-    return false;
-  }
   AppendFullLocationToStream(&posted_fileids, Range.PhysicalRange.getBegin(),
                              Ostream);
   if (Range.PhysicalRange.getEnd() != Range.PhysicalRange.getBegin()) {
@@ -176,7 +173,6 @@ bool KytheGraphObserver::AppendRangeToStream(llvm::raw_ostream &Ostream,
   if (Range.Kind == GraphObserver::Range::RangeKind::Wraith) {
     Ostream << Range.Context.ToClaimedString();
   }
-  return true;
 }
 
 /// \brief Attempt to associate a `SourceLocation` with a `FileEntry` by

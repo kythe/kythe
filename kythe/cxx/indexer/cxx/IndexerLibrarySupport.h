@@ -78,7 +78,7 @@ public:
   /// \param TargetDecl The NamedDecl being referenced.
   virtual void InspectDeclRef(IndexerASTVisitor &V,
                               clang::SourceLocation DeclRefLocation,
-                              GraphObserver::Range &Ref,
+                              const GraphObserver::Range &Ref,
                               GraphObserver::NodeId &RefId,
                               const clang::NamedDecl *TargetDecl) {}
 };
@@ -103,7 +103,8 @@ public:
   /// additional ref edge to the correspondng google/gflag node.
   void InspectDeclRef(IndexerASTVisitor &V,
                       clang::SourceLocation DeclRefLocation,
-                      GraphObserver::Range &Ref, GraphObserver::NodeId &RefId,
+                      const GraphObserver::Range &Ref,
+                      GraphObserver::NodeId &RefId,
                       const clang::NamedDecl *TargetDecl) override;
 };
 

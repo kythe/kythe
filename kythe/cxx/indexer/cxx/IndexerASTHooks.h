@@ -540,7 +540,7 @@ public:
 
   /// \brief Records the range of a definition. If the range cannot be placed
   /// somewhere inside a source file, no record is made.
-  void MaybeRecordDefinitionRange(const GraphObserver::Range &R,
+  void MaybeRecordDefinitionRange(const MaybeFew<GraphObserver::Range> &R,
                                   const GraphObserver::NodeId &Id);
 
   /// \brief Returns the attached GraphObserver.
@@ -548,7 +548,8 @@ public:
 
   /// Returns `SR` as a `Range` in this `RecursiveASTVisitor`'s current
   /// RangeContext.
-  GraphObserver::Range RangeInCurrentContext(const clang::SourceRange &SR);
+  MaybeFew<GraphObserver::Range>
+  RangeInCurrentContext(const clang::SourceRange &SR);
 
 private:
   /// Whether we should stop on missing cases or continue on.

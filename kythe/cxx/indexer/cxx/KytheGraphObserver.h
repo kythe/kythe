@@ -313,8 +313,7 @@ class KytheGraphObserver : public GraphObserver {
       const clang::SourceRange &SR) override;
 
   /// \brief Appends a representation of `Range` to `Ostream`.
-  /// \return true if `Range` was valid; false otherwise.
-  bool AppendRangeToStream(llvm::raw_ostream &Ostream,
+  void AppendRangeToStream(llvm::raw_ostream &Ostream,
                            const Range &Range) override;
 
   /// \brief Set whether we're willing to drop data to avoid redundancy.

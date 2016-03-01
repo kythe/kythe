@@ -191,22 +191,24 @@ void GoogleFlagsLibrarySupport::InspectVariable(
     FlagNameId.EqClass = GraphObserver::NameId::NameEqClass::None;
     GraphObserver::NodeId FlagNodeId = NodeIdForFlag(NodeId);
     GO.recordUserDefinedNode(FlagNameId, FlagNodeId, "google/gflag", Compl);
-    GraphObserver::Range RCC = V.RangeInCurrentContext(Range);
-    GO.recordDefinitionBindingRange(RCC, FlagNodeId);
-    clang::FileID DeclFile = GO.getSourceManager()->getFileID(Range.getBegin());
-    // If there are any Completions, this must be a definition.
-    for (const auto &C : Compls) {
-      if (const auto *NextDecl = llvm::dyn_cast<clang::VarDecl>(C.Decl)) {
-        auto NextDeclRange =
-            GetVarDeclFlagDeclLoc(*GO.getLangOptions(), NextDecl);
-        if (NextDeclRange.isValid()) {
-          clang::FileID NextDeclFile =
-              GO.getSourceManager()->getFileID(NextDeclRange.getBegin());
-          GO.recordCompletionRange(
-              RCC, NodeIdForFlag(C.DeclId),
-              NextDeclFile == DeclFile
-                  ? GraphObserver::Specificity::UniquelyCompletes
-                  : GraphObserver::Specificity::Completes);
+    if (auto RCC = V.RangeInCurrentContext(Range)) {
+      GO.recordDefinitionBindingRange(RCC.primary(), FlagNodeId);
+      clang::FileID DeclFile =
+          GO.getSourceManager()->getFileID(Range.getBegin());
+      // If there are any Completions, this must be a definition.
+      for (const auto &C : Compls) {
+        if (const auto *NextDecl = llvm::dyn_cast<clang::VarDecl>(C.Decl)) {
+          auto NextDeclRange =
+              GetVarDeclFlagDeclLoc(*GO.getLangOptions(), NextDecl);
+          if (NextDeclRange.isValid()) {
+            clang::FileID NextDeclFile =
+                GO.getSourceManager()->getFileID(NextDeclRange.getBegin());
+            GO.recordCompletionRange(
+                RCC.primary(), NodeIdForFlag(C.DeclId),
+                NextDeclFile == DeclFile
+                    ? GraphObserver::Specificity::UniquelyCompletes
+                    : GraphObserver::Specificity::Completes);
+          }
         }
       }
     }
@@ -215,7 +217,7 @@ void GoogleFlagsLibrarySupport::InspectVariable(
 
 void GoogleFlagsLibrarySupport::InspectDeclRef(
     IndexerASTVisitor &V, clang::SourceLocation DeclRefLocation,
-    GraphObserver::Range &Ref, GraphObserver::NodeId &RefId,
+    const GraphObserver::Range &Ref, GraphObserver::NodeId &RefId,
     const clang::NamedDecl *TargetDecl) {
   GraphObserver &GO = V.getGraphObserver();
   const auto *VD = llvm::dyn_cast<const clang::VarDecl>(TargetDecl);
