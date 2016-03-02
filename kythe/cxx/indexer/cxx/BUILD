@@ -52,12 +52,8 @@ cc_library(
         ":lib",
         "//external:gflags",
         "//kythe/cxx/common:lib",
-        "//kythe/proto:analysis_proto_cc",
-        "//kythe/proto:claim_proto_cc",
-        "//kythe/proto:cxx_proto_cc",
-        "//kythe/proto:storage_proto_cc",
+        "//kythe/cxx/common/indexing:frontend",
         "//third_party/googlelog:glog",
-        "//third_party/llvm",
         "//third_party/proto:protobuf",
         "//third_party/zlib",
     ],
@@ -94,19 +90,17 @@ cc_library(
 
 cc_test(
     name = "test",
-    deps = [
-        ":testlib",
-    ],
     linkopts = select({
         ":darwin": ["-headerpad_max_install_names"],
         "//conditions:default": [],
     }),
+    deps = [
+        ":testlib",
+    ],
 )
-
 
 config_setting(
     name = "darwin",
     values = {"cpu": "darwin"},
     visibility = ["//visibility:public"],
 )
-

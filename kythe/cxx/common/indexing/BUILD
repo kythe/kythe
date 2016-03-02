@@ -40,3 +40,22 @@ cc_library(
         ":lib",
     ],
 )
+
+cc_library(
+    name = "frontend",
+    srcs = [
+        "frontend.cc",
+    ],
+    hdrs = [
+        "frontend.h",
+    ],
+    copts = [
+        "-Wno-non-virtual-dtor",
+        "-Wno-unused-variable",
+        "-Wno-implicit-fallthrough",
+    ],
+    deps = [
+        ":lib",
+        "//kythe/proto:claim_proto_cc",
+    ],
+)
