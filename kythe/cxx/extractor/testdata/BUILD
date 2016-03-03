@@ -1,4 +1,4 @@
-load("/tools/build_rules/kythe", "cc_verifier_test")
+load("//tools:build_rules/kythe.bzl", "cc_verifier_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
 

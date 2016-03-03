@@ -1,6 +1,6 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
-load("/tools/build_rules/docker", "docker_build")
+load("//tools:build_rules/docker.bzl", "docker_build")
 
 exports_files(["javac-wrapper.sh"])
 

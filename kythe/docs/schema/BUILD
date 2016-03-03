@@ -1,4 +1,4 @@
-load("asciidoc_with_verifier", "asciidoc_with_verifier")
+load(":asciidoc_with_verifier.bzl", "asciidoc_with_verifier")
 
 package(default_visibility = ["//kythe:default_visibility"])
 

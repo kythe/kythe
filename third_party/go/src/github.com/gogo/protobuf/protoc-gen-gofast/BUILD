@@ -1,6 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
-load("/tools/build_rules/go", "go_binary")
+load("//tools:build_rules/go.bzl", "go_binary")
 
 licenses(["notice"])
 

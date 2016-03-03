@@ -1,4 +1,4 @@
-load("/tools/build_rules/go", "go_library", "go_test")
+load("//tools:build_rules/go.bzl", "go_library", "go_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
 

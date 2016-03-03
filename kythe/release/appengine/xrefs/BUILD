@@ -1,4 +1,4 @@
-load("/tools/build_rules/go", "go_binary")
+load("//tools:build_rules/go.bzl", "go_binary")
 
 go_binary(
     name = "server",

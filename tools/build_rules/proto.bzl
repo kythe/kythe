@@ -1,4 +1,4 @@
-load("go", "go_library")
+load("@//tools:build_rules/go.bzl", "go_library")
 
 standard_proto_path = "third_party/proto/src/"
 

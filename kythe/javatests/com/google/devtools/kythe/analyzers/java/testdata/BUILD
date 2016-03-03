@@ -1,4 +1,4 @@
-load("/tools/build_rules/kythe", "java_verifier_test")
+load("//tools:build_rules/kythe.bzl", "java_verifier_test")
 
 exports_files(
     ["corner_case.kindex"],

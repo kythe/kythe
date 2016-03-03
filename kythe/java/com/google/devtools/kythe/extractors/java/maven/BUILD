@@ -1,4 +1,4 @@
-load("/tools/build_rules/docker", "docker_build")
+load("//tools:build_rules/docker.bzl", "docker_build")
 
 docker_build(
     name = "docker",

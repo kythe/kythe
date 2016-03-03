@@ -1,4 +1,4 @@
-load("/tools/build_rules/go", "go_binary", "go_library")
+load("//tools:build_rules/go.bzl", "go_binary", "go_library")
 
 package(default_visibility = ["//visibility:public"])
 

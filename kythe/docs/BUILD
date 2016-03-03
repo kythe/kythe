@@ -1,4 +1,4 @@
-load("/tools/build_rules/doc", "asciidoc")
+load("//tools:build_rules/doc.bzl", "asciidoc")
 
 package(default_visibility = ["//kythe:default_visibility"])
 

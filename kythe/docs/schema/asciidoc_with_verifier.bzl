@@ -1,4 +1,4 @@
-load("/tools/build_rules/doc", "asciidoc")
+load("//tools:build_rules/doc.bzl", "asciidoc")
 
 def asciidoc_with_verifier(name, src):
   asciidoc(

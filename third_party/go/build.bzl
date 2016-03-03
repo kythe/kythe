@@ -1,4 +1,4 @@
-load("/tools/build_rules/go", "go_package")
+load("@//tools:build_rules/go.bzl", "go_package")
 
 _gopath_src = "third_party/go/src/"
 

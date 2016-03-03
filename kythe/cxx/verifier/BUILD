@@ -1,6 +1,6 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
-load("/tools/build_rules/lexyacc", "genlex", "genyacc")
+load("//tools:build_rules/lexyacc.bzl", "genlex", "genyacc")
 
 genyacc(
     name = "parser",
