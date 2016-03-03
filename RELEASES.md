@@ -1,5 +1,10 @@
 # Release Notes
 
+## v0.0.20
+
+Notable fixes:
+ - Java indexer: reduce redundant AST traversals causing large slowdowns
+
 ## v0.0.19
 
 Notable changes:
