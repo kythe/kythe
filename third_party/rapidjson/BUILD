@@ -9,6 +9,11 @@ filegroup(
 
 cc_library(
     name = "rapidjson",
+    srcs = [
+        # To satisfy the OSX toolchain
+        # See https://github.com/google/bazel/issues/61
+        "empty.cc",
+    ],
     hdrs = [
         "include/rapidjson/allocators.h",
         "include/rapidjson/document.h",
@@ -35,11 +40,6 @@ cc_library(
         "include/rapidjson/stringbuffer.h",
         "include/rapidjson/writer.h",
     ],
-    srcs = [
-        # To satisfy the OSX toolchain
-        # See https://github.com/google/bazel/issues/61
-        "empty.cc",
-    ],
     copts = [
         "-Wno-non-virtual-dtor",
         "-Wno-unused-variable",
@@ -65,7 +65,7 @@ cc_library(
     ],
     deps = [
         ":rapidjson",
-        "//third_party/googletest",
+        "//external:googletest",
     ],
 )
 
@@ -84,7 +84,7 @@ cc_library(
     ],
     deps = [
         ":rapidjson",
-        "//third_party/googletest",
+        "//external:googletest",
     ],
 )
 
@@ -111,7 +111,7 @@ cc_library(
     ],
     deps = [
         ":rapidjson",
-        "//third_party/googletest",
+        "//external:googletest",
     ],
 )
 
@@ -138,7 +138,7 @@ cc_library(
     ],
     deps = [
         ":rapidjson",
-        "//third_party/googletest",
+        "//external:googletest",
     ],
 )
 
@@ -165,7 +165,7 @@ cc_library(
     ],
     deps = [
         ":rapidjson",
-        "//third_party/googletest",
+        "//external:googletest",
     ],
 )
 
@@ -192,7 +192,7 @@ cc_library(
     ],
     deps = [
         ":rapidjson",
-        "//third_party/googletest",
+        "//external:googletest",
     ],
 )
 
@@ -224,7 +224,7 @@ cc_library(
     ],
     deps = [
         ":rapidjson",
-        "//third_party/googletest",
+        "//external:googletest",
     ],
 )
 
@@ -255,7 +255,7 @@ cc_library(
     ],
     deps = [
         ":rapidjson",
-        "//third_party/googletest",
+        "//external:googletest",
     ],
 )
 
@@ -282,7 +282,7 @@ cc_library(
     ],
     deps = [
         ":rapidjson",
-        "//third_party/googletest",
+        "//external:googletest",
     ],
 )
 
@@ -313,7 +313,7 @@ cc_library(
     ],
     deps = [
         ":rapidjson",
-        "//third_party/googletest",
+        "//external:googletest",
     ],
 )
 
@@ -344,7 +344,7 @@ cc_library(
     ],
     deps = [
         ":rapidjson",
-        "//third_party/googletest",
+        "//external:googletest",
     ],
 )
 
@@ -363,7 +363,7 @@ cc_library(
     ],
     deps = [
         ":rapidjson",
-        "//third_party/googletest",
+        "//external:googletest",
     ],
 )
 
@@ -390,7 +390,7 @@ cc_library(
     ],
     deps = [
         ":rapidjson",
-        "//third_party/googletest",
+        "//external:googletest",
     ],
 )
 
@@ -417,7 +417,7 @@ cc_library(
 #    ],
 #    deps = [
 #        ":rapidjson",
-#        "//third_party/googletest",
+#        "//external:googletest",
 #    ],
 #)
 #cc_test(

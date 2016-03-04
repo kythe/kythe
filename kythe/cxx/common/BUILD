@@ -130,7 +130,7 @@ cc_library(
     ],
     deps = [
         ":lib",
-        "//third_party/googletest",
+        "//external:googletest",
         "//third_party/llvm",
     ],
 )
@@ -155,8 +155,8 @@ cc_library(
     ],
     deps = [
         ":lib",
+        "//external:googletest",
         "//kythe/proto:storage_proto_cc",
-        "//third_party/googletest",
         "//third_party/proto:protobuf",
         "//third_party/re2",
     ],
@@ -182,7 +182,7 @@ cc_library(
     ],
     deps = [
         ":lib",
-        "//third_party/googletest",
+        "//external:googletest",
         "//third_party/llvm",
     ],
 )
@@ -208,10 +208,10 @@ cc_library(
     deps = [
         ":index_pack",
         "//external:gflags",
+        "//external:googletest",
         "//kythe/proto:analysis_proto_cc",
         "//kythe/proto:storage_proto_cc",
         "//third_party/googlelog:glog",
-        "//third_party/googletest",
         "//third_party/llvm",
         "//third_party/proto:protobuf",
         "//third_party/rapidjson",
@@ -239,9 +239,9 @@ cc_library(
     ],
     deps = [
         ":json_proto",
+        "//external:googletest",
         "//kythe/proto:analysis_proto_cc",
         "//kythe/proto:storage_proto_cc",
-        "//third_party/googletest",
         "//third_party/proto:protobuf",
         "//third_party/re2",
     ],
@@ -298,9 +298,9 @@ cc_library(
     deps = [
         ":lib",
         "//external:gflags",
+        "//external:googletest",
         "//kythe/proto:storage_proto_cc",
         "//third_party/googlelog:glog",
-        "//third_party/googletest",
         "//third_party/proto:protobuf",
     ],
 )

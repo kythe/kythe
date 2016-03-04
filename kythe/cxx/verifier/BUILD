@@ -109,9 +109,9 @@ cc_library(
     ],
     deps = [
         ":lib",
+        "//external:googletest",
         "//kythe/proto:storage_proto_cc",
         "//third_party/googlelog:glog",
-        "//third_party/googletest",
         "//third_party/proto:protobuf",
     ],
 )

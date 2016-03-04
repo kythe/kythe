@@ -79,10 +79,10 @@ cc_library(
     ],
     deps = [
         ":lib",
+        "//external:googletest",
         "//kythe/cxx/common/indexing:testlib",
         "//kythe/proto:cxx_proto_cc",
         "//kythe/proto:storage_proto_cc",
-        "//third_party/googletest",
         "//third_party/llvm",
         "//third_party/proto:protobuf",
     ],

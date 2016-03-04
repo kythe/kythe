@@ -1,4 +1,16 @@
 new_git_repository(
+    name = "gtest",
+    build_file = "third_party/googletest.BUILD",
+    remote = "https://github.com/google/googletest.git",
+    tag = "release-1.7.0",
+)
+
+bind(
+    name = "googletest",
+    actual = "@gtest//:googletest",
+)
+
+new_git_repository(
     name = "googleflags",
     build_file = "third_party/googleflags.BUILD",
     commit = "58345b18d92892a170d61a76c5dd2d290413bdd7",

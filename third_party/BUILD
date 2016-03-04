@@ -15,7 +15,7 @@ filegroup(
         "//third_party/go:licenses",
         "@googleflags//:license",
         "//third_party/googlelog:license",
-        "//third_party/googletest:license",
+        "@gtest//:license",
         "//third_party/grpc-java:license",
         "//third_party/grpc:license",
         "//third_party/gson:license",

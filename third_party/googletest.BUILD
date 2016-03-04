@@ -44,9 +44,12 @@ cc_library(
         "-Wno-non-virtual-dtor",
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
-        "-Ithird_party/googletest",
+        "-Iexternal/gtest/include",
     ],
     includes = [
         "include",
+    ],
+    linkopts = [
+        "-pthread",
     ],
 )
