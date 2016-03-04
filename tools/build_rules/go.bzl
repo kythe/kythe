@@ -133,8 +133,7 @@ def _go_compile(ctx, pkg, srcs, archive, extra_packages=[]):
     args = compile_args[ctx.var['COMPILATION_MODE']]
     go_path = archive.path + '.gopath/'
     cmd = "\n".join(_construct_go_path(go_path, package_map) + [
-        'if ' + gotool.path + ' tool | grep -q 6g; then TOOL=6g; else TOOL=compile; fi',
-        gotool.path + " tool $TOOL " + ' '.join(args) + " -p " + pkg + " -complete -pack -o " + archive.path + " " +
+        gotool.path + " tool compile " + ' '.join(args) + " -p " + pkg + " -complete -pack -o " + archive.path + " " +
         '-I "' + go_path + '" ' + cmd_helper.join_paths(" ", set(srcs)),
     ])
     mnemonic = 'GoCompile'
@@ -198,8 +197,7 @@ def _link_binary(ctx, binary, archive, transitive_deps, extldflags=[], cc_libs=[
   cmd = ['set -e'] + _construct_go_path(go_path, package_map) + [
       'export GOROOT=$PWD/external/local_goroot',
       'export PATH',
-      'if ' + gotool.path + ' tool | grep -q 6l; then TOOL=6l; else TOOL=link; fi',
-      gotool.path + ' tool $TOOL -extldflags="' + ' '.join(list(extldflags)) + '"'
+      gotool.path + ' tool link -extldflags="' + ' '.join(list(extldflags)) + '"'
       + ' ' + ' '.join(args) + ' -L "' + go_path + '"'
       + ' -o ' + binary.path + ' ' + archive.path + ';',
   ]
