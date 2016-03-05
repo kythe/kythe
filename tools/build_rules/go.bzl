@@ -26,6 +26,13 @@ link_args_darwin = {
     "dbg": ["-race"],
 }
 
+def _get_cc_shell_path(ctx):
+  cc = ctx.var["CC"]
+  if cc[0] == "/":
+    return cc
+  else:
+    return "$PWD/" + cc
+
 def replace_prefix(s, prefixes):
   for p in prefixes:
     if s.startswith(p):
@@ -115,7 +122,7 @@ def _go_compile(ctx, pkg, srcs, archive, extra_packages=[]):
     # Cheat and build the package non-hermetically (usually because there is a cgo dependency)
     args = build_args[ctx.var['COMPILATION_MODE']]
     cmd = "\n".join([
-        'export CC=' + ctx.var['CC'],
+        'export CC=' + _get_cc_shell_path(ctx),
         'export CGO_CFLAGS="' + ' '.join(list(cgo_compile_flags)) + '"',
         'export CGO_LDFLAGS="' + ' '.join(list(cgo_link_flags)) + '"',
         'export GOPATH="$PWD/' + ctx.label.package + '"',

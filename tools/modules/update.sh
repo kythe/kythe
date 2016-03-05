@@ -82,7 +82,7 @@ if [[ -z "$1" || "$1" == "--build_only" ]]; then
     if [ ! -z $(dirname "${BAZEL_CC}") ]; then
       CXX="$(dirname "${BAZEL_CC}")/${CXX}"
     fi
-    ../configure CC="${BAZEL_C_COMPILER}" CXX="${CXX}" \
+    ../configure CC="${BAZEL_CC}" CXX="${CXX}" \
       --prefix="$LLVM_REPO/build-install" \
       CXXFLAGS="-std=c++11" \
       --enable-optimized --disable-bindings

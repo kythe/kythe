@@ -1,2 +1,0 @@
-# TODO: https://kythe.io/phabricator/T65
-build --crosstool_top //tools/cpp:toolchain

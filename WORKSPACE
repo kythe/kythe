@@ -1,3 +1,11 @@
+load("//tools/cpp:clang_configure.bzl", "clang_configure")
+
+clang_configure()
+
+load("//tools/go:go_configure.bzl", "go_configure")
+
+go_configure()
+
 new_git_repository(
     name = "gtest",
     build_file = "third_party/googletest.BUILD",
@@ -31,22 +39,6 @@ git_repository(
 bind(
     name = "re2",
     actual = "@re2repo//:re2",
-)
-
-new_local_repository(
-    name = "local_goroot",
-    build_file = "tools/go/goroot.BUILD",
-    path = "/usr/local/go",
-)
-
-bind(
-    name = "goroot",
-    actual = "@local_goroot//:default-goroot",
-)
-
-bind(
-    name = "gotool",
-    actual = "@local_goroot//:gotool",
 )
 
 bind(
