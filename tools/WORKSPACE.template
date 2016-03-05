@@ -22,6 +22,17 @@ bind(
     actual = "@googleflags//:gflags",
 )
 
+git_repository(
+    name = "re2repo",
+    commit = "63e4dbd1996d2cf723f740e08521a67ad66a09de",
+    remote = "https://code.googlesource.com/re2",
+)
+
+bind(
+    name = "re2",
+    actual = "@re2repo//:re2",
+)
+
 new_local_repository(
     name = "local_goroot",
     build_file = "tools/go/goroot.BUILD",

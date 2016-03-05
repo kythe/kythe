@@ -80,13 +80,13 @@ cc_library(
     deps = [
         ":json_proto",
         "//external:gflags",
+        "//external:re2",
         "//kythe/proto:analysis_proto_cc",
         "//kythe/proto:storage_proto_cc",
         "//third_party/googlelog:glog",
         "//third_party/llvm",
         "//third_party/proto:protobuf",
         "//third_party/rapidjson",
-        "//third_party/re2",
         "//third_party/zlib",
     ],
 )
@@ -156,9 +156,9 @@ cc_library(
     deps = [
         ":lib",
         "//external:googletest",
+        "//external:re2",
         "//kythe/proto:storage_proto_cc",
         "//third_party/proto:protobuf",
-        "//third_party/re2",
     ],
 )
 
@@ -240,10 +240,10 @@ cc_library(
     deps = [
         ":json_proto",
         "//external:googletest",
+        "//external:re2",
         "//kythe/proto:analysis_proto_cc",
         "//kythe/proto:storage_proto_cc",
         "//third_party/proto:protobuf",
-        "//third_party/re2",
     ],
 )
 

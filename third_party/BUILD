@@ -11,11 +11,12 @@ filegroup(
 filegroup(
     name = "licenses",
     srcs = ["README"] + [
+        "@googleflags//:license",
+        "@gtest//:license",
+        "@re2repo//:LICENSE",
         "//third_party/bazel:license",
         "//third_party/go:licenses",
-        "@googleflags//:license",
         "//third_party/googlelog:license",
-        "@gtest//:license",
         "//third_party/grpc-java:license",
         "//third_party/grpc:license",
         "//third_party/gson:license",
@@ -29,7 +30,6 @@ filegroup(
         "//third_party/netty:license",
         "//third_party/proto:license",
         "//third_party/rapidjson:license",
-        "//third_party/re2:license",
         "//third_party/re2j:license",
         "//third_party/snappy:license",
         "//third_party/zlib:license",

@@ -1,5 +1,0 @@
-URL: https://code.google.com/p/re2/
-Version: re2-20140304.tgz
-License: New BSD License
-Local modifications: Ran the Makefile locally to generate unicode_casefold.cc,
-    unicode_groups.cc, perl_groups.cc. Added a BUILD file.
