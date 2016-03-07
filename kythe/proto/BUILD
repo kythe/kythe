@@ -76,6 +76,7 @@ proto_library(
 proto_library(
     name = "serving_proto",
     has_services = 1,
+    gen_cc = 1,
     gen_go = 1,
     deps = [":common_proto"],
 )
