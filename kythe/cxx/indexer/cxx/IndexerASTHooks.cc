@@ -3361,13 +3361,25 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
     // or template template parameter. Non-dependent template specializations
     // appear as different types.
     const auto &T = Type.castAs<TemplateSpecializationTypeLoc>();
-    // TODO(zarko): Consider linking directly to the instantiation or partial
-    // specialization here if one has been created. These can be found with
-    // ClassTemplateDecl::{findSpecialization, findPartialSpecialization}.
     auto TemplateName = BuildNodeIdForTemplateName(
         T.getTypePtr()->getTemplateName(), T.getTemplateNameLoc());
     if (!TemplateName) {
       return TemplateName;
+    }
+    if (EmitRanges == IndexerASTVisitor::EmitRanges::Yes &&
+        T.getTemplateNameLoc().isFileID()) {
+      // Create a reference to the template instantiation that this type refers
+      // to. If the type is dependent, create a reference to the primary
+      // template.
+      auto DeclNode = TemplateName.primary();
+      auto *RD = T.getTypePtr()->getAsCXXRecordDecl();
+      if (RD) {
+        DeclNode = BuildNodeIdForDecl(RD);
+      }
+      if (auto RCC = RangeInCurrentContext(
+              RangeForSingleTokenFromSourceLocation(T.getTemplateNameLoc()))) {
+        Observer.recordDeclUseLocation(RCC.primary(), DeclNode);
+      }
     }
     std::vector<GraphObserver::NodeId> TemplateArgs;
     TemplateArgs.reserve(T.getNumArgs());

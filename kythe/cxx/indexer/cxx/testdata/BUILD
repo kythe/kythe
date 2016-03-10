@@ -1208,6 +1208,12 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "template_class_ref",
+    srcs = ["template/template_class_ref.cc"],
+    tags = ["template"],
+)
+
+cxx_indexer_test(
     name = "template_class_ref_ps",
     srcs = ["template/template_class_ref_ps.cc"],
     tags = ["template"],
