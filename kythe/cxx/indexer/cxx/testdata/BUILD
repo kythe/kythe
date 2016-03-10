@@ -345,6 +345,12 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "nested_name_specifiers",
+    srcs = ["basic/nested_name_specifiers.cc"],
+    tags = ["basic"],
+)
+
+cxx_indexer_test(
     name = "typedef_class_anon_ns",
     srcs = ["basic/typedef_class_anon_ns.cc"],
     tags = ["basic"],
@@ -1287,6 +1293,7 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "template_depname_inst_class",
     srcs = ["template/template_depname_inst_class.cc"],
+    ignore_unimplemented = True,
     tags = ["template"],
 )
 

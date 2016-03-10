@@ -3291,10 +3291,22 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
                             DT ? DT->getNamedType().getTypePtr()
                                : T.getNamedTypeLoc().getTypePtr(),
                             EmitRanges);
+    // Add anchors for parts of the NestedNameSpecifier.
+    if (EmitRanges == IndexerASTVisitor::EmitRanges::Yes) {
+      NestedNameSpecifierLoc NNSLoc = T.getQualifierLoc();
+      while (NNSLoc) {
+        NestedNameSpecifier *NNS = NNSLoc.getNestedNameSpecifier();
+        if (NNS->getKind() != NestedNameSpecifier::TypeSpec &&
+            NNS->getKind() != NestedNameSpecifier::TypeSpecWithTemplate)
+          break;
+        BuildNodeIdForType(NNSLoc.getTypeLoc(), NNS->getAsType(),
+                           IndexerASTVisitor::EmitRanges::Yes);
+        NNSLoc = NNSLoc.getPrefix();
+      }
+    }
     // Don't link 'struct'.
     EmitRanges = IndexerASTVisitor::EmitRanges::No;
-    // TODO(zarko): Add anchors for parts of the NestedNameSpecifier.
-    // We'll add an anchor for all the Elaborated type, though; otherwise decls
+    // TODO(zarko): Add an anchor for all the Elaborated type; otherwise decls
     // like `typedef B::C tdef;` will only anchor `C` instead of `B::C`.
   } break;
   UNSUPPORTED_CLANG_TYPE(Attributed);
