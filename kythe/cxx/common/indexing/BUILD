@@ -21,12 +21,12 @@ cc_library(
     ],
     deps = [
         "//external:gflags",
+        "//external:libmemcached",
         "//kythe/cxx/common:index_pack",
         "//kythe/cxx/common:json_proto",
         "//kythe/cxx/common:lib",
         "//kythe/proto:analysis_proto_cc",
         "//kythe/proto:storage_proto_cc",
-        "//third_party:libmemcached",
         "//third_party/proto:protobuf",
     ],
 )

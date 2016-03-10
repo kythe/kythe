@@ -11,10 +11,10 @@ sh_binary(
     name = "run_case",
     srcs = ["run_case.sh"],
     data = [
+        "//external:node",
         "//kythe/cxx/verifier",
         "//kythe/go/platform/tools:entrystream",
         "//kythe/ts:ts_indexer",
-        "//tools:node",
     ],
 )
 

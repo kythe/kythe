@@ -17,7 +17,7 @@ cc_library(
     ],
     deps = [
         "//external:gflags",
-        "//third_party:libcrypto",
+        "//external:libcrypto",
         "//third_party/googlelog:glog",
         "//third_party/proto:any_proto_cc",
         "//third_party/proto:protobuf",
@@ -40,9 +40,9 @@ cc_library(
     ],
     deps = [
         ":lib",
+        "//external:libuuid",
         "//kythe/proto:analysis_proto_cc",
         "//kythe/proto:storage_proto_cc",
-        "//third_party:libuuid",
         "//third_party/proto:protobuf",
         "//third_party/zlib",
     ],

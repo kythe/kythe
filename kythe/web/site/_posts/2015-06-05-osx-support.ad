@@ -34,7 +34,6 @@ Do some first-time setup:
 
 [source,shell]
 ----
-./setup_bazel.sh
 ./tools/modules/update.sh
 ----
 

@@ -45,66 +45,7 @@ java_import(
 )
 
 cc_library(
-    name = "libuuid",
-    srcs = ["empty.cc"],
-    includes = select({
-        ":darwin": ["ossp-uuid/include"],
-        "//conditions:default": [],
-    }),
-    linkopts = select({
-        ":darwin": [
-            "-Lthird_party/ossp-uuid/lib",
-            "-luuid",
-        ],
-        "//conditions:default": ["-luuid"],
-    }),
-)
-
-cc_library(
     name = "libcurl",
     srcs = ["empty.cc"],
     linkopts = ["-lcurl"],
-)
-
-cc_library(
-    name = "libcrypto",
-    srcs = ["empty.cc"],
-    includes = select({
-        ":darwin": ["openssl/include"],
-        "//conditions:default": [],
-    }),
-    linkopts = select({
-        ":darwin": [
-            "-Lthird_party/openssl/lib",
-            "-lcrypto",
-        ],
-        "//conditions:default": ["-lcrypto"],
-    }),
-)
-
-cc_library(
-    name = "libmemcached",
-    srcs = ["empty.cc"],
-    includes = select({
-        ":darwin": ["libmemcached/include"],
-        "//conditions:default": [],
-    }),
-    linkopts = select({
-        ":darwin": [
-            "-Lthird_party/libmemcached/lib",
-            "-lmemcached",
-        ],
-        "//conditions:default": [
-            "-Wl,-Bstatic",
-            "-lmemcached",
-            "-Wl,-Bdynamic",
-            "-lsasl2",
-        ],
-    }),
-)
-
-config_setting(
-    name = "darwin",
-    values = {"cpu": "darwin"},
-    visibility = ["//visibility:public"],
 )

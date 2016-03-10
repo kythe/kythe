@@ -6,6 +6,28 @@ load("//tools/go:go_configure.bzl", "go_configure")
 
 go_configure()
 
+load("//tools:node_configure.bzl", "node_configure")
+
+node_configure()
+
+load("//tools:kythe_pkg_config.bzl", "kythe_pkg_config")
+
+kythe_pkg_config(
+    name = "libcrypto",
+    darwin = ("OPENSSL_HOME", "/usr/local/opt/openssl"),
+)
+
+kythe_pkg_config(
+    name = "libuuid",
+    darwin = ("UUID_HOME", "/usr/local/opt/ossp-uuid"),
+    modname = "uuid",
+)
+
+kythe_pkg_config(
+    name = "libmemcached",
+    darwin = ("MEMCACHED_HOME", "/usr/local/opt/libmemcached"),
+)
+
 new_git_repository(
     name = "gtest",
     build_file = "third_party/googletest.BUILD",

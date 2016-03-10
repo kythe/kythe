@@ -14,7 +14,6 @@ Kythe uses [Bazel](http://bazel.io) to build its source code.  After
 as simple as:
 
 {% highlight bash %}
-./setup_bazel.sh           # Run initial Kythe+Bazel setup
 ./tools/modules/update.sh  # Ensure third_party is updated
 
 bazel build //... # Build all Kythe sources
@@ -66,8 +65,7 @@ apt-get install \
 When building Kythe, we assume that you have an LLVM checkout in
 third_party/llvm/llvm.  If you don't have an LLVM checkout in that directory, or
 if you fall out of date, the `./tools/modules/update.sh` script will update you
-to the exact revisions that we test against.  `./setup_bazel.sh` should be run
-before updating the modules.
+to the exact revisions that we test against.
 
 Note that you don't need to have a checkout of LLVM per Kythe checkout.  It's
 enough to have a symlink of the third_party/llvm/llvm directory.
