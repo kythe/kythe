@@ -138,7 +138,8 @@ https://kythe.io/repo/kythe/java/com/google/devtools/kythe/extractors/java/maven
 
     mkdir -p "$KYTHE_OUTPUT_DIRECTORY"
 
-    java -jar extractors/javac_extractor.jar \
+    java -Xbootclasspath/p:extractors/javac_extractor.jar \
+      -jar extractors/javac_extractor.jar \
       -cp "${$(find third_party -name '*.jar' -printf '%p:')%:}" \
       $(find src/main -name '*.java')
 

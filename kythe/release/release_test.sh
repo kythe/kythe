@@ -17,7 +17,7 @@ set -o pipefail
 #
 # Test the Kythe release package for basic functionality.
 
-TMPDIR=${TEST_TMPDIR:?}
+export TMPDIR=${TEST_TMPDIR:?}
 
 TEST_PORT=9898
 ADDR=localhost:$TEST_PORT
@@ -49,7 +49,18 @@ tools/entrystream < "$TEST_SRCDIR/kythe/testdata/test.entries" | \
   tools/entrystream --read_json --entrysets >/dev/null
 tools/triples < "$TEST_SRCDIR/kythe/testdata/test.entries" >/dev/null
 
-# TODO(schroederc): add extractor tests
+# TODO(zarko): add cxx extractor tests
+rm -rf "$TMPDIR/java_compilation"
+REAL_JAVAC="$(which java)" \
+  JAVAC_EXTRACTOR_JAR=$PWD/extractors/javac_extractor.jar \
+  KYTHE_ROOT_DIRECTORY="$TEST_SRCDIR" \
+  KYTHE_OUTPUT_DIRECTORY="$TMPDIR/java_compilation" \
+  KYTHE_EXTRACT_ONLY=1 \
+  extractors/javac-wrapper.sh -cp "$TEST_SRCDIR/third_party/guava"/*.jar \
+  "$TEST_SRCDIR/kythe/java/com/google/devtools/kythe/common"/*.java
+cat "$TMPDIR"/javac-extractor.{out,err}
+java -jar indexers/java_indexer.jar "$TMPDIR/java_compilation"/*.kindex | \
+  tools/entrystream --count
 
 # Ensure the Java indexer works on a curated test compilation
 java -jar indexers/java_indexer.jar "$TEST_SRCDIR/kythe/testdata/test.kindex" > entries

@@ -78,8 +78,10 @@ sh_test(
     srcs = ["release_test.sh"],
     data = [
         ":release",
+        "//kythe/java/com/google/devtools/kythe/common:FormattingLogger.java",
         "//kythe/testdata:entries",
         "//kythe/testdata:test.kindex",
+        "//third_party/guava",
         "//third_party/jq",
     ],
     tags = [

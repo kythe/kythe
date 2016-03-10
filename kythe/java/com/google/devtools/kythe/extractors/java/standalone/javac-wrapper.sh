@@ -33,6 +33,12 @@
 # KYTHE_OUTPUT_DIRECTORY are volumes, it can be useful to set the DOCKER_CLEANUP
 # environment variable so that files modified/created in either volume have
 # their owner/group set to the volume's root directory's owner/group.
+#
+# Other environment variables that may be passed to this script include:
+#   KYTHE_EXTRACT_ONLY: if set, suppress the call to javac after extraction
+#   TMPDIR: override the location of extraction logs and other temporary output
+
+export TMPDIR="${TMPDIR:-/tmp}"
 
 if [[ -z "$REAL_JAVAC" ]]; then
   readonly REAL_JAVAC="$(dirname "$(readlink -e "$0")")/javac.real"
@@ -53,5 +59,9 @@ if [[ -n "$DOCKER_CLEANUP" ]]; then
   trap cleanup EXIT ERR INT
 fi
 
-java -jar "$JAVAC_EXTRACTOR_JAR" "$@" >>/tmp/javac-extractor.out 2>> /tmp/javac-extractor.err
-"$REAL_JAVAC" "$@"
+java -Xbootclasspath/p:"$JAVAC_EXTRACTOR_JAR" \
+     -jar "$JAVAC_EXTRACTOR_JAR" \
+     "$@" >>"$TMPDIR"/javac-extractor.out 2>> "$TMPDIR"/javac-extractor.err
+if [[ -z "$KYTHE_EXTRACT_ONLY" ]]; then
+  "$REAL_JAVAC" "$@"
+fi

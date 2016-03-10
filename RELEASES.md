@@ -1,5 +1,10 @@
 # Release Notes
 
+## Upcoming release
+
+Notable fixes:
+ - javac-wrapper.sh: prepend bootclasspath jar to use packaged javac tools
+
 ## v0.0.20
 
 Notable fixes:
