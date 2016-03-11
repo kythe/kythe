@@ -63,6 +63,7 @@ go_binary(
         "//kythe/go/services/web",
         "//kythe/go/services/xrefs",
         "//kythe/go/serving/api",
+        "//kythe/go/util/build",
         "//kythe/go/util/kytheuri",
         "//kythe/go/util/schema",
         "//kythe/go/util/stringset",

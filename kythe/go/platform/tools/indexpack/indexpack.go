@@ -38,6 +38,7 @@ import (
 	"kythe.io/kythe/go/platform/kindex"
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/platform/vfs/gcs"
+	"kythe.io/kythe/go/util/build"
 	"kythe.io/kythe/go/util/oauth2"
 
 	apb "kythe.io/kythe/proto/analysis_proto"
@@ -62,9 +63,14 @@ var (
 
 func init() {
 	flag.Usage = func() {
-		fmt.Fprintln(os.Stderr, `Usage: indexpack --to_archive <root> [kindex-paths...]
+		fmt.Fprintf(os.Stderr, `Usage: indexpack --to_archive <root> [kindex-paths...]
        indexpack --from_archive <root> [dir]
-       indexpack --view_archive <root> [unit-digests...]`)
+       indexpack --view_archive <root> [unit-digests...]
+
+%s
+
+Flags:
+`, build.VersionLine())
 		flag.PrintDefaults()
 		os.Exit(1)
 	}

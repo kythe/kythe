@@ -109,6 +109,7 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
     $this->debugPrint("runTests(" . join($targets, ", ") . ")");
 
     $future = new ExecFuture($this->bazelCommand("test", array_merge([
+        "--verbose_failures",
         "--test_tag_filters=-broken",
         "--noshow_loading_progress",
         "--noshow_progress"], $targets)));

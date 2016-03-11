@@ -46,6 +46,6 @@ esac
 if grep -q [A-Z] <<<"$dir"; then
   echo "case-insensitivity::error:1 $dir directory contains an uppercase letter"
 fi
-if [[ $(find "$dir" -maxdepth 1 -iname "$name" | wc -l) -gt 1 ]]; then
+if [[ $(find "$dir" -maxdepth 0 -iname "$name" | wc -l) -gt 1 ]]; then
   echo "case-insensitivity::error:1 $name filename clashes on case-insensitive file systems"
 fi

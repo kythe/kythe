@@ -24,6 +24,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"kythe.io/kythe/go/util/build"
 )
 
 // SimpleUsage returns a basic flag.Usage function that prints the given
@@ -32,6 +34,9 @@ import (
 //  Usage: binary <arg0> <arg1> ... <argN>
 //  <description>
 //
+//  <build.VersionLine()>
+//
+//  Flags:
 //  <flag.PrintDefaults()>
 func SimpleUsage(description string, args ...string) func() {
 	return func() {
@@ -40,7 +45,10 @@ func SimpleUsage(description string, args ...string) func() {
 		fmt.Fprintf(os.Stderr, `%s%s
 %s
 
-`, prefix, strings.Join(args, " "), description)
+%s
+
+Flags:
+`, prefix, strings.Join(args, " "), description, build.VersionLine())
 		flag.PrintDefaults()
 	}
 }

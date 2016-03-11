@@ -96,6 +96,7 @@ go_binary(
         "//kythe/go/platform/kindex",
         "//kythe/go/platform/vfs",
         "//kythe/go/platform/vfs/gcs",
+        "//kythe/go/util/build",
         "//kythe/go/util/oauth2",
         "//kythe/proto:analysis_proto_go",
         "//third_party/go/src/golang.org/x/net/context",

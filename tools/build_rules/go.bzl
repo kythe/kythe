@@ -180,6 +180,8 @@ def _go_library_impl(ctx):
       ),
   )
 
+_build_var_package = "kythe.io/kythe/go/util/build"
+
 def _link_binary(ctx, binary, archive, transitive_deps, extldflags=[], cc_libs=[]):
   gotool = ctx.file._go
 
@@ -197,13 +199,14 @@ def _link_binary(ctx, binary, archive, transitive_deps, extldflags=[], cc_libs=[
   cmd = ['set -e'] + _construct_go_path(go_path, package_map) + [
       'export GOROOT=$PWD/external/local_goroot',
       'export PATH',
-      gotool.path + ' tool link -extldflags="' + ' '.join(list(extldflags)) + '"'
+      'BUILD_VARS=$(' + ctx.file._format_build_vars.path + ' ' + _build_var_package + ')',
+      gotool.path + ' tool link ${BUILD_VARS} -extldflags="' + ' '.join(list(extldflags)) + '"'
       + ' ' + ' '.join(args) + ' -L "' + go_path + '"'
       + ' -o ' + binary.path + ' ' + archive.path + ';',
   ]
 
   ctx.action(
-      inputs = ctx.files._goroot + [archive] + dep_archives + list(cc_libs),
+      inputs = ctx.files._goroot + [archive] + dep_archives + list(cc_libs) + [ctx.file._format_build_vars, ctx.info_file, ctx.version_file],
       outputs = [binary],
       mnemonic = 'GoLink',
       command = "\n".join(cmd),
@@ -329,6 +332,11 @@ go_library = rule(
 )
 
 binary_attrs = base_attrs + {
+    "_format_build_vars": attr.label(
+        default = Label("//tools/go:format_build_vars.sh"),
+        allow_files = True,
+        single_file = True,
+    ),
     "data": attr.label_list(
         allow_files = True,
         cfg = DATA_CFG,

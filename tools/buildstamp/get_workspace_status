@@ -1,0 +1,20 @@
+#!/bin/bash -e
+
+# This script will be run bazel when building process starts to
+# generate key-value information that represents the status of the
+# workspace. The output should be like
+#
+# KEY1 VALUE1
+# KEY2 VALUE2
+
+echo "BUILD_SCM_REVISION $(git rev-parse HEAD)"
+
+# Check whether there are any uncommited changes
+if git diff-index --quiet HEAD; then
+  tree_status="Clean"
+else
+  tree_status="Modified"
+fi
+echo "BUILD_SCM_STATUS ${tree_status}"
+
+echo "KYTHE_RELEASE_VERSION $(awk '/^release_version =/ { print substr($3, 2, length($3)-2) }' kythe/release/BUILD)"

@@ -55,6 +55,7 @@ import (
 	"sort"
 
 	"kythe.io/kythe/go/serving/api"
+	"kythe.io/kythe/go/util/build"
 )
 
 var (
@@ -66,11 +67,13 @@ var (
 func globalUsage() {
 	fmt.Fprintf(os.Stderr, `Usage: %s <global-flags> <command> <flags>
 
+%s
+
 Examples:
   %[1]s ls --uris kythe://kythe?path=kythe/cxx/common
   %[1]s search --path kythe/cxx/common/CommandLineUtils.h /kythe/node/kind file
   %[1]s node kythe:?lang=java#java.util.List
-`, filepath.Base(os.Args[0]))
+`, filepath.Base(os.Args[0]), build.VersionLine())
 	if !shortHelp {
 		fmt.Fprintln(os.Stderr, "\nGlobal Flags:")
 		flag.PrintDefaults()
