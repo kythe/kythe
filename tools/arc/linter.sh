@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/bin/bash -e
 
 # Copyright 2015 Google Inc. All rights reserved.
 #
@@ -29,7 +29,7 @@ readonly name="$(basename "$1")"
 readonly dir="$(dirname "$1")"
 
 case $file in
-  WORKSPACE|third_party/*|tools/*|*.md|BUILD|*/BUILD|*/testdata/*|*.yaml|*.json|*.html|*.pb.go|.arclint|.gitignore|*/.gitignore|.arcconfig|*/__phutil_*|*.bzl|.kythe|kythe/web/site/*)
+  AUTHORS|CONTRIBUTORS|WORKSPACE|third_party/*|tools/*|*.md|BUILD|*/BUILD|*/testdata/*|*.yaml|*.json|*.html|*.pb.go|.arclint|.gitignore|*/.gitignore|.arcconfig|*/__phutil_*|*.bzl|.kythe|kythe/web/site/*)
     ;; # skip copyright checks
   *.sh|*.bash)
     if command -v shellcheck jq &>/dev/null; then
