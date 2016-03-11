@@ -10,6 +10,6 @@ filegroup(
 java_import(
     name = "guava",
     jars = [
-        "guava-18.0.jar",
+        "guava-19.0.jar",
     ],
 )
