@@ -7,5 +7,6 @@ go_package(
         "//kythe/go/storage/vnameutil",
         "//kythe/go/util/kytheuri",
         "//kythe/proto:storage_proto_go",
+        "//third_party/go/src/github.com/golang/protobuf/proto",
     ],
 )

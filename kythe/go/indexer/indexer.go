@@ -47,9 +47,10 @@ import (
 	"path"
 	"sort"
 
-	"kythe.io/kythe/go/extractors/govname"
-
+	"github.com/golang/protobuf/proto"
 	gcimporter "golang.org/x/tools/go/gcimporter15"
+
+	"kythe.io/kythe/go/extractors/govname"
 
 	apb "kythe.io/kythe/proto/analysis_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
@@ -226,9 +227,24 @@ func (pi *PackageInfo) Signature(obj types.Object) string {
 		return sig
 	}
 	tag, base := pi.newSignature(obj)
-	sig := tag + " " + base
+	sig := base
+	if tag != "" {
+		sig = tag + " " + base
+	}
 	pi.sigs[obj] = sig
 	return sig
+}
+
+// VName returns a VName for obj relative to that of its package.
+func (pi *PackageInfo) VName(obj types.Object) *spb.VName {
+	sig := pi.Signature(obj)
+	base := pi.VNames[obj.Pkg()]
+	if base == nil {
+		return govname.ForBuiltin(sig)
+	}
+	vname := proto.Clone(base).(*spb.VName)
+	vname.Signature = sig
+	return vname
 }
 
 const (
@@ -254,7 +270,7 @@ func (pi *PackageInfo) newSignature(obj types.Object) (tag, base string) {
 	topLevelTag := tagVar
 	switch t := obj.(type) {
 	case *types.Builtin:
-		return isBuiltin + tagType, t.Name()
+		return isBuiltin + tagFunc, t.Name()
 
 	case *types.Nil:
 		return isBuiltin + tagConst, "nil"
@@ -271,13 +287,13 @@ func (pi *PackageInfo) newSignature(obj types.Object) (tag, base string) {
 	case *types.Var:
 		if t.IsField() {
 			if owner, ok := pi.owner[t]; ok {
-				tag, base := pi.newSignature(owner)
-				return tag, base + "." + t.Name()
+				_, base := pi.newSignature(owner)
+				return tagField, base + "." + t.Name()
 			}
 			return tagField, fmt.Sprintf("[%p].%s", t, t.Name())
 		} else if owner, ok := pi.owner[t]; ok {
 			_, base := pi.newSignature(owner)
-			return tagParam, base + "#" + t.Name()
+			return tagParam, base + ":" + t.Name()
 		}
 
 	case *types.Func:

@@ -99,6 +99,16 @@ func ForPackage(corpus string, pkg *build.Package) *spb.VName {
 	return v
 }
 
+// ForBuiltin returns a VName for a Go built-in with the given signature.
+func ForBuiltin(signature string) *spb.VName {
+	return &spb.VName{
+		Corpus:    golangCorpus,
+		Language:  Language,
+		Root:      "ref/spec",
+		Signature: signature,
+	}
+}
+
 // IsStandardLibrary reports whether v names part of the Go standard library.
 // This includes the "golang.org" corpus but excludes the "golang.org/x/..."
 // extension repositories.  If v == nil, the answer is false.

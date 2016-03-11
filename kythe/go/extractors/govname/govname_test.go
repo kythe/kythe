@@ -20,7 +20,10 @@ import (
 	"go/build"
 	"testing"
 
+	"github.com/golang/protobuf/proto"
+
 	"kythe.io/kythe/go/util/kytheuri"
+
 	spb "kythe.io/kythe/proto/storage_proto"
 )
 
@@ -74,5 +77,19 @@ func TestNotStandardLib(t *testing.T) {
 		if ok := IsStandardLibrary(test); ok {
 			t.Errorf("IsStandardLibrary(%+v): got %v, want false", test, ok)
 		}
+	}
+}
+
+func TestForBuiltin(t *testing.T) {
+	const signature = "blah"
+	want := &spb.VName{
+		Corpus:    golangCorpus,
+		Language:  Language,
+		Root:      "ref/spec",
+		Signature: signature,
+	}
+	got := ForBuiltin("blah")
+	if !proto.Equal(got, want) {
+		t.Errorf("ForBuiltin(%q): got %+v, want %+v", signature, got, want)
 	}
 }
