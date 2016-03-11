@@ -1974,6 +1974,11 @@ class C : T {
 };
 --------------------------------------------------------------------------------
 
+Go
+~~
+
+The source language for Go is spelled "`go`".
+
 Java
 ~~~~
 
@@ -2113,3 +2118,8 @@ public class E {
   }
 }
 --------------------------------------------------------------------------------
+
+Protocol Buffers
+~~~~~~~~~~~~~~~~
+
+The source language for Protocol Buffers is spelled `"protobuf"`.
