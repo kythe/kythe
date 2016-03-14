@@ -573,16 +573,17 @@ func ExpandAnchor(anchor *srvpb.RawAnchor, file *srvpb.File, norm *xrefs.Normali
 			LineNumber: sp.LineNumber,
 		}
 		nextLine := norm.Point(&xpb.Location_Point{LineNumber: sp.LineNumber + 1})
-		if nextLine.ByteOffset > ssp.ByteOffset { // double-check ssp != EOF
-			sep = &xpb.Location_Point{
-				ByteOffset:   nextLine.ByteOffset - 1,
-				LineNumber:   sp.LineNumber,
-				ColumnOffset: sp.ColumnOffset + (nextLine.ByteOffset - sp.ByteOffset - 1),
-			}
-			snippet, err = getText(ssp, sep, file)
-			if err != nil {
-				return nil, fmt.Errorf("error getting text for line snippet: %v", err)
-			}
+		if nextLine.ByteOffset <= ssp.ByteOffset { // double-check ssp != EOF
+			return nil, errors.New("anchor past EOF")
+		}
+		sep = &xpb.Location_Point{
+			ByteOffset:   nextLine.ByteOffset - 1,
+			LineNumber:   sp.LineNumber,
+			ColumnOffset: sp.ColumnOffset + (nextLine.ByteOffset - sp.ByteOffset - 1),
+		}
+		snippet, err = getText(ssp, sep, file)
+		if err != nil {
+			return nil, fmt.Errorf("error getting text for line snippet: %v", err)
 		}
 	}
 
