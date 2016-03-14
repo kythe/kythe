@@ -19,13 +19,6 @@ link_args = {
     "dbg": ["-race"],
 }
 
-link_args_darwin = {
-    # https://github.com/golang/go/issues/10254 (fixed in >=1.5)
-    "opt": ["-w"],
-    "fastbuild": [],
-    "dbg": ["-race"],
-}
-
 def _get_cc_shell_path(ctx):
   cc = ctx.var["CC"]
   if cc[0] == "/":
@@ -191,11 +184,7 @@ def _link_binary(ctx, binary, archive, transitive_deps, extldflags=[], cc_libs=[
   dep_archives, package_map = _construct_package_map(transitive_deps)
   go_path = binary.path + '.gopath/'
 
-  if ctx.var['TARGET_CPU'] == 'darwin':
-    args = link_args_darwin[ctx.var['COMPILATION_MODE']]
-  else:
-    args = link_args[ctx.var['COMPILATION_MODE']]
-
+  args = link_args[ctx.var['COMPILATION_MODE']]
   cmd = ['set -e'] + _construct_go_path(go_path, package_map) + [
       'export GOROOT=$PWD/external/local_goroot',
       'export PATH',
