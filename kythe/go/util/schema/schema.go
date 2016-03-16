@@ -113,7 +113,7 @@ func IsEdgeVariant(k1, k2 string) bool { return k1 == k2 || strings.HasPrefix(k1
 // IsAnchorEdge returns if the given edge kind is associated with anchors.
 func IsAnchorEdge(kind string) bool {
 	kind = Canonicalize(kind)
-	return IsEdgeVariant(kind, DefinesEdge) || IsEdgeVariant(kind, DocumentsEdge) || IsEdgeVariant(kind, RefEdge)
+	return IsEdgeVariant(kind, DefinesEdge) || IsEdgeVariant(kind, DocumentsEdge) || IsEdgeVariant(kind, RefEdge) || IsEdgeVariant(kind, CompletesEdge)
 }
 
 // EdgeDirection returns the edge direction of the given edge kind

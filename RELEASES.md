@@ -2,6 +2,9 @@
 
 ## Upcoming release
 
+Notable changes:
+ - `xrefs.CrossReferences`: group declarations/definitions for incomplete nodes
+
 Notable additions:
  - kythe tool: add `--graphviz` output flag to `edges` subcommand
 

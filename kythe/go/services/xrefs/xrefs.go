@@ -115,16 +115,18 @@ func FixTickets(rawTickets []string) ([]string, error) {
 // IsDefKind determines whether the given edgeKind matches the requested
 // definition kind.
 func IsDefKind(requestedKind xpb.CrossReferencesRequest_DefinitionKind, edgeKind string) bool {
+	// TODO(schroederc): add separate declarations group for `/kythe/complete != "definition"` nodes
+	//                   use /kythe/edge/completes anchors as sole definition(s)
 	edgeKind = schema.Canonicalize(edgeKind)
 	switch requestedKind {
 	case xpb.CrossReferencesRequest_NO_DEFINITIONS:
 		return false
 	case xpb.CrossReferencesRequest_FULL_DEFINITIONS:
-		return edgeKind == schema.DefinesEdge
+		return edgeKind == schema.DefinesEdge || schema.IsEdgeVariant(edgeKind, schema.CompletesEdge)
 	case xpb.CrossReferencesRequest_BINDING_DEFINITIONS:
-		return edgeKind == schema.DefinesBindingEdge
+		return edgeKind == schema.DefinesBindingEdge || schema.IsEdgeVariant(edgeKind, schema.CompletesEdge)
 	case xpb.CrossReferencesRequest_ALL_DEFINITIONS:
-		return schema.IsEdgeVariant(edgeKind, schema.DefinesEdge)
+		return schema.IsEdgeVariant(edgeKind, schema.DefinesEdge) || schema.IsEdgeVariant(edgeKind, schema.CompletesEdge)
 	default:
 		panic("unhandled CrossReferencesRequest_DefinitionKind")
 	}
