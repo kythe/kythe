@@ -22,6 +22,20 @@
     }
   },
   {
+    "pattern": "bazel-out/[^/]+/bin/third_party/go/src/((.*)/[^/]+\\.a)",
+    "vname": {
+      "corpus": "@2@",
+      "path": "@1@"
+    }
+  },
+  {
+    "pattern": "bazel-out/[^/]+/bin/(kythe/(?:go|proto)/.+\\.a)",
+    "vname": {
+      "corpus": "kythe",
+      "path": "@1@"
+    }
+  },
+  {
     "pattern": "(third_party/llvm/lib/clang/[^/]+/include)/(.*)",
     "vname": {
       "corpus": "cstdlib",

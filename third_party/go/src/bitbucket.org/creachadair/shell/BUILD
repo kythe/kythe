@@ -6,4 +6,4 @@ licenses(["notice"])
 
 exports_files(["LICENSE"])
 
-go_package()
+go_package(package = "bitbucket.org/creachadair/shell")
