@@ -20,9 +20,11 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"html"
 	"log"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -209,6 +211,71 @@ func displayTargets(edges []*xpb.EdgeSet) error {
 		if _, err := fmt.Fprintln(out, target); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func displayEdgeGraph(reply *xpb.EdgesReply) error {
+	nodes := xrefs.NodesMap(reply.Node)
+	edges := make(map[string]map[string]stringset.Set)
+
+	for _, es := range reply.EdgeSet {
+		for _, g := range es.Group {
+			for _, tgt := range g.TargetTicket {
+				src, kind := es.SourceTicket, g.Kind
+				if schema.EdgeDirection(g.Kind) == schema.Reverse {
+					src, kind, tgt = tgt, schema.MirrorEdge(kind), src
+				}
+				groups, ok := edges[src]
+				if !ok {
+					groups = make(map[string]stringset.Set)
+					edges[src] = groups
+				}
+				targets, ok := groups[kind]
+				if !ok {
+					targets = stringset.New()
+					groups[kind] = targets
+				}
+				targets.Add(tgt)
+			}
+		}
+	}
+	if _, err := fmt.Println("digraph kythe {"); err != nil {
+		return err
+	}
+	for ticket, node := range nodes {
+		if _, err := fmt.Printf(`	%q [label=<<table><tr><td colspan="2">%s</td></tr>`, ticket, html.EscapeString(ticket)); err != nil {
+			return err
+		}
+		var facts []string
+		for fact := range node {
+			facts = append(facts, fact)
+		}
+		sort.Strings(facts)
+		for _, fact := range facts {
+			if _, err := fmt.Printf("<tr><td>%s</td><td>%s</td></tr>", html.EscapeString(fact), html.EscapeString(string(node[fact]))); err != nil {
+				return err
+			}
+		}
+		if _, err := fmt.Println("</table>> shape=plaintext];"); err != nil {
+			return err
+		}
+	}
+	if _, err := fmt.Println(); err != nil {
+		return err
+	}
+
+	for src, groups := range edges {
+		for kind, targets := range groups {
+			for tgt := range targets {
+				if _, err := fmt.Printf("\t%q -> %q [label=%q];\n", src, tgt, kind); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	if _, err := fmt.Println("}"); err != nil {
+		return err
 	}
 	return nil
 }

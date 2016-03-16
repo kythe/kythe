@@ -2,6 +2,9 @@
 
 ## Upcoming release
 
+Notable additions:
+ - kythe tool: add `--graphviz` output flag to `edges` subcommand
+
 Notable fixes:
  - javac-wrapper.sh: prepend bootclasspath jar to use packaged javac tools
 

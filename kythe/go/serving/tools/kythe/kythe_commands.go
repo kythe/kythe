@@ -58,6 +58,7 @@ var (
 	factSizeThreshold int
 
 	// edges flags
+	dotGraph    bool
 	countOnly   bool
 	targetsOnly bool
 	edgeKinds   string
@@ -147,9 +148,10 @@ var (
 			return displayDirectory(dir)
 		})
 
-	cmdEdges = newCommand("edges", "[--count_only] [--kinds edgeKind1,edgeKind2,...] [--page_token token] [--page_size num] <ticket>",
+	cmdEdges = newCommand("edges", "[--count_only | --targets_only | --graphvizviz] [--kinds edgeKind1,edgeKind2,...] [--page_token token] [--page_size num] <ticket>",
 		"Retrieve outward edges from a node",
 		func(flag *flag.FlagSet) {
+			flag.BoolVar(&dotGraph, "graphviz", false, "Print resulting edges as a dot graph")
 			flag.BoolVar(&countOnly, "count_only", false, "Only print counts per edge kind")
 			flag.BoolVar(&targetsOnly, "targets_only", false, "Only display edge targets")
 			flag.StringVar(&edgeKinds, "kinds", "", "Comma-separated list of edge kinds to return (default returns all)")
@@ -157,6 +159,14 @@ var (
 			flag.IntVar(&pageSize, "page_size", 0, "Maximum number of edges returned (0 lets the service use a sensible default)")
 		},
 		func(flag *flag.FlagSet) error {
+			if countOnly && targetsOnly {
+				return errors.New("--count_only and --targets_only are mutually exclusive")
+			} else if countOnly && dotGraph {
+				return errors.New("--count_only and --graphviz are mutually exclusive")
+			} else if targetsOnly && dotGraph {
+				return errors.New("--targets_only and --graphviz are mutually exclusive")
+			}
+
 			req := &xpb.EdgesRequest{
 				Ticket:    flag.Args(),
 				PageToken: pageToken,
@@ -164,6 +174,9 @@ var (
 			}
 			if edgeKinds != "" {
 				req.Kind = strings.Split(edgeKinds, ",")
+			}
+			if dotGraph {
+				req.Filter = []string{"**"}
 			}
 			logRequest(req)
 			reply, err := xs.Edges(ctx, req)
@@ -177,6 +190,8 @@ var (
 				return displayEdgeCounts(reply)
 			} else if targetsOnly {
 				return displayTargets(reply.EdgeSet)
+			} else if dotGraph {
+				return displayEdgeGraph(reply)
 			}
 			return displayEdges(reply)
 		})
