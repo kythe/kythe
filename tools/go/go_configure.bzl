@@ -12,11 +12,8 @@ def _find_goroot(ctx):
   return ctx.path(result.stdout.strip())
 
 def _symlink_contents(ctx, goroot):
-  # TODO(shahms): There has to be a better way, use it if
-  # https://github.com/bazelbuild/bazel/issues/1015 gets fixed.
-  result = ctx.execute([ctx.which("ls"), str(goroot)])
-  for filename in result.stdout.strip().split("\n"):
-    ctx.symlink(goroot.get_child(filename), filename)
+  for child in goroot.readdir():
+    ctx.symlink(child, child.basename)
 
 def _impl(ctx):
   _symlink_contents(ctx, _find_goroot(ctx))
