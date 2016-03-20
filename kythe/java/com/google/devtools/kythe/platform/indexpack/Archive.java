@@ -19,7 +19,6 @@ package com.google.devtools.kythe.platform.indexpack;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
-import com.google.common.base.Throwables;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.hash.HashFunction;
@@ -154,7 +153,7 @@ public class Archive {
                       .setContent(ByteString.copyFrom(readFile(input.getInfo().getDigest())))
                       .build();
                 } catch (IOException ioe) {
-                  throw Throwables.propagate(ioe);
+                  throw new RuntimeException(ioe);
                 }
               }
             }));
@@ -199,7 +198,7 @@ public class Archive {
                   String key = name.substring(0, name.length() - UNIT_SUFFIX.length());
                   return readUnit(key, formatKey, cls);
                 } catch (IOException ioe) {
-                  throw Throwables.propagate(ioe);
+                  throw new RuntimeException(ioe);
                 }
               }
             }),

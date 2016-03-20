@@ -20,7 +20,6 @@ import static com.google.common.truth.Truth.assertThat;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 import com.google.common.base.Function;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
@@ -563,7 +562,7 @@ public class JavaExtractorTest extends TestCase {
           .setDigest(ExtractorUtils.digestForPath(path))
           .build();
     } catch (Exception e) {
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -574,7 +573,7 @@ public class JavaExtractorTest extends TestCase {
           .setDigest(ExtractorUtils.digestForPath(localPath))
           .build();
     } catch (Exception e) {
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
   }
 

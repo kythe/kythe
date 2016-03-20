@@ -17,7 +17,6 @@
 package com.google.devtools.kythe.analyzers.java;
 
 import com.google.common.base.Strings;
-import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.devtools.kythe.analyzers.base.FactEmitter;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
@@ -114,7 +113,7 @@ public class JavaIndexer {
       try {
         entry.build().writeDelimitedTo(stream);
       } catch (IOException ioe) {
-        Throwables.propagate(ioe);
+        throw new RuntimeException(ioe);
       }
     }
   }
