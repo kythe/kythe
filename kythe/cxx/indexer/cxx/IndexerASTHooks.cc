@@ -2310,6 +2310,12 @@ uint64_t IndexerASTVisitor::SemanticHash(const clang::QualType &T) {
 }
 
 uint64_t IndexerASTVisitor::SemanticHash(const clang::EnumDecl *ED) {
+  // Memoize semantic hashes for enums, as they are also needed to create
+  // names for enum constants.
+  auto Ins = EnumToHash.insert(std::make_pair(ED, 0));
+  if (!Ins.second)
+    return Ins.first->second;
+
   // TODO(zarko): Do we need a better hash function?
   uint64_t hash = 0;
   for (auto E : ED->enumerators()) {
@@ -2317,6 +2323,7 @@ uint64_t IndexerASTVisitor::SemanticHash(const clang::EnumDecl *ED) {
       hash ^= std::hash<std::string>()(E->getName());
     }
   }
+  Ins.first->second = hash;
   return hash;
 }
 

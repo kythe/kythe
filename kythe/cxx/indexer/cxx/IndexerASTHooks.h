@@ -751,6 +751,9 @@ private:
   /// \brief Maps known Decls to their NodeIds.
   llvm::DenseMap<const clang::Decl *, GraphObserver::NodeId> DeclToNodeId;
 
+  /// \brief Maps EnumDecls to semantic hashes.
+  llvm::DenseMap<const clang::EnumDecl *, uint64_t> EnumToHash;
+
   /// \brief Enabled library-specific callbacks.
   const LibrarySupports &Supports;
 
