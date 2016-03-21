@@ -4,6 +4,7 @@
 
 Notable changes:
  - `xrefs.CrossReferences`: group declarations/definitions for incomplete nodes
+ - Require bazel >= release 0.2.0-2016-03-21 (@19b5675)
 
 Notable additions:
  - kythe tool: add `--graphviz` output flag to `edges` subcommand

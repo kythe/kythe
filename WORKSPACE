@@ -1,3 +1,7 @@
+load("//:version.bzl", "check_version")
+
+check_version("0.2.0-2016-03-21 (@19b5675)")
+
 load("//tools/cpp:clang_configure.bzl", "clang_configure")
 
 clang_configure()
