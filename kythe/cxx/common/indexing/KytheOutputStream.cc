@@ -148,7 +148,7 @@ void FileOutputStream::EmitAndReleaseTopBuffer() {
 void FileOutputStream::PushBuffer() { buffers_.Push(max_size_); }
 
 void FileOutputStream::PopBuffer() {
-  if (!buffers_.MergeDownIfTooSmall(min_size_, max_size_)) {
+  if (buffers_.MergeDownIfTooSmall(min_size_, max_size_)) {
     ++stats_.buffers_merged_;
   } else {
     EmitAndReleaseTopBuffer();
