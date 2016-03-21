@@ -4,34 +4,28 @@ def _find_cmakelists(files):
       return file
   return None
 
-def _srcpath(path):
-  return "/".join(["@_srcdir_@", path])
-
 def _cmake_gen_impl(ctx):
   cmakefile = _find_cmakelists(ctx.files.srcs)
   if cmakefile == None:
     fail("CMakeLists.txt missing from srcs")
 
-  relative_root = "/".join([s for s in
-                   [ctx.label.workspace_root, ctx.label.package] if s])
-  root = "/".join([ctx.configuration.genfiles_dir.path, relative_root])
-  options = [root]
+  cmake_cache = ctx.new_file("CMakeCache.txt")
+
+  options = [cmake_cache.dirname]
   if ctx.file.cache_script:
-    options += ["-C", _srcpath(ctx.file.cache_script.path)]
-  for define in ctx.attr.defines:
-    options += ["-D", define]
-  options += [_srcpath(cmakefile.dirname)]
-  ctx.action(outputs=ctx.outputs.outs,
+    options += ["-C", ctx.file.cache_script.path]
+  for define in ctx.attr.defines.items():
+    options += ["-D", "=".join(define)]
+  options += [cmakefile.dirname]
+
+  ctx.action(outputs=ctx.outputs.outs + [cmake_cache],
              inputs=ctx.files.srcs,
              mnemonic="CmakeGen",
-             command=";".join([
-                 "_SRCDIR=\"$(pwd)\"",
-                 "cd \"$1\"",
-                 "shift",
-                 "touch CMakeCache.txt",
-                 "cmake \"${@/#@_srcdir_@/$_SRCDIR}\" > /dev/null",
-             ]),
+             executable=ctx.executable._cmake_wrapper,
              use_default_shell_env=True,
+             # This is necessary for cases where `cmake` or something
+             # on which it depends lies outside of the sandbox.
+             execution_requirements={"local": ""},
              arguments=options)
 
 cmake_generate = rule(
@@ -45,10 +39,14 @@ cmake_generate = rule(
             mandatory = True,
             non_empty = True,
         ),
-        "defines": attr.string_list(),
+        "defines": attr.string_dict(),
         "cache_script": attr.label(
             single_file = True,
             allow_files = True,
+        ),
+        "_cmake_wrapper": attr.label(
+            default = Label("//tools/build_rules/cmake:cmake_wrapper"),
+            executable = True,
         ),
     },
     output_to_genfiles = True,

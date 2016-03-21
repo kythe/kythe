@@ -1,6 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
-load("@//tools:build_rules/cmake.bzl", "cmake_generate")
+load("@//tools/build_rules/cmake:cmake.bzl", "cmake_generate")
 
 licenses(["notice"])  # BSD
 
