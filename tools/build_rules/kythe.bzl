@@ -45,7 +45,7 @@ def verify(ctx, entries):
       content = '\n'.join([
         "#!/bin/bash -e",
         "set -o pipefail",
-        "zcat " + " ".join(cmd_helper.template(all_entries, "%{short_path}")) + " | " +
+        "gunzip -c " + " ".join(cmd_helper.template(all_entries, "%{short_path}")) + " | " +
         ctx.executable._verifier.short_path + " " + " ".join(ctx.attr.verifier_opts) +
         " " + cmd_helper.join_paths(" ", all_srcs),
       ]),
