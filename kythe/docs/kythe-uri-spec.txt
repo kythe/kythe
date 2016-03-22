@@ -69,7 +69,7 @@ Examples (subject to change):
 
 * Empty (no fields): `kythe:`
 * Signature only: `kythe:#loc-a90320dafd60`
-* Ad-hoc corpus (signature, corpus, path, language): `kythe://corpusname?lang=c++?path=file/base/file.h#class-Foo`
+* Ad-hoc corpus (signature, corpus, path, language): `kythe://corpusname?lang=c%2B%2B?path=file/base/file.h#class-Foo`
 * Bitbucket (corpus, path): `kythe://bitbucket.org/creachadair/stringset?path=README.md`
 * Maven (corpus, path, language): `kythe://maven.org/central/org/apache/thrift?lang=java?path=libthrift/0.9.1`
 * Language, path, signature: `kythe:?lang=go?path=mapreduce/go/contrib/plan.go#MR`
