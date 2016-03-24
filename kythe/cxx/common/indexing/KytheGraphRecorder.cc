@@ -65,7 +65,8 @@ static const std::string *kEdgeKindSpellings[] = {
     new std::string("/kythe/edge/ref/doc"),
     new std::string("/kythe/edge/generates"),
     new std::string("/kythe/edge/defines/binding"),
-    new std::string("/kythe/edge/overrides")};
+    new std::string("/kythe/edge/overrides"),
+    new std::string("/kythe/edge/childof/context")};
 
 bool of_spelling(llvm::StringRef str, EdgeKindID *edge_id) {
   size_t edge_index = 0;

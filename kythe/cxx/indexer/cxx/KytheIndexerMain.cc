@@ -30,6 +30,9 @@
 
 DEFINE_bool(index_template_instantiations, true,
             "Index template instantiations.");
+DEFINE_bool(experimental_drop_instantiation_independent_data, false,
+            "Don't emit template nodes and edges found to be "
+            "instantiation-independent.");
 
 namespace kythe {
 
@@ -49,6 +52,8 @@ int main(int argc, char *argv[]) {
   options.UnimplementedBehavior = context.ignore_unimplemented()
                                       ? kythe::BehaviorOnUnimplemented::Continue
                                       : kythe::BehaviorOnUnimplemented::Abort;
+  options.DropInstantiationIndependentData =
+      FLAGS_experimental_drop_instantiation_independent_data;
   options.AllowFSAccess = context.allow_filesystem_access();
   options.EnableLossyClaiming = context.enable_lossy_claiming();
   options.EffectiveWorkingDirectory = context.working_directory();

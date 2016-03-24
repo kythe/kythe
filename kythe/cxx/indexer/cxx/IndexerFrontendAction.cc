@@ -117,6 +117,9 @@ std::string IndexCompilationUnit(const proto::CompilationUnit &Unit,
     Output.UseHashCache(Cache);
     Observer.StopDeferringNodes();
   }
+  if (Options.DropInstantiationIndependentData) {
+    Observer.DropRedundantWraiths();
+  }
   Observer.set_claimant(Unit.v_name());
   Observer.set_starting_context(Unit.entry_context());
   Observer.set_lossy_claiming(Options.EnableLossyClaiming);

@@ -17,14 +17,14 @@ C<int> x;
 //- ImpX specializes TAppCInt
 //- TAppCInt.node/kind tapp
 //- TAppCInt param.0 TemplateC
-//- WraithXAnchor childof ImpX
+//- WraithXAnchor childof/context ImpX
 //- WraithXAnchor childof ThisFile
 //- WraithXAnchor.node/kind anchor
 //- WraithXAnchor.loc/start XStart
 //- WraithXAnchor.loc/end XEnd
 //- WraithXAnchor defines/binding ExternalDefAlias
 //- AbsvarAlias aliases AbsvarT
-//- WraithYAnchor childof ImpX
+//- WraithYAnchor childof/context ImpX
 //- WraithYAnchor.loc/start YStart
 //- WraithYAnchor.loc/end YEnd
 //- WraithYAnchor defines/binding WraithAlias

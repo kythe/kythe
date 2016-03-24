@@ -344,7 +344,7 @@ void KytheGraphObserver::RecordRange(const proto::VName &anchor_name,
                            VNameRef(VNameFromFileEntry(file_entry)));
       }
       if (range.Kind == GraphObserver::Range::RangeKind::Wraith) {
-        recorder_->AddEdge(anchor_name_ref, EdgeKindID::kChildOf,
+        recorder_->AddEdge(anchor_name_ref, EdgeKindID::kChildOfContext,
                            VNameRefFromNodeId(range.Context));
       }
     }
@@ -375,11 +375,21 @@ void KytheGraphObserver::MetaHookDefines(const MetadataFile &meta,
     }
   }
 }
-proto::VName KytheGraphObserver::RecordAnchor(
+void KytheGraphObserver::RecordAnchor(
     const GraphObserver::Range &source_range,
     const GraphObserver::NodeId &primary_anchored_to,
     EdgeKindID anchor_edge_kind, Claimability cl) {
   CHECK(!file_stack_.empty());
+  if (drop_redundant_wraiths_ &&
+      !range_edges_
+           .insert(RangeEdge{
+               source_range.PhysicalRange, anchor_edge_kind,
+               primary_anchored_to,
+               RangeEdge::ComputeHash(source_range.PhysicalRange,
+                                      anchor_edge_kind, primary_anchored_to)})
+           .second) {
+    return;
+  }
   proto::VName anchor_name = VNameFromRange(source_range);
   if (claimRange(source_range) || claimNode(primary_anchored_to)) {
     RecordRange(anchor_name, source_range);
@@ -412,10 +422,9 @@ proto::VName KytheGraphObserver::RecordAnchor(
       }
     }
   }
-  return anchor_name;
 }
 
-proto::VName KytheGraphObserver::RecordAnchor(
+void KytheGraphObserver::RecordAnchor(
     const GraphObserver::Range &source_range,
     const kythe::proto::VName &primary_anchored_to, EdgeKindID anchor_edge_kind,
     Claimability cl) {
@@ -429,16 +438,15 @@ proto::VName KytheGraphObserver::RecordAnchor(
     recorder_->AddEdge(VNameRef(anchor_name), anchor_edge_kind,
                        VNameRef(primary_anchored_to));
   }
-  return anchor_name;
 }
 
 void KytheGraphObserver::recordCallEdge(
     const GraphObserver::Range &source_range, const NodeId &caller_id,
     const NodeId &callee_id) {
-  proto::VName anchor_name = RecordAnchor(
-      source_range, caller_id, EdgeKindID::kChildOf, Claimability::Claimable);
-  recorder_->AddEdge(VNameRef(anchor_name), EdgeKindID::kRefCall,
-                     VNameRefFromNodeId(callee_id));
+  RecordAnchor(source_range, caller_id, EdgeKindID::kChildOf,
+               Claimability::Claimable);
+  RecordAnchor(source_range, callee_id, EdgeKindID::kRefCall,
+               Claimability::Unclaimable);
 }
 
 static constexpr char const kLangCpp[] = "c++";

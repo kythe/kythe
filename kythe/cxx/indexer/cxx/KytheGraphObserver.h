@@ -144,6 +144,7 @@ class KytheGraphObserver : public GraphObserver {
 
   void applyMetadataFile(clang::FileID ID, const clang::FileEntry *FE) override;
   void StopDeferringNodes() { deferring_nodes_ = false; }
+  void DropRedundantWraiths() { drop_redundant_wraiths_ = true; }
   void Delimit() override { recorder_->PushEntryGroup(); }
   void Undelimit() override { recorder_->PopEntryGroup(); }
 
@@ -349,14 +350,12 @@ class KytheGraphObserver : public GraphObserver {
   kythe::proto::VName ClaimableVNameFromFileID(const clang::FileID &file_id);
   kythe::proto::VName VNameFromRange(const GraphObserver::Range &range);
   kythe::proto::VName RecordName(const GraphObserver::NameId &name_id);
-  kythe::proto::VName RecordAnchor(
-      const GraphObserver::Range &source_range,
-      const GraphObserver::NodeId &primary_anchored_to,
-      EdgeKindID anchor_edge_kind, Claimability claimability);
-  kythe::proto::VName RecordAnchor(
-      const GraphObserver::Range &source_range,
-      const kythe::proto::VName &primary_anchored_to,
-      EdgeKindID anchor_edge_kind, Claimability claimability);
+  void RecordAnchor(const GraphObserver::Range &source_range,
+                    const GraphObserver::NodeId &primary_anchored_to,
+                    EdgeKindID anchor_edge_kind, Claimability claimability);
+  void RecordAnchor(const GraphObserver::Range &source_range,
+                    const kythe::proto::VName &primary_anchored_to,
+                    EdgeKindID anchor_edge_kind, Claimability claimability);
   /// Records a Range.
   void RecordRange(const proto::VName &range_vname,
                    const GraphObserver::Range &range);
@@ -376,6 +375,32 @@ class KytheGraphObserver : public GraphObserver {
              (range.Kind == Range::RangeKind::Wraith ? 1 : 0);
     }
   };
+
+  struct RangeEdge {
+    clang::SourceRange PhysicalRange;
+    EdgeKindID EdgeKind;
+    GraphObserver::NodeId EdgeTarget;
+    size_t Hash;
+    bool operator==(const RangeEdge &range) const {
+      return std::tie(Hash, PhysicalRange, EdgeKind, EdgeTarget) ==
+             std::tie(range.Hash, range.PhysicalRange, range.EdgeKind,
+                      range.EdgeTarget);
+    }
+    static size_t ComputeHash(const clang::SourceRange &PhysicalRange,
+                              EdgeKindID EdgeKind,
+                              const GraphObserver::NodeId EdgeTarget) {
+      return std::hash<unsigned>()(PhysicalRange.getBegin().getRawEncoding()) ^
+             (std::hash<unsigned>()(PhysicalRange.getEnd().getRawEncoding())
+              << 1) ^
+             (std::hash<unsigned>()(static_cast<unsigned>(EdgeKind))) ^
+             (std::hash<std::string>()(EdgeTarget.getRawIdentity()));
+    }
+  };
+
+  struct ContextFreeRangeEdgeHash {
+    size_t operator()(const RangeEdge &range) const { return range.Hash; }
+  };
+
   /// A file we have entered but not left.
   struct FileState {
     PreprocessorContext context;     ///< The context for this file.
@@ -415,6 +440,13 @@ class KytheGraphObserver : public GraphObserver {
   /// This allows the `GraphObserver` to limit the amount of redundant range
   /// information it emits should an anchor be the source of multiple edges.
   std::unordered_set<Range, RangeHash> deferred_anchors_;
+  /// A set of (source range, edge kind, target node) tuples, used if
+  /// drop_redundant_wraiths_ is asserted.
+  std::unordered_set<RangeEdge, ContextFreeRangeEdgeHash> range_edges_;
+  /// If true, anchors and edges from a given physical source location will
+  /// be dropped if they were previously emitted from the same location
+  /// with the same edge kind to the same target.
+  bool drop_redundant_wraiths_ = false;
   /// Favor extra memory use during indexing over storing potentially redundant
   /// facts for certain frequently-used node kinds. Since these node kinds
   /// are defined to have structure equivalent to their names (modulo

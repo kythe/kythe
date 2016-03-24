@@ -144,6 +144,38 @@ enum class Enum {
 //- Enumerator childof Enumeration
 --------------------------------------------------------------------------------
 
+[[childofcontext]]
+childof/context
+~~~~~~~~~~~~~~~
+
+Brief description::
+  A *childof/context* T if anchor A is associated with some instantiation T.
+Commonly arises from::
+  template instantiations
+Points from::
+  <<anchor>>s
+Points toward::
+  semantic nodes
+Ordinals are used::
+  never
+
+[kythe,C++,"Template instantiations create new anchor contexts."]
+--------------------------------------------------------------------------------
+//- @C defines/binding CTemplate
+//- CTemplateBody childof CTemplate
+template <typename T> struct C {
+//- @x=AnchorX defines/binding XBinding
+//- XBinding childof CTemplateBody
+//- @x=AnchorCX defines/binding CXBinding
+  int x;
+};
+//- @C defines/binding CInst
+//- AnchorCX childof/context CInst
+//- CXBinding childof CInst
+//- !{ AnchorX childof/context CInst }
+template struct C<int>;
+--------------------------------------------------------------------------------
+
 [[completes]]
 completes
 ~~~~~~~~~

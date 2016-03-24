@@ -204,6 +204,9 @@ struct IndexerOptions {
   bool EnableLossyClaiming = false;
   /// \brief Whether to allow access to the raw filesystem.
   bool AllowFSAccess = false;
+  /// \brief Whether to drop data found to be template instantiation
+  /// independent.
+  bool DropInstantiationIndependentData = false;
 };
 
 /// \brief Indexes `Unit`, reading from `Files` in the assumed and writing

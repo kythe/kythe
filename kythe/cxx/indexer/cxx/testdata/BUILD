@@ -1310,6 +1310,39 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "template_drop_redundant_wraiths_off",
+    srcs = ["template/template_drop_redundant_wraiths.cc"],
+    ignore_dups = True,
+    experimental_drop_instantiation_independent_data = False,
+    tags = ["template"],
+)
+
+cxx_indexer_test(
+    name = "template_drop_redundant_wraiths_on",
+    srcs = ["template/template_drop_redundant_wraiths.cc"],
+    ignore_dups = True,
+    experimental_drop_instantiation_independent_data = True,
+    tags = ["template"],
+)
+
+cxx_indexer_test(
+    name = "template_drop_redundant_wraiths_off_expect_fail",
+    srcs = ["template/template_drop_redundant_wraiths_expect_fail.cc"],
+    ignore_dups = True,
+    experimental_drop_instantiation_independent_data = False,
+    tags = ["template"],
+)
+
+cxx_indexer_test(
+    name = "template_drop_redundant_wraiths_on_expect_fail",
+    srcs = ["template/template_drop_redundant_wraiths_expect_fail.cc"],
+    ignore_dups = True,
+    experimental_drop_instantiation_independent_data = True,
+    tags = ["template"],
+    expect_fail_verify = True,
+)
+
+cxx_indexer_test(
     name = "template_field",
     srcs = ["template/template_field.cc"],
     tags = ["template"],

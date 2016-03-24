@@ -14,17 +14,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# bundle_case test-file clang-standard indexer-argument1 indexer-argument2
-#             verifier-argument1 verifier-argument2
-#             [expectfailindex | expectfailverify]
+# bundle_case test-file clang-standard {--indexer argument |
+#     --verifier argument | --expected (expectfailindex|expectfailverify)}*
 
 VERIFIER="kythe/cxx/verifier/verifier"
 INDEXER="kythe/cxx/indexer/cxx/indexer"
 EXTRACTOR="kythe/cxx/extractor/cxx_extractor"
 BASE_DIR="$TEST_SRCDIR/kythe/cxx/indexer/cxx/testdata"
 OUT_DIR="$TEST_TMPDIR"
-TEST_FILE="${1}"
-RESULTS_EXPECTED="${7}"
+source kythe/cxx/indexer/cxx/testdata/parse_args.sh
+
 BUNDLE_SHA="$(sha1sum "$TEST_FILE" | cut -f1 -d" ")"
 TEMP_PREFIX="${OUT_DIR}"/"${BUNDLE_SHA}"
 
@@ -43,12 +42,12 @@ popd > /dev/null
 # Extract the split bundle.
 KYTHE_ROOT_DIRECTORY="$PWD" KYTHE_OUTPUT_DIRECTORY="${TEMP_PREFIX}" \
     KYTHE_VNAMES="${BASE_DIR}"/test_vnames.json "${EXTRACTOR}" \
-    -c -std="$2" "${TEMP_PREFIX}"/test_bundle/test.cc
+    -c -std="${CLANG_STANDARD}" "${TEMP_PREFIX}"/test_bundle/test.cc
 KINDEX_FILE="$(find "${TEMP_PREFIX}" -iname '*.kindex')"
 
 # Run the indexer on the resulting .kindex.
 set +e
-"${INDEXER}" -claim_unknown=false "${KINDEX_FILE}" "$3" "$4" \
-    | "${VERIFIER}" "$5" "$6" "${TEMP_PREFIX}"/test_bundle/*
+"${INDEXER}" -claim_unknown=false "${KINDEX_FILE}" "${INDEXER_ARGS[@]}" \
+    | "${VERIFIER}" "${VERIFIER_ARGS[@]}" "${TEMP_PREFIX}"/test_bundle/*
 RESULTS=( ${PIPESTATUS[0]} ${PIPESTATUS[1]} )
 source kythe/cxx/indexer/cxx/testdata/handle_results.sh

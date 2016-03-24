@@ -6,7 +6,7 @@ template <typename T> struct C {
 };
 template struct C<int>;
 //- ExplicitC.node/kind record
-//- XAnchor childof ExplicitC
+//- XAnchor childof/context ExplicitC
 //- XAnchor.node/kind anchor
 //- XAnchor defines/binding ExternalDefAlias
 //- ExternalDefAlias.node/kind talias
