@@ -1,3 +1,5 @@
+workspace(name = "io_kythe")
+
 load("//:version.bzl", "check_version")
 
 check_version("0.2.0-2016-03-21 (@19b5675)")
@@ -33,7 +35,7 @@ kythe_pkg_config(
 )
 
 new_git_repository(
-    name = "gtest",
+    name = "com_github_google_googletest",
     build_file = "third_party/googletest.BUILD",
     remote = "https://github.com/google/googletest.git",
     tag = "release-1.7.0",
@@ -41,11 +43,16 @@ new_git_repository(
 
 bind(
     name = "googletest",
-    actual = "@gtest//:googletest",
+    actual = "@com_github_google_googletest//:googletest",
+)
+
+bind(
+    name = "googletest/license",
+    actual = "@com_github_google_googletest//:license",
 )
 
 new_git_repository(
-    name = "googleflags",
+    name = "com_github_gflags_gflags",
     build_file = "third_party/googleflags.BUILD",
     commit = "58345b18d92892a170d61a76c5dd2d290413bdd7",
     remote = "https://github.com/gflags/gflags.git",
@@ -53,18 +60,28 @@ new_git_repository(
 
 bind(
     name = "gflags",
-    actual = "@googleflags//:gflags",
+    actual = "@com_github_gflags_gflags//:gflags",
+)
+
+bind(
+    name = "gflags/license",
+    actual = "@com_github_gflags_gflags//:license",
 )
 
 git_repository(
-    name = "re2repo",
+    name = "com_googlesource_code_re2",
     commit = "63e4dbd1996d2cf723f740e08521a67ad66a09de",
     remote = "https://code.googlesource.com/re2",
 )
 
 bind(
     name = "re2",
-    actual = "@re2repo//:re2",
+    actual = "@com_googlesource_code_re2//:re2",
+)
+
+bind(
+    name = "re2/license",
+    actual = "@com_googlesource_code_re2//:LICENSE",
 )
 
 new_git_repository(
@@ -77,6 +94,11 @@ new_git_repository(
 bind(
     name = "glog",
     actual = "@com_github_google_glog//:glog",
+)
+
+bind(
+    name = "glog/license",
+    actual = "@com_github_google_glog//:license",
 )
 
 bind(

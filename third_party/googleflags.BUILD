@@ -51,7 +51,7 @@ cc_library(
     copts = [
         "-Wno-unused-local-typedef",
         "-Wno-unknown-warning-option",
-        "-I$(GENDIR)/external/googleflags/include/gflags",
+        "-I$(GENDIR)/external/com_github_gflags_gflags/include/gflags",
     ],
     includes = [
         "include",

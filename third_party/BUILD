@@ -11,10 +11,10 @@ filegroup(
 filegroup(
     name = "licenses",
     srcs = ["README"] + [
-        "@googleflags//:license",
-        "@gtest//:license",
-        "@re2repo//:LICENSE",
-        "@com_github_google_glog//:license",
+        "//external:gflags/license",
+        "//external:glog/license",
+        "//external:googletest/license",
+        "//external:re2/license",
         "//third_party/bazel:license",
         "//third_party/go:licenses",
         "//third_party/grpc-java:license",
