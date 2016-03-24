@@ -518,7 +518,7 @@ private:
       if (IsContextSafeForLookup(Context) &&
           Sema.LookupQualifiedName(
               FirstLookup, const_cast<clang::DeclContext *>(Context), false)) {
-        Lookups.push_back({FirstLookup, Context});
+        Lookups.push_back({std::move(FirstLookup), Context});
       } else {
         CHECK(FirstLookup.empty());
         // We could be looking at a (type) parameter here. Note that this
@@ -527,19 +527,21 @@ private:
                 dyn_cast_or_null<clang::FunctionDecl>(Context)) {
           for (const auto &Param : FunctionContext->params()) {
             if (Param->getDeclName() == DeclName.getName()) {
-              clang::LookupResult DerivedResult(FirstLookup);
+              clang::LookupResult DerivedResult(clang::LookupResult::Temporary,
+                                                FirstLookup);
               DerivedResult.suppressDiagnostics();
               DerivedResult.addDecl(Param);
-              Lookups.push_back({DerivedResult, Context});
+              Lookups.push_back({std::move(DerivedResult), Context});
             }
           }
         } else if (const auto *TemplateParams = GetTypeParameters(Context)) {
           for (const auto &TParam : *TemplateParams) {
             if (TParam->getDeclName() == DeclName.getName()) {
-              clang::LookupResult DerivedResult(FirstLookup);
+              clang::LookupResult DerivedResult(clang::LookupResult::Temporary,
+                                                FirstLookup);
               DerivedResult.suppressDiagnostics();
               DerivedResult.addDecl(TParam);
-              Lookups.push_back({DerivedResult, Context});
+              Lookups.push_back({std::move(DerivedResult), Context});
             }
           }
         }
@@ -564,7 +566,7 @@ private:
         if (IsContextSafeForLookup(Context) &&
             Sema.LookupQualifiedName(
                 NextResult, const_cast<clang::DeclContext *>(Context), false)) {
-          ResultLookups.push_back({NextResult, Context});
+          ResultLookups.push_back({std::move(NextResult), Context});
         }
       }
     }
@@ -623,7 +625,7 @@ bool IndexerASTVisitor::VisitDecl(const clang::Decl *Decl) {
   // Attribute all tokens on [FirstToken,LastToken] to every possible lookup
   // result inside PossibleLookups.
   auto HandleLookupResult = [&](int FirstToken, int LastToken) {
-    for (auto Results : Lookups.LookupState()) {
+    for (const auto &Results : Lookups.LookupState()) {
       for (auto Result : Results.Result) {
         auto ResultId = BuildNodeIdForDecl(Result);
         for (int Token = FirstToken; Token <= LastToken; ++Token) {
