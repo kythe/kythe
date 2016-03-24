@@ -1,3 +1,5 @@
+load("@//tools/cdexec:cdexec.bzl", "rootpath")
+
 def _find_cmakelists(files):
   for file in files:
     if file.basename == "CMakeLists.txt":
@@ -10,18 +12,19 @@ def _cmake_gen_impl(ctx):
     fail("CMakeLists.txt missing from srcs")
 
   cmake_cache = ctx.new_file("CMakeCache.txt")
+  ctx.file_action(cmake_cache, "")
 
-  options = [cmake_cache.dirname]
+  options = ["-q", cmake_cache.dirname, "cmake"]
   if ctx.file.cache_script:
-    options += ["-C", ctx.file.cache_script.path]
+    options += ["-C", rootpath(ctx.file.cache_script.path)]
   for define in ctx.attr.defines.items():
     options += ["-D", "=".join(define)]
-  options += [cmakefile.dirname]
+  options += [rootpath(cmakefile.dirname)]
 
-  ctx.action(outputs=ctx.outputs.outs + [cmake_cache],
-             inputs=ctx.files.srcs,
+  ctx.action(outputs=ctx.outputs.outs,
+             inputs=ctx.files.srcs + [cmake_cache],
              mnemonic="CmakeGen",
-             executable=ctx.executable._cmake_wrapper,
+             executable=ctx.executable._cdexec,
              use_default_shell_env=True,
              # This is necessary for cases where `cmake` or something
              # on which it depends lies outside of the sandbox.
@@ -44,8 +47,8 @@ cmake_generate = rule(
             single_file = True,
             allow_files = True,
         ),
-        "_cmake_wrapper": attr.label(
-            default = Label("//tools/build_rules/cmake:cmake_wrapper"),
+        "_cdexec": attr.label(
+            default = Label("//tools/cdexec:cdexec"),
             executable = True,
         ),
     },
