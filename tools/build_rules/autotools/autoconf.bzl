@@ -50,7 +50,6 @@ def _collect_env(env, deps):
     (env, files) Where `env` is a configure environment dict updated with
     additional arguments and `files` a list of required inputs.
   """
-
   cflags, ldflags, depfiles = [], [], set()
   for dep in deps:
     ldflags += dep.cc.link_flags + ["-L" + lib.dirname for lib in dep.cc.libs]

@@ -1,3 +1,5 @@
+load("@//tools/build_rules/autotools:autoconf.bzl", "configure_generate")
+
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])  # BSD
@@ -42,4 +44,21 @@ cc_library(
     includes = [
         "src",
     ],
+    deps = ["//external:gflags"],
+)
+
+configure_generate(
+    name = "autoconf",
+    srcs = glob(["**/*.in"]) + [
+        "README",
+    ],
+    outs = [
+        "src/config.h",
+        "src/glog/logging.h",
+        "src/glog/raw_logging.h",
+        "src/glog/stl_logging.h",
+        "src/glog/vlog_is_on.h",
+    ],
+    args = ["--quiet", "--disable-rtti"],
+    deps = ["//external:gflags"],
 )

@@ -21,7 +21,7 @@ cc_library(
         "//kythe/cxx/common:lib",
         "//kythe/proto:analysis_proto_cc",
         "//kythe/proto:storage_proto_cc",
-        "//third_party/googlelog:glog",
+        "//external:glog",
         "//third_party/llvm",
         "//third_party/proto:protobuf",
         "//third_party/zlib",

@@ -36,7 +36,7 @@ cc_library(
         ".",
     ],
     deps = [
-        "//third_party/googlelog:glog",
+        "//external:glog",
     ],
 )
 
@@ -62,7 +62,7 @@ cc_library(
         ":lexparse",
         "//external:gflags",
         "//kythe/proto:storage_proto_cc",
-        "//third_party/googlelog:glog",
+        "//external:glog",
         "//third_party/proto:protobuf",
     ],
 )
@@ -81,7 +81,7 @@ cc_library(
         ":lib",
         "//external:gflags",
         "//kythe/proto:storage_proto_cc",
-        "//third_party/googlelog:glog",
+        "//external:glog",
         "//third_party/proto:protobuf",
     ],
 )
@@ -111,7 +111,7 @@ cc_library(
         ":lib",
         "//external:googletest",
         "//kythe/proto:storage_proto_cc",
-        "//third_party/googlelog:glog",
+        "//external:glog",
         "//third_party/proto:protobuf",
     ],
 )

@@ -53,7 +53,7 @@ cc_library(
         "//external:gflags",
         "//kythe/cxx/common:lib",
         "//kythe/cxx/common/indexing:frontend",
-        "//third_party/googlelog:glog",
+        "//external:glog",
         "//third_party/proto:protobuf",
         "//third_party/zlib",
     ],

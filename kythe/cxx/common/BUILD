@@ -17,8 +17,8 @@ cc_library(
     ],
     deps = [
         "//external:gflags",
+        "//external:glog",
         "//external:libcrypto",
-        "//third_party/googlelog:glog",
         "//third_party/proto:any_proto_cc",
         "//third_party/proto:protobuf",
         "//third_party/rapidjson",
@@ -80,10 +80,10 @@ cc_library(
     deps = [
         ":json_proto",
         "//external:gflags",
+        "//external:glog",
         "//external:re2",
         "//kythe/proto:analysis_proto_cc",
         "//kythe/proto:storage_proto_cc",
-        "//third_party/googlelog:glog",
         "//third_party/llvm",
         "//third_party/proto:protobuf",
         "//third_party/rapidjson",
@@ -107,10 +107,10 @@ cc_library(
     deps = [
         ":lib",
         "//external:gflags",
+        "//external:glog",
         "//kythe/proto:storage_proto_cc",
         "//kythe/proto:xref_proto_cc",
         "//third_party:libcurl",
-        "//third_party/googlelog:glog",
         "//third_party/proto:protobuf",
         "//third_party/rapidjson",
         "//third_party/zlib",
@@ -208,10 +208,10 @@ cc_library(
     deps = [
         ":index_pack",
         "//external:gflags",
+        "//external:glog",
         "//external:googletest",
         "//kythe/proto:analysis_proto_cc",
         "//kythe/proto:storage_proto_cc",
-        "//third_party/googlelog:glog",
         "//third_party/llvm",
         "//third_party/proto:protobuf",
         "//third_party/rapidjson",
@@ -268,9 +268,9 @@ cc_library(
     deps = [
         ":net_client",
         "//external:gflags",
+        "//external:glog",
         "//kythe/proto:analysis_proto_cc",
         "//kythe/proto:storage_proto_cc",
-        "//third_party/googlelog:glog",
         "//third_party/proto:protobuf",
         "//third_party/zlib",
     ],
@@ -298,9 +298,9 @@ cc_library(
     deps = [
         ":lib",
         "//external:gflags",
+        "//external:glog",
         "//external:googletest",
         "//kythe/proto:storage_proto_cc",
-        "//third_party/googlelog:glog",
         "//third_party/proto:protobuf",
     ],
 )

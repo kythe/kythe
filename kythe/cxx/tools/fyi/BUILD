@@ -20,7 +20,7 @@ cc_library(
         "//kythe/cxx/common:net_client",
         "//kythe/proto:analysis_proto_cc",
         "//kythe/proto:storage_proto_cc",
-        "//third_party/googlelog:glog",
+        "//external:glog",
         "//third_party/llvm",
         "//third_party/llvm/src:clang_builtin_headers",
         "//third_party/proto:protobuf",
