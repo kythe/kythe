@@ -161,8 +161,8 @@ def proto_library(name, src=None, deps=[], visibility=None,
     java_deps = ["//third_party/proto:protobuf_java"]
     if has_services:
       java_deps += [
+          "//external:guava",
           "//third_party/grpc-java",
-          "//third_party/guava",
           "//third_party/jsr305_annotations:jsr305",
       ]
     for dep in deps:

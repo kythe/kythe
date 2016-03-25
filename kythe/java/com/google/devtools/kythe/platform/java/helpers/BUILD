@@ -11,8 +11,8 @@ java_library(
         "SyntaxPreservingScanner.java",
     ],
     deps = [
+        "//external:guava",
         "//kythe/java/com/google/devtools/kythe/util",
-        "//third_party/guava",
         "//third_party/java/jdk/langtools:javac",
         "//third_party/jsr305_annotations:jsr305",
         "//third_party/proto:protobuf_java",

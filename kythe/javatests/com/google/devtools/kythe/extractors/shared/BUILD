@@ -5,10 +5,10 @@ java_test(
     srcs = ["FileVNamesTest.java"],
     test_class = "com.google.devtools.kythe.extractors.shared.FileVNamesTest",
     deps = [
+        "//external:guava",
         "//kythe/java/com/google/devtools/kythe/extractors/shared:file_vnames",
         "//kythe/proto:storage_proto_java",
         "//third_party:junit4",
-        "//third_party/guava",
         "//third_party/proto:protobuf_java",
     ],
 )
@@ -19,11 +19,11 @@ java_test(
     data = ["testdata/sample.txt"],
     test_class = "com.google.devtools.kythe.extractors.shared.ExtractorUtilsTest",
     deps = [
+        "//external:guava",
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
         "//kythe/proto:analysis_proto_java",
         "//kythe/proto:storage_proto_java",
         "//third_party:junit4",
-        "//third_party/guava",
         "//third_party/proto:protobuf_java",
     ],
 )

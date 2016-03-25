@@ -17,6 +17,7 @@ java_library(
     ],
     deps = [
         ":config",
+        "//external:guava",
         "//kythe/java/com/google/devtools/kythe/analyzers/base:entryset",
         "//kythe/java/com/google/devtools/kythe/analyzers/base:schema",
         "//kythe/java/com/google/devtools/kythe/common",
@@ -27,7 +28,6 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/util",
         "//kythe/proto:analysis_proto_java",
         "//kythe/proto:storage_proto_java",
-        "//third_party/guava",
         "//third_party/java/jdk/langtools:javac",
         "//third_party/proto:protobuf_java",
     ],
@@ -40,6 +40,7 @@ java_binary(
     deps = [
         ":analyzer",
         ":config",
+        "//external:guava",
         "//kythe/java/com/google/devtools/kythe/analyzers/base:entryset",
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
         "//kythe/java/com/google/devtools/kythe/platform/indexpack",
@@ -49,7 +50,6 @@ java_binary(
         "//kythe/java/com/google/devtools/kythe/platform/shared:statistics",
         "//kythe/proto:analysis_proto_java",
         "//kythe/proto:storage_proto_java",
-        "//third_party/guava",
         "//third_party/jcommander",
         "//third_party/proto:protobuf_java",
     ],
@@ -62,6 +62,7 @@ java_binary(
     deps = [
         ":analyzer",
         ":config",
+        "//external:guava",
         "//kythe/java/com/google/devtools/kythe/analyzers/base:entryset",
         "//kythe/java/com/google/devtools/kythe/analyzers/base:grpc_compilation_analyzer",
         "//kythe/java/com/google/devtools/kythe/platform/java",
@@ -70,7 +71,6 @@ java_binary(
         "//kythe/java/com/google/devtools/kythe/platform/shared:statistics",
         "//kythe/proto:analysis_proto_java",
         "//third_party/grpc-java",
-        "//third_party/guava",
         "//third_party/jcommander",
     ],
 )

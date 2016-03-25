@@ -101,6 +101,28 @@ bind(
     actual = "@com_github_google_glog//:license",
 )
 
+maven_jar(
+    name = "maven_guava",
+    artifact = "com.google.guava:guava:19.0",
+    sha1 = "6ce200f6b23222af3d8abb6b6459e6c44f4bb0e9",
+)
+
+http_file(
+    name = "com_apache_org_license_2_0",
+    sha256 = "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    url = "http://www.apache.org/licenses/LICENSE-2.0.txt",
+)
+
+bind(
+    name = "guava",
+    actual = "@maven_guava//jar",
+)
+
+bind(
+    name = "guava/license",
+    actual = "@com_apache_org_license_2_0//file",
+)
+
 bind(
     name = "go_package_prefix",
     actual = "//:go_package_prefix",

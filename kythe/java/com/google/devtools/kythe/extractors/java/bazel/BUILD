@@ -22,11 +22,11 @@ java_binary(
     ],
     main_class = "com.google.devtools.kythe.extractors.java.bazel.JavaExtractor",
     deps = [
+        "//external:guava",
         "//kythe/java/com/google/devtools/kythe/extractors/java",
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
         "//kythe/java/com/google/devtools/kythe/extractors/shared:file_vnames",
         "//third_party/bazel:extra_actions_base_proto_java",
-        "//third_party/guava",
         "//third_party/proto:protobuf_java",
     ],
 )

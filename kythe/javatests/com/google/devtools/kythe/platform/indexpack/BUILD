@@ -5,13 +5,13 @@ java_test(
     srcs = ["ArchiveTest.java"],
     test_class = "com.google.devtools.kythe.platform.indexpack.ArchiveTest",
     deps = [
+        "//external:guava",
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
         "//kythe/java/com/google/devtools/kythe/platform/indexpack",
         "//kythe/java/com/google/devtools/kythe/util",
         "//kythe/proto:analysis_proto_java",
         "//kythe/proto:storage_proto_java",
         "//third_party:junit4",
-        "//third_party/guava",
         "//third_party/proto:protobuf_java",
     ],
 )

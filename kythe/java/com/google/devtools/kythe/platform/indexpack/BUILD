@@ -6,11 +6,11 @@ java_library(
         "Archive.java",
     ],
     deps = [
+        "//external:guava",
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
         "//kythe/java/com/google/devtools/kythe/util:json",
         "//kythe/proto:analysis_proto_java",
         "//third_party/gson",
-        "//third_party/guava",
         "//third_party/proto:protobuf_java",
     ],
 )
