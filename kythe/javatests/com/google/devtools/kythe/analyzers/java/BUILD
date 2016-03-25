@@ -35,8 +35,8 @@ java_test(
     srcs = ["SourceTextTest.java"],
     test_class = "com.google.devtools.kythe.analyzers.java.SourceTextTest",
     deps = [
+        "//external:junit4",
+        "//external:truth",
         "//kythe/java/com/google/devtools/kythe/analyzers/java:analyzer",
-        "//third_party:junit4",
-        "//third_party/truth",
     ],
 )

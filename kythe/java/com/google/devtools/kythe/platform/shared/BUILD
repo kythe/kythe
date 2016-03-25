@@ -25,8 +25,8 @@ java_library(
     ],
     deps = [
         "//external:guava",
+        "//external:proto/protobuf_java",
         "//kythe/proto:analysis_proto_java",
-        "//third_party/proto:protobuf_java",
     ],
 )
 
@@ -37,9 +37,9 @@ java_library(
     ],
     deps = [
         ":file_data",
+        "//external:grpc-java",
         "//external:guava",
+        "//external:proto/protobuf_java",
         "//kythe/proto:analysis_proto_java",
-        "//third_party/grpc-java",
-        "//third_party/proto:protobuf_java",
     ],
 )

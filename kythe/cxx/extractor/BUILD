@@ -15,19 +15,19 @@ cc_library(
     ],
     deps = [
         "//external:gflags",
+        "//external:glog",
+        "//external:proto/protobuf",
         "//external:re2",
+        "//external:zlib",
         "//kythe/cxx/common:index_pack",
         "//kythe/cxx/common:json_proto",
         "//kythe/cxx/common:lib",
         "//kythe/proto:analysis_proto_cc",
         "//kythe/proto:cxx_proto_cc",
         "//kythe/proto:storage_proto_cc",
-        "//external:glog",
         "//third_party/llvm",
         "//third_party/llvm/src:clang_builtin_headers",
         "//third_party/llvm/src:preprocessor_util_lib",
-        "//third_party/proto:protobuf",
-        "//third_party/zlib",
     ],
 )
 
@@ -47,14 +47,14 @@ cc_library(
     deps = [
         ":lib",
         "//external:gflags",
+        "//external:glog",
+        "//external:proto/protobuf",
         "//external:re2",
+        "//external:zlib",
         "//kythe/proto:analysis_proto_cc",
         "//kythe/proto:cxx_proto_cc",
         "//kythe/proto:storage_proto_cc",
-        "//external:glog",
         "//third_party/llvm",
-        "//third_party/proto:protobuf",
-        "//third_party/zlib",
     ],
 )
 
@@ -71,15 +71,15 @@ cc_library(
     deps = [
         ":lib",
         "//external:gflags",
+        "//external:glog",
+        "//external:proto/protobuf",
         "//external:re2",
+        "//external:zlib",
         "//kythe/proto:analysis_proto_cc",
         "//kythe/proto:cxx_proto_cc",
         "//kythe/proto:storage_proto_cc",
         "//third_party/bazel:extra_actions_base_proto_cc",
-        "//external:glog",
         "//third_party/llvm",
-        "//third_party/proto:protobuf",
-        "//third_party/zlib",
     ],
 )
 
@@ -128,15 +128,15 @@ cc_library(
     ],
     deps = [
         ":lib",
+        "//external:glog",
         "//external:googletest",
+        "//external:proto/protobuf",
         "//external:re2",
+        "//external:zlib",
         "//kythe/proto:analysis_proto_cc",
         "//kythe/proto:cxx_proto_cc",
         "//kythe/proto:storage_proto_cc",
-        "//external:glog",
         "//third_party/llvm",
-        "//third_party/proto:protobuf",
-        "//third_party/zlib",
     ],
 )
 

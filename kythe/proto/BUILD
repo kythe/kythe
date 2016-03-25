@@ -45,7 +45,7 @@ proto_library(
     ],
     deps = [
         ":storage_proto",
-        "//third_party/proto:any_proto",
+        "//external:proto/any_proto",
     ],
 )
 

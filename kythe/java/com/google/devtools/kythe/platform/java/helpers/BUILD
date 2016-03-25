@@ -12,9 +12,9 @@ java_library(
     ],
     deps = [
         "//external:guava",
+        "//external:proto/protobuf_java",
         "//kythe/java/com/google/devtools/kythe/util",
         "//third_party/java/jdk/langtools:javac",
         "//third_party/jsr305_annotations:jsr305",
-        "//third_party/proto:protobuf_java",
     ],
 )

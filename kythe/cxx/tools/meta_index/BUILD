@@ -21,14 +21,14 @@ cc_library(
     ],
     deps = [
         "//external:gflags",
+        "//external:glog",
+        "//external:proto/protobuf",
+        "//external:rapidjson",
         "//external:re2",
         "//kythe/cxx/common:lib",
         "//kythe/cxx/common:net_client",
         "//kythe/proto:storage_proto_cc",
-        "//external:glog",
         "//third_party/llvm",
-        "//third_party/proto:protobuf",
-        "//third_party/rapidjson",
     ],
 )
 

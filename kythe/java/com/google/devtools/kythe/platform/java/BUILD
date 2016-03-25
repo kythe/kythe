@@ -10,6 +10,7 @@ java_library(
     deps = [
         ":options",
         "//external:guava",
+        "//external:proto/protobuf_java",
         "//kythe/java/com/google/devtools/kythe/common",
         "//kythe/java/com/google/devtools/kythe/platform/java/filemanager",
         "//kythe/java/com/google/devtools/kythe/platform/shared:analysis_exception",
@@ -19,7 +20,6 @@ java_library(
         "//kythe/proto:storage_proto_java",
         "//third_party/java/jdk/langtools:javac",
         "//third_party/jsr305_annotations:jsr305",
-        "//third_party/proto:protobuf_java",
     ],
 )
 

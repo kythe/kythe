@@ -19,6 +19,7 @@ java_binary(
     main_class = "com.google.devtools.kythe.extractors.java.standalone.Javac8Wrapper",
     deps = [
         "//external:guava",
+        "//external:proto/protobuf_java",
         "//kythe/java/com/google/devtools/kythe/common",
         "//kythe/java/com/google/devtools/kythe/extractors/java",
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
@@ -27,7 +28,6 @@ java_binary(
         "//kythe/proto:analysis_proto_java",
         "//kythe/proto:storage_proto_java",
         "//third_party/java/jdk/langtools:javac",
-        "//third_party/proto:protobuf_java",
     ],
 )
 

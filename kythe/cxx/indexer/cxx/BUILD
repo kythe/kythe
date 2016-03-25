@@ -25,6 +25,7 @@ cc_library(
     deps = [
         "//external:gflags",
         "//external:libmemcached",
+        "//external:proto/protobuf",
         "//kythe/cxx/common:index_pack",
         "//kythe/cxx/common:json_proto",
         "//kythe/cxx/common:lib",
@@ -34,7 +35,6 @@ cc_library(
         "//kythe/proto:storage_proto_cc",
         "//third_party/llvm",
         "//third_party/llvm/src:clang_builtin_headers",
-        "//third_party/proto:protobuf",
     ],
 )
 
@@ -51,11 +51,11 @@ cc_library(
     deps = [
         ":lib",
         "//external:gflags",
+        "//external:glog",
+        "//external:proto/protobuf",
+        "//external:zlib",
         "//kythe/cxx/common:lib",
         "//kythe/cxx/common/indexing:frontend",
-        "//external:glog",
-        "//third_party/proto:protobuf",
-        "//third_party/zlib",
     ],
 )
 
@@ -80,11 +80,11 @@ cc_library(
     deps = [
         ":lib",
         "//external:googletest",
+        "//external:proto/protobuf",
         "//kythe/cxx/common/indexing:testlib",
         "//kythe/proto:cxx_proto_cc",
         "//kythe/proto:storage_proto_cc",
         "//third_party/llvm",
-        "//third_party/proto:protobuf",
     ],
 )
 

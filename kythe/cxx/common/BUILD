@@ -19,9 +19,9 @@ cc_library(
         "//external:gflags",
         "//external:glog",
         "//external:libcrypto",
-        "//third_party/proto:any_proto_cc",
-        "//third_party/proto:protobuf",
-        "//third_party/rapidjson",
+        "//external:proto/any_proto_cc",
+        "//external:proto/protobuf",
+        "//external:rapidjson",
     ],
 )
 
@@ -41,10 +41,10 @@ cc_library(
     deps = [
         ":lib",
         "//external:libuuid",
+        "//external:proto/protobuf",
+        "//external:zlib",
         "//kythe/proto:analysis_proto_cc",
         "//kythe/proto:storage_proto_cc",
-        "//third_party/proto:protobuf",
-        "//third_party/zlib",
     ],
 )
 
@@ -81,13 +81,13 @@ cc_library(
         ":json_proto",
         "//external:gflags",
         "//external:glog",
+        "//external:proto/protobuf",
+        "//external:rapidjson",
         "//external:re2",
+        "//external:zlib",
         "//kythe/proto:analysis_proto_cc",
         "//kythe/proto:storage_proto_cc",
         "//third_party/llvm",
-        "//third_party/proto:protobuf",
-        "//third_party/rapidjson",
-        "//third_party/zlib",
     ],
 )
 
@@ -108,12 +108,12 @@ cc_library(
         ":lib",
         "//external:gflags",
         "//external:glog",
+        "//external:libcurl",
+        "//external:proto/protobuf",
+        "//external:rapidjson",
+        "//external:zlib",
         "//kythe/proto:storage_proto_cc",
         "//kythe/proto:xref_proto_cc",
-        "//third_party:libcurl",
-        "//third_party/proto:protobuf",
-        "//third_party/rapidjson",
-        "//third_party/zlib",
     ],
 )
 
@@ -156,9 +156,9 @@ cc_library(
     deps = [
         ":lib",
         "//external:googletest",
+        "//external:proto/protobuf",
         "//external:re2",
         "//kythe/proto:storage_proto_cc",
-        "//third_party/proto:protobuf",
     ],
 )
 
@@ -210,12 +210,12 @@ cc_library(
         "//external:gflags",
         "//external:glog",
         "//external:googletest",
+        "//external:proto/protobuf",
+        "//external:rapidjson",
+        "//external:zlib",
         "//kythe/proto:analysis_proto_cc",
         "//kythe/proto:storage_proto_cc",
         "//third_party/llvm",
-        "//third_party/proto:protobuf",
-        "//third_party/rapidjson",
-        "//third_party/zlib",
     ],
 )
 
@@ -240,10 +240,10 @@ cc_library(
     deps = [
         ":json_proto",
         "//external:googletest",
+        "//external:proto/protobuf",
         "//external:re2",
         "//kythe/proto:analysis_proto_cc",
         "//kythe/proto:storage_proto_cc",
-        "//third_party/proto:protobuf",
     ],
 )
 
@@ -269,10 +269,10 @@ cc_library(
         ":net_client",
         "//external:gflags",
         "//external:glog",
+        "//external:proto/protobuf",
+        "//external:zlib",
         "//kythe/proto:analysis_proto_cc",
         "//kythe/proto:storage_proto_cc",
-        "//third_party/proto:protobuf",
-        "//third_party/zlib",
     ],
 )
 
@@ -300,8 +300,8 @@ cc_library(
         "//external:gflags",
         "//external:glog",
         "//external:googletest",
+        "//external:proto/protobuf",
         "//kythe/proto:storage_proto_cc",
-        "//third_party/proto:protobuf",
     ],
 )
 

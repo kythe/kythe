@@ -124,6 +124,91 @@ bind(
 )
 
 bind(
+    name = "libcurl",
+    actual = "//third_party:libcurl",
+)
+
+bind(
+    name = "junit4",
+    actual = "//third_party:junit4",
+)
+
+bind(
+    name = "zlib",
+    actual = "//third_party/zlib",
+)
+
+bind(
+    name = "re2j",
+    actual = "//third_party/re2j",
+)
+
+bind(
+    name = "proto/protobuf",
+    actual = "//third_party/proto:protobuf",
+)
+
+bind(
+    name = "proto/protobuf_java",
+    actual = "//third_party/proto:protobuf_java",
+)
+
+bind(
+    name = "proto/any_proto",
+    actual = "//third_party/proto:any_proto",
+)
+
+bind(
+    name = "proto/any_proto_cc",
+    actual = "//third_party/proto:any_proto_cc",
+)
+
+bind(
+    name = "proto/any_proto_java",
+    actual = "//third_party/proto:any_proto_java",
+)
+
+bind(
+    name = "proto/any_proto_go",
+    actual = "//third_party/proto:any_proto_go",
+)
+
+bind(
+    name = "grpc-java",
+    actual = "//third_party/grpc-java",
+)
+
+bind(
+    name = "rapidjson",
+    actual = "//third_party/rapidjson",
+)
+
+bind(
+    name = "gson",
+    actual = "//third_party/gson",
+)
+
+bind(
+    name = "gson/proto",
+    actual = "//third_party/gson:proto",
+)
+
+bind(
+    name = "jcommander",
+    actual = "//third_party/jcommander",
+)
+
+bind(
+    name = "jq",
+    actual = "//third_party/jq",
+)
+
+bind(
+    name = "truth",
+    actual = "//third_party/truth",
+)
+
+bind(
     name = "go_package_prefix",
     actual = "//:go_package_prefix",
 )

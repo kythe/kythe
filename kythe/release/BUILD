@@ -79,10 +79,10 @@ sh_test(
     data = [
         ":release",
         "//external:guava",
+        "//external:jq",
         "//kythe/java/com/google/devtools/kythe/common:FormattingLogger.java",
         "//kythe/testdata:entries",
         "//kythe/testdata:test.kindex",
-        "//third_party/jq",
     ],
     tags = [
         "local",

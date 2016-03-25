@@ -110,7 +110,7 @@ sh_test(
     data = [
         ":indexpack",
         ":viewindex",
+        "//external:jq",
         "//kythe/testdata:test.kindex",
-        "//third_party/jq",
     ],
 )
