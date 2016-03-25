@@ -29,6 +29,8 @@ message CxxCompilationUnitDetails {
     // The kind of data stored in this directory.
     // For C++, {0 = user code, 1 = system code, 2 = "extern C" system code}.
     int32 characteristic_kind = 2;
+    // If true, this directory is a framework.
+    bool is_framework = 3;
   }
 
   // Configuration for header search. This may be a function

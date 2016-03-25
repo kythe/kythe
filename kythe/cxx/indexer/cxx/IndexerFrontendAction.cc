@@ -62,9 +62,10 @@ bool DecodeHeaderSearchInformation(const proto::CompilationUnit &Unit,
   Info.angled_dir_idx = InfoProto.first_angled_dir();
   Info.system_dir_idx = InfoProto.first_system_dir();
   for (const auto &Dir : InfoProto.dir()) {
-    Info.paths.emplace_back(Dir.path(),
-                            static_cast<clang::SrcMgr::CharacteristicKind>(
-                                Dir.characteristic_kind()));
+    Info.paths.emplace_back(HeaderSearchInfo::Path{
+        Dir.path(), static_cast<clang::SrcMgr::CharacteristicKind>(
+                        Dir.characteristic_kind()),
+        Dir.is_framework()});
   }
   for (const auto &Prefix : Details.system_header_prefix()) {
     Info.system_prefixes.emplace_back(Prefix.prefix(),
@@ -112,10 +113,10 @@ std::string IndexCompilationUnit(const proto::CompilationUnit &Unit,
   FSO.WorkingDir = Options.EffectiveWorkingDirectory;
   std::vector<llvm::StringRef> Dirs;
   for (auto &Path : HSI.paths) {
-    Dirs.push_back(Path.first);
+    Dirs.push_back(Path.path);
   }
-  llvm::IntrusiveRefCntPtr<IndexVFS> VFS(new IndexVFS(FSO.WorkingDir, Files,
-                                                      Dirs));
+  llvm::IntrusiveRefCntPtr<IndexVFS> VFS(
+      new IndexVFS(FSO.WorkingDir, Files, Dirs));
   KytheGraphRecorder Recorder(&Output);
   KytheGraphObserver Observer(&Recorder, &Client, MetaSupports, VFS);
   if (Cache != nullptr) {

@@ -746,17 +746,23 @@ class ExtractorAction : public clang::PreprocessorFrontendAction {
       } else if (i == first_system_dir) {
         info.system_dir_idx = cur_dir_idx;
       }
-      // TODO(zarko): Support non-LT_NormalDir entries (these are frameworks
-      // and header maps).
-      if (!i->isNormalDir()) {
-        LOG(WARNING) << "Can't reproduce include lookup state for "
-                     << main_source_file_ << ": " << i->getName()
-                     << " is not a normal directory.";
-        info_valid = false;
-        break;
+      switch (i->getLookupType()) {
+        case clang::DirectoryLookup::LT_NormalDir:
+          info.paths.push_back(HeaderSearchInfo::Path{
+              i->getName(), i->getDirCharacteristic(), false});
+          break;
+        case clang::DirectoryLookup::LT_Framework:
+          info.paths.push_back(HeaderSearchInfo::Path{
+              i->getName(), i->getDirCharacteristic(), true});
+          break;
+        default:  // clang::DirectoryLookup::LT_HeaderMap:
+          // TODO(zarko): Support LT_HeaderMap.
+          LOG(WARNING) << "Can't reproduce include lookup state for "
+                       << main_source_file_ << ": " << i->getName()
+                       << " is not a normal directory.";
+          info_valid = false;
+          break;
       }
-      info.paths.push_back(
-          std::make_pair(i->getName(), i->getDirCharacteristic()));
     }
     callback_(main_source_file_, main_source_file_transcript_, source_files_,
               info_valid ? &info : nullptr,
@@ -963,8 +969,9 @@ void IndexWriter::WriteIndex(
     info->set_first_system_dir(header_search_info->system_dir_idx);
     for (const auto& path : header_search_info->paths) {
       auto* dir = info->add_dir();
-      dir->set_path(path.first);
-      dir->set_characteristic_kind(path.second);
+      dir->set_path(path.path);
+      dir->set_characteristic_kind(path.characteristic_kind);
+      dir->set_is_framework(path.is_framework);
     }
     for (const auto& prefix : header_search_info->system_prefixes) {
       auto* proto = cxx_details.add_system_header_prefix();

@@ -24,12 +24,22 @@
 namespace kythe {
 /// \brief Reproduces Clang's internal header search state.
 struct HeaderSearchInfo {
+  /// An include path to be searched.
+  struct Path {
+    /// The path to search.
+    std::string path;
+    /// Whether files in this path are normal, system, or implicitly extern C
+    /// headers.
+    clang::SrcMgr::CharacteristicKind characteristic_kind;
+    /// Whether this Path is a framework.
+    bool is_framework;
+  };
   /// The first of the paths that is an <include>.
   unsigned angled_dir_idx = 0;
   /// The first of the system include paths. Must be >= angled_dir_idx.
   unsigned system_dir_idx = 0;
   /// Include paths to be searched, along with the kind of files found there.
-  std::vector<std::pair<std::string, clang::SrcMgr::CharacteristicKind>> paths;
+  std::vector<Path> paths;
   /// Prefixes on include paths that override the system property.
   /// The second part of the pair determines whether the property is set.
   std::vector<std::pair<std::string, bool>> system_prefixes;
