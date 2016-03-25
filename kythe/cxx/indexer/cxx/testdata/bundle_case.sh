@@ -34,20 +34,25 @@ mkdir -p "${TEMP_PREFIX}"/test_bundle
 echo "#example test.cc" > "${BUNDLE_COPY}"
 cat "${TEST_FILE}" >> "${BUNDLE_COPY}"
 
-# Split the bundle into files via "#example file.name" delimiter lines.
+# Split the bundle into files via "#example file.name" delimiter lines,
+# and extract cflags.
 pushd "${TEMP_PREFIX}" > /dev/null
-awk '/#example .*/{x="test_bundle/"$2;next}{print > x;}' bundle.hcc
+awk '/#example .*/{x="test_bundle/"$2;system("mkdir -p $(dirname "x")");next}
+/#incdir .*/{print "-I'"${TEMP_PREFIX}"'/test_bundle/"$2 > "cflags";next}
+{print > x;}' bundle.hcc
 popd > /dev/null
 
 # Extract the split bundle.
 KYTHE_ROOT_DIRECTORY="$PWD" KYTHE_OUTPUT_DIRECTORY="${TEMP_PREFIX}" \
     KYTHE_VNAMES="${BASE_DIR}"/test_vnames.json "${EXTRACTOR}" \
-    -c -std="${CLANG_STANDARD}" "${TEMP_PREFIX}"/test_bundle/test.cc
+    -c -std="${CLANG_STANDARD}" $(cat ${TEMP_PREFIX}/cflags) \
+    "${TEMP_PREFIX}"/test_bundle/test.cc
 KINDEX_FILE="$(find "${TEMP_PREFIX}" -iname '*.kindex')"
 
 # Run the indexer on the resulting .kindex.
 set +e
 "${INDEXER}" -claim_unknown=false "${KINDEX_FILE}" "${INDEXER_ARGS[@]}" \
-    | "${VERIFIER}" "${VERIFIER_ARGS[@]}" "${TEMP_PREFIX}"/test_bundle/*
+    | "${VERIFIER}" "${VERIFIER_ARGS[@]}" \
+      $(find "${TEMP_PREFIX}"/test_bundle -type f)
 RESULTS=( ${PIPESTATUS[0]} ${PIPESTATUS[1]} )
 source kythe/cxx/indexer/cxx/testdata/handle_results.sh

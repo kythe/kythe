@@ -88,6 +88,13 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "include_dotdot",
+    srcs = ["include_dotdot.cc"],
+    bundled = True,
+    tags = ["basic"],
+)
+
+cxx_indexer_test(
     name = "fail_index",
     srcs = ["test_fail_index.cc"],
     expect_fail_index = True,

@@ -33,7 +33,8 @@ class IndexVFS : public clang::vfs::FileSystem {
   /// \param working_directory The absolute path to the working directory.
   /// \param virtual_files Files to map.
   IndexVFS(const std::string &working_directory,
-           const std::vector<proto::FileData> &virtual_files);
+           const std::vector<proto::FileData> &virtual_files,
+           const std::vector<llvm::StringRef> &virtual_dirs);
   ~IndexVFS();
   /// \brief Implements clang::vfs::FileSystem::status.
   llvm::ErrorOr<clang::vfs::Status> status(const llvm::Twine &path) override;

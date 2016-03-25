@@ -30,7 +30,8 @@ static inline std::pair<uint64_t, uint64_t> PairFromUid(
 }
 
 IndexVFS::IndexVFS(const std::string &working_directory,
-                   const std::vector<proto::FileData> &virtual_files)
+                   const std::vector<proto::FileData> &virtual_files,
+                   const std::vector<llvm::StringRef> &virtual_dirs)
     : virtual_files_(virtual_files), working_directory_(working_directory) {
   assert(llvm::sys::path::is_absolute(working_directory) &&
          "Working directory must be absolute.");
@@ -41,6 +42,9 @@ IndexVFS::IndexVFS(const std::string &working_directory,
       record->data =
           llvm::StringRef(data.content().data(), data.content().size());
     }
+  }
+  for (llvm::StringRef dir : virtual_dirs) {
+    FileRecordForPath(dir, BehaviorOnMissing::kCreateDirectory, 0);
   }
 }
 

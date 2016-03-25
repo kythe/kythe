@@ -110,7 +110,12 @@ std::string IndexCompilationUnit(const proto::CompilationUnit &Unit,
   }
   clang::FileSystemOptions FSO;
   FSO.WorkingDir = Options.EffectiveWorkingDirectory;
-  llvm::IntrusiveRefCntPtr<IndexVFS> VFS(new IndexVFS(FSO.WorkingDir, Files));
+  std::vector<llvm::StringRef> Dirs;
+  for (auto &Path : HSI.paths) {
+    Dirs.push_back(Path.first);
+  }
+  llvm::IntrusiveRefCntPtr<IndexVFS> VFS(new IndexVFS(FSO.WorkingDir, Files,
+                                                      Dirs));
   KytheGraphRecorder Recorder(&Output);
   KytheGraphObserver Observer(&Recorder, &Client, MetaSupports, VFS);
   if (Cache != nullptr) {
