@@ -86,7 +86,7 @@ bind(
 
 new_git_repository(
     name = "com_github_google_glog",
-    build_file = "third_party/googlelog.BUILD",
+    build_file = "third_party/googlelog/BUILD.remote",
     commit = "1b0b08c8dda1659027677966b03a3ff3c488e549",
     remote = "https://github.com/google/glog.git",
 )
