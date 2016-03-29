@@ -162,8 +162,8 @@ the naming scheme Kythe uses for nodes in its graph:
 
 A node _N_ can be uniquely identified relative to a universe _U_ of nodes by
 fixing any _v_-dimensional projection of the node's attributes that differs
-from all _U_ \ {N} under the same projection. In other words, we can choose a
-name for _N_ by picking a small basis of <<TermFact,facts>> about a node, and
+from all _U_ \ \{N\} under the same projection. In other words, we can choose
+a name for _N_ by picking a small basis of <<TermFact,facts>> about a node, and
 use the node's projection into the basis as its ``name''.  This works as long
 as the facts we pick are sufficient to distinguish all the nodes in our set
 _U_.
