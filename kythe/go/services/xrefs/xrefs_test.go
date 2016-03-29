@@ -242,7 +242,7 @@ func TestSlowCallers(t *testing.T) {
 						EdgeSet: []*xpb.EdgeSet{&xpb.EdgeSet{
 							SourceTicket: req.Ticket[0],
 							Group: []*xpb.EdgeSet_Group{&xpb.EdgeSet_Group{
-								TargetTicket: []string{"kythe://test#c"},
+								Edge: []*xpb.EdgeSet_Group_Edge{{TargetTicket: "kythe://test#c"}},
 							}},
 						}},
 					}, nil
@@ -254,7 +254,7 @@ func TestSlowCallers(t *testing.T) {
 						EdgeSet: []*xpb.EdgeSet{&xpb.EdgeSet{
 							SourceTicket: req.Ticket[0],
 							Group: []*xpb.EdgeSet_Group{&xpb.EdgeSet_Group{
-								TargetTicket: []string{"kythe://test#g"},
+								Edge: []*xpb.EdgeSet_Group_Edge{{TargetTicket: "kythe://test#g"}},
 							}},
 						}},
 					}, nil

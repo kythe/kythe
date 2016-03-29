@@ -474,17 +474,17 @@ func (s *filterStats) filter(g *srvpb.EdgeGroup) (*xpb.EdgeSet_Group, []*srvpb.N
 
 	s.total += len(targets)
 	return &xpb.EdgeSet_Group{
-		Kind:         g.Kind,
-		TargetTicket: nodeTickets(targets),
+		Kind: g.Kind,
+		Edge: nodeEdges(targets),
 	}, targets
 }
 
-func nodeTickets(ns []*srvpb.Node) []string {
-	tickets := make([]string, len(ns))
+func nodeEdges(ns []*srvpb.Node) []*xpb.EdgeSet_Group_Edge {
+	edges := make([]*xpb.EdgeSet_Group_Edge, len(ns))
 	for i, n := range ns {
-		tickets[i] = n.Ticket
+		edges[i] = &xpb.EdgeSet_Group_Edge{TargetTicket: n.Ticket}
 	}
-	return tickets
+	return edges
 }
 
 func nodeToInfo(patterns []*regexp.Regexp, n *srvpb.Node) *xpb.NodeInfo {
@@ -729,11 +729,11 @@ func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReference
 			}
 			for _, g := range es.Group {
 				if !schema.IsAnchorEdge(g.Kind) {
-					nodes.Add(g.TargetTicket...)
-					for _, t := range g.TargetTicket {
+					for _, edge := range g.Edge {
+						nodes.Add(edge.TargetTicket)
 						crs.RelatedNode = append(crs.RelatedNode, &xpb.CrossReferencesReply_RelatedNode{
 							RelationKind: g.Kind,
-							Ticket:       t,
+							Ticket:       edge.TargetTicket,
 						})
 					}
 				}

@@ -951,8 +951,8 @@ func edgeSet(kinds []string, pes *srvpb.PagedEdgeSet, pages []*srvpb.EdgePage) *
 	for _, g := range pes.Group {
 		if set.Contains(g.Kind) || len(set) == 0 {
 			es.Group = append(es.Group, &xpb.EdgeSet_Group{
-				Kind:         g.Kind,
-				TargetTicket: nodeTickets(g.Target),
+				Kind: g.Kind,
+				Edge: nodeEdges(g.Target),
 			})
 		}
 	}
@@ -960,8 +960,8 @@ func edgeSet(kinds []string, pes *srvpb.PagedEdgeSet, pages []*srvpb.EdgePage) *
 		g := ep.EdgesGroup
 		if set.Contains(g.Kind) || len(set) == 0 {
 			es.Group = append(es.Group, &xpb.EdgeSet_Group{
-				Kind:         g.Kind,
-				TargetTicket: nodeTickets(g.Target),
+				Kind: g.Kind,
+				Edge: nodeEdges(g.Target),
 			})
 		}
 	}

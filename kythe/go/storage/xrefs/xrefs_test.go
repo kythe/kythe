@@ -216,13 +216,13 @@ func (n *node) Info() *xpb.NodeInfo {
 func (n *node) EdgeSet() *xpb.EdgeSet {
 	var groups []*xpb.EdgeSet_Group
 	for kind, targets := range n.Edges {
-		var tickets []string
+		var edges []*xpb.EdgeSet_Group_Edge
 		for _, target := range targets {
-			tickets = append(tickets, kytheuri.ToString(target))
+			edges = append(edges, &xpb.EdgeSet_Group_Edge{TargetTicket: kytheuri.ToString(target)})
 		}
 		groups = append(groups, &xpb.EdgeSet_Group{
-			Kind:         kind,
-			TargetTicket: tickets,
+			Kind: kind,
+			Edge: edges,
 		})
 	}
 	return &xpb.EdgeSet{

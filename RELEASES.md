@@ -3,6 +3,7 @@
 ## Upcoming release
 
 Notable changes:
+ - xrefs service: add `ordinal` field to each EdgeSet edge
  - `xrefs.CrossReferences`: group declarations/definitions for incomplete nodes
 
 Notable additions:

@@ -354,8 +354,8 @@ class Action : public clang::ASTFrontendAction,
   bool CopyTicketsFromEdgeSets(const Reply &reply, Request *request) {
     for (const auto &edge_set : reply.edge_set()) {
       for (const auto &group : edge_set.group()) {
-        for (const auto &ticket : group.target_ticket()) {
-          request->add_ticket(ticket);
+        for (const auto &edge : group.edge()) {
+          request->add_ticket(edge.target_ticket());
         }
       }
     }

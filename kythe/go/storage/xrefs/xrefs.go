@@ -212,7 +212,7 @@ func (g *GraphStoreService) Edges(ctx context.Context, req *xpb.EdgesRequest) (*
 			for edgeKind, targets := range filteredEdges {
 				g := &xpb.EdgeSet_Group{Kind: edgeKind}
 				for target := range targets {
-					g.TargetTicket = append(g.TargetTicket, target)
+					g.Edge = append(g.Edge, &xpb.EdgeSet_Group_Edge{TargetTicket: target})
 					targetSet.Add(target)
 				}
 				groups = append(groups, g)
@@ -543,35 +543,35 @@ func (g *GraphStoreService) CrossReferences(ctx context.Context, req *xpb.CrossR
 			for _, grp := range es.Group {
 				switch {
 				case xrefs.IsDefKind(req.DefinitionKind, grp.Kind):
-					anchors, err := completeAnchors(ctx, g, req.AnchorText, files, grp.Kind, grp.TargetTicket)
+					anchors, err := completeAnchors(ctx, g, req.AnchorText, files, grp.Kind, edgeTickets(grp.Edge))
 					if err != nil {
 						return nil, fmt.Errorf("error resolving definition anchors: %v", err)
 					}
 					count += len(anchors)
 					xr.Definition = append(xr.Definition, anchors...)
 				case xrefs.IsRefKind(req.ReferenceKind, grp.Kind):
-					anchors, err := completeAnchors(ctx, g, req.AnchorText, files, grp.Kind, grp.TargetTicket)
+					anchors, err := completeAnchors(ctx, g, req.AnchorText, files, grp.Kind, edgeTickets(grp.Edge))
 					if err != nil {
 						return nil, fmt.Errorf("error resolving reference anchors: %v", err)
 					}
 					count += len(anchors)
 					xr.Reference = append(xr.Reference, anchors...)
 				case xrefs.IsDocKind(req.DocumentationKind, grp.Kind):
-					anchors, err := completeAnchors(ctx, g, req.AnchorText, files, grp.Kind, grp.TargetTicket)
+					anchors, err := completeAnchors(ctx, g, req.AnchorText, files, grp.Kind, edgeTickets(grp.Edge))
 					if err != nil {
 						return nil, fmt.Errorf("error resolving documentation anchors: %v", err)
 					}
 					count += len(anchors)
 					xr.Documentation = append(xr.Documentation, anchors...)
 				case allRelatedNodes != nil && !schema.IsAnchorEdge(grp.Kind):
-					count += len(grp.TargetTicket)
-					for _, target := range grp.TargetTicket {
+					count += len(grp.Edge)
+					for _, edge := range grp.Edge {
 						xr.RelatedNode = append(xr.RelatedNode, &xpb.CrossReferencesReply_RelatedNode{
-							Ticket:       target,
+							Ticket:       edge.TargetTicket,
 							RelationKind: grp.Kind,
 						})
+						allRelatedNodes.Add(edge.TargetTicket)
 					}
-					allRelatedNodes.Add(grp.TargetTicket...)
 				}
 			}
 
@@ -620,6 +620,13 @@ type fileNode struct {
 	norm     *xrefs.Normalizer
 }
 
+func edgeTickets(edges []*xpb.EdgeSet_Group_Edge) (tickets []string) {
+	for _, e := range edges {
+		tickets = append(tickets, e.TargetTicket)
+	}
+	return
+}
+
 func completeAnchors(ctx context.Context, xs xrefs.NodesEdgesService, retrieveText bool, files map[string]*fileNode, edgeKind string, anchors []string) ([]*xpb.Anchor, error) {
 	edgeKind = schema.Canonicalize(edgeKind)
 
@@ -660,7 +667,8 @@ func completeAnchors(ctx context.Context, xs xrefs.NodesEdgesService, retrieveTe
 				continue
 			}
 
-			for _, parent := range g.TargetTicket {
+			for _, edge := range g.Edge {
+				parent := edge.TargetTicket
 				if parentKind := string(nodes[parent][schema.NodeKindFact]); parentKind != schema.FileKind {
 					log.Printf("Found non-file parent to anchor: %q (kind: %q)", parent, parentKind)
 					continue

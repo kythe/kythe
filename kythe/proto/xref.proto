@@ -177,13 +177,19 @@ message EdgesRequest {
 // The number of edges represented by an EdgeSet es, denoted len(es), is the
 // sum of the lengths of the repeated target_ticket fields for all the groups
 // in the EdgeSet.  This count is used to determine page size in a request.
-//
-// TODO(fromberger): Sort out what to do about the rare case of facts attached
-// to edges.
 message EdgeSet {
   message Group {
+    message Edge {
+      string target_ticket = 1;
+
+      // An optional integer to give an ordering between multiple edges of same
+      // source and kind to one or more targets.  See https://kythe.io/schema
+      // for when ordinals are used for a given edge kind.
+      int32 ordinal = 2;
+    }
+
     string kind = 1;
-    repeated string target_ticket = 2;
+    repeated Edge edge = 2;
   }
 
   // The ticket of the source node for all the edges in the edge set.
@@ -456,6 +462,8 @@ message CrossReferencesReply {
     string ticket = 1;
     // Edge kind describing the node's relation
     string relation_kind = 2;
+    // Optional ordinal for edges of the same relation_kind.
+    int32 ordinal = 3;
   }
 
   message CrossReferenceSet {

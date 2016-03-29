@@ -209,14 +209,22 @@ func AllEdges(ctx context.Context, es EdgesService, req *xpb.EdgesRequest) (*xpb
 		}
 		for kind, targets := range kinds {
 			set.Group = append(set.Group, &xpb.EdgeSet_Group{
-				Kind:         kind,
-				TargetTicket: targets,
+				Kind: kind,
+				Edge: TicketsToEdges(targets),
 			})
 		}
 		reply.EdgeSet = append(reply.EdgeSet, set)
 	}
 
 	return reply, err
+}
+
+// TicketsToEdges returns an equivalent set of *xpb.EdgeSet_Group_Edges.
+func TicketsToEdges(tickets []string) (edges []*xpb.EdgeSet_Group_Edge) {
+	for _, ticket := range tickets {
+		edges = append(edges, &xpb.EdgeSet_Group_Edge{TargetTicket: ticket})
+	}
+	return
 }
 
 // NodesMap returns a map from each node ticket to a map of its facts.
@@ -254,7 +262,9 @@ func edgesMapInto(edges []*xpb.EdgeSet, m map[string]map[string][]string) {
 			m[es.SourceTicket] = kinds
 		}
 		for _, g := range es.Group {
-			kinds[g.Kind] = append(kinds[g.Kind], g.TargetTicket...)
+			for _, e := range g.Edge {
+				kinds[g.Kind] = append(kinds[g.Kind], e.TargetTicket)
+			}
 		}
 	}
 }
@@ -464,10 +474,10 @@ func forAllEdges(ctx context.Context, service Service, source stringset.Set, edg
 	if err != nil {
 		return err
 	}
-	for set := range edges.EdgeSet {
-		for group := range edges.EdgeSet[set].Group {
-			for target := range edges.EdgeSet[set].Group[group].TargetTicket {
-				err = f(edges.EdgeSet[set].SourceTicket, edges.EdgeSet[set].Group[group].TargetTicket[target])
+	for _, es := range edges.EdgeSet {
+		for _, group := range es.Group {
+			for _, edge := range group.Edge {
+				err = f(es.SourceTicket, edge.TargetTicket)
 				if err != nil {
 					return err
 				}

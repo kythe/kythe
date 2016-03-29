@@ -229,9 +229,13 @@ AND kind IN %s`, kSetQ)
 		gs := make([]*xpb.EdgeSet_Group, 0, len(groups))
 		nodeTickets.Add(src)
 		for kind, targets := range groups {
+			edges := make([]*xpb.EdgeSet_Group_Edge, 0, len(targets))
+			for _, ticket := range targets {
+				edges = append(edges, &xpb.EdgeSet_Group_Edge{TargetTicket: ticket})
+			}
 			gs = append(gs, &xpb.EdgeSet_Group{
-				Kind:         kind,
-				TargetTicket: targets,
+				Kind: kind,
+				Edge: edges,
 			})
 			nodeTickets.Add(targets...)
 		}
@@ -459,11 +463,11 @@ func (d *DB) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReques
 			}
 			for _, g := range es.Group {
 				if !schema.IsAnchorEdge(g.Kind) {
-					nodes.Add(g.TargetTicket...)
-					for _, t := range g.TargetTicket {
+					for _, edge := range g.Edge {
+						nodes.Add(edge.TargetTicket)
 						crs.RelatedNode = append(crs.RelatedNode, &xpb.CrossReferencesReply_RelatedNode{
 							RelationKind: g.Kind,
-							Ticket:       t,
+							Ticket:       edge.TargetTicket,
 						})
 					}
 				}

@@ -185,8 +185,8 @@ func displayEdges(edges *xpb.EdgesReply) error {
 			return err
 		}
 		for _, g := range es.Group {
-			for _, target := range g.TargetTicket {
-				if _, err := fmt.Fprintf(out, "%s\t%s\n", g.Kind, target); err != nil {
+			for _, edge := range g.Edge {
+				if _, err := fmt.Fprintf(out, "%s\t%s\n", g.Kind, edge.TargetTicket); err != nil {
 					return err
 				}
 			}
@@ -199,7 +199,9 @@ func displayTargets(edges []*xpb.EdgeSet) error {
 	targets := stringset.New()
 	for _, es := range edges {
 		for _, g := range es.Group {
-			targets.Add(g.TargetTicket...)
+			for _, e := range g.Edge {
+				targets.Add(e.TargetTicket)
+			}
 		}
 	}
 
@@ -221,7 +223,8 @@ func displayEdgeGraph(reply *xpb.EdgesReply) error {
 
 	for _, es := range reply.EdgeSet {
 		for _, g := range es.Group {
-			for _, tgt := range g.TargetTicket {
+			for _, edge := range g.Edge {
+				tgt := edge.TargetTicket
 				src, kind := es.SourceTicket, g.Kind
 				if schema.EdgeDirection(g.Kind) == schema.Reverse {
 					src, kind, tgt = tgt, schema.MirrorEdge(kind), src
@@ -284,7 +287,7 @@ func displayEdgeCounts(edges *xpb.EdgesReply) error {
 	counts := make(map[string]int)
 	for _, es := range edges.EdgeSet {
 		for _, g := range es.Group {
-			counts[g.Kind] += len(g.TargetTicket)
+			counts[g.Kind] += len(g.Edge)
 		}
 	}
 
