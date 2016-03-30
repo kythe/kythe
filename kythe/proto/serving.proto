@@ -30,6 +30,7 @@ message Node {
 message Edge {
   Node source = 1;
   string kind = 2;
+  int32 ordinal = 5;
   Node target = 3;
 
   repeated kythe.proto.common.Fact fact = 4;
@@ -39,8 +40,12 @@ message Edge {
 //
 // Note: this is a derivative of xref.EdgeSet_Group
 message EdgeGroup {
+  message Edge {
+    Node target = 1;
+    int32 ordinal = 2;
+  }
   string kind = 1;
-  repeated Node target = 2;
+  repeated Edge edge = 2;
 }
 
 // PagedEdgeSets are used for efficiently storing EdgeSets, all originating from

@@ -70,6 +70,7 @@ CREATE TABLE Edges (
 source text NOT NULL,
 kind text NOT NULL,
 target text NOT NULL,
+ordinal int,
 PRIMARY KEY (source, kind, target));`
 
 	// TODO(schroederc): possibly materialize the AllEdges table (or insert its data into Edges)
@@ -77,7 +78,7 @@ PRIMARY KEY (source, kind, target));`
 CREATE INDEX node_kinds ON nodes (node_kind);
 
 CREATE INDEX edge_targets ON edges (target);
-CREATE VIEW AllEdges AS SELECT * FROM Edges UNION ALL (SELECT target, CONCAT('%', kind), source FROM Edges);`
+CREATE VIEW AllEdges AS SELECT * FROM Edges UNION ALL (SELECT target, CONCAT('%', kind), source, ordinal FROM Edges);`
 
 	// Table of xpb.DecorationReply_References.
 	createDecorationsTable = `
@@ -217,6 +218,7 @@ func (d *DB) copyEntries(entries <-chan *spb.Entry) error {
 		"source",
 		"kind",
 		"target",
+		"ordinal",
 	))
 	if err != nil {
 		return fmt.Errorf("error preparing Edges copy: %v", err)
@@ -303,7 +305,15 @@ func (d *DB) copyEntries(entries <-chan *spb.Entry) error {
 			}
 		} else if schema.EdgeDirection(e.EdgeKind) == schema.Forward {
 			ticket := kytheuri.ToString(e.Source)
-			if _, err := copyEdge.Exec(ticket, e.EdgeKind, kytheuri.ToString(e.Target)); err != nil {
+			var ordinal *int32
+			if e.FactName == schema.OrdinalFact {
+				n, err := strconv.Atoi(string(e.FactValue))
+				if err == nil {
+					o := int32(n)
+					ordinal = &o
+				}
+			}
+			if _, err := copyEdge.Exec(ticket, e.EdgeKind, kytheuri.ToString(e.Target), ordinal); err != nil {
 				return fmt.Errorf("error copying edge: %v", err)
 			}
 		}

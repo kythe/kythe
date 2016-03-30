@@ -435,7 +435,7 @@ func totalEdgesWithKinds(pes *srvpb.PagedEdgeSet, kindFilter func(string) bool) 
 	var total int
 	for _, grp := range pes.Group {
 		if kindFilter(grp.Kind) {
-			total += len(grp.Target)
+			total += len(grp.Edge)
 		}
 	}
 	for _, page := range pes.PageIndex {
@@ -459,30 +459,39 @@ func (s *filterStats) skipPage(idx *srvpb.PageIndex) bool {
 }
 
 func (s *filterStats) filter(g *srvpb.EdgeGroup) (*xpb.EdgeSet_Group, []*srvpb.Node) {
-	targets := g.Target
-	if len(targets) <= s.skip {
-		s.skip -= len(targets)
+	edges := g.Edge
+	if len(edges) <= s.skip {
+		s.skip -= len(edges)
 		return nil, nil
 	} else if s.skip > 0 {
-		targets = targets[s.skip:]
+		edges = edges[s.skip:]
 		s.skip = 0
 	}
 
-	if len(targets) > s.max-s.total {
-		targets = targets[:(s.max - s.total)]
+	if len(edges) > s.max-s.total {
+		edges = edges[:(s.max - s.total)]
 	}
 
-	s.total += len(targets)
+	s.total += len(edges)
+
+	targets := make([]*srvpb.Node, len(edges))
+	for i, e := range edges {
+		targets[i] = e.Target
+	}
+
 	return &xpb.EdgeSet_Group{
 		Kind: g.Kind,
-		Edge: nodeEdges(targets),
+		Edge: e2e(edges),
 	}, targets
 }
 
-func nodeEdges(ns []*srvpb.Node) []*xpb.EdgeSet_Group_Edge {
-	edges := make([]*xpb.EdgeSet_Group_Edge, len(ns))
-	for i, n := range ns {
-		edges[i] = &xpb.EdgeSet_Group_Edge{TargetTicket: n.Ticket}
+func e2e(es []*srvpb.EdgeGroup_Edge) []*xpb.EdgeSet_Group_Edge {
+	edges := make([]*xpb.EdgeSet_Group_Edge, len(es))
+	for i, e := range es {
+		edges[i] = &xpb.EdgeSet_Group_Edge{
+			TargetTicket: e.Target.Ticket,
+			Ordinal:      e.Ordinal,
+		}
 	}
 	return edges
 }
@@ -734,6 +743,7 @@ func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReference
 						crs.RelatedNode = append(crs.RelatedNode, &xpb.CrossReferencesReply_RelatedNode{
 							RelationKind: g.Kind,
 							Ticket:       edge.TargetTicket,
+							Ordinal:      edge.Ordinal,
 						})
 					}
 				}

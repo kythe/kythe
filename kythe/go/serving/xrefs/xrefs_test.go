@@ -144,13 +144,13 @@ var (
 				Group: []*srvpb.EdgeGroup{
 					{
 						Kind: "someEdgeKind",
-						Target: getNodes(
+						Edge: getEdgeTargets(
 							"kythe://someCorpus#aTicketSig",
 						),
 					},
 					{
 						Kind: "anotherEdge",
-						Target: getNodes(
+						Edge: getEdgeTargets(
 							"kythe://someCorpus#aTicketSig",
 							"kythe://someCorpus?lang=otpl#signature",
 						),
@@ -162,13 +162,13 @@ var (
 				Source: getNode("kythe://someCorpus?lang=otpl#signature"),
 				Group: []*srvpb.EdgeGroup{{
 					Kind: "%/kythe/edge/ref",
-					Target: getNodes(
+					Edge: getEdgeTargets(
 						"kythe://c?lang=otpl?path=/a/path#51-55",
 						"kythe:?path=some/utf16/file#0-4",
 					),
 				}, {
-					Kind:   "%/kythe/edge/defines/binding",
-					Target: getNodes("kythe://c?lang=otpl?path=/a/path#27-33"),
+					Kind: "%/kythe/edge/defines/binding",
+					Edge: getEdgeTargets("kythe://c?lang=otpl?path=/a/path#27-33"),
 				}},
 
 				PageIndex: []*srvpb.PageIndex{{
@@ -185,41 +185,41 @@ var (
 
 				Source: getNode("kythe:?path=some/utf16/file#0-4"),
 				Group: []*srvpb.EdgeGroup{{
-					Kind:   "/kythe/edge/ref",
-					Target: getNodes("kythe://someCorpus?lang=otpl#signature"),
+					Kind: "/kythe/edge/ref",
+					Edge: getEdgeTargets("kythe://someCorpus?lang=otpl#signature"),
 				}, {
-					Kind:   "/kythe/edge/childof",
-					Target: getNodes("kythe://someCorpus?path=some/utf16/file#utf16FTW"),
+					Kind: "/kythe/edge/childof",
+					Edge: getEdgeTargets("kythe://someCorpus?path=some/utf16/file#utf16FTW"),
 				}},
 			}, {
 				TotalEdges: 1,
 
 				Source: getNode("kythe://someCorpus?path=some/utf16/file#utf16FTW"),
 				Group: []*srvpb.EdgeGroup{{
-					Kind:   "%/kythe/edge/childof",
-					Target: getNodes("kythe:?path=some/utf16/file#0-4"),
+					Kind: "%/kythe/edge/childof",
+					Edge: getEdgeTargets("kythe:?path=some/utf16/file#0-4"),
 				}},
 			}, {
 				TotalEdges: 2,
 
 				Source: getNode("kythe://c?lang=otpl?path=/a/path#51-55"),
 				Group: []*srvpb.EdgeGroup{{
-					Kind:   "/kythe/edge/ref",
-					Target: getNodes("kythe://someCorpus?lang=otpl#signature"),
+					Kind: "/kythe/edge/ref",
+					Edge: getEdgeTargets("kythe://someCorpus?lang=otpl#signature"),
 				}, {
-					Kind:   "/kythe/edge/childof",
-					Target: getNodes("kythe://someCorpus?path=some/path#aFileNode"),
+					Kind: "/kythe/edge/childof",
+					Edge: getEdgeTargets("kythe://someCorpus?path=some/path#aFileNode"),
 				}},
 			}, {
 				TotalEdges: 2,
 
 				Source: getNode("kythe://c?lang=otpl?path=/a/path#27-33"),
 				Group: []*srvpb.EdgeGroup{{
-					Kind:   "/kythe/edge/defines/binding",
-					Target: getNodes("kythe://someCorpus?lang=otpl#signature"),
+					Kind: "/kythe/edge/defines/binding",
+					Edge: getEdgeTargets("kythe://someCorpus?lang=otpl#signature"),
 				}, {
-					Kind:   "/kythe/edge/childof",
-					Target: getNodes("kythe://someCorpus?path=some/path#aFileNode"),
+					Kind: "/kythe/edge/childof",
+					Edge: getEdgeTargets("kythe://someCorpus?path=some/path#aFileNode"),
 				}},
 			},
 		},
@@ -232,7 +232,7 @@ var (
 				SourceTicket: "kythe://someCorpus?lang=otpl#signature",
 				EdgesGroup: &srvpb.EdgeGroup{
 					Kind: "someEdgeKind",
-					Target: getNodes(
+					Edge: getEdgeTargets(
 						"kythe://someCorpus?lang=otpl#sig3",
 						"kythe://someCorpus?lang=otpl#sig4",
 					),
@@ -242,7 +242,7 @@ var (
 				SourceTicket: "kythe://someCorpus?lang=otpl#signature",
 				EdgesGroup: &srvpb.EdgeGroup{
 					Kind: "anotherEdge",
-					Target: getNodes(
+					Edge: getEdgeTargets(
 						"kythe://someCorpus?lang=otpl#sig2",
 					),
 				},
@@ -403,12 +403,15 @@ var (
 	}
 )
 
-func getNodes(tickets ...string) []*srvpb.Node {
-	ns := make([]*srvpb.Node, len(tickets))
+func getEdgeTargets(tickets ...string) []*srvpb.EdgeGroup_Edge {
+	es := make([]*srvpb.EdgeGroup_Edge, len(tickets))
 	for i, t := range tickets {
-		ns[i] = getNode(t)
+		es[i] = &srvpb.EdgeGroup_Edge{
+			Target:  getNode(t),
+			Ordinal: int32(i),
+		}
 	}
-	return ns
+	return es
 }
 
 func getNode(t string) *srvpb.Node {
@@ -952,7 +955,7 @@ func edgeSet(kinds []string, pes *srvpb.PagedEdgeSet, pages []*srvpb.EdgePage) *
 		if set.Contains(g.Kind) || len(set) == 0 {
 			es.Group = append(es.Group, &xpb.EdgeSet_Group{
 				Kind: g.Kind,
-				Edge: nodeEdges(g.Target),
+				Edge: e2e(g.Edge),
 			})
 		}
 	}
@@ -961,7 +964,7 @@ func edgeSet(kinds []string, pes *srvpb.PagedEdgeSet, pages []*srvpb.EdgePage) *
 		if set.Contains(g.Kind) || len(set) == 0 {
 			es.Group = append(es.Group, &xpb.EdgeSet_Group{
 				Kind: g.Kind,
-				Edge: nodeEdges(g.Target),
+				Edge: e2e(g.Edge),
 			})
 		}
 	}

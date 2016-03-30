@@ -242,7 +242,7 @@ func main() {
 				log.Printf("WARNING: error getting edges for %q: %v", ref.TargetTicket, err)
 			} else {
 				edges := xrefs.EdgesMap(eReply.EdgeSet)[ref.TargetTicket]
-				for _, name := range edges[schema.NamedEdge] {
+				for name := range edges[schema.NamedEdge] {
 					if uri, err := kytheuri.Parse(name); err != nil {
 						log.Printf("WARNING: named node ticket (%q) could not be parsed: %v", name, err)
 					} else {
@@ -250,8 +250,9 @@ func main() {
 					}
 				}
 
-				if typed := edges[schema.TypedEdge]; len(typed) > 0 {
-					r.Node.Typed = typed[0]
+				for typed := range edges[schema.TypedEdge] {
+					r.Node.Typed = typed
+					break
 				}
 
 				if !*skipDefinitions {
@@ -259,7 +260,7 @@ func main() {
 					if len(defs) == 0 {
 						defs = edges[definedBindingAtEdge]
 					}
-					for _, defAnchor := range defs {
+					for defAnchor := range defs {
 						def, err := completeDefinition(defAnchor)
 						if err != nil {
 							log.Printf("WARNING: failed to complete definition for %q: %v", defAnchor, err)
@@ -289,7 +290,7 @@ func completeDefinition(defAnchor string) (*definition, error) {
 
 	parentNodes := xrefs.NodesMap(parentReply.Node)
 	var files []string
-	for _, parent := range xrefs.EdgesMap(parentReply.EdgeSet)[defAnchor][schema.ChildOfEdge] {
+	for parent := range xrefs.EdgesMap(parentReply.EdgeSet)[defAnchor][schema.ChildOfEdge] {
 		if string(parentNodes[parent][schema.NodeKindFact]) == schema.FileKind {
 			files = append(files, parent)
 		}

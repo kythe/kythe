@@ -273,16 +273,18 @@ func writePartialEdges(ctx context.Context, sorter disksort.Interface, idx table
 
 func writeCompletedEdges(ctx context.Context, edges disksort.Interface, e *srvpb.Edge) error {
 	if err := edges.Add(&srvpb.Edge{
-		Source: &srvpb.Node{Ticket: e.Source.Ticket},
-		Kind:   e.Kind,
-		Target: e.Target,
+		Source:  &srvpb.Node{Ticket: e.Source.Ticket},
+		Kind:    e.Kind,
+		Ordinal: e.Ordinal,
+		Target:  e.Target,
 	}); err != nil {
 		return fmt.Errorf("error writing complete edge: %v", err)
 	}
 	if err := edges.Add(&srvpb.Edge{
-		Source: &srvpb.Node{Ticket: e.Target.Ticket},
-		Kind:   schema.MirrorEdge(e.Kind),
-		Target: assemble.FilterTextFacts(e.Source),
+		Source:  &srvpb.Node{Ticket: e.Target.Ticket},
+		Kind:    schema.MirrorEdge(e.Kind),
+		Ordinal: e.Ordinal,
+		Target:  assemble.FilterTextFacts(e.Source),
 	}); err != nil {
 		return fmt.Errorf("error writing complete edge mirror: %v", err)
 	}
@@ -320,11 +322,11 @@ func writePagedEdges(ctx context.Context, edges <-chan *srvpb.Edge, out table.Pr
 			}
 		} else if grp == nil {
 			grp = &srvpb.EdgeGroup{
-				Kind:   e.Kind,
-				Target: []*srvpb.Node{e.Target},
+				Kind: e.Kind,
+				Edge: []*srvpb.EdgeGroup_Edge{e2e(e)},
 			}
 		} else {
-			grp.Target = append(grp.Target, e.Target)
+			grp.Edge = append(grp.Edge, e2e(e))
 		}
 	}
 
@@ -338,6 +340,13 @@ func writePagedEdges(ctx context.Context, edges <-chan *srvpb.Edge, out table.Pr
 		return err
 	}
 	return buffer.Flush(ctx)
+}
+
+func e2e(e *srvpb.Edge) *srvpb.EdgeGroup_Edge {
+	return &srvpb.EdgeGroup_Edge{
+		Target:  e.Target,
+		Ordinal: e.Ordinal,
+	}
 }
 
 // TODO(schroederc): use srvpb.CrossReference for fragments
@@ -514,10 +523,13 @@ func (edgeLesser) Less(a, b interface{}) bool {
 	x, y := a.(*srvpb.Edge), b.(*srvpb.Edge)
 	if x.Source.Ticket == y.Source.Ticket {
 		if x.Kind == y.Kind {
-			if x.Target == nil || y.Target == nil {
-				return x.Target != nil
+			if x.Ordinal == y.Ordinal {
+				if x.Target == nil || y.Target == nil {
+					return x.Target != nil
+				}
+				return x.Target.Ticket < y.Target.Ticket
 			}
-			return x.Target.Ticket < y.Target.Ticket
+			return x.Ordinal < y.Ordinal
 		}
 		return x.Kind < y.Kind
 	}

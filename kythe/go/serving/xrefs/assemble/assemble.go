@@ -31,7 +31,6 @@ import (
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/pager"
 	"kythe.io/kythe/go/util/schema"
-	"kythe.io/kythe/go/util/stringset"
 
 	"golang.org/x/net/context"
 
@@ -46,7 +45,13 @@ type Source struct {
 	Ticket string
 
 	Facts map[string][]byte
-	Edges map[string][]string
+	Edges map[string][]EdgeTarget
+}
+
+// EdgeTarget is a target of an edge with an optional ordinal.
+type EdgeTarget struct {
+	Ticket  string
+	Ordinal int32
 }
 
 // Node returns the Source as a srvpb.Node.
@@ -72,26 +77,43 @@ func SourceFromEntries(entries []*spb.Entry) *Source {
 	src := &Source{
 		Ticket: kytheuri.ToString(entries[0].Source),
 		Facts:  make(map[string][]byte),
-		Edges:  make(map[string][]string),
+		Edges:  make(map[string][]EdgeTarget),
 	}
 
-	edgeTargets := make(map[string]stringset.Set)
+	// edge kind -> target ticket -> ordinal
+	edges := make(map[string]map[string]int32)
 
 	for _, e := range entries {
 		if graphstore.IsEdge(e) {
-			tgts, ok := edgeTargets[e.EdgeKind]
+			tgts, ok := edges[e.EdgeKind]
 			if !ok {
-				tgts = stringset.New()
-				edgeTargets[e.EdgeKind] = tgts
+				tgts = make(map[string]int32)
+				edges[e.EdgeKind] = tgts
 			}
-			tgts.Add(kytheuri.ToString(e.Target))
+			var ordinal int32
+			if e.FactName == schema.OrdinalFact {
+				n, err := strconv.Atoi(string(e.FactValue))
+				if err == nil {
+					ordinal = int32(n)
+				}
+			}
+
+			ticket := kytheuri.ToString(e.Target)
+			if prev, ok := tgts[ticket]; !ok || prev == 0 || ordinal != 0 {
+				tgts[ticket] = ordinal
+			}
 		} else {
 			src.Facts[e.FactName] = e.FactValue
 		}
 	}
-	for kind, targets := range edgeTargets {
-		src.Edges[kind] = targets.Slice()
-		sort.Strings(src.Edges[kind])
+	for kind, targets := range edges {
+		for target, ordinal := range targets {
+			src.Edges[kind] = append(src.Edges[kind], EdgeTarget{
+				Ticket:  target,
+				Ordinal: ordinal,
+			})
+		}
+		sort.Sort(byOrdinal(src.Edges[kind]))
 	}
 
 	return src
@@ -133,9 +155,10 @@ func PartialReverseEdges(src *Source) []*srvpb.Edge {
 		rev := schema.MirrorEdge(kind)
 		for _, target := range targets {
 			edges = append(edges, &srvpb.Edge{
-				Source: &srvpb.Node{Ticket: target},
-				Kind:   rev,
-				Target: targetNode,
+				Source:  &srvpb.Node{Ticket: target.Ticket},
+				Kind:    rev,
+				Ordinal: target.Ordinal,
+				Target:  targetNode,
 			})
 		}
 	}
@@ -337,19 +360,19 @@ func (b *EdgeSetBuilder) constructPager() *pager.SetPager {
 			if lg.Kind != rg.Kind {
 				return nil
 			}
-			lg.Target = append(lg.Target, rg.Target...)
+			lg.Edge = append(lg.Edge, rg.Edge...)
 			return lg
 		},
 		Split: func(sz int, g pager.Group) (l, r pager.Group) {
 			eg := g.(*srvpb.EdgeGroup)
 			neg := &srvpb.EdgeGroup{
-				Kind:   eg.Kind,
-				Target: eg.Target[:sz],
+				Kind: eg.Kind,
+				Edge: eg.Edge[:sz],
 			}
-			eg.Target = eg.Target[sz:]
+			eg.Edge = eg.Edge[sz:]
 			return neg, eg
 		},
-		Size: func(g pager.Group) int { return len(g.(*srvpb.EdgeGroup).Target) },
+		Size: func(g pager.Group) int { return len(g.(*srvpb.EdgeGroup).Edge) },
 
 		OutputSet: func(ctx context.Context, total int, s pager.Set, grps []pager.Group) error {
 			pes := s.(*srvpb.PagedEdgeSet)
@@ -384,7 +407,7 @@ func (b *EdgeSetBuilder) constructPager() *pager.SetPager {
 			pes.PageIndex = append(pes.PageIndex, &srvpb.PageIndex{
 				PageKey:   key,
 				EdgeKind:  eviction.Kind,
-				EdgeCount: int32(len(eviction.Target)),
+				EdgeCount: int32(len(eviction.Edge)),
 			})
 			return nil
 		},
@@ -702,3 +725,15 @@ type byRefKind []*srvpb.PagedCrossReferences_Group
 func (s byRefKind) Len() int           { return len(s) }
 func (s byRefKind) Less(i, j int) bool { return edgeKindLess(s[i].Kind, s[j].Kind) }
 func (s byRefKind) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+
+// byOrdinal sorts edges by their ordinals
+type byOrdinal []EdgeTarget
+
+func (s byOrdinal) Len() int      { return len(s) }
+func (s byOrdinal) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
+func (s byOrdinal) Less(i, j int) bool {
+	if s[i].Ordinal == s[j].Ordinal {
+		return s[i].Ticket < s[j].Ticket
+	}
+	return s[i].Ordinal < s[j].Ordinal
+}

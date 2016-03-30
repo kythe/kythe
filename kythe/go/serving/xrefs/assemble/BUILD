@@ -11,7 +11,6 @@ go_package(
         "//kythe/go/util/kytheuri",
         "//kythe/go/util/pager",
         "//kythe/go/util/schema",
-        "//kythe/go/util/stringset",
         "//kythe/proto:common_proto_go",
         "//kythe/proto:serving_proto_go",
         "//kythe/proto:storage_proto_go",

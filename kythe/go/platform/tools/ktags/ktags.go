@@ -148,7 +148,7 @@ func getTagFields(xs xrefs.Service, ticket string) ([]string, error) {
 		fields = append(fields, "v")
 	}
 
-	for _, parent := range edges[ticket][schema.ChildOfEdge] {
+	for parent := range edges[ticket][schema.ChildOfEdge] {
 		parentIdent := string(nodes[parent][identifierFact])
 		if parentIdent == "" {
 			continue

@@ -175,8 +175,8 @@ func (g *GraphStoreService) Edges(ctx context.Context, req *xpb.EdgesRequest) (*
 		}
 
 		var (
-			// EdgeKind -> StringSet<TargetTicket>
-			filteredEdges = make(map[string]stringset.Set)
+			// EdgeKind -> TargetTicket -> Ordinal
+			filteredEdges = make(map[string]map[string]int32)
 			filteredFacts []*cpb.Fact
 		)
 
@@ -193,12 +193,16 @@ func (g *GraphStoreService) Edges(ctx context.Context, req *xpb.EdgesRequest) (*
 			} else {
 				// edge
 				if len(req.Kind) == 0 || allowedKinds.Contains(edgeKind) {
-					targets := filteredEdges[edgeKind]
-					if targets == nil {
-						targets = stringset.New()
+					targets, ok := filteredEdges[edgeKind]
+					if !ok {
+						targets = make(map[string]int32)
 						filteredEdges[edgeKind] = targets
 					}
-					targets.Add(kytheuri.ToString(entry.Target))
+					ordinal := parseOrdinal(entry)
+					ticket := kytheuri.ToString(entry.Target)
+					if prev, ok := targets[ticket]; !ok || prev == 0 || ordinal != 0 {
+						targets[ticket] = ordinal
+					}
 				}
 			}
 			return nil
@@ -211,8 +215,11 @@ func (g *GraphStoreService) Edges(ctx context.Context, req *xpb.EdgesRequest) (*
 			var groups []*xpb.EdgeSet_Group
 			for edgeKind, targets := range filteredEdges {
 				g := &xpb.EdgeSet_Group{Kind: edgeKind}
-				for target := range targets {
-					g.Edge = append(g.Edge, &xpb.EdgeSet_Group_Edge{TargetTicket: target})
+				for target, ordinal := range targets {
+					g.Edge = append(g.Edge, &xpb.EdgeSet_Group_Edge{
+						TargetTicket: target,
+						Ordinal:      ordinal,
+					})
 					targetSet.Add(target)
 				}
 				groups = append(groups, g)
@@ -251,6 +258,16 @@ func (g *GraphStoreService) Edges(ctx context.Context, req *xpb.EdgesRequest) (*
 	}
 
 	return reply, nil
+}
+
+func parseOrdinal(entry *spb.Entry) int32 {
+	if entry.FactName == schema.OrdinalFact {
+		n, err := strconv.Atoi(string(entry.FactValue))
+		if err == nil {
+			return int32(n)
+		}
+	}
+	return 0
 }
 
 // Decorations implements part of the Service interface.
@@ -422,8 +439,9 @@ func getSourceText(ctx context.Context, gs graphstore.Service, fileVName *spb.VN
 }
 
 type edgeTarget struct {
-	Kind   string
-	Target *spb.VName
+	Kind    string
+	Target  *spb.VName
+	Ordinal int32
 }
 
 // getEdges returns edgeTargets with the given node as their source.  Only edge
@@ -436,7 +454,7 @@ func getEdges(ctx context.Context, gs graphstore.Service, node *spb.VName, pred 
 		EdgeKind: "*",
 	}, func(entry *spb.Entry) error {
 		if graphstore.IsEdge(entry) && pred(entry) {
-			targets = append(targets, &edgeTarget{entry.EdgeKind, entry.Target})
+			targets = append(targets, &edgeTarget{entry.EdgeKind, entry.Target, parseOrdinal(entry)})
 		}
 		return nil
 	}); err != nil {
@@ -569,6 +587,7 @@ func (g *GraphStoreService) CrossReferences(ctx context.Context, req *xpb.CrossR
 						xr.RelatedNode = append(xr.RelatedNode, &xpb.CrossReferencesReply_RelatedNode{
 							Ticket:       edge.TargetTicket,
 							RelationKind: grp.Kind,
+							Ordinal:      edge.Ordinal,
 						})
 						allRelatedNodes.Add(edge.TargetTicket)
 					}

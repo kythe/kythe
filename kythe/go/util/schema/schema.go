@@ -34,6 +34,11 @@ const (
 	TextEncodingFact = "/kythe/text/encoding"
 )
 
+// Kythe edge fact labels
+const (
+	OrdinalFact = "/kythe/ordinal"
+)
+
 // DefaultTextEncoding is the assumed value of the TextEncodingFact if it is
 // empty or missing from a node with a TextFact.
 const DefaultTextEncoding = "UTF-8"

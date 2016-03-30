@@ -189,7 +189,7 @@ AND kind IN %s`, kSetQ)
 	}
 
 	// Scan edge sets/groups in order; necessary for CrossReferences
-	query += " ORDER BY source, kind"
+	query += " ORDER BY source, kind, ordinal"
 
 	// Seek to the requested page offset (req.PageToken.Index).  We don't use
 	// LIMIT here because we don't yet know how many edges will be filtered by
@@ -204,10 +204,12 @@ AND kind IN %s`, kSetQ)
 	defer closeRows(rs)
 
 	var scanned int
-	edges := make(map[string]map[string][]string, len(tickets))
+	// edges := map { source -> kind -> target -> ordinal }
+	edges := make(map[string]map[string]map[string]int32, len(tickets))
 	for count := 0; count < pageSize && rs.Next(); scanned++ {
 		var source, kind, target string
-		if err := rs.Scan(&source, &kind, &target); err != nil {
+		var ordinal sql.NullInt64
+		if err := rs.Scan(&source, &kind, &target, &ordinal); err != nil {
 			return nil, fmt.Errorf("edges scan error: %v", err)
 		}
 		if edgeFilter != nil && !edgeFilter(kind) {
@@ -217,10 +219,15 @@ AND kind IN %s`, kSetQ)
 
 		groups, ok := edges[source]
 		if !ok {
-			groups = make(map[string][]string)
+			groups = make(map[string]map[string]int32)
 			edges[source] = groups
 		}
-		groups[kind] = append(groups[kind], target)
+		targets, ok := groups[kind]
+		if !ok {
+			targets = make(map[string]int32)
+			groups[kind] = targets
+		}
+		targets[target] = int32(ordinal.Int64)
 	}
 
 	reply := &xpb.EdgesReply{EdgeSet: make([]*xpb.EdgeSet, 0, len(edges))}
@@ -230,14 +237,18 @@ AND kind IN %s`, kSetQ)
 		nodeTickets.Add(src)
 		for kind, targets := range groups {
 			edges := make([]*xpb.EdgeSet_Group_Edge, 0, len(targets))
-			for _, ticket := range targets {
-				edges = append(edges, &xpb.EdgeSet_Group_Edge{TargetTicket: ticket})
+			for ticket, ordinal := range targets {
+				edges = append(edges, &xpb.EdgeSet_Group_Edge{
+					TargetTicket: ticket,
+					Ordinal:      ordinal,
+				})
+				nodeTickets.Add(ticket)
 			}
+			sort.Sort(xrefs.ByOrdinal(edges))
 			gs = append(gs, &xpb.EdgeSet_Group{
 				Kind: kind,
 				Edge: edges,
 			})
-			nodeTickets.Add(targets...)
 		}
 		reply.EdgeSet = append(reply.EdgeSet, &xpb.EdgeSet{
 			SourceTicket: src,
@@ -468,6 +479,7 @@ func (d *DB) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReques
 						crs.RelatedNode = append(crs.RelatedNode, &xpb.CrossReferencesReply_RelatedNode{
 							RelationKind: g.Kind,
 							Ticket:       edge.TargetTicket,
+							Ordinal:      edge.Ordinal,
 						})
 					}
 				}

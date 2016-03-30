@@ -17,8 +17,8 @@
 package xrefs
 
 import (
-	"reflect"
 	"sort"
+	"strconv"
 	"testing"
 
 	"kythe.io/kythe/go/services/graphstore"
@@ -58,6 +58,7 @@ var (
 		}},
 		{sig("signature"), facts(schema.NodeKindFact, "test"), map[string][]*spb.VName{
 			schema.MirrorEdge("someEdgeKind"): {sig("sig2")},
+			schema.ParamEdge:                  {sig("sig2"), sig("someParameter")},
 		}},
 		{testAnchorVName, facts(
 			schema.AnchorEndFact, "4",
@@ -101,14 +102,14 @@ func TestEdges(t *testing.T) {
 	}
 
 	expectedEdges := nodesToEdgeSets(testNodes)
-	if !reflect.DeepEqual(sortEdgeSets(reply.EdgeSet), expectedEdges) {
-		t.Errorf("Got %v; Expected edgeSets %v", reply.EdgeSet, expectedEdges)
+	if err := testutil.DeepEqual(sortEdgeSets(reply.EdgeSet), expectedEdges); err != nil {
+		t.Error(err)
 	}
 
 	nodesWithEdges := testNodes[1:]
 	expectedInfos := nodesToInfos(nodesWithEdges)
-	if !reflect.DeepEqual(sortInfos(reply.Node), expectedInfos) {
-		t.Errorf("Got %v; Expected nodes %v", reply.Node, expectedInfos)
+	if err := testutil.DeepEqual(sortInfos(reply.Node), expectedInfos); err != nil {
+		t.Error(err)
 	}
 }
 
@@ -217,8 +218,11 @@ func (n *node) EdgeSet() *xpb.EdgeSet {
 	var groups []*xpb.EdgeSet_Group
 	for kind, targets := range n.Edges {
 		var edges []*xpb.EdgeSet_Group_Edge
-		for _, target := range targets {
-			edges = append(edges, &xpb.EdgeSet_Group_Edge{TargetTicket: kytheuri.ToString(target)})
+		for ordinal, target := range targets {
+			edges = append(edges, &xpb.EdgeSet_Group_Edge{
+				TargetTicket: kytheuri.ToString(target),
+				Ordinal:      int32(ordinal),
+			})
 		}
 		groups = append(groups, &xpb.EdgeSet_Group{
 			Kind: kind,
@@ -246,8 +250,8 @@ func nodesToEntries(nodes []*node) []*spb.Entry {
 			entries = append(entries, nodeFact(n.Source, fact, val))
 		}
 		for edgeKind, targets := range n.Edges {
-			for _, target := range targets {
-				entries = append(entries, edgeFact(n.Source, edgeKind, target))
+			for ordinal, target := range targets {
+				entries = append(entries, edgeFact(n.Source, edgeKind, ordinal, target))
 			}
 		}
 	}
@@ -293,13 +297,13 @@ func nodeFact(vname *spb.VName, fact, val string) *spb.Entry {
 	}
 }
 
-func edgeFact(source *spb.VName, kind string, target *spb.VName) *spb.Entry {
+func edgeFact(source *spb.VName, kind string, ordinal int, target *spb.VName) *spb.Entry {
 	return &spb.Entry{
 		Source:    source,
 		Target:    target,
 		EdgeKind:  kind,
-		FactName:  "/",
-		FactValue: []byte{},
+		FactName:  schema.OrdinalFact,
+		FactValue: []byte(strconv.Itoa(ordinal)),
 	}
 }
 

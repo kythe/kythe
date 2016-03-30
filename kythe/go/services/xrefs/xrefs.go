@@ -208,23 +208,23 @@ func AllEdges(ctx context.Context, es EdgesService, req *xpb.EdgesRequest) (*xpb
 			Group:        make([]*xpb.EdgeSet_Group, 0, len(kinds)),
 		}
 		for kind, targets := range kinds {
+			edges := make([]*xpb.EdgeSet_Group_Edge, 0, len(targets))
+			for target, ordinal := range targets {
+				edges = append(edges, &xpb.EdgeSet_Group_Edge{
+					TargetTicket: target,
+					Ordinal:      ordinal,
+				})
+			}
+			sort.Sort(ByOrdinal(edges))
 			set.Group = append(set.Group, &xpb.EdgeSet_Group{
 				Kind: kind,
-				Edge: TicketsToEdges(targets),
+				Edge: edges,
 			})
 		}
 		reply.EdgeSet = append(reply.EdgeSet, set)
 	}
 
 	return reply, err
-}
-
-// TicketsToEdges returns an equivalent set of *xpb.EdgeSet_Group_Edges.
-func TicketsToEdges(tickets []string) (edges []*xpb.EdgeSet_Group_Edge) {
-	for _, ticket := range tickets {
-		edges = append(edges, &xpb.EdgeSet_Group_Edge{TargetTicket: ticket})
-	}
-	return
 }
 
 // NodesMap returns a map from each node ticket to a map of its facts.
@@ -248,22 +248,27 @@ func nodesMapInto(nodes []*xpb.NodeInfo, m map[string]map[string][]byte) {
 }
 
 // EdgesMap returns a map from each node ticket to a map of its outward edge kinds.
-func EdgesMap(edges []*xpb.EdgeSet) map[string]map[string][]string {
-	m := make(map[string]map[string][]string, len(edges))
+func EdgesMap(edges []*xpb.EdgeSet) map[string]map[string]map[string]int32 {
+	m := make(map[string]map[string]map[string]int32, len(edges))
 	edgesMapInto(edges, m)
 	return m
 }
 
-func edgesMapInto(edges []*xpb.EdgeSet, m map[string]map[string][]string) {
+func edgesMapInto(edges []*xpb.EdgeSet, m map[string]map[string]map[string]int32) {
 	for _, es := range edges {
 		kinds, ok := m[es.SourceTicket]
 		if !ok {
-			kinds = make(map[string][]string, len(es.Group))
+			kinds = make(map[string]map[string]int32, len(es.Group))
 			m[es.SourceTicket] = kinds
 		}
 		for _, g := range es.Group {
 			for _, e := range g.Edge {
-				kinds[g.Kind] = append(kinds[g.Kind], e.TargetTicket)
+				targets, ok := kinds[g.Kind]
+				if !ok {
+					targets = make(map[string]int32)
+					kinds[g.Kind] = targets
+				}
+				targets[e.TargetTicket] = e.Ordinal
 			}
 		}
 	}
@@ -903,3 +908,16 @@ type ByName []*cpb.Fact
 func (s ByName) Len() int           { return len(s) }
 func (s ByName) Less(i, j int) bool { return s[i].Name < s[j].Name }
 func (s ByName) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+
+// ByOrdinal implements the sort.Interface for xpb.EdgeSet_Group_Edges
+type ByOrdinal []*xpb.EdgeSet_Group_Edge
+
+// Implement the sort.Interface
+func (s ByOrdinal) Len() int      { return len(s) }
+func (s ByOrdinal) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
+func (s ByOrdinal) Less(i, j int) bool {
+	if s[i].Ordinal == s[j].Ordinal {
+		return s[i].TargetTicket < s[j].TargetTicket
+	}
+	return s[i].Ordinal < s[j].Ordinal
+}
