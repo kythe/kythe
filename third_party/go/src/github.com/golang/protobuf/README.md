@@ -101,6 +101,12 @@ for a protocol buffer variable v:
 	with distinguished wrapper types for each possible field value.
   - Marshal and Unmarshal are functions to encode and decode the wire format.
 
+When the .proto file specifies `syntax="proto3"`, there are some differences:
+
+  - Non-repeated fields of non-message type are values instead of pointers.
+  - Getters are only generated for message and oneof fields.
+  - Enum types do not get an Enum method.
+
 Consider file test.proto, containing
 
 ```proto
@@ -134,6 +140,7 @@ To create and play with a Test object from the example package,
 		test := &example.Test {
 			Label: proto.String("hello"),
 			Type:  proto.Int32(17),
+			Reps:  []int64{1, 2, 3},
 			Optionalgroup: &example.Test_OptionalGroup {
 				RequiredField: proto.String("good bye"),
 			},
@@ -184,3 +191,9 @@ the `plugins` parameter to protoc-gen-go; the usual way is to insert it into
 the --go_out argument to protoc:
 
 	protoc --go_out=plugins=grpc:. *.proto
+
+## Plugins ##
+
+The `protoc-gen-go/generator` package exposes a plugin interface,
+which is used by the gRPC code generation. This interface is not
+supported and is subject to incompatible changes without notice.

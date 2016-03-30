@@ -13,6 +13,6 @@ go_binary(
     deps = [
         "//third_party/go/src/github.com/golang/protobuf/proto",
         "//third_party/go/src/github.com/golang/protobuf/protoc-gen-go/generator",
-        "//third_party/go/src/github.com/golang/protobuf/protoc-gen-go/internal/grpc",
+        "//third_party/go/src/github.com/golang/protobuf/protoc-gen-go/grpc",
     ],
 )

@@ -1,6 +1,6 @@
 // Go support for Protocol Buffers - Google's data interchange format
 //
-// Copyright 2014 The Go Authors.  All rights reserved.
+// Copyright 2016 The Go Authors.  All rights reserved.
 // https://github.com/golang/protobuf
 //
 // Redistribution and use in source and binary forms, with or without
@@ -29,44 +29,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-syntax = "proto3";
-
-import "google/protobuf/any.proto";
-import "testdata/test.proto";
-
-package proto3_proto;
-
-message Message {
-  enum Humour {
-    UNKNOWN = 0;
-    PUNS = 1;
-    SLAPSTICK = 2;
-    BILL_BAILEY = 3;
-  }
-
-  string name = 1;
-  Humour hilarity = 2;
-  uint32 height_in_cm = 3;
-  bytes data = 4;
-  int64 result_count = 7;
-  bool true_scotsman = 8;
-  float score = 9;
-
-  repeated uint64 key = 5;
-  Nested nested = 6;
-
-  map<string, Nested> terrain = 10;
-  testdata.SubDefaults proto2_field = 11;
-  map<string, testdata.SubDefaults> proto2_value = 13;
-
-  google.protobuf.Any anything = 14;
-  repeated google.protobuf.Any many_things = 15;
-}
-
-message Nested {
-  string bunny = 1;
-}
-
-message MessageWithMap {
-  map<bool, bytes> byte_mapping = 1;
-}
+/*
+Package ptypes contains code for interacting with well-known types.
+*/
+package ptypes
