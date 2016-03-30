@@ -560,7 +560,8 @@ func (g *GraphStoreService) CrossReferences(ctx context.Context, req *xpb.CrossR
 			var count int
 			for _, grp := range es.Group {
 				switch {
-				case xrefs.IsDefKind(req.DefinitionKind, grp.Kind):
+				// TODO(schroeder): handle declarations
+				case xrefs.IsDefKind(req.DefinitionKind, grp.Kind, false):
 					anchors, err := completeAnchors(ctx, g, req.AnchorText, files, grp.Kind, edgeTickets(grp.Edge))
 					if err != nil {
 						return nil, fmt.Errorf("error resolving definition anchors: %v", err)

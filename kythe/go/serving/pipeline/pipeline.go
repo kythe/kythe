@@ -482,7 +482,7 @@ func writeDecorAndRefs(ctx context.Context, opts *Options, edges <-chan *srvpb.E
 
 		if curTicket != cr.Referent.Ticket {
 			curTicket = cr.Referent.Ticket
-			if err := xb.StartSet(ctx, curTicket); err != nil {
+			if err := xb.StartSet(ctx, cr.Referent); err != nil {
 				return fmt.Errorf("error starting cross-references set: %v", err)
 			}
 		}

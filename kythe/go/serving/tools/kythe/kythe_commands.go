@@ -76,8 +76,8 @@ var (
 	refFormat string
 
 	// xrefs flags
-	defKind, refKind, docKind string
-	relatedNodes              bool
+	defKind, declKind, refKind, docKind string
+	relatedNodes                        bool
 
 	// search flags
 	suffixWildcard string
@@ -219,6 +219,7 @@ var (
 		"Retrieve the global cross-references of the given node",
 		func(flag *flag.FlagSet) {
 			flag.StringVar(&defKind, "definitions", "all", "Kind of definitions to return (kinds: all, binding, full, or none)")
+			flag.StringVar(&declKind, "declarations", "all", "Kind of declarations to return (kinds: all or none)")
 			flag.StringVar(&refKind, "references", "all", "Kind of references to return (kinds: all or none)")
 			flag.StringVar(&docKind, "documentation", "all", "Kind of documentation to return (kinds: all or none)")
 			flag.BoolVar(&relatedNodes, "related_nodes", false, "Whether to request related nodes")
@@ -246,6 +247,14 @@ var (
 				req.DefinitionKind = xpb.CrossReferencesRequest_FULL_DEFINITIONS
 			default:
 				return fmt.Errorf("unknown definition kind: %q", defKind)
+			}
+			switch declKind {
+			case "all":
+				req.DeclarationKind = xpb.CrossReferencesRequest_ALL_DECLARATIONS
+			case "none":
+				req.DeclarationKind = xpb.CrossReferencesRequest_NO_DECLARATIONS
+			default:
+				return fmt.Errorf("unknown declaration kind: %q", declKind)
 			}
 			switch refKind {
 			case "all":

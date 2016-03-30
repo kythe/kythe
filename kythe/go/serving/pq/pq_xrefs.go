@@ -419,7 +419,8 @@ func (d *DB) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReques
 				xrs = &xpb.CrossReferencesReply_CrossReferenceSet{Ticket: ticket}
 			}
 			switch {
-			case xrefs.IsDefKind(req.DefinitionKind, kind):
+			// TODO(schroederc): handle declarations
+			case xrefs.IsDefKind(req.DefinitionKind, kind, false):
 				xrs.Definition, err = addAnchor(xrs.Definition, rec, req.AnchorText)
 				if err != nil {
 					return nil, err

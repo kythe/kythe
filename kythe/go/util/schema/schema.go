@@ -32,6 +32,8 @@ const (
 
 	TextFact         = "/kythe/text"
 	TextEncodingFact = "/kythe/text/encoding"
+
+	CompleteFact = "/kythe/complete"
 )
 
 // Kythe edge fact labels

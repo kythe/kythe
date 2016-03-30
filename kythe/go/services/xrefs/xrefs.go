@@ -114,10 +114,12 @@ func FixTickets(rawTickets []string) ([]string, error) {
 
 // IsDefKind determines whether the given edgeKind matches the requested
 // definition kind.
-func IsDefKind(requestedKind xpb.CrossReferencesRequest_DefinitionKind, edgeKind string) bool {
-	// TODO(schroederc): add separate declarations group for `/kythe/complete != "definition"` nodes
-	//                   use /kythe/edge/completes anchors as sole definition(s)
+func IsDefKind(requestedKind xpb.CrossReferencesRequest_DefinitionKind, edgeKind string, incomplete bool) bool {
+	// TODO(schroederc): handle full vs. binding CompletesEdge
 	edgeKind = schema.Canonicalize(edgeKind)
+	if IsDeclKind(xpb.CrossReferencesRequest_ALL_DECLARATIONS, edgeKind, incomplete) {
+		return false
+	}
 	switch requestedKind {
 	case xpb.CrossReferencesRequest_NO_DEFINITIONS:
 		return false
@@ -129,6 +131,23 @@ func IsDefKind(requestedKind xpb.CrossReferencesRequest_DefinitionKind, edgeKind
 		return schema.IsEdgeVariant(edgeKind, schema.DefinesEdge) || schema.IsEdgeVariant(edgeKind, schema.CompletesEdge)
 	default:
 		panic("unhandled CrossReferencesRequest_DefinitionKind")
+	}
+}
+
+// IsDeclKind determines whether the given edgeKind matches the requested
+// declaration kind.
+func IsDeclKind(requestedKind xpb.CrossReferencesRequest_DeclarationKind, edgeKind string, incomplete bool) bool {
+	if !incomplete {
+		return false
+	}
+	edgeKind = schema.Canonicalize(edgeKind)
+	switch requestedKind {
+	case xpb.CrossReferencesRequest_NO_DECLARATIONS:
+		return false
+	case xpb.CrossReferencesRequest_ALL_DECLARATIONS:
+		return schema.IsEdgeVariant(edgeKind, schema.DefinesEdge)
+	default:
+		panic("unhandled CrossReferenceRequest_DeclarationKind")
 	}
 }
 

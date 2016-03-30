@@ -660,9 +660,14 @@ func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReference
 				Ticket: ticket,
 			}
 			for _, grp := range cr.Group {
-				if xrefs.IsDefKind(req.DefinitionKind, grp.Kind) {
+				if xrefs.IsDefKind(req.DefinitionKind, grp.Kind, cr.Incomplete) {
 					totalRefsPossible += len(grp.Anchor)
 					if stats.addAnchors(&crs.Definition, grp.Anchor, req.AnchorText) {
+						break
+					}
+				} else if xrefs.IsDeclKind(req.DeclarationKind, grp.Kind, cr.Incomplete) {
+					totalRefsPossible += len(grp.Anchor)
+					if stats.addAnchors(&crs.Declaration, grp.Anchor, req.AnchorText) {
 						break
 					}
 				} else if xrefs.IsDocKind(req.DocumentationKind, grp.Kind) {
@@ -687,9 +692,14 @@ func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReference
 						return nil, fmt.Errorf("internal error: error retrieving cross-references page: %v", idx.PageKey)
 					}
 
-					if xrefs.IsDefKind(req.DefinitionKind, p.Group.Kind) {
+					if xrefs.IsDefKind(req.DefinitionKind, p.Group.Kind, cr.Incomplete) {
 						totalRefsPossible += len(p.Group.Anchor)
 						if stats.addAnchors(&crs.Definition, p.Group.Anchor, req.AnchorText) {
+							break
+						}
+					} else if xrefs.IsDeclKind(req.DeclarationKind, p.Group.Kind, cr.Incomplete) {
+						totalRefsPossible += len(p.Group.Anchor)
+						if stats.addAnchors(&crs.Declaration, p.Group.Anchor, req.AnchorText) {
 							break
 						}
 					} else if xrefs.IsDocKind(req.DocumentationKind, p.Group.Kind) {

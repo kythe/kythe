@@ -455,7 +455,7 @@ type CrossReferencesBuilder struct {
 }
 
 func (b *CrossReferencesBuilder) constructPager() *pager.SetPager {
-	// Head:  string (Kythe ticket)
+	// Head:  *srvpb.Node
 	// Set:   *srvpb.PagedCrossReferences
 	// Group: *srvpb.PagedCrossReferences_Group
 	// Page:  *srvpb.PagedCrossReferences_Page
@@ -463,8 +463,16 @@ func (b *CrossReferencesBuilder) constructPager() *pager.SetPager {
 		MaxPageSize: b.MaxPageSize,
 
 		NewSet: func(hd pager.Head) pager.Set {
+			n := hd.(*srvpb.Node)
+			var incomplete bool
+			for _, f := range n.Fact {
+				if f.Name == schema.CompleteFact && string(f.Value) != "definition" {
+					incomplete = true
+				}
+			}
 			return &srvpb.PagedCrossReferences{
-				SourceTicket: hd.(string),
+				SourceTicket: n.Ticket,
+				Incomplete:   incomplete,
 			}
 		},
 		Combine: func(l, r pager.Group) pager.Group {
@@ -523,7 +531,7 @@ func (b *CrossReferencesBuilder) constructPager() *pager.SetPager {
 
 // StartSet begins a new *srvpb.PagedCrossReferences.  As a side-effect, a
 // previously-built srvpb.PagedCrossReferences may be emitted.
-func (b *CrossReferencesBuilder) StartSet(ctx context.Context, src string) error {
+func (b *CrossReferencesBuilder) StartSet(ctx context.Context, src *srvpb.Node) error {
 	if b.pager == nil {
 		b.pager = b.constructPager()
 	}
@@ -555,9 +563,18 @@ func CrossReference(file *srvpb.File, norm *xrefs.Normalizer, d *srvpb.FileDecor
 	if err != nil {
 		return nil, fmt.Errorf("error expanding anchor {%+v}: %v", d.Anchor, err)
 	}
+	// Throw away most of the referent's facts.  They are not needed.
+	var facts []*cpb.Fact
+	for _, fact := range d.Target.Fact {
+		if fact.Name == schema.CompleteFact {
+			facts = append(facts, fact)
+		}
+	}
 	return &srvpb.CrossReference{
-		// Throw away the referent's facts.  They are not needed.
-		Referent:     &srvpb.Node{Ticket: d.Target.Ticket},
+		Referent: &srvpb.Node{
+			Ticket: d.Target.Ticket,
+			Fact:   facts,
+		},
 		TargetAnchor: ea,
 	}, nil
 }

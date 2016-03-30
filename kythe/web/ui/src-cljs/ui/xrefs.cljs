@@ -122,6 +122,7 @@
           :else
           [(dom/strong nil (:ticket (:cross-references state)))
            (display-anchors "Definitions:" (:definition (:cross-references state)) file-to-view)
+           (display-anchors "Declarations:" (:declaration (:cross-references state)) file-to-view)
            (display-anchors "Documentation:" (:documentation (:cross-references state)) file-to-view)
            (display-anchors "References:" (:reference (:cross-references state)) file-to-view)
            (when (:related_node (:cross-references state))

@@ -367,6 +367,20 @@ message CrossReferencesRequest {
   // information.
   DefinitionKind definition_kind = 2;
 
+  enum DeclarationKind {
+    // No declarations will be populated in the CrossDeclarationsReply.
+    NO_DECLARATIONS = 0;
+    // When the source node is incomplete, all known declaration anchors reached
+    // by the "/kythe/edge/defines" edge kind (or its variants) will be
+    // populated in the CrossDeclarationsReply.
+    ALL_DECLARATIONS = 1;
+  }
+
+  // Determines what kind of declaration anchors, if any, should be returned in
+  // the response.  See the documentation for each DeclarationKind for more
+  // information.
+  DeclarationKind declaration_kind = 7;
+
   enum ReferenceKind {
     // No references will be populated in the CrossReferencesReply.
     NO_REFERENCES = 0;
@@ -471,6 +485,8 @@ message CrossReferencesReply {
 
     // The set of definitions for the given node.
     repeated Anchor definition = 2;
+    // The set of declarations for the given node.
+    repeated Anchor declaration = 5;
     // The set of simple references for the given node.
     repeated Anchor reference = 3;
     // The set of documentation for the given node.
