@@ -24,7 +24,7 @@ bazel test  //... # Run all Kythe tests
 
 Kythe relies on the following external dependencies:
 
-* go >=1.4
+* go >=1.6
 * clang-3.5
 * jdk >=8
 * parallel
