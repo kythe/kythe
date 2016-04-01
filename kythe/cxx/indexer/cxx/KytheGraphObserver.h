@@ -372,7 +372,9 @@ class KytheGraphObserver : public GraphObserver {
                   range.PhysicalRange.getEnd().getRawEncoding())
               << 1) ^
              (std::hash<std::string>()(range.Context.getRawIdentity())) ^
-             (range.Kind == Range::RangeKind::Wraith ? 1 : 0);
+             (range.Kind == Range::RangeKind::Physical
+                  ? 0
+                  : (range.Kind == Range::RangeKind::Wraith ? 1 : 2));
     }
   };
 

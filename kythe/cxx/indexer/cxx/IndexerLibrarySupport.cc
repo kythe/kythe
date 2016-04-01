@@ -191,7 +191,7 @@ void GoogleFlagsLibrarySupport::InspectVariable(
     FlagNameId.EqClass = GraphObserver::NameId::NameEqClass::None;
     GraphObserver::NodeId FlagNodeId = NodeIdForFlag(NodeId);
     GO.recordUserDefinedNode(FlagNameId, FlagNodeId, "google/gflag", Compl);
-    if (auto RCC = V.RangeInCurrentContext(Range)) {
+    if (auto RCC = V.ExplicitRangeInCurrentContext(Range)) {
       GO.recordDefinitionBindingRange(RCC.primary(), FlagNodeId);
       clang::FileID DeclFile =
           GO.getSourceManager()->getFileID(Range.getBegin());

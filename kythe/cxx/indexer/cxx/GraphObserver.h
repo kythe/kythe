@@ -168,6 +168,12 @@ public:
     enum class RangeKind {
       /// This range relates to a run of bytes in a source file.
       Physical,
+      /// This range refers to source text that was synthesized by the compiler,
+      /// but which is not associated with any written code. For example,
+      /// the ranges associated with implicitly defined constructors are
+      /// Implicit. Ranges that are associated with implicit instantiations
+      /// of templates are Wraiths.
+      Implicit,
       /// This range is related to some bytes, but also lives in an
       /// imaginary context; for example, a declaration of a member variable
       /// inside an implicit template instantiation has its source range
@@ -192,7 +198,8 @@ public:
         : Kind(R.Kind), PhysicalRange(NR), Context(R.Context) {
       CHECK(NR.getBegin().isValid());
     }
-
+    /// \brief Constructs a new `Implicit` `Range` keyed on a semantic object.
+    explicit Range(const NodeId &C) : Kind(RangeKind::Implicit), Context(C) {}
     RangeKind Kind;
     clang::SourceRange PhysicalRange;
     NodeId Context;

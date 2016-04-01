@@ -354,6 +354,18 @@ public:
   BuildNodeIdForTemplateArgument(const clang::TemplateArgument &Arg,
                                  clang::SourceLocation L);
 
+  /// \brief Builds a stable node ID for `Stmt`.
+  ///
+  /// This mechanism for generating IDs should only be used in contexts where
+  /// identifying statements through source locations/wraith contexts is not
+  /// possible (e.g., in implicit code).
+  ///
+  /// \param Decl The statement that is being identified
+  /// \return The node for `Stmt` if the statement was implicit; otherwise,
+  /// None.
+  MaybeFew<GraphObserver::NodeId>
+  BuildNodeIdForImplicitStmt(const clang::Stmt *Stmt);
+
   /// \brief Builds a stable node ID for `Decl`.
   ///
   /// \param Decl The declaration that is being identified.
@@ -549,7 +561,26 @@ public:
   /// Returns `SR` as a `Range` in this `RecursiveASTVisitor`'s current
   /// RangeContext.
   MaybeFew<GraphObserver::Range>
-  RangeInCurrentContext(const clang::SourceRange &SR);
+  ExplicitRangeInCurrentContext(const clang::SourceRange &SR);
+
+  /// If `Implicit` is true, returns `Id` as an implicit Range; otherwise,
+  /// returns `SR` as a `Range` in this `RecursiveASTVisitor`'s current
+  /// RangeContext.
+  MaybeFew<GraphObserver::Range>
+  RangeInCurrentContext(bool Implicit, const GraphObserver::NodeId &Id,
+                        const clang::SourceRange &SR);
+
+  /// If `Id` is some NodeId, returns it as an implicit Range; otherwise,
+  /// returns `SR` as a `Range` in this `RecursiveASTVisitor`'s current
+  /// RangeContext.
+  MaybeFew<GraphObserver::Range>
+  RangeInCurrentContext(const MaybeFew<GraphObserver::NodeId> &Id,
+                        const clang::SourceRange &SR) {
+    if (auto &PrimaryId = Id) {
+      return GraphObserver::Range(PrimaryId.primary());
+    }
+    return ExplicitRangeInCurrentContext(SR);
+  }
 
 private:
   /// Whether we should stop on missing cases or continue on.

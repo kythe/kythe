@@ -1080,6 +1080,10 @@ Facts::
   loc/end:::
     The ending byte offset (exclusive) in the <<file>> this anchor is
     <<childof>>
+  subkind::
+    If set to `implicit`, this anchor should not also have `loc/start` or
+    `loc/end` facts. It is an artifact of some internal process that may still
+    have important semantic effects.
 See also::
   <<file>>
 
@@ -1111,6 +1115,27 @@ public class E {
   Optional<String> f;
 }
 --------------------------------------------------------------------------------
+
+[kythe,C++,"Implicit anchors arise from default constructors."]
+--------------------------------------------------------------------------------
+//- @C defines/binding ClassC
+//- CCtor childof ClassC
+//- CCtor.subkind constructor
+//- CCtor.complete definition
+//- CCtor callableas CCtorCallable
+class C { };
+//- @D defines/binding ClassD
+//- DCtor childof ClassD
+//- DCtor.subkind constructor
+//- DCtor.complete definition
+class D { C c; };
+D d;
+//- ImplicitCallToCCtor.node/kind anchor
+//- ImplicitCallToCCtor.subkind implicit
+//- ImplicitCallToCCtor ref/call CCtorCallable
+//- ImplicitCallToCCtor childof DCtor
+--------------------------------------------------------------------------------
+
 
 [kythe,Java,"Anchors have VName rules."]
 --------------------------------------------------------------------------------

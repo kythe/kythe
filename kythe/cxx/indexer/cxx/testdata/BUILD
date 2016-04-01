@@ -1081,6 +1081,18 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "rec_implicit_anchors",
+    srcs = ["rec/rec_implicit_anchors.cc"],
+    tags = ["rec"],
+)
+
+cxx_indexer_test(
+    name = "rec_implicit_anchors_ctor",
+    srcs = ["rec/rec_implicit_anchors_ctor.cc"],
+    tags = ["rec"],
+)
+
+cxx_indexer_test(
     name = "rec_override",
     srcs = ["rec/rec_override.cc"],
     tags = ["rec"],

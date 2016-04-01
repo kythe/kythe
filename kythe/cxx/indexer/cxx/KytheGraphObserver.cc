@@ -205,38 +205,43 @@ static const clang::FileEntry *SearchForFileEntry(
 
 kythe::proto::VName KytheGraphObserver::VNameFromRange(
     const GraphObserver::Range &range) {
-  const clang::SourceRange &source_range = range.PhysicalRange;
-  clang::SourceLocation begin = source_range.getBegin();
-  clang::SourceLocation end = source_range.getEnd();
-  CHECK(begin.isValid());
-  if (!end.isValid()) {
-    begin = end;
-  }
-  if (begin.isMacroID()) {
-    begin = SourceManager->getExpansionLoc(begin);
-  }
-  if (end.isMacroID()) {
-    end = SourceManager->getExpansionLoc(end);
-  }
   kythe::proto::VName out_name;
-  if (const clang::FileEntry *file_entry =
-          SearchForFileEntry(begin, SourceManager)) {
-    out_name.CopyFrom(VNameFromFileEntry(file_entry));
-  } else if (range.Kind == GraphObserver::Range::RangeKind::Wraith) {
+  if (range.Kind == GraphObserver::Range::RangeKind::Implicit) {
     VNameRefFromNodeId(range.Context).Expand(&out_name);
+    out_name.mutable_signature()->append("@syntactic");
+  } else {
+    const clang::SourceRange &source_range = range.PhysicalRange;
+    clang::SourceLocation begin = source_range.getBegin();
+    clang::SourceLocation end = source_range.getEnd();
+    CHECK(begin.isValid());
+    if (!end.isValid()) {
+      begin = end;
+    }
+    if (begin.isMacroID()) {
+      begin = SourceManager->getExpansionLoc(begin);
+    }
+    if (end.isMacroID()) {
+      end = SourceManager->getExpansionLoc(end);
+    }
+    if (const clang::FileEntry *file_entry =
+            SearchForFileEntry(begin, SourceManager)) {
+      out_name.CopyFrom(VNameFromFileEntry(file_entry));
+    } else if (range.Kind == GraphObserver::Range::RangeKind::Wraith) {
+      VNameRefFromNodeId(range.Context).Expand(&out_name);
+    }
+    size_t begin_offset = SourceManager->getFileOffset(begin);
+    size_t end_offset = SourceManager->getFileOffset(end);
+    auto *const signature = out_name.mutable_signature();
+    signature->append("@");
+    signature->append(std::to_string(begin_offset));
+    signature->append(":");
+    signature->append(std::to_string(end_offset));
+    if (range.Kind == GraphObserver::Range::RangeKind::Wraith) {
+      signature->append("@");
+      signature->append(range.Context.ToClaimedString());
+    }
   }
   out_name.set_language("c++");
-  size_t begin_offset = SourceManager->getFileOffset(begin);
-  size_t end_offset = SourceManager->getFileOffset(end);
-  auto *const signature = out_name.mutable_signature();
-  signature->append("@");
-  signature->append(std::to_string(begin_offset));
-  signature->append(":");
-  signature->append(std::to_string(end_offset));
-  if (range.Kind == GraphObserver::Range::RangeKind::Wraith) {
-    signature->append("@");
-    signature->append(range.Context.ToClaimedString());
-  }
   out_name.set_signature(CompressString(out_name.signature()));
   return out_name;
 }
@@ -334,14 +339,19 @@ void KytheGraphObserver::RecordRange(const proto::VName &anchor_name,
     if (!deferring_nodes_ || deferred_anchors_.insert(range).second) {
       VNameRef anchor_name_ref(anchor_name);
       recorder_->AddProperty(anchor_name_ref, NodeKindID::kAnchor);
-      RecordSourceLocation(anchor_name_ref, range.PhysicalRange.getBegin(),
-                           PropertyID::kLocationStartOffset);
-      RecordSourceLocation(anchor_name_ref, range.PhysicalRange.getEnd(),
-                           PropertyID::kLocationEndOffset);
-      if (const auto *file_entry = SourceManager->getFileEntryForID(
-              SourceManager->getFileID(range.PhysicalRange.getBegin()))) {
-        recorder_->AddEdge(anchor_name_ref, EdgeKindID::kChildOf,
-                           VNameRef(VNameFromFileEntry(file_entry)));
+      if (range.Kind == GraphObserver::Range::RangeKind::Implicit) {
+        recorder_->AddProperty(anchor_name_ref, PropertyID::kSubkind,
+                               "implicit");
+      } else {
+        RecordSourceLocation(anchor_name_ref, range.PhysicalRange.getBegin(),
+                             PropertyID::kLocationStartOffset);
+        RecordSourceLocation(anchor_name_ref, range.PhysicalRange.getEnd(),
+                             PropertyID::kLocationEndOffset);
+        if (const auto *file_entry = SourceManager->getFileEntryForID(
+                SourceManager->getFileID(range.PhysicalRange.getBegin()))) {
+          recorder_->AddEdge(anchor_name_ref, EdgeKindID::kChildOf,
+                             VNameRef(VNameFromFileEntry(file_entry)));
+        }
       }
       if (range.Kind == GraphObserver::Range::RangeKind::Wraith) {
         recorder_->AddEdge(anchor_name_ref, EdgeKindID::kChildOfContext,

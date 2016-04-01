@@ -629,7 +629,7 @@ bool IndexerASTVisitor::VisitDecl(const clang::Decl *Decl) {
       for (auto Result : Results.Result) {
         auto ResultId = BuildNodeIdForDecl(Result);
         for (int Token = FirstToken; Token <= LastToken; ++Token) {
-          if (auto RCC = RangeInCurrentContext(
+          if (auto RCC = ExplicitRangeInCurrentContext(
                   clang::SourceRange(IdentifierTokens[Token].getLocation(),
                                      IdentifierTokens[Token].getEndLoc()))) {
             Observer.recordDeclUseLocationInDocumentation(RCC.primary(),
@@ -718,7 +718,7 @@ bool IndexerASTVisitor::VisitDecl(const clang::Decl *Decl) {
     }
   } while (Tok.getKind() != clang::comments::tok::eof);
   // Attribute the raw comment text to its associated decl.
-  if (auto RCC = RangeInCurrentContext(Comment->getSourceRange())) {
+  if (auto RCC = ExplicitRangeInCurrentContext(Comment->getSourceRange())) {
     if (const auto *DC = dyn_cast_or_null<DeclContext>(Decl)) {
       if (auto DCID = BuildNodeIdForDeclContext(DC)) {
         Observer.recordDocumentationRange(RCC.primary(), DCID.primary());
@@ -894,9 +894,10 @@ bool IndexerASTVisitor::VisitCXXDependentScopeMemberExpr(
                                   ArgIds, ArgNodeIds)) {
       auto TappNodeId =
           Observer.recordTappNode(DepNodeId.primary(), ArgNodeIds);
+      auto StmtId = BuildNodeIdForImplicitStmt(E);
       auto Range = clang::SourceRange(E->getMemberLoc(),
                                       E->getLocEnd().getLocWithOffset(1));
-      if (auto RCC = RangeInCurrentContext(Range)) {
+      if (auto RCC = RangeInCurrentContext(StmtId, Range)) {
         Observer.recordDeclUseLocation(
             RCC.primary(), TappNodeId,
             GraphObserver::Claimability::Unclaimable);
@@ -913,7 +914,8 @@ bool IndexerASTVisitor::VisitMemberExpr(const clang::MemberExpr *E) {
   if (const auto *FieldDecl = E->getMemberDecl()) {
     auto FieldId = BuildNodeIdForDecl(FieldDecl);
     auto Range = RangeForASTEntityFromSourceLocation(E->getMemberLoc());
-    if (auto RCC = RangeInCurrentContext(Range)) {
+    auto StmtId = BuildNodeIdForImplicitStmt(E);
+    if (auto RCC = RangeInCurrentContext(StmtId, Range)) {
       Observer.recordDeclUseLocation(RCC.primary(), FieldId,
                                      GraphObserver::Claimability::Unclaimable);
       // TODO(zarko): where do non-explicit template arguments come up?
@@ -925,7 +927,7 @@ bool IndexerASTVisitor::VisitMemberExpr(const clang::MemberExpr *E) {
           auto TappNodeId = Observer.recordTappNode(FieldId, ArgNodeIds);
           auto Range = clang::SourceRange(E->getMemberLoc(),
                                           E->getLocEnd().getLocWithOffset(1));
-          if (auto RCC = RangeInCurrentContext(Range)) {
+          if (auto RCC = RangeInCurrentContext(StmtId, Range)) {
             Observer.recordDeclUseLocation(
                 RCC.primary(), TappNodeId,
                 GraphObserver::Claimability::Unclaimable);
@@ -949,7 +951,8 @@ bool IndexerASTVisitor::VisitCXXConstructExpr(
         // This loses the right paren without the offset.
         SR.setEnd(RPL.getLocWithOffset(1));
       }
-      if (auto RCC = RangeInCurrentContext(SR)) {
+      auto StmtId = BuildNodeIdForImplicitStmt(E);
+      if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
         if (auto CalleeId = BuildNodeIdForCallableDecl(Callee)) {
           RecordCallEdges(RCC.primary(), CalleeId.primary());
         }
@@ -1004,7 +1007,8 @@ bool IndexerASTVisitor::VisitCXXDeleteExpr(const clang::CXXDeleteExpr *E) {
   if (DDId) {
     clang::SourceRange SR = E->getSourceRange();
     SR.setEnd(SR.getEnd().getLocWithOffset(1));
-    if (auto RCC = RangeInCurrentContext(SR)) {
+    auto StmtId = BuildNodeIdForImplicitStmt(E);
+    if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
       RecordCallEdges(RCC.primary(), DDId.primary());
     }
   }
@@ -1035,7 +1039,8 @@ bool IndexerASTVisitor::VisitCXXPseudoDestructorExpr(
           NNSLoc, DtorName, E->getTildeLoc(), TyId, EmitRanges::Yes)) {
     clang::SourceRange SR = E->getSourceRange();
     SR.setEnd(RangeForASTEntityFromSourceLocation(SR.getEnd()).getEnd());
-    if (auto RCC = RangeInCurrentContext(SR)) {
+    auto StmtId = BuildNodeIdForImplicitStmt(E);
+    if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
       auto CallableId = BuildNodeIdForCallableNode(DDId.primary());
       Observer.recordCallableNode(CallableId);
       Observer.recordCallableAsEdge(DDId.primary(), CallableId);
@@ -1070,7 +1075,8 @@ bool IndexerASTVisitor::VisitCXXUnresolvedConstructExpr(
     if (RPL.isValid()) {
       SR.setEnd(RPL.getLocWithOffset(1));
     }
-    if (auto RCC = RangeInCurrentContext(SR)) {
+    auto StmtId = BuildNodeIdForImplicitStmt(E);
+    if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
       auto CallableID = BuildNodeIdForCallableNode(LookupId.primary());
       Observer.recordCallableNode(CallableID);
       Observer.recordCallableAsEdge(LookupId.primary(), CallableID);
@@ -1092,7 +1098,8 @@ bool IndexerASTVisitor::VisitCallExpr(const clang::CallExpr *E) {
     // This loses the right paren without the offset.
     SR.setEnd(RPL.getLocWithOffset(1));
   }
-  if (auto RCC = RangeInCurrentContext(SR)) {
+  auto StmtId = BuildNodeIdForImplicitStmt(E);
+  if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
     if (const auto *Callee = E->getCalleeDecl()) {
       if (auto CalleeId = BuildNodeIdForCallableDecl(Callee)) {
         RecordCallEdges(RCC.primary(), CalleeId.primary());
@@ -1156,7 +1163,8 @@ bool IndexerASTVisitor::VisitDeclRefExpr(const clang::DeclRefExpr *DRE) {
   SourceLocation SL = DRE->getLocation();
   if (SL.isValid()) {
     SourceRange Range = RangeForASTEntityFromSourceLocation(SL);
-    if (auto RCC = RangeInCurrentContext(Range)) {
+    auto StmtId = BuildNodeIdForImplicitStmt(DRE);
+    if (auto RCC = RangeInCurrentContext(StmtId, Range)) {
       GraphObserver::NodeId DeclId = BuildNodeIdForDecl(TargetDecl);
       Observer.recordDeclUseLocation(RCC.primary(), DeclId,
                                      GraphObserver::Claimability::Unclaimable);
@@ -1270,7 +1278,8 @@ bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl *Decl) {
     }
   }
 
-  MaybeRecordDefinitionRange(RangeInCurrentContext(NameRange), DeclNode);
+  MaybeRecordDefinitionRange(
+      RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode);
   GraphObserver::NameId VarNameId(BuildNameIdForDecl(Decl));
   if (const auto *TSI = Decl->getTypeSourceInfo()) {
     // TODO(zarko): Storage classes.
@@ -1291,7 +1300,8 @@ bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl *Decl) {
     return true;
   }
   FileID DeclFile = Observer.getSourceManager()->getFileID(Decl->getLocation());
-  auto NameRangeInContext = RangeInCurrentContext(NameRange);
+  auto NameRangeInContext =
+      RangeInCurrentContext(Decl->isImplicit(), BodyDeclNode, NameRange);
   for (const auto *NextDecl : Decl->redecls()) {
     const clang::Decl *OuterTemplate = nullptr;
     // It's not useful to draw completion edges to implicit forward
@@ -1331,7 +1341,8 @@ bool IndexerASTVisitor::VisitFieldDecl(const clang::FieldDecl *Decl) {
   GraphObserver::NodeId DeclNode(BuildNodeIdForDecl(Decl));
   SourceLocation DeclLoc = Decl->getLocation();
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
-  MaybeRecordDefinitionRange(RangeInCurrentContext(NameRange), DeclNode);
+  MaybeRecordDefinitionRange(
+      RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode);
   // TODO(zarko): Record completeness data. This is relevant for static fields,
   // which may be declared along with a complete class definition but later
   // defined in a separate translation unit.
@@ -1355,7 +1366,8 @@ bool IndexerASTVisitor::VisitEnumConstantDecl(
   GraphObserver::NodeId DeclNode(BuildNodeIdForDecl(Decl));
   SourceLocation DeclLoc = Decl->getLocation();
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
-  MaybeRecordDefinitionRange(RangeInCurrentContext(NameRange), DeclNode);
+  MaybeRecordDefinitionRange(
+      RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode);
   Observer.recordNamedEdge(DeclNode, DeclName);
   Observer.recordIntegerConstantNode(DeclNode, Decl->getInitVal());
   AddChildOfEdgeToDeclContext(Decl, DeclNode);
@@ -1367,7 +1379,8 @@ bool IndexerASTVisitor::VisitEnumDecl(const clang::EnumDecl *Decl) {
   GraphObserver::NodeId DeclNode(BuildNodeIdForDecl(Decl));
   SourceLocation DeclLoc = Decl->getLocation();
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
-  MaybeRecordDefinitionRange(RangeInCurrentContext(NameRange), DeclNode);
+  MaybeRecordDefinitionRange(
+      RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode);
   Observer.recordNamedEdge(DeclNode, DeclName);
   bool HasSpecifiedStorageType = false;
   if (const auto *TSI = Decl->getIntegerTypeSourceInfo()) {
@@ -1396,7 +1409,8 @@ bool IndexerASTVisitor::VisitEnumDecl(const clang::EnumDecl *Decl) {
     if (NextDecl != Decl) {
       FileID NextDeclFile =
           Observer.getSourceManager()->getFileID(NextDecl->getLocation());
-      if (auto RCC = RangeInCurrentContext(NameRange)) {
+      if (auto RCC =
+              RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange)) {
         Observer.recordCompletionRange(
             RCC.primary(), BuildNodeIdForDecl(NextDecl),
             NextDeclFile == DeclFile
@@ -1550,7 +1564,7 @@ bool IndexerASTVisitor::TraverseFunctionTemplateDecl(
 }
 
 MaybeFew<GraphObserver::Range>
-IndexerASTVisitor::RangeInCurrentContext(const clang::SourceRange &SR) {
+IndexerASTVisitor::ExplicitRangeInCurrentContext(const clang::SourceRange &SR) {
   if (!SR.getBegin().isValid()) {
     return None();
   }
@@ -1559,6 +1573,14 @@ IndexerASTVisitor::RangeInCurrentContext(const clang::SourceRange &SR) {
   } else {
     return GraphObserver::Range(SR, Observer.getClaimTokenForRange(SR));
   }
+}
+
+MaybeFew<GraphObserver::Range>
+IndexerASTVisitor::RangeInCurrentContext(bool implicit,
+                                         const GraphObserver::NodeId &Id,
+                                         const clang::SourceRange &SR) {
+  return implicit ? GraphObserver::Range(Id)
+                  : ExplicitRangeInCurrentContext(SR);
 }
 
 template <typename TemplateDeclish>
@@ -1593,7 +1615,8 @@ IndexerASTVisitor::RecordTemplate(const TemplateDeclish *Decl,
       LOG(FATAL) << "Unknown entry in TemplateParameterList";
     }
     SourceRange Range = RangeForNameOfDeclaration(ND);
-    MaybeRecordDefinitionRange(RangeInCurrentContext(Range), ParamId);
+    MaybeRecordDefinitionRange(
+        RangeInCurrentContext(Decl->isImplicit(), ParamId, Range), ParamId);
     Observer.recordNamedEdge(ParamId, BuildNameIdForDecl(ND));
     Observer.recordParamEdge(DeclNode, ParamIndex, ParamId);
   }
@@ -1674,7 +1697,8 @@ bool IndexerASTVisitor::VisitRecordDecl(const clang::RecordDecl *Decl) {
       }
     }
   }
-  MaybeRecordDefinitionRange(RangeInCurrentContext(NameRange), DeclNode);
+  MaybeRecordDefinitionRange(
+      RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode);
   Observer.recordNamedEdge(DeclNode, BuildNameIdForDecl(Decl));
   GraphObserver::RecordKind RK =
       (Decl->isClass() ? GraphObserver::RecordKind::Class
@@ -1692,7 +1716,8 @@ bool IndexerASTVisitor::VisitRecordDecl(const clang::RecordDecl *Decl) {
     return true;
   }
   FileID DeclFile = Observer.getSourceManager()->getFileID(Decl->getLocation());
-  if (auto NameRangeInContext = RangeInCurrentContext(NameRange)) {
+  if (auto NameRangeInContext =
+          RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange)) {
     for (const auto *NextDecl : Decl->redecls()) {
       const clang::Decl *OuterTemplate = nullptr;
       // It's not useful to draw completion edges to implicit forward
@@ -1862,7 +1887,8 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
   auto CallableDeclNode(BuildNodeIdForCallableDecl(Decl));
   SourceLocation DeclLoc = Decl->getLocation();
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
-  auto NameRangeInContext(RangeInCurrentContext(NameRange));
+  auto NameRangeInContext(
+      RangeInCurrentContext(Decl->isImplicit(), OuterNode, NameRange));
   MaybeRecordDefinitionRange(NameRangeInContext, OuterNode);
   Observer.recordNamedEdge(OuterNode, DeclName);
   if (CallableDeclNode) {
@@ -1879,7 +1905,10 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
                                     ? GraphObserver::Completeness::Definition
                                     : GraphObserver::Completeness::Incomplete,
                                 GraphObserver::VariableSubkind::None);
-    MaybeRecordDefinitionRange(RangeInCurrentContext(Range), VarNodeId);
+    MaybeRecordDefinitionRange(
+        RangeInCurrentContext(Param->isImplicit() || Decl->isImplicit(),
+                              VarNodeId, Range),
+        VarNodeId);
     Observer.recordParamEdge(InnerNode, ParamNumber++, VarNodeId);
     MaybeFew<GraphObserver::NodeId> ParamType;
     if (auto *TSI = Param->getTypeSourceInfo()) {
@@ -1940,7 +1969,9 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
   GraphObserver::FunctionSubkind Subkind = GraphObserver::FunctionSubkind::None;
   if (const auto *CC = dyn_cast<CXXConstructorDecl>(Decl)) {
     Subkind = GraphObserver::FunctionSubkind::Constructor;
+    size_t InitNumber = 0;
     for (const auto *Init : CC->inits()) {
+      ++InitNumber;
       if (const auto *InitTy = Init->getTypeSourceInfo()) {
         auto QT = InitTy->getType().getCanonicalType();
         if (QT.getTypePtr()->isDependentType()) {
@@ -1954,12 +1985,23 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
               clang::SourceLocation RPL = Init->getRParenLoc();
               clang::SourceRange SR = Init->getSourceRange();
               SR.setEnd(SR.getEnd().getLocWithOffset(1));
-              if (auto RCC = RangeInCurrentContext(SR)) {
-                auto CallableID =
-                    BuildNodeIdForCallableNode(LookupId.primary());
-                Observer.recordCallableNode(CallableID);
-                Observer.recordCallableAsEdge(LookupId.primary(), CallableID);
-                RecordCallEdges(RCC.primary(), CallableID);
+              if (Init->isWritten()) {
+                if (auto RCC = ExplicitRangeInCurrentContext(SR)) {
+                  auto CallableID =
+                      BuildNodeIdForCallableNode(LookupId.primary());
+                  Observer.recordCallableNode(CallableID);
+                  Observer.recordCallableAsEdge(LookupId.primary(), CallableID);
+                  RecordCallEdges(RCC.primary(), CallableID);
+                }
+              } else {
+                // clang::CXXCtorInitializer is its own special flavor of AST
+                // node that needs extra care.
+                auto InitIdent = LookupId.primary().getRawIdentity() +
+                                 std::to_string(InitNumber);
+                auto InitId = GraphObserver::NodeId(
+                    LookupId.primary().getToken(), InitIdent);
+                RecordCallEdges(GraphObserver::Range(InitId),
+                                LookupId.primary());
               }
             }
           }
@@ -2033,7 +2075,9 @@ bool IndexerASTVisitor::VisitTypedefNameDecl(
       }
     }
     SourceRange Range = RangeForNameOfDeclaration(Decl);
-    MaybeRecordDefinitionRange(RangeInCurrentContext(Range), OuterNodeId);
+    MaybeRecordDefinitionRange(
+        RangeInCurrentContext(Decl->isImplicit(), OuterNodeId, Range),
+        OuterNodeId);
     AddChildOfEdgeToDeclContext(Decl, OuterNodeId);
   }
   return true;
@@ -2398,6 +2442,46 @@ IndexerASTVisitor::BuildNodeIdForDecl(const clang::Decl *Decl, unsigned Index) {
       BaseId.getToken(), BaseId.getRawIdentity() + "." + std::to_string(Index));
 }
 
+MaybeFew<GraphObserver::NodeId>
+IndexerASTVisitor::BuildNodeIdForImplicitStmt(const clang::Stmt *Stmt) {
+  // Do a quickish test to see if the Stmt is implicit.
+  clang::ast_type_traits::DynTypedNode CurrentNode =
+      clang::ast_type_traits::DynTypedNode::create(*Stmt);
+
+  llvm::SmallVector<unsigned, 16> StmtPath;
+  const clang::Decl *CurrentNodeAsDecl = nullptr;
+  for (;;) {
+    if ((CurrentNodeAsDecl = CurrentNode.get<clang::Decl>())) {
+      if (CurrentNodeAsDecl->isImplicit()) {
+        break;
+      } else if (isa<clang::TranslationUnitDecl>(CurrentNodeAsDecl)) {
+        CHECK(!CurrentNodeAsDecl->isImplicit());
+        return None();
+      }
+    }
+    IndexedParentVector IPV = getIndexedParents(CurrentNode);
+    if (IPV.empty()) {
+      break;
+    }
+    IndexedParent IP = IPV[0];
+    StmtPath.push_back(IP.Index);
+    CurrentNode = IP.Parent;
+  }
+  if (CurrentNodeAsDecl == nullptr) {
+    // Out of luck.
+    return None();
+  }
+  auto DeclId = BuildNodeIdForDecl(CurrentNodeAsDecl);
+  std::string NewIdent = DeclId.getRawIdentity();
+  {
+    llvm::raw_string_ostream Ostream(NewIdent);
+    for (auto &node : StmtPath) {
+      Ostream << node << ".";
+    }
+  }
+  return GraphObserver::NodeId(DeclId.getToken(), NewIdent);
+}
+
 GraphObserver::NodeId
 IndexerASTVisitor::BuildNodeIdForDecl(const clang::Decl *Decl) {
   // We can't assume that no two nodes of the same Kind can appear
@@ -2681,14 +2765,14 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForDependentName(
   Ostream << "#nns"; // Nested name specifier.
   clang::SourceRange NNSRange(InNNSLoc.getBeginLoc(), InNNSLoc.getEndLoc());
   Ostream << "@";
-  if (auto Range = RangeInCurrentContext(NNSRange)) {
+  if (auto Range = ExplicitRangeInCurrentContext(NNSRange)) {
     Observer.AppendRangeToStream(Ostream, Range.primary());
   } else {
     Ostream << "invalid";
   }
   Ostream << "@";
-  if (auto RCC =
-          RangeInCurrentContext(RangeForASTEntityFromSourceLocation(IdLoc))) {
+  if (auto RCC = ExplicitRangeInCurrentContext(
+          RangeForASTEntityFromSourceLocation(IdLoc))) {
     Observer.AppendRangeToStream(Ostream, RCC.primary());
   } else {
     Ostream << "invalid";
@@ -2772,8 +2856,8 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForDependentName(
 #undef UNEXPECTED_DECLARATION_NAME_KIND
   }
   if (ER == EmitRanges::Yes) {
-    if (auto RCC =
-            RangeInCurrentContext(RangeForASTEntityFromSourceLocation(IdLoc))) {
+    if (auto RCC = ExplicitRangeInCurrentContext(
+            RangeForASTEntityFromSourceLocation(IdLoc))) {
       Observer.recordDeclUseLocation(RCC.primary(), IdOut);
     }
   }
@@ -2789,6 +2873,7 @@ IndexerASTVisitor::BuildNodeIdForExpr(const clang::Expr *Expr, EmitRanges ER) {
   llvm::raw_string_ostream TOstream(Text);
   bool IsBindingSite = false;
   auto RCC = RangeInCurrentContext(
+      BuildNodeIdForImplicitStmt(Expr),
       RangeForASTEntityFromSourceLocation(Expr->getExprLoc()));
   if (!Expr->isValueDependent() && Expr->EvaluateAsRValue(Result, Context)) {
     // TODO(zarko): Represent constant values of any type as nodes in the
@@ -3385,7 +3470,7 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
       if (RD) {
         DeclNode = BuildNodeIdForDecl(RD);
       }
-      if (auto RCC = RangeInCurrentContext(
+      if (auto RCC = ExplicitRangeInCurrentContext(
               RangeForSingleTokenFromSourceLocation(T.getTemplateNameLoc()))) {
         Observer.recordDeclUseLocation(RCC.primary(), DeclNode);
       }
@@ -3468,9 +3553,9 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
     const auto &T = Type.castAs<PackExpansionTypeLoc>();
     const auto *DT = dyn_cast<PackExpansionType>(PT);
     auto PatternID(BuildNodeIdForType(T.getPatternLoc(),
-                   DT ? DT->getPattern().getTypePtr()
-                      : T.getPatternLoc().getTypePtr(),
-                   EmitRanges));
+                                      DT ? DT->getPattern().getTypePtr()
+                                         : T.getPatternLoc().getTypePtr(),
+                                      EmitRanges));
     if (!PatternID) {
       return PatternID;
     }
@@ -3498,7 +3583,7 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
       SR = RangeForASTEntityFromSourceLocation(SR.getBegin());
     }
     if (EmitRanges == IndexerASTVisitor::EmitRanges::Yes) {
-      if (auto RCC = RangeInCurrentContext(SR)) {
+      if (auto RCC = ExplicitRangeInCurrentContext(SR)) {
         ID.Iter([&](const GraphObserver::NodeId &I) {
           Observer.recordTypeSpellingLocation(RCC.primary(), I, Claimability);
         });
