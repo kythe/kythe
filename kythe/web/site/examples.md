@@ -67,7 +67,7 @@ find -L bazel-out -name '*.kindex'
 {% endhighlight %}
 
 The provided utility script,
-[kythe/extractors/bazel/extract.sh]({{site.data.development.source_browser}}/kythe/extractors/bazel/extract.sh),
+[https://github.com/google/kythe/blob/master/kythe/extractors/bazel/extract.sh]({{site.data.development.source_browser}}/kythe/extractors/bazel/extract.sh),
 does a full extraction using Bazel and then moves the compilations into the
 directory structure used by the
 [google/kythe]({{site.data.development.source_browser}}/kythe/release/kythe.sh)
