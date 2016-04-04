@@ -10,7 +10,7 @@ See //README.adoc for details.
 The files src/cxx_extractor_preprocessor_utils{.h, .cc} contain code from
   PreprocessorTracker.cpp from the modularize project in clang-tools-extra.
   We have modified this code by adding a visited set to the
-  getMacroExpandedString function.
+  getMacroExpandedString function and sanity checks to getSourceString.
 
 Description:
 LLVM is an industrial strength optimizer and code generator supporting multiple

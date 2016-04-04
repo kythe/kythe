@@ -110,8 +110,15 @@ std::string getMacroExpandedString(clang::Preprocessor &PP,
 std::string getSourceString(clang::Preprocessor &PP, clang::SourceRange Range) {
   clang::SourceLocation BeginLoc = Range.getBegin();
   clang::SourceLocation EndLoc = Range.getEnd();
+  if (!BeginLoc.isValid() || !EndLoc.isValid() ||
+      BeginLoc.isFileID() != EndLoc.isFileID()) {
+    return llvm::StringRef();
+  }
   const char *BeginPtr = PP.getSourceManager().getCharacterData(BeginLoc);
   const char *EndPtr = PP.getSourceManager().getCharacterData(EndLoc);
+  if (BeginPtr > EndPtr) {
+    return llvm::StringRef();
+  }
   size_t Length = EndPtr - BeginPtr;
   return llvm::StringRef(BeginPtr, Length).trim().str();
 }
