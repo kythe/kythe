@@ -557,9 +557,11 @@ func (t *tableImpl) Decorations(ctx context.Context, req *xpb.DecorationsRequest
 
 		// The span with which to constrain the set of returned anchor references.
 		var startBoundary, endBoundary int32
+		spanKind := req.SpanKind
 		if loc.Kind == xpb.Location_FILE {
 			startBoundary = 0
 			endBoundary = int32(len(text))
+			spanKind = xpb.DecorationsRequest_WITHIN_SPAN
 		} else {
 			startBoundary = loc.Start.ByteOffset
 			endBoundary = loc.End.ByteOffset
@@ -574,7 +576,7 @@ func (t *tableImpl) Decorations(ctx context.Context, req *xpb.DecorationsRequest
 			// Filter non-existent anchor.  Anchors can no longer exist if we were
 			// given a dirty buffer and the anchor was inside a changed region.
 			if exists {
-				if start >= startBoundary && end <= endBoundary {
+				if xrefs.InSpanBounds(spanKind, start, end, startBoundary, endBoundary) {
 					d.Anchor.StartOffset = start
 					d.Anchor.EndOffset = end
 

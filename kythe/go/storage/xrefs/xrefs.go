@@ -357,8 +357,8 @@ func (g *GraphStoreService) Decorations(ctx context.Context, req *xpb.Decoration
 			}
 
 			if loc.Kind == xpb.Location_SPAN {
-				// Check if anchor fits within requested source text window
-				if int32(anchorStart) < loc.Start.ByteOffset || int32(anchorEnd) > loc.End.ByteOffset {
+				// Check if anchor fits within/around requested source text window
+				if !xrefs.InSpanBounds(req.SpanKind, int32(anchorStart), int32(anchorEnd), loc.Start.ByteOffset, loc.End.ByteOffset) {
 					continue
 				} else if anchorStart > anchorEnd {
 					log.Printf("Invalid anchor offset span %d:%d", anchorStart, anchorEnd)

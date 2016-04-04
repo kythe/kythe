@@ -363,6 +363,9 @@ func sortEdgeSets(sets []*xpb.EdgeSet) []*xpb.EdgeSet {
 	sort.Sort(sortedEdgeSets(sets))
 	for _, set := range sets {
 		sort.Sort(sortedGroups(set.Group))
+		for _, g := range set.Group {
+			sort.Sort(xrefs.ByOrdinal(g.Edge))
+		}
 	}
 	return sets
 }

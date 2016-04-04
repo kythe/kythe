@@ -283,11 +283,20 @@ message Location {
 
 message DecorationsRequest {
   // The location of the file to fetch decorations for.  The ticket of location
-  // must be non-empty.
-  //
-  // If the location is a SPAN, decorations are only returned for the specified
-  // window of the file.  It is an error in any case if location is invalid.
+  // must be non-empty.  It is an error in any case if location is invalid.
   Location location = 1;
+
+  enum SpanKind {
+    // If the location is a SPAN, only decorations contained within the
+    // specified window of the file are returned.  This is the default behavior.
+    WITHIN_SPAN = 0;
+
+    // If the location is a SPAN, any decorations that surround it are returned.
+    AROUND_SPAN = 1;
+  }
+
+  // How to treat SPAN locations.
+  SpanKind span_kind = 10;
 
   // If dirty_buffer is non-empty, the results will be adjusted (patched) to
   // account for the regions of the specified file differing from the contents

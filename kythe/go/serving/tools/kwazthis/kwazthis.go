@@ -196,13 +196,23 @@ func main() {
 	}
 
 	fileTicket := reply.Ticket[0]
-	text := readDirtyBuffer(ctx)
+	point := &xpb.Location_Point{
+		ByteOffset:   int32(*offset),
+		LineNumber:   int32(*lineNumber),
+		ColumnOffset: int32(*columnOffset),
+	}
+	dirtyBuffer := readDirtyBuffer(ctx)
 	decor, err := xs.Decorations(ctx, &xpb.DecorationsRequest{
-		// TODO(schroederc): limit Location to a SPAN around *offset
-		Location:    &xpb.Location{Ticket: fileTicket},
+		Location: &xpb.Location{
+			Ticket: fileTicket,
+			Kind:   xpb.Location_SPAN,
+			Start:  point,
+			End:    point,
+		},
+		SpanKind:    xpb.DecorationsRequest_AROUND_SPAN,
 		References:  true,
 		SourceText:  true,
-		DirtyBuffer: text,
+		DirtyBuffer: dirtyBuffer,
 		Filter: []string{
 			schema.NodeKindFact,
 			schema.SubkindFact,
@@ -211,69 +221,64 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if text == nil {
-		text = decor.SourceText
-	}
 	nodes := xrefs.NodesMap(decor.Node)
-
-	// Normalize point within source text
-	point := normalizedPoint(text)
 
 	en := json.NewEncoder(os.Stdout)
 	for _, ref := range decor.Reference {
 		start, end := int(ref.AnchorStart.ByteOffset), int(ref.AnchorEnd.ByteOffset)
 
-		if start <= point && point < end {
-			var r reference
-			r.Span.Start = start
-			r.Span.End = end
-			r.Span.Text = string(text[start:end])
-			r.Kind = strings.TrimPrefix(ref.Kind, schema.EdgePrefix)
-			r.Node.Ticket = ref.TargetTicket
+		var r reference
+		r.Span.Start = start
+		r.Span.End = end
+		if len(dirtyBuffer) > 0 {
+			r.Span.Text = string(dirtyBuffer[start:end])
+		} // TODO(schroederc): add option to get anchor text from DecorationsReply
+		r.Kind = strings.TrimPrefix(ref.Kind, schema.EdgePrefix)
+		r.Node.Ticket = ref.TargetTicket
 
-			node := nodes[ref.TargetTicket]
-			r.Node.Kind = string(node[schema.NodeKindFact])
-			r.Node.Subkind = string(node[schema.SubkindFact])
+		node := nodes[ref.TargetTicket]
+		r.Node.Kind = string(node[schema.NodeKindFact])
+		r.Node.Subkind = string(node[schema.SubkindFact])
 
-			if eReply, err := xrefs.AllEdges(ctx, xs, &xpb.EdgesRequest{
-				Ticket: []string{ref.TargetTicket},
-				Kind:   []string{schema.NamedEdge, schema.TypedEdge, definedAtEdge, definedBindingAtEdge},
-			}); err != nil {
-				log.Printf("WARNING: error getting edges for %q: %v", ref.TargetTicket, err)
-			} else {
-				edges := xrefs.EdgesMap(eReply.EdgeSet)[ref.TargetTicket]
-				for name := range edges[schema.NamedEdge] {
-					if uri, err := kytheuri.Parse(name); err != nil {
-						log.Printf("WARNING: named node ticket (%q) could not be parsed: %v", name, err)
+		// TODO(schroederc): use CrossReferences method
+		if eReply, err := xrefs.AllEdges(ctx, xs, &xpb.EdgesRequest{
+			Ticket: []string{ref.TargetTicket},
+			Kind:   []string{schema.NamedEdge, schema.TypedEdge, definedAtEdge, definedBindingAtEdge},
+		}); err != nil {
+			log.Printf("WARNING: error getting edges for %q: %v", ref.TargetTicket, err)
+		} else {
+			edges := xrefs.EdgesMap(eReply.EdgeSet)[ref.TargetTicket]
+			for name := range edges[schema.NamedEdge] {
+				if uri, err := kytheuri.Parse(name); err != nil {
+					log.Printf("WARNING: named node ticket (%q) could not be parsed: %v", name, err)
+				} else {
+					r.Node.Names = append(r.Node.Names, uri.Signature)
+				}
+			}
+
+			for typed := range edges[schema.TypedEdge] {
+				r.Node.Typed = typed
+				break
+			}
+
+			if !*skipDefinitions {
+				defs := edges[definedAtEdge]
+				if len(defs) == 0 {
+					defs = edges[definedBindingAtEdge]
+				}
+				for defAnchor := range defs {
+					def, err := completeDefinition(defAnchor)
+					if err != nil {
+						log.Printf("WARNING: failed to complete definition for %q: %v", defAnchor, err)
 					} else {
-						r.Node.Names = append(r.Node.Names, uri.Signature)
-					}
-				}
-
-				for typed := range edges[schema.TypedEdge] {
-					r.Node.Typed = typed
-					break
-				}
-
-				if !*skipDefinitions {
-					defs := edges[definedAtEdge]
-					if len(defs) == 0 {
-						defs = edges[definedBindingAtEdge]
-					}
-					for defAnchor := range defs {
-						def, err := completeDefinition(defAnchor)
-						if err != nil {
-							log.Printf("WARNING: failed to complete definition for %q: %v", defAnchor, err)
-						} else {
-							r.Node.Definitions = append(r.Node.Definitions, def)
-						}
+						r.Node.Definitions = append(r.Node.Definitions, def)
 					}
 				}
 			}
+		}
 
-			if err := en.Encode(r); err != nil {
-				log.Fatal(err)
-			}
+		if err := en.Encode(r); err != nil {
+			log.Fatal(err)
 		}
 	}
 }
@@ -349,20 +354,4 @@ func findKytheRoot(dir string) string {
 		dir = filepath.Dir(dir)
 	}
 	return ""
-}
-
-func normalizedPoint(text []byte) int {
-	p := xrefs.NewNormalizer(text).Point(&xpb.Location_Point{
-		ByteOffset:   max(*offset, 0),
-		LineNumber:   max(*lineNumber, 0),
-		ColumnOffset: max(*columnOffset, 0),
-	})
-	return int(p.ByteOffset)
-}
-
-func max(a, b int) int32 {
-	if a > b {
-		return int32(a)
-	}
-	return int32(b)
 }

@@ -112,6 +112,20 @@ func FixTickets(rawTickets []string) ([]string, error) {
 	return tickets, nil
 }
 
+// InSpanBounds returns whether [start,end) is bounded by the specified [startBoundary,endBoundary)
+// span.
+func InSpanBounds(kind xpb.DecorationsRequest_SpanKind, start, end, startBoundary, endBoundary int32) bool {
+	switch kind {
+	case xpb.DecorationsRequest_WITHIN_SPAN:
+		return start >= startBoundary && end <= endBoundary
+	case xpb.DecorationsRequest_AROUND_SPAN:
+		return start <= startBoundary && end >= endBoundary
+	default:
+		log.Printf("WARNING: unknown DecorationsRequest_SpanKind: %v", kind)
+	}
+	return false
+}
+
 // IsDefKind determines whether the given edgeKind matches the requested
 // definition kind.
 func IsDefKind(requestedKind xpb.CrossReferencesRequest_DefinitionKind, edgeKind string, incomplete bool) bool {
@@ -378,6 +392,12 @@ func (n *Normalizer) Location(loc *xpb.Location) (*xpb.Location, error) {
 	nl.Kind = loc.Kind
 	if loc.Kind == xpb.Location_FILE {
 		return nl, nil
+	}
+
+	if loc.Start == nil {
+		return nil, errors.New("invalid SPAN: missing start point")
+	} else if loc.End == nil {
+		return nil, errors.New("invalid SPAN: missing end point")
 	}
 
 	nl.Start = n.Point(loc.Start)
