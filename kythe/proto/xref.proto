@@ -302,6 +302,10 @@ message DecorationsRequest {
   // selected window.  References are affected by patching.
   bool references = 4;
 
+  // If true, return definition locations, if possible, for each returned
+  // reference target in the DecorationsReply.
+  bool target_definitions = 6;
+
   // A collection of filter globs that specify which facts (by name) should be
   // returned for each node.  If filter is empty or unset, no node facts are
   // returned.  The filter applies to ALL referenced nodes.  See EdgesRequest
@@ -328,6 +332,11 @@ message DecorationsReply {
     Location.Point anchor_start = 10;
     // Ending byte offset of this references's anchor (source_ticket) span.
     Location.Point anchor_end = 11;
+
+    // Location of the target's definition.  Populated only if
+    // target_definitions is true in the DecorationsRequest and the target
+    // has a single unambiguous definition.
+    Anchor target_definition = 4;
   }
 
   // The reference edges located in the specified window.

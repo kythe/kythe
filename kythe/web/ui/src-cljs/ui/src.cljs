@@ -88,9 +88,10 @@
                   (group-overlapping-anchors
                     (filter (fn [{:keys [start end kind]}]
                               (and start end (< start end)))
-                      (map (fn [{:keys [source_ticket target_ticket anchor_start anchor_end kind]}]
+                      (map (fn [{:keys [source_ticket target_ticket anchor_start anchor_end kind target_definition]}]
                              {:start (:byte_offset anchor_start)
                               :end (:byte_offset anchor_end)
+                              :target-definition target_definition
                               :kind (schema/trim-edge-prefix kind)
                               :anchor-ticket source_ticket
                               :target-ticket target_ticket})
@@ -118,14 +119,23 @@
 (defn- src-node-view [state owner]
   (reify
     om/IRenderState
-    (render-state [_ {:keys [xrefs-to-view hover]}]
-      (let [{:keys [start end anchor-ticket target-ticket kind text background]} state]
+    (render-state [_ {:keys [file-to-view xrefs-to-view hover]}]
+      (let [{:keys [start end anchor-ticket target-ticket target-definition kind text background]} state]
         (if anchor-ticket
           (dom/a #js {:title (str kind " => " target-ticket)
                       :href "#"
                       :onClick (fn [e]
-                                 (put! xrefs-to-view target-ticket)
-                                 (.preventDefault e))
+                                 (.preventDefault e)
+                                 (if (and target-definition (.-ctrlKey e))
+                                   ;; Jump-to-definition (<Ctrl>-<click>)
+                                   (do
+                                     (.log js/console (str "Jumping to definition: " (:ticket target-definition)))
+                                     (put! file-to-view
+                                           {:ticket (:parent target-definition)
+                                            :anchor (:ticket target-definition)
+                                            :line   (:line_number (:start target-definition))}))
+                                   ;; Open cross-references panel
+                                   (put! xrefs-to-view target-ticket)))
                       :style #js {:backgroundColor background}
                       :onMouseEnter #(put! hover
                                        {:ticket anchor-ticket :target target-ticket})
@@ -155,7 +165,7 @@
                        node))
                 nodes))))))
     om/IRenderState
-    (render-state [_ {:keys [xrefs-to-view hover]}]
+    (render-state [_ {:keys [xrefs-to-view file-to-view hover]}]
       (dom/div #js {:className "col-md-9 col-lg-10" :id "src-container"}
         (apply dom/pre #js {:id "fringe"}
           (mapcat (fn [i] [(dom/a #js {:id (str "line" i)
@@ -172,6 +182,7 @@
               nil
               (om/build-all src-node-view (:nodes state)
                 {:init-state {:xrefs-to-view xrefs-to-view
+                              :file-to-view file-to-view
                               :hover hover}}))))))))
 
 (defn line-in-string [text offset] (count (.split (subs text 0 offset) "\n")))
@@ -179,7 +190,7 @@
 (defn src-view [state owner]
   (reify
     om/IRenderState
-    (render-state [_ {:keys [xrefs-to-view hover]}]
+    (render-state [_ {:keys [file-to-view xrefs-to-view hover]}]
       (cond
         (empty? state) (dom/span nil "Please select a file to your left!")
         (:failure state) (dom/div nil
@@ -191,6 +202,7 @@
                            (dom/span #js {:className "glyphicon glyphicon-repeat spinner"}))
         :else (om/build decorations-view (:decorations state)
                 {:init-state {:xrefs-to-view xrefs-to-view
+                              :file-to-view file-to-view
                               :hover hover}})))
     om/IDidUpdate
     (did-update [_ __ ___]

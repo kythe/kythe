@@ -360,6 +360,7 @@ var (
         @$line@    -- anchor source's ending line
         @$col@     -- anchor source's ending column offset`)
 			flag.StringVar(&decorSpan, "span", "", spanHelp)
+			// TODO(schroederc): add option to expose definition locations
 		},
 		func(flag *flag.FlagSet) error {
 			req := &xpb.DecorationsRequest{

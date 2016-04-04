@@ -128,6 +128,7 @@
             {:init-state {:file-to-view file-to-view}})
           (om/build src-view (:current-file state)
             {:init-state {:xrefs-to-view xrefs-to-view
+                          :file-to-view file-to-view
                           :hover hover}}))
         (om/build xrefs-view (:current-xrefs state)
           {:init-state {:xrefs-to-view xrefs-to-view

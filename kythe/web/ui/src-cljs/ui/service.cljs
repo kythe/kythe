@@ -114,7 +114,8 @@
   (POST "decorations"
     {:params {:location {:ticket ticket}
               :source_text true
-              :references true}
+              :references true
+              :target_definitions true}
      :format :json
      :response-format :json
      :keywords? true
