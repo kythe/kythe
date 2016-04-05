@@ -210,11 +210,12 @@ func Open(ctx context.Context, path string, opts ...Option) (*Archive, error) {
 	return a, nil
 }
 
-// OpenZip returns a read-only *Archive tied to the ZIP file at r, which is
-// expected to contain the recursive contents of an indexpack directory and its
-// subdirectories.  Operations that write to the pack will return errors.
-func OpenZip(ctx context.Context, r io.ReadSeeker, opts ...Option) (*Archive, error) {
-	fs, err := zip.Open(r)
+// OpenZip returns a read-only *Archive tied to the ZIP file at r, whose size
+// in bytes is given. The ZIP file is expected to contain the recursive
+// contents of an indexpack directory and its subdirectories.  Operations that
+// write to the pack will return errors.
+func OpenZip(ctx context.Context, r io.ReaderAt, size int64, opts ...Option) (*Archive, error) {
+	fs, err := zip.Open(r, size)
 	if err != nil {
 		return nil, err
 	}

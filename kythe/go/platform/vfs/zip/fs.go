@@ -26,7 +26,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"sync"
 
 	"kythe.io/kythe/go/platform/vfs"
 
@@ -37,43 +36,19 @@ var _ vfs.Reader = FS{}
 
 // Open returns a read-only virtual file system (vfs.Reader), using the contents
 // a zip archive read with r.
-func Open(r io.ReadSeeker) (FS, error) {
-	const fromEnd = 2
-	size, err := r.Seek(0, fromEnd)
-	if err != nil {
-		return FS{}, err
-	}
-
-	rc, err := zip.NewReader(&readerAt{rs: r}, size)
+func Open(r io.ReaderAt, size int64) (FS, error) {
+	rc, err := zip.NewReader(r, size)
 	if err != nil {
 		return FS{}, err
 	}
 	if len(rc.File) == 0 {
 		return FS{}, errors.New("archive has no root directory")
 	}
-
 	return FS{rc}, err
 }
 
 // FS implements the vfs.Reader interface for zip archives.
 type FS struct{ Archive *zip.Reader }
-
-type readerAt struct {
-	sync.Mutex
-	rs io.ReadSeeker
-}
-
-// ReadAt implements the io.ReaderAt interface.
-func (r *readerAt) ReadAt(buf []byte, pos int64) (int, error) {
-	r.Lock()
-	defer r.Unlock()
-
-	const fromStart = 0
-	if _, err := r.rs.Seek(pos, fromStart); err != nil {
-		return 0, err
-	}
-	return r.rs.Read(buf)
-}
 
 func (z FS) find(path string) *zip.File {
 	dirPath := path + string(filepath.Separator)

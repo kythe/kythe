@@ -346,8 +346,12 @@ func TestZipReader(t *testing.T) {
 		t.Fatalf("Error opening zip file: %v", err)
 	}
 	defer f.Close()
+	fi, err := f.Stat()
+	if err != nil {
+		t.Fatalf("Error getting zip file size: %v", err)
+	}
 
-	pack, err := OpenZip(ctx, f, UnitType((*cpb.CompilationUnit)(nil)))
+	pack, err := OpenZip(ctx, f, fi.Size(), UnitType((*cpb.CompilationUnit)(nil)))
 	if err != nil {
 		t.Fatalf("Error opening pack %q: %v", root, err)
 	}
@@ -385,7 +389,7 @@ func TestZipErrors(t *testing.T) {
 
 	// Opening an empty archive should report an error.
 	empty := strings.NewReader("")
-	if pack, err := OpenZip(ctx, empty); err == nil {
+	if pack, err := OpenZip(ctx, empty, 0); err == nil {
 		t.Errorf("Opening empty zip: got %+v, wanted error", pack)
 	}
 
@@ -396,8 +400,12 @@ func TestZipErrors(t *testing.T) {
 		t.Fatalf("Error opening zip file: %v", err)
 	}
 	defer f.Close()
+	fi, err := f.Stat()
+	if err != nil {
+		t.Fatalf("Error getting zip file size: %v", err)
+	}
 
-	pack, err := OpenZip(ctx, f)
+	pack, err := OpenZip(ctx, f, fi.Size())
 	if err != nil {
 		t.Fatalf("Error opening pack %q: %v", root, err)
 	}
