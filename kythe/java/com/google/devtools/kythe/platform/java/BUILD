@@ -8,6 +8,7 @@ java_library(
         "JavacAnalyzer.java",
     ],
     deps = [
+        "@bazel_tools//third_party/java/jdk/langtools:javac",
         ":options",
         "//external:guava",
         "//external:proto/protobuf_java",
@@ -18,7 +19,6 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/platform/shared:statistics",
         "//kythe/proto:analysis_proto_java",
         "//kythe/proto:storage_proto_java",
-        "//third_party/java/jdk/langtools:javac",
         "//third_party/jsr305_annotations:jsr305",
     ],
 )
@@ -27,8 +27,8 @@ java_library(
     name = "options",
     srcs = ["JavacOptionsUtils.java"],
     deps = [
+        "@bazel_tools//third_party/java/jdk/langtools:javac",
         "//external:guava",
-        "//third_party/java/jdk/langtools:javac",
         "//third_party/jsr305_annotations:jsr305",
     ],
 )

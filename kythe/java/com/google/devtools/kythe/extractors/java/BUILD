@@ -10,6 +10,7 @@ java_library(
         "UsageAsInputReportingJavaFileObject.java",
     ],
     deps = [
+        "@bazel_tools//third_party/java/jdk/langtools:javac",
         "//external:guava",
         "//external:proto/any_proto_java",
         "//external:proto/protobuf_java",
@@ -21,6 +22,5 @@ java_library(
         "//kythe/proto:analysis_proto_java",
         "//kythe/proto:java_proto_java",
         "//kythe/proto:storage_proto_java",
-        "//third_party/java/jdk/langtools:javac",
     ],
 )

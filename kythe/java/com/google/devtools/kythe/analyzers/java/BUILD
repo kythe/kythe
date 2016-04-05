@@ -16,6 +16,7 @@ java_library(
         "SourceText.java",
     ],
     deps = [
+        "@bazel_tools//third_party/java/jdk/langtools:javac",
         ":config",
         "//external:guava",
         "//external:proto/protobuf_java",
@@ -29,7 +30,6 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/util",
         "//kythe/proto:analysis_proto_java",
         "//kythe/proto:storage_proto_java",
-        "//third_party/java/jdk/langtools:javac",
     ],
 )
 
