@@ -7,9 +7,11 @@ Notable changes:
  - `xrefs.CrossReferences`: group declarations/definitions for incomplete nodes
 
 Notable additions:
+ - `xrefs.Decorations`: add experimental `target_definitions` switch
  - kythe tool: add `--graphviz` output flag to `edges` subcommand
 
 Notable fixes:
+ - Javac extractor: add processors registered in META-INF/services
  - javac-wrapper.sh: prepend bootclasspath jar to use packaged javac tools
 
 ## v0.0.20
