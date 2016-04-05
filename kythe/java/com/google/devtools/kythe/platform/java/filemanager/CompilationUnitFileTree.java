@@ -94,7 +94,8 @@ public class CompilationUnitFileTree {
    */
   public String lookup(String path) {
     Path p = Paths.get(path);
-    return lookup(p.getParent().toString(), p.getFileName().toString());
+    Path parent = p.getParent();
+    return lookup(parent == null ? null : parent.toString(), p.getFileName().toString());
   }
 
   /**

@@ -53,6 +53,7 @@ import com.sun.tools.javac.api.JavacTaskImpl;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Symtab;
 import com.sun.tools.javac.main.Option;
+import com.sun.tools.javac.util.ServiceLoader;
 
 import java.io.File;
 import java.io.IOError;
@@ -620,15 +621,18 @@ public class JavaCompilationUnitExtractor {
               null, fileManager, diagnosticsCollector, completeOptions, null, sourceFiles);
 
       List<Processor> procs = Lists.<Processor>newArrayList(new ProcessAnnotation(fileManager));
-      if (!Iterables.isEmpty(processors)) {
-        ClassLoader loader = processingClassloader(classpath, processorpath);
-        for (String processor : processors) {
-          try {
-            procs.add(loader.loadClass(processor).asSubclass(Processor.class).newInstance());
-          } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-            throw new ExtractionException("Bad processor entry", e, false);
-          }
+      ClassLoader loader = processingClassloader(classpath, processorpath);
+      for (String processor : processors) {
+        try {
+          procs.add(loader.loadClass(processor).asSubclass(Processor.class).newInstance());
+        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+          throw new ExtractionException("Bad processor entry", e, false);
         }
+      }
+
+      // Add any processors registered in the META-INF/services configuration.
+      for (Processor proc : ServiceLoader.load(Processor.class, loader)) {
+        procs.add(proc);
       }
 
       JavacTask javacTask = (JavacTask) task;
