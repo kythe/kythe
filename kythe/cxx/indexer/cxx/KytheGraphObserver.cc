@@ -333,6 +333,18 @@ void KytheGraphObserver::recordVariableNode(const NameId &name,
   }
 }
 
+void KytheGraphObserver::recordNamespaceNode(const NameId &name,
+                                             const NodeId &node) {
+  proto::VName name_vname = RecordName(name);
+  VNameRef node_vname = VNameRefFromNodeId(node);
+  if ((!lossy_claiming_ || claimNode(node)) &&
+      written_namespaces_.insert(node.ToClaimedString()).second) {
+    recorder_->AddProperty(node_vname, NodeKindID::kPackage);
+    recorder_->AddProperty(node_vname, PropertyID::kSubkind, "namespace");
+    recorder_->AddEdge(node_vname, EdgeKindID::kNamed, VNameRef(name_vname));
+  }
+}
+
 void KytheGraphObserver::RecordRange(const proto::VName &anchor_name,
                                      const GraphObserver::Range &range) {
   if (!lossy_claiming_ || claimRange(range)) {
@@ -880,14 +892,48 @@ void KytheGraphObserver::applyMetadataFile(clang::FileID id,
   }
 }
 
+void KytheGraphObserver::AppendMainSourceFileIdentifierToStream(
+    llvm::raw_ostream &ostream) {
+  if (main_source_file_token_) {
+    AppendRangeToStream(ostream,
+                        Range(main_source_file_loc_, main_source_file_token_));
+  }
+}
+
+bool KytheGraphObserver::isMainSourceFileRelatedLocation(
+    clang::SourceLocation location) {
+  // Where was this thing spelled out originally?
+  if (location.isInvalid()) {
+    return true;
+  }
+  if (!location.isFileID()) {
+    location = SourceManager->getExpansionLoc(location);
+    if (!location.isValid() || !location.isFileID()) {
+      return true;
+    }
+  }
+  clang::FileID file = SourceManager->getFileID(location);
+  if (file.isInvalid()) {
+    return true;
+  }
+  if (const clang::FileEntry *entry = SourceManager->getFileEntryForID(file)) {
+    return transitively_reached_through_header_.find(entry->getUniqueID()) ==
+           transitively_reached_through_header_.end();
+  }
+  return true;
+}
+
 void KytheGraphObserver::pushFile(clang::SourceLocation blame_location,
                                   clang::SourceLocation source_location) {
   PreprocessorContext previous_context =
       file_stack_.empty() ? starting_context_ : file_stack_.back().context;
   bool has_previous_uid = !file_stack_.empty();
   llvm::sys::fs::UniqueID previous_uid;
+  bool in_header = false;
   if (has_previous_uid) {
     previous_uid = file_stack_.back().uid;
+    in_header = transitively_reached_through_header_.find(previous_uid) !=
+                transitively_reached_through_header_.end();
   }
   file_stack_.push_back(FileState{});
   FileState &state = file_stack_.back();
@@ -906,6 +952,13 @@ void KytheGraphObserver::pushFile(clang::SourceLocation blame_location,
         // An actual file.
         state.vname = state.base_vname = VNameFromFileEntry(entry);
         state.uid = entry->getUniqueID();
+        // TODO(zarko): If modules are enabled, check there to see whether
+        // `entry` is a textual header.
+        if (in_header ||
+            (has_previous_uid &&
+             !llvm::StringRef(entry->getName()).endswith(".inc"))) {
+          transitively_reached_through_header_.insert(state.uid);
+        }
         // Attempt to compute the state-amended VName using the state table.
         // If we aren't working under any context, we won't end up making the
         // VName more specific.
@@ -964,6 +1017,10 @@ void KytheGraphObserver::pushFile(clang::SourceLocation blame_location,
         token.set_vname(state.vname);
         token.set_rough_claimed(state.claimed);
         claim_checked_files_.emplace(file, token);
+        if (!has_previous_uid) {
+          main_source_file_loc_ = source_location;
+          main_source_file_token_ = &claim_checked_files_[file];
+        }
       } else {
         // A builtin location.
       }
@@ -1016,10 +1073,10 @@ void KytheGraphObserver::AddContextInformation(
   }
 }
 
-const GraphObserver::ClaimToken *KytheGraphObserver::getClaimTokenForLocation(
+KytheClaimToken *KytheGraphObserver::getClaimTokenForLocation(
     clang::SourceLocation source_location) {
   if (!source_location.isValid()) {
-    return getDefaultClaimToken();
+    return &default_token_;
   }
   if (source_location.isMacroID()) {
     source_location = SourceManager->getExpansionLoc(source_location);
@@ -1027,16 +1084,40 @@ const GraphObserver::ClaimToken *KytheGraphObserver::getClaimTokenForLocation(
   CHECK(source_location.isFileID());
   clang::FileID file = SourceManager->getFileID(source_location);
   if (file.isInvalid()) {
-    return getDefaultClaimToken();
+    return &default_token_;
   }
   auto token = claim_checked_files_.find(file);
-  return token != claim_checked_files_.end() ? &token->second
-                                             : getDefaultClaimToken();
+  return token != claim_checked_files_.end() ? &token->second : &default_token_;
 }
 
-const GraphObserver::ClaimToken *KytheGraphObserver::getClaimTokenForRange(
+KytheClaimToken *KytheGraphObserver::getClaimTokenForRange(
     const clang::SourceRange &range) {
   return getClaimTokenForLocation(range.getBegin());
+}
+
+KytheClaimToken *KytheGraphObserver::getAnonymousNamespaceClaimToken(
+    clang::SourceLocation loc) {
+  if (isMainSourceFileRelatedLocation(loc)) {
+    CHECK(main_source_file_token_ != nullptr);
+    return main_source_file_token_;
+  }
+  return getNamespaceClaimToken(loc);
+}
+
+KytheClaimToken *KytheGraphObserver::getNamespaceClaimToken(
+    clang::SourceLocation loc) {
+  auto *file_token = getClaimTokenForLocation(loc);
+  auto token = namespace_tokens_.find(file_token);
+  if (token != namespace_tokens_.end()) {
+    return &token->second;
+  }
+  proto::VName vname;
+  vname.set_corpus(file_token->vname().corpus());
+  KytheClaimToken new_token;
+  new_token.set_vname(vname);
+  new_token.set_rough_claimed(file_token->rough_claimed());
+  namespace_tokens_.emplace(file_token, new_token);
+  return &namespace_tokens_.find(file_token)->second;
 }
 
 void *KytheClaimToken::clazz_ = nullptr;

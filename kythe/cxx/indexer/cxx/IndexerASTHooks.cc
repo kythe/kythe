@@ -1336,6 +1336,32 @@ bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl *Decl) {
   return true;
 }
 
+bool IndexerASTVisitor::VisitNamespaceDecl(const clang::NamespaceDecl *Decl) {
+  GraphObserver::NameId DeclName(BuildNameIdForDecl(Decl));
+  GraphObserver::NodeId DeclNode(BuildNodeIdForDecl(Decl));
+  // Use the range covering `namespace` for anonymous namespaces.
+  SourceRange NameRange;
+  if (Decl->isAnonymousNamespace()) {
+    SourceLocation Loc = Decl->getLocStart();
+    if (Decl->isInline() && Loc.isValid() && Loc.isFileID()) {
+      // Skip the `inline` keyword.
+      Loc = RangeForSingleTokenFromSourceLocation(Loc).getEnd();
+      if (Loc.isValid() && Loc.isFileID()) {
+        SkipWhitespace(*Observer.getSourceManager(), &Loc);
+      }
+    }
+    if (Loc.isValid() && Loc.isFileID()) {
+      NameRange = RangeForASTEntityFromSourceLocation(Loc);
+    }
+  } else {
+    NameRange = RangeForNameOfDeclaration(Decl);
+  }
+  MaybeRecordDefinitionRange(RangeInCurrentContext(NameRange), DeclNode);
+  Observer.recordNamespaceNode(DeclName, DeclNode);
+  AddChildOfEdgeToDeclContext(Decl, DeclNode);
+  return true;
+}
+
 bool IndexerASTVisitor::VisitFieldDecl(const clang::FieldDecl *Decl) {
   GraphObserver::NameId DeclName(BuildNameIdForDecl(Decl));
   GraphObserver::NodeId DeclNode(BuildNodeIdForDecl(Decl));
@@ -2124,10 +2150,17 @@ bool IndexerASTVisitor::AddNameToStream(llvm::raw_string_ostream &Ostream,
     Ostream << II->getName();
   } else {
     if (isa<NamespaceDecl>(ND)) {
-      // Even if it doesn't strictly reflect what the standard says, it's
-      // useful to collapse these unnamed namespaces into a single
-      // namespace.
-      Ostream << "@";
+      // This is an anonymous namespace. We have two cases:
+      // If there is any file that is not a textual include (.inc,
+      //     or explicitly marked as such in a module) between the declaration
+      //     site and the main source file, then the namespace's identifier is
+      //     the shared anonymous namespace identifier "@#anon"
+      // Otherwise, it's the anonymous namespace identifier associated with the
+      //     main source file.
+      if (Observer.isMainSourceFileRelatedLocation(ND->getLocation())) {
+        Observer.AppendMainSourceFileIdentifierToStream(Ostream);
+      }
+      Ostream << "@#anon";
     } else if (Name.getCXXOverloadedOperator() != OO_None) {
       switch (Name.getCXXOverloadedOperator()) {
 #define OVERLOADED_OPERATOR(Name, Spelling, Token, Unary, Binary, MemberOnly)  \
@@ -2513,6 +2546,18 @@ IndexerASTVisitor::BuildNodeIdForDecl(const clang::Decl *Decl) {
       DeclToNodeId.insert(std::make_pair(Decl, Id));
       return Id;
     }
+  }
+
+  // Namespaces are named according to their NameIDs.
+  if (const auto *NS = dyn_cast<NamespaceDecl>(Decl)) {
+    Ostream << "#namespace";
+    GraphObserver::NodeId Id(
+        NS->isAnonymousNamespace()
+            ? Observer.getAnonymousNamespaceClaimToken(NS->getLocation())
+            : Observer.getNamespaceClaimToken(NS->getLocation()),
+        Ostream.str());
+    DeclToNodeId.insert(std::make_pair(Decl, Id));
+    return Id;
   }
 
   // There's a special way to name type aliases.

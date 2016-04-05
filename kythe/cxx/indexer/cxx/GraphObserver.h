@@ -262,6 +262,19 @@ public:
   /// \brief Returns a claim token that provides no additional information.
   virtual const ClaimToken *getDefaultClaimToken() const = 0;
 
+  /// \brief Returns a claim token for namespaces declared at `Loc`.
+  /// \param Loc The declaration site of the namespace.
+  virtual const ClaimToken *getNamespaceClaimToken(clang::SourceLocation Loc) {
+    return getDefaultClaimToken();
+  }
+
+  /// \brief Returns a claim token for anonymous namespaces declared at `Loc`.
+  /// \param Loc The declaration site of the anonymous namespace.
+  virtual const ClaimToken *
+  getAnonymousNamespaceClaimToken(clang::SourceLocation Loc) {
+    return getDefaultClaimToken();
+  }
+
   /// \brief Returns whether experimental lossy claiming is enabled.
   virtual bool lossy_claiming() const { return false; }
 
@@ -455,6 +468,12 @@ public:
   virtual void recordVariableNode(const NameId &DeclName,
                                   const NodeId &DeclNode, Completeness Compl,
                                   VariableSubkind Subkind) {}
+
+  /// \brief Records that a namespace has been declared.
+  /// \param DeclName The name to which this element is being bound.
+  /// \param DeclNode The identifier for this particular element.
+  virtual void recordNamespaceNode(const NameId &DeclName,
+                                   const NodeId &DeclNode) {}
 
   // TODO(zarko): recordExpandedTypeEdge -- records that a type was seen
   // to have some canonical type during a compilation. (This is a 'canonical'
@@ -712,6 +731,22 @@ public:
   /// \brief Called when the previous input file to be entered is left.
   /// \sa pushFile
   virtual void popFile() {}
+
+  /// \brief Returns true if the given source location is part of the
+  /// main source file (e.g., it was written in the main source file or
+  /// a textual include, but not a header include or a textual include from
+  /// a header include).
+  /// \pre Preprocessing is complete.
+  virtual bool isMainSourceFileRelatedLocation(clang::SourceLocation Location) {
+    // Conservatively return true.
+    return true;
+  }
+
+  /// \brief Append a string representation of the identifier of the main
+  /// source file to the given stream.
+  /// \pre Preprocessing is complete.
+  virtual void
+  AppendMainSourceFileIdentifierToStream(llvm::raw_ostream &Ostream) {}
 
   /// \brief Checks whether this `GraphObserver` should emit data for some
   /// `NodeId` and its descendants.

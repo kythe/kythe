@@ -2,5 +2,6 @@
 // anonymous namespaces.
 //- @x defines/binding VarNode
 //- VarNode.node/kind variable
-//- VarNode named vname("x:@#n", "", "", "", "c++")
+//- @namespace defines/binding Namespace
+//- VarNode childof Namespace
 namespace { int x; }

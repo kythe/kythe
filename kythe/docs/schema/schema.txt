@@ -1859,20 +1859,9 @@ namespace A {
 }
 --------------------------------------------------------------------------------
 
-Anonymous namespaces are represented using `@`:
-
-[kythe,C++,"Anonymous namespaces"]
---------------------------------------------------------------------------------
-//- @A defines/binding UnionA
-namespace { union A; }
-//- @B defines/binding UnionB
-namespace { union B; }
-//- UnionA named vname("A:@#u",_,_,_,_)
-//- UnionB named vname("B:@#u",_,_,_,_)
---------------------------------------------------------------------------------
-
-Scopes without names are given ordinal values reflecting an arbitrary but
-consistent ordering between syntactic elements:
+Anonymous namespaces are represented using `@#anon` and possibly some extra
+(opaque) information. Scopes without names are given ordinal values reflecting
+an arbitrary but consistent ordering between syntactic elements:
 
 [kythe,C++,"Ordinal path nodes in names"]
 --------------------------------------------------------------------------------

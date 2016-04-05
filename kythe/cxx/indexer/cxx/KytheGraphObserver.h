@@ -80,6 +80,8 @@ class KytheClaimToken : public GraphObserver::ClaimToken {
     vname_.set_path(vname.path());
   }
 
+  const kythe::proto::VName &vname() const { return vname_; }
+
   /// \sa rough_claimed
   void set_rough_claimed(bool value) { rough_claimed_ = value; }
 
@@ -138,7 +140,7 @@ class KytheGraphObserver : public GraphObserver {
                                       spelling.str() + "#builtin");
   }
 
-  const ClaimToken *getDefaultClaimToken() const override {
+  const KytheClaimToken *getDefaultClaimToken() const override {
     return &default_token_;
   }
 
@@ -197,6 +199,9 @@ class KytheGraphObserver : public GraphObserver {
   void recordVariableNode(const NameId &DeclName, const NodeId &DeclNode,
                           Completeness VarCompleteness,
                           VariableSubkind Subkind) override;
+
+  void recordNamespaceNode(const NameId &DeclName,
+                           const NodeId &DeclNode) override;
 
   void recordUserDefinedNode(const NameId &Name, const NodeId &Id,
                              const llvm::StringRef &NodeKind,
@@ -273,6 +278,11 @@ class KytheGraphObserver : public GraphObserver {
 
   void popFile() override;
 
+  bool isMainSourceFileRelatedLocation(clang::SourceLocation Location) override;
+
+  void AppendMainSourceFileIdentifierToStream(
+      llvm::raw_ostream &Ostream) override;
+
   /// \brief Configures the claimant that will be used to make claims.
   void set_claimant(const kythe::proto::VName &vname) { claimant_ = vname; }
 
@@ -307,11 +317,15 @@ class KytheGraphObserver : public GraphObserver {
     starting_context_ = context;
   }
 
-  const ClaimToken *getClaimTokenForLocation(
+  KytheClaimToken *getClaimTokenForLocation(
       const clang::SourceLocation L) override;
 
-  const ClaimToken *getClaimTokenForRange(
-      const clang::SourceRange &SR) override;
+  KytheClaimToken *getClaimTokenForRange(const clang::SourceRange &SR) override;
+
+  KytheClaimToken *getNamespaceClaimToken(clang::SourceLocation Loc) override;
+
+  KytheClaimToken *getAnonymousNamespaceClaimToken(
+      clang::SourceLocation Loc) override;
 
   /// \brief Appends a representation of `Range` to `Ostream`.
   void AppendRangeToStream(llvm::raw_ostream &Ostream,
@@ -415,12 +429,21 @@ class KytheGraphObserver : public GraphObserver {
   std::vector<FileState> file_stack_;
   /// A map from FileIDs to associated metadata.
   std::multimap<clang::FileID, std::shared_ptr<MetadataFile>> meta_;
+  /// All files that were ever reached through a header file, including header
+  /// files themselves.
+  std::set<llvm::sys::fs::UniqueID> transitively_reached_through_header_;
+  /// A location in the main source file.
+  clang::SourceLocation main_source_file_loc_;
+  /// A claim token in the main source file.
+  KytheClaimToken *main_source_file_token_ = nullptr;
   /// Files we have previously inspected for claiming. When they refer to
   /// FileEntries, a FileID represents a specific file being included from a
   /// given include position. There will therefore be many FileIDs that map to
   /// one context + header pair; then, many context + header pairs may
   /// map to a single file's VName.
   std::map<clang::FileID, KytheClaimToken> claim_checked_files_;
+  /// Maps from claim tokens to claim tokens with path and root dropped.
+  std::map<KytheClaimToken *, KytheClaimToken> namespace_tokens_;
   /// The `KytheGraphRecorder` used to record graph data. Must not be null.
   KytheGraphRecorder *recorder_;
   /// A VName representing this `GraphObserver`'s claiming authority.
@@ -460,6 +483,9 @@ class KytheGraphObserver : public GraphObserver {
   /// The set of type nodes we've emitted so far (identified by
   /// `NodeId::ToString()`).
   std::unordered_set<std::string> written_types_;
+  /// The set of namespace nodes we've emitted so far (identified by
+  /// `NodeId::ToString()`).
+  std::unordered_set<std::string> written_namespaces_;
   /// Whether to try and locally deduplicate nodes.
   bool deferring_nodes_ = true;
   /// \brief Enabled metadata import support.

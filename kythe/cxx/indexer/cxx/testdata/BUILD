@@ -45,6 +45,48 @@ sh_test(
 )
 
 cxx_indexer_test(
+    name = "anonymous_namespace_header",
+    srcs = ["basic/anonymous_namespace_header.cc"],
+    bundled = True,
+    tags = ["basic"],
+)
+
+cxx_indexer_test(
+    name = "anonymous_namespace_inc",
+    srcs = ["basic/anonymous_namespace_inc.cc"],
+    bundled = True,
+    tags = ["basic"],
+)
+
+cxx_indexer_test(
+    name = "anonymous_namespace_transitive_header",
+    srcs = ["basic/anonymous_namespace_transitive_header.cc"],
+    bundled = True,
+    ignore_dups = True,
+    tags = ["basic"],
+)
+
+cxx_indexer_test(
+    name = "anonymous_nested_namespace",
+    srcs = ["basic/anonymous_nested_namespace.cc"],
+    bundled = True,
+    ignore_dups = True,
+    tags = ["basic"],
+)
+
+cxx_indexer_test(
+    name = "anonymous_namespace",
+    srcs = ["basic/anonymous_namespace.cc"],
+    tags = ["basic"],
+)
+
+cxx_indexer_test(
+    name = "anonymous_inline_namespace",
+    srcs = ["basic/anonymous_inline_namespace.cc"],
+    tags = ["basic"],
+)
+
+cxx_indexer_test(
     name = "bundle_self_test",
     srcs = ["bundle_self_test.cc"],
     bundled = True,
@@ -283,6 +325,12 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "inline_namespace",
+    srcs = ["basic/inline_namespace.cc"],
+    tags = ["basic"],
+)
+
+cxx_indexer_test(
     name = "macros_builtin",
     srcs = ["basic/macros_builtin.c"],
     std = "c99",
@@ -352,14 +400,34 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
-    name = "nested_name_specifiers",
-    srcs = ["basic/nested_name_specifiers.cc"],
+    name = "namespace",
+    srcs = ["basic/namespace.cc"],
     tags = ["basic"],
 )
 
 cxx_indexer_test(
-    name = "typedef_class_anon_ns",
-    srcs = ["basic/typedef_class_anon_ns.cc"],
+    name = "namespace_contains",
+    srcs = ["basic/namespace_contains.cc"],
+    tags = ["basic"],
+)
+
+cxx_indexer_test(
+    name = "namespace_header",
+    srcs = ["basic/namespace_header.cc"],
+    bundled = True,
+    tags = ["basic"],
+)
+
+cxx_indexer_test(
+    name = "namespace_vnames",
+    srcs = ["basic/namespace_vnames.cc"],
+    bundled = True,
+    tags = ["basic"],
+)
+
+cxx_indexer_test(
+    name = "nested_name_specifiers",
+    srcs = ["basic/nested_name_specifiers.cc"],
     tags = ["basic"],
 )
 
