@@ -510,6 +510,10 @@ func MatchesAny(str string, patterns []*regexp.Regexp) bool {
 }
 
 func forAllEdges(ctx context.Context, service Service, source stringset.Set, edge []string, f func(source string, target string) error) error {
+	tickets := source.Slice()
+	if len(tickets) == 0 {
+		return nil
+	}
 	req := &xpb.EdgesRequest{
 		Ticket: source.Slice(),
 		Kind:   edge,
@@ -540,10 +544,13 @@ const (
 
 // findCallableDetail returns a map from non-callable semantic object tickets to CallableDetail,
 // where the CallableDetail does not have the SemanticObject or SemanticObjectCallable fields set.
-func findCallableDetail(ctx context.Context, service Service, tickets stringset.Set) (map[string]*xpb.CallersReply_CallableDetail, error) {
-	ticketToDetail := make(map[string]*xpb.CallersReply_CallableDetail)
+func findCallableDetail(ctx context.Context, service Service, ticketSet stringset.Set) (map[string]*xpb.CallersReply_CallableDetail, error) {
+	tickets := ticketSet.Slice()
+	if len(tickets) == 0 {
+		return nil, nil
+	}
 	xreq := &xpb.CrossReferencesRequest{
-		Ticket:            tickets.Slice(),
+		Ticket:            tickets,
 		DefinitionKind:    xpb.CrossReferencesRequest_BINDING_DEFINITIONS,
 		ReferenceKind:     xpb.CrossReferencesRequest_NO_REFERENCES,
 		DocumentationKind: xpb.CrossReferencesRequest_NO_DOCUMENTATION,
@@ -552,12 +559,12 @@ func findCallableDetail(ctx context.Context, service Service, tickets stringset.
 	}
 	xrefs, err := service.CrossReferences(ctx, xreq)
 	if err != nil {
-		log.Printf("Can't get CrossReferences for Callers set: %v", err)
-		return nil, err
+		return nil, fmt.Errorf("can't get CrossReferences for callable detail set: %v", err)
 	}
 	if xrefs.NextPageToken != "" {
 		return nil, errors.New("UNIMPLEMENTED: Paged CrossReferences reply")
 	}
+	ticketToDetail := make(map[string]*xpb.CallersReply_CallableDetail)
 	for _, xrefSet := range xrefs.CrossReferences {
 		detail := &xpb.CallersReply_CallableDetail{}
 		// Just pick the first definition.
@@ -647,57 +654,61 @@ func SlowCallers(ctx context.Context, service Service, req *xpb.CallersRequest) 
 		return nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error while looking up callableas edges: %v", err)
 	}
 	// We can use CrossReferences to get detailed information about anchors that ref/call our callables. This unfortunately excludes blame information.
 	xrefTickets := []string{}
 	for callable := range callableToNode {
 		xrefTickets = append(xrefTickets, callable)
 	}
-	xreq := &xpb.CrossReferencesRequest{
-		Ticket:            xrefTickets,
-		DefinitionKind:    xpb.CrossReferencesRequest_NO_DEFINITIONS,
-		ReferenceKind:     xpb.CrossReferencesRequest_ALL_REFERENCES,
-		DocumentationKind: xpb.CrossReferencesRequest_NO_DOCUMENTATION,
-		AnchorText:        true,
-		PageSize:          math.MaxInt32,
-	}
-	xrefs, err := service.CrossReferences(ctx, xreq)
-	if err != nil {
-		log.Printf("Can't get CrossReferences for Callers set: %v", err)
-		return nil, err
-	}
-	if xrefs.NextPageToken != "" {
-		return nil, errors.New("UNIMPLEMENTED: Paged CrossReferences reply")
-	}
-	// Now we've got a bunch of call site anchors. We need to figure out which functions they belong to.
-	// anchors is the set of all callsite anchor tickets.
-	anchors := stringset.New()
 	// expandedAnchors maps callsite anchor tickets to anchor details.
-	expandedAnchors := make(map[string]*xpb.Anchor)
+	var expandedAnchors map[string]*xpb.Anchor
 	// parentToAnchor maps semantic node tickets to the callsite anchor tickets they own.
-	parentToAnchor := make(map[string][]string)
-	for _, refSet := range xrefs.CrossReferences {
-		for _, ref := range refSet.Reference {
-			if ref.Kind == schema.RefCallEdge {
-				anchors.Add(ref.Ticket)
-				expandedAnchors[ref.Ticket] = ref
+	var parentToAnchor map[string][]string
+	if len(xrefTickets) > 0 {
+		xreq := &xpb.CrossReferencesRequest{
+			Ticket:            xrefTickets,
+			DefinitionKind:    xpb.CrossReferencesRequest_NO_DEFINITIONS,
+			ReferenceKind:     xpb.CrossReferencesRequest_ALL_REFERENCES,
+			DocumentationKind: xpb.CrossReferencesRequest_NO_DOCUMENTATION,
+			AnchorText:        true,
+			PageSize:          math.MaxInt32,
+		}
+		xrefs, err := service.CrossReferences(ctx, xreq)
+		if err != nil {
+			return nil, fmt.Errorf("can't get CrossReferences for xref references set: %v", err)
+		}
+		if xrefs.NextPageToken != "" {
+			return nil, errors.New("UNIMPLEMENTED: Paged CrossReferences reply")
+		}
+		// Now we've got a bunch of call site anchors. We need to figure out which functions they belong to.
+		// anchors is the set of all callsite anchor tickets.
+		anchors := stringset.New()
+		expandedAnchors = make(map[string]*xpb.Anchor)
+		parentToAnchor = make(map[string][]string)
+		for _, refSet := range xrefs.CrossReferences {
+			for _, ref := range refSet.Reference {
+				if ref.Kind == schema.RefCallEdge {
+					anchors.Add(ref.Ticket)
+					expandedAnchors[ref.Ticket] = ref
+				}
 			}
 		}
-	}
-	err = forAllEdges(ctx, service, anchors, []string{schema.ChildOfEdge}, func(source string, target string) error {
-		anchor, ok := expandedAnchors[source]
-		if !ok {
-			return errors.New("missing expanded anchor")
+		err = forAllEdges(ctx, service, anchors, []string{schema.ChildOfEdge}, func(source string, target string) error {
+			anchor, ok := expandedAnchors[source]
+			if !ok {
+				log.Printf("Warning: missing expanded anchor for %v", source)
+				return nil
+			}
+			// anchor.Parent is the syntactic parent of the anchor; we want the semantic parent.
+			if target != anchor.Parent {
+				parentToAnchor[target] = append(parentToAnchor[target], source)
+			}
+			return nil
+		})
+		if err != nil {
+			return nil, err
 		}
-		// anchor.Parent is the syntactic parent of the anchor; we want the semantic parent.
-		if target != anchor.Parent {
-			parentToAnchor[target] = append(parentToAnchor[target], source)
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
 	}
 	// Now begin filling out the response.
 	reply := &xpb.CallersReply{}
@@ -713,37 +724,42 @@ func SlowCallers(ctx context.Context, service Service, req *xpb.CallersRequest) 
 			detailToFetch.Add(calleeNode)
 		}
 	}
-	for caller, calls := range parentToAnchor {
-		rCaller := &xpb.CallersReply_Caller{
-			Detail: &xpb.CallersReply_CallableDetail{
-				SemanticObject: caller,
-			},
+	if parentToAnchor != nil {
+		// parentToAnchor != nil implies expandedAnchors != nil
+		for caller, calls := range parentToAnchor {
+			rCaller := &xpb.CallersReply_Caller{
+				Detail: &xpb.CallersReply_CallableDetail{
+					SemanticObject: caller,
+				},
+			}
+			detailToFetch.Add(caller)
+			for _, callsite := range calls {
+				rCallsite := &xpb.CallersReply_Caller_CallSite{}
+				rCallsite.Anchor = expandedAnchors[callsite]
+				// TODO(zarko): Set rCallsite.CallToOverride.
+				rCaller.CallSite = append(rCaller.CallSite, rCallsite)
+			}
+			reply.Caller = append(reply.Caller, rCaller)
 		}
-		detailToFetch.Add(caller)
-		for _, callsite := range calls {
-			rCallsite := &xpb.CallersReply_Caller_CallSite{}
-			rCallsite.Anchor = expandedAnchors[callsite]
-			// TODO(zarko): Set rCallsite.CallToOverride.
-			rCaller.CallSite = append(rCaller.CallSite, rCallsite)
-		}
-		reply.Caller = append(reply.Caller, rCaller)
 	}
 	// Gather CallableDetail for each of our semantic nodes.
 	details, err := findCallableDetail(ctx, service, detailToFetch)
 	if err != nil {
 		return nil, err
 	}
-	// ... and merge it back into the response.
-	for _, detail := range reply.Callee {
-		msg, found := details[detail.SemanticObject]
-		if found {
-			proto.Merge(detail, msg)
+	if details != nil {
+		// ... and merge it back into the response.
+		for _, detail := range reply.Callee {
+			msg, found := details[detail.SemanticObject]
+			if found {
+				proto.Merge(detail, msg)
+			}
 		}
-	}
-	for _, caller := range reply.Caller {
-		msg, found := details[caller.Detail.SemanticObject]
-		if found {
-			proto.Merge(caller.Detail, msg)
+		for _, caller := range reply.Caller {
+			msg, found := details[caller.Detail.SemanticObject]
+			if found {
+				proto.Merge(caller.Detail, msg)
+			}
 		}
 	}
 	return reply, nil
