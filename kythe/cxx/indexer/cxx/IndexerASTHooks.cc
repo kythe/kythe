@@ -1356,7 +1356,8 @@ bool IndexerASTVisitor::VisitNamespaceDecl(const clang::NamespaceDecl *Decl) {
   } else {
     NameRange = RangeForNameOfDeclaration(Decl);
   }
-  MaybeRecordDefinitionRange(RangeInCurrentContext(NameRange), DeclNode);
+  MaybeRecordDefinitionRange(
+      RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode);
   Observer.recordNamespaceNode(DeclName, DeclNode);
   AddChildOfEdgeToDeclContext(Decl, DeclNode);
   return true;
