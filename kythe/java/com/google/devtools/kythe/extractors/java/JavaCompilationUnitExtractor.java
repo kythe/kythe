@@ -243,13 +243,14 @@ public class JavaCompilationUnitExtractor {
     Preconditions.checkNotNull(options);
     Preconditions.checkNotNull(outputPath);
 
-    if (!sources.iterator().hasNext()) {
-      throw new ExtractionException("no sources to analyze", false);
-    }
 
-    AnalysisResults results =
-        runJavaAnalysisToExtractCompilationDetails(
-            sources, classpath, sourcepath, processorpath, processors, options);
+    AnalysisResults results;
+    if (sources.iterator().hasNext()) {
+      results = runJavaAnalysisToExtractCompilationDetails(
+              sources, classpath, sourcepath, processorpath, processors, options);
+    } else {
+      results = new AnalysisResults();
+    }
 
     List<FileData> fileContents = ExtractorUtils.convertBytesToFileDatas(results.fileContents);
     List<FileInput> compilationFileInputs = Lists.newLinkedList();

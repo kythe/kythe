@@ -62,9 +62,14 @@ public class JavaIndexer {
       // java_indexer kindex-file
       desc = IndexInfoUtils.readIndexInfoFromFile(compilation.get(0));
     }
+
     if (desc == null) {
       throw new IllegalStateException("Unknown error reading CompilationDescription");
     }
+    if (!desc.getFileContents().iterator().hasNext()) {
+      return;
+    }
+
 
     try (OutputStream stream = System.out) {
       new JavacAnalysisDriver()
