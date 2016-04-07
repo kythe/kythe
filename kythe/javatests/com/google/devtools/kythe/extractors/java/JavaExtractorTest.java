@@ -40,6 +40,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /** Tests for {@link JavaCompilationExtractor}. */
@@ -485,6 +486,34 @@ public class JavaExtractorTest extends TestCase {
     JavaArguments args = JavaArguments.parseArguments(unit);
     assertEquals(2, args.getSourcepath().size());
     assertThat(args.getSourcepath()).containsExactly(TEST_DATA_DIR, "output-gensrc.jar.files");
+    assertEquals(0, args.getClasspath().size());
+    assertThatArgumentsMatch(args, unit);
+  }
+
+  /**
+   * Tests that the extractor doesn't fall over when it's provided with no sources.
+   */
+  public void testNoSources() throws Exception {
+    JavaCompilationUnitExtractor java = new JavaCompilationUnitExtractor(CORPUS);
+
+    List<String> sources = Collections.emptyList();
+    List<String> options =
+        Lists.newArrayList("-bootclasspath", testFiles("empty/fake-rt.jar").get(0));
+
+    // Index the specified sources
+    CompilationDescription description =
+        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, options, "output");
+
+    CompilationUnit unit = description.getCompilationUnit();
+
+    assertNotNull(unit);
+    assertEquals(TARGET1, unit.getVName().getSignature());
+    assertEquals(0, unit.getSourceFileCount());
+    assertEquals(0, unit.getRequiredInputCount());
+
+    // And the correct classpath set to replay the compilation.
+    JavaArguments args = JavaArguments.parseArguments(unit);
+    assertEquals(0, args.getSourcepath().size());
     assertEquals(0, args.getClasspath().size());
     assertThatArgumentsMatch(args, unit);
   }

@@ -9,6 +9,16 @@ sh_test(
     ],
 )
 
+sh_test(
+    name = "indexer_empty_cu_test",
+    srcs = ["indexer_empty_cu_test.sh"],
+    data = [
+        "//kythe/go/platform/tools:entrystream",
+        "//kythe/java/com/google/devtools/kythe/analyzers/java:indexer",
+        "//kythe/testdata:java_empty.kindex",
+    ],
+)
+
 # See https://kythe.io/phabricator/T70
 sh_test(
     name = "indexer_source_root_test",
