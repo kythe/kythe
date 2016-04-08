@@ -61,10 +61,19 @@ public class EntrySet {
   private boolean emitted;
 
   protected EntrySet(
-      VName source, String edgeKind, VName target, ImmutableMap<String, byte[]> properties) {
+      VName source,
+      String edgeKind,
+      int edgeOrdinal,
+      VName target,
+      ImmutableMap<String, byte[]> properties) {
     Preconditions.checkArgument(
         (edgeKind == null) == (target == null),
         "edgeKind and target must be both non-null or both null");
+    Preconditions.checkArgument(
+        edgeOrdinal < 0 || edgeKind != null, "edgeOrdinal must only be given with an edgeKind");
+    if (edgeOrdinal >= 0) {
+      edgeKind = edgeKind + "." + edgeOrdinal;
+    }
     this.source = source;
     this.edgeKind = edgeKind;
     this.target = target;
@@ -141,7 +150,9 @@ public class EntrySet {
     private final VName source;
 
     // invariant: (edgeKind == null) == (target == null)
+    // invariant: (edgeKind == null) == (edgeOrdinal < 0)
     private final String edgeKind;
+    private final int edgeOrdinal;
     private final VName target;
 
     /**
@@ -151,9 +162,21 @@ public class EntrySet {
      * @see KytheEntrySets.EdgeBuilder
      */
     public Builder(VName source, String edgeKind, VName target) {
+      this(source, edgeKind, -1, target);
+    }
+
+    /**
+     * Construct a new {@link EntrySet.Builder} with the given (source, edgeKind, target)
+     * tuple, adding the given ordinal to the edge kind. This is meant to
+     * begin building an edge {@link EntrySet}.
+     *
+     * @see KytheEntrySets.EdgeBuilder
+     */
+    public Builder(VName source, String edgeKind, int edgeOrdinal, VName target) {
       this.sourceBuilder = null;
       this.source = source;
       this.edgeKind = edgeKind;
+      this.edgeOrdinal = edgeOrdinal;
       this.target = target;
     }
 
@@ -167,6 +190,7 @@ public class EntrySet {
       this.sourceBuilder = sourceBase;
       this.source = null;
       this.edgeKind = null;
+      this.edgeOrdinal = -1;
       this.target = null;
     }
 
@@ -206,7 +230,7 @@ public class EntrySet {
               sourceBuilder.clone().setSignature(buildSignature(salts.build(), properties)).build();
         }
       }
-      return new EntrySet(source, edgeKind, target, properties);
+      return new EntrySet(source, edgeKind, edgeOrdinal, target, properties);
     }
   }
 

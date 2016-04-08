@@ -221,10 +221,7 @@ public class KytheEntrySets {
   /** Emits an edge of the given kind and ordinal from {@code source} to {@code target}. */
   public void emitEdge(EntrySet source, EdgeKind kind, EntrySet target, int ordinal) {
     getStatisticsCollector().incrementCounter("emit-edge-" + kind);
-    new EdgeBuilder(source.getVName(), kind, target.getVName())
-        .setOrdinal(ordinal)
-        .build()
-        .emit(emitter);
+    new EdgeBuilder(source.getVName(), kind, ordinal, target.getVName()).build().emit(emitter);
   }
 
   /**
@@ -360,14 +357,12 @@ public class KytheEntrySets {
 
   /** {@link EntrySet.Builder} for Kythe edges. */
   public static class EdgeBuilder extends EntrySet.Builder {
-    private static final String ORDINAL_EDGE_KIND = "/kythe/ordinal";
-
     public EdgeBuilder(VName source, EdgeKind kind, VName target) {
       super(source, kind.getValue(), target);
     }
 
-    public EdgeBuilder setOrdinal(int ordinal) {
-      return setProperty(ORDINAL_EDGE_KIND, "" + ordinal);
+    public EdgeBuilder(VName source, EdgeKind kind, int ordinal, VName target) {
+      super(source, kind.getValue(), ordinal, target);
     }
 
     @Override
