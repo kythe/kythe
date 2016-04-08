@@ -304,16 +304,13 @@ func (d *DB) copyEntries(entries <-chan *spb.Entry) error {
 				})
 			}
 		} else if schema.EdgeDirection(e.EdgeKind) == schema.Forward {
-			ticket := kytheuri.ToString(e.Source)
-			var ordinal *int32
-			if e.FactName == schema.OrdinalFact {
-				n, err := strconv.Atoi(string(e.FactValue))
-				if err == nil {
-					o := int32(n)
-					ordinal = &o
-				}
+			kind, ord, hasOrdinal := schema.ParseOrdinal(e.EdgeKind)
+			var ordinal *int
+			if hasOrdinal {
+				ordinal = &ord
 			}
-			if _, err := copyEdge.Exec(ticket, e.EdgeKind, kytheuri.ToString(e.Target), ordinal); err != nil {
+			ticket := kytheuri.ToString(e.Source)
+			if _, err := copyEdge.Exec(ticket, kind, kytheuri.ToString(e.Target), ordinal); err != nil {
 				return fmt.Errorf("error copying edge: %v", err)
 			}
 		}

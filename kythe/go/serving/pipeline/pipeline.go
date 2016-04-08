@@ -151,6 +151,7 @@ func Run(ctx context.Context, entries <-chan *spb.Entry, db keyvalue.DB, opts *O
 	}
 	return fErr
 }
+
 func combineNodesAndEdges(ctx context.Context, opts *Options, out *servingOutput, gsEntries <-chan *spb.Entry) (disksort.Interface, error) {
 	log.Println("Writing partial edges")
 

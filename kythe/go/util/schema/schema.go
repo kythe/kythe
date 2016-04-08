@@ -17,7 +17,11 @@
 // Package schema defines constants used in the Kythe schema.
 package schema
 
-import "strings"
+import (
+	"regexp"
+	"strconv"
+	"strings"
+)
 
 // Kythe node fact labels
 const (
@@ -34,11 +38,6 @@ const (
 	TextEncodingFact = "/kythe/text/encoding"
 
 	CompleteFact = "/kythe/complete"
-)
-
-// Kythe edge fact labels
-const (
-	OrdinalFact = "/kythe/ordinal"
 )
 
 // DefaultTextEncoding is the assumed value of the TextEncodingFact if it is
@@ -146,4 +145,16 @@ func Canonicalize(kind string) string {
 		return MirrorEdge(kind)
 	}
 	return kind
+}
+
+var ordinalRE = regexp.MustCompile(`^(.+)\.(\d+)$`)
+
+// ParseOrdinal removes an edge kind's `\.[0-9]+` ordinal suffix.
+func ParseOrdinal(edgeKind string) (kind string, ordinal int, hasOrdinal bool) {
+	match := ordinalRE.FindStringSubmatch(edgeKind)
+	if match == nil {
+		return edgeKind, 0, false
+	}
+	ordinal, _ = strconv.Atoi(match[2])
+	return match[1], ordinal, true
 }

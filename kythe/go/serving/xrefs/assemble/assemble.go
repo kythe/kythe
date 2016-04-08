@@ -80,38 +80,37 @@ func SourceFromEntries(entries []*spb.Entry) *Source {
 		Edges:  make(map[string][]EdgeTarget),
 	}
 
-	// edge kind -> target ticket -> ordinal
-	edges := make(map[string]map[string]int32)
+	// edge kind -> target ticket -> ordinal set
+	edges := make(map[string]map[string]map[int32]struct{})
 
 	for _, e := range entries {
 		if graphstore.IsEdge(e) {
-			tgts, ok := edges[e.EdgeKind]
+			kind, ordinal, _ := schema.ParseOrdinal(e.EdgeKind)
+			tgts, ok := edges[kind]
 			if !ok {
-				tgts = make(map[string]int32)
-				edges[e.EdgeKind] = tgts
-			}
-			var ordinal int32
-			if e.FactName == schema.OrdinalFact {
-				n, err := strconv.Atoi(string(e.FactValue))
-				if err == nil {
-					ordinal = int32(n)
-				}
+				tgts = make(map[string]map[int32]struct{})
+				edges[kind] = tgts
 			}
 
 			ticket := kytheuri.ToString(e.Target)
-			if prev, ok := tgts[ticket]; !ok || prev == 0 || ordinal != 0 {
-				tgts[ticket] = ordinal
+			ordSet, ok := tgts[ticket]
+			if !ok {
+				ordSet = make(map[int32]struct{})
+				tgts[ticket] = ordSet
 			}
+			ordSet[int32(ordinal)] = struct{}{}
 		} else {
 			src.Facts[e.FactName] = e.FactValue
 		}
 	}
 	for kind, targets := range edges {
-		for target, ordinal := range targets {
-			src.Edges[kind] = append(src.Edges[kind], EdgeTarget{
-				Ticket:  target,
-				Ordinal: ordinal,
-			})
+		for target, ordinals := range targets {
+			for ordinal := range ordinals {
+				src.Edges[kind] = append(src.Edges[kind], EdgeTarget{
+					Ticket:  target,
+					Ordinal: ordinal,
+				})
+			}
 		}
 		sort.Sort(byOrdinal(src.Edges[kind]))
 	}

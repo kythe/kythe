@@ -175,8 +175,8 @@ func (g *GraphStoreService) Edges(ctx context.Context, req *xpb.EdgesRequest) (*
 		}
 
 		var (
-			// EdgeKind -> TargetTicket -> Ordinal
-			filteredEdges = make(map[string]map[string]int32)
+			// EdgeKind -> TargetTicket -> OrdinalSet
+			filteredEdges = make(map[string]map[string]map[int32]struct{})
 			filteredFacts []*cpb.Fact
 		)
 
@@ -192,17 +192,20 @@ func (g *GraphStoreService) Edges(ctx context.Context, req *xpb.EdgesRequest) (*
 				}
 			} else {
 				// edge
+				edgeKind, ordinal, _ := schema.ParseOrdinal(edgeKind)
 				if len(req.Kind) == 0 || allowedKinds.Contains(edgeKind) {
 					targets, ok := filteredEdges[edgeKind]
 					if !ok {
-						targets = make(map[string]int32)
+						targets = make(map[string]map[int32]struct{})
 						filteredEdges[edgeKind] = targets
 					}
-					ordinal := parseOrdinal(entry)
 					ticket := kytheuri.ToString(entry.Target)
-					if prev, ok := targets[ticket]; !ok || prev == 0 || ordinal != 0 {
-						targets[ticket] = ordinal
+					ordSet, ok := targets[ticket]
+					if !ok {
+						ordSet = make(map[int32]struct{})
+						targets[ticket] = ordSet
 					}
+					ordSet[int32(ordinal)] = struct{}{}
 				}
 			}
 			return nil
@@ -215,11 +218,13 @@ func (g *GraphStoreService) Edges(ctx context.Context, req *xpb.EdgesRequest) (*
 			var groups []*xpb.EdgeSet_Group
 			for edgeKind, targets := range filteredEdges {
 				g := &xpb.EdgeSet_Group{Kind: edgeKind}
-				for target, ordinal := range targets {
-					g.Edge = append(g.Edge, &xpb.EdgeSet_Group_Edge{
-						TargetTicket: target,
-						Ordinal:      ordinal,
-					})
+				for target, ordinals := range targets {
+					for ordinal := range ordinals {
+						g.Edge = append(g.Edge, &xpb.EdgeSet_Group_Edge{
+							TargetTicket: target,
+							Ordinal:      ordinal,
+						})
+					}
 					targetSet.Add(target)
 				}
 				groups = append(groups, g)
@@ -258,16 +263,6 @@ func (g *GraphStoreService) Edges(ctx context.Context, req *xpb.EdgesRequest) (*
 	}
 
 	return reply, nil
-}
-
-func parseOrdinal(entry *spb.Entry) int32 {
-	if entry.FactName == schema.OrdinalFact {
-		n, err := strconv.Atoi(string(entry.FactValue))
-		if err == nil {
-			return int32(n)
-		}
-	}
-	return 0
 }
 
 // Decorations implements part of the Service interface.
@@ -454,7 +449,8 @@ func getEdges(ctx context.Context, gs graphstore.Service, node *spb.VName, pred 
 		EdgeKind: "*",
 	}, func(entry *spb.Entry) error {
 		if graphstore.IsEdge(entry) && pred(entry) {
-			targets = append(targets, &edgeTarget{entry.EdgeKind, entry.Target, parseOrdinal(entry)})
+			edgeKind, ordinal, _ := schema.ParseOrdinal(entry.EdgeKind)
+			targets = append(targets, &edgeTarget{edgeKind, entry.Target, int32(ordinal)})
 		}
 		return nil
 	}); err != nil {

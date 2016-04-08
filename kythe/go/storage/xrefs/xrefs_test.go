@@ -17,8 +17,8 @@
 package xrefs
 
 import (
+	"fmt"
 	"sort"
-	"strconv"
 	"testing"
 
 	"kythe.io/kythe/go/services/graphstore"
@@ -298,12 +298,15 @@ func nodeFact(vname *spb.VName, fact, val string) *spb.Entry {
 }
 
 func edgeFact(source *spb.VName, kind string, ordinal int, target *spb.VName) *spb.Entry {
+	if ordinal > 0 {
+		kind = fmt.Sprintf("%s.%d", kind, ordinal)
+	}
 	return &spb.Entry{
 		Source:    source,
 		Target:    target,
 		EdgeKind:  kind,
-		FactName:  schema.OrdinalFact,
-		FactValue: []byte(strconv.Itoa(ordinal)),
+		FactName:  "/",
+		FactValue: nil,
 	}
 }
 
