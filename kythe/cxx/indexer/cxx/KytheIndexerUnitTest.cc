@@ -147,13 +147,13 @@ TEST(KytheIndexerUnitTest, GraphRecorderEdgeOrdinal) {
                    VNameRef(vname_target), 42);
   ASSERT_EQ(1, stream.entries().size());
   const auto& entry = stream.entries()[0];
-  ASSERT_EQ("42", entry.fact_value());
-  ASSERT_EQ("/kythe/ordinal", entry.fact_name());
-  ASSERT_EQ("/kythe/edge/defines/binding", entry.edge_kind());
+  EXPECT_TRUE(entry.fact_value().empty());
+  EXPECT_EQ("/", entry.fact_name());
+  EXPECT_EQ("/kythe/edge/defines/binding.42", entry.edge_kind());
   ASSERT_TRUE(entry.has_target());
   ASSERT_TRUE(entry.has_source());
-  ASSERT_EQ(vname_source.DebugString(), entry.source().DebugString());
-  ASSERT_EQ(vname_target.DebugString(), entry.target().DebugString());
+  EXPECT_EQ(vname_source.DebugString(), entry.source().DebugString());
+  EXPECT_EQ(vname_target.DebugString(), entry.target().DebugString());
 }
 
 static void WriteStringToStackAndBuffer(const google::protobuf::string& string,

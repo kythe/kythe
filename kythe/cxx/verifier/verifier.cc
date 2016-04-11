@@ -935,15 +935,28 @@ void Verifier::AssertSingleFact(std::string *database, unsigned int fact_id,
   AstNode **values = (AstNode **)arena_.New(sizeof(AstNode *) * 5);
   values[0] =
       entry.has_source() ? ConvertVName(loc, entry.source()) : empty_string_id_;
-  values[1] = entry.edge_kind().empty() ? empty_string_id_
-                                        : IdentifierFor(loc, entry.edge_kind());
+  // We're removing support for ordinal facts. Support them during the
+  // transition, but also support the new dot-separated edge kinds that serve
+  // the same purpose.
+  auto dot_pos = entry.edge_kind().rfind('.');
+  if (dot_pos != std::string::npos && dot_pos > 0 &&
+      dot_pos < entry.edge_kind().size() - 1) {
+    values[1] = IdentifierFor(loc, entry.edge_kind().substr(0, dot_pos));
+    values[3] = ordinal_id_;
+    values[4] = IdentifierFor(loc, entry.edge_kind().substr(dot_pos + 1));
+  } else {
+    values[1] = entry.edge_kind().empty()
+                    ? empty_string_id_
+                    : IdentifierFor(loc, entry.edge_kind());
+    values[3] = entry.fact_name().empty()
+                    ? empty_string_id_
+                    : IdentifierFor(loc, entry.fact_name());
+    values[4] = entry.fact_value().empty()
+                    ? empty_string_id_
+                    : IdentifierFor(loc, entry.fact_value());
+  }
   values[2] =
       entry.has_target() ? ConvertVName(loc, entry.target()) : empty_string_id_;
-  values[3] = entry.fact_name().empty() ? empty_string_id_
-                                        : IdentifierFor(loc, entry.fact_name());
-  values[4] = entry.fact_value().empty()
-                  ? empty_string_id_
-                  : IdentifierFor(loc, entry.fact_value());
 
   AstNode *tuple = new (&arena_) Tuple(loc, 5, values);
   AstNode *fact = new (&arena_) App(fact_id_, tuple);

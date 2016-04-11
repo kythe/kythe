@@ -94,9 +94,6 @@ static const std::string *const kPropertySpellings[] = {
     new std::string("/kythe/subkind"),
     new std::string("/kythe/node/kind")};
 
-static const std::string *const kEdgePropertySpelling =
-    new std::string("/kythe/ordinal");
-
 static const std::string *const kEmptyStringSpelling = new std::string("");
 
 static const std::string *const kRootPropertySpelling = new std::string("/");

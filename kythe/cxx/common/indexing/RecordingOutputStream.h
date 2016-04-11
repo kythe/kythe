@@ -40,7 +40,7 @@ class RecordingOutputStream : public KytheOutputStream {
   void Emit(const OrdinalEdgeRef &edge) override {
     proto::Entry entry;
     edge.Expand(&entry);
-    entry.set_fact_name("/kythe/ordinal");
+    entry.set_fact_name("/");
     Emit(entry);
   }
 

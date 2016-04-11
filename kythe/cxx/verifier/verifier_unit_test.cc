@@ -204,6 +204,24 @@ entries {
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
+TEST(VerifierUnitTest, EdgesCanSupplyMultipleDotOrdinals) {
+  Verifier v;
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+  source { root: "1" }
+  edge_kind: "somekind.42"
+  target { root: "2" }
+  fact_name: "/"
+}
+entries {
+  source { root: "1" }
+  edge_kind: "somekind.43"
+  target { root: "2" }
+  fact_name: "/"
+})"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_TRUE(v.VerifyAllGoals());
+}
+
 TEST(VerifierUnitTest, ConflictingFactsNotWellFormed) {
   Verifier v;
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
@@ -227,6 +245,17 @@ TEST(VerifierUnitTest, OnlyTargetIsWrong) {
   target { root: "2" }
   fact_name: "/kythe/ordinal"
   fact_value: "42"
+})"));
+  ASSERT_FALSE(v.PrepareDatabase());
+  ASSERT_FALSE(v.VerifyAllGoals());
+}
+
+TEST(VerifierUnitTest, OnlyTargetIsWrongDotOrdinal) {
+  Verifier v;
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+  edge_kind: "somekind.42"
+  target { root: "2" }
+  fact_name: "/"
 })"));
   ASSERT_FALSE(v.PrepareDatabase());
   ASSERT_FALSE(v.VerifyAllGoals());
@@ -1357,6 +1386,58 @@ fact_value: "1"
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
+TEST(VerifierUnitTest, IsParamEdgePassesDotOrdinal) {
+  Verifier v;
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+#- SomeParam is_param.1 SomeNode
+source { root:"1" }
+edge_kind: "/kythe/edge/is_param.1"
+target { root:"2" }
+fact_name: "/"
+})"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_TRUE(v.VerifyAllGoals());
+}
+
+TEST(VerifierUnitTest, IsParamEdgeBadDotOrdinalNoNumber) {
+  Verifier v;
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+#- SomeParam is_param.1 SomeNode
+source { root:"1" }
+edge_kind: "/kythe/edge/is_param."
+target { root:"2" }
+fact_name: "/"
+})"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_FALSE(v.VerifyAllGoals());
+}
+
+TEST(VerifierUnitTest, IsParamEdgeBadDotOrdinalOnlyDot) {
+  Verifier v;
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+#- SomeParam is_param.1 SomeNode
+source { root:"1" }
+edge_kind: "."
+target { root:"2" }
+fact_name: "/"
+})"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_FALSE(v.VerifyAllGoals());
+}
+
+TEST(VerifierUnitTest, IsParamEdgeBadDotOrdinalNoEdge) {
+  Verifier v;
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+#- SomeParam is_param.1 SomeNode
+source { root:"1" }
+edge_kind: ".42"
+target { root:"2" }
+fact_name: "/"
+})"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_FALSE(v.VerifyAllGoals());
+}
+
 TEST(VerifierUnitTest, IsParamEdgeFailsOnWrongOrdinal) {
   Verifier v;
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
@@ -1371,6 +1452,19 @@ fact_value: "42"
   ASSERT_FALSE(v.VerifyAllGoals());
 }
 
+TEST(VerifierUnitTest, IsParamEdgeFailsOnWrongDotOrdinal) {
+  Verifier v;
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+#- SomeParam is_param.1 SomeNode
+source { root:"1" }
+edge_kind: "/kythe/edge/is_param.42"
+target { root:"2" }
+fact_name: "/"
+})"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_FALSE(v.VerifyAllGoals());
+}
+
 TEST(VerifierUnitTest, IsParamEdgeFailsOnMissingOrdinalInGoal) {
   Verifier v;
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
@@ -1380,6 +1474,19 @@ edge_kind: "/kythe/edge/is_param"
 target { root:"2" }
 fact_name: "/kythe/ordinal"
 fact_value: "42"
+})"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_FALSE(v.VerifyAllGoals());
+}
+
+TEST(VerifierUnitTest, IsParamEdgeFailsOnMissingDotOrdinalInGoal) {
+  Verifier v;
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+#- SomeParam is_param SomeNode
+source { root:"1" }
+edge_kind: "/kythe/edge/is_param.42"
+target { root:"2" }
+fact_name: "/"
 })"));
   ASSERT_TRUE(v.PrepareDatabase());
   ASSERT_FALSE(v.VerifyAllGoals());
@@ -1637,6 +1744,39 @@ edge_kind: "/kythe/edge/is_param"
 target { root:"2" }
 fact_name: "/kythe/ordinal"
 fact_value: "42"
+})"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  size_t call_count = 0;
+  bool key_was_ordinal = false;
+  bool evar_init = false;
+  bool evar_init_to_correct_ordinal = false;
+  ASSERT_TRUE(v.VerifyAllGoals([&call_count, &key_was_ordinal, &evar_init,
+                                &evar_init_to_correct_ordinal](
+      Verifier *cxt, const AssertionParser::Inspection &inspection) {
+    ++call_count;
+    key_was_ordinal = (inspection.label == "Ordinal");
+    if (AstNode *node = inspection.evar->current()) {
+      evar_init = true;
+      if (Identifier *identifier = node->AsIdentifier()) {
+        evar_init_to_correct_ordinal =
+            cxt->symbol_table()->text(identifier->symbol()) == "42";
+      }
+    }
+    return true;
+  }));
+  EXPECT_EQ(1, call_count);
+  EXPECT_TRUE(key_was_ordinal);
+  EXPECT_TRUE(evar_init_to_correct_ordinal);
+}
+
+TEST(VerifierUnitTest, DotOrdinalsGetUnified) {
+  Verifier v;
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+#- SomeAnchor is_param.Ordinal? SomeNode
+source { root:"1" }
+edge_kind: "/kythe/edge/is_param.42"
+target { root:"2" }
+fact_name: "/"
 })"));
   ASSERT_TRUE(v.PrepareDatabase());
   size_t call_count = 0;

@@ -91,10 +91,14 @@ struct OrdinalEdgeRef {
   /// Overwrites all of the fields in `entry` that can differ between edges with
   /// ordinals.
   void Expand(proto::Entry *entry) const {
+    char digits[12];  // strlen("4294967295") + 2
+    int dot_ordinal_length = ::sprintf(digits, ".%u", ordinal);
+    entry->mutable_edge_kind()->clear();
+    entry->mutable_edge_kind()->reserve(dot_ordinal_length + edge_kind.size());
+    entry->mutable_edge_kind()->append(edge_kind.data(), edge_kind.size());
+    entry->mutable_edge_kind()->append(digits, dot_ordinal_length);
     source->Expand(entry->mutable_source());
     target->Expand(entry->mutable_target());
-    *(entry->mutable_fact_value()) = std::to_string(ordinal);
-    entry->mutable_edge_kind()->assign(edge_kind.data(), edge_kind.size());
   }
 };
 
@@ -303,7 +307,6 @@ class FileOutputStream : public KytheOutputStream {
   explicit FileOutputStream(google::protobuf::io::FileOutputStream *stream)
       : stream_(stream) {
     edge_entry_.set_fact_name("/");
-    ordinal_edge_entry_.set_fact_name("/kythe/ordinal");
     UseHashCache(&default_cache_);
   }
 
@@ -321,8 +324,8 @@ class FileOutputStream : public KytheOutputStream {
     EnqueueEntry(edge_entry_);
   }
   void Emit(const OrdinalEdgeRef &edge) override {
-    edge.Expand(&ordinal_edge_entry_);
-    EnqueueEntry(ordinal_edge_entry_);
+    edge.Expand(&edge_entry_);
+    EnqueueEntry(edge_entry_);
   }
   void UseHashCache(HashCache *cache) override {
     cache_ = cache;
@@ -354,10 +357,8 @@ class FileOutputStream : public KytheOutputStream {
   google::protobuf::io::FileOutputStream *stream_;
   /// A prototypical Kythe fact, used only to build other Kythe facts.
   proto::Entry fact_entry_;
-  /// A prototypical ordinalless Kythe edge, used only to build same.
+  /// A prototypical Kythe edge, used only to build same.
   proto::Entry edge_entry_;
-  /// A prototypical ordinalful Kythe edge, used only to build same.
-  proto::Entry ordinal_edge_entry_;
   /// Buffers we're holding back for deduplication.
   BufferStack buffers_;
 
