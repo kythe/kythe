@@ -9,6 +9,7 @@ Notable changes:
 Notable additions:
  - `xrefs.Decorations`: add experimental `target_definitions` switch
  - kythe tool: add `--graphviz` output flag to `edges` subcommand
+ - kythe tool: add `--target_definitions` switch to `decor` subcommand
 
 Notable fixes:
  - Javac extractor: add processors registered in META-INF/services

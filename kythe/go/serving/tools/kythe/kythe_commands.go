@@ -72,8 +72,9 @@ var (
 	decorSpan string
 
 	// decor flags
-	dirtyFile string
-	refFormat string
+	targetDefs bool
+	dirtyFile  string
+	refFormat  string
 
 	// xrefs flags
 	defKind, declKind, refKind, docKind string
@@ -348,26 +349,28 @@ var (
 			flag.StringVar(&refFormat, "format", "@edgeKind@\t@^line@:@^col@-@$line@:@$col@\t@nodeKind@\t@target@",
 				`Format for each decoration result.
       Format Markers:
-        @source@   -- ticket of anchor source node
-        @target@   -- ticket of referenced target node
-        @edgeKind@ -- edge kind from anchor node to its referenced target
-        @nodeKind@ -- node kind of referenced target
-        @subkind@  -- subkind of referenced target
-        @^offset@  -- anchor source's starting byte-offset
-        @^line@    -- anchor source's starting line
-        @^col@     -- anchor source's starting column offset
-        @$offset@  -- anchor source's ending byte-offset
-        @$line@    -- anchor source's ending line
-        @$col@     -- anchor source's ending column offset`)
+        @source@    -- ticket of anchor source node
+        @target@    -- ticket of referenced target node
+        @targetDef@ -- ticket of referenced target's definition
+        @edgeKind@  -- edge kind from anchor node to its referenced target
+        @nodeKind@  -- node kind of referenced target
+        @subkind@   -- subkind of referenced target
+        @^offset@   -- anchor source's starting byte-offset
+        @^line@     -- anchor source's starting line
+        @^col@      -- anchor source's starting column offset
+        @$offset@   -- anchor source's ending byte-offset
+        @$line@     -- anchor source's ending line
+        @$col@      -- anchor source's ending column offset`)
 			flag.StringVar(&decorSpan, "span", "", spanHelp)
-			// TODO(schroederc): add option to expose definition locations
+			flag.BoolVar(&targetDefs, "target_definitions", false, "Whether to request definitions (@targetDef@ format marker) for each reference's target")
 		},
 		func(flag *flag.FlagSet) error {
 			req := &xpb.DecorationsRequest{
 				Location: &xpb.Location{
 					Ticket: flag.Arg(0),
 				},
-				References: true,
+				References:        true,
+				TargetDefinitions: targetDefs,
 				Filter: []string{
 					schema.NodeKindFact,
 					schema.SubkindFact,

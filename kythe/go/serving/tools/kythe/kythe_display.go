@@ -152,6 +152,12 @@ func displayDecorations(decor *xpb.DecorationsReply) error {
 			End:   ref.AnchorEnd,
 		}
 
+		var targetDef string
+		if ref.TargetDefinition != nil {
+			targetDef = ref.TargetDefinition.Ticket
+			// TODO(schroederc): other TargetDefinition fields
+		}
+
 		r := strings.NewReplacer(
 			"@source@", ref.SourceTicket,
 			"@target@", ref.TargetTicket,
@@ -164,6 +170,7 @@ func displayDecorations(decor *xpb.DecorationsReply) error {
 			"@$offset@", itoa(loc.End.ByteOffset),
 			"@$line@", itoa(loc.End.LineNumber),
 			"@$col@", itoa(loc.End.ColumnOffset),
+			"@targetDef@", targetDef,
 		)
 		if _, err := r.WriteString(out, refFormat+"\n"); err != nil {
 			return err
