@@ -84,18 +84,21 @@
   "Returns a seq of precomputed text/anchors to display as the source-text"
   [decorations]
   (let [src (b64/decodeString (:source_text decorations))
+        definitions (:definition_locations decorations)
         anchors (mapcat overlay-anchors
                   (group-overlapping-anchors
                     (filter (fn [{:keys [start end kind]}]
                               (and start end (< start end)))
-                      (map (fn [{:keys [source_ticket target_ticket anchor_start anchor_end kind target_definition]}]
-                             {:start (:byte_offset anchor_start)
-                              :end (:byte_offset anchor_end)
-                              :target-definition target_definition
-                              :kind (schema/trim-edge-prefix kind)
-                              :anchor-ticket source_ticket
-                              :target-ticket target_ticket})
-                        (filter #(not (contains? #{schema/documents-edge schema/defines-edge} (:kind %)))
+                            (map (fn [{:keys [source_ticket target_ticket anchor_start anchor_end kind target_definition]}]
+                                   (let [def (when target_definition
+                                               (get definitions (keyword target_definition)))]
+                                     {:start (:byte_offset anchor_start)
+                                      :end (:byte_offset anchor_end)
+                                      :target-definition def
+                                      :kind (schema/trim-edge-prefix kind)
+                                      :anchor-ticket source_ticket
+                                      :target-ticket target_ticket}))
+                                 (filter #(not (contains? #{schema/documents-edge schema/defines-edge} (:kind %)))
                           (:reference decorations))))))]
     {:source-text src
      :num-lines (count-lines src)
