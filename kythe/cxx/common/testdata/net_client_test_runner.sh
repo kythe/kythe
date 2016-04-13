@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 set -o pipefail
-BASE_DIR="$TEST_SRCDIR/kythe/cxx/common/testdata"
+BASE_DIR="$PWD/kythe/cxx/common/testdata"
 TEST_JSON="${BASE_DIR}/net_client_test_data.json"
 TEST_BIN="kythe/cxx/common/net_client_test"
 OUT_DIR="$TEST_TMPDIR"

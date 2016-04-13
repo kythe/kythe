@@ -20,7 +20,7 @@
 VERIFIER="kythe/cxx/verifier/verifier"
 INDEXER="kythe/cxx/indexer/cxx/indexer"
 EXTRACTOR="kythe/cxx/extractor/cxx_extractor"
-BASE_DIR="$TEST_SRCDIR/kythe/cxx/indexer/cxx/testdata"
+BASE_DIR="$PWD/kythe/cxx/indexer/cxx/testdata"
 OUT_DIR="$TEST_TMPDIR"
 source kythe/cxx/indexer/cxx/testdata/parse_args.sh
 

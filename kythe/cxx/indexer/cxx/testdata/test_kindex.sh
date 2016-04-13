@@ -1,6 +1,6 @@
 #!/bin/bash -e
 # Tests whether the indexer will read from kindex files.
-BASE_DIR="$TEST_SRCDIR/kythe/cxx/indexer/cxx/testdata"
+BASE_DIR="$PWD/kythe/cxx/indexer/cxx/testdata"
 OUT_DIR="$TEST_TMPDIR"
 VERIFIER="kythe/cxx/verifier/verifier"
 INDEXER="kythe/cxx/indexer/cxx/indexer"

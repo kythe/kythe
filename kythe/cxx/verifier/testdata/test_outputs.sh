@@ -6,7 +6,7 @@
 # output with the --graphviz flag). If the output matches exactly for
 # each test case, this script returns zero.
 HAD_ERRORS=0
-BASE_DIR="$TEST_SRCDIR/kythe/cxx/verifier/testdata"
+BASE_DIR="$PWD/kythe/cxx/verifier/testdata"
 VERIFIER="kythe/cxx/verifier/verifier"
 function one_case {
   cat $1.bin | ${VERIFIER} --graphviz | diff $1.dot -

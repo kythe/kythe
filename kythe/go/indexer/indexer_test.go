@@ -46,7 +46,11 @@ func (m memFetcher) Fetch(path, digest string) ([]byte, error) {
 }
 
 func readTestFile(path string) ([]byte, error) {
-	fullPath := filepath.Join(os.Getenv("TEST_SRCDIR"), filepath.FromSlash(path))
+	pwd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+	fullPath := filepath.Join(pwd, filepath.FromSlash(path))
 	return ioutil.ReadFile(fullPath)
 }
 

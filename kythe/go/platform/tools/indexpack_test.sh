@@ -19,7 +19,7 @@
 jq="third_party/jq/jq"
 indexpack="kythe/go/platform/tools/indexpack"
 viewindex="kythe/go/platform/tools/viewindex"
-test_kindex="$TEST_SRCDIR/kythe/testdata/test.kindex"
+test_kindex="$PWD/kythe/testdata/test.kindex"
 
 kindex_contents() {
   $viewindex --files "$1" | $jq -c -S .

@@ -16,13 +16,13 @@
 
 # This script checks that extract_compilation_database.sh works on a simple
 # compilation database.
-BASE_DIR="$TEST_SRCDIR/kythe/extractors/cmake"
+BASE_DIR="$PWD/kythe/extractors/cmake"
 OUT_DIR="$TEST_TMPDIR"
 EXTRACT="${BASE_DIR}/extract_compilation_database.sh"
 EXPECTED_FILE_HASH="deac66ccb79f6d31c0fa7d358de48e083c15c02ff50ec1ebd4b64314b9e6e196"
-KINDEX_TOOL="${TEST_SRCDIR}/kythe/cxx/tools/kindex_tool"
-export KYTHE_EXTRACTOR="${TEST_SRCDIR}/kythe/cxx/extractor/cxx_extractor"
-export JQ="${TEST_SRCDIR}/third_party/jq/jq"
+KINDEX_TOOL="$PWD/kythe/cxx/tools/kindex_tool"
+export KYTHE_EXTRACTOR="$PWD/kythe/cxx/extractor/cxx_extractor"
+export JQ="$PWD/third_party/jq/jq"
 cd "${BASE_DIR}/testdata"
 KYTHE_CORPUS=test_corpus KYTHE_ROOT_DIRECTORY="${BASE_DIR}" \
     KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}" \

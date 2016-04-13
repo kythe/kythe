@@ -1,13 +1,8 @@
-# TODO(shahms): Bazel inconsistently includes the workspace name in
-# paths but doesn't provide a reliable way of abstracting this.
-# We've baked the non-named path into a lot of shell scripts
-# such that it's infeasible to change at this juncture.
-# https://phabricator-dot-kythe-repo.appspot.com/T120
-#workspace(name = "io_kythe")
+workspace(name = "io_kythe")
 
 load("//:version.bzl", "check_version")
 
-check_version("0.2.0-2016-03-21 (@19b5675)")
+check_version("0.2.1")
 
 load("//tools/cpp:clang_configure.bzl", "clang_configure")
 

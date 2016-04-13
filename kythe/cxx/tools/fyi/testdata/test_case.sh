@@ -23,7 +23,7 @@
 
 set -o pipefail
 TEST_NAME="$1"
-BASE_DIR="$TEST_SRCDIR/kythe/cxx/tools/fyi/testdata"
+BASE_DIR="$PWD/kythe/cxx/tools/fyi/testdata"
 TEST_JSON="${BASE_DIR}/${TEST_NAME}.json"
 TEST_EXPECTED="${BASE_DIR}/${TEST_NAME}.expected"
 FYI="kythe/cxx/tools/fyi/fyi"

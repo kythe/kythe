@@ -1,7 +1,7 @@
 #!/bin/bash
 # This script checks that kindex_tool -assemble is inverted by
 # kindex_tool -explode.
-BASE_DIR="$TEST_SRCDIR/kythe/cxx/tools/testdata"
+BASE_DIR="$PWD/kythe/cxx/tools/testdata"
 OUT_DIR="$TEST_TMPDIR"
 KINDEX_TOOL_BIN="kythe/cxx/tools/kindex_tool"
 

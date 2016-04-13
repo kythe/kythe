@@ -21,8 +21,9 @@ export TMPDIR=${TEST_TMPDIR:?}
 
 TEST_PORT=9898
 ADDR=localhost:$TEST_PORT
+TEST_REPOSRCDIR="$PWD"
 
-jq() { "$TEST_SRCDIR/third_party/jq/jq" "$@"; }
+jq() { "$TEST_REPOSRCDIR/third_party/jq/jq" "$@"; }
 
 if ! command -v curl >/dev/null; then
   echo "Test requires curl command" >&2
@@ -41,29 +42,29 @@ cd "$TMPDIR/release"
 cd kythe-*
 
 # Ensure the various tools work on test inputs
-tools/viewindex "$TEST_SRCDIR/kythe/testdata/test.kindex" | \
+tools/viewindex "$TEST_REPOSRCDIR/kythe/testdata/test.kindex" | \
   jq . >/dev/null
-tools/indexpack --to_archive indexpack.test "$TEST_SRCDIR/kythe/testdata/test.kindex"
-tools/entrystream < "$TEST_SRCDIR/kythe/testdata/test.entries" | \
+tools/indexpack --to_archive indexpack.test "$TEST_REPOSRCDIR/kythe/testdata/test.kindex"
+tools/entrystream < "$TEST_REPOSRCDIR/kythe/testdata/test.entries" | \
   tools/entrystream --write_json | \
   tools/entrystream --read_json --entrysets >/dev/null
-tools/triples < "$TEST_SRCDIR/kythe/testdata/test.entries" >/dev/null
+tools/triples < "$TEST_REPOSRCDIR/kythe/testdata/test.entries" >/dev/null
 
 # TODO(zarko): add cxx extractor tests
 rm -rf "$TMPDIR/java_compilation"
 REAL_JAVAC="$(which java)" \
   JAVAC_EXTRACTOR_JAR=$PWD/extractors/javac_extractor.jar \
-  KYTHE_ROOT_DIRECTORY="$TEST_SRCDIR" \
+  KYTHE_ROOT_DIRECTORY="$TEST_REPOSRCDIR" \
   KYTHE_OUTPUT_DIRECTORY="$TMPDIR/java_compilation" \
   KYTHE_EXTRACT_ONLY=1 \
-  extractors/javac-wrapper.sh -cp "$TEST_SRCDIR/third_party/guava"/*.jar \
-  "$TEST_SRCDIR/kythe/java/com/google/devtools/kythe/common"/*.java
+  extractors/javac-wrapper.sh -cp "$TEST_REPOSRCDIR/third_party/guava"/*.jar \
+  "$TEST_REPOSRCDIR/kythe/java/com/google/devtools/kythe/common"/*.java
 cat "$TMPDIR"/javac-extractor.{out,err}
 java -jar indexers/java_indexer.jar "$TMPDIR/java_compilation"/*.kindex | \
   tools/entrystream --count
 
 # Ensure the Java indexer works on a curated test compilation
-java -jar indexers/java_indexer.jar "$TEST_SRCDIR/kythe/testdata/test.kindex" > entries
+java -jar indexers/java_indexer.jar "$TEST_REPOSRCDIR/kythe/testdata/test.kindex" > entries
 # TODO(zarko): add C++ test kindex entries
 
 # Ensure basic Kythe pipeline toolset works

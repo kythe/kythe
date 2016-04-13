@@ -18,7 +18,7 @@ set -o pipefail
 
 indexer="kythe/java/com/google/devtools/kythe/analyzers/java/indexer"
 entrystream="kythe/go/platform/tools/entrystream"
-test_kindex="$TEST_SRCDIR/kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/corner_case.kindex"
+test_kindex="$PWD/kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/corner_case.kindex"
 
 # This will emit an error if https://kythe.io/phabricator/T70 is not solved.
 "$indexer" "$test_kindex" 2>"$TEST_TMPDIR/err.log" | \

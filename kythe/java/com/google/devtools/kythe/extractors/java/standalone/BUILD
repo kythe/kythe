@@ -14,7 +14,7 @@ java_binary(
         "@bazel_tools//third_party/java/jdk/langtools:javac_jar",
     ],
     jvm_flags = [
-        "-Xbootclasspath/p:$$JAVA_RUNFILES/$(location @bazel_tools//third_party/java/jdk/langtools:javac_jar)",
+        "-Xbootclasspath/p:$$JAVA_RUNFILES/io_kythe/$(location @bazel_tools//third_party/java/jdk/langtools:javac_jar)",
     ],
     main_class = "com.google.devtools.kythe.extractors.java.standalone.Javac8Wrapper",
     deps = [

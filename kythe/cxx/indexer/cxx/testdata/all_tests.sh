@@ -17,7 +17,7 @@
 # This script runs all of the indexer minitests.
 # It's useful when you want a single test target to build.
 
-BASE_DIR="$TEST_SRCDIR/kythe/cxx/indexer/cxx/testdata"
+BASE_DIR="$PWD/kythe/cxx/indexer/cxx/testdata"
 HAD_ERRORS=0
 
 if ! "${BASE_DIR}/test_basic.sh" ; then HAD_ERRORS=1; fi

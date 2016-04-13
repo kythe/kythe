@@ -19,7 +19,7 @@ set -o pipefail
 indexer="kythe/java/com/google/devtools/kythe/analyzers/java/indexer"
 indexpack="kythe/go/platform/tools/indexpack"
 entrystream="kythe/go/platform/tools/entrystream"
-test_kindex="$TEST_SRCDIR/kythe/testdata/test.kindex"
+test_kindex="$PWD/kythe/testdata/test.kindex"
 
 # Test indexing a .kindex file
 $indexer $test_kindex | $entrystream >/dev/null

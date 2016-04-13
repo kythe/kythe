@@ -17,11 +17,11 @@
 # Ensures that vnames.json can be read by the //kythe/storage/go/filevnames library
 
 DIRECTORY_INDEXER="$PWD/kythe/go/storage/tools/directory_indexer"
-CONFIG="$TEST_SRCDIR/kythe/data/vnames.json"
+CONFIG="$PWD/kythe/data/vnames.json"
 OUT="$TEST_TMPDIR/file_entries"
 
 # Directory tree with some (but not many) files
-DIR="$TEST_SRCDIR/kythe/data"
+DIR="$PWD/kythe/data"
 
 mkdir -p "$(dirname "$OUT")"
 cd "$DIR"

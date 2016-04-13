@@ -1,6 +1,6 @@
 #!/bin/bash -e
 # This script checks that the claiming tool works on kindex files.
-BASE_DIR="$TEST_SRCDIR/kythe/cxx/tools/testdata"
+BASE_DIR="$PWD/kythe/cxx/tools/testdata"
 OUT_DIR="$TEST_TMPDIR"
 KINDEX_TOOL_BIN="kythe/cxx/tools/kindex_tool"
 CLAIM_TOOL_BIN="kythe/cxx/tools/static_claim"
