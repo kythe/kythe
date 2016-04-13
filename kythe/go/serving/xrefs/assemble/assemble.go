@@ -221,6 +221,10 @@ func (b *DecorationFragmentBuilder) AddEdge(ctx context.Context, e *srvpb.Edge) 
 				return err
 			}
 		case schema.AnchorKind:
+			// Implicit anchors don't belong in file decorations.
+			if string(srcFacts[schema.SubkindFact]) == schema.ImplicitSubkind {
+				return nil
+			}
 			anchorStart, err := strconv.Atoi(string(srcFacts[schema.AnchorStartFact]))
 			if err != nil {
 				log.Printf("Error parsing anchor start offset %q: %v",

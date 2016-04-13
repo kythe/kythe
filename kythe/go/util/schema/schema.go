@@ -61,6 +61,7 @@ const (
 const (
 	ClassSubkind     = "class"
 	EnumClassSubkind = "enumClass"
+	ImplicitSubkind  = "implicit"
 )
 
 // EdgePrefix is the standard Kythe prefix for all edge kinds.
