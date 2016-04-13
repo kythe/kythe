@@ -594,6 +594,8 @@ func (t *tableImpl) Decorations(ctx context.Context, req *xpb.DecorationsRequest
 
 		// TODO(schroederc): break apart Decorations method
 		if req.TargetDefinitions {
+			reply.DefinitionLocations = make(map[string]*xpb.Anchor)
+
 			const maxJumps = 2
 			for i := 0; i < maxJumps && len(nodeTargets) > 0; i++ {
 				tickets := make([]string, 0, len(nodeTargets))
@@ -627,7 +629,12 @@ func (t *tableImpl) Decorations(ctx context.Context, req *xpb.DecorationsRequest
 						loc := cr.Definition[0]
 						for _, r := range refs[refTicket] {
 							if loc.Ticket != r.SourceTicket {
-								r.TargetDefinition = loc
+								r.TargetDefinition = loc.Ticket
+								if _, ok := reply.DefinitionLocations[loc.Ticket]; !ok {
+									// TODO(schroederc): handle differing kinds; completes vs. binding
+									loc.Kind = ""
+									reply.DefinitionLocations[loc.Ticket] = loc
+								}
 							}
 						}
 					} else {

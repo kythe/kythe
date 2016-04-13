@@ -153,9 +153,9 @@ func displayDecorations(decor *xpb.DecorationsReply) error {
 		}
 
 		var targetDef string
-		if ref.TargetDefinition != nil {
-			targetDef = ref.TargetDefinition.Ticket
-			// TODO(schroederc): other TargetDefinition fields
+		if ref.TargetDefinition != "" {
+			targetDef = ref.TargetDefinition
+			// TODO(schroederc): fields from decor.DefinitionLocations
 		}
 
 		r := strings.NewReplacer(
