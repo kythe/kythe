@@ -70,8 +70,8 @@ CREATE TABLE Edges (
 source text NOT NULL,
 kind text NOT NULL,
 target text NOT NULL,
-ordinal int,
-PRIMARY KEY (source, kind, target));`
+ordinal int NOT NULL,
+PRIMARY KEY (source, kind, target, ordinal));`
 
 	// TODO(schroederc): possibly materialize the AllEdges table (or insert its data into Edges)
 	createNodeEdgeIndices = `
@@ -304,11 +304,7 @@ func (d *DB) copyEntries(entries <-chan *spb.Entry) error {
 				})
 			}
 		} else if schema.EdgeDirection(e.EdgeKind) == schema.Forward {
-			kind, ord, hasOrdinal := schema.ParseOrdinal(e.EdgeKind)
-			var ordinal *int
-			if hasOrdinal {
-				ordinal = &ord
-			}
+			kind, ordinal, _ := schema.ParseOrdinal(e.EdgeKind)
 			ticket := kytheuri.ToString(e.Source)
 			if _, err := copyEdge.Exec(ticket, kind, kytheuri.ToString(e.Target), ordinal); err != nil {
 				return fmt.Errorf("error copying edge: %v", err)

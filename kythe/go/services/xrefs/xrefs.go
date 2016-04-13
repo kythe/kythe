@@ -242,11 +242,13 @@ func AllEdges(ctx context.Context, es EdgesService, req *xpb.EdgesRequest) (*xpb
 		}
 		for kind, targets := range kinds {
 			edges := make([]*xpb.EdgeSet_Group_Edge, 0, len(targets))
-			for target, ordinal := range targets {
-				edges = append(edges, &xpb.EdgeSet_Group_Edge{
-					TargetTicket: target,
-					Ordinal:      ordinal,
-				})
+			for target, ordinals := range targets {
+				for ordinal := range ordinals {
+					edges = append(edges, &xpb.EdgeSet_Group_Edge{
+						TargetTicket: target,
+						Ordinal:      ordinal,
+					})
+				}
 			}
 			sort.Sort(ByOrdinal(edges))
 			set.Group = append(set.Group, &xpb.EdgeSet_Group{
@@ -281,27 +283,32 @@ func nodesMapInto(nodes []*xpb.NodeInfo, m map[string]map[string][]byte) {
 }
 
 // EdgesMap returns a map from each node ticket to a map of its outward edge kinds.
-func EdgesMap(edges []*xpb.EdgeSet) map[string]map[string]map[string]int32 {
-	m := make(map[string]map[string]map[string]int32, len(edges))
+func EdgesMap(edges []*xpb.EdgeSet) map[string]map[string]map[string]map[int32]struct{} {
+	m := make(map[string]map[string]map[string]map[int32]struct{}, len(edges))
 	edgesMapInto(edges, m)
 	return m
 }
 
-func edgesMapInto(edges []*xpb.EdgeSet, m map[string]map[string]map[string]int32) {
+func edgesMapInto(edges []*xpb.EdgeSet, m map[string]map[string]map[string]map[int32]struct{}) {
 	for _, es := range edges {
 		kinds, ok := m[es.SourceTicket]
 		if !ok {
-			kinds = make(map[string]map[string]int32, len(es.Group))
+			kinds = make(map[string]map[string]map[int32]struct{}, len(es.Group))
 			m[es.SourceTicket] = kinds
 		}
 		for _, g := range es.Group {
 			for _, e := range g.Edge {
 				targets, ok := kinds[g.Kind]
 				if !ok {
-					targets = make(map[string]int32)
+					targets = make(map[string]map[int32]struct{})
 					kinds[g.Kind] = targets
 				}
-				targets[e.TargetTicket] = e.Ordinal
+				ordinals, ok := targets[e.TargetTicket]
+				if !ok {
+					ordinals = make(map[int32]struct{})
+					targets[e.TargetTicket] = ordinals
+				}
+				ordinals[e.Ordinal] = struct{}{}
 			}
 		}
 	}

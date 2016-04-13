@@ -523,11 +523,11 @@ type edgeLesser struct{}
 func (edgeLesser) Less(a, b interface{}) bool {
 	x, y := a.(*srvpb.Edge), b.(*srvpb.Edge)
 	if x.Source.Ticket == y.Source.Ticket {
+		if x.Target == nil || y.Target == nil {
+			return x.Target == nil
+		}
 		if x.Kind == y.Kind {
 			if x.Ordinal == y.Ordinal {
-				if x.Target == nil || y.Target == nil {
-					return x.Target != nil
-				}
 				return x.Target.Ticket < y.Target.Ticket
 			}
 			return x.Ordinal < y.Ordinal

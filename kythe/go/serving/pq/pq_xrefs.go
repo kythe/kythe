@@ -204,11 +204,11 @@ AND kind IN %s`, kSetQ)
 	defer closeRows(rs)
 
 	var scanned int
-	// edges := map { source -> kind -> target -> ordinal }
-	edges := make(map[string]map[string]map[string]int32, len(tickets))
+	// edges := map { source -> kind -> target -> ordinal set }
+	edges := make(map[string]map[string]map[string]map[int32]struct{}, len(tickets))
 	for count := 0; count < pageSize && rs.Next(); scanned++ {
 		var source, kind, target string
-		var ordinal sql.NullInt64
+		var ordinal int
 		if err := rs.Scan(&source, &kind, &target, &ordinal); err != nil {
 			return nil, fmt.Errorf("edges scan error: %v", err)
 		}
@@ -219,15 +219,20 @@ AND kind IN %s`, kSetQ)
 
 		groups, ok := edges[source]
 		if !ok {
-			groups = make(map[string]map[string]int32)
+			groups = make(map[string]map[string]map[int32]struct{})
 			edges[source] = groups
 		}
 		targets, ok := groups[kind]
 		if !ok {
-			targets = make(map[string]int32)
+			targets = make(map[string]map[int32]struct{})
 			groups[kind] = targets
 		}
-		targets[target] = int32(ordinal.Int64)
+		ordinals, ok := targets[target]
+		if !ok {
+			ordinals = make(map[int32]struct{})
+			targets[target] = ordinals
+		}
+		ordinals[int32(ordinal)] = struct{}{}
 	}
 
 	reply := &xpb.EdgesReply{EdgeSet: make([]*xpb.EdgeSet, 0, len(edges))}
@@ -237,11 +242,13 @@ AND kind IN %s`, kSetQ)
 		nodeTickets.Add(src)
 		for kind, targets := range groups {
 			edges := make([]*xpb.EdgeSet_Group_Edge, 0, len(targets))
-			for ticket, ordinal := range targets {
-				edges = append(edges, &xpb.EdgeSet_Group_Edge{
-					TargetTicket: ticket,
-					Ordinal:      ordinal,
-				})
+			for ticket, ordinals := range targets {
+				for ordinal := range ordinals {
+					edges = append(edges, &xpb.EdgeSet_Group_Edge{
+						TargetTicket: ticket,
+						Ordinal:      ordinal,
+					})
+				}
 				nodeTickets.Add(ticket)
 			}
 			sort.Sort(xrefs.ByOrdinal(edges))
