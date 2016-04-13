@@ -51,6 +51,9 @@ import java.util.List;
  *   KYTHE_ROOT_DIRECTORY: required root path for file inputs; the {@link FileData} paths stored in
  *                         the {@link CompilationUnit} will be made to be relative to this directory
  *
+ *   KYTHE_OUTPUT_FILE: if set to a non-empty value, write the resulting .kindex file to this path
+ *                      instead of using KYTHE_OUTPUT_DIRECTORY
+ *
  *   KYTHE_OUTPUT_DIRECTORY: required directory path to store the resulting .kindex file
  *
  *   KYTHE_INDEX_PACK: if set to a non-empty value, interpret KYTHE_OUTPUT_DIRECTORY as the root of
@@ -90,11 +93,16 @@ public abstract class AbstractJavacWrapper {
         CompilationDescription indexInfo =
             processCompilation(getCleanedUpArguments(args), extractor);
 
-        String outputDir = readEnvironmentVariable("KYTHE_OUTPUT_DIRECTORY");
-        if (Strings.isNullOrEmpty(System.getenv("KYTHE_INDEX_PACK"))) {
-          writeIndexInfoToFile(outputDir, indexInfo);
+        String outputFile = System.getenv("KYTHE_OUTPUT_FILE");
+        if (!Strings.isNullOrEmpty(outputFile)) {
+          IndexInfoUtils.writeIndexInfoToFile(indexInfo, outputFile);
         } else {
-          new Archive(outputDir).writeDescription(indexInfo);
+          String outputDir = readEnvironmentVariable("KYTHE_OUTPUT_DIRECTORY");
+          if (Strings.isNullOrEmpty(System.getenv("KYTHE_INDEX_PACK"))) {
+            writeIndexInfoToFile(outputDir, indexInfo);
+          } else {
+            new Archive(outputDir).writeDescription(indexInfo);
+          }
         }
 
         CompilationUnit compilationUnit = indexInfo.getCompilationUnit();

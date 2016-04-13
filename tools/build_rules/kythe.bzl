@@ -1,35 +1,32 @@
-def extract(ctx, kindex, args, inputs=[], mnemonic=None, mkdir='.'):
+def extract(ctx, kindex, args, inputs=[], mnemonic=None):
   tool_inputs, _, input_manifests = ctx.resolve_command(tools=[ctx.attr._extractor])
-  cmd = '\n'.join([
-      'set -e',
-      'export KYTHE_ROOT_DIRECTORY="$PWD"',
-      'export KYTHE_OUTPUT_DIRECTORY="$(dirname ' + kindex.path + ')"',
-      'export KYTHE_VNAMES="' + ctx.file.vnames_config.path + '"',
-      'mkdir -p "$KYTHE_OUTPUT_DIRECTORY"',
-      'mkdir -p "' + mkdir + '"',
-      ctx.executable._extractor.path + " " + ' '.join(args),
-      'mv "$KYTHE_OUTPUT_DIRECTORY"/*.kindex ' + kindex.path])
+  env = {
+      "KYTHE_ROOT_DIRECTORY": ".",
+      "KYTHE_OUTPUT_FILE": kindex.path,
+      "KYTHE_VNAMES": ctx.file.vnames_config.path,
+  }
   ctx.action(
       inputs = ctx.files.srcs + inputs + tool_inputs + [ctx.file.vnames_config],
       outputs = [kindex],
       mnemonic = mnemonic,
-      command = cmd,
+      executable = ctx.executable._extractor,
+      arguments = args,
       input_manifests = input_manifests,
-      use_default_shell_env = True)
+      env = env)
 
 def index(ctx, kindex, entries, mnemonic=None):
   inputs, _, input_manifests = ctx.resolve_command(tools=[ctx.attr._indexer])
-  cmd = "\n".join([
-      "set -e",
-      'CWD="$PWD"',
-      "cd /tmp",
-      '"$CWD"/' + ctx.executable._indexer.path + " " + " ".join(ctx.attr.indexer_opts) + ' "$CWD"/' + kindex.path + ' | gzip > "$CWD"/' + entries.path,
-  ])
+  # Quote and execute all arguments, except the last,
+  # which is used as a redirection for gzip.
+  cmd = '"${@:1:${#@}-1}" | gzip > "${@:${#@}}"'
   ctx.action(
       inputs = [kindex] + inputs,
       outputs = [entries],
       mnemonic = mnemonic,
       command = cmd,
+      arguments = ([ctx.executable._indexer.path] +
+                   ctx.attr.indexer_opts +
+                   [kindex.path, entries.path]),
       input_manifests = input_manifests,
       use_default_shell_env = True)
 
@@ -66,7 +63,7 @@ def java_verifier_test_impl(ctx):
   jar = ctx.new_file(ctx.configuration.bin_dir, ctx.label.name + ".jar")
   srcs_out = jar.path + '.srcs'
 
-  args = ['-encoding', 'utf-8', '-cp', "'" + ':'.join(classpath) + "'", '-d', srcs_out]
+  args = ['-encoding', 'utf-8', '-cp', ':'.join(classpath), '-d', srcs_out]
   for src in ctx.files.srcs:
     args += [src.short_path]
 
@@ -76,15 +73,15 @@ def java_verifier_test_impl(ctx):
       mnemonic = 'MockJavac',
       command = '\n'.join([
           'set -e',
-          'rm -rf ' + srcs_out,
           'mkdir ' + srcs_out,
-          ctx.file._javac.path + '  ' + ' '.join(args),
+          ctx.file._javac.path + '  "$@"',
           ctx.file._jar.path + ' cf ' + jar.path + ' -C ' + srcs_out + ' .',
       ]),
+      arguments = args,
       use_default_shell_env = True)
 
   kindex = ctx.new_file(ctx.configuration.genfiles_dir, ctx.label.name + "/compilation.kindex")
-  extract(ctx, kindex, args, inputs=inputs+[jar], mnemonic='JavacExtractor', mkdir=srcs_out)
+  extract(ctx, kindex, args, inputs=inputs+[jar], mnemonic='JavacExtractor')
 
   entries = ctx.new_file(ctx.configuration.bin_dir, ctx.label.name + ".entries.gz")
   index(ctx, kindex, entries, mnemonic='JavaIndexer')
@@ -109,9 +106,9 @@ def cc_verifier_test_impl(ctx):
       args += ['-I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1']
       args += ['-I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/usr/include']
     args += ['-c', src.short_path]
-    kindex = ctx.new_file(ctx.configuration.genfiles_dir, ctx.label.name + ".compilation/" + src.short_path + ".kindex")
+    kindex = ctx.new_file(ctx.label.name + ".compilation/" + src.short_path + ".kindex")
     extract(ctx, kindex, args, inputs=[src], mnemonic='CcExtractor')
-    entry = ctx.new_file(ctx.configuration.genfiles_dir, ctx.label.name + ".compilation/" + src.short_path + ".entries.gz")
+    entry = ctx.new_file(ctx.label.name + ".compilation/" + src.short_path + ".entries.gz")
     entries += [entry]
     index(ctx, kindex, entry, mnemonic='CcIndexer')
 
@@ -192,5 +189,6 @@ cc_verifier_test = rule(
         "indexer_opts": attr.string_list(["--ignore_unimplemented=true"]),
     },
     executable = True,
+    output_to_genfiles = True,
     test = True,
 )

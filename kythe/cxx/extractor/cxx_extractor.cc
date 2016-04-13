@@ -1097,6 +1097,9 @@ void ExtractorConfiguration::InitializeFromEnvironment() {
   if (const char* env_output_directory = getenv("KYTHE_OUTPUT_DIRECTORY")) {
     index_writer_.set_output_directory(env_output_directory);
   }
+  if (const char* env_output_file = getenv("KYTHE_OUTPUT_FILE")) {
+    SetKindexOutputFile(env_output_file);
+  }
 }
 
 void ExtractorConfiguration::Extract() {
