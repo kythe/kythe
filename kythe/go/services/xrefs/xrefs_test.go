@@ -198,6 +198,7 @@ type mockService struct {
 	DecorationsFn     func(*xpb.DecorationsRequest) (*xpb.DecorationsReply, error)
 	CrossReferencesFn func(*xpb.CrossReferencesRequest) (*xpb.CrossReferencesReply, error)
 	CallersFn         func(*xpb.CallersRequest) (*xpb.CallersReply, error)
+	DocumentationFn   func(*xpb.DocumentationRequest) (*xpb.DocumentationReply, error)
 }
 
 func (s *mockService) Nodes(ctx context.Context, req *xpb.NodesRequest) (*xpb.NodesReply, error) {
@@ -218,6 +219,10 @@ func (s *mockService) CrossReferences(ctx context.Context, req *xpb.CrossReferen
 
 func (s *mockService) Callers(ctx context.Context, req *xpb.CallersRequest) (*xpb.CallersReply, error) {
 	return s.CallersFn(req)
+}
+
+func (s *mockService) Documentation(ctx context.Context, req *xpb.DocumentationRequest) (*xpb.DocumentationReply, error) {
+	return s.DocumentationFn(req)
 }
 
 func containsString(arr []string, key string) bool {
@@ -367,4 +372,8 @@ func TestSlowCallers(t *testing.T) {
 	if err := testutil.DeepEqual(expected, creply); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func TestDocumentation(t *testing.T) {
+	// TODO(zarko): Write this test once SlowDocumentation does useful work.
 }

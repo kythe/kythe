@@ -68,6 +68,8 @@ var (
 	// callers flags
 	includeOverrides bool
 
+	// docs flags
+
 	// source/decor flags
 	decorSpan string
 
@@ -214,6 +216,22 @@ var (
 				return err
 			}
 			return displayCallers(reply)
+		})
+
+	cmdDocs = newCommand("docs", "<ticket>",
+		"Retrieve documentation for the given node",
+		func(flag *flag.FlagSet) {},
+		func(flag *flag.FlagSet) error {
+			fmt.Fprintf(os.Stderr, "Warning: The Documentation API is experimental and may be slow.")
+			req := &xpb.DocumentationRequest{
+				Ticket: flag.Args(),
+			}
+			logRequest(req)
+			reply, err := xs.Documentation(ctx, req)
+			if err != nil {
+				return err
+			}
+			return displayDocumentation(reply)
 		})
 
 	cmdXRefs = newCommand("xrefs", "[--definitions kind] [--references kind] [--documentation kind] [--related_nodes] [--page_token token] [--page_size num] <ticket>",

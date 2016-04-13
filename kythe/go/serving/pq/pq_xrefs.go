@@ -292,6 +292,11 @@ func (d *DB) Callers(ctx context.Context, req *xpb.CallersRequest) (*xpb.Callers
 	return xrefs.SlowCallers(ctx, d, req)
 }
 
+// Documentation implements part of the xrefs.Interface.
+func (d *DB) Documentation(ctx context.Context, req *xpb.DocumentationRequest) (*xpb.DocumentationReply, error) {
+	return xrefs.SlowDocumentation(ctx, d, req)
+}
+
 // Decorations implements part of the xrefs.Interface.
 func (d *DB) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*xpb.DecorationsReply, error) {
 	if d.selectText == nil {

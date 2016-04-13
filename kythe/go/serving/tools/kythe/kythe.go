@@ -99,6 +99,7 @@ var cmds = map[string]command{
 	"search":  cmdSearch,
 	"xrefs":   cmdXRefs,
 	"callers": cmdCallers,
+	"docs":    cmdDocs,
 }
 
 var cmdSynonymns = map[string]string{

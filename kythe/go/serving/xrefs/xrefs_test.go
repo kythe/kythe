@@ -906,6 +906,14 @@ func TestCallers(t *testing.T) {
 	}
 }
 
+func TestDocumentation(t *testing.T) {
+	st := tbl.Construct(t)
+	reply, err := st.Documentation(ctx, &xpb.DocumentationRequest{})
+	if reply != nil || err == nil {
+		t.Fatalf("Documentation expected to fail")
+	}
+}
+
 // byOffset implements the sort.Interface for *xpb.Anchors.
 type byOffset []*xpb.Anchor
 

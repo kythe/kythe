@@ -48,6 +48,7 @@ type Service interface {
 	DecorationsService
 	CrossReferencesService
 	CallersService
+	DocumentationService
 }
 
 // NodesEdgesService provides fast access to nodes and edges in a Kythe graph.
@@ -87,6 +88,12 @@ type CallersService interface {
 	// Callers takes a set of tickets for semantic objects and returns the set
 	// of places where those objects were called.
 	Callers(context.Context, *xpb.CallersRequest) (*xpb.CallersReply, error)
+}
+
+// DocumentationService provides fast access to the documentation in a Kythe graph.
+type DocumentationService interface {
+	// Documentation takes a set of tickets and returns documentation for them.
+	Documentation(context.Context, *xpb.DocumentationRequest) (*xpb.DocumentationReply, error)
 }
 
 var (
@@ -772,6 +779,11 @@ func SlowCallers(ctx context.Context, service Service, req *xpb.CallersRequest) 
 	return reply, nil
 }
 
+// SlowDocumentation is an implementation of the Callers API built from other APIs.
+func SlowDocumentation(ctx context.Context, service Service, req *xpb.DocumentationRequest) (*xpb.DocumentationReply, error) {
+	return nil, errors.New("SlowDocumentation unimplemented")
+}
+
 type grpcClient struct{ xpb.XRefServiceClient }
 
 // Nodes implements part of the Service interface.
@@ -797,6 +809,11 @@ func (w *grpcClient) CrossReferences(ctx context.Context, req *xpb.CrossReferenc
 // Callers implements part of the Service interface.
 func (w *grpcClient) Callers(ctx context.Context, req *xpb.CallersRequest) (*xpb.CallersReply, error) {
 	return w.XRefServiceClient.Callers(ctx, req)
+}
+
+// Documentation implements part of the Service interface.
+func (w *grpcClient) Documentation(ctx context.Context, req *xpb.DocumentationRequest) (*xpb.DocumentationReply, error) {
+	return w.XRefServiceClient.Documentation(ctx, req)
 }
 
 // GRPC returns an xrefs Service backed by the given GRPC client and context.
@@ -834,6 +851,12 @@ func (w *webClient) Callers(ctx context.Context, q *xpb.CallersRequest) (*xpb.Ca
 	return &reply, web.Call(w.addr, "callers", q, &reply)
 }
 
+// Documentation implements part of the Service interface.
+func (w *webClient) Documentation(ctx context.Context, q *xpb.DocumentationRequest) (*xpb.DocumentationReply, error) {
+	var reply xpb.DocumentationReply
+	return &reply, web.Call(w.addr, "documentation", q, &reply)
+}
+
 // WebClient returns an xrefs Service based on a remote web server.
 func WebClient(addr string) Service {
 	return &webClient{addr}
@@ -857,6 +880,9 @@ func WebClient(addr string) Service {
 //   GET /callers
 //     Request: JSON encoded xrefs.CallersRequest
 //     Response: JSON encoded xrefs.CallersReply
+//   GET /documentation
+//     Request: JSON encoded xrefs.DocumentationRequest
+//     Response: JSON encoded xrefs.DocumentationReply
 //
 // Note: /nodes, /edges, /decorations, and /xrefs will return their responses as
 // serialized protobufs if the "proto" query parameter is set.
@@ -912,6 +938,26 @@ func RegisterHTTPHandlers(ctx context.Context, xs Service, mux *http.ServeMux) {
 			return
 		}
 		reply, err := xs.Callers(ctx, &req)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if err := web.WriteResponse(w, r, reply); err != nil {
+			log.Println(err)
+		}
+	})
+	mux.HandleFunc("/documentation", func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		defer func() {
+			log.Printf("xrefs.Documentation:\t%s", time.Since(start))
+		}()
+		var req xpb.DocumentationRequest
+		if err := web.ReadJSONBody(r, &req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		reply, err := xs.Documentation(ctx, &req)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

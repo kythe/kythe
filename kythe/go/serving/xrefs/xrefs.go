@@ -916,3 +916,8 @@ func p2p(p *cpb.Point) *xpb.Location_Point {
 func (t *tableImpl) Callers(ctx context.Context, req *xpb.CallersRequest) (*xpb.CallersReply, error) {
 	return xrefs.SlowCallers(ctx, t, req)
 }
+
+// Callers implements part of the xrefs Service interface.
+func (t *tableImpl) Documentation(ctx context.Context, req *xpb.DocumentationRequest) (*xpb.DocumentationReply, error) {
+	return xrefs.SlowDocumentation(ctx, t, req)
+}

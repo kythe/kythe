@@ -166,6 +166,11 @@ func (api apiCloser) Callers(ctx context.Context, req *xpb.CallersRequest) (*xpb
 	return api.xs.Callers(ctx, req)
 }
 
+// Documentation implements part of the xrefs Service interface.
+func (api apiCloser) Documentation(ctx context.Context, req *xpb.DocumentationRequest) (*xpb.DocumentationReply, error) {
+	return api.xs.Documentation(ctx, req)
+}
+
 // Search implements part of the search Service interface.
 func (api apiCloser) Search(ctx context.Context, req *spb.SearchRequest) (*spb.SearchReply, error) {
 	return api.idx.Search(ctx, req)

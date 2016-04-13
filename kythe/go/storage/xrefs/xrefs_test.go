@@ -171,6 +171,15 @@ func TestCallers(t *testing.T) {
 	}
 }
 
+func TestDocumentation(t *testing.T) {
+	xs := newService(t, testEntries)
+
+	reply, err := xs.Documentation(ctx, &xpb.DocumentationRequest{})
+	if reply != nil || err == nil {
+		t.Fatalf("Documentation expected to fail")
+	}
+}
+
 func newService(t *testing.T, entries []*spb.Entry) *GraphStoreService {
 	gs := inmemory.Create()
 

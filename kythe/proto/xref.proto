@@ -79,6 +79,12 @@ service XRefService {
   // The core of this query is specified in terms of graph operations in the
   // Kythe repository at //kythe/docs/schema/callgraph.txt.
   rpc Callers(CallersRequest) returns (CallersReply) {}
+
+  // Documentation takes a set of tickets for semantic objects and returns
+  // documentation about them, including generated signatures and
+  // user-provided text. The documentation may refer to tickets for other
+  // nodes in the graph.
+  rpc Documentation(DocumentationRequest) returns (DocumentationReply) {}
 }
 
 message NodesRequest {
@@ -643,4 +649,45 @@ message CallersReply {
   repeated Caller caller = 1;
   // Details for the semantic objects that were passed via a CallersRequest.
   repeated CallableDetail callee = 2;
+}
+
+message DocumentationRequest {
+  // Semantic tickets about which documentation is sought.
+  repeated string ticket = 1;
+}
+
+message DocumentationReply {
+  message Link {
+    // Definition sites found for some ticket.
+    repeated Anchor definition = 1;
+  }
+  message Printable {
+    // Raw text that can be displayed to the user (but may also contain
+    // markup that can be interpreted, like Doxygen comments). Links are
+    // marked using []. \ is an escape character (where possible escape
+    // sequences are \[, \], and \\).
+    string raw_text = 1;
+    // Destinations for links in raw_text. The ith Link corresponds to the link
+    // starting at the ith [.
+    repeated Link link = 2;
+  }
+  message Document {
+    // The ticket to which this Document refers.
+    string ticket = 1;
+    // Documentation that can be displayed to the user.
+    Printable text = 2;
+    // A signature that can be displayed to the user. For variables, this
+    // may just be the variable name; for functions, this may be some version
+    // of the function prototype.
+    Printable signature = 3;
+    // The type as a signature that can be displayed to the user.
+    Printable type = 4;
+    // The initialization value, if any.
+    Printable initializer = 5;
+    // The semantic parent of this value.
+    Printable defined_by = 6;
+    // The node kind being defined.
+    string kind = 7;
+  }
+  repeated Document document = 1;
 }
