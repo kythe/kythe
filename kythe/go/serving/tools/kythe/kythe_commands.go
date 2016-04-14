@@ -194,7 +194,7 @@ var (
 			if countOnly {
 				return displayEdgeCounts(reply)
 			} else if targetsOnly {
-				return displayTargets(reply.EdgeSet)
+				return displayTargets(reply.EdgeSets)
 			} else if dotGraph {
 				return displayEdgeGraph(reply)
 			}
@@ -327,7 +327,7 @@ var (
 			if err != nil {
 				return err
 			}
-			return displayNodes(reply.Node)
+			return displayNodes(reply.Nodes)
 		})
 
 	cmdSource = newCommand("source", "[--span span] <file-ticket>",

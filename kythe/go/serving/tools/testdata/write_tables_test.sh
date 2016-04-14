@@ -36,15 +36,21 @@ check_diff() {
     $jq .key "$gold" > "$TMPDIR/gold.keys"
     $jq .key "$new" > "$TMPDIR/new.keys"
 
-    if diff -u "$TMPDIR/"{gold,new}.keys | diffstat -qm; then
-      echo "  They differ only in their values"
-    else
+    if ! diff -u "$TMPDIR/"{gold,new}.keys | diffstat -qm; then
       echo "  Key samples:"
       echo "    Unique to gold:"
       comm -23 "$TMPDIR/"{gold,new}.keys | sort -R | head -n3
       echo "    Unique to new:"
       comm -13 "$TMPDIR/"{gold,new}.keys | sort -R | head -n3
     fi
+
+    echo "  Key-value samples:"
+    echo "    Unique to gold:"
+    comm -23 <($jq -S -c . "$gold") <($jq -S -c . "$new") | \
+      sort -R | head -n1 | $jq .
+    echo "    Unique to new:"
+    comm -13 <($jq -S -c . "$gold") <($jq -S -c . "$new") | \
+      sort -R | head -n1 | $jq .
 
     return 1
   fi

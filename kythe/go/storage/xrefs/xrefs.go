@@ -37,7 +37,6 @@ import (
 
 	"golang.org/x/net/context"
 
-	cpb "kythe.io/kythe/proto/common_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
@@ -137,22 +136,23 @@ func (g *GraphStoreService) Nodes(ctx context.Context, req *xpb.NodesRequest) (*
 		}
 		names = append(names, name)
 	}
-	var nodes []*xpb.NodeInfo
+	nodes := make(map[string]*xpb.NodeInfo)
 	for i, vname := range names {
-		info := &xpb.NodeInfo{Ticket: req.Ticket[i]}
+		ticket := req.Ticket[i]
+		info := &xpb.NodeInfo{Facts: make(map[string][]byte)}
 		if err := g.gs.Read(ctx, &spb.ReadRequest{Source: vname}, func(entry *spb.Entry) error {
 			if len(patterns) == 0 || xrefs.MatchesAny(entry.FactName, patterns) {
-				info.Fact = append(info.Fact, entryToFact(entry))
+				info.Facts[entry.FactName] = entry.FactValue
 			}
 			return nil
 		}); err != nil {
 			return nil, err
 		}
-		if len(info.Fact) > 0 {
-			nodes = append(nodes, info)
+		if len(info.Facts) > 0 {
+			nodes[ticket] = info
 		}
 	}
-	return &xpb.NodesReply{Node: nodes}, nil
+	return &xpb.NodesReply{Nodes: nodes}, nil
 }
 
 // Edges implements part of the Service interface.
@@ -166,7 +166,10 @@ func (g *GraphStoreService) Edges(ctx context.Context, req *xpb.EdgesRequest) (*
 	patterns := xrefs.ConvertFilters(req.Filter)
 	allowedKinds := stringset.New(req.Kind...)
 	targetSet := stringset.New()
-	reply := new(xpb.EdgesReply)
+	reply := &xpb.EdgesReply{
+		EdgeSets: make(map[string]*xpb.EdgeSet),
+		Nodes:    make(map[string]*xpb.NodeInfo),
+	}
 
 	for _, ticket := range req.Ticket {
 		vname, err := kytheuri.ToVName(ticket)
@@ -177,7 +180,7 @@ func (g *GraphStoreService) Edges(ctx context.Context, req *xpb.EdgesRequest) (*
 		var (
 			// EdgeKind -> TargetTicket -> OrdinalSet
 			filteredEdges = make(map[string]map[string]map[int32]struct{})
-			filteredFacts []*cpb.Fact
+			filteredFacts = make(map[string][]byte)
 		)
 
 		if err := g.gs.Read(ctx, &spb.ReadRequest{
@@ -188,7 +191,7 @@ func (g *GraphStoreService) Edges(ctx context.Context, req *xpb.EdgesRequest) (*
 			if edgeKind == "" {
 				// node fact
 				if len(patterns) > 0 && xrefs.MatchesAny(entry.FactName, patterns) {
-					filteredFacts = append(filteredFacts, entryToFact(entry))
+					filteredFacts[entry.FactName] = entry.FactValue
 				}
 			} else {
 				// edge
@@ -215,9 +218,9 @@ func (g *GraphStoreService) Edges(ctx context.Context, req *xpb.EdgesRequest) (*
 
 		// Only add a EdgeSet if there are targets for the requested edge kinds.
 		if len(filteredEdges) > 0 {
-			var groups []*xpb.EdgeSet_Group
+			groups := make(map[string]*xpb.EdgeSet_Group)
 			for edgeKind, targets := range filteredEdges {
-				g := &xpb.EdgeSet_Group{Kind: edgeKind}
+				g := &xpb.EdgeSet_Group{}
 				for target, ordinals := range targets {
 					for ordinal := range ordinals {
 						g.Edge = append(g.Edge, &xpb.EdgeSet_Group_Edge{
@@ -227,28 +230,26 @@ func (g *GraphStoreService) Edges(ctx context.Context, req *xpb.EdgesRequest) (*
 					}
 					targetSet.Add(target)
 				}
-				groups = append(groups, g)
+				groups[edgeKind] = g
 			}
-			reply.EdgeSet = append(reply.EdgeSet, &xpb.EdgeSet{
-				SourceTicket: ticket,
-				Group:        groups,
-			})
+			reply.EdgeSets[ticket] = &xpb.EdgeSet{
+				Groups: groups,
+			}
 
 			// In addition, only add a NodeInfo if the filters have resulting facts.
 			if len(filteredFacts) > 0 {
-				reply.Node = append(reply.Node, &xpb.NodeInfo{
-					Ticket: ticket,
-					Fact:   filteredFacts,
-				})
+				reply.Nodes[ticket] = &xpb.NodeInfo{
+					Facts: filteredFacts,
+				}
 			}
 		}
 	}
 
 	// Only request Nodes when there are fact filters given.
 	if len(req.Filter) > 0 {
-		// Ensure reply.Node is a unique set by removing already requested nodes from targetSet
-		for _, n := range reply.Node {
-			targetSet.Remove(n.Ticket)
+		// Eliminate redundant work by removing already requested nodes from targetSet
+		for ticket := range reply.Nodes {
+			targetSet.Remove(ticket)
 		}
 
 		// Batch request all leftover target nodes
@@ -259,7 +260,9 @@ func (g *GraphStoreService) Edges(ctx context.Context, req *xpb.EdgesRequest) (*
 		if err != nil {
 			return nil, fmt.Errorf("failure getting target nodes: %v", err)
 		}
-		reply.Node = append(reply.Node, nodesReply.Node...)
+		for ticket, node := range nodesReply.Nodes {
+			reply.Nodes[ticket] = node
+		}
 	}
 
 	return reply, nil
@@ -290,7 +293,10 @@ func (g *GraphStoreService) Decorations(ctx context.Context, req *xpb.Decoration
 		return nil, err
 	}
 
-	reply := &xpb.DecorationsReply{Location: loc}
+	reply := &xpb.DecorationsReply{
+		Location: loc,
+		Nodes:    make(map[string]*xpb.NodeInfo),
+	}
 
 	// Handle DecorationsRequest.SourceText switch
 	if req.SourceText {
@@ -307,7 +313,7 @@ func (g *GraphStoreService) Decorations(ctx context.Context, req *xpb.Decoration
 		// Traverse the following chain of edges:
 		//   file --%/kythe/edge/childof-> []anchor --forwardEdgeKind-> []target
 		//
-		// Add []anchor and []target nodes to reply.Node
+		// Add []anchor and []target nodes to reply.Nodes
 		// Add all {anchor, forwardEdgeKind, target} tuples to reply.Reference
 
 		patterns := xrefs.ConvertFilters(req.Filter)
@@ -328,11 +334,11 @@ func (g *GraphStoreService) Decorations(ctx context.Context, req *xpb.Decoration
 			})
 			if err != nil {
 				return nil, fmt.Errorf("failure getting reference source node: %v", err)
-			} else if len(anchorNodeReply.Node) != 1 {
-				return nil, fmt.Errorf("found %d nodes for {%+v}", len(anchorNodeReply.Node), anchor)
+			} else if len(anchorNodeReply.Nodes) != 1 {
+				return nil, fmt.Errorf("found %d nodes for {%+v}", len(anchorNodeReply.Nodes), anchor)
 			}
 
-			node, ok := xrefs.NodesMap(anchorNodeReply.Node)[ticket]
+			node, ok := xrefs.NodesMap(anchorNodeReply.Nodes)[ticket]
 			if !ok {
 				return nil, fmt.Errorf("failed to find info for node %q", ticket)
 			} else if string(node[schema.NodeKindFact]) != schema.AnchorKind {
@@ -372,8 +378,8 @@ func (g *GraphStoreService) Decorations(ctx context.Context, req *xpb.Decoration
 				continue
 			}
 
-			if node := filterNode(patterns, anchorNodeReply.Node[0]); node != nil {
-				reply.Node = append(reply.Node, node)
+			if node := filterNode(patterns, anchorNodeReply.Nodes[ticket]); node != nil {
+				reply.Nodes[ticket] = node
 			}
 			for _, edge := range targets {
 				targetTicket := kytheuri.ToString(edge.Target)
@@ -392,8 +398,8 @@ func (g *GraphStoreService) Decorations(ctx context.Context, req *xpb.Decoration
 		// Only request Nodes when there are fact filters given.
 		if len(req.Filter) > 0 {
 			// Ensure returned nodes are not duplicated.
-			for _, n := range reply.Node {
-				targetSet.Remove(n.Ticket)
+			for ticket := range reply.Nodes {
+				targetSet.Remove(ticket)
 			}
 
 			// Batch request all Reference target nodes
@@ -404,7 +410,9 @@ func (g *GraphStoreService) Decorations(ctx context.Context, req *xpb.Decoration
 			if err != nil {
 				return nil, fmt.Errorf("failure getting reference target nodes: %v", err)
 			}
-			reply.Node = append(reply.Node, nodesReply.Node...)
+			for ticket, node := range nodesReply.Nodes {
+				reply.Nodes[ticket] = node
+			}
 		}
 	}
 
@@ -459,22 +467,15 @@ func getEdges(ctx context.Context, gs graphstore.Service, node *spb.VName, pred 
 	return targets, nil
 }
 
-func entryToFact(entry *spb.Entry) *cpb.Fact {
-	return &cpb.Fact{
-		Name:  entry.FactName,
-		Value: entry.FactValue,
-	}
-}
-
 func filterNode(patterns []*regexp.Regexp, node *xpb.NodeInfo) *xpb.NodeInfo {
 	if len(patterns) == 0 {
 		return nil
 	}
 
-	var filteredFacts []*cpb.Fact
-	for _, f := range node.Fact {
-		if xrefs.MatchesAny(f.Name, patterns) {
-			filteredFacts = append(filteredFacts, f)
+	filteredFacts := make(map[string][]byte)
+	for name, value := range node.Facts {
+		if xrefs.MatchesAny(name, patterns) {
+			filteredFacts[name] = value
 		}
 	}
 
@@ -482,8 +483,7 @@ func filterNode(patterns []*regexp.Regexp, node *xpb.NodeInfo) *xpb.NodeInfo {
 		return nil
 	}
 	return &xpb.NodeInfo{
-		Ticket: node.Ticket,
-		Fact:   filteredFacts,
+		Facts: filteredFacts,
 	}
 }
 
@@ -547,43 +547,43 @@ func (g *GraphStoreService) CrossReferences(ctx context.Context, req *xpb.CrossR
 
 	var totalXRefs int
 	for {
-		for _, es := range eReply.EdgeSet {
-			xr, ok := reply.CrossReferences[es.SourceTicket]
+		for source, es := range eReply.EdgeSets {
+			xr, ok := reply.CrossReferences[source]
 			if !ok {
-				xr = &xpb.CrossReferencesReply_CrossReferenceSet{Ticket: es.SourceTicket}
+				xr = &xpb.CrossReferencesReply_CrossReferenceSet{Ticket: source}
 			}
 
 			var count int
-			for _, grp := range es.Group {
+			for kind, grp := range es.Groups {
 				switch {
 				// TODO(schroeder): handle declarations
-				case xrefs.IsDefKind(req.DefinitionKind, grp.Kind, false):
-					anchors, err := completeAnchors(ctx, g, req.AnchorText, files, grp.Kind, edgeTickets(grp.Edge))
+				case xrefs.IsDefKind(req.DefinitionKind, kind, false):
+					anchors, err := completeAnchors(ctx, g, req.AnchorText, files, kind, edgeTickets(grp.Edge))
 					if err != nil {
 						return nil, fmt.Errorf("error resolving definition anchors: %v", err)
 					}
 					count += len(anchors)
 					xr.Definition = append(xr.Definition, anchors...)
-				case xrefs.IsRefKind(req.ReferenceKind, grp.Kind):
-					anchors, err := completeAnchors(ctx, g, req.AnchorText, files, grp.Kind, edgeTickets(grp.Edge))
+				case xrefs.IsRefKind(req.ReferenceKind, kind):
+					anchors, err := completeAnchors(ctx, g, req.AnchorText, files, kind, edgeTickets(grp.Edge))
 					if err != nil {
 						return nil, fmt.Errorf("error resolving reference anchors: %v", err)
 					}
 					count += len(anchors)
 					xr.Reference = append(xr.Reference, anchors...)
-				case xrefs.IsDocKind(req.DocumentationKind, grp.Kind):
-					anchors, err := completeAnchors(ctx, g, req.AnchorText, files, grp.Kind, edgeTickets(grp.Edge))
+				case xrefs.IsDocKind(req.DocumentationKind, kind):
+					anchors, err := completeAnchors(ctx, g, req.AnchorText, files, kind, edgeTickets(grp.Edge))
 					if err != nil {
 						return nil, fmt.Errorf("error resolving documentation anchors: %v", err)
 					}
 					count += len(anchors)
 					xr.Documentation = append(xr.Documentation, anchors...)
-				case allRelatedNodes != nil && !schema.IsAnchorEdge(grp.Kind):
+				case allRelatedNodes != nil && !schema.IsAnchorEdge(kind):
 					count += len(grp.Edge)
 					for _, edge := range grp.Edge {
 						xr.RelatedNode = append(xr.RelatedNode, &xpb.CrossReferencesReply_RelatedNode{
 							Ticket:       edge.TargetTicket,
-							RelationKind: grp.Kind,
+							RelationKind: kind,
 							Ordinal:      edge.Ordinal,
 						})
 						allRelatedNodes.Add(edge.TargetTicket)
@@ -622,8 +622,8 @@ func (g *GraphStoreService) CrossReferences(ctx context.Context, req *xpb.CrossR
 		if err != nil {
 			return nil, fmt.Errorf("error retrieving related nodes: %v", err)
 		}
-		for _, n := range nReply.Node {
-			reply.Nodes[n.Ticket] = n
+		for ticket, n := range nReply.Nodes {
+			reply.Nodes[ticket] = n
 		}
 	}
 
@@ -659,12 +659,10 @@ func completeAnchors(ctx context.Context, xs xrefs.NodesEdgesService, retrieveTe
 	if err != nil {
 		return nil, err
 	}
-	nodes := xrefs.NodesMap(reply.Node)
+	nodes := xrefs.NodesMap(reply.Nodes)
 
 	var result []*xpb.Anchor
-	for _, es := range reply.EdgeSet {
-		ticket := es.SourceTicket
-
+	for ticket, es := range reply.EdgeSets {
 		if nodeKind := string(nodes[ticket][schema.NodeKindFact]); nodeKind != schema.AnchorKind {
 			log.Printf("Found non-anchor target to %q edge: %q (kind: %q)", edgeKind, ticket, nodeKind)
 			continue
@@ -678,8 +676,8 @@ func completeAnchors(ctx context.Context, xs xrefs.NodesEdgesService, retrieveTe
 		}
 
 		// For each file parent to the anchor, add an Anchor to the result.
-		for _, g := range es.Group {
-			if g.Kind != schema.ChildOfEdge {
+		for kind, g := range es.Groups {
+			if kind != schema.ChildOfEdge {
 				continue
 			}
 
@@ -702,7 +700,7 @@ func completeAnchors(ctx context.Context, xs xrefs.NodesEdgesService, retrieveTe
 					if err != nil {
 						return nil, fmt.Errorf("error getting file contents for %q: %v", a.Parent, err)
 					}
-					nMap := xrefs.NodesMap(nReply.Node)
+					nMap := xrefs.NodesMap(nReply.Nodes)
 					text := nMap[a.Parent][schema.TextFact]
 					file = &fileNode{
 						text:     text,

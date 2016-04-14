@@ -88,7 +88,7 @@ func main() {
 			log.Fatalf("Failed to get decorations for file %q", file)
 		}
 
-		nodes := xrefs.NodesMap(decor.Node)
+		nodes := xrefs.NodesMap(decor.Nodes)
 		emitted := stringset.New()
 
 		for _, r := range decor.Reference {
@@ -125,14 +125,14 @@ func getTagFields(xs xrefs.Service, ticket string) ([]string, error) {
 		Kind:   []string{schema.ChildOfEdge, schema.ParamEdge},
 		Filter: []string{schema.NodeKindFact, schema.SubkindFact, identifierFact},
 	})
-	if err != nil || len(reply.EdgeSet) == 0 {
+	if err != nil || len(reply.EdgeSets) == 0 {
 		return nil, err
 	}
 
 	var fields []string
 
-	nodes := xrefs.NodesMap(reply.Node)
-	edges := xrefs.EdgesMap(reply.EdgeSet)
+	nodes := xrefs.NodesMap(reply.Nodes)
+	edges := xrefs.EdgesMap(reply.EdgeSets)
 
 	switch string(nodes[ticket][schema.NodeKindFact]) + "|" + string(nodes[ticket][schema.SubkindFact]) {
 	case schema.FunctionKind + "|":

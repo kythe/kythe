@@ -3,6 +3,7 @@
 ## Upcoming release
 
 Notable changes:
+ - xrefs service: replace most repeated fields with maps
  - xrefs service: add `ordinal` field to each EdgeSet edge
  - `xrefs.CrossReferences`: group declarations/definitions for incomplete nodes
  - C++ indexer: `--flush_after_each_entry` now defaults to `true`

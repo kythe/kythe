@@ -34,7 +34,6 @@ import (
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
 
-	cpb "kythe.io/kythe/proto/common_proto"
 	ipb "kythe.io/kythe/proto/internal_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
@@ -72,71 +71,45 @@ func (d *DB) Nodes(ctx context.Context, req *xpb.NodesRequest) (*xpb.NodesReply,
 				return nil, fmt.Errorf("unexpected node internal format: %v", err)
 			}
 		}
-		n.Ticket = ticket
 
 		if nodeKind != "" {
-			n.Fact = append(n.Fact, &cpb.Fact{
-				Name:  schema.NodeKindFact,
-				Value: []byte(nodeKind),
-			})
+			n.Facts[ticket] = []byte(nodeKind)
 		}
 		if subkind.Valid {
-			n.Fact = append(n.Fact, &cpb.Fact{
-				Name:  schema.SubkindFact,
-				Value: []byte(subkind.String),
-			})
+			n.Facts[ticket] = []byte(subkind.String)
 		}
 		if text != nil { // TODO(schroederc): NULL text
-			n.Fact = append(n.Fact, &cpb.Fact{
-				Name:  schema.TextFact,
-				Value: text,
-			})
+			n.Facts[ticket] = text
 		}
 		if textEncoding.Valid {
-			n.Fact = append(n.Fact, &cpb.Fact{
-				Name:  schema.TextEncodingFact,
-				Value: []byte(textEncoding.String),
-			})
+			n.Facts[ticket] = []byte(textEncoding.String)
 		}
 		if startOffset.Valid {
-			n.Fact = append(n.Fact, &cpb.Fact{
-				Name:  schema.AnchorStartFact,
-				Value: []byte(strconv.FormatInt(startOffset.Int64, 10)),
-			})
+			n.Facts[ticket] = []byte(strconv.FormatInt(startOffset.Int64, 10))
 		}
 		if endOffset.Valid {
-			n.Fact = append(n.Fact, &cpb.Fact{
-				Name:  schema.AnchorEndFact,
-				Value: []byte(strconv.FormatInt(endOffset.Int64, 10)),
-			})
+			n.Facts[ticket] = []byte(strconv.FormatInt(endOffset.Int64, 10))
 		}
 		if snippetStart.Valid {
-			n.Fact = append(n.Fact, &cpb.Fact{
-				Name:  schema.SnippetStartFact,
-				Value: []byte(strconv.FormatInt(snippetStart.Int64, 10)),
-			})
+			n.Facts[ticket] = []byte(strconv.FormatInt(snippetStart.Int64, 10))
 		}
 		if snippetEnd.Valid {
-			n.Fact = append(n.Fact, &cpb.Fact{
-				Name:  schema.SnippetEndFact,
-				Value: []byte(strconv.FormatInt(snippetEnd.Int64, 10)),
-			})
+			n.Facts[ticket] = []byte(strconv.FormatInt(snippetEnd.Int64, 10))
 		}
 
 		if len(req.Filter) > 0 {
 			patterns := xrefs.ConvertFilters(req.Filter)
-			matched := make([]*cpb.Fact, 0, len(n.Fact))
-			for _, f := range n.Fact {
-				if xrefs.MatchesAny(f.Name, patterns) {
-					matched = append(matched, f)
+			matched := make(map[string][]byte, len(n.Facts))
+			for name, value := range n.Facts {
+				if xrefs.MatchesAny(name, patterns) {
+					matched[name] = value
 				}
 			}
-			n.Fact = matched
+			n.Facts = matched
 		}
 
-		if len(n.Fact) > 0 {
-			sort.Sort(xrefs.ByName(n.Fact))
-			reply.Node = append(reply.Node, n)
+		if len(n.Facts) > 0 {
+			reply.Nodes[ticket] = n
 		}
 	}
 
@@ -235,10 +208,10 @@ AND kind IN %s`, kSetQ)
 		ordinals[int32(ordinal)] = struct{}{}
 	}
 
-	reply := &xpb.EdgesReply{EdgeSet: make([]*xpb.EdgeSet, 0, len(edges))}
+	reply := &xpb.EdgesReply{EdgeSets: make(map[string]*xpb.EdgeSet, len(edges))}
 	nodeTickets := stringset.New()
 	for src, groups := range edges {
-		gs := make([]*xpb.EdgeSet_Group, 0, len(groups))
+		gs := make(map[string]*xpb.EdgeSet_Group, len(groups))
 		nodeTickets.Add(src)
 		for kind, targets := range groups {
 			edges := make([]*xpb.EdgeSet_Group_Edge, 0, len(targets))
@@ -252,15 +225,13 @@ AND kind IN %s`, kSetQ)
 				nodeTickets.Add(ticket)
 			}
 			sort.Sort(xrefs.ByOrdinal(edges))
-			gs = append(gs, &xpb.EdgeSet_Group{
-				Kind: kind,
+			gs[kind] = &xpb.EdgeSet_Group{
 				Edge: edges,
-			})
+			}
 		}
-		reply.EdgeSet = append(reply.EdgeSet, &xpb.EdgeSet{
-			SourceTicket: src,
-			Group:        gs,
-		})
+		reply.EdgeSets[src] = &xpb.EdgeSet{
+			Groups: gs,
+		}
 	}
 
 	// If there is another row, there is a NextPageToken.
@@ -281,7 +252,7 @@ AND kind IN %s`, kSetQ)
 		if err != nil {
 			return nil, fmt.Errorf("error filtering nodes:%v", err)
 		}
-		reply.Node = nodes.Node
+		reply.Nodes = nodes.Nodes
 	}
 
 	return reply, nil
@@ -351,7 +322,7 @@ func (d *DB) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*xpb
 			if err != nil {
 				return nil, fmt.Errorf("error filtering nodes:%v", err)
 			}
-			decor.Node = nodes.Node
+			decor.Nodes = nodes.Nodes
 		}
 	}
 
@@ -476,8 +447,7 @@ func (d *DB) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReques
 			return nil, fmt.Errorf("error getting related nodes: %v", err)
 		}
 
-		for _, es := range er.EdgeSet {
-			ticket := es.SourceTicket
+		for ticket, es := range er.EdgeSets {
 			nodes := stringset.New()
 			crs, ok := reply.CrossReferences[ticket]
 			if !ok {
@@ -485,12 +455,12 @@ func (d *DB) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReques
 					Ticket: ticket,
 				}
 			}
-			for _, g := range es.Group {
-				if !schema.IsAnchorEdge(g.Kind) {
+			for kind, g := range es.Groups {
+				if !schema.IsAnchorEdge(kind) {
 					for _, edge := range g.Edge {
 						nodes.Add(edge.TargetTicket)
 						crs.RelatedNode = append(crs.RelatedNode, &xpb.CrossReferencesReply_RelatedNode{
-							RelationKind: g.Kind,
+							RelationKind: kind,
 							Ticket:       edge.TargetTicket,
 							Ordinal:      edge.Ordinal,
 						})
@@ -498,9 +468,9 @@ func (d *DB) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReques
 				}
 			}
 			if len(nodes) > 0 {
-				for _, n := range er.Node {
-					if nodes.Contains(n.Ticket) {
-						reply.Nodes[n.Ticket] = n
+				for ticket, n := range er.Nodes {
+					if nodes.Contains(ticket) {
+						reply.Nodes[ticket] = n
 					}
 				}
 			}

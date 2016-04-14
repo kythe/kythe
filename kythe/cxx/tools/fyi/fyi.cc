@@ -16,12 +16,12 @@
 
 #include "fyi.h"
 
-#include "clang/Rewrite/Core/Rewriter.h"
-#include "clang/Lex/Preprocessor.h"
 #include "clang/Frontend/ASTUnit.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/TextDiagnosticPrinter.h"
+#include "clang/Lex/Preprocessor.h"
 #include "clang/Parse/ParseAST.h"
+#include "clang/Rewrite/Core/Rewriter.h"
 #include "clang/Sema/ExternalSemaSource.h"
 #include "clang/Sema/Sema.h"
 #include "llvm/Support/Timer.h"
@@ -352,9 +352,9 @@ class Action : public clang::ASTFrontendAction,
   /// \return false if no tickets were copied
   template <typename Reply, typename Request>
   bool CopyTicketsFromEdgeSets(const Reply &reply, Request *request) {
-    for (const auto &edge_set : reply.edge_set()) {
-      for (const auto &group : edge_set.group()) {
-        for (const auto &edge : group.edge()) {
+    for (const auto &edge_set : reply.edge_sets()) {
+      for (const auto &group : edge_set.second.groups()) {
+        for (const auto &edge : group.second.edge()) {
           request->add_ticket(edge.target_ticket());
         }
       }
@@ -366,18 +366,18 @@ class Action : public clang::ASTFrontendAction,
   /// this Action's `FileTracker`'s include list.
   template <typename Reply>
   void AddFileNodesToTracker(const Reply &reply) {
-    for (const auto &parent : reply.node()) {
+    for (const auto &parent : reply.nodes()) {
       bool is_file = false;
-      for (const auto &fact : parent.fact()) {
-        if (fact.name() == "/kythe/node/kind") {
-          is_file = (fact.value() == "/kythe/node/file");
+      for (const auto &fact : parent.second.facts()) {
+        if (fact.first == "/kythe/node/kind") {
+          is_file = (fact.second == "/kythe/node/file");
           break;
         }
       }
       if (!is_file) {
         continue;
       }
-      auto maybe_uri = URI::FromString(parent.ticket());
+      auto maybe_uri = URI::FromString(parent.first);
       if (maybe_uri.first) {
         tracker_->TryInclude(maybe_uri.second.v_name().path());
       }

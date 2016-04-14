@@ -213,7 +213,7 @@ func AllEdges(ctx context.Context, es EdgesService, req *xpb.EdgesRequest) (*xpb
 		return reply, err
 	}
 
-	nodes, edges := NodesMap(reply.Node), EdgesMap(reply.EdgeSet)
+	nodes, edges := NodesMap(reply.Nodes), EdgesMap(reply.EdgeSets)
 
 	for reply.NextPageToken != "" && err == nil {
 		req.PageToken = reply.NextPageToken
@@ -221,35 +221,30 @@ func AllEdges(ctx context.Context, es EdgesService, req *xpb.EdgesRequest) (*xpb
 		if err != nil {
 			return nil, err
 		}
-		nodesMapInto(reply.Node, nodes)
-		edgesMapInto(reply.EdgeSet, edges)
+		nodesMapInto(reply.Nodes, nodes)
+		edgesMapInto(reply.EdgeSets, edges)
 	}
 
 	reply = &xpb.EdgesReply{
-		Node:    make([]*xpb.NodeInfo, 0, len(nodes)),
-		EdgeSet: make([]*xpb.EdgeSet, 0, len(edges)),
+		Nodes:    make(map[string]*xpb.NodeInfo, len(nodes)),
+		EdgeSets: make(map[string]*xpb.EdgeSet, len(edges)),
 	}
 
 	for ticket, facts := range nodes {
 		info := &xpb.NodeInfo{
-			Ticket: ticket,
-			Fact:   make([]*cpb.Fact, 0, len(facts)),
+			Facts: make(map[string][]byte, len(facts)),
 		}
 		for name, val := range facts {
-			info.Fact = append(info.Fact, &cpb.Fact{
-				Name:  name,
-				Value: val,
-			})
+			info.Facts[name] = val
 		}
-		reply.Node = append(reply.Node, info)
+		reply.Nodes[ticket] = info
 	}
 
-	for source, kinds := range edges {
+	for source, groups := range edges {
 		set := &xpb.EdgeSet{
-			SourceTicket: source,
-			Group:        make([]*xpb.EdgeSet_Group, 0, len(kinds)),
+			Groups: make(map[string]*xpb.EdgeSet_Group, len(groups)),
 		}
-		for kind, targets := range kinds {
+		for kind, targets := range groups {
 			edges := make([]*xpb.EdgeSet_Group_Edge, 0, len(targets))
 			for target, ordinals := range targets {
 				for ordinal := range ordinals {
@@ -260,12 +255,11 @@ func AllEdges(ctx context.Context, es EdgesService, req *xpb.EdgesRequest) (*xpb
 				}
 			}
 			sort.Sort(ByOrdinal(edges))
-			set.Group = append(set.Group, &xpb.EdgeSet_Group{
-				Kind: kind,
+			set.Groups[kind] = &xpb.EdgeSet_Group{
 				Edge: edges,
-			})
+			}
 		}
-		reply.EdgeSet = append(reply.EdgeSet, set)
+		reply.EdgeSets[source] = set
 	}
 
 	return reply, err
@@ -340,45 +334,45 @@ func SlowDefinitions(xs Service, ctx context.Context, tickets []string) (map[str
 var revCallableAs = schema.MirrorEdge(schema.CallableAsEdge)
 
 // NodesMap returns a map from each node ticket to a map of its facts.
-func NodesMap(nodes []*xpb.NodeInfo) map[string]map[string][]byte {
+func NodesMap(nodes map[string]*xpb.NodeInfo) map[string]map[string][]byte {
 	m := make(map[string]map[string][]byte, len(nodes))
 	nodesMapInto(nodes, m)
 	return m
 }
 
-func nodesMapInto(nodes []*xpb.NodeInfo, m map[string]map[string][]byte) {
-	for _, n := range nodes {
-		facts, ok := m[n.Ticket]
+func nodesMapInto(nodes map[string]*xpb.NodeInfo, m map[string]map[string][]byte) {
+	for ticket, n := range nodes {
+		facts, ok := m[ticket]
 		if !ok {
-			facts = make(map[string][]byte, len(n.Fact))
-			m[n.Ticket] = facts
+			facts = make(map[string][]byte, len(n.Facts))
+			m[ticket] = facts
 		}
-		for _, f := range n.Fact {
-			facts[f.Name] = f.Value
+		for name, value := range n.Facts {
+			facts[name] = value
 		}
 	}
 }
 
 // EdgesMap returns a map from each node ticket to a map of its outward edge kinds.
-func EdgesMap(edges []*xpb.EdgeSet) map[string]map[string]map[string]map[int32]struct{} {
+func EdgesMap(edges map[string]*xpb.EdgeSet) map[string]map[string]map[string]map[int32]struct{} {
 	m := make(map[string]map[string]map[string]map[int32]struct{}, len(edges))
 	edgesMapInto(edges, m)
 	return m
 }
 
-func edgesMapInto(edges []*xpb.EdgeSet, m map[string]map[string]map[string]map[int32]struct{}) {
-	for _, es := range edges {
-		kinds, ok := m[es.SourceTicket]
+func edgesMapInto(edges map[string]*xpb.EdgeSet, m map[string]map[string]map[string]map[int32]struct{}) {
+	for source, es := range edges {
+		kinds, ok := m[source]
 		if !ok {
-			kinds = make(map[string]map[string]map[int32]struct{}, len(es.Group))
-			m[es.SourceTicket] = kinds
+			kinds = make(map[string]map[string]map[int32]struct{}, len(es.Groups))
+			m[source] = kinds
 		}
-		for _, g := range es.Group {
+		for kind, g := range es.Groups {
 			for _, e := range g.Edge {
-				targets, ok := kinds[g.Kind]
+				targets, ok := kinds[kind]
 				if !ok {
 					targets = make(map[string]map[int32]struct{})
-					kinds[g.Kind] = targets
+					kinds[kind] = targets
 				}
 				ordinals, ok := targets[e.TargetTicket]
 				if !ok {
@@ -606,10 +600,10 @@ func forAllEdges(ctx context.Context, service Service, source stringset.Set, edg
 	if err != nil {
 		return err
 	}
-	for _, es := range edges.EdgeSet {
-		for _, group := range es.Group {
+	for source, es := range edges.EdgeSets {
+		for _, group := range es.Groups {
 			for _, edge := range group.Edge {
-				err = f(es.SourceTicket, edge.TargetTicket)
+				err = f(source, edge.TargetTicket)
 				if err != nil {
 					return err
 				}
@@ -897,9 +891,9 @@ func slowLookupMeta(ctx context.Context, service Service, language string, kind 
 	if err != nil {
 		return "", fmt.Errorf("during slowLookupMeta: %v", err)
 	}
-	for _, node := range nodes.Node {
-		for _, fact := range node.Fact {
-			return string(fact.Value), nil
+	for _, node := range nodes.Nodes {
+		for _, value := range node.Facts {
+			return string(value), nil
 		}
 	}
 	return "", nil
@@ -907,9 +901,9 @@ func slowLookupMeta(ctx context.Context, service Service, language string, kind 
 
 // findParam finds the ticket for param number num in edges. It returns the empty string if a match wasn't found.
 func findParam(edges *xpb.EdgesReply, num int) string {
-	for _, set := range edges.EdgeSet {
-		for _, group := range set.Group {
-			if group.Kind == schema.ParamEdge {
+	for _, set := range edges.EdgeSets {
+		for kind, group := range set.Groups {
+			if kind == schema.ParamEdge {
 				for _, edge := range group.Edge {
 					if int(edge.Ordinal) == num {
 						return edge.TargetTicket
@@ -921,23 +915,17 @@ func findParam(edges *xpb.EdgesReply, num int) string {
 	return ""
 }
 
+func getFactValue(edges *xpb.EdgesReply, ticket, fact string) []byte {
+	if n := edges.Nodes[ticket]; n != nil {
+		return n.Facts[fact]
+	}
+	return nil
+}
+
 // findFormatAndKind finds the format and kind facts associated with ticket in edges. It returns empty strings for
 // either fact if they aren't found.
 func findFormatAndKind(edges *xpb.EdgesReply, ticket string) (string, string) {
-	var selectedFormat, selectedKind string
-	for _, node := range edges.Node {
-		if node.Ticket == ticket {
-			for _, fact := range node.Fact {
-				if fact.Name == schema.NodeKindFact {
-					selectedKind = string(fact.Value)
-				} else if fact.Name == schema.FormatFact {
-					selectedFormat = string(fact.Value)
-				}
-			}
-			return selectedFormat, selectedKind
-		}
-	}
-	return "", ""
+	return string(getFactValue(edges, ticket, schema.FormatFact)), string(getFactValue(edges, ticket, schema.NodeKindFact))
 }
 
 // slowSignatureForBacktick handles signature generation for the %N` format token.
@@ -990,29 +978,22 @@ func findSignatureDetails(ctx context.Context, service Service, ticket string) (
 		kinds:   make(map[string]string),
 		formats: make(map[string]string),
 	}
-	for _, node := range edges.Node {
-		for _, fact := range node.Fact {
-			switch fact.Name {
-			case schema.NodeKindFact:
-				details.kinds[node.Ticket] = string(fact.Value)
-			case schema.FormatFact:
-				details.formats[node.Ticket] = string(fact.Value)
+	for nodeTicket, node := range edges.Nodes {
+		details.kinds[nodeTicket] = string(node.Facts[schema.NodeKindFact])
+		details.formats[nodeTicket] = string(node.Facts[schema.FormatFact])
+	}
+	for _, set := range edges.EdgeSets {
+		if group := set.Groups[schema.TypedEdge]; group != nil {
+			for _, edge := range group.Edge {
+				details.typeTicket = edge.TargetTicket
 			}
 		}
-	}
-	for _, set := range edges.EdgeSet {
-		for _, group := range set.Group {
-			switch group.Kind {
-			case schema.TypedEdge:
-				for _, edge := range group.Edge {
-					details.typeTicket = edge.TargetTicket
-				}
-			case schema.ParamEdge:
-				details.params = extractParams(group.Edge)
-			case schema.ChildOfEdge:
-				for _, edge := range group.Edge {
-					details.parents = append(details.parents, edge.TargetTicket)
-				}
+		if group := set.Groups[schema.ParamEdge]; group != nil {
+			details.params = extractParams(group.Edge)
+		}
+		if group := set.Groups[schema.ChildOfEdge]; group != nil {
+			for _, edge := range group.Edge {
+				details.parents = append(details.parents, edge.TargetTicket)
 			}
 		}
 	}
@@ -1157,20 +1138,14 @@ func SlowSignature(ctx context.Context, service Service, ticket string) (*xpb.Do
 	if err != nil {
 		return nil, fmt.Errorf("during Nodes in SlowSignature: %v", err)
 	}
-	if len(nodes.Node) == 0 {
+	if len(nodes.Nodes) == 0 {
 		return nil, fmt.Errorf("could not find node %v", ticket)
 	}
 
 	var kind, format string
-	for _, node := range nodes.Node {
-		for _, fact := range node.Fact {
-			switch fact.Name {
-			case schema.NodeKindFact:
-				kind = string(fact.Value)
-			case schema.FormatFact:
-				format = string(fact.Value)
-			}
-		}
+	for _, node := range nodes.Nodes {
+		kind = string(node.Facts[schema.NodeKindFact])
+		format = string(node.Facts[schema.FormatFact])
 	}
 
 	text, err := slowSignatureLevel(ctx, service, ticket, kind, format, 0)
@@ -1224,40 +1199,34 @@ func getDocRelatedNodes(ctx context.Context, service Service, details documentDe
 	if err != nil {
 		return fmt.Errorf("couldn't AllEdges: %v", err)
 	}
-	for _, node := range dedges.Node {
-		for _, fact := range node.Fact {
-			if fact.Name == schema.NodeKindFact {
-				kind := string(fact.Value)
-				if kind == schema.DocKind {
-					details.docs.Add(node.Ticket)
-				}
-				details.ticketToKind[node.Ticket] = kind
-				break
+	for nodeTicket, node := range dedges.Nodes {
+		kind := string(node.Facts[schema.NodeKindFact])
+		if kind == schema.DocKind {
+			details.docs.Add(nodeTicket)
+		}
+		details.ticketToKind[nodeTicket] = kind
+	}
+	for sourceTicket, set := range dedges.EdgeSets {
+		if group := set.Groups[schema.ChildOfEdge]; group != nil {
+			for _, edge := range group.Edge {
+				details.ticketToParent[sourceTicket] = edge.TargetTicket
 			}
 		}
-	}
-	for _, set := range dedges.EdgeSet {
-		for _, group := range set.Group {
-			switch group.Kind {
-			case schema.ChildOfEdge:
-				for _, edge := range group.Edge {
-					details.ticketToParent[set.SourceTicket] = edge.TargetTicket
-				}
-			case schema.TypedEdge:
-				for _, edge := range group.Edge {
-					details.ticketToType[set.SourceTicket] = edge.TargetTicket
-				}
-			case schema.MirrorEdge(schema.DocumentsEdge):
-				for _, edge := range group.Edge {
-					if preDoc := details.ticketToPreDocument[set.SourceTicket]; preDoc != nil {
-						assocNode := details.docTicketToAssocNode[edge.TargetTicket]
-						if assocNode == nil {
-							assocNode = &associatedDocNode{}
-							details.docTicketToAssocNode[edge.TargetTicket] = assocNode
-						}
-						assocNode.documented = append(assocNode.documented, set.SourceTicket)
-						preDoc.docNode[edge.TargetTicket] = assocNode
+		if group := set.Groups[schema.TypedEdge]; group != nil {
+			for _, edge := range group.Edge {
+				details.ticketToType[sourceTicket] = edge.TargetTicket
+			}
+		}
+		if group := set.Groups[schema.MirrorEdge(schema.DocumentsEdge)]; group != nil {
+			for _, edge := range group.Edge {
+				if preDoc := details.ticketToPreDocument[sourceTicket]; preDoc != nil {
+					assocNode := details.docTicketToAssocNode[edge.TargetTicket]
+					if assocNode == nil {
+						assocNode = &associatedDocNode{}
+						details.docTicketToAssocNode[edge.TargetTicket] = assocNode
 					}
+					assocNode.documented = append(assocNode.documented, sourceTicket)
+					preDoc.docNode[edge.TargetTicket] = assocNode
 				}
 			}
 		}
@@ -1279,13 +1248,10 @@ func getDocText(ctx context.Context, service Service, details documentDetails) e
 	if err != nil {
 		return fmt.Errorf("error in Nodes during getDocTextAndLinks: %v", err)
 	}
-	for _, node := range nodes.Node {
-		for _, fact := range node.Fact {
-			if fact.Name == schema.TextFact {
-				if assocNode := details.docTicketToAssocNode[node.Ticket]; assocNode != nil {
-					assocNode.rawText = string(fact.Value)
-					break
-				}
+	for nodeTicket, node := range nodes.Nodes {
+		if text, ok := node.Facts[schema.TextFact]; ok {
+			if assocNode := details.docTicketToAssocNode[nodeTicket]; assocNode != nil {
+				assocNode.rawText = string(text)
 			}
 		}
 	}
@@ -1339,11 +1305,11 @@ func getDocLinks(ctx context.Context, service Service, details documentDetails) 
 		return fmt.Errorf("error in Edges during getDocTextAndLinks: %v", err)
 	}
 	// Resolve links to targets/simple references.
-	for _, set := range pedges.EdgeSet {
-		if assocDoc := details.docTicketToAssocNode[set.SourceTicket]; assocDoc != nil {
-			for _, group := range set.Group {
+	for sourceTicket, set := range pedges.EdgeSets {
+		if assocDoc := details.docTicketToAssocNode[sourceTicket]; assocDoc != nil {
+			for _, group := range set.Groups {
 				params := extractParams(group.Edge)
-				err = resolveDocLinks(ctx, service, set.SourceTicket, params, assocDoc)
+				err = resolveDocLinks(ctx, service, sourceTicket, params, assocDoc)
 				if err != nil {
 					return fmt.Errorf("error during resolveDocLink: %v", err)
 				}
@@ -1409,13 +1375,8 @@ func SlowDocumentation(ctx context.Context, service Service, req *xpb.Documentat
 	if err != nil {
 		return nil, fmt.Errorf("error calling Nodes on %v: %v", tickets, err)
 	}
-	for _, node := range nodes.Node {
-		for _, fact := range node.Fact {
-			if fact.Name == schema.NodeKindFact {
-				details.ticketToKind[node.Ticket] = string(fact.Value)
-				break
-			}
-		}
+	for nodeTicket, node := range nodes.Nodes {
+		details.ticketToKind[nodeTicket] = string(node.Facts[schema.NodeKindFact])
 	}
 	// We assume that expandDefRelatedNodeSet will return disjoint sets (and thus we can treat them as equivalence classes
 	// with the original request's ticket as the characteristic element).

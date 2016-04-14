@@ -56,35 +56,17 @@
      :handler (comp handler unwrap-dir-response)
      :error-handler error-handler}))
 
-(defn- unwrap-edges-response [resp]
-  {:edge_set (:edge_set resp)
-   :nodes (into {} (map (juxt :ticket
-                          #(into {} (map (juxt :name (comp b64/decodeString :value)) (:fact %))))
-                     (:node resp)))
-   :next (:next_page_token resp)})
-
-(defn get-edges
-  "Requests the outward edges from the given node ticket"
-  ([ticket handler error-handler]
-   (get-edges ticket {} handler error-handler))
-  ([ticket opts handler error-handler]
-   (POST "edges"
-     {:params (merge {:filter [schema/node-kind-fact
-                               schema/anchor-loc-filter]
-                      :page_size 20}
-                opts
-                {:ticket (if (seq? ticket) ticket [ticket])})
-      :format :json
-      :response-format :json
-      :keywords? true
-      :handler (comp handler unwrap-edges-response)
-      :error-handler error-handler})))
+(defn- unwrap-node [node]
+  {:facts (into {}
+                (map (juxt first
+                           (comp util/fix-encoding b64/decodeString second))
+                     (:facts node)))})
 
 (defn- unwrap-xrefs-response [resp]
   {:cross-references (if (= 1 (count (:cross_references resp)))
                        (second (first (:cross_references resp)))
                        (:cross_references resp))
-   :nodes (:nodes resp)
+   :nodes (into {} (map (juxt first (comp unwrap-node second)) (:nodes resp)))
    :next (:next_page_token resp)})
 
 (defn get-xrefs

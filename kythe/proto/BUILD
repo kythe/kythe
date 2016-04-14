@@ -84,7 +84,6 @@ proto_library(
     has_services = 1,
     gen_cc = 1,
     gen_go = 1,
-    deps = [":common_proto"],
 )
 
 # Protocol buffer definitions used to encode serving data

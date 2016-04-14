@@ -18,7 +18,6 @@ package xrefs
 
 import (
 	"bytes"
-	"reflect"
 	"sort"
 	"testing"
 
@@ -442,27 +441,24 @@ func TestNodes(t *testing.T) {
 		})
 		testutil.FatalOnErrT(t, "NodesRequest error: %v", err)
 
-		if len(reply.Node) != 1 {
-			t.Fatalf("Expected 1 node for %q; found %d: {%v}", node.Ticket, len(reply.Node), reply)
-		} else if expected := nodeInfo(node); !reflect.DeepEqual(reply.Node[0], expected) {
-			t.Fatalf("Expected {%v}; received {%v}", expected, reply.Node[0])
+		if len(reply.Nodes) != 1 {
+			t.Fatalf("Expected 1 node for %q; found %d: {%v}", node.Ticket, len(reply.Nodes), reply)
+		} else if err := testutil.DeepEqual(nodeInfo(node), reply.Nodes[node.Ticket]); err != nil {
+			t.Fatal(err)
 		}
 	}
 
 	var tickets []string
-	var expected []*xpb.NodeInfo
+	expected := make(map[string]*xpb.NodeInfo)
 	for _, n := range tbl.Nodes {
 		tickets = append(tickets, n.Ticket)
-		expected = append(expected, nodeInfo(n))
+		expected[n.Ticket] = nodeInfo(n)
 	}
 	reply, err := st.Nodes(ctx, &xpb.NodesRequest{Ticket: tickets})
 	testutil.FatalOnErrT(t, "NodesRequest error: %v", err)
 
-	sort.Sort(byNodeTicket(expected))
-	sort.Sort(byNodeTicket(reply.Node))
-
-	if !reflect.DeepEqual(expected, reply.Node) {
-		t.Fatalf("Expected {%v}; received {%v}", expected, reply.Node)
+	if err := testutil.DeepEqual(expected, reply.Nodes); err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -473,22 +469,22 @@ func TestNodesMissing(t *testing.T) {
 	})
 	testutil.FatalOnErrT(t, "NodesRequest error: %v", err)
 
-	if len(reply.Node) > 0 {
+	if len(reply.Nodes) > 0 {
 		t.Fatalf("Received unexpected reply for missing node: {%v}", reply)
 	}
 }
 
 func TestEdgesSinglePage(t *testing.T) {
 	tests := []struct {
-		Tickets []string
-		Kinds   []string
+		Ticket string
+		Kinds  []string
 
 		EdgeSet *srvpb.PagedEdgeSet
 	}{{
-		Tickets: []string{tbl.EdgeSets[0].Source.Ticket},
+		Ticket:  tbl.EdgeSets[0].Source.Ticket,
 		EdgeSet: tbl.EdgeSets[0],
 	}, {
-		Tickets: []string{tbl.EdgeSets[0].Source.Ticket},
+		Ticket:  tbl.EdgeSets[0].Source.Ticket,
 		Kinds:   []string{"someEdgeKind", "anotherEdge"},
 		EdgeSet: tbl.EdgeSets[0],
 	}}
@@ -497,24 +493,24 @@ func TestEdgesSinglePage(t *testing.T) {
 
 	for _, test := range tests {
 		reply, err := st.Edges(ctx, &xpb.EdgesRequest{
-			Ticket: test.Tickets,
+			Ticket: []string{test.Ticket},
 			Kind:   test.Kinds,
 		})
 		testutil.FatalOnErrT(t, "EdgesRequest error: %v", err)
 
-		if len(reply.Node) > 0 {
+		if len(reply.Nodes) > 0 {
 			t.Errorf("Received unexpected nodes in EdgesReply: {%v}", reply)
 		}
 		if reply.NextPageToken != "" {
 			t.Errorf("Received unexpected next_page_token in EdgesReply: {%v}", reply)
 		}
-		if len(reply.EdgeSet) != 1 {
-			t.Errorf("Expected 1 EdgeSet in EdgesReply; found %d: {%v}", len(reply.EdgeSet), reply)
+		if len(reply.EdgeSets) != 1 {
+			t.Errorf("Expected 1 EdgeSet in EdgesReply; found %d: {%v}", len(reply.EdgeSets), reply)
 		}
 
 		expected := edgeSet(test.Kinds, test.EdgeSet, nil)
-		if !reflect.DeepEqual(reply.EdgeSet[0], expected) {
-			t.Errorf("Expected {%v}; found {%v}", expected, reply.EdgeSet)
+		if err := testutil.DeepEqual(expected, reply.EdgeSets[test.Ticket]); err != nil {
+			t.Error(err)
 		}
 	}
 }
@@ -526,7 +522,7 @@ func TestEdgesLastPage(t *testing.T) {
 		{"%/kythe/edge/defines/binding"},
 	}
 
-	tickets := []string{tbl.EdgeSets[1].Source.Ticket}
+	ticket := tbl.EdgeSets[1].Source.Ticket
 	es := tbl.EdgeSets[1]
 	pages := []*srvpb.EdgePage{tbl.EdgePages[1], tbl.EdgePages[2]}
 
@@ -534,37 +530,37 @@ func TestEdgesLastPage(t *testing.T) {
 
 	for _, kinds := range tests {
 		reply, err := st.Edges(ctx, &xpb.EdgesRequest{
-			Ticket: tickets,
+			Ticket: []string{ticket},
 			Kind:   kinds,
 		})
 		testutil.FatalOnErrT(t, "EdgesRequest error: %v", err)
 
-		if len(reply.Node) > 0 {
+		if len(reply.Nodes) > 0 {
 			t.Errorf("Received unexpected nodes in EdgesReply: {%v}", reply)
 		}
 		if reply.NextPageToken != "" {
 			t.Errorf("Received unexpected next_page_token in EdgesReply: {%v}", reply)
 		}
-		if len(reply.EdgeSet) != 1 {
-			t.Fatalf("Expected 1 EdgeSet in EdgesReply; found %d: {%v}", len(reply.EdgeSet), reply)
+		if len(reply.EdgeSets) != 1 {
+			t.Fatalf("Expected 1 EdgeSet in EdgesReply; found %d: {%v}", len(reply.EdgeSets), reply)
 		}
 
 		expected := edgeSet(kinds, es, pages)
-		if !reflect.DeepEqual(reply.EdgeSet[0], expected) {
-			t.Errorf("Expected {%v}; found {%v}", expected, reply.EdgeSet)
+		if err := testutil.DeepEqual(expected, reply.EdgeSets[ticket]); err != nil {
+			t.Error(err)
 		}
 	}
 }
 
 func TestEdgesMultiPage(t *testing.T) {
 	tests := []struct {
-		Tickets []string
-		Kinds   []string
+		Ticket string
+		Kinds  []string
 
 		EdgeSet *srvpb.PagedEdgeSet
 		Pages   []*srvpb.EdgePage
 	}{{
-		Tickets: []string{tbl.EdgeSets[1].Source.Ticket},
+		Ticket:  tbl.EdgeSets[1].Source.Ticket,
 		EdgeSet: tbl.EdgeSets[1],
 		Pages:   []*srvpb.EdgePage{tbl.EdgePages[1], tbl.EdgePages[2]},
 	}}
@@ -573,24 +569,24 @@ func TestEdgesMultiPage(t *testing.T) {
 
 	for _, test := range tests {
 		reply, err := st.Edges(ctx, &xpb.EdgesRequest{
-			Ticket: test.Tickets,
+			Ticket: []string{test.Ticket},
 			Kind:   test.Kinds,
 		})
 		testutil.FatalOnErrT(t, "EdgesRequest error: %v", err)
 
-		if len(reply.Node) > 0 {
+		if len(reply.Nodes) > 0 {
 			t.Errorf("Received unexpected nodes in EdgesReply: {%v}", reply)
 		}
 		if reply.NextPageToken != "" {
 			t.Errorf("Received unexpected next_page_token in EdgesReply: {%v}", reply)
 		}
-		if len(reply.EdgeSet) != 1 {
-			t.Errorf("Expected 1 EdgeSet in EdgesReply; found %d: {%v}", len(reply.EdgeSet), reply)
+		if len(reply.EdgeSets) != 1 {
+			t.Errorf("Expected 1 EdgeSet in EdgesReply; found %d: {%v}", len(reply.EdgeSets), reply)
 		}
 
 		expected := edgeSet(test.Kinds, test.EdgeSet, test.Pages)
-		if !reflect.DeepEqual(reply.EdgeSet[0], expected) {
-			t.Errorf("Expected {%v}; found {%v}", expected, reply.EdgeSet)
+		if err := testutil.DeepEqual(expected, reply.EdgeSets[test.Ticket]); err != nil {
+			t.Error(err)
 		}
 	}
 }
@@ -602,7 +598,7 @@ func TestEdgesMissing(t *testing.T) {
 	})
 	testutil.FatalOnErrT(t, "EdgesRequest error: %v", err)
 
-	if len(reply.EdgeSet) > 0 || len(reply.Node) > 0 || reply.NextPageToken != "" {
+	if len(reply.EdgeSets) > 0 || len(reply.Nodes) > 0 || reply.NextPageToken != "" {
 		t.Fatalf("Received unexpected reply for missing edges: {%v}", reply)
 	}
 }
@@ -626,16 +622,12 @@ func TestDecorationsRefs(t *testing.T) {
 	}
 
 	expected := refs(xrefs.NewNormalizer(d.File.Text), d.Decoration)
-	if !reflect.DeepEqual(expected, reply.Reference) {
-		t.Fatalf("Expected references %v; found %v", expected, reply.Reference)
+	if err := testutil.DeepEqual(expected, reply.Reference); err != nil {
+		t.Fatal(err)
 	}
 
 	expectedNodes := nodeInfos(tbl.Nodes[9:11], tbl.Nodes[12:13])
-
-	sort.Sort(byNodeTicket(expectedNodes))
-	sort.Sort(byNodeTicket(reply.Node))
-
-	if err := testutil.DeepEqual(expectedNodes, reply.Node); err != nil {
+	if err := testutil.DeepEqual(expectedNodes, reply.Nodes); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -708,11 +700,7 @@ func TestDecorationsDirtyBuffer(t *testing.T) {
 	// These are a subset of the anchor nodes in tbl.Decorations[1].  tbl.Nodes[10] is missing because
 	// it is the target of an anchor in the edited region.
 	expectedNodes := nodeInfos([]*srvpb.Node{tbl.Nodes[9], tbl.Nodes[12]})
-
-	sort.Sort(byNodeTicket(expectedNodes))
-	sort.Sort(byNodeTicket(reply.Node))
-
-	if err := testutil.DeepEqual(expectedNodes, reply.Node); err != nil {
+	if err := testutil.DeepEqual(expectedNodes, reply.Nodes); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -882,20 +870,14 @@ func TestCrossReferences(t *testing.T) {
 	}
 }
 
-type byNodeTicket []*xpb.NodeInfo
-
-// Implement the sort.Interface
-func (s byNodeTicket) Len() int           { return len(s) }
-func (s byNodeTicket) Less(i, j int) bool { return s[i].Ticket < s[j].Ticket }
-func (s byNodeTicket) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
-
-func nodeInfos(nss ...[]*srvpb.Node) (infos []*xpb.NodeInfo) {
+func nodeInfos(nss ...[]*srvpb.Node) map[string]*xpb.NodeInfo {
+	m := make(map[string]*xpb.NodeInfo)
 	for _, ns := range nss {
 		for _, n := range ns {
-			infos = append(infos, nodeInfo(n))
+			m[n.Ticket] = nodeInfo(n)
 		}
 	}
-	return
+	return m
 }
 
 func TestCallers(t *testing.T) {
@@ -923,11 +905,10 @@ func (s byOffset) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 func (s byOffset) Less(i, j int) bool { return s[i].Start.ByteOffset < s[j].Start.ByteOffset }
 
 func nodeInfo(n *srvpb.Node) *xpb.NodeInfo {
-	ni := &xpb.NodeInfo{Ticket: n.Ticket}
+	ni := &xpb.NodeInfo{Facts: make(map[string][]byte, len(n.Fact))}
 	for _, f := range n.Fact {
-		ni.Fact = append(ni.Fact, &cpb.Fact{Name: f.Name, Value: f.Value})
+		ni.Facts[f.Name] = f.Value
 	}
-	sort.Sort(xrefs.ByName(ni.Fact))
 	return ni
 }
 
@@ -946,9 +927,9 @@ func makeFactList(keyVals ...string) []*cpb.Fact {
 }
 
 func mapFacts(n *xpb.NodeInfo, facts map[string]string) {
-	for _, f := range n.Fact {
-		if val, ok := facts[f.Name]; ok {
-			f.Value = []byte(val)
+	for name := range n.Facts {
+		if val, ok := facts[name]; ok {
+			n.Facts[name] = []byte(val)
 		}
 	}
 }
@@ -956,24 +937,20 @@ func mapFacts(n *xpb.NodeInfo, facts map[string]string) {
 func edgeSet(kinds []string, pes *srvpb.PagedEdgeSet, pages []*srvpb.EdgePage) *xpb.EdgeSet {
 	set := stringset.New(kinds...)
 
-	es := &xpb.EdgeSet{
-		SourceTicket: pes.Source.Ticket,
-	}
+	es := &xpb.EdgeSet{Groups: make(map[string]*xpb.EdgeSet_Group, len(pes.Group))}
 	for _, g := range pes.Group {
 		if set.Contains(g.Kind) || len(set) == 0 {
-			es.Group = append(es.Group, &xpb.EdgeSet_Group{
-				Kind: g.Kind,
+			es.Groups[g.Kind] = &xpb.EdgeSet_Group{
 				Edge: e2e(g.Edge),
-			})
+			}
 		}
 	}
 	for _, ep := range pages {
 		g := ep.EdgesGroup
 		if set.Contains(g.Kind) || len(set) == 0 {
-			es.Group = append(es.Group, &xpb.EdgeSet_Group{
-				Kind: g.Kind,
+			es.Groups[g.Kind] = &xpb.EdgeSet_Group{
 				Edge: e2e(g.Edge),
-			})
+			}
 		}
 	}
 	return es

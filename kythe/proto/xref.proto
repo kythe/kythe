@@ -18,8 +18,6 @@ syntax = "proto3";
 
 package kythe.proto;
 
-import "kythe/proto/common.proto";
-
 // Design document: <link when written>
 // This proto represents a very preliminary attempt to define a cross-reference
 // service interface, based on Kythe data.  Its main consumer is Acropolis, but
@@ -108,21 +106,22 @@ message NodesRequest {
 // not couple the reply to the request in this way.
 
 message NodeInfo {
-  // The ticket for a matching node.
-  string ticket = 1;
-
   // The matching facts known for that node.
-  repeated kythe.proto.common.Fact fact = 2;
+  map<string, bytes> facts = 2;
 
   // If known and unambiguous, an anchor ticket for this node's definition
   // location.
   string definition = 5;
+
+  reserved 1;
+  reserved "ticket";
 }
 
 message NodesReply {
-  // One NodeInfo is returned for each requested node that had a non-zero
-  // number of matching facts.
-  repeated NodeInfo node = 1;
+  // One NodeInfo, keyed by its ticket, is returned for each requested node
+  // that had a non-zero number of matching facts.  Each NodeInfo will not have
+  // its ticket set since it would just be a copy of the map keys.
+  map<string, NodeInfo> nodes = 1;
 }
 
 message EdgesRequest {
@@ -181,12 +180,12 @@ message EdgesRequest {
   // calls if they need to.
 }
 
-// An EdgeSet represents a collection of edges outbound from a single node.
-// The edges are organized into groups, each sharing a common edge kind.
+// An EdgeSet represents a collection of edges outbound from a single node.  The
+// edges are organized into groups, each sharing a common edge kind.
 //
-// The number of edges represented by an EdgeSet es, denoted len(es), is the
-// sum of the lengths of the repeated target_ticket fields for all the groups
-// in the EdgeSet.  This count is used to determine page size in a request.
+// The number of edges represented by an EdgeSet es, denoted len(es), is the sum
+// of the lengths of the repeated edge fields for all the groups in the EdgeSet.
+// This count is used to determine page size in a request.
 message EdgeSet {
   message Group {
     message Edge {
@@ -198,33 +197,37 @@ message EdgeSet {
       int32 ordinal = 2;
     }
 
-    string kind = 1;
     repeated Edge edge = 2;
+
+    reserved 1;
+    reserved "kind";
   }
 
-  // The ticket of the source node for all the edges in the edge set.
-  string source_ticket = 1;
-
   // Each group is a collection of outbound edges from source node sharing a
-  // given kind.  In a given EdgeSet, the server will not send more than one
-  // group with the same kind label.
-  repeated Group group = 2;
+  // given kind, the map's keys.  In a given EdgeSet, the server will not send
+  // more than one group with the same kind label.
+  map<string, Group> groups = 2;
+
+  reserved 1;
+  reserved "source_ticket";
 }
 
 message EdgesReply {
   // This field will contain one EdgeSet for each source node with one or more
-  // matching outbound edges.  The number of edges represented by an EdgesReply
-  // er, denoted len(er), is the sum of len(es) for each es in edgeset.  This
-  // count is used to determine the page size.
-  repeated EdgeSet edge_set = 1;
+  // matching outbound edges, keyed by the source node's ticket.  The number of
+  // edges represented by an EdgesReply er, denoted len(er), is the sum of
+  // len(es) for each es in edge_sets.  This count is used to determine the page
+  // size.
+  map<string, EdgeSet> edge_sets = 1;
 
-  // This field will contain one entry for each distinct node referenced by
-  // some edge in edgesets, for which there is one or more matching facts.
+  // This field will contain one entry, keyed by ticket, for each distinct node
+  // referenced by some edge in edgesets, for which there is one or more
+  // matching facts.
   //
   // Rationale: This prevents us from having to copy the data to all the end
   // nodes, but allows the client to have that information without making
   // additional requests.
-  repeated NodeInfo node = 2;
+  map<string, NodeInfo> nodes = 2;
 
   // If there are additional pages of edges after the ones returned in this
   // reply, next_page_token is the page token that may be passed to fetch the
@@ -362,11 +365,9 @@ message DecorationsReply {
   // The reference edges located in the specified window.
   repeated Reference reference = 4;
 
-  // TODO(schroederc): map<string, NodeInfo> nodes = 15;
-
-  // This field will contain one entry for each distinct node referenced by a
-  // reference edge that has at least 1 non-filtered fact.
-  repeated NodeInfo node = 15;
+  // This field will contain one entry, keyed by ticket, for each distinct node
+  // referenced by a reference edge that has at least 1 non-filtered fact.
+  map<string, NodeInfo> nodes = 15;
 
   // Each anchor cited as a target definition in the references.  The map is
   // keyed by each anchor's ticket.

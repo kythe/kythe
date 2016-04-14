@@ -140,7 +140,7 @@ func displayDecorations(decor *xpb.DecorationsReply) error {
 		return jsonMarshaler.Marshal(out, decor)
 	}
 
-	nodes := xrefs.NodesMap(decor.Node)
+	nodes := xrefs.NodesMap(decor.Nodes)
 
 	for _, ref := range decor.Reference {
 		nodeKind := factValue(nodes, ref.TargetTicket, schema.NodeKindFact, "UNKNOWN")
@@ -187,13 +187,13 @@ func displayEdges(edges *xpb.EdgesReply) error {
 		return jsonMarshaler.Marshal(out, edges)
 	}
 
-	for _, es := range edges.EdgeSet {
-		if _, err := fmt.Fprintln(out, "source:", es.SourceTicket); err != nil {
+	for source, es := range edges.EdgeSets {
+		if _, err := fmt.Fprintln(out, "source:", source); err != nil {
 			return err
 		}
-		for _, g := range es.Group {
+		for kind, g := range es.Groups {
 			for _, edge := range g.Edge {
-				if _, err := fmt.Fprintf(out, "%s\t%s\n", g.Kind, edge.TargetTicket); err != nil {
+				if _, err := fmt.Fprintf(out, "%s\t%s\n", kind, edge.TargetTicket); err != nil {
 					return err
 				}
 			}
@@ -202,10 +202,10 @@ func displayEdges(edges *xpb.EdgesReply) error {
 	return nil
 }
 
-func displayTargets(edges []*xpb.EdgeSet) error {
+func displayTargets(edges map[string]*xpb.EdgeSet) error {
 	targets := stringset.New()
 	for _, es := range edges {
-		for _, g := range es.Group {
+		for _, g := range es.Groups {
 			for _, e := range g.Edge {
 				targets.Add(e.TargetTicket)
 			}
@@ -225,15 +225,15 @@ func displayTargets(edges []*xpb.EdgeSet) error {
 }
 
 func displayEdgeGraph(reply *xpb.EdgesReply) error {
-	nodes := xrefs.NodesMap(reply.Node)
+	nodes := xrefs.NodesMap(reply.Nodes)
 	edges := make(map[string]map[string]stringset.Set)
 
-	for _, es := range reply.EdgeSet {
-		for _, g := range es.Group {
+	for source, es := range reply.EdgeSets {
+		for gKind, g := range es.Groups {
 			for _, edge := range g.Edge {
 				tgt := edge.TargetTicket
-				src, kind := es.SourceTicket, g.Kind
-				if schema.EdgeDirection(g.Kind) == schema.Reverse {
+				src, kind := source, gKind
+				if schema.EdgeDirection(kind) == schema.Reverse {
 					src, kind, tgt = tgt, schema.MirrorEdge(kind), src
 				}
 				groups, ok := edges[src]
@@ -292,9 +292,9 @@ func displayEdgeGraph(reply *xpb.EdgesReply) error {
 
 func displayEdgeCounts(edges *xpb.EdgesReply) error {
 	counts := make(map[string]int)
-	for _, es := range edges.EdgeSet {
-		for _, g := range es.Group {
-			counts[g.Kind] += len(g.Edge)
+	for _, es := range edges.EdgeSets {
+		for kind, g := range es.Groups {
+			counts[kind] += len(g.Edge)
 		}
 	}
 
@@ -310,22 +310,22 @@ func displayEdgeCounts(edges *xpb.EdgesReply) error {
 	return nil
 }
 
-func displayNodes(nodes []*xpb.NodeInfo) error {
+func displayNodes(nodes map[string]*xpb.NodeInfo) error {
 	if *displayJSON {
 		return json.NewEncoder(out).Encode(nodes)
 	}
 
-	for _, n := range nodes {
-		if _, err := fmt.Fprintln(out, n.Ticket); err != nil {
+	for ticket, n := range nodes {
+		if _, err := fmt.Fprintln(out, ticket); err != nil {
 			return err
 		}
-		for _, fact := range n.Fact {
-			if len(fact.Value) <= factSizeThreshold {
-				if _, err := fmt.Fprintf(out, "  %s\t%s\n", fact.Name, fact.Value); err != nil {
+		for name, value := range n.Facts {
+			if len(value) <= factSizeThreshold {
+				if _, err := fmt.Fprintf(out, "  %s\t%s\n", name, value); err != nil {
 					return err
 				}
 			} else {
-				if _, err := fmt.Fprintf(out, "  %s\n", fact.Name); err != nil {
+				if _, err := fmt.Fprintf(out, "  %s\n", name); err != nil {
 					return err
 				}
 			}
@@ -395,12 +395,12 @@ func displayXRefs(reply *xpb.CrossReferencesReply) error {
 			for _, n := range xr.RelatedNode {
 				var nodeKind, subkind string
 				if node, ok := reply.Nodes[n.Ticket]; ok {
-					for _, f := range node.Fact {
-						switch f.Name {
+					for name, value := range node.Facts {
+						switch name {
 						case schema.NodeKindFact:
-							nodeKind = string(f.Value)
+							nodeKind = string(value)
 						case schema.SubkindFact:
-							subkind = string(f.Value)
+							subkind = string(value)
 						}
 					}
 				}

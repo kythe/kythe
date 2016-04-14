@@ -22,7 +22,7 @@
             [om.dom :as dom :include-macros true]
             [ui.schema :as schema]
             [ui.service :as service]
-            [ui.util :refer [fix-encoding ticket->vname]]))
+            [ui.util :refer [ticket->vname]]))
 
 (defn- page-navigation [xrefs-to-view pages current-page-token ticket]
   (let [current-page (first (first (filter #(= (second %) current-page-token) (map-indexed (fn [i t] [i t]) pages))))
@@ -137,10 +137,12 @@
                               (map (fn [{:keys [ticket]}]
                                      (dom/li nil
                                        (str
-                                         (if-let [kind (get (into {} (map (juxt :name :value) (:fact (get @(:nodes state) (keyword ticket)))))
-                                                         schema/node-kind-fact)]
-                                           (fix-encoding (b64/decodeString kind))
-                                           "UNKNOWN") " ")
+                                         (or
+                                           (get-in (:nodes @state) [(keyword ticket)
+                                                                    :facts
+                                                                    (keyword schema/node-kind-fact)])
+                                           "UNKNOWN")
+                                         " ")
                                        (dom/a #js {:href "#"
                                                    :onClick (fn [e]
                                                               (.preventDefault e)

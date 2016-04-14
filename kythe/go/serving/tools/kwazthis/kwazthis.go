@@ -221,7 +221,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	nodes := xrefs.NodesMap(decor.Node)
+	nodes := xrefs.NodesMap(decor.Nodes)
 
 	en := json.NewEncoder(os.Stdout)
 	for _, ref := range decor.Reference {
@@ -247,7 +247,7 @@ func main() {
 		}); err != nil {
 			log.Printf("WARNING: error getting edges for %q: %v", ref.TargetTicket, err)
 		} else {
-			edges := xrefs.EdgesMap(eReply.EdgeSet)[ref.TargetTicket]
+			edges := xrefs.EdgesMap(eReply.EdgeSets)[ref.TargetTicket]
 			for name := range edges[schema.NamedEdge] {
 				if uri, err := kytheuri.Parse(name); err != nil {
 					log.Printf("WARNING: named node ticket (%q) could not be parsed: %v", name, err)
@@ -293,9 +293,9 @@ func completeDefinition(defAnchor string) (*definition, error) {
 		return nil, err
 	}
 
-	parentNodes := xrefs.NodesMap(parentReply.Node)
+	parentNodes := xrefs.NodesMap(parentReply.Nodes)
 	var files []string
-	for parent := range xrefs.EdgesMap(parentReply.EdgeSet)[defAnchor][schema.ChildOfEdge] {
+	for parent := range xrefs.EdgesMap(parentReply.EdgeSets)[defAnchor][schema.ChildOfEdge] {
 		if string(parentNodes[parent][schema.NodeKindFact]) == schema.FileKind {
 			files = append(files, parent)
 		}

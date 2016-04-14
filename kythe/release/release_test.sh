@@ -106,15 +106,15 @@ curl -sf $ADDR/dir | jq . >/dev/null
 curl -sf $ADDR/search -d '{"partial": {"language": "java"}, "fact": [{"name": "/kythe/node/kind", "value": "cmVjb3Jk"}]}' | \
   jq -e '(.ticket | length) > 0'
 curl -sf $ADDR/nodes -d '{"ticket": ["kythe:?lang=java#pkg.Names"]}' | \
-  jq -e '(.node | length) > 0'
+  jq -e '(.nodes | length) > 0'
 curl -sf $ADDR/edges -d '{"ticket": ["kythe:?lang=java#pkg.Names"]}' | \
-  jq -e '(.edge_set | length) > 0'
+  jq -e '(.edge_sets | length) > 0'
 curl -sf $ADDR/decorations -d '{"location": {"ticket": "kythe://kythe?path=kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/Names.java"}, "source_text": true, "references": true}' | \
   jq -e '(.reference | length) > 0
-     and (.node | length) == 0
+     and (.nodes | length) == 0
      and (.source_text | type) == "string"
      and (.source_text | length) > 0'
 curl -sf $ADDR/decorations -d '{"location": {"ticket": "kythe://kythe?path=kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/Names.java"}, "references": true, "filter": ["**"]}' | \
   jq -e '(.reference | length) > 0
-     and (.node | length) > 0
+     and (.nodes | length) > 0
      and (.source_text | length) == 0'
