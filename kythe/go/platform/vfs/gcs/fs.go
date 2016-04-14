@@ -34,9 +34,8 @@ import (
 
 // fs implements a VFS backed by a bucket in Google Cloud Storage
 type fs struct {
-	client     *storage.Client
-	bucketName string
-	bucket     *storage.BucketHandle
+	client *storage.Client
+	bucket *storage.BucketHandle
 }
 
 // NewFS creates a new VFS backed by the given Google Cloud Storage bucket.
@@ -46,9 +45,8 @@ func NewFS(ctx context.Context, bucket string) (vfs.Interface, error) {
 		return nil, err
 	}
 	return &fs{
-		client:     c,
-		bucketName: bucket,
-		bucket:     c.Bucket(bucket),
+		client: c,
+		bucket: c.Bucket(bucket),
 	}, nil
 }
 
@@ -86,12 +84,13 @@ func (s *fs) Create(ctx context.Context, path string) (io.WriteCloser, error) {
 
 // Rename implements part of the VFS interface.
 func (s *fs) Rename(ctx context.Context, oldPath, newPath string) error {
-	if _, err := s.client.CopyObject(ctx, s.bucketName, oldPath, s.bucketName, newPath, &storage.ObjectAttrs{
+	src, dst := s.bucket.Object(oldPath), s.bucket.Object(newPath)
+	if _, err := src.CopyTo(ctx, dst, &storage.ObjectAttrs{
 		ContentType: "application/octet-stream",
 	}); err != nil {
 		return fmt.Errorf("error copying file during rename: %v", err)
 	}
-	if err := s.bucket.Object(oldPath).Delete(ctx); err != nil {
+	if err := src.Delete(ctx); err != nil {
 		return fmt.Errorf("error deleting old file during rename: %v", err)
 	}
 	return nil
