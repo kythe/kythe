@@ -98,7 +98,7 @@ _genproto_attrs = {
         executable = True,
     ),
     "_protoc_gen_gofast": attr.label(
-        default = Label("//third_party/go/src/github.com/gogo/protobuf/protoc-gen-gofast"),
+        default = Label("@go_gogo_protobuf//:protoc-gen-gofast"),
         executable = True,
     ),
     "_protoc_grpc_plugin_java": attr.label(

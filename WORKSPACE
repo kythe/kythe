@@ -218,6 +218,13 @@ bind(
     actual = "//:go_package_prefix",
 )
 
+new_git_repository(
+    name = "go_gogo_protobuf",
+    build_file = "third_party/go/gogo_protobuf.BUILD",
+    commit = "4f262e4b0f3a6cea646e15798109335551e21756",
+    remote = "https://github.com/gogo/protobuf.git",
+)
+
 bind(
     name = "android/sdk",
     actual = "//:nothing",
