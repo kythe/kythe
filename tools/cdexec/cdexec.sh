@@ -6,6 +6,7 @@
 usage() {
   cat <<EOF
 usage: cdexec [-q|--quiet] <directory> <command> <command args ...>
+       cdexec [-q|--quiet] -t|--temp TEMPLATE <command> <command args ...>
 
 cdexec is a utility which changes current working directory, replaces all
 occurrences of '\$\{PWD\}' from the command line with the previous PWD
@@ -14,14 +15,19 @@ EOF
 }
 
 _cdexec() {
-  local -r  _ROOT="$PWD"  # Save PWD.
-  local _QUIET=""         # Allow silencing stdout.
-  local _DEST=""          # The directory to cd into.
+  local -r _ROOT="$PWD"  # Save PWD.
+  local _QUIET=""        # Allow silencing stdout.
+  local _DEST=""         # The directory to cd into.
 
   while true; do
     case "$1" in
       -q | --quiet)
         _QUIET="yes"
+        shift
+        ;;
+      -t | --temp)
+        shift
+        _DEST="$(mktemp -d "$1")"
         shift
         ;;
       -*)
@@ -30,8 +36,10 @@ _cdexec() {
         exit 1
         ;;
       *)
-        _DEST="$1"
-        shift
+        if [[ "$_DEST" == "" ]]; then
+          _DEST="$1"
+          shift
+        fi
         break  # Exit at the first non-option argument.
         ;;
     esac

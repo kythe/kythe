@@ -1,3 +1,5 @@
+load("@//tools/cdexec:cdexec.bzl", "rootpath")
+
 def extract(ctx, kindex, args, inputs=[], mnemonic=None):
   tool_inputs, _, input_manifests = ctx.resolve_command(tools=[ctx.attr._extractor])
   env = {
@@ -15,18 +17,28 @@ def extract(ctx, kindex, args, inputs=[], mnemonic=None):
       env = env)
 
 def index(ctx, kindex, entries, mnemonic=None):
-  inputs, _, input_manifests = ctx.resolve_command(tools=[ctx.attr._indexer])
+  tools = [ctx.attr._indexer]
+  indexer = [ctx.executable._indexer.path]
+  paths = [kindex.path, entries.path]
+  # If '_cdexec' is requested, munge the arguments appropriately.
+  if hasattr(ctx.executable, "_cdexec"):
+    tools += [ctx.attr._cdexec]
+    indexer = [ctx.executable._cdexec.path,
+               "-t", ctx.label.name + ".XXXXXX",
+               rootpath(ctx.executable._indexer.path)]
+    paths = [rootpath(kindex.path), entries.path]
+  inputs, _, input_manifests = ctx.resolve_command(tools=tools)
   # Quote and execute all arguments, except the last,
   # which is used as a redirection for gzip.
-  cmd = '"${@:1:${#@}-1}" | gzip > "${@:${#@}}"'
+  # _cdexec is required for the Java indexer, which refuses to run
+  # in the source directory. See https://kythe.io/phabricator/T70
+  cmd = '("${@:1:${#@}-1}" || rm -f "${@:${#@}}") | gzip > "${@:${#@}}"'
   ctx.action(
       inputs = [kindex] + inputs,
       outputs = [entries],
       mnemonic = mnemonic,
       command = cmd,
-      arguments = ([ctx.executable._indexer.path] +
-                   ctx.attr.indexer_opts +
-                   [kindex.path, entries.path]),
+      arguments = indexer + ctx.attr.indexer_opts + paths,
       input_manifests = input_manifests,
       use_default_shell_env = True)
 
@@ -149,6 +161,10 @@ java_verifier_test = rule(
         ),
         "_indexer": attr.label(
             default = Label("//kythe/java/com/google/devtools/kythe/analyzers/java:indexer"),
+            executable = True,
+        ),
+        "_cdexec": attr.label(
+            default = Label("//tools/cdexec:cdexec"),
             executable = True,
         ),
         "_javac": attr.label(
