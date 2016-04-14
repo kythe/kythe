@@ -21,22 +21,25 @@ load("//tools:node_configure.bzl", "node_configure")
 
 node_configure()
 
-load("//tools:kythe_pkg_config.bzl", "kythe_pkg_config")
+load("//tools/build_rules/config:system.bzl", "cc_system_package")
 
-kythe_pkg_config(
+cc_system_package(
     name = "libcrypto",
-    darwin = ("OPENSSL_HOME", "/usr/local/opt/openssl"),
+    default = "/usr/local/opt/openssl",
+    envvar = "OPENSSL_HOME",
 )
 
-kythe_pkg_config(
+cc_system_package(
     name = "libuuid",
-    darwin = ("UUID_HOME", "/usr/local/opt/ossp-uuid"),
+    default = "/usr/local/opt/ossp-uuid",
+    envvar = "UUID_HOME",
     modname = "uuid",
 )
 
-kythe_pkg_config(
+cc_system_package(
     name = "libmemcached",
-    darwin = ("MEMCACHED_HOME", "/usr/local/opt/libmemcached"),
+    default = "/usr/local/opt/libmemcached",
+    envvar = "MEMCACHED_HOME",
 )
 
 new_git_repository(
