@@ -5,6 +5,7 @@
 Notable changes:
  - xrefs service: add `ordinal` field to each EdgeSet edge
  - `xrefs.CrossReferences`: group declarations/definitions for incomplete nodes
+ - C++ indexer: `--flush_after_each_entry` now defaults to `true`
 
 Notable additions:
  - `xrefs.Decorations`: add experimental `target_definitions` switch

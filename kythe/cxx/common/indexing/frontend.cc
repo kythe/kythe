@@ -35,7 +35,7 @@ DEFINE_string(o, "-", "Output filename");
 DEFINE_string(i, "-", "Input filename");
 DEFINE_bool(ignore_unimplemented, true,
             "Continue indexing even if we find something we don't support.");
-DEFINE_bool(flush_after_each_entry, false,
+DEFINE_bool(flush_after_each_entry, true,
             "Flush output after writing each entry.");
 DEFINE_string(static_claim, "", "Use a static claim table.");
 DEFINE_bool(claim_unknown, true, "Process files with unknown claim status.");
