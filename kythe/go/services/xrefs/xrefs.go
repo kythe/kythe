@@ -269,6 +269,74 @@ func AllEdges(ctx context.Context, es EdgesService, req *xpb.EdgesRequest) (*xpb
 	return reply, err
 }
 
+// SlowDefinitions attempts to return a definition location for every node ticket given.  A
+// definition will be returned only if it is unambiguous, but the definition may be indirect
+// (through an intermediary node).
+func SlowDefinitions(xs Service, ctx context.Context, tickets []string) (map[string]*xpb.Anchor, error) {
+	defs := make(map[string]*xpb.Anchor)
+
+	nodeTargets := make(map[string]string, len(tickets))
+	for _, ticket := range tickets {
+		nodeTargets[ticket] = ticket
+	}
+
+	const maxJumps = 2
+	for i := 0; i < maxJumps && len(nodeTargets) > 0; i++ {
+		tickets := make([]string, 0, len(nodeTargets))
+		for ticket := range nodeTargets {
+			tickets = append(tickets, ticket)
+		}
+
+		xReply, err := xs.CrossReferences(ctx, &xpb.CrossReferencesRequest{
+			Ticket:         tickets,
+			DefinitionKind: xpb.CrossReferencesRequest_BINDING_DEFINITIONS,
+
+			// Get node kinds of related nodes for indirect definitions
+			Filter: []string{schema.NodeKindFact},
+		})
+		if err != nil {
+			return nil, fmt.Errorf("error retrieving definition locations: %v", err)
+		}
+
+		nextJump := make(map[string]string)
+
+		// Give client a definition location for each reference that has only 1
+		// definition location.
+		//
+		// If a node does not have a single definition, but does have a relevant
+		// relation to another node, try to find a single definition for the
+		// related node instead.
+		for ticket, cr := range xReply.CrossReferences {
+			targetTicket := nodeTargets[ticket]
+			if len(cr.Definition) == 1 {
+				loc := cr.Definition[0]
+				// TODO(schroederc): handle differing kinds; completes vs. binding
+				loc.Kind = ""
+				defs[ticket] = loc
+			} else {
+				// Look for relevant node relations for an indirect definition
+				var relevant []string
+				for _, n := range cr.RelatedNode {
+					switch n.RelationKind {
+					case revCallableAs: // Jump from a callable
+						relevant = append(relevant, n.Ticket)
+					}
+				}
+
+				if len(relevant) == 1 {
+					nextJump[relevant[0]] = targetTicket
+				}
+			}
+		}
+
+		nodeTargets = nextJump
+	}
+
+	return defs, nil
+}
+
+var revCallableAs = schema.MirrorEdge(schema.CallableAsEdge)
+
 // NodesMap returns a map from each node ticket to a map of its facts.
 func NodesMap(nodes []*xpb.NodeInfo) map[string]map[string][]byte {
 	m := make(map[string]map[string][]byte, len(nodes))

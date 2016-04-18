@@ -568,8 +568,9 @@ func (t *tableImpl) Decorations(ctx context.Context, req *xpb.DecorationsRequest
 		}
 
 		reply.Reference = make([]*xpb.DecorationsReply_Reference, 0, len(decor.Decoration))
+
+		// Target ticket -> set of references
 		refs := make(map[string][]*xpb.DecorationsReply_Reference)
-		nodeTargets := make(map[string]string)
 
 		for _, d := range decor.Decoration {
 			start, end, exists := patcher.Patch(d.Anchor.StartOffset, d.Anchor.EndOffset)
@@ -581,87 +582,45 @@ func (t *tableImpl) Decorations(ctx context.Context, req *xpb.DecorationsRequest
 					d.Anchor.EndOffset = end
 
 					r := decorationToReference(norm, d)
+					_, seenTargetBefore := refs[r.TargetTicket]
 					refs[r.TargetTicket] = append(refs[r.TargetTicket], r)
 					reply.Reference = append(reply.Reference, r)
 
-					if _, ok := nodeTargets[d.Target.Ticket]; len(patterns) > 0 && !ok {
+					if !seenTargetBefore && len(patterns) > 0 {
 						reply.Node = append(reply.Node, nodeToInfo(patterns, d.Target))
 					}
-					nodeTargets[d.Target.Ticket] = d.Target.Ticket
 				}
 			}
 		}
 
-		// TODO(schroederc): break apart Decorations method
 		if req.TargetDefinitions {
-			reply.DefinitionLocations = make(map[string]*xpb.Anchor)
+			targetTickets := make([]string, 0, len(refs))
+			for ticket := range refs {
+				targetTickets = append(targetTickets, ticket)
+			}
 
-			const maxJumps = 2
-			for i := 0; i < maxJumps && len(nodeTargets) > 0; i++ {
-				tickets := make([]string, 0, len(nodeTargets))
-				for ticket := range nodeTargets {
-					tickets = append(tickets, ticket)
-				}
+			// TODO(schroederc): cache this in the serving data
+			defs, err := xrefs.SlowDefinitions(t, ctx, targetTickets)
+			if err != nil {
+				return nil, fmt.Errorf("error retrieving target definitions: %v", err)
+			}
 
-				// TODO(schroederc): cache this in the serving data
-				xReply, err := t.CrossReferences(ctx, &xpb.CrossReferencesRequest{
-					Ticket:         tickets,
-					DefinitionKind: xpb.CrossReferencesRequest_BINDING_DEFINITIONS,
-
-					// Get node kinds of related nodes for indirect definitions
-					Filter: []string{schema.NodeKindFact},
-				})
-				if err != nil {
-					return nil, fmt.Errorf("error loading reference target locations: %v", err)
-				}
-
-				nextJump := make(map[string]string)
-
-				// Give client a definition location for each reference that has only 1
-				// definition location which is not itself.
-				//
-				// If a node does not have a single definition, but does have a relevant
-				// relation to another node, try to find a single definition for the
-				// related node instead.
-				for ticket, cr := range xReply.CrossReferences {
-					refTicket := nodeTargets[ticket]
-					if len(cr.Definition) == 1 {
-						loc := cr.Definition[0]
-						for _, r := range refs[refTicket] {
-							if loc.Ticket != r.SourceTicket {
-								r.TargetDefinition = loc.Ticket
-								if _, ok := reply.DefinitionLocations[loc.Ticket]; !ok {
-									// TODO(schroederc): handle differing kinds; completes vs. binding
-									loc.Kind = ""
-									reply.DefinitionLocations[loc.Ticket] = loc
-								}
-							}
-						}
-					} else {
-						// Look for relevant node relations for an indirect definition
-						var relevant []string
-						for _, n := range cr.RelatedNode {
-							switch n.RelationKind {
-							case revCallableAs: // Jump from a callable
-								relevant = append(relevant, n.Ticket)
-							}
-						}
-
-						if len(relevant) == 1 {
-							nextJump[relevant[0]] = refTicket
+			reply.DefinitionLocations = make(map[string]*xpb.Anchor, len(defs))
+			for tgt, def := range defs {
+				for _, ref := range refs[tgt] {
+					if def.Ticket != ref.SourceTicket {
+						ref.TargetDefinition = def.Ticket
+						if _, ok := reply.DefinitionLocations[def.Ticket]; !ok {
+							reply.DefinitionLocations[def.Ticket] = def
 						}
 					}
 				}
-
-				nodeTargets = nextJump
 			}
 		}
 	}
 
 	return reply, nil
 }
-
-var revCallableAs = schema.MirrorEdge(schema.CallableAsEdge)
 
 type span struct{ start, end int32 }
 
