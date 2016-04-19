@@ -342,7 +342,7 @@ Brief description::
 Commonly arises from::
   documentation comments
 Points from::
-  anchors
+  anchors and [[doc]]s
 Points toward::
   semantic nodes
 Ordinals are used::
@@ -353,7 +353,7 @@ Notes::
   $$///$$s. It is up to the language indexer to determine which comments to
   treat as documentation comments.
 See also::
-  <<refdoc,ref/doc>>
+  <<doc,refdoc,ref/doc>>
 
 In the $$C++$$ example below, there are really two documentation blocks: the
 first comes from merging together the verification annotations; the second is
@@ -1199,6 +1199,43 @@ public enum E {
   //- A.node/kind constant
   A;
 }
+--------------------------------------------------------------------------------
+
+[[doc]]
+doc
+~~~
+Brief description::
+  A *doc* is text that documents a node.
+Facts::
+  text:::
+    The text of the document. The encoding must be UTF-8.
+Notes::
+  Embedded references inside a *doc* node's *text* are delimited using `[`
+  and `]`. Ordinary brackets are escaped as `\[` and `\[`; backslash is escaped
+  as `\\`. Targets of embedded references are stored as *param* edges on the
+  document, where the nth opening bracket is matched with the nth *param*.
+  Indexers should strip off comment delimiters.
+  
+See also::
+  <<documents>>
+
+In the following example, the `\n` in the assertion about `DocNode.text` is
+stored as a newline in the graph. The escape is there for the verifier.
+
+[kythe,C++,"Doc nodes contain documentation text."]
+--------------------------------------------------------------------------------
+/// A function.
+/// It sums its parameters `x` and `y`.
+int f(int x, int y) {
+  return x + y;
+}
+//- DocNode documents FnF
+//- DocNode.node/kind doc
+//- DocNode.text " A function.\n It sums its parameters `[x]` and `[y]`."
+//- DocNode param.0 VarX
+//- DocNode param.1 VarY
+//- FnF param.0 VarX
+//- FnF param.1 VarY
 --------------------------------------------------------------------------------
 
 [[file]]

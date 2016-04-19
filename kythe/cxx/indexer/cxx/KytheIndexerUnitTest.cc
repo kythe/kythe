@@ -41,12 +41,136 @@
 
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
 #include "kythe/cxx/common/indexing/RecordingOutputStream.h"
+#include "kythe/cxx/indexer/cxx/IndexerASTHooks.h"
 
 namespace kythe {
 namespace {
 
 using clang::SourceLocation;
 using llvm::StringRef;
+
+class AnchorMarkTest : public ::testing::Test {
+ protected:
+  class EmptyToken : public GraphObserver::ClaimToken {
+   public:
+    std::string StampIdentity(const std::string&) const override { return ""; }
+    void* GetClass() const override { return nullptr; }
+    bool operator==(const ClaimToken&) const override { return false; }
+    bool operator!=(const ClaimToken&) const override { return true; }
+  };
+  MiniAnchor MakeMini(size_t begin, size_t end, const std::string& id) {
+    return MiniAnchor{begin, end, GraphObserver::NodeId::CreateUncompressed(
+                                      &empty_token_, id)};
+  }
+  EmptyToken empty_token_;
+};
+
+TEST_F(AnchorMarkTest, Empty) {
+  std::vector<MiniAnchor> empty;
+  std::string empty_text = "";
+  InsertAnchorMarks(empty_text, empty);
+  EXPECT_TRUE(empty.empty());
+  EXPECT_TRUE(empty_text.empty());
+}
+
+TEST_F(AnchorMarkTest, Escape) {
+  std::vector<MiniAnchor> empty;
+  std::string escape_text = R"(\][)";
+  InsertAnchorMarks(escape_text, empty);
+  EXPECT_TRUE(empty.empty());
+  EXPECT_EQ(R"(\\\]\[)", escape_text);
+}
+
+TEST_F(AnchorMarkTest, Bad) {
+  std::vector<MiniAnchor> bad = {MakeMini(3, 0, "aaa"), MakeMini(1, 1, "bbb")};
+  std::string bad_text = "ccc";
+  InsertAnchorMarks(bad_text, bad);
+  EXPECT_TRUE(bad.empty());
+  EXPECT_EQ("ccc", bad_text);
+}
+
+TEST_F(AnchorMarkTest, FullAnchor) {
+  std::vector<MiniAnchor> full = {MakeMini(0, 3, "bar")};
+  std::string full_text = "foo";
+  InsertAnchorMarks(full_text, full);
+  EXPECT_EQ("[foo]", full_text);
+  ASSERT_EQ(1, full.size());
+  EXPECT_EQ("bar", full[0].AnchoredTo.ToString());
+}
+
+TEST_F(AnchorMarkTest, RightPadAnchor) {
+  std::vector<MiniAnchor> offset = {MakeMini(0, 3, "bar")};
+  std::string offset_text = "foo ";
+  InsertAnchorMarks(offset_text, offset);
+  EXPECT_EQ("[foo] ", offset_text);
+  ASSERT_EQ(1, offset.size());
+  EXPECT_EQ("bar", offset[0].AnchoredTo.ToString());
+}
+
+TEST_F(AnchorMarkTest, LeftPadAnchor) {
+  std::vector<MiniAnchor> offset = {MakeMini(1, 4, "bar")};
+  std::string offset_text = " foo";
+  InsertAnchorMarks(offset_text, offset);
+  EXPECT_EQ(" [foo]", offset_text);
+  ASSERT_EQ(1, offset.size());
+  EXPECT_EQ("bar", offset[0].AnchoredTo.ToString());
+}
+
+TEST_F(AnchorMarkTest, MiddleNest) {
+  std::vector<MiniAnchor> nest = {MakeMini(1, 2, "bbb"), MakeMini(0, 3, "aaa")};
+  std::string nest_text = "aba";
+  InsertAnchorMarks(nest_text, nest);
+  EXPECT_EQ("[a[b]a]", nest_text);
+  ASSERT_EQ(2, nest.size());
+  EXPECT_EQ("aaa", nest[0].AnchoredTo.ToString());
+  EXPECT_EQ("bbb", nest[1].AnchoredTo.ToString());
+}
+
+TEST_F(AnchorMarkTest, InterposedNest) {
+  std::vector<MiniAnchor> nest = {MakeMini(1, 2, "bbb"), MakeMini(0, 5, "aaa"),
+                                  MakeMini(3, 4, "ccc")};
+  std::string nest_text = "ababa";
+  InsertAnchorMarks(nest_text, nest);
+  EXPECT_EQ("[a[b]a[b]a]", nest_text);
+  ASSERT_EQ(3, nest.size());
+  EXPECT_EQ("aaa", nest[0].AnchoredTo.ToString());
+  EXPECT_EQ("bbb", nest[1].AnchoredTo.ToString());
+  EXPECT_EQ("ccc", nest[2].AnchoredTo.ToString());
+}
+
+TEST_F(AnchorMarkTest, LeftOverlappingNest) {
+  std::vector<MiniAnchor> nest = {MakeMini(0, 2, "bbb"), MakeMini(0, 3, "aaa")};
+  std::string nest_text = "aba";
+  InsertAnchorMarks(nest_text, nest);
+  EXPECT_EQ("[[ab]a]", nest_text);
+  ASSERT_EQ(2, nest.size());
+  EXPECT_EQ("aaa", nest[0].AnchoredTo.ToString());
+  EXPECT_EQ("bbb", nest[1].AnchoredTo.ToString());
+}
+
+TEST_F(AnchorMarkTest, Juxtaposed) {
+  std::vector<MiniAnchor> nest = {MakeMini(1, 2, "bbb"), MakeMini(0, 1, "aaa")};
+  std::string nest_text = "ab";
+  InsertAnchorMarks(nest_text, nest);
+  EXPECT_EQ("[a][b]", nest_text);
+  ASSERT_EQ(2, nest.size());
+  EXPECT_EQ("aaa", nest[0].AnchoredTo.ToString());
+  EXPECT_EQ("bbb", nest[1].AnchoredTo.ToString());
+}
+
+TEST_F(AnchorMarkTest, OverlappingMiddleNest) {
+  std::vector<MiniAnchor> nest = {MakeMini(1, 2, "bbb"), MakeMini(0, 3, "aaa"),
+                                  MakeMini(1, 2, "ccc")};
+  std::string nest_text = "aba";
+  InsertAnchorMarks(nest_text, nest);
+  EXPECT_EQ("[a[[b]]a]", nest_text);
+  ASSERT_EQ(3, nest.size());
+  EXPECT_EQ("aaa", nest[0].AnchoredTo.ToString());
+  auto second = nest[1].AnchoredTo.ToString();
+  auto third = nest[2].AnchoredTo.ToString();
+  EXPECT_TRUE((second == "bbb" && third == "ccc") ||
+              (second == "ccc" && third == "bbb"));
+}
 
 TEST(KytheIndexerUnitTest, GraphRecorderNodeKind) {
   RecordingOutputStream stream;

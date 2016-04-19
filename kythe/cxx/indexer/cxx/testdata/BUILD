@@ -416,6 +416,7 @@ cxx_indexer_test(
     srcs = ["basic/namespace_header.cc"],
     bundled = True,
     tags = ["basic"],
+    ignore_dups = True,  # namespace foo has the same documentation in two .hs.
 )
 
 cxx_indexer_test(
@@ -842,6 +843,13 @@ cxx_indexer_test(
     name = "docs_block_multiline",
     srcs = ["docs/docs_block_multiline.cc"],
     tags = ["docs"],
+)
+
+cxx_indexer_test(
+    name = "docs_doc_var",
+    srcs = ["docs/docs_doc_var.cc"],
+    tags = ["docs"],
+    goal_prefix = "///-",
 )
 
 cxx_indexer_test(
@@ -1280,6 +1288,10 @@ cxx_indexer_test(
     name = "template_class_inst_implicit",
     srcs = ["template/template_class_inst_implicit.cc"],
     tags = ["template"],
+    ignore_dups = True,  # Type alias alias inside a class template gets the
+                         # same documentation text.
+                         # TODO(zarko): Should the two aliases be distinctly
+                         # named?
 )
 
 cxx_indexer_test(

@@ -600,6 +600,42 @@ enum class RefParserState {
   SawCommand      ///< We saw something Clang identifies as a comment command.
 };
 
+/// Adds markup to Text to define anchor locations and sorts Anchors
+/// accordingly.
+void InsertAnchorMarks(std::string &Text, std::vector<MiniAnchor> &Anchors) {
+  // Drop empty or negative-length anchors.
+  Anchors.erase(
+      std::remove_if(Anchors.begin(), Anchors.end(),
+                     [](const MiniAnchor &A) { return A.Begin >= A.End; }),
+      Anchors.end());
+  std::sort(Anchors.begin(), Anchors.end(),
+            [](const MiniAnchor &A, const MiniAnchor &B) {
+              return std::tie(A.Begin, B.End) < std::tie(B.Begin, A.End);
+            });
+  std::string NewText;
+  NewText.reserve(Text.size() + Anchors.size() * 2);
+  auto NextAnchor = Anchors.begin();
+  std::multiset<size_t> EndLocations;
+  for (size_t C = 0; C < Text.size(); ++C) {
+    while (!EndLocations.empty() && *(EndLocations.begin()) == C) {
+      NewText.push_back(']');
+      EndLocations.erase(EndLocations.begin());
+    }
+    for (; NextAnchor != Anchors.end() && C == NextAnchor->Begin;
+         ++NextAnchor) {
+      NewText.push_back('[');
+      EndLocations.insert(NextAnchor->End);
+    }
+    if (Text[C] == '[' || Text[C] == ']' || Text[C] == '\\') {
+      // Escape [, ], and \.
+      NewText.push_back('\\');
+    }
+    NewText.push_back(Text[C]);
+  }
+  NewText.resize(NewText.size() + EndLocations.size(), ']');
+  Text.swap(NewText);
+}
+
 bool IndexerASTVisitor::VisitDecl(const clang::Decl *Decl) {
   const auto &SM = *Observer.getSourceManager();
   const auto *Comment = Context.getRawCommentForDeclNoCache(Decl);
@@ -615,6 +651,10 @@ bool IndexerASTVisitor::VisitDecl(const clang::Decl *Decl) {
     }
   }
   std::string Text = Comment->getRawText(SM).str();
+  std::string StrippedRawText;
+  std::map<clang::SourceLocation, size_t> OffsetsInStrippedRawText;
+
+  std::vector<MiniAnchor> StrippedRawTextAnchors;
   clang::comments::Lexer Lexer(Context.getAllocator(), Context.getDiagnostics(),
                                Context.getCommentCommandTraits(),
                                Comment->getSourceRange().getBegin(),
@@ -622,6 +662,25 @@ bool IndexerASTVisitor::VisitDecl(const clang::Decl *Decl) {
   clang::comments::Token Tok;
   std::vector<clang::Token> IdentifierTokens;
   PossibleLookups Lookups(Context, Sema, DC, Context.getTranslationUnitDecl());
+  auto RecordDocDeclUse = [&](const clang::SourceRange &Range,
+                              const GraphObserver::NodeId &ResultId) {
+    if (auto RCC = ExplicitRangeInCurrentContext(Range)) {
+      Observer.recordDeclUseLocationInDocumentation(RCC.primary(), ResultId);
+    }
+    auto RawLoc = OffsetsInStrippedRawText.lower_bound(Range.getBegin());
+    if (RawLoc != OffsetsInStrippedRawText.end()) {
+      // This is a single token (so we won't span multiple stripped ranges).
+      size_t StrippedBegin = RawLoc->second +
+                             Range.getBegin().getRawEncoding() -
+                             RawLoc->first.getRawEncoding();
+      size_t StrippedLength =
+          Range.getEnd().getRawEncoding() - Range.getBegin().getRawEncoding();
+      if (StrippedLength != 0) {
+        StrippedRawTextAnchors.emplace_back(MiniAnchor{
+            StrippedBegin, StrippedBegin + StrippedLength, ResultId});
+      }
+    }
+  };
   // Attribute all tokens on [FirstToken,LastToken] to every possible lookup
   // result inside PossibleLookups.
   auto HandleLookupResult = [&](int FirstToken, int LastToken) {
@@ -629,12 +688,10 @@ bool IndexerASTVisitor::VisitDecl(const clang::Decl *Decl) {
       for (auto Result : Results.Result) {
         auto ResultId = BuildNodeIdForDecl(Result);
         for (int Token = FirstToken; Token <= LastToken; ++Token) {
-          if (auto RCC = ExplicitRangeInCurrentContext(
-                  clang::SourceRange(IdentifierTokens[Token].getLocation(),
-                                     IdentifierTokens[Token].getEndLoc()))) {
-            Observer.recordDeclUseLocationInDocumentation(RCC.primary(),
-                                                          ResultId);
-          }
+          RecordDocDeclUse(
+              clang::SourceRange(IdentifierTokens[Token].getLocation(),
+                                 IdentifierTokens[Token].getEndLoc()),
+              ResultId);
         }
       }
     }
@@ -680,6 +737,11 @@ bool IndexerASTVisitor::VisitDecl(const clang::Decl *Decl) {
   };
   do {
     Lexer.lex(Tok);
+    unsigned offset = Tok.getLocation().getRawEncoding() -
+                      Comment->getSourceRange().getBegin().getRawEncoding();
+    OffsetsInStrippedRawText.insert(
+        std::make_pair(Tok.getLocation(), StrippedRawText.size()));
+    StrippedRawText.append(Text.substr(offset, Tok.getLength()));
     switch (Tok.getKind()) {
     case clang::comments::tok::text: {
       auto TokText = Tok.getText().str();
@@ -717,39 +779,50 @@ bool IndexerASTVisitor::VisitDecl(const clang::Decl *Decl) {
       break;
     }
   } while (Tok.getKind() != clang::comments::tok::eof);
+  InsertAnchorMarks(StrippedRawText, StrippedRawTextAnchors);
+  std::vector<GraphObserver::NodeId> LinkNodes;
+  LinkNodes.reserve(StrippedRawTextAnchors.size());
+  for (const auto &Anchor : StrippedRawTextAnchors) {
+    LinkNodes.push_back(Anchor.AnchoredTo);
+  }
   // Attribute the raw comment text to its associated decl.
   if (auto RCC = ExplicitRangeInCurrentContext(Comment->getSourceRange())) {
     if (const auto *DC = dyn_cast_or_null<DeclContext>(Decl)) {
       if (auto DCID = BuildNodeIdForDeclContext(DC)) {
         Observer.recordDocumentationRange(RCC.primary(), DCID.primary());
+        Observer.recordDocumentationText(DCID.primary(), StrippedRawText,
+                                         LinkNodes);
       }
       if (const auto *CTPSD =
               dyn_cast_or_null<ClassTemplatePartialSpecializationDecl>(Decl)) {
-        Observer.recordDocumentationRange(RCC.primary(),
-                                          BuildNodeIdForDecl(CTPSD));
+        auto NodeId = BuildNodeIdForDecl(CTPSD);
+        Observer.recordDocumentationRange(RCC.primary(), NodeId);
+        Observer.recordDocumentationText(NodeId, StrippedRawText, LinkNodes);
       }
       if (const auto *FD = dyn_cast_or_null<FunctionDecl>(Decl)) {
         if (const auto *FTD = FD->getDescribedFunctionTemplate()) {
-          Observer.recordDocumentationRange(RCC.primary(),
-                                            BuildNodeIdForDecl(FTD));
+          auto NodeId = BuildNodeIdForDecl(FTD);
+          Observer.recordDocumentationRange(RCC.primary(), NodeId);
+          Observer.recordDocumentationText(NodeId, StrippedRawText, LinkNodes);
         }
       }
-    } else if (const auto *VD = dyn_cast_or_null<VarDecl>(Decl)) {
-      if (const auto *VTD = VD->getDescribedVarTemplate()) {
-        Observer.recordDocumentationRange(RCC.primary(),
-                                          BuildNodeIdForDecl(VTD));
-      }
-      Observer.recordDocumentationRange(RCC.primary(), BuildNodeIdForDecl(VD));
-    } else if (const auto *AD = dyn_cast_or_null<TypeAliasDecl>(Decl)) {
-      if (const auto *TATD = AD->getDescribedAliasTemplate()) {
-        Observer.recordDocumentationRange(RCC.primary(),
-                                          BuildNodeIdForDecl(TATD));
-      }
-      Observer.recordDocumentationRange(RCC.primary(),
-                                        BuildNodeIdForDecl(Decl));
     } else {
-      Observer.recordDocumentationRange(RCC.primary(),
-                                        BuildNodeIdForDecl(Decl));
+      if (const auto *VD = dyn_cast_or_null<VarDecl>(Decl)) {
+        if (const auto *VTD = VD->getDescribedVarTemplate()) {
+          auto NodeId = BuildNodeIdForDecl(VTD);
+          Observer.recordDocumentationRange(RCC.primary(), NodeId);
+          Observer.recordDocumentationText(NodeId, StrippedRawText, LinkNodes);
+        }
+      } else if (const auto *AD = dyn_cast_or_null<TypeAliasDecl>(Decl)) {
+        if (const auto *TATD = AD->getDescribedAliasTemplate()) {
+          auto NodeId = BuildNodeIdForDecl(TATD);
+          Observer.recordDocumentationRange(RCC.primary(), NodeId);
+          Observer.recordDocumentationText(NodeId, StrippedRawText, LinkNodes);
+        }
+      }
+      auto NodeId = BuildNodeIdForDecl(Decl);
+      Observer.recordDocumentationRange(RCC.primary(), NodeId);
+      Observer.recordDocumentationText(NodeId, StrippedRawText, LinkNodes);
     }
   }
   return true;

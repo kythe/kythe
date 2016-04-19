@@ -43,7 +43,8 @@ enum class NodeKindID {
   kMacro,
   kInterface,
   kPackage,
-  kTSigma
+  kTSigma,
+  kDoc
 };
 
 /// \brief Known properties of nodes. See the schema for details.

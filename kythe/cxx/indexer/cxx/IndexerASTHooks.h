@@ -249,6 +249,18 @@ enum BehaviorOnTemplates : bool {
   VisitInstantiations = true  ///< Visit template instantiations.
 };
 
+/// \brief A byte range that links to some node.
+struct MiniAnchor {
+  size_t Begin;
+  size_t End;
+  GraphObserver::NodeId AnchoredTo;
+};
+
+/// Adds brackets to Text to define anchor locations (escaping existing ones)
+/// and sorts Anchors such that the ith Anchor corresponds to the ith opening
+/// bracket. Drops empty or negative-length spans.
+void InsertAnchorMarks(std::string &Text, std::vector<MiniAnchor> &Anchors);
+
 /// \brief An AST visitor that extracts information for a translation unit and
 /// writes it to a `GraphObserver`.
 class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {

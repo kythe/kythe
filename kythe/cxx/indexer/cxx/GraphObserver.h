@@ -45,8 +45,9 @@ namespace kythe {
 constexpr size_t kSha256DigestBase64MaxEncodingLength = 42;
 
 /// \brief A one-way hash for `InString`.
-template <typename String> String CompressString(const String &InString) {
-  if (InString.size() <= kSha256DigestBase64MaxEncodingLength) {
+template <typename String>
+String CompressString(const String &InString, bool Force = false) {
+  if (InString.size() <= kSha256DigestBase64MaxEncodingLength && !Force) {
     return InString;
   }
   ::SHA256_CTX Sha;
@@ -507,6 +508,12 @@ public:
   virtual void recordDefinitionRangeWithBinding(const Range &SourceRange,
                                                 const Range &BindingRange,
                                                 const NodeId &DefnId) {}
+
+  /// \brief Records that a particular string contains documentation for
+  /// the node called `DocId`, possibly containing inner links to other nodes.
+  virtual void recordDocumentationText(const NodeId &DocId,
+                                       const std::string &DocText,
+                                       const std::vector<NodeId> &DocLinks) {}
 
   /// \brief Records that a particular `Range` contains some documentation
   /// for the node called `DocId`.

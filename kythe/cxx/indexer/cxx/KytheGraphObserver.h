@@ -220,6 +220,9 @@ class KytheGraphObserver : public GraphObserver {
   void recordDocumentationRange(const Range &SourceRange,
                                 const NodeId &DocId) override;
 
+  void recordDocumentationText(const NodeId &DocId, const std::string &DocText,
+                               const std::vector<NodeId> &DocLinks) override;
+
   void recordDeclUseLocationInDocumentation(const Range &SourceRange,
                                             const NodeId &DeclId) override;
 
@@ -480,6 +483,9 @@ class KytheGraphObserver : public GraphObserver {
   /// The set of NameIds we have already emitted (identified by
   /// NameId::ToString()).
   std::unordered_set<std::string> written_name_ids_;
+  /// The set of doc nodes we've emitted so far (identified by
+  /// `NodeId::ToString()`).
+  std::unordered_set<std::string> written_docs_;
   /// The set of type nodes we've emitted so far (identified by
   /// `NodeId::ToString()`).
   std::unordered_set<std::string> written_types_;

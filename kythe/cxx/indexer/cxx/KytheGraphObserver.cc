@@ -602,6 +602,33 @@ GraphObserver::NodeId KytheGraphObserver::recordTypeAliasNode(
   return type_id;
 }
 
+void KytheGraphObserver::recordDocumentationText(
+    const NodeId &node, const std::string &doc_text,
+    const std::vector<NodeId> &doc_links) {
+  if (!lossy_claiming_ || claimNode(node)) {
+    std::string signature = doc_text;
+    for (const auto &link : doc_links) {
+      signature.push_back(',');
+      signature.append(link.ToClaimedString());
+    }
+    // Force hashing because the serving backend gets upset if certain
+    // characters appear in VName fields.
+    NodeId doc_id(node.getToken(), CompressString(signature, true));
+    VNameRef doc_vname(VNameRefFromNodeId(doc_id));
+    if (written_docs_.insert(doc_id.ToClaimedString()).second) {
+      recorder_->AddProperty(doc_vname, NodeKindID::kDoc);
+      recorder_->AddProperty(doc_vname, PropertyID::kText, doc_text);
+      size_t param_index = 0;
+      for (const auto &link : doc_links) {
+        recorder_->AddEdge(doc_vname, EdgeKindID::kParam,
+                           VNameRefFromNodeId(link), param_index++);
+      }
+    }
+    recorder_->AddEdge(doc_vname, EdgeKindID::kDocuments,
+                       VNameRefFromNodeId(node));
+  }
+}
+
 void KytheGraphObserver::recordDocumentationRange(
     const GraphObserver::Range &source_range, const NodeId &node) {
   if (!lossy_claiming_ || claimRange(source_range) || claimNode(node)) {
