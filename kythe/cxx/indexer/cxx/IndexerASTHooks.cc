@@ -1160,6 +1160,11 @@ bool IndexerASTVisitor::VisitDeclRefExpr(const clang::DeclRefExpr *DRE) {
     // TODO(jdennett): Would this be better done in BuildNodeIdForDecl?
     TargetDecl = IFD->getAnonField();
   }
+  if (isa<clang::VarDecl>(TargetDecl) && TargetDecl->isImplicit()) {
+    // Ignore variable declarations synthesized from for-range loops, as they
+    // are just a clang implementation detail.
+    return true;
+  }
   SourceLocation SL = DRE->getLocation();
   if (SL.isValid()) {
     SourceRange Range = RangeForASTEntityFromSourceLocation(SL);
@@ -1218,6 +1223,11 @@ bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl *Decl) {
   if (isa<ParmVarDecl>(Decl)) {
     // Ignore parameter types, those are added to the graph after processing
     // the parent function or member.
+    return true;
+  }
+  if (Decl->isImplicit()) {
+    // Ignore variable declarations synthesized from for-range loops, as they
+    // are just a clang implementation detail.
     return true;
   }
   SourceLocation DeclLoc = Decl->getLocation();
