@@ -113,6 +113,10 @@ message NodeInfo {
 
   // The matching facts known for that node.
   repeated kythe.proto.common.Fact fact = 2;
+
+  // If known and unambiguous, an anchor ticket for this node's definition
+  // location.
+  string definition = 5;
 }
 
 message NodesReply {
@@ -448,6 +452,10 @@ message CrossReferencesRequest {
   // populated.
   bool anchor_text = 6;
 
+  // Determines whether each NodeInfo matching the above filters will have its
+  // definition location populated, if known.
+  bool node_definitions = 8;
+
   // TODO(schroederc): snippet kinds (none, indexer-default, or always line-based)
 
   // The cross-references matching a request are organized into logical pages.
@@ -532,6 +540,11 @@ message CrossReferencesReply {
 
   // The facts left from the requested filters of the related node facts
   map<string, NodeInfo> nodes = 2;
+
+  // Map from the definition tickets referred to in each NodeInfo to their
+  // Anchor.  This map will only be returned if the
+  // CrossReferencesRequest.node_definitions switch is true.
+  map<string, Anchor> definition_locations = 3;
 
   // If there are additional pages of cross-references after the ones returned
   // in this reply, next_page_token is the page token that may be passed to

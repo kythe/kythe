@@ -817,6 +817,31 @@ func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReference
 		reply.NextPageToken = base64.StdEncoding.EncodeToString(rec)
 	}
 
+	if req.NodeDefinitions {
+		nodeTickets := make([]string, 0, len(reply.Nodes))
+		for ticket := range reply.Nodes {
+			nodeTickets = append(nodeTickets, ticket)
+		}
+
+		// TODO(schroederc): cache this in the serving data
+		defs, err := xrefs.SlowDefinitions(t, ctx, nodeTickets)
+		if err != nil {
+			return nil, fmt.Errorf("error retrieving node definitions: %v", err)
+		}
+
+		reply.DefinitionLocations = make(map[string]*xpb.Anchor, len(defs))
+		for ticket, def := range defs {
+			node, ok := reply.Nodes[ticket]
+			if !ok {
+				panic(fmt.Sprintf("extra definition returned for unknown node %q: %v", ticket, def))
+			}
+			node.Definition = def.Ticket
+			if _, ok := reply.DefinitionLocations[def.Ticket]; !ok {
+				reply.DefinitionLocations[def.Ticket] = def
+			}
+		}
+	}
+
 	return reply, nil
 }
 
