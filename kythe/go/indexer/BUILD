@@ -13,7 +13,7 @@ go_library(
         "//kythe/proto:analysis_proto_go",
         "//kythe/proto:storage_proto_go",
         "//third_party/go/src/github.com/golang/protobuf/proto",
-        "//third_party/go/src/golang.org/x/net/context",
+        "@go_x_net//:context",
         "//third_party/go/src/golang.org/x/tools/go/gcimporter15",
     ],
 )

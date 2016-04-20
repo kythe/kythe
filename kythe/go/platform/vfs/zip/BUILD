@@ -5,6 +5,6 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_package(
     deps = [
         "//kythe/go/platform/vfs",
-        "//third_party/go/src/golang.org/x/net/context",
+        "@go_x_net//:context",
     ],
 )

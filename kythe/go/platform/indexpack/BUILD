@@ -6,7 +6,7 @@ go_package(
     test_deps = [
         "//kythe/proto:analysis_proto_go",
         "//kythe/proto:storage_proto_go",
-        "//third_party/go/src/golang.org/x/net/context",
+        "@go_x_net//:context",
         "//third_party/go/src/github.com/golang/protobuf/proto",
     ],
     deps = [
@@ -14,6 +14,6 @@ go_package(
         "//kythe/go/platform/vfs",
         "//kythe/go/platform/vfs/zip",
         "//third_party/go/src/github.com/pborman/uuid",
-        "//third_party/go/src/golang.org/x/net/context",
+        "@go_x_net//:context",
     ],
 )

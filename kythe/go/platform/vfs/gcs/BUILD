@@ -5,7 +5,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_package(
     deps = [
         "//kythe/go/platform/vfs",
-        "//third_party/go/src/golang.org/x/net/context",
-        "//third_party/go/src/google.golang.org/cloud/storage",
+        "@go_x_net//:context",
+        "@go_gcloud//:storage",
     ],
 )

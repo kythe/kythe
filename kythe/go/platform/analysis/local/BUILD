@@ -7,6 +7,6 @@ go_package(
         "//kythe/go/platform/analysis",
         "//kythe/go/platform/analysis/driver",
         "//kythe/go/platform/kindex",
-        "//third_party/go/src/golang.org/x/net/context",
+        "@go_x_net//:context",
     ],
 )

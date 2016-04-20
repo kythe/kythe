@@ -19,7 +19,7 @@ go_binary(
         "//kythe/proto:analysis_proto_go",
         "//kythe/proto:storage_proto_go",
         "//third_party/go/src/github.com/golang/protobuf/proto",
-        "//third_party/go/src/golang.org/x/net/context",
+        "@go_x_net//:context",
         "//third_party/go/src/google.golang.org/grpc",
     ],
 )
@@ -64,7 +64,7 @@ go_binary(
         "//kythe/go/util/stringset",
         "//kythe/proto:storage_proto_go",
         "//kythe/proto:xref_proto_go",
-        "//third_party/go/src/golang.org/x/net/context",
+        "@go_x_net//:context",
     ],
 )
 
@@ -84,7 +84,7 @@ go_binary(
     deps = [
         "//kythe/go/platform/kindex",
         "//kythe/go/util/flagutil",
-        "//third_party/go/src/golang.org/x/net/context",
+        "@go_x_net//:context",
     ],
 )
 
@@ -99,8 +99,8 @@ go_binary(
         "//kythe/go/util/build",
         "//kythe/go/util/oauth2",
         "//kythe/proto:analysis_proto_go",
-        "//third_party/go/src/golang.org/x/net/context",
-        "//third_party/go/src/google.golang.org/cloud/storage",
+        "@go_x_net//:context",
+        "@go_gcloud//:storage",
     ],
 )
 

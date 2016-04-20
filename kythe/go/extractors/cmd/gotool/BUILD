@@ -11,6 +11,6 @@ go_binary(
         "//kythe/go/extractors/golang",
         "//kythe/go/platform/indexpack",
         "//kythe/proto:analysis_proto_go",
-        "//third_party/go/src/golang.org/x/net/context",
+        "@go_x_net//:context",
     ],
 )

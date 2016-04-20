@@ -6,6 +6,6 @@ go_package(
     test_deps = ["//kythe/go/test/testutil"],
     deps = [
         "//kythe/go/util/sortutil",
-        "//third_party/go/src/golang.org/x/net/context",
+        "@go_x_net//:context",
     ],
 )

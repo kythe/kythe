@@ -26,7 +26,7 @@ go_binary(
         "//kythe/go/platform/vfs",
         "//third_party/bazel:extra_actions_base_proto_go",
         "//third_party/go/src/github.com/golang/protobuf/proto",
-        "//third_party/go/src/golang.org/x/net/context",
+        "@go_x_net//:context",
     ],
 )
 
@@ -37,6 +37,6 @@ go_binary(
         "//kythe/go/platform/vfs",
         "//third_party/bazel:test_status_proto_go",
         "//third_party/go/src/github.com/golang/protobuf/proto",
-        "//third_party/go/src/golang.org/x/net/context",
+        "@go_x_net//:context",
     ],
 )

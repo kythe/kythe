@@ -11,7 +11,7 @@ go_package(
         "//kythe/go/test/testutil",
         "//kythe/proto:storage_proto_go",
         "//kythe/proto:xref_proto_go",
-        "//third_party/go/src/golang.org/x/net/context",
+        "@go_x_net//:context",
     ],
     deps = [
         "//kythe/go/services/graphstore",
@@ -23,6 +23,6 @@ go_package(
         "//kythe/proto:common_proto_go",
         "//kythe/proto:storage_proto_go",
         "//kythe/proto:xref_proto_go",
-        "//third_party/go/src/golang.org/x/net/context",
+        "@go_x_net//:context",
     ],
 )

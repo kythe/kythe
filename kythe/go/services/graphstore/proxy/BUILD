@@ -13,6 +13,6 @@ go_package(
         "//kythe/go/services/graphstore/compare",
         "//kythe/go/storage/gsutil",
         "//kythe/proto:storage_proto_go",
-        "//third_party/go/src/golang.org/x/net/context",
+        "@go_x_net//:context",
     ],
 )

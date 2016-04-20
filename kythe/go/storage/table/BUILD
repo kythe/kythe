@@ -6,6 +6,6 @@ go_package(
     deps = [
         "//kythe/go/storage/keyvalue",
         "//third_party/go/src/github.com/golang/protobuf/proto",
-        "//third_party/go/src/golang.org/x/net/context",
+        "@go_x_net//:context",
     ],
 )

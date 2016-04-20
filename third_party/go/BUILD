@@ -17,9 +17,10 @@ filegroup(
         "//third_party/go/src/bitbucket.org/creachadair/shell:LICENSE",
         "//third_party/go/src/github.com/golang/snappy:LICENSE",
         "//third_party/go/src/github.com/pborman/uuid:LICENSE",
-        "//third_party/go/src/golang.org/x/oauth2:LICENSE",
+        "@go_oauth2//:LICENSE",
         "//third_party/go/src/google.golang.org/grpc:LICENSE",
-        "//third_party/go/src/google.golang.org/cloud:LICENSE",
+        "@go_gcloud//:LICENSE",
+        "@go_x_net//:LICENSE",
         "//third_party/go/src/google.golang.org/api/googleapi/internal/uritemplates:LICENSE",
     ],
 )

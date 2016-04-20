@@ -5,9 +5,9 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_package(
     deps = [
         "//kythe/go/platform/vfs",
-        "//third_party/go/src/golang.org/x/net/context",
-        "//third_party/go/src/golang.org/x/oauth2",
-        "//third_party/go/src/golang.org/x/oauth2/google",
-        "//third_party/go/src/google.golang.org/cloud",
+        "@go_x_net//:context",
+        "@go_oauth2//:oauth2",
+        "@go_oauth2//:google",
+        "@go_gcloud//:cloud",
     ],
 )
