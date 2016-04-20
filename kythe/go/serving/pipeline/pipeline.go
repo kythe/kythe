@@ -44,6 +44,7 @@ import (
 	"golang.org/x/net/context"
 
 	ftpb "kythe.io/kythe/proto/filetree_proto"
+	ipb "kythe.io/kythe/proto/internal_proto"
 	srvpb "kythe.io/kythe/proto/serving_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
 )
@@ -350,7 +351,7 @@ func e2e(e *srvpb.Edge) *srvpb.EdgeGroup_Edge {
 	}
 }
 
-// TODO(schroederc): use srvpb.CrossReference for fragments
+// TODO(schroederc): use ipb.CrossReference for fragments
 type decorationFragment struct {
 	fileTicket string
 	decoration *srvpb.FileDecorations
@@ -400,7 +401,7 @@ func writeDecorAndRefs(ctx context.Context, opts *Options, edges <-chan *srvpb.E
 
 	log.Println("Writing completed FileDecorations")
 
-	// refSorter stores a *srvpb.CrossReference for each Decoration from fragments
+	// refSorter stores a *ipb.CrossReference for each Decoration from fragments
 	refSorter, err := opts.diskSorter(refLesser{}, refMarshaler{})
 	if err != nil {
 		return fmt.Errorf("error creating sorter: %v", err)
@@ -438,7 +439,7 @@ func writeDecorAndRefs(ctx context.Context, opts *Options, edges <-chan *srvpb.E
 				return errors.New("missing file for anchors")
 			}
 
-			// Reverse each fragment.Decoration to create a *srvpb.CrossReference
+			// Reverse each fragment.Decoration to create a *ipb.CrossReference
 			for _, d := range fragment.Decoration {
 				cr, err := assemble.CrossReference(file, norm, d)
 				if err != nil {
@@ -479,7 +480,7 @@ func writeDecorAndRefs(ctx context.Context, opts *Options, edges <-chan *srvpb.E
 	}
 	var curTicket string
 	if err := refSorter.Read(func(i interface{}) error {
-		cr := i.(*srvpb.CrossReference)
+		cr := i.(*ipb.CrossReference)
 
 		if curTicket != cr.Referent.Ticket {
 			curTicket = cr.Referent.Ticket
@@ -577,14 +578,14 @@ type refMarshaler struct{}
 func (refMarshaler) Marshal(x interface{}) ([]byte, error) { return proto.Marshal(x.(proto.Message)) }
 
 func (refMarshaler) Unmarshal(rec []byte) (interface{}, error) {
-	var e srvpb.CrossReference
+	var e ipb.CrossReference
 	return &e, proto.Unmarshal(rec, &e)
 }
 
 type refLesser struct{}
 
 func (refLesser) Less(a, b interface{}) bool {
-	x, y := a.(*srvpb.CrossReference), b.(*srvpb.CrossReference)
+	x, y := a.(*ipb.CrossReference), b.(*ipb.CrossReference)
 	if x.Referent.Ticket == y.Referent.Ticket {
 		if x.TargetAnchor == nil || y.TargetAnchor == nil {
 			return x.TargetAnchor == nil

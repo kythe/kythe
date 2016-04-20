@@ -35,6 +35,7 @@ import (
 	"golang.org/x/net/context"
 
 	cpb "kythe.io/kythe/proto/common_proto"
+	ipb "kythe.io/kythe/proto/internal_proto"
 	srvpb "kythe.io/kythe/proto/serving_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
@@ -554,10 +555,10 @@ func (b *CrossReferencesBuilder) Flush(ctx context.Context) error { return b.pag
 
 func newPageKey(src string, n int) string { return fmt.Sprintf("%s.%.10d", src, n) }
 
-// CrossReference returns a (Referent, TargetAnchor) *srvpb.CrossReference
+// CrossReference returns a (Referent, TargetAnchor) *ipb.CrossReference
 // equivalent to the given decoration.  The decoration's anchor is expanded
 // given its parent file and associated Normalizer.
-func CrossReference(file *srvpb.File, norm *xrefs.Normalizer, d *srvpb.FileDecorations_Decoration) (*srvpb.CrossReference, error) {
+func CrossReference(file *srvpb.File, norm *xrefs.Normalizer, d *srvpb.FileDecorations_Decoration) (*ipb.CrossReference, error) {
 	if file == nil || norm == nil {
 		return nil, errors.New("missing decoration's parent file")
 	}
@@ -573,7 +574,7 @@ func CrossReference(file *srvpb.File, norm *xrefs.Normalizer, d *srvpb.FileDecor
 			facts = append(facts, fact)
 		}
 	}
-	return &srvpb.CrossReference{
+	return &ipb.CrossReference{
 		Referent: &srvpb.Node{
 			Ticket: d.Target.Ticket,
 			Fact:   facts,

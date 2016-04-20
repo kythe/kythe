@@ -1,0 +1,59 @@
+/*
+ * Copyright 2016 Google Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+package kythe.proto.internal;
+
+import "kythe/proto/serving.proto";
+
+// Internal encoding for an EdgesReply/CrossReferencesReply page_token
+message PageToken {
+  // Index into the primary reply sequence.
+  int32 index = 1;
+
+  // Secondary page token for reply sub-query.
+  string secondary_token = 2;
+}
+
+// A CrossReference represents a path between two anchors, crossing between a
+// single common node.  Abstractly this a
+// (file, anchor, kind, node, kind', anchor', file') tuple where the two
+// (file, anchor, kind) sub-components have been named Decorations.
+//
+// This structure can be used to represent the intermediary* structures needed
+// to build pre-cached responses to the Decorations and CrossReferences service
+// methods.
+//
+// * where only a subset of this structure is known at that moment in time
+message CrossReference {
+  // A Decoration is specialized partial edge with an anchor on one end, stored
+  // along side its parent file node.  The partial edge's other end is stored in
+  // the referent field of the parent CrossReference.
+  message Decoration {
+    kythe.proto.serving.File file = 1;
+    kythe.proto.serving.RawAnchor anchor = 2;
+    string kind = 3;
+  }
+
+  Decoration source_decoration = 1;
+  kythe.proto.serving.Node referent = 2;
+  Decoration target_decoration = 3;
+
+  kythe.proto.serving.ExpandedAnchor source_anchor = 4;
+  kythe.proto.serving.ExpandedAnchor target_anchor = 5;
+}
+

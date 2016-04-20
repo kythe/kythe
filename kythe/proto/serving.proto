@@ -153,34 +153,6 @@ message FileDecorations {
   repeated Decoration decoration = 2;
 }
 
-// A CrossReference represents a path between two anchors, crossing between a
-// single common node.  Abstractly this a
-// (file, anchor, kind, node, kind', anchor', file') tuple where the two
-// (file, anchor, kind) sub-components have been named Decorations.
-//
-// This structure can be used to represent the intermediary* structures needed
-// to build pre-cached responses to the Decorations and CrossReferences service
-// methods.
-//
-// * where only a subset of this structure is known at that moment in time
-message CrossReference {
-  // A Decoration is specialized partial edge with an anchor on one end, stored
-  // along side its parent file node.  The partial edge's other end is stored in
-  // the referent field of the parent CrossReference.
-  message Decoration {
-    File file = 1;
-    RawAnchor anchor = 2;
-    string kind = 3;
-  }
-
-  Decoration source_decoration = 1;
-  Node referent = 2;
-  Decoration target_decoration = 3;
-
-  ExpandedAnchor source_anchor = 4;
-  ExpandedAnchor target_anchor = 5;
-}
-
 // PagedCrossReferences are used for efficiently storing pre-cached data for
 // CrossReferencesReply.{definition,reference,documentation} anchors.  Related
 // nodes can be retrieved from edge sets/pages.
@@ -212,13 +184,4 @@ message PagedCrossReferences {
   // /kythe/edge/defines edges are considered declarations or definitions.
   // /kythe/edge/completes edges are always grouped as definitions.
   bool incomplete = 5;
-}
-
-// Internal encoding for an EdgesReply/CrossReferencesReply page_token
-message PageToken {
-  // Index into the primary reply sequence.
-  int32 index = 1;
-
-  // Secondary page token for reply sub-query.
-  string secondary_token = 2;
 }

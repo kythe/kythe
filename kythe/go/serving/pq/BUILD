@@ -13,6 +13,7 @@ go_package(
         "//kythe/go/util/stringset",
         "//kythe/proto:common_proto_go",
         "//kythe/proto:filetree_proto_go",
+        "//kythe/proto:internal_proto_go",
         "//kythe/proto:serving_proto_go",
         "//kythe/proto:storage_proto_go",
         "//kythe/proto:xref_proto_go",

@@ -16,6 +16,7 @@ go_package(
         "//kythe/go/util/schema",
         "//kythe/go/util/stringset",
         "//kythe/proto:common_proto_go",
+        "//kythe/proto:internal_proto_go",
         "//kythe/proto:serving_proto_go",
         "//kythe/proto:xref_proto_go",
         "//third_party/go/src/github.com/golang/protobuf/proto",

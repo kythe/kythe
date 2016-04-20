@@ -12,6 +12,7 @@ go_package(
         "//kythe/go/util/pager",
         "//kythe/go/util/schema",
         "//kythe/proto:common_proto_go",
+        "//kythe/proto:internal_proto_go",
         "//kythe/proto:serving_proto_go",
         "//kythe/proto:storage_proto_go",
         "//kythe/proto:xref_proto_go",

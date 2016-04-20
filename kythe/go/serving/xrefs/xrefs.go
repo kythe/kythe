@@ -41,6 +41,7 @@ import (
 	"kythe.io/kythe/go/util/stringset"
 
 	cpb "kythe.io/kythe/proto/common_proto"
+	ipb "kythe.io/kythe/proto/internal_proto"
 	srvpb "kythe.io/kythe/proto/serving_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
 
@@ -306,7 +307,7 @@ func (t *tableImpl) edges(ctx context.Context, req edgesRequest) (*xpb.EdgesRepl
 		if err != nil {
 			return nil, fmt.Errorf("invalid page_token: %q", req.PageToken)
 		}
-		var t srvpb.PageToken
+		var t ipb.PageToken
 		if err := proto.Unmarshal(rec, &t); err != nil || t.Index < 0 {
 			return nil, fmt.Errorf("invalid page_token: %q", req.PageToken)
 		}
@@ -419,7 +420,7 @@ func (t *tableImpl) edges(ctx context.Context, req edgesRequest) (*xpb.EdgesRepl
 	}
 
 	if pageToken+stats.total != totalEdgesPossible && stats.total != 0 {
-		rec, err := proto.Marshal(&srvpb.PageToken{Index: int32(pageToken + stats.total)})
+		rec, err := proto.Marshal(&ipb.PageToken{Index: int32(pageToken + stats.total)})
 		if err != nil {
 			return nil, fmt.Errorf("internal error: error marshalling page token: %v", err)
 		}
@@ -658,7 +659,7 @@ func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReference
 		if err != nil {
 			return nil, fmt.Errorf("invalid page_token: %q", req.PageToken)
 		}
-		var t srvpb.PageToken
+		var t ipb.PageToken
 		if err := proto.Unmarshal(rec, &t); err != nil || t.Index < 0 {
 			return nil, fmt.Errorf("invalid page_token: %q", req.PageToken)
 		}
@@ -673,7 +674,7 @@ func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReference
 		CrossReferences: make(map[string]*xpb.CrossReferencesReply_CrossReferenceSet, len(req.Ticket)),
 		Nodes:           make(map[string]*xpb.NodeInfo, len(req.Ticket)),
 	}
-	var nextToken *srvpb.PageToken
+	var nextToken *ipb.PageToken
 
 	if edgesPageToken == "" &&
 		(req.DefinitionKind != xpb.CrossReferencesRequest_NO_DEFINITIONS ||
@@ -755,7 +756,7 @@ func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReference
 		}
 
 		if pageToken+stats.total != totalRefsPossible && stats.total != 0 {
-			nextToken = &srvpb.PageToken{Index: int32(pageToken + stats.total)}
+			nextToken = &ipb.PageToken{Index: int32(pageToken + stats.total)}
 		}
 	}
 
@@ -805,7 +806,7 @@ func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReference
 		}
 
 		if er.NextPageToken != "" {
-			nextToken = &srvpb.PageToken{SecondaryToken: er.NextPageToken}
+			nextToken = &ipb.PageToken{SecondaryToken: er.NextPageToken}
 		}
 	}
 

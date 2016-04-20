@@ -35,7 +35,7 @@ import (
 	"golang.org/x/net/context"
 
 	cpb "kythe.io/kythe/proto/common_proto"
-	srvpb "kythe.io/kythe/proto/serving_proto"
+	ipb "kythe.io/kythe/proto/internal_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
@@ -167,7 +167,7 @@ func (d *DB) edges(ctx context.Context, req *xpb.EdgesRequest, edgeFilter func(k
 		if err != nil {
 			return nil, fmt.Errorf("invalid page_token: %q", req.PageToken)
 		}
-		var t srvpb.PageToken
+		var t ipb.PageToken
 		if err := proto.Unmarshal(rec, &t); err != nil || t.Index < 0 {
 			return nil, fmt.Errorf("invalid page_token: %q", req.PageToken)
 		}
@@ -265,7 +265,7 @@ AND kind IN %s`, kSetQ)
 
 	// If there is another row, there is a NextPageToken.
 	if rs.Next() {
-		rec, err := proto.Marshal(&srvpb.PageToken{Index: int32(pageOffset + scanned)})
+		rec, err := proto.Marshal(&ipb.PageToken{Index: int32(pageOffset + scanned)})
 		if err != nil {
 			return nil, fmt.Errorf("internal error: error marshalling page token: %v", err)
 		}
@@ -384,7 +384,7 @@ func (d *DB) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReques
 		if err != nil {
 			return nil, fmt.Errorf("invalid page_token: %q", req.PageToken)
 		}
-		var t srvpb.PageToken
+		var t ipb.PageToken
 		if err := proto.Unmarshal(rec, &t); err != nil || t.Index < 0 {
 			return nil, fmt.Errorf("invalid page_token: %q", req.PageToken)
 		}
@@ -454,7 +454,7 @@ func (d *DB) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReques
 		}
 
 		if count > pageSize {
-			rec, err := proto.Marshal(&srvpb.PageToken{Index: int32(pageOffset + pageSize)})
+			rec, err := proto.Marshal(&ipb.PageToken{Index: int32(pageOffset + pageSize)})
 			if err != nil {
 				return nil, fmt.Errorf("internal error: error marshalling page token: %v", err)
 			}
@@ -511,7 +511,7 @@ func (d *DB) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReques
 		}
 
 		if er.NextPageToken != "" {
-			rec, err := proto.Marshal(&srvpb.PageToken{SecondaryToken: er.NextPageToken})
+			rec, err := proto.Marshal(&ipb.PageToken{SecondaryToken: er.NextPageToken})
 			if err != nil {
 				return nil, fmt.Errorf("internal error: error marshalling page token: %v", err)
 			}

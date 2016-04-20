@@ -18,6 +18,7 @@ go_package(
         "//kythe/go/util/schema",
         "//kythe/go/util/sortutil",
         "//kythe/proto:filetree_proto_go",
+        "//kythe/proto:internal_proto_go",
         "//kythe/proto:serving_proto_go",
         "//kythe/proto:storage_proto_go",
         "//third_party/go/src/github.com/golang/protobuf/proto",
