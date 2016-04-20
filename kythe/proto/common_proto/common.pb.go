@@ -26,15 +26,20 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+const _ = proto.ProtoPackageIsVersion1
+
 // Fact represents a single key/value fact from the graph.
 type Fact struct {
 	Name  string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Value []byte `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 }
 
-func (m *Fact) Reset()         { *m = Fact{} }
-func (m *Fact) String() string { return proto.CompactTextString(m) }
-func (*Fact) ProtoMessage()    {}
+func (m *Fact) Reset()                    { *m = Fact{} }
+func (m *Fact) String() string            { return proto.CompactTextString(m) }
+func (*Fact) ProtoMessage()               {}
+func (*Fact) Descriptor() ([]byte, []int) { return fileDescriptorCommon, []int{0} }
 
 // A Point represents a location within a file or buffer.
 //
@@ -53,9 +58,10 @@ type Point struct {
 	ColumnOffset int32 `protobuf:"varint,3,opt,name=column_offset,proto3" json:"column_offset,omitempty"`
 }
 
-func (m *Point) Reset()         { *m = Point{} }
-func (m *Point) String() string { return proto.CompactTextString(m) }
-func (*Point) ProtoMessage()    {}
+func (m *Point) Reset()                    { *m = Point{} }
+func (m *Point) String() string            { return proto.CompactTextString(m) }
+func (*Point) ProtoMessage()               {}
+func (*Point) Descriptor() ([]byte, []int) { return fileDescriptorCommon, []int{1} }
 
 // A Span represents an inclusive-exclusive range inside of a file or buffer.
 type Span struct {
@@ -63,9 +69,10 @@ type Span struct {
 	End   *Point `protobuf:"bytes,2,opt,name=end" json:"end,omitempty"`
 }
 
-func (m *Span) Reset()         { *m = Span{} }
-func (m *Span) String() string { return proto.CompactTextString(m) }
-func (*Span) ProtoMessage()    {}
+func (m *Span) Reset()                    { *m = Span{} }
+func (m *Span) String() string            { return proto.CompactTextString(m) }
+func (*Span) ProtoMessage()               {}
+func (*Span) Descriptor() ([]byte, []int) { return fileDescriptorCommon, []int{2} }
 
 func (m *Span) GetStart() *Point {
 	if m != nil {
@@ -107,13 +114,11 @@ func (m *Fact) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintCommon(data, i, uint64(len(m.Name)))
 		i += copy(data[i:], m.Name)
 	}
-	if m.Value != nil {
-		if len(m.Value) > 0 {
-			data[i] = 0x12
-			i++
-			i = encodeVarintCommon(data, i, uint64(len(m.Value)))
-			i += copy(data[i:], m.Value)
-		}
+	if len(m.Value) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintCommon(data, i, uint64(len(m.Value)))
+		i += copy(data[i:], m.Value)
 	}
 	return i, nil
 }
@@ -223,11 +228,9 @@ func (m *Fact) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovCommon(uint64(l))
 	}
-	if m.Value != nil {
-		l = len(m.Value)
-		if l > 0 {
-			n += 1 + l + sovCommon(uint64(l))
-		}
+	l = len(m.Value)
+	if l > 0 {
+		n += 1 + l + sovCommon(uint64(l))
 	}
 	return n
 }
@@ -358,7 +361,10 @@ func (m *Fact) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Value = append([]byte{}, data[iNdEx:postIndex]...)
+			m.Value = append(m.Value[:0], data[iNdEx:postIndex]...)
+			if m.Value == nil {
+				m.Value = []byte{}
+			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -708,3 +714,20 @@ var (
 	ErrInvalidLengthCommon = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowCommon   = fmt.Errorf("proto: integer overflow")
 )
+
+var fileDescriptorCommon = []byte{
+	// 208 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xe2, 0x92, 0xc8, 0xae, 0x2c, 0xc9,
+	0x48, 0xd5, 0x2f, 0x28, 0xca, 0x2f, 0xc9, 0xd7, 0x4f, 0xce, 0xcf, 0xcd, 0xcd, 0xcf, 0xd3, 0x03,
+	0x73, 0x84, 0x84, 0xc0, 0x32, 0x10, 0x8e, 0x1e, 0x44, 0x46, 0x49, 0x99, 0x8b, 0xc5, 0x2d, 0x31,
+	0xb9, 0x44, 0x88, 0x87, 0x8b, 0x25, 0x2f, 0x31, 0x37, 0x55, 0x82, 0x51, 0x81, 0x51, 0x83, 0x53,
+	0x88, 0x97, 0x8b, 0xb5, 0x2c, 0x31, 0xa7, 0x34, 0x55, 0x82, 0x09, 0xc8, 0xe5, 0x51, 0xf2, 0xe0,
+	0x62, 0x0d, 0xc8, 0xcf, 0xcc, 0x2b, 0x11, 0x12, 0xe6, 0xe2, 0x4e, 0xaa, 0x2c, 0x49, 0x8d, 0xcf,
+	0x4f, 0x4b, 0x2b, 0x4e, 0x2d, 0x01, 0x2b, 0x66, 0x05, 0x09, 0xe6, 0x64, 0xe6, 0xa5, 0xc6, 0xe7,
+	0x95, 0xe6, 0x26, 0xa5, 0x16, 0x81, 0xb5, 0xb0, 0x0a, 0x89, 0x72, 0xf1, 0x26, 0xe7, 0xe7, 0x94,
+	0xe6, 0xe6, 0xc1, 0xd4, 0x32, 0x83, 0x84, 0x95, 0x22, 0xb8, 0x58, 0x82, 0x0b, 0x12, 0xf3, 0x84,
+	0x34, 0xb8, 0x58, 0x8b, 0x4b, 0x12, 0x8b, 0x20, 0x46, 0x70, 0x1b, 0x49, 0xea, 0x61, 0x3a, 0x4d,
+	0x0f, 0x62, 0xa5, 0x1a, 0x17, 0x73, 0x6a, 0x5e, 0x0a, 0xd8, 0x54, 0x7c, 0xea, 0x9c, 0x04, 0x4e,
+	0x3c, 0x92, 0x63, 0xbc, 0x00, 0xc4, 0x0f, 0x80, 0x78, 0xc6, 0x63, 0x39, 0x86, 0x24, 0x36, 0xb0,
+	0x2a, 0x63, 0x40, 0x00, 0x00, 0x00, 0xff, 0xff, 0x90, 0xfe, 0x49, 0xab, 0x11, 0x01, 0x00, 0x00,
+}

@@ -21,9 +21,7 @@
 		RawAnchor
 		ExpandedAnchor
 		FileDecorations
-		CrossReference
 		PagedCrossReferences
-		PageToken
 */
 package serving_proto
 
@@ -39,15 +37,20 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+const _ = proto.ProtoPackageIsVersion1
+
 // A derivative of xref.NodeInfo for serving.
 type Node struct {
 	Ticket string                     `protobuf:"bytes,1,opt,name=ticket,proto3" json:"ticket,omitempty"`
 	Fact   []*kythe_proto_common.Fact `protobuf:"bytes,2,rep,name=fact" json:"fact,omitempty"`
 }
 
-func (m *Node) Reset()         { *m = Node{} }
-func (m *Node) String() string { return proto.CompactTextString(m) }
-func (*Node) ProtoMessage()    {}
+func (m *Node) Reset()                    { *m = Node{} }
+func (m *Node) String() string            { return proto.CompactTextString(m) }
+func (*Node) ProtoMessage()               {}
+func (*Node) Descriptor() ([]byte, []int) { return fileDescriptorServing, []int{0} }
 
 func (m *Node) GetFact() []*kythe_proto_common.Fact {
 	if m != nil {
@@ -58,15 +61,17 @@ func (m *Node) GetFact() []*kythe_proto_common.Fact {
 
 // Full representation of a Kythe edge; useful during post-processing.
 type Edge struct {
-	Source *Node                      `protobuf:"bytes,1,opt,name=source" json:"source,omitempty"`
-	Kind   string                     `protobuf:"bytes,2,opt,name=kind,proto3" json:"kind,omitempty"`
-	Target *Node                      `protobuf:"bytes,3,opt,name=target" json:"target,omitempty"`
-	Fact   []*kythe_proto_common.Fact `protobuf:"bytes,4,rep,name=fact" json:"fact,omitempty"`
+	Source  *Node                      `protobuf:"bytes,1,opt,name=source" json:"source,omitempty"`
+	Kind    string                     `protobuf:"bytes,2,opt,name=kind,proto3" json:"kind,omitempty"`
+	Ordinal int32                      `protobuf:"varint,5,opt,name=ordinal,proto3" json:"ordinal,omitempty"`
+	Target  *Node                      `protobuf:"bytes,3,opt,name=target" json:"target,omitempty"`
+	Fact    []*kythe_proto_common.Fact `protobuf:"bytes,4,rep,name=fact" json:"fact,omitempty"`
 }
 
-func (m *Edge) Reset()         { *m = Edge{} }
-func (m *Edge) String() string { return proto.CompactTextString(m) }
-func (*Edge) ProtoMessage()    {}
+func (m *Edge) Reset()                    { *m = Edge{} }
+func (m *Edge) String() string            { return proto.CompactTextString(m) }
+func (*Edge) ProtoMessage()               {}
+func (*Edge) Descriptor() ([]byte, []int) { return fileDescriptorServing, []int{1} }
 
 func (m *Edge) GetSource() *Node {
 	if m != nil {
@@ -93,15 +98,33 @@ func (m *Edge) GetFact() []*kythe_proto_common.Fact {
 //
 // Note: this is a derivative of xref.EdgeSet_Group
 type EdgeGroup struct {
-	Kind   string  `protobuf:"bytes,1,opt,name=kind,proto3" json:"kind,omitempty"`
-	Target []*Node `protobuf:"bytes,2,rep,name=target" json:"target,omitempty"`
+	Kind string            `protobuf:"bytes,1,opt,name=kind,proto3" json:"kind,omitempty"`
+	Edge []*EdgeGroup_Edge `protobuf:"bytes,2,rep,name=edge" json:"edge,omitempty"`
 }
 
-func (m *EdgeGroup) Reset()         { *m = EdgeGroup{} }
-func (m *EdgeGroup) String() string { return proto.CompactTextString(m) }
-func (*EdgeGroup) ProtoMessage()    {}
+func (m *EdgeGroup) Reset()                    { *m = EdgeGroup{} }
+func (m *EdgeGroup) String() string            { return proto.CompactTextString(m) }
+func (*EdgeGroup) ProtoMessage()               {}
+func (*EdgeGroup) Descriptor() ([]byte, []int) { return fileDescriptorServing, []int{2} }
 
-func (m *EdgeGroup) GetTarget() []*Node {
+func (m *EdgeGroup) GetEdge() []*EdgeGroup_Edge {
+	if m != nil {
+		return m.Edge
+	}
+	return nil
+}
+
+type EdgeGroup_Edge struct {
+	Target  *Node `protobuf:"bytes,1,opt,name=target" json:"target,omitempty"`
+	Ordinal int32 `protobuf:"varint,2,opt,name=ordinal,proto3" json:"ordinal,omitempty"`
+}
+
+func (m *EdgeGroup_Edge) Reset()                    { *m = EdgeGroup_Edge{} }
+func (m *EdgeGroup_Edge) String() string            { return proto.CompactTextString(m) }
+func (*EdgeGroup_Edge) ProtoMessage()               {}
+func (*EdgeGroup_Edge) Descriptor() ([]byte, []int) { return fileDescriptorServing, []int{2, 0} }
+
+func (m *EdgeGroup_Edge) GetTarget() *Node {
 	if m != nil {
 		return m.Target
 	}
@@ -122,9 +145,10 @@ type PagedEdgeSet struct {
 	PageIndex []*PageIndex `protobuf:"bytes,4,rep,name=page_index" json:"page_index,omitempty"`
 }
 
-func (m *PagedEdgeSet) Reset()         { *m = PagedEdgeSet{} }
-func (m *PagedEdgeSet) String() string { return proto.CompactTextString(m) }
-func (*PagedEdgeSet) ProtoMessage()    {}
+func (m *PagedEdgeSet) Reset()                    { *m = PagedEdgeSet{} }
+func (m *PagedEdgeSet) String() string            { return proto.CompactTextString(m) }
+func (*PagedEdgeSet) ProtoMessage()               {}
+func (*PagedEdgeSet) Descriptor() ([]byte, []int) { return fileDescriptorServing, []int{3} }
 
 func (m *PagedEdgeSet) GetSource() *Node {
 	if m != nil {
@@ -159,9 +183,10 @@ type PageIndex struct {
 	PageKey string `protobuf:"bytes,3,opt,name=page_key,proto3" json:"page_key,omitempty"`
 }
 
-func (m *PageIndex) Reset()         { *m = PageIndex{} }
-func (m *PageIndex) String() string { return proto.CompactTextString(m) }
-func (*PageIndex) ProtoMessage()    {}
+func (m *PageIndex) Reset()                    { *m = PageIndex{} }
+func (m *PageIndex) String() string            { return proto.CompactTextString(m) }
+func (*PageIndex) ProtoMessage()               {}
+func (*PageIndex) Descriptor() ([]byte, []int) { return fileDescriptorServing, []int{4} }
 
 // EdgePages are a group of edges for a particular edge kind and source ticket.
 type EdgePage struct {
@@ -171,9 +196,10 @@ type EdgePage struct {
 	EdgesGroup   *EdgeGroup `protobuf:"bytes,3,opt,name=edges_group" json:"edges_group,omitempty"`
 }
 
-func (m *EdgePage) Reset()         { *m = EdgePage{} }
-func (m *EdgePage) String() string { return proto.CompactTextString(m) }
-func (*EdgePage) ProtoMessage()    {}
+func (m *EdgePage) Reset()                    { *m = EdgePage{} }
+func (m *EdgePage) String() string            { return proto.CompactTextString(m) }
+func (*EdgePage) ProtoMessage()               {}
+func (*EdgePage) Descriptor() ([]byte, []int) { return fileDescriptorServing, []int{5} }
 
 func (m *EdgePage) GetEdgesGroup() *EdgeGroup {
 	if m != nil {
@@ -190,9 +216,10 @@ type FileDirectory struct {
 	FileTicket []string `protobuf:"bytes,2,rep,name=file_ticket" json:"file_ticket,omitempty"`
 }
 
-func (m *FileDirectory) Reset()         { *m = FileDirectory{} }
-func (m *FileDirectory) String() string { return proto.CompactTextString(m) }
-func (*FileDirectory) ProtoMessage()    {}
+func (m *FileDirectory) Reset()                    { *m = FileDirectory{} }
+func (m *FileDirectory) String() string            { return proto.CompactTextString(m) }
+func (*FileDirectory) ProtoMessage()               {}
+func (*FileDirectory) Descriptor() ([]byte, []int) { return fileDescriptorServing, []int{6} }
 
 // CorpusRoots describes all of the known corpus/root pairs that contain file
 // nodes.
@@ -200,9 +227,10 @@ type CorpusRoots struct {
 	Corpus []*CorpusRoots_Corpus `protobuf:"bytes,1,rep,name=corpus" json:"corpus,omitempty"`
 }
 
-func (m *CorpusRoots) Reset()         { *m = CorpusRoots{} }
-func (m *CorpusRoots) String() string { return proto.CompactTextString(m) }
-func (*CorpusRoots) ProtoMessage()    {}
+func (m *CorpusRoots) Reset()                    { *m = CorpusRoots{} }
+func (m *CorpusRoots) String() string            { return proto.CompactTextString(m) }
+func (*CorpusRoots) ProtoMessage()               {}
+func (*CorpusRoots) Descriptor() ([]byte, []int) { return fileDescriptorServing, []int{7} }
 
 func (m *CorpusRoots) GetCorpus() []*CorpusRoots_Corpus {
 	if m != nil {
@@ -216,9 +244,10 @@ type CorpusRoots_Corpus struct {
 	Root   []string `protobuf:"bytes,2,rep,name=root" json:"root,omitempty"`
 }
 
-func (m *CorpusRoots_Corpus) Reset()         { *m = CorpusRoots_Corpus{} }
-func (m *CorpusRoots_Corpus) String() string { return proto.CompactTextString(m) }
-func (*CorpusRoots_Corpus) ProtoMessage()    {}
+func (m *CorpusRoots_Corpus) Reset()                    { *m = CorpusRoots_Corpus{} }
+func (m *CorpusRoots_Corpus) String() string            { return proto.CompactTextString(m) }
+func (*CorpusRoots_Corpus) ProtoMessage()               {}
+func (*CorpusRoots_Corpus) Descriptor() ([]byte, []int) { return fileDescriptorServing, []int{7, 0} }
 
 // A File is a specialized Node structure for file nodes.
 type File struct {
@@ -227,9 +256,10 @@ type File struct {
 	Encoding string `protobuf:"bytes,3,opt,name=encoding,proto3" json:"encoding,omitempty"`
 }
 
-func (m *File) Reset()         { *m = File{} }
-func (m *File) String() string { return proto.CompactTextString(m) }
-func (*File) ProtoMessage()    {}
+func (m *File) Reset()                    { *m = File{} }
+func (m *File) String() string            { return proto.CompactTextString(m) }
+func (*File) ProtoMessage()               {}
+func (*File) Descriptor() ([]byte, []int) { return fileDescriptorServing, []int{8} }
 
 // A RawAnchor is a specialized Node structure for anchor nodes.
 type RawAnchor struct {
@@ -240,9 +270,10 @@ type RawAnchor struct {
 	SnippetEnd   int32  `protobuf:"varint,5,opt,name=snippet_end,proto3" json:"snippet_end,omitempty"`
 }
 
-func (m *RawAnchor) Reset()         { *m = RawAnchor{} }
-func (m *RawAnchor) String() string { return proto.CompactTextString(m) }
-func (*RawAnchor) ProtoMessage()    {}
+func (m *RawAnchor) Reset()                    { *m = RawAnchor{} }
+func (m *RawAnchor) String() string            { return proto.CompactTextString(m) }
+func (*RawAnchor) ProtoMessage()               {}
+func (*RawAnchor) Descriptor() ([]byte, []int) { return fileDescriptorServing, []int{9} }
 
 // ExpandedAnchors are constructed from an RawAnchor and its associated File.
 // They contain normalized Spans based on their parent file's text as well as
@@ -257,9 +288,10 @@ type ExpandedAnchor struct {
 	SnippetSpan *kythe_proto_common.Span `protobuf:"bytes,7,opt,name=snippet_span" json:"snippet_span,omitempty"`
 }
 
-func (m *ExpandedAnchor) Reset()         { *m = ExpandedAnchor{} }
-func (m *ExpandedAnchor) String() string { return proto.CompactTextString(m) }
-func (*ExpandedAnchor) ProtoMessage()    {}
+func (m *ExpandedAnchor) Reset()                    { *m = ExpandedAnchor{} }
+func (m *ExpandedAnchor) String() string            { return proto.CompactTextString(m) }
+func (*ExpandedAnchor) ProtoMessage()               {}
+func (*ExpandedAnchor) Descriptor() ([]byte, []int) { return fileDescriptorServing, []int{10} }
 
 func (m *ExpandedAnchor) GetSpan() *kythe_proto_common.Span {
 	if m != nil {
@@ -282,9 +314,10 @@ type FileDecorations struct {
 	Decoration []*FileDecorations_Decoration `protobuf:"bytes,2,rep,name=decoration" json:"decoration,omitempty"`
 }
 
-func (m *FileDecorations) Reset()         { *m = FileDecorations{} }
-func (m *FileDecorations) String() string { return proto.CompactTextString(m) }
-func (*FileDecorations) ProtoMessage()    {}
+func (m *FileDecorations) Reset()                    { *m = FileDecorations{} }
+func (m *FileDecorations) String() string            { return proto.CompactTextString(m) }
+func (*FileDecorations) ProtoMessage()               {}
+func (*FileDecorations) Descriptor() ([]byte, []int) { return fileDescriptorServing, []int{11} }
 
 func (m *FileDecorations) GetFile() *File {
 	if m != nil {
@@ -310,6 +343,9 @@ type FileDecorations_Decoration struct {
 func (m *FileDecorations_Decoration) Reset()         { *m = FileDecorations_Decoration{} }
 func (m *FileDecorations_Decoration) String() string { return proto.CompactTextString(m) }
 func (*FileDecorations_Decoration) ProtoMessage()    {}
+func (*FileDecorations_Decoration) Descriptor() ([]byte, []int) {
+	return fileDescriptorServing, []int{11, 0}
+}
 
 func (m *FileDecorations_Decoration) GetAnchor() *RawAnchor {
 	if m != nil {
@@ -325,90 +361,6 @@ func (m *FileDecorations_Decoration) GetTarget() *Node {
 	return nil
 }
 
-// A CrossReference represents a path between two anchors, crossing between a
-// single common node.  Abstractly this a
-// (file, anchor, kind, node, kind', anchor', file') tuple where the two
-// (file, anchor, kind) sub-components have been named Decorations.
-//
-// This structure can be used to represent the intermediary* structures needed
-// to build pre-cached responses to the Decorations and CrossReferences service
-// methods.
-//
-// * where only a subset of this structure is known at that moment in time
-type CrossReference struct {
-	SourceDecoration *CrossReference_Decoration `protobuf:"bytes,1,opt,name=source_decoration" json:"source_decoration,omitempty"`
-	Referent         *Node                      `protobuf:"bytes,2,opt,name=referent" json:"referent,omitempty"`
-	TargetDecoration *CrossReference_Decoration `protobuf:"bytes,3,opt,name=target_decoration" json:"target_decoration,omitempty"`
-	SourceAnchor     *ExpandedAnchor            `protobuf:"bytes,4,opt,name=source_anchor" json:"source_anchor,omitempty"`
-	TargetAnchor     *ExpandedAnchor            `protobuf:"bytes,5,opt,name=target_anchor" json:"target_anchor,omitempty"`
-}
-
-func (m *CrossReference) Reset()         { *m = CrossReference{} }
-func (m *CrossReference) String() string { return proto.CompactTextString(m) }
-func (*CrossReference) ProtoMessage()    {}
-
-func (m *CrossReference) GetSourceDecoration() *CrossReference_Decoration {
-	if m != nil {
-		return m.SourceDecoration
-	}
-	return nil
-}
-
-func (m *CrossReference) GetReferent() *Node {
-	if m != nil {
-		return m.Referent
-	}
-	return nil
-}
-
-func (m *CrossReference) GetTargetDecoration() *CrossReference_Decoration {
-	if m != nil {
-		return m.TargetDecoration
-	}
-	return nil
-}
-
-func (m *CrossReference) GetSourceAnchor() *ExpandedAnchor {
-	if m != nil {
-		return m.SourceAnchor
-	}
-	return nil
-}
-
-func (m *CrossReference) GetTargetAnchor() *ExpandedAnchor {
-	if m != nil {
-		return m.TargetAnchor
-	}
-	return nil
-}
-
-// A Decoration is specialized partial edge with an anchor on one end, stored
-// along side its parent file node.  The partial edge's other end is stored in
-// the referent field of the parent CrossReference.
-type CrossReference_Decoration struct {
-	File   *File      `protobuf:"bytes,1,opt,name=file" json:"file,omitempty"`
-	Anchor *RawAnchor `protobuf:"bytes,2,opt,name=anchor" json:"anchor,omitempty"`
-	Kind   string     `protobuf:"bytes,3,opt,name=kind,proto3" json:"kind,omitempty"`
-}
-
-func (m *CrossReference_Decoration) Reset()         { *m = CrossReference_Decoration{} }
-func (m *CrossReference_Decoration) String() string { return proto.CompactTextString(m) }
-func (*CrossReference_Decoration) ProtoMessage()    {}
-
-func (m *CrossReference_Decoration) GetFile() *File {
-	if m != nil {
-		return m.File
-	}
-	return nil
-}
-
-func (m *CrossReference_Decoration) GetAnchor() *RawAnchor {
-	if m != nil {
-		return m.Anchor
-	}
-	return nil
-}
-
 // PagedCrossReferences are used for efficiently storing pre-cached data for
 // CrossReferencesReply.{definition,reference,documentation} anchors.  Related
 // nodes can be retrieved from edge sets/pages.
@@ -417,11 +369,16 @@ type PagedCrossReferences struct {
 	Group           []*PagedCrossReferences_Group     `protobuf:"bytes,2,rep,name=group" json:"group,omitempty"`
 	PageIndex       []*PagedCrossReferences_PageIndex `protobuf:"bytes,3,rep,name=page_index" json:"page_index,omitempty"`
 	TotalReferences int32                             `protobuf:"varint,4,opt,name=total_references,proto3" json:"total_references,omitempty"`
+	// Whether the source node is incomplete.  This changes whether
+	// /kythe/edge/defines edges are considered declarations or definitions.
+	// /kythe/edge/completes edges are always grouped as definitions.
+	Incomplete bool `protobuf:"varint,5,opt,name=incomplete,proto3" json:"incomplete,omitempty"`
 }
 
-func (m *PagedCrossReferences) Reset()         { *m = PagedCrossReferences{} }
-func (m *PagedCrossReferences) String() string { return proto.CompactTextString(m) }
-func (*PagedCrossReferences) ProtoMessage()    {}
+func (m *PagedCrossReferences) Reset()                    { *m = PagedCrossReferences{} }
+func (m *PagedCrossReferences) String() string            { return proto.CompactTextString(m) }
+func (*PagedCrossReferences) ProtoMessage()               {}
+func (*PagedCrossReferences) Descriptor() ([]byte, []int) { return fileDescriptorServing, []int{12} }
 
 func (m *PagedCrossReferences) GetGroup() []*PagedCrossReferences_Group {
 	if m != nil {
@@ -445,6 +402,9 @@ type PagedCrossReferences_Group struct {
 func (m *PagedCrossReferences_Group) Reset()         { *m = PagedCrossReferences_Group{} }
 func (m *PagedCrossReferences_Group) String() string { return proto.CompactTextString(m) }
 func (*PagedCrossReferences_Group) ProtoMessage()    {}
+func (*PagedCrossReferences_Group) Descriptor() ([]byte, []int) {
+	return fileDescriptorServing, []int{12, 0}
+}
 
 func (m *PagedCrossReferences_Group) GetAnchor() []*ExpandedAnchor {
 	if m != nil {
@@ -462,6 +422,9 @@ type PagedCrossReferences_Page struct {
 func (m *PagedCrossReferences_Page) Reset()         { *m = PagedCrossReferences_Page{} }
 func (m *PagedCrossReferences_Page) String() string { return proto.CompactTextString(m) }
 func (*PagedCrossReferences_Page) ProtoMessage()    {}
+func (*PagedCrossReferences_Page) Descriptor() ([]byte, []int) {
+	return fileDescriptorServing, []int{12, 1}
+}
 
 func (m *PagedCrossReferences_Page) GetGroup() *PagedCrossReferences_Group {
 	if m != nil {
@@ -480,25 +443,15 @@ type PagedCrossReferences_PageIndex struct {
 func (m *PagedCrossReferences_PageIndex) Reset()         { *m = PagedCrossReferences_PageIndex{} }
 func (m *PagedCrossReferences_PageIndex) String() string { return proto.CompactTextString(m) }
 func (*PagedCrossReferences_PageIndex) ProtoMessage()    {}
-
-// Internal encoding for an EdgesReply/CrossReferencesReply page_token
-type PageToken struct {
-	// Index into the primary reply sequence.
-	Index int32 `protobuf:"varint,1,opt,name=index,proto3" json:"index,omitempty"`
-	// Secondary index into the reply sequence.
-	SecondaryIndex int32 `protobuf:"varint,3,opt,name=secondary_index,proto3" json:"secondary_index,omitempty"`
-	// Secondary page token for reply sub-query.
-	SecondaryToken string `protobuf:"bytes,2,opt,name=secondary_token,proto3" json:"secondary_token,omitempty"`
+func (*PagedCrossReferences_PageIndex) Descriptor() ([]byte, []int) {
+	return fileDescriptorServing, []int{12, 2}
 }
-
-func (m *PageToken) Reset()         { *m = PageToken{} }
-func (m *PageToken) String() string { return proto.CompactTextString(m) }
-func (*PageToken) ProtoMessage()    {}
 
 func init() {
 	proto.RegisterType((*Node)(nil), "kythe.proto.serving.Node")
 	proto.RegisterType((*Edge)(nil), "kythe.proto.serving.Edge")
 	proto.RegisterType((*EdgeGroup)(nil), "kythe.proto.serving.EdgeGroup")
+	proto.RegisterType((*EdgeGroup_Edge)(nil), "kythe.proto.serving.EdgeGroup.Edge")
 	proto.RegisterType((*PagedEdgeSet)(nil), "kythe.proto.serving.PagedEdgeSet")
 	proto.RegisterType((*PageIndex)(nil), "kythe.proto.serving.PageIndex")
 	proto.RegisterType((*EdgePage)(nil), "kythe.proto.serving.EdgePage")
@@ -510,13 +463,10 @@ func init() {
 	proto.RegisterType((*ExpandedAnchor)(nil), "kythe.proto.serving.ExpandedAnchor")
 	proto.RegisterType((*FileDecorations)(nil), "kythe.proto.serving.FileDecorations")
 	proto.RegisterType((*FileDecorations_Decoration)(nil), "kythe.proto.serving.FileDecorations.Decoration")
-	proto.RegisterType((*CrossReference)(nil), "kythe.proto.serving.CrossReference")
-	proto.RegisterType((*CrossReference_Decoration)(nil), "kythe.proto.serving.CrossReference.Decoration")
 	proto.RegisterType((*PagedCrossReferences)(nil), "kythe.proto.serving.PagedCrossReferences")
 	proto.RegisterType((*PagedCrossReferences_Group)(nil), "kythe.proto.serving.PagedCrossReferences.Group")
 	proto.RegisterType((*PagedCrossReferences_Page)(nil), "kythe.proto.serving.PagedCrossReferences.Page")
 	proto.RegisterType((*PagedCrossReferences_PageIndex)(nil), "kythe.proto.serving.PagedCrossReferences.PageIndex")
-	proto.RegisterType((*PageToken)(nil), "kythe.proto.serving.PageToken")
 }
 func (m *Node) Marshal() (data []byte, err error) {
 	size := m.Size()
@@ -607,6 +557,11 @@ func (m *Edge) MarshalTo(data []byte) (int, error) {
 			i += n
 		}
 	}
+	if m.Ordinal != 0 {
+		data[i] = 0x28
+		i++
+		i = encodeVarintServing(data, i, uint64(m.Ordinal))
+	}
 	return i, nil
 }
 
@@ -631,8 +586,8 @@ func (m *EdgeGroup) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintServing(data, i, uint64(len(m.Kind)))
 		i += copy(data[i:], m.Kind)
 	}
-	if len(m.Target) > 0 {
-		for _, msg := range m.Target {
+	if len(m.Edge) > 0 {
+		for _, msg := range m.Edge {
 			data[i] = 0x12
 			i++
 			i = encodeVarintServing(data, i, uint64(msg.Size()))
@@ -642,6 +597,39 @@ func (m *EdgeGroup) MarshalTo(data []byte) (int, error) {
 			}
 			i += n
 		}
+	}
+	return i, nil
+}
+
+func (m *EdgeGroup_Edge) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *EdgeGroup_Edge) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Target != nil {
+		data[i] = 0xa
+		i++
+		i = encodeVarintServing(data, i, uint64(m.Target.Size()))
+		n3, err := m.Target.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n3
+	}
+	if m.Ordinal != 0 {
+		data[i] = 0x10
+		i++
+		i = encodeVarintServing(data, i, uint64(m.Ordinal))
 	}
 	return i, nil
 }
@@ -665,11 +653,11 @@ func (m *PagedEdgeSet) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintServing(data, i, uint64(m.Source.Size()))
-		n3, err := m.Source.MarshalTo(data[i:])
+		n4, err := m.Source.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n3
+		i += n4
 	}
 	if len(m.Group) > 0 {
 		for _, msg := range m.Group {
@@ -769,11 +757,11 @@ func (m *EdgePage) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x1a
 		i++
 		i = encodeVarintServing(data, i, uint64(m.EdgesGroup.Size()))
-		n4, err := m.EdgesGroup.MarshalTo(data[i:])
+		n5, err := m.EdgesGroup.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n4
+		i += n5
 	}
 	return i, nil
 }
@@ -916,13 +904,11 @@ func (m *File) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintServing(data, i, uint64(len(m.Ticket)))
 		i += copy(data[i:], m.Ticket)
 	}
-	if m.Text != nil {
-		if len(m.Text) > 0 {
-			data[i] = 0x12
-			i++
-			i = encodeVarintServing(data, i, uint64(len(m.Text)))
-			i += copy(data[i:], m.Text)
-		}
+	if len(m.Text) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintServing(data, i, uint64(len(m.Text)))
+		i += copy(data[i:], m.Text)
 	}
 	if len(m.Encoding) > 0 {
 		data[i] = 0x1a
@@ -1020,11 +1006,11 @@ func (m *ExpandedAnchor) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x2a
 		i++
 		i = encodeVarintServing(data, i, uint64(m.Span.Size()))
-		n5, err := m.Span.MarshalTo(data[i:])
+		n6, err := m.Span.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n5
+		i += n6
 	}
 	if len(m.Snippet) > 0 {
 		data[i] = 0x32
@@ -1036,11 +1022,11 @@ func (m *ExpandedAnchor) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x3a
 		i++
 		i = encodeVarintServing(data, i, uint64(m.SnippetSpan.Size()))
-		n6, err := m.SnippetSpan.MarshalTo(data[i:])
+		n7, err := m.SnippetSpan.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n6
+		i += n7
 	}
 	return i, nil
 }
@@ -1064,11 +1050,11 @@ func (m *FileDecorations) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintServing(data, i, uint64(m.File.Size()))
-		n7, err := m.File.MarshalTo(data[i:])
+		n8, err := m.File.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n7
+		i += n8
 	}
 	if len(m.Decoration) > 0 {
 		for _, msg := range m.Decoration {
@@ -1104,11 +1090,11 @@ func (m *FileDecorations_Decoration) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintServing(data, i, uint64(m.Anchor.Size()))
-		n8, err := m.Anchor.MarshalTo(data[i:])
+		n9, err := m.Anchor.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n8
+		i += n9
 	}
 	if len(m.Kind) > 0 {
 		data[i] = 0x12
@@ -1120,123 +1106,11 @@ func (m *FileDecorations_Decoration) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x1a
 		i++
 		i = encodeVarintServing(data, i, uint64(m.Target.Size()))
-		n9, err := m.Target.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n9
-	}
-	return i, nil
-}
-
-func (m *CrossReference) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *CrossReference) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.SourceDecoration != nil {
-		data[i] = 0xa
-		i++
-		i = encodeVarintServing(data, i, uint64(m.SourceDecoration.Size()))
-		n10, err := m.SourceDecoration.MarshalTo(data[i:])
+		n10, err := m.Target.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n10
-	}
-	if m.Referent != nil {
-		data[i] = 0x12
-		i++
-		i = encodeVarintServing(data, i, uint64(m.Referent.Size()))
-		n11, err := m.Referent.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n11
-	}
-	if m.TargetDecoration != nil {
-		data[i] = 0x1a
-		i++
-		i = encodeVarintServing(data, i, uint64(m.TargetDecoration.Size()))
-		n12, err := m.TargetDecoration.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n12
-	}
-	if m.SourceAnchor != nil {
-		data[i] = 0x22
-		i++
-		i = encodeVarintServing(data, i, uint64(m.SourceAnchor.Size()))
-		n13, err := m.SourceAnchor.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n13
-	}
-	if m.TargetAnchor != nil {
-		data[i] = 0x2a
-		i++
-		i = encodeVarintServing(data, i, uint64(m.TargetAnchor.Size()))
-		n14, err := m.TargetAnchor.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n14
-	}
-	return i, nil
-}
-
-func (m *CrossReference_Decoration) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *CrossReference_Decoration) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.File != nil {
-		data[i] = 0xa
-		i++
-		i = encodeVarintServing(data, i, uint64(m.File.Size()))
-		n15, err := m.File.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n15
-	}
-	if m.Anchor != nil {
-		data[i] = 0x12
-		i++
-		i = encodeVarintServing(data, i, uint64(m.Anchor.Size()))
-		n16, err := m.Anchor.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n16
-	}
-	if len(m.Kind) > 0 {
-		data[i] = 0x1a
-		i++
-		i = encodeVarintServing(data, i, uint64(len(m.Kind)))
-		i += copy(data[i:], m.Kind)
 	}
 	return i, nil
 }
@@ -1290,6 +1164,16 @@ func (m *PagedCrossReferences) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x20
 		i++
 		i = encodeVarintServing(data, i, uint64(m.TotalReferences))
+	}
+	if m.Incomplete {
+		data[i] = 0x28
+		i++
+		if m.Incomplete {
+			data[i] = 1
+		} else {
+			data[i] = 0
+		}
+		i++
 	}
 	return i, nil
 }
@@ -1361,11 +1245,11 @@ func (m *PagedCrossReferences_Page) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x1a
 		i++
 		i = encodeVarintServing(data, i, uint64(m.Group.Size()))
-		n17, err := m.Group.MarshalTo(data[i:])
+		n11, err := m.Group.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n17
+		i += n11
 	}
 	return i, nil
 }
@@ -1401,40 +1285,6 @@ func (m *PagedCrossReferences_PageIndex) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintServing(data, i, uint64(len(m.PageKey)))
 		i += copy(data[i:], m.PageKey)
-	}
-	return i, nil
-}
-
-func (m *PageToken) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *PageToken) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.Index != 0 {
-		data[i] = 0x8
-		i++
-		i = encodeVarintServing(data, i, uint64(m.Index))
-	}
-	if len(m.SecondaryToken) > 0 {
-		data[i] = 0x12
-		i++
-		i = encodeVarintServing(data, i, uint64(len(m.SecondaryToken)))
-		i += copy(data[i:], m.SecondaryToken)
-	}
-	if m.SecondaryIndex != 0 {
-		data[i] = 0x18
-		i++
-		i = encodeVarintServing(data, i, uint64(m.SecondaryIndex))
 	}
 	return i, nil
 }
@@ -1503,6 +1353,9 @@ func (m *Edge) Size() (n int) {
 			n += 1 + l + sovServing(uint64(l))
 		}
 	}
+	if m.Ordinal != 0 {
+		n += 1 + sovServing(uint64(m.Ordinal))
+	}
 	return n
 }
 
@@ -1513,11 +1366,24 @@ func (m *EdgeGroup) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovServing(uint64(l))
 	}
-	if len(m.Target) > 0 {
-		for _, e := range m.Target {
+	if len(m.Edge) > 0 {
+		for _, e := range m.Edge {
 			l = e.Size()
 			n += 1 + l + sovServing(uint64(l))
 		}
+	}
+	return n
+}
+
+func (m *EdgeGroup_Edge) Size() (n int) {
+	var l int
+	_ = l
+	if m.Target != nil {
+		l = m.Target.Size()
+		n += 1 + l + sovServing(uint64(l))
+	}
+	if m.Ordinal != 0 {
+		n += 1 + sovServing(uint64(m.Ordinal))
 	}
 	return n
 }
@@ -1635,11 +1501,9 @@ func (m *File) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovServing(uint64(l))
 	}
-	if m.Text != nil {
-		l = len(m.Text)
-		if l > 0 {
-			n += 1 + l + sovServing(uint64(l))
-		}
+	l = len(m.Text)
+	if l > 0 {
+		n += 1 + l + sovServing(uint64(l))
 	}
 	l = len(m.Encoding)
 	if l > 0 {
@@ -1738,50 +1602,6 @@ func (m *FileDecorations_Decoration) Size() (n int) {
 	return n
 }
 
-func (m *CrossReference) Size() (n int) {
-	var l int
-	_ = l
-	if m.SourceDecoration != nil {
-		l = m.SourceDecoration.Size()
-		n += 1 + l + sovServing(uint64(l))
-	}
-	if m.Referent != nil {
-		l = m.Referent.Size()
-		n += 1 + l + sovServing(uint64(l))
-	}
-	if m.TargetDecoration != nil {
-		l = m.TargetDecoration.Size()
-		n += 1 + l + sovServing(uint64(l))
-	}
-	if m.SourceAnchor != nil {
-		l = m.SourceAnchor.Size()
-		n += 1 + l + sovServing(uint64(l))
-	}
-	if m.TargetAnchor != nil {
-		l = m.TargetAnchor.Size()
-		n += 1 + l + sovServing(uint64(l))
-	}
-	return n
-}
-
-func (m *CrossReference_Decoration) Size() (n int) {
-	var l int
-	_ = l
-	if m.File != nil {
-		l = m.File.Size()
-		n += 1 + l + sovServing(uint64(l))
-	}
-	if m.Anchor != nil {
-		l = m.Anchor.Size()
-		n += 1 + l + sovServing(uint64(l))
-	}
-	l = len(m.Kind)
-	if l > 0 {
-		n += 1 + l + sovServing(uint64(l))
-	}
-	return n
-}
-
 func (m *PagedCrossReferences) Size() (n int) {
 	var l int
 	_ = l
@@ -1803,6 +1623,9 @@ func (m *PagedCrossReferences) Size() (n int) {
 	}
 	if m.TotalReferences != 0 {
 		n += 1 + sovServing(uint64(m.TotalReferences))
+	}
+	if m.Incomplete {
+		n += 2
 	}
 	return n
 }
@@ -1854,22 +1677,6 @@ func (m *PagedCrossReferences_PageIndex) Size() (n int) {
 	l = len(m.PageKey)
 	if l > 0 {
 		n += 1 + l + sovServing(uint64(l))
-	}
-	return n
-}
-
-func (m *PageToken) Size() (n int) {
-	var l int
-	_ = l
-	if m.Index != 0 {
-		n += 1 + sovServing(uint64(m.Index))
-	}
-	l = len(m.SecondaryToken)
-	if l > 0 {
-		n += 1 + l + sovServing(uint64(l))
-	}
-	if m.SecondaryIndex != 0 {
-		n += 1 + sovServing(uint64(m.SecondaryIndex))
 	}
 	return n
 }
@@ -2152,6 +1959,25 @@ func (m *Edge) Unmarshal(data []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Ordinal", wireType)
+			}
+			m.Ordinal = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowServing
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.Ordinal |= (int32(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipServing(data[iNdEx:])
@@ -2233,6 +2059,87 @@ func (m *EdgeGroup) Unmarshal(data []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Edge", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowServing
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthServing
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Edge = append(m.Edge, &EdgeGroup_Edge{})
+			if err := m.Edge[len(m.Edge)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipServing(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthServing
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *EdgeGroup_Edge) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowServing
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Edge: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Edge: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Target", wireType)
 			}
 			var msglen int
@@ -2257,11 +2164,32 @@ func (m *EdgeGroup) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Target = append(m.Target, &Node{})
-			if err := m.Target[len(m.Target)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if m.Target == nil {
+				m.Target = &Node{}
+			}
+			if err := m.Target.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Ordinal", wireType)
+			}
+			m.Ordinal = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowServing
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.Ordinal |= (int32(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipServing(data[iNdEx:])
@@ -3096,7 +3024,10 @@ func (m *File) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Text = append([]byte{}, data[iNdEx:postIndex]...)
+			m.Text = append(m.Text[:0], data[iNdEx:postIndex]...)
+			if m.Text == nil {
+				m.Text = []byte{}
+			}
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
@@ -3823,366 +3754,6 @@ func (m *FileDecorations_Decoration) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *CrossReference) Unmarshal(data []byte) error {
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowServing
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: CrossReference: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CrossReference: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SourceDecoration", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowServing
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthServing
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.SourceDecoration == nil {
-				m.SourceDecoration = &CrossReference_Decoration{}
-			}
-			if err := m.SourceDecoration.Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Referent", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowServing
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthServing
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Referent == nil {
-				m.Referent = &Node{}
-			}
-			if err := m.Referent.Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TargetDecoration", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowServing
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthServing
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.TargetDecoration == nil {
-				m.TargetDecoration = &CrossReference_Decoration{}
-			}
-			if err := m.TargetDecoration.Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SourceAnchor", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowServing
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthServing
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.SourceAnchor == nil {
-				m.SourceAnchor = &ExpandedAnchor{}
-			}
-			if err := m.SourceAnchor.Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TargetAnchor", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowServing
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthServing
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.TargetAnchor == nil {
-				m.TargetAnchor = &ExpandedAnchor{}
-			}
-			if err := m.TargetAnchor.Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipServing(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthServing
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *CrossReference_Decoration) Unmarshal(data []byte) error {
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowServing
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Decoration: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Decoration: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field File", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowServing
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthServing
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.File == nil {
-				m.File = &File{}
-			}
-			if err := m.File.Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Anchor", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowServing
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthServing
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Anchor == nil {
-				m.Anchor = &RawAnchor{}
-			}
-			if err := m.Anchor.Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Kind", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowServing
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthServing
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Kind = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipServing(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthServing
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
 func (m *PagedCrossReferences) Unmarshal(data []byte) error {
 	l := len(data)
 	iNdEx := 0
@@ -4322,6 +3893,26 @@ func (m *PagedCrossReferences) Unmarshal(data []byte) error {
 					break
 				}
 			}
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Incomplete", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowServing
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Incomplete = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipServing(data[iNdEx:])
@@ -4721,123 +4312,6 @@ func (m *PagedCrossReferences_PageIndex) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *PageToken) Unmarshal(data []byte) error {
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowServing
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: PageToken: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: PageToken: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Index", wireType)
-			}
-			m.Index = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowServing
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				m.Index |= (int32(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SecondaryToken", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowServing
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthServing
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.SecondaryToken = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SecondaryIndex", wireType)
-			}
-			m.SecondaryIndex = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowServing
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				m.SecondaryIndex |= (int32(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipServing(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthServing
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
 func skipServing(data []byte) (n int, err error) {
 	l := len(data)
 	iNdEx := 0
@@ -4942,3 +4416,56 @@ var (
 	ErrInvalidLengthServing = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowServing   = fmt.Errorf("proto: integer overflow")
 )
+
+var fileDescriptorServing = []byte{
+	// 778 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x9c, 0x54, 0xcb, 0x6e, 0xd3, 0x5a,
+	0x14, 0xbd, 0x6e, 0x9c, 0xb4, 0xd9, 0x49, 0x1f, 0xd7, 0xed, 0x95, 0x5c, 0x0f, 0xaa, 0xca, 0x57,
+	0x6a, 0x7b, 0x07, 0xd7, 0x11, 0x89, 0x04, 0x52, 0x07, 0x95, 0xe8, 0x53, 0x30, 0x40, 0xa8, 0xfd,
+	0x00, 0xcb, 0xb5, 0x4f, 0x52, 0x2b, 0xa9, 0x8f, 0x39, 0x3e, 0x81, 0xf6, 0x2f, 0x18, 0x32, 0xe7,
+	0x0b, 0x18, 0xf0, 0x0f, 0x0c, 0xf9, 0x01, 0x24, 0x04, 0xff, 0xc0, 0x98, 0x7d, 0x1e, 0x7e, 0x84,
+	0x26, 0x29, 0x65, 0x60, 0xc9, 0xe7, 0xb1, 0xd7, 0x5a, 0x7b, 0x9d, 0xbd, 0x37, 0x6c, 0x0e, 0x6f,
+	0xf9, 0x15, 0xe9, 0xa4, 0x8c, 0x72, 0xda, 0xc9, 0x08, 0x7b, 0x1d, 0x27, 0x03, 0x4f, 0xae, 0xac,
+	0x75, 0x79, 0xa4, 0x16, 0x9e, 0x3e, 0x72, 0xec, 0xea, 0xfd, 0x90, 0x5e, 0x5f, 0xd3, 0x44, 0xdd,
+	0x70, 0x0f, 0xc0, 0x7c, 0x41, 0x23, 0x62, 0xad, 0x40, 0x83, 0xc7, 0xe1, 0x90, 0x70, 0xdb, 0xd8,
+	0x36, 0xf6, 0x9a, 0xd6, 0x0e, 0x98, 0xfd, 0x20, 0xe4, 0xf6, 0xc2, 0x76, 0x6d, 0xaf, 0xd5, 0xb5,
+	0xbd, 0x2a, 0xaa, 0x06, 0x38, 0xc5, 0x73, 0xf7, 0xbd, 0x01, 0xe6, 0x49, 0x34, 0x20, 0xd6, 0x7f,
+	0xd0, 0xc8, 0xe8, 0x98, 0x85, 0x44, 0x02, 0xb4, 0xba, 0x9b, 0xde, 0x14, 0x21, 0x9e, 0xe4, 0x6a,
+	0x83, 0x39, 0x8c, 0x93, 0x08, 0xb1, 0x05, 0x13, 0x06, 0xf2, 0x80, 0x0d, 0x90, 0xb9, 0x76, 0x5f,
+	0x60, 0x2e, 0xca, 0x9c, 0x2f, 0xca, 0x5a, 0x85, 0x45, 0xca, 0xa2, 0x38, 0x09, 0x46, 0x76, 0x1d,
+	0x31, 0xeb, 0xee, 0x5b, 0x03, 0x9a, 0x42, 0xe5, 0x19, 0xa3, 0xe3, 0xb4, 0xe0, 0x57, 0x99, 0x3e,
+	0x02, 0x93, 0xe0, 0x91, 0xce, 0xf4, 0xdf, 0xa9, 0xec, 0x45, 0xac, 0xfc, 0x73, 0x0e, 0xcb, 0x9c,
+	0xb5, 0xf4, 0x7b, 0x73, 0xae, 0x48, 0x5a, 0x90, 0x92, 0x3e, 0x18, 0xd0, 0x7e, 0x19, 0x0c, 0x48,
+	0x24, 0x90, 0x2e, 0x08, 0x7f, 0x88, 0x81, 0xff, 0x43, 0x7d, 0x20, 0xd4, 0x68, 0xcd, 0x5b, 0xf3,
+	0x35, 0x5b, 0xeb, 0xd0, 0xe2, 0x94, 0x07, 0x23, 0x5f, 0xe4, 0x99, 0x49, 0x9b, 0xeb, 0x56, 0x17,
+	0x20, 0x45, 0x7a, 0x1f, 0x8d, 0x20, 0x37, 0xda, 0xd1, 0xe9, 0x40, 0x42, 0xe5, 0x33, 0x71, 0xcb,
+	0x3d, 0x86, 0x66, 0xb1, 0xb0, 0xfe, 0x86, 0xa6, 0xc0, 0xf3, 0x2b, 0x56, 0x5a, 0x00, 0x72, 0x2b,
+	0xa4, 0xe3, 0x84, 0xab, 0x3c, 0xad, 0x35, 0x58, 0x92, 0x3c, 0x43, 0x72, 0x2b, 0x99, 0x9b, 0xee,
+	0x15, 0x2c, 0x09, 0x6d, 0x02, 0x69, 0xe2, 0x54, 0x61, 0xfc, 0x03, 0xcb, 0xca, 0x06, 0x5f, 0xd7,
+	0xa3, 0xaa, 0x92, 0x1e, 0xb4, 0xa4, 0x7a, 0x5f, 0x25, 0xae, 0x4a, 0xe5, 0x9e, 0xc4, 0xdd, 0x7d,
+	0x58, 0x3e, 0x8d, 0x47, 0xe4, 0x38, 0x66, 0x24, 0xe4, 0x94, 0xdd, 0x5a, 0x1b, 0xd0, 0xce, 0xc6,
+	0x97, 0x51, 0xbe, 0x46, 0xca, 0x1a, 0x62, 0xa3, 0x3f, 0x7d, 0xbc, 0x56, 0x12, 0xe2, 0xa6, 0x9b,
+	0x40, 0xeb, 0x88, 0xb2, 0x74, 0x9c, 0x9d, 0x53, 0xca, 0x33, 0xeb, 0x09, 0x34, 0x42, 0xb9, 0x94,
+	0x31, 0xad, 0xee, 0xee, 0x54, 0xea, 0x4a, 0x84, 0xfe, 0x77, 0x76, 0xa0, 0xa1, 0xfe, 0x44, 0x8b,
+	0x15, 0x10, 0x22, 0x25, 0x2c, 0x43, 0x86, 0x37, 0x35, 0xdf, 0x63, 0x30, 0x85, 0xd6, 0x3b, 0x8d,
+	0x88, 0xb7, 0x38, 0xb9, 0x51, 0x36, 0xb4, 0x85, 0x5f, 0x24, 0x09, 0x29, 0x16, 0xd2, 0x40, 0xbb,
+	0xf9, 0x0a, 0x9a, 0xe7, 0xc1, 0x9b, 0xa7, 0x49, 0x78, 0x45, 0xd9, 0x9d, 0x60, 0x91, 0x2f, 0x56,
+	0x28, 0xf7, 0x69, 0xbf, 0x9f, 0x91, 0xfc, 0x49, 0xc4, 0x33, 0x25, 0x51, 0xbe, 0xa7, 0xca, 0x41,
+	0xd8, 0x9e, 0xc4, 0x69, 0x4a, 0xb8, 0x2f, 0x23, 0xb0, 0x22, 0xc4, 0x36, 0x5a, 0x93, 0x6f, 0x63,
+	0x88, 0xee, 0xa6, 0x8f, 0x06, 0xac, 0x9c, 0xdc, 0xa4, 0x01, 0x96, 0x41, 0x34, 0x83, 0x78, 0xb2,
+	0xc5, 0xf1, 0x34, 0x0d, 0x18, 0x49, 0x14, 0x59, 0x99, 0x93, 0x99, 0x8f, 0x9a, 0x0c, 0xc1, 0x24,
+	0xf8, 0x8c, 0xae, 0xbe, 0xc0, 0x73, 0xd1, 0x42, 0x5a, 0x8b, 0xdd, 0x90, 0x81, 0x1e, 0x66, 0x97,
+	0x6b, 0x16, 0x00, 0x8b, 0xf3, 0x01, 0xdc, 0x1f, 0x06, 0xac, 0xca, 0x7a, 0x20, 0xf8, 0x0e, 0x01,
+	0x8f, 0x69, 0x92, 0x59, 0xbb, 0x38, 0x52, 0x70, 0x6b, 0x6e, 0xcf, 0xc9, 0x77, 0x39, 0x02, 0x88,
+	0x8a, 0x38, 0xdd, 0x78, 0x9d, 0x99, 0xd7, 0x2b, 0x14, 0x5e, 0xf9, 0xef, 0x8c, 0x01, 0xca, 0x15,
+	0xea, 0x6f, 0x04, 0xd2, 0x3e, 0xcd, 0x3e, 0xbd, 0x9c, 0xcb, 0xd7, 0xfd, 0xd3, 0xb9, 0xe9, 0x7e,
+	0xa9, 0xc1, 0x86, 0x9c, 0x35, 0x47, 0x8c, 0x66, 0xd9, 0x39, 0xe9, 0x13, 0x7c, 0x8c, 0x90, 0x64,
+	0x77, 0x9b, 0x4d, 0xbd, 0xde, 0xc1, 0xe4, 0x7c, 0xe9, 0xcc, 0x1c, 0x0b, 0xbf, 0x02, 0x7a, 0x6a,
+	0xe0, 0x9c, 0x4d, 0xcc, 0x96, 0x9a, 0x04, 0xe9, 0xfd, 0x3e, 0x48, 0x39, 0x63, 0x6c, 0x58, 0x53,
+	0x93, 0x8b, 0x15, 0xa7, 0xba, 0x30, 0xb1, 0x86, 0x63, 0x6c, 0x84, 0xeb, 0x74, 0x44, 0x38, 0x91,
+	0xa5, 0xb3, 0xe4, 0x3c, 0x87, 0xfa, 0xb4, 0x01, 0xdf, 0x2b, 0x6c, 0x9e, 0x3b, 0xe2, 0x27, 0x0a,
+	0xda, 0xa1, 0x60, 0x3e, 0x6c, 0x40, 0x15, 0x9e, 0xa9, 0xd7, 0x78, 0xa8, 0x67, 0xce, 0x7e, 0x75,
+	0xb6, 0x4e, 0x26, 0xb0, 0x0c, 0xf5, 0xb9, 0x13, 0xf5, 0x70, 0xed, 0xd3, 0xb7, 0x2d, 0xe3, 0x33,
+	0x7e, 0x5f, 0xf1, 0x7b, 0xf7, 0x7d, 0xeb, 0xaf, 0xcb, 0x86, 0xe4, 0xed, 0xfd, 0x0c, 0x00, 0x00,
+	0xff, 0xff, 0xda, 0x3a, 0x1d, 0xb3, 0x29, 0x08, 0x00, 0x00,
+}
