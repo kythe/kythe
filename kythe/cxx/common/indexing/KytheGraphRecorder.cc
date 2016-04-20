@@ -30,7 +30,8 @@ static const std::string *const kNodeKindSpellings[] = {
     new std::string("function"),  new std::string("callable"),
     new std::string("lookup"),    new std::string("macro"),
     new std::string("interface"), new std::string("package"),
-    new std::string("tsigma"),    new std::string("doc")};
+    new std::string("tsigma"),    new std::string("doc"),
+    new std::string("builtin"),   new std::string("meta")};
 
 static const std::string *kEdgeKindSpellings[] = {
     new std::string("/kythe/edge/defines"),
@@ -92,7 +93,8 @@ static const std::string *const kPropertySpellings[] = {
     new std::string("/kythe/text"),
     new std::string("/kythe/complete"),
     new std::string("/kythe/subkind"),
-    new std::string("/kythe/node/kind")};
+    new std::string("/kythe/node/kind"),
+    new std::string("/kythe/format")};
 
 static const std::string *const kEmptyStringSpelling = new std::string("");
 

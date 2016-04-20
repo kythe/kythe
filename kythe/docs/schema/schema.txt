@@ -1388,6 +1388,26 @@ See also::
 #define FOO BAR
 --------------------------------------------------------------------------------
 
+[[meta]]
+meta
+~~~~
+Brief description::
+  A *meta* is a node that describes details about a particular language.
+Naming convention::
+  Signature:::
+    *kythe-node-name*#meta
+  Language:::
+    See <<lsr,Language-specific rules>> for language identifiers.
+Facts::
+  format:::
+    See <<formats>>.
+
+[kythe,C++,"C++ defines a default tapp format."]
+--------------------------------------------------------------------------------
+//- vname("tapp#meta","","","","c++").node/kind meta
+//- vname("tapp#meta","","","","c++").format "%0.<%1,>"
+--------------------------------------------------------------------------------
+
 [[name]]
 name
 ~~~~
@@ -1790,6 +1810,78 @@ Notes::
   Git branches point to different commits over time. It is better to use the
   (full) hash of the commit.
 
+[[formats]]
+Format strings
+--------------
+
+WARNING: This section is experimental.
+
+Various Kythe nodes can be annotated with `format` facts. These facts are meant
+to be used to generate user-visible strings that identify nodes. This is
+distinct from the function of <<name>> nodes and <<named>> edges, which
+represent (and attach to) names with various encodings, some of which may not
+be sensible to show in a user interface.
+
+A `format` fact is a UTF-8 string with embedded format tokens. These tokens
+always begin with `%`. Some have an optional decimal number argument, denoted
+`N` in the following table. We define a *format* function on nodes that produces
+a string that represents some node (denoted *this*). Unescaped text is emitted
+verbatim; otherwise, for each token, *format* makes the following substitutions:
+
+[width="50%",options="header"]
+|======================
+|Format token | Definition
+|%%           | Insert a literal *%*.
+|%^           | For a single *N'* such that *this* *childof* *N'*, insert *format*(*N'*)
+|%N.          | For a single *N'* such that *this* *param.N* *N'*, insert *format*(*N'*)
+|%N`          | For a single *N'* such that *this* typed *M* and *M* *param.N* *N'*, insert *format*(*N'*)
+|%N,          | For each integer *N'* starting at *N* and until there is no node *M* such that *this* *param.N'* *M*,
+                for a single *M* such that *this* *param.N'* *M*, insert *format*(*M*), separating adjacent insertions
+                with a comma and a space `", "`.
+|======================
+
+The `format` fact used by the expansion *format*(*this*) is determined as
+follows:
+
+  * If *this* has a `format` fact, use that.
+  * If *this* is a <<tapp>> node that has a <<param>>.0 that has a `format`
+     fact, use that. (If there are multiple candidates, choose one arbitrarily.)
+  * If the <<meta>> node for the kind of *this* has a `format` fact, use that.
+  * Otherwise, use the empty string.
+
+Implementations are free to discard invalid tokens or tokens that fail to find
+the necessary graph nodes. Implementations are also advised to implement a
+maximum expansion width and depth and to emit a placeholder string (like "...")
+if the output grows too large. It may be wise to store pre-expanded signatures
+for a subset of formattable nodes in the graph. Format strings allow
+implementations to decide which of these signatures to persist, reducing the
+total amount of data produced and stored from indexers.
+
+[kythe,C++,"Formatting a variable"]
+--------------------------------------------------------------------------------
+//- @ns defines/binding NsNs
+//- NsNs.format "%^::ns"
+namespace ns {
+//- @x defines/binding VarX
+//- VarX.format "%^::x"
+//- VarX childof NsNs
+//- VarX typed IntPtr
+//- IntPtr.node/kind tapp
+//- IntPtr param.0 Ptr
+//- Ptr.format "%1.*"
+//- IntPtr param.1 Int
+//- Int.format "int"
+  int* x;
+}
+--------------------------------------------------------------------------------
+
+To format `VarX` in this example, we use `VarX`'s `format` fact, `%^::x`.
+We must recursively format `NsNs`. `NsNs` has no parent, so `%^` has
+no effect; we emit `::ns`, then `::x`, giving `::ns::x`.
+
+To format `IntPtr`, we note that `IntPtr` is a <<tapp>> with a `param.0` with
+a defined `format`, `%1.*`. `IntPtr`'s `param.1` is `Int`, with the literal
+`format` `int`. We therefore produce `int*`.
 
 [[lsr]]
 Language-specific rules

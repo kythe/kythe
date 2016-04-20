@@ -661,6 +661,18 @@ private:
   /// to form an identifying token.
   uint64_t SemanticHash(const clang::EnumDecl *ED);
 
+  /// \brief Gets a format string for `ND`.
+  std::string GetFormat(const clang::NamedDecl *ND);
+
+  /// \brief Attempts to add a format string representation of `ND` to `Ostream`.
+  /// \return true on success; false on failure.
+  bool AddFormatToStream(llvm::raw_string_ostream &Ostream,
+                         const clang::NamedDecl *ND);
+
+  /// \brief Attempts to find the ID of the first parent of `Decl` for
+  /// generating a format string.
+  MaybeFew<GraphObserver::NodeId> GetParentForFormat(const clang::Decl *D);
+
   /// \brief Attempts to add some representation of `ND` to `Ostream`.
   /// \return true on success; false on failure.
   bool AddNameToStream(llvm::raw_string_ostream &Ostream,

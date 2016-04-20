@@ -133,11 +133,27 @@ class KytheGraphObserver : public GraphObserver {
         vfs_(vfs) {
     default_token_.set_rough_claimed(true);
     type_token_.set_rough_claimed(true);
+    RegisterBuiltins();
+    EmitMetaNodes();
   }
 
   NodeId getNodeIdForBuiltinType(const llvm::StringRef &spelling) override {
-    return NodeId::CreateUncompressed(getDefaultClaimToken(),
-                                      spelling.str() + "#builtin");
+    const auto &info = builtins_.find(spelling.str());
+    if (info == builtins_.end()) {
+      LOG(ERROR) << "Missing builtin " << spelling.str();
+      builtins_.emplace(
+          spelling.str(),
+          Builtin{NodeId::CreateUncompressed(getDefaultClaimToken(),
+                                             spelling.str() + "#builtin"),
+                  EscapeForFormatLiteral(spelling), true});
+      auto *new_builtin = &builtins_.find(spelling.str())->second;
+      EmitBuiltin(new_builtin);
+      return new_builtin->node_id;
+    }
+    if (!info->second.emitted) {
+      EmitBuiltin(&info->second);
+    }
+    return info->second.node_id;
   }
 
   const KytheClaimToken *getDefaultClaimToken() const override {
@@ -158,11 +174,12 @@ class KytheGraphObserver : public GraphObserver {
   NodeId nodeIdForTypeAliasNode(const NameId &AliasName,
                                 const NodeId &AliasedType) override;
 
-  NodeId recordTypeAliasNode(const NameId &DeclName,
-                             const NodeId &DeclNode) override;
+  NodeId recordTypeAliasNode(const NameId &DeclName, const NodeId &DeclNode,
+                             const std::string &Format) override;
 
   void recordFunctionNode(const NodeId &Node, Completeness FunctionCompleteness,
-                          FunctionSubkind Subkind) override;
+                          FunctionSubkind Subkind,
+                          const std::string &Format) override;
 
   void recordCallableNode(const NodeId &Node) override;
 
@@ -177,7 +194,8 @@ class KytheGraphObserver : public GraphObserver {
                        const NodeId &ParamNode) override;
 
   void recordRecordNode(const NodeId &Node, RecordKind Kind,
-                        Completeness RecordCompleteness) override;
+                        Completeness RecordCompleteness,
+                        const std::string &Format) override;
 
   void recordEnumNode(const NodeId &Node, Completeness Compl,
                       EnumKind Kind) override;
@@ -187,7 +205,9 @@ class KytheGraphObserver : public GraphObserver {
 
   NodeId nodeIdForNominalTypeNode(const NameId &TypeName) override;
 
-  NodeId recordNominalTypeNode(const NameId &TypeName) override;
+  NodeId recordNominalTypeNode(const NameId &TypeName,
+                               const std::string &Format,
+                               const NodeId *Parent) override;
 
   void recordExtendsEdge(const NodeId &InheritingNodeId,
                          const NodeId &InheritedTypeId, bool IsVirtual,
@@ -197,11 +217,11 @@ class KytheGraphObserver : public GraphObserver {
                              GraphObserver::Claimability Cl) override;
 
   void recordVariableNode(const NameId &DeclName, const NodeId &DeclNode,
-                          Completeness VarCompleteness,
-                          VariableSubkind Subkind) override;
+                          Completeness VarCompleteness, VariableSubkind Subkind,
+                          const std::string &Format) override;
 
-  void recordNamespaceNode(const NameId &DeclName,
-                           const NodeId &DeclNode) override;
+  void recordNamespaceNode(const NameId &DeclName, const NodeId &DeclNode,
+                           const std::string &Format) override;
 
   void recordUserDefinedNode(const NameId &Name, const NodeId &Id,
                              const llvm::StringRef &NodeKind,
@@ -504,6 +524,23 @@ class KytheGraphObserver : public GraphObserver {
   KytheClaimToken type_token_;
   /// Possibly drop data for the greater good of eliminating redundancy.
   bool lossy_claiming_ = false;
+  /// Information about builtin nodes.
+  struct Builtin {
+    /// This Builtin's NodeId.
+    NodeId node_id;
+    /// A format string for this Builtin.
+    std::string format;
+    /// Whether this Builtin has been emitted.
+    bool emitted;
+  };
+  /// Add known Builtins to builtins_.
+  void RegisterBuiltins();
+  /// Emit a particular Builtin.
+  void EmitBuiltin(Builtin *builtin);
+  /// Emit entries for C++ meta nodes.
+  void EmitMetaNodes();
+  /// Registered builtins.
+  std::map<std::string, Builtin> builtins_;
 };
 
 }  // namespace kythe

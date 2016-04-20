@@ -44,7 +44,9 @@ enum class NodeKindID {
   kInterface,
   kPackage,
   kTSigma,
-  kDoc
+  kDoc,
+  kBuiltin,
+  kMeta
 };
 
 /// \brief Known properties of nodes. See the schema for details.
@@ -60,7 +62,8 @@ enum class PropertyID {
   kText,
   kComplete,
   kSubkind,
-  kNodeKind
+  kNodeKind,
+  kFormat
 };
 
 /// \brief Known edge kinds. See the schema for details.

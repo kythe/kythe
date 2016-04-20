@@ -315,7 +315,8 @@ void KytheGraphObserver::recordUserDefinedNode(const NameId &name,
 void KytheGraphObserver::recordVariableNode(const NameId &name,
                                             const NodeId &node,
                                             Completeness completeness,
-                                            VariableSubkind subkind) {
+                                            VariableSubkind subkind,
+                                            const std::string &format) {
   proto::VName name_vname = RecordName(name);
   VNameRef node_vname = VNameRefFromNodeId(node);
   if (!lossy_claiming_ || claimNode(node)) {
@@ -330,17 +331,20 @@ void KytheGraphObserver::recordVariableNode(const NameId &name,
         break;
     }
     recorder_->AddEdge(node_vname, EdgeKindID::kNamed, VNameRef(name_vname));
+    recorder_->AddProperty(node_vname, PropertyID::kFormat, format);
   }
 }
 
 void KytheGraphObserver::recordNamespaceNode(const NameId &name,
-                                             const NodeId &node) {
+                                             const NodeId &node,
+                                             const std::string &format) {
   proto::VName name_vname = RecordName(name);
   VNameRef node_vname = VNameRefFromNodeId(node);
   if ((!lossy_claiming_ || claimNode(node)) &&
       written_namespaces_.insert(node.ToClaimedString()).second) {
     recorder_->AddProperty(node_vname, NodeKindID::kPackage);
     recorder_->AddProperty(node_vname, PropertyID::kSubkind, "namespace");
+    recorder_->AddProperty(node_vname, PropertyID::kFormat, format);
     recorder_->AddEdge(node_vname, EdgeKindID::kNamed, VNameRef(name_vname));
   }
 }
@@ -584,13 +588,15 @@ GraphObserver::NodeId KytheGraphObserver::nodeIdForTypeAliasNode(
 }
 
 GraphObserver::NodeId KytheGraphObserver::recordTypeAliasNode(
-    const NameId &alias_name, const NodeId &aliased_type) {
+    const NameId &alias_name, const NodeId &aliased_type,
+    const std::string &format) {
   NodeId type_id = nodeIdForTypeAliasNode(alias_name, aliased_type);
   if (!deferring_nodes_ ||
       written_types_.insert(type_id.ToClaimedString()).second) {
     if (!lossy_claiming_ || claimNode(type_id)) {
       VNameRef type_vname(VNameRefFromNodeId(type_id));
       recorder_->AddProperty(type_vname, NodeKindID::kTAlias);
+      recorder_->AddProperty(type_vname, PropertyID::kFormat, format);
       kythe::proto::VName alias_name_vname(RecordName(alias_name));
       recorder_->AddEdge(type_vname, EdgeKindID::kNamed,
                          VNameRef(alias_name_vname));
@@ -688,14 +694,19 @@ GraphObserver::NodeId KytheGraphObserver::nodeIdForNominalTypeNode(
 }
 
 GraphObserver::NodeId KytheGraphObserver::recordNominalTypeNode(
-    const NameId &name_id) {
+    const NameId &name_id, const std::string &format, const NodeId *parent) {
   NodeId id_out = nodeIdForNominalTypeNode(name_id);
   if (!deferring_nodes_ ||
       written_types_.insert(id_out.ToClaimedString()).second) {
     VNameRef type_vname(VNameRefFromNodeId(id_out));
+    recorder_->AddProperty(type_vname, PropertyID::kFormat, format);
     recorder_->AddProperty(type_vname, NodeKindID::kTNominal);
     recorder_->AddEdge(type_vname, EdgeKindID::kNamed,
                        VNameRef(RecordName(name_id)));
+    if (parent) {
+      recorder_->AddEdge(type_vname, EdgeKindID::kChildOf,
+                         VNameRefFromNodeId(*parent));
+    }
   }
   return id_out;
 }
@@ -790,12 +801,15 @@ void KytheGraphObserver::recordIntegerConstantNode(const NodeId &node_id,
 
 void KytheGraphObserver::recordFunctionNode(const NodeId &node_id,
                                             Completeness completeness,
-                                            FunctionSubkind subkind) {
+                                            FunctionSubkind subkind,
+                                            const std::string &format) {
   if (!lossy_claiming_ || claimNode(node_id)) {
     VNameRef node_vname = VNameRefFromNodeId(node_id);
     recorder_->AddProperty(node_vname, NodeKindID::kFunction);
     recorder_->AddProperty(node_vname, PropertyID::kComplete,
                            CompletenessToString(completeness));
+    recorder_->AddProperty(node_vname, PropertyID::kFormat,
+                           "%1` " + format + "(%0,)");
     if (subkind != FunctionSubkind::None) {
       recorder_->AddProperty(node_vname, PropertyID::kSubkind,
                              FunctionSubkindToString(subkind));
@@ -822,17 +836,20 @@ void KytheGraphObserver::recordAbsVarNode(const NodeId &node_id) {
 }
 
 void KytheGraphObserver::recordLookupNode(const NodeId &node_id,
-                                          const llvm::StringRef &Name) {
+                                          const llvm::StringRef &text) {
   if (!lossy_claiming_ || claimNode(node_id)) {
     VNameRef node_vname = VNameRefFromNodeId(node_id);
     recorder_->AddProperty(node_vname, NodeKindID::kLookup);
-    recorder_->AddProperty(node_vname, PropertyID::kText, Name);
+    recorder_->AddProperty(node_vname, PropertyID::kText, text);
+    recorder_->AddProperty(node_vname, PropertyID::kFormat,
+                           "(%0,)." + EscapeForFormatLiteral(text));
   }
 }
 
 void KytheGraphObserver::recordRecordNode(const NodeId &node_id,
                                           RecordKind kind,
-                                          Completeness completeness) {
+                                          Completeness completeness,
+                                          const std::string &format) {
   if (!lossy_claiming_ || claimNode(node_id)) {
     VNameRef node_vname = VNameRefFromNodeId(node_id);
     recorder_->AddProperty(node_vname, NodeKindID::kRecord);
@@ -849,6 +866,7 @@ void KytheGraphObserver::recordRecordNode(const NodeId &node_id,
     };
     recorder_->AddProperty(node_vname, PropertyID::kComplete,
                            CompletenessToString(completeness));
+    recorder_->AddProperty(node_vname, PropertyID::kFormat, format);
   }
 }
 
@@ -1145,6 +1163,70 @@ KytheClaimToken *KytheGraphObserver::getNamespaceClaimToken(
   new_token.set_rough_claimed(file_token->rough_claimed());
   namespace_tokens_.emplace(file_token, new_token);
   return &namespace_tokens_.find(file_token)->second;
+}
+
+void KytheGraphObserver::RegisterBuiltins() {
+  auto RegisterBuiltin = [this](const std::string &name,
+                                const std::string &format) {
+    builtins_.emplace(std::make_pair(
+        name, Builtin{NodeId::CreateUncompressed(getDefaultClaimToken(),
+                                                 name + "#builtin"),
+                      format, false}));
+  };
+  RegisterBuiltin("void", "void");
+  RegisterBuiltin("bool", "bool");
+  RegisterBuiltin("signed char", "signed char");
+  RegisterBuiltin("char", "char");
+  RegisterBuiltin("char16_t", "char16_t");
+  RegisterBuiltin("char32_t", "char32_t");
+  RegisterBuiltin("wchar_t", "wchar_t");
+  RegisterBuiltin("short", "short");
+  RegisterBuiltin("int", "int");
+  RegisterBuiltin("long", "long");
+  RegisterBuiltin("long long", "long long");
+  RegisterBuiltin("unsigned char", "unsigned char");
+  RegisterBuiltin("unsigned short", "unsigned short");
+  RegisterBuiltin("unsigned int", "unsigned int");
+  RegisterBuiltin("unsigned long", "unsigned long");
+  RegisterBuiltin("unsigned long long", "unsigned long long");
+  RegisterBuiltin("float", "float");
+  RegisterBuiltin("double", "double");
+  RegisterBuiltin("long double", "long double");
+  RegisterBuiltin("nullptr_t", "nullptr_t");
+  RegisterBuiltin("ptr", "%1.*");
+  RegisterBuiltin("fn", "%1.(%2,)");
+  RegisterBuiltin("fnvararg", "%1.(%2,) vararg");
+  RegisterBuiltin("const", "const %1.");
+  RegisterBuiltin("volatile", "volatile %1.");
+  RegisterBuiltin("restrict", "restrict %1.");
+  RegisterBuiltin("lvr", "%1.&");
+  RegisterBuiltin("rvr", "%1.&&");
+  RegisterBuiltin("iarr", "%1.[incomplete]");
+  RegisterBuiltin("carr", "%1.[const]");
+  RegisterBuiltin("darr", "%1.[dependent]");
+  RegisterBuiltin("<dependent type>", "dependent");
+  RegisterBuiltin("auto", "auto");
+  RegisterBuiltin("knrfn", "function");
+  RegisterBuiltin("__int128", "__int128");
+  RegisterBuiltin("unsigned __int128", "unsigned __int128");
+}
+
+void KytheGraphObserver::EmitBuiltin(Builtin *builtin) {
+  builtin->emitted = true;
+  VNameRef ref(VNameRefFromNodeId(builtin->node_id));
+  recorder_->AddProperty(ref, NodeKindID::kBuiltin);
+  recorder_->AddProperty(ref, PropertyID::kFormat, builtin->format);
+}
+
+void KytheGraphObserver::EmitMetaNodes() {
+  auto EmitNode = [this](const std::string &name, const std::string &format) {
+    auto id =
+        NodeId::CreateUncompressed(getDefaultClaimToken(), name + "#meta");
+    VNameRef ref(VNameRefFromNodeId(id));
+    recorder_->AddProperty(ref, NodeKindID::kMeta);
+    recorder_->AddProperty(ref, PropertyID::kFormat, format);
+  };
+  EmitNode("tapp", "%0.<%1,>");
 }
 
 void *KytheClaimToken::clazz_ = nullptr;
