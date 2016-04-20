@@ -6,10 +6,10 @@ licenses(["notice"])
 
 gopath_package(
     deps = [
-        "//third_party/go/src/golang.org/x/net/context",
-        "//third_party/go/src/golang.org/x/oauth2",
-        "//third_party/go/src/golang.org/x/oauth2/google",
-        "//third_party/go/src/golang.org/x/oauth2/jwt",
+        "@go_x_net//:context",
+        "@go_oauth2//:oauth2",
+        "@go_oauth2//:google",
+        "@go_oauth2//:jwt",
         "//third_party/go/src/google.golang.org/grpc/credentials",
     ],
 )

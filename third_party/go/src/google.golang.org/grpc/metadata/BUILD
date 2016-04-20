@@ -4,4 +4,4 @@ load("//third_party/go:build.bzl", "gopath_package")
 
 licenses(["notice"])
 
-gopath_package(deps = ["//third_party/go/src/golang.org/x/net/context"])
+gopath_package(deps = ["@go_x_net//:context"])

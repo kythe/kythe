@@ -6,8 +6,8 @@ licenses(["notice"])
 
 gopath_package(
     deps = [
-        "//third_party/go/src/golang.org/x/net/context",
-        "//third_party/go/src/golang.org/x/net/context/ctxhttp",
+        "@go_x_net//:context",
+        "@go_x_net//:context/ctxhttp",
         "//third_party/go/src/google.golang.org/api/gensupport",
         "//third_party/go/src/google.golang.org/api/googleapi",
     ],

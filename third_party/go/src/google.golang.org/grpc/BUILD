@@ -9,8 +9,8 @@ exports_files(["LICENSE"])
 gopath_package(
     deps = [
         "//third_party/go/src/github.com/golang/protobuf/proto",
-        "//third_party/go/src/golang.org/x/net/context",
-        "//third_party/go/src/golang.org/x/net/trace",
+        "@go_x_net//:context",
+        "@go_x_net//:trace",
         "//third_party/go/src/google.golang.org/grpc/codes",
         "//third_party/go/src/google.golang.org/grpc/credentials",
         "//third_party/go/src/google.golang.org/grpc/grpclog",
