@@ -90,7 +90,6 @@ proto_library(
 # WARNING: These should not be exposed to clients.
 proto_library(
     name = "serving_proto",
-    has_services = 1,
     gen_cc = 1,
     gen_go = 1,
     deps = [":common_proto"],

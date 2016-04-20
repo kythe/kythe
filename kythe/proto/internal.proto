@@ -81,3 +81,8 @@ message CrossReference {
   kythe.proto.serving.ExpandedAnchor target_anchor = 5;
 }
 
+message SortedKeyValue {
+  string key = 1;
+  string sort_key = 2;
+  bytes value = 3;
+}
