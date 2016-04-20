@@ -5,6 +5,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_package(
     test_deps = ["//kythe/go/test/testutil"],
     deps = [
+        "@go_x_net//:context",
         "//kythe/go/services/graphstore",
         "//kythe/go/services/xrefs",
         "//kythe/go/util/encoding/text",
@@ -16,6 +17,5 @@ go_package(
         "//kythe/proto:serving_proto_go",
         "//kythe/proto:storage_proto_go",
         "//kythe/proto:xref_proto_go",
-        "@go_x_net//:context",
     ],
 )

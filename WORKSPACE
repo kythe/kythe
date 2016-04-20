@@ -238,10 +238,38 @@ new_git_repository(
 )
 
 new_git_repository(
-    name = "go_oauth2",
+    name = "go_x_text",
+    build_file = "third_party/go/x_text.BUILD",
+    commit = "3100578f0f8093e37883ba48c9187fe51367ad05",
+    remote = "https://github.com/golang/text.git",
+)
+
+new_git_repository(
+    name = "go_x_tools",
+    build_file = "third_party/go/x_tools.BUILD",
+    commit = "5e468032ea9e193c60de97cfcd040ffa7a9b774e",
+    remote = "https://github.com/golang/tools.git",
+)
+
+new_git_repository(
+    name = "go_x_oauth2",
     build_file = "third_party/go/oauth2.BUILD",
     commit = "7e9cd5d59563851383f8f81a7fbb01213709387c",
     remote = "https://github.com/golang/oauth2.git",
+)
+
+new_git_repository(
+    name = "go_gapi",
+    build_file = "third_party/go/gapi.BUILD",
+    commit = "9737cc9e103c00d06a8f3993361dec083df3d252",
+    remote = "https://github.com/google/google-api-go-client.git",
+)
+
+new_git_repository(
+    name = "go_grpc",
+    build_file = "third_party/go/grpc.BUILD",
+    commit = "d3ddb4469d5a1b949fc7a7da7c1d6a0d1b6de994",
+    remote = "https://github.com/grpc/grpc-go.git",
 )
 
 bind(

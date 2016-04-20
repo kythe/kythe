@@ -8,6 +8,7 @@ go_binary(
         "write_entries/write_entries.go",
     ],
     deps = [
+        "@go_x_net//:context",
         "//kythe/go/services/graphstore",
         "//kythe/go/services/graphstore/grpc",
         "//kythe/go/services/graphstore/proxy",
@@ -17,7 +18,6 @@ go_binary(
         "//kythe/go/util/flagutil",
         "//kythe/go/util/profile",
         "//kythe/proto:storage_proto_go",
-        "@go_x_net//:context",
     ],
 )
 
@@ -27,6 +27,7 @@ go_binary(
         "read_entries/read_entries.go",
     ],
     deps = [
+        "@go_x_net//:context",
         "//kythe/go/platform/delimited",
         "//kythe/go/platform/vfs",
         "//kythe/go/services/graphstore",
@@ -37,7 +38,6 @@ go_binary(
         "//kythe/go/util/flagutil",
         "//kythe/go/util/kytheuri",
         "//kythe/proto:storage_proto_go",
-        "@go_x_net//:context",
     ],
 )
 
@@ -47,6 +47,7 @@ go_binary(
         "triples/triples.go",
     ],
     deps = [
+        "@go_x_net//:context",
         "//kythe/go/platform/vfs",
         "//kythe/go/services/graphstore",
         "//kythe/go/services/graphstore/grpc",
@@ -59,7 +60,6 @@ go_binary(
         "//kythe/go/util/kytheuri",
         "//kythe/go/util/schema",
         "//kythe/proto:storage_proto_go",
-        "@go_x_net//:context",
     ],
 )
 
@@ -69,11 +69,11 @@ go_binary(
         "directory_indexer/directory_indexer.go",
     ],
     deps = [
+        "@go_x_net//:context",
         "//kythe/go/platform/delimited",
         "//kythe/go/platform/vfs",
         "//kythe/go/storage/vnameutil",
         "//kythe/go/util/flagutil",
         "//kythe/proto:storage_proto_go",
-        "@go_x_net//:context",
     ],
 )

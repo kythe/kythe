@@ -4,8 +4,8 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 go_package(
     deps = [
-        "//third_party/go/src/golang.org/x/text/encoding",
-        "//third_party/go/src/golang.org/x/text/encoding/htmlindex",
-        "//third_party/go/src/golang.org/x/text/transform",
+        "@go_x_text//:encoding",
+        "@go_x_text//:encoding/htmlindex",
+        "@go_x_text//:transform",
     ],
 )

@@ -8,9 +8,9 @@ go_package(
         "//third_party/go/src/github.com/golang/protobuf/proto",
     ],
     deps = [
+        "@go_x_net//:context",
         "//kythe/go/services/graphstore",
         "//kythe/go/util/datasize",
         "//kythe/proto:storage_proto_go",
-        "@go_x_net//:context",
     ],
 )

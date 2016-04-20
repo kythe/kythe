@@ -17,11 +17,13 @@ filegroup(
         "//third_party/go/src/bitbucket.org/creachadair/shell:LICENSE",
         "//third_party/go/src/github.com/golang/snappy:LICENSE",
         "//third_party/go/src/github.com/pborman/uuid:LICENSE",
-        "@go_oauth2//:LICENSE",
-        "//third_party/go/src/google.golang.org/grpc:LICENSE",
+        "@go_gapi//:LICENSE",
         "@go_gcloud//:LICENSE",
+        "@go_grpc//:LICENSE",
+        "@go_x_oauth2//:LICENSE",
         "@go_x_net//:LICENSE",
-        "//third_party/go/src/google.golang.org/api/googleapi/internal/uritemplates:LICENSE",
+        "@go_x_text//:LICENSE",
+        "@go_x_tools//:LICENSE",
     ],
 )
 

@@ -10,10 +10,10 @@ go_package(
         "//third_party/go/src/github.com/golang/protobuf/proto",
     ],
     deps = [
+        "@go_x_net//:context",
         "//kythe/go/platform/analysis",
         "//kythe/go/platform/vfs",
         "//kythe/go/platform/vfs/zip",
         "//third_party/go/src/github.com/pborman/uuid",
-        "@go_x_net//:context",
     ],
 )

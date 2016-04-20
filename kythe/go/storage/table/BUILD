@@ -4,8 +4,8 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 go_package(
     deps = [
+        "@go_x_net//:context",
         "//kythe/go/storage/keyvalue",
         "//third_party/go/src/github.com/golang/protobuf/proto",
-        "@go_x_net//:context",
     ],
 )

@@ -14,6 +14,7 @@ go_package(
         "@go_x_net//:context",
     ],
     deps = [
+        "@go_x_net//:context",
         "//kythe/go/services/graphstore",
         "//kythe/go/services/xrefs",
         "//kythe/go/util/encoding/text",
@@ -23,6 +24,5 @@ go_package(
         "//kythe/proto:common_proto_go",
         "//kythe/proto:storage_proto_go",
         "//kythe/proto:xref_proto_go",
-        "@go_x_net//:context",
     ],
 )

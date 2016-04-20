@@ -19,9 +19,9 @@ external_go_package(
 external_go_package(
     base_pkg = "google.golang.org/cloud",
     deps = [
-        "@//third_party/go/src/google.golang.org/grpc",
-        "@go_oauth2//:oauth2",
+        "@go_grpc//:grpc",
         "@go_x_net//:context",
+        "@go_x_oauth2//:oauth2",
         ":internal",
         ":internal/opts",
     ],
@@ -44,8 +44,8 @@ external_go_package(
     name = "internal/opts",
     base_pkg = "google.golang.org/cloud",
     deps = [
-        "@//third_party/go/src/google.golang.org/grpc",
-        "@go_oauth2//:oauth2",
+        "@go_grpc//:grpc",
+        "@go_x_oauth2//:oauth2",
     ],
 )
 
@@ -61,12 +61,12 @@ external_go_package(
     exclude_srcs = ["cancelreq_legacy.go"],
     deps = [
         "@//third_party/go/src/github.com/golang/protobuf/proto",
-        "@//third_party/go/src/google.golang.org/grpc",
-        "@//third_party/go/src/google.golang.org/grpc/credentials",
-        "@//third_party/go/src/google.golang.org/grpc/credentials/oauth",
-        "@go_oauth2//:google",
-        "@go_oauth2//:oauth2",
+        "@go_grpc//:credentials",
+        "@go_grpc//:credentials/oauth",
+        "@go_grpc//:grpc",
         "@go_x_net//:context",
+        "@go_x_oauth2//:google",
+        "@go_x_oauth2//:oauth2",
         ":cloud",
         ":internal/opts",
     ],

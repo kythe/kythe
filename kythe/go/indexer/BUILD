@@ -9,12 +9,12 @@ go_library(
         "indexer.go",
     ],
     deps = [
+        "@go_x_net//:context",
+        "@go_x_tools//:go/gcimporter15",
         "//kythe/go/extractors/govname",
         "//kythe/proto:analysis_proto_go",
         "//kythe/proto:storage_proto_go",
         "//third_party/go/src/github.com/golang/protobuf/proto",
-        "@go_x_net//:context",
-        "//third_party/go/src/golang.org/x/tools/go/gcimporter15",
     ],
 )
 

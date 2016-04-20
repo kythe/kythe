@@ -6,6 +6,7 @@ go_binary(
     name = "pq",
     srcs = ["pq/pq.go"],
     deps = [
+        "@go_x_net//:context",
         "//kythe/go/platform/vfs",
         "//kythe/go/services/filetree",
         "//kythe/go/services/graphstore",
@@ -18,7 +19,6 @@ go_binary(
         "//kythe/go/util/profile",
         "//kythe/go/util/schema",
         "//kythe/proto:storage_proto_go",
-        "@go_x_net//:context",
     ],
 )
 
@@ -26,6 +26,9 @@ go_binary(
     name = "http_server",
     srcs = ["http_server/http_server.go"],
     deps = [
+        "@go_grpc//:grpc",
+        "@go_x_net//:context",
+        "@go_x_net//:http2",
         "//kythe/go/services/filetree",
         "//kythe/go/services/graphstore",
         "//kythe/go/services/graphstore/grpc",
@@ -43,9 +46,6 @@ go_binary(
         "//kythe/proto:filetree_proto_go",
         "//kythe/proto:storage_proto_go",
         "//kythe/proto:xref_proto_go",
-        "@go_x_net//:context",
-        "@go_x_net//:http2",
-        "//third_party/go/src/google.golang.org/grpc",
     ],
 )
 
@@ -57,6 +57,7 @@ go_binary(
         "kythe/kythe_display.go",
     ],
     deps = [
+        "@go_x_net//:context",
         "//kythe/go/platform/vfs",
         "//kythe/go/services/filetree",
         "//kythe/go/services/search",
@@ -71,7 +72,6 @@ go_binary(
         "//kythe/proto:storage_proto_go",
         "//kythe/proto:xref_proto_go",
         "//third_party/go/src/github.com/golang/protobuf/proto",
-        "@go_x_net//:context",
     ],
 )
 
@@ -79,6 +79,7 @@ go_binary(
     name = "kwazthis",
     srcs = glob(["kwazthis/*.go"]),
     deps = [
+        "@go_x_net//:context",
         "//kythe/go/platform/vfs",
         "//kythe/go/services/search",
         "//kythe/go/services/xrefs",
@@ -88,7 +89,6 @@ go_binary(
         "//kythe/go/util/schema",
         "//kythe/proto:storage_proto_go",
         "//kythe/proto:xref_proto_go",
-        "@go_x_net//:context",
     ],
 )
 
@@ -96,6 +96,7 @@ go_binary(
     name = "write_tables",
     srcs = ["write_tables/write_tables.go"],
     deps = [
+        "@go_x_net//:context",
         "//kythe/go/platform/vfs",
         "//kythe/go/services/graphstore",
         "//kythe/go/services/graphstore/grpc",
@@ -108,6 +109,5 @@ go_binary(
         "//kythe/go/util/flagutil",
         "//kythe/go/util/profile",
         "//kythe/proto:storage_proto_go",
-        "@go_x_net//:context",
     ],
 )

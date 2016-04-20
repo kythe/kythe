@@ -6,6 +6,8 @@ go_binary(
     name = "analyzer_driver",
     srcs = glob(["analyzer_driver/*.go"]),
     deps = [
+        "@go_grpc//:grpc",
+        "@go_x_net//:context",
         "//kythe/go/platform/analysis",
         "//kythe/go/platform/analysis/driver",
         "//kythe/go/platform/analysis/local",
@@ -19,8 +21,6 @@ go_binary(
         "//kythe/proto:analysis_proto_go",
         "//kythe/proto:storage_proto_go",
         "//third_party/go/src/github.com/golang/protobuf/proto",
-        "@go_x_net//:context",
-        "//third_party/go/src/google.golang.org/grpc",
     ],
 )
 
@@ -57,6 +57,7 @@ go_binary(
     name = "ktags",
     srcs = ["ktags/ktags.go"],
     deps = [
+        "@go_x_net//:context",
         "//kythe/go/services/search",
         "//kythe/go/services/xrefs",
         "//kythe/go/util/flagutil",
@@ -64,7 +65,6 @@ go_binary(
         "//kythe/go/util/stringset",
         "//kythe/proto:storage_proto_go",
         "//kythe/proto:xref_proto_go",
-        "@go_x_net//:context",
     ],
 )
 
@@ -82,9 +82,9 @@ go_binary(
     name = "viewindex",
     srcs = ["viewindex/viewindex.go"],
     deps = [
+        "@go_x_net//:context",
         "//kythe/go/platform/kindex",
         "//kythe/go/util/flagutil",
-        "@go_x_net//:context",
     ],
 )
 
@@ -92,6 +92,8 @@ go_binary(
     name = "indexpack",
     srcs = ["indexpack/indexpack.go"],
     deps = [
+        "@go_gcloud//:storage",
+        "@go_x_net//:context",
         "//kythe/go/platform/indexpack",
         "//kythe/go/platform/kindex",
         "//kythe/go/platform/vfs",
@@ -99,8 +101,6 @@ go_binary(
         "//kythe/go/util/build",
         "//kythe/go/util/oauth2",
         "//kythe/proto:analysis_proto_go",
-        "@go_x_net//:context",
-        "@go_gcloud//:storage",
     ],
 )
 

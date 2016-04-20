@@ -6,6 +6,7 @@ go_binary(
     name = "bazel_go_extractor",
     srcs = ["bazel_go_extractor.go"],
     deps = [
+        "@go_x_net//:context",
         "//kythe/go/extractors/bazel",
         "//kythe/go/extractors/golang",
         "//kythe/go/extractors/govname",
@@ -17,7 +18,6 @@ go_binary(
         "//third_party/bazel:extra_actions_base_proto_go",
         "//third_party/go/src/bitbucket.org/creachadair/shell",
         "//third_party/go/src/github.com/golang/protobuf/proto",
-        "@go_x_net//:context",
     ],
 )
 

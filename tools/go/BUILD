@@ -27,7 +27,7 @@ go_binary(
     srcs = ["parse_test_output.go"],
     deps = [
         ":testsuite",
-        "//third_party/go/src/golang.org/x/tools/benchmark/parse",
+        "@go_x_tools//:benchmark/parse",
     ],
 )
 

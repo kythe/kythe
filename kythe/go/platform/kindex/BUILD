@@ -9,11 +9,11 @@ go_package(
         "//third_party/go/src/github.com/golang/protobuf/proto",
     ],
     deps = [
+        "@go_x_net//:context",
         "//kythe/go/platform/analysis",
         "//kythe/go/platform/delimited",
         "//kythe/go/platform/vfs",
         "//kythe/proto:analysis_proto_go",
         "//third_party/go/src/github.com/golang/protobuf/proto",
-        "@go_x_net//:context",
     ],
 )

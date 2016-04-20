@@ -4,6 +4,8 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 go_package(
     deps = [
+        "@go_grpc//:grpc",
+        "@go_x_net//:context",
         "//kythe/go/services/filetree",
         "//kythe/go/services/search",
         "//kythe/go/services/xrefs",
@@ -15,7 +17,5 @@ go_package(
         "//kythe/proto:filetree_proto_go",
         "//kythe/proto:storage_proto_go",
         "//kythe/proto:xref_proto_go",
-        "@go_x_net//:context",
-        "//third_party/go/src/google.golang.org/grpc",
     ],
 )

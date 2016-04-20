@@ -179,7 +179,7 @@ def proto_library(name, src=None, deps=[], visibility=None,
     if has_services:
       go_deps += [
         "@go_x_net//:context",
-        "//third_party/go/src/google.golang.org/grpc",
+        "@go_grpc//:grpc",
       ]
     for dep in deps:
       go_deps += [dep + "_go"]

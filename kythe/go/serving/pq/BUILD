@@ -4,6 +4,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 go_package(
     deps = [
+        "@go_x_net//:context",
         "//kythe/go/services/graphstore",
         "//kythe/go/services/xrefs",
         "//kythe/go/serving/api",
@@ -19,6 +20,5 @@ go_package(
         "//kythe/proto:xref_proto_go",
         "//third_party/go/src/github.com/golang/protobuf/proto",
         "//third_party/go/src/github.com/lib/pq",
-        "@go_x_net//:context",
     ],
 )

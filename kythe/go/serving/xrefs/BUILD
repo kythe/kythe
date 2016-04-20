@@ -4,12 +4,13 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 go_package(
     test_deps = [
-        "//third_party/go/src/golang.org/x/text/encoding",
-        "//third_party/go/src/golang.org/x/text/encoding/unicode",
-        "//third_party/go/src/golang.org/x/text/transform",
+        "@go_x_text//:encoding",
+        "@go_x_text//:encoding/unicode",
+        "@go_x_text//:transform",
         "//kythe/go/test/testutil",
     ],
     deps = [
+        "@go_x_net//:context",
         "//kythe/go/services/xrefs",
         "//kythe/go/storage/table",
         "//kythe/go/util/kytheuri",
@@ -20,6 +21,5 @@ go_package(
         "//kythe/proto:serving_proto_go",
         "//kythe/proto:xref_proto_go",
         "//third_party/go/src/github.com/golang/protobuf/proto",
-        "@go_x_net//:context",
     ],
 )

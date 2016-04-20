@@ -8,9 +8,9 @@ go_binary(
         "gotool.go",
     ],
     deps = [
+        "@go_x_net//:context",
         "//kythe/go/extractors/golang",
         "//kythe/go/platform/indexpack",
         "//kythe/proto:analysis_proto_go",
-        "@go_x_net//:context",
     ],
 )
