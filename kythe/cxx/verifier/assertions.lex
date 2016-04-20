@@ -16,7 +16,7 @@
  */
 // Started from the calc++ example code as part of the Bison-3.0 distribution.
 #include "kythe/cxx/verifier/assertions.h"
-#include "parser.yy.hh"
+#include "kythe/cxx/verifier/parser.yy.hh"
 #include <assert.h>
 
 // The offset of the current token (as byte offset).

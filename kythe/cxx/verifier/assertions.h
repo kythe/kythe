@@ -25,8 +25,8 @@ namespace yy {
 class AssertionParserImpl;
 }
 
-#include "assertion_ast.h"
-#include "parser.yy.hh"
+#include "kythe/cxx/verifier/assertion_ast.h"
+#include "kythe/cxx/verifier/parser.yy.hh"
 
 namespace kythe {
 namespace verifier {

@@ -23,7 +23,7 @@
 
 #include "glog/logging.h"
 
-#include "location.hh"
+#include "kythe/cxx/verifier/location.hh"
 #include "pretty_printer.h"
 
 namespace kythe {

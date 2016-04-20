@@ -32,9 +32,6 @@ cc_library(
         "-Wno-deprecated-register",
         "-Wno-implicit-fallthrough",
     ],
-    includes = [
-        ".",
-    ],
     deps = [
         "//external:glog",
     ],
