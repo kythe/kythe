@@ -10,6 +10,7 @@ go_package(
         "//kythe/go/test/testutil",
     ],
     deps = [
+        "@go_protobuf//:proto",
         "@go_x_net//:context",
         "//kythe/go/services/xrefs",
         "//kythe/go/storage/table",
@@ -20,6 +21,5 @@ go_package(
         "//kythe/proto:internal_proto_go",
         "//kythe/proto:serving_proto_go",
         "//kythe/proto:xref_proto_go",
-        "//third_party/go/src/github.com/golang/protobuf/proto",
     ],
 )

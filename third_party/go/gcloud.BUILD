@@ -60,10 +60,10 @@ external_go_package(
     base_pkg = "google.golang.org/cloud",
     exclude_srcs = ["cancelreq_legacy.go"],
     deps = [
-        "@//third_party/go/src/github.com/golang/protobuf/proto",
         "@go_grpc//:credentials",
         "@go_grpc//:credentials/oauth",
         "@go_grpc//:grpc",
+        "@go_protobuf//:proto",
         "@go_x_net//:context",
         "@go_x_oauth2//:google",
         "@go_x_oauth2//:oauth2",

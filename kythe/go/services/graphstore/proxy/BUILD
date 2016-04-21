@@ -6,7 +6,7 @@ go_package(
     test_deps = [
         "//kythe/go/services/graphstore",
         "//kythe/proto:storage_proto_go",
-        "//third_party/go/src/github.com/golang/protobuf/proto",
+        "@go_protobuf//:proto",
     ],
     deps = [
         "@go_x_net//:context",

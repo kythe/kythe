@@ -20,7 +20,7 @@ external_go_package(
 external_go_package(
     base_pkg = "google.golang.org/grpc",
     deps = [
-        "@//third_party/go/src/github.com/golang/protobuf/proto",
+        "@go_protobuf//:proto",
         "@go_x_net//:context",
         "@go_x_net//:http2",
         "@go_x_net//:trace",

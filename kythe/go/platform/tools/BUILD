@@ -7,6 +7,7 @@ go_binary(
     srcs = glob(["analyzer_driver/*.go"]),
     deps = [
         "@go_grpc//:grpc",
+        "@go_protobuf//:proto",
         "@go_x_net//:context",
         "//kythe/go/platform/analysis",
         "//kythe/go/platform/analysis/driver",
@@ -20,7 +21,6 @@ go_binary(
         "//kythe/go/util/process",
         "//kythe/proto:analysis_proto_go",
         "//kythe/proto:storage_proto_go",
-        "//third_party/go/src/github.com/golang/protobuf/proto",
     ],
 )
 
@@ -43,13 +43,13 @@ go_binary(
     name = "entrystream",
     srcs = ["entrystream/entrystream.go"],
     deps = [
+        "@go_protobuf//:proto",
         "//kythe/go/platform/delimited",
         "//kythe/go/services/graphstore/compare",
         "//kythe/go/storage/stream",
         "//kythe/go/util/disksort",
         "//kythe/go/util/flagutil",
         "//kythe/proto:storage_proto_go",
-        "//third_party/go/src/github.com/golang/protobuf/proto",
     ],
 )
 

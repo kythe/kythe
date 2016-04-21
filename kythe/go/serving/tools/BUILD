@@ -57,6 +57,7 @@ go_binary(
         "kythe/kythe_display.go",
     ],
     deps = [
+        "@go_protobuf//:proto",
         "@go_x_net//:context",
         "//kythe/go/platform/vfs",
         "//kythe/go/services/filetree",
@@ -71,7 +72,6 @@ go_binary(
         "//kythe/proto:filetree_proto_go",
         "//kythe/proto:storage_proto_go",
         "//kythe/proto:xref_proto_go",
-        "//third_party/go/src/github.com/golang/protobuf/proto",
     ],
 )
 

@@ -7,7 +7,7 @@ go_package(
         "//kythe/proto:analysis_proto_go",
         "//kythe/proto:storage_proto_go",
         "@go_x_net//:context",
-        "//third_party/go/src/github.com/golang/protobuf/proto",
+        "@go_protobuf//:proto",
     ],
     deps = [
         "@go_uuid//:uuid",

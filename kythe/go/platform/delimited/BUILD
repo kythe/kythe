@@ -4,7 +4,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 go_package(
     deps = [
+        "@go_protobuf//:proto",
         "//kythe/go/util/dedup",
-        "//third_party/go/src/github.com/golang/protobuf/proto",
     ],
 )

@@ -47,7 +47,7 @@ def _genproto_impl(ctx):
       inputs += [ctx.executable._protoc_gen_go]
       arguments += [
           "--plugin=" + ctx.executable._protoc_gen_go.path,
-          "--go_out=%s:%s" % (",".join(go_cfg), genfiles_path)
+          "--golang_out=%s:%s" % (",".join(go_cfg), genfiles_path)
       ]
 
   ctx.action(
@@ -94,7 +94,7 @@ _genproto_attrs = {
         allow_files = False,
     ),
     "_protoc_gen_go": attr.label(
-        default = Label("//third_party/go/src/github.com/golang/protobuf/protoc-gen-go"),
+        default = Label("@go_protobuf//:protoc-gen-golang"),
         executable = True,
     ),
     "_protoc_gen_gofast": attr.label(
@@ -175,7 +175,7 @@ def proto_library(name, src=None, deps=[], visibility=None,
     )
 
   if gen_go:
-    go_deps = ["//third_party/go/src/github.com/golang/protobuf/proto"]
+    go_deps = ["@go_protobuf//:proto"]
     if has_services:
       go_deps += [
         "@go_x_net//:context",

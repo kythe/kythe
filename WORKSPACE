@@ -307,6 +307,20 @@ new_git_repository(
     remote = "https://github.com/golang/snappy.git",
 )
 
+new_git_repository(
+    name = "go_protobuf",
+    build_file = "third_party/go/protobuf.BUILD",
+    commit = "bf531ff1a004f24ee53329dfd5ce0b41bfdc17df",
+    remote = "https://github.com/golang/protobuf.git",
+)
+
+new_git_repository(
+    name = "go_levigo",
+    build_file = "third_party/go/levigo.BUILD",
+    commit = "1ddad808d437abb2b8a55a950ec2616caa88969b",
+    remote = "https://github.com/jmhodges/levigo.git",
+)
+
 bind(
     name = "android/sdk",
     actual = "//:nothing",

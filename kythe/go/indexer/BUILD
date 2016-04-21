@@ -9,12 +9,12 @@ go_library(
         "indexer.go",
     ],
     deps = [
+        "@go_protobuf//:proto",
         "@go_x_net//:context",
         "@go_x_tools//:go/gcimporter15",
         "//kythe/go/extractors/govname",
         "//kythe/proto:analysis_proto_go",
         "//kythe/proto:storage_proto_go",
-        "//third_party/go/src/github.com/golang/protobuf/proto",
     ],
 )
 
@@ -24,5 +24,5 @@ go_test(
     # TODO(fromberger): Build this with a library rule.
     data = [":testdata/foo.a"],
     library = ":indexer",
-    deps = ["//third_party/go/src/github.com/golang/protobuf/proto"],
+    deps = ["@go_protobuf//:proto"],
 )
