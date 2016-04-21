@@ -31,8 +31,8 @@ external_go_package(
     name = "storage",
     base_pkg = "google.golang.org/cloud",
     deps = [
-        "@//third_party/go/src/google.golang.org/api/googleapi",
-        "@//third_party/go/src/google.golang.org/api/storage/v1",
+        "@go_gapi//:googleapi",
+        "@go_gapi//:storage/v1",
         "@go_x_net//:context",
         ":cloud",
         ":internal",
