@@ -93,6 +93,42 @@ def _go_compile(ctx, pkg, srcs, archive, extra_packages=[]):
   deps += extra_packages
   transitive_deps = _dedup_packages(transitive_deps)
 
+  archives, package_map = _construct_package_map(deps)
+
+  gotool = ctx.file._go
+  args = compile_args[ctx.var['COMPILATION_MODE']]
+  go_path = archive.path + '.gopath/'
+  cmd = "\n".join([
+      'set -e',
+      'export GOROOT=external/local_goroot',
+  ] + _construct_go_path(go_path, package_map) + [
+      gotool.path + " tool compile " + ' '.join(args) + " -p " + pkg +
+      ' -complete -pack -o ' + archive.path + " " + '-trimpath "$PWD" ' +
+      '-I "' + go_path + '" ' + cmd_helper.join_paths(" ", set(srcs)),
+  ])
+
+  ctx.action(
+      inputs = ctx.files._goroot + srcs + archives,
+      outputs = [archive],
+      mnemonic = 'GoCompile',
+      command = cmd,
+      use_default_shell_env = True)
+
+  return transitive_deps, cgo_link_flags, transitive_cc_libs
+
+def _go_build(ctx, archive):
+  cgo_link_flags = set([], order="link")
+  transitive_deps = []
+  transitive_cc_libs = set()
+  deps = []
+  for dep in ctx.attr.deps:
+    deps += [dep.go.package]
+    transitive_deps += dep.go.transitive_deps
+    cgo_link_flags += dep.go.cgo_link_flags
+    transitive_cc_libs += dep.go.transitive_cc_libs
+
+  transitive_deps = _dedup_packages(transitive_deps)
+
   cc_inputs = set()
   cgo_compile_flags = set([], order="compile")
   if hasattr(ctx.attr, "cc_deps"):
@@ -111,36 +147,30 @@ def _go_compile(ctx, pkg, srcs, archive, extra_packages=[]):
   archives, package_map = _construct_package_map(deps)
 
   gotool = ctx.file._go
-  if ctx.attr.go_build:
-    # Cheat and build the package non-hermetically (usually because there is a cgo dependency)
-    args = build_args[ctx.var['COMPILATION_MODE']]
-    cmd = "\n".join([
-        'export CC=' + _get_cc_shell_path(ctx),
-        'export CGO_CFLAGS="' + ' '.join(list(cgo_compile_flags)) + '"',
-        'export CGO_LDFLAGS="' + ' '.join(list(cgo_link_flags)) + '"',
-        'export GOPATH="$PWD/' + ctx.label.package + '"',
-        gotool.path + ' build -a ' + ' '.join(args) + ' -o ' + archive.path + ' ' + ctx.attr.package,
-    ])
-    mnemonic = 'GoBuild'
-  else:
-    args = compile_args[ctx.var['COMPILATION_MODE']]
-    go_path = archive.path + '.gopath/'
-    cmd = "\n".join(_construct_go_path(go_path, package_map) + [
-        gotool.path + " tool compile " + ' '.join(args) + " -p " + pkg + " -complete -pack -o " + archive.path + " " +
-        '-trimpath "$PWD" ' +
-        '-I "' + go_path + '" ' + cmd_helper.join_paths(" ", set(srcs)),
-    ])
-    mnemonic = 'GoCompile'
+  args = build_args[ctx.var['COMPILATION_MODE']]
+  package_root = '$PWD/' + ctx.label.workspace_root + '/' + ctx.label.package
+  gopath_dest = '$GOPATH/src/' + ctx.attr.package
+
+  # Cheat and build the package non-hermetically (usually because there is a cgo dependency)
   cmd = "\n".join([
       'set -e',
       'export GOROOT=$PWD/external/local_goroot',
-      cmd,
+      'export CC=' + _get_cc_shell_path(ctx),
+      'export CGO_CFLAGS="' + ' '.join(list(cgo_compile_flags)) + '"',
+      'export CGO_LDFLAGS="' + ' '.join(list(cgo_link_flags)) + '"',
+
+      # Setup temporary GOPATH for this package
+      'export GOPATH="${TMPDIR:-/tmp}/gopath"',
+      'mkdir -p "$(dirname "' + gopath_dest + '")"',
+      'ln -s "' + package_root + '" "' + gopath_dest + '"',
+
+      gotool.path + ' build -a ' + ' '.join(args) + ' -o ' + archive.path + ' ' + ctx.attr.package,
   ])
 
   ctx.action(
-      inputs = ctx.files._goroot + srcs + archives + list(cc_inputs),
+      inputs = ctx.files._goroot + ctx.files.srcs + archives + list(cc_inputs),
       outputs = [archive],
-      mnemonic = mnemonic,
+      mnemonic = 'GoBuild',
       command = cmd,
       use_default_shell_env = True)
 
@@ -164,6 +194,29 @@ def _go_library_impl(ctx):
   )
 
   transitive_deps, cgo_link_flags, transitive_cc_libs = _go_compile(ctx, package.name, srcs, archive)
+  return struct(
+      go = struct(
+          sources = ctx.files.srcs,
+          package = package,
+          transitive_deps = transitive_deps + [package],
+          cgo_link_flags = cgo_link_flags,
+          transitive_cc_libs = transitive_cc_libs,
+      ),
+  )
+
+def _go_build_impl(ctx):
+  if ctx.attr.package == "":
+    fail('ERROR: missing package attribute')
+  if len(FileType([".go"]).filter(ctx.files.srcs)) == 0:
+    fail('ERROR: ' + str(ctx.label) + ' missing .go srcs')
+
+  archive = ctx.outputs.archive
+  package = struct(
+    name = ctx.attr.package,
+    archive = archive,
+  )
+
+  transitive_deps, cgo_link_flags, transitive_cc_libs = _go_build(ctx, archive)
   return struct(
       go = struct(
           sources = ctx.files.srcs,
@@ -287,12 +340,14 @@ def _go_test_impl(ctx):
   return binary_struct(ctx, extra_runfiles=[ctx.outputs.bin, test_parser])
 
 base_attrs = {
-    "srcs": attr.label_list(allow_files = FileType([".go"])),
+    "srcs": attr.label_list(
+        mandatory = True,
+        allow_files = FileType([".go"]),
+    ),
     "deps": attr.label_list(
         allow_files = False,
         providers = ["go"],
     ),
-    "go_build": attr.bool(),
     "multi_package": attr.bool(),
     "_go_package_prefix": attr.label(
         default = Label("//external:go_package_prefix"),
@@ -310,13 +365,21 @@ base_attrs = {
     ),
 }
 
-go_library = rule(
-    _go_library_impl,
+go_build = rule(
+    _go_build_impl,
     attrs = base_attrs + {
         "cc_deps": attr.label_list(
             allow_files = False,
             providers = ["cc"],
         ),
+        "package": attr.string(mandatory = True),
+    },
+    outputs = {"archive": "%{name}.a"},
+)
+
+go_library = rule(
+    _go_library_impl,
+    attrs = base_attrs + {
         "package": attr.string(),
     },
     outputs = {"archive": "%{name}.a"},
@@ -343,7 +406,10 @@ go_binary = rule(
 go_test = rule(
     _go_test_impl,
     attrs = binary_attrs + {
-        "library": attr.label(providers = ["go"]),
+        "library": attr.label(
+            mandatory = True,
+            providers = ["go"],
+        ),
         "_go_testmain_generator": attr.label(
             default = Label("//tools/go:testmain_generator"),
             single_file = True,
@@ -363,8 +429,8 @@ go_test = rule(
 )
 
 def go_package(name=None, package=None,
-               srcs="", deps=[], test_deps=[], test_args=[], test_data=[], cc_deps=[],
-               tests=True, exclude_srcs=[], go_build=False,
+               srcs="", deps=[], test_deps=[], test_args=[], test_data=[],
+               tests=True, exclude_srcs=[],
                visibility=None):
   if not name:
     name = PACKAGE_NAME.split("/")[-1]
@@ -387,8 +453,6 @@ def go_package(name=None, package=None,
     name = name,
     srcs = lib_srcs,
     deps = deps,
-    go_build = go_build,
-    cc_deps = cc_deps,
     package = package,
     visibility = visibility,
   )
