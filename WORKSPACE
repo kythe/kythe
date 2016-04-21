@@ -272,6 +272,41 @@ new_git_repository(
     remote = "https://github.com/grpc/grpc-go.git",
 )
 
+new_git_repository(
+    name = "go_shell",
+    build_file = "third_party/go/shell.BUILD",
+    commit = "4e4a4403205db46f1ef0590e98dc814a38d2ea63",
+    remote = "https://bitbucket.org/creachadair/shell.git",
+)
+
+new_git_repository(
+    name = "go_pq",
+    build_file = "third_party/go/pq.BUILD",
+    commit = "3cd0097429be7d611bb644ef85b42bfb102ceea4",
+    remote = "https://github.com/lib/pq.git",
+)
+
+new_git_repository(
+    name = "go_diff",
+    build_file = "third_party/go/diff.BUILD",
+    commit = "ec7fdbb58eb3e300c8595ad5ac74a5aa50019cc7",
+    remote = "https://github.com/sergi/go-diff",
+)
+
+new_git_repository(
+    name = "go_uuid",
+    build_file = "third_party/go/uuid.BUILD",
+    commit = "c55201b036063326c5b1b89ccfe45a184973d073",
+    remote = "https://github.com/pborman/uuid.git",
+)
+
+new_git_repository(
+    name = "go_snappy",
+    build_file = "third_party/go/snappy.BUILD",
+    commit = "774a97396f7bfa4165e9dcf4bfa0747ea3edcc02",
+    remote = "https://github.com/golang/snappy.git",
+)
+
 bind(
     name = "android/sdk",
     actual = "//:nothing",
