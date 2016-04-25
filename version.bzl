@@ -1,7 +1,10 @@
 def _tuplicate(value, delim):
   rv = ()
   for field in value.split(delim):
-    rv += (int(field),)
+    if field.isdigit():
+      rv += (int(field),)
+    else:
+      rv += (field,)
   return rv
 
 def _parse_version(version):
