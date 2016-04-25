@@ -48,7 +48,7 @@ organized as:
 |================================================================================
 |Record # |Content
 |0        |link:/repo/kythe/proto/analysis.proto[`CompilationUnit`] protobuf, wire format [specifying n required inputs]
-|1        |link:/repo/kythe/proto/analysis.proto[`CompilationUnit_FileInput`] protobuf, wire format [file 1 contents]
+|1        |link:/repo/kythe/proto/analysis.proto[`FileData`] protobuf, wire format [file 1 contents]
 |…        |…
 |n        |… [file n contents]
 |================================================================================
