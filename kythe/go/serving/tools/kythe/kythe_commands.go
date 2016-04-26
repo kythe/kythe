@@ -176,7 +176,9 @@ var (
 				PageSize:  int32(pageSize),
 			}
 			if edgeKinds != "" {
-				req.Kind = strings.Split(edgeKinds, ",")
+				for _, kind := range strings.Split(edgeKinds, ",") {
+					req.Kind = append(req.Kind, expandEdgeKind(kind))
+				}
 			}
 			if dotGraph {
 				req.Filter = []string{"**"}
@@ -479,6 +481,21 @@ var (
 			return displaySearch(reply)
 		})
 )
+
+// expandEdgeKind prefixes unrooted (not starting with "/") edge kinds with the
+// standard Kythe edge prefix ("/kythe/edge/").
+func expandEdgeKind(kind string) string {
+	ck := schema.Canonicalize(kind)
+	if strings.HasPrefix(ck, "/") {
+		return kind
+	}
+
+	expansion := schema.EdgePrefix + ck
+	if schema.EdgeDirection(kind) == schema.Reverse {
+		return schema.MirrorEdge(expansion)
+	}
+	return expansion
+}
 
 var (
 	byteOffsetPointRE = regexp.MustCompile(`^b(\d+)$`)
