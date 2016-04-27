@@ -20,6 +20,18 @@ extra_action(
 )
 
 go_binary(
+    name = "scan_leveldb",
+    srcs = ["scan_leveldb/scan_leveldb.go"],
+    deps = [
+        "@go_protobuf//:proto",
+        "//kythe/go/storage/leveldb",
+        "//kythe/go/util/flagutil",
+        "//kythe/proto:serving_proto_go",
+        "//kythe/proto:storage_proto_go",
+    ],
+)
+
+go_binary(
     name = "print_extra_action",
     srcs = ["print_extra_action/print_extra_action.go"],
     deps = [
