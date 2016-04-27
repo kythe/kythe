@@ -28,6 +28,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"kythe.io/kythe/go/storage/leveldb"
@@ -101,12 +102,12 @@ func main() {
 
 				if protoValueType == nil {
 					if *stringKey {
-						k = string(key)
+						k = strconv.Quote(string(key))
 					} else {
 						k = base64.StdEncoding.EncodeToString(key)
 					}
 					if *stringValue {
-						v = string(val)
+						v = strconv.Quote(string(val))
 					} else {
 						v = base64.StdEncoding.EncodeToString(val)
 					}
