@@ -132,6 +132,9 @@ func (LocalFS) MkdirAll(_ context.Context, path string, mode os.FileMode) error 
 
 // Open implements part of the VFS interface.
 func (LocalFS) Open(_ context.Context, path string) (io.ReadCloser, error) {
+	if path == "-" {
+		return ioutil.NopCloser(os.Stdin), nil
+	}
 	return os.Open(path)
 }
 
