@@ -449,6 +449,10 @@ func writeDecorAndRefs(ctx context.Context, opts *Options, edges <-chan *srvpb.E
 				if err := refSorter.Add(cr); err != nil {
 					return fmt.Errorf("error adding CrossReference to sorter: %v", err)
 				}
+
+				// Snippet offsets aren't needed for the actual FileDecorations; they
+				// were only needed for the above CrossReference construction
+				d.Anchor.SnippetStart, d.Anchor.SnippetEnd = 0, 0
 			}
 		} else {
 			decor.File = fragment.File
