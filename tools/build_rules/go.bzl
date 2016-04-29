@@ -229,7 +229,8 @@ def _go_build_impl(ctx):
 
 _build_var_package = "kythe.io/kythe/go/util/build"
 
-def _link_binary(ctx, binary, archive, transitive_deps, extldflags=[], cc_libs=[]):
+def _link_binary(ctx, binary, archive, transitive_deps,
+                 stamp=False, extldflags=[], cc_libs=[]):
   gotool = ctx.file._go
 
   for a in cc_libs:
@@ -239,22 +240,32 @@ def _link_binary(ctx, binary, archive, transitive_deps, extldflags=[], cc_libs=[
   go_path = binary.path + '.gopath/'
 
   args = link_args[ctx.var['COMPILATION_MODE']]
+  inputs = ctx.files._goroot + [archive] + dep_archives + list(cc_libs)
   cmd = ['set -e'] + _construct_go_path(go_path, package_map) + [
       'export GOROOT=external/local_goroot',
       'export GOROOT_FINAL=/usr/local/go',
       'export PATH',
-      'BUILD_VARS=$(' + ctx.file._format_build_vars.path + ' ' + _build_var_package + ')',
-      gotool.path + ' tool link ${BUILD_VARS} -extldflags="' + ' '.join(list(extldflags)) + '"'
-      + ' ' + ' '.join(args) + ' -L "' + go_path + '"'
-      + ' -o ' + binary.path + ' ' + archive.path + ';',
   ]
 
+  tool_cmd = gotool.path + ' tool link '
+  if stamp:
+    # TODO(schroederc): only stamp when given --stamp flag
+    cmd += ['BUILD_VARS=$('
+            + ctx.file._format_build_vars.path + ' ' + _build_var_package + ')']
+    tool_cmd += '${BUILD_VARS} '
+    inputs += [ctx.file._format_build_vars, ctx.info_file, ctx.version_file]
+  tool_cmd += ('-extldflags="' + ' '.join(list(extldflags)) + '"'
+               + ' ' + ' '.join(args) + ' -L "' + go_path + '"'
+               + ' -o ' + binary.path + ' ' + archive.path)
+  cmd += [tool_cmd]
+
   ctx.action(
-      inputs = ctx.files._goroot + [archive] + dep_archives + list(cc_libs) + [ctx.file._format_build_vars, ctx.info_file, ctx.version_file],
+      inputs = inputs,
       outputs = [binary],
       mnemonic = 'GoLink',
       command = "\n".join(cmd),
-      use_default_shell_env = True)
+      use_default_shell_env = True,
+  )
 
 def binary_struct(ctx, extra_runfiles=[]):
   runfiles = ctx.runfiles(
@@ -273,8 +284,7 @@ def _go_binary_impl(ctx):
   transitive_deps, cgo_link_flags, transitive_cc_libs = _go_compile(ctx, 'main', ctx.files.srcs, archive)
 
   _link_binary(ctx, ctx.outputs.executable, archive, transitive_deps,
-               extldflags=cgo_link_flags,
-               cc_libs=transitive_cc_libs)
+               stamp=True, extldflags=cgo_link_flags, cc_libs=transitive_cc_libs)
 
   return binary_struct(ctx)
 
