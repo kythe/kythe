@@ -17,6 +17,7 @@
 package com.google.devtools.kythe.platform.shared;
 
 import com.google.common.net.HostAndPort;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.devtools.kythe.proto.Analysis.FileData;
 import com.google.devtools.kythe.proto.Analysis.FileInfo;
@@ -30,7 +31,6 @@ import io.grpc.netty.NettyChannelBuilder;
 import io.grpc.stub.StreamObserver;
 
 import java.net.InetSocketAddress;
-import java.util.concurrent.Future;
 
 /** {@link FileDataProvider} backed by an external {@link FileDataServiceGrpc.FileDataService}. */
 public class RemoteFileData implements FileDataProvider {
@@ -46,7 +46,7 @@ public class RemoteFileData implements FileDataProvider {
   }
 
   @Override
-  public Future<byte[]> startLookup(String path, String digest) {
+  public ListenableFuture<byte[]> startLookup(String path, String digest) {
     SettableFuture<byte[]> future = SettableFuture.create();
 
     FilesRequest.Builder req = FilesRequest.newBuilder();

@@ -18,10 +18,10 @@ package com.google.devtools.kythe.platform.shared;
 
 import com.google.common.io.Files;
 import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.concurrent.Future;
 
 /**
  * {@link FileDataProvider} that looks up file data using the local filesystem. Each lookup only
@@ -39,7 +39,7 @@ public class FileDataDirectory implements FileDataProvider {
   }
 
   @Override
-  public Future<byte[]> startLookup(String path, String digest) {
+  public ListenableFuture<byte[]> startLookup(String path, String digest) {
     try {
       return Futures.immediateFuture(
           Files.asByteSource(rootDirectory.resolve(path).toFile()).read());

@@ -18,10 +18,10 @@ package com.google.devtools.kythe.platform.shared;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.devtools.kythe.proto.Analysis.FileData;
 
 import java.util.Map;
-import java.util.concurrent.Future;
 
 /**
  * {@link FileDataProvider} that looks up file data from a given {@link List} of {@link FileData}.
@@ -38,7 +38,7 @@ public class FileDataCache implements FileDataProvider {
   }
 
   @Override
-  public Future<byte[]> startLookup(String path, String digest) {
+  public ListenableFuture<byte[]> startLookup(String path, String digest) {
     byte[] content = fileContents.get(digest);
     return content != null
         ? Futures.immediateFuture(content)
