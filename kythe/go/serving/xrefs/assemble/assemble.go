@@ -310,17 +310,19 @@ type ByOffset []*srvpb.FileDecorations_Decoration
 func (s ByOffset) Len() int      { return len(s) }
 func (s ByOffset) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
 func (s ByOffset) Less(i, j int) bool {
-	if s[i].Anchor.StartOffset < s[j].Anchor.StartOffset {
-		return true
-	} else if s[i].Anchor.StartOffset > s[j].Anchor.StartOffset {
-		return false
-	} else if s[i].Anchor.EndOffset == s[j].Anchor.EndOffset {
-		if s[i].Kind == s[j].Kind {
-			return s[i].Target.Ticket < s[j].Target.Ticket
+	if s[i].Anchor.StartOffset == s[j].Anchor.StartOffset {
+		if s[i].Anchor.EndOffset == s[j].Anchor.EndOffset {
+			if s[i].Kind == s[j].Kind {
+				if s[i].Target.Ticket == s[j].Target.Ticket {
+					return s[i].Anchor.Ticket < s[j].Anchor.Ticket
+				}
+				return s[i].Target.Ticket < s[j].Target.Ticket
+			}
+			return s[i].Kind < s[j].Kind
 		}
-		return s[i].Kind < s[j].Kind
+		return s[i].Anchor.EndOffset < s[j].Anchor.EndOffset
 	}
-	return s[i].Anchor.EndOffset < s[j].Anchor.EndOffset
+	return s[i].Anchor.StartOffset < s[j].Anchor.StartOffset
 }
 
 // EdgeSetBuilder constructs a set of PagedEdgeSets and EdgePages from a
