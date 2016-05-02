@@ -594,6 +594,15 @@ func (refLesser) Less(a, b interface{}) bool {
 		if x.TargetAnchor == nil || y.TargetAnchor == nil {
 			return x.TargetAnchor == nil
 		} else if x.TargetAnchor.Kind == y.TargetAnchor.Kind {
+			if x.TargetAnchor.Span.Start.ByteOffset == y.TargetAnchor.Span.Start.ByteOffset {
+				if x.TargetAnchor.Span.End.ByteOffset == y.TargetAnchor.Span.End.ByteOffset {
+					if x.TargetAnchor.Parent == y.TargetAnchor.Parent {
+						return x.TargetAnchor.Ticket < y.TargetAnchor.Ticket
+					}
+					return x.TargetAnchor.Parent < y.TargetAnchor.Parent
+				}
+				return x.TargetAnchor.Span.End.ByteOffset < y.TargetAnchor.Span.End.ByteOffset
+			}
 			return x.TargetAnchor.Span.Start.ByteOffset < y.TargetAnchor.Span.Start.ByteOffset
 		}
 		return x.TargetAnchor.Kind < y.TargetAnchor.Kind
