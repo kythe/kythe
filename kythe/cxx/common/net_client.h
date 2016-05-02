@@ -140,6 +140,20 @@ class XrefsClient {
     }
     return false;
   }
+
+  /// \brief Issues a Documentation call.
+  /// \param request The request to send.
+  /// \param reply On success, will be merged with the reply.
+  /// \param error_text On failure, will be set to an error description.
+  /// \return true on success, false on failure.
+  virtual bool Documentation(const proto::DocumentationRequest &request,
+                             proto::DocumentationReply *reply,
+                             std::string *error_text) {
+    if (error_text) {
+      *error_text = "Unimplemented.";
+    }
+    return false;
+  }
 };
 
 /// \brief A client for a Kythe xrefs service that talks JSON.
@@ -153,7 +167,8 @@ class XrefsJsonClient : public XrefsClient {
         nodes_uri_(base_uri + "/nodes?proto=1"),
         edges_uri_(base_uri + "/edges?proto=1"),
         decorations_uri_(base_uri + "/decorations?proto=1"),
-        search_uri_(base_uri + "/search?proto=1") {}
+        search_uri_(base_uri + "/search?proto=1"),
+        documentation_uri_(base_uri + "/documentation?proto=1") {}
   bool Nodes(const proto::NodesRequest &request, proto::NodesReply *reply,
              std::string *error_text) override {
     return Roundtrip(nodes_uri_, request, reply, error_text);
@@ -171,6 +186,11 @@ class XrefsJsonClient : public XrefsClient {
               std::string *error_text) override {
     return Roundtrip(search_uri_, request, reply, error_text);
   }
+  bool Documentation(const proto::DocumentationRequest &request,
+                     proto::DocumentationReply *reply,
+                     std::string *error_text) override {
+    return Roundtrip(documentation_uri_, request, reply, error_text);
+  }
 
  private:
   bool Roundtrip(const std::string &endpoint,
@@ -182,6 +202,7 @@ class XrefsJsonClient : public XrefsClient {
   std::string edges_uri_;
   std::string decorations_uri_;
   std::string search_uri_;
+  std::string documentation_uri_;
 };
 }
 
