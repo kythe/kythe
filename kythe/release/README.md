@@ -83,7 +83,9 @@ SERVING=/tmp/kythe_serving
 rm -rf "$SERVING"
 /opt/kythe/tools/write_tables --graphstore $GRAPHSTORE --out "$SERVING"
 
-# Launch Kythe's service APIs as an HTTP server on port 9898
+# Launch Kythe's service APIs as an HTTP server listening to only local
+# connections on port 9898.  Using `--listen :9898` instead will allow
+# connections from other networked machines.
 /opt/kythe/tools/http_server --serving_table "$SERVING" \
   --public_resources /opt/kythe/web/ui --listen localhost:9898
 
