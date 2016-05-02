@@ -55,6 +55,7 @@ const (
 	PackageKind  = "package"
 	RecordKind   = "record"
 	VariableKind = "variable"
+	DocKind      = "doc"
 )
 
 // Kythe node subkinds

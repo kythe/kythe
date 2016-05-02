@@ -663,17 +663,13 @@ func findCallableDetail(ctx context.Context, service Service, ticketSet stringse
 	return ticketToDetail, nil
 }
 
-// SlowCallers is an implementation of the Callers API built from other APIs.
-func SlowCallers(ctx context.Context, service Service, req *xpb.CallersRequest) (*xpb.CallersReply, error) {
-	tickets, err := FixTickets(req.SemanticObject)
-	// TODO(zarko): Map callable tickets back to function tickets; support CallToOverride.
-	if err != nil {
-		return nil, err
-	}
+// Expand frontier until it includes all nodes connected by defines/binding, completes,
+// completes/uniquely, and (optionally) overrides edges.
+func expandDefRelatedNodeSet(ctx context.Context, service Service, frontier stringset.Set, includeOverrides bool) (stringset.Set, error) {
 	var edges []string
 	// From the schema, we know the source of a defines* or completes* edge should be an anchor. Because of this,
 	// we don't have to partition our set/queries on node kind.
-	if req.IncludeOverrides {
+	if includeOverrides {
 		edges = []string{
 			schema.OverridesEdge,
 			schema.MirrorEdge(schema.OverridesEdge),
@@ -700,14 +696,12 @@ func SlowCallers(ctx context.Context, service Service, req *xpb.CallersRequest) 
 	// TODO(zarko): We need to mark nodes we reached through overrides.
 	// All nodes that we've visited.
 	retired := stringset.New()
-	// Nodes that we haven't visited yet, but will this time around the loop.
-	frontier := stringset.New(tickets...)
 	iterations := 0
 	for len(retired) < maxCallersNodeSetSize && len(frontier) != 0 && iterations < maxCallersExpansions {
 		iterations++
 		// Nodes that we haven't visited yet but will the next time around the loop.
 		next := stringset.New()
-		err = forAllEdges(ctx, service, frontier, edges, func(_, target string) error {
+		err := forAllEdges(ctx, service, frontier, edges, func(_, target string) error {
 			if !retired.Contains(target) && !frontier.Contains(target) {
 				next.Add(target)
 			}
@@ -727,7 +721,20 @@ func SlowCallers(ctx context.Context, service Service, req *xpb.CallersRequest) 
 	if iterations >= maxCallersExpansions {
 		log.Printf("Callers iteration truncated (too many expansions)")
 	}
-	log.Printf("Finding callables for %d node(s) after %d iteration(s)", len(retired), iterations)
+	return retired, nil
+}
+
+// SlowCallers is an implementation of the Callers API built from other APIs.
+func SlowCallers(ctx context.Context, service Service, req *xpb.CallersRequest) (*xpb.CallersReply, error) {
+	tickets, err := FixTickets(req.SemanticObject)
+	// TODO(zarko): Map callable tickets back to function tickets; support CallToOverride.
+	if err != nil {
+		return nil, err
+	}
+	retired, err := expandDefRelatedNodeSet(ctx, service, stringset.New(tickets...), req.IncludeOverrides)
+	if err != nil {
+		return nil, err
+	}
 	// Now frontier is empty. The schema dictates that only semantic nodes in retired will have callableas edges.
 	// callableToNode maps callables to nodes they're %callableas.
 	callableToNode := make(map[string][]string)
@@ -794,7 +801,7 @@ func SlowCallers(ctx context.Context, service Service, req *xpb.CallersRequest) 
 	}
 	// Now begin filling out the response.
 	reply := &xpb.CallersReply{}
-	// We'll fetch CallableDetail only once for each interesting ticket, then add it to the response later.
+	// We'll fetch CallableDetail only once for each def-related ticket, then add it to the response later.
 	detailToFetch := stringset.New()
 	for calleeCallable, calleeNodes := range callableToNode {
 		for _, calleeNode := range calleeNodes {
@@ -847,9 +854,302 @@ func SlowCallers(ctx context.Context, service Service, req *xpb.CallersRequest) 
 	return reply, nil
 }
 
-// SlowDocumentation is an implementation of the Callers API built from other APIs.
+// Extracts target tickets of param edges into a string slice ordered by ordinal.
+func extractParams(edges []*xpb.EdgeSet_Group_Edge) []string {
+	arr := make([]string, len(edges))
+	for _, edge := range edges {
+		ordinal := int(edge.Ordinal)
+		if ordinal >= len(arr) || ordinal < 0 || arr[ordinal] != "" {
+			for edgeix, edge := range edges {
+				arr[edgeix] = edge.TargetTicket
+			}
+			return arr
+		}
+		arr[ordinal] = edge.TargetTicket
+	}
+	return arr
+}
+
+// SlowSignature builds a Printable that represents some ticket.
+func SlowSignature(ctx context.Context, service Service, ticket string) (*xpb.DocumentationReply_Printable, error) {
+	return &xpb.DocumentationReply_Printable{RawText: "SlowSignature unimplemented"}, nil
+}
+
+// Data from a doc node that documents some other ticket.
+type associatedDocNode struct {
+	rawText string
+	link    []*xpb.DocumentationReply_Link
+	// Tickets this associatedDocNode documents.
+	documented []string
+}
+
+// A document being compiled for Documentation.
+type preDocument struct {
+	// The Document being compiled.
+	document *xpb.DocumentationReply_Document
+	// Maps from tickets to doc nodes.
+	docNode map[string]*associatedDocNode
+}
+
+// Context for executing Documentation calls.
+type documentDetails struct {
+	// Maps doc tickets to associatedDocNodes.
+	docTicketToAssocNode map[string]*associatedDocNode
+	// Maps tickets to Documents being prepared. More than one ticket may map to the same preDocument
+	// (e.g., if they are in the same equivalence class defined by expandDefRelatedNodeSet.
+	ticketToPreDocument map[string]*preDocument
+	// Parent and type information for all expandDefRelatedNodeSet-expanded nodes.
+	ticketToParent, ticketToType map[string]string
+	// The kind facts for nodes in the original request.
+	ticketToKind map[string]string
+	// Tickets of known doc nodes.
+	docs stringset.Set
+}
+
+// getDocRelatedNodes fills details with information about the kinds, parents, types, and associated doc nodes of allTickets.
+func getDocRelatedNodes(ctx context.Context, service Service, details documentDetails, allTickets stringset.Set) error {
+	// We can't ask for text facts here (since they get filtered out).
+	dreq := &xpb.EdgesRequest{
+		Ticket:   allTickets.Slice(),
+		Kind:     []string{schema.MirrorEdge(schema.DocumentsEdge), schema.ChildOfEdge, schema.TypedEdge},
+		PageSize: math.MaxInt32,
+		Filter:   []string{schema.NodeKindFact},
+	}
+	dedges, err := AllEdges(ctx, service, dreq)
+	if err != nil {
+		return fmt.Errorf("couldn't AllEdges: %v", err)
+	}
+	for _, node := range dedges.Node {
+		for _, fact := range node.Fact {
+			if fact.Name == schema.NodeKindFact {
+				kind := string(fact.Value)
+				if kind == schema.DocKind {
+					details.docs.Add(node.Ticket)
+				}
+				details.ticketToKind[node.Ticket] = kind
+				break
+			}
+		}
+	}
+	for _, set := range dedges.EdgeSet {
+		for _, group := range set.Group {
+			switch group.Kind {
+			case schema.ChildOfEdge:
+				for _, edge := range group.Edge {
+					details.ticketToParent[set.SourceTicket] = edge.TargetTicket
+				}
+			case schema.TypedEdge:
+				for _, edge := range group.Edge {
+					details.ticketToType[set.SourceTicket] = edge.TargetTicket
+				}
+			case schema.MirrorEdge(schema.DocumentsEdge):
+				for _, edge := range group.Edge {
+					if preDoc := details.ticketToPreDocument[set.SourceTicket]; preDoc != nil {
+						assocNode := details.docTicketToAssocNode[edge.TargetTicket]
+						if assocNode == nil {
+							assocNode = &associatedDocNode{}
+							details.docTicketToAssocNode[edge.TargetTicket] = assocNode
+						}
+						assocNode.documented = append(assocNode.documented, set.SourceTicket)
+						preDoc.docNode[edge.TargetTicket] = assocNode
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// getDocText gets text for doc nodes we've found.
+func getDocText(ctx context.Context, service Service, details documentDetails) error {
+	docsSlice := details.docs.Slice()
+	if len(docsSlice) == 0 {
+		return nil
+	}
+	nreq := &xpb.NodesRequest{
+		Ticket: docsSlice,
+		Filter: []string{schema.TextFact},
+	}
+	nodes, err := service.Nodes(ctx, nreq)
+	if err != nil {
+		return fmt.Errorf("error in Nodes during getDocTextAndLinks: %v", err)
+	}
+	for _, node := range nodes.Node {
+		for _, fact := range node.Fact {
+			if fact.Name == schema.TextFact {
+				if assocNode := details.docTicketToAssocNode[node.Ticket]; assocNode != nil {
+					assocNode.rawText = string(fact.Value)
+					break
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// resolveDocLinks attaches anchor information to assocDoc with original ticket sourceTicket and param list params.
+func resolveDocLinks(ctx context.Context, service Service, sourceTicket string, params []string, assocDoc *associatedDocNode) error {
+	revParams := make(map[string]int)
+	for paramIx, param := range params {
+		revParams[param] = paramIx + 1
+	}
+	xreq := &xpb.CrossReferencesRequest{
+		Ticket:            params,
+		DefinitionKind:    xpb.CrossReferencesRequest_ALL_DEFINITIONS,
+		ReferenceKind:     xpb.CrossReferencesRequest_NO_REFERENCES,
+		DocumentationKind: xpb.CrossReferencesRequest_NO_DOCUMENTATION,
+		AnchorText:        false,
+		PageSize:          math.MaxInt32,
+	}
+	xrefs, err := service.CrossReferences(ctx, xreq)
+	if err != nil {
+		return fmt.Errorf("error during CrossReferences during getDocTextAndLinks: %v", err)
+	}
+	assocDoc.link = make([]*xpb.DocumentationReply_Link, len(params))
+	// If we leave any nils in this array, proto gets upset.
+	for l := 0; l < len(params); l++ {
+		assocDoc.link[l] = &xpb.DocumentationReply_Link{}
+	}
+	for _, refSet := range xrefs.CrossReferences {
+		index := revParams[refSet.Ticket]
+		if index == 0 {
+			log.Printf("can't relate a link param for %v for %v", refSet.Ticket, sourceTicket)
+			continue
+		}
+		assocDoc.link[index-1].Definition = refSet.Definition
+	}
+	return nil
+}
+
+// getDocLinks gets links for doc nodes we've found.
+func getDocLinks(ctx context.Context, service Service, details documentDetails) error {
+	docsSlice := details.docs.Slice()
+	preq := &xpb.EdgesRequest{
+		Ticket:   docsSlice,
+		Kind:     []string{schema.ParamEdge},
+		PageSize: math.MaxInt32,
+	}
+	pedges, err := AllEdges(ctx, service, preq)
+	if err != nil {
+		return fmt.Errorf("error in Edges during getDocTextAndLinks: %v", err)
+	}
+	// Resolve links to targets/simple references.
+	for _, set := range pedges.EdgeSet {
+		if assocDoc := details.docTicketToAssocNode[set.SourceTicket]; assocDoc != nil {
+			for _, group := range set.Group {
+				params := extractParams(group.Edge)
+				err = resolveDocLinks(ctx, service, set.SourceTicket, params, assocDoc)
+				if err != nil {
+					return fmt.Errorf("error during resolveDocLink: %v", err)
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// compilePreDocument finishes and returns the Document attached to ticket's preDocument.
+func compilePreDocument(ctx context.Context, service Service, details documentDetails, ticket string, preDocument *preDocument) (*xpb.DocumentationReply_Document, error) {
+	document := preDocument.document
+	sig, err := SlowSignature(ctx, service, ticket)
+	if err != nil {
+		return nil, fmt.Errorf("can't get SlowSignature for %v: %v", ticket, err)
+	}
+	document.Signature = sig
+	ty, ok := details.ticketToType[ticket]
+	if ok {
+		tystr, err := SlowSignature(ctx, service, ty)
+		if err != nil {
+			return nil, fmt.Errorf("can't get SlowSignature for type %v: %v", ty, err)
+		}
+		document.Type = tystr
+	}
+	parent, ok := details.ticketToParent[ticket]
+	if ok {
+		parentstr, err := SlowSignature(ctx, service, parent)
+		if err != nil {
+			return nil, fmt.Errorf("can't get SlowSignature for parent %v: %v", parent, err)
+		}
+		document.DefinedBy = parentstr
+	}
+	text := &xpb.DocumentationReply_Printable{}
+	document.Text = text
+	for _, assocDoc := range preDocument.docNode {
+		text.RawText = text.RawText + assocDoc.rawText
+		text.Link = append(text.Link, assocDoc.link...)
+	}
+	return document, nil
+}
+
+// SlowDocumentation is an implementation of the Documentation API built from other APIs.
 func SlowDocumentation(ctx context.Context, service Service, req *xpb.DocumentationRequest) (*xpb.DocumentationReply, error) {
-	return nil, errors.New("SlowDocumentation unimplemented")
+	tickets, err := FixTickets(req.Ticket)
+	if err != nil {
+		return nil, err
+	}
+	details := documentDetails{
+		ticketToPreDocument:  make(map[string]*preDocument),
+		ticketToParent:       make(map[string]string),
+		ticketToType:         make(map[string]string),
+		ticketToKind:         make(map[string]string),
+		docTicketToAssocNode: make(map[string]*associatedDocNode),
+		docs:                 stringset.New(),
+	}
+	// Get the kinds of the nodes in the original request, as we'll have to include them in the response.
+	kreq := &xpb.NodesRequest{
+		Ticket: tickets,
+		Filter: []string{schema.NodeKindFact},
+	}
+	nodes, err := service.Nodes(ctx, kreq)
+	if err != nil {
+		return nil, fmt.Errorf("error calling Nodes on %v: %v", tickets, err)
+	}
+	for _, node := range nodes.Node {
+		for _, fact := range node.Fact {
+			if fact.Name == schema.NodeKindFact {
+				details.ticketToKind[node.Ticket] = string(fact.Value)
+				break
+			}
+		}
+	}
+	// We assume that expandDefRelatedNodeSet will return disjoint sets (and thus we can treat them as equivalence classes
+	// with the original request's ticket as the characteristic element).
+	allTickets := stringset.New()
+	for _, ticket := range tickets {
+		// TODO(zarko): Include outbound override edges.
+		ticketSet, err := expandDefRelatedNodeSet(ctx, service, stringset.New(ticket) /*includeOverrides=*/, false)
+		if err != nil {
+			return nil, fmt.Errorf("couldn't expandDefRelatedNodeSet in Documentation: %v", err)
+		}
+		document := &preDocument{document: &xpb.DocumentationReply_Document{Ticket: ticket, Kind: details.ticketToKind[ticket]}, docNode: make(map[string]*associatedDocNode)}
+		for ticket := range ticketSet {
+			allTickets.Add(ticket)
+			details.ticketToPreDocument[ticket] = document
+		}
+	}
+	if err = getDocRelatedNodes(ctx, service, details, allTickets); err != nil {
+		return nil, fmt.Errorf("couldn't getDocRelatedNodes: %v", err)
+	}
+	if err = getDocText(ctx, service, details); err != nil {
+		return nil, fmt.Errorf("couldn't getDocText: %v", err)
+	}
+	if err = getDocLinks(ctx, service, details); err != nil {
+		return nil, fmt.Errorf("couldn't getDocLinks: %v", err)
+	}
+	// Finish up and attach the Documents we've built to the reply.
+	reply := &xpb.DocumentationReply{}
+	for _, ticket := range tickets {
+		preDocument, found := details.ticketToPreDocument[ticket]
+		if !found {
+			continue
+		}
+		document, err := compilePreDocument(ctx, service, details, ticket, preDocument)
+		if err != nil {
+			return nil, fmt.Errorf("during compilePreDocument for %v: %v", ticket, err)
+		}
+		reply.Document = append(reply.Document, document)
+	}
+	return reply, nil
 }
 
 type grpcClient struct{ xpb.XRefServiceClient }

@@ -17,6 +17,7 @@
 package xrefs
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -27,6 +28,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	cpb "kythe.io/kythe/proto/common_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
@@ -202,26 +204,44 @@ type mockService struct {
 }
 
 func (s *mockService) Nodes(ctx context.Context, req *xpb.NodesRequest) (*xpb.NodesReply, error) {
+	if s.NodesFn == nil {
+		return nil, errors.New("unexpected call to Nodes")
+	}
 	return s.NodesFn(req)
 }
 
 func (s *mockService) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
+	if s.EdgesFn == nil {
+		return nil, errors.New("unexpected call to Edges")
+	}
 	return s.EdgesFn(req)
 }
 
 func (s *mockService) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*xpb.DecorationsReply, error) {
+	if s.DecorationsFn == nil {
+		return nil, errors.New("unexpected call to Decorations")
+	}
 	return s.DecorationsFn(req)
 }
 
 func (s *mockService) CrossReferences(ctx context.Context, req *xpb.CrossReferencesRequest) (*xpb.CrossReferencesReply, error) {
+	if s.CrossReferencesFn == nil {
+		return nil, errors.New("unexpected call to CrossReferences")
+	}
 	return s.CrossReferencesFn(req)
 }
 
 func (s *mockService) Callers(ctx context.Context, req *xpb.CallersRequest) (*xpb.CallersReply, error) {
+	if s.CallersFn == nil {
+		return nil, errors.New("unexpected call to Callers")
+	}
 	return s.CallersFn(req)
 }
 
 func (s *mockService) Documentation(ctx context.Context, req *xpb.DocumentationRequest) (*xpb.DocumentationReply, error) {
+	if s.DocumentationFn == nil {
+		return nil, errors.New("unexpected call to Documentation")
+	}
 	return s.DocumentationFn(req)
 }
 
@@ -374,6 +394,190 @@ func TestSlowCallers(t *testing.T) {
 	}
 }
 
-func TestDocumentation(t *testing.T) {
-	// TODO(zarko): Write this test once SlowDocumentation does useful work.
+func TestSlowDocumentation(t *testing.T) {
+	db := []struct {
+		ticket, kind, documented, defines, completes, completed, childof, typed, text string
+		params, definitionText                                                        []string
+	}{
+		{ticket: "kythe://test#a", kind: "etc", documented: "kythe://test#adoc"},
+		{ticket: "kythe://test#adoc", kind: "doc", text: "atext"},
+		{ticket: "kythe://test#fdoc", kind: "doc", text: "ftext"},
+		{ticket: "kythe://test#fdecl", kind: "function", documented: "kythe://test#fdoc"},
+		{ticket: "kythe://test#fdefn", kind: "function", completed: "kythe://test#fbind"},
+		{ticket: "kythe://test#fbind", kind: "anchor", defines: "kythe://test#fdefn", completes: "kythe://test#fdecl"},
+		{ticket: "kythe://test#l", kind: "etc", documented: "kythe://test#ldoc"},
+		{ticket: "kythe://test#ldoc", kind: "doc", text: "ltext", params: []string{"kythe://test#l1", "kythe://test#l2"}},
+		{ticket: "kythe://test#l1", kind: "etc", definitionText: []string{"deftext1"}},
+		{ticket: "kythe://test#l2", kind: "etc", definitionText: []string{"deftext2"}},
+		{ticket: "kythe://test#l", kind: "etc", documented: "kythe://test#ldoc"},
+	}
+	mkPr := func(text string, link ...string) *xpb.DocumentationReply_Printable {
+		links := make([]*xpb.DocumentationReply_Link, len(link))
+		for i := range links {
+			links[i] = &xpb.DocumentationReply_Link{Definition: []*xpb.Anchor{&xpb.Anchor{Text: link[i]}}}
+		}
+		return &xpb.DocumentationReply_Printable{RawText: text, Link: links}
+	}
+	noSig := mkPr("SlowSignature unimplemented")
+	tests := []struct {
+		ticket string
+		reply  *xpb.DocumentationReply_Document
+	}{
+		{ticket: "kythe://test#a", reply: &xpb.DocumentationReply_Document{Signature: noSig, Kind: "etc", Text: mkPr("atext")}},
+		{ticket: "kythe://test#fdecl", reply: &xpb.DocumentationReply_Document{Signature: noSig, Kind: "function", Text: mkPr("ftext")}},
+		{ticket: "kythe://test#fdefn", reply: &xpb.DocumentationReply_Document{Signature: noSig, Kind: "function", Text: mkPr("ftext")}},
+		{ticket: "kythe://test#l", reply: &xpb.DocumentationReply_Document{Signature: noSig, Kind: "etc", Text: mkPr("ltext", "deftext1", "deftext2")}},
+	}
+	nodes := make(map[string]*xpb.NodeInfo)
+	edges := make(map[string]*xpb.EdgeSet)
+	xrefs := make(map[string]*xpb.CrossReferencesReply_CrossReferenceSet)
+	for _, node := range db {
+		nodes[node.ticket] = &xpb.NodeInfo{
+			Ticket: node.ticket,
+			Fact: []*cpb.Fact{
+				&cpb.Fact{Name: schema.NodeKindFact, Value: []byte(node.kind)},
+				&cpb.Fact{Name: schema.TextFact, Value: []byte(node.text)},
+			},
+		}
+		if node.definitionText != nil {
+			set := &xpb.CrossReferencesReply_CrossReferenceSet{Ticket: node.ticket}
+			for _, text := range node.definitionText {
+				set.Definition = append(set.Definition, &xpb.Anchor{Text: text})
+			}
+			xrefs[node.ticket] = set
+		}
+		set := &xpb.EdgeSet{SourceTicket: node.ticket}
+		if node.typed != "" {
+			set.Group = append(set.Group, &xpb.EdgeSet_Group{
+				Kind: schema.TypedEdge,
+				Edge: []*xpb.EdgeSet_Group_Edge{&xpb.EdgeSet_Group_Edge{TargetTicket: node.typed}},
+			})
+		}
+		if node.childof != "" {
+			set.Group = append(set.Group, &xpb.EdgeSet_Group{
+				Kind: schema.ChildOfEdge,
+				Edge: []*xpb.EdgeSet_Group_Edge{&xpb.EdgeSet_Group_Edge{TargetTicket: node.childof}},
+			})
+		}
+		if node.documented != "" {
+			set.Group = append(set.Group, &xpb.EdgeSet_Group{
+				Kind: schema.MirrorEdge(schema.DocumentsEdge),
+				Edge: []*xpb.EdgeSet_Group_Edge{&xpb.EdgeSet_Group_Edge{TargetTicket: node.documented}},
+			})
+		}
+		if node.completes != "" {
+			set.Group = append(set.Group, &xpb.EdgeSet_Group{
+				Kind: schema.CompletesEdge,
+				Edge: []*xpb.EdgeSet_Group_Edge{&xpb.EdgeSet_Group_Edge{TargetTicket: node.completes}},
+			})
+		}
+		if node.completed != "" {
+			set.Group = append(set.Group, &xpb.EdgeSet_Group{
+				Kind: schema.MirrorEdge(schema.CompletesEdge),
+				Edge: []*xpb.EdgeSet_Group_Edge{&xpb.EdgeSet_Group_Edge{TargetTicket: node.completed}},
+			})
+		}
+		if node.defines != "" {
+			set.Group = append(set.Group, &xpb.EdgeSet_Group{
+				Kind: schema.DefinesBindingEdge,
+				Edge: []*xpb.EdgeSet_Group_Edge{&xpb.EdgeSet_Group_Edge{TargetTicket: node.defines}},
+			})
+		}
+		if node.params != nil {
+			var edges []*xpb.EdgeSet_Group_Edge
+			for i, p := range node.params {
+				edges = append(edges, &xpb.EdgeSet_Group_Edge{TargetTicket: p, Ordinal: int32(i)})
+			}
+			set.Group = append(set.Group, &xpb.EdgeSet_Group{
+				Kind: schema.ParamEdge,
+				Edge: edges,
+			})
+		}
+		edges[node.ticket] = set
+	}
+	getNode := func(ticket string, facts []string) *xpb.NodeInfo {
+		data, found := nodes[ticket]
+		if !found {
+			return nil
+		}
+		info := &xpb.NodeInfo{Ticket: ticket}
+		for _, fact := range facts {
+			for _, nfact := range data.Fact {
+				if nfact.Name == fact {
+					info.Fact = append(info.Fact, nfact)
+					break
+				}
+			}
+		}
+		return info
+	}
+	service := &mockService{
+		NodesFn: func(req *xpb.NodesRequest) (*xpb.NodesReply, error) {
+			if len(req.Ticket) != 1 {
+				t.Fatalf("Unexpected Nodes request: %v", req)
+				return nil, nil
+			}
+			reply := &xpb.NodesReply{}
+			for _, ticket := range req.Ticket {
+				if info := getNode(ticket, req.Filter); info != nil {
+					reply.Node = append(reply.Node, info)
+				}
+			}
+			return reply, nil
+		},
+		EdgesFn: func(req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
+			reply := &xpb.EdgesReply{}
+			for _, ticket := range req.Ticket {
+				if data, found := edges[ticket]; found {
+					set := &xpb.EdgeSet{SourceTicket: data.SourceTicket}
+					reply.EdgeSet = append(reply.EdgeSet, set)
+					nodes := make(map[string]bool)
+					for _, group := range data.Group {
+						for _, kind := range req.Kind {
+							if group.Kind == kind {
+								set.Group = append(set.Group, group)
+								for _, edge := range group.Edge {
+									if !nodes[edge.TargetTicket] {
+										nodes[edge.TargetTicket] = true
+										if node := getNode(edge.TargetTicket, req.Filter); node != nil {
+											reply.Node = append(reply.Node, node)
+										}
+									}
+								}
+								break
+							}
+						}
+					}
+				}
+			}
+			return reply, nil
+		},
+		CrossReferencesFn: func(req *xpb.CrossReferencesRequest) (*xpb.CrossReferencesReply, error) {
+			if req.DefinitionKind != xpb.CrossReferencesRequest_ALL_DEFINITIONS ||
+				req.ReferenceKind != xpb.CrossReferencesRequest_NO_REFERENCES ||
+				req.DocumentationKind != xpb.CrossReferencesRequest_NO_DOCUMENTATION ||
+				req.AnchorText {
+				t.Fatalf("Unexpected CrossReferences request: %v", req)
+			}
+			reply := &xpb.CrossReferencesReply{
+				CrossReferences: make(map[string]*xpb.CrossReferencesReply_CrossReferenceSet),
+			}
+			for _, ticket := range req.Ticket {
+				if set, found := xrefs[ticket]; found {
+					reply.CrossReferences[ticket] = set
+				}
+			}
+			return reply, nil
+		},
+	}
+	for _, test := range tests {
+		reply, err := SlowDocumentation(nil, service, &xpb.DocumentationRequest{Ticket: []string{test.ticket}})
+		if err != nil {
+			t.Fatalf("SlowDocumentation error for %s: %v", test.ticket, err)
+		}
+		test.reply.Ticket = test.ticket
+		if err := testutil.DeepEqual(&xpb.DocumentationReply{Document: []*xpb.DocumentationReply_Document{test.reply}}, reply); err != nil {
+			t.Fatal(err)
+		}
+	}
 }
