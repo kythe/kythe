@@ -36,6 +36,10 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+const _ = proto.ProtoPackageIsVersion1
+
 // An AnalysisRequest instructs an analyzer to perform an analysis on a single
 // CompilationUnit.
 type AnalysisRequest struct {
@@ -47,9 +51,10 @@ type AnalysisRequest struct {
 	FileDataService string `protobuf:"bytes,2,opt,name=file_data_service,proto3" json:"file_data_service,omitempty"`
 }
 
-func (m *AnalysisRequest) Reset()         { *m = AnalysisRequest{} }
-func (m *AnalysisRequest) String() string { return proto.CompactTextString(m) }
-func (*AnalysisRequest) ProtoMessage()    {}
+func (m *AnalysisRequest) Reset()                    { *m = AnalysisRequest{} }
+func (m *AnalysisRequest) String() string            { return proto.CompactTextString(m) }
+func (*AnalysisRequest) ProtoMessage()               {}
+func (*AnalysisRequest) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{0} }
 
 func (m *AnalysisRequest) GetCompilation() *CompilationUnit {
 	if m != nil {
@@ -66,9 +71,10 @@ type AnalysisOutput struct {
 	Value []byte `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
 }
 
-func (m *AnalysisOutput) Reset()         { *m = AnalysisOutput{} }
-func (m *AnalysisOutput) String() string { return proto.CompactTextString(m) }
-func (*AnalysisOutput) ProtoMessage()    {}
+func (m *AnalysisOutput) Reset()                    { *m = AnalysisOutput{} }
+func (m *AnalysisOutput) String() string            { return proto.CompactTextString(m) }
+func (*AnalysisOutput) ProtoMessage()               {}
+func (*AnalysisOutput) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{1} }
 
 // Describes a single unit of compilation.
 type CompilationUnit struct {
@@ -119,9 +125,10 @@ type CompilationUnit struct {
 	Details []*google_protobuf.Any `protobuf:"bytes,11,rep,name=details" json:"details,omitempty"`
 }
 
-func (m *CompilationUnit) Reset()         { *m = CompilationUnit{} }
-func (m *CompilationUnit) String() string { return proto.CompactTextString(m) }
-func (*CompilationUnit) ProtoMessage()    {}
+func (m *CompilationUnit) Reset()                    { *m = CompilationUnit{} }
+func (m *CompilationUnit) String() string            { return proto.CompactTextString(m) }
+func (*CompilationUnit) ProtoMessage()               {}
+func (*CompilationUnit) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{2} }
 
 func (m *CompilationUnit) GetVName() *kythe_proto.VName {
 	if m != nil {
@@ -172,6 +179,9 @@ func (m *CompilationUnit_ContextDependentVersionColumn) String() string {
 	return proto.CompactTextString(m)
 }
 func (*CompilationUnit_ContextDependentVersionColumn) ProtoMessage() {}
+func (*CompilationUnit_ContextDependentVersionColumn) Descriptor() ([]byte, []int) {
+	return fileDescriptorAnalysis, []int{2, 0}
+}
 
 // See ContextDependentVersionColumn for details.
 // It is valid for a ContextDependentVersionRow to have no columns. In this
@@ -194,6 +204,9 @@ func (m *CompilationUnit_ContextDependentVersionRow) String() string {
 	return proto.CompactTextString(m)
 }
 func (*CompilationUnit_ContextDependentVersionRow) ProtoMessage() {}
+func (*CompilationUnit_ContextDependentVersionRow) Descriptor() ([]byte, []int) {
+	return fileDescriptorAnalysis, []int{2, 1}
+}
 
 func (m *CompilationUnit_ContextDependentVersionRow) GetColumn() []*CompilationUnit_ContextDependentVersionColumn {
 	if m != nil {
@@ -216,6 +229,9 @@ type CompilationUnit_FileInput struct {
 func (m *CompilationUnit_FileInput) Reset()         { *m = CompilationUnit_FileInput{} }
 func (m *CompilationUnit_FileInput) String() string { return proto.CompactTextString(m) }
 func (*CompilationUnit_FileInput) ProtoMessage()    {}
+func (*CompilationUnit_FileInput) Descriptor() ([]byte, []int) {
+	return fileDescriptorAnalysis, []int{2, 2}
+}
 
 func (m *CompilationUnit_FileInput) GetVName() *kythe_proto.VName {
 	if m != nil {
@@ -245,9 +261,10 @@ type CompilationUnit_Env struct {
 	Value string `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 }
 
-func (m *CompilationUnit_Env) Reset()         { *m = CompilationUnit_Env{} }
-func (m *CompilationUnit_Env) String() string { return proto.CompactTextString(m) }
-func (*CompilationUnit_Env) ProtoMessage()    {}
+func (m *CompilationUnit_Env) Reset()                    { *m = CompilationUnit_Env{} }
+func (m *CompilationUnit_Env) String() string            { return proto.CompactTextString(m) }
+func (*CompilationUnit_Env) ProtoMessage()               {}
+func (*CompilationUnit_Env) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{2, 3} }
 
 // A FilesRequest specifies a collection of files to be fetched from a
 // FileDataService.
@@ -255,9 +272,10 @@ type FilesRequest struct {
 	Files []*FileInfo `protobuf:"bytes,1,rep,name=files" json:"files,omitempty"`
 }
 
-func (m *FilesRequest) Reset()         { *m = FilesRequest{} }
-func (m *FilesRequest) String() string { return proto.CompactTextString(m) }
-func (*FilesRequest) ProtoMessage()    {}
+func (m *FilesRequest) Reset()                    { *m = FilesRequest{} }
+func (m *FilesRequest) String() string            { return proto.CompactTextString(m) }
+func (*FilesRequest) ProtoMessage()               {}
+func (*FilesRequest) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{3} }
 
 func (m *FilesRequest) GetFiles() []*FileInfo {
 	if m != nil {
@@ -279,9 +297,10 @@ type FileInfo struct {
 	Digest string `protobuf:"bytes,2,opt,name=digest,proto3" json:"digest,omitempty"`
 }
 
-func (m *FileInfo) Reset()         { *m = FileInfo{} }
-func (m *FileInfo) String() string { return proto.CompactTextString(m) }
-func (*FileInfo) ProtoMessage()    {}
+func (m *FileInfo) Reset()                    { *m = FileInfo{} }
+func (m *FileInfo) String() string            { return proto.CompactTextString(m) }
+func (*FileInfo) ProtoMessage()               {}
+func (*FileInfo) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{4} }
 
 // A FileData carries the content of a single file, as returned from the Get
 // method of a FileDataService.
@@ -301,9 +320,10 @@ type FileData struct {
 	Missing bool `protobuf:"varint,3,opt,name=missing,proto3" json:"missing,omitempty"`
 }
 
-func (m *FileData) Reset()         { *m = FileData{} }
-func (m *FileData) String() string { return proto.CompactTextString(m) }
-func (*FileData) ProtoMessage()    {}
+func (m *FileData) Reset()                    { *m = FileData{} }
+func (m *FileData) String() string            { return proto.CompactTextString(m) }
+func (*FileData) ProtoMessage()               {}
+func (*FileData) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{5} }
 
 func (m *FileData) GetInfo() *FileInfo {
 	if m != nil {
@@ -328,6 +348,10 @@ func init() {
 // Reference imports to suppress errors if they are not otherwise used.
 var _ context.Context
 var _ grpc.ClientConn
+
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the grpc package it is being compiled against.
+const _ = grpc.SupportPackageIsVersion2
 
 // Client API for CompilationAnalyzer service
 
@@ -594,13 +618,11 @@ func (m *AnalysisOutput) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Value != nil {
-		if len(m.Value) > 0 {
-			data[i] = 0xa
-			i++
-			i = encodeVarintAnalysis(data, i, uint64(len(m.Value)))
-			i += copy(data[i:], m.Value)
-		}
+	if len(m.Value) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintAnalysis(data, i, uint64(len(m.Value)))
+		i += copy(data[i:], m.Value)
 	}
 	return i, nil
 }
@@ -963,13 +985,11 @@ func (m *FileData) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Content != nil {
-		if len(m.Content) > 0 {
-			data[i] = 0xa
-			i++
-			i = encodeVarintAnalysis(data, i, uint64(len(m.Content)))
-			i += copy(data[i:], m.Content)
-		}
+	if len(m.Content) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintAnalysis(data, i, uint64(len(m.Content)))
+		i += copy(data[i:], m.Content)
 	}
 	if m.Info != nil {
 		data[i] = 0x12
@@ -1038,11 +1058,9 @@ func (m *AnalysisRequest) Size() (n int) {
 func (m *AnalysisOutput) Size() (n int) {
 	var l int
 	_ = l
-	if m.Value != nil {
-		l = len(m.Value)
-		if l > 0 {
-			n += 1 + l + sovAnalysis(uint64(l))
-		}
+	l = len(m.Value)
+	if l > 0 {
+		n += 1 + l + sovAnalysis(uint64(l))
 	}
 	return n
 }
@@ -1201,11 +1219,9 @@ func (m *FileInfo) Size() (n int) {
 func (m *FileData) Size() (n int) {
 	var l int
 	_ = l
-	if m.Content != nil {
-		l = len(m.Content)
-		if l > 0 {
-			n += 1 + l + sovAnalysis(uint64(l))
-		}
+	l = len(m.Content)
+	if l > 0 {
+		n += 1 + l + sovAnalysis(uint64(l))
 	}
 	if m.Info != nil {
 		l = m.Info.Size()
@@ -1397,7 +1413,10 @@ func (m *AnalysisOutput) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Value = append([]byte{}, data[iNdEx:postIndex]...)
+			m.Value = append(m.Value[:0], data[iNdEx:postIndex]...)
+			if m.Value == nil {
+				m.Value = []byte{}
+			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -2517,7 +2536,10 @@ func (m *FileData) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Content = append([]byte{}, data[iNdEx:postIndex]...)
+			m.Content = append(m.Content[:0], data[iNdEx:postIndex]...)
+			if m.Content == nil {
+				m.Content = []byte{}
+			}
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -2697,3 +2719,51 @@ var (
 	ErrInvalidLengthAnalysis = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowAnalysis   = fmt.Errorf("proto: integer overflow")
 )
+
+var fileDescriptorAnalysis = []byte{
+	// 692 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x9c, 0x54, 0xdd, 0x6e, 0xd3, 0x4a,
+	0x10, 0x6e, 0x4e, 0x9a, 0x34, 0x99, 0xa4, 0xc9, 0x39, 0xdb, 0xd3, 0x23, 0xd7, 0x07, 0xda, 0x2a,
+	0xfc, 0xa8, 0x57, 0x2e, 0x0d, 0x20, 0x24, 0x90, 0x90, 0x4a, 0x0b, 0x05, 0x2e, 0x8a, 0x28, 0xa2,
+	0xb7, 0xd6, 0x36, 0xde, 0xa4, 0xab, 0x38, 0xbb, 0x61, 0x77, 0xed, 0x62, 0x5e, 0x84, 0x5e, 0xf1,
+	0x3c, 0x5c, 0xf2, 0x08, 0x08, 0x5e, 0x84, 0xf1, 0xda, 0x4e, 0xd3, 0x96, 0x46, 0x15, 0x17, 0x56,
+	0x62, 0xef, 0xcc, 0xf7, 0x7d, 0xf3, 0xcd, 0xcc, 0x82, 0x3b, 0x4c, 0xcc, 0x31, 0xdb, 0x1c, 0x2b,
+	0x69, 0xe4, 0x26, 0x15, 0x34, 0x4c, 0x34, 0xd7, 0x9e, 0x7d, 0x25, 0x0d, 0x7b, 0x96, 0xbd, 0xb8,
+	0x2b, 0x03, 0x29, 0x07, 0x61, 0x1e, 0x79, 0x14, 0xf5, 0x31, 0x38, 0x29, 0x8e, 0xa6, 0x31, 0xb4,
+	0x91, 0x8a, 0x0e, 0xf2, 0xac, 0x8e, 0x0f, 0xed, 0xed, 0x1c, 0xf4, 0x80, 0x7d, 0x88, 0x98, 0x36,
+	0x64, 0x0b, 0x1a, 0x3d, 0x39, 0x1a, 0xf3, 0x90, 0x1a, 0x2e, 0x85, 0x53, 0x5a, 0x2f, 0x6d, 0x34,
+	0xba, 0x37, 0xbc, 0x29, 0x2e, 0x6f, 0xe7, 0xec, 0xfc, 0xbd, 0xe0, 0x86, 0xac, 0xc0, 0x3f, 0x7d,
+	0x1e, 0x32, 0x3f, 0xa0, 0x86, 0xfa, 0x9a, 0xa9, 0x98, 0xf7, 0x98, 0xf3, 0x17, 0x26, 0xd6, 0x3b,
+	0x6b, 0xd0, 0x2a, 0x08, 0xde, 0x44, 0x66, 0x1c, 0x19, 0xb2, 0x08, 0x95, 0x98, 0x86, 0x11, 0xb3,
+	0xc8, 0xcd, 0xce, 0xe7, 0x2a, 0xb4, 0x2f, 0xe2, 0x75, 0xa0, 0x1a, 0xfb, 0x82, 0x8e, 0x58, 0xce,
+	0x4e, 0xce, 0xb1, 0x1f, 0xee, 0xe3, 0x09, 0xf9, 0x1b, 0x6a, 0x8a, 0xc5, 0x5c, 0xa7, 0x1a, 0x2d,
+	0x15, 0x79, 0x0a, 0x2d, 0x85, 0x35, 0x70, 0xc5, 0x02, 0x9f, 0x0b, 0xa4, 0x72, 0xca, 0xeb, 0x65,
+	0xcc, 0xbe, 0x3b, 0x4b, 0xbb, 0xf7, 0x02, 0x85, 0xbf, 0x4a, 0xa3, 0x89, 0x0b, 0xe4, 0x98, 0x6a,
+	0x3f, 0x2b, 0x9e, 0xf9, 0x4c, 0x29, 0xa9, 0xb4, 0x33, 0x8f, 0xd8, 0xb5, 0x94, 0x8d, 0xaa, 0x41,
+	0x34, 0x62, 0xc2, 0x38, 0x15, 0x44, 0xad, 0x93, 0x25, 0x68, 0x68, 0x19, 0xa9, 0x1e, 0xf3, 0xd3,
+	0xd2, 0x9d, 0xaa, 0xfd, 0x48, 0x00, 0xa4, 0xad, 0xd2, 0x1f, 0xb2, 0xc4, 0x59, 0xb0, 0xb2, 0xd0,
+	0x9c, 0x13, 0xa9, 0x86, 0x5c, 0x0c, 0xfc, 0x00, 0xb5, 0xf5, 0xd0, 0xff, 0xc4, 0xa9, 0xd9, 0xa3,
+	0x65, 0x58, 0x44, 0x40, 0x95, 0x20, 0xa7, 0x30, 0xec, 0xa3, 0x71, 0xea, 0xf6, 0xf3, 0x43, 0x68,
+	0x30, 0x11, 0x73, 0x25, 0x85, 0xe5, 0x03, 0x5b, 0xc5, 0xfa, 0xcc, 0x2a, 0x9e, 0x8b, 0x98, 0xdc,
+	0x81, 0x85, 0x80, 0x19, 0xca, 0x43, 0xed, 0x34, 0x6c, 0xca, 0xbf, 0x5e, 0x36, 0x13, 0x5e, 0x31,
+	0x13, 0xde, 0xb6, 0x48, 0xdc, 0x3d, 0xb8, 0xb9, 0x93, 0xd1, 0xed, 0xb2, 0x31, 0x13, 0x01, 0x52,
+	0x1c, 0x32, 0x95, 0xfa, 0xb8, 0x23, 0xc3, 0x68, 0x24, 0x48, 0x0b, 0xaa, 0xb2, 0xdf, 0xd7, 0xcc,
+	0x58, 0xf7, 0x2b, 0xe4, 0x3f, 0x68, 0x85, 0x5c, 0x0c, 0xd1, 0xd5, 0x42, 0xa6, 0xf5, 0xdb, 0x3d,
+	0x2d, 0x81, 0x7b, 0x05, 0xd2, 0x81, 0x3c, 0x49, 0xd3, 0x72, 0x83, 0x8a, 0xb4, 0x92, 0xad, 0xee,
+	0x35, 0x54, 0x7b, 0x96, 0x08, 0x61, 0x52, 0x95, 0x8f, 0x67, 0x16, 0x36, 0x5b, 0x2a, 0x72, 0xd0,
+	0xf0, 0x84, 0x26, 0xda, 0xc7, 0xec, 0x1e, 0xd3, 0x1a, 0x5b, 0x8e, 0xed, 0x72, 0xbf, 0x94, 0xa0,
+	0x7e, 0xd6, 0xd8, 0xeb, 0x8c, 0xd3, 0x2d, 0x98, 0xe7, 0xa2, 0x2f, 0x6d, 0x69, 0x8d, 0xee, 0xf2,
+	0xb9, 0x88, 0x0c, 0xa9, 0x2f, 0xc9, 0x4b, 0x58, 0x28, 0x6a, 0xc9, 0x46, 0xeb, 0xd1, 0x9f, 0x68,
+	0x47, 0x73, 0xdc, 0x0e, 0x94, 0xd3, 0x96, 0x35, 0x61, 0x7e, 0xa2, 0xab, 0x7e, 0xb6, 0x19, 0xd9,
+	0xea, 0x3c, 0x80, 0x66, 0xca, 0x3c, 0x59, 0xcc, 0xdb, 0x50, 0x49, 0x47, 0x4d, 0x63, 0x74, 0xf9,
+	0x4a, 0x8d, 0x9d, 0x0d, 0xa8, 0x4d, 0xf4, 0x22, 0xfc, 0x98, 0x9a, 0xe3, 0x1c, 0x1e, 0xfb, 0x1a,
+	0xf0, 0x01, 0x22, 0xe5, 0xf8, 0x6f, 0xb3, 0xc8, 0x5d, 0x5c, 0x5a, 0xd2, 0xce, 0x2b, 0x13, 0x59,
+	0x97, 0x9a, 0xd7, 0xf3, 0x03, 0xb3, 0x46, 0x5c, 0x6b, 0x1c, 0xed, 0xcc, 0xf7, 0xae, 0x0f, 0x4b,
+	0x53, 0x26, 0xd8, 0xc5, 0xff, 0xc4, 0x54, 0xea, 0x5b, 0xfe, 0x9f, 0x9c, 0xbf, 0x48, 0x2e, 0xdc,
+	0x3d, 0xee, 0xff, 0xbf, 0x3d, 0xcd, 0x2e, 0x8e, 0xce, 0xdc, 0xbd, 0x52, 0x77, 0x1f, 0xda, 0x85,
+	0xe6, 0x77, 0xd9, 0x3d, 0x43, 0x9e, 0x40, 0x79, 0x8f, 0xe1, 0x1d, 0x74, 0x49, 0xe2, 0x04, 0xf5,
+	0xb2, 0xfa, 0x34, 0x3f, 0xc5, 0x7b, 0xb6, 0xf5, 0xf5, 0xc7, 0x6a, 0xe9, 0x1b, 0x3e, 0xdf, 0xf1,
+	0x39, 0xfd, 0xb9, 0x3a, 0x07, 0x6b, 0xb8, 0xff, 0xc5, 0xde, 0x04, 0x2c, 0x36, 0x52, 0x86, 0x7a,
+	0x3a, 0xff, 0xa8, 0x6a, 0x7f, 0xee, 0xff, 0x0a, 0x00, 0x00, 0xff, 0xff, 0x91, 0x4a, 0xd6, 0x7d,
+	0x9a, 0x05, 0x00, 0x00,
+}

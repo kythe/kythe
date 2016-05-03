@@ -107,6 +107,10 @@ func init() {
 var _ context.Context
 var _ grpc.ClientConn
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the grpc package it is being compiled against.
+const _ = grpc.SupportPackageIsVersion2
+
 // Client API for FileTreeService service
 
 type FileTreeServiceClient interface {
@@ -155,28 +159,40 @@ func RegisterFileTreeServiceServer(s *grpc.Server, srv FileTreeServiceServer) {
 	s.RegisterService(&_FileTreeService_serviceDesc, srv)
 }
 
-func _FileTreeService_CorpusRoots_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _FileTreeService_CorpusRoots_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CorpusRootsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(FileTreeServiceServer).CorpusRoots(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(FileTreeServiceServer).CorpusRoots(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/kythe.proto.FileTreeService/CorpusRoots",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FileTreeServiceServer).CorpusRoots(ctx, req.(*CorpusRootsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _FileTreeService_Directory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _FileTreeService_Directory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DirectoryRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(FileTreeServiceServer).Directory(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(FileTreeServiceServer).Directory(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/kythe.proto.FileTreeService/Directory",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FileTreeServiceServer).Directory(ctx, req.(*DirectoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 var _FileTreeService_serviceDesc = grpc.ServiceDesc{

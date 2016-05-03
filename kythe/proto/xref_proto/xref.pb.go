@@ -1226,6 +1226,10 @@ func init() {
 var _ context.Context
 var _ grpc.ClientConn
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the grpc package it is being compiled against.
+const _ = grpc.SupportPackageIsVersion2
+
 // Client API for XRefService service
 
 type XRefServiceClient interface {
@@ -1360,76 +1364,112 @@ func RegisterXRefServiceServer(s *grpc.Server, srv XRefServiceServer) {
 	s.RegisterService(&_XRefService_serviceDesc, srv)
 }
 
-func _XRefService_Nodes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _XRefService_Nodes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(NodesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(XRefServiceServer).Nodes(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(XRefServiceServer).Nodes(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/kythe.proto.XRefService/Nodes",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(XRefServiceServer).Nodes(ctx, req.(*NodesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _XRefService_Edges_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _XRefService_Edges_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(EdgesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(XRefServiceServer).Edges(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(XRefServiceServer).Edges(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/kythe.proto.XRefService/Edges",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(XRefServiceServer).Edges(ctx, req.(*EdgesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _XRefService_Decorations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _XRefService_Decorations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DecorationsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(XRefServiceServer).Decorations(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(XRefServiceServer).Decorations(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/kythe.proto.XRefService/Decorations",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(XRefServiceServer).Decorations(ctx, req.(*DecorationsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _XRefService_CrossReferences_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _XRefService_CrossReferences_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CrossReferencesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(XRefServiceServer).CrossReferences(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(XRefServiceServer).CrossReferences(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/kythe.proto.XRefService/CrossReferences",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(XRefServiceServer).CrossReferences(ctx, req.(*CrossReferencesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _XRefService_Callers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _XRefService_Callers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CallersRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(XRefServiceServer).Callers(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(XRefServiceServer).Callers(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/kythe.proto.XRefService/Callers",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(XRefServiceServer).Callers(ctx, req.(*CallersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _XRefService_Documentation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _XRefService_Documentation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DocumentationRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(XRefServiceServer).Documentation(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(XRefServiceServer).Documentation(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/kythe.proto.XRefService/Documentation",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(XRefServiceServer).Documentation(ctx, req.(*DocumentationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 var _XRefService_serviceDesc = grpc.ServiceDesc{
