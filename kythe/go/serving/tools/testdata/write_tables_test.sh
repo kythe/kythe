@@ -20,7 +20,6 @@ jq=third_party/jq/jq
 root=kythe/go/serving/tools/testdata
 
 echo "Building new serving table"
-tree kythe/testdata
 $root/entries2tables kythe/testdata/entries.gz "$TMPDIR/serving_table"
 
 echo "Splitting serving data in JSON"
