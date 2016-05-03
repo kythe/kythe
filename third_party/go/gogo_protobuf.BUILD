@@ -183,6 +183,19 @@ external_go_package(
 )
 
 external_go_package(
+    name = "plugin/compare",
+    base_pkg = "github.com/gogo/protobuf",
+    deps = [
+        ":gogoproto",
+        ":plugin/testgen",
+        ":proto",
+        ":protoc-gen-gogo/descriptor",
+        ":protoc-gen-gogo/generator",
+        ":vanity",
+    ],
+)
+
+external_go_package(
     name = "plugin/equal",
     base_pkg = "github.com/gogo/protobuf",
     deps = [
@@ -231,6 +244,7 @@ external_go_package(
     name = "vanity/command",
     base_pkg = "github.com/gogo/protobuf",
     deps = [
+        ":plugin/compare",
         ":plugin/defaultcheck",
         ":plugin/description",
         ":plugin/embedcheck",

@@ -219,7 +219,7 @@ bind(
 new_git_repository(
     name = "go_gogo_protobuf",
     build_file = "third_party/go/gogo_protobuf.BUILD",
-    commit = "4f262e4b0f3a6cea646e15798109335551e21756",
+    commit = "43a2e0b1c32252bfbbdf81f7faa7a88fb3fa4028",
     remote = "https://github.com/gogo/protobuf.git",
 )
 
@@ -268,7 +268,7 @@ new_git_repository(
 new_git_repository(
     name = "go_grpc",
     build_file = "third_party/go/grpc.BUILD",
-    commit = "d3ddb4469d5a1b949fc7a7da7c1d6a0d1b6de994",
+    commit = "b062a3c003c22bfef58fa99d689e6a892b408f9d",
     remote = "https://github.com/grpc/grpc-go.git",
 )
 
@@ -310,7 +310,7 @@ new_git_repository(
 new_git_repository(
     name = "go_protobuf",
     build_file = "third_party/go/protobuf.BUILD",
-    commit = "bf531ff1a004f24ee53329dfd5ce0b41bfdc17df",
+    commit = "7cc19b78d562895b13596ddce7aafb59dd789318",
     remote = "https://github.com/golang/protobuf.git",
 )
 
