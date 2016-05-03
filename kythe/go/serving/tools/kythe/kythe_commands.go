@@ -29,7 +29,6 @@ import (
 
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/services/filetree"
-	"kythe.io/kythe/go/services/search"
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema"
@@ -37,16 +36,14 @@ import (
 	"golang.org/x/net/context"
 
 	ftpb "kythe.io/kythe/proto/filetree_proto"
-	spb "kythe.io/kythe/proto/storage_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
 var (
 	ctx = context.Background()
 
-	xs  xrefs.Service
-	ft  filetree.Service
-	idx search.Service
+	xs xrefs.Service
+	ft filetree.Service
 
 	// ls flags
 	lsURIs    bool
@@ -81,14 +78,6 @@ var (
 	// xrefs flags
 	defKind, declKind, refKind, docKind string
 	relatedNodes                        bool
-
-	// search flags
-	suffixWildcard string
-	corpus         string
-	root           string
-	path           string
-	language       string
-	signature      string
 
 	spanHelp = `Limit results to this span (e.g. "10-30", "b1462-b1847", "3:5-3:10")
       Formats:
@@ -428,57 +417,6 @@ var (
 			}
 
 			return displayDecorations(reply)
-		})
-
-	cmdSearch = newCommand("search", "[--corpus c] [--sig s] [--root r] [--lang l] [--path p] [factName factValue]...",
-		"Search for nodes based on partial components and fact values.",
-		func(flag *flag.FlagSet) {
-			flag.StringVar(&suffixWildcard, "suffix_wildcard", "%", "Suffix wildcard for search values (optional)")
-			flag.StringVar(&corpus, "corpus", "", "Limit results to nodes with the given corpus (optional)")
-			flag.StringVar(&root, "root", "", "Limit results to nodes with the given root (optional)")
-			flag.StringVar(&path, "path", "", "Limit results to nodes with the given path (optional)")
-			flag.StringVar(&signature, "sig", "", "Limit results to nodes with the given signature (optional)")
-			flag.StringVar(&language, "lang", "", "Limit results to nodes with the given language (optional)")
-		},
-		func(flag *flag.FlagSet) error {
-			if len(flag.Args())%2 != 0 {
-				return fmt.Errorf("given odd number of arguments (%d): %v", len(flag.Args()), flag.Args())
-			}
-
-			req := &spb.SearchRequest{
-				Partial: &spb.VName{
-					Corpus:    strings.TrimSuffix(corpus, suffixWildcard),
-					Signature: strings.TrimSuffix(signature, suffixWildcard),
-					Root:      strings.TrimSuffix(root, suffixWildcard),
-					Path:      strings.TrimSuffix(path, suffixWildcard),
-					Language:  strings.TrimSuffix(language, suffixWildcard),
-				},
-			}
-			req.PartialPrefix = &spb.VNameMask{
-				Corpus:    req.Partial.Corpus != corpus,
-				Signature: req.Partial.Signature != signature,
-				Root:      req.Partial.Root != root,
-				Path:      req.Partial.Path != path,
-				Language:  req.Partial.Language != language,
-			}
-			for i := 0; i < len(flag.Args()); i = i + 2 {
-				if flag.Arg(i) == schema.TextFact {
-					log.Printf("WARNING: Large facts such as %s are not likely to be indexed", schema.TextFact)
-				}
-				v := strings.TrimSuffix(flag.Arg(i+1), suffixWildcard)
-				req.Fact = append(req.Fact, &spb.SearchRequest_Fact{
-					Name:   flag.Arg(i),
-					Value:  []byte(v),
-					Prefix: v != flag.Arg(i+1),
-				})
-			}
-
-			logRequest(req)
-			reply, err := idx.Search(ctx, req)
-			if err != nil {
-				return err
-			}
-			return displaySearch(reply)
 		})
 )
 

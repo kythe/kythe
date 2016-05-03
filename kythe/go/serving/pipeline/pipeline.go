@@ -30,7 +30,6 @@ import (
 	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/services/xrefs"
 	ftsrv "kythe.io/kythe/go/serving/filetree"
-	"kythe.io/kythe/go/serving/search"
 	xsrv "kythe.io/kythe/go/serving/xrefs"
 	"kythe.io/kythe/go/serving/xrefs/assemble"
 	"kythe.io/kythe/go/storage/keyvalue"
@@ -262,9 +261,6 @@ func writePartialEdges(ctx context.Context, sorter disksort.Interface, idx table
 		if err := sorter.Add(pe); err != nil {
 			return err
 		}
-	}
-	if err := search.IndexNode(ctx, idx, edges[0].Source); err != nil {
-		return err
 	}
 	return nil
 }

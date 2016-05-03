@@ -41,9 +41,6 @@
 //
 //   # Show all facts (except /kythe/text) for a node
 //   kythe --api /path/to/table node kythe:?lang=c%2B%2B#StripPrefix%3Acommon%3Akythe%23n%23D%40kythe%2Fcxx%2Fcommon%2FCommandLineUtils.cc%3A167%3A1
-//
-//   # Search for all Java class nodes with the given VName path
-//   kythe --api /path/to/table search --lang java --path kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java /kythe/node/kind record /kythe/subkind class
 package main
 
 import (
@@ -71,7 +68,6 @@ func globalUsage() {
 
 Examples:
   %[1]s ls --uris kythe://kythe?path=kythe/cxx/common
-  %[1]s search --path kythe/cxx/common/CommandLineUtils.h /kythe/node/kind file
   %[1]s node kythe:?lang=java#java.util.List
 `, filepath.Base(os.Args[0]), build.VersionLine())
 	if !shortHelp {
@@ -96,7 +92,6 @@ var cmds = map[string]command{
 	"node":    cmdNode,
 	"decor":   cmdDecor,
 	"source":  cmdSource,
-	"search":  cmdSearch,
 	"xrefs":   cmdXRefs,
 	"callers": cmdCallers,
 	"docs":    cmdDocs,
@@ -134,7 +129,7 @@ func main() {
 	}
 
 	defer (*apiFlag).Close()
-	xs, ft, idx = *apiFlag, *apiFlag, *apiFlag
+	xs, ft = *apiFlag, *apiFlag
 
 	if err := getCommand(flag.Arg(0)).run(); err != nil {
 		log.Fatal("ERROR: ", err)

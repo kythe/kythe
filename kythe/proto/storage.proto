@@ -54,14 +54,6 @@ service ShardedGraphStore {
   rpc Shard(ShardRequest) returns (stream Entry) {}
 }
 
-// SearchService for querying nodes based on a partial VName and collection of
-// known facts.
-service SearchService {
-  // Search responds with the set of node tickets that match the given
-  // SearchRequest.
-  rpc Search(SearchRequest) returns (SearchReply) {}
-}
-
 // VName is a proto representation of a vector name.
 //
 // Rules:
@@ -218,37 +210,4 @@ message CountReply {
 message ShardRequest {
   int64 index = 1;
   int64 shards = 2;
-}
-
-// Request for the set of node tickets matching a partial VName and collection
-// of known facts.
-message SearchRequest {
-  // Partial VName to match against nodes.  Each non-empty field becomes a
-  // constraint (i.e. the signature/corpus/etc. must be exactly case-sensitively
-  // equal to the given string) on the set of returned nodes.  Exact matching
-  // turns into prefix matching if the corresponding field in partial_prefix is
-  // set to true.
-  VName partial = 1;
-
-  message Fact {
-    string name = 1;
-    bytes value = 2;
-    bool prefix = 3;
-  }
-
-  // Facts that a node must have to be matched.  Exact matching turns into
-  // prefix matching if a Fact has its prefix field set to true.
-  repeated Fact fact = 2;
-
-  // Setting any field in this mask to true converts exact value matching to
-  // prefix value matching for the corresponding VName component in partial.
-  VNameMask partial_prefix = 3;
-
-  // TODO(schroederc): pagination for large result sets
-}
-
-// Response for a SearchRequest.
-message SearchReply {
-  // Set of node tickets matching a given SearchRequest.
-  repeated string ticket = 1;
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// Binary http_server exposes an HTTP interface for testing the search, xrefs,
+// Binary http_server exposes an HTTP interface for testing the xrefs
 // and filetree services backed by a combined serving table.  The server places
 // the port on which it listens into the given --port_file.  Requesting
 // "http://localhost:$(<"$PORT_FILE")/quitquitquit" will forcibly exit the
@@ -32,11 +32,9 @@ import (
 	"os"
 
 	"kythe.io/kythe/go/services/filetree"
-	"kythe.io/kythe/go/services/search"
 	"kythe.io/kythe/go/services/web"
 	"kythe.io/kythe/go/services/xrefs"
 	ftsrv "kythe.io/kythe/go/serving/filetree"
-	srchsrv "kythe.io/kythe/go/serving/search"
 	xsrv "kythe.io/kythe/go/serving/xrefs"
 	"kythe.io/kythe/go/storage/leveldb"
 	"kythe.io/kythe/go/storage/table"
@@ -65,12 +63,10 @@ func main() {
 	tbl := table.ProtoBatchParallel{&table.KVProto{db}}
 	xs := xsrv.NewCombinedTable(tbl)
 	ft := &ftsrv.Table{Proto: tbl, PrefixedKeys: true}
-	sr := &srchsrv.Table{&table.KVInverted{db}}
 
 	ctx := context.Background()
 	xrefs.RegisterHTTPHandlers(ctx, xs, http.DefaultServeMux)
 	filetree.RegisterHTTPHandlers(ctx, ft, http.DefaultServeMux)
-	search.RegisterHTTPHandlers(ctx, sr, http.DefaultServeMux)
 	web.RegisterQuitHandler(http.DefaultServeMux)
 	http.HandleFunc("/alive", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "ok")

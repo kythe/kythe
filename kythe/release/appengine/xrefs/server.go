@@ -26,10 +26,8 @@ import (
 	"path/filepath"
 
 	"kythe.io/kythe/go/services/filetree"
-	"kythe.io/kythe/go/services/search"
 	"kythe.io/kythe/go/services/xrefs"
 	ftsrv "kythe.io/kythe/go/serving/filetree"
-	srchsrv "kythe.io/kythe/go/serving/search"
 	xsrv "kythe.io/kythe/go/serving/xrefs"
 	"kythe.io/kythe/go/storage/leveldb"
 	"kythe.io/kythe/go/storage/table"
@@ -56,7 +54,6 @@ func main() {
 	ctx := context.Background()
 	xrefs.RegisterHTTPHandlers(ctx, xsrv.NewCombinedTable(tbl), http.DefaultServeMux)
 	filetree.RegisterHTTPHandlers(ctx, &ftsrv.Table{tbl, true}, http.DefaultServeMux)
-	search.RegisterHTTPHandlers(ctx, &srchsrv.Table{&table.KVInverted{db}}, http.DefaultServeMux)
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, filepath.Join(*publicResources, filepath.Clean(r.URL.Path)))

@@ -37,7 +37,6 @@ import (
 	"github.com/golang/protobuf/proto"
 
 	ftpb "kythe.io/kythe/proto/filetree_proto"
-	spb "kythe.io/kythe/proto/storage_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
@@ -331,20 +330,6 @@ func displayNodes(nodes map[string]*xpb.NodeInfo) error {
 			}
 		}
 	}
-	return nil
-}
-
-func displaySearch(reply *spb.SearchReply) error {
-	if *displayJSON {
-		return jsonMarshaler.Marshal(out, reply)
-	}
-
-	for _, t := range reply.Ticket {
-		if _, err := fmt.Fprintln(out, t); err != nil {
-			return err
-		}
-	}
-	fmt.Fprintln(os.Stderr, "Total Results:", len(reply.Ticket))
 	return nil
 }
 

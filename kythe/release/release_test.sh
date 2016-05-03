@@ -83,8 +83,6 @@ if tools/verifier --ignore_dups <(echo "//- Any noSuchEdge Any2") < entries; the
 fi
 
 # Ensure kythe tool is functional
-tools/kythe --api srv search /kythe/node/kind file | \
-  grep -q 'kythe://kythe?path=kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/Names.java'
 tools/kythe --api srv node 'kythe:?lang=java#pkg.Names'
 
 tools/http_server \
@@ -103,8 +101,6 @@ done
 curl -sf $ADDR >/dev/null
 curl -sf $ADDR/corpusRoots | jq . >/dev/null
 curl -sf $ADDR/dir | jq . >/dev/null
-curl -sf $ADDR/search -d '{"partial": {"language": "java"}, "fact": [{"name": "/kythe/node/kind", "value": "cmVjb3Jk"}]}' | \
-  jq -e '(.ticket | length) > 0'
 curl -sf $ADDR/nodes -d '{"ticket": ["kythe:?lang=java#pkg.Names"]}' | \
   jq -e '(.nodes | length) > 0'
 curl -sf $ADDR/edges -d '{"ticket": ["kythe:?lang=java#pkg.Names"]}' | \

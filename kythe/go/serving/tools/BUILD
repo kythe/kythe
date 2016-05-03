@@ -33,10 +33,8 @@ go_binary(
         "//kythe/go/services/graphstore",
         "//kythe/go/services/graphstore/grpc",
         "//kythe/go/services/graphstore/proxy",
-        "//kythe/go/services/search",
         "//kythe/go/services/xrefs",
         "//kythe/go/serving/filetree",
-        "//kythe/go/serving/search",
         "//kythe/go/serving/xrefs",
         "//kythe/go/storage/gsutil",
         "//kythe/go/storage/leveldb",
@@ -44,7 +42,6 @@ go_binary(
         "//kythe/go/storage/xrefs",
         "//kythe/go/util/flagutil",
         "//kythe/proto:filetree_proto_go",
-        "//kythe/proto:storage_proto_go",
         "//kythe/proto:xref_proto_go",
     ],
 )
@@ -61,7 +58,6 @@ go_binary(
         "@go_x_net//:context",
         "//kythe/go/platform/vfs",
         "//kythe/go/services/filetree",
-        "//kythe/go/services/search",
         "//kythe/go/services/web",
         "//kythe/go/services/xrefs",
         "//kythe/go/serving/api",
@@ -70,7 +66,6 @@ go_binary(
         "//kythe/go/util/schema",
         "//kythe/go/util/stringset",
         "//kythe/proto:filetree_proto_go",
-        "//kythe/proto:storage_proto_go",
         "//kythe/proto:xref_proto_go",
     ],
 )
@@ -81,7 +76,6 @@ go_binary(
     deps = [
         "@go_x_net//:context",
         "//kythe/go/platform/vfs",
-        "//kythe/go/services/search",
         "//kythe/go/services/xrefs",
         "//kythe/go/serving/api",
         "//kythe/go/util/flagutil",

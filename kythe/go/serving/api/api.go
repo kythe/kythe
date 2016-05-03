@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// Package api provides a union of the filetree, xrefs, and search interfaces
+// Package api provides a union of the filetree and xrefs interfaces
 // and a command-line flag parser.
 package api
 
@@ -26,10 +26,8 @@ import (
 	"strings"
 
 	"kythe.io/kythe/go/services/filetree"
-	"kythe.io/kythe/go/services/search"
 	"kythe.io/kythe/go/services/xrefs"
 	ftsrv "kythe.io/kythe/go/serving/filetree"
-	srchsrv "kythe.io/kythe/go/serving/search"
 	xsrv "kythe.io/kythe/go/serving/xrefs"
 	"kythe.io/kythe/go/storage/leveldb"
 	"kythe.io/kythe/go/storage/table"
@@ -38,15 +36,13 @@ import (
 	"google.golang.org/grpc"
 
 	ftpb "kythe.io/kythe/proto/filetree_proto"
-	spb "kythe.io/kythe/proto/storage_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
-// Interface is a union of the xrefs, search, and filetree interfaces.
+// Interface is a union of the xrefs and filetree interfaces.
 type Interface interface {
 	io.Closer
 	xrefs.Service
-	search.Service
 	filetree.Service
 }
 
@@ -79,7 +75,6 @@ func ParseSpec(apiSpec string) (Interface, error) {
 	if strings.HasPrefix(apiSpec, "http://") || strings.HasPrefix(apiSpec, "https://") {
 		api.xs = xrefs.WebClient(apiSpec)
 		api.ft = filetree.WebClient(apiSpec)
-		api.idx = search.WebClient(apiSpec)
 	} else if _, err := os.Stat(apiSpec); err == nil {
 		db, err := leveldb.Open(apiSpec, nil)
 		if err != nil {
@@ -90,7 +85,6 @@ func ParseSpec(apiSpec string) (Interface, error) {
 		tbl := table.ProtoBatchParallel{&table.KVProto{db}}
 		api.xs = xsrv.NewCombinedTable(tbl)
 		api.ft = &ftsrv.Table{tbl, true}
-		api.idx = &srchsrv.Table{&table.KVInverted{db}}
 	} else {
 		conn, err := grpc.Dial(apiSpec)
 		if err != nil {
@@ -100,7 +94,6 @@ func ParseSpec(apiSpec string) (Interface, error) {
 
 		api.xs = xrefs.GRPC(xpb.NewXRefServiceClient(conn))
 		api.ft = filetree.GRPC(ftpb.NewFileTreeServiceClient(conn))
-		api.idx = search.GRPC(spb.NewSearchServiceClient(conn))
 	}
 	return api, nil
 }
@@ -126,9 +119,8 @@ func (f *apiFlag) String() string { return f.spec }
 
 // apiCloser implements Interface
 type apiCloser struct {
-	xs  xrefs.Service
-	idx search.Service
-	ft  filetree.Service
+	xs xrefs.Service
+	ft filetree.Service
 
 	closer func() error
 }
@@ -169,11 +161,6 @@ func (api apiCloser) Callers(ctx context.Context, req *xpb.CallersRequest) (*xpb
 // Documentation implements part of the xrefs Service interface.
 func (api apiCloser) Documentation(ctx context.Context, req *xpb.DocumentationRequest) (*xpb.DocumentationReply, error) {
 	return api.xs.Documentation(ctx, req)
-}
-
-// Search implements part of the search Service interface.
-func (api apiCloser) Search(ctx context.Context, req *spb.SearchRequest) (*spb.SearchReply, error) {
-	return api.idx.Search(ctx, req)
 }
 
 // Directory implements part of the filetree Service interface.
