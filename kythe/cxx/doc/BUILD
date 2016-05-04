@@ -16,14 +16,22 @@ cc_library(
     ],
 )
 
-cc_test(
-    name = "html_renderer_test",
+cc_library(
+    name = "html_renderer_testlib",
+    testonly = 1,
     srcs = [
         "html_renderer_test.cc",
     ],
     deps = [
         ":html_renderer",
         "//external:googletest",
+    ],
+)
+
+cc_test(
+    name = "html_renderer_test",
+    deps = [
+        ":html_renderer_testlib",
     ],
 )
 
