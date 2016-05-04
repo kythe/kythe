@@ -45,7 +45,7 @@ inline int value_for_hex_digit(char c) {
 
 static constexpr char kHexDigits[] = "0123456789ABCDEF";
 
-std::string UriEscape(UriEscapeMode mode, llvm::StringRef uri) {
+static std::string UriEscape(UriEscapeMode mode, llvm::StringRef uri) {
   size_t num_escapes = 0;
   for (char c : uri) {
     if (should_escape(mode, c)) {
@@ -66,10 +66,14 @@ std::string UriEscape(UriEscapeMode mode, llvm::StringRef uri) {
   return result;
 }
 
+std::string UriEscape(UriEscapeMode mode, const std::string& uri) {
+  return UriEscape(mode, llvm::StringRef(uri));
+}
+
 /// \brief URI-unescapes a string.
 /// \param string The string to unescape.
 /// \return A pair of (success, error-or-unescaped-string).
-std::pair<bool, std::string> UriUnescape(const std::string &string) {
+std::pair<bool, std::string> UriUnescape(const std::string& string) {
   size_t num_escapes = 0;
   for (size_t i = 0, s = string.size(); i < s; ++i) {
     if (string[i] == '%') {
@@ -154,12 +158,13 @@ static std::pair<llvm::StringRef, llvm::StringRef> SplitScheme(
   return std::make_pair(llvm::StringRef(), uri);
 }
 
-URI::URI(const kythe::proto::VName &from_vname) : vname_(from_vname) {
+URI::URI(const kythe::proto::VName& from_vname) : vname_(from_vname) {
   auto corpus = ToStringRef(vname_.corpus());
   vname_.set_corpus(CleanPath(corpus));
 }
 
-bool URI::ParseString(const llvm::StringRef string) {
+bool URI::ParseString(const std::string& in_string) {
+  llvm::StringRef string(in_string);
   auto head_fragment = string.split('#');
   auto head = head_fragment.first, fragment = head_fragment.second;
   auto scheme_head = SplitScheme(head);
