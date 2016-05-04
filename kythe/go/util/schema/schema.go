@@ -38,6 +38,8 @@ const (
 	TextEncodingFact = "/kythe/text/encoding"
 
 	CompleteFact = "/kythe/complete"
+
+	FormatFact = "/kythe/format"
 )
 
 // DefaultTextEncoding is the assumed value of the TextEncodingFact if it is
@@ -50,12 +52,13 @@ const (
 	FileKind   = "file"
 	NameKind   = "name"
 
+	DocKind      = "doc"
 	EnumKind     = "enum"
 	FunctionKind = "function"
 	PackageKind  = "package"
 	RecordKind   = "record"
+	TAppKind     = "tapp"
 	VariableKind = "variable"
-	DocKind      = "doc"
 )
 
 // Kythe node subkinds

@@ -19,6 +19,7 @@ package xrefs
 import (
 	"errors"
 	"fmt"
+	"log"
 	"reflect"
 	"regexp"
 	"testing"
@@ -394,39 +395,193 @@ func TestSlowCallers(t *testing.T) {
 	}
 }
 
+func TestSlowSignature(t *testing.T) {
+	db := []struct {
+		ticket, format, kind, typed, childof string
+		params                               []string
+	}{
+		{ticket: "kythe://test#ident", format: "IDENT", kind: "etc"},
+		{ticket: "kythe:?lang=b#etc%23meta", format: "META", kind: "meta"},
+		{ticket: "kythe://test?lang=b#meta", kind: "etc"},
+		{ticket: "kythe://test#escparen", format: "%%", kind: "etc"},
+		{ticket: "kythe://test#escparentext", format: "a%%b%%c", kind: "etc"},
+		{ticket: "kythe://test#p0", format: "P0", kind: "etc"},
+		{ticket: "kythe://test#p1", format: "P1", kind: "etc"},
+		{ticket: "kythe://test#p2", format: "P2", kind: "etc"},
+		{ticket: "kythe://test#pselect", format: "%0.%1.", kind: "etc", params: []string{"kythe://test#p0", "kythe://test#p1"}},
+		{ticket: "kythe://test#parent", format: "%^::C", kind: "etc", childof: "kythe://test#p0"},
+		{ticket: "kythe://test#parents", format: "%^::D", kind: "etc", childof: "kythe://test#parent"},
+		{ticket: "kythe://test#recurse", format: "%^", kind: "etc", childof: "kythe://test#recurse"},
+		{ticket: "kythe://test#list", format: "%0,", kind: "etc", params: []string{"kythe://test#p0", "kythe://test#p1", "kythe://test#p2"}},
+		{ticket: "kythe://test#listofs1", format: "%1,", kind: "etc", params: []string{"kythe://test#p0", "kythe://test#p1", "kythe://test#p2"}},
+		{ticket: "kythe://test#listofs2", format: "%2,", kind: "etc", params: []string{"kythe://test#p0", "kythe://test#p1", "kythe://test#p2"}},
+		{ticket: "kythe://test#listofs3", format: "%3,", kind: "etc", params: []string{"kythe://test#p0", "kythe://test#p1", "kythe://test#p2"}},
+		{ticket: "kythe://test#typeselect", format: "%1`", kind: "etc", typed: "kythe://test#list"},
+		{ticket: "kythe:?lang=b#tapp%23meta", format: "m%2.m", kind: "meta"},
+		{ticket: "kythe://test#lhs", format: "l%1.l", kind: "tapp"},
+		{ticket: "kythe://test?lang=b#tappmeta", kind: "tapp", params: []string{"kythe://test#missing", "kythe://test#p0", "kythe://test#p1"}},
+		{ticket: "kythe://test?lang=b#tapplhs", kind: "tapp", params: []string{"kythe://test#lhs", "kythe://test#p0"}},
+	}
+	tests := []struct{ ticket, reply string }{
+		{ticket: "kythe://test#ident", reply: "IDENT"},
+		{ticket: "kythe://test?lang=b#meta", reply: "META"},
+		{ticket: "kythe://test#escparen", reply: "%"},
+		{ticket: "kythe://test#escparentext", reply: "a%b%c"},
+		{ticket: "kythe://test#pselect", reply: "P0P1"},
+		{ticket: "kythe://test#recurse", reply: "..."},
+		{ticket: "kythe://test#parent", reply: "P0::C"},
+		{ticket: "kythe://test#parents", reply: "P0::C::D"},
+		{ticket: "kythe://test#list", reply: "P0, P1, P2"},
+		{ticket: "kythe://test#listofs1", reply: "P1, P2"},
+		{ticket: "kythe://test#listofs2", reply: "P2"},
+		{ticket: "kythe://test#listofs3", reply: ""},
+		{ticket: "kythe://test#typeselect", reply: "P1"},
+		{ticket: "kythe://test?lang=b#tappmeta", reply: "mP1m"},
+		{ticket: "kythe://test?lang=b#tapplhs", reply: "lP0l"},
+	}
+	nodes := make(map[string]*xpb.NodeInfo)
+	edges := make(map[string]*xpb.EdgeSet)
+	for _, node := range db {
+		nodes[node.ticket] = &xpb.NodeInfo{
+			Ticket: node.ticket,
+			Fact: []*cpb.Fact{
+				{Name: schema.NodeKindFact, Value: []byte(node.kind)},
+				{Name: schema.FormatFact, Value: []byte(node.format)},
+			},
+		}
+		set := &xpb.EdgeSet{SourceTicket: node.ticket}
+		if node.typed != "" {
+			set.Group = append(set.Group, &xpb.EdgeSet_Group{
+				Kind: schema.TypedEdge,
+				Edge: []*xpb.EdgeSet_Group_Edge{{TargetTicket: node.typed}},
+			})
+		}
+		if node.childof != "" {
+			set.Group = append(set.Group, &xpb.EdgeSet_Group{
+				Kind: schema.ChildOfEdge,
+				Edge: []*xpb.EdgeSet_Group_Edge{{TargetTicket: node.childof}},
+			})
+		}
+		if node.params != nil {
+			var edges []*xpb.EdgeSet_Group_Edge
+			for i, p := range node.params {
+				edges = append(edges, &xpb.EdgeSet_Group_Edge{TargetTicket: p, Ordinal: int32(i)})
+			}
+			set.Group = append(set.Group, &xpb.EdgeSet_Group{
+				Kind: schema.ParamEdge,
+				Edge: edges,
+			})
+		}
+		edges[node.ticket] = set
+	}
+	getNode := func(ticket string, facts []string) *xpb.NodeInfo {
+		data, found := nodes[ticket]
+		if !found {
+			return nil
+		}
+		info := &xpb.NodeInfo{Ticket: ticket}
+		for _, fact := range facts {
+			for _, nfact := range data.Fact {
+				if nfact.Name == fact {
+					info.Fact = append(info.Fact, nfact)
+					break
+				}
+			}
+		}
+		return info
+	}
+	service := &mockService{
+		NodesFn: func(req *xpb.NodesRequest) (*xpb.NodesReply, error) {
+			log.Printf("NodesFn: %v", req)
+			if len(req.Ticket) != 1 {
+				t.Fatalf("Unexpected Nodes request: %v", req)
+				return nil, nil
+			}
+			reply := &xpb.NodesReply{}
+			if info := getNode(req.Ticket[0], req.Filter); info != nil {
+				reply.Node = append(reply.Node, info)
+			}
+			return reply, nil
+		},
+		EdgesFn: func(req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
+			log.Printf("EdgesFn: %v", req)
+			if len(req.Ticket) != 1 {
+				t.Fatalf("Unexpected Edges request: %v", req)
+				return nil, nil
+			}
+			reply := &xpb.EdgesReply{}
+			if data, found := edges[req.Ticket[0]]; found {
+				set := &xpb.EdgeSet{}
+				reply.EdgeSet = append(reply.EdgeSet, set)
+				nodes := make(map[string]bool)
+				for _, group := range data.Group {
+					for _, kind := range req.Kind {
+						if group.Kind == kind {
+							set.Group = append(set.Group, group)
+							for _, edge := range group.Edge {
+								if !nodes[edge.TargetTicket] {
+									nodes[edge.TargetTicket] = true
+									if node := getNode(edge.TargetTicket, req.Filter); node != nil {
+										reply.Node = append(reply.Node, node)
+									}
+								}
+							}
+							break
+						}
+					}
+				}
+			}
+			log.Printf(" => %v", reply)
+			return reply, nil
+		},
+	}
+	_, err := SlowSignature(nil, service, "kythe://test#missing")
+	if err == nil {
+		t.Fatal("SlowSignature should return an error for a missing ticket")
+	}
+	for _, test := range tests {
+		reply, err := SlowSignature(nil, service, test.ticket)
+		if err != nil {
+			t.Fatalf("SlowSignature error for %s: %v", test.ticket, err)
+		}
+		if err := testutil.DeepEqual(&xpb.DocumentationReply_Printable{RawText: test.reply}, reply); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
 func TestSlowDocumentation(t *testing.T) {
 	db := []struct {
-		ticket, kind, documented, defines, completes, completed, childof, typed, text string
-		params, definitionText                                                        []string
+		ticket, kind, documented, defines, completes, completed, childof, typed, text, format string
+		params, definitionText                                                                []string
 	}{
-		{ticket: "kythe://test#a", kind: "etc", documented: "kythe://test#adoc"},
+		{ticket: "kythe://test#a", kind: "etc", documented: "kythe://test#adoc", format: "asig"},
 		{ticket: "kythe://test#adoc", kind: "doc", text: "atext"},
 		{ticket: "kythe://test#fdoc", kind: "doc", text: "ftext"},
-		{ticket: "kythe://test#fdecl", kind: "function", documented: "kythe://test#fdoc"},
-		{ticket: "kythe://test#fdefn", kind: "function", completed: "kythe://test#fbind"},
+		{ticket: "kythe://test#fdecl", kind: "function", documented: "kythe://test#fdoc", format: "fsig"},
+		{ticket: "kythe://test#fdefn", kind: "function", completed: "kythe://test#fbind", format: "fsig"},
 		{ticket: "kythe://test#fbind", kind: "anchor", defines: "kythe://test#fdefn", completes: "kythe://test#fdecl"},
 		{ticket: "kythe://test#l", kind: "etc", documented: "kythe://test#ldoc"},
 		{ticket: "kythe://test#ldoc", kind: "doc", text: "ltext", params: []string{"kythe://test#l1", "kythe://test#l2"}},
 		{ticket: "kythe://test#l1", kind: "etc", definitionText: []string{"deftext1"}},
 		{ticket: "kythe://test#l2", kind: "etc", definitionText: []string{"deftext2"}},
-		{ticket: "kythe://test#l", kind: "etc", documented: "kythe://test#ldoc"},
+		{ticket: "kythe://test#l", kind: "etc", documented: "kythe://test#ldoc", format: "lsig"},
 	}
-	mkPr := func(text string, link ...string) *xpb.DocumentationReply_Printable {
-		links := make([]*xpb.DocumentationReply_Link, len(link))
-		for i := range links {
-			links[i] = &xpb.DocumentationReply_Link{Definition: []*xpb.Anchor{&xpb.Anchor{Text: link[i]}}}
+	mkPr := func(text string, linkTicket ...string) *xpb.DocumentationReply_Printable {
+		links := make([]*xpb.DocumentationReply_Link, len(linkTicket))
+		for i, link := range linkTicket {
+			links[i] = &xpb.DocumentationReply_Link{Definition: []*xpb.Anchor{{Text: link}}}
 		}
 		return &xpb.DocumentationReply_Printable{RawText: text, Link: links}
 	}
-	noSig := mkPr("SlowSignature unimplemented")
 	tests := []struct {
 		ticket string
 		reply  *xpb.DocumentationReply_Document
 	}{
-		{ticket: "kythe://test#a", reply: &xpb.DocumentationReply_Document{Signature: noSig, Kind: "etc", Text: mkPr("atext")}},
-		{ticket: "kythe://test#fdecl", reply: &xpb.DocumentationReply_Document{Signature: noSig, Kind: "function", Text: mkPr("ftext")}},
-		{ticket: "kythe://test#fdefn", reply: &xpb.DocumentationReply_Document{Signature: noSig, Kind: "function", Text: mkPr("ftext")}},
-		{ticket: "kythe://test#l", reply: &xpb.DocumentationReply_Document{Signature: noSig, Kind: "etc", Text: mkPr("ltext", "deftext1", "deftext2")}},
+		{ticket: "kythe://test#a", reply: &xpb.DocumentationReply_Document{Signature: mkPr("asig"), Kind: "etc", Text: mkPr("atext")}},
+		{ticket: "kythe://test#fdecl", reply: &xpb.DocumentationReply_Document{Signature: mkPr("fsig"), Kind: "function", Text: mkPr("ftext")}},
+		{ticket: "kythe://test#fdefn", reply: &xpb.DocumentationReply_Document{Signature: mkPr("fsig"), Kind: "function", Text: mkPr("ftext")}},
+		{ticket: "kythe://test#l", reply: &xpb.DocumentationReply_Document{Signature: mkPr("lsig"), Kind: "etc", Text: mkPr("ltext", "deftext1", "deftext2")}},
 	}
 	nodes := make(map[string]*xpb.NodeInfo)
 	edges := make(map[string]*xpb.EdgeSet)
@@ -437,6 +592,7 @@ func TestSlowDocumentation(t *testing.T) {
 			Fact: []*cpb.Fact{
 				&cpb.Fact{Name: schema.NodeKindFact, Value: []byte(node.kind)},
 				&cpb.Fact{Name: schema.TextFact, Value: []byte(node.text)},
+				&cpb.Fact{Name: schema.FormatFact, Value: []byte(node.format)},
 			},
 		}
 		if node.definitionText != nil {
