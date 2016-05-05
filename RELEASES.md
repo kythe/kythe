@@ -13,6 +13,7 @@ Notable additions:
  - kythe tool: add `--target_definitions` switch to `decor` subcommand
 
 Notable fixes:
+  `write_tables`: correctly handle nodes with missing facts
  - Javac extractor: add processors registered in META-INF/services
  - javac-wrapper.sh: prepend bootclasspath jar to use packaged javac tools
 

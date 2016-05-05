@@ -211,12 +211,17 @@ func combineNodesAndEdges(ctx context.Context, opts *Options, out *servingOutput
 		e := i.(*srvpb.Edge)
 		if n == nil || n.Ticket != e.Source.Ticket {
 			n = e.Source
-			return cSorter.Add(e)
-		} else if e.Target != nil {
-			e.Source = n
-			if err := writeCompletedEdges(ctx, cSorter, e); err != nil {
-				return fmt.Errorf("error writing complete edge: %v", err)
+			if e.Target != nil {
+				log.Printf("WARNING: missing node facts for: %q", e.Source.Ticket)
 			}
+		}
+		if e.Target == nil {
+			// pass-through self-edges
+			return cSorter.Add(e)
+		}
+		e.Source = n
+		if err := writeCompletedEdges(ctx, cSorter, e); err != nil {
+			return fmt.Errorf("error writing complete edge: %v", err)
 		}
 		return nil
 	}); err != nil {
