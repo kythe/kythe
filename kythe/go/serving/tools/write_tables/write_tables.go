@@ -54,6 +54,8 @@ var (
 		"Maximum number of elements (edges, decoration fragments, etc.) to keep in-memory before flushing an intermediary data shard to disk.")
 	shardIOBufferSize = datasize.Flag("shard_io_buffer", "16KiB",
 		"Size of the reading/writing buffers for the intermediary data shards.")
+
+	verbose = flag.Bool("verbose", false, "Whether to emit extra, and possibly excessive, log messages")
 )
 
 func init() {
@@ -110,6 +112,7 @@ func main() {
 	}
 
 	if err := pipeline.Run(ctx, entries, db, &pipeline.Options{
+		Verbose:        *verbose,
 		MaxPageSize:    *maxPageSize,
 		CompressShards: *compressShards,
 		MaxShardSize:   *maxShardSize,

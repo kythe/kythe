@@ -51,6 +51,9 @@ import (
 
 // Options controls the behavior of pipeline.Run.
 type Options struct {
+	// Verbose determines whether to emit extra, and possibly excessive, log messages.
+	Verbose bool
+
 	// MaxPageSize is maximum number of edges/cross-references that are allowed in
 	// PagedEdgeSets, CrossReferences, EdgePages, and CrossReferences_Pages.  If
 	// MaxPageSize <= 0, no paging is attempted.
@@ -212,7 +215,9 @@ func combineNodesAndEdges(ctx context.Context, opts *Options, out *servingOutput
 		if n == nil || n.Ticket != e.Source.Ticket {
 			n = e.Source
 			if e.Target != nil {
-				log.Printf("WARNING: missing node facts for: %q", e.Source.Ticket)
+				if opts.Verbose {
+					log.Printf("WARNING: missing node facts for: %q", e.Source.Ticket)
+				}
 			}
 		}
 		if e.Target == nil {
@@ -448,7 +453,9 @@ func writeDecorAndRefs(ctx context.Context, opts *Options, edges <-chan *srvpb.E
 			for _, d := range fragment.Decoration {
 				cr, err := assemble.CrossReference(file, norm, d)
 				if err != nil {
-					log.Printf("WARNING: error assembling cross-reference: %v", err)
+					if opts.Verbose {
+						log.Printf("WARNING: error assembling cross-reference: %v", err)
+					}
 					continue
 				}
 				if err := refSorter.Add(cr); err != nil {
