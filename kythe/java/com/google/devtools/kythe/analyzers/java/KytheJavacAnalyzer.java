@@ -86,7 +86,8 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
           entrySets,
           signatureGenerator,
           (JCCompilationUnit) ast,
-          details.getEncoding());
+          details.getEncoding(),
+          config.getVerboseLogging());
     } catch (IOException e) {
       throw new AnalysisException("Exception analyzing file: " + ast.getSourceFile().getName(), e);
     }

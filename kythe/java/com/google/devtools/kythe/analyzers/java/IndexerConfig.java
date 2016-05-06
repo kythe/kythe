@@ -44,6 +44,13 @@ public class IndexerConfig {
   )
   private boolean ignoreVNamePaths;
 
+  @Parameter(
+    names = "--verbose",
+    description =
+        "Determines whether the analyzer should emit verbose logging messages for debugging."
+  )
+  private boolean verboseLogging;
+
   public IndexerConfig(String programName) {
     this.programName = programName;
   }
@@ -69,8 +76,17 @@ public class IndexerConfig {
     return ignoreVNamePaths;
   }
 
+  public final boolean getVerboseLogging() {
+    return verboseLogging;
+  }
+
   public IndexerConfig setIgnoreVNamePaths(boolean ignoreVNamePaths) {
     this.ignoreVNamePaths = ignoreVNamePaths;
+    return this;
+  }
+
+  public IndexerConfig setVerboseLogging(boolean verboseLogging) {
+    this.verboseLogging = verboseLogging;
     return this;
   }
 }

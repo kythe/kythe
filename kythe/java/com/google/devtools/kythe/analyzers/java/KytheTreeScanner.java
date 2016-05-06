@@ -39,6 +39,7 @@ import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import com.sun.tools.javac.code.Symbol.PackageSymbol;
 import com.sun.tools.javac.code.Symtab;
 import com.sun.tools.javac.code.Type;
+import com.sun.tools.javac.code.TypeTag;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCAnnotation;
 import com.sun.tools.javac.tree.JCTree.JCArrayTypeTree;
@@ -83,6 +84,7 @@ import javax.lang.model.element.Name;
 /** {@link JCTreeScanner} that emits Kythe nodes and edges. */
 public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   private static final FormattingLogger logger = FormattingLogger.getLogger(KytheTreeScanner.class);
+  private final boolean verboseLogging;
 
   private final JavaEntrySets entrySets;
   private final StatisticsCollector statistics;
@@ -99,12 +101,14 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       StatisticsCollector statistics,
       SignatureGenerator signatureGenerator,
       SourceText src,
-      Context javaContext) {
+      Context javaContext,
+      boolean verboseLogging) {
     this.entrySets = entrySets;
     this.statistics = statistics;
     this.signatureGenerator = signatureGenerator;
     this.filePositions = src.getPositions();
     this.javaContext = javaContext;
+    this.verboseLogging = verboseLogging;
 
     for (SourceText.Comment comment : src.getComments()) {
       for (int line = comment.lineSpan.getStart(); line <= comment.lineSpan.getEnd(); line++) {
@@ -123,10 +127,12 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       JavaEntrySets entrySets,
       SignatureGenerator signatureGenerator,
       JCCompilationUnit compilation,
-      Charset sourceEncoding)
+      Charset sourceEncoding,
+      boolean verboseLogging)
       throws IOException {
     SourceText src = new SourceText(javaContext, compilation, sourceEncoding);
-    new KytheTreeScanner(entrySets, statistics, signatureGenerator, src, javaContext)
+    new KytheTreeScanner(
+            entrySets, statistics, signatureGenerator, src, javaContext, verboseLogging)
         .scan(compilation, null);
   }
 
@@ -538,7 +544,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   @Override
   public JavaNode visitTypeIdent(JCPrimitiveTypeTree primitiveType, TreeContext owner) {
     TreeContext ctx = owner.down(primitiveType);
-    String name = primitiveType.getPrimitiveTypeKind().toString().toLowerCase();
+    if (verboseLogging && primitiveType.typetag == TypeTag.ERROR) {
+      System.err.println("WARNING: found primitive ERROR type: " + ctx);
+    }
+    String name = primitiveType.typetag.toString().toLowerCase();
     EntrySet node = entrySets.getBuiltin(name);
     emitAnchor(ctx, EdgeKind.REF, node);
     return new JavaNode(node, name);
@@ -864,6 +873,34 @@ class TreeContext {
 
   public Span getSnippet() {
     return snippet;
+  }
+
+  @Override
+  public String toString() {
+    List<String> parts = new LinkedList<>();
+    parts.add("JCTree = " + tree);
+    if (node != null) {
+      parts.add("JavaNode = " + node);
+    }
+    parts.add("TreeSpan = " + getTreeSpan());
+    if (snippet != null) {
+      parts.add("Snippet span = " + snippet);
+    }
+    List<String> parents = new LinkedList<>();
+    TreeContext cur = up;
+    while (cur != null) {
+      String parent = "" + cur.getTree().getTag();
+      String name = NameVisitor.getName(cur.getTree());
+      if (name != null) {
+        parent += "[" + name + "]";
+      }
+      parents.add(parent);
+      cur = cur.up();
+    }
+    if (!parents.isEmpty()) {
+      parts.add("JCTree parents = " + parents);
+    }
+    return String.format("TreeContext{\n  %s,\n}", Joiner.on(",\n  ").join(parts));
   }
 }
 

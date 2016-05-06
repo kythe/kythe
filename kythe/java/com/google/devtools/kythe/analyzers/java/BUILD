@@ -13,6 +13,7 @@ java_library(
         "KytheDocTreeScanner.java",
         "KytheJavacAnalyzer.java",
         "KytheTreeScanner.java",
+        "NameVisitor.java",
         "SourceText.java",
     ],
     deps = [
