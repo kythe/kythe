@@ -163,6 +163,7 @@ java_verifier_test = rule(
             default = Label("//kythe/java/com/google/devtools/kythe/analyzers/java:indexer"),
             executable = True,
         ),
+        "indexer_opts": attr.string_list(["--verbose"]),
         "_cdexec": attr.label(
             default = Label("//tools/cdexec:cdexec"),
             executable = True,
