@@ -41,22 +41,8 @@ import (
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
-// Source is a collection of facts and edges with a common source.
-type Source struct {
-	Ticket string
-
-	Facts map[string][]byte
-	Edges map[string][]EdgeTarget
-}
-
-// EdgeTarget is a target of an edge with an optional ordinal.
-type EdgeTarget struct {
-	Ticket  string
-	Ordinal int32
-}
-
 // Node returns the Source as a srvpb.Node.
-func (s *Source) Node() *srvpb.Node {
+func Node(s *ipb.Source) *srvpb.Node {
 	facts := make([]*cpb.Fact, 0, len(s.Facts))
 	for name, value := range s.Facts {
 		facts = append(facts, &cpb.Fact{Name: name, Value: value})
@@ -70,15 +56,15 @@ func (s *Source) Node() *srvpb.Node {
 
 // SourceFromEntries returns a new Source from the given a set of entries with
 // the same source VName.
-func SourceFromEntries(entries []*spb.Entry) *Source {
+func SourceFromEntries(entries []*spb.Entry) *ipb.Source {
 	if len(entries) == 0 {
 		return nil
 	}
 
-	src := &Source{
-		Ticket: kytheuri.ToString(entries[0].Source),
-		Facts:  make(map[string][]byte),
-		Edges:  make(map[string][]EdgeTarget),
+	src := &ipb.Source{
+		Ticket:     kytheuri.ToString(entries[0].Source),
+		Facts:      make(map[string][]byte),
+		EdgeGroups: make(map[string]*ipb.Source_EdgeGroup),
 	}
 
 	// edge kind -> target ticket -> ordinal set
@@ -105,15 +91,17 @@ func SourceFromEntries(entries []*spb.Entry) *Source {
 		}
 	}
 	for kind, targets := range edges {
+		edges := make([]*ipb.Source_Edge, 0, len(targets))
 		for target, ordinals := range targets {
 			for ordinal := range ordinals {
-				src.Edges[kind] = append(src.Edges[kind], EdgeTarget{
+				edges = append(edges, &ipb.Source_Edge{
 					Ticket:  target,
 					Ordinal: ordinal,
 				})
 			}
 		}
-		sort.Sort(byOrdinal(src.Edges[kind]))
+		sort.Sort(byOrdinal(edges))
+		src.EdgeGroups[kind] = &ipb.Source_EdgeGroup{Edges: edges}
 	}
 
 	return src
@@ -142,8 +130,8 @@ func GetFact(facts []*cpb.Fact, name string) []byte {
 // reversed Edge has its Target fully populated and its Source will have no facts.  To ensure every
 // node has at least 1 Edge, the first Edge will be a self-edge without a Kind or Target.  To reduce
 // the size of edge sets, each Target will have any text facts filtered (see FilterTextFacts).
-func PartialReverseEdges(src *Source) []*srvpb.Edge {
-	node := src.Node()
+func PartialReverseEdges(src *ipb.Source) []*srvpb.Edge {
+	node := Node(src)
 
 	edges := []*srvpb.Edge{{
 		Source: node, // self-edge to ensure every node has at least 1 edge
@@ -151,9 +139,9 @@ func PartialReverseEdges(src *Source) []*srvpb.Edge {
 
 	targetNode := FilterTextFacts(node)
 
-	for kind, targets := range src.Edges {
+	for kind, group := range src.EdgeGroups {
 		rev := schema.MirrorEdge(kind)
-		for _, target := range targets {
+		for _, target := range group.Edges {
 			edges = append(edges, &srvpb.Edge{
 				Source:  &srvpb.Node{Ticket: target.Ticket},
 				Kind:    rev,
@@ -750,7 +738,7 @@ func (s byRefKind) Less(i, j int) bool { return edgeKindLess(s[i].Kind, s[j].Kin
 func (s byRefKind) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 
 // byOrdinal sorts edges by their ordinals
-type byOrdinal []EdgeTarget
+type byOrdinal []*ipb.Source_Edge
 
 func (s byOrdinal) Len() int      { return len(s) }
 func (s byOrdinal) Swap(i, j int) { s[i], s[j] = s[j], s[i] }

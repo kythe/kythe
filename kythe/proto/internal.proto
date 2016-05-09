@@ -20,6 +20,30 @@ package kythe.proto.internal;
 
 import "kythe/proto/serving.proto";
 
+// Source is a collection of facts and edges with a common source.
+message Source {
+  message Edge {
+    // Target ticket of the edge
+    string ticket = 1;
+    // Ordinal of the edge
+    int32 ordinal = 2;
+  }
+
+  message EdgeGroup {
+    // Set of Edges sharing the same kind and source
+    repeated Edge edges = 1;
+  }
+
+  // Ticket of the source node
+  string ticket = 1;
+
+  // Fact name -> fact value
+  map<string, bytes> facts = 2;
+
+  // Edge kind -> EdgeGroup
+  map<string, EdgeGroup> edge_groups = 3;
+}
+
 // Internal encoding for an EdgesReply/CrossReferencesReply page_token
 message PageToken {
   // Index into the primary reply sequence.

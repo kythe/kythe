@@ -270,7 +270,7 @@ func filterReverses(entries <-chan *spb.Entry) <-chan *spb.Entry {
 	return ch
 }
 
-func writePartialEdges(ctx context.Context, sorter disksort.Interface, idx table.BufferedInverted, src *assemble.Source) error {
+func writePartialEdges(ctx context.Context, sorter disksort.Interface, idx table.BufferedInverted, src *ipb.Source) error {
 	edges := assemble.PartialReverseEdges(src)
 	for _, pe := range edges {
 		if err := sorter.Add(pe); err != nil {
