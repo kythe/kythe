@@ -229,6 +229,9 @@ message EdgesReply {
   // additional requests.
   map<string, NodeInfo> nodes = 2;
 
+  // Total number of edges on all pages matching requested kinds.
+  int64 total_edges = 3;
+
   // If there are additional pages of edges after the ones returned in this
   // reply, next_page_token is the page token that may be passed to fetch the
   // next page in sequence after this one.  If there are no additional edges,
@@ -535,6 +538,9 @@ message CrossReferencesReply {
     // The set of related nodes to the given node.
     repeated RelatedNode related_node = 10;
   }
+
+  // Total number of cross-references on all pages matching requested filters.
+  int64 total_references = 4;
 
   // Sets of cross-references for each requested node
   map<string, CrossReferenceSet> cross_references = 1;

@@ -284,6 +284,7 @@ type edgesRequest struct {
 	Filters []string
 	Kinds   func(string) bool
 
+	TotalOnly bool
 	PageSize  int
 	PageToken string
 }
@@ -292,7 +293,9 @@ func (t *tableImpl) edges(ctx context.Context, req edgesRequest) (*xpb.EdgesRepl
 	stats := filterStats{
 		max: int(req.PageSize),
 	}
-	if stats.max < 0 {
+	if req.TotalOnly {
+		stats.max = 0
+	} else if stats.max < 0 {
 		return nil, fmt.Errorf("invalid page_size: %d", req.PageSize)
 	} else if stats.max == 0 {
 		stats.max = defaultPageSize
@@ -424,6 +427,9 @@ func (t *tableImpl) edges(ctx context.Context, req edgesRequest) (*xpb.EdgesRepl
 		}
 		reply.NextPageToken = base64.StdEncoding.EncodeToString(rec)
 	}
+
+	reply.TotalEdges = int64(totalEdgesPossible)
+
 	return reply, nil
 }
 
@@ -673,101 +679,113 @@ func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReference
 	}
 	var nextToken *ipb.PageToken
 
-	if edgesPageToken == "" &&
+	wantMoreCrossRefs := edgesPageToken == "" &&
 		(req.DefinitionKind != xpb.CrossReferencesRequest_NO_DEFINITIONS ||
+			req.DeclarationKind != xpb.CrossReferencesRequest_NO_DECLARATIONS ||
 			req.ReferenceKind != xpb.CrossReferencesRequest_NO_REFERENCES ||
-			req.DocumentationKind != xpb.CrossReferencesRequest_NO_DOCUMENTATION) {
-		for _, ticket := range tickets {
-			// TODO(schroederc): retrieve PagedCrossReferences in parallel
-			cr, err := t.crossReferences(ctx, ticket)
-			if err == table.ErrNoSuchKey {
-				log.Println("Missing CrossReferences:", ticket)
-				continue
-			} else if err != nil {
-				return nil, fmt.Errorf("error looking up cross-references for ticket %q: %v", ticket, err)
-			}
+			req.DocumentationKind != xpb.CrossReferencesRequest_NO_DOCUMENTATION)
 
-			crs := &xpb.CrossReferencesReply_CrossReferenceSet{
-				Ticket: ticket,
-			}
-			for _, grp := range cr.Group {
-				if xrefs.IsDefKind(req.DefinitionKind, grp.Kind, cr.Incomplete) {
-					totalRefsPossible += len(grp.Anchor)
-					if stats.addAnchors(&crs.Definition, grp.Anchor, req.AnchorText) {
-						break
-					}
-				} else if xrefs.IsDeclKind(req.DeclarationKind, grp.Kind, cr.Incomplete) {
-					totalRefsPossible += len(grp.Anchor)
-					if stats.addAnchors(&crs.Declaration, grp.Anchor, req.AnchorText) {
-						break
-					}
-				} else if xrefs.IsDocKind(req.DocumentationKind, grp.Kind) {
-					totalRefsPossible += len(grp.Anchor)
-					if stats.addAnchors(&crs.Documentation, grp.Anchor, req.AnchorText) {
-						break
-					}
-				} else if xrefs.IsRefKind(req.ReferenceKind, grp.Kind) {
-					totalRefsPossible += len(grp.Anchor)
-					if stats.addAnchors(&crs.Reference, grp.Anchor, req.AnchorText) {
-						break
-					}
+	for _, ticket := range tickets {
+		// TODO(schroederc): retrieve PagedCrossReferences in parallel
+		cr, err := t.crossReferences(ctx, ticket)
+		if err == table.ErrNoSuchKey {
+			log.Println("Missing CrossReferences:", ticket)
+			continue
+		} else if err != nil {
+			return nil, fmt.Errorf("error looking up cross-references for ticket %q: %v", ticket, err)
+		}
+
+		crs := &xpb.CrossReferencesReply_CrossReferenceSet{
+			Ticket: ticket,
+		}
+		for _, grp := range cr.Group {
+			switch {
+			case xrefs.IsDefKind(req.DefinitionKind, grp.Kind, cr.Incomplete):
+				totalRefsPossible += len(grp.Anchor)
+				if wantMoreCrossRefs {
+					stats.addAnchors(&crs.Definition, grp.Anchor, req.AnchorText)
+				}
+			case xrefs.IsDeclKind(req.DeclarationKind, grp.Kind, cr.Incomplete):
+				totalRefsPossible += len(grp.Anchor)
+				if wantMoreCrossRefs {
+					stats.addAnchors(&crs.Declaration, grp.Anchor, req.AnchorText)
+				}
+			case xrefs.IsDocKind(req.DocumentationKind, grp.Kind):
+				totalRefsPossible += len(grp.Anchor)
+				if wantMoreCrossRefs {
+					stats.addAnchors(&crs.Documentation, grp.Anchor, req.AnchorText)
+				}
+			case xrefs.IsRefKind(req.ReferenceKind, grp.Kind):
+				totalRefsPossible += len(grp.Anchor)
+				if wantMoreCrossRefs {
+					stats.addAnchors(&crs.Reference, grp.Anchor, req.AnchorText)
 				}
 			}
+		}
 
-			if stats.total < stats.max {
-				for _, idx := range cr.PageIndex {
-
-					// TODO(schroederc): skip entire read if s.skip >= idx.Count
+		for _, idx := range cr.PageIndex {
+			switch {
+			case xrefs.IsDefKind(req.DefinitionKind, idx.Kind, cr.Incomplete):
+				totalRefsPossible += int(idx.Count)
+				if wantMoreCrossRefs && !stats.skipPage(idx) {
 					p, err := t.crossReferencesPage(ctx, idx.PageKey)
 					if err != nil {
 						return nil, fmt.Errorf("internal error: error retrieving cross-references page: %v", idx.PageKey)
 					}
-
-					if xrefs.IsDefKind(req.DefinitionKind, p.Group.Kind, cr.Incomplete) {
-						totalRefsPossible += len(p.Group.Anchor)
-						if stats.addAnchors(&crs.Definition, p.Group.Anchor, req.AnchorText) {
-							break
-						}
-					} else if xrefs.IsDeclKind(req.DeclarationKind, p.Group.Kind, cr.Incomplete) {
-						totalRefsPossible += len(p.Group.Anchor)
-						if stats.addAnchors(&crs.Declaration, p.Group.Anchor, req.AnchorText) {
-							break
-						}
-					} else if xrefs.IsDocKind(req.DocumentationKind, p.Group.Kind) {
-						totalRefsPossible += len(p.Group.Anchor)
-						if stats.addAnchors(&crs.Documentation, p.Group.Anchor, req.AnchorText) {
-							break
-						}
-					} else {
-						totalRefsPossible += len(p.Group.Anchor)
-						if stats.addAnchors(&crs.Reference, p.Group.Anchor, req.AnchorText) {
-							break
-						}
-					}
+					stats.addAnchors(&crs.Definition, p.Group.Anchor, req.AnchorText)
 				}
-			}
-
-			if len(crs.Definition) > 0 || len(crs.Reference) > 0 || len(crs.Documentation) > 0 {
-				reply.CrossReferences[crs.Ticket] = crs
+			case xrefs.IsDeclKind(req.DeclarationKind, idx.Kind, cr.Incomplete):
+				totalRefsPossible += int(idx.Count)
+				if wantMoreCrossRefs && !stats.skipPage(idx) {
+					p, err := t.crossReferencesPage(ctx, idx.PageKey)
+					if err != nil {
+						return nil, fmt.Errorf("internal error: error retrieving cross-references page: %v", idx.PageKey)
+					}
+					stats.addAnchors(&crs.Declaration, p.Group.Anchor, req.AnchorText)
+				}
+			case xrefs.IsDocKind(req.DocumentationKind, idx.Kind):
+				totalRefsPossible += int(idx.Count)
+				if wantMoreCrossRefs && !stats.skipPage(idx) {
+					p, err := t.crossReferencesPage(ctx, idx.PageKey)
+					if err != nil {
+						return nil, fmt.Errorf("internal error: error retrieving cross-references page: %v", idx.PageKey)
+					}
+					stats.addAnchors(&crs.Documentation, p.Group.Anchor, req.AnchorText)
+				}
+			case xrefs.IsRefKind(req.ReferenceKind, idx.Kind):
+				totalRefsPossible += int(idx.Count)
+				if wantMoreCrossRefs && !stats.skipPage(idx) {
+					p, err := t.crossReferencesPage(ctx, idx.PageKey)
+					if err != nil {
+						return nil, fmt.Errorf("internal error: error retrieving cross-references page: %v", idx.PageKey)
+					}
+					stats.addAnchors(&crs.Reference, p.Group.Anchor, req.AnchorText)
+				}
 			}
 		}
 
-		if pageToken+stats.total != totalRefsPossible && stats.total != 0 {
-			nextToken = &ipb.PageToken{Index: int32(pageToken + stats.total)}
+		if len(crs.Declaration) > 0 || len(crs.Definition) > 0 || len(crs.Reference) > 0 || len(crs.Documentation) > 0 {
+			reply.CrossReferences[crs.Ticket] = crs
 		}
 	}
 
-	if len(req.Filter) > 0 && stats.total < stats.max {
+	if pageToken+stats.total != totalRefsPossible && stats.total != 0 {
+		nextToken = &ipb.PageToken{Index: int32(pageToken + stats.total)}
+	}
+
+	if len(req.Filter) > 0 {
 		er, err := t.edges(ctx, edgesRequest{
 			Tickets:   tickets,
 			Filters:   req.Filter,
 			Kinds:     func(kind string) bool { return !schema.IsAnchorEdge(kind) },
 			PageToken: edgesPageToken,
+			TotalOnly: (stats.max <= stats.total),
 			PageSize:  stats.max - stats.total,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("error getting related nodes: %v", err)
 		}
+		totalRefsPossible += int(er.TotalEdges)
 		for ticket, es := range er.EdgeSets {
 			nodes := stringset.New()
 			crs, ok := reply.CrossReferences[ticket]
@@ -777,15 +795,13 @@ func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReference
 				}
 			}
 			for kind, g := range es.Groups {
-				if !schema.IsAnchorEdge(kind) {
-					for _, edge := range g.Edge {
-						nodes.Add(edge.TargetTicket)
-						crs.RelatedNode = append(crs.RelatedNode, &xpb.CrossReferencesReply_RelatedNode{
-							RelationKind: kind,
-							Ticket:       edge.TargetTicket,
-							Ordinal:      edge.Ordinal,
-						})
-					}
+				for _, edge := range g.Edge {
+					nodes.Add(edge.TargetTicket)
+					crs.RelatedNode = append(crs.RelatedNode, &xpb.CrossReferencesReply_RelatedNode{
+						RelationKind: kind,
+						Ticket:       edge.TargetTicket,
+						Ordinal:      edge.Ordinal,
+					})
 				}
 			}
 			if len(nodes) > 0 {
@@ -805,6 +821,8 @@ func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReference
 			nextToken = &ipb.PageToken{SecondaryToken: er.NextPageToken}
 		}
 	}
+
+	reply.TotalReferences = int64(totalRefsPossible)
 
 	if nextToken != nil {
 		rec, err := proto.Marshal(nextToken)
@@ -844,6 +862,14 @@ func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReference
 
 type refStats struct {
 	skip, total, max int
+}
+
+func (s *refStats) skipPage(idx *srvpb.PagedCrossReferences_PageIndex) bool {
+	if s.skip > int(idx.Count) {
+		s.skip -= int(idx.Count)
+		return true
+	}
+	return false
 }
 
 func (s *refStats) addAnchors(to *[]*xpb.Anchor, as []*srvpb.ExpandedAnchor, anchorText bool) bool {
