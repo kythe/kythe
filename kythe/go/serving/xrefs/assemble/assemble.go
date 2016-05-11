@@ -54,6 +54,36 @@ func Node(s *ipb.Source) *srvpb.Node {
 	}
 }
 
+// AppendEntry adds the given Entry to the Source's facts or edges.  It is
+// assumed that src.Ticket == kytheuri.ToString(e.Source).
+func AppendEntry(src *ipb.Source, e *spb.Entry) {
+	if graphstore.IsEdge(e) {
+		kind, ordinal, _ := schema.ParseOrdinal(e.EdgeKind)
+		group, ok := src.EdgeGroups[kind]
+		if !ok {
+			group = &ipb.Source_EdgeGroup{}
+			src.EdgeGroups[kind] = group
+		}
+
+		ticket := kytheuri.ToString(e.Target)
+
+		ord := int32(ordinal)
+		for _, edge := range group.Edges {
+			if edge.Ticket == ticket && edge.Ordinal == ord {
+				// Don't add duplicate edge
+				return
+			}
+		}
+
+		group.Edges = append(group.Edges, &ipb.Source_Edge{
+			Ticket:  ticket,
+			Ordinal: ord,
+		})
+	} else {
+		src.Facts[e.FactName] = e.FactValue
+	}
+}
+
 // SourceFromEntries returns a new Source from the given a set of entries with
 // the same source VName.
 func SourceFromEntries(entries []*spb.Entry) *ipb.Source {
@@ -67,41 +97,12 @@ func SourceFromEntries(entries []*spb.Entry) *ipb.Source {
 		EdgeGroups: make(map[string]*ipb.Source_EdgeGroup),
 	}
 
-	// edge kind -> target ticket -> ordinal set
-	edges := make(map[string]map[string]map[int32]struct{})
-
 	for _, e := range entries {
-		if graphstore.IsEdge(e) {
-			kind, ordinal, _ := schema.ParseOrdinal(e.EdgeKind)
-			tgts, ok := edges[kind]
-			if !ok {
-				tgts = make(map[string]map[int32]struct{})
-				edges[kind] = tgts
-			}
-
-			ticket := kytheuri.ToString(e.Target)
-			ordSet, ok := tgts[ticket]
-			if !ok {
-				ordSet = make(map[int32]struct{})
-				tgts[ticket] = ordSet
-			}
-			ordSet[int32(ordinal)] = struct{}{}
-		} else {
-			src.Facts[e.FactName] = e.FactValue
-		}
+		AppendEntry(src, e)
 	}
-	for kind, targets := range edges {
-		edges := make([]*ipb.Source_Edge, 0, len(targets))
-		for target, ordinals := range targets {
-			for ordinal := range ordinals {
-				edges = append(edges, &ipb.Source_Edge{
-					Ticket:  target,
-					Ordinal: ordinal,
-				})
-			}
-		}
-		sort.Sort(byOrdinal(edges))
-		src.EdgeGroups[kind] = &ipb.Source_EdgeGroup{Edges: edges}
+
+	for _, group := range src.EdgeGroups {
+		sort.Sort(byOrdinal(group.Edges))
 	}
 
 	return src

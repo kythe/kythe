@@ -59,6 +59,8 @@ func DeepEqual(expected, got interface{}) error {
 		return expectSliceEqual(ev, gv)
 	} else if et.Kind() == reflect.Struct && gt.Kind() == reflect.Struct {
 		return expectStructEqual(ev, gv)
+	} else if et.Kind() == reflect.Map && gt.Kind() == reflect.Map {
+		return expectMapEqual(ev, gv)
 	}
 
 	if !reflect.DeepEqual(expected, got) {
@@ -97,6 +99,23 @@ func expectStructEqual(expected, got reflect.Value) error {
 		if err := DeepEqual(ef.Interface(), gf.Interface()); err != nil {
 			field := expected.Type().Field(i)
 			return expectError(expected.Interface(), got.Interface(), "%s fields differ: %s", field.Name, err)
+		}
+	}
+
+	return nil
+}
+
+func expectMapEqual(expected, got reflect.Value) error {
+	el, gl := expected.Len(), got.Len()
+	if el != gl {
+		return expectError(expected.Interface(), got.Interface(), "expected length: %d; found length: %d", el, gl)
+	}
+
+	for _, key := range expected.MapKeys() {
+		ev, gv := expected.MapIndex(key), got.MapIndex(key)
+
+		if err := DeepEqual(ev.Interface(), gv.Interface()); err != nil {
+			return expectError(expected.Interface(), got.Interface(), "%#v key values differ: %s", key.Interface(), err)
 		}
 	}
 

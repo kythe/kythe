@@ -24,8 +24,86 @@ import (
 
 	"golang.org/x/net/context"
 
+	ipb "kythe.io/kythe/proto/internal_proto"
 	srvpb "kythe.io/kythe/proto/serving_proto"
+	spb "kythe.io/kythe/proto/storage_proto"
 )
+
+func fact(name, value string) *spb.Entry {
+	return &spb.Entry{
+		FactName:  name,
+		FactValue: []byte(value),
+	}
+}
+
+func edge(kind, targetSig string) *spb.Entry {
+	return &spb.Entry{
+		EdgeKind: kind,
+		Target: &spb.VName{
+			Signature: targetSig,
+		},
+		FactName: "/",
+	}
+}
+
+func TestAppendEntry(t *testing.T) {
+	tests := []struct {
+		entries  []*spb.Entry
+		expected *ipb.Source
+	}{{
+		entries: []*spb.Entry{fact("fact", "value")},
+		expected: &ipb.Source{
+			Facts: map[string][]byte{"fact": []byte("value")},
+		},
+	}, {
+		entries: []*spb.Entry{edge("kind", "target")},
+		expected: &ipb.Source{
+			EdgeGroups: map[string]*ipb.Source_EdgeGroup{
+				"kind": {
+					Edges: []*ipb.Source_Edge{{Ticket: "kythe:#target"}},
+				},
+			},
+		},
+	}, {
+		entries: []*spb.Entry{
+			fact("kind", "first"),
+			fact("kind", "second"),
+			edge("edgeKind", "firstTarget"),
+			edge("edgeKind", "secondTarget"),
+			fact("blah", "blah"),
+		},
+		expected: &ipb.Source{
+			Facts: map[string][]byte{
+				"kind": []byte("second"),
+				"blah": []byte("blah"),
+			},
+			EdgeGroups: map[string]*ipb.Source_EdgeGroup{
+				"edgeKind": &ipb.Source_EdgeGroup{
+					Edges: []*ipb.Source_Edge{{
+						Ticket: "kythe:#firstTarget",
+					}, {
+						Ticket: "kythe:#secondTarget",
+					}},
+				},
+			},
+		},
+	}}
+
+	for i, test := range tests {
+		src := &ipb.Source{
+			Facts:      make(map[string][]byte),
+			EdgeGroups: make(map[string]*ipb.Source_EdgeGroup),
+		}
+
+		for _, e := range test.entries {
+			AppendEntry(src, e)
+		}
+
+		if err := testutil.DeepEqual(test.expected, src); err != nil {
+			t.Errorf("tests[%d] error: %v", i, err)
+		}
+	}
+}
 
 var ctx = context.Background()
 
