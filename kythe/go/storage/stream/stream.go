@@ -19,6 +19,7 @@ package stream
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 
@@ -26,6 +27,10 @@ import (
 
 	spb "kythe.io/kythe/proto/storage_proto"
 )
+
+// EntryReader functions read a stream of entries, passing each to a handler
+// function.
+type EntryReader func(func(*spb.Entry) error) error
 
 // ReadEntries reads a stream of Entry protobufs from r.
 func ReadEntries(r io.Reader) <-chan *spb.Entry {
@@ -46,6 +51,24 @@ func ReadEntries(r io.Reader) <-chan *spb.Entry {
 	return ch
 }
 
+// NewReader reads a stream of Entry protobufs from r.
+func NewReader(r io.Reader) EntryReader {
+	return func(f func(*spb.Entry) error) error {
+		rd := delimited.NewReader(r)
+		for {
+			var entry spb.Entry
+			if err := rd.NextProto(&entry); err == io.EOF {
+				return nil
+			} else if err != nil {
+				return fmt.Errorf("error decoding Entry: %v", err)
+			}
+			if err := f(&entry); err != nil {
+				return err
+			}
+		}
+	}
+}
+
 // ReadJSONEntries reads a JSON stream of Entry protobufs from r.
 func ReadJSONEntries(r io.Reader) <-chan *spb.Entry {
 	ch := make(chan *spb.Entry)
@@ -57,10 +80,28 @@ func ReadJSONEntries(r io.Reader) <-chan *spb.Entry {
 			if err := de.Decode(&entry); err == io.EOF {
 				break
 			} else if err != nil {
-				log.Fatalf("Error decoding Entry: %v", err)
+				log.Fatalf("Error decoding JSON Entry: %v", err)
 			}
 			ch <- &entry
 		}
 	}()
 	return ch
+}
+
+// NewJSONReader reads a JSON stream of Entry protobufs from r.
+func NewJSONReader(r io.Reader) EntryReader {
+	return func(f func(*spb.Entry) error) error {
+		de := json.NewDecoder(r)
+		for {
+			var entry spb.Entry
+			if err := de.Decode(&entry); err == io.EOF {
+				return nil
+			} else if err != nil {
+				return fmt.Errorf("error decoding JSON Entry: %v", err)
+			}
+			if err := f(&entry); err != nil {
+				return err
+			}
+		}
+	}
 }

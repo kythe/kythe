@@ -28,6 +28,7 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -73,33 +74,43 @@ func main() {
 		flagutil.UsageErrorf("unknown arguments: %v", flag.Args())
 	}
 
-	in := os.Stdin
-	var entries <-chan *spb.Entry
+	in := bufio.NewReaderSize(os.Stdin, 2*4096)
+	out := bufio.NewWriter(os.Stdout)
+
+	var rd stream.EntryReader
 	if *readJSON {
-		entries = stream.ReadJSONEntries(in)
+		rd = stream.NewJSONReader(in)
 	} else {
-		entries = stream.ReadEntries(in)
+		rd = stream.NewReader(in)
 	}
+
 	if *sortStream || *entrySets || *uniqEntries {
-		entries = sortEntries(entries)
+		var err error
+		rd, err = sortEntries(rd)
+		failOnErr(err)
 	}
 
 	if *uniqEntries {
-		entries = dedupEntries(entries)
+		rd = dedupEntries(rd)
 	}
 
-	encoder := json.NewEncoder(os.Stdout)
-	wr := delimited.NewWriter(os.Stdout)
-
-	var set entrySet
-	entryCount := 0
-	for entry := range entries {
-		if *countOnly {
-			entryCount++
-		} else if *entrySets {
+	switch {
+	case *countOnly:
+		var count int
+		failOnErr(rd(func(_ *spb.Entry) error {
+			count++
+			return nil
+		}))
+		fmt.Println(count)
+	case *entrySets:
+		encoder := json.NewEncoder(out)
+		var set entrySet
+		failOnErr(rd(func(entry *spb.Entry) error {
 			if !compare.VNamesEqual(set.Source, entry.Source) || !compare.VNamesEqual(set.Target, entry.Target) || set.EdgeKind != entry.EdgeKind {
 				if len(set.Properties) != 0 {
-					failOnErr(encoder.Encode(set))
+					if err := encoder.Encode(set); err != nil {
+						return err
+					}
 				}
 				set.Source = entry.Source
 				set.EdgeKind = entry.EdgeKind
@@ -107,48 +118,49 @@ func main() {
 				set.Properties = make(map[string]string)
 			}
 			set.Properties[entry.FactName] = string(entry.FactValue)
-		} else if *writeJSON {
-			failOnErr(encoder.Encode(entry))
-		} else {
-			rec, err := proto.Marshal(entry)
-			failOnErr(err)
-			failOnErr(wr.Put(rec))
+			return nil
+		}))
+		if len(set.Properties) != 0 {
+			failOnErr(encoder.Encode(set))
 		}
+	case *writeJSON:
+		encoder := json.NewEncoder(out)
+		failOnErr(rd(func(entry *spb.Entry) error {
+			return encoder.Encode(entry)
+		}))
+	default:
+		wr := delimited.NewWriter(out)
+		failOnErr(rd(func(entry *spb.Entry) error {
+			rec, err := proto.Marshal(entry)
+			if err != nil {
+				return err
+			}
+			return wr.Put(rec)
+		}))
 	}
-	if len(set.Properties) != 0 {
-		failOnErr(encoder.Encode(set))
-	}
-	if *countOnly {
-		fmt.Println(entryCount)
-	}
+	failOnErr(out.Flush())
 }
 
-func sortEntries(entries <-chan *spb.Entry) <-chan *spb.Entry {
+func sortEntries(rd stream.EntryReader) (stream.EntryReader, error) {
 	sorter, err := disksort.NewMergeSorter(disksort.MergeOptions{
 		Lesser:    entryLesser{},
 		Marshaler: entryMarshaler{},
 	})
 	if err != nil {
-		log.Fatalf("Error creating entries sorter: %v", err)
+		return nil, fmt.Errorf("error creating entries sorter: %v", err)
 	}
 
-	for e := range entries {
-		if err := sorter.Add(e); err != nil {
-			log.Fatalf("Error sorting entries: %v", err)
-		}
+	if err := rd(func(e *spb.Entry) error {
+		return sorter.Add(e)
+	}); err != nil {
+		return nil, fmt.Errorf("error sorting entries: %v", err)
 	}
 
-	ch := make(chan *spb.Entry)
-	go func() {
-		defer close(ch)
-		if err := sorter.Read(func(i interface{}) error {
-			ch <- i.(*spb.Entry)
-			return nil
-		}); err != nil {
-			log.Fatalf("error sorting entries: %v", err)
-		}
-	}()
-	return ch
+	return func(f func(*spb.Entry) error) error {
+		return sorter.Read(func(i interface{}) error {
+			return f(i.(*spb.Entry))
+		})
+	}, nil
 }
 
 type entryLesser struct{}
@@ -166,23 +178,17 @@ func (entryMarshaler) Unmarshal(rec []byte) (interface{}, error) {
 	return &e, proto.Unmarshal(rec, &e)
 }
 
-func dedupEntries(entries <-chan *spb.Entry) <-chan *spb.Entry {
-	ch := make(chan *spb.Entry)
-	go func() {
-		defer close(ch)
+func dedupEntries(rd stream.EntryReader) stream.EntryReader {
+	return func(f func(*spb.Entry) error) error {
 		var last *spb.Entry
-		var duplicates int
-		for e := range entries {
-			if compare.Entries(last, e) == compare.EQ {
-				duplicates++
-			} else {
+		return rd(func(e *spb.Entry) error {
+			if compare.Entries(last, e) != compare.EQ {
 				last = e
-				ch <- e
+				return f(e)
 			}
-		}
-		log.Printf("entrystream: removed %d duplicate entries", duplicates)
-	}()
-	return ch
+			return nil
+		})
+	}
 }
 
 func failOnErr(err error) {
