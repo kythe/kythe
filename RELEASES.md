@@ -1,6 +1,6 @@
 # Release Notes
 
-## Upcoming release
+## v0.0.21
 
 Notable changes:
  - xrefs service: replace most repeated fields with maps
