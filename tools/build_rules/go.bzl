@@ -239,7 +239,12 @@ def _link_binary(ctx, binary, archive, transitive_deps,
   dep_archives, package_map = _construct_package_map(transitive_deps)
   go_path = binary.path + '.gopath/'
 
-  args = link_args[ctx.var['COMPILATION_MODE']]
+  mode = ctx.var['COMPILATION_MODE']
+  if mode != 'opt':
+    # See https://github.com/bazelbuild/bazel/issues/1054
+    stamp=False # enable stamping only on optimized release builds
+
+  args = link_args[mode]
   inputs = ctx.files._goroot + [archive] + dep_archives + list(cc_libs)
   cmd = ['set -e'] + _construct_go_path(go_path, package_map) + [
       'export GOROOT=external/local_goroot',
