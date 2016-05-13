@@ -37,15 +37,11 @@ func ReadEntries(r io.Reader) <-chan *spb.Entry {
 	ch := make(chan *spb.Entry)
 	go func() {
 		defer close(ch)
-		rd := delimited.NewReader(r)
-		for {
-			var entry spb.Entry
-			if err := rd.NextProto(&entry); err == io.EOF {
-				break
-			} else if err != nil {
-				log.Fatalf("Error decoding Entry: %v", err)
-			}
-			ch <- &entry
+		if err := NewReader(r)(func(e *spb.Entry) error {
+			ch <- e
+			return nil
+		}); err != nil {
+			log.Fatal(err)
 		}
 	}()
 	return ch
@@ -74,15 +70,11 @@ func ReadJSONEntries(r io.Reader) <-chan *spb.Entry {
 	ch := make(chan *spb.Entry)
 	go func() {
 		defer close(ch)
-		de := json.NewDecoder(r)
-		for {
-			var entry spb.Entry
-			if err := de.Decode(&entry); err == io.EOF {
-				break
-			} else if err != nil {
-				log.Fatalf("Error decoding JSON Entry: %v", err)
-			}
-			ch <- &entry
+		if err := NewJSONReader(r)(func(e *spb.Entry) error {
+			ch <- e
+			return nil
+		}); err != nil {
+			log.Fatal(err)
 		}
 	}()
 	return ch
