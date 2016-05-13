@@ -207,7 +207,7 @@ var (
 			flag.BoolVar(&includeOverrides, "include_overrides", false, "Whether to include overrides")
 		},
 		func(flag *flag.FlagSet) error {
-			fmt.Fprintf(os.Stderr, "Warning: The Callers API is experimental and may be slow.")
+			fmt.Fprintln(os.Stderr, "Warning: The Callers API is experimental and may be slow.")
 			req := &xpb.CallersRequest{
 				SemanticObject:   flag.Args(),
 				IncludeOverrides: includeOverrides,
