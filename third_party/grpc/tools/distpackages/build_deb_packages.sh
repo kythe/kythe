@@ -36,7 +36,7 @@ mkdir -p $deb_dest
 version='0.5.0.0'
 pkg_version='0.5.0'
 
-if [ -f /.dockerinit ]; then
+if [ -f /.dockerenv ]; then
   # We're in Docker where uname -p returns "unknown".
   arch=x86_64
 else
