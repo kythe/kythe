@@ -543,7 +543,7 @@ TODO(fromberger): Include an illustration here.
 
 A sharding is a special case of a scan that is intended to support bulk
 manipulation of a large, complete graph store, _e.g.,_ via tools like Hadoop or
-MapReduce or Hadoop. The two general forms of sharding query are:
+MapReduce. The two general forms of sharding query are:
 
    Count(index, n)
    Shard(index, n)
