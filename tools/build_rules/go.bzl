@@ -138,8 +138,14 @@ def _go_build(ctx, archive):
       transitive_cc_libs += dep.cc.libs
 
       cgo_link_flags += dep.cc.link_flags
+      # cgo directives in libraries will add "-lfoo" to ldflags when looking for a
+      # libfoo.a; the compiler driver gets upset if it can't find libfoo.a using a -L
+      # path even if it's also provided with an absolute path to libfoo.a. To fix this,
+      # we provide both (since providing just the -L versions won't work as some
+      # libraries like levigo have special rules regarding linking in other dependencies
+      # like snappy).
       for lib in dep.cc.libs:
-        cgo_link_flags += ["$PWD/" + lib.path]
+        cgo_link_flags += ["$PWD/" + lib.path, "-L\"$PWD/$(dirname '" + lib.path + "')\""]
 
       for flag in dep.cc.compile_flags:
         cgo_compile_flags += [replace_prefix(flag, include_prefix_replacements)]
