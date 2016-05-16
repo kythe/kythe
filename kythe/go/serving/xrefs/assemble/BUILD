@@ -7,7 +7,9 @@ go_package(
     deps = [
         "@go_x_net//:context",
         "//kythe/go/services/graphstore",
+        "//kythe/go/services/graphstore/compare",
         "//kythe/go/services/xrefs",
+        "//kythe/go/storage/stream",
         "//kythe/go/util/encoding/text",
         "//kythe/go/util/kytheuri",
         "//kythe/go/util/pager",

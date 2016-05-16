@@ -26,7 +26,9 @@ import (
 	"strconv"
 
 	"kythe.io/kythe/go/services/graphstore"
+	"kythe.io/kythe/go/services/graphstore/compare"
 	"kythe.io/kythe/go/services/xrefs"
+	"kythe.io/kythe/go/storage/stream"
 	"kythe.io/kythe/go/util/encoding/text"
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/pager"
@@ -82,6 +84,37 @@ func AppendEntry(src *ipb.Source, e *spb.Entry) {
 	} else {
 		src.Facts[e.FactName] = e.FactValue
 	}
+}
+
+// Sources constructs a new Source for every contiguous set of entries sharing
+// the same Source, calling f for each.
+func Sources(rd stream.EntryReader, f func(*ipb.Source) error) error {
+	var source *spb.VName
+	var src *ipb.Source
+	if err := rd(func(entry *spb.Entry) error {
+		if src != nil && !compare.VNamesEqual(source, entry.Source) {
+			if err := f(src); err != nil {
+				return err
+			}
+			src = nil
+		}
+		if src == nil {
+			source = entry.Source
+			src = &ipb.Source{
+				Ticket:     kytheuri.ToString(entry.Source),
+				Facts:      make(map[string][]byte),
+				EdgeGroups: make(map[string]*ipb.Source_EdgeGroup),
+			}
+		}
+		AppendEntry(src, entry)
+		return nil
+	}); err != nil {
+		return err
+	}
+	if src != nil {
+		return f(src)
+	}
+	return nil
 }
 
 // SourceFromEntries returns a new Source from the given a set of entries with

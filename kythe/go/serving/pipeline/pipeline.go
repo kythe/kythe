@@ -28,13 +28,13 @@ import (
 
 	"kythe.io/kythe/go/services/filetree"
 	"kythe.io/kythe/go/services/graphstore"
-	"kythe.io/kythe/go/services/graphstore/compare"
 	"kythe.io/kythe/go/services/xrefs"
 	ftsrv "kythe.io/kythe/go/serving/filetree"
 	"kythe.io/kythe/go/serving/search"
 	xsrv "kythe.io/kythe/go/serving/xrefs"
 	"kythe.io/kythe/go/serving/xrefs/assemble"
 	"kythe.io/kythe/go/storage/keyvalue"
+	"kythe.io/kythe/go/storage/stream"
 	"kythe.io/kythe/go/storage/table"
 	"kythe.io/kythe/go/util/disksort"
 	"kythe.io/kythe/go/util/schema"
@@ -91,7 +91,7 @@ type servingOutput struct {
 
 // Run writes the xrefs and filetree serving tables to db based on the given
 // entries (in GraphStore-order).
-func Run(ctx context.Context, entries <-chan *spb.Entry, db keyvalue.DB, opts *Options) error {
+func Run(ctx context.Context, rd stream.EntryReader, db keyvalue.DB, opts *Options) error {
 	if opts == nil {
 		opts = new(Options)
 	}
@@ -102,14 +102,14 @@ func Run(ctx context.Context, entries <-chan *spb.Entry, db keyvalue.DB, opts *O
 		xs:  table.ProtoBatchParallel{&table.KVProto{DB: db}},
 		idx: &table.KVInverted{DB: db},
 	}
-	entries = filterReverses(entries)
+	rd = filterReverses(rd)
 
 	var cErr error
 	var wg sync.WaitGroup
 	var sortedEdges disksort.Interface
 	wg.Add(1)
 	go func() {
-		sortedEdges, cErr = combineNodesAndEdges(ctx, opts, out, entries)
+		sortedEdges, cErr = combineNodesAndEdges(ctx, opts, out, rd)
 		if cErr != nil {
 			cErr = fmt.Errorf("error combining nodes and edges: %v", cErr)
 		}
@@ -156,10 +156,19 @@ func Run(ctx context.Context, entries <-chan *spb.Entry, db keyvalue.DB, opts *O
 	return fErr
 }
 
-func combineNodesAndEdges(ctx context.Context, opts *Options, out *servingOutput, gsEntries <-chan *spb.Entry) (disksort.Interface, error) {
+func combineNodesAndEdges(ctx context.Context, opts *Options, out *servingOutput, rdIn stream.EntryReader) (disksort.Interface, error) {
 	log.Println("Writing partial edges")
 
 	tree := filetree.NewMap()
+	rd := func(f func(*spb.Entry) error) error {
+		return rdIn(func(e *spb.Entry) error {
+			if e.FactName == schema.NodeKindFact && string(e.FactValue) == schema.FileKind {
+				tree.AddFile(e.Source)
+				// TODO(schroederc): evict finished directories (based on GraphStore order)
+			}
+			return f(e)
+		})
+	}
 
 	partialSorter, err := opts.diskSorter(edgeLesser{}, edgeMarshaler{})
 	if err != nil {
@@ -167,31 +176,10 @@ func combineNodesAndEdges(ctx context.Context, opts *Options, out *servingOutput
 	}
 
 	bIdx := out.idx.Buffered()
-	var src *spb.VName
-	var entries []*spb.Entry
-	for e := range gsEntries {
-		if e.FactName == schema.NodeKindFact && string(e.FactValue) == schema.FileKind {
-			tree.AddFile(e.Source)
-			// TODO(schroederc): evict finished directories (based on GraphStore order)
-		}
-
-		if src == nil {
-			src = e.Source
-		} else if !compare.VNamesEqual(e.Source, src) {
-			if err := writePartialEdges(ctx, partialSorter, bIdx, assemble.SourceFromEntries(entries)); err != nil {
-				drainEntries(gsEntries)
-				return nil, err
-			}
-			src = e.Source
-			entries = nil
-		}
-
-		entries = append(entries, e)
-	}
-	if len(entries) > 0 {
-		if err := writePartialEdges(ctx, partialSorter, bIdx, assemble.SourceFromEntries(entries)); err != nil {
-			return nil, err
-		}
+	if err := assemble.Sources(rd, func(src *ipb.Source) error {
+		return writePartialEdges(ctx, partialSorter, bIdx, src)
+	}); err != nil {
+		return nil, err
 	}
 	if err := bIdx.Flush(ctx); err != nil {
 		return nil, err
@@ -257,17 +245,15 @@ func writeFileTree(ctx context.Context, tree *filetree.Map, out table.Proto) err
 	return buffer.Flush(ctx)
 }
 
-func filterReverses(entries <-chan *spb.Entry) <-chan *spb.Entry {
-	ch := make(chan *spb.Entry, chBuf)
-	go func() {
-		defer close(ch)
-		for e := range entries {
+func filterReverses(rd stream.EntryReader) stream.EntryReader {
+	return func(f func(*spb.Entry) error) error {
+		return rd(func(e *spb.Entry) error {
 			if graphstore.IsNodeFact(e) || schema.EdgeDirection(e.EdgeKind) == schema.Forward {
-				ch <- e
+				return f(e)
 			}
-		}
-	}()
-	return ch
+			return nil
+		})
+	}
 }
 
 func writePartialEdges(ctx context.Context, sorter disksort.Interface, idx table.BufferedInverted, src *ipb.Source) error {
@@ -528,11 +514,6 @@ func writeDecorAndRefs(ctx context.Context, opts *Options, edges <-chan *srvpb.E
 func writeDecor(ctx context.Context, t table.BufferedProto, decor *srvpb.FileDecorations) error {
 	sort.Sort(assemble.ByOffset(decor.Decoration))
 	return t.Put(ctx, xsrv.DecorationsKey(decor.File.Ticket), decor)
-}
-
-func drainEntries(entries <-chan *spb.Entry) {
-	for _ = range entries {
-	}
 }
 
 type edgeLesser struct{}

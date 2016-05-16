@@ -87,31 +87,22 @@ func main() {
 	}
 	defer profile.Stop()
 
-	var entries <-chan *spb.Entry
-
+	var rd stream.EntryReader
 	if gs != nil {
-		ch := make(chan *spb.Entry)
-		go func() {
-			defer close(ch)
+		rd = func(f func(e *spb.Entry) error) error {
 			defer gs.Close(ctx)
-			if err := gs.Scan(ctx, &spb.ScanRequest{}, func(e *spb.Entry) error {
-				ch <- e
-				return nil
-			}); err != nil {
-				log.Fatalf("Error scanning GraphStore: %v", err)
-			}
-		}()
-		entries = ch
+			return gs.Scan(ctx, &spb.ScanRequest{}, f)
+		}
 	} else {
 		f, err := vfs.Open(ctx, *entriesFile)
 		if err != nil {
 			log.Fatalf("Error opening %q: %v", *entriesFile, err)
 		}
 		defer f.Close()
-		entries = stream.ReadEntries(f)
+		rd = stream.NewReader(f)
 	}
 
-	if err := pipeline.Run(ctx, entries, db, &pipeline.Options{
+	if err := pipeline.Run(ctx, rd, db, &pipeline.Options{
 		Verbose:        *verbose,
 		MaxPageSize:    *maxPageSize,
 		CompressShards: *compressShards,
