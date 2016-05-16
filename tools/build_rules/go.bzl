@@ -173,7 +173,11 @@ def _go_build(ctx, archive):
       # Setup temporary GOPATH for this package
       'export GOPATH="${TMPDIR:-/tmp}/gopath"',
       'mkdir -p "$(dirname "' + gopath_dest + '")"',
-      'ln -s "' + package_root + '" "' + gopath_dest + '"',
+      'if [[ $(uname) == "Darwin" ]]; then',
+      '  ln -fsh "' + package_root + '" "' + gopath_dest + '"',
+      'else',
+      '  ln -sTf "' + package_root + '" "' + gopath_dest + '"',
+      'fi',
 
       gotool.path + ' build -a ' + ' '.join(args) + ' -o ' + archive.path + ' ' + ctx.attr.package,
   ])
