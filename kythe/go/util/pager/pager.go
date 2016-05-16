@@ -48,6 +48,9 @@ type SetPager struct {
 	// given Size function.
 	MaxPageSize int
 
+	// SkipEmpty determines whether empty Sets/Pages will be emitted.
+	SkipEmpty bool
+
 	// OutputSet should output the given Set and Groups not previously emitted by
 	// OutputPage.  The total size of all Groups is given.
 	OutputSet func(context.Context, int, Set, []Group) error
@@ -109,9 +112,14 @@ func (p *SetPager) StartSet(ctx context.Context, hd Head) error {
 // SetPager's documentation for the assumed order of the groups and this
 // method's relation to StartSet.
 func (p *SetPager) AddGroup(ctx context.Context, g Group) error {
-	// Setup p.curSet and p.curGrp; ensuring both are non-nil
 	if p.curSet == nil {
 		return errors.New("no Set currently being built")
+	}
+
+	// Setup p.curGrp; ensuring it is non-nil
+	sz := p.Size(g)
+	if p.SkipEmpty && sz == 0 {
+		return nil
 	} else if p.curGrp == nil {
 		p.curGrp = g
 	} else if c := p.Combine(p.curGrp, g); c != nil {
@@ -123,7 +131,6 @@ func (p *SetPager) AddGroup(ctx context.Context, g Group) error {
 		p.curGrp = g
 	}
 	// Update group size counters
-	sz := p.Size(g)
 	p.resident += sz
 	p.total += sz
 
@@ -170,7 +177,10 @@ func (p *SetPager) Flush(ctx context.Context) error {
 		grps[i] = g
 	}
 
-	err := p.OutputSet(ctx, p.total, p.curSet, grps)
+	var err error
+	if !p.SkipEmpty || p.total > 0 {
+		err = p.OutputSet(ctx, p.total, p.curSet, grps)
+	}
 	p.curSet, p.curGrp, p.groups, p.resident, p.total = nil, nil, nil, 0, 0
 	return err
 }
