@@ -31,7 +31,6 @@ Kythe relies on the following external dependencies:
 * asciidoc
 * jdk >=8
 * parallel
-* asciidoc
 * source-highlight
 * graphviz
 * libncurses-dev
