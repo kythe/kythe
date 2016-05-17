@@ -20,9 +20,8 @@ package kythe.proto;
 
 // Design document: <link when written>
 // This proto represents a very preliminary attempt to define a cross-reference
-// service interface, based on Kythe data.  Its main consumer is Acropolis, but
-// the goal is to provide an interface that will be useful to other tools also.
-
+// service interface, based on Kythe data.
+//
 // Tickets are Kythe URIs (http://www.kythe.io/docs/kythe-uri-spec.html).
 
 // XRefService provides access to a Kythe graph for fast read-only access to
@@ -97,16 +96,8 @@ message NodesRequest {
   repeated string filter = 2;
 }
 
-// To keep request and reply in sync, the server echoes the request ticket
-// back.  Since the ticket is a fairly substantial fraction of the data for a
-// node, we could save some encoding space by having the server respect the
-// original request ordering offsets.  I think this is too fragile, though, as
-// any error on the part of client or server could perturb the results in a way
-// would be tricky to debug.  I think the protocol will be simplest if we do
-// not couple the reply to the request in this way.
-
 message NodeInfo {
-  // The matching facts known for that node.
+  // The matching facts known for that node, a map from fact name to value.
   map<string, bytes> facts = 2;
 
   // If known and unambiguous, an anchor ticket for this node's definition
