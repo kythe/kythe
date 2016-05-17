@@ -10,14 +10,19 @@ build_args = {
     "dbg": ["-race"],
 }
 
-link_args = {
-    "opt": [
-        "-w",
-        "-s",
-    ],
-    "fastbuild": [],
-    "dbg": ["-race"],
-}
+def _link_args(ctx):
+  if ctx.var['TARGET_CPU'] == 'darwin':
+    return {
+      "opt": ["-w"],
+      "fastbuild": [],
+      "dbg": ["-race"],
+    }
+  else:
+    return {
+      "opt": ["-w", "-s"],
+      "fastbuild": [],
+      "dbg": ["-race"],
+    }
 
 def _get_cc_shell_path(ctx):
   cc = ctx.var["CC"]
@@ -250,7 +255,7 @@ def _link_binary(ctx, binary, archive, transitive_deps,
     # See https://github.com/bazelbuild/bazel/issues/1054
     stamp=False # enable stamping only on optimized release builds
 
-  args = link_args[mode]
+  args = _link_args(ctx)[mode]
   inputs = ctx.files._goroot + [archive] + dep_archives + list(cc_libs)
   cmd = ['set -e'] + _construct_go_path(go_path, package_map) + [
       'export GOROOT=external/local_goroot',
