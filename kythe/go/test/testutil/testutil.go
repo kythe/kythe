@@ -40,7 +40,16 @@ func DeepEqual(expected, got interface{}) error {
 	et, gt := reflect.TypeOf(expected), reflect.TypeOf(got)
 	ev, gv := reflect.ValueOf(expected), reflect.ValueOf(got)
 
-	for et.Kind() == reflect.Ptr && gt.Kind() == reflect.Ptr {
+	for {
+		if (et == nil) != (gt == nil) {
+			// Only one was a nil interface value
+			return fmt.Errorf("expected: %v; found %v", expected, got)
+		} else if et == nil {
+			return nil // both were nil interface values
+		} else if et.Kind() != reflect.Ptr || gt.Kind() != reflect.Ptr {
+			break
+		}
+
 		if ev.Elem().IsValid() != gv.Elem().IsValid() {
 			return fmt.Errorf("expected: %v; found %v", expected, got)
 		}

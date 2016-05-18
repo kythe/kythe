@@ -86,3 +86,69 @@ message SortedKeyValue {
   string sort_key = 2;
   bytes value = 3;
 }
+
+// A Path represents a chain of Kythe edges starting from a particular node
+// known as the Path's pivot node.
+//
+// Example Path representing a FileDecorations_Decoration:
+//    pivot: <
+//      file: <
+//        ticket: "kythe://kythe?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java"
+//        text: "..."
+//        encoding: "UTF-8"
+//      >
+//      ticket: "kythe://kythe?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java"
+//      node_kind: "file"
+//    >
+//    edges: <
+//      kind: "%/kythe/edge/childof"
+//      target: <
+//        expanded_anchor: <
+//          ticket: "kythe://kythe?lang=java?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java#b2b44a5e5d4b7f521b192a99ab6172ad24bf055db0c3e6353775a31f83e4e8b9"
+//          kind: "%/kythe/edge/childof"
+//          parent: "kythe://kythe?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java"
+//          text: "edgeOrdinal"
+//          span: <...>
+//          snippet: "this.edgeOrdinal = -1"
+//          snippet_span: <...>
+//        >
+//        ticket: "kythe://kythe?lang=java?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java#b2b44a5e5d4b7f521b192a99ab6172ad24bf055db0c3e6353775a31f83e4e8b9"
+//        node_kind: "anchor"
+//      >
+//    >
+//    edges: <
+//      kind: "/kythe/edge/ref"
+//      target: <
+//        ticket: "kythe://kythe?lang=java?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java#3397da0c78948141fc85aa634e6d42e4461968ad33409c104e3a5e566306b8c5"
+//        node_kind: "variable"
+//        original: <...>
+//      >
+//    >
+message Path {
+  // A serving node with a possible specialization that unwraps/parses the
+  // original node's facts.
+  message Node {
+    oneof specialization {
+      kythe.proto.serving.RawAnchor raw_anchor = 10;
+      kythe.proto.serving.ExpandedAnchor expanded_anchor = 11;
+      kythe.proto.serving.File file = 12;
+    }
+
+    string ticket = 1;
+    string node_kind = 2;
+
+    kythe.proto.serving.Node original = 3;
+  }
+
+  message Edge {
+    string kind = 1;
+    int32 ordinal = 2;
+    Node target = 3;
+  }
+
+  // The central node of this Path.
+  Node pivot = 1;
+
+  // A sequence of edges leading from the pivot node.
+  repeated Edge edges = 2;
+}
