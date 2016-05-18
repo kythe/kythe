@@ -20,17 +20,10 @@
 package reduce
 
 import (
-	"errors"
-	"fmt"
 	"io"
 	"sync"
 
-	"kythe.io/kythe/go/util/disksort"
-
-	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
-
-	ipb "kythe.io/kythe/proto/internal_proto"
 )
 
 // A Reducer transforms one stream of values into another stream of values.
@@ -111,70 +104,9 @@ type IOStruct struct {
 	Output
 }
 
-var errEndSplit = errors.New("END OF SPLIT")
-
 // SplitInput represents an input that is sharded.
 type SplitInput interface {
 	NextSplit() (Input, error)
-}
-
-// Sort applies r to each separate input in splits.  r should be a Reducer that accepts the
-// same input type that splits contains and MUST output *ipb.SortedKeyValues.  The resulting
-// SplitInput will be the set of outputs from r, split on groups sharing the same
-// SortedKeyValue.Key and sorted within a group by SortedKeyValue.SortKey (see
-// SplitSortedKeyValues).  The Reducer's Start method will be called once before any call to Reduce
-// and the Reducer's End method will be called once after the final Reduce call is completed.
-//
-// Sort will return on the first error it encounters.  This may cause some of the input to not
-// be read and Start/Reduce/End may not be called depending on when the error occurs.
-func Sort(ctx context.Context, splits SplitInput, r Reducer) (SplitInput, error) {
-	sorter, err := KeyValueSorter()
-	if err != nil {
-		return nil, err
-	}
-
-	if err := r.Start(ctx); err != nil {
-		return nil, err
-	}
-
-	addToSorter := OutFunc(func(_ context.Context, i interface{}) error {
-		_, ok := i.(*ipb.SortedKeyValue)
-		if !ok {
-			return fmt.Errorf("given non-SortedKeyValue: %T", i)
-		}
-		return sorter.Add(i)
-	})
-
-	for {
-		if err := func() error {
-			in, err := splits.NextSplit()
-			if err == io.EOF {
-				return errEndSplit
-			} else if err != nil {
-				return err
-			} else if in == nil {
-				return errors.New("received nil Input from SplitInput")
-			}
-			defer func() { // drain input if not read by Reducer
-				var err error
-				for err == nil {
-					_, err = in.Next()
-				}
-			}()
-
-			return r.Reduce(ctx, IOStruct{in, addToSorter})
-		}(); err == errEndSplit {
-			break
-		} else if err != nil {
-			return nil, err
-		}
-	}
-
-	if err := r.End(ctx); err != nil {
-		return nil, err
-	}
-
-	return SplitSortedKeyValues(sorter)
 }
 
 // ChannelSplitInput implements the SplitInput interface over a channel of
@@ -198,51 +130,6 @@ func (c ChannelSplitInput) NextSplit() (Input, error) {
 type ChannelSplitInputValue struct {
 	Input Input
 	Err   error
-}
-
-// KeyValueSorter returns a disksort for arbitrary *ipb.SortedKeyValues.
-func KeyValueSorter() (disksort.Interface, error) {
-	return disksort.NewMergeSorter(disksort.MergeOptions{
-		Lesser:    keyValueSortUtil{},
-		Marshaler: keyValueSortUtil{},
-	})
-}
-
-// SplitSortedKeyValues constructs a SplitInput that returns a Input
-// for each set of *ipb.SortedKeyValues with the same key.
-func SplitSortedKeyValues(sorter disksort.Interface) (SplitInput, error) {
-	splitCh := make(chan ChannelSplitInputValue)
-
-	go func() {
-		defer close(splitCh)
-
-		var (
-			curKey string
-			curCh  chan ChannelInputValue
-		)
-
-		if err := sorter.Read(func(i interface{}) error {
-			kv := i.(*ipb.SortedKeyValue)
-			if curCh != nil && curKey != kv.Key {
-				close(curCh)
-				curKey, curCh = "", nil
-			}
-			if curCh == nil {
-				curKey = kv.Key
-				curCh = make(chan ChannelInputValue)
-				splitCh <- ChannelSplitInputValue{Input: ChannelInput(curCh)}
-			}
-			curCh <- ChannelInputValue{Value: kv}
-			return nil
-		}); err != nil {
-			splitCh <- ChannelSplitInputValue{Err: err}
-		}
-		if curCh != nil {
-			close(curCh)
-		}
-	}()
-
-	return ChannelSplitInput(splitCh), nil
 }
 
 // CombinedReducers allows multiple Reducers to consume the same ReducerInput
@@ -319,23 +206,4 @@ func (c *CombinedReducers) Reduce(ctx context.Context, rio IO) error {
 		}
 	}
 	return nil
-}
-
-type keyValueSortUtil struct{}
-
-func (keyValueSortUtil) Less(a, b interface{}) bool {
-	x, y := a.(*ipb.SortedKeyValue), b.(*ipb.SortedKeyValue)
-	if x.Key == y.Key {
-		return x.SortKey < y.SortKey
-	}
-	return x.Key < y.Key
-}
-
-func (keyValueSortUtil) Marshal(x interface{}) ([]byte, error) {
-	return proto.Marshal(x.(proto.Message))
-}
-
-func (keyValueSortUtil) Unmarshal(rec []byte) (interface{}, error) {
-	var kv ipb.SortedKeyValue
-	return &kv, proto.Unmarshal(rec, &kv)
 }
