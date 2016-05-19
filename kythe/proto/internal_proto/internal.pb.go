@@ -9,8 +9,10 @@
 		kythe/proto/internal.proto
 
 	It has these top-level messages:
+		Source
 		PageToken
 		CrossReference
+		SortedKeyValue
 */
 package internal_proto
 
@@ -18,6 +20,8 @@ import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
 import kythe_proto_serving "kythe.io/kythe/proto/serving_proto"
+
+import errors "errors"
 
 import io "io"
 
@@ -30,6 +34,64 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 const _ = proto.ProtoPackageIsVersion1
 
+// Source is a collection of facts and edges with a common source.
+type Source struct {
+	// Ticket of the source node
+	Ticket string `protobuf:"bytes,1,opt,name=ticket,proto3" json:"ticket,omitempty"`
+	// Fact name -> fact value
+	Facts map[string][]byte `protobuf:"bytes,2,rep,name=facts" json:"facts,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	// Edge kind -> EdgeGroup
+	EdgeGroups map[string]*Source_EdgeGroup `protobuf:"bytes,3,rep,name=edge_groups" json:"edge_groups,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value"`
+}
+
+func (m *Source) Reset()                    { *m = Source{} }
+func (m *Source) String() string            { return proto.CompactTextString(m) }
+func (*Source) ProtoMessage()               {}
+func (*Source) Descriptor() ([]byte, []int) { return fileDescriptorInternal, []int{0} }
+
+func (m *Source) GetFacts() map[string][]byte {
+	if m != nil {
+		return m.Facts
+	}
+	return nil
+}
+
+func (m *Source) GetEdgeGroups() map[string]*Source_EdgeGroup {
+	if m != nil {
+		return m.EdgeGroups
+	}
+	return nil
+}
+
+type Source_Edge struct {
+	// Target ticket of the edge
+	Ticket string `protobuf:"bytes,1,opt,name=ticket,proto3" json:"ticket,omitempty"`
+	// Ordinal of the edge
+	Ordinal int32 `protobuf:"varint,2,opt,name=ordinal,proto3" json:"ordinal,omitempty"`
+}
+
+func (m *Source_Edge) Reset()                    { *m = Source_Edge{} }
+func (m *Source_Edge) String() string            { return proto.CompactTextString(m) }
+func (*Source_Edge) ProtoMessage()               {}
+func (*Source_Edge) Descriptor() ([]byte, []int) { return fileDescriptorInternal, []int{0, 0} }
+
+type Source_EdgeGroup struct {
+	// Set of Edges sharing the same kind and source
+	Edges []*Source_Edge `protobuf:"bytes,1,rep,name=edges" json:"edges,omitempty"`
+}
+
+func (m *Source_EdgeGroup) Reset()                    { *m = Source_EdgeGroup{} }
+func (m *Source_EdgeGroup) String() string            { return proto.CompactTextString(m) }
+func (*Source_EdgeGroup) ProtoMessage()               {}
+func (*Source_EdgeGroup) Descriptor() ([]byte, []int) { return fileDescriptorInternal, []int{0, 1} }
+
+func (m *Source_EdgeGroup) GetEdges() []*Source_Edge {
+	if m != nil {
+		return m.Edges
+	}
+	return nil
+}
+
 // Internal encoding for an EdgesReply/CrossReferencesReply page_token
 type PageToken struct {
 	// Index into the primary reply sequence.
@@ -41,7 +103,7 @@ type PageToken struct {
 func (m *PageToken) Reset()                    { *m = PageToken{} }
 func (m *PageToken) String() string            { return proto.CompactTextString(m) }
 func (*PageToken) ProtoMessage()               {}
-func (*PageToken) Descriptor() ([]byte, []int) { return fileDescriptorInternal, []int{0} }
+func (*PageToken) Descriptor() ([]byte, []int) { return fileDescriptorInternal, []int{1} }
 
 // A CrossReference represents a path between two anchors, crossing between a
 // single common node.  Abstractly this a
@@ -64,7 +126,7 @@ type CrossReference struct {
 func (m *CrossReference) Reset()                    { *m = CrossReference{} }
 func (m *CrossReference) String() string            { return proto.CompactTextString(m) }
 func (*CrossReference) ProtoMessage()               {}
-func (*CrossReference) Descriptor() ([]byte, []int) { return fileDescriptorInternal, []int{1} }
+func (*CrossReference) Descriptor() ([]byte, []int) { return fileDescriptorInternal, []int{2} }
 
 func (m *CrossReference) GetSourceDecoration() *CrossReference_Decoration {
 	if m != nil {
@@ -114,7 +176,7 @@ func (m *CrossReference_Decoration) Reset()         { *m = CrossReference_Decora
 func (m *CrossReference_Decoration) String() string { return proto.CompactTextString(m) }
 func (*CrossReference_Decoration) ProtoMessage()    {}
 func (*CrossReference_Decoration) Descriptor() ([]byte, []int) {
-	return fileDescriptorInternal, []int{1, 0}
+	return fileDescriptorInternal, []int{2, 0}
 }
 
 func (m *CrossReference_Decoration) GetFile() *kythe_proto_serving.File {
@@ -131,11 +193,151 @@ func (m *CrossReference_Decoration) GetAnchor() *kythe_proto_serving.RawAnchor {
 	return nil
 }
 
+type SortedKeyValue struct {
+	Key     string `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	SortKey string `protobuf:"bytes,2,opt,name=sort_key,proto3" json:"sort_key,omitempty"`
+	Value   []byte `protobuf:"bytes,3,opt,name=value,proto3" json:"value,omitempty"`
+}
+
+func (m *SortedKeyValue) Reset()                    { *m = SortedKeyValue{} }
+func (m *SortedKeyValue) String() string            { return proto.CompactTextString(m) }
+func (*SortedKeyValue) ProtoMessage()               {}
+func (*SortedKeyValue) Descriptor() ([]byte, []int) { return fileDescriptorInternal, []int{3} }
+
 func init() {
+	proto.RegisterType((*Source)(nil), "kythe.proto.internal.Source")
+	proto.RegisterType((*Source_Edge)(nil), "kythe.proto.internal.Source.Edge")
+	proto.RegisterType((*Source_EdgeGroup)(nil), "kythe.proto.internal.Source.EdgeGroup")
 	proto.RegisterType((*PageToken)(nil), "kythe.proto.internal.PageToken")
 	proto.RegisterType((*CrossReference)(nil), "kythe.proto.internal.CrossReference")
 	proto.RegisterType((*CrossReference_Decoration)(nil), "kythe.proto.internal.CrossReference.Decoration")
+	proto.RegisterType((*SortedKeyValue)(nil), "kythe.proto.internal.SortedKeyValue")
 }
+func (m *Source) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Source) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Ticket) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintInternal(data, i, uint64(len(m.Ticket)))
+		i += copy(data[i:], m.Ticket)
+	}
+	if len(m.Facts) > 0 {
+		for k, _ := range m.Facts {
+			data[i] = 0x12
+			i++
+			v := m.Facts[k]
+			mapSize := 1 + len(k) + sovInternal(uint64(len(k))) + 1 + len(v) + sovInternal(uint64(len(v)))
+			i = encodeVarintInternal(data, i, uint64(mapSize))
+			data[i] = 0xa
+			i++
+			i = encodeVarintInternal(data, i, uint64(len(k)))
+			i += copy(data[i:], k)
+			data[i] = 0x12
+			i++
+			i = encodeVarintInternal(data, i, uint64(len(v)))
+			i += copy(data[i:], v)
+		}
+	}
+	if len(m.EdgeGroups) > 0 {
+		for k, _ := range m.EdgeGroups {
+			data[i] = 0x1a
+			i++
+			v := m.EdgeGroups[k]
+			if v == nil {
+				return 0, errors.New("proto: map has nil element")
+			}
+			msgSize := v.Size()
+			mapSize := 1 + len(k) + sovInternal(uint64(len(k))) + 1 + msgSize + sovInternal(uint64(msgSize))
+			i = encodeVarintInternal(data, i, uint64(mapSize))
+			data[i] = 0xa
+			i++
+			i = encodeVarintInternal(data, i, uint64(len(k)))
+			i += copy(data[i:], k)
+			data[i] = 0x12
+			i++
+			i = encodeVarintInternal(data, i, uint64(v.Size()))
+			n1, err := v.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n1
+		}
+	}
+	return i, nil
+}
+
+func (m *Source_Edge) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Source_Edge) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Ticket) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintInternal(data, i, uint64(len(m.Ticket)))
+		i += copy(data[i:], m.Ticket)
+	}
+	if m.Ordinal != 0 {
+		data[i] = 0x10
+		i++
+		i = encodeVarintInternal(data, i, uint64(m.Ordinal))
+	}
+	return i, nil
+}
+
+func (m *Source_EdgeGroup) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Source_EdgeGroup) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Edges) > 0 {
+		for _, msg := range m.Edges {
+			data[i] = 0xa
+			i++
+			i = encodeVarintInternal(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	return i, nil
+}
+
 func (m *PageToken) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -184,51 +386,51 @@ func (m *CrossReference) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintInternal(data, i, uint64(m.SourceDecoration.Size()))
-		n1, err := m.SourceDecoration.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n1
-	}
-	if m.Referent != nil {
-		data[i] = 0x12
-		i++
-		i = encodeVarintInternal(data, i, uint64(m.Referent.Size()))
-		n2, err := m.Referent.MarshalTo(data[i:])
+		n2, err := m.SourceDecoration.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n2
 	}
-	if m.TargetDecoration != nil {
-		data[i] = 0x1a
+	if m.Referent != nil {
+		data[i] = 0x12
 		i++
-		i = encodeVarintInternal(data, i, uint64(m.TargetDecoration.Size()))
-		n3, err := m.TargetDecoration.MarshalTo(data[i:])
+		i = encodeVarintInternal(data, i, uint64(m.Referent.Size()))
+		n3, err := m.Referent.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n3
 	}
-	if m.SourceAnchor != nil {
-		data[i] = 0x22
+	if m.TargetDecoration != nil {
+		data[i] = 0x1a
 		i++
-		i = encodeVarintInternal(data, i, uint64(m.SourceAnchor.Size()))
-		n4, err := m.SourceAnchor.MarshalTo(data[i:])
+		i = encodeVarintInternal(data, i, uint64(m.TargetDecoration.Size()))
+		n4, err := m.TargetDecoration.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n4
 	}
-	if m.TargetAnchor != nil {
-		data[i] = 0x2a
+	if m.SourceAnchor != nil {
+		data[i] = 0x22
 		i++
-		i = encodeVarintInternal(data, i, uint64(m.TargetAnchor.Size()))
-		n5, err := m.TargetAnchor.MarshalTo(data[i:])
+		i = encodeVarintInternal(data, i, uint64(m.SourceAnchor.Size()))
+		n5, err := m.SourceAnchor.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n5
+	}
+	if m.TargetAnchor != nil {
+		data[i] = 0x2a
+		i++
+		i = encodeVarintInternal(data, i, uint64(m.TargetAnchor.Size()))
+		n6, err := m.TargetAnchor.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n6
 	}
 	return i, nil
 }
@@ -252,27 +454,63 @@ func (m *CrossReference_Decoration) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintInternal(data, i, uint64(m.File.Size()))
-		n6, err := m.File.MarshalTo(data[i:])
+		n7, err := m.File.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n6
+		i += n7
 	}
 	if m.Anchor != nil {
 		data[i] = 0x12
 		i++
 		i = encodeVarintInternal(data, i, uint64(m.Anchor.Size()))
-		n7, err := m.Anchor.MarshalTo(data[i:])
+		n8, err := m.Anchor.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n7
+		i += n8
 	}
 	if len(m.Kind) > 0 {
 		data[i] = 0x1a
 		i++
 		i = encodeVarintInternal(data, i, uint64(len(m.Kind)))
 		i += copy(data[i:], m.Kind)
+	}
+	return i, nil
+}
+
+func (m *SortedKeyValue) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *SortedKeyValue) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Key) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintInternal(data, i, uint64(len(m.Key)))
+		i += copy(data[i:], m.Key)
+	}
+	if len(m.SortKey) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintInternal(data, i, uint64(len(m.SortKey)))
+		i += copy(data[i:], m.SortKey)
+	}
+	if len(m.Value) > 0 {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintInternal(data, i, uint64(len(m.Value)))
+		i += copy(data[i:], m.Value)
 	}
 	return i, nil
 }
@@ -304,6 +542,61 @@ func encodeVarintInternal(data []byte, offset int, v uint64) int {
 	data[offset] = uint8(v)
 	return offset + 1
 }
+func (m *Source) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Ticket)
+	if l > 0 {
+		n += 1 + l + sovInternal(uint64(l))
+	}
+	if len(m.Facts) > 0 {
+		for k, v := range m.Facts {
+			_ = k
+			_ = v
+			mapEntrySize := 1 + len(k) + sovInternal(uint64(len(k))) + 1 + len(v) + sovInternal(uint64(len(v)))
+			n += mapEntrySize + 1 + sovInternal(uint64(mapEntrySize))
+		}
+	}
+	if len(m.EdgeGroups) > 0 {
+		for k, v := range m.EdgeGroups {
+			_ = k
+			_ = v
+			l = 0
+			if v != nil {
+				l = v.Size()
+			}
+			mapEntrySize := 1 + len(k) + sovInternal(uint64(len(k))) + 1 + l + sovInternal(uint64(l))
+			n += mapEntrySize + 1 + sovInternal(uint64(mapEntrySize))
+		}
+	}
+	return n
+}
+
+func (m *Source_Edge) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Ticket)
+	if l > 0 {
+		n += 1 + l + sovInternal(uint64(l))
+	}
+	if m.Ordinal != 0 {
+		n += 1 + sovInternal(uint64(m.Ordinal))
+	}
+	return n
+}
+
+func (m *Source_EdgeGroup) Size() (n int) {
+	var l int
+	_ = l
+	if len(m.Edges) > 0 {
+		for _, e := range m.Edges {
+			l = e.Size()
+			n += 1 + l + sovInternal(uint64(l))
+		}
+	}
+	return n
+}
+
 func (m *PageToken) Size() (n int) {
 	var l int
 	_ = l
@@ -361,6 +654,24 @@ func (m *CrossReference_Decoration) Size() (n int) {
 	return n
 }
 
+func (m *SortedKeyValue) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Key)
+	if l > 0 {
+		n += 1 + l + sovInternal(uint64(l))
+	}
+	l = len(m.SortKey)
+	if l > 0 {
+		n += 1 + l + sovInternal(uint64(l))
+	}
+	l = len(m.Value)
+	if l > 0 {
+		n += 1 + l + sovInternal(uint64(l))
+	}
+	return n
+}
+
 func sovInternal(x uint64) (n int) {
 	for {
 		n++
@@ -373,6 +684,492 @@ func sovInternal(x uint64) (n int) {
 }
 func sozInternal(x uint64) (n int) {
 	return sovInternal(uint64((x << 1) ^ uint64((int64(x) >> 63))))
+}
+func (m *Source) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowInternal
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Source: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Source: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Ticket", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowInternal
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthInternal
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Ticket = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Facts", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowInternal
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthInternal
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			var keykey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowInternal
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				keykey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			var stringLenmapkey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowInternal
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLenmapkey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLenmapkey := int(stringLenmapkey)
+			if intStringLenmapkey < 0 {
+				return ErrInvalidLengthInternal
+			}
+			postStringIndexmapkey := iNdEx + intStringLenmapkey
+			if postStringIndexmapkey > l {
+				return io.ErrUnexpectedEOF
+			}
+			mapkey := string(data[iNdEx:postStringIndexmapkey])
+			iNdEx = postStringIndexmapkey
+			var valuekey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowInternal
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				valuekey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			var mapbyteLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowInternal
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				mapbyteLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intMapbyteLen := int(mapbyteLen)
+			if intMapbyteLen < 0 {
+				return ErrInvalidLengthInternal
+			}
+			postbytesIndex := iNdEx + intMapbyteLen
+			if postbytesIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			mapvalue := make([]byte, mapbyteLen)
+			copy(mapvalue, data[iNdEx:postbytesIndex])
+			iNdEx = postbytesIndex
+			if m.Facts == nil {
+				m.Facts = make(map[string][]byte)
+			}
+			m.Facts[mapkey] = mapvalue
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EdgeGroups", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowInternal
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthInternal
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			var keykey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowInternal
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				keykey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			var stringLenmapkey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowInternal
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLenmapkey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLenmapkey := int(stringLenmapkey)
+			if intStringLenmapkey < 0 {
+				return ErrInvalidLengthInternal
+			}
+			postStringIndexmapkey := iNdEx + intStringLenmapkey
+			if postStringIndexmapkey > l {
+				return io.ErrUnexpectedEOF
+			}
+			mapkey := string(data[iNdEx:postStringIndexmapkey])
+			iNdEx = postStringIndexmapkey
+			var valuekey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowInternal
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				valuekey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			var mapmsglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowInternal
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				mapmsglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if mapmsglen < 0 {
+				return ErrInvalidLengthInternal
+			}
+			postmsgIndex := iNdEx + mapmsglen
+			if mapmsglen < 0 {
+				return ErrInvalidLengthInternal
+			}
+			if postmsgIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			mapvalue := &Source_EdgeGroup{}
+			if err := mapvalue.Unmarshal(data[iNdEx:postmsgIndex]); err != nil {
+				return err
+			}
+			iNdEx = postmsgIndex
+			if m.EdgeGroups == nil {
+				m.EdgeGroups = make(map[string]*Source_EdgeGroup)
+			}
+			m.EdgeGroups[mapkey] = mapvalue
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipInternal(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthInternal
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Source_Edge) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowInternal
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Edge: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Edge: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Ticket", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowInternal
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthInternal
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Ticket = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Ordinal", wireType)
+			}
+			m.Ordinal = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowInternal
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.Ordinal |= (int32(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipInternal(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthInternal
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Source_EdgeGroup) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowInternal
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: EdgeGroup: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: EdgeGroup: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Edges", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowInternal
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthInternal
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Edges = append(m.Edges, &Source_Edge{})
+			if err := m.Edges[len(m.Edges)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipInternal(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthInternal
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
 }
 func (m *PageToken) Unmarshal(data []byte) error {
 	l := len(data)
@@ -832,6 +1629,145 @@ func (m *CrossReference_Decoration) Unmarshal(data []byte) error {
 	}
 	return nil
 }
+func (m *SortedKeyValue) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowInternal
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SortedKeyValue: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SortedKeyValue: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowInternal
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthInternal
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Key = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SortKey", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowInternal
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthInternal
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SortKey = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Value", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowInternal
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthInternal
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Value = append(m.Value[:0], data[iNdEx:postIndex]...)
+			if m.Value == nil {
+				m.Value = []byte{}
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipInternal(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthInternal
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func skipInternal(data []byte) (n int, err error) {
 	l := len(data)
 	iNdEx := 0
@@ -938,25 +1874,36 @@ var (
 )
 
 var fileDescriptorInternal = []byte{
-	// 317 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x9c, 0x51, 0xcb, 0x4a, 0xf3, 0x40,
-	0x14, 0xfe, 0xfb, 0xf7, 0x82, 0x39, 0xb5, 0x5e, 0x06, 0xc1, 0x34, 0x8b, 0x20, 0x75, 0xa1, 0x20,
-	0x4c, 0xa0, 0xdd, 0xb9, 0xf3, 0xba, 0x70, 0x21, 0x52, 0xdc, 0x97, 0x31, 0x39, 0x4d, 0x43, 0xca,
-	0x4c, 0x99, 0x19, 0xb5, 0x7d, 0x13, 0x9f, 0xc7, 0x95, 0x4b, 0x1f, 0x41, 0xf4, 0x45, 0x9c, 0x4e,
-	0xa6, 0x92, 0x42, 0x16, 0xe2, 0x62, 0x16, 0x27, 0xe7, 0xbb, 0x9d, 0x2f, 0x10, 0xe4, 0x0b, 0x3d,
-	0xc1, 0x68, 0x26, 0x85, 0x16, 0x51, 0xc6, 0x35, 0x4a, 0xce, 0xa6, 0xd4, 0x8e, 0x64, 0xcf, 0xee,
-	0x8a, 0x81, 0xae, 0x76, 0x41, 0xb7, 0xcc, 0x50, 0x28, 0x9f, 0x32, 0x9e, 0x16, 0x98, 0xde, 0x00,
-	0xbc, 0x3b, 0x96, 0xe2, 0xbd, 0xc8, 0x91, 0x93, 0x0e, 0x34, 0x33, 0x9e, 0xe0, 0xdc, 0xaf, 0x1d,
-	0xd4, 0x8e, 0x9b, 0x64, 0x1f, 0xb6, 0x15, 0xc6, 0x82, 0x27, 0x4c, 0x2e, 0x46, 0x7a, 0x89, 0xf0,
-	0xff, 0x9b, 0x85, 0xd7, 0x7b, 0xad, 0xc3, 0xd6, 0x85, 0x14, 0x4a, 0x0d, 0x71, 0x8c, 0x12, 0x79,
-	0x8c, 0xe4, 0x06, 0x76, 0x95, 0x78, 0x94, 0x31, 0x8e, 0x12, 0x43, 0x91, 0x4c, 0x67, 0x82, 0x5b,
-	0x99, 0x76, 0x3f, 0xa2, 0x55, 0xa1, 0xe8, 0xba, 0x00, 0xbd, 0xfc, 0xa1, 0x91, 0x13, 0xd8, 0x90,
-	0xc5, 0x77, 0x6d, 0x0d, 0xdb, 0xfd, 0xee, 0x9a, 0xc4, 0xea, 0x82, 0x5b, 0x91, 0x58, 0x63, 0xcd,
-	0x64, 0x8a, 0xba, 0x6c, 0x5c, 0xff, 0x9b, 0xf1, 0x29, 0x74, 0xdc, 0x11, 0x8c, 0xc7, 0x13, 0x21,
-	0xfd, 0x86, 0xd5, 0x39, 0xac, 0x74, 0xbf, 0x9a, 0xcf, 0x98, 0x29, 0x2b, 0x39, 0xb3, 0xd0, 0x25,
-	0xd7, 0xe5, 0x70, 0xdc, 0xe6, 0xaf, 0xb9, 0x81, 0x02, 0x28, 0xa5, 0x38, 0x82, 0xc6, 0x38, 0x9b,
-	0xa2, 0x6b, 0xaf, 0xfa, 0xf4, 0x6b, 0x03, 0x20, 0x14, 0x5a, 0xce, 0xab, 0x68, 0x29, 0xac, 0x84,
-	0x0e, 0xd9, 0xb3, 0x8b, 0xb8, 0x09, 0x8d, 0xdc, 0xfc, 0x5f, 0xdb, 0x8e, 0x77, 0xbe, 0xf3, 0xf6,
-	0x19, 0xd6, 0xde, 0xcd, 0xfb, 0x30, 0xef, 0xe5, 0x2b, 0xfc, 0xf7, 0xd0, 0xb2, 0xc4, 0xc1, 0x77,
-	0x00, 0x00, 0x00, 0xff, 0xff, 0x44, 0x90, 0x45, 0x65, 0x61, 0x02, 0x00, 0x00,
+	// 494 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x9c, 0x52, 0x4f, 0x6b, 0xd4, 0x40,
+	0x14, 0x37, 0x9b, 0xcd, 0xda, 0xbc, 0x6c, 0x77, 0x6b, 0x10, 0xdc, 0xe6, 0xb0, 0xd4, 0x15, 0xec,
+	0x82, 0x25, 0x2b, 0x5b, 0x14, 0x29, 0x28, 0x54, 0xdd, 0x0a, 0x0a, 0x22, 0xad, 0x08, 0x9e, 0x96,
+	0x31, 0x79, 0x9b, 0x86, 0x2c, 0x33, 0xcb, 0xcc, 0x6c, 0x6d, 0xee, 0x7e, 0x08, 0x3f, 0x8f, 0x27,
+	0x8f, 0x7e, 0x04, 0xd1, 0x2f, 0xe2, 0xcc, 0x24, 0x2d, 0x89, 0x06, 0x2d, 0x1e, 0xe6, 0x30, 0xf3,
+	0x7e, 0xff, 0xde, 0x9b, 0x07, 0x41, 0x96, 0xcb, 0x53, 0x9c, 0xac, 0x38, 0x93, 0x6c, 0x92, 0x52,
+	0x89, 0x9c, 0x92, 0x65, 0x68, 0xae, 0xfe, 0x4d, 0x53, 0x2b, 0x2e, 0xe1, 0x45, 0x2d, 0xd8, 0xae,
+	0x32, 0x04, 0xf2, 0xb3, 0x94, 0x26, 0x05, 0x66, 0xf4, 0xc9, 0x86, 0xce, 0x09, 0x5b, 0xf3, 0x08,
+	0xfd, 0x1e, 0x74, 0x64, 0x1a, 0x65, 0x28, 0x07, 0xd6, 0x8e, 0x35, 0x76, 0xfd, 0x87, 0xe0, 0x2c,
+	0x48, 0x24, 0xc5, 0xa0, 0xb5, 0x63, 0x8f, 0xbd, 0xe9, 0x6e, 0xd8, 0xa4, 0x1d, 0x16, 0xe4, 0xf0,
+	0x48, 0x23, 0x67, 0x54, 0xf2, 0xdc, 0x3f, 0x04, 0x0f, 0xe3, 0x04, 0xe7, 0x09, 0x67, 0xeb, 0x95,
+	0x18, 0xd8, 0x86, 0xbd, 0xf7, 0x57, 0xf6, 0x4c, 0xe1, 0x5f, 0x18, 0xb8, 0x91, 0x08, 0x76, 0xa1,
+	0xad, 0x9f, 0xfe, 0x88, 0xd4, 0x87, 0xeb, 0x8c, 0xc7, 0xa9, 0x62, 0xaa, 0x50, 0xd6, 0xd8, 0x09,
+	0x1e, 0x83, 0x7b, 0xc9, 0xf5, 0xef, 0x83, 0xa3, 0x8d, 0x85, 0x02, 0x6b, 0xcb, 0xdb, 0xff, 0xb4,
+	0x0c, 0xf6, 0x00, 0x2a, 0xc1, 0x3d, 0xb0, 0x33, 0xcc, 0x4b, 0xab, 0x4d, 0x70, 0xce, 0xc8, 0x72,
+	0x8d, 0xc6, 0xa8, 0x7b, 0xd0, 0x7a, 0x64, 0x05, 0xef, 0xa1, 0xff, 0x5b, 0xd0, 0x3a, 0xe5, 0x41,
+	0x95, 0xe2, 0x4d, 0xef, 0x5e, 0xad, 0x65, 0x2d, 0x3d, 0xda, 0x07, 0xf7, 0x0d, 0x49, 0xf0, 0x2d,
+	0xcb, 0x90, 0x6a, 0xeb, 0x94, 0xc6, 0x78, 0x6e, 0x64, 0x1d, 0xff, 0x16, 0xf4, 0x05, 0x46, 0x8c,
+	0xc6, 0x84, 0xe7, 0x73, 0xa9, 0x11, 0xc6, 0xc0, 0x1d, 0x7d, 0xb1, 0xa1, 0xf7, 0x8c, 0x33, 0x21,
+	0x8e, 0x71, 0x81, 0x1c, 0xa9, 0xfa, 0xc3, 0x97, 0x70, 0x43, 0x18, 0xfd, 0x79, 0xac, 0x28, 0x9c,
+	0xc8, 0x94, 0x51, 0x23, 0xe3, 0x4d, 0x27, 0xcd, 0x71, 0xea, 0x02, 0xe1, 0xf3, 0x4b, 0x9a, 0x7f,
+	0x0f, 0x36, 0x78, 0xf1, 0x2e, 0xcb, 0x8e, 0xb6, 0x6b, 0x12, 0x17, 0x8b, 0xf4, 0x9a, 0xc5, 0xc6,
+	0x58, 0x12, 0x9e, 0xa0, 0xac, 0x1a, 0xdb, 0xff, 0x67, 0x7c, 0x00, 0x9b, 0x65, 0x13, 0x84, 0x46,
+	0xa7, 0x8c, 0x0f, 0xda, 0x46, 0xe7, 0x4e, 0xa3, 0xfb, 0xec, 0x7c, 0x45, 0xd4, 0xb0, 0xe2, 0x43,
+	0x03, 0xd5, 0xdc, 0x32, 0x47, 0xc9, 0x75, 0xae, 0xcc, 0x0d, 0x04, 0x40, 0x25, 0x85, 0xda, 0xc1,
+	0x45, 0xba, 0xc4, 0x72, 0x7a, 0xcd, 0xad, 0x1f, 0x29, 0x80, 0x1f, 0x42, 0xa7, 0xf4, 0x2a, 0xa6,
+	0x34, 0x6c, 0x84, 0x1e, 0x93, 0x8f, 0x65, 0xc4, 0x2e, 0xb4, 0x33, 0xf5, 0xbf, 0x66, 0x3a, 0xee,
+	0xe8, 0x09, 0xf4, 0x4e, 0x18, 0x97, 0x18, 0xbf, 0xc2, 0xfc, 0x9d, 0xde, 0x9e, 0xfa, 0x4e, 0x6d,
+	0xc1, 0x86, 0x50, 0xe5, 0xb9, 0x7e, 0x69, 0xd5, 0x17, 0x53, 0xf3, 0xbb, 0x4f, 0xb7, 0xbe, 0xfe,
+	0x18, 0x5a, 0xdf, 0xd4, 0xf9, 0xae, 0xce, 0xe7, 0x9f, 0xc3, 0x6b, 0x1f, 0x3a, 0xc6, 0x78, 0xff,
+	0x57, 0x00, 0x00, 0x00, 0xff, 0xff, 0xce, 0xe8, 0xb0, 0x3d, 0x28, 0x04, 0x00, 0x00,
 }
