@@ -49,9 +49,7 @@ public class JavacUtil {
 
         Scope scope = sup.tsym.members();
         for (Symbol sym : scope.getSymbolsByName(methodSymbol.name)) {
-          if (sym != null
-              && !sym.isStatic()
-              && methodSymbol.overrides(sym, owner, types, true)) {
+          if (sym != null && !sym.isStatic() && methodSymbol.overrides(sym, owner, types, true)) {
             supers.add((MethodSymbol) sym);
             break;
           }

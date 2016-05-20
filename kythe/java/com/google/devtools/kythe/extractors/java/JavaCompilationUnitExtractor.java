@@ -243,10 +243,10 @@ public class JavaCompilationUnitExtractor {
     Preconditions.checkNotNull(options);
     Preconditions.checkNotNull(outputPath);
 
-
     AnalysisResults results;
     if (sources.iterator().hasNext()) {
-      results = runJavaAnalysisToExtractCompilationDetails(
+      results =
+          runJavaAnalysisToExtractCompilationDetails(
               sources, classpath, sourcepath, processorpath, processors, options);
     } else {
       results = new AnalysisResults();
@@ -673,9 +673,7 @@ public class JavaCompilationUnitExtractor {
         if (diag.getSource() != null) {
           logger.severefmt(
               "compiler error: %s(%d): %s",
-              diag.getSource().getName(),
-              diag.getLineNumber(),
-              diag.getMessage(Locale.ENGLISH));
+              diag.getSource().getName(), diag.getLineNumber(), diag.getMessage(Locale.ENGLISH));
         } else {
           logger.severefmt("compiler error: %s", diag.getMessage(Locale.ENGLISH));
         }

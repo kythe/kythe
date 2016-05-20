@@ -70,7 +70,6 @@ public class JavaIndexer {
       return;
     }
 
-
     try (OutputStream stream = System.out) {
       new JavacAnalysisDriver()
           .analyze(

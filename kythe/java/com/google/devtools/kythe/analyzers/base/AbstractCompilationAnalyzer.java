@@ -90,7 +90,7 @@ public abstract class AbstractCompilationAnalyzer {
    * {@link FactEmitter} that emits an {@link AnalysisOutput} with an embedded {@link Entry} for
    * each fact.
    */
-  public static abstract class AnalysisOutputEmitter implements FactEmitter {
+  public abstract static class AnalysisOutputEmitter implements FactEmitter {
     @Override
     public void emit(
         VName source, String edgeKind, VName target, String factName, byte[] factValue) {
