@@ -39,46 +39,83 @@ void AppendEscapedHtmlCharacter(std::string* buffer, char c) {
 }
 
 std::string RenderHtml(const HtmlRendererOptions& options,
-                       const proto::DocumentationReply_Document& document) {
-  if (!document.has_text()) {
-    return "";
-  }
-  const auto& printable = document.text();
+                       const Printable& printable) {
   std::string text_out;
-  text_out.reserve(printable.raw_text().size());
-  int link_index = 0;
-  std::stack<bool> link_valid;
-  bool escaping_next = false;
-  for (auto c : printable.raw_text()) {
-    if (escaping_next) {
-      AppendEscapedHtmlCharacter(&text_out, c);
-      escaping_next = false;
-      continue;
+  text_out.reserve(printable.text().size());
+  enum class PrintStatus { Raw, UserHtml };
+  struct OpenSpan {
+    const PrintableSpan* span;
+    PrintStatus status;
+  };
+  std::stack<OpenSpan> open_spans;
+  PrintableSpan default_span(0, printable.text().size(),
+                             PrintableSpan::Semantic::Raw);
+  open_spans.push(OpenSpan{&default_span, PrintStatus::Raw});
+  size_t current_span = 0;
+  for (size_t i = 0; i <= printable.text().size(); ++i) {
+    // Normalized PrintableSpans have all empty or negative-length spans
+    // dropped.
+    while (!open_spans.empty() && open_spans.top().span->end() == i) {
+      switch (open_spans.top().span->semantic()) {
+        case PrintableSpan::Semantic::Link:
+          if (open_spans.top().span->link().definition_size() != 0) {
+            text_out.append("</a>");
+          }
+          break;
+        case PrintableSpan::Semantic::Return:
+          text_out.append("</p>");
+          break;
+        default:
+          break;
+      }
+      open_spans.pop();
     }
-    if (c == '\\') {
-      escaping_next = true;
-    } else if (c == '[') {
-      if (link_index < printable.link_size()) {
-        if (printable.link(link_index).definition_size() != 0) {
-          const auto& definition = printable.link(link_index++).definition(0);
-          text_out.append("<a href=\"");
-          text_out.append(options.make_link_uri(definition));
-          text_out.append("\">");
-          link_valid.push(true);
-        } else {
-          ++link_index;
-          link_valid.push(false);
-        }
-      } else {
-        link_valid.push(false);
+    if (open_spans.empty() || i == printable.text().size()) {
+      // default_span is first to enter and last to leave; there also may
+      // be no empty spans.
+      break;
+    }
+    while (current_span < printable.spans().size() &&
+           printable.spans().span(current_span).begin() == i) {
+      open_spans.push(
+          {&printable.spans().span(current_span), open_spans.top().status});
+      ++current_span;
+      switch (open_spans.top().span->semantic()) {
+        case PrintableSpan::Semantic::Link:
+          if (open_spans.top().span->link().definition_size() != 0) {
+            const auto& definition =
+                open_spans.top().span->link().definition(0);
+            text_out.append("<a href=\"");
+            text_out.append(options.make_link_uri(definition));
+            text_out.append("\">");
+          }
+          break;
+        case PrintableSpan::Semantic::Html:
+          open_spans.top().status = PrintStatus::UserHtml;
+          break;
+        case PrintableSpan::Semantic::Raw:
+          open_spans.top().status = PrintStatus::Raw;
+          break;
+        case PrintableSpan::Semantic::Return:
+          text_out.append("<p><em>Returns: </em>");
+          break;
+        default:
+          break;
       }
-    } else if (c == ']') {
-      if (!link_valid.empty() && link_valid.top()) {
-        text_out.append("</a>");
-        link_valid.pop();
+    }
+    if (open_spans.top().span->semantic() != PrintableSpan::Semantic::Markup) {
+      // TODO(zarko): Sanitization for user-provided HTML. Do we need to handle
+      // cases where trusted markup is nested inside untrusted markup or can
+      // we simply sanitize *all* HTML?
+      char c = printable.text()[i];
+      switch (open_spans.top().status) {
+        case PrintStatus::Raw:
+          AppendEscapedHtmlCharacter(&text_out, c);
+          break;
+        case PrintStatus::UserHtml:
+          text_out.push_back(c);
+          break;
       }
-    } else {
-      AppendEscapedHtmlCharacter(&text_out, c);
     }
   }
   return text_out;

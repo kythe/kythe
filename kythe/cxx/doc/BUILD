@@ -3,6 +3,43 @@ licenses(["notice"])
 package(default_visibility = ["//kythe:default_visibility"])
 
 cc_library(
+    name = "markup_handler",
+    srcs = [
+        "doxygen_markup_handler.cc",
+        "javadoc_markup_handler.cc",
+        "markup_handler.cc",
+    ],
+    hdrs = [
+        "doxygen_markup_handler.h",
+        "javadoc_markup_handler.h",
+        "markup_handler.h",
+    ],
+    deps = [
+        "//external:glog",
+        "//kythe/proto:xref_proto_cc",
+    ],
+)
+
+cc_library(
+    name = "markup_handler_testlib",
+    testonly = 1,
+    srcs = [
+        "markup_handler_test.cc",
+    ],
+    deps = [
+        ":markup_handler",
+        "//external:googletest",
+    ],
+)
+
+cc_test(
+    name = "markup_handler_test",
+    deps = [
+        ":markup_handler_testlib",
+    ],
+)
+
+cc_library(
     name = "html_renderer",
     srcs = [
         "html_renderer.cc",
@@ -11,6 +48,7 @@ cc_library(
         "html_renderer.h",
     ],
     deps = [
+        ":markup_handler",
         "//external:glog",
         "//kythe/proto:xref_proto_cc",
     ],
@@ -42,6 +80,7 @@ cc_library(
     ],
     deps = [
         ":html_renderer",
+        ":markup_handler",
         "//external:gflags",
         "//external:glog",
         "//kythe/cxx/common:lib",

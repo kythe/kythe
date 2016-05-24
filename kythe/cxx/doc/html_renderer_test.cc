@@ -36,7 +36,8 @@ class HtmlRendererTest : public ::testing::Test {
                                                        &document)) {
       return "(invalid ascii protobuf)";
     }
-    return RenderHtml(options_, document);
+    Printable printable(document.text());
+    return RenderHtml(options_, printable);
   }
   kythe::HtmlRendererOptions options_;
 };
