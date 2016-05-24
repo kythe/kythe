@@ -147,10 +147,15 @@ message FileDecorations {
     RawAnchor anchor = 1;
     string kind = 2;
     Node target = 3;
+
+    string target_definition = 4;
   }
 
   // The decorations located in the file, sorted by starting offset.
   repeated Decoration decoration = 2;
+
+  // Definition locations for each Decoration.target.
+  repeated ExpandedAnchor target_definitions = 3;
 }
 
 // PagedCrossReferences are used for efficiently storing pre-cached data for

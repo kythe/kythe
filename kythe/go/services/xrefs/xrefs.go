@@ -269,6 +269,8 @@ func AllEdges(ctx context.Context, es EdgesService, req *xpb.EdgesRequest) (*xpb
 // definition will be returned only if it is unambiguous, but the definition may be indirect
 // (through an intermediary node).
 func SlowDefinitions(xs Service, ctx context.Context, tickets []string) (map[string]*xpb.Anchor, error) {
+	start := time.Now()
+	log.Println("WARNING: performing slow-lookup of definitions")
 	defs := make(map[string]*xpb.Anchor)
 
 	nodeTargets := make(map[string]string, len(tickets))
@@ -308,7 +310,7 @@ func SlowDefinitions(xs Service, ctx context.Context, tickets []string) (map[str
 				loc := cr.Definition[0]
 				// TODO(schroederc): handle differing kinds; completes vs. binding
 				loc.Kind = ""
-				defs[ticket] = loc
+				defs[nodeTargets[ticket]] = loc
 			} else {
 				// Look for relevant node relations for an indirect definition
 				var relevant []string
@@ -327,6 +329,14 @@ func SlowDefinitions(xs Service, ctx context.Context, tickets []string) (map[str
 
 		nodeTargets = nextJump
 	}
+
+	var found int
+	for _, ticket := range tickets {
+		if _, ok := defs[ticket]; ok {
+			found++
+		}
+	}
+	log.Printf("SlowDefinitions: found %d/%d (%.1f%%) requested definitions in %s", found, len(tickets), float64(100*found)/float64(len(tickets)), time.Since(start))
 
 	return defs, nil
 }

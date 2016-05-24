@@ -573,8 +573,21 @@ func (t *tableImpl) Decorations(ctx context.Context, req *xpb.DecorationsRequest
 		reply.Reference = make([]*xpb.DecorationsReply_Reference, 0, len(decor.Decoration))
 		reply.Nodes = make(map[string]*xpb.NodeInfo)
 
-		// Target ticket -> set of references
-		refs := make(map[string][]*xpb.DecorationsReply_Reference)
+		seenTarget := stringset.New()
+
+		// Reference.TargetTicket -> []Reference set
+		var refs map[string][]*xpb.DecorationsReply_Reference
+		// ExpandedAnchor.Ticket -> ExpandedAnchor
+		var defs map[string]*srvpb.ExpandedAnchor
+		if req.TargetDefinitions {
+			refs = make(map[string][]*xpb.DecorationsReply_Reference)
+			reply.DefinitionLocations = make(map[string]*xpb.Anchor)
+
+			defs = make(map[string]*srvpb.ExpandedAnchor)
+			for _, def := range decor.TargetDefinitions {
+				defs[def.Ticket] = def
+			}
+		}
 
 		for _, d := range decor.Decoration {
 			start, end, exists := patcher.Patch(d.Anchor.StartOffset, d.Anchor.EndOffset)
@@ -586,24 +599,34 @@ func (t *tableImpl) Decorations(ctx context.Context, req *xpb.DecorationsRequest
 					d.Anchor.EndOffset = end
 
 					r := decorationToReference(norm, d)
-					_, seenTargetBefore := refs[r.TargetTicket]
-					refs[r.TargetTicket] = append(refs[r.TargetTicket], r)
+					if req.TargetDefinitions {
+						if def, ok := defs[d.TargetDefinition]; ok {
+							reply.DefinitionLocations[d.TargetDefinition] = a2a(def, false)
+						} else {
+							refs[r.TargetTicket] = append(refs[r.TargetTicket], r)
+						}
+					} else {
+						r.TargetDefinition = ""
+					}
+
 					reply.Reference = append(reply.Reference, r)
 
-					if !seenTargetBefore && len(patterns) > 0 {
+					if !seenTarget.Contains(r.TargetTicket) && len(patterns) > 0 {
 						reply.Nodes[d.Target.Ticket] = nodeToInfo(patterns, d.Target)
+						seenTarget.Add(r.TargetTicket)
 					}
 				}
 			}
 		}
 
-		if req.TargetDefinitions {
+		// Only compute target definitions if the serving data doesn't contain any
+		// TODO(schroederc): remove this once serving data is always populated
+		if req.TargetDefinitions && len(defs) == 0 {
 			targetTickets := make([]string, 0, len(refs))
 			for ticket := range refs {
 				targetTickets = append(targetTickets, ticket)
 			}
 
-			// TODO(schroederc): cache this in the serving data
 			defs, err := xrefs.SlowDefinitions(t, ctx, targetTickets)
 			if err != nil {
 				return nil, fmt.Errorf("error retrieving target definitions: %v", err)
@@ -630,11 +653,12 @@ type span struct{ start, end int32 }
 
 func decorationToReference(norm *xrefs.Normalizer, d *srvpb.FileDecorations_Decoration) *xpb.DecorationsReply_Reference {
 	return &xpb.DecorationsReply_Reference{
-		SourceTicket: d.Anchor.Ticket,
-		TargetTicket: d.Target.Ticket,
-		Kind:         d.Kind,
-		AnchorStart:  norm.ByteOffset(d.Anchor.StartOffset),
-		AnchorEnd:    norm.ByteOffset(d.Anchor.EndOffset),
+		SourceTicket:     d.Anchor.Ticket,
+		TargetTicket:     d.Target.Ticket,
+		Kind:             d.Kind,
+		AnchorStart:      norm.ByteOffset(d.Anchor.StartOffset),
+		AnchorEnd:        norm.ByteOffset(d.Anchor.EndOffset),
+		TargetDefinition: d.TargetDefinition,
 	}
 }
 
