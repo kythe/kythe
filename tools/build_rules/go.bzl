@@ -117,7 +117,7 @@ def _go_compile(ctx, pkg, srcs, archive, extra_packages=[]):
       outputs = [archive],
       mnemonic = 'GoCompile',
       command = cmd,
-      use_default_shell_env = True)
+  )
 
   return transitive_deps, cgo_link_flags, transitive_cc_libs
 
@@ -187,7 +187,7 @@ def _go_build(ctx, archive):
       outputs = [archive],
       mnemonic = 'GoBuild',
       command = cmd,
-      use_default_shell_env = True)
+  )
 
   return transitive_deps, cgo_link_flags, transitive_cc_libs
 
@@ -284,7 +284,6 @@ def _link_binary(ctx, binary, archive, transitive_deps,
       outputs = [binary],
       mnemonic = 'GoLink',
       command = "\n".join(cmd),
-      use_default_shell_env = True,
   )
 
 def binary_struct(ctx, extra_runfiles=[]):
@@ -325,7 +324,7 @@ def _go_test_impl(ctx):
       outputs = [testmain],
       mnemonic = 'GoTestMain',
       command = cmd,
-      use_default_shell_env = True)
+  )
 
   # Compile the library along with all of its test sources (creating the test package).
   archive = ctx.new_file(ctx.configuration.bin_dir, ctx.label.name + '.a')

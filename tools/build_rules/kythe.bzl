@@ -40,7 +40,7 @@ def index(ctx, kindex, entries, mnemonic=None):
       command = cmd,
       arguments = indexer + ctx.attr.indexer_opts + paths,
       input_manifests = input_manifests,
-      use_default_shell_env = True)
+  )
 
 def verify(ctx, entries):
   all_srcs = set(ctx.files.srcs)
@@ -90,7 +90,7 @@ def java_verifier_test_impl(ctx):
           ctx.file._jar.path + ' cf ' + jar.path + ' -C ' + srcs_out + ' .',
       ]),
       arguments = args,
-      use_default_shell_env = True)
+  )
 
   kindex = ctx.new_file(ctx.configuration.genfiles_dir, ctx.label.name + "/compilation.kindex")
   extract(ctx, kindex, args, inputs=inputs+[jar], mnemonic='JavacExtractor')
