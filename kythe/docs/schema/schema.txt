@@ -2298,3 +2298,8 @@ Protocol Buffers
 ~~~~~~~~~~~~~~~~
 
 The source language for Protocol Buffers is spelled `"protobuf"`.
+
+Common Lisp
+~~~~~~~~~~~
+
+The source language for Common Lisp is spelled "`lisp`".
