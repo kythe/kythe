@@ -409,6 +409,7 @@ func writeDecorAndRefs(ctx context.Context, opts *Options, edges <-chan *srvpb.E
 		file    *srvpb.File
 		norm    *xrefs.Normalizer
 		decor   *srvpb.FileDecorations
+		targets map[string]*srvpb.Node
 	)
 	if err := fragments.Read(func(x interface{}) error {
 		df := x.(*decorationFragment)
@@ -417,7 +418,7 @@ func writeDecorAndRefs(ctx context.Context, opts *Options, edges <-chan *srvpb.E
 
 		if decor != nil && curFile != fileTicket {
 			if decor.File != nil {
-				if err := writeDecor(ctx, buffer, decor); err != nil {
+				if err := writeDecor(ctx, buffer, decor, targets); err != nil {
 					return err
 				}
 				file = nil
@@ -427,17 +428,21 @@ func writeDecorAndRefs(ctx context.Context, opts *Options, edges <-chan *srvpb.E
 		curFile = fileTicket
 		if decor == nil {
 			decor = &srvpb.FileDecorations{}
+			targets = make(map[string]*srvpb.Node)
 		}
 
 		if fragment.File == nil {
 			decor.Decoration = append(decor.Decoration, fragment.Decoration...)
+			for _, n := range fragment.Target {
+				targets[n.Ticket] = n
+			}
 			if file == nil {
 				return errors.New("missing file for anchors")
 			}
 
 			// Reverse each fragment.Decoration to create a *ipb.CrossReference
 			for _, d := range fragment.Decoration {
-				cr, err := assemble.CrossReference(file, norm, d)
+				cr, err := assemble.CrossReference(file, norm, d, targets[d.Target])
 				if err != nil {
 					if opts.Verbose {
 						log.Printf("WARNING: error assembling cross-reference: %v", err)
@@ -464,7 +469,7 @@ func writeDecorAndRefs(ctx context.Context, opts *Options, edges <-chan *srvpb.E
 	}
 
 	if decor != nil && decor.File != nil {
-		if err := writeDecor(ctx, buffer, decor); err != nil {
+		if err := writeDecor(ctx, buffer, decor, targets); err != nil {
 			return err
 		}
 	}
@@ -511,8 +516,13 @@ func writeDecorAndRefs(ctx context.Context, opts *Options, edges <-chan *srvpb.E
 	return buffer.Flush(ctx)
 }
 
-func writeDecor(ctx context.Context, t table.BufferedProto, decor *srvpb.FileDecorations) error {
+func writeDecor(ctx context.Context, t table.BufferedProto, decor *srvpb.FileDecorations, targets map[string]*srvpb.Node) error {
+	for _, n := range targets {
+		decor.Target = append(decor.Target, n)
+	}
 	sort.Sort(assemble.ByOffset(decor.Decoration))
+	sort.Sort(assemble.ByTicket(decor.Target))
+	sort.Sort(assemble.ByAnchorTicket(decor.TargetDefinitions))
 	return t.Put(ctx, xsrv.DecorationsKey(decor.File.Ticket), decor)
 }
 

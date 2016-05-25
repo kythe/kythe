@@ -575,6 +575,15 @@ func (t *tableImpl) Decorations(ctx context.Context, req *xpb.DecorationsRequest
 
 		seenTarget := stringset.New()
 
+		// Reference.TargetTicket -> NodeInfo (superset of reply.Nodes)
+		var nodes map[string]*xpb.NodeInfo
+		if len(patterns) > 0 {
+			nodes = make(map[string]*xpb.NodeInfo)
+			for _, n := range decor.Target {
+				nodes[n.Ticket] = nodeToInfo(patterns, n)
+			}
+		}
+
 		// Reference.TargetTicket -> []Reference set
 		var refs map[string][]*xpb.DecorationsReply_Reference
 		// ExpandedAnchor.Ticket -> ExpandedAnchor
@@ -611,8 +620,8 @@ func (t *tableImpl) Decorations(ctx context.Context, req *xpb.DecorationsRequest
 
 					reply.Reference = append(reply.Reference, r)
 
-					if !seenTarget.Contains(r.TargetTicket) && len(patterns) > 0 {
-						reply.Nodes[d.Target.Ticket] = nodeToInfo(patterns, d.Target)
+					if !seenTarget.Contains(r.TargetTicket) && nodes != nil {
+						reply.Nodes[r.TargetTicket] = nodes[r.TargetTicket]
 						seenTarget.Add(r.TargetTicket)
 					}
 				}
@@ -654,7 +663,7 @@ type span struct{ start, end int32 }
 func decorationToReference(norm *xrefs.Normalizer, d *srvpb.FileDecorations_Decoration) *xpb.DecorationsReply_Reference {
 	return &xpb.DecorationsReply_Reference{
 		SourceTicket:     d.Anchor.Ticket,
-		TargetTicket:     d.Target.Ticket,
+		TargetTicket:     d.Target,
 		Kind:             d.Kind,
 		AnchorStart:      norm.ByteOffset(d.Anchor.StartOffset),
 		AnchorEnd:        norm.ByteOffset(d.Anchor.EndOffset),

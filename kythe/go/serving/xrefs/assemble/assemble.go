@@ -214,6 +214,7 @@ type DecorationFragmentBuilder struct {
 	Output func(ctx context.Context, file string, fragment *srvpb.FileDecorations) error
 
 	anchor  *srvpb.RawAnchor
+	targets map[string]*srvpb.Node
 	decor   []*srvpb.FileDecorations_Decoration
 	parents []string
 }
@@ -272,6 +273,7 @@ func (b *DecorationFragmentBuilder) AddEdge(ctx context.Context, e *srvpb.Edge) 
 				SnippetStart: int32(snippetStart),
 				SnippetEnd:   int32(snippetEnd),
 			}
+			b.targets = make(map[string]*srvpb.Node)
 		}
 		return nil
 	} else if b.anchor == nil {
@@ -287,17 +289,26 @@ func (b *DecorationFragmentBuilder) AddEdge(ctx context.Context, e *srvpb.Edge) 
 		b.decor = append(b.decor, &srvpb.FileDecorations_Decoration{
 			Anchor: b.anchor,
 			Kind:   e.Kind,
-			Target: e.Target,
+			Target: e.Target.Ticket,
 		})
+
+		if _, ok := b.targets[e.Target.Ticket]; !ok {
+			b.targets[e.Target.Ticket] = e.Target
+		}
 
 		if len(b.parents) > 0 {
 			fd := &srvpb.FileDecorations{Decoration: b.decor}
+			for _, n := range b.targets {
+				fd.Target = append(fd.Target, n)
+			}
+			sort.Sort(ByTicket(fd.Target))
 			for _, parent := range b.parents {
 				if err := b.Output(ctx, parent, fd); err != nil {
 					return err
 				}
 			}
 			b.decor = nil
+			b.targets = make(map[string]*srvpb.Node)
 		}
 	}
 
@@ -335,10 +346,10 @@ func (s ByOffset) Less(i, j int) bool {
 	if s[i].Anchor.StartOffset == s[j].Anchor.StartOffset {
 		if s[i].Anchor.EndOffset == s[j].Anchor.EndOffset {
 			if s[i].Kind == s[j].Kind {
-				if s[i].Target.Ticket == s[j].Target.Ticket {
+				if s[i].Target == s[j].Target {
 					return s[i].Anchor.Ticket < s[j].Anchor.Ticket
 				}
-				return s[i].Target.Ticket < s[j].Target.Ticket
+				return s[i].Target < s[j].Target
 			}
 			return s[i].Kind < s[j].Kind
 		}
@@ -346,6 +357,20 @@ func (s ByOffset) Less(i, j int) bool {
 	}
 	return s[i].Anchor.StartOffset < s[j].Anchor.StartOffset
 }
+
+// ByTicket sorts nodes by their ticket.
+type ByTicket []*srvpb.Node
+
+func (s ByTicket) Len() int           { return len(s) }
+func (s ByTicket) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (s ByTicket) Less(i, j int) bool { return s[i].Ticket < s[j].Ticket }
+
+// ByAnchorTicket sorts anchors by their ticket.
+type ByAnchorTicket []*srvpb.ExpandedAnchor
+
+func (s ByAnchorTicket) Len() int           { return len(s) }
+func (s ByAnchorTicket) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (s ByAnchorTicket) Less(i, j int) bool { return s[i].Ticket < s[j].Ticket }
 
 // EdgeSetBuilder constructs a set of PagedEdgeSets and EdgePages from a
 // sequence of Nodes and EdgeSet_Groups.  For each set of groups with the same
@@ -582,7 +607,7 @@ func newPageKey(src string, n int) string { return fmt.Sprintf("%s.%.10d", src, 
 // CrossReference returns a (Referent, TargetAnchor) *ipb.CrossReference
 // equivalent to the given decoration.  The decoration's anchor is expanded
 // given its parent file and associated Normalizer.
-func CrossReference(file *srvpb.File, norm *xrefs.Normalizer, d *srvpb.FileDecorations_Decoration) (*ipb.CrossReference, error) {
+func CrossReference(file *srvpb.File, norm *xrefs.Normalizer, d *srvpb.FileDecorations_Decoration, tgt *srvpb.Node) (*ipb.CrossReference, error) {
 	if file == nil || norm == nil {
 		return nil, errors.New("missing decoration's parent file")
 	}
@@ -593,14 +618,14 @@ func CrossReference(file *srvpb.File, norm *xrefs.Normalizer, d *srvpb.FileDecor
 	}
 	// Throw away most of the referent's facts.  They are not needed.
 	var facts []*cpb.Fact
-	for _, fact := range d.Target.Fact {
+	for _, fact := range tgt.Fact {
 		if fact.Name == schema.CompleteFact {
 			facts = append(facts, fact)
 		}
 	}
 	return &ipb.CrossReference{
 		Referent: &srvpb.Node{
-			Ticket: d.Target.Ticket,
+			Ticket: d.Target,
 			Fact:   facts,
 		},
 		TargetAnchor: ea,

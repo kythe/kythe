@@ -273,7 +273,7 @@ var (
 							EndOffset:   9,
 						},
 						Kind:   "/kythe/defines/binding",
-						Target: getNode("kythe://c?lang=otpl?path=/a/path#map"),
+						Target: "kythe://c?lang=otpl?path=/a/path#map",
 					},
 					{
 						Anchor: &srvpb.RawAnchor{
@@ -282,7 +282,7 @@ var (
 							EndOffset:   33,
 						},
 						Kind:   "/kythe/refs",
-						Target: getNode("kythe://core?lang=otpl#empty?"),
+						Target: "kythe://core?lang=otpl#empty?",
 					},
 					{
 						Anchor: &srvpb.RawAnchor{
@@ -291,9 +291,10 @@ var (
 							EndOffset:   55,
 						},
 						Kind:   "/kythe/refs",
-						Target: getNode("kythe://core?lang=otpl#cons"),
+						Target: "kythe://core?lang=otpl#cons",
 					},
 				},
+				Target: getNodes("kythe://c?lang=otpl?path=/a/path#map", "kythe://core?lang=otpl#empty?", "kythe://core?lang=otpl#cons"),
 			},
 		},
 
@@ -411,6 +412,14 @@ func getEdgeTargets(tickets ...string) []*srvpb.EdgeGroup_Edge {
 		}
 	}
 	return es
+}
+
+func getNodes(ts ...string) []*srvpb.Node {
+	var res []*srvpb.Node
+	for _, t := range ts {
+		res = append(res, getNode(t))
+	}
+	return res
 }
 
 func getNode(t string) *srvpb.Node {
