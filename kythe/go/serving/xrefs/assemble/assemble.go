@@ -618,9 +618,11 @@ func CrossReference(file *srvpb.File, norm *xrefs.Normalizer, d *srvpb.FileDecor
 	}
 	// Throw away most of the referent's facts.  They are not needed.
 	var facts []*cpb.Fact
-	for _, fact := range tgt.Fact {
-		if fact.Name == schema.CompleteFact {
-			facts = append(facts, fact)
+	if tgt != nil {
+		for _, fact := range tgt.Fact {
+			if fact.Name == schema.CompleteFact {
+				facts = append(facts, fact)
+			}
 		}
 	}
 	return &ipb.CrossReference{
