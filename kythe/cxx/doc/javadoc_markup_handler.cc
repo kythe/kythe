@@ -174,8 +174,6 @@ void ParseJavadoc(const Printable& in_message, PrintableSpans* out_spans) {
   const auto& text = in_message.text();
   // Are we at the start of the line (or the equivalent)?
   bool at_line_start = true;
-  // Are we in the text block up top or in the tag block at the bottom?
-  bool in_tag_block = false;
   // Javadoc is HTML by default.
   out_spans->Emplace(0, text.size(), PrintableSpan::Semantic::Html);
   for (size_t i = 0; i < text.size(); ++i) {
