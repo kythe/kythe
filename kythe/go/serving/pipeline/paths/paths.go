@@ -124,7 +124,7 @@ func OriginalNode(n *ipb.Path_Node) (g *srvpb.Node) {
 	}
 
 	// Synthesize node without original
-	log.Println("WARNING: synthesizing node for %q", n.Ticket)
+	log.Printf("WARNING: synthesizing node for %q", n.Ticket)
 	sn := &srvpb.Node{
 		Ticket: n.Ticket,
 		Fact: []*cpb.Fact{

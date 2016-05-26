@@ -312,7 +312,7 @@ func BenchmarkReducer_Output(b *testing.B) {
 				b.Fatal(err)
 			}
 			if sortKey, p, err := rio.Next(); err != io.EOF {
-				b.Fatal("Unexpected input/err: %q %v %v", sortKey, p, err)
+				b.Fatalf("Unexpected input/err: %q %v %v", sortKey, p, err)
 			}
 
 			for i := 0; i < b.N; i++ {
