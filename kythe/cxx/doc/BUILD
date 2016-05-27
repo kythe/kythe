@@ -5,13 +5,11 @@ package(default_visibility = ["//kythe:default_visibility"])
 cc_library(
     name = "markup_handler",
     srcs = [
-        "doxygen_markup_handler.cc",
-        "javadoc_markup_handler.cc",
+        "javadoxygen_markup_handler.cc",
         "markup_handler.cc",
     ],
     hdrs = [
-        "doxygen_markup_handler.h",
-        "javadoc_markup_handler.h",
+        "javadoxygen_markup_handler.h",
         "markup_handler.h",
     ],
     deps = [

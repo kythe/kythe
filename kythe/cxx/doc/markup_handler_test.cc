@@ -18,7 +18,7 @@
 #include "glog/logging.h"
 #include "google/protobuf/text_format.h"
 #include "gtest/gtest.h"
-#include "kythe/cxx/doc/javadoc_markup_handler.h"
+#include "kythe/cxx/doc/javadoxygen_markup_handler.h"
 
 #include <stack>
 
@@ -101,7 +101,7 @@ TEST_F(MarkupHandlerTest, PassThroughLinks) {
          {PrintableSpan(0, 0, ExpectLink("uri"))});
 }
 TEST_F(MarkupHandlerTest, JavadocReturns) {
-  Handle("@return something", ParseJavadoc, "[[@return][ something]]",
+  Handle("@return something", ParseJavadoxygen, "[[@return][ something]]",
          {PrintableSpan(0, 0, PrintableSpan::Semantic::Html),
           PrintableSpan(0, 0, PrintableSpan::Semantic::Markup),
           PrintableSpan(0, 0, PrintableSpan::Semantic::Return)});
@@ -109,25 +109,49 @@ TEST_F(MarkupHandlerTest, JavadocReturns) {
 TEST_F(MarkupHandlerTest, JavadocReturnsMultiline) {
   Handle(R"(@return something
 else)",
-         ParseJavadoc, R"([[@return][ something
+         ParseJavadoxygen, R"([[@return][ something
 else]])",
          {PrintableSpan(0, 0, PrintableSpan::Semantic::Html),
           PrintableSpan(0, 0, PrintableSpan::Semantic::Markup),
           PrintableSpan(0, 0, PrintableSpan::Semantic::Return)});
 }
 TEST_F(MarkupHandlerTest, JavadocReturnsLink) {
-  Handle("@return [something]", ParseJavadoc, "[[@return][ [something]]]",
+  Handle("@return [something]", ParseJavadoxygen, "[[@return][ [something]]]",
          {PrintableSpan(0, 0, PrintableSpan::Semantic::Html),
           PrintableSpan(0, 0, PrintableSpan::Semantic::Markup),
           PrintableSpan(0, 0, PrintableSpan::Semantic::Return),
           PrintableSpan(0, 0, ExpectLink("uri"))});
 }
 TEST_F(MarkupHandlerTest, JavadocReturnsLinkSortOrder) {
-  Handle("@return[ something]", ParseJavadoc, "[[@return][[ something]]]",
+  Handle("@return[ something]", ParseJavadoxygen, "[[@return][[ something]]]",
          {PrintableSpan(0, 0, PrintableSpan::Semantic::Html),
           PrintableSpan(0, 0, PrintableSpan::Semantic::Markup),
           PrintableSpan(0, 0, PrintableSpan::Semantic::Return),
           PrintableSpan(0, 0, ExpectLink("uri"))});
+}
+TEST_F(MarkupHandlerTest, DoxygenReturns) {
+  Handle("\\\\return[ something]", ParseJavadoxygen,
+         "[[\\return][[ something]]]",
+         {PrintableSpan(0, 0, PrintableSpan::Semantic::Html),
+          PrintableSpan(0, 0, PrintableSpan::Semantic::Markup),
+          PrintableSpan(0, 0, PrintableSpan::Semantic::Return),
+          PrintableSpan(0, 0, ExpectLink("uri"))});
+}
+TEST_F(MarkupHandlerTest, DoxygenCode) {
+  Handle("\\\\c code not", ParseJavadoxygen, "[[\\c][ code] not]",
+         {PrintableSpan(0, 0, PrintableSpan::Semantic::Html),
+          PrintableSpan(0, 0, PrintableSpan::Semantic::Markup),
+          PrintableSpan(0, 0, PrintableSpan::Semantic::CodeRef)});
+}
+TEST_F(MarkupHandlerTest, DoxygenReturnsCode) {
+  Handle("\\\\return[ \\\\c something]", ParseJavadoxygen,
+         "[[\\return][[ [\\c][ something]]]]",
+         {PrintableSpan(0, 0, PrintableSpan::Semantic::Html),
+          PrintableSpan(0, 0, PrintableSpan::Semantic::Markup),
+          PrintableSpan(0, 0, PrintableSpan::Semantic::Return),
+          PrintableSpan(0, 0, ExpectLink("uri")),
+          PrintableSpan(0, 0, PrintableSpan::Semantic::Markup),
+          PrintableSpan(0, 0, PrintableSpan::Semantic::CodeRef)});
 }
 }  // anonymous namespace
 }  // namespace kythe

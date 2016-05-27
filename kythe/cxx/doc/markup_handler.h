@@ -25,13 +25,15 @@ namespace kythe {
 class PrintableSpan {
  public:
   enum class Semantic : int {
-    Return,  ///< Text contains a description of a return value.
-    Markup,  ///< Text used solely to direct the markup processor. May contain
-             ///< child spans that are relevant. This text is usually not
-             ///< rendered.
-    Html,    ///< Text underneath this node is user-provided HTML.
-    Raw,     ///< Text underneath this node is raw (e.g., with no escaping).
-    Link     ///< Text is a link to some anchor.
+    Return,   ///< Text contains a description of a return value.
+    Brief,    ///< Text is a brief subsection of a main description.
+    CodeRef,  ///< Text is a reference to code and should be rendered monospace.
+    Markup,   ///< Text used solely to direct the markup processor. May contain
+              ///< child spans that are relevant. This text is usually not
+              ///< rendered.
+    Html,     ///< Text underneath this node is user-provided HTML.
+    Raw,      ///< Text underneath this node is raw (e.g., with no escaping).
+    Link      ///< Text is a link to some anchor.
   };
   PrintableSpan(size_t begin, size_t end, const proto::Link& link)
       : begin_(begin), end_(end), link_(link), semantic_(Semantic::Link) {}

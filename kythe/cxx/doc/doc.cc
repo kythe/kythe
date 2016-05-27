@@ -24,7 +24,7 @@
 #include "kythe/cxx/common/kythe_uri.h"
 #include "kythe/cxx/common/net_client.h"
 #include "kythe/cxx/doc/html_renderer.h"
-#include "kythe/cxx/doc/javadoc_markup_handler.h"
+#include "kythe/cxx/doc/javadoxygen_markup_handler.h"
 #include "kythe/cxx/doc/markup_handler.h"
 
 DEFINE_string(xrefs, "http://localhost:8080", "Base URI for xrefs service");
@@ -58,7 +58,7 @@ int DocumentNodesFrom(const proto::DocumentationReply& doc_reply) {
   for (const auto& document : doc_reply.document()) {
     if (document.has_text()) {
       Printable printable(document.text());
-      auto markdoc = HandleMarkup({ParseJavadoc}, printable);
+      auto markdoc = HandleMarkup({ParseJavadoxygen}, printable);
       auto html = RenderHtml(options, markdoc);
       ::fputs(html.c_str(), stdout);
     }

@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 
-#ifndef KYTHE_CXX_DOC_JAVADOC_MARKUP_HANDLER_H_
-#define KYTHE_CXX_DOC_JAVADOC_MARKUP_HANDLER_H_
+#ifndef KYTHE_CXX_DOC_JAVADOXYGEN_MARKUP_HANDLER_H_
+#define KYTHE_CXX_DOC_JAVADOXYGEN_MARKUP_HANDLER_H_
 
 #include "kythe/cxx/doc/markup_handler.h"
 #include "kythe/proto/xref.pb.h"
 
 namespace kythe {
 
-void ParseJavadoc(const Printable& in_message, PrintableSpans* out_spans);
+/// \brief Parse a Printable containing Javadoc and/or Doxygen style directives.
+/// \note This does not handle parsing Markdown.
+void ParseJavadoxygen(const Printable& in_message, PrintableSpans* out_spans);
 
 }  // namespace kythe
 

@@ -65,6 +65,9 @@ std::string RenderHtml(const HtmlRendererOptions& options,
         case PrintableSpan::Semantic::Return:
           text_out.append("</p>");
           break;
+        case PrintableSpan::Semantic::CodeRef:
+          text_out.append("</tt>");
+          break;
         default:
           break;
       }
@@ -98,6 +101,9 @@ std::string RenderHtml(const HtmlRendererOptions& options,
           break;
         case PrintableSpan::Semantic::Return:
           text_out.append("<p><em>Returns: </em>");
+          break;
+        case PrintableSpan::Semantic::CodeRef:
+          text_out.append("<tt>");
           break;
         default:
           break;
