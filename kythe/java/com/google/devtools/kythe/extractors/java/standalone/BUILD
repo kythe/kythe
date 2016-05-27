@@ -10,16 +10,9 @@ java_binary(
         "AbstractJavacWrapper.java",
         "Javac8Wrapper.java",
     ],
-    data = [
-        "@bazel_tools//third_party/java/jdk/langtools:javac_jar",
-    ],
-    jvm_flags = [
-        # TODO(shahms): Pick one of these once Bazel figures it out.
-        #   Currently (0.2.1) Bazel is inconsistent in whether or not the runfiles paths
-        #   include the workspace name.  Specifically, they do on Linux but not on OS X.
-        "-Xbootclasspath/p:$$JAVA_RUNFILES/$(location @bazel_tools//third_party/java/jdk/langtools:javac_jar)",
-        "-Xbootclasspath/p:$$JAVA_RUNFILES/io_kythe/$(location @bazel_tools//third_party/java/jdk/langtools:javac_jar)",
-    ],
+    data = ["@bazel_tools//third_party/java/jdk/langtools:javac_jar"],
+    # TODO(schroederc): fix bootclasspath to use $(location ...) syntax
+    jvm_flags = ["-Xbootclasspath/p:$$JAVA_RUNFILES/bazel_tools/third_party/java/jdk/langtools/javac.jar"],
     main_class = "com.google.devtools.kythe.extractors.java.standalone.Javac8Wrapper",
     deps = [
         "@bazel_tools//third_party/java/jdk/langtools:javac",
