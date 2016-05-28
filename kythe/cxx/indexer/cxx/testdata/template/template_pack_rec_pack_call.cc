@@ -12,13 +12,11 @@ template <typename... Ts>
 //- @g defines/binding AbsG
 //- FnTG childof AbsG
 void g(Ts... ts) {
-  //- CtorCall ref/call CtorLookupC
+  //- CtorCall ref/call CtorLookup
   //- CtorCall childof FnTG
   auto s = S<Ts...>(ts...);
 }
 
-//- CtorLookupC.node/kind callable
-//- CtorLookup callableas CtorLookupC
 //- CtorLookup.node/kind lookup
 //- CtorLookup.text "#ctor"
 //- CtorLookup param.0 TAppAbsSTs

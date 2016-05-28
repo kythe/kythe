@@ -2,10 +2,9 @@
 class C {
  public:
   //- @C defines/binding Ctor
-  //- Ctor callableas CtorC
   C() { }
 };
 void f() {
-  //- @"C()" ref/call CtorC
+  //- @"C()" ref/call Ctor
   new C();
 }

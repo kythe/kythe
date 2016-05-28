@@ -21,17 +21,17 @@
 namespace kythe {
 
 static const std::string *const kNodeKindSpellings[] = {
-    new std::string("anchor"),    new std::string("file"),
-    new std::string("variable"),  new std::string("talias"),
-    new std::string("tapp"),      new std::string("tnominal"),
-    new std::string("record"),    new std::string("sum"),
-    new std::string("constant"),  new std::string("abs"),
-    new std::string("absvar"),    new std::string("name"),
-    new std::string("function"),  new std::string("callable"),
-    new std::string("lookup"),    new std::string("macro"),
-    new std::string("interface"), new std::string("package"),
-    new std::string("tsigma"),    new std::string("doc"),
-    new std::string("builtin"),   new std::string("meta")};
+    new std::string("anchor"),   new std::string("file"),
+    new std::string("variable"), new std::string("talias"),
+    new std::string("tapp"),     new std::string("tnominal"),
+    new std::string("record"),   new std::string("sum"),
+    new std::string("constant"), new std::string("abs"),
+    new std::string("absvar"),   new std::string("name"),
+    new std::string("function"), new std::string("lookup"),
+    new std::string("macro"),    new std::string("interface"),
+    new std::string("package"),  new std::string("tsigma"),
+    new std::string("doc"),      new std::string("builtin"),
+    new std::string("meta")};
 
 static const std::string *kEdgeKindSpellings[] = {
     new std::string("/kythe/edge/defines"),
@@ -45,7 +45,6 @@ static const std::string *kEdgeKindSpellings[] = {
     new std::string("/kythe/edge/childof"),
     new std::string("/kythe/edge/specializes"),
     new std::string("/kythe/edge/ref/call"),
-    new std::string("/kythe/edge/callableas"),
     new std::string("/kythe/edge/ref/expands"),
     new std::string("/kythe/edge/undefines"),
     new std::string("/kythe/edge/ref/includes"),

@@ -19,17 +19,16 @@ Callgraphs
 :toclevels: 3
 :priority: 999
 
-The Kythe graph contains information about link:schema.html#callable[callables]
-and link:schema.html#refcall[ref/call] edges that target them. This information
-can be used to satisfy queries about the locations at which different functions
-are called:
+The Kythe graph contains information about callable objects like
+link:schema.html#function[functions] and link:schema.html#refcall[ref/call]
+edges that target them. This information can be used to satisfy queries about
+the locations at which different functions are called:
 
 [kythe,C++,"foo calls bar.",0]
 --------------------------------------------------------------------------------
 //- @bar defines/binding FnBar
-//- FnBar callableas CallableBar
 void bar() { }
-//- @"bar()" ref/call CallableBar
+//- @"bar()" ref/call FnBar
 //- @"bar()" childof FnFoo
 //- @foo defines/binding FnFoo
 void foo() { bar(); }
@@ -37,22 +36,17 @@ void foo() { bar(); }
 
 In this example, function `foo` makes a single call to function `bar`. The
 callsite is the expression `bar()`. This is spanned by an anchor that has a
-`ref/call` edge pointing to a `callable` node that is associated with `bar`.
-The anchor also has a `childof` edge that points to function `foo`. This edge
-indicates that the effects of the anchor should be blamed on `foo`. There will
-be up to one such blame `childof` edge with an anchor source and a semantic
-target.
+`ref/call` edge pointing to the function node for `bar`. The anchor also has a
+`childof` edge that points to function `foo`. This edge indicates that the
+effects of the anchor should be blamed on `foo`. There will be up to one such
+blame `childof` edge with an anchor source and a semantic target.
 
 The assertions in the example trace a possible set of queries made against
 a Kythe graph:
 
 . Identify the semantic object for the definition in question (`FnBar`).
-. Find the object's `callable`. There may be more than one callable node
-  associated with each semantic object. For example, a C++ struct with multiple
-  `operator()` overloads will have a `callableas` relationship for each
-  unique operator.
-. Find the locations at which that `callable` is called. These will be
-  `ref/call` edges with `anchor` sources and `callable` targets.
+. Find the locations at which that object is called. These will be
+  `ref/call` edges with `anchor` sources and semantic targets.
 . Find the semantic objects associated with each callsite anchor. These will
   be attached by `childof` edges.
 . Finally, we can show the binding location for the caller by looking up its
@@ -64,45 +58,43 @@ overrides.
 
 == Forward declarations
 
-The `callable` for a forward declaration may not be the same as the `callable`
-for the definition that link:schema.html#completes[completes] that declaration.
-This allows the Kythe graph to model a set of programs (where different
-programs link against different implementations for the same declaration)
-rather than a single program (where linking different implementations in this
-way would result in undefined behavior). In order to build a complete call
-graph, one must therefore also look along `completes` edges to find alternate
-possible `callable` nodes for a given declaration or definition.
+A call made using a forward declaration may not always `ref/call` the definition
+that link:schema.html#completes[completes] that declaration. This allows the
+Kythe graph to model a set of programs (where different programs link against
+different implementations for the same declaration) rather than a single program
+(where linking different implementations in this way would result in undefined
+behavior). In order to build a complete call graph, one must therefore also look
+along `completes` edges to find alternate possible nodes that may be used to
+make calls to a given declaration or definition.
 
 [kythe,C++,"foo calls a forward-declared bar.",0]
 --------------------------------------------------------------------------------
 #include "bardecl.h"
-//- @"c.bar()" ref/call BarDeclCallable
+//- @"c.bar()" ref/call BarDecl
 void foo(C& c) { c.bar(); }
 
 #example bardecl.h
 //- @bar defines/binding BarDecl
-//- BarDecl callableas BarDeclCallable
 struct C { void bar(); };
 
 #example barimpl.cc
 #include "bardecl.h"
 //- @bar defines/binding BarImpl
-//- BarImpl callableas BarImplCallable
 void C::bar() { }
 
-// Imagine that we only had BarDeclCallable and BarDecl (by looking up the
-// ref/call from c.bar() in foo()). We can find the implementation BarImpl of
-// C::bar by taking the following trip:
+// Imagine that we only had BarDecl (by looking up the ref/call from c.bar()
+// in foo()). We can find the implementation BarImpl of C::bar by taking the
+// following trip:
 //- BarImplAnchor completes BarDecl
 //- BarImplAnchor defines/binding BarImpl
 --------------------------------------------------------------------------------
 
-Note that this overestimates the possible set of `callable` nodes for a given
-callee: for example, in a given program a forward declaration might never be
-linked (in the joining-together-object-files sense) with a definition. In order
-to filter these extra associations out, one would need to consider both which
-program is in focus by the user and which modules went into building that
-program. This is out of scope for this document.
+Note that this overestimates the possible set of nodes for a given callee: for
+example, in a given program a forward declaration might never be linked (in the
+joining-together-object-files sense) with a definition. In order to filter these
+extra associations out, one would need to consider both which program is in
+focus by the user and which modules went into building that program. This is out
+of scope for this document.
 
 `completes` relationships should only be established when an indexer observes
 that a completion has actually occurred. This allows users of the graph to
@@ -140,12 +132,11 @@ function call.
 [kythe,C++,"Make sure to reach every callsite.",0]
 --------------------------------------------------------------------------------
 #include "foo.h"
-//- @"foo()"=FooDeclCall ref/call FooDeclCallable
+//- @"foo()"=FooDeclCall ref/call FooDecl
 void baz() { foo(); }
 //- @foo=FooImplAnchor defines/binding FooImpl
-//- !{ FooImpl callableas FooDeclCallable }
 void foo() { }
-//- @"foo()"=FooImplCall ref/call FooImplCallable
+//- @"foo()"=FooImplCall ref/call FooImpl
 void bar() { foo(); }
 #example foo.h
 //- @foo=FooDeclAnchor defines/binding FooDecl
@@ -162,32 +153,26 @@ void foo();
 //- FooImplAnchor defines/binding FooImpl
 //- FooDeclAnchor defines/binding FooDecl
 
-// Collect all the callables:
-//- FooImpl callableas FooImplCallable
-//- FooDecl callableas FooDeclCallable
-
-// Then look for all the ref/call edges terminating at those callables:
-//- FooDeclCall ref/call FooDeclCallable
-//- FooImplCall ref/call FooImplCallable
+// Then look for all the ref/call edges terminating at those nodes:
+//- FooDeclCall ref/call FooDecl
+//- FooImplCall ref/call FooImpl
 --------------------------------------------------------------------------------
 
 == Overrides
 
 For callsites that involve dynamic binding, Kythe indexers should emit
-`ref/call` edges to the most specific possible `callable` node.
+`ref/call` edges to the most specific possible node.
 
 [kythe,C++,"Use the most specific static overrides.",0]
 --------------------------------------------------------------------------------
 //- @f defines/binding DefSF
-//- DefSF callableas DefSFCallable
 struct S { virtual void f() { } };
 //- @f defines/binding DefTF
 //- DefTF overrides DefSF
-//- DefTF callableas DefTFCallable
 struct T : public S { void f() override { } };
-//- @"s->f()" ref/call DefSFCallable
+//- @"s->f()" ref/call DefSF
 void CallSF(S* s) { s->f(); }
-//- @"t->f()" ref/call DefTFCallable
+//- @"t->f()" ref/call DefTF
 void CallTF(T* t) { t->f(); }
 --------------------------------------------------------------------------------
 
@@ -207,12 +192,9 @@ void CallTF(T* t) { t->f(); }
 // Starting with DefSF, find all callers (and callers of overrides):
 // Build a set of overrides.
 //- DefTF overrides DefSF
-// Find all relevant callables.
-//- DefSF callableas DefSFCallable
-//- DefTF callableas DefTFCallable
-// Find callsites.
-//- DefSFCall ref/call DefSFCallable
-//- DefTFCall ref/call DefTFCallable
+// Find all callsites.
+//- DefSFCall ref/call DefSF
+//- DefTFCall ref/call DefTF
 --------------------------------------------------------------------------------
 
 == Final query
@@ -231,9 +213,8 @@ yields the various anchors that call `Fn` in the broadest sense.
 .. For every `o` in `O`, for all nodes `o'` such that (for some `a`)
    `a defines/binding o` and (`a completes o'` or `a completes/uniquely o'`),
    add `o'` to `O`.
-. Add all callables of `O` to set `C`.
-. Return the set of all `a` such that there is some `c` in `C` such that
-  `a ref/call c`.
+. Return the set of all `a` such that there is some `o` in `O` such that
+  `a ref/call o`.
 
 Since this query is expensive in practice, we (intend to) precompute it as part
 of building serving tables.

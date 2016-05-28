@@ -1,9 +1,8 @@
 // We index default values for record members.
 //- @f defines/binding FnF
-//- FnF callableas FnFC
 int f() { return 0; }
 class C {
-  //- FnFCCall=@"f()" ref/call FnFC
+  //- FnFCCall=@"f()" ref/call FnF
   //- FnFCCall childof CtorC
   //- CtorC.node/kind function
   int i = f();

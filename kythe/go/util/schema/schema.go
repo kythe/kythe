@@ -73,12 +73,11 @@ const EdgePrefix = "/kythe/edge/"
 
 // Kythe edge kinds
 const (
-	CallableAsEdge = EdgePrefix + "callableas"
-	ChildOfEdge    = EdgePrefix + "childof"
-	NamedEdge      = EdgePrefix + "named"
-	OverridesEdge  = EdgePrefix + "overrides"
-	ParamEdge      = EdgePrefix + "param"
-	TypedEdge      = EdgePrefix + "typed"
+	ChildOfEdge   = EdgePrefix + "childof"
+	NamedEdge     = EdgePrefix + "named"
+	OverridesEdge = EdgePrefix + "overrides"
+	ParamEdge     = EdgePrefix + "param"
+	TypedEdge     = EdgePrefix + "typed"
 )
 
 // Kythe edge kinds associated with anchors

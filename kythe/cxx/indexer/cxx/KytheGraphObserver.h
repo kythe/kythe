@@ -181,8 +181,6 @@ class KytheGraphObserver : public GraphObserver {
                           FunctionSubkind Subkind,
                           const std::string &Format) override;
 
-  void recordCallableNode(const NodeId &Node) override;
-
   void recordAbsVarNode(const NodeId &Node) override;
 
   void recordAbsNode(const NodeId &Node) override;
@@ -269,9 +267,6 @@ class KytheGraphObserver : public GraphObserver {
 
   void recordOverridesEdge(const NodeId &Overrider,
                            const NodeId &BaseObject) override;
-
-  void recordCallableAsEdge(const NodeId &ToCallId,
-                            const NodeId &CallableAsId) override;
 
   void recordCallEdge(const Range &SourceRange, const NodeId &CallerId,
                       const NodeId &CalleeId) override;

@@ -328,7 +328,6 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       boolean documented = visitDocComment(methodDef, methodNode);
       visitAnnotations(methodNode, methodDef.getModifiers().getAnnotations(), ctx);
 
-      EntrySet callable = entrySets.getCallable(methodNode.getVName());
       EntrySet absNode = defineTypeParameters(ctx, methodNode, methodDef.getTypeParameters());
 
       EntrySet ret, bindingAnchor = null;
@@ -381,7 +380,6 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       emitOrdinalEdges(methodNode, EdgeKind.PARAM, params);
       EntrySet fnTypeNode = entrySets.newFunctionType(ret, toEntries(paramTypes));
       entrySets.emitEdge(methodNode, EdgeKind.TYPED, fnTypeNode);
-      entrySets.emitEdge(callable, EdgeKind.TYPED, fnTypeNode);
       entrySets.emitName(fnTypeNode, fnTypeName);
 
       ClassSymbol ownerClass = (ClassSymbol) methodDef.sym.owner;
@@ -506,7 +504,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     JavaNode method = scan(invoke.getMethodSelect(), ctx);
     if (method != null) {
       EntrySet anchor =
-          emitAnchor(ctx, EdgeKind.REF_CALL, entrySets.getCallable(method.entries.getVName()));
+          emitAnchor(ctx, EdgeKind.REF_CALL, method.entries);
       TreeContext parentContext = owner.getMethodParent();
       if (anchor != null && parentContext != null && parentContext.getNode() != null) {
         emitEdge(anchor, EdgeKind.CHILDOF, parentContext.getNode());

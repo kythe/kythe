@@ -14,11 +14,10 @@ struct Struct {
 
 //- @f defines/binding FnF
 void f() {
-//- Call ref/call StructSCtorCallable
+//- Call ref/call StructSCtor
 //- Call.loc/start @^s
 //- Call.loc/end @^s
   Struct s;
 }
 
-//- StructSCtor callableas StructSCtorCallable
 //- Call childof FnF

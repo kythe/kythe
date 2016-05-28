@@ -305,25 +305,11 @@ func SlowDefinitions(xs Service, ctx context.Context, tickets []string) (map[str
 		// relation to another node, try to find a single definition for the
 		// related node instead.
 		for ticket, cr := range xReply.CrossReferences {
-			targetTicket := nodeTargets[ticket]
 			if len(cr.Definition) == 1 {
 				loc := cr.Definition[0]
 				// TODO(schroederc): handle differing kinds; completes vs. binding
 				loc.Kind = ""
 				defs[nodeTargets[ticket]] = loc
-			} else {
-				// Look for relevant node relations for an indirect definition
-				var relevant []string
-				for _, n := range cr.RelatedNode {
-					switch n.RelationKind {
-					case revCallableAs: // Jump from a callable
-						relevant = append(relevant, n.Ticket)
-					}
-				}
-
-				if len(relevant) == 1 {
-					nextJump[relevant[0]] = targetTicket
-				}
 			}
 		}
 
@@ -340,8 +326,6 @@ func SlowDefinitions(xs Service, ctx context.Context, tickets []string) (map[str
 
 	return defs, nil
 }
-
-var revCallableAs = schema.MirrorEdge(schema.CallableAsEdge)
 
 // NodesMap returns a map from each node ticket to a map of its facts.
 func NodesMap(nodes map[string]*xpb.NodeInfo) map[string]map[string][]byte {
@@ -597,7 +581,7 @@ func MatchesAny(str string, patterns []*regexp.Regexp) bool {
 	return false
 }
 
-func forAllEdges(ctx context.Context, service Service, source stringset.Set, edge []string, f func(source string, target string) error) error {
+func forAllEdges(ctx context.Context, service Service, source stringset.Set, edge []string, f func(source string, target string, targetKind string) error) error {
 	tickets := source.Slice()
 	if len(tickets) == 0 {
 		return nil
@@ -605,6 +589,7 @@ func forAllEdges(ctx context.Context, service Service, source stringset.Set, edg
 	req := &xpb.EdgesRequest{
 		Ticket: source.Slice(),
 		Kind:   edge,
+		Filter: []string{schema.NodeKindFact},
 	}
 	edges, err := AllEdges(ctx, service, req)
 	if err != nil {
@@ -613,7 +598,12 @@ func forAllEdges(ctx context.Context, service Service, source stringset.Set, edg
 	for source, es := range edges.EdgeSets {
 		for _, group := range es.Groups {
 			for _, edge := range group.Edge {
-				err = f(source, edge.TargetTicket)
+				info, foundInfo := edges.Nodes[edge.TargetTicket]
+				kind := ""
+				if foundInfo {
+					kind = string(info.Facts[schema.NodeKindFact])
+				}
+				err = f(source, edge.TargetTicket, kind)
 				if err != nil {
 					return err
 				}
@@ -630,8 +620,8 @@ const (
 	maxCallersNodeSetSize = 1024
 )
 
-// findCallableDetail returns a map from non-callable semantic object tickets to CallableDetail,
-// where the CallableDetail does not have the SemanticObject or SemanticObjectCallable fields set.
+// findCallableDetail returns a map from semantic object tickets to CallableDetail,
+// where the CallableDetail does not have the SemanticObject field set.
 func findCallableDetail(ctx context.Context, service Service, ticketSet stringset.Set) (map[string]*xpb.CallersReply_CallableDetail, error) {
 	tickets := ticketSet.Slice()
 	if len(tickets) == 0 {
@@ -670,7 +660,8 @@ func findCallableDetail(ctx context.Context, service Service, ticketSet stringse
 }
 
 // Expand frontier until it includes all nodes connected by defines/binding, completes,
-// completes/uniquely, and (optionally) overrides edges.
+// completes/uniquely, and (optionally) overrides edges. Return the resulting set of
+// tickets with anchors removed.
 func expandDefRelatedNodeSet(ctx context.Context, service Service, frontier stringset.Set, includeOverrides bool) (stringset.Set, error) {
 	var edges []string
 	// From the schema, we know the source of a defines* or completes* edge should be an anchor. Because of this,
@@ -698,16 +689,20 @@ func expandDefRelatedNodeSet(ctx context.Context, service Service, frontier stri
 	}
 	// We keep a worklist of anchors and semantic nodes that are reachable from undirected edges
 	// marked [overrides,] defines/binding, completes, or completes/uniquely. This overestimates
-	// possible calls because it ignores link structure. This set *excludes* callables.
+	// possible calls because it ignores link structure.
 	// TODO(zarko): We need to mark nodes we reached through overrides.
 	// All nodes that we've visited.
 	retired := stringset.New()
+	anchors := stringset.New()
 	iterations := 0
 	for len(retired) < maxCallersNodeSetSize && len(frontier) != 0 && iterations < maxCallersExpansions {
 		iterations++
 		// Nodes that we haven't visited yet but will the next time around the loop.
 		next := stringset.New()
-		err := forAllEdges(ctx, service, frontier, edges, func(_, target string) error {
+		err := forAllEdges(ctx, service, frontier, edges, func(_, target string, kind string) error {
+			if kind == schema.AnchorKind {
+				anchors.Add(target)
+			}
 			if !retired.Contains(target) && !frontier.Contains(target) {
 				next.Add(target)
 			}
@@ -727,39 +722,28 @@ func expandDefRelatedNodeSet(ctx context.Context, service Service, frontier stri
 	if iterations >= maxCallersExpansions {
 		log.Printf("Callers iteration truncated (too many expansions)")
 	}
+	for ticket := range anchors {
+		retired.Remove(ticket)
+	}
 	return retired, nil
 }
 
 // SlowCallers is an implementation of the Callers API built from other APIs.
 func SlowCallers(ctx context.Context, service Service, req *xpb.CallersRequest) (*xpb.CallersReply, error) {
 	tickets, err := FixTickets(req.SemanticObject)
-	// TODO(zarko): Map callable tickets back to function tickets; support CallToOverride.
+	// TODO(zarko): Support CallToOverride.
 	if err != nil {
 		return nil, err
 	}
-	retired, err := expandDefRelatedNodeSet(ctx, service, stringset.New(tickets...), req.IncludeOverrides)
+	callees, err := expandDefRelatedNodeSet(ctx, service, stringset.New(tickets...), req.IncludeOverrides)
 	if err != nil {
 		return nil, err
-	}
-	// Now frontier is empty. The schema dictates that only semantic nodes in retired will have callableas edges.
-	// callableToNode maps callables to nodes they're %callableas.
-	callableToNode := make(map[string][]string)
-	err = forAllEdges(ctx, service, retired, []string{schema.CallableAsEdge}, func(source string, target string) error {
-		callableToNode[target] = append(callableToNode[target], source)
-		return nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("error while looking up callableas edges: %v", err)
-	}
-	// We can use CrossReferences to get detailed information about anchors that ref/call our callables. This unfortunately excludes blame information.
-	xrefTickets := []string{}
-	for callable := range callableToNode {
-		xrefTickets = append(xrefTickets, callable)
 	}
 	// expandedAnchors maps callsite anchor tickets to anchor details.
 	var expandedAnchors map[string]*xpb.Anchor
 	// parentToAnchor maps semantic node tickets to the callsite anchor tickets they own.
 	var parentToAnchor map[string][]string
+	xrefTickets := callees.Slice()
 	if len(xrefTickets) > 0 {
 		xreq := &xpb.CrossReferencesRequest{
 			Ticket:            xrefTickets,
@@ -789,14 +773,14 @@ func SlowCallers(ctx context.Context, service Service, req *xpb.CallersRequest) 
 				}
 			}
 		}
-		err = forAllEdges(ctx, service, anchors, []string{schema.ChildOfEdge}, func(source string, target string) error {
+		err = forAllEdges(ctx, service, anchors, []string{schema.ChildOfEdge}, func(source string, target string, kind string) error {
 			anchor, ok := expandedAnchors[source]
 			if !ok {
 				log.Printf("Warning: missing expanded anchor for %v", source)
 				return nil
 			}
 			// anchor.Parent is the syntactic parent of the anchor; we want the semantic parent.
-			if target != anchor.Parent {
+			if target != anchor.Parent && kind != schema.AnchorKind {
 				parentToAnchor[target] = append(parentToAnchor[target], source)
 			}
 			return nil
@@ -809,15 +793,12 @@ func SlowCallers(ctx context.Context, service Service, req *xpb.CallersRequest) 
 	reply := &xpb.CallersReply{}
 	// We'll fetch CallableDetail only once for each def-related ticket, then add it to the response later.
 	detailToFetch := stringset.New()
-	for calleeCallable, calleeNodes := range callableToNode {
-		for _, calleeNode := range calleeNodes {
-			rCalleeNode := &xpb.CallersReply_CallableDetail{
-				SemanticObject:         calleeNode,
-				SemanticObjectCallable: calleeCallable,
-			}
-			reply.Callee = append(reply.Callee, rCalleeNode)
-			detailToFetch.Add(calleeNode)
+	for _, calleeNode := range xrefTickets {
+		rCalleeNode := &xpb.CallersReply_CallableDetail{
+			SemanticObject: calleeNode,
 		}
+		reply.Callee = append(reply.Callee, rCalleeNode)
+		detailToFetch.Add(calleeNode)
 	}
 	if parentToAnchor != nil {
 		// parentToAnchor != nil implies expandedAnchors != nil

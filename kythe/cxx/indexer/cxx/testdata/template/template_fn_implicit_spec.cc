@@ -3,8 +3,6 @@
 template <typename T> T id(T x) { return x; }
 //- @id ref SpecId
 int y = id(42);
-//- SpecId callableas SpecIdCallable
-//- SpecIdCallable.node/kind callable
 //- SpecId.node/kind function
 //- SpecId specializes TAppAbsInt
 //- TAppAbsInt.node/kind tapp

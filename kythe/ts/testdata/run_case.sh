@@ -18,7 +18,7 @@ HAD_ERRORS=0
 VERIFIER="kythe/cxx/verifier/verifier"
 ENTRYSTREAM="kythe/go/platform/tools/entrystream"
 INDEXER="kythe/ts/build/lib/main.js"
-NODE="tools/node"
+NODE="node"
 
 if [[ ! -e "${INDEXER}" ]]; then
   echo "The indexer wasn't compiled, so we'll trivially succeed."

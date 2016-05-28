@@ -405,18 +405,6 @@ public:
                                   FunctionSubkind Subkind,
                                   const std::string &Format) {}
 
-  /// \brief Records a node representing a callable, an object that can
-  /// appear as the target of a call expression.
-  /// \param Node The NodeId of the callable.
-  ///
-  /// Various language-level objects may be deemed 'callable' (like functions
-  /// or classes with operator()). This abstraction allows call relationships
-  /// to be recorded in the graph in a consistent way regardless of the
-  /// particular kind of object being called.
-  ///
-  /// \sa recordCallableAsEdge
-  virtual void recordCallableNode(const NodeId &Node) {}
-
   /// \brief Describes whether an enum is scoped (`enum class`).
   enum class EnumKind {
     Scoped,  ///< This enum is scoped (an `enum class`).
@@ -630,23 +618,11 @@ public:
   virtual void recordOverridesEdge(const NodeId &Overrider,
                                    const NodeId &BaseObject) {}
 
-  /// \brief Records that one node participates in the call graph as a
-  /// particular `Callable`.
-  ///
-  /// This relationship allows the indexer to abstract the notion of
-  /// callability from its embodiment in particular callable objects
-  /// (such as functions or records that define operator()).
-  ///
-  /// \param ToCallId The specific node that may be called.
-  /// \param CallableAsId The node representing `ToCallId` in the call graph.
-  virtual void recordCallableAsEdge(const NodeId &ToCallId,
-                                    const NodeId &CallableAsId) {}
-
-  /// \brief Records that a callable is called at a particular location.
+  /// \brief Records that a node is called at a particular location.
   /// \param CallLoc The `Range` responsible for making the call.
   /// \param CallerId The scope to be held responsible for making the call;
   /// for example, a function.
-  /// \param CalleeId The callable being called.
+  /// \param CalleeId The node being called.
   virtual void recordCallEdge(const Range &SourceRange, const NodeId &CallerId,
                               const NodeId &CalleeId) {}
 

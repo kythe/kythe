@@ -552,27 +552,7 @@ message CrossReferencesReply {
 }
 
 message CallersRequest {
-  // A set of semantic tickets. These may refer to nodes that are `callableas`
-  // other nodes or they may refer to those specific `callable` nodes. This
-  // means that you can use both the target nodes of `ref/call` edges and
-  // more common reference or definition edges (like `ref` or
-  // `defines/binding`).
-  //
-  // The Kythe data model defines a `callable` as something that can be the
-  // target of a `ref/call` edge. A `callable` has its own identity in the
-  // graph and is connected to the nodes it can be called through by a
-  // `callableas` edge. A `function` is the most typical node kind that
-  // participates in this `callableas` relationship. Other language-level
-  // objects that may be sources of `callableas` edges include C++
-  // struct/class types that define an operator(), Python classes that
-  // define __call__, and so forth.
-  //
-  // A given node may be `callableas` several different `callable` nodes.
-  // For example, if a struct S defines multiple overrides for
-  // operator(), it will be `callableas` multiple nodes C0...CN. These
-  // nodes will be distinguished by their type signatures. It's better to
-  // use `callable` nodes in this set because they make the query more
-  // specific.
+  // Semantic tickets for callees (e.g., function nodes).
   repeated string semantic_object = 1;
   // Expand the semantic_object set by including nodes that participate in
   // an `overrides` relationship (in either direction) with nodes in the set.
@@ -599,14 +579,10 @@ message CallersReply {
     // This would be the "bar" in "void bar()" for calls blamed on bar above
     // and the "foo" in "void foo()" if it refers to foo as a callee.
     Anchor definition = 1;
-    // The ticket of the object that is `callableas` some C. This would refer
-    // to the function node for "bar" or "foo". This object may be the target
-    // of a `completes` edge (e.g., if the call was made to a definition
-    // rather than a declaration).
+    // The ticket of the callable object. This would refer to the function node
+    // for "bar" or "foo". This object may be the target of a `completes` edge
+    // (e.g., if the call was made to a definition rather than a declaration).
     string semantic_object = 2;
-    // The ticket of the callable C for semantic_object that was used to service
-    // the query.
-    string semantic_object_callable = 3;
     // The unqualified identifier for this object ("bar" or "foo" above,
     // even if they were defined in some namespace or record). This field
     // should be human-readable and can be displayed in a UI.

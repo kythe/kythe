@@ -2,10 +2,9 @@
 class C {
  public:
   //- @"~C" defines/binding Dtor
-  //- Dtor callableas DtorC
   ~C() { }
 };
 void f(C* c) {
-  //- @"delete c" ref/call DtorC
+  //- @"delete c" ref/call Dtor
   delete c;
 }

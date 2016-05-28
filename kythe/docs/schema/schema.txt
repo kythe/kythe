@@ -97,28 +97,6 @@ Ordinals are used::
 @Deprecated public class E {}
 --------------------------------------------------------------------------------
 
-[[callableas]]
-callableas
-~~~~~~~~~~
-
-Brief description::
-  A *callableas* B if A participates in the call graph as B.
-Commonly arises from::
-  callable objects
-Points from::
-  semantic nodes
-Points toward::
-  semantic nodes
-
-[kythe,C++,"Functions can become callables."]
---------------------------------------------------------------------------------
-//- @F defines/binding FnF
-//- FnF.node/kind function
-//- FnF callableas CF
-//- CF.node/kind callable
-void F() { }
---------------------------------------------------------------------------------
-
 [[childof]]
 childof
 ~~~~~~~
@@ -738,23 +716,22 @@ ref/call
 ~~~~~~~~
 
 Brief description::
-  A *ref/call* C if A is an anchor that calls C.
+  A *ref/call* F if A is an anchor that calls F.
 Points from::
   anchors
 Points toward::
-  <<callable,callables>>
+  <<function,functions>>
 Ordinals are used::
   never
 
-[kythe,C++,"Anchors inside functions call callables."]
+[kythe,C++,"Anchors inside functions call functions."]
 --------------------------------------------------------------------------------
 //- @A defines/binding FnA
-//- FnA callableas CallableA
 void A() { }
 //- @B defines/binding FnB
 //- ACall childof FnB
 //- ACall.node/kind anchor
-//- ACall ref/call CallableA
+//- ACall ref/call FnA
 void B() { A(); }
 --------------------------------------------------------------------------------
 
@@ -1122,7 +1099,6 @@ public class E {
 //- CCtor childof ClassC
 //- CCtor.subkind constructor
 //- CCtor.complete definition
-//- CCtor callableas CCtorCallable
 class C { };
 //- @D defines/binding ClassD
 //- DCtor childof ClassD
@@ -1132,7 +1108,7 @@ class D { C c; };
 D d;
 //- ImplicitCallToCCtor.node/kind anchor
 //- ImplicitCallToCCtor.subkind implicit
-//- ImplicitCallToCCtor ref/call CCtorCallable
+//- ImplicitCallToCCtor ref/call CCtor
 //- ImplicitCallToCCtor childof DCtor
 --------------------------------------------------------------------------------
 
@@ -1143,31 +1119,6 @@ public class E {
   //- @foo=vname(_,Corpus,Root,Path,"java") childof vname("",Corpus,Root,Path,"")
   int foo;
 }
---------------------------------------------------------------------------------
-
-[[callable]]
-callable
-~~~~~~~~
-
-Brief description::
-  A *callable* is the target of a <<refcall,[ref/call]>> edge.
-Notes::
-  Callables abstract different notions of call targets. For example, in $$C++$$,
-  a struct may define an `operator()`. That struct and its operator are both
-  <<callableas,callable as>> the same callable. If the struct defines more
-  than one `operator()`, the struct will be callable as multiple callables. The
-  callable's type also abstracts away any implicit arguments (such as `this`).
-  An instance member function with type `int -> string` will be callable as a
-  callable with the same type as a free function typed as `int -> string`.
-See also::
-  <<callableas>>, <<function>>, <<refcall,[ref/call]>>
-
-[kythe,C++,"Functions are callable as callables."]
---------------------------------------------------------------------------------
-//- @F defines/binding FnF
-//- FnF callableas CF
-//- CF.node/kind callable
-void F(int X);
 --------------------------------------------------------------------------------
 
 [[constant]]
@@ -1299,8 +1250,6 @@ Facts::
   subkind:::
     `constructor` for constructors; `destructor` for destructors;
     `none` or unspecified for normal or member functions
-See also::
-  <<callable>>
 
 [kythe,C++,"Functions are functions."]
 --------------------------------------------------------------------------------
@@ -2132,16 +2081,14 @@ In this case, the constructor (or destructor) is named `#ctor` (or `#dtor`):
 //- @T defines/binding TyvarT
 template <typename T>
 class C : T {
-  //- @"T()" ref/call LookupTCtorCallable
-  //- LookupTCtor callableas LookupTCtorCallable
+  //- @"T()" ref/call LookupTCtor
   //- LookupTCtor.node/kind lookup
   //- LookupTCtor param.0 TyvarT
   //- LookupTCtor.text "#ctor"
   C() : T() { }
 
   T *t;
-  //- @"delete t" ref/call LookupTDtorCallable
-  //- LookupTDtor callableas LookupTDtorCallable
+  //- @"delete t" ref/call LookupTDtor
   //- LookupTDtor.node/kind lookup
   //- LookupTDtor param.0 TyvarT
   //- LookupTDtor.text "#dtor"

@@ -29,7 +29,6 @@ public enum EdgeKind {
   ANNOTATED_BY("annotatedby"),
   BOUNDED_LOWER("bounded/lower"),
   BOUNDED_UPPER("bounded/upper"),
-  CALLABLE_AS("callableas"),
   CHILDOF("childof"),
   EXTENDS("extends"),
   NAMED("named"),

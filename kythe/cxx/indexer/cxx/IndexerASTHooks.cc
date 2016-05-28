@@ -858,9 +858,6 @@ bool IndexerASTVisitor::TraverseDecl(clang::Decl *Decl) {
         return true;
       }
     }
-    // Blame calls on actual functions, not on callables. This keeps us from
-    // blurring together calls from different functions that happen to alias
-    // the same callable.
     auto R = RestoreStack(BlameStack);
     auto S = RestoreStack(RangeContext);
 
@@ -1026,9 +1023,7 @@ bool IndexerASTVisitor::VisitCXXConstructExpr(
       }
       auto StmtId = BuildNodeIdForImplicitStmt(E);
       if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
-        if (auto CalleeId = BuildNodeIdForCallableDecl(Callee)) {
-          RecordCallEdges(RCC.primary(), CalleeId.primary());
-        }
+        RecordCallEdges(RCC.primary(), BuildNodeIdForDecl(Callee));
       }
     }
   }
@@ -1054,7 +1049,7 @@ bool IndexerASTVisitor::VisitCXXDeleteExpr(const clang::CXXDeleteExpr *E) {
   MaybeFew<GraphObserver::NodeId> DDId;
   if (const auto *CD = BaseType->getAsCXXRecordDecl()) {
     if (const auto *DD = CD->getDestructor()) {
-      DDId = BuildNodeIdForCallableDecl(DD);
+      DDId = BuildNodeIdForDecl(DD);
     }
   } else {
     auto QTCan = BaseType.getCanonicalType();
@@ -1067,15 +1062,9 @@ bool IndexerASTVisitor::VisitCXXDeleteExpr(const clang::CXXDeleteExpr *E) {
     }
     auto DtorName = Context.DeclarationNames.getCXXDestructorName(
         CanQualType::CreateUnsafe(QTCan));
-    if (auto DepName = BuildNodeIdForDependentName(
-            clang::NestedNameSpecifierLoc(), DtorName, E->getLocStart(), TyId,
-            EmitRanges::No)) {
-      DDId = BuildNodeIdForCallableNode(DepName.primary());
-      if (DDId) {
-        Observer.recordCallableNode(DDId.primary());
-        Observer.recordCallableAsEdge(DepName.primary(), DDId.primary());
-      }
-    }
+    DDId =
+        BuildNodeIdForDependentName(clang::NestedNameSpecifierLoc(), DtorName,
+                                    E->getLocStart(), TyId, EmitRanges::No);
   }
   if (DDId) {
     clang::SourceRange SR = E->getSourceRange();
@@ -1114,10 +1103,7 @@ bool IndexerASTVisitor::VisitCXXPseudoDestructorExpr(
     SR.setEnd(RangeForASTEntityFromSourceLocation(SR.getEnd()).getEnd());
     auto StmtId = BuildNodeIdForImplicitStmt(E);
     if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
-      auto CallableId = BuildNodeIdForCallableNode(DDId.primary());
-      Observer.recordCallableNode(CallableId);
-      Observer.recordCallableAsEdge(DDId.primary(), CallableId);
-      RecordCallEdges(RCC.primary(), CallableId);
+      RecordCallEdges(RCC.primary(), DDId.primary());
     }
   }
   return true;
@@ -1150,10 +1136,7 @@ bool IndexerASTVisitor::VisitCXXUnresolvedConstructExpr(
     }
     auto StmtId = BuildNodeIdForImplicitStmt(E);
     if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
-      auto CallableID = BuildNodeIdForCallableNode(LookupId.primary());
-      Observer.recordCallableNode(CallableID);
-      Observer.recordCallableAsEdge(LookupId.primary(), CallableID);
-      RecordCallEdges(RCC.primary(), CallableID);
+      RecordCallEdges(RCC.primary(), LookupId.primary());
     }
   }
   return true;
@@ -1174,11 +1157,9 @@ bool IndexerASTVisitor::VisitCallExpr(const clang::CallExpr *E) {
   auto StmtId = BuildNodeIdForImplicitStmt(E);
   if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
     if (const auto *Callee = E->getCalleeDecl()) {
-      if (auto CalleeId = BuildNodeIdForCallableDecl(Callee)) {
-        RecordCallEdges(RCC.primary(), CalleeId.primary());
-      }
+      RecordCallEdges(RCC.primary(), BuildNodeIdForDecl(Callee));
     } else if (const auto *CE = E->getCallee()) {
-      if (auto CalleeId = BuildNodeIdForCallableExpr(CE)) {
+      if (auto CalleeId = BuildNodeIdForExpr(CE, EmitRanges::Yes)) {
         RecordCallEdges(RCC.primary(), CalleeId.primary());
       }
     }
@@ -1867,16 +1848,6 @@ bool IndexerASTVisitor::VisitRecordDecl(const clang::RecordDecl *Decl) {
   return true;
 }
 
-MaybeFew<GraphObserver::NodeId>
-IndexerASTVisitor::BuildNodeIdForCallableType(const clang::FunctionDecl *Decl) {
-  // Presently, there isn't anything about the normal type of a function that
-  // would preclude its use as the type of the callable. If we add things like
-  // linkage or calling convention to the function type, this may change.
-  const auto *FT = Decl->getFunctionType();
-  CHECK(FT != nullptr);
-  return BuildNodeIdForType(QualType(FT, 0));
-}
-
 bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
   GraphObserver::NodeId InnerNode(Observer.getDefaultClaimToken(), "");
   GraphObserver::NodeId OuterNode(Observer.getDefaultClaimToken(), "");
@@ -1996,16 +1967,12 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
     }
   }
   GraphObserver::NameId DeclName(BuildNameIdForDecl(Decl));
-  auto CallableDeclNode(BuildNodeIdForCallableDecl(Decl));
   SourceLocation DeclLoc = Decl->getLocation();
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
   auto NameRangeInContext(
       RangeInCurrentContext(Decl->isImplicit(), OuterNode, NameRange));
   MaybeRecordDefinitionRange(NameRangeInContext, OuterNode);
   Observer.recordNamedEdge(OuterNode, DeclName);
-  if (CallableDeclNode) {
-    Observer.recordCallableAsEdge(OuterNode, CallableDeclNode.primary());
-  }
   bool IsFunctionDefinition = IsDefinition(Decl);
   unsigned ParamNumber = 0;
   for (const auto *Param : Decl->params()) {
@@ -2052,14 +2019,6 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
     Observer.recordTypeEdge(InnerNode, FunctionType.primary());
   }
 
-  if (CallableDeclNode) {
-    Observer.recordCallableNode(CallableDeclNode.primary());
-    if (auto CallableType = BuildNodeIdForCallableType(Decl)) {
-      Observer.recordTypeEdge(CallableDeclNode.primary(),
-                              CallableType.primary());
-    }
-  }
-
   if (const auto *MF = dyn_cast<CXXMethodDecl>(Decl)) {
     const auto *R = MF->getParent();
     GraphObserver::NodeId ParentNode(BuildNodeIdForDecl(R));
@@ -2067,9 +2026,6 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
     // The dyn_cast to CXXMethodDecl above is therefore not dropping
     // (impossible) free function incarnations of these operators from
     // consideration in the following.
-    if (MF->getOverloadedOperator() == clang::OO_Call && CallableDeclNode) {
-      Observer.recordCallableAsEdge(ParentNode, CallableDeclNode.primary());
-    }
     for (auto O = MF->begin_overridden_methods(),
               E = MF->end_overridden_methods();
          O != E; ++O) {
@@ -2099,11 +2055,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
               SR.setEnd(SR.getEnd().getLocWithOffset(1));
               if (Init->isWritten()) {
                 if (auto RCC = ExplicitRangeInCurrentContext(SR)) {
-                  auto CallableID =
-                      BuildNodeIdForCallableNode(LookupId.primary());
-                  Observer.recordCallableNode(CallableID);
-                  Observer.recordCallableAsEdge(LookupId.primary(), CallableID);
-                  RecordCallEdges(RCC.primary(), CallableID);
+                  RecordCallEdges(RCC.primary(), LookupId.primary());
                 }
               } else {
                 // clang::CXXCtorInitializer is its own special flavor of AST
@@ -2640,28 +2592,6 @@ uint64_t IndexerASTVisitor::SemanticHash(const clang::RecordDecl *RD) {
     hash ^= SemanticHash(clang::QualType(CTSD->getTypeForDecl(), 0));
   }
   return hash;
-}
-
-MaybeFew<GraphObserver::NodeId>
-IndexerASTVisitor::BuildNodeIdForCallableDecl(const clang::Decl *Decl) {
-  return BuildNodeIdForCallableNode(BuildNodeIdForDecl(Decl));
-}
-
-GraphObserver::NodeId
-IndexerASTVisitor::BuildNodeIdForCallableNode(const GraphObserver::NodeId &Id) {
-  return GraphObserver::NodeId(Id.getToken(),
-                               Id.getRawIdentity() + "#callable");
-}
-
-MaybeFew<GraphObserver::NodeId>
-IndexerASTVisitor::BuildNodeIdForCallableExpr(const clang::Expr *Expr) {
-  if (auto BaseId = BuildNodeIdForExpr(Expr, EmitRanges::Yes)) {
-    auto CallableID = BuildNodeIdForCallableNode(BaseId.primary());
-    Observer.recordCallableNode(CallableID);
-    Observer.recordCallableAsEdge(BaseId.primary(), CallableID);
-    return CallableID;
-  }
-  return None();
 }
 
 GraphObserver::NodeId

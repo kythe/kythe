@@ -36,7 +36,6 @@ function index(job : jobs.Job) {
   let program = createFilesystemProgram();
   let filenames = program.getSourceFiles().map(file => file.fileName);
   let typechecker = program.getTypeChecker();
-  let callablesEmitted : {[index:string]:boolean} = {};
 
   program.getSourceFiles().forEach(file =>
       snapshots[file.fileName] = ts.ScriptSnapshot.fromString(file.text));
@@ -240,19 +239,6 @@ function index(job : jobs.Job) {
     return undefined;
   }
 
-  // Emits a callable for node (if it hasn't already) and returns its VName.
-  function emitCallable(fileVName : kythe.VName,
-      node : ts.Node, nodeVName : kythe.VName) : kythe.VName {
-    let callable = vnameForCallable(fileVName, node);
-    let callableStr = JSON.stringify(callable);
-    if (!callablesEmitted[callableStr]) {
-      kythe.write(kythe.fact(callable, "node/kind", "callable"));
-      kythe.write(kythe.edge(nodeVName, "callableas", callable));
-      callablesEmitted[callableStr] = true;
-    }
-    return callable;
-  }
-
   function findParentVName(fileVName : kythe.VName, node : ts.Node) {
     let parent = findKytheParent(node);
     return parent ? vnameForNode(fileVName, parent) : undefined;
@@ -314,7 +300,6 @@ function index(job : jobs.Job) {
       spanLength : number) {
     let vname = emitCommonDeclarationEntries(fn, fullName, searchString,
         file, fileVName, spanStart, spanLength);
-    let callable = emitCallable(fileVName, fn, vname);
     kythe.write(kythe.fact(vname, "node/kind", "function"));
     // TODO(zarko): completes edges.
     kythe.write(kythe.fact(vname, "complete",
@@ -328,11 +313,6 @@ function index(job : jobs.Job) {
     let vname = emitCommonDeclarationEntries(prop, fullName, searchString,
         file, fileVName, spanStart, spanLength);
     kythe.write(kythe.fact(vname, "node/kind", "variable"));
-    if (prop.initializer
-        && prop.initializer.kind == ts.SyntaxKind.FunctionExpression) {
-      // This property can be used like a function.
-      emitCallable(fileVName, prop, vname);
-    }
   }
 
   function visitDeclaration(declaration : ts.Declaration,
@@ -428,8 +408,7 @@ function index(job : jobs.Job) {
                 if (refParent.parent && refParent.parent.kind
                     == ts.SyntaxKind.CallExpression) {
                   kythe.write(kythe.edge(refSiteAnchor, "ref/call",
-                      emitCallable(defFile, canTok.parent,
-                          vnameForNode(defFile, canTok.parent))));
+                          vnameForNode(defFile, canTok.parent)));
                   if (refParentVName) {
                     kythe.write(kythe.edge(refSiteAnchor, "childof",
                         refParentVName));
@@ -439,14 +418,8 @@ function index(job : jobs.Job) {
                 // [x.y](f)
                 if (refParent.parent.parent && refParent.parent.parent.kind
                     == ts.SyntaxKind.CallExpression) {
-                  // Emit a callable for canTok.parent, since this may be
-                  // implicitly callable.
                   let prop = vnameForNode(defFile, canTok.parent);
-                  let callable = emitCallable(defFile, canTok.parent, prop);
-                  kythe.write(kythe.edge(refSiteAnchor, "ref/call", callable));
-                  // TODO(zarko): If we discover a property being assigned
-                  // a function, should that function be callableas the
-                  // property's callable?
+                  kythe.write(kythe.edge(refSiteAnchor, "ref/call", prop));
                   if (refParentVName) {
                     kythe.write(kythe.edge(refSiteAnchor, "childof",
                         refParentVName));
@@ -465,12 +438,6 @@ function index(job : jobs.Job) {
 
   function vnameForNodeNoFile(node : ts.Node) : kythe.VName {
     return vnameForNode(fileVName(tsu.getSourceFileOfNode(node)), node);
-  }
-
-  function vnameForCallable(defFileVName : kythe.VName, node : ts.Node) {
-    let vname = kythe.copyVName(vnameForNode(defFileVName, node));
-    vname.signature += "#callable";
-    return vname;
   }
 
   function vnameForNode(defFileVName : kythe.VName, node : ts.Node)

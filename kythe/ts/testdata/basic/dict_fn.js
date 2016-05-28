@@ -2,8 +2,7 @@
 var dict = {
 //- @g defines/binding VarG
 //- VarG.node/kind variable
-//- VarG callableas CG
   g: function(x) { return x; }
 };
-//- @g ref/call CG
+//- @g ref/call VarG
 var v = dict.g(1);

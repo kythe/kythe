@@ -10,7 +10,6 @@ int q() {
   //- @f ref MemF
   //- MemF childof SInstInt
   //- SInstInt specializes TAppAbsSInt
-  //- MemF callableas CMemF
-  //- @"s.f()" ref/call CMemF
+  //- @"s.f()" ref/call MemF
   return s.f();
 }

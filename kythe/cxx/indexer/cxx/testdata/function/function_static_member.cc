@@ -2,10 +2,9 @@
 //- @f defines/binding MemberF
 //- @S defines/binding StructS
 //- MemberF childof StructS
-//- MemberF callableas CF
 struct S { static int f() { return 0; } };
 void f() {
   //- @f ref MemberF
-  //- @"S::f()" ref/call CF
+  //- @"S::f()" ref/call MemberF
   int x = S::f();
 }

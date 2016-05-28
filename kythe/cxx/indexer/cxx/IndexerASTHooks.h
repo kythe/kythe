@@ -391,37 +391,6 @@ public:
   MaybeFew<GraphObserver::NodeId>
   BuildNodeIdForTypedefNameDecl(const clang::TypedefNameDecl *TND);
 
-  /// \brief Builds a stable node ID for `Decl` as a callable.
-  ///
-  /// \param Decl The callable declaration that is being identified.
-  /// \return The node for `Decl`.
-  MaybeFew<GraphObserver::NodeId>
-  BuildNodeIdForCallableDecl(const clang::Decl *Decl);
-
-  /// \brief Builds a stable node ID for `Node` as a callable.
-  ///
-  /// \param Node The node that is being used in a callable context.
-  /// \return The callable node for `Node`.
-  GraphObserver::NodeId
-  BuildNodeIdForCallableNode(const GraphObserver::NodeId &Id);
-
-  /// \brief Builds a stable node ID for `Decl` as a callable.
-  ///
-  /// \param Decl The callable declaration that is being identified.
-  /// \return The node for `Decl`.
-  MaybeFew<GraphObserver::NodeId>
-  BuildNodeIdForCallableExpr(const clang::Expr *Expr);
-
-  /// \brief Builds an abstracted function type to ascribe to the callable
-  /// node for `Decl`.
-  ///
-  /// Callables abstract some details away from the terms they represent.
-  /// Because of this, the callable representation of a function F need not
-  /// have the same type as F. This function computes the type of Callable(F)
-  /// given F.
-  MaybeFew<GraphObserver::NodeId>
-  BuildNodeIdForCallableType(const clang::FunctionDecl *Decl);
-
   /// \brief Builds a stable node ID for `Decl`.
   ///
   /// There is not a one-to-one correspondence between `Decl`s and nodes.
@@ -664,7 +633,8 @@ private:
   /// \brief Gets a format string for `ND`.
   std::string GetFormat(const clang::NamedDecl *ND);
 
-  /// \brief Attempts to add a format string representation of `ND` to `Ostream`.
+  /// \brief Attempts to add a format string representation of `ND` to
+  /// `Ostream`.
   /// \return true on success; false on failure.
   bool AddFormatToStream(llvm::raw_string_ostream &Ostream,
                          const clang::NamedDecl *ND);

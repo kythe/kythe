@@ -88,10 +88,6 @@ By clicking on `GCCArgsToClangArgs` on https://xrefs-dot-kythe-repo.appspot.com/
   location of definitions for the `GCCArgsToClangArgs`
   http://www.kythe.io/docs/schema/#function[function]
 
-http://www.kythe.io/docs/schema/#callableas[/kythe/edge/callableas]:: the
-  associated http://www.kythe.io/docs/schema/#callable[callable] node for
-  `GCCArgsToClangArgs`
-
 http://www.kythe.io/docs/schema/#typed[/kythe/edge/typed]:: associated nodes for
   the type structure of `GCCArgsToClangArgs`
 

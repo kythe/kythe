@@ -527,14 +527,6 @@ void KytheGraphObserver::recordTypeEdge(const NodeId &term_id,
   }
 }
 
-void KytheGraphObserver::recordCallableAsEdge(const NodeId &from_id,
-                                              const NodeId &to_id) {
-  if (!lossy_claiming_ || claimNode(from_id) || claimNode(to_id)) {
-    recorder_->AddEdge(VNameRefFromNodeId(from_id), EdgeKindID::kCallableAs,
-                       VNameRefFromNodeId(to_id));
-  }
-}
-
 void KytheGraphObserver::recordSpecEdge(const NodeId &term_id,
                                         const NodeId &type_id,
                                         Confidence conf) {
@@ -814,12 +806,6 @@ void KytheGraphObserver::recordFunctionNode(const NodeId &node_id,
       recorder_->AddProperty(node_vname, PropertyID::kSubkind,
                              FunctionSubkindToString(subkind));
     }
-  }
-}
-
-void KytheGraphObserver::recordCallableNode(const NodeId &node_id) {
-  if (!lossy_claiming_ || claimNode(node_id)) {
-    recorder_->AddProperty(VNameRefFromNodeId(node_id), NodeKindID::kCallable);
   }
 }
 

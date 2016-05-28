@@ -7,10 +7,6 @@ public class Callgraph {
   //- F typed FType
   static void f(int n) {}
 
-  //- F callableas FCA
-  //- FCA.node/kind callable
-  //- FCA typed FType
-
   //- @g defines/binding G
   //- G.node/kind function
   static void g() {
@@ -18,10 +14,7 @@ public class Callgraph {
     //- CallAnchor.loc/end   @$"f(4)"
     f(4);
 
-    //- CallAnchor ref/call FCA
+    //- CallAnchor ref/call F
     //- CallAnchor childof  G
   }
-
-  //- G callableas GCA
-  //- GCA.node/kind callable
 }

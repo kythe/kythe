@@ -10,9 +10,8 @@ template <> void C<int>::F() {}
 //- IntMemDecl.complete incomplete
 //- IntMemDefn.complete definition
 //- IntMemDecl childof IntTmplSpec
-//- IntMemDefn callableas IntMemCall
 //- IntTmpl specializes TApp
 //- TApp param.0 TmplDefn
 
-//- @"C<int>::F()" ref/call IntMemCall
+//- @"C<int>::F()" ref/call IntMemDefn
 void dummy() { C<int>::F(); }

@@ -2,7 +2,6 @@
 //- @f defines/binding MemberF
 //- @S defines/binding StructS
 //- MemberF childof StructS
-//- MemberF callableas CF
 //- MemberF named vname("f:S#n",_,_,_,_)
 struct S { int f() { return 0; } };
 void f() {
@@ -10,9 +9,9 @@ void f() {
   S s;
   //- @s ref VarS
   //- @f ref MemberF
-  //- @"s.f()" ref/call CF
+  //- @"s.f()" ref/call MemberF
   int x = s.f();
   //- @f ref MemberF
-  //- @"(&s)->f()" ref/call CF
+  //- @"(&s)->f()" ref/call MemberF
   int y = (&s)->f();
 }

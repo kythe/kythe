@@ -262,19 +262,6 @@ func TestSlowCallers(t *testing.T) {
 		},
 		EdgesFn: func(req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
 			if len(req.Ticket) == 1 && req.Ticket[0] == "kythe://test#f" {
-				if containsString(req.Kind, schema.CallableAsEdge) {
-					return &xpb.EdgesReply{
-						EdgeSets: map[string]*xpb.EdgeSet{
-							req.Ticket[0]: &xpb.EdgeSet{
-								Groups: map[string]*xpb.EdgeSet_Group{
-									"": &xpb.EdgeSet_Group{
-										Edge: []*xpb.EdgeSet_Group_Edge{{TargetTicket: "kythe://test#c"}},
-									},
-								},
-							},
-						},
-					}, nil
-				}
 				return &xpb.EdgesReply{}, nil
 			} else if len(req.Ticket) == 1 && req.Ticket[0] == "kythe://test#acall" {
 				if containsString(req.Kind, schema.ChildOfEdge) {
@@ -299,7 +286,7 @@ func TestSlowCallers(t *testing.T) {
 			return nil, nil
 		},
 		CrossReferencesFn: func(req *xpb.CrossReferencesRequest) (*xpb.CrossReferencesReply, error) {
-			if len(req.Ticket) == 1 && req.Ticket[0] == "kythe://test#c" {
+			if len(req.Ticket) == 1 && req.Ticket[0] == "kythe://test#f" {
 				if req.ReferenceKind == xpb.CrossReferencesRequest_ALL_REFERENCES {
 					return &xpb.CrossReferencesReply{
 						CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
@@ -364,7 +351,6 @@ func TestSlowCallers(t *testing.T) {
 		Callee: []*xpb.CallersReply_CallableDetail{
 			&xpb.CallersReply_CallableDetail{
 				SemanticObject:         "kythe://test#f",
-				SemanticObjectCallable: "kythe://test#c",
 				Definition: &xpb.Anchor{
 					Ticket: "kythe://test#afdef",
 					Text:   "f",

@@ -24,10 +24,8 @@ Class c;
 
 //- Call1 childof CCtor
 //- Call1.subkind implicit
-//- Call1 ref/call DCtorC
-//- DCtor callableas DCtorC
+//- Call1 ref/call DCtor
 
 //- Call2 childof CCtor
 //- Call2.subkind implicit
-//- Call2 ref/call ECtorC
-//- ECtor callableas ECtorC
+//- Call2 ref/call ECtor

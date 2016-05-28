@@ -11,10 +11,8 @@ template <typename... Ts>
 //- FnTG childof AbsG
 void g(Ts... ts) {
   //- SCall childof FnTG
-  //- SCall ref/call LookupSC
+  //- SCall ref/call LookupS
   auto s = S<Ts...>(ts...);
 }
 
-//- LookupSC.node/kind callable
-//- LookupS callableas LookupSC
 //- LookupS.text "S<Ts...>"

@@ -2,10 +2,9 @@
 class C {
  public:
   //- @"~C" defines/binding CDtor
-  //- CDtor callableas CDtorC
   ~C() { }
 };
 void f() {
-  //- !{Anchor ref/call CDtorC}
+  //- !{Anchor ref/call CDtor}
   C c;
 }
