@@ -33,8 +33,7 @@ class PrintableSpan {
     Raw,     ///< Text underneath this node is raw (e.g., with no escaping).
     Link     ///< Text is a link to some anchor.
   };
-  PrintableSpan(size_t begin, size_t end,
-                const proto::DocumentationReply_Link& link)
+  PrintableSpan(size_t begin, size_t end, const proto::Link& link)
       : begin_(begin), end_(end), link_(link), semantic_(Semantic::Link) {}
   PrintableSpan(size_t begin, size_t end, Semantic sema)
       : begin_(begin), end_(end), semantic_(sema) {}
@@ -46,7 +45,7 @@ class PrintableSpan {
   const size_t begin() const { return begin_; }
   const size_t end() const { return end_; }
   void set_end(size_t end) { end_ = end; }
-  const proto::DocumentationReply_Link& link() const { return link_; }
+  const proto::Link& link() const { return link_; }
   Semantic semantic() const { return semantic_; }
 
  private:
@@ -55,7 +54,7 @@ class PrintableSpan {
   /// The ending offset, in bytes, of the span.
   size_t end_;
   /// The link for the span.
-  proto::DocumentationReply_Link link_;
+  proto::Link link_;
   /// The semantic for the span.
   Semantic semantic_;
 };
@@ -83,7 +82,7 @@ class Printable {
  public:
   /// \brief Build a Printable from a protobuf.
   /// \post The internal list of spans is sorted.
-  explicit Printable(const proto::DocumentationReply_Printable& from);
+  explicit Printable(const proto::Printable& from);
   /// \pre The list of spans is sorted.
   Printable(const std::string& text, PrintableSpans&& spans)
       : text_(text), spans_(std::move(spans)) {}

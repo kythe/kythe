@@ -404,17 +404,17 @@ func (d *DB) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReques
 			switch {
 			// TODO(schroederc): handle declarations
 			case xrefs.IsDefKind(req.DefinitionKind, kind, false):
-				xrs.Definition, err = addAnchor(xrs.Definition, rec, req.AnchorText)
+				xrs.Definition, err = addRelatedAnchor(xrs.Definition, rec, req.AnchorText)
 				if err != nil {
 					return nil, err
 				}
 			case xrefs.IsDocKind(req.DocumentationKind, kind):
-				xrs.Documentation, err = addAnchor(xrs.Documentation, rec, req.AnchorText)
+				xrs.Documentation, err = addRelatedAnchor(xrs.Documentation, rec, req.AnchorText)
 				if err != nil {
 					return nil, err
 				}
 			case xrefs.IsRefKind(req.ReferenceKind, kind):
-				xrs.Reference, err = addAnchor(xrs.Reference, rec, req.AnchorText)
+				xrs.Reference, err = addRelatedAnchor(xrs.Reference, rec, req.AnchorText)
 				if err != nil {
 					return nil, err
 				}
@@ -492,7 +492,7 @@ func (d *DB) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReques
 	return reply, nil
 }
 
-func addAnchor(anchors []*xpb.Anchor, rec []byte, anchorText bool) ([]*xpb.Anchor, error) {
+func addRelatedAnchor(anchors []*xpb.CrossReferencesReply_RelatedAnchor, rec []byte, anchorText bool) ([]*xpb.CrossReferencesReply_RelatedAnchor, error) {
 	a := new(xpb.Anchor)
 	if err := proto.Unmarshal(rec, a); err != nil {
 		return anchors, err
@@ -500,7 +500,7 @@ func addAnchor(anchors []*xpb.Anchor, rec []byte, anchorText bool) ([]*xpb.Ancho
 	if !anchorText {
 		a.Text = ""
 	}
-	return append(anchors, a), nil
+	return append(anchors, &xpb.CrossReferencesReply_RelatedAnchor{Anchor: a}), nil
 }
 
 func (d *DB) scanReferences(fileTicket string, norm *xrefs.Normalizer) ([]*xpb.DecorationsReply_Reference, error) {

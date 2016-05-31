@@ -643,7 +643,7 @@ func edgeTickets(edges []*xpb.EdgeSet_Group_Edge) (tickets []string) {
 	return
 }
 
-func completeAnchors(ctx context.Context, xs xrefs.NodesEdgesService, retrieveText bool, files map[string]*fileNode, edgeKind string, anchors []string) ([]*xpb.Anchor, error) {
+func completeAnchors(ctx context.Context, xs xrefs.NodesEdgesService, retrieveText bool, files map[string]*fileNode, edgeKind string, anchors []string) ([]*xpb.CrossReferencesReply_RelatedAnchor, error) {
 	edgeKind = schema.Canonicalize(edgeKind)
 
 	// AllEdges is relatively safe because each anchor will have very few parents (almost always 1)
@@ -661,7 +661,7 @@ func completeAnchors(ctx context.Context, xs xrefs.NodesEdgesService, retrieveTe
 	}
 	nodes := xrefs.NodesMap(reply.Nodes)
 
-	var result []*xpb.Anchor
+	var result []*xpb.CrossReferencesReply_RelatedAnchor
 	for ticket, es := range reply.EdgeSets {
 		if nodeKind := string(nodes[ticket][schema.NodeKindFact]); nodeKind != schema.AnchorKind {
 			log.Printf("Found non-anchor target to %q edge: %q (kind: %q)", edgeKind, ticket, nodeKind)
@@ -755,7 +755,7 @@ func completeAnchors(ctx context.Context, xs xrefs.NodesEdgesService, retrieveTe
 					}
 				}
 
-				result = append(result, a)
+				result = append(result, &xpb.CrossReferencesReply_RelatedAnchor{Anchor: a})
 			}
 
 			break // we've handled the only /kythe/edge/childof group

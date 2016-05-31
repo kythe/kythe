@@ -794,7 +794,7 @@ func TestCrossReferences(t *testing.T) {
 	expected := &xpb.CrossReferencesReply_CrossReferenceSet{
 		Ticket: ticket,
 
-		Reference: []*xpb.Anchor{{
+		Reference: []*xpb.CrossReferencesReply_RelatedAnchor{{Anchor: &xpb.Anchor{
 			Ticket: "kythe:?path=some/utf16/file#0-4",
 			Kind:   "/kythe/edge/ref",
 			Parent: "kythe://someCorpus?path=some/utf16/file#utf16FTW",
@@ -811,7 +811,7 @@ func TestCrossReferences(t *testing.T) {
 				ColumnOffset: 28,
 			},
 			Snippet: "これはいくつかのテキストです",
-		}, {
+		}}, {Anchor: &xpb.Anchor{
 			Ticket: "kythe://c?lang=otpl?path=/a/path#51-55",
 			Kind:   "/kythe/edge/ref",
 			Parent: "kythe://someCorpus?path=some/path#aFileNode",
@@ -837,9 +837,9 @@ func TestCrossReferences(t *testing.T) {
 				ColumnOffset: 16,
 			},
 			Snippet: "some random text",
-		}},
+		}}},
 
-		Definition: []*xpb.Anchor{{
+		Definition: []*xpb.CrossReferencesReply_RelatedAnchor{{Anchor: &xpb.Anchor{
 			Ticket: "kythe://c?lang=otpl?path=/a/path#27-33",
 			Kind:   "/kythe/edge/defines/binding",
 			Parent: "kythe://someCorpus?path=some/path#aFileNode",
@@ -865,7 +865,7 @@ func TestCrossReferences(t *testing.T) {
 				ColumnOffset: 10,
 			},
 			Snippet: "here and  ",
-		}},
+		}}},
 	}
 
 	xr := reply.CrossReferences[ticket]
@@ -905,13 +905,15 @@ func TestDocumentation(t *testing.T) {
 	}
 }
 
-// byOffset implements the sort.Interface for *xpb.Anchors.
-type byOffset []*xpb.Anchor
+// byOffset implements the sort.Interface for *xpb.CrossReferencesReply_RelatedAnchors.
+type byOffset []*xpb.CrossReferencesReply_RelatedAnchor
 
 // Implement the sort.Interface.
-func (s byOffset) Len() int           { return len(s) }
-func (s byOffset) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
-func (s byOffset) Less(i, j int) bool { return s[i].Start.ByteOffset < s[j].Start.ByteOffset }
+func (s byOffset) Len() int      { return len(s) }
+func (s byOffset) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
+func (s byOffset) Less(i, j int) bool {
+	return s[i].Anchor.Start.ByteOffset < s[j].Anchor.Start.ByteOffset
+}
 
 func nodeInfo(n *srvpb.Node) *xpb.NodeInfo {
 	ni := &xpb.NodeInfo{Facts: make(map[string][]byte, len(n.Fact))}

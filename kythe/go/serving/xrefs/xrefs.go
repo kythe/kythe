@@ -610,7 +610,7 @@ func (t *tableImpl) Decorations(ctx context.Context, req *xpb.DecorationsRequest
 					r := decorationToReference(norm, d)
 					if req.TargetDefinitions {
 						if def, ok := defs[d.TargetDefinition]; ok {
-							reply.DefinitionLocations[d.TargetDefinition] = a2a(def, false)
+							reply.DefinitionLocations[d.TargetDefinition] = a2a(def, false).Anchor
 						} else {
 							refs[r.TargetTicket] = append(refs[r.TargetTicket], r)
 						}
@@ -905,7 +905,7 @@ func (s *refStats) skipPage(idx *srvpb.PagedCrossReferences_PageIndex) bool {
 	return false
 }
 
-func (s *refStats) addAnchors(to *[]*xpb.Anchor, as []*srvpb.ExpandedAnchor, anchorText bool) bool {
+func (s *refStats) addAnchors(to *[]*xpb.CrossReferencesReply_RelatedAnchor, as []*srvpb.ExpandedAnchor, anchorText bool) bool {
 	if s.total == s.max {
 		return true
 	} else if s.skip > len(as) {
@@ -926,12 +926,12 @@ func (s *refStats) addAnchors(to *[]*xpb.Anchor, as []*srvpb.ExpandedAnchor, anc
 	return s.total == s.max
 }
 
-func a2a(a *srvpb.ExpandedAnchor, anchorText bool) *xpb.Anchor {
+func a2a(a *srvpb.ExpandedAnchor, anchorText bool) *xpb.CrossReferencesReply_RelatedAnchor {
 	var text string
 	if anchorText {
 		text = a.Text
 	}
-	return &xpb.Anchor{
+	return &xpb.CrossReferencesReply_RelatedAnchor{Anchor: &xpb.Anchor{
 		Ticket:       a.Ticket,
 		Kind:         schema.Canonicalize(a.Kind),
 		Parent:       a.Parent,
@@ -941,7 +941,7 @@ func a2a(a *srvpb.ExpandedAnchor, anchorText bool) *xpb.Anchor {
 		Snippet:      a.Snippet,
 		SnippetStart: p2p(a.SnippetSpan.Start),
 		SnippetEnd:   p2p(a.SnippetSpan.End),
-	}
+	}}
 }
 
 func p2p(p *cpb.Point) *xpb.Location_Point {

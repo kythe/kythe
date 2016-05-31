@@ -292,11 +292,11 @@ func TestSlowCallers(t *testing.T) {
 						CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
 							req.Ticket[0]: &xpb.CrossReferencesReply_CrossReferenceSet{
 								Ticket: req.Ticket[0],
-								Reference: []*xpb.Anchor{
-									&xpb.Anchor{
+								Reference: []*xpb.CrossReferencesReply_RelatedAnchor{
+									&xpb.CrossReferencesReply_RelatedAnchor{Anchor: &xpb.Anchor{
 										Ticket: "kythe://test#acall",
 										Kind:   schema.RefCallEdge,
-									},
+									}},
 								},
 							},
 						},
@@ -308,20 +308,20 @@ func TestSlowCallers(t *testing.T) {
 						CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
 							"kythe://test#f": &xpb.CrossReferencesReply_CrossReferenceSet{
 								Ticket: "kythe://test#f",
-								Definition: []*xpb.Anchor{
-									&xpb.Anchor{
+								Definition: []*xpb.CrossReferencesReply_RelatedAnchor{
+									&xpb.CrossReferencesReply_RelatedAnchor{Anchor: &xpb.Anchor{
 										Ticket: "kythe://test#afdef",
 										Text:   "f",
-									},
+									}},
 								},
 							},
 							"kythe://test#g": &xpb.CrossReferencesReply_CrossReferenceSet{
 								Ticket: "kythe://test#g",
-								Definition: []*xpb.Anchor{
-									&xpb.Anchor{
+								Definition: []*xpb.CrossReferencesReply_RelatedAnchor{
+									&xpb.CrossReferencesReply_RelatedAnchor{Anchor: &xpb.Anchor{
 										Ticket: "kythe://test#agdef",
 										Text:   "g",
-									},
+									}},
 								},
 							},
 						},
@@ -527,7 +527,7 @@ func TestSlowSignature(t *testing.T) {
 		if err != nil {
 			t.Fatalf("SlowSignature error for %s: %v", test.ticket, err)
 		}
-		if err := testutil.DeepEqual(&xpb.DocumentationReply_Printable{RawText: test.reply}, reply); err != nil {
+		if err := testutil.DeepEqual(&xpb.Printable{RawText: test.reply}, reply); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -550,12 +550,12 @@ func TestSlowDocumentation(t *testing.T) {
 		{ticket: "kythe://test#l2", kind: "etc", definitionText: []string{"deftext2"}},
 		{ticket: "kythe://test#l", kind: "etc", documented: "kythe://test#ldoc", format: "lsig"},
 	}
-	mkPr := func(text string, linkTicket ...string) *xpb.DocumentationReply_Printable {
-		links := make([]*xpb.DocumentationReply_Link, len(linkTicket))
+	mkPr := func(text string, linkTicket ...string) *xpb.Printable {
+		links := make([]*xpb.Link, len(linkTicket))
 		for i, link := range linkTicket {
-			links[i] = &xpb.DocumentationReply_Link{Definition: []*xpb.Anchor{{Text: link}}}
+			links[i] = &xpb.Link{Definition: []*xpb.Anchor{{Text: link}}}
 		}
-		return &xpb.DocumentationReply_Printable{RawText: text, Link: links}
+		return &xpb.Printable{RawText: text, Link: links}
 	}
 	tests := []struct {
 		ticket string
@@ -580,7 +580,7 @@ func TestSlowDocumentation(t *testing.T) {
 		if node.definitionText != nil {
 			set := &xpb.CrossReferencesReply_CrossReferenceSet{Ticket: node.ticket}
 			for _, text := range node.definitionText {
-				set.Definition = append(set.Definition, &xpb.Anchor{Text: text})
+				set.Definition = append(set.Definition, &xpb.CrossReferencesReply_RelatedAnchor{Anchor: &xpb.Anchor{Text: text}})
 			}
 			xrefs[node.ticket] = set
 		}

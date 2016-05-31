@@ -376,16 +376,16 @@ func displayXRefs(reply *xpb.CrossReferencesReply) error {
 		if _, err := fmt.Fprintln(out, "Cross-References for", xr.Ticket); err != nil {
 			return err
 		}
-		if err := displayAnchors("Definitions", xr.Definition); err != nil {
+		if err := displayRelatedAnchors("Definitions", xr.Definition); err != nil {
 			return err
 		}
-		if err := displayAnchors("Declarations", xr.Declaration); err != nil {
+		if err := displayRelatedAnchors("Declarations", xr.Declaration); err != nil {
 			return err
 		}
-		if err := displayAnchors("Documentation", xr.Documentation); err != nil {
+		if err := displayRelatedAnchors("Documentation", xr.Documentation); err != nil {
 			return err
 		}
-		if err := displayAnchors("References", xr.Reference); err != nil {
+		if err := displayRelatedAnchors("References", xr.Reference); err != nil {
 			return err
 		}
 		if len(xr.RelatedNode) > 0 {
@@ -419,21 +419,21 @@ func displayXRefs(reply *xpb.CrossReferencesReply) error {
 	return nil
 }
 
-func displayAnchors(kind string, anchors []*xpb.Anchor) error {
+func displayRelatedAnchors(kind string, anchors []*xpb.CrossReferencesReply_RelatedAnchor) error {
 	if len(anchors) > 0 {
 		if _, err := fmt.Fprintf(out, "  %s:\n", kind); err != nil {
 			return err
 		}
 
 		for _, a := range anchors {
-			pURI, err := kytheuri.Parse(a.Parent)
+			pURI, err := kytheuri.Parse(a.Anchor.Parent)
 			if err != nil {
 				return err
 			}
 			if _, err := fmt.Fprintf(out, "    %s\t[%d:%d-%d:%d)\n      %q\n",
 				pURI.Path,
-				a.Start.LineNumber, a.Start.ColumnOffset, a.End.LineNumber, a.End.ColumnOffset,
-				string(a.Snippet)); err != nil {
+				a.Anchor.Start.LineNumber, a.Anchor.Start.ColumnOffset, a.Anchor.End.LineNumber, a.Anchor.End.ColumnOffset,
+				string(a.Anchor.Snippet)); err != nil {
 				return err
 			}
 		}

@@ -88,8 +88,8 @@
        ;; TODO(schroederc): narrow/expand multi-line snippets
        ": " (dom/span nil (trim snippet))))))
 
-(defn- display-anchors [title anchors file-to-view]
-  (when anchors
+(defn- display-related-anchors [title related-anchors file-to-view]
+  (when related-anchors
     (dom/ul nil
       (dom/li nil
         (dom/strong nil title)
@@ -98,7 +98,7 @@
                  (apply dom/li nil
                    (:path (ticket->vname file))
                    (filter identity (map (fn [anchor] (display-anchor file anchor file-to-view)) anchors))))
-            (collect-anchors anchors)))))))
+            (collect-anchors (map :anchor related-anchors))))))))
 
 (defn- xrefs-view [state owner]
   (reify
@@ -121,10 +121,10 @@
                             (dom/span #js {:className "glyphicon glyphicon-repeat spinner"})]
           :else
           [(dom/strong nil (:ticket (:cross-references state)))
-           (display-anchors "Definitions:" (:definition (:cross-references state)) file-to-view)
-           (display-anchors "Declarations:" (:declaration (:cross-references state)) file-to-view)
-           (display-anchors "Documentation:" (:documentation (:cross-references state)) file-to-view)
-           (display-anchors "References:" (:reference (:cross-references state)) file-to-view)
+           (display-related-anchors "Definitions:" (:definition (:cross-references state)) file-to-view)
+           (display-related-anchors "Declarations:" (:declaration (:cross-references state)) file-to-view)
+           (display-related-anchors "Documentation:" (:documentation (:cross-references state)) file-to-view)
+           (display-related-anchors "References:" (:reference (:cross-references state)) file-to-view)
            (when (:related_node (:cross-references state))
              (dom/ul nil
                (dom/li nil

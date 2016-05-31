@@ -30,7 +30,7 @@ void PrintableSpans::Merge(const PrintableSpans& o) {
   std::sort(spans_.begin(), spans_.end());
 }
 
-Printable::Printable(const proto::DocumentationReply_Printable& from) {
+Printable::Printable(const proto::Printable& from) {
   text_.reserve(from.raw_text().size() - from.link_size() * 2);
   size_t current_link = 0;
   std::stack<size_t> unclosed_links;

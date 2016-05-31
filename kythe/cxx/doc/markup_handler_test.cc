@@ -87,13 +87,13 @@ class MarkupHandlerTest : public ::testing::Test {
     }
     return result;
   }
-  proto::DocumentationReply_Link& ExpectLink(const std::string& uri) {
+  proto::Link& ExpectLink(const std::string& uri) {
     auto* link = reply_.add_link();
     auto* definition = link->add_definition();
     definition->set_parent(uri);
     return *link;
   }
-  proto::DocumentationReply_Printable reply_;
+  proto::Printable reply_;
 };
 TEST_F(MarkupHandlerTest, Empty) { Handle("", ReturnNoSpans, "", {}); }
 TEST_F(MarkupHandlerTest, PassThroughLinks) {

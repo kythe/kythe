@@ -437,6 +437,21 @@ message CrossReferencesRequest {
   // information.
   DocumentationKind documentation_kind = 4;
 
+  enum CallerKind {
+    // No callgraph information will be populated in the CrossReferencesReply.
+    NO_CALLERS = 0;
+    // Callgraph information will be populated in the CrossReferencesReply.
+    DIRECT_CALLERS = 1;
+    // Callgraph information will be populated in the CrossReferencesReply.
+    // Calls to override-related functions will also be considered.
+    OVERRIDE_CALLERS = 2;
+  }
+
+  // Determines what kind of callgraph information, if any, should be returned
+  // in the response.  See the documentation for each CallerKind for more
+  // information.
+  CallerKind caller_kind = 12;
+
   // Collection of filter globs that determines which facts will be returned for
   // the related nodes of each requested node.  If filter is empty or unset, no
   // node facts or related nodes are returned.  See EdgesRequest for the format
@@ -504,6 +519,22 @@ message Anchor {
   Location.Point snippet_end = 9;
 }
 
+message Link {
+  // Definition sites found for some ticket.
+  repeated Anchor definition = 1;
+}
+
+message Printable {
+  // Raw text that can be displayed to the user (but may also contain
+  // markup that can be interpreted, like Doxygen comments). Links are
+  // marked using []. \ is an escape character (where possible escape
+  // sequences are \[, \], and \\).
+  string raw_text = 1;
+  // Destinations for links in raw_text. The ith Link corresponds to the link
+  // starting at the ith [.
+  repeated Link link = 2;
+}
+
 message CrossReferencesReply {
   message RelatedNode {
     // Ticket of the node
@@ -514,17 +545,32 @@ message CrossReferencesReply {
     int32 ordinal = 3;
   }
 
+  message RelatedAnchor {
+    // The anchor covering the related object.
+    Anchor anchor = 1;
+    // A name for the related object.
+    Printable display_name = 2;
+    // Specific locations, usually within the related object, that caused
+    // the relationship to exist. This field is relevant to caller sets.
+    repeated Anchor site = 3;
+  }
+
   message CrossReferenceSet {
     string ticket = 1;
 
+    // A name for the given node.
+    Printable display_name = 7;
+
     // The set of definitions for the given node.
-    repeated Anchor definition = 2;
+    repeated RelatedAnchor definition = 2;
     // The set of declarations for the given node.
-    repeated Anchor declaration = 5;
+    repeated RelatedAnchor declaration = 5;
     // The set of simple references for the given node.
-    repeated Anchor reference = 3;
+    repeated RelatedAnchor reference = 3;
     // The set of documentation for the given node.
-    repeated Anchor documentation = 4;
+    repeated RelatedAnchor documentation = 4;
+    // The set of callers for the given node.
+    repeated RelatedAnchor caller = 6;
 
     // The set of related nodes to the given node.
     repeated RelatedNode related_node = 10;
@@ -644,20 +690,6 @@ message DocumentationRequest {
 }
 
 message DocumentationReply {
-  message Link {
-    // Definition sites found for some ticket.
-    repeated Anchor definition = 1;
-  }
-  message Printable {
-    // Raw text that can be displayed to the user (but may also contain
-    // markup that can be interpreted, like Doxygen comments). Links are
-    // marked using []. \ is an escape character (where possible escape
-    // sequences are \[, \], and \\).
-    string raw_text = 1;
-    // Destinations for links in raw_text. The ith Link corresponds to the link
-    // starting at the ith [.
-    repeated Link link = 2;
-  }
   message Document {
     // The ticket to which this Document refers.
     string ticket = 1;

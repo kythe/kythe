@@ -4,6 +4,7 @@
 
 Notable changes:
  - Schema: `callable` nodes and `callableas` edges have been removed.
+ - `xrefs.CrossReferences`: change Anchors in the reply to RelatedAnchors
 
 ## v0.0.21
 

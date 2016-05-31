@@ -308,8 +308,8 @@ func SlowDefinitions(xs Service, ctx context.Context, tickets []string) (map[str
 			if len(cr.Definition) == 1 {
 				loc := cr.Definition[0]
 				// TODO(schroederc): handle differing kinds; completes vs. binding
-				loc.Kind = ""
-				defs[nodeTargets[ticket]] = loc
+				loc.Anchor.Kind = ""
+				defs[nodeTargets[ticket]] = loc.Anchor
 			}
 		}
 
@@ -647,7 +647,7 @@ func findCallableDetail(ctx context.Context, service Service, ticketSet stringse
 		detail := &xpb.CallersReply_CallableDetail{}
 		// Just pick the first definition.
 		if len(xrefSet.Definition) >= 1 {
-			detail.Definition = xrefSet.Definition[0]
+			detail.Definition = xrefSet.Definition[0].Anchor
 			// ... and assume its text is the identifier of the function.
 			detail.Identifier = detail.Definition.Text
 			// ... and is also a fully-qualified name for it.
@@ -767,9 +767,9 @@ func SlowCallers(ctx context.Context, service Service, req *xpb.CallersRequest) 
 		parentToAnchor = make(map[string][]string)
 		for _, refSet := range xrefs.CrossReferences {
 			for _, ref := range refSet.Reference {
-				if ref.Kind == schema.RefCallEdge {
-					anchors.Add(ref.Ticket)
-					expandedAnchors[ref.Ticket] = ref
+				if ref.Anchor.Kind == schema.RefCallEdge {
+					anchors.Add(ref.Anchor.Ticket)
+					expandedAnchors[ref.Anchor.Ticket] = ref.Anchor
 				}
 			}
 		}
@@ -1120,7 +1120,7 @@ func slowSignatureLevel(ctx context.Context, service Service, ticket string, kin
 // Other formats may refer to related nodes; for example, "%^::bar" would append "::bar" to a node's
 // parent's (recursively-defined) signature.
 // See http://www.kythe.io/docs/schema/#formats for details.
-func SlowSignature(ctx context.Context, service Service, ticket string) (*xpb.DocumentationReply_Printable, error) {
+func SlowSignature(ctx context.Context, service Service, ticket string) (*xpb.Printable, error) {
 	req := &xpb.NodesRequest{
 		Ticket: []string{ticket},
 		Filter: []string{schema.NodeKindFact, schema.FormatFact},
@@ -1143,13 +1143,13 @@ func SlowSignature(ctx context.Context, service Service, ticket string) (*xpb.Do
 	if err != nil {
 		return nil, err
 	}
-	return &xpb.DocumentationReply_Printable{RawText: text}, nil
+	return &xpb.Printable{RawText: text}, nil
 }
 
 // Data from a doc node that documents some other ticket.
 type associatedDocNode struct {
 	rawText string
-	link    []*xpb.DocumentationReply_Link
+	link    []*xpb.Link
 	// Tickets this associatedDocNode documents.
 	documented []string
 }
@@ -1267,10 +1267,10 @@ func resolveDocLinks(ctx context.Context, service Service, sourceTicket string, 
 	if err != nil {
 		return fmt.Errorf("error during CrossReferences during getDocTextAndLinks: %v", err)
 	}
-	assocDoc.link = make([]*xpb.DocumentationReply_Link, len(params))
+	assocDoc.link = make([]*xpb.Link, len(params))
 	// If we leave any nils in this array, proto gets upset.
 	for l := 0; l < len(params); l++ {
-		assocDoc.link[l] = &xpb.DocumentationReply_Link{}
+		assocDoc.link[l] = &xpb.Link{}
 	}
 	for _, refSet := range xrefs.CrossReferences {
 		index := revParams[refSet.Ticket]
@@ -1278,7 +1278,9 @@ func resolveDocLinks(ctx context.Context, service Service, sourceTicket string, 
 			log.Printf("Can't relate a link param for %v for %v", refSet.Ticket, sourceTicket)
 			continue
 		}
-		assocDoc.link[index-1].Definition = refSet.Definition
+		for _, definition := range refSet.Definition {
+			assocDoc.link[index-1].Definition = append(assocDoc.link[index-1].Definition, definition.Anchor)
+		}
 	}
 	return nil
 }
@@ -1334,7 +1336,7 @@ func compilePreDocument(ctx context.Context, service Service, details documentDe
 		}
 		document.DefinedBy = parentstr
 	}
-	text := &xpb.DocumentationReply_Printable{}
+	text := &xpb.Printable{}
 	document.Text = text
 	for _, assocDoc := range preDocument.docNode {
 		text.RawText = text.RawText + assocDoc.rawText
