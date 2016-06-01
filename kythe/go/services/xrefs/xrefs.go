@@ -1237,7 +1237,7 @@ func getDocText(ctx context.Context, service Service, details documentDetails) e
 	}
 	nodes, err := service.Nodes(ctx, nreq)
 	if err != nil {
-		return fmt.Errorf("error in Nodes during getDocTextAndLinks: %v", err)
+		return fmt.Errorf("error in Nodes during getDocText: %v", err)
 	}
 	for nodeTicket, node := range nodes.Nodes {
 		if text, ok := node.Facts[schema.TextFact]; ok {
@@ -1265,7 +1265,7 @@ func resolveDocLinks(ctx context.Context, service Service, sourceTicket string, 
 	}
 	xrefs, err := service.CrossReferences(ctx, xreq)
 	if err != nil {
-		return fmt.Errorf("error during CrossReferences during getDocTextAndLinks: %v", err)
+		return fmt.Errorf("error during CrossReferences during resolveDocLinks: %v", err)
 	}
 	assocDoc.link = make([]*xpb.Link, len(params))
 	// If we leave any nils in this array, proto gets upset.
@@ -1288,6 +1288,9 @@ func resolveDocLinks(ctx context.Context, service Service, sourceTicket string, 
 // getDocLinks gets links for doc nodes we've found.
 func getDocLinks(ctx context.Context, service Service, details documentDetails) error {
 	docsSlice := details.docs.Slice()
+	if len(docsSlice) == 0 {
+		return nil
+	}
 	preq := &xpb.EdgesRequest{
 		Ticket:   docsSlice,
 		Kind:     []string{schema.ParamEdge},
@@ -1295,7 +1298,7 @@ func getDocLinks(ctx context.Context, service Service, details documentDetails) 
 	}
 	pedges, err := AllEdges(ctx, service, preq)
 	if err != nil {
-		return fmt.Errorf("error in Edges during getDocTextAndLinks: %v", err)
+		return fmt.Errorf("error in Edges during getDocLinks: %v", err)
 	}
 	// Resolve links to targets/simple references.
 	for sourceTicket, set := range pedges.EdgeSets {
@@ -1304,7 +1307,7 @@ func getDocLinks(ctx context.Context, service Service, details documentDetails) 
 				params := extractParams(group.Edge)
 				err = resolveDocLinks(ctx, service, sourceTicket, params, assocDoc)
 				if err != nil {
-					return fmt.Errorf("error during resolveDocLink: %v", err)
+					return fmt.Errorf("error during getDocLinks: %v", err)
 				}
 			}
 		}

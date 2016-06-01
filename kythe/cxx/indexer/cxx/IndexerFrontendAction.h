@@ -134,6 +134,7 @@ private:
           CI.getPreprocessor(), *Observer));
     }
     CI.getLangOpts().CommentOpts.ParseAllComments = true;
+    CI.getLangOpts().RetainCommentsFromSystemHeaders = true;
     return true;
   }
 

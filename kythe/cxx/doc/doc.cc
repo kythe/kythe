@@ -17,6 +17,9 @@
 // doc is a utility that performs simple formatting tasks on documentation
 // extracted from the Kythe graph.
 
+#include <fcntl.h>
+#include <sys/stat.h>
+
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
@@ -32,6 +35,9 @@ DEFINE_string(corpus, "test", "Default corpus to use");
 DEFINE_string(path, "",
               "Look up this path in the xrefs service and process all "
               "documented nodes inside");
+DEFINE_string(save_response, "",
+              "Save the initial documentation response to this file as an "
+              "ASCII protobuf.");
 
 namespace kythe {
 namespace {
@@ -88,7 +94,28 @@ int DocumentNodesFrom(XrefsJsonClient* client, const proto::VName& file_name) {
       doc_request.add_ticket(reference.target_ticket());
     }
   }
+  fprintf(stderr, "Looking for %d tickets\n", doc_request.ticket_size());
   CHECK(client->Documentation(doc_request, &doc_reply, &error)) << error;
+  if (!FLAGS_save_response.empty()) {
+    int saved =
+        open(FLAGS_save_response.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0640);
+    if (saved < 0) {
+      fprintf(stderr, "Couldn't open %s\n", FLAGS_save_response.c_str());
+      return 1;
+    }
+    {
+      google::protobuf::io::FileOutputStream outfile(saved);
+      if (!google::protobuf::TextFormat::Print(doc_reply, &outfile)) {
+        fprintf(stderr, "Coudln't print to %s\n", FLAGS_save_response.c_str());
+        close(saved);
+        return 1;
+      }
+    }
+    if (close(saved) < 0) {
+      fprintf(stderr, "Couldn't close %s\n", FLAGS_save_response.c_str());
+      return 1;
+    }
+  }
   return DocumentNodesFrom(doc_reply);
 }
 }  // anonymous namespace
