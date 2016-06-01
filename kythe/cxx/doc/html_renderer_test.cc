@@ -58,6 +58,15 @@ TEST_F(HtmlRendererTest, RenderLink) {
       }
   )"));
 }
+TEST_F(HtmlRendererTest, EscapeLink) {
+  EXPECT_EQ(R"(Hello, <a href="kythe://world&amp;q=1&lt;">world</a>!)",
+            RenderAsciiProtoDocument(R"(
+      text {
+        raw_text: "Hello, [world]!"
+        link: { definition: { parent: "kythe://world&q=1<" } }
+      }
+  )"));
+}
 TEST_F(HtmlRendererTest, RenderLinks) {
   EXPECT_EQ(
       R"(<a href="kythe://hello">Hello</a>, <a href="kythe://world">world</a>!)",

@@ -89,7 +89,12 @@ std::string RenderHtml(const HtmlRendererOptions& options,
             const auto& definition =
                 open_spans.top().span->link().definition(0);
             text_out.append("<a href=\"");
-            text_out.append(options.make_link_uri(definition));
+            auto link_uri = options.make_link_uri(definition);
+            // + 2 for the closing ">.
+            text_out.reserve(text_out.size() + link_uri.size() + 2);
+            for (auto c : link_uri) {
+              AppendEscapedHtmlCharacter(&text_out, c);
+            }
             text_out.append("\">");
           }
           break;

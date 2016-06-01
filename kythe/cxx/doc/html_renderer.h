@@ -27,7 +27,8 @@ namespace kythe {
 
 struct HtmlRendererOptions {
   /// Used to determine the href attribute value for a link pointing to an
-  /// `Anchor`.
+  /// `Anchor`. HtmlRenderer will HTML-escape the link (e.g., ampersands
+  /// will be replaced by &amp;).
   std::function<std::string(const proto::Anchor&)> make_link_uri =
       [](const proto::Anchor&) { return ""; };
 };
