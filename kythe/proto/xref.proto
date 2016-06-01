@@ -576,8 +576,16 @@ message CrossReferencesReply {
     repeated RelatedNode related_node = 10;
   }
 
+  message Total {
+    int64 definitions = 1;
+    int64 declarations = 2;
+    int64 references = 3;
+    int64 documentation = 4;
+    int64 callers = 5;
+    int64 related_nodes = 6;
+  }
   // Total number of cross-references on all pages matching requested filters.
-  int64 total_references = 4;
+  Total total = 5;
 
   // Sets of cross-references for each requested node
   map<string, CrossReferenceSet> cross_references = 1;

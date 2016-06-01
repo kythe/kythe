@@ -704,11 +704,11 @@ func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReference
 	}
 	pageToken := stats.skip
 
-	var totalRefsPossible int
-
 	reply := &xpb.CrossReferencesReply{
 		CrossReferences: make(map[string]*xpb.CrossReferencesReply_CrossReferenceSet, len(req.Ticket)),
 		Nodes:           make(map[string]*xpb.NodeInfo, len(req.Ticket)),
+
+		Total: &xpb.CrossReferencesReply_Total{},
 	}
 	var nextToken *ipb.PageToken
 
@@ -734,22 +734,22 @@ func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReference
 		for _, grp := range cr.Group {
 			switch {
 			case xrefs.IsDefKind(req.DefinitionKind, grp.Kind, cr.Incomplete):
-				totalRefsPossible += len(grp.Anchor)
+				reply.Total.Definitions += int64(len(grp.Anchor))
 				if wantMoreCrossRefs {
 					stats.addAnchors(&crs.Definition, grp.Anchor, req.AnchorText)
 				}
 			case xrefs.IsDeclKind(req.DeclarationKind, grp.Kind, cr.Incomplete):
-				totalRefsPossible += len(grp.Anchor)
+				reply.Total.Declarations += int64(len(grp.Anchor))
 				if wantMoreCrossRefs {
 					stats.addAnchors(&crs.Declaration, grp.Anchor, req.AnchorText)
 				}
 			case xrefs.IsDocKind(req.DocumentationKind, grp.Kind):
-				totalRefsPossible += len(grp.Anchor)
+				reply.Total.Documentation += int64(len(grp.Anchor))
 				if wantMoreCrossRefs {
 					stats.addAnchors(&crs.Documentation, grp.Anchor, req.AnchorText)
 				}
 			case xrefs.IsRefKind(req.ReferenceKind, grp.Kind):
-				totalRefsPossible += len(grp.Anchor)
+				reply.Total.References += int64(len(grp.Anchor))
 				if wantMoreCrossRefs {
 					stats.addAnchors(&crs.Reference, grp.Anchor, req.AnchorText)
 				}
@@ -759,7 +759,7 @@ func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReference
 		for _, idx := range cr.PageIndex {
 			switch {
 			case xrefs.IsDefKind(req.DefinitionKind, idx.Kind, cr.Incomplete):
-				totalRefsPossible += int(idx.Count)
+				reply.Total.Definitions += int64(idx.Count)
 				if wantMoreCrossRefs && !stats.skipPage(idx) {
 					p, err := t.crossReferencesPage(ctx, idx.PageKey)
 					if err != nil {
@@ -768,7 +768,7 @@ func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReference
 					stats.addAnchors(&crs.Definition, p.Group.Anchor, req.AnchorText)
 				}
 			case xrefs.IsDeclKind(req.DeclarationKind, idx.Kind, cr.Incomplete):
-				totalRefsPossible += int(idx.Count)
+				reply.Total.Declarations += int64(idx.Count)
 				if wantMoreCrossRefs && !stats.skipPage(idx) {
 					p, err := t.crossReferencesPage(ctx, idx.PageKey)
 					if err != nil {
@@ -777,7 +777,7 @@ func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReference
 					stats.addAnchors(&crs.Declaration, p.Group.Anchor, req.AnchorText)
 				}
 			case xrefs.IsDocKind(req.DocumentationKind, idx.Kind):
-				totalRefsPossible += int(idx.Count)
+				reply.Total.Documentation += int64(idx.Count)
 				if wantMoreCrossRefs && !stats.skipPage(idx) {
 					p, err := t.crossReferencesPage(ctx, idx.PageKey)
 					if err != nil {
@@ -786,7 +786,7 @@ func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReference
 					stats.addAnchors(&crs.Documentation, p.Group.Anchor, req.AnchorText)
 				}
 			case xrefs.IsRefKind(req.ReferenceKind, idx.Kind):
-				totalRefsPossible += int(idx.Count)
+				reply.Total.References += int64(idx.Count)
 				if wantMoreCrossRefs && !stats.skipPage(idx) {
 					p, err := t.crossReferencesPage(ctx, idx.PageKey)
 					if err != nil {
@@ -802,7 +802,7 @@ func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReference
 		}
 	}
 
-	if pageToken+stats.total != totalRefsPossible && stats.total != 0 {
+	if pageToken+stats.total != sumTotal(reply.Total) && stats.total != 0 {
 		nextToken = &ipb.PageToken{Index: int32(pageToken + stats.total)}
 	}
 
@@ -818,7 +818,7 @@ func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReference
 		if err != nil {
 			return nil, fmt.Errorf("error getting related nodes: %v", err)
 		}
-		totalRefsPossible += int(er.TotalEdges)
+		reply.Total.RelatedNodes = er.TotalEdges
 		for ticket, es := range er.EdgeSets {
 			nodes := stringset.New()
 			crs, ok := reply.CrossReferences[ticket]
@@ -855,8 +855,6 @@ func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReference
 		}
 	}
 
-	reply.TotalReferences = int64(totalRefsPossible)
-
 	if nextToken != nil {
 		rec, err := proto.Marshal(nextToken)
 		if err != nil {
@@ -891,6 +889,10 @@ func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReference
 	}
 
 	return reply, nil
+}
+
+func sumTotal(ts *xpb.CrossReferencesReply_Total) int {
+	return int(ts.Definitions) + int(ts.Declarations) + int(ts.References) + int(ts.Documentation) + int(ts.RelatedNodes)
 }
 
 type refStats struct {

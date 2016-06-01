@@ -868,6 +868,13 @@ func TestCrossReferences(t *testing.T) {
 		}}},
 	}
 
+	if err := testutil.DeepEqual(&xpb.CrossReferencesReply_Total{
+		Definitions: 1,
+		References:  2,
+	}, reply.Total); err != nil {
+		t.Error(err)
+	}
+
 	xr := reply.CrossReferences[ticket]
 	if xr == nil {
 		t.Fatalf("Missing expected CrossReferences; found: %#v", reply)
