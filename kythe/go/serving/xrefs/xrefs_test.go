@@ -521,6 +521,12 @@ func TestEdgesSinglePage(t *testing.T) {
 		if err := testutil.DeepEqual(expected, reply.EdgeSets[test.Ticket]); err != nil {
 			t.Error(err)
 		}
+		if err := testutil.DeepEqual(map[string]int64{
+			"someEdgeKind": 1,
+			"anotherEdge":  2,
+		}, reply.TotalEdgesByKind); err != nil {
+			t.Error(err)
+		}
 	}
 }
 
@@ -595,6 +601,14 @@ func TestEdgesMultiPage(t *testing.T) {
 
 		expected := edgeSet(test.Kinds, test.EdgeSet, test.Pages)
 		if err := testutil.DeepEqual(expected, reply.EdgeSets[test.Ticket]); err != nil {
+			t.Error(err)
+		}
+		if err := testutil.DeepEqual(map[string]int64{
+			"%/kythe/edge/defines/binding": 1,
+			"%/kythe/edge/ref":             2,
+			"someEdgeKind":                 2,
+			"anotherEdge":                  1,
+		}, reply.TotalEdgesByKind); err != nil {
 			t.Error(err)
 		}
 	}

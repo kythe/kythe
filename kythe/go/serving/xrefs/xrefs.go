@@ -316,8 +316,6 @@ func (t *tableImpl) edges(ctx context.Context, req edgesRequest) (*xpb.EdgesRepl
 	}
 	pageToken := stats.skip
 
-	var totalEdgesPossible int
-
 	nodeTickets := stringset.New()
 
 	rs, err := t.pagedEdgeSets(ctx, req.Tickets)
@@ -335,6 +333,8 @@ func (t *tableImpl) edges(ctx context.Context, req edgesRequest) (*xpb.EdgesRepl
 	reply := &xpb.EdgesReply{
 		EdgeSets: make(map[string]*xpb.EdgeSet),
 		Nodes:    make(map[string]*xpb.NodeInfo),
+
+		TotalEdgesByKind: make(map[string]int64),
 	}
 	for r := range rs {
 		if r.Err == table.ErrNoSuchKey {
@@ -343,7 +343,7 @@ func (t *tableImpl) edges(ctx context.Context, req edgesRequest) (*xpb.EdgesRepl
 			return nil, r.Err
 		}
 		pes := r.PagedEdgeSet
-		totalEdgesPossible += totalEdgesWithKinds(pes, req.Kinds)
+		countEdgeKinds(pes, req.Kinds, reply.TotalEdgesByKind)
 
 		// Don't scan the EdgeSet_Groups if we're already at the specified page_size.
 		if stats.total == stats.max {
@@ -414,6 +414,7 @@ func (t *tableImpl) edges(ctx context.Context, req edgesRequest) (*xpb.EdgesRepl
 			}
 		}
 	}
+	totalEdgesPossible := int(sumEdgeKinds(reply.TotalEdgesByKind))
 	if stats.total > stats.max {
 		log.Panicf("totalEdges greater than maxEdges: %d > %d", stats.total, stats.max)
 	} else if pageToken+stats.total > totalEdgesPossible && pageToken <= totalEdgesPossible {
@@ -428,27 +429,28 @@ func (t *tableImpl) edges(ctx context.Context, req edgesRequest) (*xpb.EdgesRepl
 		reply.NextPageToken = base64.StdEncoding.EncodeToString(rec)
 	}
 
-	reply.TotalEdges = int64(totalEdgesPossible)
-
 	return reply, nil
 }
 
-func totalEdgesWithKinds(pes *srvpb.PagedEdgeSet, kindFilter func(string) bool) int {
-	if kindFilter == nil {
-		return int(pes.TotalEdges)
-	}
-	var total int
+func countEdgeKinds(pes *srvpb.PagedEdgeSet, kindFilter func(string) bool, totals map[string]int64) {
 	for _, grp := range pes.Group {
-		if kindFilter(grp.Kind) {
-			total += len(grp.Edge)
+		if kindFilter == nil || kindFilter(grp.Kind) {
+			totals[grp.Kind] += int64(len(grp.Edge))
 		}
 	}
 	for _, page := range pes.PageIndex {
-		if kindFilter(page.EdgeKind) {
-			total += int(page.EdgeCount)
+		if kindFilter == nil || kindFilter(page.EdgeKind) {
+			totals[page.EdgeKind] += int64(page.EdgeCount)
 		}
 	}
-	return total
+}
+
+func sumEdgeKinds(totals map[string]int64) int64 {
+	var sum int64
+	for _, cnt := range totals {
+		sum += cnt
+	}
+	return sum
 }
 
 type filterStats struct {
@@ -802,7 +804,7 @@ func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReference
 		}
 	}
 
-	if pageToken+stats.total != sumTotal(reply.Total) && stats.total != 0 {
+	if pageToken+stats.total != sumTotalCrossRefs(reply.Total) && stats.total != 0 {
 		nextToken = &ipb.PageToken{Index: int32(pageToken + stats.total)}
 	}
 
@@ -818,7 +820,7 @@ func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReference
 		if err != nil {
 			return nil, fmt.Errorf("error getting related nodes: %v", err)
 		}
-		reply.Total.RelatedNodes = er.TotalEdges
+		reply.Total.RelatedNodesByRelation = er.TotalEdgesByKind
 		for ticket, es := range er.EdgeSets {
 			nodes := stringset.New()
 			crs, ok := reply.CrossReferences[ticket]
@@ -891,8 +893,12 @@ func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReference
 	return reply, nil
 }
 
-func sumTotal(ts *xpb.CrossReferencesReply_Total) int {
-	return int(ts.Definitions) + int(ts.Declarations) + int(ts.References) + int(ts.Documentation) + int(ts.RelatedNodes)
+func sumTotalCrossRefs(ts *xpb.CrossReferencesReply_Total) int {
+	var relatedNodes int
+	for _, cnt := range ts.RelatedNodesByRelation {
+		relatedNodes += int(cnt)
+	}
+	return int(ts.Definitions) + int(ts.Declarations) + int(ts.References) + int(ts.Documentation) + relatedNodes
 }
 
 type refStats struct {

@@ -220,8 +220,8 @@ message EdgesReply {
   // additional requests.
   map<string, NodeInfo> nodes = 2;
 
-  // Total number of edges on all pages matching requested kinds.
-  int64 total_edges = 3;
+  // Total number of edges on all pages matching requested kinds, by kind.
+  map<string, int64> total_edges_by_kind = 5;
 
   // If there are additional pages of edges after the ones returned in this
   // reply, next_page_token is the page token that may be passed to fetch the
@@ -582,7 +582,8 @@ message CrossReferencesReply {
     int64 references = 3;
     int64 documentation = 4;
     int64 callers = 5;
-    int64 related_nodes = 6;
+
+    map<string, int64> related_nodes_by_relation = 6;
   }
   // Total number of cross-references on all pages matching requested filters.
   Total total = 5;
