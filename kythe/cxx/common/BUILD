@@ -137,6 +137,7 @@ cc_library(
 
 cc_test(
     name = "commandline_test",
+    size = "small",
     deps = [
         ":commandline_testlib",
     ],
@@ -164,6 +165,7 @@ cc_library(
 
 cc_test(
     name = "file_vname_generator_test",
+    size = "small",
     deps = [
         ":file_vname_generator_testlib",
     ],
@@ -189,6 +191,7 @@ cc_library(
 
 cc_test(
     name = "path_utils_test",
+    size = "small",
     deps = [
         ":path_utils_testlib",
     ],
@@ -221,6 +224,7 @@ cc_library(
 
 cc_test(
     name = "index_pack_test",
+    size = "small",
     deps = [
         ":index_pack_testlib",
     ],
@@ -249,6 +253,7 @@ cc_library(
 
 cc_test(
     name = "json_proto_test",
+    size = "small",
     deps = [
         ":json_proto_testlib",
     ],
@@ -307,6 +312,7 @@ cc_library(
 
 cc_test(
     name = "kythe_uri_test",
+    size = "small",
     deps = [
         ":kythe_uri_testlib",
     ],

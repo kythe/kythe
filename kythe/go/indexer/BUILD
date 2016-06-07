@@ -20,6 +20,7 @@ go_library(
 
 go_test(
     name = "indexer_test",
+    size = "small",
     srcs = ["indexer_test.go"],
     # TODO(fromberger): Build this with a library rule.
     data = [":testdata/foo.a"],

@@ -1,5 +1,6 @@
 java_test(
     name = "java_extractor_test",
+    size = "small",
     srcs = ["JavaExtractorTest.java"],
     data = glob(["testdata/**"]) + [
         ":SillyProcessor_deploy.jar",

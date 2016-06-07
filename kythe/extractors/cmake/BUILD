@@ -2,6 +2,7 @@ package(default_visibility = ["//visibility:public"])
 
 sh_test(
     name = "compilation_database",
+    size = "small",
     srcs = [
         "test_extract_compilation_database.sh",
     ],

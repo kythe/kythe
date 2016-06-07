@@ -26,6 +26,7 @@ go_binary(
 
 sh_test(
     name = "analyzer_driver_test",
+    size = "small",
     srcs = ["testdata/analyzer_driver_test.sh"],
     data = [
         ":analyzer_driver",
@@ -106,6 +107,7 @@ go_binary(
 
 sh_test(
     name = "indexpack_test",
+    size = "small",
     srcs = ["indexpack_test.sh"],
     data = [
         ":indexpack",

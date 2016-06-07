@@ -115,6 +115,7 @@ cc_library(
 
 cc_test(
     name = "test",
+    size = "small",
     deps = [
         ":testlib",
     ],

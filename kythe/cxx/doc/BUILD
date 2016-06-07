@@ -32,6 +32,7 @@ cc_library(
 
 cc_test(
     name = "markup_handler_test",
+    size = "small",
     deps = [
         ":markup_handler_testlib",
     ],
@@ -66,6 +67,7 @@ cc_library(
 
 cc_test(
     name = "html_renderer_test",
+    size = "small",
     deps = [
         ":html_renderer_testlib",
     ],

@@ -2,6 +2,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 sh_test(
     name = "nothing",
+    size = "small",
     srcs = [
         "nothing_test.sh",
     ],
@@ -22,6 +23,7 @@ sh_test(
 
 sh_test(
     name = "basic",
+    size = "small",
     srcs = [
         "basic_test.sh",
     ],
@@ -43,6 +45,7 @@ sh_test(
 
 sh_test(
     name = "hopeless",
+    size = "small",
     srcs = [
         "hopeless_test.sh",
     ],

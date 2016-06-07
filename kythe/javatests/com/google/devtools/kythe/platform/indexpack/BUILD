@@ -2,6 +2,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 java_test(
     name = "archive_test",
+    size = "small",
     srcs = ["ArchiveTest.java"],
     test_class = "com.google.devtools.kythe.platform.indexpack.ArchiveTest",
     deps = [

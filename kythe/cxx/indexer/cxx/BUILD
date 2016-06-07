@@ -90,6 +90,7 @@ cc_library(
 
 cc_test(
     name = "test",
+    size = "small",
     linkopts = select({
         ":darwin": ["-headerpad_max_install_names"],
         "//conditions:default": [],

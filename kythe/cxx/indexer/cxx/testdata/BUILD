@@ -4,6 +4,7 @@ load("cxx_indexer_test", "cxx_indexer_test")
 
 sh_test(
     name = "kindex",
+    size = "small",
     srcs = [
         "test_kindex.sh",
     ],
@@ -25,6 +26,7 @@ sh_test(
 
 sh_test(
     name = "index_pack",
+    size = "small",
     srcs = [
         "test_index_pack.sh",
     ],
@@ -415,8 +417,8 @@ cxx_indexer_test(
     name = "namespace_header",
     srcs = ["basic/namespace_header.cc"],
     bundled = True,
-    tags = ["basic"],
     ignore_dups = True,  # namespace foo has the same documentation in two .hs.
+    tags = ["basic"],
 )
 
 cxx_indexer_test(
@@ -711,7 +713,7 @@ cxx_indexer_test(
 
 cxx_indexer_test(
     name = "function_operator_overload_names",
-    size = "large",
+    size = "small",
     srcs = ["function/function_operator_overload_names.cc"],
     ignore_dups = True,
     tags = ["function"],
@@ -824,8 +826,8 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "docs_doc_var",
     srcs = ["docs/docs_doc_var.cc"],
-    tags = ["docs"],
     goal_prefix = "///-",
+    tags = ["docs"],
 )
 
 cxx_indexer_test(
@@ -1263,11 +1265,11 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "template_class_inst_implicit",
     srcs = ["template/template_class_inst_implicit.cc"],
-    tags = ["template"],
     ignore_dups = True,  # Type alias alias inside a class template gets the
                          # same documentation text.
                          # TODO(zarko): Should the two aliases be distinctly
                          # named?
+    tags = ["template"],
 )
 
 cxx_indexer_test(
@@ -1387,34 +1389,34 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "template_drop_redundant_wraiths_off",
     srcs = ["template/template_drop_redundant_wraiths.cc"],
-    ignore_dups = True,
     experimental_drop_instantiation_independent_data = False,
+    ignore_dups = True,
     tags = ["template"],
 )
 
 cxx_indexer_test(
     name = "template_drop_redundant_wraiths_on",
     srcs = ["template/template_drop_redundant_wraiths.cc"],
-    ignore_dups = True,
     experimental_drop_instantiation_independent_data = True,
+    ignore_dups = True,
     tags = ["template"],
 )
 
 cxx_indexer_test(
     name = "template_drop_redundant_wraiths_off_expect_fail",
     srcs = ["template/template_drop_redundant_wraiths_expect_fail.cc"],
-    ignore_dups = True,
     experimental_drop_instantiation_independent_data = False,
+    ignore_dups = True,
     tags = ["template"],
 )
 
 cxx_indexer_test(
     name = "template_drop_redundant_wraiths_on_expect_fail",
     srcs = ["template/template_drop_redundant_wraiths_expect_fail.cc"],
-    ignore_dups = True,
-    experimental_drop_instantiation_independent_data = True,
-    tags = ["template"],
     expect_fail_verify = True,
+    experimental_drop_instantiation_independent_data = True,
+    ignore_dups = True,
+    tags = ["template"],
 )
 
 cxx_indexer_test(

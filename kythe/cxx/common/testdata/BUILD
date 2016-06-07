@@ -7,6 +7,7 @@ filegroup(
 
 sh_test(
     name = "net_client_test_runner",
+    size = "small",
     srcs = [
         "net_client_test_runner.sh",
     ],

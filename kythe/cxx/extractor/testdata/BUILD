@@ -4,6 +4,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 sh_test(
     name = "root_directory",
+    size = "small",
     srcs = [
         "test_root_directory.sh",
     ],
@@ -18,12 +19,13 @@ sh_test(
 
 sh_test(
     name = "alternate_platform",
+    size = "small",
     srcs = [
         "test_alternate_platform.sh",
     ],
     data = [
-        "arm.cc",
         "arm.UNIT",
+        "arm.cc",
         "test_common.sh",
         "//kythe/cxx/extractor:cxx_extractor",
         "//kythe/cxx/tools:kindex_tool",
@@ -32,6 +34,7 @@ sh_test(
 
 sh_test(
     name = "main_source_file_no_env_dep",
+    size = "small",
     srcs = [
         "test_main_source_file_no_env_dep.sh",
     ],
@@ -47,6 +50,7 @@ sh_test(
 
 sh_test(
     name = "main_source_file_env_dep",
+    size = "small",
     srcs = [
         "test_main_source_file_env_dep.sh",
     ],
@@ -62,6 +66,7 @@ sh_test(
 
 sh_test(
     name = "extract_transcript",
+    size = "small",
     srcs = [
         "test_extract_transcript.sh",
     ],
@@ -78,6 +83,7 @@ sh_test(
 
 sh_test(
     name = "claim_pragma",
+    size = "small",
     srcs = [
         "test_claim_pragma.sh",
     ],
@@ -94,6 +100,7 @@ sh_test(
 
 sh_test(
     name = "stdin_names",
+    size = "small",
     srcs = [
         "test_stdin_names.sh",
     ],
@@ -110,6 +117,7 @@ sh_test(
 
 sh_test(
     name = "index_pack",
+    size = "small",
     srcs = [
         "test_index_pack.sh",
     ],
@@ -125,6 +133,7 @@ sh_test(
 
 sh_test(
     name = "metadata",
+    size = "small",
     srcs = [
         "test_metadata.sh",
     ],
@@ -140,6 +149,7 @@ sh_test(
 
 sh_test(
     name = "modules",
+    size = "small",
     srcs = [
         "test_modules.sh",
     ],
@@ -156,6 +166,7 @@ sh_test(
 
 cc_verifier_test(
     name = "recursish_macro_test",
+    size = "small",
     srcs = [
         "recursish_macro.cc",
     ],
@@ -163,6 +174,7 @@ cc_verifier_test(
 
 cc_verifier_test(
     name = "extract_verify_test",
+    size = "small",
     srcs = [
         "extract_verify_test.cc",
     ],
@@ -170,6 +182,7 @@ cc_verifier_test(
 
 cc_verifier_test(
     name = "extract_verify_stddef_test",
+    size = "small",
     srcs = [
         "extract_verify_stddef_test.cc",
     ],
@@ -177,6 +190,7 @@ cc_verifier_test(
 
 cc_verifier_test(
     name = "extract_verify_std_string_test",
+    size = "small",
     srcs = [
         "extract_verify_std_string_test.cc",
     ],
@@ -184,6 +198,7 @@ cc_verifier_test(
 
 cc_verifier_test(
     name = "extract_verify_std_vector_test",
+    size = "small",
     srcs = [
         "extract_verify_std_vector_test.cc",
     ],
@@ -191,6 +206,7 @@ cc_verifier_test(
 
 cc_verifier_test(
     name = "extract_verify_iostream_test",
+    size = "small",
     srcs = [
         "extract_verify_iostream_test.cc",
     ],

@@ -1,5 +1,6 @@
 sh_test(
     name = "indexer_test",
+    size = "small",
     srcs = ["indexer_test.sh"],
     data = [
         "//kythe/go/platform/tools:entrystream",
@@ -11,6 +12,7 @@ sh_test(
 
 sh_test(
     name = "indexer_empty_cu_test",
+    size = "small",
     srcs = ["indexer_empty_cu_test.sh"],
     data = [
         "//kythe/go/platform/tools:entrystream",
@@ -42,6 +44,7 @@ sh_test(
 
 java_test(
     name = "source_text_test",
+    size = "small",
     srcs = ["SourceTextTest.java"],
     test_class = "com.google.devtools.kythe.analyzers.java.SourceTextTest",
     deps = [

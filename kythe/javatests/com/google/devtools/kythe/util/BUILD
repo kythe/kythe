@@ -2,6 +2,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 java_test(
     name = "kythe_uri_test",
+    size = "small",
     srcs = ["KytheURITest.java"],
     test_class = "com.google.devtools.kythe.util.KytheURITest",
     deps = [

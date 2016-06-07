@@ -7,6 +7,7 @@ filegroup(
 
 sh_test(
     name = "filevnames_config",
+    size = "small",
     srcs = ["test_filevnames.sh"],
     data = [
         ":vnames_config",

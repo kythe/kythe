@@ -2,6 +2,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 java_test(
     name = "file_vnames_test",
+    size = "small",
     srcs = ["FileVNamesTest.java"],
     test_class = "com.google.devtools.kythe.extractors.shared.FileVNamesTest",
     deps = [
@@ -15,6 +16,7 @@ java_test(
 
 java_test(
     name = "extractor_utils_test",
+    size = "small",
     srcs = ["ExtractorUtilsTest.java"],
     data = ["testdata/sample.txt"],
     test_class = "com.google.devtools.kythe.extractors.shared.ExtractorUtilsTest",

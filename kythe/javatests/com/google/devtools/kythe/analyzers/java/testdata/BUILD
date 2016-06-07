@@ -7,5 +7,6 @@ exports_files(
 
 java_verifier_test(
     name = "default_package_tests",
+    size = "small",
     srcs = ["DefaultPackage.java"],
 )

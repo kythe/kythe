@@ -2,6 +2,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 sh_test(
     name = "basic",
+    size = "small",
     srcs = [
         "test_verifier_cmd.sh",
     ],
@@ -12,6 +13,7 @@ sh_test(
 
 sh_test(
     name = "outputs",
+    size = "small",
     srcs = [
         "test_outputs.sh",
     ],

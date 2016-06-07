@@ -2,6 +2,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 sh_test(
     name = "test_kindex_tool",
+    size = "small",
     srcs = [
         "test_kindex_tool.sh",
     ],
@@ -14,6 +15,7 @@ sh_test(
 
 sh_test(
     name = "test_claim_tool_kindex",
+    size = "small",
     srcs = [
         "test_claim_tool_kindex.sh",
     ],
@@ -28,6 +30,7 @@ sh_test(
 
 sh_test(
     name = "test_claim_tool_index_pack",
+    size = "small",
     srcs = [
         "test_claim_tool_index_pack.sh",
     ],

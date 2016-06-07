@@ -18,6 +18,7 @@ sh_binary(
 
 sh_test(
     name = "write_tables_test",
+    size = "small",
     srcs = ["write_tables_test.sh"],
     data = [
         ":debug_serving",
@@ -34,6 +35,7 @@ sh_test(
 
 sh_test(
     name = "kwazthis_test",
+    size = "small",
     srcs = ["kwazthis_test.sh"],
     data = [
         "//external:jq",
