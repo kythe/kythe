@@ -108,7 +108,7 @@ files. This commit can be part of your first Differential code review.
 
 The Kythe team has chosen to use a [Phabricator](http://phabricator.org/)
 instance located at
-[{{site.url}}/phabricator]({{site.data.development.phabricator}})
+[{{site.url}}/phabricator]({{site.url}}{{site.data.development.phabricator}})
 for code reviews.  This requires some local setup for each developer:
 
 ### Installing arcanist
