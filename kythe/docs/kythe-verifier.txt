@@ -39,13 +39,14 @@ future, they may be specified in a startup script.
 == Specifying goals
 
 Verification goals may be inlined into ordinary source text. Lines beginning
-with language-specific magic comments are treated as goals. For languages
-supporting BCPL-style // comments, these look like:
+with language-specific magic comments are treated as goals. By default, the
+verifier looks for goals in comments that start with `//-`:
 
   //- this-is-a-goal
 
 For languages supporting shell-style comments, like Python or text protobufs,
-instead use:
+instead use `#-` and tell the verifier to expect the different syntax using the
+`'--goal_prefix=#-'` flag:
 
   #- this-is-a-goal
 
