@@ -4,6 +4,8 @@ title: Development
 permalink: /development/
 order: 30
 menu:
+  - title: Getting Started
+    href: '{{ site.baseurl }}/getting-started'
   - title: Contributing
     href: '{{ site.baseurl }}/contributing'
   - title: Github
