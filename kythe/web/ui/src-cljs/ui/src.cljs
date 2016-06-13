@@ -88,7 +88,7 @@
         anchors (mapcat overlay-anchors
                   (group-overlapping-anchors
                     (filter (fn [{:keys [start end kind]}]
-                              (and start end (< start end)))
+                              (and (> end 0) (< start end)))
                             (map (fn [{:keys [source_ticket target_ticket anchor_start anchor_end kind target_definition]}]
                                    (let [def (when target_definition
                                                (get definitions (keyword target_definition)))]
