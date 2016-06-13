@@ -25,21 +25,21 @@ import (
 	"strconv"
 	"strings"
 
-	"kythe.io/kythe/go/services/search"
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/util/flagutil"
+	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema"
 	"kythe.io/kythe/go/util/stringset"
 
 	"golang.org/x/net/context"
 
-	spb "kythe.io/kythe/proto/storage_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
 var (
 	ctx = context.Background()
 
+	corpus    = flag.String("corpus", "", "Corpus of the given files")
 	remoteAPI = flag.String("api", "https://xrefs-dot-kythe-repo.appspot.com", "Remote api server")
 )
 
@@ -59,26 +59,9 @@ func main() {
 	}
 
 	xs := xrefs.WebClient(*remoteAPI)
-	idx := search.WebClient(*remoteAPI)
 
 	for _, file := range flag.Args() {
-		results, err := idx.Search(ctx, &spb.SearchRequest{
-			Partial: &spb.VName{Path: file},
-			Fact: []*spb.SearchRequest_Fact{{
-				Name:  schema.NodeKindFact,
-				Value: []byte(schema.FileKind),
-			}},
-		})
-		if err != nil {
-			log.Fatalf("Error searching for ticket of file %q", file)
-		} else if len(results.Ticket) == 0 {
-			log.Printf("Could not find ticket for file %q", file)
-			continue
-		} else if len(results.Ticket) != 1 {
-			log.Printf("Multiple tickets found for file %q; choosing first from %v", file, results.Ticket)
-		}
-
-		ticket := results.Ticket[0]
+		ticket := (&kytheuri.URI{Corpus: *corpus, Path: file}).String()
 		decor, err := xs.Decorations(ctx, &xpb.DecorationsRequest{
 			Location:   &xpb.Location{Ticket: ticket},
 			SourceText: true,

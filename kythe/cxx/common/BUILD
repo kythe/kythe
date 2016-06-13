@@ -247,7 +247,6 @@ cc_library(
         "//external:proto/protobuf",
         "//external:re2",
         "//kythe/proto:analysis_proto_cc",
-        "//kythe/proto:storage_proto_cc",
     ],
 )
 

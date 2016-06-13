@@ -59,12 +59,11 @@ go_binary(
     srcs = ["ktags/ktags.go"],
     deps = [
         "@go_x_net//:context",
-        "//kythe/go/services/search",
         "//kythe/go/services/xrefs",
         "//kythe/go/util/flagutil",
+        "//kythe/go/util/kytheuri",
         "//kythe/go/util/schema",
         "//kythe/go/util/stringset",
-        "//kythe/proto:storage_proto_go",
         "//kythe/proto:xref_proto_go",
     ],
 )

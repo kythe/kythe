@@ -19,7 +19,6 @@
 #include "glog/logging.h"
 #include "gtest/gtest.h"
 #include "kythe/proto/analysis.pb.h"
-#include "kythe/proto/storage.pb.h"
 
 namespace kythe {
 namespace {
@@ -36,18 +35,19 @@ TEST(JsonProto, Serialize) {
       "{\"format\":\"kythe\",\"content\":{\"content\":\"dGV4dA==\",\"info\":{"
       "\"path\":\"here\"}}}",
       data_out);
-  proto::SearchReply has_repeated_field;
+  proto::Entries has_repeated_field;
   data_out.clear();
   ASSERT_TRUE(
       WriteMessageAsJsonToString(has_repeated_field, "kythe", &data_out));
   EXPECT_EQ("{\"format\":\"kythe\",\"content\":{}}", data_out);
-  has_repeated_field.add_ticket("1");
-  has_repeated_field.add_ticket("2");
+  has_repeated_field.add_entries()->set_edge_kind("e1");
+  has_repeated_field.add_entries();
   data_out.clear();
   ASSERT_TRUE(
       WriteMessageAsJsonToString(has_repeated_field, "kythe", &data_out));
   EXPECT_EQ(
-      "{\"format\":\"kythe\",\"content\":{\"ticket\":[\"1\",\"2\"]}}",
+      "{\"format\":\"kythe\",\"content\":{\"entries\":[{\"edge_kind\":\"e1\"},{"
+      "}]}}",
       data_out);
 }
 
@@ -70,17 +70,18 @@ TEST(JsonProto, Deserialize) {
       &format_string, &file_data));
   EXPECT_EQ("text", file_data.content());
   EXPECT_EQ("here", file_data.info().path());
-  proto::SearchReply has_repeated_field;
+  proto::Entries has_repeated_field;
   ASSERT_TRUE(MergeJsonWithMessage(
-      "{\"format\":\"kythe\",\"content\":{\"ticket\":[]}}", &format_string,
+      "{\"format\":\"kythe\",\"content\":{\"entries\":[]}}", &format_string,
       &has_repeated_field));
-  EXPECT_EQ(0, has_repeated_field.ticket_size());
-  ASSERT_TRUE(MergeJsonWithMessage(
-      "{\"format\":\"kythe\",\"content\":{\"ticket\":[\"1\",\"2\"]}}",
-      &format_string, &has_repeated_field));
-  EXPECT_EQ(2, has_repeated_field.ticket_size());
-  EXPECT_EQ("1", has_repeated_field.ticket(0));
-  EXPECT_EQ("2", has_repeated_field.ticket(1));
+  EXPECT_EQ(0, has_repeated_field.entries_size());
+  ASSERT_TRUE(
+      MergeJsonWithMessage("{\"format\":\"kythe\",\"content\":{\"entries\":[{"
+                           "\"edge_kind\":\"e0\"},{\"edge_kind\":\"e2\"}]}}",
+                           &format_string, &has_repeated_field));
+  EXPECT_EQ(2, has_repeated_field.entries_size());
+  EXPECT_EQ("e0", has_repeated_field.entries(0).edge_kind());
+  EXPECT_EQ("e2", has_repeated_field.entries(1).edge_kind());
 }
 
 TEST(JsonProto, Encode64) {

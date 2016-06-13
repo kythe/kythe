@@ -43,7 +43,6 @@ import (
 	"strings"
 
 	"kythe.io/kythe/go/platform/vfs"
-	"kythe.io/kythe/go/services/search"
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/serving/api"
 	"kythe.io/kythe/go/util/flagutil"
@@ -87,11 +86,9 @@ var (
 
 	dirtyBuffer = flag.String("dirty_buffer", "", "Path to file with dirty buffer contents (optional)")
 
-	path      = flag.String("path", "", "Path of file (optional if --signature is given)")
-	signature = flag.String("signature", "", "Signature of file VName (optional if --path is given)")
-	corpus    = flag.String("corpus", "", "Corpus of file VName (optional)")
-	root      = flag.String("root", "", "Root of file VName (optional)")
-	language  = flag.String("language", "", "Language of file VName (optional)")
+	path   = flag.String("path", "", "Path of file")
+	corpus = flag.String("corpus", "", "Corpus of file VName")
+	root   = flag.String("root", "", "Root of file VName")
 
 	offset       = flag.Int("offset", -1, "Non-negative offset in file to list references (mutually exclusive with --line and --column)")
 	lineNumber   = flag.Int("line", -1, "1-based line number in file to list references (must be given with --column)")
@@ -100,14 +97,7 @@ var (
 	skipDefinitions = flag.Bool("skip_defs", false, "Skip listing definitions for each node")
 )
 
-var (
-	xs  xrefs.Service
-	idx search.Service
-
-	fileFacts = []*spb.SearchRequest_Fact{
-		{Name: schema.NodeKindFact, Value: []byte(schema.FileKind)},
-	}
-)
+var xs xrefs.Service
 
 type definition struct {
 	File  *spb.VName `json:"file"`
@@ -145,12 +135,12 @@ func main() {
 		flagutil.UsageErrorf("unknown non-flag argument(s): %v", flag.Args())
 	} else if *offset < 0 && (*lineNumber < 0 || *columnOffset < 0) {
 		flagutil.UsageError("non-negative --offset (or --line and --column) required")
-	} else if *signature == "" && *path == "" {
-		flagutil.UsageError("must provide at least --path or --signature")
+	} else if *path == "" {
+		flagutil.UsageError("must provide --path")
 	}
 
 	defer (*apiFlag).Close()
-	xs, idx = *apiFlag, *apiFlag
+	xs = *apiFlag
 
 	relPath := *path
 	if *localRepoRoot != "NONE" {
@@ -175,27 +165,8 @@ func main() {
 			}
 		}
 	}
-	partialFile := &spb.VName{
-		Signature: *signature,
-		Corpus:    *corpus,
-		Root:      *root,
-		Path:      relPath,
-		Language:  *language,
-	}
-	reply, err := idx.Search(ctx, &spb.SearchRequest{
-		Partial: partialFile,
-		Fact:    fileFacts,
-	})
-	if err != nil {
-		log.Fatalf("Error locating file {%v}: %v", partialFile, err)
-	}
-	if len(reply.Ticket) == 0 {
-		log.Fatalf("Could not locate file {%v}", partialFile)
-	} else if len(reply.Ticket) > 1 {
-		log.Fatalf("Ambiguous file {%v}; multiple results: %v", partialFile, reply.Ticket)
-	}
 
-	fileTicket := reply.Ticket[0]
+	fileTicket := (&kytheuri.URI{Corpus: *corpus, Root: *root, Path: relPath}).String()
 	point := &xpb.Location_Point{
 		ByteOffset:   int32(*offset),
 		LineNumber:   int32(*lineNumber),
