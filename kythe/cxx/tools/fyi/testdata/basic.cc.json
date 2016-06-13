@@ -1,7 +1,7 @@
 {"source":{"path":"basic.h"},"edge_kind":"","fact_name":"/kythe/node/kind","fact_value":"L2t5dGhlL25vZGUvZmlsZQ=="}
 {"source":{"signature":"SOMENODE"},"edge_kind":"","fact_name":"/kythe/node/kind","fact_value":"L2t5dGhlL25vZGUvZnVuY3Rpb24="}
 {"source":{"signature":"SOMEANCHOR"},"edge_kind":"","fact_name":"/kythe/node/kind","fact_value":"L2t5dGhlL25vZGUvYW5jaG9y"}
-{"source":{"signature":"foo#n"},"edge_kind":"","fact_name":"/kythe/node/kind","fact_value":"L2t5dGhlL25vZGUvbmFtZQ=="}
-{"source":{"signature":"SOMENODE"},"edge_kind":"/kythe/edge/named","target":{"signature":"foo#n"},"fact_name":"/","fact_value":""}
+{"source":{"signature":"foo#n","language":"c++"},"edge_kind":"","fact_name":"/kythe/node/kind","fact_value":"L2t5dGhlL25vZGUvbmFtZQ=="}
+{"source":{"signature":"SOMENODE"},"edge_kind":"/kythe/edge/named","target":{"signature":"foo#n","language":"c++"},"fact_name":"/","fact_value":""}
 {"source":{"signature":"SOMEANCHOR"},"edge_kind":"/kythe/edge/defines","target":{"signature":"SOMENODE"},"fact_name":"/","fact_value":""}
 {"source":{"signature":"SOMEANCHOR"},"edge_kind":"/kythe/edge/childof","target":{"path":"basic.h"},"fact_name":"/","fact_value":""}
