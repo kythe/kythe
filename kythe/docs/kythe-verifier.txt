@@ -20,6 +20,25 @@ for writing tests to check whether Kythe is correctly processing source text.
 Here we describe the *verifier*, a standalone component that checks that a
 *database* of Kythe facts supports a set of *goals*.
 
+== Recommended use
+
+For examples of tests that use the verifier, please see
+https://github.com/google/kythe/tree/master/kythe/cxx/indexer/cxx/testdata/basic[//kythe/cxx/indexer/cxx/testdata/basic]
+or https://github.com/google/kythe/tree/master/kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg[//kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg].
+It is best to keep the size of a single test small and to develop assertions
+while frequently checking the graph produced by `--annotated_graphviz`.
+
+Assuming that you have Kythe installed to `/opt/kythe`, you can start using
+the verifier on a $$C++$$ file right away:
+
+  /opt/kythe/indexers/cxx_indexer -i foo.cc -- -std=c++1y \
+      | /opt/kythe/tools/verifier foo.cc --annotated_graphviz > foo.dot
+  xdot foo.dot
+
+By default (and assuming no errors) you will see the Kythe graph for `foo.cc`.
+The remainder of this document discusses the kinds of assertions you can make
+about the nodes and edges in the graph.
+
 == Basic well-formedness checks
 
 The verifier begins by checking that the input database obeys basic Kythe
@@ -340,6 +359,12 @@ Passing the `--graphviz` flag will cause the verifier to ignore rule files
 and dump its fact database as a Kythe graph to standard out in graphviz format.
 Note that the database must still be well-formed according to the
 basic well-formedness checks described earlier.
+
+In contrast, the `--annotated_graphviz` flag will still attempt to satisfy
+all rules. If this is successful, it will dump a graph to standard out in
+graphviz format. In this graph, nodes used to satisfy rules will be colored
+blue; their labels will also contain the names of the EVars unified with their
+VNames.
 
 === Return code
 
