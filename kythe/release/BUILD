@@ -1,5 +1,7 @@
 load("//tools:build_rules/docker.bzl", "docker_build")
 
+# See setup_release.sh for instructions on creating a release
+
 docker_build(
     name = "docker",
     data = [

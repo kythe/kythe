@@ -17,6 +17,27 @@
 # Marks a new release by incrementing the current version number, modifying both RELEASES.md and
 # kythe/release/BUILD, and creating a new local Git commit.
 
+# Guide to creating a Github release:
+#   1) Run this script on the clean master commit to release
+#      This creates a new release branch with a single commit for the new
+#      release $VERSION
+#      $ ./kythe/release/setup_release.sh
+#   2) Send the commit to Phabricator for review
+#      $ arc diff
+#   3) Build/test Kythe release archive w/ optimizations:
+#      $ bazel test -c opt //kythe/release:release_test
+#   4) "Draft a new release" at https://github.com/google/kythe/releases
+#   5) Set tag version / release title to the new $VERSION
+#   6) Set description to newest section of RELEASES.md
+#   7) Upload bazel-genfiles/kythe/release/kythe-$VERSION.tar.gz{,.md5}
+#      These files were generated in step 3.
+#   8) Mark as "pre-release" and "Save draft"
+#   9) Send draft release URL to Phabricator review
+#   10) Push release commit once Phabricator review has been accepted
+#   11) Edit Github release draft to set the tag's commit as the freshly pushed
+#       release commit
+#   12) "Publish release"
+
 cd "$(dirname $0)"/../..
 
 if [[ "$(git rev-parse --abbrev-ref HEAD)" != "master" ]]; then
