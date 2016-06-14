@@ -235,6 +235,10 @@ class AssertionParser {
   void PushAbsoluteLocationSpec(const std::string &for_token,
                                 const std::string &abs_spec);
 
+  /// \brief Changes the last-pushed location spec to match the `match_spec`th
+  /// instance of its match string.
+  void SetTopLocationSpecMatchNumber(const std::string &match_spec);
+
   AstNode *CreateAnchorSpec(const yy::location &location);
 
   /// \brief Generates a new offset spec (equivalent to a string literal).
@@ -292,6 +296,9 @@ class AssertionParser {
                               ///< on the next possible non-goal line.
     size_t group_id;  ///< The group that will own the offset goals, if any.
     Kind kind;        ///< The flavor of UnresolvedLocation we are.
+    bool must_be_unambiguous;  ///< If true, anchor_text must match only once.
+    int match_number;  ///< If !`must_be_unambiguous`, match this instance of
+                       ///< `anchor_text`.
   };
   std::vector<UnresolvedLocation> unresolved_locations_;
   std::vector<AstNode *> node_stack_;
@@ -299,10 +306,13 @@ class AssertionParser {
     std::string spec;
     int line_offset;
     bool is_absolute;
+    bool must_be_unambiguous;
+    int match_number;
   };
   std::vector<LocationSpec> location_spec_stack_;
   bool ValidateTopLocationSpec(const yy::location &location,
-                               size_t *line_number, bool *use_line_number);
+                               size_t *line_number, bool *use_line_number,
+                               bool *must_be_unambiguous, int *match_number);
   /// Files we've parsed or are parsing (pushed onto the back).
   /// Note that location records will have internal pointers to these strings.
   std::deque<std::string> files_;

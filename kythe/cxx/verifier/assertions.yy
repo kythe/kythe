@@ -61,6 +61,7 @@ class AssertionParser;
   EQUALS "="
   COLON ":"
   PLUS "+"
+  HASH "#"
 ;
 %token <string> IDENTIFIER "identifier"
 %token <string> STRING "string"
@@ -72,6 +73,7 @@ class AssertionParser;
 %type <int_> nested_goals
 %type <string> string_or_identifier
 %type <int_> location_spec
+%type <int_> location_spec_hash
 %type <size_t_> exp_tuple_plus
 %error-verbose
 %%
@@ -119,9 +121,9 @@ atom:
   | "string"           { $$ = context.CreateIdentifier(@1, $1); }
   | "_"                { $$ = context.CreateDontCare(@1); }
   | "number"           { $$ = context.CreateIdentifier(@1, $1); };
-  | "@" location_spec  { $$ = context.CreateAnchorSpec(@1); };
-  | "@^" location_spec { $$ = context.CreateOffsetSpec(@1, false); };
-  | "@$" location_spec { $$ = context.CreateOffsetSpec(@1, true); };
+  | "@" location_spec_hash  { $$ = context.CreateAnchorSpec(@1); };
+  | "@^" location_spec_hash { $$ = context.CreateOffsetSpec(@1, false); };
+  | "@$" location_spec_hash { $$ = context.CreateOffsetSpec(@1, true); };
   | "identifier" "?"   { $$ = context.CreateInspect(@2, $1,
                                                     context.CreateAtom(@1, $1));
                        }
@@ -146,6 +148,12 @@ location_spec:
   }
   | "+" "number" string_or_identifier {
     context.PushRelativeLocationSpec($3, $2); $$ = 0;
+  }
+
+location_spec_hash:
+    location_spec { $$ = $1; }
+  | HASH "number" location_spec {
+    context.SetTopLocationSpecMatchNumber($2); $$ = $3;
   }
 
 %%

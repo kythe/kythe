@@ -202,6 +202,21 @@ specifications:
   #- AnchorX.loc/start @^+2x
   #- AnchorX.loc/end @$:4x
 
+==== Ambiguity
+
+In the usual case, it is an error if a location specifier has multiple matches:
+
+  #- @text defines SomeNode
+  text text
+
+It is not always possible to rewrite a test program to ensure unambiguous
+matches. In these situations, you can choose a particular match by adding its
+ordinal directly after the `@` of the specifier:
+
+  #- @#0text defines SomeNode
+  #- @#1text defines AnotherNode
+  text text
+
 === Edge goals
 
 An edge kind, suitably intercalated between two expressions representing vnames,

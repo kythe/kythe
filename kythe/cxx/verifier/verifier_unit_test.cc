@@ -550,6 +550,116 @@ fact_value: ""
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
+constexpr char kMatchAnchorSubgraph[] = R"(entries {
+source { root:"1" }
+fact_name: "/kythe/node/kind"
+fact_value: "anchor"
+}
+entries {
+source { root:"1" }
+fact_name: "/kythe/loc/start"
+fact_value: "40"
+}
+entries {
+source { root:"1" }
+fact_name: "/kythe/loc/end"
+fact_value: "44"
+}
+entries {
+source { root:"3" }
+fact_name: "/kythe/node/kind"
+fact_value: "anchor"
+}
+entries {
+source { root:"3" }
+fact_name: "/kythe/loc/start"
+fact_value: "45"
+}
+entries {
+source { root:"3" }
+fact_name: "/kythe/loc/end"
+fact_value: "49"
+}
+entries {
+source { root:"4" }
+fact_name: "/kythe/node/kind"
+fact_value: "anchor"
+}
+entries {
+source { root:"4" }
+fact_name: "/kythe/loc/start"
+fact_value: "50"
+}
+entries {
+source { root:"4" }
+fact_name: "/kythe/loc/end"
+fact_value: "54"
+})";
+
+TEST(VerifierUnitTest, GenerateAnchorEvarMatchNumber0) {
+  Verifier v;
+  ASSERT_TRUE(v.LoadInlineProtoFile(std::string(R"(entries {
+#- @#0text defines SomeNode
+##text text text(40-44, 45-49, 50-54)
+
+source { root:"1" }
+edge_kind: "/kythe/edge/defines"
+target { root:"2" }
+fact_name: "/"
+fact_value: ""
+})") + kMatchAnchorSubgraph));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_TRUE(v.VerifyAllGoals());
+}
+
+TEST(VerifierUnitTest, GenerateAnchorEvarMatchNumber1) {
+  Verifier v;
+  ASSERT_TRUE(v.LoadInlineProtoFile(std::string(R"(entries {
+#- @#1text defines SomeNode
+##text text text(40-44, 45-49, 50-54)
+
+source { root:"3" }
+edge_kind: "/kythe/edge/defines"
+target { root:"2" }
+fact_name: "/"
+fact_value: ""
+})") + kMatchAnchorSubgraph));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_TRUE(v.VerifyAllGoals());
+}
+
+TEST(VerifierUnitTest, GenerateAnchorEvarMatchNumber2) {
+  Verifier v;
+  ASSERT_TRUE(v.LoadInlineProtoFile(std::string(R"(entries {
+#- @#2text defines SomeNode
+##text text text(40-44, 45-49, 50-54)
+
+source { root:"4" }
+edge_kind: "/kythe/edge/defines"
+target { root:"2" }
+fact_name: "/"
+fact_value: ""
+})") + kMatchAnchorSubgraph));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_TRUE(v.VerifyAllGoals());
+}
+
+TEST(VerifierUnitTest, GenerateAnchorEvarMatchNumber3) {
+  Verifier v;
+  ASSERT_FALSE(v.LoadInlineProtoFile(R"(entries {
+#- @#3text defines SomeNode
+##text text text(40-44, 45-49, 50-54)
+})"));
+}
+
+TEST(VerifierUnitTest, GenerateAnchorEvarMatchNumberNegative1) {
+  Verifier v;
+  ASSERT_FALSE(v.LoadInlineProtoFile(R"(entries {
+#- @#-1text defines SomeNode
+##text text text(40-44, 45-49, 50-54)
+})"));
+}
+
 TEST(VerifierUnitTest, GenerateAnchorEvarAbsoluteLine) {
   Verifier v;
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {

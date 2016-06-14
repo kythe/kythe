@@ -150,19 +150,26 @@ void AssertionParser::ResetLexCheck() {
 }
 
 void AssertionParser::PushLocationSpec(const std::string &for_token) {
-  location_spec_stack_.emplace_back(LocationSpec{for_token, -1, false});
+  location_spec_stack_.emplace_back(LocationSpec{for_token, -1, false, true});
 }
 
 void AssertionParser::PushRelativeLocationSpec(const std::string &for_token,
                                                const std::string &relative) {
   location_spec_stack_.emplace_back(
-      LocationSpec{for_token, atoi(relative.c_str()), false});
+      LocationSpec{for_token, atoi(relative.c_str()), false, true});
 }
 
 void AssertionParser::PushAbsoluteLocationSpec(const std::string &for_token,
                                                const std::string &absolute) {
   location_spec_stack_.emplace_back(
-      LocationSpec{for_token, atoi(absolute.c_str()), true});
+      LocationSpec{for_token, atoi(absolute.c_str()), true, true});
+}
+
+void AssertionParser::SetTopLocationSpecMatchNumber(const std::string &number) {
+  if (!location_spec_stack_.empty()) {
+    location_spec_stack_.back().must_be_unambiguous = false;
+    location_spec_stack_.back().match_number = atoi(number.c_str());
+  }
 }
 
 Identifier *AssertionParser::PathIdentifierFor(
@@ -266,12 +273,16 @@ EVar *AssertionParser::CreateEVar(const yy::location &location,
 
 bool AssertionParser::ValidateTopLocationSpec(const yy::location &location,
                                               size_t *line_number,
-                                              bool *use_line_number) {
+                                              bool *use_line_number,
+                                              bool *must_be_unambiguous,
+                                              int *match_number) {
   if (!location_spec_stack_.size()) {
     Error(location, "No locations on location stack.");
     return verifier_.empty_string_id();
   }
   const auto &spec = location_spec_stack_.back();
+  *must_be_unambiguous = spec.must_be_unambiguous;
+  *match_number = spec.match_number;
   if (spec.line_offset == 0) {
     Error(location, "This line offset is invalid.");
     return verifier_.empty_string_id();
@@ -293,14 +304,17 @@ bool AssertionParser::ValidateTopLocationSpec(const yy::location &location,
 AstNode *AssertionParser::CreateAnchorSpec(const yy::location &location) {
   size_t line_number;
   bool use_line_number;
-  if (!ValidateTopLocationSpec(location, &line_number, &use_line_number)) {
+  bool must_be_unambiguous;
+  int match_number;
+  if (!ValidateTopLocationSpec(location, &line_number, &use_line_number,
+                               &must_be_unambiguous, &match_number)) {
     return verifier_.empty_string_id();
   }
   const auto &spec = location_spec_stack_.back();
   EVar *new_evar = new (verifier_.arena()) EVar(location);
-  unresolved_locations_.push_back(
-      UnresolvedLocation{new_evar, spec.spec, line_number, use_line_number,
-                         group_id(), UnresolvedLocation::Kind::kAnchor});
+  unresolved_locations_.push_back(UnresolvedLocation{
+      new_evar, spec.spec, line_number, use_line_number, group_id(),
+      UnresolvedLocation::Kind::kAnchor, must_be_unambiguous, match_number});
   location_spec_stack_.pop_back();
   AppendGoal(group_id(), verifier_.MakePredicate(
                              location, verifier_.fact_id(),
@@ -314,7 +328,10 @@ AstNode *AssertionParser::CreateOffsetSpec(const yy::location &location,
                                            bool at_end) {
   size_t line_number;
   bool use_line_number;
-  if (!ValidateTopLocationSpec(location, &line_number, &use_line_number)) {
+  bool must_be_unambiguous;
+  int match_number;
+  if (!ValidateTopLocationSpec(location, &line_number, &use_line_number,
+                               &must_be_unambiguous, &match_number)) {
     return verifier_.empty_string_id();
   }
   const auto &spec = location_spec_stack_.back();
@@ -322,7 +339,8 @@ AstNode *AssertionParser::CreateOffsetSpec(const yy::location &location,
   unresolved_locations_.push_back(UnresolvedLocation{
       new_evar, spec.spec, line_number, use_line_number, group_id(),
       at_end ? UnresolvedLocation::Kind::kOffsetEnd
-             : UnresolvedLocation::Kind::kOffsetBegin});
+             : UnresolvedLocation::Kind::kOffsetBegin,
+      must_be_unambiguous, match_number});
   location_spec_stack_.pop_back();
   return new_evar;
 }
@@ -354,10 +372,27 @@ bool AssertionParser::ResolveLocations(const yy::location &end_of_line,
       was_ok = false;
       continue;
     }
-    if (line_.find(token, col + 1) != std::string::npos) {
-      Error(location, token + " is ambiguous.");
-      was_ok = false;
-      continue;
+    if (record.must_be_unambiguous) {
+      if (line_.find(token, col + 1) != std::string::npos) {
+        Error(location, token + " is ambiguous.");
+        was_ok = false;
+        continue;
+      }
+    } else {
+      int match_number = 0;
+      while (match_number != record.match_number) {
+        col = line_.find(token, col + 1);
+        if (col == std::string::npos) {
+          break;
+        }
+        ++match_number;
+      }
+      if (match_number != record.match_number) {
+        Error(location, token + " has no match #" +
+                            std::to_string(record.match_number) + ".");
+        was_ok = false;
+        continue;
+      }
     }
     size_t line_start = offset_after_endline - line_.size() - 1;
     switch (record.kind) {
