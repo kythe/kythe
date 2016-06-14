@@ -15,8 +15,8 @@ TODO(schroederc):
 {% endcomment %}
 
 This document assumes that the latest release archive from
-https://github.com/google/kythe/releases has been unpacked into /opt/kythe/.
-See /opt/kythe/README for more information.
+[https://github.com/google/kythe/releases](https://github.com/google/kythe/releases)
+has been unpacked into /opt/kythe/.  See /opt/kythe/README for more information.
 
 ## Extracting Compilations
 
@@ -135,15 +135,15 @@ docker run --rm \
 
 ## Using Cayley to explore a GraphStore
 
+Install Cayley if necessary:
+[https://github.com/google/cayley/releases](https://github.com/google/cayley/releases)
+
 {% highlight bash %}
 # Convert GraphStore to nquads format
 bazel run //kythe/go/storage/tools:triples -- --graphstore /path/to/graphstore | \
   gzip >kythe.nq.gz
 
-# Install Cayley (if necessary) (or https://github.com/google/cayley/releases)
-go get -u github.com/google/cayley
-
-$GOPATH/bin/cayley repl --dbpath kythe.nq.gz # or $GOPATH/bin/cayley http --dbpath kythe.nq.gz
+cayley repl --dbpath kythe.nq.gz # or cayley http --dbpath kythe.nq.gz
 {% endhighlight %}
 
     // Get all file nodes
