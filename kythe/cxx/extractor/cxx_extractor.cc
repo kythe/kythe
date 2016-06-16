@@ -25,7 +25,6 @@
 
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendAction.h"
-#include "clang/Lex/HeaderSearch.h"
 #include "clang/Lex/MacroArgs.h"
 #include "clang/Lex/PPCallbacks.h"
 #include "clang/Lex/Preprocessor.h"
@@ -720,57 +719,20 @@ class ExtractorAction : public clang::PreprocessorFrontendAction {
                             ? main_source_file_
                             : main_source_file_stdin_alternate_;
     // Include information about the header search state in the CU.
-    auto& header_search_info =
+    const auto& header_search_options =
+        getCompilerInstance().getHeaderSearchOpts();
+    const auto& header_search_info =
         getCompilerInstance().getPreprocessor().getHeaderSearchInfo();
     HeaderSearchInfo info;
-    bool info_valid = true;
-    info.angled_dir_idx = header_search_info.search_dir_size();
-    info.system_dir_idx = header_search_info.search_dir_size();
+    bool info_valid = info.CopyFrom(header_search_options, header_search_info);
     RecordModuleInfo(&header_search_info.getModuleMap());
-    unsigned cur_dir_idx = 0;
-    // Clang never sets no_cur_dir_search to true? (see InitHeaderSearch.cpp)
-    bool no_cur_dir_search = false;
-    auto first_angled_dir = header_search_info.angled_dir_begin();
-    auto first_system_dir = header_search_info.system_dir_begin();
-    auto last_dir = header_search_info.system_dir_end();
-    for (const auto& prefix :
-         getCompilerInstance().getHeaderSearchOpts().SystemHeaderPrefixes) {
-      info.system_prefixes.push_back(
-          std::make_pair(prefix.Prefix, prefix.IsSystemHeader));
-    }
-    std::vector<std::string> paths;
-    for (auto i = header_search_info.search_dir_begin(); i != last_dir;
-         ++cur_dir_idx, ++i) {
-      if (i == first_angled_dir) {
-        info.angled_dir_idx = cur_dir_idx;
-      } else if (i == first_system_dir) {
-        info.system_dir_idx = cur_dir_idx;
-      }
-      switch (i->getLookupType()) {
-        case clang::DirectoryLookup::LT_NormalDir:
-          info.paths.push_back(HeaderSearchInfo::Path{
-              i->getName(), i->getDirCharacteristic(), false});
-          break;
-        case clang::DirectoryLookup::LT_Framework:
-          info.paths.push_back(HeaderSearchInfo::Path{
-              i->getName(), i->getDirCharacteristic(), true});
-          break;
-        default:  // clang::DirectoryLookup::LT_HeaderMap:
-          // TODO(zarko): Support LT_HeaderMap.
-          LOG(WARNING) << "Can't reproduce include lookup state for "
-                       << main_source_file_ << ": " << i->getName()
-                       << " is not a normal directory.";
-          info_valid = false;
-          break;
-      }
-    }
     callback_(main_source_file_, main_source_file_transcript_, source_files_,
               info_valid ? &info : nullptr,
               getCompilerInstance().getDiagnostics().hasErrorOccurred());
   }
 
  private:
-  void RecordModuleInfo(clang::ModuleMap* module_map) {
+  void RecordModuleInfo(const clang::ModuleMap* module_map) {
     // TODO(zarko): Record module flags (::DisableModuleHash, ::ModuleMaps)
     // from HeaderSearchOptions; support "apple-style headermaps" (see
     // Clang's InitHeaderSearch.cpp.)
@@ -964,20 +926,7 @@ void IndexWriter::WriteIndex(
 
   if (header_search_info != nullptr) {
     kythe::proto::CxxCompilationUnitDetails cxx_details;
-    auto* info = cxx_details.mutable_header_search_info();
-    info->set_first_angled_dir(header_search_info->angled_dir_idx);
-    info->set_first_system_dir(header_search_info->system_dir_idx);
-    for (const auto& path : header_search_info->paths) {
-      auto* dir = info->add_dir();
-      dir->set_path(path.path);
-      dir->set_characteristic_kind(path.characteristic_kind);
-      dir->set_is_framework(path.is_framework);
-    }
-    for (const auto& prefix : header_search_info->system_prefixes) {
-      auto* proto = cxx_details.add_system_header_prefix();
-      proto->set_is_system_header(prefix.second);
-      proto->set_prefix(prefix.first);
-    }
+    header_search_info->CopyTo(&cxx_details);
     PackAny(cxx_details, kCxxCompilationUnitDetailsURI, unit.add_details());
   }
 

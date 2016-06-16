@@ -58,21 +58,7 @@ bool DecodeHeaderSearchInformation(const proto::CompilationUnit &Unit,
   if (!FoundDetails) {
     return false;
   }
-  const auto &InfoProto = Details.header_search_info();
-  Info.angled_dir_idx = InfoProto.first_angled_dir();
-  Info.system_dir_idx = InfoProto.first_system_dir();
-  for (const auto &Dir : InfoProto.dir()) {
-    Info.paths.emplace_back(HeaderSearchInfo::Path{
-        Dir.path(), static_cast<clang::SrcMgr::CharacteristicKind>(
-                        Dir.characteristic_kind()),
-        Dir.is_framework()});
-  }
-  for (const auto &Prefix : Details.system_header_prefix()) {
-    Info.system_prefixes.emplace_back(Prefix.prefix(),
-                                      Prefix.is_system_header());
-  }
-  if (!(Info.angled_dir_idx <= Info.system_dir_idx &&
-        Info.system_dir_idx <= Info.paths.size())) {
+  if (!Info.CopyFrom(Details)) {
     fprintf(stderr,
             "Warning: unit has header search info, but it is ill-formed.\n");
     return false;

@@ -86,6 +86,7 @@ cc_library(
         "//external:re2",
         "//external:zlib",
         "//kythe/proto:analysis_proto_cc",
+        "//kythe/proto:cxx_proto_cc",
         "//kythe/proto:storage_proto_cc",
         "//third_party/llvm",
     ],

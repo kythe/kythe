@@ -18,6 +18,9 @@
 #define KYTHE_CXX_COMMON_CXX_DETAILS_H_
 
 #include "clang/Basic/SourceManager.h"
+#include "clang/Lex/HeaderSearch.h"
+#include "clang/Lex/HeaderSearchOptions.h"
+#include "kythe/proto/cxx.pb.h"
 
 #include <vector>
 
@@ -43,6 +46,17 @@ struct HeaderSearchInfo {
   /// Prefixes on include paths that override the system property.
   /// The second part of the pair determines whether the property is set.
   std::vector<std::pair<std::string, bool>> system_prefixes;
+  /// Copies HeaderSearchInfo from Clang. Returns true if we can represent the
+  /// state; false if Clang is using features we don't support. This object
+  /// has undefined state until the next successful CopyFrom completes.
+  bool CopyFrom(const clang::HeaderSearchOptions& header_search_options,
+                const clang::HeaderSearch& header_search_info);
+  /// Copies HeaderSearchInfo from a serialized format. Returns true if the
+  /// data are well-formed; false if this object should not be used and
+  /// has undefined state until the next successful CopyFrom completes.
+  bool CopyFrom(const kythe::proto::CxxCompilationUnitDetails& cxx_details);
+  /// Copies HeaderSearchInfo to a serializable format.
+  void CopyTo(kythe::proto::CxxCompilationUnitDetails* cxx_details) const;
 };
 
 /// The type URI for C++ details.
