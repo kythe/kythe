@@ -19,6 +19,7 @@ package com.google.devtools.kythe.platform.java.helpers;
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.devtools.kythe.common.FormattingLogger;
 
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.util.TreePath;
@@ -76,6 +77,8 @@ import javax.lang.model.type.TypeKind;
  */
 public class SignatureGenerator
     implements ElementVisitor<Void, StringBuilder>, Visitor<Void, StringBuilder> {
+  private static final FormattingLogger logger =
+      FormattingLogger.getLogger(SignatureGenerator.class);
 
   static final String ANONYMOUS = "/anonymous";
 
@@ -128,8 +131,8 @@ public class SignatureGenerator
       }
       return Optional.of(sb.toString());
     } catch (Throwable e) {
-      // In case something unexpected happened during signature generation we do not want to
-      // fail.
+      // In case something unexpected happened during signature generation we do not want to fail.
+      logger.warning(new RuntimeException("Failure generating signature for " + symbol, e), "");
       return Optional.absent();
     }
   }

@@ -503,8 +503,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     JavaNode method = scan(invoke.getMethodSelect(), ctx);
     if (method != null) {
-      EntrySet anchor =
-          emitAnchor(ctx, EdgeKind.REF_CALL, method.entries);
+      EntrySet anchor = emitAnchor(ctx, EdgeKind.REF_CALL, method.entries);
       TreeContext parentContext = owner.getMethodParent();
       if (anchor != null && parentContext != null && parentContext.getNode() != null) {
         emitEdge(anchor, EdgeKind.CHILDOF, parentContext.getNode());
@@ -543,7 +542,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   public JavaNode visitTypeIdent(JCPrimitiveTypeTree primitiveType, TreeContext owner) {
     TreeContext ctx = owner.down(primitiveType);
     if (verboseLogging && primitiveType.typetag == TypeTag.ERROR) {
-      System.err.println("WARNING: found primitive ERROR type: " + ctx);
+      logger.warning("found primitive ERROR type: " + ctx);
     }
     String name = primitiveType.typetag.toString().toLowerCase();
     EntrySet node = entrySets.getBuiltin(name);
@@ -627,6 +626,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   void emitDocReference(Symbol sym, int startChar, int endChar) {
     EntrySet node = getNode(sym);
     if (node == null) {
+      if (verboseLogging) {
+        logger.warning("failed to emit documentation reference to " + sym);
+      }
       return;
     }
 

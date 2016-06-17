@@ -11,10 +11,11 @@ java_library(
         "SyntaxPreservingScanner.java",
     ],
     deps = [
-        "@bazel_tools//third_party/java/jdk/langtools:javac",
         "//external:guava",
         "//external:proto/protobuf_java",
+        "//kythe/java/com/google/devtools/kythe/common",
         "//kythe/java/com/google/devtools/kythe/util",
         "//third_party/jsr305_annotations:jsr305",
+        "@bazel_tools//third_party/java/jdk/langtools:javac",
     ],
 )
