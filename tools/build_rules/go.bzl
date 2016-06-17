@@ -103,9 +103,10 @@ def _go_compile(ctx, pkg, srcs, archive, extra_packages=[]):
   gotool = ctx.file._go
   args = compile_args[ctx.var['COMPILATION_MODE']]
   go_path = archive.path + '.gopath/'
+  goroot = ctx.file._go.owner.workspace_root
   cmd = "\n".join([
       'set -e',
-      'export GOROOT=external/local_goroot',
+      'export GOROOT="' + goroot + '"',
   ] + _construct_go_path(go_path, package_map) + [
       gotool.path + " tool compile " + ' '.join(args) + " -p " + pkg +
       ' -complete -pack -o ' + archive.path + " " + '-trimpath "$PWD" ' +
@@ -163,9 +164,10 @@ def _go_build(ctx, archive):
   gopath_dest = '$GOPATH/src/' + ctx.attr.package
 
   # Cheat and build the package non-hermetically (usually because there is a cgo dependency)
+  goroot = ctx.file._go.owner.workspace_root
   cmd = "\n".join([
       'set -e',
-      'export GOROOT=$PWD/external/local_goroot',
+      'export GOROOT="$PWD/' + goroot + '"',
       'export CC=' + _get_cc_shell_path(ctx),
       'export CGO_CFLAGS="' + ' '.join(list(cgo_compile_flags)) + '"',
       'export CGO_LDFLAGS="' + ' '.join(list(cgo_link_flags)) + '"',
@@ -261,8 +263,9 @@ def _link_binary(ctx, binary, archive, transitive_deps,
 
   args = _link_args(ctx)[mode]
   inputs = ctx.files._goroot + [archive] + dep_archives + list(cc_libs)
+  goroot = ctx.file._go.owner.workspace_root
   cmd = ['set -e'] + _construct_go_path(go_path, package_map) + [
-      'export GOROOT=external/local_goroot',
+      'export GOROOT="' + goroot + '"',
       'export GOROOT_FINAL=/usr/local/go',
       'export PATH',
   ]
