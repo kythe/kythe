@@ -1366,6 +1366,8 @@ Brief description::
 Naming convention::
   Signature:::
     *language-specific-string*#*language-specific-tag*
+  Language:::
+    See <<lsr,Language-specific rules>> for language identifiers.
 Notes::
   See the <<lsr,Language-specific rules>> section below for name formation
   rules.
@@ -1376,8 +1378,9 @@ Notes::
 class C;
 //- @C defines/binding CDefn
 class C { };
-//- CDecl named CName
+//- CDecl named CName=vname("C#c","","","","c++")
 //- CDefn named CName
+//- CName.node/kind name
 --------------------------------------------------------------------------------
 
 [[package]]
