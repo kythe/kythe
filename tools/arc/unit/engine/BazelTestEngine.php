@@ -67,7 +67,7 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
     $this->debugPrint("files: " . $files);
 
     $cmd = $this->bazelCommand("query", ["%s"]);
-    $query = 'rdeps(//..., set('.$files.')) except attr(tags, "docker", //...)';
+    $query = 'rdeps(//..., set('.$files.')) except attr(tags, "docker|arc-ignore", //...)';
     $this->debugPrint($query);
     $future = new ExecFuture($cmd, $query);
     $future->setCWD($this->project_root);

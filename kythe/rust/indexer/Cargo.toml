@@ -17,4 +17,8 @@ name = "indexer"
 version = "0.1.0"
 authors = ["John Renner <john@jrenner.net>"]
 
+[lib]
+name = "indexer"
+crate-type = ["dylib", "rlib"]
+
 [dependencies]
