@@ -81,5 +81,5 @@ def cargo_test(name, size, loc, test_name, srcs=[], cargo_opts=""):
         srcs=["//tools/build_rules/rust:run_cargo.sh"],
         data=srcs + native.glob(_automatic_srcs),
         args=[loc, "\"test " + cargo_opts + " " + test_name + "\""],
-        tags=["local"],
+        tags=["local", "manual"],
     )
