@@ -1,8 +1,8 @@
-def _cargo_cmd(loc, cmd, outs=[]):
+def _cargo_cmd(loc, out_dir, cmd, outs=[]):
      return "\n".join([
              "$(location //tools/build_rules/rust:run_cargo.sh) " + loc + " \"" + cmd + "\"",
         ] + [
-            "mv " + loc + out + " $(location " + out + ") " for out in outs 
+            "mv " + loc + out_dir + out + " $(location " + out + ") " for out in outs 
         ])
 
 _automatic_srcs = [
@@ -12,15 +12,16 @@ _automatic_srcs = [
 
 def cargo_bin(name, loc, srcs=[], bin_name=None, release=False):
     bin_name = name if bin_name == None else bin_name
-    output_path = "target/" + ("release/" if release else "debug/") + bin_name
+    output_path = "target/" + ("release/" if release else "debug/") 
     native.genrule(
         name = name,
         srcs = srcs + native.glob(_automatic_srcs),
-        outs = [output_path],
+        outs = [bin_name],
         cmd = _cargo_cmd(
           loc = loc,
+          out_dir = output_path,
           cmd = "build --bin " + (" --release" if release else "") + bin_name,
-          outs = [output_path],
+          outs = [bin_name],
         ),
         local = 1,
         tools = ["//tools/build_rules/rust:run_cargo.sh"],
@@ -28,15 +29,16 @@ def cargo_bin(name, loc, srcs=[], bin_name=None, release=False):
     )
 
 def _cargo_generic_lib(name, ext, loc, srcs, lib_name, release, visibility = "//visibility:public", tags = []):
-    output_path = "target/" + ("release/" if release else "debug/") + lib_name + ext
+    output_path = "target/" + ("release/" if release else "debug/")
     native.genrule(
             name = name,
             srcs = srcs + native.glob(_automatic_srcs),
-            outs = [output_path],
+            outs = [lib_name + ext],
             cmd = _cargo_cmd(
                     loc = loc,
+                    out_dir = output_path,
                     cmd = "build --lib" + (" --release" if release else ""),
-                    outs = [output_path],
+                    outs = [lib_name + ext],
                     ),
             local = 1,
             tools = ["//tools/build_rules/rust:run_cargo.sh"],
