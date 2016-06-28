@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use super::kythe::{Entry, VName, fact, node_kind};
+use super::schema::{VName, Fact, NodeKind};
+use super::writer::EntryWriter;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io;
@@ -21,12 +22,13 @@ use std::io;
 // allowing them to control VName construction.
 pub struct Corpus {
     pub name: String,
+    pub writer: Box<EntryWriter>,
 }
 
 impl Corpus {
     // Creates a collection of entries describing a file node.
     // Can fail if file is unreachable.
-    pub fn file_node(&self, path: &String) -> io::Result<Vec<Entry>> {
+    pub fn file_node(&self, path: &String) -> io::Result<()> {
         let vname = VName {
             path: Some(path.clone()),
             corpus: Some(self.name.clone()),
@@ -36,9 +38,8 @@ impl Corpus {
         let mut contents = String::new();
         try!(f.read_to_string(&mut contents));
 
-        let file_node = Entry::node(vname.clone(), fact::TEXT, &contents);
-        let kind_node = Entry::node(vname, fact::NODE_KIND, node_kind::FILE);
-
-        Ok(vec![file_node, kind_node])
+        self.writer.node(&vname, Fact::Text, &contents);
+        self.writer.node(&vname, Fact::NodeKind, &NodeKind::File);
+        Ok(())
     }
 }

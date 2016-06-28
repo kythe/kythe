@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use data::corpus::Corpus;
+use kythe::Corpus;
 use rustc::lint::{LateContext, LintContext, LintPass, LateLintPass, LintArray};
 use rustc::hir;
 use std::io::{stderr, Write};
@@ -41,15 +41,11 @@ impl LateLintPass for Pass {
             // and print the appropriate message
             let entries_res = self.corpus.file_node(&f.name);
             match entries_res {
-                Ok(entries) => {
-                    for entry in entries {
-                        println!("{}", entry.encode());
-                    }
-                }
                 Err(e) => {
                     let mut stderr = stderr();
                     writeln!(&mut stderr, "Failed to read file {}\n{:?}", f.name, e).unwrap();
                 }
+                _ => (),
             }
         }
     }

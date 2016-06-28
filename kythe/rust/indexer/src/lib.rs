@@ -22,10 +22,11 @@ extern crate rustc_serialize;
 extern crate rustc;
 extern crate rustc_plugin;
 
-mod data;
+mod kythe;
 mod pass;
 
-use data::corpus::Corpus;
+use kythe::Corpus;
+use kythe::writer::JsonEntryWriter;
 use rustc_plugin::Registry;
 use rustc::lint::LateLintPassObject;
 use std::env;
@@ -41,5 +42,8 @@ pub fn plugin_registrar(reg: &mut Registry) {
 // Corpus name will default to the empty string is the variable is not present.
 fn get_corpus() -> Corpus {
     let corpus_name = env::var("KYTHE_CORPUS").unwrap_or(String::new());
-    Corpus { name: corpus_name }
+    Corpus {
+        name: corpus_name,
+        writer: box JsonEntryWriter,
+    }
 }
