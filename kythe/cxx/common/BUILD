@@ -44,7 +44,6 @@ cc_library(
         "//external:proto/protobuf",
         "//external:zlib",
         "//kythe/proto:analysis_proto_cc",
-        "//kythe/proto:storage_proto_cc",
     ],
 )
 
@@ -160,7 +159,6 @@ cc_library(
         "//external:googletest",
         "//external:proto/protobuf",
         "//external:re2",
-        "//kythe/proto:storage_proto_cc",
     ],
 )
 
@@ -217,8 +215,6 @@ cc_library(
         "//external:proto/protobuf",
         "//external:rapidjson",
         "//external:zlib",
-        "//kythe/proto:analysis_proto_cc",
-        "//kythe/proto:storage_proto_cc",
         "//third_party/llvm",
     ],
 )
@@ -276,8 +272,6 @@ cc_library(
         "//external:glog",
         "//external:proto/protobuf",
         "//external:zlib",
-        "//kythe/proto:analysis_proto_cc",
-        "//kythe/proto:storage_proto_cc",
     ],
 )
 
@@ -306,7 +300,6 @@ cc_library(
         "//external:glog",
         "//external:googletest",
         "//external:proto/protobuf",
-        "//kythe/proto:storage_proto_cc",
     ],
 )
 

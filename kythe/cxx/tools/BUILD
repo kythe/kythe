@@ -16,7 +16,6 @@ cc_library(
         "//external:proto/protobuf",
         "//external:zlib",
         "//kythe/proto:analysis_proto_cc",
-        "//kythe/proto:storage_proto_cc",
     ],
 )
 
@@ -39,7 +38,6 @@ cc_library(
         "//kythe/cxx/common:lib",
         "//kythe/proto:analysis_proto_cc",
         "//kythe/proto:claim_proto_cc",
-        "//kythe/proto:storage_proto_cc",
     ],
 )
 
@@ -62,7 +60,6 @@ cc_library(
         "//kythe/cxx/common:lib",
         "//kythe/proto:analysis_proto_cc",
         "//kythe/proto:claim_proto_cc",
-        "//kythe/proto:storage_proto_cc",
     ],
 )
 
