@@ -73,7 +73,7 @@ bind(
 
 git_repository(
     name = "com_googlesource_code_re2",
-    commit = "63e4dbd1996d2cf723f740e08521a67ad66a09de",
+    commit = "fc6337a382bfd4f7c861abea08f872d3c85b31da",
     remote = "https://code.googlesource.com/re2",
 )
 
