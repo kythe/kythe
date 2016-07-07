@@ -25,7 +25,7 @@ extern crate rustc_plugin;
 mod kythe;
 mod pass;
 
-use kythe::Corpus;
+use kythe::corpus::Corpus;
 use kythe::writer::JsonEntryWriter;
 use rustc_plugin::Registry;
 use rustc::lint::LateLintPassObject;
@@ -34,7 +34,10 @@ use std::env;
 // Informs the compiler of the existence and implementation of our plugin.
 #[plugin_registrar]
 pub fn plugin_registrar(reg: &mut Registry) {
-    let pass = box pass::Pass { corpus: get_corpus() };
+    let pass = box pass::KytheLintPass {
+        corpus: get_corpus(),
+        writer: box JsonEntryWriter,
+    };
     reg.register_late_lint_pass(pass as LateLintPassObject);
 }
 
@@ -42,8 +45,5 @@ pub fn plugin_registrar(reg: &mut Registry) {
 // Corpus name will default to the empty string is the variable is not present.
 fn get_corpus() -> Corpus {
     let corpus_name = env::var("KYTHE_CORPUS").unwrap_or(String::new());
-    Corpus {
-        name: corpus_name,
-        writer: box JsonEntryWriter,
-    }
+    Corpus { name: corpus_name }
 }

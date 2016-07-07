@@ -53,18 +53,31 @@ macro_rules! str_enum {
 str_enum! {
     NodeKind {
        File => "file",
+       Anchor => "anchor",
+       Function => "function",
     }
 }
 
 str_enum! {
     EdgeKind {
-        _Defines => "defines",
+        ChildOf => "/kythe/edge/childof",
+        Defines => "/kythe/edge/defines",
+        DefinesBinding => "/kythe/edge/defines/binding",
+    }
+}
+
+str_enum! {
+    Complete {
+        Definition => "definition",
     }
 }
 
 str_enum! {
     Fact {
         NodeKind => "/kythe/node/kind",
+        LocStart => "/kythe/loc/start",
+        LocEnd => "/kythe/loc/end",
         Text => "/kythe/text",
+        Complete => "/kythe/complete",
     }
 }

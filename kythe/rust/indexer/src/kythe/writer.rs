@@ -19,6 +19,7 @@ use super::schema::{VName, Fact, EdgeKind};
 // EntryWriter implementations define behavior for outputting kythe info.
 pub trait EntryWriter {
     fn edge(&self, src: &VName, edge_kind: EdgeKind, target: &VName);
+    // TODO(djrenren): Make fact_value &[u8] instead of &str
     fn node(&self, src: &VName, fact_name: Fact, fact_value: &str);
 }
 
@@ -37,6 +38,7 @@ struct Edge<'a> {
     source: &'a VName,
     edge_kind: &'a str,
     target: &'a VName,
+    fact_name: &'a str,
 }
 
 
@@ -46,6 +48,7 @@ impl EntryWriter for JsonEntryWriter {
             source: src,
             edge_kind: &edge_kind,
             target: target,
+            fact_name: "/",
         };
 
         let json_str = json::encode(&edge).unwrap();

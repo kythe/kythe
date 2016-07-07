@@ -12,34 +12,47 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use super::schema::{VName, Fact, NodeKind};
-use super::writer::EntryWriter;
-use std::fs::File;
-use std::io::prelude::*;
-use std::io;
+use super::schema::VName;
 
 // Corpora are used to generate nodes
 // allowing them to control VName construction.
 pub struct Corpus {
     pub name: String,
-    pub writer: Box<EntryWriter>,
 }
 
+// Constant for language field in VNames
+static RUST: &'static str = "rust";
+
 impl Corpus {
-    // Creates a collection of entries describing a file node.
-    // Can fail if file is unreachable.
-    pub fn file_node(&self, path: &String) -> io::Result<()> {
-        let vname = VName {
-            path: Some(path.clone()),
+    // Generates the appropriate VName for a given file path.
+    pub fn file_vname(&self, path: &str) -> VName {
+        VName {
+            path: Some(path.to_string()),
             corpus: Some(self.name.clone()),
             ..Default::default()
-        };
-        let mut f = try!(File::open(path));
-        let mut contents = String::new();
-        try!(f.read_to_string(&mut contents));
+        }
+    }
 
-        self.writer.node(&vname, Fact::Text, &contents);
-        self.writer.node(&vname, Fact::NodeKind, &NodeKind::File);
-        Ok(())
+    // Generates the appropriate VName for an anchor in the text of a file.
+    pub fn anchor_vname(&self, path: &str, start: usize, end: usize) -> VName {
+        VName {
+            path: Some(path.to_string()),
+            corpus: Some(self.name.clone()),
+            language: Some(RUST.to_string()),
+            signature: Some(start.to_string() + "," + &end.to_string()),
+
+            ..Default::default()
+        }
+    }
+
+    // Generates the appropriate VName for a function
+    pub fn fn_vname(&self, name: &str) -> VName {
+        VName {
+            corpus: Some(self.name.clone()),
+            language: Some(RUST.to_string()),
+            signature: Some(name.to_string()),
+
+            ..Default::default()
+        }
     }
 }
