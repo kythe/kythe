@@ -19,8 +19,6 @@ use rustc::lint::{LateContext, LintContext, LintPass, LateLintPass, LintArray};
 use rustc::hir;
 use std::io::prelude::*;
 use std::io::stderr;
-use std::fs::File;
-use std::str;
 use syntax::ast;
 use syntax::codemap::{Pos, CodeMap, Span};
 
@@ -94,20 +92,14 @@ impl LateLintPass for KytheLintPass {
                 continue;
             }
 
+            // TODO(djrenren): Find out if/when this will actually panic
+            // Presumably, by this point the file is determined to have
+            // actually been on disk and loaded into the codemap.
+            let content = f.src.as_ref().unwrap();
             let vname = self.corpus.file_vname(&f.name);
-            let mut contents = String::new();
 
-            let res = File::open(&f.name).and_then(|mut f| f.read_to_string(&mut contents));
-
-            match res {
-                Err(e) => {
-                    writeln!(stderr(), "Failed to read file {}\n{:?}", f.name, e).unwrap();
-                }
-                Ok(_) => {
-                    self.writer.node(&vname, Fact::Text, &contents);
-                    self.writer.node(&vname, Fact::NodeKind, &NodeKind::File);
-                }
-            }
+            self.writer.node(&vname, Fact::NodeKind, &NodeKind::File);
+            self.writer.node(&vname, Fact::Text, content);
         }
     }
 
