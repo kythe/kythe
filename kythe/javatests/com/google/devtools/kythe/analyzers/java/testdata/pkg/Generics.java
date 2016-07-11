@@ -8,6 +8,9 @@ package pkg;
 //- @T defines/binding TVar
 //- TVar.node/kind absvar
 public class Generics<T> {
+  //- @obj defines/binding V
+  //- V typed Obj
+  Object obj;
 
   //- @print defines/binding PrintMethod
   //- @print defines/binding PrintAbs
@@ -16,6 +19,7 @@ public class Generics<T> {
   //- @P defines/binding PVar
   //- PrintAbs param.0 PVar
   //- PVar.node/kind absvar
+  //- PVar bounded/upper Obj
   public static <P> void print(
       //- @P ref PVar
       P p) {

@@ -2,7 +2,12 @@ package pkg;
 
 /** Tests Kythe inheritance-related nodes/edges. */
 public class Inheritance {
+  //- @obj defines/binding V
+  //- V typed Obj
+  Object obj;
+
   //- @A defines/binding AClass
+  //- AClass extends Obj
   static class A {
     //- @method1 defines/binding AM1
     //- !{ @method1 defines/binding AM1Overloaded }

@@ -280,9 +280,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       visitAnnotations(classNode, classDef.getModifiers().getAnnotations(), ctx);
 
       JavaNode superClassNode = scan(classDef.getExtendsClause(), ctx);
-      if (superClassNode != null) {
-        emitEdge(classNode, EdgeKind.EXTENDS, superClassNode);
-      }
+      emitEdge(classNode, EdgeKind.EXTENDS, superClassNode == null ? getJavaLangObjectNode() : superClassNode);
 
       for (JCExpression implClass : classDef.getImplementsClause()) {
         JavaNode implNode = scan(implClass, ctx);
@@ -679,8 +677,13 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       visitAnnotations(node, tParam.getAnnotations(), ctx);
       typeParams.add(node);
 
-      for (JCExpression expr : tParam.getBounds()) {
-        emitEdge(node, EdgeKind.BOUNDED_UPPER, scan(expr, ctx));
+      List<JCExpression> bounds = tParam.getBounds();
+      if (bounds.size() == 0) {
+        emitEdge(node, EdgeKind.BOUNDED_UPPER, getJavaLangObjectNode());
+      } else {
+        for (JCExpression expr : bounds) {
+          emitEdge(node, EdgeKind.BOUNDED_UPPER, scan(expr, ctx));
+        }
       }
     }
 
@@ -732,6 +735,14 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         name, ctx.getTree().getStartPosition(), EdgeKind.REF, node.entries, ctx.getSnippet());
     statistics.incrementCounter("name-usages-emitted");
     return node;
+  }
+
+  // Returns a JavaNode representing java.lang.Object.
+  private JavaNode getJavaLangObjectNode() {
+    Symbol javaLangObject = getSymbols().objectType.asElement();
+    String javaLangObjectSignature = signatureGenerator.getSignature(javaLangObject).get();
+    EntrySet javaLangObjectEntrySet = entrySets.getNode(javaLangObject, javaLangObjectSignature);
+    return new JavaNode(javaLangObjectEntrySet, javaLangObjectSignature);
   }
 
   // Creates/emits an anchor and an associated edge

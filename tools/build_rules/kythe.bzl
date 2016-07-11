@@ -85,7 +85,7 @@ def java_verifier_test_impl(ctx):
       mnemonic = 'MockJavac',
       command = '\n'.join([
           'set -e',
-          'mkdir ' + srcs_out,
+          'mkdir -p ' + srcs_out,
           ctx.file._javac.path + '  "$@"',
           ctx.file._jar.path + ' cf ' + jar.path + ' -C ' + srcs_out + ' .',
       ]),
