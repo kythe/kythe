@@ -21,7 +21,7 @@ TEST_ENTRIES="$PWD/kythe/javatests/com/google/devtools/kythe/analyzers/java/test
 source "kythe/cxx/common/testdata/start_http_service.sh"
 
 jq () { "third_party/jq/jq" -e "$@" <<<"$JSON"; }
-kwazthis() { "kythe/go/serving/tools/kwazthis" --local_repo=NONE --api "http://$LISTEN_AT" "$@" | tee /dev/stderr; }
+kwazthis() { "kythe/go/serving/tools/kwazthis/kwazthis" --local_repo=NONE --api "http://$LISTEN_AT" "$@" | tee /dev/stderr; }
 
 FILE_PATH=kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/Generics.java
 

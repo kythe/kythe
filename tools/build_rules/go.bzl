@@ -302,6 +302,9 @@ def binary_struct(ctx, extra_runfiles=[]):
 def _go_binary_impl(ctx):
   gotool = ctx.file._go
 
+  if len(ctx.files.srcs) == 0:
+    fail('ERROR: ' + str(ctx.label) + ' missing srcs')
+
   archive = ctx.new_file(ctx.configuration.bin_dir, ctx.label.name + ".a")
   transitive_deps, cgo_link_flags, transitive_cc_libs = _go_compile(ctx, 'main', ctx.files.srcs, archive)
 

@@ -41,9 +41,9 @@
 #   "//kythe/go/storage/tools:write_entries",
 #   "//kythe/go/test/tools:http_server",
 
-KYTHE_WRITE_TABLES="kythe/go/serving/tools/write_tables"
-KYTHE_WRITE_ENTRIES="kythe/go/storage/tools/write_entries"
-KYTHE_ENTRYSTREAM="kythe/go/platform/tools/entrystream"
+KYTHE_WRITE_TABLES="kythe/go/serving/tools/write_tables/write_tables"
+KYTHE_WRITE_ENTRIES="kythe/go/storage/tools/write_entries/write_entries"
+KYTHE_ENTRYSTREAM="kythe/go/platform/tools/entrystream/entrystream"
 KYTHE_HTTP_SERVER="kythe/go/test/tools/http_server"
 PORT_FILE="${OUT_DIR:?no output directory for test}/service_port"
 

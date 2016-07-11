@@ -4,7 +4,7 @@ BASE_DIR="$PWD/kythe/cxx/tools/testdata"
 OUT_DIR="$TEST_TMPDIR"
 KINDEX_TOOL_BIN="kythe/cxx/tools/kindex_tool"
 CLAIM_TOOL_BIN="kythe/cxx/tools/static_claim"
-INDEX_PACK_BIN="kythe/go/platform/tools/indexpack"
+INDEX_PACK_BIN="kythe/go/platform/tools/indexpack/indexpack"
 mkdir -p "${OUT_DIR}"
 rm -rf -- "${OUT_DIR}/pack"
 "${KINDEX_TOOL_BIN}" -assemble "${OUT_DIR}/claim_test_1.kindex" \

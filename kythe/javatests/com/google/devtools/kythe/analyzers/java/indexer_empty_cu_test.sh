@@ -17,7 +17,7 @@ set -o pipefail
 # This script tests that the java indexer doesn't fall over on empty CUs.
 
 indexer="kythe/java/com/google/devtools/kythe/analyzers/java/indexer"
-entrystream="kythe/go/platform/tools/entrystream"
+entrystream="kythe/go/platform/tools/entrystream/entrystream"
 test_kindex="$PWD/kythe/testdata/java_empty.kindex"
 
 # Test indexing a .kindex file

@@ -29,8 +29,8 @@ elif [[ -e "$OUT" ]]; then
   exit 1
 fi
 
-entrystream=kythe/go/platform/tools/entrystream
-write_tables=kythe/go/serving/tools/write_tables
+entrystream=kythe/go/platform/tools/entrystream/entrystream
+write_tables=kythe/go/serving/tools/write_tables/write_tables
 
 if [[ ! -x "$entrystream" || -d "$entrystream" ]]; then
   entrystream="$(which entrystream)"
