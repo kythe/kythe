@@ -414,9 +414,14 @@ message CrossReferencesRequest {
   enum ReferenceKind {
     // No references will be populated in the CrossReferencesReply.
     NO_REFERENCES = 0;
+    // Only callgraph-related references as described in
+    // http://www.kythe.io/docs/schema/callgraph.html
+    CALL_REFERENCES = 1;
+    // All references except those that are related to the callgraph.
+    NON_CALL_REFERENCES = 2;
     // All known reference anchors reached by the "/kythe/edge/ref" edge kind
     // (or its variants) will be populated in the CrossReferencesReply.
-    ALL_REFERENCES = 1;
+    ALL_REFERENCES = 3;
   }
 
   // Determines what kind of reference anchors, if any, should be returned in

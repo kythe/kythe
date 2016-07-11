@@ -87,14 +87,13 @@ Examples:
 }
 
 var cmds = map[string]command{
-	"edges":   cmdEdges,
-	"ls":      cmdLS,
-	"node":    cmdNode,
-	"decor":   cmdDecor,
-	"source":  cmdSource,
-	"xrefs":   cmdXRefs,
-	"callers": cmdCallers,
-	"docs":    cmdDocs,
+	"edges":  cmdEdges,
+	"ls":     cmdLS,
+	"node":   cmdNode,
+	"decor":  cmdDecor,
+	"source": cmdSource,
+	"xrefs":  cmdXRefs,
+	"docs":   cmdDocs,
 }
 
 var cmdSynonymns = map[string]string{

@@ -181,6 +181,10 @@ func IsRefKind(requestedKind xpb.CrossReferencesRequest_ReferenceKind, edgeKind 
 	switch requestedKind {
 	case xpb.CrossReferencesRequest_NO_REFERENCES:
 		return false
+	case xpb.CrossReferencesRequest_CALL_REFERENCES:
+		return edgeKind == schema.RefCallEdge
+	case xpb.CrossReferencesRequest_NON_CALL_REFERENCES:
+		return edgeKind != schema.RefCallEdge && schema.IsEdgeVariant(edgeKind, schema.RefEdge)
 	case xpb.CrossReferencesRequest_ALL_REFERENCES:
 		return schema.IsEdgeVariant(edgeKind, schema.RefEdge)
 	default:
@@ -726,6 +730,118 @@ func expandDefRelatedNodeSet(ctx context.Context, service Service, frontier stri
 		retired.Remove(ticket)
 	}
 	return retired, nil
+}
+
+// SlowCallersForCrossReferences is an implementation of callgraph support meant
+// for intermediate-term use by CrossReferences.
+func SlowCallersForCrossReferences(ctx context.Context, service Service, includeOverrides bool, ticket string) ([]*xpb.CrossReferencesReply_RelatedAnchor, error) {
+	ticket, err := kytheuri.Fix(ticket)
+	if err != nil {
+		return nil, err
+	}
+	callees, err := expandDefRelatedNodeSet(ctx, service, stringset.New(ticket), includeOverrides)
+	if err != nil {
+		return nil, err
+	}
+	xrefTickets := callees.Slice()
+	if len(xrefTickets) == 0 {
+		return nil, nil
+	}
+	// This will not recursively call SlowCallersForCrossReferences as we're requesting NO_CALLERS above.
+	xrefs, err := service.CrossReferences(ctx, &xpb.CrossReferencesRequest{
+		Ticket:            xrefTickets,
+		DefinitionKind:    xpb.CrossReferencesRequest_NO_DEFINITIONS,
+		ReferenceKind:     xpb.CrossReferencesRequest_CALL_REFERENCES,
+		DocumentationKind: xpb.CrossReferencesRequest_NO_DOCUMENTATION,
+		CallerKind:        xpb.CrossReferencesRequest_NO_CALLERS,
+		AnchorText:        true,
+		PageSize:          math.MaxInt32,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("can't get CrossReferences for xref references set: %v", err)
+	}
+	if xrefs.NextPageToken != "" {
+		return nil, errors.New("UNIMPLEMENTED: Paged CrossReferences reply")
+	}
+	// Now we've got a bunch of call site anchors. We need to figure out which functions they belong to.
+	// anchors is the set of all callsite anchor tickets.
+	anchors := stringset.New()
+	// callsite anchor ticket to anchor details
+	expandedAnchors := make(map[string]*xpb.Anchor)
+	// semantic node ticket to owned callsite anchor tickets
+	parentToAnchor := make(map[string][]string)
+	for _, refs := range xrefs.CrossReferences {
+		for _, ref := range refs.Reference {
+			if ref.Anchor.Kind == schema.RefCallEdge {
+				anchors.Add(ref.Anchor.Ticket)
+				expandedAnchors[ref.Anchor.Ticket] = ref.Anchor
+			}
+		}
+	}
+	var parentTickets []string
+	if err := forAllEdges(ctx, service, anchors, []string{schema.ChildOfEdge}, func(source, target, kind string) error {
+		anchor, ok := expandedAnchors[source]
+		if !ok {
+			log.Printf("Warning: missing expanded anchor for %v", source)
+			return nil
+		}
+		// anchor.Parent is the syntactic parent of the anchor; we want the semantic parent.
+		if target != anchor.Parent && kind != schema.AnchorKind {
+			if _, exists := parentToAnchor[target]; !exists {
+				parentTickets = append(parentTickets, target)
+			}
+			parentToAnchor[target] = append(parentToAnchor[target], source)
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	// Get definition-site anchors. This won't recurse through this function because we're requesting NO_CALLERS.
+	defs, err := service.CrossReferences(ctx, &xpb.CrossReferencesRequest{
+		Ticket:         parentTickets,
+		DefinitionKind: xpb.CrossReferencesRequest_ALL_DEFINITIONS,
+		AnchorText:     true,
+		PageSize:       math.MaxInt32,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("can't get CrossReferences for xref references set: %v", err)
+	}
+	if defs.NextPageToken != "" {
+		log.Printf("Warning: paged CrossReferences reply looking for ALL_DEFINITIONS")
+	}
+	for ticket, refs := range defs.CrossReferences {
+		for _, def := range refs.Definition {
+			// This chooses the last Anchor arbitrarily.
+			expandedAnchors[ticket] = def.Anchor
+		}
+	}
+	var relatedAnchors []*xpb.CrossReferencesReply_RelatedAnchor
+	for caller, calls := range parentToAnchor {
+		callerAnchor, found := expandedAnchors[caller]
+		if !found {
+			log.Printf("Warning: missing expanded anchor for caller %v", ticket)
+			continue
+		}
+		displayName, err := SlowSignature(ctx, service, caller)
+		if err != nil {
+			return nil, fmt.Errorf("error looking up signature for caller ticket %q: %v", caller, err)
+		}
+		var sites []*xpb.Anchor
+		for _, ticket := range calls {
+			related, found := expandedAnchors[ticket]
+			if found {
+				sites = append(sites, related)
+			} else {
+				log.Printf("Warning: missing expanded anchor for callsite %v", ticket)
+			}
+		}
+		relatedAnchors = append(relatedAnchors, &xpb.CrossReferencesReply_RelatedAnchor{
+			Anchor:      callerAnchor,
+			DisplayName: displayName,
+			Site:        sites,
+		})
+	}
+	return relatedAnchors, nil
 }
 
 // SlowCallers is an implementation of the Callers API built from other APIs.

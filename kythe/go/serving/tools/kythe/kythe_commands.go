@@ -62,9 +62,6 @@ var (
 	pageToken   string
 	pageSize    int
 
-	// callers flags
-	includeOverrides bool
-
 	// docs flags
 
 	// source/decor flags
@@ -76,8 +73,8 @@ var (
 	refFormat  string
 
 	// xrefs flags
-	defKind, declKind, refKind, docKind string
-	relatedNodes                        bool
+	defKind, declKind, refKind, docKind, callerKind string
+	relatedNodes                                    bool
 
 	spanHelp = `Limit results to this span (e.g. "10-30", "b1462-b1847", "3:5-3:10")
       Formats:
@@ -190,25 +187,6 @@ var (
 			return displayEdges(reply)
 		})
 
-	cmdCallers = newCommand("callers", "[--include_overrides] <ticket>",
-		"Retrieve callers of the given node",
-		func(flag *flag.FlagSet) {
-			flag.BoolVar(&includeOverrides, "include_overrides", false, "Whether to include overrides")
-		},
-		func(flag *flag.FlagSet) error {
-			fmt.Fprintln(os.Stderr, "Warning: The Callers API is experimental and may be slow.")
-			req := &xpb.CallersRequest{
-				SemanticObject:   flag.Args(),
-				IncludeOverrides: includeOverrides,
-			}
-			logRequest(req)
-			reply, err := xs.Callers(ctx, req)
-			if err != nil {
-				return err
-			}
-			return displayCallers(reply)
-		})
-
 	cmdDocs = newCommand("docs", "<ticket>",
 		"Retrieve documentation for the given node",
 		func(flag *flag.FlagSet) {},
@@ -230,8 +208,9 @@ var (
 		func(flag *flag.FlagSet) {
 			flag.StringVar(&defKind, "definitions", "all", "Kind of definitions to return (kinds: all, binding, full, or none)")
 			flag.StringVar(&declKind, "declarations", "all", "Kind of declarations to return (kinds: all or none)")
-			flag.StringVar(&refKind, "references", "all", "Kind of references to return (kinds: all or none)")
+			flag.StringVar(&refKind, "references", "nocall", "Kind of references to return (kinds: all, noncall, call, or none)")
 			flag.StringVar(&docKind, "documentation", "all", "Kind of documentation to return (kinds: all or none)")
+			flag.StringVar(&callerKind, "callers", "none", "Kind of callers to return (kinds: direct, overrides, or none)")
 			flag.BoolVar(&relatedNodes, "related_nodes", false, "Whether to request related nodes")
 
 			flag.StringVar(&pageToken, "page_token", "", "CrossReferences page token")
@@ -269,6 +248,10 @@ var (
 			switch refKind {
 			case "all":
 				req.ReferenceKind = xpb.CrossReferencesRequest_ALL_REFERENCES
+			case "noncall":
+				req.ReferenceKind = xpb.CrossReferencesRequest_NON_CALL_REFERENCES
+			case "call":
+				req.ReferenceKind = xpb.CrossReferencesRequest_CALL_REFERENCES
 			case "none":
 				req.ReferenceKind = xpb.CrossReferencesRequest_NO_REFERENCES
 			default:
@@ -281,6 +264,16 @@ var (
 				req.DocumentationKind = xpb.CrossReferencesRequest_NO_DOCUMENTATION
 			default:
 				return fmt.Errorf("unknown documentation kind: %q", docKind)
+			}
+			switch callerKind {
+			case "direct":
+				req.CallerKind = xpb.CrossReferencesRequest_DIRECT_CALLERS
+			case "overrides":
+				req.CallerKind = xpb.CrossReferencesRequest_OVERRIDE_CALLERS
+			case "none":
+				req.CallerKind = xpb.CrossReferencesRequest_NO_CALLERS
+			default:
+				return fmt.Errorf("unknown caller kind: %q", docKind)
 			}
 			logRequest(req)
 			reply, err := xs.CrossReferences(ctx, req)

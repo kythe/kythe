@@ -333,11 +333,6 @@ func displayNodes(nodes map[string]*xpb.NodeInfo) error {
 	return nil
 }
 
-func displayCallers(reply *xpb.CallersReply) error {
-	// TODO(zarko): Emit formatted data for -json=false.
-	return json.NewEncoder(out).Encode(reply)
-}
-
 func displayDocumentation(reply *xpb.DocumentationReply) error {
 	// TODO(zarko): Emit formatted data for -json=false.
 	return json.NewEncoder(out).Encode(reply)
@@ -358,7 +353,7 @@ func displayXRefs(reply *xpb.CrossReferencesReply) error {
 	}
 
 	for _, xr := range reply.CrossReferences {
-		if _, err := fmt.Fprintln(out, "Cross-References for", xr.Ticket); err != nil {
+		if _, err := fmt.Fprintln(out, "Cross-References for ", showPrintable(xr.DisplayName), xr.Ticket); err != nil {
 			return err
 		}
 		if err := displayRelatedAnchors("Definitions", xr.Definition); err != nil {
@@ -371,6 +366,9 @@ func displayXRefs(reply *xpb.CrossReferencesReply) error {
 			return err
 		}
 		if err := displayRelatedAnchors("References", xr.Reference); err != nil {
+			return err
+		}
+		if err := displayRelatedAnchors("Callers", xr.Caller); err != nil {
 			return err
 		}
 		if len(xr.RelatedNode) > 0 {
@@ -404,6 +402,13 @@ func displayXRefs(reply *xpb.CrossReferencesReply) error {
 	return nil
 }
 
+func showPrintable(printable *xpb.Printable) string {
+	if printable == nil {
+		return "(nil)"
+	}
+	return printable.RawText
+}
+
 func displayRelatedAnchors(kind string, anchors []*xpb.CrossReferencesReply_RelatedAnchor) error {
 	if len(anchors) > 0 {
 		if _, err := fmt.Fprintf(out, "  %s:\n", kind); err != nil {
@@ -415,11 +420,18 @@ func displayRelatedAnchors(kind string, anchors []*xpb.CrossReferencesReply_Rela
 			if err != nil {
 				return err
 			}
-			if _, err := fmt.Fprintf(out, "    %s\t[%d:%d-%d:%d)\n      %q\n",
-				pURI.Path,
+			if _, err := fmt.Fprintf(out, "    %s\t%s\t[%d:%d-%d:%d)\n      %q\n",
+				pURI.Path, showPrintable(a.DisplayName),
 				a.Anchor.Start.LineNumber, a.Anchor.Start.ColumnOffset, a.Anchor.End.LineNumber, a.Anchor.End.ColumnOffset,
 				string(a.Anchor.Snippet)); err != nil {
 				return err
+			}
+			for _, site := range a.Site {
+				if _, err := fmt.Fprintf(out, "      [%d:%d-%d-%d)\n        %q\n",
+					site.Start.LineNumber, site.Start.ColumnOffset, site.End.LineNumber, site.End.ColumnOffset,
+					string(site.Snippet)); err != nil {
+					return err
+				}
 			}
 		}
 	}

@@ -336,6 +336,7 @@ const (
 
 // CrossReferences implements part of the xrefs.Interface.
 func (d *DB) CrossReferences(ctx context.Context, req *xpb.CrossReferencesRequest) (*xpb.CrossReferencesReply, error) {
+	// TODO(zarko): Callgraph integration.
 	tickets, err := xrefs.FixTickets(req.Ticket)
 	if err != nil {
 		return nil, err

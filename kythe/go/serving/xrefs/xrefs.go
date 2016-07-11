@@ -718,7 +718,8 @@ func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReference
 		(req.DefinitionKind != xpb.CrossReferencesRequest_NO_DEFINITIONS ||
 			req.DeclarationKind != xpb.CrossReferencesRequest_NO_DECLARATIONS ||
 			req.ReferenceKind != xpb.CrossReferencesRequest_NO_REFERENCES ||
-			req.DocumentationKind != xpb.CrossReferencesRequest_NO_DOCUMENTATION)
+			req.DocumentationKind != xpb.CrossReferencesRequest_NO_DOCUMENTATION ||
+			req.CallerKind != xpb.CrossReferencesRequest_NO_CALLERS)
 
 	for _, ticket := range tickets {
 		// TODO(schroederc): retrieve PagedCrossReferences in parallel
@@ -729,9 +730,13 @@ func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReference
 		} else if err != nil {
 			return nil, fmt.Errorf("error looking up cross-references for ticket %q: %v", ticket, err)
 		}
-
+		sig, err := xrefs.SlowSignature(ctx, t, ticket)
+		if err != nil {
+			return nil, fmt.Errorf("error looking up signature for ticket %q: %v", ticket, err)
+		}
 		crs := &xpb.CrossReferencesReply_CrossReferenceSet{
-			Ticket: ticket,
+			Ticket:      ticket,
+			DisplayName: sig,
 		}
 		for _, grp := range cr.Group {
 			switch {
@@ -756,6 +761,15 @@ func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReference
 					stats.addAnchors(&crs.Reference, grp.Anchor, req.AnchorText)
 				}
 			}
+		}
+
+		if wantMoreCrossRefs && req.CallerKind != xpb.CrossReferencesRequest_NO_CALLERS {
+			anchors, err := xrefs.SlowCallersForCrossReferences(ctx, t, req.CallerKind == xpb.CrossReferencesRequest_OVERRIDE_CALLERS, ticket)
+			if err != nil {
+				return nil, fmt.Errorf("error in SlowCallersForCrossReferences: %v", err)
+			}
+			reply.Total.Callers += int64(len(anchors))
+			stats.addRelatedAnchors(&crs.Caller, anchors, req.AnchorText)
 		}
 
 		for _, idx := range cr.PageIndex {
@@ -799,7 +813,7 @@ func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReference
 			}
 		}
 
-		if len(crs.Declaration) > 0 || len(crs.Definition) > 0 || len(crs.Reference) > 0 || len(crs.Documentation) > 0 {
+		if len(crs.Declaration) > 0 || len(crs.Definition) > 0 || len(crs.Reference) > 0 || len(crs.Documentation) > 0 || len(crs.Caller) > 0 {
 			reply.CrossReferences[crs.Ticket] = crs
 		}
 	}
@@ -930,6 +944,30 @@ func (s *refStats) addAnchors(to *[]*xpb.CrossReferencesReply_RelatedAnchor, as 
 	s.total += len(as)
 	for _, a := range as {
 		*to = append(*to, a2a(a, anchorText))
+	}
+	return s.total == s.max
+}
+
+func (s *refStats) addRelatedAnchors(to *[]*xpb.CrossReferencesReply_RelatedAnchor, as []*xpb.CrossReferencesReply_RelatedAnchor, anchorText bool) bool {
+	if s.total == s.max {
+		return true
+	} else if s.skip > len(as) {
+		s.skip -= len(as)
+		return false
+	} else if s.skip > 0 {
+		as = as[s.skip:]
+		s.skip = 0
+	}
+
+	if s.total+len(as) > s.max {
+		as = as[:(s.max - s.total)]
+	}
+	s.total += len(as)
+	for _, a := range as {
+		if !anchorText {
+			a.Anchor.Text = ""
+		}
+		*to = append(*to, a)
 	}
 	return s.total == s.max
 }
