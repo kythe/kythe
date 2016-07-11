@@ -41,7 +41,7 @@ import java.util.List;
 /**
  * General logic for a javac-based {@link CompilationUnit} extractor.
  *
- * Environment Variables Used:
+ * Environment Variables Used (note that these can also be set as JVM system properties):
  *   KYTHE_VNAMES: optional path to a JSON configuration file for {@link FileVNames} to populate
  *                 the {@link CompilationUnit}'s required input {@link VName}s
  *
@@ -205,7 +205,12 @@ public abstract class AbstractJavacWrapper {
   }
 
   static String readEnvironmentVariable(String variableName, String defaultValue) {
-    String result = System.getenv(variableName);
+    // First see if we have a system property.
+    String result = System.getProperty(variableName);
+    if (Strings.isNullOrEmpty(result)) {
+      // Fall back to the environment variable.
+      result = System.getenv(variableName);
+    }
     if (Strings.isNullOrEmpty(result)) {
       if (Strings.isNullOrEmpty(defaultValue)) {
         System.err.println(String.format("Missing environment variable: %s", variableName));
