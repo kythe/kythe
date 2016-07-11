@@ -33,6 +33,8 @@ import com.google.protobuf.ByteString;
 
 import com.beust.jcommander.Parameter;
 
+import java.io.BufferedOutputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
@@ -70,7 +72,9 @@ public class JavaIndexer {
       return;
     }
 
-    try (OutputStream stream = System.out) {
+    try (OutputStream stream = Strings.isNullOrEmpty(config.getOutputPath())
+        ? System.out
+        : new BufferedOutputStream(new FileOutputStream(config.getOutputPath()))) {
       new JavacAnalysisDriver()
           .analyze(
               new KytheJavacAnalyzer(
@@ -138,6 +142,12 @@ public class JavaIndexer {
     )
     private String indexPackRoot;
 
+    @Parameter(
+        names = {"--out", "-out"},
+        description = "Write the entries to this file (or stdout if unspecified)"
+    )
+    private String outputPath;
+
     public StandaloneConfig() {
       super("java-indexer");
     }
@@ -148,6 +158,10 @@ public class JavaIndexer {
 
     public final String getIndexPackRoot() {
       return indexPackRoot;
+    }
+
+    public final String getOutputPath() {
+      return outputPath;
     }
 
     public final List<String> getCompilation() {
