@@ -320,7 +320,7 @@ Brief description::
 Commonly arises from::
   documentation comments
 Points from::
-  anchors and [[doc]]s
+  anchors and <<doc>>s
 Points toward::
   semantic nodes
 Ordinals are used::
