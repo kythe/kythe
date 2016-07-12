@@ -55,6 +55,7 @@ str_enum! {
        File => "file",
        Anchor => "anchor",
        Function => "function",
+       Variable => "variable",
     }
 }
 

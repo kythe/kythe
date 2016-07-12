@@ -17,6 +17,8 @@ test_suite(
     tests = [
         ":file_content",
         ":file_node",
+        ":vardecl_local_anchor",
+        ":vardecl_local_shadow",
     ],
 )
 
@@ -40,6 +42,17 @@ rust_indexer_test(
         "basic/file_content.rs",
         "basic/a.rs",
     ],
+)
+
+rust_indexer_test(
+    name = "vardecl_local_anchor",
+    srcs = ["basic/vardecl_local_anchor.rs"],
+)
+
+rust_indexer_test(
+    name = "vardecl_local_shadow",
+    expect_fail_verify = True,
+    srcs = ["basic/vardecl_local_shadow.rs"],
 )
 
 rust_indexer_test(

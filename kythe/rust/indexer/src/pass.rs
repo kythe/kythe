@@ -76,6 +76,7 @@ impl KytheLintPass {
     }
 }
 
+
 // A no-op implementation since we aren't reporting linting errors
 impl LintPass for KytheLintPass {
     fn get_lints(&self) -> LintArray {
@@ -100,6 +101,36 @@ impl LateLintPass for KytheLintPass {
 
             self.writer.node(&vname, Fact::NodeKind, &NodeKind::File);
             self.writer.node(&vname, Fact::Text, content);
+        }
+    }
+
+    fn check_decl(&mut self, cx: &LateContext, decl: &hir::Decl) {
+
+        let codemap = cx.sess().codemap();
+
+        match &decl.node {
+            &hir::Decl_::DeclLocal(ref local) => {
+                // For loops, if-let, etc. desugar into alternate forms in hir.
+                // We exclude exclude these inner decls because they don't exist in src.
+                if is_from_desugar(local) {
+                    return;
+                }
+                match local.pat.node {
+                    hir::PatKind::Binding(_, sp_name, _) => {
+                        // def_id's contain both a CrateNum and a DeclIndex.
+                        // The former is unnecessary in this case because local decls will always
+                        // be in the primary crate
+                        let var_id = cx.tcx.expect_def(local.pat.id).def_id().index.as_u32();
+                        let ident_vname = self.anchor_from_span(sp_name.span, codemap);
+                        let local_vname = self.corpus.local_decl_vname(var_id);
+
+                        self.writer.node(&local_vname, Fact::NodeKind, &NodeKind::Variable);
+                        self.writer.edge(&ident_vname, EdgeKind::DefinesBinding, &local_vname);
+                    }
+                    _ => (),
+                }
+            }
+            _ => (),
         }
     }
 
@@ -132,4 +163,17 @@ impl LateLintPass for KytheLintPass {
             _ => (),
         }
     }
+}
+
+// TODO(djrenren): Create a utils module for things like this.
+// Checks if a local decl is the result of desugaring in AST -> hir conversion.
+fn is_from_desugar(local: &hir::Local) -> bool {
+    if let Some(ref expr) = local.init {
+        if let hir::ExprMatch(_, _, hir::MatchSource::Normal) = expr.node {
+            ()
+        } else {
+            return true;
+        }
+    }
+    false
 }

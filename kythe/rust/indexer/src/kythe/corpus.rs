@@ -55,4 +55,16 @@ impl Corpus {
             ..Default::default()
         }
     }
+
+    // Generates the appropriate VName for a local variable decl
+    // based on the crate and definition id. This id is only
+    // unique to the crate in which it resides.
+    pub fn local_decl_vname(&self, def_id: u32) -> VName {
+        VName {
+            corpus: Some(self.name.clone()),
+            language: Some(RUST.to_string()),
+            signature: Some(format!("variable:{}", def_id)),
+            ..Default::default()
+        }
+    }
 }
