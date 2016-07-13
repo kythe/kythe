@@ -1,1 +1,4 @@
 build --workspace_status_command tools/buildstamp/get_workspace_status
+
+# Enforce absence of Java 8 language features
+build --javacopt '-source 7'
