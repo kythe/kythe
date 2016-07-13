@@ -279,6 +279,7 @@ public:
   bool VisitVarDecl(const clang::VarDecl *Decl);
   bool VisitNamespaceDecl(const clang::NamespaceDecl *Decl);
   bool VisitDeclRefExpr(const clang::DeclRefExpr *DRE);
+  bool VisitUnaryExprOrTypeTraitExpr(const clang::UnaryExprOrTypeTraitExpr *E);
   bool VisitCXXConstructExpr(const clang::CXXConstructExpr *E);
   bool VisitCXXDeleteExpr(const clang::CXXDeleteExpr *E);
   bool VisitCXXPseudoDestructorExpr(const clang::CXXPseudoDestructorExpr *E);

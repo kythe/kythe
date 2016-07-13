@@ -1198,6 +1198,19 @@ void IndexerASTVisitor::AddChildOfEdgeToDeclContext(
   }
 }
 
+bool IndexerASTVisitor::VisitUnaryExprOrTypeTraitExpr(
+    const clang::UnaryExprOrTypeTraitExpr *E) {
+  if (E->isArgumentType()) {
+    auto *TSI = E->getArgumentTypeInfo();
+    if (!TSI->getTypeLoc().isNull()) {
+      // TODO(zarko): Possibly discern the Decl for TargetType and call
+      // InspectDeclRef on it.
+      BuildNodeIdForType(TSI->getTypeLoc(), TSI->getType(), EmitRanges::Yes);
+    }
+  }
+  return true;
+}
+
 bool IndexerASTVisitor::VisitDeclRefExpr(const clang::DeclRefExpr *DRE) {
   // TODO(zarko): check to see if this DeclRefExpr has already been indexed.
   // (Use a simple N=1 cache.)

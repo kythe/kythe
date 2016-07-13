@@ -435,6 +435,20 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "sizeof_ref",
+    srcs = ["basic/sizeof_ref.c"],
+    std = "gnu99",
+    tags = ["basic"],
+)
+
+cxx_indexer_test(
+    name = "sizeof_typedef_ref",
+    srcs = ["basic/sizeof_typedef_ref.c"],
+    std = "gnu99",
+    tags = ["basic"],
+)
+
+cxx_indexer_test(
     name = "typedef_class",
     srcs = ["basic/typedef_class.cc"],
     tags = ["basic"],
