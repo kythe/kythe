@@ -20,7 +20,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.Strings;
-import com.google.common.collect.Lists;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Analysis.FileData;
 import com.google.protobuf.CodedInputStream;
@@ -32,6 +31,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -62,7 +62,7 @@ public class IndexInfoUtils {
     codedStream.setSizeLimit(Integer.MAX_VALUE);
 
     CompilationUnit compilationUnit = CompilationUnit.parseFrom(codedStream.readBytes());
-    List<FileData> fileContents = Lists.newArrayList();
+    List<FileData> fileContents = new ArrayList<>();
     while (!codedStream.isAtEnd()) {
       fileContents.add(FileData.parseFrom(codedStream.readBytes()));
     }

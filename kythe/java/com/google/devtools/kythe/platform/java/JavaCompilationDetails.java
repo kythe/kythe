@@ -159,63 +159,49 @@ public class JavaCompilationDetails {
     return Iterables.any(diagnostics.getDiagnostics(), ERROR_DIAGNOSTIC);
   }
 
-  /**
-   * @return Javac compiler instance initialized for current analysis target.
-   */
+  /** Returns the Javac compiler instance initialized for current analysis target. */
   public JavacTask getJavac() {
     return javac;
   }
 
-  /**
-   * @return Diagnostics reported while analyzing the code for the current analysis target.
-   */
+  /** Returns the Diagnostics reported while analyzing the code for the current analysis target. */
   public List<Diagnostic<? extends JavaFileObject>> getDiagnostics() {
     return diagnostics.getDiagnostics();
   }
 
-  /**
-   * @return DiagnosticsCollector for the current analysis target.
-   */
+  /** Returns the DiagnosticsCollector for the current analysis target. */
   DiagnosticCollector<JavaFileObject> getDiagnosticsCollector() {
     return diagnostics;
   }
 
-  /**
-   * @return AST for the current analysis target.
-   */
+  /** Returns the AST for the current analysis target. */
   public Iterable<? extends CompilationUnitTree> getAsts() {
     return asts;
   }
 
-  /**
-   * @return The protocol buffer describing the current analysis target.
-   */
+  /** Returns the protocol buffer describing the current analysis target. */
   public CompilationUnit getCompilationUnit() {
     return compilationUnit;
   }
 
-  /**
-   * @return Any unexpected crash that might have occurred during javac analysis.
-   */
+  /** Returns any unexpected crash that might have occurred during javac analysis. */
   public Throwable getAnalysisCrash() {
     return analysisCrash;
   }
 
-  /**
-   * @return The encoding for the source files in this compilation
-   */
+  /** Returns he encoding for the source files in this compilation */
   public Charset getEncoding() {
     return encoding;
   }
 
   /**
-   * Modify options so the compiler can find the classpath and sourcepath.
-   * As well as disable any annotation processor.
+   * Modify options so the compiler can find the classpath and sourcepath. As well as disable any
+   * annotation processor.
    *
-   * @param isLocalAnalysis when true we do not add jre jars to the classpath.
-   *        Adding jre jars to classpath for local analysis done by
-   *        {@link com.google.devtools.kythe.platform.java.local.LocalJavacAnalysisDriver}
-   *        will cause the analysis to fail.
+   * @param isLocalAnalysis when true we do not add jre jars to the classpath. Adding jre jars to
+   *     classpath for local analysis done by {@link
+   *     com.google.devtools.kythe.platform.java.local.LocalJavacAnalysisDriver} will cause the
+   *     analysis to fail.
    */
   private static List<String> optionsFromCompilationUnit(
       CompilationUnit compilationUnit, List<Processor> processors, boolean isLocalAnalysis) {

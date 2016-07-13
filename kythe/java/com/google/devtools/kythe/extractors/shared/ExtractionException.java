@@ -17,9 +17,8 @@
 package com.google.devtools.kythe.extractors.shared;
 
 /**
- * Exception describing issues extracting compilation unit information.
- * Thrown for issues such as: datastore connectivity, IO issues, compiler
- * failures etc...
+ * Exception describing issues extracting compilation unit information. Thrown for issues such as:
+ * datastore connectivity, IO issues, compiler failures etc...
  */
 public class ExtractionException extends Exception {
   private static final long serialVersionUID = 6211661316721501831L;

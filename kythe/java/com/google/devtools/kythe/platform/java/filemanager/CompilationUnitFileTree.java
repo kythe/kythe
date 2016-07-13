@@ -23,9 +23,7 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Represents the directory structure of the inputs of a compilation unit.
- */
+/** Represents the directory structure of the inputs of a compilation unit. */
 public class CompilationUnitFileTree {
   /**
    * Map from a directory path to file entries in that directory. Each file entry is a pair of file

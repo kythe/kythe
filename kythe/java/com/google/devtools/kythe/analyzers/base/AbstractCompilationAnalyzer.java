@@ -49,8 +49,8 @@ public abstract class AbstractCompilationAnalyzer {
   }
 
   /**
-   * Analyzes the given {@link AnalysisRequest}, emitting all facts with the given
-   * {@link FactEmitter}.
+   * Analyzes the given {@link AnalysisRequest}, emitting all facts with the given {@link
+   * FactEmitter}.
    */
   public void analyzeRequest(AnalysisRequest req, FactEmitter emitter) throws AnalysisException {
     Preconditions.checkNotNull(req, "AnalysisRequest must be non-null");
@@ -77,9 +77,9 @@ public abstract class AbstractCompilationAnalyzer {
       throws AnalysisException;
 
   /**
-   * Analyzes the given {@link CompilationUnit}.  The given {@link FileDataProvider} and
-   * {@link FactEmitter} should be used to get any necessary file data and emit any generated facts,
-   * respectively, as a result of the compilation unit's processing.  After returning, the given
+   * Analyzes the given {@link CompilationUnit}. The given {@link FileDataProvider} and {@link
+   * FactEmitter} should be used to get any necessary file data and emit any generated facts,
+   * respectively, as a result of the compilation unit's processing. After returning, the given
    * {@link FileDataProvider} and {@link FactEmitter} should no longer be used.
    */
   protected abstract void analyzeCompilation(

@@ -23,8 +23,8 @@ import com.google.devtools.kythe.proto.Analysis.FileData;
 import java.util.Objects;
 
 /**
- * Contains all data to completely describe a compilation.  Includes compilation
- * metadata and all required input files.
+ * Contains all data to completely describe a compilation. Includes compilation metadata and all
+ * required input files.
  */
 public class CompilationDescription {
   private final CompilationUnit compilationUnit;

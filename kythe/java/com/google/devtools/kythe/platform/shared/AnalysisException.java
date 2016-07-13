@@ -16,9 +16,7 @@
 
 package com.google.devtools.kythe.platform.shared;
 
-/**
- * Exception to signal catastrophic failure in sharded analysis.
- */
+/** Exception to signal catastrophic failure in sharded analysis. */
 public class AnalysisException extends Exception {
   private static final long serialVersionUID = -2938235520850434072L;
 

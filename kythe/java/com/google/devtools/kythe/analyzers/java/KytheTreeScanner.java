@@ -280,7 +280,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       visitAnnotations(classNode, classDef.getModifiers().getAnnotations(), ctx);
 
       JavaNode superClassNode = scan(classDef.getExtendsClause(), ctx);
-      emitEdge(classNode, EdgeKind.EXTENDS, superClassNode == null ? getJavaLangObjectNode() : superClassNode);
+      emitEdge(
+          classNode,
+          EdgeKind.EXTENDS,
+          superClassNode == null ? getJavaLangObjectNode() : superClassNode);
 
       for (JCExpression implClass : classDef.getImplementsClause()) {
         JavaNode implNode = scan(implClass, ctx);

@@ -35,12 +35,12 @@ import java.util.Map;
 /**
  * Factory for Kythe-compliant node and edge {@link EntrySet}s. In general, this class provides two
  * sets of methods: low-level node/edge builders and higher-level abstractions for specific kinds of
- * nodes/edges such as ANCHOR nodes and their edges.  Each higher-level abstraction returns a fully
- * realized {@link EntrySet} and automatically emits it (and any associated edges).  The lower-level
+ * nodes/edges such as ANCHOR nodes and their edges. Each higher-level abstraction returns a fully
+ * realized {@link EntrySet} and automatically emits it (and any associated edges). The lower-level
  * methods, such as {@link #newNode(String)} return {@link EntrySet.Builder}s and must be emitted by
  * the client.
  *
- * This class is meant to be subclassed to build indexer-specific nodes and edges.
+ * <p>This class is meant to be subclassed to build indexer-specific nodes and edges.
  */
 public class KytheEntrySets {
   public static final String NODE_PREFIX = "/kythe/";
@@ -182,8 +182,8 @@ public class KytheEntrySets {
   }
 
   /**
-   * Returns a {@link NodeBuilder} with the given kind and added signature salts for each
-   * {@link EntrySet} dependency.
+   * Returns a {@link NodeBuilder} with the given kind and added signature salts for each {@link
+   * EntrySet} dependency.
    */
   public NodeBuilder newNode(NodeKind kind, Iterable<EntrySet> dependencies) {
     NodeBuilder builder = newNode(kind);
@@ -261,8 +261,8 @@ public class KytheEntrySets {
   }
 
   /**
-   * Returns a {@link NodeBuilder} with the given kind and added signature salts for each
-   * {@link EntrySet} dependency as well as the "head" node of the application.
+   * Returns a {@link NodeBuilder} with the given kind and added signature salts for each {@link
+   * EntrySet} dependency as well as the "head" node of the application.
    */
   private NodeBuilder newApplyNode(NodeKind kind, EntrySet head, Iterable<EntrySet> dependencies) {
     return newNode(kind, dependencies).addSignatureSalt(head.getVName());
@@ -275,7 +275,7 @@ public class KytheEntrySets {
 
   /**
    * Returns the {@link FileInput}'s {@link VName} with the given digest. If none is found, return
-   * {@code null}.  This is the raw form of {@link #getFileName(String)}.
+   * {@code null}. This is the raw form of {@link #getFileName(String)}.
    */
   protected VName lookupVName(String digest) {
     VName inputVName = inputVNames.get(digest);

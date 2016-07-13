@@ -16,7 +16,6 @@
 
 package com.google.devtools.kythe.extractors.java.standalone;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.devtools.kythe.extractors.java.JavaCompilationUnitExtractor;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
@@ -31,9 +30,7 @@ import java.util.EnumSet;
 import java.util.List;
 import javax.tools.JavaFileObject;
 
-/**
- * A class that wraps javac to extract compilation information and write it to an index file.
- */
+/** A class that wraps javac to extract compilation information and write it to an index file. */
 public class Javac8Wrapper extends AbstractJavacWrapper {
   @Override
   protected CompilationDescription processCompilation(
@@ -72,7 +69,7 @@ public class Javac8Wrapper extends AbstractJavacWrapper {
             Option.PROCESSORPATH, Option.PROCESSOR);
 
     // Retrieve all other javac options.
-    List<String> completeOptions = Lists.newArrayList();
+    List<String> completeOptions = new ArrayList<>();
     for (Option opt : Option.values()) {
       if (!claimed.contains(opt)) {
         String value = options.get(opt);

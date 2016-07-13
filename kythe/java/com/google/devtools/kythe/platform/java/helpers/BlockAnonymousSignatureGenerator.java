@@ -37,9 +37,9 @@ import java.util.Map;
 import javax.lang.model.element.Element;
 
 /**
- *  This class is responsible for generating signatures for blocks and anonymous classes.
- *  The maps used for caching in this class are specific through out the life of analyzer and
- *  they can be used for one or more compilation units which are part of one compilation context.
+ * This class is responsible for generating signatures for blocks and anonymous classes. The maps
+ * used for caching in this class are specific through out the life of analyzer and they can be used
+ * for one or more compilation units which are part of one compilation context.
  */
 public class BlockAnonymousSignatureGenerator
     extends TreeScanner<Void, BlockAnonymousSignatureGenerator.BlockAnonymousData> {
@@ -78,9 +78,6 @@ public class BlockAnonymousSignatureGenerator
 
   private final SignatureGenerator signatureGenerator;
 
-  /**
-   * @param signatureGenerator
-   */
   BlockAnonymousSignatureGenerator(SignatureGenerator signatureGenerator) {
     this.signatureGenerator = signatureGenerator;
   }

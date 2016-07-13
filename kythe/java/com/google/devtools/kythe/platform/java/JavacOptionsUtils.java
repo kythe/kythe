@@ -18,7 +18,6 @@ package com.google.devtools.kythe.platform.java;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.StandardSystemProperty;
-import com.google.common.collect.Lists;
 
 import com.sun.tools.javac.main.Option;
 
@@ -32,9 +31,7 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
-/**
- * A utility class for dealing with javac command-line options.
- */
+/** A utility class for dealing with javac command-line options. */
 public class JavacOptionsUtils {
 
   private static final String[] JRE_JARS =
@@ -45,7 +42,7 @@ public class JavacOptionsUtils {
   /** Returns a new list of options with only javac compiler supported options. */
   public static List<String> removeUnsupportedOptions(List<String> rawOptions) {
     Set<Option> supportedOptions = EnumSet.allOf(Option.class);
-    List<String> options = Lists.newArrayList();
+    List<String> options = new ArrayList<>();
     for (int i = 0; i < rawOptions.size(); i++) {
       String opt = rawOptions.get(i);
       for (Option o : supportedOptions) {
@@ -82,7 +79,7 @@ public class JavacOptionsUtils {
 
   /**
    * Extract the encoding flag from the list of javac options. If the flag is specified more than
-   * once, returns the last copy, which matches javac's behavior.  If the flag is not specified,
+   * once, returns the last copy, which matches javac's behavior. If the flag is not specified,
    * returns null.
    */
   public static @Nullable Charset getEncodingOption(List<String> options) {
@@ -90,7 +87,7 @@ public class JavacOptionsUtils {
     return (i >= 0) ? Charset.forName(options.get(i + 1)) : null;
   }
 
-  /** If there is no encoding set, make sure to set the default encoding.*/
+  /** If there is no encoding set, make sure to set the default encoding. */
   public static List<String> ensureEncodingSet(List<String> options, Charset defaultEncoding) {
     if (getEncodingOption(options) == null) {
       options.add(Option.ENCODING.getText());
@@ -99,7 +96,7 @@ public class JavacOptionsUtils {
     return options;
   }
 
-  /** Remove the existing warning options, and do all instead.*/
+  /** Remove the existing warning options, and do all instead. */
   public static List<String> useAllWarnings(List<String> options) {
     List<String> result = new ArrayList<>();
     for (String option : options) {
@@ -111,9 +108,9 @@ public class JavacOptionsUtils {
     return result;
   }
 
-  /** Append the classpath to the list of options.*/
+  /** Append the classpath to the list of options. */
   public static void appendJREJarsToClasspath(List<String> arguments) {
-    List<String> paths = Lists.newArrayList();
+    List<String> paths = new ArrayList<>();
     Path javaHome = Paths.get(StandardSystemProperty.JAVA_HOME.value());
     for (String jreJar : JRE_JARS) {
       paths.add(javaHome.resolve(jreJar).toString());

@@ -41,6 +41,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 
 /** Tests for {@link JavaCompilationExtractor}. */
@@ -55,9 +56,7 @@ public class JavaExtractorTest extends TestCase {
 
   private static final List<String> EMPTY = ImmutableList.of();
 
-  /**
-   * Tests the basic case of indexing a java compilation with two sources.
-   */
+  /** Tests the basic case of indexing a java compilation with two sources. */
   public void testJavaExtractorSimple() throws Exception {
     JavaCompilationUnitExtractor java = new JavaCompilationUnitExtractor(CORPUS);
 
@@ -123,8 +122,8 @@ public class JavaExtractorTest extends TestCase {
   }
 
   /**
-   * Tests the basic case of indexing a java compilation where the sources
-   * live in different folders eventhough they're in the same package.
+   * Tests the basic case of indexing a java compilation where the sources live in different folders
+   * eventhough they're in the same package.
    */
   public void testJavaExtractorTwoSourceDirs() throws Exception {
     JavaCompilationUnitExtractor java = new JavaCompilationUnitExtractor(CORPUS);
@@ -158,8 +157,8 @@ public class JavaExtractorTest extends TestCase {
   }
 
   /**
-   * Tests java compilation with classfiles in the classpath.
-   * Test ensures that only used classfiles are stored.
+   * Tests java compilation with classfiles in the classpath. Test ensures that only used classfiles
+   * are stored.
    */
   public void testJavaExtractorClassFiles() throws Exception {
     JavaCompilationUnitExtractor java = new JavaCompilationUnitExtractor(CORPUS);
@@ -193,8 +192,8 @@ public class JavaExtractorTest extends TestCase {
   }
 
   /**
-   * Tests java compilation with classfiles in a jarfile on the classpath.
-   * Ensures that only used classfiles are stored.
+   * Tests java compilation with classfiles in a jarfile on the classpath. Ensures that only used
+   * classfiles are stored.
    */
   public void testJavaExtractorJar() throws Exception {
     JavaCompilationUnitExtractor java = new JavaCompilationUnitExtractor(CORPUS);
@@ -233,8 +232,8 @@ public class JavaExtractorTest extends TestCase {
   }
 
   /**
-   * Tests case where compile errors exist in the sources under compilation.
-   * Compilation should still be created.
+   * Tests case where compile errors exist in the sources under compilation. Compilation should
+   * still be created.
    */
   public void testJavaExtractorCompileError() throws Exception {
     JavaCompilationUnitExtractor java = new JavaCompilationUnitExtractor(CORPUS);
@@ -263,9 +262,7 @@ public class JavaExtractorTest extends TestCase {
     assertThatArgumentsMatch(args, unit);
   }
 
-  /**
-   * Tests that dependent files are ordered correctly.
-   */
+  /** Tests that dependent files are ordered correctly. */
   public void testJavaExtractorOrderedDependencies() throws Exception {
     JavaCompilationUnitExtractor java = new JavaCompilationUnitExtractor(CORPUS);
 
@@ -295,8 +292,8 @@ public class JavaExtractorTest extends TestCase {
   }
 
   /**
-   * Tests the case where one of the sources doesn't follow the java pattern of naming the path
-   * to the source file after the package name.
+   * Tests the case where one of the sources doesn't follow the java pattern of naming the path to
+   * the source file after the package name.
    */
   public void testJavaExtractorNonConformingPath() throws Exception {
     JavaCompilationUnitExtractor java = new JavaCompilationUnitExtractor(CORPUS);
@@ -328,8 +325,8 @@ public class JavaExtractorTest extends TestCase {
   }
 
   /**
-   * Tests the case where one of the sources defines a package only type that is not conforming
-   * to the classname matching the filename.
+   * Tests the case where one of the sources defines a package only type that is not conforming to
+   * the classname matching the filename.
    */
   public void testJavaExtractorAdditionalTypeDefinitions() throws Exception {
     JavaCompilationUnitExtractor java = new JavaCompilationUnitExtractor(CORPUS);
@@ -427,9 +424,7 @@ public class JavaExtractorTest extends TestCase {
         .inOrder();
   }
 
-  /**
-   * Tests that targets that contain annotation processors are indexed correctly.
-   */
+  /** Tests that targets that contain annotation processors are indexed correctly. */
   public void testJavaExtractorAnnotationProcessing() throws Exception {
     String testDir = System.getenv("TEST_TMPDIR");
     JavaCompilationUnitExtractor java = new JavaCompilationUnitExtractor(CORPUS, testDir);
@@ -490,9 +485,7 @@ public class JavaExtractorTest extends TestCase {
     assertThatArgumentsMatch(args, unit);
   }
 
-  /**
-   * Tests that the extractor doesn't fall over when it's provided with no sources.
-   */
+  /** Tests that the extractor doesn't fall over when it's provided with no sources. */
   public void testNoSources() throws Exception {
     JavaCompilationUnitExtractor java = new JavaCompilationUnitExtractor(CORPUS);
 
@@ -519,8 +512,8 @@ public class JavaExtractorTest extends TestCase {
   }
 
   /**
-   * Tests the case where one of the sources defines a package only type that is not conforming
-   * to the classname matching the filename.
+   * Tests the case where one of the sources defines a package only type that is not conforming to
+   * the classname matching the filename.
    */
   public void testEmptyCompilationUnit() throws Exception {
     JavaCompilationUnitExtractor java = new JavaCompilationUnitExtractor(CORPUS);
@@ -632,8 +625,8 @@ public class JavaExtractorTest extends TestCase {
     }
 
     public static JavaArguments parse(List<String> args) {
-      List<String> sourcepath = Lists.newLinkedList();
-      List<String> classpath = Lists.newLinkedList();
+      List<String> sourcepath = new LinkedList<>();
+      List<String> classpath = new LinkedList<>();
       for (int i = 0; i < args.size(); i++) {
         if (args.get(i).equals(Option.SOURCEPATH.getText())) {
           i++;

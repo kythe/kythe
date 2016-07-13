@@ -19,7 +19,6 @@ package com.google.devtools.kythe.extractors.shared;
 import static org.junit.Assert.assertArrayEquals;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Analysis.FileData;
@@ -32,6 +31,7 @@ import junit.framework.TestCase;
 import java.io.File;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -53,7 +53,7 @@ public class ExtractorUtilsTest extends TestCase {
   }
 
   public void testConvertBytesToFileDatas() throws Exception {
-    Map<String, byte[]> data = Maps.newHashMap();
+    Map<String, byte[]> data = new HashMap<>();
     data.put("a/b/c", new byte[] {1, 2, 3});
     data.put("d/e/f", new byte[] {4, 5, 6});
     List<FileData> results = ExtractorUtils.convertBytesToFileDatas(data);

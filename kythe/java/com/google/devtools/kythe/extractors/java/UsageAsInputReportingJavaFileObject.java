@@ -28,10 +28,9 @@ import javax.lang.model.element.NestingKind;
 import javax.tools.JavaFileObject;
 
 /**
- * Wraps JavaFileObjects and reports if the object is used as input by the
- * compiler. We consider the object used when the compiler asks for the
- * data in the file. Javac will ask for all files in a package, even if it
- * already knows it needs a specific one. This is probably done for caching
+ * Wraps JavaFileObjects and reports if the object is used as input by the compiler. We consider the
+ * object used when the compiler asks for the data in the file. Javac will ask for all files in a
+ * package, even if it already knows it needs a specific one. This is probably done for caching
  * optimization (especially reading from .jar files). In our case, less is better.
  */
 @com.sun.tools.javac.api.ClientCodeWrapper.Trusted

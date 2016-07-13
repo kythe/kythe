@@ -17,7 +17,6 @@
 package com.google.devtools.kythe.analyzers.java;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Lists;
 import com.google.devtools.kythe.platform.java.helpers.SyntaxPreservingScanner;
 import com.google.devtools.kythe.platform.java.helpers.SyntaxPreservingScanner.CommentToken;
 import com.google.devtools.kythe.util.Span;
@@ -34,8 +33,10 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
@@ -46,7 +47,7 @@ import javax.tools.JavaFileObject;
 
 public final class SourceText {
   private final Positions positions;
-  private final List<Comment> comments = Lists.newLinkedList();
+  private final List<Comment> comments = new LinkedList<>();
 
   public SourceText(Context context, JCCompilationUnit compilation, Charset sourceEncoding)
       throws IOException {
@@ -204,7 +205,7 @@ public final class SourceText {
 
     /**
      * Returns the {@link Span} for the first known occurrence of the specified {@link Name}d
-     * identifier, starting at or after the specified starting offset.  Returns {@code null} if no
+     * identifier, starting at or after the specified starting offset. Returns {@code null} if no
      * occurrences are found.
      */
     public Span findIdentifier(Name name, int startOffset) {
@@ -252,7 +253,7 @@ public final class SourceText {
     private void addIdentifier(Name name, Span position) {
       List<Span> spans = identTable.get(name);
       if (spans == null) {
-        spans = Lists.newArrayList();
+        spans = new ArrayList<>();
         identTable.put(name, spans);
       }
       spans.add(

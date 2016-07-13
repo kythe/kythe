@@ -33,8 +33,8 @@ import javax.tools.StandardLocation;
 
 /**
  * Makes it easier for our analysis to provide files in different ways than on the local file system
- * e.g. from datastores or .index files. All users of this class have to do is provide a
- * {@link FileDataProvider} that will feed the actual content in as a future.
+ * e.g. from datastores or .index files. All users of this class have to do is provide a {@link
+ * FileDataProvider} that will feed the actual content in as a future.
  */
 @com.sun.tools.javac.api.ClientCodeWrapper.Trusted
 public class CompilationUnitBasedJavaFileManager extends JavaFileStoreBasedFileManager {

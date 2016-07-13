@@ -16,8 +16,6 @@
 
 package com.google.devtools.kythe.platform.indexpack;
 
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
@@ -34,6 +32,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -88,7 +88,7 @@ public class ArchiveTest extends TestCase {
   public void testWriteUnit() throws IOException {
     String key1 = archive.writeUnit("test", new Object());
     assertNotNull(key1);
-    Map<String, String> map = Maps.newHashMap();
+    Map<String, String> map = new HashMap<>();
     map.put("something", "else");
     String key2 = archive.writeUnit("test", map);
     assertNotNull(key2);
@@ -134,7 +134,7 @@ public class ArchiveTest extends TestCase {
   }
 
   public void testReadUnits_compilationUnit() throws IOException {
-    Set<CompilationUnit> toRead = Sets.newHashSet();
+    Set<CompilationUnit> toRead = new HashSet<>();
     for (CompilationDescription desc : TEST_COMPILATIONS) {
       archive.writeUnit(desc.getCompilationUnit());
       toRead.add(desc.getCompilationUnit());
@@ -157,7 +157,7 @@ public class ArchiveTest extends TestCase {
   }
 
   public void testReadDescriptions() throws IOException {
-    Set<CompilationDescription> toRead = Sets.newHashSet();
+    Set<CompilationDescription> toRead = new HashSet<>();
     for (CompilationDescription desc : TEST_COMPILATIONS) {
       archive.writeDescription(desc);
       toRead.add(desc);

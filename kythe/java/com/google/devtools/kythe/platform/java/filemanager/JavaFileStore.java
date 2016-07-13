@@ -27,9 +27,8 @@ import javax.tools.JavaFileObject.Kind;
  * by a single jar file, multiple jar files, a database table, a directory on disk or any
  * combination of these.
  *
- * <p>
- * File store is not tied to a specific Java path location. Meaning a store can be used for class or
- * source retrieval. Users of this service can differentiate between the two using a path prefix.
+ * <p>File store is not tied to a specific Java path location. Meaning a store can be used for class
+ * or source retrieval. Users of this service can differentiate between the two using a path prefix.
  */
 public interface JavaFileStore {
 
@@ -46,8 +45,8 @@ public interface JavaFileStore {
   public CustomJavaFileObject find(String className, Kind kind, Set<String> pathPrefixes);
 
   /**
-   * Finds and returns the file object in a package, {@code packageName}, with name
-   * {@code relativeName}. {@code pathPrefixes} are used to limit possible search paths. There is no
+   * Finds and returns the file object in a package, {@code packageName}, with name {@code
+   * relativeName}. {@code pathPrefixes} are used to limit possible search paths. There is no
    * limitation on the format of a path. It is up to implementation to decide what it should be.
    *
    * @param packageName
@@ -58,9 +57,9 @@ public interface JavaFileStore {
   public CustomFileObject find(String packageName, String relativeName, Set<String> pathPrefixes);
 
   /**
-   * Finds and returns the Java file object with the exact path matching {@code path} and
-   * {@code kind}. There is no limitation on the format of a path. It is up to implementation to
-   * decide what it should be.
+   * Finds and returns the Java file object with the exact path matching {@code path} and {@code
+   * kind}. There is no limitation on the format of a path. It is up to implementation to decide
+   * what it should be.
    *
    * @param path
    * @param kind
@@ -69,9 +68,9 @@ public interface JavaFileStore {
   public CustomJavaFileObject findByPath(String path, Kind kind);
 
   /**
-   * Finds and returns all the Java file objects in a package, {@code packageName}.
-   * {@code pathPrefixes} are used to limit possible search paths. There is no limitation on the
-   * format of a path. It is up to implementation to decide what it should be.
+   * Finds and returns all the Java file objects in a package, {@code packageName}. {@code
+   * pathPrefixes} are used to limit possible search paths. There is no limitation on the format of
+   * a path. It is up to implementation to decide what it should be.
    *
    * @param packageName
    * @param kinds

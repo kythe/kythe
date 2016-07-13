@@ -16,7 +16,6 @@
 
 package com.google.devtools.kythe.analyzers.java;
 
-import com.google.common.collect.Lists;
 import com.google.devtools.kythe.analyzers.base.EntrySet;
 
 import com.sun.source.doctree.ReferenceTree;
@@ -31,6 +30,7 @@ import com.sun.tools.javac.tree.JCTree.JCFieldAccess;
 import com.sun.tools.javac.tree.JCTree.JCIdent;
 import com.sun.tools.javac.util.Name;
 
+import java.util.LinkedList;
 import java.util.List;
 
 public class KytheDocTreeScanner extends DocTreeScanner<Void, DCDocComment> {
@@ -89,7 +89,7 @@ public class KytheDocTreeScanner extends DocTreeScanner<Void, DCDocComment> {
     if (syms.classes.containsKey(name)) {
       return syms.classes.get(name);
     } else if (!name.toString().matches("[$.#]")) {
-      List<Name> matches = Lists.newLinkedList();
+      List<Name> matches = new LinkedList<>();
       for (Name clsName : syms.classes.keySet()) {
         String[] parts = clsName.toString().split("[$.]");
         if (parts[parts.length - 1].equals(name.toString())) {

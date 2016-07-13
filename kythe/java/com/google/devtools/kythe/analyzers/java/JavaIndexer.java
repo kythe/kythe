@@ -17,7 +17,6 @@
 package com.google.devtools.kythe.analyzers.java;
 
 import com.google.common.base.Strings;
-import com.google.common.collect.Lists;
 import com.google.devtools.kythe.analyzers.base.FactEmitter;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.google.devtools.kythe.extractors.shared.IndexInfoUtils;
@@ -37,6 +36,7 @@ import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.List;
 
 /** Binary to run Kythe's Java index over a single .kindex file, emitting entries to STDOUT. */
@@ -72,9 +72,10 @@ public class JavaIndexer {
       return;
     }
 
-    try (OutputStream stream = Strings.isNullOrEmpty(config.getOutputPath())
-        ? System.out
-        : new BufferedOutputStream(new FileOutputStream(config.getOutputPath()))) {
+    try (OutputStream stream =
+        Strings.isNullOrEmpty(config.getOutputPath())
+            ? System.out
+            : new BufferedOutputStream(new FileOutputStream(config.getOutputPath()))) {
       new JavacAnalysisDriver()
           .analyze(
               new KytheJavacAnalyzer(
@@ -128,7 +129,7 @@ public class JavaIndexer {
 
   private static class StandaloneConfig extends IndexerConfig {
     @Parameter(description = "<compilation to analyze>", required = true)
-    private List<String> compilation = Lists.newArrayList();;
+    private List<String> compilation = new ArrayList<>();
 
     @Parameter(
       names = "--print_statistics",
@@ -143,8 +144,8 @@ public class JavaIndexer {
     private String indexPackRoot;
 
     @Parameter(
-        names = {"--out", "-out"},
-        description = "Write the entries to this file (or stdout if unspecified)"
+      names = {"--out", "-out"},
+      description = "Write the entries to this file (or stdout if unspecified)"
     )
     private String outputPath;
 

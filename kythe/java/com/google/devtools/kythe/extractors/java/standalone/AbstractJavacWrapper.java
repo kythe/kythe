@@ -36,6 +36,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -70,7 +71,7 @@ public abstract class AbstractJavacWrapper {
 
   /**
    * Given the command-line arguments to javac, construct a {@link CompilationUnit} and write it to
-   * a .kindex file or indexpack.  Parameters to the extraction logic are passed by environment
+   * a .kindex file or indexpack. Parameters to the extraction logic are passed by environment
    * variables (see class comment).
    */
   public void process(String[] args) {
@@ -137,7 +138,7 @@ public abstract class AbstractJavacWrapper {
     // -Werror, we do not want to treat any warnings as errors.
     // -target, we do not care about the compiler outputs
     boolean skipArg = false;
-    List<String> cleanedUpArgs = Lists.newArrayList();
+    List<String> cleanedUpArgs = new ArrayList<>();
     for (String arg : expandedArgs) {
       if (arg.equals("-target")) {
         skipArg = true;
@@ -222,7 +223,7 @@ public abstract class AbstractJavacWrapper {
   }
 
   protected static List<String> getSourceList(Collection<File> files) {
-    List<String> sources = Lists.newArrayList();
+    List<String> sources = new ArrayList<>();
     for (File file : files) {
       sources.add(file.getPath());
     }

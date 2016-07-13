@@ -17,8 +17,6 @@
 package com.google.devtools.kythe.platform.java.helpers;
 
 import com.google.common.base.Optional;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.google.devtools.kythe.common.FormattingLogger;
 
 import com.sun.source.tree.CompilationUnitTree;
@@ -42,6 +40,8 @@ import com.sun.tools.javac.code.Type.Visitor;
 import com.sun.tools.javac.code.Type.WildcardType;
 import com.sun.tools.javac.util.Context;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -58,22 +58,18 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 
 /**
- * This class is responsible for generating signatures for elements in a Java program.
- * The class is valid to use for a single compilation context. A compilation context may contain
- * many compilation units (files). Since, this class might keep references to items in compilation
- * units, users of this class must make sure that they use this class local to a compilation task.
- * That is to make sure that after each compilation task is over the memory for the compilation
- * units are garbage collected properly.
- * Here is an example usage of this class:
+ * This class is responsible for generating signatures for elements in a Java program. The class is
+ * valid to use for a single compilation context. A compilation context may contain many compilation
+ * units (files). Since, this class might keep references to items in compilation units, users of
+ * this class must make sure that they use this class local to a compilation task. That is to make
+ * sure that after each compilation task is over the memory for the compilation units are garbage
+ * collected properly. Here is an example usage of this class:
  *
- *    CompilationTask task =
- *        compiler.getTask(null, standardFileManager,
- *            diagnosticsCollector, options, null, sourceFiles);
- *    JavacTaskImpl javacTask = (JavacTaskImpl) task;
- *    SignatureGenerator signatureGenerator = new SignatureGenerator(javacTask.getContext());
+ * <p>CompilationTask task = compiler.getTask(null, standardFileManager, diagnosticsCollector,
+ * options, null, sourceFiles); JavacTaskImpl javacTask = (JavacTaskImpl) task; SignatureGenerator
+ * signatureGenerator = new SignatureGenerator(javacTask.getContext());
  *
- * For more information see the corresponding test directory for this class.
- *
+ * <p>For more information see the corresponding test directory for this class.
  */
 public class SignatureGenerator
     implements ElementVisitor<Void, StringBuilder>, Visitor<Void, StringBuilder> {
@@ -89,16 +85,16 @@ public class SignatureGenerator
       new BlockAnonymousSignatureGenerator(this);
 
   // This map is used to store the signature of all the visited types.
-  private final Map<Type, String> visitedTypes = Maps.<Type, String>newHashMap();
+  private final Map<Type, String> visitedTypes = new HashMap<>();
 
   // This map is used to store the signature of all the visited elements.
   // It also helps us resolve the curiously-recurring template pattern.
-  private final Map<Element, String> visitedElements = Maps.<Element, String>newHashMap();
+  private final Map<Element, String> visitedElements = new HashMap<>();
 
   // The set of type variables which are bounded in  method or class declaration.
   // This set is used to avoid infinite recursion when the type parameter is used in the signature
   // of the method or class.
-  private final Set<TypeVar> boundedVars = Sets.newHashSet();
+  private final Set<TypeVar> boundedVars = new HashSet<>();
 
   private final MemoizedTreePathScanner memoizedTreePathScanner;
 
@@ -222,7 +218,7 @@ public class SignatureGenerator
   private void visitTypeParameters(
       List<? extends TypeParameterElement> typeParams, StringBuilder sb) {
     if (!typeParams.isEmpty()) {
-      Set<TypeVar> typeVars = Sets.newHashSet();
+      Set<TypeVar> typeVars = new HashSet<>();
       for (TypeParameterElement aType : typeParams) {
         typeVars.add((TypeVar) ((TypeSymbol) aType).type);
       }

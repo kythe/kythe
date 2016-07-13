@@ -29,8 +29,8 @@ public final class CorpusPath {
   }
 
   /**
-   * Returns a new {@link CorpusPath} equivalent to the corpus/path/root subset of the given
-   * {@link VName}.
+   * Returns a new {@link CorpusPath} equivalent to the corpus/path/root subset of the given {@link
+   * VName}.
    */
   public static CorpusPath fromVName(VName vname) {
     return new CorpusPath(vname.getCorpus(), vname.getRoot(), vname.getPath());

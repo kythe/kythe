@@ -32,8 +32,8 @@ import javax.annotation.processing.Processor;
 import javax.tools.JavaCompiler;
 
 /**
- * Base implementation for the various analysis drivers.
- * Allows running {@link JavacAnalyzer} over compilations that are retrieved from various locations.
+ * Base implementation for the various analysis drivers. Allows running {@link JavacAnalyzer} over
+ * compilations that are retrieved from various locations.
  */
 public class JavacAnalysisDriver {
   private static final FormattingLogger logger =

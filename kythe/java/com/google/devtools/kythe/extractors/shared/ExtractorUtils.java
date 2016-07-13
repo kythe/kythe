@@ -140,8 +140,7 @@ public class ExtractorUtils {
   }
 
   /**
-   * Tries to make a path relative based on the current working dir.
-   * Returns the fullpath otherwise.
+   * Tries to make a path relative based on the current working dir. Returns the fullpath otherwise.
    */
   public static String tryMakeRelative(String rootDir, String path) {
     Path absPath = Paths.get(path).toAbsolutePath().normalize();
@@ -164,9 +163,7 @@ public class ExtractorUtils {
     return getContentDigest(Files.toByteArray(file));
   }
 
-  /**
-   * Computes a digest over the contents of a file.
-   */
+  /** Computes a digest over the contents of a file. */
   @VisibleForTesting
   public static String getContentDigest(byte[] content) {
     return sha256().hashBytes(content).toString();

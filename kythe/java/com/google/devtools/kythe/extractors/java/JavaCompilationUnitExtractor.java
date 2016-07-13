@@ -26,7 +26,6 @@ import com.google.common.base.Strings;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import com.google.common.io.ByteStreams;
@@ -68,9 +67,15 @@ import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -89,14 +94,12 @@ import javax.tools.StandardLocation;
 import javax.tools.ToolProvider;
 
 /**
- * Extracts all required information (set of source files, class paths,
- * and compiler options) from a java compilation command and stores the
- * information to replay the compilation.
+ * Extracts all required information (set of source files, class paths, and compiler options) from a
+ * java compilation command and stores the information to replay the compilation.
  *
- * The extractor runs the Javac compiler to get a exact description of all files
- * required for the compilation as a whole. It then creates CompilationUnit entries
- * for each source file. We do not do this on a per file basis as the Java
- * Compiler takes too long to do this.
+ * <p>The extractor runs the Javac compiler to get a exact description of all files required for the
+ * compilation as a whole. It then creates CompilationUnit entries for each source file. We do not
+ * do this on a per file basis as the Java Compiler takes too long to do this.
  */
 public class JavaCompilationUnitExtractor {
   public static final String JAVA_DETAILS_URL = "kythe.io/proto/kythe.proto.JavaDetails";
@@ -205,22 +208,20 @@ public class JavaCompilationUnitExtractor {
   }
 
   /**
-   * Indexes a compilation unit to the bigtable. The extraction process will
-   * try to build a minimum set of what is needed to replay the compilation.
-   * To do this it runs the java compiler, and tracks all .class & .java files
-   * that are needed. It then builds up a new classpath & sourcepath that only
-   * contains the minimum set of paths required to replay the compilation.
+   * Indexes a compilation unit to the bigtable. The extraction process will try to build a minimum
+   * set of what is needed to replay the compilation. To do this it runs the java compiler, and
+   * tracks all .class & .java files that are needed. It then builds up a new classpath & sourcepath
+   * that only contains the minimum set of paths required to replay the compilation.
    *
-   * New classpath: because we extract classes from the jars into a temp path
-   * that needs to be set. Also we only use the classpaths that are actually
-   * used, not the ones that are provided.
-   * New sourcepath: as we're doing a partial compilation, we need to set up the
-   * source path to correctly load any files that are not the main compilation
-   * but are needed to perform compilation. This is not required when doing a
-   * full compilation as all sources are automatically loaded.
+   * <p>New classpath: because we extract classes from the jars into a temp path that needs to be
+   * set. Also we only use the classpaths that are actually used, not the ones that are provided.
+   * New sourcepath: as we're doing a partial compilation, we need to set up the source path to
+   * correctly load any files that are not the main compilation but are needed to perform
+   * compilation. This is not required when doing a full compilation as all sources are
+   * automatically loaded.
    *
-   * Next we store all required files in the bigtable and writes the
-   * CompilationUnit to the bigtable.
+   * <p>Next we store all required files in the bigtable and writes the CompilationUnit to the
+   * bigtable.
    *
    * @throws ExtractionException if anything blocks the indexing to be completed.
    */
@@ -253,7 +254,7 @@ public class JavaCompilationUnitExtractor {
     }
 
     List<FileData> fileContents = ExtractorUtils.convertBytesToFileDatas(results.fileContents);
-    List<FileInput> compilationFileInputs = Lists.newLinkedList();
+    List<FileInput> compilationFileInputs = new LinkedList<>();
     for (FileData data : fileContents) {
       String relativePath = results.relativePaths.get(data.getInfo().getPath());
       VName vname = fileVNames.lookupBaseVName(relativePath);
@@ -293,11 +294,10 @@ public class JavaCompilationUnitExtractor {
   }
 
   /**
-   * If the code has wildcard imports (e.g. import foo.bar.*) but doesn't
-   * actually use any of the imports, errors will happen.
-   * We don't get callbacks for file open of these files (since they aren't used)
-   * but when java runs it will report errors if it can't find any files to match
-   * the wildcard.  So we add one matching file here.
+   * If the code has wildcard imports (e.g. import foo.bar.*) but doesn't actually use any of the
+   * imports, errors will happen. We don't get callbacks for file open of these files (since they
+   * aren't used) but when java runs it will report errors if it can't find any files to match the
+   * wildcard. So we add one matching file here.
    */
   private void findOnDemandImportedFiles(
       Iterable<? extends CompilationUnitTree> compilationUnits,
@@ -367,11 +367,9 @@ public class JavaCompilationUnitExtractor {
   }
 
   /**
-   * Determines -sourcepath arguments to add to the compilation
-   * unit based on the package name. This is needed as the sharded analysis
-   * will need to resolve dependent source files. Also locates sources that
-   * do not follow the package == path convention and list them as explicit
-   * sources.
+   * Determines -sourcepath arguments to add to the compilation unit based on the package name. This
+   * is needed as the sharded analysis will need to resolve dependent source files. Also locates
+   * sources that do not follow the package == path convention and list them as explicit sources.
    */
   private void getAdditionalSourcePaths(
       Iterable<? extends CompilationUnitTree> compilationUnits, AnalysisResults results) {
@@ -552,21 +550,21 @@ public class JavaCompilationUnitExtractor {
 
   private static class AnalysisResults {
     // Map from strippedPath to an input's relative path to the corpus root.
-    final Map<String, String> relativePaths = Maps.newLinkedHashMap();
+    final Map<String, String> relativePaths = new LinkedHashMap<>();
     // Map from strippedPath to an input's contents.
-    final Map<String, byte[]> fileContents = Maps.newLinkedHashMap();
+    final Map<String, byte[]> fileContents = new LinkedHashMap<>();
     // Map from strippedPath to an input's true source basename. This is usually only needed for
     // non-public top-level classes where their filename does not match the path derived from their
     // fully-qualified name.
-    final Map<String, String> sourceFileNames = Maps.newHashMap();
+    final Map<String, String> sourceFileNames = new HashMap<>();
 
     // We build a new sourcepath & classpath that contain the minimum set of paths
     // as well as the modified set of paths that are needed to analyze the single compilation unit.
     // This is done to speed up analysis.
-    final Set<String> newSourcePath = Sets.newLinkedHashSet();
-    final Set<String> newClassPath = Sets.newLinkedHashSet();
-    final List<String> explicitSources = Lists.newArrayList();
-    final Set<String> unusedJars = Sets.newLinkedHashSet();
+    final Set<String> newSourcePath = new LinkedHashSet<>();
+    final Set<String> newClassPath = new LinkedHashSet<>();
+    final List<String> explicitSources = new ArrayList<>();
+    final Set<String> unusedJars = new LinkedHashSet<>();
     boolean hasErrors = false;
   }
 
@@ -705,7 +703,7 @@ public class JavaCompilationUnitExtractor {
       processorpath = classpath;
     }
 
-    List<URL> urls = Lists.newArrayList();
+    List<URL> urls = new ArrayList<>();
     for (String path : processorpath) {
       try {
         urls.add(new File(path).toURI().toURL());
@@ -734,9 +732,9 @@ public class JavaCompilationUnitExtractor {
   }
 
   /**
-   * Completes the given raw compiler options with the given classpath,
-   * sourcepath, and temporary destination directory.  Only options supported by
-   * the Java compiler will be within the returned {@link List}.
+   * Completes the given raw compiler options with the given classpath, sourcepath, and temporary
+   * destination directory. Only options supported by the Java compiler will be within the returned
+   * {@link List}.
    */
   private static List<String> completeCompilerOptions(
       Iterable<String> rawOptions,
@@ -771,7 +769,7 @@ public class JavaCompilationUnitExtractor {
 
   /** Returns a map from a classfile's {@link URI} to its sourcefile path's basename. */
   private static Map<URI, String> mapClassesToSources(Symtab syms) {
-    Map<URI, String> sourceBaseNames = Maps.newHashMap();
+    Map<URI, String> sourceBaseNames = new HashMap<>();
     for (ClassSymbol sym : syms.classes.values()) {
       if (sym.sourcefile != null && sym.classfile != null) {
         String basename = Paths.get(sym.sourcefile.toUri().getPath()).getFileName().toString();
@@ -788,7 +786,7 @@ public class JavaCompilationUnitExtractor {
       Iterable<String> classpaths,
       UsageAsInputReportingFileManager fileManager,
       AnalysisResults results) {
-    Set<String> jars = Sets.newHashSet();
+    Set<String> jars = new HashSet<>();
     for (String classpath : classpaths) {
       if (!classpath.endsWith(".jar")) {
         continue;

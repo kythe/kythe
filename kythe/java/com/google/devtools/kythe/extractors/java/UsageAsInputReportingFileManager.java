@@ -36,8 +36,8 @@ import javax.tools.JavaFileObject.Kind;
 import javax.tools.StandardJavaFileManager;
 
 /**
- * Wraps the StandardJavaFileManager to track which .java and .class files
- * Javac touches for a given compilation.
+ * Wraps the StandardJavaFileManager to track which .java and .class files Javac touches for a given
+ * compilation.
  */
 @com.sun.tools.javac.api.ClientCodeWrapper.Trusted
 class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<StandardJavaFileManager> {
@@ -48,9 +48,7 @@ class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<Standar
     super(fileManager);
   }
 
-  /**
-   * Returns collection of JavaFileObjects that Javac read the contents of.
-   */
+  /** Returns collection of JavaFileObjects that Javac read the contents of. */
   public Collection<JavaFileObject> getUsages() {
     Collection<JavaFileObject> result = new ArrayList<>();
     for (InputUsageRecord usageRecord : inputUsageRecords.values()) {
@@ -79,10 +77,7 @@ class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<Standar
         });
   }
 
-  /**
-   * Wraps a JavaFileObject in a UsageAsInputReportingJavaFileObject, shares
-   * existing instances.
-   */
+  /** Wraps a JavaFileObject in a UsageAsInputReportingJavaFileObject, shares existing instances. */
   private JavaFileObject map(JavaFileObject item) {
     if (item == null) {
       return item;
@@ -95,9 +90,7 @@ class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<Standar
     return new UsageAsInputReportingJavaFileObject(item, usage);
   }
 
-  /**
-   * Helper to match loading source files and tracking their usage.
-   */
+  /** Helper to match loading source files and tracking their usage. */
   public Iterable<JavaFileObject> getJavaFileForSources(Iterable<String> sources) {
     List<String> sourceList = Lists.newArrayList(sources);
     String[] sourceArray = new String[sourceList.size()];

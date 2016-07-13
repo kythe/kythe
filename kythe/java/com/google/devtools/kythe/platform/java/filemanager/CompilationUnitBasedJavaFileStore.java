@@ -29,9 +29,7 @@ import java.util.Set;
 
 import javax.tools.JavaFileObject.Kind;
 
-/**
- * An implementation of {@link JavaFileStore} based on data from a {@link CompilationUnit}.
- */
+/** An implementation of {@link JavaFileStore} based on data from a {@link CompilationUnit}. */
 public class CompilationUnitBasedJavaFileStore implements JavaFileStore {
   private final CompilationUnitFileTree fileTree;
   private FileDataProvider contentProvider;
@@ -108,9 +106,7 @@ public class CompilationUnitBasedJavaFileStore implements JavaFileStore {
     return matchingFiles;
   }
 
-  /**
-   * Uses the map built from the required inputs to build a list of files per directory.
-   */
+  /** Uses the map built from the required inputs to build a list of files per directory. */
   private Set<CustomJavaFileObject> getFiles(
       String dirToLookIn, Map<String, String> entries, Set<Kind> kinds, String packageName) {
     Set<CustomJavaFileObject> files = new HashSet<>();

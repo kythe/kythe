@@ -91,8 +91,8 @@ public class FileVNames {
   }
 
   /**
-   * Returns a base {@link VName} for the given file path. If none is configured, return
-   * {@link VName#getDefaultInstance()}.
+   * Returns a base {@link VName} for the given file path. If none is configured, return {@link
+   * VName#getDefaultInstance()}.
    */
   public VName lookupBaseVName(String path) {
     if (path != null) {

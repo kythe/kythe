@@ -16,7 +16,6 @@
 
 package com.google.devtools.kythe.platform.java.helpers;
 
-import com.google.common.collect.Lists;
 import com.google.devtools.kythe.util.Span;
 
 import com.sun.tools.javac.parser.JavaTokenizer;
@@ -28,20 +27,18 @@ import com.sun.tools.javac.util.Context;
 import com.sun.tools.javac.util.Position;
 
 import java.nio.CharBuffer;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Extends the javac Scanner to support comments.  Comments are injected into
- * the token stream as CUSTOM tokens; the consumer is responsible for
- * identifying them and processing their contents.
+ * Extends the javac Scanner to support comments. Comments are injected into the token stream as
+ * CUSTOM tokens; the consumer is responsible for identifying them and processing their contents.
  */
 public class SyntaxPreservingScanner extends JavaTokenizer {
-  public List<CustomToken> customTokens = Lists.newArrayList();
+  public List<CustomToken> customTokens = new ArrayList<>();
   private final Position.LineMap lineMap;
 
-  /**
-   * An abstract class to represent the data for a custom token
-   */
+  /** An abstract class to represent the data for a custom token */
   public abstract static class CustomToken {
     public Span span;
     public String text;
@@ -55,9 +52,7 @@ public class SyntaxPreservingScanner extends JavaTokenizer {
     }
   }
 
-  /**
-   * A comment token
-   */
+  /** A comment token */
   public static class CommentToken extends CustomToken {
     public CommentStyle style;
 
@@ -97,8 +92,8 @@ public class SyntaxPreservingScanner extends JavaTokenizer {
   }
 
   /**
-   * Returns a {@link Span} message corresponding to the current token, or null if
-   * there is no current token.
+   * Returns a {@link Span} message corresponding to the current token, or null if there is no
+   * current token.
    */
   public Span spanForToken(Token token) {
     return new Span(token.pos, token.endPos);

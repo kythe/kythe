@@ -211,8 +211,8 @@ public class Archive {
   }
 
   /**
-   * Returns the unit with given digest key, checking that it has the given format key.  If the
-   * unit has a different key, {@code null} is returned.
+   * Returns the unit with given digest key, checking that it has the given format key. If the unit
+   * has a different key, {@code null} is returned.
    */
   public <T> T readUnit(String digestKey, String formatKey, Class<T> cls) throws IOException {
     Path path = unitDir.resolve(digestKey + UNIT_SUFFIX);

@@ -33,7 +33,7 @@ import java.util.Map;
 /**
  * Set of storage entries with a common (source, edgeKind, target) tuple.
  *
- * The signature of source {@link VName} may be explicitly set or be determined by the set of
+ * <p>The signature of source {@link VName} may be explicitly set or be determined by the set of
  * properties in the {@link EntrySet} along with a set of salts.
  */
 public class EntrySet {
@@ -156,8 +156,8 @@ public class EntrySet {
     private final VName target;
 
     /**
-     * Construct a new {@link EntrySet.Builder} with the given (source, edgeKind, target)
-     * tuple. This is meant to begin building an edge {@link EntrySet}.
+     * Construct a new {@link EntrySet.Builder} with the given (source, edgeKind, target) tuple.
+     * This is meant to begin building an edge {@link EntrySet}.
      *
      * @see KytheEntrySets.EdgeBuilder
      */
@@ -166,9 +166,9 @@ public class EntrySet {
     }
 
     /**
-     * Construct a new {@link EntrySet.Builder} with the given (source, edgeKind, target)
-     * tuple, adding the given ordinal to the edge kind. This is meant to
-     * begin building an edge {@link EntrySet}.
+     * Construct a new {@link EntrySet.Builder} with the given (source, edgeKind, target) tuple,
+     * adding the given ordinal to the edge kind. This is meant to begin building an edge {@link
+     * EntrySet}.
      *
      * @see KytheEntrySets.EdgeBuilder
      */
@@ -182,7 +182,7 @@ public class EntrySet {
 
     /**
      * Construct a new {@link EntrySet.Builder} with the given base for a source {@link VName} and
-     * {@code null} edgeKind/target.  This is meant to begin building a node {@link EntrySet}.
+     * {@code null} edgeKind/target. This is meant to begin building a node {@link EntrySet}.
      *
      * @see KytheEntrySets.NodeBuilder
      */

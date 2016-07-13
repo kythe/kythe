@@ -56,7 +56,7 @@ public class IndexerConfig {
   }
 
   /**
-   * Parses the given command-line arguments, setting each known flag.  If --help is requested, the
+   * Parses the given command-line arguments, setting each known flag. If --help is requested, the
    * binary's usage message will be printed and the program will exit with non-zero code.
    */
   public final void parseCommandLine(String[] args) {

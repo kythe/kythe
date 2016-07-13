@@ -28,8 +28,8 @@ import java.io.Serializable;
 import java.net.URI;
 
 /**
- * Recreates a javac compiler instance from a CompilationUnit and allows
- * derived classes to analyze the instance and report results.
+ * Recreates a javac compiler instance from a CompilationUnit and allows derived classes to analyze
+ * the instance and report results.
  */
 public abstract class JavacAnalyzer implements Serializable {
   private static final long serialVersionUID = 8805455287690923133L;

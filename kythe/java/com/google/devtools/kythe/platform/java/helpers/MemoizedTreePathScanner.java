@@ -16,8 +16,6 @@
 
 package com.google.devtools.kythe.platform.java.helpers;
 
-import com.google.common.collect.Maps;
-
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.util.TreePath;
@@ -28,28 +26,27 @@ import com.sun.tools.javac.tree.JCTree.JCCompilationUnit;
 import com.sun.tools.javac.util.Context;
 import com.sun.tools.javac.util.Pair;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import javax.lang.model.element.Element;
 
 /**
- * This class memoizes the TreePath(s) in a compilation unit tree. Each node in the
- * tree has one associated tree path. Normally, using the {@code JavacTrees} class, a new
- * TreePath object gets created every time there is a call for getting the tree path to an element.
- * In addition this process is inefficient in the sense that every time it traverses the compilation
- * tree until it reaches the target element.
+ * This class memoizes the TreePath(s) in a compilation unit tree. Each node in the tree has one
+ * associated tree path. Normally, using the {@code JavacTrees} class, a new TreePath object gets
+ * created every time there is a call for getting the tree path to an element. In addition this
+ * process is inefficient in the sense that every time it traverses the compilation tree until it
+ * reaches the target element.
  *
  * <p>This class, however, traverses the whole tree once and record the tree path associated with
  * each tree element. Clients of this class can get tree paths in O(1) time. The memory used for
  * memoization is O(number of nodes(compilation tree)).
  */
 public class MemoizedTreePathScanner extends TreeScanner<Void, TreePath> {
-  private final Map<Tree, TreePath> paths = Maps.newHashMap();
+  private final Map<Tree, TreePath> paths = new HashMap<>();
   private final JavacElements elements;
 
-  /**
-   * @param unit the compilation unit for which we want to memoize the tree paths
-   */
+  /** @param unit the compilation unit for which we want to memoize the tree paths */
   public MemoizedTreePathScanner(CompilationUnitTree unit, Context context) {
     elements = JavacElements.instance(context);
     // Constructing the tree path for compilation unit.
@@ -59,9 +56,7 @@ public class MemoizedTreePathScanner extends TreeScanner<Void, TreePath> {
     unit.accept(this, path);
   }
 
-  /**
-   * Scans a single node. The current path is updated for the duration of the scan.
-   */
+  /** Scans a single node. The current path is updated for the duration of the scan. */
   @Override
   public Void scan(Tree tree, TreePath parent) {
     if (tree == null) {
@@ -75,16 +70,12 @@ public class MemoizedTreePathScanner extends TreeScanner<Void, TreePath> {
     return null;
   }
 
-  /**
-   * @return the memoized path to the {@code tree} node
-   */
+  /** Returns the memoized path to the {@code tree} node */
   public TreePath getPath(Tree tree) {
     return paths.get(tree);
   }
 
-  /**
-   * @return the memoized path to the {@code element}
-   */
+  /** Returns the memoized path to the {@code element} */
   public TreePath getPath(Element element) {
     Pair<JCTree, JCCompilationUnit> p = elements.getTreeAndTopLevel(element, null, null);
     if (p != null) {
