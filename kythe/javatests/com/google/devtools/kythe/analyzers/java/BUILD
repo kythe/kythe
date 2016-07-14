@@ -48,6 +48,7 @@ java_test(
     srcs = ["MiniAnchorTest.java"],
     test_class = "com.google.devtools.kythe.analyzers.java.MiniAnchorTest",
     deps = [
+        "//external:guava",
         "//external:junit4",
         "//external:truth",
         "//kythe/java/com/google/devtools/kythe/analyzers/java:analyzer",

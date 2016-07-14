@@ -20,6 +20,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.devtools.kythe.analyzers.base.EntrySet;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -92,7 +93,7 @@ public class MiniAnchor<T> {
             return a.begin >= a.end;
           }
         });
-    miniAnchors.sort(
+    Collections.sort(miniAnchors,
         new Comparator<MiniAnchor<T>>() {
           @Override
           public int compare(MiniAnchor<T> l, MiniAnchor<T> r) {
