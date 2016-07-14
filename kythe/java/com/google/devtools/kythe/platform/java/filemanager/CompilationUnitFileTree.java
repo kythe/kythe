@@ -42,19 +42,23 @@ public class CompilationUnitFileTree {
       Path curPath = Paths.get(path);
       putDigest(curPath, digest);
 
-      while ((curPath = curPath.getParent()) != null) {
+      while ((curPath = curPath.getParent()) != null && curPath.getFileName() != null) {
         putDigest(curPath, DIRECTORY_DIGEST);
       }
     }
   }
 
+  // Note: Do not call on the absolute root path '/'.
   private void putDigest(Path path, String digest) {
     Path parent = path.getParent();
     String dirname;
     if (parent != null) {
       dirname = parent.toString();
+    } else if (path.isAbsolute()) {
+      // path.getFileName() below will return null on the path '/', leading to an NPE.
+      throw new IllegalArgumentException("The path '/' cannot be used here.");
     } else {
-      dirname = path.isAbsolute() ? "/" : ".";
+      dirname = ".";
     }
     String basename = path.getFileName().toString();
     Map<String, String> dir = dirs.get(dirname);
