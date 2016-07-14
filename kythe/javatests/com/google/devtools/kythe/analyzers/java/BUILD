@@ -43,6 +43,18 @@ sh_test(
 )
 
 java_test(
+    name = "mini_anchor_test",
+    size = "small",
+    srcs = ["MiniAnchorTest.java"],
+    test_class = "com.google.devtools.kythe.analyzers.java.MiniAnchorTest",
+    deps = [
+        "//external:junit4",
+        "//external:truth",
+        "//kythe/java/com/google/devtools/kythe/analyzers/java:analyzer",
+    ],
+)
+
+java_test(
     name = "source_text_test",
     size = "small",
     srcs = ["SourceTextTest.java"],

@@ -22,6 +22,7 @@ import com.google.devtools.kythe.analyzers.base.CorpusPath;
 import com.google.devtools.kythe.analyzers.base.EntrySet;
 import com.google.devtools.kythe.analyzers.base.FactEmitter;
 import com.google.devtools.kythe.analyzers.base.KytheEntrySets;
+import com.google.devtools.kythe.analyzers.base.EdgeKind;
 import com.google.devtools.kythe.analyzers.base.NodeKind;
 import com.google.devtools.kythe.analyzers.java.SourceText.Positions;
 import com.google.devtools.kythe.platform.shared.StatisticsCollector;
@@ -35,6 +36,7 @@ import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import com.sun.tools.javac.code.Symbol.PackageSymbol;
 import com.sun.tools.javac.tree.JCTree;
 
+import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -103,6 +105,27 @@ public class JavaEntrySets extends KytheEntrySets {
     }
 
     symbolNodes.put(sym, node);
+    return node;
+  }
+
+  public EntrySet getDoc(Positions filePositions, String text, Iterable<EntrySet> params) {
+    VName fileVName = getFileVName(getDigest(filePositions.getSourceFile()));
+    byte[] encodedText;
+    try {
+      encodedText = text.getBytes("UTF-8");
+    } catch (UnsupportedEncodingException ex) {
+      encodedText = new byte[0];
+    }
+    NodeBuilder builder =
+        newNode(NodeKind.DOC)
+            .setCorpusPath(CorpusPath.fromVName(fileVName))
+            .setProperty("text", encodedText)
+            .addSignatureSalt(text);
+    for (EntrySet param : params) {
+      builder.addSignatureSalt(param.getVName());
+    }
+    EntrySet node = emitAndReturn(builder);
+    emitOrdinalEdges(node, EdgeKind.PARAM, params);
     return node;
   }
 

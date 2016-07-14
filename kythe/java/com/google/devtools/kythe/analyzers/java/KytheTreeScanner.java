@@ -785,6 +785,19 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     emitCommentsOnLine(defLine - 1, node);
   }
 
+  void emitDoc(String bracketedText, Iterable<Symbol> params, EntrySet node) {
+    List<EntrySet> paramNodes = Lists.newArrayList();
+    for (Symbol s : params) {
+      EntrySet paramNode = getNode(s);
+      if (paramNode == null) {
+        return;
+      }
+      paramNodes.add(paramNode);
+    }
+    EntrySet doc = entrySets.getDoc(filePositions, bracketedText, paramNodes);
+    entrySets.emitEdge(doc, EdgeKind.DOCUMENTS, node);
+  }
+
   private EntrySet commentAnchor(SourceText.Comment comment, EntrySet node) {
     return emitAnchor(
         entrySets.getAnchor(filePositions, comment.byteSpan), EdgeKind.DOCUMENTS, node);

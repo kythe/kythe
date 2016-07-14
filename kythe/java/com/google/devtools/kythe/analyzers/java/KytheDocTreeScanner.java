@@ -30,27 +30,46 @@ import com.sun.tools.javac.tree.JCTree.JCFieldAccess;
 import com.sun.tools.javac.tree.JCTree.JCIdent;
 import com.sun.tools.javac.util.Name;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
 public class KytheDocTreeScanner extends DocTreeScanner<Void, DCDocComment> {
   private final KytheTreeScanner treeScanner;
   private final DocCommentTable table;
+  private final List<MiniAnchor<Symbol>> miniAnchors;
 
   public KytheDocTreeScanner(KytheTreeScanner treeScanner, DocCommentTable table) {
     this.treeScanner = treeScanner;
     this.table = table;
+    this.miniAnchors = new ArrayList<>();
   }
 
   public boolean visitDocComment(JCTree tree, EntrySet node) {
-    DCDocComment doc = table.getCommentTree(tree);
+    final DCDocComment doc = table.getCommentTree(tree);
     if (doc == null) {
       return false;
     }
 
+    miniAnchors.clear();
     doc.accept(this, doc);
     int startChar = (int) doc.getSourcePosition(doc);
 
+    String bracketed =
+        MiniAnchor.bracket(
+            doc.comment.getText(),
+            new MiniAnchor.PositionTransform() {
+              @Override
+              public int transform(int pos) {
+                return doc.comment.getSourcePos(pos);
+              }
+            },
+            miniAnchors);
+    List<Symbol> anchoredTo = new ArrayList(miniAnchors.size());
+    for (MiniAnchor<Symbol> miniAnchor : miniAnchors) {
+      anchoredTo.add(miniAnchor.getAnchoredTo());
+    }
+    treeScanner.emitDoc(bracketed, anchoredTo, node);
     return treeScanner.emitCommentsOnLine(treeScanner.charToLine(startChar), node);
   }
 
@@ -68,6 +87,7 @@ public class KytheDocTreeScanner extends DocTreeScanner<Void, DCDocComment> {
     int endPos = ref.getEndPos(doc);
 
     treeScanner.emitDocReference(sym, startPos, endPos);
+    miniAnchors.add(new MiniAnchor(sym, startPos, endPos));
 
     return null;
   }
