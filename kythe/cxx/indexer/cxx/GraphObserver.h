@@ -73,6 +73,33 @@ inline std::string EscapeForFormatLiteral(llvm::StringRef format) {
   return escaped;
 }
 
+enum class ProfilingEvent {
+  Enter, ///< A profiling section was entered.
+  Exit   ///< A profiling section was left.
+};
+
+/// \brief A callback used to report a profiling event.
+///
+/// Profile events have labels (formatted as lowercase strings with words
+/// separated by underscores) and event types.
+using ProfilingCallback = std::function<void(const char *, ProfilingEvent)>;
+
+/// \brief Ensures that Enter events are paired with Exit events.
+class ProfileBlock {
+public:
+  /// \param Callback reporting callback; must outlive `ProfileBlock`
+  /// \param SectionName name for the section; must outlive `ProfileBlock`
+  ProfileBlock(const ProfilingCallback &Callback, const char *SectionName)
+      : Callback(Callback), SectionName(SectionName) {
+    Callback(SectionName, ProfilingEvent::Enter);
+  }
+  ~ProfileBlock() { Callback(SectionName, ProfilingEvent::Exit); }
+
+private:
+  const ProfilingCallback &Callback;
+  const char *SectionName;
+};
+
 /// \brief An interface for processing elements discovered as part of a
 /// compilation unit.
 ///
@@ -831,10 +858,13 @@ public:
 
   clang::Preprocessor *getPreprocessor() { return Preprocessor; }
 
+  const ProfilingCallback &getProfilingCallback() { return ReportProfileEvent; }
+
 protected:
   clang::SourceManager *SourceManager = nullptr;
   clang::LangOptions *LangOptions = nullptr;
   clang::Preprocessor *Preprocessor = nullptr;
+  ProfilingCallback ReportProfileEvent = [](const char *, ProfilingEvent) {};
 };
 
 inline GraphObserver::~GraphObserver() {}

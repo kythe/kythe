@@ -104,7 +104,8 @@ std::string IndexCompilationUnit(const proto::CompilationUnit &Unit,
   llvm::IntrusiveRefCntPtr<IndexVFS> VFS(
       new IndexVFS(FSO.WorkingDir, Files, Dirs));
   KytheGraphRecorder Recorder(&Output);
-  KytheGraphObserver Observer(&Recorder, &Client, MetaSupports, VFS);
+  KytheGraphObserver Observer(&Recorder, &Client, MetaSupports, VFS,
+                              Options.ReportProfileEvent);
   if (Cache != nullptr) {
     Output.UseHashCache(Cache);
     Observer.StopDeferringNodes();
@@ -153,6 +154,7 @@ std::string IndexCompilationUnit(const proto::CompilationUnit &Unit,
   clang::tooling::ToolInvocation Invocation(
       Args, Tool.get(), FileManager.get(),
       std::make_shared<clang::PCHContainerOperations>());
+  ProfileBlock block(Observer.getProfilingCallback(), "run_invocation");
   if (!Invocation.run()) {
     return "Errors during indexing.";
   }

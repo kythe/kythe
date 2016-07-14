@@ -799,7 +799,10 @@ public:
     CHECK(Sema != nullptr);
     IndexerASTVisitor Visitor(Context, IgnoreUnimplemented, TemplateMode,
                               Supports, *Sema, Observer);
-    Visitor.TraverseDecl(Context.getTranslationUnitDecl());
+    {
+      ProfileBlock block(Observer->getProfilingCallback(), "traverse_tu");
+      Visitor.TraverseDecl(Context.getTranslationUnitDecl());
+    }
   }
 
   void InitializeSema(clang::Sema &S) override { Sema = &S; }

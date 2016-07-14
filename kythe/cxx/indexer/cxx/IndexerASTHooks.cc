@@ -109,6 +109,7 @@ IndexedParentVector IndexerASTVisitor::getIndexedParents(
     // We always need to run over the whole translation unit, as
     // hasAncestor can escape any subtree.
     // TODO(zarko): Is this relavant for naming?
+    ProfileBlock block(Observer.getProfilingCallback(), "build_parent_map");
     AllParents =
         IndexedParentASTVisitor::buildMap(*Context.getTranslationUnitDecl());
   }

@@ -33,6 +33,8 @@ DEFINE_bool(index_template_instantiations, true,
 DEFINE_bool(experimental_drop_instantiation_independent_data, false,
             "Don't emit template nodes and edges found to be "
             "instantiation-independent.");
+DEFINE_bool(report_profiling_events, false,
+            "Write profiling events to standard error.");
 
 namespace kythe {
 
@@ -57,6 +59,12 @@ int main(int argc, char *argv[]) {
   options.AllowFSAccess = context.allow_filesystem_access();
   options.EnableLossyClaiming = context.enable_lossy_claiming();
   options.EffectiveWorkingDirectory = context.working_directory();
+  if (FLAGS_report_profiling_events) {
+    options.ReportProfileEvent = [](const char *counter, ProfilingEvent event) {
+      fprintf(stderr, "%s: %s\n", counter,
+              event == ProfilingEvent::Enter ? "enter" : "exit");
+    };
+  }
 
   kythe::MetadataSupports meta_supports;
   meta_supports.push_back(llvm::make_unique<KytheMetadataSupport>());

@@ -209,6 +209,9 @@ struct IndexerOptions {
   /// \brief Whether to drop data found to be template instantiation
   /// independent.
   bool DropInstantiationIndependentData = false;
+  /// \brief A function that is called as the indexer enters and exits various
+  /// phases of execution (in strict LIFO order).
+  ProfilingCallback ReportProfileEvent = [](const char *, ProfilingEvent) {};
 };
 
 /// \brief Indexes `Unit`, reading from `Files` in the assumed and writing

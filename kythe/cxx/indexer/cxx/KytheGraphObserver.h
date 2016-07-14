@@ -126,13 +126,15 @@ class KytheGraphObserver : public GraphObserver {
  public:
   KytheGraphObserver(KytheGraphRecorder *recorder, KytheClaimClient *client,
                      const MetadataSupports *meta_supports,
-                     const llvm::IntrusiveRefCntPtr<IndexVFS> vfs)
+                     const llvm::IntrusiveRefCntPtr<IndexVFS> vfs,
+                     ProfilingCallback ReportProfileEventCallback)
       : recorder_(CHECK_NOTNULL(recorder)),
         client_(CHECK_NOTNULL(client)),
         meta_supports_(CHECK_NOTNULL(meta_supports)),
         vfs_(vfs) {
     default_token_.set_rough_claimed(true);
     type_token_.set_rough_claimed(true);
+    ReportProfileEvent = ReportProfileEventCallback;
     RegisterBuiltins();
     EmitMetaNodes();
   }
