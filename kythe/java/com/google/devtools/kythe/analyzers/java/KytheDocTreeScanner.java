@@ -65,7 +65,7 @@ public class KytheDocTreeScanner extends DocTreeScanner<Void, DCDocComment> {
               }
             },
             miniAnchors);
-    List<Symbol> anchoredTo = new ArrayList(miniAnchors.size());
+    List<Symbol> anchoredTo = new ArrayList<>(miniAnchors.size());
     for (MiniAnchor<Symbol> miniAnchor : miniAnchors) {
       anchoredTo.add(miniAnchor.getAnchoredTo());
     }
@@ -87,7 +87,7 @@ public class KytheDocTreeScanner extends DocTreeScanner<Void, DCDocComment> {
     int endPos = ref.getEndPos(doc);
 
     treeScanner.emitDocReference(sym, startPos, endPos);
-    miniAnchors.add(new MiniAnchor(sym, startPos, endPos));
+    miniAnchors.add(new MiniAnchor<Symbol>(sym, startPos, endPos));
 
     return null;
   }

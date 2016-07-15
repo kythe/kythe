@@ -34,7 +34,7 @@ public class MiniAnchorTest extends TestCase {
       };
 
   private static MiniAnchor<String> makeAnchor(String anchoredTo, int begin, int end) {
-    return new MiniAnchor(anchoredTo, begin, end);
+    return new MiniAnchor<String>(anchoredTo, begin, end);
   }
 
   private void singleCase(

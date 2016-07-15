@@ -85,9 +85,9 @@ public class MiniAnchor<T> {
       String text, PositionTransform posTransform, List<MiniAnchor<T>> miniAnchors) {
     Iterables.removeIf(
         miniAnchors,
-        new Predicate<MiniAnchor>() {
+        new Predicate<MiniAnchor<T>>() {
           @Override
-          public boolean apply(MiniAnchor a) {
+          public boolean apply(MiniAnchor<T> a) {
             // Drop empty or negative-length spans. These are not useful for presentation or
             // are invalid.
             return a.begin >= a.end;
