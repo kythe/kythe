@@ -34,10 +34,7 @@ use std::env;
 // Informs the compiler of the existence and implementation of our plugin.
 #[plugin_registrar]
 pub fn plugin_registrar(reg: &mut Registry) {
-    let pass = box pass::KytheLintPass {
-        corpus: get_corpus(),
-        writer: box JsonEntryWriter,
-    };
+    let pass = box pass::KytheLintPass::new(get_corpus(), box JsonEntryWriter);
     reg.register_late_lint_pass(pass as LateLintPassObject);
 }
 

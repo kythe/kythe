@@ -17,6 +17,7 @@ use kythe::schema::{VName, Fact, NodeKind, EdgeKind, Complete};
 use kythe::writer::EntryWriter;
 use rustc::lint::{LateContext, LintContext, LintPass, LateLintPass, LintArray};
 use rustc::hir;
+use std::collections::HashSet;
 use std::io::prelude::*;
 use std::io::stderr;
 use syntax::ast;
@@ -26,9 +27,19 @@ use syntax::codemap::{Pos, CodeMap, Span};
 pub struct KytheLintPass {
     pub corpus: Corpus,
     pub writer: Box<EntryWriter>,
+    // Some definitions are uninteresting such as those from for-loop desugaring.
+    // This hashset tracks their ID's so they can be ignored.
+    blacklist: HashSet<hir::def_id::DefId>,
 }
 
 impl KytheLintPass {
+    pub fn new(corpus: Corpus, writer: Box<EntryWriter>) -> KytheLintPass {
+        KytheLintPass {
+            corpus: corpus,
+            writer: writer,
+            blacklist: HashSet::new(),
+        }
+    }
     // Emits the appropriate node and facts for an anchor defined by a span
     // and returns the node's vname
     fn anchor_from_span(&self, span: Span, codemap: &CodeMap) -> VName {
@@ -85,6 +96,33 @@ impl LintPass for KytheLintPass {
 }
 
 impl LateLintPass for KytheLintPass {
+    fn check_crate_post(&mut self, cx: &LateContext, _: &hir::Crate) {
+        for def in cx.tcx.def_map.borrow().values() {
+            use rustc::hir::def::Def;
+            match def.base_def {
+                Def::Local(..) => {
+                    let def_id = def.base_def.def_id();
+                    let def_id_num = def_id.index.as_u32();
+
+                    // Skip the definition since we've marked it as uninteresting
+                    if self.blacklist.contains(&def_id) {
+                        continue;
+                    }
+
+                    if let Some(span) = cx.tcx.map.span_if_local(def_id) {
+                        let var_name = cx.tcx.absolute_item_path_str(def_id);
+                        let anchor_vname = self.anchor_from_span(span, cx.sess().codemap());
+                        let local_vname = self.corpus.local_decl_vname(&var_name, def_id_num);
+
+                        self.writer.node(&local_vname, Fact::NodeKind, &NodeKind::Variable);
+                        self.writer.edge(&anchor_vname, EdgeKind::DefinesBinding, &local_vname);
+                    }
+                }
+                _ => (),
+            }
+        }
+    }
+
     fn check_crate(&mut self, cx: &LateContext, _: &hir::Crate) {
         for ref f in cx.sess().codemap().files.borrow().iter() {
             // The codemap contains references to virtual files all labeled <<std_macro>>
@@ -104,33 +142,35 @@ impl LateLintPass for KytheLintPass {
         }
     }
 
-    fn check_decl(&mut self, cx: &LateContext, decl: &hir::Decl) {
+    fn check_local(&mut self, cx: &LateContext, local: &hir::Local) {
+        // For loops desugar into a let and a match statement that contain local
+        // variables that we don't want to expose. The only way to
+        // tell that this is happening is at the match expression level.
+        // We want to find these variables and add them to the blacklist.
 
-        let codemap = cx.sess().codemap();
+        // If the local has no init value, it's safe to report
+        if let Some(ref init) = local.init {
+            use rustc::hir::Expr_::ExprMatch;
 
-        match &decl.node {
-            &hir::Decl_::DeclLocal(ref local) => {
-                // For loops, if-let, etc. desugar into alternate forms in hir.
-                // We exclude exclude these inner decls because they don't exist in src.
-                if is_from_desugar(local) {
-                    return;
+            // Verify that the init statement comes from a Desugar
+            if let ExprMatch(_, ref arms, hir::MatchSource::ForLoopDesugar) = init.node {
+
+                // Blacklist the lefthand side of the let statement
+                if let Some(def_id) = cx.tcx.map.opt_local_def_id(local.pat.id) {
+                    self.blacklist.insert(def_id);
                 }
-                match local.pat.node {
-                    hir::PatKind::Binding(_, sp_name, _) => {
-                        // def_id's contain both a CrateNum and a DeclIndex.
-                        // The former is unnecessary in this case because local decls will always
-                        // be in the primary crate
-                        let var_id = cx.tcx.expect_def(local.pat.id).def_id().index.as_u32();
-                        let ident_vname = self.anchor_from_span(sp_name.span, codemap);
-                        let local_vname = self.corpus.local_decl_vname(var_id);
 
-                        self.writer.node(&local_vname, Fact::NodeKind, &NodeKind::Variable);
-                        self.writer.edge(&ident_vname, EdgeKind::DefinesBinding, &local_vname);
+                // In the event that the exact representation of the desugared for loop
+                // changes, we may as well invalidate all branches
+                for arm in arms {
+                    for pat in &arm.pats {
+                        // Then we grab the def_id and insert into the blacklist
+                        if let Some(def_id) = cx.tcx.map.opt_local_def_id(pat.id) {
+                            self.blacklist.insert(def_id);
+                        }
                     }
-                    _ => (),
                 }
             }
-            _ => (),
         }
     }
 
@@ -163,17 +203,4 @@ impl LateLintPass for KytheLintPass {
             _ => (),
         }
     }
-}
-
-// TODO(djrenren): Create a utils module for things like this.
-// Checks if a local decl is the result of desugaring in AST -> hir conversion.
-fn is_from_desugar(local: &hir::Local) -> bool {
-    if let Some(ref expr) = local.init {
-        if let hir::ExprMatch(_, _, hir::MatchSource::Normal) = expr.node {
-            ()
-        } else {
-            return true;
-        }
-    }
-    false
 }

@@ -19,6 +19,7 @@ test_suite(
         ":file_node",
         ":vardecl_local_anchor",
         ":vardecl_local_shadow",
+        ":vardecl_local_destructure",
     ],
 )
 
@@ -27,6 +28,7 @@ test_suite(
     tags = ["manual"],
     tests = [
         ":function_decl",
+        ":function_params",
     ],
 )
 
@@ -56,6 +58,16 @@ rust_indexer_test(
 )
 
 rust_indexer_test(
+    name = "vardecl_local_destructure",
+    srcs = ["basic/vardecl_local_destructure.rs"],
+)
+
+rust_indexer_test(
     name = "function_decl",
     srcs = ["function/function_decl.rs"],
+)
+
+rust_indexer_test(
+    name = "function_params",
+    srcs = ["function/function_params.rs"],
 )

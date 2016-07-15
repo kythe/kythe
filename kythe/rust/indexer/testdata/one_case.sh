@@ -16,7 +16,7 @@
 
 VERIFIER="kythe/cxx/verifier/verifier"
 INDEXER="rustc -L kythe/rust/indexer/ -Z extra-plugins=indexer -Z no-trans"
-KYTHE_ENTRY_STREAM="kythe/go/platform/tools/entrystream"
+KYTHE_ENTRY_STREAM="kythe/go/platform/tools/entrystream/entrystream"
 
 export KYTHE_CORPUS=""
 
