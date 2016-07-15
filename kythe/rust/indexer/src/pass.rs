@@ -97,25 +97,29 @@ impl LintPass for KytheLintPass {
 
 impl LateLintPass for KytheLintPass {
     fn check_crate_post(&mut self, cx: &LateContext, _: &hir::Crate) {
-        for def in cx.tcx.def_map.borrow().values() {
+        for (&ref_node, def) in cx.tcx.def_map.borrow().iter() {
             use rustc::hir::def::Def;
             match def.base_def {
-                Def::Local(..) => {
-                    let def_id = def.base_def.def_id();
-                    let def_id_num = def_id.index.as_u32();
+                Def::Local(def_id, def_node) => {
+                    let ref_span = cx.tcx.map.span(ref_node);
+                    let is_from_macro = ref_span.expn_id.into_u32() != u32::max_value();
 
                     // Skip the definition since we've marked it as uninteresting
-                    if self.blacklist.contains(&def_id) {
+                    if is_from_macro || self.blacklist.contains(&def_id) {
                         continue;
                     }
 
-                    if let Some(span) = cx.tcx.map.span_if_local(def_id) {
-                        let var_name = cx.tcx.absolute_item_path_str(def_id);
-                        let anchor_vname = self.anchor_from_span(span, cx.sess().codemap());
-                        let local_vname = self.corpus.local_decl_vname(&var_name, def_id_num);
-
+                    let def_id_num = def_id.index.as_u32();
+                    let var_name = cx.tcx.absolute_item_path_str(def_id);
+                    let local_vname = self.corpus.local_decl_vname(&var_name, def_id_num);
+                    let anchor_vname = self.anchor_from_span(ref_span, cx.sess().codemap());
+                    
+                    // If the ref_node is the def_node we emit defines/binding not ref.
+                    if ref_node == def_node {
                         self.writer.node(&local_vname, Fact::NodeKind, &NodeKind::Variable);
                         self.writer.edge(&anchor_vname, EdgeKind::DefinesBinding, &local_vname);
+                    } else {
+                        self.writer.edge(&anchor_vname, EdgeKind::Ref, &local_vname);
                     }
                 }
                 _ => (),
@@ -131,14 +135,13 @@ impl LateLintPass for KytheLintPass {
                 continue;
             }
 
-            // TODO(djrenren): Find out if/when this will actually panic
-            // Presumably, by this point the file is determined to have
-            // actually been on disk and loaded into the codemap.
-            let content = f.src.as_ref().unwrap();
-            let vname = self.corpus.file_vname(&f.name);
+            // References to the core crate are filtered out here
+            if let Some(ref content) = f.src {
+                let vname = self.corpus.file_vname(&f.name);
 
-            self.writer.node(&vname, Fact::NodeKind, &NodeKind::File);
-            self.writer.node(&vname, Fact::Text, content);
+                self.writer.node(&vname, Fact::NodeKind, &NodeKind::File);
+                self.writer.node(&vname, Fact::Text, content);
+            }
         }
     }
 
@@ -151,7 +154,6 @@ impl LateLintPass for KytheLintPass {
         // If the local has no init value, it's safe to report
         if let Some(ref init) = local.init {
             use rustc::hir::Expr_::ExprMatch;
-
             // Verify that the init statement comes from a Desugar
             if let ExprMatch(_, ref arms, hir::MatchSource::ForLoopDesugar) = init.node {
 

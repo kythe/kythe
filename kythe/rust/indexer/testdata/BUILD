@@ -17,6 +17,7 @@ test_suite(
     tests = [
         ":file_content",
         ":file_node",
+        ":var_ref",
         ":vardecl_local_anchor",
         ":vardecl_local_shadow",
         ":vardecl_local_destructure",
@@ -44,6 +45,11 @@ rust_indexer_test(
         "basic/file_content.rs",
         "basic/a.rs",
     ],
+)
+
+rust_indexer_test(
+    name = "var_ref",
+    srcs = ["basic/var_ref.rs"],
 )
 
 rust_indexer_test(

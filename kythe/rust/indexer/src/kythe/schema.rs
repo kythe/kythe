@@ -64,6 +64,7 @@ str_enum! {
         ChildOf => "/kythe/edge/childof",
         Defines => "/kythe/edge/defines",
         DefinesBinding => "/kythe/edge/defines/binding",
+        Ref => "/kythe/edge/ref",
     }
 }
 
