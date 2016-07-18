@@ -208,7 +208,7 @@ var (
 		func(flag *flag.FlagSet) {
 			flag.StringVar(&defKind, "definitions", "all", "Kind of definitions to return (kinds: all, binding, full, or none)")
 			flag.StringVar(&declKind, "declarations", "all", "Kind of declarations to return (kinds: all or none)")
-			flag.StringVar(&refKind, "references", "nocall", "Kind of references to return (kinds: all, noncall, call, or none)")
+			flag.StringVar(&refKind, "references", "noncall", "Kind of references to return (kinds: all, noncall, call, or none)")
 			flag.StringVar(&docKind, "documentation", "all", "Kind of documentation to return (kinds: all or none)")
 			flag.StringVar(&callerKind, "callers", "none", "Kind of callers to return (kinds: direct, overrides, or none)")
 			flag.BoolVar(&relatedNodes, "related_nodes", false, "Whether to request related nodes")
