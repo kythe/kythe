@@ -12,12 +12,21 @@ external_go_package(
     exclude_srcs = [
         "go15.go",
         "not_go16.go",
+        "go17.go",
     ],
-    deps = [":http2/hpack"],
+    deps = [
+        ":http2/hpack",
+        ":lex/httplex",
+    ],
 )
 
 external_go_package(
     name = "http2/hpack",
+    base_pkg = "golang.org/x/net",
+)
+
+external_go_package(
+    name = "lex/httplex",
     base_pkg = "golang.org/x/net",
 )
 
@@ -33,7 +42,10 @@ external_go_package(
 external_go_package(
     name = "context/ctxhttp",
     base_pkg = "golang.org/x/net",
-    exclude_srcs = ["cancelreq_go14.go"],
+    exclude_srcs = [
+        "cancelreq_go14.go",
+        "ctxhttp.go",
+    ],
     deps = [":context"],
 )
 

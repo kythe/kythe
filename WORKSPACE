@@ -226,42 +226,42 @@ new_git_repository(
 new_git_repository(
     name = "go_gcloud",
     build_file = "third_party/go/gcloud.BUILD",
-    commit = "995e193d1cc813d7d891c0da7bc83a99c71f5ebc",
+    commit = "0529c5393e499f4f538b167ec5b85e74a58a02f8",
     remote = "https://github.com/GoogleCloudPlatform/gcloud-golang.git",
 )
 
 new_git_repository(
     name = "go_x_net",
     build_file = "third_party/go/x_net.BUILD",
-    commit = "fb93926129b8ec0056f2f458b1f519654814edf0",
+    commit = "3797cd8864994d713d909eda5e61ede8683fdc12",
     remote = "https://github.com/golang/net.git",
 )
 
 new_git_repository(
     name = "go_x_text",
     build_file = "third_party/go/x_text.BUILD",
-    commit = "3100578f0f8093e37883ba48c9187fe51367ad05",
+    commit = "d5d7737684e596dbabf914ecf946d2783f35bdc2",
     remote = "https://github.com/golang/text.git",
 )
 
 new_git_repository(
     name = "go_x_tools",
     build_file = "third_party/go/x_tools.BUILD",
-    commit = "5e468032ea9e193c60de97cfcd040ffa7a9b774e",
+    commit = "f2932db7c0155d2ea19373270a3fa937349ac375",
     remote = "https://github.com/golang/tools.git",
 )
 
 new_git_repository(
     name = "go_x_oauth2",
     build_file = "third_party/go/oauth2.BUILD",
-    commit = "7e9cd5d59563851383f8f81a7fbb01213709387c",
+    commit = "a8702432015187171c5120cbf5020bfca7be35b6",
     remote = "https://github.com/golang/oauth2.git",
 )
 
 new_git_repository(
     name = "go_gapi",
     build_file = "third_party/go/gapi.BUILD",
-    commit = "9737cc9e103c00d06a8f3993361dec083df3d252",
+    commit = "c13a21ee847eca050f08db8373d8737494a1170e",
     remote = "https://github.com/google/google-api-go-client.git",
 )
 
@@ -282,7 +282,7 @@ new_git_repository(
 new_git_repository(
     name = "go_pq",
     build_file = "third_party/go/pq.BUILD",
-    commit = "3cd0097429be7d611bb644ef85b42bfb102ceea4",
+    commit = "4dd446efc17690bc53e154025146f73203b18309",
     remote = "https://github.com/lib/pq.git",
 )
 
@@ -303,14 +303,14 @@ new_git_repository(
 new_git_repository(
     name = "go_snappy",
     build_file = "third_party/go/snappy.BUILD",
-    commit = "774a97396f7bfa4165e9dcf4bfa0747ea3edcc02",
+    commit = "d9eb7a3d35ec988b8585d4a0068e462c27d28380",
     remote = "https://github.com/golang/snappy.git",
 )
 
 new_git_repository(
     name = "go_protobuf",
     build_file = "third_party/go/protobuf.BUILD",
-    commit = "7cc19b78d562895b13596ddce7aafb59dd789318",
+    commit = "874264fbbb43f4d91e999fecb4b40143ed611400",
     remote = "https://github.com/golang/protobuf.git",
 )
 
