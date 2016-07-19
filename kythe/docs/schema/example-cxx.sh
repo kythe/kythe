@@ -88,7 +88,14 @@ done
 
 trap 'error FORMAT' ERR
 EXAMPLE_ID=$(sha1sum "$RAW_EXAMPLE" | cut -c 1-40)
-echo "<div><h5 id=\"_${LABEL}\">${LABEL}"
+
+if [[ -n "${DIV_STYLE}" ]]; then
+  echo "<div style=\"${DIV_STYLE}\">"
+else
+  echo "<div>"
+fi
+
+echo "<h5 id=\"_${LABEL}\">${LABEL}"
 
 if [[ "${SHOWGRAPH}" == 1 ]]; then
   "$VERIFIER_BIN" --ignore_dups --graphviz < "${TEST_ENTRIES}" > "$TMP/EXAMPLE_ID.dot"

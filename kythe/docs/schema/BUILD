@@ -11,3 +11,8 @@ asciidoc_with_verifier(
     name = "callgraph",
     src = "callgraph.txt",
 )
+
+asciidoc_with_verifier(
+    name = "verifierstyle",
+    src = "verifierstyle.txt",
+)

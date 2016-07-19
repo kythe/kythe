@@ -1,0 +1,163 @@
+// Copyright 2016 Google Inc. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+Verifier style guide
+====================
+:Revision: 1.0
+:toc2:
+:toclevels: 3
+:priority: 999
+
+== Style guidelines
+
+* Keep to the column width of the language you are writing assertions for.
+  The verifier's assertion language is generally whitespace-insensitive.
+* Test scripts should be short and check for one specific language feature.
+  When in doubt, write a separate script.
+* Test scripts should not exhaustively check for all possible graph objects
+  that a code segment should emit. Related features should be grouped together
+  and assertions made about them in separate scripts.
+* Use short, meaningful names for EVars.
+
+=== Avoid quotation marks in offset specifications, unless they are needed.
+
+[kythe,C++,"Quotes for most tokens are unnecessary",1,"background-color: #FFEEEE"]
+--------------------------------------------------------------------------------
+//- @"f" defines/binding _
+void f(int x) { }
+--------------------------------------------------------------------------------
+
+is less clear than
+
+[kythe,C++,"Less noise is better"]
+--------------------------------------------------------------------------------
+//- @f defines/binding _
+void f(int x) { }
+--------------------------------------------------------------------------------
+
+=== Avoid the more complicated offset specifications when possible.
+
+It is better to change code snippets than to use complicated offset
+specifications.
+
+[kythe,C++,"f is ambiguous",1,"background-color: #FFEEEE"]
+--------------------------------------------------------------------------------
+//- @#0f defines/binding _
+void f(float x) { }
+--------------------------------------------------------------------------------
+
+is less clear than
+
+[kythe,C++,"fn is not ambiguous"]
+--------------------------------------------------------------------------------
+//- @fn defines/binding _
+void fn(float x) { }
+--------------------------------------------------------------------------------
+
+=== Do not bind dangling EVars.
+
+[kythe,C++,"VarX is otherwise unconstrained",1,"background-color: #FFEEEE"]
+--------------------------------------------------------------------------------
+//- @x defines/binding VarX
+int x;
+--------------------------------------------------------------------------------
+
+is less clear than
+
+[kythe,C++,"We only care that there exists an edge of a certain kind"]
+--------------------------------------------------------------------------------
+//- @x defines/binding _
+int x;
+--------------------------------------------------------------------------------
+
+=== Put shorter assertion blocks about anchors close to those anchors.
+
+[kythe,C++,"Long distances between anchors and assertions",1,"background-color: #FFEEEE"]
+--------------------------------------------------------------------------------
+//- @x defines/binding VarX
+int x;
+//- @y defines/binding VarY
+float y;
+
+//- VarX.node/kind variable
+//- VarY.node/kind variable
+--------------------------------------------------------------------------------
+
+is less clear than
+
+[kythe,C++,"Short distances between anchors and assertions"]
+--------------------------------------------------------------------------------
+//- @x defines/binding VarX
+//- VarX.node/kind variable
+int x;
+//- @y defines/binding VarY
+//- VarY.node/kind variable
+float y;
+--------------------------------------------------------------------------------
+
+=== Prefer repeating `@` specifications for short anchors to binding EVars.
+
+[kythe,C++,"Unnecessary binding to anchors",1,"background-color: #FFEEEE"]
+--------------------------------------------------------------------------------
+void f() {
+//- FCallAnchor=@"f()" ref/call FnF
+//- FCallAnchor childof FnF
+  f();
+}
+--------------------------------------------------------------------------------
+
+is less clear than
+
+[kythe,C++,"Repeating offset specifications"]
+--------------------------------------------------------------------------------
+void f() {
+//- @"f()" ref/call FnF
+//- @"f()" childof FnF
+  f();
+}
+--------------------------------------------------------------------------------
+
+=== Minimize use of explicit unification.
+
+Explicit unification is important in those cases where you want to check whether
+you are generating a particular VName. In most test scripts, you should make
+use of the verifier's graph search algorithm to discover VNames during
+execution. This makes verification tests easier to read and less brittle in
+the face of changing implementations for opaque identifiers.
+
+[kythe,C++,"Testing whether a type generates a specific name"]
+--------------------------------------------------------------------------------
+//- @int ref vname("int#builtin","","","","c++")
+using Int = int;
+--------------------------------------------------------------------------------
+
+is reasonable; however,
+
+[kythe,C++,"Testing whether two variables have the same type",1,"background-color: #FFEEEE"]
+--------------------------------------------------------------------------------
+//- @int ref IntType=vname("int#builtin","","","","c++")
+int x;
+//- @int ref SecondIntType=vname("int#builtin","","","","c++")
+int y;
+--------------------------------------------------------------------------------
+
+is less clear than
+
+[kythe,C++,"Testing whether two variables have the same type"]
+--------------------------------------------------------------------------------
+//- @int ref IntType
+int x;
+//- @int ref IntType
+int y;
+--------------------------------------------------------------------------------

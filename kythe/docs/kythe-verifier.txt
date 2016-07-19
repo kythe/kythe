@@ -39,6 +39,9 @@ By default (and assuming no errors) you will see the Kythe graph for `foo.cc`.
 The remainder of this document discusses the kinds of assertions you can make
 about the nodes and edges in the graph.
 
+There is a https://kythe.io/docs/schema/verifierstyle.html[style guide] with
+some suggestions on how to write readable tests.
+
 == Basic well-formedness checks
 
 The verifier begins by checking that the input database obeys basic Kythe

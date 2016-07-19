@@ -37,6 +37,7 @@ export JAVA_INDEXER_BIN="$BINDIR/kythe/java/com/google/devtools/kythe/analyzers/
 export LANGUAGE="$3"
 export LABEL="$4"
 export SHOWGRAPH="$5"
+export DIV_STYLE="$6"
 
 error() {
   echo "[ FAILED $1: $LABEL ]" >&2
