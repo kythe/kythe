@@ -78,13 +78,15 @@ constexpr JavadocTagInfo kJavadocTagList[] = {
     JAVADOC_TAGS(TAG_INFO)
 #undef TAG_INFO
 };
-constexpr size_t kJavadocTagCount = sizeof(kJavadocTagList);
+constexpr size_t kJavadocTagCount =
+    sizeof(kJavadocTagList) / sizeof(JavadocTagInfo);
 constexpr DoxygenTagInfo kDoxygenTagList[] = {
 #define TAG_INFO(n, s, b) {string_length(s), s, DoxygenTag::n, b},
     DOXYGEN_TAGS(TAG_INFO)
 #undef TAG_INFO
 };
-constexpr size_t kDoxygenTagCount = sizeof(kDoxygenTagList);
+constexpr size_t kDoxygenTagCount =
+    sizeof(kDoxygenTagList) / sizeof(DoxygenTagInfo);
 
 template <typename TagInfo>
 const TagInfo* ParseTag(const TagInfo* tag_list, size_t tag_count,
