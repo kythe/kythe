@@ -18,6 +18,7 @@ package com.google.devtools.kythe.analyzers.java;
 
 import com.google.common.base.Preconditions;
 import com.google.devtools.kythe.analyzers.base.FactEmitter;
+import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.platform.java.JavaCompilationDetails;
 import com.google.devtools.kythe.platform.java.JavacAnalyzer;
 import com.google.devtools.kythe.platform.java.helpers.SignatureGenerator;
@@ -33,9 +34,14 @@ import com.sun.tools.javac.util.Context;
 import java.io.IOException;
 import java.nio.charset.Charset;
 
+import javax.tools.Diagnostic;
+
 /** {@link JavacAnalyzer} to emit Kythe nodes and edges. */
 public class KytheJavacAnalyzer extends JavacAnalyzer {
   private static final long serialVersionUID = 7458181626939870354L;
+
+  private static final FormattingLogger logger =
+      FormattingLogger.getLogger(KytheJavacAnalyzer.class);
 
   private final FactEmitter emitter;
   private final IndexerConfig config;
@@ -57,6 +63,11 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
     Preconditions.checkState(
         entrySets == null,
         "JavaEntrySets is non-null (analyzeCompilationUnit was called concurrently?)");
+    if (config.getVerboseLogging()) {
+      for (Diagnostic<?> err : details.getCompileErrors()) {
+        logger.warningfmt("javac compilation error: %s", err);
+      }
+    }
     CompilationUnit compilation = details.getCompilationUnit();
     entrySets =
         new JavaEntrySets(

@@ -159,6 +159,10 @@ public class JavaCompilationDetails {
     return Iterables.any(diagnostics.getDiagnostics(), ERROR_DIAGNOSTIC);
   }
 
+  public Iterable<Diagnostic<? extends JavaFileObject>> getCompileErrors() {
+    return Iterables.filter(diagnostics.getDiagnostics(), ERROR_DIAGNOSTIC);
+  }
+
   /** Returns the Javac compiler instance initialized for current analysis target. */
   public JavacTask getJavac() {
     return javac;
