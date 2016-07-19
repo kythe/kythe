@@ -732,7 +732,7 @@ func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReference
 		}
 		sig, err := xrefs.SlowSignature(ctx, t, ticket)
 		if err != nil {
-			return nil, fmt.Errorf("error looking up signature for ticket %q: %v", ticket, err)
+			log.Println("Error looking up signature for ticket %q: %v", ticket, err)
 		}
 		crs := &xpb.CrossReferencesReply_CrossReferenceSet{
 			Ticket:      ticket,
