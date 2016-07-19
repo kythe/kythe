@@ -25,7 +25,6 @@ import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.proto.Storage.VName;
-
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;

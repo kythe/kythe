@@ -17,7 +17,6 @@
 package com.google.devtools.kythe.platform.java.filemanager;
 
 import com.google.devtools.kythe.platform.shared.FileDataProvider;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,7 +32,6 @@ import java.nio.file.Paths;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-
 import javax.tools.FileObject;
 
 /** File object backed by a {@link Future}. */

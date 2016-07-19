@@ -17,7 +17,6 @@
 package com.google.devtools.kythe.extractors.shared;
 
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
-
 import java.util.Comparator;
 
 /** {@code Comparator} for {@code FileInput}. */

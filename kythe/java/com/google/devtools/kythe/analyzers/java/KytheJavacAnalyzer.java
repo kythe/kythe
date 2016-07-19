@@ -25,15 +25,11 @@ import com.google.devtools.kythe.platform.java.helpers.SignatureGenerator;
 import com.google.devtools.kythe.platform.shared.AnalysisException;
 import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
-
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.tools.javac.api.JavacTaskImpl;
 import com.sun.tools.javac.tree.JCTree.JCCompilationUnit;
 import com.sun.tools.javac.util.Context;
-
 import java.io.IOException;
-import java.nio.charset.Charset;
-
 import javax.tools.Diagnostic;
 
 /** {@link JavacAnalyzer} to emit Kythe nodes and edges. */

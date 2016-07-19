@@ -25,15 +25,13 @@ import com.google.devtools.kythe.proto.Analysis.FileData;
 import com.google.devtools.kythe.proto.Analysis.FileInfo;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.protobuf.ByteString;
-
-import junit.framework.TestCase;
-
 import java.io.File;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import junit.framework.TestCase;
 
 /** Tests the {@link ExtractorUtils} code. */
 public class ExtractorUtilsTest extends TestCase {

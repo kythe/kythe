@@ -19,11 +19,9 @@ package com.google.devtools.kythe.platform.java.filemanager;
 import com.google.devtools.kythe.proto.Analysis;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
-
-import junit.framework.TestCase;
-
 import java.util.LinkedList;
 import java.util.List;
+import junit.framework.TestCase;
 
 /** Tests {@link CompilationUnitFileTree}. */
 public class CompilationUnitFileTreeTest extends TestCase {

@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.devtools.kythe.proto.Analysis.FileData;
-
 import java.util.Map;
 
 /**

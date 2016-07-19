@@ -16,6 +16,7 @@
 
 package com.google.devtools.kythe.analyzers.java;
 
+import com.beust.jcommander.Parameter;
 import com.google.devtools.kythe.analyzers.base.FactEmitter;
 import com.google.devtools.kythe.analyzers.base.GRPCCompilationAnalyzer;
 import com.google.devtools.kythe.platform.java.JavacAnalysisDriver;
@@ -23,11 +24,7 @@ import com.google.devtools.kythe.platform.shared.AnalysisException;
 import com.google.devtools.kythe.platform.shared.FileDataProvider;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.CompilationAnalyzerGrpc;
-
-import com.beust.jcommander.Parameter;
-
 import io.grpc.netty.NettyServerBuilder;
-
 import java.io.IOException;
 
 /** Binary to run Kythe's Java indexer as a CompilationAnalyzer service. */

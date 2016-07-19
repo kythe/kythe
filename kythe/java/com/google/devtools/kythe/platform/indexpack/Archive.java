@@ -38,7 +38,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import com.google.protobuf.ByteString;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;

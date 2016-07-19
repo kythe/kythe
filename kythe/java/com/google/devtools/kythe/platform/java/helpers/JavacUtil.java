@@ -26,7 +26,6 @@ import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.code.Types;
 import com.sun.tools.javac.util.Context;
 import com.sun.tools.javac.util.Names;
-
 import java.util.HashSet;
 import java.util.Set;
 

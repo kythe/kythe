@@ -22,12 +22,10 @@ import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Java.JavaDetails;
 import com.google.protobuf.Any;
 import com.google.protobuf.InvalidProtocolBufferException;
-
 import java.nio.charset.Charset;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import javax.tools.StandardJavaFileManager;
 import javax.tools.StandardLocation;
 

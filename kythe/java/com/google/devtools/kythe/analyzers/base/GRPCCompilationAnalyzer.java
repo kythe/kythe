@@ -22,7 +22,6 @@ import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.proto.Analysis.AnalysisOutput;
 import com.google.devtools.kythe.proto.Analysis.AnalysisRequest;
 import com.google.devtools.kythe.proto.CompilationAnalyzerGrpc.CompilationAnalyzer;
-
 import io.grpc.stub.StreamObserver;
 
 /** GRPC-based {@link AbstractCompilationAnalyzer} implementation. */

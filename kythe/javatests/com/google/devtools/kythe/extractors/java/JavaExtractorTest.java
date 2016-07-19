@@ -29,11 +29,7 @@ import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
 import com.google.devtools.kythe.proto.Analysis.FileInfo;
 import com.google.devtools.kythe.proto.Java.JavaDetails;
 import com.google.protobuf.InvalidProtocolBufferException;
-
 import com.sun.tools.javac.main.Option;
-
-import junit.framework.TestCase;
-
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -43,6 +39,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import junit.framework.TestCase;
 
 /** Tests for {@link JavaCompilationExtractor}. */
 // TODO(schroederc): replace asserts with Truth#assertThat

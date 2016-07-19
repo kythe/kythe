@@ -18,9 +18,7 @@ package com.google.devtools.kythe.platform.java;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.StandardSystemProperty;
-
 import com.sun.tools.javac.main.Option;
-
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -28,7 +26,6 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
-
 import javax.annotation.Nullable;
 
 /** A utility class for dealing with javac command-line options. */

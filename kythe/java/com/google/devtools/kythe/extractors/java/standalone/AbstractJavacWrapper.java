@@ -29,14 +29,12 @@ import com.google.devtools.kythe.extractors.shared.IndexInfoUtils;
 import com.google.devtools.kythe.platform.indexpack.Archive;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Analysis.FileData;
-
 import com.sun.tools.javac.main.CommandLine;
-
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.ArrayList;
 import java.util.List;
 
 /**

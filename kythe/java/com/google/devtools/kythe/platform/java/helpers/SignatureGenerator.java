@@ -18,7 +18,6 @@ package com.google.devtools.kythe.platform.java.helpers;
 
 import com.google.common.base.Optional;
 import com.google.devtools.kythe.common.FormattingLogger;
-
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.util.TreePath;
 import com.sun.tools.javac.code.BoundKind;
@@ -39,13 +38,11 @@ import com.sun.tools.javac.code.Type.UndetVar;
 import com.sun.tools.javac.code.Type.Visitor;
 import com.sun.tools.javac.code.Type.WildcardType;
 import com.sun.tools.javac.util.Context;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ElementVisitor;

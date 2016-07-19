@@ -17,12 +17,9 @@
 package com.google.devtools.kythe.extractors.java;
 
 import com.google.devtools.kythe.common.FormattingLogger;
-
 import com.sun.tools.javac.code.Symbol.TypeSymbol;
-
 import java.io.IOException;
 import java.util.Set;
-
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;

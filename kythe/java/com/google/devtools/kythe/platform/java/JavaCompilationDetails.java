@@ -27,15 +27,12 @@ import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.platform.java.filemanager.CompilationUnitBasedJavaFileManager;
 import com.google.devtools.kythe.platform.shared.FileDataProvider;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
-
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.util.JavacTask;
 import com.sun.tools.javac.api.JavacTaskImpl;
-
 import java.io.Writer;
 import java.nio.charset.Charset;
 import java.util.List;
-
 import javax.annotation.processing.Processor;
 import javax.tools.Diagnostic;
 import javax.tools.Diagnostic.Kind;

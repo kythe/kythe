@@ -25,9 +25,6 @@ import com.google.devtools.kythe.proto.Analysis.FileInfo;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.devtools.kythe.util.DeleteRecursively;
 import com.google.protobuf.ByteString;
-
-import junit.framework.TestCase;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -38,6 +35,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import junit.framework.TestCase;
 
 /** This class tests {@link Archive}. */
 public class ArchiveTest extends TestCase {

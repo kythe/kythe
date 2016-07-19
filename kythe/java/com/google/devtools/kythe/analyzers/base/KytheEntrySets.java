@@ -23,7 +23,6 @@ import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.devtools.kythe.util.KytheURI;
 import com.google.devtools.kythe.util.Span;
-
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;

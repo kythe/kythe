@@ -19,7 +19,6 @@ package com.google.devtools.kythe.extractors.java;
 import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -28,7 +27,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import javax.tools.FileObject;
 import javax.tools.ForwardingJavaFileManager;
 import javax.tools.JavaFileObject;

@@ -17,10 +17,8 @@
 package com.google.devtools.kythe.util;
 
 import com.google.devtools.kythe.proto.Storage.VName;
-
-import junit.framework.TestCase;
-
 import java.net.URISyntaxException;
+import junit.framework.TestCase;
 
 /** This class tests {@link KytheURI}. */
 public class KytheURITest extends TestCase {

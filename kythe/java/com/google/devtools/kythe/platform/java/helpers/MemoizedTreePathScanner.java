@@ -25,10 +25,8 @@ import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCCompilationUnit;
 import com.sun.tools.javac.util.Context;
 import com.sun.tools.javac.util.Pair;
-
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.lang.model.element.Element;
 
 /**

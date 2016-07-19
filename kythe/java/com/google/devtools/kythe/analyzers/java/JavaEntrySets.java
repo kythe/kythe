@@ -19,30 +19,27 @@ package com.google.devtools.kythe.analyzers.java;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import com.google.devtools.kythe.analyzers.base.CorpusPath;
+import com.google.devtools.kythe.analyzers.base.EdgeKind;
 import com.google.devtools.kythe.analyzers.base.EntrySet;
 import com.google.devtools.kythe.analyzers.base.FactEmitter;
 import com.google.devtools.kythe.analyzers.base.KytheEntrySets;
-import com.google.devtools.kythe.analyzers.base.EdgeKind;
 import com.google.devtools.kythe.analyzers.base.NodeKind;
 import com.google.devtools.kythe.analyzers.java.SourceText.Positions;
 import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.devtools.kythe.util.Span;
-
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import com.sun.tools.javac.code.Symbol.PackageSymbol;
 import com.sun.tools.javac.tree.JCTree;
-
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.Name;

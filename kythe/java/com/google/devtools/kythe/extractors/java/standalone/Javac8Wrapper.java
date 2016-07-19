@@ -16,14 +16,12 @@
 
 package com.google.devtools.kythe.extractors.java.standalone;
 
-import com.google.common.collect.Sets;
 import com.google.devtools.kythe.extractors.java.JavaCompilationUnitExtractor;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.sun.tools.javac.file.JavacFileManager;
 import com.sun.tools.javac.main.Arguments;
 import com.sun.tools.javac.main.Option;
 import com.sun.tools.javac.util.Context;
-import com.sun.tools.javac.util.ListBuffer;
 import com.sun.tools.javac.util.Options;
 import java.util.ArrayList;
 import java.util.EnumSet;

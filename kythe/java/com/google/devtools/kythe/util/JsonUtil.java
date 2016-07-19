@@ -29,7 +29,6 @@ import com.google.gson.protobuf.ProtoTypeAdapter;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessage;
 import com.google.protobuf.ProtocolMessageEnum;
-
 import java.lang.reflect.Type;
 
 /** Utility class for working with JSON/{@link Gson}. */

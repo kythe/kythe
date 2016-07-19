@@ -16,6 +16,7 @@
 
 package com.google.devtools.kythe.analyzers.java;
 
+import com.beust.jcommander.Parameter;
 import com.google.common.base.Strings;
 import com.google.devtools.kythe.analyzers.base.FactEmitter;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
@@ -29,9 +30,6 @@ import com.google.devtools.kythe.platform.shared.NullStatisticsCollector;
 import com.google.devtools.kythe.proto.Storage.Entry;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.protobuf.ByteString;
-
-import com.beust.jcommander.Parameter;
-
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;

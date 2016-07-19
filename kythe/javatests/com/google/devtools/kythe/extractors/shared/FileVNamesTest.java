@@ -18,7 +18,6 @@ package com.google.devtools.kythe.extractors.shared;
 
 import com.google.common.base.Joiner;
 import com.google.devtools.kythe.proto.Storage.VName;
-
 import junit.framework.TestCase;
 
 /** Tests for {@link FileVNames}. */

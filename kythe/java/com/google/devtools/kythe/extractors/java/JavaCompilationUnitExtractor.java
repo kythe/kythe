@@ -43,7 +43,6 @@ import com.google.devtools.kythe.proto.Java.JavaDetails;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.devtools.kythe.util.DeleteRecursively;
 import com.google.protobuf.Any;
-
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.ImportTree;
@@ -53,7 +52,6 @@ import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Symtab;
 import com.sun.tools.javac.main.Option;
 import com.sun.tools.javac.util.ServiceLoader;
-
 import java.io.File;
 import java.io.IOError;
 import java.io.IOException;
@@ -80,7 +78,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-
 import javax.annotation.processing.Processor;
 import javax.tools.Diagnostic;
 import javax.tools.DiagnosticCollector;

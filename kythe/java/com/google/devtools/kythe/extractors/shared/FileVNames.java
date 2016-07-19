@@ -27,7 +27,6 @@ import com.google.gson.JsonParseException;
 import com.google.gson.reflect.TypeToken;
 import com.google.re2j.Matcher;
 import com.google.re2j.Pattern;
-
 import java.io.FileReader;
 import java.io.IOException;
 import java.lang.reflect.Type;

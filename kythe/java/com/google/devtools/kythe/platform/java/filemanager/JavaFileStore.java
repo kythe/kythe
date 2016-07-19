@@ -17,7 +17,6 @@
 package com.google.devtools.kythe.platform.java.filemanager;
 
 import java.util.Set;
-
 import javax.tools.JavaFileObject.Kind;
 
 /**

@@ -18,7 +18,6 @@ package com.google.devtools.kythe.platform.java.filemanager;
 
 import com.google.devtools.kythe.platform.shared.FileDataProvider;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
-
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -26,7 +25,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-
 import javax.tools.JavaFileObject.Kind;
 
 /** An implementation of {@link JavaFileStore} based on data from a {@link CompilationUnit}. */

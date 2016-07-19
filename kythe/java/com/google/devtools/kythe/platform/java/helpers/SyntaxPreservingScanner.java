@@ -17,7 +17,6 @@
 package com.google.devtools.kythe.platform.java.helpers;
 
 import com.google.devtools.kythe.util.Span;
-
 import com.sun.tools.javac.parser.JavaTokenizer;
 import com.sun.tools.javac.parser.ScannerFactory;
 import com.sun.tools.javac.parser.Tokens;
@@ -25,7 +24,6 @@ import com.sun.tools.javac.parser.Tokens.Comment.CommentStyle;
 import com.sun.tools.javac.parser.Tokens.Token;
 import com.sun.tools.javac.util.Context;
 import com.sun.tools.javac.util.Position;
-
 import java.nio.CharBuffer;
 import java.util.ArrayList;
 import java.util.List;

@@ -20,14 +20,12 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.devtools.kythe.platform.java.helpers.SyntaxPreservingScanner;
 import com.google.devtools.kythe.platform.java.helpers.SyntaxPreservingScanner.CommentToken;
 import com.google.devtools.kythe.util.Span;
-
 import com.sun.tools.javac.parser.Tokens.Token;
 import com.sun.tools.javac.parser.Tokens.TokenKind;
 import com.sun.tools.javac.tree.EndPosTable;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCCompilationUnit;
 import com.sun.tools.javac.util.Context;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -41,7 +39,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
-
 import javax.lang.model.element.Name;
 import javax.tools.JavaFileObject;
 

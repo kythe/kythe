@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.Collections;
 import java.util.Set;
-
 import javax.annotation.processing.Completion;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.Processor;

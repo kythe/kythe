@@ -24,7 +24,6 @@ import static com.google.common.base.Strings.nullToEmpty;
 
 import com.google.common.base.Joiner;
 import com.google.devtools.kythe.proto.Storage.VName;
-
 import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;

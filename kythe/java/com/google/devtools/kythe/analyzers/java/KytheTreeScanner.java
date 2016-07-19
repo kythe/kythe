@@ -30,7 +30,6 @@ import com.google.devtools.kythe.platform.java.helpers.JavacUtil;
 import com.google.devtools.kythe.platform.java.helpers.SignatureGenerator;
 import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.util.Span;
-
 import com.sun.source.tree.MemberReferenceTree.ReferenceMode;
 import com.sun.source.tree.Tree.Kind;
 import com.sun.tools.javac.code.Symbol;
@@ -65,7 +64,6 @@ import com.sun.tools.javac.tree.JCTree.JCTypeParameter;
 import com.sun.tools.javac.tree.JCTree.JCVariableDecl;
 import com.sun.tools.javac.tree.JCTree.JCWildcard;
 import com.sun.tools.javac.util.Context;
-
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Arrays;
@@ -76,7 +74,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Name;

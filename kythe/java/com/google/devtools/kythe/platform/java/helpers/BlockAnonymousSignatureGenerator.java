@@ -30,10 +30,8 @@ import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCBlock;
 import com.sun.tools.javac.tree.JCTree.JCClassDecl;
 import com.sun.tools.javac.tree.JCTree.JCMethodDecl;
-
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.lang.model.element.Element;
 
 /**

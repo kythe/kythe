@@ -22,12 +22,9 @@ import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.platform.shared.AnalysisException;
 import com.google.devtools.kythe.platform.shared.FileDataProvider;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
-
 import com.sun.tools.javac.api.JavacTool;
-
 import java.io.File;
 import java.util.List;
-
 import javax.annotation.processing.Processor;
 import javax.tools.JavaCompiler;
 

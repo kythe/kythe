@@ -28,7 +28,6 @@ import com.google.devtools.kythe.extractors.shared.FileVNames;
 import com.google.devtools.kythe.extractors.shared.IndexInfoUtils;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.ExtensionRegistry;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;

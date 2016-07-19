@@ -17,13 +17,11 @@
 package com.google.devtools.kythe.common;
 
 import com.google.common.collect.ImmutableSet;
-
+import java.util.Set;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
-
-import java.util.Set;
 
 public class FormattingLogger {
   private Logger logger;

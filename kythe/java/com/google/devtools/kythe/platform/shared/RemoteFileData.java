@@ -20,16 +20,13 @@ import com.google.common.net.HostAndPort;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.devtools.kythe.proto.Analysis.FileData;
-import com.google.devtools.kythe.proto.Analysis.FileInfo;
 import com.google.devtools.kythe.proto.Analysis.FilesRequest;
 import com.google.devtools.kythe.proto.FileDataServiceGrpc;
 import com.google.devtools.kythe.proto.FileDataServiceGrpc.FileDataServiceStub;
-
 import io.grpc.ManagedChannel;
 import io.grpc.netty.NegotiationType;
 import io.grpc.netty.NettyChannelBuilder;
 import io.grpc.stub.StreamObserver;
-
 import java.net.InetSocketAddress;
 
 /** {@link FileDataProvider} backed by an external {@link FileDataServiceGrpc.FileDataService}. */

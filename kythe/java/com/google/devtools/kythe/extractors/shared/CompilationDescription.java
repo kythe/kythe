@@ -19,7 +19,6 @@ package com.google.devtools.kythe.extractors.shared;
 import com.google.common.collect.Sets;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Analysis.FileData;
-
 import java.util.Objects;
 
 /**

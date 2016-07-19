@@ -17,7 +17,6 @@
 package com.google.devtools.kythe.analyzers.java;
 
 import com.google.devtools.kythe.analyzers.base.EntrySet;
-
 import com.sun.source.doctree.ReferenceTree;
 import com.sun.source.util.DocTreeScanner;
 import com.sun.tools.javac.code.Symbol;
@@ -29,7 +28,6 @@ import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCFieldAccess;
 import com.sun.tools.javac.tree.JCTree.JCIdent;
 import com.sun.tools.javac.util.Name;
-
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;

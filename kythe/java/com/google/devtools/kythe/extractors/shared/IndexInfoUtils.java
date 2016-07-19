@@ -23,7 +23,6 @@ import com.google.common.base.Strings;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Analysis.FileData;
 import com.google.protobuf.CodedInputStream;
-
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;

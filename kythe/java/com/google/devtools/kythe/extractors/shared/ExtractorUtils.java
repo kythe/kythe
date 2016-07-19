@@ -32,7 +32,6 @@ import com.google.devtools.kythe.proto.Analysis.FileData;
 import com.google.devtools.kythe.proto.Analysis.FileInfo;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.protobuf.ByteString;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;

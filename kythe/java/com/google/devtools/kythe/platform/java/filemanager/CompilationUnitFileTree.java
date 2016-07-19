@@ -17,7 +17,6 @@
 package com.google.devtools.kythe.platform.java.filemanager;
 
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
-
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;

@@ -22,9 +22,8 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_16;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import junit.framework.TestCase;
-
 import java.nio.charset.Charset;
+import junit.framework.TestCase;
 
 /** Tests {@link SourceText} */
 public class SourceTextTest extends TestCase {
