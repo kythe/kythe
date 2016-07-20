@@ -75,10 +75,10 @@
    (get-xrefs ticket {} handler error-handler))
   ([ticket opts handler error-handler]
    (POST "xrefs"
-     {:params (merge {:definition_kind 3    ;; BINDING_DEFINITIONS
-                      :declaration_kind 1   ;; ALL_DECLARATIONS
-                      :reference_kind 1     ;; ALL_REFERENCES
-                      :documentation_kind 1 ;; ALL_DOCUMENTATION
+     {:params (merge {:definition_kind    "BINDING_DEFINITIONS"
+                      :declaration_kind   "ALL_DECLARATIONS"
+                      :reference_kind     "ALL_REFERENCES"
+                      :documentation_kind "ALL_DOCUMENTATION"
                       :filter [schema/node-kind-fact]
                       :anchor_text true
                       :page_size 20}
