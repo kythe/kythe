@@ -1,6 +1,6 @@
 # Release Notes
 
-## Upcoming release
+## v0.0.22
 
 Notable changes:
  - Schema: `callable` nodes and `callableas` edges have been removed.
