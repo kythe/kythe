@@ -1,5 +1,10 @@
 # Release Notes
 
+## Upcoming release
+
+Notable changes:
+ - Java indexer: emit `ref/imports` anchors for imported symbols
+
 ## v0.0.22
 
 Notable changes:

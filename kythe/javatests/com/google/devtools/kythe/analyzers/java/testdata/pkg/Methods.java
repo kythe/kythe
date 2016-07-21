@@ -1,6 +1,6 @@
 package pkg;
 
-//- @IOException ref IOE
+//- @IOException ref/imports IOE
 import java.io.IOException;
 
 //- @Methods defines/binding Class

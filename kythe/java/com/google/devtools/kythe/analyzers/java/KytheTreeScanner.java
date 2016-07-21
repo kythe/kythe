@@ -219,7 +219,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         }
       }
 
-      return emitNameUsage(ctx.down(imprtField), sym, imprtField.name);
+      return emitNameUsage(ctx.down(imprtField), sym, imprtField.name, EdgeKind.REF_IMPORTS);
     }
     return scan(imprt.qualid, ctx);
   }
@@ -726,13 +726,17 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
   // Emits a node for the given sym, an anchor encompassing the name, and a REF edge
   private JavaNode emitNameUsage(TreeContext ctx, Symbol sym, Name name) {
+    return emitNameUsage(ctx, sym, name, EdgeKind.REF);
+  }
+
+  // Emits a node for the given sym, an anchor encompassing the name, and a given edge kind
+  private JavaNode emitNameUsage(TreeContext ctx, Symbol sym, Name name, EdgeKind edgeKind) {
     JavaNode node = getJavaNode(sym);
     if (node == null) {
       return todoNode(ctx, "NameUsage: " + ctx.getTree() + " -- " + name);
     }
 
-    emitAnchor(
-        name, ctx.getTree().getStartPosition(), EdgeKind.REF, node.entries, ctx.getSnippet());
+    emitAnchor(name, ctx.getTree().getStartPosition(), edgeKind, node.entries, ctx.getSnippet());
     statistics.incrementCounter("name-usages-emitted");
     return node;
   }

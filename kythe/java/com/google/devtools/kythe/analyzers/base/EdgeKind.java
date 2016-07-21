@@ -25,6 +25,7 @@ public enum EdgeKind {
   REF(true, "ref"),
   REF_CALL(true, "ref/call"),
   REF_DOC(true, "ref/doc"),
+  REF_IMPORTS(true, "ref/imports"),
 
   ANNOTATED_BY("annotatedby"),
   BOUNDED_LOWER("bounded/lower"),

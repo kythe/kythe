@@ -2,11 +2,11 @@ package pkg;
 
 // Check that nodes unify across file/compilation boundaries
 
-//- @CONSTANT ref ConstantMember
+//- @CONSTANT ref/imports ConstantMember
 import static pkg.Files.CONSTANT;
-//- @Inner ref InnerClass
+//- @Inner ref/imports InnerClass
 import static pkg.Files.Inner;
-//- @staticMethod ref StaticMethod
+//- @staticMethod ref/imports StaticMethod
 import static pkg.Files.staticMethod;
 
 // Make sure wildcard imports don't crash.

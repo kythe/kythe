@@ -814,6 +814,29 @@ Notes::
 int MA;
 --------------------------------------------------------------------------------
 
+[[refimports]]
+ref/imports
+~~~~~~~~~~~~
+
+Brief description::
+  A *ref/imports* B if B is imported at the site of A.
+Points from::
+  anchors
+Points toward::
+  semantic nodes
+Ordinals are used::
+  never
+
+[kythe,Java,"Import references a class."]
+--------------------------------------------------------------------------------
+//- @LinkedList ref/imports LL
+import java.util.LinkedList;
+public class E {
+  //- @LinkedList ref LL
+  LinkedList field;
+}
+--------------------------------------------------------------------------------
+
 [[refincludes]]
 ref/includes
 ~~~~~~~~~~~~
@@ -1166,7 +1189,7 @@ Notes::
   as `\\`. Targets of embedded references are stored as *param* edges on the
   document, where the nth opening bracket is matched with the nth *param*.
   Indexers should strip off comment delimiters.
-  
+
 See also::
   <<documents>>
 
