@@ -65,6 +65,7 @@ str_enum! {
         Defines => "/kythe/edge/defines",
         DefinesBinding => "/kythe/edge/defines/binding",
         Ref => "/kythe/edge/ref",
+        RefCall => "/kythe/edge/ref/call",
     }
 }
 

@@ -45,25 +45,14 @@ impl Corpus {
         }
     }
 
-    // Generates the appropriate VName for a function
-    pub fn fn_vname(&self, name: &str) -> VName {
-        VName {
-            corpus: Some(self.name.clone()),
-            language: Some(RUST.to_string()),
-            signature: Some(name.to_string()),
-
-            ..Default::default()
-        }
-    }
-
-    // Generates the appropriate VName for a local variable decl
+    // Generates the appropriate VName for a defintion
     // based on the name and definition id. This id is only
     // unique to the crate in which it resides.
-    pub fn local_decl_vname(&self, name: &str, def_id: u32) -> VName {
+    pub fn def_vname(&self, name: &str, def_id: u32) -> VName {
         VName {
             corpus: Some(self.name.clone()),
             language: Some(RUST.to_string()),
-            signature: Some(format!("variable:{}#{}", name, def_id)),
+            signature: Some(format!("def:{}#{}", name, def_id)),
             ..Default::default()
         }
     }

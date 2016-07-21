@@ -28,8 +28,13 @@ test_suite(
     name = "function",
     tags = ["manual"],
     tests = [
+        ":function_call",
         ":function_decl",
+        ":function_for_loop",
         ":function_params",
+        ":function_reference",
+        ":method_instance_call",
+        ":method_static_call",
     ],
 )
 
@@ -69,11 +74,36 @@ rust_indexer_test(
 )
 
 rust_indexer_test(
+    name = "function_call",
+    srcs = ["function/function_call.rs"],
+)
+
+rust_indexer_test(
     name = "function_decl",
     srcs = ["function/function_decl.rs"],
 )
 
 rust_indexer_test(
+    name = "function_for_loop",
+    srcs = ["function/function_for_loop.rs"],
+)
+
+rust_indexer_test(
     name = "function_params",
     srcs = ["function/function_params.rs"],
+)
+
+rust_indexer_test(
+    name = "function_reference",
+    srcs = ["function/function_reference.rs"],
+)
+
+rust_indexer_test(
+    name = "method_instance_call",
+    srcs = ["function/method_instance_call.rs"],
+)
+
+rust_indexer_test(
+    name = "method_static_call",
+    srcs = ["function/method_static_call.rs"],
 )
