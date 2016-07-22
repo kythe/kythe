@@ -18,6 +18,8 @@ use rustc::lint::{LateContext, LintContext, LintPass, LateLintPass, LintArray};
 use rustc::hir;
 use rustc::hir::def_id::DefId;
 use std::collections::HashSet;
+use std::io::stderr;
+use std::io::prelude::*;
 use syntax::ast;
 use syntax::codemap::{Pos, CodeMap, Span};
 
@@ -102,12 +104,23 @@ impl KytheLintPass {
         self.writer.edge(&call_anchor_vname, EdgeKind::RefCall, &callee_vname);
 
         let parent_did = map.get_parent_did(call_node_id);
-        let parent_item = map.expect_item(map.get_parent(call_node_id));
+        let parent_node_id = map.get_parent(call_node_id);
 
+        // Although we could just attach a childof edge without inspecting the parent,
+        // this check prevents unintended childof edges should the call have an unexpected parent
+        use rustc::hir::map::Node::{NodeItem, NodeImplItem};
         use rustc::hir::Item_::ItemFn;
-        if let ItemFn(_, _, _, _, _, _) = parent_item.node {
-            let parent_vname = self.vname_from_defid(cx, parent_did);
-            self.writer.edge(&call_anchor_vname, EdgeKind::ChildOf, &parent_vname);
+        use rustc::hir::ImplItemKind::Method;
+        if let Some(parent_node) = map.find(parent_node_id) {
+            match parent_node {
+                // The parent can be either a function or method
+                NodeItem(&hir::Item { node: ItemFn(..), .. }) |
+                NodeImplItem(&hir::ImplItem { node: Method(..), .. }) => {
+                    let parent_vname = self.vname_from_defid(cx, parent_did);
+                    self.writer.edge(&call_anchor_vname, EdgeKind::ChildOf, &parent_vname);
+                }
+                _ => (),
+            }
         }
     }
 }
