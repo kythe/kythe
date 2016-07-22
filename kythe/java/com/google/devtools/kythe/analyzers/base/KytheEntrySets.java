@@ -107,7 +107,9 @@ public class KytheEntrySets {
 
   /** Returns (and emits) a new builtin node. */
   public EntrySet getBuiltin(String name) {
-    EntrySet node = emitAndReturn(newNode(NodeKind.TBUILTIN).setSignature(name + "#builtin"));
+    EntrySet node =
+        emitAndReturn(
+            newNode(NodeKind.TBUILTIN).setSignature(name + "#builtin").setProperty("format", name));
     emitName(node, name);
     return node;
   }

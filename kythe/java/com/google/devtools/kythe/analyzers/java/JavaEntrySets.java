@@ -16,6 +16,7 @@
 
 package com.google.devtools.kythe.analyzers.java;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import com.google.devtools.kythe.analyzers.base.CorpusPath;
@@ -35,6 +36,7 @@ import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import com.sun.tools.javac.code.Symbol.PackageSymbol;
 import com.sun.tools.javac.tree.JCTree;
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -88,6 +90,30 @@ public class JavaEntrySets extends KytheEntrySets {
         v = v.toBuilder().setPath(enclClass != null ? enclClass.toString() : "").build();
       }
 
+      String format;
+      switch (sym.getKind()) {
+        case CONSTRUCTOR:
+          format =
+              String.format(
+                  "%%^.%s", enclClass != null ? enclClass.getSimpleName() : sym.getSimpleName());
+          break;
+        case TYPE_PARAMETER:
+          format = String.format("%%^.<%s>", sym.getSimpleName());
+          break;
+        case METHOD:
+          int numParams = ((MethodSymbol) sym).params().size();
+          List<String> params = new ArrayList<>(numParams);
+          for (int i = 1; i <= numParams; i++) {
+            params.add("%" + (i + 1) + "`");
+          }
+          format =
+              String.format("%%1` %%^.%s(%s)", sym.getSimpleName(), Joiner.on(",").join(params));
+          break;
+        default:
+          format = String.format("%%^.%s", sym.getSimpleName());
+          break;
+      }
+
       NodeKind kind = elementNodeKind(sym.getKind());
       NodeBuilder builder = kind != null ? newNode(kind) : newNode(sym.getKind().toString());
       node =
@@ -95,7 +121,7 @@ public class JavaEntrySets extends KytheEntrySets {
               .setCorpusPath(CorpusPath.fromVName(v))
               .addSignatureSalt(signature)
               .addSignatureSalt("" + hashSymbol(sym))
-              .setProperty("identifier", sym.getSimpleName().toString())
+              .setProperty("format", format)
               .build();
       emitName(node, signature);
       node.emit(getEmitter());
@@ -138,7 +164,8 @@ public class JavaEntrySets extends KytheEntrySets {
 
   /** Emits and returns a new {@link EntrySet} representing a Java package. */
   public EntrySet getPackageNode(String name) {
-    EntrySet node = emitAndReturn(newNode(NodeKind.PACKAGE).addSignatureSalt(name));
+    EntrySet node =
+        emitAndReturn(newNode(NodeKind.PACKAGE).addSignatureSalt(name).setProperty("format", name));
     emitName(node, name);
     return node;
   }

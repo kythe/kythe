@@ -149,9 +149,6 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     List<JavaNode> decls = scanList(compilation.getTypeDecls(), ctx);
     decls.removeAll(Collections.singleton(null));
-    for (JavaNode n : decls) {
-      entrySets.emitEdge(n.entries, EdgeKind.CHILDOF, fileNode);
-    }
 
     if (compilation.getPackageName() != null) {
       EntrySet pkgNode = entrySets.getPackageNode(compilation.packge);
@@ -379,6 +376,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       EntrySet fnTypeNode = entrySets.newFunctionType(ret, toEntries(paramTypes));
       entrySets.emitEdge(methodNode, EdgeKind.TYPED, fnTypeNode);
       entrySets.emitName(fnTypeNode, fnTypeName);
+
+      for (JavaNode n : params) {
+        emitEdge(methodNode, EdgeKind.CHILDOF, n);
+      }
 
       ClassSymbol ownerClass = (ClassSymbol) methodDef.sym.owner;
       Set<Element> ownerDirectSupertypes = new HashSet<>();

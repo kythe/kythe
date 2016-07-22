@@ -5,6 +5,9 @@
 Notable changes:
  - Java indexer: emit `ref/imports` anchors for imported symbols
 
+Notable additions:
+ - Java indexer: emit basic `format` facts
+
 ## v0.0.22
 
 Notable changes:

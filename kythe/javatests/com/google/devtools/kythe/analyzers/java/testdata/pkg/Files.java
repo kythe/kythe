@@ -25,15 +25,12 @@ public class Files {
 }
 //- Anchor childof File =
 //-   vname("","kythe","","kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/Files.java","")
-//- FilesClass childof File
 
 //- File.node/kind file
 //- File.text/encoding "UTF-8"
 
 //- @OtherDecl defines/binding ODecl
-//- ODecl childof File
 enum OtherDecl {}
 
 //- @Inter defines/binding Inter
-//- Inter childof File
 interface Inter {}
