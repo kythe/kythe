@@ -125,6 +125,10 @@ impl KytheLintPass {
     }
 }
 
+fn is_from_macro(span: &Span) -> bool {
+    span.expn_id.into_u32() != u32::max_value()
+}
+
 // A no-op implementation since we aren't reporting linting errors
 impl LintPass for KytheLintPass {
     fn get_lints(&self) -> LintArray {
@@ -141,8 +145,7 @@ impl LateLintPass for KytheLintPass {
                 Def::Method(def_id) |
                 Def::Fn(def_id) => {
                     let ref_span = cx.tcx.map.span(ref_node);
-                    let is_from_macro = ref_span.expn_id.into_u32() != u32::max_value();
-                    if is_from_macro {
+                    if is_from_macro(&ref_span) {
                         continue;
                     }
 
@@ -185,10 +188,9 @@ impl LateLintPass for KytheLintPass {
 
                 Def::Local(def_id, def_node) => {
                     let ref_span = cx.tcx.map.span(ref_node);
-                    let is_from_macro = ref_span.expn_id.into_u32() != u32::max_value();
 
                     // Skip the definition since we've marked it as uninteresting
-                    if is_from_macro || self.blacklist.contains(&def_id) {
+                    if is_from_macro(&ref_span) || self.blacklist.contains(&def_id) {
                         continue;
                     }
 
@@ -202,6 +204,16 @@ impl LateLintPass for KytheLintPass {
                     } else {
                         self.writer.edge(&anchor_vname, EdgeKind::Ref, &local_vname);
                     }
+                }
+
+                Def::Const(def_id) |
+                Def::AssociatedConst(def_id) |
+                Def::Static(def_id, _) => {
+                    let ref_span = cx.tcx.map.span(ref_node);
+                    let local_vname = self.vname_from_defid(cx, def_id);
+                    let anchor_vname = self.anchor_from_span(ref_span, cx.sess().codemap());
+
+                    self.writer.edge(&anchor_vname, EdgeKind::Ref, &local_vname);
                 }
                 _ => (),
             }
@@ -217,8 +229,7 @@ impl LateLintPass for KytheLintPass {
             let call_expr = cx.tcx.map.expect_expr(call.expr_id);
             if let hir::Expr_::ExprMethodCall(sp_name, _, _) = call_expr.node {
                 let ref_span = sp_name.span;
-                let is_from_macro = ref_span.expn_id.into_u32() != u32::max_value();
-                if is_from_macro {
+                if is_from_macro(&ref_span) {
                     continue;
                 }
 
@@ -275,6 +286,41 @@ impl LateLintPass for KytheLintPass {
                             self.blacklist.insert(def_id);
                         }
                     }
+                }
+            }
+        }
+    }
+
+    fn check_item(&mut self, cx: &LateContext, item: &hir::Item) {
+        // This includes static strings
+        if is_from_macro(&item.span) {
+            return;
+        }
+
+        use rustc::hir::Item_::*;
+        let ref kind = match item.node {
+            ItemStatic(..) => NodeKind::Variable,
+            ItemConst(..) => NodeKind::Constant,
+            _ => return,
+        };
+
+        if let Some(def_id) = cx.tcx.map.opt_local_def_id(item.id) {
+            let def_name = item.name.to_string();
+            let anchor_vname = self.anchor_from_span(item.span, cx.sess().codemap());
+            let def_vname = self.vname_from_defid(cx, def_id);
+
+            self.writer.node(&def_vname, Fact::NodeKind, kind);
+            self.writer.edge(&anchor_vname, EdgeKind::Defines, &def_vname);
+
+            // Substring matching is suboptimal, but there doesn't appear to be an accessible node
+            // or span for the item name.
+            match self.anchor_from_sub_span(item.span, &def_name, cx.sess().codemap()) {
+                Ok(bind_vname) => {
+                    self.writer.edge(&bind_vname, EdgeKind::DefinesBinding, &def_vname)
+                }
+
+                Err(e) => {
+                    writeln!(stderr(), "Error finding subspan for {}: {}", def_name, e).unwrap()
                 }
             }
         }

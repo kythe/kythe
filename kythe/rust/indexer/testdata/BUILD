@@ -15,8 +15,10 @@ test_suite(
     name = "basic",
     tags = ["manual"],
     tests = [
+        ":const",
         ":file_content",
         ":file_node",
+        ":static",
         ":var_ref",
         ":vardecl_local_anchor",
         ":vardecl_local_shadow",
@@ -40,6 +42,11 @@ test_suite(
 )
 
 rust_indexer_test(
+    name = "const",
+    srcs = ["basic/const.rs"],
+)
+
+rust_indexer_test(
     name = "file_node",
     srcs = ["basic/file_node.rs"],
 )
@@ -51,6 +58,11 @@ rust_indexer_test(
         "basic/file_content.rs",
         "basic/a.rs",
     ],
+)
+
+rust_indexer_test(
+    name = "static",
+    srcs = ["basic/static.rs"],
 )
 
 rust_indexer_test(

@@ -56,6 +56,7 @@ str_enum! {
        Anchor => "anchor",
        Function => "function",
        Variable => "variable",
+       Constant => "constant",
     }
 }
 
