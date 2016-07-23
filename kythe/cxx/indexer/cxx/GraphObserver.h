@@ -264,6 +264,12 @@ public:
     std::string Path;
     /// \brief The `NameClass` of this name.
     NameEqClass EqClass;
+    /// \brief Whether this name is known to be hidden.
+    ///
+    /// Most useful names can be uttered from the global namespace.
+    /// Some names, like the names of local variables, cannot. When we know
+    /// a name is unutterable, this flag is set.
+    bool Hidden = false;
     /// \brief Returns a string representation of this `NameId`.
     std::string ToString() const;
   };

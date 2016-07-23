@@ -35,6 +35,8 @@ DEFINE_bool(experimental_drop_instantiation_independent_data, false,
             "instantiation-independent.");
 DEFINE_bool(report_profiling_events, false,
             "Write profiling events to standard error.");
+DEFINE_bool(experimental_index_lite, false,
+            "Drop uncommonly-used data from the index.");
 
 namespace kythe {
 
@@ -54,6 +56,8 @@ int main(int argc, char *argv[]) {
   options.UnimplementedBehavior = context.ignore_unimplemented()
                                       ? kythe::BehaviorOnUnimplemented::Continue
                                       : kythe::BehaviorOnUnimplemented::Abort;
+  options.Verbosity = FLAGS_experimental_index_lite ? kythe::Verbosity::Lite
+                                                    : kythe::Verbosity::Classic;
   options.DropInstantiationIndependentData =
       FLAGS_experimental_drop_instantiation_independent_data;
   options.AllowFSAccess = context.allow_filesystem_access();

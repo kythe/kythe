@@ -20,10 +20,11 @@
 #define KYTHE_CXX_INDEXER_CXX_PP_CALLBACKS_H_
 
 #include "clang/Basic/SourceManager.h"
-#include "clang/Lex/Token.h"
 #include "clang/Lex/PPCallbacks.h"
+#include "clang/Lex/Token.h"
 
 #include "GraphObserver.h"
+#include "IndexerASTHooks.h"
 
 namespace kythe {
 
@@ -31,7 +32,7 @@ namespace kythe {
 /// use and definition.
 class IndexerPPCallbacks : public clang::PPCallbacks {
 public:
-  IndexerPPCallbacks(clang::Preprocessor &PP, GraphObserver &GO);
+  IndexerPPCallbacks(clang::Preprocessor &PP, GraphObserver &GO, Verbosity V);
   ~IndexerPPCallbacks() override;
 
   void FileChanged(clang::SourceLocation Loc,
@@ -139,6 +140,8 @@ private:
   const clang::Preprocessor &Preprocessor;
   /// The `GraphObserver` we will use for reporting information.
   GraphObserver &Observer;
+  /// Whether we should emit all data.
+  enum Verbosity Verbosity;
 };
 
 } // namespace kythe

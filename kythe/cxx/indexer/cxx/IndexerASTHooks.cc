@@ -1126,18 +1126,19 @@ bool IndexerASTVisitor::VisitCXXUnresolvedConstructExpr(
     }
     auto CtorName = Context.DeclarationNames.getCXXConstructorName(
         CanQualType::CreateUnsafe(QTCan));
-    auto LookupId =
-        BuildNodeIdForDependentName(clang::NestedNameSpecifierLoc(), CtorName,
-                                    E->getLocStart(), TyId, EmitRanges::No);
-    clang::SourceLocation RPL = E->getRParenLoc();
-    clang::SourceRange SR = E->getSourceRange();
-    // This loses the right paren without the offset.
-    if (RPL.isValid()) {
-      SR.setEnd(RPL.getLocWithOffset(1));
-    }
-    auto StmtId = BuildNodeIdForImplicitStmt(E);
-    if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
-      RecordCallEdges(RCC.primary(), LookupId.primary());
+    if (auto LookupId = BuildNodeIdForDependentName(
+            clang::NestedNameSpecifierLoc(), CtorName, E->getLocStart(), TyId,
+            EmitRanges::No)) {
+      clang::SourceLocation RPL = E->getRParenLoc();
+      clang::SourceRange SR = E->getSourceRange();
+      // This loses the right paren without the offset.
+      if (RPL.isValid()) {
+        SR.setEnd(RPL.getLocWithOffset(1));
+      }
+      auto StmtId = BuildNodeIdForImplicitStmt(E);
+      if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
+        RecordCallEdges(RCC.primary(), LookupId.primary());
+      }
     }
   }
   return true;
@@ -2368,6 +2369,10 @@ GraphObserver::NameId
 IndexerASTVisitor::BuildNameIdForDecl(const clang::Decl *Decl) {
   GraphObserver::NameId Id;
   Id.EqClass = BuildNameEqClassForDecl(Decl);
+  if (!Verbosity && !const_cast<clang::Decl *>(Decl)->isLocalExternDecl() &&
+      Decl->getParentFunctionOrMethod() != nullptr) {
+    Id.Hidden = true;
+  }
   // Cons onto the end of the name instead of the beginning to optimize for
   // prefix search.
   llvm::raw_string_ostream Ostream(Id.Path);
@@ -2617,6 +2622,9 @@ IndexerASTVisitor::BuildNodeIdForDecl(const clang::Decl *Decl, unsigned Index) {
 
 MaybeFew<GraphObserver::NodeId>
 IndexerASTVisitor::BuildNodeIdForImplicitStmt(const clang::Stmt *Stmt) {
+  if (!Verbosity) {
+    return None();
+  }
   // Do a quickish test to see if the Stmt is implicit.
   clang::ast_type_traits::DynTypedNode CurrentNode =
       clang::ast_type_traits::DynTypedNode::create(*Stmt);
@@ -2940,6 +2948,9 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForDependentName(
     const clang::NestedNameSpecifierLoc &InNNSLoc,
     const clang::DeclarationName &Id, const clang::SourceLocation IdLoc,
     const MaybeFew<GraphObserver::NodeId> &Root, EmitRanges ER) {
+  if (!Verbosity) {
+    return None();
+  }
   // TODO(zarko): Need a better way to generate stablish names here.
   // In particular, it would be nice if a dependent name A::B::C
   // and a dependent name A::B::D were represented as ::C and ::D off
@@ -3051,6 +3062,9 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForDependentName(
 
 MaybeFew<GraphObserver::NodeId>
 IndexerASTVisitor::BuildNodeIdForExpr(const clang::Expr *Expr, EmitRanges ER) {
+  if (!Verbosity) {
+    return None();
+  }
   clang::Expr::EvalResult Result;
   std::string Identity;
   llvm::raw_string_ostream Ostream(Identity);
@@ -3241,6 +3255,10 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
       return ID;
     }
     TypeAlreadyBuilt = true;
+  }
+  auto InEmitRanges = EmitRanges;
+  if (!Verbosity) {
+    EmitRanges = IndexerASTVisitor::EmitRanges::No;
   }
   // We only care about leaves in the type hierarchy (eg, we shouldn't match
   // on Reference, but instead on LValueReference or RValueReference).
@@ -3449,7 +3467,7 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
         BuildNodeIdForType(T.getInnerLoc(), DT ? DT->getInnerType().getTypePtr()
                                                : T.getInnerLoc().getTypePtr(),
                            EmitRanges);
-    EmitRanges = IndexerASTVisitor::EmitRanges::No;
+    EmitRanges = InEmitRanges = IndexerASTVisitor::EmitRanges::No;
   } break;
   case TypeLoc::Typedef: {
     // TODO(zarko): Return canonicalized versions as non-primary elements of
@@ -3594,7 +3612,7 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
       }
     }
     // Don't link 'struct'.
-    EmitRanges = IndexerASTVisitor::EmitRanges::No;
+    EmitRanges = InEmitRanges = IndexerASTVisitor::EmitRanges::No;
     // TODO(zarko): Add an anchor for all the Elaborated type; otherwise decls
     // like `typedef B::C tdef;` will only anchor `C` instead of `B::C`.
   } break;
@@ -3775,17 +3793,16 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
   } else {
     TypeNodes[Key] = ID;
   }
-  if (SR.isValid() && SR.getBegin().isFileID()) {
+  if (SR.isValid() && SR.getBegin().isFileID() &&
+      InEmitRanges == IndexerASTVisitor::EmitRanges::Yes) {
     // If this is an empty SourceRange, try to expand it.
     if (SR.getBegin() == SR.getEnd()) {
       SR = RangeForASTEntityFromSourceLocation(SR.getBegin());
     }
-    if (EmitRanges == IndexerASTVisitor::EmitRanges::Yes) {
-      if (auto RCC = ExplicitRangeInCurrentContext(SR)) {
-        ID.Iter([&](const GraphObserver::NodeId &I) {
-          Observer.recordTypeSpellingLocation(RCC.primary(), I, Claimability);
-        });
-      }
+    if (auto RCC = ExplicitRangeInCurrentContext(SR)) {
+      ID.Iter([&](const GraphObserver::NodeId &I) {
+        Observer.recordTypeSpellingLocation(RCC.primary(), I, Claimability);
+      });
     }
   }
   return ID;

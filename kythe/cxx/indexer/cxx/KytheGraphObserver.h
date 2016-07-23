@@ -28,6 +28,7 @@
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
 #include "kythe/cxx/common/indexing/KytheVFS.h"
 #include "kythe/cxx/common/kythe_metadata_file.h"
+#include "kythe/cxx/indexer/cxx/IndexerASTHooks.h"
 #include "kythe/proto/storage.pb.h"
 
 namespace kythe {
@@ -383,7 +384,8 @@ class KytheGraphObserver : public GraphObserver {
   kythe::proto::VName VNameFromFileEntry(const clang::FileEntry *file_entry);
   kythe::proto::VName ClaimableVNameFromFileID(const clang::FileID &file_id);
   kythe::proto::VName VNameFromRange(const GraphObserver::Range &range);
-  kythe::proto::VName RecordName(const GraphObserver::NameId &name_id);
+  MaybeFew<kythe::proto::VName> RecordName(
+      const GraphObserver::NameId &name_id);
   void RecordAnchor(const GraphObserver::Range &source_range,
                     const GraphObserver::NodeId &primary_anchored_to,
                     EdgeKindID anchor_edge_kind, Claimability claimability);

@@ -139,6 +139,7 @@ std::string IndexCompilationUnit(const proto::CompilationUnit &Unit,
       new IndexerFrontendAction(&Observer, HSIValid ? &HSI : nullptr));
   Action->setIgnoreUnimplemented(Options.UnimplementedBehavior);
   Action->setTemplateMode(Options.TemplateBehavior);
+  Action->setVerbosity(Options.Verbosity);
   llvm::IntrusiveRefCntPtr<clang::FileManager> FileManager(
       new clang::FileManager(FSO, Options.AllowFSAccess ? nullptr : VFS));
   std::vector<std::string> Args(Unit.argument().begin(), Unit.argument().end());

@@ -85,6 +85,10 @@ public:
   /// \param T The behavior to use for template instantiations.
   void setTemplateMode(BehaviorOnTemplates T) { TemplateMode = T; }
 
+  /// \param Emit all data?
+  /// \param V Degree of verbosity.
+  void setVerbosity(Verbosity V) { Verbosity = V; }
+
 private:
   std::unique_ptr<clang::ASTConsumer>
   CreateASTConsumer(clang::CompilerInstance &CI,
@@ -123,15 +127,15 @@ private:
       Observer->setLangOptions(&CI.getLangOpts());
       Observer->setPreprocessor(&CI.getPreprocessor());
     }
-    return llvm::make_unique<IndexerASTConsumer>(Observer, IgnoreUnimplemented,
-                                                 TemplateMode, Supports);
+    return llvm::make_unique<IndexerASTConsumer>(
+        Observer, IgnoreUnimplemented, TemplateMode, Verbosity, Supports);
   }
 
   bool BeginSourceFileAction(clang::CompilerInstance &CI,
                              llvm::StringRef Filename) override {
     if (Observer) {
       CI.getPreprocessor().addPPCallbacks(llvm::make_unique<IndexerPPCallbacks>(
-          CI.getPreprocessor(), *Observer));
+          CI.getPreprocessor(), *Observer, Verbosity));
     }
     CI.getLangOpts().CommentOpts.ParseAllComments = true;
     CI.getLangOpts().RetainCommentsFromSystemHeaders = true;
@@ -146,6 +150,8 @@ private:
   BehaviorOnUnimplemented IgnoreUnimplemented = BehaviorOnUnimplemented::Abort;
   /// Whether to visit template instantiations.
   BehaviorOnTemplates TemplateMode = BehaviorOnTemplates::VisitInstantiations;
+  /// Whether to emit all data.
+  enum Verbosity Verbosity = kythe::Verbosity::Classic;
   /// Configuration information for header search.
   HeaderSearchInfo HeaderConfig;
   /// Whether to use HeaderConfig.
@@ -202,6 +208,8 @@ struct IndexerOptions {
   /// \brief What to do when we don't know what to do.
   BehaviorOnUnimplemented UnimplementedBehavior =
       BehaviorOnUnimplemented::Abort;
+  /// \brief Whether to emit all data.
+  enum Verbosity Verbosity = kythe::Verbosity::Classic;
   /// \brief Enable experimental lossy claiming if true.
   bool EnableLossyClaiming = false;
   /// \brief Whether to allow access to the raw filesystem.

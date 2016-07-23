@@ -236,6 +236,12 @@ private:
   friend class RecursiveASTVisitor<IndexedParentASTVisitor>;
 };
 
+/// \brief Specifies whether uncommonly-used data should be dropped.
+enum Verbosity : bool {
+  Classic = true, ///< Emit all data.
+  Lite = false    ///< Emit only common data.
+};
+
 /// \brief Specifies what the indexer should do if it encounters a case it
 /// doesn't understand.
 enum BehaviorOnUnimplemented : bool {
@@ -266,9 +272,10 @@ void InsertAnchorMarks(std::string &Text, std::vector<MiniAnchor> &Anchors);
 class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
 public:
   IndexerASTVisitor(clang::ASTContext &C, BehaviorOnUnimplemented B,
-                    BehaviorOnTemplates T, const LibrarySupports &S,
-                    clang::Sema &Sema, GraphObserver *GO = nullptr)
-      : IgnoreUnimplemented(B), TemplateMode(T),
+                    BehaviorOnTemplates T, Verbosity V,
+                    const LibrarySupports &S, clang::Sema &Sema,
+                    GraphObserver *GO = nullptr)
+      : IgnoreUnimplemented(B), TemplateMode(T), Verbosity(V),
         Observer(GO ? *GO : NullObserver), Context(C), Supports(S), Sema(Sema) {
   }
 
@@ -572,6 +579,9 @@ private:
   /// Should we visit template instantiations?
   BehaviorOnTemplates TemplateMode;
 
+  /// Should we emit all data?
+  enum Verbosity Verbosity;
+
   NullGraphObserver NullObserver;
   GraphObserver &Observer;
   clang::ASTContext &Context;
@@ -792,13 +802,15 @@ private:
 class IndexerASTConsumer : public clang::SemaConsumer {
 public:
   explicit IndexerASTConsumer(GraphObserver *GO, BehaviorOnUnimplemented B,
-                              BehaviorOnTemplates T, const LibrarySupports &S)
-      : Observer(GO), IgnoreUnimplemented(B), TemplateMode(T), Supports(S) {}
+                              BehaviorOnTemplates T, Verbosity V,
+                              const LibrarySupports &S)
+      : Observer(GO), IgnoreUnimplemented(B), TemplateMode(T), Verbosity(V),
+        Supports(S) {}
 
   void HandleTranslationUnit(clang::ASTContext &Context) override {
     CHECK(Sema != nullptr);
     IndexerASTVisitor Visitor(Context, IgnoreUnimplemented, TemplateMode,
-                              Supports, *Sema, Observer);
+                              Verbosity, Supports, *Sema, Observer);
     {
       ProfileBlock block(Observer->getProfilingCallback(), "traverse_tu");
       Visitor.TraverseDecl(Context.getTranslationUnitDecl());
@@ -815,6 +827,8 @@ private:
   BehaviorOnUnimplemented IgnoreUnimplemented;
   /// Whether we should visit template instantiations.
   BehaviorOnTemplates TemplateMode;
+  /// Whether we should emit all data.
+  enum Verbosity Verbosity;
   /// Which library supports are enabled.
   const LibrarySupports &Supports;
   /// The active Sema instance.
