@@ -34,9 +34,12 @@ import (
 // CompilationFunc handles a single CompilationUnit.
 type CompilationFunc func(context.Context, *apb.CompilationUnit) error
 
-// Queue is a generic interface to a sequence of CompilationUnits.
+// A Queue represents an ordered sequence of compilation units.
 type Queue interface {
-	Next(context.Context, CompilationFunc) error
+	// Next invokes f with the next available compilation in the queue.  If no
+	// further values are available, Next must return io.EOF; otherwise, the
+	// return value from f is propagated to the caller of Next.
+	Next(_ context.Context, f CompilationFunc) error
 }
 
 // Driver sends compilations sequentially from a queue to an analyzer.
