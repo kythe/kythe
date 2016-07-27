@@ -36,9 +36,11 @@ static ThunkRet kNoException = {0};
 static ThunkRet kSolved = {1};
 /// \brief The program is invalid, so unwind.
 static ThunkRet kInvalidProgram = {2};
+/// \brief The goal group is known to be impossible to solve.
+static ThunkRet kImpossible = {3};
 /// \brief ThunkRets >= kFirstCut should unwind to the frame
 /// establishing that cut without changing assignments.
-static ThunkRet kFirstCut = {3};
+static ThunkRet kFirstCut = {4};
 
 typedef const std::function<ThunkRet()> &Thunk;
 
@@ -331,8 +333,12 @@ class Solver {
   using Inspection = AssertionParser::Inspection;
 
   Solver(Verifier *context, Database &database,
+         std::multimap<std::pair<size_t, size_t>, AstNode *> &anchors,
          std::function<bool(Verifier *, const Inspection &)> &inspect)
-      : context_(*context), database_(database), inspect_(inspect) {}
+      : context_(*context),
+        database_(database),
+        anchors_(anchors),
+        inspect_(inspect) {}
 
   ThunkRet UnifyTuple(Tuple *st, Tuple *tt, size_t ofs, size_t max,
                       ThunkRet cut, Thunk f) {
@@ -367,6 +373,12 @@ class Solver {
         }
         return UnifyTuple(st, tt, 0, st->size(), cut, f);
       }
+    } else if (Range *sr = s->AsRange()) {
+      if (Range *tr = t->AsRange()) {
+        if (sr->begin() == tr->begin() && sr->end() == tr->end()) {
+          return f();
+        }
+      }
     }
     return kNoException;
   }
@@ -382,6 +394,8 @@ class Solver {
           return true;
         }
       }
+      return false;
+    } else if (Range *r = t->AsRange()) {
       return false;
     } else {
       CHECK(t->AsIdentifier() && "Inexhaustive match.");
@@ -446,20 +460,45 @@ class Solver {
     return kNoException;
   }
 
-  ThunkRet MatchAtom(AstNode *atom, AstNode *program, ThunkRet cut, Thunk f) {
-    // We only have the database and eq-constraints right now.
-    assert(program == nullptr);
+  /// \brief If `atom` has the syntactic form =(a, b), returns the tuple (a, b).
+  /// Otherwise returns `null`.
+  Tuple *MatchEqualsArgs(AstNode *atom) {
     if (App *a = atom->AsApp()) {
       if (Identifier *id = a->lhs()->AsIdentifier()) {
         if (id->symbol() == context_.eq_id()->symbol()) {
           if (Tuple *tu = a->rhs()->AsTuple()) {
             if (tu->size() == 2) {
-              // =(a, b) succeeds if unify(a, b) succeeds.
-              return Unify(tu->element(0), tu->element(1), cut, f);
+              return tu;
             }
           }
         }
       }
+    }
+    return nullptr;
+  }
+
+  ThunkRet MatchAtom(AstNode *atom, AstNode *program, ThunkRet cut, Thunk f) {
+    // We only have the database and eq-constraints right now.
+    assert(program == nullptr);
+    if (auto *tu = MatchEqualsArgs(atom)) {
+      if (Range *r = tu->element(0)->AsRange()) {
+        auto anchors =
+            anchors_.equal_range(std::make_pair(r->begin(), r->end()));
+        if (anchors.first == anchors.second) {
+          // There's no anchor with this range in the database.
+          // This goal can therefore never succeed.
+          return kImpossible;
+        }
+        for (auto anchor = anchors.first; anchor != anchors.second; ++anchor) {
+          ThunkRet unify_ret = Unify(anchor->second, tu->element(1), cut, f);
+          if (unify_ret != kNoException) {
+            return unify_ret;
+          }
+        }
+        return kNoException;
+      }
+      // =(a, b) succeeds if unify(a, b) succeeds.
+      return Unify(tu->element(0), tu->element(1), cut, f);
     }
     return MatchAtomVersusDatabase(atom, cut, f);
   }
@@ -514,7 +553,7 @@ class Solver {
         if (group->accept_if != AssertionParser::GoalGroup::kNoneMayFail) {
           return PerformInspection() ? kNoException : kInvalidProgram;
         }
-      } else if (result == kNoException) {
+      } else if (result == kNoException || result == kImpossible) {
         // That last goal group failed.
         if (group->accept_if != AssertionParser::GoalGroup::kSomeMustFail) {
           return PerformInspection() ? kNoException : kInvalidProgram;
@@ -538,6 +577,7 @@ class Solver {
  private:
   Verifier &context_;
   Database &database_;
+  std::multimap<std::pair<size_t, size_t>, AstNode *> &anchors_;
   std::function<bool(Verifier *, const Inspection &)> &inspect_;
   size_t highest_group_reached_ = 0;
   size_t highest_goal_reached_ = 0;
@@ -552,6 +592,9 @@ Verifier::Verifier(bool trace_lex, bool trace_parse)
   fact_id_ = IdentifierFor(builtin_location_, "fact");
   vname_id_ = IdentifierFor(builtin_location_, "vname");
   kind_id_ = IdentifierFor(builtin_location_, "/kythe/node/kind");
+  anchor_id_ = IdentifierFor(builtin_location_, "anchor");
+  start_id_ = IdentifierFor(builtin_location_, "/kythe/loc/start");
+  end_id_ = IdentifierFor(builtin_location_, "/kythe/loc/end");
   root_id_ = IdentifierFor(builtin_location_, "/");
   eq_id_ = IdentifierFor(builtin_location_, "=");
   ordinal_id_ = IdentifierFor(builtin_location_, "/kythe/ordinal");
@@ -712,7 +755,7 @@ bool Verifier::VerifyAllGoals(
   if (!PrepareDatabase()) {
     return false;
   }
-  Solver solver(this, facts_, inspect);
+  Solver solver(this, facts_, anchors_, inspect);
   bool result = solver.Solve();
   highest_goal_reached_ = solver.highest_goal_reached();
   highest_group_reached_ = solver.highest_group_reached();
@@ -861,6 +904,8 @@ bool Verifier::PrepareDatabase() {
   // Now we can do a simple pairwise check on each of the facts to see
   // whether the invariants hold.
   bool is_ok = true;
+  AstNode *last_anchor_vname = nullptr;
+  size_t last_anchor_start = ~0;
   for (size_t f = 0; f < facts_.size(); ++f) {
     AstNode *fb = facts_[f];
 
@@ -870,6 +915,48 @@ bool Verifier::PrepareDatabase() {
       printer.Print("\n");
       is_ok = false;
       continue;
+    }
+    Tuple *tb = fb->AsApp()->rhs()->AsTuple();
+    if (tb->element(1) == empty_string_id_ &&
+        tb->element(2) == empty_string_id_) {
+      // Check to see if this fact entry describes part of an anchor.
+      // We've arranged via EncodedFactLessThan to sort kind_id_ before
+      // start_id_ and start_id_ before end_id_ and to group all node facts
+      // together in uninterrupted runs.
+      if (EncodedIdentEqualTo(tb->element(3), kind_id_) &&
+          EncodedIdentEqualTo(tb->element(4), anchor_id_)) {
+        // Start tracking a new anchor.
+        last_anchor_vname = tb->element(0);
+        last_anchor_start = ~0;
+      } else if (last_anchor_vname != nullptr &&
+                 EncodedIdentEqualTo(tb->element(3), start_id_) &&
+                 tb->element(4)->AsIdentifier()) {
+        if (EncodedVNameOrIdentEqualTo(last_anchor_vname, tb->element(0))) {
+          // This is a fact about the anchor we're tracking.
+          std::stringstream(
+              symbol_table_.text(tb->element(4)->AsIdentifier()->symbol())) >>
+              last_anchor_start;
+        } else {
+          // This is a fact about node we're not tracking; given our sort order,
+          // we'll never get enough information for the node we are tracking,
+          // so stop tracking it.
+          last_anchor_vname = nullptr;
+          last_anchor_start = ~0;
+        }
+      } else if (last_anchor_start != ~0 &&
+                 EncodedIdentEqualTo(tb->element(3), end_id_) &&
+                 tb->element(4)->AsIdentifier()) {
+        if (EncodedVNameOrIdentEqualTo(last_anchor_vname, tb->element(0))) {
+          // We have enough information about the anchor we're tracking.
+          size_t last_anchor_end = ~0;
+          std::stringstream(
+              symbol_table_.text(tb->element(4)->AsIdentifier()->symbol())) >>
+              last_anchor_end;
+          AddAnchor(last_anchor_vname, last_anchor_start, last_anchor_end);
+        }
+        last_anchor_vname = nullptr;
+        last_anchor_start = ~0;
+      }
     }
     if (f == 0) {
       continue;
@@ -886,7 +973,6 @@ bool Verifier::PrepareDatabase() {
       continue;
     }
     Tuple *ta = fa->AsApp()->rhs()->AsTuple();
-    Tuple *tb = fb->AsApp()->rhs()->AsTuple();
     if (EncodedVNameEqualTo(ta->element(0)->AsApp(), tb->element(0)->AsApp()) &&
         ta->element(1) == empty_string_id_ &&
         tb->element(1) == empty_string_id_ &&

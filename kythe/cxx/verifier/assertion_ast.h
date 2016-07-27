@@ -142,6 +142,7 @@ class ArenaObject {
 class App;
 class EVar;
 class Identifier;
+class Range;
 class Tuple;
 
 /// \brief An object that is manipulated by the verifier during the course of
@@ -165,12 +166,30 @@ class AstNode : public ArenaObject {
   virtual App *AsApp() { return nullptr; }
   virtual EVar *AsEVar() { return nullptr; }
   virtual Identifier *AsIdentifier() { return nullptr; }
+  virtual Range *AsRange() { return nullptr; }
   virtual Tuple *AsTuple() { return nullptr; }
 
  private:
   /// \brief The location where the `AstNode` can be found in source text, if
   /// any.
   yy::location location_;
+};
+
+/// \brief A range specification that can unify with one or more ranges.
+class Range : public AstNode {
+ public:
+  Range(const yy::location &location, size_t begin, size_t end)
+      : AstNode(location), begin_(begin), end_(end) {}
+  Range *AsRange() override { return this; }
+  void Dump(const SymbolTable &, PrettyPrinter *) override;
+  size_t begin() const { return begin_; }
+  size_t end() const { return end_; }
+
+ private:
+  /// The start of the range in bytes.
+  size_t begin_;
+  /// The end of the range in bytes.
+  size_t end_;
 };
 
 /// \brief A tuple of zero or more elements.

@@ -73,9 +73,9 @@ class Verifier {
   /// \brief Attempts to satisfy all goals from all loaded rule files and facts.
   /// \param inspect function to call on any inspection request
   /// \return true if all goals could be satisfied.
-  bool VerifyAllGoals(
-      std::function<bool(Verifier *context,
-                         const AssertionParser::Inspection &)> inspect);
+  bool VerifyAllGoals(std::function<bool(Verifier *context,
+                                         const AssertionParser::Inspection &)>
+                          inspect);
 
   /// \brief Attempts to satisfy all goals from all loaded rule files and facts.
   /// \return true if all goals could be satisfied.
@@ -163,6 +163,11 @@ class Verifier {
   AstNode *ConvertVName(const yy::location &location,
                         const kythe::proto::VName &vname);
 
+  /// \brief Adds an anchor VName.
+  void AddAnchor(AstNode *vname, size_t begin, size_t end) {
+    anchors_.emplace(std::make_pair(begin, end), vname);
+  }
+
   /// \sa parser()
   AssertionParser parser_;
 
@@ -174,6 +179,9 @@ class Verifier {
 
   /// All known facts.
   std::vector<AstNode *> facts_;
+
+  /// Multimap from anchor offsets to anchor VName tuples.
+  std::multimap<std::pair<size_t, size_t>, AstNode *> anchors_;
 
   /// Has the database been prepared?
   bool database_prepared_ = false;
@@ -207,6 +215,15 @@ class Verifier {
 
   /// Node to use for the `/kythe/node/kind` constant.
   AstNode *kind_id_;
+
+  /// Node to use for the `anchor` constant.
+  AstNode *anchor_id_;
+
+  /// Node to use for the `/kythe/loc/start` constant.
+  AstNode *start_id_;
+
+  /// Node to use for the `/kythe/loc/end` constant.
+  AstNode *end_id_;
 
   /// The highest goal group reached during solving (often the culprit for why
   /// the solution failed).

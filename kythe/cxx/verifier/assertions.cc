@@ -44,6 +44,14 @@ void Identifier::Dump(const SymbolTable &symbol_table, PrettyPrinter *printer) {
   }
 }
 
+void Range::Dump(const SymbolTable &symbol_table, PrettyPrinter *printer) {
+  printer->Print("Range(");
+  printer->Print(std::to_string(begin_));
+  printer->Print(",");
+  printer->Print(std::to_string(end_));
+  printer->Print(")");
+}
+
 void Tuple::Dump(const SymbolTable &symbol_table, PrettyPrinter *printer) {
   printer->Print("(");
   for (size_t v = 0; v < element_count_; ++v) {
@@ -316,11 +324,6 @@ AstNode *AssertionParser::CreateAnchorSpec(const yy::location &location) {
       new_evar, spec.spec, line_number, use_line_number, group_id(),
       UnresolvedLocation::Kind::kAnchor, must_be_unambiguous, match_number});
   location_spec_stack_.pop_back();
-  AppendGoal(group_id(), verifier_.MakePredicate(
-                             location, verifier_.fact_id(),
-                             {new_evar, verifier_.empty_string_id(),
-                              verifier_.empty_string_id(), verifier_.kind_id(),
-                              verifier_.IdentifierFor(location, "anchor")}));
   return new_evar;
 }
 
@@ -421,21 +424,12 @@ bool AssertionParser::ResolveLocations(const yy::location &end_of_line,
                                         "." + std::to_string(col),
                                     evar, Inspection::Kind::IMPLICIT);
         }
-        AppendGoal(
-            group_id,
-            verifier_.MakePredicate(
-                location, verifier_.fact_id(),
-                {evar, verifier_.empty_string_id(), verifier_.empty_string_id(),
-                 verifier_.IdentifierFor(location, "/kythe/loc/start"),
-                 verifier_.IdentifierFor(location, line_start + col)}));
-        AppendGoal(
-            group_id,
-            verifier_.MakePredicate(
-                location, verifier_.fact_id(),
-                {evar, verifier_.empty_string_id(), verifier_.empty_string_id(),
-                 verifier_.IdentifierFor(location, "/kythe/loc/end"),
-                 verifier_.IdentifierFor(location,
-                                         line_start + col + token.size())}));
+        AppendGoal(group_id, verifier_.MakePredicate(
+                                 location, verifier_.eq_id(),
+                                 {new (verifier_.arena())
+                                      Range(location, line_start + col,
+                                            line_start + col + token.size()),
+                                  evar}));
         break;
     }
   }
