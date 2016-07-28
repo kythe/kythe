@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #![feature(plugin_registrar)]
-#![feature(box_syntax, rustc_private)]
+#![feature(slice_patterns, box_syntax, rustc_private)]
 
 extern crate syntax;
 extern crate rustc_serialize;
@@ -24,6 +24,7 @@ extern crate rustc_plugin;
 
 mod kythe;
 mod pass;
+mod visitor;
 
 use kythe::corpus::Corpus;
 use kythe::writer::JsonEntryWriter;
