@@ -471,6 +471,14 @@ message CrossReferencesRequest {
   // definition location populated, if known.
   bool node_definitions = 8;
 
+  // Enable the experimental generation of signatures in the
+  // CrossReferencesReply.  Enabling this currently causes multiple lookups and
+  // can significantly impact latency.  Once latency concerns have been
+  // addressed, this field will be removed and signatures will be returned by
+  // default.
+  // TODO(T156): remove this flag; always enable feature
+  bool experimental_signatures = 100;
+
   // TODO(schroederc): snippet kinds (none, indexer-default, or always line-based)
 
   // The cross-references matching a request are organized into logical pages.

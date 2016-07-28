@@ -3,6 +3,7 @@
 ## Upcoming release
 
 Notable changes:
+ - CrossReferences API: hide signature generation behind feature flag
  - Java indexer: emit `ref/imports` anchors for imported symbols
 
 Notable additions:

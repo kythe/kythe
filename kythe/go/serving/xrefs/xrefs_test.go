@@ -802,6 +802,8 @@ func TestCrossReferences(t *testing.T) {
 		Ticket:         []string{ticket},
 		DefinitionKind: xpb.CrossReferencesRequest_BINDING_DEFINITIONS,
 		ReferenceKind:  xpb.CrossReferencesRequest_ALL_REFERENCES,
+
+		ExperimentalSignatures: true,
 	})
 	testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
 

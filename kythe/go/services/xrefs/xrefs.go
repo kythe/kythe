@@ -734,7 +734,7 @@ func expandDefRelatedNodeSet(ctx context.Context, service Service, frontier stri
 
 // SlowCallersForCrossReferences is an implementation of callgraph support meant
 // for intermediate-term use by CrossReferences.
-func SlowCallersForCrossReferences(ctx context.Context, service Service, includeOverrides bool, ticket string) ([]*xpb.CrossReferencesReply_RelatedAnchor, error) {
+func SlowCallersForCrossReferences(ctx context.Context, service Service, includeOverrides, generateSignatures bool, ticket string) ([]*xpb.CrossReferencesReply_RelatedAnchor, error) {
 	ticket, err := kytheuri.Fix(ticket)
 	if err != nil {
 		return nil, err
@@ -822,9 +822,12 @@ func SlowCallersForCrossReferences(ctx context.Context, service Service, include
 			log.Printf("Warning: missing expanded anchor for caller %v", ticket)
 			continue
 		}
-		displayName, err := SlowSignature(ctx, service, caller)
-		if err != nil {
-			return nil, fmt.Errorf("error looking up signature for caller ticket %q: %v", caller, err)
+		var displayName *xpb.Printable
+		if generateSignatures {
+			displayName, err = SlowSignature(ctx, service, caller)
+			if err != nil {
+				return nil, fmt.Errorf("error looking up signature for caller ticket %q: %v", caller, err)
+			}
 		}
 		var sites []*xpb.Anchor
 		for _, ticket := range calls {

@@ -730,14 +730,18 @@ func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReference
 		} else if err != nil {
 			return nil, fmt.Errorf("error looking up cross-references for ticket %q: %v", ticket, err)
 		}
-		sig, err := xrefs.SlowSignature(ctx, t, ticket)
-		if err != nil {
-			log.Println("Error looking up signature for ticket %q: %v", ticket, err)
-		}
+
 		crs := &xpb.CrossReferencesReply_CrossReferenceSet{
-			Ticket:      ticket,
-			DisplayName: sig,
+			Ticket: ticket,
 		}
+
+		if req.ExperimentalSignatures {
+			crs.DisplayName, err = xrefs.SlowSignature(ctx, t, ticket)
+			if err != nil {
+				log.Println("WARNING: error looking up signature for ticket %q: %v", ticket, err)
+			}
+		}
+
 		for _, grp := range cr.Group {
 			switch {
 			case xrefs.IsDefKind(req.DefinitionKind, grp.Kind, cr.Incomplete):
@@ -764,7 +768,7 @@ func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReference
 		}
 
 		if wantMoreCrossRefs && req.CallerKind != xpb.CrossReferencesRequest_NO_CALLERS {
-			anchors, err := xrefs.SlowCallersForCrossReferences(ctx, t, req.CallerKind == xpb.CrossReferencesRequest_OVERRIDE_CALLERS, ticket)
+			anchors, err := xrefs.SlowCallersForCrossReferences(ctx, t, req.CallerKind == xpb.CrossReferencesRequest_OVERRIDE_CALLERS, req.ExperimentalSignatures, ticket)
 			if err != nil {
 				return nil, fmt.Errorf("error in SlowCallersForCrossReferences: %v", err)
 			}
