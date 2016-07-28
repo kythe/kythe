@@ -1,6 +1,6 @@
 # Release Notes
 
-## Upcoming release
+## v0.0.23
 
 Notable changes:
  - CrossReferences API: hide signature generation behind feature flag
