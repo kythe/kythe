@@ -3398,7 +3398,8 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
     if (TypeAlreadyBuilt) {
       break;
     }
-    if (auto ExpressionID = BuildNodeIdForExpr(DT->getSizeExpr(), EmitRanges)) {
+    if (auto ExpressionID = BuildNodeIdForExpr(
+            DT ? DT->getSizeExpr() : T.getSizeExpr(), EmitRanges)) {
       ID = Observer.recordTappNode(
           Observer.getNodeIdForBuiltinType("darr"),
           {{&ElementID.primary(), &ExpressionID.primary()}});
