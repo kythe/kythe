@@ -32,7 +32,7 @@ case $file in
   AUTHORS|CONTRIBUTORS|WORKSPACE|third_party/*|tools/*|*.md|BUILD|*/BUILD|*/testdata/*|*.yaml|*.json|*.html|*.pb.go|.arclint|.gitignore|*/.gitignore|.arcconfig|*/__phutil_*|*.bzl|.kythe|kythe/web/site/*)
     ;; # skip copyright checks
   *.sh|*.bash)
-    if command -v shellcheck jq &>/dev/null; then
+    if command -v shellcheck &>/dev/null && command -v jq &>/dev/null; then
       shellcheck -f json "$file" | \
         jq -r '.[] | "shellcheck::" + (if .level == "info" then "advice" else .level end) + ":" + (.line | tostring) + " " + .message'
     fi ;;
