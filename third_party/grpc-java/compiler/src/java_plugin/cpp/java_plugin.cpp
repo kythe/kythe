@@ -8,8 +8,9 @@
 #include "java_generator.h"
 #include <google/protobuf/compiler/code_generator.h>
 #include <google/protobuf/compiler/plugin.h>
-#include <google/protobuf/io/zero_copy_stream.h>
 #include <google/protobuf/descriptor.h>
+#include <google/protobuf/descriptor.pb.h>
+#include <google/protobuf/io/zero_copy_stream.h>
 
 static string JavaPackageToDir(const string& package_name) {
   string package_dir = package_name;
@@ -34,14 +35,22 @@ class JavaGrpcGenerator : public google::protobuf::compiler::CodeGenerator {
     vector<pair<string, string> > options;
     google::protobuf::compiler::ParseGeneratorParameter(parameter, &options);
 
-    bool generate_nano = false;
+    java_grpc_generator::ProtoFlavor flavor =
+        java_grpc_generator::ProtoFlavor::NORMAL;
+
+    bool enable_deprecated = false;
     for (int i = 0; i < options.size(); i++) {
-      if (options[i].first == "nano" && options[i].second == "true") {
-        generate_nano = true;
+      if (options[i].first == "nano") {
+        flavor = java_grpc_generator::ProtoFlavor::NANO;
+      } else if (options[i].first == "lite") {
+        flavor = java_grpc_generator::ProtoFlavor::LITE;
+      } else if (options[i].first == "enable_deprecated") {
+        enable_deprecated = options[i].second == "true";
       }
     }
 
-    string package_name = java_grpc_generator::ServiceJavaPackage(file);
+    string package_name = java_grpc_generator::ServiceJavaPackage(
+        file, flavor == java_grpc_generator::ProtoFlavor::NANO);
     string package_filename = JavaPackageToDir(package_name);
     for (int i = 0; i < file->service_count(); ++i) {
       const google::protobuf::ServiceDescriptor* service = file->service(i);
@@ -49,7 +58,7 @@ class JavaGrpcGenerator : public google::protobuf::compiler::CodeGenerator {
           + java_grpc_generator::ServiceClassName(service) + ".java";
       std::unique_ptr<google::protobuf::io::ZeroCopyOutputStream> output(
           context->Open(filename));
-      java_grpc_generator::GenerateService(service, output.get(), generate_nano);
+      java_grpc_generator::GenerateService(service, output.get(), flavor, enable_deprecated);
     }
     return true;
   }

@@ -29,7 +29,7 @@ import io.grpc.netty.NettyChannelBuilder;
 import io.grpc.stub.StreamObserver;
 import java.net.InetSocketAddress;
 
-/** {@link FileDataProvider} backed by an external {@link FileDataServiceGrpc.FileDataService}. */
+/** {@link FileDataProvider} backed by an external {@link FileDataServiceGrpc} service. */
 public class RemoteFileData implements FileDataProvider {
   private final FileDataServiceStub stub;
 

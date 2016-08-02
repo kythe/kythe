@@ -23,7 +23,6 @@ import com.google.devtools.kythe.platform.java.JavacAnalysisDriver;
 import com.google.devtools.kythe.platform.shared.AnalysisException;
 import com.google.devtools.kythe.platform.shared.FileDataProvider;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
-import com.google.devtools.kythe.proto.CompilationAnalyzerGrpc;
 import io.grpc.netty.NettyServerBuilder;
 import java.io.IOException;
 
@@ -35,7 +34,7 @@ public class JavaIndexerServer {
 
     try {
       NettyServerBuilder.forPort(config.getPort())
-          .addService(CompilationAnalyzerGrpc.bindService(new JavaCompilationAnalyzer(config)))
+          .addService(new JavaCompilationAnalyzer(config))
           .build()
           .start()
           .awaitTermination();

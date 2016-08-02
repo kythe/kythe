@@ -9,5 +9,5 @@ filegroup(
 
 java_import(
     name = "netty",
-    jars = ["netty-all-4.1.0.Beta6.jar"],
+    jars = ["netty-all-4.1.3.Final.jar"],
 )
