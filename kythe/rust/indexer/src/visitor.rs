@@ -246,7 +246,7 @@ impl<'v, 'tcx: 'v> Visitor<'v> for KytheVisitor<'v, 'tcx> {
                 decl: &'v hir::FnDecl,
                 body: &'v hir::Block,
                 span: Span,
-                _: ast::NodeId) {
+                id: ast::NodeId) {
 
         use rustc::hir::intravisit::FnKind;
         match kind {
@@ -268,7 +268,7 @@ impl<'v, 'tcx: 'v> Visitor<'v> for KytheVisitor<'v, 'tcx> {
             _ => (),
         };
 
-        walk_fn(self, kind, decl, body, span);
+        walk_fn(self, kind, decl, body, span, id);
     }
 
     /// Called instead of visit_item for items inside an impl, this function sets the
