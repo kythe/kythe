@@ -842,6 +842,7 @@ func SlowCallersForCrossReferences(ctx context.Context, service Service, include
 			Anchor:      callerAnchor,
 			DisplayName: displayName,
 			Site:        sites,
+			Ticket:      caller,
 		})
 	}
 	return relatedAnchors, nil

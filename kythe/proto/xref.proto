@@ -566,6 +566,8 @@ message CrossReferencesReply {
     // Specific locations, usually within the related object, that caused
     // the relationship to exist. This field is relevant to caller sets.
     repeated Anchor site = 3;
+    // The relevant semantic object. Populated for callers.
+    string ticket = 4;
   }
 
   message CrossReferenceSet {
