@@ -36,6 +36,7 @@ test_suite(
         ":function_for_loop",
         ":function_params",
         ":function_reference",
+        ":function_unnamed",
         ":impl_method_call",
         ":method_instance_call",
         ":method_static_call",
@@ -123,6 +124,11 @@ rust_indexer_test(
 rust_indexer_test(
     name = "function_reference",
     srcs = ["function/function_reference.rs"],
+)
+
+rust_indexer_test(
+    name = "function_unnamed",
+    srcs = ["function/function_unnamed.rs"],
 )
 
 rust_indexer_test(

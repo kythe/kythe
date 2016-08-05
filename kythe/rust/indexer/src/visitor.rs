@@ -262,10 +262,11 @@ impl<'v, 'tcx: 'v> Visitor<'v> for KytheVisitor<'v, 'tcx> {
             // Calls to statically addressable functions. The ref edge is handled in the ExprPath
             // branch
             ExprCall(ref fn_expr, _) => {
-                let callee = self.tcx.def_map.borrow()[&fn_expr.id].base_def;
-                // Don't emit ref/call for an initializer
-                if let None = self.opt_variant_did(&callee) {
-                    self.function_call(expr.id, callee.def_id());
+                if let Some(callee) = self.tcx.def_map.borrow().get(&fn_expr.id) {
+                    // Don't emit ref/call for an initializer
+                    if let None = self.opt_variant_did(&callee.base_def) {
+                        self.function_call(expr.id, callee.base_def.def_id());
+                    }
                 }
             }
 
