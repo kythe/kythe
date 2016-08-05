@@ -58,6 +58,7 @@ str_enum! {
        Variable => "variable",
        Constant => "constant",
        Record => "record",
+       Sum => "sum",
     }
 }
 

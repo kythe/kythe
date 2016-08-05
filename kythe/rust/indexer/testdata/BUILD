@@ -47,6 +47,8 @@ test_suite(
     name = "variants",
     tags = ["manual"],
     tests = [
+        ":enum_decl",
+        ":enum_pat",
         ":struct_record",
         ":struct_record_pat",
         ":struct_unit",
@@ -144,6 +146,16 @@ rust_indexer_test(
 rust_indexer_test(
     name = "method_static_call",
     srcs = ["function/method_static_call.rs"],
+)
+
+rust_indexer_test(
+    name = "enum_decl",
+    srcs = ["variants/enum_decl.rs"],
+)
+
+rust_indexer_test(
+    name = "enum_pat",
+    srcs = ["variants/enum_pat.rs"],
 )
 
 rust_indexer_test(

@@ -32,9 +32,8 @@ pub struct KytheVisitor<'a, 'tcx: 'a> {
     pub tcx: TyCtxt<'a, 'tcx, 'tcx>,
     pub codemap: &'a CodeMap,
     pub corpus: &'a Corpus,
-    /// The vname of the parent item. The value changes as we recurse through the HIR, and is used
-    /// for childof relationships
-    parent_vname: Option<VName>,
+    /// The stack of the parent item vnames. The top value is used for childof relationships
+    parent_vname: Vec<VName>,
 }
 
 impl<'a, 'tcx> KytheVisitor<'a, 'tcx> {
@@ -48,7 +47,7 @@ impl<'a, 'tcx> KytheVisitor<'a, 'tcx> {
             tcx: cx.tcx,
             codemap: cx.sess().codemap(),
             corpus: corpus,
-            parent_vname: None,
+            parent_vname: vec![],
         }
     }
 
@@ -112,7 +111,7 @@ impl<'a, 'tcx> KytheVisitor<'a, 'tcx> {
         let callee_vname = self.vname_from_defid(callee_def_id);
 
         self.writer.edge(&call_anchor_vname, EdgeKind::RefCall, &callee_vname);
-        if let Some(ref parent_vname) = self.parent_vname {
+        if let Some(ref parent_vname) = self.parent_vname.last() {
             self.writer.edge(&call_anchor_vname, EdgeKind::ChildOf, &parent_vname);
         }
     }
@@ -128,13 +127,9 @@ impl<'a, 'tcx> KytheVisitor<'a, 'tcx> {
     fn opt_variant_did(&self, def: &Def) -> Option<DefId> {
         use rustc::hir::def::Def::*;
         match *def {
-            Struct(def_id) | Enum(def_id) => {
-                Some(self.tcx.lookup_adt_def(def_id).did)
-            }
-            Variant(_, def_id) => {
-                Some(def_id)
-            },
-            _ => None
+            Struct(def_id) | Enum(def_id) => Some(self.tcx.lookup_adt_def(def_id).did),
+            Variant(_, def_id) => Some(def_id),
+            _ => None,
         }
     }
 }
@@ -164,6 +159,7 @@ impl<'v, 'tcx: 'v> Visitor<'v> for KytheVisitor<'v, 'tcx> {
                 }
             }
 
+            Path(_, ref path) |
             Struct(ref path, _, _) |
             TupleStruct(ref path, _, _) => {
                 let struct_def = self.tcx.def_map.borrow()[&pat.id].base_def;
@@ -315,19 +311,16 @@ impl<'v, 'tcx: 'v> Visitor<'v> for KytheVisitor<'v, 'tcx> {
     /// Called instead of visit_item for items inside an impl, this function sets the
     /// parent_vname to the impl's vname
     fn visit_impl_item(&mut self, impl_item: &'v ImplItem) {
-        let old_parent = self.parent_vname.clone();
         let def_id = self.tcx.map.local_def_id(impl_item.id);
-
-        self.parent_vname = Some(self.vname_from_defid(def_id));
+        let vname = self.vname_from_defid(def_id);
+        self.parent_vname.push(vname);
         walk_impl_item(self, impl_item);
-        self.parent_vname = old_parent;
+        self.parent_vname.pop();
     }
 
     /// Run on every module-level item. Currently we only capture static and const items.
     /// (Functions are handled in visit_fn)
     fn visit_item(&mut self, item: &'v hir::Item) {
-        let old_parent = self.parent_vname.clone();
-
         let def_id = self.tcx.map.local_def_id(item.id);
         let def_name = item.name.to_string();
         let def_vname = self.vname_from_defid(def_id);
@@ -351,17 +344,59 @@ impl<'v, 'tcx: 'v> Visitor<'v> for KytheVisitor<'v, 'tcx> {
                 }
             }
 
-            ItemStruct(..) => {
+            ItemStruct(ref def, _) => {
                 self.writer.node(&def_vname, Fact::NodeKind, &NodeKind::Record);
                 if let Ok(bind_vname) = self.anchor_from_sub_span(item.span, &def_name) {
                     self.writer.edge(&bind_vname, EdgeKind::DefinesBinding, &def_vname);
                 }
+
+                // For structs we want to skip visiting the variant data directly, because their
+                // variant nodeids correspond to constructors which we don't index for structs. This allows us
+                // to assume when visiting variant data that we are within an enum
+                self.parent_vname.push(def_vname);
+                walk_struct_def(self, def);
+                self.parent_vname.pop();
+                return;
             }
+
+            ItemEnum(..) => {
+                self.writer.node(&def_vname, Fact::NodeKind, &NodeKind::Sum);
+                if let Ok(bind_vname) = self.anchor_from_sub_span(item.span, &def_name) {
+                    self.writer.edge(&bind_vname, EdgeKind::DefinesBinding, &def_vname);
+                }
+            }
+
             _ => (),
         }
 
-        self.parent_vname = Some(def_vname);
+        self.parent_vname.push(def_vname);
         walk_item(self, item);
-        self.parent_vname = old_parent;
+        self.parent_vname.pop();
+    }
+
+    /// Creates nodes for enum variants. This function is normally called for structs as well but
+    /// we have chosen to only navigate to this visit function on enum variants.
+    fn visit_variant_data(&mut self,
+                          v: &'v hir::VariantData,
+                          n: ast::Name,
+                          _: &'v hir::Generics,
+                          _parent_id: ast::NodeId,
+                          span: Span) {
+        let name = n.to_string();
+        let def_id = self.tcx.map.local_def_id(v.id());
+        let def_vname = self.vname_from_defid(def_id);
+
+        if let Ok(bind_vname) = self.anchor_from_sub_span(span, &name) {
+            self.writer.node(&def_vname, Fact::NodeKind, &NodeKind::Record);
+            self.writer.edge(&bind_vname, EdgeKind::DefinesBinding, &def_vname);
+
+            if let Some(ref parent_vname) = self.parent_vname.last() {
+                self.writer.edge(&def_vname, EdgeKind::ChildOf, parent_vname);
+            }
+        }
+
+        self.parent_vname.push(def_vname);
+        walk_struct_def(self, v);
+        self.parent_vname.pop();
     }
 }
