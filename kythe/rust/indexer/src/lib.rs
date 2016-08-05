@@ -15,8 +15,10 @@
 #![feature(plugin_registrar)]
 #![feature(slice_patterns, box_syntax, rustc_private)]
 
+#[macro_use(walk_list)]
 extern crate syntax;
 extern crate rustc_serialize;
+
 // Load rustc as a plugin to get macros.
 #[macro_use]
 extern crate rustc;

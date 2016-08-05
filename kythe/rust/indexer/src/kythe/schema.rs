@@ -57,6 +57,7 @@ str_enum! {
        Function => "function",
        Variable => "variable",
        Constant => "constant",
+       Record => "record",
     }
 }
 

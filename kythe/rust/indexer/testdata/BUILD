@@ -8,6 +8,7 @@ test_suite(
     tests = [
         ":basic",
         ":function",
+        ":variants",
     ],
 )
 
@@ -41,6 +42,18 @@ test_suite(
     ],
 )
 
+test_suite(
+    name = "variants",
+    tags = ["manual"],
+    tests = [
+        ":struct_record",
+        ":struct_record_pat",
+        ":struct_unit",
+        ":struct_tuple",
+        ":struct_tuple_pat",
+    ],
+)
+
 rust_indexer_test(
     name = "const",
     srcs = ["basic/const.rs"],
@@ -64,6 +77,7 @@ rust_indexer_test(
     name = "static",
     srcs = ["basic/static.rs"],
 )
+
 
 rust_indexer_test(
     name = "var_ref",
@@ -124,4 +138,29 @@ rust_indexer_test(
 rust_indexer_test(
     name = "method_static_call",
     srcs = ["function/method_static_call.rs"],
+)
+
+rust_indexer_test(
+    name = "struct_record",
+    srcs = ["variants/struct_record.rs"],
+)
+
+rust_indexer_test(
+    name = "struct_record_pat",
+    srcs = ["variants/struct_record_pat.rs"],
+)
+
+rust_indexer_test(
+    name = "struct_tuple",
+    srcs = ["variants/struct_tuple.rs"],
+)
+
+rust_indexer_test(
+    name = "struct_tuple_pat",
+    srcs = ["variants/struct_tuple_pat.rs"],
+)
+
+rust_indexer_test(
+    name = "struct_unit",
+    srcs = ["variants/struct_unit.rs"],
 )

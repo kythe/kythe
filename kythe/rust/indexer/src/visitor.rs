@@ -16,8 +16,9 @@ use kythe::schema::{Complete, EdgeKind, Fact, NodeKind, VName};
 use kythe::writer::EntryWriter;
 use rustc::hir;
 use rustc::hir::{Block, Expr, ImplItem, ItemId, Pat};
+use rustc::hir::def::Def;
 use rustc::hir::def_id::DefId;
-use rustc::hir::Expr_::{ExprCall, ExprLoop, ExprMatch, ExprMethodCall, ExprPath};
+use rustc::hir::Expr_::*;
 use rustc::hir::intravisit::*;
 use rustc::hir::MatchSource::ForLoopDesugar;
 use rustc::lint::{LateContext, LintContext};
@@ -115,6 +116,27 @@ impl<'a, 'tcx> KytheVisitor<'a, 'tcx> {
             self.writer.edge(&call_anchor_vname, EdgeKind::ChildOf, &parent_vname);
         }
     }
+
+    /// Emits the anchor and ref edge for a reference
+    fn ref_def_id(&self, ref_span: Span, def_id: DefId) {
+        let anchor_vname = self.anchor_from_span(ref_span);
+        let def_vname = self.vname_from_defid(def_id);
+        self.writer.edge(&anchor_vname, EdgeKind::Ref, &def_vname);
+    }
+
+    /// Maps struct constructors to struct DefIds and enum variant constructors to their own DefId
+    fn opt_variant_did(&self, def: &Def) -> Option<DefId> {
+        use rustc::hir::def::Def::*;
+        match *def {
+            Struct(def_id) | Enum(def_id) => {
+                Some(self.tcx.lookup_adt_def(def_id).did)
+            }
+            Variant(_, def_id) => {
+                Some(def_id)
+            },
+            _ => None
+        }
+    }
 }
 
 /// Tests whether a span is the result of macro expansion
@@ -131,14 +153,26 @@ impl<'v, 'tcx: 'v> Visitor<'v> for KytheVisitor<'v, 'tcx> {
 
     /// Captures variable bindings
     fn visit_pat(&mut self, pat: &'v Pat) {
-        use rustc::hir::PatKind::Binding;
-        if let Binding(_, _, _) = pat.node {
-            if let Some(def) = self.tcx.expect_def_or_none(pat.id) {
-                let local_vname = self.vname_from_defid(def.def_id());
-                let anchor_vname = self.anchor_from_span(pat.span);
-                self.writer.edge(&anchor_vname, EdgeKind::DefinesBinding, &local_vname);
-                self.writer.node(&local_vname, Fact::NodeKind, &NodeKind::Variable);
+        use rustc::hir::PatKind::*;
+        match pat.node {
+            Binding(..) => {
+                if let Some(def) = self.tcx.expect_def_or_none(pat.id) {
+                    let local_vname = self.vname_from_defid(def.def_id());
+                    let anchor_vname = self.anchor_from_span(pat.span);
+                    self.writer.edge(&anchor_vname, EdgeKind::DefinesBinding, &local_vname);
+                    self.writer.node(&local_vname, Fact::NodeKind, &NodeKind::Variable);
+                }
             }
+
+            Struct(ref path, _, _) |
+            TupleStruct(ref path, _, _) => {
+                let struct_def = self.tcx.def_map.borrow()[&pat.id].base_def;
+                if let Some(def_id) = self.opt_variant_did(&struct_def) {
+                    self.ref_def_id(path.span, def_id);
+                }
+            }
+
+            _ => (),
         }
         walk_pat(self, pat);
     }
@@ -181,9 +215,7 @@ impl<'v, 'tcx: 'v> Visitor<'v> for KytheVisitor<'v, 'tcx> {
                                     if let ExprMatch(_, ref arms, _) = expr.node {
                                         if let TupleStruct(_, ref pats, _) = arms[0].pats[0].node {
                                             // Walk the interesting parts of <head>
-                                            for a in args {
-                                                self.visit_expr(&a);
-                                            }
+                                            walk_list!(self, visit_expr, args);
                                             // Walk <pat>
                                             self.visit_pat(&pats[0]);
                                             // Walk <body>
@@ -211,27 +243,35 @@ impl<'v, 'tcx: 'v> Visitor<'v> for KytheVisitor<'v, 'tcx> {
             // Paths are static references to items (including static methods)
             ExprPath(..) => {
                 if let Some(def) = self.tcx.expect_def_or_none(expr.id) {
-                    let def_id = def.def_id();
-                    let local_vname = self.vname_from_defid(def_id);
-                    let anchor_vname = self.anchor_from_span(expr.span);
-                    self.writer.edge(&anchor_vname, EdgeKind::Ref, &local_vname);
+                    let def_id = if let Some(did) = self.opt_variant_did(&def) {
+                        did
+                    } else {
+                        def.def_id()
+                    };
+                    self.ref_def_id(expr.span, def_id);
                 }
             }
 
             // Method calls are calls to any impl_fn that consumes self (requiring a vtable)
             ExprMethodCall(sp_name, _, _) => {
                 let callee = self.tcx.tables.borrow().method_map[&MethodCall::expr(expr.id)];
-                let local_vname = self.vname_from_defid(callee.def_id);
-                let anchor_vname = self.anchor_from_span(sp_name.span);
+                self.ref_def_id(sp_name.span, callee.def_id);
                 self.function_call(expr.id, callee.def_id);
-                self.writer.edge(&anchor_vname, EdgeKind::Ref, &local_vname);
             }
 
             // Calls to statically addressable functions. The ref edge is handled in the ExprPath
             // branch
             ExprCall(ref fn_expr, _) => {
                 let callee = self.tcx.def_map.borrow()[&fn_expr.id].base_def;
-                self.function_call(expr.id, callee.def_id());
+                // Don't emit ref/call for an initializer
+                if let None = self.opt_variant_did(&callee) {
+                    self.function_call(expr.id, callee.def_id());
+                }
+            }
+
+            ExprStruct(ref path, _, _) => {
+                let target = self.tcx.def_map.borrow()[&expr.id].base_def;
+                self.ref_def_id(path.span, target.def_id());
             }
             _ => (),
         }
@@ -309,10 +349,17 @@ impl<'v, 'tcx: 'v> Visitor<'v> for KytheVisitor<'v, 'tcx> {
                     self.writer.edge(&bind_vname, EdgeKind::DefinesBinding, &def_vname)
                 }
             }
+
+            ItemStruct(..) => {
+                self.writer.node(&def_vname, Fact::NodeKind, &NodeKind::Record);
+                if let Ok(bind_vname) = self.anchor_from_sub_span(item.span, &def_name) {
+                    self.writer.edge(&bind_vname, EdgeKind::DefinesBinding, &def_vname);
+                }
+            }
             _ => (),
         }
 
-        self.parent_vname = Some(self.vname_from_defid(def_id));
+        self.parent_vname = Some(def_vname);
         walk_item(self, item);
         self.parent_vname = old_parent;
     }
