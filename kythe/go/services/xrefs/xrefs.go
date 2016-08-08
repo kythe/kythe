@@ -838,6 +838,8 @@ func SlowCallersForCrossReferences(ctx context.Context, service Service, include
 				log.Printf("Warning: missing expanded anchor for callsite %v", ticket)
 			}
 		}
+		// See below regarding output stability.
+		sort.Sort(byAnchor(sites))
 		relatedAnchors = append(relatedAnchors, &xpb.CrossReferencesReply_RelatedAnchor{
 			Anchor:      callerAnchor,
 			DisplayName: displayName,
@@ -845,8 +847,28 @@ func SlowCallersForCrossReferences(ctx context.Context, service Service, include
 			Ticket:      caller,
 		})
 	}
+	// For pagination to work correctly, we must return RelatedAnchors in the same
+	// order for the same request. Iterations over the parentToAnchor map are
+	// not guaranteed to follow the same order, so relatedAnchors is arbitrarily
+	// permuted. Undo this here.
+	sort.Sort(byRelatedAnchor(relatedAnchors))
 	return relatedAnchors, nil
 }
+
+// byAnchor implements sort.Interface for []*xpb.Anchor based on the Ticket field.
+type byAnchor []*xpb.Anchor
+
+func (a byAnchor) Len() int           { return len(a) }
+func (a byAnchor) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a byAnchor) Less(i, j int) bool { return a[i].Ticket < a[j].Ticket }
+
+// byRelatedAnchor implements sort.Interface for []*xpb.CrossReferencesReply_RelatedAnchor
+// based on the Ticket field.
+type byRelatedAnchor []*xpb.CrossReferencesReply_RelatedAnchor
+
+func (a byRelatedAnchor) Len() int           { return len(a) }
+func (a byRelatedAnchor) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a byRelatedAnchor) Less(i, j int) bool { return a[i].Ticket < a[j].Ticket }
 
 // SlowCallers is an implementation of the Callers API built from other APIs.
 func SlowCallers(ctx context.Context, service Service, req *xpb.CallersRequest) (*xpb.CallersReply, error) {
