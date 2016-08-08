@@ -110,18 +110,18 @@ _genproto_attrs = {
     "gen_go": attr.bool(),
 }
 
-def _genproto_outputs(attrs):
+def _genproto_outputs(gen_cc, gen_go, gen_java):
   outputs = {}
-  if attrs.gen_cc:
+  if gen_cc:
     outputs += {
         "cc_hdr": "%{src}.pb.h",
         "cc_src": "%{src}.pb.cc"
     }
-  if attrs.gen_go:
+  if gen_go:
     outputs += {
         "go_src": "%{src}.pb.go",
     }
-  if attrs.gen_java:
+  if gen_java:
     outputs += {
         "java_src": "%{src}.srcjar",
     }

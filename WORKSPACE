@@ -2,7 +2,7 @@ workspace(name = "io_kythe")
 
 load("//:version.bzl", "check_version")
 
-check_version("0.2.3")
+check_version("0.3.0-2016-07-20")
 
 load("//tools/cpp:clang_configure.bzl", "clang_configure")
 
