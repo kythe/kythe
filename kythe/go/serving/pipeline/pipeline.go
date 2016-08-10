@@ -205,6 +205,11 @@ func combineNodesAndEdges(ctx context.Context, opts *Options, out *servingOutput
 				if opts.Verbose {
 					log.Printf("WARNING: missing node facts for: %q", e.Source.Ticket)
 				}
+				// This is needed to satisfy later parts of the pipeline that look for targetless edges
+				// to signify new nodes.
+				if err := cSorter.Add(&srvpb.Edge{Source: &srvpb.Node{Ticket: e.Source.Ticket}}); err != nil {
+					return fmt.Errorf("error writing complete edge: %v", err)
+				}
 			}
 		}
 		if e.Target == nil {
