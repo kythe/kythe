@@ -322,9 +322,8 @@ clang::SourceRange IndexerASTVisitor::RangeForNameOfDeclaration(
           SecondToken.is(clang::tok::raw_identifier) &&
           ("~" + std::string(SecondToken.getRawIdentifier())) ==
               Decl->getNameAsString()) {
-        const SourceLocation EndLocation = clang::Lexer::getLocForEndOfToken(
-            SecondToken.getLocation(), 0, /* offset from end of token */
-            *Observer.getSourceManager(), *Observer.getLangOptions());
+        const SourceLocation EndLocation =
+            GetLocForEndOfToken(SecondToken.getLocation());
         return clang::SourceRange(StartLocation, EndLocation);
       }
     }
