@@ -201,9 +201,7 @@ clang::SourceRange IndexerASTVisitor::RangeForOperatorName(
 
   // TODO(jdennett): Find a better name for `Token2EndLocation`, to
   // indicate that it's the end of the first token after `operator`.
-  SourceLocation Token2EndLocation = clang::Lexer::getLocForEndOfToken(
-      Pos, 0, /* offset from end of token */
-      *Observer.getSourceManager(), *Observer.getLangOptions());
+  SourceLocation Token2EndLocation = GetLocForEndOfToken(Pos);
   if (!Token2EndLocation.isValid()) {
     // Well, this is the best we can do then.
     return OperatorTokenRange;
@@ -242,9 +240,7 @@ clang::SourceRange IndexerASTVisitor::RangeForOperatorName(
     }
 
     if (Token3.is(clang::tok::r_square) || Token3.is(clang::tok::r_paren)) {
-      SourceLocation EndLocation = clang::Lexer::getLocForEndOfToken(
-          Token3.getLocation(), 0, /* offset from end of token */
-          *Observer.getSourceManager(), *Observer.getLangOptions());
+      SourceLocation EndLocation = GetLocForEndOfToken(Token3.getLocation());
       return clang::SourceRange(OperatorTokenRange.getBegin(), EndLocation);
     }
     return OperatorTokenRange;
@@ -258,9 +254,7 @@ clang::SourceRange IndexerASTVisitor::RangeForOperatorName(
 clang::SourceRange IndexerASTVisitor::RangeForSingleTokenFromSourceLocation(
     SourceLocation Start) const {
   CHECK(Start.isFileID());
-  const SourceLocation End = clang::Lexer::getLocForEndOfToken(
-      Start, 0, /* offset from end of token */
-      *Observer.getSourceManager(), *Observer.getLangOptions());
+  const SourceLocation End = GetLocForEndOfToken(Start);
   return clang::SourceRange(Start, End);
 }
 
@@ -283,9 +277,7 @@ IndexerASTVisitor::ConsumeToken(SourceLocation StartLocation,
       ActualKind = II.getTokenID();
     }
     if (ActualKind == ExpectedKind) {
-      return clang::Lexer::getLocForEndOfToken(
-          Token.getLocation(), 0, /* offset after token */
-          *Observer.getSourceManager(), *Observer.getLangOptions());
+      return GetLocForEndOfToken(Token.getLocation());
     }
   }
   return SourceLocation(); // invalid location signals error/mismatch.
@@ -3305,9 +3297,7 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
       return PointeeID;
     }
     if (SR.isValid() && SR.getBegin().isFileID()) {
-      SR.setEnd(clang::Lexer::getLocForEndOfToken(
-          T.getStarLoc(), 0, /* offset from end of token */
-          *Observer.getSourceManager(), *Observer.getLangOptions()));
+      SR.setEnd(GetLocForEndOfToken(T.getStarLoc()));
     }
     if (TypeAlreadyBuilt) {
       break;
