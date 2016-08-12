@@ -31,22 +31,13 @@ mod kythe;
 mod pass;
 mod visitor;
 
-use kythe::corpus::Corpus;
 use kythe::writer::JsonEntryWriter;
 use rustc_plugin::Registry;
 use rustc::lint::LateLintPassObject;
-use std::env;
 
 // Informs the compiler of the existence and implementation of our plugin.
 #[plugin_registrar]
 pub fn plugin_registrar(reg: &mut Registry) {
-    let pass = box pass::KytheLintPass::new(get_corpus(), box JsonEntryWriter);
+    let pass = box pass::KytheLintPass::new(box JsonEntryWriter);
     reg.register_late_lint_pass(pass as LateLintPassObject);
-}
-
-// Reads the corpus name from the environment variable.
-// Corpus name will default to the empty string is the variable is not present.
-fn get_corpus() -> Corpus {
-    let corpus_name = env::var("KYTHE_CORPUS").unwrap_or(String::new());
-    Corpus { name: corpus_name }
 }

@@ -11,7 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use kythe::corpus::Corpus;
 use kythe::schema::{Complete, EdgeKind, Fact, NodeKind, VName};
 use kythe::writer::EntryWriter;
 use rustc::hir;
@@ -22,7 +21,10 @@ use rustc::hir::Expr_::*;
 use rustc::hir::intravisit::*;
 use rustc::hir::MatchSource::ForLoopDesugar;
 use rustc::lint::{LateContext, LintContext};
+use rustc::middle::cstore::LOCAL_CRATE;
 use rustc::ty::{MethodCall, TyCtxt};
+use std::fs;
+use std::path::{Path, PathBuf};
 use syntax::ast;
 use syntax::codemap::{CodeMap, Pos, Span, Spanned};
 
@@ -31,23 +33,27 @@ pub struct KytheVisitor<'a, 'tcx: 'a> {
     pub writer: &'a Box<EntryWriter>,
     pub tcx: TyCtxt<'a, 'tcx, 'tcx>,
     pub codemap: &'a CodeMap,
-    pub corpus: &'a Corpus,
     /// The stack of the parent item vnames. The top value is used for childof relationships
     parent_vname: Vec<VName>,
+    crate_root_dir: PathBuf,
 }
+
+// Constant for language field in VNames
+static RUST: &'static str = "rust";
 
 impl<'a, 'tcx> KytheVisitor<'a, 'tcx> {
     /// Creates a new KytheVisitor
     pub fn new(writer: &'a Box<EntryWriter>,
-               corpus: &'a Corpus,
                cx: &'a LateContext<'a, 'tcx>)
                -> KytheVisitor<'a, 'tcx> {
+        let root_dir = cx.sess().local_crate_source_file.as_ref().unwrap().parent().unwrap();
+        let real_root = fs::canonicalize(root_dir).unwrap();
         KytheVisitor {
             writer: writer,
             tcx: cx.tcx,
             codemap: cx.sess().codemap(),
-            corpus: corpus,
             parent_vname: vec![],
+            crate_root_dir: real_root.to_path_buf(),
         }
     }
 
@@ -60,7 +66,8 @@ impl<'a, 'tcx> KytheVisitor<'a, 'tcx> {
         let start_byte = start.pos.to_usize();
         let end_byte = end.pos.to_usize();
 
-        self.anchor(&start.fm.name, start_byte, end_byte)
+        let path = start.fm.abs_path.as_ref().unwrap_or(&start.fm.name);
+        self.anchor(path, start_byte, end_byte)
     }
 
     /// Emits the appropriate node and facts for an anchor defined as a substring within a span
@@ -77,17 +84,29 @@ impl<'a, 'tcx> KytheVisitor<'a, 'tcx> {
         };
         let start_byte = start.pos.to_usize() + sub_start;
         let end_byte = start_byte + sub.len();
-
-        Ok(self.anchor(&start.fm.name, start_byte, end_byte))
+        let path = start.fm.abs_path.as_ref().unwrap_or(&start.fm.name);
+        Ok(self.anchor(path, start_byte, end_byte))
     }
 
     /// Emits an anchor node based on the byte range provided
     fn anchor(&self, file_name: &str, start_byte: usize, end_byte: usize) -> VName {
-        let vname = self.corpus.anchor_vname(file_name, start_byte, end_byte);
+
+        let corpus = self.tcx.crate_name(LOCAL_CRATE).to_string();
+        let local_path = {
+            let file_path = Path::new(file_name);
+            file_path.strip_prefix(&self.crate_root_dir).unwrap_or(file_path)
+        };
+        let vname = VName {
+            path: Some(local_path.to_string_lossy().to_string()),
+            corpus: Some(corpus),
+            language: Some(RUST.to_string()),
+            signature: Some(format!("{},{}", start_byte, end_byte)),
+            ..Default::default()
+        };
 
         let start_str: String = start_byte.to_string();
         let end_str: String = end_byte.to_string();
-        let file_vname = self.corpus.file_vname(&file_name);
+        let file_vname = self.file_vname(&file_name);
 
         self.writer.node(&vname, Fact::NodeKind, &NodeKind::Anchor);
         self.writer.node(&vname, Fact::LocStart, &start_str);
@@ -100,7 +119,13 @@ impl<'a, 'tcx> KytheVisitor<'a, 'tcx> {
     fn vname_from_defid(&self, def_id: DefId) -> VName {
         let def_id_num = def_id.index.as_u32();
         let var_name = self.tcx.absolute_item_path_str(def_id);
-        self.corpus.def_vname(&var_name, def_id_num)
+        let corpus = self.tcx.crate_name(def_id.krate).to_string();
+        VName {
+            corpus: Some(corpus),
+            language: Some(RUST.to_string()),
+            signature: Some(format!("def:{}#{}", var_name, def_id_num)),
+            ..Default::default()
+        }
     }
 
     /// Emits the appropriate ref/call and childof nodes for a function call
@@ -130,6 +155,42 @@ impl<'a, 'tcx> KytheVisitor<'a, 'tcx> {
             Struct(def_id) | Enum(def_id) => Some(self.tcx.lookup_adt_def(def_id).did),
             Variant(_, def_id) => Some(def_id),
             _ => None,
+        }
+    }
+
+    /// Creates vnames for files. Files are assumed to be members of the crate currently being
+    /// compiled.
+    fn file_vname(&self, path: &str) -> VName {
+        let canon_path = Path::new(path);
+        let local_path = canon_path.strip_prefix(&self.crate_root_dir).unwrap_or(canon_path);
+        let corpus = self.tcx.crate_name(LOCAL_CRATE);
+        VName {
+            path: Some(local_path.to_string_lossy().to_string()),
+            corpus: Some(corpus.to_string()),
+            ..Default::default()
+        }
+    }
+
+    /// Because files are not visited during the HIR traversal, this method is used to emit the
+    /// appropriate nodes for files
+    pub fn index_files(&self) {
+        // Index all the file nodes
+        for ref f in self.codemap.files.borrow().iter() {
+            // The codemap contains references to virtual files all labeled <<std_macro>>
+            // These are skipped as per this check
+            if !f.is_real_file() {
+                continue;
+            }
+
+            // References to the core crate are filtered out here
+            if let Some(ref content) = f.src {
+                if let Some(ref abs_path) = f.abs_path {
+                    let vname = self.file_vname(abs_path);
+
+                    self.writer.node(&vname, Fact::NodeKind, &NodeKind::File);
+                    self.writer.node(&vname, Fact::Text, content);
+                }
+            }
         }
     }
 }
@@ -351,8 +412,8 @@ impl<'v, 'tcx: 'v> Visitor<'v> for KytheVisitor<'v, 'tcx> {
                 }
 
                 // For structs we want to skip visiting the variant data directly, because their
-                // variant nodeids correspond to constructors which we don't index for structs. This allows us
-                // to assume when visiting variant data that we are within an enum
+                // variant nodeids correspond to constructors which we don't index for structs.
+                // This allows us to assume when visiting variant data that we are within an enum
                 self.parent_vname.push(def_vname);
                 walk_struct_def(self, def);
                 self.parent_vname.pop();

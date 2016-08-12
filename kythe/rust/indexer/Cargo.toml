@@ -19,7 +19,7 @@ authors = ["John Renner <john@jrenner.net>"]
 
 [lib]
 name = "indexer"
-crate-type = ["dylib"]
+plugin = true
 
 [dependencies]
 rustc-serialize="^0.3.19"
