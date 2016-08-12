@@ -920,6 +920,8 @@ void IndexWriter::WriteIndex(
 
   kythe::proto::VName main_vname = VNameForPath(main_source_file);
   unit_vname->CopyFrom(main_vname);
+  // todo(salguarnieri) Support setting the language to objc. Or should we lump
+  // all c-ish languages together?
   unit_vname->set_language("c++");
   unit_vname->set_signature("cu#" + identifying_blob_digest);
   unit_vname->clear_path();

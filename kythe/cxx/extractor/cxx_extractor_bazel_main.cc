@@ -41,6 +41,8 @@ static void LoadExtraAction(const std::string &path,
   coded_input_stream.SetTotalBytesLimit(INT_MAX, -1);
   CHECK(info->ParseFromCodedStream(&coded_input_stream));
   close(fd);
+  // todo(salguarnieri) This extension does not exist for obj-c compiles. We
+  // will have to make use of SpawnInfo for obj-c.
   CHECK(info->HasExtension(blaze::CppCompileInfo::cpp_compile_info));
   *cpp_info = info->GetExtension(blaze::CppCompileInfo::cpp_compile_info);
 }

@@ -418,6 +418,13 @@ public:
     Destructor
   };
 
+  /// \brief Records a node representing an interface type (such as a protocol
+  /// in Objective-C).
+  /// \param Node The NodeId of the record.
+  /// \param Format A format string for this interface.
+  virtual void recordInterfaceNode(const NodeId &Node,
+                                   const std::string &Format) {}
+
   /// \brief Records a node representing a record type (such as a class or
   /// struct).
   /// \param Node The NodeId of the record.

@@ -303,12 +303,47 @@ public:
   bool VisitFunctionDecl(clang::FunctionDecl *Decl);
   bool TraverseDecl(clang::Decl *Decl);
 
+  // Objective C specific nodes
+
+  bool VisitObjCPropertyImplDecl(const clang::ObjCPropertyImplDecl *Decl);
+  bool VisitObjCCompatibleAliasDecl(const clang::ObjCCompatibleAliasDecl *Decl);
+  bool VisitObjCContainerDecl(const clang::ObjCContainerDecl *Decl);
+  bool VisitObjCCategoryDecl(const clang::ObjCCategoryDecl *Decl);
+  bool VisitObjCImplDecl(const clang::ObjCImplDecl *Decl);
+  bool VisitObjCCategoryImplDecl(const clang::ObjCCategoryImplDecl *Decl);
+  bool VisitObjCImplementationDecl(const clang::ObjCImplementationDecl *Decl);
+  bool VisitObjCInterfaceDecl(const clang::ObjCInterfaceDecl *Decl);
+  bool VisitObjCProtocolDecl(const clang::ObjCProtocolDecl *Decl);
+  bool VisitObjCMethodDecl(const clang::ObjCMethodDecl *Decl);
+  bool VisitObjCPropertyDecl(const clang::ObjCPropertyDecl *Decl);
+  bool VisitObjCIvarDecl(const clang::ObjCIvarDecl *Decl);
+
+  bool VisitObjCArrayLiteral(const clang::ObjCArrayLiteral *Decl);
+  bool VisitObjCBoolLiteralExpr(const clang::ObjCBoolLiteralExpr *Decl);
+  bool VisitObjCBoxedExpr(const clang::ObjCBoxedExpr *Decl);
+  bool VisitObjCDictionaryLiteral(const clang::ObjCDictionaryLiteral *Decl);
+  bool VisitObjCEncodeExpr(const clang::ObjCEncodeExpr *Decl);
+  bool VisitObjCIndirectCopyRestoreExpr(
+      const clang::ObjCIndirectCopyRestoreExpr *Decl);
+  bool VisitObjCIsaExpr(const clang::ObjCIsaExpr *Decl);
+  bool VisitObjCIvarRefExpr(const clang::ObjCIvarRefExpr *IRE);
+  bool VisitObjCMessageExpr(const clang::ObjCMessageExpr *Decl);
+  bool VisitObjCPropertyRefExpr(const clang::ObjCPropertyRefExpr *Decl);
+  bool VisitObjCSelectorExpr(const clang::ObjCSelectorExpr *Decl);
+  bool VisitObjCStringLiteral(const clang::ObjCStringLiteral *Decl);
+  bool VisitObjCSubscriptRefExpr(const clang::ObjCSubscriptRefExpr *Decl);
+
   /// \brief For functions that support it, controls the emission of range
   /// information.
   enum class EmitRanges {
     No, ///< Don't emit range information.
     Yes ///< Emit range information when it's available.
   };
+
+  // Objective C methods don't have TypeSourceInfo so we must construct a type
+  // for the methods to be used in the graph.
+  MaybeFew<GraphObserver::NodeId> CreateObjCMethodTypeNode(
+      const clang::ObjCMethodDecl *MD, EmitRanges ER);
 
   /// \brief Builds a stable node ID for a compile-time expression.
   /// \param Expr The expression to represent.
@@ -318,14 +353,14 @@ public:
                                                      EmitRanges ER);
 
   /// \brief Builds a stable node ID for `Type`.
-  /// \param Type The type that is being identified. If its location is valid
+  /// \param TypeLoc The type that is being identified. If its location is valid
   /// and `ER` is `EmitRanges::Yes`, notifies the attached `GraphObserver` about
   /// the location of constituent elements.
   /// \param DType The deduced form of `Type`. (May be `Type.getTypePtr()`).
   /// \param ER whether to notify the `GraphObserver` about source text ranges
   /// for types.
   /// \return The Node ID for `Type`.
-  MaybeFew<GraphObserver::NodeId> BuildNodeIdForType(const clang::TypeLoc &Type,
+  MaybeFew<GraphObserver::NodeId> BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
                                                      const clang::Type *DType,
                                                      EmitRanges ER);
 
@@ -641,6 +676,8 @@ private:
   /// to form an identifying token.
   uint64_t SemanticHash(const clang::EnumDecl *ED);
 
+  uint64_t SemanticHash(const clang::Selector &S);
+
   /// \brief Gets a format string for `ND`.
   std::string GetFormat(const clang::NamedDecl *ND);
 
@@ -771,6 +808,54 @@ private:
   /// `BlameStack` (or does nothing if there's nobody to blame).
   void RecordCallEdges(const GraphObserver::Range &Range,
                        const GraphObserver::NodeId &Callee);
+
+  bool isObjCSelector(const clang::DeclarationName &DN) {
+    const auto NK = DN.getNameKind();
+    return NK == clang::DeclarationName::NameKind::ObjCZeroArgSelector ||
+        NK == clang::DeclarationName::NameKind::ObjCOneArgSelector ||
+        NK == clang::DeclarationName::NameKind::ObjCMultiArgSelector;
+  }
+
+  /// \brief Visit a DeclRefExpr or a ObjCIvarRefExpr
+  ///
+  /// DeclRefExpr and ObjCIvarRefExpr are similar entities and can be processed
+  /// in the same way but do not have a useful common ancestry.
+  bool VisitDeclRefOrIvarRefExpr(const clang::Expr *Expr,
+                                 const clang::NamedDecl *const FoundDecl,
+                                 clang::SourceLocation SL);
+
+  /// \brief Connect a NodeId to the super and implemented protocols for a
+  /// ObjCInterfaceDecl.
+  ///
+  /// Helper method used to connect an interface to the super and protocols it
+  /// implements. It is also used to connect the interface implementation to
+  /// these nodes as well. In that case, the interface implementation node is
+  /// passed in as the first argument and the interface decl is passed in as the
+  /// second.
+  ///
+  /// \param BodyDeclNode The node to connect to the super and protocols for
+  /// the interface. This may be a interface decl node or an interface impl
+  /// node.
+  /// \param IFace The interface decl to use to look up the super and
+  //// protocols.
+  void ConnectToSuperClassAndProtocols(const GraphObserver::NodeId BodyDeclNode,
+                                       const clang::ObjCInterfaceDecl *IFace);
+
+  /// \brief Connect a parameter to a function decl.
+  ///
+  /// For FunctionDecl and ObjCMethodDecl, this connects the parameters to the
+  /// function/method decl.
+  /// \param Decl This should be a FunctionDecl or ObjCMethodDecl.
+  void ConnectParam(const clang::Decl *Decl,
+                    const GraphObserver::NodeId &FuncNode,
+                    bool IsFunctionDefinition,
+                    const unsigned int ParamNumber,
+                    const clang::ParmVarDecl *Param);
+
+  MaybeFew <GraphObserver::NodeId> GetObjCObjBaseTypeNode(
+      const clang::ObjCObjectType *T,
+      const clang::TypeLoc &Loc,
+      const IndexerASTVisitor::EmitRanges &EmitRanges);
 
   /// \brief The current context for constructing `GraphObserver::Range`s.
   ///

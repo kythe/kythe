@@ -1279,10 +1279,9 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "template_class_inst_implicit",
     srcs = ["template/template_class_inst_implicit.cc"],
-    ignore_dups = True,  # Type alias alias inside a class template gets the
-                         # same documentation text.
-                         # TODO(zarko): Should the two aliases be distinctly
-                         # named?
+    # Type alias alias inside a class template gets the same documentation text.
+    # TODO(zarko): Should the two aliases be distinctly named?
+    ignore_dups = True,
     tags = ["template"],
 )
 
@@ -1726,4 +1725,200 @@ cxx_indexer_test(
 test_suite(
     name = "indexer_template",
     tags = ["template"],
+)
+
+# Objective C Tests
+
+cxx_indexer_test(
+    name = "class_decl_defn",
+    srcs = ["objc/class_decl_defn.m"],
+    ignore_dups = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "class_instantiation",
+    srcs = ["objc/class_instantiation.m"],
+    ignore_dups = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "class_method_decl_defn",
+    srcs = ["objc/class_method_decl_defn.m"],
+    ignore_dups = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "extends",
+    srcs = ["objc/extends.m"],
+    ignore_dups = True,
+    tags = ["objc"],
+)
+
+# TODO(salguarnieri) Implement generics in the indexer.
+cxx_indexer_test(
+    name = "generic_contravariant",
+    srcs = ["objc/generic_contravariant.m"],
+    ignore_dups = True,
+    tags = ["objc"],
+)
+
+# TODO(salguarnieri) Implement generics in the indexer.
+cxx_indexer_test(
+    name = "generic_covariant_instantiation",
+    srcs = ["objc/generic_covariant_instantiation.m"],
+    ignore_dups = True,
+    tags = ["objc"],
+)
+
+# TODO(salguarnieri) Implement generics in the indexer.
+cxx_indexer_test(
+    name = "generic_covariant",
+    srcs = ["objc/generic_covariant.m"],
+    ignore_dups = True,
+    tags = ["objc"],
+)
+
+# TODO(salguarnieri) Implement generics in the indexer.
+cxx_indexer_test(
+    name = "generic_covariant_method_call",
+    srcs = ["objc/generic_covariant_method_call.m"],
+    ignore_dups = True,
+    tags = ["objc"],
+)
+
+# TODO(salguarnieri) Implement generics in the indexer.
+cxx_indexer_test(
+    name = "generic_covariant_restricted_protocol",
+    srcs = ["objc/generic_covariant_restricted_protocol.m"],
+    ignore_dups = True,
+    tags = ["objc"],
+)
+
+# TODO(salguarnieri) Implement generics in the indexer.
+cxx_indexer_test(
+    name = "generic_covariant_restricted_super_class",
+    srcs = ["objc/generic_covariant_restricted_super_class.m"],
+    ignore_dups = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "id_instance_method",
+    srcs = ["objc/id_instance_method.m"],
+    ignore_dups = True,
+    tags = ["objc"],
+)
+
+# TODO(salguarnieri) Add verficiation assertions to this test.
+cxx_indexer_test(
+    name = "implicit_method_call_for_property",
+    srcs = ["objc/implicit_method_call_for_property.m"],
+    ignore_dups = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "instance_method_call",
+    srcs = ["objc/instance_method_call.m"],
+    ignore_dups = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "instance_method_decl_defn",
+    srcs = ["objc/instance_method_decl_defn.m"],
+    ignore_dups = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "instance_method_matched_correctly",
+    srcs = ["objc/instance_method_matched_correctly.m"],
+    ignore_dups = True,
+    tags = ["objc"],
+)
+
+# TODO(salguarnieri) We need to make anchors for instance self and class self.
+# At the same time, we should make an anchor for this in c++.
+cxx_indexer_test(
+    name = "instance_method_self_and_class_method_self_different",
+    srcs = ["objc/instance_method_self_and_class_method_self_different.m"],
+    expect_fail_verify = True,
+    ignore_dups = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "ivar_decl",
+    srcs = ["objc/ivar_decl.m"],
+    ignore_dups = True,
+    tags = ["objc"],
+)
+
+# TODO(salguarnieri) add more assertions
+cxx_indexer_test(
+    name = "method_overrides",
+    srcs = ["objc/method_overrides.m"],
+    expect_fail_verify = True,
+    ignore_dups = True,
+    tags = ["objc"],
+)
+
+# TODO(salguarnieri) Try to implement support for method swizzling. It is
+# possible that this will be impossible the handle statically, in which case
+# this test should encode the expected behavior of the indexer in this case.
+# TODO(salguarnieri) support including <objc/runtime.h> so this test will at
+# least make it through the indexer.
+cxx_indexer_test(
+    name = "method_swizzle",
+    srcs = ["objc/method_swizzle.m"],
+    expect_fail_index = True,
+    ignore_dups = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "precise_extends",
+    srcs = ["objc/precise_extends.m"],
+    ignore_dups = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "property_decl_defn",
+    srcs = ["objc/property_decl_defn.m"],
+    ignore_dups = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "protocol_defn",
+    srcs = ["objc/protocol_defn.m"],
+    ignore_dups = True,
+    tags = ["objc"],
+)
+
+# TODO(salguarnieri) We need to draw an extends edge from the class to the
+# protocol to get this test to pass.
+cxx_indexer_test(
+    name = "protocol_impl",
+    srcs = ["objc/protocol_impl.m"],
+    expect_fail_verify = True,
+    ignore_dups = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "protocol_method_defn",
+    srcs = ["objc/protocol_method_defn.m"],
+    ignore_dups = True,
+    tags = ["objc"],
+)
+
+test_suite(
+    name = "indexer_objc",
+    tags = ["objc"],
 )

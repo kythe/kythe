@@ -203,6 +203,9 @@ static const clang::FileEntry *SearchForFileEntry(
   return out;
 }
 
+// todo(salguarnieri) Change this to support objective-c?
+static constexpr char const kLangCpp[] = "c++";
+
 kythe::proto::VName KytheGraphObserver::VNameFromRange(
     const GraphObserver::Range &range) {
   kythe::proto::VName out_name;
@@ -241,7 +244,7 @@ kythe::proto::VName KytheGraphObserver::VNameFromRange(
       signature->append(range.Context.ToClaimedString());
     }
   }
-  out_name.set_language("c++");
+  out_name.set_language(kLangCpp);
   out_name.set_signature(CompressString(out_name.signature()));
   return out_name;
 }
@@ -483,11 +486,11 @@ void KytheGraphObserver::recordCallEdge(
                Claimability::Unclaimable);
 }
 
-static constexpr char const kLangCpp[] = "c++";
-
 VNameRef KytheGraphObserver::VNameRefFromNodeId(
     const GraphObserver::NodeId &node_id) {
   VNameRef out_ref;
+  // todo(salguarnieri) If we change kLangCpp to support objective-c, then we
+  // may need to change this constant.
   out_ref.language = llvm::StringRef(kLangCpp, 3);
   if (const auto *token =
           clang::dyn_cast<KytheClaimToken>(node_id.getToken())) {
@@ -504,7 +507,7 @@ MaybeFew<kythe::proto::VName> KytheGraphObserver::RecordName(
   }
   proto::VName out_vname;
   // Names don't have corpus, path or root set.
-  out_vname.set_language("c++");
+  out_vname.set_language(kLangCpp);
   const std::string name_id_string = name_id.ToString();
   out_vname.set_signature(name_id_string);
   if (!deferring_nodes_ || written_name_ids_.insert(name_id_string).second) {
@@ -845,6 +848,15 @@ void KytheGraphObserver::recordLookupNode(const NodeId &node_id,
     recorder_->AddProperty(node_vname, PropertyID::kText, text);
     recorder_->AddProperty(node_vname, PropertyID::kFormat,
                            "(%0,)." + EscapeForFormatLiteral(text));
+  }
+}
+
+void KytheGraphObserver::recordInterfaceNode(const NodeId &node_id,
+                                             const std::string &format) {
+  if (!lossy_claiming_ || claimNode(node_id)) {
+    VNameRef node_vname = VNameRefFromNodeId(node_id);
+    recorder_->AddProperty(node_vname, NodeKindID::kInterface);
+    recorder_->AddProperty(node_vname, PropertyID::kFormat, format);
   }
 }
 
@@ -1211,6 +1223,8 @@ void KytheGraphObserver::RegisterBuiltins() {
   RegisterBuiltin("knrfn", "function");
   RegisterBuiltin("__int128", "__int128");
   RegisterBuiltin("unsigned __int128", "unsigned __int128");
+  RegisterBuiltin("SEL", "SEL");
+  RegisterBuiltin("id", "id");
 }
 
 void KytheGraphObserver::EmitBuiltin(Builtin *builtin) {

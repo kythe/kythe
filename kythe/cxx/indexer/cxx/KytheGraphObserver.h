@@ -194,6 +194,9 @@ class KytheGraphObserver : public GraphObserver {
   void recordParamEdge(const NodeId &ParamOfNode, uint32_t Ordinal,
                        const NodeId &ParamNode) override;
 
+  void recordInterfaceNode(const NodeId &Node,
+                           const std::string &Format) override;
+
   void recordRecordNode(const NodeId &Node, RecordKind Kind,
                         Completeness RecordCompleteness,
                         const std::string &Format) override;
