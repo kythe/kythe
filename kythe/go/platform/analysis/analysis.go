@@ -30,8 +30,6 @@ import (
 	"io"
 	"sync"
 
-	"kythe.io/kythe/go/platform/delimited"
-
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
 
@@ -142,14 +140,16 @@ func (s *FileDataService) Get(req *apb.FilesRequest, srv apb.FileDataService_Get
 	return nil
 }
 
-type outputReader struct{ outs <-chan *apb.AnalysisOutput }
+// An OutputReader consumes a stream of analysis output records from a channel.
+type OutputReader struct{ outs <-chan *apb.AnalysisOutput }
 
-// OutputReader returns a delimited.Reader of each AnalysisOutput's value.
-func OutputReader(outs <-chan *apb.AnalysisOutput) delimited.Reader { return &outputReader{outs} }
+// NewOutputReader returns an output reader that delivers records from outs to
+// the caller.
+func NewOutputReader(outs <-chan *apb.AnalysisOutput) *OutputReader { return &OutputReader{outs} }
 
-// Next implements part of the delimited.Reader interface.  Next does not return
-// an error except io.EOF once the channel is closed or returns nil.
-func (r *outputReader) Next() ([]byte, error) {
+// Next returns the next output record, or io.EOF when the channel is closed
+// and no more records are available.  No other errors are returned.
+func (r *OutputReader) Next() ([]byte, error) {
 	out := <-r.outs
 	if out == nil {
 		return nil, io.EOF
@@ -157,8 +157,8 @@ func (r *outputReader) Next() ([]byte, error) {
 	return out.Value, nil
 }
 
-// NextProto implements part of the delimited.Reader interface.
-func (r *outputReader) NextProto(pb proto.Message) error {
+// NextProto reads the next available record and decodes it into pb.
+func (r *OutputReader) NextProto(pb proto.Message) error {
 	rec, err := r.Next()
 	if err != nil {
 		return err

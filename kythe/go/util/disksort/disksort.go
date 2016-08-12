@@ -373,7 +373,7 @@ func (m *mergeSorter) dumpShard() (err error) {
 		if err != nil {
 			return fmt.Errorf("marshaling error: %v", err)
 		}
-		if _, err := wr.Write(rec); err != nil {
+		if _, err := wr.WriteRecord(rec); err != nil {
 			return fmt.Errorf("writing error: %v", err)
 		}
 		m.buffer = m.buffer[1:]
@@ -391,7 +391,7 @@ func replaceErrIfNil(err *error, s string, newError error) {
 
 type mergeElement struct {
 	el interface{}
-	rd delimited.Reader
+	rd *delimited.Reader
 	f  *os.File
 }
 

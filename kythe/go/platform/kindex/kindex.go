@@ -140,7 +140,7 @@ func (c *Compilation) WriteTo(w io.Writer) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	w = delimited.NewWriter(gz)
+	dw := delimited.NewWriter(gz)
 
 	buf := proto.NewBuffer(nil)
 	if err := buf.Marshal(c.Proto); err != nil {
@@ -150,7 +150,7 @@ func (c *Compilation) WriteTo(w io.Writer) (int64, error) {
 
 	var total int64
 
-	nw, err := w.Write(buf.Bytes())
+	nw, err := dw.WriteRecord(buf.Bytes())
 	total += int64(nw)
 	if err != nil {
 		gz.Close()
@@ -163,7 +163,7 @@ func (c *Compilation) WriteTo(w io.Writer) (int64, error) {
 			gz.Close()
 			return total, fmt.Errorf("marshaling file data: %v", err)
 		}
-		nw, err := w.Write(buf.Bytes())
+		nw, err := dw.WriteRecord(buf.Bytes())
 		total += int64(nw)
 		if err != nil {
 			gz.Close()

@@ -4,9 +4,8 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 go_package(
     deps = [
-        "//kythe/proto:analysis_proto_go",
-        "//kythe/proto:storage_proto_go",
+        "//kythe/go/platform/delimited",
+        "//kythe/go/util/dedup",
         "@go_protobuf//:proto",
-        "@go_x_net//:context",
     ],
 )
