@@ -31,6 +31,7 @@ import com.google.devtools.kythe.platform.java.helpers.SignatureGenerator;
 import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.util.Span;
 import com.sun.source.tree.MemberReferenceTree.ReferenceMode;
+import com.sun.source.tree.Tree;
 import com.sun.source.tree.Tree.Kind;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
@@ -274,10 +275,13 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       visitAnnotations(classNode, classDef.getModifiers().getAnnotations(), ctx);
 
       JavaNode superClassNode = scan(classDef.getExtendsClause(), ctx);
-      emitEdge(
-          classNode,
-          EdgeKind.EXTENDS,
-          superClassNode == null ? getJavaLangObjectNode() : superClassNode);
+      if (superClassNode == null && classDef.getKind() != Tree.Kind.INTERFACE) {
+        superClassNode = getJavaLangObjectNode();
+      }
+
+      if (superClassNode != null) {
+        emitEdge(classNode, EdgeKind.EXTENDS, superClassNode);
+      }
 
       for (JCExpression implClass : classDef.getImplementsClause()) {
         JavaNode implNode = scan(implClass, ctx);

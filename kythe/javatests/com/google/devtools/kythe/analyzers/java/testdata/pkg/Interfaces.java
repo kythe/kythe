@@ -11,10 +11,17 @@ public interface Interfaces {
             || (ordering.lessThan(y, x) && ordering.moreThan(x, y));
   }
 
+  class X {
+    //- @obj defines/binding V
+    //- V typed Obj
+    Object obj;
+  }
+
   //- @Ordered defines/binding OrderedInterface
   //- @"Ordered<T>" defines/binding OrderedTAbs
   //- @Interfaces ref Inter
   //- OrderedInterface extends Inter
+  //- !{ OrderedInterface extends Obj }
   public static interface Ordered<T> extends Interfaces {
     //- @lessThan defines/binding OrderedLessThan
     //- OrderedLessThan childof OrderedInterface
