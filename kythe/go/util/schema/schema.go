@@ -73,11 +73,19 @@ const EdgePrefix = "/kythe/edge/"
 
 // Kythe edge kinds
 const (
-	ChildOfEdge   = EdgePrefix + "childof"
-	NamedEdge     = EdgePrefix + "named"
-	OverridesEdge = EdgePrefix + "overrides"
-	ParamEdge     = EdgePrefix + "param"
-	TypedEdge     = EdgePrefix + "typed"
+	ChildOfEdge                 = EdgePrefix + "childof"
+	ExtendsEdge                 = EdgePrefix + "extends"
+	ExtendsPrivateEdge          = EdgePrefix + "extends/private"
+	ExtendsPrivateVirtualEdge   = EdgePrefix + "extends/private/virtual"
+	ExtendsProtectedEdge        = EdgePrefix + "extends/protected"
+	ExtendsProtectedVirtualEdge = EdgePrefix + "extends/protected/virtual"
+	ExtendsPublicEdge           = EdgePrefix + "extends/public"
+	ExtendsPublicVirtualEdge    = EdgePrefix + "extends/public/virtual"
+	ExtendsVirtualEdge          = EdgePrefix + "extends/virtual"
+	NamedEdge                   = EdgePrefix + "named"
+	OverridesEdge               = EdgePrefix + "overrides"
+	ParamEdge                   = EdgePrefix + "param"
+	TypedEdge                   = EdgePrefix + "typed"
 )
 
 // Kythe edge kinds associated with anchors

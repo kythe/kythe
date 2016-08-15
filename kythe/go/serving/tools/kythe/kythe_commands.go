@@ -68,9 +68,10 @@ var (
 	decorSpan string
 
 	// decor flags
-	targetDefs bool
-	dirtyFile  string
-	refFormat  string
+	targetDefs       bool
+	dirtyFile        string
+	refFormat        string
+	extendsOverrides bool
 
 	// xrefs flags
 	defKind, declKind, refKind, docKind, callerKind string
@@ -365,6 +366,7 @@ var (
         @$col@      -- anchor source's ending column offset`)
 			flag.StringVar(&decorSpan, "span", "", spanHelp)
 			flag.BoolVar(&targetDefs, "target_definitions", false, "Whether to request definitions (@targetDef@ format marker) for each reference's target")
+			flag.BoolVar(&extendsOverrides, "extends_overrides", false, "Whether to request extends/overrides information")
 		},
 		func(flag *flag.FlagSet) error {
 			req := &xpb.DecorationsRequest{
@@ -373,6 +375,7 @@ var (
 				},
 				References:        true,
 				TargetDefinitions: targetDefs,
+				ExtendsOverrides:  extendsOverrides,
 				Filter: []string{
 					schema.NodeKindFact,
 					schema.SubkindFact,

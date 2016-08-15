@@ -155,6 +155,7 @@ func displayDecorations(decor *xpb.DecorationsReply) error {
 		if ref.TargetDefinition != "" {
 			targetDef = ref.TargetDefinition
 			// TODO(schroederc): fields from decor.DefinitionLocations
+			// TODO(zarko): fields from decor.ExtendsOverrides
 		}
 
 		r := strings.NewReplacer(

@@ -269,6 +269,44 @@ func AllEdges(ctx context.Context, es EdgesService, req *xpb.EdgesRequest) (*xpb
 	return reply, err
 }
 
+// SlowOverrides retrieves the list of Overrides for every input ticket. The map that it
+// returns will only contain entries for input tickets that have at least one Override.
+func SlowOverrides(xs Service, ctx context.Context, tickets []string) (map[string][]*xpb.DecorationsReply_Override, error) {
+	start := time.Now()
+	log.Println("WARNING: performing slow-lookup of overrides")
+	overrides := make(map[string][]*xpb.DecorationsReply_Override)
+	edges := []string{
+		schema.OverridesEdge,
+		schema.ExtendsEdge,
+		schema.ExtendsPrivateEdge,
+		schema.ExtendsPrivateVirtualEdge,
+		schema.ExtendsProtectedEdge,
+		schema.ExtendsProtectedVirtualEdge,
+		schema.ExtendsPublicEdge,
+		schema.ExtendsPublicVirtualEdge,
+		schema.ExtendsVirtualEdge,
+	}
+	err := forAllEdges(ctx, xs, stringset.New(tickets...), edges, func(source, target, _, edgeKind string) error {
+		sig, err := SlowSignature(ctx, xs, target)
+		if err != nil {
+			log.Printf("SlowOverrides: error getting signature for %s: %v", target, err)
+			sig = &xpb.Printable{}
+		}
+		okind := xpb.DecorationsReply_Override_EXTENDS
+		if edgeKind == schema.OverridesEdge {
+			okind = xpb.DecorationsReply_Override_OVERRIDES
+		}
+		overrides[source] = append(overrides[source], &xpb.DecorationsReply_Override{Ticket: target, DisplayName: sig, Kind: okind})
+		return nil
+	})
+	// It's not necessarily the case that we should find *any* overrides, so counting them is not useful here.
+	log.Printf("SlowOverrides: finished in %s", time.Since(start))
+	if err != nil {
+		return nil, err
+	}
+	return overrides, nil
+}
+
 // SlowDefinitions attempts to return a definition location for every node ticket given.  A
 // definition will be returned only if it is unambiguous, but the definition may be indirect
 // (through an intermediary node).
@@ -585,7 +623,7 @@ func MatchesAny(str string, patterns []*regexp.Regexp) bool {
 	return false
 }
 
-func forAllEdges(ctx context.Context, service Service, source stringset.Set, edge []string, f func(source string, target string, targetKind string) error) error {
+func forAllEdges(ctx context.Context, service Service, source stringset.Set, edge []string, f func(source, target, targetKind, edgeKind string) error) error {
 	tickets := source.Slice()
 	if len(tickets) == 0 {
 		return nil
@@ -600,14 +638,14 @@ func forAllEdges(ctx context.Context, service Service, source stringset.Set, edg
 		return err
 	}
 	for source, es := range edges.EdgeSets {
-		for _, group := range es.Groups {
+		for edgeKind, group := range es.Groups {
 			for _, edge := range group.Edge {
 				info, foundInfo := edges.Nodes[edge.TargetTicket]
 				kind := ""
 				if foundInfo {
 					kind = string(info.Facts[schema.NodeKindFact])
 				}
-				err = f(source, edge.TargetTicket, kind)
+				err = f(source, edge.TargetTicket, kind, edgeKind)
 				if err != nil {
 					return err
 				}
@@ -703,7 +741,7 @@ func expandDefRelatedNodeSet(ctx context.Context, service Service, frontier stri
 		iterations++
 		// Nodes that we haven't visited yet but will the next time around the loop.
 		next := stringset.New()
-		err := forAllEdges(ctx, service, frontier, edges, func(_, target string, kind string) error {
+		err := forAllEdges(ctx, service, frontier, edges, func(_, target, kind, _ string) error {
 			if kind == schema.AnchorKind {
 				anchors.Add(target)
 			}
@@ -779,7 +817,7 @@ func SlowCallersForCrossReferences(ctx context.Context, service Service, include
 		}
 	}
 	var parentTickets []string
-	if err := forAllEdges(ctx, service, anchors, []string{schema.ChildOfEdge}, func(source, target, kind string) error {
+	if err := forAllEdges(ctx, service, anchors, []string{schema.ChildOfEdge}, func(source, target, kind, _ string) error {
 		anchor, ok := expandedAnchors[source]
 		if !ok {
 			log.Printf("Warning: missing expanded anchor for %v", source)
@@ -915,7 +953,7 @@ func SlowCallers(ctx context.Context, service Service, req *xpb.CallersRequest) 
 				}
 			}
 		}
-		err = forAllEdges(ctx, service, anchors, []string{schema.ChildOfEdge}, func(source string, target string, kind string) error {
+		err = forAllEdges(ctx, service, anchors, []string{schema.ChildOfEdge}, func(source, target, kind, _ string) error {
 			anchor, ok := expandedAnchors[source]
 			if !ok {
 				log.Printf("Warning: missing expanded anchor for %v", source)

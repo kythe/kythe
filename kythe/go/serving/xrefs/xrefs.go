@@ -600,6 +600,8 @@ func (t *tableImpl) Decorations(ctx context.Context, req *xpb.DecorationsRequest
 			}
 		}
 
+		var bindings []string
+
 		for _, d := range decor.Decoration {
 			start, end, exists := patcher.Patch(d.Anchor.StartOffset, d.Anchor.EndOffset)
 			// Filter non-existent anchor.  Anchors can no longer exist if we were
@@ -620,12 +622,57 @@ func (t *tableImpl) Decorations(ctx context.Context, req *xpb.DecorationsRequest
 						r.TargetDefinition = ""
 					}
 
+					if req.ExtendsOverrides && r.Kind == schema.DefinesBindingEdge {
+						bindings = append(bindings, r.TargetTicket)
+					}
+
 					reply.Reference = append(reply.Reference, r)
 
 					if !seenTarget.Contains(r.TargetTicket) && nodes != nil {
 						reply.Nodes[r.TargetTicket] = nodes[r.TargetTicket]
 						seenTarget.Add(r.TargetTicket)
 					}
+				}
+			}
+		}
+
+		var extendsOverrides map[string][]*xpb.DecorationsReply_Override
+		var extendsOverridesTargets stringset.Set
+		if len(bindings) != 0 {
+			extendsOverrides, err = xrefs.SlowOverrides(t, ctx, bindings)
+			if err != nil {
+				return nil, fmt.Errorf("lookup error for overrides tickets: %v", err)
+			}
+			extendsOverridesTargets = stringset.New()
+			if len(extendsOverrides) != 0 {
+				reply.ExtendsOverrides = make(map[string]*xpb.DecorationsReply_Overrides, len(extendsOverrides))
+				for ticket, eos := range extendsOverrides {
+					// Note: extendsOverrides goes out of scope after this loop, so downstream code won't accidentally
+					// mutate reply.ExtendsOverrides via aliasing.
+					pb := &xpb.DecorationsReply_Overrides{Override: eos}
+					for _, eo := range eos {
+						extendsOverridesTargets.Add(eo.Ticket)
+					}
+					reply.ExtendsOverrides[ticket] = pb
+				}
+			}
+		}
+
+		if len(extendsOverridesTargets) != 0 && len(patterns) > 0 {
+			// Add missing NodeInfo.
+			request := &xpb.NodesRequest{Filter: req.Filter}
+			for ticket := range extendsOverridesTargets {
+				if _, ok := reply.Nodes[ticket]; !ok {
+					request.Ticket = append(request.Ticket, ticket)
+				}
+			}
+			if len(request.Ticket) > 0 {
+				nodes, err := t.Nodes(ctx, request)
+				if err != nil {
+					return nil, fmt.Errorf("lookup error for overrides nodes: %v", err)
+				}
+				for ticket, node := range nodes.Nodes {
+					reply.Nodes[ticket] = node
 				}
 			}
 		}
@@ -637,6 +684,9 @@ func (t *tableImpl) Decorations(ctx context.Context, req *xpb.DecorationsRequest
 			for ticket := range refs {
 				targetTickets = append(targetTickets, ticket)
 			}
+			for ticket := range extendsOverridesTargets {
+				targetTickets = append(targetTickets, ticket)
+			}
 
 			defs, err := xrefs.SlowDefinitions(t, ctx, targetTickets)
 			if err != nil {
@@ -645,11 +695,18 @@ func (t *tableImpl) Decorations(ctx context.Context, req *xpb.DecorationsRequest
 
 			reply.DefinitionLocations = make(map[string]*xpb.Anchor, len(defs))
 			for tgt, def := range defs {
-				for _, ref := range refs[tgt] {
-					if def.Ticket != ref.SourceTicket {
-						ref.TargetDefinition = def.Ticket
-						if _, ok := reply.DefinitionLocations[def.Ticket]; !ok {
-							reply.DefinitionLocations[def.Ticket] = def
+				if extendsOverridesTargets.Contains(tgt) {
+					if _, ok := reply.DefinitionLocations[tgt]; !ok {
+						reply.DefinitionLocations[tgt] = def
+					}
+				}
+				if refsTgt, ok := refs[tgt]; ok {
+					for _, ref := range refsTgt {
+						if def.Ticket != ref.SourceTicket {
+							ref.TargetDefinition = def.Ticket
+							if _, ok := reply.DefinitionLocations[def.Ticket]; !ok {
+								reply.DefinitionLocations[def.Ticket] = def
+							}
 						}
 					}
 				}

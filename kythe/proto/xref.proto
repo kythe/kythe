@@ -327,6 +327,13 @@ message DecorationsRequest {
   // returned.  The filter applies to ALL referenced nodes.  See EdgesRequest
   // for the format of the filter globs.
   repeated string filter = 5;
+
+  // If true, for every defines/binding Reference in the reply, a NodeInfo
+  // will be provided for each node that Reference extends or overrides.
+  // Furthermore, if definition_locations is true, the response's
+  // definition_locations field will include (where possible) the locations of
+  // the definitions of the nodes that are extended or overridden.
+  bool extends_overrides = 7;
 }
 
 message DecorationsReply {
@@ -356,6 +363,27 @@ message DecorationsReply {
     string target_definition = 4;
   }
 
+  message Override {
+    // What kind of override this is.
+    enum Kind {
+      OVERRIDES  = 0;
+      EXTENDS    = 1;
+    }
+
+    // The target object.
+    string ticket = 1;
+
+    // The kind of override.
+    Kind kind = 2;
+
+    // A display name for the object at ticket.
+    Printable display_name = 3;
+  }
+
+  message Overrides {
+    repeated Override override = 1;
+  }
+
   // The reference edges located in the specified window.
   repeated Reference reference = 4;
 
@@ -366,6 +394,10 @@ message DecorationsReply {
   // Each anchor cited as a target definition in the references.  The map is
   // keyed by each anchor's ticket.
   map<string, Anchor> definition_locations = 16;
+
+  // Maps from semantic nodes on the right-hand side of defines/binding
+  // references to the list of their overrides.
+  map<string, Overrides> extends_overrides = 17;
 
   // TODO(fromberger): Patch diff information.
 }
