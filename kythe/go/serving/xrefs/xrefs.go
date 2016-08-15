@@ -639,7 +639,7 @@ func (t *tableImpl) Decorations(ctx context.Context, req *xpb.DecorationsRequest
 		var extendsOverrides map[string][]*xpb.DecorationsReply_Override
 		var extendsOverridesTargets stringset.Set
 		if len(bindings) != 0 {
-			extendsOverrides, err = xrefs.SlowOverrides(t, ctx, bindings)
+			extendsOverrides, err = xrefs.SlowOverrides(ctx, t, bindings)
 			if err != nil {
 				return nil, fmt.Errorf("lookup error for overrides tickets: %v", err)
 			}
@@ -688,7 +688,7 @@ func (t *tableImpl) Decorations(ctx context.Context, req *xpb.DecorationsRequest
 				targetTickets = append(targetTickets, ticket)
 			}
 
-			defs, err := xrefs.SlowDefinitions(t, ctx, targetTickets)
+			defs, err := xrefs.SlowDefinitions(ctx, t, targetTickets)
 			if err != nil {
 				return nil, fmt.Errorf("error retrieving target definitions: %v", err)
 			}
@@ -947,7 +947,7 @@ func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReference
 		}
 
 		// TODO(schroederc): cache this in the serving data
-		defs, err := xrefs.SlowDefinitions(t, ctx, nodeTickets)
+		defs, err := xrefs.SlowDefinitions(ctx, t, nodeTickets)
 		if err != nil {
 			return nil, fmt.Errorf("error retrieving node definitions: %v", err)
 		}

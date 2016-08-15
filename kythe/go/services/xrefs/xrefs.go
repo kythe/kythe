@@ -271,7 +271,7 @@ func AllEdges(ctx context.Context, es EdgesService, req *xpb.EdgesRequest) (*xpb
 
 // SlowOverrides retrieves the list of Overrides for every input ticket. The map that it
 // returns will only contain entries for input tickets that have at least one Override.
-func SlowOverrides(xs Service, ctx context.Context, tickets []string) (map[string][]*xpb.DecorationsReply_Override, error) {
+func SlowOverrides(ctx context.Context, xs Service, tickets []string) (map[string][]*xpb.DecorationsReply_Override, error) {
 	start := time.Now()
 	log.Println("WARNING: performing slow-lookup of overrides")
 	overrides := make(map[string][]*xpb.DecorationsReply_Override)
@@ -310,7 +310,7 @@ func SlowOverrides(xs Service, ctx context.Context, tickets []string) (map[strin
 // SlowDefinitions attempts to return a definition location for every node ticket given.  A
 // definition will be returned only if it is unambiguous, but the definition may be indirect
 // (through an intermediary node).
-func SlowDefinitions(xs Service, ctx context.Context, tickets []string) (map[string]*xpb.Anchor, error) {
+func SlowDefinitions(ctx context.Context, xs Service, tickets []string) (map[string]*xpb.Anchor, error) {
 	start := time.Now()
 	log.Println("WARNING: performing slow-lookup of definitions")
 	defs := make(map[string]*xpb.Anchor)
