@@ -11,6 +11,8 @@ cargo install cargo-kythe
 `cargo-kythe` **requires nightly rust**
 
 ## Usage
+`cargo-kythe` reads an environment variable `KYTHE_DIR` to determine the path to the local installation of kythe. You will probably need to download it from [google/kythe](https://github.com/google/kythe/releases)
+
 To index the top level package:
 
 ```

@@ -14,6 +14,7 @@
 
 [package]
 name = "cargo-kythe"
+description = "A cargo subcommand for generating and viewing Kythe graphs of cargo projects"
 version = "0.1.0"
 authors = ["John Renner <john@jrenner.net>"]
 license = "Apache-2.0"
