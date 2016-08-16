@@ -22,7 +22,7 @@ fn main() {
     let so_folder = Path::new(&cargo_home).join("kythe");
 
     let indexer = fs::read_dir(dep_dir).expect("deps folder not found").find(|entry| {
-        entry.as_ref().unwrap().file_name().to_string_lossy().starts_with("libindexer")
+        entry.as_ref().unwrap().file_name().to_string_lossy().starts_with("libkythe_indexer")
     });
 
     let indexer = indexer.expect("indexer not found").unwrap();

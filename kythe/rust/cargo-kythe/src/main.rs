@@ -47,7 +47,7 @@ fn index(kythe_dir: &Path) {
 
     let rustc_flags = env::var("RUSTFLAGS").unwrap_or(String::new());
 
-    let rustc_flags = format!("{} -L {} -Zextra-plugins=indexer ",
+    let rustc_flags = format!("{} -L {} -Zextra-plugins=kythe_indexer ",
                               rustc_flags,
                               so_folder.to_string_lossy());
 

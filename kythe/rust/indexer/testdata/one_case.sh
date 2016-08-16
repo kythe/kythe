@@ -15,7 +15,7 @@
 # limitations under the License.
 
 VERIFIER="kythe/cxx/verifier/verifier"
-INDEXER="rustc -L kythe/rust/indexer/ -Z extra-plugins=indexer -Z no-trans"
+INDEXER="rustc -L kythe/rust/indexer/ -Z extra-plugins=kythe_indexer -Z no-trans"
 KYTHE_ENTRY_STREAM="kythe/go/platform/tools/entrystream/entrystream"
 
 export KYTHE_CORPUS=""

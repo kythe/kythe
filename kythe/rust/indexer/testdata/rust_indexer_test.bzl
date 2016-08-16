@@ -20,7 +20,7 @@ def rust_indexer_test(name, srcs, deps=[], tags=[], size="small",
       name = name,
       srcs = ["//kythe/rust/indexer/testdata:one_case.sh"],
       data = srcs + deps + [
-          "//kythe/rust/indexer:libindexer",
+          "//kythe/rust/indexer:libkythe_indexer",
           "//kythe/cxx/verifier",
           "//kythe/go/platform/tools:entrystream",
           "//kythe/rust/indexer/testdata:handle_results.sh",

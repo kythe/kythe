@@ -18,10 +18,10 @@ version = "0.1.0"
 authors = ["John Renner <john@jrenner.net>"]
 license = "Apache-2.0"
 repository = "https://github.com/google/kythe" 
-keywords = ["kythe", "index", "plugin"]
+keywords = ["kythe", "index", "cargo", "subcommand"]
 readme = "README.md"
 
 build="build.rs"
 
-[build-dependencies.indexer]
-path = "../indexer"
+[build-dependencies]
+kythe-indexer = { path = "../indexer", version = "0.1.0" }

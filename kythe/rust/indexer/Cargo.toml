@@ -13,12 +13,16 @@
 # limitations under the License.
 
 [package]
-name = "indexer"
+name = "kythe-indexer"
 version = "0.1.0"
 authors = ["John Renner <john@jrenner.net>"]
+license = "Apache-2.0"
+repository = "https://github.com/google/kythe" 
+keywords = ["kythe", "index", "plugin"]
+readme = "README.md"
 
 [lib]
-name = "indexer"
+crate-type = ["dylib"]
 plugin = true
 
 [dependencies]
