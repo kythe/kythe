@@ -29,8 +29,8 @@ import (
 	"kythe.io/kythe/go/util/flagutil"
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema"
-	"kythe.io/kythe/go/util/stringset"
 
+	"bitbucket.org/creachadair/stringset"
 	"golang.org/x/net/context"
 
 	xpb "kythe.io/kythe/proto/xref_proto"
@@ -72,7 +72,7 @@ func main() {
 		}
 
 		nodes := xrefs.NodesMap(decor.Nodes)
-		emitted := stringset.New()
+		var emitted stringset.Set
 
 		for _, r := range decor.Reference {
 			if r.Kind != schema.DefinesBindingEdge || emitted.Contains(r.TargetTicket) {

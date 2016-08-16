@@ -29,8 +29,8 @@ import (
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema"
-	"kythe.io/kythe/go/util/stringset"
 
+	"bitbucket.org/creachadair/stringset"
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
 
@@ -209,7 +209,7 @@ AND kind IN %s`, kSetQ)
 	}
 
 	reply := &xpb.EdgesReply{EdgeSets: make(map[string]*xpb.EdgeSet, len(edges))}
-	nodeTickets := stringset.New()
+	var nodeTickets stringset.Set
 	for src, groups := range edges {
 		gs := make(map[string]*xpb.EdgeSet_Group, len(groups))
 		nodeTickets.Add(src)
@@ -244,9 +244,9 @@ AND kind IN %s`, kSetQ)
 	}
 
 	// TODO(schroederc): faster node lookups
-	if len(req.Filter) > 0 && len(nodeTickets) > 0 {
+	if len(req.Filter) > 0 && !nodeTickets.Empty() {
 		nodes, err := d.Nodes(ctx, &xpb.NodesRequest{
-			Ticket: nodeTickets.Slice(),
+			Ticket: nodeTickets.Elements(),
 			Filter: req.Filter,
 		})
 		if err != nil {
@@ -310,13 +310,13 @@ func (d *DB) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*xpb
 		}
 
 		if len(req.Filter) > 0 && len(decor.Reference) > 0 {
-			nodeTickets := stringset.New()
+			var nodeTickets stringset.Set
 			for _, r := range decor.Reference {
 				nodeTickets.Add(r.TargetTicket)
 			}
 
 			nodes, err := d.Nodes(ctx, &xpb.NodesRequest{
-				Ticket: nodeTickets.Slice(),
+				Ticket: nodeTickets.Elements(),
 				Filter: req.Filter,
 			})
 			if err != nil {
@@ -449,7 +449,7 @@ func (d *DB) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReques
 		}
 
 		for ticket, es := range er.EdgeSets {
-			nodes := stringset.New()
+			var nodes stringset.Set
 			crs, ok := reply.CrossReferences[ticket]
 			if !ok {
 				crs = &xpb.CrossReferencesReply_CrossReferenceSet{

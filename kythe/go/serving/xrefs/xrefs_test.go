@@ -25,8 +25,8 @@ import (
 	"kythe.io/kythe/go/storage/table"
 	"kythe.io/kythe/go/test/testutil"
 	"kythe.io/kythe/go/util/kytheuri"
-	"kythe.io/kythe/go/util/stringset"
 
+	"bitbucket.org/creachadair/stringset"
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
 	"golang.org/x/text/encoding"
@@ -1009,12 +1009,12 @@ type testTable struct {
 
 func (tbl *testTable) Construct(t *testing.T) xrefs.Service {
 	p := make(testProtoTable)
-	tickets := stringset.New()
+	var tickets stringset.Set
 	for _, n := range tbl.Nodes {
 		tickets.Add(n.Ticket)
 	}
 	for _, es := range tbl.EdgeSets {
-		tickets.Remove(es.Source.Ticket)
+		tickets.Discard(es.Source.Ticket)
 		testutil.FatalOnErrT(t, "Error writing edge set: %v", p.Put(ctx, EdgeSetKey(mustFix(t, es.Source.Ticket)), es))
 	}
 	// Fill in EdgeSets for zero-degree nodes

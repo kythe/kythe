@@ -37,13 +37,13 @@ import (
 	"kythe.io/kythe/go/storage/table"
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema"
-	"kythe.io/kythe/go/util/stringset"
 
 	cpb "kythe.io/kythe/proto/common_proto"
 	ipb "kythe.io/kythe/proto/internal_proto"
 	srvpb "kythe.io/kythe/proto/serving_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
 
+	"bitbucket.org/creachadair/stringset"
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
 )
@@ -271,7 +271,7 @@ func (t *tableImpl) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.Edge
 		Tickets: tickets,
 		Filters: req.Filter,
 		Kinds: func(kind string) bool {
-			return len(allowedKinds) == 0 || allowedKinds.Contains(kind)
+			return allowedKinds.Empty() || allowedKinds.Contains(kind)
 		},
 
 		PageSize:  int(req.PageSize),
@@ -316,7 +316,7 @@ func (t *tableImpl) edges(ctx context.Context, req edgesRequest) (*xpb.EdgesRepl
 	}
 	pageToken := stats.skip
 
-	nodeTickets := stringset.New()
+	var nodeTickets stringset.Set
 
 	rs, err := t.pagedEdgeSets(ctx, req.Tickets)
 	if err != nil {
@@ -575,7 +575,7 @@ func (t *tableImpl) Decorations(ctx context.Context, req *xpb.DecorationsRequest
 		reply.Reference = make([]*xpb.DecorationsReply_Reference, 0, len(decor.Decoration))
 		reply.Nodes = make(map[string]*xpb.NodeInfo)
 
-		seenTarget := stringset.New()
+		var seenTarget stringset.Set
 
 		// Reference.TargetTicket -> NodeInfo (superset of reply.Nodes)
 		var nodes map[string]*xpb.NodeInfo
@@ -643,7 +643,6 @@ func (t *tableImpl) Decorations(ctx context.Context, req *xpb.DecorationsRequest
 			if err != nil {
 				return nil, fmt.Errorf("lookup error for overrides tickets: %v", err)
 			}
-			extendsOverridesTargets = stringset.New()
 			if len(extendsOverrides) != 0 {
 				reply.ExtendsOverrides = make(map[string]*xpb.DecorationsReply_Overrides, len(extendsOverrides))
 				for ticket, eos := range extendsOverrides {
@@ -897,7 +896,7 @@ func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReference
 		}
 		reply.Total.RelatedNodesByRelation = er.TotalEdgesByKind
 		for ticket, es := range er.EdgeSets {
-			nodes := stringset.New()
+			var nodes stringset.Set
 			crs, ok := reply.CrossReferences[ticket]
 			if !ok {
 				crs = &xpb.CrossReferencesReply_CrossReferenceSet{

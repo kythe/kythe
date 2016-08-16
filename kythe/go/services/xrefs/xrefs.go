@@ -34,8 +34,8 @@ import (
 	"kythe.io/kythe/go/services/web"
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema"
-	"kythe.io/kythe/go/util/stringset"
 
+	"bitbucket.org/creachadair/stringset"
 	"github.com/golang/protobuf/proto"
 	"github.com/sergi/go-diff/diffmatchpatch"
 	"golang.org/x/net/context"
@@ -624,12 +624,11 @@ func MatchesAny(str string, patterns []*regexp.Regexp) bool {
 }
 
 func forAllEdges(ctx context.Context, service Service, source stringset.Set, edge []string, f func(source, target, targetKind, edgeKind string) error) error {
-	tickets := source.Slice()
-	if len(tickets) == 0 {
+	if source.Empty() {
 		return nil
 	}
 	req := &xpb.EdgesRequest{
-		Ticket: source.Slice(),
+		Ticket: source.Elements(),
 		Kind:   edge,
 		Filter: []string{schema.NodeKindFact},
 	}
@@ -665,12 +664,11 @@ const (
 // findCallableDetail returns a map from semantic object tickets to CallableDetail,
 // where the CallableDetail does not have the SemanticObject field set.
 func findCallableDetail(ctx context.Context, service Service, ticketSet stringset.Set) (map[string]*xpb.CallersReply_CallableDetail, error) {
-	tickets := ticketSet.Slice()
-	if len(tickets) == 0 {
+	if ticketSet.Empty() {
 		return nil, nil
 	}
 	xreq := &xpb.CrossReferencesRequest{
-		Ticket:            tickets,
+		Ticket:            ticketSet.Elements(),
 		DefinitionKind:    xpb.CrossReferencesRequest_BINDING_DEFINITIONS,
 		ReferenceKind:     xpb.CrossReferencesRequest_NO_REFERENCES,
 		DocumentationKind: xpb.CrossReferencesRequest_NO_DOCUMENTATION,
@@ -734,8 +732,7 @@ func expandDefRelatedNodeSet(ctx context.Context, service Service, frontier stri
 	// possible calls because it ignores link structure.
 	// TODO(zarko): We need to mark nodes we reached through overrides.
 	// All nodes that we've visited.
-	retired := stringset.New()
-	anchors := stringset.New()
+	var retired, anchors stringset.Set
 	iterations := 0
 	for len(retired) < maxCallersNodeSetSize && len(frontier) != 0 && iterations < maxCallersExpansions {
 		iterations++
@@ -765,7 +762,7 @@ func expandDefRelatedNodeSet(ctx context.Context, service Service, frontier stri
 		log.Printf("Callers iteration truncated (too many expansions)")
 	}
 	for ticket := range anchors {
-		retired.Remove(ticket)
+		retired.Discard(ticket)
 	}
 	return retired, nil
 }
@@ -781,13 +778,12 @@ func SlowCallersForCrossReferences(ctx context.Context, service Service, include
 	if err != nil {
 		return nil, err
 	}
-	xrefTickets := callees.Slice()
-	if len(xrefTickets) == 0 {
+	if callees.Empty() {
 		return nil, nil
 	}
 	// This will not recursively call SlowCallersForCrossReferences as we're requesting NO_CALLERS above.
 	xrefs, err := service.CrossReferences(ctx, &xpb.CrossReferencesRequest{
-		Ticket:            xrefTickets,
+		Ticket:            callees.Elements(),
 		DefinitionKind:    xpb.CrossReferencesRequest_NO_DEFINITIONS,
 		ReferenceKind:     xpb.CrossReferencesRequest_CALL_REFERENCES,
 		DocumentationKind: xpb.CrossReferencesRequest_NO_DOCUMENTATION,
@@ -803,7 +799,7 @@ func SlowCallersForCrossReferences(ctx context.Context, service Service, include
 	}
 	// Now we've got a bunch of call site anchors. We need to figure out which functions they belong to.
 	// anchors is the set of all callsite anchor tickets.
-	anchors := stringset.New()
+	var anchors stringset.Set
 	// callsite anchor ticket to anchor details
 	expandedAnchors := make(map[string]*xpb.Anchor)
 	// semantic node ticket to owned callsite anchor tickets
@@ -923,7 +919,7 @@ func SlowCallers(ctx context.Context, service Service, req *xpb.CallersRequest) 
 	var expandedAnchors map[string]*xpb.Anchor
 	// parentToAnchor maps semantic node tickets to the callsite anchor tickets they own.
 	var parentToAnchor map[string][]string
-	xrefTickets := callees.Slice()
+	xrefTickets := callees.Elements()
 	if len(xrefTickets) > 0 {
 		xreq := &xpb.CrossReferencesRequest{
 			Ticket:            xrefTickets,
@@ -942,7 +938,7 @@ func SlowCallers(ctx context.Context, service Service, req *xpb.CallersRequest) 
 		}
 		// Now we've got a bunch of call site anchors. We need to figure out which functions they belong to.
 		// anchors is the set of all callsite anchor tickets.
-		anchors := stringset.New()
+		var anchors stringset.Set
 		expandedAnchors = make(map[string]*xpb.Anchor)
 		parentToAnchor = make(map[string][]string)
 		for _, refSet := range xrefs.CrossReferences {
@@ -972,7 +968,7 @@ func SlowCallers(ctx context.Context, service Service, req *xpb.CallersRequest) 
 	// Now begin filling out the response.
 	reply := &xpb.CallersReply{}
 	// We'll fetch CallableDetail only once for each def-related ticket, then add it to the response later.
-	detailToFetch := stringset.New()
+	var detailToFetch stringset.Set
 	for _, calleeNode := range xrefTickets {
 		rCalleeNode := &xpb.CallersReply_CallableDetail{
 			SemanticObject: calleeNode,
@@ -1361,7 +1357,7 @@ type documentDetails struct {
 func getDocRelatedNodes(ctx context.Context, service Service, details documentDetails, allTickets stringset.Set) error {
 	// We can't ask for text facts here (since they get filtered out).
 	dreq := &xpb.EdgesRequest{
-		Ticket:   allTickets.Slice(),
+		Ticket:   allTickets.Elements(),
 		Kind:     []string{schema.MirrorEdge(schema.DocumentsEdge), schema.ChildOfEdge, schema.TypedEdge},
 		PageSize: math.MaxInt32,
 		Filter:   []string{schema.NodeKindFact},
@@ -1407,12 +1403,11 @@ func getDocRelatedNodes(ctx context.Context, service Service, details documentDe
 
 // getDocText gets text for doc nodes we've found.
 func getDocText(ctx context.Context, service Service, details documentDetails) error {
-	docsSlice := details.docs.Slice()
-	if len(docsSlice) == 0 {
+	if details.docs.Empty() {
 		return nil
 	}
 	nreq := &xpb.NodesRequest{
-		Ticket: docsSlice,
+		Ticket: details.docs.Elements(),
 		Filter: []string{schema.TextFact},
 	}
 	nodes, err := service.Nodes(ctx, nreq)
@@ -1467,12 +1462,11 @@ func resolveDocLinks(ctx context.Context, service Service, sourceTicket string, 
 
 // getDocLinks gets links for doc nodes we've found.
 func getDocLinks(ctx context.Context, service Service, details documentDetails) error {
-	docsSlice := details.docs.Slice()
-	if len(docsSlice) == 0 {
+	if details.docs.Empty() {
 		return nil
 	}
 	preq := &xpb.EdgesRequest{
-		Ticket:   docsSlice,
+		Ticket:   details.docs.Elements(),
 		Kind:     []string{schema.ParamEdge},
 		PageSize: math.MaxInt32,
 	}
@@ -1540,7 +1534,7 @@ func SlowDocumentation(ctx context.Context, service Service, req *xpb.Documentat
 		ticketToType:         make(map[string]string),
 		ticketToKind:         make(map[string]string),
 		docTicketToAssocNode: make(map[string]*associatedDocNode),
-		docs:                 stringset.New(),
+		docs:                 make(stringset.Set),
 	}
 	// Get the kinds of the nodes in the original request, as we'll have to include them in the response.
 	kreq := &xpb.NodesRequest{
@@ -1556,7 +1550,7 @@ func SlowDocumentation(ctx context.Context, service Service, req *xpb.Documentat
 	}
 	// We assume that expandDefRelatedNodeSet will return disjoint sets (and thus we can treat them as equivalence classes
 	// with the original request's ticket as the characteristic element).
-	allTickets := stringset.New()
+	var allTickets stringset.Set
 	for _, ticket := range tickets {
 		// TODO(zarko): Include outbound override edges.
 		ticketSet, err := expandDefRelatedNodeSet(ctx, service, stringset.New(ticket) /*includeOverrides=*/, false)

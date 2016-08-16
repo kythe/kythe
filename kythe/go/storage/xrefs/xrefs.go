@@ -33,8 +33,8 @@ import (
 	"kythe.io/kythe/go/util/encoding/text"
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema"
-	"kythe.io/kythe/go/util/stringset"
 
+	"bitbucket.org/creachadair/stringset"
 	"golang.org/x/net/context"
 
 	spb "kythe.io/kythe/proto/storage_proto"
@@ -165,7 +165,7 @@ func (g *GraphStoreService) Edges(ctx context.Context, req *xpb.EdgesRequest) (*
 
 	patterns := xrefs.ConvertFilters(req.Filter)
 	allowedKinds := stringset.New(req.Kind...)
-	targetSet := stringset.New()
+	var targetSet stringset.Set
 	reply := &xpb.EdgesReply{
 		EdgeSets: make(map[string]*xpb.EdgeSet),
 		Nodes:    make(map[string]*xpb.NodeInfo),
@@ -249,12 +249,12 @@ func (g *GraphStoreService) Edges(ctx context.Context, req *xpb.EdgesRequest) (*
 	if len(req.Filter) > 0 {
 		// Eliminate redundant work by removing already requested nodes from targetSet
 		for ticket := range reply.Nodes {
-			targetSet.Remove(ticket)
+			targetSet.Discard(ticket)
 		}
 
 		// Batch request all leftover target nodes
 		nodesReply, err := g.Nodes(ctx, &xpb.NodesRequest{
-			Ticket: targetSet.Slice(),
+			Ticket: targetSet.Elements(),
 			Filter: req.Filter,
 		})
 		if err != nil {
@@ -325,7 +325,7 @@ func (g *GraphStoreService) Decorations(ctx context.Context, req *xpb.Decoration
 			return nil, fmt.Errorf("failed to retrieve file children: %v", err)
 		}
 
-		targetSet := stringset.New()
+		var targetSet stringset.Set
 		for _, edge := range children {
 			anchor := edge.Target
 			ticket := kytheuri.ToString(anchor)
@@ -399,12 +399,12 @@ func (g *GraphStoreService) Decorations(ctx context.Context, req *xpb.Decoration
 		if len(req.Filter) > 0 {
 			// Ensure returned nodes are not duplicated.
 			for ticket := range reply.Nodes {
-				targetSet.Remove(ticket)
+				targetSet.Discard(ticket)
 			}
 
 			// Batch request all Reference target nodes
 			nodesReply, err := g.Nodes(ctx, &xpb.NodesRequest{
-				Ticket: targetSet.Slice(),
+				Ticket: targetSet.Elements(),
 				Filter: req.Filter,
 			})
 			if err != nil {
@@ -540,7 +540,6 @@ func (g *GraphStoreService) CrossReferences(ctx context.Context, req *xpb.CrossR
 	var allRelatedNodes stringset.Set
 	if len(req.Filter) > 0 {
 		reply.Nodes = make(map[string]*xpb.NodeInfo)
-		allRelatedNodes = stringset.New()
 	}
 
 	// Cache parent files across all anchors
@@ -579,7 +578,7 @@ func (g *GraphStoreService) CrossReferences(ctx context.Context, req *xpb.CrossR
 					}
 					count += len(anchors)
 					xr.Documentation = append(xr.Documentation, anchors...)
-				case allRelatedNodes != nil && !schema.IsAnchorEdge(kind):
+				case !allRelatedNodes.Empty() && !schema.IsAnchorEdge(kind):
 					count += len(grp.Edge)
 					for _, edge := range grp.Edge {
 						xr.RelatedNode = append(xr.RelatedNode, &xpb.CrossReferencesReply_RelatedNode{
@@ -615,9 +614,9 @@ func (g *GraphStoreService) CrossReferences(ctx context.Context, req *xpb.CrossR
 		reply.NextPageToken = eReply.NextPageToken
 	}
 
-	if len(allRelatedNodes) > 0 {
+	if !allRelatedNodes.Empty() {
 		nReply, err := g.Nodes(ctx, &xpb.NodesRequest{
-			Ticket: allRelatedNodes.Slice(),
+			Ticket: allRelatedNodes.Elements(),
 			Filter: req.Filter,
 		})
 		if err != nil {

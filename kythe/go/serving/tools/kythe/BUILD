@@ -18,10 +18,10 @@ go_binary(
         "//kythe/go/util/build",
         "//kythe/go/util/kytheuri",
         "//kythe/go/util/schema",
-        "//kythe/go/util/stringset",
         "//kythe/proto:filetree_proto_go",
         "//kythe/proto:xref_proto_go",
         "@go_protobuf//:proto",
+        "@go_stringset//:stringset",
         "@go_x_net//:context",
     ],
 )

@@ -32,8 +32,8 @@ import (
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema"
-	"kythe.io/kythe/go/util/stringset"
 
+	"bitbucket.org/creachadair/stringset"
 	"github.com/golang/protobuf/proto"
 
 	ftpb "kythe.io/kythe/proto/filetree_proto"
@@ -203,7 +203,7 @@ func displayEdges(edges *xpb.EdgesReply) error {
 }
 
 func displayTargets(edges map[string]*xpb.EdgeSet) error {
-	targets := stringset.New()
+	var targets stringset.Set
 	for _, es := range edges {
 		for _, g := range es.Groups {
 			for _, e := range g.Edge {
@@ -213,7 +213,7 @@ func displayTargets(edges map[string]*xpb.EdgeSet) error {
 	}
 
 	if *displayJSON {
-		return json.NewEncoder(out).Encode(targets.Slice())
+		return json.NewEncoder(out).Encode(targets.Elements())
 	}
 
 	for target := range targets {
@@ -242,11 +242,12 @@ func displayEdgeGraph(reply *xpb.EdgesReply) error {
 					edges[src] = groups
 				}
 				targets, ok := groups[kind]
-				if !ok {
-					targets = stringset.New()
-					groups[kind] = targets
+				if ok {
+					targets.Add(tgt)
+				} else {
+					groups[kind] = stringset.New(tgt)
 				}
-				targets.Add(tgt)
+
 			}
 		}
 	}
