@@ -1,5 +1,10 @@
 # Release Notes
 
+## v0.0.24
+
+Notable fixes:
+ - write_tables now tolerates nodes with no facts. Previously it could sometimes crash if this occurred.
+
 ## v0.0.23
 
 Notable changes:
