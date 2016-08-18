@@ -89,6 +89,11 @@ bazel build //... # Build all Kythe sources
 bazel test  //... # Run all Kythe tests
 {% endhighlight %}
 
+Please note that you must use a non-jdk7 version of Bazel. Some package managers
+may provide the jdk7 version by default. To determine if you are using an
+incompatible version of Bazel, look for `jdk7` in the build label that
+is printed by `bazel version`.
+
 ### Build a release of Kythe using Bazel and unpack it in /opt/kythe
 
 Many examples on the site assume you have installed kythe in /opt/kythe.
