@@ -155,8 +155,8 @@ public class KytheEntrySets {
   }
 
   /**
-   * Returns the {@link VName} of the {@link NodeKind.FILE} node with the given contents digest. If
-   * none is found, return {@code null}.
+   * Returns the {@link VName} of the {@link NodeKind.FILE} node with the given contents digest.
+   * If none is found, return {@code null}.
    */
   public VName getFileVName(String digest) {
     VName name = lookupVName(digest);
@@ -167,14 +167,18 @@ public class KytheEntrySets {
     return name.toBuilder().setLanguage("").setSignature("").build();
   }
 
-  /** Emits and returns a new {@link EntrySet} representing a file. */
+  /** Emits and returns a new {@link EntrySet} representing a file digest. */
   public EntrySet getFileNode(String digest, byte[] contents, Charset encoding) {
     VName name = getFileVName(digest);
-    EntrySet node =
-        emitAndReturn(
-            newNode(NodeKind.FILE, name)
-                .setProperty("text", contents)
-                .setProperty("text/encoding", encoding.name()));
+    return getFileNode(name, contents, encoding);
+  }
+
+  /** Emits and returns a new {@link EntrySet} representing a file {@link VName}. */
+  public EntrySet getFileNode(VName name, byte[] contents, Charset encoding) {
+    EntrySet node = emitAndReturn(
+        new NodeBuilder(NodeKind.FILE, name)
+            .setProperty("text", contents)
+            .setProperty("text/encoding", encoding.name()));
     Path fileName = Paths.get(name.getPath()).getFileName();
     if (fileName != null) {
       emitName(node, fileName.toString());
@@ -183,8 +187,8 @@ public class KytheEntrySets {
   }
 
   /**
-   * Returns a {@link NodeBuilder} with the given kind and added signature salts for each {@link
-   * EntrySet} dependency.
+   * Returns a {@link NodeBuilder} with the given kind and added signature salts for each
+   * {@link EntrySet} dependency.
    */
   public NodeBuilder newNode(NodeKind kind, Iterable<EntrySet> dependencies) {
     NodeBuilder builder = newNode(kind);
@@ -216,6 +220,12 @@ public class KytheEntrySets {
   public void emitEdge(EntrySet source, EdgeKind kind, EntrySet target, int ordinal) {
     getStatisticsCollector().incrementCounter("emit-edge-" + kind);
     new EdgeBuilder(source.getVName(), kind, ordinal, target.getVName()).build().emit(emitter);
+  }
+
+  /** Emits an edge of the given kind and ordinal from {@code source} to {@code target}. */
+  public void emitEdge(VName source, EdgeKind kind, VName target, int ordinal) {
+    getStatisticsCollector().incrementCounter("emit-edge-" + kind);
+    new EdgeBuilder(source, kind, ordinal, target).build().emit(emitter);
   }
 
   /**
