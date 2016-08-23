@@ -77,7 +77,7 @@ func TestScanNothing(t *testing.T) {
 			return nil
 		})
 		if err != ErrNotArchive {
-			t.Errorf("Scan(%q): got error %v, want %v", err, ErrNotArchive)
+			t.Errorf("Scan(%q): got error %v, want %v", path, err, ErrNotArchive)
 		}
 	}
 }

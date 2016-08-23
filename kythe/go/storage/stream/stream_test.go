@@ -43,7 +43,7 @@ func TestReader(t *testing.T) {
 	}
 
 	if i != len(testEntries) {
-		t.Fatal("Missing %d entries", len(testEntries)-i)
+		t.Fatalf("Missing %d entries", len(testEntries)-i)
 	}
 }
 
@@ -62,7 +62,7 @@ func TestJSONReader(t *testing.T) {
 	}
 
 	if i != len(testEntries) {
-		t.Fatal("Missing %d entries", len(testEntries)-i)
+		t.Fatalf("Missing %d entries", len(testEntries)-i)
 	}
 }
 
