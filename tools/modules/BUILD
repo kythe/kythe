@@ -9,7 +9,10 @@ genrule(
     cmd = ("echo \"BAZEL_CC=$$($(location :abspath) $(CC))\n" +
            "BAZEL_C_COMPILER=$(C_COMPILER)\" > $@"),
     tags = ["manual"],
-    tools = [":abspath"],
+    tools = [
+        ":abspath",
+        "@local_config_cc//:toolchain",
+    ],
 )
 
 # This rule generates an empty .cc file if all modules are up to date.
