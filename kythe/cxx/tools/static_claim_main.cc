@@ -179,7 +179,7 @@ class ClaimTool {
     }
     for (auto &input : unit.required_input()) {
       ++total_input_count_;
-      if (input.context_size()) {
+      if (input.context().row_size()) {
         VName input_vname = input.v_name();
         if (input_vname.signature().size()) {
           // We generally expect that file vnames have no signature.
@@ -189,7 +189,7 @@ class ClaimTool {
           LOG(WARNING) << "Input " << input_vname.DebugString()
                        << " has a nonempty signature.\n";
         }
-        for (const auto &row : input.context()) {
+        for (const auto &row : input.context().row()) {
           // If we have a (r, h, c) entry, we'd better have an input entry for
           // the file included at h with context c (otherwise the index file
           // isn't well-formed). We therefore only need to claim each unique

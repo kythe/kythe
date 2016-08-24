@@ -11,7 +11,9 @@ required_input {
     digest: "a24091884bc15b53e380fe5b874d1bb52d89269fdf2592808ac70ba189204730"
   }
   context {
-    source_context: "hash0"
+    row {
+      source_context: "hash0"
+    }
   }
 }
 argument: "../../../cxx_extractor"

@@ -23,8 +23,8 @@
 //   assembles some/file.kindex using some/unit as the CompilationUnit and
 //   any other input files as FileData
 
-#include <sys/stat.h>
 #include <fcntl.h>
+#include <sys/stat.h>
 
 #include "gflags/gflags.h"
 #include "glog/logging.h"
@@ -35,6 +35,7 @@
 #include "google/protobuf/stubs/common.h"
 #include "google/protobuf/text_format.h"
 #include "kythe/proto/analysis.pb.h"
+#include "kythe/proto/filecontext.pb.h"
 
 DEFINE_string(assemble, "", "Assemble positional args into output file");
 DEFINE_string(explode, "", "Explode this kindex file into its constituents");
@@ -76,8 +77,8 @@ static void DumpIndexFile(const std::string& path) {
         CanonicalizeHash(&hash_table, unit.mutable_entry_context());
         for (int i = 0; i < unit.required_input_size(); ++i) {
           auto* input = unit.mutable_required_input(i);
-          for (int r = 0; r < input->context_size(); ++r) {
-            auto* row = input->mutable_context(r);
+          for (int r = 0; r < input->context().row_size(); ++r) {
+            auto* row = input->mutable_context()->mutable_row(r);
             CanonicalizeHash(&hash_table, row->mutable_source_context());
             for (int c = 0; c < row->column_size(); ++c) {
               auto* col = row->mutable_column(c);

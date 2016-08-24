@@ -11,7 +11,9 @@ required_input {
     digest: "c6e32ef903ab01c637e4453897d545162cc0d92a58a62754f9c1b0f464322982"
   }
   context {
-    source_context: "hash0"
+    row {
+      source_context: "hash0"
+    }
   }
 }
 argument: "./kythe/cxx/extractor/cxx_extractor"

@@ -122,7 +122,7 @@ std::string IndexCompilationUnit(const proto::CompilationUnit &Unit,
       VFS->SetVName(Input.info().path(), Input.v_name());
     }
     const std::string &FilePath = Input.info().path();
-    for (const auto &Row : Input.context()) {
+    for (const auto &Row : Input.context().row()) {
       if (Row.always_process()) {
         auto ClaimableVname = Input.v_name();
         ClaimableVname.set_signature(Row.source_context() +

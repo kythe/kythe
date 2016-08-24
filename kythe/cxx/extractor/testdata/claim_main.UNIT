@@ -11,16 +11,18 @@ required_input {
     digest: "4b19bb44ad66bc14a2b29694604420990d94e2b27bb55d10ce9ad5a93f6a6bde"
   }
   context {
-    source_context: "hash0"
-    column {
-      offset: 12
-      linked_context: "hash1"
+    row {
+      source_context: "hash0"
+      column {
+        offset: 12
+        linked_context: "hash1"
+      }
+      column {
+        offset: 33
+        linked_context: "hash1"
+      }
+      always_process: true
     }
-    column {
-      offset: 33
-      linked_context: "hash1"
-    }
-    always_process: true
   }
 }
 required_input {
@@ -32,8 +34,10 @@ required_input {
     digest: "a3d03965930673eced0d8ad50753f1933013a27a06b8be57443781275f1f937f"
   }
   context {
-    source_context: "hash1"
-    always_process: true
+    row {
+      source_context: "hash1"
+      always_process: true
+    }
   }
 }
 required_input {
@@ -45,7 +49,9 @@ required_input {
     digest: "2c339c36aa02459955c6d5be9e73ebe030baf3b74dc1123439af8613844d0b1f"
   }
   context {
-    source_context: "hash1"
+    row {
+      source_context: "hash1"
+    }
   }
 }
 argument: "./kythe/cxx/extractor/cxx_extractor"

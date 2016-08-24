@@ -16,6 +16,7 @@ cc_library(
         "//external:proto/protobuf",
         "//external:zlib",
         "//kythe/proto:analysis_proto_cc",
+        "//kythe/proto:filecontext_proto_cc",
     ],
 )
 

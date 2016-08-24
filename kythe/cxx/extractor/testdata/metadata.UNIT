@@ -11,7 +11,9 @@ required_input {
     digest: "72269be69625ca9015a59bf7342dce1a30e96ddda51196c9f6ae6c4cbdefb7ea"
   }
   context {
-    source_context: "hash0"
+    row {
+      source_context: "hash0"
+    }
   }
 }
 required_input {

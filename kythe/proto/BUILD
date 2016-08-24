@@ -8,6 +8,7 @@ filegroup(
         "analysis.proto",
         "common.proto",
         "cxx.proto",
+        "filecontext.proto",
         "filetree.proto",
         "java.proto",
         "storage.proto",
@@ -47,9 +48,18 @@ proto_library(
         "//third_party/llvm/src:__pkg__",
     ],
     deps = [
+        ":filecontext_proto",
         ":storage_proto",
         "//external:proto/any_proto",
     ],
+)
+
+# Context-dependent version information, for claiming.
+proto_library(
+    name = "filecontext_proto",
+    gen_cc = 1,
+    gen_go = 1,
+    gen_java = 1,
 )
 
 # C++-specific protocol buffer definitions

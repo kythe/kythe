@@ -1,0 +1,51 @@
+/*
+ * Copyright 2016 Google Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+package kythe.proto;
+option java_package = "com.google.devtools.kythe.proto";
+
+// ContextDependentVersion columns and rows define a table that relates input
+// contexts (keyed by a single source context per row) to tuples of (byte
+// offset * linked context).  When a file F being processed in context C refers
+// to another file F' at offset O (perhaps because F has an #include directive
+// at O) the context in which F' should be processed is the linked context
+// derived from this table.
+message ContextDependentVersion {
+  message Column {
+    // The byte offset into the file resource.
+    int32 offset = 1;
+    // The signature for the resulting context.
+    string linked_context = 2;
+  }
+
+  // See ContextDependentVersionColumn for details.  It is valid for a Row to
+  // have no columns. In this case, the associated file was seen to exist in
+  // some context C, but did not refer to any other files while in that
+  // context.
+  message Row {
+    // The context to be applied to all columns.
+    string source_context = 1;
+    // A map from byte offsets to linked contexts.
+    repeated Column column = 2;
+    // If true, this version should always be processed regardless of any
+    // claiming.
+    bool always_process = 3;
+  }
+
+  repeated Row row = 1;
+}

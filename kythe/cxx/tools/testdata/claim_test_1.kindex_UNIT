@@ -6,10 +6,12 @@ required_input {
     path: "a.h"
   }
   context {
-    source_context: "a.h_1"
-  }
-  context {
-    source_context: "a.h_2"
+    row {
+      source_context: "a.h_1"
+    }
+    row {
+      source_context: "a.h_2"
+    }
   }
 }
 required_input {
@@ -17,6 +19,8 @@ required_input {
     path: "c.h"
   }
   context {
-    source_context: "c.h_1"
+    row {
+      source_context: "c.h_1"
+    }
   }
 }

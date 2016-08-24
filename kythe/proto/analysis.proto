@@ -20,6 +20,7 @@ package kythe.proto;
 option java_package = "com.google.devtools.kythe.proto";
 
 import "google/protobuf/any.proto";
+import "kythe/proto/filecontext.proto";
 import "kythe/proto/storage.proto";
 
 // CompilationAnalyzer services are exposed by any program that wants to plug
@@ -107,34 +108,6 @@ message CompilationUnit {
   // FileInfo message of a dependent compilation that consumes its output.
   string output_key = 7;
 
-  // ContextDependentVersionColumn and ContextDependentVersionRow
-  // define a table that relates input contexts (keyed by a single
-  // source context per row) to tuples of (byte offset * linked context).
-  // When a FileInput F being processed in context C refers to another
-  // FileInput F' at offset O (perhaps because F has an #include directive at O)
-  // the context in which F' should be processed is the linked context derived
-  // from this table.
-  message ContextDependentVersionColumn {
-    // The byte offset into the file resource.
-    int32 offset = 1;
-    // The signature for the resulting context.
-    string linked_context = 2;
-  }
-
-  // See ContextDependentVersionColumn for details.
-  // It is valid for a ContextDependentVersionRow to have no columns. In this
-  // case, the associated FileInput was seen to exist in some context C, but
-  // did not refer to any other FileInputs while in that context.
-  message ContextDependentVersionRow {
-    // The context to be applied to all columns.
-    string source_context = 1;
-    // A map from byte offsets to linked contexts.
-    repeated ContextDependentVersionColumn column = 2;
-    // If true, this version should always be processed regardless of any
-    // claiming.
-    bool always_process = 3;
-  }
-
   message FileInput {
     // If set, overrides the `v_name` in the `CompilationUnit` for deriving
     // VNames during analysis.
@@ -144,8 +117,8 @@ message CompilationUnit {
     // the file's path and digest.
     FileInfo info = 2;
 
-    // The file's context-dependent versions.
-    repeated ContextDependentVersionRow context = 3;
+    // The file's context-dependent version table.
+    ContextDependentVersion context = 3;
   }
 
   // The absolute path of the current working directory where the build tool

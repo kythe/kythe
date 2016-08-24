@@ -887,7 +887,7 @@ void IndexWriter::FillFileInput(
   file_info->set_digest(Sha256(source_file.file_content.c_str(),
                                source_file.file_content.size()));
   for (const auto& row : source_file.include_history) {
-    auto* row_pb = file_input->add_context();
+    auto* row_pb = file_input->mutable_context()->add_row();
     row_pb->set_source_context(row.first);
     if (row.second.default_claim == ClaimDirective::AlwaysClaim) {
       row_pb->set_always_process(true);
