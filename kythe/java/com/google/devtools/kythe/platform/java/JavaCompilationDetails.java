@@ -209,7 +209,9 @@ public class JavaCompilationDetails {
     // Start with the default options, and then add in source
     // Turn on all warnings as well.
     List<String> options = Lists.newArrayList(compilationUnit.getArgumentList());
-    options = JavacOptionsUtils.useAllWarnings(options);
+    // Use Xlint options in the compilation unit, instead of adding Xlint:all,
+    // so that it's possible to turn off lint checks.
+    // options = JavacOptionsUtils.useAllWarnings(options);
     options = JavacOptionsUtils.ensureEncodingSet(options, DEFAULT_ENCODING);
     options = JavacOptionsUtils.removeUnsupportedOptions(options);
 
