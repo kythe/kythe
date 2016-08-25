@@ -381,10 +381,6 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       entrySets.emitEdge(methodNode, EdgeKind.TYPED, fnTypeNode);
       entrySets.emitName(fnTypeNode, fnTypeName);
 
-      for (JavaNode n : params) {
-        emitEdge(methodNode, EdgeKind.CHILDOF, n);
-      }
-
       ClassSymbol ownerClass = (ClassSymbol) methodDef.sym.owner;
       Set<Element> ownerDirectSupertypes = new HashSet<>();
       ownerDirectSupertypes.add(ownerClass.getSuperclass().asElement());
