@@ -16,7 +16,6 @@
 
 package com.google.devtools.kythe.analyzers.java;
 
-import com.google.common.base.Joiner;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import com.google.devtools.kythe.analyzers.base.CorpusPath;
@@ -36,7 +35,6 @@ import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import com.sun.tools.javac.code.Symbol.PackageSymbol;
 import com.sun.tools.javac.tree.JCTree;
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -95,22 +93,17 @@ public class JavaEntrySets extends KytheEntrySets {
         case CONSTRUCTOR:
           format =
               String.format(
-                  "%%^.%s", enclClass != null ? enclClass.getSimpleName() : sym.getSimpleName());
+                  "%%[^.%%]%%[i%s%%]",
+                  enclClass != null ? enclClass.getSimpleName() : sym.getSimpleName());
           break;
         case TYPE_PARAMETER:
-          format = String.format("%%^.<%s>", sym.getSimpleName());
+          format = String.format("%%[^.%%]%%[i<%s>%%]", sym.getSimpleName());
           break;
         case METHOD:
-          int numParams = ((MethodSymbol) sym).params().size();
-          List<String> params = new ArrayList<>(numParams);
-          for (int i = 1; i <= numParams; i++) {
-            params.add("%" + (i + 1) + "`");
-          }
-          format =
-              String.format("%%1` %%^.%s(%s)", sym.getSimpleName(), Joiner.on(",").join(params));
+          format = String.format("%%[^.%%]%%[i%s%%]%%[p(%%0,)%%]", sym.getSimpleName());
           break;
         default:
-          format = String.format("%%^.%s", sym.getSimpleName());
+          format = String.format("%%[^.%%]%%[i%s%%]", sym.getSimpleName());
           break;
       }
 

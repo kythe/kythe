@@ -350,7 +350,7 @@ func TestSlowCallers(t *testing.T) {
 	expected := &xpb.CallersReply{
 		Callee: []*xpb.CallersReply_CallableDetail{
 			&xpb.CallersReply_CallableDetail{
-				SemanticObject:         "kythe://test#f",
+				SemanticObject: "kythe://test#f",
 				Definition: &xpb.Anchor{
 					Ticket: "kythe://test#afdef",
 					Text:   "f",
@@ -396,14 +396,14 @@ func TestSlowSignature(t *testing.T) {
 		{ticket: "kythe://test?lang=b#meta", kind: "etc"},
 		{ticket: "kythe://test#escparen", format: "%%", kind: "etc"},
 		{ticket: "kythe://test#escparentext", format: "a%%b%%c", kind: "etc"},
-		{ticket: "kythe://test#p0", format: "P0", kind: "etc"},
+		{ticket: "kythe://test#p0", format: "%[^bad%]%[iP0%]", kind: "etc"},
 		{ticket: "kythe://test#p1", format: "P1", kind: "etc"},
 		{ticket: "kythe://test#p2", format: "P2", kind: "etc"},
 		{ticket: "kythe://test#pselect", format: "%0.%1.", kind: "etc", params: []string{"kythe://test#p0", "kythe://test#p1"}},
-		{ticket: "kythe://test#parent", format: "%^::C", kind: "etc", childof: "kythe://test#p0"},
+		{ticket: "kythe://test#parent", format: "%^::%[iC%]", kind: "etc", childof: "kythe://test#p0"},
 		{ticket: "kythe://test#parents", format: "%^::D", kind: "etc", childof: "kythe://test#parent"},
 		{ticket: "kythe://test#recurse", format: "%^", kind: "etc", childof: "kythe://test#recurse"},
-		{ticket: "kythe://test#list", format: "%0,", kind: "etc", params: []string{"kythe://test#p0", "kythe://test#p1", "kythe://test#p2"}},
+		{ticket: "kythe://test#list", format: "%[p%0,%]", kind: "etc", params: []string{"kythe://test#p0", "kythe://test#p1", "kythe://test#p2"}},
 		{ticket: "kythe://test#listofs1", format: "%1,", kind: "etc", params: []string{"kythe://test#p0", "kythe://test#p1", "kythe://test#p2"}},
 		{ticket: "kythe://test#listofs2", format: "%2,", kind: "etc", params: []string{"kythe://test#p0", "kythe://test#p1", "kythe://test#p2"}},
 		{ticket: "kythe://test#listofs3", format: "%3,", kind: "etc", params: []string{"kythe://test#p0", "kythe://test#p1", "kythe://test#p2"}},
@@ -413,18 +413,21 @@ func TestSlowSignature(t *testing.T) {
 		{ticket: "kythe://test?lang=b#tappmeta", kind: "tapp", params: []string{"kythe://test#missing", "kythe://test#p0", "kythe://test#p1"}},
 		{ticket: "kythe://test?lang=b#tapplhs", kind: "tapp", params: []string{"kythe://test#lhs", "kythe://test#p0"}},
 	}
-	tests := []struct{ ticket, reply string }{
+	tests := []struct {
+		ticket, reply string
+		kinds         []xpb.Link_Kind
+	}{
 		{ticket: "kythe://test#ident", reply: "IDENT"},
 		{ticket: "kythe://test?lang=b#meta", reply: "META"},
 		{ticket: "kythe://test#escparen", reply: "%"},
 		{ticket: "kythe://test#escparentext", reply: "a%b%c"},
 		{ticket: "kythe://test#pselect", reply: "P0P1"},
 		{ticket: "kythe://test#recurse", reply: "..."},
-		{ticket: "kythe://test#parent", reply: "P0::C"},
+		{ticket: "kythe://test#parent", reply: "P0::[C]", kinds: []xpb.Link_Kind{xpb.Link_IMPORTANT}},
 		{ticket: "kythe://test#parents", reply: "P0::C::D"},
-		{ticket: "kythe://test#list", reply: "P0, P1, P2"},
-		{ticket: "kythe://test#listofs1", reply: "P1, P2"},
-		{ticket: "kythe://test#listofs2", reply: "P2"},
+		{ticket: "kythe://test#list", reply: "[[P0], [P1], [P2]]", kinds: []xpb.Link_Kind{xpb.Link_LIST, xpb.Link_LIST_ITEM, xpb.Link_LIST_ITEM, xpb.Link_LIST_ITEM}},
+		{ticket: "kythe://test#listofs1", reply: "[P1], [P2]", kinds: []xpb.Link_Kind{xpb.Link_LIST_ITEM, xpb.Link_LIST_ITEM}},
+		{ticket: "kythe://test#listofs2", reply: "[P2]", kinds: []xpb.Link_Kind{xpb.Link_LIST_ITEM}},
 		{ticket: "kythe://test#listofs3", reply: ""},
 		{ticket: "kythe://test#typeselect", reply: "P1"},
 		{ticket: "kythe://test?lang=b#tappmeta", reply: "mP1m"},
@@ -527,7 +530,11 @@ func TestSlowSignature(t *testing.T) {
 		if err != nil {
 			t.Fatalf("SlowSignature error for %s: %v", test.ticket, err)
 		}
-		if err := testutil.DeepEqual(&xpb.Printable{RawText: test.reply}, reply); err != nil {
+		var links []*xpb.Link
+		for _, k := range test.kinds {
+			links = append(links, &xpb.Link{Kind: k})
+		}
+		if err := testutil.DeepEqual(&xpb.Printable{RawText: test.reply, Link: links}, reply); err != nil {
 			t.Fatal(err)
 		}
 	}

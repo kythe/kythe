@@ -30,33 +30,80 @@ void PrintableSpans::Merge(const PrintableSpans& o) {
   std::sort(spans_.begin(), spans_.end());
 }
 
-Printable::Printable(const proto::Printable& from) {
+namespace {
+bool ShouldReject(Printable::RejectPolicy filter, size_t important_count,
+                  size_t list_count) {
+  return !((filter & Printable::IncludeLists) == Printable::IncludeLists &&
+           list_count != 0) &&
+         ((((filter & Printable::RejectUnimportant) ==
+            Printable::RejectUnimportant) &&
+           important_count == 0) ||
+          (((filter & Printable::RejectLists) == Printable::RejectLists) &&
+           list_count != 0));
+}
+}  // anonymous namespace
+
+Printable::Printable(const proto::Printable& from,
+                     Printable::RejectPolicy filter) {
   text_.reserve(from.raw_text().size() - from.link_size() * 2);
   size_t current_link = 0;
   std::stack<size_t> unclosed_links;
+  // Number of important blocks we're inside.
+  size_t important_count = 0;
+  // Number of list blocks we're inside.
+  size_t list_count = 0;
   for (size_t i = 0; i < from.raw_text().size(); ++i) {
     char c = from.raw_text()[i], next = (i + 1 == from.raw_text().size())
                                             ? '\0'
                                             : from.raw_text()[i + 1];
     switch (c) {
       case '\\':
-        text_.push_back(next);
+        if (!ShouldReject(filter, important_count, list_count)) {
+          text_.push_back(next);
+        }
         ++i;
         break;
       case '[':
         if (current_link < from.link_size()) {
           unclosed_links.push(spans_.size());
-          spans_.Emplace(text_.size(), text_.size(), from.link(current_link++));
+          switch (from.link(current_link).kind()) {
+            case proto::Link::LIST:
+              ++list_count;
+              break;
+            case proto::Link::IMPORTANT:
+              ++important_count;
+              break;
+            default:
+              break;
+          }
+          if (!ShouldReject(filter, important_count, list_count)) {
+            spans_.Emplace(text_.size(), text_.size(),
+                           from.link(current_link++));
+          }
         }
         break;
       case ']':
         if (!unclosed_links.empty()) {
-          spans_.mutable_span(unclosed_links.top())->set_end(text_.size());
+          if (!ShouldReject(filter, important_count, list_count)) {
+            spans_.mutable_span(unclosed_links.top())->set_end(text_.size());
+          }
+          switch (spans_.span(unclosed_links.top()).link().kind()) {
+            case proto::Link::LIST:
+              --list_count;
+              break;
+            case proto::Link::IMPORTANT:
+              --important_count;
+              break;
+            default:
+              break;
+          }
           unclosed_links.pop();
         }
         break;
       default:
-        text_.push_back(c);
+        if (!ShouldReject(filter, important_count, list_count)) {
+          text_.push_back(c);
+        }
         break;
     }
   }

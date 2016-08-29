@@ -40,8 +40,10 @@ class PrintableSpan {
   PrintableSpan(size_t begin, size_t end, Semantic sema)
       : begin_(begin), end_(end), semantic_(sema) {}
   const bool operator<(const PrintableSpan& o) const {
-    return std::tie(begin_, o.end_, semantic_) <
-           std::tie(o.begin_, end_, o.semantic_);
+    int priority = link_priority();
+    int opriority = o.link_priority();
+    return std::tie(begin_, o.end_, semantic_, priority) <
+           std::tie(o.begin_, end_, o.semantic_, opriority);
   }
   bool is_valid() const { return begin_ < end_; }
   const size_t begin() const { return begin_; }
@@ -51,6 +53,7 @@ class PrintableSpan {
   Semantic semantic() const { return semantic_; }
 
  private:
+  int link_priority() const { return -link_.kind(); }
   /// The beginning offset, in bytes, of the span.
   size_t begin_;
   /// The ending offset, in bytes, of the span.
@@ -82,9 +85,23 @@ class PrintableSpans {
 
 class Printable {
  public:
+  /// A policy bitmask for filtering spans.
+  enum RejectPolicy : unsigned {
+    IncludeAll = 0,         ///< Reject no spans.
+    RejectLists = 1,        ///< Reject LIST spans.
+    RejectUnimportant = 2,  ///< Reject spans not dominated by IMPORTANT spans.
+    IncludeLists = 4        ///< Always include LIST spans. Has precedence over
+                            ///< `kRejectLists`.
+  };
+
   /// \brief Build a Printable from a protobuf.
   /// \post The internal list of spans is sorted.
-  explicit Printable(const proto::Printable& from);
+  /// \param filter A bitmask of Link spans to reject.
+  Printable(const proto::Printable& from, RejectPolicy filter);
+  /// \brief Build a Printable from a protobuf.
+  /// \post The internal list of spans is sorted.
+  explicit Printable(const proto::Printable& from)
+      : Printable(from, IncludeAll) {}
   /// \pre The list of spans is sorted.
   Printable(const std::string& text, PrintableSpans&& spans)
       : text_(text), spans_(std::move(spans)) {}

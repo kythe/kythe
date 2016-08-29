@@ -62,6 +62,13 @@ int DocumentNodesFrom(const proto::DocumentationReply& doc_reply) {
   };
   ::fputs(kDocHeader, stdout);
   for (const auto& document : doc_reply.document()) {
+    if (document.has_signature()) {
+      Printable printable(document.signature());
+      auto html = RenderHtml(options, HandleMarkup({}, printable));
+      ::fputs("<h1>", stdout);
+      ::fputs(html.c_str(), stdout);
+      ::fputs("</h1>", stdout);
+    }
     if (document.has_text()) {
       Printable printable(document.text());
       auto markdoc = HandleMarkup({ParseJavadoxygen}, printable);

@@ -1096,8 +1096,9 @@ func findFormatAndKind(edges *xpb.EdgesReply, ticket string) (string, string) {
 }
 
 // slowSignatureForBacktick handles signature generation for the %N` format token.
-// typeTicket should be the type being inspected; num is the N from the token.
-func slowSignatureForBacktick(ctx context.Context, service Service, typeTicket string, depth int, num int) (string, error) {
+// typeTicket should be the type being inspected. num is the N from the token. links is the list of `xpb.Link` to which new links will be appended.
+// It will return the expansion of the backtick signature and a (possibly appended to) slice of links (or "", nil, error).
+func slowSignatureForBacktick(ctx context.Context, service Service, typeTicket string, depth, num int, links []*xpb.Link) (string, []*xpb.Link, error) {
 	if typeTicket != "" {
 		req := &xpb.EdgesRequest{
 			Ticket:   []string{typeTicket},
@@ -1107,14 +1108,14 @@ func slowSignatureForBacktick(ctx context.Context, service Service, typeTicket s
 		}
 		edges, err := AllEdges(ctx, service, req)
 		if err != nil {
-			return "", fmt.Errorf("during AllEdges in slowSignatureForBacktick: %v", err)
+			return "", nil, fmt.Errorf("fetching parameter edges: %v", err)
 		}
 		if selectedParam := findParam(edges, num); selectedParam != "" {
 			selectedFormat, selectedKind := findFormatAndKind(edges, selectedParam)
-			return slowSignatureLevel(ctx, service, selectedParam, selectedKind, selectedFormat, depth+1)
+			return slowSignatureLevel(ctx, service, selectedParam, selectedKind, selectedFormat, depth+1, links)
 		}
 	}
-	return "", nil
+	return "", links, nil
 }
 
 // SignatureDetails contains information from the graph used by slowSignatureLevel to build signatures.
@@ -1167,17 +1168,31 @@ func findSignatureDetails(ctx context.Context, service Service, ticket string) (
 	return &details, nil
 }
 
+// Kinds of blocks we might be inside while rendering a signature.
+const (
+	// Don't emit any text for this block. Don't emit any delimiters.
+	ignoredBlock = '_'
+	// Pass through text from this block. Don't emit any delimiters.
+	passBlock = 'p'
+	// Delimit this block and tag it as a list.
+	listBlock = 'l'
+	// Delimit this block and tag it as important.
+	importantBlock = 'i'
+)
+
 // slowSignatureLevel uses formats to traverse the graph to produce a signature string for the given ticket.
-func slowSignatureLevel(ctx context.Context, service Service, ticket string, kind string, format string, depth int) (string, error) {
+// links is the list of `xpb.Link` to which new links will be appended.
+// It will return the expansion of the signature and a (possibly appended to) slice of links (or "", nil, error).
+func slowSignatureLevel(ctx context.Context, service Service, ticket, kind, format string, depth int, links []*xpb.Link) (string, []*xpb.Link, error) {
 	if depth > maxFormatExpansions {
-		return "...", nil
+		return "...", links, nil
 	}
 	if kind == "" {
 		log.Printf("Node %v missing kind", ticket)
 	}
 	details, err := findSignatureDetails(ctx, service, ticket)
 	if err != nil {
-		return "", fmt.Errorf("during findSignatureDetails in slowSignatureLevel: %v", err)
+		return "", nil, fmt.Errorf("during findSignatureDetails in slowSignatureLevel: %v", err)
 	}
 	// tapp nodes allow their 0th param to provide a format.
 	if format == "" && kind == schema.TAppKind && len(details.params) > 0 && details.formats[details.params[0]] != "" {
@@ -1187,11 +1202,11 @@ func slowSignatureLevel(ctx context.Context, service Service, ticket string, kin
 	if format == "" {
 		format, err = slowLookupMeta(ctx, service, getLanguage(ticket), kind)
 		if err != nil {
-			return "", fmt.Errorf("during slowLookupMeta in slowSignatureLevel: %v", err)
+			return "", nil, fmt.Errorf("during slowLookupMeta in slowSignatureLevel: %v", err)
 		}
 		if format == "" {
 			log.Printf("Could not deduce format for node %v", ticket)
-			return "", nil
+			return "", links, nil
 		}
 	}
 	// The name we're building up.
@@ -1202,8 +1217,53 @@ func slowSignatureLevel(ctx context.Context, service Service, ticket string, kin
 	sawEscape := false
 	// Are we currently parsing an integer?
 	parsingNum := false
+	// Were the last two characters we saw %[?
+	sawOpenBracket := false
+	// The stack of open brace lists.
+	var braces []byte
+	// How many ignored blocks are open.
+	ignored := 0
 	for i, c := range format {
 		switch {
+		case sawOpenBracket:
+			sawOpenBracket = false
+			switch c {
+			default:
+				log.Printf("Bad escape character %c after %%[ in format %v for node %v (ignored)", c, format, ticket)
+			case 'i':
+				if depth == 0 {
+					if ignored == 0 {
+						links = append(links, &xpb.Link{Kind: xpb.Link_IMPORTANT})
+						name += "["
+					}
+					braces = append(braces, importantBlock)
+				} else {
+					braces = append(braces, passBlock)
+				}
+			case 'p':
+				if ignored == 0 {
+					links = append(links, &xpb.Link{Kind: xpb.Link_LIST})
+					name += "["
+				}
+				braces = append(braces, listBlock)
+			case '^':
+				// Add the signature of the node being expanded's parent node.
+				if len(details.parents) > 0 {
+					if ignored == 0 {
+						parent := details.parents[0]
+						var pName string
+						pName, links, err = slowSignatureLevel(ctx, service, parent, details.kinds[parent], details.formats[parent], depth+1, links)
+						if err != nil {
+							return "", nil, fmt.Errorf("while formatting node %v with format %v: %v", ticket, format, err)
+						}
+						name += pName
+					}
+					braces = append(braces, passBlock)
+				} else {
+					braces = append(braces, ignoredBlock)
+					ignored++
+				}
+			}
 		case parsingNum:
 			if unicode.IsNumber(c) {
 				continue
@@ -1212,41 +1272,48 @@ func slowSignatureLevel(ctx context.Context, service Service, ticket string, kin
 			parsingNum = false
 			switch c {
 			default:
-				log.Printf("Bad escape character %v in format %v for node %v", c, format, ticket)
+				log.Printf("Bad escape character %c in format %v for node %v", c, format, ticket)
 			case '.':
 				// Pick a single parameter.
-				if num < len(details.params) {
+				if num < len(details.params) && ignored == 0 {
 					param := details.params[num]
-					pName, err := slowSignatureLevel(ctx, service, param, details.kinds[param], details.formats[param], depth+1)
+					var pName string
+					pName, links, err = slowSignatureLevel(ctx, service, param, details.kinds[param], details.formats[param], depth+1, links)
 					if err != nil {
-						return "", fmt.Errorf("while formatting node %v with format %v: %v", ticket, format, err)
+						return "", nil, fmt.Errorf("while formatting node %v with format %v: %v", ticket, format, err)
 					}
-					name = name + pName
+					name += pName
 				}
 			case '`':
 				// Pick a single parameter from the type of the node being expanded.
-				if details.typeTicket == "" {
-					log.Printf("No type found processing format %v for node %v", format, ticket)
-				} else {
-					pName, err := slowSignatureForBacktick(ctx, service, details.typeTicket, depth, num)
-					if err != nil {
-						return "", fmt.Errorf("while formatting node %v with format %v: %v", ticket, format, err)
+				if ignored == 0 {
+					if details.typeTicket == "" {
+						log.Printf("No type found processing format %v for node %v", format, ticket)
+					} else {
+						var pName string
+						pName, links, err = slowSignatureForBacktick(ctx, service, details.typeTicket, depth, num, links)
+						if err != nil {
+							return "", nil, fmt.Errorf("while formatting node %v with format %v: %v", ticket, format, err)
+						}
+						name += pName
 					}
-					name = name + pName
 				}
 			case ',':
 				// Build a comma-separated list of the signatures of all parameters starting at some parameter.
-				if num < len(details.params) {
+				if num < len(details.params) && ignored == 0 {
 					for p := num; p < len(details.params); p++ {
 						if p != num {
-							name = name + ", "
+							name += ", "
 						}
 						param := details.params[p]
-						pName, err := slowSignatureLevel(ctx, service, param, details.kinds[param], details.formats[param], depth+1)
+						links = append(links, &xpb.Link{Kind: xpb.Link_LIST_ITEM})
+						name += "["
+						var pName string
+						pName, links, err = slowSignatureLevel(ctx, service, param, details.kinds[param], details.formats[param], depth+1, links)
 						if err != nil {
-							return "", fmt.Errorf("while formatting node %v with format %v: %v", ticket, format, err)
+							return "", nil, fmt.Errorf("while formatting node %v with format %v: %v", ticket, format, err)
 						}
-						name = name + pName
+						name += pName + "]"
 					}
 				}
 			}
@@ -1259,21 +1326,46 @@ func slowSignatureLevel(ctx context.Context, service Service, ticket string, kin
 			}
 			switch c {
 			default:
-				log.Printf("Bad escape character %v in format %v for node %v", c, format, ticket)
+				log.Printf("Bad escape character %c in format %v for node %v", c, format, ticket)
+			case ']':
+				if len(braces) == 0 {
+					log.Printf("Brace stack underflow in format %v for node %v", format, ticket)
+				} else {
+					switch braces[len(braces)-1] {
+					case listBlock:
+						if ignored == 0 {
+							name += "]"
+						}
+					case importantBlock:
+						if ignored == 0 {
+							name += "]"
+						}
+					case ignoredBlock:
+						ignored--
+					}
+					braces = braces[:len(braces)-1]
+				}
+			case '[':
+				sawOpenBracket = true
 			case '%':
 				// Identity-escape %.
-				name = name + "%"
+				if ignored == 0 {
+					name += "%"
+				}
 			case '^':
 				// Add the signature of the node being expanded's parent node.
-				if len(details.parents) > 0 {
-					parent := details.parents[0]
-					pName, err := slowSignatureLevel(ctx, service, parent, details.kinds[parent], details.formats[parent], depth+1)
-					if err != nil {
-						return "", fmt.Errorf("while formatting node %v with format %v: %v", ticket, format, err)
+				if ignored == 0 {
+					if len(details.parents) > 0 {
+						parent := details.parents[0]
+						var pName string
+						pName, links, err = slowSignatureLevel(ctx, service, parent, details.kinds[parent], details.formats[parent], depth+1, links)
+						if err != nil {
+							return "", nil, fmt.Errorf("while formatting node %v with format %v: %v", ticket, format, err)
+						}
+						name += pName
+					} else {
+						log.Printf("No parents found processing format %v for node %v", format, ticket)
 					}
-					name = name + pName
-				} else {
-					log.Printf("No parents found processing format %v for node %v", format, ticket)
 				}
 			}
 		default:
@@ -1281,14 +1373,36 @@ func slowSignatureLevel(ctx context.Context, service Service, ticket string, kin
 			case '%':
 				sawEscape = true
 			default:
-				name = name + string(c)
+				if ignored == 0 {
+					if c == '[' || c == ']' {
+						name += "\\"
+					}
+					name += string(c)
+				}
 			}
 		}
 	}
-	if sawEscape || parsingNum {
+	if sawEscape || parsingNum || sawOpenBracket {
 		log.Printf("Unterminated escape processing format %v for node %v", format, ticket)
 	}
-	return name, nil
+	if len(braces) != 0 {
+		log.Printf("Unterminated brace processing format %v for node %v", format, ticket)
+		for i := 0; i < len(braces); i++ {
+			switch braces[len(braces)-i-1] {
+			case listBlock:
+				if ignored == 0 {
+					name += "]"
+				}
+			case importantBlock:
+				if ignored == 0 {
+					name += "]"
+				}
+			case ignoredBlock:
+				ignored--
+			}
+		}
+	}
+	return name, links, nil
 }
 
 // SlowSignature uses formats to generate a xpb.DocumentationReply_Printable given a ticket.
@@ -1315,11 +1429,11 @@ func SlowSignature(ctx context.Context, service Service, ticket string) (*xpb.Pr
 		format = string(node.Facts[schema.FormatFact])
 	}
 
-	text, err := slowSignatureLevel(ctx, service, ticket, kind, format, 0)
+	text, links, err := slowSignatureLevel(ctx, service, ticket, kind, format, 0, nil)
 	if err != nil {
 		return nil, err
 	}
-	return &xpb.Printable{RawText: text}, nil
+	return &xpb.Printable{RawText: text, Link: links}, nil
 }
 
 // Data from a doc node that documents some other ticket.

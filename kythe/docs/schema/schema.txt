@@ -1812,7 +1812,13 @@ verbatim; otherwise, for each token, *format* makes the following substitutions:
 |%N`          | For a single *N'* such that *this* typed *M* and *M* *param.N* *N'*, insert *format*(*N'*)
 |%N,          | For each integer *N'* starting at *N* and until there is no node *M* such that *this* *param.N'* *M*,
                 for a single *M* such that *this* *param.N'* *M*, insert *format*(*M*), separating adjacent insertions
-                with a comma and a space `", "`.
+                with a comma and a space `", "`, marking each as a parameter.
+|%[i ... %]   | Label the text between the tokens as important. Text that is marked important in constitutent signatures
+                loses its importance. This allows you to pick out the part of a qualified name to use as an identifier
+                when printing a signature (without including the identifiers of parent names).
+|%[p ... %]   | Label the text between the tokens as a parameter list.
+|%[^ ... %]   | Like %^, but the text between the tokens will only be emitted if a parent exists. This is useful for
+                formatting qualified names (e.g., %[^::%] for C++).
 |======================
 
 The `format` fact used by the expansion *format*(*this*) is determined as

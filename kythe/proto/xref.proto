@@ -564,9 +564,22 @@ message Anchor {
   Location.Point snippet_end = 9;
 }
 
+// TODO(zarko): Rename to something more appropriate.
 message Link {
+  enum Kind {
+    // This annotates a link to a ticket.
+    DEFINITION = 0;
+    // This span of text contains a list of items.
+    LIST = 1;
+    // This span of text is an item in a list.
+    LIST_ITEM = 2;
+    // This span of text is important.
+    IMPORTANT = 999;
+  }
   // Definition sites found for some ticket.
   repeated Anchor definition = 1;
+  // The kind of this span.
+  Kind kind = 2;
 }
 
 message Printable {
@@ -575,8 +588,10 @@ message Printable {
   // marked using []. \ is an escape character (where possible escape
   // sequences are \[, \], and \\).
   string raw_text = 1;
-  // Destinations for links in raw_text. The ith Link corresponds to the link
-  // starting at the ith [.
+  // Annotations for spans in raw_text. The ith Link corresponds to the span
+  // starting at the ith [. Spans may link to definitions; they may also
+  // describe properties of the text (e.g., that parts should not be dropped
+  // when summarizing).
   repeated Link link = 2;
 }
 
