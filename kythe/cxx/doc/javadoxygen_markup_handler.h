@@ -23,7 +23,7 @@
 namespace kythe {
 
 /// \brief Parse a Printable containing Javadoc and/or Doxygen style directives.
-/// \note This does not handle parsing Markdown.
+/// \note This does not handle parsing Markdown or HTML.
 void ParseJavadoxygen(const Printable& in_message, PrintableSpans* out_spans);
 
 }  // namespace kythe

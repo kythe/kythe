@@ -38,29 +38,36 @@ DEFINE_string(path, "",
 DEFINE_string(save_response, "",
               "Save the initial documentation response to this file as an "
               "ASCII protobuf.");
+DEFINE_string(css, "", "Include this stylesheet path in the resulting HTML.");
 
 namespace kythe {
 namespace {
-const char kDocHeader[] = R"(<!doctype html>
+constexpr char kDocHeaderPrefix[] = R"(<!doctype html>
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Kythe doc output</title>
+)";
+constexpr char kDocHeaderSuffix[] = R"(    <title>Kythe doc output</title>
   </head>
   <body>
 )";
-const char kDocFooter[] = R"(
+constexpr char kDocFooter[] = R"(
   </body>
 </html>
 )";
-const char kDefinesBinding[] = "/kythe/edge/defines/binding";
+constexpr char kDefinesBinding[] = "/kythe/edge/defines/binding";
 
 int DocumentNodesFrom(const proto::DocumentationReply& doc_reply) {
   HtmlRendererOptions options;
   options.make_link_uri = [](const proto::Anchor& anchor) {
     return anchor.parent();
   };
-  ::fputs(kDocHeader, stdout);
+  ::fputs(kDocHeaderPrefix, stdout);
+  if (!FLAGS_css.empty()) {
+    ::fprintf(stdout, "<link rel=\"stylesheet\" type=\"text/css\" href=\"%s\">",
+              FLAGS_css.c_str());
+  }
+  ::fputs(kDocHeaderSuffix, stdout);
   for (const auto& document : doc_reply.document()) {
     if (document.has_signature()) {
       Printable printable(document.signature());
@@ -70,9 +77,7 @@ int DocumentNodesFrom(const proto::DocumentationReply& doc_reply) {
       ::fputs("</h1>", stdout);
     }
     if (document.has_text()) {
-      Printable printable(document.text());
-      auto markdoc = HandleMarkup({ParseJavadoxygen}, printable);
-      auto html = RenderHtml(options, markdoc);
+      auto html = RenderDocument(options, {ParseJavadoxygen}, document);
       ::fputs(html.c_str(), stdout);
     }
   }

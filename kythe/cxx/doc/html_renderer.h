@@ -31,11 +31,31 @@ struct HtmlRendererOptions {
   /// will be replaced by &amp;).
   std::function<std::string(const proto::Anchor&)> make_link_uri =
       [](const proto::Anchor&) { return ""; };
+  /// Configures the CSS class to apply to the outermost div of a document.
+  std::string doc_div = "kythe-doc";
+  /// Configures the CSS class to apply to a tag's label (e.g, "Authors:")
+  std::string tag_section_title_div = "kythe-doc-tag-section-title";
+  /// Configures the CSS class to apply to a tag's content.
+  std::string tag_section_content_div = "kythe-doc-tag-section-content";
+  /// Configures the CSS class to apply to signature divs.
+  std::string signature_div = "kythe-doc-element-signature";
+  /// Configures the CSS class to apply to type name divs.
+  std::string type_name_div = "kythe-doc-type-name";
+  /// Configures the CSS class to apply to name spans.
+  std::string name_span = "kythe-doc-name-span";
+  /// Configures the CSS class to apply to signature detail divs.
+  std::string sig_detail_div = "kythe-doc-qualified-name";
 };
 
-/// \brief Render `document` as HTML according to `options`.
+/// \brief Render `printable` as HTML according to `options`.
 std::string RenderHtml(const HtmlRendererOptions& options,
                        const Printable& printable);
+
+/// \brief Render `document` as HTML according to `options`, using `handlers` to
+/// process markup.
+std::string RenderDocument(const HtmlRendererOptions& options,
+                           const std::vector<MarkupHandler>& handlers,
+                           const proto::DocumentationReply::Document& document);
 
 }  // namespace kythe
 

@@ -29,6 +29,13 @@ class MarkupHandlerTest : public ::testing::Test {
  public:
  protected:
   void Handle(const std::string& raw_text, const MarkupHandler& handler,
+              const std::string& dump_expected) {
+    reply_.set_raw_text(raw_text);
+    Printable input(reply_);
+    auto output = HandleMarkup({handler}, input);
+    EXPECT_EQ(dump_expected, output.spans().Dump(output.text()));
+  }
+  void Handle(const std::string& raw_text, const MarkupHandler& handler,
               const std::string& bracketed_expected,
               std::initializer_list<PrintableSpan> spans) {
     reply_.set_raw_text(raw_text);
@@ -101,54 +108,51 @@ TEST_F(MarkupHandlerTest, PassThroughLinks) {
          {PrintableSpan(0, 0, ExpectLink("uri"))});
 }
 TEST_F(MarkupHandlerTest, JavadocReturns) {
-  Handle("@return something", ParseJavadoxygen, "[[@return][ something]]",
-         {PrintableSpan(0, 0, PrintableSpan::Semantic::Html),
-          PrintableSpan(0, 0, PrintableSpan::Semantic::Markup),
-          PrintableSpan(0, 0, PrintableSpan::Semantic::Return)});
+  Handle("@return something", ParseJavadoxygen,
+         "[[^ @return][tbReturns0  something]]");
+}
+TEST_F(MarkupHandlerTest, JavadocParam) {
+  Handle("Some text.\n@param argument option", ParseJavadoxygen,
+         "[Some text.\n[^ @param][tbParam0  argument option]]");
+}
+TEST_F(MarkupHandlerTest, JavadocAuthors) {
+  Handle("@author Aa Bb @author Cc Dd", ParseJavadoxygen,
+         "[[^ @author][tbAuthor0  Aa Bb ][^ @author][tbAuthor1  Cc Dd]]");
+}
+TEST_F(MarkupHandlerTest, JavadocAuthorsNewline) {
+  Handle("@author Aa Bb\n@author Cc Dd", ParseJavadoxygen,
+         "[[^ @author][tbAuthor0  Aa Bb\n][^ @author][tbAuthor1  Cc Dd]]");
 }
 TEST_F(MarkupHandlerTest, JavadocReturnsMultiline) {
-  Handle(R"(@return something
-else)",
-         ParseJavadoxygen, R"([[@return][ something
-else]])",
-         {PrintableSpan(0, 0, PrintableSpan::Semantic::Html),
-          PrintableSpan(0, 0, PrintableSpan::Semantic::Markup),
-          PrintableSpan(0, 0, PrintableSpan::Semantic::Return)});
+  Handle("@return something\nelse", ParseJavadoxygen,
+         "[[^ @return][tbReturns0  something\nelse]]");
 }
 TEST_F(MarkupHandlerTest, JavadocReturnsLink) {
-  Handle("@return [something]", ParseJavadoxygen, "[[@return][ [something]]]",
-         {PrintableSpan(0, 0, PrintableSpan::Semantic::Html),
-          PrintableSpan(0, 0, PrintableSpan::Semantic::Markup),
-          PrintableSpan(0, 0, PrintableSpan::Semantic::Return),
+  Handle("@return [something]", ParseJavadoxygen, "[@return][ [something]]",
+         {PrintableSpan(0, 0, PrintableSpan::Semantic::Markup),
+          PrintableSpan(0, 0, PrintableSpan::TagBlockId::Returns, 0),
           PrintableSpan(0, 0, ExpectLink("uri"))});
 }
 TEST_F(MarkupHandlerTest, JavadocReturnsLinkSortOrder) {
-  Handle("@return[ something]", ParseJavadoxygen, "[[@return][[ something]]]",
-         {PrintableSpan(0, 0, PrintableSpan::Semantic::Html),
-          PrintableSpan(0, 0, PrintableSpan::Semantic::Markup),
-          PrintableSpan(0, 0, PrintableSpan::Semantic::Return),
+  Handle("@return[ something]", ParseJavadoxygen, "[@return][[ something]]",
+         {PrintableSpan(0, 0, PrintableSpan::Semantic::Markup),
+          PrintableSpan(0, 0, PrintableSpan::TagBlockId::Returns, 0),
           PrintableSpan(0, 0, ExpectLink("uri"))});
 }
 TEST_F(MarkupHandlerTest, DoxygenReturns) {
-  Handle("\\\\return[ something]", ParseJavadoxygen,
-         "[[\\return][[ something]]]",
-         {PrintableSpan(0, 0, PrintableSpan::Semantic::Html),
-          PrintableSpan(0, 0, PrintableSpan::Semantic::Markup),
-          PrintableSpan(0, 0, PrintableSpan::Semantic::Return),
+  Handle("\\\\return[ something]", ParseJavadoxygen, "[\\return][[ something]]",
+         {PrintableSpan(0, 0, PrintableSpan::Semantic::Markup),
+          PrintableSpan(0, 0, PrintableSpan::TagBlockId::Returns, 0),
           PrintableSpan(0, 0, ExpectLink("uri"))});
 }
 TEST_F(MarkupHandlerTest, DoxygenCode) {
-  Handle("\\\\c code not", ParseJavadoxygen, "[[\\c][ code] not]",
-         {PrintableSpan(0, 0, PrintableSpan::Semantic::Html),
-          PrintableSpan(0, 0, PrintableSpan::Semantic::Markup),
-          PrintableSpan(0, 0, PrintableSpan::Semantic::CodeRef)});
+  Handle("\\\\c code not", ParseJavadoxygen, "[[^ \\c][coderef  code] not]");
 }
 TEST_F(MarkupHandlerTest, DoxygenReturnsCode) {
   Handle("\\\\return[ \\\\c something]", ParseJavadoxygen,
-         "[[\\return][[ [\\c][ something]]]]",
-         {PrintableSpan(0, 0, PrintableSpan::Semantic::Html),
-          PrintableSpan(0, 0, PrintableSpan::Semantic::Markup),
-          PrintableSpan(0, 0, PrintableSpan::Semantic::Return),
+         "[\\return][[ [\\c][ something]]]",
+         {PrintableSpan(0, 0, PrintableSpan::Semantic::Markup),
+          PrintableSpan(0, 0, PrintableSpan::TagBlockId::Returns, 0),
           PrintableSpan(0, 0, ExpectLink("uri")),
           PrintableSpan(0, 0, PrintableSpan::Semantic::Markup),
           PrintableSpan(0, 0, PrintableSpan::Semantic::CodeRef)});

@@ -18,6 +18,7 @@
 #include "glog/logging.h"
 #include "google/protobuf/text_format.h"
 #include "gtest/gtest.h"
+#include "kythe/cxx/doc/javadoxygen_markup_handler.h"
 
 namespace kythe {
 namespace {
@@ -31,13 +32,20 @@ class HtmlRendererTest : public ::testing::Test {
 
  protected:
   std::string RenderAsciiProtoDocument(const char *document_pb) {
-    proto::DocumentationReply_Document document;
+    proto::DocumentationReply::Document document;
     if (!google::protobuf::TextFormat::ParseFromString(document_pb,
                                                        &document)) {
       return "(invalid ascii protobuf)";
     }
     Printable printable(document.text());
     return RenderHtml(options_, printable);
+  }
+  std::string RenderJavadoc(const char *raw_text) {
+    proto::Printable reply_;
+    reply_.set_raw_text(raw_text);
+    Printable input(reply_);
+    auto output = HandleMarkup({ParseJavadoxygen}, input);
+    return RenderHtml(options_, output);
   }
   kythe::HtmlRendererOptions options_;
 };
@@ -106,6 +114,26 @@ TEST_F(HtmlRendererTest, EscapeHtml) {
   EXPECT_EQ("&lt;&gt;&amp;&lt;&gt;&amp;[]\\", RenderAsciiProtoDocument(R"(
       text { raw_text: "<>&\\<\\>\\&\\[\\]\\\\" }
   )"));
+}
+TEST_F(HtmlRendererTest, JavadocTagBlocks) {
+  EXPECT_EQ(
+      "text\n<div class=\"kythe-doc-tag-section-title\">Author</div>"
+      "<div class=\"kythe-doc-tag-section-content\"> a\n</div>"
+      "<div class=\"kythe-doc-tag-section-title\">Author</div>"
+      "<div class=\"kythe-doc-tag-section-content\"> b</div>",
+      RenderJavadoc(R"(text
+@author a
+@author b)"));
+}
+TEST_F(HtmlRendererTest, JavadocTagBlockEmbedsCodeRef) {
+  EXPECT_EQ(
+      "text\n<div class=\"kythe-doc-tag-section-title\">Author</div>"
+      "<div class=\"kythe-doc-tag-section-content\"> a <tt> robot</tt>\n</div>"
+      "<div class=\"kythe-doc-tag-section-title\">Author</div>"
+      "<div class=\"kythe-doc-tag-section-content\"> b</div>",
+      RenderJavadoc(R"(text
+@author a {@code robot}
+@author b)"));
 }
 }  // anonymous namespace
 }  // namespace kythe

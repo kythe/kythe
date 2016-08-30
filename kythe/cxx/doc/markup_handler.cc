@@ -118,16 +118,97 @@ Printable HandleMarkup(const std::vector<MarkupHandler>& handlers,
   if (handlers.empty()) {
     return printable;
   }
-  std::vector<PrintableSpans> attempts;
-  attempts.resize(handlers.size());
-  size_t best_span_count = 0;
-  for (size_t h = 0; h < handlers.size(); ++h) {
-    handlers[h](printable, &attempts[h]);
-    if (attempts[h].size() > attempts[best_span_count].size()) {
-      best_span_count = h;
-    }
+  PrintableSpans spans = printable.spans();
+  for (const auto& handler : handlers) {
+    PrintableSpans next_spans;
+    handler(printable, &next_spans);
+    spans.Merge(next_spans);
   }
-  attempts[best_span_count].Merge(printable.spans());
-  return Printable(printable.text(), std::move(attempts[best_span_count]));
+  return Printable(printable.text(), std::move(spans));
 }
+
+std::string PrintableSpans::Dump(const std::string& annotated_buffer) const {
+  std::string text_out;
+  text_out.reserve(annotated_buffer.size());
+  std::stack<const PrintableSpan*> open_spans;
+  PrintableSpan default_span(0, annotated_buffer.size(),
+                             PrintableSpan::Semantic::Raw);
+  open_spans.push(&default_span);
+  text_out.append("[");
+  size_t current_span = 0;
+  for (size_t i = 0; i <= annotated_buffer.size(); ++i) {
+    while (!open_spans.empty() && open_spans.top()->end() == i) {
+      text_out.append("]");
+      open_spans.pop();
+    }
+    if (open_spans.empty() || i == annotated_buffer.size()) {
+      // default_span is first to enter and last to leave; there also may
+      // be no empty spans.
+      break;
+    }
+    while (current_span < spans_.size() && spans_[current_span].begin() == i) {
+      open_spans.push(&spans_[current_span++]);
+      switch (open_spans.top()->semantic()) {
+        case PrintableSpan::Semantic::Link: {
+          text_out.append("[link");
+          switch (open_spans.top()->link().kind()) {
+            case proto::Link::DEFINITION:
+              text_out.append("D ");
+              break;
+            case proto::Link::LIST:
+              text_out.append("L ");
+              break;
+            case proto::Link::LIST_ITEM:
+              text_out.append("E ");
+              break;
+            case proto::Link::IMPORTANT:
+              text_out.append("I ");
+              break;
+            default:
+              text_out.append("? ");
+          }
+        } break;
+        case PrintableSpan::Semantic::CodeRef:
+          text_out.append("[coderef ");
+          break;
+        case PrintableSpan::Semantic::Raw:
+          text_out.append("[raw ");
+          break;
+        case PrintableSpan::Semantic::Brief:
+          text_out.append("[brief ");
+          break;
+        case PrintableSpan::Semantic::Markup:
+          text_out.append("[^ ");
+          break;
+        case PrintableSpan::Semantic::TagBlock: {
+          text_out.append("[tb");
+          switch (open_spans.top()->tag_block().first) {
+            case PrintableSpan::TagBlockId::Author:
+              text_out.append("Author");
+              break;
+            case PrintableSpan::TagBlockId::Returns:
+              text_out.append("Returns");
+              break;
+            case PrintableSpan::TagBlockId::Since:
+              text_out.append("Since");
+              break;
+            case PrintableSpan::TagBlockId::Version:
+              text_out.append("Version");
+              break;
+            case PrintableSpan::TagBlockId::Param:
+              text_out.append("Param");
+              break;
+            case PrintableSpan::TagBlockId::Throws:
+              text_out.append("Throws");
+              break;
+          }
+          text_out.append(std::to_string(open_spans.top()->tag_block().second));
+          text_out.append(" ");
+        } break;
+      }
+    }
+    text_out.push_back(annotated_buffer[i]);
+  }
+  return text_out;
 }
+}  // namespace kythe
