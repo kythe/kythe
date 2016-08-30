@@ -58,7 +58,7 @@ bool FileVNameGenerator::ParseRule(const std::string &rule, int max_capture,
     if (!RE2::Consume(&rule_left, substitution_matcher_, &prefix,
                       &substitution)) {
       prefix = rule_left;
-      rule_left.clear();
+      rule_left = re2::StringPiece();
     }
     if (!prefix.empty()) {
       StringConsNode node;
