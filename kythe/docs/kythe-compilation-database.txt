@@ -1,0 +1,170 @@
+// Copyright 2016 Google Inc. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+Kythe Compilation Database (KCD) Specification
+==============================================
+Michael J. Fromberger <fromberger@google.com>
+v.0.1.1, 31-Aug-2016: Draft
+:toc:
+:priority: 750
+
+== Summary
+
+This document describes the Kythe compilation database, an index of build
+information used by Kythe to perform semantic analysis of source code.
+
+== Background & Motivation
+
+For Kythe to index a source file, we need to know all of the dependencies of
+that file (e.g., imports or include files), as well as any settings that
+control the compiler's behaviour in processing that file (e.g., environment
+variables, flags). Files often depend on generated code (e.g., protobuf
+wrappers, SWIG), produced as part of the build process. Thus: In order to index
+a file, Kythe usually must first _build_ that file—which we do in Kythe using
+Bazel.
+
+For several reasons, Kythe does not index _during_ the build. Instead, we
+capture a record of each compile action taken by the build process and store it
+for separate processing. The main reasons for this separation are:
+
+- **Resource constraints.** Builds often run in a special-purpose build
+    environment, specialized to handle build executions and typically under
+    high load.  Kythe indexers run with a CPU and output profile that isn't a
+    good fit for this environment. By storing the build information, we can do
+    its processing "offline" from the build, in a less-constrained environment.
+
+- **Reusability.** Besides Kythe indexers, there are other static analysis that
+    require the same basic data that Kythe uses.  Rather than run repeated
+    builds, capturing and the compilation records allows these tools to take
+    advantage of the same work. It is also helpful to be able to replay a
+    stored compilation for testing and repro purposes, without the need to
+    re-invoke the build system.
+
+- **Historical data.** Maintainers of important core libraries find it helpful
+    to have records of compilation data over a longer span of time, e.g., for
+    analysis of API usage. Keeping an archive of compilation settings for a
+    longer period of time than the build caches (order of months, vs. order of
+    days) makes it easier to support this kind of exploration.
+
+== Kythe Compilation Database
+
+To address these needs, we use a compilation storage format called a
+**compilation database**. This is similar in many respects to the language-
+specific compilation databases produced by tools like Clang.
+
+=== Overview
+
+A Kythe compilation database represents a storage mechanism for compilation
+data captured from a build system. It consists of two parts:
+
+1.  The **store** is a content-addressable store of compilation records and
+    file contents. Files and compilations are addressed via a lowercase
+    hex-encoded SHA256 digest of their contents.
+
+2.  The **index** records revision information and supports efficient lookup of
+    compilation units from some of their properties. This includes:
+
+    -   A *revisions index*, recording which complete revisions (e.g., CLs,
+        commit hashes) are recorded in the database, and to which corpus they
+        belong.
+
+    -   An *compilation index* of query terms for each compilation unit,
+        including target name, source files, revision, corpus label, and
+        language.
+
+=== Terminology
+
+*   A *compilation unit* is a record of a single action taken by the build
+    system. Typically this corresponds to the invocation of a compiler with a
+    particular set of flags and input files.
+
+*   A *corpus label* is a string that identifies a corpus of files governed by a
+    source repository and build system.
+
+*   A *digest* is a lowercase hex-encoded digest used to identify an object in
+    the content-addressable store. A *unit digest* identifies a compilation
+    record ("compilation unit"), while a *file digest* identifies a file.
+    +
+    +
+    A file digest is constructed by encoding the SHA256 digest of the file's
+    content, and is the same across all compilation databases.
+    +
+    +
+    A unit digest may be constructed the same way based on the storage format of
+    the compilation record, but is not required to be the same from one database
+    to another (as storage formats may differ).
+
+*   A *format key* is a string that provides an optional type hint for the data
+    stored in a compilation unit. In Kythe we use the format key `kythe` to
+    mean a `kythe.proto.CompilationUnit`.
+
+*   A *revision marker* is a string that identifies a revision within a corpus.
+    A revision marker must be nonempty and contain no ASCII whitespace, but is
+    otherwise unconstrained. A revision marker is expected to be unique among
+    revisions for its corpus. In a Git repo, for example, we will use a commit
+    hash
+
+=== Interface
+
+The interface to the compilation database is via the following abstract methods:
+
+-   `Revisions` returns the revision marker, corpus label, and timestamp for
+    each indexed revision matching the query terms.
+
+-   `Find` returns the digests of all compilation units in the store matching
+    the given query terms. The query terms supported include: *revision*,
+    *language*, *corpus label*, *target name*, *source path*, and *output path*.
+
+-   `Units` returns the stored compilation data matching the given unit digests.
+    The storage format of compilation records may differ by implementation, so
+    only units returned by its `Find` method may be considered valid for a given
+    KCD instance.
+
+-   `Files` returns the stored file data matching the given digests.
+
+-   `FilesExist` checks whether file data is stored for the given file digests.
+    The method returns all the proffered file digests that exist in the store.
+
+-   `WriteRevision` adds or replaces a revision in the revisions index. A
+    revision is specified as a *revision marker* and a *corpus*.
+
+-   `WriteUnit` adds a compilation unit to the content-addressable store and
+    updates the compilation index. The unit digest of the stored compilation is
+    returned (as by `Find`).
+
+-   `WriteFile` adds the contents of a file to the content-addressable store.
+    The file digest of the stored file is returned.
+
+A read-only implementation may omit the `WriteRevision`, `WriteUnit`, and
+`WriteFile` methods, or provide stubs that always return an error.
+
+=== Implementations
+
+A Go description of the abstract interface, along with some support code, is
+defined in `kythe/go/platform/kcd`.
+
+==== Concrete implementations:
+
+-   Indexpack (`packdb.go`).
+    Build target: `//kythe/go/platform/kcd:packdb`
+
+-   In-memory (`memdb.go`).
+    Build target: `//kythe/go/platform/kcd:memdb`
+
+-   Unit tests for an arbitrary `kcd.ReadWriter` value can be built using
+    (`testutil.go`).
+
+The intended goal of this design is that clients will use the compilation
+database via a service interface, and will not need a heavyweight client
+library for common tasks such as locating and analyzing compilations.

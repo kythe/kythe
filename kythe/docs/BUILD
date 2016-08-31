@@ -31,3 +31,8 @@ asciidoc(
     name = "kythe-verifier",
     src = "kythe-verifier.txt",
 )
+
+asciidoc(
+    name = "kythe-compilation-database",
+    src = "kythe-compilation-database.txt",
+)
