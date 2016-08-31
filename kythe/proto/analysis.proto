@@ -69,6 +69,9 @@ message AnalysisRequest {
 // place.  A given analysis may not produce any outputs.  It is okay for an
 // indexer to send an empty AnalysisOutput message if needed to keep the RPC
 // channel alive; the driver must correctly handle this.
+//
+// The format of value is determined by the analyzer. Kythe language indexers
+// emit wire-format kythe.proto.Entry messages.
 message AnalysisOutput {
   bytes value = 1;
 }
