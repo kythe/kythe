@@ -239,16 +239,6 @@ type CompiledFilter struct {
 	SourcesMatch    func(...string) bool
 }
 
-const (
-	// GrokFormat is the format key used to denote Grok v2 compilations, stored
-	// as devtools.cymbal.CompilationUnit messages.
-	GrokFormat = "grok"
-
-	// KytheFormat is the format key used to denote Kythe compilations, stored
-	// as kythe.proto.CompilationUnit messages.
-	KytheFormat = "kythe"
-)
-
 // matcher returns a function that reports whether any of its string arguments
 // is matched by at least one of the given regular expressions.  Matches are
 // implicitly anchored at both ends.
