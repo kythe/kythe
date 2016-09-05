@@ -36,7 +36,6 @@ import (
 	"kythe.io/kythe/go/util/schema"
 
 	"bitbucket.org/creachadair/stringset"
-	"github.com/golang/protobuf/proto"
 	"github.com/sergi/go-diff/diffmatchpatch"
 	"golang.org/x/net/context"
 
@@ -49,7 +48,6 @@ type Service interface {
 	NodesEdgesService
 	DecorationsService
 	CrossReferencesService
-	CallersService
 	DocumentationService
 }
 
@@ -83,13 +81,6 @@ type DecorationsService interface {
 type CrossReferencesService interface {
 	// CrossReferences returns the global references of the given nodes.
 	CrossReferences(context.Context, *xpb.CrossReferencesRequest) (*xpb.CrossReferencesReply, error)
-}
-
-// CallersService provides fast access to the callgraph implied by a Kythe graph.
-type CallersService interface {
-	// Callers takes a set of tickets for semantic objects and returns the set
-	// of places where those objects were called.
-	Callers(context.Context, *xpb.CallersRequest) (*xpb.CallersReply, error)
 }
 
 // DocumentationService provides fast access to the documentation in a Kythe graph.
@@ -661,44 +652,6 @@ const (
 	maxCallersNodeSetSize = 1024
 )
 
-// findCallableDetail returns a map from semantic object tickets to CallableDetail,
-// where the CallableDetail does not have the SemanticObject field set.
-func findCallableDetail(ctx context.Context, service Service, ticketSet stringset.Set) (map[string]*xpb.CallersReply_CallableDetail, error) {
-	if ticketSet.Empty() {
-		return nil, nil
-	}
-	xreq := &xpb.CrossReferencesRequest{
-		Ticket:            ticketSet.Elements(),
-		DefinitionKind:    xpb.CrossReferencesRequest_BINDING_DEFINITIONS,
-		ReferenceKind:     xpb.CrossReferencesRequest_NO_REFERENCES,
-		DocumentationKind: xpb.CrossReferencesRequest_NO_DOCUMENTATION,
-		AnchorText:        true,
-		PageSize:          math.MaxInt32,
-	}
-	xrefs, err := service.CrossReferences(ctx, xreq)
-	if err != nil {
-		return nil, fmt.Errorf("can't get CrossReferences for callable detail set: %v", err)
-	}
-	if xrefs.NextPageToken != "" {
-		return nil, errors.New("UNIMPLEMENTED: Paged CrossReferences reply")
-	}
-	ticketToDetail := make(map[string]*xpb.CallersReply_CallableDetail)
-	for _, xrefSet := range xrefs.CrossReferences {
-		detail := &xpb.CallersReply_CallableDetail{}
-		// Just pick the first definition.
-		if len(xrefSet.Definition) >= 1 {
-			detail.Definition = xrefSet.Definition[0].Anchor
-			// ... and assume its text is the identifier of the function.
-			detail.Identifier = detail.Definition.Text
-			// ... and is also a fully-qualified name for it.
-			detail.DisplayName = detail.Identifier
-		}
-		// TODO(zarko): Fill in parameters (and proper DisplayName/Identifier values.)
-		ticketToDetail[xrefSet.Ticket] = detail
-	}
-	return ticketToDetail, nil
-}
-
 // Expand frontier until it includes all nodes connected by defines/binding, completes,
 // completes/uniquely, and (optionally) overrides edges. Return the resulting set of
 // tickets with anchors removed.
@@ -903,119 +856,6 @@ type byRelatedAnchor []*xpb.CrossReferencesReply_RelatedAnchor
 func (a byRelatedAnchor) Len() int           { return len(a) }
 func (a byRelatedAnchor) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a byRelatedAnchor) Less(i, j int) bool { return a[i].Ticket < a[j].Ticket }
-
-// SlowCallers is an implementation of the Callers API built from other APIs.
-func SlowCallers(ctx context.Context, service Service, req *xpb.CallersRequest) (*xpb.CallersReply, error) {
-	tickets, err := FixTickets(req.SemanticObject)
-	// TODO(zarko): Support CallToOverride.
-	if err != nil {
-		return nil, err
-	}
-	callees, err := expandDefRelatedNodeSet(ctx, service, stringset.New(tickets...), req.IncludeOverrides)
-	if err != nil {
-		return nil, err
-	}
-	// expandedAnchors maps callsite anchor tickets to anchor details.
-	var expandedAnchors map[string]*xpb.Anchor
-	// parentToAnchor maps semantic node tickets to the callsite anchor tickets they own.
-	var parentToAnchor map[string][]string
-	xrefTickets := callees.Elements()
-	if len(xrefTickets) > 0 {
-		xreq := &xpb.CrossReferencesRequest{
-			Ticket:            xrefTickets,
-			DefinitionKind:    xpb.CrossReferencesRequest_NO_DEFINITIONS,
-			ReferenceKind:     xpb.CrossReferencesRequest_ALL_REFERENCES,
-			DocumentationKind: xpb.CrossReferencesRequest_NO_DOCUMENTATION,
-			AnchorText:        true,
-			PageSize:          math.MaxInt32,
-		}
-		xrefs, err := service.CrossReferences(ctx, xreq)
-		if err != nil {
-			return nil, fmt.Errorf("can't get CrossReferences for xref references set: %v", err)
-		}
-		if xrefs.NextPageToken != "" {
-			return nil, errors.New("UNIMPLEMENTED: Paged CrossReferences reply")
-		}
-		// Now we've got a bunch of call site anchors. We need to figure out which functions they belong to.
-		// anchors is the set of all callsite anchor tickets.
-		var anchors stringset.Set
-		expandedAnchors = make(map[string]*xpb.Anchor)
-		parentToAnchor = make(map[string][]string)
-		for _, refSet := range xrefs.CrossReferences {
-			for _, ref := range refSet.Reference {
-				if ref.Anchor.Kind == schema.RefCallEdge {
-					anchors.Add(ref.Anchor.Ticket)
-					expandedAnchors[ref.Anchor.Ticket] = ref.Anchor
-				}
-			}
-		}
-		err = forAllEdges(ctx, service, anchors, []string{schema.ChildOfEdge}, func(source, target, kind, _ string) error {
-			anchor, ok := expandedAnchors[source]
-			if !ok {
-				log.Printf("Warning: missing expanded anchor for %v", source)
-				return nil
-			}
-			// anchor.Parent is the syntactic parent of the anchor; we want the semantic parent.
-			if target != anchor.Parent && kind != schema.AnchorKind {
-				parentToAnchor[target] = append(parentToAnchor[target], source)
-			}
-			return nil
-		})
-		if err != nil {
-			return nil, err
-		}
-	}
-	// Now begin filling out the response.
-	reply := &xpb.CallersReply{}
-	// We'll fetch CallableDetail only once for each def-related ticket, then add it to the response later.
-	var detailToFetch stringset.Set
-	for _, calleeNode := range xrefTickets {
-		rCalleeNode := &xpb.CallersReply_CallableDetail{
-			SemanticObject: calleeNode,
-		}
-		reply.Callee = append(reply.Callee, rCalleeNode)
-		detailToFetch.Add(calleeNode)
-	}
-	if parentToAnchor != nil {
-		// parentToAnchor != nil implies expandedAnchors != nil
-		for caller, calls := range parentToAnchor {
-			rCaller := &xpb.CallersReply_Caller{
-				Detail: &xpb.CallersReply_CallableDetail{
-					SemanticObject: caller,
-				},
-			}
-			detailToFetch.Add(caller)
-			for _, callsite := range calls {
-				rCallsite := &xpb.CallersReply_Caller_CallSite{}
-				rCallsite.Anchor = expandedAnchors[callsite]
-				// TODO(zarko): Set rCallsite.CallToOverride.
-				rCaller.CallSite = append(rCaller.CallSite, rCallsite)
-			}
-			reply.Caller = append(reply.Caller, rCaller)
-		}
-	}
-	// Gather CallableDetail for each of our semantic nodes.
-	details, err := findCallableDetail(ctx, service, detailToFetch)
-	if err != nil {
-		return nil, err
-	}
-	if details != nil {
-		// ... and merge it back into the response.
-		for _, detail := range reply.Callee {
-			msg, found := details[detail.SemanticObject]
-			if found {
-				proto.Merge(detail, msg)
-			}
-		}
-		for _, caller := range reply.Caller {
-			msg, found := details[caller.Detail.SemanticObject]
-			if found {
-				proto.Merge(caller.Detail, msg)
-			}
-		}
-	}
-	return reply, nil
-}
 
 const (
 	// The maximum number of times to recur in signature generation.
@@ -1724,11 +1564,6 @@ func (w *grpcClient) CrossReferences(ctx context.Context, req *xpb.CrossReferenc
 	return w.XRefServiceClient.CrossReferences(ctx, req)
 }
 
-// Callers implements part of the Service interface.
-func (w *grpcClient) Callers(ctx context.Context, req *xpb.CallersRequest) (*xpb.CallersReply, error) {
-	return w.XRefServiceClient.Callers(ctx, req)
-}
-
 // Documentation implements part of the Service interface.
 func (w *grpcClient) Documentation(ctx context.Context, req *xpb.DocumentationRequest) (*xpb.DocumentationReply, error) {
 	return w.XRefServiceClient.Documentation(ctx, req)
@@ -1763,12 +1598,6 @@ func (w *webClient) CrossReferences(ctx context.Context, q *xpb.CrossReferencesR
 	return &reply, web.Call(w.addr, "xrefs", q, &reply)
 }
 
-// Callers implements part of the Service interface.
-func (w *webClient) Callers(ctx context.Context, q *xpb.CallersRequest) (*xpb.CallersReply, error) {
-	var reply xpb.CallersReply
-	return &reply, web.Call(w.addr, "callers", q, &reply)
-}
-
 // Documentation implements part of the Service interface.
 func (w *webClient) Documentation(ctx context.Context, q *xpb.DocumentationRequest) (*xpb.DocumentationReply, error) {
 	var reply xpb.DocumentationReply
@@ -1795,9 +1624,6 @@ func WebClient(addr string) Service {
 //   GET /xrefs
 //     Request: JSON encoded xrefs.CrossReferencesRequest
 //     Response: JSON encoded xrefs.CrossReferencesReply
-//   GET /callers
-//     Request: JSON encoded xrefs.CallersRequest
-//     Response: JSON encoded xrefs.CallersReply
 //   GET /documentation
 //     Request: JSON encoded xrefs.DocumentationRequest
 //     Response: JSON encoded xrefs.DocumentationReply
@@ -1836,26 +1662,6 @@ func RegisterHTTPHandlers(ctx context.Context, xs Service, mux *http.ServeMux) {
 			return
 		}
 		reply, err := xs.Decorations(ctx, &req)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		if err := web.WriteResponse(w, r, reply); err != nil {
-			log.Println(err)
-		}
-	})
-	mux.HandleFunc("/callers", func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-		defer func() {
-			log.Printf("xrefs.Callers:\t%s", time.Since(start))
-		}()
-		var req xpb.CallersRequest
-		if err := web.ReadJSONBody(r, &req); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		reply, err := xs.Callers(ctx, &req)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

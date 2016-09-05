@@ -161,15 +161,6 @@ func TestDecorations(t *testing.T) {
 	}
 }
 
-func TestCallers(t *testing.T) {
-	xs := newService(t, testEntries)
-
-	reply, err := xs.Callers(ctx, &xpb.CallersRequest{})
-	if reply != nil || err == nil {
-		t.Fatalf("Callers expected to fail")
-	}
-}
-
 func TestDocumentation(t *testing.T) {
 	xs := newService(t, testEntries)
 

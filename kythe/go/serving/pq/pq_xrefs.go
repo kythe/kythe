@@ -258,11 +258,6 @@ AND kind IN %s`, kSetQ)
 	return reply, nil
 }
 
-// Callers implements part of the xrefs.Interface.
-func (d *DB) Callers(ctx context.Context, req *xpb.CallersRequest) (*xpb.CallersReply, error) {
-	return xrefs.SlowCallers(ctx, d, req)
-}
-
 // Documentation implements part of the xrefs.Interface.
 func (d *DB) Documentation(ctx context.Context, req *xpb.DocumentationRequest) (*xpb.DocumentationReply, error) {
 	return xrefs.SlowDocumentation(ctx, d, req)

@@ -199,7 +199,6 @@ type mockService struct {
 	EdgesFn           func(*xpb.EdgesRequest) (*xpb.EdgesReply, error)
 	DecorationsFn     func(*xpb.DecorationsRequest) (*xpb.DecorationsReply, error)
 	CrossReferencesFn func(*xpb.CrossReferencesRequest) (*xpb.CrossReferencesReply, error)
-	CallersFn         func(*xpb.CallersRequest) (*xpb.CallersReply, error)
 	DocumentationFn   func(*xpb.DocumentationRequest) (*xpb.DocumentationReply, error)
 }
 
@@ -231,13 +230,6 @@ func (s *mockService) CrossReferences(ctx context.Context, req *xpb.CrossReferen
 	return s.CrossReferencesFn(req)
 }
 
-func (s *mockService) Callers(ctx context.Context, req *xpb.CallersRequest) (*xpb.CallersReply, error) {
-	if s.CallersFn == nil {
-		return nil, errors.New("unexpected call to Callers")
-	}
-	return s.CallersFn(req)
-}
-
 func (s *mockService) Documentation(ctx context.Context, req *xpb.DocumentationRequest) (*xpb.DocumentationReply, error) {
 	if s.DocumentationFn == nil {
 		return nil, errors.New("unexpected call to Documentation")
@@ -252,138 +244,6 @@ func containsString(arr []string, key string) bool {
 		}
 	}
 	return false
-}
-
-func TestSlowCallers(t *testing.T) {
-	service := &mockService{
-		NodesFn: func(req *xpb.NodesRequest) (*xpb.NodesReply, error) {
-			t.Fatalf("Unexpected Nodes request: %v", req)
-			return nil, nil
-		},
-		EdgesFn: func(req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
-			if len(req.Ticket) == 1 && req.Ticket[0] == "kythe://test#f" {
-				return &xpb.EdgesReply{}, nil
-			} else if len(req.Ticket) == 1 && req.Ticket[0] == "kythe://test#acall" {
-				if containsString(req.Kind, schema.ChildOfEdge) {
-					return &xpb.EdgesReply{
-						EdgeSets: map[string]*xpb.EdgeSet{
-							req.Ticket[0]: &xpb.EdgeSet{
-								Groups: map[string]*xpb.EdgeSet_Group{
-									"": &xpb.EdgeSet_Group{
-										Edge: []*xpb.EdgeSet_Group_Edge{{TargetTicket: "kythe://test#g"}},
-									},
-								},
-							},
-						},
-					}, nil
-				}
-			}
-			t.Fatalf("Unexpected Edges request: %v", req)
-			return nil, nil
-		},
-		DecorationsFn: func(req *xpb.DecorationsRequest) (*xpb.DecorationsReply, error) {
-			t.Fatalf("Unexpected Decorations request: %v", req)
-			return nil, nil
-		},
-		CrossReferencesFn: func(req *xpb.CrossReferencesRequest) (*xpb.CrossReferencesReply, error) {
-			if len(req.Ticket) == 1 && req.Ticket[0] == "kythe://test#f" {
-				if req.ReferenceKind == xpb.CrossReferencesRequest_ALL_REFERENCES {
-					return &xpb.CrossReferencesReply{
-						CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
-							req.Ticket[0]: &xpb.CrossReferencesReply_CrossReferenceSet{
-								Ticket: req.Ticket[0],
-								Reference: []*xpb.CrossReferencesReply_RelatedAnchor{
-									&xpb.CrossReferencesReply_RelatedAnchor{Anchor: &xpb.Anchor{
-										Ticket: "kythe://test#acall",
-										Kind:   schema.RefCallEdge,
-									}},
-								},
-							},
-						},
-					}, nil
-				}
-			} else if len(req.Ticket) == 2 && containsString(req.Ticket, "kythe://test#f") && containsString(req.Ticket, "kythe://test#g") {
-				if req.DefinitionKind == xpb.CrossReferencesRequest_BINDING_DEFINITIONS {
-					return &xpb.CrossReferencesReply{
-						CrossReferences: map[string]*xpb.CrossReferencesReply_CrossReferenceSet{
-							"kythe://test#f": &xpb.CrossReferencesReply_CrossReferenceSet{
-								Ticket: "kythe://test#f",
-								Definition: []*xpb.CrossReferencesReply_RelatedAnchor{
-									&xpb.CrossReferencesReply_RelatedAnchor{Anchor: &xpb.Anchor{
-										Ticket: "kythe://test#afdef",
-										Text:   "f",
-									}},
-								},
-							},
-							"kythe://test#g": &xpb.CrossReferencesReply_CrossReferenceSet{
-								Ticket: "kythe://test#g",
-								Definition: []*xpb.CrossReferencesReply_RelatedAnchor{
-									&xpb.CrossReferencesReply_RelatedAnchor{Anchor: &xpb.Anchor{
-										Ticket: "kythe://test#agdef",
-										Text:   "g",
-									}},
-								},
-							},
-						},
-					}, nil
-				}
-			}
-			t.Fatalf("Unexpected CrossReferences request: %v", req)
-			return nil, nil
-		},
-		CallersFn: func(req *xpb.CallersRequest) (*xpb.CallersReply, error) {
-			t.Fatalf("Unexpected Callers request: %v", req)
-			return nil, nil
-		},
-	}
-	creq := &xpb.CallersRequest{
-		IncludeOverrides: true,
-		SemanticObject:   []string{"kythe://test#f"},
-	}
-	creply, err := SlowCallers(nil, service, creq)
-	if err != nil {
-		t.Fatalf("SlowCallers error: %v", err)
-	}
-	if creply == nil {
-		t.Fatalf("SlowCallers returned nil response")
-	}
-	expected := &xpb.CallersReply{
-		Callee: []*xpb.CallersReply_CallableDetail{
-			&xpb.CallersReply_CallableDetail{
-				SemanticObject: "kythe://test#f",
-				Definition: &xpb.Anchor{
-					Ticket: "kythe://test#afdef",
-					Text:   "f",
-				},
-				Identifier:  "f",
-				DisplayName: "f",
-			},
-		},
-		Caller: []*xpb.CallersReply_Caller{
-			&xpb.CallersReply_Caller{
-				Detail: &xpb.CallersReply_CallableDetail{
-					SemanticObject: "kythe://test#g",
-					Definition: &xpb.Anchor{
-						Ticket: "kythe://test#agdef",
-						Text:   "g",
-					},
-					Identifier:  "g",
-					DisplayName: "g",
-				},
-				CallSite: []*xpb.CallersReply_Caller_CallSite{
-					&xpb.CallersReply_Caller_CallSite{
-						Anchor: &xpb.Anchor{
-							Ticket: "kythe://test#acall",
-							Kind:   "/kythe/edge/ref/call",
-						},
-					},
-				},
-			},
-		},
-	}
-	if err := testutil.DeepEqual(expected, creply); err != nil {
-		t.Fatal(err)
-	}
 }
 
 func TestSlowSignature(t *testing.T) {

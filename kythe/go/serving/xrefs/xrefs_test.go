@@ -913,14 +913,6 @@ func nodeInfos(nss ...[]*srvpb.Node) map[string]*xpb.NodeInfo {
 	return m
 }
 
-func TestCallers(t *testing.T) {
-	st := tbl.Construct(t)
-	reply, err := st.Callers(ctx, &xpb.CallersRequest{})
-	if reply != nil || err == nil {
-		t.Fatalf("Callers expected to fail")
-	}
-}
-
 func TestDocumentation(t *testing.T) {
 	st := tbl.Construct(t)
 	reply, err := st.Documentation(ctx, &xpb.DocumentationRequest{})

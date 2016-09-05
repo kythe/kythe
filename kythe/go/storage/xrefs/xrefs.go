@@ -800,11 +800,6 @@ func normalizeSpan(norm *xrefs.Normalizer, startOffset, endOffset int32) (start,
 	return
 }
 
-// Callers implements part of the Service interface.
-func (g *GraphStoreService) Callers(ctx context.Context, req *xpb.CallersRequest) (*xpb.CallersReply, error) {
-	return xrefs.SlowCallers(ctx, g, req)
-}
-
 // Documentation implements part of the Service interface.
 func (g *GraphStoreService) Documentation(ctx context.Context, req *xpb.DocumentationRequest) (*xpb.DocumentationReply, error) {
 	return xrefs.SlowDocumentation(ctx, g, req)

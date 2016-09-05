@@ -11,7 +11,6 @@ go_package(
         "//kythe/proto:common_proto_go",
         "//kythe/proto:xref_proto_go",
         "@go_diff//:diffmatchpatch",
-        "@go_protobuf//:proto",
         "@go_stringset//:stringset",
         "@go_x_net//:context",
     ],
