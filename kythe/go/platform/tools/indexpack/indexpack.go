@@ -37,14 +37,11 @@ import (
 	"kythe.io/kythe/go/platform/indexpack"
 	"kythe.io/kythe/go/platform/kindex"
 	"kythe.io/kythe/go/platform/vfs"
-	"kythe.io/kythe/go/platform/vfs/gcs"
 	"kythe.io/kythe/go/util/build"
-	"kythe.io/kythe/go/util/oauth2"
 
 	apb "kythe.io/kythe/proto/analysis_proto"
 
 	"golang.org/x/net/context"
-	"google.golang.org/cloud/storage"
 )
 
 const formatKey = "kythe"
@@ -53,12 +50,8 @@ var (
 	toArchive   = flag.String("to_archive", "", "Move kindex files into the given indexpack archive")
 	fromArchive = flag.String("from_archive", "", "Move the compilation units from the given archive into separate kindex files")
 	viewArchive = flag.String("view_archive", "", "Print JSON representations of each specified compilation unit in the given archive")
-
-	printFiles = flag.Bool("files", false, "Print file contents as well as the compilation for --view_archive")
-
-	oauth2Config = oauth2.NewConfigFlags(flag.CommandLine)
-
-	quiet = flag.Bool("quiet", false, "Suppress normal log output")
+	printFiles  = flag.Bool("files", false, "Print file contents as well as the compilation for --view_archive")
+	quiet       = flag.Bool("quiet", false, "Suppress normal log output")
 )
 
 func init() {
@@ -74,8 +67,6 @@ Flags:
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
-
-	oauth2Config.Scopes = []string{storage.ScopeFullControl}
 }
 
 func main() {
@@ -107,25 +98,6 @@ func main() {
 	var err error
 
 	opts := []indexpack.Option{indexpack.UnitType(apb.CompilationUnit{})}
-	if strings.HasPrefix(archiveRoot, "gs://") {
-		path := strings.Trim(strings.TrimPrefix(archiveRoot, "gs://"), "/")
-		parts := strings.SplitN(path, "/", 2)
-		ctx, err = oauth2Config.Context(ctx)
-		if err != nil {
-			log.Fatal(err)
-		}
-		fs, err := gcs.NewFS(ctx, parts[0])
-		if err != nil {
-			log.Fatal(err)
-		}
-		opts = append(opts, indexpack.FS(fs))
-		if len(parts) == 2 {
-			archiveRoot = parts[1]
-		} else {
-			archiveRoot = "/"
-		}
-	}
-
 	pack, err := indexpack.CreateOrOpen(ctx, archiveRoot, opts...)
 	if err != nil {
 		log.Fatalf("Error opening indexpack at %q: %v", archiveRoot, err)
