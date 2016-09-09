@@ -55,7 +55,7 @@ label        = ireg-name -- RFC 3987
 attrs        = ["?" lang-attr] ["?" path-attr] ["?" root-attr]
 lang-attr    = "lang=" language
 path-attr    = "path=" path-segment 0*{"/" path-segment}
-root-attr    = "root=" 1*{"/" root-segment}
+root-attr    = "root=" root-segment 0*{"/" root-segment}
 language     = 1*ipchar  -- RFC 3987
 signature    = 1*ipchar  -- RFC 3987
 root-segment = 1*ipchar  -- RFC 3987
