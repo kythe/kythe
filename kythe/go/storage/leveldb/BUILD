@@ -8,9 +8,9 @@ go_package(
         "//kythe/go/test/storage/keyvalue",
     ],
     deps = [
-        "@go_levigo//:levigo",
         "//kythe/go/services/graphstore",
         "//kythe/go/storage/gsutil",
         "//kythe/go/storage/keyvalue",
+        "@go_levigo//:levigo",
     ],
 )

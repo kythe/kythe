@@ -10,10 +10,10 @@ go_package(
         "@go_protobuf//:proto",
     ],
     deps = [
-        "@go_uuid//:uuid",
-        "@go_x_net//:context",
         "//kythe/go/platform/analysis",
         "//kythe/go/platform/vfs",
         "//kythe/go/platform/vfs/zip",
+        "@go_uuid//:uuid",
+        "@go_x_net//:context",
     ],
 )

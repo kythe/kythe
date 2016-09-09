@@ -11,7 +11,6 @@ java_test(
     jvm_flags = ["-Xbootclasspath/p:$$JAVA_RUNFILES/bazel_tools/third_party/java/jdk/langtools/javac.jar"],
     test_class = "com.google.devtools.kythe.extractors.java.JavaExtractorTest",
     deps = [
-        "@bazel_tools//third_party/java/jdk/langtools:javac",
         "//external:guava",
         "//external:junit4",
         "//external:proto/protobuf_java",
@@ -21,6 +20,7 @@ java_test(
         "//kythe/proto:analysis_proto_java",
         "//kythe/proto:java_proto_java",
         "//kythe/proto:storage_proto_java",
+        "@bazel_tools//third_party/java/jdk/langtools:javac",
     ],
 )
 

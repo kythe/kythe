@@ -4,8 +4,8 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 go_package(
     deps = [
-        "@go_snappy//:snappy",
         "//kythe/go/platform/delimited",
         "//kythe/go/util/sortutil",
+        "@go_snappy//:snappy",
     ],
 )

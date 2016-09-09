@@ -15,7 +15,6 @@ java_binary(
     jvm_flags = ["-Xbootclasspath/p:$$JAVA_RUNFILES/bazel_tools/third_party/java/jdk/langtools/javac.jar"],
     main_class = "com.google.devtools.kythe.extractors.java.standalone.Javac8Wrapper",
     deps = [
-        "@bazel_tools//third_party/java/jdk/langtools:javac",
         "//external:guava",
         "//external:proto/protobuf_java",
         "//kythe/java/com/google/devtools/kythe/common",
@@ -25,6 +24,7 @@ java_binary(
         "//kythe/java/com/google/devtools/kythe/platform/indexpack",
         "//kythe/proto:analysis_proto_java",
         "//kythe/proto:storage_proto_java",
+        "@bazel_tools//third_party/java/jdk/langtools:javac",
     ],
 )
 

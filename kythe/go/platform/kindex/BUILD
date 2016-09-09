@@ -9,11 +9,11 @@ go_package(
         "@go_protobuf//:proto",
     ],
     deps = [
-        "@go_protobuf//:proto",
-        "@go_x_net//:context",
         "//kythe/go/platform/analysis",
         "//kythe/go/platform/delimited",
         "//kythe/go/platform/vfs",
         "//kythe/proto:analysis_proto_go",
+        "@go_protobuf//:proto",
+        "@go_x_net//:context",
     ],
 )

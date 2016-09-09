@@ -22,8 +22,8 @@ test_suite(
         ":static",
         ":var_ref",
         ":vardecl_local_anchor",
-        ":vardecl_local_shadow",
         ":vardecl_local_destructure",
+        ":vardecl_local_shadow",
     ],
 )
 
@@ -51,9 +51,9 @@ test_suite(
         ":enum_pat",
         ":struct_record",
         ":struct_record_pat",
-        ":struct_unit",
         ":struct_tuple",
         ":struct_tuple_pat",
+        ":struct_unit",
     ],
 )
 
@@ -81,7 +81,6 @@ rust_indexer_test(
     srcs = ["basic/static.rs"],
 )
 
-
 rust_indexer_test(
     name = "var_ref",
     srcs = ["basic/var_ref.rs"],
@@ -94,8 +93,8 @@ rust_indexer_test(
 
 rust_indexer_test(
     name = "vardecl_local_shadow",
-    expect_fail_verify = True,
     srcs = ["basic/vardecl_local_shadow.rs"],
+    expect_fail_verify = True,
 )
 
 rust_indexer_test(

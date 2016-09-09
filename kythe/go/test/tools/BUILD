@@ -8,7 +8,6 @@ go_binary(
         "http_server/http_server.go",
     ],
     deps = [
-        "@go_x_net//:context",
         "//kythe/go/services/filetree",
         "//kythe/go/services/web",
         "//kythe/go/services/xrefs",
@@ -16,5 +15,6 @@ go_binary(
         "//kythe/go/serving/xrefs",
         "//kythe/go/storage/leveldb",
         "//kythe/go/storage/table",
+        "@go_x_net//:context",
     ],
 )

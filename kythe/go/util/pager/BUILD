@@ -5,7 +5,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_package(
     test_deps = ["//kythe/go/test/testutil"],
     deps = [
-        "@go_x_net//:context",
         "//kythe/go/util/sortutil",
+        "@go_x_net//:context",
     ],
 )

@@ -9,10 +9,10 @@ go_package(
         "@go_protobuf//:proto",
     ],
     deps = [
-        "@go_x_net//:context",
         "//kythe/go/services/graphstore",
         "//kythe/go/services/graphstore/compare",
         "//kythe/go/storage/gsutil",
         "//kythe/proto:storage_proto_go",
+        "@go_x_net//:context",
     ],
 )
