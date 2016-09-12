@@ -83,7 +83,7 @@ func TestResolve(t *testing.T) { // are you function enough not to back down?
 	//
 	// Package bar is specified as source and imports foo.
 	// TODO(fromberger): Compile foo as part of the build.
-	foo, err := readTestFile("kythe/go/indexer/testdata/foo.a")
+	foo, err := readTestFile("testdata/foo.a")
 	if err != nil {
 		t.Fatalf("Unable to read foo.a: %v", err)
 	}

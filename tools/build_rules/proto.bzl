@@ -1,6 +1,46 @@
-load("@//tools:build_rules/go.bzl", "go_library")
+load(
+    "@io_bazel_rules_go//go:def.bzl",
+    "go_library_impl",
+    "go_library_attrs",
+    "go_library_outputs",
+)
 
 standard_proto_path = "third_party/proto/src/"
+
+def _go_proto_library_impl(ctx):
+  """Pseudo-go_library rule used to work around the proto import-path mismatch.
+
+  The upstream Go rules require `go_library` rules name to match the package,
+  but this isn't true for `proto_library` generated Go rules.  We use this
+  rule to create a Go library with a munged import path.
+  """
+  providers = go_library_impl(ctx)
+  package = providers.transitive_go_importmap[ctx.outputs.lib.path]
+  if package.endswith("_go"):
+    package = package[:-3]
+  importmap = providers.transitive_go_importmap + {
+      ctx.outputs.lib.path: package,
+  }
+  return struct(
+      label = providers.label,
+      runfiles = providers.runfiles,
+      files = providers.files,
+      direct_deps = providers.direct_deps,
+      go_sources = providers.go_sources,
+      asm_sources = providers.asm_sources,
+      go_library_object = providers.go_library_object,
+      transitive_go_library_object = providers.transitive_go_library_object,
+      cgo_object = providers.cgo_object,
+      transitive_cgo_deps = providers.transitive_cgo_deps,
+      transitive_go_importmap = importmap,
+  )
+
+_go_proto_library_hack = rule(
+    _go_proto_library_impl,
+    attrs = go_library_attrs,
+    fragments = ["cpp"],
+    outputs = go_library_outputs,
+)
 
 def go_package_name(go_prefix, label):
   return "%s%s/%s" % (go_prefix.go_prefix, label.package, label.name)
@@ -89,7 +129,7 @@ _genproto_attrs = {
         executable = True,
     ),
     "_go_package_prefix": attr.label(
-        default = Label("//external:go_package_prefix"),
+        default = Label("//:go_prefix"),
         providers = ["go_prefix"],
         allow_files = False,
     ),
@@ -183,11 +223,10 @@ def proto_library(name, src=None, deps=[], visibility=None,
       ]
     for dep in deps:
       go_deps += [dep + "_go"]
-    go_library(
+    _go_proto_library_hack(
         name  = name + "_go",
         srcs = [proto_pkg.label()],
         deps = go_deps,
-        multi_package = 1,
         visibility = visibility,
     )
 

@@ -8,10 +8,6 @@ load("//tools/cpp:clang_configure.bzl", "clang_configure")
 
 clang_configure()
 
-load("//tools/go:go_configure.bzl", "go_configure")
-
-go_configure()
-
 load("//tools:node_configure.bzl", "node_configure")
 
 node_configure()
@@ -211,10 +207,15 @@ bind(
     actual = "//third_party/truth",
 )
 
-bind(
-    name = "go_package_prefix",
-    actual = "//:go_package_prefix",
+git_repository(
+    name = "io_bazel_rules_go",
+    remote = "https://github.com/bazelbuild/rules_go.git",
+    tag = "0.1.0",
 )
+
+load("@io_bazel_rules_go//go:def.bzl", "go_repositories")
+
+go_repositories()
 
 new_git_repository(
     name = "go_gogo_protobuf",
@@ -297,7 +298,7 @@ new_git_repository(
     name = "go_diff",
     build_file = "third_party/go/diff.BUILD",
     commit = "ec7fdbb58eb3e300c8595ad5ac74a5aa50019cc7",
-    remote = "https://github.com/sergi/go-diff",
+    remote = "https://github.com/sergi/go-diff.git",
 )
 
 new_git_repository(
