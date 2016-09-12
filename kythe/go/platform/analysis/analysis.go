@@ -34,6 +34,7 @@ import (
 	"golang.org/x/net/context"
 
 	apb "kythe.io/kythe/proto/analysis_proto"
+	aspb "kythe.io/kythe/proto/analysis_service_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
 )
 
@@ -101,8 +102,8 @@ func (s *FileDataService) Clear() {
 	s.fetchers = nil
 }
 
-// Get implements the apb.FileDataServiceServer interface.
-func (s *FileDataService) Get(req *apb.FilesRequest, srv apb.FileDataService_GetServer) error {
+// Get implements the aspb.FileDataServiceServer interface.
+func (s *FileDataService) Get(req *apb.FilesRequest, srv aspb.FileDataService_GetServer) error {
 	for _, info := range req.Files {
 		if info.Path == "" && info.Digest == "" {
 			return errors.New("file request missing both path and digest")

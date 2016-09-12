@@ -28,6 +28,7 @@ import (
 	"golang.org/x/net/context"
 
 	spb "kythe.io/kythe/proto/storage_proto"
+	sspb "kythe.io/kythe/proto/storage_service_proto"
 )
 
 // An EntryFunc is a callback from the implementation of a Service to deliver
@@ -154,7 +155,7 @@ func IsNodeFact(e *spb.Entry) bool { return e.EdgeKind == "" }
 // IsEdge determines if the Entry describes an edge; implies !IsNodeFact(e).
 func IsEdge(e *spb.Entry) bool { return e.EdgeKind != "" }
 
-type grpcClient struct{ spb.GraphStoreClient }
+type grpcClient struct{ sspb.GraphStoreClient }
 
 // Read implements part of Service interface.
 func (c *grpcClient) Read(ctx context.Context, req *spb.ReadRequest, f EntryFunc) error {
@@ -208,4 +209,4 @@ func (c *grpcClient) Write(ctx context.Context, req *spb.WriteRequest) error {
 func (c *grpcClient) Close(ctx context.Context) error { return nil }
 
 // GRPC returns a GraphStore service backed by a GraphStoreClient.
-func GRPC(c spb.GraphStoreClient) Service { return &grpcClient{c} }
+func GRPC(c sspb.GraphStoreClient) Service { return &grpcClient{c} }

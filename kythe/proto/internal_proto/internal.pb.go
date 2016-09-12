@@ -13,6 +13,7 @@
 		PageToken
 		CrossReference
 		SortedKeyValue
+		Path
 */
 package internal_proto
 
@@ -204,6 +205,253 @@ func (m *SortedKeyValue) String() string            { return proto.CompactTextSt
 func (*SortedKeyValue) ProtoMessage()               {}
 func (*SortedKeyValue) Descriptor() ([]byte, []int) { return fileDescriptorInternal, []int{3} }
 
+// A Path represents a chain of Kythe edges starting from a particular node
+// known as the Path's pivot node.
+//
+// Example Path representing a FileDecorations_Decoration:
+//    pivot: <
+//      file: <
+//        ticket: "kythe://kythe?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java"
+//        text: "..."
+//        encoding: "UTF-8"
+//      >
+//      ticket: "kythe://kythe?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java"
+//      node_kind: "file"
+//    >
+//    edges: <
+//      kind: "%/kythe/edge/childof"
+//      target: <
+//        expanded_anchor: <
+//          ticket: "kythe://kythe?lang=java?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java#b2b44a5e5d4b7f521b192a99ab6172ad24bf055db0c3e6353775a31f83e4e8b9"
+//          kind: "%/kythe/edge/childof"
+//          parent: "kythe://kythe?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java"
+//          text: "edgeOrdinal"
+//          span: <...>
+//          snippet: "this.edgeOrdinal = -1"
+//          snippet_span: <...>
+//        >
+//        ticket: "kythe://kythe?lang=java?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java#b2b44a5e5d4b7f521b192a99ab6172ad24bf055db0c3e6353775a31f83e4e8b9"
+//        node_kind: "anchor"
+//      >
+//    >
+//    edges: <
+//      kind: "/kythe/edge/ref"
+//      target: <
+//        ticket: "kythe://kythe?lang=java?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java#3397da0c78948141fc85aa634e6d42e4461968ad33409c104e3a5e566306b8c5"
+//        node_kind: "variable"
+//        original: <...>
+//      >
+//    >
+type Path struct {
+	// The central node of this Path.
+	Pivot *Path_Node `protobuf:"bytes,1,opt,name=pivot" json:"pivot,omitempty"`
+	// A sequence of edges leading from the pivot node.
+	Edges []*Path_Edge `protobuf:"bytes,2,rep,name=edges" json:"edges,omitempty"`
+}
+
+func (m *Path) Reset()                    { *m = Path{} }
+func (m *Path) String() string            { return proto.CompactTextString(m) }
+func (*Path) ProtoMessage()               {}
+func (*Path) Descriptor() ([]byte, []int) { return fileDescriptorInternal, []int{4} }
+
+func (m *Path) GetPivot() *Path_Node {
+	if m != nil {
+		return m.Pivot
+	}
+	return nil
+}
+
+func (m *Path) GetEdges() []*Path_Edge {
+	if m != nil {
+		return m.Edges
+	}
+	return nil
+}
+
+// A serving node with a possible specialization that unwraps/parses the
+// original node's facts.
+type Path_Node struct {
+	// Types that are valid to be assigned to Specialization:
+	//	*Path_Node_RawAnchor
+	//	*Path_Node_ExpandedAnchor
+	//	*Path_Node_File
+	Specialization isPath_Node_Specialization `protobuf_oneof:"specialization"`
+	Ticket         string                     `protobuf:"bytes,1,opt,name=ticket,proto3" json:"ticket,omitempty"`
+	NodeKind       string                     `protobuf:"bytes,2,opt,name=node_kind,proto3" json:"node_kind,omitempty"`
+	Original       *kythe_proto_serving.Node  `protobuf:"bytes,3,opt,name=original" json:"original,omitempty"`
+}
+
+func (m *Path_Node) Reset()                    { *m = Path_Node{} }
+func (m *Path_Node) String() string            { return proto.CompactTextString(m) }
+func (*Path_Node) ProtoMessage()               {}
+func (*Path_Node) Descriptor() ([]byte, []int) { return fileDescriptorInternal, []int{4, 0} }
+
+type isPath_Node_Specialization interface {
+	isPath_Node_Specialization()
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+
+type Path_Node_RawAnchor struct {
+	RawAnchor *kythe_proto_serving.RawAnchor `protobuf:"bytes,10,opt,name=raw_anchor,oneof"`
+}
+type Path_Node_ExpandedAnchor struct {
+	ExpandedAnchor *kythe_proto_serving.ExpandedAnchor `protobuf:"bytes,11,opt,name=expanded_anchor,oneof"`
+}
+type Path_Node_File struct {
+	File *kythe_proto_serving.File `protobuf:"bytes,12,opt,name=file,oneof"`
+}
+
+func (*Path_Node_RawAnchor) isPath_Node_Specialization()      {}
+func (*Path_Node_ExpandedAnchor) isPath_Node_Specialization() {}
+func (*Path_Node_File) isPath_Node_Specialization()           {}
+
+func (m *Path_Node) GetSpecialization() isPath_Node_Specialization {
+	if m != nil {
+		return m.Specialization
+	}
+	return nil
+}
+
+func (m *Path_Node) GetRawAnchor() *kythe_proto_serving.RawAnchor {
+	if x, ok := m.GetSpecialization().(*Path_Node_RawAnchor); ok {
+		return x.RawAnchor
+	}
+	return nil
+}
+
+func (m *Path_Node) GetExpandedAnchor() *kythe_proto_serving.ExpandedAnchor {
+	if x, ok := m.GetSpecialization().(*Path_Node_ExpandedAnchor); ok {
+		return x.ExpandedAnchor
+	}
+	return nil
+}
+
+func (m *Path_Node) GetFile() *kythe_proto_serving.File {
+	if x, ok := m.GetSpecialization().(*Path_Node_File); ok {
+		return x.File
+	}
+	return nil
+}
+
+func (m *Path_Node) GetOriginal() *kythe_proto_serving.Node {
+	if m != nil {
+		return m.Original
+	}
+	return nil
+}
+
+// XXX_OneofFuncs is for the internal use of the proto package.
+func (*Path_Node) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _Path_Node_OneofMarshaler, _Path_Node_OneofUnmarshaler, _Path_Node_OneofSizer, []interface{}{
+		(*Path_Node_RawAnchor)(nil),
+		(*Path_Node_ExpandedAnchor)(nil),
+		(*Path_Node_File)(nil),
+	}
+}
+
+func _Path_Node_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*Path_Node)
+	// specialization
+	switch x := m.Specialization.(type) {
+	case *Path_Node_RawAnchor:
+		_ = b.EncodeVarint(10<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.RawAnchor); err != nil {
+			return err
+		}
+	case *Path_Node_ExpandedAnchor:
+		_ = b.EncodeVarint(11<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.ExpandedAnchor); err != nil {
+			return err
+		}
+	case *Path_Node_File:
+		_ = b.EncodeVarint(12<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.File); err != nil {
+			return err
+		}
+	case nil:
+	default:
+		return fmt.Errorf("Path_Node.Specialization has unexpected type %T", x)
+	}
+	return nil
+}
+
+func _Path_Node_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*Path_Node)
+	switch tag {
+	case 10: // specialization.raw_anchor
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(kythe_proto_serving.RawAnchor)
+		err := b.DecodeMessage(msg)
+		m.Specialization = &Path_Node_RawAnchor{msg}
+		return true, err
+	case 11: // specialization.expanded_anchor
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(kythe_proto_serving.ExpandedAnchor)
+		err := b.DecodeMessage(msg)
+		m.Specialization = &Path_Node_ExpandedAnchor{msg}
+		return true, err
+	case 12: // specialization.file
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(kythe_proto_serving.File)
+		err := b.DecodeMessage(msg)
+		m.Specialization = &Path_Node_File{msg}
+		return true, err
+	default:
+		return false, nil
+	}
+}
+
+func _Path_Node_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*Path_Node)
+	// specialization
+	switch x := m.Specialization.(type) {
+	case *Path_Node_RawAnchor:
+		s := proto.Size(x.RawAnchor)
+		n += proto.SizeVarint(10<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Path_Node_ExpandedAnchor:
+		s := proto.Size(x.ExpandedAnchor)
+		n += proto.SizeVarint(11<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Path_Node_File:
+		s := proto.Size(x.File)
+		n += proto.SizeVarint(12<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
+}
+
+type Path_Edge struct {
+	Kind    string     `protobuf:"bytes,1,opt,name=kind,proto3" json:"kind,omitempty"`
+	Ordinal int32      `protobuf:"varint,2,opt,name=ordinal,proto3" json:"ordinal,omitempty"`
+	Target  *Path_Node `protobuf:"bytes,3,opt,name=target" json:"target,omitempty"`
+}
+
+func (m *Path_Edge) Reset()                    { *m = Path_Edge{} }
+func (m *Path_Edge) String() string            { return proto.CompactTextString(m) }
+func (*Path_Edge) ProtoMessage()               {}
+func (*Path_Edge) Descriptor() ([]byte, []int) { return fileDescriptorInternal, []int{4, 1} }
+
+func (m *Path_Edge) GetTarget() *Path_Node {
+	if m != nil {
+		return m.Target
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*Source)(nil), "kythe.proto.internal.Source")
 	proto.RegisterType((*Source_Edge)(nil), "kythe.proto.internal.Source.Edge")
@@ -212,6 +460,9 @@ func init() {
 	proto.RegisterType((*CrossReference)(nil), "kythe.proto.internal.CrossReference")
 	proto.RegisterType((*CrossReference_Decoration)(nil), "kythe.proto.internal.CrossReference.Decoration")
 	proto.RegisterType((*SortedKeyValue)(nil), "kythe.proto.internal.SortedKeyValue")
+	proto.RegisterType((*Path)(nil), "kythe.proto.internal.Path")
+	proto.RegisterType((*Path_Node)(nil), "kythe.proto.internal.Path.Node")
+	proto.RegisterType((*Path_Edge)(nil), "kythe.proto.internal.Path.Edge")
 }
 func (m *Source) Marshal() (data []byte, err error) {
 	size := m.Size()
@@ -515,6 +766,174 @@ func (m *SortedKeyValue) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *Path) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Path) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Pivot != nil {
+		data[i] = 0xa
+		i++
+		i = encodeVarintInternal(data, i, uint64(m.Pivot.Size()))
+		n9, err := m.Pivot.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n9
+	}
+	if len(m.Edges) > 0 {
+		for _, msg := range m.Edges {
+			data[i] = 0x12
+			i++
+			i = encodeVarintInternal(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	return i, nil
+}
+
+func (m *Path_Node) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Path_Node) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Ticket) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintInternal(data, i, uint64(len(m.Ticket)))
+		i += copy(data[i:], m.Ticket)
+	}
+	if len(m.NodeKind) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintInternal(data, i, uint64(len(m.NodeKind)))
+		i += copy(data[i:], m.NodeKind)
+	}
+	if m.Original != nil {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintInternal(data, i, uint64(m.Original.Size()))
+		n10, err := m.Original.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n10
+	}
+	if m.Specialization != nil {
+		nn11, err := m.Specialization.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += nn11
+	}
+	return i, nil
+}
+
+func (m *Path_Node_RawAnchor) MarshalTo(data []byte) (int, error) {
+	i := 0
+	if m.RawAnchor != nil {
+		data[i] = 0x52
+		i++
+		i = encodeVarintInternal(data, i, uint64(m.RawAnchor.Size()))
+		n12, err := m.RawAnchor.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n12
+	}
+	return i, nil
+}
+func (m *Path_Node_ExpandedAnchor) MarshalTo(data []byte) (int, error) {
+	i := 0
+	if m.ExpandedAnchor != nil {
+		data[i] = 0x5a
+		i++
+		i = encodeVarintInternal(data, i, uint64(m.ExpandedAnchor.Size()))
+		n13, err := m.ExpandedAnchor.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n13
+	}
+	return i, nil
+}
+func (m *Path_Node_File) MarshalTo(data []byte) (int, error) {
+	i := 0
+	if m.File != nil {
+		data[i] = 0x62
+		i++
+		i = encodeVarintInternal(data, i, uint64(m.File.Size()))
+		n14, err := m.File.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n14
+	}
+	return i, nil
+}
+func (m *Path_Edge) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Path_Edge) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Kind) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintInternal(data, i, uint64(len(m.Kind)))
+		i += copy(data[i:], m.Kind)
+	}
+	if m.Ordinal != 0 {
+		data[i] = 0x10
+		i++
+		i = encodeVarintInternal(data, i, uint64(m.Ordinal))
+	}
+	if m.Target != nil {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintInternal(data, i, uint64(m.Target.Size()))
+		n15, err := m.Target.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n15
+	}
+	return i, nil
+}
+
 func encodeFixed64Internal(data []byte, offset int, v uint64) int {
 	data[offset] = uint8(v)
 	data[offset+1] = uint8(v >> 8)
@@ -667,6 +1086,87 @@ func (m *SortedKeyValue) Size() (n int) {
 	}
 	l = len(m.Value)
 	if l > 0 {
+		n += 1 + l + sovInternal(uint64(l))
+	}
+	return n
+}
+
+func (m *Path) Size() (n int) {
+	var l int
+	_ = l
+	if m.Pivot != nil {
+		l = m.Pivot.Size()
+		n += 1 + l + sovInternal(uint64(l))
+	}
+	if len(m.Edges) > 0 {
+		for _, e := range m.Edges {
+			l = e.Size()
+			n += 1 + l + sovInternal(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *Path_Node) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Ticket)
+	if l > 0 {
+		n += 1 + l + sovInternal(uint64(l))
+	}
+	l = len(m.NodeKind)
+	if l > 0 {
+		n += 1 + l + sovInternal(uint64(l))
+	}
+	if m.Original != nil {
+		l = m.Original.Size()
+		n += 1 + l + sovInternal(uint64(l))
+	}
+	if m.Specialization != nil {
+		n += m.Specialization.Size()
+	}
+	return n
+}
+
+func (m *Path_Node_RawAnchor) Size() (n int) {
+	var l int
+	_ = l
+	if m.RawAnchor != nil {
+		l = m.RawAnchor.Size()
+		n += 1 + l + sovInternal(uint64(l))
+	}
+	return n
+}
+func (m *Path_Node_ExpandedAnchor) Size() (n int) {
+	var l int
+	_ = l
+	if m.ExpandedAnchor != nil {
+		l = m.ExpandedAnchor.Size()
+		n += 1 + l + sovInternal(uint64(l))
+	}
+	return n
+}
+func (m *Path_Node_File) Size() (n int) {
+	var l int
+	_ = l
+	if m.File != nil {
+		l = m.File.Size()
+		n += 1 + l + sovInternal(uint64(l))
+	}
+	return n
+}
+func (m *Path_Edge) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Kind)
+	if l > 0 {
+		n += 1 + l + sovInternal(uint64(l))
+	}
+	if m.Ordinal != 0 {
+		n += 1 + sovInternal(uint64(m.Ordinal))
+	}
+	if m.Target != nil {
+		l = m.Target.Size()
 		n += 1 + l + sovInternal(uint64(l))
 	}
 	return n
@@ -1768,6 +2268,488 @@ func (m *SortedKeyValue) Unmarshal(data []byte) error {
 	}
 	return nil
 }
+func (m *Path) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowInternal
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Path: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Path: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pivot", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowInternal
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthInternal
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Pivot == nil {
+				m.Pivot = &Path_Node{}
+			}
+			if err := m.Pivot.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Edges", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowInternal
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthInternal
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Edges = append(m.Edges, &Path_Edge{})
+			if err := m.Edges[len(m.Edges)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipInternal(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthInternal
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Path_Node) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowInternal
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Node: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Node: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Ticket", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowInternal
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthInternal
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Ticket = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field NodeKind", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowInternal
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthInternal
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.NodeKind = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Original", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowInternal
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthInternal
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Original == nil {
+				m.Original = &kythe_proto_serving.Node{}
+			}
+			if err := m.Original.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 10:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RawAnchor", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowInternal
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthInternal
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &kythe_proto_serving.RawAnchor{}
+			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Specialization = &Path_Node_RawAnchor{v}
+			iNdEx = postIndex
+		case 11:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ExpandedAnchor", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowInternal
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthInternal
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &kythe_proto_serving.ExpandedAnchor{}
+			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Specialization = &Path_Node_ExpandedAnchor{v}
+			iNdEx = postIndex
+		case 12:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field File", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowInternal
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthInternal
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &kythe_proto_serving.File{}
+			if err := v.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Specialization = &Path_Node_File{v}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipInternal(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthInternal
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Path_Edge) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowInternal
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Edge: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Edge: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Kind", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowInternal
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthInternal
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Kind = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Ordinal", wireType)
+			}
+			m.Ordinal = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowInternal
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.Ordinal |= (int32(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Target", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowInternal
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthInternal
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Target == nil {
+				m.Target = &Path_Node{}
+			}
+			if err := m.Target.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipInternal(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthInternal
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func skipInternal(data []byte) (n int, err error) {
 	l := len(data)
 	iNdEx := 0
@@ -1874,36 +2856,45 @@ var (
 )
 
 var fileDescriptorInternal = []byte{
-	// 494 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x9c, 0x52, 0x4f, 0x6b, 0xd4, 0x40,
-	0x14, 0x37, 0x9b, 0xcd, 0xda, 0xbc, 0x6c, 0x77, 0x6b, 0x10, 0xdc, 0xe6, 0xb0, 0xd4, 0x15, 0xec,
-	0x82, 0x25, 0x2b, 0x5b, 0x14, 0x29, 0x28, 0x54, 0xdd, 0x0a, 0x0a, 0x22, 0xad, 0x08, 0x9e, 0x96,
-	0x31, 0x79, 0x9b, 0x86, 0x2c, 0x33, 0xcb, 0xcc, 0x6c, 0x6d, 0xee, 0x7e, 0x08, 0x3f, 0x8f, 0x27,
-	0x8f, 0x7e, 0x04, 0xd1, 0x2f, 0xe2, 0xcc, 0x24, 0x2d, 0x89, 0x06, 0x2d, 0x1e, 0xe6, 0x30, 0xf3,
-	0x7e, 0xff, 0xde, 0x9b, 0x07, 0x41, 0x96, 0xcb, 0x53, 0x9c, 0xac, 0x38, 0x93, 0x6c, 0x92, 0x52,
-	0x89, 0x9c, 0x92, 0x65, 0x68, 0xae, 0xfe, 0x4d, 0x53, 0x2b, 0x2e, 0xe1, 0x45, 0x2d, 0xd8, 0xae,
-	0x32, 0x04, 0xf2, 0xb3, 0x94, 0x26, 0x05, 0x66, 0xf4, 0xc9, 0x86, 0xce, 0x09, 0x5b, 0xf3, 0x08,
-	0xfd, 0x1e, 0x74, 0x64, 0x1a, 0x65, 0x28, 0x07, 0xd6, 0x8e, 0x35, 0x76, 0xfd, 0x87, 0xe0, 0x2c,
-	0x48, 0x24, 0xc5, 0xa0, 0xb5, 0x63, 0x8f, 0xbd, 0xe9, 0x6e, 0xd8, 0xa4, 0x1d, 0x16, 0xe4, 0xf0,
-	0x48, 0x23, 0x67, 0x54, 0xf2, 0xdc, 0x3f, 0x04, 0x0f, 0xe3, 0x04, 0xe7, 0x09, 0x67, 0xeb, 0x95,
-	0x18, 0xd8, 0x86, 0xbd, 0xf7, 0x57, 0xf6, 0x4c, 0xe1, 0x5f, 0x18, 0xb8, 0x91, 0x08, 0x76, 0xa1,
-	0xad, 0x9f, 0xfe, 0x88, 0xd4, 0x87, 0xeb, 0x8c, 0xc7, 0xa9, 0x62, 0xaa, 0x50, 0xd6, 0xd8, 0x09,
-	0x1e, 0x83, 0x7b, 0xc9, 0xf5, 0xef, 0x83, 0xa3, 0x8d, 0x85, 0x02, 0x6b, 0xcb, 0xdb, 0xff, 0xb4,
-	0x0c, 0xf6, 0x00, 0x2a, 0xc1, 0x3d, 0xb0, 0x33, 0xcc, 0x4b, 0xab, 0x4d, 0x70, 0xce, 0xc8, 0x72,
-	0x8d, 0xc6, 0xa8, 0x7b, 0xd0, 0x7a, 0x64, 0x05, 0xef, 0xa1, 0xff, 0x5b, 0xd0, 0x3a, 0xe5, 0x41,
-	0x95, 0xe2, 0x4d, 0xef, 0x5e, 0xad, 0x65, 0x2d, 0x3d, 0xda, 0x07, 0xf7, 0x0d, 0x49, 0xf0, 0x2d,
-	0xcb, 0x90, 0x6a, 0xeb, 0x94, 0xc6, 0x78, 0x6e, 0x64, 0x1d, 0xff, 0x16, 0xf4, 0x05, 0x46, 0x8c,
-	0xc6, 0x84, 0xe7, 0x73, 0xa9, 0x11, 0xc6, 0xc0, 0x1d, 0x7d, 0xb1, 0xa1, 0xf7, 0x8c, 0x33, 0x21,
-	0x8e, 0x71, 0x81, 0x1c, 0xa9, 0xfa, 0xc3, 0x97, 0x70, 0x43, 0x18, 0xfd, 0x79, 0xac, 0x28, 0x9c,
-	0xc8, 0x94, 0x51, 0x23, 0xe3, 0x4d, 0x27, 0xcd, 0x71, 0xea, 0x02, 0xe1, 0xf3, 0x4b, 0x9a, 0x7f,
-	0x0f, 0x36, 0x78, 0xf1, 0x2e, 0xcb, 0x8e, 0xb6, 0x6b, 0x12, 0x17, 0x8b, 0xf4, 0x9a, 0xc5, 0xc6,
-	0x58, 0x12, 0x9e, 0xa0, 0xac, 0x1a, 0xdb, 0xff, 0x67, 0x7c, 0x00, 0x9b, 0x65, 0x13, 0x84, 0x46,
-	0xa7, 0x8c, 0x0f, 0xda, 0x46, 0xe7, 0x4e, 0xa3, 0xfb, 0xec, 0x7c, 0x45, 0xd4, 0xb0, 0xe2, 0x43,
-	0x03, 0xd5, 0xdc, 0x32, 0x47, 0xc9, 0x75, 0xae, 0xcc, 0x0d, 0x04, 0x40, 0x25, 0x85, 0xda, 0xc1,
-	0x45, 0xba, 0xc4, 0x72, 0x7a, 0xcd, 0xad, 0x1f, 0x29, 0x80, 0x1f, 0x42, 0xa7, 0xf4, 0x2a, 0xa6,
-	0x34, 0x6c, 0x84, 0x1e, 0x93, 0x8f, 0x65, 0xc4, 0x2e, 0xb4, 0x33, 0xf5, 0xbf, 0x66, 0x3a, 0xee,
-	0xe8, 0x09, 0xf4, 0x4e, 0x18, 0x97, 0x18, 0xbf, 0xc2, 0xfc, 0x9d, 0xde, 0x9e, 0xfa, 0x4e, 0x6d,
-	0xc1, 0x86, 0x50, 0xe5, 0xb9, 0x7e, 0x69, 0xd5, 0x17, 0x53, 0xf3, 0xbb, 0x4f, 0xb7, 0xbe, 0xfe,
-	0x18, 0x5a, 0xdf, 0xd4, 0xf9, 0xae, 0xce, 0xe7, 0x9f, 0xc3, 0x6b, 0x1f, 0x3a, 0xc6, 0x78, 0xff,
-	0x57, 0x00, 0x00, 0x00, 0xff, 0xff, 0xce, 0xe8, 0xb0, 0x3d, 0x28, 0x04, 0x00, 0x00,
+	// 626 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x9c, 0x54, 0xcd, 0x6a, 0x13, 0x41,
+	0x1c, 0xcf, 0x66, 0xb3, 0xb1, 0xf9, 0x27, 0x4d, 0xda, 0x41, 0x30, 0xdd, 0x43, 0xac, 0x11, 0x6c,
+	0xa5, 0x65, 0x23, 0xad, 0x8a, 0x14, 0x2c, 0xb4, 0xda, 0x5a, 0x14, 0xa4, 0xb4, 0x52, 0xf0, 0x14,
+	0xc6, 0x9d, 0x7f, 0xb7, 0x43, 0xc2, 0x4c, 0x98, 0x9d, 0x7e, 0xc4, 0xb3, 0x17, 0xdf, 0xc0, 0xe7,
+	0xf1, 0x24, 0x9e, 0x7c, 0x04, 0x89, 0x2f, 0x22, 0x3b, 0x3b, 0x5b, 0x92, 0xba, 0x34, 0xc1, 0xe3,
+	0xee, 0xfe, 0xbe, 0xfe, 0x5f, 0x0b, 0x7e, 0x6f, 0xa8, 0xcf, 0xb0, 0x33, 0x50, 0x52, 0xcb, 0x0e,
+	0x17, 0x1a, 0x95, 0xa0, 0xfd, 0xc0, 0x3c, 0x92, 0xbb, 0xe6, 0x5b, 0xfa, 0x10, 0x64, 0xdf, 0xfc,
+	0xa5, 0x71, 0x46, 0x8c, 0xea, 0x82, 0x8b, 0x28, 0xc5, 0xb4, 0xbf, 0xb8, 0x50, 0x3e, 0x96, 0xe7,
+	0x2a, 0x44, 0x52, 0x87, 0xb2, 0xe6, 0x61, 0x0f, 0x75, 0xd3, 0x59, 0x76, 0x56, 0x2b, 0xe4, 0x39,
+	0x78, 0xa7, 0x34, 0xd4, 0x71, 0xb3, 0xb8, 0xec, 0xae, 0x56, 0x37, 0x56, 0x82, 0x3c, 0xed, 0x20,
+	0x25, 0x07, 0xfb, 0x09, 0x72, 0x4f, 0x68, 0x35, 0x24, 0x3b, 0x50, 0x45, 0x16, 0x61, 0x37, 0x52,
+	0xf2, 0x7c, 0x10, 0x37, 0x5d, 0xc3, 0x5e, 0xbf, 0x95, 0xbd, 0xc7, 0x22, 0x7c, 0x63, 0xe0, 0x46,
+	0xc2, 0x5f, 0x81, 0x52, 0xf2, 0xea, 0x9f, 0x48, 0x0d, 0xb8, 0x23, 0x15, 0xe3, 0x82, 0xf6, 0x9b,
+	0xc5, 0x65, 0x67, 0xd5, 0xf3, 0x5f, 0x42, 0xe5, 0x9a, 0x4b, 0x9e, 0x80, 0x97, 0x18, 0xc7, 0x4d,
+	0xc7, 0x58, 0x3e, 0x98, 0x6a, 0xe9, 0xaf, 0x03, 0x8c, 0x05, 0xaf, 0x82, 0xdb, 0xc3, 0xa1, 0xb5,
+	0x9a, 0x07, 0xef, 0x82, 0xf6, 0xcf, 0xd1, 0x18, 0xd5, 0xb6, 0x8a, 0x2f, 0x1c, 0xff, 0x23, 0x34,
+	0x6e, 0x04, 0x9d, 0xa4, 0x3c, 0x1b, 0xa7, 0x54, 0x37, 0x1e, 0xcd, 0x56, 0x72, 0x22, 0xdd, 0xde,
+	0x84, 0xca, 0x21, 0x8d, 0xf0, 0x83, 0xec, 0xa1, 0x48, 0xac, 0xb9, 0x60, 0x78, 0x65, 0x64, 0x3d,
+	0x72, 0x0f, 0x1a, 0x31, 0x86, 0x52, 0x30, 0xaa, 0x86, 0x5d, 0x9d, 0x20, 0x8c, 0x41, 0xa5, 0xfd,
+	0xdd, 0x85, 0xfa, 0x2b, 0x25, 0xe3, 0xf8, 0x08, 0x4f, 0x51, 0xa1, 0x08, 0x91, 0xbc, 0x85, 0xc5,
+	0xd8, 0xe8, 0x77, 0x19, 0x86, 0x52, 0x51, 0xcd, 0xa5, 0x30, 0x32, 0xd5, 0x8d, 0x4e, 0x7e, 0x9c,
+	0x49, 0x81, 0xe0, 0xf5, 0x35, 0x8d, 0xac, 0xc1, 0x9c, 0x4a, 0xdf, 0x6b, 0x5b, 0xd1, 0xd2, 0x84,
+	0x44, 0xb6, 0x48, 0xef, 0x25, 0x33, 0xc6, 0x9a, 0xaa, 0x08, 0xf5, 0xb8, 0xb1, 0xfb, 0x7f, 0xc6,
+	0x5b, 0x30, 0x6f, 0x8b, 0xa0, 0x22, 0x3c, 0x93, 0xaa, 0x59, 0x32, 0x3a, 0x0f, 0x73, 0xdd, 0xf7,
+	0xae, 0x06, 0x54, 0x30, 0x64, 0x3b, 0x06, 0x9a, 0x70, 0x6d, 0x0e, 0xcb, 0xf5, 0x66, 0xe6, 0xfa,
+	0x31, 0xc0, 0x58, 0x8a, 0x15, 0x28, 0x9d, 0xf2, 0x3e, 0xda, 0xee, 0xe5, 0x97, 0xbe, 0xcf, 0xfb,
+	0x48, 0x02, 0x28, 0x5b, 0xaf, 0xb4, 0x4b, 0xad, 0x5c, 0xe8, 0x11, 0xbd, 0xb4, 0x11, 0x6b, 0x50,
+	0xea, 0x71, 0xc1, 0x4c, 0x77, 0x2a, 0xed, 0x6d, 0xa8, 0x1f, 0x4b, 0xa5, 0x91, 0xbd, 0xc3, 0xe1,
+	0x49, 0xb2, 0x3d, 0x93, 0x3b, 0xb5, 0x00, 0x73, 0xb1, 0x54, 0xba, 0x9b, 0xbc, 0x29, 0x4e, 0x2e,
+	0x66, 0xc2, 0xaf, 0xb5, 0x7f, 0xba, 0x50, 0x3a, 0xa4, 0xfa, 0x8c, 0x04, 0xe0, 0x0d, 0xf8, 0x85,
+	0xd4, 0x36, 0xf0, 0xfd, 0xfc, 0xae, 0x27, 0xd0, 0x74, 0x62, 0x41, 0x76, 0x2d, 0xe9, 0x79, 0xdf,
+	0x86, 0x37, 0xb7, 0xf2, 0xb5, 0x08, 0x25, 0x43, 0xbc, 0x79, 0x94, 0x8b, 0x50, 0x11, 0x92, 0x61,
+	0xd7, 0x14, 0x95, 0x66, 0x5c, 0x83, 0x39, 0xa9, 0x78, 0x64, 0x0e, 0xd5, 0x9d, 0xb6, 0x3a, 0x4f,
+	0x01, 0x14, 0xbd, 0xcc, 0xe6, 0x05, 0xb3, 0xf4, 0xf0, 0xa0, 0x40, 0xb6, 0xa1, 0x81, 0x76, 0x7c,
+	0x19, 0xb5, 0x3a, 0xf3, 0xa8, 0x0f, 0x0a, 0xe4, 0xb1, 0x1d, 0x6f, 0x6d, 0xca, 0x78, 0x0f, 0x0a,
+	0xbb, 0x0b, 0x50, 0x8f, 0x07, 0x18, 0x72, 0xda, 0xe7, 0x9f, 0xcd, 0x6e, 0xf8, 0x27, 0xf6, 0xff,
+	0x94, 0x8d, 0x32, 0xff, 0xef, 0x44, 0x3a, 0x50, 0x4e, 0x97, 0xd1, 0x36, 0x61, 0xda, 0x4c, 0x76,
+	0x17, 0x7e, 0x8c, 0x5a, 0xce, 0xaf, 0x51, 0xcb, 0xf9, 0x3d, 0x6a, 0x39, 0xdf, 0xfe, 0xb4, 0x0a,
+	0x9f, 0xca, 0x06, 0xbb, 0xf9, 0x37, 0x00, 0x00, 0xff, 0xff, 0x24, 0xcf, 0x60, 0x4a, 0xf5, 0x05,
+	0x00, 0x00,
 }

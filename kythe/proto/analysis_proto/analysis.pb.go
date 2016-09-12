@@ -22,12 +22,8 @@ import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
 import google_protobuf "kythe.io/third_party/proto/any_proto"
-import kythe_proto "kythe.io/kythe/proto/storage_proto"
-
-import (
-	context "golang.org/x/net/context"
-	grpc "google.golang.org/grpc"
-)
+import kythe_proto "kythe.io/kythe/proto/filecontext_proto"
+import kythe_proto1 "kythe.io/kythe/proto/storage_proto"
 
 import io "io"
 
@@ -67,6 +63,9 @@ func (m *AnalysisRequest) GetCompilation() *CompilationUnit {
 // place.  A given analysis may not produce any outputs.  It is okay for an
 // indexer to send an empty AnalysisOutput message if needed to keep the RPC
 // channel alive; the driver must correctly handle this.
+//
+// The format of value is determined by the analyzer. Kythe language indexers
+// emit wire-format kythe.proto.Entry messages.
 type AnalysisOutput struct {
 	Value []byte `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
 }
@@ -81,7 +80,7 @@ type CompilationUnit struct {
 	// The base VName for the compilation and any generated VNames from its
 	// analysis. Generally, the `language` component designates the language of
 	// the compilation's sources.
-	VName *kythe_proto.VName `protobuf:"bytes,1,opt,name=v_name" json:"v_name,omitempty"`
+	VName *kythe_proto1.VName `protobuf:"bytes,1,opt,name=v_name" json:"v_name,omitempty"`
 	// The revision of the compilation.
 	Revision string `protobuf:"bytes,2,opt,name=revision,proto3" json:"revision,omitempty"`
 	// All files that might be touched in the course of this compilation.
@@ -130,7 +129,7 @@ func (m *CompilationUnit) String() string            { return proto.CompactTextS
 func (*CompilationUnit) ProtoMessage()               {}
 func (*CompilationUnit) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{2} }
 
-func (m *CompilationUnit) GetVName() *kythe_proto.VName {
+func (m *CompilationUnit) GetVName() *kythe_proto1.VName {
 	if m != nil {
 		return m.VName
 	}
@@ -158,82 +157,25 @@ func (m *CompilationUnit) GetDetails() []*google_protobuf.Any {
 	return nil
 }
 
-// ContextDependentVersionColumn and ContextDependentVersionRow
-// define a table that relates input contexts (keyed by a single
-// source context per row) to tuples of (byte offset * linked context).
-// When a FileInput F being processed in context C refers to another
-// FileInput F' at offset O (perhaps because F has an #include directive at O)
-// the context in which F' should be processed is the linked context derived
-// from this table.
-type CompilationUnit_ContextDependentVersionColumn struct {
-	// The byte offset into the file resource.
-	Offset int32 `protobuf:"varint,1,opt,name=offset,proto3" json:"offset,omitempty"`
-	// The signature for the resulting context.
-	LinkedContext string `protobuf:"bytes,2,opt,name=linked_context,proto3" json:"linked_context,omitempty"`
-}
-
-func (m *CompilationUnit_ContextDependentVersionColumn) Reset() {
-	*m = CompilationUnit_ContextDependentVersionColumn{}
-}
-func (m *CompilationUnit_ContextDependentVersionColumn) String() string {
-	return proto.CompactTextString(m)
-}
-func (*CompilationUnit_ContextDependentVersionColumn) ProtoMessage() {}
-func (*CompilationUnit_ContextDependentVersionColumn) Descriptor() ([]byte, []int) {
-	return fileDescriptorAnalysis, []int{2, 0}
-}
-
-// See ContextDependentVersionColumn for details.
-// It is valid for a ContextDependentVersionRow to have no columns. In this
-// case, the associated FileInput was seen to exist in some context C, but
-// did not refer to any other FileInputs while in that context.
-type CompilationUnit_ContextDependentVersionRow struct {
-	// The context to be applied to all columns.
-	SourceContext string `protobuf:"bytes,1,opt,name=source_context,proto3" json:"source_context,omitempty"`
-	// A map from byte offsets to linked contexts.
-	Column []*CompilationUnit_ContextDependentVersionColumn `protobuf:"bytes,2,rep,name=column" json:"column,omitempty"`
-	// If true, this version should always be processed regardless of any
-	// claiming.
-	AlwaysProcess bool `protobuf:"varint,3,opt,name=always_process,proto3" json:"always_process,omitempty"`
-}
-
-func (m *CompilationUnit_ContextDependentVersionRow) Reset() {
-	*m = CompilationUnit_ContextDependentVersionRow{}
-}
-func (m *CompilationUnit_ContextDependentVersionRow) String() string {
-	return proto.CompactTextString(m)
-}
-func (*CompilationUnit_ContextDependentVersionRow) ProtoMessage() {}
-func (*CompilationUnit_ContextDependentVersionRow) Descriptor() ([]byte, []int) {
-	return fileDescriptorAnalysis, []int{2, 1}
-}
-
-func (m *CompilationUnit_ContextDependentVersionRow) GetColumn() []*CompilationUnit_ContextDependentVersionColumn {
-	if m != nil {
-		return m.Column
-	}
-	return nil
-}
-
 type CompilationUnit_FileInput struct {
 	// If set, overrides the `v_name` in the `CompilationUnit` for deriving
 	// VNames during analysis.
-	VName *kythe_proto.VName `protobuf:"bytes,1,opt,name=v_name" json:"v_name,omitempty"`
+	VName *kythe_proto1.VName `protobuf:"bytes,1,opt,name=v_name" json:"v_name,omitempty"`
 	// The file's metadata. It is invalid to provide a FileInput without both
 	// the file's path and digest.
 	Info *FileInfo `protobuf:"bytes,2,opt,name=info" json:"info,omitempty"`
-	// The file's context-dependent versions.
-	Context []*CompilationUnit_ContextDependentVersionRow `protobuf:"bytes,3,rep,name=context" json:"context,omitempty"`
+	// The file's context-dependent version table.
+	Context *kythe_proto.ContextDependentVersion `protobuf:"bytes,3,opt,name=context" json:"context,omitempty"`
 }
 
 func (m *CompilationUnit_FileInput) Reset()         { *m = CompilationUnit_FileInput{} }
 func (m *CompilationUnit_FileInput) String() string { return proto.CompactTextString(m) }
 func (*CompilationUnit_FileInput) ProtoMessage()    {}
 func (*CompilationUnit_FileInput) Descriptor() ([]byte, []int) {
-	return fileDescriptorAnalysis, []int{2, 2}
+	return fileDescriptorAnalysis, []int{2, 0}
 }
 
-func (m *CompilationUnit_FileInput) GetVName() *kythe_proto.VName {
+func (m *CompilationUnit_FileInput) GetVName() *kythe_proto1.VName {
 	if m != nil {
 		return m.VName
 	}
@@ -247,7 +189,7 @@ func (m *CompilationUnit_FileInput) GetInfo() *FileInfo {
 	return nil
 }
 
-func (m *CompilationUnit_FileInput) GetContext() []*CompilationUnit_ContextDependentVersionRow {
+func (m *CompilationUnit_FileInput) GetContext() *kythe_proto.ContextDependentVersion {
 	if m != nil {
 		return m.Context
 	}
@@ -264,7 +206,7 @@ type CompilationUnit_Env struct {
 func (m *CompilationUnit_Env) Reset()                    { *m = CompilationUnit_Env{} }
 func (m *CompilationUnit_Env) String() string            { return proto.CompactTextString(m) }
 func (*CompilationUnit_Env) ProtoMessage()               {}
-func (*CompilationUnit_Env) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{2, 3} }
+func (*CompilationUnit_Env) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{2, 1} }
 
 // A FilesRequest specifies a collection of files to be fetched from a
 // FileDataService.
@@ -336,239 +278,12 @@ func init() {
 	proto.RegisterType((*AnalysisRequest)(nil), "kythe.proto.AnalysisRequest")
 	proto.RegisterType((*AnalysisOutput)(nil), "kythe.proto.AnalysisOutput")
 	proto.RegisterType((*CompilationUnit)(nil), "kythe.proto.CompilationUnit")
-	proto.RegisterType((*CompilationUnit_ContextDependentVersionColumn)(nil), "kythe.proto.CompilationUnit.ContextDependentVersionColumn")
-	proto.RegisterType((*CompilationUnit_ContextDependentVersionRow)(nil), "kythe.proto.CompilationUnit.ContextDependentVersionRow")
 	proto.RegisterType((*CompilationUnit_FileInput)(nil), "kythe.proto.CompilationUnit.FileInput")
 	proto.RegisterType((*CompilationUnit_Env)(nil), "kythe.proto.CompilationUnit.Env")
 	proto.RegisterType((*FilesRequest)(nil), "kythe.proto.FilesRequest")
 	proto.RegisterType((*FileInfo)(nil), "kythe.proto.FileInfo")
 	proto.RegisterType((*FileData)(nil), "kythe.proto.FileData")
 }
-
-// Reference imports to suppress errors if they are not otherwise used.
-var _ context.Context
-var _ grpc.ClientConn
-
-// This is a compile-time assertion to ensure that this generated file
-// is compatible with the grpc package it is being compiled against.
-const _ = grpc.SupportPackageIsVersion2
-
-// Client API for CompilationAnalyzer service
-
-type CompilationAnalyzerClient interface {
-	// Analyze is the main entry point for the analysis driver to send work to the
-	// analyzer.  The analysis may produce many outputs which will be streamed as
-	// framed AnalysisOutput messages.
-	//
-	// A driver may choose to retry analyses that return RPC errors.  It should
-	// not retry analyses that are reported as finished unless it is necessary to
-	// recover from an external production issue.
-	Analyze(ctx context.Context, in *AnalysisRequest, opts ...grpc.CallOption) (CompilationAnalyzer_AnalyzeClient, error)
-}
-
-type compilationAnalyzerClient struct {
-	cc *grpc.ClientConn
-}
-
-func NewCompilationAnalyzerClient(cc *grpc.ClientConn) CompilationAnalyzerClient {
-	return &compilationAnalyzerClient{cc}
-}
-
-func (c *compilationAnalyzerClient) Analyze(ctx context.Context, in *AnalysisRequest, opts ...grpc.CallOption) (CompilationAnalyzer_AnalyzeClient, error) {
-	stream, err := grpc.NewClientStream(ctx, &_CompilationAnalyzer_serviceDesc.Streams[0], c.cc, "/kythe.proto.CompilationAnalyzer/Analyze", opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &compilationAnalyzerAnalyzeClient{stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-type CompilationAnalyzer_AnalyzeClient interface {
-	Recv() (*AnalysisOutput, error)
-	grpc.ClientStream
-}
-
-type compilationAnalyzerAnalyzeClient struct {
-	grpc.ClientStream
-}
-
-func (x *compilationAnalyzerAnalyzeClient) Recv() (*AnalysisOutput, error) {
-	m := new(AnalysisOutput)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-// Server API for CompilationAnalyzer service
-
-type CompilationAnalyzerServer interface {
-	// Analyze is the main entry point for the analysis driver to send work to the
-	// analyzer.  The analysis may produce many outputs which will be streamed as
-	// framed AnalysisOutput messages.
-	//
-	// A driver may choose to retry analyses that return RPC errors.  It should
-	// not retry analyses that are reported as finished unless it is necessary to
-	// recover from an external production issue.
-	Analyze(*AnalysisRequest, CompilationAnalyzer_AnalyzeServer) error
-}
-
-func RegisterCompilationAnalyzerServer(s *grpc.Server, srv CompilationAnalyzerServer) {
-	s.RegisterService(&_CompilationAnalyzer_serviceDesc, srv)
-}
-
-func _CompilationAnalyzer_Analyze_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(AnalysisRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(CompilationAnalyzerServer).Analyze(m, &compilationAnalyzerAnalyzeServer{stream})
-}
-
-type CompilationAnalyzer_AnalyzeServer interface {
-	Send(*AnalysisOutput) error
-	grpc.ServerStream
-}
-
-type compilationAnalyzerAnalyzeServer struct {
-	grpc.ServerStream
-}
-
-func (x *compilationAnalyzerAnalyzeServer) Send(m *AnalysisOutput) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-var _CompilationAnalyzer_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "kythe.proto.CompilationAnalyzer",
-	HandlerType: (*CompilationAnalyzerServer)(nil),
-	Methods:     []grpc.MethodDesc{},
-	Streams: []grpc.StreamDesc{
-		{
-			StreamName:    "Analyze",
-			Handler:       _CompilationAnalyzer_Analyze_Handler,
-			ServerStreams: true,
-		},
-	},
-}
-
-// Client API for FileDataService service
-
-type FileDataServiceClient interface {
-	// Get returns the contents of one or more files needed for analysis.  It is
-	// the server's responsibility to do any caching necessary to make this
-	// perform well, so that an analyzer does not need to implement its own
-	// caches unless it is doing something unusual.
-	//
-	// For each distinct path/digest pair in the request, the server must return
-	// exactly one response.  The order of the responses is arbitrary.
-	//
-	// For each requested file, one or both of the path and digest fields must be
-	// nonempty, otherwise an error is returned.  It is not an error for there to
-	// be no requested files, however.
-	Get(ctx context.Context, in *FilesRequest, opts ...grpc.CallOption) (FileDataService_GetClient, error)
-}
-
-type fileDataServiceClient struct {
-	cc *grpc.ClientConn
-}
-
-func NewFileDataServiceClient(cc *grpc.ClientConn) FileDataServiceClient {
-	return &fileDataServiceClient{cc}
-}
-
-func (c *fileDataServiceClient) Get(ctx context.Context, in *FilesRequest, opts ...grpc.CallOption) (FileDataService_GetClient, error) {
-	stream, err := grpc.NewClientStream(ctx, &_FileDataService_serviceDesc.Streams[0], c.cc, "/kythe.proto.FileDataService/Get", opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &fileDataServiceGetClient{stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-type FileDataService_GetClient interface {
-	Recv() (*FileData, error)
-	grpc.ClientStream
-}
-
-type fileDataServiceGetClient struct {
-	grpc.ClientStream
-}
-
-func (x *fileDataServiceGetClient) Recv() (*FileData, error) {
-	m := new(FileData)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-// Server API for FileDataService service
-
-type FileDataServiceServer interface {
-	// Get returns the contents of one or more files needed for analysis.  It is
-	// the server's responsibility to do any caching necessary to make this
-	// perform well, so that an analyzer does not need to implement its own
-	// caches unless it is doing something unusual.
-	//
-	// For each distinct path/digest pair in the request, the server must return
-	// exactly one response.  The order of the responses is arbitrary.
-	//
-	// For each requested file, one or both of the path and digest fields must be
-	// nonempty, otherwise an error is returned.  It is not an error for there to
-	// be no requested files, however.
-	Get(*FilesRequest, FileDataService_GetServer) error
-}
-
-func RegisterFileDataServiceServer(s *grpc.Server, srv FileDataServiceServer) {
-	s.RegisterService(&_FileDataService_serviceDesc, srv)
-}
-
-func _FileDataService_Get_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(FilesRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(FileDataServiceServer).Get(m, &fileDataServiceGetServer{stream})
-}
-
-type FileDataService_GetServer interface {
-	Send(*FileData) error
-	grpc.ServerStream
-}
-
-type fileDataServiceGetServer struct {
-	grpc.ServerStream
-}
-
-func (x *fileDataServiceGetServer) Send(m *FileData) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-var _FileDataService_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "kythe.proto.FileDataService",
-	HandlerType: (*FileDataServiceServer)(nil),
-	Methods:     []grpc.MethodDesc{},
-	Streams: []grpc.StreamDesc{
-		{
-			StreamName:    "Get",
-			Handler:       _FileDataService_Get_Handler,
-			ServerStreams: true,
-		},
-	},
-}
-
 func (m *AnalysisRequest) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -755,81 +470,6 @@ func (m *CompilationUnit) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *CompilationUnit_ContextDependentVersionColumn) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *CompilationUnit_ContextDependentVersionColumn) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.Offset != 0 {
-		data[i] = 0x8
-		i++
-		i = encodeVarintAnalysis(data, i, uint64(m.Offset))
-	}
-	if len(m.LinkedContext) > 0 {
-		data[i] = 0x12
-		i++
-		i = encodeVarintAnalysis(data, i, uint64(len(m.LinkedContext)))
-		i += copy(data[i:], m.LinkedContext)
-	}
-	return i, nil
-}
-
-func (m *CompilationUnit_ContextDependentVersionRow) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *CompilationUnit_ContextDependentVersionRow) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if len(m.SourceContext) > 0 {
-		data[i] = 0xa
-		i++
-		i = encodeVarintAnalysis(data, i, uint64(len(m.SourceContext)))
-		i += copy(data[i:], m.SourceContext)
-	}
-	if len(m.Column) > 0 {
-		for _, msg := range m.Column {
-			data[i] = 0x12
-			i++
-			i = encodeVarintAnalysis(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
-	}
-	if m.AlwaysProcess {
-		data[i] = 0x18
-		i++
-		if m.AlwaysProcess {
-			data[i] = 1
-		} else {
-			data[i] = 0
-		}
-		i++
-	}
-	return i, nil
-}
-
 func (m *CompilationUnit_FileInput) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -865,17 +505,15 @@ func (m *CompilationUnit_FileInput) MarshalTo(data []byte) (int, error) {
 		}
 		i += n4
 	}
-	if len(m.Context) > 0 {
-		for _, msg := range m.Context {
-			data[i] = 0x1a
-			i++
-			i = encodeVarintAnalysis(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
+	if m.Context != nil {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintAnalysis(data, i, uint64(m.Context.Size()))
+		n5, err := m.Context.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
 		}
+		i += n5
 	}
 	return i, nil
 }
@@ -995,11 +633,11 @@ func (m *FileData) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x12
 		i++
 		i = encodeVarintAnalysis(data, i, uint64(m.Info.Size()))
-		n5, err := m.Info.MarshalTo(data[i:])
+		n6, err := m.Info.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n5
+		i += n6
 	}
 	if m.Missing {
 		data[i] = 0x18
@@ -1124,38 +762,6 @@ func (m *CompilationUnit) Size() (n int) {
 	return n
 }
 
-func (m *CompilationUnit_ContextDependentVersionColumn) Size() (n int) {
-	var l int
-	_ = l
-	if m.Offset != 0 {
-		n += 1 + sovAnalysis(uint64(m.Offset))
-	}
-	l = len(m.LinkedContext)
-	if l > 0 {
-		n += 1 + l + sovAnalysis(uint64(l))
-	}
-	return n
-}
-
-func (m *CompilationUnit_ContextDependentVersionRow) Size() (n int) {
-	var l int
-	_ = l
-	l = len(m.SourceContext)
-	if l > 0 {
-		n += 1 + l + sovAnalysis(uint64(l))
-	}
-	if len(m.Column) > 0 {
-		for _, e := range m.Column {
-			l = e.Size()
-			n += 1 + l + sovAnalysis(uint64(l))
-		}
-	}
-	if m.AlwaysProcess {
-		n += 2
-	}
-	return n
-}
-
 func (m *CompilationUnit_FileInput) Size() (n int) {
 	var l int
 	_ = l
@@ -1167,11 +773,9 @@ func (m *CompilationUnit_FileInput) Size() (n int) {
 		l = m.Info.Size()
 		n += 1 + l + sovAnalysis(uint64(l))
 	}
-	if len(m.Context) > 0 {
-		for _, e := range m.Context {
-			l = e.Size()
-			n += 1 + l + sovAnalysis(uint64(l))
-		}
+	if m.Context != nil {
+		l = m.Context.Size()
+		n += 1 + l + sovAnalysis(uint64(l))
 	}
 	return n
 }
@@ -1495,7 +1099,7 @@ func (m *CompilationUnit) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.VName == nil {
-				m.VName = &kythe_proto.VName{}
+				m.VName = &kythe_proto1.VName{}
 			}
 			if err := m.VName.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
@@ -1809,234 +1413,6 @@ func (m *CompilationUnit) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *CompilationUnit_ContextDependentVersionColumn) Unmarshal(data []byte) error {
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowAnalysis
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ContextDependentVersionColumn: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ContextDependentVersionColumn: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Offset", wireType)
-			}
-			m.Offset = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowAnalysis
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				m.Offset |= (int32(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field LinkedContext", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowAnalysis
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthAnalysis
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.LinkedContext = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipAnalysis(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthAnalysis
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *CompilationUnit_ContextDependentVersionRow) Unmarshal(data []byte) error {
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowAnalysis
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ContextDependentVersionRow: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ContextDependentVersionRow: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SourceContext", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowAnalysis
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthAnalysis
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.SourceContext = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Column", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowAnalysis
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthAnalysis
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Column = append(m.Column, &CompilationUnit_ContextDependentVersionColumn{})
-			if err := m.Column[len(m.Column)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field AlwaysProcess", wireType)
-			}
-			var v int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowAnalysis
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				v |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.AlwaysProcess = bool(v != 0)
-		default:
-			iNdEx = preIndex
-			skippy, err := skipAnalysis(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthAnalysis
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
 func (m *CompilationUnit_FileInput) Unmarshal(data []byte) error {
 	l := len(data)
 	iNdEx := 0
@@ -2093,7 +1469,7 @@ func (m *CompilationUnit_FileInput) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.VName == nil {
-				m.VName = &kythe_proto.VName{}
+				m.VName = &kythe_proto1.VName{}
 			}
 			if err := m.VName.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
@@ -2158,8 +1534,10 @@ func (m *CompilationUnit_FileInput) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Context = append(m.Context, &CompilationUnit_ContextDependentVersionRow{})
-			if err := m.Context[len(m.Context)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if m.Context == nil {
+				m.Context = &kythe_proto.ContextDependentVersion{}
+			}
+			if err := m.Context.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -2721,49 +2099,41 @@ var (
 )
 
 var fileDescriptorAnalysis = []byte{
-	// 692 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x9c, 0x54, 0xdd, 0x6e, 0xd3, 0x4a,
-	0x10, 0x6e, 0x4e, 0x9a, 0x34, 0x99, 0xa4, 0xc9, 0x39, 0xdb, 0xd3, 0x23, 0xd7, 0x07, 0xda, 0x2a,
-	0xfc, 0xa8, 0x57, 0x2e, 0x0d, 0x20, 0x24, 0x90, 0x90, 0x4a, 0x0b, 0x05, 0x2e, 0x8a, 0x28, 0xa2,
-	0xb7, 0xd6, 0x36, 0xde, 0xa4, 0xab, 0x38, 0xbb, 0x61, 0x77, 0xed, 0x62, 0x5e, 0x84, 0x5e, 0xf1,
-	0x3c, 0x5c, 0xf2, 0x08, 0x08, 0x5e, 0x84, 0xf1, 0xda, 0x4e, 0xd3, 0x96, 0x46, 0x15, 0x17, 0x56,
-	0x62, 0xef, 0xcc, 0xf7, 0x7d, 0xf3, 0xcd, 0xcc, 0x82, 0x3b, 0x4c, 0xcc, 0x31, 0xdb, 0x1c, 0x2b,
-	0x69, 0xe4, 0x26, 0x15, 0x34, 0x4c, 0x34, 0xd7, 0x9e, 0x7d, 0x25, 0x0d, 0x7b, 0x96, 0xbd, 0xb8,
-	0x2b, 0x03, 0x29, 0x07, 0x61, 0x1e, 0x79, 0x14, 0xf5, 0x31, 0x38, 0x29, 0x8e, 0xa6, 0x31, 0xb4,
-	0x91, 0x8a, 0x0e, 0xf2, 0xac, 0x8e, 0x0f, 0xed, 0xed, 0x1c, 0xf4, 0x80, 0x7d, 0x88, 0x98, 0x36,
-	0x64, 0x0b, 0x1a, 0x3d, 0x39, 0x1a, 0xf3, 0x90, 0x1a, 0x2e, 0x85, 0x53, 0x5a, 0x2f, 0x6d, 0x34,
-	0xba, 0x37, 0xbc, 0x29, 0x2e, 0x6f, 0xe7, 0xec, 0xfc, 0xbd, 0xe0, 0x86, 0xac, 0xc0, 0x3f, 0x7d,
-	0x1e, 0x32, 0x3f, 0xa0, 0x86, 0xfa, 0x9a, 0xa9, 0x98, 0xf7, 0x98, 0xf3, 0x17, 0x26, 0xd6, 0x3b,
-	0x6b, 0xd0, 0x2a, 0x08, 0xde, 0x44, 0x66, 0x1c, 0x19, 0xb2, 0x08, 0x95, 0x98, 0x86, 0x11, 0xb3,
-	0xc8, 0xcd, 0xce, 0xe7, 0x2a, 0xb4, 0x2f, 0xe2, 0x75, 0xa0, 0x1a, 0xfb, 0x82, 0x8e, 0x58, 0xce,
-	0x4e, 0xce, 0xb1, 0x1f, 0xee, 0xe3, 0x09, 0xf9, 0x1b, 0x6a, 0x8a, 0xc5, 0x5c, 0xa7, 0x1a, 0x2d,
-	0x15, 0x79, 0x0a, 0x2d, 0x85, 0x35, 0x70, 0xc5, 0x02, 0x9f, 0x0b, 0xa4, 0x72, 0xca, 0xeb, 0x65,
-	0xcc, 0xbe, 0x3b, 0x4b, 0xbb, 0xf7, 0x02, 0x85, 0xbf, 0x4a, 0xa3, 0x89, 0x0b, 0xe4, 0x98, 0x6a,
-	0x3f, 0x2b, 0x9e, 0xf9, 0x4c, 0x29, 0xa9, 0xb4, 0x33, 0x8f, 0xd8, 0xb5, 0x94, 0x8d, 0xaa, 0x41,
-	0x34, 0x62, 0xc2, 0x38, 0x15, 0x44, 0xad, 0x93, 0x25, 0x68, 0x68, 0x19, 0xa9, 0x1e, 0xf3, 0xd3,
-	0xd2, 0x9d, 0xaa, 0xfd, 0x48, 0x00, 0xa4, 0xad, 0xd2, 0x1f, 0xb2, 0xc4, 0x59, 0xb0, 0xb2, 0xd0,
-	0x9c, 0x13, 0xa9, 0x86, 0x5c, 0x0c, 0xfc, 0x00, 0xb5, 0xf5, 0xd0, 0xff, 0xc4, 0xa9, 0xd9, 0xa3,
-	0x65, 0x58, 0x44, 0x40, 0x95, 0x20, 0xa7, 0x30, 0xec, 0xa3, 0x71, 0xea, 0xf6, 0xf3, 0x43, 0x68,
-	0x30, 0x11, 0x73, 0x25, 0x85, 0xe5, 0x03, 0x5b, 0xc5, 0xfa, 0xcc, 0x2a, 0x9e, 0x8b, 0x98, 0xdc,
-	0x81, 0x85, 0x80, 0x19, 0xca, 0x43, 0xed, 0x34, 0x6c, 0xca, 0xbf, 0x5e, 0x36, 0x13, 0x5e, 0x31,
-	0x13, 0xde, 0xb6, 0x48, 0xdc, 0x3d, 0xb8, 0xb9, 0x93, 0xd1, 0xed, 0xb2, 0x31, 0x13, 0x01, 0x52,
-	0x1c, 0x32, 0x95, 0xfa, 0xb8, 0x23, 0xc3, 0x68, 0x24, 0x48, 0x0b, 0xaa, 0xb2, 0xdf, 0xd7, 0xcc,
-	0x58, 0xf7, 0x2b, 0xe4, 0x3f, 0x68, 0x85, 0x5c, 0x0c, 0xd1, 0xd5, 0x42, 0xa6, 0xf5, 0xdb, 0x3d,
-	0x2d, 0x81, 0x7b, 0x05, 0xd2, 0x81, 0x3c, 0x49, 0xd3, 0x72, 0x83, 0x8a, 0xb4, 0x92, 0xad, 0xee,
-	0x35, 0x54, 0x7b, 0x96, 0x08, 0x61, 0x52, 0x95, 0x8f, 0x67, 0x16, 0x36, 0x5b, 0x2a, 0x72, 0xd0,
-	0xf0, 0x84, 0x26, 0xda, 0xc7, 0xec, 0x1e, 0xd3, 0x1a, 0x5b, 0x8e, 0xed, 0x72, 0xbf, 0x94, 0xa0,
-	0x7e, 0xd6, 0xd8, 0xeb, 0x8c, 0xd3, 0x2d, 0x98, 0xe7, 0xa2, 0x2f, 0x6d, 0x69, 0x8d, 0xee, 0xf2,
-	0xb9, 0x88, 0x0c, 0xa9, 0x2f, 0xc9, 0x4b, 0x58, 0x28, 0x6a, 0xc9, 0x46, 0xeb, 0xd1, 0x9f, 0x68,
-	0x47, 0x73, 0xdc, 0x0e, 0x94, 0xd3, 0x96, 0x35, 0x61, 0x7e, 0xa2, 0xab, 0x7e, 0xb6, 0x19, 0xd9,
-	0xea, 0x3c, 0x80, 0x66, 0xca, 0x3c, 0x59, 0xcc, 0xdb, 0x50, 0x49, 0x47, 0x4d, 0x63, 0x74, 0xf9,
-	0x4a, 0x8d, 0x9d, 0x0d, 0xa8, 0x4d, 0xf4, 0x22, 0xfc, 0x98, 0x9a, 0xe3, 0x1c, 0x1e, 0xfb, 0x1a,
-	0xf0, 0x01, 0x22, 0xe5, 0xf8, 0x6f, 0xb3, 0xc8, 0x5d, 0x5c, 0x5a, 0xd2, 0xce, 0x2b, 0x13, 0x59,
-	0x97, 0x9a, 0xd7, 0xf3, 0x03, 0xb3, 0x46, 0x5c, 0x6b, 0x1c, 0xed, 0xcc, 0xf7, 0xae, 0x0f, 0x4b,
-	0x53, 0x26, 0xd8, 0xc5, 0xff, 0xc4, 0x54, 0xea, 0x5b, 0xfe, 0x9f, 0x9c, 0xbf, 0x48, 0x2e, 0xdc,
-	0x3d, 0xee, 0xff, 0xbf, 0x3d, 0xcd, 0x2e, 0x8e, 0xce, 0xdc, 0xbd, 0x52, 0x77, 0x1f, 0xda, 0x85,
-	0xe6, 0x77, 0xd9, 0x3d, 0x43, 0x9e, 0x40, 0x79, 0x8f, 0xe1, 0x1d, 0x74, 0x49, 0xe2, 0x04, 0xf5,
-	0xb2, 0xfa, 0x34, 0x3f, 0xc5, 0x7b, 0xb6, 0xf5, 0xf5, 0xc7, 0x6a, 0xe9, 0x1b, 0x3e, 0xdf, 0xf1,
-	0x39, 0xfd, 0xb9, 0x3a, 0x07, 0x6b, 0xb8, 0xff, 0xc5, 0xde, 0x04, 0x2c, 0x36, 0x52, 0x86, 0x7a,
-	0x3a, 0xff, 0xa8, 0x6a, 0x7f, 0xee, 0xff, 0x0a, 0x00, 0x00, 0xff, 0xff, 0x91, 0x4a, 0xd6, 0x7d,
-	0x9a, 0x05, 0x00, 0x00,
+	// 562 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x8c, 0x52, 0xcb, 0x6e, 0xd4, 0x30,
+	0x14, 0x25, 0xcc, 0x74, 0x1e, 0x37, 0xd3, 0x0e, 0x35, 0x54, 0x4a, 0x47, 0x30, 0x8d, 0x42, 0x41,
+	0x59, 0xa5, 0x6a, 0xa1, 0x5b, 0xa4, 0x42, 0x41, 0x62, 0x03, 0x02, 0x89, 0x6e, 0x23, 0x37, 0xb9,
+	0x93, 0x5a, 0x4d, 0xec, 0xd4, 0x76, 0x02, 0xf9, 0x06, 0x7e, 0x80, 0x25, 0x9f, 0xc3, 0x92, 0x4f,
+	0x40, 0xc3, 0x8f, 0xa0, 0x38, 0x99, 0x47, 0x2b, 0x54, 0x75, 0x15, 0xc5, 0xe7, 0xfa, 0x3c, 0x7c,
+	0x0f, 0x4c, 0x2e, 0x2b, 0x7d, 0x81, 0x07, 0xb9, 0x14, 0x5a, 0x1c, 0x50, 0x4e, 0xd3, 0x4a, 0x31,
+	0x15, 0x98, 0x5f, 0x62, 0x1b, 0xac, 0xf9, 0x99, 0xec, 0x26, 0x42, 0x24, 0x69, 0x3b, 0x79, 0x5e,
+	0xcc, 0x0e, 0x28, 0xaf, 0x5a, 0xe8, 0xc9, 0x3a, 0xc7, 0x8c, 0xa5, 0x18, 0x09, 0xae, 0xf1, 0x9b,
+	0x5e, 0xdc, 0x5c, 0x87, 0x95, 0x16, 0x92, 0x26, 0x2d, 0xa9, 0x17, 0xc2, 0xf8, 0xa4, 0xd5, 0xfc,
+	0x8c, 0x57, 0x05, 0x2a, 0x4d, 0x0e, 0xc1, 0x8e, 0x44, 0x96, 0xb3, 0x94, 0x6a, 0x26, 0xb8, 0x63,
+	0xb9, 0x96, 0x6f, 0x1f, 0x3d, 0x0e, 0xd6, 0xac, 0x04, 0x6f, 0x56, 0xf8, 0x17, 0xce, 0x34, 0xd9,
+	0x85, 0xed, 0x5a, 0x35, 0x8c, 0xa9, 0xa6, 0xa1, 0x42, 0x59, 0xb2, 0x08, 0x9d, 0xfb, 0xae, 0xe5,
+	0x0f, 0xbd, 0x3d, 0xd8, 0x5a, 0x08, 0x7c, 0x2c, 0x74, 0x5e, 0x68, 0xb2, 0x09, 0x1b, 0x25, 0x4d,
+	0x0b, 0x34, 0xcc, 0x23, 0xef, 0x67, 0x17, 0xc6, 0x37, 0xf9, 0x3c, 0xe8, 0x95, 0x21, 0xa7, 0x19,
+	0xb6, 0xea, 0xe4, 0x9a, 0xfa, 0xd9, 0x07, 0x9a, 0x21, 0x79, 0x00, 0x03, 0x89, 0x25, 0x53, 0xb5,
+	0x47, 0x23, 0x45, 0x5e, 0xc1, 0x96, 0xc4, 0xab, 0x82, 0x49, 0x8c, 0x43, 0xc6, 0xf3, 0x42, 0x3b,
+	0x1d, 0xb7, 0xe3, 0xdb, 0x47, 0xcf, 0x6f, 0xf3, 0x1e, 0xbc, 0x63, 0x29, 0xbe, 0xaf, 0xa7, 0xc9,
+	0x04, 0xc8, 0x05, 0x55, 0x61, 0x13, 0x1e, 0x43, 0x94, 0x52, 0x48, 0xe5, 0x74, 0x5d, 0xcb, 0x1f,
+	0xd4, 0x6a, 0x54, 0x26, 0x45, 0x86, 0x5c, 0x3b, 0x1b, 0x6e, 0xc7, 0x1f, 0x92, 0x87, 0x60, 0x2b,
+	0x51, 0xc8, 0x08, 0xc3, 0x3a, 0xba, 0xd3, 0x33, 0x87, 0x04, 0x40, 0x98, 0x94, 0xe1, 0x25, 0x56,
+	0x4e, 0xdf, 0xd8, 0xda, 0x85, 0xed, 0xaf, 0x42, 0x5e, 0x32, 0x9e, 0x84, 0x31, 0x93, 0x18, 0x69,
+	0x21, 0x2b, 0x67, 0x60, 0xa0, 0x1d, 0xd8, 0x44, 0xae, 0x65, 0x15, 0xb6, 0xfb, 0x72, 0x86, 0xe6,
+	0xf8, 0x18, 0x6c, 0xe4, 0x25, 0x93, 0x82, 0x1b, 0x3d, 0x30, 0x29, 0xdc, 0x5b, 0x53, 0xbc, 0xe5,
+	0x25, 0x79, 0x06, 0xfd, 0x18, 0x35, 0x65, 0xa9, 0x72, 0x6c, 0x73, 0xe5, 0x51, 0xd0, 0x54, 0x26,
+	0x58, 0x54, 0x26, 0x38, 0xe1, 0xd5, 0xe4, 0xbb, 0x05, 0xc3, 0x55, 0xe8, 0xbb, 0x3c, 0xf5, 0x53,
+	0xe8, 0x32, 0x3e, 0x13, 0xe6, 0x99, 0xed, 0xa3, 0x9d, 0x6b, 0x13, 0x0d, 0xd3, 0x4c, 0x90, 0x63,
+	0xe8, 0x2f, 0x52, 0x74, 0xcc, 0xdc, 0xfe, 0x0d, 0xc3, 0x06, 0x3b, 0xc5, 0x1c, 0x79, 0x8c, 0x5c,
+	0x9f, 0xa1, 0xac, 0x57, 0x37, 0xf1, 0xa0, 0x53, 0x7b, 0x1f, 0x41, 0x77, 0x69, 0x62, 0xb8, 0xaa,
+	0x48, 0xd3, 0xa1, 0x97, 0x30, 0xaa, 0x65, 0x96, 0x0d, 0xdd, 0x87, 0x8d, 0xfa, 0xcd, 0x95, 0x63,
+	0x99, 0x98, 0xff, 0x37, 0xe4, 0xf9, 0x30, 0x58, 0x9a, 0x1b, 0x41, 0x37, 0xa7, 0xfa, 0xa2, 0xa5,
+	0xdf, 0x82, 0x5e, 0xcc, 0x12, 0x54, 0xba, 0xe5, 0xff, 0xd4, 0x4c, 0x9e, 0x52, 0x4d, 0xc9, 0xb8,
+	0x8d, 0xc1, 0x75, 0xd3, 0xcf, 0xbb, 0x85, 0x1f, 0x43, 0x3f, 0x63, 0x4a, 0x31, 0x9e, 0x98, 0xf0,
+	0x83, 0xd7, 0x87, 0xbf, 0xe6, 0x53, 0xeb, 0xf7, 0x7c, 0x6a, 0xfd, 0x99, 0x4f, 0xad, 0x1f, 0x7f,
+	0xa7, 0xf7, 0x60, 0x2f, 0x12, 0xd9, 0x62, 0x1f, 0x31, 0x96, 0x5a, 0x88, 0x54, 0xad, 0x93, 0x9d,
+	0xf7, 0xcc, 0xe7, 0xc5, 0xbf, 0x00, 0x00, 0x00, 0xff, 0xff, 0x56, 0x93, 0xfd, 0x31, 0x11, 0x04,
+	0x00, 0x00,
 }

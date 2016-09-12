@@ -44,6 +44,7 @@ import (
 	"google.golang.org/grpc"
 
 	apb "kythe.io/kythe/proto/analysis_proto"
+	aspb "kythe.io/kythe/proto/analysis_service_proto"
 )
 
 func init() {
@@ -110,7 +111,7 @@ func main() {
 	wr := delimited.NewWriter(os.Stdout)
 
 	driver := &driver.Driver{
-		Analyzer: &remote.Analyzer{apb.NewCompilationAnalyzerClient(conn)},
+		Analyzer: &remote.Analyzer{aspb.NewCompilationAnalyzerClient(conn)},
 		Output:   func(_ context.Context, out *apb.AnalysisOutput) error { return wr.Put(out.Value) },
 
 		FileDataService: fdsAddr,
@@ -133,7 +134,7 @@ func launchFileDataService() (*analysis.FileDataService, string) {
 	if err != nil {
 		log.Fatalf("Error binding listening port for FileDataService: %v", err)
 	}
-	apb.RegisterFileDataServiceServer(srv, fds)
+	aspb.RegisterFileDataServiceServer(srv, fds)
 	go func() { log.Fatal(srv.Serve(l)) }()
 	return fds, l.Addr().String()
 }

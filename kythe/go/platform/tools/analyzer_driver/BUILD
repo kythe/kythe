@@ -17,7 +17,7 @@ go_binary(
         "//kythe/go/util/netutil",
         "//kythe/go/util/process",
         "//kythe/proto:analysis_proto_go",
-        "//kythe/proto:storage_proto_go",
+        "//kythe/proto:analysis_service_proto_go",
         "@go_grpc//:grpc",
         "@go_protobuf//:proto",
         "@go_x_net//:context",

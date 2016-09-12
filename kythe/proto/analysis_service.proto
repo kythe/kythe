@@ -1,0 +1,54 @@
+/*
+ * Copyright 2014 Google Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+package kythe.proto;
+option java_package = "com.google.devtools.kythe.proto";
+
+import "google/protobuf/any.proto";
+import "kythe/proto/analysis.proto";
+
+// CompilationAnalyzer services are exposed by any program that wants to plug
+// into the Kythe pipeline to perform per-compilation analysis.
+service CompilationAnalyzer {
+  // Analyze is the main entry point for the analysis driver to send work to the
+  // analyzer.  The analysis may produce many outputs which will be streamed as
+  // framed AnalysisOutput messages.
+  //
+  // A driver may choose to retry analyses that return RPC errors.  It should
+  // not retry analyses that are reported as finished unless it is necessary to
+  // recover from an external production issue.
+  rpc Analyze(AnalysisRequest) returns (stream AnalysisOutput) {}
+}
+
+// FileDataServices are used by a CompilationAnalyzer to retrieve the contents of
+// input files required for analysis.
+service FileDataService {
+  // Get returns the contents of one or more files needed for analysis.  It is
+  // the server's responsibility to do any caching necessary to make this
+  // perform well, so that an analyzer does not need to implement its own
+  // caches unless it is doing something unusual.
+  //
+  // For each distinct path/digest pair in the request, the server must return
+  // exactly one response.  The order of the responses is arbitrary.
+  //
+  // For each requested file, one or both of the path and digest fields must be
+  // nonempty, otherwise an error is returned.  It is not an error for there to
+  // be no requested files, however.
+  rpc Get(FilesRequest) returns (stream FileData) {}
+}
+

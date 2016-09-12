@@ -20,9 +20,9 @@
 		DecorationsReply
 		CrossReferencesRequest
 		Anchor
+		Link
+		Printable
 		CrossReferencesReply
-		CallersRequest
-		CallersReply
 		DocumentationRequest
 		DocumentationReply
 */
@@ -99,6 +99,30 @@ func (DecorationsRequest_SpanKind) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptorXref, []int{7, 0}
 }
 
+// What kind of override this is.
+type DecorationsReply_Override_Kind int32
+
+const (
+	DecorationsReply_Override_OVERRIDES DecorationsReply_Override_Kind = 0
+	DecorationsReply_Override_EXTENDS   DecorationsReply_Override_Kind = 1
+)
+
+var DecorationsReply_Override_Kind_name = map[int32]string{
+	0: "OVERRIDES",
+	1: "EXTENDS",
+}
+var DecorationsReply_Override_Kind_value = map[string]int32{
+	"OVERRIDES": 0,
+	"EXTENDS":   1,
+}
+
+func (x DecorationsReply_Override_Kind) String() string {
+	return proto.EnumName(DecorationsReply_Override_Kind_name, int32(x))
+}
+func (DecorationsReply_Override_Kind) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptorXref, []int{8, 1, 0}
+}
+
 type CrossReferencesRequest_DefinitionKind int32
 
 const (
@@ -167,18 +191,27 @@ type CrossReferencesRequest_ReferenceKind int32
 const (
 	// No references will be populated in the CrossReferencesReply.
 	CrossReferencesRequest_NO_REFERENCES CrossReferencesRequest_ReferenceKind = 0
+	// Only callgraph-related references as described in
+	// http://www.kythe.io/docs/schema/callgraph.html
+	CrossReferencesRequest_CALL_REFERENCES CrossReferencesRequest_ReferenceKind = 1
+	// All references except those that are related to the callgraph.
+	CrossReferencesRequest_NON_CALL_REFERENCES CrossReferencesRequest_ReferenceKind = 2
 	// All known reference anchors reached by the "/kythe/edge/ref" edge kind
 	// (or its variants) will be populated in the CrossReferencesReply.
-	CrossReferencesRequest_ALL_REFERENCES CrossReferencesRequest_ReferenceKind = 1
+	CrossReferencesRequest_ALL_REFERENCES CrossReferencesRequest_ReferenceKind = 3
 )
 
 var CrossReferencesRequest_ReferenceKind_name = map[int32]string{
 	0: "NO_REFERENCES",
-	1: "ALL_REFERENCES",
+	1: "CALL_REFERENCES",
+	2: "NON_CALL_REFERENCES",
+	3: "ALL_REFERENCES",
 }
 var CrossReferencesRequest_ReferenceKind_value = map[string]int32{
-	"NO_REFERENCES":  0,
-	"ALL_REFERENCES": 1,
+	"NO_REFERENCES":       0,
+	"CALL_REFERENCES":     1,
+	"NON_CALL_REFERENCES": 2,
+	"ALL_REFERENCES":      3,
 }
 
 func (x CrossReferencesRequest_ReferenceKind) String() string {
@@ -214,31 +247,66 @@ func (CrossReferencesRequest_DocumentationKind) EnumDescriptor() ([]byte, []int)
 	return fileDescriptorXref, []int{9, 3}
 }
 
-type CallersReply_CallableDetail_Parameter_Kind int32
+type CrossReferencesRequest_CallerKind int32
 
 const (
-	// A term-level binding (like the `x` in `void foo(int x)`).
-	CallersReply_CallableDetail_Parameter_TERM CallersReply_CallableDetail_Parameter_Kind = 0
-	// A type-level binding (like the `T` in
-	// `template <typename T> void foo()`).
-	CallersReply_CallableDetail_Parameter_TYPE CallersReply_CallableDetail_Parameter_Kind = 1
+	// No callgraph information will be populated in the CrossReferencesReply.
+	CrossReferencesRequest_NO_CALLERS CrossReferencesRequest_CallerKind = 0
+	// Callgraph information will be populated in the CrossReferencesReply.
+	CrossReferencesRequest_DIRECT_CALLERS CrossReferencesRequest_CallerKind = 1
+	// Callgraph information will be populated in the CrossReferencesReply.
+	// Calls to override-related functions will also be considered.
+	CrossReferencesRequest_OVERRIDE_CALLERS CrossReferencesRequest_CallerKind = 2
 )
 
-var CallersReply_CallableDetail_Parameter_Kind_name = map[int32]string{
-	0: "TERM",
-	1: "TYPE",
+var CrossReferencesRequest_CallerKind_name = map[int32]string{
+	0: "NO_CALLERS",
+	1: "DIRECT_CALLERS",
+	2: "OVERRIDE_CALLERS",
 }
-var CallersReply_CallableDetail_Parameter_Kind_value = map[string]int32{
-	"TERM": 0,
-	"TYPE": 1,
+var CrossReferencesRequest_CallerKind_value = map[string]int32{
+	"NO_CALLERS":       0,
+	"DIRECT_CALLERS":   1,
+	"OVERRIDE_CALLERS": 2,
 }
 
-func (x CallersReply_CallableDetail_Parameter_Kind) String() string {
-	return proto.EnumName(CallersReply_CallableDetail_Parameter_Kind_name, int32(x))
+func (x CrossReferencesRequest_CallerKind) String() string {
+	return proto.EnumName(CrossReferencesRequest_CallerKind_name, int32(x))
 }
-func (CallersReply_CallableDetail_Parameter_Kind) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptorXref, []int{13, 0, 0, 0}
+func (CrossReferencesRequest_CallerKind) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptorXref, []int{9, 4}
 }
+
+type Link_Kind int32
+
+const (
+	// This annotates a link to a ticket.
+	Link_DEFINITION Link_Kind = 0
+	// This span of text contains a list of items.
+	Link_LIST Link_Kind = 1
+	// This span of text is an item in a list.
+	Link_LIST_ITEM Link_Kind = 2
+	// This span of text is important.
+	Link_IMPORTANT Link_Kind = 999
+)
+
+var Link_Kind_name = map[int32]string{
+	0:   "DEFINITION",
+	1:   "LIST",
+	2:   "LIST_ITEM",
+	999: "IMPORTANT",
+}
+var Link_Kind_value = map[string]int32{
+	"DEFINITION": 0,
+	"LIST":       1,
+	"LIST_ITEM":  2,
+	"IMPORTANT":  999,
+}
+
+func (x Link_Kind) String() string {
+	return proto.EnumName(Link_Kind_name, int32(x))
+}
+func (Link_Kind) EnumDescriptor() ([]byte, []int) { return fileDescriptorXref, []int{11, 0} }
 
 type NodesRequest struct {
 	// The tickets of the nodes to be looked up.
@@ -415,8 +483,8 @@ type EdgesReply struct {
 	// nodes, but allows the client to have that information without making
 	// additional requests.
 	Nodes map[string]*NodeInfo `protobuf:"bytes,2,rep,name=nodes" json:"nodes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value"`
-	// Total number of edges on all pages matching requested kinds.
-	TotalEdges int64 `protobuf:"varint,3,opt,name=total_edges,proto3" json:"total_edges,omitempty"`
+	// Total number of edges on all pages matching requested kinds, by kind.
+	TotalEdgesByKind map[string]int64 `protobuf:"bytes,5,rep,name=total_edges_by_kind" json:"total_edges_by_kind,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"varint,2,opt,name=value,proto3"`
 	// If there are additional pages of edges after the ones returned in this
 	// reply, next_page_token is the page token that may be passed to fetch the
 	// next page in sequence after this one.  If there are no additional edges,
@@ -439,6 +507,13 @@ func (m *EdgesReply) GetEdgeSets() map[string]*EdgeSet {
 func (m *EdgesReply) GetNodes() map[string]*NodeInfo {
 	if m != nil {
 		return m.Nodes
+	}
+	return nil
+}
+
+func (m *EdgesReply) GetTotalEdgesByKind() map[string]int64 {
+	if m != nil {
+		return m.TotalEdgesByKind
 	}
 	return nil
 }
@@ -528,6 +603,12 @@ type DecorationsRequest struct {
 	// returned.  The filter applies to ALL referenced nodes.  See EdgesRequest
 	// for the format of the filter globs.
 	Filter []string `protobuf:"bytes,5,rep,name=filter" json:"filter,omitempty"`
+	// If true, for every defines/binding Reference in the reply, a NodeInfo
+	// will be provided for each node that Reference extends or overrides.
+	// Furthermore, if definition_locations is true, the response's
+	// definition_locations field will include (where possible) the locations of
+	// the definitions of the nodes that are extended or overridden.
+	ExtendsOverrides bool `protobuf:"varint,7,opt,name=extends_overrides,proto3" json:"extends_overrides,omitempty"`
 }
 
 func (m *DecorationsRequest) Reset()                    { *m = DecorationsRequest{} }
@@ -556,6 +637,9 @@ type DecorationsReply struct {
 	// Each anchor cited as a target definition in the references.  The map is
 	// keyed by each anchor's ticket.
 	DefinitionLocations map[string]*Anchor `protobuf:"bytes,16,rep,name=definition_locations" json:"definition_locations,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value"`
+	// Maps from semantic nodes on the right-hand side of defines/binding
+	// references to the list of their overrides.
+	ExtendsOverrides map[string]*DecorationsReply_Overrides `protobuf:"bytes,17,rep,name=extends_overrides" json:"extends_overrides,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value"`
 }
 
 func (m *DecorationsReply) Reset()                    { *m = DecorationsReply{} }
@@ -587,6 +671,13 @@ func (m *DecorationsReply) GetNodes() map[string]*NodeInfo {
 func (m *DecorationsReply) GetDefinitionLocations() map[string]*Anchor {
 	if m != nil {
 		return m.DefinitionLocations
+	}
+	return nil
+}
+
+func (m *DecorationsReply) GetExtendsOverrides() map[string]*DecorationsReply_Overrides {
+	if m != nil {
+		return m.ExtendsOverrides
 	}
 	return nil
 }
@@ -629,6 +720,45 @@ func (m *DecorationsReply_Reference) GetAnchorEnd() *Location_Point {
 	return nil
 }
 
+type DecorationsReply_Override struct {
+	// The target object.
+	Ticket string `protobuf:"bytes,1,opt,name=ticket,proto3" json:"ticket,omitempty"`
+	// The kind of override.
+	Kind DecorationsReply_Override_Kind `protobuf:"varint,2,opt,name=kind,proto3,enum=kythe.proto.DecorationsReply_Override_Kind" json:"kind,omitempty"`
+	// A display name for the object at ticket.
+	DisplayName *Printable `protobuf:"bytes,3,opt,name=display_name" json:"display_name,omitempty"`
+}
+
+func (m *DecorationsReply_Override) Reset()                    { *m = DecorationsReply_Override{} }
+func (m *DecorationsReply_Override) String() string            { return proto.CompactTextString(m) }
+func (*DecorationsReply_Override) ProtoMessage()               {}
+func (*DecorationsReply_Override) Descriptor() ([]byte, []int) { return fileDescriptorXref, []int{8, 1} }
+
+func (m *DecorationsReply_Override) GetDisplayName() *Printable {
+	if m != nil {
+		return m.DisplayName
+	}
+	return nil
+}
+
+type DecorationsReply_Overrides struct {
+	Override []*DecorationsReply_Override `protobuf:"bytes,1,rep,name=override" json:"override,omitempty"`
+}
+
+func (m *DecorationsReply_Overrides) Reset()         { *m = DecorationsReply_Overrides{} }
+func (m *DecorationsReply_Overrides) String() string { return proto.CompactTextString(m) }
+func (*DecorationsReply_Overrides) ProtoMessage()    {}
+func (*DecorationsReply_Overrides) Descriptor() ([]byte, []int) {
+	return fileDescriptorXref, []int{8, 2}
+}
+
+func (m *DecorationsReply_Overrides) GetOverride() []*DecorationsReply_Override {
+	if m != nil {
+		return m.Override
+	}
+	return nil
+}
+
 type CrossReferencesRequest struct {
 	// Set of nodes for which to return their cross-references.  Must be
 	// non-empty.
@@ -649,6 +779,10 @@ type CrossReferencesRequest struct {
 	// in the response.  See the documentation for each DocumentationKind for more
 	// information.
 	DocumentationKind CrossReferencesRequest_DocumentationKind `protobuf:"varint,4,opt,name=documentation_kind,proto3,enum=kythe.proto.CrossReferencesRequest_DocumentationKind" json:"documentation_kind,omitempty"`
+	// Determines what kind of callgraph information, if any, should be returned
+	// in the response.  See the documentation for each CallerKind for more
+	// information.
+	CallerKind CrossReferencesRequest_CallerKind `protobuf:"varint,12,opt,name=caller_kind,proto3,enum=kythe.proto.CrossReferencesRequest_CallerKind" json:"caller_kind,omitempty"`
 	// Collection of filter globs that determines which facts will be returned for
 	// the related nodes of each requested node.  If filter is empty or unset, no
 	// node facts or related nodes are returned.  See EdgesRequest for the format
@@ -660,6 +794,13 @@ type CrossReferencesRequest struct {
 	// Determines whether each NodeInfo matching the above filters will have its
 	// definition location populated, if known.
 	NodeDefinitions bool `protobuf:"varint,8,opt,name=node_definitions,proto3" json:"node_definitions,omitempty"`
+	// Enable the experimental generation of signatures in the
+	// CrossReferencesReply.  Enabling this currently causes multiple lookups and
+	// can significantly impact latency.  Once latency concerns have been
+	// addressed, this field will be removed and signatures will be returned by
+	// default.
+	// TODO(T156): remove this flag; always enable feature
+	ExperimentalSignatures bool `protobuf:"varint,100,opt,name=experimental_signatures,proto3" json:"experimental_signatures,omitempty"`
 	// The cross-references matching a request are organized into logical pages.
 	// The size of each page is a number of distinct cross-references
 	// (definitions, references, documentation, and related nodes).
@@ -744,9 +885,54 @@ func (m *Anchor) GetSnippetEnd() *Location_Point {
 	return nil
 }
 
+// TODO(zarko): Rename to something more appropriate.
+type Link struct {
+	// Definition sites found for some ticket.
+	Definition []*Anchor `protobuf:"bytes,1,rep,name=definition" json:"definition,omitempty"`
+	// The kind of this span.
+	Kind Link_Kind `protobuf:"varint,2,opt,name=kind,proto3,enum=kythe.proto.Link_Kind" json:"kind,omitempty"`
+}
+
+func (m *Link) Reset()                    { *m = Link{} }
+func (m *Link) String() string            { return proto.CompactTextString(m) }
+func (*Link) ProtoMessage()               {}
+func (*Link) Descriptor() ([]byte, []int) { return fileDescriptorXref, []int{11} }
+
+func (m *Link) GetDefinition() []*Anchor {
+	if m != nil {
+		return m.Definition
+	}
+	return nil
+}
+
+type Printable struct {
+	// Raw text that can be displayed to the user (but may also contain
+	// markup that can be interpreted, like Doxygen comments). Links are
+	// marked using []. \ is an escape character (where possible escape
+	// sequences are \[, \], and \\).
+	RawText string `protobuf:"bytes,1,opt,name=raw_text,proto3" json:"raw_text,omitempty"`
+	// Annotations for spans in raw_text. The ith Link corresponds to the span
+	// starting at the ith [. Spans may link to definitions; they may also
+	// describe properties of the text (e.g., that parts should not be dropped
+	// when summarizing).
+	Link []*Link `protobuf:"bytes,2,rep,name=link" json:"link,omitempty"`
+}
+
+func (m *Printable) Reset()                    { *m = Printable{} }
+func (m *Printable) String() string            { return proto.CompactTextString(m) }
+func (*Printable) ProtoMessage()               {}
+func (*Printable) Descriptor() ([]byte, []int) { return fileDescriptorXref, []int{12} }
+
+func (m *Printable) GetLink() []*Link {
+	if m != nil {
+		return m.Link
+	}
+	return nil
+}
+
 type CrossReferencesReply struct {
 	// Total number of cross-references on all pages matching requested filters.
-	TotalReferences int64 `protobuf:"varint,4,opt,name=total_references,proto3" json:"total_references,omitempty"`
+	Total *CrossReferencesReply_Total `protobuf:"bytes,5,opt,name=total" json:"total,omitempty"`
 	// Sets of cross-references for each requested node
 	CrossReferences map[string]*CrossReferencesReply_CrossReferenceSet `protobuf:"bytes,1,rep,name=cross_references" json:"cross_references,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value"`
 	// The facts left from the requested filters of the related node facts
@@ -765,7 +951,14 @@ type CrossReferencesReply struct {
 func (m *CrossReferencesReply) Reset()                    { *m = CrossReferencesReply{} }
 func (m *CrossReferencesReply) String() string            { return proto.CompactTextString(m) }
 func (*CrossReferencesReply) ProtoMessage()               {}
-func (*CrossReferencesReply) Descriptor() ([]byte, []int) { return fileDescriptorXref, []int{11} }
+func (*CrossReferencesReply) Descriptor() ([]byte, []int) { return fileDescriptorXref, []int{13} }
+
+func (m *CrossReferencesReply) GetTotal() *CrossReferencesReply_Total {
+	if m != nil {
+		return m.Total
+	}
+	return nil
+}
 
 func (m *CrossReferencesReply) GetCrossReferences() map[string]*CrossReferencesReply_CrossReferenceSet {
 	if m != nil {
@@ -801,19 +994,63 @@ func (m *CrossReferencesReply_RelatedNode) Reset()         { *m = CrossReference
 func (m *CrossReferencesReply_RelatedNode) String() string { return proto.CompactTextString(m) }
 func (*CrossReferencesReply_RelatedNode) ProtoMessage()    {}
 func (*CrossReferencesReply_RelatedNode) Descriptor() ([]byte, []int) {
-	return fileDescriptorXref, []int{11, 0}
+	return fileDescriptorXref, []int{13, 0}
+}
+
+type CrossReferencesReply_RelatedAnchor struct {
+	// The anchor covering the related object.
+	Anchor *Anchor `protobuf:"bytes,1,opt,name=anchor" json:"anchor,omitempty"`
+	// A name for the related object.
+	DisplayName *Printable `protobuf:"bytes,2,opt,name=display_name" json:"display_name,omitempty"`
+	// Specific locations, usually within the related object, that caused
+	// the relationship to exist. This field is relevant to caller sets.
+	Site []*Anchor `protobuf:"bytes,3,rep,name=site" json:"site,omitempty"`
+	// The relevant semantic object. Populated for callers.
+	Ticket string `protobuf:"bytes,4,opt,name=ticket,proto3" json:"ticket,omitempty"`
+}
+
+func (m *CrossReferencesReply_RelatedAnchor) Reset()         { *m = CrossReferencesReply_RelatedAnchor{} }
+func (m *CrossReferencesReply_RelatedAnchor) String() string { return proto.CompactTextString(m) }
+func (*CrossReferencesReply_RelatedAnchor) ProtoMessage()    {}
+func (*CrossReferencesReply_RelatedAnchor) Descriptor() ([]byte, []int) {
+	return fileDescriptorXref, []int{13, 1}
+}
+
+func (m *CrossReferencesReply_RelatedAnchor) GetAnchor() *Anchor {
+	if m != nil {
+		return m.Anchor
+	}
+	return nil
+}
+
+func (m *CrossReferencesReply_RelatedAnchor) GetDisplayName() *Printable {
+	if m != nil {
+		return m.DisplayName
+	}
+	return nil
+}
+
+func (m *CrossReferencesReply_RelatedAnchor) GetSite() []*Anchor {
+	if m != nil {
+		return m.Site
+	}
+	return nil
 }
 
 type CrossReferencesReply_CrossReferenceSet struct {
 	Ticket string `protobuf:"bytes,1,opt,name=ticket,proto3" json:"ticket,omitempty"`
+	// A name for the given node.
+	DisplayName *Printable `protobuf:"bytes,7,opt,name=display_name" json:"display_name,omitempty"`
 	// The set of definitions for the given node.
-	Definition []*Anchor `protobuf:"bytes,2,rep,name=definition" json:"definition,omitempty"`
+	Definition []*CrossReferencesReply_RelatedAnchor `protobuf:"bytes,2,rep,name=definition" json:"definition,omitempty"`
 	// The set of declarations for the given node.
-	Declaration []*Anchor `protobuf:"bytes,5,rep,name=declaration" json:"declaration,omitempty"`
+	Declaration []*CrossReferencesReply_RelatedAnchor `protobuf:"bytes,5,rep,name=declaration" json:"declaration,omitempty"`
 	// The set of simple references for the given node.
-	Reference []*Anchor `protobuf:"bytes,3,rep,name=reference" json:"reference,omitempty"`
+	Reference []*CrossReferencesReply_RelatedAnchor `protobuf:"bytes,3,rep,name=reference" json:"reference,omitempty"`
 	// The set of documentation for the given node.
-	Documentation []*Anchor `protobuf:"bytes,4,rep,name=documentation" json:"documentation,omitempty"`
+	Documentation []*CrossReferencesReply_RelatedAnchor `protobuf:"bytes,4,rep,name=documentation" json:"documentation,omitempty"`
+	// The set of callers for the given node.
+	Caller []*CrossReferencesReply_RelatedAnchor `protobuf:"bytes,6,rep,name=caller" json:"caller,omitempty"`
 	// The set of related nodes to the given node.
 	RelatedNode []*CrossReferencesReply_RelatedNode `protobuf:"bytes,10,rep,name=related_node" json:"related_node,omitempty"`
 }
@@ -824,33 +1061,47 @@ func (m *CrossReferencesReply_CrossReferenceSet) Reset() {
 func (m *CrossReferencesReply_CrossReferenceSet) String() string { return proto.CompactTextString(m) }
 func (*CrossReferencesReply_CrossReferenceSet) ProtoMessage()    {}
 func (*CrossReferencesReply_CrossReferenceSet) Descriptor() ([]byte, []int) {
-	return fileDescriptorXref, []int{11, 1}
+	return fileDescriptorXref, []int{13, 2}
 }
 
-func (m *CrossReferencesReply_CrossReferenceSet) GetDefinition() []*Anchor {
+func (m *CrossReferencesReply_CrossReferenceSet) GetDisplayName() *Printable {
+	if m != nil {
+		return m.DisplayName
+	}
+	return nil
+}
+
+func (m *CrossReferencesReply_CrossReferenceSet) GetDefinition() []*CrossReferencesReply_RelatedAnchor {
 	if m != nil {
 		return m.Definition
 	}
 	return nil
 }
 
-func (m *CrossReferencesReply_CrossReferenceSet) GetDeclaration() []*Anchor {
+func (m *CrossReferencesReply_CrossReferenceSet) GetDeclaration() []*CrossReferencesReply_RelatedAnchor {
 	if m != nil {
 		return m.Declaration
 	}
 	return nil
 }
 
-func (m *CrossReferencesReply_CrossReferenceSet) GetReference() []*Anchor {
+func (m *CrossReferencesReply_CrossReferenceSet) GetReference() []*CrossReferencesReply_RelatedAnchor {
 	if m != nil {
 		return m.Reference
 	}
 	return nil
 }
 
-func (m *CrossReferencesReply_CrossReferenceSet) GetDocumentation() []*Anchor {
+func (m *CrossReferencesReply_CrossReferenceSet) GetDocumentation() []*CrossReferencesReply_RelatedAnchor {
 	if m != nil {
 		return m.Documentation
+	}
+	return nil
+}
+
+func (m *CrossReferencesReply_CrossReferenceSet) GetCaller() []*CrossReferencesReply_RelatedAnchor {
+	if m != nil {
+		return m.Caller
 	}
 	return nil
 }
@@ -862,195 +1113,25 @@ func (m *CrossReferencesReply_CrossReferenceSet) GetRelatedNode() []*CrossRefere
 	return nil
 }
 
-type CallersRequest struct {
-	// A set of semantic tickets. These may refer to nodes that are `callableas`
-	// other nodes or they may refer to those specific `callable` nodes. This
-	// means that you can use both the target nodes of `ref/call` edges and
-	// more common reference or definition edges (like `ref` or
-	// `defines/binding`).
-	//
-	// The Kythe data model defines a `callable` as something that can be the
-	// target of a `ref/call` edge. A `callable` has its own identity in the
-	// graph and is connected to the nodes it can be called through by a
-	// `callableas` edge. A `function` is the most typical node kind that
-	// participates in this `callableas` relationship. Other language-level
-	// objects that may be sources of `callableas` edges include C++
-	// struct/class types that define an operator(), Python classes that
-	// define __call__, and so forth.
-	//
-	// A given node may be `callableas` several different `callable` nodes.
-	// For example, if a struct S defines multiple overrides for
-	// operator(), it will be `callableas` multiple nodes C0...CN. These
-	// nodes will be distinguished by their type signatures. It's better to
-	// use `callable` nodes in this set because they make the query more
-	// specific.
-	SemanticObject []string `protobuf:"bytes,1,rep,name=semantic_object" json:"semantic_object,omitempty"`
-	// Expand the semantic_object set by including nodes that participate in
-	// an `overrides` relationship (in either direction) with nodes in the set.
-	//
-	// In the program:
-	//   struct A { virtual void f(); };
-	//   struct B : public A { void f() override; };
-	//   struct C : public B { void f() override; };
-	//   void g(B* b) { b->f(); }
-	//
-	// we would return the following results (for queries on the singleton
-	// semantic_object set containing A::f, B::f, or C::f):
-	//
-	// include_overrides  A::f  B::f  C::f
-	//             false    {}   {g}    {}
-	//              true   {g}   {g}   {g}
-	IncludeOverrides bool `protobuf:"varint,2,opt,name=include_overrides,proto3" json:"include_overrides,omitempty"`
+type CrossReferencesReply_Total struct {
+	Definitions            int64            `protobuf:"varint,1,opt,name=definitions,proto3" json:"definitions,omitempty"`
+	Declarations           int64            `protobuf:"varint,2,opt,name=declarations,proto3" json:"declarations,omitempty"`
+	References             int64            `protobuf:"varint,3,opt,name=references,proto3" json:"references,omitempty"`
+	Documentation          int64            `protobuf:"varint,4,opt,name=documentation,proto3" json:"documentation,omitempty"`
+	Callers                int64            `protobuf:"varint,5,opt,name=callers,proto3" json:"callers,omitempty"`
+	RelatedNodesByRelation map[string]int64 `protobuf:"bytes,6,rep,name=related_nodes_by_relation" json:"related_nodes_by_relation,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"varint,2,opt,name=value,proto3"`
 }
 
-func (m *CallersRequest) Reset()                    { *m = CallersRequest{} }
-func (m *CallersRequest) String() string            { return proto.CompactTextString(m) }
-func (*CallersRequest) ProtoMessage()               {}
-func (*CallersRequest) Descriptor() ([]byte, []int) { return fileDescriptorXref, []int{12} }
-
-type CallersReply struct {
-	// All objects that were blamed for making calls.
-	Caller []*CallersReply_Caller `protobuf:"bytes,1,rep,name=caller" json:"caller,omitempty"`
-	// Details for the semantic objects that were passed via a CallersRequest.
-	Callee []*CallersReply_CallableDetail `protobuf:"bytes,2,rep,name=callee" json:"callee,omitempty"`
+func (m *CrossReferencesReply_Total) Reset()         { *m = CrossReferencesReply_Total{} }
+func (m *CrossReferencesReply_Total) String() string { return proto.CompactTextString(m) }
+func (*CrossReferencesReply_Total) ProtoMessage()    {}
+func (*CrossReferencesReply_Total) Descriptor() ([]byte, []int) {
+	return fileDescriptorXref, []int{13, 3}
 }
 
-func (m *CallersReply) Reset()                    { *m = CallersReply{} }
-func (m *CallersReply) String() string            { return proto.CompactTextString(m) }
-func (*CallersReply) ProtoMessage()               {}
-func (*CallersReply) Descriptor() ([]byte, []int) { return fileDescriptorXref, []int{13} }
-
-func (m *CallersReply) GetCaller() []*CallersReply_Caller {
+func (m *CrossReferencesReply_Total) GetRelatedNodesByRelation() map[string]int64 {
 	if m != nil {
-		return m.Caller
-	}
-	return nil
-}
-
-func (m *CallersReply) GetCallee() []*CallersReply_CallableDetail {
-	if m != nil {
-		return m.Callee
-	}
-	return nil
-}
-
-// Details common to all objects that participate in the call graph.
-type CallersReply_CallableDetail struct {
-	// The definition site of the object called or being blamed for a call.
-	// This would be the "bar" in "void bar()" for calls blamed on bar above
-	// and the "foo" in "void foo()" if it refers to foo as a callee.
-	Definition *Anchor `protobuf:"bytes,1,opt,name=definition" json:"definition,omitempty"`
-	// The ticket of the object that is `callableas` some C. This would refer
-	// to the function node for "bar" or "foo". This object may be the target
-	// of a `completes` edge (e.g., if the call was made to a definition
-	// rather than a declaration).
-	SemanticObject string `protobuf:"bytes,2,opt,name=semantic_object,proto3" json:"semantic_object,omitempty"`
-	// The ticket of the callable C for semantic_object that was used to service
-	// the query.
-	SemanticObjectCallable string `protobuf:"bytes,3,opt,name=semantic_object_callable,proto3" json:"semantic_object_callable,omitempty"`
-	// The unqualified identifier for this object ("bar" or "foo" above,
-	// even if they were defined in some namespace or record). This field
-	// should be human-readable and can be displayed in a UI.
-	Identifier string `protobuf:"bytes,4,opt,name=identifier,proto3" json:"identifier,omitempty"`
-	// An unambiguous (as possible) identifier for this object ("bar()" or
-	// "foo()" above; if it was defined in a namespace, "ns::bar()";
-	// if it took arguments, "ns::bar(int *, void *)"). This field should
-	// be human-readable and can be displayed in a UI.
-	DisplayName string `protobuf:"bytes,5,opt,name=display_name,proto3" json:"display_name,omitempty"`
-	// The parameters bound by the object referred to by `definition` above.
-	// There is no semantic meaning to the order of this array, but it should
-	// be reasonable to surface the ordering in a UI (for example, term-level
-	// parameters will not be capriciously reordered).
-	Parameter []*CallersReply_CallableDetail_Parameter `protobuf:"bytes,6,rep,name=parameter" json:"parameter,omitempty"`
-}
-
-func (m *CallersReply_CallableDetail) Reset()         { *m = CallersReply_CallableDetail{} }
-func (m *CallersReply_CallableDetail) String() string { return proto.CompactTextString(m) }
-func (*CallersReply_CallableDetail) ProtoMessage()    {}
-func (*CallersReply_CallableDetail) Descriptor() ([]byte, []int) {
-	return fileDescriptorXref, []int{13, 0}
-}
-
-func (m *CallersReply_CallableDetail) GetDefinition() *Anchor {
-	if m != nil {
-		return m.Definition
-	}
-	return nil
-}
-
-func (m *CallersReply_CallableDetail) GetParameter() []*CallersReply_CallableDetail_Parameter {
-	if m != nil {
-		return m.Parameter
-	}
-	return nil
-}
-
-// A parameter bound by the object referred to by `definition` above.
-type CallersReply_CallableDetail_Parameter struct {
-	// The parameter's kind.
-	Kind CallersReply_CallableDetail_Parameter_Kind `protobuf:"varint,1,opt,name=kind,proto3,enum=kythe.proto.CallersReply_CallableDetail_Parameter_Kind" json:"kind,omitempty"`
-	// The parameter's (unqualified) human-readable and displayable name.
-	// May be empty. May also be non-unique; for example, the identifiers for
-	// the (unnamed in the source language) parameters for the function
-	// `void ignore_pair(int, int)` may be "int" and "int".
-	Identifier string `protobuf:"bytes,2,opt,name=identifier,proto3" json:"identifier,omitempty"`
-	// The ticket that refers to the parameter.
-	Ticket string `protobuf:"bytes,3,opt,name=ticket,proto3" json:"ticket,omitempty"`
-}
-
-func (m *CallersReply_CallableDetail_Parameter) Reset()         { *m = CallersReply_CallableDetail_Parameter{} }
-func (m *CallersReply_CallableDetail_Parameter) String() string { return proto.CompactTextString(m) }
-func (*CallersReply_CallableDetail_Parameter) ProtoMessage()    {}
-func (*CallersReply_CallableDetail_Parameter) Descriptor() ([]byte, []int) {
-	return fileDescriptorXref, []int{13, 0, 0}
-}
-
-// An object that was blamed for making a call to an object in the set passed
-// to Callers, along with the syntactic locations that caused that blame to
-// be cast.
-type CallersReply_Caller struct {
-	// The object (e.g., a function) responsible for making a call.
-	Detail   *CallersReply_CallableDetail    `protobuf:"bytes,1,opt,name=detail" json:"detail,omitempty"`
-	CallSite []*CallersReply_Caller_CallSite `protobuf:"bytes,2,rep,name=call_site" json:"call_site,omitempty"`
-}
-
-func (m *CallersReply_Caller) Reset()                    { *m = CallersReply_Caller{} }
-func (m *CallersReply_Caller) String() string            { return proto.CompactTextString(m) }
-func (*CallersReply_Caller) ProtoMessage()               {}
-func (*CallersReply_Caller) Descriptor() ([]byte, []int) { return fileDescriptorXref, []int{13, 1} }
-
-func (m *CallersReply_Caller) GetDetail() *CallersReply_CallableDetail {
-	if m != nil {
-		return m.Detail
-	}
-	return nil
-}
-
-func (m *CallersReply_Caller) GetCallSite() []*CallersReply_Caller_CallSite {
-	if m != nil {
-		return m.CallSite
-	}
-	return nil
-}
-
-type CallersReply_Caller_CallSite struct {
-	// The location where a call was found inside the blamed object.
-	Anchor *Anchor `protobuf:"bytes,1,opt,name=anchor" json:"anchor,omitempty"`
-	// This field will be set to true iff this call site was included in the
-	// results because include_overrides was true in CallersRequest.
-	CallToOverride bool `protobuf:"varint,2,opt,name=call_to_override,proto3" json:"call_to_override,omitempty"`
-}
-
-func (m *CallersReply_Caller_CallSite) Reset()         { *m = CallersReply_Caller_CallSite{} }
-func (m *CallersReply_Caller_CallSite) String() string { return proto.CompactTextString(m) }
-func (*CallersReply_Caller_CallSite) ProtoMessage()    {}
-func (*CallersReply_Caller_CallSite) Descriptor() ([]byte, []int) {
-	return fileDescriptorXref, []int{13, 1, 0}
-}
-
-func (m *CallersReply_Caller_CallSite) GetAnchor() *Anchor {
-	if m != nil {
-		return m.Anchor
+		return m.RelatedNodesByRelation
 	}
 	return nil
 }
@@ -1081,63 +1162,21 @@ func (m *DocumentationReply) GetDocument() []*DocumentationReply_Document {
 	return nil
 }
 
-type DocumentationReply_Link struct {
-	// Definition sites found for some ticket.
-	Definition []*Anchor `protobuf:"bytes,1,rep,name=definition" json:"definition,omitempty"`
-}
-
-func (m *DocumentationReply_Link) Reset()                    { *m = DocumentationReply_Link{} }
-func (m *DocumentationReply_Link) String() string            { return proto.CompactTextString(m) }
-func (*DocumentationReply_Link) ProtoMessage()               {}
-func (*DocumentationReply_Link) Descriptor() ([]byte, []int) { return fileDescriptorXref, []int{15, 0} }
-
-func (m *DocumentationReply_Link) GetDefinition() []*Anchor {
-	if m != nil {
-		return m.Definition
-	}
-	return nil
-}
-
-type DocumentationReply_Printable struct {
-	// Raw text that can be displayed to the user (but may also contain
-	// markup that can be interpreted, like Doxygen comments). Links are
-	// marked using []. \ is an escape character (where possible escape
-	// sequences are \[, \], and \\).
-	RawText string `protobuf:"bytes,1,opt,name=raw_text,proto3" json:"raw_text,omitempty"`
-	// Destinations for links in raw_text. The ith Link corresponds to the link
-	// starting at the ith [.
-	Link []*DocumentationReply_Link `protobuf:"bytes,2,rep,name=link" json:"link,omitempty"`
-}
-
-func (m *DocumentationReply_Printable) Reset()         { *m = DocumentationReply_Printable{} }
-func (m *DocumentationReply_Printable) String() string { return proto.CompactTextString(m) }
-func (*DocumentationReply_Printable) ProtoMessage()    {}
-func (*DocumentationReply_Printable) Descriptor() ([]byte, []int) {
-	return fileDescriptorXref, []int{15, 1}
-}
-
-func (m *DocumentationReply_Printable) GetLink() []*DocumentationReply_Link {
-	if m != nil {
-		return m.Link
-	}
-	return nil
-}
-
 type DocumentationReply_Document struct {
 	// The ticket to which this Document refers.
 	Ticket string `protobuf:"bytes,1,opt,name=ticket,proto3" json:"ticket,omitempty"`
 	// Documentation that can be displayed to the user.
-	Text *DocumentationReply_Printable `protobuf:"bytes,2,opt,name=text" json:"text,omitempty"`
+	Text *Printable `protobuf:"bytes,2,opt,name=text" json:"text,omitempty"`
 	// A signature that can be displayed to the user. For variables, this
 	// may just be the variable name; for functions, this may be some version
 	// of the function prototype.
-	Signature *DocumentationReply_Printable `protobuf:"bytes,3,opt,name=signature" json:"signature,omitempty"`
+	Signature *Printable `protobuf:"bytes,3,opt,name=signature" json:"signature,omitempty"`
 	// The type as a signature that can be displayed to the user.
-	Type *DocumentationReply_Printable `protobuf:"bytes,4,opt,name=type" json:"type,omitempty"`
+	Type *Printable `protobuf:"bytes,4,opt,name=type" json:"type,omitempty"`
 	// The initialization value, if any.
-	Initializer *DocumentationReply_Printable `protobuf:"bytes,5,opt,name=initializer" json:"initializer,omitempty"`
+	Initializer *Printable `protobuf:"bytes,5,opt,name=initializer" json:"initializer,omitempty"`
 	// The semantic parent of this value.
-	DefinedBy *DocumentationReply_Printable `protobuf:"bytes,6,opt,name=defined_by" json:"defined_by,omitempty"`
+	DefinedBy *Printable `protobuf:"bytes,6,opt,name=defined_by" json:"defined_by,omitempty"`
 	// The node kind being defined.
 	Kind string `protobuf:"bytes,7,opt,name=kind,proto3" json:"kind,omitempty"`
 }
@@ -1146,38 +1185,38 @@ func (m *DocumentationReply_Document) Reset()         { *m = DocumentationReply_
 func (m *DocumentationReply_Document) String() string { return proto.CompactTextString(m) }
 func (*DocumentationReply_Document) ProtoMessage()    {}
 func (*DocumentationReply_Document) Descriptor() ([]byte, []int) {
-	return fileDescriptorXref, []int{15, 2}
+	return fileDescriptorXref, []int{15, 0}
 }
 
-func (m *DocumentationReply_Document) GetText() *DocumentationReply_Printable {
+func (m *DocumentationReply_Document) GetText() *Printable {
 	if m != nil {
 		return m.Text
 	}
 	return nil
 }
 
-func (m *DocumentationReply_Document) GetSignature() *DocumentationReply_Printable {
+func (m *DocumentationReply_Document) GetSignature() *Printable {
 	if m != nil {
 		return m.Signature
 	}
 	return nil
 }
 
-func (m *DocumentationReply_Document) GetType() *DocumentationReply_Printable {
+func (m *DocumentationReply_Document) GetType() *Printable {
 	if m != nil {
 		return m.Type
 	}
 	return nil
 }
 
-func (m *DocumentationReply_Document) GetInitializer() *DocumentationReply_Printable {
+func (m *DocumentationReply_Document) GetInitializer() *Printable {
 	if m != nil {
 		return m.Initializer
 	}
 	return nil
 }
 
-func (m *DocumentationReply_Document) GetDefinedBy() *DocumentationReply_Printable {
+func (m *DocumentationReply_Document) GetDefinedBy() *Printable {
 	if m != nil {
 		return m.DefinedBy
 	}
@@ -1198,29 +1237,29 @@ func init() {
 	proto.RegisterType((*DecorationsRequest)(nil), "kythe.proto.DecorationsRequest")
 	proto.RegisterType((*DecorationsReply)(nil), "kythe.proto.DecorationsReply")
 	proto.RegisterType((*DecorationsReply_Reference)(nil), "kythe.proto.DecorationsReply.Reference")
+	proto.RegisterType((*DecorationsReply_Override)(nil), "kythe.proto.DecorationsReply.Override")
+	proto.RegisterType((*DecorationsReply_Overrides)(nil), "kythe.proto.DecorationsReply.Overrides")
 	proto.RegisterType((*CrossReferencesRequest)(nil), "kythe.proto.CrossReferencesRequest")
 	proto.RegisterType((*Anchor)(nil), "kythe.proto.Anchor")
+	proto.RegisterType((*Link)(nil), "kythe.proto.Link")
+	proto.RegisterType((*Printable)(nil), "kythe.proto.Printable")
 	proto.RegisterType((*CrossReferencesReply)(nil), "kythe.proto.CrossReferencesReply")
 	proto.RegisterType((*CrossReferencesReply_RelatedNode)(nil), "kythe.proto.CrossReferencesReply.RelatedNode")
+	proto.RegisterType((*CrossReferencesReply_RelatedAnchor)(nil), "kythe.proto.CrossReferencesReply.RelatedAnchor")
 	proto.RegisterType((*CrossReferencesReply_CrossReferenceSet)(nil), "kythe.proto.CrossReferencesReply.CrossReferenceSet")
-	proto.RegisterType((*CallersRequest)(nil), "kythe.proto.CallersRequest")
-	proto.RegisterType((*CallersReply)(nil), "kythe.proto.CallersReply")
-	proto.RegisterType((*CallersReply_CallableDetail)(nil), "kythe.proto.CallersReply.CallableDetail")
-	proto.RegisterType((*CallersReply_CallableDetail_Parameter)(nil), "kythe.proto.CallersReply.CallableDetail.Parameter")
-	proto.RegisterType((*CallersReply_Caller)(nil), "kythe.proto.CallersReply.Caller")
-	proto.RegisterType((*CallersReply_Caller_CallSite)(nil), "kythe.proto.CallersReply.Caller.CallSite")
+	proto.RegisterType((*CrossReferencesReply_Total)(nil), "kythe.proto.CrossReferencesReply.Total")
 	proto.RegisterType((*DocumentationRequest)(nil), "kythe.proto.DocumentationRequest")
 	proto.RegisterType((*DocumentationReply)(nil), "kythe.proto.DocumentationReply")
-	proto.RegisterType((*DocumentationReply_Link)(nil), "kythe.proto.DocumentationReply.Link")
-	proto.RegisterType((*DocumentationReply_Printable)(nil), "kythe.proto.DocumentationReply.Printable")
 	proto.RegisterType((*DocumentationReply_Document)(nil), "kythe.proto.DocumentationReply.Document")
 	proto.RegisterEnum("kythe.proto.Location_Kind", Location_Kind_name, Location_Kind_value)
 	proto.RegisterEnum("kythe.proto.DecorationsRequest_SpanKind", DecorationsRequest_SpanKind_name, DecorationsRequest_SpanKind_value)
+	proto.RegisterEnum("kythe.proto.DecorationsReply_Override_Kind", DecorationsReply_Override_Kind_name, DecorationsReply_Override_Kind_value)
 	proto.RegisterEnum("kythe.proto.CrossReferencesRequest_DefinitionKind", CrossReferencesRequest_DefinitionKind_name, CrossReferencesRequest_DefinitionKind_value)
 	proto.RegisterEnum("kythe.proto.CrossReferencesRequest_DeclarationKind", CrossReferencesRequest_DeclarationKind_name, CrossReferencesRequest_DeclarationKind_value)
 	proto.RegisterEnum("kythe.proto.CrossReferencesRequest_ReferenceKind", CrossReferencesRequest_ReferenceKind_name, CrossReferencesRequest_ReferenceKind_value)
 	proto.RegisterEnum("kythe.proto.CrossReferencesRequest_DocumentationKind", CrossReferencesRequest_DocumentationKind_name, CrossReferencesRequest_DocumentationKind_value)
-	proto.RegisterEnum("kythe.proto.CallersReply_CallableDetail_Parameter_Kind", CallersReply_CallableDetail_Parameter_Kind_name, CallersReply_CallableDetail_Parameter_Kind_value)
+	proto.RegisterEnum("kythe.proto.CrossReferencesRequest_CallerKind", CrossReferencesRequest_CallerKind_name, CrossReferencesRequest_CallerKind_value)
+	proto.RegisterEnum("kythe.proto.Link_Kind", Link_Kind_name, Link_Kind_value)
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -1245,19 +1284,6 @@ type XRefServiceClient interface {
 	// CrossReferences returns the global references, definitions, and
 	// documentation of a set of requested nodes.
 	CrossReferences(ctx context.Context, in *CrossReferencesRequest, opts ...grpc.CallOption) (*CrossReferencesReply, error)
-	// Callers takes a set of tickets for semantic objects and returns the set
-	// of places where those objects were called. For example, in the program
-	//   void bar() { foo(); foo(); } void baz() { foo(); } void foo() { }
-	// `Callers({foo})` would return:
-	//   {(bar, {first-call-anchor, second-call-anchor}),
-	//    (baz, {first-call-anchor})}
-	// To walk further up the call graph, you can project the first field of
-	// each tuple in the result set ({bar, baz}) and feed that set back in
-	// to a new Callers request.
-	//
-	// The core of this query is specified in terms of graph operations in the
-	// Kythe repository at //kythe/docs/schema/callgraph.txt.
-	Callers(ctx context.Context, in *CallersRequest, opts ...grpc.CallOption) (*CallersReply, error)
 	// Documentation takes a set of tickets for semantic objects and returns
 	// documentation about them, including generated signatures and
 	// user-provided text. The documentation may refer to tickets for other
@@ -1309,15 +1335,6 @@ func (c *xRefServiceClient) CrossReferences(ctx context.Context, in *CrossRefere
 	return out, nil
 }
 
-func (c *xRefServiceClient) Callers(ctx context.Context, in *CallersRequest, opts ...grpc.CallOption) (*CallersReply, error) {
-	out := new(CallersReply)
-	err := grpc.Invoke(ctx, "/kythe.proto.XRefService/Callers", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *xRefServiceClient) Documentation(ctx context.Context, in *DocumentationRequest, opts ...grpc.CallOption) (*DocumentationReply, error) {
 	out := new(DocumentationReply)
 	err := grpc.Invoke(ctx, "/kythe.proto.XRefService/Documentation", in, out, c.cc, opts...)
@@ -1341,19 +1358,6 @@ type XRefServiceServer interface {
 	// CrossReferences returns the global references, definitions, and
 	// documentation of a set of requested nodes.
 	CrossReferences(context.Context, *CrossReferencesRequest) (*CrossReferencesReply, error)
-	// Callers takes a set of tickets for semantic objects and returns the set
-	// of places where those objects were called. For example, in the program
-	//   void bar() { foo(); foo(); } void baz() { foo(); } void foo() { }
-	// `Callers({foo})` would return:
-	//   {(bar, {first-call-anchor, second-call-anchor}),
-	//    (baz, {first-call-anchor})}
-	// To walk further up the call graph, you can project the first field of
-	// each tuple in the result set ({bar, baz}) and feed that set back in
-	// to a new Callers request.
-	//
-	// The core of this query is specified in terms of graph operations in the
-	// Kythe repository at //kythe/docs/schema/callgraph.txt.
-	Callers(context.Context, *CallersRequest) (*CallersReply, error)
 	// Documentation takes a set of tickets for semantic objects and returns
 	// documentation about them, including generated signatures and
 	// user-provided text. The documentation may refer to tickets for other
@@ -1437,24 +1441,6 @@ func _XRefService_CrossReferences_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _XRefService_Callers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CallersRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(XRefServiceServer).Callers(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/kythe.proto.XRefService/Callers",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(XRefServiceServer).Callers(ctx, req.(*CallersRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _XRefService_Documentation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DocumentationRequest)
 	if err := dec(in); err != nil {
@@ -1492,10 +1478,6 @@ var _XRefService_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CrossReferences",
 			Handler:    _XRefService_CrossReferences_Handler,
-		},
-		{
-			MethodName: "Callers",
-			Handler:    _XRefService_Callers_Handler,
 		},
 		{
 			MethodName: "Documentation",
@@ -1878,10 +1860,21 @@ func (m *EdgesReply) MarshalTo(data []byte) (int, error) {
 			i += n4
 		}
 	}
-	if m.TotalEdges != 0 {
-		data[i] = 0x18
-		i++
-		i = encodeVarintXref(data, i, uint64(m.TotalEdges))
+	if len(m.TotalEdgesByKind) > 0 {
+		for k, _ := range m.TotalEdgesByKind {
+			data[i] = 0x2a
+			i++
+			v := m.TotalEdgesByKind[k]
+			mapSize := 1 + len(k) + sovXref(uint64(len(k))) + 1 + sovXref(uint64(v))
+			i = encodeVarintXref(data, i, uint64(mapSize))
+			data[i] = 0xa
+			i++
+			i = encodeVarintXref(data, i, uint64(len(k)))
+			i += copy(data[i:], k)
+			data[i] = 0x10
+			i++
+			i = encodeVarintXref(data, i, uint64(v))
+		}
 	}
 	if len(m.NextPageToken) > 0 {
 		data[i] = 0x4a
@@ -2050,6 +2043,16 @@ func (m *DecorationsRequest) MarshalTo(data []byte) (int, error) {
 		}
 		i++
 	}
+	if m.ExtendsOverrides {
+		data[i] = 0x38
+		i++
+		if m.ExtendsOverrides {
+			data[i] = 1
+		} else {
+			data[i] = 0
+		}
+		i++
+	}
 	if m.SpanKind != 0 {
 		data[i] = 0x50
 		i++
@@ -2159,6 +2162,33 @@ func (m *DecorationsReply) MarshalTo(data []byte) (int, error) {
 			i += n10
 		}
 	}
+	if len(m.ExtendsOverrides) > 0 {
+		for k, _ := range m.ExtendsOverrides {
+			data[i] = 0x8a
+			i++
+			data[i] = 0x1
+			i++
+			v := m.ExtendsOverrides[k]
+			if v == nil {
+				return 0, errors.New("proto: map has nil element")
+			}
+			msgSize := v.Size()
+			mapSize := 1 + len(k) + sovXref(uint64(len(k))) + 1 + msgSize + sovXref(uint64(msgSize))
+			i = encodeVarintXref(data, i, uint64(mapSize))
+			data[i] = 0xa
+			i++
+			i = encodeVarintXref(data, i, uint64(len(k)))
+			i += copy(data[i:], k)
+			data[i] = 0x12
+			i++
+			i = encodeVarintXref(data, i, uint64(v.Size()))
+			n11, err := v.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n11
+		}
+	}
 	return i, nil
 }
 
@@ -2205,21 +2235,90 @@ func (m *DecorationsReply_Reference) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x52
 		i++
 		i = encodeVarintXref(data, i, uint64(m.AnchorStart.Size()))
-		n11, err := m.AnchorStart.MarshalTo(data[i:])
+		n12, err := m.AnchorStart.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n11
+		i += n12
 	}
 	if m.AnchorEnd != nil {
 		data[i] = 0x5a
 		i++
 		i = encodeVarintXref(data, i, uint64(m.AnchorEnd.Size()))
-		n12, err := m.AnchorEnd.MarshalTo(data[i:])
+		n13, err := m.AnchorEnd.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n12
+		i += n13
+	}
+	return i, nil
+}
+
+func (m *DecorationsReply_Override) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *DecorationsReply_Override) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Ticket) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintXref(data, i, uint64(len(m.Ticket)))
+		i += copy(data[i:], m.Ticket)
+	}
+	if m.Kind != 0 {
+		data[i] = 0x10
+		i++
+		i = encodeVarintXref(data, i, uint64(m.Kind))
+	}
+	if m.DisplayName != nil {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintXref(data, i, uint64(m.DisplayName.Size()))
+		n14, err := m.DisplayName.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n14
+	}
+	return i, nil
+}
+
+func (m *DecorationsReply_Overrides) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *DecorationsReply_Overrides) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Override) > 0 {
+		for _, msg := range m.Override {
+			data[i] = 0xa
+			i++
+			i = encodeVarintXref(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
 	}
 	return i, nil
 }
@@ -2320,6 +2419,23 @@ func (m *CrossReferencesRequest) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintXref(data, i, uint64(len(m.PageToken)))
 		i += copy(data[i:], m.PageToken)
 	}
+	if m.CallerKind != 0 {
+		data[i] = 0x60
+		i++
+		i = encodeVarintXref(data, i, uint64(m.CallerKind))
+	}
+	if m.ExperimentalSignatures {
+		data[i] = 0xa0
+		i++
+		data[i] = 0x6
+		i++
+		if m.ExperimentalSignatures {
+			data[i] = 1
+		} else {
+			data[i] = 0
+		}
+		i++
+	}
 	return i, nil
 }
 
@@ -2360,21 +2476,21 @@ func (m *Anchor) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x22
 		i++
 		i = encodeVarintXref(data, i, uint64(m.Start.Size()))
-		n13, err := m.Start.MarshalTo(data[i:])
+		n15, err := m.Start.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n13
+		i += n15
 	}
 	if m.End != nil {
 		data[i] = 0x2a
 		i++
 		i = encodeVarintXref(data, i, uint64(m.End.Size()))
-		n14, err := m.End.MarshalTo(data[i:])
+		n16, err := m.End.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n14
+		i += n16
 	}
 	if len(m.Text) > 0 {
 		data[i] = 0x32
@@ -2392,21 +2508,92 @@ func (m *Anchor) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x42
 		i++
 		i = encodeVarintXref(data, i, uint64(m.SnippetStart.Size()))
-		n15, err := m.SnippetStart.MarshalTo(data[i:])
+		n17, err := m.SnippetStart.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n15
+		i += n17
 	}
 	if m.SnippetEnd != nil {
 		data[i] = 0x4a
 		i++
 		i = encodeVarintXref(data, i, uint64(m.SnippetEnd.Size()))
-		n16, err := m.SnippetEnd.MarshalTo(data[i:])
+		n18, err := m.SnippetEnd.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n16
+		i += n18
+	}
+	return i, nil
+}
+
+func (m *Link) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Link) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Definition) > 0 {
+		for _, msg := range m.Definition {
+			data[i] = 0xa
+			i++
+			i = encodeVarintXref(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	if m.Kind != 0 {
+		data[i] = 0x10
+		i++
+		i = encodeVarintXref(data, i, uint64(m.Kind))
+	}
+	return i, nil
+}
+
+func (m *Printable) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Printable) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.RawText) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintXref(data, i, uint64(len(m.RawText)))
+		i += copy(data[i:], m.RawText)
+	}
+	if len(m.Link) > 0 {
+		for _, msg := range m.Link {
+			data[i] = 0x12
+			i++
+			i = encodeVarintXref(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
 	}
 	return i, nil
 }
@@ -2444,11 +2631,11 @@ func (m *CrossReferencesReply) MarshalTo(data []byte) (int, error) {
 			data[i] = 0x12
 			i++
 			i = encodeVarintXref(data, i, uint64(v.Size()))
-			n17, err := v.MarshalTo(data[i:])
+			n19, err := v.MarshalTo(data[i:])
 			if err != nil {
 				return 0, err
 			}
-			i += n17
+			i += n19
 		}
 	}
 	if len(m.Nodes) > 0 {
@@ -2469,11 +2656,11 @@ func (m *CrossReferencesReply) MarshalTo(data []byte) (int, error) {
 			data[i] = 0x12
 			i++
 			i = encodeVarintXref(data, i, uint64(v.Size()))
-			n18, err := v.MarshalTo(data[i:])
+			n20, err := v.MarshalTo(data[i:])
 			if err != nil {
 				return 0, err
 			}
-			i += n18
+			i += n20
 		}
 	}
 	if len(m.DefinitionLocations) > 0 {
@@ -2494,17 +2681,22 @@ func (m *CrossReferencesReply) MarshalTo(data []byte) (int, error) {
 			data[i] = 0x12
 			i++
 			i = encodeVarintXref(data, i, uint64(v.Size()))
-			n19, err := v.MarshalTo(data[i:])
+			n21, err := v.MarshalTo(data[i:])
 			if err != nil {
 				return 0, err
 			}
-			i += n19
+			i += n21
 		}
 	}
-	if m.TotalReferences != 0 {
-		data[i] = 0x20
+	if m.Total != nil {
+		data[i] = 0x2a
 		i++
-		i = encodeVarintXref(data, i, uint64(m.TotalReferences))
+		i = encodeVarintXref(data, i, uint64(m.Total.Size()))
+		n22, err := m.Total.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n22
 	}
 	if len(m.NextPageToken) > 0 {
 		data[i] = 0x52
@@ -2546,6 +2738,62 @@ func (m *CrossReferencesReply_RelatedNode) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x18
 		i++
 		i = encodeVarintXref(data, i, uint64(m.Ordinal))
+	}
+	return i, nil
+}
+
+func (m *CrossReferencesReply_RelatedAnchor) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *CrossReferencesReply_RelatedAnchor) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Anchor != nil {
+		data[i] = 0xa
+		i++
+		i = encodeVarintXref(data, i, uint64(m.Anchor.Size()))
+		n23, err := m.Anchor.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n23
+	}
+	if m.DisplayName != nil {
+		data[i] = 0x12
+		i++
+		i = encodeVarintXref(data, i, uint64(m.DisplayName.Size()))
+		n24, err := m.DisplayName.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n24
+	}
+	if len(m.Site) > 0 {
+		for _, msg := range m.Site {
+			data[i] = 0x1a
+			i++
+			i = encodeVarintXref(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	if len(m.Ticket) > 0 {
+		data[i] = 0x22
+		i++
+		i = encodeVarintXref(data, i, uint64(len(m.Ticket)))
+		i += copy(data[i:], m.Ticket)
 	}
 	return i, nil
 }
@@ -2619,6 +2867,28 @@ func (m *CrossReferencesReply_CrossReferenceSet) MarshalTo(data []byte) (int, er
 			i += n
 		}
 	}
+	if len(m.Caller) > 0 {
+		for _, msg := range m.Caller {
+			data[i] = 0x32
+			i++
+			i = encodeVarintXref(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	if m.DisplayName != nil {
+		data[i] = 0x3a
+		i++
+		i = encodeVarintXref(data, i, uint64(m.DisplayName.Size()))
+		n25, err := m.DisplayName.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n25
+	}
 	if len(m.RelatedNode) > 0 {
 		for _, msg := range m.RelatedNode {
 			data[i] = 0x52
@@ -2634,7 +2904,7 @@ func (m *CrossReferencesReply_CrossReferenceSet) MarshalTo(data []byte) (int, er
 	return i, nil
 }
 
-func (m *CallersRequest) Marshal() (data []byte, err error) {
+func (m *CrossReferencesReply_Total) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
 	n, err := m.MarshalTo(data)
@@ -2644,254 +2914,51 @@ func (m *CallersRequest) Marshal() (data []byte, err error) {
 	return data[:n], nil
 }
 
-func (m *CallersRequest) MarshalTo(data []byte) (int, error) {
+func (m *CrossReferencesReply_Total) MarshalTo(data []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
-	if len(m.SemanticObject) > 0 {
-		for _, s := range m.SemanticObject {
-			data[i] = 0xa
-			i++
-			l = len(s)
-			for l >= 1<<7 {
-				data[i] = uint8(uint64(l)&0x7f | 0x80)
-				l >>= 7
-				i++
-			}
-			data[i] = uint8(l)
-			i++
-			i += copy(data[i:], s)
-		}
-	}
-	if m.IncludeOverrides {
-		data[i] = 0x10
-		i++
-		if m.IncludeOverrides {
-			data[i] = 1
-		} else {
-			data[i] = 0
-		}
-		i++
-	}
-	return i, nil
-}
-
-func (m *CallersReply) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *CallersReply) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if len(m.Caller) > 0 {
-		for _, msg := range m.Caller {
-			data[i] = 0xa
-			i++
-			i = encodeVarintXref(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
-	}
-	if len(m.Callee) > 0 {
-		for _, msg := range m.Callee {
-			data[i] = 0x12
-			i++
-			i = encodeVarintXref(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
-	}
-	return i, nil
-}
-
-func (m *CallersReply_CallableDetail) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *CallersReply_CallableDetail) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.Definition != nil {
-		data[i] = 0xa
-		i++
-		i = encodeVarintXref(data, i, uint64(m.Definition.Size()))
-		n20, err := m.Definition.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n20
-	}
-	if len(m.SemanticObject) > 0 {
-		data[i] = 0x12
-		i++
-		i = encodeVarintXref(data, i, uint64(len(m.SemanticObject)))
-		i += copy(data[i:], m.SemanticObject)
-	}
-	if len(m.SemanticObjectCallable) > 0 {
-		data[i] = 0x1a
-		i++
-		i = encodeVarintXref(data, i, uint64(len(m.SemanticObjectCallable)))
-		i += copy(data[i:], m.SemanticObjectCallable)
-	}
-	if len(m.Identifier) > 0 {
-		data[i] = 0x22
-		i++
-		i = encodeVarintXref(data, i, uint64(len(m.Identifier)))
-		i += copy(data[i:], m.Identifier)
-	}
-	if len(m.DisplayName) > 0 {
-		data[i] = 0x2a
-		i++
-		i = encodeVarintXref(data, i, uint64(len(m.DisplayName)))
-		i += copy(data[i:], m.DisplayName)
-	}
-	if len(m.Parameter) > 0 {
-		for _, msg := range m.Parameter {
-			data[i] = 0x32
-			i++
-			i = encodeVarintXref(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
-	}
-	return i, nil
-}
-
-func (m *CallersReply_CallableDetail_Parameter) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *CallersReply_CallableDetail_Parameter) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.Kind != 0 {
+	if m.Definitions != 0 {
 		data[i] = 0x8
 		i++
-		i = encodeVarintXref(data, i, uint64(m.Kind))
+		i = encodeVarintXref(data, i, uint64(m.Definitions))
 	}
-	if len(m.Identifier) > 0 {
-		data[i] = 0x12
-		i++
-		i = encodeVarintXref(data, i, uint64(len(m.Identifier)))
-		i += copy(data[i:], m.Identifier)
-	}
-	if len(m.Ticket) > 0 {
-		data[i] = 0x1a
-		i++
-		i = encodeVarintXref(data, i, uint64(len(m.Ticket)))
-		i += copy(data[i:], m.Ticket)
-	}
-	return i, nil
-}
-
-func (m *CallersReply_Caller) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *CallersReply_Caller) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.Detail != nil {
-		data[i] = 0xa
-		i++
-		i = encodeVarintXref(data, i, uint64(m.Detail.Size()))
-		n21, err := m.Detail.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n21
-	}
-	if len(m.CallSite) > 0 {
-		for _, msg := range m.CallSite {
-			data[i] = 0x12
-			i++
-			i = encodeVarintXref(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
-	}
-	return i, nil
-}
-
-func (m *CallersReply_Caller_CallSite) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *CallersReply_Caller_CallSite) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.Anchor != nil {
-		data[i] = 0xa
-		i++
-		i = encodeVarintXref(data, i, uint64(m.Anchor.Size()))
-		n22, err := m.Anchor.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n22
-	}
-	if m.CallToOverride {
+	if m.Declarations != 0 {
 		data[i] = 0x10
 		i++
-		if m.CallToOverride {
-			data[i] = 1
-		} else {
-			data[i] = 0
-		}
+		i = encodeVarintXref(data, i, uint64(m.Declarations))
+	}
+	if m.References != 0 {
+		data[i] = 0x18
 		i++
+		i = encodeVarintXref(data, i, uint64(m.References))
+	}
+	if m.Documentation != 0 {
+		data[i] = 0x20
+		i++
+		i = encodeVarintXref(data, i, uint64(m.Documentation))
+	}
+	if m.Callers != 0 {
+		data[i] = 0x28
+		i++
+		i = encodeVarintXref(data, i, uint64(m.Callers))
+	}
+	if len(m.RelatedNodesByRelation) > 0 {
+		for k, _ := range m.RelatedNodesByRelation {
+			data[i] = 0x32
+			i++
+			v := m.RelatedNodesByRelation[k]
+			mapSize := 1 + len(k) + sovXref(uint64(len(k))) + 1 + sovXref(uint64(v))
+			i = encodeVarintXref(data, i, uint64(mapSize))
+			data[i] = 0xa
+			i++
+			i = encodeVarintXref(data, i, uint64(len(k)))
+			i += copy(data[i:], k)
+			data[i] = 0x10
+			i++
+			i = encodeVarintXref(data, i, uint64(v))
+		}
 	}
 	return i, nil
 }
@@ -2959,72 +3026,6 @@ func (m *DocumentationReply) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *DocumentationReply_Link) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *DocumentationReply_Link) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if len(m.Definition) > 0 {
-		for _, msg := range m.Definition {
-			data[i] = 0xa
-			i++
-			i = encodeVarintXref(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
-	}
-	return i, nil
-}
-
-func (m *DocumentationReply_Printable) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *DocumentationReply_Printable) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if len(m.RawText) > 0 {
-		data[i] = 0xa
-		i++
-		i = encodeVarintXref(data, i, uint64(len(m.RawText)))
-		i += copy(data[i:], m.RawText)
-	}
-	if len(m.Link) > 0 {
-		for _, msg := range m.Link {
-			data[i] = 0x12
-			i++
-			i = encodeVarintXref(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
-	}
-	return i, nil
-}
-
 func (m *DocumentationReply_Document) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -3050,51 +3051,51 @@ func (m *DocumentationReply_Document) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x12
 		i++
 		i = encodeVarintXref(data, i, uint64(m.Text.Size()))
-		n23, err := m.Text.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n23
-	}
-	if m.Signature != nil {
-		data[i] = 0x1a
-		i++
-		i = encodeVarintXref(data, i, uint64(m.Signature.Size()))
-		n24, err := m.Signature.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n24
-	}
-	if m.Type != nil {
-		data[i] = 0x22
-		i++
-		i = encodeVarintXref(data, i, uint64(m.Type.Size()))
-		n25, err := m.Type.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n25
-	}
-	if m.Initializer != nil {
-		data[i] = 0x2a
-		i++
-		i = encodeVarintXref(data, i, uint64(m.Initializer.Size()))
-		n26, err := m.Initializer.MarshalTo(data[i:])
+		n26, err := m.Text.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n26
 	}
-	if m.DefinedBy != nil {
-		data[i] = 0x32
+	if m.Signature != nil {
+		data[i] = 0x1a
 		i++
-		i = encodeVarintXref(data, i, uint64(m.DefinedBy.Size()))
-		n27, err := m.DefinedBy.MarshalTo(data[i:])
+		i = encodeVarintXref(data, i, uint64(m.Signature.Size()))
+		n27, err := m.Signature.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n27
+	}
+	if m.Type != nil {
+		data[i] = 0x22
+		i++
+		i = encodeVarintXref(data, i, uint64(m.Type.Size()))
+		n28, err := m.Type.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n28
+	}
+	if m.Initializer != nil {
+		data[i] = 0x2a
+		i++
+		i = encodeVarintXref(data, i, uint64(m.Initializer.Size()))
+		n29, err := m.Initializer.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n29
+	}
+	if m.DefinedBy != nil {
+		data[i] = 0x32
+		i++
+		i = encodeVarintXref(data, i, uint64(m.DefinedBy.Size()))
+		n30, err := m.DefinedBy.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n30
 	}
 	if len(m.Kind) > 0 {
 		data[i] = 0x3a
@@ -3287,8 +3288,13 @@ func (m *EdgesReply) Size() (n int) {
 			n += mapEntrySize + 1 + sovXref(uint64(mapEntrySize))
 		}
 	}
-	if m.TotalEdges != 0 {
-		n += 1 + sovXref(uint64(m.TotalEdges))
+	if len(m.TotalEdgesByKind) > 0 {
+		for k, v := range m.TotalEdgesByKind {
+			_ = k
+			_ = v
+			mapEntrySize := 1 + len(k) + sovXref(uint64(len(k))) + 1 + sovXref(uint64(v))
+			n += mapEntrySize + 1 + sovXref(uint64(mapEntrySize))
+		}
 	}
 	l = len(m.NextPageToken)
 	if l > 0 {
@@ -3359,6 +3365,9 @@ func (m *DecorationsRequest) Size() (n int) {
 	if m.TargetDefinitions {
 		n += 2
 	}
+	if m.ExtendsOverrides {
+		n += 2
+	}
 	if m.SpanKind != 0 {
 		n += 1 + sovXref(uint64(m.SpanKind))
 	}
@@ -3410,6 +3419,18 @@ func (m *DecorationsReply) Size() (n int) {
 			n += mapEntrySize + 2 + sovXref(uint64(mapEntrySize))
 		}
 	}
+	if len(m.ExtendsOverrides) > 0 {
+		for k, v := range m.ExtendsOverrides {
+			_ = k
+			_ = v
+			l = 0
+			if v != nil {
+				l = v.Size()
+			}
+			mapEntrySize := 1 + len(k) + sovXref(uint64(len(k))) + 1 + l + sovXref(uint64(l))
+			n += mapEntrySize + 2 + sovXref(uint64(mapEntrySize))
+		}
+	}
 	return n
 }
 
@@ -3439,6 +3460,35 @@ func (m *DecorationsReply_Reference) Size() (n int) {
 	if m.AnchorEnd != nil {
 		l = m.AnchorEnd.Size()
 		n += 1 + l + sovXref(uint64(l))
+	}
+	return n
+}
+
+func (m *DecorationsReply_Override) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Ticket)
+	if l > 0 {
+		n += 1 + l + sovXref(uint64(l))
+	}
+	if m.Kind != 0 {
+		n += 1 + sovXref(uint64(m.Kind))
+	}
+	if m.DisplayName != nil {
+		l = m.DisplayName.Size()
+		n += 1 + l + sovXref(uint64(l))
+	}
+	return n
+}
+
+func (m *DecorationsReply_Overrides) Size() (n int) {
+	var l int
+	_ = l
+	if len(m.Override) > 0 {
+		for _, e := range m.Override {
+			l = e.Size()
+			n += 1 + l + sovXref(uint64(l))
+		}
 	}
 	return n
 }
@@ -3482,6 +3532,12 @@ func (m *CrossReferencesRequest) Size() (n int) {
 	l = len(m.PageToken)
 	if l > 0 {
 		n += 1 + l + sovXref(uint64(l))
+	}
+	if m.CallerKind != 0 {
+		n += 1 + sovXref(uint64(m.CallerKind))
+	}
+	if m.ExperimentalSignatures {
+		n += 3
 	}
 	return n
 }
@@ -3528,6 +3584,37 @@ func (m *Anchor) Size() (n int) {
 	return n
 }
 
+func (m *Link) Size() (n int) {
+	var l int
+	_ = l
+	if len(m.Definition) > 0 {
+		for _, e := range m.Definition {
+			l = e.Size()
+			n += 1 + l + sovXref(uint64(l))
+		}
+	}
+	if m.Kind != 0 {
+		n += 1 + sovXref(uint64(m.Kind))
+	}
+	return n
+}
+
+func (m *Printable) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.RawText)
+	if l > 0 {
+		n += 1 + l + sovXref(uint64(l))
+	}
+	if len(m.Link) > 0 {
+		for _, e := range m.Link {
+			l = e.Size()
+			n += 1 + l + sovXref(uint64(l))
+		}
+	}
+	return n
+}
+
 func (m *CrossReferencesReply) Size() (n int) {
 	var l int
 	_ = l
@@ -3567,8 +3654,9 @@ func (m *CrossReferencesReply) Size() (n int) {
 			n += mapEntrySize + 1 + sovXref(uint64(mapEntrySize))
 		}
 	}
-	if m.TotalReferences != 0 {
-		n += 1 + sovXref(uint64(m.TotalReferences))
+	if m.Total != nil {
+		l = m.Total.Size()
+		n += 1 + l + sovXref(uint64(l))
 	}
 	l = len(m.NextPageToken)
 	if l > 0 {
@@ -3590,6 +3678,30 @@ func (m *CrossReferencesReply_RelatedNode) Size() (n int) {
 	}
 	if m.Ordinal != 0 {
 		n += 1 + sovXref(uint64(m.Ordinal))
+	}
+	return n
+}
+
+func (m *CrossReferencesReply_RelatedAnchor) Size() (n int) {
+	var l int
+	_ = l
+	if m.Anchor != nil {
+		l = m.Anchor.Size()
+		n += 1 + l + sovXref(uint64(l))
+	}
+	if m.DisplayName != nil {
+		l = m.DisplayName.Size()
+		n += 1 + l + sovXref(uint64(l))
+	}
+	if len(m.Site) > 0 {
+		for _, e := range m.Site {
+			l = e.Size()
+			n += 1 + l + sovXref(uint64(l))
+		}
+	}
+	l = len(m.Ticket)
+	if l > 0 {
+		n += 1 + l + sovXref(uint64(l))
 	}
 	return n
 }
@@ -3625,6 +3737,16 @@ func (m *CrossReferencesReply_CrossReferenceSet) Size() (n int) {
 			n += 1 + l + sovXref(uint64(l))
 		}
 	}
+	if len(m.Caller) > 0 {
+		for _, e := range m.Caller {
+			l = e.Size()
+			n += 1 + l + sovXref(uint64(l))
+		}
+	}
+	if m.DisplayName != nil {
+		l = m.DisplayName.Size()
+		n += 1 + l + sovXref(uint64(l))
+	}
 	if len(m.RelatedNode) > 0 {
 		for _, e := range m.RelatedNode {
 			l = e.Size()
@@ -3634,113 +3756,31 @@ func (m *CrossReferencesReply_CrossReferenceSet) Size() (n int) {
 	return n
 }
 
-func (m *CallersRequest) Size() (n int) {
+func (m *CrossReferencesReply_Total) Size() (n int) {
 	var l int
 	_ = l
-	if len(m.SemanticObject) > 0 {
-		for _, s := range m.SemanticObject {
-			l = len(s)
-			n += 1 + l + sovXref(uint64(l))
+	if m.Definitions != 0 {
+		n += 1 + sovXref(uint64(m.Definitions))
+	}
+	if m.Declarations != 0 {
+		n += 1 + sovXref(uint64(m.Declarations))
+	}
+	if m.References != 0 {
+		n += 1 + sovXref(uint64(m.References))
+	}
+	if m.Documentation != 0 {
+		n += 1 + sovXref(uint64(m.Documentation))
+	}
+	if m.Callers != 0 {
+		n += 1 + sovXref(uint64(m.Callers))
+	}
+	if len(m.RelatedNodesByRelation) > 0 {
+		for k, v := range m.RelatedNodesByRelation {
+			_ = k
+			_ = v
+			mapEntrySize := 1 + len(k) + sovXref(uint64(len(k))) + 1 + sovXref(uint64(v))
+			n += mapEntrySize + 1 + sovXref(uint64(mapEntrySize))
 		}
-	}
-	if m.IncludeOverrides {
-		n += 2
-	}
-	return n
-}
-
-func (m *CallersReply) Size() (n int) {
-	var l int
-	_ = l
-	if len(m.Caller) > 0 {
-		for _, e := range m.Caller {
-			l = e.Size()
-			n += 1 + l + sovXref(uint64(l))
-		}
-	}
-	if len(m.Callee) > 0 {
-		for _, e := range m.Callee {
-			l = e.Size()
-			n += 1 + l + sovXref(uint64(l))
-		}
-	}
-	return n
-}
-
-func (m *CallersReply_CallableDetail) Size() (n int) {
-	var l int
-	_ = l
-	if m.Definition != nil {
-		l = m.Definition.Size()
-		n += 1 + l + sovXref(uint64(l))
-	}
-	l = len(m.SemanticObject)
-	if l > 0 {
-		n += 1 + l + sovXref(uint64(l))
-	}
-	l = len(m.SemanticObjectCallable)
-	if l > 0 {
-		n += 1 + l + sovXref(uint64(l))
-	}
-	l = len(m.Identifier)
-	if l > 0 {
-		n += 1 + l + sovXref(uint64(l))
-	}
-	l = len(m.DisplayName)
-	if l > 0 {
-		n += 1 + l + sovXref(uint64(l))
-	}
-	if len(m.Parameter) > 0 {
-		for _, e := range m.Parameter {
-			l = e.Size()
-			n += 1 + l + sovXref(uint64(l))
-		}
-	}
-	return n
-}
-
-func (m *CallersReply_CallableDetail_Parameter) Size() (n int) {
-	var l int
-	_ = l
-	if m.Kind != 0 {
-		n += 1 + sovXref(uint64(m.Kind))
-	}
-	l = len(m.Identifier)
-	if l > 0 {
-		n += 1 + l + sovXref(uint64(l))
-	}
-	l = len(m.Ticket)
-	if l > 0 {
-		n += 1 + l + sovXref(uint64(l))
-	}
-	return n
-}
-
-func (m *CallersReply_Caller) Size() (n int) {
-	var l int
-	_ = l
-	if m.Detail != nil {
-		l = m.Detail.Size()
-		n += 1 + l + sovXref(uint64(l))
-	}
-	if len(m.CallSite) > 0 {
-		for _, e := range m.CallSite {
-			l = e.Size()
-			n += 1 + l + sovXref(uint64(l))
-		}
-	}
-	return n
-}
-
-func (m *CallersReply_Caller_CallSite) Size() (n int) {
-	var l int
-	_ = l
-	if m.Anchor != nil {
-		l = m.Anchor.Size()
-		n += 1 + l + sovXref(uint64(l))
-	}
-	if m.CallToOverride {
-		n += 2
 	}
 	return n
 }
@@ -3762,34 +3802,6 @@ func (m *DocumentationReply) Size() (n int) {
 	_ = l
 	if len(m.Document) > 0 {
 		for _, e := range m.Document {
-			l = e.Size()
-			n += 1 + l + sovXref(uint64(l))
-		}
-	}
-	return n
-}
-
-func (m *DocumentationReply_Link) Size() (n int) {
-	var l int
-	_ = l
-	if len(m.Definition) > 0 {
-		for _, e := range m.Definition {
-			l = e.Size()
-			n += 1 + l + sovXref(uint64(l))
-		}
-	}
-	return n
-}
-
-func (m *DocumentationReply_Printable) Size() (n int) {
-	var l int
-	_ = l
-	l = len(m.RawText)
-	if l > 0 {
-		n += 1 + l + sovXref(uint64(l))
-	}
-	if len(m.Link) > 0 {
-		for _, e := range m.Link {
 			l = e.Size()
 			n += 1 + l + sovXref(uint64(l))
 		}
@@ -5100,11 +5112,11 @@ func (m *EdgesReply) Unmarshal(data []byte) error {
 			}
 			m.Nodes[mapkey] = mapvalue
 			iNdEx = postIndex
-		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TotalEdges", wireType)
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TotalEdgesByKind", wireType)
 			}
-			m.TotalEdges = 0
+			var msglen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowXref
@@ -5114,11 +5126,93 @@ func (m *EdgesReply) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				m.TotalEdges |= (int64(b) & 0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
+			if msglen < 0 {
+				return ErrInvalidLengthXref
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			var keykey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				keykey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			var stringLenmapkey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLenmapkey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLenmapkey := int(stringLenmapkey)
+			if intStringLenmapkey < 0 {
+				return ErrInvalidLengthXref
+			}
+			postStringIndexmapkey := iNdEx + intStringLenmapkey
+			if postStringIndexmapkey > l {
+				return io.ErrUnexpectedEOF
+			}
+			mapkey := string(data[iNdEx:postStringIndexmapkey])
+			iNdEx = postStringIndexmapkey
+			var valuekey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				valuekey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			var mapvalue int64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				mapvalue |= (int64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if m.TotalEdgesByKind == nil {
+				m.TotalEdgesByKind = make(map[string]int64)
+			}
+			m.TotalEdgesByKind[mapkey] = mapvalue
+			iNdEx = postIndex
 		case 9:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field NextPageToken", wireType)
@@ -5622,6 +5716,26 @@ func (m *DecorationsRequest) Unmarshal(data []byte) error {
 				}
 			}
 			m.TargetDefinitions = bool(v != 0)
+		case 7:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ExtendsOverrides", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.ExtendsOverrides = bool(v != 0)
 		case 10:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field SpanKind", wireType)
@@ -6047,6 +6161,122 @@ func (m *DecorationsReply) Unmarshal(data []byte) error {
 			}
 			m.DefinitionLocations[mapkey] = mapvalue
 			iNdEx = postIndex
+		case 17:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ExtendsOverrides", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthXref
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			var keykey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				keykey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			var stringLenmapkey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLenmapkey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLenmapkey := int(stringLenmapkey)
+			if intStringLenmapkey < 0 {
+				return ErrInvalidLengthXref
+			}
+			postStringIndexmapkey := iNdEx + intStringLenmapkey
+			if postStringIndexmapkey > l {
+				return io.ErrUnexpectedEOF
+			}
+			mapkey := string(data[iNdEx:postStringIndexmapkey])
+			iNdEx = postStringIndexmapkey
+			var valuekey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				valuekey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			var mapmsglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				mapmsglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if mapmsglen < 0 {
+				return ErrInvalidLengthXref
+			}
+			postmsgIndex := iNdEx + mapmsglen
+			if mapmsglen < 0 {
+				return ErrInvalidLengthXref
+			}
+			if postmsgIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			mapvalue := &DecorationsReply_Overrides{}
+			if err := mapvalue.Unmarshal(data[iNdEx:postmsgIndex]); err != nil {
+				return err
+			}
+			iNdEx = postmsgIndex
+			if m.ExtendsOverrides == nil {
+				m.ExtendsOverrides = make(map[string]*DecorationsReply_Overrides)
+			}
+			m.ExtendsOverrides[mapkey] = mapvalue
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipXref(data[iNdEx:])
@@ -6276,6 +6506,218 @@ func (m *DecorationsReply_Reference) Unmarshal(data []byte) error {
 				m.AnchorEnd = &Location_Point{}
 			}
 			if err := m.AnchorEnd.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipXref(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthXref
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DecorationsReply_Override) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowXref
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Override: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Override: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Ticket", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthXref
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Ticket = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Kind", wireType)
+			}
+			m.Kind = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.Kind |= (DecorationsReply_Override_Kind(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DisplayName", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthXref
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.DisplayName == nil {
+				m.DisplayName = &Printable{}
+			}
+			if err := m.DisplayName.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipXref(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthXref
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DecorationsReply_Overrides) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowXref
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Overrides: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Overrides: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Override", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthXref
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Override = append(m.Override, &DecorationsReply_Override{})
+			if err := m.Override[len(m.Override)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -6551,6 +6993,45 @@ func (m *CrossReferencesRequest) Unmarshal(data []byte) error {
 			}
 			m.PageToken = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
+		case 12:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CallerKind", wireType)
+			}
+			m.CallerKind = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.CallerKind |= (CrossReferencesRequest_CallerKind(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 100:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ExperimentalSignatures", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.ExperimentalSignatures = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipXref(data[iNdEx:])
@@ -6875,6 +7356,216 @@ func (m *Anchor) Unmarshal(data []byte) error {
 				m.SnippetEnd = &Location_Point{}
 			}
 			if err := m.SnippetEnd.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipXref(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthXref
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Link) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowXref
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Link: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Link: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Definition", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthXref
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Definition = append(m.Definition, &Anchor{})
+			if err := m.Definition[len(m.Definition)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Kind", wireType)
+			}
+			m.Kind = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.Kind |= (Link_Kind(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipXref(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthXref
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Printable) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowXref
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Printable: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Printable: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RawText", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthXref
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.RawText = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Link", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthXref
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Link = append(m.Link, &Link{})
+			if err := m.Link[len(m.Link)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -7276,11 +7967,11 @@ func (m *CrossReferencesReply) Unmarshal(data []byte) error {
 			}
 			m.DefinitionLocations[mapkey] = mapvalue
 			iNdEx = postIndex
-		case 4:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TotalReferences", wireType)
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Total", wireType)
 			}
-			m.TotalReferences = 0
+			var msglen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowXref
@@ -7290,11 +7981,25 @@ func (m *CrossReferencesReply) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				m.TotalReferences |= (int64(b) & 0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
+			if msglen < 0 {
+				return ErrInvalidLengthXref
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Total == nil {
+				m.Total = &CrossReferencesReply_Total{}
+			}
+			if err := m.Total.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		case 10:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field NextPageToken", wireType)
@@ -7472,6 +8177,182 @@ func (m *CrossReferencesReply_RelatedNode) Unmarshal(data []byte) error {
 	}
 	return nil
 }
+func (m *CrossReferencesReply_RelatedAnchor) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowXref
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RelatedAnchor: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RelatedAnchor: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Anchor", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthXref
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Anchor == nil {
+				m.Anchor = &Anchor{}
+			}
+			if err := m.Anchor.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DisplayName", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthXref
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.DisplayName == nil {
+				m.DisplayName = &Printable{}
+			}
+			if err := m.DisplayName.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Site", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthXref
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Site = append(m.Site, &Anchor{})
+			if err := m.Site[len(m.Site)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Ticket", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthXref
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Ticket = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipXref(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthXref
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func (m *CrossReferencesReply_CrossReferenceSet) Unmarshal(data []byte) error {
 	l := len(data)
 	iNdEx := 0
@@ -7556,7 +8437,7 @@ func (m *CrossReferencesReply_CrossReferenceSet) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Definition = append(m.Definition, &Anchor{})
+			m.Definition = append(m.Definition, &CrossReferencesReply_RelatedAnchor{})
 			if err := m.Definition[len(m.Definition)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -7587,7 +8468,7 @@ func (m *CrossReferencesReply_CrossReferenceSet) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Reference = append(m.Reference, &Anchor{})
+			m.Reference = append(m.Reference, &CrossReferencesReply_RelatedAnchor{})
 			if err := m.Reference[len(m.Reference)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -7618,7 +8499,7 @@ func (m *CrossReferencesReply_CrossReferenceSet) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Documentation = append(m.Documentation, &Anchor{})
+			m.Documentation = append(m.Documentation, &CrossReferencesReply_RelatedAnchor{})
 			if err := m.Documentation[len(m.Documentation)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -7649,8 +8530,72 @@ func (m *CrossReferencesReply_CrossReferenceSet) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Declaration = append(m.Declaration, &Anchor{})
+			m.Declaration = append(m.Declaration, &CrossReferencesReply_RelatedAnchor{})
 			if err := m.Declaration[len(m.Declaration)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Caller", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthXref
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Caller = append(m.Caller, &CrossReferencesReply_RelatedAnchor{})
+			if err := m.Caller[len(m.Caller)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DisplayName", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthXref
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.DisplayName == nil {
+				m.DisplayName = &Printable{}
+			}
+			if err := m.DisplayName.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -7706,7 +8651,7 @@ func (m *CrossReferencesReply_CrossReferenceSet) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *CallersRequest) Unmarshal(data []byte) error {
+func (m *CrossReferencesReply_Total) Unmarshal(data []byte) error {
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -7729,17 +8674,17 @@ func (m *CallersRequest) Unmarshal(data []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: CallersRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: Total: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CallersRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: Total: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SemanticObject", wireType)
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Definitions", wireType)
 			}
-			var stringLen uint64
+			m.Definitions = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowXref
@@ -7749,26 +8694,16 @@ func (m *CallersRequest) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				m.Definitions |= (int64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthXref
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.SemanticObject = append(m.SemanticObject, string(data[iNdEx:postIndex]))
-			iNdEx = postIndex
 		case 2:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field IncludeOverrides", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Declarations", wireType)
 			}
-			var v int
+			m.Declarations = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowXref
@@ -7778,241 +8713,16 @@ func (m *CallersRequest) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				v |= (int(b) & 0x7F) << shift
+				m.Declarations |= (int64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			m.IncludeOverrides = bool(v != 0)
-		default:
-			iNdEx = preIndex
-			skippy, err := skipXref(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthXref
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *CallersReply) Unmarshal(data []byte) error {
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowXref
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: CallersReply: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CallersReply: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Caller", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowXref
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthXref
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Caller = append(m.Caller, &CallersReply_Caller{})
-			if err := m.Caller[len(m.Caller)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Callee", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowXref
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthXref
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Callee = append(m.Callee, &CallersReply_CallableDetail{})
-			if err := m.Callee[len(m.Callee)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipXref(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthXref
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *CallersReply_CallableDetail) Unmarshal(data []byte) error {
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowXref
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: CallableDetail: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CallableDetail: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Definition", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowXref
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthXref
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Definition == nil {
-				m.Definition = &Anchor{}
-			}
-			if err := m.Definition.Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SemanticObject", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowXref
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthXref
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.SemanticObject = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
 		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SemanticObjectCallable", wireType)
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field References", wireType)
 			}
-			var stringLen uint64
+			m.References = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowXref
@@ -8022,26 +8732,16 @@ func (m *CallersReply_CallableDetail) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				m.References |= (int64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthXref
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.SemanticObjectCallable = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
 		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Identifier", wireType)
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Documentation", wireType)
 			}
-			var stringLen uint64
+			m.Documentation = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowXref
@@ -8051,26 +8751,16 @@ func (m *CallersReply_CallableDetail) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				m.Documentation |= (int64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthXref
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Identifier = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
 		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DisplayName", wireType)
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Callers", wireType)
 			}
-			var stringLen uint64
+			m.Callers = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowXref
@@ -8080,24 +8770,14 @@ func (m *CallersReply_CallableDetail) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				m.Callers |= (int64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthXref
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.DisplayName = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
 		case 6:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Parameter", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field RelatedNodesByRelation", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -8121,355 +8801,81 @@ func (m *CallersReply_CallableDetail) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Parameter = append(m.Parameter, &CallersReply_CallableDetail_Parameter{})
-			if err := m.Parameter[len(m.Parameter)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
+			var keykey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				keykey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
 			}
+			var stringLenmapkey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLenmapkey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLenmapkey := int(stringLenmapkey)
+			if intStringLenmapkey < 0 {
+				return ErrInvalidLengthXref
+			}
+			postStringIndexmapkey := iNdEx + intStringLenmapkey
+			if postStringIndexmapkey > l {
+				return io.ErrUnexpectedEOF
+			}
+			mapkey := string(data[iNdEx:postStringIndexmapkey])
+			iNdEx = postStringIndexmapkey
+			var valuekey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				valuekey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			var mapvalue int64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowXref
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				mapvalue |= (int64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if m.RelatedNodesByRelation == nil {
+				m.RelatedNodesByRelation = make(map[string]int64)
+			}
+			m.RelatedNodesByRelation[mapkey] = mapvalue
 			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipXref(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthXref
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *CallersReply_CallableDetail_Parameter) Unmarshal(data []byte) error {
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowXref
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Parameter: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Parameter: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Kind", wireType)
-			}
-			m.Kind = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowXref
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				m.Kind |= (CallersReply_CallableDetail_Parameter_Kind(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Identifier", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowXref
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthXref
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Identifier = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Ticket", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowXref
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthXref
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Ticket = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipXref(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthXref
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *CallersReply_Caller) Unmarshal(data []byte) error {
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowXref
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Caller: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Caller: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Detail", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowXref
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthXref
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Detail == nil {
-				m.Detail = &CallersReply_CallableDetail{}
-			}
-			if err := m.Detail.Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field CallSite", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowXref
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthXref
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.CallSite = append(m.CallSite, &CallersReply_Caller_CallSite{})
-			if err := m.CallSite[len(m.CallSite)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipXref(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthXref
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *CallersReply_Caller_CallSite) Unmarshal(data []byte) error {
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowXref
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: CallSite: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CallSite: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Anchor", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowXref
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthXref
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Anchor == nil {
-				m.Anchor = &Anchor{}
-			}
-			if err := m.Anchor.Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field CallToOverride", wireType)
-			}
-			var v int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowXref
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				v |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.CallToOverride = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipXref(data[iNdEx:])
@@ -8651,197 +9057,6 @@ func (m *DocumentationReply) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *DocumentationReply_Link) Unmarshal(data []byte) error {
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowXref
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Link: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Link: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Definition", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowXref
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthXref
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Definition = append(m.Definition, &Anchor{})
-			if err := m.Definition[len(m.Definition)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipXref(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthXref
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *DocumentationReply_Printable) Unmarshal(data []byte) error {
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowXref
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Printable: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Printable: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RawText", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowXref
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthXref
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.RawText = string(data[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Link", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowXref
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthXref
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Link = append(m.Link, &DocumentationReply_Link{})
-			if err := m.Link[len(m.Link)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipXref(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthXref
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
 func (m *DocumentationReply_Document) Unmarshal(data []byte) error {
 	l := len(data)
 	iNdEx := 0
@@ -8927,7 +9142,7 @@ func (m *DocumentationReply_Document) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Text == nil {
-				m.Text = &DocumentationReply_Printable{}
+				m.Text = &Printable{}
 			}
 			if err := m.Text.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
@@ -8960,7 +9175,7 @@ func (m *DocumentationReply_Document) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Signature == nil {
-				m.Signature = &DocumentationReply_Printable{}
+				m.Signature = &Printable{}
 			}
 			if err := m.Signature.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
@@ -8993,7 +9208,7 @@ func (m *DocumentationReply_Document) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Type == nil {
-				m.Type = &DocumentationReply_Printable{}
+				m.Type = &Printable{}
 			}
 			if err := m.Type.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
@@ -9026,7 +9241,7 @@ func (m *DocumentationReply_Document) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Initializer == nil {
-				m.Initializer = &DocumentationReply_Printable{}
+				m.Initializer = &Printable{}
 			}
 			if err := m.Initializer.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
@@ -9059,7 +9274,7 @@ func (m *DocumentationReply_Document) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.DefinedBy == nil {
-				m.DefinedBy = &DocumentationReply_Printable{}
+				m.DefinedBy = &Printable{}
 			}
 			if err := m.DefinedBy.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
@@ -9221,125 +9436,136 @@ var (
 )
 
 var fileDescriptorXref = []byte{
-	// 1918 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xac, 0x58, 0x4f, 0x73, 0xe3, 0x66,
-	0x19, 0x8f, 0x6c, 0x2b, 0xb1, 0x1f, 0x39, 0x89, 0xa3, 0xcd, 0xb6, 0x5e, 0x75, 0xe8, 0x6e, 0xd5,
-	0xd2, 0xf5, 0x76, 0xb6, 0x4e, 0xeb, 0x1d, 0xba, 0x9d, 0x6d, 0x61, 0xc8, 0x26, 0x4e, 0x6b, 0x9a,
-	0x75, 0x52, 0x27, 0x3b, 0x94, 0xe1, 0xa0, 0x51, 0xe4, 0xd7, 0x59, 0x11, 0x45, 0x32, 0x92, 0xbc,
-	0xd4, 0x9c, 0x38, 0x70, 0x83, 0x81, 0x01, 0x2e, 0x7c, 0x0a, 0x2e, 0x7c, 0x06, 0x18, 0x66, 0xb8,
-	0x70, 0x61, 0xb8, 0x32, 0x70, 0xe3, 0x23, 0x70, 0xea, 0xf3, 0x3e, 0x7a, 0x25, 0x4b, 0xb2, 0x1c,
-	0x27, 0x33, 0x7b, 0xc8, 0xc4, 0x7a, 0xf5, 0xfc, 0xfd, 0x3d, 0x7f, 0x5f, 0xc1, 0x6b, 0x17, 0xd3,
-	0xf0, 0x05, 0xdb, 0x19, 0xfb, 0x5e, 0xe8, 0xed, 0x7c, 0xed, 0xb3, 0x51, 0x9b, 0x7e, 0xaa, 0x0a,
-	0x9d, 0x47, 0x0f, 0x7a, 0x1b, 0xea, 0x7d, 0x6f, 0xc8, 0x82, 0x01, 0xfb, 0xe9, 0x84, 0x05, 0xa1,
-	0xba, 0x01, 0xab, 0xa1, 0x6d, 0x5d, 0xb0, 0xb0, 0x29, 0xdd, 0x2b, 0xb7, 0x6a, 0xfc, 0x79, 0x64,
-	0x3b, 0x21, 0xf3, 0x9b, 0x25, 0xfe, 0xac, 0xff, 0x4a, 0x82, 0x2a, 0x67, 0xe8, 0xb9, 0x23, 0x4f,
-	0xdd, 0x01, 0x79, 0x64, 0x5a, 0x61, 0x40, 0xef, 0x94, 0xce, 0xbd, 0x76, 0x4a, 0x72, 0x3b, 0xa6,
-	0x6a, 0x1f, 0x70, 0x92, 0xae, 0x1b, 0xfa, 0x53, 0x55, 0x05, 0x18, 0xb2, 0x91, 0xed, 0xda, 0xa1,
-	0xed, 0xb9, 0x4d, 0xf9, 0x9e, 0xd4, 0xaa, 0x69, 0x0f, 0x01, 0x52, 0x14, 0x0a, 0x94, 0x2f, 0xd8,
-	0x14, 0x95, 0xe3, 0x2b, 0x75, 0x1d, 0xe4, 0x97, 0xa6, 0x33, 0x61, 0x28, 0x5f, 0x6a, 0xd5, 0x9f,
-	0x94, 0x3e, 0x96, 0x7e, 0x50, 0xa9, 0x4a, 0x8d, 0xd2, 0x40, 0xd8, 0xa8, 0xff, 0x52, 0x02, 0x10,
-	0xe6, 0x8f, 0x9d, 0xa9, 0xfa, 0x21, 0xc8, 0x2e, 0x7f, 0x22, 0xdb, 0x95, 0x8e, 0x3e, 0x67, 0x4f,
-	0x44, 0x17, 0xfd, 0x24, 0x7d, 0xda, 0x9e, 0x10, 0x50, 0xa0, 0xfd, 0x9d, 0xb4, 0x76, 0xa5, 0x73,
-	0xbb, 0xd0, 0x3b, 0x6e, 0x94, 0x6e, 0x41, 0xbd, 0x3b, 0x3c, 0x5f, 0x0c, 0x62, 0x1d, 0x2a, 0x17,
-	0xb6, 0x3b, 0x8c, 0x20, 0x4c, 0x41, 0x5a, 0xa6, 0xe7, 0x2d, 0xa8, 0x8d, 0xcd, 0x73, 0x66, 0x04,
-	0xf6, 0xcf, 0x59, 0xb3, 0x8a, 0xba, 0x64, 0x8e, 0x13, 0x1d, 0x85, 0xde, 0x05, 0x73, 0x9b, 0x35,
-	0x6e, 0x8e, 0xfe, 0xdb, 0x12, 0xac, 0x71, 0x2d, 0x27, 0x2c, 0x54, 0x3f, 0x80, 0xd5, 0x73, 0xdf,
-	0x9b, 0x8c, 0x8b, 0x91, 0x17, 0x54, 0xed, 0xcf, 0x88, 0x24, 0xf2, 0xd3, 0x07, 0x99, 0x1e, 0xd5,
-	0xf7, 0xa1, 0xc2, 0xf0, 0xbd, 0x60, 0xbc, 0xbb, 0x98, 0x91, 0x9e, 0xb4, 0x36, 0x54, 0xf8, 0x7f,
-	0xf5, 0x36, 0xac, 0x87, 0xa6, 0x7f, 0xce, 0x42, 0x23, 0xf1, 0x8c, 0x63, 0xb4, 0x09, 0x6b, 0x9e,
-	0x3f, 0xb4, 0x5d, 0xd3, 0x21, 0x94, 0x64, 0x11, 0x1f, 0x72, 0x57, 0xeb, 0x81, 0x92, 0x32, 0x21,
-	0x0b, 0xee, 0x83, 0x2c, 0xb8, 0xda, 0x62, 0x3b, 0x52, 0x61, 0x5f, 0x0f, 0xbc, 0x89, 0x6f, 0x31,
-	0x61, 0x82, 0xfe, 0xe7, 0x12, 0x80, 0xc0, 0x9d, 0x47, 0xff, 0x63, 0xa8, 0x71, 0xcf, 0x8c, 0x80,
-	0x85, 0x71, 0x06, 0x7c, 0x7b, 0x4e, 0xac, 0xc8, 0x00, 0xa1, 0x41, 0x58, 0x96, 0xe4, 0x4d, 0xa9,
-	0x20, 0x6f, 0x52, 0x5c, 0xa9, 0x4c, 0xb9, 0x05, 0x4a, 0xe8, 0x85, 0xa6, 0x63, 0x70, 0x95, 0x01,
-	0x46, 0x52, 0x6a, 0x95, 0xd5, 0xd7, 0x61, 0xd3, 0x65, 0x5f, 0x87, 0x46, 0x3e, 0x76, 0x5a, 0x17,
-	0xd6, 0xb3, 0x1a, 0x33, 0x58, 0xbc, 0x9d, 0xc5, 0x62, 0xbb, 0x08, 0x0b, 0x8e, 0xc2, 0xab, 0x49,
-	0xd6, 0x5f, 0x94, 0xa0, 0x7a, 0xe8, 0x59, 0x26, 0x2f, 0xc1, 0x4c, 0xa6, 0x72, 0x31, 0xad, 0x24,
-	0x53, 0xa5, 0xd6, 0x46, 0x2e, 0x2a, 0x31, 0x53, 0xfb, 0x0b, 0xa4, 0x50, 0xdf, 0x03, 0x39, 0xc0,
-	0x8c, 0x08, 0xc9, 0x75, 0xa5, 0xf3, 0x46, 0x31, 0xe9, 0xb1, 0x67, 0xbb, 0x21, 0x4a, 0x2d, 0x33,
-	0x14, 0x5a, 0x59, 0x4a, 0xa9, 0x7d, 0x0e, 0x72, 0xc4, 0x82, 0xf8, 0x9e, 0x4d, 0x43, 0x66, 0x78,
-	0xa3, 0x51, 0x20, 0xac, 0x93, 0xf9, 0xa1, 0x63, 0xbb, 0xcc, 0x70, 0x27, 0x97, 0x67, 0xd4, 0x91,
-	0xf8, 0x21, 0x66, 0xa6, 0xe5, 0x39, 0x93, 0x4b, 0x37, 0xa6, 0xe5, 0x06, 0xc9, 0xba, 0x06, 0x15,
-	0xb2, 0xb3, 0x0a, 0x95, 0x83, 0xde, 0x61, 0xb7, 0xb1, 0xc2, 0x7f, 0x9d, 0x1c, 0xef, 0xf6, 0x1b,
-	0x92, 0xfe, 0x87, 0x12, 0xa8, 0xfb, 0xcc, 0xf2, 0x7c, 0x52, 0x9d, 0x94, 0xed, 0x7d, 0xa8, 0x3a,
-	0xc2, 0x1c, 0x52, 0x98, 0x87, 0x31, 0x41, 0x6d, 0x1b, 0xea, 0x43, 0xdb, 0x0f, 0xa7, 0xc6, 0xd9,
-	0x64, 0x34, 0x12, 0x86, 0xd4, 0xb9, 0x75, 0x71, 0x7e, 0x62, 0x12, 0x90, 0x19, 0x55, 0x5e, 0xc9,
-	0xd8, 0x79, 0x99, 0xcf, 0x5c, 0x0b, 0xd3, 0xa4, 0x42, 0x67, 0xb3, 0x06, 0x20, 0x53, 0x03, 0xd0,
-	0x40, 0x15, 0xb5, 0x35, 0x6b, 0x8e, 0x41, 0x73, 0x95, 0x68, 0x3f, 0x81, 0x5a, 0x30, 0x36, 0x5d,
-	0x83, 0xa2, 0x02, 0x14, 0x95, 0x56, 0xc6, 0xa8, 0x79, 0x3f, 0xda, 0x27, 0xc8, 0xc0, 0x7d, 0xd7,
-	0x1f, 0x42, 0x35, 0xfe, 0x8d, 0x95, 0xaa, 0xfc, 0xb0, 0x77, 0xfa, 0x79, 0xaf, 0x6f, 0x10, 0x08,
-	0x2b, 0xfc, 0x60, 0x77, 0x70, 0xf4, 0xbc, 0xbf, 0x6f, 0x08, 0x54, 0x7e, 0x2d, 0x43, 0x23, 0x23,
-	0x8d, 0x17, 0xd5, 0xb5, 0x31, 0xc9, 0x79, 0x1f, 0x41, 0xd2, 0x80, 0x2a, 0x3a, 0xee, 0x61, 0x83,
-	0x38, 0x27, 0x3c, 0x6a, 0xea, 0x13, 0xa8, 0x25, 0x78, 0x20, 0x1c, 0xbc, 0xdc, 0xee, 0x2f, 0xf6,
-	0x87, 0x17, 0xdd, 0x20, 0x26, 0x57, 0x1f, 0xc7, 0x65, 0xba, 0x49, 0x7c, 0xad, 0xab, 0xf9, 0x52,
-	0x95, 0x72, 0x0a, 0xdb, 0x33, 0x64, 0x8d, 0xd8, 0x9f, 0xa0, 0xd9, 0x20, 0x39, 0x1f, 0x5d, 0x2d,
-	0x67, 0x3f, 0xe1, 0x8c, 0x7d, 0x15, 0x2d, 0xf5, 0xaf, 0x12, 0xd4, 0x66, 0xc6, 0x61, 0x1a, 0x66,
-	0xba, 0x93, 0x28, 0xa8, 0xb9, 0xbe, 0x59, 0xa2, 0xe3, 0x78, 0x22, 0x44, 0xa0, 0xdc, 0x81, 0xad,
-	0xb9, 0x04, 0xa0, 0x5c, 0xa9, 0x61, 0x6b, 0xaa, 0x9b, 0xae, 0xf5, 0xc2, 0xf3, 0x8d, 0xa8, 0xda,
-	0x60, 0x79, 0xb5, 0xed, 0x00, 0x08, 0x16, 0x5e, 0x74, 0xca, 0xf2, 0xa2, 0x7b, 0x15, 0x6d, 0x45,
-	0x3b, 0x82, 0xe6, 0x22, 0xa4, 0xb2, 0x22, 0xf5, 0xac, 0xc8, 0x5b, 0x19, 0x91, 0xbb, 0x64, 0x38,
-	0xf5, 0xa9, 0xff, 0xc9, 0xf0, 0xda, 0x9e, 0xef, 0x05, 0x41, 0x82, 0xf1, 0xc2, 0xf9, 0xfa, 0x05,
-	0x6c, 0xa6, 0xe2, 0x9b, 0x6a, 0x60, 0x9d, 0x8c, 0xf0, 0x62, 0x69, 0xa9, 0x00, 0x53, 0xa1, 0xf4,
-	0x60, 0x23, 0xc9, 0x50, 0x23, 0x09, 0xd2, 0x46, 0xe7, 0xc3, 0xeb, 0xc8, 0x4a, 0x4e, 0x48, 0xd4,
-	0x97, 0xa0, 0x0e, 0x3d, 0x6b, 0x72, 0xc9, 0xdc, 0xd0, 0x9c, 0x99, 0x56, 0x21, 0x71, 0xdf, 0xb9,
-	0x96, 0x69, 0x69, 0x6e, 0x12, 0x99, 0xef, 0x1d, 0x58, 0x76, 0x22, 0xd8, 0x54, 0x76, 0x51, 0xd3,
-	0x78, 0x06, 0x8d, 0x21, 0xb3, 0x1c, 0xd3, 0x4f, 0x69, 0x5d, 0x23, 0xad, 0x8f, 0xae, 0x07, 0x48,
-	0xc2, 0x4b, 0x3a, 0x9b, 0xd0, 0xe0, 0x75, 0x97, 0xe9, 0x4e, 0x55, 0x52, 0x94, 0x59, 0x5d, 0xa0,
-	0x60, 0x75, 0x51, 0x68, 0x75, 0x79, 0x01, 0x1b, 0x39, 0x90, 0x55, 0xd8, 0xe8, 0x1f, 0x19, 0xfb,
-	0xdd, 0x83, 0x5e, 0xbf, 0x77, 0xda, 0x3b, 0xea, 0x9f, 0x60, 0x43, 0xba, 0x05, 0x9b, 0xbb, 0x87,
-	0x87, 0x99, 0x43, 0x09, 0x5b, 0x6d, 0xe3, 0xe0, 0x79, 0xee, 0xb4, 0x84, 0x83, 0xf6, 0xd6, 0xd3,
-	0x5e, 0x7f, 0xbf, 0xd7, 0xff, 0x2c, 0xf3, 0xa2, 0xac, 0x7f, 0x0a, 0x9b, 0x79, 0xeb, 0x51, 0x2c,
-	0xa9, 0xda, 0x3b, 0xdc, 0x1d, 0xec, 0xc6, 0xba, 0x50, 0x6c, 0xa4, 0x2b, 0x75, 0x2a, 0xe9, 0x1f,
-	0xc1, 0x7a, 0x36, 0x80, 0x5b, 0xb0, 0x8e, 0xbc, 0x83, 0xee, 0x41, 0x77, 0xd0, 0xed, 0xef, 0x75,
-	0x39, 0x27, 0x5a, 0xce, 0x39, 0x53, 0x67, 0x92, 0xfe, 0x7d, 0xd8, 0x9a, 0x8f, 0x14, 0xaa, 0xe0,
-	0x7a, 0x8f, 0xf6, 0x9e, 0x3f, 0xeb, 0xf6, 0x4f, 0x49, 0x07, 0xb2, 0xdf, 0x86, 0x2d, 0x52, 0x9c,
-	0x39, 0x96, 0xf4, 0xdf, 0x95, 0x60, 0x35, 0xca, 0xfd, 0xb9, 0x91, 0x5c, 0x4f, 0x8d, 0x64, 0x5a,
-	0x1e, 0xc7, 0x26, 0x1a, 0x18, 0x8a, 0xd6, 0x91, 0x8c, 0xe1, 0xca, 0xb5, 0xc7, 0xb0, 0xbc, 0x9c,
-	0x12, 0x75, 0x26, 0xe9, 0x44, 0x4b, 0x5e, 0xe0, 0xda, 0xe3, 0x31, 0x9a, 0xb4, 0x46, 0x07, 0x1d,
-	0xec, 0x75, 0xd1, 0x81, 0xe8, 0x4a, 0xd5, 0xe5, 0x22, 0x3f, 0xc0, 0xf9, 0x20, 0x78, 0xb8, 0x11,
-	0xb5, 0xa5, 0x1c, 0xfa, 0x6f, 0xd6, 0x60, 0x7b, 0x2e, 0x43, 0xf9, 0x4c, 0x3a, 0x86, 0x86, 0xc5,
-	0xcf, 0x8d, 0xd4, 0x64, 0x95, 0x0a, 0x5a, 0x79, 0x11, 0x73, 0xfe, 0x30, 0x6a, 0x50, 0x9f, 0x64,
-	0x17, 0xc0, 0x87, 0xcb, 0xc5, 0xa4, 0x1a, 0xe6, 0x57, 0x0b, 0xa6, 0x4b, 0x99, 0x64, 0x3d, 0x59,
-	0x2e, 0x6b, 0x61, 0xdf, 0xc4, 0xc2, 0x8b, 0x96, 0xcc, 0xdc, 0x0a, 0x51, 0xb8, 0x69, 0x82, 0xd8,
-	0x34, 0x95, 0x01, 0x73, 0xcc, 0x90, 0x0d, 0xb9, 0x85, 0x73, 0xc9, 0x84, 0xe3, 0xc8, 0xe7, 0xaf,
-	0x33, 0x7d, 0x32, 0xb3, 0xc6, 0xd3, 0xf6, 0xa4, 0xe1, 0x65, 0x63, 0x2b, 0x6b, 0x2b, 0xbf, 0x76,
-	0xe4, 0xa5, 0xdd, 0xcf, 0x5c, 0xe7, 0x22, 0xec, 0x8a, 0xfa, 0xb9, 0xfa, 0x6e, 0x7a, 0xea, 0x97,
-	0x17, 0xd3, 0xbd, 0x07, 0xeb, 0x99, 0x86, 0x29, 0x36, 0x84, 0x42, 0xda, 0x16, 0x28, 0xa9, 0x26,
-	0x47, 0xed, 0x70, 0x01, 0xe5, 0x1e, 0xd4, 0xfd, 0x08, 0x13, 0x83, 0x47, 0x19, 0x91, 0xe2, 0xa4,
-	0xef, 0x2f, 0x0f, 0x4c, 0x0a, 0x49, 0xed, 0x62, 0x2e, 0x19, 0x0b, 0x66, 0xdb, 0xd3, 0xec, 0x6c,
-	0x7b, 0x74, 0xd3, 0x74, 0x7c, 0x95, 0x8b, 0xfe, 0xab, 0x9f, 0xc8, 0xfb, 0xb0, 0xb1, 0x67, 0x3a,
-	0x0e, 0xf3, 0x93, 0x41, 0x8c, 0x69, 0x18, 0xb0, 0x4b, 0xd3, 0xc5, 0xac, 0x30, 0xbc, 0xb3, 0x9f,
-	0x30, 0x2b, 0x9e, 0xc8, 0xb8, 0xd1, 0xd8, 0xae, 0xe5, 0x4c, 0x70, 0x6a, 0x78, 0x2f, 0x99, 0xef,
-	0xdb, 0x51, 0x71, 0xe1, 0xcc, 0xd0, 0xff, 0x22, 0x43, 0x3d, 0x11, 0xc3, 0xcb, 0x19, 0x2f, 0xb3,
-	0x16, 0x3d, 0x8b, 0x22, 0xce, 0x5e, 0x66, 0xd3, 0xa4, 0xe2, 0x01, 0x6f, 0x7a, 0x11, 0x47, 0x7c,
-	0x8b, 0x6d, 0x5d, 0xcd, 0x61, 0x9e, 0x39, 0x6c, 0x9f, 0x85, 0xa6, 0xed, 0x68, 0xff, 0x2f, 0x45,
-	0x3e, 0xcc, 0x8e, 0x72, 0x49, 0x2c, 0x2d, 0x84, 0xa0, 0xc8, 0xd9, 0xa8, 0x7a, 0xee, 0x41, 0x33,
-	0xf7, 0xc2, 0xb0, 0x84, 0x0e, 0xd1, 0xa5, 0x71, 0x28, 0x22, 0x02, 0x48, 0x30, 0xb2, 0xd1, 0xcd,
-	0x68, 0xb3, 0xa3, 0x4b, 0x44, 0x30, 0x76, 0xcc, 0xa9, 0xe1, 0x9a, 0x97, 0x2c, 0xfa, 0x1a, 0xa2,
-	0x76, 0xf9, 0x44, 0xf5, 0xf1, 0x99, 0x8f, 0xf8, 0x55, 0xf2, 0xae, 0x73, 0x5d, 0xef, 0xda, 0xc7,
-	0x31, 0xa7, 0xf6, 0x7b, 0xdc, 0x4d, 0x93, 0x27, 0x14, 0x1a, 0x8d, 0x10, 0x89, 0x76, 0x80, 0xc7,
-	0x37, 0x97, 0xd7, 0x16, 0x43, 0x3b, 0xed, 0x45, 0x32, 0x8f, 0x44, 0x4b, 0x20, 0x4f, 0xd3, 0xd7,
-	0xae, 0xd3, 0xee, 0xe0, 0x59, 0x74, 0xed, 0x3a, 0xfd, 0xd1, 0x71, 0xb7, 0x21, 0x69, 0x7f, 0x97,
-	0x60, 0x75, 0x16, 0xc1, 0x21, 0xe9, 0x10, 0x80, 0x5f, 0x3b, 0x82, 0xea, 0xa7, 0x50, 0xe3, 0xe0,
-	0xe2, 0xca, 0x11, 0xc6, 0xe1, 0x7f, 0xb0, 0x2c, 0x61, 0xe8, 0xdf, 0x09, 0x32, 0x68, 0x3d, 0xa8,
-	0xc6, 0xbf, 0xf1, 0xda, 0xbd, 0x1a, 0xad, 0x4e, 0x57, 0x05, 0x1d, 0x5b, 0x30, 0xa9, 0x0b, 0xbd,
-	0x24, 0x91, 0x45, 0x1e, 0xbf, 0x0b, 0xdb, 0x99, 0xa1, 0xbf, 0x60, 0x39, 0xd5, 0xff, 0x54, 0xc1,
-	0xcb, 0x66, 0x96, 0x90, 0x67, 0xfd, 0x13, 0xa8, 0xc6, 0xad, 0x4e, 0xe4, 0x7d, 0xee, 0x3e, 0x33,
-	0xc7, 0x92, 0x1c, 0x69, 0x3b, 0x50, 0x39, 0xb4, 0xdd, 0x8b, 0xb9, 0xd4, 0x5d, 0xd4, 0x01, 0xb5,
-	0x2f, 0x31, 0x1b, 0x7c, 0x9c, 0xa9, 0x1c, 0x47, 0x7e, 0x29, 0xf3, 0xcd, 0x9f, 0x45, 0xfb, 0xa2,
-	0x24, 0xe6, 0x79, 0x05, 0xef, 0xd5, 0x17, 0x02, 0xce, 0x77, 0x96, 0xd9, 0xc1, 0x75, 0x6b, 0xff,
-	0x2a, 0x41, 0x35, 0x7e, 0x37, 0x37, 0x18, 0x1e, 0x8b, 0xfd, 0x21, 0x6a, 0x28, 0x0f, 0x96, 0x09,
-	0x9c, 0xd9, 0x86, 0xd1, 0x0d, 0xec, 0x73, 0xd7, 0x0c, 0x27, 0x3e, 0x13, 0x5f, 0x16, 0x6e, 0xc0,
-	0xcd, 0xd5, 0x4e, 0xc7, 0x4c, 0xec, 0x42, 0x37, 0x60, 0xfc, 0x1e, 0x28, 0x84, 0xa2, 0xe9, 0xe0,
-	0x22, 0xeb, 0x8b, 0x0d, 0xe9, 0x06, 0xfc, 0xdf, 0x15, 0x81, 0xc0, 0x09, 0x73, 0x36, 0xa5, 0xad,
-	0xe9, 0x46, 0xec, 0xf1, 0x8a, 0x47, 0xdb, 0x55, 0xe7, 0x9f, 0x65, 0x50, 0xbe, 0xc2, 0x91, 0x70,
-	0xc2, 0xfc, 0x97, 0xb6, 0xc5, 0x85, 0xcb, 0x34, 0x0c, 0xd4, 0x3b, 0x45, 0xdf, 0x33, 0x29, 0xe9,
-	0xb4, 0xd7, 0x17, 0x7c, 0xea, 0xd4, 0x57, 0x38, 0x3b, 0x7d, 0xc2, 0xca, 0xb1, 0xa7, 0x3f, 0x58,
-	0xe6, 0xd8, 0x67, 0x5f, 0xbc, 0x90, 0xfd, 0x08, 0x94, 0xd4, 0x95, 0x58, 0xbd, 0xbb, 0xe4, 0xe3,
-	0x83, 0xf6, 0xad, 0x2b, 0x6f, 0xd3, 0x28, 0xf0, 0xc7, 0xb0, 0x99, 0x9b, 0x84, 0xea, 0xdb, 0xd7,
-	0xb8, 0x95, 0x68, 0x6f, 0x2d, 0x1d, 0xa6, 0x28, 0x7c, 0x0f, 0xd6, 0x44, 0xfd, 0xab, 0x6f, 0x14,
-	0x77, 0x85, 0x48, 0xd8, 0x9d, 0x85, 0x2d, 0x03, 0x85, 0x3c, 0x87, 0xf5, 0x4c, 0xb8, 0xd4, 0xb7,
-	0xae, 0x0a, 0x65, 0x24, 0xf0, 0xee, 0x92, 0x68, 0xeb, 0x2b, 0x4f, 0x1b, 0x7f, 0xfb, 0xcf, 0x9b,
-	0xd2, 0x3f, 0xf0, 0xef, 0xdf, 0xf8, 0xf7, 0xc7, 0xff, 0xbe, 0xb9, 0x72, 0xb6, 0x4a, 0xd4, 0x8f,
-	0xbe, 0x09, 0x00, 0x00, 0xff, 0xff, 0x67, 0x87, 0x11, 0xae, 0xaa, 0x17, 0x00, 0x00,
+	// 2090 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xac, 0x58, 0xcd, 0x73, 0xdb, 0xc6,
+	0x15, 0x27, 0xf8, 0x21, 0x91, 0x0f, 0xfc, 0x80, 0x56, 0x52, 0x4c, 0x23, 0x53, 0x4b, 0x86, 0xdd,
+	0x48, 0x49, 0x1c, 0x2a, 0x96, 0xa7, 0x8e, 0xeb, 0x34, 0x4d, 0x25, 0x0a, 0x4a, 0x98, 0xc8, 0xa0,
+	0x4a, 0xd1, 0xad, 0x67, 0x7a, 0x40, 0x21, 0x72, 0x29, 0x63, 0x44, 0x03, 0x2c, 0x00, 0xb9, 0x62,
+	0x4e, 0x3d, 0xf4, 0xd6, 0x43, 0xdb, 0x43, 0x3a, 0xbd, 0xf7, 0xd0, 0x5b, 0xfb, 0x07, 0xf4, 0x9e,
+	0xe9, 0x4c, 0x2f, 0xfd, 0x13, 0x3a, 0xee, 0xa1, 0xb7, 0x9e, 0x7b, 0xec, 0xec, 0xc3, 0x02, 0x04,
+	0x40, 0xf0, 0xc3, 0x19, 0x9f, 0x48, 0x3c, 0xec, 0x7b, 0xfb, 0xdb, 0xdf, 0xbe, 0x4f, 0xc0, 0x5b,
+	0x97, 0x63, 0xef, 0x39, 0xdd, 0x1b, 0x39, 0xb6, 0x67, 0xef, 0x5d, 0x3b, 0x74, 0xd0, 0xc0, 0xbf,
+	0x44, 0x44, 0xb9, 0xff, 0xa0, 0x34, 0xa0, 0xac, 0xd9, 0x7d, 0xea, 0x76, 0xe8, 0x2f, 0xae, 0xa8,
+	0xeb, 0x91, 0x2a, 0xac, 0x78, 0x66, 0xef, 0x92, 0x7a, 0x75, 0x61, 0x3b, 0xb7, 0x5b, 0x62, 0xcf,
+	0x03, 0x73, 0xe8, 0x51, 0xa7, 0x9e, 0x65, 0xcf, 0xca, 0x6f, 0x04, 0x28, 0x32, 0x85, 0x96, 0x35,
+	0xb0, 0xc9, 0x1e, 0x14, 0x06, 0x46, 0xcf, 0x73, 0xf1, 0x9d, 0xb8, 0xbf, 0xdd, 0x88, 0x58, 0x6e,
+	0x04, 0xab, 0x1a, 0xc7, 0x6c, 0x89, 0x6a, 0x79, 0xce, 0x98, 0x10, 0x80, 0x3e, 0x1d, 0x98, 0x96,
+	0xe9, 0x99, 0xb6, 0x55, 0x2f, 0x6c, 0x0b, 0xbb, 0x25, 0xf9, 0x1e, 0x40, 0x64, 0x85, 0x08, 0xb9,
+	0x4b, 0x3a, 0xae, 0x0b, 0xec, 0x15, 0xa9, 0x40, 0xe1, 0xa5, 0x31, 0xbc, 0xa2, 0xf5, 0xec, 0xb6,
+	0xb0, 0x5b, 0x7e, 0x9c, 0x7d, 0x24, 0x7c, 0x91, 0x2f, 0x0a, 0x52, 0xb6, 0xc3, 0x31, 0x2a, 0xbf,
+	0x16, 0x00, 0x38, 0xfc, 0xd1, 0x70, 0x4c, 0xee, 0x43, 0xc1, 0x62, 0x4f, 0x88, 0x5d, 0xdc, 0x57,
+	0xa6, 0xf0, 0xf8, 0xeb, 0xfc, 0xbf, 0xb8, 0x9f, 0xdc, 0xe4, 0x06, 0x52, 0x76, 0xbf, 0x1b, 0xdd,
+	0x5d, 0xdc, 0xdf, 0x4c, 0x3d, 0x1d, 0x03, 0xa5, 0xf4, 0xa0, 0xac, 0xf6, 0x2f, 0x66, 0x93, 0x58,
+	0x86, 0xfc, 0xa5, 0x69, 0xf5, 0x7d, 0x0a, 0x23, 0x94, 0xe6, 0xf0, 0x79, 0x0d, 0x4a, 0x23, 0xe3,
+	0x82, 0xea, 0xae, 0xf9, 0x15, 0xad, 0x17, 0xb7, 0x85, 0xdd, 0x02, 0xe3, 0x09, 0x45, 0x9e, 0x7d,
+	0x49, 0xad, 0x7a, 0x89, 0xc1, 0x51, 0x7e, 0x9b, 0x85, 0x55, 0xb6, 0xcb, 0x19, 0xf5, 0xc8, 0x87,
+	0xb0, 0x72, 0xe1, 0xd8, 0x57, 0xa3, 0x74, 0xe6, 0xf9, 0xaa, 0xc6, 0x67, 0xb8, 0xc4, 0x3f, 0xa7,
+	0x03, 0x05, 0x7c, 0x24, 0x1f, 0x40, 0x9e, 0xf6, 0x2f, 0x28, 0x57, 0xdc, 0x9a, 0xad, 0x88, 0x4f,
+	0x72, 0x03, 0xf2, 0xec, 0x97, 0x6c, 0x42, 0xc5, 0x33, 0x9c, 0x0b, 0xea, 0xe9, 0xe1, 0xc9, 0x18,
+	0x47, 0x35, 0x58, 0xb5, 0x9d, 0xbe, 0x69, 0x19, 0x43, 0x64, 0xa9, 0xc0, 0xef, 0x07, 0x8f, 0x2b,
+	0xb7, 0x40, 0x8c, 0x40, 0x88, 0x93, 0xfb, 0x6e, 0x9c, 0x5c, 0x79, 0x36, 0x8e, 0xc8, 0xb5, 0x57,
+	0x5c, 0xfb, 0xca, 0xe9, 0x51, 0x0e, 0x41, 0xf9, 0x53, 0x0e, 0x80, 0xf3, 0xce, 0x6e, 0xff, 0x11,
+	0x94, 0xd8, 0xc9, 0x74, 0x97, 0x7a, 0x81, 0x07, 0x7c, 0x77, 0xca, 0x2c, 0xf7, 0x00, 0xbe, 0x03,
+	0x47, 0x16, 0xfa, 0x4d, 0x36, 0xc5, 0x6f, 0x22, 0x5a, 0x11, 0x4f, 0xf9, 0x02, 0xd6, 0x3d, 0xdb,
+	0x33, 0x86, 0x3a, 0xdb, 0xd2, 0xd5, 0xcf, 0xc7, 0x3a, 0xde, 0x70, 0x01, 0x0d, 0x7c, 0x30, 0xcb,
+	0x40, 0x97, 0xa9, 0xe0, 0xf3, 0xe1, 0xf8, 0x4b, 0xd3, 0xea, 0xfb, 0xb6, 0x6e, 0x40, 0xcd, 0xa2,
+	0xd7, 0x9e, 0x9e, 0xbc, 0x72, 0x59, 0x85, 0x4a, 0x1c, 0x68, 0x8c, 0xc2, 0x3b, 0x71, 0x0a, 0x37,
+	0xd2, 0x28, 0x64, 0xe4, 0xbd, 0x11, 0x1f, 0x97, 0x3f, 0x82, 0xcd, 0x74, 0xf4, 0xb3, 0x23, 0x36,
+	0x87, 0xc1, 0xf1, 0xab, 0x2c, 0x14, 0x4f, 0xec, 0x9e, 0xc1, 0x42, 0x3e, 0x16, 0x19, 0x6c, 0xfd,
+	0x6e, 0x18, 0x19, 0xc2, 0x6e, 0x35, 0xe1, 0x05, 0x81, 0x52, 0x83, 0xed, 0x45, 0xde, 0x83, 0x82,
+	0xeb, 0x19, 0x8e, 0x57, 0xcf, 0x21, 0xd2, 0xb7, 0xd3, 0x97, 0x9e, 0xda, 0xa6, 0xe5, 0x91, 0x5d,
+	0xc8, 0x51, 0xab, 0x5f, 0xcf, 0x2f, 0x5c, 0x29, 0x7f, 0x0e, 0x05, 0x5f, 0x65, 0x1d, 0xc4, 0xf3,
+	0xb1, 0x47, 0x75, 0x7b, 0x30, 0x70, 0x39, 0xba, 0x02, 0x13, 0x0e, 0x4d, 0x8b, 0xea, 0xd6, 0xd5,
+	0x8b, 0x73, 0xcc, 0x80, 0x4c, 0xb8, 0x09, 0x95, 0x9e, 0x3d, 0xbc, 0x7a, 0x61, 0x05, 0x6b, 0x19,
+	0xa0, 0x82, 0x22, 0x43, 0x1e, 0x71, 0x16, 0x21, 0x7f, 0xdc, 0x3a, 0x51, 0xa5, 0x0c, 0xfb, 0x77,
+	0x76, 0x7a, 0xa0, 0x49, 0x82, 0xf2, 0x97, 0x2c, 0x90, 0x23, 0xda, 0xb3, 0x1d, 0xdc, 0x3a, 0x4c,
+	0x13, 0x3b, 0x50, 0x1c, 0x72, 0x38, 0xb8, 0x61, 0x92, 0xff, 0x90, 0xb5, 0x0d, 0x28, 0xf7, 0x4d,
+	0xc7, 0x1b, 0xeb, 0xe7, 0x57, 0x83, 0x01, 0x07, 0x52, 0x66, 0xe8, 0x82, 0x78, 0xa0, 0xd7, 0x3e,
+	0x8c, 0x22, 0xcb, 0x1c, 0x0e, 0x1d, 0x50, 0x87, 0x5a, 0x3d, 0xea, 0x22, 0x03, 0xc5, 0x48, 0xc2,
+	0x29, 0x60, 0xc2, 0x91, 0x81, 0xf0, 0x58, 0x9e, 0x24, 0x63, 0xb7, 0xbe, 0x82, 0x6b, 0x6f, 0xc2,
+	0x1a, 0xbd, 0xf6, 0xa8, 0xd5, 0x77, 0x75, 0xfb, 0x25, 0x75, 0x1c, 0x93, 0x85, 0xc5, 0x2a, 0xbe,
+	0xfa, 0x18, 0x4a, 0xee, 0xc8, 0xb0, 0x7c, 0x47, 0x07, 0xbc, 0xb0, 0xdd, 0x18, 0xde, 0xe9, 0x23,
+	0x36, 0xce, 0x46, 0x86, 0xc5, 0x68, 0x51, 0xee, 0x41, 0x31, 0xf8, 0x4f, 0x6a, 0x20, 0xfe, 0xb4,
+	0xd5, 0xfd, 0xbc, 0xa5, 0xe9, 0xc8, 0x4f, 0x86, 0x09, 0x0e, 0x3a, 0xed, 0xa7, 0xda, 0x91, 0xce,
+	0x09, 0xfb, 0x6b, 0x11, 0xa4, 0x98, 0x35, 0x16, 0xdf, 0x4b, 0xd3, 0x95, 0x20, 0xc6, 0x67, 0x4b,
+	0x82, 0x22, 0xb5, 0x7a, 0x76, 0xdf, 0xb4, 0x2e, 0x90, 0xaa, 0x12, 0x79, 0x0c, 0xa5, 0x90, 0xaa,
+	0x7a, 0x1e, 0x03, 0x77, 0x67, 0xf6, 0x79, 0x58, 0xf8, 0x76, 0x82, 0xe5, 0xe4, 0xa3, 0x20, 0x63,
+	0xd4, 0x50, 0x6f, 0x77, 0xbe, 0x5e, 0x24, 0xfa, 0xba, 0xb0, 0x31, 0x21, 0x5d, 0x0f, 0xce, 0xe3,
+	0xd6, 0x25, 0xb4, 0xf3, 0x70, 0xbe, 0x9d, 0xa3, 0x50, 0x33, 0x38, 0x2b, 0xb7, 0xaa, 0xa5, 0xdd,
+	0xda, 0x1a, 0x9a, 0x7c, 0x30, 0xdf, 0xa4, 0xea, 0xab, 0xb5, 0x03, 0x2d, 0xbf, 0x5a, 0x7c, 0x23,
+	0x40, 0x69, 0x72, 0xd8, 0x4d, 0x88, 0x27, 0x5e, 0x1e, 0xbb, 0x53, 0x25, 0x21, 0x8b, 0xe2, 0xa0,
+	0xd8, 0xf9, 0x24, 0xdf, 0x84, 0xb5, 0x29, 0x5f, 0x43, 0xb7, 0x2c, 0x91, 0xfb, 0x50, 0x36, 0xac,
+	0xde, 0x73, 0xdb, 0xd1, 0xfd, 0xc0, 0x86, 0xc5, 0x81, 0xbd, 0x07, 0xc0, 0x55, 0x58, 0x7c, 0x8b,
+	0x8b, 0xe3, 0xfb, 0xcf, 0x02, 0x14, 0x83, 0xb3, 0x4d, 0x25, 0x9f, 0xef, 0xc7, 0x92, 0xcf, 0xfb,
+	0xf3, 0x89, 0x0a, 0xac, 0xf8, 0xd9, 0xe8, 0x1e, 0x8b, 0x48, 0x77, 0x34, 0x34, 0xc6, 0xba, 0x65,
+	0xbc, 0xa0, 0x3c, 0x29, 0xbd, 0x15, 0x33, 0x71, 0xea, 0x98, 0x96, 0x67, 0x9c, 0x0f, 0xa9, 0xa2,
+	0xf0, 0xdc, 0x50, 0x81, 0x52, 0xfb, 0x27, 0x6a, 0xa7, 0xd3, 0x3a, 0x52, 0xcf, 0xa4, 0x0c, 0x11,
+	0x61, 0x55, 0x7d, 0xd6, 0x55, 0xb5, 0xa3, 0x33, 0x49, 0x90, 0x55, 0x28, 0x85, 0x97, 0x40, 0x1e,
+	0x41, 0x31, 0xb8, 0x47, 0x5e, 0xc9, 0xde, 0x59, 0x0e, 0xdd, 0x9b, 0xc9, 0xf5, 0x6d, 0xa8, 0xcf,
+	0x74, 0xb5, 0x98, 0x49, 0x25, 0x6e, 0x72, 0x3d, 0x66, 0xf2, 0x00, 0x6f, 0x0a, 0x0d, 0xfe, 0x1c,
+	0x36, 0x53, 0x1d, 0x2d, 0x6e, 0xed, 0x61, 0xdc, 0xda, 0xce, 0x72, 0x47, 0x76, 0xb1, 0xca, 0x7c,
+	0xb3, 0x0a, 0x6f, 0x35, 0x1d, 0xdb, 0x75, 0x43, 0xb7, 0x9d, 0xd9, 0x8d, 0x7d, 0x09, 0xb5, 0x48,
+	0x08, 0x46, 0x3c, 0x60, 0x3f, 0xb6, 0x61, 0xba, 0xb5, 0x48, 0x0c, 0xe2, 0x95, 0xb6, 0xa0, 0x1a,
+	0x26, 0x11, 0x3d, 0xf4, 0xfb, 0xea, 0xfe, 0xfd, 0x65, 0x6c, 0x85, 0x12, 0x34, 0xf5, 0x63, 0x20,
+	0x7d, 0xbb, 0x77, 0xf5, 0x82, 0x5a, 0x9e, 0x31, 0x81, 0x96, 0x47, 0x73, 0xdf, 0x5b, 0x0a, 0x5a,
+	0x54, 0x1b, 0x4d, 0x26, 0x33, 0xff, 0x3a, 0x88, 0x3c, 0x7e, 0x30, 0x33, 0xfa, 0x29, 0xff, 0x09,
+	0x48, 0x7d, 0xda, 0x1b, 0x1a, 0x4e, 0x64, 0xd7, 0x55, 0xdc, 0xf5, 0xc1, 0x72, 0x84, 0x84, 0xba,
+	0xb8, 0x67, 0x1d, 0x24, 0x96, 0x1a, 0x63, 0xb5, 0xa5, 0x88, 0x1b, 0xc5, 0x1a, 0x5d, 0x48, 0x69,
+	0x74, 0x45, 0x74, 0x83, 0x26, 0x88, 0x3d, 0x63, 0x38, 0xa4, 0x8e, 0x0f, 0xa5, 0x8c, 0x50, 0x1a,
+	0xcb, 0x40, 0x69, 0xa2, 0x1a, 0xa2, 0xd8, 0x82, 0x1b, 0xf4, 0x7a, 0x44, 0x1d, 0x13, 0x09, 0x19,
+	0xea, 0xae, 0x79, 0x61, 0x19, 0xde, 0x95, 0x43, 0xdd, 0x7a, 0x9f, 0x81, 0x51, 0x9e, 0x43, 0x35,
+	0x71, 0x95, 0x04, 0xaa, 0x5a, 0x5b, 0x3f, 0x52, 0x8f, 0x5b, 0x5a, 0xab, 0xdb, 0x6a, 0x6b, 0x2c,
+	0x44, 0xd7, 0xa1, 0x76, 0x70, 0x72, 0x12, 0x13, 0x0a, 0x64, 0x03, 0xa4, 0xe3, 0xa7, 0x09, 0x69,
+	0x96, 0xdc, 0x80, 0xf5, 0xc3, 0x96, 0x76, 0xd4, 0xd2, 0x3e, 0x8b, 0xbd, 0xc8, 0x29, 0x3f, 0x80,
+	0x5a, 0x92, 0xa3, 0x75, 0xa8, 0xe1, 0x56, 0xcd, 0x93, 0x83, 0xce, 0x41, 0xb0, 0xd7, 0x06, 0x48,
+	0xfe, 0x5e, 0x11, 0xa9, 0xa0, 0xf4, 0xa1, 0x12, 0x77, 0x93, 0x35, 0xa8, 0x68, 0x6d, 0xbd, 0xa3,
+	0x1e, 0xab, 0x1d, 0x55, 0x6b, 0xaa, 0x1c, 0x65, 0x93, 0xa9, 0x46, 0x84, 0x02, 0xc3, 0xa3, 0xb5,
+	0x35, 0x3d, 0xf9, 0x22, 0xcb, 0xce, 0x99, 0x90, 0xe5, 0x94, 0x1f, 0xc1, 0xda, 0xb4, 0xf7, 0x6c,
+	0x80, 0xc4, 0x50, 0xb6, 0x9b, 0x4f, 0x9f, 0xa8, 0x5a, 0x17, 0x11, 0x49, 0x19, 0xb2, 0x09, 0x6b,
+	0x08, 0x33, 0x26, 0x16, 0x94, 0x63, 0x80, 0x08, 0xfd, 0x55, 0x00, 0xad, 0x8d, 0x7b, 0xab, 0x1d,
+	0x86, 0x90, 0x40, 0xf5, 0xa8, 0xd5, 0x51, 0x9b, 0xdd, 0x50, 0x86, 0x34, 0x06, 0xd9, 0x30, 0x94,
+	0x66, 0x95, 0xdf, 0x67, 0x61, 0xc5, 0xcf, 0x1c, 0x53, 0xf9, 0xba, 0x1c, 0xc9, 0xd7, 0x38, 0x46,
+	0x8d, 0x0c, 0x87, 0x5a, 0x1e, 0xaf, 0x34, 0x61, 0x83, 0x98, 0x5f, 0xba, 0x41, 0x2c, 0x2c, 0x5e,
+	0x59, 0x86, 0x7c, 0x18, 0x2a, 0x38, 0xee, 0xb8, 0x96, 0x39, 0x1a, 0x51, 0x0f, 0x23, 0xa4, 0x44,
+	0xf6, 0xa1, 0xc2, 0x05, 0xbc, 0x88, 0x15, 0x17, 0x9b, 0xfc, 0x10, 0xc4, 0x40, 0x87, 0x81, 0x28,
+	0x2d, 0xd4, 0x50, 0xfe, 0x20, 0x40, 0xfe, 0xc4, 0xb4, 0x2e, 0xc9, 0x4e, 0x6c, 0x7e, 0xf6, 0x2b,
+	0x43, 0x5a, 0xd2, 0x25, 0x77, 0x63, 0xa5, 0x2d, 0x5e, 0x97, 0x98, 0x25, 0xac, 0x62, 0xca, 0xa7,
+	0xbc, 0x2e, 0x55, 0x01, 0x26, 0x2e, 0xeb, 0x77, 0xae, 0x27, 0xad, 0xb3, 0xae, 0x24, 0xb0, 0x8a,
+	0xc5, 0xfe, 0xe9, 0xad, 0xae, 0xfa, 0x44, 0xca, 0x92, 0x2a, 0x94, 0x5a, 0x4f, 0x4e, 0xdb, 0x9d,
+	0xee, 0x81, 0xd6, 0x95, 0xfe, 0xb3, 0xaa, 0xfc, 0x10, 0x4a, 0x61, 0x95, 0x63, 0x1d, 0x96, 0x63,
+	0xfc, 0xd2, 0xcf, 0x2c, 0xfe, 0x85, 0x6d, 0x41, 0x7e, 0x68, 0x5a, 0x97, 0x7c, 0xac, 0x5a, 0x9b,
+	0x42, 0xa1, 0xfc, 0xad, 0x0c, 0x1b, 0x53, 0xb1, 0xcc, 0x7a, 0xbd, 0x53, 0x90, 0x7a, 0x4c, 0xae,
+	0x47, 0x9a, 0x59, 0x21, 0xa5, 0x45, 0x4a, 0x53, 0x4e, 0x0a, 0xfd, 0x4a, 0xf3, 0x71, 0x7c, 0xc6,
+	0xbb, 0xb7, 0xd8, 0x4c, 0xa4, 0x8e, 0x3e, 0x9b, 0xd1, 0xb5, 0xe5, 0xd0, 0xd6, 0xe3, 0xc5, 0xb6,
+	0x66, 0x96, 0xd3, 0x87, 0x50, 0xc0, 0x39, 0x92, 0xfb, 0xe2, 0xce, 0x62, 0x53, 0x38, 0x85, 0xa5,
+	0xcd, 0x8c, 0xc0, 0x67, 0x46, 0xb1, 0x43, 0x87, 0x86, 0x47, 0xfb, 0x0c, 0xff, 0x54, 0x0c, 0x6d,
+	0x42, 0xc5, 0x61, 0xaf, 0x63, 0xa5, 0x2f, 0x36, 0xc7, 0xe3, 0x38, 0x23, 0x7f, 0x2d, 0xb0, 0xbc,
+	0x83, 0x76, 0xb8, 0x4b, 0xdd, 0x81, 0x15, 0xbf, 0x76, 0xf0, 0xe6, 0x3b, 0xd5, 0xef, 0x92, 0x7d,
+	0x51, 0x76, 0x5e, 0x5f, 0x44, 0x6e, 0x43, 0xde, 0x35, 0x3d, 0xca, 0x69, 0x4c, 0x35, 0x38, 0xc1,
+	0x8f, 0x4d, 0xa3, 0xfc, 0xdf, 0x1c, 0xac, 0xc5, 0x69, 0x39, 0xa3, 0xde, 0xd4, 0x29, 0x9b, 0xb1,
+	0x38, 0xf1, 0x6f, 0x7c, 0x6f, 0x31, 0xb5, 0xf1, 0x03, 0x1f, 0x46, 0xe7, 0x83, 0xdc, 0xb7, 0xb3,
+	0x71, 0x0c, 0x95, 0x58, 0x4d, 0xe7, 0x73, 0xc6, 0x6b, 0xdb, 0x39, 0x02, 0x31, 0x52, 0xa3, 0xf9,
+	0x67, 0x86, 0xd7, 0xb6, 0xf2, 0x29, 0xac, 0xf8, 0x95, 0xb5, 0xbe, 0xf2, 0xed, 0x0c, 0x24, 0xaf,
+	0x77, 0x75, 0xee, 0xf5, 0x36, 0xa1, 0xec, 0xf8, 0xea, 0x3a, 0x0b, 0xbd, 0x3a, 0xa4, 0x7c, 0x1c,
+	0x99, 0xb7, 0x29, 0x73, 0x60, 0xf9, 0xeb, 0x2c, 0x14, 0x7c, 0x97, 0x5f, 0x67, 0x1c, 0x4c, 0x7a,
+	0x0a, 0x76, 0xd3, 0x39, 0x1c, 0x8d, 0x27, 0xc4, 0xb8, 0xfe, 0x77, 0x87, 0xc4, 0x14, 0x9c, 0x43,
+	0xd9, 0xe6, 0xf4, 0x55, 0x30, 0x71, 0x0d, 0x56, 0x7d, 0x4e, 0x5c, 0x0c, 0xc1, 0x1c, 0x19, 0xc0,
+	0xcd, 0x28, 0x6a, 0xfc, 0xb6, 0x13, 0x84, 0x0c, 0xe7, 0xad, 0xb9, 0x64, 0x94, 0x46, 0x0f, 0xe2,
+	0x1e, 0x8e, 0x3b, 0xdc, 0x8a, 0x3f, 0x63, 0x7d, 0x02, 0x6f, 0xcf, 0x79, 0xbd, 0xe8, 0xb3, 0x8a,
+	0x7c, 0x39, 0x95, 0x39, 0x53, 0xf4, 0x0e, 0xe3, 0x1d, 0xf5, 0x83, 0xd7, 0xcd, 0x9d, 0x6f, 0xf4,
+	0x0b, 0xd2, 0x9b, 0x9e, 0x2a, 0x94, 0x77, 0x60, 0x23, 0xd6, 0xb4, 0xcc, 0x68, 0xf8, 0x95, 0x7f,
+	0x64, 0x81, 0x24, 0x16, 0xb2, 0x1a, 0xf3, 0x18, 0x8a, 0x81, 0x43, 0xf0, 0xda, 0x92, 0x18, 0xe3,
+	0xa7, 0x54, 0x42, 0x91, 0xfc, 0x3f, 0x01, 0x8a, 0xc1, 0xc3, 0x54, 0xf6, 0xb9, 0xcb, 0x7b, 0x86,
+	0xf9, 0xc9, 0xef, 0x5d, 0x28, 0x85, 0x4d, 0xe9, 0xfc, 0xf9, 0x11, 0x0d, 0x8e, 0x47, 0x94, 0x77,
+	0x36, 0xb3, 0x56, 0xbd, 0x0f, 0x22, 0x92, 0x6b, 0x0c, 0xcd, 0xaf, 0xb0, 0xe3, 0x9f, 0xb7, 0xf8,
+	0x3d, 0x9e, 0x21, 0x69, 0x5f, 0x3f, 0x1f, 0x63, 0x77, 0x33, 0x7b, 0x6d, 0xd0, 0x77, 0x61, 0xcb,
+	0xb3, 0xff, 0xbb, 0x1c, 0x88, 0xcf, 0x3a, 0x74, 0x70, 0x46, 0x9d, 0x97, 0x66, 0x8f, 0x92, 0x4f,
+	0xa0, 0x80, 0xbe, 0x41, 0x6e, 0xa6, 0x7d, 0x6e, 0xc7, 0x1b, 0x91, 0x6f, 0xcc, 0xf8, 0x12, 0xaf,
+	0x64, 0x98, 0x3a, 0x7e, 0x52, 0x4c, 0xa8, 0x47, 0xbf, 0xa7, 0x27, 0xd4, 0x27, 0xdf, 0x53, 0x95,
+	0x0c, 0x69, 0x83, 0x18, 0x99, 0x0c, 0xc9, 0xd6, 0x82, 0x0f, 0x52, 0xf2, 0x77, 0xe6, 0x0e, 0x95,
+	0x4a, 0x86, 0xfc, 0x0c, 0x6a, 0x89, 0xc0, 0x20, 0x77, 0x96, 0x98, 0x3d, 0xe4, 0xdb, 0x0b, 0x63,
+	0x4b, 0xc9, 0x90, 0xa7, 0x50, 0x89, 0x79, 0x15, 0xb9, 0x3d, 0xcf, 0xe3, 0x7c, 0xc3, 0x5b, 0x0b,
+	0x9c, 0x52, 0xc9, 0x1c, 0x4a, 0x7f, 0x7f, 0x75, 0x4b, 0xf8, 0xe7, 0xab, 0x5b, 0xc2, 0xbf, 0x5e,
+	0xdd, 0x12, 0xfe, 0xf8, 0xef, 0x5b, 0x99, 0xf3, 0x15, 0x5c, 0xfd, 0xe0, 0xff, 0x01, 0x00, 0x00,
+	0xff, 0xff, 0xa4, 0x78, 0x37, 0xbb, 0x04, 0x1a, 0x00, 0x00,
 }

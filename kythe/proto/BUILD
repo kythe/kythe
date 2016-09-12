@@ -6,12 +6,14 @@ filegroup(
     name = "public",
     srcs = [
         "analysis.proto",
+        "analysis_service.proto",
         "common.proto",
         "cxx.proto",
         "filecontext.proto",
         "filetree.proto",
         "java.proto",
         "storage.proto",
+        "storage_service.proto",
         "xref.proto",
     ],
 )
@@ -23,10 +25,9 @@ proto_library(
     gen_go = 1,
 )
 
-# Public Kythe GraphStore service API and analyzer output format
+# Public Kythe GraphStore analyzer output format
 proto_library(
     name = "storage_proto",
-    has_services = 1,
     gen_cc = 1,
     gen_go = 1,
     gen_java = 1,
@@ -36,9 +37,40 @@ proto_library(
     ],
 )
 
-# Public Kythe analyzer and file data service APIs
+# Public Kythe GraphStore service API
+proto_library(
+    name = "storage_service_proto",
+    has_services = 1,
+    gen_cc = 1,
+    gen_go = 1,
+    gen_java = 1,
+    visibility = [
+        "//kythe:default_visibility",
+        "//third_party/llvm/src:__pkg__",
+    ],
+    deps = [":storage_proto"],
+)
+
+# Public Kythe analyzer
 proto_library(
     name = "analysis_proto",
+    gen_cc = 1,
+    gen_go = 1,
+    gen_java = 1,
+    visibility = [
+        "//kythe:default_visibility",
+        "//third_party/llvm/src:__pkg__",
+    ],
+    deps = [
+        ":filecontext_proto",
+        ":storage_proto",
+        "//external:proto/any_proto",
+    ],
+)
+
+# Public Kythe file data service APIs
+proto_library(
+    name = "analysis_service_proto",
     has_services = 1,
     gen_cc = 1,
     gen_go = 1,
@@ -48,6 +80,7 @@ proto_library(
         "//third_party/llvm/src:__pkg__",
     ],
     deps = [
+        ":analysis_proto",
         ":filecontext_proto",
         ":storage_proto",
         "//external:proto/any_proto",

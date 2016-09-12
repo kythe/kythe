@@ -59,6 +59,7 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/platform/shared:remote_file_data",
         "//kythe/java/com/google/devtools/kythe/platform/shared:statistics",
         "//kythe/proto:analysis_proto_java",
+        "//kythe/proto:analysis_service_proto_java",
     ],
 )
 

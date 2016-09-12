@@ -2,7 +2,7 @@ def _cargo_cmd(loc, out_dir, cmd, outs=[]):
      return "\n".join([
              "$(location //tools/build_rules/rust:run_cargo.sh) " + loc + " \"" + cmd + "\"",
         ] + [
-            "mv " + loc + out_dir + out + " $(location " + out + ") " for out in outs 
+            "mv " + loc + out_dir + out + " $(location " + out + ") " for out in outs
         ])
 
 _automatic_srcs = [
@@ -12,7 +12,7 @@ _automatic_srcs = [
 
 def cargo_bin(name, loc, srcs=[], bin_name=None, release=False):
     bin_name = name if bin_name == None else bin_name
-    output_path = "target/" + ("release/" if release else "debug/") 
+    output_path = "target/" + ("release/" if release else "debug/")
     native.genrule(
         name = name,
         srcs = srcs + native.glob(_automatic_srcs),
@@ -30,6 +30,7 @@ def cargo_bin(name, loc, srcs=[], bin_name=None, release=False):
 
 def _cargo_generic_lib(name, ext, loc, srcs, lib_name, release, visibility = "//visibility:public", tags = []):
     output_path = "target/" + ("release/" if release else "debug/")
+    output_path = output_path + "deps/"
     native.genrule(
             name = name,
             srcs = srcs + native.glob(_automatic_srcs),
@@ -47,7 +48,7 @@ def _cargo_generic_lib(name, ext, loc, srcs, lib_name, release, visibility = "//
             )
 
 def cargo_lib(name, loc, srcs=[], lib_name=None, lib_type="rlib", release=False):
-    lib_name = (name if lib_name == None else lib_name) 
+    lib_name = (name if lib_name == None else lib_name)
     if lib_type == "rlib":
         _cargo_generic_lib(name, ".rlib", loc, srcs, lib_name, release)
     elif lib_type == "dylib":
@@ -55,9 +56,9 @@ def cargo_lib(name, loc, srcs=[], lib_name=None, lib_type="rlib", release=False)
         # and bazel doesn't allow for selecting over outputs.
         # To circumvent this we create platform specific rules.
         # The wrong rule will always fail on the wrong platform.
-        _cargo_generic_lib("_" + name + "-k8", ".so", 
-                           loc, srcs, lib_name, release, 
-                           "//visibility:private", 
+        _cargo_generic_lib("_" + name + "-k8", ".so",
+                           loc, srcs, lib_name, release,
+                           "//visibility:private",
                            tags = ["arc-ignore"])
         _cargo_generic_lib("_" + name + "-darwin", ".dylib",
                            loc, srcs, lib_name, release,

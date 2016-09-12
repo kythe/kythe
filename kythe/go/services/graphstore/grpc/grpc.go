@@ -23,7 +23,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	spb "kythe.io/kythe/proto/storage_proto"
+	sspb "kythe.io/kythe/proto/storage_service_proto"
 )
 
 func init() {
@@ -35,5 +35,5 @@ func handler(spec string) (graphstore.Service, error) {
 	if err != nil {
 		return nil, err
 	}
-	return graphstore.GRPC(spb.NewGraphStoreClient(conn)), nil
+	return graphstore.GRPC(sspb.NewGraphStoreClient(conn)), nil
 }

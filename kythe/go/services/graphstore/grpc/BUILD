@@ -6,7 +6,7 @@ go_package(
     deps = [
         "//kythe/go/services/graphstore",
         "//kythe/go/storage/gsutil",
-        "//kythe/proto:storage_proto_go",
+        "//kythe/proto:storage_service_proto_go",
         "@go_grpc//:grpc",
     ],
 )

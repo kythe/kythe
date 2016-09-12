@@ -1,0 +1,57 @@
+/*
+ * Copyright 2014 Google Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+package kythe.proto;
+option java_package = "com.google.devtools.kythe.proto";
+
+import "kythe/proto/storage.proto";
+
+// Persistent storage server for Kythe analysis data.
+// See: http://www.kythe.io/docs/kythe-storage.html
+service GraphStore {
+  // Read responds with all Entry messages that match the given ReadRequest.
+  // The Read operation should be implemented with time complexity proportional
+  // to the size of the return set.
+  rpc Read(ReadRequest) returns (stream Entry) {}
+
+  // Scan responds with all Entry messages matching the given ScanRequest.  If a
+  // ScanRequest field is empty, any entry value for that field matches and will
+  // be returned.  Scan is similar to Read, but with no time complexity
+  // restrictions.
+  rpc Scan(ScanRequest) returns (stream Entry) {}
+
+  // Write atomically inserts or updates a collection of entries into the store.
+  // Each update is a tuple of the form (kind, target, fact, value).  For each
+  // such update, an entry (source, kind, target, fact, value) is written into
+  // the store, replacing any existing entry (source, kind, target, fact,
+  // value') that may exist.  Note that this operation cannot delete any data
+  // from the store; entries are only ever inserted or updated.  Apart from
+  // acting atomically, no other constraints are placed on the implementation.
+  rpc Write(WriteRequest) returns (WriteReply) {}
+}
+
+// ShardedGraphStores can be arbitrarily sharded for parallel processing.
+// Depending on the implementation, these methods may not return consistent
+// results when the store is being written to.  Shards are indexed from 0.
+service ShardedGraphStore {
+  // Count returns the number of entries in the given shard.
+  rpc Count(CountRequest) returns (CountReply) {}
+
+  // Shard responds with each Entry in the given shard.
+  rpc Shard(ShardRequest) returns (stream Entry) {}
+}

@@ -41,5 +41,6 @@ java_library(
         "//external:guava",
         "//external:proto/protobuf_java",
         "//kythe/proto:analysis_proto_java",
+        "//kythe/proto:analysis_service_proto_java",
     ],
 )

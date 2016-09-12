@@ -26,11 +26,14 @@ import (
 	"golang.org/x/net/context"
 
 	apb "kythe.io/kythe/proto/analysis_proto"
+	aspb "kythe.io/kythe/proto/analysis_service_proto"
 )
 
 // Analyzer implements the analysis.CompilationAnalyzer interface by using a
 // remote GRPC CompilationAnalyzer server.
-type Analyzer struct{ Client apb.CompilationAnalyzerClient }
+type Analyzer struct {
+	Client aspb.CompilationAnalyzerClient
+}
 
 // Analyze implements the analysis.CompilationAnalyzer interface.
 func (a *Analyzer) Analyze(ctx context.Context, req *apb.AnalysisRequest, f analysis.OutputFunc) error {
