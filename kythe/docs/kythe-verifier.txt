@@ -49,7 +49,7 @@ conventions and some uniqueness properties:
 
 * All vnames must have at least one field set.
 * Facts must be one of the following forms:
-  - `(source, edge, target, "", "")`
+  - `(source, edge, target, /, "")`
   - `(source, edge, target, /kythe/ordinal, base10string)`
   - `(source, "", "", string, _)`
 * forall `s k`, there may be at most one fact matching `(s, "", "", k, _)`.
