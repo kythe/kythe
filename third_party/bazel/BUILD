@@ -23,3 +23,13 @@ proto_library(
     src = "src/main/protobuf/test_status.proto",
     gen_go = 1,
 )
+
+sh_binary(
+    name = "get_devdir",
+    srcs = ["get_devdir.sh"],
+)
+
+sh_binary(
+    name = "get_sdkroot",
+    srcs = ["get_sdkroot.sh"],
+)

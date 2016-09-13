@@ -1,0 +1,48 @@
+
+'//kythe/cxx/extractor/testdata:objc_lib fd43074876270c744bd2f1328f78cdef*ObjcCompileÚ>ö
+?bazel-out/host/bin/external/bazel_tools/tools/objc/xcrunwrapper
+clang
+-Wshorten-64-to-32
+-Wbool-conversion
+-Wconstant-conversion
+-Wduplicate-method-match
+-Wempty-body
+-Wenum-conversion
+-Wint-conversion
+-Wunreachable-code
+-Wmismatched-return-types
+-Wundeclared-selector
+-Wuninitialized
+-Wunused-function
+-Wunused-variable
+-fexceptions
+-fasm-blocks
+-fobjc-abi-version=2
+-fobjc-legacy-dispatch
+-DOS_IOS
+-mios-simulator-version-min=7.0
+-arch
+x86_64
+	-isysroot
+__BAZEL_XCODE_SDKROOT__
+-F
+1__BAZEL_XCODE_SDKROOT__/System/Library/Frameworks
+-F
+]__BAZEL_XCODE_DEVELOPER_DIR__/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks
+-O0
+	-DDEBUG=1
+-iquote
+.
+-iquote
+)bazel-out/local_darwin-fastbuild/genfiles
+
+-fobjc-arc
+-c
+'kythe/cxx/extractor/testdata/objc_lib.m
+-o
+xbazel-out/local_darwin-fastbuild/bin/kythe/cxx/extractor/testdata/_objs/objc_lib/kythe/cxx/extractor/testdata/objc_lib.o
+-MD
+-MF
+xbazel-out/local_darwin-fastbuild/bin/kythe/cxx/extractor/testdata/_objs/objc_lib/kythe/cxx/extractor/testdata/objc_lib.d!
+APPLE_SDK_VERSION_OVERRIDE9.3%
+APPLE_SDK_PLATFORMiPhoneSimulator"'kythe/cxx/extractor/testdata/objc_lib.m"/external/bazel_tools/tools/objc/xcrunwrapper.sh"?bazel-out/host/bin/external/bazel_tools/tools/objc/xcrunwrapper*xbazel-out/local_darwin-fastbuild/bin/kythe/cxx/extractor/testdata/_objs/objc_lib/kythe/cxx/extractor/testdata/objc_lib.o*xbazel-out/local_darwin-fastbuild/bin/kythe/cxx/extractor/testdata/_objs/objc_lib/kythe/cxx/extractor/testdata/objc_lib.d

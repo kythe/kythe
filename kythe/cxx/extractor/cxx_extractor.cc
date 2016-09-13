@@ -22,6 +22,7 @@
 #include <fcntl.h>
 #include <openssl/sha.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendAction.h"
@@ -820,8 +821,10 @@ void KindexWriterSink::OpenIndex(const std::string& directory,
       << " old path: " << open_path_ << ")";
   std::string file_path =
       force_path_.empty() ? directory + "/" + hash + ".kindex" : force_path_;
+  // Open with read/write for all. The exact permissions required may depend on
+  // the backend implementation running the extractor.
   fd_ =
-      open(file_path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, S_IREAD | S_IWRITE);
+      open(file_path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0666);
   CHECK_GE(fd_, 0) << "Couldn't open output file " << file_path;
   open_path_ = file_path;
   file_stream_.reset(new FileOutputStream(fd_));

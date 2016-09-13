@@ -1,4 +1,5 @@
 load("//tools:build_rules/kythe.bzl", "cc_verifier_test")
+load("//tools:build_rules/kythe.bzl", "objc_bazel_verifier_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
@@ -209,5 +210,35 @@ cc_verifier_test(
     size = "small",
     srcs = [
         "extract_verify_iostream_test.cc",
+    ],
+)
+
+objc_library(
+    name = "objc_lib",
+    srcs = ["objc_lib.m"],
+    # This is a little tricky to build, so don't do it automatically.
+    tags = [
+        "arc-ignore",
+        "manual",
+    ],
+)
+
+# Test that we can use the bazel extractor to extract a .xa file, index the
+# result of the extraction, and verify the result of the indexing. The primary
+# purpose of this test is to see if the whole pipeline works without failure.
+# The actual verficiation being done is not important as long as *some*
+# verficiation is being done.
+#
+# The xa file is generated and copied into this directory by running the helper
+# script run_objc_bazel_extraction.sh.
+objc_bazel_verifier_test(
+    name = "objc_lib_test",
+    size = "small",
+    srcs = "objc_lib.m",
+    data = "objc_lib.xa",
+    # This test can only pass on darwin, so do not include it in our presubmit.
+    tags = [
+        "arc-ignore",
+        "manual",
     ],
 )

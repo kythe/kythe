@@ -13,3 +13,7 @@ Built tools/jdk/*_deploy.jar
 Remove tools/jdk/ijar binary and use a filegroup instead.
 
 The extra_actions_base and test_status protos have their generated Go source code checked-in.
+
+Two helper scripts (get_devdir.sh and get_sdkroot.sh) were created by
+modifying src/tools/xcode/xcrunwrapper/xcrunwrapper.sh @
+180d1b56b8aea8fab974cfa57e9182598990710c.

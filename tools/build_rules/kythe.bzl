@@ -1,5 +1,19 @@
 load("@//tools/cdexec:cdexec.bzl", "rootpath")
 
+base_attrs = {
+    "vnames_config": attr.label(
+        default = Label("//kythe/data:vnames_config"),
+        allow_files = True,
+        single_file = True,
+    ),
+    "_verifier": attr.label(
+        default = Label("//kythe/cxx/verifier"),
+        executable = True,
+    ),
+    "indexer_opts": attr.string_list([]),
+    "verifier_opts": attr.string_list(["--ignore_dups"]),
+}
+
 def extract(ctx, kindex, args, inputs=[], mnemonic=None):
   tool_inputs, _, input_manifests = ctx.resolve_command(tools=[ctx.attr._extractor])
   env = {
@@ -116,6 +130,8 @@ def cc_verifier_test_impl(ctx):
       # TODO(zarko): This needs to be autodetected (or does doing so even make
       # sense?)
       args += ['-I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1']
+      # TODO(salguarnieri): This could be made more generic with:
+      # $(xcrun --show-sdk-path)/usr/include
       args += ['-I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/usr/include']
     args += ['-c', src.short_path]
     kindex = ctx.new_file(ctx.label.name + ".compilation/" + src.short_path + ".kindex")
@@ -129,19 +145,29 @@ def cc_verifier_test_impl(ctx):
       runfiles = runfiles,
   )
 
-base_attrs = {
-    "vnames_config": attr.label(
-        default = Label("//kythe/data:vnames_config"),
-        allow_files = True,
-        single_file = True,
-    ),
-    "_verifier": attr.label(
-        default = Label("//kythe/cxx/verifier"),
-        executable = True,
-    ),
-    "indexer_opts": attr.string_list([]),
-    "verifier_opts": attr.string_list(["--ignore_dups"]),
-}
+def objc_bazel_verifier_test_impl(ctx):
+  entries = []
+
+  src = ctx.files.srcs[0]
+  xa = ctx.files.data[0]
+  inputs = [src, xa, ctx.executable._devdir_script, ctx.executable._sdkroot_script] + ctx.files._vnames
+  args = [xa.short_path]
+  kindex = ctx.new_file(ctx.label.name + ".compilation/" + src.short_path + ".kindex")
+  args += [kindex.path]
+  for s in ctx.attr._vnames.files:
+    args += [s.path]
+  args += [ctx.executable._devdir_script.path];
+  args += [ctx.executable._sdkroot_script.path];
+  extract(ctx, kindex, args, inputs=inputs, mnemonic='ObjcExtractor')
+  entry = ctx.new_file(ctx.label.name + ".compilation/" + src.short_path + ".entries.gz")
+  entries += [entry]
+  # We can use the Cc indexer since we only have 1 indexer for both Objective-C and C++.
+  index(ctx, kindex, entry, mnemonic='CcIndexer')
+
+  runfiles = verify(ctx, entries)
+  return struct(
+      runfiles = runfiles,
+  )
 
 java_verifier_test = rule(
     java_verifier_test_impl,
@@ -201,6 +227,45 @@ cc_verifier_test = rule(
         ),
         "_indexer": attr.label(
             default = Label("//kythe/cxx/indexer/cxx:indexer"),
+            executable = True,
+        ),
+        "indexer_opts": attr.string_list(["--ignore_unimplemented=true"]),
+    },
+    executable = True,
+    output_to_genfiles = True,
+    test = True,
+)
+
+objc_bazel_verifier_test = rule(
+    objc_bazel_verifier_test_impl,
+    attrs = base_attrs + {
+        "srcs": attr.label(allow_files = FileType([
+            ".m",
+        ])),
+        "data": attr.label(allow_files = FileType([
+            ".xa",
+        ])),
+        "deps": attr.label_list(
+            allow_files = False,
+        ),
+        "_extractor": attr.label(
+            default = Label("//kythe/cxx/extractor:objc_extractor_bazel"),
+            executable = True,
+        ),
+        "_indexer": attr.label(
+            default = Label("//kythe/cxx/indexer/cxx:indexer"),
+            executable = True,
+        ),
+        "_vnames": attr.label(
+            default = Label("//kythe/data:vnames_config"),
+            allow_files = False,
+        ),
+        "_devdir_script": attr.label(
+            default = Label("//third_party/bazel:get_devdir"),
+            executable = True,
+        ),
+        "_sdkroot_script": attr.label(
+            default = Label("//third_party/bazel:get_sdkroot"),
             executable = True,
         ),
         "indexer_opts": attr.string_list(["--ignore_unimplemented=true"]),
