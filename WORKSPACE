@@ -209,8 +209,8 @@ bind(
 
 git_repository(
     name = "io_bazel_rules_go",
+    commit = "a9fc44f15240198a34c09d7df96cf04509b33960",
     remote = "https://github.com/bazelbuild/rules_go.git",
-    tag = "0.1.0",
 )
 
 load("@io_bazel_rules_go//go:def.bzl", "go_repositories")
