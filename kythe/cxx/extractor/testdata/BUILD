@@ -1,5 +1,6 @@
 load("//tools:build_rules/kythe.bzl", "cc_verifier_test")
 load("//tools:build_rules/kythe.bzl", "objc_bazel_verifier_test")
+load("//tools:build_rules/kythe.bzl", "cc_bazel_verifier_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
@@ -241,4 +242,23 @@ objc_bazel_verifier_test(
         "arc-ignore",
         "manual",
     ],
+)
+
+cc_library(
+    name = "cc_lib",
+    srcs = ["cc_lib.cc"],
+)
+
+# Test that we can use the bazel extractor to extract a .xa file, index the
+# result of the extraction, and verify the result of the indexing. The primary
+# purpose of this test is to see if the whole pipeline works without failure.
+# The actual verficiation being done is not important.
+#
+# The xa file is generated and copied into this directory by running the helper
+# script run_cxx_bazel_extraction.sh.
+cc_bazel_verifier_test(
+    name = "cc_lib_test",
+    size = "small",
+    srcs = "cc_lib.cc",
+    data = "cc_lib.xa",
 )

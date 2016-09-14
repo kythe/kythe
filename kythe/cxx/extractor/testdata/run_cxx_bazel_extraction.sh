@@ -15,18 +15,12 @@
 
 set -o pipefail
 
-if [ "$(uname)" != "Darwin" ]; then
-  echo "Objective C Bazel extraction can only be done on darwin"
-  exit 2
-fi
-
 BAZELOUT="$(bazel info workspace)/bazel-out"
 bazel build \
-  --experimental_action_listener=//kythe/cxx/extractor:extract_kindex_objc \
+  --experimental_action_listener=//kythe/cxx/extractor:extract_kindex \
   --experimental_extra_action_top_level_only \
   --experimental_proto_extra_actions \
-  --ios_sdk_version=9.3 \
-  :objc_lib
+  :cc_lib
 
 if [ $? -ne 0 ]; then
   echo "Build failed"
@@ -37,8 +31,8 @@ fi
 D="$(pwd)"
 pushd "$BAZELOUT"
 find . \
-  -path "*/extra_actions/kythe/cxx/extractor/extra_action_objc/kythe/cxx/extractor/testdata/*.xa" \
-  -exec cp {} "$D/objc_lib.xa" \; \
+  -path "*/extra_actions/kythe/cxx/extractor/extra_action/kythe/cxx/extractor/testdata/*.xa" \
+  -exec cp {} "$D/cc_lib.xa" \; \
   && \
-  chmod -x "$D/objc_lib.xa"
+  chmod 644 "$D/cc_lib.xa"
 popd

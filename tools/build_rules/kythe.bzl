@@ -169,6 +169,27 @@ def objc_bazel_verifier_test_impl(ctx):
       runfiles = runfiles,
   )
 
+def cc_bazel_verifier_test_impl(ctx):
+  entries = []
+
+  src = ctx.files.srcs[0]
+  xa = ctx.files.data[0]
+  inputs = [src, xa] + ctx.files._vnames
+  args = [xa.short_path]
+  kindex = ctx.new_file(ctx.label.name + ".compilation/" + src.short_path + ".kindex")
+  args += [kindex.path]
+  for s in ctx.attr._vnames.files:
+    args += [s.path]
+  extract(ctx, kindex, args, inputs=inputs, mnemonic='CcExtractor')
+  entry = ctx.new_file(ctx.label.name + ".compilation/" + src.short_path + ".entries.gz")
+  entries += [entry]
+  index(ctx, kindex, entry, mnemonic='CcIndexer')
+
+  runfiles = verify(ctx, entries)
+  return struct(
+      runfiles = runfiles,
+  )
+
 java_verifier_test = rule(
     java_verifier_test_impl,
     attrs = base_attrs + {
@@ -267,6 +288,37 @@ objc_bazel_verifier_test = rule(
         "_sdkroot_script": attr.label(
             default = Label("//third_party/bazel:get_sdkroot"),
             executable = True,
+        ),
+        "indexer_opts": attr.string_list(["--ignore_unimplemented=true"]),
+    },
+    executable = True,
+    output_to_genfiles = True,
+    test = True,
+)
+
+cc_bazel_verifier_test = rule(
+    cc_bazel_verifier_test_impl,
+    attrs = base_attrs + {
+        "srcs": attr.label(allow_files = FileType([
+            ".cc",
+        ])),
+        "data": attr.label(allow_files = FileType([
+            ".xa",
+        ])),
+        "deps": attr.label_list(
+            allow_files = False,
+        ),
+        "_extractor": attr.label(
+            default = Label("//kythe/cxx/extractor:cxx_extractor_bazel"),
+            executable = True,
+        ),
+        "_indexer": attr.label(
+            default = Label("//kythe/cxx/indexer/cxx:indexer"),
+            executable = True,
+        ),
+        "_vnames": attr.label(
+            default = Label("//kythe/data:vnames_config"),
+            allow_files = False,
         ),
         "indexer_opts": attr.string_list(["--ignore_unimplemented=true"]),
     },
