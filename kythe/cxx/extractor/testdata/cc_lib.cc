@@ -3,5 +3,5 @@
 //- VarNode named vname("x:0:0:foo#n", "", "", "", "c++")
 void foo() {
 //- @x defines/binding VarNode
-  int x;
+  int __attribute__ ((unused)) x;
 }

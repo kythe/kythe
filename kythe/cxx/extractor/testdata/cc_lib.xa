@@ -1,5 +1,5 @@
 
-%//kythe/cxx/extractor/testdata:cc_lib f8c8d9402d1fe98bd4c3c9437823a726*
+%//kythe/cxx/extractor/testdata:cc_lib 68e7d4ed6a09871572456c9521960b20*
 CppCompile >ù
 /usr/bin/clang-3.5
 -std=c++11	-fno-rtti-Wall-Werror-Wno-unused-variable-isystem tools/cpp/include-MD-MFwbazel-out/local_linux-fastbuild/bin/kythe/cxx/extractor/testdata/_objs/cc_lib/kythe/cxx/extractor/testdata/cc_lib.pic.dÖ-frandom-seed=bazel-out/local_linux-fastbuild/bin/kythe/cxx/extractor/testdata/_objs/cc_lib/kythe/cxx/extractor/testdata/cc_lib.pic.o-fPIC-iquote.-iquote(bazel-out/local_linux-fastbuild/genfiles-iquoteexternal/bazel_tools-iquote=bazel-out/local_linux-fastbuild/genfiles/external/bazel_tools-isystem#external/bazel_tools/tools/cpp/gcc3&kythe/cxx/extractor/testdata/cc_lib.cc"wbazel-out/local_linux-fastbuild/bin/kythe/cxx/extractor/testdata/_objs/cc_lib/kythe/cxx/extractor/testdata/cc_lib.pic.o*&kythe/cxx/extractor/testdata/cc_lib.cc
