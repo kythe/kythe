@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+#
 # Copyright 2016 Google Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,6 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# This script (re)generates the source for Go protobuf packages so that
+# Go packages can be fetched and installed with the "go get" command.
+#
+# This script must be run with its current working directory inside a Bazel
+# workspace root.
+
 from subprocess import check_output
 from subprocess import call
 
@@ -20,40 +28,41 @@ import re
 import shlex
 import shutil
 import stat
+import sys
 
-workspace = check_output(['bazel', 'info', 'workspace']).strip()
+# Find the locations of the workspace root and the generated files directory.
+workspace      = check_output(['bazel', 'info', 'workspace']).strip()
 bazel_genfiles = check_output(['bazel', 'info', 'bazel-genfiles']).strip()
-relative_path = os.path.relpath(os.getcwd(), workspace)
+targets        = '//%s/...' % os.path.basename(workspace)
 
-package = "//" + relative_path + "/..."
+go_protos = check_output([
+    'bazel', 'query', 'attr("gen_go", 1, %s)' % targets,
+]).split()
 
-go_protos = check_output(['bazel', 'query', 'attr("gen_go", 1, %s)' % package]).split()
-for proto_rule in go_protos:
-  # proto_rule is now something like //foo/bar:baz_proto
-  proto = proto_rule.rsplit(':', 1)[-1]
-  # proto is now something like baz_proto
-  out_dir = proto
-  filename = re.sub('_proto$', '.proto', proto)
-  # filename is now something like baz.proto
+# Each rule has the form //foo/bar:baz_proto.
+# First build all the rules to ensure we have the output files.
+# Then strip off each :baz_proto, convert it to a filename "baz.proto",
+# and copy the generated output "baz.pb.go" into the source tree.
+if call(['bazel', 'build'] + [rule + '_go' for rule in go_protos]) != 0:
+  print 'Build failed'
+  sys.exit(1)
 
-  print "Updating Go protobuf for %s" % filename
-  gen_go_src = re.sub('.proto$', '.pb.go', filename)
-  # gen_go_src is now something like baz.pb.go
+for rule in go_protos:
+  rule_dir, proto = rule.lstrip('/').rsplit(':', 1)
+  output_dir = os.path.join(workspace, rule_dir, proto)
+  proto_file = re.sub('_proto$', '.proto', proto)
 
-  # Build the Go proto
-  go_proto_rule = proto_rule + "_go"
-  if call(['bazel', 'build', go_proto_rule]) != 0:
-    print "Build failed"
-    system.exit(1)
-  output_gopb = os.path.join(bazel_genfiles, relative_path, gen_go_src)
+  print 'Copying Go protobuf source for %s' % rule
+  generated_file = re.sub('.proto$', '.pb.go', proto_file)
+  generated_path = os.path.join(bazel_genfiles, rule_dir, generated_file)
 
-  if os.path.isdir(out_dir):
-    print "Deleting and recreating old protobuf directory: %s" % out_dir
-    shutil.rmtree(out_dir)
+  if os.path.isdir(output_dir):
+    print 'Deleting and recreating old protobuf directory: %s' % output_dir
+    shutil.rmtree(output_dir)
   else:
-    print "Creating new Go protobuf: %s" % gen_go_src
+    print 'Creating new Go protobuf: %s' % generated_file
 
-  os.makedirs(out_dir, 0755)
-  shutil.copy(output_gopb, out_dir)
-  dest = os.path.join(out_dir, gen_go_src)
-  os.chmod(dest, 0644)
+  # Ensure the output directory exists, and update permissions after copying.
+  os.makedirs(output_dir, 0755)
+  shutil.copy(generated_path, output_dir)
+  os.chmod(os.path.join(output_dir, generated_file), 0644)

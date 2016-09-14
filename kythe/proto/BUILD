@@ -7,6 +7,7 @@ filegroup(
     srcs = [
         "analysis.proto",
         "analysis_service.proto",
+        "buildinfo.proto",
         "common.proto",
         "cxx.proto",
         "filecontext.proto",
@@ -90,6 +91,14 @@ proto_library(
 # Context-dependent version information, for claiming.
 proto_library(
     name = "filecontext_proto",
+    gen_cc = 1,
+    gen_go = 1,
+    gen_java = 1,
+)
+
+# Build tool details for compilation units
+proto_library(
+    name = "buildinfo_proto",
     gen_cc = 1,
     gen_go = 1,
     gen_java = 1,
