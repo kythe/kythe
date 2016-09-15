@@ -318,7 +318,7 @@ new_git_repository(
 new_git_repository(
     name = "go_protobuf",
     build_file = "third_party/go/protobuf.BUILD",
-    commit = "874264fbbb43f4d91e999fecb4b40143ed611400",
+    commit = "1f49d83d9aa00e6ce4fc8258c71cc7786aec968a",
     remote = "https://github.com/golang/protobuf.git",
 )
 

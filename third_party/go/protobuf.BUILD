@@ -65,3 +65,32 @@ external_go_package(
     base_pkg = "github.com/golang/protobuf",
     deps = [":proto"],
 )
+
+external_go_package(
+    name = "ptypes",
+    base_pkg = "github.com/golang/protobuf",
+    deps = [
+        ":proto",
+        ":ptypes/any",
+        ":ptypes/duration",
+        ":ptypes/timestamp",
+    ],
+)
+
+external_go_package(
+    name = "ptypes/any",
+    base_pkg = "github.com/golang/protobuf",
+    deps = [":proto"],
+)
+
+external_go_package(
+    name = "ptypes/duration",
+    base_pkg = "github.com/golang/protobuf",
+    deps = [":proto"],
+)
+
+external_go_package(
+    name = "ptypes/timestamp",
+    base_pkg = "github.com/golang/protobuf",
+    deps = [":proto"],
+)

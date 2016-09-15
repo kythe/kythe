@@ -34,8 +34,10 @@ import (
 	"kythe.io/kythe/go/extractors/govname"
 	"kythe.io/kythe/go/platform/kindex"
 	"kythe.io/kythe/go/storage/vnameutil"
+	"kythe.io/kythe/go/util/ptypes"
 
 	apb "kythe.io/kythe/proto/analysis_proto"
+	bipb "kythe.io/kythe/proto/buildinfo_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
 	eapb "kythe.io/third_party/bazel/extra_actions_base_proto"
 )
@@ -88,6 +90,11 @@ func (c *Config) Extract(ctx context.Context, info *eapb.ExtraActionInfo) (*kind
 				Value: toolArgs.goRoot,
 			}},
 		},
+	}
+	if info, err := ptypes.MarshalAny(&bipb.BuildDetails{
+		BuildTarget: info.GetOwner(),
+	}); err == nil {
+		cu.Proto.Details = append(cu.Proto.Details, info)
 	}
 
 	// Load and populate file contents and required inputs.  Do this in two
