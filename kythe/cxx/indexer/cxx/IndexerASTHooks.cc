@@ -1493,7 +1493,6 @@ bool IndexerASTVisitor::VisitNamespaceDecl(const clang::NamespaceDecl *Decl) {
 bool IndexerASTVisitor::VisitFieldDecl(const clang::FieldDecl *Decl) {
   GraphObserver::NameId DeclName(BuildNameIdForDecl(Decl));
   GraphObserver::NodeId DeclNode(BuildNodeIdForDecl(Decl));
-  SourceLocation DeclLoc = Decl->getLocation();
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
   MaybeRecordDefinitionRange(
       RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode);
