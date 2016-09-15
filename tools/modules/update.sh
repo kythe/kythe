@@ -74,6 +74,9 @@ fi
 if [[ -z "$1" || "$1" == "--build_only" ]]; then
   cd "$LLVM_REPO"
   vbuild_dir="build.${MIN_LLVM_SHA}.${MIN_CLANG_SHA}.${MIN_EXTRA_SHA}"
+  find "${LLVM_REPO}" -maxdepth 1 -type d \
+      ! -name "${vbuild_dir}" -name 'build.*.*.*' \
+      -exec rm -rf \{} \;
   if [[ ! -d "$vbuild_dir" ]]; then
     mkdir -p "$vbuild_dir"
     trap "rm -rf '$LLVM_REPO/$vbuild_dir'" ERR INT
@@ -82,11 +85,41 @@ if [[ -z "$1" || "$1" == "--build_only" ]]; then
     if [ ! -z $(dirname "${BAZEL_CC}") ]; then
       CXX="$(dirname "${BAZEL_CC}")/${CXX}"
     fi
-    ../configure CC="${BAZEL_CC}" CXX="${CXX}" \
-      --prefix="$LLVM_REPO/build-install" \
-      CXXFLAGS="-std=c++11" \
-      --enable-optimized --disable-bindings
-    make -j8
+    cmake -G"Unix Makefiles" \
+        -DCMAKE_INSTALL_PREFIX="$LLVM_REPO/build-install" \
+        -DCMAKE_BUILD_TYPE="Release" \
+        -DCMAKE_C_COMPILER="${BAZEL_CC}" \
+        -DCMAKE_CXX_COMPILER="${CXX}" \
+        -DCLANG_BUILD_TOOLS="OFF" \
+        -DCLANG_INCLUDE_DOCS="OFF" \
+        -DCLANG_INCLUDE_TESTS="OFF" \
+        -DLIBCLANG_BUILD_STATIC="ON" \
+        -DLLVM_BUILD_TOOLS="OFF" \
+        -DLLVM_BUILD_UTILS="OFF" \
+        -DLLVM_BUILD_RUNTIME="OFF" \
+        -DLLVM_DYLIB_COMPONENTS="" \
+        -DLLVM_ENABLE_OCAMLDOC="OFF" \
+        -DLLVM_INCLUDE_DOCS="OFF" \
+        -DLLVM_INCLUDE_EXAMPLES="OFF" \
+        -DLLVM_INCLUDE_GO_TESTS="OFF" \
+        -DLLVM_INCLUDE_TESTS="OFF" \
+        -DLLVM_INCLUDE_TOOLS="ON" \
+        -DLLVM_INCLUDE_UTILS="OFF" \
+        -DLLVM_TOOL_CLANG_TOOLS_EXTRA_BUILD="OFF" \
+        -DLLVM_TARGETS_TO_BUILD="X86;PowerPC;ARM;AArch64;Mips" \
+        -DBUILD_SHARED_LIBS="OFF" \
+        -DLLVM_BUILD_LLVM_DYLIB="OFF" \
+        ..
+    if [[ $(uname) == 'Darwin' ]]; then
+      cores="$(sysctl -n hw.ncpu)"
+    else
+      cores="$(nproc)"
+    fi
+    make "-j${cores}" clangAnalysis clangAST clangBasic clangDriver clangEdit \
+        clangFrontend clang-headers clangLex clangParse clangRewrite clangSema \
+        clangSerialization clangTooling LLVMAArch64Info LLVMARMInfo \
+        LLVMBitReader LLVMCore LLVMMC LLVMMCParser LLVMMipsInfo LLVMOption \
+        LLVMPowerPCInfo LLVMProfileData LLVMX86Info
     cd ..
   fi
   rm -f build

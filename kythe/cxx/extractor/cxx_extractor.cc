@@ -39,6 +39,7 @@
 #include "kythe/cxx/common/proto_conversions.h"
 #include "kythe/proto/analysis.pb.h"
 #include "kythe/proto/cxx.pb.h"
+#include "llvm/Support/Path.h"
 #include "llvm/Support/TargetSelect.h"
 #include "third_party/llvm/src/clang_builtin_headers.h"
 #include "third_party/llvm/src/cxx_extractor_preprocessor_utils.h"
@@ -823,8 +824,7 @@ void KindexWriterSink::OpenIndex(const std::string& directory,
       force_path_.empty() ? directory + "/" + hash + ".kindex" : force_path_;
   // Open with read/write for all. The exact permissions required may depend on
   // the backend implementation running the extractor.
-  fd_ =
-      open(file_path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0666);
+  fd_ = ::open(file_path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0666);
   CHECK_GE(fd_, 0) << "Couldn't open output file " << file_path;
   open_path_ = file_path;
   file_stream_.reset(new FileOutputStream(fd_));

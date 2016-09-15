@@ -18,6 +18,7 @@
 
 #include "glog/logging.h"
 #include "kythe/cxx/common/kythe_uri.h"
+#include "llvm/ADT/SmallString.h"
 #include "llvm/Support/Path.h"
 #include "rapidjson/filereadstream.h"
 #include "rapidjson/filewritestream.h"

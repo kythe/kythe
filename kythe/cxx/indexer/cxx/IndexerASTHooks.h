@@ -342,8 +342,8 @@ public:
 
   // Objective C methods don't have TypeSourceInfo so we must construct a type
   // for the methods to be used in the graph.
-  MaybeFew<GraphObserver::NodeId> CreateObjCMethodTypeNode(
-      const clang::ObjCMethodDecl *MD, EmitRanges ER);
+  MaybeFew<GraphObserver::NodeId>
+  CreateObjCMethodTypeNode(const clang::ObjCMethodDecl *MD, EmitRanges ER);
 
   /// \brief Builds a stable node ID for a compile-time expression.
   /// \param Expr The expression to represent.
@@ -360,9 +360,9 @@ public:
   /// \param ER whether to notify the `GraphObserver` about source text ranges
   /// for types.
   /// \return The Node ID for `Type`.
-  MaybeFew<GraphObserver::NodeId> BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
-                                                     const clang::Type *DType,
-                                                     EmitRanges ER);
+  MaybeFew<GraphObserver::NodeId>
+  BuildNodeIdForType(const clang::TypeLoc &TypeLoc, const clang::Type *DType,
+                     EmitRanges ER);
 
   /// \brief Builds a stable node ID for `Type`.
   /// \param Type The type that is being identified. If its location is valid
@@ -763,14 +763,14 @@ private:
 
   /// \brief Fills `ArgNodeIds` with pointers to `NodeId`s for a template
   /// argument list.
-  /// \param `ArgsAsWritten` Use this argument list if it isn't null.
-  /// \param `Args` Use this argument list if `ArgsAsWritten` is null.
+  /// \param `ArgsAsWritten` Use this argument list if it isn't None.
+  /// \param `Args` Use this argument list if `ArgsAsWritten` is None.
   /// \param `ArgIds` Vector into which pointers in `ArgNodeIds` will point.
   /// \param `ArgNodeIds` Vector of pointers to the result type list.
   /// \return true on success; if false, `ArgNodeIds` is invalid.
   bool BuildTemplateArgumentList(
-      const clang::ASTTemplateArgumentListInfo *ArgsAsWritten,
-      const clang::TemplateArgumentList *Args,
+      llvm::Optional<llvm::ArrayRef<clang::TemplateArgumentLoc>> ArgsAsWritten,
+      llvm::ArrayRef<clang::TemplateArgument> Args,
       std::vector<GraphObserver::NodeId> &ArgIds,
       std::vector<const GraphObserver::NodeId *> &ArgNodeIds);
 
@@ -812,8 +812,8 @@ private:
   bool isObjCSelector(const clang::DeclarationName &DN) {
     const auto NK = DN.getNameKind();
     return NK == clang::DeclarationName::NameKind::ObjCZeroArgSelector ||
-        NK == clang::DeclarationName::NameKind::ObjCOneArgSelector ||
-        NK == clang::DeclarationName::NameKind::ObjCMultiArgSelector;
+           NK == clang::DeclarationName::NameKind::ObjCOneArgSelector ||
+           NK == clang::DeclarationName::NameKind::ObjCMultiArgSelector;
   }
 
   /// \brief Visit a DeclRefExpr or a ObjCIvarRefExpr
@@ -848,14 +848,13 @@ private:
   /// \param Decl This should be a FunctionDecl or ObjCMethodDecl.
   void ConnectParam(const clang::Decl *Decl,
                     const GraphObserver::NodeId &FuncNode,
-                    bool IsFunctionDefinition,
-                    const unsigned int ParamNumber,
+                    bool IsFunctionDefinition, const unsigned int ParamNumber,
                     const clang::ParmVarDecl *Param);
 
-  MaybeFew <GraphObserver::NodeId> GetObjCObjBaseTypeNode(
-      const clang::ObjCObjectType *T,
-      const clang::TypeLoc &Loc,
-      const IndexerASTVisitor::EmitRanges &EmitRanges);
+  MaybeFew<GraphObserver::NodeId>
+  GetObjCObjBaseTypeNode(const clang::ObjCObjectType *T,
+                         const clang::TypeLoc &Loc,
+                         const IndexerASTVisitor::EmitRanges &EmitRanges);
 
   /// \brief The current context for constructing `GraphObserver::Range`s.
   ///

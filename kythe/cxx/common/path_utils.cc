@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
+#include "path_utils.h"
 #include "clang/Basic/FileManager.h"
 #include "clang/Lex/HeaderSearch.h"
 #include "clang/Lex/LexDiagnostic.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Tooling/Tooling.h"
 #include "llvm/Support/Path.h"
-#include "path_utils.h"
 
 namespace kythe {
 std::string CleanPath(llvm::StringRef in_path) {
   llvm::SmallString<1024> out_path = in_path;
-  // NB: This becomes llvm::sys::path::remove_dots.
-  clang::FileManager::removeDotPaths(out_path, true);
+  llvm::sys::path::remove_dots(out_path, true);
   return out_path.str();
 }
 

@@ -26,6 +26,7 @@
 #include "clang/Sema/Sema.h"
 #include "kythe/cxx/common/kythe_uri.h"
 #include "kythe/cxx/common/proto_conversions.h"
+#include "llvm/Support/Path.h"
 #include "llvm/Support/Timer.h"
 #include "llvm/Support/raw_ostream.h"
 #include "third_party/llvm/src/clang_builtin_headers.h"
