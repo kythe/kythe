@@ -19,7 +19,6 @@ syntax = "proto3";
 package kythe.proto;
 option java_package = "com.google.devtools.kythe.proto";
 
-import "google/protobuf/any.proto";
 import "kythe/proto/analysis.proto";
 
 // CompilationAnalyzer services are exposed by any program that wants to plug
@@ -51,4 +50,3 @@ service FileDataService {
   // be no requested files, however.
   rpc Get(FilesRequest) returns (stream FileData) {}
 }
-
