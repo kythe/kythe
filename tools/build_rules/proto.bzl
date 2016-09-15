@@ -174,22 +174,24 @@ genproto = rule(
     outputs = _genproto_outputs,
 )
 
-def proto_library(name, src=None, deps=[], visibility=None,
+def proto_library(name, srcs, deps=[], visibility=None,
                   has_services=False,
-                  gen_java=False, gen_go=False, gen_cc=False,
+                  java_api_version=0, go_api_version=0, cc_api_version=0,
                   gofast=True):
-  if not src:
-    if name.endswith("_proto"):
-      src = name[:-6] + ".proto"
-    else:
-      src = name + ".proto"
+  if java_api_version not in (None, 0, 2):
+    fail("java_api_version must be 2 if present")
+  if go_api_version not in (None, 0, 2):
+    fail("go_api_version must be 2 if present")
+  if cc_api_version not in (None, 0, 2):
+    fail("cc_api_version must be 2 if present")
+
   proto_pkg = genproto(name=name,
-                       src=src,
+                       src=srcs[0],
                        deps=deps,
                        has_services=has_services,
-                       gen_java=gen_java,
-                       gen_go=gen_go,
-                       gen_cc=gen_cc,
+                       gen_java=bool(java_api_version),
+                       gen_go=bool(go_api_version),
+                       gen_cc=bool(cc_api_version),
                        gofast=gofast)
 
   # TODO(shahms): These should probably not be separate libraries, but
@@ -197,7 +199,7 @@ def proto_library(name, src=None, deps=[], visibility=None,
   # proto_library() directly is a challenge.  We'd also need a different
   # workaround for the non-generated any.pb.{h,cc} from the upstream protocol
   # buffer library.
-  if gen_java:
+  if java_api_version:
     java_deps = ["//third_party/proto:protobuf_java"]
     if has_services:
       java_deps += [
@@ -214,7 +216,7 @@ def proto_library(name, src=None, deps=[], visibility=None,
         visibility = visibility,
     )
 
-  if gen_go:
+  if go_api_version:
     go_deps = ["@go_protobuf//:proto"]
     if has_services:
       go_deps += [
@@ -230,7 +232,7 @@ def proto_library(name, src=None, deps=[], visibility=None,
         visibility = visibility,
     )
 
-  if gen_cc:
+  if cc_api_version:
     cc_deps = ["//third_party/proto:protobuf"]
     for dep in deps:
       cc_deps += [dep + "_cc"]

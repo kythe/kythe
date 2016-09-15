@@ -22,16 +22,18 @@ filegroup(
 # Common Kythe protocol buffer definitions shared among other libraries
 proto_library(
     name = "common_proto",
-    gen_cc = 1,
-    gen_go = 1,
+    srcs = ["common.proto"],
+    cc_api_version = 2,
+    go_api_version = 2,
 )
 
 # Public Kythe GraphStore analyzer output format
 proto_library(
     name = "storage_proto",
-    gen_cc = 1,
-    gen_go = 1,
-    gen_java = 1,
+    srcs = ["storage.proto"],
+    cc_api_version = 2,
+    go_api_version = 2,
+    java_api_version = 2,
     visibility = [
         "//kythe:default_visibility",
         "//third_party/llvm/src:__pkg__",
@@ -41,10 +43,11 @@ proto_library(
 # Public Kythe GraphStore service API
 proto_library(
     name = "storage_service_proto",
+    srcs = ["storage_service.proto"],
     has_services = 1,
-    gen_cc = 1,
-    gen_go = 1,
-    gen_java = 1,
+    cc_api_version = 2,
+    go_api_version = 2,
+    java_api_version = 2,
     visibility = [
         "//kythe:default_visibility",
         "//third_party/llvm/src:__pkg__",
@@ -55,9 +58,10 @@ proto_library(
 # Public Kythe analyzer
 proto_library(
     name = "analysis_proto",
-    gen_cc = 1,
-    gen_go = 1,
-    gen_java = 1,
+    srcs = ["analysis.proto"],
+    cc_api_version = 2,
+    go_api_version = 2,
+    java_api_version = 2,
     visibility = [
         "//kythe:default_visibility",
         "//third_party/llvm/src:__pkg__",
@@ -72,10 +76,11 @@ proto_library(
 # Public Kythe file data service APIs
 proto_library(
     name = "analysis_service_proto",
+    srcs = ["analysis_service.proto"],
     has_services = 1,
-    gen_cc = 1,
-    gen_go = 1,
-    gen_java = 1,
+    cc_api_version = 2,
+    go_api_version = 2,
+    java_api_version = 2,
     visibility = [
         "//kythe:default_visibility",
         "//third_party/llvm/src:__pkg__",
@@ -91,59 +96,67 @@ proto_library(
 # Context-dependent version information, for claiming.
 proto_library(
     name = "filecontext_proto",
-    gen_cc = 1,
-    gen_go = 1,
-    gen_java = 1,
+    srcs = ["filecontext.proto"],
+    cc_api_version = 2,
+    go_api_version = 2,
+    java_api_version = 2,
 )
 
 # Build tool details for compilation units
 proto_library(
     name = "buildinfo_proto",
-    gen_cc = 1,
-    gen_go = 1,
-    gen_java = 1,
+    srcs = ["buildinfo.proto"],
+    cc_api_version = 2,
+    go_api_version = 2,
+    java_api_version = 2,
 )
 
 # C++-specific protocol buffer definitions
 proto_library(
     name = "cxx_proto",
-    gen_cc = 1,
+    srcs = ["cxx.proto"],
+    cc_api_version = 2,
 )
 
 # Java-specific protocol buffer definitions
 proto_library(
     name = "java_proto",
-    gen_java = 1,
+    srcs = ["java.proto"],
+    java_api_version = 2,
 )
 
 # Kythe claiming message definitions
 proto_library(
     name = "claim_proto",
-    gen_cc = 1,
+    srcs = ["claim.proto"],
+    cc_api_version = 2,
     deps = [":storage_proto"],
 )
 
 # Public Kythe filetree service API
 proto_library(
     name = "filetree_proto",
+    srcs = ["filetree.proto"],
     has_services = 1,
-    gen_go = 1,
+    go_api_version = 2,
 )
 
 # Public Kythe xref service API
 proto_library(
     name = "xref_proto",
+    srcs = ["xref.proto"],
     has_services = 1,
-    gen_cc = 1,
-    gen_go = 1,
+    cc_api_version = 2,
+    go_api_version = 2,
 )
 
 # Protocol buffer definitions used to encode serving data
 # WARNING: These should not be exposed to clients.
 proto_library(
     name = "serving_proto",
-    gen_cc = 1,
-    gen_go = 1,
+    srcs = ["serving.proto"],
+    cc_api_version = 2,
+    go_api_version = 2,
     deps = [":common_proto"],
 )
 
@@ -151,7 +164,8 @@ proto_library(
 # WARNING: These should not be exposed to clients.
 proto_library(
     name = "internal_proto",
-    gen_go = 1,
+    srcs = ["internal.proto"],
+    go_api_version = 2,
     deps = [
         ":common_proto",
         ":serving_proto",

@@ -11,17 +11,17 @@ filegroup(
 
 proto_library(
     name = "extra_actions_base_proto",
-    src = "src/main/protobuf/extra_actions_base.proto",
-    gen_cc = 1,
-    gen_go = 1,
-    gen_java = 1,
+    srcs = ["src/main/protobuf/extra_actions_base.proto"],
+    cc_api_version = 2,
+    go_api_version = 2,
     gofast = 0,  # protoc-gen-gofast fails due the extensions in this proto
+    java_api_version = 2,
 )
 
 proto_library(
     name = "test_status_proto",
-    src = "src/main/protobuf/test_status.proto",
-    gen_go = 1,
+    srcs = ["src/main/protobuf/test_status.proto"],
+    go_api_version = 2,
 )
 
 sh_binary(

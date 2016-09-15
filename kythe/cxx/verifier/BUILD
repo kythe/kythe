@@ -4,7 +4,14 @@ load("//tools:build_rules/lexyacc.bzl", "genlex", "genyacc")
 
 genyacc(
     name = "parser",
-    src = "assertions.yy",
+    srcs = ["assertions.yy"],
+    outs = [
+        "parser.yy.cc",
+        "parser.yy.hh",
+        "location.hh",
+        "stack.hh",
+        "position.hh",
+    ],
 )
 
 genlex(
@@ -13,6 +20,7 @@ genlex(
         "assertions.lex",
         ":parser",
     ],
+    out = "lexer.yy.cc",
 )
 
 cc_library(

@@ -16,12 +16,12 @@ exports_files(["src/google/protobuf/any.proto"])
 # TODO(schroederc): have a single Go library for all standard protos
 proto_library(
     name = "any_proto",
-    src = "src/google/protobuf/any.proto",
+    srcs = ["src/google/protobuf/any.proto"],
     # We cannot generate the C++ version as it is depended on, in source form,
     # by the protocol buffer library iteself.
-    gen_cc = 0,
-    gen_go = 1,
-    gen_java = 1,
+    cc_api_version = 0,
+    go_api_version = 2,
+    java_api_version = 2,
 )
 
 genrule(
