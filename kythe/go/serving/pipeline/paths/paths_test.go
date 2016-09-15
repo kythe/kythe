@@ -21,11 +21,10 @@ import (
 	"io"
 	"testing"
 
+	"golang.org/x/net/context"
 	"kythe.io/kythe/go/test/testutil"
 	"kythe.io/kythe/go/util/reduce"
-	"kythe.io/kythe/go/util/schema"
-
-	"golang.org/x/net/context"
+	"kythe.io/kythe/go/util/schema/facts"
 
 	cpb "kythe.io/kythe/proto/common_proto"
 	ipb "kythe.io/kythe/proto/internal_proto"
@@ -353,8 +352,8 @@ func BenchmarkReducer_Output(b *testing.B) {
 	}
 }
 
-func testNode(ticket, kind string, facts ...string) *ipb.Path_Node {
-	if len(facts)%2 != 0 {
+func testNode(ticket, kind string, factPairs ...string) *ipb.Path_Node {
+	if len(factPairs)%2 != 0 {
 		panic("uneven number of fact-values")
 	}
 
@@ -364,16 +363,16 @@ func testNode(ticket, kind string, facts ...string) *ipb.Path_Node {
 		Original: &srvpb.Node{
 			Ticket: ticket,
 			Fact: []*cpb.Fact{{
-				Name:  schema.NodeKindFact,
+				Name:  facts.NodeKind,
 				Value: []byte(kind),
 			}},
 		},
 	}
 
-	for i := 0; i < len(facts); i += 2 {
+	for i := 0; i < len(factPairs); i += 2 {
 		n.Original.Fact = append(n.Original.Fact, &cpb.Fact{
-			Name:  facts[i],
-			Value: []byte(facts[i+1]),
+			Name:  factPairs[i],
+			Value: []byte(factPairs[i+1]),
 		})
 	}
 

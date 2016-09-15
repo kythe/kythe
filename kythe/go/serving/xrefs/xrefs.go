@@ -36,7 +36,7 @@ import (
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/storage/table"
 	"kythe.io/kythe/go/util/kytheuri"
-	"kythe.io/kythe/go/util/schema"
+	"kythe.io/kythe/go/util/schema/edges"
 
 	cpb "kythe.io/kythe/proto/common_proto"
 	ipb "kythe.io/kythe/proto/internal_proto"
@@ -622,7 +622,7 @@ func (t *tableImpl) Decorations(ctx context.Context, req *xpb.DecorationsRequest
 						r.TargetDefinition = ""
 					}
 
-					if req.ExtendsOverrides && r.Kind == schema.DefinesBindingEdge {
+					if req.ExtendsOverrides && r.Kind == edges.DefinesBinding {
 						bindings = append(bindings, r.TargetTicket)
 					}
 
@@ -886,7 +886,7 @@ func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReference
 		er, err := t.edges(ctx, edgesRequest{
 			Tickets:   tickets,
 			Filters:   req.Filter,
-			Kinds:     func(kind string) bool { return !schema.IsAnchorEdge(kind) },
+			Kinds:     func(kind string) bool { return !edges.IsAnchorEdge(kind) },
 			PageToken: edgesPageToken,
 			TotalOnly: (stats.max <= stats.total),
 			PageSize:  stats.max - stats.total,
@@ -1039,7 +1039,7 @@ func a2a(a *srvpb.ExpandedAnchor, anchorText bool) *xpb.CrossReferencesReply_Rel
 	}
 	return &xpb.CrossReferencesReply_RelatedAnchor{Anchor: &xpb.Anchor{
 		Ticket:       a.Ticket,
-		Kind:         schema.Canonicalize(a.Kind),
+		Kind:         edges.Canonical(a.Kind),
 		Parent:       a.Parent,
 		Text:         text,
 		Start:        p2p(a.Span.Start),

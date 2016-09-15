@@ -48,6 +48,9 @@ import (
 	"kythe.io/kythe/go/util/flagutil"
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema"
+	"kythe.io/kythe/go/util/schema/edges"
+	"kythe.io/kythe/go/util/schema/facts"
+	"kythe.io/kythe/go/util/schema/nodes"
 
 	"golang.org/x/net/context"
 
@@ -125,8 +128,8 @@ type reference struct {
 }
 
 var (
-	definedAtEdge        = schema.MirrorEdge(schema.DefinesEdge)
-	definedBindingAtEdge = schema.MirrorEdge(schema.DefinesBindingEdge)
+	definedAtEdge        = edges.Mirror(edges.Defines)
+	definedBindingAtEdge = edges.Mirror(edges.DefinesBinding)
 )
 
 func main() {
@@ -185,8 +188,8 @@ func main() {
 		SourceText:  true,
 		DirtyBuffer: dirtyBuffer,
 		Filter: []string{
-			schema.NodeKindFact,
-			schema.SubkindFact,
+			facts.NodeKind,
+			facts.Subkind,
 		},
 	})
 	if err != nil {
@@ -204,22 +207,22 @@ func main() {
 		if len(dirtyBuffer) > 0 {
 			r.Span.Text = string(dirtyBuffer[start:end])
 		} // TODO(schroederc): add option to get anchor text from DecorationsReply
-		r.Kind = strings.TrimPrefix(ref.Kind, schema.EdgePrefix)
+		r.Kind = strings.TrimPrefix(ref.Kind, edges.Prefix)
 		r.Node.Ticket = ref.TargetTicket
 
 		node := nodes[ref.TargetTicket]
-		r.Node.Kind = string(node[schema.NodeKindFact])
-		r.Node.Subkind = string(node[schema.SubkindFact])
+		r.Node.Kind = string(node[facts.NodeKind])
+		r.Node.Subkind = string(node[facts.Subkind])
 
 		// TODO(schroederc): use CrossReferences method
 		if eReply, err := xrefs.AllEdges(ctx, xs, &xpb.EdgesRequest{
 			Ticket: []string{ref.TargetTicket},
-			Kind:   []string{schema.NamedEdge, schema.TypedEdge, definedAtEdge, definedBindingAtEdge},
+			Kind:   []string{edges.Named, edges.Typed, definedAtEdge, definedBindingAtEdge},
 		}); err != nil {
 			log.Printf("WARNING: error getting edges for %q: %v", ref.TargetTicket, err)
 		} else {
-			edges := xrefs.EdgesMap(eReply.EdgeSets)[ref.TargetTicket]
-			for name := range edges[schema.NamedEdge] {
+			matching := xrefs.EdgesMap(eReply.EdgeSets)[ref.TargetTicket]
+			for name := range matching[edges.Named] {
 				if uri, err := kytheuri.Parse(name); err != nil {
 					log.Printf("WARNING: named node ticket (%q) could not be parsed: %v", name, err)
 				} else {
@@ -227,15 +230,15 @@ func main() {
 				}
 			}
 
-			for typed := range edges[schema.TypedEdge] {
+			for typed := range matching[edges.Typed] {
 				r.Node.Typed = typed
 				break
 			}
 
 			if !*skipDefinitions {
-				defs := edges[definedAtEdge]
+				defs := matching[definedAtEdge]
 				if len(defs) == 0 {
-					defs = edges[definedBindingAtEdge]
+					defs = matching[definedBindingAtEdge]
 				}
 				for defAnchor := range defs {
 					def, err := completeDefinition(defAnchor)
@@ -257,8 +260,8 @@ func main() {
 func completeDefinition(defAnchor string) (*definition, error) {
 	parentReply, err := xrefs.AllEdges(ctx, xs, &xpb.EdgesRequest{
 		Ticket: []string{defAnchor},
-		Kind:   []string{schema.ChildOfEdge},
-		Filter: []string{schema.NodeKindFact, schema.AnchorLocFilter},
+		Kind:   []string{edges.ChildOf},
+		Filter: []string{facts.NodeKind, schema.AnchorLocFilter},
 	})
 	if err != nil {
 		return nil, err
@@ -266,8 +269,8 @@ func completeDefinition(defAnchor string) (*definition, error) {
 
 	parentNodes := xrefs.NodesMap(parentReply.Nodes)
 	var files []string
-	for parent := range xrefs.EdgesMap(parentReply.EdgeSets)[defAnchor][schema.ChildOfEdge] {
-		if string(parentNodes[parent][schema.NodeKindFact]) == schema.FileKind {
+	for parent := range xrefs.EdgesMap(parentReply.EdgeSets)[defAnchor][edges.ChildOf] {
+		if string(parentNodes[parent][facts.NodeKind]) == nodes.File {
 			files = append(files, parent)
 		}
 	}
@@ -292,8 +295,8 @@ func completeDefinition(defAnchor string) (*definition, error) {
 }
 
 func parseAnchorSpan(anchor map[string][]byte) (start int, end int) {
-	start, _ = strconv.Atoi(string(anchor[schema.AnchorStartFact]))
-	end, _ = strconv.Atoi(string(anchor[schema.AnchorEndFact]))
+	start, _ = strconv.Atoi(string(anchor[facts.AnchorStart]))
+	end, _ = strconv.Atoi(string(anchor[facts.AnchorEnd]))
 	return
 }
 

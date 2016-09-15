@@ -31,7 +31,8 @@ import (
 	"kythe.io/kythe/go/services/web"
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/util/kytheuri"
-	"kythe.io/kythe/go/util/schema"
+	"kythe.io/kythe/go/util/schema/edges"
+	"kythe.io/kythe/go/util/schema/facts"
 
 	"bitbucket.org/creachadair/stringset"
 	"github.com/golang/protobuf/proto"
@@ -142,8 +143,8 @@ func displayDecorations(decor *xpb.DecorationsReply) error {
 	nodes := xrefs.NodesMap(decor.Nodes)
 
 	for _, ref := range decor.Reference {
-		nodeKind := factValue(nodes, ref.TargetTicket, schema.NodeKindFact, "UNKNOWN")
-		subkind := factValue(nodes, ref.TargetTicket, schema.SubkindFact, "")
+		nodeKind := factValue(nodes, ref.TargetTicket, facts.NodeKind, "UNKNOWN")
+		subkind := factValue(nodes, ref.TargetTicket, facts.Subkind, "")
 
 		loc := &xpb.Location{
 			Kind:  xpb.Location_SPAN,
@@ -182,12 +183,12 @@ func displayDecorations(decor *xpb.DecorationsReply) error {
 
 func itoa(n int32) string { return strconv.Itoa(int(n)) }
 
-func displayEdges(edges *xpb.EdgesReply) error {
+func displayEdges(reply *xpb.EdgesReply) error {
 	if *displayJSON {
-		return jsonMarshaler.Marshal(out, edges)
+		return jsonMarshaler.Marshal(out, reply)
 	}
 
-	for source, es := range edges.EdgeSets {
+	for source, es := range reply.EdgeSets {
 		if _, err := fmt.Fprintln(out, "source:", source); err != nil {
 			return err
 		}
@@ -226,20 +227,20 @@ func displayTargets(edges map[string]*xpb.EdgeSet) error {
 
 func displayEdgeGraph(reply *xpb.EdgesReply) error {
 	nodes := xrefs.NodesMap(reply.Nodes)
-	edges := make(map[string]map[string]stringset.Set)
+	esets := make(map[string]map[string]stringset.Set)
 
 	for source, es := range reply.EdgeSets {
 		for gKind, g := range es.Groups {
 			for _, edge := range g.Edge {
 				tgt := edge.TargetTicket
 				src, kind := source, gKind
-				if schema.EdgeDirection(kind) == schema.Reverse {
-					src, kind, tgt = tgt, schema.MirrorEdge(kind), src
+				if edges.IsReverse(kind) {
+					src, kind, tgt = tgt, edges.Mirror(kind), src
 				}
-				groups, ok := edges[src]
+				groups, ok := esets[src]
 				if !ok {
 					groups = make(map[string]stringset.Set)
-					edges[src] = groups
+					esets[src] = groups
 				}
 				targets, ok := groups[kind]
 				if ok {
@@ -276,7 +277,7 @@ func displayEdgeGraph(reply *xpb.EdgesReply) error {
 		return err
 	}
 
-	for src, groups := range edges {
+	for src, groups := range esets {
 		for kind, targets := range groups {
 			for tgt := range targets {
 				if _, err := fmt.Printf("\t%q -> %q [label=%q];\n", src, tgt, kind); err != nil {
@@ -382,9 +383,9 @@ func displayXRefs(reply *xpb.CrossReferencesReply) error {
 				if node, ok := reply.Nodes[n.Ticket]; ok {
 					for name, value := range node.Facts {
 						switch name {
-						case schema.NodeKindFact:
+						case facts.NodeKind:
 							nodeKind = string(value)
-						case schema.SubkindFact:
+						case facts.Subkind:
 							subkind = string(value)
 						}
 					}

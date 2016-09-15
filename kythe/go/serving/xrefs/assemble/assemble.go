@@ -32,7 +32,9 @@ import (
 	"kythe.io/kythe/go/util/encoding/text"
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/pager"
-	"kythe.io/kythe/go/util/schema"
+	"kythe.io/kythe/go/util/schema/edges"
+	"kythe.io/kythe/go/util/schema/facts"
+	"kythe.io/kythe/go/util/schema/nodes"
 
 	"golang.org/x/net/context"
 
@@ -60,7 +62,7 @@ func Node(s *ipb.Source) *srvpb.Node {
 // assumed that src.Ticket == kytheuri.ToString(e.Source).
 func AppendEntry(src *ipb.Source, e *spb.Entry) {
 	if graphstore.IsEdge(e) {
-		kind, ordinal, _ := schema.ParseOrdinal(e.EdgeKind)
+		kind, ordinal, _ := edges.ParseOrdinal(e.EdgeKind)
 		group, ok := src.EdgeGroups[kind]
 		if !ok {
 			group = &ipb.Source_EdgeGroup{}
@@ -167,16 +169,16 @@ func GetFact(facts []*cpb.Fact, name string) []byte {
 func PartialReverseEdges(src *ipb.Source) []*srvpb.Edge {
 	node := Node(src)
 
-	edges := []*srvpb.Edge{{
+	result := []*srvpb.Edge{{
 		Source: node, // self-edge to ensure every node has at least 1 edge
 	}}
 
 	targetNode := FilterTextFacts(node)
 
 	for kind, group := range src.EdgeGroups {
-		rev := schema.MirrorEdge(kind)
+		rev := edges.Mirror(kind)
 		for _, target := range group.Edges {
-			edges = append(edges, &srvpb.Edge{
+			result = append(result, &srvpb.Edge{
 				Source:  &srvpb.Node{Ticket: target.Ticket},
 				Kind:    rev,
 				Ordinal: target.Ordinal,
@@ -185,7 +187,7 @@ func PartialReverseEdges(src *ipb.Source) []*srvpb.Edge {
 		}
 	}
 
-	return edges
+	return result
 }
 
 // FilterTextFacts returns a new Node without any text facts.
@@ -196,7 +198,7 @@ func FilterTextFacts(n *srvpb.Node) *srvpb.Node {
 	}
 	for _, f := range n.Fact {
 		switch f.Name {
-		case schema.TextFact, schema.TextEncodingFact:
+		case facts.Text, facts.TextEncoding:
 			// Skip large text facts for targets
 		default:
 			res.Fact = append(res.Fact, f)
@@ -233,38 +235,38 @@ func (b *DecorationFragmentBuilder) AddEdge(ctx context.Context, e *srvpb.Edge) 
 
 		srcFacts := FactsToMap(e.Source.Fact)
 
-		switch string(srcFacts[schema.NodeKindFact]) {
-		case schema.FileKind:
+		switch string(srcFacts[facts.NodeKind]) {
+		case nodes.File:
 			if err := b.Output(ctx, e.Source.Ticket, &srvpb.FileDecorations{
 				File: &srvpb.File{
 					Ticket:   e.Source.Ticket,
-					Text:     srcFacts[schema.TextFact],
-					Encoding: string(srcFacts[schema.TextEncodingFact]),
+					Text:     srcFacts[facts.Text],
+					Encoding: string(srcFacts[facts.TextEncoding]),
 				},
 			}); err != nil {
 				return err
 			}
-		case schema.AnchorKind:
+		case nodes.Anchor:
 			// Implicit anchors don't belong in file decorations.
-			if string(srcFacts[schema.SubkindFact]) == schema.ImplicitSubkind {
+			if string(srcFacts[facts.Subkind]) == nodes.Implicit {
 				return nil
 			}
-			anchorStart, err := strconv.Atoi(string(srcFacts[schema.AnchorStartFact]))
+			anchorStart, err := strconv.Atoi(string(srcFacts[facts.AnchorStart]))
 			if err != nil {
 				log.Printf("Error parsing anchor start offset %q: %v",
-					string(srcFacts[schema.AnchorStartFact]), err)
+					string(srcFacts[facts.AnchorStart]), err)
 				return nil
 			}
-			anchorEnd, err := strconv.Atoi(string(srcFacts[schema.AnchorEndFact]))
+			anchorEnd, err := strconv.Atoi(string(srcFacts[facts.AnchorEnd]))
 			if err != nil {
 				log.Printf("Error parsing anchor end offset %q: %v",
-					string(srcFacts[schema.AnchorEndFact]), err)
+					string(srcFacts[facts.AnchorEnd]), err)
 				return nil
 			}
 
 			// Ignore errors; offsets will just be zero
-			snippetStart, _ := strconv.Atoi(string(srcFacts[schema.SnippetStartFact]))
-			snippetEnd, _ := strconv.Atoi(string(srcFacts[schema.SnippetEndFact]))
+			snippetStart, _ := strconv.Atoi(string(srcFacts[facts.SnippetStart]))
+			snippetEnd, _ := strconv.Atoi(string(srcFacts[facts.SnippetEnd]))
 
 			b.anchor = &srvpb.RawAnchor{
 				Ticket:       e.Source.Ticket,
@@ -281,8 +283,8 @@ func (b *DecorationFragmentBuilder) AddEdge(ctx context.Context, e *srvpb.Edge) 
 		return nil
 	}
 
-	if e.Kind == schema.ChildOfEdge {
-		if string(GetFact(e.Target.Fact, schema.NodeKindFact)) == schema.FileKind {
+	if e.Kind == edges.ChildOf {
+		if string(GetFact(e.Target.Fact, facts.NodeKind)) == nodes.File {
 			b.parents = append(b.parents, e.Target.Ticket)
 		}
 	} else {
@@ -519,7 +521,7 @@ func (b *CrossReferencesBuilder) constructPager() *pager.SetPager {
 			n := hd.(*srvpb.Node)
 			var incomplete bool
 			for _, f := range n.Fact {
-				if f.Name == schema.CompleteFact && string(f.Value) != "definition" {
+				if f.Name == facts.Complete && string(f.Value) != "definition" {
 					incomplete = true
 				}
 			}
@@ -612,23 +614,23 @@ func CrossReference(file *srvpb.File, norm *xrefs.Normalizer, d *srvpb.FileDecor
 		return nil, errors.New("missing decoration's parent file")
 	}
 
-	ea, err := ExpandAnchor(d.Anchor, file, norm, schema.MirrorEdge(d.Kind))
+	ea, err := ExpandAnchor(d.Anchor, file, norm, edges.Mirror(d.Kind))
 	if err != nil {
 		return nil, fmt.Errorf("error expanding anchor {%+v}: %v", d.Anchor, err)
 	}
 	// Throw away most of the referent's facts.  They are not needed.
-	var facts []*cpb.Fact
+	var selected []*cpb.Fact
 	if tgt != nil {
 		for _, fact := range tgt.Fact {
-			if fact.Name == schema.CompleteFact {
-				facts = append(facts, fact)
+			if fact.Name == facts.Complete {
+				selected = append(selected, fact)
 			}
 		}
 	}
 	return &ipb.CrossReference{
 		Referent: &srvpb.Node{
 			Ticket: d.Target,
-			Fact:   facts,
+			Fact:   selected,
 		},
 		TargetAnchor: ea,
 	}, nil
@@ -729,11 +731,11 @@ func p2p(p *xpb.Location_Point) *cpb.Point {
 }
 
 var edgeOrdering = []string{
-	schema.DefinesEdge,
-	schema.DocumentsEdge,
-	schema.RefEdge,
-	schema.NamedEdge,
-	schema.TypedEdge,
+	edges.Defines,
+	edges.Documents,
+	edges.Ref,
+	edges.Named,
+	edges.Typed,
 }
 
 func edgeKindLess(kind1, kind2 string) bool {
@@ -746,18 +748,18 @@ func edgeKindLess(kind1, kind2 string) bool {
 
 	if kind1 == kind2 {
 		return false
-	} else if a1, a2 := schema.IsAnchorEdge(kind1), schema.IsAnchorEdge(kind2); a1 != a2 {
+	} else if a1, a2 := edges.IsAnchorEdge(kind1), edges.IsAnchorEdge(kind2); a1 != a2 {
 		return a1
-	} else if d1, d2 := schema.EdgeDirection(kind1), schema.EdgeDirection(kind2); d1 != d2 {
-		return d1 == schema.Forward
+	} else if d1, d2 := edges.IsForward(kind1), edges.IsForward(kind2); d1 != d2 {
+		return d1
 	}
-	kind1, kind2 = schema.Canonicalize(kind1), schema.Canonicalize(kind2)
+	kind1, kind2 = edges.Canonical(kind1), edges.Canonical(kind2)
 	for _, kind := range edgeOrdering {
 		if kind1 == kind {
 			return true
 		} else if kind2 == kind {
 			return false
-		} else if v1, v2 := schema.IsEdgeVariant(kind1, kind), schema.IsEdgeVariant(kind2, kind); v1 != v2 {
+		} else if v1, v2 := edges.IsVariant(kind1, kind), edges.IsVariant(kind2, kind); v1 != v2 {
 			return v1
 		} else if v1 {
 			return kind1 < kind2

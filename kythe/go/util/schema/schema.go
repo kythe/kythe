@@ -18,155 +18,81 @@
 package schema
 
 import (
-	"regexp"
-	"strconv"
-	"strings"
+	"kythe.io/kythe/go/util/schema/facts"
+
+	spb "kythe.io/kythe/proto/storage_proto"
 )
 
-// Kythe node fact labels
-const (
-	NodeKindFact = "/kythe/node/kind"
-	SubkindFact  = "/kythe/subkind"
-
-	AnchorStartFact = "/kythe/loc/start"
-	AnchorEndFact   = "/kythe/loc/end"
-
-	SnippetStartFact = "/kythe/snippet/start"
-	SnippetEndFact   = "/kythe/snippet/end"
-
-	TextFact         = "/kythe/text"
-	TextEncodingFact = "/kythe/text/encoding"
-
-	CompleteFact = "/kythe/complete"
-
-	FormatFact = "/kythe/format"
-)
-
-// DefaultTextEncoding is the assumed value of the TextEncodingFact if it is
-// empty or missing from a node with a TextFact.
-const DefaultTextEncoding = "UTF-8"
-
-// Kythe node kinds
-const (
-	AnchorKind = "anchor"
-	FileKind   = "file"
-	NameKind   = "name"
-
-	DocKind      = "doc"
-	EnumKind     = "enum"
-	FunctionKind = "function"
-	PackageKind  = "package"
-	RecordKind   = "record"
-	TAppKind     = "tapp"
-	VariableKind = "variable"
-)
-
-// Kythe node subkinds
-const (
-	ClassSubkind     = "class"
-	EnumClassSubkind = "enumClass"
-	ImplicitSubkind  = "implicit"
-)
-
-// EdgePrefix is the standard Kythe prefix for all edge kinds.
-const EdgePrefix = "/kythe/edge/"
-
-// Kythe edge kinds
-const (
-	ChildOfEdge                 = EdgePrefix + "childof"
-	ExtendsEdge                 = EdgePrefix + "extends"
-	ExtendsPrivateEdge          = EdgePrefix + "extends/private"
-	ExtendsPrivateVirtualEdge   = EdgePrefix + "extends/private/virtual"
-	ExtendsProtectedEdge        = EdgePrefix + "extends/protected"
-	ExtendsProtectedVirtualEdge = EdgePrefix + "extends/protected/virtual"
-	ExtendsPublicEdge           = EdgePrefix + "extends/public"
-	ExtendsPublicVirtualEdge    = EdgePrefix + "extends/public/virtual"
-	ExtendsVirtualEdge          = EdgePrefix + "extends/virtual"
-	NamedEdge                   = EdgePrefix + "named"
-	OverridesEdge               = EdgePrefix + "overrides"
-	ParamEdge                   = EdgePrefix + "param"
-	TypedEdge                   = EdgePrefix + "typed"
-)
-
-// Kythe edge kinds associated with anchors
-const (
-	CompletesEdge         = EdgePrefix + "completes"
-	CompletesUniquelyEdge = EdgePrefix + "completes/uniquely"
-	DefinesEdge           = EdgePrefix + "defines"
-	DefinesBindingEdge    = EdgePrefix + "defines/binding"
-	DocumentsEdge         = EdgePrefix + "documents"
-	RefEdge               = EdgePrefix + "ref"
-	RefCallEdge           = EdgePrefix + "ref/call"
-)
+// Prefix is the label prefix for the Kythe schema.
+const Prefix = "/kythe/"
 
 const (
-	// AnchorLocFilter is a fact filter for anchor locations
+	// AnchorLocFilter is a fact filter for anchor locations.
 	AnchorLocFilter = "/kythe/loc/*"
 
-	// SnippetLocFilter is a fact filter for snippet locations
+	// SnippetLocFilter is a fact filter for snippet locations.
 	SnippetLocFilter = "/kythe/snippet/*"
 )
 
-// reverseEdgePrefix is the Kythe edgeKind prefix for reverse edges.  Edge kinds
-// must be prefixed at most once with this string.
-const reverseEdgePrefix = "%"
-
-// EdgeDir represents the inherent direction of an edge kind.
-type EdgeDir bool
-
-// Forward edges are generally dependency edges and ensure that each node has a
-// small out-degree in the Kythe graph.  Reverse edges are the opposite.
-const (
-	Forward EdgeDir = true
-	Reverse EdgeDir = false
-)
-
-// IsEdgeVariant returns if k1 is the same edge kind as k2 or a more specific
-// variant
-// (i.e. IsEdgeVariant("/kythe/edge/defines/binding", "/kythe/edge/defines") == true).
-// Note that
-// IsEdgeVariant(k1, k2) == IsEdgeVariant(MirrorEdge(k1), MirrorEdge(k2)).
-func IsEdgeVariant(k1, k2 string) bool { return k1 == k2 || strings.HasPrefix(k1, k2+"/") }
-
-// IsAnchorEdge returns if the given edge kind is associated with anchors.
-func IsAnchorEdge(kind string) bool {
-	kind = Canonicalize(kind)
-	return IsEdgeVariant(kind, DefinesEdge) || IsEdgeVariant(kind, DocumentsEdge) || IsEdgeVariant(kind, RefEdge) || IsEdgeVariant(kind, CompletesEdge)
+// An Edge represents an edge.
+type Edge struct {
+	Source, Target *spb.VName
+	Kind           string
 }
 
-// EdgeDirection returns the edge direction of the given edge kind
-func EdgeDirection(kind string) EdgeDir {
-	if strings.HasPrefix(kind, reverseEdgePrefix) {
-		return Reverse
+// ToEntry converts e to a kythe.proto.Entry message.
+func (e *Edge) ToEntry() *spb.Entry {
+	return &spb.Entry{
+		Source:   e.Source,
+		Target:   e.Target,
+		EdgeKind: e.Kind,
+		FactName: "/",
 	}
-	return Forward
 }
 
-// MirrorEdge returns the reverse edge kind for a given forward edge kind and
-// returns the forward edge kind for a given reverse edge kind.
-func MirrorEdge(kind string) string {
-	if rev := strings.TrimPrefix(kind, reverseEdgePrefix); rev != kind {
-		return rev
-	}
-	return reverseEdgePrefix + kind
+// Facts represents a collection of key/value facts.
+type Facts map[string]string
+
+// A Node represents a collection of facts about a node.
+type Node struct {
+	VName *spb.VName
+	Kind  string
+	Facts Facts
 }
 
-// Canonicalize will return the canonical, forward version of an edge kind.
-func Canonicalize(kind string) string {
-	if EdgeDirection(kind) == Reverse {
-		return MirrorEdge(kind)
+// AddFact adds the specified fact to n, replacing any previous value for that
+// fact that may exist.
+func (n *Node) AddFact(name, value string) {
+	if n.Facts == nil {
+		n.Facts = make(Facts)
 	}
-	return kind
+	n.Facts[name] = value
 }
 
-var ordinalRE = regexp.MustCompile(`^(.+)\.(\d+)$`)
-
-// ParseOrdinal removes an edge kind's `\.[0-9]+` ordinal suffix.
-func ParseOrdinal(edgeKind string) (kind string, ordinal int, hasOrdinal bool) {
-	match := ordinalRE.FindStringSubmatch(edgeKind)
-	if match == nil {
-		return edgeKind, 0, false
+// ToEntries converts n to a slice of kythe.proto.Entry messages. The result
+// will have at least one entry for the node kind. If n contains a text fact
+// and does not supply an explicit encoding, the default one is also added.
+// The resulting slice is not ordered.
+func (n *Node) ToEntries() []*spb.Entry {
+	var entries []*spb.Entry
+	add := func(key, value string) {
+		entries = append(entries, &spb.Entry{
+			Source:    n.VName,
+			FactName:  key,
+			FactValue: []byte(value),
+		})
 	}
-	ordinal, _ = strconv.Atoi(match[2])
-	return match[1], ordinal, true
+
+	add(facts.NodeKind, n.Kind) // ensure the node kind exists.
+	for name, value := range n.Facts {
+		add(name, value)
+	}
+
+	// If a text fact was emitted, ensure there is an encoding too.
+	if _, hasText := n.Facts[facts.Text]; hasText {
+		if _, hasEncoding := n.Facts[facts.TextEncoding]; !hasEncoding {
+			add(facts.TextEncoding, facts.DefaultTextEncoding)
+		}
+	}
+	return entries
 }

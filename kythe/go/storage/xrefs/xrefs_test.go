@@ -26,7 +26,9 @@ import (
 	"kythe.io/kythe/go/storage/inmemory"
 	"kythe.io/kythe/go/test/testutil"
 	"kythe.io/kythe/go/util/kytheuri"
-	"kythe.io/kythe/go/util/schema"
+	"kythe.io/kythe/go/util/schema/edges"
+	"kythe.io/kythe/go/util/schema/facts"
+	"kythe.io/kythe/go/util/schema/nodes"
 
 	"golang.org/x/net/context"
 
@@ -45,30 +47,30 @@ var (
 	testAnchorTargetVName = sig("someSemanticNode")
 
 	testNodes = []*node{
-		{sig("orphanedNode"), facts(schema.NodeKindFact, "orphan"), nil},
-		{testFileVName, facts(
-			schema.NodeKindFact, schema.FileKind,
-			schema.TextFact, testFileContent,
-			schema.TextEncodingFact, testFileEncoding), map[string][]*spb.VName{
+		{sig("orphanedNode"), newFacts(facts.NodeKind, "orphan"), nil},
+		{testFileVName, newFacts(
+			facts.NodeKind, nodes.File,
+			facts.Text, testFileContent,
+			facts.TextEncoding, testFileEncoding), map[string][]*spb.VName{
 			revChildOfEdgeKind: {testAnchorVName},
 		}},
-		{sig("sig2"), facts(schema.NodeKindFact, "test"), map[string][]*spb.VName{
+		{sig("sig2"), newFacts(facts.NodeKind, "test"), map[string][]*spb.VName{
 			"someEdgeKind": {sig("signature")},
 		}},
-		{sig("signature"), facts(schema.NodeKindFact, "test"), map[string][]*spb.VName{
-			schema.MirrorEdge("someEdgeKind"): {sig("sig2")},
-			schema.ParamEdge:                  {sig("sig2"), sig("someParameter")},
+		{sig("signature"), newFacts(facts.NodeKind, "test"), map[string][]*spb.VName{
+			edges.Mirror("someEdgeKind"): {sig("sig2")},
+			edges.Param:                  {sig("sig2"), sig("someParameter")},
 		}},
-		{testAnchorVName, facts(
-			schema.AnchorEndFact, "4",
-			schema.AnchorStartFact, "1",
-			schema.NodeKindFact, schema.AnchorKind,
+		{testAnchorVName, newFacts(
+			facts.AnchorEnd, "4",
+			facts.AnchorStart, "1",
+			facts.NodeKind, nodes.Anchor,
 		), map[string][]*spb.VName{
-			schema.ChildOfEdge: {testFileVName},
-			schema.RefEdge:     {testAnchorTargetVName},
+			edges.ChildOf: {testFileVName},
+			edges.Ref:     {testAnchorTargetVName},
 		}},
-		{testAnchorTargetVName, facts(schema.NodeKindFact, "record"), map[string][]*spb.VName{
-			schema.MirrorEdge(schema.RefEdge): {testAnchorVName},
+		{testAnchorTargetVName, newFacts(facts.NodeKind, "record"), map[string][]*spb.VName{
+			edges.Mirror(edges.Ref): {testAnchorVName},
 		}},
 	}
 	testEntries = nodesToEntries(testNodes)
@@ -138,7 +140,7 @@ func TestDecorations(t *testing.T) {
 		{
 			SourceTicket: kytheuri.ToString(testAnchorVName),
 			TargetTicket: kytheuri.ToString(testAnchorTargetVName),
-			Kind:         schema.RefEdge,
+			Kind:         edges.Ref,
 			AnchorStart: &xpb.Location_Point{
 				ByteOffset:   1,
 				LineNumber:   1,
@@ -275,7 +277,7 @@ func sig(sig string) *spb.VName {
 	return &spb.VName{Signature: sig}
 }
 
-func facts(keyVals ...string) map[string]string {
+func newFacts(keyVals ...string) map[string]string {
 	facts := make(map[string]string)
 	for i := 0; i < len(keyVals); i += 2 {
 		facts[keyVals[i]] = keyVals[i+1]

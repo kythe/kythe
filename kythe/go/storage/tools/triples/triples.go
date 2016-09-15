@@ -39,7 +39,7 @@ import (
 	"kythe.io/kythe/go/util/encoding/rdf"
 	"kythe.io/kythe/go/util/flagutil"
 	"kythe.io/kythe/go/util/kytheuri"
-	"kythe.io/kythe/go/util/schema"
+	"kythe.io/kythe/go/util/schema/edges"
 
 	"golang.org/x/net/context"
 
@@ -124,7 +124,7 @@ func main() {
 	}
 
 	for entry := range entries {
-		if schema.EdgeDirection(entry.EdgeKind) == schema.Reverse && !*keepReverseEdges {
+		if edges.IsReverse(entry.EdgeKind) && !*keepReverseEdges {
 			reverseEdges++
 			continue
 		}

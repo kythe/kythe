@@ -19,35 +19,59 @@ package schema
 import (
 	"testing"
 
-	"kythe.io/kythe/go/test/testutil"
+	"kythe.io/kythe/go/util/schema/edges"
+	"kythe.io/kythe/go/util/schema/facts"
+	"kythe.io/kythe/go/util/schema/nodes"
+
+	"github.com/golang/protobuf/proto"
+
+	spb "kythe.io/kythe/proto/storage_proto"
 )
 
-type OrdinalTest struct {
-	Input string
+func TestNodeToEntry(t *testing.T) {
+	n := &Node{
+		VName: &spb.VName{Signature: "a"},
+		Kind:  nodes.Anchor,
+		Facts: Facts{
+			facts.AnchorStart: "25",
+			facts.AnchorEnd:   "37",
+			facts.Text:        "apple",
+		},
+	}
+	entries := n.ToEntries()
+	t.Logf("Checking entries for node: %+v", n)
 
-	Kind       string
-	Ordinal    int
-	HasOrdinal bool
+	check := func(key, value string) {
+		for _, entry := range entries {
+			if entry.FactName == key && string(entry.FactValue) == value {
+				return
+			}
+		}
+		t.Errorf("Missing entry for %q, wanted %q", key, value)
+	}
+	check(facts.NodeKind, nodes.Anchor)
+	check(facts.AnchorStart, "25")
+	check(facts.AnchorEnd, "37")
+	check(facts.Text, "apple")
+	check(facts.TextEncoding, facts.DefaultTextEncoding)
 }
 
-func TestParseOrdinal(t *testing.T) {
-	tests := []OrdinalTest{
-		{"/kythe/edge/defines", "/kythe/edge/defines", 0, false},
-		{"/kythe/edge/kind.here", "/kythe/edge/kind.here", 0, false},
-		{"/kythe/edge/kind1", "/kythe/edge/kind1", 0, false},
-		{"kind.-1", "kind.-1", 0, false},
-
-		{"kind.3", "kind", 3, true},
-		{"/kythe/edge/param.0", "/kythe/edge/param", 0, true},
-		{"/kythe/edge/param.1", "/kythe/edge/param", 1, true},
-		{"%/kythe/edge/param.1", "%/kythe/edge/param", 1, true},
-		{"/kythe/edge/kind.1930", "/kythe/edge/kind", 1930, true},
+func TestEdgeToEntry(t *testing.T) {
+	src := &spb.VName{Signature: "source"}
+	tgt := &spb.VName{Signature: "target"}
+	e := &Edge{
+		Source: src,
+		Target: tgt,
+		Kind:   edges.ChildOf,
 	}
-
-	for _, test := range tests {
-		kind, ord, ok := ParseOrdinal(test.Input)
-		if err := testutil.DeepEqual(&test, &OrdinalTest{test.Input, kind, ord, ok}); err != nil {
-			t.Error(err)
-		}
+	got := e.ToEntry()
+	want := &spb.Entry{
+		Source:   src,
+		Target:   tgt,
+		EdgeKind: edges.ChildOf,
+		FactName: "/",
+	}
+	if !proto.Equal(got, want) {
+		t.Errorf("ToEdge(%+v):\n--- got\n%s\n--- want\n%s", e, proto.MarshalTextString(got), proto.MarshalTextString(want))
 	}
 }

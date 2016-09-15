@@ -33,6 +33,9 @@ import (
 	"kythe.io/kythe/go/util/encoding/text"
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema"
+	"kythe.io/kythe/go/util/schema/edges"
+	"kythe.io/kythe/go/util/schema/facts"
+	"kythe.io/kythe/go/util/schema/nodes"
 
 	"bitbucket.org/creachadair/stringset"
 	"golang.org/x/net/context"
@@ -59,14 +62,14 @@ func EnsureReverseEdges(ctx context.Context, gs graphstore.Service) error {
 	if edge == nil {
 		log.Println("No edges found in GraphStore")
 		return nil
-	} else if schema.EdgeDirection(edge.EdgeKind) == schema.Reverse {
+	} else if edges.IsReverse(edge.EdgeKind) {
 		return nil
 	}
 
 	var foundReverse bool
 	if err := gs.Read(ctx, &spb.ReadRequest{
 		Source:   edge.Target,
-		EdgeKind: schema.MirrorEdge(edge.EdgeKind),
+		EdgeKind: edges.Mirror(edge.EdgeKind),
 	}, func(entry *spb.Entry) error {
 		foundReverse = true
 		return nil
@@ -88,12 +91,12 @@ func addReverseEdges(ctx context.Context, gs graphstore.Service) error {
 	startTime := time.Now()
 	err := gs.Scan(ctx, new(spb.ScanRequest), func(entry *spb.Entry) error {
 		kind := entry.EdgeKind
-		if kind != "" && schema.EdgeDirection(kind) == schema.Forward {
+		if kind != "" && edges.IsForward(kind) {
 			if err := gs.Write(ctx, &spb.WriteRequest{
 				Source: entry.Target,
 				Update: []*spb.WriteRequest_Update{{
 					Target:    entry.Source,
-					EdgeKind:  schema.MirrorEdge(kind),
+					EdgeKind:  edges.Mirror(kind),
 					FactName:  entry.FactName,
 					FactValue: entry.FactValue,
 				}},
@@ -195,7 +198,7 @@ func (g *GraphStoreService) Edges(ctx context.Context, req *xpb.EdgesRequest) (*
 				}
 			} else {
 				// edge
-				edgeKind, ordinal, _ := schema.ParseOrdinal(edgeKind)
+				edgeKind, ordinal, _ := edges.ParseOrdinal(edgeKind)
 				if len(req.Kind) == 0 || allowedKinds.Contains(edgeKind) {
 					targets, ok := filteredEdges[edgeKind]
 					if !ok {
@@ -341,19 +344,19 @@ func (g *GraphStoreService) Decorations(ctx context.Context, req *xpb.Decoration
 			node, ok := xrefs.NodesMap(anchorNodeReply.Nodes)[ticket]
 			if !ok {
 				return nil, fmt.Errorf("failed to find info for node %q", ticket)
-			} else if string(node[schema.NodeKindFact]) != schema.AnchorKind {
+			} else if string(node[facts.NodeKind]) != nodes.Anchor {
 				// Skip child if it isn't an anchor node
 				continue
 			}
 
-			anchorStart, err := strconv.Atoi(string(node[schema.AnchorStartFact]))
+			anchorStart, err := strconv.Atoi(string(node[facts.AnchorStart]))
 			if err != nil {
-				log.Printf("Invalid anchor start offset %q for node %q: %v", node[schema.AnchorStartFact], ticket, err)
+				log.Printf("Invalid anchor start offset %q for node %q: %v", node[facts.AnchorStart], ticket, err)
 				continue
 			}
-			anchorEnd, err := strconv.Atoi(string(node[schema.AnchorEndFact]))
+			anchorEnd, err := strconv.Atoi(string(node[facts.AnchorEnd]))
 			if err != nil {
-				log.Printf("Invalid anchor end offset %q for node %q: %v", node[schema.AnchorEndFact], ticket, err)
+				log.Printf("Invalid anchor end offset %q for node %q: %v", node[facts.AnchorEnd], ticket, err)
 				continue
 			}
 
@@ -368,7 +371,7 @@ func (g *GraphStoreService) Decorations(ctx context.Context, req *xpb.Decoration
 			}
 
 			targets, err := getEdges(ctx, g.gs, anchor, func(e *spb.Entry) bool {
-				return schema.EdgeDirection(e.EdgeKind) == schema.Forward && e.EdgeKind != schema.ChildOfEdge
+				return edges.IsForward(e.EdgeKind) && e.EdgeKind != edges.ChildOf
 			})
 			if err != nil {
 				return nil, fmt.Errorf("failed to retrieve targets of anchor %v: %v", anchor, err)
@@ -419,14 +422,14 @@ func (g *GraphStoreService) Decorations(ctx context.Context, req *xpb.Decoration
 	return reply, nil
 }
 
-var revChildOfEdgeKind = schema.MirrorEdge(schema.ChildOfEdge)
+var revChildOfEdgeKind = edges.Mirror(edges.ChildOf)
 
 func getSourceText(ctx context.Context, gs graphstore.Service, fileVName *spb.VName) (text []byte, encoding string, err error) {
 	if err := gs.Read(ctx, &spb.ReadRequest{Source: fileVName}, func(entry *spb.Entry) error {
 		switch entry.FactName {
-		case schema.TextFact:
+		case facts.Text:
 			text = entry.FactValue
-		case schema.TextEncodingFact:
+		case facts.TextEncoding:
 			encoding = string(entry.FactValue)
 		default:
 			// skip other file facts
@@ -457,7 +460,7 @@ func getEdges(ctx context.Context, gs graphstore.Service, node *spb.VName, pred 
 		EdgeKind: "*",
 	}, func(entry *spb.Entry) error {
 		if graphstore.IsEdge(entry) && pred(entry) {
-			edgeKind, ordinal, _ := schema.ParseOrdinal(entry.EdgeKind)
+			edgeKind, ordinal, _ := edges.ParseOrdinal(entry.EdgeKind)
 			targets = append(targets, &edgeTarget{edgeKind, entry.Target, int32(ordinal)})
 		}
 		return nil
@@ -578,7 +581,7 @@ func (g *GraphStoreService) CrossReferences(ctx context.Context, req *xpb.CrossR
 					}
 					count += len(anchors)
 					xr.Documentation = append(xr.Documentation, anchors...)
-				case !allRelatedNodes.Empty() && !schema.IsAnchorEdge(kind):
+				case !allRelatedNodes.Empty() && !edges.IsAnchorEdge(kind):
 					count += len(grp.Edge)
 					for _, edge := range grp.Edge {
 						xr.RelatedNode = append(xr.RelatedNode, &xpb.CrossReferencesReply_RelatedNode{
@@ -644,14 +647,14 @@ func edgeTickets(edges []*xpb.EdgeSet_Group_Edge) (tickets []string) {
 }
 
 func completeAnchors(ctx context.Context, xs xrefs.NodesEdgesService, retrieveText bool, files map[string]*fileNode, edgeKind string, anchors []string) ([]*xpb.CrossReferencesReply_RelatedAnchor, error) {
-	edgeKind = schema.Canonicalize(edgeKind)
+	edgeKind = edges.Canonical(edgeKind)
 
 	// AllEdges is relatively safe because each anchor will have very few parents (almost always 1)
 	reply, err := xrefs.AllEdges(ctx, xs, &xpb.EdgesRequest{
 		Ticket: anchors,
-		Kind:   []string{schema.ChildOfEdge},
+		Kind:   []string{edges.ChildOf},
 		Filter: []string{
-			schema.NodeKindFact,
+			facts.NodeKind,
 			schema.AnchorLocFilter,
 			schema.SnippetLocFilter,
 		},
@@ -659,17 +662,17 @@ func completeAnchors(ctx context.Context, xs xrefs.NodesEdgesService, retrieveTe
 	if err != nil {
 		return nil, err
 	}
-	nodes := xrefs.NodesMap(reply.Nodes)
+	allNodes := xrefs.NodesMap(reply.Nodes)
 
 	var result []*xpb.CrossReferencesReply_RelatedAnchor
 	for ticket, es := range reply.EdgeSets {
-		if nodeKind := string(nodes[ticket][schema.NodeKindFact]); nodeKind != schema.AnchorKind {
+		if nodeKind := string(allNodes[ticket][facts.NodeKind]); nodeKind != nodes.Anchor {
 			log.Printf("Found non-anchor target to %q edge: %q (kind: %q)", edgeKind, ticket, nodeKind)
 			continue
 		}
 
 		// Parse anchor location start/end facts
-		so, eo, err := getSpan(nodes[ticket], schema.AnchorStartFact, schema.AnchorEndFact)
+		so, eo, err := getSpan(allNodes[ticket], facts.AnchorStart, facts.AnchorEnd)
 		if err != nil {
 			log.Printf("Invalid anchor span for %q: %v", ticket, err)
 			continue
@@ -677,13 +680,13 @@ func completeAnchors(ctx context.Context, xs xrefs.NodesEdgesService, retrieveTe
 
 		// For each file parent to the anchor, add an Anchor to the result.
 		for kind, g := range es.Groups {
-			if kind != schema.ChildOfEdge {
+			if kind != edges.ChildOf {
 				continue
 			}
 
 			for _, edge := range g.Edge {
 				parent := edge.TargetTicket
-				if parentKind := string(nodes[parent][schema.NodeKindFact]); parentKind != schema.FileKind {
+				if parentKind := string(allNodes[parent][facts.NodeKind]); parentKind != nodes.File {
 					log.Printf("Found non-file parent to anchor: %q (kind: %q)", parent, parentKind)
 					continue
 				}
@@ -701,10 +704,10 @@ func completeAnchors(ctx context.Context, xs xrefs.NodesEdgesService, retrieveTe
 						return nil, fmt.Errorf("error getting file contents for %q: %v", a.Parent, err)
 					}
 					nMap := xrefs.NodesMap(nReply.Nodes)
-					text := nMap[a.Parent][schema.TextFact]
+					text := nMap[a.Parent][facts.Text]
 					file = &fileNode{
 						text:     text,
-						encoding: string(nMap[a.Parent][schema.TextEncodingFact]),
+						encoding: string(nMap[a.Parent][facts.TextEncoding]),
 						norm:     xrefs.NewNormalizer(text),
 					}
 					files[a.Parent] = file
@@ -723,7 +726,7 @@ func completeAnchors(ctx context.Context, xs xrefs.NodesEdgesService, retrieveTe
 					}
 				}
 
-				if snippetStart, snippetEnd, err := getSpan(nodes[ticket], schema.SnippetStartFact, schema.SnippetEndFact); err == nil {
+				if snippetStart, snippetEnd, err := getSpan(allNodes[ticket], facts.SnippetStart, facts.SnippetEnd); err == nil {
 					startPoint, endPoint, err := normalizeSpan(file.norm, int32(snippetStart), int32(snippetEnd))
 					if err != nil {
 						log.Printf("Invalid snippet span %q in file %q: %v", ticket, a.Parent, err)

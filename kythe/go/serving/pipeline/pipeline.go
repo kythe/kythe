@@ -36,7 +36,9 @@ import (
 	"kythe.io/kythe/go/storage/stream"
 	"kythe.io/kythe/go/storage/table"
 	"kythe.io/kythe/go/util/disksort"
-	"kythe.io/kythe/go/util/schema"
+	"kythe.io/kythe/go/util/schema/edges"
+	"kythe.io/kythe/go/util/schema/facts"
+	"kythe.io/kythe/go/util/schema/nodes"
 	"kythe.io/kythe/go/util/sortutil"
 
 	"github.com/golang/protobuf/proto"
@@ -161,7 +163,7 @@ func combineNodesAndEdges(ctx context.Context, opts *Options, out *servingOutput
 	tree := filetree.NewMap()
 	rd := func(f func(*spb.Entry) error) error {
 		return rdIn(func(e *spb.Entry) error {
-			if e.FactName == schema.NodeKindFact && string(e.FactValue) == schema.FileKind {
+			if e.FactName == facts.NodeKind && string(e.FactValue) == nodes.File {
 				tree.AddFile(e.Source)
 				// TODO(schroederc): evict finished directories (based on GraphStore order)
 			}
@@ -252,7 +254,7 @@ func writeFileTree(ctx context.Context, tree *filetree.Map, out table.Proto) err
 func filterReverses(rd stream.EntryReader) stream.EntryReader {
 	return func(f func(*spb.Entry) error) error {
 		return rd(func(e *spb.Entry) error {
-			if graphstore.IsNodeFact(e) || schema.EdgeDirection(e.EdgeKind) == schema.Forward {
+			if graphstore.IsNodeFact(e) || edges.IsForward(e.EdgeKind) {
 				return f(e)
 			}
 			return nil
@@ -270,8 +272,8 @@ func writePartialEdges(ctx context.Context, sorter disksort.Interface, idx table
 	return nil
 }
 
-func writeCompletedEdges(ctx context.Context, edges disksort.Interface, e *srvpb.Edge) error {
-	if err := edges.Add(&srvpb.Edge{
+func writeCompletedEdges(ctx context.Context, output disksort.Interface, e *srvpb.Edge) error {
+	if err := output.Add(&srvpb.Edge{
 		Source:  &srvpb.Node{Ticket: e.Source.Ticket},
 		Kind:    e.Kind,
 		Ordinal: e.Ordinal,
@@ -279,9 +281,9 @@ func writeCompletedEdges(ctx context.Context, edges disksort.Interface, e *srvpb
 	}); err != nil {
 		return fmt.Errorf("error writing complete edge: %v", err)
 	}
-	if err := edges.Add(&srvpb.Edge{
+	if err := output.Add(&srvpb.Edge{
 		Source:  &srvpb.Node{Ticket: e.Target.Ticket},
-		Kind:    schema.MirrorEdge(e.Kind),
+		Kind:    edges.Mirror(e.Kind),
 		Ordinal: e.Ordinal,
 		Target:  assemble.FilterTextFacts(e.Source),
 	}); err != nil {

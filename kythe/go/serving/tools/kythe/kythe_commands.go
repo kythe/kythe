@@ -31,7 +31,8 @@ import (
 	"kythe.io/kythe/go/services/filetree"
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/util/kytheuri"
-	"kythe.io/kythe/go/util/schema"
+	"kythe.io/kythe/go/util/schema/edges"
+	"kythe.io/kythe/go/util/schema/facts"
 
 	"golang.org/x/net/context"
 
@@ -224,7 +225,7 @@ var (
 				PageSize:  int32(pageSize),
 			}
 			if relatedNodes {
-				req.Filter = []string{schema.NodeKindFact, schema.SubkindFact}
+				req.Filter = []string{facts.NodeKind, facts.Subkind}
 			}
 			switch defKind {
 			case "all":
@@ -377,8 +378,8 @@ var (
 				TargetDefinitions: targetDefs,
 				ExtendsOverrides:  extendsOverrides,
 				Filter: []string{
-					schema.NodeKindFact,
-					schema.SubkindFact,
+					facts.NodeKind,
+					facts.Subkind,
 				},
 			}
 			if dirtyFile != "" {
@@ -419,14 +420,14 @@ var (
 // expandEdgeKind prefixes unrooted (not starting with "/") edge kinds with the
 // standard Kythe edge prefix ("/kythe/edge/").
 func expandEdgeKind(kind string) string {
-	ck := schema.Canonicalize(kind)
+	ck := edges.Canonical(kind)
 	if strings.HasPrefix(ck, "/") {
 		return kind
 	}
 
-	expansion := schema.EdgePrefix + ck
-	if schema.EdgeDirection(kind) == schema.Reverse {
-		return schema.MirrorEdge(expansion)
+	expansion := edges.Prefix + ck
+	if edges.IsReverse(kind) {
+		return edges.Mirror(expansion)
 	}
 	return expansion
 }

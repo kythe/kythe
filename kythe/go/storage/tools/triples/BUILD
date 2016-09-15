@@ -16,7 +16,7 @@ go_binary(
         "//kythe/go/util/encoding/rdf",
         "//kythe/go/util/flagutil",
         "//kythe/go/util/kytheuri",
-        "//kythe/go/util/schema",
+        "//kythe/go/util/schema/edges",
         "//kythe/proto:storage_proto_go",
         "@go_x_net//:context",
     ],

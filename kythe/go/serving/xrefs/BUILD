@@ -13,7 +13,7 @@ go_package(
         "//kythe/go/services/xrefs",
         "//kythe/go/storage/table",
         "//kythe/go/util/kytheuri",
-        "//kythe/go/util/schema",
+        "//kythe/go/util/schema/edges",
         "//kythe/proto:common_proto_go",
         "//kythe/proto:internal_proto_go",
         "//kythe/proto:serving_proto_go",

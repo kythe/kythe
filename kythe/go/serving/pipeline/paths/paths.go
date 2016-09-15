@@ -26,7 +26,9 @@ import (
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/serving/xrefs/assemble"
 	"kythe.io/kythe/go/util/reduce"
-	"kythe.io/kythe/go/util/schema"
+	"kythe.io/kythe/go/util/schema/edges"
+	"kythe.io/kythe/go/util/schema/facts"
+	"kythe.io/kythe/go/util/schema/nodes"
 
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
@@ -92,7 +94,7 @@ func FromSource(src *ipb.Source) []*ipb.Path {
 	n := specialize(assemble.Node(src))
 	paths = append(paths, &ipb.Path{Pivot: n})
 	for kind, group := range src.EdgeGroups {
-		if schema.EdgeDirection(kind) != schema.Forward {
+		if !edges.IsForward(kind) {
 			continue
 		}
 		for _, tgt := range group.Edges {
@@ -101,7 +103,7 @@ func FromSource(src *ipb.Source) []*ipb.Path {
 					Ticket: tgt.Ticket,
 				},
 				Edges: []*ipb.Path_Edge{{
-					Kind:    schema.MirrorEdge(kind),
+					Kind:    edges.Mirror(kind),
 					Ordinal: int32(tgt.Ordinal),
 					Target:  n,
 				}},
@@ -128,38 +130,38 @@ func OriginalNode(n *ipb.Path_Node) (g *srvpb.Node) {
 	sn := &srvpb.Node{
 		Ticket: n.Ticket,
 		Fact: []*cpb.Fact{
-			{Name: schema.NodeKindFact, Value: []byte(n.NodeKind)},
+			{Name: facts.NodeKind, Value: []byte(n.NodeKind)},
 		},
 	}
 
 	if a := n.GetRawAnchor(); a != nil {
 		sn.Fact = append(sn.Fact,
-			&cpb.Fact{Name: schema.AnchorStartFact, Value: []byte(strconv.FormatInt(int64(a.StartOffset), 10))},
-			&cpb.Fact{Name: schema.AnchorEndFact, Value: []byte(strconv.FormatInt(int64(a.EndOffset), 10))},
+			&cpb.Fact{Name: facts.AnchorStart, Value: []byte(strconv.FormatInt(int64(a.StartOffset), 10))},
+			&cpb.Fact{Name: facts.AnchorEnd, Value: []byte(strconv.FormatInt(int64(a.EndOffset), 10))},
 		)
 		if a.SnippetStart != 0 || a.SnippetEnd != 0 {
 			sn.Fact = append(sn.Fact,
-				&cpb.Fact{Name: schema.SnippetStartFact, Value: []byte(strconv.FormatInt(int64(a.SnippetStart), 10))},
-				&cpb.Fact{Name: schema.SnippetEndFact, Value: []byte(strconv.FormatInt(int64(a.SnippetEnd), 10))},
+				&cpb.Fact{Name: facts.SnippetStart, Value: []byte(strconv.FormatInt(int64(a.SnippetStart), 10))},
+				&cpb.Fact{Name: facts.SnippetEnd, Value: []byte(strconv.FormatInt(int64(a.SnippetEnd), 10))},
 			)
 		}
 	} else if a := n.GetExpandedAnchor(); a != nil {
 		sn.Fact = append(sn.Fact,
-			&cpb.Fact{Name: schema.AnchorStartFact, Value: []byte(strconv.FormatInt(int64(a.Span.Start.ByteOffset), 10))},
-			&cpb.Fact{Name: schema.AnchorEndFact, Value: []byte(strconv.FormatInt(int64(a.Span.End.ByteOffset), 10))},
+			&cpb.Fact{Name: facts.AnchorStart, Value: []byte(strconv.FormatInt(int64(a.Span.Start.ByteOffset), 10))},
+			&cpb.Fact{Name: facts.AnchorEnd, Value: []byte(strconv.FormatInt(int64(a.Span.End.ByteOffset), 10))},
 		)
 		if a.SnippetSpan.Start.ByteOffset != 0 || a.SnippetSpan.End.ByteOffset != 0 {
 			sn.Fact = append(sn.Fact,
-				&cpb.Fact{Name: schema.SnippetStartFact, Value: []byte(strconv.FormatInt(int64(a.SnippetSpan.Start.ByteOffset), 10))},
-				&cpb.Fact{Name: schema.SnippetEndFact, Value: []byte(strconv.FormatInt(int64(a.SnippetSpan.End.ByteOffset), 10))},
+				&cpb.Fact{Name: facts.SnippetStart, Value: []byte(strconv.FormatInt(int64(a.SnippetSpan.Start.ByteOffset), 10))},
+				&cpb.Fact{Name: facts.SnippetEnd, Value: []byte(strconv.FormatInt(int64(a.SnippetSpan.End.ByteOffset), 10))},
 			)
 		}
 	} else if f := n.GetFile(); f != nil {
 		if len(f.Text) > 0 {
-			sn.Fact = append(sn.Fact, &cpb.Fact{Name: schema.TextFact, Value: f.Text})
+			sn.Fact = append(sn.Fact, &cpb.Fact{Name: facts.Text, Value: f.Text})
 		}
 		if f.Encoding != "" {
-			sn.Fact = append(sn.Fact, &cpb.Fact{Name: schema.TextEncodingFact, Value: []byte(f.Encoding)})
+			sn.Fact = append(sn.Fact, &cpb.Fact{Name: facts.TextEncoding, Value: []byte(f.Encoding)})
 		}
 	}
 
@@ -187,10 +189,10 @@ func RawAnchor(n *ipb.Path_Node) *srvpb.RawAnchor {
 func ToString(p *ipb.Path) string {
 	s := "**" + p.Pivot.NodeKind + "**"
 	for _, e := range p.Edges {
-		if schema.EdgeDirection(e.Kind) == schema.Forward {
+		if edges.IsForward(e.Kind) {
 			s += fmt.Sprintf(" -[%s]> %s", e.Kind, e.Target.NodeKind)
 		} else {
-			s += fmt.Sprintf(" <[%s]- %s", schema.MirrorEdge(e.Kind), e.Target.NodeKind)
+			s += fmt.Sprintf(" <[%s]- %s", edges.Mirror(e.Kind), e.Target.NodeKind)
 		}
 	}
 	return s
@@ -201,7 +203,7 @@ func ReverseSinglePath(p *ipb.Path) *ipb.Path {
 	return &ipb.Path{
 		Pivot: p.Edges[0].Target,
 		Edges: []*ipb.Path_Edge{{
-			Kind:    schema.MirrorEdge(p.Edges[0].Kind),
+			Kind:    edges.Mirror(p.Edges[0].Kind),
 			Ordinal: p.Edges[0].Ordinal,
 			Target:  p.Pivot,
 		}},
@@ -214,25 +216,25 @@ func specialize(n *srvpb.Node) *ipb.Path_Node {
 	}
 	var nodeKind string
 	for _, f := range n.Fact {
-		if f.Name == schema.NodeKindFact {
+		if f.Name == facts.NodeKind {
 			nodeKind = string(f.Value)
 		}
 	}
 	switch nodeKind {
-	case schema.FileKind:
+	case nodes.File:
 		var text []byte
 		var encoding string
 		for _, f := range n.Fact {
 			switch f.Name {
-			case schema.TextFact:
+			case facts.Text:
 				text = f.Value
-			case schema.TextEncodingFact:
+			case facts.TextEncoding:
 				encoding = string(f.Value)
 			}
 		}
 		return &ipb.Path_Node{
 			Ticket:   n.Ticket,
-			NodeKind: schema.FileKind,
+			NodeKind: nodes.File,
 			Specialization: &ipb.Path_Node_File{&srvpb.File{
 				Ticket:   n.Ticket,
 				Text:     text,
@@ -240,23 +242,23 @@ func specialize(n *srvpb.Node) *ipb.Path_Node {
 			}},
 			Original: n,
 		}
-	case schema.AnchorKind:
+	case nodes.Anchor:
 		var locStart, locEnd, snippetStart, snippetEnd int
 		for _, f := range n.Fact {
 			switch f.Name {
-			case schema.AnchorStartFact:
+			case facts.AnchorStart:
 				locStart, _ = strconv.Atoi(string(f.Value))
-			case schema.AnchorEndFact:
+			case facts.AnchorEnd:
 				locEnd, _ = strconv.Atoi(string(f.Value))
-			case schema.SnippetStartFact:
+			case facts.SnippetStart:
 				snippetStart, _ = strconv.Atoi(string(f.Value))
-			case schema.SnippetEndFact:
+			case facts.SnippetEnd:
 				snippetEnd, _ = strconv.Atoi(string(f.Value))
 			}
 		}
 		return &ipb.Path_Node{
 			Ticket:   n.Ticket,
-			NodeKind: schema.AnchorKind,
+			NodeKind: nodes.Anchor,
 			Specialization: &ipb.Path_Node_RawAnchor{&srvpb.RawAnchor{
 				Ticket:       n.Ticket,
 				StartOffset:  int32(locStart),

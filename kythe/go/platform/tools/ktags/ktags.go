@@ -28,7 +28,9 @@ import (
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/util/flagutil"
 	"kythe.io/kythe/go/util/kytheuri"
-	"kythe.io/kythe/go/util/schema"
+	"kythe.io/kythe/go/util/schema/edges"
+	"kythe.io/kythe/go/util/schema/facts"
+	"kythe.io/kythe/go/util/schema/nodes"
 
 	"bitbucket.org/creachadair/stringset"
 	"golang.org/x/net/context"
@@ -71,20 +73,20 @@ func main() {
 			log.Fatalf("Failed to get decorations for file %q", file)
 		}
 
-		nodes := xrefs.NodesMap(decor.Nodes)
+		nmap := xrefs.NodesMap(decor.Nodes)
 		var emitted stringset.Set
 
 		for _, r := range decor.Reference {
-			if r.Kind != schema.DefinesBindingEdge || emitted.Contains(r.TargetTicket) {
+			if r.Kind != edges.DefinesBinding || emitted.Contains(r.TargetTicket) {
 				continue
 			}
 
-			ident := string(nodes[r.TargetTicket][identifierFact])
+			ident := string(nmap[r.TargetTicket][identifierFact])
 			if ident == "" {
 				continue
 			}
 
-			offset, err := strconv.Atoi(string(nodes[r.SourceTicket][schema.AnchorStartFact]))
+			offset, err := strconv.Atoi(string(nmap[r.SourceTicket][facts.AnchorStart]))
 			if err != nil {
 				log.Printf("Invalid start offset for anchor %q", r.SourceTicket)
 				continue
@@ -105,8 +107,8 @@ func main() {
 func getTagFields(xs xrefs.Service, ticket string) ([]string, error) {
 	reply, err := xs.Edges(ctx, &xpb.EdgesRequest{
 		Ticket: []string{ticket},
-		Kind:   []string{schema.ChildOfEdge, schema.ParamEdge},
-		Filter: []string{schema.NodeKindFact, schema.SubkindFact, identifierFact},
+		Kind:   []string{edges.ChildOf, edges.Param},
+		Filter: []string{facts.NodeKind, facts.Subkind, identifierFact},
 	})
 	if err != nil || len(reply.EdgeSets) == 0 {
 		return nil, err
@@ -114,34 +116,34 @@ func getTagFields(xs xrefs.Service, ticket string) ([]string, error) {
 
 	var fields []string
 
-	nodes := xrefs.NodesMap(reply.Nodes)
-	edges := xrefs.EdgesMap(reply.EdgeSets)
+	nmap := xrefs.NodesMap(reply.Nodes)
+	emap := xrefs.EdgesMap(reply.EdgeSets)
 
-	switch string(nodes[ticket][schema.NodeKindFact]) + "|" + string(nodes[ticket][schema.SubkindFact]) {
-	case schema.FunctionKind + "|":
+	switch string(nmap[ticket][facts.NodeKind]) + "|" + string(nmap[ticket][facts.Subkind]) {
+	case nodes.Function + "|":
 		fields = append(fields, "f")
-		fields = append(fields, "arity:"+strconv.Itoa(len(edges[ticket][schema.ParamEdge])))
-	case schema.EnumKind + "|" + schema.EnumClassSubkind:
+		fields = append(fields, "arity:"+strconv.Itoa(len(emap[ticket][edges.Param])))
+	case nodes.Enum + "|" + nodes.EnumClass:
 		fields = append(fields, "g")
-	case schema.PackageKind + "|":
+	case nodes.Package + "|":
 		fields = append(fields, "p")
-	case schema.RecordKind + "|" + schema.ClassSubkind:
+	case nodes.Record + "|" + nodes.Class:
 		fields = append(fields, "c")
-	case schema.VariableKind + "|":
+	case nodes.Variable + "|":
 		fields = append(fields, "v")
 	}
 
-	for parent := range edges[ticket][schema.ChildOfEdge] {
-		parentIdent := string(nodes[parent][identifierFact])
+	for parent := range emap[ticket][edges.ChildOf] {
+		parentIdent := string(nmap[parent][identifierFact])
 		if parentIdent == "" {
 			continue
 		}
-		switch string(nodes[parent][schema.NodeKindFact]) + "|" + string(nodes[parent][schema.SubkindFact]) {
-		case schema.FunctionKind + "|":
+		switch string(nmap[parent][facts.NodeKind]) + "|" + string(nmap[parent][facts.Subkind]) {
+		case nodes.Function + "|":
 			fields = append(fields, "function:"+parentIdent)
-		case schema.RecordKind + "|" + schema.ClassSubkind:
+		case nodes.Record + "|" + nodes.Class:
 			fields = append(fields, "class:"+parentIdent)
-		case schema.EnumKind + "|" + schema.EnumClassSubkind:
+		case nodes.Enum + "|" + nodes.EnumClass:
 			fields = append(fields, "enum:"+parentIdent)
 		}
 	}

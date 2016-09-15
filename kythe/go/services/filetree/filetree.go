@@ -30,7 +30,8 @@ import (
 	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/services/web"
 	"kythe.io/kythe/go/util/kytheuri"
-	"kythe.io/kythe/go/util/schema"
+	"kythe.io/kythe/go/util/schema/facts"
+	"kythe.io/kythe/go/util/schema/nodes"
 
 	"golang.org/x/net/context"
 
@@ -85,9 +86,9 @@ func (m *Map) Populate(ctx context.Context, gs graphstore.Service) error {
 	start := time.Now()
 	log.Println("Populating in-memory file tree")
 	var total int
-	if err := gs.Scan(ctx, &spb.ScanRequest{FactPrefix: schema.NodeKindFact},
+	if err := gs.Scan(ctx, &spb.ScanRequest{FactPrefix: facts.NodeKind},
 		func(entry *spb.Entry) error {
-			if entry.FactName == schema.NodeKindFact && string(entry.FactValue) == schema.FileKind {
+			if entry.FactName == facts.NodeKind && string(entry.FactValue) == nodes.File {
 				m.AddFile(entry.Source)
 				total++
 			}

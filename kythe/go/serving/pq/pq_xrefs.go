@@ -28,7 +28,7 @@ import (
 
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/util/kytheuri"
-	"kythe.io/kythe/go/util/schema"
+	"kythe.io/kythe/go/util/schema/edges"
 
 	"bitbucket.org/creachadair/stringset"
 	"github.com/golang/protobuf/proto"
@@ -437,7 +437,7 @@ func (d *DB) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReques
 			PageSize:  int32(pageSize - count),
 			PageToken: edgesToken,
 		}, func(kind string) bool {
-			return !schema.IsAnchorEdge(kind)
+			return !edges.IsAnchorEdge(kind)
 		})
 		if err != nil {
 			return nil, fmt.Errorf("error getting related nodes: %v", err)
@@ -452,7 +452,7 @@ func (d *DB) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReques
 				}
 			}
 			for kind, g := range es.Groups {
-				if !schema.IsAnchorEdge(kind) {
+				if !edges.IsAnchorEdge(kind) {
 					for _, edge := range g.Edge {
 						nodes.Add(edge.TargetTicket)
 						crs.RelatedNode = append(crs.RelatedNode, &xpb.CrossReferencesReply_RelatedNode{

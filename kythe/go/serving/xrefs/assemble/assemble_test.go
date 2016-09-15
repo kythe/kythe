@@ -140,7 +140,7 @@ func makeNodes() map[string]*srvpb.Node {
 }
 
 // TODO(schroederc): add some facts for each node
-var nodes = makeNodes()
+var testNodes = makeNodes()
 
 func getEdgeTargets(tickets ...string) []*srvpb.EdgeGroup_Edge {
 	es := make([]*srvpb.EdgeGroup_Edge, len(tickets))
@@ -153,7 +153,7 @@ func getEdgeTargets(tickets ...string) []*srvpb.EdgeGroup_Edge {
 }
 
 func getNode(t string) *srvpb.Node {
-	n, ok := nodes[t]
+	n, ok := testNodes[t]
 	if !ok {
 		n = &srvpb.Node{Ticket: t}
 	}

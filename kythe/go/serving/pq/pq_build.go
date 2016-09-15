@@ -29,7 +29,8 @@ import (
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/serving/xrefs/assemble"
 	"kythe.io/kythe/go/util/kytheuri"
-	"kythe.io/kythe/go/util/schema"
+	"kythe.io/kythe/go/util/schema/edges"
+	"kythe.io/kythe/go/util/schema/facts"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/lib/pq"
@@ -243,7 +244,7 @@ func (d *DB) copyEntries(entries <-chan *spb.Entry) error {
 					}
 				}
 				if text != nil && textEncoding == nil {
-					textEncoding = proto.String(schema.DefaultTextEncoding)
+					textEncoding = proto.String(facts.DefaultTextEncoding)
 				}
 				if _, err := copyNode.Exec(
 					nodeTicket,
@@ -269,30 +270,30 @@ func (d *DB) copyEntries(entries <-chan *spb.Entry) error {
 				node.Ticket = ticket
 			}
 			switch e.FactName {
-			case schema.NodeKindFact:
+			case facts.NodeKind:
 				nodeKind = string(e.FactValue)
-			case schema.SubkindFact:
+			case facts.Subkind:
 				subkind = proto.String(string(e.FactValue))
-			case schema.TextFact:
+			case facts.Text:
 				text = &e.FactValue
-			case schema.TextEncodingFact:
+			case facts.TextEncoding:
 				textEncoding = proto.String(string(e.FactValue))
-			case schema.AnchorStartFact:
+			case facts.AnchorStart:
 				n, err := strconv.ParseInt(string(e.FactValue), 10, 64)
 				if err == nil {
 					startOffset = proto.Int64(n)
 				}
-			case schema.AnchorEndFact:
+			case facts.AnchorEnd:
 				n, err := strconv.ParseInt(string(e.FactValue), 10, 64)
 				if err == nil {
 					endOffset = proto.Int64(n)
 				}
-			case schema.SnippetStartFact:
+			case facts.SnippetStart:
 				n, err := strconv.ParseInt(string(e.FactValue), 10, 64)
 				if err == nil {
 					snippetStart = proto.Int64(n)
 				}
-			case schema.SnippetEndFact:
+			case facts.SnippetEnd:
 				n, err := strconv.ParseInt(string(e.FactValue), 10, 64)
 				if err == nil {
 					snippetEnd = proto.Int64(n)
@@ -303,8 +304,8 @@ func (d *DB) copyEntries(entries <-chan *spb.Entry) error {
 					Value: e.FactValue,
 				})
 			}
-		} else if schema.EdgeDirection(e.EdgeKind) == schema.Forward {
-			kind, ordinal, _ := schema.ParseOrdinal(e.EdgeKind)
+		} else if edges.IsForward(e.EdgeKind) {
+			kind, ordinal, _ := edges.ParseOrdinal(e.EdgeKind)
 			ticket := kytheuri.ToString(e.Source)
 			if _, err := copyEdge.Exec(ticket, kind, kytheuri.ToString(e.Target), ordinal); err != nil {
 				return fmt.Errorf("error copying edge: %v", err)
@@ -420,7 +421,7 @@ func a2a(a *srvpb.ExpandedAnchor, anchorText bool) *xpb.Anchor {
 	}
 	return &xpb.Anchor{
 		Ticket:       a.Ticket,
-		Kind:         schema.Canonicalize(a.Kind),
+		Kind:         edges.Canonical(a.Kind),
 		Parent:       a.Parent,
 		Text:         text,
 		Start:        p2p(a.Span.Start),

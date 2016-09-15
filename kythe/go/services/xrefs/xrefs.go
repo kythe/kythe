@@ -33,7 +33,9 @@ import (
 
 	"kythe.io/kythe/go/services/web"
 	"kythe.io/kythe/go/util/kytheuri"
-	"kythe.io/kythe/go/util/schema"
+	"kythe.io/kythe/go/util/schema/edges"
+	"kythe.io/kythe/go/util/schema/facts"
+	"kythe.io/kythe/go/util/schema/nodes"
 
 	"bitbucket.org/creachadair/stringset"
 	"github.com/sergi/go-diff/diffmatchpatch"
@@ -130,7 +132,7 @@ func InSpanBounds(kind xpb.DecorationsRequest_SpanKind, start, end, startBoundar
 // definition kind.
 func IsDefKind(requestedKind xpb.CrossReferencesRequest_DefinitionKind, edgeKind string, incomplete bool) bool {
 	// TODO(schroederc): handle full vs. binding CompletesEdge
-	edgeKind = schema.Canonicalize(edgeKind)
+	edgeKind = edges.Canonical(edgeKind)
 	if IsDeclKind(xpb.CrossReferencesRequest_ALL_DECLARATIONS, edgeKind, incomplete) {
 		return false
 	}
@@ -138,11 +140,11 @@ func IsDefKind(requestedKind xpb.CrossReferencesRequest_DefinitionKind, edgeKind
 	case xpb.CrossReferencesRequest_NO_DEFINITIONS:
 		return false
 	case xpb.CrossReferencesRequest_FULL_DEFINITIONS:
-		return edgeKind == schema.DefinesEdge || schema.IsEdgeVariant(edgeKind, schema.CompletesEdge)
+		return edgeKind == edges.Defines || edges.IsVariant(edgeKind, edges.Completes)
 	case xpb.CrossReferencesRequest_BINDING_DEFINITIONS:
-		return edgeKind == schema.DefinesBindingEdge || schema.IsEdgeVariant(edgeKind, schema.CompletesEdge)
+		return edgeKind == edges.DefinesBinding || edges.IsVariant(edgeKind, edges.Completes)
 	case xpb.CrossReferencesRequest_ALL_DEFINITIONS:
-		return schema.IsEdgeVariant(edgeKind, schema.DefinesEdge) || schema.IsEdgeVariant(edgeKind, schema.CompletesEdge)
+		return edges.IsVariant(edgeKind, edges.Defines) || edges.IsVariant(edgeKind, edges.Completes)
 	default:
 		panic("unhandled CrossReferencesRequest_DefinitionKind")
 	}
@@ -154,12 +156,12 @@ func IsDeclKind(requestedKind xpb.CrossReferencesRequest_DeclarationKind, edgeKi
 	if !incomplete {
 		return false
 	}
-	edgeKind = schema.Canonicalize(edgeKind)
+	edgeKind = edges.Canonical(edgeKind)
 	switch requestedKind {
 	case xpb.CrossReferencesRequest_NO_DECLARATIONS:
 		return false
 	case xpb.CrossReferencesRequest_ALL_DECLARATIONS:
-		return schema.IsEdgeVariant(edgeKind, schema.DefinesEdge)
+		return edges.IsVariant(edgeKind, edges.Defines)
 	default:
 		panic("unhandled CrossReferenceRequest_DeclarationKind")
 	}
@@ -168,16 +170,16 @@ func IsDeclKind(requestedKind xpb.CrossReferencesRequest_DeclarationKind, edgeKi
 // IsRefKind determines whether the given edgeKind matches the requested
 // reference kind.
 func IsRefKind(requestedKind xpb.CrossReferencesRequest_ReferenceKind, edgeKind string) bool {
-	edgeKind = schema.Canonicalize(edgeKind)
+	edgeKind = edges.Canonical(edgeKind)
 	switch requestedKind {
 	case xpb.CrossReferencesRequest_NO_REFERENCES:
 		return false
 	case xpb.CrossReferencesRequest_CALL_REFERENCES:
-		return edgeKind == schema.RefCallEdge
+		return edgeKind == edges.RefCall
 	case xpb.CrossReferencesRequest_NON_CALL_REFERENCES:
-		return edgeKind != schema.RefCallEdge && schema.IsEdgeVariant(edgeKind, schema.RefEdge)
+		return edgeKind != edges.RefCall && edges.IsVariant(edgeKind, edges.Ref)
 	case xpb.CrossReferencesRequest_ALL_REFERENCES:
-		return schema.IsEdgeVariant(edgeKind, schema.RefEdge)
+		return edges.IsVariant(edgeKind, edges.Ref)
 	default:
 		panic("unhandled CrossReferencesRequest_ReferenceKind")
 	}
@@ -186,12 +188,12 @@ func IsRefKind(requestedKind xpb.CrossReferencesRequest_ReferenceKind, edgeKind 
 // IsDocKind determines whether the given edgeKind matches the requested
 // documentation kind.
 func IsDocKind(requestedKind xpb.CrossReferencesRequest_DocumentationKind, edgeKind string) bool {
-	edgeKind = schema.Canonicalize(edgeKind)
+	edgeKind = edges.Canonical(edgeKind)
 	switch requestedKind {
 	case xpb.CrossReferencesRequest_NO_DOCUMENTATION:
 		return false
 	case xpb.CrossReferencesRequest_ALL_DOCUMENTATION:
-		return schema.IsEdgeVariant(edgeKind, schema.DocumentsEdge)
+		return edges.IsVariant(edgeKind, edges.Documents)
 	default:
 		panic("unhandled CrossDocumentationRequest_DocumentationKind")
 	}
@@ -266,25 +268,25 @@ func SlowOverrides(ctx context.Context, xs Service, tickets []string) (map[strin
 	start := time.Now()
 	log.Println("WARNING: performing slow-lookup of overrides")
 	overrides := make(map[string][]*xpb.DecorationsReply_Override)
-	edges := []string{
-		schema.OverridesEdge,
-		schema.ExtendsEdge,
-		schema.ExtendsPrivateEdge,
-		schema.ExtendsPrivateVirtualEdge,
-		schema.ExtendsProtectedEdge,
-		schema.ExtendsProtectedVirtualEdge,
-		schema.ExtendsPublicEdge,
-		schema.ExtendsPublicVirtualEdge,
-		schema.ExtendsVirtualEdge,
+	edgeKinds := []string{
+		edges.Overrides,
+		edges.Extends,
+		edges.ExtendsPrivate,
+		edges.ExtendsPrivateVirtual,
+		edges.ExtendsProtected,
+		edges.ExtendsProtectedVirtual,
+		edges.ExtendsPublic,
+		edges.ExtendsPublicVirtual,
+		edges.ExtendsVirtual,
 	}
-	err := forAllEdges(ctx, xs, stringset.New(tickets...), edges, func(source, target, _, edgeKind string) error {
+	err := forAllEdges(ctx, xs, stringset.New(tickets...), edgeKinds, func(source, target, _, edgeKind string) error {
 		sig, err := SlowSignature(ctx, xs, target)
 		if err != nil {
 			log.Printf("SlowOverrides: error getting signature for %s: %v", target, err)
 			sig = &xpb.Printable{}
 		}
 		okind := xpb.DecorationsReply_Override_EXTENDS
-		if edgeKind == schema.OverridesEdge {
+		if edgeKind == edges.Overrides {
 			okind = xpb.DecorationsReply_Override_OVERRIDES
 		}
 		overrides[source] = append(overrides[source], &xpb.DecorationsReply_Override{Ticket: target, DisplayName: sig, Kind: okind})
@@ -323,7 +325,7 @@ func SlowDefinitions(ctx context.Context, xs Service, tickets []string) (map[str
 			DefinitionKind: xpb.CrossReferencesRequest_BINDING_DEFINITIONS,
 
 			// Get node kinds of related nodes for indirect definitions
-			Filter: []string{schema.NodeKindFact},
+			Filter: []string{facts.NodeKind},
 		})
 		if err != nil {
 			return nil, fmt.Errorf("error retrieving definition locations: %v", err)
@@ -621,7 +623,7 @@ func forAllEdges(ctx context.Context, service Service, source stringset.Set, edg
 	req := &xpb.EdgesRequest{
 		Ticket: source.Elements(),
 		Kind:   edge,
-		Filter: []string{schema.NodeKindFact},
+		Filter: []string{facts.NodeKind},
 	}
 	edges, err := AllEdges(ctx, service, req)
 	if err != nil {
@@ -633,7 +635,7 @@ func forAllEdges(ctx context.Context, service Service, source stringset.Set, edg
 				info, foundInfo := edges.Nodes[edge.TargetTicket]
 				kind := ""
 				if foundInfo {
-					kind = string(info.Facts[schema.NodeKindFact])
+					kind = string(info.Facts[facts.NodeKind])
 				}
 				err = f(source, edge.TargetTicket, kind, edgeKind)
 				if err != nil {
@@ -656,28 +658,28 @@ const (
 // completes/uniquely, and (optionally) overrides edges. Return the resulting set of
 // tickets with anchors removed.
 func expandDefRelatedNodeSet(ctx context.Context, service Service, frontier stringset.Set, includeOverrides bool) (stringset.Set, error) {
-	var edges []string
+	var edgeKinds []string
 	// From the schema, we know the source of a defines* or completes* edge should be an anchor. Because of this,
 	// we don't have to partition our set/queries on node kind.
 	if includeOverrides {
-		edges = []string{
-			schema.OverridesEdge,
-			schema.MirrorEdge(schema.OverridesEdge),
-			schema.DefinesBindingEdge,
-			schema.MirrorEdge(schema.DefinesBindingEdge),
-			schema.CompletesEdge,
-			schema.MirrorEdge(schema.CompletesEdge),
-			schema.CompletesUniquelyEdge,
-			schema.MirrorEdge(schema.CompletesUniquelyEdge),
+		edgeKinds = []string{
+			edges.Overrides,
+			edges.Mirror(edges.Overrides),
+			edges.DefinesBinding,
+			edges.Mirror(edges.DefinesBinding),
+			edges.Completes,
+			edges.Mirror(edges.Completes),
+			edges.CompletesUniquely,
+			edges.Mirror(edges.CompletesUniquely),
 		}
 	} else {
-		edges = []string{
-			schema.DefinesBindingEdge,
-			schema.MirrorEdge(schema.DefinesBindingEdge),
-			schema.CompletesEdge,
-			schema.MirrorEdge(schema.CompletesEdge),
-			schema.CompletesUniquelyEdge,
-			schema.MirrorEdge(schema.CompletesUniquelyEdge),
+		edgeKinds = []string{
+			edges.DefinesBinding,
+			edges.Mirror(edges.DefinesBinding),
+			edges.Completes,
+			edges.Mirror(edges.Completes),
+			edges.CompletesUniquely,
+			edges.Mirror(edges.CompletesUniquely),
 		}
 	}
 	// We keep a worklist of anchors and semantic nodes that are reachable from undirected edges
@@ -691,8 +693,8 @@ func expandDefRelatedNodeSet(ctx context.Context, service Service, frontier stri
 		iterations++
 		// Nodes that we haven't visited yet but will the next time around the loop.
 		next := stringset.New()
-		err := forAllEdges(ctx, service, frontier, edges, func(_, target, kind, _ string) error {
-			if kind == schema.AnchorKind {
+		err := forAllEdges(ctx, service, frontier, edgeKinds, func(_, target, kind, _ string) error {
+			if kind == nodes.Anchor {
 				anchors.Add(target)
 			}
 			if !retired.Contains(target) && !frontier.Contains(target) {
@@ -759,21 +761,21 @@ func SlowCallersForCrossReferences(ctx context.Context, service Service, include
 	parentToAnchor := make(map[string][]string)
 	for _, refs := range xrefs.CrossReferences {
 		for _, ref := range refs.Reference {
-			if ref.Anchor.Kind == schema.RefCallEdge {
+			if ref.Anchor.Kind == edges.RefCall {
 				anchors.Add(ref.Anchor.Ticket)
 				expandedAnchors[ref.Anchor.Ticket] = ref.Anchor
 			}
 		}
 	}
 	var parentTickets []string
-	if err := forAllEdges(ctx, service, anchors, []string{schema.ChildOfEdge}, func(source, target, kind, _ string) error {
+	if err := forAllEdges(ctx, service, anchors, []string{edges.ChildOf}, func(source, target, kind, _ string) error {
 		anchor, ok := expandedAnchors[source]
 		if !ok {
 			log.Printf("Warning: missing expanded anchor for %v", source)
 			return nil
 		}
 		// anchor.Parent is the syntactic parent of the anchor; we want the semantic parent.
-		if target != anchor.Parent && kind != schema.AnchorKind {
+		if target != anchor.Parent && kind != nodes.Anchor {
 			if _, exists := parentToAnchor[target]; !exists {
 				parentTickets = append(parentTickets, target)
 			}
@@ -892,7 +894,7 @@ func slowLookupMeta(ctx context.Context, service Service, language string, kind 
 	uri := kytheuri.URI{Language: language, Signature: kind + "#meta"}
 	req := &xpb.NodesRequest{
 		Ticket: []string{uri.String()},
-		Filter: []string{schema.FormatFact},
+		Filter: []string{facts.Format},
 	}
 	nodes, err := service.Nodes(ctx, req)
 	if err != nil {
@@ -907,10 +909,10 @@ func slowLookupMeta(ctx context.Context, service Service, language string, kind 
 }
 
 // findParam finds the ticket for param number num in edges. It returns the empty string if a match wasn't found.
-func findParam(edges *xpb.EdgesReply, num int) string {
-	for _, set := range edges.EdgeSets {
+func findParam(reply *xpb.EdgesReply, num int) string {
+	for _, set := range reply.EdgeSets {
 		for kind, group := range set.Groups {
-			if kind == schema.ParamEdge {
+			if kind == edges.Param {
 				for _, edge := range group.Edge {
 					if int(edge.Ordinal) == num {
 						return edge.TargetTicket
@@ -932,7 +934,7 @@ func getFactValue(edges *xpb.EdgesReply, ticket, fact string) []byte {
 // findFormatAndKind finds the format and kind facts associated with ticket in edges. It returns empty strings for
 // either fact if they aren't found.
 func findFormatAndKind(edges *xpb.EdgesReply, ticket string) (string, string) {
-	return string(getFactValue(edges, ticket, schema.FormatFact)), string(getFactValue(edges, ticket, schema.NodeKindFact))
+	return string(getFactValue(edges, ticket, facts.Format)), string(getFactValue(edges, ticket, facts.NodeKind))
 }
 
 // slowSignatureForBacktick handles signature generation for the %N` format token.
@@ -942,9 +944,9 @@ func slowSignatureForBacktick(ctx context.Context, service Service, typeTicket s
 	if typeTicket != "" {
 		req := &xpb.EdgesRequest{
 			Ticket:   []string{typeTicket},
-			Kind:     []string{schema.ParamEdge},
+			Kind:     []string{edges.Param},
 			PageSize: math.MaxInt32,
-			Filter:   []string{schema.NodeKindFact, schema.FormatFact},
+			Filter:   []string{facts.NodeKind, facts.Format},
 		}
 		edges, err := AllEdges(ctx, service, req)
 		if err != nil {
@@ -974,11 +976,11 @@ type SignatureDetails struct {
 func findSignatureDetails(ctx context.Context, service Service, ticket string) (*SignatureDetails, error) {
 	req := &xpb.EdgesRequest{
 		Ticket:   []string{ticket},
-		Kind:     []string{schema.NamedEdge, schema.ParamEdge, schema.TypedEdge, schema.ChildOfEdge},
+		Kind:     []string{edges.Named, edges.Param, edges.Typed, edges.ChildOf},
 		PageSize: math.MaxInt32,
-		Filter:   []string{schema.NodeKindFact, schema.FormatFact},
+		Filter:   []string{facts.NodeKind, facts.Format},
 	}
-	edges, err := AllEdges(ctx, service, req)
+	allEdges, err := AllEdges(ctx, service, req)
 	if err != nil {
 		return &SignatureDetails{}, fmt.Errorf("during AllEdges in findSignatureDetails: %v", err)
 	}
@@ -986,20 +988,20 @@ func findSignatureDetails(ctx context.Context, service Service, ticket string) (
 		kinds:   make(map[string]string),
 		formats: make(map[string]string),
 	}
-	for nodeTicket, node := range edges.Nodes {
-		details.kinds[nodeTicket] = string(node.Facts[schema.NodeKindFact])
-		details.formats[nodeTicket] = string(node.Facts[schema.FormatFact])
+	for nodeTicket, node := range allEdges.Nodes {
+		details.kinds[nodeTicket] = string(node.Facts[facts.NodeKind])
+		details.formats[nodeTicket] = string(node.Facts[facts.Format])
 	}
-	for _, set := range edges.EdgeSets {
-		if group := set.Groups[schema.TypedEdge]; group != nil {
+	for _, set := range allEdges.EdgeSets {
+		if group := set.Groups[edges.Typed]; group != nil {
 			for _, edge := range group.Edge {
 				details.typeTicket = edge.TargetTicket
 			}
 		}
-		if group := set.Groups[schema.ParamEdge]; group != nil {
+		if group := set.Groups[edges.Param]; group != nil {
 			details.params = extractParams(group.Edge)
 		}
-		if group := set.Groups[schema.ChildOfEdge]; group != nil {
+		if group := set.Groups[edges.ChildOf]; group != nil {
 			for _, edge := range group.Edge {
 				details.parents = append(details.parents, edge.TargetTicket)
 			}
@@ -1035,7 +1037,7 @@ func slowSignatureLevel(ctx context.Context, service Service, ticket, kind, form
 		return "", nil, fmt.Errorf("during findSignatureDetails in slowSignatureLevel: %v", err)
 	}
 	// tapp nodes allow their 0th param to provide a format.
-	if format == "" && kind == schema.TAppKind && len(details.params) > 0 && details.formats[details.params[0]] != "" {
+	if format == "" && kind == nodes.TApp && len(details.params) > 0 && details.formats[details.params[0]] != "" {
 		format = details.formats[details.params[0]]
 	}
 	// Try looking for a meta node as a last resort.
@@ -1253,7 +1255,7 @@ func slowSignatureLevel(ctx context.Context, service Service, ticket, kind, form
 func SlowSignature(ctx context.Context, service Service, ticket string) (*xpb.Printable, error) {
 	req := &xpb.NodesRequest{
 		Ticket: []string{ticket},
-		Filter: []string{schema.NodeKindFact, schema.FormatFact},
+		Filter: []string{facts.NodeKind, facts.Format},
 	}
 	nodes, err := service.Nodes(ctx, req)
 	if err != nil {
@@ -1265,8 +1267,8 @@ func SlowSignature(ctx context.Context, service Service, ticket string) (*xpb.Pr
 
 	var kind, format string
 	for _, node := range nodes.Nodes {
-		kind = string(node.Facts[schema.NodeKindFact])
-		format = string(node.Facts[schema.FormatFact])
+		kind = string(node.Facts[facts.NodeKind])
+		format = string(node.Facts[facts.Format])
 	}
 
 	text, links, err := slowSignatureLevel(ctx, service, ticket, kind, format, 0, nil)
@@ -1312,33 +1314,33 @@ func getDocRelatedNodes(ctx context.Context, service Service, details documentDe
 	// We can't ask for text facts here (since they get filtered out).
 	dreq := &xpb.EdgesRequest{
 		Ticket:   allTickets.Elements(),
-		Kind:     []string{schema.MirrorEdge(schema.DocumentsEdge), schema.ChildOfEdge, schema.TypedEdge},
+		Kind:     []string{edges.Mirror(edges.Documents), edges.ChildOf, edges.Typed},
 		PageSize: math.MaxInt32,
-		Filter:   []string{schema.NodeKindFact},
+		Filter:   []string{facts.NodeKind},
 	}
 	dedges, err := AllEdges(ctx, service, dreq)
 	if err != nil {
 		return fmt.Errorf("couldn't AllEdges: %v", err)
 	}
 	for nodeTicket, node := range dedges.Nodes {
-		kind := string(node.Facts[schema.NodeKindFact])
-		if kind == schema.DocKind {
+		kind := string(node.Facts[facts.NodeKind])
+		if kind == nodes.Doc {
 			details.docs.Add(nodeTicket)
 		}
 		details.ticketToKind[nodeTicket] = kind
 	}
 	for sourceTicket, set := range dedges.EdgeSets {
-		if group := set.Groups[schema.ChildOfEdge]; group != nil {
+		if group := set.Groups[edges.ChildOf]; group != nil {
 			for _, edge := range group.Edge {
 				details.ticketToParent[sourceTicket] = edge.TargetTicket
 			}
 		}
-		if group := set.Groups[schema.TypedEdge]; group != nil {
+		if group := set.Groups[edges.Typed]; group != nil {
 			for _, edge := range group.Edge {
 				details.ticketToType[sourceTicket] = edge.TargetTicket
 			}
 		}
-		if group := set.Groups[schema.MirrorEdge(schema.DocumentsEdge)]; group != nil {
+		if group := set.Groups[edges.Mirror(edges.Documents)]; group != nil {
 			for _, edge := range group.Edge {
 				if preDoc := details.ticketToPreDocument[sourceTicket]; preDoc != nil {
 					assocNode := details.docTicketToAssocNode[edge.TargetTicket]
@@ -1362,14 +1364,14 @@ func getDocText(ctx context.Context, service Service, details documentDetails) e
 	}
 	nreq := &xpb.NodesRequest{
 		Ticket: details.docs.Elements(),
-		Filter: []string{schema.TextFact},
+		Filter: []string{facts.Text},
 	}
 	nodes, err := service.Nodes(ctx, nreq)
 	if err != nil {
 		return fmt.Errorf("error in Nodes during getDocText: %v", err)
 	}
 	for nodeTicket, node := range nodes.Nodes {
-		if text, ok := node.Facts[schema.TextFact]; ok {
+		if text, ok := node.Facts[facts.Text]; ok {
 			if assocNode := details.docTicketToAssocNode[nodeTicket]; assocNode != nil {
 				assocNode.rawText = string(text)
 			}
@@ -1421,7 +1423,7 @@ func getDocLinks(ctx context.Context, service Service, details documentDetails) 
 	}
 	preq := &xpb.EdgesRequest{
 		Ticket:   details.docs.Elements(),
-		Kind:     []string{schema.ParamEdge},
+		Kind:     []string{edges.Param},
 		PageSize: math.MaxInt32,
 	}
 	pedges, err := AllEdges(ctx, service, preq)
@@ -1493,14 +1495,14 @@ func SlowDocumentation(ctx context.Context, service Service, req *xpb.Documentat
 	// Get the kinds of the nodes in the original request, as we'll have to include them in the response.
 	kreq := &xpb.NodesRequest{
 		Ticket: tickets,
-		Filter: []string{schema.NodeKindFact},
+		Filter: []string{facts.NodeKind},
 	}
 	nodes, err := service.Nodes(ctx, kreq)
 	if err != nil {
 		return nil, fmt.Errorf("error calling Nodes on %v: %v", tickets, err)
 	}
 	for nodeTicket, node := range nodes.Nodes {
-		details.ticketToKind[nodeTicket] = string(node.Facts[schema.NodeKindFact])
+		details.ticketToKind[nodeTicket] = string(node.Facts[facts.NodeKind])
 	}
 	// We assume that expandDefRelatedNodeSet will return disjoint sets (and thus we can treat them as equivalence classes
 	// with the original request's ticket as the characteristic element).
