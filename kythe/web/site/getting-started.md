@@ -17,7 +17,7 @@ git clone https://github.com/google/kythe.git
 
 Kythe relies on the following external dependencies:
 
-* go >=1.6
+* go >=1.7
 * clang-3.5
 * cmake
 * node.js

@@ -227,14 +227,14 @@ new_git_repository(
 new_git_repository(
     name = "go_gcloud",
     build_file = "third_party/go/gcloud.BUILD",
-    commit = "0529c5393e499f4f538b167ec5b85e74a58a02f8",
-    remote = "https://github.com/GoogleCloudPlatform/gcloud-golang.git",
+    commit = "64568e4898e813ad748cf9523d56a65209c7dc18",
+    remote = "https://github.com/GoogleCloudPlatform/google-cloud-go.git",
 )
 
 new_git_repository(
     name = "go_x_net",
     build_file = "third_party/go/x_net.BUILD",
-    commit = "3797cd8864994d713d909eda5e61ede8683fdc12",
+    commit = "de35ec43e7a9aabd6a9c54d2898220ea7e44de7d",
     remote = "https://github.com/golang/net.git",
 )
 
@@ -255,21 +255,21 @@ new_git_repository(
 new_git_repository(
     name = "go_x_oauth2",
     build_file = "third_party/go/oauth2.BUILD",
-    commit = "a8702432015187171c5120cbf5020bfca7be35b6",
+    commit = "3c3a985cb79f52a3190fbc056984415ca6763d01",
     remote = "https://github.com/golang/oauth2.git",
 )
 
 new_git_repository(
     name = "go_gapi",
     build_file = "third_party/go/gapi.BUILD",
-    commit = "c13a21ee847eca050f08db8373d8737494a1170e",
+    commit = "0637df23b94dd27d09659ae7d9052b6c8d6fc1a0",
     remote = "https://github.com/google/google-api-go-client.git",
 )
 
 new_git_repository(
     name = "go_grpc",
     build_file = "third_party/go/grpc.BUILD",
-    commit = "b062a3c003c22bfef58fa99d689e6a892b408f9d",
+    commit = "2700f043b937c2b59b4a520bc6ddbb440a2de20e",
     remote = "https://github.com/grpc/grpc-go.git",
 )
 

@@ -1,5 +1,11 @@
 # Release Notes
 
+## Upcoming release
+
+Notable changes:
+ - Replace google.golang.org/cloud dependencies with cloud.google.com/go
+ - Update required version of Go from 1.6 to 1.7
+
 ## v0.0.24
 
 Notable fixes:

@@ -52,6 +52,7 @@ external_go_package(
     base_pkg = "google.golang.org/api",
     deps = [
         "@go_grpc//:grpc",
+        "@go_grpc//:naming",
         "@go_x_oauth2//:oauth2",
     ],
 )
@@ -75,4 +76,9 @@ external_go_package(
         "@go_x_net//:context",
         "@go_x_net//:context/ctxhttp",
     ],
+)
+
+external_go_package(
+    name = "iterator",
+    base_pkg = "google.golang.org/api",
 )

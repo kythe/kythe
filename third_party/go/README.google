@@ -28,7 +28,7 @@ URL: http://google.golang.org/grpc
 License: New BSD License: http://opensource.org/licenses/BSD-3-Clause
 Local Modifications: No modifications.
 
-URL: http://google.golang.org/cloud
+URL: http://cloud.google.com/go
 License: Apache 2.0 http://www.apache.org/licenses/LICENSE-2.0
 Local Modifications: No modifications.
 

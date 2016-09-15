@@ -28,8 +28,8 @@ import (
 
 	"kythe.io/kythe/go/platform/vfs"
 
+	"cloud.google.com/go/storage"
 	"golang.org/x/net/context"
-	"google.golang.org/cloud/storage"
 )
 
 // fs implements a VFS backed by a bucket in Google Cloud Storage
