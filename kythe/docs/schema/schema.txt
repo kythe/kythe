@@ -965,7 +965,7 @@ Brief description::
 Commonly arises from::
   terms with types; definitions and declarations
 Points from::
-  anchors
+  semantic nodes
 Points toward::
   types
 Ordinals are used::
