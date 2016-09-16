@@ -22,9 +22,7 @@ cc_library(
     name = "llvm",
     # See https://github.com/google/bazel/issues/61 regarding check_modules's
     # modules_checked_empty.cc.
-    # We're using a glob() here because (unless check_modules has run) we can't
-    # be sure which, if any, of the LLVM libraries exist.
-    srcs = glob([
+    srcs = [
         "llvm/build/lib/libclangTooling.a",
         "llvm/build/lib/libclangFrontend.a",
         "llvm/build/lib/libclangDriver.a",
@@ -50,7 +48,8 @@ cc_library(
         "llvm/build/lib/libLLVMCore.a",
         "llvm/build/lib/libLLVMSupport.a",
         "llvm/build/lib/libLLVMDemangle.a",
-    ]) + ["//tools/modules:check_modules"],
+        "//tools/modules:check_modules",
+    ],
     hdrs = glob([
         "llvm/include/**",
         "llvm/build/include/**",
