@@ -121,6 +121,27 @@ void RenderTagBlocks(const HtmlRendererOptions& options,
     }
   }
 }
+
+const char* TagNameForStyle(PrintableSpan::Style style) {
+  switch (style) {
+    case PrintableSpan::Style::Bold:
+      return "b";
+    case PrintableSpan::Style::Italic:
+      return "i";
+    case PrintableSpan::Style::H1:
+      return "h1";
+    case PrintableSpan::Style::H2:
+      return "h2";
+    case PrintableSpan::Style::H3:
+      return "h3";
+    case PrintableSpan::Style::H4:
+      return "h4";
+    case PrintableSpan::Style::H5:
+      return "h5";
+    case PrintableSpan::Style::H6:
+      return "h6";
+  }
+}
 }  // anonymous namespace
 
 std::string RenderHtml(const HtmlRendererOptions& options,
@@ -129,7 +150,14 @@ std::string RenderHtml(const HtmlRendererOptions& options,
     const PrintableSpan* span;
     bool valid;
   };
+  struct FormatState {
+    bool in_pre_block;
+  };
   std::stack<OpenSpan> open_spans;
+  // To avoid entering multiple <pre> blocks, we keep track of whether we're
+  // currently in a <pre> context. This does not affect escaping, since
+  // tags can appear in a <pre>.
+  std::stack<FormatState> format_states;
   // Elements on `open_tags` point to values of `tag_blocks`. The element on
   // top of the stack is the tag block whose buffer we're currently appending
   // data to (if any). This stack should usually have one or zero elements,
@@ -145,6 +173,7 @@ std::string RenderHtml(const HtmlRendererOptions& options,
   PrintableSpan default_span(0, printable.text().size(),
                              PrintableSpan::Semantic::Raw);
   open_spans.push(OpenSpan{&default_span, true});
+  format_states.push(FormatState{false});
   size_t current_span = 0;
   for (size_t i = 0; i <= printable.text().size(); ++i) {
     // Normalized PrintableSpans have all empty or negative-length spans
@@ -157,6 +186,12 @@ std::string RenderHtml(const HtmlRendererOptions& options,
           }
           out = open_tags.empty() ? &main_text : open_tags.top();
         } break;
+        case PrintableSpan::Semantic::UriLink:
+          out->buffer.append("</a>");
+          break;
+        case PrintableSpan::Semantic::Uri:
+          out->buffer.append("\">");
+          break;
         case PrintableSpan::Semantic::Link:
           if (open_spans.top().valid) {
             out->buffer.append("</a>");
@@ -164,6 +199,28 @@ std::string RenderHtml(const HtmlRendererOptions& options,
           break;
         case PrintableSpan::Semantic::CodeRef:
           out->buffer.append("</tt>");
+          break;
+        case PrintableSpan::Semantic::Paragraph:
+          out->buffer.append("</p>");
+          break;
+        case PrintableSpan::Semantic::ListItem:
+          out->buffer.append("</li>");
+          break;
+        case PrintableSpan::Semantic::UnorderedList:
+          out->buffer.append("</ul>");
+          break;
+        case PrintableSpan::Semantic::Styled:
+          out->buffer.append("</");
+          out->buffer.append(TagNameForStyle(open_spans.top().span->style()));
+          out->buffer.append(">");
+          break;
+        case PrintableSpan::Semantic::CodeBlock:
+          if (!format_states.empty()) {
+            format_states.pop();
+            if (!format_states.empty() && !format_states.top().in_pre_block) {
+              out->buffer.append("</pre>");
+            }
+          }
           break;
         default:
           break;
@@ -185,6 +242,12 @@ std::string RenderHtml(const HtmlRendererOptions& options,
           out = &tag_blocks[block];
           open_tags.push(out);
         } break;
+        case PrintableSpan::Semantic::UriLink:
+          out->buffer.append("<a ");
+          break;
+        case PrintableSpan::Semantic::Uri:
+          out->buffer.append("href=\"");
+          break;
         case PrintableSpan::Semantic::Link:
           open_spans.top().valid = false;  // Invalid until proven otherwise.
           if (open_spans.top().span->link().definition_size() != 0) {
@@ -211,11 +274,34 @@ std::string RenderHtml(const HtmlRendererOptions& options,
         case PrintableSpan::Semantic::CodeRef:
           out->buffer.append("<tt>");
           break;
+        case PrintableSpan::Semantic::Paragraph:
+          out->buffer.append("<p>");
+          break;
+        case PrintableSpan::Semantic::ListItem:
+          out->buffer.append("<li>");
+          break;
+        case PrintableSpan::Semantic::UnorderedList:
+          out->buffer.append("<ul>");
+          break;
+        case PrintableSpan::Semantic::Styled:
+          out->buffer.append("<");
+          out->buffer.append(TagNameForStyle(open_spans.top().span->style()));
+          out->buffer.append(">");
+          break;
+        case PrintableSpan::Semantic::CodeBlock:
+          if (!format_states.empty() && !format_states.top().in_pre_block) {
+            out->buffer.append("<pre>");
+          }
+          format_states.push(FormatState{true});
+          break;
         default:
           break;
       }
     }
-    if (open_spans.top().span->semantic() != PrintableSpan::Semantic::Markup) {
+    if (open_spans.top().span->semantic() == PrintableSpan::Semantic::Escaped) {
+      out->buffer.push_back(printable.text()[i]);
+    } else if (open_spans.top().span->semantic() !=
+               PrintableSpan::Semantic::Markup) {
       char c = printable.text()[i];
       AppendEscapedHtmlCharacter(&out->buffer, c);
     }

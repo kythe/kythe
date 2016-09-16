@@ -26,6 +26,7 @@
 #include "google/protobuf/text_format.h"
 #include "kythe/cxx/common/kythe_uri.h"
 #include "kythe/cxx/common/net_client.h"
+#include "kythe/cxx/doc/html_markup_handler.h"
 #include "kythe/cxx/doc/html_renderer.h"
 #include "kythe/cxx/doc/javadoxygen_markup_handler.h"
 #include "kythe/cxx/doc/markup_handler.h"
@@ -77,7 +78,8 @@ int DocumentNodesFrom(const proto::DocumentationReply& doc_reply) {
       ::fputs("</h1>", stdout);
     }
     if (document.has_text()) {
-      auto html = RenderDocument(options, {ParseJavadoxygen}, document);
+      auto html =
+          RenderDocument(options, {ParseJavadoxygen, ParseHtml}, document);
       ::fputs(html.c_str(), stdout);
     }
   }

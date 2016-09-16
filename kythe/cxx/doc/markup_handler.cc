@@ -121,7 +121,7 @@ Printable HandleMarkup(const std::vector<MarkupHandler>& handlers,
   PrintableSpans spans = printable.spans();
   for (const auto& handler : handlers) {
     PrintableSpans next_spans;
-    handler(printable, &next_spans);
+    handler(printable, spans, &next_spans);
     spans.Merge(next_spans);
   }
   return Printable(printable.text(), std::move(spans));
@@ -149,6 +149,41 @@ std::string PrintableSpans::Dump(const std::string& annotated_buffer) const {
     while (current_span < spans_.size() && spans_[current_span].begin() == i) {
       open_spans.push(&spans_[current_span++]);
       switch (open_spans.top()->semantic()) {
+        case PrintableSpan::Semantic::Uri:
+          text_out.append("[uri ");
+          break;
+        case PrintableSpan::Semantic::Escaped:
+          text_out.append("[esc ");
+          break;
+        case PrintableSpan::Semantic::Styled: {
+          text_out.append("[s");
+          switch (open_spans.top()->style()) {
+            case PrintableSpan::Style::Bold:
+              text_out.append("B ");
+              break;
+            case PrintableSpan::Style::Italic:
+              text_out.append("I ");
+              break;
+            case PrintableSpan::Style::H1:
+              text_out.append("H1 ");
+              break;
+            case PrintableSpan::Style::H2:
+              text_out.append("H2 ");
+              break;
+            case PrintableSpan::Style::H3:
+              text_out.append("H3 ");
+              break;
+            case PrintableSpan::Style::H4:
+              text_out.append("H4 ");
+              break;
+            case PrintableSpan::Style::H5:
+              text_out.append("H5 ");
+              break;
+            case PrintableSpan::Style::H6:
+              text_out.append("H6 ");
+              break;
+          }
+        } break;
         case PrintableSpan::Semantic::Link: {
           text_out.append("[link");
           switch (open_spans.top()->link().kind()) {
@@ -171,6 +206,15 @@ std::string PrintableSpans::Dump(const std::string& annotated_buffer) const {
         case PrintableSpan::Semantic::CodeRef:
           text_out.append("[coderef ");
           break;
+        case PrintableSpan::Semantic::Paragraph:
+          text_out.append("[p ");
+          break;
+        case PrintableSpan::Semantic::ListItem:
+          text_out.append("[li ");
+          break;
+        case PrintableSpan::Semantic::UnorderedList:
+          text_out.append("[ul ");
+          break;
         case PrintableSpan::Semantic::Raw:
           text_out.append("[raw ");
           break;
@@ -179,6 +223,12 @@ std::string PrintableSpans::Dump(const std::string& annotated_buffer) const {
           break;
         case PrintableSpan::Semantic::Markup:
           text_out.append("[^ ");
+          break;
+        case PrintableSpan::Semantic::CodeBlock:
+          text_out.append("[cb ");
+          break;
+        case PrintableSpan::Semantic::UriLink:
+          text_out.append("[uril ");
           break;
         case PrintableSpan::Semantic::TagBlock: {
           text_out.append("[tb");

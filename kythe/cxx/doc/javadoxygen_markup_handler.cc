@@ -339,7 +339,8 @@ size_t ParseJavadocBrace(const std::string& buffer, size_t open_brace,
 }
 }
 
-void ParseJavadoxygen(const Printable& in_message, PrintableSpans* out_spans) {
+void ParseJavadoxygen(const Printable& in_message, const PrintableSpans&,
+                      PrintableSpans* out_spans) {
   const auto& text = in_message.text();
   // Are we at the start of the line (or the equivalent)?
   bool at_line_start = true;

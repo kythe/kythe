@@ -6,10 +6,12 @@ cc_library(
     name = "markup_handler",
     srcs = [
         "javadoxygen_markup_handler.cc",
+        "html_markup_handler.cc",
         "markup_handler.cc",
     ],
     hdrs = [
         "javadoxygen_markup_handler.h",
+        "html_markup_handler.h",
         "markup_handler.h",
     ],
     deps = [

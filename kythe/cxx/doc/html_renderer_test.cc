@@ -18,6 +18,7 @@
 #include "glog/logging.h"
 #include "google/protobuf/text_format.h"
 #include "gtest/gtest.h"
+#include "kythe/cxx/doc/html_markup_handler.h"
 #include "kythe/cxx/doc/javadoxygen_markup_handler.h"
 
 namespace kythe {
@@ -50,14 +51,21 @@ class HtmlRendererTest : public ::testing::Test {
       return "(invalid ascii protobuf)";
     }
     Printable printable(document.text());
-    return RenderHtml(options_, printable);
+    return kythe::RenderHtml(options_, printable);
   }
   std::string RenderJavadoc(const char *raw_text) {
     proto::Printable reply_;
     reply_.set_raw_text(raw_text);
     Printable input(reply_);
     auto output = HandleMarkup({ParseJavadoxygen}, input);
-    return RenderHtml(options_, output);
+    return kythe::RenderHtml(options_, output);
+  }
+  std::string RenderHtml(const char *raw_text) {
+    proto::Printable reply_;
+    reply_.set_raw_text(raw_text);
+    Printable input(reply_);
+    auto output = HandleMarkup({ParseHtml}, input);
+    return kythe::RenderHtml(options_, output);
   }
   kythe::HtmlRendererOptions options_;
   std::map<std::string, proto::NodeInfo> node_info_;
@@ -156,6 +164,30 @@ TEST_F(HtmlRendererTest, JavadocTagBlockEmbedsCodeRef) {
       RenderJavadoc(R"(text
 @author a {@code robot}
 @author b)"));
+}
+TEST_F(HtmlRendererTest, EmptyTags) {
+  EXPECT_EQ("", RenderHtml("<I></I>"));
+  EXPECT_EQ("<i></i>", RenderHtml("<I><B></B></I>"));
+}
+TEST_F(HtmlRendererTest, PassThroughStyles) {
+  EXPECT_EQ(
+      "<b><i><h1><h2><h3><h4><h5><h6>x</h6></h5></h4></h3></h2></h1></i></b>",
+      RenderHtml("<B><I><H1><H2><H3><H4><H5><H6>x</H6></H5></H4></H3></H2></"
+                 "H1></I></B>"));
+}
+TEST_F(HtmlRendererTest, PassThroughEntities) {
+  EXPECT_EQ("&foo;", RenderHtml("&foo;"));
+  EXPECT_EQ("&amp;&lt;bar&gt;;", RenderHtml("&<bar>;"));
+}
+TEST_F(HtmlRendererTest, RenderHtmlLinks) {
+  EXPECT_EQ("<a href=\"foo.html\">bar</a>",
+            RenderHtml("<A HREF = \"foo.html\" >bar</A>"));
+  EXPECT_EQ("<a href=\"&quot;foo.html&quot;\">bar</a>",
+            RenderHtml("<A HREF = \"&quot;foo.html&quot;\" >bar</A>"));
+  EXPECT_EQ("&lt;A HREF = \"&amp; q;foo.html&amp; q;\" &gt;bar",
+            RenderHtml("<A HREF = \"& q;foo.html& q;\" >bar</A>"));
+  EXPECT_EQ("&lt;A HREF = \"href=\"foo.html\">\" BAD&gt;bar",
+            RenderHtml("<A HREF = \"foo.html\" BAD>bar</A>"));
 }
 }  // anonymous namespace
 }  // namespace kythe

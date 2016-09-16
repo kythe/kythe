@@ -25,14 +25,23 @@ namespace kythe {
 class PrintableSpan {
  public:
   enum class Semantic : int {
-    TagBlock,  ///< Text belongs to a new tag block.
-    Brief,     ///< Text is a brief subsection of a main description.
+    TagBlock,       ///< Text belongs to a new tag block.
+    Styled,         ///< Text is styled according to `style_`.
+    Paragraph,      ///< Text is a paragraph.
+    UnorderedList,  ///< Text is an unordered (bulleted) list.
+    ListItem,       ///< Text is an item in a list.
+    Brief,          ///< Text is a brief subsection of a main description.
     CodeRef,  ///< Text is a reference to code and should be rendered monospace.
     Markup,   ///< Text used solely to direct the markup processor. May contain
               ///< child spans that are relevant. This text is usually not
               ///< rendered.
     Raw,      ///< Text may be passed through directly (modulo escaping).
-    Link      ///< Text is a link to some anchor.
+    CodeBlock,  ///< Text is a block of code.
+    Uri,        ///< Text is the URI component of a UriLink.
+    UriLink,    ///< Text is a link to some (embedded) URI. There must be
+                ///< an embedded span with the Uri semantic.
+    Link,       ///< Text is a link to some anchor.
+    Escaped     ///< Text is (atomic and) escaped; e.g. "&gt;".
   };
   enum class TagBlockId : int {
     Author,
@@ -42,6 +51,7 @@ class PrintableSpan {
     Param,
     Throws
   };
+  enum class Style : int { Bold, Italic, H1, H2, H3, H4, H5, H6 };
   PrintableSpan(size_t begin, size_t end, const proto::Link& link)
       : begin_(begin), end_(end), link_(link), semantic_(Semantic::Link) {}
   PrintableSpan(size_t begin, size_t end, Semantic sema)
@@ -51,11 +61,13 @@ class PrintableSpan {
         end_(end),
         semantic_(Semantic::TagBlock),
         tag_block_(tag_id, tag_ordinal) {}
+  PrintableSpan(size_t begin, size_t end, Style style)
+      : begin_(begin), end_(end), semantic_(Semantic::Styled), style_(style) {}
   const bool operator<(const PrintableSpan& o) const {
     int priority = link_priority();
     int opriority = o.link_priority();
-    return std::tie(begin_, o.end_, semantic_, priority, tag_block_) <
-           std::tie(o.begin_, end_, o.semantic_, opriority, tag_block_);
+    return std::tie(begin_, o.end_, semantic_, priority, tag_block_, style_) <
+           std::tie(o.begin_, end_, o.semantic_, opriority, tag_block_, style_);
   }
   bool is_valid() const { return begin_ < end_; }
   const size_t begin() const { return begin_; }
@@ -63,6 +75,7 @@ class PrintableSpan {
   void set_end(size_t end) { end_ = end; }
   const proto::Link& link() const { return link_; }
   Semantic semantic() const { return semantic_; }
+  Style style() const { return style_; }
   std::pair<TagBlockId, size_t> tag_block() const { return tag_block_; }
 
  private:
@@ -78,6 +91,8 @@ class PrintableSpan {
   /// The tag block ID for the span.
   std::pair<TagBlockId, size_t> tag_block_ =
       std::make_pair(TagBlockId::Author, 0);
+  /// The style for the span.
+  Style style_ = Style::Bold;
 };
 
 class PrintableSpans {
@@ -152,10 +167,13 @@ inline Printable::RejectPolicy operator|(Printable::RejectPolicy lhs,
 }
 
 /// \brief Appends markup-specific spans to `spans` from `printable`.
-using MarkupHandler =
-    std::function<void(const Printable& printable, PrintableSpans* spans)>;
+/// \param previous_spans Previously-emitted spans. After the MarkupHandler
+/// runs, these will be merged with `spans`.
+using MarkupHandler = std::function<void(const Printable& printable,
+                                         const PrintableSpans& previous_spans,
+                                         PrintableSpans* spans)>;
 
-/// \brief Marks up `printable` using the series of handlers in `handlers`.
+/// \brief Marks up `printable` using the sequence of handlers in `handlers`.
 Printable HandleMarkup(const std::vector<MarkupHandler>& handlers,
                        const Printable& printable);
 
