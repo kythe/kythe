@@ -1,16 +1,4 @@
-load(
-    "@io_bazel_rules_go//go:def.bzl",
-    g_go_binary = "go_binary",
-    g_go_library = "go_library",
-    g_go_test = "go_test",
-)
-
-# Re-export the upstream rules.
-go_library = g_go_library
-
-go_binary = g_go_binary
-
-go_test = g_go_test
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 def go_package(name=None,
                deps=[], test_deps=[], test_args=[], test_data=[],
