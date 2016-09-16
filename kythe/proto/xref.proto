@@ -458,6 +458,8 @@ message CrossReferencesRequest {
   // Determines what kind of documentation anchors, if any, should be returned
   // in the response.  See the documentation for each DocumentationKind for more
   // information.
+  // NOTE: this field is deprecated and will be treated as NO_DOCUMENTATION
+  // in the future.
   DocumentationKind documentation_kind = 4;
 
   enum CallerKind {
@@ -562,10 +564,11 @@ message Link {
     // This span of text is important.
     IMPORTANT = 999;
   }
-  // Definition sites found for some ticket.
-  repeated Anchor definition = 1;
+  reserved 1;
   // The kind of this span.
   Kind kind = 2;
+  // Semantic tickets for DEFINITION links.
+  repeated string definition = 3;
 }
 
 message Printable {
@@ -657,6 +660,12 @@ message CrossReferencesReply {
 message DocumentationRequest {
   // Semantic tickets about which documentation is sought.
   repeated string ticket = 1;
+
+  // A collection of filter globs that specify which facts (by name) should be
+  // returned for each node.  If filter is empty or unset, no node facts are
+  // returned. The filter applies to ALL documented and linked nodes.
+  // See EdgesRequest for the format of the filter globs.
+  repeated string filter = 2;
 }
 
 message DocumentationReply {
@@ -675,8 +684,12 @@ message DocumentationReply {
     Printable initializer = 5;
     // The semantic parent of this value.
     Printable defined_by = 6;
-    // The node kind being defined.
-    string kind = 7;
+    reserved 7;
   }
   repeated Document document = 1;
+  // The facts left from the requested filters of the documented node facts.
+  map<string, NodeInfo> nodes = 2;
+  // Map from the definition tickets referred to in each NodeInfo to their
+  // Anchor.
+  map<string, Anchor> definition_locations = 3;
 }

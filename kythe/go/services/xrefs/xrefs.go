@@ -1303,8 +1303,6 @@ type documentDetails struct {
 	ticketToPreDocument map[string]*preDocument
 	// Parent and type information for all expandDefRelatedNodeSet-expanded nodes.
 	ticketToParent, ticketToType map[string]string
-	// The kind facts for nodes in the original request.
-	ticketToKind map[string]string
 	// Tickets of known doc nodes.
 	docs stringset.Set
 }
@@ -1327,7 +1325,6 @@ func getDocRelatedNodes(ctx context.Context, service Service, details documentDe
 		if kind == nodes.Doc {
 			details.docs.Add(nodeTicket)
 		}
-		details.ticketToKind[nodeTicket] = kind
 	}
 	for sourceTicket, set := range dedges.EdgeSets {
 		if group := set.Groups[edges.ChildOf]; group != nil {
@@ -1380,42 +1377,6 @@ func getDocText(ctx context.Context, service Service, details documentDetails) e
 	return nil
 }
 
-// resolveDocLinks attaches anchor information to assocDoc with original ticket sourceTicket and param list params.
-func resolveDocLinks(ctx context.Context, service Service, sourceTicket string, params []string, assocDoc *associatedDocNode) error {
-	revParams := make(map[string]int)
-	for paramIx, param := range params {
-		revParams[param] = paramIx + 1
-	}
-	xreq := &xpb.CrossReferencesRequest{
-		Ticket:            params,
-		DefinitionKind:    xpb.CrossReferencesRequest_ALL_DEFINITIONS,
-		ReferenceKind:     xpb.CrossReferencesRequest_NO_REFERENCES,
-		DocumentationKind: xpb.CrossReferencesRequest_NO_DOCUMENTATION,
-		AnchorText:        false,
-		PageSize:          math.MaxInt32,
-	}
-	xrefs, err := service.CrossReferences(ctx, xreq)
-	if err != nil {
-		return fmt.Errorf("error during CrossReferences during resolveDocLinks: %v", err)
-	}
-	assocDoc.link = make([]*xpb.Link, len(params))
-	// If we leave any nils in this array, proto gets upset.
-	for l := 0; l < len(params); l++ {
-		assocDoc.link[l] = &xpb.Link{}
-	}
-	for _, refSet := range xrefs.CrossReferences {
-		index := revParams[refSet.Ticket]
-		if index == 0 {
-			log.Printf("Can't relate a link param for %v for %v", refSet.Ticket, sourceTicket)
-			continue
-		}
-		for _, definition := range refSet.Definition {
-			assocDoc.link[index-1].Definition = append(assocDoc.link[index-1].Definition, definition.Anchor)
-		}
-	}
-	return nil
-}
-
 // getDocLinks gets links for doc nodes we've found.
 func getDocLinks(ctx context.Context, service Service, details documentDetails) error {
 	if details.docs.Empty() {
@@ -1430,14 +1391,13 @@ func getDocLinks(ctx context.Context, service Service, details documentDetails) 
 	if err != nil {
 		return fmt.Errorf("error in Edges during getDocLinks: %v", err)
 	}
-	// Resolve links to targets/simple references.
 	for sourceTicket, set := range pedges.EdgeSets {
 		if assocDoc := details.docTicketToAssocNode[sourceTicket]; assocDoc != nil {
 			for _, group := range set.Groups {
 				params := extractParams(group.Edge)
-				err = resolveDocLinks(ctx, service, sourceTicket, params, assocDoc)
-				if err != nil {
-					return fmt.Errorf("error during getDocLinks: %v", err)
+				assocDoc.link = make([]*xpb.Link, len(params))
+				for i, param := range extractParams(group.Edge) {
+					assocDoc.link[i] = &xpb.Link{Definition: []string{param}}
 				}
 			}
 		}
@@ -1478,6 +1438,17 @@ func compilePreDocument(ctx context.Context, service Service, details documentDe
 	return document, nil
 }
 
+func getLinkTickets(p *xpb.Printable, s stringset.Set) {
+	if p == nil {
+		return
+	}
+	for _, l := range p.Link {
+		for _, d := range l.Definition {
+			s.Add(d)
+		}
+	}
+}
+
 // SlowDocumentation is an implementation of the Documentation API built from other APIs.
 func SlowDocumentation(ctx context.Context, service Service, req *xpb.DocumentationRequest) (*xpb.DocumentationReply, error) {
 	tickets, err := FixTickets(req.Ticket)
@@ -1488,21 +1459,8 @@ func SlowDocumentation(ctx context.Context, service Service, req *xpb.Documentat
 		ticketToPreDocument:  make(map[string]*preDocument),
 		ticketToParent:       make(map[string]string),
 		ticketToType:         make(map[string]string),
-		ticketToKind:         make(map[string]string),
 		docTicketToAssocNode: make(map[string]*associatedDocNode),
 		docs:                 make(stringset.Set),
-	}
-	// Get the kinds of the nodes in the original request, as we'll have to include them in the response.
-	kreq := &xpb.NodesRequest{
-		Ticket: tickets,
-		Filter: []string{facts.NodeKind},
-	}
-	nodes, err := service.Nodes(ctx, kreq)
-	if err != nil {
-		return nil, fmt.Errorf("error calling Nodes on %v: %v", tickets, err)
-	}
-	for nodeTicket, node := range nodes.Nodes {
-		details.ticketToKind[nodeTicket] = string(node.Facts[facts.NodeKind])
 	}
 	// We assume that expandDefRelatedNodeSet will return disjoint sets (and thus we can treat them as equivalence classes
 	// with the original request's ticket as the characteristic element).
@@ -1513,7 +1471,7 @@ func SlowDocumentation(ctx context.Context, service Service, req *xpb.Documentat
 		if err != nil {
 			return nil, fmt.Errorf("couldn't expandDefRelatedNodeSet in Documentation: %v", err)
 		}
-		document := &preDocument{document: &xpb.DocumentationReply_Document{Ticket: ticket, Kind: details.ticketToKind[ticket]}, docNode: make(map[string]*associatedDocNode)}
+		document := &preDocument{document: &xpb.DocumentationReply_Document{Ticket: ticket}, docNode: make(map[string]*associatedDocNode)}
 		for ticket := range ticketSet {
 			allTickets.Add(ticket)
 			details.ticketToPreDocument[ticket] = document
@@ -1530,6 +1488,7 @@ func SlowDocumentation(ctx context.Context, service Service, req *xpb.Documentat
 	}
 	// Finish up and attach the Documents we've built to the reply.
 	reply := &xpb.DocumentationReply{}
+	var definitionSet stringset.Set
 	for _, ticket := range tickets {
 		preDocument, found := details.ticketToPreDocument[ticket]
 		if !found {
@@ -1539,7 +1498,36 @@ func SlowDocumentation(ctx context.Context, service Service, req *xpb.Documentat
 		if err != nil {
 			return nil, fmt.Errorf("during compilePreDocument for %v: %v", ticket, err)
 		}
+		definitionSet.Add(document.Ticket)
+		getLinkTickets(document.Text, definitionSet)
+		getLinkTickets(document.Signature, definitionSet)
+		getLinkTickets(document.Type, definitionSet)
+		getLinkTickets(document.Initializer, definitionSet)
+		getLinkTickets(document.DefinedBy, definitionSet)
 		reply.Document = append(reply.Document, document)
+	}
+	defs, err := SlowDefinitions(ctx, service, definitionSet.Elements())
+	if err != nil {
+		return nil, fmt.Errorf("during SlowDefinitions for %v: %v", definitionSet, err)
+	}
+	if len(defs) != 0 {
+		reply.DefinitionLocations = make(map[string]*xpb.Anchor, len(defs))
+		for _, def := range defs {
+			reply.DefinitionLocations[def.Ticket] = def
+		}
+	}
+	nodes, err := service.Nodes(ctx, &xpb.NodesRequest{
+		Filter: req.Filter,
+		Ticket: definitionSet.Elements(),
+	})
+	if len(nodes.Nodes) != 0 {
+		reply.Nodes = make(map[string]*xpb.NodeInfo, len(nodes.Nodes))
+		for node, info := range nodes.Nodes {
+			if def, ok := defs[node]; ok {
+				info.Definition = def.Ticket
+			}
+			reply.Nodes[node] = info
+		}
 	}
 	return reply, nil
 }

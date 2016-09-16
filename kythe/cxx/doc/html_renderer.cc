@@ -127,6 +127,7 @@ std::string RenderHtml(const HtmlRendererOptions& options,
                        const Printable& printable) {
   struct OpenSpan {
     const PrintableSpan* span;
+    bool valid;
   };
   std::stack<OpenSpan> open_spans;
   // Elements on `open_tags` point to values of `tag_blocks`. The element on
@@ -143,7 +144,7 @@ std::string RenderHtml(const HtmlRendererOptions& options,
   TaggedText* out = &main_text;
   PrintableSpan default_span(0, printable.text().size(),
                              PrintableSpan::Semantic::Raw);
-  open_spans.push(OpenSpan{&default_span});
+  open_spans.push(OpenSpan{&default_span, true});
   size_t current_span = 0;
   for (size_t i = 0; i <= printable.text().size(); ++i) {
     // Normalized PrintableSpans have all empty or negative-length spans
@@ -157,7 +158,7 @@ std::string RenderHtml(const HtmlRendererOptions& options,
           out = open_tags.empty() ? &main_text : open_tags.top();
         } break;
         case PrintableSpan::Semantic::Link:
-          if (open_spans.top().span->link().definition_size() != 0) {
+          if (open_spans.top().valid) {
             out->buffer.append("</a>");
           }
           break;
@@ -176,7 +177,7 @@ std::string RenderHtml(const HtmlRendererOptions& options,
     }
     while (current_span < printable.spans().size() &&
            printable.spans().span(current_span).begin() == i) {
-      open_spans.push({&printable.spans().span(current_span)});
+      open_spans.push({&printable.spans().span(current_span), true});
       ++current_span;
       switch (open_spans.top().span->semantic()) {
         case PrintableSpan::Semantic::TagBlock: {
@@ -185,17 +186,26 @@ std::string RenderHtml(const HtmlRendererOptions& options,
           open_tags.push(out);
         } break;
         case PrintableSpan::Semantic::Link:
+          open_spans.top().valid = false;  // Invalid until proven otherwise.
           if (open_spans.top().span->link().definition_size() != 0) {
             const auto& definition =
                 open_spans.top().span->link().definition(0);
-            out->buffer.append("<a href=\"");
-            auto link_uri = options.make_link_uri(definition);
-            // + 2 for the closing ">.
-            out->buffer.reserve(out->buffer.size() + link_uri.size() + 2);
-            for (auto c : link_uri) {
-              AppendEscapedHtmlCharacter(&out->buffer, c);
+            if (const auto* def_info = options.node_info(definition)) {
+              if (!def_info->definition().empty()) {
+                if (const auto* def_anchor =
+                        options.anchor_for_ticket(def_info->definition())) {
+                  open_spans.top().valid = true;
+                  out->buffer.append("<a href=\"");
+                  auto link_uri = options.make_link_uri(*def_anchor);
+                  // + 2 for the closing ">.
+                  out->buffer.reserve(out->buffer.size() + link_uri.size() + 2);
+                  for (auto c : link_uri) {
+                    AppendEscapedHtmlCharacter(&out->buffer, c);
+                  }
+                  out->buffer.append("\">");
+                }
+              }
             }
-            out->buffer.append("\">");
           }
           break;
         case PrintableSpan::Semantic::CodeRef:
@@ -232,8 +242,16 @@ std::string RenderDocument(
       }
       {
         CssTag detail_div(CssTag::Kind::Div, options.sig_detail_div, &text_out);
-        text_out.append(document.kind());
-        text_out.append(" declared by ");
+        if (const auto* doc_info = options.node_info(document.ticket())) {
+          auto kind = doc_info->facts().find(document.ticket());
+          if (kind != doc_info->facts().end()) {
+            for (char c : kind->second) {
+              AppendEscapedHtmlCharacter(&text_out, c);
+            }
+            text_out.append(" ");
+          }
+        }
+        text_out.append("declared by ");
         text_out.append(RenderPrintable(options, {}, document.defined_by(),
                                         Printable::IncludeAll));
       }

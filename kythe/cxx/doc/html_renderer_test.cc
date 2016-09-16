@@ -28,6 +28,18 @@ class HtmlRendererTest : public ::testing::Test {
     options_.make_link_uri = [](const proto::Anchor &anchor) {
       return anchor.parent();
     };
+    options_.node_info = [this](const std::string &ticket) {
+      auto record = node_info_.find(ticket);
+      return record != node_info_.end() ? &record->second : nullptr;
+    };
+    options_.anchor_for_ticket = [this](const std::string &ticket) {
+      auto record = definition_locations_.find(ticket);
+      return record != definition_locations_.end() ? &record->second : nullptr;
+    };
+    node_info_["kythe://foo"].set_definition("kythe://food");
+    node_info_["kythe://bar"].set_definition("kythe://bard");
+    definition_locations_["kythe://food"].set_parent("kythe://foop");
+    definition_locations_["kythe://bard"].set_parent("kythe://barp&q=1<");
   }
 
  protected:
@@ -48,6 +60,8 @@ class HtmlRendererTest : public ::testing::Test {
     return RenderHtml(options_, output);
   }
   kythe::HtmlRendererOptions options_;
+  std::map<std::string, proto::NodeInfo> node_info_;
+  std::map<std::string, proto::Anchor> definition_locations_;
 };
 TEST_F(HtmlRendererTest, RenderEmptyDoc) {
   EXPECT_EQ("", RenderAsciiProtoDocument(""));
@@ -58,55 +72,63 @@ TEST_F(HtmlRendererTest, RenderSimpleDoc) {
   )"));
 }
 TEST_F(HtmlRendererTest, RenderLink) {
-  EXPECT_EQ(R"(Hello, <a href="kythe://world">world</a>!)",
+  EXPECT_EQ(R"(Hello, <a href="kythe://foop">world</a>!)",
             RenderAsciiProtoDocument(R"(
       text {
         raw_text: "Hello, [world]!"
-        link: { definition: { parent: "kythe://world" } }
+        link: { definition: "kythe://foo" }
+      }
+  )"));
+}
+TEST_F(HtmlRendererTest, DropMissingLink) {
+  EXPECT_EQ(R"(Hello, world!)", RenderAsciiProtoDocument(R"(
+      text {
+        raw_text: "Hello, [world]!"
+        link: { definition: "kythe://baz" }
       }
   )"));
 }
 TEST_F(HtmlRendererTest, EscapeLink) {
-  EXPECT_EQ(R"(Hello, <a href="kythe://world&amp;q=1&lt;">world</a>!)",
+  EXPECT_EQ(R"(Hello, <a href="kythe://barp&amp;q=1&lt;">world</a>!)",
             RenderAsciiProtoDocument(R"(
       text {
         raw_text: "Hello, [world]!"
-        link: { definition: { parent: "kythe://world&q=1<" } }
+        link: { definition: "kythe://bar" }
       }
   )"));
 }
 TEST_F(HtmlRendererTest, RenderLinks) {
   EXPECT_EQ(
-      R"(<a href="kythe://hello">Hello</a>, <a href="kythe://world">world</a>!)",
+      R"(<a href="kythe://foop">Hello</a>, <a href="kythe://barp&amp;q=1&lt;">world</a>!)",
       RenderAsciiProtoDocument(R"(
       text {
         raw_text: "[Hello], [world][!]"
-        link: { definition: { parent: "kythe://hello" } }
-        link: { definition: { parent: "kythe://world" } }
+        link: { definition: "kythe://foo" }
+        link: { definition: "kythe://bar" }
       }
   )"));
 }
 TEST_F(HtmlRendererTest, SkipMissingLinks) {
   EXPECT_EQ(
-      R"(<a href="kythe://hello">Hello</a>, world<a href="kythe://bang">!</a>)",
+      R"(<a href="kythe://foop">Hello</a>, world<a href="kythe://barp&amp;q=1&lt;">!</a>)",
       RenderAsciiProtoDocument(R"(
       text {
         raw_text: "[Hello], [world][!]"
-        link: { definition: { parent: "kythe://hello" } }
+        link: { definition: "kythe://foo" }
         link: { }
-        link: { definition: { parent: "kythe://bang" } }
+        link: { definition: "kythe://bar" }
       }
   )"));
 }
 TEST_F(HtmlRendererTest, SkipNestedMissingLinks) {
   EXPECT_EQ(
-      R"(<a href="kythe://hello">Hello</a>, world<a href="kythe://bang">!</a>)",
+      R"(<a href="kythe://foop">Hello</a>, world<a href="kythe://barp&amp;q=1&lt;">!</a>)",
       RenderAsciiProtoDocument(R"(
       text {
         raw_text: "[Hello], [world[!]]"
-        link: { definition: { parent: "kythe://hello" } }
+        link: { definition: "kythe://foo" }
         link: { }
-        link: { definition: { parent: "kythe://bang" } }
+        link: { definition: "kythe://bar" }
       }
   )"));
 }

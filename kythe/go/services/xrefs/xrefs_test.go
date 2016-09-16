@@ -410,7 +410,7 @@ func TestSlowDocumentation(t *testing.T) {
 		{ticket: "kythe://test#adoc", kind: "doc", text: "atext"},
 		{ticket: "kythe://test#fdoc", kind: "doc", text: "ftext"},
 		{ticket: "kythe://test#fdecl", kind: "function", documented: "kythe://test#fdoc", format: "fsig"},
-		{ticket: "kythe://test#fdefn", kind: "function", completed: "kythe://test#fbind", format: "fsig"},
+		{ticket: "kythe://test#fdefn", kind: "function", completed: "kythe://test#fbind", format: "fsig", definitionText: []string{"fdeftext"}},
 		{ticket: "kythe://test#fbind", kind: "anchor", defines: "kythe://test#fdefn", completes: "kythe://test#fdecl"},
 		{ticket: "kythe://test#l", kind: "etc", documented: "kythe://test#ldoc"},
 		{ticket: "kythe://test#ldoc", kind: "doc", text: "ltext", params: []string{"kythe://test#l1", "kythe://test#l2"}},
@@ -421,18 +421,22 @@ func TestSlowDocumentation(t *testing.T) {
 	mkPr := func(text string, linkTicket ...string) *xpb.Printable {
 		links := make([]*xpb.Link, len(linkTicket))
 		for i, link := range linkTicket {
-			links[i] = &xpb.Link{Definition: []*xpb.Anchor{{Text: link}}}
+			links[i] = &xpb.Link{Definition: []string{link}}
 		}
 		return &xpb.Printable{RawText: text, Link: links}
 	}
+	type returnNode struct{ ticket, kind, anchorText string }
 	tests := []struct {
 		ticket string
 		reply  *xpb.DocumentationReply_Document
+		nodes  []returnNode
 	}{
-		{ticket: "kythe://test#a", reply: &xpb.DocumentationReply_Document{Signature: mkPr("asig"), Kind: "etc", Text: mkPr("atext")}},
-		{ticket: "kythe://test#fdecl", reply: &xpb.DocumentationReply_Document{Signature: mkPr("fsig"), Kind: "function", Text: mkPr("ftext")}},
-		{ticket: "kythe://test#fdefn", reply: &xpb.DocumentationReply_Document{Signature: mkPr("fsig"), Kind: "function", Text: mkPr("ftext")}},
-		{ticket: "kythe://test#l", reply: &xpb.DocumentationReply_Document{Signature: mkPr("lsig"), Kind: "etc", Text: mkPr("ltext", "deftext1", "deftext2")}},
+		{ticket: "kythe://test#a", reply: &xpb.DocumentationReply_Document{Signature: mkPr("asig"), Text: mkPr("atext")}, nodes: []returnNode{{ticket: "kythe://test#a", kind: "etc"}}},
+		// Note that SlowDefinitions doesn't handle completions.
+		{ticket: "kythe://test#fdecl", reply: &xpb.DocumentationReply_Document{Signature: mkPr("fsig"), Text: mkPr("ftext")}, nodes: []returnNode{{ticket: "kythe://test#fdecl", kind: "function"}}},
+		{ticket: "kythe://test#fdefn", reply: &xpb.DocumentationReply_Document{Signature: mkPr("fsig"), Text: mkPr("ftext")}, nodes: []returnNode{{ticket: "kythe://test#fdefn", kind: "function", anchorText: "fdeftext"}}},
+		{ticket: "kythe://test#l", reply: &xpb.DocumentationReply_Document{Signature: mkPr("lsig"), Text: mkPr("ltext", "kythe://test#l1", "kythe://test#l2")},
+			nodes: []returnNode{{ticket: "kythe://test#l1", kind: "etc", anchorText: "deftext1"}, {ticket: "kythe://test#l2", kind: "etc", anchorText: "deftext2"}, {ticket: "kythe://test#l", kind: "etc"}}},
 	}
 	nodes := make(map[string]*xpb.NodeInfo)
 	esets := make(map[string]*xpb.EdgeSet)
@@ -448,7 +452,7 @@ func TestSlowDocumentation(t *testing.T) {
 		if node.definitionText != nil {
 			set := &xpb.CrossReferencesReply_CrossReferenceSet{Ticket: node.ticket}
 			for _, text := range node.definitionText {
-				set.Definition = append(set.Definition, &xpb.CrossReferencesReply_RelatedAnchor{Anchor: &xpb.Anchor{Text: text}})
+				set.Definition = append(set.Definition, &xpb.CrossReferencesReply_RelatedAnchor{Anchor: &xpb.Anchor{Text: text, Ticket: node.ticket + "a"}})
 			}
 			xrefs[node.ticket] = set
 		}
@@ -505,10 +509,6 @@ func TestSlowDocumentation(t *testing.T) {
 	}
 	service := &mockService{
 		NodesFn: func(req *xpb.NodesRequest) (*xpb.NodesReply, error) {
-			if len(req.Ticket) != 1 {
-				t.Fatalf("Unexpected Nodes request: %v", req)
-				return nil, nil
-			}
 			reply := &xpb.NodesReply{Nodes: make(map[string]*xpb.NodeInfo)}
 			for _, ticket := range req.Ticket {
 				if info := getNode(ticket, req.Filter); info != nil {
@@ -548,14 +548,15 @@ func TestSlowDocumentation(t *testing.T) {
 			return reply, nil
 		},
 		CrossReferencesFn: func(req *xpb.CrossReferencesRequest) (*xpb.CrossReferencesReply, error) {
-			if req.DefinitionKind != xpb.CrossReferencesRequest_ALL_DEFINITIONS ||
+			reply := &xpb.CrossReferencesReply{
+				CrossReferences: make(map[string]*xpb.CrossReferencesReply_CrossReferenceSet),
+			}
+			if req.DefinitionKind != xpb.CrossReferencesRequest_BINDING_DEFINITIONS &&
+				req.DefinitionKind != xpb.CrossReferencesRequest_ALL_DEFINITIONS ||
 				req.ReferenceKind != xpb.CrossReferencesRequest_NO_REFERENCES ||
 				req.DocumentationKind != xpb.CrossReferencesRequest_NO_DOCUMENTATION ||
 				req.AnchorText {
 				t.Fatalf("Unexpected CrossReferences request: %v", req)
-			}
-			reply := &xpb.CrossReferencesReply{
-				CrossReferences: make(map[string]*xpb.CrossReferencesReply_CrossReferenceSet),
 			}
 			for _, ticket := range req.Ticket {
 				if set, found := xrefs[ticket]; found {
@@ -566,12 +567,27 @@ func TestSlowDocumentation(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		reply, err := SlowDocumentation(nil, service, &xpb.DocumentationRequest{Ticket: []string{test.ticket}})
+		reply, err := SlowDocumentation(nil, service, &xpb.DocumentationRequest{Ticket: []string{test.ticket}, Filter: []string{facts.NodeKind}})
 		if err != nil {
 			t.Fatalf("SlowDocumentation error for %s: %v", test.ticket, err)
 		}
 		test.reply.Ticket = test.ticket
-		if err := testutil.DeepEqual(&xpb.DocumentationReply{Document: []*xpb.DocumentationReply_Document{test.reply}}, reply); err != nil {
+		expectedDoc := &xpb.DocumentationReply{Document: []*xpb.DocumentationReply_Document{test.reply}}
+		for _, node := range test.nodes {
+			anchorTicket := ""
+			if node.anchorText != "" {
+				if expectedDoc.DefinitionLocations == nil {
+					expectedDoc.DefinitionLocations = make(map[string]*xpb.Anchor)
+				}
+				anchorTicket = node.ticket + "a"
+				expectedDoc.DefinitionLocations[anchorTicket] = &xpb.Anchor{Ticket: anchorTicket, Text: node.anchorText}
+			}
+			if expectedDoc.Nodes == nil {
+				expectedDoc.Nodes = make(map[string]*xpb.NodeInfo)
+			}
+			expectedDoc.Nodes[node.ticket] = &xpb.NodeInfo{Definition: anchorTicket, Facts: map[string][]byte{"/kythe/node/kind": []byte(node.kind)}}
+		}
+		if err := testutil.DeepEqual(expectedDoc, reply); err != nil {
 			t.Fatal(err)
 		}
 	}

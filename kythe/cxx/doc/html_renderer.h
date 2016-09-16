@@ -31,6 +31,12 @@ struct HtmlRendererOptions {
   /// will be replaced by &amp;).
   std::function<std::string(const proto::Anchor&)> make_link_uri =
       [](const proto::Anchor&) { return ""; };
+  /// Used to retrieve `NodeInfo` for the given semantic ticket.
+  std::function<const proto::NodeInfo*(const std::string&)> node_info =
+      [](const std::string&) { return nullptr; };
+  /// Used to map from an anchor's ticket to that `Anchor`.
+  std::function<const proto::Anchor*(const std::string&)> anchor_for_ticket =
+      [](const std::string&) { return nullptr; };
   /// Configures the CSS class to apply to the outermost div of a document.
   std::string doc_div = "kythe-doc";
   /// Configures the CSS class to apply to a tag's label (e.g, "Authors:")

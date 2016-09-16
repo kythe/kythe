@@ -58,8 +58,7 @@ class MarkupHandlerTest : public ::testing::Test {
             EXPECT_EQ(span.link().definition_size(),
                       aspan.link().definition_size());
             if (span.link().definition_size() == 1) {
-              EXPECT_EQ(span.link().definition(0).parent(),
-                        aspan.link().definition(0).parent());
+              EXPECT_EQ(span.link().definition(0), aspan.link().definition(0));
             }
             break;
           }
@@ -96,8 +95,7 @@ class MarkupHandlerTest : public ::testing::Test {
   }
   proto::Link& ExpectLink(const std::string& uri) {
     auto* link = reply_.add_link();
-    auto* definition = link->add_definition();
-    definition->set_parent(uri);
+    link->add_definition(uri);
     return *link;
   }
   proto::Printable reply_;
