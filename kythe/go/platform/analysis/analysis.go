@@ -27,7 +27,6 @@ package analysis
 import (
 	"errors"
 	"fmt"
-	"io"
 	"sync"
 
 	"github.com/golang/protobuf/proto"
@@ -139,30 +138,4 @@ func (s *FileDataService) Get(req *apb.FilesRequest, srv aspb.FileDataService_Ge
 		}
 	}
 	return nil
-}
-
-// An OutputReader consumes a stream of analysis output records from a channel.
-type OutputReader struct{ outs <-chan *apb.AnalysisOutput }
-
-// NewOutputReader returns an output reader that delivers records from outs to
-// the caller.
-func NewOutputReader(outs <-chan *apb.AnalysisOutput) *OutputReader { return &OutputReader{outs} }
-
-// Next returns the next output record, or io.EOF when the channel is closed
-// and no more records are available.  No other errors are returned.
-func (r *OutputReader) Next() ([]byte, error) {
-	out := <-r.outs
-	if out == nil {
-		return nil, io.EOF
-	}
-	return out.Value, nil
-}
-
-// NextProto reads the next available record and decodes it into pb.
-func (r *OutputReader) NextProto(pb proto.Message) error {
-	rec, err := r.Next()
-	if err != nil {
-		return err
-	}
-	return proto.Unmarshal(rec, pb)
 }
