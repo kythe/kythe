@@ -31,6 +31,7 @@ import com.sun.tools.javac.code.Type.CapturedType;
 import com.sun.tools.javac.code.Type.ClassType;
 import com.sun.tools.javac.code.Type.ErrorType;
 import com.sun.tools.javac.code.Type.ForAll;
+import com.sun.tools.javac.code.Type.IntersectionClassType;
 import com.sun.tools.javac.code.Type.MethodType;
 import com.sun.tools.javac.code.Type.PackageType;
 import com.sun.tools.javac.code.Type.TypeVar;
@@ -70,6 +71,11 @@ import javax.lang.model.type.TypeKind;
  */
 public class SignatureGenerator
     implements ElementVisitor<Void, StringBuilder>, Visitor<Void, StringBuilder> {
+
+  private static boolean isJavaLangObject(Type type) {
+    return type.tsym.getQualifiedName().contentEquals(Object.class.getName());
+  }
+
   private static final FormattingLogger logger =
       FormattingLogger.getLogger(SignatureGenerator.class);
 
@@ -290,26 +296,29 @@ public class SignatureGenerator
     if (tsym.type.getKind() != TypeKind.NONE) {
       if (!visitedElements.containsKey(e)) {
         StringBuilder sb = new StringBuilder();
-        visitedElements.put(e, tsym.name.toString());
+        sb.append(tsym.name.toString());
         // Don't use TypeKind to check the upper bound, because java 8 introduces a new kind for
         // intersection types. We can't use TypeKind.INTERSECTION until we're using JDK8, since
         // javax.lang.model.* classes come from the runtime.
         if (tsym.type.getUpperBound() instanceof ClassType) {
-          sb.append(tsym.name.toString());
-          TypeVar t = (TypeVar) tsym.type;
-          ClassType extendsType = (ClassType) t.bound;
-          if (extendsType.isCompound()) {
-            if (extendsType.supertype_field.getKind() != TypeKind.NONE
-                && extendsType.interfaces_field.nonEmpty()) {
-              sb.append(" extends ");
-              extendsType.supertype_field.accept(this, sb);
-              for (Type i : extendsType.interfaces_field) {
-                sb.append("&");
-                i.accept(this, sb);
-              }
+          ClassType extendsType = (ClassType) tsym.type.getUpperBound();
+          if (extendsType instanceof IntersectionClassType) {
+            IntersectionClassType intersectionType = (IntersectionClassType) extendsType;
+            sb.append(" extends ");
+            if (!intersectionType.allInterfaces) {
+              intersectionType.supertype_field.accept(this, sb);
+              sb.append("&");
             }
+            for (Type i : intersectionType.interfaces_field) {
+              i.accept(this, sb);
+              sb.append("&");
+            }
+            // Remove the extraneous final '&'.  We know there was at least one.
+            // Note that using setLength() to shorten a StringBuilder is efficient,
+            // and doesn't trigger allocation or copying.
+            sb.setLength(sb.length() - 1);
           } else {
-            if (!extendsType.tsym.getQualifiedName().contentEquals(Object.class.getName())) {
+            if (!isJavaLangObject(extendsType)) {
               sb.append(" extends ");
               extendsType.accept(this, sb);
             }
