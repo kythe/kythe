@@ -38,7 +38,6 @@ import (
 var config = &bazel.Config{
 	Corpus:   "kythe",
 	Mnemonic: "GoCompile",
-	Root:     os.Getenv("PWD"),
 }
 
 const baseUsage = `Usage: %[1]s <extra-action> <output-file> <vname-config>`

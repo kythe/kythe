@@ -22,16 +22,17 @@
     }
   },
   {
-    "pattern": "bazel-out/[^/]+/bin/third_party/go/src/((.*)/[^/]+\\.a)",
+    "pattern": "bazel-out/[^/]+/(\\w+)/(.*)",
     "vname": {
-      "corpus": "@2@",
-      "path": "@1@"
+      "corpus": "kythe",
+      "path": "@2@",
+      "root": "bazel-out/@1@"
     }
   },
   {
-    "pattern": "bazel-out/[^/]+/bin/(kythe/(?:go|proto)/.+\\.a)",
+    "pattern": "external/io_bazel_rules_go_toolchain/(.*)",
     "vname": {
-      "corpus": "kythe",
+      "corpus": "golang.org",
       "path": "@1@"
     }
   },

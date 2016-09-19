@@ -20,9 +20,11 @@ package bazel
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -51,7 +53,6 @@ func osOpen(_ context.Context, path string) (io.ReadCloser, error) { return os.O
 type Config struct {
 	Corpus   string          // the default corpus label to use
 	Mnemonic string          // the build mnemonic to match (if "", matches all)
-	Root     string          // working directory (if "", uses os.Getcwd)
 	Rules    vnameutil.Rules // rules for rewriting file VNames
 
 	// If set, this function is used to open files for reading.  If nil,
@@ -73,7 +74,10 @@ func (c *Config) Extract(ctx context.Context, info *eapb.ExtraActionInfo) (*kind
 	}
 
 	// Construct the basic compilation.
-	toolArgs := extractToolArgs(spawnInfo.Argument)
+	toolArgs, err := c.extractToolArgs(ctx, spawnInfo.Argument)
+	if err != nil {
+		return nil, fmt.Errorf("extracting tool arguments: %v", err)
+	}
 	log.Printf("Extracting compilation for %q", info.GetOwner())
 	cu := &kindex.Compilation{
 		Proto: &apb.CompilationUnit{
@@ -82,9 +86,9 @@ func (c *Config) Extract(ctx context.Context, info *eapb.ExtraActionInfo) (*kind
 				Corpus:    c.Corpus,
 				Signature: info.GetOwner(),
 			},
-			Argument:         toolArgs.fullArgs,
+			Argument:         toolArgs.compile,
 			SourceFile:       toolArgs.sources,
-			WorkingDirectory: c.Root,
+			WorkingDirectory: toolArgs.workDir,
 			Environment: []*apb.CompilationUnit_Env{{
 				Name:  "GOROOT",
 				Value: toolArgs.goRoot,
@@ -97,9 +101,9 @@ func (c *Config) Extract(ctx context.Context, info *eapb.ExtraActionInfo) (*kind
 		cu.Proto.Details = append(cu.Proto.Details, info)
 	}
 
-	// Load and populate file contents and required inputs.  Do this in two
-	// passes: First scan the inputs and filter out which ones we actually want
-	// to keep; then load their contents concurrently.
+	// Load and populate file contents and required inputs.  First scan the
+	// inputs and filter out which ones we actually want to keep by path
+	// inspection; then load the contents concurrently.
 	var wantPaths []string
 	for _, in := range spawnInfo.InputFile {
 		if toolArgs.wantInput(in) {
@@ -119,7 +123,7 @@ func (c *Config) Extract(ctx context.Context, info *eapb.ExtraActionInfo) (*kind
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			fd, err := c.readFile(ctx, path)
+			fd, err := c.readFileData(ctx, path)
 			if err != nil {
 				log.Fatalf("Unable to read input %q: %v", path, err)
 			}
@@ -154,14 +158,19 @@ func (c *Config) Extract(ctx context.Context, info *eapb.ExtraActionInfo) (*kind
 	return cu, nil
 }
 
-// readFile fetches the contents of the file at path and returns a FileData
-// message populated with its content, path, and digest.
-func (c *Config) readFile(ctx context.Context, path string) (*apb.FileData, error) {
+// openFile opens a the file at path using the opener from c or osOpen.
+func (c *Config) openFile(ctx context.Context, path string) (io.ReadCloser, error) {
 	open := c.OpenRead
 	if open == nil {
 		open = osOpen
 	}
-	f, err := open(ctx, path)
+	return open(ctx, path)
+}
+
+// readFileData fetches the contents of the file at path and returns a FileData
+// message populated with its content, path, and digest.
+func (c *Config) readFileData(ctx context.Context, path string) (*apb.FileData, error) {
+	f, err := c.openFile(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -173,14 +182,6 @@ func (c *Config) readFile(ctx context.Context, path string) (*apb.FileData, erro
 // to generate the vname and root as the working directory.
 func (c *Config) fileDataToInfo(fd *apb.FileData) *apb.CompilationUnit_FileInput {
 	path := fd.Info.Path
-	if !filepath.IsAbs(path) {
-		if abs, err := filepath.Abs(path); err == nil {
-			path = abs
-		}
-	}
-	if rel, err := filepath.Rel(c.Root, path); err == nil && c.Root != "" {
-		path = rel
-	}
 	vname, ok := c.Rules.Apply(path)
 	if !ok {
 		vname = &spb.VName{Corpus: c.Corpus, Path: path}
@@ -194,92 +195,159 @@ func (c *Config) fileDataToInfo(fd *apb.FileData) *apb.CompilationUnit_FileInput
 // toolArgs captures the settings expressed by the Go compiler tool and its
 // arguments.
 type toolArgs struct {
-	fullArgs    []string // complete argument list
+	compile     []string // compiler argument list
+	paramsFile  string   // the response file, if one was used
+	workDir     string   // the compiler's working directory
 	goRoot      string   // the GOROOT path
 	importPath  string   // the import path being compiled
 	includePath string   // an include path, if set
 	outputPath  string   // the output from the compiler
 	toolRoot    string   // root directory for compiler/libraries
 	useCgo      bool     // whether cgo is enabled
+	useRace     bool     // whether the race-detector is enabled
 	sources     []string // source file paths
 }
 
 // wantInput reports whether path should be included as a required input.
-//
-// TODO(T110): The current Bazel rules include a lot of excess data, which
-// makes the extraction process slow (because we are writing a large number of
-// "required inputs" that aren't actually required). Improve communication
-// between the rules and the tools so that we can prune out the unnecessary
-// packages.
 func (g *toolArgs) wantInput(path string) bool {
-	// Anything that isn't in the tool root we keep.
-	if !strings.HasPrefix(path, g.toolRoot) {
+	// Drop the response file (if there is one).
+	if path == g.paramsFile {
+		return false
+	}
+
+	// Otherwise, anything that isn't in the tool root we keep.
+	trimmed, err := filepath.Rel(g.toolRoot, path)
+	if err != nil || trimmed == path {
 		return true
 	}
-	switch filepath.Ext(path) {
-	case ".a", ".h":
-		return true
-	default:
+
+	// Within the tool root, we keep library inputs, but discard binaries.
+	// Filter libraries based on the race-detector settings.
+	prefix, tail := splitPrefix(trimmed)
+	switch prefix {
+	case "bin/":
 		return false
+	case "pkg/":
+		sub, _ := splitPrefix(tail)
+		if strings.HasSuffix(sub, "_race/") && !g.useRace {
+			return false
+		}
+		return sub != "tool/"
+	default:
+		return true // conservative fallback
 	}
 }
 
-// extractToolArgs extracts the build tool arguments from args.
-func extractToolArgs(args []string) toolArgs {
-	if len(args) == 3 && args[0] == "/bin/bash" && args[1] == "-c" {
-		actual, ok := shell.Split(args[2])
-		if !ok {
-			log.Fatalf("Invalid shell-quoted argument %#q", args[2])
-		}
-		args = actual
+// bazelArgs captures compiler settings extracted from a Bazel response file.
+type bazelArgs struct {
+	paramsFile string   // the path of the params file (if there was one)
+	goRoot     string   // the corpus-relative path of the Go root
+	workDir    string   // the corpus-relative working directory
+	compile    []string // the compiler argument list
+}
+
+var rootVar = regexp.MustCompile(`export +GOROOT=(?:\$\(pwd\)/)?(.+)$`)
+var cdCommand = regexp.MustCompile(`cd +(.+)$`)
+
+// parseBazelArgs extracts the compiler command line from the raw argument list
+// passed in by Bazel. The official Go rules currently pass in a response file
+// containing a shell script that we have to parse.
+func (c *Config) parseBazelArgs(ctx context.Context, args []string) (*bazelArgs, error) {
+	if len(args) != 1 || filepath.Ext(args[0]) != ".params" {
+		// This is some unusual case; assume the arguments are already parsed.
+		return &bazelArgs{compile: args}, nil
 	}
 
-	// Find the Go tool invocation, and return only that portion.
-	var result toolArgs
-	var wantArg *string
-	inTool := false
-	for _, arg := range args {
-		// Discard arguments until the tool binary is found.
-		if !inTool {
-			if root := strings.TrimPrefix(arg, "GOROOT="); root != arg {
-				result.goRoot = os.ExpandEnv(root)
-				continue
-			} else if ok, dir := isGoTool(arg); ok {
-				inTool = true
-				result.toolRoot = dir
-			} else {
-				continue
+	// This is the expected case, a response file.
+	result := &bazelArgs{paramsFile: args[0]}
+	f, err := c.openFile(ctx, result.paramsFile)
+	if err != nil {
+		return nil, err
+	}
+	data, err := ioutil.ReadAll(f)
+	f.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	// Split up the response into lines, and split each line into commands
+	// assuming a pipeline of the form "cmd1 && cmd2 && ...".
+	// Bazel exports GOROOT and changes the working directory, both of which we
+	// want for processing the compiler's argument list.
+	var last []string
+	for _, line := range strings.Split(string(data), "\n") {
+		for _, cmd := range strings.Split(line, "&&") {
+			trimmed := strings.TrimSpace(cmd)
+			last, _ = shell.Split(trimmed)
+			if m := rootVar.FindStringSubmatch(trimmed); m != nil {
+				result.goRoot = m[1]
+			} else if m := cdCommand.FindStringSubmatch(trimmed); m != nil {
+				result.workDir = m[1]
 			}
 		}
-		result.fullArgs = append(result.fullArgs, arg)
+	}
+	result.compile = last
+	return result, nil
+}
+
+// extractToolArgs extracts the build tool arguments from args.
+func (c *Config) extractToolArgs(ctx context.Context, args []string) (*toolArgs, error) {
+	parsed, err := c.parseBazelArgs(ctx, args)
+	if err != nil {
+		return nil, err
+	}
+
+	result := &toolArgs{
+		paramsFile: parsed.paramsFile,
+		workDir:    parsed.workDir,
+		goRoot:     filepath.Join(parsed.workDir, parsed.goRoot),
+	}
+
+	// Process the parsed command-line arguments to find the tool, source, and
+	// output paths.
+	var wantArg *string
+	inTool := false
+	for _, arg := range parsed.compile {
+		// Discard arguments until the tool binary is found.
+		if !inTool {
+			if filepath.Base(arg) == "go" {
+				adjusted := filepath.Join(result.workDir, arg)
+				result.toolRoot = filepath.Dir(filepath.Dir(adjusted))
+				result.compile = append(result.compile, adjusted)
+				inTool = true
+			}
+			continue
+		}
 
 		// Scan for important flags.
 		if wantArg != nil { // capture argument for a previous flag
-			*wantArg = arg
+			*wantArg = filepath.Join(parsed.workDir, arg)
+			result.compile = append(result.compile, *wantArg)
 			wantArg = nil
 			continue
 		}
+		result.compile = append(result.compile, arg)
 		if arg == "-p" {
 			wantArg = &result.importPath
 		} else if arg == "-o" {
 			wantArg = &result.outputPath
 		} else if arg == "-I" {
 			wantArg = &result.includePath
+		} else if arg == "-race" {
+			result.useRace = true
 		} else if !strings.HasPrefix(arg, "-") && strings.HasSuffix(arg, ".go") {
 			result.sources = append(result.sources, arg)
 		}
 	}
-	return result
+	return result, nil
 }
 
-// isGoTool reports whether arg is the path of the "go" build tool, and if so
-// returns the enclosing directory.
-//
-// TODO(fromberger): This is a heuristic that relies on details of the Kythe
-// Bazel rules. Make this less brittle.
-func isGoTool(arg string) (bool, string) {
-	if dir := strings.TrimSuffix(arg, "/bin/go"); dir != arg {
-		return true, dir
+// splitPrefix separates the first slash-delimited component of path.
+// The prefix includes the slash, so that prefix + tail == path.
+// If there is no slash in the path, prefix == "".
+func splitPrefix(path string) (prefix, tail string) {
+	if i := strings.Index(path, "/"); i >= 0 {
+		return path[:i+1], path[i+1:]
 	}
-	return false, ""
+	return "", path
 }
