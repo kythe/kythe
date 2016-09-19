@@ -218,7 +218,7 @@ kythe::proto::VName KytheGraphObserver::VNameFromRange(
     clang::SourceLocation end = source_range.getEnd();
     CHECK(begin.isValid());
     if (!end.isValid()) {
-      begin = end;
+      end = begin;
     }
     if (begin.isMacroID()) {
       begin = SourceManager->getExpansionLoc(begin);
