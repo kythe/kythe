@@ -280,13 +280,13 @@ TEST(KytheIndexerUnitTest, GraphRecorderEdgeOrdinal) {
   EXPECT_EQ(vname_target.DebugString(), entry.target().DebugString());
 }
 
-static void WriteStringToStackAndBuffer(const google::protobuf::string& string,
+static void WriteStringToStackAndBuffer(const google::protobuf::string& value,
                                         kythe::BufferStack* stack,
                                         google::protobuf::string* buffer) {
-  unsigned char* bytes = stack->WriteToTop(string.size());
-  memcpy(bytes, string.data(), string.size());
+  unsigned char* bytes = stack->WriteToTop(value.size());
+  memcpy(bytes, value.data(), value.size());
   if (buffer) {
-    buffer->append(string);
+    buffer->append(value);
   }
 }
 
