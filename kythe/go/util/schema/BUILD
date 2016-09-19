@@ -17,7 +17,6 @@ go_test(
     library = "schema",
     visibility = ["//visibility:private"],
     deps = [
-        "//kythe/go/util/schema/edges",
         "//kythe/go/util/schema/nodes",
         "@go_protobuf//:proto",
     ],

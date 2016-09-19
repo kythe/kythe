@@ -19,7 +19,6 @@ package schema
 import (
 	"testing"
 
-	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/facts"
 	"kythe.io/kythe/go/util/schema/nodes"
 
@@ -62,13 +61,13 @@ func TestEdgeToEntry(t *testing.T) {
 	e := &Edge{
 		Source: src,
 		Target: tgt,
-		Kind:   edges.ChildOf,
+		Kind:   "childof",
 	}
 	got := e.ToEntry()
 	want := &spb.Entry{
 		Source:   src,
 		Target:   tgt,
-		EdgeKind: edges.ChildOf,
+		EdgeKind: "childof",
 		FactName: "/",
 	}
 	if !proto.Equal(got, want) {
