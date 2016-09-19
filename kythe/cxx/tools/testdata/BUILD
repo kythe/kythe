@@ -40,6 +40,6 @@ sh_test(
         "claim_test_2.kindex_UNIT",
         "//kythe/cxx/tools:kindex_tool",
         "//kythe/cxx/tools:static_claim",
-        "//kythe/go/platform/tools:indexpack",
+        "//kythe/go/platform/tools/indexpack",
     ],
 )

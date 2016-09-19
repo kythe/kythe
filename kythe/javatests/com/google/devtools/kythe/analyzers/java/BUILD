@@ -3,8 +3,8 @@ sh_test(
     size = "small",
     srcs = ["indexer_test.sh"],
     data = [
-        "//kythe/go/platform/tools:entrystream",
-        "//kythe/go/platform/tools:indexpack",
+        "//kythe/go/platform/tools/entrystream",
+        "//kythe/go/platform/tools/indexpack",
         "//kythe/java/com/google/devtools/kythe/analyzers/java:indexer",
         "//kythe/testdata:test.kindex",
     ],
@@ -15,7 +15,7 @@ sh_test(
     size = "small",
     srcs = ["indexer_empty_cu_test.sh"],
     data = [
-        "//kythe/go/platform/tools:entrystream",
+        "//kythe/go/platform/tools/entrystream",
         "//kythe/java/com/google/devtools/kythe/analyzers/java:indexer",
         "//kythe/testdata:java_empty.kindex",
     ],
@@ -26,7 +26,7 @@ sh_test(
     name = "indexer_source_root_test",
     srcs = ["indexer_source_root_test.sh"],
     data = [
-        "//kythe/go/platform/tools:entrystream",
+        "//kythe/go/platform/tools/entrystream",
         "//kythe/java/com/google/devtools/kythe/analyzers/java:indexer",
         "//kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata:corner_case.kindex",
 

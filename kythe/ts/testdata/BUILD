@@ -13,7 +13,7 @@ sh_binary(
     data = [
         "//external:node",
         "//kythe/cxx/verifier",
-        "//kythe/go/platform/tools:entrystream",
+        "//kythe/go/platform/tools/entrystream",
         "//kythe/ts:ts_indexer",
     ],
 )

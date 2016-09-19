@@ -11,7 +11,7 @@ sh_binary(
     name = "entries2tables",
     srcs = ["entries2tables.sh"],
     data = [
-        "//kythe/go/platform/tools:entrystream",
+        "//kythe/go/platform/tools/entrystream",
         "//kythe/go/serving/tools:write_tables",
     ],
 )
@@ -40,7 +40,7 @@ sh_test(
     data = [
         "//external:jq",
         "//kythe/cxx/common/testdata:start_http_service",
-        "//kythe/go/platform/tools:entrystream",
+        "//kythe/go/platform/tools/entrystream",
         "//kythe/go/serving/tools:kwazthis",
         "//kythe/go/serving/tools:write_tables",
         "//kythe/go/storage/tools:write_entries",

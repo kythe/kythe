@@ -113,7 +113,7 @@ sh_test(
         "//kythe/cxx/extractor:cxx_extractor",
         "//kythe/cxx/indexer/cxx:indexer",
         "//kythe/cxx/verifier",
-        "//kythe/go/platform/tools:indexpack",
+        "//kythe/go/platform/tools/indexpack",
     ],
 )
 

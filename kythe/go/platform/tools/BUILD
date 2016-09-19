@@ -1,42 +1,12 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
-filegroup(
-    name = "analyzer_driver",
-    srcs = ["//kythe/go/platform/tools/analyzer_driver"],
-)
-
-filegroup(
-    name = "entrystream",
-    srcs = ["//kythe/go/platform/tools/entrystream"],
-)
-
-filegroup(
-    name = "ktags",
-    srcs = ["//kythe/go/platform/tools/ktags"],
-)
-
-filegroup(
-    name = "dedup_stream",
-    srcs = ["//kythe/go/platform/tools/dedup_stream"],
-)
-
-filegroup(
-    name = "viewindex",
-    srcs = ["//kythe/go/platform/tools/viewindex"],
-)
-
-filegroup(
-    name = "indexpack",
-    srcs = ["//kythe/go/platform/tools/indexpack"],
-)
-
 sh_test(
     name = "analyzer_driver_test",
     size = "small",
     srcs = ["testdata/analyzer_driver_test.sh"],
     data = [
-        ":analyzer_driver",
-        ":entrystream",
+        "//kythe/go/platform/tools/analyzer_driver",
+        "//kythe/go/platform/tools/entrystream",
         "//kythe/java/com/google/devtools/kythe/analyzers/java:indexer_server",
         "//kythe/testdata:test.kindex",
     ],
@@ -51,9 +21,9 @@ sh_test(
     size = "small",
     srcs = ["indexpack_test.sh"],
     data = [
-        ":indexpack",
-        ":viewindex",
         "//external:jq",
+        "//kythe/go/platform/tools/indexpack",
+        "//kythe/go/platform/tools/viewindex",
         "//kythe/testdata:test.kindex",
     ],
 )
