@@ -1,9 +1,10 @@
-load("//tools:build_rules/go.bzl", "go_package")
+load("//tools:build_rules/go.bzl", "go_package_library", "go_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
-go_package(
-    test_deps = ["//kythe/go/test/testutil"],
+go_package_library(
+    name = "paths",
+    srcs = ["paths.go"],
     deps = [
         "//kythe/go/services/xrefs",
         "//kythe/go/serving/xrefs/assemble",
@@ -17,4 +18,12 @@ go_package(
         "@go_protobuf//:proto",
         "@go_x_net//:context",
     ],
+)
+
+go_test(
+    name = "paths_test",
+    srcs = ["paths_test.go"],
+    library = "paths",
+    visibility = ["//visibility:private"],
+    deps = ["//kythe/go/test/testutil"],
 )

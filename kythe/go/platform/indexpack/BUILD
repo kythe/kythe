@@ -1,19 +1,28 @@
-load("//tools:build_rules/go.bzl", "go_package")
+load("//tools:build_rules/go.bzl", "go_package_library", "go_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
-go_package(
-    test_deps = [
-        "//kythe/proto:analysis_proto_go",
-        "//kythe/proto:storage_proto_go",
-        "@go_x_net//:context",
-        "@go_protobuf//:proto",
-    ],
+go_package_library(
+    name = "indexpack",
+    srcs = ["indexpack.go"],
     deps = [
         "//kythe/go/platform/analysis",
         "//kythe/go/platform/vfs",
         "//kythe/go/platform/vfs/zip",
         "@go_uuid//:uuid",
+        "@go_x_net//:context",
+    ],
+)
+
+go_test(
+    name = "indexpack_test",
+    srcs = ["indexpack_test.go"],
+    library = "indexpack",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//kythe/proto:analysis_proto_go",
+        "//kythe/proto:storage_proto_go",
+        "@go_protobuf//:proto",
         "@go_x_net//:context",
     ],
 )

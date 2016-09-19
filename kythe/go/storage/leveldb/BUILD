@@ -1,16 +1,25 @@
-load("//tools:build_rules/go.bzl", "go_package")
+load("//tools:build_rules/go.bzl", "go_package_library", "go_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
-go_package(
-    test_deps = [
-        "//kythe/go/test/services/graphstore",
-        "//kythe/go/test/storage/keyvalue",
-    ],
+go_package_library(
+    name = "leveldb",
+    srcs = ["leveldb.go"],
     deps = [
         "//kythe/go/services/graphstore",
         "//kythe/go/storage/gsutil",
         "//kythe/go/storage/keyvalue",
         "@go_levigo//:levigo",
+    ],
+)
+
+go_test(
+    name = "leveldb_test",
+    srcs = ["leveldb_test.go"],
+    library = "leveldb",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//kythe/go/test/services/graphstore",
+        "//kythe/go/test/storage/keyvalue",
     ],
 )

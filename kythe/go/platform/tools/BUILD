@@ -36,7 +36,7 @@ sh_test(
     srcs = ["testdata/analyzer_driver_test.sh"],
     data = [
         ":analyzer_driver",
-        "//kythe/go/platform/tools:entrystream",
+        ":entrystream",
         "//kythe/java/com/google/devtools/kythe/analyzers/java:indexer_server",
         "//kythe/testdata:test.kindex",
     ],

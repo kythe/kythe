@@ -1,5 +1,16 @@
-load("//tools:build_rules/go.bzl", "go_package")
+load("//tools:build_rules/go.bzl", "go_package_library", "go_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
-go_package(deps = ["@go_x_net//:context"])
+go_package_library(
+    name = "kcd",
+    srcs = ["kcd.go"],
+    deps = ["@go_x_net//:context"],
+)
+
+go_test(
+    name = "kcd_test",
+    srcs = ["kcd_test.go"],
+    library = "kcd",
+    visibility = ["//visibility:private"],
+)

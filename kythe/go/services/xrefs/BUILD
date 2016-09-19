@@ -1,8 +1,10 @@
-load("@//tools:build_rules/go.bzl", "go_package")
+load("//tools:build_rules/go.bzl", "go_package_library", "go_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
-go_package(
+go_package_library(
+    name = "xrefs",
+    srcs = ["xrefs.go"],
     deps = [
         "//kythe/go/services/web",
         "//kythe/go/test/testutil",
@@ -16,4 +18,11 @@ go_package(
         "@go_stringset//:stringset",
         "@go_x_net//:context",
     ],
+)
+
+go_test(
+    name = "xrefs_test",
+    srcs = ["xrefs_test.go"],
+    library = "xrefs",
+    visibility = ["//visibility:private"],
 )

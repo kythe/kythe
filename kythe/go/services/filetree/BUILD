@@ -1,8 +1,10 @@
-load("//tools:build_rules/go.bzl", "go_package")
+load("//tools:build_rules/go.bzl", "go_package_library")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
-go_package(
+go_package_library(
+    name = "filetree",
+    srcs = ["filetree.go"],
     deps = [
         "//kythe/go/services/graphstore",
         "//kythe/go/services/web",

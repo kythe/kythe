@@ -1,8 +1,15 @@
-load("//tools:build_rules/go.bzl", "go_package")
+load("//tools:build_rules/go.bzl", "go_package_library")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
-go_package(
+go_package_library(
+    name = "pq",
+    srcs = [
+        "pq.go",
+        ":pq_build.go",
+        ":pq_filetree.go",
+        ":pq_xrefs.go",
+    ],
     deps = [
         "//kythe/go/services/graphstore",
         "//kythe/go/services/xrefs",

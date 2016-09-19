@@ -1,17 +1,10 @@
-load("//tools:build_rules/go.bzl", "go_package")
+load("//tools:build_rules/go.bzl", "go_package_library", "go_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
-go_package(
-    test_deps = [
-        "//kythe/go/services/graphstore",
-        "//kythe/go/storage/inmemory",
-        "//kythe/go/util/kytheuri",
-        "//kythe/go/test/testutil",
-        "//kythe/proto:storage_proto_go",
-        "//kythe/proto:xref_proto_go",
-        "@go_x_net//:context",
-    ],
+go_package_library(
+    name = "xrefs",
+    srcs = ["xrefs.go"],
     deps = [
         "//kythe/go/services/graphstore",
         "//kythe/go/services/xrefs",
@@ -24,6 +17,22 @@ go_package(
         "//kythe/proto:storage_proto_go",
         "//kythe/proto:xref_proto_go",
         "@go_stringset//:stringset",
+        "@go_x_net//:context",
+    ],
+)
+
+go_test(
+    name = "xrefs_test",
+    srcs = ["xrefs_test.go"],
+    library = "xrefs",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//kythe/go/services/graphstore",
+        "//kythe/go/storage/inmemory",
+        "//kythe/go/test/testutil",
+        "//kythe/go/util/kytheuri",
+        "//kythe/proto:storage_proto_go",
+        "//kythe/proto:xref_proto_go",
         "@go_x_net//:context",
     ],
 )

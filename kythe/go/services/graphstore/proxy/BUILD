@@ -1,18 +1,27 @@
-load("//tools:build_rules/go.bzl", "go_package")
+load("//tools:build_rules/go.bzl", "go_package_library", "go_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
-go_package(
-    test_deps = [
-        "//kythe/go/services/graphstore",
-        "//kythe/proto:storage_proto_go",
-        "@go_protobuf//:proto",
-    ],
+go_package_library(
+    name = "proxy",
+    srcs = ["proxy.go"],
     deps = [
         "//kythe/go/services/graphstore",
         "//kythe/go/services/graphstore/compare",
         "//kythe/go/storage/gsutil",
         "//kythe/proto:storage_proto_go",
         "@go_x_net//:context",
+    ],
+)
+
+go_test(
+    name = "proxy_test",
+    srcs = ["proxy_test.go"],
+    library = "proxy",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//kythe/go/services/graphstore",
+        "//kythe/proto:storage_proto_go",
+        "@go_protobuf//:proto",
     ],
 )
