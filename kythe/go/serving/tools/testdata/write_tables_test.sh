@@ -14,34 +14,32 @@ set -o pipefail
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-TMPDIR=${TMPDIR:-/tmp}
-
 jq=third_party/jq/jq
 root=kythe/go/serving/tools/testdata
 
 echo "Building new serving table"
-$root/entries2tables kythe/testdata/entries.gz "$TMPDIR/serving_table"
+$root/entries2tables kythe/testdata/entries.gz "$TEST_TMPDIR/serving_table"
 
 echo "Splitting serving data in JSON"
-$root/debug_serving.sh "$TMPDIR/serving_table"
+$root/debug_serving.sh "$TEST_TMPDIR/serving_table"
 
 check_diff() {
   local table="serving_table.$1.json"
   local gold="kythe/testdata/$table"
-  local new="$TMPDIR/$table"
-  gzip -kd "$gold.gz"
+  local new="$TEST_TMPDIR/$table"
+  gzip -kdf "$gold.gz"
 
   echo
   if ! diff -q "$gold" "$new"; then
-    $jq .key "$gold" > "$TMPDIR/gold.keys"
-    $jq .key "$new" > "$TMPDIR/new.keys"
+    $jq .key "$gold" > "$TEST_TMPDIR/gold.keys"
+    $jq .key "$new" > "$TEST_TMPDIR/new.keys"
 
-    if ! diff -u "$TMPDIR/"{gold,new}.keys | diffstat -qm; then
+    if ! diff -u "$TEST_TMPDIR/"{gold,new}.keys | diffstat -qm; then
       echo "  Key samples:"
       echo "    Unique to gold:"
-      comm -23 "$TMPDIR/"{gold,new}.keys | sort -R | head -n3
+      comm -23 "$TEST_TMPDIR/"{gold,new}.keys | sort -R | head -n3
       echo "    Unique to new:"
-      comm -13 "$TMPDIR/"{gold,new}.keys | sort -R | head -n3
+      comm -13 "$TEST_TMPDIR/"{gold,new}.keys | sort -R | head -n3
     fi
 
     echo "  Key-value samples:"
