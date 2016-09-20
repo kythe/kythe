@@ -1,7 +1,0 @@
-URL: http://central.maven.org/maven2/com/google/truth/truth/0.27/truth-0.27.jar
-Version: 0.27
-License: Apache License 2.0 http://www.apache.org/licenses/LICENSE-2.0
-License File: LICENSE
-
-Description: Assertion/Proposition framework for Java unit tests
-Modifications: None.

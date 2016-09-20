@@ -7,20 +7,13 @@ filegroup(
     srcs = ["LICENSE"],
 )
 
-java_import(
-    name = "gson",
-    jars = [
-        "gson-2.3-SNAPSHOT.jar",
-    ],
-)
-
 java_library(
     name = "proto",
     srcs = [
         "ProtoTypeAdapter.java",
     ],
     deps = [
-        ":gson",
+        "//external:gson",
         "//third_party/proto:protobuf_java",
     ],
 )

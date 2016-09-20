@@ -101,7 +101,28 @@ bind(
 )
 
 maven_jar(
-    name = "maven_guava",
+    name = "com_google_code_gson_gson",
+    artifact = "com.google.code.gson:gson:2.7",
+)
+
+bind(
+    name = "gson",
+    actual = "@com_google_code_gson_gson//jar",
+)
+
+bind(
+    name = "gson/license",
+    actual = "@com_apache_org_license_2_0//file",
+)
+
+# TODO(shahms): See if we can use upstream (apparently github only for gson-proto)
+bind(
+    name = "gson/proto",
+    actual = "//third_party/gson:proto",
+)
+
+maven_jar(
+    name = "com_google_guava_guava",
     artifact = "com.google.guava:guava:19.0",
     sha1 = "6ce200f6b23222af3d8abb6b6459e6c44f4bb0e9",
 )
@@ -112,9 +133,15 @@ http_file(
     url = "http://www.apache.org/licenses/LICENSE-2.0.txt",
 )
 
+http_file(
+    name = "org_opensource_licenses_bsd_3_clause",
+    sha256 = "8ace8cd6c04c30234a573632af05bbb8eab01094130b0330834603741fc1f6af",
+    url = "https://opensource.org/licenses/BSD-3-Clause",
+)
+
 bind(
     name = "guava",
-    actual = "@maven_guava//jar",
+    actual = "@com_google_guava_guava//jar",
 )
 
 bind(
@@ -122,24 +149,72 @@ bind(
     actual = "@com_apache_org_license_2_0//file",
 )
 
-bind(
-    name = "libcurl",
-    actual = "//third_party:libcurl",
+http_file(
+    name = "junit_junit_license",
+    sha256 = "9648bb2891b9813970bddb68d4be8a5e6ec8280d0180a53dfb29236b579c55bb",
+    url = "https://raw.githubusercontent.com/junit-team/junit4/master/LICENSE-junit.txt",
+)
+
+maven_jar(
+    name = "junit_junit",
+    artifact = "junit:junit:4.12",
+    sha1 = "2973d150c0dc1fefe998f834810d68f278ea58ec",
 )
 
 bind(
     name = "junit4",
-    actual = "//third_party:junit4",
+    actual = "@junit_junit//jar",
 )
 
 bind(
-    name = "zlib",
-    actual = "//third_party/zlib",
+    name = "junit4/license",
+    actual = "@junit_junit_license//file",
+)
+
+maven_jar(
+    name = "com_google_re2j_re2j",
+    artifact = "com.google.re2j:re2j:1.1",
+    sha1 = "d716952ab58aa4369ea15126505a36544d50a333",
 )
 
 bind(
     name = "re2j",
-    actual = "//third_party/re2j",
+    actual = "@com_google_re2j_re2j//jar",
+)
+
+bind(
+    name = "re2j/license",
+    actual = "@org_opensource_licenses_bsd_3_clause//file",
+)
+
+maven_jar(
+    name = "com_beust_jcommander",
+    artifact = "com.beust:jcommander:1.48",
+)
+
+bind(
+    name = "jcommander",
+    actual = "@com_beust_jcommander//jar",
+)
+
+bind(
+    name = "jcommander/license",
+    actual = "@com_apache_org_license_2_0//file",
+)
+
+maven_jar(
+    name = "com_google_truth_truth",
+    artifact = "com.google.truth:truth:0.27",
+)
+
+bind(
+    name = "truth",
+    actual = "@com_google_truth_truth//jar",
+)
+
+bind(
+    name = "truth/license",
+    actual = "@com_apache_org_license_2_0//file",
 )
 
 bind(
@@ -172,9 +247,64 @@ bind(
     actual = "//third_party/proto:any_proto_go",
 )
 
+maven_jar(
+    name = "io_netty_netty_all",
+    artifact = "io.netty:netty-all:4.1.3.Final",
+)
+
+bind(
+    name = "netty/license",
+    actual = "@com_apache_org_license_2_0//file",
+)
+
+maven_jar(
+    name = "io_grpc_grpc_core",
+    artifact = "io.grpc:grpc-core:1.0.1",
+)
+
+maven_jar(
+    name = "io_grpc_grpc_context",
+    artifact = "io.grpc:grpc-context:1.0.1",
+)
+
+maven_jar(
+    name = "io_grpc_grpc_stub",
+    artifact = "io.grpc:grpc-stub:1.0.1",
+)
+
+maven_jar(
+    name = "io_grpc_grpc_netty",
+    artifact = "io.grpc:grpc-netty:1.0.1",
+)
+
+maven_jar(
+    name = "io_grpc_grpc_protobuf",
+    artifact = "io.grpc:grpc-protobuf:1.0.1",
+)
+
+maven_jar(
+    name = "io_grpc_grpc_protobuf_lite",
+    artifact = "io.grpc:grpc-protobuf-lite:1.0.1",
+)
+
 bind(
     name = "grpc-java",
     actual = "//third_party/grpc-java",
+)
+
+maven_jar(
+    name = "com_google_code_findbugs_jsr305",
+    artifact = "com.google.code.findbugs:jsr305:3.0.1",
+)
+
+bind(
+    name = "jsr305",
+    actual = "@com_google_code_findbugs_jsr305//jar",
+)
+
+bind(
+    name = "jsr305/license",
+    actual = "@com_apache_org_license_2_0//file",
 )
 
 bind(
@@ -183,28 +313,18 @@ bind(
 )
 
 bind(
-    name = "gson",
-    actual = "//third_party/gson",
-)
-
-bind(
-    name = "gson/proto",
-    actual = "//third_party/gson:proto",
-)
-
-bind(
-    name = "jcommander",
-    actual = "//third_party/jcommander",
-)
-
-bind(
     name = "jq",
     actual = "//third_party/jq",
 )
 
 bind(
-    name = "truth",
-    actual = "//third_party/truth",
+    name = "libcurl",
+    actual = "//third_party:libcurl",
+)
+
+bind(
+    name = "zlib",
+    actual = "//third_party/zlib",
 )
 
 git_repository(

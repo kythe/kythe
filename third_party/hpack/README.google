@@ -1,6 +1,0 @@
-URL: https://search.maven.org/remotecontent?filepath=com/twitter/hpack/0.10.1/hpack-0.10.1.jar
-Version: 0.10.1
-License: Apache License 2.0 http://www.apache.org/licenses/LICENSE-2.0
-License File: LICENSE
-Description: Header Compression for HTTP/2 https://twitter.com/http_2
-Modifications: None.

@@ -20,14 +20,14 @@ cc_binary(
 java_import(
     name = "grpc-java",
     jars = [
-        "grpc-core-1.0.0.jar",
-        "grpc-stub-1.0.0.jar",
-        "grpc-netty-1.0.0.jar",
-        "grpc-protobuf-1.0.0.jar",
-        "grpc-protobuf-lite-1.0.0.jar",
+        "@io_grpc_grpc_core//jar:file",
+        "@io_grpc_grpc_context//jar:file",
+        "@io_grpc_grpc_netty//jar:file",
+        "@io_grpc_grpc_protobuf//jar:file",
+        "@io_grpc_grpc_protobuf_lite//jar:file",
+        "@io_grpc_grpc_stub//jar:file",
     ],
     runtime_deps = [
-        "//third_party/hpack",
-        "//third_party/netty",
+        "@io_netty_netty_all//jar",
     ],
 )
