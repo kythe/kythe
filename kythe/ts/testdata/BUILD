@@ -1,6 +1,6 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
-load("ts_indexer_test", "ts_indexer_test")
+load(":ts_indexer_test.bzl", "ts_indexer_test")
 
 filegroup(
     name = "repo_files",

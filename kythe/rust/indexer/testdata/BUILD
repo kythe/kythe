@@ -1,6 +1,6 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
-load("rust_indexer_test", "rust_indexer_test")
+load(":rust_indexer_test.bzl", "rust_indexer_test")
 
 test_suite(
     name = "testdata",

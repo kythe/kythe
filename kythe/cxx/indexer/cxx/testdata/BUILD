@@ -1,6 +1,6 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
-load("cxx_indexer_test", "cxx_indexer_test")
+load(":cxx_indexer_test.bzl", "cxx_indexer_test")
 
 sh_test(
     name = "kindex",
