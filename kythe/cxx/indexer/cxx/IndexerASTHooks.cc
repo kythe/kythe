@@ -4280,7 +4280,6 @@ IndexerASTVisitor::CreateObjCMethodTypeNode(const clang::ObjCMethodDecl *MD,
 
   NodeIds.push_back(ReturnType.primary());
   for (auto PVD : MD->parameters()) {
-    MaybeFew<GraphObserver::NodeId> ParmType;
     if (PVD) {
       auto TSI = PVD->getTypeSourceInfo();
       auto ParamType =
@@ -4289,11 +4288,11 @@ IndexerASTVisitor::CreateObjCMethodTypeNode(const clang::ObjCMethodDecl *MD,
                     PVD->getTypeSourceInfo()->getTypeLoc().getTypePtr(),
                     EmitRanges)
               : BuildNodeIdForType(PVD->getType());
+      if (!ParamType) {
+        return ParamType;
+      }
+      NodeIds.push_back(ParamType.primary());
     }
-    if (!ParmType) {
-      return ParmType;
-    }
-    NodeIds.push_back(ParmType.primary());
   }
 
   for (size_t I = 0; I < NodeIds.size(); ++I) {

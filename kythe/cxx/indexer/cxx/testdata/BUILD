@@ -1852,6 +1852,13 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "instance_method_type",
+    srcs = ["objc/instance_method_type.m"],
+    ignore_dups = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
     name = "ivar_decl",
     srcs = ["objc/ivar_decl.m"],
     ignore_dups = True,
