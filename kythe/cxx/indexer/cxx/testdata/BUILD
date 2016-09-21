@@ -1858,7 +1858,7 @@ cxx_indexer_test(
     tags = ["objc"],
 )
 
-# TODO(salguarnieri) add more assertions
+# TODO(salguarnieri) add more assertions.
 cxx_indexer_test(
     name = "method_overrides",
     srcs = ["objc/method_overrides.m"],

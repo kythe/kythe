@@ -133,12 +133,6 @@ http_file(
     url = "http://www.apache.org/licenses/LICENSE-2.0.txt",
 )
 
-http_file(
-    name = "org_opensource_licenses_bsd_3_clause",
-    sha256 = "8ace8cd6c04c30234a573632af05bbb8eab01094130b0330834603741fc1f6af",
-    url = "https://opensource.org/licenses/BSD-3-Clause",
-)
-
 bind(
     name = "guava",
     actual = "@com_google_guava_guava//jar",
@@ -171,6 +165,12 @@ bind(
     actual = "@junit_junit_license//file",
 )
 
+http_file(
+    name = "re2j_license",
+    sha256 = "26a6133577cc8e48d7c002ac4d4a554786e7c0e1732e10f2db205e5e494c411b",
+    url = "https://raw.githubusercontent.com/google/re2j/master/LICENSE",
+)
+
 maven_jar(
     name = "com_google_re2j_re2j",
     artifact = "com.google.re2j:re2j:1.1",
@@ -184,7 +184,7 @@ bind(
 
 bind(
     name = "re2j/license",
-    actual = "@org_opensource_licenses_bsd_3_clause//file",
+    actual = "@re2j_license//file",
 )
 
 maven_jar(
