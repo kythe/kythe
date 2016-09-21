@@ -4301,10 +4301,8 @@ IndexerASTVisitor::CreateObjCMethodTypeNode(const clang::ObjCMethodDecl *MD,
   }
   // todo(salguarnieri) Make this a constant somewhere
   const char *Tycon = "fn";
-  // todo(salguarnieri) remove this temp var
-  auto ID = Observer.recordTappNode(Observer.getNodeIdForBuiltinType(Tycon),
-                                    NodeIdPtrs);
-  return ID;
+  return Observer.recordTappNode(Observer.getNodeIdForBuiltinType(Tycon),
+                                 NodeIdPtrs);
 }
 
 } // namespace kythe
