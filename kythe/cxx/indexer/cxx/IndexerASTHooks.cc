@@ -3997,21 +3997,19 @@ bool IndexerASTVisitor::VisitObjCImplDecl(const clang::ObjCImplDecl *Decl) {
   FileID DeclFile = Observer.getSourceManager()->getFileID(Decl->getLocation());
   if (auto NameRangeInContext =
           RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange)) {
-    for (const auto *NextDecl : Decl->redecls()) {
-      // It's not useful to draw completion edges to implicit forward
-      // declarations, nor is it useful to declare that a definition completes
-      // itself.
-      if (NextDecl != Decl && !NextDecl->isImplicit()) {
-        FileID NextDeclFile =
-            Observer.getSourceManager()->getFileID(NextDecl->getLocation());
-        GraphObserver::NodeId TargetDecl = BuildNodeIdForDecl(NextDecl);
-        Observer.recordCompletionRange(
-            NameRangeInContext.primary(), TargetDecl,
-            NextDeclFile == DeclFile
-                ? GraphObserver::Specificity::UniquelyCompletes
-                : GraphObserver::Specificity::Completes);
-      }
+    // Draw the completion edge to this class's interface decl.
+    auto Interface = Decl->getClassInterface();
+    if (!Interface->isImplicit()) {
+      FileID InterfaceFile =
+          Observer.getSourceManager()->getFileID(Interface->getLocation());
+      GraphObserver::NodeId TargetDecl = BuildNodeIdForDecl(Interface);
+      Observer.recordCompletionRange(
+          NameRangeInContext.primary(), TargetDecl,
+          InterfaceFile == DeclFile
+              ? GraphObserver::Specificity::UniquelyCompletes
+              : GraphObserver::Specificity::Completes);
     }
+    RecordCompletesForRedecls(Decl, NameRange, DeclNode);
   }
   ConnectToSuperClassAndProtocols(DeclNode, Decl->getClassInterface());
   Observer.recordRecordNode(
@@ -4052,7 +4050,6 @@ bool IndexerASTVisitor::VisitObjCImplementationDecl(
 // todo(salguarnieri) Connect this with the implementation node.
 bool IndexerASTVisitor::VisitObjCInterfaceDecl(
     const clang::ObjCInterfaceDecl *Decl) {
-  SourceLocation DeclLoc = Decl->getLocation();
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
   GraphObserver::NodeId DeclNode(Observer.getDefaultClaimToken(), "");
   DeclNode = BuildNodeIdForDecl(Decl);
@@ -4070,13 +4067,37 @@ bool IndexerASTVisitor::VisitObjCInterfaceDecl(
                               GraphObserver::Completeness::Incomplete,
                               GetFormat(Decl));
   }
+  RecordCompletesForRedecls(Decl, NameRange, DeclNode);
   ConnectToSuperClassAndProtocols(DeclNode, Decl);
   return true;
 }
 
+void IndexerASTVisitor::RecordCompletesForRedecls(
+    const Decl *Decl, const SourceRange &NameRange,
+    const GraphObserver::NodeId &DeclNode) {
+  FileID DeclFile = Observer.getSourceManager()->getFileID(Decl->getLocation());
+  if (auto NameRangeInContext =
+          RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange)) {
+    for (const auto *NextDecl : Decl->redecls()) {
+      // It's not useful to draw completion edges to implicit forward
+      // declarations, nor is it useful to declare that a definition completes
+      // itself.
+      if (NextDecl != Decl && !NextDecl->isImplicit()) {
+        FileID NextDeclFile =
+            Observer.getSourceManager()->getFileID(NextDecl->getLocation());
+        GraphObserver::NodeId TargetDecl = BuildNodeIdForDecl(NextDecl);
+        Observer.recordCompletionRange(
+            NameRangeInContext.primary(), TargetDecl,
+            NextDeclFile == DeclFile
+                ? GraphObserver::Specificity::UniquelyCompletes
+                : GraphObserver::Specificity::Completes);
+      }
+    }
+  }
+}
+
 bool IndexerASTVisitor::VisitObjCProtocolDecl(
     const clang::ObjCProtocolDecl *Decl) {
-  SourceLocation DeclLoc = Decl->getLocation();
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
   GraphObserver::NodeId DeclNode(Observer.getDefaultClaimToken(), "");
   DeclNode = BuildNodeIdForDecl(Decl);

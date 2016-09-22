@@ -9,13 +9,11 @@
 @interface Box
 @end
 
-// Doesn't work yet
-//#- @Box completes/uniquely BoxIface
-
 //- @Box defines/binding BoxImpl
 //- BoxImpl.node/kind record
 //- BoxImpl.subkind class
 //- BoxImpl.complete definition
+//- @Box completes/uniquely BoxIface
 @implementation Box
 @end
 

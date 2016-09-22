@@ -860,6 +860,11 @@ private:
                          const clang::TypeLoc &Loc,
                          const IndexerASTVisitor::EmitRanges &EmitRanges);
 
+  /// \brief Draw the completes edge from a Decl to each of its redecls.
+  void RecordCompletesForRedecls(const clang::Decl *Decl,
+                                 const clang::SourceRange &NameRange,
+                                 const GraphObserver::NodeId &DeclNode);
+
   /// \brief The current context for constructing `GraphObserver::Range`s.
   ///
   /// This is used whenever we enter a context where a section of source
