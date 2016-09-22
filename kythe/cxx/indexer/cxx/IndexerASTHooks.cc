@@ -3931,9 +3931,29 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::GetObjCObjBaseTypeNode(
   return BuildNodeIdForType(Loc, IFace->getTypeForDecl(), EmitRanges);
 }
 
+// This is the synthesize statement.
+//
+// We don't do anything here because we don't want to draw edges to the
+// synthesize statement. Any edges we draw to this statement are because of
+// the synthesized IVarDecls in the AST which we visit separately.
+//
+// The following three scenarios produce synthesized ivar decls.
+// * The synthesize statements declares a new ivar.
+//   * @synthesize a = newvar;
+//   * We get an ivar decl rooted at the new ivar name's source range.
+// * It may specify no ivar, in which case the default value is used.
+//   * @synthesize a;
+//   * We get an ivar decl rooted at the property's name source range in the
+//     synthesize statement.
+// * This entire statement may be left out when modern versions of xcode are
+//   used.
+//   * We get an ivar decl rooted at the property's name source range in the
+//     property declaration.
+//
+// In the future, we may want to draw some edge between the ivar and the
+// property to show their relationship.
 bool IndexerASTVisitor::VisitObjCPropertyImplDecl(
     const clang::ObjCPropertyImplDecl *Decl) {
-  // todo(salguarnieri) implement
   return true;
 }
 
@@ -4109,17 +4129,34 @@ bool IndexerASTVisitor::VisitObjCMethodDecl(const clang::ObjCMethodDecl *Decl) {
   }
 
   if (NameRangeInContext) {
-    FileID DeclFile =
+    FileID DefnFile =
         Observer.getSourceManager()->getFileID(Decl->getLocation());
-    for (const auto *NextDecl : Decl->redecls()) {
-      if (NextDecl != Decl) {
-        FileID NextDeclFile =
-            Observer.getSourceManager()->getFileID(NextDecl->getLocation());
-        GraphObserver::NodeId TargetDecl = BuildNodeIdForDecl(NextDecl);
+    const GraphObserver::Range &DeclNameRangeInContext =
+        NameRangeInContext.primary();
 
+    // If we want to draw an edge from method impl to property we can modify the
+    // following code:
+    // auto *propertyDecl = Decl->findPropertyDecl(true /* checkOverrides */);
+    // if (propertyDecl != nullptr) { ...
+
+    // This is necessary if this definition comes from an implicit method from
+    // a property.
+    auto CD = Decl->getCanonicalDecl();
+    FileID CDDeclFile =
+        Observer.getSourceManager()->getFileID(CD->getLocation());
+    Observer.recordCompletionRange(
+        DeclNameRangeInContext, BuildNodeIdForDecl(CD),
+        CDDeclFile == DefnFile ? GraphObserver::Specificity::UniquelyCompletes
+                               : GraphObserver::Specificity::Completes);
+
+    // Connect all other redecls to this definition with a completion edge.
+    for (const auto *NextDecl : Decl->redecls()) {
+      if (NextDecl != Decl && NextDecl != CD) {
+        FileID RedeclFile =
+            Observer.getSourceManager()->getFileID(NextDecl->getLocation());
         Observer.recordCompletionRange(
-            NameRangeInContext.primary(), TargetDecl,
-            NextDeclFile == DeclFile
+            DeclNameRangeInContext, BuildNodeIdForDecl(NextDecl),
+            RedeclFile == DefnFile
                 ? GraphObserver::Specificity::UniquelyCompletes
                 : GraphObserver::Specificity::Completes);
       }
@@ -4163,53 +4200,49 @@ void IndexerASTVisitor::ConnectParam(const Decl *Decl,
   }
 }
 
-// todo(salguarnieri) implement
+// todo(salguarnieri) Think about merging with VisitFieldDecl
 bool IndexerASTVisitor::VisitObjCPropertyDecl(
     const clang::ObjCPropertyDecl *Decl) {
+  GraphObserver::NameId DeclName(BuildNameIdForDecl(Decl));
+  GraphObserver::NodeId DeclNode(BuildNodeIdForDecl(Decl));
+  SourceRange NameRange = RangeForNameOfDeclaration(Decl);
+  MaybeRecordDefinitionRange(
+      RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode);
+  // TODO(zarko): Record completeness data. This is relevant for static fields,
+  // which may be declared along with a complete class definition but later
+  // defined in a separate translation unit.
+  Observer.recordVariableNode(
+      DeclName, DeclNode, GraphObserver::Completeness::Definition,
+      // todo(salguarnieri) Think about making a new subkind for properties.
+      GraphObserver::VariableSubkind::Field, GetFormat(Decl));
+  if (const auto *TSI = Decl->getTypeSourceInfo()) {
+    // TODO(zarko): Record storage classes for fields.
+    AscribeSpelledType(TSI->getTypeLoc(), Decl->getType(), DeclNode);
+  } else if (auto TyNodeId = BuildNodeIdForType(Decl->getType())) {
+    Observer.recordTypeEdge(DeclNode, TyNodeId.primary());
+  }
+  AddChildOfEdgeToDeclContext(Decl, DeclNode);
   return true;
 }
 
 // todo(salguarnieri) implement
-bool IndexerASTVisitor::VisitObjCIvarDecl(const clang::ObjCIvarDecl *Decl) {
+bool IndexerASTVisitor::VisitObjCBoxedExpr(const clang::ObjCBoxedExpr *Expr) {
   return true;
 }
 
 // todo(salguarnieri) implement
-bool IndexerASTVisitor::VisitObjCArrayLiteral(
-    const clang::ObjCArrayLiteral *Decl) {
-  return true;
-}
-
-// todo(salguarnieri) implement
-bool IndexerASTVisitor::VisitObjCBoolLiteralExpr(
-    const clang::ObjCBoolLiteralExpr *Decl) {
-  return true;
-}
-
-// todo(salguarnieri) implement
-bool IndexerASTVisitor::VisitObjCBoxedExpr(const clang::ObjCBoxedExpr *Decl) {
-  return true;
-}
-
-// todo(salguarnieri) implement
-bool IndexerASTVisitor::VisitObjCDictionaryLiteral(
-    const clang::ObjCDictionaryLiteral *Decl) {
-  return true;
-}
-
-// todo(salguarnieri) implement
-bool IndexerASTVisitor::VisitObjCEncodeExpr(const clang::ObjCEncodeExpr *Decl) {
+bool IndexerASTVisitor::VisitObjCEncodeExpr(const clang::ObjCEncodeExpr *Expr) {
   return true;
 }
 
 // todo(salguarnieri) implement
 bool IndexerASTVisitor::VisitObjCIndirectCopyRestoreExpr(
-    const clang::ObjCIndirectCopyRestoreExpr *Decl) {
+    const clang::ObjCIndirectCopyRestoreExpr *Expr) {
   return true;
 }
 
 // todo(salguarnieri) implement
-bool IndexerASTVisitor::VisitObjCIsaExpr(const clang::ObjCIsaExpr *Decl) {
+bool IndexerASTVisitor::VisitObjCIsaExpr(const clang::ObjCIsaExpr *Expr) {
   return true;
 }
 
@@ -4218,7 +4251,13 @@ bool IndexerASTVisitor::VisitObjCIvarRefExpr(
   return VisitDeclRefOrIvarRefExpr(IRE, IRE->getDecl(), IRE->getLocation());
 }
 
-bool IndexerASTVisitor::VisitObjCMessageExpr(const clang::ObjCMessageExpr *E) {
+// todo(salguarnieri) See if we can connect directly to the method definition.
+// This may not be possible with clang. If it isn't we should do it in post
+// process. A fair approximation would be to go to the definition for the type
+// written by the user. This would miss cases that type inference would limit
+// to subclasses, but should be good enough for now.
+bool IndexerASTVisitor::VisitObjCMessageExpr(
+    const clang::ObjCMessageExpr *Expr) {
   if (BlameStack.empty()) {
     return true;
   }
@@ -4226,10 +4265,10 @@ bool IndexerASTVisitor::VisitObjCMessageExpr(const clang::ObjCMessageExpr *E) {
   // The end of the source range for ObjCMessageExpr is the location of the
   // right brace. We actually want to include the right brace in the range
   // we record, so get the location *after* the right brace.
-  const auto AfterBrace = ConsumeToken(E->getLocEnd(), clang::tok::r_square);
-  clang::SourceRange SR(E->getLocStart(), AfterBrace);
+  const auto AfterBrace = ConsumeToken(Expr->getLocEnd(), clang::tok::r_square);
+  clang::SourceRange SR(Expr->getLocStart(), AfterBrace);
   if (auto RCC = ExplicitRangeInCurrentContext(SR)) {
-    const auto *Callee = E->getMethodDecl();
+    const auto *Callee = Expr->getMethodDecl();
     if (Callee != nullptr) {
       RecordCallEdges(RCC.primary(), BuildNodeIdForDecl(Callee));
     }
@@ -4237,27 +4276,67 @@ bool IndexerASTVisitor::VisitObjCMessageExpr(const clang::ObjCMessageExpr *E) {
   return true;
 }
 
-// todo(salguarnieri) implement
 bool IndexerASTVisitor::VisitObjCPropertyRefExpr(
-    const clang::ObjCPropertyRefExpr *Decl) {
+    const clang::ObjCPropertyRefExpr *Expr) {
+  // Both implicit and explicit properties will provide a backing method decl.
+  ObjCMethodDecl *MD = nullptr;
+  ObjCPropertyDecl *PD = nullptr;
+  if (Expr->isImplicitProperty()) {
+    // todo(salguarnieri) Create test cases for implicit properties.
+    MD = Expr->isMessagingGetter() ? Expr->getImplicitPropertyGetter()
+                                   : Expr->getImplicitPropertySetter();
+  } else if ((PD = Expr->getExplicitProperty())) {
+    MD = Expr->isMessagingGetter() ? PD->getGetterMethodDecl()
+                                   : PD->getSetterMethodDecl();
+  } else {
+    // If this is an explicit property but we cannot get the property, we
+    // need to stop.
+    return true;
+  }
+
+  // Record the a "field" access *and* a method call.
+  auto SL = Expr->getLocation();
+  if (SL.isValid()) {
+    // This gives us the property name. If we just call Expr->getSourceRange()
+    // we just get the range for the object's name.
+    SourceRange SR = RangeForASTEntityFromSourceLocation(SL);
+    auto StmtId = BuildNodeIdForImplicitStmt(Expr);
+    if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
+      // Record the "field" access if this has an explicit property.
+      if (PD != nullptr) {
+        GraphObserver::NodeId DeclId = BuildNodeIdForDecl(PD);
+        Observer.recordDeclUseLocation(
+            RCC.primary(), DeclId, GraphObserver::Claimability::Unclaimable);
+        for (const auto &S : Supports) {
+          S->InspectDeclRef(*this, SL, RCC.primary(), DeclId, PD);
+        }
+      }
+
+      // Record the method call.
+
+      // todo(salguarnieri) Try to prevent the call edge unless the user has
+      // defined a custom setter or getter. This is a non-trivial
+      // because the user may provide a custom implementation using the
+      // default name. Otherwise, we could just test the method decl
+      // location.
+      if (MD != nullptr) {
+        RecordCallEdges(RCC.primary(), BuildNodeIdForDecl(MD));
+      }
+    }
+  }
+
   return true;
 }
 
 // todo(salguarnieri) implement
 bool IndexerASTVisitor::VisitObjCSelectorExpr(
-    const clang::ObjCSelectorExpr *Decl) {
-  return true;
-}
-
-// todo(salguarnieri) implement
-bool IndexerASTVisitor::VisitObjCStringLiteral(
-    const clang::ObjCStringLiteral *Decl) {
+    const clang::ObjCSelectorExpr *Expr) {
   return true;
 }
 
 // todo(salguarnieri) implement
 bool IndexerASTVisitor::VisitObjCSubscriptRefExpr(
-    const clang::ObjCSubscriptRefExpr *Decl) {
+    const clang::ObjCSubscriptRefExpr *Expr) {
   return true;
 }
 

@@ -316,22 +316,26 @@ public:
   bool VisitObjCProtocolDecl(const clang::ObjCProtocolDecl *Decl);
   bool VisitObjCMethodDecl(const clang::ObjCMethodDecl *Decl);
   bool VisitObjCPropertyDecl(const clang::ObjCPropertyDecl *Decl);
-  bool VisitObjCIvarDecl(const clang::ObjCIvarDecl *Decl);
 
-  bool VisitObjCArrayLiteral(const clang::ObjCArrayLiteral *Decl);
-  bool VisitObjCBoolLiteralExpr(const clang::ObjCBoolLiteralExpr *Decl);
-  bool VisitObjCBoxedExpr(const clang::ObjCBoxedExpr *Decl);
-  bool VisitObjCDictionaryLiteral(const clang::ObjCDictionaryLiteral *Decl);
-  bool VisitObjCEncodeExpr(const clang::ObjCEncodeExpr *Decl);
+  bool VisitObjCBoxedExpr(const clang::ObjCBoxedExpr *Expr);
+  bool VisitObjCEncodeExpr(const clang::ObjCEncodeExpr *Expr);
   bool VisitObjCIndirectCopyRestoreExpr(
-      const clang::ObjCIndirectCopyRestoreExpr *Decl);
-  bool VisitObjCIsaExpr(const clang::ObjCIsaExpr *Decl);
+      const clang::ObjCIndirectCopyRestoreExpr *Expr);
+  bool VisitObjCIsaExpr(const clang::ObjCIsaExpr *Expr);
   bool VisitObjCIvarRefExpr(const clang::ObjCIvarRefExpr *IRE);
-  bool VisitObjCMessageExpr(const clang::ObjCMessageExpr *Decl);
-  bool VisitObjCPropertyRefExpr(const clang::ObjCPropertyRefExpr *Decl);
-  bool VisitObjCSelectorExpr(const clang::ObjCSelectorExpr *Decl);
-  bool VisitObjCStringLiteral(const clang::ObjCStringLiteral *Decl);
-  bool VisitObjCSubscriptRefExpr(const clang::ObjCSubscriptRefExpr *Decl);
+  bool VisitObjCMessageExpr(const clang::ObjCMessageExpr *Expr);
+  bool VisitObjCPropertyRefExpr(const clang::ObjCPropertyRefExpr *Expr);
+  bool VisitObjCSelectorExpr(const clang::ObjCSelectorExpr *Expr);
+  bool VisitObjCSubscriptRefExpr(const clang::ObjCSubscriptRefExpr *Expr);
+
+  // todo(salguarnieri) delete this comment block when we have more objective-c
+  // support implemented.
+  //
+  // Visitors that are left to their default behavior.
+  //  bool VisitObjCDictionaryLiteral(const clang::ObjCDictionaryLiteral *Decl);
+  //  bool VisitObjCArrayLiteral(const clang::ObjCArrayLiteral *Decl);
+  //  bool VisitObjCBoolLiteralExpr(const clang::ObjCBoolLiteralExpr *Decl);
+  //  bool VisitObjCStringLiteral(const clang::ObjCStringLiteral *Decl);
 
   /// \brief For functions that support it, controls the emission of range
   /// information.

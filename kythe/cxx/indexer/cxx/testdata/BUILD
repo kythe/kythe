@@ -1812,14 +1812,6 @@ cxx_indexer_test(
     tags = ["objc"],
 )
 
-# TODO(salguarnieri) Add verficiation assertions to this test.
-cxx_indexer_test(
-    name = "implicit_method_call_for_property",
-    srcs = ["objc/implicit_method_call_for_property.m"],
-    ignore_dups = True,
-    tags = ["objc"],
-)
-
 cxx_indexer_test(
     name = "instance_method_call",
     srcs = ["objc/instance_method_call.m"],
@@ -1828,8 +1820,22 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "instance_method_call_with_params",
+    srcs = ["objc/instance_method_call_with_params.m"],
+    ignore_dups = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
     name = "instance_method_decl_defn",
     srcs = ["objc/instance_method_decl_defn.m"],
+    ignore_dups = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "instance_method_decl_defn_with_params",
+    srcs = ["objc/instance_method_decl_defn_with_params.m"],
     ignore_dups = True,
     tags = ["objc"],
 )
@@ -1895,8 +1901,49 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "property_custom_getter_setter",
+    srcs = ["objc/property_custom_getter_setter.m"],
+    ignore_dups = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
     name = "property_decl_defn",
     srcs = ["objc/property_decl_defn.m"],
+    ignore_dups = True,
+    tags = ["objc"],
+)
+
+# This test passes with the default version of clang on darwin but fails on
+# linux.
+# TODO(salguarnieri) Use configurable attributes to make this test runnable.
+# The problem is that cxx_indexer_test is a macro and configurable attributes
+# do not expand in the macro, they only expand during the analysis phase, which
+# means they only take on their final value in the impl of a rule.
+#
+# For example, this does not work because cxx_indexer_test is a macro:
+# config_setting(
+#   name = "darwin",
+#   values = { "cpu": "darwin" },
+# )
+# expect_fail_index = select({
+#        "//:darwin": False,
+#        "//conditions:default": True,
+#    }),
+cxx_indexer_test(
+    name = "property_decl_defn_xcode_only",
+    srcs = ["objc/property_decl_defn_xcode_only.m"],
+    ignore_dups = True,
+    tags = [
+        "objc",
+        "arc-ignore",
+        "manual"
+    ],
+)
+
+cxx_indexer_test(
+    name = "property_getter_setter",
+    srcs = ["objc/property_getter_setter.m"],
     ignore_dups = True,
     tags = ["objc"],
 )
