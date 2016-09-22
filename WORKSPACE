@@ -45,11 +45,6 @@ bind(
     actual = "@com_github_google_googletest//:googletest",
 )
 
-bind(
-    name = "googletest/license",
-    actual = "@com_github_google_googletest//:license",
-)
-
 new_git_repository(
     name = "com_github_gflags_gflags",
     build_file = "third_party/googleflags.BUILD",
@@ -62,11 +57,6 @@ bind(
     actual = "@com_github_gflags_gflags//:gflags",
 )
 
-bind(
-    name = "gflags/license",
-    actual = "@com_github_gflags_gflags//:license",
-)
-
 git_repository(
     name = "com_googlesource_code_re2",
     commit = "fc6337a382bfd4f7c861abea08f872d3c85b31da",
@@ -76,11 +66,6 @@ git_repository(
 bind(
     name = "re2",
     actual = "@com_googlesource_code_re2//:re2",
-)
-
-bind(
-    name = "re2/license",
-    actual = "@com_googlesource_code_re2//:LICENSE",
 )
 
 new_git_repository(
@@ -95,24 +80,15 @@ bind(
     actual = "@com_github_google_glog//:glog",
 )
 
-bind(
-    name = "glog/license",
-    actual = "@com_github_google_glog//:license",
-)
-
 maven_jar(
     name = "com_google_code_gson_gson",
     artifact = "com.google.code.gson:gson:2.7",
+    sha1 = "751f548c85fa49f330cecbb1875893f971b33c4e",
 )
 
 bind(
     name = "gson",
     actual = "@com_google_code_gson_gson//jar",
-)
-
-bind(
-    name = "gson/license",
-    actual = "@com_apache_org_license_2_0//file",
 )
 
 # TODO(shahms): See if we can use upstream (apparently github only for gson-proto)
@@ -127,26 +103,9 @@ maven_jar(
     sha1 = "6ce200f6b23222af3d8abb6b6459e6c44f4bb0e9",
 )
 
-http_file(
-    name = "com_apache_org_license_2_0",
-    sha256 = "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
-    url = "http://www.apache.org/licenses/LICENSE-2.0.txt",
-)
-
 bind(
     name = "guava",
     actual = "@com_google_guava_guava//jar",
-)
-
-bind(
-    name = "guava/license",
-    actual = "@com_apache_org_license_2_0//file",
-)
-
-http_file(
-    name = "junit_junit_license",
-    sha256 = "9648bb2891b9813970bddb68d4be8a5e6ec8280d0180a53dfb29236b579c55bb",
-    url = "https://raw.githubusercontent.com/junit-team/junit4/master/LICENSE-junit.txt",
 )
 
 maven_jar(
@@ -160,17 +119,6 @@ bind(
     actual = "@junit_junit//jar",
 )
 
-bind(
-    name = "junit4/license",
-    actual = "@junit_junit_license//file",
-)
-
-http_file(
-    name = "re2j_license",
-    sha256 = "26a6133577cc8e48d7c002ac4d4a554786e7c0e1732e10f2db205e5e494c411b",
-    url = "https://raw.githubusercontent.com/google/re2j/master/LICENSE",
-)
-
 maven_jar(
     name = "com_google_re2j_re2j",
     artifact = "com.google.re2j:re2j:1.1",
@@ -182,14 +130,10 @@ bind(
     actual = "@com_google_re2j_re2j//jar",
 )
 
-bind(
-    name = "re2j/license",
-    actual = "@re2j_license//file",
-)
-
 maven_jar(
     name = "com_beust_jcommander",
     artifact = "com.beust:jcommander:1.48",
+    sha1 = "bfcb96281ea3b59d626704f74bc6d625ff51cbce",
 )
 
 bind(
@@ -197,24 +141,15 @@ bind(
     actual = "@com_beust_jcommander//jar",
 )
 
-bind(
-    name = "jcommander/license",
-    actual = "@com_apache_org_license_2_0//file",
-)
-
 maven_jar(
     name = "com_google_truth_truth",
     artifact = "com.google.truth:truth:0.27",
+    sha1 = "bd17774d2dc0fffa884d42c07d2537e86c67acd6",
 )
 
 bind(
     name = "truth",
     actual = "@com_google_truth_truth//jar",
-)
-
-bind(
-    name = "truth/license",
-    actual = "@com_apache_org_license_2_0//file",
 )
 
 bind(
@@ -250,41 +185,43 @@ bind(
 maven_jar(
     name = "io_netty_netty_all",
     artifact = "io.netty:netty-all:4.1.3.Final",
-)
-
-bind(
-    name = "netty/license",
-    actual = "@com_apache_org_license_2_0//file",
+    sha1 = "5304532edd11da8ab899baeab80aaf36ccf89d6e",
 )
 
 maven_jar(
     name = "io_grpc_grpc_core",
     artifact = "io.grpc:grpc-core:1.0.1",
+    sha1 = "dce1c939c2c6110ac571d99f8d2a29b19bdad4db",
 )
 
 maven_jar(
     name = "io_grpc_grpc_context",
     artifact = "io.grpc:grpc-context:1.0.1",
+    sha1 = "9d308f2b616044ddd380866b4e6c23b5b4020963",
 )
 
 maven_jar(
     name = "io_grpc_grpc_stub",
     artifact = "io.grpc:grpc-stub:1.0.1",
+    sha1 = "a875969bf700b0d25dc8b7febe42bfb253ca5b3b",
 )
 
 maven_jar(
     name = "io_grpc_grpc_netty",
     artifact = "io.grpc:grpc-netty:1.0.1",
+    sha1 = "1e4628b96434fcd6fbe519e7a3dbcc1ec5ac2c14",
 )
 
 maven_jar(
     name = "io_grpc_grpc_protobuf",
     artifact = "io.grpc:grpc-protobuf:1.0.1",
+    sha1 = "17222b03c64a65eb05de5ab266c920fca8c90fab",
 )
 
 maven_jar(
     name = "io_grpc_grpc_protobuf_lite",
     artifact = "io.grpc:grpc-protobuf-lite:1.0.1",
+    sha1 = "b28a07b56ed2e66088221cbaf1228fa4e9669166",
 )
 
 bind(
@@ -295,16 +232,12 @@ bind(
 maven_jar(
     name = "com_google_code_findbugs_jsr305",
     artifact = "com.google.code.findbugs:jsr305:3.0.1",
+    sha1 = "f7be08ec23c21485b9b5a1cf1654c2ec8c58168d",
 )
 
 bind(
     name = "jsr305",
     actual = "@com_google_code_findbugs_jsr305//jar",
-)
-
-bind(
-    name = "jsr305/license",
-    actual = "@com_apache_org_license_2_0//file",
 )
 
 bind(

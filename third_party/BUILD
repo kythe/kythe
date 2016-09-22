@@ -11,18 +11,6 @@ filegroup(
 filegroup(
     name = "licenses",
     srcs = ["README"] + [
-        "//external:gflags/license",
-        "//external:glog/license",
-        "//external:googletest/license",
-        "//external:gson/license",
-        "//external:guava/license",
-        "//external:jcommander/license",
-        "//external:jsr305/license",
-        "//external:junit4/license",
-        "//external:netty/license",
-        "//external:re2/license",
-        "//external:re2j/license",
-        "//external:truth/license",
         "//third_party/bazel:license",
         "//third_party/go:licenses",
         "//third_party/grpc-java:license",
