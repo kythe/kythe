@@ -307,11 +307,9 @@ public:
 
   bool VisitObjCPropertyImplDecl(const clang::ObjCPropertyImplDecl *Decl);
   bool VisitObjCCompatibleAliasDecl(const clang::ObjCCompatibleAliasDecl *Decl);
-  bool VisitObjCContainerDecl(const clang::ObjCContainerDecl *Decl);
   bool VisitObjCCategoryDecl(const clang::ObjCCategoryDecl *Decl);
   bool VisitObjCImplDecl(const clang::ObjCImplDecl *Decl);
   bool VisitObjCCategoryImplDecl(const clang::ObjCCategoryImplDecl *Decl);
-  bool VisitObjCImplementationDecl(const clang::ObjCImplementationDecl *Decl);
   bool VisitObjCInterfaceDecl(const clang::ObjCInterfaceDecl *Decl);
   bool VisitObjCProtocolDecl(const clang::ObjCProtocolDecl *Decl);
   bool VisitObjCMethodDecl(const clang::ObjCMethodDecl *Decl);
@@ -332,10 +330,12 @@ public:
   // support implemented.
   //
   // Visitors that are left to their default behavior.
-  //  bool VisitObjCDictionaryLiteral(const clang::ObjCDictionaryLiteral *Decl);
-  //  bool VisitObjCArrayLiteral(const clang::ObjCArrayLiteral *Decl);
-  //  bool VisitObjCBoolLiteralExpr(const clang::ObjCBoolLiteralExpr *Decl);
-  //  bool VisitObjCStringLiteral(const clang::ObjCStringLiteral *Decl);
+  //  bool VisitObjCDictionaryLiteral(const clang::ObjCDictionaryLiteral *D);
+  //  bool VisitObjCArrayLiteral(const clang::ObjCArrayLiteral *D);
+  //  bool VisitObjCBoolLiteralExpr(const clang::ObjCBoolLiteralExpr *D);
+  //  bool VisitObjCStringLiteral(const clang::ObjCStringLiteral *D);
+  //  bool VisitObjCContainerDecl(const clang::ObjCContainerDecl *D);
+  //  bool VisitObjCImplementationDecl(const clang::ObjCImplementationDecl *D);
 
   /// \brief For functions that support it, controls the emission of range
   /// information.

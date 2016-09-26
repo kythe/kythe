@@ -1757,6 +1757,13 @@ cxx_indexer_test(
     tags = ["objc"],
 )
 
+cxx_indexer_test(
+    name = "forward_declare",
+    srcs = ["objc/forward_declare.m"],
+    ignore_dups = True,
+    tags = ["objc"],
+)
+
 # TODO(salguarnieri) Implement generics in the indexer.
 cxx_indexer_test(
     name = "generic_contravariant",
@@ -1820,6 +1827,13 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "instance_method_call_with_class_params",
+    srcs = ["objc/instance_method_call_with_class_params.m"],
+    ignore_dups = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
     name = "instance_method_call_with_params",
     srcs = ["objc/instance_method_call_with_params.m"],
     ignore_dups = True,
@@ -1871,11 +1885,9 @@ cxx_indexer_test(
     tags = ["objc"],
 )
 
-# TODO(salguarnieri) add more assertions.
 cxx_indexer_test(
     name = "method_overrides",
     srcs = ["objc/method_overrides.m"],
-    expect_fail_verify = True,
     ignore_dups = True,
     tags = ["objc"],
 )
@@ -1935,9 +1947,9 @@ cxx_indexer_test(
     srcs = ["objc/property_decl_defn_xcode_only.m"],
     ignore_dups = True,
     tags = [
-        "objc",
         "arc-ignore",
-        "manual"
+        "manual",
+        "objc",
     ],
 )
 
@@ -1949,18 +1961,22 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "protocol_class_namespace",
+    srcs = ["objc/protocol_class_namespace.m"],
+    ignore_dups = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
     name = "protocol_defn",
     srcs = ["objc/protocol_defn.m"],
     ignore_dups = True,
     tags = ["objc"],
 )
 
-# TODO(salguarnieri) We need to draw an extends edge from the class to the
-# protocol to get this test to pass.
 cxx_indexer_test(
     name = "protocol_impl",
     srcs = ["objc/protocol_impl.m"],
-    expect_fail_verify = True,
     ignore_dups = True,
     tags = ["objc"],
 )

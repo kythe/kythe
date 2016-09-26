@@ -1,6 +1,4 @@
 // Checks that Objective-C classes are declared and defined.
-// todo(salguarnieri) Have the implementation "completes/uniquely" the
-// interface.
 
 //- @Box defines/binding BoxIface
 //- BoxIface.node/kind record

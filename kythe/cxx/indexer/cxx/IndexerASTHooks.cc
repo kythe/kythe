@@ -1787,7 +1787,6 @@ bool IndexerASTVisitor::VisitRecordDecl(const clang::RecordDecl *Decl) {
     return true;
   }
 
-  SourceLocation DeclLoc = Decl->getLocation();
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
   GraphObserver::NodeId BodyDeclNode(Observer.getDefaultClaimToken(), "");
   GraphObserver::NodeId DeclNode(Observer.getDefaultClaimToken(), "");
@@ -3971,15 +3970,6 @@ bool IndexerASTVisitor::VisitObjCCompatibleAliasDecl(
   return true;
 }
 
-// superclass of ObjCImplDecl, ObjCInterfaceDecl, ObjCCategoryDecl,
-// ObjCProtocolDecl
-bool IndexerASTVisitor::VisitObjCContainerDecl(
-    const clang::ObjCContainerDecl *Decl) {
-  // todo(salguarnieri) I think this will be handled by the subclass visitors.
-  return true;
-}
-
-// todo(salguarnieri) connect this with the interface node
 // ObjCImplDecl is the base class for ObjCImplementationDecl and
 // ObjCCategoryImplDecl.
 bool IndexerASTVisitor::VisitObjCImplDecl(const clang::ObjCImplDecl *Decl) {
@@ -4020,7 +4010,25 @@ bool IndexerASTVisitor::VisitObjCImplDecl(const clang::ObjCImplDecl *Decl) {
 void IndexerASTVisitor::ConnectToSuperClassAndProtocols(
     const GraphObserver::NodeId BodyDeclNode,
     const clang::ObjCInterfaceDecl *IFace) {
+  if (!IFace->hasDefinition()) {
+    // This is a forward declaration, so it won't have superclass or protocol
+    // info
+    return;
+  }
+
   if (const auto *SCTSI = IFace->getSuperClassTInfo()) {
+    // If EmitRanges is Yes, we will emit a ref from the use of the superclass
+    // in this interface declaration (IFace) to the superclass implementation.
+    //
+    // If EmitRanges is No, we will *not* emit a ref from the user of the
+    // superclass to the implementation of the superclass.
+    //
+    // We choose to set EmitRanges to Yes because it matches the behavior of
+    // other parts of kythe that link to the Impl if possible. In a following
+    // code block, we also emit a ref from the use of the superclass to the
+    // declaration of the superclass. It should be up to the UI to follow the
+    // link that makes the most sense in a given context (probably relying on
+    // the user to help clarify what they want).
     if (auto SCType =
             BuildNodeIdForType(SCTSI->getTypeLoc(), EmitRanges::Yes)) {
       Observer.recordExtendsEdge(BodyDeclNode, SCType.primary(),
@@ -4028,7 +4036,38 @@ void IndexerASTVisitor::ConnectToSuperClassAndProtocols(
                                  clang::AccessSpecifier::AS_none);
     }
   }
-  // todo(salguarnieri) Draw an extends edge to implemented protocols.
+  // Draw a ref edge from the superclass usage in the interface declaration to
+  // the superclass declaration.
+  if (auto SC = IFace->getSuperClass()) {
+    auto SuperRange =
+        RangeForASTEntityFromSourceLocation(IFace->getSuperClassLoc());
+    if (auto SCRCC = ExplicitRangeInCurrentContext(SuperRange)) {
+      auto SCID = BuildNodeIdForDecl(SC);
+      Observer.recordDeclUseLocation(SCRCC.primary(), SCID,
+                                     GraphObserver::Claimability::Unclaimable);
+    }
+  }
+
+  // The location of the protocols in the interface decl and the protocol
+  // decls are stored in two parallel arrays, iterate through them at the same
+  // time.
+  auto PLocIt = IFace->protocol_loc_begin();
+  auto PIt = IFace->protocol_begin();
+  // The termination condition should only need to check one of the iterators
+  // since they should have the exact same number of elements but checking
+  // them both keeps us safe.
+  for (; PLocIt != IFace->protocol_loc_end() && PIt != IFace->protocol_end();
+       ++PLocIt, ++PIt) {
+    Observer.recordExtendsEdge(BodyDeclNode, BuildNodeIdForDecl(*PIt),
+                               false /* isVirtual */,
+                               clang::AccessSpecifier::AS_none);
+    auto Range = RangeForASTEntityFromSourceLocation(*PLocIt);
+    if (auto ERCC = ExplicitRangeInCurrentContext(Range)) {
+      auto PID = BuildNodeIdForDecl(*PIt);
+      Observer.recordDeclUseLocation(ERCC.primary(), PID,
+                                     GraphObserver::Claimability::Unclaimable);
+    }
+  }
 }
 
 // todo(salguarnieri) This should be handled by the superclass visitor.
@@ -4039,15 +4078,6 @@ bool IndexerASTVisitor::VisitObjCCategoryImplDecl(
   return true;
 }
 
-// todo(salguarnieri) This should be handled by the superclass visitor.
-// todo(salguarnieri) Remove once all objective-c container kinds are
-// implemented and tested.
-bool IndexerASTVisitor::VisitObjCImplementationDecl(
-    const clang::ObjCImplementationDecl *Decl) {
-  return true;
-}
-
-// todo(salguarnieri) Connect this with the implementation node.
 bool IndexerASTVisitor::VisitObjCInterfaceDecl(
     const clang::ObjCInterfaceDecl *Decl) {
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
@@ -4060,13 +4090,9 @@ bool IndexerASTVisitor::VisitObjCInterfaceDecl(
 
   AddChildOfEdgeToDeclContext(Decl, DeclNode);
 
-  if (isa<ObjCProtocolDecl>(Decl)) {
-    Observer.recordInterfaceNode(DeclNode, GetFormat(Decl));
-  } else {
-    Observer.recordRecordNode(DeclNode, GraphObserver::RecordKind::Class,
-                              GraphObserver::Completeness::Incomplete,
-                              GetFormat(Decl));
-  }
+  Observer.recordRecordNode(DeclNode, GraphObserver::RecordKind::Class,
+                            GraphObserver::Completeness::Incomplete,
+                            GetFormat(Decl));
   RecordCompletesForRedecls(Decl, NameRange, DeclNode);
   ConnectToSuperClassAndProtocols(DeclNode, Decl);
   return true;
@@ -4188,6 +4214,7 @@ bool IndexerASTVisitor::VisitObjCMethodDecl(const clang::ObjCMethodDecl *Decl) {
   return true;
 }
 
+// todo(salguarnieri) Do we need to record a use for the parameter type?
 void IndexerASTVisitor::ConnectParam(const Decl *Decl,
                                      const GraphObserver::NodeId &FuncNode,
                                      bool IsFunctionDefinition,

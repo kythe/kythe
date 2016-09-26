@@ -1,16 +1,14 @@
-// Checks protocols are defined correctly.
-//
-// todo(salguarnieri) Add commented out verification.
+// Checks protocol methods are children of the protocol.
 
 //- @Shape defines/binding ShapeProto
 @protocol Shape
 
-//#- Name childof ShapeProto
 //- @"name" defines/binding Name
+//- Name childof ShapeProto
 -(int)name;
 
-//#- FitsIn childof ShapeProto
-//#- @"fitsIn:(id<Shape>)shape" defines/binding FitsIn
+//- @"fitsIn:(id<Shape>)shape" defines/binding FitsIn
+//- FitsIn childof ShapeProto
 -(int)fitsIn:(id<Shape>)shape;
 
 @end

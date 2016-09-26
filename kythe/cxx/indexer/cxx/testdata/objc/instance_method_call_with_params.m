@@ -1,4 +1,8 @@
-// Checks that Objective-C instance methods are called via the decl.
+// Checks that Objective-C instance methods are called via the decl. Also check
+// that our params are defined as expected.
+//
+// Side-effect: Also check that our verify syntax properly handles methods with
+// params.
 
 //- @Box defines/binding BoxIface
 @interface Box
@@ -7,6 +11,8 @@
 -(int) foo;
 
 //- @"bar:(int)k" defines/binding BarDecl
+//- @k defines/binding KArgDecl
+//- BarDecl param.0 KargDecl
 -(int) bar:(int)k;
 
 @end
@@ -22,6 +28,8 @@
 
 //- @"bar:(int) k " defines/binding BarDefn
 //- @"bar:(int) k " completes/uniquely BarDecl
+//- @k defines/binding KArgDefn
+//- BarDefn param.0 KArgDefn
 -(int) bar:(int) k {
   return 28;
 }
