@@ -99,7 +99,7 @@ func (d *Driver) Run(ctx context.Context) error {
 			if d.Teardown != nil {
 				if tErr := d.Teardown(ctx, cu); tErr != nil {
 					if err == nil {
-						return fmt.Errorf("analysis teardown error: %v", err)
+						return fmt.Errorf("analysis teardown error: %v", tErr)
 					}
 					log.Printf("WARNING: analysis teardown error after analysis error: %v (analysis error: %v)", tErr, err)
 				}
