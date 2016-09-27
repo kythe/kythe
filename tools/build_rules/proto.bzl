@@ -127,6 +127,7 @@ _genproto_attrs = {
     "_protoc": attr.label(
         default = Label("//third_party/proto:protoc"),
         executable = True,
+        cfg = "host",
     ),
     "_go_package_prefix": attr.label(
         default = Label("//:go_prefix"),
@@ -136,14 +137,17 @@ _genproto_attrs = {
     "_protoc_gen_go": attr.label(
         default = Label("@go_protobuf//:protoc-gen-golang"),
         executable = True,
+        cfg = "host",
     ),
     "_protoc_gen_gofast": attr.label(
         default = Label("@go_gogo_protobuf//:protoc-gen-gofast"),
         executable = True,
+        cfg = "host",
     ),
     "_protoc_grpc_plugin_java": attr.label(
         default = Label("//third_party/grpc-java:plugin"),
         executable = True,
+        cfg = "host",
     ),
     "gen_cc": attr.bool(),
     "gen_java": attr.bool(),

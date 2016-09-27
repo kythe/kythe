@@ -23,7 +23,7 @@ toolchain {
   abi_version: "armeabi-v7a"
   abi_libc_version: "armeabi-v7a"
   builtin_sysroot: ""
-  compiler: "compiler"
+  compiler: "false"
   host_system_name: "armeabi-v7a"
   needsPic: true
   supports_gold_linker: false
@@ -56,7 +56,7 @@ toolchain {
   abi_version: "local"
   abi_libc_version: "local"
   builtin_sysroot: ""
-  compiler: "ADD_CXX_COMPILER"
+  compiler: "clang"
   host_system_name: "local"
   needsPic: true
   supports_gold_linker: false
@@ -138,7 +138,7 @@ toolchain {
   abi_version: "local"
   abi_libc_version: "local"
   builtin_sysroot: ""
-  compiler: "ABS_WRAPPER_SCRIPT"
+  compiler: "clang"
   host_system_name: "local"
   needsPic: true
   target_libc: "macosx"
@@ -200,106 +200,4 @@ ADD_CXX_BUILTIN_INCLUDE_DIRECTORIES
     compiler_flag: "-ffunction-sections"
     compiler_flag: "-fdata-sections"
   }
-}
-
-toolchain {
-  abi_version: "local"
-  abi_libc_version: "local"
-  builtin_sysroot: ""
-  compiler: "windows_mingw"
-  host_system_name: "local"
-  needsPic: false
-  target_libc: "local"
-  target_cpu: "k8"
-  target_system_name: "local"
-  toolchain_identifier: "local_windows_mingw"
-
-  tool_path { name: "ar" path: "C:/mingw/bin/ar" }
-  tool_path { name: "compat-ld" path: "C:/mingw/bin/ld" }
-  tool_path { name: "cpp" path: "C:/mingw/bin/cpp" }
-  tool_path { name: "dwp" path: "C:/mingw/bin/dwp" }
-  tool_path { name: "gcc" path: "C:/mingw/bin/gcc" }
-  cxx_flag: "-std=c++0x"
-  # TODO(bazel-team): In theory, the path here ought to exactly match the path
-  # used by gcc. That works because bazel currently doesn't track files at
-  # absolute locations and has no remote execution, yet. However, this will need
-  # to be fixed, maybe with auto-detection?
-  cxx_builtin_include_directory: "C:/mingw/include"
-  cxx_builtin_include_directory: "C:/mingw/lib/gcc"
-  tool_path { name: "gcov" path: "C:/mingw/bin/gcov" }
-  tool_path { name: "ld" path: "C:/mingw/bin/ld" }
-  tool_path { name: "nm" path: "C:/mingw/bin/nm" }
-  tool_path { name: "objcopy" path: "C:/mingw/bin/objcopy" }
-  objcopy_embed_flag: "-I"
-  objcopy_embed_flag: "binary"
-  tool_path { name: "objdump" path: "C:/mingw/bin/objdump" }
-  tool_path { name: "strip" path: "C:/mingw/bin/strip" }
-}
-
-toolchain {
-  abi_version: "local"
-  abi_libc_version: "local"
-  builtin_sysroot: ""
-  compiler: "windows_msys64_mingw64"
-  host_system_name: "local"
-  needsPic: false
-  target_libc: "local"
-  target_cpu: "k8"
-  target_system_name: "local"
-  toolchain_identifier: "local_windows_msys64_mingw64"
-
-  tool_path { name: "ar" path: "C:/msys64/mingw64/bin/ar" }
-  tool_path { name: "compat-ld" path: "C:/msys64/mingw64/bin/ld" }
-  tool_path { name: "cpp" path: "C:/msys64/mingw64/bin/cpp" }
-  tool_path { name: "dwp" path: "C:/msys64/mingw64/bin/dwp" }
-  tool_path { name: "gcc" path: "C:/msys64/mingw64/bin/gcc" }
-  cxx_flag: "-std=c++0x"
-  # TODO(bazel-team): In theory, the path here ought to exactly match the path
-  # used by gcc. That works because bazel currently doesn't track files at
-  # absolute locations and has no remote execution, yet. However, this will need
-  # to be fixed, maybe with auto-detection?
-  cxx_builtin_include_directory: "C:/msys64/mingw64/x86_64-w64-mingw32/include"
-  tool_path { name: "gcov" path: "C:/msys64/mingw64/bin/gcov" }
-  tool_path { name: "ld" path: "C:/msys64/mingw64/bin/ld" }
-  tool_path { name: "nm" path: "C:/msys64/mingw64/bin/nm" }
-  tool_path { name: "objcopy" path: "C:/msys64/mingw64/bin/objcopy" }
-  objcopy_embed_flag: "-I"
-  objcopy_embed_flag: "binary"
-  tool_path { name: "objdump" path: "C:/msys64/mingw64/bin/objdump" }
-  tool_path { name: "strip" path: "C:/msys64/mingw64/bin/strip" }
-}
-
-toolchain {
-  abi_version: "local"
-  abi_libc_version: "local"
-  builtin_sysroot: ""
-  compiler: "windows_clang"
-  host_system_name: "local"
-  needsPic: false
-  target_libc: "local"
-  target_cpu: "k8"
-  target_system_name: "local"
-  toolchain_identifier: "local_windows_clang"
-
-  tool_path { name: "ar" path: "C:/mingw/bin/ar" }
-  tool_path { name: "compat-ld" path: "C:/Program Files (x86)/LLVM/bin/ld" }
-  tool_path { name: "cpp" path: "C:/Program Files (x86)/LLVM/bin/cpp" }
-  tool_path { name: "dwp" path: "C:/Program Files (x86)/LLVM/bin/dwp" }
-  tool_path { name: "gcc" path: "C:/Program Files (x86)/LLVM/bin/clang" }
-  cxx_flag: "-std=c++0x"
-  # TODO(bazel-team): In theory, the path here ought to exactly match the path
-  # used by gcc. That works because bazel currently doesn't track files at
-  # absolute locations and has no remote execution, yet. However, this will need
-  # to be fixed, maybe with auto-detection?
-  cxx_builtin_include_directory: "/usr/lib/gcc/"
-  cxx_builtin_include_directory: "/usr/local/include"
-  cxx_builtin_include_directory: "/usr/include"
-  tool_path { name: "gcov" path: "C:/Program Files (x86)/LLVM/bin/gcov" }
-  tool_path { name: "ld" path: "C:/Program Files (x86)/LLVM/bin/ld" }
-  tool_path { name: "nm" path: "C:/Program Files (x86)/LLVM/bin/nm" }
-  tool_path { name: "objcopy" path: "C:/Program Files (x86)/LLVM/bin/objcopy" }
-  objcopy_embed_flag: "-I"
-  objcopy_embed_flag: "binary"
-  tool_path { name: "objdump" path: "C:/Program Files (x86)/LLVM/bin/objdump" }
-  tool_path { name: "strip" path: "C:/Program Files (x86)/LLVM/bin/strip" }
 }

@@ -50,6 +50,7 @@ cmake_generate = rule(
         "_cdexec": attr.label(
             default = Label("//tools/cdexec:cdexec"),
             executable = True,
+            cfg = "host",
         ),
     },
     output_to_genfiles = True,

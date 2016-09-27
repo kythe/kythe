@@ -9,6 +9,7 @@ base_attrs = {
     "_verifier": attr.label(
         default = Label("//kythe/cxx/verifier"),
         executable = True,
+        cfg = "host",
     ),
     "indexer_opts": attr.string_list([]),
     "verifier_opts": attr.string_list(["--ignore_dups"]),
@@ -205,15 +206,18 @@ java_verifier_test = rule(
         "_extractor": attr.label(
             default = Label("//kythe/java/com/google/devtools/kythe/extractors/java/standalone:javac_extractor"),
             executable = True,
+            cfg = "host",
         ),
         "_indexer": attr.label(
             default = Label("//kythe/java/com/google/devtools/kythe/analyzers/java:indexer"),
             executable = True,
+            cfg = "host",
         ),
         "indexer_opts": attr.string_list(["--verbose"]),
         "_cdexec": attr.label(
             default = Label("//tools/cdexec:cdexec"),
             executable = True,
+            cfg = "host",
         ),
         "_javac": attr.label(
             default = Label("@bazel_tools//tools/jdk:javac"),
@@ -245,10 +249,12 @@ cc_verifier_test = rule(
         "_extractor": attr.label(
             default = Label("//kythe/cxx/extractor:cxx_extractor"),
             executable = True,
+            cfg = "host",
         ),
         "_indexer": attr.label(
             default = Label("//kythe/cxx/indexer/cxx:indexer"),
             executable = True,
+            cfg = "host",
         ),
         "indexer_opts": attr.string_list(["--ignore_unimplemented=true"]),
     },
@@ -272,22 +278,27 @@ objc_bazel_verifier_test = rule(
         "_extractor": attr.label(
             default = Label("//kythe/cxx/extractor:objc_extractor_bazel"),
             executable = True,
+            cfg = "host",
         ),
         "_indexer": attr.label(
             default = Label("//kythe/cxx/indexer/cxx:indexer"),
             executable = True,
+            cfg = "host",
         ),
         "_vnames": attr.label(
             default = Label("//kythe/data:vnames_config"),
             allow_files = False,
+            cfg = "data",
         ),
         "_devdir_script": attr.label(
             default = Label("//third_party/bazel:get_devdir"),
             executable = True,
+            cfg = "host",
         ),
         "_sdkroot_script": attr.label(
             default = Label("//third_party/bazel:get_sdkroot"),
             executable = True,
+            cfg = "host",
         ),
         "indexer_opts": attr.string_list(["--ignore_unimplemented=true"]),
     },
@@ -311,10 +322,12 @@ cc_bazel_verifier_test = rule(
         "_extractor": attr.label(
             default = Label("//kythe/cxx/extractor:cxx_extractor_bazel"),
             executable = True,
+            cfg = "host",
         ),
         "_indexer": attr.label(
             default = Label("//kythe/cxx/indexer/cxx:indexer"),
             executable = True,
+            cfg = "host",
         ),
         "_vnames": attr.label(
             default = Label("//kythe/data:vnames_config"),

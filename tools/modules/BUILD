@@ -20,6 +20,7 @@ genrule(
     name = "check_modules",
     outs = ["modules_checked_empty.cc"],
     cmd = "$(location check.sh) && touch $@",
+    local = True,
     tools = [
         "check.sh",
         "versions.sh",

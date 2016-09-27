@@ -20,24 +20,22 @@ filegroup(
     srcs = [],
 )
 
-# This is the entry point for --crosstool_top.  Toolchains are found
-# by lopping off the name of --crosstool_top and searching for
-# "cc-compiler-${CPU}" in this BUILD file, where CPU is the target CPU
-# specified in --cpu.
+# This is the entry point for --crosstool_top.
 #
-# This file group should include
-#   * all cc_toolchain targets supported
-#   * all file groups that said cc_toolchain might refer to,
-# including the default_grte_top setting in the CROSSTOOL
-# protobuf.
-filegroup(
+# The cc_toolchain rule used is found by:
+#
+# 1. Finding the appropriate toolchain in the CROSSTOOL file based on the --cpu
+#    and --compiler command line flags (if they exist, otherwise using the
+#    "default_target_cpu" / "default_toolchain" fields in the CROSSTOOL file)
+# 2. Concatenating the "target_cpu" and "compiler" fields of the toolchain in
+#    use and using that as a key in the map in the "toolchains" attribute
+cc_toolchain_suite(
     name = "toolchain",
-    srcs = [
-        ":cc-compiler-armeabi-v7a",
-        ":cc-compiler-darwin",
-        ":cc-compiler-local",
-        ":empty",
-    ],
+    toolchains = {
+        "darwin|clang": ":cc-compiler-darwin",
+        "local|clang": ":cc-compiler-local",
+        "armeabi-v7a|false": ":cc-compiler-armeabi-v7a",
+    },
 )
 
 cc_toolchain(
