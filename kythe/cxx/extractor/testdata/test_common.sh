@@ -14,7 +14,7 @@
 # Define TEST_NAME, then include as part of an extractor test.
 # TODO(zarko): lift this script out for use in other test suites.
 BASE_DIR="$PWD/kythe/cxx/extractor/testdata"
-OUT_DIR="$TEST_TMPDIR"
+OUT_DIR="$TEST_TMPDIR/out"
 mkdir -p "${OUT_DIR}"
 # This needs to be relative (or else it must be fixed up in the resulting
 # compilation units) because the extractor stores its invocation path in its
