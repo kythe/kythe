@@ -3,7 +3,7 @@
 // DO NOT EDIT!
 
 /*
-	Package any_proto is a generated protocol buffer package.
+	Package github_com_golang_protobuf_ptypes_any is a generated protocol buffer package.
 
 	It is generated from these files:
 		third_party/proto/src/google/protobuf/any.proto
@@ -11,7 +11,7 @@
 	It has these top-level messages:
 		Any
 */
-package any_proto
+package github_com_golang_protobuf_ptypes_any
 
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
@@ -24,8 +24,51 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
-// `Any` contains an arbitrary serialized message along with a URL
-// that describes the type of the serialized message.
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+const _ = proto.ProtoPackageIsVersion1
+
+// `Any` contains an arbitrary serialized protocol buffer message along with a
+// URL that describes the type of the serialized message.
+//
+// Protobuf library provides support to pack/unpack Any values in the form
+// of utility functions or additional generated methods of the Any type.
+//
+// Example 1: Pack and unpack a message in C++.
+//
+//     Foo foo = ...;
+//     Any any;
+//     any.PackFrom(foo);
+//     ...
+//     if (any.UnpackTo(&foo)) {
+//       ...
+//     }
+//
+// Example 2: Pack and unpack a message in Java.
+//
+//     Foo foo = ...;
+//     Any any = Any.pack(foo);
+//     ...
+//     if (any.is(Foo.class)) {
+//       foo = any.unpack(Foo.class);
+//     }
+//
+//  Example 3: Pack and unpack a message in Python.
+//
+//     foo = Foo(...)
+//     any = Any()
+//     any.Pack(foo)
+//     ...
+//     if any.Is(Foo.DESCRIPTOR):
+//       any.Unpack(foo)
+//       ...
+//
+// The pack methods provided by protobuf library will by default use
+// 'type.googleapis.com/full.type.name' as the type URL and the unpack
+// methods only use the fully qualified type name after the last '/'
+// in the type URL, for example "foo.bar.com/x/y.z" will yield type
+// name "y.z".
+//
 //
 // JSON
 // ====
@@ -47,8 +90,8 @@ var _ = math.Inf
 //
 // If the embedded message type is well-known and has a custom JSON
 // representation, that representation will be embedded adding a field
-// `value` which holds the custom JSON in addition to the the `@type`
-// field. Example (for message [google.protobuf.Duration][google.protobuf.Duration]):
+// `value` which holds the custom JSON in addition to the `@type`
+// field. Example (for message [google.protobuf.Duration][]):
 //
 //     {
 //       "@type": "type.googleapis.com/google.protobuf.Duration",
@@ -57,15 +100,17 @@ var _ = math.Inf
 //
 type Any struct {
 	// A URL/resource name whose content describes the type of the
-	// serialized message.
+	// serialized protocol buffer message.
 	//
-	// For URLs which use the schema `http`, `https`, or no schema, the
+	// For URLs which use the scheme `http`, `https`, or no scheme, the
 	// following restrictions and interpretations apply:
 	//
-	// * If no schema is provided, `https` is assumed.
+	// * If no scheme is provided, `https` is assumed.
 	// * The last segment of the URL's path must represent the fully
 	//   qualified name of the type (as in `path/google.protobuf.Duration`).
-	// * An HTTP GET on the URL must yield a [google.protobuf.Type][google.protobuf.Type]
+	//   The name should be in a canonical form (e.g., leading "." is
+	//   not accepted).
+	// * An HTTP GET on the URL must yield a [google.protobuf.Type][]
 	//   value in binary format, or produce an error.
 	// * Applications are allowed to cache lookup results based on the
 	//   URL, or have them precompiled into a binary to avoid any
@@ -73,17 +118,18 @@ type Any struct {
 	//   on changes to types. (Use versioned type names to manage
 	//   breaking changes.)
 	//
-	// Schemas other than `http`, `https` (or the empty schema) might be
+	// Schemes other than `http`, `https` (or the empty scheme) might be
 	// used with implementation specific semantics.
 	//
-	TypeUrl string `protobuf:"bytes,1,opt,name=type_url,proto3" json:"type_url,omitempty"`
-	// Must be valid serialized data of the above specified type.
+	TypeUrl string `protobuf:"bytes,1,opt,name=type_url,json=typeUrl,proto3" json:"type_url,omitempty"`
+	// Must be a valid serialized protocol buffer of the above specified type.
 	Value []byte `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 }
 
-func (m *Any) Reset()         { *m = Any{} }
-func (m *Any) String() string { return proto.CompactTextString(m) }
-func (*Any) ProtoMessage()    {}
+func (m *Any) Reset()                    { *m = Any{} }
+func (m *Any) String() string            { return proto.CompactTextString(m) }
+func (*Any) ProtoMessage()               {}
+func (*Any) Descriptor() ([]byte, []int) { return fileDescriptorAny, []int{0} }
 
 func init() {
 	proto.RegisterType((*Any)(nil), "google.protobuf.Any")
@@ -109,13 +155,11 @@ func (m *Any) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintAny(data, i, uint64(len(m.TypeUrl)))
 		i += copy(data[i:], m.TypeUrl)
 	}
-	if m.Value != nil {
-		if len(m.Value) > 0 {
-			data[i] = 0x12
-			i++
-			i = encodeVarintAny(data, i, uint64(len(m.Value)))
-			i += copy(data[i:], m.Value)
-		}
+	if len(m.Value) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintAny(data, i, uint64(len(m.Value)))
+		i += copy(data[i:], m.Value)
 	}
 	return i, nil
 }
@@ -154,11 +198,9 @@ func (m *Any) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovAny(uint64(l))
 	}
-	if m.Value != nil {
-		l = len(m.Value)
-		if l > 0 {
-			n += 1 + l + sovAny(uint64(l))
-		}
+	l = len(m.Value)
+	if l > 0 {
+		n += 1 + l + sovAny(uint64(l))
 	}
 	return n
 }
@@ -260,7 +302,10 @@ func (m *Any) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Value = append([]byte{}, data[iNdEx:postIndex]...)
+			m.Value = append(m.Value[:0], data[iNdEx:postIndex]...)
+			if m.Value == nil {
+				m.Value = []byte{}
+			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -387,3 +432,21 @@ var (
 	ErrInvalidLengthAny = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowAny   = fmt.Errorf("proto: integer overflow")
 )
+
+var fileDescriptorAny = []byte{
+	// 220 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xe2, 0xd2, 0x2f, 0xc9, 0xc8, 0x2c,
+	0x4a, 0x89, 0x2f, 0x48, 0x2c, 0x2a, 0xa9, 0xd4, 0x2f, 0x28, 0xca, 0x2f, 0xc9, 0xd7, 0x2f, 0x2e,
+	0x4a, 0xd6, 0x4f, 0xcf, 0xcf, 0x4f, 0xcf, 0x49, 0x85, 0x08, 0x24, 0x95, 0xa6, 0xe9, 0x27, 0xe6,
+	0x55, 0xea, 0x81, 0x39, 0x42, 0xfc, 0x10, 0x29, 0x3d, 0x98, 0x94, 0x92, 0x19, 0x17, 0xb3, 0x63,
+	0x5e, 0xa5, 0x90, 0x24, 0x17, 0x47, 0x49, 0x65, 0x41, 0x6a, 0x7c, 0x69, 0x51, 0x8e, 0x04, 0xa3,
+	0x02, 0xa3, 0x06, 0x67, 0x10, 0x3b, 0x88, 0x1f, 0x5a, 0x94, 0x23, 0x24, 0xc2, 0xc5, 0x5a, 0x96,
+	0x98, 0x53, 0x9a, 0x2a, 0xc1, 0xa4, 0xc0, 0xa8, 0xc1, 0x13, 0x04, 0xe1, 0x38, 0xd5, 0x9f, 0x78,
+	0x24, 0xc7, 0x78, 0xe1, 0x91, 0x1c, 0xe3, 0x83, 0x47, 0x72, 0x8c, 0x33, 0x1e, 0xcb, 0x31, 0x70,
+	0x09, 0x27, 0xe7, 0xe7, 0xea, 0xa1, 0x19, 0xef, 0xc4, 0xe1, 0x98, 0x57, 0x19, 0x00, 0xe2, 0x04,
+	0x30, 0x46, 0xa9, 0xa6, 0x67, 0x96, 0x64, 0x94, 0x26, 0xe9, 0x25, 0xe7, 0xe7, 0xea, 0xa7, 0xe7,
+	0xe7, 0x24, 0xe6, 0xa5, 0x23, 0x5c, 0x58, 0x00, 0xb2, 0xad, 0x18, 0xe4, 0xd0, 0x45, 0x4c, 0xcc,
+	0xee, 0x01, 0x4e, 0xab, 0x98, 0xe4, 0xdc, 0x21, 0x46, 0x05, 0x40, 0x95, 0xe8, 0x85, 0xa7, 0xe6,
+	0xe4, 0x78, 0xe7, 0xe5, 0x97, 0xe7, 0x85, 0x80, 0x94, 0x26, 0xb1, 0x81, 0xf5, 0x1a, 0x03, 0x02,
+	0x00, 0x00, 0xff, 0xff, 0x0d, 0xc5, 0x19, 0x2e, 0x03, 0x01, 0x00, 0x00,
+}

@@ -132,15 +132,11 @@ class LIBPROTOBUF_EXPORT GeneratedMessageReflection : public Reflection {
   //                  by sizeof().
   GeneratedMessageReflection(const Descriptor* descriptor,
                              const Message* default_instance,
-                             const int offsets[],
-                             int has_bits_offset,
-                             int unknown_fields_offset,
-                             int extensions_offset,
+                             const int offsets[], int has_bits_offset,
+                             int unknown_fields_offset, int extensions_offset,
                              const DescriptorPool* pool,
-                             MessageFactory* factory,
-                             int object_size,
-                             int arena_offset,
-                             int is_default_instance_offset = -1);
+                             MessageFactory* factory, int object_size,
+                             int arena_offset);
 
   // Similar with the construction above. Call this construction if the
   // message has oneof definition.
@@ -168,17 +164,12 @@ class LIBPROTOBUF_EXPORT GeneratedMessageReflection : public Reflection {
   //   other parameters are the same with the construction above.
   GeneratedMessageReflection(const Descriptor* descriptor,
                              const Message* default_instance,
-                             const int offsets[],
-                             int has_bits_offset,
-                             int unknown_fields_offset,
-                             int extensions_offset,
+                             const int offsets[], int has_bits_offset,
+                             int unknown_fields_offset, int extensions_offset,
                              const void* default_oneof_instance,
-                             int oneof_case_offset,
-                             const DescriptorPool* pool,
-                             MessageFactory* factory,
-                             int object_size,
-                             int arena_offset,
-                             int is_default_instance_offset = -1);
+                             int oneof_case_offset, const DescriptorPool* pool,
+                             MessageFactory* factory, int object_size,
+                             int arena_offset);
   ~GeneratedMessageReflection();
 
   // Shorter-to-call helpers for the above two constructions that work if the
@@ -226,11 +217,11 @@ class LIBPROTOBUF_EXPORT GeneratedMessageReflection : public Reflection {
   Message* ReleaseLast(Message* message, const FieldDescriptor* field) const;
   void Swap(Message* message1, Message* message2) const;
   void SwapFields(Message* message1, Message* message2,
-                  const vector<const FieldDescriptor*>& fields) const;
+                  const std::vector<const FieldDescriptor*>& fields) const;
   void SwapElements(Message* message, const FieldDescriptor* field,
                     int index1, int index2) const;
   void ListFields(const Message& message,
-                  vector<const FieldDescriptor*>* output) const;
+                  std::vector<const FieldDescriptor*>* output) const;
 
   int32  GetInt32 (const Message& message,
                    const FieldDescriptor* field) const;
@@ -448,10 +439,7 @@ class LIBPROTOBUF_EXPORT GeneratedMessageReflection : public Reflection {
   int unknown_fields_offset_;
   int extensions_offset_;
   int arena_offset_;
-  int is_default_instance_offset_;
   int object_size_;
-
-  static const int kHasNoDefaultInstanceField = -1;
 
   const DescriptorPool* descriptor_pool_;
   MessageFactory* message_factory_;
@@ -582,7 +570,16 @@ class LIBPROTOBUF_EXPORT GeneratedMessageReflection : public Reflection {
 // which the offsets of the direct fields of a class are non-constant.
 // Fields inherited from superclasses *can* have non-constant offsets,
 // but that's not what this macro will be used for.
-//
+#if defined(__clang__)
+// For Clang we use __builtin_offsetof() and suppress the warning,
+// to avoid Control Flow Integrity and UBSan vptr sanitizers from
+// crashing while trying to validate the invalid reinterpet_casts.
+#define GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(TYPE, FIELD)    \
+  _Pragma("clang diagnostic push")                            \
+  _Pragma("clang diagnostic ignored \"-Winvalid-offsetof\"")  \
+  __builtin_offsetof(TYPE, FIELD)                             \
+  _Pragma("clang diagnostic pop")
+#else
 // Note that we calculate relative to the pointer value 16 here since if we
 // just use zero, GCC complains about dereferencing a NULL pointer.  We
 // choose 16 rather than some other number just in case the compiler would
@@ -592,6 +589,7 @@ class LIBPROTOBUF_EXPORT GeneratedMessageReflection : public Reflection {
       reinterpret_cast<const char*>(                          \
           &reinterpret_cast<const TYPE*>(16)->FIELD) -        \
       reinterpret_cast<const char*>(16))
+#endif
 
 #define PROTO2_GENERATED_DEFAULT_ONEOF_FIELD_OFFSET(ONEOF, FIELD)     \
   static_cast<int>(                                                   \

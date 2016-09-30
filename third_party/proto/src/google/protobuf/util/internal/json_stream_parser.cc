@@ -42,8 +42,9 @@
 
 #include <google/protobuf/stubs/logging.h>
 #include <google/protobuf/stubs/common.h>
-#include <google/protobuf/stubs/strutil.h>
 #include <google/protobuf/util/internal/object_writer.h>
+#include <google/protobuf/util/internal/json_escaping.h>
+#include <google/protobuf/stubs/strutil.h>
 
 namespace google {
 namespace protobuf {
@@ -59,7 +60,7 @@ using util::error::INVALID_ARGUMENT;
 
 namespace converter {
 
-// Number of digits in a unicode escape sequence (/uXXXX)
+// Number of digits in an escaped UTF-16 code unit ('\\' 'u' X X X X)
 static const int kUnicodeEscapedLength = 6;
 
 // Length of the true, false, and null literals.
@@ -106,7 +107,8 @@ JsonStreamParser::JsonStreamParser(ObjectWriter* ow)
       parsed_storage_(),
       string_open_(0),
       chunk_storage_(),
-      coerce_to_utf8_(false) {
+      coerce_to_utf8_(false),
+      allow_empty_null_(false) {
   // Initialize the stack with a single value to be parsed.
   stack_.push(VALUE);
 }
@@ -157,10 +159,10 @@ util::Status JsonStreamParser::FinishParse() {
     char* coerced = internal::UTF8CoerceToStructurallyValid(leftover_, utf8.get(), ' ');
     p_ = json_ = StringPiece(coerced, leftover_.size());
   } else {
+    p_ = json_ = leftover_;
     if (!internal::IsStructurallyValidUTF8(leftover_)) {
       return ReportFailure("Encountered non UTF-8 code points.");
     }
-    p_ = json_ = leftover_;
   }
 
   // Parse the remainder in finishing mode, which reports errors for things like
@@ -276,6 +278,10 @@ util::Status JsonStreamParser::ParseValue(TokenType type) {
     case UNKNOWN:
       return ReportUnknown("Expected a value.");
     default: {
+      if (allow_empty_null_ && IsEmptyNullAllowed(type)) {
+        return ParseEmptyNull();
+      }
+
       // Special case for having been cut off while parsing, wait for more data.
       // This handles things like 'fals' being at the end of the string, we
       // don't know if the next char would be e, completing it, or something
@@ -292,8 +298,8 @@ util::Status JsonStreamParser::ParseString() {
   util::Status result = ParseStringHelper();
   if (result.ok()) {
     ow_->RenderString(key_, parsed_);
-    key_.clear();
-    parsed_.clear();
+    key_ = StringPiece();
+    parsed_ = StringPiece();
     parsed_storage_.clear();
   }
   return result;
@@ -419,9 +425,45 @@ util::Status JsonStreamParser::ParseUnicodeEscape() {
     }
     code = (code << 4) + hex_digit_to_int(p_.data()[i]);
   }
+  if (code >= JsonEscaping::kMinHighSurrogate &&
+      code <= JsonEscaping::kMaxHighSurrogate) {
+    if (p_.length() < 2 * kUnicodeEscapedLength) {
+      if (!finishing_) {
+        return util::Status::CANCELLED;
+      }
+      if (!coerce_to_utf8_) {
+        return ReportFailure("Missing low surrogate.");
+      }
+    } else if (p_.data()[kUnicodeEscapedLength] == '\\' &&
+               p_.data()[kUnicodeEscapedLength + 1] == 'u') {
+      uint32 low_code = 0;
+      for (int i = kUnicodeEscapedLength + 2; i < 2 * kUnicodeEscapedLength;
+           ++i) {
+        if (!isxdigit(p_.data()[i])) {
+          return ReportFailure("Invalid escape sequence.");
+        }
+        low_code = (low_code << 4) + hex_digit_to_int(p_.data()[i]);
+      }
+      if (low_code >= JsonEscaping::kMinLowSurrogate &&
+          low_code <= JsonEscaping::kMaxLowSurrogate) {
+        // Convert UTF-16 surrogate pair to 21-bit Unicode codepoint.
+        code = (((code & 0x3FF) << 10) | (low_code & 0x3FF)) +
+               JsonEscaping::kMinSupplementaryCodePoint;
+        // Advance past the first code unit escape.
+        p_.remove_prefix(kUnicodeEscapedLength);
+      } else if (!coerce_to_utf8_) {
+        return ReportFailure("Invalid low surrogate.");
+      }
+    } else if (!coerce_to_utf8_) {
+      return ReportFailure("Missing low surrogate.");
+    }
+  }
+  if (!coerce_to_utf8_ && !IsValidCodePoint(code)) {
+    return ReportFailure("Invalid unicode code point.");
+  }
   char buf[UTFmax];
   int len = EncodeAsUTF8Char(code, buf);
-  // Advance past the unicode escape.
+  // Advance past the [final] code unit escape.
   p_.remove_prefix(kUnicodeEscapedLength);
   parsed_storage_.append(buf, len);
   return util::Status::OK;
@@ -434,17 +476,17 @@ util::Status JsonStreamParser::ParseNumber() {
     switch (number.type) {
       case NumberResult::DOUBLE:
         ow_->RenderDouble(key_, number.double_val);
-        key_.clear();
+        key_ = StringPiece();
         break;
 
       case NumberResult::INT:
         ow_->RenderInt64(key_, number.int_val);
-        key_.clear();
+        key_ = StringPiece();
         break;
 
       case NumberResult::UINT:
         ow_->RenderUint64(key_, number.uint_val);
-        key_.clear();
+        key_ = StringPiece();
         break;
 
       default:
@@ -473,7 +515,7 @@ util::Status JsonStreamParser::ParseNumberHelper(NumberResult* result) {
       floating = true;
       continue;
     }
-    if (c == '+' || c == '-') continue;
+    if (c == '+' || c == '-' || c == 'x') continue;
     // Not a valid number character, break out.
     break;
   }
@@ -499,6 +541,10 @@ util::Status JsonStreamParser::ParseNumberHelper(NumberResult* result) {
 
   // Positive non-floating point number, parse as a uint64.
   if (!negative) {
+    // Octal/Hex numbers are not valid JSON values.
+    if (number.length() >= 2 && number[0] == '0') {
+      return ReportFailure("Octal/hex numbers are not valid JSON values.");
+    }
     if (!safe_strtou64(number, &result->uint_val)) {
       return ReportFailure("Unable to parse number.");
     }
@@ -507,6 +553,10 @@ util::Status JsonStreamParser::ParseNumberHelper(NumberResult* result) {
     return util::Status::OK;
   }
 
+  // Octal/Hex numbers are not valid JSON values.
+  if (number.length() >= 3 && number[1] == '0') {
+    return ReportFailure("Octal/hex numbers are not valid JSON values.");
+  }
   // Negative non-floating point number, parse as an int64.
   if (!safe_strto64(number, &result->int_val)) {
     return ReportFailure("Unable to parse number.");
@@ -520,7 +570,7 @@ util::Status JsonStreamParser::HandleBeginObject() {
   GOOGLE_DCHECK_EQ('{', *p_.data());
   Advance();
   ow_->StartObject(key_);
-  key_.clear();
+  key_ = StringPiece();
   stack_.push(ENTRY);
   return util::Status::OK;
 }
@@ -570,7 +620,7 @@ util::Status JsonStreamParser::ParseEntry(TokenType type) {
       } else {
         key_ = parsed_;
       }
-      parsed_.clear();
+      parsed_ = StringPiece();
     }
   } else if (type == BEGIN_KEY) {
     // Key is a bare key (back compat), create a StringPiece pointing to it.
@@ -603,7 +653,7 @@ util::Status JsonStreamParser::HandleBeginArray() {
   GOOGLE_DCHECK_EQ('[', *p_.data());
   Advance();
   ow_->StartList(key_);
-  key_.clear();
+  key_ = StringPiece();
   stack_.push(ARRAY_VALUE);
   return util::Status::OK;
 }
@@ -620,7 +670,8 @@ util::Status JsonStreamParser::ParseArrayValue(TokenType type) {
   }
 
   // The ParseValue call may push something onto the stack so we need to make
-  // sure an ARRAY_MID is after it, so we push it on now.
+  // sure an ARRAY_MID is after it, so we push it on now. Also, the parsing of
+  // empty-null array value is relying on this ARRAY_MID token.
   stack_.push(ARRAY_MID);
   util::Status result = ParseValue(type);
   if (result == util::Status::CANCELLED) {
@@ -654,31 +705,44 @@ util::Status JsonStreamParser::ParseArrayMid(TokenType type) {
 
 util::Status JsonStreamParser::ParseTrue() {
   ow_->RenderBool(key_, true);
-  key_.clear();
+  key_ = StringPiece();
   p_.remove_prefix(true_len);
   return util::Status::OK;
 }
 
 util::Status JsonStreamParser::ParseFalse() {
   ow_->RenderBool(key_, false);
-  key_.clear();
+  key_ = StringPiece();
   p_.remove_prefix(false_len);
   return util::Status::OK;
 }
 
 util::Status JsonStreamParser::ParseNull() {
   ow_->RenderNull(key_);
-  key_.clear();
+  key_ = StringPiece();
   p_.remove_prefix(null_len);
   return util::Status::OK;
+}
+
+util::Status JsonStreamParser::ParseEmptyNull() {
+  ow_->RenderNull(key_);
+  key_ = StringPiece();
+  return util::Status::OK;
+}
+
+bool JsonStreamParser::IsEmptyNullAllowed(TokenType type) {
+  if (stack_.empty()) return false;
+  return (stack_.top() == ARRAY_MID && type == VALUE_SEPARATOR) ||
+         stack_.top() == OBJ_MID;
 }
 
 util::Status JsonStreamParser::ReportFailure(StringPiece message) {
   static const int kContextLength = 20;
   const char* p_start = p_.data();
   const char* json_start = json_.data();
-  const char* begin = max(p_start - kContextLength, json_start);
-  const char* end = min(p_start + kContextLength, json_start + json_.size());
+  const char* begin = std::max(p_start - kContextLength, json_start);
+  const char* end =
+      std::min(p_start + kContextLength, json_start + json_.size());
   StringPiece segment(begin, end - begin);
   string location(p_start - begin, ' ');
   location.push_back('^');
@@ -706,8 +770,8 @@ void JsonStreamParser::SkipWhitespace() {
 void JsonStreamParser::Advance() {
   // Advance by moving one UTF8 character while making sure we don't go beyond
   // the length of StringPiece.
-  p_.remove_prefix(
-      min<int>(p_.length(), UTF8FirstLetterNumBytes(p_.data(), p_.length())));
+  p_.remove_prefix(std::min<int>(
+      p_.length(), UTF8FirstLetterNumBytes(p_.data(), p_.length())));
 }
 
 util::Status JsonStreamParser::ParseKey() {

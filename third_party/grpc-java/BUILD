@@ -14,7 +14,7 @@ cc_binary(
         "compiler/src/java_plugin/cpp/java_generator.h",
         "compiler/src/java_plugin/cpp/java_plugin.cpp",
     ],
-    deps = ["//third_party/proto:libprotoc"],
+    deps = ["//third_party/proto:protoc_lib"],
 )
 
 java_import(

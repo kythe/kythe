@@ -46,8 +46,7 @@ namespace cpp {
 
 class EnumFieldGenerator : public FieldGenerator {
  public:
-  explicit EnumFieldGenerator(const FieldDescriptor* descriptor,
-                              const Options& options);
+  EnumFieldGenerator(const FieldDescriptor* descriptor, const Options& options);
   ~EnumFieldGenerator();
 
   // implements FieldGenerator ---------------------------------------
@@ -74,8 +73,8 @@ class EnumFieldGenerator : public FieldGenerator {
 
 class EnumOneofFieldGenerator : public EnumFieldGenerator {
  public:
-  explicit EnumOneofFieldGenerator(const FieldDescriptor* descriptor,
-                                   const Options& options);
+  EnumOneofFieldGenerator(const FieldDescriptor* descriptor,
+                          const Options& options);
   ~EnumOneofFieldGenerator();
 
   // implements FieldGenerator ---------------------------------------
@@ -91,8 +90,8 @@ class EnumOneofFieldGenerator : public EnumFieldGenerator {
 
 class RepeatedEnumFieldGenerator : public FieldGenerator {
  public:
-  explicit RepeatedEnumFieldGenerator(const FieldDescriptor* descriptor,
-                                      const Options& options);
+  RepeatedEnumFieldGenerator(const FieldDescriptor* descriptor,
+                             const Options& options);
   ~RepeatedEnumFieldGenerator();
 
   // implements FieldGenerator ---------------------------------------
@@ -102,6 +101,7 @@ class RepeatedEnumFieldGenerator : public FieldGenerator {
                                          bool is_inline) const;
   void GenerateClearingCode(io::Printer* printer) const;
   void GenerateMergingCode(io::Printer* printer) const;
+  void GenerateUnsafeMergingCode(io::Printer* printer) const;
   void GenerateSwappingCode(io::Printer* printer) const;
   void GenerateConstructorCode(io::Printer* printer) const;
   void GenerateMergeFromCodedStream(io::Printer* printer) const;

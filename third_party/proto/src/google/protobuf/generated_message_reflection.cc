@@ -58,18 +58,6 @@ bool IsMapFieldInApi(const FieldDescriptor* field) {
 }
 }  // anonymous namespace
 
-int StringSpaceUsedExcludingSelf(const string& str) {
-  const void* start = &str;
-  const void* end = &str + 1;
-
-  if (start <= str.data() && str.data() < end) {
-    // The string's data is stored inside the string object itself.
-    return 0;
-  } else {
-    return str.capacity();
-  }
-}
-
 bool ParseNamedEnum(const EnumDescriptor* descriptor,
                     const string& name,
                     int* value) {
@@ -185,62 +173,43 @@ static void ReportReflectionUsageEnumTypeError(
 // ===================================================================
 
 GeneratedMessageReflection::GeneratedMessageReflection(
-    const Descriptor* descriptor,
-    const Message* default_instance,
-    const int offsets[],
-    int has_bits_offset,
-    int unknown_fields_offset,
-    int extensions_offset,
-    const DescriptorPool* descriptor_pool,
-    MessageFactory* factory,
-    int object_size,
-    int arena_offset,
-    int is_default_instance_offset)
-  : descriptor_       (descriptor),
-    default_instance_ (default_instance),
-    offsets_          (offsets),
-    has_bits_offset_  (has_bits_offset),
-    unknown_fields_offset_(unknown_fields_offset),
-    extensions_offset_(extensions_offset),
-    arena_offset_     (arena_offset),
-    is_default_instance_offset_(is_default_instance_offset),
-    object_size_      (object_size),
-    descriptor_pool_  ((descriptor_pool == NULL) ?
-                         DescriptorPool::generated_pool() :
-                         descriptor_pool),
-    message_factory_  (factory) {
-}
+    const Descriptor* descriptor, const Message* default_instance,
+    const int offsets[], int has_bits_offset, int unknown_fields_offset,
+    int extensions_offset, const DescriptorPool* descriptor_pool,
+    MessageFactory* factory, int object_size, int arena_offset)
+    : descriptor_(descriptor),
+      default_instance_(default_instance),
+      offsets_(offsets),
+      has_bits_offset_(has_bits_offset),
+      unknown_fields_offset_(unknown_fields_offset),
+      extensions_offset_(extensions_offset),
+      arena_offset_(arena_offset),
+      object_size_(object_size),
+      descriptor_pool_((descriptor_pool == NULL)
+                           ? DescriptorPool::generated_pool()
+                           : descriptor_pool),
+      message_factory_(factory) {}
 
 GeneratedMessageReflection::GeneratedMessageReflection(
-    const Descriptor* descriptor,
-    const Message* default_instance,
-    const int offsets[],
-    int has_bits_offset,
-    int unknown_fields_offset,
-    int extensions_offset,
-    const void* default_oneof_instance,
-    int oneof_case_offset,
-    const DescriptorPool* descriptor_pool,
-    MessageFactory* factory,
-    int object_size,
-    int arena_offset,
-    int is_default_instance_offset)
-  : descriptor_       (descriptor),
-    default_instance_ (default_instance),
-    default_oneof_instance_ (default_oneof_instance),
-    offsets_          (offsets),
-    has_bits_offset_  (has_bits_offset),
-    oneof_case_offset_(oneof_case_offset),
-    unknown_fields_offset_(unknown_fields_offset),
-    extensions_offset_(extensions_offset),
-    arena_offset_     (arena_offset),
-    is_default_instance_offset_(is_default_instance_offset),
-    object_size_      (object_size),
-    descriptor_pool_  ((descriptor_pool == NULL) ?
-                         DescriptorPool::generated_pool() :
-                         descriptor_pool),
-    message_factory_  (factory) {
-}
+    const Descriptor* descriptor, const Message* default_instance,
+    const int offsets[], int has_bits_offset, int unknown_fields_offset,
+    int extensions_offset, const void* default_oneof_instance,
+    int oneof_case_offset, const DescriptorPool* descriptor_pool,
+    MessageFactory* factory, int object_size, int arena_offset)
+    : descriptor_(descriptor),
+      default_instance_(default_instance),
+      default_oneof_instance_(default_oneof_instance),
+      offsets_(offsets),
+      has_bits_offset_(has_bits_offset),
+      oneof_case_offset_(oneof_case_offset),
+      unknown_fields_offset_(unknown_fields_offset),
+      extensions_offset_(extensions_offset),
+      arena_offset_(arena_offset),
+      object_size_(object_size),
+      descriptor_pool_((descriptor_pool == NULL)
+                           ? DescriptorPool::generated_pool()
+                           : descriptor_pool),
+      message_factory_(factory) {}
 
 GeneratedMessageReflection::~GeneratedMessageReflection() {}
 
@@ -424,6 +393,15 @@ void GeneratedMessageReflection::SwapField(
 #undef SWAP_ARRAYS
 
       case FieldDescriptor::CPPTYPE_STRING:
+        switch (field->options().ctype()) {
+          default:  // TODO(kenton):  Support other string reps.
+          case FieldOptions::STRING:
+            MutableRaw<RepeatedPtrFieldBase>(message1, field)->
+                Swap<GenericTypeHandler<string> >(
+                    MutableRaw<RepeatedPtrFieldBase>(message2, field));
+            break;
+        }
+        break;
       case FieldDescriptor::CPPTYPE_MESSAGE:
         if (IsMapFieldInApi(field)) {
           MutableRaw<MapFieldBase>(message1, field)->
@@ -459,16 +437,50 @@ void GeneratedMessageReflection::SwapField(
       SWAP_VALUES(ENUM  , int   );
 #undef SWAP_VALUES
       case FieldDescriptor::CPPTYPE_MESSAGE:
-        std::swap(*MutableRaw<Message*>(message1, field),
-                  *MutableRaw<Message*>(message2, field));
+        if (GetArena(message1) == GetArena(message2)) {
+          std::swap(*MutableRaw<Message*>(message1, field),
+                    *MutableRaw<Message*>(message2, field));
+        } else {
+          Message** sub_msg1 = MutableRaw<Message*>(message1, field);
+          Message** sub_msg2 = MutableRaw<Message*>(message2, field);
+          if (*sub_msg1 == NULL && *sub_msg2 == NULL) break;
+          if (*sub_msg1 && *sub_msg2) {
+            (*sub_msg1)->GetReflection()->Swap(*sub_msg1, *sub_msg2);
+            break;
+          }
+          if (*sub_msg1 == NULL) {
+            *sub_msg1 = (*sub_msg2)->New(message1->GetArena());
+            (*sub_msg1)->CopyFrom(**sub_msg2);
+            ClearField(message2, field);
+          } else {
+            *sub_msg2 = (*sub_msg1)->New(message2->GetArena());
+            (*sub_msg2)->CopyFrom(**sub_msg1);
+            ClearField(message1, field);
+          }
+        }
         break;
 
       case FieldDescriptor::CPPTYPE_STRING:
         switch (field->options().ctype()) {
           default:  // TODO(kenton):  Support other string reps.
           case FieldOptions::STRING:
-            MutableRaw<ArenaStringPtr>(message1, field)->Swap(
-                MutableRaw<ArenaStringPtr>(message2, field));
+            {
+              Arena* arena1 = GetArena(message1);
+              Arena* arena2 = GetArena(message2);
+              ArenaStringPtr* string1 =
+                  MutableRaw<ArenaStringPtr>(message1, field);
+              ArenaStringPtr* string2 =
+                  MutableRaw<ArenaStringPtr>(message2, field);
+              if (arena1 == arena2) {
+                string1->Swap(string2);
+              } else {
+                const string* default_ptr =
+                    &DefaultRaw<ArenaStringPtr>(field).Get(NULL);
+                const string temp = string1->Get(default_ptr);
+                string1->Set(default_ptr, string2->Get(default_ptr), arena1);
+                string2->Set(default_ptr, temp, arena2);
+              }
+            }
             break;
         }
         break;
@@ -995,6 +1007,11 @@ struct FieldNumberSorter {
     return left->number() < right->number();
   }
 };
+
+inline bool IsIndexInHasBitSet(const uint32* has_bit_set, uint32 index) {
+  return ((has_bit_set[index / 32] >> (index % 32)) & static_cast<uint32>(1))
+      != 0;
+}
 }  // namespace
 
 void GeneratedMessageReflection::ListFields(
@@ -1005,6 +1022,12 @@ void GeneratedMessageReflection::ListFields(
   // Optimization:  The default instance never has any fields set.
   if (&message == default_instance_) return;
 
+  // Optimization: Avoid calling GetHasBits() and HasOneofField() many times
+  // within the field loop.
+  const uint32* const has_bits = GetHasBits(message);
+  const uint32* const oneof_case_array = reinterpret_cast<const uint32*>(
+      reinterpret_cast<const uint8*>(&message) + oneof_case_offset_);
+
   output->reserve(descriptor_->field_count());
   for (int i = 0; i < descriptor_->field_count(); i++) {
     const FieldDescriptor* field = descriptor_->field(i);
@@ -1013,11 +1036,18 @@ void GeneratedMessageReflection::ListFields(
         output->push_back(field);
       }
     } else {
-      if (field->containing_oneof()) {
-        if (HasOneofField(message, field)) {
+      const OneofDescriptor* containing_oneof = field->containing_oneof();
+      if (containing_oneof) {
+        // Equivalent to: HasOneofField(message, field)
+        if (oneof_case_array[containing_oneof->index()] == field->number()) {
           output->push_back(field);
         }
-      } else if (HasBit(message, field)) {
+      } else if (has_bits) {
+        // Equivalent to: HasBit(message, field)
+        if (IsIndexInHasBitSet(has_bits, i)) {
+          output->push_back(field);
+        }
+      } else if (HasBit(message, field)) {  // Fall back on proto3-style HasBit.
         output->push_back(field);
       }
     }
@@ -1548,7 +1578,8 @@ Message* GeneratedMessageReflection::UnsafeArenaReleaseMessage(
 
   if (field->is_extension()) {
     return static_cast<Message*>(
-        MutableExtensionSet(message)->ReleaseMessage(field, factory));
+        MutableExtensionSet(message)->UnsafeArenaReleaseMessage(field,
+                                                                factory));
   } else {
     ClearBit(message, field);
     if (field->containing_oneof()) {
@@ -1764,7 +1795,8 @@ bool GeneratedMessageReflection::InsertOrLookupMapValue(
               "InsertOrLookupMapValue",
               "Field is not a map field.");
   val->SetType(field->message_type()->FindFieldByName("value")->cpp_type());
-  return MutableRaw<MapFieldBase>(message, field)->InsertMapValue(key, val);
+  return MutableRaw<MapFieldBase>(message, field)->InsertOrLookupMapValue(
+      key, val);
 }
 
 bool GeneratedMessageReflection::DeleteMapValue(
@@ -1968,12 +2000,7 @@ GeneratedMessageReflection::MutableInternalMetadataWithArena(
 inline bool
 GeneratedMessageReflection::GetIsDefaultInstance(
     const Message& message) const {
-  if (is_default_instance_offset_ == kHasNoDefaultInstanceField) {
-    return false;
-  }
-  const void* ptr = reinterpret_cast<const uint8*>(&message) +
-      is_default_instance_offset_;
-  return *reinterpret_cast<const bool*>(ptr);
+  return &message == default_instance_;
 }
 
 // Simple accessors for manipulating has_bits_.
@@ -2030,8 +2057,7 @@ inline bool GeneratedMessageReflection::HasBit(
       }
     }
   }
-  return GetHasBits(message)[field->index() / 32] &
-    (1 << (field->index() % 32));
+  return IsIndexInHasBitSet(GetHasBits(message), field->index());
 }
 
 inline void GeneratedMessageReflection::SetBit(
@@ -2039,7 +2065,9 @@ inline void GeneratedMessageReflection::SetBit(
   if (has_bits_offset_ == -1) {
     return;
   }
-  MutableHasBits(message)[field->index() / 32] |= (1 << (field->index() % 32));
+  const uint32 index = static_cast<uint32>(field->index());
+  MutableHasBits(message)[index / 32] |=
+      (static_cast<uint32>(1) << (index % 32));
 }
 
 inline void GeneratedMessageReflection::ClearBit(
@@ -2047,7 +2075,9 @@ inline void GeneratedMessageReflection::ClearBit(
   if (has_bits_offset_ == -1) {
     return;
   }
-  MutableHasBits(message)[field->index() / 32] &= ~(1 << (field->index() % 32));
+  const uint32 index = static_cast<uint32>(field->index());
+  MutableHasBits(message)[index / 32] &=
+      ~(static_cast<uint32>(1) << (index % 32));
 }
 
 inline void GeneratedMessageReflection::SwapBit(
@@ -2093,7 +2123,7 @@ inline void GeneratedMessageReflection::ClearOneofField(
 inline void GeneratedMessageReflection::ClearOneof(
     Message* message, const OneofDescriptor* oneof_descriptor) const {
   // TODO(jieluo): Consider to cache the unused object instead of deleting
-  // it. It will be much faster if an aplication switches a lot from
+  // it. It will be much faster if an application switches a lot from
   // a few oneof fields.  Time/space tradeoff
   uint32 oneof_case = GetOneofCase(*message, oneof_descriptor);
   if (oneof_case > 0) {
@@ -2242,19 +2272,11 @@ GeneratedMessageReflection::NewGeneratedMessageReflection(
     int object_size,
     int arena_offset,
     int is_default_instance_offset) {
-  return new GeneratedMessageReflection(descriptor,
-                                        default_instance,
-                                        offsets,
-                                        has_bits_offset,
-                                        unknown_fields_offset,
-                                        extensions_offset,
-                                        default_oneof_instance,
-                                        oneof_case_offset,
-                                        DescriptorPool::generated_pool(),
-                                        MessageFactory::generated_factory(),
-                                        object_size,
-                                        arena_offset,
-                                        is_default_instance_offset);
+  return new GeneratedMessageReflection(
+      descriptor, default_instance, offsets, has_bits_offset,
+      unknown_fields_offset, extensions_offset, default_oneof_instance,
+      oneof_case_offset, DescriptorPool::generated_pool(),
+      MessageFactory::generated_factory(), object_size, arena_offset);
 }
 
 GeneratedMessageReflection*
@@ -2268,17 +2290,11 @@ GeneratedMessageReflection::NewGeneratedMessageReflection(
     int object_size,
     int arena_offset,
     int is_default_instance_offset) {
-  return new GeneratedMessageReflection(descriptor,
-                                        default_instance,
-                                        offsets,
-                                        has_bits_offset,
-                                        unknown_fields_offset,
-                                        extensions_offset,
-                                        DescriptorPool::generated_pool(),
-                                        MessageFactory::generated_factory(),
-                                        object_size,
-                                        arena_offset,
-                                        is_default_instance_offset);
+  return new GeneratedMessageReflection(
+      descriptor, default_instance, offsets, has_bits_offset,
+      unknown_fields_offset, extensions_offset,
+      DescriptorPool::generated_pool(), MessageFactory::generated_factory(),
+      object_size, arena_offset);
 }
 
 }  // namespace internal

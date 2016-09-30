@@ -155,7 +155,7 @@ void ExtensionGenerator::GenerateDefinition(io::Printer* printer) {
   // Likewise, class members need to declare the field constant variable.
   if (descriptor_->extension_scope() != NULL) {
     printer->Print(vars,
-      "#ifndef _MSC_VER\n"
+      "#if !defined(_MSC_VER) || _MSC_VER >= 1900\n"
       "const int $scope$$constant_name$;\n"
       "#endif\n");
   }
@@ -178,28 +178,30 @@ void ExtensionGenerator::GenerateRegistration(io::Printer* printer) {
 
   switch (descriptor_->cpp_type()) {
     case FieldDescriptor::CPPTYPE_ENUM:
-      printer->Print(vars,
-        "::google::protobuf::internal::ExtensionSet::RegisterEnumExtension(\n"
-        "  &$extendee$::default_instance(),\n"
-        "  $number$, $field_type$, $is_repeated$, $is_packed$,\n");
+      printer->Print(
+          vars,
+          "::google::protobuf::internal::ExtensionSet::RegisterEnumExtension(\n"
+          "  $extendee$::internal_default_instance(),\n"
+          "  $number$, $field_type$, $is_repeated$, $is_packed$,\n");
       printer->Print(
         "  &$type$_IsValid);\n",
         "type", ClassName(descriptor_->enum_type(), true));
       break;
     case FieldDescriptor::CPPTYPE_MESSAGE:
-      printer->Print(vars,
-        "::google::protobuf::internal::ExtensionSet::RegisterMessageExtension(\n"
-        "  &$extendee$::default_instance(),\n"
-        "  $number$, $field_type$, $is_repeated$, $is_packed$,\n");
       printer->Print(
-        "  &$type$::default_instance());\n",
-        "type", ClassName(descriptor_->message_type(), true));
+          vars,
+          "::google::protobuf::internal::ExtensionSet::RegisterMessageExtension(\n"
+          "  $extendee$::internal_default_instance(),\n"
+          "  $number$, $field_type$, $is_repeated$, $is_packed$,\n");
+      printer->Print("  $type$::internal_default_instance());\n", "type",
+                     ClassName(descriptor_->message_type(), true));
       break;
     default:
-      printer->Print(vars,
-        "::google::protobuf::internal::ExtensionSet::RegisterExtension(\n"
-        "  &$extendee$::default_instance(),\n"
-        "  $number$, $field_type$, $is_repeated$, $is_packed$);\n");
+      printer->Print(
+          vars,
+          "::google::protobuf::internal::ExtensionSet::RegisterExtension(\n"
+          "  $extendee$::internal_default_instance(),\n"
+          "  $number$, $field_type$, $is_repeated$, $is_packed$);\n");
       break;
   }
 }

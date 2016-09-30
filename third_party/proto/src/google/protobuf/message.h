@@ -179,7 +179,7 @@ struct Metadata {
 class LIBPROTOBUF_EXPORT Message : public MessageLite {
  public:
   inline Message() {}
-  virtual ~Message();
+  virtual ~Message() {}
 
   // Basic Operations ------------------------------------------------
 
@@ -271,10 +271,10 @@ class LIBPROTOBUF_EXPORT Message : public MessageLite {
   bool ParsePartialFromFileDescriptor(int file_descriptor);
   // Parse a protocol buffer from a C++ istream.  If successful, the entire
   // input will be consumed.
-  bool ParseFromIstream(istream* input);
+  bool ParseFromIstream(std::istream* input);
   // Like ParseFromIstream(), but accepts messages that are missing
   // required fields.
-  bool ParsePartialFromIstream(istream* input);
+  bool ParsePartialFromIstream(std::istream* input);
 
   // Serialize the message and write it to the given file descriptor.  All
   // required fields must be set.
@@ -283,9 +283,9 @@ class LIBPROTOBUF_EXPORT Message : public MessageLite {
   bool SerializePartialToFileDescriptor(int file_descriptor) const;
   // Serialize the message and write it to the given C++ ostream.  All
   // required fields must be set.
-  bool SerializeToOstream(ostream* output) const;
+  bool SerializeToOstream(std::ostream* output) const;
   // Like SerializeToOstream(), but allows missing required fields.
-  bool SerializePartialToOstream(ostream* output) const;
+  bool SerializePartialToOstream(std::ostream* output) const;
 
 
   // Reflection-based methods ----------------------------------------
@@ -297,7 +297,7 @@ class LIBPROTOBUF_EXPORT Message : public MessageLite {
   virtual bool IsInitialized() const;
   virtual void CheckTypeAndMergeFrom(const MessageLite& other);
   virtual bool MergePartialFromCodedStream(io::CodedInputStream* input);
-  virtual int ByteSize() const;
+  virtual size_t ByteSizeLong() const;
   virtual void SerializeWithCachedSizes(io::CodedOutputStream* output) const;
 
  private:
@@ -585,8 +585,8 @@ class LIBPROTOBUF_EXPORT Reflection {
   // If you have no idea what that meant, then you probably don't need to worry
   // about it (don't provide a MessageFactory).  WARNING:  If the
   // FieldDescriptor is for a compiled-in extension, then
-  // factory->GetPrototype(field->message_type() MUST return an instance of the
-  // compiled-in class for this type, NOT DynamicMessage.
+  // factory->GetPrototype(field->message_type()) MUST return an instance of
+  // the compiled-in class for this type, NOT DynamicMessage.
   virtual Message* MutableMessage(Message* message,
                                   const FieldDescriptor* field,
                                   MessageFactory* factory = NULL) const = 0;
@@ -739,9 +739,9 @@ class LIBPROTOBUF_EXPORT Reflection {
   // specifyed by 'field' passing ownership to the message.
   // TODO(tmarek): Make virtual after all subclasses have been
   // updated.
-  virtual void AddAllocatedMessage(Message* message,
-                                   const FieldDescriptor* field,
-                                   Message* new_entry) const {}
+  virtual void AddAllocatedMessage(Message* /* message */,
+                                   const FieldDescriptor* /*field */,
+                                   Message* /* new_entry */) const {}
 
 
   // Get a RepeatedFieldRef object that can be used to read the underlying
@@ -947,31 +947,31 @@ class LIBPROTOBUF_EXPORT Reflection {
   // TODO(jieluo) - make the map APIs pure virtual after updating
   // all the subclasses.
   // Returns true if key is in map. Returns false if key is not in map field.
-  virtual bool ContainsMapKey(const Message& message,
-                              const FieldDescriptor* field,
-                              const MapKey& key) const {
+  virtual bool ContainsMapKey(const Message& /* message*/,
+                              const FieldDescriptor* /* field */,
+                              const MapKey& /* key */) const {
     return false;
   }
 
   // If key is in map field: Saves the value pointer to val and returns
   // false. If key in not in map field: Insert the key into map, saves
   // value pointer to val and retuns true.
-  virtual bool InsertOrLookupMapValue(Message* message,
-                                      const FieldDescriptor* field,
-                                      const MapKey& key,
-                                      MapValueRef* val) const {
+  virtual bool InsertOrLookupMapValue(Message* /* message */,
+                                      const FieldDescriptor* /* field */,
+                                      const MapKey& /* key */,
+                                      MapValueRef* /* val */) const {
     return false;
   }
 
   // Delete and returns true if key is in the map field. Returns false
   // otherwise.
-  virtual bool DeleteMapValue(Message* message,
-                              const FieldDescriptor* field,
-                              const MapKey& key) const {
+  virtual bool DeleteMapValue(Message* /* mesage */,
+                              const FieldDescriptor* /* field */,
+                              const MapKey& /* key */) const {
     return false;
   }
 
-  // Returns a MaIterator referring to the first element in the map field.
+  // Returns a MapIterator referring to the first element in the map field.
   // If the map field is empty, this function returns the same as
   // reflection::MapEnd. Mutation to the field may invalidate the iterator.
   virtual MapIterator MapBegin(
@@ -987,15 +987,15 @@ class LIBPROTOBUF_EXPORT Reflection {
 
   // Get the number of <key, value> pair of a map field. The result may be
   // different from FieldSize which can have duplicate keys.
-  virtual int MapSize(const Message& message,
-                      const FieldDescriptor* field) const {
+  virtual int MapSize(const Message& /* message */,
+                      const FieldDescriptor* /* field */) const {
     return 0;
   }
 
   // Help method for MapIterator.
   friend class MapIterator;
   virtual internal::MapFieldBase* MapData(
-      Message* message, const FieldDescriptor* field) const {
+      Message* /* message */, const FieldDescriptor* /* field */) const {
     return NULL;
   }
 

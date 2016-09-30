@@ -46,8 +46,8 @@ namespace cpp {
 
 class StringFieldGenerator : public FieldGenerator {
  public:
-  explicit StringFieldGenerator(const FieldDescriptor* descriptor,
-                                const Options& options);
+  StringFieldGenerator(const FieldDescriptor* descriptor,
+                       const Options& options);
   ~StringFieldGenerator();
 
   // implements FieldGenerator ---------------------------------------
@@ -79,8 +79,8 @@ class StringFieldGenerator : public FieldGenerator {
 
 class StringOneofFieldGenerator : public StringFieldGenerator {
  public:
-  explicit StringOneofFieldGenerator(const FieldDescriptor* descriptor,
-                                     const Options& options);
+  StringOneofFieldGenerator(const FieldDescriptor* descriptor,
+                            const Options& options);
   ~StringOneofFieldGenerator();
 
   // implements FieldGenerator ---------------------------------------
@@ -99,8 +99,8 @@ class StringOneofFieldGenerator : public StringFieldGenerator {
 
 class RepeatedStringFieldGenerator : public FieldGenerator {
  public:
-  explicit RepeatedStringFieldGenerator(const FieldDescriptor* descriptor,
-                                        const Options& options);
+  RepeatedStringFieldGenerator(const FieldDescriptor* descriptor,
+                               const Options& options);
   ~RepeatedStringFieldGenerator();
 
   // implements FieldGenerator ---------------------------------------
@@ -110,6 +110,7 @@ class RepeatedStringFieldGenerator : public FieldGenerator {
                                          bool is_inline) const;
   void GenerateClearingCode(io::Printer* printer) const;
   void GenerateMergingCode(io::Printer* printer) const;
+  void GenerateUnsafeMergingCode(io::Printer* printer) const;
   void GenerateSwappingCode(io::Printer* printer) const;
   void GenerateConstructorCode(io::Printer* printer) const;
   void GenerateMergeFromCodedStream(io::Printer* printer) const;

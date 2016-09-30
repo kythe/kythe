@@ -54,7 +54,7 @@ class ContendedMapCleanTest;
 class GeneratedMessageReflection;
 class MapFieldAccessor;
 
-// This class provides accesss to map field using reflection, which is the same
+// This class provides access to map field using reflection, which is the same
 // as those provided for RepeatedPtrField<Message>. It is used for internal
 // reflection implentation only. Users should never use this directly.
 class LIBPROTOBUF_EXPORT MapFieldBase {
@@ -87,7 +87,8 @@ class LIBPROTOBUF_EXPORT MapFieldBase {
 
   // Pure virtual map APIs for Map Reflection.
   virtual bool ContainsMapKey(const MapKey& map_key) const = 0;
-  virtual bool InsertMapValue(const MapKey& map_key, MapValueRef* val) = 0;
+  virtual bool InsertOrLookupMapValue(
+      const MapKey& map_key, MapValueRef* val) = 0;
   virtual bool DeleteMapValue(const MapKey& map_key) = 0;
   virtual bool EqualIterator(const MapIterator& a,
                              const MapIterator& b) const = 0;
@@ -207,7 +208,7 @@ class TypeDefinedMapFieldBase : public MapFieldBase {
   virtual void SetMapIteratorValue(MapIterator* map_iter) const = 0;
 };
 
-// This class provides accesss to map field using generated api. It is used for
+// This class provides access to map field using generated api. It is used for
 // internal generated message implentation only. Users should never use this
 // directly.
 template <typename Key, typename T,
@@ -251,7 +252,7 @@ class MapField : public TypeDefinedMapFieldBase<Key, T>,
 
   // Implement MapFieldBase
   bool ContainsMapKey(const MapKey& map_key) const;
-  bool InsertMapValue(const MapKey& map_key, MapValueRef* val);
+  bool InsertOrLookupMapValue(const MapKey& map_key, MapValueRef* val);
   bool DeleteMapValue(const MapKey& map_key);
 
   // Accessors
@@ -302,7 +303,7 @@ class LIBPROTOBUF_EXPORT DynamicMapField: public TypeDefinedMapFieldBase<MapKey,
 
   // Implement MapFieldBase
   bool ContainsMapKey(const MapKey& map_key) const;
-  bool InsertMapValue(const MapKey& map_key, MapValueRef* val);
+  bool InsertOrLookupMapValue(const MapKey& map_key, MapValueRef* val);
   bool DeleteMapValue(const MapKey& map_key);
 
   const Map<MapKey, MapValueRef>& GetMap() const;

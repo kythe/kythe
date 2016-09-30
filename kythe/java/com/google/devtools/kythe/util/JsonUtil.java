@@ -18,6 +18,7 @@ package com.google.devtools.kythe.util;
 
 import com.google.common.io.BaseEncoding;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
@@ -28,6 +29,8 @@ import com.google.gson.JsonSerializer;
 import com.google.gson.protobuf.ProtoTypeAdapter;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessage;
+import com.google.protobuf.LazyStringArrayList;
+import com.google.protobuf.LazyStringList;
 import com.google.protobuf.ProtocolMessageEnum;
 import java.lang.reflect.Type;
 
@@ -43,7 +46,8 @@ public class JsonUtil {
         .registerTypeHierarchyAdapter(ProtocolMessageEnum.class, new ProtoEnumTypeAdapter())
         .registerTypeHierarchyAdapter(GeneratedMessage.class, new ProtoTypeAdapter())
         .registerTypeHierarchyAdapter(ByteString.class, new ByteStringTypeAdapter())
-        .registerTypeAdapter(byte[].class, new ByteArrayTypeAdapter());
+        .registerTypeAdapter(byte[].class, new ByteArrayTypeAdapter())
+        .registerTypeHierarchyAdapter(LazyStringList.class, new LazyStringListTypeAdapter());
   }
 
   private static class ByteStringTypeAdapter
@@ -74,6 +78,30 @@ public class JsonUtil {
     public byte[] deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
         throws JsonParseException {
       return ENCODING.decode((String) context.deserialize(json, String.class));
+    }
+  }
+
+  private static class LazyStringListTypeAdapter
+      implements JsonSerializer<LazyStringList>, JsonDeserializer<LazyStringList> {
+    private static final BaseEncoding ENCODING = BaseEncoding.base64();
+
+    @Override
+    public JsonElement serialize(LazyStringList lsl, Type t, JsonSerializationContext ctx) {
+      return ctx.serialize(lsl.asByteArrayList());
+    }
+
+    @Override
+    public LazyStringList deserialize(JsonElement json, Type t, JsonDeserializationContext ctx)
+        throws JsonParseException {
+      if (json.isJsonNull()) {
+        return null;
+      }
+      JsonArray array = json.getAsJsonArray();
+      LazyStringList lsl = new LazyStringArrayList();
+      for (JsonElement element : json.getAsJsonArray()) {
+        lsl.add(ENCODING.decode((String) ctx.deserialize(element, String.class)));
+      }
+      return lsl;
     }
   }
 

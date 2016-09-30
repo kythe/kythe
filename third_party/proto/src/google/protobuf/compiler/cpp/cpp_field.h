@@ -69,7 +69,7 @@ void SetCommonOneofFieldVariables(const FieldDescriptor* descriptor,
 
 class FieldGenerator {
  public:
-  FieldGenerator() {}
+  explicit FieldGenerator(const Options& options) : options_(options) {}
   virtual ~FieldGenerator();
 
   // Generate lines of code declaring members fields of the message class
@@ -136,6 +136,13 @@ class FieldGenerator {
   // GenerateMergeFrom method.
   virtual void GenerateMergingCode(io::Printer* printer) const = 0;
 
+  // The same, but the generated code may or may not check the possibility that
+  // the two objects being merged have the same address.  To be safe, callers
+  // should avoid calling this unless they know the objects are different.
+  virtual void GenerateUnsafeMergingCode(io::Printer* printer) const {
+    GenerateMergingCode(printer);
+  }
+
   // Generate lines of code (statements, not declarations) which swaps
   // this field and the corresponding field of another message, which
   // is stored in the generated code variable "other". This is used to
@@ -194,6 +201,9 @@ class FieldGenerator {
   // are placed in the message's ByteSize() method.
   virtual void GenerateByteSize(io::Printer* printer) const = 0;
 
+ protected:
+  const Options& options_;
+
  private:
   GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(FieldGenerator);
 };
@@ -201,13 +211,14 @@ class FieldGenerator {
 // Convenience class which constructs FieldGenerators for a Descriptor.
 class FieldGeneratorMap {
  public:
-  explicit FieldGeneratorMap(const Descriptor* descriptor, const Options& options);
+  FieldGeneratorMap(const Descriptor* descriptor, const Options& options);
   ~FieldGeneratorMap();
 
   const FieldGenerator& get(const FieldDescriptor* field) const;
 
  private:
   const Descriptor* descriptor_;
+  const Options& options_;
   google::protobuf::scoped_array<google::protobuf::scoped_ptr<FieldGenerator> > field_generators_;
 
   static FieldGenerator* MakeGenerator(const FieldDescriptor* field,

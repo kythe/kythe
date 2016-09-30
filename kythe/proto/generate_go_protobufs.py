@@ -33,7 +33,7 @@ import sys
 # Find the locations of the workspace root and the generated files directory.
 workspace      = check_output(['bazel', 'info', 'workspace']).strip()
 bazel_genfiles = check_output(['bazel', 'info', 'bazel-genfiles']).strip()
-targets        = '//%s/...' % os.path.basename(workspace)
+targets        = '//kythe/...'
 
 go_protos = check_output([
     'bazel', 'query', 'attr("gen_go", 1, %s)' % targets,

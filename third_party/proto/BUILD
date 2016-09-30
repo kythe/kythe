@@ -4,7 +4,7 @@ load("//tools:build_rules/proto.bzl", "proto_library")
 
 # Bazel (http://bazel.io/) BUILD file for Protobuf.
 
-licenses(["notice"])  # BSD
+licenses(["notice"])
 
 filegroup(
     name = "license",
@@ -24,20 +24,6 @@ proto_library(
     java_api_version = 2,
 )
 
-genrule(
-    name = "protobuf_descriptor_java",
-    srcs = ["src/google/protobuf/descriptor.proto"],
-    outs = ["com/google/protobuf/DescriptorProtos.java"],
-    cmd = "$(location :protoc) --java_out=$(GENDIR)/third_party/proto $<",
-    tools = [":protoc"],
-)
-
-java_library(
-    name = "protobuf_java",
-    srcs = [
-        ":protobuf_descriptor_java",
-    ] + glob(["java/src/main/java/com/google/protobuf/*.java"]),
-)
 
 ################################################################################
 # Protobuf Runtime Library
@@ -61,10 +47,58 @@ DEFINES = [
     "HAVE_ZLIB",
 ]
 
-# Bazel should provide portable link_opts for pthread.
-LINK_OPTS = ["-lpthread"]
+config_setting(
+    name = "android",
+    values = {
+        "crosstool_top": "//external:android/crosstool",
+    },
+)
 
-hdrs = glob(["src/**/*.h"])
+# Android builds do not need to link in a separate pthread library.
+LINK_OPTS = select({
+    ":android": [],
+    "//conditions:default": ["-lpthread"],
+})
+
+load(
+    "protobuf",
+    "cc_proto_library",
+    "py_proto_library",
+    "internal_copied_filegroup",
+    "internal_gen_well_known_protos_java",
+    "internal_protobuf_py_tests",
+)
+
+config_setting(
+    name = "ios_armv7",
+    values = {
+        "ios_cpu": "armv7",
+    },
+)
+
+config_setting(
+    name = "ios_armv7s",
+    values = {
+        "ios_cpu": "armv7s",
+    },
+)
+
+config_setting(
+    name = "ios_arm64",
+    values = {
+        "ios_cpu": "arm64",
+    },
+)
+
+IOS_ARM_COPTS = COPTS + [
+    "-DOS_IOS",
+    "-miphoneos-version-min=7.0",
+    "-arch armv7",
+    "-arch armv7s",
+    "-arch arm64",
+    "-D__thread=",
+    "-isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS9.2.sdk/",
+]
 
 cc_library(
     name = "protobuf_lite",
@@ -94,8 +128,13 @@ cc_library(
         "src/google/protobuf/stubs/time.cc",
         "src/google/protobuf/wire_format_lite.cc",
     ],
-    hdrs = hdrs,
-    copts = COPTS,
+    hdrs = glob(["src/google/protobuf/**/*.h"]),
+    copts = select({
+        ":ios_armv7": IOS_ARM_COPTS,
+        ":ios_armv7s": IOS_ARM_COPTS,
+        ":ios_arm64": IOS_ARM_COPTS,
+        "//conditions:default": COPTS,
+    }),
     defines = DEFINES,
     includes = ["src/"],
     linkopts = LINK_OPTS,
@@ -103,21 +142,12 @@ cc_library(
     deps = ["//third_party/zlib"],
 )
 
-# This is a hack to support the non-generated any.pb.{cc,h} files as a
-# proto_library() and resolve the circular dependency.
-cc_library(
-    name = "any_proto_cc",
-    srcs = ["src/google/protobuf/any.pb.cc"],
-    hdrs = ["src/google/protobuf/any.pb.h"],
-    includes = ["src"],
-    deps = [":protobuf_lite"],
-)
-
 cc_library(
     name = "protobuf",
     srcs = [
         # AUTOGEN(protobuf_srcs)
         "src/google/protobuf/any.cc",
+        "src/google/protobuf/any.pb.cc",
         "src/google/protobuf/api.pb.cc",
         "src/google/protobuf/compiler/importer.cc",
         "src/google/protobuf/compiler/parser.cc",
@@ -157,6 +187,7 @@ cc_library(
         "src/google/protobuf/util/internal/json_objectwriter.cc",
         "src/google/protobuf/util/internal/json_stream_parser.cc",
         "src/google/protobuf/util/internal/object_writer.cc",
+        "src/google/protobuf/util/internal/proto_writer.cc",
         "src/google/protobuf/util/internal/protostream_objectsource.cc",
         "src/google/protobuf/util/internal/protostream_objectwriter.cc",
         "src/google/protobuf/util/internal/type_info.cc",
@@ -169,14 +200,51 @@ cc_library(
         "src/google/protobuf/wire_format.cc",
         "src/google/protobuf/wrappers.pb.cc",
     ],
-    hdrs = hdrs,
-    copts = COPTS,
+    hdrs = glob(["src/**/*.h"]),
+    copts = select({
+        ":ios_armv7": IOS_ARM_COPTS,
+        ":ios_armv7s": IOS_ARM_COPTS,
+        ":ios_arm64": IOS_ARM_COPTS,
+        "//conditions:default": COPTS,
+    }),
     includes = ["src/"],
     linkopts = LINK_OPTS,
-    deps = [
-        ":any_proto_cc",
-        ":protobuf_lite",
-    ],
+    visibility = ["//visibility:public"],
+    deps = [":protobuf_lite"],
+)
+
+RELATIVE_WELL_KNOWN_PROTOS = [
+    # AUTOGEN(well_known_protos)
+    "google/protobuf/any.proto",
+    "google/protobuf/api.proto",
+    "google/protobuf/compiler/plugin.proto",
+    "google/protobuf/descriptor.proto",
+    "google/protobuf/duration.proto",
+    "google/protobuf/empty.proto",
+    "google/protobuf/field_mask.proto",
+    "google/protobuf/source_context.proto",
+    "google/protobuf/struct.proto",
+    "google/protobuf/timestamp.proto",
+    "google/protobuf/type.proto",
+    "google/protobuf/wrappers.proto",
+]
+
+WELL_KNOWN_PROTOS = ["src/" + s for s in RELATIVE_WELL_KNOWN_PROTOS]
+
+filegroup(
+    name = "well_known_protos",
+    srcs = WELL_KNOWN_PROTOS,
+    visibility = ["//visibility:public"],
+)
+
+cc_proto_library(
+    name = "cc_wkt_protos",
+    srcs = WELL_KNOWN_PROTOS,
+    include = "src",
+    default_runtime = ":protobuf",
+    internal_bootstrap_hack = 1,
+    protoc = ":protoc",
+    visibility = ["//visibility:public"],
 )
 
 ################################################################################
@@ -184,7 +252,7 @@ cc_library(
 ################################################################################
 
 cc_library(
-    name = "libprotoc",
+    name = "protoc_lib",
     srcs = [
         # AUTOGEN(protoc_lib_srcs)
         "src/google/protobuf/compiler/code_generator.cc",
@@ -202,6 +270,7 @@ cc_library(
         "src/google/protobuf/compiler/cpp/cpp_primitive_field.cc",
         "src/google/protobuf/compiler/cpp/cpp_service.cc",
         "src/google/protobuf/compiler/cpp/cpp_string_field.cc",
+        "src/google/protobuf/compiler/csharp/csharp_doc_comment.cc",
         "src/google/protobuf/compiler/csharp/csharp_enum.cc",
         "src/google/protobuf/compiler/csharp/csharp_enum_field.cc",
         "src/google/protobuf/compiler/csharp/csharp_field_base.cc",
@@ -211,11 +280,11 @@ cc_library(
         "src/google/protobuf/compiler/csharp/csharp_message.cc",
         "src/google/protobuf/compiler/csharp/csharp_message_field.cc",
         "src/google/protobuf/compiler/csharp/csharp_primitive_field.cc",
+        "src/google/protobuf/compiler/csharp/csharp_reflection_class.cc",
         "src/google/protobuf/compiler/csharp/csharp_repeated_enum_field.cc",
         "src/google/protobuf/compiler/csharp/csharp_repeated_message_field.cc",
         "src/google/protobuf/compiler/csharp/csharp_repeated_primitive_field.cc",
         "src/google/protobuf/compiler/csharp/csharp_source_generator_base.cc",
-        "src/google/protobuf/compiler/csharp/csharp_umbrella_class.cc",
         "src/google/protobuf/compiler/csharp/csharp_wrapper_field.cc",
         "src/google/protobuf/compiler/java/java_context.cc",
         "src/google/protobuf/compiler/java/java_doc_comment.cc",
@@ -224,6 +293,7 @@ cc_library(
         "src/google/protobuf/compiler/java/java_enum_field_lite.cc",
         "src/google/protobuf/compiler/java/java_enum_lite.cc",
         "src/google/protobuf/compiler/java/java_extension.cc",
+        "src/google/protobuf/compiler/java/java_extension_lite.cc",
         "src/google/protobuf/compiler/java/java_field.cc",
         "src/google/protobuf/compiler/java/java_file.cc",
         "src/google/protobuf/compiler/java/java_generator.cc",
@@ -257,6 +327,7 @@ cc_library(
         "src/google/protobuf/compiler/javanano/javanano_message.cc",
         "src/google/protobuf/compiler/javanano/javanano_message_field.cc",
         "src/google/protobuf/compiler/javanano/javanano_primitive_field.cc",
+        "src/google/protobuf/compiler/js/js_generator.cc",
         "src/google/protobuf/compiler/objectivec/objectivec_enum.cc",
         "src/google/protobuf/compiler/objectivec/objectivec_enum_field.cc",
         "src/google/protobuf/compiler/objectivec/objectivec_extension.cc",
@@ -269,6 +340,7 @@ cc_library(
         "src/google/protobuf/compiler/objectivec/objectivec_message_field.cc",
         "src/google/protobuf/compiler/objectivec/objectivec_oneof.cc",
         "src/google/protobuf/compiler/objectivec/objectivec_primitive_field.cc",
+        "src/google/protobuf/compiler/php/php_generator.cc",
         "src/google/protobuf/compiler/plugin.cc",
         "src/google/protobuf/compiler/plugin.pb.cc",
         "src/google/protobuf/compiler/python/python_generator.cc",
@@ -288,5 +360,35 @@ cc_binary(
     srcs = ["src/google/protobuf/compiler/main.cc"],
     linkopts = LINK_OPTS,
     visibility = ["//visibility:public"],
-    deps = [":libprotoc"],
+    deps = [":protoc_lib"],
+)
+
+################################################################################
+# Java support
+################################################################################
+internal_gen_well_known_protos_java(
+    srcs = WELL_KNOWN_PROTOS,
+)
+
+java_library(
+    name = "protobuf_java",
+    srcs = glob([
+        "java/core/src/main/java/com/google/protobuf/*.java",
+    ]) + [
+        ":gen_well_known_protos_java",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+java_library(
+    name = "protobuf_java_util",
+    srcs = glob([
+        "java/util/src/main/java/com/google/protobuf/util/*.java",
+    ]),
+    deps = [
+        "protobuf_java",
+        "//external:gson",
+        "//external:guava",
+    ],
+    visibility = ["//visibility:public"],
 )

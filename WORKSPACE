@@ -169,7 +169,8 @@ bind(
 
 bind(
     name = "proto/any_proto_cc",
-    actual = "//third_party/proto:any_proto_cc",
+    # This also pulls in other well-known protos.
+    actual = "//third_party/proto:cc_wkt_protos",
 )
 
 bind(

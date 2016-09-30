@@ -53,7 +53,7 @@
   #if !defined(PROTOBUF_DISABLE_LITTLE_ENDIAN_OPT_FOR_TEST)
     #define PROTOBUF_LITTLE_ENDIAN 1
   #endif
-  #if defined(_MSC_VER) && _MSC_VER >= 1300
+  #if _MSC_VER >= 1300 && !defined(__INTEL_COMPILER)
     // If MSVC has "/RTCc" set, it will complain about truncating casts at
     // runtime.  This file contains some intentional truncating casts.
     #pragma runtime_checks("c", off)
@@ -82,6 +82,15 @@
   #define LIBPROTOC_EXPORT
 #endif
 
+// These #includes are for the byte swap functions declared later on.
+#ifdef _MSC_VER
+#include <stdlib.h>  // NOLINT(build/include)
+#elif defined(__APPLE__)
+#include <libkern/OSByteOrder.h>
+#elif defined(__GLIBC__) || defined(__CYGWIN__)
+#include <byteswap.h>  // IWYU pragma: export
+#endif
+
 // ===================================================================
 // from google3/base/port.h
 namespace google {
@@ -100,15 +109,15 @@ typedef unsigned __int16 uint16;
 typedef unsigned __int32 uint32;
 typedef unsigned __int64 uint64;
 #else
-typedef signed char  int8;
-typedef short int16;
-typedef int int32;
-typedef long long int64;
+typedef int8_t int8;
+typedef int16_t int16;
+typedef int32_t int32;
+typedef int64_t int64;
 
-typedef unsigned char  uint8;
-typedef unsigned short uint16;
-typedef unsigned int uint32;
-typedef unsigned long long uint64;
+typedef uint8_t uint8;
+typedef uint16_t uint16;
+typedef uint32_t uint32;
+typedef uint64_t uint64;
 #endif
 
 // long long macros to be used because gcc and vc++ use different suffixes,
@@ -122,8 +131,10 @@ typedef unsigned long long uint64;
 #define GOOGLE_ULONGLONG(x) x##UI64
 #define GOOGLE_LL_FORMAT "I64"  // As in printf("%I64d", ...)
 #else
+// By long long, we actually mean int64.
 #define GOOGLE_LONGLONG(x) x##LL
 #define GOOGLE_ULONGLONG(x) x##ULL
+// Used to format real long long integers.
 #define GOOGLE_LL_FORMAT "ll"  // As in "%lld". Note that "q" is poor form also.
 #endif
 
@@ -165,6 +176,15 @@ static const uint64 kuint64max = GOOGLE_ULONGLONG(0xFFFFFFFFFFFFFFFF);
 #endif
 #endif
 
+#ifndef GOOGLE_ATTRIBUTE_NORETURN
+#ifdef __GNUC__
+// Tell the compiler that a given function never returns.
+#define GOOGLE_ATTRIBUTE_NORETURN __attribute__((noreturn))
+#else
+#define GOOGLE_ATTRIBUTE_NORETURN
+#endif
+#endif
+
 #ifndef GOOGLE_ATTRIBUTE_DEPRECATED
 #ifdef __GNUC__
 // If the method/variable/type is used anywhere, produce a warning.
@@ -179,7 +199,7 @@ static const uint64 kuint64max = GOOGLE_ULONGLONG(0xFFFFFFFFFFFFFFFF);
 // Provided at least since GCC 3.0.
 #define GOOGLE_PREDICT_TRUE(x) (__builtin_expect(!!(x), 1))
 #else
-#define GOOGLE_PREDICT_TRUE
+#define GOOGLE_PREDICT_TRUE(x) (x)
 #endif
 #endif
 
@@ -188,7 +208,7 @@ static const uint64 kuint64max = GOOGLE_ULONGLONG(0xFFFFFFFFFFFFFFFF);
 // Provided at least since GCC 3.0.
 #define GOOGLE_PREDICT_FALSE(x) (__builtin_expect(x, 0))
 #else
-#define GOOGLE_PREDICT_FALSE
+#define GOOGLE_PREDICT_FALSE(x) (x)
 #endif
 #endif
 
@@ -267,26 +287,19 @@ inline void GOOGLE_UNALIGNED_STORE64(void *p, uint64 v) {
 #define GOOGLE_THREAD_LOCAL __thread
 #endif
 
-// The following guarantees declaration of the byte swap functions, and
-// defines __BYTE_ORDER for MSVC
+// The following guarantees declaration of the byte swap functions.
 #ifdef _MSC_VER
-#include <stdlib.h>  // NOLINT(build/include)
-#define __BYTE_ORDER __LITTLE_ENDIAN
 #define bswap_16(x) _byteswap_ushort(x)
 #define bswap_32(x) _byteswap_ulong(x)
 #define bswap_64(x) _byteswap_uint64(x)
 
 #elif defined(__APPLE__)
 // Mac OS X / Darwin features
-#include <libkern/OSByteOrder.h>
 #define bswap_16(x) OSSwapInt16(x)
 #define bswap_32(x) OSSwapInt32(x)
 #define bswap_64(x) OSSwapInt64(x)
 
-#elif defined(__GLIBC__) || defined(__CYGWIN__)
-#include <byteswap.h>  // IWYU pragma: export
-
-#else
+#elif !defined(__GLIBC__) && !defined(__CYGWIN__)
 
 static inline uint16 bswap_16(uint16 x) {
   return static_cast<uint16>(((x & 0xFF) << 8) | ((x & 0xFF00) >> 8));
@@ -312,6 +325,61 @@ static inline uint64 bswap_64(uint64 x) {
 #define bswap_64(x) bswap_64(x)
 
 #endif
+
+// ===================================================================
+// from google3/util/bits/bits.h
+
+class Bits {
+ public:
+  static uint32 Log2FloorNonZero(uint32 n) {
+#if defined(__GNUC__)
+  return 31 ^ __builtin_clz(n);
+#elif defined(COMPILER_MSVC) && defined(_M_IX86)
+  _asm {
+    bsr ebx, n
+    mov n, ebx
+  }
+  return n;
+#else
+  return Log2FloorNonZero_Portable(n);
+#endif
+  }
+
+  static uint64 Log2FloorNonZero64(uint64 n) {
+#if defined(__GNUC__)
+  return 63 ^ __builtin_clzll(n);
+#else
+  return Log2FloorNonZero64_Portable(n);
+#endif
+  }
+ private:
+  static int Log2FloorNonZero_Portable(uint32 n) {
+    if (n == 0)
+      return -1;
+    int log = 0;
+    uint32 value = n;
+    for (int i = 4; i >= 0; --i) {
+      int shift = (1 << i);
+      uint32 x = value >> shift;
+      if (x != 0) {
+        value = x;
+        log += shift;
+      }
+    }
+    assert(value == 1);
+    return log;
+  }
+
+  static int Log2FloorNonZero64_Portable(uint64 n) {
+    const uint32 topbits = static_cast<uint32>(n >> 32);
+    if (topbits == 0) {
+      // Top bits are zero, so scan in bottom bits
+      return Log2FloorNonZero(static_cast<uint32>(n));
+    } else {
+      return 32 + Log2FloorNonZero(topbits);
+    }
+  }
+};
 
 // ===================================================================
 // from google3/util/endian/endian.h

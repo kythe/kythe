@@ -66,10 +66,14 @@ class MessageGenerator {
 
   // Header stuff.
 
-  // Return names for foward declarations of this class and all its nested
-  // types.
-  void FillMessageForwardDeclarations(set<string>* class_names);
-  void FillEnumForwardDeclarations(set<string>* enum_names);
+  // Return names for forward declarations of this class and all its nested
+  // types. A given key in {class,enum}_names will map from a class name to the
+  // descriptor that was responsible for its inclusion in the map. This can be
+  // used to associate the descriptor with the code generated for it.
+  void FillMessageForwardDeclarations(
+      map<string, const Descriptor*>* class_names);
+  void FillEnumForwardDeclarations(
+      map<string, const EnumDescriptor*>* enum_names);
 
   // Generate definitions of all nested enums (must come before class
   // definitions because those classes use the enums definitions).
@@ -161,6 +165,11 @@ class MessageGenerator {
   void GenerateSerializeOneField(io::Printer* printer,
                                  const FieldDescriptor* field,
                                  bool unbounded);
+  // Generate a switch statement to serialize 2+ fields from the same oneof.
+  // Or, if fields.size() == 1, just call GenerateSerializeOneField().
+  void GenerateSerializeOneofFields(
+      io::Printer* printer, const vector<const FieldDescriptor*>& fields,
+      bool to_array);
   void GenerateSerializeOneExtensionRange(
       io::Printer* printer, const Descriptor::ExtensionRange* range,
       bool unbounded);
@@ -185,6 +194,11 @@ class MessageGenerator {
   string classname_;
   Options options_;
   FieldGeneratorMap field_generators_;
+  // optimized_order_ is the order we layout the message's fields in the class.
+  // This is reused to initialize the fields in-order for cache efficiency.
+  //
+  // optimized_order_ excludes oneof fields.
+  vector<const FieldDescriptor *> optimized_order_;
   vector< vector<string> > runs_of_fields_;  // that might be trivially cleared
   google::protobuf::scoped_array<google::protobuf::scoped_ptr<MessageGenerator> > nested_generators_;
   google::protobuf::scoped_array<google::protobuf::scoped_ptr<EnumGenerator> > enum_generators_;

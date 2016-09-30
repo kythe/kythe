@@ -80,7 +80,8 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 bin_PROGRAMS = conformance-test-runner$(EXEEXT) \
-	conformance-cpp$(EXEEXT)
+	conformance-cpp$(EXEEXT) $(am__EXEEXT_1)
+@OBJC_CONFORMANCE_TEST_TRUE@am__append_1 = conformance-objc
 subdir = conformance
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/depcomp
@@ -97,6 +98,7 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
+@OBJC_CONFORMANCE_TEST_TRUE@am__EXEEXT_1 = conformance-objc$(EXEEXT)
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_conformance_cpp_OBJECTS =  \
@@ -110,9 +112,22 @@ AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
+am__conformance_objc_SOURCES_DIST = conformance_objc.m \
+	../objectivec/GPBProtocolBuffers.m
+am__dirstamp = $(am__leading_dot)dirstamp
+@OBJC_CONFORMANCE_TEST_TRUE@am_conformance_objc_OBJECTS = conformance_objc-conformance_objc.$(OBJEXT) \
+@OBJC_CONFORMANCE_TEST_TRUE@	../objectivec/conformance_objc-GPBProtocolBuffers.$(OBJEXT)
+@OBJC_CONFORMANCE_TEST_TRUE@nodist_conformance_objc_OBJECTS = conformance_objc-Conformance.pbobjc.$(OBJEXT)
+conformance_objc_OBJECTS = $(am_conformance_objc_OBJECTS) \
+	$(nodist_conformance_objc_OBJECTS)
+conformance_objc_LDADD = $(LDADD)
+conformance_objc_LINK = $(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(OBJCLD) $(AM_OBJCFLAGS) \
+	$(OBJCFLAGS) $(conformance_objc_LDFLAGS) $(LDFLAGS) -o $@
 am_conformance_test_runner_OBJECTS =  \
 	conformance_test_runner-conformance_test.$(OBJEXT) \
-	conformance_test_runner-conformance_test_runner.$(OBJEXT)
+	conformance_test_runner-conformance_test_runner.$(OBJEXT) \
+	third_party/jsoncpp/conformance_test_runner-jsoncpp.$(OBJEXT)
 nodist_conformance_test_runner_OBJECTS =  \
 	conformance_test_runner-conformance.pb.$(OBJEXT)
 conformance_test_runner_OBJECTS =  \
@@ -120,6 +135,10 @@ conformance_test_runner_OBJECTS =  \
 	$(nodist_conformance_test_runner_OBJECTS)
 conformance_test_runner_DEPENDENCIES =  \
 	$(top_srcdir)/src/libprotobuf.la
+conformance_test_runner_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(conformance_test_runner_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -154,10 +173,48 @@ AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
 am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
 am__v_CXXLD_0 = @echo "  CXXLD   " $@;
 am__v_CXXLD_1 = 
+OBJCCOMPILE = $(OBJC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_OBJCFLAGS) $(OBJCFLAGS)
+LTOBJCCOMPILE = $(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=compile $(OBJC) $(DEFS) \
+	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
+	$(AM_OBJCFLAGS) $(OBJCFLAGS)
+AM_V_OBJC = $(am__v_OBJC_@AM_V@)
+am__v_OBJC_ = $(am__v_OBJC_@AM_DEFAULT_V@)
+am__v_OBJC_0 = @echo "  OBJC    " $@;
+am__v_OBJC_1 = 
+OBJCLD = $(OBJC)
+OBJCLINK = $(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=link $(OBJCLD) $(AM_OBJCFLAGS) $(OBJCFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+AM_V_OBJCLD = $(am__v_OBJCLD_@AM_V@)
+am__v_OBJCLD_ = $(am__v_OBJCLD_@AM_DEFAULT_V@)
+am__v_OBJCLD_0 = @echo "  OBJCLD  " $@;
+am__v_OBJCLD_1 = 
+COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
+	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+LTCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) \
+	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
+	$(AM_CFLAGS) $(CFLAGS)
+AM_V_CC = $(am__v_CC_@AM_V@)
+am__v_CC_ = $(am__v_CC_@AM_DEFAULT_V@)
+am__v_CC_0 = @echo "  CC      " $@;
+am__v_CC_1 = 
+CCLD = $(CC)
+LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+AM_V_CCLD = $(am__v_CCLD_@AM_V@)
+am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
+am__v_CCLD_0 = @echo "  CCLD    " $@;
+am__v_CCLD_1 = 
 SOURCES = $(conformance_cpp_SOURCES) $(nodist_conformance_cpp_SOURCES) \
+	$(conformance_objc_SOURCES) $(nodist_conformance_objc_SOURCES) \
 	$(conformance_test_runner_SOURCES) \
 	$(nodist_conformance_test_runner_SOURCES)
 DIST_SOURCES = $(conformance_cpp_SOURCES) \
+	$(am__conformance_objc_SOURCES_DIST) \
 	$(conformance_test_runner_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
@@ -234,6 +291,9 @@ MANIFEST_TOOL = @MANIFEST_TOOL@
 MKDIR_P = @MKDIR_P@
 NM = @NM@
 NMEDIT = @NMEDIT@
+OBJC = @OBJC@
+OBJCDEPMODE = @OBJCDEPMODE@
+OBJCFLAGS = @OBJCFLAGS@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 OTOOL = @OTOOL@
@@ -266,6 +326,7 @@ ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_CXX = @ac_ct_CXX@
 ac_ct_DUMPBIN = @ac_ct_DUMPBIN@
+ac_ct_OBJC = @ac_ct_OBJC@
 acx_pthread_config = @acx_pthread_config@
 am__include = @am__include@
 am__leading_dot = @am__leading_dot@
@@ -317,23 +378,134 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-protoc_inputs = \
+conformance_protoc_inputs = \
   conformance.proto
+
+well_known_type_protoc_inputs = \
+  $(top_srcdir)/src/google/protobuf/any.proto                  \
+  $(top_srcdir)/src/google/protobuf/duration.proto             \
+  $(top_srcdir)/src/google/protobuf/field_mask.proto           \
+  $(top_srcdir)/src/google/protobuf/struct.proto               \
+  $(top_srcdir)/src/google/protobuf/timestamp.proto            \
+  $(top_srcdir)/src/google/protobuf/wrappers.proto
 
 protoc_outputs = \
   conformance.pb.cc                                            \
   conformance.pb.h
 
+other_language_protoc_outputs = \
+  conformance_pb2.py                                           \
+  Conformance.pbobjc.h                                         \
+  Conformance.pbobjc.m                                         \
+  conformance_pb.rb                                            \
+  com/google/protobuf/Any.java                                 \
+  com/google/protobuf/AnyOrBuilder.java                        \
+  com/google/protobuf/AnyProto.java                            \
+  com/google/protobuf/BoolValue.java                           \
+  com/google/protobuf/BoolValueOrBuilder.java                  \
+  com/google/protobuf/BytesValue.java                          \
+  com/google/protobuf/BytesValueOrBuilder.java                 \
+  com/google/protobuf/conformance/Conformance.java             \
+  com/google/protobuf/DoubleValue.java                         \
+  com/google/protobuf/DoubleValueOrBuilder.java                \
+  com/google/protobuf/Duration.java                            \
+  com/google/protobuf/DurationOrBuilder.java                   \
+  com/google/protobuf/DurationProto.java                       \
+  com/google/protobuf/FieldMask.java                           \
+  com/google/protobuf/FieldMaskOrBuilder.java                  \
+  com/google/protobuf/FieldMaskProto.java                      \
+  com/google/protobuf/FloatValue.java                          \
+  com/google/protobuf/FloatValueOrBuilder.java                 \
+  com/google/protobuf/Int32Value.java                          \
+  com/google/protobuf/Int32ValueOrBuilder.java                 \
+  com/google/protobuf/Int64Value.java                          \
+  com/google/protobuf/Int64ValueOrBuilder.java                 \
+  com/google/protobuf/ListValue.java                           \
+  com/google/protobuf/ListValueOrBuilder.java                  \
+  com/google/protobuf/NullValue.java                           \
+  com/google/protobuf/StringValue.java                         \
+  com/google/protobuf/StringValueOrBuilder.java                \
+  com/google/protobuf/Struct.java                              \
+  com/google/protobuf/StructOrBuilder.java                     \
+  com/google/protobuf/StructProto.java                         \
+  com/google/protobuf/Timestamp.java                           \
+  com/google/protobuf/TimestampOrBuilder.java                  \
+  com/google/protobuf/TimestampProto.java                      \
+  com/google/protobuf/UInt32Value.java                         \
+  com/google/protobuf/UInt32ValueOrBuilder.java                \
+  com/google/protobuf/UInt64Value.java                         \
+  com/google/protobuf/UInt64ValueOrBuilder.java                \
+  com/google/protobuf/Value.java                               \
+  com/google/protobuf/ValueOrBuilder.java                      \
+  com/google/protobuf/WrappersProto.java                       \
+  google/protobuf/any.pb.cc                                    \
+  google/protobuf/any.pb.h                                     \
+  google/protobuf/any.rb                                       \
+  google/protobuf/any_pb2.py                                   \
+  google/protobuf/duration.pb.cc                               \
+  google/protobuf/duration.pb.h                                \
+  google/protobuf/duration.rb                                  \
+  google/protobuf/duration_pb2.py                              \
+  google/protobuf/field_mask.pb.cc                             \
+  google/protobuf/field_mask.pb.h                              \
+  google/protobuf/field_mask.rb                                \
+  google/protobuf/field_mask_pb2.py                            \
+  google/protobuf/struct.pb.cc                                 \
+  google/protobuf/struct.pb.h                                  \
+  google/protobuf/struct.rb                                    \
+  google/protobuf/struct_pb2.py                                \
+  google/protobuf/timestamp.pb.cc                              \
+  google/protobuf/timestamp.pb.h                               \
+  google/protobuf/timestamp.rb                                 \
+  google/protobuf/timestamp_pb2.py                             \
+  google/protobuf/wrappers.pb.cc                               \
+  google/protobuf/wrappers.pb.h                                \
+  google/protobuf/wrappers.rb                                  \
+  google/protobuf/wrappers_pb2.py
+
+
+# All source files excepet C++/Objective-C ones should be explicitly listed
+# here because the autoconf tools don't include files of other languages
+# automatically.
+EXTRA_DIST = \
+  ConformanceJava.java        \
+  ConformanceJavaLite.java    \
+  README.md                   \
+  conformance.proto           \
+  conformance_python.py       \
+  conformance_ruby.rb         \
+  failure_list_cpp.txt        \
+  failure_list_csharp.txt     \
+  failure_list_java.txt       \
+  failure_list_objc.txt       \
+  failure_list_python.txt     \
+  failure_list_python_cpp.txt \
+  failure_list_python-post26.txt \
+  failure_list_ruby.txt
+
 conformance_test_runner_LDADD = $(top_srcdir)/src/libprotobuf.la
-conformance_test_runner_SOURCES = conformance_test.cc conformance_test_runner.cc
+conformance_test_runner_SOURCES = conformance_test.h conformance_test.cc \
+                                  conformance_test_runner.cc             \
+                                  third_party/jsoncpp/json.h             \
+                                  third_party/jsoncpp/jsoncpp.cpp
+
 nodist_conformance_test_runner_SOURCES = conformance.pb.cc
-conformance_test_runner_CPPFLAGS = -I$(top_srcdir)/src
+conformance_test_runner_CPPFLAGS = -I$(top_srcdir)/src -I$(srcdir)
+conformance_test_runner_CXXFLAGS = -std=c++11
 conformance_cpp_LDADD = $(top_srcdir)/src/libprotobuf.la
 conformance_cpp_SOURCES = conformance_cpp.cc
 nodist_conformance_cpp_SOURCES = conformance.pb.cc
 conformance_cpp_CPPFLAGS = -I$(top_srcdir)/src
-BUILT_SOURCES = $(protoc_outputs)
-CLEANFILES = $(protoc_outputs) protoc_middleman javac_middleman conformance-java conformance-csharp
+@OBJC_CONFORMANCE_TEST_TRUE@conformance_objc_SOURCES = conformance_objc.m ../objectivec/GPBProtocolBuffers.m
+@OBJC_CONFORMANCE_TEST_TRUE@nodist_conformance_objc_SOURCES = Conformance.pbobjc.m
+# On travis, the build fails without the isysroot because whatever system
+# headers are being found don't include generics support for
+# NSArray/NSDictionary, the only guess is their image at one time had an odd
+# setup for Xcode and old frameworks are being found.
+@OBJC_CONFORMANCE_TEST_TRUE@conformance_objc_CPPFLAGS = -I$(top_srcdir)/objectivec -isysroot `xcrun --sdk macosx --show-sdk-path`
+@OBJC_CONFORMANCE_TEST_TRUE@conformance_objc_LDFLAGS = -framework Foundation
+BUILT_SOURCES = $(protoc_outputs) $(other_language_protoc_outputs)
+CLEANFILES = $(protoc_outputs) protoc_middleman javac_middleman conformance-java javac_middleman_lite conformance-java-lite conformance-csharp $(other_language_protoc_outputs)
 MAINTAINERCLEANFILES = \
   Makefile.in
 
@@ -341,7 +513,7 @@ all: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
 .SUFFIXES:
-.SUFFIXES: .cc .lo .o .obj
+.SUFFIXES: .cc .cpp .lo .m .o .obj
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -351,9 +523,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign conformance/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu conformance/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign conformance/Makefile
+	  $(AUTOMAKE) --gnu conformance/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -425,22 +597,50 @@ clean-binPROGRAMS:
 conformance-cpp$(EXEEXT): $(conformance_cpp_OBJECTS) $(conformance_cpp_DEPENDENCIES) $(EXTRA_conformance_cpp_DEPENDENCIES) 
 	@rm -f conformance-cpp$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(conformance_cpp_OBJECTS) $(conformance_cpp_LDADD) $(LIBS)
+../objectivec/$(am__dirstamp):
+	@$(MKDIR_P) ../objectivec
+	@: > ../objectivec/$(am__dirstamp)
+../objectivec/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) ../objectivec/$(DEPDIR)
+	@: > ../objectivec/$(DEPDIR)/$(am__dirstamp)
+../objectivec/conformance_objc-GPBProtocolBuffers.$(OBJEXT):  \
+	../objectivec/$(am__dirstamp) \
+	../objectivec/$(DEPDIR)/$(am__dirstamp)
+
+conformance-objc$(EXEEXT): $(conformance_objc_OBJECTS) $(conformance_objc_DEPENDENCIES) $(EXTRA_conformance_objc_DEPENDENCIES) 
+	@rm -f conformance-objc$(EXEEXT)
+	$(AM_V_OBJCLD)$(conformance_objc_LINK) $(conformance_objc_OBJECTS) $(conformance_objc_LDADD) $(LIBS)
+third_party/jsoncpp/$(am__dirstamp):
+	@$(MKDIR_P) third_party/jsoncpp
+	@: > third_party/jsoncpp/$(am__dirstamp)
+third_party/jsoncpp/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) third_party/jsoncpp/$(DEPDIR)
+	@: > third_party/jsoncpp/$(DEPDIR)/$(am__dirstamp)
+third_party/jsoncpp/conformance_test_runner-jsoncpp.$(OBJEXT):  \
+	third_party/jsoncpp/$(am__dirstamp) \
+	third_party/jsoncpp/$(DEPDIR)/$(am__dirstamp)
 
 conformance-test-runner$(EXEEXT): $(conformance_test_runner_OBJECTS) $(conformance_test_runner_DEPENDENCIES) $(EXTRA_conformance_test_runner_DEPENDENCIES) 
 	@rm -f conformance-test-runner$(EXEEXT)
-	$(AM_V_CXXLD)$(CXXLINK) $(conformance_test_runner_OBJECTS) $(conformance_test_runner_LDADD) $(LIBS)
+	$(AM_V_CXXLD)$(conformance_test_runner_LINK) $(conformance_test_runner_OBJECTS) $(conformance_test_runner_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
+	-rm -f ../objectivec/*.$(OBJEXT)
+	-rm -f third_party/jsoncpp/*.$(OBJEXT)
 
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@../objectivec/$(DEPDIR)/conformance_objc-GPBProtocolBuffers.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/conformance_cpp-conformance.pb.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/conformance_cpp-conformance_cpp.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/conformance_objc-Conformance.pbobjc.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/conformance_objc-conformance_objc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/conformance_test_runner-conformance.pb.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/conformance_test_runner-conformance_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/conformance_test_runner-conformance_test_runner.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@third_party/jsoncpp/$(DEPDIR)/conformance_test_runner-jsoncpp.Po@am__quote@
 
 .cc.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
@@ -495,46 +695,150 @@ conformance_cpp-conformance.pb.obj: conformance.pb.cc
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_cpp_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o conformance_cpp-conformance.pb.obj `if test -f 'conformance.pb.cc'; then $(CYGPATH_W) 'conformance.pb.cc'; else $(CYGPATH_W) '$(srcdir)/conformance.pb.cc'; fi`
 
 conformance_test_runner-conformance_test.o: conformance_test.cc
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_test_runner_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT conformance_test_runner-conformance_test.o -MD -MP -MF $(DEPDIR)/conformance_test_runner-conformance_test.Tpo -c -o conformance_test_runner-conformance_test.o `test -f 'conformance_test.cc' || echo '$(srcdir)/'`conformance_test.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_test_runner_CPPFLAGS) $(CPPFLAGS) $(conformance_test_runner_CXXFLAGS) $(CXXFLAGS) -MT conformance_test_runner-conformance_test.o -MD -MP -MF $(DEPDIR)/conformance_test_runner-conformance_test.Tpo -c -o conformance_test_runner-conformance_test.o `test -f 'conformance_test.cc' || echo '$(srcdir)/'`conformance_test.cc
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/conformance_test_runner-conformance_test.Tpo $(DEPDIR)/conformance_test_runner-conformance_test.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='conformance_test.cc' object='conformance_test_runner-conformance_test.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_test_runner_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o conformance_test_runner-conformance_test.o `test -f 'conformance_test.cc' || echo '$(srcdir)/'`conformance_test.cc
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_test_runner_CPPFLAGS) $(CPPFLAGS) $(conformance_test_runner_CXXFLAGS) $(CXXFLAGS) -c -o conformance_test_runner-conformance_test.o `test -f 'conformance_test.cc' || echo '$(srcdir)/'`conformance_test.cc
 
 conformance_test_runner-conformance_test.obj: conformance_test.cc
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_test_runner_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT conformance_test_runner-conformance_test.obj -MD -MP -MF $(DEPDIR)/conformance_test_runner-conformance_test.Tpo -c -o conformance_test_runner-conformance_test.obj `if test -f 'conformance_test.cc'; then $(CYGPATH_W) 'conformance_test.cc'; else $(CYGPATH_W) '$(srcdir)/conformance_test.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_test_runner_CPPFLAGS) $(CPPFLAGS) $(conformance_test_runner_CXXFLAGS) $(CXXFLAGS) -MT conformance_test_runner-conformance_test.obj -MD -MP -MF $(DEPDIR)/conformance_test_runner-conformance_test.Tpo -c -o conformance_test_runner-conformance_test.obj `if test -f 'conformance_test.cc'; then $(CYGPATH_W) 'conformance_test.cc'; else $(CYGPATH_W) '$(srcdir)/conformance_test.cc'; fi`
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/conformance_test_runner-conformance_test.Tpo $(DEPDIR)/conformance_test_runner-conformance_test.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='conformance_test.cc' object='conformance_test_runner-conformance_test.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_test_runner_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o conformance_test_runner-conformance_test.obj `if test -f 'conformance_test.cc'; then $(CYGPATH_W) 'conformance_test.cc'; else $(CYGPATH_W) '$(srcdir)/conformance_test.cc'; fi`
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_test_runner_CPPFLAGS) $(CPPFLAGS) $(conformance_test_runner_CXXFLAGS) $(CXXFLAGS) -c -o conformance_test_runner-conformance_test.obj `if test -f 'conformance_test.cc'; then $(CYGPATH_W) 'conformance_test.cc'; else $(CYGPATH_W) '$(srcdir)/conformance_test.cc'; fi`
 
 conformance_test_runner-conformance_test_runner.o: conformance_test_runner.cc
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_test_runner_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT conformance_test_runner-conformance_test_runner.o -MD -MP -MF $(DEPDIR)/conformance_test_runner-conformance_test_runner.Tpo -c -o conformance_test_runner-conformance_test_runner.o `test -f 'conformance_test_runner.cc' || echo '$(srcdir)/'`conformance_test_runner.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_test_runner_CPPFLAGS) $(CPPFLAGS) $(conformance_test_runner_CXXFLAGS) $(CXXFLAGS) -MT conformance_test_runner-conformance_test_runner.o -MD -MP -MF $(DEPDIR)/conformance_test_runner-conformance_test_runner.Tpo -c -o conformance_test_runner-conformance_test_runner.o `test -f 'conformance_test_runner.cc' || echo '$(srcdir)/'`conformance_test_runner.cc
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/conformance_test_runner-conformance_test_runner.Tpo $(DEPDIR)/conformance_test_runner-conformance_test_runner.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='conformance_test_runner.cc' object='conformance_test_runner-conformance_test_runner.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_test_runner_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o conformance_test_runner-conformance_test_runner.o `test -f 'conformance_test_runner.cc' || echo '$(srcdir)/'`conformance_test_runner.cc
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_test_runner_CPPFLAGS) $(CPPFLAGS) $(conformance_test_runner_CXXFLAGS) $(CXXFLAGS) -c -o conformance_test_runner-conformance_test_runner.o `test -f 'conformance_test_runner.cc' || echo '$(srcdir)/'`conformance_test_runner.cc
 
 conformance_test_runner-conformance_test_runner.obj: conformance_test_runner.cc
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_test_runner_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT conformance_test_runner-conformance_test_runner.obj -MD -MP -MF $(DEPDIR)/conformance_test_runner-conformance_test_runner.Tpo -c -o conformance_test_runner-conformance_test_runner.obj `if test -f 'conformance_test_runner.cc'; then $(CYGPATH_W) 'conformance_test_runner.cc'; else $(CYGPATH_W) '$(srcdir)/conformance_test_runner.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_test_runner_CPPFLAGS) $(CPPFLAGS) $(conformance_test_runner_CXXFLAGS) $(CXXFLAGS) -MT conformance_test_runner-conformance_test_runner.obj -MD -MP -MF $(DEPDIR)/conformance_test_runner-conformance_test_runner.Tpo -c -o conformance_test_runner-conformance_test_runner.obj `if test -f 'conformance_test_runner.cc'; then $(CYGPATH_W) 'conformance_test_runner.cc'; else $(CYGPATH_W) '$(srcdir)/conformance_test_runner.cc'; fi`
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/conformance_test_runner-conformance_test_runner.Tpo $(DEPDIR)/conformance_test_runner-conformance_test_runner.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='conformance_test_runner.cc' object='conformance_test_runner-conformance_test_runner.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_test_runner_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o conformance_test_runner-conformance_test_runner.obj `if test -f 'conformance_test_runner.cc'; then $(CYGPATH_W) 'conformance_test_runner.cc'; else $(CYGPATH_W) '$(srcdir)/conformance_test_runner.cc'; fi`
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_test_runner_CPPFLAGS) $(CPPFLAGS) $(conformance_test_runner_CXXFLAGS) $(CXXFLAGS) -c -o conformance_test_runner-conformance_test_runner.obj `if test -f 'conformance_test_runner.cc'; then $(CYGPATH_W) 'conformance_test_runner.cc'; else $(CYGPATH_W) '$(srcdir)/conformance_test_runner.cc'; fi`
+
+third_party/jsoncpp/conformance_test_runner-jsoncpp.o: third_party/jsoncpp/jsoncpp.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_test_runner_CPPFLAGS) $(CPPFLAGS) $(conformance_test_runner_CXXFLAGS) $(CXXFLAGS) -MT third_party/jsoncpp/conformance_test_runner-jsoncpp.o -MD -MP -MF third_party/jsoncpp/$(DEPDIR)/conformance_test_runner-jsoncpp.Tpo -c -o third_party/jsoncpp/conformance_test_runner-jsoncpp.o `test -f 'third_party/jsoncpp/jsoncpp.cpp' || echo '$(srcdir)/'`third_party/jsoncpp/jsoncpp.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) third_party/jsoncpp/$(DEPDIR)/conformance_test_runner-jsoncpp.Tpo third_party/jsoncpp/$(DEPDIR)/conformance_test_runner-jsoncpp.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='third_party/jsoncpp/jsoncpp.cpp' object='third_party/jsoncpp/conformance_test_runner-jsoncpp.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_test_runner_CPPFLAGS) $(CPPFLAGS) $(conformance_test_runner_CXXFLAGS) $(CXXFLAGS) -c -o third_party/jsoncpp/conformance_test_runner-jsoncpp.o `test -f 'third_party/jsoncpp/jsoncpp.cpp' || echo '$(srcdir)/'`third_party/jsoncpp/jsoncpp.cpp
+
+third_party/jsoncpp/conformance_test_runner-jsoncpp.obj: third_party/jsoncpp/jsoncpp.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_test_runner_CPPFLAGS) $(CPPFLAGS) $(conformance_test_runner_CXXFLAGS) $(CXXFLAGS) -MT third_party/jsoncpp/conformance_test_runner-jsoncpp.obj -MD -MP -MF third_party/jsoncpp/$(DEPDIR)/conformance_test_runner-jsoncpp.Tpo -c -o third_party/jsoncpp/conformance_test_runner-jsoncpp.obj `if test -f 'third_party/jsoncpp/jsoncpp.cpp'; then $(CYGPATH_W) 'third_party/jsoncpp/jsoncpp.cpp'; else $(CYGPATH_W) '$(srcdir)/third_party/jsoncpp/jsoncpp.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) third_party/jsoncpp/$(DEPDIR)/conformance_test_runner-jsoncpp.Tpo third_party/jsoncpp/$(DEPDIR)/conformance_test_runner-jsoncpp.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='third_party/jsoncpp/jsoncpp.cpp' object='third_party/jsoncpp/conformance_test_runner-jsoncpp.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_test_runner_CPPFLAGS) $(CPPFLAGS) $(conformance_test_runner_CXXFLAGS) $(CXXFLAGS) -c -o third_party/jsoncpp/conformance_test_runner-jsoncpp.obj `if test -f 'third_party/jsoncpp/jsoncpp.cpp'; then $(CYGPATH_W) 'third_party/jsoncpp/jsoncpp.cpp'; else $(CYGPATH_W) '$(srcdir)/third_party/jsoncpp/jsoncpp.cpp'; fi`
 
 conformance_test_runner-conformance.pb.o: conformance.pb.cc
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_test_runner_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT conformance_test_runner-conformance.pb.o -MD -MP -MF $(DEPDIR)/conformance_test_runner-conformance.pb.Tpo -c -o conformance_test_runner-conformance.pb.o `test -f 'conformance.pb.cc' || echo '$(srcdir)/'`conformance.pb.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_test_runner_CPPFLAGS) $(CPPFLAGS) $(conformance_test_runner_CXXFLAGS) $(CXXFLAGS) -MT conformance_test_runner-conformance.pb.o -MD -MP -MF $(DEPDIR)/conformance_test_runner-conformance.pb.Tpo -c -o conformance_test_runner-conformance.pb.o `test -f 'conformance.pb.cc' || echo '$(srcdir)/'`conformance.pb.cc
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/conformance_test_runner-conformance.pb.Tpo $(DEPDIR)/conformance_test_runner-conformance.pb.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='conformance.pb.cc' object='conformance_test_runner-conformance.pb.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_test_runner_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o conformance_test_runner-conformance.pb.o `test -f 'conformance.pb.cc' || echo '$(srcdir)/'`conformance.pb.cc
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_test_runner_CPPFLAGS) $(CPPFLAGS) $(conformance_test_runner_CXXFLAGS) $(CXXFLAGS) -c -o conformance_test_runner-conformance.pb.o `test -f 'conformance.pb.cc' || echo '$(srcdir)/'`conformance.pb.cc
 
 conformance_test_runner-conformance.pb.obj: conformance.pb.cc
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_test_runner_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT conformance_test_runner-conformance.pb.obj -MD -MP -MF $(DEPDIR)/conformance_test_runner-conformance.pb.Tpo -c -o conformance_test_runner-conformance.pb.obj `if test -f 'conformance.pb.cc'; then $(CYGPATH_W) 'conformance.pb.cc'; else $(CYGPATH_W) '$(srcdir)/conformance.pb.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_test_runner_CPPFLAGS) $(CPPFLAGS) $(conformance_test_runner_CXXFLAGS) $(CXXFLAGS) -MT conformance_test_runner-conformance.pb.obj -MD -MP -MF $(DEPDIR)/conformance_test_runner-conformance.pb.Tpo -c -o conformance_test_runner-conformance.pb.obj `if test -f 'conformance.pb.cc'; then $(CYGPATH_W) 'conformance.pb.cc'; else $(CYGPATH_W) '$(srcdir)/conformance.pb.cc'; fi`
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/conformance_test_runner-conformance.pb.Tpo $(DEPDIR)/conformance_test_runner-conformance.pb.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='conformance.pb.cc' object='conformance_test_runner-conformance.pb.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_test_runner_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o conformance_test_runner-conformance.pb.obj `if test -f 'conformance.pb.cc'; then $(CYGPATH_W) 'conformance.pb.cc'; else $(CYGPATH_W) '$(srcdir)/conformance.pb.cc'; fi`
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_test_runner_CPPFLAGS) $(CPPFLAGS) $(conformance_test_runner_CXXFLAGS) $(CXXFLAGS) -c -o conformance_test_runner-conformance.pb.obj `if test -f 'conformance.pb.cc'; then $(CYGPATH_W) 'conformance.pb.cc'; else $(CYGPATH_W) '$(srcdir)/conformance.pb.cc'; fi`
+
+.cpp.o:
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
+@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXXCOMPILE) -c -o $@ $<
+
+.cpp.obj:
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
+@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
+@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+
+.cpp.lo:
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.lo$$||'`;\
+@am__fastdepCXX_TRUE@	$(LTCXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LTCXXCOMPILE) -c -o $@ $<
+
+.m.o:
+@am__fastdepOBJC_TRUE@	$(AM_V_OBJC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
+@am__fastdepOBJC_TRUE@	$(OBJCCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepOBJC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
+@AMDEP_TRUE@@am__fastdepOBJC_FALSE@	$(AM_V_OBJC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepOBJC_FALSE@	DEPDIR=$(DEPDIR) $(OBJCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepOBJC_FALSE@	$(AM_V_OBJC@am__nodep@)$(OBJCCOMPILE) -c -o $@ $<
+
+.m.obj:
+@am__fastdepOBJC_TRUE@	$(AM_V_OBJC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
+@am__fastdepOBJC_TRUE@	$(OBJCCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
+@am__fastdepOBJC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
+@AMDEP_TRUE@@am__fastdepOBJC_FALSE@	$(AM_V_OBJC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepOBJC_FALSE@	DEPDIR=$(DEPDIR) $(OBJCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepOBJC_FALSE@	$(AM_V_OBJC@am__nodep@)$(OBJCCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+
+.m.lo:
+@am__fastdepOBJC_TRUE@	$(AM_V_OBJC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.lo$$||'`;\
+@am__fastdepOBJC_TRUE@	$(LTOBJCCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepOBJC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Plo
+@AMDEP_TRUE@@am__fastdepOBJC_FALSE@	$(AM_V_OBJC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepOBJC_FALSE@	DEPDIR=$(DEPDIR) $(OBJCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepOBJC_FALSE@	$(AM_V_OBJC@am__nodep@)$(LTOBJCCOMPILE) -c -o $@ $<
+
+conformance_objc-conformance_objc.o: conformance_objc.m
+@am__fastdepOBJC_TRUE@	$(AM_V_OBJC)$(OBJC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_objc_CPPFLAGS) $(CPPFLAGS) $(AM_OBJCFLAGS) $(OBJCFLAGS) -MT conformance_objc-conformance_objc.o -MD -MP -MF $(DEPDIR)/conformance_objc-conformance_objc.Tpo -c -o conformance_objc-conformance_objc.o `test -f 'conformance_objc.m' || echo '$(srcdir)/'`conformance_objc.m
+@am__fastdepOBJC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/conformance_objc-conformance_objc.Tpo $(DEPDIR)/conformance_objc-conformance_objc.Po
+@AMDEP_TRUE@@am__fastdepOBJC_FALSE@	$(AM_V_OBJC)source='conformance_objc.m' object='conformance_objc-conformance_objc.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepOBJC_FALSE@	DEPDIR=$(DEPDIR) $(OBJCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepOBJC_FALSE@	$(AM_V_OBJC@am__nodep@)$(OBJC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_objc_CPPFLAGS) $(CPPFLAGS) $(AM_OBJCFLAGS) $(OBJCFLAGS) -c -o conformance_objc-conformance_objc.o `test -f 'conformance_objc.m' || echo '$(srcdir)/'`conformance_objc.m
+
+conformance_objc-conformance_objc.obj: conformance_objc.m
+@am__fastdepOBJC_TRUE@	$(AM_V_OBJC)$(OBJC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_objc_CPPFLAGS) $(CPPFLAGS) $(AM_OBJCFLAGS) $(OBJCFLAGS) -MT conformance_objc-conformance_objc.obj -MD -MP -MF $(DEPDIR)/conformance_objc-conformance_objc.Tpo -c -o conformance_objc-conformance_objc.obj `if test -f 'conformance_objc.m'; then $(CYGPATH_W) 'conformance_objc.m'; else $(CYGPATH_W) '$(srcdir)/conformance_objc.m'; fi`
+@am__fastdepOBJC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/conformance_objc-conformance_objc.Tpo $(DEPDIR)/conformance_objc-conformance_objc.Po
+@AMDEP_TRUE@@am__fastdepOBJC_FALSE@	$(AM_V_OBJC)source='conformance_objc.m' object='conformance_objc-conformance_objc.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepOBJC_FALSE@	DEPDIR=$(DEPDIR) $(OBJCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepOBJC_FALSE@	$(AM_V_OBJC@am__nodep@)$(OBJC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_objc_CPPFLAGS) $(CPPFLAGS) $(AM_OBJCFLAGS) $(OBJCFLAGS) -c -o conformance_objc-conformance_objc.obj `if test -f 'conformance_objc.m'; then $(CYGPATH_W) 'conformance_objc.m'; else $(CYGPATH_W) '$(srcdir)/conformance_objc.m'; fi`
+
+../objectivec/conformance_objc-GPBProtocolBuffers.o: ../objectivec/GPBProtocolBuffers.m
+@am__fastdepOBJC_TRUE@	$(AM_V_OBJC)$(OBJC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_objc_CPPFLAGS) $(CPPFLAGS) $(AM_OBJCFLAGS) $(OBJCFLAGS) -MT ../objectivec/conformance_objc-GPBProtocolBuffers.o -MD -MP -MF ../objectivec/$(DEPDIR)/conformance_objc-GPBProtocolBuffers.Tpo -c -o ../objectivec/conformance_objc-GPBProtocolBuffers.o `test -f '../objectivec/GPBProtocolBuffers.m' || echo '$(srcdir)/'`../objectivec/GPBProtocolBuffers.m
+@am__fastdepOBJC_TRUE@	$(AM_V_at)$(am__mv) ../objectivec/$(DEPDIR)/conformance_objc-GPBProtocolBuffers.Tpo ../objectivec/$(DEPDIR)/conformance_objc-GPBProtocolBuffers.Po
+@AMDEP_TRUE@@am__fastdepOBJC_FALSE@	$(AM_V_OBJC)source='../objectivec/GPBProtocolBuffers.m' object='../objectivec/conformance_objc-GPBProtocolBuffers.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepOBJC_FALSE@	DEPDIR=$(DEPDIR) $(OBJCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepOBJC_FALSE@	$(AM_V_OBJC@am__nodep@)$(OBJC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_objc_CPPFLAGS) $(CPPFLAGS) $(AM_OBJCFLAGS) $(OBJCFLAGS) -c -o ../objectivec/conformance_objc-GPBProtocolBuffers.o `test -f '../objectivec/GPBProtocolBuffers.m' || echo '$(srcdir)/'`../objectivec/GPBProtocolBuffers.m
+
+../objectivec/conformance_objc-GPBProtocolBuffers.obj: ../objectivec/GPBProtocolBuffers.m
+@am__fastdepOBJC_TRUE@	$(AM_V_OBJC)$(OBJC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_objc_CPPFLAGS) $(CPPFLAGS) $(AM_OBJCFLAGS) $(OBJCFLAGS) -MT ../objectivec/conformance_objc-GPBProtocolBuffers.obj -MD -MP -MF ../objectivec/$(DEPDIR)/conformance_objc-GPBProtocolBuffers.Tpo -c -o ../objectivec/conformance_objc-GPBProtocolBuffers.obj `if test -f '../objectivec/GPBProtocolBuffers.m'; then $(CYGPATH_W) '../objectivec/GPBProtocolBuffers.m'; else $(CYGPATH_W) '$(srcdir)/../objectivec/GPBProtocolBuffers.m'; fi`
+@am__fastdepOBJC_TRUE@	$(AM_V_at)$(am__mv) ../objectivec/$(DEPDIR)/conformance_objc-GPBProtocolBuffers.Tpo ../objectivec/$(DEPDIR)/conformance_objc-GPBProtocolBuffers.Po
+@AMDEP_TRUE@@am__fastdepOBJC_FALSE@	$(AM_V_OBJC)source='../objectivec/GPBProtocolBuffers.m' object='../objectivec/conformance_objc-GPBProtocolBuffers.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepOBJC_FALSE@	DEPDIR=$(DEPDIR) $(OBJCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepOBJC_FALSE@	$(AM_V_OBJC@am__nodep@)$(OBJC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_objc_CPPFLAGS) $(CPPFLAGS) $(AM_OBJCFLAGS) $(OBJCFLAGS) -c -o ../objectivec/conformance_objc-GPBProtocolBuffers.obj `if test -f '../objectivec/GPBProtocolBuffers.m'; then $(CYGPATH_W) '../objectivec/GPBProtocolBuffers.m'; else $(CYGPATH_W) '$(srcdir)/../objectivec/GPBProtocolBuffers.m'; fi`
+
+conformance_objc-Conformance.pbobjc.o: Conformance.pbobjc.m
+@am__fastdepOBJC_TRUE@	$(AM_V_OBJC)$(OBJC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_objc_CPPFLAGS) $(CPPFLAGS) $(AM_OBJCFLAGS) $(OBJCFLAGS) -MT conformance_objc-Conformance.pbobjc.o -MD -MP -MF $(DEPDIR)/conformance_objc-Conformance.pbobjc.Tpo -c -o conformance_objc-Conformance.pbobjc.o `test -f 'Conformance.pbobjc.m' || echo '$(srcdir)/'`Conformance.pbobjc.m
+@am__fastdepOBJC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/conformance_objc-Conformance.pbobjc.Tpo $(DEPDIR)/conformance_objc-Conformance.pbobjc.Po
+@AMDEP_TRUE@@am__fastdepOBJC_FALSE@	$(AM_V_OBJC)source='Conformance.pbobjc.m' object='conformance_objc-Conformance.pbobjc.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepOBJC_FALSE@	DEPDIR=$(DEPDIR) $(OBJCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepOBJC_FALSE@	$(AM_V_OBJC@am__nodep@)$(OBJC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_objc_CPPFLAGS) $(CPPFLAGS) $(AM_OBJCFLAGS) $(OBJCFLAGS) -c -o conformance_objc-Conformance.pbobjc.o `test -f 'Conformance.pbobjc.m' || echo '$(srcdir)/'`Conformance.pbobjc.m
+
+conformance_objc-Conformance.pbobjc.obj: Conformance.pbobjc.m
+@am__fastdepOBJC_TRUE@	$(AM_V_OBJC)$(OBJC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_objc_CPPFLAGS) $(CPPFLAGS) $(AM_OBJCFLAGS) $(OBJCFLAGS) -MT conformance_objc-Conformance.pbobjc.obj -MD -MP -MF $(DEPDIR)/conformance_objc-Conformance.pbobjc.Tpo -c -o conformance_objc-Conformance.pbobjc.obj `if test -f 'Conformance.pbobjc.m'; then $(CYGPATH_W) 'Conformance.pbobjc.m'; else $(CYGPATH_W) '$(srcdir)/Conformance.pbobjc.m'; fi`
+@am__fastdepOBJC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/conformance_objc-Conformance.pbobjc.Tpo $(DEPDIR)/conformance_objc-Conformance.pbobjc.Po
+@AMDEP_TRUE@@am__fastdepOBJC_FALSE@	$(AM_V_OBJC)source='Conformance.pbobjc.m' object='conformance_objc-Conformance.pbobjc.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepOBJC_FALSE@	DEPDIR=$(DEPDIR) $(OBJCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepOBJC_FALSE@	$(AM_V_OBJC@am__nodep@)$(OBJC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(conformance_objc_CPPFLAGS) $(CPPFLAGS) $(AM_OBJCFLAGS) $(OBJCFLAGS) -c -o conformance_objc-Conformance.pbobjc.obj `if test -f 'Conformance.pbobjc.m'; then $(CYGPATH_W) 'Conformance.pbobjc.m'; else $(CYGPATH_W) '$(srcdir)/Conformance.pbobjc.m'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -660,6 +964,10 @@ clean-generic:
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
+	-rm -f ../objectivec/$(DEPDIR)/$(am__dirstamp)
+	-rm -f ../objectivec/$(am__dirstamp)
+	-rm -f third_party/jsoncpp/$(DEPDIR)/$(am__dirstamp)
+	-rm -f third_party/jsoncpp/$(am__dirstamp)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
@@ -671,7 +979,7 @@ clean: clean-am
 clean-am: clean-binPROGRAMS clean-generic clean-libtool mostlyclean-am
 
 distclean: distclean-am
-	-rm -rf ./$(DEPDIR)
+	-rm -rf ../objectivec/$(DEPDIR) ./$(DEPDIR) third_party/jsoncpp/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -717,7 +1025,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-	-rm -rf ./$(DEPDIR)
+	-rm -rf ../objectivec/$(DEPDIR) ./$(DEPDIR) third_party/jsoncpp/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
@@ -752,51 +1060,130 @@ uninstall-am: uninstall-binPROGRAMS
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	tags tags-am uninstall uninstall-am uninstall-binPROGRAMS
 
+  # lite/com/google/protobuf/Any.java                            \
+  # lite/com/google/protobuf/AnyOrBuilder.java                   \
+  # lite/com/google/protobuf/AnyProto.java                       \
+  # lite/com/google/protobuf/BoolValue.java                      \
+  # lite/com/google/protobuf/BoolValueOrBuilder.java             \
+  # lite/com/google/protobuf/BytesValue.java                     \
+  # lite/com/google/protobuf/BytesValueOrBuilder.java            \
+  # lite/com/google/protobuf/conformance/Conformance.java        \
+  # lite/com/google/protobuf/DoubleValue.java                    \
+  # lite/com/google/protobuf/DoubleValueOrBuilder.java           \
+  # lite/com/google/protobuf/Duration.java                       \
+  # lite/com/google/protobuf/DurationOrBuilder.java              \
+  # lite/com/google/protobuf/DurationProto.java                  \
+  # lite/com/google/protobuf/FieldMask.java                      \
+  # lite/com/google/protobuf/FieldMaskOrBuilder.java             \
+  # lite/com/google/protobuf/FieldMaskProto.java                 \
+  # lite/com/google/protobuf/FloatValue.java                     \
+  # lite/com/google/protobuf/FloatValueOrBuilder.java            \
+  # lite/com/google/protobuf/Int32Value.java                     \
+  # lite/com/google/protobuf/Int32ValueOrBuilder.java            \
+  # lite/com/google/protobuf/Int64Value.java                     \
+  # lite/com/google/protobuf/Int64ValueOrBuilder.java            \
+  # lite/com/google/protobuf/ListValue.java                      \
+  # lite/com/google/protobuf/ListValueOrBuilder.java             \
+  # lite/com/google/protobuf/NullValue.java                      \
+  # lite/com/google/protobuf/StringValue.java                    \
+  # lite/com/google/protobuf/StringValueOrBuilder.java           \
+  # lite/com/google/protobuf/Struct.java                         \
+  # lite/com/google/protobuf/StructOrBuilder.java                \
+  # lite/com/google/protobuf/StructProto.java                    \
+  # lite/com/google/protobuf/Timestamp.java                      \
+  # lite/com/google/protobuf/TimestampOrBuilder.java             \
+  # lite/com/google/protobuf/TimestampProto.java                 \
+  # lite/com/google/protobuf/UInt32Value.java                    \
+  # lite/com/google/protobuf/UInt32ValueOrBuilder.java           \
+  # lite/com/google/protobuf/UInt64Value.java                    \
+  # lite/com/google/protobuf/UInt64ValueOrBuilder.java           \
+  # lite/com/google/protobuf/Value.java                          \
+  # lite/com/google/protobuf/ValueOrBuilder.java                 \
+  # lite/com/google/protobuf/WrappersProto.java
+# Explicit deps beacuse BUILT_SOURCES are only done before a "make all/check"
+# so a direct "make test_cpp" could fail if parallel enough.
+conformance_test_runner-conformance_test.$(OBJEXT): conformance.pb.h
+conformance_test_runner-conformance_test_runner.$(OBJEXT): conformance.pb.h
+# Explicit dep beacuse BUILT_SOURCES are only done before a "make all/check"
+# so a direct "make test_cpp" could fail if parallel enough.
+conformance_cpp-conformance_cpp.$(OBJEXT): conformance.pb.h
+# Explicit dep beacuse BUILT_SOURCES are only done before a "make all/check"
+# so a direct "make test_objc" could fail if parallel enough.
+@OBJC_CONFORMANCE_TEST_TRUE@conformance_objc-conformance_objc.$(OBJEXT): Conformance.pbobjc.h
 
-@USE_EXTERNAL_PROTOC_TRUE@protoc_middleman: $(protoc_inputs)
-@USE_EXTERNAL_PROTOC_TRUE@	$(PROTOC) -I$(srcdir) --cpp_out=. --java_out=. --ruby_out=. $^
+# Some implementations include pre-generated versions of well-known types.
+@USE_EXTERNAL_PROTOC_TRUE@protoc_middleman: $(conformance_protoc_inputs) $(well_known_type_protoc_inputs)
+@USE_EXTERNAL_PROTOC_TRUE@	$(PROTOC) -I$(srcdir) -I$(top_srcdir) --cpp_out=. --java_out=. --ruby_out=. --objc_out=. --python_out=. $(conformance_protoc_inputs)
+@USE_EXTERNAL_PROTOC_TRUE@	$(PROTOC) -I$(srcdir) -I$(top_srcdir) --cpp_out=. --java_out=. --ruby_out=. --python_out=. $(well_known_type_protoc_inputs)
 @USE_EXTERNAL_PROTOC_TRUE@	touch protoc_middleman
 
 # We have to cd to $(srcdir) before executing protoc because $(protoc_inputs) is
 # relative to srcdir, which may not be the same as the current directory when
 # building out-of-tree.
-@USE_EXTERNAL_PROTOC_FALSE@protoc_middleman: $(top_srcdir)/src/protoc$(EXEEXT) $(protoc_inputs)
-@USE_EXTERNAL_PROTOC_FALSE@	oldpwd=`pwd` && ( cd $(srcdir) && $$oldpwd/../src/protoc$(EXEEXT) -I. --cpp_out=$$oldpwd --java_out=$$oldpwd --ruby_out=$$oldpwd $(protoc_inputs) )
+@USE_EXTERNAL_PROTOC_FALSE@protoc_middleman: $(top_srcdir)/src/protoc$(EXEEXT) $(conformance_protoc_inputs) $(well_known_type_protoc_inputs)
+@USE_EXTERNAL_PROTOC_FALSE@	oldpwd=`pwd` && ( cd $(srcdir) && $$oldpwd/../src/protoc$(EXEEXT) -I. -I$(top_srcdir)/src --cpp_out=$$oldpwd --java_out=$$oldpwd --ruby_out=$$oldpwd --objc_out=$$oldpwd --python_out=$$oldpwd $(conformance_protoc_inputs) )
+@USE_EXTERNAL_PROTOC_FALSE@	oldpwd=`pwd` && ( cd $(srcdir) && $$oldpwd/../src/protoc$(EXEEXT) -I. -I$(top_srcdir)/src --cpp_out=$$oldpwd --java_out=$$oldpwd --ruby_out=$$oldpwd --python_out=$$oldpwd $(well_known_type_protoc_inputs) )
 @USE_EXTERNAL_PROTOC_FALSE@	touch protoc_middleman
 
 $(protoc_outputs): protoc_middleman
 
-javac_middleman: ConformanceJava.java protoc_middleman
-	javac -classpath ../java/target/classes ConformanceJava.java com/google/protobuf/conformance/Conformance.java
+$(other_language_protoc_outputs): protoc_middleman
+
+javac_middleman: ConformanceJava.java protoc_middleman $(other_language_protoc_outputs)
+	jar=`ls ../java/util/target/*jar-with-dependencies.jar` && javac -classpath ../java/target/classes:$$jar ConformanceJava.java com/google/protobuf/conformance/Conformance.java
 	@touch javac_middleman
 
 conformance-java: javac_middleman
 	@echo "Writing shortcut script conformance-java..."
 	@echo '#! /bin/sh' > conformance-java
-	@echo 'java -classpath .:../java/target/classes ConformanceJava "$$@"' >> conformance-java
+	@jar=`ls ../java/util/target/*jar-with-dependencies.jar` && echo java -classpath .:../java/target/classes:$$jar ConformanceJava '$$@' >> conformance-java
 	@chmod +x conformance-java
+
+javac_middleman_lite: ConformanceJavaLite.java protoc_middleman $(other_language_protoc_outputs)
+	javac -classpath ../java/lite/target/classes:lite ConformanceJavaLite.java lite/com/google/protobuf/conformance/Conformance.java
+	@touch javac_middleman_lite
+
+conformance-java-lite: javac_middleman_lite
+	@echo "Writing shortcut script conformance-java-lite..."
+	@echo '#! /bin/sh' > conformance-java-lite
+	@echo java -classpath .:../java/lite/target/classes:lite ConformanceJavaLite '$$@' >> conformance-java-lite
+	@chmod +x conformance-java-lite
 
 # Currently the conformance code is alongside the rest of the C#
 # source, as it's easier to maintain there. We assume we've already
 # built that, so we just need a script to run it.
-conformance-csharp:
+conformance-csharp: $(other_language_protoc_outputs)
 	@echo "Writing shortcut script conformance-csharp..."
 	@echo '#! /bin/sh' > conformance-csharp
-	@echo 'mono ../csharp/src/Google.Protobuf.Conformance/bin/Release/Google.Protobuf.Conformance.exe "$$@"' >> conformance-csharp
+	@echo 'dotnet ../csharp/src/Google.Protobuf.Conformance/bin/Release/netcoreapp1.0/Google.Protobuf.Conformance.dll "$$@"' >> conformance-csharp
 	@chmod +x conformance-csharp
 
 # Targets for actually running tests.
 test_cpp: protoc_middleman conformance-test-runner conformance-cpp
-	./conformance-test-runner --failure_list failure_list_cpp.txt ./conformance-cpp
+	./conformance-test-runner --enforce_recommended --failure_list failure_list_cpp.txt ./conformance-cpp
 
 test_java: protoc_middleman conformance-test-runner conformance-java
-	./conformance-test-runner ./conformance-java
+	./conformance-test-runner --enforce_recommended --failure_list failure_list_java.txt ./conformance-java
+
+test_java_lite: protoc_middleman conformance-test-runner conformance-java-lite
+	./conformance-test-runner --enforce_recommended ./conformance-java-lite
 
 test_csharp: protoc_middleman conformance-test-runner conformance-csharp
-	./conformance-test-runner --failure_list failure_list_csharp.txt ./conformance-csharp
+	./conformance-test-runner --enforce_recommended --failure_list failure_list_csharp.txt ./conformance-csharp
 
-test_ruby: protoc_middleman conformance-test-runner
-	RUBYLIB=../ruby/lib:. ./conformance-test-runner --failure_list failure_list_ruby.txt ./conformance_ruby.rb
+test_ruby: protoc_middleman conformance-test-runner $(other_language_protoc_outputs)
+	RUBYLIB=../ruby/lib:. ./conformance-test-runner --enforce_recommended --failure_list failure_list_ruby.txt ./conformance_ruby.rb
+
+# These depend on library paths being properly set up.  The easiest way to
+# run them is to just use "tox" from the python dir.
+test_python: protoc_middleman conformance-test-runner
+	./conformance-test-runner --enforce_recommended --failure_list failure_list_python.txt ./conformance_python.py
+
+test_python_cpp: protoc_middleman conformance-test-runner
+	./conformance-test-runner --enforce_recommended --failure_list failure_list_python_cpp.txt ./conformance_python.py
+
+@OBJC_CONFORMANCE_TEST_TRUE@test_objc: protoc_middleman conformance-test-runner conformance-objc
+@OBJC_CONFORMANCE_TEST_TRUE@	./conformance-test-runner --enforce_recommended --failure_list failure_list_objc.txt ./conformance-objc
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

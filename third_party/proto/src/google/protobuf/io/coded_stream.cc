@@ -47,6 +47,7 @@
 #include <google/protobuf/stubs/logging.h>
 #include <google/protobuf/stubs/common.h>
 #include <google/protobuf/stubs/stl_util.h>
+#include <google/protobuf/stubs/port.h>
 
 
 namespace google {
@@ -105,7 +106,7 @@ void CodedInputStream::BackUpInputToCurrentPosition() {
 
 inline void CodedInputStream::RecomputeBufferLimits() {
   buffer_end_ += buffer_size_after_limit_;
-  int closest_limit = min(current_limit_, total_bytes_limit_);
+  int closest_limit = std::min(current_limit_, total_bytes_limit_);
   if (closest_limit < total_bytes_read_) {
     // The limit position is in the current buffer.  We must adjust
     // the buffer size accordingly.
@@ -135,7 +136,7 @@ CodedInputStream::Limit CodedInputStream::PushLimit(int byte_limit) {
   // We need to enforce all limits, not just the new one, so if the previous
   // limit was before the new requested limit, we continue to enforce the
   // previous limit.
-  current_limit_ = min(current_limit_, old_limit);
+  current_limit_ = std::min(current_limit_, old_limit);
 
   RecomputeBufferLimits();
   return old_limit;
@@ -188,7 +189,7 @@ void CodedInputStream::SetTotalBytesLimit(
   // Make sure the limit isn't already past, since this could confuse other
   // code.
   int current_position = CurrentPosition();
-  total_bytes_limit_ = max(current_position, total_bytes_limit);
+  total_bytes_limit_ = std::max(current_position, total_bytes_limit);
   if (warning_threshold >= 0) {
     total_bytes_warning_threshold_ = warning_threshold;
   } else {
@@ -233,7 +234,7 @@ bool CodedInputStream::Skip(int count) {
   buffer_end_ = buffer_;
 
   // Make sure this skip doesn't try to skip past the current limit.
-  int closest_limit = min(current_limit_, total_bytes_limit_);
+  int closest_limit = std::min(current_limit_, total_bytes_limit_);
   int bytes_until_limit = closest_limit - total_bytes_read_;
   if (bytes_until_limit < count) {
     // We hit the limit.  Skip up to it then fail.
@@ -270,7 +271,7 @@ bool CodedInputStream::ReadStringFallback(string* buffer, int size) {
     buffer->clear();
   }
 
-  int closest_limit = min(current_limit_, total_bytes_limit_);
+  int closest_limit = std::min(current_limit_, total_bytes_limit_);
   if (closest_limit != INT_MAX) {
     int bytes_to_limit = closest_limit - CurrentPosition();
     if (bytes_to_limit > 0 && size > 0 && size <= bytes_to_limit) {
@@ -376,6 +377,49 @@ inline ::std::pair<bool, const uint8*> ReadVarint32FromArray(
   return std::make_pair(true, ptr);
 }
 
+GOOGLE_ATTRIBUTE_ALWAYS_INLINE::std::pair<bool, const uint8*> ReadVarint64FromArray(
+    const uint8* buffer, uint64* value);
+inline ::std::pair<bool, const uint8*> ReadVarint64FromArray(
+    const uint8* buffer, uint64* value) {
+  const uint8* ptr = buffer;
+  uint32 b;
+
+  // Splitting into 32-bit pieces gives better performance on 32-bit
+  // processors.
+  uint32 part0 = 0, part1 = 0, part2 = 0;
+
+  b = *(ptr++); part0  = b      ; if (!(b & 0x80)) goto done;
+  part0 -= 0x80;
+  b = *(ptr++); part0 += b <<  7; if (!(b & 0x80)) goto done;
+  part0 -= 0x80 << 7;
+  b = *(ptr++); part0 += b << 14; if (!(b & 0x80)) goto done;
+  part0 -= 0x80 << 14;
+  b = *(ptr++); part0 += b << 21; if (!(b & 0x80)) goto done;
+  part0 -= 0x80 << 21;
+  b = *(ptr++); part1  = b      ; if (!(b & 0x80)) goto done;
+  part1 -= 0x80;
+  b = *(ptr++); part1 += b <<  7; if (!(b & 0x80)) goto done;
+  part1 -= 0x80 << 7;
+  b = *(ptr++); part1 += b << 14; if (!(b & 0x80)) goto done;
+  part1 -= 0x80 << 14;
+  b = *(ptr++); part1 += b << 21; if (!(b & 0x80)) goto done;
+  part1 -= 0x80 << 21;
+  b = *(ptr++); part2  = b      ; if (!(b & 0x80)) goto done;
+  part2 -= 0x80;
+  b = *(ptr++); part2 += b <<  7; if (!(b & 0x80)) goto done;
+  // "part2 -= 0x80 << 7" is irrelevant because (0x80 << 7) << 56 is 0.
+
+  // We have overrun the maximum size of a varint (10 bytes).  Assume
+  // the data is corrupt.
+  return std::make_pair(false, ptr);
+
+ done:
+  *value = (static_cast<uint64>(part0)) |
+           (static_cast<uint64>(part1) << 28) |
+           (static_cast<uint64>(part2) << 56);
+  return std::make_pair(true, ptr);
+}
+
 }  // namespace
 
 bool CodedInputStream::ReadVarint32Slow(uint32* value) {
@@ -405,6 +449,32 @@ int64 CodedInputStream::ReadVarint32Fallback(uint32 first_byte_or_zero) {
     // improves the common case. In micro benchmarks, this is worth about 10-15%
     uint32 temp;
     return ReadVarint32Slow(&temp) ? static_cast<int64>(temp) : -1;
+  }
+}
+
+int CodedInputStream::ReadVarintSizeAsIntSlow() {
+  // Directly invoke ReadVarint64Fallback, since we already tried to optimize
+  // for one-byte varints.
+  std::pair<uint64, bool> p = ReadVarint64Fallback();
+  if (!p.second || p.first > static_cast<uint64>(INT_MAX)) return -1;
+  return p.first;
+}
+
+int CodedInputStream::ReadVarintSizeAsIntFallback() {
+  if (BufferSize() >= kMaxVarintBytes ||
+      // Optimization:  We're also safe if the buffer is non-empty and it ends
+      // with a byte that would terminate a varint.
+      (buffer_end_ > buffer_ && !(buffer_end_[-1] & 0x80))) {
+    uint64 temp;
+    ::std::pair<bool, const uint8*> p = ReadVarint64FromArray(buffer_, &temp);
+    if (!p.first || temp > static_cast<uint64>(INT_MAX)) return -1;
+    buffer_ = p.second;
+    return temp;
+  } else {
+    // Really slow case: we will incur the cost of an extra function call here,
+    // but moving this out of line reduces the size of this function, which
+    // improves the common case. In micro benchmarks, this is worth about 10-15%
+    return ReadVarintSizeAsIntSlow();
   }
 }
 
@@ -499,47 +569,13 @@ std::pair<uint64, bool> CodedInputStream::ReadVarint64Fallback() {
       // Optimization:  We're also safe if the buffer is non-empty and it ends
       // with a byte that would terminate a varint.
       (buffer_end_ > buffer_ && !(buffer_end_[-1] & 0x80))) {
-    // Fast path:  We have enough bytes left in the buffer to guarantee that
-    // this read won't cross the end, so we can skip the checks.
-
-    const uint8* ptr = buffer_;
-    uint32 b;
-
-    // Splitting into 32-bit pieces gives better performance on 32-bit
-    // processors.
-    uint32 part0 = 0, part1 = 0, part2 = 0;
-
-    b = *(ptr++); part0  = b      ; if (!(b & 0x80)) goto done;
-    part0 -= 0x80;
-    b = *(ptr++); part0 += b <<  7; if (!(b & 0x80)) goto done;
-    part0 -= 0x80 << 7;
-    b = *(ptr++); part0 += b << 14; if (!(b & 0x80)) goto done;
-    part0 -= 0x80 << 14;
-    b = *(ptr++); part0 += b << 21; if (!(b & 0x80)) goto done;
-    part0 -= 0x80 << 21;
-    b = *(ptr++); part1  = b      ; if (!(b & 0x80)) goto done;
-    part1 -= 0x80;
-    b = *(ptr++); part1 += b <<  7; if (!(b & 0x80)) goto done;
-    part1 -= 0x80 << 7;
-    b = *(ptr++); part1 += b << 14; if (!(b & 0x80)) goto done;
-    part1 -= 0x80 << 14;
-    b = *(ptr++); part1 += b << 21; if (!(b & 0x80)) goto done;
-    part1 -= 0x80 << 21;
-    b = *(ptr++); part2  = b      ; if (!(b & 0x80)) goto done;
-    part2 -= 0x80;
-    b = *(ptr++); part2 += b <<  7; if (!(b & 0x80)) goto done;
-    // "part2 -= 0x80 << 7" is irrelevant because (0x80 << 7) << 56 is 0.
-
-    // We have overrun the maximum size of a varint (10 bytes).  The data
-    // must be corrupt.
-    return std::make_pair(0, false);
-
-   done:
-    Advance(ptr - buffer_);
-    return std::make_pair((static_cast<uint64>(part0)) |
-                              (static_cast<uint64>(part1) << 28) |
-                              (static_cast<uint64>(part2) << 56),
-                          true);
+    uint64 temp;
+    ::std::pair<bool, const uint8*> p = ReadVarint64FromArray(buffer_, &temp);
+    if (!p.first) {
+      return std::make_pair(0, false);
+    }
+    buffer_ = p.second;
+    return std::make_pair(temp, true);
   } else {
     uint64 temp;
     bool success = ReadVarint64Slow(&temp);
@@ -614,19 +650,41 @@ bool CodedInputStream::Refresh() {
 
 // CodedOutputStream =================================================
 
+bool CodedOutputStream::default_serialization_deterministic_ = false;
+
 CodedOutputStream::CodedOutputStream(ZeroCopyOutputStream* output)
   : output_(output),
     buffer_(NULL),
     buffer_size_(0),
     total_bytes_(0),
     had_error_(false),
-    aliasing_enabled_(false) {
+    aliasing_enabled_(false),
+    serialization_deterministic_is_overridden_(false) {
   // Eagerly Refresh() so buffer space is immediately available.
   Refresh();
   // The Refresh() may have failed. If the client doesn't write any data,
   // though, don't consider this an error. If the client does write data, then
   // another Refresh() will be attempted and it will set the error once again.
   had_error_ = false;
+}
+
+CodedOutputStream::CodedOutputStream(ZeroCopyOutputStream* output,
+                                     bool do_eager_refresh)
+  : output_(output),
+    buffer_(NULL),
+    buffer_size_(0),
+    total_bytes_(0),
+    had_error_(false),
+    aliasing_enabled_(false),
+    serialization_deterministic_is_overridden_(false) {
+  if (do_eager_refresh) {
+    // Eagerly Refresh() so buffer space is immediately available.
+    Refresh();
+    // The Refresh() may have failed. If the client doesn't write any data,
+    // though, don't consider this an error. If the client does write data, then
+    // another Refresh() will be attempted and it will set the error once again.
+    had_error_ = false;
+  }
 }
 
 CodedOutputStream::~CodedOutputStream() {
@@ -845,46 +903,18 @@ bool CodedOutputStream::Refresh() {
   }
 }
 
-int CodedOutputStream::VarintSize32Fallback(uint32 value) {
-  if (value < (1 << 7)) {
-    return 1;
-  } else if (value < (1 << 14)) {
-    return 2;
-  } else if (value < (1 << 21)) {
-    return 3;
-  } else if (value < (1 << 28)) {
-    return 4;
-  } else {
-    return 5;
-  }
+size_t CodedOutputStream::VarintSize32Fallback(uint32 value) {
+  GOOGLE_DCHECK_NE(0, value);  // This is enforced by our caller.
+
+  return 1 + Bits::Log2FloorNonZero(value) / 7;
 }
 
-int CodedOutputStream::VarintSize64(uint64 value) {
-  if (value < (1ull << 35)) {
-    if (value < (1ull << 7)) {
-      return 1;
-    } else if (value < (1ull << 14)) {
-      return 2;
-    } else if (value < (1ull << 21)) {
-      return 3;
-    } else if (value < (1ull << 28)) {
-      return 4;
-    } else {
-      return 5;
-    }
-  } else {
-    if (value < (1ull << 42)) {
-      return 6;
-    } else if (value < (1ull << 49)) {
-      return 7;
-    } else if (value < (1ull << 56)) {
-      return 8;
-    } else if (value < (1ull << 63)) {
-      return 9;
-    } else {
-      return 10;
-    }
+size_t CodedOutputStream::VarintSize64(uint64 value) {
+  if (value < (1 << 7)) {
+    return 1;
   }
+
+  return 1 + Bits::Log2FloorNonZero64(value) / 7;
 }
 
 uint8* CodedOutputStream::WriteStringWithSizeToArray(const string& str,

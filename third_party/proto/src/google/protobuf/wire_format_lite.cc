@@ -49,8 +49,10 @@ namespace google {
 namespace protobuf {
 namespace internal {
 
-#ifndef _MSC_VER    // MSVC doesn't like definitions of inline constants, GCC
-                    // requires them.
+
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
+// Old version of MSVC doesn't like definitions of inline constants, GCC
+// requires them.
 const int WireFormatLite::kMessageSetItemStartTag;
 const int WireFormatLite::kMessageSetItemEndTag;
 const int WireFormatLite::kMessageSetTypeIdTag;
@@ -59,7 +61,7 @@ const int WireFormatLite::kMessageSetMessageTag;
 #endif
 
 // IBM xlC requires prefixing constants with WireFormatLite::
-const int WireFormatLite::kMessageSetItemTagsSize =
+const size_t WireFormatLite::kMessageSetItemTagsSize =
   io::CodedOutputStream::StaticVarintSize32<
       WireFormatLite::kMessageSetItemStartTag>::value +
   io::CodedOutputStream::StaticVarintSize32<
@@ -410,7 +412,7 @@ void WireFormatLite::WriteString(int field_number, const string& value,
                                  io::CodedOutputStream* output) {
   // String is for UTF-8 text only
   WriteTag(field_number, WIRETYPE_LENGTH_DELIMITED, output);
-  GOOGLE_CHECK(value.size() <= kint32max);
+  GOOGLE_CHECK_LE(value.size(), kint32max);
   output->WriteVarint32(value.size());
   output->WriteString(value);
 }
@@ -419,14 +421,14 @@ void WireFormatLite::WriteStringMaybeAliased(
     io::CodedOutputStream* output) {
   // String is for UTF-8 text only
   WriteTag(field_number, WIRETYPE_LENGTH_DELIMITED, output);
-  GOOGLE_CHECK(value.size() <= kint32max);
+  GOOGLE_CHECK_LE(value.size(), kint32max);
   output->WriteVarint32(value.size());
   output->WriteRawMaybeAliased(value.data(), value.size());
 }
 void WireFormatLite::WriteBytes(int field_number, const string& value,
                                 io::CodedOutputStream* output) {
   WriteTag(field_number, WIRETYPE_LENGTH_DELIMITED, output);
-  GOOGLE_CHECK(value.size() <= kint32max);
+  GOOGLE_CHECK_LE(value.size(), kint32max);
   output->WriteVarint32(value.size());
   output->WriteString(value);
 }
@@ -434,7 +436,7 @@ void WireFormatLite::WriteBytesMaybeAliased(
     int field_number, const string& value,
     io::CodedOutputStream* output) {
   WriteTag(field_number, WIRETYPE_LENGTH_DELIMITED, output);
-  GOOGLE_CHECK(value.size() <= kint32max);
+  GOOGLE_CHECK_LE(value.size(), kint32max);
   output->WriteVarint32(value.size());
   output->WriteRawMaybeAliased(value.data(), value.size());
 }
@@ -464,7 +466,8 @@ void WireFormatLite::WriteGroupMaybeToArray(int field_number,
   const int size = value.GetCachedSize();
   uint8* target = output->GetDirectBufferForNBytesAndAdvance(size);
   if (target != NULL) {
-    uint8* end = value.SerializeWithCachedSizesToArray(target);
+    uint8* end = value.InternalSerializeWithCachedSizesToArray(
+        output->IsSerializationDeterminstic(), target);
     GOOGLE_DCHECK_EQ(end - target, size);
   } else {
     value.SerializeWithCachedSizes(output);
@@ -480,7 +483,8 @@ void WireFormatLite::WriteMessageMaybeToArray(int field_number,
   output->WriteVarint32(size);
   uint8* target = output->GetDirectBufferForNBytesAndAdvance(size);
   if (target != NULL) {
-    uint8* end = value.SerializeWithCachedSizesToArray(target);
+    uint8* end = value.InternalSerializeWithCachedSizesToArray(
+        output->IsSerializationDeterminstic(), target);
     GOOGLE_DCHECK_EQ(end - target, size);
   } else {
     value.SerializeWithCachedSizes(output);

@@ -39,6 +39,7 @@
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/io/zero_copy_stream.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
+#include <google/protobuf/metadata.h>
 #include <google/protobuf/wire_format.h>
 #include <google/protobuf/stubs/stl_util.h>
 
@@ -69,28 +70,14 @@ const UnknownFieldSet* UnknownFieldSet::default_instance() {
   return default_unknown_field_set_instance_;
 }
 
-UnknownFieldSet::UnknownFieldSet()
-    : fields_(NULL) {}
-
-UnknownFieldSet::~UnknownFieldSet() {
-  Clear();
-  delete fields_;
-}
-
 void UnknownFieldSet::ClearFallback() {
-  if (fields_ != NULL) {
-    for (int i = 0; i < fields_->size(); i++) {
-      (*fields_)[i].Delete();
-    }
-    delete fields_;
-    fields_ = NULL;
-  }
-}
-
-void UnknownFieldSet::ClearAndFreeMemory() {
-  if (fields_ != NULL) {
-    Clear();
-  }
+  GOOGLE_DCHECK(fields_ != NULL && fields_->size() > 0);
+  int n = fields_->size();
+  do {
+    (*fields_)[--n].Delete();
+  } while (n > 0);
+  delete fields_;
+  fields_ = NULL;
 }
 
 void UnknownFieldSet::InternalMergeFrom(const UnknownFieldSet& other) {
@@ -128,6 +115,12 @@ void UnknownFieldSet::MergeFromAndDestroy(UnknownFieldSet* other) {
   }
   delete other->fields_;
   other->fields_ = NULL;
+}
+
+void UnknownFieldSet::MergeToInternalMetdata(
+    const UnknownFieldSet& other,
+    internal::InternalMetadataWithArena* metadata) {
+  metadata->mutable_unknown_fields()->MergeFrom(other);
 }
 
 int UnknownFieldSet::SpaceUsedExcludingSelf() const {
