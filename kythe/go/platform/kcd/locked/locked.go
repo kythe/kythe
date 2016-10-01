@@ -30,18 +30,25 @@ import (
 )
 
 type locker struct {
-	μ  sync.Mutex
-	rd kcd.Reader
-	wr kcd.Writer
+	μ   sync.Mutex
+	rd  kcd.Reader
+	wr  kcd.Writer
+	del kcd.Deleter
 }
 
 // Reader returns a kcd.Reader that delegates to r with method calls protected
 // by a mutex.
 func Reader(r kcd.Reader) kcd.Reader { return &locker{rd: r} }
 
-// ReadWriter returns a kcd.ReadWriter that delegates to r with method calls
+// ReadWriter returns a kcd.ReadWriter that delegates to rw with method calls
 // protected by a mutex.
 func ReadWriter(rw kcd.ReadWriter) kcd.ReadWriter { return &locker{rd: rw, wr: rw} }
+
+// ReadWriteDeleter returns a kcd.ReadWriteDeleter that delegates to rwd with
+// method calls protected by a mutex.
+func ReadWriteDeleter(rwd kcd.ReadWriteDeleter) kcd.ReadWriteDeleter {
+	return &locker{rd: rwd, wr: rwd, del: rwd}
+}
 
 // ErrNotSupported is returned by the write methods if no Writer is available.
 var ErrNotSupported = errors.New("write operation not supported")
@@ -109,4 +116,34 @@ func (db *locker) WriteFile(ctx context.Context, r io.Reader) (string, error) {
 	db.μ.Lock()
 	defer db.μ.Unlock()
 	return db.wr.WriteFile(ctx, r)
+}
+
+// DeleteUnit implements a method of kcd.Deleter.
+func (db *locker) DeleteUnit(ctx context.Context, unitDigest string) error {
+	if db.del == nil {
+		return ErrNotSupported
+	}
+	db.μ.Lock()
+	defer db.μ.Unlock()
+	return db.del.DeleteUnit(ctx, unitDigest)
+}
+
+// DeleteFile implements a method of kcd.Deleter.
+func (db *locker) DeleteFile(ctx context.Context, fileDigest string) error {
+	if db.del == nil {
+		return ErrNotSupported
+	}
+	db.μ.Lock()
+	defer db.μ.Unlock()
+	return db.del.DeleteFile(ctx, fileDigest)
+}
+
+// DeleteRevision implements a method of kcd.Deleter.
+func (db *locker) DeleteRevision(ctx context.Context, revision, corpus string) error {
+	if db.del == nil {
+		return ErrNotSupported
+	}
+	db.μ.Lock()
+	defer db.μ.Unlock()
+	return db.del.DeleteRevision(ctx, revision, corpus)
 }

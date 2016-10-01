@@ -89,6 +89,31 @@ type ReadWriter interface {
 	Writer
 }
 
+// Deleter expresses the capacity to delete data from a compilation database.
+// Each of the methods of this interface should return an error that satisfies
+// os.IsNotExist if its argument does not match any known entries.
+// Not all writable databases must support this interface.
+type Deleter interface {
+	// DeleteUnit removes the specified unit from the database.
+	DeleteUnit(_ context.Context, unitDigest string) error
+
+	// DeleteFile removes the specified file from the database.
+	DeleteFile(_ context.Context, fileDigest string) error
+
+	// DeleteRevision removes the specified revision marker from the database.
+	// It is an error if rev == "" or corpus == "".  All timestamps for the
+	// matching revision are discarded.
+	DeleteRevision(_ context.Context, revision, corpus string) error
+}
+
+// ReadWriteDeleter expresses the capacity to read, write, and delete data in a
+// compilation database.
+type ReadWriteDeleter interface {
+	Reader
+	Writer
+	Deleter
+}
+
 // RevisionsFilter gives constraints on which revisions are matched by a call to
 // the Revisions method of compdb.Reader.
 type RevisionsFilter struct {

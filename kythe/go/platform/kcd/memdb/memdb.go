@@ -22,6 +22,7 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
+	"os"
 	"time"
 
 	"kythe.io/kythe/go/platform/kcd"
@@ -29,9 +30,9 @@ import (
 	"golang.org/x/net/context"
 )
 
-// DB implements kcd.Reader, and *DB implements kcd.ReadWriter.  Records are
-// stored in exported fields, to assist in testing.  The zero value is ready
-// for use as an empty database.
+// DB implements kcd.Reader, and *DB implements kcd.ReadWriter and kcd.Deleter.
+// Records are stored in exported fields, to assist in testing.  The zero value
+// is ready for use as an empty database.
 type DB struct {
 	Rev   []kcd.Revision
 	Unit  map[string]Unit   // :: unit digest → compilation record
@@ -226,4 +227,48 @@ func (db *DB) WriteFile(_ context.Context, r io.Reader) (string, error) {
 	}
 	db.File[digest] = string(bits)
 	return digest, nil
+}
+
+// DeleteUnit implements a method of kcd.Deleter.
+func (db *DB) DeleteUnit(_ context.Context, unitDigest string) error {
+	if _, ok := db.Unit[unitDigest]; !ok {
+		return os.ErrNotExist
+	}
+	delete(db.Unit, unitDigest)
+	delete(db.Index, unitDigest)
+	return nil
+}
+
+// DeleteFile implements a method of kcd.Deleter.
+func (db *DB) DeleteFile(_ context.Context, fileDigest string) error {
+	if _, ok := db.File[fileDigest]; !ok {
+		return os.ErrNotExist
+	}
+	delete(db.File, fileDigest)
+	return nil
+}
+
+// revisionsEqual reports whether r1 and r2 are equal, diregarding timestamp.
+func revisionsEqual(r1, r2 kcd.Revision) bool {
+	return r1.Revision == r2.Revision && r1.Corpus == r2.Corpus
+}
+
+// DeleteRevision implements a method of kcd.Deleter.
+func (db *DB) DeleteRevision(_ context.Context, revision, corpus string) error {
+	rev := kcd.Revision{Revision: revision, Corpus: corpus}
+	if err := rev.IsValid(); err != nil {
+		return err
+	}
+
+	found := false
+	for i := len(db.Rev) - 1; i >= 0; i-- {
+		if revisionsEqual(db.Rev[i], rev) {
+			found = true
+			db.Rev = append(db.Rev[:i], db.Rev[i+1:]...)
+		}
+	}
+	if found {
+		return nil
+	}
+	return os.ErrNotExist
 }

@@ -21,6 +21,7 @@ package testutil
 import (
 	"errors"
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -160,10 +161,11 @@ func Run(ctx context.Context, db kcd.ReadWriter) []error {
 		}
 	})
 
+	// SHA256 test vector from http://www.nsrl.nist.gov/testdata/
+	const wantData = "abc"
+	const wantDigest = "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+
 	check("written files round-trip", func(fail failer) {
-		// SHA256 test vector from http://www.nsrl.nist.gov/testdata/
-		const wantData = "abc"
-		const wantDigest = "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
 		gotDigest, err := db.WriteFile(ctx, strings.NewReader(wantData))
 		if err != nil {
 			fail("WriteFile", err)
@@ -346,6 +348,54 @@ func Run(ctx context.Context, db kcd.ReadWriter) []error {
 			if rev == nil {
 				fail("Revisions", fmt.Errorf("missing revision for %q\nFilter: %+v", marker, filter))
 			}
+		}
+	})
+
+	// If db implements the Deleter interface, verify that it works.
+	del, ok := db.(kcd.Deleter)
+	if !ok {
+		return errs
+	}
+
+	check("deleting an existing unit succeeds", func(fail failer) {
+		if err := del.DeleteUnit(ctx, unitDigest); err != nil {
+			fail("DeleteUnit", err)
+		}
+	})
+
+	check("deleting a nonexistent unit reports an error", func(fail failer) {
+		if err := del.DeleteUnit(ctx, "no-such-unit"); err == nil {
+			fail("DeleteUnit", errors.New("no error returned for absent digest"))
+		} else if !os.IsNotExist(err) {
+			fail("DeleteUnit", fmt.Errorf("error %v does not satisfy os.IsNotExist", err))
+		}
+	})
+
+	check("deleting an existing file succeeds", func(fail failer) {
+		if err := del.DeleteFile(ctx, wantDigest); err != nil {
+			fail("DeleteFile", err)
+		}
+	})
+
+	check("deleting a nonexistent file reports an error", func(fail failer) {
+		if err := del.DeleteFile(ctx, "no-such-file"); err == nil {
+			fail("DeleteFile", errors.New("no error returned for absent file"))
+		} else if !os.IsNotExist(err) {
+			fail("DeleteFile", fmt.Errorf("error %v does not satisfy os.IsNotExist", err))
+		}
+	})
+
+	check("deleting an existing revision succeeds", func(fail failer) {
+		if err := del.DeleteRevision(ctx, Revision, Corpus); err != nil {
+			fail("DeleteRevision", err)
+		}
+	})
+
+	check("deleting a nonexistent revision reports an error", func(fail failer) {
+		if err := del.DeleteRevision(ctx, "nsrev", "nscorp"); err == nil {
+			fail("DeleteRevision", errors.New("no error returned for absent revision"))
+		} else if !os.IsNotExist(err) {
+			fail("DeleteRevision", fmt.Errorf("error %v does not satisfy os.IsNotExist", err))
 		}
 	})
 
