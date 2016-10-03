@@ -3973,10 +3973,8 @@ bool IndexerASTVisitor::VisitObjCCompatibleAliasDecl(
 // ObjCImplDecl is the base class for ObjCImplementationDecl and
 // ObjCCategoryImplDecl.
 bool IndexerASTVisitor::VisitObjCImplDecl(const clang::ObjCImplDecl *Decl) {
-  SourceLocation DeclLoc = Decl->getLocation();
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
-  GraphObserver::NodeId DeclNode(Observer.getDefaultClaimToken(), "");
-  DeclNode = BuildNodeIdForDecl(Decl);
+  auto DeclNode = BuildNodeIdForDecl(Decl);
 
   MaybeRecordDefinitionRange(
       RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode);
@@ -4081,8 +4079,7 @@ bool IndexerASTVisitor::VisitObjCCategoryImplDecl(
 bool IndexerASTVisitor::VisitObjCInterfaceDecl(
     const clang::ObjCInterfaceDecl *Decl) {
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
-  GraphObserver::NodeId DeclNode(Observer.getDefaultClaimToken(), "");
-  DeclNode = BuildNodeIdForDecl(Decl);
+  auto DeclNode = BuildNodeIdForDecl(Decl);
 
   MaybeRecordDefinitionRange(
       RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode);
@@ -4125,8 +4122,7 @@ void IndexerASTVisitor::RecordCompletesForRedecls(
 bool IndexerASTVisitor::VisitObjCProtocolDecl(
     const clang::ObjCProtocolDecl *Decl) {
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
-  GraphObserver::NodeId DeclNode(Observer.getDefaultClaimToken(), "");
-  DeclNode = BuildNodeIdForDecl(Decl);
+  auto DeclNode = BuildNodeIdForDecl(Decl);
 
   MaybeRecordDefinitionRange(
       RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode);
