@@ -281,7 +281,7 @@ new_git_repository(
 new_git_repository(
     name = "go_gcloud",
     build_file = "third_party/go/gcloud.BUILD",
-    commit = "64568e4898e813ad748cf9523d56a65209c7dc18",
+    commit = "fe3d41e1ecb2ce36ad3a979037c9b9a2b726226f",
     remote = "https://github.com/GoogleCloudPlatform/google-cloud-go.git",
 )
 

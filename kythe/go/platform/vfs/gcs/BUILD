@@ -7,6 +7,7 @@ go_package_library(
     srcs = ["fs.go"],
     deps = [
         "//kythe/go/platform/vfs",
+        "@go_gapi//:iterator",
         "@go_gcloud//:storage",
         "@go_x_net//:context",
     ],

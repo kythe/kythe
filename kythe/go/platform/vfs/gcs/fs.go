@@ -30,6 +30,7 @@ import (
 
 	"cloud.google.com/go/storage"
 	"golang.org/x/net/context"
+	"google.golang.org/api/iterator"
 )
 
 // fs implements a VFS backed by a bucket in Google Cloud Storage
@@ -85,9 +86,9 @@ func (s *fs) Create(ctx context.Context, path string) (io.WriteCloser, error) {
 // Rename implements part of the VFS interface.
 func (s *fs) Rename(ctx context.Context, oldPath, newPath string) error {
 	src, dst := s.bucket.Object(oldPath), s.bucket.Object(newPath)
-	if _, err := src.CopyTo(ctx, dst, &storage.ObjectAttrs{
-		ContentType: "application/octet-stream",
-	}); err != nil {
+	c := dst.CopierFrom(src)
+	c.ContentType = "application/octet-stream"
+	if _, err := c.Run(ctx); err != nil {
 		return fmt.Errorf("error copying file during rename: %v", err)
 	}
 	if err := src.Delete(ctx); err != nil {
@@ -107,19 +108,20 @@ func (s *fs) Glob(ctx context.Context, glob string) ([]string, error) {
 		Prefix: globLiteralPrefix(glob),
 	}
 	var paths []string
-	for q != nil {
-		objs, err := s.bucket.List(ctx, q)
+	iter := s.bucket.Objects(ctx, q)
+	for {
+		obj, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
 		if err != nil {
 			return nil, err
 		}
-		for _, o := range objs.Results {
-			if matched, err := filepath.Match(glob, o.Name); err != nil {
-				return nil, err
-			} else if matched {
-				paths = append(paths, o.Name)
-			}
+		if matched, err := filepath.Match(glob, obj.Name); err != nil {
+			return nil, err
+		} else if matched {
+			paths = append(paths, obj.Name)
 		}
-		q = objs.Next
 	}
 	return paths, nil
 }
