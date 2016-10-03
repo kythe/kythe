@@ -27,4 +27,11 @@ message JavaDetails {
 
   // List of sourcepaths used in the compilation.
   repeated string sourcepath = 2;
+
+  // List of bootclasspaths used in the compilation.
+  repeated string bootclasspath = 3;
+
+  // List of additional JavaC arguments identified by the extractor as
+  // necessary for analysis, but not included in the argument list.
+  repeated string extra_javacopts = 10;
 }
