@@ -79,9 +79,24 @@ public class Generics<T> {
   //- BVar.node/kind absvar
   //- @List ref List
   //- @Inter ref Inter
-  //- BV bounded/upper List
-  //- BV bounded/upper Inter
+  //- BVar bounded/upper List
+  //- BVar bounded/upper Inter
   private static class Bounded<BV extends java.util.List & Inter> {}
+
+  //- @classTypeVarBound defines/binding ClassTypeVarBoundFunc
+  //- @E defines/binding EVar
+  //- EVar bounded/upper TVar
+  //- ClassTypeVarBoundFunc named vname("pkg.Generics.<E extends pkg.Generics~T>classTypeVarBound()","","","","java")
+  public <E extends T> void classTypeVarBound() {}
+
+  //- @X defines/binding XVar
+  public <X,
+      //- @ownTypeVarBound defines/binding OwnTypeVarBoundFunc
+      //- @Y defines/binding YVar
+      //- YVar bounded/upper XVar
+      //- OwnTypeVarBoundFunc named vname("pkg.Generics.<X,Y extends X>ownTypeVarBound()","","","","java")
+      Y extends X> void ownTypeVarBound() {}
+
 
   // Verify that, if there are interface bounds, then java.lang.Object appears as a superclass bound
   // (and in the type parameter's signature) iff it's provided explicitly.
