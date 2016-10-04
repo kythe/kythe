@@ -13,6 +13,7 @@ filegroup(
         "filecontext.proto",
         "filetree.proto",
         "java.proto",
+        "status.proto",
         "storage.proto",
         "storage_service.proto",
         "xref.proto",
@@ -91,6 +92,16 @@ proto_library(
         ":storage_proto",
         "//external:proto/any_proto",
     ],
+)
+
+# Public Kythe status service API
+proto_library(
+    name = "status_service_proto",
+    srcs = ["status_service.proto"],
+    has_services = 1,
+    cc_api_version = 2,
+    go_api_version = 2,
+    java_api_version = 2,
 )
 
 # Context-dependent version information, for claiming.

@@ -1,0 +1,54 @@
+/*
+ * Copyright 2016 Google Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+package kythe.proto;
+
+// StatusService provides clients a way to request information about the data
+// provided by another Kythe service such as XRefService. Clients can use this
+// to inform decisions about what requests to make to the primary service.
+service StatusService {
+  rpc Status(StatusRequest) returns (StatusResponse) {
+  }
+}
+
+message StatusRequest {
+}
+
+message StatusResponse {
+  // The origins of the data served by this endpoint.
+  repeated Origin origins = 1;
+
+  message Origin {
+    string corpus = 1;    // The corpus label
+    string revision = 2;  // The revision marker of the data
+  }
+
+  // The languages supported by this endpoint.
+  repeated Language languages = 2;
+
+  message Language {
+    string name = 1;      // the language name (see kythe.io/docs/schema)
+    Support support = 2;  // the language support level
+
+    enum Support {
+      UNSUPPORTED = 0;   // the language is known but unsupported
+      EXPERIMENTAL = 1;  // support for this language is experimental
+      SUPPORTED = 2;     // the language is fully supported
+    }
+  }
+}
