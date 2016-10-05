@@ -13,7 +13,7 @@ filegroup(
         "filecontext.proto",
         "filetree.proto",
         "java.proto",
-        "status.proto",
+        "status_service.proto",
         "storage.proto",
         "storage_service.proto",
         "xref.proto",
