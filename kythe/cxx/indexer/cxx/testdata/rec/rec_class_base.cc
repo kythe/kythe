@@ -1,5 +1,4 @@
 // We index base classes.
-// --ignore_dups=true (T28)
 //- @A defines/binding ClassA
 class A { };
 //- @B defines/binding ClassB ClassB extends/private ClassA

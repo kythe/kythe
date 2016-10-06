@@ -1079,6 +1079,12 @@ test_suite(
 )
 
 cxx_indexer_test(
+    name = "rec_ambiguous_struct",
+    srcs = ["rec/rec_ambiguous_struct.cc"],
+    tags = ["rec"],
+)
+
+cxx_indexer_test(
     name = "rec_anon_struct",
     srcs = ["rec/rec_anon_struct.cc"],
     ignore_dups = True,
@@ -1106,7 +1112,6 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "rec_class_base",
     srcs = ["rec/rec_class_base.cc"],
-    ignore_dups = True,
     tags = ["rec"],
 )
 
