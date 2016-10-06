@@ -315,7 +315,6 @@ public:
   bool VisitObjCMethodDecl(const clang::ObjCMethodDecl *Decl);
   bool VisitObjCPropertyDecl(const clang::ObjCPropertyDecl *Decl);
 
-  bool VisitObjCBoxedExpr(const clang::ObjCBoxedExpr *Expr);
   bool VisitObjCEncodeExpr(const clang::ObjCEncodeExpr *Expr);
   bool VisitObjCIndirectCopyRestoreExpr(
       const clang::ObjCIndirectCopyRestoreExpr *Expr);
@@ -334,8 +333,15 @@ public:
   //  bool VisitObjCArrayLiteral(const clang::ObjCArrayLiteral *D);
   //  bool VisitObjCBoolLiteralExpr(const clang::ObjCBoolLiteralExpr *D);
   //  bool VisitObjCStringLiteral(const clang::ObjCStringLiteral *D);
+  //
+  //  We visit the subclasses of ObjCContainerDecl so there is nothing to do.
   //  bool VisitObjCContainerDecl(const clang::ObjCContainerDecl *D);
+  //
   //  bool VisitObjCImplementationDecl(const clang::ObjCImplementationDecl *D);
+  //
+  //  There are not interesting connections to/from this expression. It is used
+  //  for things like @42 and @true to turn scalars into objects.
+  //  bool VisitObjCBoxedExpr(const clang::ObjCBoxedExpr *Expr);
 
   /// \brief For functions that support it, controls the emission of range
   /// information.

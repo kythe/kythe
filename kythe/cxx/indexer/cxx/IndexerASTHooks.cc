@@ -4270,11 +4270,6 @@ bool IndexerASTVisitor::VisitObjCPropertyDecl(
 }
 
 // todo(salguarnieri) implement
-bool IndexerASTVisitor::VisitObjCBoxedExpr(const clang::ObjCBoxedExpr *Expr) {
-  return true;
-}
-
-// todo(salguarnieri) implement
 bool IndexerASTVisitor::VisitObjCEncodeExpr(const clang::ObjCEncodeExpr *Expr) {
   return true;
 }

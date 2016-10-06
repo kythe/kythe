@@ -1730,6 +1730,13 @@ test_suite(
 # Objective C Tests
 
 cxx_indexer_test(
+    name = "boxed_expr",
+    srcs = ["objc/boxed_expr.m"],
+    ignore_dups = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
     name = "class_decl_defn",
     srcs = ["objc/class_decl_defn.m"],
     ignore_dups = True,
