@@ -1938,31 +1938,14 @@ cxx_indexer_test(
     tags = ["objc"],
 )
 
-# This test passes with the default version of clang on darwin but fails on
-# linux.
-# TODO(salguarnieri) Use configurable attributes to make this test runnable.
-# The problem is that cxx_indexer_test is a macro and configurable attributes
-# do not expand in the macro, they only expand during the analysis phase, which
-# means they only take on their final value in the impl of a rule.
-#
-# For example, this does not work because cxx_indexer_test is a macro:
-# config_setting(
-#   name = "darwin",
-#   values = { "cpu": "darwin" },
-# )
-# expect_fail_index = select({
-#        "//:darwin": False,
-#        "//conditions:default": True,
-#    }),
+# This test passes on darwin but fails on linux. The version of syntax
+# supported appears to be dependent on the machine.
 cxx_indexer_test(
     name = "property_decl_defn_xcode_only",
     srcs = ["objc/property_decl_defn_xcode_only.m"],
+    darwin_only = True,
     ignore_dups = True,
-    tags = [
-        "arc-ignore",
-        "manual",
-        "objc",
-    ],
+    tags = ["objc"],
 )
 
 cxx_indexer_test(

@@ -1,3 +1,6 @@
+# If a test is expected to pass on darwin but not on linux, you can set
+# darwin_only to True. This causes the test to always pass on linux and it
+# causes the actual test to execute on darwin.
 def cxx_indexer_test(name, srcs, deps=[], tags=[], size="small",
                      std="c++1y", ignore_dups=False,
                      ignore_unimplemented=False,
@@ -6,6 +9,7 @@ def cxx_indexer_test(name, srcs, deps=[], tags=[], size="small",
                      expect_fail_verify=False,
                      bundled=False,
                      experimental_drop_instantiation_independent_data=False,
+                     darwin_only=False,
                      goal_prefix="//-"):
   if len(srcs) != 1:
     fail("A single source file is required.", "srcs")
@@ -34,9 +38,17 @@ def cxx_indexer_test(name, srcs, deps=[], tags=[], size="small",
     args += ["--indexer",
              "--experimental_drop_instantiation_independent_data=false"]
   if bundled:
+    nondarwin_test = []
+    if darwin_only:
+      nondarwin_test = ["//kythe/cxx/indexer/cxx/testdata:pass_test.sh"]
+    else:
+      nondarwin_test = ["//kythe/cxx/indexer/cxx/testdata:bundle_case.sh"]
     native.sh_test(
         name = name,
-        srcs = ["//kythe/cxx/indexer/cxx/testdata:bundle_case.sh"],
+        srcs = select({
+            "//:darwin": ["//kythe/cxx/indexer/cxx/testdata:bundle_case.sh"],
+            "//conditions:default": nondarwin_test,
+        }),
         data = srcs + deps + [
             "//kythe/cxx/indexer/cxx:indexer",
             "//kythe/cxx/indexer/cxx/testdata:test_vnames.json",
@@ -50,9 +62,17 @@ def cxx_indexer_test(name, srcs, deps=[], tags=[], size="small",
         size = size,
     )
   else:
+    nondarwin_test = []
+    if darwin_only:
+      nondarwin_test = ["//kythe/cxx/indexer/cxx/testdata:pass_test.sh"]
+    else:
+      nondarwin_test = ["//kythe/cxx/indexer/cxx/testdata:one_case.sh"]
     native.sh_test(
         name = name,
-        srcs = ["//kythe/cxx/indexer/cxx/testdata:one_case.sh"],
+        srcs = select({
+            "//:darwin": ["//kythe/cxx/indexer/cxx/testdata:one_case.sh"],
+            "//conditions:default": nondarwin_test,
+        }),
         data = srcs + deps + [
             "//kythe/cxx/indexer/cxx:indexer",
             "//kythe/cxx/indexer/cxx/testdata:handle_results.sh",
