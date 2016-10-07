@@ -3956,12 +3956,6 @@ bool IndexerASTVisitor::VisitObjCPropertyImplDecl(
   return true;
 }
 
-bool IndexerASTVisitor::VisitObjCCategoryDecl(
-    const clang::ObjCCategoryDecl *Decl) {
-  // todo(salguarnieri) implement
-  return true;
-}
-
 // This is like a typedef at a high level. It says that class A can be used
 // instead of class B if class B does not exist.
 bool IndexerASTVisitor::VisitObjCCompatibleAliasDecl(
@@ -3970,38 +3964,118 @@ bool IndexerASTVisitor::VisitObjCCompatibleAliasDecl(
   return true;
 }
 
-// ObjCImplDecl is the base class for ObjCImplementationDecl and
-// ObjCCategoryImplDecl.
-bool IndexerASTVisitor::VisitObjCImplDecl(const clang::ObjCImplDecl *Decl) {
-  SourceRange NameRange = RangeForNameOfDeclaration(Decl);
-  auto DeclNode = BuildNodeIdForDecl(Decl);
+bool IndexerASTVisitor::VisitObjCImplementationDecl(
+    const clang::ObjCImplementationDecl *ImplDecl) {
+  SourceRange NameRange = RangeForNameOfDeclaration(ImplDecl);
+  auto DeclNode = BuildNodeIdForDecl(ImplDecl);
 
   MaybeRecordDefinitionRange(
-      RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode);
-  Observer.recordNamedEdge(DeclNode, BuildNameIdForDecl(Decl));
-  GraphObserver::RecordKind RK = GraphObserver::RecordKind::Class;
-  AddChildOfEdgeToDeclContext(Decl, DeclNode);
+      RangeInCurrentContext(ImplDecl->isImplicit(), DeclNode, NameRange),
+      DeclNode);
+  Observer.recordNamedEdge(DeclNode, BuildNameIdForDecl(ImplDecl));
+  AddChildOfEdgeToDeclContext(ImplDecl, DeclNode);
 
-  FileID DeclFile = Observer.getSourceManager()->getFileID(Decl->getLocation());
-  if (auto NameRangeInContext =
-          RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange)) {
-    // Draw the completion edge to this class's interface decl.
-    auto Interface = Decl->getClassInterface();
-    if (!Interface->isImplicit()) {
-      FileID InterfaceFile =
-          Observer.getSourceManager()->getFileID(Interface->getLocation());
-      GraphObserver::NodeId TargetDecl = BuildNodeIdForDecl(Interface);
-      Observer.recordCompletionRange(
-          NameRangeInContext.primary(), TargetDecl,
-          InterfaceFile == DeclFile
-              ? GraphObserver::Specificity::UniquelyCompletes
-              : GraphObserver::Specificity::Completes);
+  FileID DeclFile =
+      Observer.getSourceManager()->getFileID(ImplDecl->getLocation());
+  if (auto Interface = ImplDecl->getClassInterface()) {
+    if (auto NameRangeInContext = RangeInCurrentContext(ImplDecl->isImplicit(),
+                                                        DeclNode, NameRange)) {
+      // Draw the completion edge to this class's interface decl.
+      if (!Interface->isImplicit()) {
+        FileID InterfaceFile =
+            Observer.getSourceManager()->getFileID(Interface->getLocation());
+        GraphObserver::NodeId TargetDecl = BuildNodeIdForDecl(Interface);
+        Observer.recordCompletionRange(
+            NameRangeInContext.primary(), TargetDecl,
+            InterfaceFile == DeclFile
+                ? GraphObserver::Specificity::UniquelyCompletes
+                : GraphObserver::Specificity::Completes);
+      }
+      RecordCompletesForRedecls(ImplDecl, NameRange, DeclNode);
     }
-    RecordCompletesForRedecls(Decl, NameRange, DeclNode);
+    ConnectToSuperClassAndProtocols(DeclNode, Interface);
+  } else {
+    LogErrorWithASTDump("Missing class interface", ImplDecl);
   }
-  ConnectToSuperClassAndProtocols(DeclNode, Decl->getClassInterface());
-  Observer.recordRecordNode(
-      DeclNode, RK, GraphObserver::Completeness::Definition, GetFormat(Decl));
+  Observer.recordRecordNode(DeclNode, GraphObserver::RecordKind::Class,
+                            GraphObserver::Completeness::Definition,
+                            GetFormat(ImplDecl));
+  return true;
+}
+
+// Categories and Classes are different things. You either have an
+// ObjCImplementationDecl *OR* a ObjCCategoryImplDecl.
+//
+// Category implementations only occur in the case of true categories. They
+// do not occur for an extension.
+bool IndexerASTVisitor::VisitObjCCategoryImplDecl(
+    const clang::ObjCCategoryImplDecl *ImplDecl) {
+  SourceRange NameRange =
+      RangeForASTEntityFromSourceLocation(ImplDecl->getCategoryNameLoc());
+  auto ImplDeclNode = BuildNodeIdForDecl(ImplDecl);
+  MaybeRecordDefinitionRange(
+      RangeInCurrentContext(ImplDecl->isImplicit(), ImplDeclNode, NameRange),
+      ImplDeclNode);
+  Observer.recordNamedEdge(ImplDeclNode, BuildNameIdForDecl(ImplDecl));
+  AddChildOfEdgeToDeclContext(ImplDecl, ImplDeclNode);
+
+  FileID ImplDeclFile =
+      Observer.getSourceManager()->getFileID(ImplDecl->getCategoryNameLoc());
+
+  Observer.recordRecordNode(ImplDeclNode, GraphObserver::RecordKind::Category,
+                            GraphObserver::Completeness::Definition,
+                            GetFormat(ImplDecl));
+
+  if (auto CategoryDecl = ImplDecl->getCategoryDecl()) {
+    if (auto NameRangeInContext = ExplicitRangeInCurrentContext(NameRange)) {
+      // Draw the completion edge to this category's decl.
+      if (!CategoryDecl->isImplicit()) {
+        FileID DeclFile =
+            Observer.getSourceManager()->getFileID(CategoryDecl->getLocation());
+        GraphObserver::NodeId DeclNode = BuildNodeIdForDecl(CategoryDecl);
+        Observer.recordCompletionRange(
+            NameRangeInContext.primary(), DeclNode,
+            DeclFile == ImplDeclFile
+                ? GraphObserver::Specificity::UniquelyCompletes
+                : GraphObserver::Specificity::Completes);
+      }
+      RecordCompletesForRedecls(ImplDecl, NameRange, ImplDeclNode);
+    }
+    // Record a use of the category decl where the name is specified.
+
+    // It should be impossible to be a class extension and have an
+    // ObjCCategoryImplDecl.
+    if (CategoryDecl->IsClassExtension()) {
+      LOG(ERROR) << "Class extensions should not have a category impl.";
+      return true;
+    }
+    auto Range =
+        RangeForASTEntityFromSourceLocation(ImplDecl->getCategoryNameLoc());
+    if (auto RCC = ExplicitRangeInCurrentContext(Range)) {
+      auto ID = BuildNodeIdForDecl(CategoryDecl);
+      Observer.recordDeclUseLocation(RCC.primary(), ID,
+                                     GraphObserver::Claimability::Unclaimable);
+    }
+  } else {
+    LogErrorWithASTDump("Missing category decl", ImplDecl);
+  }
+
+  if (auto BaseClassInterface = ImplDecl->getClassInterface()) {
+    ConnectCategoryToBaseClass(ImplDeclNode, BaseClassInterface);
+
+    // Link the class interface name to the class interface
+    auto ClassInterfaceNode = BuildNodeIdForDecl(BaseClassInterface);
+    // The location for the category decl is actually the location of the
+    // interface name.
+    const SourceRange &IFaceNameRange =
+        RangeForASTEntityFromSourceLocation(ImplDecl->getLocation());
+    if (auto RCC = ExplicitRangeInCurrentContext(IFaceNameRange)) {
+      Observer.recordDeclUseLocation(RCC.primary(), ClassInterfaceNode);
+    }
+  } else {
+    LogErrorWithASTDump("Missing class interface", ImplDecl);
+  }
+
   return true;
 }
 
@@ -4068,14 +4142,6 @@ void IndexerASTVisitor::ConnectToSuperClassAndProtocols(
   }
 }
 
-// todo(salguarnieri) This should be handled by the superclass visitor.
-// todo(salguarnieri) Remove once all objective-c container kinds are
-// implemented and tested.
-bool IndexerASTVisitor::VisitObjCCategoryImplDecl(
-    const clang::ObjCCategoryImplDecl *Decl) {
-  return true;
-}
-
 bool IndexerASTVisitor::VisitObjCInterfaceDecl(
     const clang::ObjCInterfaceDecl *Decl) {
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
@@ -4093,6 +4159,55 @@ bool IndexerASTVisitor::VisitObjCInterfaceDecl(
   RecordCompletesForRedecls(Decl, NameRange, DeclNode);
   ConnectToSuperClassAndProtocols(DeclNode, Decl);
   return true;
+}
+
+// Categories and Classes are different things. You either have an
+// ObjCInterfaceDecl *OR* a ObjCCategoryDecl.
+bool IndexerASTVisitor::VisitObjCCategoryDecl(
+    const clang::ObjCCategoryDecl *Decl) {
+  // Use the category name as our name range. If this is an extension and has
+  // no category name, use the name range for the interface decl.
+  SourceRange NameRange;
+  if (Decl->IsClassExtension()) {
+    NameRange = RangeForNameOfDeclaration(Decl);
+  } else {
+    NameRange = RangeForASTEntityFromSourceLocation(Decl->getCategoryNameLoc());
+  }
+
+  auto DeclNode = BuildNodeIdForDecl(Decl);
+  MaybeRecordDefinitionRange(
+      RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode);
+  Observer.recordNamedEdge(DeclNode, BuildNameIdForDecl(Decl));
+  AddChildOfEdgeToDeclContext(Decl, DeclNode);
+  Observer.recordRecordNode(DeclNode, GraphObserver::RecordKind::Category,
+                            GraphObserver::Completeness::Incomplete,
+                            GetFormat(Decl));
+  RecordCompletesForRedecls(Decl, NameRange, DeclNode);
+  if (auto BaseClassInterface = Decl->getClassInterface()) {
+    ConnectCategoryToBaseClass(DeclNode, BaseClassInterface);
+
+    // Link the class interface name to the class interface
+    auto ClassInterfaceNode = BuildNodeIdForDecl(BaseClassInterface);
+    // The location for the category decl is actually the location of the
+    // interface name.
+    const SourceRange &IFaceNameRange =
+        RangeForASTEntityFromSourceLocation(Decl->getLocation());
+    if (auto RCC = ExplicitRangeInCurrentContext(IFaceNameRange)) {
+      Observer.recordDeclUseLocation(RCC.primary(), ClassInterfaceNode);
+    }
+  } else {
+    LogErrorWithASTDump("Missing class interface", Decl);
+  }
+
+  return true;
+}
+
+// This method is not inlined because it is important that we do the same thing
+// for category declarations and category implementations.
+void IndexerASTVisitor::ConnectCategoryToBaseClass(
+    const GraphObserver::NodeId &DeclNode, const ObjCInterfaceDecl *IFace) {
+  auto ClassTypeId = BuildNodeIdForDecl(IFace);
+  Observer.recordCategoryExtendsEdge(DeclNode, ClassTypeId);
 }
 
 void IndexerASTVisitor::RecordCompletesForRedecls(
@@ -4133,8 +4248,7 @@ bool IndexerASTVisitor::VisitObjCProtocolDecl(
 }
 
 bool IndexerASTVisitor::VisitObjCMethodDecl(const clang::ObjCMethodDecl *Decl) {
-  GraphObserver::NodeId Node(Observer.getDefaultClaimToken(), "");
-  Node = BuildNodeIdForDecl(Decl);
+  auto Node = BuildNodeIdForDecl(Decl);
   GraphObserver::NameId DeclName(BuildNameIdForDecl(Decl));
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
   auto NameRangeInContext(
@@ -4168,6 +4282,57 @@ bool IndexerASTVisitor::VisitObjCMethodDecl(const clang::ObjCMethodDecl *Decl) {
   if (!IsFunctionDefinition) {
     Observer.recordFunctionNode(Node, GraphObserver::Completeness::Incomplete,
                                 Subkind, GetFormat(Decl));
+
+    // If this is a decl in an extension, we need to connect it to its
+    // implementation here.
+    //
+    // When we are visiting the definition for a method decl from an extension,
+    // we don't have a way to get back to the declaration. The true method
+    // decl does not appear in the list of redecls and it is not returned by
+    // getCanonicalDecl. Furthermore, there is no way to get access to the
+    // extension declaration. Since class implementations do not mention
+    // extensions, there is nothing for us to use.
+    //
+    // There may be unexpected behavior in getCanonicalDecl because it only
+    // covers the following cases:
+    //  * When the declaration is a child of ObjCInterfaceDecl and the
+    //    definition is a child of ObjCImplementationDecl.
+    //  * When the declaration is a child of ObjCCategoryDecl and the
+    //    definition is a child of ObjCCategeoryImplDecl.
+    // It does not cover the following case:
+    //  * When the declaration is a child of ObjCCategoryDecl and the
+    //    definition is a child of ObjCImplementationDecl. This occurs in an
+    //    extension.
+    if (auto CategoryDecl =
+            dyn_cast<ObjCCategoryDecl>(Decl->getDeclContext())) {
+      if (CategoryDecl->IsClassExtension() &&
+          CategoryDecl->getClassInterface() != nullptr &&
+          CategoryDecl->getClassInterface()->getImplementation() != nullptr) {
+        // Temp variable to make code slightly more readable.
+        ObjCImplementationDecl *ClassImpl =
+            CategoryDecl->getClassInterface()->getImplementation();
+        if (auto MethodImpl = ClassImpl->getMethod(Decl->getSelector(),
+                                                   Decl->isInstanceMethod())) {
+          if (MethodImpl != Decl) {
+            FileID DeclFile =
+                Observer.getSourceManager()->getFileID(Decl->getLocation());
+            FileID ImplFile = Observer.getSourceManager()->getFileID(
+                MethodImpl->getLocation());
+            auto ImplNode = BuildNodeIdForDecl(MethodImpl);
+            SourceRange ImplNameRange = RangeForNameOfDeclaration(MethodImpl);
+            auto ImplNameRangeInContext(RangeInCurrentContext(
+                MethodImpl->isImplicit(), ImplNode, ImplNameRange));
+            if (ImplNameRangeInContext) {
+              Observer.recordCompletionRange(
+                  ImplNameRangeInContext.primary(), BuildNodeIdForDecl(Decl),
+                  DeclFile == ImplFile
+                      ? GraphObserver::Specificity::UniquelyCompletes
+                      : GraphObserver::Specificity::Completes);
+            }
+          }
+        }
+      }
+    }
     return true;
   }
 
@@ -4185,15 +4350,21 @@ bool IndexerASTVisitor::VisitObjCMethodDecl(const clang::ObjCMethodDecl *Decl) {
     // This is necessary if this definition comes from an implicit method from
     // a property.
     auto CD = Decl->getCanonicalDecl();
-    FileID CDDeclFile =
-        Observer.getSourceManager()->getFileID(CD->getLocation());
-    Observer.recordCompletionRange(
-        DeclNameRangeInContext, BuildNodeIdForDecl(CD),
-        CDDeclFile == DefnFile ? GraphObserver::Specificity::UniquelyCompletes
-                               : GraphObserver::Specificity::Completes);
+
+    // Do not draw self-completion edges.
+    if (Decl != CD) {
+      FileID CDDeclFile =
+          Observer.getSourceManager()->getFileID(CD->getLocation());
+      Observer.recordCompletionRange(
+          DeclNameRangeInContext, BuildNodeIdForDecl(CD),
+          CDDeclFile == DefnFile ? GraphObserver::Specificity::UniquelyCompletes
+                                 : GraphObserver::Specificity::Completes);
+    }
 
     // Connect all other redecls to this definition with a completion edge.
     for (const auto *NextDecl : Decl->redecls()) {
+      // Do not draw self-completion edges and do not draw an edge for the
+      // canonical decl again.
       if (NextDecl != Decl && NextDecl != CD) {
         FileID RedeclFile =
             Observer.getSourceManager()->getFileID(NextDecl->getLocation());
@@ -4421,5 +4592,14 @@ IndexerASTVisitor::CreateObjCMethodTypeNode(const clang::ObjCMethodDecl *MD,
   return Observer.recordTappNode(Observer.getNodeIdForBuiltinType(Tycon),
                                  NodeIdPtrs);
 }
+
+void IndexerASTVisitor::LogErrorWithASTDump(const std::string &msg,
+                                            const clang::Decl *Decl) {
+  std::string s;
+  llvm::raw_string_ostream ss(s);
+  Decl->dump(ss);
+  LOG(ERROR) << msg << " :: " << s;
+}
+
 
 } // namespace kythe

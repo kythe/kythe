@@ -92,6 +92,7 @@ enum class EdgeKindID {
   kExtendsProtectedVirtual,
   kExtendsPrivateVirtual,
   kExtendsVirtual,
+  kExtendsCategory,
   kSpecializesSpeculative,
   kInstantiatesSpeculative,
   kDocuments,

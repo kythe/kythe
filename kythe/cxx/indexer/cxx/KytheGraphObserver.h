@@ -42,7 +42,7 @@ class KytheGraphRecorder;
 /// the (file * transcript) pair it came from is statically claimed by the
 /// GraphObserver.
 class KytheClaimToken : public GraphObserver::ClaimToken {
- public:
+public:
   std::string StampIdentity(const std::string &identity) const override {
     std::string stamped = identity;
     if (!vname_.corpus().empty()) {
@@ -114,7 +114,7 @@ class KytheClaimToken : public GraphObserver::ClaimToken {
     return true;
   }
 
- private:
+private:
   static void *clazz_;
   /// The prototypical VName to use for claimed objects.
   kythe::proto::VName vname_;
@@ -124,15 +124,13 @@ class KytheClaimToken : public GraphObserver::ClaimToken {
 /// \brief Records details in the form of Kythe nodes and edges about elements
 /// discovered during indexing to the provided `KytheGraphRecorder`.
 class KytheGraphObserver : public GraphObserver {
- public:
+public:
   KytheGraphObserver(KytheGraphRecorder *recorder, KytheClaimClient *client,
                      const MetadataSupports *meta_supports,
                      const llvm::IntrusiveRefCntPtr<IndexVFS> vfs,
                      ProfilingCallback ReportProfileEventCallback)
-      : recorder_(CHECK_NOTNULL(recorder)),
-        client_(CHECK_NOTNULL(client)),
-        meta_supports_(CHECK_NOTNULL(meta_supports)),
-        vfs_(vfs) {
+      : recorder_(CHECK_NOTNULL(recorder)), client_(CHECK_NOTNULL(client)),
+        meta_supports_(CHECK_NOTNULL(meta_supports)), vfs_(vfs) {
     default_token_.set_rough_claimed(true);
     type_token_.set_rough_claimed(true);
     ReportProfileEvent = ReportProfileEventCallback;
@@ -212,6 +210,9 @@ class KytheGraphObserver : public GraphObserver {
   NodeId recordNominalTypeNode(const NameId &TypeName,
                                const std::string &Format,
                                const NodeId *Parent) override;
+
+  void recordCategoryExtendsEdge(const NodeId &InheritingNodeId,
+                                 const NodeId &InheritedTypeId) override;
 
   void recordExtendsEdge(const NodeId &InheritingNodeId,
                          const NodeId &InheritedTypeId, bool IsVirtual,
@@ -304,8 +305,8 @@ class KytheGraphObserver : public GraphObserver {
 
   bool isMainSourceFileRelatedLocation(clang::SourceLocation Location) override;
 
-  void AppendMainSourceFileIdentifierToStream(
-      llvm::raw_ostream &Ostream) override;
+  void
+  AppendMainSourceFileIdentifierToStream(llvm::raw_ostream &Ostream) override;
 
   /// \brief Configures the claimant that will be used to make claims.
   void set_claimant(const kythe::proto::VName &vname) { claimant_ = vname; }
@@ -341,15 +342,15 @@ class KytheGraphObserver : public GraphObserver {
     starting_context_ = context;
   }
 
-  KytheClaimToken *getClaimTokenForLocation(
-      const clang::SourceLocation L) override;
+  KytheClaimToken *
+  getClaimTokenForLocation(const clang::SourceLocation L) override;
 
   KytheClaimToken *getClaimTokenForRange(const clang::SourceRange &SR) override;
 
   KytheClaimToken *getNamespaceClaimToken(clang::SourceLocation Loc) override;
 
-  KytheClaimToken *getAnonymousNamespaceClaimToken(
-      clang::SourceLocation Loc) override;
+  KytheClaimToken *
+  getAnonymousNamespaceClaimToken(clang::SourceLocation Loc) override;
 
   /// \brief Appends a representation of `Range` to `Ostream`.
   void AppendRangeToStream(llvm::raw_ostream &Ostream,
@@ -365,7 +366,7 @@ class KytheGraphObserver : public GraphObserver {
 
   bool lossy_claiming() const override { return lossy_claiming_; }
 
- private:
+private:
   void RecordSourceLocation(const VNameRef &vname,
                             clang::SourceLocation source_location,
                             PropertyID offset_id);
@@ -387,8 +388,8 @@ class KytheGraphObserver : public GraphObserver {
   kythe::proto::VName VNameFromFileEntry(const clang::FileEntry *file_entry);
   kythe::proto::VName ClaimableVNameFromFileID(const clang::FileID &file_id);
   kythe::proto::VName VNameFromRange(const GraphObserver::Range &range);
-  MaybeFew<kythe::proto::VName> RecordName(
-      const GraphObserver::NameId &name_id);
+  MaybeFew<kythe::proto::VName>
+  RecordName(const GraphObserver::NameId &name_id);
   void RecordAnchor(const GraphObserver::Range &source_range,
                     const GraphObserver::NodeId &primary_anchored_to,
                     EdgeKindID anchor_edge_kind, Claimability claimability);
@@ -444,11 +445,11 @@ class KytheGraphObserver : public GraphObserver {
 
   /// A file we have entered but not left.
   struct FileState {
-    PreprocessorContext context;     ///< The context for this file.
-    kythe::proto::VName vname;       ///< The file's VName.
-    kythe::proto::VName base_vname;  ///< The file's VName without context.
-    llvm::sys::fs::UniqueID uid;     ///< The ID Clang uses for this file.
-    bool claimed;                    ///< Whether we have claimed this file.
+    PreprocessorContext context;    ///< The context for this file.
+    kythe::proto::VName vname;      ///< The file's VName.
+    kythe::proto::VName base_vname; ///< The file's VName without context.
+    llvm::sys::fs::UniqueID uid;    ///< The ID Clang uses for this file.
+    bool claimed;                   ///< Whether we have claimed this file.
   };
   /// The files we have entered but not left.
   std::vector<FileState> file_stack_;
@@ -545,6 +546,6 @@ class KytheGraphObserver : public GraphObserver {
   std::map<std::string, Builtin> builtins_;
 };
 
-}  // namespace kythe
+} // namespace kythe
 
-#endif  // KYTHE_CXX_INDEXER_CXX_KYTHE_GRAPH_OBSERVER_H_
+#endif // KYTHE_CXX_INDEXER_CXX_KYTHE_GRAPH_OBSERVER_H_

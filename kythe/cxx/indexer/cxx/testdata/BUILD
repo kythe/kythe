@@ -1742,6 +1742,17 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "category",
+    srcs = ["objc/categories/base+foo.m"],
+    ignore_dups = True,
+    tags = ["objc"],
+    deps = [
+        "objc/categories/base.h",
+        "objc/categories/base+foo.h",
+    ],
+)
+
+cxx_indexer_test(
     name = "class_decl_defn",
     srcs = ["objc/class_decl_defn.m"],
     ignore_dups = True,
@@ -1767,6 +1778,24 @@ cxx_indexer_test(
     srcs = ["objc/extends.m"],
     ignore_dups = True,
     tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "extension",
+    srcs = ["objc/categories/extension.m"],
+    ignore_dups = True,
+    tags = ["objc"],
+    deps = ["objc/categories/extension.h"],
+)
+
+# This test passes on darwin but fails on Linux.
+cxx_indexer_test(
+    name = "extension_property_xcode",
+    srcs = ["objc/categories/extension_property_xcode.m"],
+    darwin_only = True,
+    ignore_dups = True,
+    tags = ["objc"],
+    deps = ["objc/categories/extension_property_xcode.h"],
 )
 
 cxx_indexer_test(
@@ -1829,6 +1858,14 @@ cxx_indexer_test(
     srcs = ["objc/id_instance_method.m"],
     ignore_dups = True,
     tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "include",
+    srcs = ["objc/include.m"],
+    ignore_dups = True,
+    tags = ["objc"],
+    deps = ["objc/include.h"],
 )
 
 cxx_indexer_test(
@@ -1979,6 +2016,13 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "protocol_method_defn",
     srcs = ["objc/protocol_method_defn.m"],
+    ignore_dups = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "single_file_category",
+    srcs = ["objc/categories/single_file_category.m"],
     ignore_dups = True,
     tags = ["objc"],
 )

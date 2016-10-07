@@ -63,6 +63,8 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
       print("No files affected\n");
       return array();
     }
+    // Quote each file to make it safe in case it has special characters in it.
+    $files = array_map(function($s) { return '"'.$s.'"'; }, $files);
     $files = join($files, " ");
     $this->debugPrint("files: " . $files);
 
@@ -80,7 +82,8 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
       print("No targets affected\n");
       return array();
     }
-    return explode("\n", $output);
+    // Quote each target to make it safe in case it has special characters in it.
+    return array_map(function($s) { return '"'.$s.'"'; }, explode("\n", $output));
   }
 
   private function getFileTargets() {

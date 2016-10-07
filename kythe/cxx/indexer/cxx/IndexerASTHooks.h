@@ -308,8 +308,9 @@ public:
   bool VisitObjCPropertyImplDecl(const clang::ObjCPropertyImplDecl *Decl);
   bool VisitObjCCompatibleAliasDecl(const clang::ObjCCompatibleAliasDecl *Decl);
   bool VisitObjCCategoryDecl(const clang::ObjCCategoryDecl *Decl);
-  bool VisitObjCImplDecl(const clang::ObjCImplDecl *Decl);
-  bool VisitObjCCategoryImplDecl(const clang::ObjCCategoryImplDecl *Decl);
+  bool
+  VisitObjCImplementationDecl(const clang::ObjCImplementationDecl *ImplDecl);
+  bool VisitObjCCategoryImplDecl(const clang::ObjCCategoryImplDecl *ImplDecl);
   bool VisitObjCInterfaceDecl(const clang::ObjCInterfaceDecl *Decl);
   bool VisitObjCProtocolDecl(const clang::ObjCProtocolDecl *Decl);
   bool VisitObjCMethodDecl(const clang::ObjCMethodDecl *Decl);
@@ -337,7 +338,7 @@ public:
   //  We visit the subclasses of ObjCContainerDecl so there is nothing to do.
   //  bool VisitObjCContainerDecl(const clang::ObjCContainerDecl *D);
   //
-  //  bool VisitObjCImplementationDecl(const clang::ObjCImplementationDecl *D);
+  //  bool VisitObjCImplDecl(const clang::ObjCImplDecl *D);
   //
   //  There are not interesting connections to/from this expression. It is used
   //  for things like @42 and @true to turn scalars into objects.
@@ -870,6 +871,19 @@ private:
   void RecordCompletesForRedecls(const clang::Decl *Decl,
                                  const clang::SourceRange &NameRange,
                                  const GraphObserver::NodeId &DeclNode);
+
+  /// \brief Draw an extends/category edge from the category to the class the
+  /// category is extending.
+  ///
+  /// For example, @interface A (Cat) ... We draw an extends edge from the
+  /// ObjCCategoryDecl for Cat to the ObjCInterfaceDecl for A.
+  ///
+  /// \param DeclNode The node for the category (impl or decl).
+  /// \param IFace The class interface for class we are adding a category to.
+  void ConnectCategoryToBaseClass(const GraphObserver::NodeId &DeclNode,
+                                  const clang::ObjCInterfaceDecl *IFace);
+
+  void LogErrorWithASTDump(const std::string &msg, const clang::Decl *Decl);
 
   /// \brief The current context for constructing `GraphObserver::Range`s.
   ///

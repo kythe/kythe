@@ -387,7 +387,7 @@ public:
   virtual NodeId
   recordTsigmaNode(const std::vector<const NodeId *> &Params) = 0;
 
-  enum class RecordKind { Struct, Class, Union };
+  enum class RecordKind { Struct, Class, Union, Category };
 
   /// \brief Describes how autological a given declaration is.
   enum class Completeness {
@@ -671,6 +671,15 @@ public:
   /// \param ParentNodeId The identifier for the parent node.
   virtual void recordChildOfEdge(const NodeId &ChildNodeId,
                                  const NodeId &ParentNodeId) {}
+
+  /// \brief Records that a record adds functionality to another record. In the
+  /// case of Objective-C this occurs in a category where additional methods
+  /// are added to a preexisting class.
+  /// \param InheritingNodeId The record type providing additional
+  /// functionality. In Objective-C, this would be the category.
+  /// \param InheritedTypeId The record type being extended (the base class).
+  virtual void recordCategoryExtendsEdge(const NodeId &InheritingNodeId,
+                                         const NodeId &InheritedTypeId) {}
 
   /// \brief Records that a record directly inherits from another record.
   /// \param InheritingNodeId The inheriting record type (the derived class).
