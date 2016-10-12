@@ -315,7 +315,6 @@ public:
   bool VisitObjCProtocolDecl(const clang::ObjCProtocolDecl *Decl);
   bool VisitObjCMethodDecl(const clang::ObjCMethodDecl *Decl);
   bool VisitObjCPropertyDecl(const clang::ObjCPropertyDecl *Decl);
-
   bool VisitObjCEncodeExpr(const clang::ObjCEncodeExpr *Expr);
   bool VisitObjCIndirectCopyRestoreExpr(
       const clang::ObjCIndirectCopyRestoreExpr *Expr);
@@ -343,6 +342,11 @@ public:
   //  There are not interesting connections to/from this expression. It is used
   //  for things like @42 and @true to turn scalars into objects.
   //  bool VisitObjCBoxedExpr(const clang::ObjCBoxedExpr *Expr);
+  //
+  //  There is nothing specific we need to do for blocks. The recursive visitor
+  //  will visit the components of them correctly.
+  //  bool VisitBlockDecl(const clang::BlockDecl *Decl);
+  //  bool VisitBlockExpr(const clang::BlockExpr *Expr);
 
   /// \brief For functions that support it, controls the emission of range
   /// information.

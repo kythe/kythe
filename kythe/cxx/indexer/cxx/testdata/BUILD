@@ -1735,9 +1735,34 @@ test_suite(
 # Objective C Tests
 
 cxx_indexer_test(
+    name = "block_pointer",
+    srcs = ["objc/block_pointer.m"],
+    ignore_dups = True,
+    objc = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "block_pointer_typedef",
+    srcs = ["objc/block_pointer_typedef.m"],
+    ignore_dups = True,
+    objc = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "block_pointer_type",
+    srcs = ["objc/block_pointer_type.m"],
+    ignore_dups = True,
+    objc = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
     name = "boxed_expr",
     srcs = ["objc/boxed_expr.m"],
     ignore_dups = True,
+    objc = True,
     tags = ["objc"],
 )
 
@@ -1745,6 +1770,7 @@ cxx_indexer_test(
     name = "category",
     srcs = ["objc/categories/base+foo.m"],
     ignore_dups = True,
+    objc = True,
     tags = ["objc"],
     deps = [
         "objc/categories/base.h",
@@ -1756,6 +1782,7 @@ cxx_indexer_test(
     name = "class_decl_defn",
     srcs = ["objc/class_decl_defn.m"],
     ignore_dups = True,
+    objc = True,
     tags = ["objc"],
 )
 
@@ -1763,6 +1790,7 @@ cxx_indexer_test(
     name = "class_instantiation",
     srcs = ["objc/class_instantiation.m"],
     ignore_dups = True,
+    objc = True,
     tags = ["objc"],
 )
 
@@ -1770,6 +1798,7 @@ cxx_indexer_test(
     name = "class_method_decl_defn",
     srcs = ["objc/class_method_decl_defn.m"],
     ignore_dups = True,
+    objc = True,
     tags = ["objc"],
 )
 
@@ -1777,6 +1806,7 @@ cxx_indexer_test(
     name = "extends",
     srcs = ["objc/extends.m"],
     ignore_dups = True,
+    objc = True,
     tags = ["objc"],
 )
 
@@ -1784,6 +1814,7 @@ cxx_indexer_test(
     name = "extension",
     srcs = ["objc/categories/extension.m"],
     ignore_dups = True,
+    objc = True,
     tags = ["objc"],
     deps = ["objc/categories/extension.h"],
 )
@@ -1794,6 +1825,7 @@ cxx_indexer_test(
     srcs = ["objc/categories/extension_property_xcode.m"],
     darwin_only = True,
     ignore_dups = True,
+    objc = True,
     tags = ["objc"],
     deps = ["objc/categories/extension_property_xcode.h"],
 )
@@ -1802,6 +1834,7 @@ cxx_indexer_test(
     name = "forward_declare",
     srcs = ["objc/forward_declare.m"],
     ignore_dups = True,
+    objc = True,
     tags = ["objc"],
 )
 
@@ -1810,6 +1843,7 @@ cxx_indexer_test(
     name = "generic_contravariant",
     srcs = ["objc/generic_contravariant.m"],
     ignore_dups = True,
+    objc = True,
     tags = ["objc"],
 )
 
@@ -1818,6 +1852,7 @@ cxx_indexer_test(
     name = "generic_covariant_instantiation",
     srcs = ["objc/generic_covariant_instantiation.m"],
     ignore_dups = True,
+    objc = True,
     tags = ["objc"],
 )
 
@@ -1826,6 +1861,7 @@ cxx_indexer_test(
     name = "generic_covariant",
     srcs = ["objc/generic_covariant.m"],
     ignore_dups = True,
+    objc = True,
     tags = ["objc"],
 )
 
@@ -1834,6 +1870,7 @@ cxx_indexer_test(
     name = "generic_covariant_method_call",
     srcs = ["objc/generic_covariant_method_call.m"],
     ignore_dups = True,
+    objc = True,
     tags = ["objc"],
 )
 
@@ -1842,6 +1879,7 @@ cxx_indexer_test(
     name = "generic_covariant_restricted_protocol",
     srcs = ["objc/generic_covariant_restricted_protocol.m"],
     ignore_dups = True,
+    objc = True,
     tags = ["objc"],
 )
 
@@ -1850,6 +1888,7 @@ cxx_indexer_test(
     name = "generic_covariant_restricted_super_class",
     srcs = ["objc/generic_covariant_restricted_super_class.m"],
     ignore_dups = True,
+    objc = True,
     tags = ["objc"],
 )
 
@@ -1857,6 +1896,7 @@ cxx_indexer_test(
     name = "id_instance_method",
     srcs = ["objc/id_instance_method.m"],
     ignore_dups = True,
+    objc = True,
     tags = ["objc"],
 )
 
@@ -1864,6 +1904,7 @@ cxx_indexer_test(
     name = "include",
     srcs = ["objc/include.m"],
     ignore_dups = True,
+    objc = True,
     tags = ["objc"],
     deps = ["objc/include.h"],
 )
@@ -1872,6 +1913,7 @@ cxx_indexer_test(
     name = "instance_method_call",
     srcs = ["objc/instance_method_call.m"],
     ignore_dups = True,
+    objc = True,
     tags = ["objc"],
 )
 
@@ -1879,6 +1921,7 @@ cxx_indexer_test(
     name = "instance_method_call_with_class_params",
     srcs = ["objc/instance_method_call_with_class_params.m"],
     ignore_dups = True,
+    objc = True,
     tags = ["objc"],
 )
 
@@ -1886,6 +1929,7 @@ cxx_indexer_test(
     name = "instance_method_call_with_params",
     srcs = ["objc/instance_method_call_with_params.m"],
     ignore_dups = True,
+    objc = True,
     tags = ["objc"],
 )
 
@@ -1893,6 +1937,7 @@ cxx_indexer_test(
     name = "instance_method_decl_defn",
     srcs = ["objc/instance_method_decl_defn.m"],
     ignore_dups = True,
+    objc = True,
     tags = ["objc"],
 )
 
@@ -1900,6 +1945,7 @@ cxx_indexer_test(
     name = "instance_method_decl_defn_with_params",
     srcs = ["objc/instance_method_decl_defn_with_params.m"],
     ignore_dups = True,
+    objc = True,
     tags = ["objc"],
 )
 
@@ -1907,6 +1953,7 @@ cxx_indexer_test(
     name = "instance_method_matched_correctly",
     srcs = ["objc/instance_method_matched_correctly.m"],
     ignore_dups = True,
+    objc = True,
     tags = ["objc"],
 )
 
@@ -1917,6 +1964,7 @@ cxx_indexer_test(
     srcs = ["objc/instance_method_self_and_class_method_self_different.m"],
     expect_fail_verify = True,
     ignore_dups = True,
+    objc = True,
     tags = ["objc"],
 )
 
@@ -1924,6 +1972,7 @@ cxx_indexer_test(
     name = "instance_method_type",
     srcs = ["objc/instance_method_type.m"],
     ignore_dups = True,
+    objc = True,
     tags = ["objc"],
 )
 
@@ -1931,6 +1980,7 @@ cxx_indexer_test(
     name = "ivar_decl",
     srcs = ["objc/ivar_decl.m"],
     ignore_dups = True,
+    objc = True,
     tags = ["objc"],
 )
 
@@ -1938,6 +1988,7 @@ cxx_indexer_test(
     name = "method_overrides",
     srcs = ["objc/method_overrides.m"],
     ignore_dups = True,
+    objc = True,
     tags = ["objc"],
 )
 
@@ -1951,6 +2002,7 @@ cxx_indexer_test(
     srcs = ["objc/method_swizzle.m"],
     expect_fail_index = True,
     ignore_dups = True,
+    objc = True,
     tags = ["objc"],
 )
 
@@ -1958,6 +2010,7 @@ cxx_indexer_test(
     name = "precise_extends",
     srcs = ["objc/precise_extends.m"],
     ignore_dups = True,
+    objc = True,
     tags = ["objc"],
 )
 
@@ -1965,6 +2018,7 @@ cxx_indexer_test(
     name = "property_custom_getter_setter",
     srcs = ["objc/property_custom_getter_setter.m"],
     ignore_dups = True,
+    objc = True,
     tags = ["objc"],
 )
 
@@ -1972,6 +2026,7 @@ cxx_indexer_test(
     name = "property_decl_defn",
     srcs = ["objc/property_decl_defn.m"],
     ignore_dups = True,
+    objc = True,
     tags = ["objc"],
 )
 
@@ -1982,6 +2037,7 @@ cxx_indexer_test(
     srcs = ["objc/property_decl_defn_xcode_only.m"],
     darwin_only = True,
     ignore_dups = True,
+    objc = True,
     tags = ["objc"],
 )
 
@@ -1989,6 +2045,7 @@ cxx_indexer_test(
     name = "property_getter_setter",
     srcs = ["objc/property_getter_setter.m"],
     ignore_dups = True,
+    objc = True,
     tags = ["objc"],
 )
 
@@ -1996,6 +2053,7 @@ cxx_indexer_test(
     name = "protocol_class_namespace",
     srcs = ["objc/protocol_class_namespace.m"],
     ignore_dups = True,
+    objc = True,
     tags = ["objc"],
 )
 
@@ -2003,6 +2061,7 @@ cxx_indexer_test(
     name = "protocol_defn",
     srcs = ["objc/protocol_defn.m"],
     ignore_dups = True,
+    objc = True,
     tags = ["objc"],
 )
 
@@ -2010,6 +2069,7 @@ cxx_indexer_test(
     name = "protocol_impl",
     srcs = ["objc/protocol_impl.m"],
     ignore_dups = True,
+    objc = True,
     tags = ["objc"],
 )
 
@@ -2017,6 +2077,7 @@ cxx_indexer_test(
     name = "protocol_method_defn",
     srcs = ["objc/protocol_method_defn.m"],
     ignore_dups = True,
+    objc = True,
     tags = ["objc"],
 )
 
@@ -2024,6 +2085,7 @@ cxx_indexer_test(
     name = "single_file_category",
     srcs = ["objc/categories/single_file_category.m"],
     ignore_dups = True,
+    objc = True,
     tags = ["objc"],
 )
 

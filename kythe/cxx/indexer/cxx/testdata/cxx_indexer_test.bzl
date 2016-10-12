@@ -1,6 +1,8 @@
 # If a test is expected to pass on darwin but not on linux, you can set
 # darwin_only to True. This causes the test to always pass on linux and it
 # causes the actual test to execute on darwin.
+#
+# Setting objc to True will also set std to "".
 def cxx_indexer_test(name, srcs, deps=[], tags=[], size="small",
                      std="c++1y", ignore_dups=False,
                      ignore_unimplemented=False,
@@ -8,13 +10,18 @@ def cxx_indexer_test(name, srcs, deps=[], tags=[], size="small",
                      expect_fail_index=False,
                      expect_fail_verify=False,
                      bundled=False,
+                     objc=False,
                      experimental_drop_instantiation_independent_data=False,
                      darwin_only=False,
                      goal_prefix="//-"):
   if len(srcs) != 1:
     fail("A single source file is required.", "srcs")
-  args = ["$(location %s)" % srcs[0], std, "--verifier",
+  args = ["$(location %s)" % srcs[0], "--verifier",
           "--goal_prefix=\"" + goal_prefix + "\""]
+  if std != "" and not objc:
+    args += ["--clang", "-std=" + std]
+  if objc:
+    args += ["--clang", "-fblocks"]
   if ignore_dups:
     args += ["--verifier", "--ignore_dups=true"]
   if ignore_unimplemented:

@@ -16,11 +16,11 @@
 
 VERIFIER="kythe/cxx/verifier/verifier"
 INDEXER="kythe/cxx/indexer/cxx/indexer"
-# one_case test-file clang-standard {--indexer argument |
+# one_case test-file {--indexer argument | --clang argument |
 #     --verifier argument | --expected (expectfailindex|expectfailverify)}*
 source kythe/cxx/indexer/cxx/testdata/parse_args.sh
 "${INDEXER}" -i "${TEST_FILE}" "${INDEXER_ARGS[@]}" -- \
-    -std="${CLANG_STANDARD}" | "${VERIFIER}" "${TEST_FILE}" \
+    "${CLANG_ARGS[@]}" | "${VERIFIER}" "${TEST_FILE}" \
     "${VERIFIER_ARGS[@]}"
 RESULTS=( ${PIPESTATUS[0]} ${PIPESTATUS[1]} )
 source kythe/cxx/indexer/cxx/testdata/handle_results.sh

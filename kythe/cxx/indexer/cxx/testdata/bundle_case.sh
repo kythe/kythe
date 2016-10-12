@@ -45,7 +45,7 @@ popd > /dev/null
 # Extract the split bundle.
 KYTHE_ROOT_DIRECTORY="$PWD" KYTHE_OUTPUT_DIRECTORY="${TEMP_PREFIX}" \
     KYTHE_VNAMES="${BASE_DIR}"/test_vnames.json "${EXTRACTOR}" \
-    -c -std="${CLANG_STANDARD}" $(cat ${TEMP_PREFIX}/cflags) \
+    -c "${CLANG_ARGS[@]}" $(cat ${TEMP_PREFIX}/cflags) \
     "${TEMP_PREFIX}"/test_bundle/test.cc
 KINDEX_FILE="$(find "${TEMP_PREFIX}" -iname '*.kindex')"
 

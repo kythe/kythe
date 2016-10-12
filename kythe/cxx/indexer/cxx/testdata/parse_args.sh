@@ -13,19 +13,19 @@
 # limitations under the License.
 
 # parse_args should be inlined into another script.
-# It sets $INDEXER_ARGS to an array of arguments to pass to the indexer and
-# $VERIFIER_ARGS to an array of arguments to pass to the verifier.
-# It will also set $CLANG_STANDARD, $RESULTS_EXPECTED, and $TEST_FILE.
+# It sets $INDEXER_ARGS to an array of arguments to pass to the indexer,
+# $VERIFIER_ARGS to an array of arguments to pass to the verifier, and
+# $CLANG_ARGS to an array of arguments to pass to indexer to set upclang.
+# It will also set $RESULTS_EXPECTED and $TEST_FILE.
 
 # Usage (imposed on embedders):
-# script test-file clang-standard {--indexer argument |
+# script test-file {--indexer argument | --clang argument |
 #     --verifier argument | --expected (expectfailindex|expectfailverify)}*
 
 TEST_FILE="$1"
-shift
-CLANG_STANDARD="$1"
 INDEXER_ARGS=()
 VERIFIER_ARGS=()
+CLANG_ARGS=()
 RESULTS_EXPECTED=''
 
 while shift; [ $# -ne 0 ]; do
@@ -40,6 +40,10 @@ while shift; [ $# -ne 0 ]; do
     ;;
   --verifier)
     VERIFIER_ARGS+=("$2")
+    shift
+    ;;
+  --clang)
+    CLANG_ARGS+=("$2")
     shift
     ;;
   '')

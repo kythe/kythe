@@ -3892,8 +3892,25 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
     const auto *OTPT = dyn_cast<ObjCTypeParamType>(PT);
     ID = BuildNodeIdForDecl(OTPT ? OTPT->getDecl() : OTPTL.getDecl());
   } break;
+  case TypeLoc::BlockPointer: {
+    const auto &BPTL = TypeLoc.getAs<BlockPointerTypeLoc>();
+    const auto &DT = dyn_cast<BlockPointerType>(PT);
+    auto PointeeID(BuildNodeIdForType(BPTL.getPointeeLoc(),
+                                      DT ? DT->getPointeeType().getTypePtr()
+                                         : BPTL.getPointeeLoc().getTypePtr(),
+                                      EmitRanges));
+    if (!PointeeID) {
+      return PointeeID;
+    }
+    if (SR.isValid() && SR.getBegin().isFileID()) {
+      SR.setEnd(GetLocForEndOfToken(BPTL.getCaretLoc()));
+    }
+    if (TypeAlreadyBuilt) {
+      break;
+    }
+    ID = ApplyBuiltinTypeConstructor("ptr", PointeeID);
+  } break;
     // todo(salguarnieri) implement
-    UNSUPPORTED_CLANG_TYPE(BlockPointer);
     UNSUPPORTED_CLANG_TYPE(Atomic);
     UNSUPPORTED_CLANG_TYPE(Pipe);
   }
