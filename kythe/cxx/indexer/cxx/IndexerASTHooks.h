@@ -315,38 +315,40 @@ public:
   bool VisitObjCProtocolDecl(const clang::ObjCProtocolDecl *Decl);
   bool VisitObjCMethodDecl(const clang::ObjCMethodDecl *Decl);
   bool VisitObjCPropertyDecl(const clang::ObjCPropertyDecl *Decl);
-  bool VisitObjCEncodeExpr(const clang::ObjCEncodeExpr *Expr);
-  bool VisitObjCIndirectCopyRestoreExpr(
-      const clang::ObjCIndirectCopyRestoreExpr *Expr);
-  bool VisitObjCIsaExpr(const clang::ObjCIsaExpr *Expr);
   bool VisitObjCIvarRefExpr(const clang::ObjCIvarRefExpr *IRE);
   bool VisitObjCMessageExpr(const clang::ObjCMessageExpr *Expr);
   bool VisitObjCPropertyRefExpr(const clang::ObjCPropertyRefExpr *Expr);
-  bool VisitObjCSelectorExpr(const clang::ObjCSelectorExpr *Expr);
-  bool VisitObjCSubscriptRefExpr(const clang::ObjCSubscriptRefExpr *Expr);
 
-  // todo(salguarnieri) delete this comment block when we have more objective-c
+  // TODO(salguarnieri) We could link something here (the square brackets?) to
+  // the setter and getter methods
+  //   bool VisitObjCSubscriptRefExpr(const clang::ObjCSubscriptRefExpr *Expr);
+
+  // TODO(salguarnieri) delete this comment block when we have more objective-c
   // support implemented.
   //
-  // Visitors that are left to their default behavior.
-  //  bool VisitObjCDictionaryLiteral(const clang::ObjCDictionaryLiteral *D);
-  //  bool VisitObjCArrayLiteral(const clang::ObjCArrayLiteral *D);
-  //  bool VisitObjCBoolLiteralExpr(const clang::ObjCBoolLiteralExpr *D);
-  //  bool VisitObjCStringLiteral(const clang::ObjCStringLiteral *D);
+  //  Visitors that are left to their default behavior because we do not need
+  //  to take any action while visiting them.
+  //   bool VisitObjCDictionaryLiteral(const clang::ObjCDictionaryLiteral *D);
+  //   bool VisitObjCArrayLiteral(const clang::ObjCArrayLiteral *D);
+  //   bool VisitObjCBoolLiteralExpr(const clang::ObjCBoolLiteralExpr *D);
+  //   bool VisitObjCStringLiteral(const clang::ObjCStringLiteral *D);
+  //   bool VisitObjCEncodeExpr(const clang::ObjCEncodeExpr *Expr);
+  //   bool VisitObjCBoxedExpr(const clang::ObjCBoxedExpr *Expr);
+  //   bool VisitObjCSelectorExpr(const clang::ObjCSelectorExpr *Expr);
+  //   bool VisitObjCIndirectCopyRestoreExpr(
+  //    const clang::ObjCIndirectCopyRestoreExpr *Expr);
+  //   bool VisitObjCIsaExpr(const clang::ObjCIsaExpr *Expr);
   //
   //  We visit the subclasses of ObjCContainerDecl so there is nothing to do.
-  //  bool VisitObjCContainerDecl(const clang::ObjCContainerDecl *D);
+  //   bool VisitObjCContainerDecl(const clang::ObjCContainerDecl *D);
   //
-  //  bool VisitObjCImplDecl(const clang::ObjCImplDecl *D);
-  //
-  //  There are not interesting connections to/from this expression. It is used
-  //  for things like @42 and @true to turn scalars into objects.
-  //  bool VisitObjCBoxedExpr(const clang::ObjCBoxedExpr *Expr);
+  //  We visit the subclasses of ObjCImpleDecl so there is nothing to do.
+  //   bool VisitObjCImplDecl(const clang::ObjCImplDecl *D);
   //
   //  There is nothing specific we need to do for blocks. The recursive visitor
   //  will visit the components of them correctly.
-  //  bool VisitBlockDecl(const clang::BlockDecl *Decl);
-  //  bool VisitBlockExpr(const clang::BlockExpr *Expr);
+  //   bool VisitBlockDecl(const clang::BlockDecl *Decl);
+  //   bool VisitBlockExpr(const clang::BlockExpr *Expr);
 
   /// \brief For functions that support it, controls the emission of range
   /// information.
@@ -554,10 +556,14 @@ public:
   RangeForOperatorName(const clang::SourceRange &OperatorTokenRange) const;
 
   /// Consume a token of the `ExpectedKind` from the `StartLocation`,
-  /// returning the location after that token on success and an invalid
-  /// location otherwise.
-  clang::SourceLocation ConsumeToken(clang::SourceLocation StartLocation,
-                                     clang::tok::TokenKind ExpectedKind) const;
+  /// returning the range for that token on success and an invalid
+  /// range otherwise.
+  ///
+  /// The begin location for the returned range may be different than
+  /// StartLocation. For example, this can happen if StartLocation points to
+  /// whitespace before the start of the token.
+  clang::SourceRange ConsumeToken(clang::SourceLocation StartLocation,
+                                  clang::tok::TokenKind ExpectedKind) const;
 
   /// \brief Using the source manager and language options of the `Observer`,
   /// find the location at the end of the token starting at `StartLocation`.

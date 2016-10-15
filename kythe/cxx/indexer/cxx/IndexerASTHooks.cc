@@ -258,7 +258,7 @@ clang::SourceRange IndexerASTVisitor::RangeForSingleTokenFromSourceLocation(
   return clang::SourceRange(Start, End);
 }
 
-SourceLocation
+SourceRange
 IndexerASTVisitor::ConsumeToken(SourceLocation StartLocation,
                                 clang::tok::TokenKind ExpectedKind) const {
   clang::Token Token;
@@ -277,10 +277,11 @@ IndexerASTVisitor::ConsumeToken(SourceLocation StartLocation,
       ActualKind = II.getTokenID();
     }
     if (ActualKind == ExpectedKind) {
-      return GetLocForEndOfToken(Token.getLocation());
+      const SourceLocation Begin = Token.getLocation();
+      return SourceRange(Begin, GetLocForEndOfToken(Begin));
     }
   }
-  return SourceLocation(); // invalid location signals error/mismatch.
+  return SourceRange(); // invalid location signals error/mismatch.
 }
 
 SourceLocation
@@ -302,7 +303,7 @@ clang::SourceRange IndexerASTVisitor::RangeForNameOfDeclaration(
       // the second is the name of class (rather than the name of a macro),
       // then span two tokens.  Otherwise span just one.
       const SourceLocation NextLocation =
-          ConsumeToken(StartLocation, clang::tok::tilde);
+          ConsumeToken(StartLocation, clang::tok::tilde).getEnd();
 
       if (NextLocation.isValid()) {
         // There was a tilde (or its alternate token, "compl", which is
@@ -325,7 +326,7 @@ clang::SourceRange IndexerASTVisitor::RangeForNameOfDeclaration(
       // not include the "{". This range will include other fields, such as the
       // return type, parameter types, and parameter names.
 
-      // todo(salguarnieri) This includes too much text. If our method was:
+      // TODO(salguarnieri) This includes too much text. If our method was:
       // -(int) foo:(int)f withBar:(int)b without:(int)c
       // we would want to return three ranges (one for each selector location
       // foo:, withBar:, and without:. Since we only return one source range,
@@ -3859,7 +3860,7 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
       }
     }
   } break;
-  // todo(salguarnieri) Write verification tests for ObjCObjects.
+  // TODO(salguarnieri) Write verification tests for ObjCObjects.
   case TypeLoc::ObjCObject: {
     const auto &ObjLoc = TypeLoc.getAs<ObjCObjectTypeLoc>();
     const auto *DT = dyn_cast<ObjCObjectType>(PT);
@@ -3910,7 +3911,7 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
     }
     ID = ApplyBuiltinTypeConstructor("ptr", PointeeID);
   } break;
-    // todo(salguarnieri) implement
+    // TODO(salguarnieri) implement
     UNSUPPORTED_CLANG_TYPE(Atomic);
     UNSUPPORTED_CLANG_TYPE(Pipe);
   }
@@ -3940,7 +3941,7 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::GetObjCObjBaseTypeNode(
   const auto *IFace = T->getInterface();
   if (IFace == nullptr) {
     // If we don't have an interface, that means we must be "id".
-    // todo(salguarnieri) make sure this is the right way to handle the id
+    // TODO(salguarnieri) make sure this is the right way to handle the id
     // type.
     return Observer.getNodeIdForBuiltinType("id");
   }
@@ -3977,7 +3978,39 @@ bool IndexerASTVisitor::VisitObjCPropertyImplDecl(
 // instead of class B if class B does not exist.
 bool IndexerASTVisitor::VisitObjCCompatibleAliasDecl(
     const clang::ObjCCompatibleAliasDecl *Decl) {
-  // todo(salguarnieri) implement??
+  // TODO(salguarnieri) Find a better way to parse the tokens to account for
+  // macros with parameters.
+
+  // Ugliness to get the ranges for the tokens in this decl since clang does
+  // not give them to us. We expect something of the form:
+  // @compatibility_alias AliasName OriginalClassName
+  // Note that this does not work in the presence of macros with parameters.
+  SourceRange AtSign = RangeForNameOfDeclaration(Decl);
+  const auto KeywordRange(
+      ConsumeToken(AtSign.getEnd(), clang::tok::identifier));
+  const auto AliasRange(
+      ConsumeToken(KeywordRange.getEnd(), clang::tok::identifier));
+  const auto OrgClassRange(
+      ConsumeToken(AliasRange.getEnd(), clang::tok::identifier));
+
+  // Record a ref to the original type
+  if (const auto &ERCC = ExplicitRangeInCurrentContext(OrgClassRange)) {
+    const auto &ID = BuildNodeIdForDecl(Decl->getClassInterface());
+    Observer.recordDeclUseLocation(ERCC.primary(), ID);
+  }
+
+  // Record the type alias
+  const auto &OriginalInterface = Decl->getClassInterface();
+  GraphObserver::NameId AliasID(BuildNameIdForDecl(Decl));
+  auto AliasedTypeID(BuildNodeIdForDecl(OriginalInterface));
+  auto AliasNode =
+      Observer.recordTypeAliasNode(AliasID, AliasedTypeID, GetFormat(Decl));
+
+  // Record the definition of this type alias
+  MaybeRecordDefinitionRange(ExplicitRangeInCurrentContext(AliasRange),
+                             AliasNode);
+  AddChildOfEdgeToDeclContext(Decl, AliasNode);
+
   return true;
 }
 
@@ -4398,7 +4431,7 @@ bool IndexerASTVisitor::VisitObjCMethodDecl(const clang::ObjCMethodDecl *Decl) {
   return true;
 }
 
-// todo(salguarnieri) Do we need to record a use for the parameter type?
+// TODO(salguarnieri) Do we need to record a use for the parameter type?
 void IndexerASTVisitor::ConnectParam(const Decl *Decl,
                                      const GraphObserver::NodeId &FuncNode,
                                      bool IsFunctionDefinition,
@@ -4432,7 +4465,7 @@ void IndexerASTVisitor::ConnectParam(const Decl *Decl,
   }
 }
 
-// todo(salguarnieri) Think about merging with VisitFieldDecl
+// TODO(salguarnieri) Think about merging with VisitFieldDecl
 bool IndexerASTVisitor::VisitObjCPropertyDecl(
     const clang::ObjCPropertyDecl *Decl) {
   GraphObserver::NameId DeclName(BuildNameIdForDecl(Decl));
@@ -4445,7 +4478,7 @@ bool IndexerASTVisitor::VisitObjCPropertyDecl(
   // defined in a separate translation unit.
   Observer.recordVariableNode(
       DeclName, DeclNode, GraphObserver::Completeness::Definition,
-      // todo(salguarnieri) Think about making a new subkind for properties.
+      // TODO(salguarnieri) Think about making a new subkind for properties.
       GraphObserver::VariableSubkind::Field, GetFormat(Decl));
   if (const auto *TSI = Decl->getTypeSourceInfo()) {
     // TODO(zarko): Record storage classes for fields.
@@ -4457,28 +4490,12 @@ bool IndexerASTVisitor::VisitObjCPropertyDecl(
   return true;
 }
 
-// todo(salguarnieri) implement
-bool IndexerASTVisitor::VisitObjCEncodeExpr(const clang::ObjCEncodeExpr *Expr) {
-  return true;
-}
-
-// todo(salguarnieri) implement
-bool IndexerASTVisitor::VisitObjCIndirectCopyRestoreExpr(
-    const clang::ObjCIndirectCopyRestoreExpr *Expr) {
-  return true;
-}
-
-// todo(salguarnieri) implement
-bool IndexerASTVisitor::VisitObjCIsaExpr(const clang::ObjCIsaExpr *Expr) {
-  return true;
-}
-
 bool IndexerASTVisitor::VisitObjCIvarRefExpr(
     const clang::ObjCIvarRefExpr *IRE) {
   return VisitDeclRefOrIvarRefExpr(IRE, IRE->getDecl(), IRE->getLocation());
 }
 
-// todo(salguarnieri) See if we can connect directly to the method definition.
+// TODO(salguarnieri) See if we can connect directly to the method definition.
 // This may not be possible with clang. If it isn't we should do it in post
 // process. A fair approximation would be to go to the definition for the type
 // written by the user. This would miss cases that type inference would limit
@@ -4492,8 +4509,9 @@ bool IndexerASTVisitor::VisitObjCMessageExpr(
   // The end of the source range for ObjCMessageExpr is the location of the
   // right brace. We actually want to include the right brace in the range
   // we record, so get the location *after* the right brace.
-  const auto AfterBrace = ConsumeToken(Expr->getLocEnd(), clang::tok::r_square);
-  clang::SourceRange SR(Expr->getLocStart(), AfterBrace);
+  const auto AfterBrace =
+      ConsumeToken(Expr->getLocEnd(), clang::tok::r_square).getEnd();
+  const SourceRange SR(Expr->getLocStart(), AfterBrace);
   if (auto RCC = ExplicitRangeInCurrentContext(SR)) {
     const auto *Callee = Expr->getMethodDecl();
     if (Callee != nullptr) {
@@ -4509,7 +4527,7 @@ bool IndexerASTVisitor::VisitObjCPropertyRefExpr(
   ObjCMethodDecl *MD = nullptr;
   ObjCPropertyDecl *PD = nullptr;
   if (Expr->isImplicitProperty()) {
-    // todo(salguarnieri) Create test cases for implicit properties.
+    // TODO(salguarnieri) Create test cases for implicit properties.
     MD = Expr->isMessagingGetter() ? Expr->getImplicitPropertyGetter()
                                    : Expr->getImplicitPropertySetter();
   } else if ((PD = Expr->getExplicitProperty())) {
@@ -4541,7 +4559,7 @@ bool IndexerASTVisitor::VisitObjCPropertyRefExpr(
 
       // Record the method call.
 
-      // todo(salguarnieri) Try to prevent the call edge unless the user has
+      // TODO(salguarnieri) Try to prevent the call edge unless the user has
       // defined a custom setter or getter. This is a non-trivial
       // because the user may provide a custom implementation using the
       // default name. Otherwise, we could just test the method decl
@@ -4552,18 +4570,6 @@ bool IndexerASTVisitor::VisitObjCPropertyRefExpr(
     }
   }
 
-  return true;
-}
-
-// todo(salguarnieri) implement
-bool IndexerASTVisitor::VisitObjCSelectorExpr(
-    const clang::ObjCSelectorExpr *Expr) {
-  return true;
-}
-
-// todo(salguarnieri) implement
-bool IndexerASTVisitor::VisitObjCSubscriptRefExpr(
-    const clang::ObjCSubscriptRefExpr *Expr) {
   return true;
 }
 
@@ -4604,7 +4610,7 @@ IndexerASTVisitor::CreateObjCMethodTypeNode(const clang::ObjCMethodDecl *MD,
   for (size_t I = 0; I < NodeIds.size(); ++I) {
     NodeIdPtrs.push_back(&NodeIds[I]);
   }
-  // todo(salguarnieri) Make this a constant somewhere
+  // TODO(salguarnieri) Make this a constant somewhere
   const char *Tycon = "fn";
   return Observer.recordTappNode(Observer.getNodeIdForBuiltinType(Tycon),
                                  NodeIdPtrs);
@@ -4617,6 +4623,5 @@ void IndexerASTVisitor::LogErrorWithASTDump(const std::string &msg,
   Decl->dump(ss);
   LOG(ERROR) << msg << " :: " << s;
 }
-
 
 } // namespace kythe

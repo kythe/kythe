@@ -1803,6 +1803,55 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "compatibility_alias",
+    srcs = ["objc/compatibility_alias.m"],
+    ignore_dups = True,
+    objc = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "compatibility_alias_and_typedef",
+    srcs = ["objc/compatibility_alias_and_typedef.m"],
+    ignore_dups = True,
+    objc = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "compatibility_alias_twice",
+    srcs = ["objc/compatibility_alias_twice.m"],
+    ignore_dups = True,
+    objc = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "compatibility_alias_with_macro",
+    srcs = ["objc/compatibility_alias_with_macro.m"],
+    ignore_dups = True,
+    objc = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "compatibility_alias_with_macro_with_params",
+    srcs = ["objc/compatibility_alias_with_macro_with_params.m"],
+    expect_fail_verify = True,
+    ignore_dups = True,
+    objc = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "encode",
+    srcs = ["objc/encode.m"],
+    ignore_dups = True,
+    objc = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
     name = "extends",
     srcs = ["objc/extends.m"],
     ignore_dups = True,
@@ -2082,8 +2131,26 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "selector",
+    srcs = ["objc/selector.m"],
+    darwin_only = True,
+    ignore_dups = True,
+    objc = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
     name = "single_file_category",
     srcs = ["objc/categories/single_file_category.m"],
+    ignore_dups = True,
+    objc = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "subscript_ref",
+    srcs = ["objc/subscript_ref.m"],
+    darwin_only = True,
     ignore_dups = True,
     objc = True,
     tags = ["objc"],
