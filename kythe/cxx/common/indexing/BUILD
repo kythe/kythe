@@ -13,6 +13,7 @@ cc_library(
         "KytheGraphRecorder.h",
         "KytheOutputStream.h",
         "KytheVFS.h",
+        "MaybeFew.h",
     ],
     copts = [
         "-Wno-non-virtual-dtor",

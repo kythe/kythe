@@ -35,6 +35,7 @@
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/raw_ostream.h"
 
+#include "kythe/cxx/common/indexing/MaybeFew.h"
 #include "kythe/cxx/common/json_proto.h" // for EncodeBase64
 
 namespace kythe {
@@ -349,10 +350,13 @@ public:
   /// `using Alias = ty` instance).
   /// \param AliasName a `NameId` for the alias name.
   /// \param AliasedType a `NodeId` corresponding to the aliased type.
+  /// \param RootAliasedType the non-alias at the root of the alias chain; may
+  /// be AliasedType
   /// \param Format a format string for the alias.
   /// \return the `NodeId` for the type alias node this definition defines.
   virtual NodeId recordTypeAliasNode(const NameId &AliasName,
                                      const NodeId &AliasedType,
+                                     const MaybeFew<NodeId> &RootAliasedType,
                                      const std::string &Format) = 0;
 
   /// \brief Returns the ID for a nominal type node (such as a struct,
@@ -658,6 +662,12 @@ public:
   virtual void recordOverridesEdge(const NodeId &Overrider,
                                    const NodeId &BaseObject) {}
 
+  /// \brief Records that some overrider overrides a root base object.
+  /// \param Overrider the object doing the overriding
+  /// \param RootBaseObject the root of the override chain; may be BaseObject
+  virtual void recordOverridesRootEdge(const NodeId &Overrider,
+                                       const NodeId &RootBaseObject) {}
+
   /// \brief Records that a node is called at a particular location.
   /// \param CallLoc The `Range` responsible for making the call.
   /// \param CallerId The scope to be held responsible for making the call;
@@ -922,6 +932,7 @@ public:
   }
 
   NodeId recordTypeAliasNode(const NameId &AliasName, const NodeId &AliasedType,
+                             const MaybeFew<NodeId> &RootAliasedType,
                              const std::string &Format) override {
     return NodeId(getDefaultClaimToken(), "");
   }

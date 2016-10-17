@@ -50,6 +50,188 @@ using namespace clang;
 
 void *NullGraphObserver::NullClaimToken::NullClaimTokenClass = nullptr;
 
+namespace {
+/// \brief Returns true if the `SL` is from a top-level macro argument and
+/// the argument itself is not expanded from a macro.
+///
+/// Example: returns true for `i` and false for `MACRO_INT_VAR` in the
+/// following code segment.
+///
+/// ~~~
+/// #define MACRO_INT_VAR i
+/// int i;
+/// MACRO_FUNCTION(i);              // a top level non-macro macro argument
+/// MACRO_FUNCTION(MACRO_INT_VAR);  // a top level _macro_ macro argument
+/// ~~~
+bool IsTopLevelNonMacroMacroArgument(const clang::SourceManager &SM,
+                                     const clang::SourceLocation &SL) {
+  if (!SL.isMacroID())
+    return false;
+  clang::SourceLocation Loc = SL;
+  // We want to get closer towards the initial macro typed into the source only
+  // if the location is being expanded as a macro argument.
+  while (SM.isMacroArgExpansion(Loc)) {
+    // We are calling getImmediateMacroCallerLoc, but note it is essentially
+    // equivalent to calling getImmediateSpellingLoc in this context according
+    // to Clang implementation. We are not calling getImmediateSpellingLoc
+    // because Clang comment says it "should not generally be used by clients."
+    Loc = SM.getImmediateMacroCallerLoc(Loc);
+  }
+  return !Loc.isMacroID();
+}
+
+/// \brief Updates `*Loc` to move it past whitespace characters.
+///
+/// This is useful because most of `clang::Lexer`'s static functions fail if
+/// given a location that is in whitespace between tokens.
+///
+/// TODO(jdennett): Delete this if/when we replace its uses with sane lexing.
+void SkipWhitespace(const SourceManager &SM, SourceLocation *Loc) {
+  CHECK(Loc != nullptr);
+
+  while (clang::isWhitespace(*SM.getCharacterData(*Loc))) {
+    *Loc = Loc->getLocWithOffset(1);
+  }
+}
+
+/// Decides whether `Tok` can be used to quote an identifier.
+bool TokenQuotesIdentifier(const clang::SourceManager &SM,
+                           const clang::Token &Tok) {
+  switch (Tok.getKind()) {
+  case tok::TokenKind::pipe:
+    return true;
+  case tok::TokenKind::unknown: {
+    bool Invalid = false;
+    if (const char *TokChar =
+            SM.getCharacterData(Tok.getLocation(), &Invalid)) {
+      if (!Invalid && Tok.getLength() > 0) {
+        return *TokChar == '`';
+      }
+    }
+    return false;
+  }
+  default:
+    return false;
+  }
+}
+
+template <typename F>
+void MapOverrideRoots(const clang::CXXMethodDecl *M, const F &Fn) {
+  if (M->size_overridden_methods() == 0) {
+    Fn(M);
+  } else {
+    for (const auto &PM : M->overridden_methods()) {
+      MapOverrideRoots(PM, Fn);
+    }
+  }
+}
+
+template <typename F>
+void MapOverrideRoots(const clang::ObjCMethodDecl *M, const F &Fn) {
+  if (!M->isOverriding()) {
+    Fn(M);
+  } else {
+    SmallVector<const ObjCMethodDecl *, 4> overrides;
+    M->getOverriddenMethods(overrides);
+    for (const auto &PM : overrides) {
+      MapOverrideRoots(PM, Fn);
+    }
+  }
+}
+
+clang::QualType FollowAliasChain(const clang::TypedefNameDecl *TND) {
+  clang::Qualifiers Qs;
+  clang::QualType QT;
+  for (;;) {
+    // We'll assume that the alias chain stops as soon as we hit a non-alias.
+    // This does not attempt to dereference aliases in template parameters
+    // (or even aliases underneath pointers, etc).
+    QT = TND->getUnderlyingType();
+    Qs.addQualifiers(QT.getQualifiers());
+    if (auto *TTD = dyn_cast<TypedefType>(QT.getTypePtr())) {
+      TND = TTD->getDecl();
+    } else {
+      // We lose fidelity with getFastQualifiers.
+      return QualType(QT.getTypePtr(), Qs.getFastQualifiers());
+    }
+  }
+}
+
+/// \brief Attempt to find the template parameters bound immediately by `DC`.
+/// \return null if no parameters could be found.
+clang::TemplateParameterList *GetTypeParameters(const clang::DeclContext *DC) {
+  if (!DC) {
+    return nullptr;
+  }
+  if (const auto *TemplateContext = dyn_cast<clang::TemplateDecl>(DC)) {
+    return TemplateContext->getTemplateParameters();
+  } else if (const auto *CTPSD =
+                 dyn_cast<ClassTemplatePartialSpecializationDecl>(DC)) {
+    return CTPSD->getTemplateParameters();
+  } else if (const auto *RD = dyn_cast<CXXRecordDecl>(DC)) {
+    if (const auto *TD = RD->getDescribedClassTemplate()) {
+      return TD->getTemplateParameters();
+    }
+  } else if (const auto *VTPSD =
+                 dyn_cast<VarTemplatePartialSpecializationDecl>(DC)) {
+    return VTPSD->getTemplateParameters();
+  } else if (const auto *VD = dyn_cast<VarDecl>(DC)) {
+    if (const auto *TD = VD->getDescribedVarTemplate()) {
+      return TD->getTemplateParameters();
+    }
+  } else if (const auto *AD = dyn_cast<TypeAliasDecl>(DC)) {
+    if (const auto *TD = AD->getDescribedAliasTemplate()) {
+      return TD->getTemplateParameters();
+    }
+  }
+  return nullptr;
+}
+
+/// Make sure `DC` won't cause Sema::LookupQualifiedName to fail an assertion.
+bool IsContextSafeForLookup(const clang::DeclContext *DC) {
+  if (const auto *TD = dyn_cast<clang::TagDecl>(DC)) {
+    return TD->isCompleteDefinition() || TD->isBeingDefined();
+  }
+  return DC->isDependentContext() || !isa<clang::LinkageSpecDecl>(DC);
+}
+
+/// \brief Returns whether `Ctor` would override the in-class initializer for
+/// `Field`.
+bool ConstructorOverridesInitializer(const clang::CXXConstructorDecl *Ctor,
+                                     const clang::FieldDecl *Field) {
+  const clang::FunctionDecl *CtorDefn = nullptr;
+  if (Ctor->isDefined(CtorDefn) &&
+      (Ctor = dyn_cast_or_null<CXXConstructorDecl>(CtorDefn))) {
+    for (const auto *Init : Ctor->inits()) {
+      if (Init->getMember() == Field && !Init->isInClassMemberInitializer()) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+// Use the arithmetic sum of the pointer value of clang::Type and the numerical
+// value of CVR qualifiers as the unique key for a QualType.
+// The size of clang::Type is 24 (as of 2/22/2013), and the maximum of the
+// qualifiers (i.e., the return value of clang::Qualifiers::getCVRQualifiers() )
+// is clang::Qualifiers::CVRMask which is 7. Therefore, uniqueness is satisfied.
+int64_t ComputeKeyFromQualType(const ASTContext &Context, const QualType &QT,
+                               const Type *T) {
+  const clang::SplitQualType &Split = QT.split();
+  // split.Ty is of type "const clang::Type*" and uintptr_t is guaranteed
+  // to have the same size. Note that reinterpret_cast<int64_t> may fail.
+  int64_t Key;
+  if (isa<TemplateSpecializationType>(T)) {
+    Key = reinterpret_cast<uintptr_t>(Context.getCanonicalType(T));
+  } else {
+    // Don't collapse aliases if we can help it.
+    Key = reinterpret_cast<uintptr_t>(T);
+  }
+  Key += Split.Quals.getCVRQualifiers();
+  return Key;
+}
+
 /// \brief Restores the type of a stacklike container of `ElementType` upon
 /// destruction.
 template <typename StackType> class StackSizeRestorer {
@@ -85,6 +267,7 @@ template <typename StackType>
 StackSizeRestorer<StackType> RestoreStack(StackType &S) {
   return StackSizeRestorer<StackType>(S);
 }
+} // anonymous namespace
 
 void IndexerASTVisitor::deleteAllParents() {
   if (!AllParents) {
@@ -138,49 +321,6 @@ bool IndexerASTVisitor::IsDefinition(const clang::VarDecl *VD) {
   // implicit_cast<bool>(VD->isThisDeclarationADefinition()), because
   // VarDecl::DeclarationOnly is zero, but this is more explicit.
   return VD->isThisDeclarationADefinition() != VarDecl::DeclarationOnly;
-}
-
-/// \brief Returns true if the `SL` is from a top-level macro argument and
-/// the argument itself is not expanded from a macro.
-///
-/// Example: returns true for `i` and false for `MACRO_INT_VAR` in the
-/// following code segment.
-///
-/// ~~~
-/// #define MACRO_INT_VAR i
-/// int i;
-/// MACRO_FUNCTION(i);              // a top level non-macro macro argument
-/// MACRO_FUNCTION(MACRO_INT_VAR);  // a top level _macro_ macro argument
-/// ~~~
-static bool IsTopLevelNonMacroMacroArgument(const clang::SourceManager &SM,
-                                            const clang::SourceLocation &SL) {
-  if (!SL.isMacroID())
-    return false;
-  clang::SourceLocation Loc = SL;
-  // We want to get closer towards the initial macro typed into the source only
-  // if the location is being expanded as a macro argument.
-  while (SM.isMacroArgExpansion(Loc)) {
-    // We are calling getImmediateMacroCallerLoc, but note it is essentially
-    // equivalent to calling getImmediateSpellingLoc in this context according
-    // to Clang implementation. We are not calling getImmediateSpellingLoc
-    // because Clang comment says it "should not generally be used by clients."
-    Loc = SM.getImmediateMacroCallerLoc(Loc);
-  }
-  return !Loc.isMacroID();
-}
-
-/// \brief Updates `*Loc` to move it past whitespace characters.
-///
-/// This is useful because most of `clang::Lexer`'s static functions fail if
-/// given a location that is in whitespace between tokens.
-///
-/// TODO(jdennett): Delete this if/when we replace its uses with sane lexing.
-void SkipWhitespace(const SourceManager &SM, SourceLocation *Loc) {
-  CHECK(Loc != nullptr);
-
-  while (clang::isWhitespace(*SM.getCharacterData(*Loc))) {
-    *Loc = Loc->getLocWithOffset(1);
-  }
 }
 
 clang::SourceRange IndexerASTVisitor::RangeForOperatorName(
@@ -397,66 +537,6 @@ void IndexerASTVisitor::RecordCallEdges(const GraphObserver::Range &Range,
       Observer.recordCallEdge(Range, Caller, Callee);
     }
   }
-}
-
-/// Decides whether `Tok` can be used to quote an identifier.
-static bool TokenQuotesIdentifier(const clang::SourceManager &SM,
-                                  const clang::Token &Tok) {
-  switch (Tok.getKind()) {
-  case tok::TokenKind::pipe:
-    return true;
-  case tok::TokenKind::unknown: {
-    bool Invalid = false;
-    if (const char *TokChar =
-            SM.getCharacterData(Tok.getLocation(), &Invalid)) {
-      if (!Invalid && Tok.getLength() > 0) {
-        return *TokChar == '`';
-      }
-    }
-    return false;
-  }
-  default:
-    return false;
-  }
-}
-
-/// \brief Attempt to find the template parameters bound immediately by `DC`.
-/// \return null if no parameters could be found.
-static clang::TemplateParameterList *
-GetTypeParameters(const clang::DeclContext *DC) {
-  if (!DC) {
-    return nullptr;
-  }
-  if (const auto *TemplateContext = dyn_cast<clang::TemplateDecl>(DC)) {
-    return TemplateContext->getTemplateParameters();
-  } else if (const auto *CTPSD =
-                 dyn_cast<ClassTemplatePartialSpecializationDecl>(DC)) {
-    return CTPSD->getTemplateParameters();
-  } else if (const auto *RD = dyn_cast<CXXRecordDecl>(DC)) {
-    if (const auto *TD = RD->getDescribedClassTemplate()) {
-      return TD->getTemplateParameters();
-    }
-  } else if (const auto *VTPSD =
-                 dyn_cast<VarTemplatePartialSpecializationDecl>(DC)) {
-    return VTPSD->getTemplateParameters();
-  } else if (const auto *VD = dyn_cast<VarDecl>(DC)) {
-    if (const auto *TD = VD->getDescribedVarTemplate()) {
-      return TD->getTemplateParameters();
-    }
-  } else if (const auto *AD = dyn_cast<TypeAliasDecl>(DC)) {
-    if (const auto *TD = AD->getDescribedAliasTemplate()) {
-      return TD->getTemplateParameters();
-    }
-  }
-  return nullptr;
-}
-
-/// Make sure `DC` won't cause Sema::LookupQualifiedName to fail an assertion.
-static bool IsContextSafeForLookup(const clang::DeclContext *DC) {
-  if (const auto *TD = dyn_cast<clang::TagDecl>(DC)) {
-    return TD->isCompleteDefinition() || TD->isBeingDefined();
-  }
-  return DC->isDependentContext() || !isa<clang::LinkageSpecDecl>(DC);
 }
 
 /// An in-flight possible lookup result used to approximate qualified lookup.
@@ -842,23 +922,6 @@ bool IndexerASTVisitor::VisitDecl(const clang::Decl *Decl) {
     }
   }
   return true;
-}
-
-/// \brief Returns whether `Ctor` would override the in-class initializer for
-/// `Field`.
-static bool
-ConstructorOverridesInitializer(const clang::CXXConstructorDecl *Ctor,
-                                const clang::FieldDecl *Field) {
-  const clang::FunctionDecl *CtorDefn = nullptr;
-  if (Ctor->isDefined(CtorDefn) &&
-      (Ctor = dyn_cast_or_null<CXXConstructorDecl>(CtorDefn))) {
-    for (const auto *Init : Ctor->inits()) {
-      if (Init->getMember() == Field && !Init->isInClassMemberInitializer()) {
-        return true;
-      }
-    }
-  }
-  return false;
 }
 
 bool IndexerASTVisitor::TraverseDecl(clang::Decl *Decl) {
@@ -2061,15 +2124,19 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
   }
 
   if (const auto *MF = dyn_cast<CXXMethodDecl>(Decl)) {
-    const auto *R = MF->getParent();
     // OO_Call, OO_Subscript, and OO_Equal must be member functions.
     // The dyn_cast to CXXMethodDecl above is therefore not dropping
     // (impossible) free function incarnations of these operators from
     // consideration in the following.
-    for (auto O = MF->begin_overridden_methods(),
-              E = MF->end_overridden_methods();
-         O != E; ++O) {
-      Observer.recordOverridesEdge(InnerNode, BuildNodeIdForDecl(*O));
+    if (MF->size_overridden_methods() != 0) {
+      for (auto O = MF->begin_overridden_methods(),
+                E = MF->end_overridden_methods();
+           O != E; ++O) {
+        Observer.recordOverridesEdge(InnerNode, BuildNodeIdForDecl(*O));
+      }
+      MapOverrideRoots(MF, [&](const CXXMethodDecl *R) {
+        Observer.recordOverridesRootEdge(InnerNode, BuildNodeIdForDecl(R));
+      });
     }
   }
 
@@ -2160,8 +2227,9 @@ IndexerASTVisitor::BuildNodeIdForTypedefNameDecl(
   if (auto AliasedTypeId =
           BuildNodeIdForType(TSI->getTypeLoc(), EmitRanges::Yes)) {
     GraphObserver::NameId AliasNameId(BuildNameIdForDecl(Decl));
-    return Observer.recordTypeAliasNode(AliasNameId, AliasedTypeId.primary(),
-                                        GetFormat(Decl));
+    return Observer.recordTypeAliasNode(
+        AliasNameId, AliasedTypeId.primary(),
+        BuildNodeIdForType(FollowAliasChain(Decl)), GetFormat(Decl));
   }
   return None();
 }
@@ -2871,27 +2939,6 @@ bool IndexerASTVisitor::IsDefinition(const FunctionDecl *FunctionDecl) {
   return FunctionDecl->isThisDeclarationADefinition();
 }
 
-// Use the arithmetic sum of the pointer value of clang::Type and the numerical
-// value of CVR qualifiers as the unique key for a QualType.
-// The size of clang::Type is 24 (as of 2/22/2013), and the maximum of the
-// qualifiers (i.e., the return value of clang::Qualifiers::getCVRQualifiers() )
-// is clang::Qualifiers::CVRMask which is 7. Therefore, uniqueness is satisfied.
-static int64_t ComputeKeyFromQualType(const ASTContext &Context,
-                                      const QualType &QT, const Type *T) {
-  const clang::SplitQualType &Split = QT.split();
-  // split.Ty is of type "const clang::Type*" and uintptr_t is guaranteed
-  // to have the same size. Note that reinterpret_cast<int64_t> may fail.
-  int64_t Key;
-  if (isa<TemplateSpecializationType>(T)) {
-    Key = reinterpret_cast<uintptr_t>(Context.getCanonicalType(T));
-  } else {
-    // Don't collapse aliases if we can help it.
-    Key = reinterpret_cast<uintptr_t>(T);
-  }
-  Key += Split.Quals.getCVRQualifiers();
-  return Key;
-}
-
 // There aren't too many types in C++, as it turns out. See
 // clang/AST/TypeNodes.def.
 
@@ -3520,8 +3567,10 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
     }
     ID = TypeAlreadyBuilt
              ? Observer.nodeIdForTypeAliasNode(AliasID, AliasedTypeID.primary())
-             : Observer.recordTypeAliasNode(AliasID, AliasedTypeID.primary(),
-                                            GetFormat(T.getTypedefNameDecl()));
+             : Observer.recordTypeAliasNode(
+                   AliasID, AliasedTypeID.primary(),
+                   BuildNodeIdForType(FollowAliasChain(T.getTypedefNameDecl())),
+                   GetFormat(T.getTypedefNameDecl()));
   } break;
     UNSUPPORTED_CLANG_TYPE(Adjusted);
     UNSUPPORTED_CLANG_TYPE(Decayed);
@@ -4003,8 +4052,8 @@ bool IndexerASTVisitor::VisitObjCCompatibleAliasDecl(
   const auto &OriginalInterface = Decl->getClassInterface();
   GraphObserver::NameId AliasID(BuildNameIdForDecl(Decl));
   auto AliasedTypeID(BuildNodeIdForDecl(OriginalInterface));
-  auto AliasNode =
-      Observer.recordTypeAliasNode(AliasID, AliasedTypeID, GetFormat(Decl));
+  auto AliasNode = Observer.recordTypeAliasNode(AliasID, AliasedTypeID,
+                                                AliasedTypeID, GetFormat(Decl));
 
   // Record the definition of this type alias
   MaybeRecordDefinitionRange(ExplicitRangeInCurrentContext(AliasRange),
@@ -4321,10 +4370,13 @@ bool IndexerASTVisitor::VisitObjCMethodDecl(const clang::ObjCMethodDecl *Decl) {
   // Record overrides edges
   SmallVector<const ObjCMethodDecl *, 4> overrides;
   Decl->getOverriddenMethods(overrides);
-  auto e = overrides.size();
-  for (auto i = 0; i < e; ++i) {
-    const auto O = overrides[i];
+  for (const auto &O : overrides) {
     Observer.recordOverridesEdge(Node, BuildNodeIdForDecl(O));
+  }
+  if (!overrides.empty()) {
+    MapOverrideRoots(Decl, [&](const ObjCMethodDecl *R) {
+      Observer.recordOverridesRootEdge(Node, BuildNodeIdForDecl(R));
+    });
   }
 
   AddChildOfEdgeToDeclContext(Decl, Node);

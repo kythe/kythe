@@ -73,6 +73,7 @@ enum class EdgeKindID {
   kRef,
   kParam,
   kAliases,
+  kAliasesRoot,
   kUniquelyCompletes,
   kCompletes,
   kChildOf,
@@ -100,6 +101,7 @@ enum class EdgeKindID {
   kGenerates,
   kDefinesBinding,
   kOverrides,
+  kOverridesRoot,
   kChildOfContext
 };
 

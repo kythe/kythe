@@ -68,12 +68,68 @@ Points toward::
   types
 Ordinals are used::
   never
+See also::
+  <<aliasesroot, [aliases/root]>>
 
 [kythe,C++,"Typedefs are aliases."]
 --------------------------------------------------------------------------------
 //- @Counter defines/binding TAlias
 //- TAlias aliases TInt
 typedef int Counter;
+--------------------------------------------------------------------------------
+
+[[aliasesroot]]
+aliases/root
+~~~~~~~~~~~~
+
+Brief description::
+  A *aliases/root* T if following all *aliases* edges from A may lead to T,
+  possibly with language-specific qualifiers applied.
+Commonly arises from::
+  typedefs
+Points from::
+  <<talias>>
+Points toward::
+  types
+Ordinals are used::
+  never
+See also::
+  <<aliasesroot, [aliases/root]>>
+
+[kythe,C++,"Following aliases."]
+--------------------------------------------------------------------------------
+//- @T defines/binding AliasT
+//- AliasT aliases TInt
+//- AliasT aliases/root TInt
+using T = int;
+//- AliasS aliases AliasT
+//- AliasS aliases/root TInt
+using S = T;
+//- AliasU aliases AliasS
+//- AliasU aliases/root TInt
+using U = S;
+--------------------------------------------------------------------------------
+
+[kythe,C++,"Following aliases and collecting qualifiers."]
+--------------------------------------------------------------------------------
+//- @CInt defines/binding ConstIntAlias
+//- ConstIntAlias aliases CInt
+//- CInt.node/kind tapp
+//- CInt param.0 Const
+//- CInt param.1 TInt
+using CInt = const int;
+//- @T defines/binding AliasT
+//- AliasT aliases TInt
+//- AliasT aliases/root TInt
+using T = int;
+//- AliasS aliases ConstAliasT
+//- ConstAliasT param.0 Const
+//- ConstAliasT param.1 AliasT
+//- AliasS aliases/root CInt
+using S = const T;
+//- AliasU aliases AliasS
+//- AliasU aliases/root CInt
+using U = S;
 --------------------------------------------------------------------------------
 
 [[annotatedby]]
@@ -602,7 +658,7 @@ Points toward::
 Ordinals are used::
   never
 See also::
-  <<overridestransitive,[overrides/transitive]>>
+  <<overridestransitive,[overrides/transitive]>>, <<overridesroot,[overrides/root]>>
 
 [kythe,Java,"Methods have overrides edges."]
 --------------------------------------------------------------------------------
@@ -624,6 +680,39 @@ public class E {
     public void method();
   }
 }
+--------------------------------------------------------------------------------
+
+[[overridesroot]]
+overrides/root
+~~~~~~~~~~~~~~~~~~~~
+
+Brief description::
+  A *overrides/root* B if following all *overrides* edges from A would lead to
+  B.
+Points from::
+  semantic nodes
+Points toward::
+  semantic nodes
+Ordinals are used::
+  never
+See also::
+  <<overrides>>
+
+[kythe,C++,"Override roots"]
+--------------------------------------------------------------------------------
+//- @f defines/binding CF
+class C { virtual void f()          { } };
+//- @f defines/binding DF
+class D : C {     void f() override { } };
+//- @f defines/binding EF
+class E : D {     void f() override { } };
+
+//- !{CF overrides _}
+//- !{CF overrides/root _}
+//- DF overrides CF
+//- DF overrides/root CF
+//- EF overrides DF
+//- EF overrides/root CF
 --------------------------------------------------------------------------------
 
 [[overridestransitive]]

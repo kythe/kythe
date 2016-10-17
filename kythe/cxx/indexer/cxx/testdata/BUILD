@@ -183,6 +183,18 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "alias_root",
+    srcs = ["basic/alias_root.cc"],
+    tags = ["basic"],
+)
+
+cxx_indexer_test(
+    name = "alias_root_quals",
+    srcs = ["basic/alias_root_quals.cc"],
+    tags = ["basic"],
+)
+
+cxx_indexer_test(
     name = "anchor_utf8",
     srcs = ["basic/anchor_utf8.cc"],
     tags = ["basic"],
@@ -1172,6 +1184,12 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "rec_override_root",
+    srcs = ["rec/rec_override_root.cc"],
+    tags = ["rec"],
+)
+
+cxx_indexer_test(
     name = "rec_struct_c99",
     srcs = ["rec/rec_struct.c"],
     std = "c99",
@@ -1629,6 +1647,12 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "template_rec_override_root",
+    srcs = ["template/template_rec_override_root.cc"],
+    tags = ["template"],
+)
+
+cxx_indexer_test(
     name = "template_redundant_constituents_anchored",
     srcs = ["template/template_redundant_constituents_anchored.cc"],
     tags = ["template"],
@@ -2036,6 +2060,14 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "method_overrides",
     srcs = ["objc/method_overrides.m"],
+    ignore_dups = True,
+    objc = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "method_overrides_root",
+    srcs = ["objc/method_overrides_root.m"],
     ignore_dups = True,
     objc = True,
     tags = ["objc"],
