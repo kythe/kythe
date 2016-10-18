@@ -10,7 +10,7 @@
 
 	It has these top-level messages:
 		StatusRequest
-		StatusResponse
+		StatusReply
 */
 package status_service_proto
 
@@ -34,29 +34,29 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 const _ = proto.ProtoPackageIsVersion1
 
-type StatusResponse_Language_Support int32
+type StatusReply_Language_Support int32
 
 const (
-	StatusResponse_Language_UNSUPPORTED  StatusResponse_Language_Support = 0
-	StatusResponse_Language_EXPERIMENTAL StatusResponse_Language_Support = 1
-	StatusResponse_Language_SUPPORTED    StatusResponse_Language_Support = 2
+	StatusReply_Language_UNSUPPORTED  StatusReply_Language_Support = 0
+	StatusReply_Language_EXPERIMENTAL StatusReply_Language_Support = 1
+	StatusReply_Language_SUPPORTED    StatusReply_Language_Support = 2
 )
 
-var StatusResponse_Language_Support_name = map[int32]string{
+var StatusReply_Language_Support_name = map[int32]string{
 	0: "UNSUPPORTED",
 	1: "EXPERIMENTAL",
 	2: "SUPPORTED",
 }
-var StatusResponse_Language_Support_value = map[string]int32{
+var StatusReply_Language_Support_value = map[string]int32{
 	"UNSUPPORTED":  0,
 	"EXPERIMENTAL": 1,
 	"SUPPORTED":    2,
 }
 
-func (x StatusResponse_Language_Support) String() string {
-	return proto.EnumName(StatusResponse_Language_Support_name, int32(x))
+func (x StatusReply_Language_Support) String() string {
+	return proto.EnumName(StatusReply_Language_Support_name, int32(x))
 }
-func (StatusResponse_Language_Support) EnumDescriptor() ([]byte, []int) {
+func (StatusReply_Language_Support) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptorStatusService, []int{1, 1, 0}
 }
 
@@ -68,62 +68,62 @@ func (m *StatusRequest) String() string            { return proto.CompactTextStr
 func (*StatusRequest) ProtoMessage()               {}
 func (*StatusRequest) Descriptor() ([]byte, []int) { return fileDescriptorStatusService, []int{0} }
 
-type StatusResponse struct {
+type StatusReply struct {
 	// The origins of the data served by this endpoint.
-	Origins []*StatusResponse_Origin `protobuf:"bytes,1,rep,name=origins" json:"origins,omitempty"`
+	Origins []*StatusReply_Origin `protobuf:"bytes,1,rep,name=origins" json:"origins,omitempty"`
 	// The languages supported by this endpoint.
-	Languages []*StatusResponse_Language `protobuf:"bytes,2,rep,name=languages" json:"languages,omitempty"`
+	Languages []*StatusReply_Language `protobuf:"bytes,2,rep,name=languages" json:"languages,omitempty"`
 }
 
-func (m *StatusResponse) Reset()                    { *m = StatusResponse{} }
-func (m *StatusResponse) String() string            { return proto.CompactTextString(m) }
-func (*StatusResponse) ProtoMessage()               {}
-func (*StatusResponse) Descriptor() ([]byte, []int) { return fileDescriptorStatusService, []int{1} }
+func (m *StatusReply) Reset()                    { *m = StatusReply{} }
+func (m *StatusReply) String() string            { return proto.CompactTextString(m) }
+func (*StatusReply) ProtoMessage()               {}
+func (*StatusReply) Descriptor() ([]byte, []int) { return fileDescriptorStatusService, []int{1} }
 
-func (m *StatusResponse) GetOrigins() []*StatusResponse_Origin {
+func (m *StatusReply) GetOrigins() []*StatusReply_Origin {
 	if m != nil {
 		return m.Origins
 	}
 	return nil
 }
 
-func (m *StatusResponse) GetLanguages() []*StatusResponse_Language {
+func (m *StatusReply) GetLanguages() []*StatusReply_Language {
 	if m != nil {
 		return m.Languages
 	}
 	return nil
 }
 
-type StatusResponse_Origin struct {
+type StatusReply_Origin struct {
 	Corpus   string `protobuf:"bytes,1,opt,name=corpus,proto3" json:"corpus,omitempty"`
 	Revision string `protobuf:"bytes,2,opt,name=revision,proto3" json:"revision,omitempty"`
 }
 
-func (m *StatusResponse_Origin) Reset()         { *m = StatusResponse_Origin{} }
-func (m *StatusResponse_Origin) String() string { return proto.CompactTextString(m) }
-func (*StatusResponse_Origin) ProtoMessage()    {}
-func (*StatusResponse_Origin) Descriptor() ([]byte, []int) {
+func (m *StatusReply_Origin) Reset()         { *m = StatusReply_Origin{} }
+func (m *StatusReply_Origin) String() string { return proto.CompactTextString(m) }
+func (*StatusReply_Origin) ProtoMessage()    {}
+func (*StatusReply_Origin) Descriptor() ([]byte, []int) {
 	return fileDescriptorStatusService, []int{1, 0}
 }
 
-type StatusResponse_Language struct {
-	Name    string                          `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Support StatusResponse_Language_Support `protobuf:"varint,2,opt,name=support,proto3,enum=kythe.proto.StatusResponse_Language_Support" json:"support,omitempty"`
+type StatusReply_Language struct {
+	Name    string                       `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Support StatusReply_Language_Support `protobuf:"varint,2,opt,name=support,proto3,enum=kythe.proto.StatusReply_Language_Support" json:"support,omitempty"`
 }
 
-func (m *StatusResponse_Language) Reset()         { *m = StatusResponse_Language{} }
-func (m *StatusResponse_Language) String() string { return proto.CompactTextString(m) }
-func (*StatusResponse_Language) ProtoMessage()    {}
-func (*StatusResponse_Language) Descriptor() ([]byte, []int) {
+func (m *StatusReply_Language) Reset()         { *m = StatusReply_Language{} }
+func (m *StatusReply_Language) String() string { return proto.CompactTextString(m) }
+func (*StatusReply_Language) ProtoMessage()    {}
+func (*StatusReply_Language) Descriptor() ([]byte, []int) {
 	return fileDescriptorStatusService, []int{1, 1}
 }
 
 func init() {
 	proto.RegisterType((*StatusRequest)(nil), "kythe.proto.StatusRequest")
-	proto.RegisterType((*StatusResponse)(nil), "kythe.proto.StatusResponse")
-	proto.RegisterType((*StatusResponse_Origin)(nil), "kythe.proto.StatusResponse.Origin")
-	proto.RegisterType((*StatusResponse_Language)(nil), "kythe.proto.StatusResponse.Language")
-	proto.RegisterEnum("kythe.proto.StatusResponse_Language_Support", StatusResponse_Language_Support_name, StatusResponse_Language_Support_value)
+	proto.RegisterType((*StatusReply)(nil), "kythe.proto.StatusReply")
+	proto.RegisterType((*StatusReply_Origin)(nil), "kythe.proto.StatusReply.Origin")
+	proto.RegisterType((*StatusReply_Language)(nil), "kythe.proto.StatusReply.Language")
+	proto.RegisterEnum("kythe.proto.StatusReply_Language_Support", StatusReply_Language_Support_name, StatusReply_Language_Support_value)
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -137,7 +137,7 @@ const _ = grpc.SupportPackageIsVersion2
 // Client API for StatusService service
 
 type StatusServiceClient interface {
-	Status(ctx context.Context, in *StatusRequest, opts ...grpc.CallOption) (*StatusResponse, error)
+	Status(ctx context.Context, in *StatusRequest, opts ...grpc.CallOption) (*StatusReply, error)
 }
 
 type statusServiceClient struct {
@@ -148,8 +148,8 @@ func NewStatusServiceClient(cc *grpc.ClientConn) StatusServiceClient {
 	return &statusServiceClient{cc}
 }
 
-func (c *statusServiceClient) Status(ctx context.Context, in *StatusRequest, opts ...grpc.CallOption) (*StatusResponse, error) {
-	out := new(StatusResponse)
+func (c *statusServiceClient) Status(ctx context.Context, in *StatusRequest, opts ...grpc.CallOption) (*StatusReply, error) {
+	out := new(StatusReply)
 	err := grpc.Invoke(ctx, "/kythe.proto.StatusService/Status", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
@@ -160,7 +160,7 @@ func (c *statusServiceClient) Status(ctx context.Context, in *StatusRequest, opt
 // Server API for StatusService service
 
 type StatusServiceServer interface {
-	Status(context.Context, *StatusRequest) (*StatusResponse, error)
+	Status(context.Context, *StatusRequest) (*StatusReply, error)
 }
 
 func RegisterStatusServiceServer(s *grpc.Server, srv StatusServiceServer) {
@@ -215,7 +215,7 @@ func (m *StatusRequest) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *StatusResponse) Marshal() (data []byte, err error) {
+func (m *StatusReply) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
 	n, err := m.MarshalTo(data)
@@ -225,7 +225,7 @@ func (m *StatusResponse) Marshal() (data []byte, err error) {
 	return data[:n], nil
 }
 
-func (m *StatusResponse) MarshalTo(data []byte) (int, error) {
+func (m *StatusReply) MarshalTo(data []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
@@ -257,7 +257,7 @@ func (m *StatusResponse) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *StatusResponse_Origin) Marshal() (data []byte, err error) {
+func (m *StatusReply_Origin) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
 	n, err := m.MarshalTo(data)
@@ -267,7 +267,7 @@ func (m *StatusResponse_Origin) Marshal() (data []byte, err error) {
 	return data[:n], nil
 }
 
-func (m *StatusResponse_Origin) MarshalTo(data []byte) (int, error) {
+func (m *StatusReply_Origin) MarshalTo(data []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
@@ -287,7 +287,7 @@ func (m *StatusResponse_Origin) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *StatusResponse_Language) Marshal() (data []byte, err error) {
+func (m *StatusReply_Language) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
 	n, err := m.MarshalTo(data)
@@ -297,7 +297,7 @@ func (m *StatusResponse_Language) Marshal() (data []byte, err error) {
 	return data[:n], nil
 }
 
-func (m *StatusResponse_Language) MarshalTo(data []byte) (int, error) {
+func (m *StatusReply_Language) MarshalTo(data []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
@@ -349,7 +349,7 @@ func (m *StatusRequest) Size() (n int) {
 	return n
 }
 
-func (m *StatusResponse) Size() (n int) {
+func (m *StatusReply) Size() (n int) {
 	var l int
 	_ = l
 	if len(m.Origins) > 0 {
@@ -367,7 +367,7 @@ func (m *StatusResponse) Size() (n int) {
 	return n
 }
 
-func (m *StatusResponse_Origin) Size() (n int) {
+func (m *StatusReply_Origin) Size() (n int) {
 	var l int
 	_ = l
 	l = len(m.Corpus)
@@ -381,7 +381,7 @@ func (m *StatusResponse_Origin) Size() (n int) {
 	return n
 }
 
-func (m *StatusResponse_Language) Size() (n int) {
+func (m *StatusReply_Language) Size() (n int) {
 	var l int
 	_ = l
 	l = len(m.Name)
@@ -457,7 +457,7 @@ func (m *StatusRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *StatusResponse) Unmarshal(data []byte) error {
+func (m *StatusReply) Unmarshal(data []byte) error {
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -480,10 +480,10 @@ func (m *StatusResponse) Unmarshal(data []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: StatusResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: StatusReply: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: StatusResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: StatusReply: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -512,7 +512,7 @@ func (m *StatusResponse) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Origins = append(m.Origins, &StatusResponse_Origin{})
+			m.Origins = append(m.Origins, &StatusReply_Origin{})
 			if err := m.Origins[len(m.Origins)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -543,7 +543,7 @@ func (m *StatusResponse) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Languages = append(m.Languages, &StatusResponse_Language{})
+			m.Languages = append(m.Languages, &StatusReply_Language{})
 			if err := m.Languages[len(m.Languages)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -569,7 +569,7 @@ func (m *StatusResponse) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *StatusResponse_Origin) Unmarshal(data []byte) error {
+func (m *StatusReply_Origin) Unmarshal(data []byte) error {
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -677,7 +677,7 @@ func (m *StatusResponse_Origin) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *StatusResponse_Language) Unmarshal(data []byte) error {
+func (m *StatusReply_Language) Unmarshal(data []byte) error {
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -749,7 +749,7 @@ func (m *StatusResponse_Language) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				m.Support |= (StatusResponse_Language_Support(b) & 0x7F) << shift
+				m.Support |= (StatusReply_Language_Support(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -881,26 +881,26 @@ var (
 )
 
 var fileDescriptorStatusService = []byte{
-	// 327 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x8c, 0x91, 0xc1, 0x4a, 0xc3, 0x40,
-	0x10, 0x86, 0xbb, 0x51, 0xd2, 0x76, 0x6a, 0xdb, 0x30, 0x07, 0x29, 0x11, 0x42, 0x09, 0x1e, 0x7a,
-	0x90, 0x14, 0xea, 0xd1, 0x5e, 0xac, 0x46, 0x10, 0x6a, 0x5b, 0x36, 0x2d, 0x78, 0x93, 0x58, 0x96,
-	0x1a, 0xd4, 0x6c, 0xdc, 0xdd, 0x14, 0x7c, 0x13, 0xef, 0xbe, 0x8c, 0x47, 0x1f, 0x41, 0xea, 0x3b,
-	0x78, 0x16, 0x37, 0x89, 0x55, 0x90, 0xe2, 0x6d, 0xe7, 0xdf, 0xef, 0x1b, 0x7e, 0x18, 0x68, 0xdf,
-	0x3e, 0xaa, 0x1b, 0xd6, 0x4d, 0x04, 0x57, 0xbc, 0x2b, 0x55, 0xa8, 0x52, 0x79, 0x25, 0x99, 0x58,
-	0x46, 0x73, 0xe6, 0xe9, 0x10, 0x6b, 0x9a, 0xc8, 0x06, 0xb7, 0x09, 0xf5, 0x40, 0x43, 0x94, 0x3d,
-	0xa4, 0x4c, 0x2a, 0xf7, 0xc3, 0x80, 0x46, 0x91, 0xc8, 0x84, 0xc7, 0x92, 0x61, 0x1f, 0xca, 0x5c,
-	0x44, 0x8b, 0x28, 0x96, 0x2d, 0xd2, 0xde, 0xea, 0xd4, 0x7a, 0xae, 0xf7, 0x63, 0x85, 0xf7, 0x9b,
-	0xf6, 0xc6, 0x1a, 0xa5, 0x85, 0x82, 0x03, 0xa8, 0xde, 0x85, 0xf1, 0x22, 0x0d, 0x17, 0x4c, 0xb6,
-	0x0c, 0xed, 0xef, 0x6f, 0xf2, 0x87, 0x39, 0x4c, 0xd7, 0x9a, 0xdd, 0x07, 0x33, 0x5b, 0x8b, 0xbb,
-	0x60, 0xce, 0xb9, 0x48, 0xd2, 0xaf, 0x2a, 0xa4, 0x53, 0xa5, 0xf9, 0x84, 0x36, 0x54, 0x04, 0x5b,
-	0x46, 0x32, 0xe2, 0x71, 0xcb, 0xd0, 0x3f, 0xdf, 0xb3, 0xfd, 0x4c, 0xa0, 0x52, 0x6c, 0x45, 0x84,
-	0xed, 0x38, 0xbc, 0x67, 0xb9, 0xae, 0xdf, 0x78, 0x06, 0x65, 0x99, 0x26, 0x09, 0x17, 0x4a, 0xbb,
-	0x8d, 0xde, 0xc1, 0x7f, 0x0a, 0x7a, 0x41, 0xe6, 0xd0, 0x42, 0x76, 0x8f, 0xa0, 0x9c, 0x67, 0xd8,
-	0x84, 0xda, 0x6c, 0x14, 0xcc, 0x26, 0x93, 0x31, 0x9d, 0xfa, 0xa7, 0x56, 0x09, 0x2d, 0xd8, 0xf1,
-	0x2f, 0x27, 0x3e, 0x3d, 0xbf, 0xf0, 0x47, 0xd3, 0xe3, 0xa1, 0x45, 0xb0, 0x0e, 0xd5, 0x35, 0x60,
-	0xf4, 0xa6, 0xc5, 0x25, 0x82, 0xec, 0x5a, 0x78, 0x02, 0x66, 0x16, 0xa0, 0xfd, 0x67, 0x1d, 0x7d,
-	0x2f, 0x7b, 0x6f, 0x43, 0x55, 0xb7, 0x34, 0xb0, 0x5e, 0x56, 0x0e, 0x79, 0x5d, 0x39, 0xe4, 0x6d,
-	0xe5, 0x90, 0xa7, 0x77, 0xa7, 0x74, 0x6d, 0x6a, 0xf2, 0xf0, 0x33, 0x00, 0x00, 0xff, 0xff, 0x50,
-	0x8e, 0x58, 0x90, 0x29, 0x02, 0x00, 0x00,
+	// 326 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x84, 0x91, 0xbf, 0x4e, 0xc2, 0x50,
+	0x14, 0xc6, 0xb9, 0xd5, 0x14, 0x38, 0x15, 0x69, 0xce, 0x60, 0x9a, 0x0e, 0x15, 0x3b, 0xe1, 0x52,
+	0x12, 0x9c, 0x8c, 0x26, 0xfe, 0xed, 0x60, 0x82, 0x80, 0xb7, 0x90, 0xb8, 0x99, 0x4a, 0x6e, 0xb0,
+	0x11, 0xdb, 0xda, 0x7b, 0x4b, 0xc2, 0x9b, 0x38, 0xfa, 0x38, 0x8e, 0x3e, 0x82, 0xa9, 0x9b, 0x4f,
+	0x61, 0xbc, 0x6d, 0x85, 0x41, 0xe2, 0xd6, 0xf3, 0xf5, 0xf7, 0x3b, 0xf9, 0x72, 0x0f, 0xb4, 0x1e,
+	0x17, 0xe2, 0x81, 0x75, 0xe2, 0x24, 0x12, 0x51, 0x87, 0x0b, 0x5f, 0xa4, 0xfc, 0x8e, 0xb3, 0x64,
+	0x1e, 0x4c, 0x98, 0x23, 0x43, 0xd4, 0x24, 0x91, 0x0f, 0x76, 0x13, 0x1a, 0x9e, 0x84, 0x28, 0x7b,
+	0x4e, 0x19, 0x17, 0xf6, 0x97, 0x02, 0x5a, 0x99, 0xc4, 0xb3, 0x05, 0x1e, 0x42, 0x35, 0x4a, 0x82,
+	0x69, 0x10, 0x72, 0x83, 0xb4, 0x36, 0xda, 0x5a, 0x77, 0xd7, 0x59, 0xf1, 0x9d, 0x15, 0xd4, 0x19,
+	0x48, 0x8e, 0x96, 0x3c, 0x9e, 0x40, 0x7d, 0xe6, 0x87, 0xd3, 0xd4, 0x9f, 0x32, 0x6e, 0x28, 0x52,
+	0xde, 0x5b, 0x2b, 0xf7, 0x0a, 0x92, 0x2e, 0x1d, 0xf3, 0x18, 0xd4, 0x7c, 0x27, 0xee, 0x80, 0x3a,
+	0x89, 0x92, 0x38, 0xfd, 0x29, 0x41, 0xda, 0x75, 0x5a, 0x4c, 0x68, 0x42, 0x2d, 0x61, 0xf3, 0x80,
+	0x07, 0x51, 0x68, 0x28, 0xf2, 0xcf, 0xef, 0x6c, 0xbe, 0x12, 0xa8, 0x95, 0x5b, 0x11, 0x61, 0x33,
+	0xf4, 0x9f, 0x58, 0xa1, 0xcb, 0x6f, 0xbc, 0x80, 0x2a, 0x4f, 0xe3, 0x38, 0x4a, 0x84, 0x74, 0xb7,
+	0xbb, 0xfb, 0xff, 0xb6, 0x73, 0xbc, 0x5c, 0xa0, 0xa5, 0x69, 0x1f, 0x41, 0xb5, 0xc8, 0xb0, 0x09,
+	0xda, 0xb8, 0xef, 0x8d, 0x87, 0xc3, 0x01, 0x1d, 0xb9, 0x97, 0x7a, 0x05, 0x75, 0xd8, 0x72, 0x6f,
+	0x87, 0x2e, 0xbd, 0xba, 0x76, 0xfb, 0xa3, 0xb3, 0x9e, 0x4e, 0xb0, 0x01, 0xf5, 0x25, 0xa0, 0x74,
+	0x6f, 0xca, 0xd7, 0xf7, 0xf2, 0x0b, 0xe1, 0x29, 0xa8, 0x79, 0x80, 0xe6, 0x9f, 0x5d, 0xe4, 0x8d,
+	0x4c, 0x63, 0x5d, 0x4f, 0xbb, 0x72, 0xae, 0xbf, 0x65, 0x16, 0x79, 0xcf, 0x2c, 0xf2, 0x91, 0x59,
+	0xe4, 0xe5, 0xd3, 0xaa, 0xdc, 0xab, 0x12, 0x3b, 0xf8, 0x0e, 0x00, 0x00, 0xff, 0xff, 0x27, 0x71,
+	0xa0, 0xcf, 0x1a, 0x02, 0x00, 0x00,
 }
