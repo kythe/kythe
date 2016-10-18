@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// Package inmemory implements a simple in-memory graphstore.Service.
+// Package inmemory provides a in-memory implementation of graphstore.Service.
 package inmemory
 
 import (
@@ -31,19 +31,18 @@ import (
 	"golang.org/x/net/context"
 )
 
-type store struct {
-	entries []*spb.Entry
+// GraphStore implements the graphstore.Service interface. A zero of this type
+// is ready for use, and is safe for access by concurrent goroutines.
+type GraphStore struct {
 	mu      sync.RWMutex
+	entries []*spb.Entry
 }
 
-// Create returns a new in-memory graphstore.Service
-func Create() graphstore.Service { return &store{} }
-
-// Close implements part of the graphstore.Service interface.
-func (*store) Close(ctx context.Context) error { return nil }
+// Close implements io.Closer. It never returns an error.
+func (*GraphStore) Close(ctx context.Context) error { return nil }
 
 // Write implements part of the graphstore.Service interface.
-func (s *store) Write(ctx context.Context, req *spb.WriteRequest) error {
+func (s *GraphStore) Write(ctx context.Context, req *spb.WriteRequest) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for _, u := range req.Update {
@@ -58,7 +57,7 @@ func (s *store) Write(ctx context.Context, req *spb.WriteRequest) error {
 	return nil
 }
 
-func (s *store) insert(e *spb.Entry) {
+func (s *GraphStore) insert(e *spb.Entry) {
 	i := sort.Search(len(s.entries), func(i int) bool {
 		return compare.Entries(e, s.entries[i]) == compare.LT
 	})
@@ -74,7 +73,7 @@ func (s *store) insert(e *spb.Entry) {
 }
 
 // Read implements part of the graphstore.Service interface.
-func (s *store) Read(ctx context.Context, req *spb.ReadRequest, f graphstore.EntryFunc) error {
+func (s *GraphStore) Read(ctx context.Context, req *spb.ReadRequest, f graphstore.EntryFunc) error {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	start := sort.Search(len(s.entries), func(i int) bool {
@@ -96,7 +95,7 @@ func (s *store) Read(ctx context.Context, req *spb.ReadRequest, f graphstore.Ent
 }
 
 // Scan implements part of the graphstore.Service interface.
-func (s *store) Scan(ctx context.Context, req *spb.ScanRequest, f graphstore.EntryFunc) error {
+func (s *GraphStore) Scan(ctx context.Context, req *spb.ScanRequest, f graphstore.EntryFunc) error {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 

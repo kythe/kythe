@@ -173,7 +173,7 @@ func TestDocumentation(t *testing.T) {
 }
 
 func newService(t *testing.T, entries []*spb.Entry) *GraphStoreService {
-	gs := inmemory.Create()
+	gs := new(inmemory.GraphStore)
 
 	for req := range graphstore.BatchWrites(channelEntries(entries), 64) {
 		if err := gs.Write(ctx, req); err != nil {

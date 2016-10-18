@@ -38,7 +38,9 @@ type Handler func(spec string) (graphstore.Service, error)
 
 var (
 	handlers = map[string]Handler{
-		"in-memory": func(_ string) (graphstore.Service, error) { return inmemory.Create(), nil },
+		"in-memory": func(_ string) (graphstore.Service, error) {
+			return new(inmemory.GraphStore), nil
+		},
 	}
 	defaultHandlerKind string
 )
