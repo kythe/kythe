@@ -45,77 +45,56 @@ import (
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
-// Service provides access to a Kythe graph for fast access to cross-references.
+// Service defines the interface for file based cross-references.  Informally,
+// the cross-references of an entity comprise the definitions of that entity,
+// together with all the places where those definitions are referenced through
+// constructs such as type declarations, variable references, function calls,
+// and so on.
 type Service interface {
-	NodesEdgesService
-	DecorationsService
-	CrossReferencesService
-	DocumentationService
-}
+	GraphService
 
-// NodesEdgesService provides fast access to nodes and edges in a Kythe graph.
-type NodesEdgesService interface {
-	NodesService
-	EdgesService
-}
+	// TODO(fromberger): Separate direct graph access from xrefs.
 
-// NodesService provides fast access to nodes in a Kythe graph.
-type NodesService interface {
-	// Nodes returns a subset of the facts for each of the requested nodes.
-	Nodes(context.Context, *xpb.NodesRequest) (*xpb.NodesReply, error)
-}
-
-// EdgesService provides fast access to edges in a Kythe graph.
-type EdgesService interface {
-	// Edges returns a subset of the outbound edges for each of a set of requested
-	// nodes.
-	Edges(context.Context, *xpb.EdgesRequest) (*xpb.EdgesReply, error)
-}
-
-// DecorationsService provides fast access to file decorations in a Kythe graph.
-type DecorationsService interface {
-	// Decorations returns an index of the nodes and edges associated with a
-	// particular file node.
+	// Decorations returns an index of the nodes associated with a specified file.
 	Decorations(context.Context, *xpb.DecorationsRequest) (*xpb.DecorationsReply, error)
-}
 
-// CrossReferencesService provides fast access to cross-references in a Kythe graph.
-type CrossReferencesService interface {
-	// CrossReferences returns the global references of the given nodes.
+	// CrossReferences returns the global cross-references for the given nodes.
 	CrossReferences(context.Context, *xpb.CrossReferencesRequest) (*xpb.CrossReferencesReply, error)
-}
 
-// DocumentationService provides fast access to the documentation in a Kythe graph.
-type DocumentationService interface {
 	// Documentation takes a set of tickets and returns documentation for them.
 	Documentation(context.Context, *xpb.DocumentationRequest) (*xpb.DocumentationReply, error)
 }
 
-var (
-	// ErrDecorationsNotFound is returned from Decorations when decorations for
-	// the given file cannot be found.
-	ErrDecorationsNotFound = errors.New("file decorations not found")
-)
+// GraphService exposes direct access to nodes and edges in a Kythe graph.
+type GraphService interface {
+	Nodes(context.Context, *xpb.NodesRequest) (*xpb.NodesReply, error)
+	Edges(context.Context, *xpb.EdgesRequest) (*xpb.EdgesReply, error)
+}
 
-// FixTickets returns an equivalent slice of normalized tickets.
-func FixTickets(rawTickets []string) ([]string, error) {
-	if len(rawTickets) == 0 {
+// ErrDecorationsNotFound is returned by an implementation of the Decorations
+// method when decorations for the given file cannot be found.
+var ErrDecorationsNotFound = errors.New("file decorations not found")
+
+// FixTickets converts the specified tickets, which are expected to be Kythe
+// URIs, into canonical form. It is an error if len(tickets) == 0.
+func FixTickets(tickets []string) ([]string, error) {
+	if len(tickets) == 0 {
 		return nil, errors.New("no tickets specified")
 	}
 
-	var tickets []string
-	for _, rawTicket := range rawTickets {
-		ticket, err := kytheuri.Fix(rawTicket)
+	canonical := make([]string, len(tickets))
+	for i, ticket := range tickets {
+		fixed, err := kytheuri.Fix(ticket)
 		if err != nil {
-			return nil, fmt.Errorf("invalid ticket %q: %v", rawTicket, err)
+			return nil, fmt.Errorf("invalid ticket %q: %v", ticket, err)
 		}
-		tickets = append(tickets, ticket)
+		canonical[i] = fixed
 	}
-	return tickets, nil
+	return canonical, nil
 }
 
-// InSpanBounds returns whether [start,end) is bounded by the specified [startBoundary,endBoundary)
-// span.
+// InSpanBounds reports whether [start,end) is bounded by the specified
+// [startBoundary,endBoundary) span.
 func InSpanBounds(kind xpb.DecorationsRequest_SpanKind, start, end, startBoundary, endBoundary int32) bool {
 	switch kind {
 	case xpb.DecorationsRequest_WITHIN_SPAN:
@@ -128,7 +107,7 @@ func InSpanBounds(kind xpb.DecorationsRequest_SpanKind, start, end, startBoundar
 	return false
 }
 
-// IsDefKind determines whether the given edgeKind matches the requested
+// IsDefKind reports whether the given edgeKind matches the requested
 // definition kind.
 func IsDefKind(requestedKind xpb.CrossReferencesRequest_DefinitionKind, edgeKind string, incomplete bool) bool {
 	// TODO(schroederc): handle full vs. binding CompletesEdge
@@ -150,8 +129,8 @@ func IsDefKind(requestedKind xpb.CrossReferencesRequest_DefinitionKind, edgeKind
 	}
 }
 
-// IsDeclKind determines whether the given edgeKind matches the requested
-// declaration kind.
+// IsDeclKind reportsa whether the given edgeKind matches the requested
+// declaration kind
 func IsDeclKind(requestedKind xpb.CrossReferencesRequest_DeclarationKind, edgeKind string, incomplete bool) bool {
 	if !incomplete {
 		return false
@@ -203,7 +182,7 @@ func IsDocKind(requestedKind xpb.CrossReferencesRequest_DocumentationKind, edgeK
 // the returned reply will not have a next page token.  WARNING: the paging API
 // exists for a reason; using this can lead to very large memory consumption
 // depending on the request.
-func AllEdges(ctx context.Context, es EdgesService, req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
+func AllEdges(ctx context.Context, es GraphService, req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
 	req.PageSize = math.MaxInt32
 	reply, err := es.Edges(ctx, req)
 	if err != nil || reply.NextPageToken == "" {
@@ -1723,18 +1702,17 @@ func RegisterHTTPHandlers(ctx context.Context, xs Service, mux *http.ServeMux) {
 	})
 }
 
-// ByName implements the sort.Interface for cpb.Facts
+// ByName orders a slice of facts by their fact names.
 type ByName []*cpb.Fact
 
-// Implement the sort.Interface
 func (s ByName) Len() int           { return len(s) }
 func (s ByName) Less(i, j int) bool { return s[i].Name < s[j].Name }
 func (s ByName) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 
-// ByOrdinal implements the sort.Interface for xpb.EdgeSet_Group_Edges
+// ByOrdinal orders the edges in an edge group by their ordinals, with ties
+// broken by ticket.
 type ByOrdinal []*xpb.EdgeSet_Group_Edge
 
-// Implement the sort.Interface
 func (s ByOrdinal) Len() int      { return len(s) }
 func (s ByOrdinal) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
 func (s ByOrdinal) Less(i, j int) bool {

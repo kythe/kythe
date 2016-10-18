@@ -646,7 +646,7 @@ func edgeTickets(edges []*xpb.EdgeSet_Group_Edge) (tickets []string) {
 	return
 }
 
-func completeAnchors(ctx context.Context, xs xrefs.NodesEdgesService, retrieveText bool, files map[string]*fileNode, edgeKind string, anchors []string) ([]*xpb.CrossReferencesReply_RelatedAnchor, error) {
+func completeAnchors(ctx context.Context, xs xrefs.GraphService, retrieveText bool, files map[string]*fileNode, edgeKind string, anchors []string) ([]*xpb.CrossReferencesReply_RelatedAnchor, error) {
 	edgeKind = edges.Canonical(edgeKind)
 
 	// AllEdges is relatively safe because each anchor will have very few parents (almost always 1)
