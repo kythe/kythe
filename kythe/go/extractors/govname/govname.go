@@ -23,7 +23,7 @@ import (
 	"regexp"
 	"strings"
 
-	"kythe.io/kythe/go/storage/vnameutil"
+	"kythe.io/kythe/go/util/vnameutil"
 
 	spb "kythe.io/kythe/proto/storage_proto"
 )

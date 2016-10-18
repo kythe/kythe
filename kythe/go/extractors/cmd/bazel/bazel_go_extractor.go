@@ -30,7 +30,7 @@ import (
 	"golang.org/x/net/context"
 
 	"kythe.io/kythe/go/extractors/bazel"
-	"kythe.io/kythe/go/storage/vnameutil"
+	"kythe.io/kythe/go/util/vnameutil"
 
 	eapb "kythe.io/third_party/bazel/extra_actions_base_proto"
 )

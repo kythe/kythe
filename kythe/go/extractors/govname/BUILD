@@ -6,8 +6,8 @@ go_package_library(
     name = "govname",
     srcs = ["govname.go"],
     deps = [
-        "//kythe/go/storage/vnameutil",
         "//kythe/go/util/kytheuri",
+        "//kythe/go/util/vnameutil",
         "//kythe/proto:storage_proto_go",
         "@go_protobuf//:proto",
     ],

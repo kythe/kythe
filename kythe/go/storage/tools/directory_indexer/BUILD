@@ -8,8 +8,8 @@ go_binary(
     deps = [
         "//kythe/go/platform/delimited",
         "//kythe/go/platform/vfs",
-        "//kythe/go/storage/vnameutil",
         "//kythe/go/util/flagutil",
+        "//kythe/go/util/vnameutil",
         "//kythe/proto:storage_proto_go",
         "@go_x_net//:context",
     ],

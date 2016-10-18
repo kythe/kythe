@@ -11,7 +11,7 @@ go_binary(
         "//kythe/go/extractors/govname",
         "//kythe/go/platform/indexpack",
         "//kythe/go/platform/kindex",
-        "//kythe/go/storage/vnameutil",
+        "//kythe/go/util/vnameutil",
         "//kythe/proto:analysis_proto_go",
         "//kythe/proto:storage_proto_go",
         "//third_party/bazel:extra_actions_base_proto_go",

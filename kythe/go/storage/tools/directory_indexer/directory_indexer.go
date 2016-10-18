@@ -58,8 +58,8 @@ import (
 
 	"kythe.io/kythe/go/platform/delimited"
 	"kythe.io/kythe/go/platform/vfs"
-	"kythe.io/kythe/go/storage/vnameutil"
 	"kythe.io/kythe/go/util/flagutil"
+	"kythe.io/kythe/go/util/vnameutil"
 
 	"golang.org/x/net/context"
 

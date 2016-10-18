@@ -35,8 +35,8 @@ import (
 
 	"kythe.io/kythe/go/extractors/govname"
 	"kythe.io/kythe/go/platform/kindex"
-	"kythe.io/kythe/go/storage/vnameutil"
 	"kythe.io/kythe/go/util/ptypes"
+	"kythe.io/kythe/go/util/vnameutil"
 
 	apb "kythe.io/kythe/proto/analysis_proto"
 	bipb "kythe.io/kythe/proto/buildinfo_proto"
