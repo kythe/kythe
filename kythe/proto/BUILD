@@ -70,7 +70,7 @@ proto_library(
     deps = [
         ":filecontext_proto",
         ":storage_proto",
-        "//external:proto/any_proto",
+        "//third_party/proto:any_proto",
     ],
 )
 
@@ -90,7 +90,7 @@ proto_library(
         ":analysis_proto",
         ":filecontext_proto",
         ":storage_proto",
-        "//external:proto/any_proto",
+        "//third_party/proto:any_proto",
     ],
 )
 

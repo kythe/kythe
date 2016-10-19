@@ -24,9 +24,9 @@ java_library(
         "FileDataProvider.java",
     ],
     deps = [
-        "//external:guava",
-        "//external:proto/protobuf_java",
         "//kythe/proto:analysis_proto_java",
+        "//third_party/proto:protobuf_java",
+        "@com_google_guava_guava//jar",
     ],
 )
 
@@ -37,10 +37,10 @@ java_library(
     ],
     deps = [
         ":file_data",
-        "//external:grpc-java",
-        "//external:guava",
-        "//external:proto/protobuf_java",
         "//kythe/proto:analysis_proto_java",
         "//kythe/proto:analysis_service_proto_java",
+        "//third_party/grpc-java",
+        "//third_party/proto:protobuf_java",
+        "@com_google_guava_guava//jar",
     ],
 )

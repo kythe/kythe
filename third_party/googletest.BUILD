@@ -44,7 +44,7 @@ cc_library(
         "-Wno-non-virtual-dtor",
         "-Wno-unused-variable",
         "-Wno-implicit-fallthrough",
-        "-Iexternal/gtest/include",
+        "-Iexternal/com_github_google_googletest/include",
     ],
     includes = [
         "include",

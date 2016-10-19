@@ -14,11 +14,6 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
-        "//external:gflags",
-        "//external:glog",
-        "//external:proto/protobuf",
-        "//external:re2",
-        "//external:zlib",
         "//kythe/cxx/common:index_pack",
         "//kythe/cxx/common:json_proto",
         "//kythe/cxx/common:lib",
@@ -27,6 +22,11 @@ cc_library(
         "//third_party/llvm",
         "//third_party/llvm/src:clang_builtin_headers",
         "//third_party/llvm/src:preprocessor_util_lib",
+        "//third_party/proto:protobuf",
+        "//third_party/zlib",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_github_google_glog//:glog",
+        "@com_googlesource_code_re2//:re2",
     ],
 )
 
@@ -45,13 +45,13 @@ cc_library(
     ],
     deps = [
         ":lib",
-        "//external:gflags",
-        "//external:glog",
-        "//external:proto/protobuf",
-        "//external:re2",
-        "//external:zlib",
         "//kythe/proto:analysis_proto_cc",
         "//third_party/llvm",
+        "//third_party/proto:protobuf",
+        "//third_party/zlib",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_github_google_glog//:glog",
+        "@com_googlesource_code_re2//:re2",
     ],
 )
 
@@ -67,13 +67,13 @@ cc_library(
     ],
     deps = [
         ":lib",
-        "//external:gflags",
-        "//external:glog",
-        "//external:proto/protobuf",
-        "//external:re2",
-        "//external:zlib",
         "//third_party/bazel:extra_actions_base_proto_cc",
         "//third_party/llvm",
+        "//third_party/proto:protobuf",
+        "//third_party/zlib",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_github_google_glog//:glog",
+        "@com_googlesource_code_re2//:re2",
     ],
 )
 
@@ -90,13 +90,13 @@ cc_library(
     deps = [
         ":lib",
         ":objc_bazel_support_library",
-        "//external:gflags",
-        "//external:glog",
-        "//external:proto/protobuf",
-        "//external:re2",
-        "//external:zlib",
         "//third_party/bazel:extra_actions_base_proto_cc",
         "//third_party/llvm",
+        "//third_party/proto:protobuf",
+        "//third_party/zlib",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_github_google_glog//:glog",
+        "@com_googlesource_code_re2//:re2",
     ],
 )
 
@@ -106,9 +106,9 @@ cc_library(
     hdrs = ["objc_bazel_support.h"],
     visibility = ["//visibility:private"],
     deps = [
-        "//external:re2",
         "//third_party/bazel:extra_actions_base_proto_cc",
         "//third_party/llvm",
+        "@com_googlesource_code_re2//:re2",
     ],
 )
 
@@ -117,8 +117,8 @@ cc_test(
     srcs = ["objc_bazel_support_test.cc"],
     deps = [
         ":objc_bazel_support_library",
-        "//external:glog",
-        "//external:googletest",
+        "@com_github_google_glog//:glog",
+        "@com_github_google_googletest//:googletest",
     ],
 )
 
@@ -201,13 +201,13 @@ cc_library(
     ],
     deps = [
         ":lib",
-        "//external:glog",
-        "//external:googletest",
-        "//external:proto/protobuf",
-        "//external:re2",
-        "//external:zlib",
         "//kythe/proto:analysis_proto_cc",
         "//third_party/llvm",
+        "//third_party/proto:protobuf",
+        "//third_party/zlib",
+        "@com_github_google_glog//:glog",
+        "@com_github_google_googletest//:googletest",
+        "@com_googlesource_code_re2//:re2",
     ],
 )
 

@@ -43,6 +43,6 @@ cc_library(
     ],
     deps = [
         "@//third_party/googlelog:headers",
-        "//external:gflags",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )

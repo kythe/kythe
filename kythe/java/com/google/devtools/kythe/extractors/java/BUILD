@@ -10,9 +10,6 @@ java_library(
         "UsageAsInputReportingJavaFileObject.java",
     ],
     deps = [
-        "//external:guava",
-        "//external:proto/any_proto_java",
-        "//external:proto/protobuf_java",
         "//kythe/java/com/google/devtools/kythe/common",
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
         "//kythe/java/com/google/devtools/kythe/extractors/shared:file_vnames",
@@ -21,6 +18,9 @@ java_library(
         "//kythe/proto:analysis_proto_java",
         "//kythe/proto:java_proto_java",
         "//kythe/proto:storage_proto_java",
+        "//third_party/proto:any_proto_java",
+        "//third_party/proto:protobuf_java",
         "@bazel_tools//third_party/java/jdk/langtools:javac",
+        "@com_google_guava_guava//jar",
     ],
 )

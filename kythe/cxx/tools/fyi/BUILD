@@ -15,13 +15,13 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
-        "//external:gflags",
-        "//external:glog",
-        "//external:proto/protobuf",
         "//kythe/cxx/common:lib",
         "//kythe/cxx/common:net_client",
         "//third_party/llvm",
         "//third_party/llvm/src:clang_builtin_headers",
+        "//third_party/proto:protobuf",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_github_google_glog//:glog",
     ],
 )
 

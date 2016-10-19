@@ -65,7 +65,7 @@ cc_library(
     ],
     deps = [
         ":rapidjson",
-        "//external:googletest",
+        "@com_github_google_googletest//:googletest",
     ],
 )
 
@@ -84,7 +84,7 @@ cc_library(
     ],
     deps = [
         ":rapidjson",
-        "//external:googletest",
+        "@com_github_google_googletest//:googletest",
     ],
 )
 
@@ -111,7 +111,7 @@ cc_library(
     ],
     deps = [
         ":rapidjson",
-        "//external:googletest",
+        "@com_github_google_googletest//:googletest",
     ],
 )
 
@@ -138,7 +138,7 @@ cc_library(
     ],
     deps = [
         ":rapidjson",
-        "//external:googletest",
+        "@com_github_google_googletest//:googletest",
     ],
 )
 
@@ -165,7 +165,7 @@ cc_library(
     ],
     deps = [
         ":rapidjson",
-        "//external:googletest",
+        "@com_github_google_googletest//:googletest",
     ],
 )
 
@@ -192,7 +192,7 @@ cc_library(
     ],
     deps = [
         ":rapidjson",
-        "//external:googletest",
+        "@com_github_google_googletest//:googletest",
     ],
 )
 
@@ -224,7 +224,7 @@ cc_library(
     ],
     deps = [
         ":rapidjson",
-        "//external:googletest",
+        "@com_github_google_googletest//:googletest",
     ],
 )
 
@@ -255,7 +255,7 @@ cc_library(
     ],
     deps = [
         ":rapidjson",
-        "//external:googletest",
+        "@com_github_google_googletest//:googletest",
     ],
 )
 
@@ -282,7 +282,7 @@ cc_library(
     ],
     deps = [
         ":rapidjson",
-        "//external:googletest",
+        "@com_github_google_googletest//:googletest",
     ],
 )
 
@@ -313,7 +313,7 @@ cc_library(
     ],
     deps = [
         ":rapidjson",
-        "//external:googletest",
+        "@com_github_google_googletest//:googletest",
     ],
 )
 
@@ -344,7 +344,7 @@ cc_library(
     ],
     deps = [
         ":rapidjson",
-        "//external:googletest",
+        "@com_github_google_googletest//:googletest",
     ],
 )
 
@@ -363,7 +363,7 @@ cc_library(
     ],
     deps = [
         ":rapidjson",
-        "//external:googletest",
+        "@com_github_google_googletest//:googletest",
     ],
 )
 
@@ -390,7 +390,7 @@ cc_library(
     ],
     deps = [
         ":rapidjson",
-        "//external:googletest",
+        "@com_github_google_googletest//:googletest",
     ],
 )
 
@@ -417,7 +417,7 @@ cc_library(
 #    ],
 #    deps = [
 #        ":rapidjson",
-#        "//external:googletest",
+#        "@com_github_google_googletest//:googletest",
 #    ],
 #)
 #cc_test(

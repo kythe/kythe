@@ -9,9 +9,6 @@ java_library(
     ],
     deps = [
         ":options",
-        "//external:guava",
-        "//external:jsr305",
-        "//external:proto/protobuf_java",
         "//kythe/java/com/google/devtools/kythe/common",
         "//kythe/java/com/google/devtools/kythe/platform/java/filemanager",
         "//kythe/java/com/google/devtools/kythe/platform/shared:analysis_exception",
@@ -19,7 +16,10 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/platform/shared:statistics",
         "//kythe/proto:analysis_proto_java",
         "//kythe/proto:storage_proto_java",
+        "//third_party/proto:protobuf_java",
         "@bazel_tools//third_party/java/jdk/langtools:javac",
+        "@com_google_code_findbugs_jsr305//jar",
+        "@com_google_guava_guava//jar",
     ],
 )
 
@@ -27,8 +27,8 @@ java_library(
     name = "options",
     srcs = ["JavacOptionsUtils.java"],
     deps = [
-        "//external:guava",
-        "//external:jsr305",
         "@bazel_tools//third_party/java/jdk/langtools:javac",
+        "@com_google_code_findbugs_jsr305//jar",
+        "@com_google_guava_guava//jar",
     ],
 )

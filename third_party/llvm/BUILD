@@ -22,6 +22,7 @@ cc_library(
     name = "llvm",
     # See https://github.com/google/bazel/issues/61 regarding check_modules's
     # modules_checked_empty.cc.
+    # Do not sort; srcs are link-order dependent.
     srcs = [
         "llvm/build/lib/libclangTooling.a",
         "llvm/build/lib/libclangFrontend.a",

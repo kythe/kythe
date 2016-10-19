@@ -6,9 +6,9 @@ java_test(
     srcs = ["CompilationUnitFileTreeTest.java"],
     test_class = "com.google.devtools.kythe.platform.java.filemanager.CompilationUnitFileTreeTest",
     deps = [
-        "//external:guava",
-        "//external:junit4",
         "//kythe/java/com/google/devtools/kythe/platform/java/filemanager",
         "//kythe/proto:analysis_proto_java",
+        "@com_google_guava_guava//jar",
+        "@junit_junit//jar",
     ],
 )

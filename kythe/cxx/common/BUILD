@@ -16,12 +16,12 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
-        "//external:gflags",
-        "//external:glog",
         "//external:libcrypto",
-        "//external:proto/any_proto_cc",
-        "//external:proto/protobuf",
-        "//external:rapidjson",
+        "//third_party/proto:cc_wkt_protos",
+        "//third_party/proto:protobuf",
+        "//third_party/rapidjson",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_github_google_glog//:glog",
     ],
 )
 
@@ -41,9 +41,9 @@ cc_library(
     deps = [
         ":lib",
         "//external:libuuid",
-        "//external:proto/protobuf",
-        "//external:zlib",
         "//kythe/proto:analysis_proto_cc",
+        "//third_party/proto:protobuf",
+        "//third_party/zlib",
     ],
 )
 
@@ -78,16 +78,16 @@ cc_library(
     ],
     deps = [
         ":json_proto",
-        "//external:gflags",
-        "//external:glog",
-        "//external:proto/protobuf",
-        "//external:rapidjson",
-        "//external:re2",
-        "//external:zlib",
         "//kythe/proto:analysis_proto_cc",
         "//kythe/proto:cxx_proto_cc",
         "//kythe/proto:storage_proto_cc",
         "//third_party/llvm",
+        "//third_party/proto:protobuf",
+        "//third_party/rapidjson",
+        "//third_party/zlib",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_github_google_glog//:glog",
+        "@com_googlesource_code_re2//:re2",
     ],
 )
 
@@ -106,14 +106,14 @@ cc_library(
     ],
     deps = [
         ":lib",
-        "//external:gflags",
-        "//external:glog",
-        "//external:libcurl",
-        "//external:proto/protobuf",
-        "//external:rapidjson",
-        "//external:zlib",
         "//kythe/proto:storage_proto_cc",
         "//kythe/proto:xref_proto_cc",
+        "//third_party:libcurl",
+        "//third_party/proto:protobuf",
+        "//third_party/rapidjson",
+        "//third_party/zlib",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_github_google_glog//:glog",
     ],
 )
 
@@ -130,8 +130,8 @@ cc_library(
     ],
     deps = [
         ":lib",
-        "//external:googletest",
         "//third_party/llvm",
+        "@com_github_google_googletest//:googletest",
     ],
 )
 
@@ -156,9 +156,9 @@ cc_library(
     ],
     deps = [
         ":lib",
-        "//external:googletest",
-        "//external:proto/protobuf",
-        "//external:re2",
+        "//third_party/proto:protobuf",
+        "@com_github_google_googletest//:googletest",
+        "@com_googlesource_code_re2//:re2",
     ],
 )
 
@@ -183,8 +183,8 @@ cc_library(
     ],
     deps = [
         ":lib",
-        "//external:googletest",
         "//third_party/llvm",
+        "@com_github_google_googletest//:googletest",
     ],
 )
 
@@ -209,13 +209,13 @@ cc_library(
     ],
     deps = [
         ":index_pack",
-        "//external:gflags",
-        "//external:glog",
-        "//external:googletest",
-        "//external:proto/protobuf",
-        "//external:rapidjson",
-        "//external:zlib",
         "//third_party/llvm",
+        "//third_party/proto:protobuf",
+        "//third_party/rapidjson",
+        "//third_party/zlib",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_github_google_glog//:glog",
+        "@com_github_google_googletest//:googletest",
     ],
 )
 
@@ -240,10 +240,10 @@ cc_library(
     ],
     deps = [
         ":json_proto",
-        "//external:googletest",
-        "//external:proto/protobuf",
-        "//external:re2",
         "//kythe/proto:analysis_proto_cc",
+        "//third_party/proto:protobuf",
+        "@com_github_google_googletest//:googletest",
+        "@com_googlesource_code_re2//:re2",
     ],
 )
 
@@ -268,10 +268,10 @@ cc_library(
     ],
     deps = [
         ":net_client",
-        "//external:gflags",
-        "//external:glog",
-        "//external:proto/protobuf",
-        "//external:zlib",
+        "//third_party/proto:protobuf",
+        "//third_party/zlib",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_github_google_glog//:glog",
     ],
 )
 
@@ -296,10 +296,10 @@ cc_library(
     ],
     deps = [
         ":lib",
-        "//external:gflags",
-        "//external:glog",
-        "//external:googletest",
-        "//external:proto/protobuf",
+        "//third_party/proto:protobuf",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_github_google_glog//:glog",
+        "@com_github_google_googletest//:googletest",
     ],
 )
 

@@ -80,11 +80,11 @@ sh_test(
     srcs = ["release_test.sh"],
     data = [
         ":release",
-        "//external:guava",
-        "//external:jq",
         "//kythe/java/com/google/devtools/kythe/common:FormattingLogger.java",
         "//kythe/testdata:entries",
         "//kythe/testdata:test.kindex",
+        "//third_party/jq",
+        "@com_google_guava_guava//jar",
     ],
     tags = [
         "local",

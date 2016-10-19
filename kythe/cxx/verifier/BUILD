@@ -43,7 +43,7 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
-        "//external:glog",
+        "@com_github_google_glog//:glog",
     ],
 )
 
@@ -68,10 +68,10 @@ cc_library(
     ],
     deps = [
         ":lexparse",
-        "//external:gflags",
-        "//external:glog",
-        "//external:proto/protobuf",
         "//kythe/proto:storage_proto_cc",
+        "//third_party/proto:protobuf",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_github_google_glog//:glog",
     ],
 )
 
@@ -87,10 +87,10 @@ cc_library(
     ],
     deps = [
         ":lib",
-        "//external:gflags",
-        "//external:glog",
-        "//external:proto/protobuf",
         "//kythe/proto:storage_proto_cc",
+        "//third_party/proto:protobuf",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_github_google_glog//:glog",
     ],
 )
 
@@ -117,10 +117,10 @@ cc_library(
     ],
     deps = [
         ":lib",
-        "//external:glog",
-        "//external:googletest",
-        "//external:proto/protobuf",
         "//kythe/proto:storage_proto_cc",
+        "//third_party/proto:protobuf",
+        "@com_github_google_glog//:glog",
+        "@com_github_google_googletest//:googletest",
     ],
 )
 

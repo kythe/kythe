@@ -16,15 +16,15 @@ cc_library(
         "-Wno-implicit-fallthrough",
     ],
     deps = [
-        "//external:gflags",
-        "//external:glog",
-        "//external:re2",
         "//kythe/cxx/common:lib",
         "//kythe/proto:analysis_proto_cc",
         "//kythe/proto:storage_proto_cc",
         "//third_party/llvm",
         "//third_party/proto:protobuf",
         "//third_party/zlib",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_github_google_glog//:glog",
+        "@com_googlesource_code_re2//:re2",
     ],
 )
 

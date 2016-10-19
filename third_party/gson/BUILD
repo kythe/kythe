@@ -13,7 +13,7 @@ java_library(
         "ProtoTypeAdapter.java",
     ],
     deps = [
-        "//external:gson",
         "//third_party/proto:protobuf_java",
+        "@com_google_code_gson_gson//jar",
     ],
 )

@@ -6,7 +6,7 @@ go_package_library(
     name = "ptypes",
     srcs = ["ptypes.go"],
     deps = [
-        "//external:proto/any_proto_go",
+        "//third_party/proto:any_proto_go",
         "@go_protobuf//:proto",
         "@go_protobuf//:ptypes",
     ],

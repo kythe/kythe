@@ -2,7 +2,7 @@ workspace(name = "io_kythe")
 
 load("//:version.bzl", "check_version")
 
-check_version("0.3.0-2016-07-20")
+check_version("0.3.1")
 
 load("//tools/cpp:clang_configure.bzl", "clang_configure")
 
@@ -40,11 +40,6 @@ new_git_repository(
     tag = "release-1.7.0",
 )
 
-bind(
-    name = "googletest",
-    actual = "@com_github_google_googletest//:googletest",
-)
-
 new_git_repository(
     name = "com_github_gflags_gflags",
     build_file = "third_party/googleflags.BUILD",
@@ -52,20 +47,10 @@ new_git_repository(
     remote = "https://github.com/gflags/gflags.git",
 )
 
-bind(
-    name = "gflags",
-    actual = "@com_github_gflags_gflags//:gflags",
-)
-
 git_repository(
     name = "com_googlesource_code_re2",
     commit = "fc6337a382bfd4f7c861abea08f872d3c85b31da",
     remote = "https://code.googlesource.com/re2",
-)
-
-bind(
-    name = "re2",
-    actual = "@com_googlesource_code_re2//:re2",
 )
 
 new_git_repository(
@@ -75,26 +60,10 @@ new_git_repository(
     remote = "https://github.com/google/glog.git",
 )
 
-bind(
-    name = "glog",
-    actual = "@com_github_google_glog//:glog",
-)
-
 maven_jar(
     name = "com_google_code_gson_gson",
     artifact = "com.google.code.gson:gson:2.7",
     sha1 = "751f548c85fa49f330cecbb1875893f971b33c4e",
-)
-
-bind(
-    name = "gson",
-    actual = "@com_google_code_gson_gson//jar",
-)
-
-# TODO(shahms): See if we can use upstream (apparently github only for gson-proto)
-bind(
-    name = "gson/proto",
-    actual = "//third_party/gson:proto",
 )
 
 maven_jar(
@@ -103,20 +72,10 @@ maven_jar(
     sha1 = "6ce200f6b23222af3d8abb6b6459e6c44f4bb0e9",
 )
 
-bind(
-    name = "guava",
-    actual = "@com_google_guava_guava//jar",
-)
-
 maven_jar(
     name = "junit_junit",
     artifact = "junit:junit:4.12",
     sha1 = "2973d150c0dc1fefe998f834810d68f278ea58ec",
-)
-
-bind(
-    name = "junit4",
-    actual = "@junit_junit//jar",
 )
 
 maven_jar(
@@ -125,62 +84,16 @@ maven_jar(
     sha1 = "d716952ab58aa4369ea15126505a36544d50a333",
 )
 
-bind(
-    name = "re2j",
-    actual = "@com_google_re2j_re2j//jar",
-)
-
 maven_jar(
     name = "com_beust_jcommander",
     artifact = "com.beust:jcommander:1.48",
     sha1 = "bfcb96281ea3b59d626704f74bc6d625ff51cbce",
 )
 
-bind(
-    name = "jcommander",
-    actual = "@com_beust_jcommander//jar",
-)
-
 maven_jar(
     name = "com_google_truth_truth",
     artifact = "com.google.truth:truth:0.27",
     sha1 = "bd17774d2dc0fffa884d42c07d2537e86c67acd6",
-)
-
-bind(
-    name = "truth",
-    actual = "@com_google_truth_truth//jar",
-)
-
-bind(
-    name = "proto/protobuf",
-    actual = "//third_party/proto:protobuf",
-)
-
-bind(
-    name = "proto/protobuf_java",
-    actual = "//third_party/proto:protobuf_java",
-)
-
-bind(
-    name = "proto/any_proto",
-    actual = "//third_party/proto:any_proto",
-)
-
-bind(
-    name = "proto/any_proto_cc",
-    # This also pulls in other well-known protos.
-    actual = "//third_party/proto:cc_wkt_protos",
-)
-
-bind(
-    name = "proto/any_proto_java",
-    actual = "//third_party/proto:any_proto_java",
-)
-
-bind(
-    name = "proto/any_proto_go",
-    actual = "//third_party/proto:any_proto_go",
 )
 
 maven_jar(
@@ -225,40 +138,10 @@ maven_jar(
     sha1 = "b28a07b56ed2e66088221cbaf1228fa4e9669166",
 )
 
-bind(
-    name = "grpc-java",
-    actual = "//third_party/grpc-java",
-)
-
 maven_jar(
     name = "com_google_code_findbugs_jsr305",
     artifact = "com.google.code.findbugs:jsr305:3.0.1",
     sha1 = "f7be08ec23c21485b9b5a1cf1654c2ec8c58168d",
-)
-
-bind(
-    name = "jsr305",
-    actual = "@com_google_code_findbugs_jsr305//jar",
-)
-
-bind(
-    name = "rapidjson",
-    actual = "//third_party/rapidjson",
-)
-
-bind(
-    name = "jq",
-    actual = "//third_party/jq",
-)
-
-bind(
-    name = "libcurl",
-    actual = "//third_party:libcurl",
-)
-
-bind(
-    name = "zlib",
-    actual = "//third_party/zlib",
 )
 
 git_repository(
@@ -381,9 +264,4 @@ new_git_repository(
     build_file = "third_party/go/levigo.BUILD",
     commit = "1ddad808d437abb2b8a55a950ec2616caa88969b",
     remote = "https://github.com/jmhodges/levigo.git",
-)
-
-bind(
-    name = "android/sdk",
-    actual = "//:nothing",
 )

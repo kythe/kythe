@@ -12,8 +12,8 @@ sh_test(
         "testdata/expected.file",
         "testdata/expected.unit",
         "testdata/test_file.cc",
-        "//external:jq",
         "//kythe/cxx/extractor:cxx_extractor",
         "//kythe/cxx/tools:kindex_tool",
+        "//third_party/jq",
     ],
 )

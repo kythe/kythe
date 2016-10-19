@@ -48,10 +48,10 @@ java_test(
     srcs = ["MiniAnchorTest.java"],
     test_class = "com.google.devtools.kythe.analyzers.java.MiniAnchorTest",
     deps = [
-        "//external:guava",
-        "//external:junit4",
-        "//external:truth",
         "//kythe/java/com/google/devtools/kythe/analyzers/java:analyzer",
+        "@com_google_guava_guava//jar",
+        "@com_google_truth_truth//jar",
+        "@junit_junit//jar",
     ],
 )
 
@@ -61,8 +61,8 @@ java_test(
     srcs = ["SourceTextTest.java"],
     test_class = "com.google.devtools.kythe.analyzers.java.SourceTextTest",
     deps = [
-        "//external:junit4",
-        "//external:truth",
         "//kythe/java/com/google/devtools/kythe/analyzers/java:analyzer",
+        "@com_google_truth_truth//jar",
+        "@junit_junit//jar",
     ],
 )

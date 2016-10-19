@@ -5,18 +5,18 @@ package(default_visibility = ["//kythe:default_visibility"])
 cc_library(
     name = "markup_handler",
     srcs = [
-        "javadoxygen_markup_handler.cc",
         "html_markup_handler.cc",
+        "javadoxygen_markup_handler.cc",
         "markup_handler.cc",
     ],
     hdrs = [
-        "javadoxygen_markup_handler.h",
         "html_markup_handler.h",
+        "javadoxygen_markup_handler.h",
         "markup_handler.h",
     ],
     deps = [
-        "//external:glog",
         "//kythe/proto:xref_proto_cc",
+        "@com_github_google_glog//:glog",
     ],
 )
 
@@ -28,7 +28,7 @@ cc_library(
     ],
     deps = [
         ":markup_handler",
-        "//external:googletest",
+        "@com_github_google_googletest//:googletest",
     ],
 )
 
@@ -50,8 +50,8 @@ cc_library(
     ],
     deps = [
         ":markup_handler",
-        "//external:glog",
         "//kythe/proto:xref_proto_cc",
+        "@com_github_google_glog//:glog",
     ],
 )
 
@@ -63,7 +63,7 @@ cc_library(
     ],
     deps = [
         ":html_renderer",
-        "//external:googletest",
+        "@com_github_google_googletest//:googletest",
     ],
 )
 
@@ -83,10 +83,10 @@ cc_library(
     deps = [
         ":html_renderer",
         ":markup_handler",
-        "//external:gflags",
-        "//external:glog",
         "//kythe/cxx/common:lib",
         "//kythe/cxx/common:net_client",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_github_google_glog//:glog",
     ],
 )
 

@@ -21,9 +21,9 @@ sh_test(
     size = "small",
     srcs = ["indexpack_test.sh"],
     data = [
-        "//external:jq",
         "//kythe/go/platform/tools/indexpack",
         "//kythe/go/platform/tools/viewindex",
         "//kythe/testdata:test.kindex",
+        "//third_party/jq",
     ],
 )

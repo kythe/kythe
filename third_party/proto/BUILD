@@ -24,6 +24,10 @@ proto_library(
     java_api_version = 2,
 )
 
+alias(
+    name = "any_proto_cc",
+    actual = ":cc_wkt_protos",
+)
 
 ################################################################################
 # Protobuf Runtime Library
@@ -385,10 +389,10 @@ java_library(
     srcs = glob([
         "java/util/src/main/java/com/google/protobuf/util/*.java",
     ]),
+    visibility = ["//visibility:public"],
     deps = [
         "protobuf_java",
-        "//external:gson",
-        "//external:guava",
+        "@com_google_code_gson_gson//jar",
+        "@com_google_guava_guava//jar",
     ],
-    visibility = ["//visibility:public"],
 )

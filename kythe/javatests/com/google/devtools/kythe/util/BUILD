@@ -6,9 +6,9 @@ java_test(
     srcs = ["KytheURITest.java"],
     test_class = "com.google.devtools.kythe.util.KytheURITest",
     deps = [
-        "//external:junit4",
-        "//external:proto/protobuf_java",
         "//kythe/java/com/google/devtools/kythe/util",
         "//kythe/proto:storage_proto_java",
+        "//third_party/proto:protobuf_java",
+        "@junit_junit//jar",
     ],
 )
