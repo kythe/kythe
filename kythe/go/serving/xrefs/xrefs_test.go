@@ -999,7 +999,7 @@ type testTable struct {
 	RefPages    []*srvpb.PagedCrossReferences_Page
 }
 
-func (tbl *testTable) Construct(t *testing.T) xrefs.Service {
+func (tbl *testTable) Construct(t *testing.T) *Table {
 	p := make(testProtoTable)
 	var tickets stringset.Set
 	for _, n := range tbl.Nodes {

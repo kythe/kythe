@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// Package xrefs provides a high-performance serving table implementation of the
+// Package xrefs provides a high-performance table-based implementation of the
 // xrefs.Service.
 //
 // Table format:
@@ -174,14 +174,14 @@ func (c *combinedTable) crossReferencesPage(ctx context.Context, key string) (*s
 	return &p, c.Lookup(ctx, CrossReferencesPageKey(key), &p)
 }
 
-// NewSplitTable returns an xrefs.Service based on the given serving tables for
-// each API component.
-func NewSplitTable(c *SplitTable) xrefs.Service { return &tableImpl{c} }
+// NewSplitTable returns a table based on the given serving tables for each API
+// component.
+func NewSplitTable(c *SplitTable) *Table { return &Table{c} }
 
-// NewCombinedTable returns an xrefs.Service for the given combined xrefs
-// serving table.  The table's keys are expected to be constructed using only
-// the EdgeSetKey, EdgePageKey, and DecorationsKey functions.
-func NewCombinedTable(t table.ProtoBatch) xrefs.Service { return &tableImpl{&combinedTable{t}} }
+// NewCombinedTable returns a table for the given combined xrefs lookup table.
+// The table's keys are expected to be constructed using only the EdgeSetKey,
+// EdgePageKey, and DecorationsKey functions.
+func NewCombinedTable(t table.ProtoBatch) *Table { return &Table{&combinedTable{t}} }
 
 // EdgeSetKey returns the edgeset CombinedTable key for the given source ticket.
 func EdgeSetKey(ticket string) []byte {
@@ -211,11 +211,11 @@ func CrossReferencesPageKey(key string) []byte {
 	return []byte(crossRefPageTablePrefix + key)
 }
 
-// tableImpl implements the xrefs Service interface using static lookup tables.
-type tableImpl struct{ staticLookupTables }
+// Table implements the xrefs Service interface using static lookup tables.
+type Table struct{ staticLookupTables }
 
 // Nodes implements part of the xrefs Service interface.
-func (t *tableImpl) Nodes(ctx context.Context, req *xpb.NodesRequest) (*xpb.NodesReply, error) {
+func (t *Table) Nodes(ctx context.Context, req *xpb.NodesRequest) (*xpb.NodesReply, error) {
 	tickets, err := xrefs.FixTickets(req.Ticket)
 	if err != nil {
 		return nil, err
@@ -260,7 +260,7 @@ const (
 )
 
 // Edges implements part of the xrefs Service interface.
-func (t *tableImpl) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
+func (t *Table) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
 	tickets, err := xrefs.FixTickets(req.Ticket)
 	if err != nil {
 		return nil, err
@@ -289,7 +289,7 @@ type edgesRequest struct {
 	PageToken string
 }
 
-func (t *tableImpl) edges(ctx context.Context, req edgesRequest) (*xpb.EdgesReply, error) {
+func (t *Table) edges(ctx context.Context, req edgesRequest) (*xpb.EdgesReply, error) {
 	stats := filterStats{
 		max: int(req.PageSize),
 	}
@@ -513,7 +513,7 @@ func nodeToInfo(patterns []*regexp.Regexp, n *srvpb.Node) *xpb.NodeInfo {
 }
 
 // Decorations implements part of the xrefs Service interface.
-func (t *tableImpl) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*xpb.DecorationsReply, error) {
+func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*xpb.DecorationsReply, error) {
 	if req.GetLocation() == nil || req.GetLocation().Ticket == "" {
 		return nil, errors.New("missing location")
 	}
@@ -730,7 +730,7 @@ func decorationToReference(norm *xrefs.Normalizer, d *srvpb.FileDecorations_Deco
 }
 
 // CrossReferences implements part of the xrefs.Service interface.
-func (t *tableImpl) CrossReferences(ctx context.Context, req *xpb.CrossReferencesRequest) (*xpb.CrossReferencesReply, error) {
+func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesRequest) (*xpb.CrossReferencesReply, error) {
 	tickets, err := xrefs.FixTickets(req.Ticket)
 	if err != nil {
 		return nil, err
@@ -1059,6 +1059,6 @@ func p2p(p *cpb.Point) *xpb.Location_Point {
 }
 
 // Callers implements part of the xrefs Service interface.
-func (t *tableImpl) Documentation(ctx context.Context, req *xpb.DocumentationRequest) (*xpb.DocumentationReply, error) {
+func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest) (*xpb.DocumentationReply, error) {
 	return xrefs.SlowDocumentation(ctx, t, req)
 }
