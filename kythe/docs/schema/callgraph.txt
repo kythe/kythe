@@ -20,7 +20,7 @@ Callgraphs
 :priority: 999
 
 The Kythe graph contains information about callable objects like
-link:schema.html#function[functions] and link:schema.html#refcall[ref/call]
+link:./#function[functions] and link:./#refcall[ref/call]
 edges that target them. This information can be used to satisfy queries about
 the locations at which different functions are called:
 
@@ -59,7 +59,7 @@ overrides.
 == Forward declarations
 
 A call made using a forward declaration may not always `ref/call` the definition
-that link:schema.html#completes[completes] that declaration. This allows the
+that link:./#completes[completes] that declaration. This allows the
 Kythe graph to model a set of programs (where different programs link against
 different implementations for the same declaration) rather than a single program
 (where linking different implementations in this way would result in undefined
