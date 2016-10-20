@@ -1319,7 +1319,26 @@ bool IndexerASTVisitor::VisitUnaryExprOrTypeTraitExpr(
 }
 
 bool IndexerASTVisitor::VisitDeclRefExpr(const clang::DeclRefExpr *DRE) {
-  return VisitDeclRefOrIvarRefExpr(DRE, DRE->getDecl(), DRE->getLocation());
+  if (!VisitDeclRefOrIvarRefExpr(DRE, DRE->getDecl(), DRE->getLocation())) {
+    return false;
+  }
+  if (DRE->hasQualifier()) {
+    VisitNestedNameSpecifierLoc(DRE->getQualifierLoc());
+  }
+  return true;
+}
+
+void IndexerASTVisitor::VisitNestedNameSpecifierLoc(
+    clang::NestedNameSpecifierLoc NNSL) {
+  while (NNSL) {
+    NestedNameSpecifier *NNS = NNSL.getNestedNameSpecifier();
+    if (NNS->getKind() != NestedNameSpecifier::TypeSpec &&
+        NNS->getKind() != NestedNameSpecifier::TypeSpecWithTemplate)
+      break;
+    BuildNodeIdForType(NNSL.getTypeLoc(), NNS->getAsType(),
+                       IndexerASTVisitor::EmitRanges::Yes);
+    NNSL = NNSL.getPrefix();
+  }
 }
 
 // Use FoundDecl to get to template defs; use getDecl to get to template
@@ -1356,8 +1375,6 @@ bool IndexerASTVisitor::VisitDeclRefOrIvarRefExpr(
       }
     }
   }
-
-  // TODO(zarko): types (if DRE->hasQualifier()...)
   return true;
 }
 
@@ -3685,16 +3702,7 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
                             EmitRanges);
     // Add anchors for parts of the NestedNameSpecifier.
     if (EmitRanges == IndexerASTVisitor::EmitRanges::Yes) {
-      NestedNameSpecifierLoc NNSLoc = T.getQualifierLoc();
-      while (NNSLoc) {
-        NestedNameSpecifier *NNS = NNSLoc.getNestedNameSpecifier();
-        if (NNS->getKind() != NestedNameSpecifier::TypeSpec &&
-            NNS->getKind() != NestedNameSpecifier::TypeSpecWithTemplate)
-          break;
-        BuildNodeIdForType(NNSLoc.getTypeLoc(), NNS->getAsType(),
-                           IndexerASTVisitor::EmitRanges::Yes);
-        NNSLoc = NNSLoc.getPrefix();
-      }
+      VisitNestedNameSpecifierLoc(T.getQualifierLoc());
     }
     // Don't link 'struct'.
     EmitRanges = InEmitRanges = IndexerASTVisitor::EmitRanges::No;

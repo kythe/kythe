@@ -823,6 +823,10 @@ private:
 
   void LogErrorWithASTDump(const std::string &msg, const clang::Decl *Decl);
 
+  /// \brief Mark each node of `NNSL` as a reference.
+  /// \param NNSL the nested name specifier to visit.
+  void VisitNestedNameSpecifierLoc(clang::NestedNameSpecifierLoc NNSL);
+
   /// \brief The current context for constructing `GraphObserver::Range`s.
   ///
   /// This is used whenever we enter a context where a section of source

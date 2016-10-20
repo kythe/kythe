@@ -1178,6 +1178,12 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "rec_nested_name",
+    srcs = ["rec/rec_nested_name.cc"],
+    tags = ["rec"],
+)
+
+cxx_indexer_test(
     name = "rec_override",
     srcs = ["rec/rec_override.cc"],
     tags = ["rec"],
@@ -1573,6 +1579,12 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "template_instance_type_from_class",
     srcs = ["template/template_instance_type_from_class.cc"],
+    tags = ["template"],
+)
+
+cxx_indexer_test(
+    name = "template_nested_name",
+    srcs = ["template/template_nested_name.cc"],
     tags = ["template"],
 )
 
