@@ -52,9 +52,16 @@ def _genproto_impl(ctx):
     if src.path.startswith(standard_proto_path):
       arguments += ["--proto_path=" + standard_proto_path]
       break
+  if ctx.attr.emit_metadata:
+    outputs += [ctx.outputs.descriptor]
+    arguments += ["-o" + ctx.outputs.descriptor.path, "--include_imports", "--include_source_info"]
   if ctx.attr.gen_cc:
     outputs += [ctx.outputs.cc_hdr, ctx.outputs.cc_src]
-    arguments += ["--cpp_out=" + ctx.configuration.genfiles_dir.path]
+    metadata_args = ""
+    if ctx.attr.emit_metadata:
+      metadata_args = "annotate_headers=1,annotation_pragma_name=kythe_metadata,annotation_guard_name=KYTHE_IS_RUNNING:"
+      outputs += [ctx.outputs.cc_meta]
+    arguments += ["--cpp_out=" + metadata_args + ctx.configuration.genfiles_dir.path]
   if ctx.attr.gen_java:
     if ctx.outputs.java_src.path.endswith(".srcjar"):
       srcjar = ctx.new_file(ctx.outputs.java_src.basename[:-6] + "jar")
@@ -123,6 +130,7 @@ _genproto_attrs = {
         providers = ["proto_src"],
     ),
     "has_services": attr.bool(),
+    "emit_metadata": attr.bool(),
     "gofast": attr.bool(),
     "_protoc": attr.label(
         default = Label("//third_party/proto:protoc"),
@@ -154,9 +162,17 @@ _genproto_attrs = {
     "gen_go": attr.bool(),
 }
 
-def _genproto_outputs(gen_cc, gen_go, gen_java):
+def _genproto_outputs(gen_cc, gen_go, gen_java, emit_metadata):
   outputs = {}
+  if emit_metadata:
+    outputs += {
+        "descriptor": "%{src}.descriptor",
+    }
   if gen_cc:
+    if emit_metadata:
+      outputs += {
+          "cc_meta": "%{src}.pb.h.meta"
+      }
     outputs += {
         "cc_hdr": "%{src}.pb.h",
         "cc_src": "%{src}.pb.cc"
@@ -181,7 +197,7 @@ genproto = rule(
 def proto_library(name, srcs, deps=[], visibility=None,
                   has_services=False,
                   java_api_version=0, go_api_version=0, cc_api_version=0,
-                  gofast=True):
+                  emit_metadata=False, gofast=True):
   if java_api_version not in (None, 0, 2):
     fail("java_api_version must be 2 if present")
   if go_api_version not in (None, 0, 2):
@@ -196,6 +212,7 @@ def proto_library(name, srcs, deps=[], visibility=None,
                        gen_java=bool(java_api_version),
                        gen_go=bool(go_api_version),
                        gen_cc=bool(cc_api_version),
+                       emit_metadata=emit_metadata,
                        gofast=gofast)
 
   # TODO(shahms): These should probably not be separate libraries, but

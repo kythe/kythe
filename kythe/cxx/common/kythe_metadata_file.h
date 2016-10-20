@@ -61,6 +61,13 @@ class MetadataFile {
   std::multimap<unsigned, Rule> rules_;
 };
 
+/// \brief Provides interested MetadataSupport classes with the ability to
+/// look up VNames for arbitrary required inputs (including metadata files).
+/// \return true and merges `path`'s VName into `out` on success; false on
+/// failure.
+using VNameLookup =
+    std::function<bool(const std::string &path, proto::VName *out)>;
+
 /// \brief Converts from arbitrary metadata formats to those supported by Kythe.
 ///
 /// Some metadata producers may be unable to directly generate Kythe metadata.
@@ -78,6 +85,9 @@ class MetadataSupport {
       const std::string &filename, const llvm::MemoryBuffer *buffer) {
     return nullptr;
   }
+
+  /// \brief Use `lookup` when generating VNames (if necessary).
+  virtual void UseVNameLookup(VNameLookup lookup) {}
 };
 
 /// \brief A collection of metadata support implementations.

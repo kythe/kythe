@@ -51,6 +51,12 @@ class IndexVFS : public clang::vfs::FileSystem {
   /// \param merge_with The `VName` to copy the vname onto.
   /// \return true if a match was found; false otherwise.
   bool get_vname(const clang::FileEntry *entry, proto::VName *merge_with);
+  /// \brief Returns the vname associated with some `path`.
+  /// \param path The path to look up.
+  /// \param merge_with The `VName` to copy the vname onto.
+  /// \return true if a match was found; false otherwise.
+  bool get_vname(const llvm::StringRef &path, proto::VName *merge_with);
+
   /// \brief Returns a string representation of `uid` for error messages.
   std::string get_debug_uid_string(const llvm::sys::fs::UniqueID &uid);
   const std::string &working_directory() const { return working_directory_; }

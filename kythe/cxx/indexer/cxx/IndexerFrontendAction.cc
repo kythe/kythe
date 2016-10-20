@@ -135,6 +135,14 @@ std::string IndexCompilationUnit(const proto::CompilationUnit &Unit,
       }
     }
   }
+  if (MetaSupports != nullptr) {
+    for (auto &support : *MetaSupports) {
+      support->UseVNameLookup(
+          [VFS](const std::string &path, proto::VName *out) {
+            return VFS->get_vname(path, out);
+          });
+    }
+  }
   std::unique_ptr<IndexerFrontendAction> Action(
       new IndexerFrontendAction(&Observer, HSIValid ? &HSI : nullptr));
   Action->setIgnoreUnimplemented(Options.UnimplementedBehavior);
@@ -159,7 +167,6 @@ std::string IndexCompilationUnit(const proto::CompilationUnit &Unit,
   if (!Invocation.run()) {
     return "Errors during indexing.";
   }
-
   return "";
 }
 

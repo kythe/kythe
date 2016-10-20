@@ -56,6 +56,7 @@ cc_library(
         "kythe_metadata_file.cc",
         "kythe_uri.cc",
         "path_utils.cc",
+        "protobuf_metadata_file.cc",
     ],
     hdrs = [
         "CommandLineUtils.h",
@@ -65,6 +66,7 @@ cc_library(
         "kythe_uri.h",
         "path_utils.h",
         "proto_conversions.h",
+        "protobuf_metadata_file.h",
         "vname_ordering.h",
     ],
     copts = [
@@ -83,6 +85,7 @@ cc_library(
         "//kythe/proto:storage_proto_cc",
         "//third_party/llvm",
         "//third_party/proto:protobuf",
+        "//third_party/proto:cc_wkt_protos",
         "//third_party/rapidjson",
         "//third_party/zlib",
         "@com_github_gflags_gflags//:gflags",

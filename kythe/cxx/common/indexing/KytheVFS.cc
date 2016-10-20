@@ -18,9 +18,9 @@
 
 #include "kythe/cxx/common/proto_conversions.h"
 
-#include "llvm/Support/Path.h"
 #include "llvm/Support/Errc.h"
 #include "llvm/Support/FileSystem.h"
+#include "llvm/Support/Path.h"
 
 namespace kythe {
 
@@ -60,6 +60,18 @@ llvm::ErrorOr<clang::vfs::Status> IndexVFS::status(const llvm::Twine &path) {
     return record->status;
   }
   return make_error_code(llvm::errc::no_such_file_or_directory);
+}
+
+bool IndexVFS::get_vname(const llvm::StringRef &path, proto::VName *vname) {
+  if (FileRecord *record =
+          FileRecordForPath(path, BehaviorOnMissing::kReturnError, 0)) {
+    if (record->status.getType() == llvm::sys::fs::file_type::regular_file &&
+        record->has_vname) {
+      *vname = record->vname;
+      return true;
+    }
+  }
+  return false;
 }
 
 llvm::ErrorOr<std::unique_ptr<clang::vfs::File>> IndexVFS::openFileForRead(
@@ -144,10 +156,10 @@ IndexVFS::FileRecord *IndexVFS::FileRecordForPathRoot(const llvm::Twine &path,
     return nullptr;
   } else {
     name_record = new FileRecord(
-        {clang::vfs::Status(
-             root_name, clang::vfs::getNextVirtualUniqueID(),
-             llvm::sys::TimeValue(), 0, 0, 0,
-             llvm::sys::fs::file_type::directory_file, llvm::sys::fs::all_read),
+        {clang::vfs::Status(root_name, clang::vfs::getNextVirtualUniqueID(),
+                            llvm::sys::TimeValue(), 0, 0, 0,
+                            llvm::sys::fs::file_type::directory_file,
+                            llvm::sys::fs::all_read),
          false, root_name});
     root_name_to_root_map_[root_name] = name_record;
     uid_to_record_map_[PairFromUid(name_record->status.getUniqueID())] =
@@ -251,9 +263,9 @@ IndexVFS::FileRecord *IndexVFS::AllocOrReturnFileRecord(
   llvm::SmallString<1024> out_path(llvm::StringRef(parent->status.getName()));
   llvm::sys::path::append(out_path, label);
   FileRecord *new_record = new FileRecord{
-      clang::vfs::Status(
-          out_path, clang::vfs::getNextVirtualUniqueID(),
-          llvm::sys::TimeValue(), 0, 0, size, type, llvm::sys::fs::all_read),
+      clang::vfs::Status(out_path, clang::vfs::getNextVirtualUniqueID(),
+                         llvm::sys::TimeValue(), 0, 0, size, type,
+                         llvm::sys::fs::all_read),
       false, label};
   parent->children.push_back(new_record);
   uid_to_record_map_[PairFromUid(new_record->status.getUniqueID())] =
@@ -262,4 +274,3 @@ IndexVFS::FileRecord *IndexVFS::AllocOrReturnFileRecord(
 }
 
 }  // namespace kythe
-

@@ -26,6 +26,7 @@
 #include "gflags/gflags.h"
 #include "google/protobuf/stubs/common.h"
 #include "kythe/cxx/common/indexing/frontend.h"
+#include "kythe/cxx/common/protobuf_metadata_file.h"
 #include "kythe/cxx/indexer/cxx/IndexerFrontendAction.h"
 
 DEFINE_bool(index_template_instantiations, true,
@@ -71,6 +72,7 @@ int main(int argc, char *argv[]) {
   }
 
   kythe::MetadataSupports meta_supports;
+  meta_supports.push_back(llvm::make_unique<ProtobufMetadataSupport>());
   meta_supports.push_back(llvm::make_unique<KytheMetadataSupport>());
 
   std::string result = IndexCompilationUnit(
