@@ -20,9 +20,9 @@
 
 #include "gflags/gflags.h"
 #include "glog/logging.h"
+#include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
-#include "google/protobuf/io/coded_stream.h"
 
 #include "kythe/proto/storage.pb.h"
 
@@ -84,15 +84,17 @@ Example:
   kythe::proto::Entry entry;
   google::protobuf::uint32 byte_size;
   google::protobuf::io::FileInputStream raw_input(STDIN_FILENO);
-  google::protobuf::io::CodedInputStream coded_input(&raw_input);
-  coded_input.SetTotalBytesLimit(INT_MAX, -1);
-  while (coded_input.ReadVarint32(&byte_size)) {
+  for (;;) {
+    google::protobuf::io::CodedInputStream coded_input(&raw_input);
+    coded_input.SetTotalBytesLimit(INT_MAX, -1);
+    if (!coded_input.ReadVarint32(&byte_size)) {
+      break;
+    }
     auto limit = coded_input.PushLimit(byte_size);
     if (!entry.ParseFromCodedStream(&coded_input)) {
       fprintf(stderr, "Error reading around fact %zu\n", facts);
       return 1;
     }
-    coded_input.PopLimit(limit);
     if (FLAGS_show_protos) {
       entry.PrintDebugString();
     }
