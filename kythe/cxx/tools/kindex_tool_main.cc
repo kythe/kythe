@@ -57,12 +57,16 @@ static void DumpIndexFile(const std::string& path) {
   CHECK_GE(in_fd, 0) << "Couldn't open input file " << path;
   FileInputStream file_input_stream(in_fd);
   GzipInputStream gzip_input_stream(&file_input_stream);
-  CodedInputStream coded_input_stream(&gzip_input_stream);
   google::protobuf::uint32 byte_size;
   bool decoded_unit = false;
   std::map<google::protobuf::string, size_t> hash_table;
-  while (coded_input_stream.ReadVarint32(&byte_size)) {
-    auto limit = coded_input_stream.PushLimit(byte_size);
+  for (;;) {
+    CodedInputStream coded_input_stream(&gzip_input_stream);
+    coded_input_stream.SetTotalBytesLimit(INT_MAX, -1);
+    if (!coded_input_stream.ReadVarint32(&byte_size)) {
+      break;
+    }
+    coded_input_stream.PushLimit(byte_size);
     if (!decoded_unit) {
       kythe::proto::CompilationUnit unit;
       CHECK(unit.ParseFromCodedStream(&coded_input_stream));
@@ -103,7 +107,6 @@ static void DumpIndexFile(const std::string& path) {
       CHECK(google::protobuf::TextFormat::Print(content, &file_output_stream));
       CHECK(file_output_stream.Close());
     }
-    coded_input_stream.PopLimit(limit);
   }
   CHECK(file_input_stream.Close());
 }

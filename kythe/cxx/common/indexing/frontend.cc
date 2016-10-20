@@ -71,18 +71,19 @@ void DecodeStaticClaimTable(const std::string &path,
   CHECK_GE(fd, 0) << "Couldn't open input file " << path;
   FileInputStream file_input_stream(fd);
   GzipInputStream gzip_input_stream(&file_input_stream);
-  CodedInputStream coded_input_stream(&gzip_input_stream);
   google::protobuf::uint32 byte_size;
-  // Silence a warning about input size.
-  coded_input_stream.SetTotalBytesLimit(INT_MAX, -1);
-  while (coded_input_stream.ReadVarint32(&byte_size)) {
-    auto limit = coded_input_stream.PushLimit(byte_size);
+  for (;;) {
+    CodedInputStream coded_input_stream(&gzip_input_stream);
+    coded_input_stream.SetTotalBytesLimit(INT_MAX, -1);
+    if (!coded_input_stream.ReadVarint32(&byte_size)) {
+      break;
+    }
+    coded_input_stream.PushLimit(byte_size);
     kythe::proto::ClaimAssignment claim;
     CHECK(claim.ParseFromCodedStream(&coded_input_stream));
     // NB: We don't filter on compilation unit here. A dependency has three
     // static states (wrt some CU): unknown, owned by CU, owned by another CU.
     client->AssignClaim(claim.dependency_v_name(), claim.compilation_v_name());
-    coded_input_stream.PopLimit(limit);
   }
   close(fd);
 }
@@ -99,12 +100,14 @@ void DecodeIndexFile(const std::string &path,
   CHECK_GE(fd, 0) << "Couldn't open input file " << path;
   FileInputStream file_input_stream(fd);
   GzipInputStream gzip_input_stream(&file_input_stream);
-  CodedInputStream coded_input_stream(&gzip_input_stream);
-  // Silence a warning about input size.
-  coded_input_stream.SetTotalBytesLimit(INT_MAX, -1);
   google::protobuf::uint32 byte_size;
-  while (coded_input_stream.ReadVarint32(&byte_size)) {
-    auto limit = coded_input_stream.PushLimit(byte_size);
+  for (;;) {
+    CodedInputStream coded_input_stream(&gzip_input_stream);
+    coded_input_stream.SetTotalBytesLimit(INT_MAX, -1);
+    if (!coded_input_stream.ReadVarint32(&byte_size)) {
+      break;
+    }
+    coded_input_stream.PushLimit(byte_size);
     if (unit) {
       CHECK(unit->ParseFromCodedStream(&coded_input_stream));
       unit = nullptr;
@@ -114,7 +117,6 @@ void DecodeIndexFile(const std::string &path,
       CHECK(content.has_info());
       virtual_files->push_back(std::move(content));
     }
-    coded_input_stream.PopLimit(limit);
   }
   CHECK(!unit) << "Never saw a CompilationUnit.";
   close(fd);

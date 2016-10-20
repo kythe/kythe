@@ -32,8 +32,8 @@
 // making claims on the paths you pass in as well as all of the data files
 // on which they depend.
 
-#include <sys/stat.h>
 #include <fcntl.h>
+#include <sys/stat.h>
 
 #include <set>
 
@@ -62,14 +62,17 @@ void ReadGzippedDelimitedProtoSequence(const std::string &path, ClosureType f) {
                   << ::strerror(errno);
   io::FileInputStream file_input_stream(fd);
   io::GzipInputStream gzip_input_stream(&file_input_stream);
-  io::CodedInputStream coded_input_stream(&gzip_input_stream);
   google::protobuf::uint32 byte_size;
-  while (coded_input_stream.ReadVarint32(&byte_size)) {
-    auto limit = coded_input_stream.PushLimit(byte_size);
+  for (;;) {
+    io::CodedInputStream coded_input_stream(&gzip_input_stream);
+    coded_input_stream.SetTotalBytesLimit(INT_MAX, -1);
+    if (!coded_input_stream.ReadVarint32(&byte_size)) {
+      break;
+    }
+    coded_input_stream.PushLimit(byte_size);
     ProtoType proto;
     CHECK(proto.ParseFromCodedStream(&coded_input_stream));
     f(proto);
-    coded_input_stream.PopLimit(limit);
   }
   ::close(fd);
 }
