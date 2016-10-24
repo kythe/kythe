@@ -185,8 +185,8 @@ new_git_repository(
 new_git_repository(
     name = "go_x_tools",
     build_file = "third_party/go/x_tools.BUILD",
-    commit = "f2932db7c0155d2ea19373270a3fa937349ac375",
-    remote = "https://github.com/golang/tools.git",
+    commit = "b5ed9db83fbf41b937824795876668fc8d31335a",
+    remote = "https://go.googlesource.com/tools",
 )
 
 new_git_repository(

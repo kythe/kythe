@@ -15,7 +15,7 @@ go_library(
         "//kythe/proto:storage_proto_go",
         "@go_protobuf//:proto",
         "@go_x_net//:context",
-        "@go_x_tools//:go/gcimporter15",
+        "@go_x_tools//:go/gcexportdata",
     ],
 )
 

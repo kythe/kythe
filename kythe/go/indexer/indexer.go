@@ -35,7 +35,6 @@ package indexer
 // TODO(fromberger): Connect the back end of the indexer.
 
 import (
-	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
@@ -48,7 +47,7 @@ import (
 	"sort"
 
 	"github.com/golang/protobuf/proto"
-	gcimporter "golang.org/x/tools/go/gcimporter15"
+	"golang.org/x/tools/go/gcexportdata"
 
 	"kythe.io/kythe/go/extractors/govname"
 
@@ -148,8 +147,8 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 		if ri.VName == nil {
 			return nil, fmt.Errorf("missing vname for %q", fpath)
 		}
-		hdr := bufio.NewReader(bytes.NewReader(data))
-		if _, err := gcimporter.FindExportData(hdr); err != nil {
+		r, err := gcexportdata.NewReader(bytes.NewReader(data))
+		if err != nil {
 			return nil, fmt.Errorf("scanning export data in %q: %v", fpath, err)
 		}
 
@@ -159,7 +158,8 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 		}
 		imap[ipath] = ri.VName
 
-		if _, err := gcimporter.ImportData(deps, fpath, ipath, hdr); err != nil {
+		// Populate deps with package ipath and its prerequisites.
+		if _, err := gcexportdata.Read(r, fset, deps, ipath); err != nil {
 			return nil, fmt.Errorf("importing %q: %v", ipath, err)
 		}
 	}

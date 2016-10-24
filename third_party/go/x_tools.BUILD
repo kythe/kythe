@@ -12,6 +12,12 @@ external_go_package(
 )
 
 external_go_package(
+    name = "go/gcexportdata",
+    base_pkg = "golang.org/x/tools",
+    deps = [":go/gcimporter15"],
+)
+
+external_go_package(
     name = "go/gcimporter15",
     base_pkg = "golang.org/x/tools",
     exclude_srcs = [
