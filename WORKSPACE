@@ -29,11 +29,12 @@ cc_system_package(
     envvar = "MEMCACHED_HOME",
 )
 
-new_git_repository(
+new_http_archive(
     name = "com_github_google_googletest",
     build_file = "third_party/googletest.BUILD",
-    remote = "https://github.com/google/googletest.git",
-    tag = "release-1.7.0",
+    sha256 = "f3ed3b58511efd272eb074a3a6d6fb79d7c2e6a0e374323d1e6bcbcc1ef141bf",
+    strip_prefix = "googletest-release-1.8.0/googletest",
+    url = "https://github.com/google/googletest/archive/release-1.8.0.zip",
 )
 
 new_git_repository(
