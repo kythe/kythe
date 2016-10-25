@@ -1,8 +1,19 @@
----
-title: Kythe's Command-line Tool
-author: Cody Schroeder
-layout: post
----
+// Copyright 2015 Google Inc. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+Kythe's Command-line Tool
+=========================
+:Author: Cody Schroeder
 
 Every good interface deserves a good command-line tool.
 
@@ -12,8 +23,8 @@ Along with the sample web UI, Kythe also provides a basic command-line tool for
 the xrefs, filetree, and search interfaces.  The Kythe tool can use serving
 tables directly or communicate with a remote API service.  By default, it talks
 to the API at https://xrefs-dot-kythe-repo.appspot.com/ which serves a
-recentfootnote:[The serving data for the sample web UI is currently updated
-manually which can lead to stale data over time.] index of Kythe's own sources.
+recent index of Kythe's own sources. (The serving data for the sample web UI is
+currently updated manually which can lead to stale data over time.)
 
 All of the information surfaced by the sample web UI, and *more*, can be
 retrieved with the Kythe command-line tool.  It's simply a wrapper around the
@@ -32,7 +43,6 @@ $ alias kythe="$PWD/bazel-bin/kythe/go/serving/tools/kythe"
 $ kythe help --short
 ----
 
-[role=output]
 .Output
 ----
 Usage: kythe <global-flags> <command> <flags>
@@ -66,9 +76,9 @@ source [--span span] <file-ticket>
 ----
 
 Even with these _basic_ commands, one can build sophisticated queries and gather
-rich data about Kythe indexed source code.footnote:[Special attention should be
+rich data about Kythe indexed source code. (Special attention should be
 made that this tool is built to be *very simple*.  It is entirely meant to be
-built upon to provide better abstractions for clients.]  The tool can browse all
+built upon to provide better abstractions for clients.)  The tool can browse all
 known node facts, edges, directories, files, and file anchor references.  By
 combining these commands, one can begin to uncover larger structures within the
 graph and then use that knowledge to better maintain, refactor, and otherwise
@@ -94,7 +104,6 @@ print_classes kythe/java/com/google/devtools/kythe/analyzers/java/
 print_classes kythe/cxx/tools/fyi/
 ----
 
-[role=output]
 .Output
 ----
 com.google.devtools.kythe.analyzers.java.JavaEntrySets
@@ -135,7 +144,6 @@ $ kythe ls --uris kythe://kythe?path=kythe/java/com/google/devtools/kythe/analyz
   | grep EntrySet.java
 ----
 
-[role=output]
 .Output
 ----
 kythe://kythe?lang=java?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java#03e35c4ead4f300d85f196e988d1d0d649577c178b8d2acd38c9762693afdb1e
@@ -158,7 +166,6 @@ $ kythe refs --span 17-25 "$ticket" | column -t
 $ kythe source --span 17-25 "$ticket"
 ----
 
-[role=output]
 .Output
 ----
 /kythe/edge/ref  17:8-17:48   package    kythe:?lang=java#23d9461e1b9e98e148846d9f763afea35ec1ff1fd5a8b2a53ac6d0a3b955fed4
@@ -189,7 +196,6 @@ $ kythe refs "$ticket" \
   | column -t
 ----
 
-[role=output]
 .Output
 ----
 /kythe/edge/defines  18:8-18:38   macro     kythe://kythe?lang=c%2B%2B?path=kythe/cxx/common/path_utils.h#KYTHE_CXX_COMMON_PATH_UTILS_H_%23m%40662%23kythe%23kythe%2Fcxx%2Fcommon%2Fpath_utils.h
@@ -223,7 +229,6 @@ $ kythe edges --targets_only --kinds %/kythe/edge/childof "$ticket" \
   | parallel python -c '"import urllib, sys; print urllib.unquote(sys.argv[1])"'
 ----
 
-[role=output]
 .Output
 ----
 kythe://kythe?lang=java?path=kythe/java/com/google/devtools/kythe/analyzers/base/EntrySet.java#03956569bc7dc10ac1e5a0a0741d96ed2e53c530d12bd612b018dd1b295678ca

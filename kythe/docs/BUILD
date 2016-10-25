@@ -36,3 +36,18 @@ asciidoc(
     name = "kythe-compilation-database",
     src = "kythe-compilation-database.txt",
 )
+
+asciidoc(
+    name = "exploring-kythe-sample-web-ui",
+    src = "exploring-kythe-sample-web-ui.txt",
+)
+
+asciidoc(
+    name = "kythes-command-line-tool",
+    src = "kythes-command-line-tool.txt",
+)
+
+asciidoc(
+    name = "modeling-libraries",
+    src = "modeling-libraries.txt",
+)
