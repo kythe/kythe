@@ -16,3 +16,8 @@ asciidoc_with_verifier(
     name = "verifierstyle",
     src = "verifierstyle.txt",
 )
+
+asciidoc_with_verifier(
+    name = "indexing-protobuf",
+    src = "indexing-protobuf.txt",
+)
