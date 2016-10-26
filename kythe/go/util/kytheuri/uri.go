@@ -51,7 +51,7 @@ func (u *URI) VName() *spb.VName {
 		Signature: u.Signature,
 		Corpus:    u.Corpus,
 		Root:      u.Root,
-		Path:      u.Path,
+		Path:      cleanPath(u.Path),
 		Language:  u.Language,
 	}
 }
@@ -71,11 +71,6 @@ func (u *URI) String() string {
 	buf.WriteString(empty)
 	if c := u.Corpus; c != "" {
 		buf.WriteString("//")
-		// If the corpus has a path-like tail, separate that into the path
-		// component of the URL.
-		if i := strings.Index(c, "/"); i > 0 {
-			c = path.Join(c[:i], path.Clean(c[i:]))
-		}
 		buf.WriteString(paths.escape(c))
 	}
 
@@ -85,7 +80,7 @@ func (u *URI) String() string {
 	if s := u.Language; s != "" {
 		query = append(query, "lang="+all.escape(s))
 	}
-	if s := u.Path; s != "" {
+	if s := cleanPath(u.Path); s != "" {
 		query = append(query, "path="+paths.escape(s))
 	}
 	if s := u.Root; s != "" {
@@ -124,7 +119,7 @@ func FromVName(v *spb.VName) *URI {
 // cleanPath is as path.Clean, but leaves "" alone.
 func cleanPath(s string) string {
 	if s == "" {
-		return ""
+		return s
 	}
 	return path.Clean(s)
 }
@@ -189,7 +184,7 @@ func Parse(s string) (*URI, error) {
 	}
 	u := &URI{
 		Signature: sig,
-		Corpus:    cleanPath(corpus),
+		Corpus:    corpus,
 	}
 
 	// If there are any attributes, parse them.  We allow valid attributes to

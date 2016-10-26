@@ -200,10 +200,12 @@ The initial definition of a VName will include the following 5 fields:
    +
    +
    _Note:_ It is possible, though not recommended, to use a local directory
-   path as a corpus label. In such cases the label should also be _cleaned_ as
-   described under *Path* below. However, a path label will generally not work
-   well with corpora defined elsewhere, so avoid this formulation unless you
-   don't require your data to interoperate with other corpora.
+   path as a corpus label. For storage purposes, corpus labels are _not_
+   treated like paths (in particular they are not "cleaned" or otherwise
+   lexically normalized as described under *Path* below). Moreover, a literal
+   path as a corpus label will generally not work well with corpora defined
+   elsewhere, so avoid this formulation unless you don't require your data to
+   interoperate with other corpora.
 
  * *Root.* A corpus-specific root label, typically a directory path or project
    identifier, denoting a distinct subset of the corpus. This may also be used

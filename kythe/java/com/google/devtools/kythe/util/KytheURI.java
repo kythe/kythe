@@ -23,15 +23,17 @@ import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.base.Strings.nullToEmpty;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Splitter;
 import com.google.devtools.kythe.proto.Storage.VName;
 import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 
 /**
  * {@link URI}/{@link String} realization of a {@link VName}.
  *
- * Specification: //kythe/util/go/kytheuri/kythe-uri-spec.txt
+ * <p>Specification: //kythe/util/go/kytheuri/kythe-uri-spec.txt
  */
 public class KytheURI implements Serializable {
   private static final long serialVersionUID = 2726281203803801095L;
@@ -99,7 +101,7 @@ public class KytheURI implements Serializable {
             .skipNulls()
             .join(
                 attr("lang", vName.getLanguage()),
-                attr("path", vName.getPath()),
+                attr("path", cleanPath(vName.getPath())),
                 attr("root", vName.getRoot()));
     String corpus = vName.getCorpus();
     String authority = corpus, path = null;
@@ -109,12 +111,11 @@ public class KytheURI implements Serializable {
       path = corpus.substring(slash);
     }
     return new URI(
-            SCHEME_LABEL,
-            emptyToNull(authority),
-            path,
-            emptyToNull(query),
-            emptyToNull(vName.getSignature()))
-        .normalize();
+        SCHEME_LABEL,
+        emptyToNull(authority),
+        path,
+        emptyToNull(query),
+        emptyToNull(vName.getSignature()));
   }
 
   /** Returns an equivalent {@link VName}. */
@@ -160,7 +161,7 @@ public class KytheURI implements Serializable {
       return EMPTY;
     }
 
-    URI uri = new URI(str).normalize();
+    URI uri = new URI(str);
     checkArgument(
         SCHEME_LABEL.equals(uri.getScheme()) || isNullOrEmpty(uri.getScheme()),
         "URI Scheme must be " + SCHEME_LABEL + "; was " + uri.getScheme());
@@ -179,7 +180,7 @@ public class KytheURI implements Serializable {
             root = keyValue[1];
             break;
           case "path":
-            path = keyValue[1];
+            path = cleanPath(keyValue[1]);
             break;
           default:
             throw new URISyntaxException(str, "Invalid query attribute: " + keyValue[0]);
@@ -234,5 +235,25 @@ public class KytheURI implements Serializable {
 
   private static String attr(String name, String value) {
     return value.isEmpty() ? null : name + "=" + value;
+  }
+
+  /**
+   * Returns a lexically cleaned path, with repeated slashes and "." path
+   * components removed, and ".." path components rewound as far as possible
+   * without touching the filesystem.
+   */
+  private static String cleanPath(String path) {
+    ArrayList<String> clean = new ArrayList<String>();
+    for (String part : Splitter.on('/').split(path)) {
+      if (part.isEmpty() || part.equals(".")) {
+        continue; // skip empty path components and "here" markers.
+      } else if (part.equals("..") && clean.size() > 0) {
+        clean.remove(clean.size() - 1);
+        continue; // back off if possible for "up" (..) markers.
+      } else {
+        clean.add(part);
+      }
+    }
+    return Joiner.on('/').join(clean);
   }
 }

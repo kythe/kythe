@@ -87,13 +87,18 @@ public class KytheURITest extends TestCase {
         "kythe://libstdc%2B%2B?lang=c%2B%2B?path=bits/basic_string.h?root=/usr/include/c%2B%2B/4.8";
     checkToString(hairyUri, hairyUri);
 
-    // Path cleaning
+    // Corpus labels are not normalized, even if they "look like" paths.
+    checkToString("kythe://corpus/name/with/path", "kythe://corpus/name/with/path");
+    checkToString("kythe://corpus/name///with//path", "kythe://corpus/name///with//path");
     checkToString(
-        "kythe://corpus/name/with/path",
-        "kythe://corpus/name/with/path",
-        "kythe://corpus/name///with//path",
-        "kythe://corpus/name///with/./../with/path");
-    checkToString("kythe://a/c#sig", "kythe://a/b/../c#sig", "kythe://a/./d/.././c#sig");
+        "kythe://corpus/name///with/./../with/path", "kythe://corpus/name///with/./../with/path");
+    checkToString("kythe://a/c#sig", "kythe://a/c#sig");
+    checkToString("kythe://a/b/../c#sig", "kythe://a/b/../c#sig");
+    checkToString("kythe://a/./d/.././c#sig", "kythe://a/./d/.././c#sig");
+
+    // Paths are cleaned.
+    checkToString(
+        "kythe://a?path=c#sig", "kythe://a?path=b/../c#sig", "kythe://a?path=./d/.././c#sig");
   }
 
   private void checkToString(String expected, String... cases) throws URISyntaxException {
@@ -103,8 +108,7 @@ public class KytheURITest extends TestCase {
   }
 
   public void testGetters() throws URISyntaxException {
-    String
-        signature = "magic school truck",
+    String signature = "magic school truck",
         corpus = "com.crazyTown-1.20_PROTOTYPE",
         path = "usa/2.0",
         root = null,
@@ -118,8 +122,7 @@ public class KytheURITest extends TestCase {
   }
 
   public void testToVName() throws URISyntaxException {
-    String
-        signature = "magic school truck",
+    String signature = "magic school truck",
         corpus = "crazyTown",
         path = "usa/2.0",
         root = null,

@@ -79,7 +79,7 @@ TEST(KytheUri, Parse) {
       {"#sig", MakeURI().Signature("sig")},
       {"kythe:#sig", MakeURI().Signature("sig")},
       {"kythe://corpus", MakeURI().Corpus("corpus")},
-      {"kythe://corpus/", MakeURI().Corpus("corpus")},
+      {"kythe://corpus/", MakeURI().Corpus("corpus/")},
       {"kythe://corpus/with/path", MakeURI().Corpus("corpus/with/path")},
       {"//corpus/with/path", MakeURI().Corpus("corpus/with/path")},
       {"kythe:?root=R", MakeURI().Root("R")},
@@ -87,11 +87,10 @@ TEST(KytheUri, Parse) {
       {"kythe:?lang=L", MakeURI().Language("L")},
 
       // Corner cases about relative paths. NB: MakeURI() goes through VNames.
-      {"kythe://", MakeURI().Corpus("..")},
-      {"kythe:", MakeURI().Corpus("..")},
-      {"kythe:", MakeURI().Corpus("../")},
-      {"kythe://..", MakeURI().Corpus("")},
-      {"kythe://bbb", MakeURI().Corpus("aaa/../bbb")},
+      {"kythe://..", MakeURI().Corpus("..")},
+      {"kythe://../", MakeURI().Corpus("../")},
+      {"kythe://../..", MakeURI().Corpus("../..")},
+      {"kythe://a/../b//c", MakeURI().Corpus("a/../b//c")},
 
       // Multiple attributes, with permutation of order.
       {"kythe:?lang=L?root=R", MakeURI().Root("R").Language("L")},
@@ -103,6 +102,12 @@ TEST(KytheUri, Parse) {
       // Corpora with slashes.
       {"kythe:///Users/foo", MakeURI().Corpus("/Users/foo")},
       {"kythe:///", MakeURI().Corpus("/")},
+
+      // Corpus labels are not cleaned.
+      {"//a//?lang=foo?path=b/c/..",
+       MakeURI().Corpus("a//").Path("b").Language("foo")},
+      {"kythe://a/./b/..//c/#sig",
+       MakeURI().Signature("sig").Corpus("a/./b/..//c/")},
 
       // Everything.
       {"kythe://bitbucket.org/creachadair/"
@@ -133,11 +138,15 @@ TEST(KytheUri, Parse) {
 
 TEST(KytheUri, ParseErrors) {
   auto tests = {
-      "invalid corpus", "http://unsupported-scheme", "?huh=bogus+attribute+key",
+      "invalid corpus",
+      "http://unsupported-scheme",
+      "?huh=bogus+attribute+key",
       "?path=",   // empty query value
       "?root=?",  // empty query value
-      "//a/%x/bad-escaping", "kythe:///invalid-corpus?blah",
-      "/another-invalid-corpus", "random/opaque/failure",
+      "//a/%x/bad-escaping",
+      "kythe:///invalid-corpus?blah",
+      "/another-invalid-corpus",
+      "random/opaque/failure",
   };
   for (auto &test : tests) {
     auto parsed = URI::FromString(test);
@@ -148,24 +157,25 @@ TEST(KytheUri, ParseErrors) {
 TEST(KytheUri, Equality) {
   struct {
     const char *a, *b;
-  } equal[] = {// Various empty equivalencies.
-               {"", ""},
-               {"", "kythe:"},
-               {"kythe://", ""},
-               {"kythe://", "kythe:"},
+  } equal[] = {
+      // Various empty equivalencies.
+      {"", ""},
+      {"", "kythe:"},
+      {"kythe://", ""},
+      {"kythe://", "kythe:"},
 
-               // Order of attributes is normalized.
-               {"kythe:?root=R?path=P", "kythe://?path=P?root=R"},
-               {"kythe:?root=R?path=P?lang=L", "kythe://?path=P?lang=L?root=R"},
+      // Order of attributes is normalized.
+      {"kythe:?root=R?path=P", "kythe://?path=P?root=R"},
+      {"kythe:?root=R?path=P?lang=L", "kythe://?path=P?lang=L?root=R"},
 
-               // Escaping is respected.
-               {"kythe:?path=%50", "kythe://?path=P"},
-               {"kythe:?lang=%4c?path=%50", "kythe://?lang=L?path=P"},
+      // Escaping is respected.
+      {"kythe:?path=%50", "kythe://?path=P"},
+      {"kythe:?lang=%4c?path=%50", "kythe://?lang=L?path=P"},
 
-               // Paths are cleaned.
-               {"kythe://a/b/../c#sig", "kythe://a/c#sig"},
-               {"kythe://a/b/../d/./e/../../c#sig", "kythe://a/c#sig"},
-               {"//a/b/c/../d?lang=%67%6F", "kythe://a/b/d?lang=go"}};
+      // Paths are cleaned.
+      {"kythe://a?path=b/../c#sig", "kythe://a?path=c#sig"},
+      {"kythe://a?path=b/../d/./e/../../c#sig", "kythe://a?path=c#sig"},
+      {"//a?path=b/c/../d?lang=%67%6F", "kythe://a?path=b/d?lang=go"}};
   for (auto &test : equal) {
     auto a_parse = URI::FromString(test.a);
     auto b_parse = URI::FromString(test.b);
@@ -238,7 +248,7 @@ TEST(KytheUri, TwoSlashRoundTrip) {
 TEST(KytheUri, Strings) {
   constexpr char empty[] = "kythe:";
   constexpr char canonical[] = "kythe:?lang=L?path=P?root=R";
-  constexpr char cleaned[] = "kythe://a/c#sig";
+  constexpr char cleaned[] = "kythe://a?path=c#sig";
   struct {
     const char *input, *want;
   } tests[] = {// Empty forms
@@ -262,8 +272,8 @@ TEST(KytheUri, Strings) {
                {"kythe://?path=a/b", "kythe:?path=a/b"},
 
                // Path cleaning
-               {"kythe://a/b/../c#sig", cleaned},
-               {"kythe://a/./d/.././c#sig", cleaned},
+               {"kythe://a?path=b/../c#sig", cleaned},
+               {"kythe://a?path=./d/.././c#sig", cleaned},
 
                // Regression: Escape sequences in the corpus specification.
                {"kythe://libstdc%2B%2B?path=bits/"

@@ -128,7 +128,7 @@ std::string URI::ToString() const {
   }
   if (!path.empty()) {
     result.append("?path=");
-    result.append(UriEscape(UriEscapeMode::kEscapePaths, path));
+    result.append(UriEscape(UriEscapeMode::kEscapePaths, CleanPath(path)));
   }
   if (!root.empty()) {
     result.append("?root=");
@@ -158,10 +158,7 @@ static std::pair<llvm::StringRef, llvm::StringRef> SplitScheme(
   return std::make_pair(llvm::StringRef(), uri);
 }
 
-URI::URI(const kythe::proto::VName& from_vname) : vname_(from_vname) {
-  auto corpus = ToStringRef(vname_.corpus());
-  vname_.set_corpus(CleanPath(corpus));
-}
+URI::URI(const kythe::proto::VName& from_vname) : vname_(from_vname) {}
 
 bool URI::ParseString(const std::string& in_string) {
   llvm::StringRef string(in_string);
@@ -191,7 +188,7 @@ bool URI::ParseString(const std::string& in_string) {
     if (!maybe_corpus.first) {
       return false;
     }
-    corpus = CleanPath(maybe_corpus.second);
+    corpus = maybe_corpus.second;
   }
   auto maybe_sig = UriUnescape(fragment);
   if (!maybe_sig.first) {
@@ -212,7 +209,7 @@ bool URI::ParseString(const std::string& in_string) {
     } else if (name_value.first == "root") {
       vname_.set_root(maybe_value.second);
     } else if (name_value.first == "path") {
-      vname_.set_path(maybe_value.second);
+      vname_.set_path(CleanPath(maybe_value.second));
     } else {
       return false;
     }

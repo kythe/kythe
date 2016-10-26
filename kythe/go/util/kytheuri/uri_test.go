@@ -35,11 +35,18 @@ func TestParse(t *testing.T) {
 		{"kythe:", new(URI)},
 		{"kythe://", new(URI)},
 
+		// Corpus labels are not normalized, even if they "look like" paths.
+		// See T181 for discussion.
+		{"kythe://..", &URI{Corpus: ".."}},
+		{"kythe://../", &URI{Corpus: "../"}},
+		{"kythe://../..", &URI{Corpus: "../.."}},
+		{"kythe://a/../b//c", &URI{Corpus: "a/../b//c"}},
+
 		// Individual components.
 		{"#sig", &URI{Signature: "sig"}},
 		{"kythe:#sig", &URI{Signature: "sig"}},
 		{"kythe://corpus", &URI{Corpus: "corpus"}},
-		{"kythe://corpus/", &URI{Corpus: "corpus"}},
+		{"kythe://corpus/", &URI{Corpus: "corpus/"}},
 		{"kythe://corpus/with/path", &URI{Corpus: "corpus/with/path"}},
 		{"//corpus/with/path", &URI{Corpus: "corpus/with/path"}},
 		{"kythe:?root=R", &URI{Root: "R"}},
@@ -112,9 +119,13 @@ func TestEqual(t *testing.T) {
 		{"kythe:?lang=%4c?path=%50", "kythe://?lang=L?path=P"},
 
 		// Paths are cleaned.
-		{"kythe://a/b/../c#sig", "kythe://a/c#sig"},
-		{"kythe://a/b/../d/./e/../../c#sig", "kythe://a/c#sig"},
-		{"//a/b/c/../d?lang=%67%6F", "kythe://a/b/d?lang=go"},
+		{"kythe://a?path=b/../c#sig", "kythe://a?path=c#sig"},
+		{"kythe://a?path=b/../d/./e/../../c#sig", "kythe://a?path=c#sig"},
+		{"//a?path=b/c/../d?lang=%67%6F", "kythe://a?path=b/d?lang=go"},
+
+		// Corpus labels are not cleaned.
+		{"//a//?path=b/c/..?lang=foo", "kythe://a//?path=b?lang=foo"},
+		{"kythe://a/./b/..//c/#sig", "kythe://a/./b/..//c/#sig"},
 	}
 	for _, test := range eq {
 		if !Equal(test.a, test.b) {
@@ -204,7 +215,7 @@ func TestRoundTripVName(t *testing.T) {
 func TestString(t *testing.T) {
 	const empty = "kythe:"
 	const canonical = "kythe:?lang=L?path=P?root=R"
-	const cleaned = "kythe://a/c#sig"
+	const cleaned = "kythe://a?path=c#sig"
 	tests := []struct {
 		input, want string
 	}{
@@ -229,8 +240,8 @@ func TestString(t *testing.T) {
 		{"kythe://?path=a/b", "kythe:?path=a/b"},
 
 		// Path cleaning
-		{"kythe://a/b/../c#sig", cleaned},
-		{"kythe://a/./d/.././c#sig", cleaned},
+		{"kythe://a?path=b/../c#sig", cleaned},
+		{"kythe://a?path=./d/.././c#sig", cleaned},
 
 		// Regression: Escape sequences in the corpus specification.
 		{"kythe://libstdc%2B%2B?path=bits/basic_string.h?lang=c%2B%2B?root=/usr/include/c%2B%2B/4.8",
