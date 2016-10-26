@@ -8,10 +8,6 @@ load("//tools/cpp:clang_configure.bzl", "clang_configure")
 
 clang_configure()
 
-load("//tools:node_configure.bzl", "node_configure")
-
-node_configure()
-
 load("//tools/build_rules/config:system.bzl", "cc_system_package")
 
 cc_system_package(
