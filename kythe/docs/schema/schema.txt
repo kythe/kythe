@@ -153,6 +153,71 @@ Ordinals are used::
 @Deprecated public class E {}
 --------------------------------------------------------------------------------
 
+[[bounded]]
+bounded/upper or bounded/lower
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Brief description::
+  <<absvar>> A is *bounded/upper* by B when A is constrained to be a subtype
+  of B. <<absvar>> A is *bounded/lower* by B when A is constrained to be a
+  supertype of B.
+See also::
+  <<absvar>>
+Commonly arises from::
+  Type parameters
+Notes::
+  * Kythe leaves the interpretation of unbounded <<absvar>> nodes to each
+    language. For example, an <<absvar>> with no *bounded* edges in Java may be
+    assigned any subtype of Object, but no primitive type.
+  * It is possible for an <<absvar>> to have multiple bounds. For example, this
+    occurs in Java when a type parameter must implement several interfaces.
+
+[kythe,Java,"Generic type parameters can be bound."]
+--------------------------------------------------------------------------------
+package pkg;
+public class E {
+  //- @"Optional<?>" ref OptionalWild
+  //- OptionalWild.node/kind tapp
+  //- OptionalWild param.0 OptionalClass
+  //- OptionalWild param.1 Wildcard0
+  //- Wildcard0.node/kind absvar
+  //- !{ Wildcard0 bounded/upper Anything0
+  //-    Wildcard0 bounded/lower Anything1 }
+  private static void wildcard(Optional<?> o) {}
+
+  //- @"Optional<? extends String>" ref OptionalWildString
+  //- OptionalWildString.node/kind tapp
+  //- OptionalWildString param.0 OptionalClass
+  //- OptionalWildString param.1 Wildcard1
+  //- Wildcard1.node/kind absvar
+  //- Wildcard1 bounded/upper Str
+  //- @String ref Str
+  //- !{ Wildcard1 bounded/lower Anything2 }
+  private static void wildcardBound(Optional<? extends String> o) {}
+
+  //- @"Optional<? super String>" ref OptionalWildSuperString
+  //- OptionalWildSuperString.node/kind tapp
+  //- OptionalWildSuperString param.0 OptionalClass
+  //- OptionalWildSuperString param.1 WildcardSuper1
+  //- WildcardSuper1.node/kind absvar
+  //- WildcardSuper1 bounded/lower Str
+  //- !{ WildcardSuper1 bounded/upper Anything1 }
+  //- @String ref Str
+  private static void wildcardSuperBound(Optional<? super String> o) {}
+
+  //- @objAndOneIFaceBound defines/binding OIFunc
+  //- @S1 defines/binding S1Var
+  //- @List ref List
+  //- S1Var bounded/upper Obj
+  //- S1Var bounded/upper List
+  public <S1 extends Object & java.util.List> void objAndOneIFaceBound() {}
+
+}
+--------------------------------------------------------------------------------
+
+// TODO(salguarnieri) Add in Objective-C example once this feature is added to
+// the Objective-C indexer.
+
 [[childof]]
 childof
 ~~~~~~~
@@ -1799,7 +1864,7 @@ verbatim; otherwise, for each token, *format* makes the following substitutions:
 |%N,          | For each integer *N'* starting at *N* and until there is no node *M* such that *this* *param.N'* *M*,
                 for a single *M* such that *this* *param.N'* *M*, insert *format*(*M*), separating adjacent insertions
                 with a comma and a space `", "`, marking each as a parameter.
-|%[i ... %]   | Label the text between the tokens as important. Text that is marked important in constitutent signatures
+|%[i ... %]   | Label the text between the tokens as important. Text that is marked important in constituent signatures
                 loses its importance. This allows you to pick out the part of a qualified name to use as an identifier
                 when printing a signature (without including the identifiers of parent names).
 |%[p ... %]   | Label the text between the tokens as a parameter list.
@@ -2235,7 +2300,7 @@ public class E {
   //- Field.subkind field
   private final Object field = null;
 
-  //- @param defines/binding Parmeter
+  //- @param defines/binding Parameter
   //- Parameter.node/kind variable
   //- Parameter.subkind local/parameter
   public static void m(String param) throws IOException {

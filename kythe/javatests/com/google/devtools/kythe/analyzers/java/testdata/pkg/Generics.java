@@ -70,6 +70,17 @@ public class Generics<T> {
   //- OptionalWildString named vname("pkg.Generics.Optional<? extends java.lang.String>","","","","java")
   private static void wildcardBound(Optional<? extends String> o) {}
 
+  //- @"Optional<? super String>" ref OptionalWildSuperString
+  //- OptionalWildSuperString.node/kind tapp
+  //- OptionalWildSuperString param.0 OptionalClass
+  //- OptionalWildSuperString param.1 WildcardSuper1
+  //- WildcardSuper1.node/kind absvar
+  //- WildcardSuper1 bounded/lower Str
+  //- !{ WildcardSuper1 bounded/upper Anything1 }
+  //- @String ref Str
+  //- OptionalWildSuperString named vname("pkg.Generics.Optional<? super java.lang.String>","","","","java")
+  private static void wildcardSuperBound(Optional<? super String> o) {}
+
   //- @Optional defines/binding OptionalClass
   //- @T defines/binding OptionalTVar
   //- OptionalTVar.node/kind absvar
