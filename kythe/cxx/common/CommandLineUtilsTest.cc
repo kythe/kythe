@@ -22,11 +22,6 @@
 namespace {
 
 using ::kythe::common::HasCxxInputInCommandLineOrArgs;
-using ::kythe::common::AdjustClangArgsForAnalyze;
-using ::kythe::common::AdjustClangArgsForSyntaxOnly;
-using ::kythe::common::ClangArgsToGCCArgs;
-using ::kythe::common::GCCArgsToClangArgs;
-using ::kythe::common::DetermineDriverAction;
 using ::kythe::common::DriverAction;
 using ::kythe::common::ASSEMBLY;
 using ::kythe::common::CXX_COMPILE;
