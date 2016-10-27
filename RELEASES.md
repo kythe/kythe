@@ -1,6 +1,6 @@
 # Release Notes
 
-## Upcoming release
+## v0.0.25
 
 Notable changes:
  - Replace google.golang.org/cloud dependencies with cloud.google.com/go
