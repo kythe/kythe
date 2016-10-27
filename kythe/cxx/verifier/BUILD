@@ -32,9 +32,7 @@ cc_library(
     hdrs = [
         "assertion_ast.h",
         "assertions.h",
-        "location.hh",
         "pretty_printer.h",
-        "stack.hh",
         ":parser",
     ],
     copts = [
