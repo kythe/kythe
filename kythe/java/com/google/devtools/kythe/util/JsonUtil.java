@@ -33,6 +33,7 @@ import com.google.protobuf.LazyStringArrayList;
 import com.google.protobuf.LazyStringList;
 import com.google.protobuf.ProtocolMessageEnum;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 
 /** Utility class for working with JSON/{@link Gson}. */
 public class JsonUtil {
@@ -83,11 +84,13 @@ public class JsonUtil {
 
   private static class LazyStringListTypeAdapter
       implements JsonSerializer<LazyStringList>, JsonDeserializer<LazyStringList> {
-    private static final BaseEncoding ENCODING = BaseEncoding.base64();
-
     @Override
     public JsonElement serialize(LazyStringList lsl, Type t, JsonSerializationContext ctx) {
-      return ctx.serialize(lsl.asByteArrayList());
+      ArrayList<String> elements = new ArrayList<String>(lsl.size());
+      for (byte[] element : lsl.asByteArrayList()) {
+        elements.add(new String(element));
+      }
+      return ctx.serialize(elements);
     }
 
     @Override
@@ -99,7 +102,7 @@ public class JsonUtil {
       JsonArray array = json.getAsJsonArray();
       LazyStringList lsl = new LazyStringArrayList();
       for (JsonElement element : json.getAsJsonArray()) {
-        lsl.add(ENCODING.decode((String) ctx.deserialize(element, String.class)));
+        lsl.add((String) ctx.deserialize(element, String.class));
       }
       return lsl;
     }
