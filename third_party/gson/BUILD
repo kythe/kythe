@@ -15,5 +15,6 @@ java_library(
     deps = [
         "//third_party/proto:protobuf_java",
         "@com_google_code_gson_gson//jar",
+        "@com_google_guava_guava//jar",
     ],
 )

@@ -44,7 +44,7 @@ public class JsonUtil {
   public static GsonBuilder registerProtoTypes(GsonBuilder builder) {
     return builder
         .registerTypeHierarchyAdapter(ProtocolMessageEnum.class, new ProtoEnumTypeAdapter())
-        .registerTypeHierarchyAdapter(GeneratedMessage.class, new ProtoTypeAdapter())
+        .registerTypeHierarchyAdapter(GeneratedMessage.class, ProtoTypeAdapter.newBuilder().build())
         .registerTypeHierarchyAdapter(ByteString.class, new ByteStringTypeAdapter())
         .registerTypeAdapter(byte[].class, new ByteArrayTypeAdapter())
         .registerTypeHierarchyAdapter(LazyStringList.class, new LazyStringListTypeAdapter());

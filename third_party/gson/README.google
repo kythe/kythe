@@ -1,7 +1,5 @@
-URL: https://google-gson.googlecode.com/svn-history/r1300/trunk/proto/src/main/java/com/google/gson/protobuf/ProtoTypeAdapter.java
-Version: r1300
+URL: https://github.com/google/gson/blob/master/proto/src/main/java/com/google/gson/protobuf/ProtoTypeAdapter.java
+Version: 2928b3ef978a619a5433a6f3c9209e2968497904
 License: Apache License 2.0 http://www.apache.org/licenses/LICENSE-2.0
 License File: LICENSE
 Description: GSON type adapter for Protocol Buffers
-Local Modifications:
-  gson-proto.patch fixes proto enum support in ProtoTypeAdapter.java
