@@ -72,12 +72,12 @@ public class Names {
   //- VarArgsFuncType named vname("void(int[])","","","","java")
   private static void varArgsFunc(int... varArgsParam) {}
 
-  //- @Generic defines/binding GenericClass
-  //- GenericClass.node/kind record
-  //- GenericClass named vname("pkg.Names.Generic","","","","java")
-  //- @"Generic<T>" defines/binding GenericAbs
+  //- @Generic defines/binding GenericAbs
   //- GenericAbs.node/kind abs
   //- GenericAbs named vname("pkg.Names.Generic<T>","","","","java")
+  //- GenericClass childof GenericAbs
+  //- GenericClass.node/kind record
+  //- GenericClass named vname("pkg.Names.Generic","","","","java")
   static class Generic<T> {
     //- @T ref TVar
     //- TVar named vname("pkg.Names.Generic~T","","","","java")

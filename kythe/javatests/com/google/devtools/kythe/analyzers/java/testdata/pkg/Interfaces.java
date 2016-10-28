@@ -17,8 +17,8 @@ public interface Interfaces {
     Object obj;
   }
 
-  //- @Ordered defines/binding OrderedInterface
-  //- @"Ordered<T>" defines/binding OrderedTAbs
+  //- @Ordered defines/binding OrderedTAbs
+  //- OrderedInterface childof OrderedTAbs
   //- @Interfaces ref Inter
   //- OrderedInterface extends Inter
   //- !{ OrderedInterface extends Obj }
@@ -43,8 +43,8 @@ public interface Interfaces {
     }
   }
 
-  //- @Deredro defines/binding DeredroInterface
-  //- @"Deredro<T>" defines/binding DeredroTAbs
+  //- @Deredro defines/binding DeredroTAbs
+  //- DeredroInterface childof DeredroTAbs
   //- @T defines/binding TypeVariable
   //- DeredroTAbs param.0 TypeVariable
   public static interface Deredro<T>
@@ -115,7 +115,8 @@ public interface Interfaces {
 
   // TODO(mazurak): should @FunctionalInterface classes interact with calleables in some way?
   //- @FunctionalInterface ref FunctionalAnnotation
-  //- @Reducer defines/binding ReducerInterface
+  //- @Reducer defines/binding ReducerInterfaceAbs
+  //- ReducerInterface childof ReducerInterfaceAbs
   //- ReducerInterface annotatedby FunctionalAnnotation
   @FunctionalInterface public static interface Reducer<T, S> {
     //- @reduce defines/binding ReduceMethod

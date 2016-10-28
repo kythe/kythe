@@ -16,7 +16,6 @@
 
 package com.google.devtools.kythe.platform.java.helpers;
 
-import com.google.common.base.Optional;
 import com.google.devtools.kythe.common.FormattingLogger;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.util.TreePath;
@@ -43,6 +42,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -119,7 +119,7 @@ public class SignatureGenerator
   /** Returns a Java signature for the specified Symbol. */
   public Optional<String> getSignature(Symbol symbol) {
     if (symbol == null) {
-      return Optional.absent();
+      return Optional.empty();
     }
     try {
       StringBuilder sb = getStringBuilder();
@@ -132,7 +132,7 @@ public class SignatureGenerator
     } catch (Throwable e) {
       // In case something unexpected happened during signature generation we do not want to fail.
       logger.warning(new RuntimeException("Failure generating signature for " + symbol, e), "");
-      return Optional.absent();
+      return Optional.empty();
     }
   }
 

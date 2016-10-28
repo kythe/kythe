@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 set -o pipefail
+set -x
 
 BASE_DIR="$PWD/kythe/go/serving/tools/testdata"
 OUT_DIR="$TEST_TMPDIR"
@@ -26,12 +27,10 @@ kwazthis() { "kythe/go/serving/tools/kwazthis/kwazthis" --local_repo=NONE --api 
 FILE_PATH=kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/Generics.java
 
 JSON=$(kwazthis --corpus kythe --path $FILE_PATH --offset 934)
-jq --slurp 'length == 5'
+jq --slurp 'length == 3'
 # .[0] is Generics class def
 # .[1] is f method def
-# TODO(schroederc): jq --slurp '.[2].span.text == "Generics<String>"' # ref to Generics<String> type
-# .[3] is gs variable def
-# TODO(schroederc): jq --slurp '.[4].span.text == "String"'           # ref to String type
+# .[2] is gs variable def
 jq --slurp '.[] | (.kind == "ref" or .kind == "defines" or .kind == "defines/binding")'
 jq --slurp '.[].node.ticket
         and .[].node.ticket != ""'

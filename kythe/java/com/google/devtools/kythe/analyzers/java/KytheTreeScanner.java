@@ -17,11 +17,11 @@
 package com.google.devtools.kythe.analyzers.java;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.devtools.kythe.analyzers.base.EdgeKind;
 import com.google.devtools.kythe.analyzers.base.EntrySet;
+import com.google.devtools.kythe.analyzers.java.SourceText.Comment;
 import com.google.devtools.kythe.analyzers.java.SourceText.Keyword;
 import com.google.devtools.kythe.analyzers.java.SourceText.Positions;
 import com.google.devtools.kythe.common.FormattingLogger;
@@ -31,7 +31,6 @@ import com.google.devtools.kythe.platform.java.helpers.SignatureGenerator;
 import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.util.Span;
 import com.sun.source.tree.MemberReferenceTree.ReferenceMode;
-import com.sun.source.tree.Tree;
 import com.sun.source.tree.Tree.Kind;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
@@ -74,6 +73,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -89,7 +89,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   // TODO(schroederc): refactor SignatureGenerator for new schema names
   private final SignatureGenerator signatureGenerator;
   private final Positions filePositions;
-  private final Map<Integer, List<SourceText.Comment>> comments = new HashMap<>();
+  private final Map<Integer, List<Comment>> comments = new HashMap<>();
   private final Context javaContext;
 
   private KytheDocTreeScanner docScanner;
@@ -108,7 +108,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     this.javaContext = javaContext;
     this.verboseLogging = verboseLogging;
 
-    for (SourceText.Comment comment : src.getComments()) {
+    for (Comment comment : src.getComments()) {
       for (int line = comment.lineSpan.getStart(); line <= comment.lineSpan.getEnd(); line++) {
         if (comments.containsKey(line)) {
           comments.get(line).add(comment);
@@ -238,7 +238,28 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
       Span classIdent =
           filePositions.findIdentifier(classDef.name, classDef.getPreferredPosition());
-      if (classIdent != null) {
+      if (classIdent == null) {
+        logger.warning("Missing span for class identifier: " + classDef.sym);
+      }
+
+      // Generic classes record the source range of the class name for the abs node, regular
+      // classes record the source range of the class name for the record node.
+      EntrySet absNode = defineTypeParameters(ctx, classNode, classDef.getTypeParameters());
+      if (absNode != null) {
+        List<String> tParamNames = new LinkedList<>();
+        for (JCTypeParameter tParam : classDef.getTypeParameters()) {
+          tParamNames.add(tParam.getName().toString());
+        }
+        if (classIdent != null) {
+          EntrySet absAnchor = entrySets.getAnchor(filePositions, classIdent, ctx.getSnippet());
+          emitAnchor(absAnchor, EdgeKind.DEFINES_BINDING, absNode);
+        }
+        if (!documented) {
+          emitComment(classDef, absNode);
+        }
+        entrySets.emitName(absNode, signature.get() + "<" + Joiner.on(",").join(tParamNames) + ">");
+      }
+      if (absNode == null && classIdent != null) {
         EntrySet anchor = entrySets.getAnchor(filePositions, classIdent, ctx.getSnippet());
         emitAnchor(anchor, EdgeKind.DEFINES_BINDING, classNode);
       }
@@ -247,35 +268,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         emitComment(classDef, classNode);
       }
 
-      EntrySet absNode = defineTypeParameters(ctx, classNode, classDef.getTypeParameters());
-      if (absNode != null) {
-        List<String> tParamNames = new LinkedList<>();
-        for (JCTypeParameter tParam : classDef.getTypeParameters()) {
-          tParamNames.add(tParam.getName().toString());
-        }
-        Span bracketGroup = filePositions.findBracketGroup(classDef.getPreferredPosition());
-        if (bracketGroup != null) {
-          if (classIdent != null) {
-            EntrySet absAnchor =
-                entrySets.getAnchor(
-                    filePositions,
-                    new Span(classIdent.getStart(), bracketGroup.getEnd()),
-                    ctx.getSnippet());
-            emitAnchor(absAnchor, EdgeKind.DEFINES_BINDING, absNode);
-          }
-        } else {
-          logger.warning("Missing bracket group for generic class definition: " + classDef.sym);
-        }
-        if (!documented) {
-          emitComment(classDef, absNode);
-        }
-        entrySets.emitName(absNode, signature.get() + "<" + Joiner.on(",").join(tParamNames) + ">");
-      }
-
       visitAnnotations(classNode, classDef.getModifiers().getAnnotations(), ctx);
 
       JavaNode superClassNode = scan(classDef.getExtendsClause(), ctx);
-      if (superClassNode == null && classDef.getKind() != Tree.Kind.INTERFACE) {
+      if (superClassNode == null && classDef.getKind() != Kind.INTERFACE) {
         superClassNode = getJavaLangObjectNode();
       }
 
@@ -645,9 +641,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   }
 
   boolean emitCommentsOnLine(int line, EntrySet node) {
-    List<SourceText.Comment> lst = comments.get(line);
+    List<Comment> lst = comments.get(line);
     if (lst != null) {
-      for (SourceText.Comment comment : lst) {
+      for (Comment comment : lst) {
         commentAnchor(comment, node);
       }
       return !lst.isEmpty();
@@ -800,7 +796,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     entrySets.emitEdge(doc, EdgeKind.DOCUMENTS, node);
   }
 
-  private EntrySet commentAnchor(SourceText.Comment comment, EntrySet node) {
+  private EntrySet commentAnchor(Comment comment, EntrySet node) {
     return emitAnchor(
         entrySets.getAnchor(filePositions, comment.byteSpan), EdgeKind.DOCUMENTS, node);
   }

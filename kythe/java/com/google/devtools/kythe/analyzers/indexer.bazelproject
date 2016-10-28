@@ -18,6 +18,8 @@
 # plugin.
 directories:
   kythe/java/com/google/devtools/kythe/analyzers/
+  kythe/java/com/google/devtools/kythe/platform/java/helpers
+  kythe/java/com/google/devtools/kythe/util
   kythe/javatests/com/google/devtools/kythe/analyzers/
 
 # These could be more precise to have faster sync times.

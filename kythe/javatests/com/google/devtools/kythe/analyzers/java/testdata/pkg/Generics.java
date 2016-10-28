@@ -1,7 +1,6 @@
 package pkg;
 
-//- @Generics defines/binding Class
-//- @"Generics<T>" defines/binding GAbs
+//- @Generics defines/binding GAbs
 //- Class childof GAbs
 //- GAbs.node/kind abs
 //- GAbs param.0 TVar
@@ -81,7 +80,8 @@ public class Generics<T> {
   //- OptionalWildSuperString named vname("pkg.Generics.Optional<? super java.lang.String>","","","","java")
   private static void wildcardSuperBound(Optional<? super String> o) {}
 
-  //- @Optional defines/binding OptionalClass
+  //- @Optional defines/binding OptionalAbs
+  //- OptionalClass childof OptionalAbs
   //- @T defines/binding OptionalTVar
   //- OptionalTVar.node/kind absvar
   private static class Optional<T> {}

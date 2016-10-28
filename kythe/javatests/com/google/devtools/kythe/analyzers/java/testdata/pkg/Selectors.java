@@ -35,7 +35,8 @@ public class Selectors {
     return null;
   }
 
-  //- @Optional defines/binding Optional
+  //- @Optional defines/binding OptionalAbs
+  //- Optional childof OptionalAbs
   private static interface Optional<T> {
     public T get();
     public boolean isPresent();
