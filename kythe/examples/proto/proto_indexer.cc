@@ -326,8 +326,8 @@ int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   FLAGS_logtostderr = true;
   google::InitGoogleLogging(argv[0]);
-  google::SetVersionString("0.1");
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  gflags::SetVersionString("0.1");
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   std::vector<std::string> final_args(argv + 1, argv + argc);
   google::protobuf::io::FileOutputStream out_stream(STDOUT_FILENO);
   FileOutputStream stream(&out_stream);

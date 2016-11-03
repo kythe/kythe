@@ -98,7 +98,7 @@ static void LoadExtraAction(const std::string &path,
 int main(int argc, char *argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   google::InitGoogleLogging(argv[0]);
-  google::SetVersionString("0.1");
+  gflags::SetVersionString("0.1");
   if (argc != 6) {
     fprintf(stderr,
             "Invalid number of arguments:\n\tCall as %s extra-action-file "

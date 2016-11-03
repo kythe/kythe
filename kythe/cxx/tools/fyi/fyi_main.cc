@@ -35,8 +35,8 @@ static cl::opt<std::string> xrefs("xrefs",
 int main(int argc, const char **argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   google::InitGoogleLogging(argv[0]);
-  google::SetVersionString("0.1");
-  google::SetUsageMessage("fyi: repair a C++ file with missing includes");
+  gflags::SetVersionString("0.1");
+  gflags::SetUsageMessage("fyi: repair a C++ file with missing includes");
   clang::tooling::CommonOptionsParser options(argc, argv, fyi_options);
   kythe::JsonClient::InitNetwork();
   auto xrefs_db = llvm::make_unique<kythe::XrefsJsonClient>(

@@ -138,7 +138,7 @@ int DocumentNodesFrom(XrefsJsonClient* client, const proto::VName& file_name) {
 int main(int argc, char** argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   google::InitGoogleLogging(argv[0]);
-  google::SetUsageMessage(R"(perform simple documentation formatting
+  gflags::SetUsageMessage(R"(perform simple documentation formatting
 
 doc -corpus foo -file bar.cc
   Formats documentation for all nodes attached via defines/binding anchors to
@@ -147,7 +147,7 @@ doc
   Formats documentation from a text-format proto::DocumentationReply provided
   on standard input.
 )");
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   if (FLAGS_path.empty()) {
     return kythe::DocumentNodesFromStdin();
   } else {

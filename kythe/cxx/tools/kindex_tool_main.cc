@@ -152,8 +152,8 @@ static void BuildIndexFile(const std::string& outfile,
 int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   google::InitGoogleLogging(argv[0]);
-  google::SetVersionString("0.1");
-  google::SetUsageMessage(R"(kindex_tool: work with .kindex files
+  gflags::SetVersionString("0.1");
+  gflags::SetUsageMessage(R"(kindex_tool: work with .kindex files
 kindex_tool -explode some/file.kindex
   dumps some/file.kindex to some/file.kindex_UNIT, some/file.kindex_sha2...
   as ascii protobufs
@@ -161,7 +161,7 @@ kindex_tool -explode some/file.kindex
 kindex_tool -assemble some/file.kindex some/unit some/content...
   assembles some/file.kindex using some/unit as the CompilationUnit and
   any other input files as FileData)");
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   if (!FLAGS_explode.empty()) {
     DumpIndexFile(FLAGS_explode);
   } else if (!FLAGS_assemble.empty()) {

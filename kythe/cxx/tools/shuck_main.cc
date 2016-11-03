@@ -79,8 +79,8 @@ void ReadGzippedDelimitedProtoSequence(const std::string &path, ClosureType f) {
 
 int main(int argc, char *argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
-  google::SetVersionString("0.1");
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  gflags::SetVersionString("0.1");
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   CHECK(!FLAGS_index_pack.empty()) << "Need an index pack.";
   CHECK(!FLAGS_static_claim.empty()) << "Need a static claim table.";
   const std::set<std::string> paths(argv + 1, argv + argc);

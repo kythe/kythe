@@ -37,11 +37,12 @@ new_http_archive(
     url = "https://github.com/google/googletest/archive/release-1.8.0.zip",
 )
 
-new_git_repository(
+new_http_archive(
     name = "com_github_gflags_gflags",
-    build_file = "third_party/googleflags.BUILD",
-    commit = "58345b18d92892a170d61a76c5dd2d290413bdd7",
-    remote = "https://github.com/gflags/gflags.git",
+    build_file = "third_party/googleflags.BUILD",  # Upstream's BUILD file doesn't quite work.
+    sha256 = "659de3fab5ba5a0376e3c2da333e4ecec9c8a4b41709861765e28e02dd562f7a",
+    strip_prefix = "gflags-cce68f0c9c5d054017425e6e6fd54f696d36e8ee",
+    url = "https://github.com/gflags/gflags/archive/cce68f0c9c5d054017425e6e6fd54f696d36e8ee.zip",
 )
 
 git_repository(
@@ -50,11 +51,12 @@ git_repository(
     remote = "https://code.googlesource.com/re2",
 )
 
-new_git_repository(
+new_http_archive(
     name = "com_github_google_glog",
-    build_file = "third_party/googlelog/BUILD.remote",
-    commit = "1b0b08c8dda1659027677966b03a3ff3c488e549",
-    remote = "https://github.com/google/glog.git",
+    build_file = "third_party/googlelog.BUILD",
+    sha256 = "8fd1eca8e8e24d7240a106cf8183221f5319b6b7b69bcc1bb5f3826ade2bb4cd",
+    strip_prefix = "glog-cf36dabd8e24469c1b16748711f38c0d08085b36",
+    url = "https://github.com/google/glog/archive/cf36dabd8e24469c1b16748711f38c0d08085b36.zip",
 )
 
 maven_jar(

@@ -1,15 +1,8 @@
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["@com_github_google_glog//:__pkg__"])
 
 licenses(["notice"])  # BSD
 
 cc_library(
-    name = "headers",
-    hdrs = [
-        "src/config.h",
-        "src/glog/logging.h",
-        "src/glog/raw_logging.h",
-        "src/glog/stl_logging.h",
-        "src/glog/vlog_is_on.h",
-    ],
-    includes = ["src"],
+    name = "config_h",
+    hdrs = ["src/config.h"],
 )

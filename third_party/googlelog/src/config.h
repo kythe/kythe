@@ -32,7 +32,7 @@
 /* #undef HAVE_LIBUNWIND_H */
 
 /* define if you have google gflags library */
-/* #undef HAVE_LIB_GFLAGS */
+#define HAVE_LIB_GFLAGS 1
 
 /* define if you have google gmock library */
 /* #undef HAVE_LIB_GMOCK */

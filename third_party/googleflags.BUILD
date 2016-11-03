@@ -1,59 +1,99 @@
-package(default_visibility = ["//visibility:public"])
-
-load("@//tools/build_rules/cmake:cmake.bzl", "cmake_generate")
-
-licenses(["notice"])  # BSD
-
-filegroup(
-    name = "license",
-    srcs = ["COPYING.txt"],
-)
-
-cmake_generate(
-    name = "headers",
-    srcs =
-        glob([
-            "cmake/*",
-            "src/*.in",
-        ]) + ["CMakeLists.txt"] + [
-            "src/gflags.cc",
-            "src/gflags_reporting.cc",
-            "src/gflags_completions.cc",
-            "src/util.h",
-            "src/mutex.h",
-        ],
-    outs = [
-        "include/gflags/config.h",
-        "include/gflags/gflags.h",
-        "include/gflags/gflags_completions.h",
-        "include/gflags/gflags_declare.h",
-        "include/gflags/gflags_gflags.h",
-    ],
-    visibility = ["//visibility:private"],
-)
+# Bazel build file for gflags
+licenses(["notice"])
 
 cc_library(
     name = "gflags",
     srcs = [
-        "include/gflags/config.h",
         "src/gflags.cc",
         "src/gflags_completions.cc",
         "src/gflags_reporting.cc",
         "src/mutex.h",
         "src/util.h",
+        ":config_h",
+        ":gflags_completions_h",
+        ":gflags_declare_h",
+        ":gflags_h",
+        ":includes",
     ],
-    hdrs = [
-        "include/gflags/gflags.h",
-        "include/gflags/gflags_completions.h",
-        "include/gflags/gflags_declare.h",
-        "include/gflags/gflags_gflags.h",
-    ],
+    hdrs = ["include/gflags/gflags.h"],
     copts = [
-        "-Wno-unused-local-typedef",
-        "-Wno-unknown-warning-option",
-        "-I$(GENDIR)/external/com_github_gflags_gflags/include/gflags",
+        "-I$(GENDIR)/external/com_github_gflags_gflags/src",
+        "-Wno-sign-compare",
+        "-DHAVE_STDINT_H",
+        "-DHAVE_SYS_TYPES_H",
+        "-DHAVE_INTTYPES_H",
+        "-DHAVE_SYS_STAT_H",
+        "-DHAVE_UNISTD_H",
+        "-DHAVE_FNMATCH_H",
+        "-DHAVE_STRTOLL",
+        "-DHAVE_STRTOQ",
+        "-DHAVE_PTHREAD",
+        "-DHAVE_RWLOCK",
+        "-DGFLAGS_INTTYPES_FORMAT_C99",
     ],
     includes = [
         "include",
     ],
+    visibility = ["//visibility:public"],
+)
+
+genrule(
+    name = "config_h",
+    srcs = [
+        "src/config.h.in",
+    ],
+    outs = [
+        "src/config.h",
+    ],
+    cmd = "awk '{ gsub(/^#cmakedefine/, \"//cmakedefine\"); print; }' $(<) > $(@)",
+)
+
+genrule(
+    name = "gflags_h",
+    srcs = [
+        "src/gflags.h.in",
+    ],
+    outs = [
+        "src/gflags.h",
+    ],
+    cmd = "awk '{ gsub(/@(GFLAGS_ATTRIBUTE_UNUSED|INCLUDE_GFLAGS_NS_H)@/, \"\"); print; }' $(<) > $(@)",
+)
+
+genrule(
+    name = "gflags_completions_h",
+    srcs = [
+        "src/gflags_completions.h.in",
+    ],
+    outs = [
+        "src/gflags_completions.h",
+    ],
+    cmd = "awk '{ gsub(/@GFLAGS_NAMESPACE@/, \"gflags\"); print; }' $(<) > $(@)",
+)
+
+genrule(
+    name = "gflags_declare_h",
+    srcs = [
+        "src/gflags_declare.h.in",
+    ],
+    outs = [
+        "src/gflags_declare.h",
+    ],
+    cmd = ("awk '{ " +
+           "gsub(/@GFLAGS_NAMESPACE@/, \"gflags\"); " +
+           "gsub(/@(HAVE_STDINT_H|HAVE_SYS_TYPES_H|HAVE_INTTYPES_H|GFLAGS_INTTYPES_FORMAT_C99)@/, \"1\"); " +
+           "gsub(/@([A-Z0-9_]+)@/, \"0\"); " +
+           "print; }' $(<) > $(@)"),
+)
+
+genrule(
+    name = "includes",
+    srcs = [
+        ":gflags_h",
+        ":gflags_declare_h",
+    ],
+    outs = [
+        "include/gflags/gflags.h",
+        "include/gflags/gflags_declare.h",
+    ],
+    cmd = "mkdir -p $(@D)/include/gflags && cp $(SRCS) $(@D)/include/gflags",
 )

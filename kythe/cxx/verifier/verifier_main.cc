@@ -38,8 +38,8 @@ DEFINE_string(goal_prefix, "//-", "Denote goals with this string.");
 
 int main(int argc, char **argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
-  ::google::SetVersionString("0.1");
-  ::google::SetUsageMessage(R"(Verification tool for Kythe databases.
+  ::gflags::SetVersionString("0.1");
+  ::gflags::SetUsageMessage(R"(Verification tool for Kythe databases.
 Reads Kythe facts from standard input and checks them against one or more rule
 files. See the DESIGN file for more details on invocation and rule syntax.
 
@@ -47,7 +47,7 @@ Example:
   ${INDEXER_BIN} -i $1 | ${VERIFIER_BIN} --show_protos --show_goals $1
   cat foo.entries | ${VERIFIER_BIN} goals1.cc goals2.cc
 )");
-  ::google::ParseCommandLineFlags(&argc, &argv, true);
+  ::gflags::ParseCommandLineFlags(&argc, &argv, true);
   ::google::InitGoogleLogging(argv[0]);
 
   kythe::verifier::Verifier v;

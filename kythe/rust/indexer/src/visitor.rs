@@ -17,11 +17,11 @@ use rustc::hir;
 use rustc::hir::{Block, Expr, ImplItem, ItemId, Pat};
 use rustc::hir::def::Def;
 use rustc::hir::def_id::DefId;
+use rustc::hir::def_id::LOCAL_CRATE;
 use rustc::hir::Expr_::*;
 use rustc::hir::intravisit::*;
 use rustc::hir::MatchSource::ForLoopDesugar;
 use rustc::lint::{LateContext, LintContext};
-use rustc::middle::cstore::LOCAL_CRATE;
 use rustc::ty::{MethodCall, TyCtxt};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -153,7 +153,7 @@ impl<'a, 'tcx> KytheVisitor<'a, 'tcx> {
         use rustc::hir::def::Def::*;
         match *def {
             Struct(def_id) | Enum(def_id) => Some(self.tcx.lookup_adt_def(def_id).did),
-            Variant(_, def_id) => Some(def_id),
+            Variant(def_id) => Some(def_id),
             _ => None,
         }
     }

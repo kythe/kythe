@@ -44,7 +44,7 @@
 int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   google::InitGoogleLogging(argv[0]);
-  google::SetVersionString("0.1");
+  gflags::SetVersionString("0.1");
   std::vector<std::string> args(argv, argv + argc);
   kythe::ExtractorConfiguration config;
   config.SetArgs(args);

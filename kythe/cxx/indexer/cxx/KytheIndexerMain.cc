@@ -44,10 +44,10 @@ namespace kythe {
 int main(int argc, char *argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   google::InitGoogleLogging(argv[0]);
-  google::SetVersionString("0.1");
-  google::SetUsageMessage(
+  gflags::SetVersionString("0.1");
+  gflags::SetUsageMessage(
       IndexerContext::UsageMessage("the Kythe C++ indexer", "indexer"));
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   std::vector<std::string> final_args(argv, argv + argc);
   IndexerContext context(final_args, "stdin.cc");
   IndexerOptions options;

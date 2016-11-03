@@ -232,9 +232,9 @@ class ClaimTool {
 int main(int argc, char *argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   google::InitGoogleLogging(argv[0]);
-  google::SetVersionString("0.1");
-  google::SetUsageMessage("static_claim: assign ownership for analysis");
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  gflags::SetVersionString("0.1");
+  gflags::SetUsageMessage("static_claim: assign ownership for analysis");
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   std::string next_index_file;
   ClaimTool tool;
   if (FLAGS_index_pack.empty()) {
