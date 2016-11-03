@@ -22,6 +22,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -103,10 +104,8 @@ func main() {
 	}
 	defer conn.Close()
 
-	fds, fdsAddr := launchFileDataService()
-	// TODO(schroederc): add ability to analyze compilations from indexpacks
 	queue := local.NewKIndexQueue(compilations)
-	fds.AddFetcher(queue)
+	fdsAddr := launchFileDataService(queue)
 
 	wr := delimited.NewWriter(os.Stdout)
 
@@ -127,8 +126,10 @@ func main() {
 	}
 }
 
-func launchFileDataService() (*analysis.FileDataService, string) {
-	fds := &analysis.FileDataService{}
+// launchFileDataService starts up a local FileDataService and returns its
+// address.  In case of error the program is terminated.
+func launchFileDataService(f analysis.Fetcher) string {
+	fds := &fileDataService{fetcher: f}
 	srv := grpc.NewServer()
 	l, err := net.Listen("tcp", "localhost:"+strconv.Itoa(*fdsPort))
 	if err != nil {
@@ -136,36 +137,72 @@ func launchFileDataService() (*analysis.FileDataService, string) {
 	}
 	aspb.RegisterFileDataServiceServer(srv, fds)
 	go func() { log.Fatal(srv.Serve(l)) }()
-	return fds, l.Addr().String()
+	return l.Addr().String()
 }
 
-func parseAnalyzerCommand() (string, []string, []string) {
-	if *analyzerPort == 0 {
-		port, err := netutil.PickUnusedPort()
+// parseAnalyzerCommand extracts the analyzer subcommand line from the current
+// process's argument list, and replaces any occurrences of "@port@" in its
+// command-line with the designated analyzer port. If no port is given, one is
+// chosen and stored into *analyzerPort.
+//
+// The command and its arguments are returned, along with any trailing
+// unclaimed arguments to use as compilation unit sources.
+func parseAnalyzerCommand() (command string, args, compilations []string) {
+	if *analyzerPort <= 0 {
+		picked, err := netutil.PickUnusedPort()
 		if err != nil {
 			log.Fatalf("Failed to pick analyzer port: %v", err)
 		}
-		*analyzerPort = port
+		*analyzerPort = picked
 	}
 
-	var i int
-	for ; i < flag.NArg() && flag.Arg(i) != "--"; i++ {
+	// Find the breakpoint between the subcommand arguments and the trailing
+	// arguments, if any.
+	port := strings.NewReplacer("@port@", strconv.Itoa(*analyzerPort))
+	for i, arg := range flag.Args() {
+		if i == 0 {
+			command = arg
+		} else if arg == "--" {
+			compilations = flag.Args()[i+1:]
+			break
+		} else {
+			args = append(args, port.Replace(arg))
+		}
 	}
-
-	args := constructArgs(flag.Args()[1:i], *analyzerPort)
-	var compilations []string
-	if i < flag.NArg() {
-		compilations = flag.Args()[i+1:]
-	}
-	return flag.Arg(0), args, compilations
+	return
 }
 
-func constructArgs(raw []string, port int) []string {
-	r := strings.NewReplacer("@port@", strconv.Itoa(port))
+// fileDataService implements the apb.FileDataServiceServer interface backed by
+// a single analysis.Fetcher.
+type fileDataService struct {
+	fetcher analysis.Fetcher
+}
 
-	var args []string
-	for _, arg := range raw {
-		args = append(args, r.Replace(arg))
+// Get implements the aspb.FileDataServiceServer interface.
+func (s *fileDataService) Get(req *apb.FilesRequest, srv aspb.FileDataService_GetServer) error {
+	for _, info := range req.Files {
+		if info.Path == "" && info.Digest == "" {
+			return errors.New("file request missing both path and digest")
+		}
 	}
-	return args
+	for _, info := range req.Files {
+		data, err := s.fetcher.Fetch(info.Path, info.Digest)
+		if err != nil {
+			// Report the file as missing.
+			if serr := srv.Send(&apb.FileData{
+				Info:    info,
+				Missing: true,
+			}); serr != nil {
+				return serr
+			}
+			continue
+		}
+		if err := srv.Send(&apb.FileData{
+			Content: data,
+			Info:    info,
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
 }
