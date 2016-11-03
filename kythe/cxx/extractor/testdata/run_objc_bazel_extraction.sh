@@ -25,7 +25,7 @@ bazel build \
   --experimental_action_listener=//kythe/cxx/extractor:extract_kindex_objc \
   --experimental_extra_action_top_level_only \
   --experimental_proto_extra_actions \
-  --ios_sdk_version=9.3 \
+  --ios_sdk_version=10.0 \
   :objc_lib
 
 if [ $? -ne 0 ]; then

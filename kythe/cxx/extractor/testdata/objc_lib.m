@@ -1,16 +1,16 @@
 // Checks that Objective-C classes are declared and defined.
-// todo(salguarnieri) Have the implementation "completes/uniquely" the
-// interface.
+
+// Not needed but tests that we are able to correctly find it
+#import <Availability.h>
+
+#import <Foundation/Foundation.h>
 
 //- @Box defines/binding BoxIface
 //- BoxIface.node/kind record
 //- BoxIface.subkind class
 //- BoxIface.complete incomplete
-@interface Box
+@interface Box : NSObject
 @end
-
-// Doesn't work yet
-//#- @Box completes/uniquely BoxIface
 
 //- @Box defines/binding BoxImpl
 //- BoxImpl.node/kind record

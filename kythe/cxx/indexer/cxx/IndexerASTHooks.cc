@@ -2199,7 +2199,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
   } else if (const auto *CD = dyn_cast<CXXDestructorDecl>(Decl)) {
     Subkind = GraphObserver::FunctionSubkind::Destructor;
   }
-  if (!IsFunctionDefinition) {
+  if (!IsFunctionDefinition && Decl->getBuiltinID() == 0) {
     Observer.recordFunctionNode(InnerNode,
                                 GraphObserver::Completeness::Incomplete,
                                 Subkind, GetFormat(Decl));

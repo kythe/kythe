@@ -1803,6 +1803,14 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "builtin_defs",
+    srcs = ["objc/builtin_defs.m"],
+    ignore_dups = True,
+    objc = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
     name = "category",
     srcs = ["objc/categories/base+foo.m"],
     ignore_dups = True,
