@@ -1,8 +1,8 @@
 // Checks that Objective-C instance methods are called via the decl. Also check
-// that our params are defined as expected.
+// that our parameters are defined as expected.
 //
 // Side-effect: Also check that our verify syntax properly handles methods with
-// params.
+// parameters.
 
 //- @Box defines/binding BoxIface
 @interface Box
@@ -39,11 +39,11 @@
 int main(int argc, char **argv) {
   Box *box = [[Box alloc] init];
 
-  //- @"[box foo]" ref/call FooDecl
+  //- @"[box foo]" ref/call FooDefn
   //- @"[box foo]" childof Main
   [box foo];
 
-  //- @"[box bar: 38]" ref/call BarDecl
+  //- @"[box bar: 38]" ref/call BarDefn
   //- @"[box bar: 38]" childof Main
   [box bar: 38];
 

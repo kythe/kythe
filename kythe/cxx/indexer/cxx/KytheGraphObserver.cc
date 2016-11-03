@@ -541,6 +541,35 @@ void KytheGraphObserver::recordTypeEdge(const NodeId &term_id,
   }
 }
 
+void KytheGraphObserver::recordUpperBoundEdge(const NodeId &TypeNodeId,
+                                              const NodeId &TypeBoundNodeId) {
+  if (!lossy_claiming_ || claimNode(TypeNodeId) || claimNode(TypeBoundNodeId)) {
+    recorder_->AddEdge(VNameRefFromNodeId(TypeNodeId),
+                       EdgeKindID::kBoundedUpper,
+                       VNameRefFromNodeId(TypeBoundNodeId));
+  }
+}
+
+void KytheGraphObserver::recordVariance(const NodeId &TypeNodeId,
+                                        const Variance V) {
+  if (!lossy_claiming_ || claimNode(TypeNodeId)) {
+    std::string Variance;
+    switch (V) {
+      case Variance::Contravariant:
+        Variance = "contravariant";
+        break;
+      case Variance::Covariant:
+        Variance = "covariant";
+        break;
+      case Variance::Invariant:
+        Variance = "invariant";
+        break;
+    }
+    recorder_->AddProperty(VNameRefFromNodeId(TypeNodeId),
+                           PropertyID::kVariance, Variance);
+  }
+}
+
 void KytheGraphObserver::recordSpecEdge(const NodeId &term_id,
                                         const NodeId &type_id,
                                         Confidence conf) {
@@ -1251,6 +1280,7 @@ void KytheGraphObserver::RegisterBuiltins() {
   RegisterBuiltin("unsigned __int128", "unsigned __int128");
   RegisterBuiltin("SEL", "SEL");
   RegisterBuiltin("id", "id");
+  RegisterBuiltin("TypeUnion", "TypeUnion");
 }
 
 void KytheGraphObserver::EmitBuiltin(Builtin *builtin) {

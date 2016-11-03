@@ -1817,6 +1817,26 @@ IndexerASTVisitor::RangeInCurrentContext(bool implicit,
                   : ExplicitRangeInCurrentContext(SR);
 }
 
+GraphObserver::NodeId
+IndexerASTVisitor::RecordGenericClass(const ObjCInterfaceDecl *IDecl,
+                                      const ObjCTypeParamList *TPL,
+                                      const GraphObserver::NodeId &BodyId) {
+  auto AbsId = BuildNodeIdForDecl(IDecl);
+  Observer.recordAbsNode(AbsId);
+  Observer.recordChildOfEdge(BodyId, AbsId);
+
+  for (const ObjCTypeParamDecl *TP : *TPL) {
+    GraphObserver::NodeId TypeParamId = BuildNodeIdForDecl(TP);
+    // We record the range, name, absvar identity, and variance when we visit
+    // the type param decl. Here, we only want to record the information that is
+    // specific to this context, which is how it interacts with the generic type
+    // (BodyID). See VisitObjCTypeParamDecl for where we record this other
+    // information.
+    Observer.recordParamEdge(AbsId, TP->getIndex(), TypeParamId);
+  }
+  return AbsId;
+}
+
 template <typename TemplateDeclish>
 GraphObserver::NodeId
 IndexerASTVisitor::RecordTemplate(const TemplateDeclish *Decl,
@@ -2251,8 +2271,55 @@ IndexerASTVisitor::BuildNodeIdForTypedefNameDecl(
   return None();
 }
 
-bool IndexerASTVisitor::VisitTypedefNameDecl(
-    const clang::TypedefNameDecl *Decl) {
+bool IndexerASTVisitor::VisitObjCTypeParamDecl(
+    const clang::ObjCTypeParamDecl *Decl) {
+  GraphObserver::NodeId TypeParamId = BuildNodeIdForDecl(Decl);
+  Observer.recordAbsVarNode(TypeParamId);
+  SourceRange TypeSR = RangeForNameOfDeclaration(Decl);
+  MaybeRecordDefinitionRange(
+      RangeInCurrentContext(Decl->isImplicit(), TypeParamId, TypeSR),
+      TypeParamId);
+  GraphObserver::NameId Name = BuildNameIdForDecl(Decl);
+  Observer.recordNamedEdge(TypeParamId, Name);
+  GraphObserver::Variance V;
+  switch (Decl->getVariance()) {
+  case clang::ObjCTypeParamVariance::Contravariant:
+    V = GraphObserver::Variance::Contravariant;
+    break;
+  case clang::ObjCTypeParamVariance::Covariant:
+    V = GraphObserver::Variance::Covariant;
+    break;
+  case clang::ObjCTypeParamVariance::Invariant:
+    V = GraphObserver::Variance::Invariant;
+    break;
+  }
+  Observer.recordVariance(TypeParamId, V);
+
+  // If the type has an explicit bound, getTypeSourceInfo will get the bound
+  // for us. If there is not explicit bound, it will return id.
+  auto BoundInfo = Decl->getTypeSourceInfo();
+
+  if (auto Type = BuildNodeIdForType(BoundInfo->getTypeLoc(),
+                                     BoundInfo->getType(), EmitRanges::Yes)) {
+    if (Decl->hasExplicitBound()) {
+      Observer.recordUpperBoundEdge(TypeParamId, Type.primary());
+    } else {
+      Observer.recordTypeEdge(TypeParamId, Type.primary());
+    }
+  }
+
+  return true;
+}
+
+bool IndexerASTVisitor::VisitTypedefDecl(const clang::TypedefDecl *Decl) {
+  return VisitCTypedef(Decl);
+}
+
+bool IndexerASTVisitor::VisitTypeAliasDecl(const clang::TypeAliasDecl *Decl) {
+  return VisitCTypedef(Decl);
+}
+
+bool IndexerASTVisitor::VisitCTypedef(const clang::TypedefNameDecl *Decl) {
   if (Decl == Context.getBuiltinVaListDecl() ||
       Decl == Context.getInt128Decl() || Decl == Context.getUInt128Decl()) {
     // Don't index __uint128_t, __builtin_va_list, __int128_t
@@ -2816,8 +2883,17 @@ IndexerASTVisitor::BuildNodeIdForDecl(const clang::Decl *Decl) {
     }
   }
 
-  // Namespaces are named according to their NameIDs.
-  if (const auto *NS = dyn_cast<NamespaceDecl>(Decl)) {
+  const TypedefNameDecl *TND;
+  if ((TND = dyn_cast<TypedefNameDecl>(Decl)) &&
+      !isa<ObjCTypeParamDecl>(Decl)) {
+    // There's a special way to name type aliases but we want to handle type
+    // parameters for Objective-C as "normal" named decls.
+    if (auto TypedefNameId = BuildNodeIdForTypedefNameDecl(TND)) {
+      DeclToNodeId.insert(std::make_pair(Decl, TypedefNameId.primary()));
+      return TypedefNameId.primary();
+    }
+  } else if (const auto *NS = dyn_cast<NamespaceDecl>(Decl)) {
+    // Namespaces are named according to their NameIDs.
     Ostream << "#namespace";
     GraphObserver::NodeId Id(
         NS->isAnonymousNamespace()
@@ -2826,14 +2902,6 @@ IndexerASTVisitor::BuildNodeIdForDecl(const clang::Decl *Decl) {
         Ostream.str());
     DeclToNodeId.insert(std::make_pair(Decl, Id));
     return Id;
-  }
-
-  // There's a special way to name type aliases.
-  if (const auto *TND = dyn_cast<TypedefNameDecl>(Decl)) {
-    if (auto TypedefNameId = BuildNodeIdForTypedefNameDecl(TND)) {
-      DeclToNodeId.insert(std::make_pair(Decl, TypedefNameId.primary()));
-      return TypedefNameId.primary();
-    }
   }
 
   // Disambiguate nodes underneath template instances.
@@ -3350,9 +3418,12 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
   if (Prev != TypeNodes.end()) {
     // If we're not trying to emit edges for constituent types, or if there's
     // no chance for us to do so because we lack source location information,
-    // finish early.
-    if (EmitRanges != IndexerASTVisitor::EmitRanges::Yes ||
-        !(SR.isValid() && SR.getBegin().isFileID())) {
+    // finish early. Unless we are an ObjCObjectPointer, then we always want to
+    // visit because we may need to record information for implemented
+    // protocols.
+    if (TypeLoc.getTypeLocClass() != TypeLoc::ObjCObjectPointer &&
+        (EmitRanges != IndexerASTVisitor::EmitRanges::Yes ||
+         !(SR.isValid() && SR.getBegin().isFileID()))) {
       ID = Prev->second;
       return ID;
     }
@@ -3880,7 +3951,7 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
     // This is effectively a clone of PointerType since these two types
     // don't share ancestors and the code has some side effects.
     const auto &OPTL = TypeLoc.castAs<ObjCObjectPointerTypeLoc>();
-    const auto *DT = dyn_cast<PointerType>(PT);
+    const auto *DT = dyn_cast<ObjCObjectPointerType>(PT);
     auto PointeeID(BuildNodeIdForType(OPTL.getPointeeLoc(),
                                       DT ? DT->getPointeeType().getTypePtr()
                                          : OPTL.getPointeeLoc().getTypePtr(),
@@ -3917,38 +3988,50 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
       }
     }
   } break;
-  // TODO(salguarnieri) Write verification tests for ObjCObjects.
   case TypeLoc::ObjCObject: {
     const auto &ObjLoc = TypeLoc.getAs<ObjCObjectTypeLoc>();
     const auto *DT = dyn_cast<ObjCObjectType>(PT);
-    auto IFaceNode =
-        GetObjCObjBaseTypeNode(DT, ObjLoc.getBaseLoc(), EmitRanges);
+    MaybeFew<GraphObserver::NodeId> IFaceNode;
+    if (const auto *IFace = DT->getInterface()) {
+      IFaceNode = BuildNodeIdForType(ObjLoc.getBaseLoc(),
+                                     IFace->getTypeForDecl(), EmitRanges);
+    } else {
+      IFaceNode = RecordIdTypeNode(DT, ObjLoc.getProtocolLocs());
+    }
     if (!IFaceNode) {
       return IFaceNode;
     }
-    std::vector<GraphObserver::NodeId> GenericArgIds;
-    std::vector<const GraphObserver::NodeId *> GenericArgIdPtrs;
-    GenericArgIds.reserve(ObjLoc.getNumTypeArgs());
-    GenericArgIdPtrs.resize(ObjLoc.getNumTypeArgs(), nullptr);
-    for (unsigned int i = 0; i < ObjLoc.getNumTypeArgs(); ++i) {
-      const auto *TI = ObjLoc.getTypeArgTInfo(i);
-      if (auto Arg =
-              BuildNodeIdForType(TI->getTypeLoc(), TI->getType(), EmitRanges)) {
-        GenericArgIds.push_back((Arg.primary()));
-        GenericArgIdPtrs[i] = &GenericArgIds[i];
-      } else {
-        return Arg;
+
+    if (ObjLoc.getNumTypeArgs() > 0) {
+      std::vector<GraphObserver::NodeId> GenericArgIds;
+      std::vector<const GraphObserver::NodeId *> GenericArgIdPtrs;
+      GenericArgIds.reserve(ObjLoc.getNumTypeArgs());
+      GenericArgIdPtrs.resize(ObjLoc.getNumTypeArgs(), nullptr);
+      for (unsigned int i = 0; i < ObjLoc.getNumTypeArgs(); ++i) {
+        const auto *TI = ObjLoc.getTypeArgTInfo(i);
+        if (auto Arg = BuildNodeIdForType(TI->getTypeLoc(), TI->getType(),
+                                          EmitRanges)) {
+          GenericArgIds.push_back((Arg.primary()));
+          GenericArgIdPtrs[i] = &GenericArgIds[i];
+        } else {
+          return Arg;
+        }
       }
-    }
-    if (!TypeAlreadyBuilt) {
-      ID = Observer.recordTappNode(IFaceNode.primary(), GenericArgIdPtrs);
+      if (!TypeAlreadyBuilt) {
+        ID = Observer.recordTappNode(IFaceNode.primary(), GenericArgIdPtrs);
+      }
+    } else if (!TypeAlreadyBuilt) {
+      ID = IFaceNode;
     }
   }; break;
   case TypeLoc::ObjCTypeParam: {
-    // TODO(salguarnieri): model any attached protocols.
     const auto &OTPTL = TypeLoc.getAs<ObjCTypeParamTypeLoc>();
     const auto *OTPT = dyn_cast<ObjCTypeParamType>(PT);
-    ID = BuildNodeIdForDecl(OTPT ? OTPT->getDecl() : OTPTL.getDecl());
+
+    if (const auto *TPD = OTPT ? OTPT->getDecl() : OTPTL.getDecl()) {
+      ID = BuildNodeIdForDecl(TPD);
+    }
+
   } break;
   case TypeLoc::BlockPointer: {
     const auto &BPTL = TypeLoc.getAs<BlockPointerTypeLoc>();
@@ -3992,17 +4075,49 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
   return ID;
 }
 
-MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::GetObjCObjBaseTypeNode(
-    const ObjCObjectType *T, const TypeLoc &Loc,
-    const IndexerASTVisitor::EmitRanges &EmitRanges) {
-  const auto *IFace = T->getInterface();
-  if (IFace == nullptr) {
-    // If we don't have an interface, that means we must be "id".
-    // TODO(salguarnieri) make sure this is the right way to handle the id
-    // type.
-    return Observer.getNodeIdForBuiltinType("id");
+MaybeFew<GraphObserver::NodeId>
+IndexerASTVisitor::RecordIdTypeNode(const ObjCObjectType *T,
+                                    ArrayRef<SourceLocation> ProtocolLocs) {
+  CHECK(T->getInterface() == nullptr);
+
+  const auto Protocols = T->getProtocols();
+  // Use a multimap since it is sorted by key and we want our nodes sorted by
+  // their (uncompressed) name. We want the items sorted by the original class
+  // name because the user should be able to write down a union type
+  // for the verifier and they can only do that if they know the order in which
+  // the types will be passed as parameters.
+  std::multimap<std::string, GraphObserver::NodeId> ProtocolNodes;
+  unsigned i = 0;
+  for (ObjCProtocolDecl *P : Protocols) {
+    auto SL = ProtocolLocs[i++];
+    auto PID = BuildNodeIdForDecl(P);
+    auto SR = RangeForASTEntityFromSourceLocation(SL);
+    if (auto ERCC = ExplicitRangeInCurrentContext(SR)) {
+      Observer.recordDeclUseLocation(ERCC.primary(), PID);
+    }
+    ProtocolNodes.insert(std::pair<std::string, GraphObserver::NodeId>(
+        P->getNameAsString(), PID));
   }
-  return BuildNodeIdForType(Loc, IFace->getTypeForDecl(), EmitRanges);
+  if (ProtocolNodes.size() == 0) {
+    return Observer.getNodeIdForBuiltinType("id");
+  } else if (ProtocolNodes.size() == 1) {
+    // We have something like id<P1>. This is a special case of the following
+    // code that handles id<P1, P2> because *this* case can skip the
+    // intermediate union tapp.
+    return (ProtocolNodes.begin()->second);
+  }
+  // We have something like id<P1, P2>, which means this is a union of types
+  // P1 and P2.
+
+  std::vector<const GraphObserver::NodeId *> ProtocolNodePointers;
+  ProtocolNodePointers.resize(ProtocolNodes.size(), nullptr);
+  i = 0;
+  for (const auto &PN : ProtocolNodes) {
+    ProtocolNodePointers[i++] = &(PN.second);
+  }
+  // Create/find the Union node.
+  auto UnionTApp = Observer.getNodeIdForBuiltinType("TypeUnion");
+  return Observer.recordTappNode(UnionTApp, ProtocolNodePointers);
 }
 
 // This is the synthesize statement.
@@ -4249,10 +4364,33 @@ void IndexerASTVisitor::ConnectToSuperClassAndProtocols(
   }
 }
 
+// Outline for the spirit of how generic types are handled in the kythe graph
+// (the following may be implemented out of order and may be partially
+// implemented in other methods):
+//
+// Create a node for the generic class (ObjCInterfaceDecl)
+// If there are type arguments:
+//   Create an abs node
+//   Create an absvar nodes for the type arguments
+//   Make the class a childof the abs node
+//   Make the type arguments parameters of the abs node
+// If the class is generic, there is no source range that corresponds to the
+// record node created for the class.
 bool IndexerASTVisitor::VisitObjCInterfaceDecl(
     const clang::ObjCInterfaceDecl *Decl) {
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
-  auto DeclNode = BuildNodeIdForDecl(Decl);
+  GraphObserver::NodeId BodyDeclNode(Observer.getDefaultClaimToken(), "");
+  GraphObserver::NodeId DeclNode(Observer.getDefaultClaimToken(), "");
+
+  // If we have type arguments, treat this as a generic type and indirect
+  // through an abs node.
+  if (const auto *TPL = Decl->getTypeParamList()) {
+    BodyDeclNode = BuildNodeIdForDecl(Decl, 0);
+    DeclNode = RecordGenericClass(Decl, TPL, BodyDeclNode);
+  } else {
+    BodyDeclNode = BuildNodeIdForDecl(Decl);
+    DeclNode = BodyDeclNode;
+  }
 
   MaybeRecordDefinitionRange(
       RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode);
@@ -4260,11 +4398,11 @@ bool IndexerASTVisitor::VisitObjCInterfaceDecl(
 
   AddChildOfEdgeToDeclContext(Decl, DeclNode);
 
-  Observer.recordRecordNode(DeclNode, GraphObserver::RecordKind::Class,
+  Observer.recordRecordNode(BodyDeclNode, GraphObserver::RecordKind::Class,
                             GraphObserver::Completeness::Incomplete,
                             GetFormat(Decl));
-  RecordCompletesForRedecls(Decl, NameRange, DeclNode);
-  ConnectToSuperClassAndProtocols(DeclNode, Decl);
+  RecordCompletesForRedecls(Decl, NameRange, BodyDeclNode);
+  ConnectToSuperClassAndProtocols(BodyDeclNode, Decl);
   return true;
 }
 
@@ -4555,11 +4693,6 @@ bool IndexerASTVisitor::VisitObjCIvarRefExpr(
   return VisitDeclRefOrIvarRefExpr(IRE, IRE->getDecl(), IRE->getLocation());
 }
 
-// TODO(salguarnieri) See if we can connect directly to the method definition.
-// This may not be possible with clang. If it isn't we should do it in post
-// process. A fair approximation would be to go to the definition for the type
-// written by the user. This would miss cases that type inference would limit
-// to subclasses, but should be good enough for now.
 bool IndexerASTVisitor::VisitObjCMessageExpr(
     const clang::ObjCMessageExpr *Expr) {
   if (BlameStack.empty()) {
@@ -4573,12 +4706,32 @@ bool IndexerASTVisitor::VisitObjCMessageExpr(
       ConsumeToken(Expr->getLocEnd(), clang::tok::r_square).getEnd();
   const SourceRange SR(Expr->getLocStart(), AfterBrace);
   if (auto RCC = ExplicitRangeInCurrentContext(SR)) {
-    const auto *Callee = Expr->getMethodDecl();
-    if (Callee != nullptr) {
+    // This does not take dynamic dispatch into account when looking for the
+    // method definition.
+    if (const auto *Callee = FindMethodDefn(Expr->getMethodDecl(),
+                                            Expr->getReceiverInterface())) {
       RecordCallEdges(RCC.primary(), BuildNodeIdForDecl(Callee));
     }
   }
   return true;
+}
+
+const ObjCMethodDecl *
+IndexerASTVisitor::FindMethodDefn(const ObjCMethodDecl *MD,
+                                  const ObjCInterfaceDecl *I) {
+  if (MD == nullptr || I == nullptr || MD->isThisDeclarationADefinition()) {
+    return MD;
+  }
+  // If we can, look in the implementation, otherwise we look in the interface.
+  const ObjCContainerDecl *CD = I->getImplementation();
+  if (CD == nullptr) {
+    CD = I;
+  }
+  if (const auto *MI =
+          CD->getMethod(MD->getSelector(), MD->isInstanceMethod())) {
+    return MI;
+  }
+  return MD;
 }
 
 bool IndexerASTVisitor::VisitObjCPropertyRefExpr(

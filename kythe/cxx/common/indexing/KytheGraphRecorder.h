@@ -62,7 +62,8 @@ enum class PropertyID {
   kComplete,
   kSubkind,
   kNodeKind,
-  kFormat
+  kFormat,
+  kVariance
 };
 
 /// \brief Known edge kinds. See the schema for details.
@@ -102,7 +103,8 @@ enum class EdgeKindID {
   kDefinesBinding,
   kOverrides,
   kOverridesRoot,
-  kChildOfContext
+  kChildOfContext,
+  kBoundedUpper,
 };
 
 /// \brief Returns the Kythe spelling of `node_kind_id`

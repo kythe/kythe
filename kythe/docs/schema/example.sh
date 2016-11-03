@@ -53,6 +53,8 @@ case "$LANGUAGE" in
     "$SCHEMA_ROOT/example-java.sh" ;;
   C++)
     "$SCHEMA_ROOT/example-cxx.sh" ;;
+  ObjC)
+    "$SCHEMA_ROOT/example-objc.sh" ;;
   dot)
     "$SCHEMA_ROOT/example-dot.sh" ;;
   clike)

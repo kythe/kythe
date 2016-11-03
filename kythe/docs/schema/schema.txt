@@ -1928,6 +1928,70 @@ To format `IntPtr`, we note that `IntPtr` is a <<tapp>> with a `param.0` with
 a defined `format`, `%1.*`. `IntPtr`'s `param.1` is `Int`, with the literal
 `format` `int`. We therefore produce `int*`.
 
+[[variance]]
+Variance
+--------
+
+Some languages (like Objective C) allow you to specify the variance of a
+type argument as it relates to the typing relationship of the class it is a
+parameter for. This is different than the bounds that may be placed on a type
+variable. The bounds are represented with <<bounded>> edges. Variance is
+stored as a fact in the node for the type variable.
+
+For example, `@interface G1<__covariant Type : P1*> : Root` states that `G1` is a
+generic type, `G1` takes a single type parameter that has an upper bound of `P1*`,
+and `G1<T>` is a subtype of `G1<U>` if and only if `T` is a subtype of `U`.
+
+Specifically for Objective C, the default variance is invariant, so
+`@interface G1<Type : P1*> : Root` states that `G1<T>` is a subtype of `G2<U>`
+if and only if T == U.
+
+The variance fact can be omitted, in which case covariance is assumed.
+
+[kythe,ObjC,"Variance for a generic type"]
+--------------------------------------------------------------------------------
+@interface Root
+@end
+
+@interface P1 : Root
+@end
+
+@interface P2 : P1
+@end
+
+//- @Type defines/binding TypeVar1
+//- @G1 defines/binding G1Abs
+//- TypeVar1.node/kind absvar
+//- TypeVar1.variance covariant
+//- G1Decl childof G1Abs
+//- G1Abs.node/kind abs
+//- G1Abs param.0 TypeVar1
+@interface G1<__covariant Type> : Root
+@end
+
+//- @Type defines/binding TypeVar2
+//- @G2 defines/binding G2Abs
+//- TypeVar2.node/kind absvar
+//- TypeVar2.variance contravariant
+//- G2Decl childof G2Abs
+//- G2Abs.node/kind abs
+//- G2Abs param.0 TypeVar2
+@interface G2<__contravariant Type> : Root
+@end
+
+int main(int argc, char **argv) {
+  // Example of variance in action.
+  G1<P2*> *g1var = [[G1 alloc] init];
+  G1<P1*> *g1var2 = g1var;
+
+  G2<P1*> *g2var = [[G1 alloc] init];
+  G2<P2*> *g2var2 = g2var;
+
+  return 0;
+}
+--------------------------------------------------------------------------------
+
+
 [[lsr]]
 Language-specific rules
 -----------------------

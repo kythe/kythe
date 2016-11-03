@@ -59,10 +59,10 @@
 int main(int argc, char **argv) {
   OldClock *c = [[OldClock alloc] init];
 
-  //- @"[c wind]" ref/call WindDecl
+  //- @"[c wind]" ref/call WindImpl
   [c wind];
 
-  //- @"[c getTime]" ref/call GetTimeDecl
+  //- @"[c getTime]" ref/call GetTimeImpl
   [c getTime];
   return 0;
 }

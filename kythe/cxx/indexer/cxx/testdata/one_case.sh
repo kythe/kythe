@@ -14,10 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-VERIFIER="kythe/cxx/verifier/verifier"
-INDEXER="kythe/cxx/indexer/cxx/indexer"
 # one_case test-file {--indexer argument | --clang argument |
 #     --verifier argument | --expected (expectfailindex|expectfailverify)}*
+
+# Output the commands that are run to help when debugging test failures.
+set -x
+
+VERIFIER="kythe/cxx/verifier/verifier"
+INDEXER="kythe/cxx/indexer/cxx/indexer"
 source kythe/cxx/indexer/cxx/testdata/parse_args.sh
 "${INDEXER}" -i "${TEST_FILE}" "${INDEXER_ARGS[@]}" -- \
     "${CLANG_ARGS[@]}" | "${VERIFIER}" "${TEST_FILE}" \

@@ -11,6 +11,7 @@ def asciidoc_with_verifier(name, src):
         "example.sh",
         "example-clike.sh",
         "example-cxx.sh",
+        "example-objc.sh",
         "example-dot.sh",
         "example-java.sh",
         "java-schema-file-data-template.FileData",

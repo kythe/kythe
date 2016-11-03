@@ -1931,55 +1931,113 @@ cxx_indexer_test(
     tags = ["objc"],
 )
 
-# TODO(salguarnieri) Implement generics in the indexer.
 cxx_indexer_test(
-    name = "generic_contravariant",
-    srcs = ["objc/generic_contravariant.m"],
+    name = "generic_bound",
+    srcs = ["objc/generics/generic_bound.m"],
     ignore_dups = True,
     objc = True,
     tags = ["objc"],
 )
 
-# TODO(salguarnieri) Implement generics in the indexer.
 cxx_indexer_test(
-    name = "generic_covariant_instantiation",
-    srcs = ["objc/generic_covariant_instantiation.m"],
+    name = "generic_contravariant_decl",
+    srcs = ["objc/generics/generic_contravariant_decl.m"],
     ignore_dups = True,
     objc = True,
     tags = ["objc"],
 )
 
-# TODO(salguarnieri) Implement generics in the indexer.
 cxx_indexer_test(
-    name = "generic_covariant",
-    srcs = ["objc/generic_covariant.m"],
+    name = "generic_contravariant_restricted_super_class",
+    srcs = ["objc/generics/generic_contravariant_restricted_super_class.m"],
     ignore_dups = True,
     objc = True,
     tags = ["objc"],
 )
 
-# TODO(salguarnieri) Implement generics in the indexer.
 cxx_indexer_test(
-    name = "generic_covariant_method_call",
-    srcs = ["objc/generic_covariant_method_call.m"],
+    name = "generic_covariant_decl",
+    srcs = ["objc/generics/generic_covariant_decl.m"],
     ignore_dups = True,
     objc = True,
     tags = ["objc"],
 )
 
-# TODO(salguarnieri) Implement generics in the indexer.
-cxx_indexer_test(
-    name = "generic_covariant_restricted_protocol",
-    srcs = ["objc/generic_covariant_restricted_protocol.m"],
-    ignore_dups = True,
-    objc = True,
-    tags = ["objc"],
-)
-
-# TODO(salguarnieri) Implement generics in the indexer.
 cxx_indexer_test(
     name = "generic_covariant_restricted_super_class",
-    srcs = ["objc/generic_covariant_restricted_super_class.m"],
+    srcs = ["objc/generics/generic_covariant_restricted_super_class.m"],
+    ignore_dups = True,
+    objc = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "generic_inherited",
+    srcs = ["objc/generics/generic_inherited.m"],
+    ignore_dups = True,
+    objc = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "generic_invariant",
+    srcs = ["objc/generics/generic_invariant.m"],
+    ignore_dups = True,
+    objc = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "generic_instantiation",
+    srcs = ["objc/generics/generic_instantiation.m"],
+    ignore_dups = True,
+    objc = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "generic_method_call",
+    srcs = ["objc/generics/generic_method_call.m"],
+    ignore_dups = True,
+    objc = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "generic_method_type",
+    srcs = ["objc/generics/generic_method_type.m"],
+    ignore_dups = True,
+    objc = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "generic_nested",
+    srcs = ["objc/generics/generic_nested.m"],
+    ignore_dups = True,
+    objc = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "generic_restricted_protocol",
+    srcs = ["objc/generics/generic_restricted_protocol.m"],
+    ignore_dups = True,
+    objc = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "generic_two_args",
+    srcs = ["objc/generics/generic_two_args.m"],
+    ignore_dups = True,
+    objc = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "generic_unbound",
+    srcs = ["objc/generics/generic_unbound.m"],
     ignore_dups = True,
     objc = True,
     tags = ["objc"],
@@ -2086,8 +2144,24 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "method_overrides_decl_only",
+    srcs = ["objc/method_overrides_decl_only.m"],
+    ignore_dups = True,
+    objc = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
     name = "method_overrides_root",
     srcs = ["objc/method_overrides_root.m"],
+    ignore_dups = True,
+    objc = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "method_param_types",
+    srcs = ["objc/method_param_types.m"],
     ignore_dups = True,
     objc = True,
     tags = ["objc"],
@@ -2102,6 +2176,14 @@ cxx_indexer_test(
     name = "method_swizzle",
     srcs = ["objc/method_swizzle.m"],
     expect_fail_index = True,
+    ignore_dups = True,
+    objc = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "method_type",
+    srcs = ["objc/method_type.m"],
     ignore_dups = True,
     objc = True,
     tags = ["objc"],
@@ -2177,6 +2259,22 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "protocol_method_defn",
     srcs = ["objc/protocol_method_defn.m"],
+    ignore_dups = True,
+    objc = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "protocol_param",
+    srcs = ["objc/protocol_param.m"],
+    ignore_dups = True,
+    objc = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "protocol_param_long_enough_to_hash",
+    srcs = ["objc/protocol_param_long_enough_to_hash.m"],
     ignore_dups = True,
     objc = True,
     tags = ["objc"],

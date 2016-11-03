@@ -1,5 +1,5 @@
 // Test that subclasses ref their superclass and overridden methods have the
-// right edges.
+// right edges when no implementations are provided.
 
 //- @Super defines/binding SuperDecl
 @interface Super
@@ -24,38 +24,12 @@
 -(int)bar;
 @end
 
-//- @Duper defines/binding DuperImpl
-@implementation Duper
-//- @"foo " defines/binding FooImpl2
-//- FooImpl2 overrides FooDecl
--(int)foo {
-  return 24;
-}
-
--(int)bar {
-  return 33;
-}
-@end
-
 //- @C2 defines/binding C2Interface
 //- C2Interface extends SuperImpl
 //- @Super ref SuperDecl
 //- @Super ref SuperImpl
 @interface C2 : Super
 -(int)bar;
-@end
-
-//- @C2 defines/binding C2Impl
-@implementation C2
-//- @"foo " defines/binding FooImplC2
-//- FooImplC2 overrides FooDecl
--(int)foo {
-  return 24;
-}
-
--(int)bar {
-  return 33;
-}
 @end
 
 int main(int argc, char** argv) {
@@ -66,11 +40,11 @@ int main(int argc, char** argv) {
 
   //- @"[s foo]" ref/call FooImpl
   [s foo];
-  //- @"[d foo]" ref/call FooImpl2
+  //- @"[d foo]" ref/call FooDecl2
   [d foo];
   //- @"[sd foo]" ref/call FooImpl
   [sd foo];
-  //- @"[c2 foo]" ref/call FooImplC2
+  //- @"[c2 foo]" ref/call FooDecl
   [c2 foo];
   return 0;
 }

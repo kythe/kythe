@@ -69,7 +69,9 @@ static const std::string *kEdgeKindSpellings[] = {
     new std::string("/kythe/edge/defines/binding"),
     new std::string("/kythe/edge/overrides"),
     new std::string("/kythe/edge/overrides/root"),
-    new std::string("/kythe/edge/childof/context")};
+    new std::string("/kythe/edge/childof/context"),
+    new std::string("/kythe/edge/bounded/upper")
+};
 
 bool of_spelling(llvm::StringRef str, EdgeKindID *edge_id) {
   size_t edge_index = 0;
@@ -96,7 +98,9 @@ static const std::string *const kPropertySpellings[] = {
     new std::string("/kythe/complete"),
     new std::string("/kythe/subkind"),
     new std::string("/kythe/node/kind"),
-    new std::string("/kythe/format")};
+    new std::string("/kythe/format"),
+    new std::string("/kythe/variance"),
+};
 
 static const std::string *const kEmptyStringSpelling = new std::string("");
 

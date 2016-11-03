@@ -40,18 +40,18 @@ int main(int argc, char **argv) {
 
   //- @"[box foo]" childof Main
   //- @"[box foo]".node/kind anchor
-  //- @"[box foo]" ref/call FooDecl
+  //- @"[box foo]" ref/call FooDefn
   [box foo];
 
   //- @"[box foo:30]" childof Main
   //- @"[box foo:30]".node/kind anchor
-  //- @"[box foo:30]" ref/call FooKDecl
+  //- @"[box foo:30]" ref/call FooKDefn
   [box foo:30];
 
   // Also test to make sure we don't get extra whitespace.
   //- @"[box foo:30 withBar:47]" childof Main
   //- @"[box foo:30 withBar:47]".node/kind anchor
-  //- @"[box foo:30 withBar:47]" ref/call FooKWithBarDecl
+  //- @"[box foo:30 withBar:47]" ref/call FooKWithBarDefn
   [box foo:30 withBar:47]    ;
 
   return 0;

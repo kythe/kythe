@@ -1,7 +1,7 @@
 // Test what compatibility_alias does in the presence of a typedef.
 //
-// It turns out that the alias is repalced by the root type, so in the
-// following example, the alias Truck is repalced with Car, which skips
+// It turns out that the alias is replaced by the root type, so in the
+// following example, the alias Truck is replaced with Car, which skips
 // through the intermediate alias of SUV.
 
 //- @Car defines/binding CarDecl

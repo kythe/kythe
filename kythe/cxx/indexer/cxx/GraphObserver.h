@@ -422,6 +422,8 @@ public:
     Destructor
   };
 
+  enum class Variance { Covariant, Contravariant, Invariant };
+
   /// \brief Records a node representing an interface type (such as a protocol
   /// in Objective-C).
   /// \param Node The NodeId of the record.
@@ -638,6 +640,28 @@ public:
   /// \param TypeNodeId The identifier for the node representing the type.
   virtual void recordTypeEdge(const NodeId &TermNodeId,
                               const NodeId &TypeNodeId) {}
+
+  /// \brief Records an upper bound for the type of a node as an edge in the
+  /// graph.
+  /// \param TypeNodeId The identifier for the node to given a bounded type.
+  /// \param TypeNodeId The identifier for the node representing the type that
+  /// is the bound.
+  virtual void recordUpperBoundEdge(const NodeId &TypeNodeId,
+                                    const NodeId &TypeBoundNodeId) {}
+
+  /// \brief Record the variance for this Type Node. This is useful for
+  /// Objective-C where the user can explicitly set the variance for a type
+  /// parameter.
+  ///
+  /// Objective C type param decls may declare their variance, which affects the
+  /// subtyping of the parent type. See the test cases for examples and text
+  /// explaining the typing relationship.
+  ///
+  /// In short, given A<__covaraint T : U*>, the type parameter bound (T : U*)
+  /// describes how the type parameter can be assigned. The co/contra qualifier
+  /// describes the type relationship between A<X*> and A<Y*> if X and Y are
+  /// both subtypes of U.
+  virtual void recordVariance(const NodeId &TypeNodeId, const Variance V) {}
 
   /// \brief Records that some term specializes some abstraction.
   /// \param TermNodeId The identifier for the node specializing the

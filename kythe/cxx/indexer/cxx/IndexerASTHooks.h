@@ -224,7 +224,13 @@ public:
   bool VisitMemberExpr(const clang::MemberExpr *Expr);
   bool VisitCXXDependentScopeMemberExpr(
       const clang::CXXDependentScopeMemberExpr *Expr);
-  bool VisitTypedefNameDecl(const clang::TypedefNameDecl *Decl);
+
+  // Visit the subtypes of TypedefNameDecl individually because we want to do
+  // something different with ObjCTypeParamDecl.
+  bool VisitTypedefDecl(const clang::TypedefDecl *Decl);
+  bool VisitTypeAliasDecl(const clang::TypeAliasDecl *Decl);
+  bool VisitObjCTypeParamDecl(const clang::ObjCTypeParamDecl *Decl);
+
   bool VisitRecordDecl(const clang::RecordDecl *Decl);
   bool VisitEnumDecl(const clang::EnumDecl *Decl);
   bool VisitEnumConstantDecl(const clang::EnumConstantDecl *Decl);
@@ -232,7 +238,6 @@ public:
   bool TraverseDecl(clang::Decl *Decl);
 
   // Objective C specific nodes
-
   bool VisitObjCPropertyImplDecl(const clang::ObjCPropertyImplDecl *Decl);
   bool VisitObjCCompatibleAliasDecl(const clang::ObjCCompatibleAliasDecl *Decl);
   bool VisitObjCCategoryDecl(const clang::ObjCCategoryDecl *Decl);
@@ -710,6 +715,13 @@ private:
   GraphObserver::NodeId RecordTemplate(const TemplateDeclish *Template,
                                        const GraphObserver::NodeId &BodyId);
 
+  /// Records information about the generic class by wrapping the node
+  /// `BodyId`. Returns the `NodeId` for the dominating generic type.
+  GraphObserver::NodeId
+  RecordGenericClass(const clang::ObjCInterfaceDecl *IDecl,
+                     const clang::ObjCTypeParamList *TPL,
+                     const GraphObserver::NodeId &BodyId);
+
   /// \brief Fills `ArgNodeIds` with pointers to `NodeId`s for a template
   /// argument list.
   /// \param `ArgsAsWritten` Use this argument list if it isn't None.
@@ -800,10 +812,16 @@ private:
                     bool IsFunctionDefinition, const unsigned int ParamNumber,
                     const clang::ParmVarDecl *Param);
 
+  /// \brief Record the type node for this id usage. This should only be called
+  /// if T->getInterface() returns null, which means T is of type id and not
+  /// a "real" class.
+  ///
+  /// If this is a naked id (no protocols listed), this returns the node id
+  /// for the builtin id node. Otherwise, this calls BuildNodeIdForDecl for
+  /// each protocol and constructs a new tapp node for this TypeUnion.
   MaybeFew<GraphObserver::NodeId>
-  GetObjCObjBaseTypeNode(const clang::ObjCObjectType *T,
-                         const clang::TypeLoc &Loc,
-                         const IndexerASTVisitor::EmitRanges &EmitRanges);
+  RecordIdTypeNode(const clang::ObjCObjectType *T,
+                   llvm::ArrayRef<clang::SourceLocation> ProtocolLocs);
 
   /// \brief Draw the completes edge from a Decl to each of its redecls.
   void RecordCompletesForRedecls(const clang::Decl *Decl,
@@ -826,6 +844,18 @@ private:
   /// \brief Mark each node of `NNSL` as a reference.
   /// \param NNSL the nested name specifier to visit.
   void VisitNestedNameSpecifierLoc(clang::NestedNameSpecifierLoc NNSL);
+
+  /// \brief This is used to handle the visitation of a clang::TypedefDecl
+  /// or a clang::TypeAliasDecl.
+  bool VisitCTypedef(const clang::TypedefNameDecl *Decl);
+
+  /// \brief Find the implementation for `MD`. If `MD` is a definition, `MD` is
+  /// returned. Otherwise, the method tries to find the implementation by
+  /// looking through the interface and its implementation. If a method
+  /// implementation is found, it is returned otherwise `MD` is returned.
+  const clang::ObjCMethodDecl *
+  FindMethodDefn(const clang::ObjCMethodDecl *MD,
+                 const clang::ObjCInterfaceDecl *I);
 
   /// \brief The current context for constructing `GraphObserver::Range`s.
   ///

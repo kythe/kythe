@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
 
   //- @"[box setWidth:55]" childof Main
   //- @"[box setWidth:55]".node/kind anchor
-  //- @"[box setWidth:55]" ref/call SetWidthDecl
+  //- @"[box setWidth:55]" ref/call SetWidthDefn
   [box setWidth:55];
 
   //- @width ref/call GetWidthMethod

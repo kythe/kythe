@@ -33,12 +33,12 @@
 int main(int argc, char **argv) {
   Box *box = [[Box alloc] init];
 
-  //- @"[box foo]" ref/call FooDecl
+  //- @"[box foo]" ref/call FooDefn
   //- @"[box foo]" childof Main
   //- @"[box foo]".node/kind anchor
   [box foo];
 
-  //- @"[    box    bar    ]" ref/call BarDecl
+  //- @"[    box    bar    ]" ref/call BarDefn
   //- @"[    box    bar    ]" childof Main
   //- @"[    box    bar    ]".node/kind anchor
   [    box    bar    ]      ;

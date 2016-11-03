@@ -17,6 +17,9 @@
 # bundle_case test-file clang-standard {--indexer argument |
 #     --verifier argument | --expected (expectfailindex|expectfailverify)}*
 
+# Output the commands that are run to help when debugging test failures.
+set -x
+
 VERIFIER="kythe/cxx/verifier/verifier"
 INDEXER="kythe/cxx/indexer/cxx/indexer"
 EXTRACTOR="kythe/cxx/extractor/cxx_extractor"

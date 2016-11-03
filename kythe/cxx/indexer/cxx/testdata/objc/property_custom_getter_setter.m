@@ -65,7 +65,7 @@ int main(int argc, char **argv) {
 
   //- @"[box bar:55]" childof Main
   //- @"[box bar:55]".node/kind anchor
-  //- @"[box bar:55]" ref/call BarDecl
+  //- @"[box bar:55]" ref/call BarImpl
   [box bar:55];
 
   //- @width ref/call FooDecl
@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
   //- @width.node/kind anchor
   int a = box.width;
 
-  //- @"[box foo]" ref/call FooDecl
+  //- @"[box foo]" ref/call FooImpl
   //- @"[box foo]" childof Main
   //- @"[box foo]".node/kind anchor
   int b = [box foo];
