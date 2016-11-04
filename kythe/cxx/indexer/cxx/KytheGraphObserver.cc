@@ -555,13 +555,15 @@ void KytheGraphObserver::recordVariance(const NodeId &TypeNodeId,
   if (!lossy_claiming_ || claimNode(TypeNodeId)) {
     std::string Variance;
     switch (V) {
-      case Variance::Contravariant:
+      // KytheGraphObserver prefix shouldn't be necessary but some compiler
+      // incantations complain if it is not there.
+      case KytheGraphObserver::Variance::Contravariant:
         Variance = "contravariant";
         break;
-      case Variance::Covariant:
+      case KytheGraphObserver::Variance::Covariant:
         Variance = "covariant";
         break;
-      case Variance::Invariant:
+      case KytheGraphObserver::Variance::Invariant:
         Variance = "invariant";
         break;
     }
