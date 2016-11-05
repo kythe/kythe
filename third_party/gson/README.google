@@ -3,3 +3,5 @@ Version: 2928b3ef978a619a5433a6f3c9209e2968497904
 License: Apache License 2.0 http://www.apache.org/licenses/LICENSE-2.0
 License File: LICENSE
 Description: GSON type adapter for Protocol Buffers
+Local Modifications:
+ No modifications.
