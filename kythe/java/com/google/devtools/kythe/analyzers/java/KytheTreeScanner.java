@@ -18,6 +18,8 @@ package com.google.devtools.kythe.analyzers.java;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.Lists;
 import com.google.devtools.kythe.analyzers.base.EdgeKind;
 import com.google.devtools.kythe.analyzers.base.EntrySet;
@@ -244,7 +246,12 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
       // Generic classes record the source range of the class name for the abs node, regular
       // classes record the source range of the class name for the record node.
-      EntrySet absNode = defineTypeParameters(ctx, classNode, classDef.getTypeParameters());
+      EntrySet absNode = defineTypeParameters(
+          ctx,
+          classNode,
+          classDef.getTypeParameters(),
+          ImmutableList.<EntrySet>of() /* There are no wildcards in class definitions */
+      );
       if (absNode != null) {
         List<String> tParamNames = new LinkedList<>();
         for (JCTypeParameter tParam : classDef.getTypeParameters()) {
@@ -312,9 +319,11 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     List<JavaNode> params = scanList(methodDef.getParameters(), ctx);
     List<JavaNode> paramTypes = new LinkedList<>();
     List<String> paramTypeNames = new LinkedList<>();
+    List<EntrySet> wildcards = new LinkedList<>();
     for (JavaNode n : params) {
       paramTypes.add(n.typeNode);
       paramTypeNames.add(n.typeNode.qualifiedName);
+      wildcards.addAll(n.childWildcards);
     }
 
     Optional<String> signature = signatureGenerator.getSignature(methodDef.sym);
@@ -323,7 +332,12 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       boolean documented = visitDocComment(methodDef, methodNode);
       visitAnnotations(methodNode, methodDef.getModifiers().getAnnotations(), ctx);
 
-      EntrySet absNode = defineTypeParameters(ctx, methodNode, methodDef.getTypeParameters());
+      EntrySet absNode = defineTypeParameters(
+          ctx,
+          methodNode,
+          methodDef.getTypeParameters(),
+          wildcards
+      );
 
       EntrySet ret, bindingAnchor = null;
       String fnTypeName = "(" + Joiner.on(",").join(paramTypeNames) + ")";
@@ -449,18 +463,21 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     List<JavaNode> arguments = scanList(tApply.getTypeArguments(), ctx);
     List<EntrySet> argEntries = new LinkedList<>();
     List<String> argNames = new LinkedList<>();
+    Builder<EntrySet> childWildcards = ImmutableList.builder();
     for (JavaNode n : arguments) {
       argEntries.add(n.entries);
       argNames.add(n.qualifiedName);
+      childWildcards.addAll(n.childWildcards);
     }
 
     EntrySet typeNode = entrySets.newTApply(typeCtorNode.entries, argEntries);
+    // TODO(salguarnieri) Think about removing this since it isn't something that we have a use for.
     emitAnchor(ctx, EdgeKind.REF, typeNode);
 
     String qualifiedName = typeCtorNode.qualifiedName + "<" + Joiner.on(',').join(argNames) + ">";
     entrySets.emitName(typeNode, qualifiedName);
 
-    return new JavaNode(typeNode, qualifiedName);
+    return new JavaNode(typeNode, qualifiedName, childWildcards.build());
   }
 
   @Override
@@ -579,7 +596,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
           wild.getKind() == Kind.EXTENDS_WILDCARD ? EdgeKind.BOUNDED_UPPER : EdgeKind.BOUNDED_LOWER,
           bound);
     }
-    return new JavaNode(node, signature);
+    return new JavaNode(node, signature, ImmutableList.of(node));
   }
 
   @Override
@@ -659,9 +676,19 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     return entries;
   }
 
+  // TODO When we want to refer to a type or method that is generic, we need to point to the abs
+  // node. The code currently does not have an easy way to access that node but this method might
+  // offer a way to change that.
+  // See https://phabricator-dot-kythe-repo.appspot.com/T185 for more discussion and detail.
+  /**
+   * Create an abs node if we have type variables or if we have wildcards.
+   */
   private EntrySet defineTypeParameters(
-      TreeContext ownerContext, EntrySet owner, List<JCTypeParameter> params) {
-    if (params.isEmpty()) {
+      TreeContext ownerContext,
+      EntrySet owner,
+      List<JCTypeParameter> params,
+      List<EntrySet> wildcards) {
+    if (params.isEmpty() && wildcards.isEmpty()) {
       return null;
     }
 
@@ -683,7 +710,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         }
       }
     }
-
+    // Add all of the wildcards that roll up to this node. For example:
+    // public static <T> void foo(Ty<?> a, Obj<?, ?> b, Obj<Ty<?>, Ty<?>> c) should declare an abs
+    // node that has 1 named absvar (T) and 5 unnamed absvars.
+    typeParams.addAll(wildcards);
     return entrySets.newAbstract(owner, typeParams);
   }
 
@@ -935,14 +965,42 @@ class JavaNode {
   final JavaNode typeNode;
   final String qualifiedName;
 
-  public JavaNode(EntrySet entries, String qualifiedName) {
-    this(entries, qualifiedName, null);
+  // I think order matters for the wildcards because the abs node will be connected to them with
+  // param edges, which are numbered. If order doesn't matter, we should change this to something
+  // like bazel's NestedSet.
+  /**
+   * The full list of wildcards that are parented by this node. This includes all wildcards that
+   * directly belong to this node, and all wildcards that belong to children of this node.
+   */
+  final ImmutableList<EntrySet> childWildcards;
+
+  JavaNode(EntrySet entries, String qualifiedName) {
+    this(entries, qualifiedName, null, ImmutableList.<EntrySet>of());
   }
 
-  public JavaNode(EntrySet entries, String qualifiedName, JavaNode typeNode) {
+  JavaNode(EntrySet entries,
+      String qualifiedName,
+      ImmutableList<EntrySet> childWildcards) {
+    this(entries, qualifiedName, null, childWildcards);
+  }
+
+  JavaNode(EntrySet entries, String qualifiedName, JavaNode typeNode) {
+    this(
+        entries,
+        qualifiedName,
+        typeNode,
+        typeNode != null ? typeNode.childWildcards : ImmutableList.<EntrySet>of()
+    );
+  }
+
+  JavaNode(EntrySet entries,
+      String qualifiedName,
+      JavaNode typeNode,
+      ImmutableList<EntrySet> childWildcards) {
     this.entries = entries;
     this.qualifiedName = qualifiedName;
     this.typeNode = typeNode;
+    this.childWildcards = childWildcards;
   }
 
   @Override

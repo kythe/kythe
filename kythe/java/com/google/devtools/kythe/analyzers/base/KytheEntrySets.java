@@ -155,7 +155,7 @@ public class KytheEntrySets {
   }
 
   /**
-   * Returns the {@link VName} of the {@link NodeKind.FILE} node with the given contents digest.
+   * Returns the {@link VName} of the {@link NodeKind#FILE} node with the given contents digest.
    * If none is found, return {@code null}.
    */
   public VName getFileVName(String digest) {
@@ -256,14 +256,14 @@ public class KytheEntrySets {
     return abs;
   }
 
-  /** Returns and emits a new {@link NodeKind.TAPPLY} function type node. */
+  /** Returns and emits a new {@link NodeKind#TAPPLY} function type node. */
   public EntrySet newFunctionType(EntrySet returnType, List<EntrySet> arguments) {
     List<EntrySet> tArgs = new LinkedList<>(arguments);
     tArgs.add(0, returnType);
     return newTApply(getBuiltin("fn"), tArgs);
   }
 
-  /** Returns and emits a new {@link NodeKind.TAPPLY} node along with its parameter edges. */
+  /** Returns and emits a new {@link NodeKind#TAPPLY} node along with its parameter edges. */
   public EntrySet newTApply(EntrySet head, List<EntrySet> arguments) {
     EntrySet node = emitAndReturn(newApplyNode(NodeKind.TAPPLY, head, arguments));
     emitEdge(node, EdgeKind.PARAM, head, 0);
@@ -286,7 +286,7 @@ public class KytheEntrySets {
 
   /**
    * Returns the {@link FileInput}'s {@link VName} with the given digest. If none is found, return
-   * {@code null}. This is the raw form of {@link #getFileName(String)}.
+   * {@code null}.
    */
   protected VName lookupVName(String digest) {
     VName inputVName = inputVNames.get(digest);

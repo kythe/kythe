@@ -79,6 +79,34 @@ java_verifier_test(
     deps = [":files_tests"],
 )
 
+# TODO This test currently fails: https://phabricator-dot-kythe-repo.appspot.com/T185
+java_verifier_test(
+    name = "generic_class_tests",
+    size = "small",
+    srcs = ["GenericClass.java"],
+    tags = [
+        "arc-ignore",
+        "manual",
+    ],
+)
+
+java_verifier_test(
+    name = "generic_method_tests",
+    size = "small",
+    srcs = ["GenericMethod.java"],
+)
+
+# TODO This test currently fails: https://phabricator-dot-kythe-repo.appspot.com/T185
+java_verifier_test(
+    name = "generic_method_ref_tests",
+    size = "small",
+    srcs = ["GenericMethodRef.java"],
+    tags = [
+        "arc-ignore",
+        "manual",
+    ],
+)
+
 java_verifier_test(
     name = "generics_tests",
     size = "small",
@@ -120,4 +148,10 @@ java_verifier_test(
     name = "member_references_tests",
     size = "small",
     srcs = ["MemberReferences.java"],
+)
+
+java_verifier_test(
+    name = "wildcard_method_tests",
+    size = "small",
+    srcs = ["WildcardMethod.java"],
 )
