@@ -64,38 +64,32 @@ genrule(
         "include/glog/log_severity.h",
     ],
     cmd = """
-    declare -A ac_subst
-    ac_subst=(
-      [ac_cv___attribute___noinline]="__attribute__ ((noinline))"
-      [ac_cv___attribute___noreturn]="__attribute__ ((noreturn))"
-      [ac_cv___attribute___printf_4_5]="__attribute__((__format__ (__printf__, 4, 5)))"
-      [ac_cv_cxx_using_operator]=1
-      [ac_cv_have___builtin_expect]=1
-      [ac_cv_have_inttypes_h]=1
-      [ac_cv_have_libgflags]=1
-      [ac_cv_have_stdint_h]=1
-      [ac_cv_have_systypes_h]=1
-      [ac_cv_have___uint16]=0
-      [ac_cv_have_u_int16_t]=0
-      [ac_cv_have_uint16_t]=1
-      [ac_cv_have_unistd_h]=1
-      [ac_google_end_namespace]="}"
-      [ac_google_namespace]="google"
-      [ac_google_start_namespace]="namespace google {"
-    )
     replace() {
-      local script="$$(
-        for key in "$${!ac_subst[@]}"; do
-          echo -n "s|@$$key@|$${ac_subst[$$key]}|g;"
-        done
-      )"
-      sed -e "$$script" "$$1" > "$$2"
+      local ac_subst=(
+        's|@ac_cv___attribute___noinline@|__attribute__ ((noinline))|g;'
+        's|@ac_cv___attribute___noreturn@|__attribute__ ((noreturn))|g;'
+        's|@ac_cv___attribute___printf_4_5@|__attribute__((__format__ (__printf__, 4, 5)))|g;'
+        's|@ac_cv_cxx_using_operator@|1|g;'
+        's|@ac_cv_have___builtin_expect@|1|g;'
+        's|@ac_cv_have_inttypes_h@|1|g;'
+        's|@ac_cv_have_libgflags@|1|g;'
+        's|@ac_cv_have_stdint_h@|1|g;'
+        's|@ac_cv_have_systypes_h@|1|g;'
+        's|@ac_cv_have___uint16@|0|g;'
+        's|@ac_cv_have_u_int16_t@|0|g;'
+        's|@ac_cv_have_uint16_t@|1|g;'
+        's|@ac_cv_have_unistd_h@|1|g;'
+        's|@ac_google_end_namespace@|}|g;'
+        's|@ac_google_namespace@|google|g;'
+        's|@ac_google_start_namespace@|namespace google {|g;'
+      )
+      sed -e "$${ac_subst[*]}" "$$1" > "$$2"
     }
     replace $(location src/glog/vlog_is_on.h.in) $(location include/glog/vlog_is_on.h)
     replace $(location src/glog/raw_logging.h.in) $(location include/glog/raw_logging.h)
     replace $(location src/glog/stl_logging.h.in) $(location include/glog/stl_logging.h)
     replace $(location src/glog/logging.h.in) $(location include/glog/logging.h)
-    mv $(location src/glog/log_severity.h) $(location include/glog/log_severity.h)
+    cp $(location src/glog/log_severity.h) $(location include/glog/log_severity.h)
     """,
     visibility = ["//visibility:private"],
 )
