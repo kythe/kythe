@@ -1511,16 +1511,19 @@ func SlowDocumentation(ctx context.Context, service Service, req *xpb.Documentat
 	return reply, nil
 }
 
-type grpcClient struct{ xpb.XRefServiceClient }
+type grpcClient struct {
+	xpb.XRefServiceClient
+	xpb.GraphServiceClient
+}
 
 // Nodes implements part of the Service interface.
 func (w *grpcClient) Nodes(ctx context.Context, req *xpb.NodesRequest) (*xpb.NodesReply, error) {
-	return w.XRefServiceClient.Nodes(ctx, req)
+	return w.GraphServiceClient.Nodes(ctx, req)
 }
 
 // Edges implements part of the Service interface.
 func (w *grpcClient) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
-	return w.XRefServiceClient.Edges(ctx, req)
+	return w.GraphServiceClient.Edges(ctx, req)
 }
 
 // Decorations implements part of the Service interface.
@@ -1539,7 +1542,9 @@ func (w *grpcClient) Documentation(ctx context.Context, req *xpb.DocumentationRe
 }
 
 // GRPC returns an xrefs Service backed by the given GRPC client and context.
-func GRPC(c xpb.XRefServiceClient) Service { return &grpcClient{c} }
+func GRPC(xref xpb.XRefServiceClient, graph xpb.GraphServiceClient) Service {
+	return &grpcClient{XRefServiceClient: xref, GraphServiceClient: graph}
+}
 
 type webClient struct{ addr string }
 

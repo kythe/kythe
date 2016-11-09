@@ -92,7 +92,7 @@ func ParseSpec(apiSpec string) (Interface, error) {
 		}
 		api.closer = func() error { conn.Close(); return nil }
 
-		api.xs = xrefs.GRPC(xpb.NewXRefServiceClient(conn))
+		api.xs = xrefs.GRPC(xpb.NewXRefServiceClient(conn), xpb.NewGraphServiceClient(conn))
 		api.ft = filetree.GRPC(ftpb.NewFileTreeServiceClient(conn))
 	}
 	return api, nil

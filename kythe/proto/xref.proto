@@ -18,20 +18,16 @@ syntax = "proto3";
 
 package kythe.proto;
 
-// Design document: <link when written>
-// This proto represents a very preliminary attempt to define a cross-reference
-// service interface, based on Kythe data.
+// This file defines a cross-reference service interface, based on Kythe data.
 //
 // Tickets are Kythe URIs (http://www.kythe.io/docs/kythe-uri-spec.html).
 
-// XRefService provides access to a Kythe graph for fast read-only access to
-// cross-reference relationships.  What constitutes a "Cross-reference" is not
-// precisely defined, but generally includes non-transitive (single-step)
-// relation like usage of a declaration, instantiation of a type, invocation of
-// a function, direct inheritance or overrides, and so forth.  Some transitive
-// relations can be converted into cross-references by precomputing a flattened
-// representation of a transitive relation.  In general, though, this service
-// is designed to be most efficient for single-step expansions.
+// XRefService provides fast read-only access to Kythe cross-reference
+// relationships.  "Cross-references" generally include non-transitive
+// (single-step) relations like usage of a declaration, instantiation of a
+// type, invocation of a function, direct inheritance or overrides, and so
+// forth.  Some transitive relations can be converted into cross-references by
+// precomputing a flattened representation of a transitive relation.
 //
 // Key design principles:
 //  - All requests must be satisfied "quickly", e.g., in time proportional to
@@ -41,20 +37,7 @@ package kythe.proto;
 //
 //  - The client specifies exactly what facts should be returned.
 //
-// There is no distinction made in the API between "node not found" and "no
-// facts/edges for node".  A node is extensionally defined by its facts and
-// edges, so a node without any facts or edges is not considered to exist.
 service XRefService {
-
-  // TODO(schroederc): break off Nodes/Edges into a separate service
-
-  // Nodes returns a subset of the facts for each of the requested nodes.
-  rpc Nodes(NodesRequest) returns (NodesReply) {}
-
-  // Edges returns a subset of the outbound edges for each of a set of
-  // requested nodes.
-  rpc Edges(EdgesRequest) returns (EdgesReply) {}
-
   // Decorations returns an index of the nodes and edges associated with a
   // particular file node.
   rpc Decorations(DecorationsRequest) returns (DecorationsReply) {}
@@ -68,6 +51,22 @@ service XRefService {
   // user-provided text. The documentation may refer to tickets for other
   // nodes in the graph.
   rpc Documentation(DocumentationRequest) returns (DocumentationReply) {}
+}
+
+// GraphService provides fast single-step node and edge lookups in a Kythe
+// graph. The difference between this and a GraphStore is that queries for
+// reverse relationships are also expected to be fast.
+//
+// There is no distinction between "node not found" and "no facts/edges for
+// node".  A node is extensionally defined by its facts and edges, so a node
+// without any facts or edges is not considered to exist.
+service GraphService {
+  // Nodes returns a subset of the facts for each of the requested nodes.
+  rpc Nodes(NodesRequest) returns (NodesReply) {}
+
+  // Edges returns a subset of the outbound edges for each of a set of
+  // requested nodes.
+  rpc Edges(EdgesRequest) returns (EdgesReply) {}
 }
 
 message NodesRequest {
