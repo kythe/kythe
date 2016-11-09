@@ -1,6 +1,12 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
 java_library(
+    name = "config",
+    srcs = ["IndexerConfig.java"],
+    deps = ["@com_beust_jcommander//jar"],
+)
+
+java_library(
     name = "schema",
     srcs = [
         "EdgeKind.java",

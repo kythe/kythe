@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Google Inc. All rights reserved.
+ * Copyright 2016 Google Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,32 +14,26 @@
  * limitations under the License.
  */
 
-package com.google.devtools.kythe.analyzers.java;
+package com.google.devtools.kythe.analyzers.bazel;
 
 import com.beust.jcommander.Parameter;
 import com.google.common.base.Strings;
-import com.google.devtools.kythe.analyzers.base.FactEmitter;
 import com.google.devtools.kythe.analyzers.base.IndexerConfig;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.google.devtools.kythe.extractors.shared.IndexInfoUtils;
 import com.google.devtools.kythe.platform.indexpack.Archive;
-import com.google.devtools.kythe.platform.java.JavacAnalysisDriver;
 import com.google.devtools.kythe.platform.shared.AnalysisException;
-import com.google.devtools.kythe.platform.shared.FileDataCache;
 import com.google.devtools.kythe.platform.shared.MemoryStatisticsCollector;
-import com.google.devtools.kythe.platform.shared.NullStatisticsCollector;
-import com.google.devtools.kythe.proto.Storage.Entry;
-import com.google.devtools.kythe.proto.Storage.VName;
-import com.google.protobuf.ByteString;
-import java.io.BufferedOutputStream;
-import java.io.FileOutputStream;
+import com.google.devtools.kythe.proto.Analysis.FileData;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Binary to run Kythe's Java index over a single .kindex file, emitting entries to STDOUT. */
-public class JavaIndexer {
+/**
+ * Binary to run Kythe's Bazel index over a single .kindex file, emitting entries as Kythe nodes
+ * and edges to STDOUT.
+ */
+public class BazelIndexer {
   public static void main(String[] args) throws AnalysisException, IOException {
     StandaloneConfig config = new StandaloneConfig();
     config.parseCommandLine(args);
@@ -57,10 +51,10 @@ public class JavaIndexer {
 
     CompilationDescription desc = null;
     if (!Strings.isNullOrEmpty(config.getIndexPackRoot())) {
-      // java_indexer --index_pack=archive-root unit-key
+      // bazel_indexer --index_pack=archive-root unit-key
       desc = new Archive(config.getIndexPackRoot()).readDescription(compilation.get(0));
     } else {
-      // java_indexer kindex-file
+      // bazel_indexer kindex-file
       desc = IndexInfoUtils.readIndexInfoFromFile(compilation.get(0));
     }
 
@@ -71,59 +65,29 @@ public class JavaIndexer {
       return;
     }
 
-    try (OutputStream stream =
-        Strings.isNullOrEmpty(config.getOutputPath())
-            ? System.out
-            : new BufferedOutputStream(new FileOutputStream(config.getOutputPath()))) {
-      new JavacAnalysisDriver()
-          .analyze(
-              new KytheJavacAnalyzer(
-                  config,
-                  new StreamFactEmitter(stream),
-                  statistics == null ? NullStatisticsCollector.getInstance() : statistics),
-              desc.getCompilationUnit(),
-              new FileDataCache(desc.getFileContents()),
-              false);
+    // print out the CU info and the file data list
+    System.out.println("CU: " + desc.getCompilationUnit().getVName());
+    for (FileData inputFile : desc.getFileContents()) {
+      System.out.println("input file path: " + inputFile.getInfo().getPath());
     }
+
+    // TODO: add analysis logic
 
     if (statistics != null) {
       statistics.printStatistics(System.err);
     }
   }
 
+  /**
+   * Prints the usage string for this program and exits with the specified code.
+   *
+   * @param exitCode The exit code to be used when exitting the program.
+   */
   private static void usage(int exitCode) {
     System.err.println(
-        "usage: java_indexer [--print_statistics] kindex-file\n"
+        "usage: bazel_indexer [--print_statistics] kindex-file\n"
             + "       java_indexer [--print_statistics] --index_pack=archive-root unit-key");
     System.exit(exitCode);
-  }
-
-  /** {@link FactEmitter} directly streaming to an {@link OutputValueStream}. */
-  private static class StreamFactEmitter implements FactEmitter {
-    private final OutputStream stream;
-
-    public StreamFactEmitter(OutputStream stream) {
-      this.stream = stream;
-    }
-
-    @Override
-    public void emit(
-        VName source, String edgeKind, VName target, String factName, byte[] factValue) {
-      Entry.Builder entry =
-          Entry.newBuilder()
-              .setSource(source)
-              .setFactName(factName)
-              .setFactValue(ByteString.copyFrom(factValue));
-      if (edgeKind != null) {
-        entry.setEdgeKind(edgeKind).setTarget(target);
-      }
-
-      try {
-        entry.build().writeDelimitedTo(stream);
-      } catch (IOException ioe) {
-        throw new RuntimeException(ioe);
-      }
-    }
   }
 
   private static class StandaloneConfig extends IndexerConfig {
@@ -149,7 +113,7 @@ public class JavaIndexer {
     private String outputPath;
 
     public StandaloneConfig() {
-      super("java-indexer");
+      super("bazel-indexer");
     }
 
     public final boolean getPrintStatistics() {

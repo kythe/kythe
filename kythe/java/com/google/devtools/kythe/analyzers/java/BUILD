@@ -1,12 +1,6 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
 java_library(
-    name = "config",
-    srcs = ["IndexerConfig.java"],
-    deps = ["@com_beust_jcommander//jar"],
-)
-
-java_library(
     name = "analyzer",
     srcs = [
         "JavaEntrySets.java",
@@ -18,7 +12,7 @@ java_library(
         "SourceText.java",
     ],
     deps = [
-        ":config",
+        "//kythe/java/com/google/devtools/kythe/analyzers/base:config",
         "//kythe/java/com/google/devtools/kythe/analyzers/base:entryset",
         "//kythe/java/com/google/devtools/kythe/analyzers/base:schema",
         "//kythe/java/com/google/devtools/kythe/common",
@@ -41,7 +35,7 @@ java_binary(
     main_class = "com.google.devtools.kythe.analyzers.java.JavaIndexer",
     deps = [
         ":analyzer",
-        ":config",
+        "//kythe/java/com/google/devtools/kythe/analyzers/base:config",
         "//kythe/java/com/google/devtools/kythe/analyzers/base:entryset",
         "//kythe/java/com/google/devtools/kythe/extractors/shared",
         "//kythe/java/com/google/devtools/kythe/platform/indexpack",
@@ -63,7 +57,7 @@ java_binary(
     main_class = "com.google.devtools.kythe.analyzers.java.JavaIndexerServer",
     deps = [
         ":analyzer",
-        ":config",
+        "//kythe/java/com/google/devtools/kythe/analyzers/base:config",
         "//kythe/java/com/google/devtools/kythe/analyzers/base:entryset",
         "//kythe/java/com/google/devtools/kythe/analyzers/base:grpc_compilation_analyzer",
         "//kythe/java/com/google/devtools/kythe/platform/java",

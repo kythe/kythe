@@ -153,6 +153,13 @@ load("@io_bazel_rules_go//go:def.bzl", "go_repositories")
 
 go_repositories()
 
+http_archive(
+    name = "io_bazelbuild_bazel",
+    url = "https://github.com/bazelbuild/bazel/archive/0.3.2.zip",
+    sha256 = "86daa14e3739289492a470c07f71ad23dfd1892c5046223fa180395085103c40",
+    strip_prefix = "bazel-0.3.2",
+)
+
 new_git_repository(
     name = "go_gogo_protobuf",
     build_file = "third_party/go/gogo_protobuf.BUILD",
@@ -263,4 +270,10 @@ new_git_repository(
     build_file = "third_party/go/levigo.BUILD",
     commit = "1ddad808d437abb2b8a55a950ec2616caa88969b",
     remote = "https://github.com/jmhodges/levigo.git",
+)
+
+maven_jar(
+    name = "com_google_auto_value",
+    artifact = "com.google.auto.value:auto-value:1.3",
+    sha1 = "4961194f62915eb45e21940537d60ac53912c57d",
 )

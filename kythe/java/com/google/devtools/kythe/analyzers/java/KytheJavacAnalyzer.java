@@ -18,6 +18,7 @@ package com.google.devtools.kythe.analyzers.java;
 
 import com.google.common.base.Preconditions;
 import com.google.devtools.kythe.analyzers.base.FactEmitter;
+import com.google.devtools.kythe.analyzers.base.IndexerConfig;
 import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.platform.java.JavaCompilationDetails;
 import com.google.devtools.kythe.platform.java.JavacAnalyzer;

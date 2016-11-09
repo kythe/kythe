@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.devtools.kythe.analyzers.java;
+package com.google.devtools.kythe.analyzers.base;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
