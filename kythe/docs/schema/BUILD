@@ -21,3 +21,8 @@ asciidoc_with_verifier(
     name = "indexing-protobuf",
     src = "indexing-protobuf.txt",
 )
+
+asciidoc_with_verifier(
+    name = "writing-an-indexer",
+    src = "writing-an-indexer.txt",
+)

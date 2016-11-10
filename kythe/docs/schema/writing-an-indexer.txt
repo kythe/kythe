@@ -1,0 +1,622 @@
+// Copyright 2016 Google Inc. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+Writing a New Indexer
+=====================
+:Revision: 1.0
+:toc2:
+:toclevels: 3
+:priority: 999
+
+This document is an overview of the steps to take to add support for a new
+language to Kythe. We assume that you have the
+link:https://github.com/google/kythe/releases[Kythe release package] extracted
+to `/opt/kythe`. You can also build the tools from source (but it is not
+necessary to build Kythe to provide it with graph data). Sample code snippets
+are written in JavaScript, but this document is not about indexing any
+particular language.
+
+In the Kythe pipeline, a language's *indexer* is responsible for building a
+subgraph that represents a particular program. Complete indexers usually accept
+`.kindex` files or index packs that contain a program, all of its dependencies,
+and the arguments necessary for a compiler or interpreter to understand it. This
+data is packaged by a separate component called an *extractor*. Depending on the
+language and build system involved, it may be possible to use a generic
+extractor to produce these hermetic compilation units. We will not address
+extraction here.
+
+For development and testing, it's useful for the indexer to accept program text
+directly as input; this is how we will proceed in these instructions. First,
+we'll begin by writing some scripts to insert file content into a small Kythe
+graph. From there, we'll see how to encode Kythe nodes and edges into *entries*,
+the unit of exchange between many of our tools. We'll see that certain kinds
+of nodes are used to represent common sorts of semantic objects in programming
+languages and that other nodes are used to represent syntactic spans of text.
+We will add relationships as edges between these nodes to add cross-reference
+data to the graph. This allows users to jump between definitions and references
+in programs we've indexed. Finally, we'll discuss how to write tests for (and
+how to debug) Kythe indexers.
+
+== Bootstrapping Kythe support
+
+Kythe indexers emit directed graph data as a stream of *entries* that can
+represent either nodes or edges. These have various encodings, but for
+simplicity we'll use JSON. To get started, let's write a script `kythe-browse.sh`
+that will turn a stream of JSON-formatted Kythe entries into a format that our
+example code browser can read. Put it in your Kythe root; it will clobber the
+directories `//graphstore` and `//tables`.
+
+[source,bash]
+----
+#!/bin/bash -e
+set -o pipefail
+BROWSE_PORT="${BROWSE_PORT:-8080}"
+# You can find prebuilt binaries at https://github.com/google/kythe/releases.
+# This script assumes that they are installed to /opt/kythe.
+# If you build the tools yourself or install them to a different location,
+# make sure to pass the correct public_resources directory to http_server.
+rm -f -- graphstore/* tables/*
+mkdir -p graphstore tables
+# Read JSON entries from standard in to a graphstore.
+/opt/kythe/tools/entrystream --read_json \
+  | /opt/kythe/tools/write_entries -graphstore graphstore
+# Convert the graphstore to serving tables.
+/opt/kythe/tools/write_tables -graphstore graphstore -out=tables
+# Host the browser UI.
+/opt/kythe/tools/http_server -serving_table tables \
+  -public_resources="/opt/kythe/web/ui" \
+  -listen="localhost:${BROWSE_PORT}"
+----
+
+TIP: The
+link:https://github.com/google/kythe/blob/master/kythe/proto/storage.proto[protocol buffer]
+encoding of Kythe facts is more efficient than the JSON encoding we're using
+here. Kythe supports JSON because some languages do not have good support for
+protocol buffers. This only comes into play for languages that emit a large
+amount of data, like $$C++$$. The `entrystream` tool used in `kythe-browse.sh`
+is invoked to read a stream of JSON entries from standard input and emit a
+`varint32`-delimited stream of `kythe.proto.Entry` messages on standard output.
+
+You can test this with a very short entry stream. The only tricky part here is
+that Kythe fact values, when serialized to JSON, are base64-encoded. This
+ensures that they can be properly deserialized later, since fact values may
+contain arbitrary binary data, but JSON strings permit only UTF-8 characters.
+`ZmlsZQ==` is `file` and `SGVsbG8sIHdvcmxkIQ==` is `Hello, world!`.
+
+[source,bash]
+----
+echo '
+{"source":{"corpus":"example","path":"hello"},
+ "fact_name":"/kythe/node/kind","fact_value":"ZmlsZQ=="}
+{"source":{"corpus":"example","path":"hello"},
+ "fact_name":"/kythe/text","fact_value":"SGVsbG8sIHdvcmxkIQ=="}
+' | ./kythe-browse.sh
+----
+
+You can check that http://localhost:8080/#hello?corpus=example shows
+`Hello, world!'.
+
+== Modeling Kythe entries
+
+A Kythe graph can be encoded using two basic data types. The first, called a
+http://www.kythe.io/docs/kythe-storage.html#_a_id_termvname_a_vector_name_strong_vname_strong[VName],
+uniquely picks out a node in the graph. VNames have five string-valued fields.
+http://www.kythe.io/docs/kythe-storage.html#_entry[Entries]
+record both facts about individual nodes and edges between them. As described in
+the documentation, we only need to emit the forward versions of edges (those
+that are described in the http://www.kythe.io/docs/schema[schema]); the Kythe
+pipeline takes care of generating reverse edges as needed for efficiency.
+
+We'll encode VNames and entries in a straightforward way; in particular, we
+represent entries as objects, where the target's presence or absence determines
+if the entry represents an edge between nodes or a fact about a single node
+(respectively). Our `fact` and `edge` convenience functions also assume that all
+of the fact and edge names we'll use are underneath the `/kythe` prefix, since
+we're following the Kythe schema. This prefix is a requirement of the schema,
+not of the data model.
+
+[source,js]
+----
+function vname(signature, path, language, root, corpus) {
+  return {
+    signature: signature,
+    path: path,
+    language: language,
+    root: root,
+    corpus: corpus
+  };
+}
+function fact(node, fact_name, fact_val) {
+  return {
+    source: node,
+    fact_name: "/kythe/" + fact_name,
+    fact_value: base64enc(fact_val)
+  }
+}
+function edge(source, edge_name, target) {
+  return {
+    source: source,
+    edge_kind: "/kythe/edge/" + edge_name,
+    target: target,
+    fact_name: "/",
+  }
+}
+function ordinal_edge(source, edge_name, target, ordinal) {
+  return {
+    source: source,
+    edge_kind: "/kythe/edge/" + edge_name + "." + ordinal,
+    target: target,
+    fact_name: "/",
+  }
+}
+----
+
+You can follow along at home with link:https://nodejs.org[node.js] and the
+following definitions:
+
+[source,js]
+----
+function base64enc(string) {
+  return new Buffer(string).toString('base64');
+}
+function emitEntries(entries) {
+  entries.forEach(function(v){console.log(JSON.stringify(v))})
+}
+----
+
+With this representation, our example database becomes:
+
+[source,js]
+----
+[
+  fact(vname("", "hello", "", "", "example"), "node/kind", "file"),
+  fact(vname("", "hello", "", "", "example"), "text", "Hello, world!")
+]
+----
+
+VNames have an alternate
+link:http://www.kythe.io/docs/kythe-uri-spec.html[URI-style encoding]. VNames
+encoded in this way are called *tickets*; tickets and VNames are semantically
+interchangeable. This encoding is used where it is inconvenient or not possible
+to store VNames in a more structured format. You can use Kythe URIs when
+interacting with the
+link:http://www.kythe.io/docs/kythes-command-line-tool.html[Kythe command-line tool]:
+
+[source,bash]
+----
+/opt/kythe/tools/kythe -api './tables' nodes 'kythe://example?path=hello'
+----
+
+.Output
+----
+kythe://example?path=hello
+  /kythe/node/kind	file
+  /kythe/text	Hello, world!
+----
+
+`kythe://example?path=hello` is the URI encoding of the VName used in the
+example graph above.
+
+== File content
+
+Kythe stores file content in its graph. The `http_server` binary used in our
+`kythe-browse.sh` script doesn't look in your filesystem for a file to present
+to the Web browser; it instead reads the `text` fact off of a graph node.
+
+Since every node in the graph has a VName, we'll need to be able to build one
+for any source file your indexer might refer to. In our small example above,
+our test file had the path `hello` in the corpus `example`. It is up to you
+how to determine the corpus (and possibly root) to which a node belongs. It is
+best to keep this configurable; other Kythe indexers use a `vnames.json` file
+to choose the VName fields based on regular expressions over paths.
+
+All Kythe graph nodes should have a `node/kind` fact. For files, this kind is
+`file`. This means that each file should have at least two associated facts.
+You can see the JSON representation of the resulting entries above, where we
+used them to test the `kythe-browse.sh` script.
+
+NOTE: The Kythe JSON representation requires fact values to be base64-encoded.
+The protocol buffer representation does not, but it does store fact values as
+`bytes` instead of the `string` type. The protocol buffer `string` type must be
+valid UTF-8 and not all files in a graph may be UTF-8 encoded (though it is the
+default). Alternate encodings may be specified using the `encoding` fact.
+
+== Cross-references
+
+Imagine we have the following simple program:
+
+[source,lua]
+----
+var foo = 1
+print foo
+----
+
+We want to record the relationship between the reference to `foo` on the second
+line and its definition on the first line. First, we should build a
+representation for the variable `foo` itself. To summon a node into existence,
+we need a VName and a node kind. The schema already defines a node kind
+for http://www.kythe.io/docs/schema#variable[variables]. If there is no existing
+way to model `foo` in the schema, you're free to invent one of your own; the
+schema is intended to be open-ended. Be aware that tools that consume Kythe data
+may not be able to offer as much help with custom kinds, but should always be
+tolerant of them.
+
+We've already seen that VNames for http://www.kythe.io/docs/schema#file[files]
+contain *path*, *root*, and *corpus* components. (In fact, the schema requires
+that the other components of a file VName be empty.) We need to come up with
+assignments to these, plus *signature* and *language*, that uniquely refer to
+our variable `foo`. Getting this right can be subtle. Here are some guidelines:
+
+* Indexing the same compilation unit twice should always produce the same data.
+* VNames for objects that are accessible from multiple compilation units must
+be generated consistently. For example, if a module defines a public variable
+`Bar`, then `Bar`'s VName must be the same in all of the modules that use it.
+* VNames should not be over-specific. For example, if your language has a
+builtin `string` type, you should only have a single `VName` for that type
+(which is probably of the http://www.kythe.io/docs/schema#tbuiltin[tbuiltin]
+kind). Structural types should also have single representations; if your
+language also has a builtin pair type, there should only be a single `VName`
+for `pair<string,string>` (that's probably a
+http://www.kythe.io/docs/schema#tapp[tapp]).
+* Where possible, VNames should be generated without reference to source
+locations. This makes debugging your indexer easier and decreases the number
+of spurious changes to the graph when source text is modified.
+* Take caution that your *signature* fields aren't too long. In the $$C++$$
+indexer, signatures that are past a certain length are replaced with their
+hashes. This has significant implications for the size of your graph and the
+I/O cost of your tools.
+* The *language* component of a VName should be set to a well-known value.
+Java is `java`; $$C++$$ is `c++`; and so on. We'll use `ex` as our language.
+* Avoid duplicating information that's elsewhere in the VName, like the corpus
+label, language label, or path (in cases where a path is appropriate).
+
+We'll use `foo`'s defining file's preset components, the *language* `ex`, and
+the *signature* `foo#0` (to mean "the zeroth binding of foo at global scope").
+Using the functions we've defined above, we emit the following entry:
+
+[source,js]
+----
+//         sig      path     lang  root   corpus
+fact(vname("foo#0", "hello", "ex", "", "example"), "node/kind", "variable")
+----
+
+We can see it in the graph with the `kythe` tool (after running
+`kythe-browse.sh` to generate `./tables`):
+
+[source,bash]
+----
+/opt/kythe/tools/kythe -api './tables' \
+    nodes 'kythe://example?path=hello?lang=ex#foo#0'
+----
+
+.Output
+----
+kythe://example?lang=ex?path=hello#foo%230
+  /kythe/node/kind	variable
+----
+
+Notice how the `#` was URI-encoded in the ticket.
+
+=== Specifying spans of text
+
+Spans of text in Kythe are represented by
+http://www.kythe.io/docs/schema#anchor[anchor] nodes. Anchors may overlap.
+If an anchor exactly overlaps another anchor (e.g., it shares the same start
+and end offsets), it is conventional (but not required) that they share a VName.
+Contrary to the general advice for generating VNames, an anchor's VName *should*
+be based on its location in a source file.
+
+Besides the required `node/kind` fact, anchors should have `loc/start`
+and `loc/end` facts that give their (inclusive) start and (exclusive) end
+location offsets as base-10 stringified integers.
+
+NOTE: In Kythe, offsets are always in units of bytes. If your programming
+language specifies locations of syntactic objects in lines and columns or
+codepoints, you will need to transform these to byte offsets.
+
+[source,js]
+----
+function anchorVName(file_vname, begin, end) {
+  return vname("@" + begin + ":" + end, file_vname.path, "ex", file_vname.root,
+      file_vname.corpus);
+}
+function anchor(file_vname, begin, end) {
+  var anchor_vname = anchorVName(file_vname, begin, end)
+  return [
+    fact(anchor_vname, "node/kind", "anchor"),
+    fact(anchor_vname, "loc/start", begin.toString()),
+    fact(anchor_vname, "loc/end", end.toString()),
+    // This edge is required in the current Kythe release, but it will not be
+    // required in a future release.
+    edge(anchor_vname, "childof", file_vname),
+  ]
+}
+----
+
+The anchor covering the definition of `foo` in our example file, assuming the
+file has the same `VName` as the earlier file, is represented by these three
+facts (leaving out the deprecated `childof` edge mentioned in the code):
+
+[source,js]
+----
+{"source":{"signature":"@4:7","path":"hello","language":"ex","corpus":"example"},
+ "edge_name":"/","fact_name":"/kythe/node/kind","fact_value":"YW5jaG9y"}
+{"source":{"signature":"@4:7","path":"hello","language":"ex","corpus":"example"},
+ "edge_name":"/","fact_name":"/kythe/loc/start","fact_value":"NA=="}
+{"source":{"signature":"@4:7","path":"hello","language":"ex","corpus":"example"},
+ "edge_name":"/","fact_name":"/kythe/loc/end","fact_value":"Nw=="}
+----
+
+=== Linking anchors to semantic nodes
+
+We can now link the definition and reference sites of `foo` back to the node
+we created for the variable. To do so, we'll add a
+link:http://www.kythe.io/docs/schema/#definesbinding[defines/binding] edge
+from the definition site and a link:http://www.kythe.io/docs/schema/#ref[ref]
+edge from the use site:
+
+[source,js]
+----
+edge(foo_def_anchor_vname, "defines/binding", foo_vname),
+edge(foo_ref_anchor_vname, "ref", foo_vname)
+----
+
+Our full database, specified using the previously-defined functions, looks
+like:
+
+[source,js]
+----
+var hello_file_vname = vname("", "hello", "", "", "example")
+var foo_vname = vname("foo#0", "hello", "ex", "", "example")
+var foo_def_anchor_vname = anchorVName(hello_file_vname, 4, 7)
+var foo_ref_anchor_vname = anchorVName(hello_file_vname, 18, 21)
+var entries = [
+  fact(hello_file_vname, "node/kind", "file"),
+  fact(hello_file_vname, "text", "var foo = 1\nprint foo"),
+  fact(foo_vname, "node/kind", "variable"),
+  edge(foo_def_anchor_vname, "defines/binding", foo_vname),
+  edge(foo_ref_anchor_vname, "ref", foo_vname)
+].concat(anchor(hello_file_vname, 4, 7))
+ .concat(anchor(hello_file_vname, 18, 21))
+----
+
+NOTE: For pedagogical reasons, we're building our graph up as a big array
+of entries. In practice, this is a bad idea; graphs can become very large,
+and buffering all your data up to release it at the same time prevents
+downstream consumers from working in parallel (even if you're just writing
+to disk). Indexers should emit graph data as soon as practical (and should also
+endeavor to avoid emitting duplicate data).
+
+You can test it using `kythe-browse.sh` and by querying the `kythe` tool for
+file decorations:
+
+[source,bash]
+----
+/opt/kythe/tools/kythe -api './tables' decor 'kythe://example?path=hello'
+----
+
+.Output
+----
+/kythe/edge/defines/binding	1:4-1:7	variable	kythe://example?lang=ex?path=hello#foo%230
+/kythe/edge/ref	2:6-2:9	variable	kythe://example?lang=ex?path=hello#foo%230
+----
+
+== Testing
+
+Most of the work in testing a tool that produces Kythe data boils down to
+checking that different anchors in example source text are linked to the correct
+nodes and edges. From this starting point, you can make sure that other parts
+of the semantic graph are properly formed.
+
+Given a description of these anchors and their desired relationships,
+performing the necessary checks doesn't require any information specific to the
+language being analyzed. With this in mind, we built the
+http://www.kythe.io/docs/kythe-verifier.html[Kythe verifier]. The verifier
+accepts a stream of Kythe entries and source files, the latter of which have
+been annotated with *goals*. Each goal describes entries that the verifier must
+(or must not) find in its input stream. Since some parts of these entries are
+uninteresting to test--for example, the exact encoding used for a anchor's VName
+is unimportant--parts of a goal may be replaced with variables for which the
+verifier will try to find an assignment.
+
+Just as we were able to drive the Kythe pipeline with only a list of JSON
+entries, so too can we drive the verifier with only those entries and a list
+of goals. This script, `kythe-verify-json.sh`, reads JSON entries from
+standard in and passes them (and its arguments) to the verifier:
+
+[source,bash]
+----
+#!/bin/bash -e
+set -o pipefail
+# You can find prebuilt binaries at https://github.com/google/kythe/releases.
+# This script assumes that they are installed to /opt/kythe.
+# Read JSON entries from standard in and pass them to the verifier.
+# The entrystream tool turns the JSON into length-delimited protocol buffers,
+# described at http://godoc.org/kythe.io/kythe/go/platform/delimited
+/opt/kythe/tools/entrystream --read_json | /opt/kythe/tools/verifier "$@"
+----
+
+We can write a rule file that checks whether we have any file nodes at all and
+call it `test.goals`:
+
+[source,c]
+----
+//- FileNode.node/kind file
+----
+
+The `//-` prefix tells the verifier which lines to look for goals on. It's meant
+to be ignored as a comment by most languages. Of course, some languages (like
+Python) use different character sequences to denote comments, so it can be
+changed with a command-line flag.
+
+We ask the verifier to check that the goals can be met with the entries we wrote
+out earlier in this document:
+
+[source,bash]
+----
+echo '
+{"source":{"corpus":"example","path":"hello"},
+ "fact_name":"/kythe/node/kind","fact_value":"ZmlsZQ=="}
+{"source":{"corpus":"example","path":"hello"},
+ "fact_name":"/kythe/text","fact_value":"SGVsbG8sIHdvcmxkIQ=="}
+' | ./kythe-verify-json.sh test.goals
+----
+
+Since we do have a node with kind `file`, the verifier exits with a zero error
+code without printing any diagnostics.
+
+If we had written an unsatisfiable goal--let's say we made a spelling mistake
+and asked for a node with kind `elif` instead:
+
+[source,c]
+----
+//- FileNode.node/kind elif
+----
+
+the verifier will protest (and return a nonzero exit code):
+
+.Output
+----
+Could not verify all goals. The furthest we reached was:
+  test.goals:2:5-2:28 FileNode.node/kind elif
+----
+
+If your graph is small, it can be useful to display it graphically:
+
+[source,bash]
+----
+echo '
+{"source":{"corpus":"example","path":"hello"},
+ "fact_name":"/kythe/node/kind","fact_value":"ZmlsZQ=="}
+{"source":{"corpus":"example","path":"hello"},
+ "fact_name":"/kythe/text","fact_value":"SGVsbG8sIHdvcmxkIQ=="}
+' | ./kythe-verify-json.sh -annotated_graphviz test.goals | xdot
+----
+
+This graph will render in https://github.com/jrfonseca/xdot.py[xdot.py] as
+something like:
+
+[kythe,dot,"one file node",0]
+--------------------------------------------------------------------------------
+digraph G {
+"App(vname, (\"\", example, \"\", hello, \"\"))" [ label=<<TABLE><TR><TD COLSPAN="2">(&quot;&quot;, example, &quot;&quot;, hello, &quot;&quot;) = FileNode</TD></TR><TR><TD>/kythe/node/kind</TD><TD>file</TD></TR><TR><TD>/kythe/text</TD><TD>...</TD></TR></TABLE>> shape=plaintext  color=blue ];
+}
+--------------------------------------------------------------------------------
+
+There's only one node in this graph, but it's the file node that we asked the
+verifier to find; notice how it is outlined in blue. The verifier applies this
+highlighting to nodes that are matched against variables in the goals
+(here, `FileNode`).
+
+=== Testing for variable definitions and references
+
+Most of the time, verifier rules are written down in the same file that the
+rules are meant to check. For example, we can rewrite our example program
+in the following way:
+
+[source,lua]
+----
+--! @foo defines/binding VarFoo
+--! VarFoo.node/kind variable
+var foo = 1
+--! @foo ref VarFoo
+print foo
+----
+
+Let's start with the second line. To satisfy this goal, the verifier must find
+the VName of a node with a `node/kind` fact with the value `variable`. It will
+then use that VName wherever the variable `VarFoo` appears. `VarFoo` is
+interpreted as a variable because it begins with a capital letter.
+
+To satisfy the goal on the first line, the verifier must find two VNames:
+one to substitute for `VarFoo` (the same `VarFoo` as previously discussed)
+and one to use as the VName of the anchor spanning `foo` on the next
+line of code. The `@foo` token generates a new VName variable and constrains
+it to refer to an *anchor* node with the offsets of `foo`. Any additional
+constraints on `@foo` act as constraints on that variable. In order for this
+first goal to succeed, then, the verifier must find an anchor spanning the
+text `foo` that is the source of a `defines/binding` edge with some other
+node (with VName `VarFoo`) as a target.
+
+Similarly, to satisfy the goal on the fourth line, the verifier must find
+a `ref` edge starting at an anchor covering `foo` on the next line of code
+and ending at a node with VName `VarFoo`.
+
+NOTE: `@foo` does not refer to the same variable as the `@foo` on the first
+line. Each `@` token creates a new anonymous variable.
+
+The *full* problem that the verifier must solve is the *conjunction* of all
+of these goals. If it chooses a VName to use for `VarFoo` that works for the
+first goal but not the third, the verifier will backtrack and try a different
+assignment. The test succeeds if there is an assignment that satisfies all
+the goals. When our first example failed, the verifier couldn't find any
+assignment to `FileNode` that would satisfy `FileNode.node/kind elif`.
+
+Assuming we update the offsets in our output to reflect the comments
+(these are now `(66, 69)` and `(100, 103)`), we can now check our code:
+
+[source,bash]
+----
+./kythe-verify-json.sh --goal_prefix="--!" test.program < test.program.json
+----
+
+We can also dump our graph:
+
+[source,bash]
+----
+./kythe-verify-json.sh --goal_prefix="--!" --annotated_graphviz \
+    test.program < test.program.json | xdot
+----
+
+This results in the following:
+
+[kythe,dot,"tiny program",0]
+----
+digraph G {
+"App(vname, (\"\", example, \"\", hello, \"\"))" [ label=<<TABLE><TR><TD COLSPAN="2">(&quot;&quot;, example, &quot;&quot;, hello, &quot;&quot;)</TD></TR><TR><TD>/kythe/node/kind</TD><TD>file</TD></TR><TR><TD>/kythe/text</TD><TD>...</TD></TR></TABLE>> shape=plaintext ];
+"App(vname, (foo#0, example, \"\", hello, ex))" [ label=<<TABLE><TR><TD COLSPAN="2">(foo#0, example, &quot;&quot;, hello, ex) = VarFoo</TD></TR><TR><TD>/kythe/node/kind</TD><TD>variable</TD></TR></TABLE>> shape=plaintext  color=blue ];
+"App(vname, (@66:69, example, \"\", hello, ex))" [ shape=circle, label="@foo:1.4", color="blue" ];
+"App(vname, (@66:69, example, \"\", hello, ex))" -> "App(vname, (foo#0, example, \"\", hello, ex))" [ label="/kythe/edge/defines/binding" ];
+"App(vname, (@66:69, example, \"\", hello, ex))" -> "App(vname, (\"\", example, \"\", hello, \"\"))" [ label="/kythe/edge/childof" ];
+"App(vname, (@100:103, example, \"\", hello, ex))" [ shape=circle, label="@foo:4.6", color="blue" ];
+"App(vname, (@100:103, example, \"\", hello, ex))" -> "App(vname, (foo#0, example, \"\", hello, ex))" [ label="/kythe/edge/ref" ];
+"App(vname, (@100:103, example, \"\", hello, ex))" -> "App(vname, (\"\", example, \"\", hello, \"\"))" [ label="/kythe/edge/childof" ];
+}
+----
+
+As before, the nodes we've matched are colored blue. In these diagrams, anchors
+are presented as circles with `@` labels (unless they are matched to verifier
+variables, in which case more information is provided). The vast majority of
+the time, you will not be interested in seeing file offsets in these diagrams.
+You can still test for facts on `@`-specified nodes as you would any other
+node.
+
+For more examples of the goal language, take a look at the code listings in the
+http://www.kythe.io/docs/schema[schema document]. There are also lots more in
+the $$C++$$ indexer's
+https://kythe.io/repo/kythe/cxx/indexer/cxx/testdata[testdata] and the Java
+indexer's
+https://kythe.io/repo/kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata[testdata]
+directories. Finally, there is a
+http://www.kythe.io/docs/schema/verifierstyle.html[style guide] with helpful
+tips.
+
+Note how the verifier goals don't mention any of the internal implementation
+decisions we've made about the VNames of anchors or variables. This means that
+if we later choose to change those aspects of our implementation, the verifier
+tests will not break. Also note that we didn't check for details about the
+file itself (as we did in the first example). Tests using the Kythe verifier
+rarely examine *all* of an indexer's output, just the subgraph that is relevant
+for a particular feature. This makes the tests easier to read and guards against
+tests becoming sensitive to new features.
