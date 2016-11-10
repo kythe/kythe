@@ -591,6 +591,41 @@ void ExtractorPPCallbacks::Ifndef(
                   macro_name.getIdentifierInfo()->getName().str());
 }
 
+std::string IncludeDirGroupToString(const clang::frontend::IncludeDirGroup& G) {
+  switch (G) {
+    ///< '\#include ""' paths, added by 'gcc -iquote'.
+    case clang::frontend::Quoted:
+      return "Quoted";
+    ///< Paths for '\#include <>' added by '-I'.
+    case clang::frontend::Angled:
+      return "Angled";
+    ///< Like Angled, but marks header maps used when building frameworks.
+    case clang::frontend::IndexHeaderMap:
+      return "IndexHeaderMap";
+    ///< Like Angled, but marks system directories.
+    case clang::frontend::System:
+      return "System";
+    ///< Like System, but headers are implicitly wrapped in extern "C".
+    case clang::frontend::ExternCSystem:
+      return "ExternCSystem";
+    ///< Like System, but only used for C.
+    case clang::frontend::CSystem:
+      return "CSystem";
+    ///< Like System, but only used for C++.
+    case clang::frontend::CXXSystem:
+      return "CXXSystem";
+    ///< Like System, but only used for ObjC.
+    case clang::frontend::ObjCSystem:
+      return "ObjCSystem";
+    ///< Like System, but only used for ObjC++.
+    case clang::frontend::ObjCXXSystem:
+      return "ObjCXXSystem";
+    ///< Like System, but searched after the system directories.
+    case clang::frontend::After:
+      return "After";
+  }
+}
+
 void ExtractorPPCallbacks::InclusionDirective(
     clang::SourceLocation HashLoc, const clang::Token& IncludeTok,
     llvm::StringRef FileName, bool IsAngled, clang::CharSourceRange Range,
@@ -605,10 +640,13 @@ void ExtractorPPCallbacks::InclusionDirective(
         &preprocessor_->getHeaderSearchInfo().getHeaderSearchOpts();
     LOG(WARNING) << "Resource directory is " << options->ResourceDir;
     for (const auto& entry : options->UserEntries) {
-      LOG(WARNING) << "User entry: " << entry.Path;
+      LOG(WARNING) << "User entry (" << IncludeDirGroupToString(entry.Group)
+                   << "): " << entry.Path;
     }
     for (const auto& prefix : options->SystemHeaderPrefixes) {
-      LOG(WARNING) << "System entry: " << prefix.Prefix;
+      // This is not a search path. If an include path starts with this prefix,
+      // it is considered a system header.
+      LOG(WARNING) << "System header prefix: " << prefix.Prefix;
     }
     LOG(WARNING) << "Sysroot set to " << options->Sysroot;
     return;
