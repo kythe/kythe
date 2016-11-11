@@ -1,6 +1,6 @@
 # kythe-indexer
 `kythe-indexer` is an **EXPERIMENTAL** plugin for rustc that utilizes Google's 
-(Kythe)[https://kythe.io] pipeline for working with source code. 
+[Kythe](https://kythe.io) pipeline for working with source code. 
 
 `kythe-indexer` currently supports:
 
