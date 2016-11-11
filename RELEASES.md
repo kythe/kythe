@@ -1,5 +1,10 @@
 # Release Notes
 
+## v0.0.26
+
+Notable changes:
+ - Nodes and Edges API calls have been moved from XRefService to GraphService.
+
 ## v0.0.25
 
 Notable changes:
