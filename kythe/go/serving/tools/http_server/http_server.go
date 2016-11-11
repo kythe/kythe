@@ -127,6 +127,7 @@ func main() {
 	if *grpcListeningAddr != "" {
 		srv := grpc.NewServer()
 		xpb.RegisterXRefServiceServer(srv, xs)
+		xpb.RegisterGraphServiceServer(srv, xs)
 		ftpb.RegisterFileTreeServiceServer(srv, ft)
 		go startGRPC(srv)
 	}
