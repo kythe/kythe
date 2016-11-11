@@ -22,6 +22,96 @@
 namespace kythe {
 namespace {
 
+TEST(ObjcExtractorBazelMain, TestSanitizeSimple) {
+  std::string v = SanitizeArgument("V A L");
+  EXPECT_EQ("'V A L'", v);
+}
+
+TEST(ObjcExtractorBazelMain, TestSanitizeWithQuote) {
+  std::string v = SanitizeArgument(R"(V "A" L)");
+  EXPECT_EQ(R"('V "A" L')", v);
+}
+
+TEST(ObjcExtractorBazelMain, TestSanitizeWithQuote2) {
+  std::string v = SanitizeArgument("V 'A' L");
+  EXPECT_EQ(R"("V 'A' L")", v);
+}
+
+TEST(ObjcExtractorBazelMain, TestSanitizeWithAllSpecials) {
+  std::string v = SanitizeArgument(R"(V \ 'A' $ ` " L)");
+  EXPECT_EQ(R"("V \\ 'A' \$ \` \" L")", v);
+}
+
+TEST(ObjcExtractorBazelMain, TestSanitizeWithAllDoubleSpecials) {
+  std::string v = SanitizeArgument(R"(V \\ 'A' $$ `` " L ")");
+  EXPECT_EQ(R"("V \\\\ 'A' \$\$ \`\` \" L \"")", v);
+}
+
+TEST(ObjcExtractorBazelMain, TestExtractOneEnvVar) {
+  std::vector<std::string> args;
+  blaze::SpawnInfo si;
+  auto *e = si.add_variable();
+  e->set_name("VONE");
+  e->set_value("VAL");
+
+  std::string v = BuildEnvVarCommandPrefix(si);
+
+  EXPECT_EQ("VONE='VAL' ", v);
+}
+
+TEST(ObjcExtractorBazelMain, TestExtractManyEnvVars) {
+  std::vector<std::string> args;
+  blaze::SpawnInfo si;
+  auto *e = si.add_variable();
+  e->set_name("VONE");
+  e->set_value("VAL");
+  e = si.add_variable();
+  e->set_name("VTWO");
+  e->set_value("");
+  e = si.add_variable();
+  e->set_name("VTHREE");
+  e->set_value("space space");
+  e = si.add_variable();
+  e->set_name("VFOUR");
+  // This is probably invalid input to the spawn info, but we should be able to
+  // handle it without doing something unpredictable.
+  e->set_value("space\\ space");
+  e = si.add_variable();
+  e->set_name("VFIVE");
+  e->set_value("B 'A' G$");
+
+  std::string v = BuildEnvVarCommandPrefix(si);
+
+  EXPECT_EQ(
+      "VONE='VAL' VTWO='' VTHREE='space space' VFOUR='space\\ space' VFIVE=\"B "
+      "'A' G\\$\" ",
+      v);
+}
+
+TEST(ObjcExtractorBazelMain, TestExtractIgnoreInvalidVarNames) {
+  std::vector<std::string> args;
+  blaze::SpawnInfo si;
+  auto *e = si.add_variable();
+  e->set_name("VONE");
+  e->set_value("VAL");
+  e = si.add_variable();
+  e->set_name("V TWO");
+  e->set_value("");
+  e = si.add_variable();
+  e->set_name("VT-HREE");
+  e->set_value("space space");
+  e = si.add_variable();
+  e->set_name(" VFOUR");
+  e->set_value("value");
+  e = si.add_variable();
+  e->set_name("VFIVE");
+  e->set_value("T");
+
+  std::string v = BuildEnvVarCommandPrefix(si);
+
+  EXPECT_EQ("VONE='VAL' VFIVE='T' ", v);
+}
+
 TEST(ObjcExtractorBazelMain, TestFixArgs) {
   std::vector<std::string> args;
   blaze::SpawnInfo si;
@@ -57,7 +147,7 @@ TEST(ObjcExtractorBazelMain, TestRunScriptThatFails) {
 // This test passes on linux (2016-09-09). It seems too dangerous to call out
 // to an unknown binary, so this test is commented out so it does not run
 // automatically.
-//TEST(ObjcExtractorBazelMain, TestRunScriptThatDoesNotExist) {
+// TEST(ObjcExtractorBazelMain, TestRunScriptThatDoesNotExist) {
 //  EXPECT_EQ("", RunScript("/usr/bin/xcrun"));
 //}
 

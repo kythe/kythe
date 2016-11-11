@@ -24,6 +24,27 @@
 
 namespace kythe {
 
+/// \brief Make `s` safe to output to a command line.
+///
+/// If `s` has no single quotes, place `s` in single quotes to make it safe. If
+/// `s` has at least one single quote, place `s` in double quotes and escape
+/// backslash, double-quote, dollar sign, and back-tick.
+///
+/// For example:
+///   FOO       -> 'FOO'
+///   FOO BAR   -> 'FOO BAR'
+///   FOO"B"    -> 'FOO"B"'
+///   FOO'B'    -> "FOO'B'"
+///   "FOO"'B'  -> "\"FOO\"'B'"
+/// See the implementation for full details on all the transformations
+/// preformed.
+std::string SanitizeArgument(const std::string &s);
+
+/// \brief Build a command prefix that specifies the environment variables
+// that should be set according to bazel. This returns a string like:
+// "env V1=VAL V2=VAL "
+std::string BuildEnvVarCommandPrefix(const blaze::SpawnInfo &si);
+
 /// \brief Run a command and capture its (trimmed) stdout in a string.
 std::string RunScript(const std::string &cmd);
 

@@ -19,7 +19,36 @@
 #include <llvm/ADT/StringRef.h>
 #include "re2/re2.h"
 
+#include <sstream>
+
 namespace kythe {
+
+// This is inspiried by Python's commands.mkarg
+// https://hg.python.org/cpython/file/tip/Lib/commands.py#l81
+std::string SanitizeArgument(const std::string &s) {
+  if (s.find("'") == std::string::npos) {
+    // There are no single quotes, so we can make the string safe by putting it
+    // in single quotes.
+    return "'" + s + "'";
+  }
+  // There are single quotes in the string, so we will wrap it in double quotes
+  // and escape backslash, double-quote, dollar, and back-tick.
+  std::string ret = s;
+  RE2::GlobalReplace(&ret, R"(([\\"$`]))", R"(\\\1)");
+  return "\"" + ret + "\"";
+}
+
+std::string BuildEnvVarCommandPrefix(const blaze::SpawnInfo &si) {
+  std::stringstream ret;
+  for (auto env : si.variable()) {
+    // Neither name nor value are validated or sanitized.
+    // This really should be unnecessary, but we don't have any guarantees.
+    if (RE2::FullMatch(env.name(), "[a-zA-Z_][a-zA-Z_0-9]*")) {
+      ret << env.name() << "=" << SanitizeArgument(env.value()) << " ";
+    }
+  }
+  return ret.str();
+}
 
 std::string RunScript(const std::string &cmd) {
   char buffer[256];

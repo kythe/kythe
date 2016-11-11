@@ -114,8 +114,9 @@ int main(int argc, char *argv[]) {
   blaze::ExtraActionInfo info;
   blaze::SpawnInfo spawn_info;
   LoadExtraAction(extra_action_file, &info, &spawn_info);
-  auto devdir = kythe::RunScript(devdir_script);
-  auto sdkroot = kythe::RunScript(sdkroot_script);
+  auto cmdPrefix = kythe::BuildEnvVarCommandPrefix(spawn_info);
+  auto devdir = kythe::RunScript(cmdPrefix + devdir_script);
+  auto sdkroot = kythe::RunScript(cmdPrefix + sdkroot_script);
   std::vector<std::string> args;
   kythe::FillWithFixedArgs(args, spawn_info, devdir, sdkroot);
 
