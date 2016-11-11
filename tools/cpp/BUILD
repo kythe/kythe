@@ -82,12 +82,12 @@ cc_toolchain(
 
 cc_toolchain(
     name = "cc-compiler-darwin",
-    all_files = ":empty",
-    compiler_files = ":empty",
+    all_files = ":darwin_files",
+    compiler_files = ":darwin_files",
     cpu = "darwin",
     dwp_files = ":empty",
     dynamic_runtime_libs = [":empty"],
-    linker_files = ":empty",
+    linker_files = ":darwin_files",
     objcopy_files = ":empty",
     static_runtime_libs = [":empty"],
     strip_files = ":empty",
@@ -97,4 +97,12 @@ cc_toolchain(
 filegroup(
     name = "srcs",
     srcs = glob(["**"]),
+)
+
+filegroup(
+    name = "darwin_files",
+    srcs = [
+        ":clang_wrapper_is_not_clang",
+        ":clang_wrapper_is_not_clang++",
+    ],
 )

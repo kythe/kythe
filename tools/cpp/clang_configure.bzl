@@ -50,15 +50,15 @@ def _impl(ctx):
       _find_cxx_include_directories(ctx, cc))
 
   ctx.symlink(Label("@//tools/cpp:BUILD"), "BUILD")
-  ctx.template("clang",
+  ctx.template("clang_wrapper_is_not_clang",
                Label("@//tools/cpp:osx_gcc_wrapper.sh.in"),
                {"ADD_CXX_COMPILER": str(cc)})
-  ctx.symlink("clang", "clang++"),
+  ctx.symlink("clang_wrapper_is_not_clang", "clang_wrapper_is_not_clang++"),
   ctx.template("CROSSTOOL",
                Label("@//tools/cpp:CROSSTOOL.in"),
                {"ADD_CXX_COMPILER": str(cc),
                 "ADD_CXX_BUILTIN_INCLUDE_DIRECTORIES": includes,
-                "ABS_WRAPPER_SCRIPT": "clang"}, False)
+                "ABS_WRAPPER_SCRIPT": "clang_wrapper_is_not_clang"}, False)
 
 cc_autoconf = repository_rule(
     _impl,
