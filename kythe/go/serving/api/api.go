@@ -86,7 +86,7 @@ func ParseSpec(apiSpec string) (Interface, error) {
 		api.xs = xsrv.NewCombinedTable(tbl)
 		api.ft = &ftsrv.Table{tbl, true}
 	} else {
-		conn, err := grpc.Dial(apiSpec)
+		conn, err := grpc.Dial(apiSpec, grpc.WithInsecure())
 		if err != nil {
 			return nil, fmt.Errorf("error connecting to remote API %q: %v", apiSpec, err)
 		}
