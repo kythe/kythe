@@ -85,6 +85,9 @@ if [[ -z "$1" || "$1" == "--build_only" ]]; then
     if [ ! -z $(dirname "${BAZEL_CC}") ]; then
       CXX="$(dirname "${BAZEL_CC}")/${CXX}"
     fi
+    if [[ $(uname) == 'Darwin' ]]; then
+      CMAKE_CXX_FLAGS="-lstdc++"
+    fi
     cmake -G"Unix Makefiles" \
         -DCMAKE_INSTALL_PREFIX="$LLVM_REPO/build-install" \
         -DCMAKE_BUILD_TYPE="Release" \
@@ -109,6 +112,7 @@ if [[ -z "$1" || "$1" == "--build_only" ]]; then
         -DLLVM_TARGETS_TO_BUILD="X86;PowerPC;ARM;AArch64;Mips" \
         -DBUILD_SHARED_LIBS="OFF" \
         -DLLVM_BUILD_LLVM_DYLIB="OFF" \
+        -DCMAKE_CXX_FLAGS="${CMAKE_CXX_FLAGS}" \
         ..
     if [[ $(uname) == 'Darwin' ]]; then
       cores="$(sysctl -n hw.ncpu)"

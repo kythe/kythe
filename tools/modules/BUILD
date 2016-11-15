@@ -8,6 +8,7 @@ genrule(
     outs = ["compiler_info.txt"],
     cmd = ("echo \"BAZEL_CC=$$($(location :abspath) $(CC))\n" +
            "BAZEL_C_COMPILER=$(C_COMPILER)\" > $@"),
+    local = 1,
     tags = ["manual"],
     tools = [
         ":abspath",
