@@ -1,18 +1,15 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"flag"
 	"fmt"
 	"go/ast"
-	"go/token"
 	"go/types"
 	"log"
 	"os"
 	"runtime"
 	"strconv"
-	"strings"
 	"sync"
 
 	"kythe.io/kythe/go/indexer/indexer"
@@ -174,29 +171,34 @@ func (w *worker) run(ctx context.Context, wg *sync.WaitGroup) {
 			}
 
 			for _, cg := range []*ast.CommentGroup{docg, commentg} {
-				if cg == nil {
+				if cg == nil || len(cg.List) == 0 {
 					continue
 				}
 
-				da, e := newAnchor(cg, pkg.Signature(o)+"#doc-"+strconv.Itoa(int(cg.Pos())), pkg, unit)
-				w.Writes(da)
-				w.Write(e)
-
 				doc := schema.Node{
-					Kind: nodes.Doc,
+					VName: pkg.VName(o),
+					Kind:  nodes.Doc,
 				}
+				doc.AddFact(facts.Text, cg.Text())
+				doc.VName.Signature = pkg.Signature(o) + "#doc-" + strconv.Itoa(int(cg.Pos()))
 
 				w.Write(&schema.Edge{
 					Source: doc.VName,
 					Target: pkg.VName(o),
 					Kind:   edges.Documents,
 				})
-				//w.Write(&schema.Edge{
-				//	Source: doc.VName,
-				//	Target: a.VName,
-				//	Kind:   edges.Documents,
-				//})
+
+				doca, e := newAnchor(cg, pkg.Signature(o)+"#doca-"+strconv.Itoa(int(cg.Pos())), pkg, unit)
+				w.Writes(doca)
+				w.Write(e)
+
+				w.Write(&schema.Edge{
+					Source: doca.VName,
+					Target: pkg.VName(o),
+					Kind:   edges.Documents,
+				})
 			}
+
 		}
 
 		for i, o := range pkg.Info.Uses {
