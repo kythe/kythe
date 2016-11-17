@@ -45,6 +45,7 @@ import (
 	"log"
 	"path"
 	"sort"
+	"strings"
 
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/tools/go/gcexportdata"
@@ -72,6 +73,7 @@ type PackageInfo struct {
 	FileSet      *token.FileSet                // Location info for the source files
 	Files        []*ast.File                   // The parsed ASTs of the source files
 	SourceText   map[string]string             // The text of the source files, by path
+	Comments     map[*ast.File]ast.CommentMap
 
 	Info   *types.Info // If non-nil, contains type-checker results
 	Errors []error     // All errors reported by the type checker
@@ -129,11 +131,19 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 			return nil, fmt.Errorf("fetching %q (%s): %v", fpath, ri.Info.Digest, err)
 		}
 
+		if strings.HasSuffix(fpath, ".h") {
+			continue
+		}
+		if strings.Contains(fpath, "external/io_bazel_rules_go_toolchain/pkg/tool") ||
+			strings.Contains(fpath, "external/io_bazel_rules_go_toolchain/bin") ||
+			strings.Contains(fpath, ".cgo.dir") {
+			continue
+		}
 		// Source inputs need to be parsed, so we can give their ASTs to the
 		// type checker later on.
-		if isSource[fpath] {
+		if isSource[fpath] || strings.HasSuffix(fpath, ".go") {
 			srcs[fpath] = string(data)
-			parsed, err := parser.ParseFile(fset, fpath, data, parser.AllErrors)
+			parsed, err := parser.ParseFile(fset, fpath, data, parser.AllErrors|parser.ParseComments)
 			if err != nil {
 				return nil, fmt.Errorf("parsing %q: %v", fpath, err)
 			}
@@ -171,6 +181,12 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 			vmap[pkg] = vname
 		}
 	}
+
+	cmap := make(map[*ast.File]ast.CommentMap)
+	for _, f := range files {
+		cmap[f] = ast.NewCommentMap(fset, f, f.Comments)
+	}
+
 	pi := &PackageInfo{
 		Name:         files[0].Name.Name,
 		ImportPath:   path.Join(unit.VName.Corpus, unit.VName.Path),
@@ -180,6 +196,7 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 		SourceText:   srcs,
 		Dependencies: deps,
 		Info:         info,
+		Comments:     cmap,
 
 		sigs: make(map[types.Object]string),
 	}
@@ -248,6 +265,7 @@ func (pi *PackageInfo) VName(obj types.Object) *spb.VName {
 	}
 	vname := proto.Clone(base).(*spb.VName)
 	vname.Signature = sig
+	vname.Path = pi.FileSet.File(obj.Pos()).Name()
 	return vname
 }
 

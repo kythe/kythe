@@ -27,7 +27,6 @@ import (
 	"regexp"
 	"strings"
 	"sync"
-	"time"
 
 	"bitbucket.org/creachadair/shell"
 	"github.com/golang/protobuf/proto"
@@ -78,7 +77,6 @@ func (c *Config) Extract(ctx context.Context, info *eapb.ExtraActionInfo) (*kind
 	if err != nil {
 		return nil, fmt.Errorf("extracting tool arguments: %v", err)
 	}
-	log.Printf("Extracting compilation for %q", info.GetOwner())
 	cu := &kindex.Compilation{
 		Proto: &apb.CompilationUnit{
 			VName: &spb.VName{
@@ -115,8 +113,6 @@ func (c *Config) Extract(ctx context.Context, info *eapb.ExtraActionInfo) (*kind
 
 	// Fetch concurrently. Each element of the proto slices is accessed by a
 	// single goroutine corresponding to its index.
-	log.Printf("Reading file contents for %d required inputs", len(wantPaths))
-	start := time.Now()
 	var wg sync.WaitGroup
 	for i, path := range wantPaths {
 		i, path := i, path
@@ -132,7 +128,6 @@ func (c *Config) Extract(ctx context.Context, info *eapb.ExtraActionInfo) (*kind
 		}()
 	}
 	wg.Wait()
-	log.Printf("Finished reading required inputs [%v elapsed]", time.Since(start))
 
 	// Set the output path.  Although the SpawnInfo has room for multiple
 	// outputs, we expect only one to be set in practice.  It's harmless if
