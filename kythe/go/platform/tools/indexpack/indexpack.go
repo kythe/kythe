@@ -33,6 +33,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"kythe.io/kythe/go/platform/indexpack"
 	"kythe.io/kythe/go/platform/kindex"
@@ -107,15 +108,21 @@ func main() {
 		if len(flag.Args()) == 0 {
 			log.Println("WARNING: no kindex file paths given")
 		}
+		var wg sync.WaitGroup
 		for _, path := range flag.Args() {
-			kindex, err := kindex.Open(ctx, path)
-			if err != nil {
-				log.Fatalf("Error opening kindex at %q: %v", path, err)
-			}
-			if err := packIndex(ctx, pack, kindex); err != nil {
-				log.Fatalf("Error packing kindex at %q into %q: %v", path, pack.Root(), err)
-			}
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				kindex, err := kindex.Open(ctx, path)
+				if err != nil {
+					log.Fatalf("Error opening kindex at %q: %v", path, err)
+				}
+				if err := packIndex(ctx, pack, kindex); err != nil {
+					log.Fatalf("Error packing kindex at %q into %q: %v", path, pack.Root(), err)
+				}
+			}()
 		}
+		wg.Wait()
 	} else if *fromArchive != "" {
 		var dir string
 		if len(flag.Args()) > 1 {

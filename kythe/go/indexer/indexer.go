@@ -486,9 +486,12 @@ func AllTypeInfo() *types.Info {
 }
 
 func normalize(ipath string) string {
+	//log.Printf("in: %v", ipath)
 	ipath = regexp.MustCompile("(.*/)?vendor/").ReplaceAllString(ipath, "")
-	ipath = regexp.MustCompile("/[^/]*.go$").ReplaceAllString(ipath, "")
+	ipath = regexp.MustCompile("/[^/]*\\.go$").ReplaceAllString(ipath, "")
 	ipath = strings.TrimPrefix(ipath, "golang.org/pkg/linux_amd64/")
+	ipath = strings.TrimSuffix(ipath, "/go_default_library.a")
 	ipath = strings.TrimSuffix(ipath, ".a")
+	//log.Printf("out: %v", ipath)
 	return ipath
 }

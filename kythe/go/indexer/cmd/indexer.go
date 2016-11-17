@@ -204,9 +204,6 @@ func (w *worker) run(ctx context.Context, wg *sync.WaitGroup) {
 		}
 
 		for i, o := range pkg.Info.Uses {
-			if i.Name == "NormalizedName" {
-				log.Printf("%v: %v", pkg.FileSet.Position(i.Pos()), pkg.VName(o))
-			}
 			a, childOf := newAnchor(i, pkg.Signature(o)+"#use-"+strconv.Itoa(int(i.Pos())), pkg, unit)
 			w.Writes(a)
 			w.Write(childOf)
@@ -233,7 +230,7 @@ func (w *worker) run(ctx context.Context, wg *sync.WaitGroup) {
 		}
 
 		if len(pkg.Errors) != 0 {
-			log.Fatalf("error indexing: %v", pkg.Errors)
+			log.Printf("error indexing: %v", pkg.Errors)
 		}
 
 		log.Printf("done indexing %q", unit.VName.Signature)
