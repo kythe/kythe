@@ -77,6 +77,13 @@ func (c *Config) Extract(ctx context.Context, info *eapb.ExtraActionInfo) (*kind
 	if err != nil {
 		return nil, fmt.Errorf("extracting tool arguments: %v", err)
 	}
+
+	if len(toolArgs.sources) != 0 {
+		if vname, ok := c.Rules.Apply(strings.TrimPrefix(toolArgs.sources[0], "k8s.io/kubernetes/")); ok {
+			c.Corpus = vname.Corpus
+		}
+	}
+
 	cu := &kindex.Compilation{
 		Proto: &apb.CompilationUnit{
 			VName: &spb.VName{

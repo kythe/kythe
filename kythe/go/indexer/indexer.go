@@ -44,6 +44,7 @@ import (
 	"go/types"
 	"log"
 	"path"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -73,7 +74,6 @@ type PackageInfo struct {
 	FileSet      *token.FileSet                // Location info for the source files
 	Files        []*ast.File                   // The parsed ASTs of the source files
 	SourceText   map[string]string             // The text of the source files, by path
-	Comments     map[*ast.File]ast.CommentMap
 
 	Info   *types.Info // If non-nil, contains type-checker results
 	Errors []error     // All errors reported by the type checker
@@ -162,10 +162,7 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 			return nil, fmt.Errorf("scanning export data in %q: %v", fpath, err)
 		}
 
-		ipath := path.Join(ri.VName.Corpus, ri.VName.Path)
-		if govname.IsStandardLibrary(ri.VName) {
-			ipath = ri.VName.Path
-		}
+		ipath := normalize(path.Join(ri.VName.Corpus, ri.VName.Path))
 		imap[ipath] = ri.VName
 
 		// Populate deps with package ipath and its prerequisites.
@@ -182,11 +179,6 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 		}
 	}
 
-	cmap := make(map[*ast.File]ast.CommentMap)
-	for _, f := range files {
-		cmap[f] = ast.NewCommentMap(fset, f, f.Comments)
-	}
-
 	pi := &PackageInfo{
 		Name:         files[0].Name.Name,
 		ImportPath:   path.Join(unit.VName.Corpus, unit.VName.Path),
@@ -196,7 +188,6 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 		SourceText:   srcs,
 		Dependencies: deps,
 		Info:         info,
-		Comments:     cmap,
 
 		sigs: make(map[types.Object]string),
 	}
@@ -265,7 +256,9 @@ func (pi *PackageInfo) VName(obj types.Object) *spb.VName {
 	}
 	vname := proto.Clone(base).(*spb.VName)
 	vname.Signature = sig
-	vname.Path = pi.FileSet.File(obj.Pos()).Name()
+	vname.Path = normalize(pi.FileSet.File(obj.Pos()).Name())
+	vname.Language = "go"
+	vname.Root = ""
 	return vname
 }
 
@@ -490,4 +483,12 @@ func AllTypeInfo() *types.Info {
 		Selections: make(map[*ast.SelectorExpr]*types.Selection),
 		Scopes:     make(map[ast.Node]*types.Scope),
 	}
+}
+
+func normalize(ipath string) string {
+	ipath = regexp.MustCompile("(.*/)?vendor/").ReplaceAllString(ipath, "")
+	ipath = regexp.MustCompile("/[^/]*.go$").ReplaceAllString(ipath, "")
+	ipath = strings.TrimPrefix(ipath, "golang.org/pkg/linux_amd64/")
+	ipath = strings.TrimSuffix(ipath, ".a")
+	return ipath
 }

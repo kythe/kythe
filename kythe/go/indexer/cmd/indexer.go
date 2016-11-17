@@ -61,11 +61,14 @@ func main() {
 	go func() {
 		defer wg.Done()
 		for {
-			e, ok := <-out
-			if !ok {
-				return
+
+			select {
+			case e, ok := <-out:
+				if !ok {
+					return
+				}
+				w.PutProto(e)
 			}
-			w.PutProto(e)
 		}
 	}()
 
@@ -198,10 +201,12 @@ func (w *worker) run(ctx context.Context, wg *sync.WaitGroup) {
 					Kind:   edges.Documents,
 				})
 			}
-
 		}
 
 		for i, o := range pkg.Info.Uses {
+			if i.Name == "NormalizedName" {
+				log.Printf("%v: %v", pkg.FileSet.Position(i.Pos()), pkg.VName(o))
+			}
 			a, childOf := newAnchor(i, pkg.Signature(o)+"#use-"+strconv.Itoa(int(i.Pos())), pkg, unit)
 			w.Writes(a)
 			w.Write(childOf)
@@ -225,6 +230,10 @@ func (w *worker) run(ctx context.Context, wg *sync.WaitGroup) {
 			a.AddFact(facts.Text, c)
 			a.AddFact(facts.TextEncoding, facts.DefaultTextEncoding)
 			w.Writes(&a)
+		}
+
+		if len(pkg.Errors) != 0 {
+			log.Fatalf("error indexing: %v", pkg.Errors)
 		}
 
 		log.Printf("done indexing %q", unit.VName.Signature)
