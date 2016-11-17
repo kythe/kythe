@@ -19,7 +19,7 @@ Kythe relies on the following external dependencies:
 
 * go >=1.7
 * clang-3.5
-* cmake
+* cmake >= 3.4.3
 * node.js
 * asciidoc
 * jdk >=8
