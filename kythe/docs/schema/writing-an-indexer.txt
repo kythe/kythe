@@ -134,15 +134,15 @@ function vname(signature, path, language, root, corpus) {
     path: path,
     language: language,
     root: root,
-    corpus: corpus
+    corpus: corpus,
   };
 }
 function fact(node, fact_name, fact_val) {
   return {
     source: node,
     fact_name: "/kythe/" + fact_name,
-    fact_value: base64enc(fact_val)
-  }
+    fact_value: base64enc(fact_val),
+  };
 }
 function edge(source, edge_name, target) {
   return {
@@ -150,7 +150,7 @@ function edge(source, edge_name, target) {
     edge_kind: "/kythe/edge/" + edge_name,
     target: target,
     fact_name: "/",
-  }
+  };
 }
 function ordinal_edge(source, edge_name, target, ordinal) {
   return {
@@ -158,7 +158,7 @@ function ordinal_edge(source, edge_name, target, ordinal) {
     edge_kind: "/kythe/edge/" + edge_name + "." + ordinal,
     target: target,
     fact_name: "/",
-  }
+  };
 }
 ----
 
@@ -171,7 +171,7 @@ function base64enc(string) {
   return new Buffer(string).toString('base64');
 }
 function emitEntries(entries) {
-  entries.forEach(function(v){console.log(JSON.stringify(v))})
+  entries.forEach(function(v){console.log(JSON.stringify(v))});
 }
 ----
 
@@ -288,7 +288,7 @@ Using the functions we've defined above, we emit the following entry:
 [source,js]
 ----
 //         sig      path     lang  root   corpus
-fact(vname("foo#0", "hello", "ex", "", "example"), "node/kind", "variable")
+fact(vname("foo#0", "hello", "ex", "", "example"), "node/kind", "variable");
 ----
 
 We can see it in the graph with the `kythe` tool (after running
@@ -332,15 +332,15 @@ function anchorVName(file_vname, begin, end) {
       file_vname.corpus);
 }
 function anchor(file_vname, begin, end) {
-  var anchor_vname = anchorVName(file_vname, begin, end)
+  var anchor_vname = anchorVName(file_vname, begin, end);
   return [
     fact(anchor_vname, "node/kind", "anchor"),
     fact(anchor_vname, "loc/start", begin.toString()),
     fact(anchor_vname, "loc/end", end.toString()),
     // This edge is required in the current Kythe release, but it will not be
     // required in a future release.
-    edge(anchor_vname, "childof", file_vname),
-  ]
+    edge(anchor_vname, "childof", file_vname)
+  ];
 }
 ----
 
@@ -377,10 +377,10 @@ like:
 
 [source,js]
 ----
-var hello_file_vname = vname("", "hello", "", "", "example")
-var foo_vname = vname("foo#0", "hello", "ex", "", "example")
-var foo_def_anchor_vname = anchorVName(hello_file_vname, 4, 7)
-var foo_ref_anchor_vname = anchorVName(hello_file_vname, 18, 21)
+var hello_file_vname = vname("", "hello", "", "", "example");
+var foo_vname = vname("foo#0", "hello", "ex", "", "example");
+var foo_def_anchor_vname = anchorVName(hello_file_vname, 4, 7);
+var foo_ref_anchor_vname = anchorVName(hello_file_vname, 18, 21);
 var entries = [
   fact(hello_file_vname, "node/kind", "file"),
   fact(hello_file_vname, "text", "var foo = 1\nprint foo"),
@@ -388,7 +388,7 @@ var entries = [
   edge(foo_def_anchor_vname, "defines/binding", foo_vname),
   edge(foo_ref_anchor_vname, "ref", foo_vname)
 ].concat(anchor(hello_file_vname, 4, 7))
- .concat(anchor(hello_file_vname, 18, 21))
+ .concat(anchor(hello_file_vname, 18, 21));
 ----
 
 NOTE: For pedagogical reasons, we're building our graph up as a big array
