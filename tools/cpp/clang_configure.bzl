@@ -49,7 +49,7 @@ def _impl(ctx):
       "cxx_builtin_include_directory",
       _find_cxx_include_directories(ctx, cc))
 
-  ctx.symlink(Label("@//tools/cpp:BUILD"), "BUILD")
+  ctx.symlink(Label("@//tools/cpp:toolchain.BUILD"), "BUILD")
   ctx.template("clang_wrapper_is_not_clang",
                Label("@//tools/cpp:osx_gcc_wrapper.sh.in"),
                {"ADD_CXX_COMPILER": str(cc)})
