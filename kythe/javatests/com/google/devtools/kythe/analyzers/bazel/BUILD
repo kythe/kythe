@@ -18,7 +18,7 @@ java_test(
         "//kythe/java/com/google/devtools/kythe/analyzers/bazel:Tickets",
         "//kythe/java/com/google/devtools/kythe/util",
         "@com_google_truth_truth//jar",
-        "@io_bazelbuild_bazel//src/main/java/com/google/devtools/build/lib:skylark-lang",
+        "@io_bazel//src/main/java/com/google/devtools/build/lib:skylark-lang",
         "@junit_junit//jar",
     ],
 )

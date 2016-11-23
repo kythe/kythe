@@ -13,7 +13,7 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/util",
         "@com_google_auto_value//jar",
         "@com_google_guava_guava//jar",
-        "@io_bazelbuild_bazel//src/main/java/com/google/devtools/build/lib:skylark-lang",
+        "@io_bazel//src/main/java/com/google/devtools/build/lib:skylark-lang",
     ],
 )
 

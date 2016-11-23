@@ -154,10 +154,10 @@ load("@io_bazel_rules_go//go:def.bzl", "go_repositories")
 go_repositories()
 
 http_archive(
-    name = "io_bazelbuild_bazel",
-    url = "https://github.com/bazelbuild/bazel/archive/0.3.2.zip",
-    sha256 = "86daa14e3739289492a470c07f71ad23dfd1892c5046223fa180395085103c40",
-    strip_prefix = "bazel-0.3.2",
+    name = "io_bazel",
+    sha256 = "9b2fffa18d0e87baded2dc4aba470f6274fb66e2b2c6119b93426c47ab19fb40",
+    strip_prefix = "bazel-0.4.0",
+    url = "https://github.com/bazelbuild/bazel/archive/0.4.0.zip",
 )
 
 new_git_repository(
