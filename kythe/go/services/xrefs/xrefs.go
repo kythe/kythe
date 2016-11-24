@@ -341,6 +341,37 @@ func SlowDefinitions(ctx context.Context, xs Service, tickets []string) (map[str
 	return defs, nil
 }
 
+// SlowDeclarationsForCrossReferences finds the tickets of every declaration completed by the same definitions.
+func SlowDeclarationsForCrossReferences(ctx context.Context, xs Service, ticket string) ([]string, error) {
+	// Find the set of definitions covered by the ticket (which may be either a declaration or a definition).
+	reply, err := xs.CrossReferences(ctx, &xpb.CrossReferencesRequest{
+		Ticket:         []string{ticket},
+		DefinitionKind: xpb.CrossReferencesRequest_ALL_DEFINITIONS,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	defanchors := stringset.New()
+	for _, crs := range reply.CrossReferences {
+		for _, ra := range crs.Definition {
+			defanchors.Add(ra.Anchor.Ticket)
+		}
+	}
+
+	// Follow all of the completion edges from the definition anchors to their declarations.
+	decls := stringset.New()
+	if err := forAllEdges(ctx, xs, defanchors, []string{edges.Completes, edges.CompletesUniquely},
+		func(_, target, _, _ string) error {
+			decls.Add(target)
+			return nil
+		}); err != nil {
+		return nil, err
+	}
+
+	return decls.Elements(), nil
+}
+
 // NodesMap returns a map from each node ticket to a map of its facts.
 func NodesMap(nodes map[string]*xpb.NodeInfo) map[string]map[string][]byte {
 	m := make(map[string]map[string][]byte, len(nodes))

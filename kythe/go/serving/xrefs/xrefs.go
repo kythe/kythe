@@ -832,6 +832,32 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 			stats.addRelatedAnchors(&crs.Caller, anchors, req.AnchorText)
 		}
 
+		if wantMoreCrossRefs && req.DeclarationKind != xpb.CrossReferencesRequest_NO_DECLARATIONS {
+			decls, err := xrefs.SlowDeclarationsForCrossReferences(ctx, t, ticket)
+			if err != nil {
+				return nil, fmt.Errorf("error in SlowDeclarations: %v", err)
+			}
+			for _, decl := range decls {
+				if decl == ticket {
+					continue // Added in the original loop above.
+				}
+				cr, err := t.crossReferences(ctx, decl)
+				if err == table.ErrNoSuchKey {
+					log.Println("Missing CrossReferences:", decl)
+					continue
+				} else if err != nil {
+					return nil, fmt.Errorf("error looking up cross-references for ticket %q: %v", ticket, err)
+				}
+
+				for _, grp := range cr.Group {
+					if xrefs.IsDeclKind(req.DeclarationKind, grp.Kind, cr.Incomplete) {
+						reply.Total.Declarations += int64(len(grp.Anchor))
+						stats.addAnchors(&crs.Declaration, grp.Anchor, req.AnchorText)
+					}
+				}
+			}
+		}
+
 		for _, idx := range cr.PageIndex {
 			switch {
 			case xrefs.IsDefKind(req.DefinitionKind, idx.Kind, cr.Incomplete):

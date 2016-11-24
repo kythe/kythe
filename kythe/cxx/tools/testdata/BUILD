@@ -43,3 +43,16 @@ sh_test(
         "//kythe/go/platform/tools/indexpack",
     ],
 )
+
+sh_test(
+    name = "def_decl_test",
+    srcs = ["def_decl_test.sh"],
+    data = [
+        "def_decl_test.cc",
+        "//kythe/cxx/indexer/cxx:indexer",
+        "//kythe/go/serving/tools:kythe",
+        "//kythe/go/serving/tools:write_tables",
+        "//kythe/go/storage/tools/write_entries",
+    ],
+    tags = ["manual"],  # Currently failing.
+)
