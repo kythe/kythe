@@ -20,7 +20,7 @@ _INC_DIR_MARKER_BEGIN = "#include <...> search starts here:"
 _INC_DIR_MARKER_END = "End of search list."
 
 def _find_cxx_include_directories(ctx, cc):
-  """Compute the list of default C++ include directories."""
+  """Compute the list of default C and C++ include directories."""
   result = ctx.execute([cc, "-E", "-xc++", "-", "-v"])
   start = result.stderr.find(_INC_DIR_MARKER_BEGIN)
   if start == -1:
@@ -29,6 +29,17 @@ def _find_cxx_include_directories(ctx, cc):
   if end == -1:
     return []
   inc_dirs = result.stderr[start + len(_INC_DIR_MARKER_BEGIN):end].strip()
+
+  result = ctx.execute([cc, "-E", "-xc", "-", "-v"])
+  start = result.stderr.find(_INC_DIR_MARKER_BEGIN)
+  if start == -1:
+    return []
+  end = result.stderr.find(_INC_DIR_MARKER_END, start)
+  if end == -1:
+    return []
+  inc_dirs = (inc_dirs +
+              result.stderr[start + len(_INC_DIR_MARKER_BEGIN):end].strip())
+
   return [ctx.path(p.strip()) for p in inc_dirs.split("\n")]
 
 def _get_value(it):
