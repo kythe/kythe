@@ -46,3 +46,16 @@ message Span {
   Point start = 1;
   Point end = 2;
 }
+
+message NodeInfo {
+  // The matching facts known for that node, a map from fact name to value.
+  map<string, bytes> facts = 2;
+
+  // If known and unambiguous, an anchor ticket for this node's definition
+  // location.
+  // Tickets are Kythe URIs (http://www.kythe.io/docs/kythe-uri-spec.html).
+  string definition = 5;
+
+  reserved 1;
+  reserved "ticket";
+}

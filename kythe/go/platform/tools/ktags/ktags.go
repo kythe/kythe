@@ -35,6 +35,7 @@ import (
 	"bitbucket.org/creachadair/stringset"
 	"golang.org/x/net/context"
 
+	gpb "kythe.io/kythe/proto/graph_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
@@ -105,7 +106,7 @@ func main() {
 }
 
 func getTagFields(xs xrefs.Service, ticket string) ([]string, error) {
-	reply, err := xs.Edges(ctx, &xpb.EdgesRequest{
+	reply, err := xs.Edges(ctx, &gpb.EdgesRequest{
 		Ticket: []string{ticket},
 		Kind:   []string{edges.ChildOf, edges.Param},
 		Filter: []string{facts.NodeKind, facts.Subkind, identifierFact},

@@ -39,6 +39,7 @@ import (
 	"kythe.io/kythe/go/util/schema/edges"
 
 	cpb "kythe.io/kythe/proto/common_proto"
+	gpb "kythe.io/kythe/proto/graph_proto"
 	ipb "kythe.io/kythe/proto/internal_proto"
 	srvpb "kythe.io/kythe/proto/serving_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
@@ -215,7 +216,7 @@ func CrossReferencesPageKey(key string) []byte {
 type Table struct{ staticLookupTables }
 
 // Nodes implements part of the xrefs Service interface.
-func (t *Table) Nodes(ctx context.Context, req *xpb.NodesRequest) (*xpb.NodesReply, error) {
+func (t *Table) Nodes(ctx context.Context, req *gpb.NodesRequest) (*gpb.NodesReply, error) {
 	tickets, err := xrefs.FixTickets(req.Ticket)
 	if err != nil {
 		return nil, err
@@ -231,7 +232,7 @@ func (t *Table) Nodes(ctx context.Context, req *xpb.NodesRequest) (*xpb.NodesRep
 		}
 	}()
 
-	reply := &xpb.NodesReply{Nodes: make(map[string]*xpb.NodeInfo, len(req.Ticket))}
+	reply := &gpb.NodesReply{Nodes: make(map[string]*cpb.NodeInfo, len(req.Ticket))}
 	patterns := xrefs.ConvertFilters(req.Filter)
 
 	for r := range rs {
@@ -241,7 +242,7 @@ func (t *Table) Nodes(ctx context.Context, req *xpb.NodesRequest) (*xpb.NodesRep
 			return nil, r.Err
 		}
 		node := r.PagedEdgeSet.Source
-		ni := &xpb.NodeInfo{Facts: make(map[string][]byte, len(node.Fact))}
+		ni := &cpb.NodeInfo{Facts: make(map[string][]byte, len(node.Fact))}
 		for _, f := range node.Fact {
 			if len(patterns) == 0 || xrefs.MatchesAny(f.Name, patterns) {
 				ni.Facts[f.Name] = f.Value
@@ -260,7 +261,7 @@ const (
 )
 
 // Edges implements part of the xrefs Service interface.
-func (t *Table) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
+func (t *Table) Edges(ctx context.Context, req *gpb.EdgesRequest) (*gpb.EdgesReply, error) {
 	tickets, err := xrefs.FixTickets(req.Ticket)
 	if err != nil {
 		return nil, err
@@ -289,7 +290,7 @@ type edgesRequest struct {
 	PageToken string
 }
 
-func (t *Table) edges(ctx context.Context, req edgesRequest) (*xpb.EdgesReply, error) {
+func (t *Table) edges(ctx context.Context, req edgesRequest) (*gpb.EdgesReply, error) {
 	stats := filterStats{
 		max: int(req.PageSize),
 	}
@@ -330,9 +331,9 @@ func (t *Table) edges(ctx context.Context, req edgesRequest) (*xpb.EdgesReply, e
 
 	patterns := xrefs.ConvertFilters(req.Filters)
 
-	reply := &xpb.EdgesReply{
-		EdgeSets: make(map[string]*xpb.EdgeSet),
-		Nodes:    make(map[string]*xpb.NodeInfo),
+	reply := &gpb.EdgesReply{
+		EdgeSets: make(map[string]*gpb.EdgeSet),
+		Nodes:    make(map[string]*cpb.NodeInfo),
 
 		TotalEdgesByKind: make(map[string]int64),
 	}
@@ -350,7 +351,7 @@ func (t *Table) edges(ctx context.Context, req edgesRequest) (*xpb.EdgesReply, e
 			continue
 		}
 
-		groups := make(map[string]*xpb.EdgeSet_Group)
+		groups := make(map[string]*gpb.EdgeSet_Group)
 		for _, grp := range pes.Group {
 			if req.Kinds == nil || req.Kinds(grp.Kind) {
 				ng, ns := stats.filter(grp)
@@ -406,7 +407,7 @@ func (t *Table) edges(ctx context.Context, req edgesRequest) (*xpb.EdgesReply, e
 		}
 
 		if len(groups) > 0 {
-			reply.EdgeSets[pes.Source.Ticket] = &xpb.EdgeSet{Groups: groups}
+			reply.EdgeSets[pes.Source.Ticket] = &gpb.EdgeSet{Groups: groups}
 
 			if len(patterns) > 0 && !nodeTickets.Contains(pes.Source.Ticket) {
 				nodeTickets.Add(pes.Source.Ticket)
@@ -465,7 +466,7 @@ func (s *filterStats) skipPage(idx *srvpb.PageIndex) bool {
 	return false
 }
 
-func (s *filterStats) filter(g *srvpb.EdgeGroup) (*xpb.EdgeSet_Group, []*srvpb.Node) {
+func (s *filterStats) filter(g *srvpb.EdgeGroup) (*gpb.EdgeSet_Group, []*srvpb.Node) {
 	edges := g.Edge
 	if len(edges) <= s.skip {
 		s.skip -= len(edges)
@@ -486,15 +487,15 @@ func (s *filterStats) filter(g *srvpb.EdgeGroup) (*xpb.EdgeSet_Group, []*srvpb.N
 		targets[i] = e.Target
 	}
 
-	return &xpb.EdgeSet_Group{
+	return &gpb.EdgeSet_Group{
 		Edge: e2e(edges),
 	}, targets
 }
 
-func e2e(es []*srvpb.EdgeGroup_Edge) []*xpb.EdgeSet_Group_Edge {
-	edges := make([]*xpb.EdgeSet_Group_Edge, len(es))
+func e2e(es []*srvpb.EdgeGroup_Edge) []*gpb.EdgeSet_Group_Edge {
+	edges := make([]*gpb.EdgeSet_Group_Edge, len(es))
 	for i, e := range es {
-		edges[i] = &xpb.EdgeSet_Group_Edge{
+		edges[i] = &gpb.EdgeSet_Group_Edge{
 			TargetTicket: e.Target.Ticket,
 			Ordinal:      e.Ordinal,
 		}
@@ -502,8 +503,8 @@ func e2e(es []*srvpb.EdgeGroup_Edge) []*xpb.EdgeSet_Group_Edge {
 	return edges
 }
 
-func nodeToInfo(patterns []*regexp.Regexp, n *srvpb.Node) *xpb.NodeInfo {
-	ni := &xpb.NodeInfo{Facts: make(map[string][]byte, len(n.Fact))}
+func nodeToInfo(patterns []*regexp.Regexp, n *srvpb.Node) *cpb.NodeInfo {
+	ni := &cpb.NodeInfo{Facts: make(map[string][]byte, len(n.Fact))}
 	for _, f := range n.Fact {
 		if xrefs.MatchesAny(f.Name, patterns) {
 			ni.Facts[f.Name] = f.Value
@@ -573,14 +574,14 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 		}
 
 		reply.Reference = make([]*xpb.DecorationsReply_Reference, 0, len(decor.Decoration))
-		reply.Nodes = make(map[string]*xpb.NodeInfo)
+		reply.Nodes = make(map[string]*cpb.NodeInfo)
 
 		var seenTarget stringset.Set
 
 		// Reference.TargetTicket -> NodeInfo (superset of reply.Nodes)
-		var nodes map[string]*xpb.NodeInfo
+		var nodes map[string]*cpb.NodeInfo
 		if len(patterns) > 0 {
-			nodes = make(map[string]*xpb.NodeInfo)
+			nodes = make(map[string]*cpb.NodeInfo)
 			for _, n := range decor.Target {
 				nodes[n.Ticket] = nodeToInfo(patterns, n)
 			}
@@ -659,7 +660,7 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 
 		if len(extendsOverridesTargets) != 0 && len(patterns) > 0 {
 			// Add missing NodeInfo.
-			request := &xpb.NodesRequest{Filter: req.Filter}
+			request := &gpb.NodesRequest{Filter: req.Filter}
 			for ticket := range extendsOverridesTargets {
 				if _, ok := reply.Nodes[ticket]; !ok {
 					request.Ticket = append(request.Ticket, ticket)
@@ -764,7 +765,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 
 	reply := &xpb.CrossReferencesReply{
 		CrossReferences: make(map[string]*xpb.CrossReferencesReply_CrossReferenceSet, len(req.Ticket)),
-		Nodes:           make(map[string]*xpb.NodeInfo, len(req.Ticket)),
+		Nodes:           make(map[string]*cpb.NodeInfo, len(req.Ticket)),
 
 		Total: &xpb.CrossReferencesReply_Total{},
 	}

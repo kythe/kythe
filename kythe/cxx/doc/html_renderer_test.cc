@@ -20,6 +20,7 @@
 #include "gtest/gtest.h"
 #include "kythe/cxx/doc/html_markup_handler.h"
 #include "kythe/cxx/doc/javadoxygen_markup_handler.h"
+#include "kythe/proto/common.pb.h"
 
 namespace kythe {
 namespace {
@@ -68,7 +69,7 @@ class HtmlRendererTest : public ::testing::Test {
     return kythe::RenderHtml(options_, output);
   }
   kythe::HtmlRendererOptions options_;
-  std::map<std::string, proto::NodeInfo> node_info_;
+  std::map<std::string, proto::common::NodeInfo> node_info_;
   std::map<std::string, proto::Anchor> definition_locations_;
 };
 TEST_F(HtmlRendererTest, RenderEmptyDoc) {

@@ -43,6 +43,7 @@ import (
 
 	cpb "kythe.io/kythe/proto/common_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
+	gpb "kythe.io/kythe/proto/graph_proto"
 )
 
 // Service defines the interface for file based cross-references.  Informally,
@@ -67,8 +68,8 @@ type Service interface {
 
 // GraphService exposes direct access to nodes and edges in a Kythe graph.
 type GraphService interface {
-	Nodes(context.Context, *xpb.NodesRequest) (*xpb.NodesReply, error)
-	Edges(context.Context, *xpb.EdgesRequest) (*xpb.EdgesReply, error)
+	Nodes(context.Context, *gpb.NodesRequest) (*gpb.NodesReply, error)
+	Edges(context.Context, *gpb.EdgesRequest) (*gpb.EdgesReply, error)
 }
 
 // ErrDecorationsNotFound is returned by an implementation of the Decorations
@@ -129,7 +130,7 @@ func IsDefKind(requestedKind xpb.CrossReferencesRequest_DefinitionKind, edgeKind
 	}
 }
 
-// IsDeclKind reportsa whether the given edgeKind matches the requested
+// IsDeclKind reports whether the given edgeKind matches the requested
 // declaration kind
 func IsDeclKind(requestedKind xpb.CrossReferencesRequest_DeclarationKind, edgeKind string, incomplete bool) bool {
 	if !incomplete {
@@ -182,7 +183,7 @@ func IsDocKind(requestedKind xpb.CrossReferencesRequest_DocumentationKind, edgeK
 // the returned reply will not have a next page token.  WARNING: the paging API
 // exists for a reason; using this can lead to very large memory consumption
 // depending on the request.
-func AllEdges(ctx context.Context, es GraphService, req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
+func AllEdges(ctx context.Context, es GraphService, req *gpb.EdgesRequest) (*gpb.EdgesReply, error) {
 	req.PageSize = math.MaxInt32
 	reply, err := es.Edges(ctx, req)
 	if err != nil || reply.NextPageToken == "" {
@@ -201,13 +202,13 @@ func AllEdges(ctx context.Context, es GraphService, req *xpb.EdgesRequest) (*xpb
 		edgesMapInto(reply.EdgeSets, edges)
 	}
 
-	reply = &xpb.EdgesReply{
-		Nodes:    make(map[string]*xpb.NodeInfo, len(nodes)),
-		EdgeSets: make(map[string]*xpb.EdgeSet, len(edges)),
+	reply = &gpb.EdgesReply{
+		Nodes:    make(map[string]*cpb.NodeInfo, len(nodes)),
+		EdgeSets: make(map[string]*gpb.EdgeSet, len(edges)),
 	}
 
 	for ticket, facts := range nodes {
-		info := &xpb.NodeInfo{
+		info := &cpb.NodeInfo{
 			Facts: make(map[string][]byte, len(facts)),
 		}
 		for name, val := range facts {
@@ -217,21 +218,21 @@ func AllEdges(ctx context.Context, es GraphService, req *xpb.EdgesRequest) (*xpb
 	}
 
 	for source, groups := range edges {
-		set := &xpb.EdgeSet{
-			Groups: make(map[string]*xpb.EdgeSet_Group, len(groups)),
+		set := &gpb.EdgeSet{
+			Groups: make(map[string]*gpb.EdgeSet_Group, len(groups)),
 		}
 		for kind, targets := range groups {
-			edges := make([]*xpb.EdgeSet_Group_Edge, 0, len(targets))
+			edges := make([]*gpb.EdgeSet_Group_Edge, 0, len(targets))
 			for target, ordinals := range targets {
 				for ordinal := range ordinals {
-					edges = append(edges, &xpb.EdgeSet_Group_Edge{
+					edges = append(edges, &gpb.EdgeSet_Group_Edge{
 						TargetTicket: target,
 						Ordinal:      ordinal,
 					})
 				}
 			}
 			sort.Sort(ByOrdinal(edges))
-			set.Groups[kind] = &xpb.EdgeSet_Group{
+			set.Groups[kind] = &gpb.EdgeSet_Group{
 				Edge: edges,
 			}
 		}
@@ -373,13 +374,13 @@ func SlowDeclarationsForCrossReferences(ctx context.Context, xs Service, ticket 
 }
 
 // NodesMap returns a map from each node ticket to a map of its facts.
-func NodesMap(nodes map[string]*xpb.NodeInfo) map[string]map[string][]byte {
+func NodesMap(nodes map[string]*cpb.NodeInfo) map[string]map[string][]byte {
 	m := make(map[string]map[string][]byte, len(nodes))
 	nodesMapInto(nodes, m)
 	return m
 }
 
-func nodesMapInto(nodes map[string]*xpb.NodeInfo, m map[string]map[string][]byte) {
+func nodesMapInto(nodes map[string]*cpb.NodeInfo, m map[string]map[string][]byte) {
 	for ticket, n := range nodes {
 		facts, ok := m[ticket]
 		if !ok {
@@ -393,13 +394,13 @@ func nodesMapInto(nodes map[string]*xpb.NodeInfo, m map[string]map[string][]byte
 }
 
 // EdgesMap returns a map from each node ticket to a map of its outward edge kinds.
-func EdgesMap(edges map[string]*xpb.EdgeSet) map[string]map[string]map[string]map[int32]struct{} {
+func EdgesMap(edges map[string]*gpb.EdgeSet) map[string]map[string]map[string]map[int32]struct{} {
 	m := make(map[string]map[string]map[string]map[int32]struct{}, len(edges))
 	edgesMapInto(edges, m)
 	return m
 }
 
-func edgesMapInto(edges map[string]*xpb.EdgeSet, m map[string]map[string]map[string]map[int32]struct{}) {
+func edgesMapInto(edges map[string]*gpb.EdgeSet, m map[string]map[string]map[string]map[int32]struct{}) {
 	for source, es := range edges {
 		kinds, ok := m[source]
 		if !ok {
@@ -630,7 +631,7 @@ func forAllEdges(ctx context.Context, service Service, source stringset.Set, edg
 	if source.Empty() {
 		return nil
 	}
-	req := &xpb.EdgesRequest{
+	req := &gpb.EdgesRequest{
 		Ticket: source.Elements(),
 		Kind:   edge,
 		Filter: []string{facts.NodeKind},
@@ -875,7 +876,7 @@ const (
 )
 
 // extractParams extracts target tickets of param edges into a string slice ordered by ordinal.
-func extractParams(edges []*xpb.EdgeSet_Group_Edge) []string {
+func extractParams(edges []*gpb.EdgeSet_Group_Edge) []string {
 	arr := make([]string, len(edges))
 	for _, edge := range edges {
 		ordinal := int(edge.Ordinal)
@@ -902,7 +903,7 @@ func getLanguage(ticket string) string {
 // slowLookupMeta retrieves the meta node for some node kind in some language.
 func slowLookupMeta(ctx context.Context, service Service, language string, kind string) (string, error) {
 	uri := kytheuri.URI{Language: language, Signature: kind + "#meta"}
-	req := &xpb.NodesRequest{
+	req := &gpb.NodesRequest{
 		Ticket: []string{uri.String()},
 		Filter: []string{facts.Format},
 	}
@@ -919,7 +920,7 @@ func slowLookupMeta(ctx context.Context, service Service, language string, kind 
 }
 
 // findParam finds the ticket for param number num in edges. It returns the empty string if a match wasn't found.
-func findParam(reply *xpb.EdgesReply, num int) string {
+func findParam(reply *gpb.EdgesReply, num int) string {
 	for _, set := range reply.EdgeSets {
 		for kind, group := range set.Groups {
 			if kind == edges.Param {
@@ -934,7 +935,7 @@ func findParam(reply *xpb.EdgesReply, num int) string {
 	return ""
 }
 
-func getFactValue(edges *xpb.EdgesReply, ticket, fact string) []byte {
+func getFactValue(edges *gpb.EdgesReply, ticket, fact string) []byte {
 	if n := edges.Nodes[ticket]; n != nil {
 		return n.Facts[fact]
 	}
@@ -943,7 +944,7 @@ func getFactValue(edges *xpb.EdgesReply, ticket, fact string) []byte {
 
 // findFormatAndKind finds the format and kind facts associated with ticket in edges. It returns empty strings for
 // either fact if they aren't found.
-func findFormatAndKind(edges *xpb.EdgesReply, ticket string) (string, string) {
+func findFormatAndKind(edges *gpb.EdgesReply, ticket string) (string, string) {
 	return string(getFactValue(edges, ticket, facts.Format)), string(getFactValue(edges, ticket, facts.NodeKind))
 }
 
@@ -952,7 +953,7 @@ func findFormatAndKind(edges *xpb.EdgesReply, ticket string) (string, string) {
 // It will return the expansion of the backtick signature and a (possibly appended to) slice of links (or "", nil, error).
 func slowSignatureForBacktick(ctx context.Context, service Service, typeTicket string, depth, num int, links []*xpb.Link) (string, []*xpb.Link, error) {
 	if typeTicket != "" {
-		req := &xpb.EdgesRequest{
+		req := &gpb.EdgesRequest{
 			Ticket:   []string{typeTicket},
 			Kind:     []string{edges.Param},
 			PageSize: math.MaxInt32,
@@ -984,7 +985,7 @@ type SignatureDetails struct {
 
 // findSignatureDetails fills a SignatureDetails from the graph.
 func findSignatureDetails(ctx context.Context, service Service, ticket string) (*SignatureDetails, error) {
-	req := &xpb.EdgesRequest{
+	req := &gpb.EdgesRequest{
 		Ticket:   []string{ticket},
 		Kind:     []string{edges.Named, edges.Param, edges.Typed, edges.ChildOf},
 		PageSize: math.MaxInt32,
@@ -1263,7 +1264,7 @@ func slowSignatureLevel(ctx context.Context, service Service, ticket, kind, form
 // parent's (recursively-defined) signature.
 // See http://www.kythe.io/docs/schema/#formats for details.
 func SlowSignature(ctx context.Context, service Service, ticket string) (*xpb.Printable, error) {
-	req := &xpb.NodesRequest{
+	req := &gpb.NodesRequest{
 		Ticket: []string{ticket},
 		Filter: []string{facts.NodeKind, facts.Format},
 	}
@@ -1320,7 +1321,7 @@ type documentDetails struct {
 // getDocRelatedNodes fills details with information about the kinds, parents, types, and associated doc nodes of allTickets.
 func getDocRelatedNodes(ctx context.Context, service Service, details documentDetails, allTickets stringset.Set) error {
 	// We can't ask for text facts here (since they get filtered out).
-	dreq := &xpb.EdgesRequest{
+	dreq := &gpb.EdgesRequest{
 		Ticket:   allTickets.Elements(),
 		Kind:     []string{edges.Mirror(edges.Documents), edges.ChildOf, edges.Typed},
 		PageSize: math.MaxInt32,
@@ -1369,7 +1370,7 @@ func getDocText(ctx context.Context, service Service, details documentDetails) e
 	if details.docs.Empty() {
 		return nil
 	}
-	nreq := &xpb.NodesRequest{
+	nreq := &gpb.NodesRequest{
 		Ticket: details.docs.Elements(),
 		Filter: []string{facts.Text},
 	}
@@ -1392,7 +1393,7 @@ func getDocLinks(ctx context.Context, service Service, details documentDetails) 
 	if details.docs.Empty() {
 		return nil
 	}
-	preq := &xpb.EdgesRequest{
+	preq := &gpb.EdgesRequest{
 		Ticket:   details.docs.Elements(),
 		Kind:     []string{edges.Param},
 		PageSize: math.MaxInt32,
@@ -1526,12 +1527,12 @@ func SlowDocumentation(ctx context.Context, service Service, req *xpb.Documentat
 			reply.DefinitionLocations[def.Ticket] = def
 		}
 	}
-	nodes, err := service.Nodes(ctx, &xpb.NodesRequest{
+	nodes, err := service.Nodes(ctx, &gpb.NodesRequest{
 		Filter: req.Filter,
 		Ticket: definitionSet.Elements(),
 	})
 	if len(nodes.Nodes) != 0 {
-		reply.Nodes = make(map[string]*xpb.NodeInfo, len(nodes.Nodes))
+		reply.Nodes = make(map[string]*cpb.NodeInfo, len(nodes.Nodes))
 		for node, info := range nodes.Nodes {
 			if def, ok := defs[node]; ok {
 				info.Definition = def.Ticket
@@ -1544,16 +1545,16 @@ func SlowDocumentation(ctx context.Context, service Service, req *xpb.Documentat
 
 type grpcClient struct {
 	xpb.XRefServiceClient
-	xpb.GraphServiceClient
+	gpb.GraphServiceClient
 }
 
 // Nodes implements part of the Service interface.
-func (w *grpcClient) Nodes(ctx context.Context, req *xpb.NodesRequest) (*xpb.NodesReply, error) {
+func (w *grpcClient) Nodes(ctx context.Context, req *gpb.NodesRequest) (*gpb.NodesReply, error) {
 	return w.GraphServiceClient.Nodes(ctx, req)
 }
 
 // Edges implements part of the Service interface.
-func (w *grpcClient) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
+func (w *grpcClient) Edges(ctx context.Context, req *gpb.EdgesRequest) (*gpb.EdgesReply, error) {
 	return w.GraphServiceClient.Edges(ctx, req)
 }
 
@@ -1573,21 +1574,21 @@ func (w *grpcClient) Documentation(ctx context.Context, req *xpb.DocumentationRe
 }
 
 // GRPC returns an xrefs Service backed by the given GRPC client and context.
-func GRPC(xref xpb.XRefServiceClient, graph xpb.GraphServiceClient) Service {
+func GRPC(xref xpb.XRefServiceClient, graph gpb.GraphServiceClient) Service {
 	return &grpcClient{XRefServiceClient: xref, GraphServiceClient: graph}
 }
 
 type webClient struct{ addr string }
 
 // Nodes implements part of the Service interface.
-func (w *webClient) Nodes(ctx context.Context, q *xpb.NodesRequest) (*xpb.NodesReply, error) {
-	var reply xpb.NodesReply
+func (w *webClient) Nodes(ctx context.Context, q *gpb.NodesRequest) (*gpb.NodesReply, error) {
+	var reply gpb.NodesReply
 	return &reply, web.Call(w.addr, "nodes", q, &reply)
 }
 
 // Edges implements part of the Service interface.
-func (w *webClient) Edges(ctx context.Context, q *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
-	var reply xpb.EdgesReply
+func (w *webClient) Edges(ctx context.Context, q *gpb.EdgesRequest) (*gpb.EdgesReply, error) {
+	var reply gpb.EdgesReply
 	return &reply, web.Call(w.addr, "edges", q, &reply)
 }
 
@@ -1702,7 +1703,7 @@ func RegisterHTTPHandlers(ctx context.Context, xs Service, mux *http.ServeMux) {
 			log.Printf("xrefs.Nodes:\t%s", time.Since(start))
 		}()
 
-		var req xpb.NodesRequest
+		var req gpb.NodesRequest
 		if err := web.ReadJSONBody(r, &req); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -1722,7 +1723,7 @@ func RegisterHTTPHandlers(ctx context.Context, xs Service, mux *http.ServeMux) {
 			log.Printf("xrefs.Edges:\t%s", time.Since(start))
 		}()
 
-		var req xpb.EdgesRequest
+		var req gpb.EdgesRequest
 		if err := web.ReadJSONBody(r, &req); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -1747,7 +1748,7 @@ func (s ByName) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 
 // ByOrdinal orders the edges in an edge group by their ordinals, with ties
 // broken by ticket.
-type ByOrdinal []*xpb.EdgeSet_Group_Edge
+type ByOrdinal []*gpb.EdgeSet_Group_Edge
 
 func (s ByOrdinal) Len() int      { return len(s) }
 func (s ByOrdinal) Swap(i, j int) { s[i], s[j] = s[j], s[i] }

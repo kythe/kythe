@@ -1,0 +1,175 @@
+/*
+ * Copyright 2016 Google Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+package kythe.proto;
+
+import "kythe/proto/common.proto";
+
+// This file defines a graph service interface, based on Kythe data.
+//
+// Tickets are Kythe URIs (http://www.kythe.io/docs/kythe-uri-spec.html).
+
+// GraphService provides fast single-step node and edge lookups in a Kythe
+// graph. The difference between this and a GraphStore is that queries for
+// reverse relationships are also expected to be fast.
+//
+// There is no distinction between "node not found" and "no facts/edges for
+// node".  A node is extensionally defined by its facts and edges, so a node
+// without any facts or edges is not considered to exist.
+service GraphService {
+  // Nodes returns a subset of the facts for each of the requested nodes.
+  rpc Nodes(NodesRequest) returns (NodesReply) {}
+
+  // Edges returns a subset of the outbound edges for each of a set of
+  // requested nodes.
+  rpc Edges(EdgesRequest) returns (EdgesReply) {}
+}
+
+message NodesRequest {
+  // The tickets of the nodes to be looked up.
+  repeated string ticket = 1;
+
+  // A collection of filter globs that specify which facts (by name) should be
+  // returned for each node.  If filter is empty or unset, all available facts
+  // are returned for each matching node.  The filter applies to ALL requested
+  // nodes.  For different filters per node, the client must issue separate
+  // requests.  See EdgesRequest for the format of the filter globs.
+  repeated string filter = 2;
+}
+
+message NodesReply {
+  // One NodeInfo, keyed by its ticket, is returned for each requested node
+  // that had a non-zero number of matching facts.  Each NodeInfo will not have
+  // its ticket set since it would just be a copy of the map keys.
+  map<string, common.NodeInfo> nodes = 1;
+}
+
+message EdgesRequest {
+  // The tickets of the source nodes for which edges are requested.
+  // The service will return an error if no tickets are specified.
+  repeated string ticket = 1;
+
+  // The kinds of outbound edges that should be returned for each matching
+  // source node.  If empty, all available edge kinds are returned.
+  repeated string kind = 2;
+
+  // A collection of filter globs that specify which facts (by name) should be
+  // returned for the target node of each matching edge.  If filter is empty,
+  // no facts are returned.
+  //
+  // The supported glob operators are:
+  //   *   zero or more non-slash characters ([^/]*)
+  //   ?   any single non-slash character ([^/])
+  //   **  zero or more of any character (.*)
+  //
+  // All other characters match literally, and the glob must consume the entire
+  // name in order to match.  The facts returned are the union of those matched
+  // by all the globs provided.
+  repeated string filter = 3;
+
+  // The edges matching a request are organized into logical pages.  The size
+  // of each page is a number of distinct edges.  Notionally: All the matching
+  // edges are ordered lexicographically by (start_ticket, kind, end_ticket);
+  // the page_token determines where in the ordering to start, and page_size
+  // determines how many edges should be returned.
+  //
+  // If page_token is empty, edges will be returned starting at the beginning
+  // of the sequence; otherwise the starting point named by the page_token will
+  // be used.  Legal values of page_token are returned by the server in the
+  // next_page_token field of the EdgesReply.  A page token should be treated
+  // as an opaque value by the client, and is valid only relative to a
+  // particular set of tickets and kinds.  If an invalid page token is
+  // requested, the server will return an error.
+  //
+  // If page_size > 0, at most that number of edges will be returned by the
+  // service for this request (see EdgeSet and EdgesReply below).
+  // If page_size = 0, the default, the server will assume a reasonable default
+  // page size.  The server will return an error if page_size < 0.
+  //
+  // The server is allowed to return fewer edges than the requested page_size,
+  // even if more are available, save that it must return at least 1 edge if
+  // any are available at all.
+  int32  page_size  = 8;
+  string page_token = 9;
+
+
+  // TODO(fromberger): Should this interface support automatic indirection
+  // through "name" nodes?
+  // For now, I'm assuming name-indirecting lookup will be a separate
+  // API, and that the initial clients will just make two (batching)
+  // calls if they need to.
+}
+
+// An EdgeSet represents a collection of edges outbound from a single node.  The
+// edges are organized into groups, each sharing a common edge kind.
+//
+// The number of edges represented by an EdgeSet es, denoted len(es), is the sum
+// of the lengths of the repeated edge fields for all the groups in the EdgeSet.
+// This count is used to determine page size in a request.
+message EdgeSet {
+  message Group {
+    message Edge {
+      string target_ticket = 1;
+
+      // An optional integer to give an ordering between multiple edges of same
+      // source and kind to one or more targets.  See https://kythe.io/schema
+      // for when ordinals are used for a given edge kind.
+      int32 ordinal = 2;
+    }
+
+    repeated Edge edge = 2;
+
+    reserved 1;
+    reserved "kind";
+  }
+
+  // Each group is a collection of outbound edges from source node sharing a
+  // given kind, the map's keys.  In a given EdgeSet, the server will not send
+  // more than one group with the same kind label.
+  map<string, Group> groups = 2;
+
+  reserved 1;
+  reserved "source_ticket";
+}
+
+message EdgesReply {
+  // This field will contain one EdgeSet for each source node with one or more
+  // matching outbound edges, keyed by the source node's ticket.  The number of
+  // edges represented by an EdgesReply er, denoted len(er), is the sum of
+  // len(es) for each es in edge_sets.  This count is used to determine the page
+  // size.
+  map<string, EdgeSet> edge_sets = 1;
+
+  // This field will contain one entry, keyed by ticket, for each distinct node
+  // referenced by some edge in edgesets, for which there is one or more
+  // matching facts.
+  //
+  // Rationale: This prevents us from having to copy the data to all the end
+  // nodes, but allows the client to have that information without making
+  // additional requests.
+  map<string, common.NodeInfo> nodes = 2;
+
+  // Total number of edges on all pages matching requested kinds, by kind.
+  map<string, int64> total_edges_by_kind = 5;
+
+  // If there are additional pages of edges after the ones returned in this
+  // reply, next_page_token is the page token that may be passed to fetch the
+  // next page in sequence after this one.  If there are no additional edges,
+  // this field will be empty.
+  string next_page_token = 9;
+}

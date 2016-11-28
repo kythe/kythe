@@ -18,6 +18,7 @@
 #define KYTHE_CXX_DOC_HTML_RENDERER_H_
 
 #include "kythe/cxx/doc/markup_handler.h"
+#include "kythe/proto/common.pb.h"
 #include "kythe/proto/xref.pb.h"
 
 #include <functional>
@@ -32,7 +33,7 @@ struct HtmlRendererOptions {
   std::function<std::string(const proto::Anchor&)> make_link_uri =
       [](const proto::Anchor&) { return ""; };
   /// Used to retrieve `NodeInfo` for the given semantic ticket.
-  std::function<const proto::NodeInfo*(const std::string&)> node_info =
+  std::function<const proto::common::NodeInfo*(const std::string&)> node_info =
       [](const std::string&) { return nullptr; };
   /// Used to map from an anchor's ticket to that `Anchor`.
   std::function<const proto::Anchor*(const std::string&)> anchor_for_ticket =

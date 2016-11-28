@@ -37,6 +37,7 @@ import (
 	"golang.org/x/net/context"
 
 	ftpb "kythe.io/kythe/proto/filetree_proto"
+	gpb "kythe.io/kythe/proto/graph_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
@@ -158,7 +159,7 @@ var (
 				return errors.New("--targets_only and --graphviz are mutually exclusive")
 			}
 
-			req := &xpb.EdgesRequest{
+			req := &gpb.EdgesRequest{
 				Ticket:    flag.Args(),
 				PageToken: pageToken,
 				PageSize:  int32(pageSize),
@@ -300,7 +301,7 @@ var (
 				return fmt.Errorf("invalid --max_fact_size value (must be non-negative): %d", factSizeThreshold)
 			}
 
-			req := &xpb.NodesRequest{
+			req := &gpb.NodesRequest{
 				Ticket: flag.Args(),
 			}
 			if nodeFilters != "" {

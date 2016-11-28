@@ -30,6 +30,8 @@ import (
 
 	"golang.org/x/net/context"
 
+	cpb "kythe.io/kythe/proto/common_proto"
+	gpb "kythe.io/kythe/proto/graph_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
@@ -196,21 +198,21 @@ type span struct{ start, end int32 }
 func (s span) String() string { return fmt.Sprintf("(%d, %d]", s.start, s.end) }
 
 type mockService struct {
-	NodesFn           func(*xpb.NodesRequest) (*xpb.NodesReply, error)
-	EdgesFn           func(*xpb.EdgesRequest) (*xpb.EdgesReply, error)
+	NodesFn           func(*gpb.NodesRequest) (*gpb.NodesReply, error)
+	EdgesFn           func(*gpb.EdgesRequest) (*gpb.EdgesReply, error)
 	DecorationsFn     func(*xpb.DecorationsRequest) (*xpb.DecorationsReply, error)
 	CrossReferencesFn func(*xpb.CrossReferencesRequest) (*xpb.CrossReferencesReply, error)
 	DocumentationFn   func(*xpb.DocumentationRequest) (*xpb.DocumentationReply, error)
 }
 
-func (s *mockService) Nodes(ctx context.Context, req *xpb.NodesRequest) (*xpb.NodesReply, error) {
+func (s *mockService) Nodes(ctx context.Context, req *gpb.NodesRequest) (*gpb.NodesReply, error) {
 	if s.NodesFn == nil {
 		return nil, errors.New("unexpected call to Nodes")
 	}
 	return s.NodesFn(req)
 }
 
-func (s *mockService) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
+func (s *mockService) Edges(ctx context.Context, req *gpb.EdgesRequest) (*gpb.EdgesReply, error) {
 	if s.EdgesFn == nil {
 		return nil, errors.New("unexpected call to Edges")
 	}
@@ -294,71 +296,71 @@ func TestSlowSignature(t *testing.T) {
 		{ticket: "kythe://test?lang=b#tappmeta", reply: "mP1m"},
 		{ticket: "kythe://test?lang=b#tapplhs", reply: "lP0l"},
 	}
-	ninfo := make(map[string]*xpb.NodeInfo)
-	esets := make(map[string]*xpb.EdgeSet)
+	ninfo := make(map[string]*cpb.NodeInfo)
+	esets := make(map[string]*gpb.EdgeSet)
 	for _, node := range db {
-		ninfo[node.ticket] = &xpb.NodeInfo{
+		ninfo[node.ticket] = &cpb.NodeInfo{
 			Facts: map[string][]byte{
 				facts.NodeKind: []byte(node.kind),
 				facts.Format:   []byte(node.format),
 			},
 		}
-		set := &xpb.EdgeSet{Groups: make(map[string]*xpb.EdgeSet_Group)}
+		set := &gpb.EdgeSet{Groups: make(map[string]*gpb.EdgeSet_Group)}
 		if node.typed != "" {
-			set.Groups[edges.Typed] = &xpb.EdgeSet_Group{
-				Edge: []*xpb.EdgeSet_Group_Edge{{TargetTicket: node.typed}},
+			set.Groups[edges.Typed] = &gpb.EdgeSet_Group{
+				Edge: []*gpb.EdgeSet_Group_Edge{{TargetTicket: node.typed}},
 			}
 		}
 		if node.childof != "" {
-			set.Groups[edges.ChildOf] = &xpb.EdgeSet_Group{
-				Edge: []*xpb.EdgeSet_Group_Edge{{TargetTicket: node.childof}},
+			set.Groups[edges.ChildOf] = &gpb.EdgeSet_Group{
+				Edge: []*gpb.EdgeSet_Group_Edge{{TargetTicket: node.childof}},
 			}
 		}
 		if node.params != nil {
-			var groups []*xpb.EdgeSet_Group_Edge
+			var groups []*gpb.EdgeSet_Group_Edge
 			for i, p := range node.params {
-				groups = append(groups, &xpb.EdgeSet_Group_Edge{TargetTicket: p, Ordinal: int32(i)})
+				groups = append(groups, &gpb.EdgeSet_Group_Edge{TargetTicket: p, Ordinal: int32(i)})
 			}
-			set.Groups[edges.Param] = &xpb.EdgeSet_Group{Edge: groups}
+			set.Groups[edges.Param] = &gpb.EdgeSet_Group{Edge: groups}
 		}
 		esets[node.ticket] = set
 	}
-	getNode := func(ticket string, facts []string) *xpb.NodeInfo {
+	getNode := func(ticket string, facts []string) *cpb.NodeInfo {
 		data, found := ninfo[ticket]
 		if !found {
 			return nil
 		}
-		info := &xpb.NodeInfo{Facts: make(map[string][]byte)}
+		info := &cpb.NodeInfo{Facts: make(map[string][]byte)}
 		for _, fact := range facts {
 			info.Facts[fact] = data.Facts[fact]
 		}
 		return info
 	}
 	service := &mockService{
-		NodesFn: func(req *xpb.NodesRequest) (*xpb.NodesReply, error) {
+		NodesFn: func(req *gpb.NodesRequest) (*gpb.NodesReply, error) {
 			log.Printf("NodesFn: %v", req)
 			if len(req.Ticket) != 1 {
 				t.Fatalf("Unexpected Nodes request: %v", req)
 				return nil, nil
 			}
-			reply := &xpb.NodesReply{Nodes: make(map[string]*xpb.NodeInfo)}
+			reply := &gpb.NodesReply{Nodes: make(map[string]*cpb.NodeInfo)}
 			if info := getNode(req.Ticket[0], req.Filter); info != nil {
 				reply.Nodes[req.Ticket[0]] = info
 			}
 			return reply, nil
 		},
-		EdgesFn: func(req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
+		EdgesFn: func(req *gpb.EdgesRequest) (*gpb.EdgesReply, error) {
 			log.Printf("EdgesFn: %v", req)
 			if len(req.Ticket) != 1 {
 				t.Fatalf("Unexpected Edges request: %v", req)
 				return nil, nil
 			}
-			reply := &xpb.EdgesReply{
-				EdgeSets: make(map[string]*xpb.EdgeSet),
-				Nodes:    make(map[string]*xpb.NodeInfo),
+			reply := &gpb.EdgesReply{
+				EdgeSets: make(map[string]*gpb.EdgeSet),
+				Nodes:    make(map[string]*cpb.NodeInfo),
 			}
 			if data, found := esets[req.Ticket[0]]; found {
-				set := &xpb.EdgeSet{Groups: make(map[string]*xpb.EdgeSet_Group)}
+				set := &gpb.EdgeSet{Groups: make(map[string]*gpb.EdgeSet_Group)}
 				reply.EdgeSets[req.Ticket[0]] = set
 				seen := make(map[string]bool)
 				for groupKind, group := range data.Groups {
@@ -438,11 +440,11 @@ func TestSlowDocumentation(t *testing.T) {
 		{ticket: "kythe://test#l", reply: &xpb.DocumentationReply_Document{Signature: mkPr("lsig"), Text: mkPr("ltext", "kythe://test#l1", "kythe://test#l2")},
 			nodes: []returnNode{{ticket: "kythe://test#l1", kind: "etc", anchorText: "deftext1"}, {ticket: "kythe://test#l2", kind: "etc", anchorText: "deftext2"}, {ticket: "kythe://test#l", kind: "etc"}}},
 	}
-	nodes := make(map[string]*xpb.NodeInfo)
-	esets := make(map[string]*xpb.EdgeSet)
+	nodes := make(map[string]*cpb.NodeInfo)
+	esets := make(map[string]*gpb.EdgeSet)
 	xrefs := make(map[string]*xpb.CrossReferencesReply_CrossReferenceSet)
 	for _, node := range db {
-		nodes[node.ticket] = &xpb.NodeInfo{
+		nodes[node.ticket] = &cpb.NodeInfo{
 			Facts: map[string][]byte{
 				facts.NodeKind: []byte(node.kind),
 				facts.Text:     []byte(node.text),
@@ -456,60 +458,60 @@ func TestSlowDocumentation(t *testing.T) {
 			}
 			xrefs[node.ticket] = set
 		}
-		set := &xpb.EdgeSet{Groups: make(map[string]*xpb.EdgeSet_Group)}
+		set := &gpb.EdgeSet{Groups: make(map[string]*gpb.EdgeSet_Group)}
 		if node.typed != "" {
-			set.Groups[edges.Typed] = &xpb.EdgeSet_Group{
-				Edge: []*xpb.EdgeSet_Group_Edge{&xpb.EdgeSet_Group_Edge{TargetTicket: node.typed}},
+			set.Groups[edges.Typed] = &gpb.EdgeSet_Group{
+				Edge: []*gpb.EdgeSet_Group_Edge{&gpb.EdgeSet_Group_Edge{TargetTicket: node.typed}},
 			}
 		}
 		if node.childof != "" {
-			set.Groups[edges.ChildOf] = &xpb.EdgeSet_Group{
-				Edge: []*xpb.EdgeSet_Group_Edge{&xpb.EdgeSet_Group_Edge{TargetTicket: node.childof}},
+			set.Groups[edges.ChildOf] = &gpb.EdgeSet_Group{
+				Edge: []*gpb.EdgeSet_Group_Edge{&gpb.EdgeSet_Group_Edge{TargetTicket: node.childof}},
 			}
 		}
 		if node.documented != "" {
-			set.Groups[edges.Mirror(edges.Documents)] = &xpb.EdgeSet_Group{
-				Edge: []*xpb.EdgeSet_Group_Edge{&xpb.EdgeSet_Group_Edge{TargetTicket: node.documented}},
+			set.Groups[edges.Mirror(edges.Documents)] = &gpb.EdgeSet_Group{
+				Edge: []*gpb.EdgeSet_Group_Edge{&gpb.EdgeSet_Group_Edge{TargetTicket: node.documented}},
 			}
 		}
 		if node.completes != "" {
-			set.Groups[edges.Completes] = &xpb.EdgeSet_Group{
-				Edge: []*xpb.EdgeSet_Group_Edge{&xpb.EdgeSet_Group_Edge{TargetTicket: node.completes}},
+			set.Groups[edges.Completes] = &gpb.EdgeSet_Group{
+				Edge: []*gpb.EdgeSet_Group_Edge{&gpb.EdgeSet_Group_Edge{TargetTicket: node.completes}},
 			}
 		}
 		if node.completed != "" {
-			set.Groups[edges.Mirror(edges.Completes)] = &xpb.EdgeSet_Group{
-				Edge: []*xpb.EdgeSet_Group_Edge{&xpb.EdgeSet_Group_Edge{TargetTicket: node.completed}},
+			set.Groups[edges.Mirror(edges.Completes)] = &gpb.EdgeSet_Group{
+				Edge: []*gpb.EdgeSet_Group_Edge{&gpb.EdgeSet_Group_Edge{TargetTicket: node.completed}},
 			}
 		}
 		if node.defines != "" {
-			set.Groups[edges.DefinesBinding] = &xpb.EdgeSet_Group{
-				Edge: []*xpb.EdgeSet_Group_Edge{&xpb.EdgeSet_Group_Edge{TargetTicket: node.defines}},
+			set.Groups[edges.DefinesBinding] = &gpb.EdgeSet_Group{
+				Edge: []*gpb.EdgeSet_Group_Edge{&gpb.EdgeSet_Group_Edge{TargetTicket: node.defines}},
 			}
 		}
 		if node.params != nil {
-			var groups []*xpb.EdgeSet_Group_Edge
+			var groups []*gpb.EdgeSet_Group_Edge
 			for i, p := range node.params {
-				groups = append(groups, &xpb.EdgeSet_Group_Edge{TargetTicket: p, Ordinal: int32(i)})
+				groups = append(groups, &gpb.EdgeSet_Group_Edge{TargetTicket: p, Ordinal: int32(i)})
 			}
-			set.Groups[edges.Param] = &xpb.EdgeSet_Group{Edge: groups}
+			set.Groups[edges.Param] = &gpb.EdgeSet_Group{Edge: groups}
 		}
 		esets[node.ticket] = set
 	}
-	getNode := func(ticket string, facts []string) *xpb.NodeInfo {
+	getNode := func(ticket string, facts []string) *cpb.NodeInfo {
 		data, found := nodes[ticket]
 		if !found {
 			return nil
 		}
-		info := &xpb.NodeInfo{Facts: make(map[string][]byte)}
+		info := &cpb.NodeInfo{Facts: make(map[string][]byte)}
 		for _, fact := range facts {
 			info.Facts[fact] = data.Facts[fact]
 		}
 		return info
 	}
 	service := &mockService{
-		NodesFn: func(req *xpb.NodesRequest) (*xpb.NodesReply, error) {
-			reply := &xpb.NodesReply{Nodes: make(map[string]*xpb.NodeInfo)}
+		NodesFn: func(req *gpb.NodesRequest) (*gpb.NodesReply, error) {
+			reply := &gpb.NodesReply{Nodes: make(map[string]*cpb.NodeInfo)}
 			for _, ticket := range req.Ticket {
 				if info := getNode(ticket, req.Filter); info != nil {
 					reply.Nodes[ticket] = info
@@ -517,14 +519,14 @@ func TestSlowDocumentation(t *testing.T) {
 			}
 			return reply, nil
 		},
-		EdgesFn: func(req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
-			reply := &xpb.EdgesReply{
-				EdgeSets: make(map[string]*xpb.EdgeSet),
-				Nodes:    make(map[string]*xpb.NodeInfo),
+		EdgesFn: func(req *gpb.EdgesRequest) (*gpb.EdgesReply, error) {
+			reply := &gpb.EdgesReply{
+				EdgeSets: make(map[string]*gpb.EdgeSet),
+				Nodes:    make(map[string]*cpb.NodeInfo),
 			}
 			for _, ticket := range req.Ticket {
 				if data, found := esets[ticket]; found {
-					set := &xpb.EdgeSet{Groups: make(map[string]*xpb.EdgeSet_Group)}
+					set := &gpb.EdgeSet{Groups: make(map[string]*gpb.EdgeSet_Group)}
 					reply.EdgeSets[ticket] = set
 					nodes := make(map[string]bool)
 					for groupKind, group := range data.Groups {
@@ -583,9 +585,9 @@ func TestSlowDocumentation(t *testing.T) {
 				expectedDoc.DefinitionLocations[anchorTicket] = &xpb.Anchor{Ticket: anchorTicket, Text: node.anchorText}
 			}
 			if expectedDoc.Nodes == nil {
-				expectedDoc.Nodes = make(map[string]*xpb.NodeInfo)
+				expectedDoc.Nodes = make(map[string]*cpb.NodeInfo)
 			}
-			expectedDoc.Nodes[node.ticket] = &xpb.NodeInfo{Definition: anchorTicket, Facts: map[string][]byte{"/kythe/node/kind": []byte(node.kind)}}
+			expectedDoc.Nodes[node.ticket] = &cpb.NodeInfo{Definition: anchorTicket, Facts: map[string][]byte{"/kythe/node/kind": []byte(node.kind)}}
 		}
 		if err := testutil.DeepEqual(expectedDoc, reply); err != nil {
 			t.Fatal(err)

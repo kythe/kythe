@@ -42,6 +42,7 @@ import (
 	"google.golang.org/grpc"
 
 	ftpb "kythe.io/kythe/proto/filetree_proto"
+	gpb "kythe.io/kythe/proto/graph_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
 
 	_ "kythe.io/kythe/go/services/graphstore/grpc"
@@ -127,7 +128,7 @@ func main() {
 	if *grpcListeningAddr != "" {
 		srv := grpc.NewServer()
 		xpb.RegisterXRefServiceServer(srv, xs)
-		xpb.RegisterGraphServiceServer(srv, xs)
+		gpb.RegisterGraphServiceServer(srv, xs)
 		ftpb.RegisterFileTreeServiceServer(srv, ft)
 		go startGRPC(srv)
 	}

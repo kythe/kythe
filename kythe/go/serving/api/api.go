@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// Package api provides a union of the filetree and xrefs interfaces
+// Package api provides a union of the filetree, xrefs, and graph interfaces
 // and a command-line flag parser.
 package api
 
@@ -36,6 +36,7 @@ import (
 	"google.golang.org/grpc"
 
 	ftpb "kythe.io/kythe/proto/filetree_proto"
+	gpb "kythe.io/kythe/proto/graph_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
@@ -92,7 +93,7 @@ func ParseSpec(apiSpec string) (Interface, error) {
 		}
 		api.closer = func() error { conn.Close(); return nil }
 
-		api.xs = xrefs.GRPC(xpb.NewXRefServiceClient(conn), xpb.NewGraphServiceClient(conn))
+		api.xs = xrefs.GRPC(xpb.NewXRefServiceClient(conn), gpb.NewGraphServiceClient(conn))
 		api.ft = filetree.GRPC(ftpb.NewFileTreeServiceClient(conn))
 	}
 	return api, nil
@@ -133,13 +134,13 @@ func (api apiCloser) Close() error {
 	return nil
 }
 
-// Nodes implements part of the xrefs Service interface.
-func (api apiCloser) Nodes(ctx context.Context, req *xpb.NodesRequest) (*xpb.NodesReply, error) {
+// Nodes implements part of the graph Service interface.
+func (api apiCloser) Nodes(ctx context.Context, req *gpb.NodesRequest) (*gpb.NodesReply, error) {
 	return api.xs.Nodes(ctx, req)
 }
 
-// Edges implements part of the xrefs Service interface.
-func (api apiCloser) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
+// Edges implements part of the graph Service interface.
+func (api apiCloser) Edges(ctx context.Context, req *gpb.EdgesRequest) (*gpb.EdgesReply, error) {
 	return api.xs.Edges(ctx, req)
 }
 

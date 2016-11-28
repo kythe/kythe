@@ -12,6 +12,7 @@ filegroup(
         "cxx.proto",
         "filecontext.proto",
         "filetree.proto",
+        "graph.proto",
         "java.proto",
         "status_service.proto",
         "storage.proto",
@@ -159,6 +160,17 @@ proto_library(
     has_services = 1,
     cc_api_version = 2,
     go_api_version = 2,
+    deps = [":common_proto"],
+)
+
+# Public Kythe graph service API
+proto_library(
+    name = "graph_proto",
+    srcs = ["graph.proto"],
+    has_services = 1,
+    cc_api_version = 2,
+    go_api_version = 2,
+    deps = [":common_proto"],
 )
 
 # Protocol buffer definitions used to encode serving data

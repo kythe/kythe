@@ -54,6 +54,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	gpb "kythe.io/kythe/proto/graph_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
@@ -215,7 +216,7 @@ func main() {
 		r.Node.Subkind = string(node[facts.Subkind])
 
 		// TODO(schroederc): use CrossReferences method
-		if eReply, err := xrefs.AllEdges(ctx, xs, &xpb.EdgesRequest{
+		if eReply, err := xrefs.AllEdges(ctx, xs, &gpb.EdgesRequest{
 			Ticket: []string{ref.TargetTicket},
 			Kind:   []string{edges.Named, edges.Typed, definedAtEdge, definedBindingAtEdge},
 		}); err != nil {
@@ -258,7 +259,7 @@ func main() {
 }
 
 func completeDefinition(defAnchor string) (*definition, error) {
-	parentReply, err := xrefs.AllEdges(ctx, xs, &xpb.EdgesRequest{
+	parentReply, err := xrefs.AllEdges(ctx, xs, &gpb.EdgesRequest{
 		Ticket: []string{defAnchor},
 		Kind:   []string{edges.ChildOf},
 		Filter: []string{facts.NodeKind, schema.AnchorLocFilter},

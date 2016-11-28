@@ -18,6 +18,8 @@
 #include "glog/logging.h"
 #include "kythe/cxx/common/json_proto.h"
 #include "kythe/cxx/common/net_client.h"
+#include "kythe/proto/common.pb.h"
+#include "kythe/proto/graph.pb.h"
 
 DEFINE_string(xrefs, "http://localhost:8080", "Base URI for xrefs service");
 
@@ -35,7 +37,7 @@ void TestNodeRequest() {
 
   CHECK_EQ(request.ticket(0), response.nodes().begin()->first)
       << response.DebugString();
-  kythe::proto::NodeInfo node = response.nodes().begin()->second;
+  kythe::proto::common::NodeInfo node = response.nodes().begin()->second;
   CHECK_EQ(1, node.facts().size()) << response.DebugString();
 
   CHECK_EQ("/kythe/node/kind", node.facts().begin()->first);

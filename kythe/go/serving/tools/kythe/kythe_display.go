@@ -37,7 +37,9 @@ import (
 	"bitbucket.org/creachadair/stringset"
 	"github.com/golang/protobuf/proto"
 
+	cpb "kythe.io/kythe/proto/common_proto"
 	ftpb "kythe.io/kythe/proto/filetree_proto"
+	gpb "kythe.io/kythe/proto/graph_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
@@ -183,7 +185,7 @@ func displayDecorations(decor *xpb.DecorationsReply) error {
 
 func itoa(n int32) string { return strconv.Itoa(int(n)) }
 
-func displayEdges(reply *xpb.EdgesReply) error {
+func displayEdges(reply *gpb.EdgesReply) error {
 	if *displayJSON {
 		return jsonMarshaler.Marshal(out, reply)
 	}
@@ -203,7 +205,7 @@ func displayEdges(reply *xpb.EdgesReply) error {
 	return nil
 }
 
-func displayTargets(edges map[string]*xpb.EdgeSet) error {
+func displayTargets(edges map[string]*gpb.EdgeSet) error {
 	var targets stringset.Set
 	for _, es := range edges {
 		for _, g := range es.Groups {
@@ -225,7 +227,7 @@ func displayTargets(edges map[string]*xpb.EdgeSet) error {
 	return nil
 }
 
-func displayEdgeGraph(reply *xpb.EdgesReply) error {
+func displayEdgeGraph(reply *gpb.EdgesReply) error {
 	nodes := xrefs.NodesMap(reply.Nodes)
 	esets := make(map[string]map[string]stringset.Set)
 
@@ -292,7 +294,7 @@ func displayEdgeGraph(reply *xpb.EdgesReply) error {
 	return nil
 }
 
-func displayEdgeCounts(edges *xpb.EdgesReply) error {
+func displayEdgeCounts(edges *gpb.EdgesReply) error {
 	counts := make(map[string]int)
 	for _, es := range edges.EdgeSets {
 		for kind, g := range es.Groups {
@@ -312,7 +314,7 @@ func displayEdgeCounts(edges *xpb.EdgesReply) error {
 	return nil
 }
 
-func displayNodes(nodes map[string]*xpb.NodeInfo) error {
+func displayNodes(nodes map[string]*cpb.NodeInfo) error {
 	if *displayJSON {
 		return json.NewEncoder(out).Encode(nodes)
 	}

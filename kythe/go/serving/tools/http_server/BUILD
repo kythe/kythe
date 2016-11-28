@@ -19,6 +19,7 @@ go_binary(
         "//kythe/go/storage/xrefs",
         "//kythe/go/util/flagutil",
         "//kythe/proto:filetree_proto_go",
+        "//kythe/proto:graph_proto_go",
         "//kythe/proto:xref_proto_go",
         "@go_grpc//:grpc",
         "@go_x_net//:context",

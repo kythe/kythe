@@ -34,6 +34,8 @@ import (
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
 
+	cpb "kythe.io/kythe/proto/common_proto"
+	gpb "kythe.io/kythe/proto/graph_proto"
 	ipb "kythe.io/kythe/proto/internal_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
@@ -41,7 +43,7 @@ import (
 // TODO(schroederc): share base logic with LevelDB implementation
 
 // Nodes implements part of the xrefs.Interface.
-func (d *DB) Nodes(ctx context.Context, req *xpb.NodesRequest) (*xpb.NodesReply, error) {
+func (d *DB) Nodes(ctx context.Context, req *gpb.NodesRequest) (*gpb.NodesReply, error) {
 	tickets, err := xrefs.FixTickets(req.Ticket)
 	if err != nil {
 		return nil, err
@@ -54,7 +56,7 @@ func (d *DB) Nodes(ctx context.Context, req *xpb.NodesRequest) (*xpb.NodesReply,
 	}
 	defer closeRows(rs)
 
-	var reply xpb.NodesReply
+	var reply gpb.NodesReply
 	for rs.Next() {
 		var ticket, nodeKind string
 		var subkind, textEncoding sql.NullString
@@ -65,7 +67,7 @@ func (d *DB) Nodes(ctx context.Context, req *xpb.NodesRequest) (*xpb.NodesReply,
 			return nil, fmt.Errorf("error scanning nodes: %v", err)
 		}
 
-		n := new(xpb.NodeInfo)
+		n := new(cpb.NodeInfo)
 		if otherFactsNum > 0 {
 			if err := proto.Unmarshal(otherFacts, n); err != nil {
 				return nil, fmt.Errorf("unexpected node internal format: %v", err)
@@ -117,11 +119,11 @@ func (d *DB) Nodes(ctx context.Context, req *xpb.NodesRequest) (*xpb.NodesReply,
 }
 
 // Edges implements part of the xrefs.Interface.
-func (d *DB) Edges(ctx context.Context, req *xpb.EdgesRequest) (*xpb.EdgesReply, error) {
+func (d *DB) Edges(ctx context.Context, req *gpb.EdgesRequest) (*gpb.EdgesReply, error) {
 	return d.edges(ctx, req, nil)
 }
 
-func (d *DB) edges(ctx context.Context, req *xpb.EdgesRequest, edgeFilter func(kind string) bool) (*xpb.EdgesReply, error) {
+func (d *DB) edges(ctx context.Context, req *gpb.EdgesRequest, edgeFilter func(kind string) bool) (*gpb.EdgesReply, error) {
 	tickets, err := xrefs.FixTickets(req.Ticket)
 	if err != nil {
 		return nil, err
@@ -208,16 +210,16 @@ AND kind IN %s`, kSetQ)
 		ordinals[int32(ordinal)] = struct{}{}
 	}
 
-	reply := &xpb.EdgesReply{EdgeSets: make(map[string]*xpb.EdgeSet, len(edges))}
+	reply := &gpb.EdgesReply{EdgeSets: make(map[string]*gpb.EdgeSet, len(edges))}
 	var nodeTickets stringset.Set
 	for src, groups := range edges {
-		gs := make(map[string]*xpb.EdgeSet_Group, len(groups))
+		gs := make(map[string]*gpb.EdgeSet_Group, len(groups))
 		nodeTickets.Add(src)
 		for kind, targets := range groups {
-			edges := make([]*xpb.EdgeSet_Group_Edge, 0, len(targets))
+			edges := make([]*gpb.EdgeSet_Group_Edge, 0, len(targets))
 			for ticket, ordinals := range targets {
 				for ordinal := range ordinals {
-					edges = append(edges, &xpb.EdgeSet_Group_Edge{
+					edges = append(edges, &gpb.EdgeSet_Group_Edge{
 						TargetTicket: ticket,
 						Ordinal:      ordinal,
 					})
@@ -225,11 +227,11 @@ AND kind IN %s`, kSetQ)
 				nodeTickets.Add(ticket)
 			}
 			sort.Sort(xrefs.ByOrdinal(edges))
-			gs[kind] = &xpb.EdgeSet_Group{
+			gs[kind] = &gpb.EdgeSet_Group{
 				Edge: edges,
 			}
 		}
-		reply.EdgeSets[src] = &xpb.EdgeSet{
+		reply.EdgeSets[src] = &gpb.EdgeSet{
 			Groups: gs,
 		}
 	}
@@ -245,7 +247,7 @@ AND kind IN %s`, kSetQ)
 
 	// TODO(schroederc): faster node lookups
 	if len(req.Filter) > 0 && !nodeTickets.Empty() {
-		nodes, err := d.Nodes(ctx, &xpb.NodesRequest{
+		nodes, err := d.Nodes(ctx, &gpb.NodesRequest{
 			Ticket: nodeTickets.Elements(),
 			Filter: req.Filter,
 		})
@@ -310,7 +312,7 @@ func (d *DB) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*xpb
 				nodeTickets.Add(r.TargetTicket)
 			}
 
-			nodes, err := d.Nodes(ctx, &xpb.NodesRequest{
+			nodes, err := d.Nodes(ctx, &gpb.NodesRequest{
 				Ticket: nodeTickets.Elements(),
 				Filter: req.Filter,
 			})
@@ -361,7 +363,7 @@ func (d *DB) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReques
 
 	reply := &xpb.CrossReferencesReply{
 		CrossReferences: make(map[string]*xpb.CrossReferencesReply_CrossReferenceSet),
-		Nodes:           make(map[string]*xpb.NodeInfo),
+		Nodes:           make(map[string]*cpb.NodeInfo),
 	}
 
 	setQ, ticketArgs := sqlSetQuery(1, tickets)
@@ -431,7 +433,7 @@ func (d *DB) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReques
 
 	if len(req.Filter) > 0 && count <= pageSize {
 		// TODO(schroederc): consolidate w/ LevelDB implementation
-		er, err := d.edges(ctx, &xpb.EdgesRequest{
+		er, err := d.edges(ctx, &gpb.EdgesRequest{
 			Ticket:    tickets,
 			Filter:    req.Filter,
 			PageSize:  int32(pageSize - count),

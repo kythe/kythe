@@ -109,6 +109,7 @@ cc_library(
     ],
     deps = [
         ":lib",
+        "//kythe/proto:graph_proto_cc",
         "//kythe/proto:storage_proto_cc",
         "//kythe/proto:xref_proto_cc",
         "//third_party:libcurl",

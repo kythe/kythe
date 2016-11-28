@@ -34,6 +34,7 @@ import (
 	"golang.org/x/text/transform"
 
 	cpb "kythe.io/kythe/proto/common_proto"
+	gpb "kythe.io/kythe/proto/graph_proto"
 	srvpb "kythe.io/kythe/proto/serving_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
@@ -445,7 +446,7 @@ func TestNodes(t *testing.T) {
 	st := tbl.Construct(t)
 
 	for _, node := range tbl.Nodes {
-		reply, err := st.Nodes(ctx, &xpb.NodesRequest{
+		reply, err := st.Nodes(ctx, &gpb.NodesRequest{
 			Ticket: []string{node.Ticket},
 		})
 		testutil.FatalOnErrT(t, "NodesRequest error: %v", err)
@@ -458,12 +459,12 @@ func TestNodes(t *testing.T) {
 	}
 
 	var tickets []string
-	expected := make(map[string]*xpb.NodeInfo)
+	expected := make(map[string]*cpb.NodeInfo)
 	for _, n := range tbl.Nodes {
 		tickets = append(tickets, n.Ticket)
 		expected[n.Ticket] = nodeInfo(n)
 	}
-	reply, err := st.Nodes(ctx, &xpb.NodesRequest{Ticket: tickets})
+	reply, err := st.Nodes(ctx, &gpb.NodesRequest{Ticket: tickets})
 	testutil.FatalOnErrT(t, "NodesRequest error: %v", err)
 
 	if err := testutil.DeepEqual(expected, reply.Nodes); err != nil {
@@ -473,7 +474,7 @@ func TestNodes(t *testing.T) {
 
 func TestNodesMissing(t *testing.T) {
 	st := tbl.Construct(t)
-	reply, err := st.Nodes(ctx, &xpb.NodesRequest{
+	reply, err := st.Nodes(ctx, &gpb.NodesRequest{
 		Ticket: []string{"kythe:#someMissingTicket"},
 	})
 	testutil.FatalOnErrT(t, "NodesRequest error: %v", err)
@@ -501,7 +502,7 @@ func TestEdgesSinglePage(t *testing.T) {
 	st := tbl.Construct(t)
 
 	for _, test := range tests {
-		reply, err := st.Edges(ctx, &xpb.EdgesRequest{
+		reply, err := st.Edges(ctx, &gpb.EdgesRequest{
 			Ticket: []string{test.Ticket},
 			Kind:   test.Kinds,
 		})
@@ -544,7 +545,7 @@ func TestEdgesLastPage(t *testing.T) {
 	st := tbl.Construct(t)
 
 	for _, kinds := range tests {
-		reply, err := st.Edges(ctx, &xpb.EdgesRequest{
+		reply, err := st.Edges(ctx, &gpb.EdgesRequest{
 			Ticket: []string{ticket},
 			Kind:   kinds,
 		})
@@ -583,7 +584,7 @@ func TestEdgesMultiPage(t *testing.T) {
 	st := tbl.Construct(t)
 
 	for _, test := range tests {
-		reply, err := st.Edges(ctx, &xpb.EdgesRequest{
+		reply, err := st.Edges(ctx, &gpb.EdgesRequest{
 			Ticket: []string{test.Ticket},
 			Kind:   test.Kinds,
 		})
@@ -616,7 +617,7 @@ func TestEdgesMultiPage(t *testing.T) {
 
 func TestEdgesMissing(t *testing.T) {
 	st := tbl.Construct(t)
-	reply, err := st.Edges(ctx, &xpb.EdgesRequest{
+	reply, err := st.Edges(ctx, &gpb.EdgesRequest{
 		Ticket: []string{"kythe:#someMissingTicket"},
 	})
 	testutil.FatalOnErrT(t, "EdgesRequest error: %v", err)
@@ -903,8 +904,8 @@ func TestCrossReferences(t *testing.T) {
 	}
 }
 
-func nodeInfos(nss ...[]*srvpb.Node) map[string]*xpb.NodeInfo {
-	m := make(map[string]*xpb.NodeInfo)
+func nodeInfos(nss ...[]*srvpb.Node) map[string]*cpb.NodeInfo {
+	m := make(map[string]*cpb.NodeInfo)
 	for _, ns := range nss {
 		for _, n := range ns {
 			m[n.Ticket] = nodeInfo(n)
@@ -931,8 +932,8 @@ func (s byOffset) Less(i, j int) bool {
 	return s[i].Anchor.Start.ByteOffset < s[j].Anchor.Start.ByteOffset
 }
 
-func nodeInfo(n *srvpb.Node) *xpb.NodeInfo {
-	ni := &xpb.NodeInfo{Facts: make(map[string][]byte, len(n.Fact))}
+func nodeInfo(n *srvpb.Node) *cpb.NodeInfo {
+	ni := &cpb.NodeInfo{Facts: make(map[string][]byte, len(n.Fact))}
 	for _, f := range n.Fact {
 		ni.Facts[f.Name] = f.Value
 	}
@@ -953,7 +954,7 @@ func makeFactList(keyVals ...string) []*cpb.Fact {
 	return facts
 }
 
-func mapFacts(n *xpb.NodeInfo, facts map[string]string) {
+func mapFacts(n *cpb.NodeInfo, facts map[string]string) {
 	for name := range n.Facts {
 		if val, ok := facts[name]; ok {
 			n.Facts[name] = []byte(val)
@@ -961,13 +962,13 @@ func mapFacts(n *xpb.NodeInfo, facts map[string]string) {
 	}
 }
 
-func edgeSet(kinds []string, pes *srvpb.PagedEdgeSet, pages []*srvpb.EdgePage) *xpb.EdgeSet {
+func edgeSet(kinds []string, pes *srvpb.PagedEdgeSet, pages []*srvpb.EdgePage) *gpb.EdgeSet {
 	set := stringset.New(kinds...)
 
-	es := &xpb.EdgeSet{Groups: make(map[string]*xpb.EdgeSet_Group, len(pes.Group))}
+	es := &gpb.EdgeSet{Groups: make(map[string]*gpb.EdgeSet_Group, len(pes.Group))}
 	for _, g := range pes.Group {
 		if set.Contains(g.Kind) || len(set) == 0 {
-			es.Groups[g.Kind] = &xpb.EdgeSet_Group{
+			es.Groups[g.Kind] = &gpb.EdgeSet_Group{
 				Edge: e2e(g.Edge),
 			}
 		}
@@ -975,7 +976,7 @@ func edgeSet(kinds []string, pes *srvpb.PagedEdgeSet, pages []*srvpb.EdgePage) *
 	for _, ep := range pages {
 		g := ep.EdgesGroup
 		if set.Contains(g.Kind) || len(set) == 0 {
-			es.Groups[g.Kind] = &xpb.EdgeSet_Group{
+			es.Groups[g.Kind] = &gpb.EdgeSet_Group{
 				Edge: e2e(g.Edge),
 			}
 		}

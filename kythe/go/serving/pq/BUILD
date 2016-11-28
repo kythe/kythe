@@ -20,6 +20,7 @@ go_package_library(
         "//kythe/go/util/schema/facts",
         "//kythe/proto:common_proto_go",
         "//kythe/proto:filetree_proto_go",
+        "//kythe/proto:graph_proto_go",	
         "//kythe/proto:internal_proto_go",
         "//kythe/proto:serving_proto_go",
         "//kythe/proto:storage_proto_go",

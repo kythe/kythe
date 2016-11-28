@@ -22,6 +22,7 @@
 
 #include <curl/curl.h>
 
+#include "kythe/proto/graph.pb.h"
 #include "kythe/proto/storage.pb.h"
 #include "kythe/proto/xref.pb.h"
 #include "rapidjson/document.h"

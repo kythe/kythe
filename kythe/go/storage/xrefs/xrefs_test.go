@@ -32,6 +32,8 @@ import (
 
 	"golang.org/x/net/context"
 
+	cpb "kythe.io/kythe/proto/common_proto"
+	gpb "kythe.io/kythe/proto/graph_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
@@ -79,7 +81,7 @@ var (
 func TestNodes(t *testing.T) {
 	xs := newService(t, testEntries)
 
-	reply, err := xs.Nodes(ctx, &xpb.NodesRequest{
+	reply, err := xs.Nodes(ctx, &gpb.NodesRequest{
 		Ticket: nodesToTickets(testNodes),
 	})
 	if err != nil {
@@ -94,7 +96,7 @@ func TestNodes(t *testing.T) {
 func TestEdges(t *testing.T) {
 	xs := newService(t, testEntries)
 
-	reply, err := xs.Edges(ctx, &xpb.EdgesRequest{
+	reply, err := xs.Edges(ctx, &gpb.EdgesRequest{
 		Ticket: nodesToTickets(testNodes),
 		Filter: []string{"**"}, // every fact
 	})
@@ -202,8 +204,8 @@ type node struct {
 	Edges map[string][]*spb.VName
 }
 
-func (n *node) Info() *xpb.NodeInfo {
-	info := &xpb.NodeInfo{
+func (n *node) Info() *cpb.NodeInfo {
+	info := &cpb.NodeInfo{
 		Facts: make(map[string][]byte, len(n.Facts)),
 	}
 	for name, val := range n.Facts {
@@ -212,21 +214,21 @@ func (n *node) Info() *xpb.NodeInfo {
 	return info
 }
 
-func (n *node) EdgeSet() *xpb.EdgeSet {
-	groups := make(map[string]*xpb.EdgeSet_Group)
+func (n *node) EdgeSet() *gpb.EdgeSet {
+	groups := make(map[string]*gpb.EdgeSet_Group)
 	for kind, targets := range n.Edges {
-		var edges []*xpb.EdgeSet_Group_Edge
+		var edges []*gpb.EdgeSet_Group_Edge
 		for ordinal, target := range targets {
-			edges = append(edges, &xpb.EdgeSet_Group_Edge{
+			edges = append(edges, &gpb.EdgeSet_Group_Edge{
 				TargetTicket: kytheuri.ToString(target),
 				Ordinal:      int32(ordinal),
 			})
 		}
-		groups[kind] = &xpb.EdgeSet_Group{
+		groups[kind] = &gpb.EdgeSet_Group{
 			Edge: edges,
 		}
 	}
-	return &xpb.EdgeSet{
+	return &gpb.EdgeSet{
 		Groups: groups,
 	}
 }
@@ -254,16 +256,16 @@ func nodesToEntries(nodes []*node) []*spb.Entry {
 	return entries
 }
 
-func nodesToInfos(nodes []*node) map[string]*xpb.NodeInfo {
-	m := make(map[string]*xpb.NodeInfo)
+func nodesToInfos(nodes []*node) map[string]*cpb.NodeInfo {
+	m := make(map[string]*cpb.NodeInfo)
 	for _, n := range nodes {
 		m[kytheuri.ToString(n.Source)] = n.Info()
 	}
 	return m
 }
 
-func nodesToEdgeSets(nodes []*node) map[string]*xpb.EdgeSet {
-	sets := make(map[string]*xpb.EdgeSet)
+func nodesToEdgeSets(nodes []*node) map[string]*gpb.EdgeSet {
+	sets := make(map[string]*gpb.EdgeSet)
 	for _, n := range nodes {
 		set := n.EdgeSet()
 		if len(set.Groups) > 0 {
@@ -328,7 +330,7 @@ func (h sortedReferences) Swap(i, j int) {
 	h[i], h[j] = h[j], h[i]
 }
 
-func sortEdgeSets(sets map[string]*xpb.EdgeSet) map[string]*xpb.EdgeSet {
+func sortEdgeSets(sets map[string]*gpb.EdgeSet) map[string]*gpb.EdgeSet {
 	for _, set := range sets {
 		for _, g := range set.Groups {
 			sort.Sort(xrefs.ByOrdinal(g.Edge))
