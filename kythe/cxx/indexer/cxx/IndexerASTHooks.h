@@ -442,52 +442,6 @@ public:
   clang::SourceRange
   RangeForNameOfDeclaration(const clang::NamedDecl *Decl) const;
 
-  /// \brief Gets a suitable range for an AST entity from the `StartLocation`.
-  ///
-  /// Note: if the AST entity is a declaration, use `RangeForNameOfDeclaration`,
-  /// as that can use more semantic information to determine a better range in
-  /// some cases.
-  ///
-  /// The returned range is a best-effort attempt to cover the "name" of
-  /// the entity as written in the source code.
-  ///
-  /// This range does double duty, being used for a "source link" as well as
-  /// to represent the semantic range of what's being used. Therefore,
-  /// if the entity is not in a macro expansion, or it comes from a top-level
-  /// macro argument and itself is not expanded from a macro, Kythe has found
-  /// it best to span just the entity's name -- in most cases, that's a
-  /// single token.  Otherwise, when the entity comes from a macro definition
-  /// (and not from a top-level macro argument), the resulting range is a
-  /// 0-width span (a point), so that no source link will be created.
-  ///
-  /// Note: the definition of "suitable" is in the context of the AST visitor.
-  /// Being suitable may mean something different to the preprocessor.
-  clang::SourceRange RangeForASTEntityFromSourceLocation(
-      clang::SourceLocation StartLocation) const;
-
-  /// \brief Gets a range for a token from the location specified by
-  /// `StartLocation`.
-  ///
-  /// Assumes the `StartLocation` is a file location (i.e., isFileID returning
-  /// true) because we want the range of a token in the context of the
-  /// original file.
-  clang::SourceRange RangeForSingleTokenFromSourceLocation(
-      clang::SourceLocation StartLocation) const;
-
-  /// \brief Gets a suitable range to represent the name of some `operator???`,
-  /// whether it's an overloaded operator or a conversion operator.
-  ///
-  /// For conversion operators, the range is the given `OperatorTokenRange`.
-  ///
-  /// For overloaded operators, the range covers the whole operator name
-  /// (e.g., "operator++" or "operator[]").  Note: There's currently a bug
-  /// in that operators new/delete/new[]/delete[] get single-token ranges.
-  ///
-  /// The argument `OperatorTokenRange` should span the text of the
-  /// `operator` keyword.
-  clang::SourceRange
-  RangeForOperatorName(const clang::SourceRange &OperatorTokenRange) const;
-
   /// Consume a token of the `ExpectedKind` from the `StartLocation`,
   /// returning the range for that token on success and an invalid
   /// range otherwise.
@@ -497,11 +451,6 @@ public:
   /// whitespace before the start of the token.
   clang::SourceRange ConsumeToken(clang::SourceLocation StartLocation,
                                   clang::tok::TokenKind ExpectedKind) const;
-
-  /// \brief Using the source manager and language options of the `Observer`,
-  /// find the location at the end of the token starting at `StartLocation`.
-  clang::SourceLocation
-  GetLocForEndOfToken(clang::SourceLocation StartLocation) const;
 
   bool TraverseClassTemplateDecl(clang::ClassTemplateDecl *TD);
   bool TraverseClassTemplateSpecializationDecl(

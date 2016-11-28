@@ -18,6 +18,7 @@
 
 #include "IndexerASTHooks.h"
 
+#include "kythe/cxx/indexer/cxx/clang_utils.h"
 #include "clang/AST/Attr.h"
 #include "clang/AST/CommentLexer.h"
 #include "clang/AST/Decl.h"
@@ -40,7 +41,6 @@
 #include "clang/AST/TypeLoc.h"
 #include "clang/Lex/Lexer.h"
 #include "clang/Sema/Lookup.h"
-
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/raw_ostream.h"
 
@@ -51,49 +51,6 @@ using namespace clang;
 void *NullGraphObserver::NullClaimToken::NullClaimTokenClass = nullptr;
 
 namespace {
-/// \brief Returns true if the `SL` is from a top-level macro argument and
-/// the argument itself is not expanded from a macro.
-///
-/// Example: returns true for `i` and false for `MACRO_INT_VAR` in the
-/// following code segment.
-///
-/// ~~~
-/// #define MACRO_INT_VAR i
-/// int i;
-/// MACRO_FUNCTION(i);              // a top level non-macro macro argument
-/// MACRO_FUNCTION(MACRO_INT_VAR);  // a top level _macro_ macro argument
-/// ~~~
-bool IsTopLevelNonMacroMacroArgument(const clang::SourceManager &SM,
-                                     const clang::SourceLocation &SL) {
-  if (!SL.isMacroID())
-    return false;
-  clang::SourceLocation Loc = SL;
-  // We want to get closer towards the initial macro typed into the source only
-  // if the location is being expanded as a macro argument.
-  while (SM.isMacroArgExpansion(Loc)) {
-    // We are calling getImmediateMacroCallerLoc, but note it is essentially
-    // equivalent to calling getImmediateSpellingLoc in this context according
-    // to Clang implementation. We are not calling getImmediateSpellingLoc
-    // because Clang comment says it "should not generally be used by clients."
-    Loc = SM.getImmediateMacroCallerLoc(Loc);
-  }
-  return !Loc.isMacroID();
-}
-
-/// \brief Updates `*Loc` to move it past whitespace characters.
-///
-/// This is useful because most of `clang::Lexer`'s static functions fail if
-/// given a location that is in whitespace between tokens.
-///
-/// TODO(jdennett): Delete this if/when we replace its uses with sane lexing.
-void SkipWhitespace(const SourceManager &SM, SourceLocation *Loc) {
-  CHECK(Loc != nullptr);
-
-  while (clang::isWhitespace(*SM.getCharacterData(*Loc))) {
-    *Loc = Loc->getLocWithOffset(1);
-  }
-}
-
 /// Decides whether `Tok` can be used to quote an identifier.
 bool TokenQuotesIdentifier(const clang::SourceManager &SM,
                            const clang::Token &Tok) {
@@ -323,81 +280,6 @@ bool IndexerASTVisitor::IsDefinition(const clang::VarDecl *VD) {
   return VD->isThisDeclarationADefinition() != VarDecl::DeclarationOnly;
 }
 
-clang::SourceRange IndexerASTVisitor::RangeForOperatorName(
-    const clang::SourceRange &OperatorTokenRange) const {
-  // Make a longer range than `OperatorTokenRange`, if possible, so that
-  // the range captures which operator this is.  There are two kinds of
-  // operators; type conversion operators, and overloaded operators.
-  // Most of the overloaded operators have names `operator ???` for some
-  // token `???`, but there are exceptions (namely: `operator[]`,
-  // `operator()`, `operator new[]` and `operator delete[]`.
-  //
-  // If this is a conversion operator to some type T, we link from the
-  // `operator` keyword only, but if it's an overloaded operator then
-  // we'd like to link from the name, e.g., `operator[]`, so long as
-  // that is spelled out in the source file.
-  SourceLocation Pos = OperatorTokenRange.getEnd();
-  SkipWhitespace(*Observer.getSourceManager(), &Pos);
-
-  // TODO(jdennett): Find a better name for `Token2EndLocation`, to
-  // indicate that it's the end of the first token after `operator`.
-  SourceLocation Token2EndLocation = GetLocForEndOfToken(Pos);
-  if (!Token2EndLocation.isValid()) {
-    // Well, this is the best we can do then.
-    return OperatorTokenRange;
-  }
-  // TODO(jdennett): Prefer checking the token's type here also, rather
-  // than the spelling.
-  llvm::SmallVector<char, 32> Buffer;
-  const clang::StringRef Token2Spelling = clang::Lexer::getSpelling(
-      Pos, Buffer, *Observer.getSourceManager(), *Observer.getLangOptions());
-  // TODO(jdennett): Handle (and test) operator new, operator new[],
-  // operator delete, and operator delete[].
-  if (!Token2Spelling.empty() &&
-      (Token2Spelling == "::" ||
-       clang::Lexer::isIdentifierBodyChar(Token2Spelling[0],
-                                          *Observer.getLangOptions()))) {
-    // The token after `operator` is an identifier or keyword, or the
-    // scope resolution operator `::`, so just return the range of
-    // `operator` -- this is presumably a type conversion operator, and
-    // the type-visiting code will add any appropriate links from the
-    // type, so we shouldn't link from it here.
-    return OperatorTokenRange;
-  }
-  if (Token2Spelling == "(" || Token2Spelling == "[") {
-    // TODO(jdennett): Do better than this disgusting hack to skip
-    // whitespace.  We probably want to actually instantiate a lexer.
-    SourceLocation Pos = Token2EndLocation;
-    SkipWhitespace(*Observer.getSourceManager(), &Pos);
-    clang::Token Token3;
-    if (clang::Lexer::getRawToken(Pos, Token3, *Observer.getSourceManager(),
-                                  *Observer.getLangOptions())) {
-      // That's weird, we've got just part of the operator name -- we saw
-      // an opening "(" or "]", but not its closing partner.  The best
-      // we can do is to just return the range covering `operator`.
-      llvm::errs() << "Failed to lex token after " << Token2Spelling.str();
-      return OperatorTokenRange;
-    }
-
-    if (Token3.is(clang::tok::r_square) || Token3.is(clang::tok::r_paren)) {
-      SourceLocation EndLocation = GetLocForEndOfToken(Token3.getLocation());
-      return clang::SourceRange(OperatorTokenRange.getBegin(), EndLocation);
-    }
-    return OperatorTokenRange;
-  }
-
-  // In this case we assume we have `operator???`, for some single-token
-  // operator name `???`.
-  return clang::SourceRange(OperatorTokenRange.getBegin(), Token2EndLocation);
-}
-
-clang::SourceRange IndexerASTVisitor::RangeForSingleTokenFromSourceLocation(
-    SourceLocation Start) const {
-  CHECK(Start.isFileID());
-  const SourceLocation End = GetLocForEndOfToken(Start);
-  return clang::SourceRange(Start, End);
-}
-
 SourceRange
 IndexerASTVisitor::ConsumeToken(SourceLocation StartLocation,
                                 clang::tok::TokenKind ExpectedKind) const {
@@ -418,17 +300,12 @@ IndexerASTVisitor::ConsumeToken(SourceLocation StartLocation,
     }
     if (ActualKind == ExpectedKind) {
       const SourceLocation Begin = Token.getLocation();
-      return SourceRange(Begin, GetLocForEndOfToken(Begin));
+      return SourceRange(
+          Begin, GetLocForEndOfToken(*Observer.getSourceManager(),
+                                     *Observer.getLangOptions(), Begin));
     }
   }
   return SourceRange(); // invalid location signals error/mismatch.
-}
-
-SourceLocation
-IndexerASTVisitor::GetLocForEndOfToken(SourceLocation StartLocation) const {
-  return clang::Lexer::getLocForEndOfToken(
-      StartLocation, 0 /* offset from end of token */,
-      *Observer.getSourceManager(), *Observer.getLangOptions());
 }
 
 clang::SourceRange IndexerASTVisitor::RangeForNameOfDeclaration(
@@ -455,8 +332,9 @@ clang::SourceRange IndexerASTVisitor::RangeForNameOfDeclaration(
             SecondToken.is(clang::tok::raw_identifier) &&
             ("~" + std::string(SecondToken.getRawIdentifier())) ==
                 Decl->getNameAsString()) {
-          const SourceLocation EndLocation =
-              GetLocForEndOfToken(SecondToken.getLocation());
+          const SourceLocation EndLocation = GetLocForEndOfToken(
+              *Observer.getSourceManager(), *Observer.getLangOptions(),
+              SecondToken.getLocation());
           return clang::SourceRange(StartLocation, EndLocation);
         }
       }
@@ -484,43 +362,8 @@ clang::SourceRange IndexerASTVisitor::RangeForNameOfDeclaration(
       return SourceRange(S, E);
     }
   }
-  return RangeForASTEntityFromSourceLocation(StartLocation);
-}
-
-clang::SourceRange IndexerASTVisitor::RangeForASTEntityFromSourceLocation(
-    SourceLocation Start) const {
-  if (Start.isFileID()) {
-    clang::SourceRange FirstTokenRange =
-        RangeForSingleTokenFromSourceLocation(Start);
-    llvm::SmallVector<char, 32> Buffer;
-    // TODO(jdennett): Prefer to lex a token and then check if it is
-    // `clang::tok::kw_operator`, instead of checking the spelling?
-    // If we do that, update `RangeForOperatorName` to take a `clang::Token`
-    // as its argument?
-    llvm::StringRef TokenSpelling =
-        clang::Lexer::getSpelling(Start, Buffer, *Observer.getSourceManager(),
-                                  *Observer.getLangOptions());
-    if (TokenSpelling == "operator") {
-      return RangeForOperatorName(FirstTokenRange);
-    } else {
-      return FirstTokenRange;
-    }
-  } else {
-    // The location is from macro expansion. We always need to return a
-    // location that can be associated with the original file.
-    SourceLocation FileLoc = Observer.getSourceManager()->getFileLoc(Start);
-    if (IsTopLevelNonMacroMacroArgument(*Observer.getSourceManager(), Start)) {
-      // TODO(jdennett): Test cases such as `MACRO(operator[])`, where the
-      // name in the macro argument should ideally not just be linked to a
-      // single token.
-      return RangeForSingleTokenFromSourceLocation(FileLoc);
-    } else {
-      // The entity is in a macro expansion, and it is not a top-level macro
-      // argument that itself is not expanded from a macro. The range
-      // is a 0-width span (a point), so no source link will be created.
-      return clang::SourceRange(FileLoc);
-    }
-  }
+  return RangeForASTEntityFromSourceLocation(
+      *Observer.getSourceManager(), *Observer.getLangOptions(), StartLocation);
 }
 
 void IndexerASTVisitor::MaybeRecordDefinitionRange(
@@ -1087,7 +930,9 @@ bool IndexerASTVisitor::VisitMemberExpr(const clang::MemberExpr *E) {
   }
   if (const auto *FieldDecl = E->getMemberDecl()) {
     auto FieldId = BuildNodeIdForDecl(FieldDecl);
-    auto Range = RangeForASTEntityFromSourceLocation(E->getMemberLoc());
+    auto Range = RangeForASTEntityFromSourceLocation(
+        *Observer.getSourceManager(), *Observer.getLangOptions(),
+        E->getMemberLoc());
     auto StmtId = BuildNodeIdForImplicitStmt(E);
     if (auto RCC = RangeInCurrentContext(StmtId, Range)) {
       Observer.recordDeclUseLocation(RCC.primary(), FieldId,
@@ -1206,7 +1051,10 @@ bool IndexerASTVisitor::VisitCXXPseudoDestructorExpr(
   if (auto DDId = BuildNodeIdForDependentName(
           NNSLoc, DtorName, E->getTildeLoc(), TyId, EmitRanges::Yes)) {
     clang::SourceRange SR = E->getSourceRange();
-    SR.setEnd(RangeForASTEntityFromSourceLocation(SR.getEnd()).getEnd());
+    SR.setEnd(RangeForASTEntityFromSourceLocation(*Observer.getSourceManager(),
+                                                  *Observer.getLangOptions(),
+                                                  SR.getEnd())
+                  .getEnd());
     auto StmtId = BuildNodeIdForImplicitStmt(E);
     if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
       RecordCallEdges(RCC.primary(), DDId.primary());
@@ -1364,7 +1212,8 @@ bool IndexerASTVisitor::VisitDeclRefOrIvarRefExpr(
     return true;
   }
   if (SL.isValid()) {
-    SourceRange Range = RangeForASTEntityFromSourceLocation(SL);
+    SourceRange Range = RangeForASTEntityFromSourceLocation(
+        *Observer.getSourceManager(), *Observer.getLangOptions(), SL);
     auto StmtId = BuildNodeIdForImplicitStmt(Expr);
     if (auto RCC = RangeInCurrentContext(StmtId, Range)) {
       GraphObserver::NodeId DeclId = BuildNodeIdForDecl(TargetDecl);
@@ -1553,13 +1402,16 @@ bool IndexerASTVisitor::VisitNamespaceDecl(const clang::NamespaceDecl *Decl) {
     SourceLocation Loc = Decl->getLocStart();
     if (Decl->isInline() && Loc.isValid() && Loc.isFileID()) {
       // Skip the `inline` keyword.
-      Loc = RangeForSingleTokenFromSourceLocation(Loc).getEnd();
+      Loc = RangeForSingleTokenFromSourceLocation(
+                *Observer.getSourceManager(), *Observer.getLangOptions(), Loc)
+                .getEnd();
       if (Loc.isValid() && Loc.isFileID()) {
         SkipWhitespace(*Observer.getSourceManager(), &Loc);
       }
     }
     if (Loc.isValid() && Loc.isFileID()) {
-      NameRange = RangeForASTEntityFromSourceLocation(Loc);
+      NameRange = RangeForASTEntityFromSourceLocation(
+          *Observer.getSourceManager(), *Observer.getLangOptions(), Loc);
     }
   } else {
     NameRange = RangeForNameOfDeclaration(Decl);
@@ -3135,8 +2987,10 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForDependentName(
     Ostream << "invalid";
   }
   Ostream << "@";
-  if (auto RCC = ExplicitRangeInCurrentContext(
-          RangeForASTEntityFromSourceLocation(IdLoc))) {
+  if (auto RCC =
+          ExplicitRangeInCurrentContext(RangeForASTEntityFromSourceLocation(
+              *Observer.getSourceManager(), *Observer.getLangOptions(),
+              IdLoc))) {
     Observer.AppendRangeToStream(Ostream, RCC.primary());
   } else {
     Ostream << "invalid";
@@ -3220,8 +3074,10 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForDependentName(
 #undef UNEXPECTED_DECLARATION_NAME_KIND
   }
   if (ER == EmitRanges::Yes) {
-    if (auto RCC = ExplicitRangeInCurrentContext(
-            RangeForASTEntityFromSourceLocation(IdLoc))) {
+    if (auto RCC =
+            ExplicitRangeInCurrentContext(RangeForASTEntityFromSourceLocation(
+                *Observer.getSourceManager(), *Observer.getLangOptions(),
+                IdLoc))) {
       Observer.recordDeclUseLocation(RCC.primary(), IdOut);
     }
   }
@@ -3241,7 +3097,9 @@ IndexerASTVisitor::BuildNodeIdForExpr(const clang::Expr *Expr, EmitRanges ER) {
   bool IsBindingSite = false;
   auto RCC = RangeInCurrentContext(
       BuildNodeIdForImplicitStmt(Expr),
-      RangeForASTEntityFromSourceLocation(Expr->getExprLoc()));
+      RangeForASTEntityFromSourceLocation(*Observer.getSourceManager(),
+                                          *Observer.getLangOptions(),
+                                          Expr->getExprLoc()));
   if (!Expr->isValueDependent() && Expr->EvaluateAsRValue(Result, Context)) {
     // TODO(zarko): Represent constant values of any type as nodes in the
     // graph; link ranges to them. Right now we don't emit any node data for
@@ -3479,7 +3337,9 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
       return PointeeID;
     }
     if (SR.isValid() && SR.getBegin().isFileID()) {
-      SR.setEnd(GetLocForEndOfToken(T.getStarLoc()));
+      SR.setEnd(GetLocForEndOfToken(*Observer.getSourceManager(),
+                                    *Observer.getLangOptions(),
+                                    T.getStarLoc()));
     }
     if (TypeAlreadyBuilt) {
       break;
@@ -3497,7 +3357,8 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
       return ReferentID;
     }
     if (SR.isValid() && SR.getBegin().isFileID()) {
-      SR.setEnd(GetLocForEndOfToken(T.getAmpLoc()));
+      SR.setEnd(GetLocForEndOfToken(*Observer.getSourceManager(),
+                                    *Observer.getLangOptions(), T.getAmpLoc()));
     }
     if (TypeAlreadyBuilt) {
       break;
@@ -3515,7 +3376,9 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
       return ReferentID;
     }
     if (SR.isValid() && SR.getBegin().isFileID()) {
-      SR.setEnd(GetLocForEndOfToken(T.getAmpAmpLoc()));
+      SR.setEnd(GetLocForEndOfToken(*Observer.getSourceManager(),
+                                    *Observer.getLangOptions(),
+                                    T.getAmpAmpLoc()));
     }
     if (TypeAlreadyBuilt) {
       break;
@@ -3851,7 +3714,9 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
         DeclNode = BuildNodeIdForDecl(RD);
       }
       if (auto RCC = ExplicitRangeInCurrentContext(
-              RangeForSingleTokenFromSourceLocation(T.getTemplateNameLoc()))) {
+              RangeForSingleTokenFromSourceLocation(
+                  *Observer.getSourceManager(), *Observer.getLangOptions(),
+                  T.getTemplateNameLoc()))) {
         Observer.recordDeclUseLocation(RCC.primary(), DeclNode);
       }
     }
@@ -4044,7 +3909,9 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
       return PointeeID;
     }
     if (SR.isValid() && SR.getBegin().isFileID()) {
-      SR.setEnd(GetLocForEndOfToken(BPTL.getCaretLoc()));
+      SR.setEnd(GetLocForEndOfToken(*Observer.getSourceManager(),
+                                    *Observer.getLangOptions(),
+                                    BPTL.getCaretLoc()));
     }
     if (TypeAlreadyBuilt) {
       break;
@@ -4064,7 +3931,9 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
       InEmitRanges == IndexerASTVisitor::EmitRanges::Yes) {
     // If this is an empty SourceRange, try to expand it.
     if (SR.getBegin() == SR.getEnd()) {
-      SR = RangeForASTEntityFromSourceLocation(SR.getBegin());
+      SR = RangeForASTEntityFromSourceLocation(*Observer.getSourceManager(),
+                                               *Observer.getLangOptions(),
+                                               SR.getBegin());
     }
     if (auto RCC = ExplicitRangeInCurrentContext(SR)) {
       ID.Iter([&](const GraphObserver::NodeId &I) {
@@ -4091,7 +3960,8 @@ IndexerASTVisitor::RecordIdTypeNode(const ObjCObjectType *T,
   for (ObjCProtocolDecl *P : Protocols) {
     auto SL = ProtocolLocs[i++];
     auto PID = BuildNodeIdForDecl(P);
-    auto SR = RangeForASTEntityFromSourceLocation(SL);
+    auto SR = RangeForASTEntityFromSourceLocation(
+        *Observer.getSourceManager(), *Observer.getLangOptions(), SL);
     if (auto ERCC = ExplicitRangeInCurrentContext(SR)) {
       Observer.recordDeclUseLocation(ERCC.primary(), PID);
     }
@@ -4232,8 +4102,9 @@ bool IndexerASTVisitor::VisitObjCImplementationDecl(
 // do not occur for an extension.
 bool IndexerASTVisitor::VisitObjCCategoryImplDecl(
     const clang::ObjCCategoryImplDecl *ImplDecl) {
-  SourceRange NameRange =
-      RangeForASTEntityFromSourceLocation(ImplDecl->getCategoryNameLoc());
+  SourceRange NameRange = RangeForASTEntityFromSourceLocation(
+      *Observer.getSourceManager(), *Observer.getLangOptions(),
+      ImplDecl->getCategoryNameLoc());
   auto ImplDeclNode = BuildNodeIdForDecl(ImplDecl);
   MaybeRecordDefinitionRange(
       RangeInCurrentContext(ImplDecl->isImplicit(), ImplDeclNode, NameRange),
@@ -4271,8 +4142,9 @@ bool IndexerASTVisitor::VisitObjCCategoryImplDecl(
       LOG(ERROR) << "Class extensions should not have a category impl.";
       return true;
     }
-    auto Range =
-        RangeForASTEntityFromSourceLocation(ImplDecl->getCategoryNameLoc());
+    auto Range = RangeForASTEntityFromSourceLocation(
+        *Observer.getSourceManager(), *Observer.getLangOptions(),
+        ImplDecl->getCategoryNameLoc());
     if (auto RCC = ExplicitRangeInCurrentContext(Range)) {
       auto ID = BuildNodeIdForDecl(CategoryDecl);
       Observer.recordDeclUseLocation(RCC.primary(), ID,
@@ -4289,8 +4161,9 @@ bool IndexerASTVisitor::VisitObjCCategoryImplDecl(
     auto ClassInterfaceNode = BuildNodeIdForDecl(BaseClassInterface);
     // The location for the category decl is actually the location of the
     // interface name.
-    const SourceRange &IFaceNameRange =
-        RangeForASTEntityFromSourceLocation(ImplDecl->getLocation());
+    const SourceRange &IFaceNameRange = RangeForASTEntityFromSourceLocation(
+        *Observer.getSourceManager(), *Observer.getLangOptions(),
+        ImplDecl->getLocation());
     if (auto RCC = ExplicitRangeInCurrentContext(IFaceNameRange)) {
       Observer.recordDeclUseLocation(RCC.primary(), ClassInterfaceNode);
     }
@@ -4333,8 +4206,9 @@ void IndexerASTVisitor::ConnectToSuperClassAndProtocols(
   // Draw a ref edge from the superclass usage in the interface declaration to
   // the superclass declaration.
   if (auto SC = IFace->getSuperClass()) {
-    auto SuperRange =
-        RangeForASTEntityFromSourceLocation(IFace->getSuperClassLoc());
+    auto SuperRange = RangeForASTEntityFromSourceLocation(
+        *Observer.getSourceManager(), *Observer.getLangOptions(),
+        IFace->getSuperClassLoc());
     if (auto SCRCC = ExplicitRangeInCurrentContext(SuperRange)) {
       auto SCID = BuildNodeIdForDecl(SC);
       Observer.recordDeclUseLocation(SCRCC.primary(), SCID,
@@ -4355,7 +4229,8 @@ void IndexerASTVisitor::ConnectToSuperClassAndProtocols(
     Observer.recordExtendsEdge(BodyDeclNode, BuildNodeIdForDecl(*PIt),
                                false /* isVirtual */,
                                clang::AccessSpecifier::AS_none);
-    auto Range = RangeForASTEntityFromSourceLocation(*PLocIt);
+    auto Range = RangeForASTEntityFromSourceLocation(
+        *Observer.getSourceManager(), *Observer.getLangOptions(), *PLocIt);
     if (auto ERCC = ExplicitRangeInCurrentContext(Range)) {
       auto PID = BuildNodeIdForDecl(*PIt);
       Observer.recordDeclUseLocation(ERCC.primary(), PID,
@@ -4416,7 +4291,9 @@ bool IndexerASTVisitor::VisitObjCCategoryDecl(
   if (Decl->IsClassExtension()) {
     NameRange = RangeForNameOfDeclaration(Decl);
   } else {
-    NameRange = RangeForASTEntityFromSourceLocation(Decl->getCategoryNameLoc());
+    NameRange = RangeForASTEntityFromSourceLocation(
+        *Observer.getSourceManager(), *Observer.getLangOptions(),
+        Decl->getCategoryNameLoc());
   }
 
   auto DeclNode = BuildNodeIdForDecl(Decl);
@@ -4435,8 +4312,9 @@ bool IndexerASTVisitor::VisitObjCCategoryDecl(
     auto ClassInterfaceNode = BuildNodeIdForDecl(BaseClassInterface);
     // The location for the category decl is actually the location of the
     // interface name.
-    const SourceRange &IFaceNameRange =
-        RangeForASTEntityFromSourceLocation(Decl->getLocation());
+    const SourceRange &IFaceNameRange = RangeForASTEntityFromSourceLocation(
+        *Observer.getSourceManager(), *Observer.getLangOptions(),
+        Decl->getLocation());
     if (auto RCC = ExplicitRangeInCurrentContext(IFaceNameRange)) {
       Observer.recordDeclUseLocation(RCC.primary(), ClassInterfaceNode);
     }
@@ -4757,7 +4635,8 @@ bool IndexerASTVisitor::VisitObjCPropertyRefExpr(
   if (SL.isValid()) {
     // This gives us the property name. If we just call Expr->getSourceRange()
     // we just get the range for the object's name.
-    SourceRange SR = RangeForASTEntityFromSourceLocation(SL);
+    SourceRange SR = RangeForASTEntityFromSourceLocation(
+        *Observer.getSourceManager(), *Observer.getLangOptions(), SL);
     auto StmtId = BuildNodeIdForImplicitStmt(Expr);
     if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
       // Record the "field" access if this has an explicit property.

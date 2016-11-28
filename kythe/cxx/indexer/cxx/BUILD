@@ -3,6 +3,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 cc_library(
     name = "lib",
     srcs = [
+        "clang_utils.cc",
         "IndexerASTHooks.cc",
         "IndexerFrontendAction.cc",
         "IndexerLibrarySupport.cc",
@@ -10,6 +11,7 @@ cc_library(
         "KytheGraphObserver.cc",
     ],
     hdrs = [
+        "clang_utils.h",
         "GraphObserver.h",
         "IndexerASTHooks.h",
         "IndexerFrontendAction.h",
