@@ -25,7 +25,7 @@ def cargo_bin(name, loc, srcs=[], bin_name=None, release=False):
         ),
         local = 1,
         tools = ["//tools/build_rules/rust:run_cargo.sh"],
-        tags = ["manual", "requires-network"],
+        tags = ["manual", "requires-network", "arc-ignore"],
     )
 
 def _cargo_generic_lib(name, ext, loc, srcs, lib_name, release, visibility = "//visibility:public", tags = []):
@@ -43,7 +43,7 @@ def _cargo_generic_lib(name, ext, loc, srcs, lib_name, release, visibility = "//
                     ),
             local = 1,
             tools = ["//tools/build_rules/rust:run_cargo.sh"],
-            tags = ["manual", "requires-network"] + tags,
+            tags = ["manual", "requires-network", "arc-ignore"] + tags,
             visibility = [visibility]
             )
 
@@ -72,7 +72,7 @@ def cargo_lib(name, loc, srcs=[], lib_name=None, lib_type="rlib", release=False)
                 "//tools/build_rules/rust:k8": ["_" + name + "-k8"],
                 "//tools/build_rules/rust:darwin": ["_" + name + "-darwin"],
                 }),
-            tags = ["manual"],
+            tags = ["manual", "arc-ignore"],
             )
 
 # BEWARE: cargo will report a test as passing if there is no matching
@@ -84,5 +84,5 @@ def cargo_test(name, size, loc, test_name, srcs=[], cargo_opts=""):
         srcs=["//tools/build_rules/rust:run_cargo.sh"],
         data=srcs + native.glob(_automatic_srcs),
         args=[loc, "\"test " + cargo_opts + " " + test_name + "\""],
-        tags=["local", "manual"],
+        tags=["local", "manual", "arc-ignore"],
     )
