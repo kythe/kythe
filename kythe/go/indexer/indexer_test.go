@@ -33,9 +33,6 @@ import (
 	spb "kythe.io/kythe/proto/storage_proto"
 )
 
-var _ spb.VName
-var _ apb.CompilationUnit
-
 type memFetcher map[string]string // :: digest → content
 
 func (m memFetcher) Fetch(path, digest string) ([]byte, error) {

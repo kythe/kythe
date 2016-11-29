@@ -6,14 +6,18 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_library(
     name = "indexer",
     srcs = [
+        "emit.go",
         "facts.go",
         "indexer.go",
     ],
     deps = [
         "//kythe/go/extractors/govname",
+        "//kythe/go/util/schema/facts",
+        "//kythe/go/util/schema/nodes",
         "//kythe/proto:analysis_proto_go",
         "//kythe/proto:storage_proto_go",
         "@go_protobuf//:proto",
+        "@go_stringset//:stringset",
         "@go_x_tools//:go/gcexportdata",
     ],
 )

@@ -44,8 +44,11 @@ import (
 	"go/types"
 	"log"
 	"path"
+	"path/filepath"
 	"strconv"
+	"strings"
 
+	"bitbucket.org/creachadair/stringset"
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/tools/go/gcexportdata"
 
@@ -103,10 +106,7 @@ func (pi *PackageInfo) Import(importPath string) (*types.Package, error) {
 // and will contain the output of the type checker in each user-provided map
 // field.
 func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageInfo, error) {
-	isSource := make(map[string]bool)
-	for _, src := range unit.SourceFile {
-		isSource[src] = true
-	}
+	sourceFiles := stringset.New(unit.SourceFile...)
 
 	deps := make(map[string]*types.Package) // import path → package
 	imap := make(map[string]*spb.VName)     // import path → vname
@@ -132,7 +132,7 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 
 		// Source inputs need to be parsed, so we can give their ASTs to the
 		// type checker later on.
-		if isSource[fpath] {
+		if sourceFiles.Contains(fpath) {
 			srcs[fpath] = string(data)
 			parsed, err := parser.ParseFile(fset, fpath, data, parser.AllErrors)
 			if err != nil {
@@ -142,21 +142,22 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 			continue
 		}
 
-		// For archives, recover the import path from the VName and read the
-		// archive header for type information.  If the VName is not set, the
-		// import is considered bogus.
+		// Other files may be compiled archives with type information for other
+		// packages, or may be other ancillary files like C headers to support
+		// cgo. File extension isn't sufficient to distinguish these, so we'll
+		// just try to parse them. It's OK if that fails.
+		r, err := gcexportdata.NewReader(bytes.NewReader(data))
+		if err != nil {
+			log.Printf("Error scanning export data in %q: %v [ignored]", fpath, err)
+			continue
+		}
+
+		// Package archives must have a VName set to resolve their origin.
 		if ri.VName == nil {
 			return nil, fmt.Errorf("missing vname for %q", fpath)
 		}
-		r, err := gcexportdata.NewReader(bytes.NewReader(data))
-		if err != nil {
-			return nil, fmt.Errorf("scanning export data in %q: %v", fpath, err)
-		}
 
-		ipath := path.Join(ri.VName.Corpus, ri.VName.Path)
-		if govname.IsStandardLibrary(ri.VName) {
-			ipath = ri.VName.Path
-		}
+		ipath := vnameToImport(ri.VName)
 		imap[ipath] = ri.VName
 
 		// Populate deps with package ipath and its prerequisites.
@@ -473,6 +474,22 @@ func (pi *PackageInfo) addOwners(pkg *types.Package) {
 			}
 		}
 	}
+}
+
+// vnameToImport returns the putative Go import path corresponding to v.  The
+// resulting string corresponds to the string literal appearing in source at
+// the import site for the package so named.
+//
+// TODO(fromberger): This implementation currently assumes the extractor has
+// stored the package relative to GOROOT or GOPATH in v.Path. This should be
+// more robust to configurations where the path fragments are still part of the
+// VName.
+func vnameToImport(v *spb.VName) string {
+	if govname.IsStandardLibrary(v) {
+		return v.Path
+	}
+	trimmed := strings.TrimSuffix(v.Path, filepath.Ext(v.Path))
+	return filepath.Join(v.Corpus, trimmed)
 }
 
 // AllTypeInfo creates a new types.Info value with empty maps for each of the
