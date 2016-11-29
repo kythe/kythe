@@ -763,6 +763,10 @@ class ExtractorAction : public clang::PreprocessorFrontendAction {
         getCompilerInstance().getHeaderSearchOpts();
     const auto& header_search_info =
         getCompilerInstance().getPreprocessor().getHeaderSearchInfo();
+    // Record the target triple during extraction so we can set it explicitly
+    // during indexing. This is important when extraction and indexing are done
+    // on machines that are not identical.
+    index_writer_->set_triple(getCompilerInstance().getTargetOpts().Triple);
     HeaderSearchInfo info;
     bool info_valid = info.CopyFrom(header_search_options, header_search_info);
     RecordModuleInfo(&header_search_info.getModuleMap());
@@ -950,6 +954,14 @@ void IndexWriter::WriteIndex(
   kythe::proto::CompilationUnit unit;
   std::string identifying_blob;
   identifying_blob.append(corpus_);
+
+  // Record the target triple in the list of arguments. Put it at the front in
+  // the unlikely event that a different triple was supplied in the arguments.
+  identifying_blob.append("-target");
+  identifying_blob.append(triple_);
+  unit.add_argument("-target");
+  unit.add_argument(triple_);
+
   for (const auto& arg : args_) {
     identifying_blob.append(arg);
     unit.add_argument(arg);
@@ -961,8 +973,7 @@ void IndexWriter::WriteIndex(
 
   kythe::proto::VName main_vname = VNameForPath(main_source_file);
   unit_vname->CopyFrom(main_vname);
-  // todo(salguarnieri) Support setting the language to objc. Or should we lump
-  // all c-ish languages together?
+  // Group all C-ish languages together (C, C++, Obj-C).
   unit_vname->set_language("c++");
   unit_vname->set_signature("cu#" + identifying_blob_digest);
   unit_vname->clear_path();

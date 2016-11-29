@@ -4168,7 +4168,7 @@ bool IndexerASTVisitor::VisitObjCCategoryImplDecl(
       Observer.recordDeclUseLocation(RCC.primary(), ClassInterfaceNode);
     }
   } else {
-    LogErrorWithASTDump("Missing class interface", ImplDecl);
+    LogErrorWithASTDump("Missing category impl class interface", ImplDecl);
   }
 
   return true;
@@ -4319,7 +4319,7 @@ bool IndexerASTVisitor::VisitObjCCategoryDecl(
       Observer.recordDeclUseLocation(RCC.primary(), ClassInterfaceNode);
     }
   } else {
-    LogErrorWithASTDump("Missing class interface", Decl);
+    LogErrorWithASTDump("Missing category decl class interface", Decl);
   }
 
   return true;
@@ -4713,7 +4713,7 @@ void IndexerASTVisitor::LogErrorWithASTDump(const std::string &msg,
   std::string s;
   llvm::raw_string_ostream ss(s);
   Decl->dump(ss);
-  LOG(ERROR) << msg << " :: " << s;
+  LOG(ERROR) << msg << " :" << std::endl << s;
 }
 
 } // namespace kythe

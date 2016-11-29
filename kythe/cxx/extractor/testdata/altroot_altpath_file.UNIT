@@ -1,5 +1,5 @@
 v_name {
-  signature: "cu#ef4b9099d07e834ed542b8593bda109cb9c258d32f8674679c3afb9f0f539241"
+  signature: "cu#faa64dd55a0a5651ce1ef0b05679b1f0ebabba4a6da676b4c100b62ad5089348"
   language: "c++"
 }
 required_input {
@@ -16,6 +16,8 @@ required_input {
     }
   }
 }
+argument: "-target"
+argument: "x86_64-unknown-linux-gnu"
 argument: "../../../cxx_extractor"
 argument: "-DKYTHE_IS_RUNNING=1"
 argument: "-resource-dir"

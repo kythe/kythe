@@ -25,5 +25,11 @@ KYTHE_ROOT_DIRECTORY="${BASE_DIR}/altroot" \
 [[ $(ls -1 "${OUT_DIR}"/*.kindex | wc -l) -eq 1 ]]
 INDEX_PATH=$(ls -1 "${OUT_DIR}"/*.kindex)
 "${KINDEX_TOOL}" -canonicalize_hashes -suppress_details -explode "${INDEX_PATH}"
+
+# Remove lines that will change depending on the machine the test is run on.
+sed -i -e '/-target/,+1d' "${INDEX_PATH}_UNIT"
+sed -i -e '/signature/,+d' "${INDEX_PATH}_UNIT"
 sed "s|TEST_CWD|${PWD}/|" "${BASE_DIR}/altroot_altpath_file.UNIT" | \
+    sed -e '/-target/,+1d' | \
+    sed -e '/signature/,+d' | \
     diff - "${INDEX_PATH}_UNIT"

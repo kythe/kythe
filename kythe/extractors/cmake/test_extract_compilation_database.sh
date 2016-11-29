@@ -33,7 +33,12 @@ INDEX_PATH=$(ls -1 "${OUT_DIR}"/*.kindex)
     "${INDEX_PATH}"
 sed "s|signature: \"cu.*\"|signature: \"\"|" "${INDEX_PATH}_UNIT" > \
     "${INDEX_PATH}_UNIT_NS"
+
+# Remove lines that are system specific
+sed -i -e '/-target/,+1d' "${INDEX_PATH}_UNIT_NS"
+
 sed "s:TEST_CWD:${PWD}/:
 s:TEST_EXTRACTOR:${KYTHE_EXTRACTOR}:" "${BASE_DIR}/testdata/expected.unit" | \
+    sed -e '/-target/,+1d' | \
     diff - "${INDEX_PATH}_UNIT_NS"
 diff "${BASE_DIR}/testdata/expected.file" "${INDEX_PATH}_${EXPECTED_FILE_HASH}"

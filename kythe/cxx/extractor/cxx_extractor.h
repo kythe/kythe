@@ -164,6 +164,12 @@ class IndexWriter {
   /// passed to the main() of a build tool. It includes both the tool's
   /// name as it was invoked and the name of the main source file.
   void set_args(const std::vector<std::string> &args) { args_ = args; }
+  /// \brief Set the target triple used during compilation.
+  ///
+  /// Setting this allows the indexer to set the same triple that was used
+  /// during extraction even if it is run on a machine with a different
+  /// architecture.
+  void set_triple(const std::string &triple) { triple_ = triple; }
   /// \brief Configure the default corpus.
   void set_corpus(const std::string &corpus) { corpus_ = corpus; }
   /// \brief Configure vname generation using some JSON string.
@@ -198,6 +204,8 @@ class IndexWriter {
   FileVNameGenerator vname_generator_;
   /// The arguments used for this compilation.
   std::vector<std::string> args_;
+  /// The host triple used during compilation
+  std::string triple_ = "";
   /// The default corpus to use for artifacts.
   std::string corpus_ = "";
   /// The directory to use for index files.
