@@ -384,6 +384,14 @@ graphviz format. In this graph, nodes used to satisfy rules will be colored
 blue; their labels will also contain the names of the EVars unified with their
 VNames.
 
+=== Reading assertions from the input graph
+
+You can instruct the verifier to read assertions from file content stored in
+the graph database with the `--use_file_nodes` flag. In certain cases this may
+be more convenient than providing that content as actual source files. For
+example, an indexer may synthesize file nodes that never existed in files in
+the first place.
+
 === Return code
 
 If the database passes all well-formedness checks and all rules could be

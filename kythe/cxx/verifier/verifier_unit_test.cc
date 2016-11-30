@@ -2439,6 +2439,57 @@ fact_value: "43"
   ASSERT_EQ(2, v.highest_goal_reached());
 }
 
+TEST(VerifierUnitTest, ReadGoalsFromFileNodeFailure) {
+  Verifier v;
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+source { path:"test" }
+fact_name: "/kythe/node/kind"
+fact_value: "file"
+}
+entries {
+source { path:"test" }
+fact_name: "/kythe/text"
+fact_value: "//- A.node/kind file\n//- A.notafact yes\n"
+})"));
+  v.UseFileNodes();
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_FALSE(v.VerifyAllGoals());
+  ASSERT_EQ(1, v.highest_goal_reached());
+}
+
+TEST(VerifierUnitTest, ReadGoalsFromFileNodeSuccess) {
+  Verifier v;
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+source { path:"test" }
+fact_name: "/kythe/node/kind"
+fact_value: "file"
+}
+entries {
+source { path:"test" }
+fact_name: "/kythe/text"
+fact_value: "//- A.node/kind file\n"
+})"));
+  v.UseFileNodes();
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_TRUE(v.VerifyAllGoals());
+}
+
+TEST(VerifierUnitTest, ReadGoalsFromFileNodeFailParse) {
+  Verifier v;
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+source { path:"test" }
+fact_name: "/kythe/node/kind"
+fact_value: "file"
+}
+entries {
+source { path:"test" }
+fact_name: "/kythe/text"
+fact_value: "//- A->node/kind file\n"
+})"));
+  v.UseFileNodes();
+  ASSERT_FALSE(v.PrepareDatabase());
+}
+
 }  // anonymous namespace
 }  // namespace verifier
 }  // namespace kythe

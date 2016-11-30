@@ -598,6 +598,8 @@ Verifier::Verifier(bool trace_lex, bool trace_parse)
   root_id_ = IdentifierFor(builtin_location_, "/");
   eq_id_ = IdentifierFor(builtin_location_, "=");
   ordinal_id_ = IdentifierFor(builtin_location_, "/kythe/ordinal");
+  file_id_ = IdentifierFor(builtin_location_, "file");
+  text_id_ = IdentifierFor(builtin_location_, "/kythe/text");
 }
 
 bool Verifier::LoadInlineProtoFile(const std::string &file_data) {
@@ -628,6 +630,14 @@ bool Verifier::LoadInlineRuleFile(const std::string &filename) {
   return true;
 }
 
+bool Verifier::LoadInMemoryRuleFile(AstNode *vname, Symbol text) {
+  StringPrettyPrinter printer;
+  vname->Dump(symbol_table_, &printer);
+  fake_files_[printer.str()] = text;
+  return parser_.ParseInlineRuleString(symbol_table_.text(text), printer.str(),
+                                       goal_comment_marker_.c_str());
+}
+
 void Verifier::IgnoreDuplicateFacts() { ignore_dups_ = true; }
 
 void Verifier::SaveEVarAssignments() {
@@ -649,6 +659,38 @@ void Verifier::ShowGoals() {
       printer.Print("\n");
     }
   }
+}
+
+static bool PrintInMemoryFileSection(const std::string &file_text,
+                                     size_t start_line, size_t start_ix,
+                                     size_t end_line, size_t end_ix,
+                                     PrettyPrinter *printer) {
+  size_t current_line = 0;
+  size_t pos = 0;
+  auto walk_lines = [&](size_t until_line) {
+    if (until_line == current_line) {
+      return pos;
+    }
+    do {
+      auto endline = file_text.find('\n', pos);
+      if (endline == std::string::npos) {
+        return std::string::npos;
+      }
+      pos = endline + 1;
+    } while (++current_line < start_line);
+    return pos;
+  };
+  auto begin = walk_lines(start_line);
+  auto end = begin == std::string::npos ? begin : walk_lines(end_line);
+  auto begin_ofs = begin + start_ix;
+  auto end_ofs = end + end_ix;
+  if (begin == std::string::npos || end == std::string::npos ||
+      begin_ofs > file_text.size() || end_ofs > file_text.size()) {
+    printer->Print("(error line out of bounds)");
+    return false;
+  }
+  printer->Print(file_text.substr(begin_ofs, end_ofs - begin_ofs));
+  return true;
 }
 
 static bool PrintFileSection(FILE *file, size_t start_line, size_t start_ix,
@@ -736,13 +778,23 @@ void Verifier::DumpErrorGoal(size_t group, size_t index) {
   }
   bool printed_goal = false;
   printer.Print(" ");
-  if (goal_end.filename && *goal_end.filename != *kStandardIn &&
-      *goal_begin.filename == *goal_end.filename) {
-    FILE *f = fopen(goal_end.filename->c_str(), "r");
-    printed_goal =
-        PrintFileSection(f, goal_begin.line - 1, goal_begin.column - 1,
-                         goal_end.line - 1, goal_end.column - 1, &printer);
-    fclose(f);
+  if (goal_end.filename) {
+    auto has_symbol = fake_files_.find(*goal_end.filename);
+    if (has_symbol != fake_files_.end()) {
+      printed_goal = PrintInMemoryFileSection(
+          symbol_table_.text(has_symbol->second), goal_begin.line - 1,
+          goal_begin.column - 1, goal_end.line - 1, goal_end.column - 1,
+          &printer);
+    } else if (*goal_end.filename != *kStandardIn &&
+               *goal_begin.filename == *goal_end.filename) {
+      FILE *f = fopen(goal_end.filename->c_str(), "r");
+      if (f != nullptr) {
+        printed_goal =
+            PrintFileSection(f, goal_begin.line - 1, goal_begin.column - 1,
+                             goal_end.line - 1, goal_end.column - 1, &printer);
+        fclose(f);
+      }
+    }
   }
   if (!printed_goal) {
     goal->Dump(symbol_table_, &printer);
@@ -905,6 +957,7 @@ bool Verifier::PrepareDatabase() {
   // whether the invariants hold.
   bool is_ok = true;
   AstNode *last_anchor_vname = nullptr;
+  AstNode *last_file_vname = nullptr;
   size_t last_anchor_start = ~0;
   for (size_t f = 0; f < facts_.size(); ++f) {
     AstNode *fb = facts_[f];
@@ -919,12 +972,32 @@ bool Verifier::PrepareDatabase() {
     Tuple *tb = fb->AsApp()->rhs()->AsTuple();
     if (tb->element(1) == empty_string_id_ &&
         tb->element(2) == empty_string_id_) {
+      bool is_kind_fact = EncodedIdentEqualTo(tb->element(3), kind_id_);
+      // Check to see if this fact entry describes part of a file.
+      // NB: kind_id_ is ordered before text_id_.
+      if (assertions_from_file_nodes_) {
+        if (is_kind_fact) {
+          if (EncodedIdentEqualTo(tb->element(4), file_id_)) {
+            last_file_vname = tb->element(0);
+          } else {
+            last_file_vname = nullptr;
+          }
+        } else if (last_file_vname != nullptr &&
+                   EncodedIdentEqualTo(tb->element(3), text_id_)) {
+          if (EncodedVNameOrIdentEqualTo(last_file_vname, tb->element(0))) {
+            if (!LoadInMemoryRuleFile(
+                    tb->element(0), tb->element(4)->AsIdentifier()->symbol())) {
+              is_ok = false;
+            }
+          }
+          last_file_vname = nullptr;
+        }
+      }
       // Check to see if this fact entry describes part of an anchor.
       // We've arranged via EncodedFactLessThan to sort kind_id_ before
       // start_id_ and start_id_ before end_id_ and to group all node facts
       // together in uninterrupted runs.
-      if (EncodedIdentEqualTo(tb->element(3), kind_id_) &&
-          EncodedIdentEqualTo(tb->element(4), anchor_id_)) {
+      if (is_kind_fact && EncodedIdentEqualTo(tb->element(4), anchor_id_)) {
         // Start tracking a new anchor.
         last_anchor_vname = tb->element(0);
         last_anchor_start = ~0;

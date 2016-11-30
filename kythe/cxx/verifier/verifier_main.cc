@@ -35,6 +35,7 @@ DEFINE_bool(ignore_dups, false, "Ignore duplicate facts during verification");
 DEFINE_bool(graphviz, false, "Only dump facts as a GraphViz-compatible graph");
 DEFINE_bool(annotated_graphviz, false, "Solve and annotate a GraphViz graph.");
 DEFINE_string(goal_prefix, "//-", "Denote goals with this string.");
+DEFINE_bool(use_file_nodes, false, "Look for assertions in UTF8 file nodes.");
 
 int main(int argc, char **argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -46,6 +47,7 @@ files. See the DESIGN file for more details on invocation and rule syntax.
 Example:
   ${INDEXER_BIN} -i $1 | ${VERIFIER_BIN} --show_protos --show_goals $1
   cat foo.entries | ${VERIFIER_BIN} goals1.cc goals2.cc
+  cat foo.entries | ${VERIFIER_BIN} --use_file_nodes
 )");
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);
   ::google::InitGoogleLogging(argv[0]);
@@ -61,9 +63,13 @@ Example:
     v.SaveEVarAssignments();
   }
 
+  if (FLAGS_use_file_nodes) {
+    v.UseFileNodes();
+  }
+
   if (!FLAGS_graphviz) {
     std::vector<std::string> rule_files(argv + 1, argv + argc);
-    if (rule_files.empty()) {
+    if (rule_files.empty() && !FLAGS_use_file_nodes) {
       fprintf(stderr, "No rule files specified\n");
       return 1;
     }

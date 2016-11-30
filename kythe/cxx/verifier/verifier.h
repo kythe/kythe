@@ -38,6 +38,12 @@ class Verifier {
   /// \param trace_parse Dump parsing debug information
   explicit Verifier(bool trace_lex = false, bool trace_parse = false);
 
+  /// \brief Loads an in-memory source file.
+  /// \param vname The AstNode of the vname for the file.
+  /// \param text The symbol for the text to load
+  /// \return false if we failed.
+  bool LoadInMemoryRuleFile(AstNode *vname, Symbol text);
+
   /// \brief Loads a source file with goal comments indicating rules and data.
   /// \param filename The filename to load
   /// \return false if we failed
@@ -158,6 +164,9 @@ class Verifier {
     goal_comment_marker_ = it;
   }
 
+  /// \brief Look for assertions in file node text.
+  void UseFileNodes() { assertions_from_file_nodes_ = true; }
+
  private:
   /// \brief Converts a VName proto to its AST representation.
   AstNode *ConvertVName(const yy::location &location,
@@ -225,6 +234,12 @@ class Verifier {
   /// Node to use for the `/kythe/loc/end` constant.
   AstNode *end_id_;
 
+  /// Node to use for the `file` node kind.
+  AstNode *file_id_;
+
+  /// Node to use for the `text` fact kind.
+  AstNode *text_id_;
+
   /// The highest goal group reached during solving (often the culprit for why
   /// the solution failed).
   size_t highest_group_reached_ = 0;
@@ -243,8 +258,14 @@ class Verifier {
   /// for anchors).
   std::map<std::string, AstNode *> saved_assignments_;
 
+  /// Maps from pretty-printed vnames to (parsed) file node text.
+  std::map<std::string, Symbol> fake_files_;
+
   /// The string to look for at the beginning of a goal comment.
   std::string goal_comment_marker_ = "//-";
+
+  /// Read assertions from file nodes.
+  bool assertions_from_file_nodes_ = false;
 };
 
 }  // namespace verifier
