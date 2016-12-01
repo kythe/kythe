@@ -35,12 +35,9 @@ import (
 	eapb "kythe.io/third_party/bazel/extra_actions_base_proto"
 )
 
-var config = &bazel.Config{
-	Corpus:   "kythe",
-	Mnemonic: "GoCompile",
-}
+var config bazel.Config
 
-const baseUsage = `Usage: %[1]s <extra-action> <output-file> <vname-config>`
+const baseUsage = `Usage: %[1]s [flags] <extra-action> <output-file> <vname-config>`
 
 func init() {
 	flag.Usage = func() {
@@ -57,6 +54,9 @@ Flags:
 `, filepath.Base(os.Args[0]))
 		flag.PrintDefaults()
 	}
+
+	flag.StringVar(&config.Corpus, "corpus", "kythe", "The corpus label to assign (required)")
+	flag.StringVar(&config.Mnemonic, "mnemonic", "GoCompile", `The action mnemonic to match ("" means any)`)
 }
 
 func main() {

@@ -24,12 +24,12 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"sync"
 	"time"
 
 	"bitbucket.org/creachadair/shell"
+	"bitbucket.org/creachadair/stringset"
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
 
@@ -128,7 +128,8 @@ func (c *Config) Extract(ctx context.Context, info *eapb.ExtraActionInfo) (*kind
 				log.Fatalf("Unable to read input %q: %v", path, err)
 			}
 			cu.Files[i] = fd
-			cu.Proto.RequiredInput[i] = c.fileDataToInfo(fd)
+			ri := c.fileDataToInfo(fd, toolArgs.fixPath)
+			cu.Proto.RequiredInput[i] = ri
 		}()
 	}
 	wg.Wait()
@@ -168,7 +169,7 @@ func (c *Config) openFile(ctx context.Context, path string) (io.ReadCloser, erro
 }
 
 // readFileData fetches the contents of the file at path and returns a FileData
-// message populated with its content, path, and digest.
+// message populated with its content and digest.
 func (c *Config) readFileData(ctx context.Context, path string) (*apb.FileData, error) {
 	f, err := c.openFile(ctx, path)
 	if err != nil {
@@ -179,12 +180,16 @@ func (c *Config) readFileData(ctx context.Context, path string) (*apb.FileData, 
 }
 
 // fileDataToInfo produces a file info message corresponding to fd, using rules
-// to generate the vname and root as the working directory.
-func (c *Config) fileDataToInfo(fd *apb.FileData) *apb.CompilationUnit_FileInput {
+// to generate the vname and root as the working directory. Paths are mapped to
+// their compiler-apparent location using fix.
+func (c *Config) fileDataToInfo(fd *apb.FileData, fix func(string) string) *apb.CompilationUnit_FileInput {
 	path := fd.Info.Path
-	vname, ok := c.Rules.Apply(path)
+	vname, ok := c.Rules.Apply(fix(path))
 	if !ok {
-		vname = &spb.VName{Corpus: c.Corpus, Path: path}
+		vname = &spb.VName{
+			Corpus: c.Corpus,
+			Path:   fix(path),
+		}
 	}
 	return &apb.CompilationUnit_FileInput{
 		VName: vname,
@@ -195,17 +200,35 @@ func (c *Config) fileDataToInfo(fd *apb.FileData) *apb.CompilationUnit_FileInput
 // toolArgs captures the settings expressed by the Go compiler tool and its
 // arguments.
 type toolArgs struct {
-	compile     []string // compiler argument list
-	paramsFile  string   // the response file, if one was used
-	workDir     string   // the compiler's working directory
-	goRoot      string   // the GOROOT path
-	importPath  string   // the import path being compiled
-	includePath string   // an include path, if set
-	outputPath  string   // the output from the compiler
-	toolRoot    string   // root directory for compiler/libraries
-	useCgo      bool     // whether cgo is enabled
-	useRace     bool     // whether the race-detector is enabled
-	sources     []string // source file paths
+	compile     []string          // compiler argument list
+	paramsFile  string            // the response file, if one was used
+	workDir     string            // the compiler's working directory
+	goRoot      string            // the GOROOT path
+	importPath  string            // the import path being compiled
+	includePath string            // an include path, if set
+	outputPath  string            // the output from the compiler
+	toolRoot    string            // root directory for compiler/libraries
+	useCgo      bool              // whether cgo is enabled
+	useRace     bool              // whether the race-detector is enabled
+	pathmap     map[string]string // a mapping from physical path to expected path
+	sources     []string          // source file paths
+
+	// The file paths written by the Go compile actions do not have the names
+	// the compiler expects to match with the package import paths. Instead,
+	// the action creates a symlink forest where the links have the expected
+	// names and the targets of those links are the files as emitted.
+	//
+	// The pathmap allows us to invert this mapping, so that the files stored
+	// in a compilation record have the paths the compiler expects.
+}
+
+// fixPath remaps path through the path map if it is present; or otherwise
+// returns path unmodified.
+func (g *toolArgs) fixPath(path string) string {
+	if fixed, ok := g.pathmap[path]; ok {
+		return fixed
+	}
+	return path
 }
 
 // wantInput reports whether path should be included as a required input.
@@ -225,7 +248,7 @@ func (g *toolArgs) wantInput(path string) bool {
 	// Filter libraries based on the race-detector settings.
 	prefix, tail := splitPrefix(trimmed)
 	switch prefix {
-	case "bin/":
+	case "bin/", "cmd/":
 		return false
 	case "pkg/":
 		sub, _ := splitPrefix(tail)
@@ -240,14 +263,16 @@ func (g *toolArgs) wantInput(path string) bool {
 
 // bazelArgs captures compiler settings extracted from a Bazel response file.
 type bazelArgs struct {
-	paramsFile string   // the path of the params file (if there was one)
-	goRoot     string   // the corpus-relative path of the Go root
-	workDir    string   // the corpus-relative working directory
-	compile    []string // the compiler argument list
-}
+	paramsFile string            // the path of the params file (if there was one)
+	goRoot     string            // the corpus-relative path of the Go root
+	workDir    string            // the corpus-relative working directory
+	compile    []string          // the compiler argument list
+	symlinks   map[string]string // a mapping from original path to linked path
 
-var rootVar = regexp.MustCompile(`export +GOROOT=(?:\$\(pwd\)/)?(.+)$`)
-var cdCommand = regexp.MustCompile(`cd +(.+)$`)
+	// TODO(fromberger): See if we can fix the rule definitions to emit the
+	// output in the correct format, so the symlink forest isn't needed.
+	// See also http://github.com/bazelbuild/rules_go/issues/211.
+}
 
 // parseBazelArgs extracts the compiler command line from the raw argument list
 // passed in by Bazel. The official Go rules currently pass in a response file
@@ -274,18 +299,23 @@ func (c *Config) parseBazelArgs(ctx context.Context, args []string) (*bazelArgs,
 	// assuming a pipeline of the form "cmd1 && cmd2 && ...".
 	// Bazel exports GOROOT and changes the working directory, both of which we
 	// want for processing the compiler's argument list.
+	result.symlinks = make(map[string]string)
 	var last []string
-	for _, line := range strings.Split(string(data), "\n") {
-		for _, cmd := range strings.Split(line, "&&") {
-			trimmed := strings.TrimSpace(cmd)
-			last, _ = shell.Split(trimmed)
-			if m := rootVar.FindStringSubmatch(trimmed); m != nil {
-				result.goRoot = m[1]
-			} else if m := cdCommand.FindStringSubmatch(trimmed); m != nil {
-				result.workDir = m[1]
+	parseShellCommands(data, func(cmd string, args []string) {
+		last = append([]string{cmd}, args...)
+		switch cmd {
+		case "export":
+			if dir := strings.TrimPrefix(args[0], "GOROOT=$(pwd)/"); dir != args[0] {
+				result.goRoot = filepath.Clean(dir)
+			}
+		case "cd":
+			result.workDir = args[0]
+		case "ln":
+			if len(args) == 3 && args[0] == "-s" {
+				result.symlinks[args[1]] = args[2]
 			}
 		}
-	}
+	})
 	result.compile = last
 	return result, nil
 }
@@ -301,6 +331,7 @@ func (c *Config) extractToolArgs(ctx context.Context, args []string) (*toolArgs,
 		paramsFile: parsed.paramsFile,
 		workDir:    parsed.workDir,
 		goRoot:     filepath.Join(parsed.workDir, parsed.goRoot),
+		pathmap:    make(map[string]string),
 	}
 
 	// Process the parsed command-line arguments to find the tool, source, and
@@ -339,7 +370,32 @@ func (c *Config) extractToolArgs(ctx context.Context, args []string) (*toolArgs,
 			result.sources = append(result.sources, arg)
 		}
 	}
+
+	// Reverse-engineer the symlink forest to recover the paths the compiler is
+	// expecting to see so the captured inputs map correctly.
+	for physical, logical := range parsed.symlinks {
+		result.pathmap[cleanLinkTarget(physical)] = trimPrefixDir(logical, parsed.workDir)
+	}
+
 	return result, nil
+}
+
+// parseShellCommands splits input into lines and parses each line as a shell
+// pipeline of the form "cmd1 && cmd2 && ...". Each resulting command and its
+// arguments are passed to f in their order of occurrence in the input.
+func parseShellCommands(input []byte, f func(cmd string, args []string)) {
+	for _, line := range strings.Split(string(input), "\n") {
+		words, _ := shell.Split(strings.TrimSpace(line))
+		for len(words) > 0 {
+			i := stringset.Index("&&", words...)
+			if i < 0 {
+				f(words[0], words[1:])
+				break
+			}
+			f(words[0], words[1:i])
+			words = words[i+1:]
+		}
+	}
 }
 
 // splitPrefix separates the first slash-delimited component of path.
@@ -350,4 +406,23 @@ func splitPrefix(path string) (prefix, tail string) {
 		return path[:i+1], path[i+1:]
 	}
 	return "", path
+}
+
+// cleanLinkTarget removes ".." markers from the head of path, and returns the
+// cleaned remainder.
+func cleanLinkTarget(path string) string {
+	const up = "../"
+	for strings.HasPrefix(path, up) {
+		path = path[len(up):]
+	}
+	return filepath.Clean(path)
+}
+
+// trimPrefixDir makes path relative to dir is possible; otherwise it returns
+// path unmodified.
+func trimPrefixDir(path, dir string) string {
+	if rel, err := filepath.Rel(dir, path); err == nil {
+		return rel
+	}
+	return path
 }

@@ -110,13 +110,16 @@ func init() { println(foo.Foo()) }
 	if got, want := pi.Name, "bar"; got != want {
 		t.Errorf("Package name: got %q, want %q", got, want)
 	}
+	if got, want := pi.VName, unit.VName; !proto.Equal(got, want) {
+		t.Errorf("Base vname: got %+v, want %+v", got, want)
+	}
 	if got, want := pi.ImportPath, "test/bar"; got != want {
 		t.Errorf("Import path: got %q, want %q", got, want)
 	}
 	if dep, ok := pi.Dependencies["test/foo"]; !ok {
 		t.Errorf("Missing dependency for test/foo in %+v", pi.Dependencies)
-	} else if pi.VNames[dep] == nil {
-		t.Errorf("Missing VName for test/foo in %+v", pi.VNames)
+	} else if pi.PackageVName[dep] == nil {
+		t.Errorf("Missing VName for test/foo in %+v", pi.PackageVName)
 	}
 	if got, want := len(pi.Files), len(unit.SourceFile); got != want {
 		t.Errorf("Source files: got %d, want %d", got, want)

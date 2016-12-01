@@ -44,7 +44,7 @@ import (
 	"go/types"
 	"log"
 	"path"
-	"sort"
+	"strconv"
 
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/tools/go/gcexportdata"
@@ -68,7 +68,8 @@ type PackageInfo struct {
 	ImportPath   string                        // The nominal import path of the package
 	Package      *types.Package                // The package for this compilation
 	Dependencies map[string]*types.Package     // Packages imported from dependencies
-	VNames       map[*types.Package]*spb.VName // Resolved package to vname
+	VName        *spb.VName                    // The base vname for this package
+	PackageVName map[*types.Package]*spb.VName // Resolved package to vname
 	FileSet      *token.FileSet                // Location info for the source files
 	Files        []*ast.File                   // The parsed ASTs of the source files
 	SourceText   map[string]string             // The text of the source files, by path
@@ -174,7 +175,8 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 	pi := &PackageInfo{
 		Name:         files[0].Name.Name,
 		ImportPath:   path.Join(unit.VName.Corpus, unit.VName.Path),
-		VNames:       vmap,
+		VName:        unit.VName,
+		PackageVName: vmap,
 		FileSet:      fset,
 		Files:        files,
 		SourceText:   srcs,
@@ -207,13 +209,8 @@ func (pi *PackageInfo) String() string {
 	if pi == nil {
 		return "#<package-info nil>"
 	}
-	var deps []string
-	for ip := range pi.Dependencies {
-		deps = append(deps, ip)
-	}
-	sort.Strings(deps)
-	return fmt.Sprintf("#<package-info %q ip=%q pkg=%p deps=%+s src=%d errs=%d>",
-		pi.Name, pi.ImportPath, pi.Package, deps, len(pi.Files), len(pi.Errors))
+	return fmt.Sprintf("#<package-info %q ip=%q pkg=%p #deps=%d #src=%d #errs=%d>",
+		pi.Name, pi.ImportPath, pi.Package, len(pi.Dependencies), len(pi.Files), len(pi.Errors))
 }
 
 // Signature returns a signature for obj, suitable for use in a vname.
@@ -239,15 +236,32 @@ func (pi *PackageInfo) Signature(obj types.Object) string {
 	return sig
 }
 
-// VName returns a VName for obj relative to that of its package.
-func (pi *PackageInfo) VName(obj types.Object) *spb.VName {
+// ObjectVName returns a VName for obj relative to that of its package.
+func (pi *PackageInfo) ObjectVName(obj types.Object) *spb.VName {
 	sig := pi.Signature(obj)
-	base := pi.VNames[obj.Pkg()]
+	base := pi.PackageVName[obj.Pkg()]
 	if base == nil {
 		return govname.ForBuiltin(sig)
 	}
 	vname := proto.Clone(base).(*spb.VName)
 	vname.Signature = sig
+	return vname
+}
+
+// FileVName returns a VName for path relative to the package base.
+func (pi *PackageInfo) FileVName(path string) *spb.VName {
+	vname := proto.Clone(pi.VName).(*spb.VName)
+	vname.Language = ""
+	vname.Signature = ""
+	vname.Path = path
+	return vname
+}
+
+// AnchorVName returns a VName for the given path and offsets.
+func (pi *PackageInfo) AnchorVName(path string, start, end int) *spb.VName {
+	vname := proto.Clone(pi.VName).(*spb.VName)
+	vname.Signature = "#" + strconv.Itoa(start) + ":" + strconv.Itoa(end)
+	vname.Path = path
 	return vname
 }
 
