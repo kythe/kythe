@@ -14,6 +14,8 @@
 // This file uses the Clang style conventions.
 #include "cxx_extractor_preprocessor_utils.h"
 
+#include <set>
+
 #include "clang/Lex/Preprocessor.h"
 
 namespace kythe {
