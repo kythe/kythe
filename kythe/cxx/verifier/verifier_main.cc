@@ -36,6 +36,10 @@ DEFINE_bool(graphviz, false, "Only dump facts as a GraphViz-compatible graph");
 DEFINE_bool(annotated_graphviz, false, "Solve and annotate a GraphViz graph.");
 DEFINE_string(goal_prefix, "//-", "Denote goals with this string.");
 DEFINE_bool(use_file_nodes, false, "Look for assertions in UTF8 file nodes.");
+DEFINE_string(
+    goal_regex, "",
+    "If nonempty, denote goals with this regex. "
+    "The regex must match the entire line. Expects one capture group.");
 
 int main(int argc, char **argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -53,7 +57,15 @@ Example:
   ::google::InitGoogleLogging(argv[0]);
 
   kythe::verifier::Verifier v;
-  v.set_goal_comment_marker(FLAGS_goal_prefix);
+  if (FLAGS_goal_regex.empty()) {
+    v.SetGoalCommentPrefix(FLAGS_goal_prefix);
+  } else {
+    std::string error;
+    if (!v.SetGoalCommentRegex(FLAGS_goal_regex, &error)) {
+      fprintf(stderr, "While parsing goal regex: %s\n", error.c_str());
+      return 1;
+    }
+  }
 
   if (FLAGS_ignore_dups) {
     v.IgnoreDuplicateFacts();

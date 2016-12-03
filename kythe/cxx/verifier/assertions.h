@@ -27,6 +27,7 @@ class AssertionParserImpl;
 
 #include "kythe/cxx/verifier/assertion_ast.h"
 #include "kythe/cxx/verifier/parser.yy.hh"
+#include "re2/re2.h"
 
 namespace kythe {
 namespace verifier {
@@ -58,19 +59,21 @@ class AssertionParser {
 
   /// \brief Loads a file containing rules in marked comments.
   /// \param filename The filename of the file to load
-  /// \param comment_prefix Lines starting with this prefix are goals (eg "//-")
+  /// \param goal_comment_regex Lines matching this regex are goals. Goals
+  /// will be read from the regex's first capture group.
   /// \return true if there were no errors
   bool ParseInlineRuleFile(const std::string &filename,
-                           const char *comment_prefix);
+                           const RE2 &goal_comment_regex);
 
   /// \brief Loads a string containing rules in marked comments.
   /// \param content The content to parse and load
   /// \param fake_filename Some string to use when printing errors and locations
-  /// \param comment_prefix Lines starting with this prefix are goals (eg "//-")
+  /// \param goal_comment_regex Lines matching this regex are goals. Goals
+  /// will be read from the regex's first capture group.
   /// \return true if there were no errors
   bool ParseInlineRuleString(const std::string &content,
                              const std::string &fake_filename,
-                             const char *comment_prefix);
+                             const RE2 &goal_comment_regex);
 
   /// \brief The name of the current file being read. It is safe to take
   /// the address of this string (which shares the lifetime of this object.)
@@ -111,28 +114,17 @@ class AssertionParser {
  private:
   friend class yy::AssertionParserImpl;
 
-  /// \brief Resets the goal comment token check.
-  /// \sa NextLexCheck
-  void ResetLexCheck();
+  /// \brief Sets the scan buffer to a premarked string and turns on
+  /// tracing.
+  /// \note Implemented in `assertions.lex`.
+  void SetScanBuffer(const std::string &scan_buffer, bool trace_scanning);
 
-  /// \brief Advances the goal comment token check.
-  ///
-  /// It isn't possible to bake goal comments into the lexer because there is
-  /// not a single supported comment syntax across all languages; while many
-  /// do allow BCPL-style // comments, some (like Python) do not. The lexer
-  /// starts each line by calling `NextLexCheck` on each character until
-  /// it determines whether the line begins with a goal comment or not.
-  /// Whitespace (\t ) is ignored.
-  ///
-  /// \param yytext A 1-length string containing the character to check.
-  /// \return 0 on inconclusive; 1 if this is a goal comment; -1 if this is
-  /// an ordinary source line.
-  int NextLexCheck(const char *yytext);
+  /// \brief Resets recorded source text.
+  void ResetLine();
 
   /// \brief Records source text after determining that it does not
   /// begin with a goal comment marker.
   /// \param yytext A 1-length string containing the character to append.
-  /// \sa NextLexCheck
   void AppendToLine(const char *yytext);
 
   /// \brief Called at the end of an ordinary line of source text to resolve
@@ -167,12 +159,13 @@ class AssertionParser {
   void Error(const std::string &message);
 
   /// \brief Initializes the lexer to scan from file_.
-  /// \note Implemented in `assertions.lex`.
-  void ScanBeginFile(bool trace_scanning);
+  /// \param goal_comment_regex regex to identify goal comments.
+  void ScanBeginFile(const RE2 &goal_comment_regex, bool trace_scanning);
 
   /// \brief Initializes the lexer to scan from a string.
-  /// \note Implemented in `assertions.lex`.
-  void ScanBeginString(const std::string &data, bool trace_scanning);
+  /// \param goal_comment_regex regex to identify goal comments.
+  void ScanBeginString(const RE2 &goal_comment_regex, const std::string &data,
+                       bool trace_scanning);
 
   /// \brief Handles end-of-scan actions and destroys any buffers.
   /// \note Implemented in `assertions.lex`.
@@ -317,10 +310,6 @@ class AssertionParser {
   /// Note that location records will have internal pointers to these strings.
   std::deque<std::string> files_;
   std::string line_;
-  /// The comment prefix we're looking for.
-  std::string lex_check_against_;
-  /// How many characters into lex_check_against_ we've seen.
-  int lex_check_buffer_size_;
   /// Did we encounter errors during lexing or parsing?
   bool had_errors_ = false;
   /// Save the end-of-file location from the lexer.

@@ -42,6 +42,7 @@ cc_library(
     ],
     deps = [
         "@com_github_google_glog//:glog",
+        "@com_googlesource_code_re2//:re2",
     ],
 )
 
@@ -70,6 +71,7 @@ cc_library(
         "//third_party/proto:protobuf",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
+        "@com_googlesource_code_re2//:re2",
     ],
 )
 

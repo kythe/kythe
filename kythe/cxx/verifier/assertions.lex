@@ -48,15 +48,9 @@ blank [ \t]
 %}
 
 <INITIAL>{
-\n       yylloc->lines(yyleng); yylloc->step(); context.ResetLexCheck();
-.        {
-            int lex_check = context.NextLexCheck(yytext);
-            if (lex_check < 0) {
-              BEGIN(IGNORED);
-            } else if (lex_check > 0) {
-              BEGIN(NORMAL);
-            }
-         }
+\n       yylloc->lines(yyleng); yylloc->step(); context.ResetLine();
+"-"      --loc_ofs; yylloc->columns(-1); BEGIN(NORMAL);
+"."      --loc_ofs; yylloc->columns(-1); BEGIN(IGNORED);
 }  /* INITIAL state */
 
 <IGNORED>{
@@ -77,7 +71,7 @@ blank [ \t]
 \n       {
           yylloc->lines(yyleng);
           yylloc->step();
-          context.ResetLexCheck();
+          context.ResetLine();
           BEGIN(INITIAL);
          }
 "("      return yy::AssertionParserImpl::token::LPAREN;
@@ -119,28 +113,16 @@ blank [ \t]
 namespace kythe {
 namespace verifier {
 
-static YY_BUFFER_STATE stringBufferState = nullptr;
-static std::string *kNoFile = new std::string("no-file");
+static YY_BUFFER_STATE string_buffer_state = nullptr;
 
-void AssertionParser::ScanBeginString(const std::string &data,
-                                      bool trace_scanning) {
+void AssertionParser::SetScanBuffer(const std::string& scan_buffer,
+                                    bool trace_scanning) {
   BEGIN(INITIAL);
   loc_ofs = 0;
   yy_flex_debug = trace_scanning;
-  assert(stringBufferState == nullptr);
-  stringBufferState = yy_scan_bytes(data.c_str(), data.size());
-}
-
-void AssertionParser::ScanBeginFile(bool trace_scanning) {
-  BEGIN(INITIAL);
-  loc_ofs = 0;
-  yy_flex_debug = trace_scanning;
-  if (file().empty() || file() == "-") {
-    yyin = stdin;
-  } else if (!(yyin = fopen(file().c_str(), "r"))) {
-    Error("cannot open " + file() + ": " + strerror(errno));
-    exit(EXIT_FAILURE);
-  }
+  CHECK(string_buffer_state == nullptr);
+  // yy_scan_bytes makes a copy of its buffer.
+  string_buffer_state = yy_scan_bytes(scan_buffer.c_str(), scan_buffer.size());
 }
 
 void AssertionParser::ScanEnd(const yy::location &eof_loc,
@@ -149,12 +131,8 @@ void AssertionParser::ScanEnd(const yy::location &eof_loc,
   if (!ResolveLocations(eof_loc, eof_loc_ofs + 1, true)) {
     Error(eof_loc, "could not resolve all locations at end of file");
   }
-  if (stringBufferState) {
-    yy_delete_buffer(stringBufferState);
-    stringBufferState = nullptr;
-  } else {
-    fclose(yyin);
-  }
+  yy_delete_buffer(string_buffer_state);
+  string_buffer_state = nullptr;
 }
 
 }

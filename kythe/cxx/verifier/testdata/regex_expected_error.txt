@@ -1,0 +1,2 @@
+Could not verify all goals. The furthest we reached was:
+  kythe/cxx/verifier/testdata/regex_input.txt:2:6-2:17 Aaa bbb Ccc

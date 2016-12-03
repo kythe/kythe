@@ -77,6 +77,14 @@ token. Long goals may be split across multiple lines, each of which must begin
 with the comment token (after zero or more tabs or spaces). Within the assertion
 language, the verifier is whitespace insensitive.
 
+You may also use a regular expression (using
+https://github.com/google/re2/wiki/Syntax[RE2 syntax]) to specify which lines
+include goals and which parts of those lines to include. Your regex must match
+the entire line and must contain a single capture group. The default goal
+matching behavior uses the regex `\s*\/\/\-(.*)`. To specify an alternate
+regex--for example, one that requires goals to be bracketed--use
+`--goal_regex='\s*\/\/\-\s*\[(.*)\]'`.
+
 === Literal strings
 
 The verifier permits literal strings to be specified with C-style escapes:

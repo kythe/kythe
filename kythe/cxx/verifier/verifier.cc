@@ -600,6 +600,36 @@ Verifier::Verifier(bool trace_lex, bool trace_parse)
   ordinal_id_ = IdentifierFor(builtin_location_, "/kythe/ordinal");
   file_id_ = IdentifierFor(builtin_location_, "file");
   text_id_ = IdentifierFor(builtin_location_, "/kythe/text");
+  SetGoalCommentPrefix("//-");
+}
+
+void Verifier::SetGoalCommentPrefix(const std::string &it) {
+  std::string error;
+  auto escaped = RE2::QuoteMeta(it);
+  CHECK(SetGoalCommentRegex("\\s*" + escaped + "(.*)", &error)) << error;
+}
+
+bool Verifier::SetGoalCommentRegex(const std::string &regex,
+                                   std::string *error) {
+  auto re2 = std::unique_ptr<RE2>(new RE2(regex));
+  if (re2->error_code() != RE2::NoError) {
+    if (error) {
+      *error = re2->error();
+      return false;
+    }
+  }
+  if (re2->NumberOfCapturingGroups() != 1) {
+    if (error) {
+      *error = "Wrong number of capture groups in goal comment regex ";
+      // This is useful to show, since the shell might unexpectedly shred
+      // regexes.
+      error->append(regex);
+      error->append("(want 1).");
+      return false;
+    }
+  }
+  goal_comment_regex_ = std::move(re2);
+  return true;
 }
 
 bool Verifier::LoadInlineProtoFile(const std::string &file_data) {
@@ -613,17 +643,12 @@ bool Verifier::LoadInlineProtoFile(const std::string &file_data) {
   for (int i = 0; i < entries.entries_size(); ++i) {
     AssertSingleFact(kDefaultDatabase, i, entries.entries(i));
   }
-  bool parsed = parser_.ParseInlineRuleString(file_data, *kStandardIn, "#-");
-  if (!parsed) {
-    return false;
-  }
-  return true;
+  return parser_.ParseInlineRuleString(file_data, *kStandardIn,
+                                       "\\s*\\#\\-(.*)");
 }
 
 bool Verifier::LoadInlineRuleFile(const std::string &filename) {
-  // TODO(zarko): figure out comment prefix from file extension
-  bool parsed =
-      parser_.ParseInlineRuleFile(filename, goal_comment_marker_.c_str());
+  bool parsed = parser_.ParseInlineRuleFile(filename, *goal_comment_regex_);
   if (!parsed) {
     return false;
   }
@@ -635,7 +660,7 @@ bool Verifier::LoadInMemoryRuleFile(AstNode *vname, Symbol text) {
   vname->Dump(symbol_table_, &printer);
   fake_files_[printer.str()] = text;
   return parser_.ParseInlineRuleString(symbol_table_.text(text), printer.str(),
-                                       goal_comment_marker_.c_str());
+                                       *goal_comment_regex_);
 }
 
 void Verifier::IgnoreDuplicateFacts() { ignore_dups_ = true; }
@@ -768,12 +793,12 @@ void Verifier::DumpErrorGoal(size_t group, size_t index) {
   }
   printer.Print(":");
   if (goal_begin.filename) {
-    printer.Print(std::to_string(goal_begin.line + 1) + ":" +
+    printer.Print(std::to_string(goal_begin.line) + ":" +
                   std::to_string(goal_begin.column));
   }
   printer.Print("-");
   if (goal_end.filename) {
-    printer.Print(std::to_string(goal_end.line + 1) + ":" +
+    printer.Print(std::to_string(goal_end.line) + ":" +
                   std::to_string(goal_end.column));
   }
   bool printed_goal = false;

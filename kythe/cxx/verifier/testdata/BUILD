@@ -12,6 +12,19 @@ sh_test(
 )
 
 sh_test(
+    name = "regex",
+    size = "small",
+    srcs = [
+        "test_verifier_regex.sh",
+    ],
+    data = [
+        "regex_expected_error.txt",
+        "regex_input.txt",
+        "//kythe/cxx/verifier",
+    ],
+)
+
+sh_test(
     name = "outputs",
     size = "small",
     srcs = [

@@ -159,10 +159,12 @@ class Verifier {
   /// solving.
   size_t highest_goal_reached() const { return highest_goal_reached_; }
 
-  /// \brief Change the prefix used to identify goals in source text.
-  void set_goal_comment_marker(const std::string &it) {
-    goal_comment_marker_ = it;
-  }
+  /// \brief Change the regex used to identify goals in source text.
+  /// \return false on failure.
+  bool SetGoalCommentRegex(const std::string &it, std::string *error);
+
+  /// \brief Use a prefix to match goals in source text.
+  void SetGoalCommentPrefix(const std::string &it);
 
   /// \brief Look for assertions in file node text.
   void UseFileNodes() { assertions_from_file_nodes_ = true; }
@@ -261,11 +263,12 @@ class Verifier {
   /// Maps from pretty-printed vnames to (parsed) file node text.
   std::map<std::string, Symbol> fake_files_;
 
-  /// The string to look for at the beginning of a goal comment.
-  std::string goal_comment_marker_ = "//-";
-
   /// Read assertions from file nodes.
   bool assertions_from_file_nodes_ = false;
+
+  /// The regex to look for to identify goal comments. Should have one match
+  /// group.
+  std::unique_ptr<RE2> goal_comment_regex_;
 };
 
 }  // namespace verifier

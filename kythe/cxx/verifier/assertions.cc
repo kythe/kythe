@@ -73,12 +73,11 @@ void App::Dump(const SymbolTable &symbol_table, PrettyPrinter *printer) {
 
 bool AssertionParser::ParseInlineRuleString(const std::string &content,
                                             const std::string &fake_filename,
-                                            const char *comment_prefix) {
-  lex_check_against_ = comment_prefix;
+                                            const RE2 &goal_comment_regex) {
   had_errors_ = false;
   files_.push_back(fake_filename);
-  ResetLexCheck();
-  ScanBeginString(content, trace_lex_);
+  ResetLine();
+  ScanBeginString(goal_comment_regex, content, trace_lex_);
   yy::AssertionParserImpl parser(*this);
   parser.set_debug_level(trace_parse_);
   int result = parser.parse();
@@ -87,12 +86,11 @@ bool AssertionParser::ParseInlineRuleString(const std::string &content,
 }
 
 bool AssertionParser::ParseInlineRuleFile(const std::string &filename,
-                                          const char *comment_prefix) {
-  lex_check_against_ = comment_prefix;
+                                          const RE2 &goal_comment_regex) {
   files_.push_back(filename);
   had_errors_ = false;
-  ResetLexCheck();
-  ScanBeginFile(trace_lex_);
+  ResetLine();
+  ScanBeginFile(goal_comment_regex, trace_lex_);
   yy::AssertionParserImpl parser(*this);
   parser.set_debug_level(trace_parse_);
   int result = parser.parse();
@@ -152,10 +150,7 @@ bool AssertionParser::Unescape(const char *yytext, std::string *out) {
   return (current == '\"' && *yytext == '\0');
 }
 
-void AssertionParser::ResetLexCheck() {
-  lex_check_buffer_size_ = 0;
-  line_.clear();
-}
+void AssertionParser::ResetLine() { line_.clear(); }
 
 void AssertionParser::PushLocationSpec(const std::string &for_token) {
   location_spec_stack_.emplace_back(LocationSpec{for_token, -1, false, true});
@@ -434,26 +429,11 @@ bool AssertionParser::ResolveLocations(const yy::location &end_of_line,
     }
   }
   unresolved_locations_.swap(succ_lines);
-  ResetLexCheck();
+  ResetLine();
   return was_ok;
 }
 
 void AssertionParser::AppendToLine(const char *yytext) { line_.append(yytext); }
-
-int AssertionParser::NextLexCheck(const char *yytext) {
-  char ch = yytext[0];
-  size_t max_len = lex_check_against_.size();
-  if (max_len == 0) {
-    return 1;
-  }
-  line_.push_back(ch);
-  if (lex_check_buffer_size_ == 0 && (ch == '\t' || ch == ' ')) {
-    return 0;
-  } else if (ch == lex_check_against_[lex_check_buffer_size_++]) {
-    return static_cast<size_t>(lex_check_buffer_size_) == max_len ? 1 : 0;
-  }
-  return -1;
-}
 
 void AssertionParser::PushNode(AstNode *node) { node_stack_.push_back(node); }
 
@@ -490,6 +470,72 @@ void AssertionParser::ExitGoalGroup(const yy::location &location) {
     return;
   }
   inside_goal_group_ = false;
+}
+
+void AssertionParser::ScanBeginString(const RE2 &goal_comment_regex,
+                                      const std::string &data,
+                                      bool trace_scanning) {
+  // Preprocess the input by adding a - to the left of every goal line and a
+  // . to the left of every non-goal line. From every goal line remove any
+  // character that is not part of the goal regex's capture group. This means
+  // that we don't have to push RE2 deeper into the lexer; it also preserves
+  // file locations for diagnostics (after taking into account the constant
+  // 1 offset).
+  std::string yy_buf;
+  size_t next_line_begin = 0;
+  auto append_line = [&](size_t line_end) {
+    re2::StringPiece match_region;
+    size_t line_length = line_end - next_line_begin;
+    auto is_goal = RE2::FullMatch(
+        re2::StringPiece(data.data() + next_line_begin, line_length),
+        goal_comment_regex, &match_region);
+    if (is_goal == 1) {
+      yy_buf.push_back('-');
+      size_t pre_pad = match_region.data() - data.data() - next_line_begin;
+      for (size_t s = 0; s < pre_pad; ++s) {
+        yy_buf.push_back(' ');
+      }
+      yy_buf.append(match_region.data(), match_region.size());
+      size_t post_pad = line_length - pre_pad - match_region.size();
+      for (size_t s = 0; s < post_pad; ++s) {
+        yy_buf.push_back(' ');
+      }
+    } else {
+      yy_buf.push_back('.');
+      yy_buf.append(data, next_line_begin, line_length);
+    }
+    if (line_end != data.size()) {
+      yy_buf.push_back('\n');
+    }
+    next_line_begin = line_end + 1;
+  };
+  auto endline = data.find('\n');
+  while (endline != std::string::npos) {
+    append_line(endline);
+    endline = data.find('\n', next_line_begin);
+  }
+  append_line(data.size());
+  SetScanBuffer(yy_buf, trace_scanning);
+}
+
+void AssertionParser::ScanBeginFile(const RE2 &goal_comment_regex,
+                                    bool trace_scanning) {
+  std::string buffer;
+  if (file().empty() || file() == "-") {
+    Error("will not read goals from stdin");
+    exit(EXIT_FAILURE);
+  }
+  FILE *input = ::fopen(file().c_str(), "r");
+  CHECK(input != nullptr) << "Couldn't open " << file();
+  CHECK(!::fseek(input, 0, SEEK_END));
+  auto file_len = ::ftell(input);
+  CHECK(file_len >= 0);
+  CHECK(!::fseek(input, 0, SEEK_SET));
+  buffer.resize(file_len);
+  CHECK(::fread(const_cast<char *>(buffer.data()), 1, file_len, input) ==
+        file_len);
+  ::fclose(input);
+  ScanBeginString(goal_comment_regex, buffer, trace_scanning);
 }
 
 }  // namespace verifier
