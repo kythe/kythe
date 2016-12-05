@@ -37,24 +37,25 @@ INDEX_PATH_WITHOUT_MACRO=$(ls -1 "${OUT_DIR}"/without/*.kindex)
 "${KINDEX_TOOL}" -suppress_details -explode "${INDEX_PATH_WITHOUT_MACRO}"
 
 # Remove lines that will change depending on the machine the test is run on.
-sed -i -e '/-target/,+1d' "${INDEX_PATH_WITH_MACRO}_UNIT"
-sed -i -e '/signature/,+d' "${INDEX_PATH_WITH_MACRO}_UNIT"
-sed -i -e '/-target/,+1d' "${INDEX_PATH_WITHOUT_MACRO}_UNIT"
-sed -i -e '/signature/,+d' "${INDEX_PATH_WITHOUT_MACRO}_UNIT"
+skip_inplace "-target" 1 "${INDEX_PATH_WITH_MACRO}_UNIT"
+skip_inplace "signature" 0 "${INDEX_PATH_WITH_MACRO}_UNIT"
+skip_inplace "-target" 1 "${INDEX_PATH_WITHOUT_MACRO}_UNIT"
+skip_inplace "signature" 0 "${INDEX_PATH_WITHOUT_MACRO}_UNIT"
 
 EC_HASH=$(sed -ne '/^entry_context:/ {s/.*entry_context: \"\(.*\)\"$/\1/; p;}' \
     "${INDEX_PATH_WITH_MACRO}_UNIT")
 sed "s/EC_HASH/${EC_HASH}/g
 s|TEST_CWD|${PWD}/|" \
     "${BASE_DIR}/main_source_file_env_dep_with.UNIT" | \
-    sed -e '/-target/,+1d' | \
-    sed -e '/signature/,+d' | \
+    skip "-target" 1 |
+    skip "signature" 0 |
     diff - "${INDEX_PATH_WITH_MACRO}_UNIT"
+
 EC_HASH=$(sed -ne '/^entry_context:/ {s/.*entry_context: \"\(.*\)\"$/\1/; p;}' \
     "${INDEX_PATH_WITHOUT_MACRO}_UNIT")
 sed "s/EC_HASH/${EC_HASH}/g
 s|TEST_CWD|${PWD}/|" \
     "${BASE_DIR}/main_source_file_env_dep_without.UNIT" | \
-    sed -e '/-target/,+1d' | \
-    sed -e '/signature/,+d' | \
+    skip "-target" 1 |
+    skip "signature" 0 |
     diff - "${INDEX_PATH_WITHOUT_MACRO}_UNIT"

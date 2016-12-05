@@ -26,9 +26,10 @@ INDEX_PATH=$(ls -1 "${OUT_DIR}"/*.kindex)
 "${KINDEX_TOOL}" -canonicalize_hashes -suppress_details -explode "${INDEX_PATH}"
 
 # Remove lines that will change depending on the machine the test is run on.
-sed -i -e '/-target/,+1d' "${INDEX_PATH}_UNIT"
-sed -i -e '/signature/,+d' "${INDEX_PATH}_UNIT"
+skip_inplace "-target" 1 "${INDEX_PATH}_UNIT"
+skip_inplace "signature" 0 "${INDEX_PATH}_UNIT"
+
 sed "s|TEST_CWD|${PWD}/|" "${BASE_DIR}/metadata.UNIT${PF_SUFFIX}" | \
-    sed -e '/-target/,+1d' | \
-    sed -e '/signature/,+d' | \
+    skip "-target" 1 |
+    skip "signature" 0 |
     diff - "${INDEX_PATH}_UNIT"
