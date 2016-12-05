@@ -20,7 +20,9 @@
 #include "google/protobuf/text_format.h"
 
 #include "assertions.h"
+#include "kythe/cxx/common/kythe_uri.h"
 #include "kythe/proto/storage.pb.h"
+#include "kythe/proto/xref.pb.h"
 
 namespace kythe {
 namespace verifier {
@@ -600,6 +602,40 @@ Verifier::Verifier(bool trace_lex, bool trace_parse)
   ordinal_id_ = IdentifierFor(builtin_location_, "/kythe/ordinal");
   file_id_ = IdentifierFor(builtin_location_, "file");
   text_id_ = IdentifierFor(builtin_location_, "/kythe/text");
+  code_id_ = IdentifierFor(builtin_location_, "/kythe/code");
+  marked_source_child_id_ =
+      IdentifierFor(builtin_location_, "/kythe/edge/child");
+  marked_source_box_id_ = IdentifierFor(builtin_location_, "BOX");
+  marked_source_type_id_ = IdentifierFor(builtin_location_, "TYPE");
+  marked_source_parameter_id_ = IdentifierFor(builtin_location_, "PARAMETER");
+  marked_source_identifier_id_ = IdentifierFor(builtin_location_, "IDENTIFIER");
+  marked_source_context_id_ = IdentifierFor(builtin_location_, "CONTEXT");
+  marked_source_initializer_id_ =
+      IdentifierFor(builtin_location_, "INITIALIZER");
+  marked_source_parameter_lookup_by_param_id_ =
+      IdentifierFor(builtin_location_, "PARAMETER_LOOKUP_BY_PARAM");
+  marked_source_lookup_by_param_id_ =
+      IdentifierFor(builtin_location_, "LOOKUP_BY_PARAM");
+  marked_source_parameter_lookup_by_param_with_defaults_id_ = IdentifierFor(
+      builtin_location_, "PARAMETER_LOOKUP_BY_PARAM_WITH_DEFAULTS");
+  marked_source_kind_id_ = IdentifierFor(builtin_location_, "/kythe/kind");
+  marked_source_pre_text_id_ =
+      IdentifierFor(builtin_location_, "/kythe/pre_text");
+  marked_source_post_child_text_id_ =
+      IdentifierFor(builtin_location_, "/kythe/post_child_text");
+  marked_source_post_text_id_ =
+      IdentifierFor(builtin_location_, "/kythe/post_text");
+  marked_source_lookup_index_id_ =
+      IdentifierFor(builtin_location_, "/kythe/lookup_index");
+  marked_source_default_children_count_id_ =
+      IdentifierFor(builtin_location_, "/kythe/default_children_count");
+  marked_source_add_final_list_token_id_ =
+      IdentifierFor(builtin_location_, "/kythe/add_final_list_token");
+  marked_source_link_id_ = IdentifierFor(builtin_location_, "/kythe/edge/link");
+  marked_source_true_id_ = IdentifierFor(builtin_location_, "true");
+  marked_source_code_edge_id_ =
+      IdentifierFor(builtin_location_, "/kythe/edge/code");
+  marked_source_false_id_ = IdentifierFor(builtin_location_, "false");
   SetGoalCommentPrefix("//-");
 }
 
@@ -641,7 +677,9 @@ bool Verifier::LoadInlineProtoFile(const std::string &file_data) {
     return false;
   }
   for (int i = 0; i < entries.entries_size(); ++i) {
-    AssertSingleFact(kDefaultDatabase, i, entries.entries(i));
+    if (!AssertSingleFact(kDefaultDatabase, i, entries.entries(i))) {
+      return false;
+    }
   }
   return parser_.ParseInlineRuleString(file_data, *kStandardIn,
                                        "\\s*\\#\\-(.*)");
@@ -1110,12 +1148,115 @@ AstNode *Verifier::ConvertVName(const yy::location &loc,
   return new (&arena_) App(vname_id_, tuple);
 }
 
-void Verifier::AssertSingleFact(std::string *database, unsigned int fact_id,
+AstNode *Verifier::NewUniqueVName(const yy::location &loc) {
+  return MakePredicate(
+      loc, vname_id_,
+      {new (&arena_) Identifier(loc, symbol_table_.unique()), empty_string_id_,
+       empty_string_id_, empty_string_id_, empty_string_id_});
+}
+
+AstNode *Verifier::ConvertCodeFact(const yy::location &loc,
+                                   const google::protobuf::string &code_data) {
+  proto::MarkedSource marked_source;
+  if (!marked_source.ParseFromString(code_data)) {
+    std::cerr << loc << ": can't parse code protobuf" << std::endl;
+    return nullptr;
+  }
+  return ConvertMarkedSource(loc, marked_source);
+}
+
+AstNode *Verifier::ConvertMarkedSource(const yy::location &loc,
+                                       const proto::MarkedSource &source) {
+  // Explode each MarkedSource message into a node with an unutterable vname.
+  auto *vname = NewUniqueVName(loc);
+  for (int child = 0; child < source.child_size(); ++child) {
+    auto *child_vname = ConvertMarkedSource(loc, source.child(child));
+    if (child_vname == nullptr) {
+      return nullptr;
+    }
+    facts_.push_back(MakePredicate(
+        loc, fact_id_,
+        {vname, marked_source_child_id_, child_vname, ordinal_id_,
+         IdentifierFor(builtin_location_, std::to_string(child))}));
+  }
+  for (const auto &link : source.link()) {
+    if (link.definition_size() != 1) {
+      std::cerr << loc << ": bad link: want one definition" << std::endl;
+      return nullptr;
+    }
+    auto from_uri = URI::FromString(link.definition(0));
+    if (!from_uri.first) {
+      std::cerr << loc << ": bad URI in link" << std::endl;
+      return nullptr;
+    }
+    facts_.push_back(MakePredicate(
+        loc, fact_id_, {vname, marked_source_link_id_,
+                        ConvertVName(loc, from_uri.second.v_name()), root_id_,
+                        empty_string_id_}));
+  }
+  auto emit_fact = [&](AstNode *fact_id, AstNode *fact_value) {
+    facts_.push_back(MakePredicate(
+        loc, fact_id_,
+        {vname, empty_string_id_, empty_string_id_, fact_id, fact_value}));
+  };
+  switch (source.kind()) {
+    case proto::MarkedSource::BOX:
+      emit_fact(marked_source_kind_id_, marked_source_box_id_);
+      break;
+    case proto::MarkedSource::TYPE:
+      emit_fact(marked_source_kind_id_, marked_source_type_id_);
+      break;
+    case proto::MarkedSource::PARAMETER:
+      emit_fact(marked_source_kind_id_, marked_source_parameter_id_);
+      break;
+    case proto::MarkedSource::IDENTIFIER:
+      emit_fact(marked_source_kind_id_, marked_source_identifier_id_);
+      break;
+    case proto::MarkedSource::CONTEXT:
+      emit_fact(marked_source_kind_id_, marked_source_context_id_);
+      break;
+    case proto::MarkedSource::INITIALIZER:
+      emit_fact(marked_source_kind_id_, marked_source_initializer_id_);
+      break;
+    case proto::MarkedSource::PARAMETER_LOOKUP_BY_PARAM:
+      emit_fact(marked_source_kind_id_,
+                marked_source_parameter_lookup_by_param_id_);
+      break;
+    case proto::MarkedSource::LOOKUP_BY_PARAM:
+      emit_fact(marked_source_kind_id_, marked_source_lookup_by_param_id_);
+      break;
+    case proto::MarkedSource::PARAMETER_LOOKUP_BY_PARAM_WITH_DEFAULTS:
+      emit_fact(marked_source_kind_id_,
+                marked_source_parameter_lookup_by_param_with_defaults_id_);
+      break;
+    // The proto enum is polluted with enumerators like
+    // MarkedSource_Kind_MarkedSource_Kind_INT_MIN_SENTINEL_DO_NOT_USE_.
+    default:
+      std::cerr << loc << ": unknown source kind for MarkedSource" << std::endl;
+  }
+  emit_fact(marked_source_pre_text_id_, IdentifierFor(loc, source.pre_text()));
+  emit_fact(marked_source_post_child_text_id_,
+            IdentifierFor(loc, source.post_child_text()));
+  emit_fact(marked_source_post_text_id_,
+            IdentifierFor(loc, source.post_text()));
+  emit_fact(marked_source_lookup_index_id_,
+            IdentifierFor(loc, std::to_string(source.lookup_index())));
+  emit_fact(
+      marked_source_default_children_count_id_,
+      IdentifierFor(loc, std::to_string(source.default_children_count())));
+  emit_fact(marked_source_add_final_list_token_id_,
+            source.add_final_list_token() ? marked_source_true_id_
+                                          : marked_source_false_id_);
+  return vname;
+}
+
+bool Verifier::AssertSingleFact(std::string *database, unsigned int fact_id,
                                 const kythe::proto::Entry &entry) {
   yy::location loc;
   loc.initialize(database);
   loc.begin.line = fact_id;
   loc.end.line = fact_id;
+  Symbol code_symbol = code_id_->AsIdentifier()->symbol();
   AstNode **values = (AstNode **)arena_.New(sizeof(AstNode *) * 5);
   values[0] =
       entry.has_source() ? ConvertVName(loc, entry.source()) : empty_string_id_;
@@ -1123,6 +1264,7 @@ void Verifier::AssertSingleFact(std::string *database, unsigned int fact_id,
   // transition, but also support the new dot-separated edge kinds that serve
   // the same purpose.
   auto dot_pos = entry.edge_kind().rfind('.');
+  bool is_code = false;
   if (dot_pos != std::string::npos && dot_pos > 0 &&
       dot_pos < entry.edge_kind().size() - 1) {
     values[1] = IdentifierFor(loc, entry.edge_kind().substr(0, dot_pos));
@@ -1135,18 +1277,34 @@ void Verifier::AssertSingleFact(std::string *database, unsigned int fact_id,
     values[3] = entry.fact_name().empty()
                     ? empty_string_id_
                     : IdentifierFor(loc, entry.fact_name());
-    values[4] = entry.fact_value().empty()
-                    ? empty_string_id_
-                    : IdentifierFor(loc, entry.fact_value());
+    if (values[3]->AsIdentifier()->symbol() == code_symbol &&
+        convert_marked_source_) {
+      // Code facts are turned into subgraphs, so this fact entry will turn
+      // into an edge entry.
+      if ((values[2] = ConvertCodeFact(loc, entry.fact_value())) == nullptr) {
+        return false;
+      }
+      values[1] = marked_source_code_edge_id_;
+      values[3] = root_id_;
+      values[4] = empty_string_id_;
+      is_code = true;
+    } else {
+      values[4] = entry.fact_value().empty()
+                      ? empty_string_id_
+                      : IdentifierFor(loc, entry.fact_value());
+    }
   }
-  values[2] =
-      entry.has_target() ? ConvertVName(loc, entry.target()) : empty_string_id_;
+  if (!is_code) {
+    values[2] = entry.has_target() ? ConvertVName(loc, entry.target())
+                                   : empty_string_id_;
+  }
 
   AstNode *tuple = new (&arena_) Tuple(loc, 5, values);
   AstNode *fact = new (&arena_) App(fact_id_, tuple);
 
   database_prepared_ = false;
   facts_.push_back(fact);
+  return true;
 }
 
 void Verifier::DumpAsJson() {
@@ -1238,10 +1396,6 @@ void Verifier::DumpAsDot() {
       return std::string();
     }
   };
-  AstNode *kind_id = IdentifierFor(builtin_location_, "/kythe/node/kind");
-  AstNode *anchor_id = IdentifierFor(builtin_location_, "anchor");
-  AstNode *file_id = IdentifierFor(builtin_location_, "file");
-  AstNode *text_id = IdentifierFor(builtin_location_, "/kythe/text");
   std::sort(facts_.begin(), facts_.end(), GraphvizSortOrder);
   FileHandlePrettyPrinter printer(stdout);
   QuoteEscapingPrettyPrinter quote_printer(printer);
@@ -1269,11 +1423,11 @@ void Verifier::DumpAsDot() {
           last_fact = i;
           break;
         }
-        if (EncodedIdentEqualTo(nt->element(3), kind_id)) {
-          if (EncodedIdentEqualTo(nt->element(4), anchor_id)) {
+        if (EncodedIdentEqualTo(nt->element(3), kind_id_)) {
+          if (EncodedIdentEqualTo(nt->element(4), anchor_id_)) {
             // Keep on scanning to find the end of the fact block.
             is_anchor_node = true;
-          } else if (EncodedIdentEqualTo(nt->element(4), file_id)) {
+          } else if (EncodedIdentEqualTo(nt->element(4), file_id_)) {
             is_file_node = true;
           }
         }
@@ -1301,8 +1455,11 @@ void Verifier::DumpAsDot() {
           printer.Print("<TR><TD>");
           nt->element(3)->Dump(symbol_table_, &html_printer);
           printer.Print("</TD><TD>");
-          if (is_file_node && EncodedIdentEqualTo(nt->element(3), text_id)) {
+          if (is_file_node && EncodedIdentEqualTo(nt->element(3), text_id_)) {
             // Don't clutter the graph with file content.
+            printer.Print("...");
+          } else if (EncodedIdentEqualTo(nt->element(3), code_id_)) {
+            // Don't print encoded proto data.
             printer.Print("...");
           } else {
             nt->element(4)->Dump(symbol_table_, &html_printer);

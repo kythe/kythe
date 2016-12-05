@@ -400,6 +400,24 @@ be more convenient than providing that content as actual source files. For
 example, an indexer may synthesize file nodes that never existed in files in
 the first place.
 
+=== Making assertions about tree-valued facts
+
+Certain facts have tree-shaped values. These are encoded in various ways defined
+by the schema. By default, the verifier will truncate these values to unique but
+unutterable symbols. If you want to expand these facts into subgraphs, use the
+appropriate `--convert_` flag. (As of the time this was written, there is only
+one such flag, `--convert_marked_source`.)
+
+==== `MarkedSource`
+
+`MarkedSource` values are converted to subgraphs by creating new nodes for each
+`MarkedSource` message. These nodes are given unique but unutterable VNames.
+The original fact with the `MarkedSource` value becomes an edge with the same
+name. Each scalar field of the message becomes a fact on the relevant node.
+Links are decoded to VNames and become unordered `link` edges. Children are
+recursively converted and connected from parent to child with ordered
+`child.N` edges.
+
 === Return code
 
 If the database passes all well-formedness checks and all rules could be

@@ -36,12 +36,7 @@ void EVar::Dump(const SymbolTable &symbol_table, PrettyPrinter *printer) {
 }
 
 void Identifier::Dump(const SymbolTable &symbol_table, PrettyPrinter *printer) {
-  const auto &text = symbol_table.text(symbol_);
-  if (text.size()) {
-    printer->Print(text);
-  } else {
-    printer->Print("\"\"");
-  }
+  printer->Print(symbol_table.PrettyText(symbol_));
 }
 
 void Range::Dump(const SymbolTable &symbol_table, PrettyPrinter *printer) {
@@ -355,8 +350,9 @@ bool AssertionParser::ResolveLocations(const yy::location &end_of_line,
     if (record.use_line_number &&
         (record.line_number != end_of_line.begin.line)) {
       if (end_of_file) {
-        Error(location, token + ":" + std::to_string(record.line_number) +
-                            " not found before end of file.");
+        Error(location,
+              token + ":" + std::to_string(record.line_number) +
+                  " not found before end of file.");
         was_ok = false;
       } else {
         succ_lines.push_back(record);
@@ -386,8 +382,9 @@ bool AssertionParser::ResolveLocations(const yy::location &end_of_line,
         ++match_number;
       }
       if (match_number != record.match_number) {
-        Error(location, token + " has no match #" +
-                            std::to_string(record.match_number) + ".");
+        Error(location,
+              token + " has no match #" + std::to_string(record.match_number) +
+                  ".");
         was_ok = false;
         continue;
       }
@@ -419,12 +416,13 @@ bool AssertionParser::ResolveLocations(const yy::location &end_of_line,
                                         "." + std::to_string(col),
                                     evar, Inspection::Kind::IMPLICIT);
         }
-        AppendGoal(group_id, verifier_.MakePredicate(
-                                 location, verifier_.eq_id(),
-                                 {new (verifier_.arena())
-                                      Range(location, line_start + col,
-                                            line_start + col + token.size()),
-                                  evar}));
+        AppendGoal(
+            group_id,
+            verifier_.MakePredicate(
+                location, verifier_.eq_id(),
+                {new (verifier_.arena()) Range(location, line_start + col,
+                                               line_start + col + token.size()),
+                 evar}));
         break;
     }
   }

@@ -40,6 +40,8 @@ DEFINE_string(
     goal_regex, "",
     "If nonempty, denote goals with this regex. "
     "The regex must match the entire line. Expects one capture group.");
+DEFINE_bool(convert_marked_source, false,
+            "Convert MarkedSource-valued facts to subgraphs.");
 
 int main(int argc, char **argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -79,6 +81,10 @@ Example:
     v.UseFileNodes();
   }
 
+  if (FLAGS_convert_marked_source) {
+    v.ConvertMarkedSource();
+  }
+
   if (!FLAGS_graphviz) {
     std::vector<std::string> rule_files(argv + 1, argv + argc);
     if (rule_files.empty() && !FLAGS_use_file_nodes) {
@@ -116,7 +122,10 @@ Example:
     if (FLAGS_show_protos) {
       entry.PrintDebugString();
     }
-    v.AssertSingleFact(&dbname, facts, entry);
+    if (!v.AssertSingleFact(&dbname, facts, entry)) {
+      fprintf(stderr, "Error asserting fact %zu\n", facts);
+      return 1;
+    }
     ++facts;
   }
 

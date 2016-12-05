@@ -21,6 +21,7 @@
 #include <string>
 
 #include "kythe/proto/storage.pb.h"
+#include "kythe/proto/xref.pb.h"
 
 #include "assertions.h"
 
@@ -91,7 +92,8 @@ class Verifier {
   /// \param database_name some name used to define the database; should live
   /// as long as the `Verifier`. Used only for diagnostics.
   /// \param fact_id some identifier for the fact. Used only for diagnostics.
-  void AssertSingleFact(std::string *database_name, unsigned int fact_id,
+  /// \return false if something went wrong.
+  bool AssertSingleFact(std::string *database_name, unsigned int fact_id,
                         const kythe::proto::Entry &entry);
 
   /// \brief Perform basic well-formedness checks on the input database.
@@ -169,7 +171,29 @@ class Verifier {
   /// \brief Look for assertions in file node text.
   void UseFileNodes() { assertions_from_file_nodes_ = true; }
 
+  /// \brief Convert MarkedSource-valued facts to graphs.
+  void ConvertMarkedSource() { convert_marked_source_ = true; }
+
  private:
+  /// \brief Generate a VName that will not conflict with any other VName.
+  AstNode *NewUniqueVName(const yy::location &loc);
+
+  /// \brief Converts an encoded /kythe/code fact to a form that's useful
+  /// to the verifier.
+  /// \param loc The location to use in diagnostics.
+  /// \return null if something went wrong; otherwise, an AstNode corresponding
+  /// to a VName of a synthetic node for `code_data`.
+  AstNode *ConvertCodeFact(const yy::location &loc,
+                           const google::protobuf::string &code_data);
+
+  /// \brief Converts a MarkedSource message to a form that's useful
+  /// to the verifier.
+  /// \param loc The location to use in diagnostics.
+  /// \return null if something went wrong; otherwise, an AstNode corresponding
+  /// to a VName of a synthetic node for `marked_source`.
+  AstNode *ConvertMarkedSource(const yy::location &loc,
+                               const kythe::proto::MarkedSource &marked_source);
+
   /// \brief Converts a VName proto to its AST representation.
   AstNode *ConvertVName(const yy::location &location,
                         const kythe::proto::VName &vname);
@@ -242,6 +266,10 @@ class Verifier {
   /// Node to use for the `text` fact kind.
   AstNode *text_id_;
 
+  /// Node to use for the `code` fact kind. The fact value should be a
+  /// serialized kythe.proto.MarkedSource message.
+  AstNode *code_id_;
+
   /// The highest goal group reached during solving (often the culprit for why
   /// the solution failed).
   size_t highest_group_reached_ = 0;
@@ -269,6 +297,74 @@ class Verifier {
   /// The regex to look for to identify goal comments. Should have one match
   /// group.
   std::unique_ptr<RE2> goal_comment_regex_;
+
+  /// If true, convert MarkedSource-valued facts to subgraphs. If false,
+  /// MarkedSource-valued facts will be replaced with opaque but unique
+  /// identifiers.
+  bool convert_marked_source_ = false;
+
+  /// Identifier for MarkedSource child edges.
+  AstNode *marked_source_child_id_;
+
+  /// Identifier for MarkedSource code edges.
+  AstNode *marked_source_code_edge_id_;
+
+  /// Identifier for MarkedSource BOX kinds.
+  AstNode *marked_source_box_id_;
+
+  /// Identifier for MarkedSource TYPE kinds.
+  AstNode *marked_source_type_id_;
+
+  /// Identifier for MarkedSource PARAMETER kinds.
+  AstNode *marked_source_parameter_id_;
+
+  /// Identifier for MarkedSource IDENTIFIER kinds.
+  AstNode *marked_source_identifier_id_;
+
+  /// Identifier for MarkedSource CONTEXT kinds.
+  AstNode *marked_source_context_id_;
+
+  /// Identifier for MarkedSource INITIALIZER kinds.
+  AstNode *marked_source_initializer_id_;
+
+  /// Identifier for MarkedSource PARAMETER_LOOKUP_BY_PARAM kinds.
+  AstNode *marked_source_parameter_lookup_by_param_id_;
+
+  /// Identifier for MarkedSource LOOKUP_BY_PARAM kinds.
+  AstNode *marked_source_lookup_by_param_id_;
+
+  /// Identifier for MarkedSource LOOKUP_BY_PARAM_WITH_DEFAULTS kinds.
+  AstNode *marked_source_parameter_lookup_by_param_with_defaults_id_;
+
+  /// Identifier for MarkedSource kind facts.
+  AstNode *marked_source_kind_id_;
+
+  /// Identifier for MarkedSource pre_text facts.
+  AstNode *marked_source_pre_text_id_;
+
+  /// Identifier for MarkedSource post_child_text facts.
+  AstNode *marked_source_post_child_text_id_;
+
+  /// Identifier for MarkedSource post_text facts.
+  AstNode *marked_source_post_text_id_;
+
+  /// Identifier for MarkedSource lookup_index facts.
+  AstNode *marked_source_lookup_index_id_;
+
+  /// Identifier for MarkedSource default_children_count facts.
+  AstNode *marked_source_default_children_count_id_;
+
+  /// Identifier for MarkedSource add_final_list_token facts.
+  AstNode *marked_source_add_final_list_token_id_;
+
+  /// Identifier for MarkedSource link edges.
+  AstNode *marked_source_link_id_;
+
+  /// Identifier for MarkedSource true values.
+  AstNode *marked_source_true_id_;
+
+  /// Identifier for MarkedSource false values.
+  AstNode *marked_source_false_id_;
 };
 
 }  // namespace verifier

@@ -67,7 +67,9 @@ cc_library(
     ],
     deps = [
         ":lexparse",
+        "//kythe/cxx/common:lib",
         "//kythe/proto:storage_proto_cc",
+        "//kythe/proto:xref_proto_cc",
         "//third_party/proto:protobuf",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",

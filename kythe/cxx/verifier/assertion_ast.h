@@ -42,7 +42,7 @@ class SymbolTable {
     if (old != symbols_.end()) {
       return old->second;
     }
-    Symbol next_symbol = symbols_.size();
+    Symbol next_symbol = reverse_map_.size();
     symbols_[string] = next_symbol;
     // Note that references to elements of `unordered_map` are not invalidated
     // upon insert (really, upon rehash), so keeping around pointers in
@@ -53,11 +53,33 @@ class SymbolTable {
   /// \brief Returns the text associated with `symbol`.
   const std::string &text(Symbol symbol) const { return *reverse_map_[symbol]; }
 
+  /// \brief Returns a string associated with `symbol` that disambiguates
+  /// nonces.
+  std::string PrettyText(Symbol symbol) const {
+    auto *text = reverse_map_[symbol];
+    if (text == &unique_symbol_) {
+      return "(unique#" + std::to_string(symbol) + ")";
+    } else if (text->size()) {
+      return *text;
+    } else {
+      return "\"\"";
+    }
+  }
+
+  /// \brief Returns a `Symbol` that can never be spelled (but which still has
+  /// a printable name).
+  Symbol unique() {
+    reverse_map_.push_back(&unique_symbol_);
+    return reverse_map_.size() - 1;
+  }
+
  private:
   /// Maps text to unique `Symbol`s.
   std::unordered_map<std::string, Symbol> symbols_;
   /// Maps `Symbol`s back to their original text.
   std::vector<const std::string *> reverse_map_;
+  /// The text to use for unique() symbols.
+  std::string unique_symbol_ = "(unique)";
 };
 
 /// \brief Performs bump-pointer allocation of pointer-aligned memory.

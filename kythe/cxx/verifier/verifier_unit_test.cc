@@ -19,11 +19,13 @@
 #include "verifier.h"
 
 #include "glog/logging.h"
+#include "google/protobuf/text_format.h"
 #include "gtest/gtest.h"
 
 namespace kythe {
 namespace verifier {
 namespace {
+using MarkedSource = kythe::proto::MarkedSource;
 
 TEST(VerifierUnitTest, StringPrettyPrinter) {
   StringPrettyPrinter c_string;
@@ -2488,6 +2490,291 @@ fact_value: "//- A->node/kind file\n"
 })"));
   v.UseFileNodes();
   ASSERT_FALSE(v.PrepareDatabase());
+}
+
+TEST(VerifierUnitTest, DontConvertMarkedSource) {
+  Verifier v;
+  MarkedSource source;
+  google::protobuf::string source_string;
+  ASSERT_TRUE(source.SerializeToString(&source_string));
+  google::protobuf::TextFormat::FieldValuePrinter printer;
+  google::protobuf::string enc_source = printer.PrintBytes(source_string);
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(
+  entries {
+    source { signature:"test" }
+    fact_name: "/kythe/code"
+    fact_value: )" + enc_source + R"(
+  }
+  #- vname("test","","","","").code _
+  #- !{vname("test","","","","") code _}
+  )"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_TRUE(v.VerifyAllGoals());
+}
+
+TEST(VerifierUnitTest, ConvertMarkedSource) {
+  Verifier v;
+  v.ConvertMarkedSource();
+  MarkedSource source;
+  google::protobuf::string source_string;
+  ASSERT_TRUE(source.SerializeToString(&source_string));
+  google::protobuf::TextFormat::FieldValuePrinter printer;
+  google::protobuf::string enc_source = printer.PrintBytes(source_string);
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(
+  entries {
+    source { signature:"test" }
+    fact_name: "/kythe/code"
+    fact_value: )" + enc_source + R"(
+  }
+  #- !{vname("test","","","","").code _}
+  #- vname("test","","","","") code Tree
+  #- Tree.kind "BOX"
+  #- Tree.pre_text ""
+  #- Tree.post_child_text ""
+  #- Tree.post_text ""
+  #- Tree.lookup_index 0
+  #- Tree.default_children_count 0
+  #- Tree.add_final_list_token false
+  )"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_TRUE(v.VerifyAllGoals());
+}
+
+TEST(VerifierUnitTest, ConvertMarkedSourceKindEnums) {
+  for (int kind = MarkedSource::Kind_MIN; kind <= MarkedSource::Kind_MAX;
+       ++kind) {
+    if (!MarkedSource::Kind_IsValid(kind)) {
+      continue;
+    }
+    auto kind_enum = static_cast<MarkedSource::Kind>(kind);
+    Verifier v;
+    v.ConvertMarkedSource();
+    MarkedSource source;
+    source.set_kind(kind_enum);
+    google::protobuf::string source_string;
+    ASSERT_TRUE(source.SerializeToString(&source_string));
+    google::protobuf::TextFormat::FieldValuePrinter printer;
+    google::protobuf::string enc_source = printer.PrintBytes(source_string);
+    ASSERT_TRUE(v.LoadInlineProtoFile(R"(
+    entries {
+      source { signature:"test" }
+      fact_name: "/kythe/code"
+      fact_value: )" + enc_source + R"(
+    }
+    #- vname("test","","","","") code Tree
+    #- Tree.kind ")" + MarkedSource::Kind_Name(kind_enum) +
+                                      R"("
+    )"));
+    ASSERT_TRUE(v.PrepareDatabase());
+    ASSERT_TRUE(v.VerifyAllGoals());
+  }
+}
+
+TEST(VerifierUnitTest, ConvertMarkedSourceLinks) {
+  Verifier v;
+  v.ConvertMarkedSource();
+  MarkedSource source;
+  source.add_link()->add_definition("kythe://corpus#sig");
+  google::protobuf::string source_string;
+  ASSERT_TRUE(source.SerializeToString(&source_string));
+  google::protobuf::TextFormat::FieldValuePrinter printer;
+  google::protobuf::string enc_source = printer.PrintBytes(source_string);
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(
+  entries {
+    source { signature:"test" }
+    fact_name: "/kythe/code"
+    fact_value: )" + enc_source + R"(
+  }
+  #- vname("test","","","","") code Tree
+  #- Tree link vname("sig", "corpus", "", "", "")
+  )"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_TRUE(v.VerifyAllGoals());
+}
+
+TEST(VerifierUnitTest, ConvertMarkedSourceLinksBadUri) {
+  Verifier v;
+  v.ConvertMarkedSource();
+  MarkedSource source;
+  source.add_link()->add_definition("kythe:/&bad");
+  google::protobuf::string source_string;
+  ASSERT_TRUE(source.SerializeToString(&source_string));
+  google::protobuf::TextFormat::FieldValuePrinter printer;
+  google::protobuf::string enc_source = printer.PrintBytes(source_string);
+  ASSERT_FALSE(v.LoadInlineProtoFile(R"(
+  entries {
+    source { signature:"test" }
+    fact_name: "/kythe/code"
+    fact_value: )" + enc_source + R"(
+  }
+  )"));
+}
+
+TEST(VerifierUnitTest, ConvertMarkedSourceLinksMissingUri) {
+  Verifier v;
+  v.ConvertMarkedSource();
+  MarkedSource source;
+  source.add_link();
+  google::protobuf::string source_string;
+  ASSERT_TRUE(source.SerializeToString(&source_string));
+  google::protobuf::TextFormat::FieldValuePrinter printer;
+  google::protobuf::string enc_source = printer.PrintBytes(source_string);
+  ASSERT_FALSE(v.LoadInlineProtoFile(R"(
+  entries {
+    source { signature:"test" }
+    fact_name: "/kythe/code"
+    fact_value: )" + enc_source + R"(
+  }
+  )"));
+}
+
+TEST(VerifierUnitTest, ConvertMarkedSourceLinksMultipleUri) {
+  Verifier v;
+  v.ConvertMarkedSource();
+  MarkedSource source;
+  auto *link = source.add_link();
+  link->add_definition("kythe://corpus#sig");
+  link->add_definition("kythe://corpus#sig2");
+  google::protobuf::string source_string;
+  ASSERT_TRUE(source.SerializeToString(&source_string));
+  google::protobuf::TextFormat::FieldValuePrinter printer;
+  google::protobuf::string enc_source = printer.PrintBytes(source_string);
+  ASSERT_FALSE(v.LoadInlineProtoFile(R"(
+  entries {
+    source { signature:"test" }
+    fact_name: "/kythe/code"
+    fact_value: )" + enc_source + R"(
+  }
+  )"));
+}
+
+TEST(VerifierUnitTest, ConvertMarkedSourceChildren) {
+  Verifier v;
+  v.ConvertMarkedSource();
+  MarkedSource source;
+  auto *child = source.add_child();
+  child->set_kind(MarkedSource::IDENTIFIER);
+  child = source.add_child();
+  child->set_kind(MarkedSource::CONTEXT);
+  google::protobuf::string source_string;
+  ASSERT_TRUE(source.SerializeToString(&source_string));
+  google::protobuf::TextFormat::FieldValuePrinter printer;
+  google::protobuf::string enc_source = printer.PrintBytes(source_string);
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(
+  entries {
+    source { signature:"test" }
+    fact_name: "/kythe/code"
+    fact_value: )" + enc_source + R"(
+  }
+  #- vname("test","","","","") code Tree
+  #- Tree child.0 IdChild
+  #- IdChild.kind "IDENTIFIER"
+  #- Tree child.1 ContextChild
+  #- ContextChild.kind "CONTEXT"
+  )"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_TRUE(v.VerifyAllGoals());
+}
+
+TEST(VerifierUnitTest, ConvertMarkedSourceBadChildren) {
+  Verifier v;
+  v.ConvertMarkedSource();
+  MarkedSource parent;
+  MarkedSource *child = parent.add_child();
+  auto *link = child->add_link();
+  link->add_definition("kythe://corpus#sig");
+  link->add_definition("kythe://corpus#sig2");
+  google::protobuf::string source_string;
+  ASSERT_TRUE(parent.SerializeToString(&source_string));
+  google::protobuf::TextFormat::FieldValuePrinter printer;
+  google::protobuf::string enc_source = printer.PrintBytes(source_string);
+  ASSERT_FALSE(v.LoadInlineProtoFile(R"(
+  entries {
+    source { signature:"test" }
+    fact_name: "/kythe/code"
+    fact_value: )" + enc_source + R"(
+  }
+  )"));
+}
+
+TEST(VerifierUnitTest, ConvertMarkedSourceFields) {
+  Verifier v;
+  v.ConvertMarkedSource();
+  MarkedSource source;
+  source.set_pre_text("pre_text");
+  source.set_post_child_text("post_child_text");
+  source.set_post_text("post_text");
+  source.set_lookup_index(42);
+  source.set_default_children_count(43);
+  source.set_add_final_list_token(true);
+  google::protobuf::string source_string;
+  ASSERT_TRUE(source.SerializeToString(&source_string));
+  google::protobuf::TextFormat::FieldValuePrinter printer;
+  google::protobuf::string enc_source = printer.PrintBytes(source_string);
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(
+  entries {
+    source { signature:"test" }
+    fact_name: "/kythe/code"
+    fact_value: )" + enc_source + R"(
+  }
+  #- vname("test","","","","") code Tree
+  #- Tree.pre_text "pre_text"
+  #- Tree.post_child_text "post_child_text"
+  #- Tree.post_text "post_text"
+  #- Tree.lookup_index 42
+  #- Tree.default_children_count 43
+  #- Tree.add_final_list_token true
+  )"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_TRUE(v.VerifyAllGoals());
+}
+
+TEST(VerifierUnitTest, DontConvertMarkedSourceDuplicateFactsWellFormed) {
+  Verifier v;
+  MarkedSource source;
+  v.IgnoreDuplicateFacts();
+  google::protobuf::string source_string;
+  ASSERT_TRUE(source.SerializeToString(&source_string));
+  google::protobuf::TextFormat::FieldValuePrinter printer;
+  google::protobuf::string enc_source = printer.PrintBytes(source_string);
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(
+  entries {
+    source { signature:"test" }
+    fact_name: "/kythe/code"
+    fact_value: )" + enc_source + R"(
+  }
+  entries {
+    source { signature:"test" }
+    fact_name: "/kythe/code"
+    fact_value: )" + enc_source + R"(
+  }
+  )"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_TRUE(v.VerifyAllGoals());
+}
+
+TEST(VerifierUnitTest, ConvertMarkedSourceDuplicateFactsWellFormed) {
+  Verifier v;
+  v.ConvertMarkedSource();
+  MarkedSource source;
+  google::protobuf::string source_string;
+  ASSERT_TRUE(source.SerializeToString(&source_string));
+  google::protobuf::TextFormat::FieldValuePrinter printer;
+  google::protobuf::string enc_source = printer.PrintBytes(source_string);
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(
+  entries {
+    source { signature:"test" }
+    fact_name: "/kythe/code"
+    fact_value: )" + enc_source + R"(
+  }
+  entries {
+    source { signature:"test" }
+    fact_name: "/kythe/code"
+    fact_value: )" + enc_source + R"(
+  }
+  )"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_TRUE(v.VerifyAllGoals());
 }
 
 }  // anonymous namespace
