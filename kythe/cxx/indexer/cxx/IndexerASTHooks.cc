@@ -2672,7 +2672,11 @@ IndexerASTVisitor::BuildNodeIdForImplicitStmt(const clang::Stmt *Stmt) {
   const clang::Decl *CurrentNodeAsDecl = nullptr;
   for (;;) {
     if ((CurrentNodeAsDecl = CurrentNode.get<clang::Decl>())) {
-      if (CurrentNodeAsDecl->isImplicit()) {
+      // If this is an implicit variable declaration, we assume that it is one
+      // of the implicit declarations attached to a range for loop. We ignore
+      // its implicitness, which lets us associate a source location with the
+      // implicit references to 'begin', 'end' and operators.
+      if (CurrentNodeAsDecl->isImplicit() && !isa<VarDecl>(CurrentNodeAsDecl)) {
         break;
       } else if (isa<clang::TranslationUnitDecl>(CurrentNodeAsDecl)) {
         CHECK(!CurrentNodeAsDecl->isImplicit());
