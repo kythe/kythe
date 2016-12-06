@@ -48,7 +48,12 @@ blank [ \t]
 %}
 
 <INITIAL>{
-\n       yylloc->lines(yyleng); yylloc->step(); context.ResetLine();
+\n       {
+           yylloc->lines(yyleng);
+           yylloc->end.column = 1;
+           yylloc->step();
+           context.ResetLine();
+         }
 "-"      --loc_ofs; yylloc->columns(-1); BEGIN(NORMAL);
 "."      --loc_ofs; yylloc->columns(-1); BEGIN(IGNORED);
 }  /* INITIAL state */
@@ -60,6 +65,7 @@ blank [ \t]
               context.Error(*yylloc, "could not resolve all locations");
             }
             yylloc->lines(yyleng);
+            yylloc->end.column = 1;
             yylloc->step();
             BEGIN(INITIAL);
          }
@@ -70,6 +76,7 @@ blank [ \t]
 {blank}+ yylloc->step();
 \n       {
           yylloc->lines(yyleng);
+          yylloc->end.column = 1;
           yylloc->step();
           context.ResetLine();
           BEGIN(INITIAL);

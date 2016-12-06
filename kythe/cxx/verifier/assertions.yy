@@ -37,6 +37,8 @@ class AssertionParser;
 %initial-action
 {
   @$.initialize(&context.file());
+  @$.begin.column = 1;
+  @$.end.column = 1;
 };
 %define "parse.trace"
 %{

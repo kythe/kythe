@@ -590,6 +590,8 @@ Verifier::Verifier(bool trace_lex, bool trace_parse)
     : parser_(this, trace_lex, trace_parse),
       builtin_location_name_("builtins") {
   builtin_location_.initialize(&builtin_location_name_);
+  builtin_location_.begin.column = 1;
+  builtin_location_.end.column = 1;
   empty_string_id_ = IdentifierFor(builtin_location_, "");
   fact_id_ = IdentifierFor(builtin_location_, "fact");
   vname_id_ = IdentifierFor(builtin_location_, "vname");
@@ -1254,8 +1256,9 @@ bool Verifier::AssertSingleFact(std::string *database, unsigned int fact_id,
                                 const kythe::proto::Entry &entry) {
   yy::location loc;
   loc.initialize(database);
+  loc.begin.column = 1;
   loc.begin.line = fact_id;
-  loc.end.line = fact_id;
+  loc.end = loc.begin;
   Symbol code_symbol = code_id_->AsIdentifier()->symbol();
   AstNode **values = (AstNode **)arena_.New(sizeof(AstNode *) * 5);
   values[0] =
