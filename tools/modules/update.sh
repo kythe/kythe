@@ -61,21 +61,19 @@ fi
 if [[ -z "$1" || "$1" == "--git_only" ]]; then
   echo "Using repository in $LLVM_REPO"
 
-  git_maybe_clone http://llvm.org/git/llvm.git "$LLVM_REPO"
-  git_maybe_clone http://llvm.org/git/clang.git "$LLVM_REPO/tools/clang"
-  git_maybe_clone http://llvm.org/git/clang-tools-extra.git \
-    "$LLVM_REPO/tools/clang/tools/extra"
+  git_maybe_clone https://github.com/llvm-mirror/llvm "$LLVM_REPO"
+  git_maybe_clone https://github.com/llvm-mirror/clang "$LLVM_REPO/tools/clang"
+  rm -rf "$LLVM_REPO/tools/clang/tools/extra"
 
   git_checkout_sha "$LLVM_REPO" "$MIN_LLVM_SHA"
   git_checkout_sha "$LLVM_REPO/tools/clang" "$MIN_CLANG_SHA"
-  git_checkout_sha "$LLVM_REPO/tools/clang/tools/extra" "$MIN_EXTRA_SHA"
 fi
 
 if [[ -z "$1" || "$1" == "--build_only" ]]; then
   cd "$LLVM_REPO"
-  vbuild_dir="build.${MIN_LLVM_SHA}.${MIN_CLANG_SHA}.${MIN_EXTRA_SHA}"
+  vbuild_dir="build.${MIN_LLVM_SHA}.${MIN_CLANG_SHA}"
   find "${LLVM_REPO}" -maxdepth 1 -type d \
-      ! -name "${vbuild_dir}" -name 'build.*.*.*' \
+      ! -name "${vbuild_dir}" -name 'build.*.*' \
       -exec rm -rf \{} \;
   if [[ ! -d "$vbuild_dir" ]]; then
     mkdir -p "$vbuild_dir"
@@ -88,7 +86,11 @@ if [[ -z "$1" || "$1" == "--build_only" ]]; then
     if [[ $(uname) == 'Darwin' ]]; then
       CMAKE_CXX_FLAGS="-lstdc++"
     fi
-    cmake -G"Unix Makefiles" \
+    CMAKE_GEN="Unix Makefiles"
+    if which ninja > /dev/null 2> /dev/null; then
+      CMAKE_GEN=Ninja
+    fi
+    cmake "-G$CMAKE_GEN" \
         -DCMAKE_INSTALL_PREFIX="$LLVM_REPO/build-install" \
         -DCMAKE_BUILD_TYPE="Release" \
         -DCMAKE_C_COMPILER="${BAZEL_CC}" \
@@ -119,7 +121,8 @@ if [[ -z "$1" || "$1" == "--build_only" ]]; then
     else
       cores="$(nproc)"
     fi
-    make "-j${cores}" clangAnalysis clangAST clangBasic clangDriver clangEdit \
+    cmake --build . -- "-j${cores}" \
+        clangAnalysis clangAST clangBasic clangDriver clangEdit \
         clangFrontend clang-headers clangLex clangParse clangRewrite clangSema \
         clangSerialization clangTooling LLVMAArch64Info LLVMARMInfo \
         LLVMBitReader LLVMCore LLVMMC LLVMMCParser LLVMMipsInfo LLVMOption \

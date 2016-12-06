@@ -39,5 +39,3 @@ Please run //tools/modules/update.sh." \
 check_repo "${LLVM_REPO}" "LLVM" "${MIN_LLVM_SHA}" "${MIN_LLVM_REV}"
 check_repo "${LLVM_REPO}/tools/clang" "clang" "${MIN_CLANG_SHA}" \
      "${MIN_CLANG_REV}"
-check_repo "${LLVM_REPO}/tools/clang/tools/extra" "clang extra tools" \
-     "${MIN_EXTRA_SHA}" "${MIN_EXTRA_REV}"

@@ -35,6 +35,7 @@ Kythe relies on the following external dependencies:
 * libmemcached-dev
 * [docker](https://www.docker.com/) (for release images `//kythe/release/...` and `//buildtools/docker`)
 * [leiningen](http://leiningen.org/) (used to build `kythe/web/ui`)
+* [ninja](https://ninja-build.org/) (optional; improves LLVM build speed)
 
 You will need to ensure they exist using your favorite method (apt-get, brew,
 etc.).
