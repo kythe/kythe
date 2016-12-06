@@ -59,7 +59,7 @@ class SymbolTable {
     auto *text = reverse_map_[symbol];
     if (text == &unique_symbol_) {
       return "(unique#" + std::to_string(symbol) + ")";
-    } else if (text->size()) {
+    } else if (!text->empty()) {
       return *text;
     } else {
       return "\"\"";
