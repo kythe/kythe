@@ -35,13 +35,13 @@
 //             $(location :vnames_config) \
 //             $(location :get_devdir) \
 //             $(location :get_sdkroot)",
-//    data = [":vnames_config"],
-//    out_templates = ["$(ACTION_ID).objc.kindex"],
-//    tools = [
+//    data = [
 //      ":get_devdir",
 //      ":get_sdkroot",
-//      ":objc_extractor_binary"
+//      ":vnames_config",
 //    ],
+//    out_templates = ["$(ACTION_ID).objc.kindex"],
+//    tools = [":objc_extractor_binary"],
 //  )
 //
 //  # In this example, the extractor binary is pre-built.

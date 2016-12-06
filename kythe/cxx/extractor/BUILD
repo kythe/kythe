@@ -155,13 +155,13 @@ extra_action(
         $(location //kythe/data:vnames_config) \
         $(location //third_party/bazel:get_devdir) \
         $(location //third_party/bazel:get_sdkroot)",
-    data = ["//kythe/data:vnames_config"],
-    out_templates = ["$(ACTION_ID).objc.kindex"],
-    tools = [
-        ":objc_extractor_bazel",
+    data = [
+        "//kythe/data:vnames_config",
         "//third_party/bazel:get_devdir",
         "//third_party/bazel:get_sdkroot",
     ],
+    out_templates = ["$(ACTION_ID).objc.kindex"],
+    tools = [":objc_extractor_bazel"],
 )
 
 cc_binary(
