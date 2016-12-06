@@ -15,6 +15,7 @@
 set -o pipefail
 TEST_NAME="test_stdin_names"
 . ./kythe/cxx/extractor/testdata/test_common.sh
+. ./kythe/cxx/extractor/testdata/skip_functions.sh
 rm -rf -- "${OUT_DIR}"
 echo '#define STDIN_OK 1\n' | KYTHE_INDEX_PACK=1 \
     KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}" \

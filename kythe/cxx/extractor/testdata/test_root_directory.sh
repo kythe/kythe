@@ -17,6 +17,7 @@
 # It should be run from the Kythe root.
 TEST_NAME="test_root_directory"
 . ./kythe/cxx/extractor/testdata/test_common.sh
+. ./kythe/cxx/extractor/testdata/skip_functions.sh
 cd kythe/cxx/extractor/testdata/altroot/altpath
 KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}" \
 KYTHE_ROOT_DIRECTORY="${BASE_DIR}/altroot" \

@@ -17,6 +17,7 @@
 # It should be run from the Kythe root.
 TEST_NAME="test_claim_pragma"
 . ./kythe/cxx/extractor/testdata/test_common.sh
+. ./kythe/cxx/extractor/testdata/skip_functions.sh
 KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}" \
     "${EXTRACTOR}" --with_executable "/usr/bin/g++" \
     -I./kythe/cxx/extractor/testdata \

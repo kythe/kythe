@@ -19,6 +19,7 @@
 # It should be run from the Kythe root.
 TEST_NAME="test_main_source_file_env_dep"
 . ./kythe/cxx/extractor/testdata/test_common.sh
+. ./kythe/cxx/extractor/testdata/skip_functions.sh
 mkdir -p "${OUT_DIR}/with"
 mkdir -p "${OUT_DIR}/without"
 KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}/without" \

@@ -13,6 +13,7 @@ sh_test(
         "testdata/expected.unit",
         "testdata/test_file.cc",
         "//kythe/cxx/extractor:cxx_extractor",
+        "//kythe/cxx/extractor/testdata:skip",
         "//kythe/cxx/tools:kindex_tool",
         "//third_party/jq",
     ],

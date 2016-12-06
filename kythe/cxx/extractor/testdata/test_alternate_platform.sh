@@ -14,6 +14,7 @@
 # limitations under the License.
 TEST_NAME="test_alternate_platform"
 . ./kythe/cxx/extractor/testdata/test_common.sh
+. ./kythe/cxx/extractor/testdata/skip_functions.sh
 KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}" \
 "${EXTRACTOR}" --with_executable "arm-none-linux-gnueabi-g++" \
     -mcpu=cortex-a15 \

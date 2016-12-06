@@ -14,6 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+. ./kythe/cxx/extractor/testdata/skip_functions.sh
+
 # This script checks that extract_compilation_database.sh works on a simple
 # compilation database.
 BASE_DIR="$PWD/kythe/extractors/cmake"
@@ -35,10 +38,10 @@ sed "s|signature: \"cu.*\"|signature: \"\"|" "${INDEX_PATH}_UNIT" > \
     "${INDEX_PATH}_UNIT_NS"
 
 # Remove lines that are system specific
-sed -i -e '/-target/,+1d' "${INDEX_PATH}_UNIT_NS"
+skip_inplace "-target" 1 "${INDEX_PATH}_UNIT_NS"
 
 sed "s:TEST_CWD:${PWD}/:
 s:TEST_EXTRACTOR:${KYTHE_EXTRACTOR}:" "${BASE_DIR}/testdata/expected.unit" | \
-    sed -e '/-target/,+1d' | \
+    skip "-target" 1 |
     diff - "${INDEX_PATH}_UNIT_NS"
 diff "${BASE_DIR}/testdata/expected.file" "${INDEX_PATH}_${EXPECTED_FILE_HASH}"

@@ -4,6 +4,11 @@ load("//tools:build_rules/kythe.bzl", "cc_bazel_verifier_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
+filegroup(
+    name = "skip",
+    srcs = ["skip_functions.sh"],
+)
+
 sh_test(
     name = "root_directory",
     size = "small",
@@ -13,6 +18,7 @@ sh_test(
     data = [
         "altroot/altpath/file.cc",
         "altroot_altpath_file.UNIT",
+        "skip_functions.sh",
         "test_common.sh",
         "//kythe/cxx/extractor:cxx_extractor",
         "//kythe/cxx/tools:kindex_tool",
@@ -28,6 +34,7 @@ sh_test(
     data = [
         "arm.UNIT",
         "arm.cc",
+        "skip_functions.sh",
         "test_common.sh",
         "//kythe/cxx/extractor:cxx_extractor",
         "//kythe/cxx/tools:kindex_tool",
@@ -44,6 +51,7 @@ sh_test(
         "main_source_file_no_env_dep.cc",
         "main_source_file_no_env_dep_with.UNIT",
         "main_source_file_no_env_dep_without.UNIT",
+        "skip_functions.sh",
         "test_common.sh",
         "//kythe/cxx/extractor:cxx_extractor",
         "//kythe/cxx/tools:kindex_tool",
@@ -60,6 +68,7 @@ sh_test(
         "main_source_file_env_dep.cc",
         "main_source_file_env_dep_with.UNIT",
         "main_source_file_env_dep_without.UNIT",
+        "skip_functions.sh",
         "test_common.sh",
         "//kythe/cxx/extractor:cxx_extractor",
         "//kythe/cxx/tools:kindex_tool",
@@ -73,6 +82,7 @@ sh_test(
         "test_extract_transcript.sh",
     ],
     data = [
+        "skip_functions.sh",
         "test_common.sh",
         "transcript_a.h",
         "transcript_b.h",
@@ -94,6 +104,7 @@ sh_test(
         "claim_b.h",
         "claim_main.UNIT",
         "claim_main.cc",
+        "skip_functions.sh",
         "test_common.sh",
         "//kythe/cxx/extractor:cxx_extractor",
         "//kythe/cxx/tools:kindex_tool",
@@ -108,6 +119,7 @@ sh_test(
     ],
     data = [
         "stdin.vnames",
+        "skip_functions.sh",
         "test_common.sh",
         "test_stdin_names_verify.cc",
         "//kythe/cxx/extractor:cxx_extractor",
@@ -124,6 +136,7 @@ sh_test(
         "test_index_pack.sh",
     ],
     data = [
+        "skip_functions.sh",
         "test_common.sh",
         "transcript_a.h",
         "transcript_b.h",
@@ -143,6 +156,7 @@ sh_test(
         "metadata.UNIT",
         "metadata.cc",
         "metadata.cc.meta",
+        "skip_functions.sh",
         "test_common.sh",
         "//kythe/cxx/extractor:cxx_extractor",
         "//kythe/cxx/tools:kindex_tool",
@@ -160,6 +174,7 @@ sh_test(
         "modfoo.modulemap",
         "modules.UNIT",
         "modules.cc",
+        "skip_functions.sh",
         "test_common.sh",
         "//kythe/cxx/extractor:cxx_extractor",
         "//kythe/cxx/tools:kindex_tool",

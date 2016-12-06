@@ -17,6 +17,7 @@
 # It should be run from the Kythe root.
 TEST_NAME="test_index_pack"
 . ./kythe/cxx/extractor/testdata/test_common.sh
+. ./kythe/cxx/extractor/testdata/skip_functions.sh
 rm -rf -- "${OUT_DIR}"
 mkdir -p "${OUT_DIR}"
 KYTHE_OUTPUT_DIRECTORY="${OUT_DIR}" KYTHE_INDEX_PACK="1" \
