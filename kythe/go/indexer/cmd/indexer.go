@@ -115,10 +115,19 @@ func (w *worker) run(ctx context.Context, wg *sync.WaitGroup) {
 				continue
 			}
 			switch obj := o.(type) {
-			case *types.Const, *types.Var, *types.PkgName:
+			case *types.Const, *types.Var:
 				n = schema.Node{
 					VName: pkg.VName(o),
 					Kind:  nodes.Variable,
+				}
+			case *types.PkgName:
+				n = schema.Node{
+					VName: &spb.VName{
+						Signature: pkg.Signature(obj),
+						Path:      obj.Imported().Path(),
+						Corpus:    "k8s.io/kubernetes",
+					},
+					Kind: nodes.Record,
 				}
 			case *types.Func:
 				n = schema.Node{
@@ -204,16 +213,31 @@ func (w *worker) run(ctx context.Context, wg *sync.WaitGroup) {
 		}
 
 		for i, o := range pkg.Info.Uses {
-			a, childOf := newAnchor(i, pkg.Signature(o)+"#use-"+strconv.Itoa(int(i.Pos())), pkg, unit)
+			var a *schema.Node
+			var childOf *schema.Edge
+			switch obj := o.(type) {
+			case *types.PkgName:
+				vname := &spb.VName{
+					Signature: pkg.Signature(obj),
+					Path:      obj.Imported().Path(),
+					Corpus:    "k8s.io/kubernetes",
+				}
+				a, childOf = newAnchor(i, pkg.Signature(o)+"#use-"+strconv.Itoa(int(i.Pos())), pkg, unit)
+				a.VName = vname
+				childOf.Source = vname
+				continue
+			default:
+				a, childOf = newAnchor(i, pkg.Signature(o)+"#use-"+strconv.Itoa(int(i.Pos())), pkg, unit)
+			}
 			w.Writes(a)
 			w.Write(childOf)
-
 			e := schema.Edge{
 				Source: a.VName,
 				Target: pkg.VName(o),
 				Kind:   edges.Ref,
 			}
 			w.Write(&e)
+
 		}
 
 		for p, c := range pkg.SourceText {

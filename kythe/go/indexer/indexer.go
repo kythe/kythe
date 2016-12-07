@@ -205,7 +205,7 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 	}
 	if pkg, _ := c.Check(pi.Name, pi.FileSet, pi.Files, pi.Info); pkg != nil {
 		pi.Package = pkg
-		vmap[pkg] = unit.VName
+		vmap[pkg] = proto.Clone(unit.VName).(*spb.VName)
 	}
 	return pi, nil
 }
@@ -256,7 +256,7 @@ func (pi *PackageInfo) VName(obj types.Object) *spb.VName {
 	}
 	vname := proto.Clone(base).(*spb.VName)
 	vname.Signature = sig
-	vname.Path = normalize(pi.FileSet.File(obj.Pos()).Name())
+	vname.Path = normalize(path.Join(vname.Corpus, pi.FileSet.File(obj.Pos()).Name()))
 	vname.Language = "go"
 	vname.Root = ""
 	return vname
@@ -488,6 +488,7 @@ func AllTypeInfo() *types.Info {
 func normalize(ipath string) string {
 	//log.Printf("in: %v", ipath)
 	ipath = regexp.MustCompile("(.*/)?vendor/").ReplaceAllString(ipath, "")
+	ipath = regexp.MustCompile("(.*/)?go_default_library.a.dir/").ReplaceAllString(ipath, "")
 	ipath = regexp.MustCompile("/[^/]*\\.go$").ReplaceAllString(ipath, "")
 	ipath = strings.TrimPrefix(ipath, "golang.org/pkg/linux_amd64/")
 	ipath = strings.TrimSuffix(ipath, "/go_default_library.a")
