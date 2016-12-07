@@ -18,6 +18,9 @@ syntax = "proto3";
 
 package kythe.proto;
 
+option java_package = "com.google.devtools.kythe.proto";
+option java_multiple_files = true;
+
 import "kythe/proto/common.proto";
 
 // This file defines a cross-reference service interface, based on Kythe data.

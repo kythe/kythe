@@ -27,6 +27,7 @@ proto_library(
     srcs = ["common.proto"],
     cc_api_version = 2,
     go_api_version = 2,
+    java_api_version = 2,
 )
 
 # Public Kythe GraphStore analyzer output format
@@ -160,6 +161,7 @@ proto_library(
     has_services = 1,
     cc_api_version = 2,
     go_api_version = 2,
+    java_api_version = 2,
     deps = [":common_proto"],
 )
 

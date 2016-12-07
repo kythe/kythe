@@ -18,6 +18,9 @@ syntax = "proto3";
 
 package kythe.proto.common;
 
+option java_package = "com.google.devtools.kythe.proto";
+option java_multiple_files = true;
+
 // Fact represents a single key/value fact from the graph.
 message Fact {
   string name = 1;
