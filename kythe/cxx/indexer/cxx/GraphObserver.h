@@ -35,6 +35,7 @@
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/raw_ostream.h"
 
+#include "kythe/cxx/common/indexing/KytheOutputStream.h"
 #include "kythe/cxx/common/indexing/MaybeFew.h"
 #include "kythe/cxx/common/json_proto.h" // for EncodeBase64
 
@@ -59,19 +60,6 @@ String CompressString(const String &InString, bool Force = false) {
   String Hash(SHA256_DIGEST_LENGTH, '\0');
   ::SHA256_Final(reinterpret_cast<unsigned char *>(&Hash[0]), &Sha);
   return EncodeBase64(Hash);
-}
-
-/// \brief Escapes `format` such that it can be included in a format string.
-inline std::string EscapeForFormatLiteral(llvm::StringRef format) {
-  std::string escaped;
-  escaped.reserve(format.size());
-  for (char c : format) {
-    if (c == '%') {
-      escaped.push_back('%');
-    }
-    escaped.push_back(c);
-  }
-  return escaped;
 }
 
 enum class ProfilingEvent {
@@ -352,12 +340,12 @@ public:
   /// \param AliasedType a `NodeId` corresponding to the aliased type.
   /// \param RootAliasedType the non-alias at the root of the alias chain; may
   /// be AliasedType
-  /// \param Format a format string for the alias.
+  /// \param MarkedSource marked source for the alias.
   /// \return the `NodeId` for the type alias node this definition defines.
-  virtual NodeId recordTypeAliasNode(const NameId &AliasName,
-                                     const NodeId &AliasedType,
-                                     const MaybeFew<NodeId> &RootAliasedType,
-                                     const std::string &Format) = 0;
+  virtual NodeId
+  recordTypeAliasNode(const NameId &AliasName, const NodeId &AliasedType,
+                      const MaybeFew<NodeId> &RootAliasedType,
+                      const MaybeFew<MarkedSource> &MarkedSource) = 0;
 
   /// \brief Returns the ID for a nominal type node (such as a struct,
   /// typedef or enum).
@@ -368,12 +356,13 @@ public:
   /// \brief Records a type node for some nominal type (such as a struct,
   /// typedef or enum), returning its ID.
   /// \param TypeName a `NameId` corresponding to a nominal type.
-  /// \param Format a format string for the alias.
+  /// \param MarkedSource marked source for the type node.
   /// \param Parent if non-null, the parent node of this nominal type.
   /// \return the `NodeId` for the type node corresponding to `TypeName`.
-  virtual NodeId recordNominalTypeNode(const NameId &TypeName,
-                                       const std::string &Format,
-                                       const NodeId *Parent) = 0;
+  virtual NodeId
+  recordNominalTypeNode(const NameId &TypeName,
+                        const MaybeFew<MarkedSource> &MarkedSource,
+                        const NodeId *Parent) = 0;
 
   /// \brief Records a type application node, returning its ID.
   /// \note This is the elimination form for the `abs` node.
@@ -381,9 +370,12 @@ public:
   /// abstraction.
   /// \param Params The `NodeId`s of the types to apply to the constructor or
   /// abstraction.
+  /// \param FirstDefaultParam The first type parameter to consider
+  /// assigned its default value (or Params.size() otherwise).
   /// \return The application's result's ID.
   virtual NodeId recordTappNode(const NodeId &TyconId,
-                                const std::vector<const NodeId *> &Params) = 0;
+                                const std::vector<const NodeId *> &Params,
+                                unsigned FirstDefaultParam) = 0;
 
   /// \brief Records a sigma node, returning its ID.
   /// \param Params The `NodeId`s of the types to include.
@@ -427,29 +419,30 @@ public:
   /// \brief Records a node representing an interface type (such as a protocol
   /// in Objective-C).
   /// \param Node The NodeId of the record.
-  /// \param Format A format string for this interface.
+  /// \param MarkedSource marked source for this interface.
   virtual void recordInterfaceNode(const NodeId &Node,
-                                   const std::string &Format) {}
+                                   const MaybeFew<MarkedSource> &MarkedSource) {
+  }
 
   /// \brief Records a node representing a record type (such as a class or
   /// struct).
   /// \param Node The NodeId of the record.
   /// \param Kind Whether this record is a struct, class, or union.
   /// \param RecordCompleteness Whether the record is complete.
-  /// \param Format A format string for this record.
+  /// \param MarkedSource marked source for this record.
   virtual void recordRecordNode(const NodeId &Node, RecordKind Kind,
                                 Completeness RecordCompleteness,
-                                const std::string &Format) {}
+                                const MaybeFew<MarkedSource> &MarkedSource) {}
 
   /// \brief Records a node representing a function.
   /// \param Node The NodeId of the function.
   /// \param FunctionCompleteness Whether the function is complete.
   /// \param Subkind The subkind of the function.
-  /// \param Format A format string for this function.
+  /// \param MarkedSource marked source for this function.
   virtual void recordFunctionNode(const NodeId &Node,
                                   Completeness FunctionCompleteness,
                                   FunctionSubkind Subkind,
-                                  const std::string &Format) {}
+                                  const MaybeFew<MarkedSource> &MarkedSource) {}
 
   /// \brief Describes whether an enum is scoped (`enum class`).
   enum class EnumKind {
@@ -476,6 +469,10 @@ public:
   /// \param Node The NodeId of the abstraction.
   /// \sa recordAbsVarNode
   virtual void recordAbsNode(const NodeId &Node) {}
+
+  /// \brief Explicitly record marked source for some `Node`.
+  virtual void recordMarkedSource(const NodeId &Node,
+                                  const MaybeFew<MarkedSource> &MarkedSource) {}
 
   /// \brief Records a node representing a variable in a dependent type
   /// abstraction.
@@ -520,22 +517,23 @@ public:
   /// \param DeclNode The identifier for this particular element.
   /// \param Compl The completeness of this variable declaration.
   /// \param Subkind Which kind of variable declaration this is.
-  /// \param Format A format string for this variable.
+  /// \param MarkedSource marked source for this variable.
   // TODO(zarko): We should make note of the storage-class-specifier (dcl.stc)
   // of the variable, which is a property the variable itself and not of its
   // type.
   virtual void recordVariableNode(const NameId &DeclName,
                                   const NodeId &DeclNode, Completeness Compl,
                                   VariableSubkind Subkind,
-                                  const std::string &Format) {}
+                                  const MaybeFew<MarkedSource> &MarkedSource) {}
 
   /// \brief Records that a namespace has been declared.
   /// \param DeclName The name to which this element is being bound.
   /// \param DeclNode The identifier for this particular element.
-  /// \param Format A format string for this namespace.
+  /// \param MarkedSource marked source for this namespace.
   virtual void recordNamespaceNode(const NameId &DeclName,
                                    const NodeId &DeclNode,
-                                   const std::string &Format) {}
+                                   const MaybeFew<MarkedSource> &MarkedSource) {
+  }
 
   // TODO(zarko): recordExpandedTypeEdge -- records that a type was seen
   // to have some canonical type during a compilation. (This is a 'canonical'
@@ -955,9 +953,10 @@ public:
     return NodeId(getDefaultClaimToken(), "");
   }
 
-  NodeId recordTypeAliasNode(const NameId &AliasName, const NodeId &AliasedType,
-                             const MaybeFew<NodeId> &RootAliasedType,
-                             const std::string &Format) override {
+  NodeId
+  recordTypeAliasNode(const NameId &AliasName, const NodeId &AliasedType,
+                      const MaybeFew<NodeId> &RootAliasedType,
+                      const MaybeFew<MarkedSource> &MarkedSource) override {
     return NodeId(getDefaultClaimToken(), "");
   }
 
@@ -966,7 +965,7 @@ public:
   }
 
   NodeId recordNominalTypeNode(const NameId &TypeName,
-                               const std::string &Format,
+                               const MaybeFew<MarkedSource> &MarkedSource,
                                const NodeId *Parent) override {
     return NodeId(getDefaultClaimToken(), "");
   }
@@ -976,7 +975,8 @@ public:
   }
 
   NodeId recordTappNode(const NodeId &TyconId,
-                        const std::vector<const NodeId *> &Params) override {
+                        const std::vector<const NodeId *> &Params,
+                        unsigned FirstDefaultParam) override {
     return NodeId(getDefaultClaimToken(), "");
   }
 

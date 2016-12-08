@@ -3,21 +3,23 @@ package(default_visibility = ["//kythe:default_visibility"])
 cc_library(
     name = "lib",
     srcs = [
-        "clang_utils.cc",
         "IndexerASTHooks.cc",
         "IndexerFrontendAction.cc",
         "IndexerLibrarySupport.cc",
         "IndexerPPCallbacks.cc",
         "KytheGraphObserver.cc",
+        "clang_utils.cc",
+        "marked_source.cc",
     ],
     hdrs = [
-        "clang_utils.h",
         "GraphObserver.h",
         "IndexerASTHooks.h",
         "IndexerFrontendAction.h",
         "IndexerLibrarySupport.h",
         "IndexerPPCallbacks.h",
         "KytheGraphObserver.h",
+        "clang_utils.h",
+        "marked_source.h",
     ],
     copts = [
         "-Wno-non-virtual-dtor",
@@ -33,6 +35,7 @@ cc_library(
         "//kythe/proto:analysis_proto_cc",
         "//kythe/proto:cxx_proto_cc",
         "//kythe/proto:storage_proto_cc",
+        "//kythe/proto:xref_proto_cc",
         "//third_party/llvm",
         "//third_party/llvm/src:clang_builtin_headers",
         "//third_party/proto:protobuf",

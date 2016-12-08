@@ -16,6 +16,8 @@
 
 #include "KytheGraphRecorder.h"
 
+#include "llvm/ADT/SmallVector.h"
+
 #include "kythe/proto/storage.pb.h"
 
 namespace kythe {
@@ -31,7 +33,8 @@ static const std::string *const kNodeKindSpellings[] = {
     new std::string("macro"),    new std::string("interface"),
     new std::string("package"),  new std::string("tsigma"),
     new std::string("doc"),      new std::string("builtin"),
-    new std::string("meta")};
+    new std::string("meta"),
+};
 
 static const std::string *kEdgeKindSpellings[] = {
     new std::string("/kythe/edge/defines"),
@@ -70,7 +73,7 @@ static const std::string *kEdgeKindSpellings[] = {
     new std::string("/kythe/edge/overrides"),
     new std::string("/kythe/edge/overrides/root"),
     new std::string("/kythe/edge/childof/context"),
-    new std::string("/kythe/edge/bounded/upper")
+    new std::string("/kythe/edge/bounded/upper"),
 };
 
 bool of_spelling(llvm::StringRef str, EdgeKindID *edge_id) {
@@ -98,8 +101,9 @@ static const std::string *const kPropertySpellings[] = {
     new std::string("/kythe/complete"),
     new std::string("/kythe/subkind"),
     new std::string("/kythe/node/kind"),
-    new std::string("/kythe/format"),
+    new std::string("/kythe/code"),
     new std::string("/kythe/variance"),
+    new std::string("/kythe/param/default"),
 };
 
 static const std::string *const kEmptyStringSpelling = new std::string("");
@@ -133,6 +137,15 @@ void KytheGraphRecorder::AddProperty(const VNameRef &node_vname,
                                      PropertyID property_id,
                                      const size_t property_value) {
   AddProperty(node_vname, property_id, std::to_string(property_value));
+}
+
+void KytheGraphRecorder::AddMarkedSource(const VNameRef &node_vname,
+                                         const MarkedSource &marked_source) {
+  auto size = marked_source.ByteSize();
+  llvm::SmallVector<char, 64> buffer(size);
+  marked_source.SerializeToArray(buffer.data(), size);
+  stream_->Emit(FactRef{&node_vname, spelling_of(PropertyID::kCode),
+                        llvm::StringRef(buffer.data(), buffer.size())});
 }
 
 void KytheGraphRecorder::AddEdge(const VNameRef &edge_from,

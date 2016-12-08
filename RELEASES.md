@@ -1,5 +1,11 @@
 # Release Notes
 
+## Upcoming release
+
+Notable changes:
+ - Formats are being deprecated in favor of MarkedSource
+ - C++ indexer: no longer generates formats
+
 ## v0.0.26
 
 Notable changes:

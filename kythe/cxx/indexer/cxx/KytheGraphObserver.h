@@ -144,11 +144,14 @@ class KytheGraphObserver : public GraphObserver {
     const auto &info = builtins_.find(spelling.str());
     if (info == builtins_.end()) {
       LOG(ERROR) << "Missing builtin " << spelling.str();
+      MarkedSource sig;
+      sig.set_kind(MarkedSource::IDENTIFIER);
+      sig.set_pre_text(spelling);
       builtins_.emplace(
           spelling.str(),
           Builtin{NodeId::CreateUncompressed(getDefaultClaimToken(),
                                              spelling.str() + "#builtin"),
-                  EscapeForFormatLiteral(spelling), true});
+                  sig, true});
       auto *new_builtin = &builtins_.find(spelling.str())->second;
       EmitBuiltin(new_builtin);
       return new_builtin->node_id;
@@ -170,24 +173,29 @@ class KytheGraphObserver : public GraphObserver {
   void Undelimit() override { recorder_->PopEntryGroup(); }
 
   NodeId recordTappNode(const NodeId &TyconId,
-                        const std::vector<const NodeId *> &Params) override;
+                        const std::vector<const NodeId *> &Params,
+                        unsigned FirstDefaultParam) override;
 
   NodeId recordTsigmaNode(const std::vector<const NodeId *> &Params) override;
 
   NodeId nodeIdForTypeAliasNode(const NameId &AliasName,
                                 const NodeId &AliasedType) override;
 
-  NodeId recordTypeAliasNode(const NameId &AliasName, const NodeId &AliasedType,
-                             const MaybeFew<NodeId> &RootAliasedType,
-                             const std::string &Format) override;
+  NodeId recordTypeAliasNode(
+      const NameId &AliasName, const NodeId &AliasedType,
+      const MaybeFew<NodeId> &RootAliasedType,
+      const MaybeFew<MarkedSource> &MarkedSource) override;
 
   void recordFunctionNode(const NodeId &Node, Completeness FunctionCompleteness,
                           FunctionSubkind Subkind,
-                          const std::string &Format) override;
+                          const MaybeFew<MarkedSource> &MarkedSource) override;
 
   void recordAbsVarNode(const NodeId &Node) override;
 
   void recordAbsNode(const NodeId &Node) override;
+
+  void recordMarkedSource(const NodeId &Node,
+                          const MaybeFew<MarkedSource> &MarkedSource) override;
 
   void recordLookupNode(const NodeId &Node,
                         const llvm::StringRef &Name) override;
@@ -196,11 +204,11 @@ class KytheGraphObserver : public GraphObserver {
                        const NodeId &ParamNode) override;
 
   void recordInterfaceNode(const NodeId &Node,
-                           const std::string &Format) override;
+                           const MaybeFew<MarkedSource> &MarkedSource) override;
 
   void recordRecordNode(const NodeId &Node, RecordKind Kind,
                         Completeness RecordCompleteness,
-                        const std::string &Format) override;
+                        const MaybeFew<MarkedSource> &MarkedSource) override;
 
   void recordEnumNode(const NodeId &Node, Completeness Compl,
                       EnumKind Kind) override;
@@ -211,7 +219,7 @@ class KytheGraphObserver : public GraphObserver {
   NodeId nodeIdForNominalTypeNode(const NameId &TypeName) override;
 
   NodeId recordNominalTypeNode(const NameId &TypeName,
-                               const std::string &Format,
+                               const MaybeFew<MarkedSource> &MarkedSource,
                                const NodeId *Parent) override;
 
   void recordCategoryExtendsEdge(const NodeId &InheritingNodeId,
@@ -226,10 +234,10 @@ class KytheGraphObserver : public GraphObserver {
 
   void recordVariableNode(const NameId &DeclName, const NodeId &DeclNode,
                           Completeness VarCompleteness, VariableSubkind Subkind,
-                          const std::string &Format) override;
+                          const MaybeFew<MarkedSource> &MarkedSource) override;
 
   void recordNamespaceNode(const NameId &DeclName, const NodeId &DeclNode,
-                           const std::string &Format) override;
+                           const MaybeFew<MarkedSource> &MarkedSource) override;
 
   void recordUserDefinedNode(const NameId &Name, const NodeId &Id,
                              const llvm::StringRef &NodeKind,
@@ -378,6 +386,13 @@ class KytheGraphObserver : public GraphObserver {
   bool lossy_claiming() const override { return lossy_claiming_; }
 
  private:
+  void AddMarkedSource(const VNameRef &vname,
+                       const MaybeFew<MarkedSource> &signature) {
+    if (signature) {
+      recorder_->AddMarkedSource(vname, signature.primary());
+    }
+  }
+
   void RecordSourceLocation(const VNameRef &vname,
                             clang::SourceLocation source_location,
                             PropertyID offset_id);
@@ -542,8 +557,8 @@ class KytheGraphObserver : public GraphObserver {
   struct Builtin {
     /// This Builtin's NodeId.
     NodeId node_id;
-    /// A format string for this Builtin.
-    std::string format;
+    /// Marked source for this Builtin.
+    MarkedSource marked_source;
     /// Whether this Builtin has been emitted.
     bool emitted;
   };

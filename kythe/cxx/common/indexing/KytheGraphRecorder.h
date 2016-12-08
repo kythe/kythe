@@ -62,8 +62,9 @@ enum class PropertyID {
   kComplete,
   kSubkind,
   kNodeKind,
-  kFormat,
-  kVariance
+  kCode,
+  kVariance,
+  kParamDefault
 };
 
 /// \brief Known edge kinds. See the schema for details.
@@ -148,6 +149,13 @@ class KytheGraphRecorder {
   /// \param property_value The value of the property to set.
   void AddProperty(const VNameRef &node_vname, PropertyID property_id,
                    const std::string &property_value);
+
+  /// \brief Record a node's marked source.
+  ///
+  /// \param node_vname The vname of the node to modify.
+  /// \param marked_source The marked source to set.
+  void AddMarkedSource(const VNameRef &node_vname,
+                       const MarkedSource &marked_source);
 
   /// \copydoc KytheGraphRecorder::AddProperty(const
   /// VNameRef&,PropertyID,std::string&)

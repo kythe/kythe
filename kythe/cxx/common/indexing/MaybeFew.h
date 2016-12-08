@@ -23,6 +23,8 @@
 #include <utility>
 #include <vector>
 
+#include "glog/logging.h"
+
 namespace kythe {
 
 /// \brief None() may be used to construct an empty `MaybeFew<T>`.
@@ -34,8 +36,7 @@ struct None {};
 /// This class is primarily used to hold type NodeIds, as the process for
 /// deriving one may fail (if the type is unsupported) or may return more than
 /// one possible ID (if the type is noncanonical).
-template <typename T>
-class MaybeFew {
+template <typename T> class MaybeFew {
 public:
   /// \brief Constructs a new `MaybeFew` holding zero or more elements.
   /// If there are more than zero elements, the first one provided is primary.

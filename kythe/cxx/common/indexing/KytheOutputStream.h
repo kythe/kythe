@@ -17,14 +17,15 @@
 #ifndef KYTHE_CXX_COMMON_INDEXING_KYTHE_OUTPUT_STREAM_H_
 #define KYTHE_CXX_COMMON_INDEXING_KYTHE_OUTPUT_STREAM_H_
 
+#include <openssl/sha.h>
 #include <memory>
 #include <vector>
-#include <openssl/sha.h>
 
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 
 #include "kythe/proto/storage.pb.h"
+#include "kythe/proto/xref.pb.h"
 #include "llvm/ADT/StringRef.h"
 
 extern "C" {
@@ -32,6 +33,8 @@ struct memcached_st;
 }
 
 namespace kythe {
+/// \brief Code marked with semantic spans.
+using MarkedSource = kythe::proto::MarkedSource;
 
 /// A collection of references to the components of a VName.
 struct VNameRef {

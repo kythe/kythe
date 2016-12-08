@@ -33,6 +33,7 @@
 
 #include "GraphObserver.h"
 #include "IndexerLibrarySupport.h"
+#include "marked_source.h"
 
 namespace kythe {
 
@@ -204,8 +205,8 @@ public:
                     const LibrarySupports &S, clang::Sema &Sema,
                     GraphObserver *GO = nullptr)
       : IgnoreUnimplemented(B), TemplateMode(T), Verbosity(V),
-        Observer(GO ? *GO : NullObserver), Context(C), Supports(S), Sema(Sema) {
-  }
+        Observer(GO ? *GO : NullObserver), Context(C), Supports(S), Sema(Sema),
+        MarkedSources(&Sema, &Observer) {}
 
   ~IndexerASTVisitor() { deleteAllParents(); }
 
@@ -581,18 +582,9 @@ private:
 
   uint64_t SemanticHash(const clang::Selector &S);
 
-  /// \brief Gets a format string for `ND`.
-  std::string GetFormat(const clang::NamedDecl *ND);
-
-  /// \brief Attempts to add a format string representation of `ND` to
-  /// `Ostream`.
-  /// \return true on success; false on failure.
-  bool AddFormatToStream(llvm::raw_string_ostream &Ostream,
-                         const clang::NamedDecl *ND);
-
   /// \brief Attempts to find the ID of the first parent of `Decl` for
-  /// generating a format string.
-  MaybeFew<GraphObserver::NodeId> GetParentForFormat(const clang::Decl *D);
+  /// attaching a `childof` relationship.
+  MaybeFew<GraphObserver::NodeId> GetDeclChildOf(const clang::Decl *D);
 
   /// \brief Attempts to add some representation of `ND` to `Ostream`.
   /// \return true on success; false on failure.
@@ -759,7 +751,7 @@ private:
   void ConnectParam(const clang::Decl *Decl,
                     const GraphObserver::NodeId &FuncNode,
                     bool IsFunctionDefinition, const unsigned int ParamNumber,
-                    const clang::ParmVarDecl *Param);
+                    const clang::ParmVarDecl *Param, bool DeclIsImplicit);
 
   /// \brief Record the type node for this id usage. This should only be called
   /// if T->getInterface() returns null, which means T is of type id and not
@@ -830,6 +822,9 @@ private:
 
   /// \brief The `Sema` instance to use.
   clang::Sema &Sema;
+
+  /// \brief The cache to use to generate signatures.
+  MarkedSourceCache MarkedSources;
 };
 
 /// \brief An `ASTConsumer` that passes events to a `GraphObserver`.
