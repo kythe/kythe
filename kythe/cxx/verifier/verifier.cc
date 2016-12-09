@@ -1118,11 +1118,37 @@ bool Verifier::PrepareDatabase() {
         tb->element(2) == empty_string_id_ &&
         EncodedIdentEqualTo(ta->element(3), tb->element(3)) &&
         !EncodedIdentEqualTo(ta->element(4), tb->element(4))) {
-      printer.Print("Two facts about a node differed in value:\n  ");
-      fa->Dump(symbol_table_, &printer);
-      printer.Print("\n  ");
-      fb->Dump(symbol_table_, &printer);
-      printer.Print("\n");
+      if (EncodedIdentEqualTo(ta->element(3), code_id_)) {
+        // TODO(zarko): Add documentation for these new edges (T195).
+        printer.Print(
+            "Two /kythe/code facts about a node differed in value:\n  ");
+        ta->element(0)->Dump(symbol_table_, &printer);
+        printer.Print("\n  ");
+        printer.Print("\nThe decoded values were:\n");
+        auto print_decoded = [&](AstNode *value) {
+          if (auto *ident = value->AsIdentifier()) {
+            proto::MarkedSource marked_source;
+            if (!marked_source.ParseFromString(
+                    symbol_table_.text(ident->symbol()))) {
+              printer.Print("(failed to decode)\n");
+            } else {
+              printer.Print(marked_source.DebugString());
+              printer.Print("\n");
+            }
+          } else {
+            printer.Print("(not an identifier)\n");
+          }
+        };
+        print_decoded(ta->element(4));
+        printer.Print("\n -----------------  versus  ----------------- \n\n");
+        print_decoded(tb->element(4));
+      } else {
+        printer.Print("Two facts about a node differed in value:\n  ");
+        fa->Dump(symbol_table_, &printer);
+        printer.Print("\n  ");
+        fb->Dump(symbol_table_, &printer);
+        printer.Print("\n");
+      }
       is_ok = false;
     }
   }
