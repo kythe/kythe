@@ -60,7 +60,7 @@ generate_file_info_proto()
 {
   local input_file_path="$1"
   
-  local digest=$(sha256sum "$input_file_path" | head -c 64)
+  local digest=$(shasum -a256 "$input_file_path" | head -c 64)
   echo " {"
   echo "   path:\"$input_file_path\""
   echo "   digest:\"$digest\""

@@ -32,7 +32,7 @@ TMP_FILES=()
 # Generates a new temp file.
 generate_temp_file()
 {
-  local tmp_file=$(mktemp -p $TEST_TMPDIR)
+  local tmp_file=$(mktemp)
   TMP_FILES+=($tmp_file)
   echo $tmp_file
 }
@@ -60,7 +60,9 @@ $PWD/kythe/cxx/tools/kindex_file_generator.sh "//kythe/BUILD" "kythe" \
   "skylark" "$TMP_KINDEX_OUTPUT_FILE" "$SOURCE_INPUT_FILE"
 
 # Ensure the output file was populated
-OUTPUT_FILE_SIZE=$(stat -c%s "$TMP_KINDEX_OUTPUT_FILE")
+# We cannot use stat because different systems implement it differently and
+# provide different command line options.
+OUTPUT_FILE_SIZE=$(du -k "$TMP_KINDEX_OUTPUT_FILE" | cut -f1)
 if [ ! $OUTPUT_FILE_SIZE -gt "0" ];
 then
   echo "FAILED: output kindex out contains no bytes."
