@@ -2,6 +2,10 @@ java_test(
     name = "label_util_test",
     size = "small",
     srcs = ["LabelUtilTest.java"],
+    tags = [
+        "arc-ignore",
+        "manual",
+    ],
     test_class = "com.google.devtools.kythe.analyzers.bazel.LabelUtilTest",
     deps = [
         "//kythe/java/com/google/devtools/kythe/analyzers/bazel:LabelUtil",
@@ -13,6 +17,10 @@ java_test(
     name = "tickets_test",
     size = "small",
     srcs = ["TicketsTest.java"],
+    tags = [
+        "arc-ignore",
+        "manual",
+    ],
     test_class = "com.google.devtools.kythe.analyzers.bazel.TicketsTest",
     deps = [
         "//kythe/java/com/google/devtools/kythe/analyzers/bazel:Tickets",

@@ -3,11 +3,19 @@ package(default_visibility = ["//kythe:default_visibility"])
 java_library(
     name = "LabelUtil",
     srcs = ["LabelUtil.java"],
+    tags = [
+        "arc-ignore",
+        "manual",
+    ],
 )
 
 java_library(
     name = "Tickets",
     srcs = ["Tickets.java"],
+    tags = [
+        "arc-ignore",
+        "manual",
+    ],
     deps = [
         ":LabelUtil",
         "//kythe/java/com/google/devtools/kythe/util",
@@ -21,6 +29,10 @@ java_binary(
     name = "indexer",
     srcs = ["BazelIndexer.java"],
     main_class = "com.google.devtools.kythe.analyzers.bazel.BazelIndexer",
+    tags = [
+        "arc-ignore",
+        "manual",
+    ],
     deps = [
         ":LabelUtil",
         "//kythe/java/com/google/devtools/kythe/analyzers/base:config",
