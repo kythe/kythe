@@ -13,6 +13,8 @@ def docker_build(name, image_name,
   args = []
   if not use_cache:
     args += ['--force-rm', '--no-cache']
+  # Use cp -p instead of cp --preserve=all because --preserve is a non-standard
+  # flag.
   cmd = [
       "set +u",
       "CTX=$@.ctx",
@@ -25,9 +27,8 @@ def docker_build(name, image_name,
       "    dir=$${dir#*/*/*/}",
       "  fi",
       '  mkdir -p "$$CTX/$$dir"',
-      '  cp -L --preserve=all $$src "$$CTX/$$dir"',
+      '  cp -Lp $$src "$$CTX/$$dir"',
       "done",
-      'tree $$CTX',
       "cp $(location %s) \"$$CTX\"" % (src),
       'cd "$$CTX"',
       "docker build -t %s %s ." % (image_name, ' '.join(args)),

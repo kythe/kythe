@@ -37,7 +37,8 @@ fi
 cd "$(dirname "$0")/../../../.."
 SERVER='//kythe/release/appengine/xrefs:server'
 bazel build "$SERVER"
-cp -f --preserve=all bazel-bin/kythe/release/appengine/xrefs/server "$DIR"/
+# Cannot use preserve=all because it is non-standard.
+cp -fp bazel-bin/kythe/release/appengine/xrefs/server "$DIR"/
 
 cd kythe/web/ui
 lein cljsbuild once prod
