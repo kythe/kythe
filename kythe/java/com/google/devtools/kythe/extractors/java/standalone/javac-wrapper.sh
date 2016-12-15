@@ -49,7 +49,10 @@ fi
 
 fix_permissions() {
   local dir="${1:?missing path}"
-  chown -R $(stat "$dir" -c %u:%g) "$dir"
+  # We cannot use stat -c to get user and group because it varies too much from
+  # system to system.
+  local ug=$(ls -ld "$dir" | awk '{print $3":"$4}')
+  chown -R "$ug" "$dir"
 }
 cleanup() {
   fix_permissions "$KYTHE_ROOT_DIRECTORY"
