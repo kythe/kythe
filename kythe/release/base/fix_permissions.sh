@@ -13,4 +13,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 dir="${1:?missing path}"
-chown -R $(stat "$dir" -c %u:%g) "$dir"
+ug=$(ls -ld "$dir" | awk '{print $3":"$4}')
+chown -R "$ug" "$dir"
