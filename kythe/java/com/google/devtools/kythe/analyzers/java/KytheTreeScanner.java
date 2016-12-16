@@ -588,6 +588,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     EntrySet node = entrySets.getWildcardNode(wild);
     String signature = wild.kind.kind.toString();
+    Builder<EntrySet> wildcards = ImmutableList.builder();
+    wildcards.add(node);
+
     if (wild.getKind() != Kind.UNBOUNDED_WILDCARD) {
       JavaNode bound = scan(wild.getBound(), ctx);
       signature += bound.qualifiedName;
@@ -595,8 +598,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
           node,
           wild.getKind() == Kind.EXTENDS_WILDCARD ? EdgeKind.BOUNDED_UPPER : EdgeKind.BOUNDED_LOWER,
           bound);
+      wildcards.addAll(bound.childWildcards);
     }
-    return new JavaNode(node, signature, ImmutableList.of(node));
+    return new JavaNode(node, signature, wildcards.build());
   }
 
   @Override

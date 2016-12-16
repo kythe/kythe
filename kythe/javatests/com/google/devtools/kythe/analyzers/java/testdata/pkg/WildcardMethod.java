@@ -2,6 +2,7 @@ package pkg;
 
 public final class WildcardMethod {
   public static final class Optional<T> {}
+  public static final class Generic<T> {}
 
   //- @Optional ref OptionalClass
   //- @wildcard defines/binding WildcardFnAbs
@@ -77,4 +78,39 @@ public final class WildcardMethod {
   //- @String ref Str
   //- OptionalWildSuperString named vname("pkg.WildcardMethod.Optional<? super java.lang.String>","","","","java")
   private static void wildcardSuperBound(Optional<? super String> ovar) {}
+
+  //- @Optional ref OptionalClass
+  //- @Generic ref GenericClass
+  //- @ogvar defines/binding OgVar
+  //- OgVar typed OgType
+  //- OgType.node/kind tapp
+  //- OgType param.0 OptionalClass
+  //- OgType param.1 FirstWildcard
+  //- FirstWildcard.node/kind absvar
+  //- FirstWildcard bounded/upper GType
+  //- GType.node/kind tapp
+  //- GType param.0 GenericClass
+  //- GType param.1 SecondWildcard
+  //- SecondWildcard.node/kind absvar
+  //- @nestedWildcard defines/binding NestedWildFnAbs
+  //- NestedWildFnAbs.node/kind abs
+  //- NestedWildFnAbs param.0 FirstWildcard
+  //- NestedWildFnAbs param.1 SecondWildcard
+  private static void nestedWildcard(Optional<? extends Generic<?>> ogvar) {}
+
+  //- @Optional ref OptionalClass
+  //- @ovar defines/binding OVar
+  //- OVar typed OType
+  //- OType.node/kind tapp
+  //- OType param.0 OptionalClass
+  //- OType param.1 Wildcard
+  //- Wildcard.node/kind absvar
+  //- @tvar defines/binding TVar
+  //- TVar typed TType
+  //- TType.node/kind absvar
+  //- @wildcardAndParam defines/binding WildcardAndParamFnAbs
+  //- WildcardAndParamFnAbs.node/kind abs
+  //- WildcardAndParamFnAbs param.0 TType
+  //- WildcardAndParamFnAbs param.1 Wildcard
+  private static <T> void wildcardAndParam(Optional<?> ovar, T tvar) {}
 }
