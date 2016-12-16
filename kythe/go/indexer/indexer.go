@@ -44,7 +44,9 @@ import (
 	"go/types"
 	"log"
 	"path"
+	"regexp"
 	"sort"
+	"strings"
 
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/tools/go/gcexportdata"
@@ -129,11 +131,19 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 			return nil, fmt.Errorf("fetching %q (%s): %v", fpath, ri.Info.Digest, err)
 		}
 
+		if strings.HasSuffix(fpath, ".h") {
+			continue
+		}
+		if strings.Contains(fpath, "external/io_bazel_rules_go_toolchain/pkg/tool") ||
+			strings.Contains(fpath, "external/io_bazel_rules_go_toolchain/bin") ||
+			strings.Contains(fpath, ".cgo.dir") {
+			continue
+		}
 		// Source inputs need to be parsed, so we can give their ASTs to the
 		// type checker later on.
-		if isSource[fpath] {
+		if isSource[fpath] || strings.HasSuffix(fpath, ".go") {
 			srcs[fpath] = string(data)
-			parsed, err := parser.ParseFile(fset, fpath, data, parser.AllErrors)
+			parsed, err := parser.ParseFile(fset, fpath, data, parser.AllErrors|parser.ParseComments)
 			if err != nil {
 				return nil, fmt.Errorf("parsing %q: %v", fpath, err)
 			}
@@ -152,10 +162,7 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 			return nil, fmt.Errorf("scanning export data in %q: %v", fpath, err)
 		}
 
-		ipath := path.Join(ri.VName.Corpus, ri.VName.Path)
-		if govname.IsStandardLibrary(ri.VName) {
-			ipath = ri.VName.Path
-		}
+		ipath := normalize(path.Join(ri.VName.Corpus, ri.VName.Path))
 		imap[ipath] = ri.VName
 
 		// Populate deps with package ipath and its prerequisites.
@@ -171,6 +178,7 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 			vmap[pkg] = vname
 		}
 	}
+
 	pi := &PackageInfo{
 		Name:         files[0].Name.Name,
 		ImportPath:   path.Join(unit.VName.Corpus, unit.VName.Path),
@@ -197,7 +205,7 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 	}
 	if pkg, _ := c.Check(pi.Name, pi.FileSet, pi.Files, pi.Info); pkg != nil {
 		pi.Package = pkg
-		vmap[pkg] = unit.VName
+		vmap[pkg] = proto.Clone(unit.VName).(*spb.VName)
 	}
 	return pi, nil
 }
@@ -248,6 +256,9 @@ func (pi *PackageInfo) VName(obj types.Object) *spb.VName {
 	}
 	vname := proto.Clone(base).(*spb.VName)
 	vname.Signature = sig
+	vname.Path = normalize(path.Join(vname.Corpus, pi.FileSet.File(obj.Pos()).Name()))
+	vname.Language = "go"
+	vname.Root = ""
 	return vname
 }
 
@@ -472,4 +483,16 @@ func AllTypeInfo() *types.Info {
 		Selections: make(map[*ast.SelectorExpr]*types.Selection),
 		Scopes:     make(map[ast.Node]*types.Scope),
 	}
+}
+
+func normalize(ipath string) string {
+	//log.Printf("in: %v", ipath)
+	ipath = regexp.MustCompile("(.*/)?vendor/").ReplaceAllString(ipath, "")
+	ipath = regexp.MustCompile("(.*/)?go_default_library.a.dir/").ReplaceAllString(ipath, "")
+	ipath = regexp.MustCompile("/[^/]*\\.go$").ReplaceAllString(ipath, "")
+	ipath = strings.TrimPrefix(ipath, "golang.org/pkg/linux_amd64/")
+	ipath = strings.TrimSuffix(ipath, "/go_default_library.a")
+	ipath = strings.TrimSuffix(ipath, ".a")
+	//log.Printf("out: %v", ipath)
+	return ipath
 }
