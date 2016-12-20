@@ -30,10 +30,11 @@
     }
   },
   {
-    "pattern": "external/io_bazel_rules_go_toolchain/(.*)",
+    "pattern": "external/io_bazel_rules_go_toolchain/pkg/([^/]*(?:/vendor)?)/(.*)(?:\\.a)?",
     "vname": {
       "corpus": "golang.org",
-      "path": "@1@"
+      "path": "@2@",
+      "root": "pkg/@1@"
     }
   },
   {

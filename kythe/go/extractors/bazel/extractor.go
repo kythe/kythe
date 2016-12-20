@@ -184,11 +184,12 @@ func (c *Config) readFileData(ctx context.Context, path string) (*apb.FileData, 
 // their compiler-apparent location using fix.
 func (c *Config) fileDataToInfo(fd *apb.FileData, fix func(string) string) *apb.CompilationUnit_FileInput {
 	path := fd.Info.Path
-	vname, ok := c.Rules.Apply(fix(path))
+	fixed := fix(path)
+	vname, ok := c.Rules.Apply(fixed)
 	if !ok {
 		vname = &spb.VName{
 			Corpus: c.Corpus,
-			Path:   fix(path),
+			Path:   fixed,
 		}
 	}
 	return &apb.CompilationUnit_FileInput{
@@ -226,9 +227,31 @@ type toolArgs struct {
 // returns path unmodified.
 func (g *toolArgs) fixPath(path string) string {
 	if fixed, ok := g.pathmap[path]; ok {
-		return fixed
+		trimmed := trimPrefixDir(fixed, g.workDir)
+		if root, ok := findBazelOut(path); ok {
+			return filepath.Join(root, trimmed)
+		}
+		return trimmed
 	}
 	return path
+}
+
+// findBazelOut reports whether path is rooted under a Bazel output directory,
+// and if so returns the prefix of the path corresponding to that directory.
+func findBazelOut(path string) (string, bool) {
+	// Bazel stores outputs from the build process in a directory structure
+	// of the form bazel-out/<build-config>/<tag>/..., for example:
+	//
+	//    bazel-out/local_linux-fastbuild/genfiles/foo/bar.cc
+	//
+	// We detect this structure by checking for a prefix of the path with three
+	// or more components, the first of which is "bazel-out".
+
+	parts := strings.SplitN(path, string(filepath.Separator), 4)
+	if len(parts) >= 3 && parts[0] == "bazel-out" {
+		return filepath.Join(parts[:3]...), true
+	}
+	return "", false
 }
 
 // wantInput reports whether path should be included as a required input.
@@ -374,7 +397,7 @@ func (c *Config) extractToolArgs(ctx context.Context, args []string) (*toolArgs,
 	// Reverse-engineer the symlink forest to recover the paths the compiler is
 	// expecting to see so the captured inputs map correctly.
 	for physical, logical := range parsed.symlinks {
-		result.pathmap[cleanLinkTarget(physical)] = trimPrefixDir(logical, parsed.workDir)
+		result.pathmap[cleanLinkTarget(physical)] = logical
 	}
 
 	return result, nil
