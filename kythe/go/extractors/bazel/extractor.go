@@ -185,6 +185,7 @@ func (c *Config) readFileData(ctx context.Context, path string) (*apb.FileData, 
 func (c *Config) fileDataToInfo(fd *apb.FileData, fix func(string) string) *apb.CompilationUnit_FileInput {
 	path := fd.Info.Path
 	fixed := fix(path)
+	fd.Info.Path = fixed
 	vname, ok := c.Rules.Apply(fixed)
 	if !ok {
 		vname = &spb.VName{
