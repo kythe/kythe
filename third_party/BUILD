@@ -1,11 +1,5 @@
 package(default_visibility = ["//visibility:public"])
 
-filegroup(
-    name = "srcs",
-    srcs = glob(["**"]),
-    visibility = ["//visibility:private"],
-)
-
 # This filegroup should include all licenses of third_party libraries
 # distributed in Kythe binary releases.
 filegroup(
@@ -14,7 +8,6 @@ filegroup(
         "//third_party/bazel:license",
         "//third_party/go:licenses",
         "//third_party/grpc-java:license",
-        "//third_party/grpc:license",
         "//third_party/leiningen:license",
         "//third_party/leveldb:license",
         "//third_party/llvm:license",

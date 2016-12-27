@@ -11,12 +11,6 @@ clang_configure()
 load("//tools/build_rules/config:system.bzl", "cc_system_package")
 
 cc_system_package(
-    name = "libcrypto",
-    default = "/usr/local/opt/openssl",
-    envvar = "OPENSSL_HOME",
-)
-
-cc_system_package(
     name = "libuuid",
     default = "/usr/local/opt/ossp-uuid",
     envvar = "UUID_HOME",
@@ -27,6 +21,14 @@ cc_system_package(
     name = "libmemcached",
     default = "/usr/local/opt/libmemcached",
     envvar = "MEMCACHED_HOME",
+)
+
+http_archive(
+    name = "boringssl",  # Must match upstream workspace name.
+    # Gitiles creates gzip files with an embedded timestamp, so we cannot use
+    # sha256 to validate the archives.  We must rely on the commit hash and https.
+    # Commits must come from the master-with-bazel branch.
+    url = "https://boringssl.googlesource.com/boringssl/+archive/9612e1d2ce16a1bd67fbbe6ce969839af4d84a29.tar.gz",
 )
 
 new_http_archive(

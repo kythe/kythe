@@ -16,9 +16,7 @@
 
 #include "json_proto.h"
 
-#include <openssl/bio.h>
-#include <openssl/err.h>
-#include <openssl/evp.h>
+#include <openssl/base64.h>
 #include <openssl/sha.h>
 
 #include "rapidjson/document.h"
@@ -34,67 +32,45 @@ namespace kythe {
 
 bool DecodeBase64(const google::protobuf::string &data,
                   google::protobuf::string *decoded) {
-  // Defensively empty the OpenSSL error queue.
-  while (::ERR_get_error())
-    ;
 
-  // Estimate the decoded size of the data (round up the encoded length
-  // to the nearest multiple of 4, then divide by 4 and multiply by 3).
-  size_t expected_size = ((data.size() + 3) & ~(size_t)3) / 4 * 3;
+  size_t expected_size;
+  if (::EVP_DecodedLength(&expected_size, data.size()) != 1) {
+    return false;
+  }
 
   if (expected_size == 0) {
     decoded->clear();
     return true;
   }
-
-  ::BIO *base64 = ::BIO_new(BIO_f_base64());
-  ::BIO *stream =
-      ::BIO_new_mem_buf(const_cast<char *>(data.c_str()), data.size());
-  CHECK(base64 != nullptr && stream != nullptr);
-  stream = ::BIO_push(base64, stream);
-  CHECK(stream != nullptr);
-  ::BIO_set_flags(stream, BIO_FLAGS_BASE64_NO_NL);
-
   decoded->resize(expected_size);
-  size_t accumulated = 0;
-  for (;;) {
-    long l =
-        ::BIO_read(stream, const_cast<char *>(decoded->c_str() + accumulated),
-                   decoded->size() - accumulated);
-    accumulated += l;
-    if (l < decoded->size() - accumulated - l) {
-      // We're sure there's no more data to read (otherwise, ::BIO_read would
-      // have filled all of the space available to it).
-      break;
-    }
-    decoded->resize(decoded->size() * 2);
-  }
-  decoded->resize(accumulated);
-  ::BIO_free_all(stream);
 
-  // Check for new errors.
-  return ::ERR_get_error() == 0;
+  size_t written_size;
+  uint8_t *output = reinterpret_cast<uint8_t *>(&(*decoded)[0]);
+  const uint8_t *input = reinterpret_cast<const uint8_t *>(data.data());
+  if (::EVP_DecodeBase64(output, &written_size, decoded->size(), input,
+                         data.size()) != 1) {
+    return false;
+  }
+  decoded->resize(written_size);
+  return true;
 }
 
 google::protobuf::string EncodeBase64(const google::protobuf::string &data) {
-  std::string encoded;
-  ::BIO *base64 = BIO_new(BIO_f_base64());
-  ::BIO *stream = BIO_new(BIO_s_mem());
-  CHECK(base64 != nullptr && stream != nullptr);
-  stream = ::BIO_push(base64, stream);
-  CHECK(stream != nullptr);
-  ::BIO_set_flags(stream, BIO_FLAGS_BASE64_NO_NL);
-  ::BIO_write(stream, data.c_str(), data.size());
-  (void)BIO_flush(stream);
-  char *buffer = nullptr;
-  long size = ::BIO_get_mem_data(stream, &buffer);
-  if (buffer == nullptr) {
-    CHECK(size == 0);
-  } else {
-    CHECK(size > 0);
-    encoded.assign(buffer, size);
-  }
-  ::BIO_free_all(stream);
+  google::protobuf::string encoded;
+
+  size_t expected_size;
+  CHECK(::EVP_EncodedLength(&expected_size, data.size()));
+  CHECK(expected_size > 0);
+
+  // expected_size includes trailing NULL, resize() does not.
+  encoded.resize(expected_size - 1);
+
+  const uint8_t *input = reinterpret_cast<const uint8_t *>(data.data());
+  uint8_t* output = reinterpret_cast<uint8_t*>(&encoded[0]);
+  const size_t encoded_size = ::EVP_EncodeBlock(output, input, data.size());
+
+  // Shrink-to-fit the actual encoded size.
+  encoded.resize(encoded_size);
   return encoded;
 }
 

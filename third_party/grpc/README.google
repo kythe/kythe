@@ -1,9 +1,0 @@
-URL: https://github.com/grpc/grpc
-Version: bd946ebcd7540491a514316f798f8b55621344b3
-License: New BSD License: http://opensource.org/licenses/BSD-3-Clause
-
-Description:
-The C++ gRPC implementation. HTTP/2 based RPC
-
-Local modifications:
-Added -Wno-implicit-function-declaration to BUILD target :grpc.
