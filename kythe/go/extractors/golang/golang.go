@@ -41,6 +41,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"bitbucket.org/creachadair/stringset"
+
 	"kythe.io/kythe/go/extractors/govname"
 	"kythe.io/kythe/go/platform/indexpack"
 	"kythe.io/kythe/go/platform/vfs"
@@ -162,7 +164,9 @@ func (e *Extractor) vnameFor(bp *build.Package) *spb.VName {
 	if e.PackageVName != nil {
 		return e.PackageVName(e.Corpus, bp)
 	}
-	return govname.ForPackage(e.Corpus, bp)
+	v := govname.ForPackage(e.Corpus, bp)
+	v.Signature = "" // not useful in this context
+	return v
 }
 
 // dirToImport converts a directory name to an import path, if possible.
@@ -244,7 +248,8 @@ func (e *Extractor) Extract() error {
 
 // Package represents a single Go package extracted from local files.
 type Package struct {
-	ext *Extractor // pointer back to the extractor that generated this package
+	ext  *Extractor    // pointer back to the extractor that generated this package
+	seen stringset.Set // input files already added to this package
 
 	Path         string                 // Import or directory path
 	Err          error                  // Error discovered during processing
@@ -356,7 +361,7 @@ func (p *Package) Store(ctx context.Context, a *indexpack.Archive) ([]string, er
 // The path of the input will have root/ trimmed from the beginning.
 // The digest will be the complete path as written -- this will be replaced
 // with the content digest in the fetcher.
-func (*Package) addFiles(cu *apb.CompilationUnit, root, base string, names []string) {
+func (p *Package) addFiles(cu *apb.CompilationUnit, root, base string, names []string) {
 	for _, name := range names {
 		path := name
 		if base != "" {
@@ -382,11 +387,15 @@ func (p *Package) addSource(cu *apb.CompilationUnit, root, base string, names []
 
 // addInput acts as addFiles for the output of a package.
 func (p *Package) addInput(cu *apb.CompilationUnit, bp *build.Package) {
-	p.addFiles(cu, bp.Root, "", []string{bp.PkgObj})
+	obj := bp.PkgObj
+	if !p.seen.Contains(obj) {
+		p.seen.Add(obj)
+		p.addFiles(cu, bp.Root, "", []string{obj})
 
-	// Populate the vname for the input based on the corpus of the package.
-	fi := cu.RequiredInput[len(cu.RequiredInput)-1]
-	fi.VName = p.ext.vnameFor(bp)
+		// Populate the vname for the input based on the corpus of the package.
+		fi := cu.RequiredInput[len(cu.RequiredInput)-1]
+		fi.VName = p.ext.vnameFor(bp)
+	}
 }
 
 // addEnv adds an environment variable to cu.
