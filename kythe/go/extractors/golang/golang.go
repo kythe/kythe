@@ -41,12 +41,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"bitbucket.org/creachadair/stringset"
-
 	"kythe.io/kythe/go/extractors/govname"
 	"kythe.io/kythe/go/platform/indexpack"
+	"kythe.io/kythe/go/platform/kindex"
 	"kythe.io/kythe/go/platform/vfs"
 
+	"bitbucket.org/creachadair/stringset"
 	"golang.org/x/net/context"
 
 	apb "kythe.io/kythe/proto/analysis_proto"
@@ -117,6 +117,20 @@ func (e *Extractor) mapPackage(importPath string, bp *build.Package) {
 	}
 }
 
+// readFile reads the contents of path as resolved through the extracted settings.
+func (e *Extractor) readFile(ctx context.Context, path string) ([]byte, error) {
+	data, err := vfs.ReadFile(ctx, path)
+	if err != nil {
+		// If there's an alternative installation path, and this is a path that
+		// could potentially be there, try that.
+		if i := strings.Index(path, "/pkg/"); i >= 0 && e.AltInstallPath != "" {
+			alt := e.AltInstallPath + path[i:]
+			return vfs.ReadFile(ctx, alt)
+		}
+	}
+	return data, err
+}
+
 // fetchAndStore reads the contents of path and stores them into a, returning
 // the digest of the contents.  The path to digest mapping is cached so that
 // repeated uses of the same file will avoid redundant work.
@@ -124,16 +138,7 @@ func (e *Extractor) fetchAndStore(ctx context.Context, path string, a *indexpack
 	if digest, ok := e.fmap[path]; ok {
 		return digest, nil
 	}
-	data, err := vfs.ReadFile(ctx, path)
-	if err != nil {
-		// If there's an alternative installation path, and this is a path that
-		// could potentially be there, try that.
-		if i := strings.Index(path, "/pkg/"); i >= 0 && e.AltInstallPath != "" {
-			alt := e.AltInstallPath + path[i:]
-			data, err = vfs.ReadFile(ctx, alt)
-			// fall through to the recheck below
-		}
-	}
+	data, err := e.readFile(ctx, path)
 	if err != nil {
 		return "", err
 	}
@@ -354,6 +359,32 @@ func (p *Package) Store(ctx context.Context, a *indexpack.Archive) ([]string, er
 		unitFiles = append(unitFiles, fn)
 	}
 	return unitFiles, nil
+}
+
+// extFetcher implements analysis.Fetcher by dispatching to an extractor.
+type extFetcher struct {
+	ctx context.Context
+	ext *Extractor
+}
+
+// Fetch implements the analysis.Fetcher interface. Where this is used, the
+// digest argument is actually the fully-expanded path, and the nominal path is
+// ignored.
+func (e extFetcher) Fetch(_, digest string) ([]byte, error) { return e.ext.readFile(e.ctx, digest) }
+
+// EachUnit calls f with a compilation record for each unit in p.  If f reports
+// an error, that error is returned by EachUnit.
+func (p *Package) EachUnit(ctx context.Context, f func(*kindex.Compilation) error) error {
+	for _, cu := range p.Units {
+		idx, err := kindex.FromUnit(cu, extFetcher{ctx: ctx, ext: p.ext})
+		if err != nil {
+			return fmt.Errorf("loading compilation: %v", err)
+		}
+		if err := f(idx); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // addFiles adds a required input to cu for each file whose basename or path is

@@ -26,12 +26,14 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
+
+	"github.com/pborman/uuid"
+	"golang.org/x/net/context"
 
 	"kythe.io/kythe/go/extractors/golang"
 	"kythe.io/kythe/go/platform/indexpack"
-
-	"golang.org/x/net/context"
+	"kythe.io/kythe/go/platform/kindex"
+	"kythe.io/kythe/go/platform/vfs"
 
 	apb "kythe.io/kythe/proto/analysis_proto"
 )
@@ -39,22 +41,24 @@ import (
 var (
 	bc = build.Default // A shallow copy of the default build settings
 
-	corpus    = flag.String("corpus", "", "Default corpus name to use")
-	localPath = flag.String("local_path", "", "Directory where relative imports are resolved")
-	outputDir = flag.String("output_dir", "", "Directory where output should be written")
-	byDir     = flag.Bool("bydir", false, "Import by directory rather than import path")
-	keepGoing = flag.Bool("continue", false, "Continue past errors")
-	verbose   = flag.Bool("v", false, "Enable verbose logging")
+	corpus     = flag.String("corpus", "", "Default corpus name to use")
+	localPath  = flag.String("local_path", "", "Directory where relative imports are resolved")
+	outputDir  = flag.String("output_dir", "", "Directory where output should be written")
+	indexFiles = flag.Bool("kindex", false, "Write outputs to .kindex files")
+	byDir      = flag.Bool("bydir", false, "Import by directory rather than import path")
+	keepGoing  = flag.Bool("continue", false, "Continue past errors")
+	verbose    = flag.Bool("v", false, "Enable verbose logging")
 )
 
 func init() {
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %s [options] <import-path>...\n", filepath.Base(os.Args[0]))
-		fmt.Fprintln(os.Stderr, `
+		fmt.Fprintf(os.Stderr, `Usage: %s [options] <import-path>...
 Extract Kythe compilation records from Go import paths specified on the command line.
-Outputs are written to an index pack directory.
+Outputs are written to an index pack unless --kindex is set, in which case they
+are written to individual .kindex files in the output directory.
 
-Options:`)
+Options:
+`, filepath.Base(os.Args[0]))
 		flag.PrintDefaults()
 	}
 
@@ -90,7 +94,8 @@ func main() {
 		log.Fatal("You must provide a non-empty --output_dir")
 	}
 
-	ext := golang.Extractor{
+	ctx := context.Background()
+	ext := &golang.Extractor{
 		BuildContext: bc,
 		Corpus:       *corpus,
 		LocalPath:    *localPath,
@@ -112,20 +117,56 @@ func main() {
 		maybeFatal("Error in extraction: %v", err)
 	}
 
-	pack, err := indexpack.CreateOrOpen(context.Background(), *outputDir,
-		indexpack.UnitType((*apb.CompilationUnit)(nil)))
-	if err != nil {
-		log.Fatalf("Unable to open %q: %v", *outputDir, err)
+	var write packageWriter
+	if *indexFiles {
+		write = writeToIndex(ctx, *outputDir)
+	} else {
+		write = writeToPack(ctx, *outputDir)
 	}
-
-	maybeLog("Writing %d package(s) to %q", len(ext.Packages), pack.Root())
+	maybeLog("Writing %d package(s) to %q", len(ext.Packages), *outputDir)
 	for _, pkg := range ext.Packages {
 		maybeLog("Package %q:\n\t// %s", pkg.Path, pkg.BuildPackage.Doc)
-		uf, err := pkg.Store(context.Background(), pack)
-		if err != nil {
+		if err := write(ctx, pkg); err != nil {
 			maybeFatal("Error writing %q: %v", pkg.Path, err)
-		} else {
-			maybeLog("Output: %v\n", strings.Join(uf, ", "))
 		}
+	}
+
+}
+
+type packageWriter func(context.Context, *golang.Package) error
+
+// writeToPack returns a packageWriter that stores the package into a Kythe
+// format indexpack rooted at path.
+func writeToPack(ctx context.Context, path string) packageWriter {
+	pack, err := indexpack.CreateOrOpen(ctx, path, indexpack.UnitType((*apb.CompilationUnit)(nil)))
+	if err != nil {
+		log.Fatalf("Unable to open %q: %v", path, err)
+	}
+	return func(ctx context.Context, pkg *golang.Package) error {
+		_, err := pkg.Store(ctx, pack)
+		return err
+	}
+}
+
+// writeToIndex returns a packageWriter that stores the package as kindex files
+// under the specified directory path.
+func writeToIndex(ctx context.Context, path string) packageWriter {
+	if err := vfs.MkdirAll(ctx, path, 0755); err != nil {
+		log.Fatalf("Unable to create output directory: %v", err)
+	}
+	return func(ctx context.Context, pkg *golang.Package) error {
+		return pkg.EachUnit(ctx, func(cu *kindex.Compilation) error {
+			path := filepath.Join(path, uuid.New()+".kindex")
+			f, err := vfs.Create(ctx, path)
+			if err != nil {
+				return err
+			}
+			_, err = cu.WriteTo(f)
+			cerr := f.Close()
+			if err != nil {
+				return err
+			}
+			return cerr
+		})
 	}
 }

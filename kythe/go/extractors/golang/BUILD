@@ -8,6 +8,7 @@ go_package_library(
     deps = [
         "//kythe/go/extractors/govname",
         "//kythe/go/platform/indexpack",
+        "//kythe/go/platform/kindex",
         "//kythe/go/platform/vfs",
         "//kythe/proto:analysis_proto_go",
         "//kythe/proto:storage_proto_go",
