@@ -22,7 +22,6 @@ go_package_library(
         "//kythe/proto:storage_proto_go",
         "//kythe/proto:xref_proto_go",
         "@go_stringset//:stringset",
-        "@go_x_net//:context",
     ],
 )
 

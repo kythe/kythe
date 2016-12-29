@@ -38,7 +38,6 @@ go_binary(
         "//kythe/go/platform/vfs",
         "//third_party/bazel:extra_actions_base_proto_go",
         "@go_protobuf//:proto",
-        "@go_x_net//:context",
     ],
 )
 
@@ -49,6 +48,5 @@ go_binary(
         "//kythe/go/platform/vfs",
         "//third_party/bazel:test_status_proto_go",
         "@go_protobuf//:proto",
-        "@go_x_net//:context",
     ],
 )

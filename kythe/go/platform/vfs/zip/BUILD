@@ -7,6 +7,5 @@ go_package_library(
     srcs = ["fs.go"],
     deps = [
         "//kythe/go/platform/vfs",
-        "@go_x_net//:context",
     ],
 )

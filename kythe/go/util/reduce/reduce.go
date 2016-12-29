@@ -20,10 +20,9 @@
 package reduce
 
 import (
+	"context"
 	"io"
 	"sync"
-
-	"golang.org/x/net/context"
 )
 
 // A Reducer transforms one stream of values into another stream of values.

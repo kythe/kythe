@@ -7,7 +7,6 @@ go_package_library(
     srcs = ["pager.go"],
     deps = [
         "//kythe/go/util/sortutil",
-        "@go_x_net//:context",
     ],
 )
 

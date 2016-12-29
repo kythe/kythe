@@ -22,6 +22,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -41,7 +42,6 @@ import (
 	"kythe.io/kythe/go/util/netutil"
 	"kythe.io/kythe/go/util/process"
 
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
 	apb "kythe.io/kythe/proto/analysis_proto"

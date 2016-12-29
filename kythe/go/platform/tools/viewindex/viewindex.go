@@ -21,6 +21,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"log"
@@ -28,8 +29,6 @@ import (
 
 	"kythe.io/kythe/go/platform/kindex"
 	"kythe.io/kythe/go/util/flagutil"
-
-	"golang.org/x/net/context"
 )
 
 func init() {

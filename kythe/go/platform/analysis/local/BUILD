@@ -9,6 +9,5 @@ go_package_library(
         "//kythe/go/platform/analysis",
         "//kythe/go/platform/analysis/driver",
         "//kythe/go/platform/kindex",
-        "@go_x_net//:context",
     ],
 )

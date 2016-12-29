@@ -20,6 +20,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"io/ioutil"
@@ -29,7 +30,6 @@ import (
 	"kythe.io/kythe/go/platform/vfs"
 
 	"github.com/golang/protobuf/proto"
-	"golang.org/x/net/context"
 
 	xapb "kythe.io/third_party/bazel/extra_actions_base_proto"
 )

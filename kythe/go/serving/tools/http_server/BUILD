@@ -4,7 +4,10 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 go_binary(
     name = "http_server",
-    srcs = ["http_server.go"],
+    srcs = [
+        "grpc.go",
+        "http_server.go",
+    ],
     deps = [
         "//kythe/go/services/filetree",
         "//kythe/go/services/graphstore",

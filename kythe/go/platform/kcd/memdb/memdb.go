@@ -19,6 +19,7 @@
 package memdb
 
 import (
+	"context"
 	"errors"
 	"io"
 	"io/ioutil"
@@ -26,8 +27,6 @@ import (
 	"time"
 
 	"kythe.io/kythe/go/platform/kcd"
-
-	"golang.org/x/net/context"
 )
 
 // DB implements kcd.Reader, and *DB implements kcd.ReadWriter and kcd.Deleter.

@@ -26,6 +26,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -40,8 +41,6 @@ import (
 	"kythe.io/kythe/go/util/flagutil"
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema/edges"
-
-	"golang.org/x/net/context"
 
 	spb "kythe.io/kythe/proto/storage_proto"
 

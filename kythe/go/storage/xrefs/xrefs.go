@@ -19,6 +19,7 @@
 package xrefs
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -38,7 +39,6 @@ import (
 	"kythe.io/kythe/go/util/schema/nodes"
 
 	"bitbucket.org/creachadair/stringset"
-	"golang.org/x/net/context"
 
 	cpb "kythe.io/kythe/proto/common_proto"
 	gpb "kythe.io/kythe/proto/graph_proto"

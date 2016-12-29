@@ -9,7 +9,6 @@ go_package_library(
         "//kythe/go/platform/indexpack",
         "//kythe/go/platform/kcd",
         "@go_protobuf//:proto",
-        "@go_x_net//:context",
     ],
 )
 

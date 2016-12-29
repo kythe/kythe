@@ -8,6 +8,5 @@ go_package_library(
     deps = [
         "//kythe/go/services/graphstore",
         "//kythe/go/storage/inmemory",
-        "@go_x_net//:context",
     ],
 )

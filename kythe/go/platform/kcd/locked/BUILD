@@ -7,6 +7,5 @@ go_package_library(
     srcs = ["locked.go"],
     deps = [
         "//kythe/go/platform/kcd",
-        "@go_x_net//:context",
     ],
 )

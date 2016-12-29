@@ -19,14 +19,13 @@
 package driver
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
 	"log"
 
 	"kythe.io/kythe/go/platform/analysis"
-
-	"golang.org/x/net/context"
 
 	apb "kythe.io/kythe/proto/analysis_proto"
 )

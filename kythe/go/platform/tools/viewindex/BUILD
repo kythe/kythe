@@ -8,6 +8,5 @@ go_binary(
     deps = [
         "//kythe/go/platform/kindex",
         "//kythe/go/util/flagutil",
-        "@go_x_net//:context",
     ],
 )

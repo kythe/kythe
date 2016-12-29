@@ -8,6 +8,5 @@ go_package_library(
     deps = [
         "//kythe/go/storage/keyvalue",
         "@go_protobuf//:proto",
-        "@go_x_net//:context",
     ],
 )

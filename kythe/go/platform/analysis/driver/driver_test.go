@@ -18,14 +18,13 @@ package driver
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"io"
 	"testing"
 
 	"kythe.io/kythe/go/platform/analysis"
 	"kythe.io/kythe/go/test/testutil"
-
-	"golang.org/x/net/context"
 
 	apb "kythe.io/kythe/proto/analysis_proto"
 	spb "kythe.io/kythe/proto/storage_proto"

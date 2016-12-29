@@ -18,6 +18,7 @@
 package inmemory
 
 import (
+	"context"
 	"io"
 	"sort"
 	"sync"
@@ -28,7 +29,6 @@ import (
 	spb "kythe.io/kythe/proto/storage_proto"
 
 	"github.com/golang/protobuf/proto"
-	"golang.org/x/net/context"
 )
 
 // GraphStore implements the graphstore.Service interface. A zero of this type

@@ -18,14 +18,13 @@
 package local
 
 import (
+	"context"
 	"fmt"
 	"io"
 
 	"kythe.io/kythe/go/platform/analysis"
 	"kythe.io/kythe/go/platform/analysis/driver"
 	"kythe.io/kythe/go/platform/kindex"
-
-	"golang.org/x/net/context"
 )
 
 // KIndexQueue is a driver.Queue reading each compilation from a .kindex file.

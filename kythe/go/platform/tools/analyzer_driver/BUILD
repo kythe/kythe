@@ -20,6 +20,5 @@ go_binary(
         "//kythe/proto:analysis_service_proto_go",
         "@go_grpc//:grpc",
         "@go_protobuf//:proto",
-        "@go_x_net//:context",
     ],
 )

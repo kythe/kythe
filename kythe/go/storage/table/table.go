@@ -19,6 +19,7 @@ package table
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -29,7 +30,6 @@ import (
 	"kythe.io/kythe/go/storage/keyvalue"
 
 	"github.com/golang/protobuf/proto"
-	"golang.org/x/net/context"
 )
 
 // Proto is a key-value direct lookup table with protobuf values.

@@ -19,11 +19,10 @@
 package remote
 
 import (
+	"context"
 	"io"
 
 	"kythe.io/kythe/go/platform/analysis"
-
-	"golang.org/x/net/context"
 
 	apb "kythe.io/kythe/proto/analysis_proto"
 	aspb "kythe.io/kythe/proto/analysis_service_proto"

@@ -19,6 +19,7 @@
 package packdb
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -33,7 +34,6 @@ import (
 	"kythe.io/kythe/go/platform/kcd"
 
 	"github.com/golang/protobuf/proto"
-	"golang.org/x/net/context"
 )
 
 // DB implements kcd.ReadWriter using an index pack as its backing store.

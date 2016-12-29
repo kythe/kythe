@@ -19,6 +19,7 @@
 package testutil
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -33,7 +34,6 @@ import (
 	spb "kythe.io/kythe/proto/storage_proto"
 
 	"github.com/golang/protobuf/proto"
-	"golang.org/x/net/context"
 )
 
 // TestError is the concrete type of errors returned by the Run function.

@@ -22,13 +22,12 @@
 package filetree
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
 
 	"kythe.io/kythe/go/storage/table"
-
-	"golang.org/x/net/context"
 
 	ftpb "kythe.io/kythe/proto/filetree_proto"
 	srvpb "kythe.io/kythe/proto/serving_proto"

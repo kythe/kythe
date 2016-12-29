@@ -19,13 +19,12 @@
 package graphstore
 
 import (
+	"context"
 	"errors"
 	"io"
 	"strings"
 
 	"kythe.io/kythe/go/services/graphstore/compare"
-
-	"golang.org/x/net/context"
 
 	spb "kythe.io/kythe/proto/storage_proto"
 	sspb "kythe.io/kythe/proto/storage_service_proto"

@@ -20,6 +20,7 @@
 package profile
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -32,8 +33,6 @@ import (
 	"sync"
 
 	"kythe.io/kythe/go/platform/vfs"
-
-	"golang.org/x/net/context"
 
 	_ "net/http/pprof" // for /debug/pprof/... handlers
 )

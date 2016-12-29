@@ -20,6 +20,7 @@ package zip
 
 import (
 	"archive/zip"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -28,8 +29,6 @@ import (
 	"path/filepath"
 
 	"kythe.io/kythe/go/platform/vfs"
-
-	"golang.org/x/net/context"
 )
 
 var _ vfs.Reader = FS{}

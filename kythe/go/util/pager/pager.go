@@ -21,12 +21,11 @@ package pager
 
 import (
 	"container/heap"
+	"context"
 	"errors"
 	"fmt"
 
 	"kythe.io/kythe/go/util/sortutil"
-
-	"golang.org/x/net/context"
 )
 
 // A Head signals the start of a new Set.

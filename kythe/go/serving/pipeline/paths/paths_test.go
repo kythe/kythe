@@ -17,11 +17,11 @@
 package paths
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"testing"
 
-	"golang.org/x/net/context"
 	"kythe.io/kythe/go/test/testutil"
 	"kythe.io/kythe/go/util/reduce"
 	"kythe.io/kythe/go/util/schema/facts"

@@ -13,6 +13,5 @@ go_package_library(
         "//kythe/go/util/schema/nodes",
         "//kythe/proto:filetree_proto_go",
         "//kythe/proto:storage_proto_go",
-        "@go_x_net//:context",
     ],
 )

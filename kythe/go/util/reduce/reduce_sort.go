@@ -17,6 +17,7 @@
 package reduce
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -24,7 +25,6 @@ import (
 	"kythe.io/kythe/go/util/disksort"
 
 	"github.com/golang/protobuf/proto"
-	"golang.org/x/net/context"
 
 	ipb "kythe.io/kythe/proto/internal_proto"
 )

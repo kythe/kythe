@@ -19,6 +19,7 @@
 package filetree
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -32,8 +33,6 @@ import (
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema/facts"
 	"kythe.io/kythe/go/util/schema/nodes"
-
-	"golang.org/x/net/context"
 
 	ftpb "kythe.io/kythe/proto/filetree_proto"
 	spb "kythe.io/kythe/proto/storage_proto"

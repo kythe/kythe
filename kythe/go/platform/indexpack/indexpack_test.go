@@ -18,6 +18,7 @@ package indexpack
 
 import (
 	"archive/zip"
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -35,7 +36,6 @@ import (
 	spb "kythe.io/kythe/proto/storage_proto"
 
 	"github.com/golang/protobuf/proto"
-	"golang.org/x/net/context"
 )
 
 var (

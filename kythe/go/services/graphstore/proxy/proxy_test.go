@@ -17,6 +17,7 @@
 package proxy
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -25,7 +26,6 @@ import (
 	"kythe.io/kythe/go/services/graphstore"
 
 	"github.com/golang/protobuf/proto"
-	"golang.org/x/net/context"
 
 	spb "kythe.io/kythe/proto/storage_proto"
 )

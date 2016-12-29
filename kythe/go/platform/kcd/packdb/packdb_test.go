@@ -17,6 +17,7 @@
 package packdb
 
 import (
+	"context"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -25,8 +26,6 @@ import (
 	"kythe.io/kythe/go/platform/indexpack"
 	"kythe.io/kythe/go/platform/kcd/kythe"
 	"kythe.io/kythe/go/platform/kcd/testutil"
-
-	"golang.org/x/net/context"
 )
 
 func TestPackDB(t *testing.T) {

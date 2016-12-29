@@ -12,6 +12,5 @@ go_binary(
         "//kythe/go/util/build",
         "//kythe/proto:analysis_proto_go",
         "@go_gcloud//:storage",
-        "@go_x_net//:context",
     ],
 )

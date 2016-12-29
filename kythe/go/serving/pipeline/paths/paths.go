@@ -18,6 +18,7 @@
 package paths
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"sort"
@@ -31,7 +32,6 @@ import (
 	"kythe.io/kythe/go/util/schema/nodes"
 
 	"github.com/golang/protobuf/proto"
-	"golang.org/x/net/context"
 
 	cpb "kythe.io/kythe/proto/common_proto"
 	ipb "kythe.io/kythe/proto/internal_proto"

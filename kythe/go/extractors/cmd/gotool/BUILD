@@ -14,6 +14,5 @@ go_binary(
         "//kythe/go/platform/vfs",
         "//kythe/proto:analysis_proto_go",
         "@go_uuid//:uuid",
-        "@go_x_net//:context",
     ],
 )

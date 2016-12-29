@@ -19,6 +19,7 @@
 package api
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -32,7 +33,6 @@ import (
 	"kythe.io/kythe/go/storage/leveldb"
 	"kythe.io/kythe/go/storage/table"
 
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
 	ftpb "kythe.io/kythe/proto/filetree_proto"

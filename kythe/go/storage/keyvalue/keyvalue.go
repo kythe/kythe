@@ -20,6 +20,7 @@ package keyvalue
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -29,8 +30,6 @@ import (
 
 	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/util/datasize"
-
-	"golang.org/x/net/context"
 
 	spb "kythe.io/kythe/proto/storage_proto"
 )

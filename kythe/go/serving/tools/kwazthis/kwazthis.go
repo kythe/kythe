@@ -32,6 +32,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -51,8 +52,6 @@ import (
 	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/facts"
 	"kythe.io/kythe/go/util/schema/nodes"
-
-	"golang.org/x/net/context"
 
 	gpb "kythe.io/kythe/proto/graph_proto"
 	spb "kythe.io/kythe/proto/storage_proto"

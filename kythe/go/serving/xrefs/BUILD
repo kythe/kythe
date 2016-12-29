@@ -17,7 +17,6 @@ go_package_library(
         "//kythe/proto:xref_proto_go",
         "@go_protobuf//:proto",
         "@go_stringset//:stringset",
-        "@go_x_net//:context",
     ],
 )
 

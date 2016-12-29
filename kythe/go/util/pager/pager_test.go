@@ -17,11 +17,10 @@
 package pager
 
 import (
+	"context"
 	"testing"
 
 	"kythe.io/kythe/go/test/testutil"
-
-	"golang.org/x/net/context"
 )
 
 type testSet struct {

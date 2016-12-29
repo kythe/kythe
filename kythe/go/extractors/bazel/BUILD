@@ -19,6 +19,5 @@ go_package_library(
         "@go_protobuf//:proto",
         "@go_shell//:shell",
         "@go_stringset//:stringset",
-        "@go_x_net//:context",
     ],
 )

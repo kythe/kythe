@@ -17,6 +17,7 @@
 package xrefs
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"testing"
@@ -29,8 +30,6 @@ import (
 	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/facts"
 	"kythe.io/kythe/go/util/schema/nodes"
-
-	"golang.org/x/net/context"
 
 	cpb "kythe.io/kythe/proto/common_proto"
 	gpb "kythe.io/kythe/proto/graph_proto"

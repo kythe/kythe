@@ -5,5 +5,4 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_package_library(
     name = "vfs",
     srcs = ["vfs.go"],
-    deps = ["@go_x_net//:context"],
 )

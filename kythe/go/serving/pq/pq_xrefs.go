@@ -17,6 +17,7 @@
 package pq
 
 import (
+	"context"
 	"database/sql"
 	"encoding/base64"
 	"fmt"
@@ -32,7 +33,6 @@ import (
 
 	"bitbucket.org/creachadair/stringset"
 	"github.com/golang/protobuf/proto"
-	"golang.org/x/net/context"
 
 	cpb "kythe.io/kythe/proto/common_proto"
 	gpb "kythe.io/kythe/proto/graph_proto"

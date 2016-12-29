@@ -20,6 +20,7 @@ package pipeline
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -42,7 +43,6 @@ import (
 	"kythe.io/kythe/go/util/sortutil"
 
 	"github.com/golang/protobuf/proto"
-	"golang.org/x/net/context"
 
 	ftpb "kythe.io/kythe/proto/filetree_proto"
 	ipb "kythe.io/kythe/proto/internal_proto"

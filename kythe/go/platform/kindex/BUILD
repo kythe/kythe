@@ -11,7 +11,6 @@ go_package_library(
         "//kythe/go/platform/vfs",
         "//kythe/proto:analysis_proto_go",
         "@go_protobuf//:proto",
-        "@go_x_net//:context",
     ],
 )
 

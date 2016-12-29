@@ -24,8 +24,8 @@ import (
 	"log"
 	"os"
 
-	"kythe.io/kythe/go/platform/delimited/dedup"
 	"kythe.io/kythe/go/platform/delimited"
+	"kythe.io/kythe/go/platform/delimited/dedup"
 	"kythe.io/kythe/go/util/datasize"
 	"kythe.io/kythe/go/util/flagutil"
 )

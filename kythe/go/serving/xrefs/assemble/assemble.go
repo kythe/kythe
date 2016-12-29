@@ -19,6 +19,7 @@
 package assemble
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -35,8 +36,6 @@ import (
 	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/facts"
 	"kythe.io/kythe/go/util/schema/nodes"
-
-	"golang.org/x/net/context"
 
 	cpb "kythe.io/kythe/proto/common_proto"
 	ipb "kythe.io/kythe/proto/internal_proto"

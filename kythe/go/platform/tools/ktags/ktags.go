@@ -19,6 +19,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -33,7 +34,6 @@ import (
 	"kythe.io/kythe/go/util/schema/nodes"
 
 	"bitbucket.org/creachadair/stringset"
-	"golang.org/x/net/context"
 
 	gpb "kythe.io/kythe/proto/graph_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"

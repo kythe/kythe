@@ -19,6 +19,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
 	"net"
@@ -37,7 +38,6 @@ import (
 	xstore "kythe.io/kythe/go/storage/xrefs"
 	"kythe.io/kythe/go/util/flagutil"
 
-	"golang.org/x/net/context"
 	"golang.org/x/net/http2"
 	"google.golang.org/grpc"
 
@@ -127,9 +127,9 @@ func main() {
 
 	if *grpcListeningAddr != "" {
 		srv := grpc.NewServer()
-		xpb.RegisterXRefServiceServer(srv, xs)
-		gpb.RegisterGraphServiceServer(srv, xs)
-		ftpb.RegisterFileTreeServiceServer(srv, ft)
+		xpb.RegisterXRefServiceServer(srv, grpcXRefServiceServer{xs})
+		gpb.RegisterGraphServiceServer(srv, grpcGraphServiceServer{xs})
+		ftpb.RegisterFileTreeServiceServer(srv, grpcFileTreeServiceServer{ft})
 		go startGRPC(srv)
 	}
 

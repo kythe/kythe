@@ -5,7 +5,6 @@ package(default_visibility = ["//kythe:default_visibility"])
 go_package_library(
     name = "kcd",
     srcs = ["kcd.go"],
-    deps = ["@go_x_net//:context"],
 )
 
 go_test(

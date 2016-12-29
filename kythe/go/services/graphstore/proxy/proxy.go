@@ -20,6 +20,7 @@ package proxy
 
 import (
 	"container/heap"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -31,8 +32,6 @@ import (
 	"kythe.io/kythe/go/storage/gsutil"
 
 	spb "kythe.io/kythe/proto/storage_proto"
-
-	"golang.org/x/net/context"
 )
 
 func init() {

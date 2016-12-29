@@ -38,6 +38,7 @@ package kindex
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -52,7 +53,6 @@ import (
 	apb "kythe.io/kythe/proto/analysis_proto"
 
 	"github.com/golang/protobuf/proto"
-	"golang.org/x/net/context"
 )
 
 // Extension is the standard file extension for Kythe compilation index files.

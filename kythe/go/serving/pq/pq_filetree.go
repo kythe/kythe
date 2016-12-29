@@ -17,10 +17,9 @@
 package pq
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
-
-	"golang.org/x/net/context"
 
 	ftpb "kythe.io/kythe/proto/filetree_proto"
 )

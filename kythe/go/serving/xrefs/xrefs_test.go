@@ -18,6 +18,7 @@ package xrefs
 
 import (
 	"bytes"
+	"context"
 	"sort"
 	"testing"
 
@@ -28,7 +29,6 @@ import (
 
 	"bitbucket.org/creachadair/stringset"
 	"github.com/golang/protobuf/proto"
-	"golang.org/x/net/context"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/unicode"
 	"golang.org/x/text/transform"

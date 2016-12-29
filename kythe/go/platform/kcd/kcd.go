@@ -22,6 +22,7 @@
 package kcd
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding"
 	"encoding/hex"
@@ -31,8 +32,6 @@ import (
 	"regexp"
 	"strings"
 	"time"
-
-	"golang.org/x/net/context"
 )
 
 // Reader represents read-only access to an underlying storage layer used to

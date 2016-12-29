@@ -17,11 +17,10 @@
 package memdb
 
 import (
+	"context"
 	"testing"
 
 	"kythe.io/kythe/go/platform/kcd/testutil"
-
-	"golang.org/x/net/context"
 )
 
 func TestMemDB(t *testing.T) {

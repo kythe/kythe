@@ -10,6 +10,5 @@ go_package_library(
         "//kythe/go/services/graphstore/compare",
         "//kythe/proto:storage_proto_go",
         "@go_protobuf//:proto",
-        "@go_x_net//:context",
     ],
 )

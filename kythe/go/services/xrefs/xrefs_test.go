@@ -17,6 +17,7 @@
 package xrefs
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -27,8 +28,6 @@ import (
 	"kythe.io/kythe/go/test/testutil"
 	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/facts"
-
-	"golang.org/x/net/context"
 
 	cpb "kythe.io/kythe/proto/common_proto"
 	gpb "kythe.io/kythe/proto/graph_proto"
@@ -461,32 +460,32 @@ func TestSlowDocumentation(t *testing.T) {
 		set := &gpb.EdgeSet{Groups: make(map[string]*gpb.EdgeSet_Group)}
 		if node.typed != "" {
 			set.Groups[edges.Typed] = &gpb.EdgeSet_Group{
-				Edge: []*gpb.EdgeSet_Group_Edge{&gpb.EdgeSet_Group_Edge{TargetTicket: node.typed}},
+				Edge: []*gpb.EdgeSet_Group_Edge{{TargetTicket: node.typed}},
 			}
 		}
 		if node.childof != "" {
 			set.Groups[edges.ChildOf] = &gpb.EdgeSet_Group{
-				Edge: []*gpb.EdgeSet_Group_Edge{&gpb.EdgeSet_Group_Edge{TargetTicket: node.childof}},
+				Edge: []*gpb.EdgeSet_Group_Edge{{TargetTicket: node.childof}},
 			}
 		}
 		if node.documented != "" {
 			set.Groups[edges.Mirror(edges.Documents)] = &gpb.EdgeSet_Group{
-				Edge: []*gpb.EdgeSet_Group_Edge{&gpb.EdgeSet_Group_Edge{TargetTicket: node.documented}},
+				Edge: []*gpb.EdgeSet_Group_Edge{{TargetTicket: node.documented}},
 			}
 		}
 		if node.completes != "" {
 			set.Groups[edges.Completes] = &gpb.EdgeSet_Group{
-				Edge: []*gpb.EdgeSet_Group_Edge{&gpb.EdgeSet_Group_Edge{TargetTicket: node.completes}},
+				Edge: []*gpb.EdgeSet_Group_Edge{{TargetTicket: node.completes}},
 			}
 		}
 		if node.completed != "" {
 			set.Groups[edges.Mirror(edges.Completes)] = &gpb.EdgeSet_Group{
-				Edge: []*gpb.EdgeSet_Group_Edge{&gpb.EdgeSet_Group_Edge{TargetTicket: node.completed}},
+				Edge: []*gpb.EdgeSet_Group_Edge{{TargetTicket: node.completed}},
 			}
 		}
 		if node.defines != "" {
 			set.Groups[edges.DefinesBinding] = &gpb.EdgeSet_Group{
-				Edge: []*gpb.EdgeSet_Group_Edge{&gpb.EdgeSet_Group_Edge{TargetTicket: node.defines}},
+				Edge: []*gpb.EdgeSet_Group_Edge{{TargetTicket: node.defines}},
 			}
 		}
 		if node.params != nil {

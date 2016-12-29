@@ -18,6 +18,7 @@
 package gsutil
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -28,8 +29,6 @@ import (
 
 	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/storage/inmemory"
-
-	"golang.org/x/net/context"
 )
 
 // Handler returns a graphstore.Service based on the given specification.

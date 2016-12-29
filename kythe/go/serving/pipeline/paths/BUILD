@@ -16,7 +16,6 @@ go_package_library(
         "//kythe/proto:internal_proto_go",
         "//kythe/proto:serving_proto_go",
         "@go_protobuf//:proto",
-        "@go_x_net//:context",
     ],
 )
 

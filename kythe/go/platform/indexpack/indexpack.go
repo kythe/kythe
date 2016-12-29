@@ -66,6 +66,7 @@ package indexpack
 import (
 	"bufio"
 	"compress/gzip"
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -83,7 +84,6 @@ import (
 	"kythe.io/kythe/go/platform/vfs/zip"
 
 	"github.com/pborman/uuid"
-	"golang.org/x/net/context"
 )
 
 const (

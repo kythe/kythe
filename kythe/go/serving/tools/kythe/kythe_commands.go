@@ -17,6 +17,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -33,8 +34,6 @@ import (
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/facts"
-
-	"golang.org/x/net/context"
 
 	ftpb "kythe.io/kythe/proto/filetree_proto"
 	gpb "kythe.io/kythe/proto/graph_proto"

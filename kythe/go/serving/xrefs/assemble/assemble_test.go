@@ -17,12 +17,11 @@
 package assemble
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
 	"kythe.io/kythe/go/test/testutil"
-
-	"golang.org/x/net/context"
 
 	ipb "kythe.io/kythe/proto/internal_proto"
 	srvpb "kythe.io/kythe/proto/serving_proto"
@@ -78,7 +77,7 @@ func TestAppendEntry(t *testing.T) {
 				"blah": []byte("blah"),
 			},
 			EdgeGroups: map[string]*ipb.Source_EdgeGroup{
-				"edgeKind": &ipb.Source_EdgeGroup{
+				"edgeKind": {
 					Edges: []*ipb.Source_Edge{{
 						Ticket: "kythe:#firstTarget",
 					}, {

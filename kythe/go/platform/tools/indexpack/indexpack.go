@@ -24,6 +24,7 @@
 package main
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -40,8 +41,6 @@ import (
 	"kythe.io/kythe/go/util/build"
 
 	apb "kythe.io/kythe/proto/analysis_proto"
-
-	"golang.org/x/net/context"
 )
 
 const formatKey = "kythe"

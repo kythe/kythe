@@ -18,6 +18,5 @@ go_binary(
         "//kythe/go/util/profile",
         "//kythe/go/util/schema",
         "//kythe/proto:storage_proto_go",
-        "@go_x_net//:context",
     ],
 )

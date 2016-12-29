@@ -20,13 +20,12 @@
 package locked
 
 import (
+	"context"
 	"errors"
 	"io"
 	"sync"
 
 	"kythe.io/kythe/go/platform/kcd"
-
-	"golang.org/x/net/context"
 )
 
 type locker struct {

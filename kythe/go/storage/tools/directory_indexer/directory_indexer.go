@@ -47,6 +47,7 @@
 package main
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"flag"
@@ -60,8 +61,6 @@ import (
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/flagutil"
 	"kythe.io/kythe/go/util/vnameutil"
-
-	"golang.org/x/net/context"
 
 	spb "kythe.io/kythe/proto/storage_proto"
 )

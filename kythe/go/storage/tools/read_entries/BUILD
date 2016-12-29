@@ -16,6 +16,5 @@ go_binary(
         "//kythe/go/util/flagutil",
         "//kythe/go/util/kytheuri",
         "//kythe/proto:storage_proto_go",
-        "@go_x_net//:context",
     ],
 )

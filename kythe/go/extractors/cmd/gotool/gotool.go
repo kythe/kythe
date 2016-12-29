@@ -20,6 +20,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"go/build"
@@ -28,7 +29,6 @@ import (
 	"path/filepath"
 
 	"github.com/pborman/uuid"
-	"golang.org/x/net/context"
 
 	"kythe.io/kythe/go/extractors/golang"
 	"kythe.io/kythe/go/platform/indexpack"

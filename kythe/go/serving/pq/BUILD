@@ -28,6 +28,5 @@ go_package_library(
         "@go_pq//:pq",
         "@go_protobuf//:proto",
         "@go_stringset//:stringset",
-        "@go_x_net//:context",
     ],
 )

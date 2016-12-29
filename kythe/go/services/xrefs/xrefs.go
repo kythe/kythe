@@ -20,6 +20,7 @@ package xrefs
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -39,11 +40,10 @@ import (
 
 	"bitbucket.org/creachadair/stringset"
 	"github.com/sergi/go-diff/diffmatchpatch"
-	"golang.org/x/net/context"
 
 	cpb "kythe.io/kythe/proto/common_proto"
-	xpb "kythe.io/kythe/proto/xref_proto"
 	gpb "kythe.io/kythe/proto/graph_proto"
+	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
 // Service defines the interface for file based cross-references.  Informally,

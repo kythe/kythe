@@ -17,13 +17,12 @@
 package reduce
 
 import (
+	"context"
 	"io"
 	"strconv"
 	"testing"
 
 	"kythe.io/kythe/go/test/testutil"
-
-	"golang.org/x/net/context"
 
 	ipb "kythe.io/kythe/proto/internal_proto"
 )

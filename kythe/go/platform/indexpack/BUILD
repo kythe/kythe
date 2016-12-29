@@ -10,7 +10,6 @@ go_package_library(
         "//kythe/go/platform/vfs",
         "//kythe/go/platform/vfs/zip",
         "@go_uuid//:uuid",
-        "@go_x_net//:context",
     ],
 )
 
@@ -23,6 +22,5 @@ go_test(
         "//kythe/proto:analysis_proto_go",
         "//kythe/proto:storage_proto_go",
         "@go_protobuf//:proto",
-        "@go_x_net//:context",
     ],
 )

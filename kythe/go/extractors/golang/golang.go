@@ -35,6 +35,7 @@
 package golang
 
 import (
+	"context"
 	"fmt"
 	"go/build"
 	"os"
@@ -47,7 +48,6 @@ import (
 	"kythe.io/kythe/go/platform/vfs"
 
 	"bitbucket.org/creachadair/stringset"
-	"golang.org/x/net/context"
 
 	apb "kythe.io/kythe/proto/analysis_proto"
 	spb "kythe.io/kythe/proto/storage_proto"

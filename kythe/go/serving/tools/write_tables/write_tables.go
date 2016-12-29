@@ -19,6 +19,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
 
@@ -31,8 +32,6 @@ import (
 	"kythe.io/kythe/go/util/datasize"
 	"kythe.io/kythe/go/util/flagutil"
 	"kythe.io/kythe/go/util/profile"
-
-	"golang.org/x/net/context"
 
 	spb "kythe.io/kythe/proto/storage_proto"
 

@@ -8,7 +8,6 @@ go_package_library(
     deps = [
         "//kythe/go/platform/analysis",
         "//kythe/proto:analysis_proto_go",
-        "@go_x_net//:context",
     ],
 )
 

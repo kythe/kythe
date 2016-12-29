@@ -17,7 +17,6 @@ go_package_library(
         "//kythe/proto:graph_proto_go",
         "@go_diff//:diffmatchpatch",
         "@go_stringset//:stringset",
-        "@go_x_net//:context",
     ],
 )
 

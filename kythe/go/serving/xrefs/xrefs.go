@@ -26,6 +26,7 @@
 package xrefs
 
 import (
+	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -46,7 +47,6 @@ import (
 
 	"bitbucket.org/creachadair/stringset"
 	"github.com/golang/protobuf/proto"
-	"golang.org/x/net/context"
 )
 
 type edgeSetResult struct {
@@ -228,7 +228,7 @@ func (t *Table) Nodes(ctx context.Context, req *gpb.NodesRequest) (*gpb.NodesRep
 	}
 	defer func() {
 		// drain channel in case of errors
-		for _ = range rs {
+		for range rs {
 		}
 	}()
 
@@ -325,7 +325,7 @@ func (t *Table) edges(ctx context.Context, req edgesRequest) (*gpb.EdgesReply, e
 	}
 	defer func() {
 		// drain channel in case of errors or early return
-		for _ = range rs {
+		for range rs {
 		}
 	}()
 

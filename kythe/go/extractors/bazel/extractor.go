@@ -18,6 +18,7 @@
 package bazel
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -31,7 +32,6 @@ import (
 	"bitbucket.org/creachadair/shell"
 	"bitbucket.org/creachadair/stringset"
 	"github.com/golang/protobuf/proto"
-	"golang.org/x/net/context"
 
 	"kythe.io/kythe/go/extractors/govname"
 	"kythe.io/kythe/go/platform/kindex"

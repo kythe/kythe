@@ -19,13 +19,12 @@
 package vfs
 
 import (
+	"context"
 	"errors"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-
-	"golang.org/x/net/context"
 )
 
 // ErrNotSupported is returned for all unsupported VFS operations.

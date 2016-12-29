@@ -18,6 +18,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -27,7 +28,6 @@ import (
 	"path/filepath"
 
 	"github.com/golang/protobuf/proto"
-	"golang.org/x/net/context"
 
 	"kythe.io/kythe/go/extractors/bazel"
 	"kythe.io/kythe/go/util/vnameutil"

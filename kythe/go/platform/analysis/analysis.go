@@ -24,10 +24,10 @@
 package analysis
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/golang/protobuf/proto"
-	"golang.org/x/net/context"
 
 	apb "kythe.io/kythe/proto/analysis_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
