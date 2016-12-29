@@ -738,8 +738,8 @@ class ExtractorAction : public clang::PreprocessorFrontendAction {
 
   void ExecuteAction() override {
     const auto inputs = getCompilerInstance().getFrontendOpts().Inputs;
-    CHECK_EQ(1, inputs.size()) << "Expected to see only one TU; instead saw "
-                               << inputs.size() << ".";
+    CHECK_EQ(1, inputs.size())
+        << "Expected to see only one TU; instead saw " << inputs.size() << ".";
     main_source_file_ = inputs[0].getFile();
     auto* preprocessor = &getCompilerInstance().getPreprocessor();
     preprocessor->addPPCallbacks(
@@ -878,8 +878,8 @@ void KindexWriterSink::OpenIndex(const std::string& directory,
 }
 
 KindexWriterSink::~KindexWriterSink() {
-  CHECK(!coded_stream_->HadError()) << "Errors encountered writing to "
-                                    << open_path_;
+  CHECK(!coded_stream_->HadError())
+      << "Errors encountered writing to " << open_path_;
   coded_stream_.reset(nullptr);
   gzip_stream_.reset(nullptr);
   file_stream_.reset(nullptr);
@@ -1105,21 +1105,16 @@ void ExtractorConfiguration::InitializeFromEnvironment() {
   }
 }
 
-void ExtractorConfiguration::Extract() {
+bool ExtractorConfiguration::Extract(std::unique_ptr<IndexWriterSink> sink) {
   llvm::IntrusiveRefCntPtr<clang::FileManager> file_manager(
       new clang::FileManager(file_system_options_));
   auto extractor = NewExtractor(
       &index_writer_,
-      [this](const std::string& main_source_file,
-             const PreprocessorTranscript& transcript,
-             const std::unordered_map<std::string, SourceFile>& source_files,
-             const HeaderSearchInfo* header_search_info, bool had_errors) {
-        std::unique_ptr<IndexWriterSink> sink;
-        if (using_index_packs_) {
-          sink.reset(new IndexPackWriterSink());
-        } else {
-          sink.reset(new KindexWriterSink(kindex_path_));
-        }
+      [this, &sink](
+          const std::string& main_source_file,
+          const PreprocessorTranscript& transcript,
+          const std::unordered_map<std::string, SourceFile>& source_files,
+          const HeaderSearchInfo* header_search_info, bool had_errors) {
         index_writer_.WriteIndex(std::move(sink), main_source_file, transcript,
                                  source_files, header_search_info, had_errors,
                                  file_system_options_.WorkingDir);
@@ -1129,7 +1124,17 @@ void ExtractorConfiguration::Extract() {
   if (map_builtin_resources_) {
     MapCompilerResources(&invocation, kBuiltinResourceDirectory);
   }
-  invocation.run();
+  return invocation.run();
+}
+
+bool ExtractorConfiguration::Extract() {
+  std::unique_ptr<IndexWriterSink> sink;
+  if (using_index_packs_) {
+    sink.reset(new IndexPackWriterSink());
+  } else {
+    sink.reset(new KindexWriterSink(kindex_path_));
+  }
+  return Extract(std::move(sink));
 }
 
 }  // namespace kythe

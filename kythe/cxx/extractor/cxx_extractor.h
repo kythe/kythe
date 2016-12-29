@@ -239,8 +239,12 @@ class ExtractorConfiguration {
   void SetVNameConfig(const std::string &path);
   /// \brief If a kindex file will be written, write it here.
   void SetKindexOutputFile(const std::string &path) { kindex_path_ = path; }
-  /// \brief Execute the extractor with this configuration.
-  void Extract();
+  /// \brief Executes the extractor with this configuration, returning true on
+  /// success.
+  bool Extract();
+  /// \brief Executes the extractor with this configuration to the provided sink,
+  //  returning true on success.
+  bool Extract(std::unique_ptr<IndexWriterSink> sink);
 
  private:
   /// The argument list to pass to Clang.

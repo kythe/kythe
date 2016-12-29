@@ -93,21 +93,20 @@ sh_test(
     ],
 )
 
-sh_test(
-    name = "claim_pragma",
+cc_test(
+    name = "claim_pragma_test",
     size = "small",
-    srcs = [
-        "test_claim_pragma.sh",
-    ],
+    srcs = ["claim_pragma_test.cc"],
     data = [
         "claim_a.h",
         "claim_b.h",
-        "claim_main.UNIT",
         "claim_main.cc",
-        "skip_functions.sh",
-        "test_common.sh",
-        "//kythe/cxx/extractor:cxx_extractor",
-        "//kythe/cxx/tools:kindex_tool",
+    ],
+    deps = [
+        "//kythe/cxx/extractor:lib",
+        "//third_party:gmock_main",
+        "//third_party:gtest",
+        "//third_party/proto:protobuf",
     ],
 )
 
@@ -118,8 +117,8 @@ sh_test(
         "test_stdin_names.sh",
     ],
     data = [
-        "stdin.vnames",
         "skip_functions.sh",
+        "stdin.vnames",
         "test_common.sh",
         "test_stdin_names_verify.cc",
         "//kythe/cxx/extractor:cxx_extractor",
