@@ -28,7 +28,7 @@ cc_library(
     ],
     deps = [
         ":markup_handler",
-        "@com_github_google_googletest//:googletest",
+        "//third_party:gtest",
     ],
 )
 
@@ -63,7 +63,7 @@ cc_library(
     ],
     deps = [
         ":html_renderer",
-        "@com_github_google_googletest//:googletest",
+        "//third_party:gtest",
     ],
 )
 

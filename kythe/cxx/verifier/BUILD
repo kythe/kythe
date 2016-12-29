@@ -122,7 +122,7 @@ cc_library(
         "//kythe/proto:storage_proto_cc",
         "//third_party/proto:protobuf",
         "@com_github_google_glog//:glog",
-        "@com_github_google_googletest//:googletest",
+        "//third_party:gtest",
     ],
 )
 

@@ -23,3 +23,23 @@ cc_library(
     srcs = ["empty.cc"],
     linkopts = ["-lcurl"],
 )
+
+alias(
+    name = "gtest",
+    actual = "@com_github_google_googletest//:gtest",
+)
+
+alias(
+    name = "gtest_main",
+    actual = "@com_github_google_googletest//:gtest_main",
+)
+
+alias(
+    name = "gmock",
+    actual = "@com_github_google_googletest//:gmock",
+)
+
+alias(
+    name = "gmock_main",
+    actual = "@com_github_google_googletest//:gmock_main",
+)

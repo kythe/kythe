@@ -118,7 +118,7 @@ cc_test(
     deps = [
         ":objc_bazel_support_library",
         "@com_github_google_glog//:glog",
-        "@com_github_google_googletest//:googletest",
+        "//third_party:gtest",
     ],
 )
 
@@ -206,7 +206,7 @@ cc_library(
         "//third_party/proto:protobuf",
         "//third_party/zlib",
         "@com_github_google_glog//:glog",
-        "@com_github_google_googletest//:googletest",
+        "//third_party:gtest",
         "@com_googlesource_code_re2//:re2",
     ],
 )

@@ -87,7 +87,7 @@ cc_library(
         "//kythe/cxx/common/indexing:testlib",
         "//third_party/llvm",
         "//third_party/proto:protobuf",
-        "@com_github_google_googletest//:googletest",
+        "//third_party:gtest",
     ],
 )
 
