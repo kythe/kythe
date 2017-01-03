@@ -1468,6 +1468,12 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "template_fn_call",
+    srcs = ["template/template_fn_call.cc"],
+    tags = ["template"],
+)
+
+cxx_indexer_test(
     name = "template_fn_decl",
     srcs = ["template/template_fn_decl.cc"],
     tags = ["template"],

@@ -1176,6 +1176,9 @@ bool IndexerASTVisitor::VisitDeclRefExpr(const clang::DeclRefExpr *DRE) {
   if (DRE->hasQualifier()) {
     VisitNestedNameSpecifierLoc(DRE->getQualifierLoc());
   }
+  for (auto &ArgLoc : DRE->template_arguments()) {
+    BuildNodeIdForTemplateArgument(ArgLoc, EmitRanges::Yes);
+  }
   return true;
 }
 
