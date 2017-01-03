@@ -19,11 +19,16 @@
 
 # We depend on the Go toolchain to identify the effective OS and architecture
 # settings and to resolve standard library packages.
-load("@io_bazel_rules_go//go:def.bzl", "go_environment_vars")
+load(
+    "@io_bazel_rules_go//go:def.bzl",
+    "go_environment_vars",
+    "go_library",
+    "go_library_attrs",
+)
 
-# Emit a shell script that sets up the environment needed by
-# the extractor to capture dependencies.
-def _emit_setup_script(ctx, script, output, srcs, deps):
+# Emit a shell script that sets up the environment needed by the extractor to
+# capture dependencies and runs the extractor.
+def _emit_extractor_script(ctx, script, output, srcs, deps):
   env     = go_environment_vars(ctx) # for GOOS and GOARCH
   tmpdir  = output.dirname + '/tmp'
   pkgdir  = tmpdir + '/pkg/%s_%s' % (env['GOOS'], env['GOARCH'])
@@ -71,7 +76,8 @@ def _go_indexpack(ctx):
             for dep in depfiles}
   srcs   = list(ctx.attr.library.go_sources)
   output = ctx.outputs.archive
-  script = _emit_setup_script(ctx, 'setup.sh', output, srcs, deps)
+  script = _emit_extractor_script(ctx, ctx.label.name+'-extract.sh',
+                                  output, srcs, deps)
   ctx.action(
       mnemonic   = 'GoIndexPack',
       executable = script,
@@ -80,35 +86,99 @@ def _go_indexpack(ctx):
   )
   return struct(zipfile = output)
 
+_library_providers = [
+    "go_sources",
+    "go_library_object",
+    "direct_deps",
+    "transitive_go_importmap",
+]
+
 # Generate an index pack with the compilations captured from a single Go
 # library or binary rule. The output is written as a single ZIP file that
 # contains the index pack directory.
 go_indexpack = rule(
     _go_indexpack,
     attrs = {
-        'library': attr.label(
-            providers = [
-                'go_sources',
-                'go_library_object',
-                'direct_deps',
-                'transitive_go_importmap',
-            ],
+        "library": attr.label(
+            providers = _library_providers,
             mandatory = True,
         ),
 
         # The location of the Go extractor binary.
-        '_extractor': attr.label(
-            default = Label('//kythe/go/extractors/cmd/gotool'),
+        "_extractor": attr.label(
+            default = Label("//kythe/go/extractors/cmd/gotool"),
             executable = True,
-            cfg        = 'host',
+            cfg = "host",
         ),
 
         # The location of the Go toolchain, needed to resolve standard
         # library packages.
-        '_goroot': attr.label(
-            default = Label('@io_bazel_rules_go_toolchain//:toolchain'),
+        "_goroot": attr.label(
+            default = Label("@io_bazel_rules_go_toolchain//:toolchain"),
         ),
     },
-    outputs = {'archive': '%{name}.zip'},
-    fragments = ['cpp'], # required to isolate GOOS and GOARCH
+    fragments = ["cpp"],  # required to isolate GOOS and GOARCH
+    outputs = {"archive": "%{name}.zip"},
 )
+
+def _go_verifier_test(ctx):
+  pack     = ctx.attr.indexpack.zipfile
+  indexer  = ctx.files._indexer[-1]
+  verifier = ctx.file._verifier
+  cmds = ['set -e', ' '.join([
+      indexer.short_path, '-zip', pack.short_path,
+      '\\\n|', verifier.short_path, '--use_file_nodes', '--show_goals',
+  ]), '']
+  ctx.file_action(output=ctx.outputs.executable,
+                  content='\n'.join(cmds), executable=True)
+  return struct(
+      runfiles = ctx.runfiles([indexer, verifier, pack]),
+  )
+
+# Run the Kythe verifier on the output that results from invoking the Go
+# indexer on the output of a go_indexpack rule.
+go_verifier_test = rule(
+    _go_verifier_test,
+    attrs = {
+        # The go_indexpack output to pass to the indexer.
+        "indexpack": attr.label(
+            providers = ["zipfile"],
+            mandatory = True,
+        ),
+
+        # The location of the Go indexer binary.
+        "_indexer": attr.label(
+            default = Label("//kythe/go/indexer/cmd/go_indexer"),
+            executable = True,
+            cfg = "data",
+        ),
+
+        # The location of the Kythe verifier binary.
+        "_verifier": attr.label(
+            default = Label("//kythe/cxx/verifier"),
+            executable = True,
+            single_file = True,
+            cfg = "data",
+        ),
+    },
+    test = True,
+)
+
+# A convenience macro to generate a test library, pass it to the Go indexer,
+# and feed the output of indexing to the Kythe schema verifier.
+def go_indexer_test(name, srcs, deps=[]):
+  testlib = name+'_lib'
+  go_library(
+      name = testlib,
+      srcs = srcs,
+      deps = deps,
+  )
+  testpack = name+'_pack'
+  go_indexpack(
+      name = testpack,
+      library = ':'+testlib,
+  )
+  go_verifier_test(
+      name = name,
+      indexpack = ':'+testpack,
+  )
