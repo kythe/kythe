@@ -179,15 +179,15 @@ func (e *Extractor) dirToImport(dir string) (string, error) {
 	if conv := e.DirToImport; conv != nil {
 		return conv(dir)
 	}
-	if !filepath.IsAbs(dir) {
-		return dir, nil
-	}
 	for _, path := range e.BuildContext.SrcDirs() {
 		if rel, err := filepath.Rel(path, dir); err == nil {
 			return rel, nil
 		}
 	}
-	return filepath.Rel(workingDir, dir)
+	if rel, err := filepath.Rel(workingDir, dir); err == nil {
+		return rel, nil
+	}
+	return dir, nil
 }
 
 // Locate attempts to locate the specified import path in the build context.

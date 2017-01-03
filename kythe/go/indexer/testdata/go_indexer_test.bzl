@@ -28,20 +28,21 @@ load(
 
 # Emit a shell script that sets up the environment needed by the extractor to
 # capture dependencies and runs the extractor.
-def _emit_extractor_script(ctx, script, output, srcs, deps):
+def _emit_extractor_script(ctx, script, output, srcs, deps, ipath):
   env     = go_environment_vars(ctx) # for GOOS and GOARCH
   tmpdir  = output.dirname + '/tmp'
+  srcdir  = tmpdir + '/src/' + ipath
   pkgdir  = tmpdir + '/pkg/%s_%s' % (env['GOOS'], env['GOARCH'])
   outpack = output.path + '_pack'
-  cmds    = ['set -e', 'mkdir -p ' + pkgdir]
+  cmds    = ['set -e', 'mkdir -p ' + pkgdir, 'mkdir -p ' + srcdir]
 
   # Link the source files and dependencies into a common temporary directory.
   # Source files need to be made relative to the temp directory.
-  ups = tmpdir.count('/') + 1
-  cmds += ['ln -s "%s%s" "%s"' % ('../'*ups, src.path, tmpdir)
+  ups = srcdir.count('/') + 1
+  cmds += ['ln -s "%s%s" "%s"' % ('../'*ups, src.path, srcdir)
            for src in srcs]
-  for path, ipath in deps.items():
-    fullpath = '/'.join([pkgdir, ipath])
+  for path, dpath in deps.items():
+    fullpath = '/'.join([pkgdir, dpath])
     tups = fullpath.count('/')
     cmds += [
         'mkdir -p ' + fullpath.rsplit('/', 1)[0],
@@ -56,7 +57,8 @@ def _emit_extractor_script(ctx, script, output, srcs, deps):
       '-output_dir', outpack,
       '-goroot', goroot,
       '-gopath', tmpdir,
-      '-bydir', tmpdir,
+      '-bydir',
+      srcdir,
   ]))
 
   # Pack the results into a ZIP archive, so we have a single output.
@@ -76,8 +78,12 @@ def _go_indexpack(ctx):
             for dep in depfiles}
   srcs   = list(ctx.attr.library.go_sources)
   output = ctx.outputs.archive
+  ipath  = ctx.attr.import_path
+  if not ipath:
+    ipath = srcs[0].path.rsplit('/', 1)[0]
+
   script = _emit_extractor_script(ctx, ctx.label.name+'-extract.sh',
-                                  output, srcs, deps)
+                                  output, srcs, deps, ipath)
   ctx.action(
       mnemonic   = 'GoIndexPack',
       executable = script,
@@ -103,6 +109,10 @@ go_indexpack = rule(
             providers = _library_providers,
             mandatory = True,
         ),
+
+        # The import path to attribute to the compilation.
+        # If omitted, use the base name of the source directory.
+        "import_path": attr.string(),
 
         # The location of the Go extractor binary.
         "_extractor": attr.label(
