@@ -218,6 +218,7 @@ public:
   bool VisitUnaryExprOrTypeTraitExpr(const clang::UnaryExprOrTypeTraitExpr *E);
   bool VisitCXXConstructExpr(const clang::CXXConstructExpr *E);
   bool VisitCXXDeleteExpr(const clang::CXXDeleteExpr *E);
+  bool VisitCXXNewExpr(const clang::CXXNewExpr *E);
   bool VisitCXXPseudoDestructorExpr(const clang::CXXPseudoDestructorExpr *E);
   bool
   VisitCXXUnresolvedConstructExpr(const clang::CXXUnresolvedConstructExpr *E);

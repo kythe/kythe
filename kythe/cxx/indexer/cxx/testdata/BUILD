@@ -447,6 +447,18 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "new",
+    srcs = ["basic/new.cc"],
+    tags = ["basic"],
+)
+
+cxx_indexer_test(
+    name = "new_operator",
+    srcs = ["basic/new_operator.cc"],
+    tags = ["basic"],
+)
+
+cxx_indexer_test(
     name = "sizeof_ref",
     srcs = ["basic/sizeof_ref.c"],
     std = "gnu99",

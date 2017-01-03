@@ -1031,6 +1031,28 @@ bool IndexerASTVisitor::VisitCXXDeleteExpr(const clang::CXXDeleteExpr *E) {
   return true;
 }
 
+bool IndexerASTVisitor::VisitCXXNewExpr(const clang::CXXNewExpr *E) {
+  auto StmtId = BuildNodeIdForImplicitStmt(E);
+  if (FunctionDecl *New = E->getOperatorNew()) {
+    auto NewId = BuildNodeIdForDecl(New);
+    clang::SourceLocation NewLoc = E->getLocStart();
+    if (NewLoc.isFileID()) {
+      clang::SourceRange NewRange(
+          NewLoc, GetLocForEndOfToken(*Observer.getSourceManager(),
+                                      *Observer.getLangOptions(), NewLoc));
+      if (auto RCC = RangeInCurrentContext(StmtId, NewRange)) {
+        Observer.recordDeclUseLocation(
+            RCC.primary(), NewId, GraphObserver::Claimability::Unclaimable);
+      }
+    }
+  }
+
+  BuildNodeIdForType(E->getAllocatedTypeSourceInfo()->getTypeLoc(),
+                     E->getAllocatedTypeSourceInfo()->getTypeLoc().getType(),
+                     EmitRanges::Yes);
+  return true;
+}
+
 bool IndexerASTVisitor::VisitCXXPseudoDestructorExpr(
     const clang::CXXPseudoDestructorExpr *E) {
   if (E->getDestroyedType().isNull()) {
