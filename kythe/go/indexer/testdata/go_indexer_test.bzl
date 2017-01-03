@@ -77,6 +77,7 @@ def _go_indexpack(ctx):
   deps   = {dep.path: ctx.attr.library.transitive_go_importmap[dep.path]
             for dep in depfiles}
   srcs   = list(ctx.attr.library.go_sources)
+  tools  = ctx.files._goroot + ctx.files._extractor
   output = ctx.outputs.archive
   ipath  = ctx.attr.import_path
   if not ipath:
@@ -88,7 +89,7 @@ def _go_indexpack(ctx):
       mnemonic   = 'GoIndexPack',
       executable = script,
       outputs    = [output],
-      inputs     = srcs + depfiles + ctx.files._goroot,
+      inputs     = srcs + depfiles + tools,
   )
   return struct(zipfile = output)
 
@@ -118,7 +119,7 @@ go_indexpack = rule(
         "_extractor": attr.label(
             default = Label("//kythe/go/extractors/cmd/gotool"),
             executable = True,
-            cfg = "host",
+            cfg = "target",
         ),
 
         # The location of the Go toolchain, needed to resolve standard
