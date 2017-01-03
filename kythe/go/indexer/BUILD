@@ -31,3 +31,11 @@ go_test(
     library = ":indexer",
     deps = ["@go_protobuf//:proto"],
 )
+
+load(":testdata/go_indexer_test.bzl", "go_indexer_test")
+
+go_indexer_test(
+    name = "filenode_test",
+    srcs = ["testdata/basic/filenode.go"],
+    import_path = "test/basic",
+)

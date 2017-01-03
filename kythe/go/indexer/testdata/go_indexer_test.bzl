@@ -176,7 +176,7 @@ go_verifier_test = rule(
 
 # A convenience macro to generate a test library, pass it to the Go indexer,
 # and feed the output of indexing to the Kythe schema verifier.
-def go_indexer_test(name, srcs, deps=[]):
+def go_indexer_test(name, srcs, deps=[], import_path=''):
   testlib = name+'_lib'
   go_library(
       name = testlib,
@@ -187,6 +187,7 @@ def go_indexer_test(name, srcs, deps=[]):
   go_indexpack(
       name = testpack,
       library = ':'+testlib,
+      import_path = import_path,
   )
   go_verifier_test(
       name = name,
