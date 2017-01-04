@@ -153,7 +153,7 @@ func main() { fmt.Println("Hello, world") }`
 	}
 	for _, test := range tests {
 		node := test.key(pi.Files[0])
-		pos, end := pi.Span(node)
+		_, pos, end := pi.Span(node)
 		if pos != test.pos || end != test.end {
 			t.Errorf("Span(%v): got pos=%d, end=%v; want pos=%d, end=%d", node, pos, end, test.pos, test.end)
 		}

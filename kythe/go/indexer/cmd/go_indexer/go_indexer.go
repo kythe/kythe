@@ -96,7 +96,7 @@ func main() {
 
 // indexGo is a visitFunct that invokes the Kythe Go indexer on unit.
 func indexGo(ctx context.Context, unit *apb.CompilationUnit, f indexer.Fetcher) error {
-	pi, err := indexer.Resolve(unit, f, indexer.AllTypeInfo())
+	pi, err := indexer.Resolve(unit, f, indexer.XRefTypeInfo())
 	if err != nil {
 		return err
 	}

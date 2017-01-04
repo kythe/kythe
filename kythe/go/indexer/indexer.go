@@ -266,23 +266,32 @@ func (pi *PackageInfo) AnchorVName(path string, start, end int) *spb.VName {
 	return vname
 }
 
-// Span returns the 0-based offset range of the given AST node.
+// Span returns the file path and 0-based offset range of the given AST node.
 // The range is half-open, including the start position but excluding the end.
-// If node == nil or lacks a valid start position, Span returns -1, -1.
+// If node == nil or lacks a valid start position, Span returns "", -1, -1.
 // If the end position of node is invalid, start == end.
-func (pi *PackageInfo) Span(node ast.Node) (start, end int) {
+func (pi *PackageInfo) Span(node ast.Node) (path string, start, end int) {
 	if node == nil {
-		return -1, -1
-	} else if pos := node.Pos(); pos == token.NoPos {
-		return -1, -1
-	} else {
-		start = pi.FileSet.Position(pos).Offset
-		end = start
+		return "", -1, -1
 	}
+	pos := node.Pos()
+	if pos == token.NoPos {
+		return "", -1, -1
+	}
+	sp := pi.FileSet.Position(pos)
+	path = sp.Filename
+	start = sp.Offset
+	end = start
 	if pos := node.End(); pos != token.NoPos {
 		end = pi.FileSet.Position(pos).Offset
 	}
 	return
+}
+
+// Anchor returns an anchor VName and offsets for the given AST node.
+func (pi *PackageInfo) Anchor(node ast.Node) (vname *spb.VName, start, end int) {
+	path, start, end := pi.Span(node)
+	return pi.AnchorVName(path, start, end), start, end
 }
 
 const (
@@ -380,8 +389,8 @@ func (pi *PackageInfo) newSignature(obj types.Object) (tag, base string) {
 //
 // This relation is used to construct signatures for these fields/methods,
 // since they may be referenced from another package and thus need
-// deterministic names. An object does expose its "owner"; indeed, it may have
-// several.
+// deterministic names. An object does not expose its "owner"; indeed it may
+// have several.
 //
 // Caveats:
 //
@@ -502,5 +511,16 @@ func AllTypeInfo() *types.Info {
 		Implicits:  make(map[ast.Node]types.Object),
 		Selections: make(map[*ast.SelectorExpr]*types.Selection),
 		Scopes:     make(map[ast.Node]*types.Scope),
+	}
+}
+
+// XRefTypeInfo creates a new types.Info value with empty maps for each of the
+// fields needed for cross-reference indexing.
+func XRefTypeInfo() *types.Info {
+	return &types.Info{
+		Types:     make(map[ast.Expr]types.TypeAndValue),
+		Defs:      make(map[*ast.Ident]types.Object),
+		Uses:      make(map[*ast.Ident]types.Object),
+		Implicits: make(map[ast.Node]types.Object),
 	}
 }

@@ -18,6 +18,10 @@ package indexer
 
 import (
 	"context"
+	"strconv"
+
+	"kythe.io/kythe/go/util/schema/facts"
+	"kythe.io/kythe/go/util/schema/nodes"
 
 	spb "kythe.io/kythe/proto/storage_proto"
 )
@@ -42,4 +46,15 @@ func (s Sink) writeEdge(ctx context.Context, src, tgt *spb.VName, kind string) e
 		EdgeKind: kind,
 		FactName: "/",
 	})
+}
+
+// writeAnchor emits an anchor with the given offsets to s.
+func (s Sink) writeAnchor(ctx context.Context, src *spb.VName, start, end int) error {
+	if err := s.writeFact(ctx, src, facts.NodeKind, nodes.Anchor); err != nil {
+		return err
+	}
+	if err := s.writeFact(ctx, src, facts.AnchorStart, strconv.Itoa(start)); err != nil {
+		return err
+	}
+	return s.writeFact(ctx, src, facts.AnchorEnd, strconv.Itoa(end))
 }

@@ -12,6 +12,7 @@ go_library(
     ],
     deps = [
         "//kythe/go/extractors/govname",
+        "//kythe/go/util/schema/edges",
         "//kythe/go/util/schema/facts",
         "//kythe/go/util/schema/nodes",
         "//kythe/proto:analysis_proto_go",
@@ -38,4 +39,14 @@ go_indexer_test(
     name = "filenode_test",
     srcs = ["testdata/basic/filenode.go"],
     import_path = "test/basic",
+)
+
+go_indexer_test(
+    name = "varref_test",
+    srcs = ["testdata/basic/varref.go"],
+)
+
+go_indexer_test(
+    name = "funcall_test",
+    srcs = ["testdata/basic/funcall.go"],
 )
