@@ -136,10 +136,13 @@ def _go_verifier_test(ctx):
   pack     = ctx.attr.indexpack.zipfile
   indexer  = ctx.files._indexer[-1]
   verifier = ctx.file._verifier
+  vargs    = ['--use_file_nodes', '--show_goals']
+  if ctx.attr.log_entries:
+    vargs.append('--show_protos')
   cmds = ['set -e', ' '.join([
       indexer.short_path, '-zip', pack.short_path,
-      '\\\n|', verifier.short_path, '--use_file_nodes', '--show_goals',
-  ]), '']
+      '\\\n|', verifier.short_path,
+  ] + vargs), '']
   ctx.file_action(output=ctx.outputs.executable,
                   content='\n'.join(cmds), executable=True)
   return struct(
@@ -156,6 +159,9 @@ go_verifier_test = rule(
             providers = ["zipfile"],
             mandatory = True,
         ),
+
+        # Whether to log the input entries to the verifier.
+        "log_entries": attr.bool(default=False),
 
         # The location of the Go indexer binary.
         "_indexer": attr.label(
@@ -177,7 +183,7 @@ go_verifier_test = rule(
 
 # A convenience macro to generate a test library, pass it to the Go indexer,
 # and feed the output of indexing to the Kythe schema verifier.
-def go_indexer_test(name, srcs, deps=[], import_path=''):
+def go_indexer_test(name, srcs, deps=[], import_path='', log_entries=False):
   testlib = name+'_lib'
   go_library(
       name = testlib,
@@ -193,4 +199,5 @@ def go_indexer_test(name, srcs, deps=[], import_path=''):
   go_verifier_test(
       name = name,
       indexpack = ':'+testpack,
+      log_entries = log_entries,
   )
