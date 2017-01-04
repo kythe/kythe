@@ -18,6 +18,7 @@ package com.google.devtools.kythe.extractors.java.bazel;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.devtools.build.lib.actions.extra.ExtraActionInfo;
 import com.google.devtools.build.lib.actions.extra.ExtraActionsBase;
 import com.google.devtools.build.lib.actions.extra.JavaCompileInfo;
@@ -28,10 +29,13 @@ import com.google.devtools.kythe.extractors.shared.FileVNames;
 import com.google.devtools.kythe.extractors.shared.IndexInfoUtils;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.ExtensionRegistry;
+import com.sun.tools.javac.main.Option;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 
 /** Java CompilationUnit extractor using Bazel's extra_action feature. */
 public class JavaExtractor {
@@ -59,6 +63,26 @@ public class JavaExtractor {
     }
 
     JavaCompileInfo jInfo = info.getExtension(JavaCompileInfo.javaCompileInfo);
+
+    List<String> javacOpts =
+        Lists.newArrayList(Iterables.filter(jInfo.getJavacOptList(), JAVAC_OPT_FILTER));
+
+    // Set up a fresh output directory
+    javacOpts.add(Option.D.getText());
+    Path output = Files.createTempDirectory("output");
+    javacOpts.add(output.toString());
+
+    // Add the generated sources directory if any processors could be invoked.
+    if (!jInfo.getProcessorList().isEmpty()) {
+      String gensrcdir = readGeneratedSourceDirParam(jInfo);
+      if (gensrcdir != null) {
+        javacOpts.add(Option.S.getText());
+        javacOpts.add(gensrcdir);
+        // javac expects the directory to already exist.
+        Files.createDirectories(Paths.get(gensrcdir));
+      }
+    }
+
     CompilationDescription description =
         new JavaCompilationUnitExtractor(
                 FileVNames.fromFile(vNamesConfigPath), System.getProperty("user.dir"))
@@ -69,10 +93,29 @@ public class JavaExtractor {
                 jInfo.getSourcepathList(),
                 jInfo.getProcessorpathList(),
                 jInfo.getProcessorList(),
-                Iterables.filter(jInfo.getJavacOptList(), JAVAC_OPT_FILTER),
+                javacOpts,
                 jInfo.getOutputjar());
 
     IndexInfoUtils.writeIndexInfoToFile(description, outputPath);
+  }
+
+  /**
+   * Reads Bazel's compilation params file and returns the value of the --sourcegendir flag. Returns
+   * {@code null} if the value does not exist.
+   */
+  private static String readGeneratedSourceDirParam(JavaCompileInfo jInfo) throws IOException {
+    try (java.io.BufferedReader params =
+        Files.newBufferedReader(
+            Paths.get(jInfo.getOutputjar() + "-2.params"),
+            java.nio.charset.StandardCharsets.UTF_8)) {
+      String line;
+      while ((line = params.readLine()) != null) {
+        if ("--sourcegendir".equals(line)) {
+          return params.readLine();
+        }
+      }
+      return null;
+    }
   }
 
   // Predicate that filters out Bazel-specific flags.  Bazel adds its own flags (such as error-prone
