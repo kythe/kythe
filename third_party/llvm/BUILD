@@ -24,6 +24,8 @@ cc_library(
     # modules_checked_empty.cc.
     # Do not sort; srcs are link-order dependent.
     srcs = [
+        "llvm/build/lib/libclangFormat.a",
+        "llvm/build/lib/libclangToolingCore.a",
         "llvm/build/lib/libclangTooling.a",
         "llvm/build/lib/libclangFrontend.a",
         "llvm/build/lib/libclangDriver.a",

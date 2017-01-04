@@ -1322,7 +1322,8 @@ bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl *Decl) {
   }
 
   if (auto *VTSD = dyn_cast<const clang::VarTemplateSpecializationDecl>(Decl)) {
-    Marks.set_implicit(!VTSD->isExplicitInstantiationOrSpecialization());
+    Marks.set_implicit(UnderneathImplicitTemplateInstantiation ||
+                       !VTSD->isExplicitInstantiationOrSpecialization());
     // If this is a partial specialization, we've already recorded the newly
     // abstracted parameters above. We can now record the type arguments passed
     // to the template we're specializing. Synthesize the type we need.
@@ -1575,14 +1576,19 @@ bool IndexerASTVisitor::TraverseClassTemplateDecl(
 bool IndexerASTVisitor::TraverseClassTemplateSpecializationDecl(
     clang::ClassTemplateSpecializationDecl *TD) {
   auto R = RestoreStack(RangeContext);
+  bool UITI = UnderneathImplicitTemplateInstantiation;
   // If this specialization was spelled out in the file, it has
   // physical ranges.
   if (TD->getTemplateSpecializationKind() !=
       clang::TSK_ExplicitSpecialization) {
     RangeContext.push_back(BuildNodeIdForDecl(TD));
   }
+  if (!TD->isExplicitInstantiationOrSpecialization()) {
+    UnderneathImplicitTemplateInstantiation = true;
+  }
   bool Result = RecursiveASTVisitor<
       IndexerASTVisitor>::TraverseClassTemplateSpecializationDecl(TD);
+  UnderneathImplicitTemplateInstantiation = UITI;
   return Result;
 }
 
@@ -1600,14 +1606,19 @@ bool IndexerASTVisitor::TraverseVarTemplateSpecializationDecl(
 bool IndexerASTVisitor::ForceTraverseVarTemplateSpecializationDecl(
     clang::VarTemplateSpecializationDecl *TD) {
   auto R = RestoreStack(RangeContext);
+  bool UITI = UnderneathImplicitTemplateInstantiation;
   // If this specialization was spelled out in the file, it has
   // physical ranges.
   if (TD->getTemplateSpecializationKind() !=
       clang::TSK_ExplicitSpecialization) {
     RangeContext.push_back(BuildNodeIdForDecl(TD));
   }
+  if (!TD->isExplicitInstantiationOrSpecialization()) {
+    UnderneathImplicitTemplateInstantiation = true;
+  }
   bool Result = RecursiveASTVisitor<
       IndexerASTVisitor>::TraverseVarTemplateSpecializationDecl(TD);
+  UnderneathImplicitTemplateInstantiation = UITI;
   return Result;
 }
 
@@ -1674,6 +1685,25 @@ bool IndexerASTVisitor::TraverseTypeAliasTemplateDecl(
   TraverseDecl(TATD->getTemplatedDecl());
   TypeContext.pop_back();
   return true;
+}
+
+bool IndexerASTVisitor::TraverseFunctionDecl(clang::FunctionDecl *FD) {
+  bool UITI = UnderneathImplicitTemplateInstantiation;
+  if (const auto *MSI = FD->getMemberSpecializationInfo()) {
+    // The definitions of class template member functions are not necessarily
+    // dominated by the class template definition.
+    if (!MSI->isExplicitSpecialization()) {
+      UnderneathImplicitTemplateInstantiation = true;
+    }
+  } else if (const auto *FSI = FD->getTemplateSpecializationInfo()) {
+    if (!FSI->isExplicitInstantiationOrSpecialization()) {
+      UnderneathImplicitTemplateInstantiation = true;
+    }
+  }
+  bool Result =
+      RecursiveASTVisitor<IndexerASTVisitor>::TraverseFunctionDecl(FD);
+  UnderneathImplicitTemplateInstantiation = UITI;
+  return Result;
 }
 
 bool IndexerASTVisitor::TraverseFunctionTemplateDecl(
@@ -1813,7 +1843,8 @@ bool IndexerASTVisitor::VisitRecordDecl(const clang::RecordDecl *Decl) {
 
   if (auto *CTSD =
           dyn_cast<const clang::ClassTemplateSpecializationDecl>(Decl)) {
-    Marks.set_implicit(!CTSD->isExplicitInstantiationOrSpecialization());
+    Marks.set_implicit(UnderneathImplicitTemplateInstantiation ||
+                       !CTSD->isExplicitInstantiationOrSpecialization());
     // If this is a partial specialization, we've already recorded the newly
     // abstracted parameters above. We can now record the type arguments passed
     // to the template we're specializing. Synthesize the type we need.
@@ -1999,7 +2030,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
     InnerNode = BuildNodeIdForDecl(Decl);
     OuterNode = InnerNode;
   }
-  Marks.set_implicit(IsImplicit);
+  Marks.set_implicit(UnderneathImplicitTemplateInstantiation || IsImplicit);
   if (ArgsAsWritten || Args) {
     bool CouldGetAllTypes = true;
     std::vector<GraphObserver::NodeId> NIDS;
@@ -4584,7 +4615,7 @@ void IndexerASTVisitor::ConnectParam(const Decl *Decl,
   GraphObserver::NameId VarNameId(BuildNameIdForDecl(Param));
   SourceRange Range = RangeForNameOfDeclaration(Param);
   Marks.set_name_range(Range);
-  Marks.set_implicit(DeclIsImplicit);
+  Marks.set_implicit(UnderneathImplicitTemplateInstantiation || DeclIsImplicit);
   Marks.set_marked_source_end(GetLocForEndOfToken(
       *Observer.getSourceManager(), *Observer.getLangOptions(),
       Param->getSourceRange().getEnd()));

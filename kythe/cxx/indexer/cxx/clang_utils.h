@@ -17,10 +17,14 @@
 #ifndef KYTHE_CXX_INDEXER_CXX_CLANG_UTILS_H_
 #define KYTHE_CXX_INDEXER_CXX_CLANG_UTILS_H_
 
+#include "clang/AST/DeclarationName.h"
 #include "clang/Basic/LangOptions.h"
 #include "clang/Basic/SourceManager.h"
 
 namespace kythe {
+/// \return true if `DN` is an Objective-C selector.
+bool isObjCSelector(const clang::DeclarationName &DN);
+
 /// \brief Updates `*loc` to move it past whitespace characters.
 ///
 /// This is useful because most of `clang::Lexer`'s static functions fail if
@@ -114,6 +118,7 @@ clang::SourceRange RangeForSingleTokenFromSourceLocation(
 bool IsTopLevelNonMacroMacroArgument(
     const clang::SourceManager &source_manager,
     const clang::SourceLocation &source_location);
+
 }  // namespace kythe
 
 #endif  // KYTHE_CXX_INDEXER_CXX_CLANG_UTILS_H_

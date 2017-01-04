@@ -468,6 +468,7 @@ public:
   bool TraverseVarTemplatePartialSpecializationDecl(
       clang::VarTemplatePartialSpecializationDecl *TD);
 
+  bool TraverseFunctionDecl(clang::FunctionDecl *FD);
   bool TraverseFunctionTemplateDecl(clang::FunctionTemplateDecl *FTD);
 
   bool TraverseTypeAliasTemplateDecl(clang::TypeAliasTemplateDecl *TATD);
@@ -712,13 +713,6 @@ private:
   void RecordCallEdges(const GraphObserver::Range &Range,
                        const GraphObserver::NodeId &Callee);
 
-  bool isObjCSelector(const clang::DeclarationName &DN) {
-    const auto NK = DN.getNameKind();
-    return NK == clang::DeclarationName::NameKind::ObjCZeroArgSelector ||
-           NK == clang::DeclarationName::NameKind::ObjCOneArgSelector ||
-           NK == clang::DeclarationName::NameKind::ObjCMultiArgSelector;
-  }
-
   /// \brief Visit a DeclRefExpr or a ObjCIvarRefExpr
   ///
   /// DeclRefExpr and ObjCIvarRefExpr are similar entities and can be processed
@@ -826,6 +820,10 @@ private:
 
   /// \brief The cache to use to generate signatures.
   MarkedSourceCache MarkedSources;
+
+  /// \brief True if we're currently underneath an implicit template
+  /// instantiation.
+  bool UnderneathImplicitTemplateInstantiation = false;
 };
 
 /// \brief An `ASTConsumer` that passes events to a `GraphObserver`.

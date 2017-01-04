@@ -13,6 +13,7 @@ def cxx_indexer_test(name, srcs, deps=[], tags=[], size="small",
                      objc=False,
                      experimental_drop_instantiation_independent_data=False,
                      darwin_only=False,
+                     convert_marked_source=False,
                      goal_prefix="//-"):
   if len(srcs) != 1:
     fail("A single source file is required.", "srcs")
@@ -22,6 +23,8 @@ def cxx_indexer_test(name, srcs, deps=[], tags=[], size="small",
     args += ["--clang", "-std=" + std]
   if objc:
     args += ["--clang", "-fblocks"]
+  if convert_marked_source:
+    args += ["--verifier", "--convert_marked_source=true"]
   if ignore_dups:
     args += ["--verifier", "--ignore_dups=true"]
   if ignore_unimplemented:

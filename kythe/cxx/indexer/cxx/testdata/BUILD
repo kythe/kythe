@@ -1786,6 +1786,67 @@ test_suite(
     tags = ["template"],
 )
 
+cxx_indexer_test(
+    name = "ms_fn",
+    srcs = ["marked_source/ms_fn.cc"],
+    std = "c++14",
+    tags = ["marked_source"],
+    convert_marked_source = True,
+)
+
+cxx_indexer_test(
+    name = "ms_fn_namespace",
+    srcs = ["marked_source/ms_fn_namespace.cc"],
+    std = "c++14",
+    tags = ["marked_source"],
+    convert_marked_source = True,
+)
+
+cxx_indexer_test(
+    name = "ms_fn_rec",
+    srcs = ["marked_source/ms_fn_rec.cc"],
+    std = "c++14",
+    tags = ["marked_source"],
+    convert_marked_source = True,
+)
+
+cxx_indexer_test(
+    name = "ms_fn_template",
+    srcs = ["marked_source/ms_fn_template.cc"],
+    std = "c++14",
+    tags = ["marked_source"],
+    convert_marked_source = True,
+)
+
+cxx_indexer_test(
+    name = "ms_fn_rec_template",
+    srcs = ["marked_source/ms_fn_rec_template.cc"],
+    std = "c++14",
+    tags = ["marked_source"],
+    convert_marked_source = True,
+)
+
+cxx_indexer_test(
+    name = "ms_var_fn_template",
+    srcs = ["marked_source/ms_var_fn_template.cc"],
+    std = "c++14",
+    tags = ["marked_source"],
+    convert_marked_source = True,
+)
+
+cxx_indexer_test(
+    name = "ms_fn_ptr_return",
+    srcs = ["marked_source/ms_fn_ptr_return.cc"],
+    std = "c++14",
+    tags = ["marked_source"],
+    convert_marked_source = True,
+)
+
+test_suite(
+    name = "indexer_marked_source",
+    tags = ["marked_source"],
+)
+
 # Objective C Tests
 
 cxx_indexer_test(

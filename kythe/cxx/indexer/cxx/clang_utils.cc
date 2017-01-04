@@ -21,6 +21,17 @@
 #include "glog/logging.h"
 
 namespace kythe {
+bool isObjCSelector(const clang::DeclarationName &DN) {
+  switch (DN.getNameKind()) {
+    case clang::DeclarationName::NameKind::ObjCZeroArgSelector:
+    case clang::DeclarationName::NameKind::ObjCOneArgSelector:
+    case clang::DeclarationName::NameKind::ObjCMultiArgSelector:
+      return true;
+    default:
+      return false;
+  }
+}
+
 void SkipWhitespace(const clang::SourceManager &source_manager,
                     clang::SourceLocation *loc) {
   CHECK(loc != nullptr);
