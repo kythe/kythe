@@ -18,6 +18,7 @@ package indexer
 
 import (
 	"context"
+	"fmt"
 	"go/ast"
 	"go/types"
 	"log"
@@ -53,6 +54,8 @@ func (pi *PackageInfo) Emit(ctx context.Context, sink Sink) error {
 			switch n := node.(type) {
 			case *ast.Ident:
 				e.visitIdent(n, parent)
+			case *ast.FuncDecl:
+				e.visitFuncDecl(n, parent)
 			}
 			return true
 		}), file)
@@ -85,14 +88,41 @@ func (e *emitter) visitIdent(id *ast.Ident, parent parentFunc) {
 	e.writeAnchor(refAnchor, start, end)
 	target := e.pi.ObjectVName(obj)
 	e.writeEdge(refAnchor, target, edges.Ref)
+
 	if call, ok := isCall(id, obj, parent); ok {
 		callAnchor, start, end := e.pi.Anchor(call)
 		e.writeAnchor(callAnchor, start, end)
 		e.writeEdge(callAnchor, target, edges.RefCall)
 	}
+}
 
-	// TODO(fromberger): If there is an enclosing context, blame the reference
-	// on it.
+// visitFuncDecl handles function and method declarations and their parameters.
+func (e *emitter) visitFuncDecl(decl *ast.FuncDecl, parent parentFunc) {
+	info := new(funcInfo)
+	e.pi.function[decl] = info
+
+	// Get the type of this function, even if its name is blank.
+	obj, _ := e.pi.Info.Defs[decl.Name].(*types.Func)
+	if obj == nil {
+		return // a redefinition, for example
+	}
+
+	// Special case: There may be multiple package-level init functions, so
+	// override the normal signature generation to include a discriminator.
+	if decl.Recv == nil && obj.Name() == "init" {
+		e.pi.numInits++
+		e.pi.sigs[obj] = fmt.Sprintf("%s#%d", e.pi.Signature(obj), e.pi.numInits)
+	}
+
+	info.vname = e.pi.ObjectVName(obj)
+	defAnchor, start, end := e.pi.Anchor(decl.Name)
+	e.writeAnchor(defAnchor, start, end)
+	e.writeEdge(defAnchor, info.vname, edges.DefinesBinding)
+	fullAnchor, start, end := e.pi.Anchor(decl)
+	e.writeAnchor(fullAnchor, start, end)
+	e.writeEdge(fullAnchor, info.vname, edges.Defines)
+
+	// TODO(fromberger): For concrete methods, emit the receiver if named.
 }
 
 func (e *emitter) check(err error) {

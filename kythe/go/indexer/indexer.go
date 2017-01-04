@@ -85,8 +85,24 @@ type PackageInfo struct {
 	// the body of a function or method to the nearest enclosing named method.
 	owner map[types.Object]types.Object
 
+	// A lazily-initialized mapping from AST nodes corresponding to function
+	// declarations and literals, recording naming information.
+
+	// A lazily-initialized mapping from from AST nodes to their corresponding
+	// VNames. Only nodes that do not resolve directly to a type object are
+	// included in this map, e.g., function literals.
+	function map[ast.Node]*funcInfo
+
 	// A cache of already-computed signatures.
 	sigs map[types.Object]string
+
+	// The number of package-level init declarations seen.
+	numInits int
+}
+
+type funcInfo struct {
+	vname   *spb.VName
+	numAnon int // number of anonymous functions defined inside this one
 }
 
 // Import satisfies the types.Importer interface using the captured data from
@@ -184,7 +200,8 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 		Dependencies: deps,
 		Info:         info,
 
-		sigs: make(map[types.Object]string),
+		function: make(map[ast.Node]*funcInfo),
+		sigs:     make(map[types.Object]string),
 	}
 
 	// Run the type-checker and collect any errors it generates.  Errors in the
