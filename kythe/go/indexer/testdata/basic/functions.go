@@ -1,11 +1,14 @@
 // Package functions tests function and method structure.
 package functions
 
-//- File=vname("", "test", _, "src/test/fun/functions.go", "").node/kind file
+//- Pkg=vname("package", "test", _, "fun", "go").node/kind package
+//- Init=vname("package.<init>", "test", _, "fun", "go").node/kind function
+//- Init childof Pkg
 
 // Anonymous functions do not get binding anchors.
 //
-//- @"func(b bool) {}" defines Anon = vname("$1", "test", _, _, "go")
+//- @"func(b bool) {}" defines
+//-   Anon = vname("package.<init>$1", "test", _, "fun", "go")
 //- Anon param.0 AnonPB
 var _ = func(b bool) {}
 

@@ -63,7 +63,7 @@ func hexDigest(data []byte) string {
 func oneFileCompilation(path, pkg, content string) (*apb.CompilationUnit, string) {
 	digest := hexDigest([]byte(content))
 	return &apb.CompilationUnit{
-		VName: &spb.VName{Language: "go", Corpus: "test", Path: pkg, Signature: ":pkg:"},
+		VName: &spb.VName{Language: "go", Corpus: "test", Path: pkg, Signature: "package"},
 		RequiredInput: []*apb.CompilationUnit_FileInput{{
 			Info: &apb.FileInfo{Path: path, Digest: digest},
 		}},
@@ -96,7 +96,7 @@ func init() { println(foo.Foo()) }
 		digest:         bar,
 	}
 	unit.RequiredInput = append(unit.RequiredInput, &apb.CompilationUnit_FileInput{
-		VName: &spb.VName{Language: "go", Corpus: "test", Path: "foo", Signature: ":pkg:"},
+		VName: &spb.VName{Language: "go", Corpus: "test", Path: "foo", Signature: "package"},
 		Info:  &apb.FileInfo{Path: "testdata/foo.a", Digest: hexDigest(foo)},
 	})
 

@@ -33,16 +33,16 @@ func TestForPackage(t *testing.T) {
 		ticket string
 		isRoot bool
 	}{
-		{path: "bytes", ticket: "kythe://golang.org?lang=go?path=bytes#%3Apkg%3A", isRoot: true},
-		{path: "go/types", ticket: "kythe://golang.org?lang=go?path=go/types#%3Apkg%3A", isRoot: true},
-		{path: "golang.org/x/net/context", ticket: "kythe://golang.org/x/net?lang=go?path=context#%3Apkg%3A"},
-		{path: "code.google.com/p/foo.bar/baz", ticket: "kythe://code.google.com/p/foo?lang=go?path=baz?root=bar#%3Apkg%3A"},
-		{path: "fuzzy1.googlecode.com/alpha", ticket: "kythe://fuzzy1.googlecode.com?lang=go?path=alpha#%3Apkg%3A"},
-		{path: "github.com/google/kythe/foo", ticket: "kythe://github.com/google/kythe?lang=go?path=foo#%3Apkg%3A"},
-		{path: "bitbucket.org/zut/alors/non", ticket: "kythe://bitbucket.org/zut/alors?lang=go?path=non#%3Apkg%3A"},
-		{path: "launchpad.net/~frood/blee/blor", ticket: "kythe://launchpad.net/~frood/blee?lang=go?path=blor#%3Apkg%3A"},
+		{path: "bytes", ticket: "kythe://golang.org?lang=go?path=bytes#package", isRoot: true},
+		{path: "go/types", ticket: "kythe://golang.org?lang=go?path=go/types#package", isRoot: true},
+		{path: "golang.org/x/net/context", ticket: "kythe://golang.org/x/net?lang=go?path=context#package"},
+		{path: "code.google.com/p/foo.bar/baz", ticket: "kythe://code.google.com/p/foo?lang=go?path=baz?root=bar#package"},
+		{path: "fuzzy1.googlecode.com/alpha", ticket: "kythe://fuzzy1.googlecode.com?lang=go?path=alpha#package"},
+		{path: "github.com/google/kythe/foo", ticket: "kythe://github.com/google/kythe?lang=go?path=foo#package"},
+		{path: "bitbucket.org/zut/alors/non", ticket: "kythe://bitbucket.org/zut/alors?lang=go?path=non#package"},
+		{path: "launchpad.net/~frood/blee/blor", ticket: "kythe://launchpad.net/~frood/blee?lang=go?path=blor#package"},
 
-		{path: "golang.org/x/net/context", ticket: "kythe://golang.org/x/net?lang=go?path=context#%3Apkg%3A"},
+		{path: "golang.org/x/net/context", ticket: "kythe://golang.org/x/net?lang=go?path=context#package"},
 	}
 	for _, test := range tests {
 		pkg := &build.Package{
@@ -69,7 +69,7 @@ func TestNotStandardLib(t *testing.T) {
 		nil,
 		{Corpus: "foo", Language: "go"},
 		{Corpus: "golang.org", Language: "c++"},
-		{Corpus: "golang.org/x/net", Language: "go", Signature: ":pkg:"},
+		{Corpus: "golang.org/x/net", Language: "go", Signature: "package"},
 		{Language: "go"},
 		{Corpus: "golang.org", Language: "python", Path: "p", Root: "R", Signature: "Σ"},
 	}

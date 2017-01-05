@@ -30,7 +30,7 @@ import (
 
 const (
 	pathTail     = `(?:/(?P<path>.+))?$`
-	packageSig   = ":pkg:"
+	packageSig   = "package"
 	golangCorpus = "golang.org"
 )
 
@@ -69,7 +69,7 @@ const Language = "go"
 
 // ForPackage returns a VName for a Go package.
 //
-// A package VName has the fixed signature ":pkg:", and the VName path holds
+// A package VName has the fixed signature "package", and the VName path holds
 // the import path relative to the corpus root.  The VCSRules are used to
 // identify the corpus; if none apply then by default the first path component
 // of the import path is used as the corpus name, except for packages under

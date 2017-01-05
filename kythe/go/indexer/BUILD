@@ -57,3 +57,9 @@ go_indexer_test(
     srcs = ["testdata/basic/functions.go"],
     import_path = "test/fun",
 )
+
+go_indexer_test(
+    name = "package_test",
+    srcs = ["testdata/basic/packages.go"],
+    import_path = "test/pkg",
+)

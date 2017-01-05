@@ -93,6 +93,10 @@ type PackageInfo struct {
 	// included in this map, e.g., function literals.
 	function map[ast.Node]*funcInfo
 
+	// A dummy function representing the undeclared package initilization
+	// function.
+	packageInit *funcInfo
+
 	// A cache of already-computed signatures.
 	sigs map[types.Object]string
 
@@ -189,10 +193,14 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 			vmap[pkg] = vname
 		}
 	}
+	thisPackage := proto.Clone(unit.VName).(*spb.VName)
+	thisPackage.Language = govname.Language
+	thisPackage.Signature = "package"
+
 	pi := &PackageInfo{
 		Name:         files[0].Name.Name,
 		ImportPath:   path.Join(unit.VName.Corpus, unit.VName.Path),
-		VName:        unit.VName,
+		VName:        thisPackage,
 		PackageVName: vmap,
 		FileSet:      fset,
 		Files:        files,
@@ -340,7 +348,7 @@ func (pi *PackageInfo) newSignature(obj types.Object) (tag, base string) {
 		return isBuiltin + tagConst, "nil"
 
 	case *types.PkgName:
-		return "", ":pkg:" // the vname corpus and path carry the package name
+		return "", "package" // the vname corpus and path carry the package name
 
 	case *types.Const:
 		topLevelTag = tagConst

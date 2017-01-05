@@ -49,22 +49,23 @@ func (pi *PackageInfo) Emit(ctx context.Context, sink Sink) error {
 		sink: sink,
 	}
 
+	// Emit a node to represent the package as a whole.
+	e.writeFact(pi.VName, facts.NodeKind, nodes.Package)
+
 	// Emit facts for all the source files claimed by this package.
 	for path, text := range pi.SourceText {
 		vname := pi.FileVName(path)
 		e.writeFact(vname, facts.NodeKind, nodes.File)
 		e.writeFact(vname, facts.Text, text)
 		// All Go source files are encoded as UTF-8, which is the default.
+
+		// TODO(fromberger): Update the schema to record that files are childof
+		// the package that contains them.
+		e.writeEdge(vname, pi.VName, edges.ChildOf)
 	}
 
 	// Traverse the AST of each file in the package for xref entries.
 	for _, file := range pi.Files {
-		// Record a dummy context node to be the parent of function literals
-		// defined at file scope. Since there can be more than one, we need to
-		// keep track of offsets to avoid name collisions.
-		path, _, _ := pi.Span(file)
-		pi.function[file] = &funcInfo{vname: pi.FileVName(path)}
-
 		ast.Walk(newASTVisitor(func(node ast.Node, parent parentFunc) bool {
 			switch n := node.(type) {
 			case *ast.Ident:
@@ -113,7 +114,7 @@ func (e *emitter) visitIdent(id *ast.Ident, parent parentFunc) {
 
 		// Paint an edge to the function blamed for the call, or if there is
 		// none then to the enclosing file.
-		if fi := e.pi.function[callContext(parent)]; fi != nil {
+		if fi := e.callContext(parent); fi != nil {
 			e.writeEdge(callAnchor, fi.vname, edges.ChildOf)
 		}
 	}
@@ -144,6 +145,7 @@ func (e *emitter) visitFuncDecl(decl *ast.FuncDecl, parent parentFunc) {
 	fullAnchor, start, end := e.pi.Anchor(decl)
 	e.writeAnchor(fullAnchor, start, end)
 	e.writeEdge(fullAnchor, info.vname, edges.Defines)
+	e.writeFact(info.vname, facts.NodeKind, nodes.Function)
 
 	// For concrete methods: Emit the receiver if named, and connect the method
 	// to its declaring type.
@@ -168,7 +170,7 @@ func (e *emitter) visitFuncDecl(decl *ast.FuncDecl, parent parentFunc) {
 // for a function literal is named relative to the signature of its parent
 // function, or the file scope if the literal is at the top level.
 func (e *emitter) visitFuncLit(flit *ast.FuncLit, parent parentFunc) {
-	fi := e.pi.function[callContext(parent)]
+	fi := e.callContext(parent)
 	if fi == nil {
 		log.Panic("Function literal without a context: ", flit)
 	}
@@ -179,9 +181,9 @@ func (e *emitter) visitFuncLit(flit *ast.FuncLit, parent parentFunc) {
 	info.vname.Signature += fmt.Sprintf("$%d", fi.numAnons)
 	e.pi.function[flit] = info
 
-	litAnchor, start, end := e.pi.Anchor(flit)
-	e.writeAnchor(litAnchor, start, end)
-	e.writeEdge(litAnchor, info.vname, edges.Defines)
+	flitAnchor, start, end := e.pi.Anchor(flit)
+	e.writeAnchor(flitAnchor, start, end)
+	e.writeEdge(flitAnchor, info.vname, edges.Defines)
 
 	sig := e.pi.Info.Types[flit].Type.(*types.Signature)
 	e.emitParameters(flit.Type, sig, info)
@@ -246,15 +248,27 @@ func isCall(id *ast.Ident, obj types.Object, parent parentFunc) (*ast.CallExpr, 
 	return nil, false
 }
 
-// callContext returns the nearest enclosing parent function, not including the
-// node itself, or the enclosing file if the node is at file scope.
-func callContext(parent parentFunc) ast.Node {
+// callContext returns funcInfo for the nearest enclosing parent function, not
+// including the node itself, or the enclosing package if the node is at the
+// top level.
+func (e *emitter) callContext(parent parentFunc) *funcInfo {
 	for i := 1; ; i++ {
 		switch p := parent(i).(type) {
-		case *ast.FuncDecl, *ast.FuncLit, *ast.File:
-			return p
+		case *ast.FuncDecl, *ast.FuncLit:
+			return e.pi.function[p]
 		case nil:
-			return nil
+			if e.pi.packageInit == nil {
+				// Lazily emit a virtual node to represent the static
+				// initializer for top-level expressions in the package.  We
+				// only do this if there are expressions that need to be
+				// initialized.
+				vname := proto.Clone(e.pi.VName).(*spb.VName)
+				vname.Signature += ".<init>"
+				e.pi.packageInit = &funcInfo{vname: vname}
+				e.writeFact(vname, facts.NodeKind, nodes.Function)
+				e.writeEdge(vname, e.pi.VName, edges.ChildOf)
+			}
+			return e.pi.packageInit
 		}
 	}
 }
