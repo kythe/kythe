@@ -23,12 +23,21 @@ import (
 	"go/types"
 	"log"
 
+	"github.com/golang/protobuf/proto"
+
+	"kythe.io/kythe/go/extractors/govname"
 	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/facts"
 	"kythe.io/kythe/go/util/schema/nodes"
 
 	spb "kythe.io/kythe/proto/storage_proto"
 )
+
+// TODO(fromberger): Maybe blame calls at file scope on a dummy package
+// initializer function node, instead of on the file.
+//
+// TODO(fromberger): Should function literals be childof their containing
+// function, when one exists?
 
 // Emit generates Kythe facts and edges to represent pi, and writes them to
 // sink. In case of errors, processing continues as far as possible before the
@@ -50,12 +59,20 @@ func (pi *PackageInfo) Emit(ctx context.Context, sink Sink) error {
 
 	// Traverse the AST of each file in the package for xref entries.
 	for _, file := range pi.Files {
+		// Record a dummy context node to be the parent of function literals
+		// defined at file scope. Since there can be more than one, we need to
+		// keep track of offsets to avoid name collisions.
+		path, _, _ := pi.Span(file)
+		pi.function[file] = &funcInfo{vname: pi.FileVName(path)}
+
 		ast.Walk(newASTVisitor(func(node ast.Node, parent parentFunc) bool {
 			switch n := node.(type) {
 			case *ast.Ident:
 				e.visitIdent(n, parent)
 			case *ast.FuncDecl:
 				e.visitFuncDecl(n, parent)
+			case *ast.FuncLit:
+				e.visitFuncLit(n, parent)
 			}
 			return true
 		}), file)
@@ -95,15 +112,8 @@ func (e *emitter) visitIdent(id *ast.Ident, parent parentFunc) {
 		e.writeEdge(callAnchor, target, edges.RefCall)
 
 		// Paint an edge to the function blamed for the call, or if there is
-		// none than to the enclosing file.
-		//
-		// TODO(fromberger): Drop the file case when we get rid of childof file
-		// edges.
-		cc := callContext(parent)
-		if fi := e.pi.function[cc]; cc == nil || fi == nil {
-			path, _, _ := e.pi.Span(id)
-			e.writeEdge(callAnchor, e.pi.FileVName(path), edges.ChildOf)
-		} else {
+		// none then to the enclosing file.
+		if fi := e.pi.function[callContext(parent)]; fi != nil {
 			e.writeEdge(callAnchor, fi.vname, edges.ChildOf)
 		}
 	}
@@ -152,6 +162,29 @@ func (e *emitter) visitFuncDecl(decl *ast.FuncDecl, parent parentFunc) {
 		}
 	}
 	e.emitParameters(decl.Type, sig, info)
+}
+
+// visitFuncLit handles function literals and their parameters.  The signature
+// for a function literal is named relative to the signature of its parent
+// function, or the file scope if the literal is at the top level.
+func (e *emitter) visitFuncLit(flit *ast.FuncLit, parent parentFunc) {
+	fi := e.pi.function[callContext(parent)]
+	if fi == nil {
+		log.Panic("Function literal without a context: ", flit)
+	}
+
+	fi.numAnons++
+	info := &funcInfo{vname: proto.Clone(fi.vname).(*spb.VName)}
+	info.vname.Language = govname.Language
+	info.vname.Signature += fmt.Sprintf("$%d", fi.numAnons)
+	e.pi.function[flit] = info
+
+	litAnchor, start, end := e.pi.Anchor(flit)
+	e.writeAnchor(litAnchor, start, end)
+	e.writeEdge(litAnchor, info.vname, edges.Defines)
+
+	sig := e.pi.Info.Types[flit].Type.(*types.Signature)
+	e.emitParameters(flit.Type, sig, info)
 }
 
 // emitParameters emits parameter edges for the parameters of a function type,
@@ -214,13 +247,13 @@ func isCall(id *ast.Ident, obj types.Object, parent parentFunc) (*ast.CallExpr, 
 }
 
 // callContext returns the nearest enclosing parent function, not including the
-// node itself, or returns nil to indicate the node is at file scope.
+// node itself, or the enclosing file if the node is at file scope.
 func callContext(parent parentFunc) ast.Node {
 	for i := 1; ; i++ {
 		switch p := parent(i).(type) {
-		case *ast.FuncDecl, *ast.FuncLit:
+		case *ast.FuncDecl, *ast.FuncLit, *ast.File:
 			return p
-		case nil, *ast.File:
+		case nil:
 			return nil
 		}
 	}

@@ -101,8 +101,8 @@ type PackageInfo struct {
 }
 
 type funcInfo struct {
-	vname   *spb.VName
-	numAnon int // number of anonymous functions defined inside this one
+	vname    *spb.VName
+	numAnons int // number of anonymous functions defined inside this one
 }
 
 // Import satisfies the types.Importer interface using the captured data from
