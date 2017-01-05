@@ -13,7 +13,7 @@
     "go": {
       "type": "golint",
       "include": "(\\.go$)",
-      "exclude": "(^third_party|^kythe/proto/)"
+      "exclude": "(^third_party|^kythe/proto/|/testdata/)"
     },
     "custom": {
       "type": "script-and-regex",
