@@ -561,8 +561,12 @@ void MarkedSourceGenerator::ReplaceMarkedSourceWithTemplateArgumentList(
     // the type context.
     // TODO(zarko): Pack expansions;
     // see TemplateSpecializationType::PrintTemplateArgumentList
-    llvm::raw_string_ostream stream(*next_arg->mutable_pre_text());
-    print_arg.print(policy, stream);
+    std::string pre_text;
+    {
+      llvm::raw_string_ostream stream(pre_text);
+      print_arg.print(policy, stream);
+    }
+    *next_arg->mutable_pre_text() = std::move(pre_text);
   }
 }
 
@@ -599,35 +603,43 @@ bool MarkedSourceGenerator::ReplaceMarkedSourceWithQualifiedName(
         parent->set_kind(MarkedSource::BOX);
         auto *class_name = parent->add_child();
         class_name->set_kind(MarkedSource::IDENTIFIER);
-        llvm::raw_string_ostream stream(*class_name->mutable_pre_text());
-        stream << spec->getName();
+        std::string pre_text;
+        {
+          llvm::raw_string_ostream stream(pre_text);
+          stream << spec->getName();
+        }
+        *class_name->mutable_pre_text() = std::move(pre_text);
         ReplaceMarkedSourceWithTemplateArgumentList(parent->add_child(), spec);
       } else {
         parent->set_kind(MarkedSource::IDENTIFIER);
-        llvm::raw_string_ostream stream(*parent->mutable_pre_text());
-        if (const auto *namespace_decl =
-                llvm::dyn_cast<clang::NamespaceDecl>(decl_context)) {
-          if (namespace_decl->isAnonymousNamespace()) {
-            stream << (policy.MSVCFormatting ? "`anonymous namespace\'"
-                                             : "(anonymous namespace)");
+        std::string pre_text;
+        {
+          llvm::raw_string_ostream stream(pre_text);
+          if (const auto *namespace_decl =
+                  llvm::dyn_cast<clang::NamespaceDecl>(decl_context)) {
+            if (namespace_decl->isAnonymousNamespace()) {
+              stream << (policy.MSVCFormatting ? "`anonymous namespace\'"
+                                               : "(anonymous namespace)");
+            } else {
+              stream << *namespace_decl;
+            }
+          } else if (const auto *record_decl =
+                         llvm::dyn_cast<clang::RecordDecl>(decl_context)) {
+            if (!record_decl->getIdentifier())
+              stream << "(anonymous " << record_decl->getKindName() << ')';
+            else
+              stream << *record_decl;
+          } else if (const auto *function_decl =
+                         llvm::dyn_cast<clang::FunctionDecl>(decl_context)) {
+            stream << *function_decl;
+          } else if (const auto *enum_decl =
+                         llvm::dyn_cast<clang::EnumDecl>(decl_context)) {
+            stream << *enum_decl;
           } else {
-            stream << *namespace_decl;
+            stream << *llvm::cast<clang::NamedDecl>(decl_context);
           }
-        } else if (const auto *record_decl =
-                       llvm::dyn_cast<clang::RecordDecl>(decl_context)) {
-          if (!record_decl->getIdentifier())
-            stream << "(anonymous " << record_decl->getKindName() << ')';
-          else
-            stream << *record_decl;
-        } else if (const auto *function_decl =
-                       llvm::dyn_cast<clang::FunctionDecl>(decl_context)) {
-          stream << *function_decl;
-        } else if (const auto *enum_decl =
-                       llvm::dyn_cast<clang::EnumDecl>(decl_context)) {
-          stream << *enum_decl;
-        } else {
-          stream << *llvm::cast<clang::NamedDecl>(decl_context);
         }
+        *parent->mutable_pre_text() = std::move(pre_text);
       }
     }
   }
@@ -656,15 +668,12 @@ MaybeFew<MarkedSource> MarkedSourceGenerator::GenerateMarkedSourceUsingSource(
                    << decl_id.getRawIdentity();
       return None();
     }
-    DCHECK(
-        google::protobuf::internal::IsStructurallyValidUTF8(formatted_range));
     DeclAnnotator annotator(cache_, &replacements, start_loc, formatted_range,
                             &out_sig, name_range_);
     annotator.Annotate(decl_);
     ReplaceMarkedSourceWithQualifiedName(annotator.ident_node());
   } else {
     auto range_string = range.str();
-    DCHECK(google::protobuf::internal::IsStructurallyValidUTF8(range_string));
     DeclAnnotator annotator(cache_, nullptr, start_loc, range_string, &out_sig,
                             name_range_);
     annotator.Annotate(decl_);
