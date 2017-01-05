@@ -51,3 +51,9 @@ go_indexer_test(
     srcs = ["testdata/basic/funcall.go"],
     import_path = "test/fun",
 )
+
+go_indexer_test(
+    name = "functions_test",
+    srcs = ["testdata/basic/functions.go"],
+    import_path = "test/fun",
+)

@@ -142,7 +142,7 @@ func (e *emitter) visitFuncDecl(decl *ast.FuncDecl, parent parentFunc) {
 		// The receiver is treated as parameter 0.
 		if names := decl.Recv.List[0].Names; names != nil {
 			recv := e.pi.ObjectVName(e.pi.Info.Defs[names[0]])
-			e.writeEdge(recv, info.vname, edges.ParamIndex(0))
+			e.writeEdge(info.vname, recv, edges.ParamIndex(0))
 		}
 
 		// The method should be a child of its (named) enclosing type.
@@ -151,6 +151,27 @@ func (e *emitter) visitFuncDecl(decl *ast.FuncDecl, parent parentFunc) {
 			e.writeEdge(info.vname, base, edges.ChildOf)
 		}
 	}
+	e.emitParameters(decl.Type, sig, info)
+}
+
+// emitParameters emits parameter edges for the parameters of a function type,
+// given the type signature and info of the enclosing declaration or function
+// literal.
+func (e *emitter) emitParameters(ftype *ast.FuncType, sig *types.Signature, info *funcInfo) {
+	paramIndex := 0
+
+	// If there is a receiver, it is treated as param.0.
+	if sig.Recv() != nil {
+		paramIndex++
+	}
+
+	mapFields(ftype.Params, func(i int, id *ast.Ident) {
+		if obj := sig.Params().At(i); obj != nil {
+			param := e.pi.ObjectVName(obj)
+			e.writeEdge(info.vname, param, edges.ParamIndex(paramIndex))
+		}
+		paramIndex++
+	})
 }
 
 func (e *emitter) check(err error) {
@@ -251,4 +272,17 @@ func deref(T types.Type) types.Type {
 		return U.Elem()
 	}
 	return T
+}
+
+// mapFields applies f to each identifier declared in fields.  Each call to f
+// is given the offset and the identifier.
+func mapFields(fields *ast.FieldList, f func(i int, id *ast.Ident)) {
+	if fields == nil {
+		return
+	}
+	for i, field := range fields.List {
+		for _, id := range field.Names {
+			f(i, id)
+		}
+	}
 }

@@ -3,16 +3,12 @@ package fun
 
 //- File=vname("", "test", _, "src/test/fun/funcall.go", "").node/kind file
 
-//- @"func F() int { return 0 }" defines Fun
-//- @F defines/binding Fun
+//- @F defines/binding Fun = vname("func F", "test", _, "fun", "go")
 func F() int { return 0 }
 
 type T struct{}
 
-//- @"func (p T) M() {}" defines Meth
 //- @M defines/binding Meth = vname("method (fun.T).M", "test", _, "fun", "go")
-//- Meth childof T
-//- Recv param.0 Meth
 func (p T) M() {}
 
 //- @F ref Fun
