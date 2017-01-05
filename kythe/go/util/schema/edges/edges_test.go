@@ -127,3 +127,13 @@ func TestIsVariant(t *testing.T) {
 		}
 	}
 }
+
+func TestParamIndex(t *testing.T) {
+	tests := []string{"param.0", "param.1", "param.2", "param.3"}
+	for i, test := range tests {
+		want := "/kythe/edge/" + test
+		if got := ParamIndex(i); got != want {
+			t.Errorf("ParamIndex(%d): got %q, want %q", i, got, want)
+		}
+	}
+}

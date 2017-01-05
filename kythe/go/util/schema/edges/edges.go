@@ -56,6 +56,9 @@ const (
 	RefCall           = Prefix + "ref/call"
 )
 
+// ParamIndex returns an edge label of the form "param.i" for the i given.
+func ParamIndex(i int) string { return Param + "." + strconv.Itoa(i) }
+
 // revPrefix is used to distinguish reverse kinds from forward ones.
 const revPrefix = "%"
 

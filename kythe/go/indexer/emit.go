@@ -93,6 +93,19 @@ func (e *emitter) visitIdent(id *ast.Ident, parent parentFunc) {
 		callAnchor, start, end := e.pi.Anchor(call)
 		e.writeAnchor(callAnchor, start, end)
 		e.writeEdge(callAnchor, target, edges.RefCall)
+
+		// Paint an edge to the function blamed for the call, or if there is
+		// none than to the enclosing file.
+		//
+		// TODO(fromberger): Drop the file case when we get rid of childof file
+		// edges.
+		cc := callContext(parent)
+		if fi := e.pi.function[cc]; cc == nil || fi == nil {
+			path, _, _ := e.pi.Span(id)
+			e.writeEdge(callAnchor, e.pi.FileVName(path), edges.ChildOf)
+		} else {
+			e.writeEdge(callAnchor, fi.vname, edges.ChildOf)
+		}
 	}
 }
 
@@ -122,7 +135,22 @@ func (e *emitter) visitFuncDecl(decl *ast.FuncDecl, parent parentFunc) {
 	e.writeAnchor(fullAnchor, start, end)
 	e.writeEdge(fullAnchor, info.vname, edges.Defines)
 
-	// TODO(fromberger): For concrete methods, emit the receiver if named.
+	// For concrete methods: Emit the receiver if named, and connect the method
+	// to its declaring type.
+	sig := obj.Type().(*types.Signature)
+	if sig.Recv() != nil {
+		// The receiver is treated as parameter 0.
+		if names := decl.Recv.List[0].Names; names != nil {
+			recv := e.pi.ObjectVName(e.pi.Info.Defs[names[0]])
+			e.writeEdge(recv, info.vname, edges.ParamIndex(0))
+		}
+
+		// The method should be a child of its (named) enclosing type.
+		if named, _ := deref(sig.Recv().Type()).(*types.Named); named != nil {
+			base := e.pi.ObjectVName(named.Obj())
+			e.writeEdge(info.vname, base, edges.ChildOf)
+		}
+	}
 }
 
 func (e *emitter) check(err error) {
@@ -164,6 +192,19 @@ func isCall(id *ast.Ident, obj types.Object, parent parentFunc) (*ast.CallExpr, 
 	return nil, false
 }
 
+// callContext returns the nearest enclosing parent function, not including the
+// node itself, or returns nil to indicate the node is at file scope.
+func callContext(parent parentFunc) ast.Node {
+	for i := 1; ; i++ {
+		switch p := parent(i).(type) {
+		case *ast.FuncDecl, *ast.FuncLit:
+			return p
+		case nil, *ast.File:
+			return nil
+		}
+	}
+}
+
 // A visitFunc visits a node of the Go AST. The function can use parent to
 // retrieve AST nodes on the path from the root up to and including node.  If
 // the return value is true, the children of node are also visited; otherwise
@@ -202,4 +243,12 @@ func (w *astVisitor) parent(i int) ast.Node {
 		return nil
 	}
 	return w.stack[len(w.stack)-1-i]
+}
+
+// deref returns the base type of T if it is a pointer, otherwise T itself.
+func deref(T types.Type) types.Type {
+	if U, ok := T.Underlying().(*types.Pointer); ok {
+		return U.Elem()
+	}
+	return T
 }
