@@ -758,7 +758,7 @@ func SlowCallersForCrossReferences(ctx context.Context, service Service, include
 		PageSize:          math.MaxInt32,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("can't get CrossReferences for xref references set: %v", err)
+		return nil, fmt.Errorf("can't get CrossReferences for callees set: %v", err)
 	}
 	if xrefs.NextPageToken != "" {
 		return nil, errors.New("UNIMPLEMENTED: Paged CrossReferences reply")
@@ -795,6 +795,8 @@ func SlowCallersForCrossReferences(ctx context.Context, service Service, include
 		return nil
 	}); err != nil {
 		return nil, err
+	} else if len(parentTickets) == 0 {
+		return nil, nil
 	}
 	// Get definition-site anchors. This won't recurse through this function because we're requesting NO_CALLERS.
 	defs, err := service.CrossReferences(ctx, &xpb.CrossReferencesRequest{
