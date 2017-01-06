@@ -46,6 +46,11 @@ func init() {
 	http.Handle("/repo/", http.StripPrefix("/repo", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, repoURL+r.URL.Path, http.StatusTemporaryRedirect)
 	})))
+	// This redirect is put in place to handle the case when a user fails to include a trailing slash, which causes
+	// images within docs/schema to not be properly served.
+	http.Handle("/docs/schema", http.StripPrefix("/docs/schema", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/docs/schema/", http.StatusTemporaryRedirect)
+	})))
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if _, ok := r.URL.Query()["go-get"]; ok {
 			if _, err := w.Write([]byte(goGetHTML)); err != nil {
