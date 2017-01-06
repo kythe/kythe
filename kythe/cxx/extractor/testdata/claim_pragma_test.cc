@@ -134,7 +134,7 @@ TEST(ClaimPragmaTest, ClaimPragmaIsSupported) {
       "./kythe/cxx/extractor/testdata/claim_main.cc",
   });
 
-  int call_count;
+  int call_count = 0;
   std::unique_ptr<kythe::IndexWriterSink> sink(
       new FakeIndexWriterSink(&call_count));
   EXPECT_TRUE(extractor.Extract(std::move(sink)));
