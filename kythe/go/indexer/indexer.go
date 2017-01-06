@@ -177,7 +177,7 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 			return nil, fmt.Errorf("missing vname for %q", fpath)
 		}
 
-		ipath := vnameToImport(ri.VName)
+		ipath := vnameToImport(ri.VName, getenv("GOROOT", unit))
 		imap[ipath] = ri.VName
 
 		// Populate deps with package ipath and its prerequisites.
@@ -513,17 +513,48 @@ func (pi *PackageInfo) addOwners(pkg *types.Package) {
 // vnameToImport returns the putative Go import path corresponding to v.  The
 // resulting string corresponds to the string literal appearing in source at
 // the import site for the package so named.
-//
-// TODO(fromberger): This implementation currently assumes the extractor has
-// stored the package relative to GOROOT or GOPATH in v.Path. This should be
-// more robust to configurations where the path fragments are still part of the
-// VName.
-func vnameToImport(v *spb.VName) string {
-	if govname.IsStandardLibrary(v) {
+func vnameToImport(v *spb.VName, goRoot string) string {
+	if govname.IsStandardLibrary(v) || (goRoot != "" && v.Root == goRoot) {
 		return v.Path
+	} else if tail, ok := rootRelative(goRoot, v.Path); ok {
+		// Paths under a nonempty GOROOT are treated as if they were standard
+		// library packages even if they are not labelled as "golang.org", so
+		// that nonstandard install locations will work sensibly.
+		return strings.TrimSuffix(tail, filepath.Ext(tail))
 	}
 	trimmed := strings.TrimSuffix(v.Path, filepath.Ext(v.Path))
 	return filepath.Join(v.Corpus, trimmed)
+}
+
+// rootRelative reports whether path has the form
+//
+//     root[/pkg/os_arch/]tail
+//
+// and if so, returns the tail. It returns path, false if path does not have
+// this form.
+func rootRelative(root, path string) (string, bool) {
+	trimmed := strings.TrimPrefix(path, root+"/")
+	if root == "" || trimmed == path {
+		return path, false
+	}
+	if tail := strings.TrimPrefix(trimmed, "pkg/"); tail != trimmed {
+		parts := strings.SplitN(tail, "/", 2)
+		if len(parts) == 2 && strings.Contains(parts[0], "_") {
+			return parts[1], true
+		}
+	}
+	return trimmed, true
+}
+
+// getenv returns the value of the specified environment variable from unit.
+// It returns "" if no such variable is defined.
+func getenv(name string, unit *apb.CompilationUnit) string {
+	for _, env := range unit.Environment {
+		if env.Name == name {
+			return env.Value
+		}
+	}
+	return ""
 }
 
 // AllTypeInfo creates a new types.Info value with empty maps for each of the
