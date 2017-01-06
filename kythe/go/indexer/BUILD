@@ -63,3 +63,8 @@ go_indexer_test(
     srcs = ["testdata/basic/packages.go"],
     import_path = "test/pkg",
 )
+
+go_indexer_test(
+    name = "vardef_test",
+    srcs = ["testdata/basic/vardef.go"],
+)

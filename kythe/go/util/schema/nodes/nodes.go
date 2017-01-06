@@ -19,16 +19,18 @@ package nodes
 
 // Node kind labels
 const (
-	Anchor   = "anchor"
-	File     = "file"
-	Name     = "name"
-	Doc      = "doc"
-	EnumK    = "enum"
-	Function = "function"
-	Package  = "package"
-	Record   = "record"
-	TApp     = "tapp"
-	Variable = "variable"
+	Anchor    = "anchor"
+	Constant  = "constant"
+	Doc       = "doc"
+	EnumK     = "enum"
+	File      = "file"
+	Function  = "function"
+	Interface = "interface"
+	Name      = "name"
+	Package   = "package"
+	Record    = "record"
+	TApp      = "tapp"
+	Variable  = "variable"
 )
 
 // Node subkinds

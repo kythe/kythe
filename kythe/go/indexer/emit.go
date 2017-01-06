@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"go/ast"
+	"go/token"
 	"go/types"
 	"log"
 
@@ -74,6 +75,8 @@ func (pi *PackageInfo) Emit(ctx context.Context, sink Sink) error {
 				e.visitFuncDecl(n, parent)
 			case *ast.FuncLit:
 				e.visitFuncLit(n, parent)
+			case *ast.ValueSpec:
+				e.visitValueSpec(n, parent)
 			}
 			return true
 		}), file)
@@ -113,10 +116,8 @@ func (e *emitter) visitIdent(id *ast.Ident, parent parentFunc) {
 		e.writeEdge(callAnchor, target, edges.RefCall)
 
 		// Paint an edge to the function blamed for the call, or if there is
-		// none then to the enclosing file.
-		if fi := e.callContext(parent); fi != nil {
-			e.writeEdge(callAnchor, fi.vname, edges.ChildOf)
-		}
+		// none then to the package initializer.
+		e.writeEdge(callAnchor, e.callContext(parent).vname, edges.ChildOf)
 	}
 }
 
@@ -139,13 +140,11 @@ func (e *emitter) visitFuncDecl(decl *ast.FuncDecl, parent parentFunc) {
 	}
 
 	info.vname = e.pi.ObjectVName(obj)
-	defAnchor, start, end := e.pi.Anchor(decl.Name)
-	e.writeAnchor(defAnchor, start, end)
-	e.writeEdge(defAnchor, info.vname, edges.DefinesBinding)
+	e.writeBinding(decl.Name, nodes.Function, nil)
+
 	fullAnchor, start, end := e.pi.Anchor(decl)
 	e.writeAnchor(fullAnchor, start, end)
 	e.writeEdge(fullAnchor, info.vname, edges.Defines)
-	e.writeFact(info.vname, facts.NodeKind, nodes.Function)
 
 	// For concrete methods: Emit the receiver if named, and connect the method
 	// to its declaring type.
@@ -189,6 +188,24 @@ func (e *emitter) visitFuncLit(flit *ast.FuncLit, parent parentFunc) {
 	e.emitParameters(flit.Type, sig, info)
 }
 
+// visitValueSpec handles variable and constant bindings.
+func (e *emitter) visitValueSpec(spec *ast.ValueSpec, parent parentFunc) {
+	kind := nodes.Variable
+	if parent(1).(*ast.GenDecl).Tok == token.CONST {
+		kind = nodes.Constant
+	}
+	for _, id := range spec.Names {
+		if id.Name == "_" {
+			continue
+		}
+		obj := e.pi.Info.Defs[id]
+		if obj == nil {
+			continue // type error (reported elsewhere)
+		}
+		e.writeBinding(id, kind, e.nameContext(parent))
+	}
+}
+
 // emitParameters emits parameter edges for the parameters of a function type,
 // given the type signature and info of the enclosing declaration or function
 // literal.
@@ -228,6 +245,20 @@ func (e *emitter) writeAnchor(src *spb.VName, start, end int) {
 	e.check(e.sink.writeAnchor(e.ctx, src, start, end))
 }
 
+// writeBinding emits an anchor for a binding definition of the specified kind
+// at id, and records its binding to the target. If parent != nil, the target
+// is also recorded as its child.
+func (e *emitter) writeBinding(id *ast.Ident, kind string, parent *spb.VName) {
+	anchor, start, end := e.pi.Anchor(id)
+	e.writeAnchor(anchor, start, end)
+	target := e.pi.ObjectVName(e.pi.Info.Defs[id])
+	e.writeFact(target, facts.NodeKind, kind)
+	e.writeEdge(anchor, target, edges.DefinesBinding)
+	if parent != nil {
+		e.writeEdge(target, parent, edges.ChildOf)
+	}
+}
+
 // isCall reports whether id is a call to obj.  This holds if id is in call
 // position ("id(...") or is the RHS of a selector in call position
 // ("x.id(...)"). If so, the nearest enclosing call expression is also
@@ -249,8 +280,8 @@ func isCall(id *ast.Ident, obj types.Object, parent parentFunc) (*ast.CallExpr, 
 }
 
 // callContext returns funcInfo for the nearest enclosing parent function, not
-// including the node itself, or the enclosing package if the node is at the
-// top level.
+// including the node itself, or the enclosing package initializer if the node
+// is at the top level.
 func (e *emitter) callContext(parent parentFunc) *funcInfo {
 	for i := 1; ; i++ {
 		switch p := parent(i).(type) {
@@ -271,6 +302,16 @@ func (e *emitter) callContext(parent parentFunc) *funcInfo {
 			return e.pi.packageInit
 		}
 	}
+}
+
+// nameContext returns the vname for the nearest enclosing parent node, not
+// including the node itself, or the enclosing package vname if the node is at
+// the top level.
+func (e *emitter) nameContext(parent parentFunc) *spb.VName {
+	if fi := e.callContext(parent); fi != e.pi.packageInit {
+		return fi.vname
+	}
+	return e.pi.VName
 }
 
 // A visitFunc visits a node of the Go AST. The function can use parent to

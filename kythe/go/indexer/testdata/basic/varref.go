@@ -1,3 +1,4 @@
+// Package ref tests variable references.
 package ref
 
 var (
