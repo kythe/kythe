@@ -152,7 +152,7 @@ func (e *emitter) visitFuncDecl(decl *ast.FuncDecl, parent parentFunc) {
 	if sig.Recv() != nil {
 		// The receiver is treated as parameter 0.
 		if names := decl.Recv.List[0].Names; names != nil {
-			recv := e.pi.ObjectVName(e.pi.Info.Defs[names[0]])
+			recv := e.writeBinding(names[0], nodes.Variable, info.vname)
 			e.writeEdge(info.vname, recv, edges.ParamIndex(0))
 		}
 
@@ -195,11 +195,7 @@ func (e *emitter) visitValueSpec(spec *ast.ValueSpec, parent parentFunc) {
 		kind = nodes.Constant
 	}
 	for _, id := range spec.Names {
-		if id.Name == "_" {
-			continue
-		}
-		obj := e.pi.Info.Defs[id]
-		if obj == nil {
+		if e.pi.Info.Defs[id] == nil {
 			continue // type error (reported elsewhere)
 		}
 		e.writeBinding(id, kind, e.nameContext(parent))
@@ -217,12 +213,19 @@ func (e *emitter) emitParameters(ftype *ast.FuncType, sig *types.Signature, info
 		paramIndex++
 	}
 
+	// Emit bindings and parameter edges for the parameters.
 	mapFields(ftype.Params, func(i int, id *ast.Ident) {
 		if obj := sig.Params().At(i); obj != nil {
 			param := e.pi.ObjectVName(obj)
+			e.writeBinding(id, nodes.Variable, info.vname)
 			e.writeEdge(info.vname, param, edges.ParamIndex(paramIndex))
 		}
 		paramIndex++
+	})
+	// Emit bindings for any named result variables.
+	// Results are not considered parameters.
+	mapFields(ftype.Results, func(i int, id *ast.Ident) {
+		e.writeBinding(id, nodes.Variable, info.vname)
 	})
 }
 
@@ -245,18 +248,22 @@ func (e *emitter) writeAnchor(src *spb.VName, start, end int) {
 	e.check(e.sink.writeAnchor(e.ctx, src, start, end))
 }
 
-// writeBinding emits an anchor for a binding definition of the specified kind
-// at id, and records its binding to the target. If parent != nil, the target
-// is also recorded as its child.
-func (e *emitter) writeBinding(id *ast.Ident, kind string, parent *spb.VName) {
-	anchor, start, end := e.pi.Anchor(id)
-	e.writeAnchor(anchor, start, end)
+// writeBinding emits a node of the specified kind for the target of id.  If
+// the identifier is not "_", an anchor for a binding definition of the target
+// is also emitted at id. If parent != nil, the target is also recorded as its
+// child. The target vname is returned.
+func (e *emitter) writeBinding(id *ast.Ident, kind string, parent *spb.VName) *spb.VName {
 	target := e.pi.ObjectVName(e.pi.Info.Defs[id])
 	e.writeFact(target, facts.NodeKind, kind)
-	e.writeEdge(anchor, target, edges.DefinesBinding)
+	if id.Name != "_" {
+		anchor, start, end := e.pi.Anchor(id)
+		e.writeAnchor(anchor, start, end)
+		e.writeEdge(anchor, target, edges.DefinesBinding)
+	}
 	if parent != nil {
 		e.writeEdge(target, parent, edges.ChildOf)
 	}
+	return target
 }
 
 // isCall reports whether id is a call to obj.  This holds if id is in call
