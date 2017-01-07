@@ -29,7 +29,10 @@ const (
 	Name      = "name"
 	Package   = "package"
 	Record    = "record"
+	TAlias    = "talias"
 	TApp      = "tapp"
+	TBuiltin  = "tbuiltin"
+	TNominal  = "tnominal"
 	Variable  = "variable"
 )
 

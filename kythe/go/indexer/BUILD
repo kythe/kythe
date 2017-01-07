@@ -68,3 +68,8 @@ go_indexer_test(
     name = "vardef_test",
     srcs = ["testdata/basic/vardef.go"],
 )
+
+go_indexer_test(
+    name = "typespec_test",
+    srcs = ["testdata/basic/typespec.go"],
+)

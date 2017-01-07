@@ -71,6 +71,8 @@ func (pi *PackageInfo) Emit(ctx context.Context, sink Sink) error {
 				e.visitFuncLit(n, parent)
 			case *ast.ValueSpec:
 				e.visitValueSpec(n, parent)
+			case *ast.TypeSpec:
+				e.visitTypeSpec(n, parent)
 			}
 			return true
 		}), file)
@@ -133,12 +135,8 @@ func (e *emitter) visitFuncDecl(decl *ast.FuncDecl, parent parentFunc) {
 		e.pi.sigs[obj] = fmt.Sprintf("%s#%d", e.pi.Signature(obj), e.pi.numInits)
 	}
 
-	info.vname = e.pi.ObjectVName(obj)
-	e.writeBinding(decl.Name, nodes.Function, nil)
-
-	fullAnchor, start, end := e.pi.Anchor(decl)
-	e.writeAnchor(fullAnchor, start, end)
-	e.writeEdge(fullAnchor, info.vname, edges.Defines)
+	info.vname = e.writeBinding(decl.Name, nodes.Function, nil)
+	e.writeDef(decl, info.vname)
 
 	// For concrete methods: Emit the receiver if named, and connect the method
 	// to its declaring type.
@@ -173,10 +171,7 @@ func (e *emitter) visitFuncLit(flit *ast.FuncLit, parent parentFunc) {
 	info.vname.Language = govname.Language
 	info.vname.Signature += fmt.Sprintf("$%d", fi.numAnons)
 	e.pi.function[flit] = info
-
-	flitAnchor, start, end := e.pi.Anchor(flit)
-	e.writeAnchor(flitAnchor, start, end)
-	e.writeEdge(flitAnchor, info.vname, edges.Defines)
+	e.writeDef(flit, info.vname)
 
 	sig := e.pi.Info.Types[flit].Type.(*types.Signature)
 	e.emitParameters(flit.Type, sig, info)
@@ -196,6 +191,57 @@ func (e *emitter) visitValueSpec(spec *ast.ValueSpec, parent parentFunc) {
 	}
 }
 
+// visitTypeSpec handles type declarations, including the bindings for fields
+// of struct types and methods of interfaces.
+func (e *emitter) visitTypeSpec(spec *ast.TypeSpec, parent parentFunc) {
+	obj, _ := e.pi.Info.Defs[spec.Name]
+	if obj == nil {
+		return // type error
+	}
+	target := e.writeBinding(spec.Name, "", e.nameContext(parent))
+	e.writeDef(spec, target)
+
+	// Emit type-specific structure.
+	switch t := obj.Type().Underlying().(type) {
+	case *types.Struct:
+		e.writeFact(target, facts.NodeKind, nodes.Record)
+		e.writeFact(target, facts.Subkind, nodes.Struct)
+		// Add parent edges for all fields, including promoted ones.
+		for i, n := 0, t.NumFields(); i < n; i++ {
+			e.writeEdge(e.pi.ObjectVName(t.Field(i)), target, edges.ChildOf)
+		}
+
+		// Add bindings for the explicitly-named fields in this declaration.
+		// Parent edges were already added, so skip them here.
+		mapFields(spec.Type.(*ast.StructType).Fields, func(_ int, id *ast.Ident) {
+			e.writeBinding(id, nodes.Variable, nil)
+		})
+		// TODO(fromberger): Add bindings for anonymous fields. This will need
+		// to account for pointers and qualified identifiers.
+
+	case *types.Interface:
+		e.writeFact(target, facts.NodeKind, nodes.Interface)
+		// Add parent edges for all methods, including inherited ones.
+		for i, n := 0, t.NumMethods(); i < n; i++ {
+			e.writeEdge(e.pi.ObjectVName(t.Method(i)), target, edges.ChildOf)
+		}
+		// Mark the interface as an extension of any embedded interfaces.
+		for i, n := 0, t.NumEmbeddeds(); i < n; i++ {
+			e.writeEdge(target, e.pi.ObjectVName(t.Embedded(i).Obj()), edges.Extends)
+		}
+
+		// Add bindings for the explicitly-named methods in this declaration.
+		// Parent edges were already added, so skip them here.
+		mapFields(spec.Type.(*ast.InterfaceType).Methods, func(_ int, id *ast.Ident) {
+			e.writeBinding(id, nodes.Function, nil)
+		})
+
+	default:
+		e.writeFact(target, facts.NodeKind, nodes.TApp)
+		// TODO(fromberger): Handle pointer types, newtype forms.
+	}
+}
+
 // emitParameters emits parameter edges for the parameters of a function type,
 // given the type signature and info of the enclosing declaration or function
 // literal.
@@ -209,9 +255,8 @@ func (e *emitter) emitParameters(ftype *ast.FuncType, sig *types.Signature, info
 
 	// Emit bindings and parameter edges for the parameters.
 	mapFields(ftype.Params, func(i int, id *ast.Ident) {
-		if obj := sig.Params().At(i); obj != nil {
-			param := e.pi.ObjectVName(obj)
-			e.writeBinding(id, nodes.Variable, info.vname)
+		if sig.Params().At(i) != nil {
+			param := e.writeBinding(id, nodes.Variable, info.vname)
 			e.writeEdge(info.vname, param, edges.ParamIndex(paramIndex))
 		}
 		paramIndex++
@@ -248,7 +293,9 @@ func (e *emitter) writeAnchor(src *spb.VName, start, end int) {
 // child. The target vname is returned.
 func (e *emitter) writeBinding(id *ast.Ident, kind string, parent *spb.VName) *spb.VName {
 	target := e.pi.ObjectVName(e.pi.Info.Defs[id])
-	e.writeFact(target, facts.NodeKind, kind)
+	if kind != "" {
+		e.writeFact(target, facts.NodeKind, kind)
+	}
 	if id.Name != "_" {
 		anchor, start, end := e.pi.Anchor(id)
 		e.writeAnchor(anchor, start, end)
@@ -258,6 +305,14 @@ func (e *emitter) writeBinding(id *ast.Ident, kind string, parent *spb.VName) *s
 		e.writeEdge(target, parent, edges.ChildOf)
 	}
 	return target
+}
+
+// writeDef emits a spanning anchor and defines edge for the specified node.
+// This function does not create the target node.
+func (e *emitter) writeDef(node ast.Node, target *spb.VName) {
+	anchor, start, end := e.pi.Anchor(node)
+	e.writeAnchor(anchor, start, end)
+	e.writeEdge(anchor, target, edges.Defines)
 }
 
 // isCall reports whether id is a call to obj.  This holds if id is in call
