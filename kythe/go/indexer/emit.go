@@ -34,12 +34,6 @@ import (
 	spb "kythe.io/kythe/proto/storage_proto"
 )
 
-// TODO(fromberger): Maybe blame calls at file scope on a dummy package
-// initializer function node, instead of on the file.
-//
-// TODO(fromberger): Should function literals be childof their containing
-// function, when one exists?
-
 // Emit generates Kythe facts and edges to represent pi, and writes them to
 // sink. In case of errors, processing continues as far as possible before the
 // first error encountered is reported.
