@@ -73,6 +73,10 @@ func (pi *PackageInfo) Emit(ctx context.Context, sink Sink) error {
 				e.visitValueSpec(n, parent)
 			case *ast.TypeSpec:
 				e.visitTypeSpec(n, parent)
+			case *ast.AssignStmt:
+				e.visitAssignStmt(n, parent)
+			case *ast.RangeStmt:
+				e.visitRangeStmt(n, parent)
 			}
 			return true
 		}), file)
@@ -239,6 +243,45 @@ func (e *emitter) visitTypeSpec(spec *ast.TypeSpec, parent parentFunc) {
 	default:
 		e.writeFact(target, facts.NodeKind, nodes.TApp)
 		// TODO(fromberger): Handle pointer types, newtype forms.
+	}
+}
+
+// visitAssignStmt handles bindings introduced by short-declaration syntax in
+// assignment statments, e.g., "x, y := 1, 2".
+func (e *emitter) visitAssignStmt(stmt *ast.AssignStmt, parent parentFunc) {
+	if stmt.Tok != token.DEFINE {
+		return // no new bindings in this statement
+	}
+
+	// Not all the names in a short declaration assignment may be defined here.
+	// We only add bindings for newly-defined ones, of which there must be at
+	// least one in a well-typed program.
+	up := e.nameContext(parent)
+	for _, expr := range stmt.Lhs {
+		if id, _ := expr.(*ast.Ident); id != nil {
+			// Add a binding only if this is the definition site for the name.
+			if obj := e.pi.Info.Defs[id]; obj != nil && obj.Pos() == id.Pos() {
+				e.writeBinding(id, nodes.Variable, up)
+			}
+		}
+	}
+
+	// TODO(fromberger): Add information about initializers where available.
+}
+
+// visitRangeStmt handles the bindings introduced by a for ... range statement.
+func (e *emitter) visitRangeStmt(stmt *ast.RangeStmt, parent parentFunc) {
+	if stmt.Tok != token.DEFINE {
+		return // no new bindings in this statement
+	}
+
+	// In a well-typed program, the key and value will always be identifiers.
+	up := e.nameContext(parent)
+	if key, _ := stmt.Key.(*ast.Ident); key != nil {
+		e.writeBinding(key, nodes.Variable, up)
+	}
+	if val, _ := stmt.Value.(*ast.Ident); val != nil {
+		e.writeBinding(val, nodes.Variable, up)
 	}
 }
 

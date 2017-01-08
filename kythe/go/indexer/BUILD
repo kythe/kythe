@@ -73,3 +73,8 @@ go_indexer_test(
     name = "typespec_test",
     srcs = ["testdata/basic/typespec.go"],
 )
+
+go_indexer_test(
+    name = "locals_test",
+    srcs = ["testdata/basic/locals.go"],
+)
