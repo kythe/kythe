@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
+import com.google.devtools.kythe.proto.MarkedSource;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.devtools.kythe.util.KytheURI;
 import com.google.devtools.kythe.util.Span;
@@ -109,7 +110,14 @@ public class KytheEntrySets {
   public EntrySet getBuiltin(String name) {
     EntrySet node =
         emitAndReturn(
-            newNode(NodeKind.TBUILTIN).setSignature(name + "#builtin").setProperty("format", name));
+            newNode(NodeKind.TBUILTIN)
+                .setSignature(name + "#builtin")
+                .setProperty(
+                    "code",
+                    MarkedSource.newBuilder()
+                        .setPreText(name)
+                        .setKind(MarkedSource.Kind.IDENTIFIER)
+                        .build()));
     emitName(node, name);
     return node;
   }
@@ -155,8 +163,8 @@ public class KytheEntrySets {
   }
 
   /**
-   * Returns the {@link VName} of the {@link NodeKind#FILE} node with the given contents digest.
-   * If none is found, return {@code null}.
+   * Returns the {@link VName} of the {@link NodeKind#FILE} node with the given contents digest. If
+   * none is found, returns {@code null}.
    */
   public VName getFileVName(String digest) {
     VName name = lookupVName(digest);
@@ -175,10 +183,11 @@ public class KytheEntrySets {
 
   /** Emits and returns a new {@link EntrySet} representing a file {@link VName}. */
   public EntrySet getFileNode(VName name, byte[] contents, Charset encoding) {
-    EntrySet node = emitAndReturn(
-        new NodeBuilder(NodeKind.FILE, name)
-            .setProperty("text", contents)
-            .setProperty("text/encoding", encoding.name()));
+    EntrySet node =
+        emitAndReturn(
+            new NodeBuilder(NodeKind.FILE, name)
+                .setProperty("text", contents)
+                .setProperty("text/encoding", encoding.name()));
     Path fileName = Paths.get(name.getPath()).getFileName();
     if (fileName != null) {
       emitName(node, fileName.toString());
@@ -187,8 +196,8 @@ public class KytheEntrySets {
   }
 
   /**
-   * Returns a {@link NodeBuilder} with the given kind and added signature salts for each
-   * {@link EntrySet} dependency.
+   * Returns a {@link NodeBuilder} with the given kind and added signature salts for each {@link
+   * EntrySet} dependency.
    */
   public NodeBuilder newNode(NodeKind kind, Iterable<EntrySet> dependencies) {
     NodeBuilder builder = newNode(kind);

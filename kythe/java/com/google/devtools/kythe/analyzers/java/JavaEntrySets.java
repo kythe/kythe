@@ -17,6 +17,7 @@
 package com.google.devtools.kythe.analyzers.java;
 
 import com.google.common.collect.HashMultiset;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Multiset;
 import com.google.devtools.kythe.analyzers.base.CorpusPath;
 import com.google.devtools.kythe.analyzers.base.EdgeKind;
@@ -27,12 +28,14 @@ import com.google.devtools.kythe.analyzers.base.NodeKind;
 import com.google.devtools.kythe.analyzers.java.SourceText.Positions;
 import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
+import com.google.devtools.kythe.proto.MarkedSource;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.devtools.kythe.util.Span;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import com.sun.tools.javac.code.Symbol.PackageSymbol;
+import com.sun.tools.javac.code.TypeTag;
 import com.sun.tools.javac.tree.JCTree;
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
@@ -63,6 +66,55 @@ public class JavaEntrySets extends KytheEntrySets {
   }
 
   /**
+   * The only place the integer index for nested classes/anonymous classes is stored is in the
+   * flatname of the symbol. (This index is determined at compile time using linear search; see
+   * 'localClassName' in Check.java). The simple name can't be relied on; for nested classes it
+   * drops the name of the parent class (so 'pkg.Clasz$Inner' yields only 'Inner') and for anonymous
+   * classes it's blank. For multiply-nested classes, we'll see tokens like 'Class$Inner$1$1'.
+   */
+  private String getIdentToken(Symbol sym) {
+    String flatName = sym.flatName().toString();
+    int lastDot = flatName.lastIndexOf('.');
+    int lastCash = flatName.lastIndexOf('$');
+    int lastTok = lastDot > lastCash ? lastDot : lastCash;
+    String identToken = lastTok < 0 ? flatName : flatName.substring(lastTok + 1);
+    if (!identToken.isEmpty() && Character.isDigit(identToken.charAt(0))) {
+      identToken = "(anon " + identToken + ")";
+    }
+    return identToken;
+  }
+
+  /**
+   * Returns the Symbol for sym's parent in qualified names, assuming that we'll be using
+   * getIdentToken() to print nodes.
+   *
+   * We're going through this extra effort to try and give people unsurprising qualified names.
+   * To do that we have to deal with javac's mangling (in {@link getIdentToken} above), since for
+   * anonymous classes javac only stores mangled symbols. The code as written will emit only dotted
+   * fully-qualified names, even for inner or anonymous classes, and considers concrete type, package,
+   * or method names to be appropriate dot points. (If we weren't careful here we might, for example,
+   * observe nodes in a qualified name corresponding to variables that are initialized to anonymous
+   * classes.) This reflects the nesting structure from the Java side, not the JVM side.
+   */
+  private Symbol getQualifiedNameParent(Symbol sym) {
+    sym = sym.owner;
+    while (sym != null) {
+      switch (sym.kind) {
+        case TYP:
+          if (!sym.type.hasTag(TypeTag.TYPEVAR)) {
+            return sym;
+          }
+          break;
+        case PCK:
+        case MTH:
+          return sym;
+      }
+      sym = sym.owner;
+    }
+    return sym;
+  }
+
+  /**
    * Returns a node for the given {@link Symbol} and its signature. A new node is created and
    * emitted if necessary.
    */
@@ -88,22 +140,64 @@ public class JavaEntrySets extends KytheEntrySets {
         v = v.toBuilder().setPath(enclClass != null ? enclClass.toString() : "").build();
       }
 
-      String format;
+      MarkedSource.Builder context = MarkedSource.newBuilder();
+      context.setKind(MarkedSource.Kind.CONTEXT).setPostChildText(".").setAddFinalListToken(true);
+      String identToken = getIdentToken(sym);
+      Symbol parent = getQualifiedNameParent(sym);
+      List<MarkedSource> parents = Lists.newArrayList();
+      while (parent != null) {
+        String parentName = getIdentToken(parent);
+        if (!parentName.isEmpty()) {
+          parents.add(
+              MarkedSource.newBuilder()
+                  .setKind(MarkedSource.Kind.IDENTIFIER)
+                  .setPreText(parentName)
+                  .build());
+        }
+        parent = getQualifiedNameParent(parent);
+      }
+      for (int i = 0; i < parents.size(); ++i) {
+        context.addChild(parents.get(parents.size() - i - 1));
+      }
+      MarkedSource.Builder markedSource = MarkedSource.newBuilder();
+      markedSource.addChild(context.build());
       switch (sym.getKind()) {
         case CONSTRUCTOR:
-          format =
-              String.format(
-                  "%%[^.%%]%%[i%s%%]",
-                  enclClass != null ? enclClass.getSimpleName() : sym.getSimpleName());
+          markedSource.addChild(
+              MarkedSource.newBuilder()
+                  .setKind(MarkedSource.Kind.IDENTIFIER)
+                  .setPreText(
+                      (enclClass != null ? enclClass.getSimpleName() : sym.getSimpleName())
+                          .toString())
+                  .build());
           break;
         case TYPE_PARAMETER:
-          format = String.format("%%[^.%%]%%[i<%s>%%]", sym.getSimpleName());
+          markedSource.addChild(
+              MarkedSource.newBuilder()
+                  .setKind(MarkedSource.Kind.IDENTIFIER)
+                  .setPreText("<" + sym.getSimpleName().toString() + ">")
+                  .build());
           break;
         case METHOD:
-          format = String.format("%%[^.%%]%%[i%s%%]%%[p(%%0,)%%]", sym.getSimpleName());
+          markedSource.addChild(
+              MarkedSource.newBuilder()
+                  .setKind(MarkedSource.Kind.IDENTIFIER)
+                  .setPreText(sym.getSimpleName().toString())
+                  .build());
+          markedSource.addChild(
+              MarkedSource.newBuilder()
+                  .setKind(MarkedSource.Kind.PARAMETER_LOOKUP_BY_PARAM)
+                  .setPreText("(")
+                  .setPostChildText(", ")
+                  .setPostText(")")
+                  .build());
           break;
         default:
-          format = String.format("%%[^.%%]%%[i%s%%]", sym.getSimpleName());
+          markedSource.addChild(
+              MarkedSource.newBuilder()
+                  .setKind(MarkedSource.Kind.IDENTIFIER)
+                  .setPreText(identToken)
+                  .build());
           break;
       }
 
@@ -114,7 +208,7 @@ public class JavaEntrySets extends KytheEntrySets {
               .setCorpusPath(CorpusPath.fromVName(v))
               .addSignatureSalt(signature)
               .addSignatureSalt("" + hashSymbol(sym))
-              .setProperty("format", format)
+              .setProperty("code", markedSource.build())
               .build();
       emitName(node, signature);
       node.emit(getEmitter());
@@ -156,7 +250,15 @@ public class JavaEntrySets extends KytheEntrySets {
   /** Emits and returns a new {@link EntrySet} representing a Java package. */
   public EntrySet getPackageNode(String name) {
     EntrySet node =
-        emitAndReturn(newNode(NodeKind.PACKAGE).addSignatureSalt(name).setProperty("format", name));
+        emitAndReturn(
+            newNode(NodeKind.PACKAGE)
+                .addSignatureSalt(name)
+                .setProperty(
+                    "code",
+                    MarkedSource.newBuilder()
+                        .setPreText(name)
+                        .setKind(MarkedSource.Kind.IDENTIFIER)
+                        .build()));
     emitName(node, name);
     return node;
   }

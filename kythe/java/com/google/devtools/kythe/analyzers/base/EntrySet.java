@@ -24,6 +24,7 @@ import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 import com.google.devtools.kythe.common.FormattingLogger;
+import com.google.devtools.kythe.proto.MarkedSource;
 import com.google.devtools.kythe.proto.Storage.VName;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -215,6 +216,17 @@ public class EntrySet {
      */
     public Builder setProperty(String name, String value) {
       return setProperty(name, value.getBytes(PROPERTY_VALUE_CHARSET));
+    }
+
+    /**
+     * Sets a named property value to the {@link EntrySet.Builder}. The property value will be
+     * serialized to a {@code byte[]} before it is added.
+     *
+     * @see #setProperty(String, byte[])
+     * @see EntrySet#PROPERTY_VALUE_CHARSET
+     */
+    public Builder setProperty(String name, MarkedSource value) {
+      return setProperty(name, value.toByteArray());
     }
 
     /** Builds a new {@link EntrySet}. */

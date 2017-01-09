@@ -43,12 +43,6 @@ java_verifier_test(
 )
 
 java_verifier_test(
-    name = "formats_tests",
-    size = "small",
-    srcs = ["Formats.java"],
-)
-
-java_verifier_test(
     name = "interfaces_tests",
     size = "small",
     srcs = ["Interfaces.java"],
@@ -118,6 +112,16 @@ java_verifier_test(
     name = "names_tests",
     size = "small",
     srcs = ["Names.java"],
+)
+
+java_verifier_test(
+    name = "marked_source_tests",
+    size = "small",
+    srcs = ["MarkedSource.java"],
+    verifier_opts = [
+        "--ignore_dups",
+        "--convert_marked_source",
+    ],
 )
 
 java_verifier_test(
