@@ -278,8 +278,17 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       visitAnnotations(classNode, classDef.getModifiers().getAnnotations(), ctx);
 
       JavaNode superClassNode = scan(classDef.getExtendsClause(), ctx);
-      if (superClassNode == null && classDef.getKind() != Kind.INTERFACE) {
-        superClassNode = getJavaLangObjectNode();
+      if (superClassNode == null) {
+        // Use the implicit superclass.
+        switch (classDef.getKind()) {
+          case CLASS:
+            superClassNode = getJavaLangObjectNode();
+            break;
+          case ENUM:
+            superClassNode = getJavaLangEnumNode(classNode, signature.get());
+            break;
+          // Interfaces have no implicit superclass.
+        }
       }
 
       if (superClassNode != null) {
@@ -778,6 +787,17 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     String javaLangObjectSignature = signatureGenerator.getSignature(javaLangObject).get();
     EntrySet javaLangObjectEntrySet = entrySets.getNode(javaLangObject, javaLangObjectSignature);
     return new JavaNode(javaLangObjectEntrySet, javaLangObjectSignature);
+  }
+
+  // Returns a JavaNode representing java.lang.Enum<E> where E is a given enum type.
+  private JavaNode getJavaLangEnumNode(EntrySet enumEntrySet, String enumSignature) {
+    Symbol javaLangEnum = getSymbols().enumSym;
+    String javaLangEnumSignature = signatureGenerator.getSignature(javaLangEnum).get();
+    EntrySet javaLangEnumEntrySet = entrySets.getNode(javaLangEnum, javaLangEnumSignature);
+    EntrySet typeNode = entrySets.newTApply(javaLangEnumEntrySet, Collections.singletonList(enumEntrySet));
+    String qualifiedName = javaLangEnumSignature + "<" + enumSignature + ">";
+    entrySets.emitName(typeNode, qualifiedName);
+    return new JavaNode(typeNode, qualifiedName);
   }
 
   // Creates/emits an anchor and an associated edge

@@ -58,4 +58,12 @@ public class Inheritance {
     //- @method1 defines/binding IM1
     public void method1();
   }
+
+  //- @enumBase defines/binding EN
+  //- EN typed EnumBase
+  Enum<E> enumBase;
+
+  //- @E defines/binding EEnum
+  //- EEnum extends EnumBase
+  private static enum E {}
 }
