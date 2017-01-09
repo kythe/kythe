@@ -22,6 +22,7 @@ def asciidoc_with_verifier(name, src):
         "//kythe/cxx/indexer/cxx:indexer",
         "//kythe/cxx/tools:kindex_tool",
         "//kythe/cxx/verifier",
+        "//kythe/go/indexer/cmd/go_example:go_example",
         "//kythe/java/com/google/devtools/kythe/analyzers/java:indexer",
     ]
   )

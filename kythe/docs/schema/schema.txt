@@ -863,6 +863,18 @@ int x;
 int y = x;
 --------------------------------------------------------------------------------
 
+[kythe,Go,"Mentions of variables are refs."]
+--------------------------------------------------------------------------------
+package p
+
+//- @x defines/binding VarX = vname(_,"kythe",_,"schema","go")
+//- VarX.node/kind variable
+var x int
+
+//- @x ref VarX
+var y = x
+--------------------------------------------------------------------------------
+
 [[refcall]]
 ref/call
 ~~~~~~~~

@@ -32,6 +32,7 @@ cd "$OUTDIR"
 export VERIFIER_BIN="$BINDIR/kythe/cxx/verifier/verifier"
 export KINDEX_TOOL_BIN="$BINDIR/kythe/cxx/tools/kindex_tool"
 export CXX_INDEXER_BIN="$BINDIR/kythe/cxx/indexer/cxx/indexer"
+export GO_INDEXER_BIN="$BINDIR/kythe/go/indexer/cmd/go_example/go_example"
 export JAVA_INDEXER_BIN="$BINDIR/kythe/java/com/google/devtools/kythe/analyzers/java/indexer"
 
 export LANGUAGE="$3"
@@ -53,6 +54,8 @@ case "$LANGUAGE" in
     "$SCHEMA_ROOT/example-java.sh" ;;
   C++)
     "$SCHEMA_ROOT/example-cxx.sh" ;;
+  Go)
+    "$SCHEMA_ROOT/example-go.sh" ;;
   ObjC)
     "$SCHEMA_ROOT/example-objc.sh" ;;
   dot)
