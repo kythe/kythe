@@ -78,3 +78,8 @@ go_indexer_test(
     name = "locals_test",
     srcs = ["testdata/basic/locals.go"],
 )
+
+go_indexer_test(
+    name = "imports_test",
+    srcs = ["testdata/basic/imports.go"],
+)

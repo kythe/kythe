@@ -32,8 +32,6 @@
 //
 package indexer
 
-// TODO(fromberger): Connect the back end of the indexer.
-
 import (
 	"bytes"
 	"errors"
@@ -190,7 +188,8 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 	vmap := make(map[*types.Package]*spb.VName)
 	for ip, vname := range imap {
 		if pkg := deps[ip]; pkg != nil {
-			vmap[pkg] = vname
+			vmap[pkg] = proto.Clone(vname).(*spb.VName)
+			vmap[pkg].Signature = "package"
 		}
 	}
 	thisPackage := proto.Clone(unit.VName).(*spb.VName)
@@ -264,6 +263,9 @@ func (pi *PackageInfo) Signature(obj types.Object) string {
 
 // ObjectVName returns a VName for obj relative to that of its package.
 func (pi *PackageInfo) ObjectVName(obj types.Object) *spb.VName {
+	if pkg, ok := obj.(*types.PkgName); ok {
+		return pi.PackageVName[pkg.Imported()]
+	}
 	sig := pi.Signature(obj)
 	base := pi.PackageVName[obj.Pkg()]
 	if base == nil {

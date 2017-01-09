@@ -23,6 +23,7 @@ import (
 	"go/token"
 	"go/types"
 	"log"
+	"strconv"
 
 	"github.com/golang/protobuf/proto"
 
@@ -61,22 +62,24 @@ func (pi *PackageInfo) Emit(ctx context.Context, sink Sink) error {
 
 	// Traverse the AST of each file in the package for xref entries.
 	for _, file := range pi.Files {
-		ast.Walk(newASTVisitor(func(node ast.Node, parent parentFunc) bool {
+		ast.Walk(newASTVisitor(func(node ast.Node, stack stackFunc) bool {
 			switch n := node.(type) {
 			case *ast.Ident:
-				e.visitIdent(n, parent)
+				e.visitIdent(n, stack)
 			case *ast.FuncDecl:
-				e.visitFuncDecl(n, parent)
+				e.visitFuncDecl(n, stack)
 			case *ast.FuncLit:
-				e.visitFuncLit(n, parent)
+				e.visitFuncLit(n, stack)
 			case *ast.ValueSpec:
-				e.visitValueSpec(n, parent)
+				e.visitValueSpec(n, stack)
 			case *ast.TypeSpec:
-				e.visitTypeSpec(n, parent)
+				e.visitTypeSpec(n, stack)
+			case *ast.ImportSpec:
+				e.visitImportSpec(n, stack)
 			case *ast.AssignStmt:
-				e.visitAssignStmt(n, parent)
+				e.visitAssignStmt(n, stack)
 			case *ast.RangeStmt:
-				e.visitRangeStmt(n, parent)
+				e.visitRangeStmt(n, stack)
 			}
 			return true
 		}), file)
@@ -98,31 +101,26 @@ type emitter struct {
 
 // visitIdent handles referring identifiers. Declaring identifiers are handled
 // as part of their parent syntax.
-func (e *emitter) visitIdent(id *ast.Ident, parent parentFunc) {
+func (e *emitter) visitIdent(id *ast.Ident, stack stackFunc) {
 	obj := e.pi.Info.Uses[id]
 	if obj == nil {
 		// Defining identifiers are handled by their parent nodes.
 		return
 	}
 
-	refAnchor, start, end := e.pi.Anchor(id)
-	e.writeAnchor(refAnchor, start, end)
 	target := e.pi.ObjectVName(obj)
-	e.writeEdge(refAnchor, target, edges.Ref)
-
-	if call, ok := isCall(id, obj, parent); ok {
-		callAnchor, start, end := e.pi.Anchor(call)
-		e.writeAnchor(callAnchor, start, end)
-		e.writeEdge(callAnchor, target, edges.RefCall)
+	e.writeRef(id, target, edges.Ref)
+	if call, ok := isCall(id, obj, stack); ok {
+		callAnchor := e.writeRef(call, target, edges.RefCall)
 
 		// Paint an edge to the function blamed for the call, or if there is
 		// none then to the package initializer.
-		e.writeEdge(callAnchor, e.callContext(parent).vname, edges.ChildOf)
+		e.writeEdge(callAnchor, e.callContext(stack).vname, edges.ChildOf)
 	}
 }
 
 // visitFuncDecl handles function and method declarations and their parameters.
-func (e *emitter) visitFuncDecl(decl *ast.FuncDecl, parent parentFunc) {
+func (e *emitter) visitFuncDecl(decl *ast.FuncDecl, stack stackFunc) {
 	info := new(funcInfo)
 	e.pi.function[decl] = info
 
@@ -164,8 +162,8 @@ func (e *emitter) visitFuncDecl(decl *ast.FuncDecl, parent parentFunc) {
 // visitFuncLit handles function literals and their parameters.  The signature
 // for a function literal is named relative to the signature of its parent
 // function, or the file scope if the literal is at the top level.
-func (e *emitter) visitFuncLit(flit *ast.FuncLit, parent parentFunc) {
-	fi := e.callContext(parent)
+func (e *emitter) visitFuncLit(flit *ast.FuncLit, stack stackFunc) {
+	fi := e.callContext(stack)
 	if fi == nil {
 		log.Panic("Function literal without a context: ", flit)
 	}
@@ -182,27 +180,27 @@ func (e *emitter) visitFuncLit(flit *ast.FuncLit, parent parentFunc) {
 }
 
 // visitValueSpec handles variable and constant bindings.
-func (e *emitter) visitValueSpec(spec *ast.ValueSpec, parent parentFunc) {
+func (e *emitter) visitValueSpec(spec *ast.ValueSpec, stack stackFunc) {
 	kind := nodes.Variable
-	if parent(1).(*ast.GenDecl).Tok == token.CONST {
+	if stack(1).(*ast.GenDecl).Tok == token.CONST {
 		kind = nodes.Constant
 	}
 	for _, id := range spec.Names {
 		if e.pi.Info.Defs[id] == nil {
 			continue // type error (reported elsewhere)
 		}
-		e.writeBinding(id, kind, e.nameContext(parent))
+		e.writeBinding(id, kind, e.nameContext(stack))
 	}
 }
 
 // visitTypeSpec handles type declarations, including the bindings for fields
 // of struct types and methods of interfaces.
-func (e *emitter) visitTypeSpec(spec *ast.TypeSpec, parent parentFunc) {
+func (e *emitter) visitTypeSpec(spec *ast.TypeSpec, stack stackFunc) {
 	obj, _ := e.pi.Info.Defs[spec.Name]
 	if obj == nil {
 		return // type error
 	}
-	target := e.writeBinding(spec.Name, "", e.nameContext(parent))
+	target := e.writeBinding(spec.Name, "", e.nameContext(stack))
 	e.writeDef(spec, target)
 
 	// Emit type-specific structure.
@@ -246,9 +244,25 @@ func (e *emitter) visitTypeSpec(spec *ast.TypeSpec, parent parentFunc) {
 	}
 }
 
+// visitImportSpec handles references to imported packages.
+func (e *emitter) visitImportSpec(spec *ast.ImportSpec, stack stackFunc) {
+	var (
+		ipath, _ = strconv.Unquote(spec.Path.Value)
+		pkg      = e.pi.Dependencies[ipath]
+		target   = e.pi.PackageVName[pkg]
+	)
+	if target == nil {
+		log.Printf("Unable to resolving import path %q", ipath)
+		return
+	}
+
+	e.writeRef(spec.Path, target, edges.RefImports)
+	// TODO(fromberger): Lazily emit nodes for standard library packages.
+}
+
 // visitAssignStmt handles bindings introduced by short-declaration syntax in
 // assignment statments, e.g., "x, y := 1, 2".
-func (e *emitter) visitAssignStmt(stmt *ast.AssignStmt, parent parentFunc) {
+func (e *emitter) visitAssignStmt(stmt *ast.AssignStmt, stack stackFunc) {
 	if stmt.Tok != token.DEFINE {
 		return // no new bindings in this statement
 	}
@@ -256,7 +270,7 @@ func (e *emitter) visitAssignStmt(stmt *ast.AssignStmt, parent parentFunc) {
 	// Not all the names in a short declaration assignment may be defined here.
 	// We only add bindings for newly-defined ones, of which there must be at
 	// least one in a well-typed program.
-	up := e.nameContext(parent)
+	up := e.nameContext(stack)
 	for _, expr := range stmt.Lhs {
 		if id, _ := expr.(*ast.Ident); id != nil {
 			// Add a binding only if this is the definition site for the name.
@@ -270,13 +284,13 @@ func (e *emitter) visitAssignStmt(stmt *ast.AssignStmt, parent parentFunc) {
 }
 
 // visitRangeStmt handles the bindings introduced by a for ... range statement.
-func (e *emitter) visitRangeStmt(stmt *ast.RangeStmt, parent parentFunc) {
+func (e *emitter) visitRangeStmt(stmt *ast.RangeStmt, stack stackFunc) {
 	if stmt.Tok != token.DEFINE {
 		return // no new bindings in this statement
 	}
 
 	// In a well-typed program, the key and value will always be identifiers.
-	up := e.nameContext(parent)
+	up := e.nameContext(stack)
 	if key, _ := stmt.Key.(*ast.Ident); key != nil {
 		e.writeBinding(key, nodes.Variable, up)
 	}
@@ -330,6 +344,15 @@ func (e *emitter) writeAnchor(src *spb.VName, start, end int) {
 	e.check(e.sink.writeAnchor(e.ctx, src, start, end))
 }
 
+// writeRef emits an anchor spanning origin and referring to target with an
+// edge of the given kind. The vname of the anchor is returned.
+func (e *emitter) writeRef(origin ast.Node, target *spb.VName, kind string) *spb.VName {
+	anchor, start, end := e.pi.Anchor(origin)
+	e.writeAnchor(anchor, start, end)
+	e.writeEdge(anchor, target, kind)
+	return anchor
+}
+
 // writeBinding emits a node of the specified kind for the target of id.  If
 // the identifier is not "_", an anchor for a binding definition of the target
 // is also emitted at id. If parent != nil, the target is also recorded as its
@@ -340,9 +363,7 @@ func (e *emitter) writeBinding(id *ast.Ident, kind string, parent *spb.VName) *s
 		e.writeFact(target, facts.NodeKind, kind)
 	}
 	if id.Name != "_" {
-		anchor, start, end := e.pi.Anchor(id)
-		e.writeAnchor(anchor, start, end)
-		e.writeEdge(anchor, target, edges.DefinesBinding)
+		e.writeRef(id, target, edges.DefinesBinding)
 	}
 	if parent != nil {
 		e.writeEdge(target, parent, edges.ChildOf)
@@ -352,11 +373,7 @@ func (e *emitter) writeBinding(id *ast.Ident, kind string, parent *spb.VName) *s
 
 // writeDef emits a spanning anchor and defines edge for the specified node.
 // This function does not create the target node.
-func (e *emitter) writeDef(node ast.Node, target *spb.VName) {
-	anchor, start, end := e.pi.Anchor(node)
-	e.writeAnchor(anchor, start, end)
-	e.writeEdge(anchor, target, edges.Defines)
-}
+func (e *emitter) writeDef(node ast.Node, target *spb.VName) { e.writeRef(node, target, edges.Defines) }
 
 // isCall reports whether id is a call to obj.  This holds if id is in call
 // position ("id(...") or is the RHS of a selector in call position
@@ -364,13 +381,13 @@ func (e *emitter) writeDef(node ast.Node, target *spb.VName) {
 // returned.
 //
 // This will not match if there are redundant parentheses in the expression.
-func isCall(id *ast.Ident, obj types.Object, parent parentFunc) (*ast.CallExpr, bool) {
+func isCall(id *ast.Ident, obj types.Object, stack stackFunc) (*ast.CallExpr, bool) {
 	if _, ok := obj.(*types.Func); ok {
-		if call, ok := parent(1).(*ast.CallExpr); ok && call.Fun == id {
+		if call, ok := stack(1).(*ast.CallExpr); ok && call.Fun == id {
 			return call, true // id(...)
 		}
-		if sel, ok := parent(1).(*ast.SelectorExpr); ok && sel.Sel == id {
-			if call, ok := parent(2).(*ast.CallExpr); ok && call.Fun == sel {
+		if sel, ok := stack(1).(*ast.SelectorExpr); ok && sel.Sel == id {
+			if call, ok := stack(2).(*ast.CallExpr); ok && call.Fun == sel {
 				return call, true // x.id(...)
 			}
 		}
@@ -381,9 +398,9 @@ func isCall(id *ast.Ident, obj types.Object, parent parentFunc) (*ast.CallExpr, 
 // callContext returns funcInfo for the nearest enclosing parent function, not
 // including the node itself, or the enclosing package initializer if the node
 // is at the top level.
-func (e *emitter) callContext(parent parentFunc) *funcInfo {
+func (e *emitter) callContext(stack stackFunc) *funcInfo {
 	for i := 1; ; i++ {
-		switch p := parent(i).(type) {
+		switch p := stack(i).(type) {
 		case *ast.FuncDecl, *ast.FuncLit:
 			return e.pi.function[p]
 		case nil:
@@ -406,22 +423,23 @@ func (e *emitter) callContext(parent parentFunc) *funcInfo {
 // nameContext returns the vname for the nearest enclosing parent node, not
 // including the node itself, or the enclosing package vname if the node is at
 // the top level.
-func (e *emitter) nameContext(parent parentFunc) *spb.VName {
-	if fi := e.callContext(parent); fi != e.pi.packageInit {
+func (e *emitter) nameContext(stack stackFunc) *spb.VName {
+	if fi := e.callContext(stack); fi != e.pi.packageInit {
 		return fi.vname
 	}
 	return e.pi.VName
 }
 
-// A visitFunc visits a node of the Go AST. The function can use parent to
-// retrieve AST nodes on the path from the root up to and including node.  If
-// the return value is true, the children of node are also visited; otherwise
-// they are skipped.
-type visitFunc func(node ast.Node, parent parentFunc) bool
+// A visitFunc visits a node of the Go AST. The function can use stack to
+// retrieve AST nodes on the path from the node up to the root.  If the return
+// value is true, the children of node are also visited; otherwise they are
+// skipped.
+type visitFunc func(node ast.Node, stack stackFunc) bool
 
-// A parentFunc returns the ith parent of an AST node, where 0 denotes the node
-// itself. If the ith parent does not exist, the function returns nil.
-type parentFunc func(i int) ast.Node
+// A stackFunc returns the ith stack entry above of an AST node, where 0
+// denotes the node itself. If the ith entry does not exist, the function
+// returns nil.
+type stackFunc func(i int) ast.Node
 
 // astVisitor implements ast.Visitor, passing each visited node to a callback
 // function.
