@@ -68,7 +68,12 @@ type gsFlag struct {
 }
 
 // String implements part of the flag.Value interface.
-func (f *gsFlag) String() string { return fmt.Sprintf("%T", *f.gs) }
+func (f *gsFlag) String() string {
+	if f.gs == nil {
+		return "<graphstore>"
+	}
+	return fmt.Sprintf("%T", *f.gs)
+}
 
 // Set implements part of the flag.Value interface.
 func (f *gsFlag) Set(str string) (err error) {
