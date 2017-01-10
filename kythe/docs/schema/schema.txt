@@ -1001,6 +1001,17 @@ public class E {
 }
 --------------------------------------------------------------------------------
 
+[kythe,Go,"Imports reference the imported package."]
+--------------------------------------------------------------------------------
+package p
+
+//- @"\"fmt\"" ref/imports Fmt=vname("package", "golang.org", _, "fmt", "go")
+import "fmt"
+
+//- @fmt ref Fmt
+var _ = fmt.Sprint
+--------------------------------------------------------------------------------
+
 [[refincludes]]
 ref/includes
 ~~~~~~~~~~~~

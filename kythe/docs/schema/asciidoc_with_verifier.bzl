@@ -16,6 +16,7 @@ def asciidoc_with_verifier(name, src):
         "example-java.sh",
         "java-schema-file-data-template.FileData",
         "java-schema-unit-template.CompilationUnit",
+        "@io_bazel_rules_go_toolchain//:toolchain",
     ],
     tags = ["manual"],
     tools = [

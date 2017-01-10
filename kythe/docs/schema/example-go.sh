@@ -20,6 +20,7 @@ set -o pipefail
 #
 # The script assumes its working directory is the schema output directory and
 # requires the following environment variables:
+#   GOROOT
 #   TMP
 #   LANGUAGE
 #   LABEL
@@ -48,7 +49,7 @@ fi
 echo "<h5 id=\"_${LABEL}\">${LABEL}"
 
 if [[ "${SHOWGRAPH}" == 1 ]] ; then
-  "$VERIFIER_BIN" --use_file_nodes --annotated_graphviz \
+  "$VERIFIER_BIN" --use_file_nodes --graphviz \
     < "$ENTRIES" > "$TMP/${EXAMPLE_ID}.dot"
   dot -Tsvg -o "${EXAMPLE_ID}.svg" "$TMP/${EXAMPLE_ID}.dot"
   echo "(<a href=\"${EXAMPLE_ID}.svg\" target=\"_blank\">${LANGUAGE}</a>)</h5>"

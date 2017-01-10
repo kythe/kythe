@@ -27,6 +27,7 @@
 #                          label describing the test.
 
 export SCHEMA_ROOT="$PWD/kythe/docs/schema"
+export GOROOT="$PWD/external/io_bazel_rules_go_toolchain"
 cd "$OUTDIR"
 
 export VERIFIER_BIN="$BINDIR/kythe/cxx/verifier/verifier"

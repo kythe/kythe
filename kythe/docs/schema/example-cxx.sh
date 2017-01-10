@@ -98,8 +98,8 @@ fi
 echo "<h5 id=\"_${LABEL}\">${LABEL}"
 
 if [[ "${SHOWGRAPH}" == 1 ]]; then
-  "$VERIFIER_BIN" --ignore_dups --graphviz < "${TEST_ENTRIES}" > "$TMP/EXAMPLE_ID.dot"
-  dot -Tsvg -o "$EXAMPLE_ID.svg" "$TMP/EXAMPLE_ID.dot"
+  "$VERIFIER_BIN" --ignore_dups --graphviz < "${TEST_ENTRIES}" > "$TMP/${EXAMPLE_ID}.dot"
+  dot -Tsvg -o "$EXAMPLE_ID.svg" "$TMP/${EXAMPLE_ID}.dot"
   echo "(<a href=\"${EXAMPLE_ID}.svg\" target=\"_blank\">${LANGUAGE}</a>)</h5>"
 else
   echo " (${LANGUAGE})</h5>"
