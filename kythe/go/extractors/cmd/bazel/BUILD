@@ -33,8 +33,16 @@ extra_action(
     cmd = "$(location :bazel_go_extractor)" +
           " $(EXTRA_ACTION_FILE)" +
           " $(output $(ACTION_ID).go.kindex)" +
-          " $(location //kythe/data:vnames_config)",
-    data = ["//kythe/data:vnames_config"],
+          " $(location :govnames.json)",
+    data = [":govnames.json"],
     out_templates = ["$(ACTION_ID).go.kindex"],
     tools = [":bazel_go_extractor"],
+)
+
+load("//kythe/go/util/vnameutil:test/macros.bzl", "test_vname_rules")
+
+test_vname_rules(
+    name = "govnames_test",
+    rules = "govnames.json",
+    tests = "govnames_test.json",
 )

@@ -1,0 +1,41 @@
+[
+  {
+    "input": "blah",
+    "match": true,
+    "want": {
+      "corpus": "kythe.io",
+      "path": "blah"
+    }
+  },
+  {
+    "input": "bazel-out/foo/bin/github.com/google/kythe/blah",
+    "match": true,
+    "want": {
+      "corpus": "github.com/google/kythe",
+      "path": "blah"
+    }
+  },
+  {
+    "input": "bazel-out/foo/bin/bitbucket.org/creachadair/stringset",
+    "match": true,
+    "want": {"corpus": "bitbucket.org/creachadair/stringset"}
+  },
+  {
+    "input": "bazel-out/foo/genfiles/kythe.io/kythe/proto/analysis.pb.go",
+    "match": true,
+    "want": {
+      "corpus": "kythe.io",
+      "root": "bazel-out/genfiles",
+      "path": "kythe/proto/analysis.pb.go"
+    }
+  },
+  {
+    "input": "external/io_bazel_rules_go_toolchain/pkg/linux_amd64/io/ioutil.a",
+    "match": true,
+    "want": {
+      "corpus": "golang.org",
+      "root": "pkg/linux_amd64",
+      "path": "io/ioutil"
+    }
+  }
+]

@@ -58,15 +58,22 @@ func TestForPackage(t *testing.T) {
 }
 
 func TestIsStandardLib(t *testing.T) {
-	test := &spb.VName{Corpus: "golang.org", Language: "go", Signature: "whatever"}
-	if ok := IsStandardLibrary(test); !ok {
-		t.Errorf("IsStandardLibrary(%+v): got %v, want true", test, ok)
+	tests := []*spb.VName{
+		{Corpus: "golang.org"},
+		{Corpus: "golang.org", Language: "go", Signature: "whatever"},
+		{Corpus: "golang.org", Language: "go", Path: "strconv"},
+	}
+	for _, test := range tests {
+		if ok := IsStandardLibrary(test); !ok {
+			t.Errorf("IsStandardLibrary(%+v): got %v, want true", test, ok)
+		}
 	}
 }
 
 func TestNotStandardLib(t *testing.T) {
 	tests := []*spb.VName{
 		nil,
+		{},
 		{Corpus: "foo", Language: "go"},
 		{Corpus: "golang.org", Language: "c++"},
 		{Corpus: "golang.org/x/net", Language: "go", Signature: "package"},

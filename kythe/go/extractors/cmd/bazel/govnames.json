@@ -1,0 +1,46 @@
+[
+  {
+    "pattern": "bazel-out/[^/]+/bin/(github\\.com(?:/[-.\\w]+){2})(?:/(.+))$",
+    "vname": {
+      "corpus": "@1@",
+      "path": "@2@"
+    }
+  },
+  {
+    "pattern": "bazel-out/[^/]+/bin/(bitbucket\\.org(?:/[-.\\w]+){2})(?:/(.+))?$",
+    "vname": {
+      "corpus": "@1@",
+      "path": "@2@"
+    }
+  },
+  {
+    "pattern": "bazel-out/[^/]+/bin/(golang\\.org(?:/x/\\w+))/(.+)\\.[ax]$",
+    "vname": {
+      "corpus": "@1@",
+      "path": "@2@"
+    }
+  },
+  {
+    "pattern": "bazel-out/[^/]+/(\\w+)/([-.\\w]+)/(.+)$",
+    "vname": {
+      "corpus": "@2@",
+      "root": "bazel-out/@1@",
+      "path": "@3@"
+    }
+  },
+  {
+    "pattern": "external/io_bazel_rules_go_toolchain/(pkg/\\w+_\\w+)(?:/vendor/\\w+)?/(.*)\\.[ax]$",
+    "vname": {
+      "corpus": "golang.org",
+      "root": "@1@",
+      "path": "@2@"
+    }
+  },
+  {
+    "pattern": "(.*)",
+    "vname": {
+      "corpus": "kythe.io",
+      "path": "@1@"
+    }
+  }
+]

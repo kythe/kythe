@@ -113,5 +113,5 @@ func ForBuiltin(signature string) *spb.VName {
 // This includes the "golang.org" corpus but excludes the "golang.org/x/..."
 // extension repositories.  If v == nil, the answer is false.
 func IsStandardLibrary(v *spb.VName) bool {
-	return v != nil && v.Language == "go" && v.Corpus == golangCorpus
+	return v != nil && (v.Language == "go" || v.Language == "") && v.Corpus == golangCorpus
 }

@@ -82,9 +82,9 @@ func (c *Config) Extract(ctx context.Context, info *eapb.ExtraActionInfo) (*kind
 	cu := &kindex.Compilation{
 		Proto: &apb.CompilationUnit{
 			VName: &spb.VName{
-				Language:  govname.Language,
-				Corpus:    c.Corpus,
-				Signature: info.GetOwner(),
+				Language: govname.Language,
+				Corpus:   c.Corpus,
+				Path:     toolArgs.importPath,
 			},
 			Argument:         toolArgs.compile,
 			SourceFile:       toolArgs.sources,

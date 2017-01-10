@@ -30,14 +30,6 @@
     }
   },
   {
-    "pattern": "external/io_bazel_rules_go_toolchain/pkg/([^/]*(?:/vendor)?)/(.*)(?:\\.a)?",
-    "vname": {
-      "corpus": "golang.org",
-      "path": "@2@",
-      "root": "pkg/@1@"
-    }
-  },
-  {
     "pattern": "(third_party/llvm/lib/clang/[^/]+/include)/(.*)",
     "vname": {
       "corpus": "cstdlib",
