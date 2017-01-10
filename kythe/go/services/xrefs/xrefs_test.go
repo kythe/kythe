@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"reflect"
 	"regexp"
 	"testing"
@@ -28,6 +27,8 @@ import (
 	"kythe.io/kythe/go/test/testutil"
 	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/facts"
+
+	"github.com/golang/protobuf/proto"
 
 	cpb "kythe.io/kythe/proto/common_proto"
 	gpb "kythe.io/kythe/proto/graph_proto"
@@ -196,266 +197,48 @@ type span struct{ start, end int32 }
 
 func (s span) String() string { return fmt.Sprintf("(%d, %d]", s.start, s.end) }
 
+type mockNode struct {
+	ticket, kind, documented, defines, completes, completed, childof, typed, text, defaultParam string
+	params, definitionText                                                                      []string
+	code                                                                                        *xpb.MarkedSource
+}
+
+// mockService implements interface xrefs.Service.
 type mockService struct {
-	NodesFn           func(*gpb.NodesRequest) (*gpb.NodesReply, error)
-	EdgesFn           func(*gpb.EdgesRequest) (*gpb.EdgesReply, error)
-	DecorationsFn     func(*xpb.DecorationsRequest) (*xpb.DecorationsReply, error)
-	CrossReferencesFn func(*xpb.CrossReferencesRequest) (*xpb.CrossReferencesReply, error)
-	DocumentationFn   func(*xpb.DocumentationRequest) (*xpb.DocumentationReply, error)
+	nodes map[string]*cpb.NodeInfo
+	esets map[string]*gpb.EdgeSet
+	xrefs map[string]*xpb.CrossReferencesReply_CrossReferenceSet
 }
 
-func (s *mockService) Nodes(ctx context.Context, req *gpb.NodesRequest) (*gpb.NodesReply, error) {
-	if s.NodesFn == nil {
-		return nil, errors.New("unexpected call to Nodes")
+func makeMockService(db []mockNode) *mockService {
+	s := &mockService{
+		nodes: make(map[string]*cpb.NodeInfo),
+		esets: make(map[string]*gpb.EdgeSet),
+		xrefs: make(map[string]*xpb.CrossReferencesReply_CrossReferenceSet),
 	}
-	return s.NodesFn(req)
-}
-
-func (s *mockService) Edges(ctx context.Context, req *gpb.EdgesRequest) (*gpb.EdgesReply, error) {
-	if s.EdgesFn == nil {
-		return nil, errors.New("unexpected call to Edges")
-	}
-	return s.EdgesFn(req)
-}
-
-func (s *mockService) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*xpb.DecorationsReply, error) {
-	if s.DecorationsFn == nil {
-		return nil, errors.New("unexpected call to Decorations")
-	}
-	return s.DecorationsFn(req)
-}
-
-func (s *mockService) CrossReferences(ctx context.Context, req *xpb.CrossReferencesRequest) (*xpb.CrossReferencesReply, error) {
-	if s.CrossReferencesFn == nil {
-		return nil, errors.New("unexpected call to CrossReferences")
-	}
-	return s.CrossReferencesFn(req)
-}
-
-func (s *mockService) Documentation(ctx context.Context, req *xpb.DocumentationRequest) (*xpb.DocumentationReply, error) {
-	if s.DocumentationFn == nil {
-		return nil, errors.New("unexpected call to Documentation")
-	}
-	return s.DocumentationFn(req)
-}
-
-func containsString(arr []string, key string) bool {
-	for _, i := range arr {
-		if i == key {
-			return true
-		}
-	}
-	return false
-}
-
-func TestSlowSignature(t *testing.T) {
-	db := []struct {
-		ticket, format, kind, typed, childof string
-		params                               []string
-	}{
-		{ticket: "kythe://test#ident", format: "IDENT", kind: "etc"},
-		{ticket: "kythe:?lang=b#etc%23meta", format: "META", kind: "meta"},
-		{ticket: "kythe://test?lang=b#meta", kind: "etc"},
-		{ticket: "kythe://test#escparen", format: "%%", kind: "etc"},
-		{ticket: "kythe://test#escparentext", format: "a%%b%%c", kind: "etc"},
-		{ticket: "kythe://test#p0", format: "%[^bad%]%[iP0%]", kind: "etc"},
-		{ticket: "kythe://test#p1", format: "P1", kind: "etc"},
-		{ticket: "kythe://test#p2", format: "P2", kind: "etc"},
-		{ticket: "kythe://test#pselect", format: "%0.%1.", kind: "etc", params: []string{"kythe://test#p0", "kythe://test#p1"}},
-		{ticket: "kythe://test#parent", format: "%^::%[iC%]", kind: "etc", childof: "kythe://test#p0"},
-		{ticket: "kythe://test#parents", format: "%^::D", kind: "etc", childof: "kythe://test#parent"},
-		{ticket: "kythe://test#recurse", format: "%^", kind: "etc", childof: "kythe://test#recurse"},
-		{ticket: "kythe://test#list", format: "%[p%0,%]", kind: "etc", params: []string{"kythe://test#p0", "kythe://test#p1", "kythe://test#p2"}},
-		{ticket: "kythe://test#listofs1", format: "%1,", kind: "etc", params: []string{"kythe://test#p0", "kythe://test#p1", "kythe://test#p2"}},
-		{ticket: "kythe://test#listofs2", format: "%2,", kind: "etc", params: []string{"kythe://test#p0", "kythe://test#p1", "kythe://test#p2"}},
-		{ticket: "kythe://test#listofs3", format: "%3,", kind: "etc", params: []string{"kythe://test#p0", "kythe://test#p1", "kythe://test#p2"}},
-		{ticket: "kythe://test#typeselect", format: "%1`", kind: "etc", typed: "kythe://test#list"},
-		{ticket: "kythe:?lang=b#tapp%23meta", format: "m%2.m", kind: "meta"},
-		{ticket: "kythe://test#lhs", format: "l%1.l", kind: "tapp"},
-		{ticket: "kythe://test?lang=b#tappmeta", kind: "tapp", params: []string{"kythe://test#missing", "kythe://test#p0", "kythe://test#p1"}},
-		{ticket: "kythe://test?lang=b#tapplhs", kind: "tapp", params: []string{"kythe://test#lhs", "kythe://test#p0"}},
-	}
-	tests := []struct {
-		ticket, reply string
-		kinds         []xpb.Link_Kind
-	}{
-		{ticket: "kythe://test#ident", reply: "IDENT"},
-		{ticket: "kythe://test?lang=b#meta", reply: "META"},
-		{ticket: "kythe://test#escparen", reply: "%"},
-		{ticket: "kythe://test#escparentext", reply: "a%b%c"},
-		{ticket: "kythe://test#pselect", reply: "P0P1"},
-		{ticket: "kythe://test#recurse", reply: "..."},
-		{ticket: "kythe://test#parent", reply: "P0::[C]", kinds: []xpb.Link_Kind{xpb.Link_IMPORTANT}},
-		{ticket: "kythe://test#parents", reply: "P0::C::D"},
-		{ticket: "kythe://test#list", reply: "[[P0], [P1], [P2]]", kinds: []xpb.Link_Kind{xpb.Link_LIST, xpb.Link_LIST_ITEM, xpb.Link_LIST_ITEM, xpb.Link_LIST_ITEM}},
-		{ticket: "kythe://test#listofs1", reply: "[P1], [P2]", kinds: []xpb.Link_Kind{xpb.Link_LIST_ITEM, xpb.Link_LIST_ITEM}},
-		{ticket: "kythe://test#listofs2", reply: "[P2]", kinds: []xpb.Link_Kind{xpb.Link_LIST_ITEM}},
-		{ticket: "kythe://test#listofs3", reply: ""},
-		{ticket: "kythe://test#typeselect", reply: "P1"},
-		{ticket: "kythe://test?lang=b#tappmeta", reply: "mP1m"},
-		{ticket: "kythe://test?lang=b#tapplhs", reply: "lP0l"},
-	}
-	ninfo := make(map[string]*cpb.NodeInfo)
-	esets := make(map[string]*gpb.EdgeSet)
 	for _, node := range db {
-		ninfo[node.ticket] = &cpb.NodeInfo{
-			Facts: map[string][]byte{
-				facts.NodeKind: []byte(node.kind),
-				facts.Format:   []byte(node.format),
-			},
-		}
-		set := &gpb.EdgeSet{Groups: make(map[string]*gpb.EdgeSet_Group)}
-		if node.typed != "" {
-			set.Groups[edges.Typed] = &gpb.EdgeSet_Group{
-				Edge: []*gpb.EdgeSet_Group_Edge{{TargetTicket: node.typed}},
-			}
-		}
-		if node.childof != "" {
-			set.Groups[edges.ChildOf] = &gpb.EdgeSet_Group{
-				Edge: []*gpb.EdgeSet_Group_Edge{{TargetTicket: node.childof}},
-			}
-		}
-		if node.params != nil {
-			var groups []*gpb.EdgeSet_Group_Edge
-			for i, p := range node.params {
-				groups = append(groups, &gpb.EdgeSet_Group_Edge{TargetTicket: p, Ordinal: int32(i)})
-			}
-			set.Groups[edges.Param] = &gpb.EdgeSet_Group{Edge: groups}
-		}
-		esets[node.ticket] = set
-	}
-	getNode := func(ticket string, facts []string) *cpb.NodeInfo {
-		data, found := ninfo[ticket]
-		if !found {
-			return nil
-		}
-		info := &cpb.NodeInfo{Facts: make(map[string][]byte)}
-		for _, fact := range facts {
-			info.Facts[fact] = data.Facts[fact]
-		}
-		return info
-	}
-	service := &mockService{
-		NodesFn: func(req *gpb.NodesRequest) (*gpb.NodesReply, error) {
-			log.Printf("NodesFn: %v", req)
-			if len(req.Ticket) != 1 {
-				t.Fatalf("Unexpected Nodes request: %v", req)
-				return nil, nil
-			}
-			reply := &gpb.NodesReply{Nodes: make(map[string]*cpb.NodeInfo)}
-			if info := getNode(req.Ticket[0], req.Filter); info != nil {
-				reply.Nodes[req.Ticket[0]] = info
-			}
-			return reply, nil
-		},
-		EdgesFn: func(req *gpb.EdgesRequest) (*gpb.EdgesReply, error) {
-			log.Printf("EdgesFn: %v", req)
-			if len(req.Ticket) != 1 {
-				t.Fatalf("Unexpected Edges request: %v", req)
-				return nil, nil
-			}
-			reply := &gpb.EdgesReply{
-				EdgeSets: make(map[string]*gpb.EdgeSet),
-				Nodes:    make(map[string]*cpb.NodeInfo),
-			}
-			if data, found := esets[req.Ticket[0]]; found {
-				set := &gpb.EdgeSet{Groups: make(map[string]*gpb.EdgeSet_Group)}
-				reply.EdgeSets[req.Ticket[0]] = set
-				seen := make(map[string]bool)
-				for groupKind, group := range data.Groups {
-					for _, kind := range req.Kind {
-						if groupKind == kind {
-							set.Groups[kind] = group
-							for _, edge := range group.Edge {
-								if !seen[edge.TargetTicket] {
-									seen[edge.TargetTicket] = true
-									if node := getNode(edge.TargetTicket, req.Filter); node != nil {
-										reply.Nodes[edge.TargetTicket] = node
-									}
-								}
-							}
-							break
-						}
-					}
-				}
-			}
-			log.Printf(" => %v", reply)
-			return reply, nil
-		},
-	}
-	_, err := SlowSignature(nil, service, "kythe://test#missing")
-	if err == nil {
-		t.Fatal("SlowSignature should return an error for a missing ticket")
-	}
-	for _, test := range tests {
-		reply, err := SlowSignature(nil, service, test.ticket)
-		if err != nil {
-			t.Fatalf("SlowSignature error for %s: %v", test.ticket, err)
-		}
-		var links []*xpb.Link
-		for _, k := range test.kinds {
-			links = append(links, &xpb.Link{Kind: k})
-		}
-		if err := testutil.DeepEqual(&xpb.Printable{RawText: test.reply, Link: links}, reply); err != nil {
-			t.Fatal(err)
-		}
-	}
-}
-
-func TestSlowDocumentation(t *testing.T) {
-	db := []struct {
-		ticket, kind, documented, defines, completes, completed, childof, typed, text, format string
-		params, definitionText                                                                []string
-	}{
-		{ticket: "kythe://test#a", kind: "etc", documented: "kythe://test#adoc", format: "asig"},
-		{ticket: "kythe://test#adoc", kind: "doc", text: "atext"},
-		{ticket: "kythe://test#fdoc", kind: "doc", text: "ftext"},
-		{ticket: "kythe://test#fdecl", kind: "function", documented: "kythe://test#fdoc", format: "fsig"},
-		{ticket: "kythe://test#fdefn", kind: "function", completed: "kythe://test#fbind", format: "fsig", definitionText: []string{"fdeftext"}},
-		{ticket: "kythe://test#fbind", kind: "anchor", defines: "kythe://test#fdefn", completes: "kythe://test#fdecl"},
-		{ticket: "kythe://test#l", kind: "etc", documented: "kythe://test#ldoc"},
-		{ticket: "kythe://test#ldoc", kind: "doc", text: "ltext", params: []string{"kythe://test#l1", "kythe://test#l2"}},
-		{ticket: "kythe://test#l1", kind: "etc", definitionText: []string{"deftext1"}},
-		{ticket: "kythe://test#l2", kind: "etc", definitionText: []string{"deftext2"}},
-		{ticket: "kythe://test#l", kind: "etc", documented: "kythe://test#ldoc", format: "lsig"},
-	}
-	mkPr := func(text string, linkTicket ...string) *xpb.Printable {
-		links := make([]*xpb.Link, len(linkTicket))
-		for i, link := range linkTicket {
-			links[i] = &xpb.Link{Definition: []string{link}}
-		}
-		return &xpb.Printable{RawText: text, Link: links}
-	}
-	type returnNode struct{ ticket, kind, anchorText string }
-	tests := []struct {
-		ticket string
-		reply  *xpb.DocumentationReply_Document
-		nodes  []returnNode
-	}{
-		{ticket: "kythe://test#a", reply: &xpb.DocumentationReply_Document{Signature: mkPr("asig"), Text: mkPr("atext")}, nodes: []returnNode{{ticket: "kythe://test#a", kind: "etc"}}},
-		// Note that SlowDefinitions doesn't handle completions.
-		{ticket: "kythe://test#fdecl", reply: &xpb.DocumentationReply_Document{Signature: mkPr("fsig"), Text: mkPr("ftext")}, nodes: []returnNode{{ticket: "kythe://test#fdecl", kind: "function"}}},
-		{ticket: "kythe://test#fdefn", reply: &xpb.DocumentationReply_Document{Signature: mkPr("fsig"), Text: mkPr("ftext")}, nodes: []returnNode{{ticket: "kythe://test#fdefn", kind: "function", anchorText: "fdeftext"}}},
-		{ticket: "kythe://test#l", reply: &xpb.DocumentationReply_Document{Signature: mkPr("lsig"), Text: mkPr("ltext", "kythe://test#l1", "kythe://test#l2")},
-			nodes: []returnNode{{ticket: "kythe://test#l1", kind: "etc", anchorText: "deftext1"}, {ticket: "kythe://test#l2", kind: "etc", anchorText: "deftext2"}, {ticket: "kythe://test#l", kind: "etc"}}},
-	}
-	nodes := make(map[string]*cpb.NodeInfo)
-	esets := make(map[string]*gpb.EdgeSet)
-	xrefs := make(map[string]*xpb.CrossReferencesReply_CrossReferenceSet)
-	for _, node := range db {
-		nodes[node.ticket] = &cpb.NodeInfo{
+		s.nodes[node.ticket] = &cpb.NodeInfo{
 			Facts: map[string][]byte{
 				facts.NodeKind: []byte(node.kind),
 				facts.Text:     []byte(node.text),
-				facts.Format:   []byte(node.format),
 			},
+		}
+		if node.code != nil {
+			p, err := proto.Marshal(node.code)
+			if err != nil {
+				panic("couldn't set up test: couldn't marshal input proto")
+			}
+			s.nodes[node.ticket].Facts[facts.Code] = p
+		}
+		if node.defaultParam != "" {
+			s.nodes[node.ticket].Facts[facts.ParamDefault] = []byte(node.defaultParam)
 		}
 		if node.definitionText != nil {
 			set := &xpb.CrossReferencesReply_CrossReferenceSet{Ticket: node.ticket}
 			for _, text := range node.definitionText {
 				set.Definition = append(set.Definition, &xpb.CrossReferencesReply_RelatedAnchor{Anchor: &xpb.Anchor{Text: text, Ticket: node.ticket + "a"}})
 			}
-			xrefs[node.ticket] = set
+			s.xrefs[node.ticket] = set
 		}
 		set := &gpb.EdgeSet{Groups: make(map[string]*gpb.EdgeSet_Group)}
 		if node.typed != "" {
@@ -495,82 +278,209 @@ func TestSlowDocumentation(t *testing.T) {
 			}
 			set.Groups[edges.Param] = &gpb.EdgeSet_Group{Edge: groups}
 		}
-		esets[node.ticket] = set
+		s.esets[node.ticket] = set
 	}
-	getNode := func(ticket string, facts []string) *cpb.NodeInfo {
-		data, found := nodes[ticket]
-		if !found {
-			return nil
-		}
-		info := &cpb.NodeInfo{Facts: make(map[string][]byte)}
-		for _, fact := range facts {
-			info.Facts[fact] = data.Facts[fact]
-		}
-		return info
+	return s
+}
+
+func (s *mockService) getNode(ticket string, facts []string) *cpb.NodeInfo {
+	data, found := s.nodes[ticket]
+	if !found {
+		return nil
 	}
-	service := &mockService{
-		NodesFn: func(req *gpb.NodesRequest) (*gpb.NodesReply, error) {
-			reply := &gpb.NodesReply{Nodes: make(map[string]*cpb.NodeInfo)}
-			for _, ticket := range req.Ticket {
-				if info := getNode(ticket, req.Filter); info != nil {
-					reply.Nodes[ticket] = info
-				}
-			}
-			return reply, nil
-		},
-		EdgesFn: func(req *gpb.EdgesRequest) (*gpb.EdgesReply, error) {
-			reply := &gpb.EdgesReply{
-				EdgeSets: make(map[string]*gpb.EdgeSet),
-				Nodes:    make(map[string]*cpb.NodeInfo),
-			}
-			for _, ticket := range req.Ticket {
-				if data, found := esets[ticket]; found {
-					set := &gpb.EdgeSet{Groups: make(map[string]*gpb.EdgeSet_Group)}
-					reply.EdgeSets[ticket] = set
-					nodes := make(map[string]bool)
-					for groupKind, group := range data.Groups {
-						for _, kind := range req.Kind {
-							if groupKind == kind {
-								set.Groups[kind] = group
-								for _, edge := range group.Edge {
-									if !nodes[edge.TargetTicket] {
-										nodes[edge.TargetTicket] = true
-										if node := getNode(edge.TargetTicket, req.Filter); node != nil {
-											reply.Nodes[edge.TargetTicket] = node
-										}
-									}
+	info := &cpb.NodeInfo{Facts: make(map[string][]byte)}
+	for _, fact := range facts {
+		info.Facts[fact] = data.Facts[fact]
+	}
+	return info
+}
+
+func (s *mockService) Nodes(ctx context.Context, req *gpb.NodesRequest) (*gpb.NodesReply, error) {
+	reply := &gpb.NodesReply{Nodes: make(map[string]*cpb.NodeInfo)}
+	for _, ticket := range req.Ticket {
+		if info := s.getNode(ticket, req.Filter); info != nil {
+			reply.Nodes[ticket] = info
+		}
+	}
+	return reply, nil
+}
+
+func (s *mockService) Edges(ctx context.Context, req *gpb.EdgesRequest) (*gpb.EdgesReply, error) {
+	reply := &gpb.EdgesReply{
+		EdgeSets: make(map[string]*gpb.EdgeSet),
+		Nodes:    make(map[string]*cpb.NodeInfo),
+	}
+	for _, ticket := range req.Ticket {
+		if data, found := s.esets[ticket]; found {
+			set := &gpb.EdgeSet{Groups: make(map[string]*gpb.EdgeSet_Group)}
+			reply.EdgeSets[ticket] = set
+			nodes := make(map[string]bool)
+			for groupKind, group := range data.Groups {
+				for _, kind := range req.Kind {
+					if groupKind == kind {
+						set.Groups[kind] = group
+						for _, edge := range group.Edge {
+							if !nodes[edge.TargetTicket] {
+								nodes[edge.TargetTicket] = true
+								if node := s.getNode(edge.TargetTicket, req.Filter); node != nil {
+									reply.Nodes[edge.TargetTicket] = node
 								}
-								break
 							}
 						}
+						break
 					}
 				}
 			}
-			return reply, nil
-		},
-		CrossReferencesFn: func(req *xpb.CrossReferencesRequest) (*xpb.CrossReferencesReply, error) {
-			reply := &xpb.CrossReferencesReply{
-				CrossReferences: make(map[string]*xpb.CrossReferencesReply_CrossReferenceSet),
-			}
-			if req.DefinitionKind != xpb.CrossReferencesRequest_BINDING_DEFINITIONS &&
-				req.DefinitionKind != xpb.CrossReferencesRequest_ALL_DEFINITIONS ||
-				req.ReferenceKind != xpb.CrossReferencesRequest_NO_REFERENCES ||
-				req.DocumentationKind != xpb.CrossReferencesRequest_NO_DOCUMENTATION ||
-				req.AnchorText {
-				t.Fatalf("Unexpected CrossReferences request: %v", req)
-			}
-			for _, ticket := range req.Ticket {
-				if set, found := xrefs[ticket]; found {
-					reply.CrossReferences[ticket] = set
-				}
-			}
-			return reply, nil
-		},
+		}
+	}
+	return reply, nil
+}
+
+func (s *mockService) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*xpb.DecorationsReply, error) {
+	return nil, errors.New("unexpected call to Decorations")
+}
+
+func (s *mockService) CrossReferences(ctx context.Context, req *xpb.CrossReferencesRequest) (*xpb.CrossReferencesReply, error) {
+	reply := &xpb.CrossReferencesReply{
+		CrossReferences: make(map[string]*xpb.CrossReferencesReply_CrossReferenceSet),
+	}
+	if req.DefinitionKind != xpb.CrossReferencesRequest_BINDING_DEFINITIONS &&
+		req.DefinitionKind != xpb.CrossReferencesRequest_ALL_DEFINITIONS ||
+		req.ReferenceKind != xpb.CrossReferencesRequest_NO_REFERENCES ||
+		req.DocumentationKind != xpb.CrossReferencesRequest_NO_DOCUMENTATION ||
+		req.AnchorText {
+		return nil, fmt.Errorf("Unexpected CrossReferences request: %v", req)
+	}
+	for _, ticket := range req.Ticket {
+		if set, found := s.xrefs[ticket]; found {
+			reply.CrossReferences[ticket] = set
+		}
+	}
+	return reply, nil
+}
+
+func (s *mockService) Documentation(ctx context.Context, req *xpb.DocumentationRequest) (*xpb.DocumentationReply, error) {
+	return nil, errors.New("unexpected call to Documentation")
+}
+
+func containsString(arr []string, key string) bool {
+	for _, i := range arr {
+		if i == key {
+			return true
+		}
+	}
+	return false
+}
+
+func TestSlowSignature(t *testing.T) {
+	mkID := func(text string) *xpb.MarkedSource {
+		return &xpb.MarkedSource{Kind: xpb.MarkedSource_IDENTIFIER, PreText: text}
+	}
+	service := makeMockService([]mockNode{
+		{ticket: "kythe://test#ident", kind: "etc", code: mkID("IDENT")},
+		{ticket: "kythe://test#other", kind: "etc", code: mkID("OTHER")},
+		{ticket: "kythe://test#a", kind: "etc", params: []string{"invalid", "kythe://test#ident", "kythe://test#other"}, code: &xpb.MarkedSource{
+			Kind: xpb.MarkedSource_PARAMETER_LOOKUP_BY_PARAM, LookupIndex: 1,
+			PreText: "PRE", PostChildText: "POSTC", PostText: "POST", AddFinalListToken: true}},
+		{ticket: "kythe://test#b", kind: "etc", params: []string{"invalid", "kythe://test#ident", "kythe://test#other"}, defaultParam: "2", code: &xpb.MarkedSource{
+			Kind: xpb.MarkedSource_PARAMETER_LOOKUP_BY_PARAM_WITH_DEFAULTS, LookupIndex: 1,
+			PreText: "PRE", PostChildText: "POSTC", PostText: "POST", AddFinalListToken: true}},
+		{ticket: "kythe://test#aa", kind: "etc", params: []string{"invalid", "kythe://test#a"}, code: &xpb.MarkedSource{
+			Kind: xpb.MarkedSource_LOOKUP_BY_PARAM, LookupIndex: 1}},
+		{ticket: "kythe://test#loop", kind: "etc", params: []string{"kythe://test#loop"}, code: &xpb.MarkedSource{
+			Kind: xpb.MarkedSource_LOOKUP_BY_PARAM, LookupIndex: 0}},
+		{ticket: "kythe://test#app", kind: "tapp", params: []string{"kythe://test#ptr", "kythe://test#ident"}},
+		{ticket: "kythe://test#ptr", kind: "etc", code: &xpb.MarkedSource{
+			Kind: xpb.MarkedSource_BOX, PostText: "*", Child: []*xpb.MarkedSource{
+				{Kind: xpb.MarkedSource_LOOKUP_BY_PARAM, LookupIndex: 1}}}},
+		{ticket: "kythe:#xapp%23meta", kind: "meta", code: &xpb.MarkedSource{
+			Kind: xpb.MarkedSource_PARAMETER_LOOKUP_BY_PARAM, PostChildText: ","}},
+		{ticket: "kythe://test#app2", kind: "xapp", params: []string{"kythe://test#other", "kythe://test#ident"}},
+	})
+	tests := []struct {
+		ticket string
+		reply  *xpb.MarkedSource
+	}{
+		{ticket: "kythe://test#ident", reply: mkID("IDENT")},
+		{ticket: "kythe://test#a", reply: &xpb.MarkedSource{
+			Kind: xpb.MarkedSource_PARAMETER, PreText: "PRE",
+			PostChildText: "POSTC", PostText: "POST", AddFinalListToken: true,
+			Child: []*xpb.MarkedSource{mkID("IDENT"), mkID("OTHER")}}},
+		{ticket: "kythe://test#b", reply: &xpb.MarkedSource{
+			Kind: xpb.MarkedSource_PARAMETER, PreText: "PRE",
+			PostChildText: "POSTC", PostText: "POST", AddFinalListToken: true,
+			Child: []*xpb.MarkedSource{mkID("IDENT"), mkID("OTHER")}, DefaultChildrenCount: 1}},
+		{ticket: "kythe://test#a", reply: &xpb.MarkedSource{
+			Kind: xpb.MarkedSource_PARAMETER, PreText: "PRE",
+			PostChildText: "POSTC", PostText: "POST", AddFinalListToken: true,
+			Child: []*xpb.MarkedSource{mkID("IDENT"), mkID("OTHER")}}},
+		{ticket: "kythe://test#loop", reply: &xpb.MarkedSource{PreText: "..."}},
+		{ticket: "kythe://test#app", reply: &xpb.MarkedSource{
+			Kind: xpb.MarkedSource_BOX, PostText: "*", Child: []*xpb.MarkedSource{mkID("IDENT")}}},
+		{ticket: "kythe://test#app2", reply: &xpb.MarkedSource{
+			Kind: xpb.MarkedSource_PARAMETER, PostChildText: ",",
+			Child: []*xpb.MarkedSource{mkID("OTHER"), mkID("IDENT")}}},
+	}
+	_, err := SlowSignature(nil, service, "kythe://test#missing")
+	if err == nil {
+		t.Fatal("SlowSignature should return an error for a missing ticket")
+	}
+	for _, test := range tests {
+		reply, err := SlowSignature(nil, service, test.ticket)
+		if err != nil {
+			t.Errorf("SlowSignature error for %s: %v", test.ticket, err)
+			continue
+		}
+		if err := testutil.DeepEqual(test.reply, reply); err != nil {
+			t.Error(err)
+		}
+	}
+}
+
+func TestSlowDocumentation(t *testing.T) {
+	mkID := func(text string) *xpb.MarkedSource {
+		return &xpb.MarkedSource{Kind: xpb.MarkedSource_IDENTIFIER, PreText: "text"}
+	}
+	service := makeMockService([]mockNode{
+		{ticket: "kythe://test#a", kind: "etc", documented: "kythe://test#adoc", code: mkID("asig")},
+		{ticket: "kythe://test#adoc", kind: "doc", text: "atext"},
+		{ticket: "kythe://test#fdoc", kind: "doc", text: "ftext"},
+		{ticket: "kythe://test#fdecl", kind: "function", documented: "kythe://test#fdoc", code: mkID("fsig")},
+		{ticket: "kythe://test#fdefn", kind: "function", completed: "kythe://test#fbind", code: mkID("fsig"), definitionText: []string{"fdeftext"}},
+		{ticket: "kythe://test#fbind", kind: "anchor", defines: "kythe://test#fdefn", completes: "kythe://test#fdecl"},
+		{ticket: "kythe://test#l", kind: "etc", documented: "kythe://test#ldoc"},
+		{ticket: "kythe://test#ldoc", kind: "doc", text: "ltext", params: []string{"kythe://test#l1", "kythe://test#l2"}},
+		{ticket: "kythe://test#l1", kind: "etc", definitionText: []string{"deftext1"}},
+		{ticket: "kythe://test#l2", kind: "etc", definitionText: []string{"deftext2"}},
+		{ticket: "kythe://test#l", kind: "etc", documented: "kythe://test#ldoc", code: mkID("lsig")},
+	})
+	mkPr := func(text string, linkTicket ...string) *xpb.Printable {
+		links := make([]*xpb.Link, len(linkTicket))
+		for i, link := range linkTicket {
+			links[i] = &xpb.Link{Definition: []string{link}}
+		}
+		return &xpb.Printable{RawText: text, Link: links}
+	}
+	type returnNode struct{ ticket, kind, anchorText string }
+	tests := []struct {
+		ticket string
+		reply  *xpb.DocumentationReply_Document
+		nodes  []returnNode
+	}{
+		{ticket: "kythe://test#a", reply: &xpb.DocumentationReply_Document{Text: mkPr("atext")}, nodes: []returnNode{{ticket: "kythe://test#a", kind: "etc"}}},
+		// Note that SlowDefinitions doesn't handle completions.
+		{ticket: "kythe://test#fdecl", reply: &xpb.DocumentationReply_Document{Text: mkPr("ftext")}, nodes: []returnNode{{ticket: "kythe://test#fdecl", kind: "function"}}},
+		{ticket: "kythe://test#fdefn", reply: &xpb.DocumentationReply_Document{Text: mkPr("ftext")}, nodes: []returnNode{{ticket: "kythe://test#fdefn", kind: "function", anchorText: "fdeftext"}}},
+		{ticket: "kythe://test#l", reply: &xpb.DocumentationReply_Document{Text: mkPr("ltext", "kythe://test#l1", "kythe://test#l2")},
+			nodes: []returnNode{{ticket: "kythe://test#l1", kind: "etc", anchorText: "deftext1"}, {ticket: "kythe://test#l2", kind: "etc", anchorText: "deftext2"}, {ticket: "kythe://test#l", kind: "etc"}}},
 	}
 	for _, test := range tests {
 		reply, err := SlowDocumentation(nil, service, &xpb.DocumentationRequest{Ticket: []string{test.ticket}, Filter: []string{facts.NodeKind}})
 		if err != nil {
 			t.Fatalf("SlowDocumentation error for %s: %v", test.ticket, err)
+		}
+		for _, doc := range reply.Document {
+			doc.MarkedSource = nil
 		}
 		test.reply.Ticket = test.ticket
 		expectedDoc := &xpb.DocumentationReply{Document: []*xpb.DocumentationReply_Document{test.reply}}

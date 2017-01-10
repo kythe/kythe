@@ -809,8 +809,7 @@ func TestCrossReferences(t *testing.T) {
 	testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
 
 	expected := &xpb.CrossReferencesReply_CrossReferenceSet{
-		Ticket:      ticket,
-		DisplayName: &xpb.Printable{RawText: ""},
+		Ticket:       ticket,
 
 		Reference: []*xpb.CrossReferencesReply_RelatedAnchor{{Anchor: &xpb.Anchor{
 			Ticket: "kythe:?path=some/utf16/file#0-4",

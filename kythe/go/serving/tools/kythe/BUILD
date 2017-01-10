@@ -17,6 +17,7 @@ go_binary(
         "//kythe/go/serving/api",
         "//kythe/go/util/build",
         "//kythe/go/util/kytheuri",
+        "//kythe/go/util/markedsource",
         "//kythe/go/util/schema/edges",
         "//kythe/go/util/schema/facts",
         "//kythe/proto:common_proto_go",

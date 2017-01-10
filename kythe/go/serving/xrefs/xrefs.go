@@ -793,7 +793,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		}
 
 		if req.ExperimentalSignatures {
-			crs.DisplayName, err = xrefs.SlowSignature(ctx, t, ticket)
+			crs.MarkedSource, err = xrefs.SlowSignature(ctx, t, ticket)
 			if err != nil {
 				log.Printf("WARNING: error looking up signature for ticket %q: %v", ticket, err)
 			}
