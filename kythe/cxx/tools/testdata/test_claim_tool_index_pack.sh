@@ -11,7 +11,7 @@ rm -rf -- "${OUT_DIR}/pack"
   "${BASE_DIR}/claim_test_1.kindex_UNIT"
 "${KINDEX_TOOL_BIN}" -assemble "${OUT_DIR}/claim_test_2.kindex" \
   "${BASE_DIR}/claim_test_2.kindex_UNIT"
-"${INDEX_PACK_BIN}" -quiet=true --to_archive "${OUT_DIR}/pack" \
+"${INDEX_PACK_BIN}" --to_archive "${OUT_DIR}/pack" \
     "${OUT_DIR}"/claim_test_*.kindex >/dev/null
 # The assignment is arbitrary but should be stable, since the heuristic for
 # assigning responsibility for a claimable picks the first possible claimant

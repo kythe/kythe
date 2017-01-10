@@ -27,7 +27,8 @@ $indexer $test_kindex | $entrystream >/dev/null
 tmp="$(mktemp -d 2>/dev/null || mktemp -d -t 'kythetest')"
 trap 'rm -rf "$tmp"' EXIT ERR INT
 
-UNIT="$($indexpack --to_archive "$tmp/archive" $test_kindex 2>/dev/null)"
+UNIT="$($indexpack --verbose --to_archive "$tmp/archive" "$test_kindex" | \
+  awk '-F\t' '/Wrote compilation:/ { print $2 }')"
 
 # Test indexing compilation in an indexpack
 $indexer --index_pack="$tmp/archive" $UNIT | $entrystream >/dev/null

@@ -28,8 +28,8 @@ kindex_contents() {
 tmp="$(mktemp -d 2>/dev/null || mktemp -d -t 'kythetest')"
 trap 'rm -rf "$tmp"' EXIT ERR INT
 
-$indexpack --quiet --to_archive "$tmp/archive" $test_kindex >/dev/null
-$indexpack --quiet --from_archive "$tmp/archive" "$tmp/idx"
+$indexpack --to_archive "$tmp/archive" "$test_kindex" >/dev/null
+$indexpack --from_archive "$tmp/archive" "$tmp/idx"
 
 kindex_file="$(find "$tmp/idx" -name "*.kindex")"
 

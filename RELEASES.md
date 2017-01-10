@@ -5,6 +5,7 @@
 Notable changes:
  - Formats are being deprecated in favor of MarkedSource
  - C++ indexer: no longer generates formats
+ - indexpack tool: replaced `--quiet` flag with `--verbose`
 
 ## v0.0.26
 

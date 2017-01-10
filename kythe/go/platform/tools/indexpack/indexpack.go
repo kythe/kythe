@@ -50,7 +50,7 @@ var (
 	fromArchive = flag.String("from_archive", "", "Move the compilation units from the given archive into separate kindex files")
 	viewArchive = flag.String("view_archive", "", "Print JSON representations of each specified compilation unit in the given archive")
 	printFiles  = flag.Bool("files", false, "Print file contents as well as the compilation for --view_archive")
-	quiet       = flag.Bool("quiet", false, "Suppress normal log output")
+	verbose     = flag.Bool("verbose", false, "Explain each operation being done")
 )
 
 func init() {
@@ -163,8 +163,8 @@ func packIndex(ctx context.Context, pack *indexpack.Archive, idx *kindex.Compila
 	for _, data := range idx.Files {
 		if path, err := pack.WriteFile(ctx, data.Content); err != nil {
 			return fmt.Errorf("error writing file %v: %v", data.Info, err)
-		} else if !*quiet {
-			log.Println("Wrote file to", path)
+		} else if *verbose {
+			fmt.Printf("Wrote file:\t%s\n", path)
 		}
 	}
 
@@ -172,13 +172,15 @@ func packIndex(ctx context.Context, pack *indexpack.Archive, idx *kindex.Compila
 	if err != nil {
 		return fmt.Errorf("error writing compilation unit: %v", err)
 	}
-	fmt.Println(strings.TrimSuffix(path, ".unit"))
+	if *verbose {
+		fmt.Printf("Wrote compilation:\t%s\n", strings.TrimSuffix(path, ".unit"))
+	}
 	return nil
 }
 
 func unpackIndex(ctx context.Context, pack *indexpack.Archive, dir string) error {
 	fetcher := pack.Fetcher(ctx)
-	return pack.ReadUnits(ctx, formatKey, func(_ string, u interface{}) error {
+	return pack.ReadUnits(ctx, formatKey, func(digest string, u interface{}) error {
 		unit, ok := u.(*apb.CompilationUnit)
 		if !ok {
 			return fmt.Errorf("%T is not a CompilationUnit", u)
@@ -188,9 +190,6 @@ func unpackIndex(ctx context.Context, pack *indexpack.Archive, dir string) error
 			return fmt.Errorf("error creating kindex: %v", err)
 		}
 		path := kindexPath(dir, idx)
-		if !*quiet {
-			log.Println("Writing compilation unit to", path)
-		}
 		f, err := vfs.Create(ctx, path)
 		if err != nil {
 			return fmt.Errorf("error creating output file: %v", err)
@@ -199,7 +198,13 @@ func unpackIndex(ctx context.Context, pack *indexpack.Archive, dir string) error
 			f.Close() // try to close file before returning
 			return fmt.Errorf("error writing output file: %v", err)
 		}
-		return f.Close()
+		if err := f.Close(); err != nil {
+			return fmt.Errorf("error closing kindex file: %v", err)
+		}
+		if *verbose {
+			fmt.Printf("Unpacked compilation:\t%s\t%s\n", digest, path)
+		}
+		return nil
 	})
 }
 
