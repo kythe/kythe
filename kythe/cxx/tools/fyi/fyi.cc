@@ -507,8 +507,8 @@ ActionFactory::ActionFactory(std::unique_ptr<XrefsClient> xrefs,
                              size_t iterations)
     : xrefs_(std::move(xrefs)), iterations_(iterations) {
   for (const auto *file = builtin_headers_create(); file->name; ++file) {
-    builtin_headers_.push_back(llvm::MemoryBuffer::getMemBuffer(
-        llvm::MemoryBufferRef(file->data, file->name), false));
+    builtin_headers_.push_back(llvm::MemoryBuffer::getMemBufferCopy(
+        llvm::StringRef(file->data), file->name));
   }
 }
 
