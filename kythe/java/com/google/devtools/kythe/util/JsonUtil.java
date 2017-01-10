@@ -29,14 +29,23 @@ import com.google.gson.JsonSerializer;
 import com.google.gson.protobuf.ProtoTypeAdapter;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessage;
+import com.google.protobuf.GeneratedMessageV3;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.LazyStringArrayList;
 import com.google.protobuf.LazyStringList;
 import com.google.protobuf.ProtocolMessageEnum;
+import com.google.protobuf.util.JsonFormat;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 
 /** Utility class for working with JSON/{@link Gson}. */
 public class JsonUtil {
+
+  /** Use the given {@link JsonFormat.TypeRegistry} when parsing proto3 Any messages. */
+  public static void usingTypeRegistry(JsonFormat.TypeRegistry registry) {
+    GeneratedMessageV3TypeAdapter.PARSER.usingTypeRegistry(registry);
+  }
 
   /**
    * Registers type adapters for Java protobuf types (including ByteStrings and byte[]) that matches
@@ -44,11 +53,48 @@ public class JsonUtil {
    */
   public static GsonBuilder registerProtoTypes(GsonBuilder builder) {
     return builder
+        .registerTypeHierarchyAdapter(GeneratedMessageV3.class, new GeneratedMessageV3TypeAdapter())
         .registerTypeHierarchyAdapter(ProtocolMessageEnum.class, new ProtoEnumTypeAdapter())
         .registerTypeHierarchyAdapter(GeneratedMessage.class, ProtoTypeAdapter.newBuilder().build())
         .registerTypeHierarchyAdapter(ByteString.class, new ByteStringTypeAdapter())
         .registerTypeAdapter(byte[].class, new ByteArrayTypeAdapter())
         .registerTypeHierarchyAdapter(LazyStringList.class, new LazyStringListTypeAdapter());
+  }
+
+  private static class GeneratedMessageV3TypeAdapter
+      implements JsonSerializer<GeneratedMessageV3>, JsonDeserializer<GeneratedMessageV3> {
+    private static final JsonFormat.Parser PARSER = JsonFormat.parser();
+    private static final JsonFormat.Printer PRINTER =
+        JsonFormat.printer().preservingProtoFieldNames().omittingInsignificantWhitespace();
+
+    @Override
+    public JsonElement serialize(GeneratedMessageV3 msg, Type t, JsonSerializationContext ctx) {
+      try {
+        return new JsonPrimitive(PRINTER.print(msg));
+      } catch (InvalidProtocolBufferException e) {
+        throw new RuntimeException(e);
+      }
+    }
+
+    @Override
+    public GeneratedMessageV3 deserialize(
+        JsonElement json, Type typeOfT, JsonDeserializationContext context)
+        throws JsonParseException {
+      try {
+        Class<? extends GeneratedMessageV3> protoClass =
+            (Class<? extends GeneratedMessageV3>) typeOfT;
+        GeneratedMessageV3.Builder<?> protoBuilder =
+            (GeneratedMessageV3.Builder<?>) protoClass.getMethod("newBuilder").invoke(null);
+        String msg = json instanceof JsonPrimitive ? json.getAsString() : json.toString();
+        PARSER.merge(msg, protoBuilder);
+        return (GeneratedMessageV3) protoBuilder.build();
+      } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+        throw new JsonParseException(
+            "failed to retrieve Message.Builder while parsing proto3 message", e);
+      } catch (InvalidProtocolBufferException e) {
+        throw new JsonParseException(e);
+      }
+    }
   }
 
   private static class ByteStringTypeAdapter

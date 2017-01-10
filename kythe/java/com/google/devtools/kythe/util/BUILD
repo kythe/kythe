@@ -16,12 +16,11 @@ java_library(
 
 java_library(
     name = "json",
-    srcs = [
-        "JsonUtil.java",
-    ],
+    srcs = ["JsonUtil.java"],
     deps = [
         "//third_party/gson:proto",
         "//third_party/proto:protobuf_java",
+        "//third_party/proto:protobuf_java_util",
         "@com_google_code_gson_gson//jar",
         "@com_google_guava_guava//jar",
     ],
