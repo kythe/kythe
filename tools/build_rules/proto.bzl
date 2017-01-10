@@ -79,22 +79,33 @@ def _genproto_impl(ctx):
 
   go_package = go_package_name(ctx.attr._go_package_prefix, ctx.label)
   if ctx.attr.gen_go:
-    outputs += [ctx.outputs.go_src]
+    genroot = ctx.configuration.genfiles_dir.path
+    if ctx.attr.go_package:
+      # Handle a "go_package" annotation by moving the output file to the expected location
+      gosrc = ctx.new_file(ctx.attr.go_package + "/" + ctx.outputs.go_src.basename)
+      genroot = gosrc.root.path + "/" + ctx.label.package
+      outputs += [gosrc]
+      ctx.action(
+          inputs = [gosrc],
+          outputs = [ctx.outputs.go_src],
+          command = "mv " + gosrc.path + " " + ctx.outputs.go_src.path,
+      )
+    else:
+      outputs += [ctx.outputs.go_src]
     go_cfg = ["import_path=" + go_package, _go_import_path(ctx.attr.deps)]
     if ctx.attr.has_services:
       go_cfg += ["plugins=grpc"]
-    genfiles_path = ctx.configuration.genfiles_dir.path
     if ctx.attr.gofast:
       inputs += [ctx.executable._protoc_gen_gofast]
       arguments += [
           "--plugin=" + ctx.executable._protoc_gen_gofast.path,
-          "--gofast_out=%s:%s" % (",".join(go_cfg), genfiles_path)
+          "--gofast_out=%s:%s" % (",".join(go_cfg), genroot)
       ]
     else:
       inputs += [ctx.executable._protoc_gen_go]
       arguments += [
           "--plugin=" + ctx.executable._protoc_gen_go.path,
-          "--golang_out=%s:%s" % (",".join(go_cfg), genfiles_path)
+          "--golang_out=%s:%s" % (",".join(go_cfg), genroot)
       ]
 
   ctx.action(
@@ -132,6 +143,7 @@ _genproto_attrs = {
     "has_services": attr.bool(),
     "emit_metadata": attr.bool(),
     "gofast": attr.bool(),
+    "go_package": attr.string(),
     "_protoc": attr.label(
         default = Label("//third_party/proto:protoc"),
         executable = True,
@@ -197,7 +209,7 @@ genproto = rule(
 def proto_library(name, srcs, deps=[], visibility=None,
                   has_services=False,
                   java_api_version=0, go_api_version=0, cc_api_version=0,
-                  emit_metadata=False, gofast=True):
+                  emit_metadata=False, gofast=True, go_package=None):
   if java_api_version not in (None, 0, 2):
     fail("java_api_version must be 2 if present")
   if go_api_version not in (None, 0, 2):
@@ -213,7 +225,7 @@ def proto_library(name, srcs, deps=[], visibility=None,
                        gen_go=bool(go_api_version),
                        gen_cc=bool(cc_api_version),
                        emit_metadata=emit_metadata,
-                       gofast=gofast)
+                       gofast=gofast, go_package=go_package)
 
   # TODO(shahms): These should probably not be separate libraries, but
   # allowing upstream *_library and *_binary targets to depend on the

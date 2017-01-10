@@ -105,38 +105,38 @@ maven_jar(
 
 maven_jar(
     name = "io_grpc_grpc_core",
-    artifact = "io.grpc:grpc-core:1.0.1",
-    sha1 = "dce1c939c2c6110ac571d99f8d2a29b19bdad4db",
+    artifact = "io.grpc:grpc-core:1.0.3",
+    sha1 = "104435f03a23f5680a392a9586d03995e45b9d35",
 )
 
 maven_jar(
     name = "io_grpc_grpc_context",
-    artifact = "io.grpc:grpc-context:1.0.1",
-    sha1 = "9d308f2b616044ddd380866b4e6c23b5b4020963",
+    artifact = "io.grpc:grpc-context:1.0.3",
+    sha1 = "fc29af09029527ac52bc9bb97ef27a645709aeea",
 )
 
 maven_jar(
     name = "io_grpc_grpc_stub",
-    artifact = "io.grpc:grpc-stub:1.0.1",
-    sha1 = "a875969bf700b0d25dc8b7febe42bfb253ca5b3b",
+    artifact = "io.grpc:grpc-stub:1.0.3",
+    sha1 = "4af1464041224cdef2efbeafbe948f942a3fb028",
 )
 
 maven_jar(
     name = "io_grpc_grpc_netty",
-    artifact = "io.grpc:grpc-netty:1.0.1",
-    sha1 = "1e4628b96434fcd6fbe519e7a3dbcc1ec5ac2c14",
+    artifact = "io.grpc:grpc-netty:1.0.3",
+    sha1 = "d473fe54759e38cd2e88e2994817421e193adebe",
 )
 
 maven_jar(
     name = "io_grpc_grpc_protobuf",
-    artifact = "io.grpc:grpc-protobuf:1.0.1",
-    sha1 = "17222b03c64a65eb05de5ab266c920fca8c90fab",
+    artifact = "io.grpc:grpc-protobuf:1.0.3",
+    sha1 = "330c3da988bdc9bf336218ae12b2b0ee86767775",
 )
 
 maven_jar(
     name = "io_grpc_grpc_protobuf_lite",
-    artifact = "io.grpc:grpc-protobuf-lite:1.0.1",
-    sha1 = "b28a07b56ed2e66088221cbaf1228fa4e9669166",
+    artifact = "io.grpc:grpc-protobuf-lite:1.0.3",
+    sha1 = "016a1669179ab06c7b74d3b1c5959b28f1caa6a1",
 )
 
 maven_jar(
@@ -165,7 +165,7 @@ http_archive(
 new_git_repository(
     name = "go_gogo_protobuf",
     build_file = "third_party/go/gogo_protobuf.BUILD",
-    commit = "43a2e0b1c32252bfbbdf81f7faa7a88fb3fa4028",
+    commit = "f9114dace7bd920b32f943b3c73fafbcbab2bf31",
     remote = "https://github.com/gogo/protobuf.git",
 )
 
@@ -214,7 +214,7 @@ new_git_repository(
 new_git_repository(
     name = "go_grpc",
     build_file = "third_party/go/grpc.BUILD",
-    commit = "2700f043b937c2b59b4a520bc6ddbb440a2de20e",
+    commit = "cb653e4b6150b81ba5157618b57c6f910a6a99f7",
     remote = "https://github.com/grpc/grpc-go.git",
 )
 
@@ -263,7 +263,7 @@ new_git_repository(
 new_git_repository(
     name = "go_protobuf",
     build_file = "third_party/go/protobuf.BUILD",
-    commit = "1f49d83d9aa00e6ce4fc8258c71cc7786aec968a",
+    commit = "8ee79997227bf9b34611aee7946ae64735e6fd93",
     remote = "https://github.com/golang/protobuf.git",
 )
 

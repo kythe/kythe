@@ -21,6 +21,7 @@ proto_library(
     # by the protocol buffer library iteself.
     cc_api_version = 0,
     go_api_version = 2,
+    go_package = "github.com/golang/protobuf/ptypes/any",
     java_api_version = 2,
 )
 

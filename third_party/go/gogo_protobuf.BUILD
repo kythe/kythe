@@ -35,6 +35,15 @@ external_go_package(
 )
 
 external_go_package(
+    name = "protoc-gen-gogo/grpc",
+    base_pkg = "github.com/gogo/protobuf",
+    deps = [
+        ":protoc-gen-gogo/descriptor",
+        ":protoc-gen-gogo/generator",
+    ],
+)
+
+external_go_package(
     name = "protoc-gen-gogo/descriptor",
     base_pkg = "github.com/gogo/protobuf",
     deps = [
@@ -76,6 +85,7 @@ external_go_package(
     deps = [
         ":gogoproto",
         ":plugin/testgen",
+        ":proto",
         ":protoc-gen-gogo/descriptor",
         ":protoc-gen-gogo/generator",
     ],
@@ -139,15 +149,6 @@ external_go_package(
         ":protoc-gen-gogo/descriptor",
         ":protoc-gen-gogo/generator",
         ":vanity",
-    ],
-)
-
-external_go_package(
-    name = "plugin/grpc",
-    base_pkg = "github.com/gogo/protobuf",
-    deps = [
-        ":protoc-gen-gogo/descriptor",
-        ":protoc-gen-gogo/generator",
     ],
 )
 
@@ -252,7 +253,6 @@ external_go_package(
         ":plugin/equal",
         ":plugin/face",
         ":plugin/gostring",
-        ":plugin/grpc",
         ":plugin/marshalto",
         ":plugin/oneofcheck",
         ":plugin/populate",
@@ -263,6 +263,7 @@ external_go_package(
         ":plugin/unmarshal",
         ":proto",
         ":protoc-gen-gogo/generator",
+        ":protoc-gen-gogo/grpc",
         ":protoc-gen-gogo/plugin",
     ],
 )
@@ -270,5 +271,8 @@ external_go_package(
 external_go_package(
     name = "proto",
     base_pkg = "github.com/gogo/protobuf",
-    exclude_srcs = ["pointer_reflect.go"],
+    exclude_srcs = [
+        "pointer_reflect.go",
+        "pointer_reflect_gogo.go",
+    ],
 )

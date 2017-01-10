@@ -20,17 +20,19 @@ external_go_package(
 external_go_package(
     base_pkg = "google.golang.org/grpc",
     deps = [
-        "@go_protobuf//:proto",
-        "@go_x_net//:context",
-        "@go_x_net//:http2",
-        "@go_x_net//:trace",
         ":codes",
         ":credentials",
         ":grpclog",
         ":internal",
         ":metadata",
         ":naming",
+        ":stats",
+        ":tap",
         ":transport",
+        "@go_protobuf//:proto",
+        "@go_x_net//:context",
+        "@go_x_net//:http2",
+        "@go_x_net//:trace",
     ],
 )
 
@@ -47,15 +49,17 @@ external_go_package(
         "pre_go16.go",
     ],
     deps = [
-        "@go_x_net//:context",
-        "@go_x_net//:http2",
-        "@go_x_net//:http2/hpack",
-        "@go_x_net//:trace",
         ":codes",
         ":credentials",
         ":grpclog",
         ":metadata",
         ":peer",
+        ":stats",
+        ":tap",
+        "@go_x_net//:context",
+        "@go_x_net//:http2",
+        "@go_x_net//:http2/hpack",
+        "@go_x_net//:trace",
     ],
 )
 
@@ -72,14 +76,30 @@ external_go_package(
 )
 
 external_go_package(
+    name = "stats",
+    base_pkg = "google.golang.org/grpc",
+    deps = [
+        "@go_x_net//:context",
+    ],
+)
+
+external_go_package(
+    name = "tap",
+    base_pkg = "google.golang.org/grpc",
+    deps = [
+        "@go_x_net//:context",
+    ],
+)
+
+external_go_package(
     name = "credentials/oauth",
     base_pkg = "google.golang.org/grpc",
     deps = [
+        ":credentials",
         "@go_x_net//:context",
         "@go_x_oauth2//:google",
         "@go_x_oauth2//:jwt",
         "@go_x_oauth2//:oauth2",
-        ":credentials",
     ],
 )
 
@@ -92,8 +112,8 @@ external_go_package(
     name = "peer",
     base_pkg = "google.golang.org/grpc",
     deps = [
-        "@go_x_net//:context",
         ":credentials",
+        "@go_x_net//:context",
     ],
 )
 
