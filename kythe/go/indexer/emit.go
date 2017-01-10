@@ -175,8 +175,9 @@ func (e *emitter) visitFuncLit(flit *ast.FuncLit, stack stackFunc) {
 	e.pi.function[flit] = info
 	e.writeDef(flit, info.vname)
 
-	sig := e.pi.Info.Types[flit].Type.(*types.Signature)
-	e.emitParameters(flit.Type, sig, info)
+	if sig, ok := e.pi.Info.Types[flit].Type.(*types.Signature); ok {
+		e.emitParameters(flit.Type, sig, info)
+	}
 }
 
 // visitValueSpec handles variable and constant bindings.
