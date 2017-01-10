@@ -1586,6 +1586,16 @@ package pkg;
 public class E {}
 --------------------------------------------------------------------------------
 
+[kythe,Go,"Files belonging to a package are children of that package."]
+--------------------------------------------------------------------------------
+//- @foo ref Pkg
+//- Pkg.node/kind package
+package foo
+
+//- File = vname("", "kythe", _, "kythe/schema/example.go", "").node/kind file
+//- File childof Pkg
+--------------------------------------------------------------------------------
+
 [[record]]
 record
 ~~~~~~

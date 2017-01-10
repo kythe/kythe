@@ -56,14 +56,13 @@ func (pi *PackageInfo) Emit(ctx context.Context, sink Sink) error {
 		e.writeFact(vname, facts.Text, text)
 		// All Go source files are encoded as UTF-8, which is the default.
 
-		// TODO(fromberger): Update the schema to record that files are childof
-		// the package that contains them.
 		e.writeEdge(vname, pi.VName, edges.ChildOf)
 	}
 
 	// Traverse the AST of each file in the package for xref entries.
 	for _, file := range pi.Files {
-		e.writeDoc(file.Doc, pi.VName) // capture package comments
+		e.writeDoc(file.Doc, pi.VName)             // capture package comments
+		e.writeRef(file.Name, pi.VName, edges.Ref) // refer to the package
 		ast.Walk(newASTVisitor(func(node ast.Node, stack stackFunc) bool {
 			switch n := node.(type) {
 			case *ast.Ident:
