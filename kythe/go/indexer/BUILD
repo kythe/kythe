@@ -83,3 +83,8 @@ go_indexer_test(
     name = "imports_test",
     srcs = ["testdata/basic/imports.go"],
 )
+
+go_indexer_test(
+    name = "comment_test",
+    srcs = ["testdata/basic/comments.go"],
+)

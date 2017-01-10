@@ -24,6 +24,7 @@ import (
 	"go/types"
 	"log"
 	"strconv"
+	"strings"
 
 	"github.com/golang/protobuf/proto"
 
@@ -62,6 +63,7 @@ func (pi *PackageInfo) Emit(ctx context.Context, sink Sink) error {
 
 	// Traverse the AST of each file in the package for xref entries.
 	for _, file := range pi.Files {
+		e.writeDoc(file.Doc, pi.VName) // capture package comments
 		ast.Walk(newASTVisitor(func(node ast.Node, stack stackFunc) bool {
 			switch n := node.(type) {
 			case *ast.Ident:
@@ -139,6 +141,7 @@ func (e *emitter) visitFuncDecl(decl *ast.FuncDecl, stack stackFunc) {
 
 	info.vname = e.writeBinding(decl.Name, nodes.Function, nil)
 	e.writeDef(decl, info.vname)
+	e.writeDoc(decl.Doc, info.vname)
 
 	// For concrete methods: Emit the receiver if named, and connect the method
 	// to its declaring type.
@@ -186,11 +189,13 @@ func (e *emitter) visitValueSpec(spec *ast.ValueSpec, stack stackFunc) {
 	if stack(1).(*ast.GenDecl).Tok == token.CONST {
 		kind = nodes.Constant
 	}
+	doc := specComment(spec, stack)
 	for _, id := range spec.Names {
 		if e.pi.Info.Defs[id] == nil {
 			continue // type error (reported elsewhere)
 		}
-		e.writeBinding(id, kind, e.nameContext(stack))
+		target := e.writeBinding(id, kind, e.nameContext(stack))
+		e.writeDoc(doc, target)
 	}
 }
 
@@ -203,6 +208,7 @@ func (e *emitter) visitTypeSpec(spec *ast.TypeSpec, stack stackFunc) {
 	}
 	target := e.writeBinding(spec.Name, "", e.nameContext(stack))
 	e.writeDef(spec, target)
+	e.writeDoc(specComment(spec, stack), target)
 
 	// Emit type-specific structure.
 	switch t := obj.Type().Underlying().(type) {
@@ -376,6 +382,22 @@ func (e *emitter) writeBinding(id *ast.Ident, kind string, parent *spb.VName) *s
 // This function does not create the target node.
 func (e *emitter) writeDef(node ast.Node, target *spb.VName) { e.writeRef(node, target, edges.Defines) }
 
+// writeDoc adds associations between comment groups and a documented node.
+func (e *emitter) writeDoc(comments *ast.CommentGroup, target *spb.VName) {
+	if comments == nil || len(comments.List) == 0 || target == nil {
+		return
+	}
+	var lines []string
+	for _, comment := range comments.List {
+		lines = append(lines, trimComment(comment.Text))
+	}
+	docNode := proto.Clone(target).(*spb.VName)
+	docNode.Signature += " doc"
+	e.writeFact(docNode, facts.NodeKind, nodes.Doc)
+	e.writeFact(docNode, facts.Text, strings.Join(lines, "\n"))
+	e.writeEdge(docNode, target, edges.Documents)
+}
+
 // isCall reports whether id is a call to obj.  This holds if id is in call
 // position ("id(...") or is the RHS of a selector in call position
 // ("x.id(...)"). If so, the nearest enclosing call expression is also
@@ -491,4 +513,33 @@ func mapFields(fields *ast.FieldList, f func(i int, id *ast.Ident)) {
 			f(i, id)
 		}
 	}
+}
+
+// trimComment removes the comment delimiters from a comment.  For single-line
+// comments, it also removes a single leading space, if present; for multi-line
+// comments it discards leading and trailing whitespace.
+func trimComment(text string) string {
+	if single := strings.TrimPrefix(text, "//"); single != text {
+		return strings.TrimPrefix(single, " ")
+	}
+	return strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(text, "/*"), "*/"))
+}
+
+// specComment returns the innermost comment associated with spec, or nil.
+func specComment(spec ast.Spec, stack stackFunc) *ast.CommentGroup {
+	var comment *ast.CommentGroup
+	switch t := spec.(type) {
+	case *ast.TypeSpec:
+		comment = t.Doc
+	case *ast.ValueSpec:
+		comment = t.Doc
+	case *ast.ImportSpec:
+		comment = t.Doc
+	}
+	if comment == nil {
+		if t, ok := stack(1).(*ast.GenDecl); ok {
+			return t.Doc
+		}
+	}
+	return comment
 }

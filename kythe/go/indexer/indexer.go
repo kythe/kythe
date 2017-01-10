@@ -152,7 +152,7 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 		// type checker later on.
 		if sourceFiles.Contains(fpath) {
 			srcs[fpath] = string(data)
-			parsed, err := parser.ParseFile(fset, fpath, data, parser.AllErrors)
+			parsed, err := parser.ParseFile(fset, fpath, data, parser.AllErrors|parser.ParseComments)
 			if err != nil {
 				return nil, fmt.Errorf("parsing %q: %v", fpath, err)
 			}
