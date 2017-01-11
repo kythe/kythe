@@ -32,17 +32,26 @@ DEFINE_bool(pretty_print_function_prototypes, true,
 
 namespace kythe {
 namespace {
-llvm::StringRef GetTextRange(const clang::SourceManager &source_manager,
-                             const clang::SourceRange &range) {
+/// \return true if `range` is valid for use in annotations.
+bool IsValidRange(const clang::SourceManager &source_manager,
+                  const clang::SourceRange &range) {
   // Check that the range is valid and ends in macros xnor files.
   if (!range.isValid() ||
       range.getBegin().isFileID() != range.getEnd().isFileID()) {
-    return llvm::StringRef();
+    return false;
   }
   // Reject definitions in macro expansions or that span multiple files.
   if (!range.getBegin().isFileID() ||
       source_manager.getFileID(range.getBegin()) !=
           source_manager.getFileID(range.getEnd())) {
+    return false;
+  }
+  return true;
+}
+
+llvm::StringRef GetTextRange(const clang::SourceManager &source_manager,
+                             const clang::SourceRange &range) {
+  if (!IsValidRange(source_manager, range)) {
     return llvm::StringRef();
   }
   const char *begin = source_manager.getCharacterData(range.getBegin());
@@ -403,7 +412,19 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
     }
     if (annotation.begin >= annotation.end ||
         annotation.end > formatted_range_.size()) {
-      LOG(WARNING) << "Invalid annotation range";
+      // TODO(zarko): This is a symptom of T204. This check is here to avoid
+      // clogging log output.
+      if (annotation.kind != Annotation::QualifiedName &&
+          IsValidRange(cache_->source_manager(), original_range)) {
+        LOG(WARNING)
+            << "Invalid annotation range (" << annotation.kind << "): '"
+            << original_range.getBegin().printToString(cache_->source_manager())
+            << "' to '"
+            << original_range.getEnd().printToString(cache_->source_manager())
+            << "': became " << annotation.begin << " <= " << annotation.end
+            << " <= " << formatted_range_.size()
+            << " (text: " << formatted_range_ << ")";
+      }
       return;
     }
     annotations_.push_back(std::move(annotation));
@@ -494,14 +515,13 @@ void MarkedSourceGenerator::ReplaceMarkedSourceWithTemplateArgumentList(
       switch (arg.getKind()) {
         case clang::TemplateArgument::Null:
           // This argument has not been deduced.
-          list_prefix.addArgument(clang::TemplateArgumentLoc());
-          break;
+          return false;
         case clang::TemplateArgument::Type:
           list_prefix.addArgument(clang::TemplateArgumentLoc(
               arg,
               cache_->sema()->getASTContext().getTrivialTypeSourceInfo(
                   arg.getAsType())));
-          break;
+          return true;
         case clang::TemplateArgument::Declaration:
         case clang::TemplateArgument::NullPtr:
         case clang::TemplateArgument::Integral:
@@ -510,11 +530,15 @@ void MarkedSourceGenerator::ReplaceMarkedSourceWithTemplateArgumentList(
         case clang::TemplateArgument::Expression:
         case clang::TemplateArgument::Pack:
           // TODO(zarko): Remaining cases.
-          list_prefix.addArgument(clang::TemplateArgumentLoc());
+          return false;
       }
     };
     for (unsigned n = 0; n < first_default; ++n) {
-      add_template_argument(template_args.get(n));
+      if (!add_template_argument(template_args.get(n))) {
+        // Abort if we can't complete a template_args list.
+        first_default = template_args.size();
+        break;
+      }
     }
     llvm::SmallVector<clang::TemplateArgument, 4> out_arguments;
     noprint = first_default;
