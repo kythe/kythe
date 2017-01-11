@@ -54,7 +54,6 @@ def _emit_extractor_script(ctx, script, output, srcs, deps, ipath):
   goroot = '/'.join(ctx.files._goroot[0].path.split('/')[:-2])
   cmds.append(' '.join([
       ctx.files._extractor[-1].path,
-      '-v',
       '-output_dir', outpack,
       '-goroot', goroot,
       '-gopath', tmpdir,
@@ -162,7 +161,7 @@ go_verifier_test = rule(
         ),
 
         # Whether to log the input entries to the verifier.
-        "log_entries": attr.bool(default=False),
+        "log_entries": attr.bool(default = False),
 
         # The location of the Go indexer binary.
         "_indexer": attr.label(
