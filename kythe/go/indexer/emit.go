@@ -222,9 +222,11 @@ func (e *emitter) visitTypeSpec(spec *ast.TypeSpec, stack stackFunc) {
 
 		// Add bindings for the explicitly-named fields in this declaration.
 		// Parent edges were already added, so skip them here.
-		mapFields(spec.Type.(*ast.StructType).Fields, func(_ int, id *ast.Ident) {
-			e.writeBinding(id, nodes.Variable, nil)
-		})
+		if st, ok := spec.Type.(*ast.StructType); ok {
+			mapFields(st.Fields, func(_ int, id *ast.Ident) {
+				e.writeBinding(id, nodes.Variable, nil)
+			})
+		}
 		// TODO(fromberger): Add bindings for anonymous fields. This will need
 		// to account for pointers and qualified identifiers.
 
@@ -241,9 +243,11 @@ func (e *emitter) visitTypeSpec(spec *ast.TypeSpec, stack stackFunc) {
 
 		// Add bindings for the explicitly-named methods in this declaration.
 		// Parent edges were already added, so skip them here.
-		mapFields(spec.Type.(*ast.InterfaceType).Methods, func(_ int, id *ast.Ident) {
-			e.writeBinding(id, nodes.Function, nil)
-		})
+		if it, ok := spec.Type.(*ast.InterfaceType); ok {
+			mapFields(it.Methods, func(_ int, id *ast.Ident) {
+				e.writeBinding(id, nodes.Function, nil)
+			})
+		}
 
 	default:
 		e.writeFact(target, facts.NodeKind, nodes.TApp)

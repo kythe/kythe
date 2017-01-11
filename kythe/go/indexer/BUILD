@@ -36,6 +36,11 @@ go_test(
 load(":testdata/go_indexer_test.bzl", "go_indexer_test")
 
 go_indexer_test(
+    name = "syntax_test",
+    srcs = ["testdata/syntax.go"],
+)
+
+go_indexer_test(
     name = "filenode_test",
     srcs = ["testdata/basic/filenode.go"],
     import_path = "test/basic",

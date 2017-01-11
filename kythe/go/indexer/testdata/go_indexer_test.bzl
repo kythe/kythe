@@ -34,7 +34,8 @@ def _emit_extractor_script(ctx, script, output, srcs, deps, ipath):
   srcdir  = tmpdir + '/src/' + ipath
   pkgdir  = tmpdir + '/pkg/%s_%s' % (env['GOOS'], env['GOARCH'])
   outpack = output.path + '_pack'
-  cmds    = ['set -e', 'mkdir -p ' + pkgdir, 'mkdir -p ' + srcdir]
+  cmds    = ['set -e', 'set -o pipefail',
+             'mkdir -p ' + pkgdir, 'mkdir -p ' + srcdir]
 
   # Link the source files and dependencies into a common temporary directory.
   # Source files need to be made relative to the temp directory.
@@ -139,7 +140,7 @@ def _go_verifier_test(ctx):
   vargs    = ['--use_file_nodes', '--show_goals']
   if ctx.attr.log_entries:
     vargs.append('--show_protos')
-  cmds = ['set -e', ' '.join([
+  cmds = ['set -e', 'set -o pipefail', ' '.join([
       indexer.short_path, '-zip', pack.short_path,
       '\\\n|', verifier.short_path,
   ] + vargs), '']
