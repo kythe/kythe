@@ -64,6 +64,13 @@ std::string RenderDocument(const HtmlRendererOptions& options,
                            const std::vector<MarkupHandler>& handlers,
                            const proto::DocumentationReply::Document& document);
 
+/// \brief Extract and render the simple identifiers for parameters in `sig`.
+std::vector<std::string> RenderSimpleParams(const proto::MarkedSource& sig);
+
+/// \brief Extract and render the simple identifier for `sig`.
+/// \return The empty string if there is no such identifier.
+std::string RenderSimpleIdentifier(const proto::MarkedSource& sig);
+
 }  // namespace kythe
 
 #endif

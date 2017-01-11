@@ -24,6 +24,8 @@
 
 namespace kythe {
 namespace {
+using google::protobuf::TextFormat;
+
 class HtmlRendererTest : public ::testing::Test {
  public:
   HtmlRendererTest() {
@@ -47,8 +49,7 @@ class HtmlRendererTest : public ::testing::Test {
  protected:
   std::string RenderAsciiProtoDocument(const char *document_pb) {
     proto::DocumentationReply::Document document;
-    if (!google::protobuf::TextFormat::ParseFromString(document_pb,
-                                                       &document)) {
+    if (!TextFormat::ParseFromString(document_pb, &document)) {
       return "(invalid ascii protobuf)";
     }
     Printable printable(document.text());
@@ -189,6 +190,123 @@ TEST_F(HtmlRendererTest, RenderHtmlLinks) {
             RenderHtml("<A HREF = \"& q;foo.html& q;\" >bar</A>"));
   EXPECT_EQ("&lt;A HREF = \"href=\"foo.html\">\" BAD&gt;bar",
             RenderHtml("<A HREF = \"foo.html\" BAD>bar</A>"));
+}
+constexpr char kSampleMarkedSource[] = R""(child {
+  child {
+    kind: CONTEXT
+    child {
+      kind: IDENTIFIER
+      pre_text: "namespace"
+    }
+    child {
+      kind: IDENTIFIER
+      pre_text: "(anonymous namespace)"
+    }
+    child {
+      kind: IDENTIFIER
+      pre_text: "ClassContainer"
+    }
+    post_child_text: "::"
+    add_final_list_token: true
+  }
+  child {
+    kind: IDENTIFIER
+    pre_text: "FunctionName"
+  }
+}
+child {
+  kind: PARAMETER
+  pre_text: "("
+  child {
+    child {
+      kind: TYPE
+      pre_text: "TypeOne*"
+    }
+    child {
+      pre_text: " "
+    }
+    child {
+      child {
+        kind: CONTEXT
+        child {
+          kind: IDENTIFIER
+          pre_text: "namespace"
+        }
+        child {
+          kind: IDENTIFIER
+          pre_text: "(anonymous namespace)"
+        }
+        child {
+          kind: IDENTIFIER
+          pre_text: "ClassContainer"
+        }
+        child {
+          kind: IDENTIFIER
+          pre_text: "FunctionName"
+        }
+        post_child_text: "::"
+        add_final_list_token: true
+      }
+      child {
+        kind: IDENTIFIER
+        pre_text: "param_name_one"
+      }
+    }
+  }
+  child {
+    child {
+      kind: TYPE
+      pre_text: "TypeTwo*"
+    }
+    child {
+      pre_text: " "
+    }
+    child {
+      child {
+        kind: CONTEXT
+        child {
+          kind: IDENTIFIER
+          pre_text: "namespace"
+        }
+        child {
+          kind: IDENTIFIER
+          pre_text: "(anonymous namespace)"
+        }
+        child {
+          kind: IDENTIFIER
+          pre_text: "ClassContainer"
+        }
+        child {
+          kind: IDENTIFIER
+          pre_text: "FunctionName"
+        }
+        post_child_text: "::"
+        add_final_list_token: true
+      }
+      child {
+        kind: IDENTIFIER
+        pre_text: "param_name_two"
+      }
+    }
+  }
+  post_child_text: ", "
+  post_text: ")"
+}
+)"";
+TEST_F(HtmlRendererTest, RenderSimpleParams) {
+  proto::MarkedSource marked;
+  ASSERT_TRUE(TextFormat::ParseFromString(kSampleMarkedSource, &marked))
+      << "(invalid ascii protobuf)";
+  auto params = kythe::RenderSimpleParams(marked);
+  ASSERT_EQ(2, params.size());
+  EXPECT_EQ("param_name_one", params[0]);
+  EXPECT_EQ("param_name_two", params[1]);
+}
+TEST_F(HtmlRendererTest, RenderSimpleIdentifier) {
+  proto::MarkedSource marked;
+  ASSERT_TRUE(TextFormat::ParseFromString(kSampleMarkedSource, &marked))
+      << "(invalid ascii protobuf)";
+  EXPECT_EQ("FunctionName", kythe::RenderSimpleIdentifier(marked));
 }
 }  // anonymous namespace
 }  // namespace kythe

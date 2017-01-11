@@ -21,6 +21,9 @@
 
 namespace kythe {
 namespace {
+/// Don't recurse more than this many times when rendering MarkedSource.
+constexpr size_t kMaxRenderDepth = 10;
+
 /// \brief A RAII class to deal with styled div/span tags.
 class CssTag {
  public:
@@ -142,7 +145,84 @@ const char* TagNameForStyle(PrintableSpan::Style style) {
       return "h6";
   }
 }
+
+template <typename SourceString>
+void AppendEscapedHtmlString(const SourceString& source, std::string* dest) {
+  dest->reserve(dest->size() + source.size());
+  for (char c : source) {
+    AppendEscapedHtmlCharacter(dest, c);
+  }
+}
+
+/// State while recursing through MarkedSource for RenderSimpleIdentifier.
+enum class IdentifierPos {
+  Above,  /// Above an IDENTIFIER node.
+  Below   /// Below an IDENTIFIER node.
+};
+
+/// Render text underneath IDENTIFIER nodes with no other non-BOXes in between.
+void RenderSimpleIdentifier(const proto::MarkedSource& sig, std::string* out,
+                            IdentifierPos state, size_t depth) {
+  if (depth >= kMaxRenderDepth) {
+    return;
+  }
+  if (state == IdentifierPos::Below) {
+    AppendEscapedHtmlString(sig.pre_text(), out);
+  }
+  for (const auto& child : sig.child()) {
+    switch (child.kind()) {
+      case proto::MarkedSource::BOX:
+        RenderSimpleIdentifier(child, out, state, depth + 1);
+        break;
+      case proto::MarkedSource::IDENTIFIER:
+        RenderSimpleIdentifier(child, out, IdentifierPos::Below, depth + 1);
+        break;
+      default:
+        break;
+    }
+  }
+  if (state == IdentifierPos::Below) {
+    AppendEscapedHtmlString(sig.post_text(), out);
+  }
+}
+
+/// Render identifiers underneath PARAMETER nodes with no other non-BOXes in
+/// between.
+void RenderSimpleParams(const proto::MarkedSource& sig,
+                        std::vector<std::string>* out, size_t depth) {
+  if (depth >= kMaxRenderDepth) {
+    return;
+  }
+  switch (sig.kind()) {
+    case proto::MarkedSource::BOX:
+      for (const auto& child : sig.child()) {
+        RenderSimpleParams(child, out, depth + 1);
+      }
+      break;
+    case proto::MarkedSource::PARAMETER:
+      for (const auto& child : sig.child()) {
+        out->emplace_back();
+        RenderSimpleIdentifier(child, &out->back(), IdentifierPos::Above,
+                               depth + 1);
+      }
+      break;
+    default:
+      break;
+  }
+}
 }  // anonymous namespace
+
+std::string RenderSimpleIdentifier(const proto::MarkedSource& sig) {
+  std::string result;
+  RenderSimpleIdentifier(sig, &result, IdentifierPos::Above, 0);
+  return result;
+}
+
+std::vector<std::string> RenderSimpleParams(const proto::MarkedSource& sig) {
+  std::vector<std::string> result;
+  RenderSimpleParams(sig, &result, 0);
+  return result;
+}
 
 std::string RenderHtml(const HtmlRendererOptions& options,
                        const Printable& printable) {
