@@ -15,6 +15,7 @@ go_package_library(
 
 go_test(
     name = "govname_test",
+    size = "small",
     srcs = ["govname_test.go"],
     library = "govname",
     visibility = ["//visibility:private"],

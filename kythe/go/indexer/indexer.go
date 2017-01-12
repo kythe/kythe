@@ -123,6 +123,11 @@ type packageImporter struct {
 func (pi *packageImporter) Import(importPath string) (*types.Package, error) {
 	if pkg := pi.deps[importPath]; pkg != nil && pkg.Complete() {
 		return pkg, nil
+	} else if importPath == "unsafe" {
+		// The "unsafe" package is special, and isn't usually added by the
+		// resolver into the dependency map.
+		pi.deps[importPath] = types.Unsafe
+		return types.Unsafe, nil
 	}
 
 	// Fetch the required input holding the package for this import path, and
@@ -234,6 +239,9 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 			pi.PackageVName[pkg] = proto.Clone(vname).(*spb.VName)
 			pi.PackageVName[pkg].Signature = "package"
 		}
+	}
+	if _, ok := pi.Dependencies["unsafe"]; ok {
+		pi.PackageVName[types.Unsafe] = govname.ForStandardLibrary("unsafe")
 	}
 
 	// Set this package's own vname.

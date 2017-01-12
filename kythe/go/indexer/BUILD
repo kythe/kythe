@@ -93,3 +93,8 @@ go_indexer_test(
     name = "comment_test",
     srcs = ["testdata/basic/comments.go"],
 )
+
+go_indexer_test(
+    name = "unsafe_test",
+    srcs = ["testdata/unsafe.go"],
+)

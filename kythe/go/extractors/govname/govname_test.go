@@ -100,3 +100,22 @@ func TestForBuiltin(t *testing.T) {
 		t.Errorf("ForBuiltin(%q): got %+v, want %+v", signature, got, want)
 	}
 }
+
+func TestForStandardLibrary(t *testing.T) {
+	tests := []struct {
+		input string
+		want  *spb.VName
+	}{
+		{"fmt", &spb.VName{Corpus: "golang.org", Path: "fmt", Signature: "package", Language: "go"}},
+		{"io/ioutil", &spb.VName{Corpus: "golang.org", Path: "io/ioutil", Signature: "package", Language: "go"}},
+		{"strconv", &spb.VName{Corpus: "golang.org", Path: "strconv", Signature: "package", Language: "go"}},
+	}
+	for _, test := range tests {
+		got := ForStandardLibrary(test.input)
+		if !proto.Equal(got, test.want) {
+			t.Errorf("ForStandardLibrary(%q): got %+v\nwant %+v", test.input, got, test.want)
+		} else if !IsStandardLibrary(got) {
+			t.Errorf("IsStandardLibrary(%+v) is unexpectedly false", got)
+		}
+	}
+}

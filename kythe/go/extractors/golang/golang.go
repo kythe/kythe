@@ -450,10 +450,11 @@ func (*Package) addFlag(cu *apb.CompilationUnit, name string, values ...string) 
 func (p *Package) addDeps(cu *apb.CompilationUnit, importPaths []string) []string {
 	var missing []string
 	for _, ip := range importPaths {
-		dep, err := p.ext.addPackage(ip)
-		if err != nil {
+		if ip == "unsafe" {
+			// package unsafe is intrinsic; nothing to do
+		} else if dep, err := p.ext.addPackage(ip); err != nil {
 			missing = append(missing, ip)
-		} else if ip != "unsafe" { // package unsafe is intrinsic
+		} else {
 			p.addInput(cu, dep)
 		}
 	}

@@ -109,6 +109,17 @@ func ForBuiltin(signature string) *spb.VName {
 	}
 }
 
+// ForStandardLibrary returns a VName for a standard library package with the
+// given import path.
+func ForStandardLibrary(importPath string) *spb.VName {
+	return &spb.VName{
+		Corpus:    golangCorpus,
+		Language:  Language,
+		Path:      importPath,
+		Signature: "package",
+	}
+}
+
 // IsStandardLibrary reports whether v names part of the Go standard library.
 // This includes the "golang.org" corpus but excludes the "golang.org/x/..."
 // extension repositories.  If v == nil, the answer is false.
