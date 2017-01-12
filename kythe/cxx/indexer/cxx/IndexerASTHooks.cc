@@ -2797,6 +2797,13 @@ IndexerASTVisitor::BuildNodeIdForDecl(const clang::Decl *Decl) {
     }
   }
 
+  if (const auto *BTD = dyn_cast<BuiltinTemplateDecl>(Decl)) {
+    Ostream << "#builtin";
+    GraphObserver::NodeId Id(Observer.getClaimTokenForBuiltin(), Ostream.str());
+    DeclToNodeId.insert(std::make_pair(Decl, Id));
+    return Id;
+  }
+
   const TypedefNameDecl *TND;
   if ((TND = dyn_cast<TypedefNameDecl>(Decl)) &&
       !isa<ObjCTypeParamDecl>(Decl)) {
@@ -3001,6 +3008,8 @@ IndexerASTVisitor::BuildNodeIdForTemplateName(const clang::TemplateName &Name,
       } else {
         LOG(FATAL) << "Unexpected UnderlyingDecl";
       }
+    } else if (const auto *BTD = dyn_cast<BuiltinTemplateDecl>(TD)) {
+      return BuildNodeIdForDecl(BTD);
     } else {
       LOG(FATAL) << "BuildNodeIdForTemplateName can't identify TemplateDecl";
     }
