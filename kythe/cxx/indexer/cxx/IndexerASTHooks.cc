@@ -18,6 +18,7 @@
 
 #include "IndexerASTHooks.h"
 
+#include "gflags/gflags.h"
 #include "kythe/cxx/indexer/cxx/clang_utils.h"
 #include "kythe/cxx/indexer/cxx/marked_source.h"
 #include "clang/AST/Attr.h"
@@ -45,6 +46,9 @@
 
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/raw_ostream.h"
+
+DEFINE_bool(experimental_alias_template_instantiations, false,
+            "Ignore template instantation information when generating IDs.");
 
 namespace kythe {
 
@@ -1731,11 +1735,20 @@ IndexerASTVisitor::ExplicitRangeInCurrentContext(const clang::SourceRange &SR) {
   if (!SR.getBegin().isValid()) {
     return None();
   }
-  if (!RangeContext.empty()) {
+  if (!RangeContext.empty() &&
+      !FLAGS_experimental_alias_template_instantiations) {
     return GraphObserver::Range(SR, RangeContext.back());
   } else {
     return GraphObserver::Range(SR, Observer.getClaimTokenForRange(SR));
   }
+}
+
+MaybeFew<GraphObserver::Range> IndexerASTVisitor::RangeInCurrentContext(
+    const MaybeFew<GraphObserver::NodeId> &Id, const clang::SourceRange &SR) {
+  if (auto &PrimaryId = Id) {
+    return GraphObserver::Range(PrimaryId.primary());
+  }
+  return ExplicitRangeInCurrentContext(SR);
 }
 
 MaybeFew<GraphObserver::Range>
@@ -2845,43 +2858,46 @@ IndexerASTVisitor::BuildNodeIdForDecl(const clang::Decl *Decl) {
       if (CurrentNodeAsDecl != Decl) {
         Ostream << "#";
       }
-    } else if (const auto *CTSD = dyn_cast<ClassTemplateSpecializationDecl>(
-                   CurrentNodeAsDecl)) {
-      // Inductively, we can break after the first implicit instantiation*
-      // (since its NodeId will contain its parent's first implicit
-      // instantiation and so on). We still want to include hashes of
-      // instantiation types.
-      // * we assume that the first parent changing, if it does change, is not
-      //   semantically important; we're generating stable internal IDs.
-      if (CurrentNodeAsDecl != Decl) {
-        Ostream << "#" << BuildNodeIdForDecl(CTSD);
-        if (CTSD->isImplicit()) {
-          break;
-        }
-      } else {
-        Ostream << "#" << HashToString(SemanticHash(
-                              &CTSD->getTemplateInstantiationArgs()));
-      }
-    } else if (const auto *FD = dyn_cast<FunctionDecl>(CurrentNodeAsDecl)) {
-      Ostream << "#"
-              << HashToString(SemanticHash(QualType(FD->getFunctionType(), 0)));
-      if (const auto *TemplateArgs = FD->getTemplateSpecializationArgs()) {
+    }
+    if (!FLAGS_experimental_alias_template_instantiations) {
+      if (const auto *CTSD =
+              dyn_cast<ClassTemplateSpecializationDecl>(CurrentNodeAsDecl)) {
+        // Inductively, we can break after the first implicit instantiation*
+        // (since its NodeId will contain its parent's first implicit
+        // instantiation and so on). We still want to include hashes of
+        // instantiation types.
+        // * we assume that the first parent changing, if it does change, is not
+        //   semantically important; we're generating stable internal IDs.
         if (CurrentNodeAsDecl != Decl) {
-          Ostream << "#" << BuildNodeIdForDecl(FD);
-          break;
-        } else {
-          Ostream << "#" << HashToString(SemanticHash(TemplateArgs));
-        }
-      }
-    } else if (const auto *VD =
-                   dyn_cast<VarTemplateSpecializationDecl>(CurrentNodeAsDecl)) {
-      if (VD->isImplicit()) {
-        if (CurrentNodeAsDecl != Decl) {
-          Ostream << "#" << BuildNodeIdForDecl(VD);
-          break;
+          Ostream << "#" << BuildNodeIdForDecl(CTSD);
+          if (CTSD->isImplicit()) {
+            break;
+          }
         } else {
           Ostream << "#" << HashToString(SemanticHash(
-                                &VD->getTemplateInstantiationArgs()));
+                                &CTSD->getTemplateInstantiationArgs()));
+        }
+      } else if (const auto *FD = dyn_cast<FunctionDecl>(CurrentNodeAsDecl)) {
+        Ostream << "#" << HashToString(
+                              SemanticHash(QualType(FD->getFunctionType(), 0)));
+        if (const auto *TemplateArgs = FD->getTemplateSpecializationArgs()) {
+          if (CurrentNodeAsDecl != Decl) {
+            Ostream << "#" << BuildNodeIdForDecl(FD);
+            break;
+          } else {
+            Ostream << "#" << HashToString(SemanticHash(TemplateArgs));
+          }
+        }
+      } else if (const auto *VD = dyn_cast<VarTemplateSpecializationDecl>(
+                     CurrentNodeAsDecl)) {
+        if (VD->isImplicit()) {
+          if (CurrentNodeAsDecl != Decl) {
+            Ostream << "#" << BuildNodeIdForDecl(VD);
+            break;
+          } else {
+            Ostream << "#" << HashToString(SemanticHash(
+                                  &VD->getTemplateInstantiationArgs()));
+          }
         }
       }
     }

@@ -506,12 +506,7 @@ public:
   /// RangeContext.
   MaybeFew<GraphObserver::Range>
   RangeInCurrentContext(const MaybeFew<GraphObserver::NodeId> &Id,
-                        const clang::SourceRange &SR) {
-    if (auto &PrimaryId = Id) {
-      return GraphObserver::Range(PrimaryId.primary());
-    }
-    return ExplicitRangeInCurrentContext(SR);
-  }
+                        const clang::SourceRange &SR);
 
 private:
   /// Whether we should stop on missing cases or continue on.
