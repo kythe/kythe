@@ -14,6 +14,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# ==============================================================================
+# This .ycm_extra_conf will be picked up automatically for code completion using
+# YouCompleteMe.
+# 
+# See https://valloric.github.io/YouCompleteMe/ for instructions on setting up
+# YouCompleteMe using Vim. This .ycm_extra_conf file also works with any other
+# completion engine that uses YCMD (https://github.com/Valloric/ycmd).
+# 
+# Code completion depends on a Clang compilation database. This is placed in a
+# file named `compile_commands.json` in your execution root path. I.e. it will
+# be at the path returned by `bazel info execution_root`.
+# 
+# If the compilation database isn't available, this script will generate one
+# using tools/cpp/generate_compilation_database.sh. This process can be slow if
+# you haven't built the sources yet. It's always a good idea to run
+# generate_compilation_database.sh manually so that you can see the build output
+# including any errors encountered during compile command generation.
+# ==============================================================================
+
 import json
 import os
 import shlex
@@ -91,6 +110,19 @@ CLANG_OPTION_DISPOSITION = {
 }
 
 
+def ProcessOutput(args):
+  """Run the program described by |args| and return its stdout as a stream.
+
+  |stderr| and |stdin| will be set to /dev/null. Will raise CalledProcessError
+  if the subprocess doesn't complete successfully.
+  """
+  output = ''
+  with open(os.devnull, 'w') as err:
+    with open(os.devnull, 'r') as inp:
+      output = subprocess.check_output(args, stderr=err, stdin=inp)
+  return str(output).strip()
+
+
 def InitBazelConfig():
   """Initialize globals based on Bazel configuration.
 
@@ -100,12 +132,10 @@ def InitBazelConfig():
   global COMPILATION_DATABASE_PATH
   global WORKSPACE_PATH
   global CANONICAL_SOURCE_FILE
-  execution_root = str(
-      subprocess.check_output(['bazel', 'info', 'execution_root'])).strip()
+  execution_root = ProcessOutput(['bazel', 'info', 'execution_root'])
   COMPILATION_DATABASE_PATH = os.path.join(execution_root,
                                            'compile_commands.json')
-  WORKSPACE_PATH = str(subprocess.check_output(['bazel', 'info', 'workspace'
-                                               ])).strip()
+  WORKSPACE_PATH = ProcessOutput(['bazel', 'info', 'workspace'])
   CANONICAL_SOURCE_FILE = ExpandAndNormalizePath(CANONICAL_SOURCE_FILE,
                                                  WORKSPACE_PATH)
 
@@ -114,7 +144,7 @@ def GenerateCompilationDatabaseSlowly():
   """Generate compilation database. May take a while."""
   script_path = os.path.join(WORKSPACE_PATH, 'tools', 'cpp',
                              'generate_compilation_database.sh')
-  subprocess.check_call(script_path)
+  ProcessOutput(script_path)
 
 
 def ExpandAndNormalizePath(filename, basepath=WORKSPACE_PATH):

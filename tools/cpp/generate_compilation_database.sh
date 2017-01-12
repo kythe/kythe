@@ -1,12 +1,15 @@
 #!/bin/bash
 
+# Generates a compile_commands.json file at $(bazel info execution_root) for
+# your Clang tooling needs.
+
 set -e
 
-echo -n "Rebuilding compilations database..."
 bazel build \
   --experimental_action_listener=//kythe/cxx/tools/generate_compile_commands:extract_json \
-  $(bazel query 'kind(cc_.*, //...)') > /dev/null 2>&1
-echo "Done"
+  --noshow_progress \
+  --noshow_loading_progress \
+  $(bazel query 'kind(cc_.*, //...)') > /dev/null
 
 pushd $(bazel info execution_root) > /dev/null
 echo "[" > compile_commands.json
