@@ -77,9 +77,6 @@ type PackageInfo struct {
 	Info   *types.Info // If non-nil, contains type-checker results
 	Errors []error     // All errors reported by the type checker
 
-	// The fetcher provides access to the data from required inputs.
-	fetcher Fetcher
-
 	// A lazily-initialized mapping from an object on the RHS of a selection
 	// (lhs.RHS) to the nearest enclosing named struct or interface type; or in
 	// the body of a function or method to the nearest enclosing named method.
