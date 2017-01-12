@@ -262,7 +262,7 @@ func (e *emitter) visitImportSpec(spec *ast.ImportSpec, stack stackFunc) {
 		target   = e.pi.PackageVName[pkg]
 	)
 	if target == nil {
-		log.Printf("Unable to resolving import path %q", ipath)
+		log.Printf("Unable to resolve import path %q", ipath)
 		return
 	}
 

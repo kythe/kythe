@@ -41,7 +41,6 @@ import (
 	"go/token"
 	"go/types"
 	"log"
-	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -78,6 +77,9 @@ type PackageInfo struct {
 	Info   *types.Info // If non-nil, contains type-checker results
 	Errors []error     // All errors reported by the type checker
 
+	// The fetcher provides access to the data from required inputs.
+	fetcher Fetcher
+
 	// A lazily-initialized mapping from an object on the RHS of a selection
 	// (lhs.RHS) to the nearest enclosing named struct or interface type; or in
 	// the body of a function or method to the nearest enclosing named method.
@@ -107,11 +109,34 @@ type funcInfo struct {
 	numAnons int // number of anonymous functions defined inside this one
 }
 
+// packageImporter implements the types.Importer interface by fetching files
+// from the required inputs of a compilation unit.
+type packageImporter struct {
+	deps    map[string]*types.Package // packages already loaded
+	fileSet *token.FileSet            // source location information
+	fileMap map[string]*apb.FileInfo  // :: import path → required input location
+	fetcher Fetcher                   // access to required input contents
+}
+
 // Import satisfies the types.Importer interface using the captured data from
 // the compilation unit.
-func (pi *PackageInfo) Import(importPath string) (*types.Package, error) {
-	if pkg := pi.Dependencies[importPath]; pkg != nil {
+func (pi *packageImporter) Import(importPath string) (*types.Package, error) {
+	if pkg := pi.deps[importPath]; pkg != nil && pkg.Complete() {
 		return pkg, nil
+	}
+
+	// Fetch the required input holding the package for this import path, and
+	// load its export data for use by the type resolver.
+	if fi := pi.fileMap[importPath]; fi != nil {
+		data, err := pi.fetcher.Fetch(fi.Path, fi.Digest)
+		if err != nil {
+			return nil, fmt.Errorf("fetching %q (%s): %v", fi.Path, fi.Digest, err)
+		}
+		r, err := gcexportdata.NewReader(bytes.NewReader(data))
+		if err != nil {
+			return nil, fmt.Errorf("reading export data in %q (%s): %v", fi.Path, fi.Digest, err)
+		}
+		return gcexportdata.Read(r, pi.fileSet, pi.deps, importPath)
 	}
 	return nil, fmt.Errorf("package %q not found", importPath)
 }
@@ -126,11 +151,12 @@ func (pi *PackageInfo) Import(importPath string) (*types.Package, error) {
 func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageInfo, error) {
 	sourceFiles := stringset.New(unit.SourceFile...)
 
-	deps := make(map[string]*types.Package) // import path → package
-	imap := make(map[string]*spb.VName)     // import path → vname
-	srcs := make(map[string]string)         // file path → text
-	fset := token.NewFileSet()              // location info for the parser
-	var files []*ast.File                   // parsed sources
+	imap := make(map[string]*spb.VName)    // import path → vname
+	srcs := make(map[string]string)        // file path → text
+	fmap := make(map[string]*apb.FileInfo) // import path → file info
+	fset := token.NewFileSet()             // location info for the parser
+	goRoot := getenv("GOROOT", unit)
+	var files []*ast.File // parsed sources
 
 	// Classify the required inputs as either sources, which are to be parsed,
 	// or dependencies, which are to be "imported" via the type-checker's
@@ -141,16 +167,14 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 			return nil, errors.New("required input file info missing")
 		}
 
-		// Fetch the contents of each required input.
-		fpath := ri.Info.Path
-		data, err := f.Fetch(fpath, ri.Info.Digest)
-		if err != nil {
-			return nil, fmt.Errorf("fetching %q (%s): %v", fpath, ri.Info.Digest, err)
-		}
-
 		// Source inputs need to be parsed, so we can give their ASTs to the
 		// type checker later on.
+		fpath := ri.Info.Path
 		if sourceFiles.Contains(fpath) {
+			data, err := f.Fetch(fpath, ri.Info.Digest)
+			if err != nil {
+				return nil, fmt.Errorf("fetching %q (%s): %v", fpath, ri.Info.Digest, err)
+			}
 			srcs[fpath] = string(data)
 			parsed, err := parser.ParseFile(fset, fpath, data, parser.AllErrors|parser.ParseComments)
 			if err != nil {
@@ -162,50 +186,26 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 
 		// Other files may be compiled archives with type information for other
 		// packages, or may be other ancillary files like C headers to support
-		// cgo. File extension isn't sufficient to distinguish these, so we'll
-		// just try to parse them. It's OK if that fails.
-		r, err := gcexportdata.NewReader(bytes.NewReader(data))
-		if err != nil {
-			log.Printf("Error scanning export data in %q: %v [ignored]", fpath, err)
-			continue
-		}
-
-		// Package archives must have a VName set to resolve their origin.
+		// cgo.  Use the vname to determine which import path for each and save
+		// that mapping for use by the importer.
 		if ri.VName == nil {
 			return nil, fmt.Errorf("missing vname for %q", fpath)
 		}
 
-		ipath := vnameToImport(ri.VName, getenv("GOROOT", unit))
+		ipath := vnameToImport(ri.VName, goRoot)
 		imap[ipath] = ri.VName
-
-		// Populate deps with package ipath and its prerequisites.
-		if _, err := gcexportdata.Read(r, fset, deps, ipath); err != nil {
-			return nil, fmt.Errorf("importing %q: %v", ipath, err)
-		}
+		fmap[ipath] = ri.Info
 	}
-
-	// Fill in the mapping from packages to vnames.
-	vmap := make(map[*types.Package]*spb.VName)
-	for ip, vname := range imap {
-		if pkg := deps[ip]; pkg != nil {
-			vmap[pkg] = proto.Clone(vname).(*spb.VName)
-			vmap[pkg].Signature = "package"
-		}
-	}
-	thisPackage := proto.Clone(unit.VName).(*spb.VName)
-	thisPackage.Language = govname.Language
-	thisPackage.Signature = "package"
 
 	pi := &PackageInfo{
 		Name:         files[0].Name.Name,
-		ImportPath:   path.Join(unit.VName.Corpus, unit.VName.Path),
-		VName:        thisPackage,
-		PackageVName: vmap,
+		ImportPath:   vnameToImport(unit.VName, goRoot),
 		FileSet:      fset,
 		Files:        files,
-		SourceText:   srcs,
-		Dependencies: deps,
 		Info:         info,
+		SourceText:   srcs,
+		PackageVName: make(map[*types.Package]*spb.VName),
+		Dependencies: make(map[string]*types.Package), // :: import path → package
 
 		function: make(map[ast.Node]*funcInfo),
 		sigs:     make(map[types.Object]string),
@@ -217,15 +217,30 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 	c := &types.Config{
 		FakeImportC:              true, // so we can handle cgo
 		DisableUnusedImportCheck: true, // this is not fatal to type-checking
-		Importer:                 pi,
-		Error: func(err error) {
-			pi.Errors = append(pi.Errors, err)
+		Importer: &packageImporter{
+			deps:    pi.Dependencies,
+			fileSet: pi.FileSet,
+			fileMap: fmap,
+			fetcher: f,
 		},
+		Error: func(err error) { pi.Errors = append(pi.Errors, err) },
 	}
-	if pkg, _ := c.Check(pi.Name, pi.FileSet, pi.Files, pi.Info); pkg != nil {
-		pi.Package = pkg
-		vmap[pkg] = unit.VName
+	pi.Package, _ = c.Check(pi.Name, pi.FileSet, pi.Files, pi.Info)
+	pi.PackageVName[pi.Package] = unit.VName
+
+	// Fill in the mapping from packages to vnames.
+	for ip, vname := range imap {
+		if pkg := pi.Dependencies[ip]; pkg != nil {
+			pi.PackageVName[pkg] = proto.Clone(vname).(*spb.VName)
+			pi.PackageVName[pkg].Signature = "package"
+		}
 	}
+
+	// Set this package's own vname.
+	pi.VName = proto.Clone(unit.VName).(*spb.VName)
+	pi.VName.Language = govname.Language
+	pi.VName.Signature = "package"
+
 	return pi, nil
 }
 
