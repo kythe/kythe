@@ -162,6 +162,14 @@ class KytheOutputStream {
   virtual ~KytheOutputStream() {}
 };
 
+/// \brief An output stream that drops its output.
+class NullOutputStream : public KytheOutputStream {
+ public:
+  void Emit(const FactRef &fact) override {}
+  void Emit(const EdgeRef &edge) override {}
+  void Emit(const OrdinalEdgeRef &edge) override {}
+};
+
 /// \brief Manages a stack of size-bounded buffers.
 class BufferStack {
  public:

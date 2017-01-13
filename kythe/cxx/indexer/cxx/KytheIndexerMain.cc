@@ -63,7 +63,6 @@ int main(int argc, char *argv[]) {
       FLAGS_experimental_drop_instantiation_independent_data;
   options.AllowFSAccess = context.allow_filesystem_access();
   options.EnableLossyClaiming = context.enable_lossy_claiming();
-  options.EffectiveWorkingDirectory = context.working_directory();
   if (FLAGS_report_profiling_events) {
     options.ReportProfileEvent = [](const char *counter, ProfilingEvent event) {
       fprintf(stderr, "%s: %s\n", counter,
@@ -71,19 +70,30 @@ int main(int argc, char *argv[]) {
     };
   }
 
-  kythe::MetadataSupports meta_supports;
-  meta_supports.push_back(llvm::make_unique<ProtobufMetadataSupport>());
-  meta_supports.push_back(llvm::make_unique<KytheMetadataSupport>());
+  bool had_errors = false;
+  NullOutputStream null_stream;
 
-  std::string result = IndexCompilationUnit(
-      context.unit(), *context.virtual_files(), *context.claim_client(),
-      context.hash_cache(), *context.output(), options, &meta_supports);
+  for (auto &job : *context.jobs()) {
+    options.EffectiveWorkingDirectory = job.working_directory;
 
-  if (!result.empty()) {
-    fprintf(stderr, "Error: %s\n", result.c_str());
+    kythe::MetadataSupports meta_supports;
+    meta_supports.push_back(llvm::make_unique<ProtobufMetadataSupport>());
+    meta_supports.push_back(llvm::make_unique<KytheMetadataSupport>());
+
+    std::string result = IndexCompilationUnit(
+        job.unit, job.virtual_files, *context.claim_client(),
+        context.hash_cache(),
+        job.silent ? static_cast<KytheOutputStream &>(null_stream)
+                   : static_cast<KytheOutputStream &>(*context.output()),
+        options, &meta_supports);
+
+    if (!result.empty()) {
+      fprintf(stderr, "Error: %s\n", result.c_str());
+      had_errors = true;
+    }
   }
 
-  return !result.empty();
+  return (had_errors ? 1 : 0);
 }
 
 }  // namespace kythe

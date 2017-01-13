@@ -31,6 +31,19 @@
 
 namespace kythe {
 
+/// \brief A compilation unit to be indexed.
+struct IndexerJob {
+  /// All files necessary for the compilation under analysis.
+  std::vector<proto::FileData> virtual_files;
+  /// The compilation under analysis.
+  proto::CompilationUnit unit;
+  /// The absolute working directory in which indexing is taking place. This may
+  /// not exist on the local filesystem.
+  std::string working_directory;
+  /// If set, this job should not produce any output.
+  bool silent;
+};
+
 /// \brief Handles common tasks related to invoking a Kythe indexer from the
 /// command line.
 class IndexerContext {
@@ -50,15 +63,10 @@ class IndexerContext {
   /// \brief If true, the indexer may make decisions about claiming that could
   /// lose data.
   bool enable_lossy_claiming() const { return enable_lossy_claiming_; }
-  /// \brief The absolute working directory in which indexing is taking place.
-  /// This may not exist on the local filesystem.
-  const std::string &working_directory() const { return working_dir_; }
   /// \brief If true, the indexer should handle unknown elements gracefully.
   bool ignore_unimplemented() const { return ignore_unimplemented_; }
-  /// \brief All files necessary for the compilation being analyzed.
-  std::vector<proto::FileData> *virtual_files() { return &virtual_files_; }
-  /// \brief The compilation being analyzed.
-  const proto::CompilationUnit &unit() const { return unit_; }
+  /// \brief Indexer jobs to complete.
+  std::vector<IndexerJob> *jobs() { return &jobs_; }
   /// \brief The claim client to use for this compilation. Not null.
   KytheClaimClient *claim_client() const {
     CHECK(claim_client_ != nullptr);
@@ -80,9 +88,8 @@ class IndexerContext {
 
  private:
   /// \brief Checks to see if a .kindex or index pack was specified.
-  /// \return The name of the .kindex (with extension) or the compilation unit
-  /// hash (if either was specified); otherwise, an empty string.
-  std::string CheckForIndexArguments();
+  /// \return true if there are index/kindex arguments; false otherwise.
+  bool HasIndexArguments();
   /// \brief Loads from an index pack or .kindex.
   /// \param kindex_file_or_cu The name of the .kindex (with extension) or
   /// the compilation unit hash.
@@ -104,12 +111,8 @@ class IndexerContext {
 
   /// Command-line arguments, pruned of empty strings and gflags.
   std::vector<std::string> args_;
-  /// All files necessary for the compilation under analysis.
-  std::vector<proto::FileData> virtual_files_;
-  /// The compilation under analysis.
-  proto::CompilationUnit unit_;
-  /// The absolute virtual directory in which analysis occurs.
-  std::string working_dir_;
+  /// Indexer jobs to complete.
+  std::vector<IndexerJob> jobs_;
   /// The file descriptor to which we're writing output.
   int write_fd_ = -1;
   /// Wraps `write_fd_`.

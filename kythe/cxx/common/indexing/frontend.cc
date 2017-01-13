@@ -56,10 +56,22 @@ DEFINE_string(experimental_dynamic_claim_cache, "",
 // between translation units.
 DEFINE_uint64(experimental_dynamic_overclaim, 1,
               "Maximum number of dynamic claims per claimable (EXPERIMENTAL)");
+DEFINE_bool(test_claim, false, "Use an in-memory claim database for testing.");
 
 namespace kythe {
 
 namespace {
+/// The prefix prepended to silent inputs. Only checked when "--test_claim"
+/// is enabled.
+constexpr char kSilentPrefix[] = "silent:";
+/// \return the input name stripped of its prefix if it's silent; an empty
+/// string otherwise.
+llvm::StringRef strip_silent_input_prefix(llvm::StringRef argument) {
+  if (FLAGS_test_claim && argument.startswith(kSilentPrefix)) {
+    return argument.drop_front(::strlen(kSilentPrefix));
+  }
+  return {};
+}
 /// \brief Reads the output of the static claim tool.
 ///
 /// `path` should be a file that contains a GZip-compressed sequence of
@@ -137,8 +149,8 @@ void DecodeIndexPack(const std::string &cu_hash,
   for (const auto &input : unit->required_input()) {
     const auto &info = input.info();
     CHECK(!info.path().empty());
-    CHECK(!info.digest().empty()) << "Required input " << info.path()
-                                  << " is missing its digest.";
+    CHECK(!info.digest().empty())
+        << "Required input " << info.path() << " is missing its digest.";
     std::string read_data;
     CHECK(index_pack->ReadFileData(info.digest(), &read_data))
         << "Could not read " << info.path() << " (digest " << info.digest()
@@ -170,6 +182,10 @@ If -index_pack is specified, there must be exactly one positional parameter.
 This parameter should be the compilation unit ID from the mounted index pack
 that is meant to be indexed. No additional input parameters may be specified.
 
+If -test_claim is specified, you may specify that one or more kindex or index
+pack inputs should not produce any output by prepending the prefix "silent:"
+to the input's name.
+
 Examples:)");
   message.append(program_name +
                  " -index_pack path/to/pack/root 660f1f840000000000\n");
@@ -179,31 +195,36 @@ Examples:)");
   return message;
 }
 
-std::string IndexerContext::CheckForIndexArguments() {
-  std::string kindex_file_or_cu;
+bool IndexerContext::HasIndexArguments() {
+  bool had_index = false;
   if (!FLAGS_index_pack.empty()) {
+    had_index = true;
     CHECK(args_.size() >= 2) << "You must specify a compilation unit.";
-    kindex_file_or_cu = args_[1];
   } else {
     for (const auto &arg : args_) {
       if (llvm::StringRef(arg).endswith(".kindex")) {
-        kindex_file_or_cu = arg;
-        break;
+        had_index = true;
       }
     }
   }
-  if (!kindex_file_or_cu.empty()) {
-    CHECK_EQ(2, args_.size())
-        << "No other positional arguments are allowed when reading "
-        << "from an index file or an index pack.";
+  if (had_index) {
     CHECK_EQ("-", FLAGS_i)
         << "No other input is allowed when reading from an index file or an "
         << "index pack.";
   }
-  return kindex_file_or_cu;
+  return had_index;
 }
 
 void IndexerContext::LoadDataFromIndex(const std::string &kindex_file_or_cu) {
+  jobs_.emplace_back();
+  auto *job = &jobs_.back();
+  std::string name = strip_silent_input_prefix(kindex_file_or_cu);
+  if (name.empty()) {
+    job->silent = false;
+    name = kindex_file_or_cu;
+  } else {
+    job->silent = true;
+  }
   if (!FLAGS_index_pack.empty()) {
     std::string error_text;
     auto filesystem = kythe::IndexPackPosixFilesystem::Open(
@@ -211,28 +232,29 @@ void IndexerContext::LoadDataFromIndex(const std::string &kindex_file_or_cu) {
         &error_text);
     CHECK(filesystem) << "Couldn't open index pack from " << FLAGS_index_pack
                       << ": " << error_text;
-    DecodeIndexPack(kindex_file_or_cu,
-                    llvm::make_unique<IndexPack>(std::move(filesystem)),
-                    &virtual_files_, &unit_);
+    DecodeIndexPack(name, llvm::make_unique<IndexPack>(std::move(filesystem)),
+                    &job->virtual_files, &job->unit);
   } else {
-    DecodeIndexFile(kindex_file_or_cu, &virtual_files_, &unit_);
+    DecodeIndexFile(name, &job->virtual_files, &job->unit);
   }
-  working_dir_ = unit_.working_directory();
-  if (!llvm::sys::path::is_absolute(working_dir_)) {
+  job->working_directory = job->unit.working_directory();
+  if (!llvm::sys::path::is_absolute(job->working_directory)) {
     llvm::SmallString<1024> stored_wd;
     CHECK(!llvm::sys::fs::make_absolute(stored_wd));
-    working_dir_ = stored_wd.str();
+    job->working_directory = stored_wd.str();
   }
 }
 
 void IndexerContext::LoadDataFromUnpackedFile(
     const std::string &default_filename) {
+  jobs_.emplace_back();
+  auto *job = &jobs_.back();
   allow_filesystem_access_ = true;
   int read_fd = STDIN_FILENO;
   std::string source_file_name = default_filename;
   llvm::SmallString<1024> cwd;
   CHECK(!llvm::sys::fs::current_path(cwd));
-  working_dir_ = cwd.str();
+  job->working_directory = cwd.str();
   if (FLAGS_i != "-") {
     read_fd = open(FLAGS_i.c_str(), O_RDONLY);
     if (read_fd == -1) {
@@ -258,11 +280,11 @@ void IndexerContext::LoadDataFromUnpackedFile(
   proto::FileData file_data;
   file_data.mutable_info()->set_path(source_file_name);
   file_data.set_content(source_data.str());
-  virtual_files_.push_back(std::move(file_data));
+  job->virtual_files.push_back(std::move(file_data));
   for (const auto &arg : args_) {
-    unit_.add_argument(arg);
+    job->unit.add_argument(arg);
   }
-  unit_.mutable_v_name()->set_corpus(FLAGS_icorpus);
+  job->unit.mutable_v_name()->set_corpus(FLAGS_icorpus);
 }
 
 void IndexerContext::InitializeClaimClient() {
@@ -289,10 +311,12 @@ void IndexerContext::InitializeClaimClient() {
 }
 
 void IndexerContext::NormalizeFileVNames() {
-  for (auto &input : *unit_.mutable_required_input()) {
-    input.mutable_v_name()->set_path(
-        CleanPath(ToStringRef(input.v_name().path())));
-    input.mutable_v_name()->clear_signature();
+  for (auto &job : jobs_) {
+    for (auto &input : *job.unit.mutable_required_input()) {
+      input.mutable_v_name()->set_path(
+          CleanPath(ToStringRef(input.v_name().path())));
+      input.mutable_v_name()->clear_signature();
+    }
   }
 }
 
@@ -337,11 +361,12 @@ IndexerContext::IndexerContext(const std::vector<std::string> &args,
     : args_(args), ignore_unimplemented_(FLAGS_ignore_unimplemented) {
   args_.erase(std::remove(args_.begin(), args_.end(), std::string()),
               args_.end());
-  std::string index = CheckForIndexArguments();
-  if (index.empty()) {
-    LoadDataFromUnpackedFile(default_filename);
+  if (HasIndexArguments()) {
+    for (size_t arg = 1; arg < args_.size(); ++arg) {
+      LoadDataFromIndex(args[arg]);
+    }
   } else {
-    LoadDataFromIndex(index);
+    LoadDataFromUnpackedFile(default_filename);
   }
   if (FLAGS_normalize_file_vnames) {
     NormalizeFileVNames();
