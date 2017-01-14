@@ -37,6 +37,7 @@ import (
 	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/facts"
 	"kythe.io/kythe/go/util/schema/nodes"
+	"kythe.io/kythe/go/util/schema/tickets"
 
 	"bitbucket.org/creachadair/stringset"
 
@@ -651,12 +652,17 @@ func edgeTickets(edges []*gpb.EdgeSet_Group_Edge) (tickets []string) {
 func completeAnchors(ctx context.Context, xs xrefs.GraphService, retrieveText bool, files map[string]*fileNode, edgeKind string, anchors []string) ([]*xpb.CrossReferencesReply_RelatedAnchor, error) {
 	edgeKind = edges.Canonical(edgeKind)
 
-	// AllEdges is relatively safe because each anchor will have very few parents (almost always 1)
-	reply, err := xrefs.AllEdges(ctx, xs, &gpb.EdgesRequest{
+	parents := make(map[string]string)
+	for _, anchor := range anchors {
+		file, err := tickets.AnchorFile(anchor)
+		if err != nil {
+			return nil, fmt.Errorf("invalid anchor %q: %v", anchor, err)
+		}
+		parents[anchor] = file
+	}
+	reply, err := xs.Nodes(ctx, &gpb.NodesRequest{
 		Ticket: anchors,
-		Kind:   []string{edges.ChildOf},
 		Filter: []string{
-			facts.NodeKind,
 			schema.AnchorLocFilter,
 			schema.SnippetLocFilter,
 		},
@@ -664,111 +670,96 @@ func completeAnchors(ctx context.Context, xs xrefs.GraphService, retrieveText bo
 	if err != nil {
 		return nil, err
 	}
-	allNodes := xrefs.NodesMap(reply.Nodes)
 
 	var result []*xpb.CrossReferencesReply_RelatedAnchor
-	for ticket, es := range reply.EdgeSets {
-		if nodeKind := string(allNodes[ticket][facts.NodeKind]); nodeKind != nodes.Anchor {
-			log.Printf("Found non-anchor target to %q edge: %q (kind: %q)", edgeKind, ticket, nodeKind)
-			continue
-		}
-
-		// Parse anchor location start/end facts
-		so, eo, err := getSpan(allNodes[ticket], facts.AnchorStart, facts.AnchorEnd)
+	for ticket, info := range reply.Nodes {
+		start, end, err := getSpan(info.Facts, facts.AnchorStart, facts.AnchorEnd)
 		if err != nil {
 			log.Printf("Invalid anchor span for %q: %v", ticket, err)
 			continue
 		}
 
-		// For each file parent to the anchor, add an Anchor to the result.
-		for kind, g := range es.Groups {
-			if kind != edges.ChildOf {
-				continue
-			}
-
-			for _, edge := range g.Edge {
-				parent := edge.TargetTicket
-				if parentKind := string(allNodes[parent][facts.NodeKind]); parentKind != nodes.File {
-					log.Printf("Found non-file parent to anchor: %q (kind: %q)", parent, parentKind)
-					continue
-				}
-
-				a := &xpb.Anchor{
-					Ticket: ticket,
-					Kind:   edgeKind,
-					Parent: parent,
-				}
-
-				file, ok := files[a.Parent]
-				if !ok {
-					nReply, err := xs.Nodes(ctx, &gpb.NodesRequest{Ticket: []string{a.Parent}})
-					if err != nil {
-						return nil, fmt.Errorf("error getting file contents for %q: %v", a.Parent, err)
-					}
-					nMap := xrefs.NodesMap(nReply.Nodes)
-					text := nMap[a.Parent][facts.Text]
-					file = &fileNode{
-						text:     text,
-						encoding: string(nMap[a.Parent][facts.TextEncoding]),
-						norm:     xrefs.NewNormalizer(text),
-					}
-					files[a.Parent] = file
-				}
-
-				a.Start, a.End, err = normalizeSpan(file.norm, int32(so), int32(eo))
-				if err != nil {
-					log.Printf("Invalid anchor span %q in file %q: %v", ticket, a.Parent, err)
-					continue
-				}
-
-				if retrieveText && a.Start.ByteOffset < a.End.ByteOffset {
-					a.Text, err = text.ToUTF8(file.encoding, file.text[a.Start.ByteOffset:a.End.ByteOffset])
-					if err != nil {
-						log.Printf("Error decoding anchor text: %v", err)
-					}
-				}
-
-				if snippetStart, snippetEnd, err := getSpan(allNodes[ticket], facts.SnippetStart, facts.SnippetEnd); err == nil {
-					startPoint, endPoint, err := normalizeSpan(file.norm, int32(snippetStart), int32(snippetEnd))
-					if err != nil {
-						log.Printf("Invalid snippet span %q in file %q: %v", ticket, a.Parent, err)
-					} else {
-						a.Snippet, err = text.ToUTF8(file.encoding, file.text[startPoint.ByteOffset:endPoint.ByteOffset])
-						if err != nil {
-							log.Printf("Error decoding snippet text: %v", err)
-						}
-						a.SnippetStart = startPoint
-						a.SnippetEnd = endPoint
-					}
-				}
-
-				// fallback to a line-based snippet if the indexer did not provide its own snippet offsets
-				if a.Snippet == "" {
-					a.SnippetStart = &xpb.Location_Point{
-						ByteOffset: a.Start.ByteOffset - a.Start.ColumnOffset,
-						LineNumber: a.Start.LineNumber,
-					}
-					nextLine := file.norm.Point(&xpb.Location_Point{LineNumber: a.Start.LineNumber + 1})
-					a.SnippetEnd = &xpb.Location_Point{
-						ByteOffset:   nextLine.ByteOffset - 1,
-						LineNumber:   a.Start.LineNumber,
-						ColumnOffset: a.Start.ColumnOffset + (nextLine.ByteOffset - a.Start.ByteOffset - 1),
-					}
-					a.Snippet, err = text.ToUTF8(file.encoding, file.text[a.SnippetStart.ByteOffset:a.SnippetEnd.ByteOffset])
-					if err != nil {
-						log.Printf("Error decoding snippet text: %v", err)
-					}
-				}
-
-				result = append(result, &xpb.CrossReferencesReply_RelatedAnchor{Anchor: a})
-			}
-
-			break // we've handled the only /kythe/edge/childof group
+		// Add this anchor to the result for its parent file.
+		anchor := &xpb.Anchor{
+			Ticket: ticket,
+			Kind:   edgeKind,
+			Parent: parents[ticket],
 		}
-	}
 
+		// If we haven't already fetched the contents of this file, do so now.
+		file, ok := files[anchor.Parent]
+		if !ok {
+			rsp, err := xs.Nodes(ctx, &gpb.NodesRequest{
+				Ticket: []string{anchor.Parent},
+			})
+			if err != nil {
+				return nil, fmt.Errorf("fetching file contents for %q: %v", anchor.Parent, err)
+			}
+			info := rsp.Nodes[anchor.Parent]
+			text := info.Facts[facts.Text]
+			file = &fileNode{
+				text:     text,
+				encoding: string(info.Facts[facts.TextEncoding]),
+				norm:     xrefs.NewNormalizer(text),
+			}
+			files[anchor.Parent] = file
+		}
+
+		// Normalize the anchor's bounds relative to the file.
+		anchor.Start, anchor.End, err = normalizeSpan(file.norm, int32(start), int32(end))
+		if err != nil {
+			log.Printf("Invalid anchor span %q in file %q: %v", ticket, anchor.Parent, err)
+			continue
+		}
+
+		// Decode the content of the file spanned by the anchor.
+		if retrieveText && anchor.Start.ByteOffset < anchor.End.ByteOffset {
+			anchor.Text, err = text.ToUTF8(file.encoding, file.text[anchor.Start.ByteOffset:anchor.End.ByteOffset])
+			if err != nil {
+				log.Printf("Error decoding anchor text: %v", err)
+			}
+		}
+
+		// If the anchor provided snippet bounds, extract the snippet.
+		if snipStart, snipEnd, err := getSpan(reply.Nodes[ticket].Facts, facts.SnippetStart, facts.SnippetEnd); err == nil {
+			start, end, err := normalizeSpan(file.norm, int32(snipStart), int32(snipEnd))
+			if err != nil {
+				log.Printf("Invalid snippet span %q in file %q: %v", ticket, anchor.Parent, err)
+			} else {
+				anchor.Snippet, err = text.ToUTF8(file.encoding, file.text[start.ByteOffset:end.ByteOffset])
+				if err != nil {
+					log.Printf("Error decoding snippet text: %v", err)
+				}
+				anchor.SnippetStart = start
+				anchor.SnippetEnd = end
+			}
+		}
+
+		// Fall back to a line-based snippet if the indexer did not provide its
+		// own snippet offsets.
+		if anchor.Snippet == "" {
+			anchor.SnippetStart = &xpb.Location_Point{
+				ByteOffset: anchor.Start.ByteOffset - anchor.Start.ColumnOffset,
+				LineNumber: anchor.Start.LineNumber,
+			}
+			nextLine := file.norm.Point(&xpb.Location_Point{LineNumber: anchor.Start.LineNumber + 1})
+			anchor.SnippetEnd = &xpb.Location_Point{
+				ByteOffset:   nextLine.ByteOffset - 1,
+				LineNumber:   anchor.Start.LineNumber,
+				ColumnOffset: anchor.Start.ColumnOffset + (nextLine.ByteOffset - anchor.Start.ByteOffset - 1),
+			}
+			anchor.Snippet, err = text.ToUTF8(file.encoding,
+				file.text[anchor.SnippetStart.ByteOffset:anchor.SnippetEnd.ByteOffset])
+			if err != nil {
+				log.Printf("Error decoding snippet text: %v", err)
+			}
+		}
+
+		result = append(result, &xpb.CrossReferencesReply_RelatedAnchor{Anchor: anchor})
+	}
 	return result, nil
 }
+
 func getSpan(facts map[string][]byte, startFact, endFact string) (startOffset, endOffset int, err error) {
 	start := string(facts[startFact])
 	end := string(facts[endFact])
