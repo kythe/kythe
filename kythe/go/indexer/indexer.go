@@ -82,13 +82,14 @@ type PackageInfo struct {
 	// the body of a function or method to the nearest enclosing named method.
 	owner map[types.Object]types.Object
 
-	// A lazily-initialized mapping from AST nodes corresponding to function
-	// declarations and literals, recording naming information.
-
 	// A lazily-initialized mapping from from AST nodes to their corresponding
 	// VNames. Only nodes that do not resolve directly to a type object are
 	// included in this map, e.g., function literals.
 	function map[ast.Node]*funcInfo
+
+	// A lazily-initialized set of standard library package import paths for
+	// which a node has been emitted.
+	standardLib stringset.Set
 
 	// A dummy function representing the undeclared package initilization
 	// function.

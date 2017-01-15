@@ -19,12 +19,12 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 	"log"
-	"context"
 	"os"
 	"path/filepath"
 
@@ -42,6 +42,7 @@ var (
 	doIndexPack = flag.Bool("indexpack", false, "Treat arguments as index pack directories")
 	doZipPack   = flag.Bool("zip", false, "Treat arguments as zipped indexpack files (implies -indexpack)")
 	doJSON      = flag.Bool("json", false, "Write output as JSON")
+	doLibNodes  = flag.Bool("libnodes", false, "Emit nodes for standard library packages")
 
 	writeEntry func(context.Context, *spb.Entry) error
 )
@@ -101,7 +102,9 @@ func indexGo(ctx context.Context, unit *apb.CompilationUnit, f indexer.Fetcher) 
 		return err
 	}
 	log.Printf("Finished resolving compilation: %s", pi.String())
-	return pi.Emit(ctx, writeEntry)
+	return pi.Emit(ctx, writeEntry, &indexer.EmitOptions{
+		EmitStandardLibs: *doLibNodes,
+	})
 }
 
 type visitFunc func(context.Context, *apb.CompilationUnit, indexer.Fetcher) error

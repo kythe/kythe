@@ -36,14 +36,31 @@ import (
 	spb "kythe.io/kythe/proto/storage_proto"
 )
 
+// EmitOptions control the behaviour of the Emit function. A nil options
+// pointer provides default values.
+type EmitOptions struct {
+	// If true, emit nodes for standard library packages when they are first
+	// encountered. This is helpful if you want to index a package in isolation
+	// where data for the standard library are not available.
+	EmitStandardLibs bool
+}
+
+// shouldEmit reports whether the indexer should emit a node for the given
+// vname.  Presently this is true if vname denotes a standard library and the
+// corresponding option is enabled.
+func (e *EmitOptions) shouldEmit(vname *spb.VName) bool {
+	return e != nil && e.EmitStandardLibs && govname.IsStandardLibrary(vname)
+}
+
 // Emit generates Kythe facts and edges to represent pi, and writes them to
 // sink. In case of errors, processing continues as far as possible before the
 // first error encountered is reported.
-func (pi *PackageInfo) Emit(ctx context.Context, sink Sink) error {
+func (pi *PackageInfo) Emit(ctx context.Context, sink Sink, opts *EmitOptions) error {
 	e := &emitter{
 		ctx:  ctx,
 		pi:   pi,
 		sink: sink,
+		opts: opts,
 	}
 
 	// Emit a node to represent the package as a whole.
@@ -97,6 +114,7 @@ type emitter struct {
 	ctx      context.Context
 	pi       *PackageInfo
 	sink     Sink
+	opts     *EmitOptions
 	firstErr error
 }
 
@@ -267,7 +285,10 @@ func (e *emitter) visitImportSpec(spec *ast.ImportSpec, stack stackFunc) {
 	}
 
 	e.writeRef(spec.Path, target, edges.RefImports)
-	// TODO(fromberger): Lazily emit nodes for standard library packages.
+	if e.opts.shouldEmit(target) && !e.pi.standardLib.Contains(ipath) {
+		e.writeFact(target, facts.NodeKind, nodes.Package)
+		e.pi.standardLib.Add(ipath)
+	}
 }
 
 // visitAssignStmt handles bindings introduced by short-declaration syntax in

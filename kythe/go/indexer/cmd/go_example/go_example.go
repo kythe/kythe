@@ -108,7 +108,7 @@ func main() {
 		}
 		return pi.Emit(ctx, func(_ context.Context, entry *spb.Entry) error {
 			return rw.PutProto(entry)
-		})
+		}, nil)
 	}); err != nil {
 		log.Fatalf("Error indexing: %v", err)
 	}
