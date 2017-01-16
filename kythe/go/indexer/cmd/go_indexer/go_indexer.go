@@ -141,7 +141,7 @@ func openPack(ctx context.Context, path string) (*indexpack.Archive, error) {
 		if err != nil {
 			return nil, err
 		} else if !fi.Mode().IsRegular() {
-			return nil, fmt.Errorf("invalid zip file path: %v", path, err)
+			return nil, fmt.Errorf("invalid zip file path %q: %v", path, err)
 		}
 		f, err := vfs.Open(ctx, path)
 		if err != nil {
