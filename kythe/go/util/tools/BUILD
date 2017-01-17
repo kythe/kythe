@@ -50,3 +50,8 @@ go_binary(
         "@go_protobuf//:proto",
     ],
 )
+
+go_binary(
+    name = "extractschema",
+    srcs = ["extractschema/extractschema.go"],
+)
