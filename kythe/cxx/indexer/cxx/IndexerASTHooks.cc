@@ -237,17 +237,13 @@ void IndexerASTVisitor::deleteAllParents() {
     return;
   }
   for (const auto &Entry : *AllParents) {
-    if (Entry.second.is<IndexedParentVector *>()) {
-      delete Entry.second.get<IndexedParentVector *>();
-    } else {
-      delete Entry.second.get<IndexedParent *>();
-    }
+    delete Entry.second.getPointer();
   }
   AllParents.reset(nullptr);
 }
 
-IndexedParentVector IndexerASTVisitor::getIndexedParents(
-    const ast_type_traits::DynTypedNode &Node) {
+IndexedParent *
+IndexerASTVisitor::getIndexedParent(const ast_type_traits::DynTypedNode &Node) {
   CHECK(Node.getMemoizationData() != nullptr)
       << "Invariant broken: only nodes that support memoization may be "
          "used in the parent map.";
@@ -262,13 +258,9 @@ IndexedParentVector IndexerASTVisitor::getIndexedParents(
   IndexedParentMap::const_iterator I =
       AllParents->find(Node.getMemoizationData());
   if (I == AllParents->end()) {
-    return IndexedParentVector();
+    return nullptr;
   }
-  if (I->second.is<IndexedParent *>()) {
-    return IndexedParentVector(1, *I->second.get<IndexedParent *>());
-  }
-  const auto &Parents = *I->second.get<IndexedParentVector *>();
-  return IndexedParentVector(Parents.begin(), Parents.end());
+  return I->second.getPointer();
 }
 
 bool IndexerASTVisitor::IsDefinition(const clang::VarDecl *VD) {
@@ -2360,18 +2352,16 @@ IndexerASTVisitor::GetDeclChildOf(const clang::Decl *Decl) {
   const clang::Decl *CurrentNodeAsDecl;
   while (!(CurrentNodeAsDecl = CurrentNode.get<clang::Decl>()) ||
          !isa<clang::TranslationUnitDecl>(CurrentNodeAsDecl)) {
-    IndexedParentVector IPV = getIndexedParents(CurrentNode);
-    if (IPV.empty()) {
+    IndexedParent *IP = getIndexedParent(CurrentNode);
+    if (IP == nullptr) {
       break;
     }
-    // Pick the first path we took to get to this node.
-    IndexedParent IP = IPV[0];
     // We would rather name 'template <etc> class C' as C, not C::C, but
     // we also want to be able to give useful names to templates when they're
     // explicitly requested. Therefore:
     if (CurrentNodeAsDecl == Decl ||
         (CurrentNodeAsDecl && isa<ClassTemplateDecl>(CurrentNodeAsDecl))) {
-      CurrentNode = IP.Parent;
+      CurrentNode = IP->Parent;
       continue;
     }
     if (CurrentNodeAsDecl) {
@@ -2379,7 +2369,7 @@ IndexerASTVisitor::GetDeclChildOf(const clang::Decl *Decl) {
         return BuildNodeIdForDecl(ND);
       }
     }
-    CurrentNode = IP.Parent;
+    CurrentNode = IP->Parent;
     if (CurrentNodeAsDecl) {
       if (const auto *DC = CurrentNodeAsDecl->getDeclContext()) {
         if (const TagDecl *TD = dyn_cast<TagDecl>(CurrentNodeAsDecl)) {
@@ -2493,8 +2483,8 @@ IndexerASTVisitor::BuildNameIdForDecl(const clang::Decl *Decl) {
     // NestedNameSpecifier return memoization data. Can we claim an invariant
     // that if we start at any Decl, we will always encounter nodes with
     // memoization data?
-    IndexedParentVector IPV = getIndexedParents(CurrentNode);
-    if (IPV.empty()) {
+    IndexedParent *IP = getIndexedParent(CurrentNode);
+    if (IP == nullptr) {
       // Make sure that we don't miss out on implicit nodes.
       if (CurrentNodeAsDecl && CurrentNodeAsDecl->isImplicit()) {
         if (const NamedDecl *ND = dyn_cast<NamedDecl>(CurrentNodeAsDecl)) {
@@ -2524,14 +2514,12 @@ IndexerASTVisitor::BuildNameIdForDecl(const clang::Decl *Decl) {
       }
       break;
     }
-    // Pick the first path we took to get to this node.
-    IndexedParent IP = IPV[0];
     // We would rather name 'template <etc> class C' as C, not C::C, but
     // we also want to be able to give useful names to templates when they're
     // explicitly requested. Therefore:
     if (MissingSeparator && CurrentNodeAsDecl &&
         isa<ClassTemplateDecl>(CurrentNodeAsDecl)) {
-      CurrentNode = IP.Parent;
+      CurrentNode = IP->Parent;
       continue;
     }
     if (MissingSeparator) {
@@ -2545,18 +2533,18 @@ IndexerASTVisitor::BuildNameIdForDecl(const clang::Decl *Decl) {
       // At any rate, a hash cache might be a good idea.
       if (const NamedDecl *ND = dyn_cast<NamedDecl>(CurrentNodeAsDecl)) {
         if (!AddNameToStream(Ostream, ND)) {
-          Ostream << IP.Index;
+          Ostream << IP->Index;
         }
       } else {
         // If there's no good name for this Decl, name it after its child
         // index wrt its parent node.
-        Ostream << IP.Index;
+        Ostream << IP->Index;
       }
     } else if (auto *S = CurrentNode.get<clang::Stmt>()) {
       // This is a Stmt--we can name it by its index wrt its parent node.
-      Ostream << IP.Index;
+      Ostream << IP->Index;
     }
-    CurrentNode = IP.Parent;
+    CurrentNode = IP->Parent;
     if (CurrentNodeAsDecl) {
       if (const auto *DC = CurrentNodeAsDecl->getDeclContext()) {
         if (const TagDecl *TD = dyn_cast<TagDecl>(CurrentNodeAsDecl)) {
@@ -2754,13 +2742,12 @@ IndexerASTVisitor::BuildNodeIdForImplicitStmt(const clang::Stmt *Stmt) {
         return None();
       }
     }
-    IndexedParentVector IPV = getIndexedParents(CurrentNode);
-    if (IPV.empty()) {
+    IndexedParent *IP = getIndexedParent(CurrentNode);
+    if (IP == nullptr) {
       break;
     }
-    IndexedParent IP = IPV[0];
-    StmtPath.push_back(IP.Index);
-    CurrentNode = IP.Parent;
+    StmtPath.push_back(IP->Index);
+    CurrentNode = IP->Parent;
   }
   if (CurrentNodeAsDecl == nullptr) {
     // Out of luck.
@@ -2844,12 +2831,11 @@ IndexerASTVisitor::BuildNodeIdForDecl(const clang::Decl *Decl) {
   const clang::Decl *CurrentNodeAsDecl;
   while (!(CurrentNodeAsDecl = CurrentNode.get<clang::Decl>()) ||
          !isa<clang::TranslationUnitDecl>(CurrentNodeAsDecl)) {
-    IndexedParentVector IPV = getIndexedParents(CurrentNode);
-    if (IPV.empty()) {
+    IndexedParent *IP = getIndexedParent(CurrentNode);
+    if (IP == nullptr) {
       break;
     }
-    IndexedParent IP = IPV[0];
-    CurrentNode = IP.Parent;
+    CurrentNode = IP->Parent;
     if (!CurrentNodeAsDecl) {
       continue;
     }

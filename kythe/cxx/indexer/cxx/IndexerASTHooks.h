@@ -59,11 +59,9 @@ inline bool operator!=(const IndexedParent &L, const IndexedParent &R) {
   return !(L == R);
 }
 
-typedef llvm::SmallVector<IndexedParent, 2> IndexedParentVector;
-
-typedef llvm::DenseMap<
-    const void *, llvm::PointerUnion<IndexedParent *, IndexedParentVector *>>
-    IndexedParentMap;
+using IndexedParentMap =
+    llvm::DenseMap<const void *,
+                   llvm::PointerIntPair<IndexedParent *, 1, bool>>;
 
 /// FIXME: Currently only builds up the map using \c Stmt and \c Decl nodes.
 /// TODO(zarko): Is this necessary to change for naming?
@@ -103,38 +101,10 @@ private:
     if (!Node)
       return true;
     if (!ParentStack.empty()) {
-      // FIXME: Currently we add the same parent multiple times, but only
-      // when no memoization data is available for the type.
-      // For example when we visit all subexpressions of template
-      // instantiations; this is suboptimal, but benign: the only way to
-      // visit those is with hasAncestor / hasParent, and those do not create
-      // new matches.
-      // The plan is to enable DynTypedNode to be storable in a map or hash
-      // map. The main problem there is to implement hash functions /
-      // comparison operators for all types that DynTypedNode supports that
-      // do not have pointer identity.
       auto &NodeOrVector = (*Parents)[Node];
-      if (NodeOrVector.isNull()) {
-        NodeOrVector = new IndexedParent(ParentStack.back());
-      } else {
-        if (NodeOrVector.template is<IndexedParent *>()) {
-          auto *Node = NodeOrVector.template get<IndexedParent *>();
-          auto *Vector = new IndexedParentVector(1, *Node);
-          NodeOrVector = Vector;
-          delete Node;
-        }
-        CHECK(NodeOrVector.template is<IndexedParentVector *>());
-
-        auto *Vector = NodeOrVector.template get<IndexedParentVector *>();
-        // Skip duplicates for types that have memoization data.
-        // We must check that the type has memoization data before calling
-        // std::find() because DynTypedNode::operator== can't compare all
-        // types.
-        bool Found = ParentStack.back().Parent.getMemoizationData() &&
-                     std::find(Vector->begin(), Vector->end(),
-                               ParentStack.back()) != Vector->end();
-        if (!Found)
-          Vector->push_back(ParentStack.back());
+      if (NodeOrVector.getPointer() == nullptr) {
+        // It's not useful to store more than one parent.
+        NodeOrVector.setPointer(new IndexedParent(ParentStack.back()));
       }
     }
     ParentStack.push_back(
@@ -605,7 +575,7 @@ private:
                           const clang::QualType &DType,
                           const GraphObserver::NodeId &AscribeTo);
 
-  /// \brief Returns the parents of the given node, along with the index
+  /// \brief Returns the parent of the given node, along with the index
   /// at which the node appears underneath each parent.
   ///
   /// Note that this will lazily compute the parents of all nodes
@@ -630,14 +600,12 @@ private:
   ///
   /// 'NodeT' can be one of Decl, Stmt, Type, TypeLoc,
   /// NestedNameSpecifier or NestedNameSpecifierLoc.
-  template <typename NodeT>
-  IndexedParentVector getIndexedParents(const NodeT &Node) {
-    return getIndexedParents(
-        clang::ast_type_traits::DynTypedNode::create(Node));
+  template <typename NodeT> IndexedParent *getIndexedParent(const NodeT &Node) {
+    return getIndexedParent(clang::ast_type_traits::DynTypedNode::create(Node));
   }
 
-  IndexedParentVector
-  getIndexedParents(const clang::ast_type_traits::DynTypedNode &Node);
+  IndexedParent *
+  getIndexedParent(const clang::ast_type_traits::DynTypedNode &Node);
   /// A map from memoizable DynTypedNodes to their parent nodes
   /// and their child indices with respect to those parents.
   /// Filled on the first call to `getIndexedParents`.
