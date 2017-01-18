@@ -749,7 +749,7 @@ public class E {
 
 [[overridesroot]]
 overrides/root
-~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~
 
 Brief description::
   A *overrides/root* B if following all *overrides* edges from A would lead to
