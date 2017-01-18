@@ -385,6 +385,10 @@ class KytheGraphObserver : public GraphObserver {
 
   bool lossy_claiming() const override { return lossy_claiming_; }
 
+  bool claimImplicitNode(const std::string &identifier) override;
+
+  void finishImplicitNode(const std::string &identifier) override;
+
  private:
   void AddMarkedSource(const VNameRef &vname,
                        const MaybeFew<MarkedSource> &signature) {

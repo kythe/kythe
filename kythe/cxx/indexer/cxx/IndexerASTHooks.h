@@ -63,6 +63,14 @@ using IndexedParentMap =
     llvm::DenseMap<const void *,
                    llvm::PointerIntPair<IndexedParent *, 1, bool>>;
 
+/// \return `true` if truncating tree traversal at `D` is safe, provided that
+/// `D` has been traversed previously.
+bool IsClaimableForTraverse(const clang::Decl *D);
+
+/// \return `true` if truncating tree traversal at `S` is safe, provided that
+/// `S` has been traversed previously.
+inline bool IsClaimableForTraverse(const clang::Stmt *S) { return false; }
+
 /// FIXME: Currently only builds up the map using \c Stmt and \c Decl nodes.
 /// TODO(zarko): Is this necessary to change for naming?
 class IndexedParentASTVisitor
@@ -109,7 +117,15 @@ private:
     }
     ParentStack.push_back(
         {clang::ast_type_traits::DynTypedNode::create(*Node), 0});
+    bool SavedClaimableAtThisDepth = ClaimableAtThisDepth;
+    ClaimableAtThisDepth = false; // for depth + 1
     bool Result = traverse(Node);
+    if (ClaimableAtThisDepth || IsClaimableForTraverse(Node)) {
+      ClaimableAtThisDepth = true; // for depth
+      (*Parents)[Node].setInt(1);
+    } else {
+      ClaimableAtThisDepth = SavedClaimableAtThisDepth; // restore depth
+    }
     ParentStack.pop_back();
     if (!ParentStack.empty()) {
       ParentStack.back().Index++;
@@ -131,6 +147,7 @@ private:
 
   IndexedParentMap *Parents;
   llvm::SmallVector<IndexedParent, 16> ParentStack;
+  bool ClaimableAtThisDepth = false;
 
   friend class RecursiveASTVisitor<IndexedParentASTVisitor>;
 };
@@ -165,6 +182,9 @@ struct MiniAnchor {
 /// and sorts Anchors such that the ith Anchor corresponds to the ith opening
 /// bracket. Drops empty or negative-length spans.
 void InsertAnchorMarks(std::string &Text, std::vector<MiniAnchor> &Anchors);
+
+/// \brief Used internally to check whether parts of the AST can be ignored.
+class PruneCheck;
 
 /// \brief An AST visitor that extracts information for a translation unit and
 /// writes it to a `GraphObserver`.
@@ -479,6 +499,8 @@ public:
                         const clang::SourceRange &SR);
 
 private:
+  friend class PruneCheck;
+
   /// Whether we should stop on missing cases or continue on.
   BehaviorOnUnimplemented IgnoreUnimplemented;
 
@@ -603,6 +625,12 @@ private:
   template <typename NodeT> IndexedParent *getIndexedParent(const NodeT &Node) {
     return getIndexedParent(clang::ast_type_traits::DynTypedNode::create(Node));
   }
+
+  /// \return true if `Decl` and all of the nodes underneath it are prunable.
+  ///
+  /// A subtree is prunable if it's "the same" in all possible indexer runs.
+  /// This excludes, for example, certain template instantiations.
+  bool declDominatesPrunableSubtree(const clang::Decl *Decl);
 
   IndexedParent *
   getIndexedParent(const clang::ast_type_traits::DynTypedNode &Node);

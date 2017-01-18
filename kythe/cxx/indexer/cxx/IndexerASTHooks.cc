@@ -232,6 +232,124 @@ StackSizeRestorer<StackType> RestoreStack(StackType &S) {
 }
 } // anonymous namespace
 
+bool IsClaimableForTraverse(const clang::Decl *decl) {
+  // Operationally, we'll define this as any decl that causes
+  // UnderneathImplicitTemplateInstantiation to be set.
+  if (auto *VTSD = dyn_cast<const clang::VarTemplateSpecializationDecl>(decl)) {
+    return !VTSD->isExplicitInstantiationOrSpecialization();
+  }
+  if (auto *CTSD =
+          dyn_cast<const clang::ClassTemplateSpecializationDecl>(decl)) {
+    return !CTSD->isExplicitInstantiationOrSpecialization();
+  }
+  if (auto *FD = dyn_cast<const clang::FunctionDecl>(decl)) {
+    if (const auto *MSI = FD->getMemberSpecializationInfo()) {
+      // The definitions of class template member functions are not necessarily
+      // dominated by the class template definition.
+      if (!MSI->isExplicitSpecialization()) {
+        return true;
+      }
+    } else if (const auto *FSI = FD->getTemplateSpecializationInfo()) {
+      if (!FSI->isExplicitInstantiationOrSpecialization()) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+/// \brief RAII class used to pair claimImplicitNode/finishImplicitNode
+/// when pruning AST traversal.
+class PruneCheck {
+public:
+  PruneCheck(IndexerASTVisitor *visitor, const clang::Decl *decl)
+      : visitor_(visitor) {
+    if (!visitor_->UnderneathImplicitTemplateInstantiation &&
+        visitor_->declDominatesPrunableSubtree(decl)) {
+      // This node in the AST dominates a subtree that can be pruned.
+      can_prune_ = !visitor_->Observer.claimLocation(decl->getLocation());
+      return;
+    }
+    if (llvm::isa<clang::FunctionDecl>(decl)) {
+      // We make the assumption that we can stop traversal at function
+      // declarations, which means that we always expect the subtree rooted
+      // at a particular FunctionDecl under a particular type context will
+      // look the same. If this isn't a function declaration, the tree we
+      // see depends on external use sites. This assumption is reasonable
+      // for code that doesn't rely on making different sets of decls
+      // visible for ADL in different places (for example). (The core
+      // difference between a function body and, say, a class body is that
+      // function bodies are "closed*" and can't span files**, nor can they
+      // leak local template declarations in a way that would allow
+      // clients outside the function body to instantiate those declarations
+      // at different types.)
+      //
+      //  * modulo ADL, dependent lookup, different overloads/specializations
+      //    in context; code that makes these a problem is arguably not
+      //    reasonable code
+      // ** modulo wacky macros
+      //
+      // TODO(zarko): Check to see if non-function members of a class
+      // can be traversed once per argument set.
+      cleanup_id_ = visitor_->BuildNodeIdForDecl(decl).getRawIdentity();
+      // It's critical that we distinguish between different argument lists
+      // here even if aliasing is turned on; otherwise we will drop data.
+      // If aliasing is off, the NodeId already contains this information.
+      if (FLAGS_experimental_alias_template_instantiations) {
+        clang::ast_type_traits::DynTypedNode current_node =
+            clang::ast_type_traits::DynTypedNode::create(*decl);
+        const clang::Decl *current_decl;
+        llvm::raw_string_ostream ostream(cleanup_id_);
+        while (!(current_decl = current_node.get<clang::Decl>()) ||
+               !isa<clang::TranslationUnitDecl>(current_decl)) {
+          IndexedParent *parent = visitor_->getIndexedParent(current_node);
+          if (parent == nullptr) {
+            break;
+          }
+          current_node = parent->Parent;
+          if (!current_decl) {
+            continue;
+          }
+          if (const auto *czdecl =
+                  dyn_cast<ClassTemplateSpecializationDecl>(current_decl)) {
+            ostream << "#" << HashToString(visitor_->SemanticHash(
+                                  &czdecl->getTemplateInstantiationArgs()));
+          } else if (const auto *fdecl = dyn_cast<FunctionDecl>(current_decl)) {
+            if (const auto *template_args =
+                    fdecl->getTemplateSpecializationArgs()) {
+              ostream << "#"
+                      << HashToString(visitor_->SemanticHash(template_args));
+            }
+          } else if (const auto *vdecl =
+                         dyn_cast<VarTemplateSpecializationDecl>(
+                             current_decl)) {
+            ostream << "#" << HashToString(visitor_->SemanticHash(
+                                  &vdecl->getTemplateInstantiationArgs()));
+          }
+        }
+      }
+      cleanup_id_ = CompressString(cleanup_id_);
+      if (!visitor_->Observer.claimImplicitNode(cleanup_id_)) {
+        can_prune_ = true;
+      }
+    }
+  }
+  ~PruneCheck() {
+    if (!can_prune_ && !cleanup_id_.empty()) {
+      visitor_->Observer.finishImplicitNode(cleanup_id_);
+    }
+  }
+
+  /// \return true if the decl supplied during construction doesn't need
+  /// traversed.
+  bool can_prune() const { return can_prune_; }
+
+private:
+  bool can_prune_ = false;
+  std::string cleanup_id_;
+  IndexerASTVisitor *visitor_;
+};
+
 void IndexerASTVisitor::deleteAllParents() {
   if (!AllParents) {
     return;
@@ -261,6 +379,22 @@ IndexerASTVisitor::getIndexedParent(const ast_type_traits::DynTypedNode &Node) {
     return nullptr;
   }
   return I->second.getPointer();
+}
+
+bool IndexerASTVisitor::declDominatesPrunableSubtree(const clang::Decl *Decl) {
+  const auto Node = clang::ast_type_traits::DynTypedNode::create(*Decl);
+  if (!AllParents) {
+    ProfileBlock block(Observer.getProfilingCallback(), "build_parent_map");
+    AllParents =
+        IndexedParentASTVisitor::buildMap(*Context.getTranslationUnitDecl());
+  }
+  IndexedParentMap::const_iterator I =
+      AllParents->find(Node.getMemoizationData());
+  if (I == AllParents->end()) {
+    // Safe default.
+    return false;
+  }
+  return I->second.getInt() == 0;
 }
 
 bool IndexerASTVisitor::IsDefinition(const clang::VarDecl *VD) {
@@ -574,6 +708,10 @@ void InsertAnchorMarks(std::string &Text, std::vector<MiniAnchor> &Anchors) {
 }
 
 bool IndexerASTVisitor::VisitDecl(const clang::Decl *Decl) {
+  if (UnderneathImplicitTemplateInstantiation) {
+    // Template instantiation can't add any documentation text.
+    return true;
+  }
   const auto &SM = *Observer.getSourceManager();
   const auto *Comment = Context.getRawCommentForDeclNoCache(Decl);
   if (!Comment) {
@@ -766,6 +904,13 @@ bool IndexerASTVisitor::VisitDecl(const clang::Decl *Decl) {
 }
 
 bool IndexerASTVisitor::TraverseDecl(clang::Decl *Decl) {
+  if (Decl == nullptr) {
+    return true;
+  }
+  PruneCheck Prune(this, Decl);
+  if (Prune.can_prune()) {
+    return true;
+  }
   GraphObserver::Delimiter Del(Observer);
   // For clang::FunctionDecl and all subclasses thereof push blame data.
   if (auto *FD = dyn_cast_or_null<clang::FunctionDecl>(Decl)) {
@@ -799,12 +944,7 @@ bool IndexerASTVisitor::TraverseDecl(clang::Decl *Decl) {
 
     // Dispatch the remaining logic to the base class TraverseDecl() which will
     // call TraverseX(X*) for the most-derived X.
-    if (!Observer.lossy_claiming() ||
-        Observer.claimNode(BuildNodeIdForDecl(FD))) {
-      return RecursiveASTVisitor::TraverseDecl(FD);
-    } else {
-      return true;
-    }
+    return RecursiveASTVisitor::TraverseDecl(FD);
   } else if (auto *ID = dyn_cast_or_null<clang::FieldDecl>(Decl)) {
     // This will also cover the case of clang::ObjCIVarDecl since it is a
     // subclass.
@@ -846,12 +986,7 @@ bool IndexerASTVisitor::TraverseDecl(clang::Decl *Decl) {
           }
         }
       }
-      if (!Observer.lossy_claiming() ||
-          Observer.claimNode(BuildNodeIdForDecl(ID))) {
-        return RecursiveASTVisitor::TraverseDecl(ID);
-      } else {
-        return true;
-      }
+      return RecursiveASTVisitor::TraverseDecl(ID);
     }
   } else if (auto *MD = dyn_cast_or_null<clang::ObjCMethodDecl>(Decl)) {
     // These variables (R and S) clean up the stacks (BlameStack and
@@ -868,20 +1003,10 @@ bool IndexerASTVisitor::TraverseDecl(clang::Decl *Decl) {
 
     // Dispatch the remaining logic to the base class TraverseDecl() which will
     // call TraverseX(X*) for the most-derived X.
-    if (!Observer.lossy_claiming() ||
-        Observer.claimNode(BuildNodeIdForDecl(MD))) {
-      return RecursiveASTVisitor::TraverseDecl(MD);
-    } else {
-      return true;
-    }
+    return RecursiveASTVisitor::TraverseDecl(MD);
   }
 
-  if (Decl != nullptr && (!Observer.lossy_claiming() ||
-                          Observer.claimNode(BuildNodeIdForDecl(Decl)))) {
-    return RecursiveASTVisitor::TraverseDecl(Decl);
-  } else {
-    return true;
-  }
+  return RecursiveASTVisitor::TraverseDecl(Decl);
 }
 
 bool IndexerASTVisitor::VisitCXXDependentScopeMemberExpr(
@@ -2779,7 +2904,6 @@ IndexerASTVisitor::BuildNodeIdForDecl(const clang::Decl *Decl) {
   if (Cached != DeclToNodeId.end()) {
     return Cached->second;
   }
-
   const auto *Token = Observer.getClaimTokenForLocation(Decl->getLocation());
   std::string Identity;
   llvm::raw_string_ostream Ostream(Identity);

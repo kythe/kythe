@@ -849,6 +849,17 @@ public:
   virtual bool claimNode(const NodeId &NodeId) { return true; }
 
   /// \brief Checks whether this `GraphObserver` should emit data for
+  /// an implicitly defined node which may not have a claim token.
+  ///
+  /// It is always safe to return `true` here. If this function returns
+  /// `true`, the caller should follow up with a call to `finishImplicitNode`.
+  virtual bool claimImplicitNode(const std::string &Identifier) { return true; }
+
+  /// \brief Notifies the `GraphObserver` that data that was emitted because
+  /// a call to `claimImplicitNode` returned true.
+  virtual void finishImplicitNode(const std::string &Identifier) {}
+
+  /// \brief Checks whether this `GraphObserver` should emit data for
   /// nodes at some `SourceLocation`.
   ///
   /// \param Loc The location to claim.

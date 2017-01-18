@@ -1063,6 +1063,16 @@ bool KytheGraphObserver::isMainSourceFileRelatedLocation(
   return true;
 }
 
+bool KytheGraphObserver::claimImplicitNode(const std::string &identifier) {
+  kythe::proto::VName node_vname;
+  node_vname.set_signature(identifier);
+  return client_->Claim(claimant_, node_vname);
+}
+
+void KytheGraphObserver::finishImplicitNode(const std::string &identifier) {
+  // TODO(zarko): Handle this in two phases. This should commmit the claim.
+}
+
 void KytheGraphObserver::pushFile(clang::SourceLocation blame_location,
                                   clang::SourceLocation source_location) {
   PreprocessorContext previous_context =
