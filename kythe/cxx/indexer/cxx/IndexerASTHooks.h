@@ -193,10 +193,12 @@ public:
   IndexerASTVisitor(clang::ASTContext &C, BehaviorOnUnimplemented B,
                     BehaviorOnTemplates T, Verbosity V,
                     const LibrarySupports &S, clang::Sema &Sema,
+                    std::function<bool()> ShouldStopIndexing,
                     GraphObserver *GO = nullptr)
       : IgnoreUnimplemented(B), TemplateMode(T), Verbosity(V),
         Observer(GO ? *GO : NullObserver), Context(C), Supports(S), Sema(Sema),
-        MarkedSources(&Sema, &Observer) {}
+        MarkedSources(&Sema, &Observer),
+        ShouldStopIndexing(ShouldStopIndexing) {}
 
   ~IndexerASTVisitor() { deleteAllParents(); }
 
@@ -815,6 +817,9 @@ private:
   /// \brief True if we're currently underneath an implicit template
   /// instantiation.
   bool UnderneathImplicitTemplateInstantiation = false;
+
+  /// \return true if we should stop indexing.
+  std::function<bool()> ShouldStopIndexing;
 };
 
 /// \brief An `ASTConsumer` that passes events to a `GraphObserver`.
@@ -822,14 +827,16 @@ class IndexerASTConsumer : public clang::SemaConsumer {
 public:
   explicit IndexerASTConsumer(GraphObserver *GO, BehaviorOnUnimplemented B,
                               BehaviorOnTemplates T, Verbosity V,
-                              const LibrarySupports &S)
+                              const LibrarySupports &S,
+                              std::function<bool()> ShouldStopIndexing)
       : Observer(GO), IgnoreUnimplemented(B), TemplateMode(T), Verbosity(V),
-        Supports(S) {}
+        Supports(S), ShouldStopIndexing(ShouldStopIndexing) {}
 
   void HandleTranslationUnit(clang::ASTContext &Context) override {
     CHECK(Sema != nullptr);
     IndexerASTVisitor Visitor(Context, IgnoreUnimplemented, TemplateMode,
-                              Verbosity, Supports, *Sema, Observer);
+                              Verbosity, Supports, *Sema, ShouldStopIndexing,
+                              Observer);
     {
       ProfileBlock block(Observer->getProfilingCallback(), "traverse_tu");
       Visitor.TraverseDecl(Context.getTranslationUnitDecl());
@@ -852,6 +859,8 @@ private:
   const LibrarySupports &Supports;
   /// The active Sema instance.
   clang::Sema *Sema;
+  /// \return true if we should stop indexing.
+  std::function<bool()> ShouldStopIndexing;
 };
 
 } // namespace kythe

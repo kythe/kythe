@@ -143,8 +143,8 @@ std::string IndexCompilationUnit(const proto::CompilationUnit &Unit,
           });
     }
   }
-  std::unique_ptr<IndexerFrontendAction> Action(
-      new IndexerFrontendAction(&Observer, HSIValid ? &HSI : nullptr));
+  std::unique_ptr<IndexerFrontendAction> Action(new IndexerFrontendAction(
+      &Observer, HSIValid ? &HSI : nullptr, Options.ShouldStopIndexing));
   Action->setIgnoreUnimplemented(Options.UnimplementedBehavior);
   Action->setTemplateMode(Options.TemplateBehavior);
   Action->setVerbosity(Options.Verbosity);

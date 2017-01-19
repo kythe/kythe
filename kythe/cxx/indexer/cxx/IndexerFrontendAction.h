@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <functional>
 #include <memory>
 #include <set>
 #include <string>
@@ -67,8 +68,10 @@ bool RunToolOnCode(std::unique_ptr<clang::FrontendAction> tool_action,
 // TODO(jdennett): Consider moving/renaming this to kythe::ExtractIndexAction.
 class IndexerFrontendAction : public clang::ASTFrontendAction {
 public:
-  IndexerFrontendAction(GraphObserver *GO, const HeaderSearchInfo *Info)
-      : Observer(CHECK_NOTNULL(GO)), HeaderConfigValid(Info != nullptr) {
+  IndexerFrontendAction(GraphObserver *GO, const HeaderSearchInfo *Info,
+                        std::function<bool()> ShouldStopIndexing)
+      : Observer(CHECK_NOTNULL(GO)), HeaderConfigValid(Info != nullptr),
+        ShouldStopIndexing(ShouldStopIndexing) {
     if (HeaderConfigValid) {
       HeaderConfig = *Info;
     }
@@ -127,8 +130,9 @@ private:
       Observer->setLangOptions(&CI.getLangOpts());
       Observer->setPreprocessor(&CI.getPreprocessor());
     }
-    return llvm::make_unique<IndexerASTConsumer>(
-        Observer, IgnoreUnimplemented, TemplateMode, Verbosity, Supports);
+    return llvm::make_unique<IndexerASTConsumer>(Observer, IgnoreUnimplemented,
+                                                 TemplateMode, Verbosity,
+                                                 Supports, ShouldStopIndexing);
   }
 
   bool BeginSourceFileAction(clang::CompilerInstance &CI,
@@ -158,6 +162,8 @@ private:
   bool HeaderConfigValid;
   /// Library-specific callbacks.
   LibrarySupports Supports;
+  /// \return true if indexing should be cancelled.
+  std::function<bool()> ShouldStopIndexing = [] { return false; };
 };
 
 /// \brief Allows stdin to be replaced with a mapped file.
@@ -220,6 +226,10 @@ struct IndexerOptions {
   /// \brief A function that is called as the indexer enters and exits various
   /// phases of execution (in strict LIFO order).
   ProfilingCallback ReportProfileEvent = [](const char *, ProfilingEvent) {};
+  /// \brief A callback to determine whether to cancel indexing as quickly
+  /// as possible.
+  /// \return true if indexing should be cancelled.
+  std::function<bool()> ShouldStopIndexing = [] { return false; };
 };
 
 /// \brief Indexes `Unit`, reading from `Files` in the assumed and writing

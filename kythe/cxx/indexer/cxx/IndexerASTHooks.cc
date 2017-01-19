@@ -904,6 +904,9 @@ bool IndexerASTVisitor::VisitDecl(const clang::Decl *Decl) {
 }
 
 bool IndexerASTVisitor::TraverseDecl(clang::Decl *Decl) {
+  if (ShouldStopIndexing()) {
+    return false;
+  }
   if (Decl == nullptr) {
     return true;
   }
