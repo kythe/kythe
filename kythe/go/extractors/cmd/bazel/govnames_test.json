@@ -16,9 +16,14 @@
     }
   },
   {
-    "input": "bazel-out/foo/bin/bitbucket.org/creachadair/stringset",
+    "input": "bazel-out/foo/bin/bitbucket.org/creachadair/stringset.a",
     "match": true,
     "want": {"corpus": "bitbucket.org/creachadair/stringset"}
+  },
+  {
+    "input": "bazel-out/itty/bin/bitbucket.org/nobble/fleem/wharrgarbl.a",
+    "match": true,
+    "want": {"corpus": "bitbucket.org/nobble/fleem", "path": "wharrgarbl.a"}
   },
   {
     "input": "bazel-out/foo/genfiles/kythe.io/kythe/proto/analysis.pb.go",

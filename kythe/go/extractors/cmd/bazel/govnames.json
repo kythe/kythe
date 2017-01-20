@@ -7,7 +7,13 @@
     }
   },
   {
-    "pattern": "bazel-out/[^/]+/bin/(bitbucket\\.org(?:/[-.\\w]+){2})(?:/(.+))?$",
+    "pattern": "bazel-out/[^/]+/bin/(bitbucket\\.org/[-.\\w]+/[-\\w]+)\\.a",
+    "vname": {
+      "corpus": "@1@"
+    }
+  },
+  {
+    "pattern": "bazel-out/[^/]+/bin/(bitbucket\\.org(?:/[-.\\w]+){2})(?:/(.*))?",
     "vname": {
       "corpus": "@1@",
       "path": "@2@"

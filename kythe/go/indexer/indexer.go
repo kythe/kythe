@@ -199,6 +199,9 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 		imap[ipath] = ri.VName
 		fmap[ipath] = ri.Info
 	}
+	if len(files) == 0 {
+		return nil, errors.New("no source files in package")
+	}
 
 	pi := &PackageInfo{
 		Name:         files[0].Name.Name,

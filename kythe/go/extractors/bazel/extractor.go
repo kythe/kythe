@@ -229,7 +229,7 @@ type toolArgs struct {
 func (g *toolArgs) fixPath(path string) string {
 	if fixed, ok := g.pathmap[path]; ok {
 		trimmed := trimPrefixDir(fixed, g.workDir)
-		if root, ok := findBazelOut(path); ok {
+		if root, ok := findBazelOut(path); ok && !strings.Contains(trimmed, root) {
 			return filepath.Join(root, trimmed)
 		}
 		return trimmed

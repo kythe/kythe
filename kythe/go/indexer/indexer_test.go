@@ -65,7 +65,8 @@ func oneFileCompilation(path, pkg, content string) (*apb.CompilationUnit, string
 	return &apb.CompilationUnit{
 		VName: &spb.VName{Language: "go", Corpus: "test", Path: pkg, Signature: "package"},
 		RequiredInput: []*apb.CompilationUnit_FileInput{{
-			Info: &apb.FileInfo{Path: path, Digest: digest},
+			VName: &spb.VName{Corpus: "test", Path: path},
+			Info:  &apb.FileInfo{Path: path, Digest: digest},
 		}},
 		SourceFile: []string{path},
 	}, digest
@@ -123,6 +124,17 @@ func init() { println(foo.Foo()) }
 	}
 	for _, err := range pi.Errors {
 		t.Errorf("Unexpected resolution error: %v", err)
+	}
+}
+
+func TestResolveErrors(t *testing.T) {
+	unit, _ := oneFileCompilation("blah.a", "bogus", "package blah")
+	unit.SourceFile = nil
+	pkg, err := Resolve(unit, make(memFetcher), nil)
+	if err == nil {
+		t.Errorf("Resolving 0-source package: got %+v, wanted error", pkg)
+	} else {
+		t.Logf("Got expected error for 0-source package: %v", err)
 	}
 }
 
