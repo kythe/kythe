@@ -17,6 +17,7 @@ cc_library(
         "//kythe/cxx/common:index_pack",
         "//kythe/cxx/common:json_proto",
         "//kythe/cxx/common:lib",
+        "//kythe/cxx/common:supported_language",
         "//kythe/proto:analysis_proto_cc",
         "//kythe/proto:cxx_proto_cc",
         "//third_party/llvm",
@@ -45,6 +46,7 @@ cc_library(
     ],
     deps = [
         ":lib",
+        "//kythe/cxx/common:supported_language",
         "//kythe/proto:analysis_proto_cc",
         "//third_party/llvm",
         "//third_party/proto:protobuf",
@@ -67,6 +69,7 @@ cc_library(
     ],
     deps = [
         ":lib",
+        "//kythe/cxx/common:supported_language",
         "//third_party/bazel:extra_actions_base_proto_cc",
         "//third_party/llvm",
         "//third_party/proto:protobuf",
@@ -90,6 +93,7 @@ cc_library(
     deps = [
         ":lib",
         ":objc_bazel_support_library",
+        "//kythe/cxx/common:supported_language",
         "//third_party/bazel:extra_actions_base_proto_cc",
         "//third_party/llvm",
         "//third_party/proto:protobuf",
@@ -117,8 +121,8 @@ cc_test(
     srcs = ["objc_bazel_support_test.cc"],
     deps = [
         ":objc_bazel_support_library",
-        "@com_github_google_glog//:glog",
         "//third_party:gtest",
+        "@com_github_google_glog//:glog",
     ],
 )
 
@@ -202,11 +206,11 @@ cc_library(
     deps = [
         ":lib",
         "//kythe/proto:analysis_proto_cc",
+        "//third_party:gtest",
         "//third_party/llvm",
         "//third_party/proto:protobuf",
         "//third_party/zlib",
         "@com_github_google_glog//:glog",
-        "//third_party:gtest",
         "@com_googlesource_code_re2//:re2",
     ],
 )

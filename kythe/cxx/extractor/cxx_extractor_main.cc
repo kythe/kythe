@@ -38,6 +38,7 @@
 
 #include "gflags/gflags.h"
 #include "google/protobuf/stubs/common.h"
+#include "kythe/cxx/common/language.h"
 
 #include "cxx_extractor.h"
 
@@ -49,7 +50,7 @@ int main(int argc, char* argv[]) {
   kythe::ExtractorConfiguration config;
   config.SetArgs(args);
   config.InitializeFromEnvironment();
-  config.Extract();
+  config.Extract(kythe::supported_language::Language::kCpp);
   google::protobuf::ShutdownProtobufLibrary();
   return 0;
 }

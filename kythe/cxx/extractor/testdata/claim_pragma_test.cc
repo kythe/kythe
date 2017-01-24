@@ -9,6 +9,7 @@
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/util/message_differencer.h"
 #include "gtest/gtest.h"
+#include "kythe/cxx/common/language.h"
 
 namespace kythe {
 namespace {
@@ -137,7 +138,8 @@ TEST(ClaimPragmaTest, ClaimPragmaIsSupported) {
   int call_count = 0;
   std::unique_ptr<kythe::IndexWriterSink> sink(
       new FakeIndexWriterSink(&call_count));
-  EXPECT_TRUE(extractor.Extract(std::move(sink)));
+  EXPECT_TRUE(
+      extractor.Extract(supported_language::Language::kCpp, std::move(sink)));
   EXPECT_EQ(call_count, 1);
 }
 

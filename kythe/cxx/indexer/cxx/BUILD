@@ -31,6 +31,7 @@ cc_library(
         "//kythe/cxx/common:index_pack",
         "//kythe/cxx/common:json_proto",
         "//kythe/cxx/common:lib",
+        "//kythe/cxx/common:supported_language",
         "//kythe/cxx/common/indexing:lib",
         "//kythe/proto:analysis_proto_cc",
         "//kythe/proto:cxx_proto_cc",
@@ -85,9 +86,9 @@ cc_library(
     deps = [
         ":lib",
         "//kythe/cxx/common/indexing:testlib",
+        "//third_party:gtest",
         "//third_party/llvm",
         "//third_party/proto:protobuf",
-        "//third_party:gtest",
     ],
 )
 

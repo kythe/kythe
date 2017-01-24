@@ -134,8 +134,8 @@ cc_library(
     ],
     deps = [
         ":lib",
-        "//third_party/llvm",
         "//third_party:gtest",
+        "//third_party/llvm",
     ],
 )
 
@@ -160,8 +160,8 @@ cc_library(
     ],
     deps = [
         ":lib",
-        "//third_party/proto:protobuf",
         "//third_party:gtest",
+        "//third_party/proto:protobuf",
         "@com_googlesource_code_re2//:re2",
     ],
 )
@@ -187,8 +187,8 @@ cc_library(
     ],
     deps = [
         ":lib",
-        "//third_party/llvm",
         "//third_party:gtest",
+        "//third_party/llvm",
     ],
 )
 
@@ -213,13 +213,13 @@ cc_library(
     ],
     deps = [
         ":index_pack",
+        "//third_party:gtest",
         "//third_party/llvm",
         "//third_party/proto:protobuf",
         "//third_party/rapidjson",
         "//third_party/zlib",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
-        "//third_party:gtest",
     ],
 )
 
@@ -245,8 +245,8 @@ cc_library(
     deps = [
         ":json_proto",
         "//kythe/proto:analysis_proto_cc",
-        "//third_party/proto:protobuf",
         "//third_party:gtest",
+        "//third_party/proto:protobuf",
         "@com_googlesource_code_re2//:re2",
     ],
 )
@@ -300,10 +300,10 @@ cc_library(
     ],
     deps = [
         ":lib",
+        "//third_party:gtest",
         "//third_party/proto:protobuf",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
-        "//third_party:gtest",
     ],
 )
 
@@ -312,5 +312,18 @@ cc_test(
     size = "small",
     deps = [
         ":kythe_uri_testlib",
+    ],
+)
+
+cc_library(
+    name = "supported_language",
+    srcs = [
+        "language.cc",
+    ],
+    hdrs = [
+        "language.h",
+    ],
+    deps = [
+        "//third_party/llvm",
     ],
 )

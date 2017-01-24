@@ -75,6 +75,7 @@
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "google/protobuf/stubs/common.h"
+#include "kythe/cxx/common/language.h"
 #include "third_party/bazel/src/main/protobuf/extra_actions_base.pb.h"
 
 #include "cxx_extractor.h"
@@ -124,7 +125,7 @@ int main(int argc, char *argv[]) {
   config.SetKindexOutputFile(output_file);
   config.SetArgs(args);
   config.SetVNameConfig(vname_config);
-  config.Extract();
+  config.Extract(kythe::supported_language::Language::kObjectiveC);
   google::protobuf::ShutdownProtobufLibrary();
   return 0;
 }

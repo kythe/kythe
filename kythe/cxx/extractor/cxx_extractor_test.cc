@@ -99,9 +99,10 @@ class CxxExtractorTest : public testing::Test {
     int write_fd;
     UndoableCreateDirectories(path);
     ASSERT_EQ(0, llvm::sys::fs::remove(path).value());
-    ASSERT_EQ(0, llvm::sys::fs::openFileForWrite(path, write_fd,
-                                                 llvm::sys::fs::F_Text)
-                     .value());
+    ASSERT_EQ(
+        0,
+        llvm::sys::fs::openFileForWrite(path, write_fd, llvm::sys::fs::F_Text)
+            .value());
     ASSERT_EQ(code.size(), ::write(write_fd, code.c_str(), code.size()));
     ASSERT_EQ(0, ::close(write_fd));
     files_to_remove_.insert(path);
@@ -206,7 +207,8 @@ class CxxExtractorTest : public testing::Test {
             const PreprocessorTranscript &transcript,
             const std::unordered_map<std::string, SourceFile> &source_files,
             const HeaderSearchInfo *header_search_info, bool had_errors) {
-          index_writer.WriteIndex(std::unique_ptr<kythe::IndexWriterSink>(
+          index_writer.WriteIndex(supported_language::Language::kCpp,
+                                  std::unique_ptr<kythe::IndexWriterSink>(
                                       new ForwardingIndexWriterSink(sink)),
                                   main_source_file, transcript, source_files,
                                   header_search_info, had_errors, ".");
@@ -324,9 +326,10 @@ TEST_F(CxxExtractorTest, SupportsAbsoluteIncludes) {
   std::string absolute_header = GetRootedPath("/a/a.h");
   AddAbsoluteSourceFile(absolute_header, "class A;");
 
-  AddSourceFile("z.cc", "#include \"" + absolute_header +
-                            "\"\n"
-                            "int main() { return 0; }");
+  AddSourceFile("z.cc",
+                "#include \"" + absolute_header +
+                    "\"\n"
+                    "int main() { return 0; }");
   FillAndVerifyCompilationUnit("z.cc", {"-I."},
                                {absolute_header.c_str(), "z.cc"});
 }

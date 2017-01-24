@@ -30,6 +30,7 @@
 #include "kythe/cxx/common/cxx_details.h"
 #include "kythe/cxx/common/file_vname_generator.h"
 #include "kythe/cxx/common/index_pack.h"
+#include "kythe/cxx/common/language.h"
 #include "kythe/proto/analysis.pb.h"
 
 namespace clang {
@@ -182,6 +183,7 @@ class IndexWriter {
   const std::string &root_directory() const { return root_directory_; }
   /// \brief Write the index file to `sink`, consuming the sink in the process.
   void WriteIndex(
+      supported_language::Language lang,
       std::unique_ptr<IndexWriterSink> sink,
       const std::string &main_source_file, const std::string &entry_context,
       const std::unordered_map<std::string, SourceFile> &source_files,
@@ -241,10 +243,11 @@ class ExtractorConfiguration {
   void SetKindexOutputFile(const std::string &path) { kindex_path_ = path; }
   /// \brief Executes the extractor with this configuration, returning true on
   /// success.
-  bool Extract();
-  /// \brief Executes the extractor with this configuration to the provided sink,
-  //  returning true on success.
-  bool Extract(std::unique_ptr<IndexWriterSink> sink);
+  bool Extract(supported_language::Language lang);
+  /// \brief Executes the extractor with this configuration to the provided
+  /// sink, returning true on success.
+  bool Extract(supported_language::Language lang,
+               std::unique_ptr<IndexWriterSink> sink);
 
  private:
   /// The argument list to pass to Clang.

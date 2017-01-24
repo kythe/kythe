@@ -28,6 +28,7 @@
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
 #include "kythe/cxx/common/indexing/KytheVFS.h"
 #include "kythe/cxx/common/kythe_metadata_file.h"
+#include "kythe/cxx/common/language.h"
 #include "kythe/cxx/indexer/cxx/IndexerASTHooks.h"
 #include "kythe/proto/storage.pb.h"
 
@@ -128,11 +129,13 @@ class KytheGraphObserver : public GraphObserver {
   KytheGraphObserver(KytheGraphRecorder *recorder, KytheClaimClient *client,
                      const MetadataSupports *meta_supports,
                      const llvm::IntrusiveRefCntPtr<IndexVFS> vfs,
-                     ProfilingCallback ReportProfileEventCallback)
+                     ProfilingCallback ReportProfileEventCallback,
+                     supported_language::Language lang)
       : recorder_(CHECK_NOTNULL(recorder)),
         client_(CHECK_NOTNULL(client)),
         meta_supports_(CHECK_NOTNULL(meta_supports)),
-        vfs_(vfs) {
+        vfs_(vfs),
+        lang_(lang) {
     default_token_.set_rough_claimed(true);
     type_token_.set_rough_claimed(true);
     ReportProfileEvent = ReportProfileEventCallback;
@@ -574,6 +577,8 @@ class KytheGraphObserver : public GraphObserver {
   void EmitMetaNodes();
   /// Registered builtins.
   std::map<std::string, Builtin> builtins_;
+  /// Language we are currently indexing.
+  supported_language::Language lang_;
 };
 
 }  // namespace kythe

@@ -35,6 +35,7 @@
 #include "glog/logging.h"
 #include "kythe/cxx/common/CommandLineUtils.h"
 #include "kythe/cxx/common/json_proto.h"
+#include "kythe/cxx/common/language.h"
 #include "kythe/cxx/common/path_utils.h"
 #include "kythe/cxx/common/proto_conversions.h"
 #include "kythe/proto/analysis.pb.h"
@@ -946,6 +947,7 @@ void IndexWriter::FillFileInput(
 }
 
 void IndexWriter::WriteIndex(
+    supported_language::Language lang,
     std::unique_ptr<IndexWriterSink> sink, const std::string& main_source_file,
     const std::string& entry_context,
     const std::unordered_map<std::string, SourceFile>& source_files,
@@ -973,8 +975,7 @@ void IndexWriter::WriteIndex(
 
   kythe::proto::VName main_vname = VNameForPath(main_source_file);
   unit_vname->CopyFrom(main_vname);
-  // Group all C-ish languages together (C, C++, Obj-C).
-  unit_vname->set_language("c++");
+  unit_vname->set_language(supported_language::ToString(lang));
   unit_vname->set_signature("cu#" + identifying_blob_digest);
   unit_vname->clear_path();
 
@@ -1105,19 +1106,20 @@ void ExtractorConfiguration::InitializeFromEnvironment() {
   }
 }
 
-bool ExtractorConfiguration::Extract(std::unique_ptr<IndexWriterSink> sink) {
+bool ExtractorConfiguration::Extract(supported_language::Language lang,
+                                     std::unique_ptr<IndexWriterSink> sink) {
   llvm::IntrusiveRefCntPtr<clang::FileManager> file_manager(
       new clang::FileManager(file_system_options_));
   auto extractor = NewExtractor(
       &index_writer_,
-      [this, &sink](
+      [this, &lang, &sink](
           const std::string& main_source_file,
           const PreprocessorTranscript& transcript,
           const std::unordered_map<std::string, SourceFile>& source_files,
           const HeaderSearchInfo* header_search_info, bool had_errors) {
-        index_writer_.WriteIndex(std::move(sink), main_source_file, transcript,
-                                 source_files, header_search_info, had_errors,
-                                 file_system_options_.WorkingDir);
+        index_writer_.WriteIndex(lang, std::move(sink), main_source_file,
+                                 transcript, source_files, header_search_info,
+                                 had_errors, file_system_options_.WorkingDir);
       });
   clang::tooling::ToolInvocation invocation(final_args_, extractor.release(),
                                             file_manager.get());
@@ -1127,14 +1129,14 @@ bool ExtractorConfiguration::Extract(std::unique_ptr<IndexWriterSink> sink) {
   return invocation.run();
 }
 
-bool ExtractorConfiguration::Extract() {
+bool ExtractorConfiguration::Extract(supported_language::Language lang) {
   std::unique_ptr<IndexWriterSink> sink;
   if (using_index_packs_) {
     sink.reset(new IndexPackWriterSink());
   } else {
     sink.reset(new KindexWriterSink(kindex_path_));
   }
-  return Extract(std::move(sink));
+  return Extract(lang, std::move(sink));
 }
 
 }  // namespace kythe

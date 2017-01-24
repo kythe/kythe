@@ -1789,57 +1789,57 @@ test_suite(
 cxx_indexer_test(
     name = "ms_fn",
     srcs = ["marked_source/ms_fn.cc"],
+    convert_marked_source = True,
     std = "c++14",
     tags = ["marked_source"],
-    convert_marked_source = True,
 )
 
 cxx_indexer_test(
     name = "ms_fn_namespace",
     srcs = ["marked_source/ms_fn_namespace.cc"],
+    convert_marked_source = True,
     std = "c++14",
     tags = ["marked_source"],
-    convert_marked_source = True,
 )
 
 cxx_indexer_test(
     name = "ms_fn_rec",
     srcs = ["marked_source/ms_fn_rec.cc"],
+    convert_marked_source = True,
     std = "c++14",
     tags = ["marked_source"],
-    convert_marked_source = True,
 )
 
 cxx_indexer_test(
     name = "ms_fn_template",
     srcs = ["marked_source/ms_fn_template.cc"],
+    convert_marked_source = True,
     std = "c++14",
     tags = ["marked_source"],
-    convert_marked_source = True,
 )
 
 cxx_indexer_test(
     name = "ms_fn_rec_template",
     srcs = ["marked_source/ms_fn_rec_template.cc"],
+    convert_marked_source = True,
     std = "c++14",
     tags = ["marked_source"],
-    convert_marked_source = True,
 )
 
 cxx_indexer_test(
     name = "ms_var_fn_template",
     srcs = ["marked_source/ms_var_fn_template.cc"],
+    convert_marked_source = True,
     std = "c++14",
     tags = ["marked_source"],
-    convert_marked_source = True,
 )
 
 cxx_indexer_test(
     name = "ms_fn_ptr_return",
     srcs = ["marked_source/ms_fn_ptr_return.cc"],
+    convert_marked_source = True,
     std = "c++14",
     tags = ["marked_source"],
-    convert_marked_source = True,
 )
 
 test_suite(
@@ -2209,6 +2209,14 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "ivar_decl",
     srcs = ["objc/ivar_decl.m"],
+    ignore_dups = True,
+    objc = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "lang_name",
+    srcs = ["objc/lang_name.m"],
     ignore_dups = True,
     objc = True,
     tags = ["objc"],

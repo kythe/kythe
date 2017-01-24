@@ -26,6 +26,7 @@
 #include "gflags/gflags.h"
 #include "google/protobuf/stubs/common.h"
 #include "kythe/cxx/common/indexing/frontend.h"
+#include "kythe/cxx/common/language.h"
 #include "kythe/cxx/common/protobuf_metadata_file.h"
 #include "kythe/cxx/indexer/cxx/IndexerFrontendAction.h"
 
@@ -38,6 +39,8 @@ DEFINE_bool(report_profiling_events, false,
             "Write profiling events to standard error.");
 DEFINE_bool(experimental_index_lite, false,
             "Drop uncommonly-used data from the index.");
+// See kythe/cxx/common/language.cc for valid strings.
+DEFINE_string(language, "c++", "Language we are indexing.");
 
 namespace kythe {
 
@@ -68,6 +71,14 @@ int main(int argc, char *argv[]) {
       fprintf(stderr, "%s: %s\n", counter,
               event == ProfilingEvent::Enter ? "enter" : "exit");
     };
+  }
+  if (!supported_language::FromString(FLAGS_language, &options.Language)) {
+    // This comment may get out of date. See kythe/cxx/common/language.h for
+    // valid language strings.
+    fprintf(stderr,
+            "Got an invalid --language: %s. Should be c++ or objectivec.",
+            FLAGS_language.c_str());
+    return 2;
   }
 
   bool had_errors = false;

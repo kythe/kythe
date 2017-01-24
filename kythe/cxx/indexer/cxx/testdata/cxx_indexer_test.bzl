@@ -22,7 +22,7 @@ def cxx_indexer_test(name, srcs, deps=[], tags=[], size="small",
   if std != "" and not objc:
     args += ["--clang", "-std=" + std]
   if objc:
-    args += ["--clang", "-fblocks"]
+    args += ["--indexer", "--language=objectivec", "--clang", "-fblocks"]
   if convert_marked_source:
     args += ["--verifier", "--convert_marked_source=true"]
   if ignore_dups:

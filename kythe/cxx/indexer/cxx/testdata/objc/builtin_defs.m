@@ -8,8 +8,8 @@ isalnum(int _c)
 
 int main(int argc, char **argv) {
   //- @isalnum ref BuiltinFn
-  //- @isalnum ref vname("isalnum#n#builtin", "", "", "", "c++")
-  //- ImplicitLoc=vname("isalnum#n#builtin@syntactic", "", "", "", "c++")
+  //- @isalnum ref vname("isalnum#n#builtin", "", "", "", "objectivec")
+  //- ImplicitLoc=vname("isalnum#n#builtin@syntactic", "", "", "", "objectivec")
   //-   defines/binding BuiltinFn
   //- !{ ImplicitLoc.loc/start _
   //-    ImplicitLoc.loc/end _ }

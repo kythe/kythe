@@ -244,7 +244,8 @@ The initial definition of a VName will include the following 5 fields:
  * *Language.* The language this name belongs to. The schema defines specific
    labels for each supported language, so we don't wind up with a confusion of
    names like "cxx", "cpp", "C\+\+", etc. As a rule of thumb, we will use the
-   common name of the language, in lowercase ("c++", "python", "elisp").
+   common name of the language, in lowercase ("c++", "python", "elisp",
+   "objectivec").
 
 Other fields can be added as necessary—for example, if a Branch or Client label
 becomes necessary. As a rule, we try to keep the number of essential VName

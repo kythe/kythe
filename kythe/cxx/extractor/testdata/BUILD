@@ -103,6 +103,7 @@ cc_test(
         "claim_main.cc",
     ],
     deps = [
+        "//kythe/cxx/common:supported_language",
         "//kythe/cxx/extractor:lib",
         "//third_party:gmock_main",
         "//third_party:gtest",
