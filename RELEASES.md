@@ -7,6 +7,9 @@ Notable changes:
  - C++ indexer: no longer generates formats
  - indexpack tool: replaced `--quiet` flag with `--verbose`
 
+Notable additions:
+ - kythe tool: add `--filters` and `--node_definitions` to `xrefs` subcommand
+
 ## v0.0.26
 
 Notable changes:

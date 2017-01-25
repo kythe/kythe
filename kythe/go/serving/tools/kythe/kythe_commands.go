@@ -76,7 +76,7 @@ var (
 
 	// xrefs flags
 	defKind, declKind, refKind, docKind, callerKind string
-	relatedNodes                                    bool
+	relatedNodes, nodeDefinitions                   bool
 
 	spanHelp = `Limit results to this span (e.g. "10-30", "b1462-b1847", "3:5-3:10")
       Formats:
@@ -205,7 +205,7 @@ var (
 			return displayDocumentation(reply)
 		})
 
-	cmdXRefs = newCommand("xrefs", "[--definitions kind] [--references kind] [--documentation kind] [--related_nodes] [--page_token token] [--page_size num] <ticket>",
+	cmdXRefs = newCommand("xrefs", "[--definitions kind] [--references kind] [--documentation kind] [--related_nodes] [--filters f] [--node_definitions] [--page_token token] [--page_size num] <ticket>",
 		"Retrieve the global cross-references of the given node",
 		func(flag *flag.FlagSet) {
 			flag.StringVar(&defKind, "definitions", "all", "Kind of definitions to return (kinds: all, binding, full, or none)")
@@ -214,18 +214,24 @@ var (
 			flag.StringVar(&docKind, "documentation", "all", "Kind of documentation to return (kinds: all or none)")
 			flag.StringVar(&callerKind, "callers", "none", "Kind of callers to return (kinds: direct, overrides, or none)")
 			flag.BoolVar(&relatedNodes, "related_nodes", false, "Whether to request related nodes")
+			flag.StringVar(&nodeFilters, "filters", "", "Comma-separated list of additional fact filters to use when requesting related nodes")
+			flag.BoolVar(&nodeDefinitions, "node_definitions", false, "Whether to request definition locations for related nodes")
 
 			flag.StringVar(&pageToken, "page_token", "", "CrossReferences page token")
 			flag.IntVar(&pageSize, "page_size", 0, "Maximum number of cross-references returned (0 lets the service use a sensible default)")
 		},
 		func(flag *flag.FlagSet) error {
 			req := &xpb.CrossReferencesRequest{
-				Ticket:    flag.Args(),
-				PageToken: pageToken,
-				PageSize:  int32(pageSize),
+				Ticket:          flag.Args(),
+				PageToken:       pageToken,
+				PageSize:        int32(pageSize),
+				NodeDefinitions: nodeDefinitions,
 			}
 			if relatedNodes {
 				req.Filter = []string{facts.NodeKind, facts.Subkind}
+				if nodeFilters != "" {
+					req.Filter = append(req.Filter, strings.Split(nodeFilters, ",")...)
+				}
 			}
 			switch defKind {
 			case "all":
