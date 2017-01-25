@@ -818,6 +818,10 @@ private:
   /// instantiation.
   bool UnderneathImplicitTemplateInstantiation = false;
 
+  /// \brief True if we should only traverse decls that are complete
+  /// functions.
+  bool PruneIncompleteFunctions = false;
+
   /// \return true if we should stop indexing.
   std::function<bool()> ShouldStopIndexing;
 };

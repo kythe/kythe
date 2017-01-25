@@ -258,6 +258,8 @@ bool IsClaimableForTraverse(const clang::Decl *decl) {
   return false;
 }
 
+enum class Prunability { CantPrune, CanPruneIncompleteFunctions, CanPrune };
+
 /// \brief RAII class used to pair claimImplicitNode/finishImplicitNode
 /// when pruning AST traversal.
 class PruneCheck {
@@ -267,7 +269,9 @@ public:
     if (!visitor_->UnderneathImplicitTemplateInstantiation &&
         visitor_->declDominatesPrunableSubtree(decl)) {
       // This node in the AST dominates a subtree that can be pruned.
-      can_prune_ = !visitor_->Observer.claimLocation(decl->getLocation());
+      if (!visitor_->Observer.claimLocation(decl->getLocation())) {
+        can_prune_ = Prunability::CanPrune;
+      }
       return;
     }
     if (llvm::isa<clang::FunctionDecl>(decl)) {
@@ -289,63 +293,70 @@ public:
       //    reasonable code
       // ** modulo wacky macros
       //
-      // TODO(zarko): Check to see if non-function members of a class
-      // can be traversed once per argument set.
-      cleanup_id_ = visitor_->BuildNodeIdForDecl(decl).getRawIdentity();
-      // It's critical that we distinguish between different argument lists
-      // here even if aliasing is turned on; otherwise we will drop data.
-      // If aliasing is off, the NodeId already contains this information.
-      if (FLAGS_experimental_alias_template_instantiations) {
-        clang::ast_type_traits::DynTypedNode current_node =
-            clang::ast_type_traits::DynTypedNode::create(*decl);
-        const clang::Decl *current_decl;
-        llvm::raw_string_ostream ostream(cleanup_id_);
-        while (!(current_decl = current_node.get<clang::Decl>()) ||
-               !isa<clang::TranslationUnitDecl>(current_decl)) {
-          IndexedParent *parent = visitor_->getIndexedParent(current_node);
-          if (parent == nullptr) {
-            break;
-          }
-          current_node = parent->Parent;
-          if (!current_decl) {
-            continue;
-          }
-          if (const auto *czdecl =
-                  dyn_cast<ClassTemplateSpecializationDecl>(current_decl)) {
-            ostream << "#" << HashToString(visitor_->SemanticHash(
-                                  &czdecl->getTemplateInstantiationArgs()));
-          } else if (const auto *fdecl = dyn_cast<FunctionDecl>(current_decl)) {
-            if (const auto *template_args =
-                    fdecl->getTemplateSpecializationArgs()) {
-              ostream << "#"
-                      << HashToString(visitor_->SemanticHash(template_args));
-            }
-          } else if (const auto *vdecl =
-                         dyn_cast<VarTemplateSpecializationDecl>(
-                             current_decl)) {
-            ostream << "#" << HashToString(visitor_->SemanticHash(
-                                  &vdecl->getTemplateInstantiationArgs()));
-          }
-        }
-      }
-      cleanup_id_ = CompressString(cleanup_id_);
+      GenerateCleanupId(decl);
       if (!visitor_->Observer.claimImplicitNode(cleanup_id_)) {
-        can_prune_ = true;
+        can_prune_ = Prunability::CanPrune;
+      }
+    } else if (llvm::isa<clang::ClassTemplateSpecializationDecl>(decl)) {
+      GenerateCleanupId(decl);
+      if (!visitor_->Observer.claimImplicitNode(cleanup_id_)) {
+        can_prune_ = Prunability::CanPruneIncompleteFunctions;
       }
     }
   }
   ~PruneCheck() {
-    if (!can_prune_ && !cleanup_id_.empty()) {
+    if (!cleanup_id_.empty()) {
       visitor_->Observer.finishImplicitNode(cleanup_id_);
     }
   }
 
   /// \return true if the decl supplied during construction doesn't need
   /// traversed.
-  bool can_prune() const { return can_prune_; }
+  Prunability can_prune() const { return can_prune_; }
 
 private:
-  bool can_prune_ = false;
+  void GenerateCleanupId(const clang::Decl *decl) {
+    // TODO(zarko): Check to see if non-function members of a class
+    // can be traversed once per argument set.
+    cleanup_id_ = visitor_->BuildNodeIdForDecl(decl).getRawIdentity();
+    // It's critical that we distinguish between different argument lists
+    // here even if aliasing is turned on; otherwise we will drop data.
+    // If aliasing is off, the NodeId already contains this information.
+    if (FLAGS_experimental_alias_template_instantiations) {
+      clang::ast_type_traits::DynTypedNode current_node =
+          clang::ast_type_traits::DynTypedNode::create(*decl);
+      const clang::Decl *current_decl;
+      llvm::raw_string_ostream ostream(cleanup_id_);
+      while (!(current_decl = current_node.get<clang::Decl>()) ||
+             !isa<clang::TranslationUnitDecl>(current_decl)) {
+        IndexedParent *parent = visitor_->getIndexedParent(current_node);
+        if (parent == nullptr) {
+          break;
+        }
+        current_node = parent->Parent;
+        if (!current_decl) {
+          continue;
+        }
+        if (const auto *czdecl =
+                dyn_cast<ClassTemplateSpecializationDecl>(current_decl)) {
+          ostream << "#" << HashToString(visitor_->SemanticHash(
+                                &czdecl->getTemplateInstantiationArgs()));
+        } else if (const auto *fdecl = dyn_cast<FunctionDecl>(current_decl)) {
+          if (const auto *template_args =
+                  fdecl->getTemplateSpecializationArgs()) {
+            ostream << "#"
+                    << HashToString(visitor_->SemanticHash(template_args));
+          }
+        } else if (const auto *vdecl =
+                       dyn_cast<VarTemplateSpecializationDecl>(current_decl)) {
+          ostream << "#" << HashToString(visitor_->SemanticHash(
+                                &vdecl->getTemplateInstantiationArgs()));
+        }
+      }
+    }
+    cleanup_id_ = CompressString(cleanup_id_);
+  }
+  Prunability can_prune_ = Prunability::CantPrune;
   std::string cleanup_id_;
   IndexerASTVisitor *visitor_;
 };
@@ -910,9 +921,28 @@ bool IndexerASTVisitor::TraverseDecl(clang::Decl *Decl) {
   if (Decl == nullptr) {
     return true;
   }
+  struct RestoreBool {
+    RestoreBool(bool *to_restore)
+        : to_restore_(to_restore), state_(*to_restore) {}
+    ~RestoreBool() { *to_restore_ = state_; }
+    bool *to_restore_;
+    bool state_;
+  } RB(&PruneIncompleteFunctions);
+  if (PruneIncompleteFunctions) {
+    if (auto *FD = llvm::dyn_cast<clang::FunctionDecl>(Decl)) {
+      if (!FD->isThisDeclarationADefinition()) {
+        return true;
+      }
+    } else {
+      return true;
+    }
+  }
   PruneCheck Prune(this, Decl);
-  if (Prune.can_prune()) {
+  auto can_prune = Prune.can_prune();
+  if (can_prune == Prunability::CanPrune) {
     return true;
+  } else if (can_prune == Prunability::CanPruneIncompleteFunctions) {
+    PruneIncompleteFunctions = true;
   }
   GraphObserver::Delimiter Del(Observer);
   // For clang::FunctionDecl and all subclasses thereof push blame data.
