@@ -463,7 +463,7 @@ func (s *filterStats) skipPage(idx *srvpb.PageIndex) bool {
 		s.skip -= int(idx.EdgeCount)
 		return true
 	}
-	return false
+	return s.total >= s.max
 }
 
 func (s *filterStats) filter(g *srvpb.EdgeGroup) (*gpb.EdgeSet_Group, []*srvpb.Node) {
@@ -1011,7 +1011,7 @@ func (s *refStats) skipPage(idx *srvpb.PagedCrossReferences_PageIndex) bool {
 		s.skip -= int(idx.Count)
 		return true
 	}
-	return false
+	return s.total >= s.max
 }
 
 func (s *refStats) addAnchors(to *[]*xpb.CrossReferencesReply_RelatedAnchor, as []*srvpb.ExpandedAnchor, anchorText bool) bool {
