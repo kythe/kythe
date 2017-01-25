@@ -20,6 +20,23 @@
 #include <openssl/sha.h>
 
 namespace kythe {
+namespace {
+constexpr char kArbitraryClaimantRoot[] = "KytheClaimClient";
+}  // anonymous namespace
+
+bool KytheClaimClient::ClaimBatch(
+    std::vector<std::pair<std::string, bool>> *tokens) {
+  kythe::proto::VName claim;
+  claim.set_root(kArbitraryClaimantRoot);
+  bool success = false;
+  for (auto &token : *tokens) {
+    claim.set_signature(token.first);
+    if ((token.second = Claim(claim, claim))) {
+      success = true;
+    }
+  }
+  return success;
+}
 
 bool StaticClaimClient::Claim(const kythe::proto::VName &claimant,
                               const kythe::proto::VName &vname) {

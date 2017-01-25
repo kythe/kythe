@@ -41,6 +41,16 @@ class KytheClaimClient {
                      const kythe::proto::VName &vname) {
     return true;
   }
+  /// \brief Claim a batch of identifying tokens for an anonymous claimant.
+  /// \param tokens A vector of pairs of `(token, claimed)`. `claimed` should
+  /// initially be set to `true`.
+  /// \return true if, after claiming, any of the `claimed` values is set to
+  /// `true`.
+  ///
+  /// Calls to `ClaimBatch` are not idempotent; claiming the same token more
+  /// than once may fail even if the first claim succeeds. Implementations
+  /// should ensure that failure is permanent.
+  virtual bool ClaimBatch(std::vector<std::pair<std::string, bool>> *tokens);
   /// \brief Assigns responsibility for `claimable` to `claimant`.
   virtual void AssignClaim(const kythe::proto::VName &claimable,
                            const kythe::proto::VName &claimant) = 0;
