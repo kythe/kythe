@@ -19,6 +19,7 @@ package com.google.devtools.kythe.analyzers.java;
 import com.beust.jcommander.Parameter;
 import com.google.common.base.Strings;
 import com.google.devtools.kythe.analyzers.base.FactEmitter;
+import com.google.devtools.kythe.analyzers.base.StreamFactEmitter;
 import com.google.devtools.kythe.analyzers.base.IndexerConfig;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.google.devtools.kythe.extractors.shared.IndexInfoUtils;
@@ -96,34 +97,6 @@ public class JavaIndexer {
         "usage: java_indexer [--print_statistics] kindex-file\n"
             + "       java_indexer [--print_statistics] --index_pack=archive-root unit-key");
     System.exit(exitCode);
-  }
-
-  /** {@link FactEmitter} directly streaming to an {@link OutputValueStream}. */
-  private static class StreamFactEmitter implements FactEmitter {
-    private final OutputStream stream;
-
-    public StreamFactEmitter(OutputStream stream) {
-      this.stream = stream;
-    }
-
-    @Override
-    public void emit(
-        VName source, String edgeKind, VName target, String factName, byte[] factValue) {
-      Entry.Builder entry =
-          Entry.newBuilder()
-              .setSource(source)
-              .setFactName(factName)
-              .setFactValue(ByteString.copyFrom(factValue));
-      if (edgeKind != null) {
-        entry.setEdgeKind(edgeKind).setTarget(target);
-      }
-
-      try {
-        entry.build().writeDelimitedTo(stream);
-      } catch (IOException ioe) {
-        throw new RuntimeException(ioe);
-      }
-    }
   }
 
   private static class StandaloneConfig extends IndexerConfig {

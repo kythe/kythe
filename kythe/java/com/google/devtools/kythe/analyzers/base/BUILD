@@ -1,6 +1,16 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
 java_library(
+    name = "stream_fact_emitter",
+    srcs = ["StreamFactEmitter.java"],
+    deps = [
+        ":entryset",
+        "//kythe/proto:storage_proto_java",
+        "//third_party/proto:protobuf_java",
+    ],
+)
+
+java_library(
     name = "config",
     srcs = ["IndexerConfig.java"],
     deps = ["@com_beust_jcommander//jar"],
