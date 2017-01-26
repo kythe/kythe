@@ -188,7 +188,7 @@ class PruneCheck;
 
 /// \brief An indexer task and its related state.
 struct IndexJob {
-  explicit IndexJob(clang::Decl *Decl) : Decl(Decl) { }
+  explicit IndexJob(clang::Decl *Decl) : Decl(Decl) {}
 
   /// \brief The `Decl` to index.
   clang::Decl *Decl;
@@ -214,13 +214,15 @@ struct IndexJob {
   /// give them distinct ranges).
   std::vector<GraphObserver::NodeId> RangeContext;
 
-  /// \brief The current type variable context for the visitor (indexed by depth).
+  /// \brief The current type variable context for the visitor (indexed by
+  /// depth).
   std::vector<clang::TemplateParameterList *> TypeContext;
 
   /// \brief At least 1 NodeId.
   using SomeNodes = llvm::SmallVector<GraphObserver::NodeId, 1>;
 
-  /// \brief A stack of ID groups to use when assigning blame for references (such as
+  /// \brief A stack of ID groups to use when assigning blame for references
+  /// (such as
   /// function calls).
   std::vector<SomeNodes> BlameStack;
 };
@@ -543,6 +545,7 @@ public:
     Job = std::move(JobToRun);
     TraverseDecl(Job->Decl);
   }
+
 private:
   friend class PruneCheck;
 
@@ -858,7 +861,8 @@ public:
                               Observer);
     {
       ProfileBlock block(Observer->getProfilingCallback(), "traverse_tu");
-      Visitor.RunJob(llvm::make_unique<IndexJob>(Context.getTranslationUnitDecl()));
+      Visitor.RunJob(
+          llvm::make_unique<IndexJob>(Context.getTranslationUnitDecl()));
     }
   }
 

@@ -2193,7 +2193,8 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
     InnerNode = BuildNodeIdForDecl(Decl);
     OuterNode = InnerNode;
   }
-  Marks.set_implicit(Job->UnderneathImplicitTemplateInstantiation || IsImplicit);
+  Marks.set_implicit(Job->UnderneathImplicitTemplateInstantiation ||
+                     IsImplicit);
   if (ArgsAsWritten || Args) {
     bool CouldGetAllTypes = true;
     std::vector<GraphObserver::NodeId> NIDS;
@@ -3890,7 +3891,8 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
     UNSUPPORTED_CLANG_TYPE(Attributed);
   // Either the `TemplateTypeParm` will link directly to a relevant
   // `TemplateTypeParmDecl` or (particularly in the case of canonicalized types)
-  // we will find the Decl in the `Job->TypeContext` according to the parameter's
+  // we will find the Decl in the `Job->TypeContext` according to the
+  // parameter's
   // depth and index.
   case TypeLoc::TemplateTypeParm: { // Leaf.
     // Depths count from the outside-in; each Template*ParmDecl has only
@@ -3902,10 +3904,11 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
       // dump with DumpTypeContext(T->getDepth(), T->getIndex());
       CHECK_LT(TypeParm->getDepth(), Job->TypeContext.size())
           << "Decl for type parameter missing from context.";
-      CHECK_LT(TypeParm->getIndex(), Job->TypeContext[TypeParm->getDepth()]->size())
+      CHECK_LT(TypeParm->getIndex(),
+               Job->TypeContext[TypeParm->getDepth()]->size())
           << "Decl for type parameter missing at specified depth.";
-      const auto *ND =
-          Job->TypeContext[TypeParm->getDepth()]->getParam(TypeParm->getIndex());
+      const auto *ND = Job->TypeContext[TypeParm->getDepth()]->getParam(
+          TypeParm->getIndex());
       TD = cast<TemplateTypeParmDecl>(ND);
       CHECK(TypeParm->getDecl() == nullptr || TypeParm->getDecl() == TD);
     } else if (!TD) {
@@ -4783,7 +4786,8 @@ void IndexerASTVisitor::ConnectParam(const Decl *Decl,
   GraphObserver::NameId VarNameId(BuildNameIdForDecl(Param));
   SourceRange Range = RangeForNameOfDeclaration(Param);
   Marks.set_name_range(Range);
-  Marks.set_implicit(Job->UnderneathImplicitTemplateInstantiation || DeclIsImplicit);
+  Marks.set_implicit(Job->UnderneathImplicitTemplateInstantiation ||
+                     DeclIsImplicit);
   Marks.set_marked_source_end(GetLocForEndOfToken(
       *Observer.getSourceManager(), *Observer.getLangOptions(),
       Param->getSourceRange().getEnd()));
