@@ -234,7 +234,7 @@ StackSizeRestorer<StackType> RestoreStack(StackType &S) {
 
 bool IsClaimableForTraverse(const clang::Decl *decl) {
   // Operationally, we'll define this as any decl that causes
-  // UnderneathImplicitTemplateInstantiation to be set.
+  // Job->UnderneathImplicitTemplateInstantiation to be set.
   if (auto *VTSD = dyn_cast<const clang::VarTemplateSpecializationDecl>(decl)) {
     return !VTSD->isExplicitInstantiationOrSpecialization();
   }
@@ -266,7 +266,7 @@ class PruneCheck {
 public:
   PruneCheck(IndexerASTVisitor *visitor, const clang::Decl *decl)
       : visitor_(visitor) {
-    if (!visitor_->UnderneathImplicitTemplateInstantiation &&
+    if (!visitor_->Job->UnderneathImplicitTemplateInstantiation &&
         visitor_->declDominatesPrunableSubtree(decl)) {
       // This node in the AST dominates a subtree that can be pruned.
       if (!visitor_->Observer.claimLocation(decl->getLocation())) {
@@ -518,8 +518,8 @@ void IndexerASTVisitor::MaybeRecordDefinitionRange(
 
 void IndexerASTVisitor::RecordCallEdges(const GraphObserver::Range &Range,
                                         const GraphObserver::NodeId &Callee) {
-  if (!BlameStack.empty()) {
-    for (const auto &Caller : BlameStack.back()) {
+  if (!Job->BlameStack.empty()) {
+    for (const auto &Caller : Job->BlameStack.back()) {
       Observer.recordCallEdge(Range, Caller, Callee);
     }
   }
@@ -719,7 +719,7 @@ void InsertAnchorMarks(std::string &Text, std::vector<MiniAnchor> &Anchors) {
 }
 
 bool IndexerASTVisitor::VisitDecl(const clang::Decl *Decl) {
-  if (UnderneathImplicitTemplateInstantiation) {
+  if (Job->UnderneathImplicitTemplateInstantiation) {
     // Template instantiation can't add any documentation text.
     return true;
   }
@@ -927,8 +927,8 @@ bool IndexerASTVisitor::TraverseDecl(clang::Decl *Decl) {
     ~RestoreBool() { *to_restore_ = state_; }
     bool *to_restore_;
     bool state_;
-  } RB(&PruneIncompleteFunctions);
-  if (PruneIncompleteFunctions) {
+  } RB(&Job->PruneIncompleteFunctions);
+  if (Job->PruneIncompleteFunctions) {
     if (auto *FD = llvm::dyn_cast<clang::FunctionDecl>(Decl)) {
       if (!FD->isThisDeclarationADefinition()) {
         return true;
@@ -942,7 +942,7 @@ bool IndexerASTVisitor::TraverseDecl(clang::Decl *Decl) {
   if (can_prune == Prunability::CanPrune) {
     return true;
   } else if (can_prune == Prunability::CanPruneIncompleteFunctions) {
-    PruneIncompleteFunctions = true;
+    Job->PruneIncompleteFunctions = true;
   }
   GraphObserver::Delimiter Del(Observer);
   // For clang::FunctionDecl and all subclasses thereof push blame data.
@@ -956,23 +956,23 @@ bool IndexerASTVisitor::TraverseDecl(clang::Decl *Decl) {
         return true;
       }
     }
-    auto R = RestoreStack(BlameStack);
-    auto S = RestoreStack(RangeContext);
+    auto R = RestoreStack(Job->BlameStack);
+    auto S = RestoreStack(Job->RangeContext);
 
     if (FD->isTemplateInstantiation() &&
         FD->getTemplateSpecializationKind() !=
             clang::TSK_ExplicitSpecialization) {
       // Explicit specializations have ranges.
       if (const auto RangeId = BuildNodeIdForDeclContext(FD)) {
-        RangeContext.push_back(RangeId.primary());
+        Job->RangeContext.push_back(RangeId.primary());
       } else {
-        RangeContext.push_back(BuildNodeIdForDecl(FD));
+        Job->RangeContext.push_back(BuildNodeIdForDecl(FD));
       }
     }
     if (const auto BlameId = BuildNodeIdForDeclContext(FD)) {
-      BlameStack.push_back(SomeNodes(1, BlameId.primary()));
+      Job->BlameStack.push_back(IndexJob::SomeNodes(1, BlameId.primary()));
     } else {
-      BlameStack.push_back(SomeNodes(1, BuildNodeIdForDecl(FD)));
+      Job->BlameStack.push_back(IndexJob::SomeNodes(1, BuildNodeIdForDecl(FD)));
     }
 
     // Dispatch the remaining logic to the base class TraverseDecl() which will
@@ -985,10 +985,10 @@ bool IndexerASTVisitor::TraverseDecl(clang::Decl *Decl) {
       // Blame calls from in-class initializers I on all ctors C of the
       // containing class so long as C does not have its own initializer for
       // I's field.
-      auto R = RestoreStack(BlameStack);
+      auto R = RestoreStack(Job->BlameStack);
       if (auto *CR = dyn_cast_or_null<clang::CXXRecordDecl>(ID->getParent())) {
         if ((CR = CR->getDefinition())) {
-          SomeNodes Ctors;
+          IndexJob::SomeNodes Ctors;
           auto TryCtor = [&](const clang::CXXConstructorDecl *Ctor) {
             if (!ConstructorOverridesInitializer(Ctor, ID)) {
               if (const auto BlameId = BuildNodeIdForDeclContext(Ctor)) {
@@ -1015,23 +1015,23 @@ bool IndexerASTVisitor::TraverseDecl(clang::Decl *Decl) {
             }
           }
           if (!Ctors.empty()) {
-            BlameStack.push_back(Ctors);
+            Job->BlameStack.push_back(Ctors);
           }
         }
       }
       return RecursiveASTVisitor::TraverseDecl(ID);
     }
   } else if (auto *MD = dyn_cast_or_null<clang::ObjCMethodDecl>(Decl)) {
-    // These variables (R and S) clean up the stacks (BlameStack and
-    // RangeContext) when the local variables (R and S) are
+    // These variables (R and S) clean up the stacks (Job->BlameStack and
+    // Job->RangeContext) when the local variables (R and S) are
     // destructed.
-    auto R = RestoreStack(BlameStack);
-    auto S = RestoreStack(RangeContext);
+    auto R = RestoreStack(Job->BlameStack);
+    auto S = RestoreStack(Job->RangeContext);
 
     if (const auto BlameId = BuildNodeIdForDeclContext(MD)) {
-      BlameStack.push_back(SomeNodes(1, BlameId.primary()));
+      Job->BlameStack.push_back(IndexJob::SomeNodes(1, BlameId.primary()));
     } else {
-      BlameStack.push_back(SomeNodes(1, BuildNodeIdForDecl(MD)));
+      Job->BlameStack.push_back(IndexJob::SomeNodes(1, BuildNodeIdForDecl(MD)));
     }
 
     // Dispatch the remaining logic to the base class TraverseDecl() which will
@@ -1122,7 +1122,7 @@ bool IndexerASTVisitor::VisitCXXConstructExpr(
   if (const auto *Callee = E->getConstructor()) {
     // TODO(zarko): What about static initializers? Do we blame these on the
     // translation unit?
-    if (!BlameStack.empty()) {
+    if (!Job->BlameStack.empty()) {
       clang::SourceLocation RPL = E->getParenOrBraceRange().getEnd();
       clang::SourceRange SR = E->getSourceRange();
       if (RPL.isValid()) {
@@ -1139,7 +1139,7 @@ bool IndexerASTVisitor::VisitCXXConstructExpr(
 }
 
 bool IndexerASTVisitor::VisitCXXDeleteExpr(const clang::CXXDeleteExpr *E) {
-  if (BlameStack.empty()) {
+  if (Job->BlameStack.empty()) {
     return true;
   }
   auto DTy = E->getDestroyedType();
@@ -1244,7 +1244,7 @@ bool IndexerASTVisitor::VisitCXXPseudoDestructorExpr(
 
 bool IndexerASTVisitor::VisitCXXUnresolvedConstructExpr(
     const clang::CXXUnresolvedConstructExpr *E) {
-  if (!BlameStack.empty()) {
+  if (!Job->BlameStack.empty()) {
     auto QTCan = E->getTypeAsWritten().getCanonicalType();
     if (QTCan.isNull()) {
       return true;
@@ -1277,7 +1277,7 @@ bool IndexerASTVisitor::VisitCXXUnresolvedConstructExpr(
 }
 
 bool IndexerASTVisitor::VisitCallExpr(const clang::CallExpr *E) {
-  if (BlameStack.empty()) {
+  if (Job->BlameStack.empty()) {
     // TODO(zarko): What about static initializers? Do we blame these on the
     // translation unit?
     return true;
@@ -1476,7 +1476,7 @@ bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl *Decl) {
   }
 
   if (auto *VTSD = dyn_cast<const clang::VarTemplateSpecializationDecl>(Decl)) {
-    Marks.set_implicit(UnderneathImplicitTemplateInstantiation ||
+    Marks.set_implicit(Job->UnderneathImplicitTemplateInstantiation ||
                        !VTSD->isExplicitInstantiationOrSpecialization());
     // If this is a partial specialization, we've already recorded the newly
     // abstracted parameters above. We can now record the type arguments passed
@@ -1717,10 +1717,10 @@ bool IndexerASTVisitor::VisitEnumDecl(const clang::EnumDecl *Decl) {
 // want to have the primary-template's type variables in context.
 bool IndexerASTVisitor::TraverseClassTemplateDecl(
     clang::ClassTemplateDecl *TD) {
-  TypeContext.push_back(TD->getTemplateParameters());
+  Job->TypeContext.push_back(TD->getTemplateParameters());
   bool Result =
       RecursiveASTVisitor<IndexerASTVisitor>::TraverseClassTemplateDecl(TD);
-  TypeContext.pop_back();
+  Job->TypeContext.pop_back();
   return Result;
 }
 
@@ -1729,20 +1729,20 @@ bool IndexerASTVisitor::TraverseClassTemplateDecl(
 // TraverseClassTemplate{Partial}SpecializationDecl will be called).
 bool IndexerASTVisitor::TraverseClassTemplateSpecializationDecl(
     clang::ClassTemplateSpecializationDecl *TD) {
-  auto R = RestoreStack(RangeContext);
-  bool UITI = UnderneathImplicitTemplateInstantiation;
+  auto R = RestoreStack(Job->RangeContext);
+  bool UITI = Job->UnderneathImplicitTemplateInstantiation;
   // If this specialization was spelled out in the file, it has
   // physical ranges.
   if (TD->getTemplateSpecializationKind() !=
       clang::TSK_ExplicitSpecialization) {
-    RangeContext.push_back(BuildNodeIdForDecl(TD));
+    Job->RangeContext.push_back(BuildNodeIdForDecl(TD));
   }
   if (!TD->isExplicitInstantiationOrSpecialization()) {
-    UnderneathImplicitTemplateInstantiation = true;
+    Job->UnderneathImplicitTemplateInstantiation = true;
   }
   bool Result = RecursiveASTVisitor<
       IndexerASTVisitor>::TraverseClassTemplateSpecializationDecl(TD);
-  UnderneathImplicitTemplateInstantiation = UITI;
+  Job->UnderneathImplicitTemplateInstantiation = UITI;
   return Result;
 }
 
@@ -1759,38 +1759,38 @@ bool IndexerASTVisitor::TraverseVarTemplateSpecializationDecl(
 
 bool IndexerASTVisitor::ForceTraverseVarTemplateSpecializationDecl(
     clang::VarTemplateSpecializationDecl *TD) {
-  auto R = RestoreStack(RangeContext);
-  bool UITI = UnderneathImplicitTemplateInstantiation;
+  auto R = RestoreStack(Job->RangeContext);
+  bool UITI = Job->UnderneathImplicitTemplateInstantiation;
   // If this specialization was spelled out in the file, it has
   // physical ranges.
   if (TD->getTemplateSpecializationKind() !=
       clang::TSK_ExplicitSpecialization) {
-    RangeContext.push_back(BuildNodeIdForDecl(TD));
+    Job->RangeContext.push_back(BuildNodeIdForDecl(TD));
   }
   if (!TD->isExplicitInstantiationOrSpecialization()) {
-    UnderneathImplicitTemplateInstantiation = true;
+    Job->UnderneathImplicitTemplateInstantiation = true;
   }
   bool Result = RecursiveASTVisitor<
       IndexerASTVisitor>::TraverseVarTemplateSpecializationDecl(TD);
-  UnderneathImplicitTemplateInstantiation = UITI;
+  Job->UnderneathImplicitTemplateInstantiation = UITI;
   return Result;
 }
 
 bool IndexerASTVisitor::TraverseClassTemplatePartialSpecializationDecl(
     clang::ClassTemplatePartialSpecializationDecl *TD) {
   // Implicit partial specializations don't happen, so we don't need
-  // to consider changing the RangeContext stack.
-  TypeContext.push_back(TD->getTemplateParameters());
+  // to consider changing the Job->RangeContext stack.
+  Job->TypeContext.push_back(TD->getTemplateParameters());
   bool Result = RecursiveASTVisitor<
       IndexerASTVisitor>::TraverseClassTemplatePartialSpecializationDecl(TD);
-  TypeContext.pop_back();
+  Job->TypeContext.pop_back();
   return Result;
 }
 
 bool IndexerASTVisitor::TraverseVarTemplateDecl(clang::VarTemplateDecl *TD) {
-  TypeContext.push_back(TD->getTemplateParameters());
+  Job->TypeContext.push_back(TD->getTemplateParameters());
   if (!TraverseDecl(TD->getTemplatedDecl())) {
-    TypeContext.pop_back();
+    Job->TypeContext.pop_back();
     return false;
   }
   if (TD == TD->getCanonicalDecl()) {
@@ -1802,7 +1802,7 @@ bool IndexerASTVisitor::TraverseVarTemplateDecl(clang::VarTemplateDecl *TD) {
         case TSK_Undeclared:
         case TSK_ImplicitInstantiation:
           if (!ForceTraverseVarTemplateSpecializationDecl(VD)) {
-            TypeContext.pop_back();
+            Job->TypeContext.pop_back();
             return false;
           }
           break;
@@ -1818,54 +1818,54 @@ bool IndexerASTVisitor::TraverseVarTemplateDecl(clang::VarTemplateDecl *TD) {
       }
     }
   }
-  TypeContext.pop_back();
+  Job->TypeContext.pop_back();
   return true;
 }
 
 bool IndexerASTVisitor::TraverseVarTemplatePartialSpecializationDecl(
     clang::VarTemplatePartialSpecializationDecl *TD) {
   // Implicit partial specializations don't happen, so we don't need
-  // to consider changing the RangeContext stack.
-  TypeContext.push_back(TD->getTemplateParameters());
+  // to consider changing the Job->RangeContext stack.
+  Job->TypeContext.push_back(TD->getTemplateParameters());
   bool Result = RecursiveASTVisitor<
       IndexerASTVisitor>::TraverseVarTemplatePartialSpecializationDecl(TD);
-  TypeContext.pop_back();
+  Job->TypeContext.pop_back();
   return Result;
 }
 
 bool IndexerASTVisitor::TraverseTypeAliasTemplateDecl(
     clang::TypeAliasTemplateDecl *TATD) {
-  TypeContext.push_back(TATD->getTemplateParameters());
+  Job->TypeContext.push_back(TATD->getTemplateParameters());
   TraverseDecl(TATD->getTemplatedDecl());
-  TypeContext.pop_back();
+  Job->TypeContext.pop_back();
   return true;
 }
 
 bool IndexerASTVisitor::TraverseFunctionDecl(clang::FunctionDecl *FD) {
-  bool UITI = UnderneathImplicitTemplateInstantiation;
+  bool UITI = Job->UnderneathImplicitTemplateInstantiation;
   if (const auto *MSI = FD->getMemberSpecializationInfo()) {
     // The definitions of class template member functions are not necessarily
     // dominated by the class template definition.
     if (!MSI->isExplicitSpecialization()) {
-      UnderneathImplicitTemplateInstantiation = true;
+      Job->UnderneathImplicitTemplateInstantiation = true;
     }
   } else if (const auto *FSI = FD->getTemplateSpecializationInfo()) {
     if (!FSI->isExplicitInstantiationOrSpecialization()) {
-      UnderneathImplicitTemplateInstantiation = true;
+      Job->UnderneathImplicitTemplateInstantiation = true;
     }
   }
   bool Result =
       RecursiveASTVisitor<IndexerASTVisitor>::TraverseFunctionDecl(FD);
-  UnderneathImplicitTemplateInstantiation = UITI;
+  Job->UnderneathImplicitTemplateInstantiation = UITI;
   return Result;
 }
 
 bool IndexerASTVisitor::TraverseFunctionTemplateDecl(
     clang::FunctionTemplateDecl *FTD) {
-  TypeContext.push_back(FTD->getTemplateParameters());
+  Job->TypeContext.push_back(FTD->getTemplateParameters());
   // We traverse the template parameter list when we visit the FunctionDecl.
   TraverseDecl(FTD->getTemplatedDecl());
-  TypeContext.pop_back();
+  Job->TypeContext.pop_back();
   // See also RecursiveAstVisitor<T>::TraverseTemplateInstantiations.
   if (FTD == FTD->getCanonicalDecl()) {
     for (auto *FD : FTD->specializations()) {
@@ -1885,9 +1885,9 @@ IndexerASTVisitor::ExplicitRangeInCurrentContext(const clang::SourceRange &SR) {
   if (!SR.getBegin().isValid()) {
     return None();
   }
-  if (!RangeContext.empty() &&
+  if (!Job->RangeContext.empty() &&
       !FLAGS_experimental_alias_template_instantiations) {
-    return GraphObserver::Range(SR, RangeContext.back());
+    return GraphObserver::Range(SR, Job->RangeContext.back());
   } else {
     return GraphObserver::Range(SR, Observer.getClaimTokenForRange(SR));
   }
@@ -2006,7 +2006,7 @@ bool IndexerASTVisitor::VisitRecordDecl(const clang::RecordDecl *Decl) {
 
   if (auto *CTSD =
           dyn_cast<const clang::ClassTemplateSpecializationDecl>(Decl)) {
-    Marks.set_implicit(UnderneathImplicitTemplateInstantiation ||
+    Marks.set_implicit(Job->UnderneathImplicitTemplateInstantiation ||
                        !CTSD->isExplicitInstantiationOrSpecialization());
     // If this is a partial specialization, we've already recorded the newly
     // abstracted parameters above. We can now record the type arguments passed
@@ -2193,7 +2193,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
     InnerNode = BuildNodeIdForDecl(Decl);
     OuterNode = InnerNode;
   }
-  Marks.set_implicit(UnderneathImplicitTemplateInstantiation || IsImplicit);
+  Marks.set_implicit(Job->UnderneathImplicitTemplateInstantiation || IsImplicit);
   if (ArgsAsWritten || Args) {
     bool CouldGetAllTypes = true;
     std::vector<GraphObserver::NodeId> NIDS;
@@ -3461,11 +3461,11 @@ IndexerASTVisitor::BuildNodeIdForTemplateArgument(
 
 void IndexerASTVisitor::DumpTypeContext(unsigned Depth, unsigned Index) {
   llvm::errs() << "(looking for " << Depth << "/" << Index << ")\n";
-  for (unsigned D = 0; D < TypeContext.size(); ++D) {
+  for (unsigned D = 0; D < Job->TypeContext.size(); ++D) {
     llvm::errs() << "  Depth " << D << " ---- \n";
-    for (unsigned I = 0; I < TypeContext[D]->size(); ++I) {
+    for (unsigned I = 0; I < Job->TypeContext[D]->size(); ++I) {
       llvm::errs() << "    Index " << I << " ";
-      TypeContext[D]->getParam(I)->dump();
+      Job->TypeContext[D]->getParam(I)->dump();
       llvm::errs() << "\n";
     }
   }
@@ -3890,7 +3890,7 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
     UNSUPPORTED_CLANG_TYPE(Attributed);
   // Either the `TemplateTypeParm` will link directly to a relevant
   // `TemplateTypeParmDecl` or (particularly in the case of canonicalized types)
-  // we will find the Decl in the `TypeContext` according to the parameter's
+  // we will find the Decl in the `Job->TypeContext` according to the parameter's
   // depth and index.
   case TypeLoc::TemplateTypeParm: { // Leaf.
     // Depths count from the outside-in; each Template*ParmDecl has only
@@ -3900,12 +3900,12 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
     if (!IgnoreUnimplemented) {
       // TODO(zarko): Remove sanity checks. If things go poorly here,
       // dump with DumpTypeContext(T->getDepth(), T->getIndex());
-      CHECK_LT(TypeParm->getDepth(), TypeContext.size())
+      CHECK_LT(TypeParm->getDepth(), Job->TypeContext.size())
           << "Decl for type parameter missing from context.";
-      CHECK_LT(TypeParm->getIndex(), TypeContext[TypeParm->getDepth()]->size())
+      CHECK_LT(TypeParm->getIndex(), Job->TypeContext[TypeParm->getDepth()]->size())
           << "Decl for type parameter missing at specified depth.";
       const auto *ND =
-          TypeContext[TypeParm->getDepth()]->getParam(TypeParm->getIndex());
+          Job->TypeContext[TypeParm->getDepth()]->getParam(TypeParm->getIndex());
       TD = cast<TemplateTypeParmDecl>(ND);
       CHECK(TypeParm->getDecl() == nullptr || TypeParm->getDecl() == TD);
     } else if (!TD) {
@@ -4783,7 +4783,7 @@ void IndexerASTVisitor::ConnectParam(const Decl *Decl,
   GraphObserver::NameId VarNameId(BuildNameIdForDecl(Param));
   SourceRange Range = RangeForNameOfDeclaration(Param);
   Marks.set_name_range(Range);
-  Marks.set_implicit(UnderneathImplicitTemplateInstantiation || DeclIsImplicit);
+  Marks.set_implicit(Job->UnderneathImplicitTemplateInstantiation || DeclIsImplicit);
   Marks.set_marked_source_end(GetLocForEndOfToken(
       *Observer.getSourceManager(), *Observer.getLangOptions(),
       Param->getSourceRange().getEnd()));
@@ -4847,7 +4847,7 @@ bool IndexerASTVisitor::VisitObjCIvarRefExpr(
 
 bool IndexerASTVisitor::VisitObjCMessageExpr(
     const clang::ObjCMessageExpr *Expr) {
-  if (BlameStack.empty()) {
+  if (Job->BlameStack.empty()) {
     return true;
   }
 

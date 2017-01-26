@@ -186,6 +186,45 @@ void InsertAnchorMarks(std::string &Text, std::vector<MiniAnchor> &Anchors);
 /// \brief Used internally to check whether parts of the AST can be ignored.
 class PruneCheck;
 
+/// \brief An indexer task and its related state.
+struct IndexJob {
+  explicit IndexJob(clang::Decl *Decl) : Decl(Decl) { }
+
+  /// \brief The `Decl` to index.
+  clang::Decl *Decl;
+
+  /// \brief True if we're currently underneath an implicit template
+  /// instantiation.
+  bool UnderneathImplicitTemplateInstantiation = false;
+
+  /// \brief True if we should only traverse decls that are complete
+  /// functions.
+  bool PruneIncompleteFunctions = false;
+
+  /// \brief The current context for constructing `GraphObserver::Range`s.
+  ///
+  /// This is used whenever we enter a context where a section of source
+  /// code might have different meaning depending on assignments to
+  /// type variables (or, potentially eventually, preprocessor variables).
+  /// The `RangeContext` does not need to be extended when the meaning of
+  /// a section of code (given the current context) is unambiguous; for example,
+  /// the programmer must write down explicit specializations of template
+  /// classes (so they have distinct ranges), but the programmer does *not*
+  /// write down implicit specializations (so the context must be extended to
+  /// give them distinct ranges).
+  std::vector<GraphObserver::NodeId> RangeContext;
+
+  /// \brief The current type variable context for the visitor (indexed by depth).
+  std::vector<clang::TemplateParameterList *> TypeContext;
+
+  /// \brief At least 1 NodeId.
+  using SomeNodes = llvm::SmallVector<GraphObserver::NodeId, 1>;
+
+  /// \brief A stack of ID groups to use when assigning blame for references (such as
+  /// function calls).
+  std::vector<SomeNodes> BlameStack;
+};
+
 /// \brief An AST visitor that extracts information for a translation unit and
 /// writes it to a `GraphObserver`.
 class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
@@ -500,6 +539,10 @@ public:
   RangeInCurrentContext(const MaybeFew<GraphObserver::NodeId> &Id,
                         const clang::SourceRange &SR);
 
+  void RunJob(std::unique_ptr<IndexJob> JobToRun) {
+    Job = std::move(JobToRun);
+    TraverseDecl(Job->Decl);
+  }
 private:
   friend class PruneCheck;
 
@@ -691,16 +734,6 @@ private:
   /// makes sense only within the implementation of this class.
   std::unordered_map<int64_t, MaybeFew<GraphObserver::NodeId>> TypeNodes;
 
-  /// The current type variable context for the visitor (indexed by depth).
-  std::vector<clang::TemplateParameterList *> TypeContext;
-
-  /// At least 1 NodeId.
-  using SomeNodes = llvm::SmallVector<GraphObserver::NodeId, 1>;
-
-  /// A stack of ID groups to use when assigning blame for references (such as
-  /// function calls).
-  std::vector<SomeNodes> BlameStack;
-
   /// Blames a call to `Callee` at `Range` on everything at the top of
   /// `BlameStack` (or does nothing if there's nobody to blame).
   void RecordCallEdges(const GraphObserver::Range &Range,
@@ -786,19 +819,6 @@ private:
   FindMethodDefn(const clang::ObjCMethodDecl *MD,
                  const clang::ObjCInterfaceDecl *I);
 
-  /// \brief The current context for constructing `GraphObserver::Range`s.
-  ///
-  /// This is used whenever we enter a context where a section of source
-  /// code might have different meaning depending on assignments to
-  /// type variables (or, potentially eventually, preprocessor variables).
-  /// The `RangeContext` does not need to be extended when the meaning of
-  /// a section of code (given the current context) is unambiguous; for example,
-  /// the programmer must write down explicit specializations of template
-  /// classes (so they have distinct ranges), but the programmer does *not*
-  /// write down implicit specializations (so the context must be extended to
-  /// give them distinct ranges).
-  std::vector<GraphObserver::NodeId> RangeContext;
-
   /// \brief Maps known Decls to their NodeIds.
   llvm::DenseMap<const clang::Decl *, GraphObserver::NodeId> DeclToNodeId;
 
@@ -814,16 +834,11 @@ private:
   /// \brief The cache to use to generate signatures.
   MarkedSourceCache MarkedSources;
 
-  /// \brief True if we're currently underneath an implicit template
-  /// instantiation.
-  bool UnderneathImplicitTemplateInstantiation = false;
-
-  /// \brief True if we should only traverse decls that are complete
-  /// functions.
-  bool PruneIncompleteFunctions = false;
-
   /// \return true if we should stop indexing.
   std::function<bool()> ShouldStopIndexing;
+
+  /// \brief The active indexing job.
+  std::unique_ptr<IndexJob> Job;
 };
 
 /// \brief An `ASTConsumer` that passes events to a `GraphObserver`.
@@ -843,7 +858,7 @@ public:
                               Observer);
     {
       ProfileBlock block(Observer->getProfilingCallback(), "traverse_tu");
-      Visitor.TraverseDecl(Context.getTranslationUnitDecl());
+      Visitor.RunJob(llvm::make_unique<IndexJob>(Context.getTranslationUnitDecl()));
     }
   }
 
