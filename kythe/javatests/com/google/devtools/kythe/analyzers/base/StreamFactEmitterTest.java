@@ -16,10 +16,10 @@
 
 package com.google.devtools.kythe.analyzers.base;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.io.ByteArrayOutputStream;
 import java.io.ByteArrayInputStream;
-import java.io.ObjectOutputStream;
-import java.io.ObjectInputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import junit.framework.TestCase;
@@ -31,6 +31,7 @@ public class StreamFactEmitterTest extends TestCase {
   private StreamFactEmitter emitter;
   private ByteArrayOutputStream outputStream;
 
+  @Override
   public void setUp() {
     this.outputStream = new ByteArrayOutputStream();
     this.emitter = new StreamFactEmitter(this.outputStream);
@@ -51,6 +52,6 @@ public class StreamFactEmitterTest extends TestCase {
     assertNotNull(entry);
     assertEquals(entry.getSource(), testVName);
     assertEquals(entry.getFactName(), testFactName);
-    assertEquals(entry.getFactValue().toString(Charset.defaultCharset()), testFactValue);
+    assertEquals(entry.getFactValue().toString(UTF_8), testFactValue);
   }
 }

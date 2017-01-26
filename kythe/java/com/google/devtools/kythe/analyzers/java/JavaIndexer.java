@@ -18,7 +18,6 @@ package com.google.devtools.kythe.analyzers.java;
 
 import com.beust.jcommander.Parameter;
 import com.google.common.base.Strings;
-import com.google.devtools.kythe.analyzers.base.FactEmitter;
 import com.google.devtools.kythe.analyzers.base.StreamFactEmitter;
 import com.google.devtools.kythe.analyzers.base.IndexerConfig;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;

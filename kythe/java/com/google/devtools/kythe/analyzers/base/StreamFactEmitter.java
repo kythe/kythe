@@ -30,6 +30,7 @@ public class StreamFactEmitter implements FactEmitter {
     this.stream = stream;
   }
 
+  @Override
   public void emit(
       VName source, String edgeKind, VName target, String factName, byte[] factValue) {
     Entry.Builder entry =
