@@ -18,13 +18,11 @@ package com.google.devtools.kythe.analyzers.base;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import java.io.ByteArrayOutputStream;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.nio.charset.Charset;
-import junit.framework.TestCase;
 import com.google.devtools.kythe.proto.Storage.Entry;
 import com.google.devtools.kythe.proto.Storage.VName;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import junit.framework.TestCase;
 
 /** Tests {@link StreamFactEmitter} */
 public class StreamFactEmitterTest extends TestCase {

@@ -16,11 +16,11 @@
 
 package com.google.devtools.kythe.analyzers.base;
 
-import java.io.OutputStream;
-import java.io.IOException;
 import com.google.devtools.kythe.proto.Storage.Entry;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.protobuf.ByteString;
+import java.io.IOException;
+import java.io.OutputStream;
 
 /** {@link FactEmitter} directly streaming to an {@link OutputValueStream}. */
 public class StreamFactEmitter implements FactEmitter {
