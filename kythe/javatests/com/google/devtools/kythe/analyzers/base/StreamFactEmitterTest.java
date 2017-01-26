@@ -39,7 +39,7 @@ public class StreamFactEmitterTest extends TestCase {
     VName testVName = VName.newBuilder().setSignature("testSignature").build();
     String testFactName = "testFactName";
     String testFactValue = "testFactValue";
-    this.emitter.emit(testVName, null, null, testFactName, testFactValue.getBytes());
+    this.emitter.emit(testVName, null, null, testFactName, testFactValue.getBytes(UTF_8));
     this.outputStream.flush();
 
     ByteArrayInputStream inputStream = new ByteArrayInputStream(this.outputStream.toByteArray());
