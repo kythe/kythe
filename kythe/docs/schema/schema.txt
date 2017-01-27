@@ -431,6 +431,21 @@ public class E {
 int x;
 --------------------------------------------------------------------------------
 
+[[depends]]
+depends
+~~~~~~~
+
+Brief description::
+  A *depends* B if processing of A depends on the existence or presence of B.
+Commonly arises from::
+  build dependencies
+Points from::
+  <<process>>
+Points toward::
+  <<process>>, <<file>>
+Ordinals are used::
+  never
+
 [[documents]]
 documents
 ~~~~~~~~~
@@ -1595,6 +1610,23 @@ package foo
 //- File = vname("", "kythe", _, "kythe/schema/example.go", "").node/kind file
 //- File childof Pkg
 --------------------------------------------------------------------------------
+
+[[process]]
+process
+~~~~~~~
+
+Brief description::
+  A *process* describes an abstract processing action in a workflow.
+Facts::
+  label:::
+    A string label used to identify the process (optional).
+See also::
+  <<depends>>
+
+A *process* defines a processing action such as a step in a build or the
+execution of a continuous integration workflow. For workflows that assign
+identifying labels to processing steps (such as target names), the `label`
+should carry the name so assigned.
 
 [[record]]
 record
