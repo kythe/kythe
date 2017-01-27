@@ -723,10 +723,6 @@ MaybeFew<MarkedSource> MarkedSourceGenerator::GenerateMarkedSource(
   // MarkedSource generation is expensive. If we're not going to write out the
   // marked source later on, don't spend time on it.
   // TODO(zarko): Introduce a similar check for documentation.
-  if (!cache_->observer()->lossy_claiming() &&
-      !cache_->observer()->claimNode(decl_id)) {
-    return None();
-  }
   if (!WillGenerateMarkedSource()) {
     return None();
   }

@@ -378,16 +378,6 @@ class KytheGraphObserver : public GraphObserver {
   void AppendRangeToStream(llvm::raw_ostream &Ostream,
                            const Range &Range) override;
 
-  /// \brief Set whether we're willing to drop data to avoid redundancy.
-  ///
-  /// The resulting output will be missing nodes and edges depending on
-  /// various factors, including whether claim transcripts are available in the
-  /// input translation units and whether template instantations are being
-  /// indexed.
-  void set_lossy_claiming(bool value) { lossy_claiming_ = value; }
-
-  bool lossy_claiming() const override { return lossy_claiming_; }
-
   bool claimImplicitNode(const std::string &identifier) override;
 
   void finishImplicitNode(const std::string &identifier) override;
@@ -558,8 +548,6 @@ class KytheGraphObserver : public GraphObserver {
   KytheClaimToken default_token_;
   /// The claim token to use for structural types.
   KytheClaimToken type_token_;
-  /// Possibly drop data for the greater good of eliminating redundancy.
-  bool lossy_claiming_ = false;
   /// Information about builtin nodes.
   struct Builtin {
     /// This Builtin's NodeId.

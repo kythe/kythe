@@ -115,7 +115,6 @@ std::string IndexCompilationUnit(const proto::CompilationUnit &Unit,
   }
   Observer.set_claimant(Unit.v_name());
   Observer.set_starting_context(Unit.entry_context());
-  Observer.set_lossy_claiming(Options.EnableLossyClaiming);
   for (const auto &Input : Unit.required_input()) {
     if (Input.has_info() && !Input.info().path().empty() &&
         Input.has_v_name()) {

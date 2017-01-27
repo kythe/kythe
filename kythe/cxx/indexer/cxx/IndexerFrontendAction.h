@@ -217,8 +217,6 @@ struct IndexerOptions {
       BehaviorOnUnimplemented::Abort;
   /// \brief Whether to emit all data.
   enum Verbosity Verbosity = kythe::Verbosity::Classic;
-  /// \brief Enable experimental lossy claiming if true.
-  bool EnableLossyClaiming = false;
   /// \brief Whether to allow access to the raw filesystem.
   bool AllowFSAccess = false;
   /// \brief Whether to drop data found to be template instantiation

@@ -60,9 +60,6 @@ class IndexerContext {
   HashCache *hash_cache() const { return hash_cache_.get(); }
   /// \brief If true, the indexer is permitted to touch the local filesystem.
   bool allow_filesystem_access() const { return allow_filesystem_access_; }
-  /// \brief If true, the indexer may make decisions about claiming that could
-  /// lose data.
-  bool enable_lossy_claiming() const { return enable_lossy_claiming_; }
   /// \brief If true, the indexer should handle unknown elements gracefully.
   bool ignore_unimplemented() const { return ignore_unimplemented_; }
   /// \brief Indexer jobs to complete.
@@ -125,8 +122,6 @@ class IndexerContext {
   std::unique_ptr<HashCache> hash_cache_;
   /// Whether access to the local filesystem is allowed during analysis.
   bool allow_filesystem_access_ = false;
-  /// Whether possibly lossy optimizations are allowed.
-  bool enable_lossy_claiming_ = false;
   /// Whether to ignore missing cases during analysis.
   bool ignore_unimplemented_ = false;
 };

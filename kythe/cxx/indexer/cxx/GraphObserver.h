@@ -311,9 +311,6 @@ public:
     return getDefaultClaimToken();
   }
 
-  /// \brief Returns whether experimental lossy claiming is enabled.
-  virtual bool lossy_claiming() const { return false; }
-
   /// \brief Returns the `NodeId` for the builtin type or type constructor named
   /// by `Spelling`.
   ///

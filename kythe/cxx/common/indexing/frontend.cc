@@ -298,7 +298,6 @@ void IndexerContext::InitializeClaimClient() {
       exit(1);
     }
     claim_client_ = std::move(dynamic_claims);
-    enable_lossy_claiming_ = true;
   } else {
     auto static_claims = std::unique_ptr<kythe::StaticClaimClient>(
         new kythe::StaticClaimClient());

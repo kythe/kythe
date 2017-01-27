@@ -65,7 +65,6 @@ int main(int argc, char *argv[]) {
   options.DropInstantiationIndependentData =
       FLAGS_experimental_drop_instantiation_independent_data;
   options.AllowFSAccess = context.allow_filesystem_access();
-  options.EnableLossyClaiming = context.enable_lossy_claiming();
   if (FLAGS_report_profiling_events) {
     options.ReportProfileEvent = [](const char *counter, ProfilingEvent event) {
       fprintf(stderr, "%s: %s\n", counter,
