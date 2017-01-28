@@ -9,6 +9,7 @@ cc_library(
         "IndexerPPCallbacks.cc",
         "KytheGraphObserver.cc",
         "clang_utils.cc",
+        "indexer_worklist.cc",
         "marked_source.cc",
     ],
     hdrs = [
@@ -19,6 +20,7 @@ cc_library(
         "IndexerPPCallbacks.h",
         "KytheGraphObserver.h",
         "clang_utils.h",
+        "indexer_worklist.h",
         "marked_source.h",
     ],
     copts = [

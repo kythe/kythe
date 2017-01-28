@@ -33,6 +33,7 @@
 
 #include "GraphObserver.h"
 #include "IndexerLibrarySupport.h"
+#include "indexer_worklist.h"
 #include "marked_source.h"
 
 namespace kythe {
@@ -185,47 +186,6 @@ void InsertAnchorMarks(std::string &Text, std::vector<MiniAnchor> &Anchors);
 
 /// \brief Used internally to check whether parts of the AST can be ignored.
 class PruneCheck;
-
-/// \brief An indexer task and its related state.
-struct IndexJob {
-  explicit IndexJob(clang::Decl *Decl) : Decl(Decl) {}
-
-  /// \brief The `Decl` to index.
-  clang::Decl *Decl;
-
-  /// \brief True if we're currently underneath an implicit template
-  /// instantiation.
-  bool UnderneathImplicitTemplateInstantiation = false;
-
-  /// \brief True if we should only traverse decls that are complete
-  /// functions.
-  bool PruneIncompleteFunctions = false;
-
-  /// \brief The current context for constructing `GraphObserver::Range`s.
-  ///
-  /// This is used whenever we enter a context where a section of source
-  /// code might have different meaning depending on assignments to
-  /// type variables (or, potentially eventually, preprocessor variables).
-  /// The `RangeContext` does not need to be extended when the meaning of
-  /// a section of code (given the current context) is unambiguous; for example,
-  /// the programmer must write down explicit specializations of template
-  /// classes (so they have distinct ranges), but the programmer does *not*
-  /// write down implicit specializations (so the context must be extended to
-  /// give them distinct ranges).
-  std::vector<GraphObserver::NodeId> RangeContext;
-
-  /// \brief The current type variable context for the visitor (indexed by
-  /// depth).
-  std::vector<clang::TemplateParameterList *> TypeContext;
-
-  /// \brief At least 1 NodeId.
-  using SomeNodes = llvm::SmallVector<GraphObserver::NodeId, 1>;
-
-  /// \brief A stack of ID groups to use when assigning blame for references
-  /// (such as
-  /// function calls).
-  std::vector<SomeNodes> BlameStack;
-};
 
 /// \brief An AST visitor that extracts information for a translation unit and
 /// writes it to a `GraphObserver`.
@@ -546,6 +506,20 @@ public:
     TraverseDecl(Job->Decl);
   }
 
+  const IndexJob &getCurrentJob() {
+    CHECK(Job != nullptr);
+    return *Job;
+  }
+
+  void Work(clang::Decl *InitialDecl,
+            std::unique_ptr<IndexerWorklist> NewWorklist) {
+    Worklist = std::move(NewWorklist);
+    Worklist->EnqueueJob(llvm::make_unique<IndexJob>(InitialDecl));
+    while (!ShouldStopIndexing() && Worklist->DoWork())
+      ;
+    Worklist.reset();
+  }
+
 private:
   friend class PruneCheck;
 
@@ -842,6 +816,9 @@ private:
 
   /// \brief The active indexing job.
   std::unique_ptr<IndexJob> Job;
+
+  /// \brief The controlling worklist.
+  std::unique_ptr<IndexerWorklist> Worklist;
 };
 
 /// \brief An `ASTConsumer` that passes events to a `GraphObserver`.
@@ -861,8 +838,8 @@ public:
                               Observer);
     {
       ProfileBlock block(Observer->getProfilingCallback(), "traverse_tu");
-      Visitor.RunJob(
-          llvm::make_unique<IndexJob>(Context.getTranslationUnitDecl()));
+      Visitor.Work(Context.getTranslationUnitDecl(),
+                   IndexerWorklist::CreateWorklist(&Visitor));
     }
   }
 
