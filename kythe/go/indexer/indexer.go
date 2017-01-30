@@ -179,7 +179,11 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 				return nil, fmt.Errorf("fetching %q (%s): %v", fpath, ri.Info.Digest, err)
 			}
 			srcs[fpath] = string(data)
-			parsed, err := parser.ParseFile(fset, fpath, data, parser.AllErrors|parser.ParseComments)
+			vpath := ri.VName.GetPath()
+			if vpath == "" {
+				vpath = fpath
+			}
+			parsed, err := parser.ParseFile(fset, vpath, data, parser.AllErrors|parser.ParseComments)
 			if err != nil {
 				return nil, fmt.Errorf("parsing %q: %v", fpath, err)
 			}
