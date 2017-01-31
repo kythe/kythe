@@ -105,7 +105,7 @@ std::string IndexCompilationUnit(const proto::CompilationUnit &Unit,
       new IndexVFS(FSO.WorkingDir, Files, Dirs));
   KytheGraphRecorder Recorder(&Output);
   KytheGraphObserver Observer(&Recorder, &Client, MetaSupports, VFS,
-                              Options.ReportProfileEvent, Options.Language);
+                              Options.ReportProfileEvent);
   if (Cache != nullptr) {
     Output.UseHashCache(Cache);
     Observer.StopDeferringNodes();

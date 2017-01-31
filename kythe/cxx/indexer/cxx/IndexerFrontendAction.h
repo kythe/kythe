@@ -35,7 +35,6 @@
 #include "glog/logging.h"
 #include "kythe/cxx/common/cxx_details.h"
 #include "kythe/cxx/common/kythe_metadata_file.h"
-#include "kythe/cxx/common/language.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Lex/HeaderSearch.h"
@@ -229,8 +228,6 @@ struct IndexerOptions {
   /// as possible.
   /// \return true if indexing should be cancelled.
   std::function<bool()> ShouldStopIndexing = [] { return false; };
-  /// \brief Language we are indexing (c++ or objc).
-  supported_language::Language Language = supported_language::Language::kCpp;
 };
 
 /// \brief Indexes `Unit`, reading from `Files` in the assumed and writing

@@ -129,13 +129,11 @@ class KytheGraphObserver : public GraphObserver {
   KytheGraphObserver(KytheGraphRecorder *recorder, KytheClaimClient *client,
                      const MetadataSupports *meta_supports,
                      const llvm::IntrusiveRefCntPtr<IndexVFS> vfs,
-                     ProfilingCallback ReportProfileEventCallback,
-                     supported_language::Language lang)
+                     ProfilingCallback ReportProfileEventCallback)
       : recorder_(CHECK_NOTNULL(recorder)),
         client_(CHECK_NOTNULL(client)),
         meta_supports_(CHECK_NOTNULL(meta_supports)),
-        vfs_(vfs),
-        lang_(lang) {
+        vfs_(vfs) {
     default_token_.set_rough_claimed(true);
     type_token_.set_rough_claimed(true);
     ReportProfileEvent = ReportProfileEventCallback;
@@ -565,8 +563,6 @@ class KytheGraphObserver : public GraphObserver {
   void EmitMetaNodes();
   /// Registered builtins.
   std::map<std::string, Builtin> builtins_;
-  /// Language we are currently indexing.
-  supported_language::Language lang_;
 };
 
 }  // namespace kythe

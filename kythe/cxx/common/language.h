@@ -23,17 +23,15 @@
 
 namespace kythe {
 namespace supported_language {
+
+// The indexer operates on Objective-C, C, and C++. Since there are links
+// between all of those languages, it is easiest if we output all indexer facts
+// using a single language, even if it is a bit of a lie.
+extern const char *const kIndexerLang;
+
 enum class Language { kCpp, kObjectiveC };
 
-/// \brief Return the enum version of s in lang and return true if s is a
-/// supported language. If s is not a supported language, false is returned.
-bool FromString(const std::string &s, Language *l);
-
 std::string ToString(Language l);
-
-/// \brief Returns a llvm::StringRef for the language. The StringRef will point
-/// to data that never changes and will remain alive until the program exits.
-llvm::StringRef ToStringRef(Language l);
 
 };  // namespace supported_language
 };  // namespace kythe

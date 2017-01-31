@@ -37,6 +37,7 @@
 #include "clang/AST/TypeLoc.h"
 #include "clang/Basic/SourceManager.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
+#include "kythe/cxx/common/language.h"
 #include "kythe/cxx/common/path_utils.h"
 
 #include "IndexerASTHooks.h"
@@ -241,7 +242,7 @@ kythe::proto::VName KytheGraphObserver::VNameFromRange(
       signature->append(range.Context.ToClaimedString());
     }
   }
-  out_name.set_language(supported_language::ToString(lang_));
+  out_name.set_language(supported_language::kIndexerLang);
   out_name.set_signature(CompressString(out_name.signature()));
   return out_name;
 }
@@ -474,7 +475,7 @@ void KytheGraphObserver::recordCallEdge(
 VNameRef KytheGraphObserver::VNameRefFromNodeId(
     const GraphObserver::NodeId &node_id) {
   VNameRef out_ref;
-  out_ref.language = supported_language::ToStringRef(lang_);
+  out_ref.language = llvm::StringRef(supported_language::kIndexerLang);
   if (const auto *token =
           clang::dyn_cast<KytheClaimToken>(node_id.getToken())) {
     token->DecorateVName(&out_ref);
@@ -490,7 +491,7 @@ MaybeFew<kythe::proto::VName> KytheGraphObserver::RecordName(
   }
   proto::VName out_vname;
   // Names don't have corpus, path or root set.
-  out_vname.set_language(supported_language::ToString(lang_));
+  out_vname.set_language(supported_language::kIndexerLang);
   const std::string name_id_string = name_id.ToString();
   out_vname.set_signature(name_id_string);
   if (!deferring_nodes_ || written_name_ids_.insert(name_id_string).second) {

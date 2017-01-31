@@ -1,8 +1,8 @@
-// Checks that the language is properly set to objectivec.
+// Checks that the language is properly set.
 
 
 //- @Box defines/binding BoxDecl
-//- BoxDecl named vname(_, _, _, _, "objectivec")
+//- BoxDecl named vname(_, _, _, _, "c++")
 @interface Box
 @end
 

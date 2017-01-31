@@ -22,20 +22,10 @@
 namespace kythe {
 namespace supported_language {
 
+const char *const kIndexerLang = "c++";
+
 constexpr char kCpp[] = "c++";
 constexpr char kObjectiveC[] = "objectivec";
-
-bool FromString(const std::string &s, Language *l) {
-  if (s.compare(kCpp) == 0) {
-    *l = Language::kCpp;
-    return true;
-  }
-  if (s.compare(kObjectiveC) == 0) {
-    *l = Language::kObjectiveC;
-    return true;
-  }
-  return false;
-}
 
 std::string ToString(Language l) {
   switch (l) {
@@ -46,13 +36,5 @@ std::string ToString(Language l) {
   }
 }
 
-llvm::StringRef ToStringRef(Language l) {
-  switch (l) {
-    case Language::kCpp:
-      return llvm::StringRef(kCpp);
-    case Language::kObjectiveC:
-      return llvm::StringRef(kObjectiveC);
-  }
-}
 }  // namespace supported_langauge
 }  // namespace kythe
