@@ -302,7 +302,8 @@ public class SignatureGenerator
         // javax.lang.model.* classes come from the runtime.
         Type upperBound = tsym.type.getUpperBound();
         if (upperBound instanceof IntersectionClassType) {
-          IntersectionClassType intersectionType = (IntersectionClassType) tsym.type.getUpperBound();
+          IntersectionClassType intersectionType =
+              (IntersectionClassType) tsym.type.getUpperBound();
           sb.append(" extends ");
           if (!intersectionType.allInterfaces) {
             intersectionType.supertype_field.accept(this, sb);
@@ -316,8 +317,8 @@ public class SignatureGenerator
           // Note that using setLength() to shorten a StringBuilder is efficient,
           // and doesn't trigger allocation or copying.
           sb.setLength(sb.length() - 1);
-        } else if ((upperBound instanceof ClassType || upperBound instanceof TypeVar) &&
-                   !isJavaLangObject(upperBound)) {
+        } else if ((upperBound instanceof ClassType || upperBound instanceof TypeVar)
+            && !isJavaLangObject(upperBound)) {
           sb.append(" extends ");
           upperBound.accept(this, sb);
         }

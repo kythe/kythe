@@ -91,7 +91,8 @@ public class MiniAnchor<T> {
             return a.begin >= a.end;
           }
         });
-    Collections.sort(miniAnchors,
+    Collections.sort(
+        miniAnchors,
         new Comparator<MiniAnchor<T>>() {
           @Override
           public int compare(MiniAnchor<T> l, MiniAnchor<T> r) {

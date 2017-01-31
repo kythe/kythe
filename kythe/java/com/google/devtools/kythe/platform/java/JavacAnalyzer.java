@@ -20,7 +20,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.devtools.kythe.platform.shared.AnalysisException;
 import com.google.devtools.kythe.platform.shared.StatisticsCollector;
-import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.sun.source.tree.CompilationUnitTree;
 import java.io.Serializable;
 import java.net.URI;

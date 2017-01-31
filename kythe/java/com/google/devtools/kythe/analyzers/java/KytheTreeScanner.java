@@ -246,12 +246,12 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
       // Generic classes record the source range of the class name for the abs node, regular
       // classes record the source range of the class name for the record node.
-      EntrySet absNode = defineTypeParameters(
-          ctx,
-          classNode,
-          classDef.getTypeParameters(),
-          ImmutableList.<EntrySet>of() /* There are no wildcards in class definitions */
-      );
+      EntrySet absNode =
+          defineTypeParameters(
+              ctx,
+              classNode,
+              classDef.getTypeParameters(),
+              ImmutableList.<EntrySet>of() /* There are no wildcards in class definitions */);
       if (absNode != null) {
         List<String> tParamNames = new LinkedList<>();
         for (JCTypeParameter tParam : classDef.getTypeParameters()) {
@@ -287,7 +287,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
           case ENUM:
             superClassNode = getJavaLangEnumNode(classNode, signature.get());
             break;
-          // Interfaces have no implicit superclass.
+            // Interfaces have no implicit superclass.
         }
       }
 
@@ -341,12 +341,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       boolean documented = visitDocComment(methodDef, methodNode);
       visitAnnotations(methodNode, methodDef.getModifiers().getAnnotations(), ctx);
 
-      EntrySet absNode = defineTypeParameters(
-          ctx,
-          methodNode,
-          methodDef.getTypeParameters(),
-          wildcards
-      );
+      EntrySet absNode =
+          defineTypeParameters(ctx, methodNode, methodDef.getTypeParameters(), wildcards);
 
       EntrySet ret, bindingAnchor = null;
       String fnTypeName = "(" + Joiner.on(",").join(paramTypeNames) + ")";
@@ -693,9 +689,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   // node. The code currently does not have an easy way to access that node but this method might
   // offer a way to change that.
   // See https://phabricator-dot-kythe-repo.appspot.com/T185 for more discussion and detail.
-  /**
-   * Create an abs node if we have type variables or if we have wildcards.
-   */
+  /** Create an abs node if we have type variables or if we have wildcards. */
   private EntrySet defineTypeParameters(
       TreeContext ownerContext,
       EntrySet owner,
@@ -794,7 +788,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     Symbol javaLangEnum = getSymbols().enumSym;
     String javaLangEnumSignature = signatureGenerator.getSignature(javaLangEnum).get();
     EntrySet javaLangEnumEntrySet = entrySets.getNode(javaLangEnum, javaLangEnumSignature);
-    EntrySet typeNode = entrySets.newTApply(javaLangEnumEntrySet, Collections.singletonList(enumEntrySet));
+    EntrySet typeNode =
+        entrySets.newTApply(javaLangEnumEntrySet, Collections.singletonList(enumEntrySet));
     String qualifiedName = javaLangEnumSignature + "<" + enumSignature + ">";
     entrySets.emitName(typeNode, qualifiedName);
     return new JavaNode(typeNode, qualifiedName);
@@ -1002,9 +997,7 @@ class JavaNode {
     this(entries, qualifiedName, null, ImmutableList.<EntrySet>of());
   }
 
-  JavaNode(EntrySet entries,
-      String qualifiedName,
-      ImmutableList<EntrySet> childWildcards) {
+  JavaNode(EntrySet entries, String qualifiedName, ImmutableList<EntrySet> childWildcards) {
     this(entries, qualifiedName, null, childWildcards);
   }
 
@@ -1013,11 +1006,11 @@ class JavaNode {
         entries,
         qualifiedName,
         typeNode,
-        typeNode != null ? typeNode.childWildcards : ImmutableList.<EntrySet>of()
-    );
+        typeNode != null ? typeNode.childWildcards : ImmutableList.<EntrySet>of());
   }
 
-  JavaNode(EntrySet entries,
+  JavaNode(
+      EntrySet entries,
       String qualifiedName,
       JavaNode typeNode,
       ImmutableList<EntrySet> childWildcards) {

@@ -30,8 +30,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Binary to run Kythe's Bazel index over a single .kindex file, emitting entries as Kythe nodes
- * and edges to STDOUT.
+ * Binary to run Kythe's Bazel index over a single .kindex file, emitting entries as Kythe nodes and
+ * edges to STDOUT.
  */
 public class BazelIndexer {
   public static void main(String[] args) throws AnalysisException, IOException {

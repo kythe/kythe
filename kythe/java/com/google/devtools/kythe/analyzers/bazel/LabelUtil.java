@@ -25,41 +25,38 @@ import java.util.regex.Pattern;
  */
 public class LabelUtil {
 
-  /**
-   * Fully qualified bazel build labels start with double slashes.
-   */
+  /** Fully qualified bazel build labels start with double slashes. */
   private static final String LABEL_PREFIX = "//";
 
   /**
-   * In labels bazel build packages and rules/files are separated with a colon. Unqualified
-   * names may also start with a colon.
+   * In labels bazel build packages and rules/files are separated with a colon. Unqualified names
+   * may also start with a colon.
    */
   private static final String RULE_SEPARATOR = ":";
 
-  /**
-   * bazel uses forward slashes for path part separators.
-   */
+  /** bazel uses forward slashes for path part separators. */
   private static final String SLASH = "/";
 
   /**
-   * Build labels can be just about any vaguely path-like format with a colon
-   * thrown in somewhere. This pattern handles every working visible BUILD label in
-   * bazel, as of its check-in.
-   * <p>
-   * Example build labels:
+   * Build labels can be just about any vaguely path-like format with a colon thrown in somewhere.
+   * This pattern handles every working visible BUILD label in bazel, as of its check-in.
+   *
+   * <p>Example build labels:
+   *
    * <ul>
-   *   <li><code>//base</code></li>
-   *   <li><code>//base:base</code></li>
-   *   <li><code>:base</code></li>
-   *   <li><code>base</code></li>
-   *   <li><code>//gws/base:release</code></li>
-   *   <li><code>//util/gtl:lazy_static_ptr</code></li>
-   *   <li><code>//example/d/foo:bar/baz.bing+</code></li>
+   *   <li><code>//base</code>
+   *   <li><code>//base:base</code>
+   *   <li><code>:base</code>
+   *   <li><code>base</code>
+   *   <li><code>//gws/base:release</code>
+   *   <li><code>//util/gtl:lazy_static_ptr</code>
+   *   <li><code>//example/d/foo:bar/baz.bing+</code>
    * </ul>
    */
-  private static final Pattern LABEL_PATTERN = Pattern.compile(
-      "^((?://)(([a-zA-Z_.][a-zA-Z0-9_.\\-]*/)*([a-zA-Z_.][a-zA-Z0-9_.\\-\\+]*)))?"
-          + "(?::)?([a-zA-Z0-9_.\\-/\\+]+)?$");
+  private static final Pattern LABEL_PATTERN =
+      Pattern.compile(
+          "^((?://)(([a-zA-Z_.][a-zA-Z0-9_.\\-]*/)*([a-zA-Z_.][a-zA-Z0-9_.\\-\\+]*)))?"
+              + "(?::)?([a-zA-Z0-9_.\\-/\\+]+)?$");
 
   // The important regex capture groups for LABEL_PATTERN
   private static final int PACKAGE_GROUP = 2;
@@ -67,8 +64,8 @@ public class LabelUtil {
   private static final int RULE_GROUP = 5;
 
   /**
-   * Every rule name is stored in the full {@code package:rule} format, even for eponymous
-   * rules (e.g. {@code foo/package:package}.
+   * Every rule name is stored in the full {@code package:rule} format, even for eponymous rules
+   * (e.g. {@code foo/package:package}.
    *
    * @param label the label to canonicalize
    * @param packageName the name of the current package context
@@ -79,9 +76,9 @@ public class LabelUtil {
     label = label.replace("/...", ":__subpackages__");
 
     /**
-     * TODO(craigbarber): This logic is duplicated in the bazel {@code Label} class. Once
-     * this class and other bazel libs become available, this code should be re-factored
-     * to utilize the bazel lib.
+     * TODO(craigbarber): This logic is duplicated in the bazel {@code Label} class. Once this class
+     * and other bazel libs become available, this code should be re-factored to utilize the bazel
+     * lib.
      */
     Matcher matcher = LABEL_PATTERN.matcher(label.trim());
 
@@ -106,9 +103,7 @@ public class LabelUtil {
     return canonicalLabel.toString();
   }
 
-  /**
-   * Strips any label prefix and replaces the rule separating colon with a slash.
-   */
+  /** Strips any label prefix and replaces the rule separating colon with a slash. */
   public static String labelToFilePath(String label) {
     return label.replaceFirst(LABEL_PREFIX, "").replace(RULE_SEPARATOR, SLASH);
   }

@@ -238,9 +238,8 @@ public class KytheURI implements Serializable {
   }
 
   /**
-   * Returns a lexically cleaned path, with repeated slashes and "." path
-   * components removed, and ".." path components rewound as far as possible
-   * without touching the filesystem.
+   * Returns a lexically cleaned path, with repeated slashes and "." path components removed, and
+   * ".." path components rewound as far as possible without touching the filesystem.
    */
   private static String cleanPath(String path) {
     ArrayList<String> clean = new ArrayList<String>();

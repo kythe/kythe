@@ -27,9 +27,8 @@ import java.io.File;
 import java.util.ArrayList;
 
 /**
- * A set of methods for generating tickets in the BUILD analyzer.
- * Allows handling preprocessed vs. real BUILD files, by customizing tickets with configurable
- * prefixes.
+ * A set of methods for generating tickets in the BUILD analyzer. Allows handling preprocessed vs.
+ * real BUILD files, by customizing tickets with configurable prefixes.
  */
 public class Tickets {
   private static final String RUNFILES = "/runfiles/";
@@ -102,20 +101,19 @@ public class Tickets {
       this.packageName = basePackageName;
     }
 
-    this.buildFileUri = this.fileUri(joinTicketPaths(locationUriPrefix,
-            this.basePackageName, this.buildFilePath.getBaseName())).toString();
+    this.buildFileUri =
+        this.fileUri(
+                joinTicketPaths(
+                    locationUriPrefix, this.basePackageName, this.buildFilePath.getBaseName()))
+            .toString();
   }
 
-  /**
-   * @return The corpus root.
-   */
+  /** @return The corpus root. */
   public Path getCorpusRoot() {
     return this.corpusRoot;
   }
 
-  /**
-   * @return The corpus label for ticket generator.
-   */
+  /** @return The corpus label for ticket generator. */
   public String getCorpusLabel() {
     return this.corpusLabel;
   }
@@ -127,9 +125,7 @@ public class Tickets {
     return packageName;
   }
 
-  /**
-   * {@see #basePackageName}
-   */
+  /** {@see #basePackageName} */
   public String getBasePackageName() {
     return basePackageName;
   }
@@ -141,6 +137,7 @@ public class Tickets {
   /**
    * Returns "build:" ticket (rule, target, etc.) for an entity defined in the currently processed
    * BUILD file. `packageNamePrefix` is used in the result.
+   *
    * @param ruleName e.g., "Bar".
    * @return e.g., "build:foo/Foo:bar".
    */
@@ -151,6 +148,7 @@ public class Tickets {
 
   /**
    * Returns a ticket for the named rule.
+   *
    * @param packageName e.g., "devtools/kythe/lang/foo"
    * @param ruleName e.g., "Bar"
    * @return if `packageName` is the same as the package derived from
@@ -164,23 +162,20 @@ public class Tickets {
   }
 
   /**
-   * Returns a ticket for an exported variable. Exported variables are variables that are
-   * visible from other files (i.e. a top-level symbol in a .bzl file).
+   * Returns a ticket for an exported variable. Exported variables are variables that are visible
+   * from other files (i.e. a top-level symbol in a .bzl file).
    */
   public String exportedVariable(String bzlFile, String name) {
     return String.format("build:%s:%s", bzlFile, name);
   }
 
   /**
-   * Attempts to parse a string as a BUILD target. Returns null if it can't.
-   * Returns a ticket to a BUILD artifact. For non-global targets, uses `packageNamePrefix` in the
-   * result.
-   * `value` must either be a global target (//foo) or have a colon (:).
-   * Examples:
-   * 1. "//foo:bar" -> "build:foo:bar"
-   * 2. ":bar" -> "build:packageNamePrefix/current_BUILD_path:bar"
-   * 3. "//example/d/foo:bar/baz.bing" -> "build:example/d/foo:bar/baz.bing"
-   * 4. "foobar" -> NULL
+   * Attempts to parse a string as a BUILD target. Returns null if it can't. Returns a ticket to a
+   * BUILD artifact. For non-global targets, uses `packageNamePrefix` in the result. `value` must
+   * either be a global target (//foo) or have a colon (:). Examples: 1. "//foo:bar" ->
+   * "build:foo:bar" 2. ":bar" -> "build:packageNamePrefix/current_BUILD_path:bar" 3.
+   * "//example/d/foo:bar/baz.bing" -> "build:example/d/foo:bar/baz.bing" 4. "foobar" -> NULL
+   *
    * @param value The BUILD string to parse for embedded references
    */
   public String tryParseRule(String value) {
@@ -200,10 +195,9 @@ public class Tickets {
   }
 
   /**
-   * If `value` represents an existing file, returns a path to it.
-   * Otherwise, null.
+   * If `value` represents an existing file, returns a path to it. Otherwise, null.
    *
-   * `value` is taken relative to the BUILD file.
+   * <p>`value` is taken relative to the BUILD file.
    */
   public Path tryParseFilename(String value) {
     System.out.println("tryParseFilename(): value: " + value);
@@ -232,9 +226,7 @@ public class Tickets {
             || filePath.equals(this.buildFilePath.getPathString()));
   }
 
-  /**
-   * @return true iff `filePath` points to the processed BUILD file.
-   */
+  /** @return true iff `filePath` points to the processed BUILD file. */
   public boolean isBuildFile(Path file) {
     return file.equals(buildFilePath);
   }
@@ -263,50 +255,49 @@ public class Tickets {
       path = this.fileSystem.getPath(filePath);
     }
 
-    return new KytheURI(null,
-        this.getCorpusLabel(),
-        this.getCorpusRoot().getPathString(),
-        path.getPathString(),
-        BUILD_FILE_LANGUAGE).toString();
+    return new KytheURI(
+            null,
+            this.getCorpusLabel(),
+            this.getCorpusRoot().getPathString(),
+            path.getPathString(),
+            BUILD_FILE_LANGUAGE)
+        .toString();
   }
 
-  /**
-   * @return KytheURI path to `filePath`, e.g., kythe://<corpus>?path=/foo/bar.h
-   */
+  /** @return KytheURI path to `filePath`, e.g., kythe://<corpus>?path=/foo/bar.h */
   public String fileUri(Path file) {
     if (isBuildFile(file)) {
       return this.buildFileUri;
     }
 
-    return new KytheURI(null,
-        this.getCorpusLabel(),
-        (this.getCorpusRoot() != null ? this.getCorpusRoot().getPathString() : null),
-        file.getPathString(),
-        BUILD_FILE_LANGUAGE).toString();
+    return new KytheURI(
+            null,
+            this.getCorpusLabel(),
+            (this.getCorpusRoot() != null ? this.getCorpusRoot().getPathString() : null),
+            file.getPathString(),
+            BUILD_FILE_LANGUAGE)
+        .toString();
   }
 
-  /**
-   * Transforms Path(/home/user/client/javatests/foo/Bar.java) to
-   * "javatests/foo/Bar.java".
-   */
+  /** Transforms Path(/home/user/client/javatests/foo/Bar.java) to "javatests/foo/Bar.java". */
   public String relativeToCorpusRoot(Path file) {
     return file.relativeTo(this.getCorpusRoot()).getPathString();
   }
 
-  /**
-   * @return The build file's Kythe URI.
-   */
+  /** @return The build file's Kythe URI. */
   public String buildFileUri() {
     return this.buildFileUri.toString();
   }
 
   /**
    * Creates a BUILD ticket for an entity based on its position in the processed BUILD file.
+   *
    * @param displayName display-name of the referenced entity, e.g., "foo:Bar".
    */
   public String positional(String displayName, Location location) {
-    return String.format("build:%s@%s[%d:%d]", displayName, buildFileUri, location.getStartOffset(),
-        location.getEndOffset());
+    return String.format(
+        "build:%s@%s[%d:%d]",
+        displayName, buildFileUri, location.getStartOffset(), location.getEndOffset());
   }
 
   /**
@@ -319,6 +310,7 @@ public class Tickets {
 
   /**
    * Returns a BUILD ticket for s, not appending any prefixes.
+   *
    * @return build:s
    */
   private static String absoluteBuildTicket(String s) {
@@ -327,6 +319,7 @@ public class Tickets {
 
   /**
    * Returns a ticket for accessing a BUILD-language function and its attribute.
+   *
    * @param functionName e.g., "java_library"
    * @param attribute e.g., "srcs".
    * @return e.g., "build:java_library:srcs".
@@ -345,7 +338,7 @@ public class Tickets {
    * @param paths The paths to be joined.
    * @return A join string composed of the specified paths.
    */
-  private static String joinTicketPaths(String...paths) {
+  private static String joinTicketPaths(String... paths) {
     ArrayList<String> pathsWithValue = new ArrayList<>();
     for (String path : paths) {
       if (!Strings.isNullOrEmpty(path)) {

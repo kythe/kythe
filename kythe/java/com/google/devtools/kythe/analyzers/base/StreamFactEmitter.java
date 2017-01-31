@@ -31,13 +31,12 @@ public class StreamFactEmitter implements FactEmitter {
   }
 
   @Override
-  public void emit(
-      VName source, String edgeKind, VName target, String factName, byte[] factValue) {
+  public void emit(VName source, String edgeKind, VName target, String factName, byte[] factValue) {
     Entry.Builder entry =
         Entry.newBuilder()
-        .setSource(source)
-        .setFactName(factName)
-        .setFactValue(ByteString.copyFrom(factValue));
+            .setSource(source)
+            .setFactName(factName)
+            .setFactValue(ByteString.copyFrom(factValue));
     if (edgeKind != null) {
       entry.setEdgeKind(edgeKind).setTarget(target);
     }

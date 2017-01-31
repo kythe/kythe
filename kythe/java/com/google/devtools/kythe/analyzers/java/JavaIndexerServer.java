@@ -18,8 +18,8 @@ package com.google.devtools.kythe.analyzers.java;
 
 import com.beust.jcommander.Parameter;
 import com.google.devtools.kythe.analyzers.base.FactEmitter;
-import com.google.devtools.kythe.analyzers.base.IndexerConfig;
 import com.google.devtools.kythe.analyzers.base.GRPCCompilationAnalyzer;
+import com.google.devtools.kythe.analyzers.base.IndexerConfig;
 import com.google.devtools.kythe.platform.java.JavacAnalysisDriver;
 import com.google.devtools.kythe.platform.shared.AnalysisException;
 import com.google.devtools.kythe.platform.shared.FileDataProvider;

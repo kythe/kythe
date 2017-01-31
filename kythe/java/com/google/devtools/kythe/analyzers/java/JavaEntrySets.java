@@ -91,10 +91,11 @@ public class JavaEntrySets extends KytheEntrySets {
    * We're going through this extra effort to try and give people unsurprising qualified names.
    * To do that we have to deal with javac's mangling (in {@link getIdentToken} above), since for
    * anonymous classes javac only stores mangled symbols. The code as written will emit only dotted
-   * fully-qualified names, even for inner or anonymous classes, and considers concrete type, package,
-   * or method names to be appropriate dot points. (If we weren't careful here we might, for example,
-   * observe nodes in a qualified name corresponding to variables that are initialized to anonymous
-   * classes.) This reflects the nesting structure from the Java side, not the JVM side.
+   * fully-qualified names, even for inner or anonymous classes, and considers concrete type,
+   * package, or method names to be appropriate dot points. (If we weren't careful here we might,
+   * for example, observe nodes in a qualified name corresponding to variables that are initialized
+   * to anonymous classes.) This reflects the nesting structure from the Java side, not the JVM
+   * side.
    */
   private Symbol getQualifiedNameParent(Symbol sym) {
     sym = sym.owner;
