@@ -108,6 +108,8 @@ class IndexerWorklist {
   /// \brief Perform one or more units of work.
   /// \return true if these is more work to be done.
   virtual bool DoWork() = 0;
+
+  virtual ~IndexerWorklist() { }
 };
 
 }  // namespace kythe
