@@ -538,13 +538,20 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     EntrySet ctorNode = getNode(newClass.constructor);
     if (ctorNode != null) {
       // Span over "new Class"
-      EntrySet anchor =
-          entrySets.getAnchor(
-              filePositions,
-              new Span(
-                  filePositions.getStart(newClass), filePositions.getEnd(newClass.getIdentifier())),
-              ctx.getSnippet());
+      Span refSpan =
+          new Span(
+              filePositions.getStart(newClass), filePositions.getEnd(newClass.getIdentifier()));
+      EntrySet anchor = entrySets.getAnchor(filePositions, refSpan, ctx.getSnippet());
       emitAnchor(anchor, EdgeKind.REF, ctorNode);
+
+      // Span over "new Class(...)"
+      Span callSpan = new Span(refSpan.getStart(), filePositions.getEnd(newClass));
+      EntrySet callAnchor = entrySets.getAnchor(filePositions, callSpan, ctx.getSnippet());
+      emitAnchor(callAnchor, EdgeKind.REF_CALL, ctorNode);
+      TreeContext parentContext = owner.getMethodParent();
+      if (anchor != null && parentContext != null && parentContext.getNode() != null) {
+        emitEdge(callAnchor, EdgeKind.CHILDOF, parentContext.getNode());
+      }
 
       scanList(newClass.getTypeArguments(), ctx);
       scanList(newClass.getArguments(), ctx);
