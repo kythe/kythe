@@ -49,6 +49,8 @@
 
 DEFINE_bool(experimental_alias_template_instantiations, false,
             "Ignore template instantation information when generating IDs.");
+DEFINE_bool(experimental_threaded_claiming, false,
+            "Defer answering claims and submit them in bulk when possible.");
 
 namespace kythe {
 
@@ -258,7 +260,12 @@ bool IsClaimableForTraverse(const clang::Decl *decl) {
   return false;
 }
 
-enum class Prunability { CantPrune, CanPruneIncompleteFunctions, CanPrune };
+enum class Prunability {
+  kNone,
+  kImmediate,
+  kDeferIncompleteFunctions,
+  kDeferred
+};
 
 /// \brief RAII class used to pair claimImplicitNode/finishImplicitNode
 /// when pruning AST traversal.
@@ -270,7 +277,7 @@ public:
         visitor_->declDominatesPrunableSubtree(decl)) {
       // This node in the AST dominates a subtree that can be pruned.
       if (!visitor_->Observer.claimLocation(decl->getLocation())) {
-        can_prune_ = Prunability::CanPrune;
+        can_prune_ = Prunability::kImmediate;
       }
       return;
     }
@@ -294,18 +301,20 @@ public:
       // ** modulo wacky macros
       //
       GenerateCleanupId(decl);
-      if (!visitor_->Observer.claimImplicitNode(cleanup_id_)) {
-        can_prune_ = Prunability::CanPrune;
+      if (FLAGS_experimental_threaded_claiming ||
+          !visitor_->Observer.claimImplicitNode(cleanup_id_)) {
+        can_prune_ = Prunability::kDeferred;
       }
     } else if (llvm::isa<clang::ClassTemplateSpecializationDecl>(decl)) {
       GenerateCleanupId(decl);
-      if (!visitor_->Observer.claimImplicitNode(cleanup_id_)) {
-        can_prune_ = Prunability::CanPruneIncompleteFunctions;
+      if (FLAGS_experimental_threaded_claiming ||
+          !visitor_->Observer.claimImplicitNode(cleanup_id_)) {
+        can_prune_ = Prunability::kDeferIncompleteFunctions;
       }
     }
   }
   ~PruneCheck() {
-    if (!cleanup_id_.empty()) {
+    if (!FLAGS_experimental_threaded_claiming && !cleanup_id_.empty()) {
       visitor_->Observer.finishImplicitNode(cleanup_id_);
     }
   }
@@ -313,6 +322,8 @@ public:
   /// \return true if the decl supplied during construction doesn't need
   /// traversed.
   Prunability can_prune() const { return can_prune_; }
+
+  const std::string &cleanup_id() { return cleanup_id_; }
 
 private:
   void GenerateCleanupId(const clang::Decl *decl) {
@@ -356,7 +367,7 @@ private:
     }
     cleanup_id_ = CompressString(cleanup_id_);
   }
-  Prunability can_prune_ = Prunability::CantPrune;
+  Prunability can_prune_ = Prunability::kNone;
   std::string cleanup_id_;
   IndexerASTVisitor *visitor_;
 };
@@ -937,12 +948,31 @@ bool IndexerASTVisitor::TraverseDecl(clang::Decl *Decl) {
       return true;
     }
   }
-  PruneCheck Prune(this, Decl);
-  auto can_prune = Prune.can_prune();
-  if (can_prune == Prunability::CanPrune) {
-    return true;
-  } else if (can_prune == Prunability::CanPruneIncompleteFunctions) {
-    Job->PruneIncompleteFunctions = true;
+  if (FLAGS_experimental_threaded_claiming) {
+    if (Decl != Job->Decl) {
+      PruneCheck Prune(this, Decl);
+      auto can_prune = Prune.can_prune();
+      if (can_prune == Prunability::kImmediate) {
+        return true;
+      } else if (can_prune != Prunability::kNone) {
+        Worklist->EnqueueJobForImplicitDecl(
+            Decl, can_prune == Prunability::kDeferIncompleteFunctions,
+            Prune.cleanup_id());
+        return true;
+      }
+    } else {
+      if (Job->SetPruneIncompleteFunctions) {
+        Job->PruneIncompleteFunctions = true;
+      }
+    }
+  } else {
+    PruneCheck Prune(this, Decl);
+    auto can_prune = Prune.can_prune();
+    if (can_prune == Prunability::kImmediate) {
+      return true;
+    } else if (can_prune == Prunability::kDeferIncompleteFunctions) {
+      Job->PruneIncompleteFunctions = true;
+    }
   }
   GraphObserver::Delimiter Del(Observer);
   // For clang::FunctionDecl and all subclasses thereof push blame data.
