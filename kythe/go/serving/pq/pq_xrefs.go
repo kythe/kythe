@@ -358,7 +358,9 @@ func (d *DB) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReques
 			return nil, fmt.Errorf("invalid page_token: %q", req.PageToken)
 		}
 		pageOffset = int(t.Index)
-		edgesToken = t.SecondaryToken
+		if len(t.SecondaryToken) > 0 {
+			edgesToken = t.SecondaryToken[0]
+		}
 	}
 
 	reply := &xpb.CrossReferencesReply{
@@ -479,7 +481,7 @@ func (d *DB) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReques
 		}
 
 		if er.NextPageToken != "" {
-			rec, err := proto.Marshal(&ipb.PageToken{SecondaryToken: er.NextPageToken})
+			rec, err := proto.Marshal(&ipb.PageToken{SecondaryToken: []string{er.NextPageToken}})
 			if err != nil {
 				return nil, fmt.Errorf("internal error: error marshalling page token: %v", err)
 			}

@@ -759,7 +759,9 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 			return nil, fmt.Errorf("invalid page_token: %q", req.PageToken)
 		}
 		stats.skip = int(t.Index)
-		edgesPageToken = t.SecondaryToken
+		if len(t.SecondaryToken) > 0 {
+			edgesPageToken = t.SecondaryToken[0]
+		}
 	}
 	pageToken := stats.skip
 
@@ -954,7 +956,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		}
 
 		if er.NextPageToken != "" {
-			nextToken = &ipb.PageToken{SecondaryToken: er.NextPageToken}
+			nextToken = &ipb.PageToken{SecondaryToken: []string{er.NextPageToken}}
 		}
 	}
 

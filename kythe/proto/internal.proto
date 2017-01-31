@@ -49,8 +49,8 @@ message PageToken {
   // Index into the primary reply sequence.
   int32 index = 1;
 
-  // Secondary page token for reply sub-query.
-  string secondary_token = 2;
+  // Secondary page tokens for reply sub-queries.
+  repeated string secondary_token = 2;
 }
 
 // A CrossReference represents a path between two anchors, crossing between a
