@@ -16,6 +16,7 @@
 
 #include "kythe/cxx/indexer/cxx/clang_utils.h"
 
+#include "clang/AST/DeclTemplate.h"
 #include "clang/Basic/CharInfo.h"
 #include "clang/Lex/Lexer.h"
 #include "glog/logging.h"
@@ -184,5 +185,45 @@ bool IsTopLevelNonMacroMacroArgument(
     loc = source_manager.getImmediateMacroCallerLoc(loc);
   }
   return !loc.isMacroID();
+}
+
+const clang::Decl *FindSpecializedTemplate(const clang::Decl *decl) {
+  if (const auto *FD = llvm::dyn_cast<const clang::FunctionDecl>(decl)) {
+    if (auto *ftsi = FD->getTemplateSpecializationInfo()) {
+      if (!ftsi->isExplicitInstantiationOrSpecialization()) {
+        return ftsi->getTemplate();
+      }
+    }
+  } else if (const auto *ctsd =
+                 llvm::dyn_cast<const clang::ClassTemplateSpecializationDecl>(
+                     decl)) {
+    if (!ctsd->isExplicitInstantiationOrSpecialization()) {
+      auto primary_or_partial = ctsd->getSpecializedTemplateOrPartial();
+      if (const auto *partial =
+              primary_or_partial.dyn_cast<
+                  clang::ClassTemplatePartialSpecializationDecl *>()) {
+        return partial;
+      } else if (const auto *primary =
+                     primary_or_partial
+                         .dyn_cast<clang::ClassTemplateDecl *>()) {
+        return primary;
+      }
+    }
+  } else if (const auto *vtsd =
+                 llvm::dyn_cast<const clang::VarTemplateSpecializationDecl>(
+                     decl)) {
+    if (!vtsd->isExplicitInstantiationOrSpecialization()) {
+      auto primary_or_partial = vtsd->getSpecializedTemplateOrPartial();
+      if (const auto *partial =
+              primary_or_partial
+                  .dyn_cast<clang::VarTemplatePartialSpecializationDecl *>()) {
+        return partial;
+      } else if (const auto *primary =
+                     primary_or_partial.dyn_cast<clang::VarTemplateDecl *>()) {
+        return primary;
+      }
+    }
+  }
+  return decl;
 }
 }  // namespace kythe

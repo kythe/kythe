@@ -232,6 +232,13 @@ template <typename StackType>
 StackSizeRestorer<StackType> RestoreStack(StackType &S) {
   return StackSizeRestorer<StackType>(S);
 }
+
+/// \return true if `D` should not be visited because its name will never be
+/// uttered due to aliasing rules.
+bool SkipAliasedDecl(const clang::Decl *D) {
+  return FLAGS_experimental_alias_template_instantiations &&
+         (FindSpecializedTemplate(D) != D);
+}
 } // anonymous namespace
 
 bool IsClaimableForTraverse(const clang::Decl *decl) {
@@ -1475,6 +1482,9 @@ bool IndexerASTVisitor::BuildTemplateArgumentList(
 }
 
 bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl *Decl) {
+  if (SkipAliasedDecl(Decl)) {
+    return true;
+  }
   if (isa<ParmVarDecl>(Decl)) {
     // Ignore parameter types, those are added to the graph after processing
     // the parent function or member.
@@ -2000,6 +2010,9 @@ IndexerASTVisitor::RecordTemplate(const TemplateDeclish *Decl,
 }
 
 bool IndexerASTVisitor::VisitRecordDecl(const clang::RecordDecl *Decl) {
+  if (SkipAliasedDecl(Decl)) {
+    return true;
+  }
   if (Decl->isInjectedClassName()) {
     // We can't ignore this in ::Traverse* and still make use of the code that
     // traverses template instantiations (since that functionality is marked
@@ -2147,6 +2160,9 @@ bool IndexerASTVisitor::VisitRecordDecl(const clang::RecordDecl *Decl) {
 }
 
 bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
+  if (SkipAliasedDecl(Decl)) {
+    return true;
+  }
   auto Marks = MarkedSources.Generate(Decl);
   GraphObserver::NodeId InnerNode(Observer.getDefaultClaimToken(), "");
   GraphObserver::NodeId OuterNode(Observer.getDefaultClaimToken(), "");
@@ -2961,6 +2977,10 @@ IndexerASTVisitor::BuildNodeIdForDecl(const clang::Decl *Decl) {
   // NodeIds must be stable across analysis runs with the same input data.
   // Some NodeIds are stable in the face of changes to that data, such as
   // the IDs given to class definitions (in part because of the language rules).
+
+  if (FLAGS_experimental_alias_template_instantiations) {
+    Decl = FindSpecializedTemplate(Decl);
+  }
 
   // find, not insert, since we might generate other IDs in the process of
   // generating this one (thus invalidating the iterator insert returns).

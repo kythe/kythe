@@ -17,6 +17,7 @@
 #ifndef KYTHE_CXX_INDEXER_CXX_CLANG_UTILS_H_
 #define KYTHE_CXX_INDEXER_CXX_CLANG_UTILS_H_
 
+#include "clang/AST/Decl.h"
 #include "clang/AST/DeclarationName.h"
 #include "clang/Basic/LangOptions.h"
 #include "clang/Basic/SourceManager.h"
@@ -118,6 +119,11 @@ clang::SourceRange RangeForSingleTokenFromSourceLocation(
 bool IsTopLevelNonMacroMacroArgument(
     const clang::SourceManager &source_manager,
     const clang::SourceLocation &source_location);
+
+/// \brief If `decl` is an implicit template instantiation or specialization,
+/// returns the primary template or the partial specialization being
+/// instantiated. Otherwise, returns `decl`.
+const clang::Decl *FindSpecializedTemplate(const clang::Decl *decl);
 
 }  // namespace kythe
 
