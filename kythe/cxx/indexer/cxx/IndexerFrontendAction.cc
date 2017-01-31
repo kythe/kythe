@@ -83,12 +83,12 @@ std::string ConfigureSystemHeaders(const proto::CompilationUnit &Unit,
 }
 } // anonymous namespace
 
-std::string IndexCompilationUnit(const proto::CompilationUnit &Unit,
-                                 std::vector<proto::FileData> &Files,
-                                 KytheClaimClient &Client, HashCache *Cache,
-                                 KytheOutputStream &Output,
-                                 const IndexerOptions &Options,
-                                 const MetadataSupports *MetaSupports) {
+std::string IndexCompilationUnit(
+    const proto::CompilationUnit &Unit, std::vector<proto::FileData> &Files,
+    KytheClaimClient &Client, HashCache *Cache, KytheOutputStream &Output,
+    const IndexerOptions &Options, const MetadataSupports *MetaSupports,
+    std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor *)>
+        CreateWorklist) {
   HeaderSearchInfo HSI;
   bool HSIValid = DecodeHeaderSearchInformation(Unit, HSI);
   std::string FixupArgument;
@@ -142,8 +142,9 @@ std::string IndexCompilationUnit(const proto::CompilationUnit &Unit,
           });
     }
   }
-  std::unique_ptr<IndexerFrontendAction> Action(new IndexerFrontendAction(
-      &Observer, HSIValid ? &HSI : nullptr, Options.ShouldStopIndexing));
+  std::unique_ptr<IndexerFrontendAction> Action(
+      new IndexerFrontendAction(&Observer, HSIValid ? &HSI : nullptr,
+                                Options.ShouldStopIndexing, CreateWorklist));
   Action->setIgnoreUnimplemented(Options.UnimplementedBehavior);
   Action->setTemplateMode(Options.TemplateBehavior);
   Action->setVerbosity(Options.Verbosity);

@@ -1002,6 +1002,11 @@ void KytheGraphObserver::finishImplicitNode(const std::string &identifier) {
   // TODO(zarko): Handle this in two phases. This should commmit the claim.
 }
 
+bool KytheGraphObserver::claimBatch(
+    std::vector<std::pair<std::string, bool>> *pairs) {
+  return client_->ClaimBatch(pairs);
+}
+
 void KytheGraphObserver::pushFile(clang::SourceLocation blame_location,
                                   clang::SourceLocation source_location) {
   PreprocessorContext previous_context =

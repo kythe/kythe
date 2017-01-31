@@ -51,7 +51,7 @@ class IndexerWorklistImpl : public IndexerWorklist {
 };
 }  // anonymous namespace
 
-std::unique_ptr<IndexerWorklist> IndexerWorklist::CreateWorklist(
+std::unique_ptr<IndexerWorklist> IndexerWorklist::CreateDefaultWorklist(
     IndexerASTVisitor* indexer) {
   return llvm::make_unique<IndexerWorklistImpl>(indexer);
 }

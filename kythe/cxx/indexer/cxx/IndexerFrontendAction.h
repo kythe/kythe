@@ -68,10 +68,13 @@ bool RunToolOnCode(std::unique_ptr<clang::FrontendAction> tool_action,
 // TODO(jdennett): Consider moving/renaming this to kythe::ExtractIndexAction.
 class IndexerFrontendAction : public clang::ASTFrontendAction {
 public:
-  IndexerFrontendAction(GraphObserver *GO, const HeaderSearchInfo *Info,
-                        std::function<bool()> ShouldStopIndexing)
+  IndexerFrontendAction(
+      GraphObserver *GO, const HeaderSearchInfo *Info,
+      std::function<bool()> ShouldStopIndexing,
+      std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor *)>
+          CreateWorklist)
       : Observer(CHECK_NOTNULL(GO)), HeaderConfigValid(Info != nullptr),
-        ShouldStopIndexing(ShouldStopIndexing) {
+        ShouldStopIndexing(ShouldStopIndexing), CreateWorklist(CreateWorklist) {
     if (HeaderConfigValid) {
       HeaderConfig = *Info;
     }
@@ -130,9 +133,9 @@ private:
       Observer->setLangOptions(&CI.getLangOpts());
       Observer->setPreprocessor(&CI.getPreprocessor());
     }
-    return llvm::make_unique<IndexerASTConsumer>(Observer, IgnoreUnimplemented,
-                                                 TemplateMode, Verbosity,
-                                                 Supports, ShouldStopIndexing);
+    return llvm::make_unique<IndexerASTConsumer>(
+        Observer, IgnoreUnimplemented, TemplateMode, Verbosity, Supports,
+        ShouldStopIndexing, CreateWorklist);
   }
 
   bool BeginSourceFileAction(clang::CompilerInstance &CI,
@@ -164,6 +167,9 @@ private:
   LibrarySupports Supports;
   /// \return true if indexing should be cancelled.
   std::function<bool()> ShouldStopIndexing = [] { return false; };
+  /// \return a new worklist for the given visitor.
+  std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor *)>
+      CreateWorklist;
 };
 
 /// \brief Allows stdin to be replaced with a mapped file.
@@ -240,13 +246,15 @@ struct IndexerOptions {
 /// \param Output The output stream to use.
 /// \param Options Configuration settings for this run.
 /// \param MetaSupports Metadata support for this run.
+/// \param Worklist A function that generates a new worklist for the given
+/// visitor.
 /// \return empty if OK; otherwise, an error description.
-std::string IndexCompilationUnit(const proto::CompilationUnit &Unit,
-                                 std::vector<proto::FileData> &Files,
-                                 KytheClaimClient &ClaimClient,
-                                 HashCache *Cache, KytheOutputStream &Output,
-                                 const IndexerOptions &Options,
-                                 const MetadataSupports *MetaSupports);
+std::string IndexCompilationUnit(
+    const proto::CompilationUnit &Unit, std::vector<proto::FileData> &Files,
+    KytheClaimClient &ClaimClient, HashCache *Cache, KytheOutputStream &Output,
+    const IndexerOptions &Options, const MetadataSupports *MetaSupports,
+    std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor *)>
+        CreateWorklist);
 
 } // namespace kythe
 

@@ -28,6 +28,7 @@
 #include "kythe/cxx/common/indexing/frontend.h"
 #include "kythe/cxx/common/protobuf_metadata_file.h"
 #include "kythe/cxx/indexer/cxx/IndexerFrontendAction.h"
+#include "kythe/cxx/indexer/cxx/indexer_worklist.h"
 
 DEFINE_bool(index_template_instantiations, true,
             "Index template instantiations.");
@@ -84,7 +85,9 @@ int main(int argc, char *argv[]) {
         context.hash_cache(),
         job.silent ? static_cast<KytheOutputStream &>(null_stream)
                    : static_cast<KytheOutputStream &>(*context.output()),
-        options, &meta_supports);
+        options, &meta_supports, [](IndexerASTVisitor *indexer) {
+          return IndexerWorklist::CreateDefaultWorklist(indexer);
+        });
 
     if (!result.empty()) {
       fprintf(stderr, "Error: %s\n", result.c_str());

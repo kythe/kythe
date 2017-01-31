@@ -856,6 +856,26 @@ public:
   /// a call to `claimImplicitNode` returned true.
   virtual void finishImplicitNode(const std::string &Identifier) {}
 
+  /// \brief Claim a batch of identifying tokens for an anonymous claimant.
+  /// \param tokens A vector of pairs of `(token, claimed)`. `claimed` should
+  /// initially be set to `true`.
+  /// \return true if, after claiming, any of the `claimed` values is set to
+  /// `true`.
+  ///
+  /// Calls to `claimBatch` are not idempotent; claiming the same token more
+  /// than once may fail even if the first claim succeeds. Implementations
+  /// should ensure that failure is permanent.
+  virtual bool claimBatch(std::vector<std::pair<std::string, bool>> *pairs) {
+    bool claimed = false;
+    for (auto &pair : *pairs) {
+      if (claimImplicitNode(pair.first)) {
+        claimed = true;
+        pair.second = true;
+      }
+    }
+    return claimed;
+  }
+
   /// \brief Checks whether this `GraphObserver` should emit data for
   /// nodes at some `SourceLocation`.
   ///

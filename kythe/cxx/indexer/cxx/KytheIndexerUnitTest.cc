@@ -382,8 +382,11 @@ TEST(KytheIndexerUnitTest, BufferStackMergeFailures) {
 
 TEST(KytheIndexerUnitTest, TrivialHappyCase) {
   NullGraphObserver observer;
-  std::unique_ptr<clang::FrontendAction> Action(
-      new IndexerFrontendAction(&observer, nullptr, []() { return false; }));
+  std::unique_ptr<clang::FrontendAction> Action(new IndexerFrontendAction(
+      &observer, nullptr, []() { return false; },
+      [](IndexerASTVisitor* visitor) {
+        return IndexerWorklist::CreateDefaultWorklist(visitor);
+      }));
   ASSERT_TRUE(
       RunToolOnCode(std::move(Action), "int main() {}", "valid_main.cc"));
 }
@@ -438,8 +441,11 @@ class PushPopLintingGraphObserver : public NullGraphObserver {
 
 TEST(KytheIndexerUnitTest, PushFilePopFileTracking) {
   PushPopLintingGraphObserver Observer;
-  std::unique_ptr<clang::FrontendAction> Action(
-      new IndexerFrontendAction(&Observer, nullptr, []() { return false; }));
+  std::unique_ptr<clang::FrontendAction> Action(new IndexerFrontendAction(
+      &Observer, nullptr, []() { return false; },
+      [](IndexerASTVisitor* visitor) {
+        return IndexerWorklist::CreateDefaultWorklist(visitor);
+      }));
   ASSERT_TRUE(RunToolOnCode(std::move(Action), "int i;", "main.cc"));
   ASSERT_FALSE(Observer.hadUnderrun());
   ASSERT_EQ(0, Observer.getFileNameStackSize());

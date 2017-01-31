@@ -380,6 +380,8 @@ class KytheGraphObserver : public GraphObserver {
 
   void finishImplicitNode(const std::string &identifier) override;
 
+  bool claimBatch(std::vector<std::pair<std::string, bool>> *pairs) override;
+
  private:
   void AddMarkedSource(const VNameRef &vname,
                        const MaybeFew<MarkedSource> &signature) {

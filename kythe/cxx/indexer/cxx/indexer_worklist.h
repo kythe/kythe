@@ -89,8 +89,8 @@ class IndexerASTVisitor;
 /// \brief Manages indexer tasks.
 class IndexerWorklist {
  public:
-  /// \brief Create a new worklist that's appropriate for this platform.
-  static std::unique_ptr<IndexerWorklist> CreateWorklist(
+  /// \brief Create a new default worklist.
+  static std::unique_ptr<IndexerWorklist> CreateDefaultWorklist(
       IndexerASTVisitor* visitor);
 
   /// \brief Enqueue a job to index an implicit declaration.
@@ -109,7 +109,7 @@ class IndexerWorklist {
   /// \return true if these is more work to be done.
   virtual bool DoWork() = 0;
 
-  virtual ~IndexerWorklist() { }
+  virtual ~IndexerWorklist() {}
 };
 
 }  // namespace kythe

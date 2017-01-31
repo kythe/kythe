@@ -520,6 +520,10 @@ public:
     Worklist.reset();
   }
 
+  /// \brief Provides execute-only access to ShouldStopIndexing. Should be used
+  /// from the same thread that's walking the AST.
+  bool shouldStopIndexing() const { return ShouldStopIndexing(); }
+
 private:
   friend class PruneCheck;
 
@@ -824,12 +828,15 @@ private:
 /// \brief An `ASTConsumer` that passes events to a `GraphObserver`.
 class IndexerASTConsumer : public clang::SemaConsumer {
 public:
-  explicit IndexerASTConsumer(GraphObserver *GO, BehaviorOnUnimplemented B,
-                              BehaviorOnTemplates T, Verbosity V,
-                              const LibrarySupports &S,
-                              std::function<bool()> ShouldStopIndexing)
+  explicit IndexerASTConsumer(
+      GraphObserver *GO, BehaviorOnUnimplemented B, BehaviorOnTemplates T,
+      Verbosity V, const LibrarySupports &S,
+      std::function<bool()> ShouldStopIndexing,
+      std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor *)>
+          CreateWorklist)
       : Observer(GO), IgnoreUnimplemented(B), TemplateMode(T), Verbosity(V),
-        Supports(S), ShouldStopIndexing(ShouldStopIndexing) {}
+        Supports(S), ShouldStopIndexing(ShouldStopIndexing),
+        CreateWorklist(CreateWorklist) {}
 
   void HandleTranslationUnit(clang::ASTContext &Context) override {
     CHECK(Sema != nullptr);
@@ -838,8 +845,7 @@ public:
                               Observer);
     {
       ProfileBlock block(Observer->getProfilingCallback(), "traverse_tu");
-      Visitor.Work(Context.getTranslationUnitDecl(),
-                   IndexerWorklist::CreateWorklist(&Visitor));
+      Visitor.Work(Context.getTranslationUnitDecl(), CreateWorklist(&Visitor));
     }
   }
 
@@ -861,6 +867,9 @@ private:
   clang::Sema *Sema;
   /// \return true if we should stop indexing.
   std::function<bool()> ShouldStopIndexing;
+  /// \return a new worklist for the given visitor.
+  std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor *)>
+      CreateWorklist;
 };
 
 } // namespace kythe
