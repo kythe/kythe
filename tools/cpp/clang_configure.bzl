@@ -64,7 +64,7 @@ def _impl(ctx):
   ctx.template("clang_wrapper_is_not_clang",
                Label("@//tools/cpp:osx_gcc_wrapper.sh.in"),
                {"ADD_CXX_COMPILER": str(cc)})
-  ctx.symlink("clang_wrapper_is_not_clang", "clang_wrapper_is_not_clang++"),
+  ctx.symlink("clang_wrapper_is_not_clang", "clang_wrapper_is_not_clang++")
   ctx.template("CROSSTOOL",
                Label("@//tools/cpp:CROSSTOOL.in"),
                {"ADD_CXX_COMPILER": str(cc),
