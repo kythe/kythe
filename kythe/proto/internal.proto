@@ -48,9 +48,13 @@ message Source {
 message PageToken {
   // Index into the primary reply sequence.
   int32 index = 1;
-
   // Secondary page tokens for reply sub-queries.
   repeated string secondary_token = 2;
+
+  // Map of named page tokens for sub-queries.
+  map<string, string> sub_tokens = 3;
+  // Map of named indices into a paged sequence.
+  map<string, int32> indices = 4;
 }
 
 // A CrossReference represents a path between two anchors, crossing between a

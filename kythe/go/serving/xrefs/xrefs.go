@@ -47,6 +47,7 @@ import (
 
 	"bitbucket.org/creachadair/stringset"
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/snappy"
 )
 
 type edgeSetResult struct {
@@ -748,22 +749,28 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		stats.max = maxPageSize
 	}
 
-	var edgesPageToken string
+	var pageToken ipb.PageToken
 	if req.PageToken != "" {
 		rec, err := base64.StdEncoding.DecodeString(req.PageToken)
 		if err != nil {
 			return nil, fmt.Errorf("invalid page_token: %q", req.PageToken)
 		}
-		var t ipb.PageToken
-		if err := proto.Unmarshal(rec, &t); err != nil || t.Index < 0 {
+		rec, err = snappy.Decode(nil, rec)
+		if err != nil {
 			return nil, fmt.Errorf("invalid page_token: %q", req.PageToken)
 		}
-		stats.skip = int(t.Index)
-		if len(t.SecondaryToken) > 0 {
-			edgesPageToken = t.SecondaryToken[0]
+		if err := proto.Unmarshal(rec, &pageToken); err != nil {
+			return nil, fmt.Errorf("invalid page_token: %q", req.PageToken)
+		}
+		for _, index := range pageToken.Indices {
+			if index < 0 {
+				return nil, fmt.Errorf("invalid page_token: %q", req.PageToken)
+			}
 		}
 	}
-	pageToken := stats.skip
+	initialSkip := int(pageToken.Indices["skip"])
+	edgesPageToken := pageToken.SubTokens["edges"]
+	stats.skip = initialSkip
 
 	reply := &xpb.CrossReferencesReply{
 		CrossReferences: make(map[string]*xpb.CrossReferencesReply_CrossReferenceSet, len(req.Ticket)),
@@ -771,7 +778,10 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 
 		Total: &xpb.CrossReferencesReply_Total{},
 	}
-	var nextToken *ipb.PageToken
+	nextPageToken := &ipb.PageToken{
+		SubTokens: make(map[string]string),
+		Indices:   make(map[string]int32),
+	}
 
 	wantMoreCrossRefs := edgesPageToken == "" &&
 		(req.DefinitionKind != xpb.CrossReferencesRequest_NO_DEFINITIONS ||
@@ -780,7 +790,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 			req.DocumentationKind != xpb.CrossReferencesRequest_NO_DOCUMENTATION ||
 			req.CallerKind != xpb.CrossReferencesRequest_NO_CALLERS)
 
-	for _, ticket := range tickets {
+	for i, ticket := range tickets {
 		// TODO(schroederc): retrieve PagedCrossReferences in parallel
 		cr, err := t.crossReferences(ctx, ticket)
 		if err == table.ErrNoSuchKey {
@@ -792,13 +802,6 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 
 		crs := &xpb.CrossReferencesReply_CrossReferenceSet{
 			Ticket: ticket,
-		}
-
-		if req.ExperimentalSignatures {
-			crs.MarkedSource, err = xrefs.SlowSignature(ctx, t, ticket)
-			if err != nil {
-				log.Printf("WARNING: error looking up signature for ticket %q: %v", ticket, err)
-			}
 		}
 
 		for _, grp := range cr.Group {
@@ -827,12 +830,42 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		}
 
 		if wantMoreCrossRefs && req.CallerKind != xpb.CrossReferencesRequest_NO_CALLERS {
-			anchors, err := xrefs.SlowCallersForCrossReferences(ctx, t, req.CallerKind == xpb.CrossReferencesRequest_OVERRIDE_CALLERS, req.ExperimentalSignatures, ticket)
-			if err != nil {
-				return nil, fmt.Errorf("error in SlowCallersForCrossReferences: %v", err)
+			tokenStr := fmt.Sprintf("callers.%d", i)
+			callerSkip := pageToken.Indices[tokenStr]
+			callersToken, hasToken := pageToken.SubTokens[tokenStr]
+			stats.skip -= int(callerSkip) // Mark the previously retrieved callers as skipped
+			var callersEstimate int64
+			if callersToken != "" || !hasToken { // if we didn't reach the last callers page
+				reply, err := xrefs.SlowCallersForCrossReferences(ctx, t, &xrefs.CallersRequest{
+					Ticket:             ticket,
+					PageSize:           int32(stats.max - stats.total),
+					PageToken:          callersToken,
+					IncludeOverrides:   req.CallerKind == xpb.CrossReferencesRequest_OVERRIDE_CALLERS,
+					GenerateSignatures: req.ExperimentalSignatures,
+				})
+				if err != nil {
+					return nil, fmt.Errorf("error in SlowCallersForCrossReferences: %v", err)
+				}
+				callersEstimate = reply.EstimatedTotal
+				added := stats.addRelatedAnchors(&crs.Caller, reply.Callers, req.AnchorText)
+				if added == len(reply.Callers) { // if all of the callers fit on the xrefs page
+					// Update the page token/index for the next callers page
+					hasToken = true
+					callersToken = reply.NextPageToken
+					callerSkip += int32(added)
+				}
 			}
-			reply.Total.Callers += int64(len(anchors))
-			stats.addRelatedAnchors(&crs.Caller, anchors, req.AnchorText)
+			if hasToken {
+				nextPageToken.Indices[tokenStr] = callerSkip
+				nextPageToken.SubTokens[tokenStr] = callersToken
+			}
+
+			if callersToken == "" && hasToken {
+				// We've hit the last callers page and know the exact number of callers
+				reply.Total.Callers += int64(callerSkip)
+			} else {
+				reply.Total.Callers += callersEstimate
+			}
 		}
 
 		if wantMoreCrossRefs && req.DeclarationKind != xpb.CrossReferencesRequest_NO_DECLARATIONS {
@@ -907,8 +940,8 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		}
 	}
 
-	if pageToken+stats.total != sumTotalCrossRefs(reply.Total) && stats.total != 0 {
-		nextToken = &ipb.PageToken{Index: int32(pageToken + stats.total)}
+	if initialSkip+stats.total != sumTotalCrossRefs(reply.Total) && stats.total != 0 {
+		nextPageToken.Indices["skip"] = int32(initialSkip + stats.total)
 	}
 
 	if len(req.Filter) > 0 {
@@ -956,16 +989,25 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		}
 
 		if er.NextPageToken != "" {
-			nextToken = &ipb.PageToken{SecondaryToken: []string{er.NextPageToken}}
+			nextPageToken.SubTokens["edges"] = er.NextPageToken
 		}
 	}
 
-	if nextToken != nil {
-		rec, err := proto.Marshal(nextToken)
+	if _, skip := nextPageToken.Indices["skip"]; skip || nextPageToken.SubTokens["edges"] != "" {
+		rec, err := proto.Marshal(nextPageToken)
 		if err != nil {
 			return nil, fmt.Errorf("internal error: error marshalling page token: %v", err)
 		}
-		reply.NextPageToken = base64.StdEncoding.EncodeToString(rec)
+		reply.NextPageToken = base64.StdEncoding.EncodeToString(snappy.Encode(nil, rec))
+	}
+
+	if req.ExperimentalSignatures {
+		for ticket, crs := range reply.CrossReferences {
+			crs.MarkedSource, err = xrefs.SlowSignature(ctx, t, ticket)
+			if err != nil {
+				log.Printf("WARNING: error looking up signature for ticket %q: %v", ticket, err)
+			}
+		}
 	}
 
 	if req.NodeDefinitions {
@@ -1001,10 +1043,14 @@ func sumTotalCrossRefs(ts *xpb.CrossReferencesReply_Total) int {
 	for _, cnt := range ts.RelatedNodesByRelation {
 		relatedNodes += int(cnt)
 	}
-	return int(ts.Definitions) + int(ts.Declarations) + int(ts.References) + int(ts.Documentation) + relatedNodes
+	return int(ts.Callers) + int(ts.Definitions) + int(ts.Declarations) + int(ts.References) + int(ts.Documentation) + relatedNodes
 }
 
 type refStats struct {
+	// number of refs:
+	//   to skip (returned on previous pages)
+	//   max to return (the page size)
+	//   total (count of refs so far read for current page)
 	skip, total, max int
 }
 
@@ -1037,12 +1083,12 @@ func (s *refStats) addAnchors(to *[]*xpb.CrossReferencesReply_RelatedAnchor, as 
 	return s.total == s.max
 }
 
-func (s *refStats) addRelatedAnchors(to *[]*xpb.CrossReferencesReply_RelatedAnchor, as []*xpb.CrossReferencesReply_RelatedAnchor, anchorText bool) bool {
+func (s *refStats) addRelatedAnchors(to *[]*xpb.CrossReferencesReply_RelatedAnchor, as []*xpb.CrossReferencesReply_RelatedAnchor, anchorText bool) int {
 	if s.total == s.max {
-		return true
+		return 0
 	} else if s.skip > len(as) {
 		s.skip -= len(as)
-		return false
+		return 0
 	} else if s.skip > 0 {
 		as = as[s.skip:]
 		s.skip = 0
@@ -1058,7 +1104,7 @@ func (s *refStats) addRelatedAnchors(to *[]*xpb.CrossReferencesReply_RelatedAnch
 		}
 		*to = append(*to, a)
 	}
-	return s.total == s.max
+	return len(as)
 }
 
 func a2a(a *srvpb.ExpandedAnchor, anchorText bool) *xpb.CrossReferencesReply_RelatedAnchor {

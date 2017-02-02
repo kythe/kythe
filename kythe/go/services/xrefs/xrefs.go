@@ -669,29 +669,18 @@ const (
 // completes/uniquely, and (optionally) overrides edges. Return the resulting set of
 // tickets with anchors removed.
 func expandDefRelatedNodeSet(ctx context.Context, service Service, frontier stringset.Set, includeOverrides bool) (stringset.Set, error) {
-	var edgeKinds []string
 	// From the schema, we know the source of a defines* or completes* edge should be an anchor. Because of this,
 	// we don't have to partition our set/queries on node kind.
+	edgeKinds := []string{
+		edges.DefinesBinding,
+		edges.Mirror(edges.DefinesBinding),
+		edges.Completes,
+		edges.Mirror(edges.Completes),
+		edges.CompletesUniquely,
+		edges.Mirror(edges.CompletesUniquely),
+	}
 	if includeOverrides {
-		edgeKinds = []string{
-			edges.Overrides,
-			edges.Mirror(edges.Overrides),
-			edges.DefinesBinding,
-			edges.Mirror(edges.DefinesBinding),
-			edges.Completes,
-			edges.Mirror(edges.Completes),
-			edges.CompletesUniquely,
-			edges.Mirror(edges.CompletesUniquely),
-		}
-	} else {
-		edgeKinds = []string{
-			edges.DefinesBinding,
-			edges.Mirror(edges.DefinesBinding),
-			edges.Completes,
-			edges.Mirror(edges.Completes),
-			edges.CompletesUniquely,
-			edges.Mirror(edges.CompletesUniquely),
-		}
+		edgeKinds = append(edgeKinds, edges.Overrides, edges.Mirror(edges.Overrides))
 	}
 	// We keep a worklist of anchors and semantic nodes that are reachable from undirected edges
 	// marked [overrides,] defines/binding, completes, or completes/uniquely. This overestimates
@@ -733,19 +722,37 @@ func expandDefRelatedNodeSet(ctx context.Context, service Service, frontier stri
 	return retired, nil
 }
 
+// CallersRequest is the data needed for SlowCallersForCrossReferences.
+type CallersRequest struct {
+	Ticket string
+
+	IncludeOverrides   bool
+	GenerateSignatures bool
+
+	PageSize  int32
+	PageToken string
+}
+
+// CallersReply is a paged response from SlowCallersForCrossReferences.
+type CallersReply struct {
+	Callers []*xpb.CrossReferencesReply_RelatedAnchor
+
+	EstimatedTotal int64
+	NextPageToken  string
+}
+
 // SlowCallersForCrossReferences is an implementation of callgraph support meant
 // for intermediate-term use by CrossReferences.
-func SlowCallersForCrossReferences(ctx context.Context, service Service, includeOverrides, generateSignatures bool, ticket string) ([]*xpb.CrossReferencesReply_RelatedAnchor, error) {
-	ticket, err := kytheuri.Fix(ticket)
+func SlowCallersForCrossReferences(ctx context.Context, service Service, req *CallersRequest) (*CallersReply, error) {
+	ticket, err := kytheuri.Fix(req.Ticket)
 	if err != nil {
 		return nil, err
 	}
-	callees, err := expandDefRelatedNodeSet(ctx, service, stringset.New(ticket), includeOverrides)
+	callees, err := expandDefRelatedNodeSet(ctx, service, stringset.New(ticket), req.IncludeOverrides)
 	if err != nil {
 		return nil, err
-	}
-	if callees.Empty() {
-		return nil, nil
+	} else if callees.Empty() {
+		return &CallersReply{}, nil
 	}
 	// This will not recursively call SlowCallersForCrossReferences as we're requesting NO_CALLERS above.
 	xrefs, err := service.CrossReferences(ctx, &xpb.CrossReferencesRequest{
@@ -755,13 +762,17 @@ func SlowCallersForCrossReferences(ctx context.Context, service Service, include
 		DocumentationKind: xpb.CrossReferencesRequest_NO_DOCUMENTATION,
 		CallerKind:        xpb.CrossReferencesRequest_NO_CALLERS,
 		AnchorText:        true,
-		PageSize:          math.MaxInt32,
+		PageSize:          req.PageSize,
+		PageToken:         req.PageToken,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("can't get CrossReferences for callees set: %v", err)
 	}
-	if xrefs.NextPageToken != "" {
-		return nil, errors.New("UNIMPLEMENTED: Paged CrossReferences reply")
+	reply := &CallersReply{
+		// For the lack of anything better, we page the callers by call-sites.
+		NextPageToken: xrefs.NextPageToken,
+		// Overestimate the total number of callers by using the number of call-sites.
+		EstimatedTotal: xrefs.Total.References,
 	}
 	// Now we've got a bunch of call site anchors. We need to figure out which functions they belong to.
 	// anchors is the set of all callsite anchor tickets.
@@ -796,14 +807,14 @@ func SlowCallersForCrossReferences(ctx context.Context, service Service, include
 	}); err != nil {
 		return nil, err
 	} else if len(parentTickets) == 0 {
-		return nil, nil
+		return reply, nil
 	}
 	// Get definition-site anchors. This won't recurse through this function because we're requesting NO_CALLERS.
 	defs, err := service.CrossReferences(ctx, &xpb.CrossReferencesRequest{
 		Ticket:         parentTickets,
 		DefinitionKind: xpb.CrossReferencesRequest_ALL_DEFINITIONS,
 		AnchorText:     true,
-		PageSize:       math.MaxInt32,
+		PageSize:       math.MaxInt32, // attempt to get ALL definitions (warn on failure below)
 	})
 	if err != nil {
 		return nil, fmt.Errorf("can't get CrossReferences for xref references set: %v", err)
@@ -825,7 +836,7 @@ func SlowCallersForCrossReferences(ctx context.Context, service Service, include
 			continue
 		}
 		var signature *xpb.MarkedSource
-		if generateSignatures {
+		if req.GenerateSignatures {
 			signature, err = SlowSignature(ctx, service, caller)
 			if err != nil {
 				return nil, fmt.Errorf("error looking up signature for caller ticket %q: %v", caller, err)
@@ -854,7 +865,8 @@ func SlowCallersForCrossReferences(ctx context.Context, service Service, include
 	// not guaranteed to follow the same order, so relatedAnchors is arbitrarily
 	// permuted. Undo this here.
 	sort.Sort(byRelatedAnchor(relatedAnchors))
-	return relatedAnchors, nil
+	reply.Callers = relatedAnchors
+	return reply, nil
 }
 
 // byAnchor implements sort.Interface for []*xpb.Anchor based on the Ticket field.
