@@ -35,6 +35,7 @@ cc_toolchain_suite(
         "darwin|clang": ":cc-compiler-darwin",
         "local|clang": ":cc-compiler-local",
         "armeabi-v7a|false": ":cc-compiler-armeabi-v7a",
+        "ios_x86_64|compiler": ":cc-compiler-ios_x86_64",
     },
 )
 
@@ -88,6 +89,20 @@ cc_toolchain(
     dwp_files = ":empty",
     dynamic_runtime_libs = [":empty"],
     linker_files = ":darwin_files",
+    objcopy_files = ":empty",
+    static_runtime_libs = [":empty"],
+    strip_files = ":empty",
+    supports_param_files = 0,
+)
+
+cc_toolchain(
+    name = "cc-compiler-ios_x86_64",
+    all_files = ":empty",
+    compiler_files = ":empty",
+    cpu = "local",
+    dwp_files = ":empty",
+    dynamic_runtime_libs = [":empty"],
+    linker_files = ":empty",
     objcopy_files = ":empty",
     static_runtime_libs = [":empty"],
     strip_files = ":empty",
