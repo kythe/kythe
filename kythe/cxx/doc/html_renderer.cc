@@ -33,18 +33,25 @@ class CssTag {
   /// \param buffer must outlive CssTag.
   CssTag(Kind kind, const std::string& style, std::string* buffer)
       : kind_(kind), buffer_(buffer) {
-    buffer_->append("<");
-    buffer_->append(label());
-    buffer_->append(" class=\"");
-    buffer_->append(style);
-    buffer_->append("\">");
+    OpenTag(kind, style, buffer);
   }
-  ~CssTag() {
-    buffer_->append("</");
-    buffer_->append(label());
-    buffer_->append(">");
+  ~CssTag() { CloseTag(kind_, buffer_); }
+  static void OpenTag(Kind kind, const std::string& style,
+                      std::string* buffer) {
+    buffer->append("<");
+    buffer->append(label(kind));
+    buffer->append(" class=\"");
+    buffer->append(style);
+    buffer->append("\">");
   }
-  const char* label() const { return kind_ == Kind::Div ? "div" : "span"; }
+  static void CloseTag(Kind kind, std::string* buffer) {
+    buffer->append("</");
+    buffer->append(label(kind));
+    buffer->append(">");
+  }
+  static const char* label(Kind kind) {
+    return kind == Kind::Div ? "div" : "span";
+  }
   CssTag(const CssTag& o) = delete;
 
  private:
@@ -91,37 +98,55 @@ using TagBlocks =
 /// \brief Renders the content of `tag_blocks` to the block `out`.
 void RenderTagBlocks(const HtmlRendererOptions& options,
                      const TagBlocks& tag_blocks, TaggedText* out) {
+  bool first_block = true;
+  PrintableSpan::TagBlockId block_id;
   for (const auto& block : tag_blocks) {
-    {
-      CssTag title(CssTag::Kind::Div, options.tag_section_title_div,
-                   &out->buffer);
-      // TODO(zarko): Aggregate tag blocks by ID.
-      switch (block.first.first) {
-        case PrintableSpan::TagBlockId::Author:
-          out->buffer.append("Author");
-          break;
-        case PrintableSpan::TagBlockId::Returns:
-          out->buffer.append("Returns");
-          break;
-        case PrintableSpan::TagBlockId::Since:
-          out->buffer.append("Since");
-          break;
-        case PrintableSpan::TagBlockId::Version:
-          out->buffer.append("Version");
-          break;
-        case PrintableSpan::TagBlockId::Throws:
-          out->buffer.append("Throws");
-          break;
-        case PrintableSpan::TagBlockId::Param:
-          out->buffer.append("Parameter");
-          break;
+    if (first_block || block_id != block.first.first) {
+      if (!first_block) {
+        out->buffer.append("</ul>");
+        CssTag::CloseTag(CssTag::Kind::Div, &out->buffer);
       }
-    }
-    {
-      CssTag content(CssTag::Kind::Div, options.tag_section_content_div,
+      block_id = block.first.first;
+      first_block = false;
+      {
+        CssTag title(CssTag::Kind::Div, options.tag_section_title_div,
                      &out->buffer);
-      out->buffer.append(block.second.buffer);
+        switch (block.first.first) {
+          case PrintableSpan::TagBlockId::Author:
+            out->buffer.append("Author");
+            break;
+          case PrintableSpan::TagBlockId::Returns:
+            out->buffer.append("Returns");
+            break;
+          case PrintableSpan::TagBlockId::Since:
+            out->buffer.append("Since");
+            break;
+          case PrintableSpan::TagBlockId::Version:
+            out->buffer.append("Version");
+            break;
+          case PrintableSpan::TagBlockId::Throws:
+            out->buffer.append("Throws");
+            break;
+          case PrintableSpan::TagBlockId::Param:
+            out->buffer.append("Parameter");
+            break;
+          case PrintableSpan::TagBlockId::See:
+            out->buffer.append("See");
+            break;
+        }
+      }
+      CssTag::OpenTag(CssTag::Kind::Div, options.tag_section_content_div,
+                      &out->buffer);
+      out->buffer.append("<ul>");
     }
+    out->buffer.append("<li>");
+    out->buffer.append(block.second.buffer);
+    out->buffer.append("</li>");
+  }
+  if (!first_block) {
+    // We've opened a ul and a div that we need to close.
+    out->buffer.append("</ul>");
+    CssTag::CloseTag(CssTag::Kind::Div, &out->buffer);
   }
 }
 
@@ -155,33 +180,48 @@ void AppendEscapedHtmlString(const SourceString& source, std::string* dest) {
 }
 
 /// State while recursing through MarkedSource for RenderSimpleIdentifier.
-enum class IdentifierPos {
-  Above,  /// Above an IDENTIFIER node.
-  Below   /// Below an IDENTIFIER node.
+struct RenderSimpleIdentifierState {
+  bool render_identifier = false;
+  bool render_context = false;
+  bool in_identifier = false;
+  bool in_context = false;
+  bool should_render() const {
+    return (render_context && in_context) ||
+           (render_identifier && in_identifier);
+  }
 };
 
-/// Render text underneath IDENTIFIER nodes with no other non-BOXes in between.
 void RenderSimpleIdentifier(const proto::MarkedSource& sig, std::string* out,
-                            IdentifierPos state, size_t depth) {
+                            RenderSimpleIdentifierState state, size_t depth) {
   if (depth >= kMaxRenderDepth) {
     return;
   }
-  if (state == IdentifierPos::Below) {
+  switch (sig.kind()) {
+    case proto::MarkedSource::IDENTIFIER:
+      state.in_identifier = true;
+      break;
+    case proto::MarkedSource::CONTEXT:
+      if (!state.render_context) {
+        return;
+      }
+      state.in_context = true;
+      break;
+    case proto::MarkedSource::BOX:
+      break;
+    default:
+      return;
+  }
+  if (state.should_render()) {
     AppendEscapedHtmlString(sig.pre_text(), out);
   }
-  for (const auto& child : sig.child()) {
-    switch (child.kind()) {
-      case proto::MarkedSource::BOX:
-        RenderSimpleIdentifier(child, out, state, depth + 1);
-        break;
-      case proto::MarkedSource::IDENTIFIER:
-        RenderSimpleIdentifier(child, out, IdentifierPos::Below, depth + 1);
-        break;
-      default:
-        break;
+  for (int child = 0; child < sig.child_size(); ++child) {
+    RenderSimpleIdentifier(sig.child(child), out, state, depth + 1);
+    // TODO(zarko): Use .add_final_list_token().
+    if (state.should_render() && child + 1 != sig.child_size()) {
+      AppendEscapedHtmlString(sig.post_child_text(), out);
     }
   }
-  if (state == IdentifierPos::Below) {
+  if (state.should_render()) {
     AppendEscapedHtmlString(sig.post_text(), out);
   }
 }
@@ -202,8 +242,9 @@ void RenderSimpleParams(const proto::MarkedSource& sig,
     case proto::MarkedSource::PARAMETER:
       for (const auto& child : sig.child()) {
         out->emplace_back();
-        RenderSimpleIdentifier(child, &out->back(), IdentifierPos::Above,
-                               depth + 1);
+        RenderSimpleIdentifierState state;
+        state.render_identifier = true;
+        RenderSimpleIdentifier(child, &out->back(), state, depth + 1);
       }
       break;
     default:
@@ -212,9 +253,34 @@ void RenderSimpleParams(const proto::MarkedSource& sig,
 }
 }  // anonymous namespace
 
+const proto::common::NodeInfo* DocumentHtmlRendererOptions::node_info(
+    const std::string& ticket) const {
+  auto node = document_.nodes().find(ticket);
+  return node == document_.nodes().end() ? nullptr : &node->second;
+}
+
+const proto::Anchor* DocumentHtmlRendererOptions::anchor_for_ticket(
+    const std::string& ticket) const {
+  auto anchor = document_.definition_locations().find(ticket);
+  return anchor == document_.definition_locations().end() ? nullptr
+                                                          : &anchor->second;
+}
+
 std::string RenderSimpleIdentifier(const proto::MarkedSource& sig) {
   std::string result;
-  RenderSimpleIdentifier(sig, &result, IdentifierPos::Above, 0);
+  RenderSimpleIdentifierState state;
+  state.render_identifier = true;
+  RenderSimpleIdentifier(sig, &result, state, 0);
+  return result;
+}
+
+std::string RenderSimpleQualifiedName(const proto::MarkedSource& sig,
+                                      bool include_identifier) {
+  std::string result;
+  RenderSimpleIdentifierState state;
+  state.render_identifier = include_identifier;
+  state.render_context = true;
+  RenderSimpleIdentifier(sig, &result, state, 0);
   return result;
 }
 
@@ -402,26 +468,21 @@ std::string RenderDocument(
       {
         CssTag type_div(CssTag::Kind::Div, options.type_name_div, &text_out);
         CssTag type_name(CssTag::Kind::Span, options.name_span, &text_out);
-        text_out.append(RenderPrintable(
-            options, {}, document.signature(),
-            Printable::RejectUnimportant | Printable::IncludeLists));
+        text_out.append(RenderSimpleIdentifier(document.marked_source()));
       }
       {
         CssTag detail_div(CssTag::Kind::Div, options.sig_detail_div, &text_out);
-        if (const auto* doc_info = options.node_info(document.ticket())) {
-          auto kind = doc_info->facts().find(document.ticket());
-          if (kind != doc_info->facts().end()) {
-            for (char c : kind->second) {
-              AppendEscapedHtmlCharacter(&text_out, c);
-            }
-            text_out.append(" ");
-          }
+        auto kind_name = options.kind_name(document.ticket());
+        if (!kind_name.empty()) {
+          AppendEscapedHtmlString(kind_name, &text_out);
+          text_out.append(" ");
         }
         text_out.append("declared by ");
-        text_out.append(RenderPrintable(options, {}, document.defined_by(),
-                                        Printable::IncludeAll));
+        text_out.append(
+            RenderSimpleQualifiedName(document.marked_source(), false));
       }
     }
+    CssTag content_div(CssTag::Kind::Div, options.content_div, &text_out);
     text_out.append(RenderPrintable(options, handlers, document.text(),
                                     Printable::IncludeAll));
   }

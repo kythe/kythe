@@ -25,27 +25,35 @@
 namespace kythe {
 namespace {
 using google::protobuf::TextFormat;
-
+class TestHtmlRendererOptions : public HtmlRendererOptions {
+ public:
+  TestHtmlRendererOptions() {
+    node_info_["kythe://foo"].set_definition("kythe://food");
+    node_info_["kythe://bar"].set_definition("kythe://bard");
+    definition_locations_["kythe://food"].set_parent("kythe://foop");
+    definition_locations_["kythe://bard"].set_parent("kythe://barp&q=1<");
+  }
+  const proto::common::NodeInfo *node_info(
+      const std::string &ticket) const override {
+    auto record = node_info_.find(ticket);
+    return record != node_info_.end() ? &record->second : nullptr;
+  }
+  const proto::Anchor *anchor_for_ticket(
+      const std::string &ticket) const override {
+    auto record = definition_locations_.find(ticket);
+    return record != definition_locations_.end() ? &record->second : nullptr;
+  }
+ private:
+  std::map<std::string, proto::common::NodeInfo> node_info_;
+  std::map<std::string, proto::Anchor> definition_locations_;
+};
 class HtmlRendererTest : public ::testing::Test {
  public:
   HtmlRendererTest() {
     options_.make_link_uri = [](const proto::Anchor &anchor) {
       return anchor.parent();
     };
-    options_.node_info = [this](const std::string &ticket) {
-      auto record = node_info_.find(ticket);
-      return record != node_info_.end() ? &record->second : nullptr;
-    };
-    options_.anchor_for_ticket = [this](const std::string &ticket) {
-      auto record = definition_locations_.find(ticket);
-      return record != definition_locations_.end() ? &record->second : nullptr;
-    };
-    node_info_["kythe://foo"].set_definition("kythe://food");
-    node_info_["kythe://bar"].set_definition("kythe://bard");
-    definition_locations_["kythe://food"].set_parent("kythe://foop");
-    definition_locations_["kythe://bard"].set_parent("kythe://barp&q=1<");
   }
-
  protected:
   std::string RenderAsciiProtoDocument(const char *document_pb) {
     proto::DocumentationReply::Document document;
@@ -69,9 +77,7 @@ class HtmlRendererTest : public ::testing::Test {
     auto output = HandleMarkup({ParseHtml}, input);
     return kythe::RenderHtml(options_, output);
   }
-  kythe::HtmlRendererOptions options_;
-  std::map<std::string, proto::common::NodeInfo> node_info_;
-  std::map<std::string, proto::Anchor> definition_locations_;
+  kythe::TestHtmlRendererOptions options_;
 };
 TEST_F(HtmlRendererTest, RenderEmptyDoc) {
   EXPECT_EQ("", RenderAsciiProtoDocument(""));
@@ -150,9 +156,8 @@ TEST_F(HtmlRendererTest, EscapeHtml) {
 TEST_F(HtmlRendererTest, JavadocTagBlocks) {
   EXPECT_EQ(
       "text\n<div class=\"kythe-doc-tag-section-title\">Author</div>"
-      "<div class=\"kythe-doc-tag-section-content\"> a\n</div>"
-      "<div class=\"kythe-doc-tag-section-title\">Author</div>"
-      "<div class=\"kythe-doc-tag-section-content\"> b</div>",
+      "<div class=\"kythe-doc-tag-section-content\"><ul><li> a\n</li>"
+      "<li> b</li></ul></div>",
       RenderJavadoc(R"(text
 @author a
 @author b)"));
@@ -160,9 +165,8 @@ TEST_F(HtmlRendererTest, JavadocTagBlocks) {
 TEST_F(HtmlRendererTest, JavadocTagBlockEmbedsCodeRef) {
   EXPECT_EQ(
       "text\n<div class=\"kythe-doc-tag-section-title\">Author</div>"
-      "<div class=\"kythe-doc-tag-section-content\"> a <tt> robot</tt>\n</div>"
-      "<div class=\"kythe-doc-tag-section-title\">Author</div>"
-      "<div class=\"kythe-doc-tag-section-content\"> b</div>",
+      "<div class=\"kythe-doc-tag-section-content\"><ul><li> a <tt> robot</tt>"
+      "\n</li><li> b</li></ul></div>",
       RenderJavadoc(R"(text
 @author a {@code robot}
 @author b)"));

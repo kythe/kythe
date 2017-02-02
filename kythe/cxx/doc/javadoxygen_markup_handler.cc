@@ -38,7 +38,7 @@ namespace {
   v(Literal, "literal", false, NOT_TAG_BLOCK) \
   v(Param, "param", false, NOT_TAG_BLOCK) \
   v(Return, "return", true, Returns) \
-  v(See, "see", false, NOT_TAG_BLOCK) \
+  v(See, "see", true, See) \
   v(Serial, "serial", false, NOT_TAG_BLOCK) \
   v(SerialData, "serialData", false, NOT_TAG_BLOCK) \
   v(SerialField, "serialField", false, NOT_TAG_BLOCK) \

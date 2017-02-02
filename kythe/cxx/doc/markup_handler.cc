@@ -53,9 +53,9 @@ Printable::Printable(const proto::Printable& from,
   // Number of list blocks we're inside.
   size_t list_count = 0;
   for (size_t i = 0; i < from.raw_text().size(); ++i) {
-    char c = from.raw_text()[i], next = (i + 1 == from.raw_text().size())
-                                            ? '\0'
-                                            : from.raw_text()[i + 1];
+    char c = from.raw_text()[i],
+         next =
+             (i + 1 == from.raw_text().size()) ? '\0' : from.raw_text()[i + 1];
     switch (c) {
       case '\\':
         if (!ShouldReject(filter, important_count, list_count)) {
@@ -250,6 +250,9 @@ std::string PrintableSpans::Dump(const std::string& annotated_buffer) const {
               break;
             case PrintableSpan::TagBlockId::Throws:
               text_out.append("Throws");
+              break;
+            case PrintableSpan::TagBlockId::See:
+              text_out.append("See");
               break;
           }
           text_out.append(std::to_string(open_spans.top()->tag_block().second));

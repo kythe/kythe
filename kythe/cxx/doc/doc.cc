@@ -59,24 +59,27 @@ constexpr char kDocFooter[] = R"(
 constexpr char kDefinesBinding[] = "/kythe/edge/defines/binding";
 
 int DocumentNodesFrom(const proto::DocumentationReply& doc_reply) {
-  HtmlRendererOptions options;
-  options.make_link_uri = [](const proto::Anchor& anchor) {
-    return anchor.parent();
-  };
   ::fputs(kDocHeaderPrefix, stdout);
   if (!FLAGS_css.empty()) {
     ::fprintf(stdout, "<link rel=\"stylesheet\" type=\"text/css\" href=\"%s\">",
               FLAGS_css.c_str());
   }
   ::fputs(kDocHeaderSuffix, stdout);
-  for (const auto& document : doc_reply.document()) {
-    if (document.has_signature()) {
-      Printable printable(document.signature());
-      auto html = RenderHtml(options, HandleMarkup({}, printable));
-      ::fputs("<h1>", stdout);
-      ::fputs(html.c_str(), stdout);
-      ::fputs("</h1>", stdout);
+  DocumentHtmlRendererOptions options(doc_reply);
+  options.make_link_uri = [](const proto::Anchor& anchor) {
+    return anchor.parent();
+  };
+  options.kind_name = [&options](const std::string& ticket) {
+    if (const auto* node = options.node_info(ticket)) {
+      for (const auto& fact : node->facts()) {
+        if (fact.first == "/kythe/node/kind") {
+          return fact.second;
+        }
+      }
     }
+    return std::string();
+  };
+  for (const auto& document : doc_reply.document()) {
     if (document.has_text()) {
       auto html =
           RenderDocument(options, {ParseJavadoxygen, ParseHtml}, document);
@@ -160,8 +163,8 @@ doc
       ticket = kythe::URI::FromString(
           "kythe://" +
           kythe::UriEscape(kythe::UriEscapeMode::kEscapePaths, FLAGS_corpus) +
-          "?path=" +
-          kythe::UriEscape(kythe::UriEscapeMode::kEscapePaths, FLAGS_path));
+          "?path=" + kythe::UriEscape(kythe::UriEscapeMode::kEscapePaths,
+                                      FLAGS_path));
     }
     if (!ticket.first) {
       ::fprintf(stderr, "Couldn't parse URI %s\n", FLAGS_path.c_str());

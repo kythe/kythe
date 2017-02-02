@@ -49,7 +49,8 @@ class PrintableSpan {
     Since,
     Version,
     Param,
-    Throws
+    Throws,
+    See
   };
   enum class Style : int { Bold, Italic, H1, H2, H3, H4, H5, H6 };
   PrintableSpan(size_t begin, size_t end, const proto::Link& link)

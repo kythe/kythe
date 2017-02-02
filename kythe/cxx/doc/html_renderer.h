@@ -27,17 +27,24 @@
 namespace kythe {
 
 struct HtmlRendererOptions {
+  virtual ~HtmlRendererOptions() {}
   /// Used to determine the href attribute value for a link pointing to an
   /// `Anchor`. HtmlRenderer will HTML-escape the link (e.g., ampersands
   /// will be replaced by &amp;).
   std::function<std::string(const proto::Anchor&)> make_link_uri =
       [](const proto::Anchor&) { return ""; };
   /// Used to retrieve `NodeInfo` for the given semantic ticket.
-  std::function<const proto::common::NodeInfo*(const std::string&)> node_info =
-      [](const std::string&) { return nullptr; };
+  virtual const proto::common::NodeInfo* node_info(const std::string&) const {
+    return nullptr;
+  }
+  /// Used to retrieve a string representing the kind of the given semantic
+  /// ticket.
+  std::function<std::string(const std::string&)> kind_name =
+      [](const std::string&) { return ""; };
   /// Used to map from an anchor's ticket to that `Anchor`.
-  std::function<const proto::Anchor*(const std::string&)> anchor_for_ticket =
-      [](const std::string&) { return nullptr; };
+  virtual const proto::Anchor* anchor_for_ticket(const std::string&) const {
+    return nullptr;
+  }
   /// Configures the CSS class to apply to the outermost div of a document.
   std::string doc_div = "kythe-doc";
   /// Configures the CSS class to apply to a tag's label (e.g, "Authors:")
@@ -46,12 +53,26 @@ struct HtmlRendererOptions {
   std::string tag_section_content_div = "kythe-doc-tag-section-content";
   /// Configures the CSS class to apply to signature divs.
   std::string signature_div = "kythe-doc-element-signature";
+  /// Configures the CSS class to apply to content divs.
+  std::string content_div = "kythe-doc-content";
   /// Configures the CSS class to apply to type name divs.
   std::string type_name_div = "kythe-doc-type-name";
   /// Configures the CSS class to apply to name spans.
   std::string name_span = "kythe-doc-name-span";
   /// Configures the CSS class to apply to signature detail divs.
   std::string sig_detail_div = "kythe-doc-qualified-name";
+};
+
+class DocumentHtmlRendererOptions : public HtmlRendererOptions {
+ public:
+  explicit DocumentHtmlRendererOptions(
+      const proto::DocumentationReply& document)
+      : document_(document) {}
+  const proto::common::NodeInfo* node_info(const std::string&) const override;
+  const proto::Anchor* anchor_for_ticket(const std::string&) const override;
+
+ private:
+  const proto::DocumentationReply& document_;
 };
 
 /// \brief Render `printable` as HTML according to `options`.
@@ -70,6 +91,13 @@ std::vector<std::string> RenderSimpleParams(const proto::MarkedSource& sig);
 /// \brief Extract and render the simple identifier for `sig`.
 /// \return The empty string if there is no such identifier.
 std::string RenderSimpleIdentifier(const proto::MarkedSource& sig);
+
+/// \brief Extract and render the simple qualified name for `sig`.
+/// \param include_identifier if set, include the identifier on the qualified
+/// name.
+/// \return The empty string if there is no such identifier.
+std::string RenderSimpleQualifiedName(const proto::MarkedSource& sig,
+                                      bool include_identifier);
 
 }  // namespace kythe
 
