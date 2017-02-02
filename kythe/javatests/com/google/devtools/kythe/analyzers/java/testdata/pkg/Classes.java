@@ -42,4 +42,18 @@ public class Classes {
   //- E.subkind enumClass
   //- E childof N
   private static enum Enum {}
+
+  //- @localFunc defines/binding LF
+  private void localFunc() {
+    //- @LocalClass defines/binding LC
+    //- LC childof LF
+    class LocalClass {};
+  }
+
+
+  static {
+    //- @LocalClassInStaticInitializer defines/binding LCISI
+    //- LCISI childof N
+    class LocalClassInStaticInitializer {};
+  }
 }

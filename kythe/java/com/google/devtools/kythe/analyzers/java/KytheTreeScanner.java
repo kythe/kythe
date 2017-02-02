@@ -236,6 +236,19 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     Optional<String> signature = signatureGenerator.getSignature(classDef.sym);
     if (signature.isPresent()) {
       EntrySet classNode = entrySets.getNode(classDef.sym, signature.get());
+
+      // Find the method or class in which this class is defined, if any.
+      TreeContext container = ctx.getClassOrMethodParent();
+      // Emit the fact that the class is a child of its containing class or method.
+      // Note that for a nested/inner class, we already emitted the fact that it's a
+      // child of the containing class when we scanned the containing class's members.
+      // However we can't restrict ourselves to just classes contained in methods here,
+      // because that would miss the case of local/anonymous classes in static/member
+      // initializers. But there's no harm in emitting the same fact twice!
+      if (container != null) {
+        entrySets.emitEdge(classNode, EdgeKind.CHILDOF, container.getNode().entries);
+      }
+
       boolean documented = visitDocComment(classDef, classNode);
 
       Span classIdent =
@@ -306,6 +319,11 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         emitEdge(classNode, EdgeKind.EXTENDS, implNode);
       }
 
+      // Set the resulting node for the class before recursing through its members.  Setting the node
+      // first is necessary to correctly add childof edges from local/anonymous classes defined directly
+      // in the class body (in static initializers or member initializers).
+      JavaNode node = ctx.setNode(new JavaNode(classNode, signature.get()));
+
       for (JCTree member : classDef.getMembers()) {
         JavaNode n = scan(member, ctx);
         if (n != null) {
@@ -313,7 +331,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         }
       }
 
-      return new JavaNode(classNode, signature.get());
+      return node;
     }
     return todoNode(ctx, "JCClass: " + classDef);
   }
@@ -521,7 +539,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     JavaNode method = scan(invoke.getMethodSelect(), ctx);
     if (method != null) {
       EntrySet anchor = emitAnchor(ctx, EdgeKind.REF_CALL, method.entries);
-      TreeContext parentContext = owner.getMethodParent();
+      TreeContext parentContext = ctx.getMethodParent();
       if (anchor != null && parentContext != null && parentContext.getNode() != null) {
         emitEdge(anchor, EdgeKind.CHILDOF, parentContext.getNode());
       }
@@ -943,6 +961,14 @@ class TreeContext {
   public TreeContext getMethodParent() {
     TreeContext parent = up();
     while (parent != null && !(parent.getTree() instanceof JCMethodDecl)) {
+      parent = parent.up();
+    }
+    return parent;
+  }
+
+  public TreeContext getClassOrMethodParent() {
+    TreeContext parent = up();
+    while (parent != null && !(parent.getTree() instanceof JCMethodDecl || parent.getTree() instanceof JCClassDecl)) {
       parent = parent.up();
     }
     return parent;
