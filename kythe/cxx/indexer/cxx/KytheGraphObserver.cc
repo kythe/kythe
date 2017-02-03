@@ -42,6 +42,9 @@
 
 #include "IndexerASTHooks.h"
 
+DEFINE_bool(fail_on_unimplemented_builtin, false,
+            "Fail indexer if we encounter a builtin we do not handle");
+
 namespace kythe {
 
 using clang::SourceLocation;
@@ -944,6 +947,31 @@ void KytheGraphObserver::recordDeclUseLocation(
   RecordAnchor(source_range, node, EdgeKindID::kRef, claimability);
 }
 
+GraphObserver::NodeId KytheGraphObserver::getNodeIdForBuiltinType(
+    const llvm::StringRef &spelling) {
+  const auto &info = builtins_.find(spelling.str());
+  if (info == builtins_.end()) {
+    if (FLAGS_fail_on_unimplemented_builtin) {
+      LOG(FATAL) << "Missing builtin " << spelling.str();
+    }
+    LOG(ERROR) << "Missing builtin " << spelling.str();
+    MarkedSource sig;
+    sig.set_kind(MarkedSource::IDENTIFIER);
+    sig.set_pre_text(spelling);
+    builtins_.emplace(spelling.str(), Builtin{NodeId::CreateUncompressed(
+                                                  getDefaultClaimToken(),
+                                                  spelling.str() + "#builtin"),
+                                              sig, true});
+    auto *new_builtin = &builtins_.find(spelling.str())->second;
+    EmitBuiltin(new_builtin);
+    return new_builtin->node_id;
+  }
+  if (!info->second.emitted) {
+    EmitBuiltin(&info->second);
+  }
+  return info->second.node_id;
+}
+
 void KytheGraphObserver::applyMetadataFile(clang::FileID id,
                                            const clang::FileEntry *file) {
   const llvm::MemoryBuffer *buffer =
@@ -1221,6 +1249,7 @@ void KytheGraphObserver::RegisterBuiltins() {
   };
   RegisterTokenBuiltin("void", "void");
   RegisterTokenBuiltin("bool", "bool");
+  RegisterTokenBuiltin("_Bool", "_Bool");
   RegisterTokenBuiltin("signed char", "signed char");
   RegisterTokenBuiltin("char", "char");
   RegisterTokenBuiltin("char16_t", "char16_t");

@@ -141,27 +141,7 @@ class KytheGraphObserver : public GraphObserver {
     EmitMetaNodes();
   }
 
-  NodeId getNodeIdForBuiltinType(const llvm::StringRef &spelling) override {
-    const auto &info = builtins_.find(spelling.str());
-    if (info == builtins_.end()) {
-      LOG(ERROR) << "Missing builtin " << spelling.str();
-      MarkedSource sig;
-      sig.set_kind(MarkedSource::IDENTIFIER);
-      sig.set_pre_text(spelling);
-      builtins_.emplace(
-          spelling.str(),
-          Builtin{NodeId::CreateUncompressed(getDefaultClaimToken(),
-                                             spelling.str() + "#builtin"),
-                  sig, true});
-      auto *new_builtin = &builtins_.find(spelling.str())->second;
-      EmitBuiltin(new_builtin);
-      return new_builtin->node_id;
-    }
-    if (!info->second.emitted) {
-      EmitBuiltin(&info->second);
-    }
-    return info->second.node_id;
-  }
+  NodeId getNodeIdForBuiltinType(const llvm::StringRef &spelling) override;
 
   const KytheClaimToken *getDefaultClaimToken() const override {
     return &default_token_;

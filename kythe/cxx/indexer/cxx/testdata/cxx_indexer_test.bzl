@@ -6,6 +6,7 @@
 def cxx_indexer_test(name, srcs, deps=[], tags=[], size="small",
                      std="c++1y", ignore_dups=False,
                      ignore_unimplemented=False,
+                     fail_on_unimplemented_builtin=True,
                      index_template_instantiations=True,
                      expect_fail_index=False,
                      expect_fail_verify=False,
@@ -27,6 +28,10 @@ def cxx_indexer_test(name, srcs, deps=[], tags=[], size="small",
     args += ["--verifier", "--convert_marked_source=true"]
   if ignore_dups:
     args += ["--verifier", "--ignore_dups=true"]
+  if fail_on_unimplemented_builtin:
+    args += ["--indexer", "--fail_on_unimplemented_builtin=true"]
+  else:
+    args += ["--indexer", "--fail_on_unimplemented_builtin=false"]
   if ignore_unimplemented:
     args += ["--indexer", "--ignore_unimplemented=true"]
   else:

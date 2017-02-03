@@ -56,6 +56,6 @@ KINDEX_FILE="$(find "${TEMP_PREFIX}" -iname '*.kindex')"
 set +e
 "${INDEXER}" -claim_unknown=false "${KINDEX_FILE}" "${INDEXER_ARGS[@]}" \
     | "${VERIFIER}" "${VERIFIER_ARGS[@]}" \
-      $(find "${TEMP_PREFIX}"/test_bundle -type f)
+    $(find "${TEMP_PREFIX}"/test_bundle -type f)
 RESULTS=( ${PIPESTATUS[0]} ${PIPESTATUS[1]} )
 source kythe/cxx/indexer/cxx/testdata/handle_results.sh

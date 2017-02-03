@@ -1890,6 +1890,14 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "builtin_bool",
+    srcs = ["objc/builtin_bool.m"],
+    ignore_dups = True,
+    objc = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
     name = "category",
     srcs = ["objc/categories/base+foo.m"],
     ignore_dups = True,
@@ -2265,7 +2273,11 @@ cxx_indexer_test(
     expect_fail_index = True,
     ignore_dups = True,
     objc = True,
-    tags = ["objc"],
+    tags = [
+        "arc-ignore",
+        "manual",
+        "objc",
+    ],
 )
 
 cxx_indexer_test(

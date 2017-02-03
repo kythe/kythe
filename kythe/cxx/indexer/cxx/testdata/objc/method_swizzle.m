@@ -1,4 +1,6 @@
-// TODO(salguarnieri) Add assertions to make this a real test.
+// TODO(salguarnieri) Add assertions to make this a real test. This test is
+// marked with the arc-ignore and manual tags in the BUILD file so it is
+// not executed.
 
 // TODO(salguarnieri) Locate this header file so this test can be indexed.
 #import <objc/runtime.h>
