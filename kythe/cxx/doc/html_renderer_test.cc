@@ -43,6 +43,7 @@ class TestHtmlRendererOptions : public HtmlRendererOptions {
     auto record = definition_locations_.find(ticket);
     return record != definition_locations_.end() ? &record->second : nullptr;
   }
+
  private:
   std::map<std::string, proto::common::NodeInfo> node_info_;
   std::map<std::string, proto::Anchor> definition_locations_;
@@ -54,6 +55,7 @@ class HtmlRendererTest : public ::testing::Test {
       return anchor.parent();
     };
   }
+
  protected:
   std::string RenderAsciiProtoDocument(const char *document_pb) {
     proto::DocumentationReply::Document document;
@@ -311,6 +313,15 @@ TEST_F(HtmlRendererTest, RenderSimpleIdentifier) {
   ASSERT_TRUE(TextFormat::ParseFromString(kSampleMarkedSource, &marked))
       << "(invalid ascii protobuf)";
   EXPECT_EQ("FunctionName", kythe::RenderSimpleIdentifier(marked));
+}
+TEST_F(HtmlRendererTest, RenderSimpleQualifiedName) {
+  proto::MarkedSource marked;
+  ASSERT_TRUE(TextFormat::ParseFromString(kSampleMarkedSource, &marked))
+      << "(invalid ascii protobuf)";
+  EXPECT_EQ("namespace::(anonymous namespace)::ClassContainer",
+            kythe::RenderSimpleQualifiedName(marked, false));
+  EXPECT_EQ("namespace::(anonymous namespace)::ClassContainer::FunctionName",
+            kythe::RenderSimpleQualifiedName(marked, true));
 }
 }  // anonymous namespace
 }  // namespace kythe

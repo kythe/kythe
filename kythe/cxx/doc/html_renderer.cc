@@ -179,6 +179,34 @@ void AppendEscapedHtmlString(const SourceString& source, std::string* dest) {
   }
 }
 
+/// Target buffer for RenderSimpleIdentifier.
+class RenderSimpleIdentifierTarget {
+ public:
+  /// \brief escapes and appends `source` to the buffer.
+  template <typename SourceString>
+  void Append(const SourceString& source) {
+    if (!prepend_buffer_.empty() && !source.empty()) {
+      AppendEscapedHtmlString(prepend_buffer_, &buffer_);
+      prepend_buffer_.clear();
+    }
+    AppendEscapedHtmlString(source, &buffer_);
+  }
+  /// \brief escapes and adds `source` before the (non-empty) text that would
+  /// be added by the next call to `Append`.
+  template <typename SourceString>
+  void AppendFinalListToken(const SourceString& source) {
+    prepend_buffer_.append(std::string(source));
+  }
+  const std::string buffer() const { return buffer_; }
+
+ private:
+  /// The buffer used to hold escaped data.
+  std::string buffer_;
+  /// Unescaped text that should be escaped and appended before any other text
+  /// is appended to `buffer_`.
+  std::string prepend_buffer_;
+};
+
 /// State while recursing through MarkedSource for RenderSimpleIdentifier.
 struct RenderSimpleIdentifierState {
   bool render_identifier = false;
@@ -191,7 +219,8 @@ struct RenderSimpleIdentifierState {
   }
 };
 
-void RenderSimpleIdentifier(const proto::MarkedSource& sig, std::string* out,
+void RenderSimpleIdentifier(const proto::MarkedSource& sig,
+                            RenderSimpleIdentifierTarget* out,
                             RenderSimpleIdentifierState state, size_t depth) {
   if (depth >= kMaxRenderDepth) {
     return;
@@ -212,17 +241,20 @@ void RenderSimpleIdentifier(const proto::MarkedSource& sig, std::string* out,
       return;
   }
   if (state.should_render()) {
-    AppendEscapedHtmlString(sig.pre_text(), out);
+    out->Append(sig.pre_text());
   }
   for (int child = 0; child < sig.child_size(); ++child) {
     RenderSimpleIdentifier(sig.child(child), out, state, depth + 1);
-    // TODO(zarko): Use .add_final_list_token().
-    if (state.should_render() && child + 1 != sig.child_size()) {
-      AppendEscapedHtmlString(sig.post_child_text(), out);
+    if (state.should_render()) {
+      if (child + 1 != sig.child_size()) {
+        out->Append(sig.post_child_text());
+      } else if (sig.add_final_list_token()) {
+        out->AppendFinalListToken(sig.post_child_text());
+      }
     }
   }
   if (state.should_render()) {
-    AppendEscapedHtmlString(sig.post_text(), out);
+    out->Append(sig.post_text());
   }
 }
 
@@ -242,9 +274,11 @@ void RenderSimpleParams(const proto::MarkedSource& sig,
     case proto::MarkedSource::PARAMETER:
       for (const auto& child : sig.child()) {
         out->emplace_back();
+        RenderSimpleIdentifierTarget target;
         RenderSimpleIdentifierState state;
         state.render_identifier = true;
-        RenderSimpleIdentifier(child, &out->back(), state, depth + 1);
+        RenderSimpleIdentifier(child, &target, state, depth + 1);
+        out->back().append(target.buffer());
       }
       break;
     default:
@@ -267,21 +301,21 @@ const proto::Anchor* DocumentHtmlRendererOptions::anchor_for_ticket(
 }
 
 std::string RenderSimpleIdentifier(const proto::MarkedSource& sig) {
-  std::string result;
+  RenderSimpleIdentifierTarget target;
   RenderSimpleIdentifierState state;
   state.render_identifier = true;
-  RenderSimpleIdentifier(sig, &result, state, 0);
-  return result;
+  RenderSimpleIdentifier(sig, &target, state, 0);
+  return target.buffer();
 }
 
 std::string RenderSimpleQualifiedName(const proto::MarkedSource& sig,
                                       bool include_identifier) {
-  std::string result;
+  RenderSimpleIdentifierTarget target;
   RenderSimpleIdentifierState state;
   state.render_identifier = include_identifier;
   state.render_context = true;
-  RenderSimpleIdentifier(sig, &result, state, 0);
-  return result;
+  RenderSimpleIdentifier(sig, &target, state, 0);
+  return target.buffer();
 }
 
 std::vector<std::string> RenderSimpleParams(const proto::MarkedSource& sig) {
