@@ -11,8 +11,9 @@ java_binary(
         "Javac8Wrapper.java",
     ],
     data = ["@bazel_tools//third_party/java/jdk/langtools:javac_jar"],
-    # TODO(schroederc): fix bootclasspath to use $(location ...) syntax
-    jvm_flags = ["-Xbootclasspath/p:$$JAVA_RUNFILES/bazel_tools/third_party/java/jdk/langtools/javac.jar"],
+    jvm_flags = [
+        "-Xbootclasspath/p:$$JAVA_RUNFILES/io_kythe/$(location @bazel_tools//third_party/java/jdk/langtools:javac_jar)",
+    ],
     main_class = "com.google.devtools.kythe.extractors.java.standalone.Javac8Wrapper",
     deps = [
         "//kythe/java/com/google/devtools/kythe/common",

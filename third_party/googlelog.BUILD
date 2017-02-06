@@ -36,6 +36,7 @@ cc_library(
         ":headers",
     ],
     copts = [
+        "-D_XOPEN_SOURCE",
         "-Ithird_party/googlelog/src",
     ],
     includes = [

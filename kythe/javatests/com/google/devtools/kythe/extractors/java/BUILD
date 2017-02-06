@@ -7,8 +7,9 @@ java_test(
         "@bazel_tools//third_party/java/jdk/langtools:javac_jar",
     ],
     javacopts = ["-Xlint:all"],
-    # TODO(schroederc): fix bootclasspath to use $(location ...) syntax
-    jvm_flags = ["-Xbootclasspath/p:$$JAVA_RUNFILES/bazel_tools/third_party/java/jdk/langtools/javac.jar"],
+    jvm_flags = [
+        "-Xbootclasspath/p:$$JAVA_RUNFILES/io_kythe/$(location @bazel_tools//third_party/java/jdk/langtools:javac_jar)",
+    ],
     test_class = "com.google.devtools.kythe.extractors.java.JavaExtractorTest",
     deps = [
         "//kythe/java/com/google/devtools/kythe/extractors/java",

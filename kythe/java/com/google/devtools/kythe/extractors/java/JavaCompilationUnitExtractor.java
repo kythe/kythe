@@ -50,7 +50,11 @@ import com.sun.source.util.JavacTask;
 import com.sun.tools.javac.api.JavacTaskImpl;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Symtab;
+import com.sun.tools.javac.file.CacheFSInfo;
+import com.sun.tools.javac.file.FSInfo;
+import com.sun.tools.javac.file.JavacFileManager;
 import com.sun.tools.javac.main.Option;
+import com.sun.tools.javac.util.Context;
 import com.sun.tools.javac.util.ServiceLoader;
 import java.io.File;
 import java.io.IOError;
@@ -565,6 +569,33 @@ public class JavaCompilationUnitExtractor {
     boolean hasErrors = false;
   }
 
+  // Install NonResolvingCacheFSInfo into Context to avoid resolving symlinks.
+  private void setupFSInfo(StandardJavaFileManager fileManager) {
+    Context context = new Context();
+    NonResolvingCacheFSInfo.preRegister(context);
+    ((JavacFileManager) fileManager).setContext(context);
+  }
+
+  // FSInfo class which does not resolve symlinks when canonicalizing paths.
+  private static class NonResolvingCacheFSInfo extends CacheFSInfo {
+    public static void preRegister(Context context) {
+      context.put(
+          FSInfo.class,
+          new Context.Factory<FSInfo>() {
+            public FSInfo make(Context c) {
+              FSInfo instance = new NonResolvingCacheFSInfo();
+              c.put(FSInfo.class, instance);
+              return instance;
+            }
+          });
+    }
+
+    @Override
+    public Path getCanonicalFile(Path file) {
+      return file.toAbsolutePath();
+    }
+  }
+
   private AnalysisResults runJavaAnalysisToExtractCompilationDetails(
       Iterable<String> sources,
       Iterable<String> classpath,
@@ -590,6 +621,7 @@ public class JavaCompilationUnitExtractor {
 
     StandardJavaFileManager standardFileManager =
         compiler.getStandardFileManager(diagnosticsCollector, null, null);
+    setupFSInfo(standardFileManager);
 
     // We insert a filemanager that wraps the standard filemanager and records the compiler's
     // usage of .java & .class files.

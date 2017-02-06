@@ -2,7 +2,7 @@ workspace(name = "io_kythe")
 
 load("//:version.bzl", "check_version")
 
-check_version("0.3.1")
+check_version("0.4.3")
 
 load("//tools/cpp:clang_configure.bzl", "clang_configure")
 
@@ -157,9 +157,9 @@ go_repositories()
 
 http_archive(
     name = "io_bazel",
-    sha256 = "9b2fffa18d0e87baded2dc4aba470f6274fb66e2b2c6119b93426c47ab19fb40",
-    strip_prefix = "bazel-0.4.0",
-    url = "https://github.com/bazelbuild/bazel/archive/0.4.0.zip",
+    sha256 = "5a3388d58440200b5650cdc59b82f458184cba2578cf0e1c437eead3e5bde4bb",
+    strip_prefix = "bazel-0.4.4",
+    url = "https://github.com/bazelbuild/bazel/archive/0.4.4.zip",
 )
 
 new_git_repository(

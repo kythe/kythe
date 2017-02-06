@@ -83,6 +83,9 @@ if [[ -z "$1" || "$1" == "--build_only" ]]; then
     if [ ! -z $(dirname "${BAZEL_CC}") ]; then
       CXX="$(dirname "${BAZEL_CC}")/${CXX}"
     fi
+    if [ ! -x "$CXX" ]; then
+      CXX="$BAZEL_CC"  # Fall back to unadorned compiler name.
+    fi
     if [[ $(uname) == 'Darwin' ]]; then
       CMAKE_CXX_FLAGS="-lstdc++"
     fi

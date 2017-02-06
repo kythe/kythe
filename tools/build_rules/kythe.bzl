@@ -15,6 +15,9 @@ base_attrs = {
     "verifier_opts": attr.string_list(["--ignore_dups"]),
 }
 
+def _template(items, template):
+  return [template.format(path = i.path, short_path = i.short_path) for i in items]
+
 def extract(ctx, kindex, args, inputs=[], mnemonic=None):
   tool_inputs, _, input_manifests = ctx.resolve_command(tools=[ctx.attr._extractor])
   env = {
@@ -69,7 +72,7 @@ def verify(ctx, entries):
       content = '\n'.join([
         "#!/bin/bash -e",
         "set -o pipefail",
-        "gunzip -c " + " ".join(cmd_helper.template(all_entries, "%{short_path}")) + " | " +
+        "gunzip -c " + " ".join(_template(all_entries, "{short_path}")) + " | " +
         ctx.executable._verifier.short_path + " " + " ".join(ctx.attr.verifier_opts) +
         " " + cmd_helper.join_paths(" ", all_srcs),
       ]),

@@ -18,13 +18,11 @@ package com.google.devtools.kythe.extractors.java;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.tools.FileObject;
@@ -90,12 +88,8 @@ class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<Standar
 
   /** Helper to match loading source files and tracking their usage. */
   public Iterable<JavaFileObject> getJavaFileForSources(Iterable<String> sources) {
-    List<String> sourceList = Lists.newArrayList(sources);
-    String[] sourceArray = new String[sourceList.size()];
-    sourceList.toArray(sourceArray);
-
     return Iterables.transform(
-        fileManager.getJavaFileObjects(sourceArray),
+        fileManager.getJavaFileObjectsFromStrings(sources),
         new Function<JavaFileObject, JavaFileObject>() {
           @Override
           public JavaFileObject apply(JavaFileObject input) {

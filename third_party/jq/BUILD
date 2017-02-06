@@ -48,6 +48,7 @@ cc_library(
     ],
     copts = [
         "-Ithird_party/jq",
+        "-Wno-unused-function",
     ],
     visibility = ["//visibility:private"],
 )

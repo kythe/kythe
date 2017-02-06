@@ -120,7 +120,10 @@ cc_library(
         "//conditions:default": [],
     }),
     includes = ["include"],
-    linkopts = ["-lstdc++"],
+    linkopts = [
+        "-lstdc++",
+        "-lpthread",
+    ],
     deps = ["//third_party/snappy"],
 )
 
