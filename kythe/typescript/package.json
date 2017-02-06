@@ -1,0 +1,12 @@
+{
+  "name": "kythe-typescript-indexer",
+  "bin": "./indexer.js",
+  "scripts": {
+    "watch": "tsc -w",
+    "browse": "node ./indexer.js | ./browse"
+  },
+  "dependencies": {
+    "@types/node": "^7.0.4",
+    "typescript": "^2.1.5"
+  }
+}
