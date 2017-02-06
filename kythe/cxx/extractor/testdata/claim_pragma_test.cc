@@ -75,9 +75,9 @@ required_input {
     }
   }
 }
+argument: "./kythe/cxx/extractor/cxx_extractor"
 argument: "-target"
 argument: "{ignored target}"
-argument: "./kythe/cxx/extractor/cxx_extractor"
 argument: "-DKYTHE_IS_RUNNING=1"
 argument: "-resource-dir"
 argument: "/kythe_builtins"
@@ -117,7 +117,7 @@ class FakeIndexWriterSink : public kythe::IndexWriterSink {
 
     EXPECT_THAT(
         unit.argument(),
-        ElementsAre("-target", ::testing::_, "dummy-executable",
+        ElementsAre("dummy-executable", "-target", ::testing::_,
                     "-DKYTHE_IS_RUNNING=1", "-resource-dir", "/kythe_builtins",
                     "--driver-mode=g++", "-I./kythe/cxx/extractor/testdata",
                     "./kythe/cxx/extractor/testdata/claim_main.cc",

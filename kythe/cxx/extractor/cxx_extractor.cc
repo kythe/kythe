@@ -957,14 +957,14 @@ void IndexWriter::WriteIndex(
   std::string identifying_blob;
   identifying_blob.append(corpus_);
 
-  // Record the target triple in the list of arguments. Put it at the front in
-  // the unlikely event that a different triple was supplied in the arguments.
-  identifying_blob.append("-target");
-  identifying_blob.append(triple_);
-  unit.add_argument("-target");
-  unit.add_argument(triple_);
+  std::vector<std::string> final_args(args_);
+  // Record the target triple in the list of arguments. Put it at the front
+  // (after the tool) in the unlikely event that a different triple was
+  // supplied in the arguments.
+  final_args.insert(final_args.begin() + 1, triple_);
+  final_args.insert(final_args.begin() + 1, "-target");
 
-  for (const auto& arg : args_) {
+  for (const auto& arg : final_args) {
     identifying_blob.append(arg);
     unit.add_argument(arg);
   }
