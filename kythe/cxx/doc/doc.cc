@@ -73,7 +73,7 @@ int DocumentNodesFrom(const proto::DocumentationReply& doc_reply) {
     if (const auto* node = options.node_info(ticket)) {
       for (const auto& fact : node->facts()) {
         if (fact.first == "/kythe/node/kind") {
-          return fact.second;
+          return std::string(fact.second);
         }
       }
     }
