@@ -40,21 +40,24 @@ class Vistor {
        */
       private sourcePath: string) {}
 
-  /** emit emits a Kythe entry, structured as a JSON object. */
-  emit(obj: any) {
-    // TODO: allow control of where the output is produced.
-    console.log(JSON.stringify(obj));
-  }
+  /**
+   * emit emits a Kythe entry, structured as a JSON object.  Defaults to
+   * emitting to stdout but users may replace it.
+   */
+  emit =
+      (obj: any) => {
+        // TODO: allow control of where the output is produced.
+        console.log(JSON.stringify(obj));
+      }
 
   /** newVName returns a new VName pointing at the current file. */
   newVName(signature: string): VName {
-    let corpus = 'TODO';
     return {
       signature,
       path: this.sourcePath,
       language: 'typescript',
       root: '',
-      corpus,
+      corpus: 'TODO',
     };
   }
 
@@ -93,12 +96,47 @@ class Vistor {
     });
   }
 
+  /** getSymbolName computes the VName (and signature) of a ts.Symbol. */
+  getSymbolName(sym: ts.Symbol): VName {
+    // TODO: this is totally incorrect but it's sufficient to make the
+    // current test pass, and future tests will better establish what
+    // behavior is actually needed.
+    return this.newVName(sym.name);
+  }
+
+  visitVariableDeclaration(decl: ts.VariableDeclaration) {
+    if (decl.name.kind === ts.SyntaxKind.Identifier) {
+      let kVar = this.newNode(decl.name.text, 'variable');
+      let anchor = this.newAnchor(decl.name);
+      this.emitEdge(anchor, 'defines/binding', kVar);
+    } else {
+      console.warn(
+          'TODO: handle variable declaration:', ts.SyntaxKind[decl.name.kind]);
+    }
+  }
+
   /** visit is the main dispatch for visiting AST nodes. */
-  visit(node: ts.Node) {
+  visit(node: ts.Node): void {
     switch (node.kind) {
+      case ts.SyntaxKind.VariableDeclaration:
+        return this.visitVariableDeclaration(node as ts.VariableDeclaration);
+      case ts.SyntaxKind.Identifier:
+        // Assume that this identifer is occurring as part of an
+        // expression; we'll handle identifiers that occur in other
+        // circumstances (e.g. in a type) separately.
+        let sym = this.typeChecker.getSymbolAtLocation(node);
+        let name = this.getSymbolName(sym);
+        this.emitEdge(this.newAnchor(node), 'ref', name);
+        return;
+      case ts.SyntaxKind.VariableStatement:
+      case ts.SyntaxKind.VariableDeclarationList:
+      case ts.SyntaxKind.ExpressionStatement:
+      case ts.SyntaxKind.PostfixUnaryExpression:
+      case ts.SyntaxKind.EndOfFileToken:
+        // Use default recursive processing.
+        return ts.forEachChild(node, n => this.visit(n));
       default:
         console.warn(`TODO: handle input node: ${ts.SyntaxKind[node.kind]}`);
-        ts.forEachChild(node, n => this.visit(n));
     }
   }
 
@@ -112,10 +150,19 @@ class Vistor {
   }
 }
 
-function main() {
-  let inPath = 'indexer.ts';
-  let tsOpts: ts.CompilerOptions = {};
-  let program = ts.createProgram([inPath], tsOpts);
+/**
+ * index indexes a TypeScript program, producing Kythe JSON objects for the
+ * source file in the specified path.
+ *
+ * (A ts.Program is a configured collection of parsed source files, but
+ * the caller must specify the source files within the program that they want
+ * Kythe output for, because e.g. the standard library is contained within
+ * the Program and we only want to process it once.)
+ *
+ * @param emit If provided, a function that receives objects as they
+ */
+export function index(
+    path: string, program: ts.Program, emit?: (obj: any) => void) {
   let diags = ts.getPreEmitDiagnostics(program);
   if (diags.length > 0) {
     let message = ts.formatDiagnostics(diags, {
@@ -129,13 +176,28 @@ function main() {
         return '\n';
       },
     });
-    console.error('error:', message);
+    throw new Error(message);
+  }
+  let sourceFile = program.getSourceFile(path);
+  let visitor = new Vistor(program.getTypeChecker(), path);
+  if (emit != null) {
+    visitor.emit = emit;
+  }
+  visitor.indexFile(sourceFile);
+}
+
+function main(argv: string[]) {
+  if (argv.length !== 3) {
+    console.error('usage: indexer path.ts');
     return 1;
   }
-  let sourceFile = program.getSourceFile(inPath);
-
-  new Vistor(program.getTypeChecker(), inPath).indexFile(sourceFile);
+  let inPath = argv[2];
+  let tsOpts: ts.CompilerOptions = {};
+  let program = ts.createProgram([inPath], tsOpts);
+  index(inPath, program);
   return 0;
 }
 
-process.exit(main());
+if (require.main === module) {
+  process.exit(main(process.argv));
+}

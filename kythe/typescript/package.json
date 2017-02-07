@@ -2,8 +2,10 @@
   "name": "kythe-typescript-indexer",
   "bin": "./indexer.js",
   "scripts": {
+    "build": "tsc",
     "watch": "tsc -w",
-    "browse": "node ./indexer.js | ./browse"
+    "browse": "node indexer.js indexer.ts | ./browse",
+    "test": "node test.js"
   },
   "dependencies": {
     "@types/node": "^7.0.4",

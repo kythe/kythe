@@ -6,5 +6,9 @@
         "noImplicitAny": true,
         "strictNullChecks": true,
         "sourceMap": false
-    }
+    },
+    "exclude": [
+        "node_modules",
+        "testdata"
+    ]
 }
