@@ -92,6 +92,7 @@ sh_binary(
     ],
     data = [
         ":kindex_tool",
+        "//kythe/go/platform/tools/shasum_tool",
     ],
 )
 
