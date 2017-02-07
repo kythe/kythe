@@ -61,21 +61,20 @@ class Vistor {
     };
   }
 
-  /** newNode emits a new node entry and returns its VName. */
-  newNode(signature: string, kind: string): VName {
-    let vn = this.newVName(signature);
-    this.emitFact(vn, 'node/kind', kind);
-    return vn;
-  }
-
   /** newAnchor emits a new anchor entry that covers a TypeScript node. */
   newAnchor(node: ts.Node): VName {
-    let name = this.newNode(`@${node.pos}:${node.end}`, 'anchor');
+    let name = this.newVName(`@${node.pos}:${node.end}`);
+    this.emitNode(name, 'anchor');
     // TODO: loc/* should be in bytes, but these offsets are in UTF-16 units.
     this.emitFact(name, 'loc/start', node.getStart().toString());
     this.emitFact(name, 'loc/end', node.getEnd().toString());
     this.emitEdge(name, 'childof', this.kFile);
     return name;
+  }
+
+  /** emitNode emits a new node entry, declaring the kind of a VName. */
+  emitNode(source: VName, kind: string) {
+    this.emitFact(source, 'node/kind', kind);
   }
 
   /** emitFact emits a new fact entry, tying an attribute to a VName. */
@@ -106,13 +105,27 @@ class Vistor {
 
   visitVariableDeclaration(decl: ts.VariableDeclaration) {
     if (decl.name.kind === ts.SyntaxKind.Identifier) {
-      let kVar = this.newNode(decl.name.text, 'variable');
-      let anchor = this.newAnchor(decl.name);
-      this.emitEdge(anchor, 'defines/binding', kVar);
+      let sym = this.typeChecker.getSymbolAtLocation(decl.name);
+      let kVar = this.getSymbolName(sym);
+      this.emitNode(kVar, 'variable');
+
+      this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kVar);
     } else {
       console.warn(
           'TODO: handle variable declaration:', ts.SyntaxKind[decl.name.kind]);
     }
+    if (decl.initializer) this.visit(decl.initializer);
+  }
+
+  visitFunctionDeclaration(decl: ts.FunctionDeclaration) {
+    if (decl.name) {
+      let sym = this.typeChecker.getSymbolAtLocation(decl.name);
+      let kFunc = this.getSymbolName(sym);
+      this.emitNode(kFunc, 'function');
+
+      this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kFunc);
+    }
+    if (decl.body) this.visit(decl.body);
   }
 
   /** visit is the main dispatch for visiting AST nodes. */
@@ -120,6 +133,8 @@ class Vistor {
     switch (node.kind) {
       case ts.SyntaxKind.VariableDeclaration:
         return this.visitVariableDeclaration(node as ts.VariableDeclaration);
+      case ts.SyntaxKind.FunctionDeclaration:
+        return this.visitFunctionDeclaration(node as ts.FunctionDeclaration);
       case ts.SyntaxKind.Identifier:
         // Assume that this identifer is occurring as part of an
         // expression; we'll handle identifiers that occur in other
@@ -128,11 +143,16 @@ class Vistor {
         let name = this.getSymbolName(sym);
         this.emitEdge(this.newAnchor(node), 'ref', name);
         return;
-      case ts.SyntaxKind.VariableStatement:
-      case ts.SyntaxKind.VariableDeclarationList:
-      case ts.SyntaxKind.ExpressionStatement:
-      case ts.SyntaxKind.PostfixUnaryExpression:
+      case ts.SyntaxKind.BinaryExpression:
+      case ts.SyntaxKind.Block:
+      case ts.SyntaxKind.CallExpression:
       case ts.SyntaxKind.EndOfFileToken:
+      case ts.SyntaxKind.ExpressionStatement:
+      case ts.SyntaxKind.NumericLiteral:
+      case ts.SyntaxKind.PlusToken:
+      case ts.SyntaxKind.PostfixUnaryExpression:
+      case ts.SyntaxKind.VariableDeclarationList:
+      case ts.SyntaxKind.VariableStatement:
         // Use default recursive processing.
         return ts.forEachChild(node, n => this.visit(n));
       default:
