@@ -116,8 +116,13 @@ TEST_F(MarkupHandlerTest, JavadocParam) {
          "[Some text.\n[^ @param][tbParam0  argument option]]");
 }
 TEST_F(MarkupHandlerTest, JavadocAuthors) {
-  Handle("@author Aa Bb @author Cc Dd", ParseJavadoxygen,
-         "[[^ @author][tbAuthor0  Aa Bb ][^ @author][tbAuthor1  Cc Dd]]");
+  Handle("@author Aa Bb\n@author Cc Dd", ParseJavadoxygen,
+         "[[^ @author][tbAuthor0  Aa Bb\n][^ @author][tbAuthor1  Cc Dd]]");
+}
+TEST_F(MarkupHandlerTest, JavadocAuthorsEmail) {
+  Handle("@author aa@bb.com\n@author cc@dd.com (Cc Dd)", ParseJavadoxygen,
+         "[[^ @author][tbAuthor0  aa@bb.com\n][^ @author][tbAuthor1  cc@dd.com "
+         "(Cc Dd)]]");
 }
 TEST_F(MarkupHandlerTest, JavadocAuthorsNewline) {
   Handle("@author Aa Bb\n@author Cc Dd", ParseJavadoxygen,

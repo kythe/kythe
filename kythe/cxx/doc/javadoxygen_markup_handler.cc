@@ -138,12 +138,33 @@ size_t EvaluateDoxygenTag(const std::string& buffer, size_t slash, size_t limit,
 size_t ParseJavadocDescription(const std::string& buffer, size_t begin,
                                size_t limit, PrintableSpans* out_spans) {
   CHECK(limit <= buffer.size());
+  bool at_line_start = false;
   for (size_t end = begin; end < limit; ++end) {
     char c = buffer[end];
-    if (c == '{') {
-      end = ParseJavadocBrace(buffer, end, limit, out_spans) - 1;
-    } else if (c == '@') {
-      return end;
+    switch (c) {
+      case '{':
+        end = ParseJavadocBrace(buffer, end, limit, out_spans) - 1;
+        at_line_start = false;
+        break;
+      case '\n':
+        at_line_start = true;
+        break;
+      case '@':
+        if (at_line_start) {
+          // Tags must start at the beginning of a line; otherwise they should
+          // be treated as normal text. (This discounts inline tags, but those
+          // start with {@.)
+          return end;
+        }
+        at_line_start = false;
+      default:
+        if (c != ' ' && c != '\t') {
+          // TODO(zarko): Unicode whitespace support (probably using
+          // std::wstring_convert::from_bytes/isspace to avoid taking on
+          // more dependencies).
+          at_line_start = false;
+        }
+        break;
     }
   }
   return limit;
