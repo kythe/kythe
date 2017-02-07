@@ -1,3 +1,5 @@
+export {}
+
 //- @test defines/binding F
 //- F.node/kind function
 function test() {

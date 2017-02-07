@@ -1,3 +1,5 @@
+export {}
+
 //- @x defines/binding X
 //- X.node/kind variable
 let x = 3;
