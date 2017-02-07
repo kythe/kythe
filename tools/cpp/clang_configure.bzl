@@ -11,6 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
+# Imported from https://github.com/bazelbuild/bazel/blob/master/tools/cpp/cc_configure.bzl
+# with local modifications to support out requirements.
 """Rules for configuring the C++ toolchain (experimental)."""
 
 def _get_value(it):
@@ -498,12 +501,12 @@ def _cuda_compute_capabilities(repository_ctx):
       auto_configure_fail("Invalid compute capability: %s" % capability)
   return capabilities
 
-def _tpl(repository_ctx, tpl, substitutions={}, out=None):
+def _tpl(repository_ctx, tpl, substitutions={}, out=None, repo="bazel_tools"):
   if not out:
     out = tpl
   repository_ctx.template(
       out,
-      Label("@bazel_tools//tools/cpp:%s.tpl" % tpl),
+      Label("@%s//tools/cpp:%s.tpl" % (repo, tpl)),
       substitutions)
 
 def _get_env(repository_ctx):
@@ -600,11 +603,12 @@ def _impl(repository_ctx):
     _tpl(repository_ctx, "CROSSTOOL", {
         "%{cpu}": cpu_value,
         "%{content}": _build_crosstool(crosstool_content) + "\n" +
-                      _build_tool_path(tool_paths),
+                      _build_tool_path(tool_paths) + "\n" +
+                      ("" if darwin else "linking_mode_flags { mode: DYNAMIC }\n"),
         "%{opt_content}": _build_crosstool(opt_content, "    "),
         "%{dbg_content}": _build_crosstool(dbg_content, "    "),
         "%{cxx_builtin_include_directory}": "",
-    })
+    }, repo="")
 
 cc_autoconf = repository_rule(
     local = True,
