@@ -67,8 +67,8 @@ func (pi *PackageInfo) Emit(ctx context.Context, sink Sink, opts *EmitOptions) e
 	e.writeFact(pi.VName, facts.NodeKind, nodes.Package)
 
 	// Emit facts for all the source files claimed by this package.
-	for path, text := range pi.SourceText {
-		vname := pi.FileVName(path)
+	for file, text := range pi.SourceText {
+		vname := pi.FileVName(file)
 		e.writeFact(vname, facts.NodeKind, nodes.File)
 		e.writeFact(vname, facts.Text, text)
 		// All Go source files are encoded as UTF-8, which is the default.

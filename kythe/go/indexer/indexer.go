@@ -72,7 +72,7 @@ type PackageInfo struct {
 	PackageVName map[*types.Package]*spb.VName // Resolved package to vname
 	FileSet      *token.FileSet                // Location info for the source files
 	Files        []*ast.File                   // The parsed ASTs of the source files
-	SourceText   map[string]string             // The text of the source files, by path
+	SourceText   map[*ast.File]string          // The text of the source files
 
 	Info   *types.Info // If non-nil, contains type-checker results
 	Errors []error     // All errors reported by the type checker
@@ -94,6 +94,9 @@ type PackageInfo struct {
 	// A dummy function representing the undeclared package initilization
 	// function.
 	packageInit *funcInfo
+
+	// A cache of source file vnames.
+	fileVName map[*ast.File]*spb.VName
 
 	// A cache of already-computed signatures.
 	sigs map[types.Object]string
@@ -154,10 +157,11 @@ func (pi *packageImporter) Import(importPath string) (*types.Package, error) {
 func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageInfo, error) {
 	sourceFiles := stringset.New(unit.SourceFile...)
 
-	imap := make(map[string]*spb.VName)    // import path → vname
-	srcs := make(map[string]string)        // file path → text
-	fmap := make(map[string]*apb.FileInfo) // import path → file info
-	fset := token.NewFileSet()             // location info for the parser
+	imap := make(map[string]*spb.VName)     // import path → vname
+	srcs := make(map[*ast.File]string)      // file → text
+	fmap := make(map[string]*apb.FileInfo)  // import path → file info
+	filev := make(map[*ast.File]*spb.VName) // file → vname
+	fset := token.NewFileSet()              // location info for the parser
 	goRoot := getenv("GOROOT", unit)
 	var files []*ast.File // parsed sources
 
@@ -178,7 +182,6 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 			if err != nil {
 				return nil, fmt.Errorf("fetching %q (%s): %v", fpath, ri.Info.Digest, err)
 			}
-			srcs[fpath] = string(data)
 			vpath := ri.VName.GetPath()
 			if vpath == "" {
 				vpath = fpath
@@ -187,14 +190,25 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 			if err != nil {
 				return nil, fmt.Errorf("parsing %q: %v", fpath, err)
 			}
+
+			// Cache file VNames based on the required input.
 			files = append(files, parsed)
+			vname := proto.Clone(ri.VName).(*spb.VName)
+			if vname == nil {
+				vname = proto.Clone(unit.VName).(*spb.VName)
+				vname.Signature = ""
+				vname.Language = ""
+			}
+			vname.Path = vpath
+			filev[parsed] = vname
+			srcs[parsed] = string(data)
 			continue
 		}
 
-		// Other files may be compiled archives with type information for other
-		// packages, or may be other ancillary files like C headers to support
-		// cgo.  Use the vname to determine which import path for each and save
-		// that mapping for use by the importer.
+		// Files may be source or compiled archives with type information for
+		// other packages, or may be other ancillary files like C headers to
+		// support cgo.  Use the vname to determine which import path for each
+		// and save that mapping for use by the importer.
 		if ri.VName == nil {
 			return nil, fmt.Errorf("missing vname for %q", fpath)
 		}
@@ -217,8 +231,9 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 		PackageVName: make(map[*types.Package]*spb.VName),
 		Dependencies: make(map[string]*types.Package), // :: import path → package
 
-		function: make(map[ast.Node]*funcInfo),
-		sigs:     make(map[types.Object]string),
+		function:  make(map[ast.Node]*funcInfo),
+		sigs:      make(map[types.Object]string),
+		fileVName: filev,
 	}
 
 	// Run the type-checker and collect any errors it generates.  Errors in the
@@ -305,12 +320,15 @@ func (pi *PackageInfo) ObjectVName(obj types.Object) *spb.VName {
 }
 
 // FileVName returns a VName for path relative to the package base.
-func (pi *PackageInfo) FileVName(path string) *spb.VName {
-	vname := proto.Clone(pi.VName).(*spb.VName)
-	vname.Language = ""
-	vname.Signature = ""
-	vname.Path = path
-	return vname
+func (pi *PackageInfo) FileVName(file *ast.File) *spb.VName {
+	if v := pi.fileVName[file]; v != nil {
+		return v
+	}
+	v := proto.Clone(pi.VName).(*spb.VName)
+	v.Language = ""
+	v.Signature = ""
+	v.Path = pi.FileSet.Position(file.Pos()).Filename
+	return v
 }
 
 // AnchorVName returns a VName for the given path and offsets.
