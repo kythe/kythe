@@ -16,6 +16,8 @@
 
 package com.google.devtools.kythe.analyzers.base;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.devtools.kythe.platform.shared.StatisticsCollector;
@@ -44,6 +46,9 @@ import java.util.Map;
  */
 public class KytheEntrySets {
   public static final String NODE_PREFIX = "/kythe/";
+
+  // A consant Charset defining the default file encoding to be utilized by indexers.
+  public static final Charset DEFAULT_FILE_ENCODING = UTF_8;
 
   private final Map<String, EntrySet> nameNodes = new HashMap<>();
 
