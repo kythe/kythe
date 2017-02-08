@@ -182,6 +182,7 @@ proto_library(
     srcs = ["serving.proto"],
     cc_api_version = 2,
     go_api_version = 2,
+    java_api_version = 2,
     deps = [":common_proto"],
 )
 
@@ -191,6 +192,7 @@ proto_library(
     name = "internal_proto",
     srcs = ["internal.proto"],
     go_api_version = 2,
+    java_api_version = 2,
     deps = [
         ":common_proto",
         ":serving_proto",
