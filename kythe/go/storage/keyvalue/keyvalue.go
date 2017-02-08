@@ -502,7 +502,7 @@ func EncodeKey(source *spb.VName, factName string, edgeKind string, target *spb.
 	if err != nil {
 		return nil, fmt.Errorf("error encoding source VName: %v", err)
 	} else if bytes.Index(srcEncoding, entryKeySepBytes) != -1 {
-		return nil, fmt.Errorf("invalid Entry: source VName contains key separator %v", source)
+		return nil, fmt.Errorf("invalid Entry: source VName contains key separator (%q) %v", entryKeySepBytes, source)
 	}
 	targetEncoding, err := encodeVName(target)
 	if err != nil {

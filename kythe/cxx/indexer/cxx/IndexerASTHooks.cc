@@ -44,6 +44,7 @@
 #include "clang/Lex/Lexer.h"
 #include "clang/Sema/Lookup.h"
 
+#include "GraphObserver.h"
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/raw_ostream.h"
 
@@ -357,8 +358,9 @@ private:
         }
         if (const auto *czdecl =
                 dyn_cast<ClassTemplateSpecializationDecl>(current_decl)) {
-          ostream << "#" << HashToString(visitor_->SemanticHash(
-                                &czdecl->getTemplateInstantiationArgs()));
+          ostream << "#"
+                  << HashToString(visitor_->SemanticHash(
+                         &czdecl->getTemplateInstantiationArgs()));
         } else if (const auto *fdecl = dyn_cast<FunctionDecl>(current_decl)) {
           if (const auto *template_args =
                   fdecl->getTemplateSpecializationArgs()) {
@@ -367,8 +369,9 @@ private:
           }
         } else if (const auto *vdecl =
                        dyn_cast<VarTemplateSpecializationDecl>(current_decl)) {
-          ostream << "#" << HashToString(visitor_->SemanticHash(
-                                &vdecl->getTemplateInstantiationArgs()));
+          ostream << "#"
+                  << HashToString(visitor_->SemanticHash(
+                         &vdecl->getTemplateInstantiationArgs()));
         }
       }
     }
@@ -3068,12 +3071,14 @@ IndexerASTVisitor::BuildNodeIdForDecl(const clang::Decl *Decl) {
             break;
           }
         } else {
-          Ostream << "#" << HashToString(SemanticHash(
-                                &CTSD->getTemplateInstantiationArgs()));
+          Ostream << "#"
+                  << HashToString(
+                         SemanticHash(&CTSD->getTemplateInstantiationArgs()));
         }
       } else if (const auto *FD = dyn_cast<FunctionDecl>(CurrentNodeAsDecl)) {
-        Ostream << "#" << HashToString(
-                              SemanticHash(QualType(FD->getFunctionType(), 0)));
+        Ostream << "#"
+                << HashToString(
+                       SemanticHash(QualType(FD->getFunctionType(), 0)));
         if (const auto *TemplateArgs = FD->getTemplateSpecializationArgs()) {
           if (CurrentNodeAsDecl != Decl) {
             Ostream << "#" << BuildNodeIdForDecl(FD);
@@ -3089,8 +3094,9 @@ IndexerASTVisitor::BuildNodeIdForDecl(const clang::Decl *Decl) {
             Ostream << "#" << BuildNodeIdForDecl(VD);
             break;
           } else {
-            Ostream << "#" << HashToString(SemanticHash(
-                                  &VD->getTemplateInstantiationArgs()));
+            Ostream << "#"
+                    << HashToString(
+                           SemanticHash(&VD->getTemplateInstantiationArgs()));
           }
         }
       }
@@ -4225,7 +4231,6 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
     }
     ID = ApplyBuiltinTypeConstructor("ptr", PointeeID);
   } break;
-    // TODO(salguarnieri) implement
     UNSUPPORTED_CLANG_TYPE(Atomic);
     UNSUPPORTED_CLANG_TYPE(Pipe);
   }
@@ -4905,6 +4910,21 @@ bool IndexerASTVisitor::VisitObjCMessageExpr(
     return true;
   }
 
+  if (Expr->isClassMessage()) {
+    if (auto ID = BuildNodeIdForType(Expr->getClassReceiver())) {
+      const SourceLocation &Loc = Expr->getReceiverRange().getBegin();
+      if (Loc.isValid() && Loc.isFileID()) {
+        const SourceRange SR(RangeForSingleTokenFromSourceLocation(
+            *Observer.getSourceManager(), *Observer.getLangOptions(), Loc));
+        if (auto ERCC = ExplicitRangeInCurrentContext(SR)) {
+          Observer.recordTypeSpellingLocation(
+              ERCC.primary(), ID.primary(),
+              GraphObserver::Claimability::Claimable);
+        }
+      }
+    }
+  }
+
   // The end of the source range for ObjCMessageExpr is the location of the
   // right brace. We actually want to include the right brace in the range
   // we record, so get the location *after* the right brace.
@@ -4916,7 +4936,21 @@ bool IndexerASTVisitor::VisitObjCMessageExpr(
     // method definition.
     if (const auto *Callee = FindMethodDefn(Expr->getMethodDecl(),
                                             Expr->getReceiverInterface())) {
-      RecordCallEdges(RCC.primary(), BuildNodeIdForDecl(Callee));
+      const GraphObserver::NodeId &DeclId = BuildNodeIdForDecl(Callee);
+      RecordCallEdges(RCC.primary(), DeclId);
+
+      // We only record a ref if we have successfully recorded a ref/call.
+      // If we don't have any selectors, just use the same span as the ref/call.
+      if (Expr->getNumSelectorLocs() == 0) {
+        Observer.recordDeclUseLocation(
+            RCC.primary(), DeclId, GraphObserver::Claimability::Unclaimable);
+      } else {
+        SourceRange RefRange(Expr->getSelectorLoc(0), Expr->getLocEnd());
+        if (auto R = ExplicitRangeInCurrentContext(RefRange)) {
+          Observer.recordDeclUseLocation(
+              R.primary(), DeclId, GraphObserver::Claimability::Unclaimable);
+        }
+      }
     }
   }
   return true;

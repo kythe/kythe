@@ -1926,6 +1926,22 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "class_method_call",
+    srcs = ["objc/class_method_call.m"],
+    ignore_dups = True,
+    objc = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "class_method_call_variable_params",
+    srcs = ["objc/class_method_call_variable_params.m"],
+    ignore_dups = True,
+    objc = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
     name = "class_method_decl_defn",
     srcs = ["objc/class_method_decl_defn.m"],
     ignore_dups = True,
@@ -2150,6 +2166,14 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "instance_method_call",
     srcs = ["objc/instance_method_call.m"],
+    ignore_dups = True,
+    objc = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "instance_method_call_variable_params",
+    srcs = ["objc/instance_method_call_variable_params.m"],
     ignore_dups = True,
     objc = True,
     tags = ["objc"],
