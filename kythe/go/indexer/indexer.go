@@ -98,6 +98,11 @@ type PackageInfo struct {
 	// A cache of source file vnames.
 	fileVName map[*ast.File]*spb.VName
 
+	// A cache of file location mappings. This lets us get back from the
+	// parser's location to the vname for the enclosing file, which is in turn
+	// affected by the build configuration.
+	fileLoc map[*token.File]*ast.File
+
 	// A cache of already-computed signatures.
 	sigs map[types.Object]string
 
@@ -161,6 +166,7 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 	srcs := make(map[*ast.File]string)      // file → text
 	fmap := make(map[string]*apb.FileInfo)  // import path → file info
 	filev := make(map[*ast.File]*spb.VName) // file → vname
+	floc := make(map[*token.File]*ast.File) // file → ast
 	fset := token.NewFileSet()              // location info for the parser
 	goRoot := getenv("GOROOT", unit)
 	var files []*ast.File // parsed sources
@@ -221,6 +227,16 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 		return nil, errors.New("no source files in package")
 	}
 
+	// Populate the location mapping. This relies on the fact that Iterate
+	// reports its files in the order they were added to the set, which in turn
+	// is their order in the files list.
+	i := 0
+	fset.Iterate(func(f *token.File) bool {
+		floc[f] = files[i]
+		i++
+		return true
+	})
+
 	pi := &PackageInfo{
 		Name:         files[0].Name.Name,
 		ImportPath:   vnameToImport(unit.VName, goRoot),
@@ -234,6 +250,7 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 		function:  make(map[ast.Node]*funcInfo),
 		sigs:      make(map[types.Object]string),
 		fileVName: filev,
+		fileLoc:   floc,
 	}
 
 	// Run the type-checker and collect any errors it generates.  Errors in the
@@ -331,28 +348,29 @@ func (pi *PackageInfo) FileVName(file *ast.File) *spb.VName {
 	return v
 }
 
-// AnchorVName returns a VName for the given path and offsets.
-func (pi *PackageInfo) AnchorVName(path string, start, end int) *spb.VName {
-	vname := proto.Clone(pi.VName).(*spb.VName)
+// AnchorVName returns a VName for the given file and offsets.
+func (pi *PackageInfo) AnchorVName(file *ast.File, start, end int) *spb.VName {
+	vname := proto.Clone(pi.FileVName(file)).(*spb.VName)
 	vname.Signature = "#" + strconv.Itoa(start) + ":" + strconv.Itoa(end)
-	vname.Path = path
 	return vname
 }
 
-// Span returns the file path and 0-based offset range of the given AST node.
-// The range is half-open, including the start position but excluding the end.
-// If node == nil or lacks a valid start position, Span returns "", -1, -1.
-// If the end position of node is invalid, start == end.
-func (pi *PackageInfo) Span(node ast.Node) (path string, start, end int) {
+// Span returns the containing file and 0-based offset range of the given AST
+// node.  The range is half-open, including the start position but excluding
+// the end.
+//
+// If node == nil or lacks a valid start position, Span returns nil -1, -1.  If
+// the end position of node is invalid, start == end.
+func (pi *PackageInfo) Span(node ast.Node) (file *ast.File, start, end int) {
 	if node == nil {
-		return "", -1, -1
+		return nil, -1, -1
 	}
 	pos := node.Pos()
 	if pos == token.NoPos {
-		return "", -1, -1
+		return nil, -1, -1
 	}
 	sp := pi.FileSet.Position(pos)
-	path = sp.Filename
+	file = pi.fileLoc[pi.FileSet.File(pos)]
 	start = sp.Offset
 	end = start
 	if pos := node.End(); pos != token.NoPos {
@@ -363,8 +381,8 @@ func (pi *PackageInfo) Span(node ast.Node) (path string, start, end int) {
 
 // Anchor returns an anchor VName and offsets for the given AST node.
 func (pi *PackageInfo) Anchor(node ast.Node) (vname *spb.VName, start, end int) {
-	path, start, end := pi.Span(node)
-	return pi.AnchorVName(path, start, end), start, end
+	file, start, end := pi.Span(node)
+	return pi.AnchorVName(file, start, end), start, end
 }
 
 const (
