@@ -19,9 +19,13 @@
 #
 # Usage Example:
 # bazel build //kythe/cxx/tools:kindex_file_generator
-# bazel run kythe/cxx/tools/kindex_file_generator "//kythe/BUILD" "kythe" \
-# "skylark" "$(readlink -f ./output_dir/)/kythe.build.kindex" \
+# bazel run //kythe/cxx/tools:kindex_file_generator "//kythe/BUILD" "kythe" \
+# "bazel" "$(readlink -f ./output_dir/)/kythe.build.kindex" \
 # $(readlink -f ./kythe/BUILD)
+#
+# This script looks for the optional env vars:
+#   SHASUM_TOOL: The path to the shasum_tool to be utilized.
+#   KINDEX_TOOL: The path to the kindex_tool to be utilized.
 
 ## Helper Functions ##
 
@@ -59,7 +63,7 @@ generate_vname_proto()
 generate_file_info_proto()
 {
   local input_file_path="$1"
-  local digest=$(kythe/go/platform/tools/shasum_tool/shasum_tool "$input_file_path" | head -c 64)
+  local digest=$($SHASUM_TOOL "$input_file_path" | head -c 64)
   echo " {"
   echo "   path:\"$input_file_path\""
   echo "   digest:\"$digest\""
@@ -135,6 +139,13 @@ LANGUAGE="$3"
 KINDEX_OUTPUT_FILE="$4"
 INPUT_SOURCE_FILE="$5"
 
+# If no env var exists for the shasum_tool, set a default path
+: ${SHASUM_TOOL:=${PWD}/kythe/go/platform/tools/shasum_tool/shasum_tool}
+
+
+# If no env var exists for the kindex_tool, set a default path
+: ${KINDEX_TOOL:=${PWD}/kythe/cxx/tools/kindex_tool}
+
 # Create temp files.
 CPU_TMP_FILE=$(mktemp)
 FILE_DATA_TMP_FILE=$(mktemp)
@@ -152,5 +163,5 @@ FILE_DATA_PROTO_TXT=$(generate_file_data_proto "$INPUT_SOURCE_FILE")
 echo $FILE_DATA_PROTO_TXT > $FILE_DATA_TMP_FILE
 
 # Execute the kindex tool.
-$PWD/kythe/cxx/tools/kindex_tool -assemble "$KINDEX_OUTPUT_FILE" $CPU_TMP_FILE \
+$KINDEX_TOOL -assemble "$KINDEX_OUTPUT_FILE" $CPU_TMP_FILE \
   $FILE_DATA_TMP_FILE
