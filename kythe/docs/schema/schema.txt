@@ -1603,7 +1603,7 @@ public class E {}
 
 [kythe,Go,"Files belonging to a package are children of that package."]
 --------------------------------------------------------------------------------
-//- @foo ref Pkg
+//- @foo defines/binding Pkg
 //- Pkg.node/kind package
 package foo
 

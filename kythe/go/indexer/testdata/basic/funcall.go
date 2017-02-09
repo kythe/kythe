@@ -1,4 +1,5 @@
 // Package fun tests basic function call references.
+//- @fun defines/binding Pkg
 package fun
 
 //- Pkg.node/kind package

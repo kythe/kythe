@@ -1,4 +1,5 @@
 // Package def tests variable and constant definitions.
+//- @def defines/binding Pkg
 package def
 
 //- Pkg.node/kind package

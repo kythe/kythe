@@ -2,6 +2,7 @@
 // it has the correct relationship to its package.
 //
 //- File=vname("", "test", "", "src/test/basic/filenode.go", "").node/kind file
+//- @file defines/binding Pkg
 package file
 
 //- Pkg=vname("package", "test", "", "basic", "go").node/kind package
