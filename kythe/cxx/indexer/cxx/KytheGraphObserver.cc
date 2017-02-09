@@ -482,6 +482,9 @@ VNameRef KytheGraphObserver::VNameRefFromNodeId(
   if (const auto *token =
           clang::dyn_cast<KytheClaimToken>(node_id.getToken())) {
     token->DecorateVName(&out_ref);
+    if (token->language_independent()) {
+      out_ref.language = llvm::StringRef();
+    }
   }
   out_ref.signature = node_id.IdentityRef();
   return out_ref;
@@ -1129,6 +1132,13 @@ void KytheGraphObserver::pushFile(clang::SourceLocation blame_location,
         token.set_vname(state.vname);
         token.set_rough_claimed(state.claimed);
         claim_checked_files_.emplace(file, token);
+        if (state.claimed) {
+          KytheClaimToken file_token;
+          file_token.set_vname(state.vname);
+          file_token.set_rough_claimed(state.claimed);
+          file_token.set_language_independent(true);
+          claimed_file_specific_tokens_.emplace(file, file_token);
+        }
         if (!has_previous_uid) {
           main_source_file_loc_ = source_location;
           main_source_file_token_ = &claim_checked_files_[file];
@@ -1146,6 +1156,15 @@ void KytheGraphObserver::popFile() {
   file_stack_.pop_back();
   if (file_stack_.empty()) {
     deferred_anchors_.clear();
+  }
+}
+
+void KytheGraphObserver::iterateOverClaimedFiles(
+    std::function<bool(clang::FileID, const NodeId &)> iter) {
+  for (const auto &file : claimed_file_specific_tokens_) {
+    if (!iter(file.first, NodeId(&file.second, ""))) {
+      return;
+    }
   }
 }
 

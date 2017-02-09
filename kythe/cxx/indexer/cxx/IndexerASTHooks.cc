@@ -17,6 +17,7 @@
 // This file uses the Clang style conventions.
 
 #include "IndexerASTHooks.h"
+#include "GraphObserver.h"
 
 #include "gflags/gflags.h"
 #include "kythe/cxx/indexer/cxx/clang_utils.h"
@@ -43,10 +44,10 @@
 #include "clang/AST/TypeLoc.h"
 #include "clang/Lex/Lexer.h"
 #include "clang/Sema/Lookup.h"
-
-#include "GraphObserver.h"
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/raw_ostream.h"
+
+#include <algorithm>
 
 DEFINE_bool(experimental_alias_template_instantiations, false,
             "Ignore template instantation information when generating IDs.");
@@ -739,24 +740,52 @@ void InsertAnchorMarks(std::string &Text, std::vector<MiniAnchor> &Anchors) {
   Text.swap(NewText);
 }
 
-bool IndexerASTVisitor::VisitDecl(const clang::Decl *Decl) {
-  if (Job->UnderneathImplicitTemplateInstantiation) {
-    // Template instantiation can't add any documentation text.
-    return true;
+void IndexerASTVisitor::HandleFileLevelComments(
+    clang::FileID Id, const GraphObserver::NodeId &FileNode) {
+  const auto &RCL = Context.getRawCommentList();
+  auto IdStart = Context.getSourceManager().getLocForStartOfFile(Id);
+  if (!IdStart.isFileID() || !IdStart.isValid()) {
+    return;
   }
-  const auto &SM = *Observer.getSourceManager();
-  const auto *Comment = Context.getRawCommentForDeclNoCache(Decl);
-  if (!Comment) {
-    // Fast path: if there are no attached documentation comments, bail.
-    return true;
+  auto StartIdLoc = Context.getSourceManager().getDecomposedLoc(IdStart);
+  // Find the block of comments for the given file. This behavior is not well-
+  // defined by Clang, which commits only to the RawComments being
+  // "sorted in order of appearance in the translation unit".
+  if (RCL.getComments().empty()) {
+    return;
   }
-  const auto *DC = dyn_cast<DeclContext>(Decl);
-  if (!DC) {
-    DC = Decl->getDeclContext();
-    if (!DC) {
-      DC = Context.getTranslationUnitDecl();
+  // Find the first RawComment whose start location is greater or equal to
+  // the start of the file whose FileID is Id.
+  auto C = std::lower_bound(
+      RCL.getComments().begin(), RCL.getComments().end(), StartIdLoc,
+      [&](clang::RawComment *const T1, const decltype(StartIdLoc) &T2) {
+        return Context.getSourceManager().getDecomposedLoc(T1->getLocStart()) <
+               T2;
+      });
+  // Walk through the comments in Id starting with the one at the top. If we
+  // ever leave Id, then we're done. (The first time around the loop, if C isn't
+  // already in Id, this check will immediately break;.)
+  if (C != RCL.getComments().end()) {
+    auto CommentIdLoc =
+        Context.getSourceManager().getDecomposedLoc((*C)->getLocStart());
+    if (CommentIdLoc.first != Id) {
+      return;
     }
+    // Here's a simple heuristic: the first comment in a file is the file-level
+    // comment. This is bad for files with (e.g.) license blocks, but we can
+    // gradually refine as necessary.
+    if (VisitedComments.find(*C) == VisitedComments.end()) {
+      VisitComment(*C, Context.getTranslationUnitDecl(), FileNode);
+    }
+    return;
   }
+}
+
+void IndexerASTVisitor::VisitComment(
+    const clang::RawComment *Comment, const clang::DeclContext *DC,
+    const GraphObserver::NodeId &DocumentedNode) {
+  VisitedComments.insert(Comment);
+  const auto &SM = *Observer.getSourceManager();
   std::string Text = Comment->getRawText(SM).str();
   std::string StrippedRawText;
   std::map<clang::SourceLocation, size_t> OffsetsInStrippedRawText;
@@ -894,43 +923,59 @@ bool IndexerASTVisitor::VisitDecl(const clang::Decl *Decl) {
   }
   // Attribute the raw comment text to its associated decl.
   if (auto RCC = ExplicitRangeInCurrentContext(Comment->getSourceRange())) {
-    if (const auto *DC = dyn_cast_or_null<DeclContext>(Decl)) {
-      if (auto DCID = BuildNodeIdForDeclContext(DC)) {
-        Observer.recordDocumentationRange(RCC.primary(), DCID.primary());
-        Observer.recordDocumentationText(DCID.primary(), StrippedRawText,
-                                         LinkNodes);
-      }
-      if (const auto *CTPSD =
-              dyn_cast_or_null<ClassTemplatePartialSpecializationDecl>(Decl)) {
-        auto NodeId = BuildNodeIdForDecl(CTPSD);
-        Observer.recordDocumentationRange(RCC.primary(), NodeId);
-        Observer.recordDocumentationText(NodeId, StrippedRawText, LinkNodes);
-      }
-      if (const auto *FD = dyn_cast_or_null<FunctionDecl>(Decl)) {
-        if (const auto *FTD = FD->getDescribedFunctionTemplate()) {
-          auto NodeId = BuildNodeIdForDecl(FTD);
-          Observer.recordDocumentationRange(RCC.primary(), NodeId);
-          Observer.recordDocumentationText(NodeId, StrippedRawText, LinkNodes);
-        }
-      }
-    } else {
-      if (const auto *VD = dyn_cast_or_null<VarDecl>(Decl)) {
-        if (const auto *VTD = VD->getDescribedVarTemplate()) {
-          auto NodeId = BuildNodeIdForDecl(VTD);
-          Observer.recordDocumentationRange(RCC.primary(), NodeId);
-          Observer.recordDocumentationText(NodeId, StrippedRawText, LinkNodes);
-        }
-      } else if (const auto *AD = dyn_cast_or_null<TypeAliasDecl>(Decl)) {
-        if (const auto *TATD = AD->getDescribedAliasTemplate()) {
-          auto NodeId = BuildNodeIdForDecl(TATD);
-          Observer.recordDocumentationRange(RCC.primary(), NodeId);
-          Observer.recordDocumentationText(NodeId, StrippedRawText, LinkNodes);
-        }
-      }
-      auto NodeId = BuildNodeIdForDecl(Decl);
-      Observer.recordDocumentationRange(RCC.primary(), NodeId);
-      Observer.recordDocumentationText(NodeId, StrippedRawText, LinkNodes);
+    Observer.recordDocumentationRange(RCC.primary(), DocumentedNode);
+    Observer.recordDocumentationText(DocumentedNode, StrippedRawText,
+                                     LinkNodes);
+  }
+}
+
+bool IndexerASTVisitor::VisitDecl(const clang::Decl *Decl) {
+  if (Job->UnderneathImplicitTemplateInstantiation || Decl == nullptr) {
+    // Template instantiation can't add any documentation text.
+    return true;
+  }
+  const auto *Comment = Context.getRawCommentForDeclNoCache(Decl);
+  if (!Comment) {
+    // Fast path: if there are no attached documentation comments, bail.
+    return true;
+  }
+  const auto *DCxt = dyn_cast<DeclContext>(Decl);
+  if (!DCxt) {
+    DCxt = Decl->getDeclContext();
+    if (!DCxt) {
+      DCxt = Context.getTranslationUnitDecl();
     }
+  }
+
+  if (const auto *DC = dyn_cast_or_null<DeclContext>(Decl)) {
+    if (auto DCID = BuildNodeIdForDeclContext(DC)) {
+      VisitComment(Comment, DCxt, DCID.primary());
+    }
+    if (const auto *CTPSD =
+            dyn_cast_or_null<ClassTemplatePartialSpecializationDecl>(Decl)) {
+      auto NodeId = BuildNodeIdForDecl(CTPSD);
+      VisitComment(Comment, DCxt, NodeId);
+    }
+    if (const auto *FD = dyn_cast_or_null<FunctionDecl>(Decl)) {
+      if (const auto *FTD = FD->getDescribedFunctionTemplate()) {
+        auto NodeId = BuildNodeIdForDecl(FTD);
+        VisitComment(Comment, DCxt, NodeId);
+      }
+    }
+  } else {
+    if (const auto *VD = dyn_cast_or_null<VarDecl>(Decl)) {
+      if (const auto *VTD = VD->getDescribedVarTemplate()) {
+        auto NodeId = BuildNodeIdForDecl(VTD);
+        VisitComment(Comment, DCxt, NodeId);
+      }
+    } else if (const auto *AD = dyn_cast_or_null<TypeAliasDecl>(Decl)) {
+      if (const auto *TATD = AD->getDescribedAliasTemplate()) {
+        auto NodeId = BuildNodeIdForDecl(TATD);
+        VisitComment(Comment, DCxt, NodeId);
+      }
+    }
+    auto NodeId = BuildNodeIdForDecl(Decl);
+    VisitComment(Comment, DCxt, NodeId);
   }
   return true;
 }

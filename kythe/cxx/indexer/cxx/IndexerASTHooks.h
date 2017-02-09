@@ -517,6 +517,11 @@ public:
     Worklist->EnqueueJob(llvm::make_unique<IndexJob>(InitialDecl));
     while (!ShouldStopIndexing() && Worklist->DoWork())
       ;
+    Observer.iterateOverClaimedFiles(
+        [this](clang::FileID Id, const GraphObserver::NodeId &FileNode) {
+          HandleFileLevelComments(Id, FileNode);
+          return !ShouldStopIndexing();
+        });
     Worklist.reset();
   }
 
@@ -558,6 +563,16 @@ private:
                ? LexerResult::Failure
                : LexerResult::Success;
   }
+
+  /// \brief Handle the file-level comments for `Id` with node ID `FileId`.
+  void HandleFileLevelComments(clang::FileID Id,
+                               const GraphObserver::NodeId &FileId);
+
+  /// \brief Emit data for `Comment` that documents `DocumentedNode`, using
+  /// `DC` for lookups.
+  void VisitComment(const clang::RawComment *Comment,
+                    const clang::DeclContext *DC,
+                    const GraphObserver::NodeId &DocumentedNode);
 
   /// \brief Builds a semantic hash of the given `Decl`, which should look
   /// like a `TemplateDecl` (eg, a `TemplateDecl` itself or a partial
@@ -823,6 +838,9 @@ private:
 
   /// \brief The controlling worklist.
   std::unique_ptr<IndexerWorklist> Worklist;
+
+  /// \brief Comments we've already visited.
+  std::unordered_set<const clang::RawComment *> VisitedComments;
 };
 
 /// \brief An `ASTConsumer` that passes events to a `GraphObserver`.

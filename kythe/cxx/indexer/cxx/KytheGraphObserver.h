@@ -92,6 +92,12 @@ class KytheClaimToken : public GraphObserver::ClaimToken {
   /// may be required.
   bool rough_claimed() const { return rough_claimed_; }
 
+  /// \sa language_independent
+  void set_language_independent(bool value) { language_independent_ = value; }
+
+  /// \brief If true, this node isn't language-specific.
+  bool language_independent() const { return language_independent_; }
+
   bool operator==(const ClaimToken &rhs) const override {
     if (this == &rhs) {
       return true;
@@ -120,6 +126,7 @@ class KytheClaimToken : public GraphObserver::ClaimToken {
   /// The prototypical VName to use for claimed objects.
   kythe::proto::VName vname_;
   bool rough_claimed_ = true;
+  bool language_independent_ = false;
 };
 
 /// \brief Records details in the form of Kythe nodes and edges about elements
@@ -362,6 +369,9 @@ class KytheGraphObserver : public GraphObserver {
 
   bool claimBatch(std::vector<std::pair<std::string, bool>> *pairs) override;
 
+  void iterateOverClaimedFiles(
+      std::function<bool(clang::FileID, const NodeId &)> iter) override;
+
  private:
   void AddMarkedSource(const VNameRef &vname,
                        const MaybeFew<MarkedSource> &signature) {
@@ -471,6 +481,8 @@ class KytheGraphObserver : public GraphObserver {
   /// one context + header pair; then, many context + header pairs may
   /// map to a single file's VName.
   std::map<clang::FileID, KytheClaimToken> claim_checked_files_;
+  /// Tokens for files (independent of language) that we've claimed.
+  std::map<clang::FileID, KytheClaimToken> claimed_file_specific_tokens_;
   /// Maps from claim tokens to claim tokens with path and root dropped.
   std::map<KytheClaimToken *, KytheClaimToken> namespace_tokens_;
   /// The `KytheGraphRecorder` used to record graph data. Must not be null.

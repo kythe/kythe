@@ -336,6 +336,7 @@ cxx_indexer_test(
     name = "file_node_reentrant",
     srcs = ["basic/file_node_reentrant.cc"],
     tags = ["basic"],
+    deps = ["basic/file_node_reentrant.h"],
 )
 
 cxx_indexer_test(
@@ -866,6 +867,34 @@ cxx_indexer_test(
     srcs = ["docs/docs_doc_var.cc"],
     goal_prefix = "///-",
     tags = ["docs"],
+)
+
+cxx_indexer_test(
+    name = "docs_file_level",
+    srcs = ["docs/docs_file_level.cc"],
+    tags = ["docs"],
+)
+
+cxx_indexer_test(
+    name = "docs_file_level_conflict",
+    srcs = ["docs/docs_file_level_conflict.cc"],
+    tags = ["docs"],
+)
+
+cxx_indexer_test(
+    name = "docs_file_level_doxygen",
+    srcs = ["docs/docs_file_level_doxygen.cc"],
+    tags = ["docs"],
+)
+
+cxx_indexer_test(
+    name = "docs_file_level_includes",
+    srcs = ["docs/docs_file_level_includes.cc"],
+    tags = ["docs"],
+    deps = [
+        "docs/docs_file_level_includes_a.h",
+        "docs/docs_file_level_includes_b.h",
+    ],
 )
 
 cxx_indexer_test(

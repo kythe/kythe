@@ -942,6 +942,12 @@ public:
 
   const ProfilingCallback &getProfilingCallback() { return ReportProfileEvent; }
 
+  /// \brief Calls `iter` for each claimed FileID.
+  ///
+  /// If `iter` returns false, terminates iteration.
+  virtual void iterateOverClaimedFiles(
+      std::function<bool(clang::FileID, const NodeId &)> iter) {}
+
 protected:
   clang::SourceManager *SourceManager = nullptr;
   clang::LangOptions *LangOptions = nullptr;
