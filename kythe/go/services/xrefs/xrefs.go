@@ -276,7 +276,11 @@ func SlowOverrides(ctx context.Context, xs Service, tickets []string) (map[strin
 		if edgeKind == edges.Overrides {
 			okind = xpb.DecorationsReply_Override_OVERRIDES
 		}
-		overrides[source] = append(overrides[source], &xpb.DecorationsReply_Override{Ticket: target, MarkedSource: sig, Kind: okind})
+		overrides[source] = append(overrides[source], &xpb.DecorationsReply_Override{
+			Target:       target,
+			MarkedSource: sig,
+			Kind:         okind,
+		})
 		return nil
 	})
 	// It's not necessarily the case that we should find *any* overrides, so counting them is not useful here.

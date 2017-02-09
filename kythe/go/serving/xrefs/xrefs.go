@@ -577,8 +577,6 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 		reply.Reference = make([]*xpb.DecorationsReply_Reference, 0, len(decor.Decoration))
 		reply.Nodes = make(map[string]*cpb.NodeInfo)
 
-		var seenTarget stringset.Set
-
 		// Reference.TargetTicket -> NodeInfo (superset of reply.Nodes)
 		var nodes map[string]*cpb.NodeInfo
 		if len(patterns) > 0 {
@@ -602,7 +600,7 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 			}
 		}
 
-		var bindings []string
+		bindings := stringset.New()
 
 		for _, d := range decor.Decoration {
 			start, end, exists := patcher.Patch(d.Anchor.StartOffset, d.Anchor.EndOffset)
@@ -624,56 +622,87 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 						r.TargetDefinition = ""
 					}
 
-					if req.ExtendsOverrides && r.Kind == edges.DefinesBinding {
-						bindings = append(bindings, r.TargetTicket)
+					if req.ExtendsOverrides && (r.Kind == edges.DefinesBinding || r.Kind == edges.DefinesBinding) {
+						bindings.Add(r.TargetTicket)
 					}
 
 					reply.Reference = append(reply.Reference, r)
 
-					if !seenTarget.Contains(r.TargetTicket) && nodes != nil {
+					if nodes != nil {
 						reply.Nodes[r.TargetTicket] = nodes[r.TargetTicket]
-						seenTarget.Add(r.TargetTicket)
 					}
 				}
 			}
 		}
 
-		var extendsOverrides map[string][]*xpb.DecorationsReply_Override
 		var extendsOverridesTargets stringset.Set
-		if len(bindings) != 0 {
-			extendsOverrides, err = xrefs.SlowOverrides(ctx, t, bindings)
-			if err != nil {
-				return nil, fmt.Errorf("lookup error for overrides tickets: %v", err)
-			}
-			if len(extendsOverrides) != 0 {
-				reply.ExtendsOverrides = make(map[string]*xpb.DecorationsReply_Overrides, len(extendsOverrides))
-				for ticket, eos := range extendsOverrides {
-					// Note: extendsOverrides goes out of scope after this loop, so downstream code won't accidentally
-					// mutate reply.ExtendsOverrides via aliasing.
-					pb := &xpb.DecorationsReply_Overrides{Override: eos}
-					for _, eo := range eos {
-						extendsOverridesTargets.Add(eo.Ticket)
-					}
-					reply.ExtendsOverrides[ticket] = pb
-				}
-			}
-		}
+		if len(decor.TargetOverride) > 0 {
+			// Read overrides from serving data
+			reply.ExtendsOverrides = make(map[string]*xpb.DecorationsReply_Overrides, len(bindings))
 
-		if len(extendsOverridesTargets) != 0 && len(patterns) > 0 {
-			// Add missing NodeInfo.
-			request := &gpb.NodesRequest{Filter: req.Filter}
-			for ticket := range extendsOverridesTargets {
-				if _, ok := reply.Nodes[ticket]; !ok {
-					request.Ticket = append(request.Ticket, ticket)
+			for _, o := range decor.TargetOverride {
+				if bindings.Contains(o.Overriding) {
+					os, ok := reply.ExtendsOverrides[o.Overriding]
+					if !ok {
+						os = &xpb.DecorationsReply_Overrides{}
+						reply.ExtendsOverrides[o.Overriding] = os
+					}
+
+					ov := &xpb.DecorationsReply_Override{
+						Target:       o.Overridden,
+						Kind:         xpb.DecorationsReply_Override_Kind(o.Kind),
+						MarkedSource: m2m(o.MarkedSource),
+					}
+					os.Override = append(os.Override, ov)
+
+					if nodes != nil {
+						reply.Nodes[o.Overridden] = nodes[o.Overridden]
+					}
+					if req.TargetDefinitions {
+						if def, ok := defs[o.OverriddenDefinition]; ok {
+							ov.TargetDefinition = o.OverriddenDefinition
+							reply.DefinitionLocations[o.OverriddenDefinition] = a2a(def, false).Anchor
+						}
+					}
 				}
 			}
-			if len(request.Ticket) > 0 {
-				nodes, err := t.Nodes(ctx, request)
+		} else {
+			// Dynamically construct overrides; data not found in serving tables
+			if len(bindings) != 0 {
+				extendsOverrides, err := xrefs.SlowOverrides(ctx, t, bindings.Elements())
 				if err != nil {
-					return nil, fmt.Errorf("lookup error for overrides nodes: %v", err)
+					return nil, fmt.Errorf("lookup error for overrides tickets: %v", err)
 				}
-				for ticket, node := range nodes.Nodes {
-					reply.Nodes[ticket] = node
+				if len(extendsOverrides) != 0 {
+					reply.ExtendsOverrides = make(map[string]*xpb.DecorationsReply_Overrides, len(extendsOverrides))
+					for ticket, eos := range extendsOverrides {
+						// Note: extendsOverrides goes out of scope after this loop, so downstream code won't accidentally
+						// mutate reply.ExtendsOverrides via aliasing.
+						pb := &xpb.DecorationsReply_Overrides{Override: eos}
+						for _, eo := range eos {
+							extendsOverridesTargets.Add(eo.Target)
+						}
+						reply.ExtendsOverrides[ticket] = pb
+					}
+				}
+			}
+
+			if len(extendsOverridesTargets) != 0 && len(patterns) > 0 {
+				// Add missing NodeInfo.
+				request := &gpb.NodesRequest{Filter: req.Filter}
+				for ticket := range extendsOverridesTargets {
+					if _, ok := reply.Nodes[ticket]; !ok {
+						request.Ticket = append(request.Ticket, ticket)
+					}
+				}
+				if len(request.Ticket) > 0 {
+					nodes, err := t.Nodes(ctx, request)
+					if err != nil {
+						return nil, fmt.Errorf("lookup error for overrides nodes: %v", err)
+					}
+					for ticket, node := range nodes.Nodes {
+						reply.Nodes[ticket] = node
+					}
 				}
 			}
 		}
@@ -681,15 +710,12 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 		// Only compute target definitions if the serving data doesn't contain any
 		// TODO(schroederc): remove this once serving data is always populated
 		if req.TargetDefinitions && len(defs) == 0 {
-			targetTickets := make([]string, 0, len(refs))
+			targetTickets := stringset.New(extendsOverridesTargets.Elements()...)
 			for ticket := range refs {
-				targetTickets = append(targetTickets, ticket)
-			}
-			for ticket := range extendsOverridesTargets {
-				targetTickets = append(targetTickets, ticket)
+				targetTickets.Add(ticket)
 			}
 
-			defs, err := xrefs.SlowDefinitions(ctx, t, targetTickets)
+			defs, err := xrefs.SlowDefinitions(ctx, t, targetTickets.Elements())
 			if err != nil {
 				return nil, fmt.Errorf("error retrieving target definitions: %v", err)
 			}
@@ -716,6 +742,34 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 	}
 
 	return reply, nil
+}
+
+func m2m(m *srvpb.MarkedSource) *xpb.MarkedSource {
+	if m == nil {
+		return nil
+	}
+	res := &xpb.MarkedSource{
+		Kind:                 xpb.MarkedSource_Kind(m.Kind),
+		PreText:              m.PreText,
+		PostChildText:        m.PostChildText,
+		LookupIndex:          m.LookupIndex,
+		DefaultChildrenCount: m.DefaultChildrenCount,
+		AddFinalListToken:    m.AddFinalListToken,
+	}
+	for _, c := range m.Child {
+		res.Child = append(res.Child, m2m(c))
+	}
+	for _, l := range m.Link {
+		res.Link = append(res.Link, l2l(l))
+	}
+	return res
+}
+
+func l2l(l *srvpb.Link) *xpb.Link {
+	if l == nil {
+		return nil
+	}
+	return &xpb.Link{Definition: l.Definition}
 }
 
 type span struct{ start, end int32 }

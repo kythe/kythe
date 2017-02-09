@@ -198,8 +198,13 @@ message DecorationsReply {
       EXTENDS    = 1;
     }
 
-    // The target object.
-    string ticket = 1;
+    // The target of the override.
+    string target = 1;
+    // Anchor ticket of the override target's definition.  Populated only if
+    // target_definitions is true in the DecorationsRequest and the target has
+    // a single unambiguous definition.  For each ticket, an Anchor will be
+    // populated in the top-level definition_locations map.
+    string target_definition = 5;
 
     // The kind of override.
     Kind kind = 2;
@@ -220,8 +225,8 @@ message DecorationsReply {
   // referenced by a reference edge that has at least 1 non-filtered fact.
   map<string, common.NodeInfo> nodes = 15;
 
-  // Each anchor cited as a target definition in the references.  The map is
-  // keyed by each anchor's ticket.
+  // Each anchor cited as a target definition in the references/overrides.  The
+  // map is keyed by each anchor's ticket.
   map<string, Anchor> definition_locations = 16;
 
   // Maps from semantic nodes on the right-hand side of defines/binding

@@ -211,10 +211,12 @@ message FileDecorations {
   // The decorations located in the file, sorted by starting offset.
   repeated Decoration decoration = 2;
 
-  // Set of nodes associated with each Decoration.target.
+  // Set of nodes associated with each Decoration.target and
+  // target_override.overridden.
   repeated Node target = 4;
 
-  // Set of definition locations for each Decoration.target.
+  // Set of definition locations for each Decoration.target and
+  // target_override.overridden.
   repeated ExpandedAnchor target_definitions = 3;
 
   // An overrides/extends for a defining Decoration's target.
@@ -234,6 +236,7 @@ message FileDecorations {
     string overriding = 1;
     // Ticket of node that is being overridden/extended.
     string overridden = 2;
+    string overridden_definition = 5;
 
     Kind kind = 3;
 
