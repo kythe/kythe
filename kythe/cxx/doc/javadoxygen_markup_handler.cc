@@ -157,6 +157,7 @@ size_t ParseJavadocDescription(const std::string& buffer, size_t begin,
           return end;
         }
         at_line_start = false;
+        break;
       default:
         if (c != ' ' && c != '\t') {
           // TODO(zarko): Unicode whitespace support (probably using
