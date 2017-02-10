@@ -139,6 +139,62 @@ message ExpandedAnchor {
   kythe.proto.common.Span snippet_span = 7;
 }
 
+// Serving equivalent of kythe.proto.Link.
+message Link {
+  // Semantic tickets for DEFINITION links.
+  repeated string definition = 1;
+}
+
+// Marked up, source code-like text.
+// Serving equivalent of kythe.proto.MarkedSource.
+message MarkedSource {
+  enum Kind {
+    // This node only contains other nodes and has no special semantics.
+    BOX = 0;
+    // This node dominates nodes that should be classified as types.
+    TYPE = 1;
+    // This node dominates nodes that should be classified as parameters.
+    PARAMETER = 2;
+    // This node dominates nodes that should be classified as identifiers.
+    IDENTIFIER = 3;
+    // This node dominates nodes that should be classified as context.
+    CONTEXT = 4;
+    // This node dominates nodes that should be classified as initializers.
+    INITIALIZER = 5;
+    // Substitute this node with a PARAMETER formed from the param edges from
+    // the context node starting with `lookup_index`.
+    PARAMETER_LOOKUP_BY_PARAM = 6;
+    // Substitute this node with the marked source derived from the
+    // `lookup_index`th param edge of the context node.
+    LOOKUP_BY_PARAM = 7;
+    // Substitute this node with a PARAMETER formed from the param edges from
+    // the context node starting with `lookup_index`. Checks the context
+    // node for a `param/default` fact and uses that to set the
+    // first_default_child field.
+    PARAMETER_LOOKUP_BY_PARAM_WITH_DEFAULTS = 8;
+  }
+  Kind kind = 1;
+  // Nodes expect to be printed as:
+  // pre_text + (child + post_child_text)* + post_text
+  // where post_child_text is not included after the final child unless
+  // add_final_list_token is asserted. post_child_text should never be
+  // printed if there are no children.
+  string pre_text = 2;
+  repeated MarkedSource child = 3;
+  string post_child_text = 4;
+  string post_text = 5;
+  uint32 lookup_index = 6;
+  // The default_children_count children at the end of the child list should
+  // be considered as "default" or uninteresting.
+  uint32 default_children_count = 7;
+  // `add_final_list_token` ensures that `post_child_text` will be
+  // included after any nonempty list when that list is followed by additional
+  // text.
+  bool add_final_list_token = 10;
+  // Annotations covering this subtree's full span.
+  repeated Link link = 11;
+}
+
 // FileDecorations stores a file's contents and all contained anchor edges.
 message FileDecorations {
   File file = 1;
@@ -160,6 +216,34 @@ message FileDecorations {
 
   // Set of definition locations for each Decoration.target.
   repeated ExpandedAnchor target_definitions = 3;
+
+  // An overrides/extends for a defining Decoration's target.
+  //
+  // Example:
+  //   overriding:  "kythe:#java.lang.String"
+  //   kind:        EXTENDS
+  //   overridden:  "kythe:#java.lang.Object"
+  message Override {
+    // What kind of override this is.
+    enum Kind {
+      OVERRIDES  = 0;
+      EXTENDS    = 1;
+    }
+
+    // Ticket of overriding node (i.e. a Decoration target for a definition)
+    string overriding = 1;
+    // Ticket of node that is being overridden/extended.
+    string overridden = 2;
+
+    Kind kind = 3;
+
+    // MarkedSource for the node being overridden/extended (i.e. node whose
+    // ticket is overridden).
+    MarkedSource marked_source = 4;
+  }
+
+  // List of overrides for target semantic nodes.
+  repeated Override target_override = 5;
 }
 
 // PagedCrossReferences are used for efficiently storing pre-cached data for
