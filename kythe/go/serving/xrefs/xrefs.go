@@ -1133,7 +1133,7 @@ func p2p(p *cpb.Point) *xpb.Location_Point {
 	}
 }
 
-// Callers implements part of the xrefs Service interface.
+// Documentation implements part of the xrefs Service interface.
 func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest) (*xpb.DocumentationReply, error) {
 	return xrefs.SlowDocumentation(ctx, t, req)
 }
