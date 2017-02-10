@@ -275,6 +275,7 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 		if pkg := pi.Dependencies[ip]; pkg != nil {
 			pi.PackageVName[pkg] = proto.Clone(vname).(*spb.VName)
 			pi.PackageVName[pkg].Signature = "package"
+			pi.PackageVName[pkg].Language = govname.Language
 		}
 	}
 	if _, ok := pi.Dependencies["unsafe"]; ok {
