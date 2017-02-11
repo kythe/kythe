@@ -2,7 +2,10 @@ export {}
 
 //- @test defines/binding F
 //- F.node/kind function
-function test() {
+//- @a defines/binding ParamA
+//- ParamA.node/kind variable
+//- F param.0 ParamA
+function test(a: number) {
   // Check that we index function body:
   //- @x defines/binding X
   //- X.node/kind variable
@@ -10,4 +13,4 @@ function test() {
 }
 
 //- @test ref F
-test();
+test(3);

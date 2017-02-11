@@ -118,13 +118,27 @@ class Vistor {
   }
 
   visitFunctionDeclaration(decl: ts.FunctionDeclaration) {
+    let kFunc: VName;
     if (decl.name) {
       let sym = this.typeChecker.getSymbolAtLocation(decl.name);
-      let kFunc = this.getSymbolName(sym);
+      kFunc = this.getSymbolName(sym);
       this.emitNode(kFunc, 'function');
 
       this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kFunc);
+    } else {
+      // TODO: choose VName for anonymous functions.
+      kFunc = this.newVName('TODO');
     }
+
+    for (const [index, param] of decl.parameters.entries()) {
+      let sym = this.typeChecker.getSymbolAtLocation(param.name);
+      let kParam = this.getSymbolName(sym);
+      this.emitNode(kParam, 'variable');
+      this.emitEdge(kFunc, `param.${index}`, kParam);
+
+      this.emitEdge(this.newAnchor(param.name), 'defines/binding', kParam);
+    }
+
     if (decl.body) this.visit(decl.body);
   }
 
