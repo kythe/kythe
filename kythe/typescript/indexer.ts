@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import 'source-map-support/register';
 import * as ts from 'typescript';
 
 /** VName is the type of Kythe node identities. */

@@ -5,7 +5,7 @@
         "lib": ["ES6"],
         "noImplicitAny": true,
         "strictNullChecks": true,
-        "sourceMap": false
+        "sourceMap": true
     },
     "exclude": [
         "node_modules",

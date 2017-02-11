@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@types/node": "^7.0.4",
+    "source-map-support": "^0.4.11",
     "typescript": "^2.1.5"
   }
 }
