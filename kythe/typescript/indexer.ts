@@ -104,6 +104,19 @@ class Vistor {
     return this.newVName(sym.name);
   }
 
+  visitExportDeclaration(decl: ts.ExportDeclaration) {
+    // TODO: this code doesn't do much yet, but it's enough to silence a TODO
+    // that is printed in unrelated tests.
+    if (decl.exportClause) {
+      for (const element of decl.exportClause.elements) {
+        console.warn(`TODO: handle export element in ${decl.getText()}`);
+      }
+    }
+    if (decl.moduleSpecifier) {
+      console.warn(`TODO: handle module specifier in ${decl.getText()}`);
+    }
+  }
+
   visitVariableDeclaration(decl: ts.VariableDeclaration) {
     if (decl.name.kind === ts.SyntaxKind.Identifier) {
       let sym = this.typeChecker.getSymbolAtLocation(decl.name);
@@ -146,6 +159,8 @@ class Vistor {
   /** visit is the main dispatch for visiting AST nodes. */
   visit(node: ts.Node): void {
     switch (node.kind) {
+      case ts.SyntaxKind.ExportDeclaration:
+        return this.visitExportDeclaration(node as ts.ExportDeclaration);
       case ts.SyntaxKind.VariableDeclaration:
         return this.visitVariableDeclaration(node as ts.VariableDeclaration);
       case ts.SyntaxKind.FunctionDeclaration:
