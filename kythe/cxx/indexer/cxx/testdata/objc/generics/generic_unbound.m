@@ -21,7 +21,6 @@
 @end
 
 //- @Box defines/binding BoxImpl
-//- @Box childof File
 //- File.node/kind file
 //- @Box completes/uniquely BoxAbs
 @implementation Box

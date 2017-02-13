@@ -1,7 +1,6 @@
 // Checks the behavior of implicit class template instantiations.
 using ExternalDef = int;
 //- @C defines/binding TemplateC
-//- @C childof ThisFile
 //- @T defines/binding AbsvarT
 template <typename T> struct C {
 //- @X defines/binding ExternalDefAlias
@@ -18,7 +17,6 @@ C<int> x;
 //- TAppCInt.node/kind tapp
 //- TAppCInt param.0 TemplateC
 //- WraithXAnchor childof/context ImpX
-//- WraithXAnchor childof ThisFile
 //- WraithXAnchor.node/kind anchor
 //- WraithXAnchor.loc/start XStart
 //- WraithXAnchor.loc/end XEnd

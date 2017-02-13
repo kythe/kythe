@@ -34,7 +34,6 @@
 
 //- @Box completes/uniquely BoxAbs
 //- @Box defines/binding BoxImpl
-//- @Box childof File
 //- File.node/kind file
 @implementation Box
 -(int) doSomething:(id)t {

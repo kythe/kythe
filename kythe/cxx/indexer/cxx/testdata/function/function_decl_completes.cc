@@ -6,6 +6,5 @@ void f();
 //- @f completes FHDecl
 //- @f completes/uniquely FSDecl
 void f() { }
-//- FHAnchor defines/binding FHDecl
-//- FHAnchor childof vname(_,_,_,
-//-                        "kythe/cxx/indexer/cxx/testdata/function/void_f.h",_)
+//- FHAnchor=vname(_,_,_,"kythe/cxx/indexer/cxx/testdata/function/void_f.h","c++")
+//-    defines/binding FHDecl

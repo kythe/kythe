@@ -1282,7 +1282,8 @@ int 錨;
 
 [kythe,C++,"Anchors have VName rules."]
 --------------------------------------------------------------------------------
-//- @foo=vname(_,Corpus,Root,Path,"c++") childof vname("",Corpus,Root,Path,"")
+//- @foo=vname(_,Corpus,Root,Path,"c++").node/kind anchor
+//- File=vname("",Corpus,Root,Path,"").node/kind file
 int foo;
 --------------------------------------------------------------------------------
 
@@ -1418,14 +1419,13 @@ Facts::
 See also::
   <<anchor>>, <<refincludes,[ref/includes]>>
 
-[kythe,C++,"Anchors are children of files."]
+[kythe,C++,"File tickets are related to anchor tickets."]
 --------------------------------------------------------------------------------
 int x;
-//- XAnchor.node/kind anchor
+//- XAnchor=vname(_,Corpus,Root,Path,"c++").node/kind anchor
 //- XAnchor.loc/start 4
 //- XAnchor.loc/end 5
-//- XAnchor childof SourceFile
-//- SourceFile.node/kind file
+//- SourceFile=vname("",Corpus,Root,Path,"").node/kind file
 --------------------------------------------------------------------------------
 
 [[interface]]

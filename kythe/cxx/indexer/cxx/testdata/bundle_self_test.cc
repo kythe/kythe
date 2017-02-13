@@ -2,12 +2,12 @@
 // This is a multiplexed test file. The default file will be named
 // test.cc.
 #include "a.h"
-//- AnchorC.node/kind anchor
-//- AnchorC childof vname("","bundle","","test.cc","")
+//- @C=vname(_,"bundle","","test.cc",_).node/kind anchor
+//- File1=vname("","bundle","","test.cc","").node/kind file
 #define C macroc
 #example a.h
 #pragma kythe_claim
 // This is now a header file called a.h.
-//- @A=AnchorA.node/kind anchor
-//- AnchorA childof vname("","bundle","","a.h","")
+//- @A=vname(_,"bundle","","a.h",_).node/kind anchor
+//- File2=vname("","bundle","","a.h","").node/kind file
 #define A macroa

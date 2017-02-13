@@ -364,11 +364,6 @@ void KytheGraphObserver::RecordRange(const proto::VName &anchor_name,
                            PropertyID::kLocationStartOffset);
       RecordSourceLocation(anchor_name_ref, range.PhysicalRange.getEnd(),
                            PropertyID::kLocationEndOffset);
-      if (const auto *file_entry = SourceManager->getFileEntryForID(
-              SourceManager->getFileID(range.PhysicalRange.getBegin()))) {
-        recorder_->AddEdge(anchor_name_ref, EdgeKindID::kChildOf,
-                           VNameRef(VNameFromFileEntry(file_entry)));
-      }
     }
     if (range.Kind == GraphObserver::Range::RangeKind::Wraith) {
       recorder_->AddEdge(anchor_name_ref, EdgeKindID::kChildOfContext,
