@@ -23,10 +23,9 @@ public class Files {
   // Ensure this private member does not affect the class node across compilations.
   private int PRIVATE_MEMBER = -42;
 }
-//- Anchor childof File =
-//-   vname("","kythe","","kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/Files.java","")
 
-//- File.node/kind file
+//- File=vname("","kythe","","kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/Files.java","")
+//-   .node/kind file
 //- File.text/encoding "UTF-8"
 
 //- @OtherDecl defines/binding ODecl

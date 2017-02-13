@@ -15,7 +15,7 @@
  */
 
 // Binary http_server exposes HTTP/GRPC interfaces for the xrefs and filetree
-// services backed by either a combined serving table or a bare GraphStore.
+// services backed by a combined serving table.
 package main
 
 import (
@@ -28,14 +28,11 @@ import (
 	"path/filepath"
 
 	"kythe.io/kythe/go/services/filetree"
-	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/services/xrefs"
 	ftsrv "kythe.io/kythe/go/serving/filetree"
 	xsrv "kythe.io/kythe/go/serving/xrefs"
-	"kythe.io/kythe/go/storage/gsutil"
 	"kythe.io/kythe/go/storage/leveldb"
 	"kythe.io/kythe/go/storage/table"
-	xstore "kythe.io/kythe/go/storage/xrefs"
 	"kythe.io/kythe/go/util/flagutil"
 
 	"golang.org/x/net/http2"
@@ -51,7 +48,6 @@ import (
 )
 
 var (
-	gs           graphstore.Service
 	servingTable = flag.String("serving_table", "", "LevelDB serving table")
 
 	grpcListeningAddr = flag.String("grpc_listen", "", "Listening address for GRPC server")
@@ -66,19 +62,16 @@ var (
 )
 
 func init() {
-	gsutil.Flag(&gs, "graphstore", "GraphStore to serve xrefs")
 	flag.Usage = flagutil.SimpleUsage("Exposes HTTP/GRPC interfaces for the xrefs and filetree services",
 		"(--graphstore spec | --serving_table path) [--listen addr] [--grpc_listen addr] [--public_resources dir]")
 }
 
 func main() {
 	flag.Parse()
-	if *servingTable == "" && gs == nil {
-		flagutil.UsageError("missing either --serving_table or --graphstore")
+	if *servingTable == "" {
+		flagutil.UsageError("missing --serving_table")
 	} else if *httpListeningAddr == "" && *grpcListeningAddr == "" && *tlsListeningAddr == "" {
 		flagutil.UsageError("missing either --listen, --tls_listen, or --grpc_listen argument")
-	} else if *servingTable != "" && gs != nil {
-		flagutil.UsageError("--serving_table and --graphstore are mutually exclusive")
 	} else if *tlsListeningAddr != "" && (*tlsCertFile == "" || *tlsKeyFile == "") {
 		flagutil.UsageError("--tls_cert_file and --tls_key_file are required if given --tls_listen")
 	} else if flag.NArg() > 0 {
@@ -91,39 +84,14 @@ func main() {
 	)
 
 	ctx := context.Background()
-	if *servingTable != "" {
-		db, err := leveldb.Open(*servingTable, &leveldb.Options{MustExist: true})
-		if err != nil {
-			log.Fatalf("Error opening db at %q: %v", *servingTable, err)
-		}
-		defer db.Close()
-		tbl := table.ProtoBatchParallel{&table.KVProto{db}}
-		xs = xsrv.NewCombinedTable(tbl)
-		ft = &ftsrv.Table{Proto: tbl, PrefixedKeys: true}
-	} else {
-		log.Println("WARNING: serving directly from a GraphStore can be slow; you may want to use a --serving_table")
-		if f, ok := gs.(filetree.Service); ok {
-			log.Printf("Using %T directly as filetree service", gs)
-			ft = f
-		} else {
-			m := filetree.NewMap()
-			if err := m.Populate(ctx, gs); err != nil {
-				log.Fatalf("Error populating file tree from GraphStore: %v", err)
-			}
-			ft = m
-		}
-
-		if x, ok := gs.(xrefs.Service); ok {
-			log.Printf("Using %T directly as xrefs service", gs)
-			xs = x
-		} else {
-			if err := xstore.EnsureReverseEdges(ctx, gs); err != nil {
-				log.Fatalf("Error ensuring reverse edges in GraphStore: %v", err)
-			}
-			xs = xstore.NewGraphStoreService(gs)
-		}
-
+	db, err := leveldb.Open(*servingTable, &leveldb.Options{MustExist: true})
+	if err != nil {
+		log.Fatalf("Error opening db at %q: %v", *servingTable, err)
 	}
+	defer db.Close()
+	tbl := table.ProtoBatchParallel{&table.KVProto{db}}
+	xs = xsrv.NewCombinedTable(tbl)
+	ft = &ftsrv.Table{Proto: tbl, PrefixedKeys: true}
 
 	if *grpcListeningAddr != "" {
 		srv := grpc.NewServer()

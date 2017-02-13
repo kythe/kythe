@@ -16,6 +16,7 @@ go_package_library(
         "//kythe/go/util/schema/edges",
         "//kythe/go/util/schema/facts",
         "//kythe/go/util/schema/nodes",
+        "//kythe/go/util/schema/tickets",
         "//kythe/proto:common_proto_go",
         "//kythe/proto:internal_proto_go",
         "//kythe/proto:serving_proto_go",

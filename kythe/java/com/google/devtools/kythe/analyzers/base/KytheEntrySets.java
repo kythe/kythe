@@ -148,7 +148,6 @@ public class KytheEntrySets {
           .setProperty("snippet/end", "" + snippet.getEnd());
     }
     EntrySet anchor = builder.build();
-    emitEdge(anchor.getVName(), EdgeKind.CHILDOF, fileVName);
     return emitAndReturn(anchor);
   }
 

@@ -1320,9 +1320,10 @@ D d;
 [kythe,Java,"Anchors have VName rules."]
 --------------------------------------------------------------------------------
 public class E {
-  //- @foo=vname(_,Corpus,Root,Path,"java") childof vname("",Corpus,Root,Path,"")
+  //- @foo=vname(_,Corpus,Root,Path,"java").node/kind anchor
   int foo;
 }
+//- File=vname("",Corpus,Root,Path,"").node/kind file
 --------------------------------------------------------------------------------
 
 [[constant]]

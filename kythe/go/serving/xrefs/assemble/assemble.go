@@ -36,6 +36,7 @@ import (
 	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/facts"
 	"kythe.io/kythe/go/util/schema/nodes"
+	"kythe.io/kythe/go/util/schema/tickets"
 
 	cpb "kythe.io/kythe/proto/common_proto"
 	ipb "kythe.io/kythe/proto/internal_proto"
@@ -262,6 +263,13 @@ func (b *DecorationFragmentBuilder) AddEdge(ctx context.Context, e *srvpb.Edge) 
 					string(srcFacts[facts.AnchorEnd]), err)
 				return nil
 			}
+			// Record the parent file for the anchor.
+			parentFile, err := tickets.AnchorFile(e.Source.Ticket)
+			if err != nil {
+				log.Printf("Error deriving anchor ticket for %q: %v", e.Source.Ticket, err)
+			} else {
+				b.parents = append(b.parents, parentFile)
+			}
 
 			// Ignore errors; offsets will just be zero
 			snippetStart, _ := strconv.Atoi(string(srcFacts[facts.SnippetStart]))
@@ -282,11 +290,7 @@ func (b *DecorationFragmentBuilder) AddEdge(ctx context.Context, e *srvpb.Edge) 
 		return nil
 	}
 
-	if e.Kind == edges.ChildOf {
-		if string(GetFact(e.Target.Fact, facts.NodeKind)) == nodes.File {
-			b.parents = append(b.parents, e.Target.Ticket)
-		}
-	} else {
+	if e.Kind != edges.ChildOf {
 		b.decor = append(b.decor, &srvpb.FileDecorations_Decoration{
 			Anchor: b.anchor,
 			Kind:   e.Kind,

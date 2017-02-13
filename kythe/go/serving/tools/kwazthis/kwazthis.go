@@ -35,7 +35,6 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -51,7 +50,7 @@ import (
 	"kythe.io/kythe/go/util/schema"
 	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/facts"
-	"kythe.io/kythe/go/util/schema/nodes"
+	"kythe.io/kythe/go/util/schema/tickets"
 
 	gpb "kythe.io/kythe/proto/graph_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
@@ -258,37 +257,25 @@ func main() {
 }
 
 func completeDefinition(defAnchor string) (*definition, error) {
-	parentReply, err := xrefs.AllEdges(ctx, xs, &gpb.EdgesRequest{
+	parentFile, err := tickets.AnchorFile(defAnchor)
+	if err != nil {
+		return nil, err
+	}
+	parent, err := kytheuri.Parse(parentFile)
+	if err != nil {
+		return nil, err
+	}
+	locReply, err := xs.Nodes(ctx, &gpb.NodesRequest{
 		Ticket: []string{defAnchor},
-		Kind:   []string{edges.ChildOf},
-		Filter: []string{facts.NodeKind, schema.AnchorLocFilter},
+		Filter: []string{schema.AnchorLocFilter},
 	})
 	if err != nil {
 		return nil, err
 	}
-
-	parentNodes := xrefs.NodesMap(parentReply.Nodes)
-	var files []string
-	for parent := range xrefs.EdgesMap(parentReply.EdgeSets)[defAnchor][edges.ChildOf] {
-		if string(parentNodes[parent][facts.NodeKind]) == nodes.File {
-			files = append(files, parent)
-		}
-	}
-
-	if len(files) == 0 {
-		return nil, nil
-	} else if len(files) > 1 {
-		return nil, fmt.Errorf("anchor has multiple file parents %q: %v", defAnchor, files)
-	}
-
-	vName, err := kytheuri.Parse(files[0])
-	if err != nil {
-		return nil, err
-	}
-	start, end := parseAnchorSpan(parentNodes[defAnchor])
-
+	nodes := xrefs.NodesMap(locReply.Nodes)
+	start, end := parseAnchorSpan(nodes[defAnchor])
 	return &definition{
-		File:  vName.VName(),
+		File:  parent.VName(),
 		Start: start,
 		End:   end,
 	}, nil
