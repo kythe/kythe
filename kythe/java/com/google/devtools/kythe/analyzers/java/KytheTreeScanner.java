@@ -253,7 +253,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
       Span classIdent =
           filePositions.findIdentifier(classDef.name, classDef.getPreferredPosition());
-      if (classIdent == null) {
+      if (!classDef.name.isEmpty() && classIdent == null) {
         logger.warning("Missing span for class identifier: " + classDef.sym);
       }
 

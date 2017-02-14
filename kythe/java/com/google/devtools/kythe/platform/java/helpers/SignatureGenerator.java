@@ -164,11 +164,7 @@ public class SignatureGenerator
     if (!visitedElements.containsKey(e)) {
       StringBuilder sb = new StringBuilder();
       if (e.getNestingKind() == NestingKind.ANONYMOUS) {
-        if (e.getKind() == ElementKind.ENUM) {
-          e.getEnclosingElement().accept(this, sb);
-        } else {
-          sb.append(blockNumber.getAnonymousSignature(e));
-        }
+        sb.append(blockNumber.getAnonymousSignature(e));
       } else if (e.asType() != null
           && (e.asType().getKind().isPrimitive() || e.asType().getKind() == TypeKind.VOID)) {
         sb.append(e.getSimpleName());

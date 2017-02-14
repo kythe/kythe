@@ -16,7 +16,13 @@ public enum Enums {
   //- @C defines/binding C
   //- C childof Enum
   //- C.node/kind constant
-  C("hello");
+  C("hello"),
+
+  //- @D defines/binding D
+  //- D childof Enum
+  //- D.node/kind constant
+  D {
+  };
 
   private Enums(String s) {}
   private Enums() {}
