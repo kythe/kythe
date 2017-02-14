@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// Binary http_server exposes HTTP/GRPC interfaces for the xrefs and filetree
+// Binary http_server exposes HTTP interfaces for the xrefs and filetree
 // services backed by a combined serving table.
 package main
 
@@ -22,7 +22,6 @@ import (
 	"context"
 	"flag"
 	"log"
-	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -36,21 +35,13 @@ import (
 	"kythe.io/kythe/go/util/flagutil"
 
 	"golang.org/x/net/http2"
-	"google.golang.org/grpc"
 
-	ftpb "kythe.io/kythe/proto/filetree_proto"
-	gpb "kythe.io/kythe/proto/graph_proto"
-	xpb "kythe.io/kythe/proto/xref_proto"
-
-	_ "kythe.io/kythe/go/services/graphstore/grpc"
 	_ "kythe.io/kythe/go/services/graphstore/proxy"
 	_ "kythe.io/kythe/go/storage/leveldb"
 )
 
 var (
 	servingTable = flag.String("serving_table", "", "LevelDB serving table")
-
-	grpcListeningAddr = flag.String("grpc_listen", "", "Listening address for GRPC server")
 
 	httpListeningAddr = flag.String("listen", "localhost:8080", "Listening address for HTTP server")
 	httpAllowOrigin   = flag.String("http_allow_origin", "", "If set, each HTTP response will contain a Access-Control-Allow-Origin header with the given value")
@@ -63,15 +54,15 @@ var (
 
 func init() {
 	flag.Usage = flagutil.SimpleUsage("Exposes HTTP/GRPC interfaces for the xrefs and filetree services",
-		"(--graphstore spec | --serving_table path) [--listen addr] [--grpc_listen addr] [--public_resources dir]")
+		"(--graphstore spec | --serving_table path) [--listen addr] [--public_resources dir]")
 }
 
 func main() {
 	flag.Parse()
 	if *servingTable == "" {
 		flagutil.UsageError("missing --serving_table")
-	} else if *httpListeningAddr == "" && *grpcListeningAddr == "" && *tlsListeningAddr == "" {
-		flagutil.UsageError("missing either --listen, --tls_listen, or --grpc_listen argument")
+	} else if *httpListeningAddr == "" && *tlsListeningAddr == "" {
+		flagutil.UsageError("missing either --listen or --tls_listen argument")
 	} else if *tlsListeningAddr != "" && (*tlsCertFile == "" || *tlsKeyFile == "") {
 		flagutil.UsageError("--tls_cert_file and --tls_key_file are required if given --tls_listen")
 	} else if flag.NArg() > 0 {
@@ -92,14 +83,6 @@ func main() {
 	tbl := table.ProtoBatchParallel{&table.KVProto{db}}
 	xs = xsrv.NewCombinedTable(tbl)
 	ft = &ftsrv.Table{Proto: tbl, PrefixedKeys: true}
-
-	if *grpcListeningAddr != "" {
-		srv := grpc.NewServer()
-		xpb.RegisterXRefServiceServer(srv, grpcXRefServiceServer{xs})
-		gpb.RegisterGraphServiceServer(srv, grpcGraphServiceServer{xs})
-		ftpb.RegisterFileTreeServiceServer(srv, grpcFileTreeServiceServer{ft})
-		go startGRPC(srv)
-	}
 
 	if *httpListeningAddr != "" || *tlsListeningAddr != "" {
 		apiMux := http.NewServeMux()
@@ -132,15 +115,6 @@ func main() {
 	}
 
 	select {} // block forever
-}
-
-func startGRPC(srv *grpc.Server) {
-	l, err := net.Listen("tcp", *grpcListeningAddr)
-	if err != nil {
-		log.Fatalf("Error listening on GRPC address %q: %v", *grpcListeningAddr, err)
-	}
-	log.Printf("GRPC server listening on %s", l.Addr())
-	log.Fatal(srv.Serve(l))
 }
 
 func startHTTP() {

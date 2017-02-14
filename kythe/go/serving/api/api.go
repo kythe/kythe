@@ -33,8 +33,6 @@ import (
 	"kythe.io/kythe/go/storage/leveldb"
 	"kythe.io/kythe/go/storage/table"
 
-	"google.golang.org/grpc"
-
 	ftpb "kythe.io/kythe/proto/filetree_proto"
 	gpb "kythe.io/kythe/proto/graph_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
@@ -52,7 +50,7 @@ const (
 	CommonDefault = "https://xrefs-dot-kythe-repo.appspot.com"
 
 	// CommonFlagUsage is the common Kythe usage description used for Flag
-	CommonFlagUsage = "Backing API specification (e.g. JSON HTTP server: https://xrefs-dot-kythe-repo.appspot.com or GRPC server: localhost:1003 or local serving table path: /var/kythe_serving)"
+	CommonFlagUsage = "Backing API specification (e.g. JSON HTTP server: https://xrefs-dot-kythe-repo.appspot.com or local serving table path: /var/kythe_serving)"
 )
 
 // Flag defines an api Interface flag with specified name, default value, and
@@ -69,7 +67,6 @@ func Flag(name, value, usage string) *Interface {
 // API Interface.  The following formats are currently supported:
 //   - http:// URL pointed at a JSON web API
 //   - https:// URL pointed at a JSON web API
-//   - host:port pointed at a GRPC API
 //   - local path to a LevelDB serving table
 func ParseSpec(apiSpec string) (Interface, error) {
 	api := &apiCloser{}
@@ -87,14 +84,7 @@ func ParseSpec(apiSpec string) (Interface, error) {
 		api.xs = xsrv.NewCombinedTable(tbl)
 		api.ft = &ftsrv.Table{tbl, true}
 	} else {
-		conn, err := grpc.Dial(apiSpec, grpc.WithInsecure())
-		if err != nil {
-			return nil, fmt.Errorf("error connecting to remote API %q: %v", apiSpec, err)
-		}
-		api.closer = func() error { conn.Close(); return nil }
-
-		api.xs = xrefs.GRPC(xpb.NewXRefServiceClient(conn), gpb.NewGraphServiceClient(conn))
-		api.ft = filetree.GRPC(ftpb.NewFileTreeServiceClient(conn))
+		return nil, fmt.Errorf("unknown API spec format: %q", apiSpec)
 	}
 	return api, nil
 }

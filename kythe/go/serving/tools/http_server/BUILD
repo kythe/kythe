@@ -4,14 +4,10 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 go_binary(
     name = "http_server",
-    srcs = [
-        "grpc.go",
-        "http_server.go",
-    ],
+    srcs = ["http_server.go"],
     deps = [
         "//kythe/go/services/filetree",
         "//kythe/go/services/graphstore",
-        "//kythe/go/services/graphstore/grpc",
         "//kythe/go/services/graphstore/proxy",
         "//kythe/go/services/xrefs",
         "//kythe/go/serving/filetree",
@@ -19,11 +15,6 @@ go_binary(
         "//kythe/go/storage/leveldb",
         "//kythe/go/storage/table",
         "//kythe/go/util/flagutil",
-        "//kythe/proto:filetree_proto_go",
-        "//kythe/proto:graph_proto_go",
-        "//kythe/proto:xref_proto_go",
-        "@go_grpc//:grpc",
-        "@go_x_net//:context",
         "@go_x_net//:http2",
     ],
 )
