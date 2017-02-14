@@ -242,7 +242,17 @@ function main(argv: string[]) {
     return 1;
   }
   let inPath = argv[2];
-  let tsOpts: ts.CompilerOptions = {};
+  // TODO: accept compiler options from the user.
+  // These options are just enough to get indexer.ts itself indexable.
+  let tsOpts: ts.CompilerOptions = {
+    module: ts.ModuleKind.CommonJS,
+    target: ts.ScriptTarget.ES2015,
+    // NOTE: the 'lib' parameter in tsconfig.json is translated by the 'tsc'
+    // command-line parser into one of these values, which are what the compiler
+    // uses internally.  This is just enough to get this indexer.ts to be able
+    // to load itself for debugging.
+    lib: ['lib.es6.d.ts'],
+  };
   let program = ts.createProgram([inPath], tsOpts);
   index(inPath, program);
   return 0;
