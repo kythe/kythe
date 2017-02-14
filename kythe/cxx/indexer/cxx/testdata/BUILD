@@ -2342,6 +2342,14 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "multiline_method",
+    srcs = ["objc/multiline_method.m"],
+    ignore_dups = True,
+    objc = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
     name = "precise_extends",
     srcs = ["objc/precise_extends.m"],
     ignore_dups = True,
