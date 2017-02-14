@@ -690,7 +690,6 @@ func ExpandAnchor(anchor *srvpb.RawAnchor, file *srvpb.File, norm *xrefs.Normali
 	return &srvpb.ExpandedAnchor{
 		Ticket: anchor.Ticket,
 		Kind:   kind,
-		Parent: file.Ticket,
 
 		Text: txt,
 		Span: &cpb.Span{

@@ -417,7 +417,6 @@ func fixEdges(es []*ipb.Path_Edge) []*ipb.Path_Edge {
 				Specialization: &ipb.Path_Node_ExpandedAnchor{&srvpb.ExpandedAnchor{
 					Ticket:      xa.Ticket,
 					Kind:        e.Kind,
-					Parent:      xa.Parent,
 					Text:        xa.Text,
 					Span:        xa.Span,
 					Snippet:     xa.Snippet,

@@ -31,6 +31,7 @@ import (
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/facts"
+	"kythe.io/kythe/go/util/schema/tickets"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/lib/pq"
@@ -419,10 +420,14 @@ func a2a(a *srvpb.ExpandedAnchor, anchorText bool) *xpb.Anchor {
 	if anchorText {
 		text = a.Text
 	}
+	parent, err := tickets.AnchorFile(a.Ticket)
+	if err != nil {
+		log.Printf("Error parsing anchor ticket: %v", err)
+	}
 	return &xpb.Anchor{
 		Ticket:       a.Ticket,
 		Kind:         edges.Canonical(a.Kind),
-		Parent:       a.Parent,
+		Parent:       parent,
 		Text:         text,
 		Start:        p2p(a.Span.Start),
 		End:          p2p(a.Span.End),

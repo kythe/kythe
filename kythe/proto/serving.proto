@@ -130,7 +130,7 @@ message RawAnchor {
 message ExpandedAnchor {
   string ticket = 1;
   string kind = 2;
-  string parent = 3;
+  reserved 3;
 
   string text = 4;
   kythe.proto.common.Span span = 5;

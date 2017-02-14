@@ -38,6 +38,7 @@ import (
 	"kythe.io/kythe/go/storage/table"
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema/edges"
+	"kythe.io/kythe/go/util/schema/tickets"
 
 	cpb "kythe.io/kythe/proto/common_proto"
 	gpb "kythe.io/kythe/proto/graph_proto"
@@ -1166,10 +1167,14 @@ func a2a(a *srvpb.ExpandedAnchor, anchorText bool) *xpb.CrossReferencesReply_Rel
 	if anchorText {
 		text = a.Text
 	}
+	parent, err := tickets.AnchorFile(a.Ticket)
+	if err != nil {
+		log.Printf("Error parsing anchor ticket: %v", err)
+	}
 	return &xpb.CrossReferencesReply_RelatedAnchor{Anchor: &xpb.Anchor{
 		Ticket:       a.Ticket,
 		Kind:         edges.Canonical(a.Kind),
-		Parent:       a.Parent,
+		Parent:       parent,
 		Text:         text,
 		Start:        p2p(a.Span.Start),
 		End:          p2p(a.Span.End),

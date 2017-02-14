@@ -106,14 +106,14 @@ var (
 				"/kythe/loc/start", "51",
 			),
 		}, {
-			Ticket: "kythe://someCorpus?path=some/path#aFileNode",
+			Ticket: "kythe://c?path=/a/path",
 			Fact: makeFactList(
 				"/kythe/node/kind", "file",
 				"/kythe/text/encoding", "utf-8",
 				"/kythe/text", "some random text\nhere and  \n  there\nsome random text\nhere and  \n  there\n",
 			),
 		}, {
-			Ticket: "kythe://someCorpus?path=some/utf16/file#utf16FTW",
+			Ticket: "kythe:?path=some/utf16/file",
 			Fact: []*cpb.Fact{{
 				Name:  "/kythe/text/encoding",
 				Value: []byte("utf-16le"),
@@ -187,18 +187,11 @@ var (
 				Group: []*srvpb.EdgeGroup{{
 					Kind: "/kythe/edge/ref",
 					Edge: getEdgeTargets("kythe://someCorpus?lang=otpl#signature"),
-				}, {
-					Kind: "/kythe/edge/childof",
-					Edge: getEdgeTargets("kythe://someCorpus?path=some/utf16/file#utf16FTW"),
 				}},
 			}, {
 				TotalEdges: 1,
 
-				Source: getNode("kythe://someCorpus?path=some/utf16/file#utf16FTW"),
-				Group: []*srvpb.EdgeGroup{{
-					Kind: "%/kythe/edge/childof",
-					Edge: getEdgeTargets("kythe:?path=some/utf16/file#0-4"),
-				}},
+				Source: getNode("kythe:?path=some/utf16/file"),
 			}, {
 				TotalEdges: 2,
 
@@ -206,9 +199,6 @@ var (
 				Group: []*srvpb.EdgeGroup{{
 					Kind: "/kythe/edge/ref",
 					Edge: getEdgeTargets("kythe://someCorpus?lang=otpl#signature"),
-				}, {
-					Kind: "/kythe/edge/childof",
-					Edge: getEdgeTargets("kythe://someCorpus?path=some/path#aFileNode"),
 				}},
 			}, {
 				TotalEdges: 2,
@@ -217,9 +207,6 @@ var (
 				Group: []*srvpb.EdgeGroup{{
 					Kind: "/kythe/edge/defines/binding",
 					Edge: getEdgeTargets("kythe://someCorpus?lang=otpl#signature"),
-				}, {
-					Kind: "/kythe/edge/childof",
-					Edge: getEdgeTargets("kythe://someCorpus?path=some/path#aFileNode"),
 				}},
 			},
 		},
@@ -307,7 +294,6 @@ var (
 				Anchor: []*srvpb.ExpandedAnchor{{
 					Ticket: "kythe://c?lang=otpl?path=/a/path#27-33",
 					Kind:   "/kythe/edge/defines/binding",
-					Parent: "kythe://someCorpus?path=some/path#aFileNode",
 
 					Span: &cpb.Span{
 						Start: &cpb.Point{
@@ -350,7 +336,6 @@ var (
 				Anchor: []*srvpb.ExpandedAnchor{{
 					Ticket: "kythe:?path=some/utf16/file#0-4",
 					Kind:   "/kythe/edge/ref",
-					Parent: "kythe://someCorpus?path=some/utf16/file#utf16FTW",
 
 					Span: &cpb.Span{
 						Start: &cpb.Point{LineNumber: 1},
@@ -371,7 +356,6 @@ var (
 				}, {
 					Ticket: "kythe://c?lang=otpl?path=/a/path#51-55",
 					Kind:   "/kythe/edge/ref",
-					Parent: "kythe://someCorpus?path=some/path#aFileNode",
 
 					Span: &cpb.Span{
 						Start: &cpb.Point{
@@ -809,12 +793,12 @@ func TestCrossReferences(t *testing.T) {
 	testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
 
 	expected := &xpb.CrossReferencesReply_CrossReferenceSet{
-		Ticket:       ticket,
+		Ticket: ticket,
 
 		Reference: []*xpb.CrossReferencesReply_RelatedAnchor{{Anchor: &xpb.Anchor{
 			Ticket: "kythe:?path=some/utf16/file#0-4",
 			Kind:   "/kythe/edge/ref",
-			Parent: "kythe://someCorpus?path=some/utf16/file#utf16FTW",
+			Parent: "kythe:?path=some/utf16/file",
 
 			Start: &xpb.Location_Point{LineNumber: 1},
 			End:   &xpb.Location_Point{ByteOffset: 4, LineNumber: 1, ColumnOffset: 4},
@@ -831,7 +815,7 @@ func TestCrossReferences(t *testing.T) {
 		}}, {Anchor: &xpb.Anchor{
 			Ticket: "kythe://c?lang=otpl?path=/a/path#51-55",
 			Kind:   "/kythe/edge/ref",
-			Parent: "kythe://someCorpus?path=some/path#aFileNode",
+			Parent: "kythe://c?path=/a/path",
 
 			Start: &xpb.Location_Point{
 				ByteOffset:   51,
@@ -859,7 +843,7 @@ func TestCrossReferences(t *testing.T) {
 		Definition: []*xpb.CrossReferencesReply_RelatedAnchor{{Anchor: &xpb.Anchor{
 			Ticket: "kythe://c?lang=otpl?path=/a/path#27-33",
 			Kind:   "/kythe/edge/defines/binding",
-			Parent: "kythe://someCorpus?path=some/path#aFileNode",
+			Parent: "kythe://c?path=/a/path",
 
 			Start: &xpb.Location_Point{
 				ByteOffset:   27,

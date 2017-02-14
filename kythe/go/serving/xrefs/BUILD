@@ -10,6 +10,7 @@ go_package_library(
         "//kythe/go/storage/table",
         "//kythe/go/util/kytheuri",
         "//kythe/go/util/schema/edges",
+        "//kythe/go/util/schema/tickets",
         "//kythe/proto:common_proto_go",
         "//kythe/proto:graph_proto_go",
         "//kythe/proto:internal_proto_go",
