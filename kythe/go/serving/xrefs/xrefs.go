@@ -622,7 +622,7 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 						r.TargetDefinition = ""
 					}
 
-					if req.ExtendsOverrides && (r.Kind == edges.DefinesBinding || r.Kind == edges.DefinesBinding) {
+					if req.ExtendsOverrides && (r.Kind == edges.Defines || r.Kind == edges.DefinesBinding) {
 						bindings.Add(r.TargetTicket)
 					}
 
