@@ -798,6 +798,7 @@ private:
                                   const clang::ObjCInterfaceDecl *IFace);
 
   void LogErrorWithASTDump(const std::string &msg, const clang::Decl *Decl);
+  void LogErrorWithASTDump(const std::string &msg, const clang::Expr *Expr);
 
   /// \brief Mark each node of `NNSL` as a reference.
   /// \param NNSL the nested name specifier to visit.

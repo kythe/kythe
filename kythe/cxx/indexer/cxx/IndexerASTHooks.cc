@@ -4956,7 +4956,15 @@ bool IndexerASTVisitor::VisitObjCMessageExpr(
   }
 
   if (Expr->isClassMessage()) {
-    if (auto ID = BuildNodeIdForType(Expr->getClassReceiver())) {
+    const QualType &CR = Expr->getClassReceiver();
+    if (CR.isNull()) {
+      // TODO(salguarnieri) Figure out why this happens and if it is normal. The
+      // comments at
+      // https://clang.llvm.org/doxygen/classclang_1_1ObjCMessageExpr.html#a6457400eb37b74bf08efc178d6474e07
+      // claim that getClassReceiver should only return null if this is not
+      // a class message.
+      LogErrorWithASTDump("Class receiver was null", Expr);
+    } else if (auto ID = BuildNodeIdForType(CR)) {
       const SourceLocation &Loc = Expr->getReceiverRange().getBegin();
       if (Loc.isValid() && Loc.isFileID()) {
         const SourceRange SR(RangeForSingleTokenFromSourceLocation(
@@ -5120,6 +5128,14 @@ void IndexerASTVisitor::LogErrorWithASTDump(const std::string &msg,
   std::string s;
   llvm::raw_string_ostream ss(s);
   Decl->dump(ss);
+  LOG(ERROR) << msg << " :" << std::endl << s;
+}
+
+void IndexerASTVisitor::LogErrorWithASTDump(const std::string &msg,
+                                            const clang::Expr *Expr) {
+  std::string s;
+  llvm::raw_string_ostream ss(s);
+  Expr->dump(ss);
   LOG(ERROR) << msg << " :" << std::endl << s;
 }
 
