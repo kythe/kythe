@@ -20,6 +20,7 @@
 #define KYTHE_CXX_INDEXER_CXX_INDEXER_LIBRARY_SUPPORT_H_
 
 #include "clang/AST/Decl.h"
+#include "clang/AST/Expr.h"
 
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
 
@@ -81,6 +82,16 @@ public:
                               const GraphObserver::Range &Ref,
                               GraphObserver::NodeId &RefId,
                               const clang::NamedDecl *TargetDecl) {}
+
+  /// \brief Called on any CallExpr.
+  /// \param V The active IndexerASTVisitor.
+  /// \param CallExpr The call expr.
+  /// \param Range The range of the call expr.
+  /// \param CalleeId The NodeId of the callee.
+  virtual void InspectCallExpr(IndexerASTVisitor &V,
+                               const clang::CallExpr *CallExpr,
+                               const GraphObserver::Range &Range,
+                               GraphObserver::NodeId &CalleeId) {}
 };
 
 /// \brief A collection of library support implementations.

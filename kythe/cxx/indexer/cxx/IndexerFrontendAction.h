@@ -46,6 +46,7 @@
 #include "GraphObserver.h"
 #include "IndexerASTHooks.h"
 #include "IndexerPPCallbacks.h"
+#include "ProtoLibrarySupport.h"
 
 namespace kythe {
 namespace proto {
@@ -79,6 +80,7 @@ public:
       HeaderConfig = *Info;
     }
     Supports.push_back(llvm::make_unique<GoogleFlagsLibrarySupport>());
+    Supports.push_back(llvm::make_unique<GoogleProtoLibrarySupport>());
   }
 
   /// \brief Barrel through even if we don't understand part of a program?

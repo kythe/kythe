@@ -1376,7 +1376,11 @@ bool IndexerASTVisitor::VisitCallExpr(const clang::CallExpr *E) {
   auto StmtId = BuildNodeIdForImplicitStmt(E);
   if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
     if (const auto *Callee = E->getCalleeDecl()) {
-      RecordCallEdges(RCC.primary(), BuildNodeIdForDecl(Callee));
+      auto CalleeId = BuildNodeIdForDecl(Callee);
+      RecordCallEdges(RCC.primary(), CalleeId);
+      for (const auto &S : Supports) {
+        S->InspectCallExpr(*this, E, RCC.primary(), CalleeId);
+      }
     } else if (const auto *CE = E->getCallee()) {
       if (auto CalleeId = BuildNodeIdForExpr(CE, EmitRanges::Yes)) {
         RecordCallEdges(RCC.primary(), CalleeId.primary());

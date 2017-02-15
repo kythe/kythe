@@ -8,6 +8,7 @@ cc_library(
         "IndexerLibrarySupport.cc",
         "IndexerPPCallbacks.cc",
         "KytheGraphObserver.cc",
+        "ProtoLibrarySupport.cc",
         "clang_utils.cc",
         "indexer_worklist.cc",
         "marked_source.cc",
@@ -19,6 +20,7 @@ cc_library(
         "IndexerLibrarySupport.h",
         "IndexerPPCallbacks.h",
         "KytheGraphObserver.h",
+        "ProtoLibrarySupport.h",
         "clang_utils.h",
         "indexer_worklist.h",
         "marked_source.h",
@@ -43,6 +45,7 @@ cc_library(
         "//third_party/llvm/src:clang_builtin_headers",
         "//third_party/proto:protobuf",
         "@com_github_gflags_gflags//:gflags",
+        "@com_github_google_glog//:glog",
     ],
 )
 

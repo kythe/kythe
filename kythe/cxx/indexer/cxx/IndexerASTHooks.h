@@ -483,6 +483,9 @@ public:
   /// \brief Returns the attached GraphObserver.
   GraphObserver &getGraphObserver() { return Observer; }
 
+  /// \brief Returns the ASTContext.
+  const clang::ASTContext &getASTContext() { return Context; }
+
   /// Returns `SR` as a `Range` in this `RecursiveASTVisitor`'s current
   /// RangeContext.
   MaybeFew<GraphObserver::Range>
@@ -529,6 +532,11 @@ public:
   /// \brief Provides execute-only access to ShouldStopIndexing. Should be used
   /// from the same thread that's walking the AST.
   bool shouldStopIndexing() const { return ShouldStopIndexing(); }
+
+  /// Blames a call to `Callee` at `Range` on everything at the top of
+  /// `BlameStack` (or does nothing if there's nobody to blame).
+  void RecordCallEdges(const GraphObserver::Range &Range,
+                       const GraphObserver::NodeId &Callee);
 
 private:
   friend class PruneCheck;
@@ -730,11 +738,6 @@ private:
   /// generating node IDs for recursive types. The key is opaque and
   /// makes sense only within the implementation of this class.
   std::unordered_map<int64_t, MaybeFew<GraphObserver::NodeId>> TypeNodes;
-
-  /// Blames a call to `Callee` at `Range` on everything at the top of
-  /// `BlameStack` (or does nothing if there's nobody to blame).
-  void RecordCallEdges(const GraphObserver::Range &Range,
-                       const GraphObserver::NodeId &Callee);
 
   /// \brief Visit a DeclRefExpr or a ObjCIvarRefExpr
   ///
