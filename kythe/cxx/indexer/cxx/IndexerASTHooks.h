@@ -22,6 +22,7 @@
 
 #include <memory>
 #include <unordered_map>
+#include <unordered_set>
 
 #include "glog/logging.h"
 #include "clang/AST/ASTContext.h"
