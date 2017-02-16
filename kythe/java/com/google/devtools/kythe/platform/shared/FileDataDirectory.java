@@ -19,6 +19,7 @@ package com.google.devtools.kythe.platform.shared;
 import com.google.common.io.Files;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -39,6 +40,9 @@ public class FileDataDirectory implements FileDataProvider {
 
   @Override
   public ListenableFuture<byte[]> startLookup(String path, String digest) {
+    if (path == null) {
+      return Futures.immediateFailedFuture(new IllegalArgumentException("path cannot be null"));
+    }
     try {
       return Futures.immediateFuture(
           Files.asByteSource(rootDirectory.resolve(path).toFile()).read());
@@ -48,5 +52,6 @@ public class FileDataDirectory implements FileDataProvider {
   }
 
   @Override
-  public void close() {}
+  public void close() {
+  }
 }

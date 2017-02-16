@@ -24,6 +24,7 @@ java_library(
         "FileDataProvider.java",
     ],
     deps = [
+        "//kythe/java/com/google/devtools/kythe/common",
         "//kythe/proto:analysis_proto_java",
         "//third_party/proto:protobuf_java",
         "@com_google_guava_guava//jar",
@@ -37,6 +38,7 @@ java_library(
     ],
     deps = [
         ":file_data",
+        "//kythe/java/com/google/devtools/kythe/common",
         "//kythe/proto:analysis_proto_java",
         "//kythe/proto:analysis_service_proto_java",
         "//third_party/grpc-java",

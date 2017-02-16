@@ -25,7 +25,12 @@ import com.google.common.util.concurrent.ListenableFuture;
 public interface FileDataProvider extends AutoCloseable {
   /**
    * Returns a {@link Future<byte[]>} for the contents of the file described by the given path and
-   * digest. At least one of path or digest must be specified for each file lookup.
+   * digest. If the file cannot be found (and there was no exception), the future will return null.
+   *
+   * <p>If both digest and path are non-null, they should correspond to each other.
+   * Implementations can choose to ignore path, digest, or require them both to be present. If an
+   * implementation encounters incomplete data (null for any of the arguments it requires), it
+   * returns an IllegalArgumentException in the future.
    */
-  public ListenableFuture<byte[]> startLookup(String path, String digest);
+  ListenableFuture<byte[]> startLookup(String path, String digest);
 }

@@ -20,10 +20,12 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.devtools.kythe.proto.Analysis.FileData;
+
 import java.util.Map;
 
 /**
- * {@link FileDataProvider} that looks up file data from a given {@link List} of {@link FileData}.
+ * {@link FileDataProvider} that looks up file data from a given {@link Iterable} of
+ * {@link FileData}.
  */
 public class FileDataCache implements FileDataProvider {
   private final Map<String, byte[]> fileContents;
@@ -38,11 +40,14 @@ public class FileDataCache implements FileDataProvider {
 
   @Override
   public ListenableFuture<byte[]> startLookup(String path, String digest) {
+    if (digest == null) {
+      return Futures.immediateFailedFuture(new IllegalArgumentException("digest cannot be null"));
+    }
     byte[] content = fileContents.get(digest);
-    return content != null
-        ? Futures.immediateFuture(content)
-        : Futures.<byte[]>immediateFailedFuture(
-            new RuntimeException("Cache does not contain file for digest: " + digest));
+    return content == null ?
+        Futures.immediateFailedFuture(
+            new RuntimeException("Cache does not contain file for digest: " + digest))
+        : Futures.immediateFuture(content);
   }
 
   @Override
