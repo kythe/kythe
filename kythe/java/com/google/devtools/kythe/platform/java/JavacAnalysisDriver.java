@@ -38,7 +38,7 @@ public class JavacAnalysisDriver {
   private final List<Processor> processors;
 
   public JavacAnalysisDriver() {
-    this(ImmutableList.<Processor>of());
+    this(ImmutableList.of());
   }
 
   public JavacAnalysisDriver(List<Processor> processors) {
@@ -60,6 +60,13 @@ public class JavacAnalysisDriver {
       FileDataProvider fileDataProvider,
       boolean isLocalAnalysis)
       throws AnalysisException {
+
+    // If there are no source files, then there is nothing for us to do.
+    if (compilationUnit.getSourceFileList().isEmpty()) {
+      logger.warning("CompilationUnit has no source files");
+      return;
+    }
+
     checkEnvironment(compilationUnit);
 
     analyzer.analyzeCompilationUnit(
@@ -68,8 +75,6 @@ public class JavacAnalysisDriver {
   }
 
   private static void checkEnvironment(CompilationUnit compilation) throws AnalysisException {
-    Preconditions.checkArgument(
-        !compilation.getSourceFileList().isEmpty(), "CompilationUnit has no source files");
     String sourcePath = compilation.getSourceFileList().get(0);
     if (new File(sourcePath).canRead()) {
       throw new AnalysisException(
