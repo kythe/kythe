@@ -850,7 +850,8 @@ Ordinals are used::
 
 [kythe,C++,"Type applications have parameters."]
 --------------------------------------------------------------------------------
-//- @"int*" ref PtrInt
+//- @T defines/binding AliasT
+//- AliasT aliases PtrInt
 //- PtrInt param.0 PointerConstructor
 //- PtrInt param.1 IntType
 using T = int*;
@@ -1744,7 +1745,8 @@ Expected out-edges::
 
 [kythe,C++,"Pointers are type constructors."]
 --------------------------------------------------------------------------------
-//- @"int*" ref IntPtrType
+//- @PtrInt defines/binding PtrIntAlias
+//- PtrIntAlias aliases IntPtrType
 using PtrInt = int*;
 //- IntPtrType.node/kind tapp
 //- IntPtrType param.0 vname("ptr#builtin",_,_,_,"c++")
@@ -1796,7 +1798,8 @@ Notes::
 //- ClassC.node/kind record
 //- ClassC named ClassCName
 class C;
-//- @"C*" ref PtrC
+//- @Alias defines/binding Alias
+//- Alias aliases PtrC
 //- PtrC param.1 NominalC
 //- NominalC.node/kind tnominal
 //- NominalC named ClassCName
@@ -1994,7 +1997,8 @@ $$C++$$ supplies the following <<tbuiltin>> nodes by default:
 //- @"void" ref vname("void#builtin","","","","c++")
 using Void = void;
 
-//- @"void*" ref TappPtrVoid
+//- @PtrVoid defines/binding AliasTappPtrVoid
+//- AliasTappPtrVoid aliases TappPtrVoid
 //- TappPtrVoid param.0 vname("ptr#builtin","","","","c++")
 using PtrVoid = void*;
 

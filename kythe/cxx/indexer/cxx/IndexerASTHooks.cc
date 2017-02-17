@@ -3600,7 +3600,7 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::QualType &QT) {
 MaybeFew<GraphObserver::NodeId>
 IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
                                       const clang::Type *PT,
-                                      EmitRanges EmitRanges) {
+                                      const EmitRanges EmitRanges) {
   MaybeFew<GraphObserver::NodeId> ID;
   const QualType QT = TypeLoc.getType();
   SourceRange SR = TypeLoc.getSourceRange();
@@ -3623,15 +3623,16 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
     }
     TypeAlreadyBuilt = true;
   }
+  // We may turn off emitting ranges for particular types, but we still want
+  // to emit ranges recursively. For example, for the type T*, we don't want to
+  // emit a range for [T*], but we do want to emit one for [T]*.
   auto InEmitRanges = EmitRanges;
-  if (!Verbosity) {
-    EmitRanges = IndexerASTVisitor::EmitRanges::No;
-  }
   // We only care about leaves in the type hierarchy (eg, we shouldn't match
   // on Reference, but instead on LValueReference or RValueReference).
   switch (TypeLoc.getTypeLocClass()) {
   case TypeLoc::Qualified: {
     const auto &T = TypeLoc.castAs<QualifiedTypeLoc>();
+    InEmitRanges = EmitRanges::No;
     // TODO(zarko): ObjC tycons; embedded C tycons (address spaces).
     ID = BuildNodeIdForType(T.getUnqualifiedLoc(), PT, EmitRanges);
     if (TypeAlreadyBuilt) {
@@ -3665,17 +3666,13 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
   case TypeLoc::Pointer: {
     const auto &T = TypeLoc.castAs<PointerTypeLoc>();
     const auto *DT = dyn_cast<PointerType>(PT);
+    InEmitRanges = EmitRanges::No;
     auto PointeeID(BuildNodeIdForType(T.getPointeeLoc(),
                                       DT ? DT->getPointeeType().getTypePtr()
                                          : T.getPointeeLoc().getTypePtr(),
                                       EmitRanges));
     if (!PointeeID) {
       return PointeeID;
-    }
-    if (SR.isValid() && SR.getBegin().isFileID()) {
-      SR.setEnd(GetLocForEndOfToken(*Observer.getSourceManager(),
-                                    *Observer.getLangOptions(),
-                                    T.getStarLoc()));
     }
     if (TypeAlreadyBuilt) {
       break;
@@ -3685,16 +3682,13 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
   case TypeLoc::LValueReference: {
     const auto &T = TypeLoc.castAs<LValueReferenceTypeLoc>();
     const auto *DT = dyn_cast<LValueReferenceType>(PT);
+    InEmitRanges = EmitRanges::No;
     auto ReferentID(BuildNodeIdForType(T.getPointeeLoc(),
                                        DT ? DT->getPointeeType().getTypePtr()
                                           : T.getPointeeLoc().getTypePtr(),
                                        EmitRanges));
     if (!ReferentID) {
       return ReferentID;
-    }
-    if (SR.isValid() && SR.getBegin().isFileID()) {
-      SR.setEnd(GetLocForEndOfToken(*Observer.getSourceManager(),
-                                    *Observer.getLangOptions(), T.getAmpLoc()));
     }
     if (TypeAlreadyBuilt) {
       break;
@@ -3704,17 +3698,13 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
   case TypeLoc::RValueReference: {
     const auto &T = TypeLoc.castAs<RValueReferenceTypeLoc>();
     const auto *DT = dyn_cast<RValueReferenceType>(PT);
+    InEmitRanges = EmitRanges::No;
     auto ReferentID(BuildNodeIdForType(T.getPointeeLoc(),
                                        DT ? DT->getPointeeType().getTypePtr()
                                           : T.getPointeeLoc().getTypePtr(),
                                        EmitRanges));
     if (!ReferentID) {
       return ReferentID;
-    }
-    if (SR.isValid() && SR.getBegin().isFileID()) {
-      SR.setEnd(GetLocForEndOfToken(*Observer.getSourceManager(),
-                                    *Observer.getLangOptions(),
-                                    T.getAmpAmpLoc()));
     }
     if (TypeAlreadyBuilt) {
       break;
@@ -3725,6 +3715,7 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
   case TypeLoc::ConstantArray: {
     const auto &T = TypeLoc.castAs<ConstantArrayTypeLoc>();
     const auto *DT = dyn_cast<ConstantArrayType>(PT);
+    InEmitRanges = EmitRanges::No;
     auto ElementID(BuildNodeIdForType(T.getElementLoc(),
                                       DT ? DT->getElementType().getTypePtr()
                                          : T.getElementLoc().getTypePtr(),
@@ -3741,6 +3732,7 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
   case TypeLoc::IncompleteArray: {
     const auto &T = TypeLoc.castAs<IncompleteArrayTypeLoc>();
     const auto *DT = dyn_cast<IncompleteArrayType>(PT);
+    InEmitRanges = EmitRanges::No;
     auto ElementID(BuildNodeIdForType(T.getElementLoc(),
                                       DT ? DT->getElementType().getTypePtr()
                                          : T.getElementLoc().getTypePtr(),
@@ -3757,6 +3749,7 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
   case TypeLoc::DependentSizedArray: {
     const auto &T = TypeLoc.castAs<DependentSizedArrayTypeLoc>();
     const auto *DT = dyn_cast<DependentSizedArrayType>(PT);
+    InEmitRanges = EmitRanges::No;
     auto ElementID(BuildNodeIdForType(T.getElementLoc(),
                                       DT ? DT->getElementType().getTypePtr()
                                          : T.getElementLoc().getTypePtr(),
@@ -3783,6 +3776,7 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
     const auto &T = TypeLoc.castAs<FunctionProtoTypeLoc>();
     const auto *FT = cast<clang::FunctionProtoType>(TypeLoc.getType());
     const auto *DT = dyn_cast<FunctionProtoType>(PT);
+    InEmitRanges = EmitRanges::No;
     std::vector<GraphObserver::NodeId> NodeIds;
     std::vector<const GraphObserver::NodeId *> NodeIdPtrs;
     auto ReturnType(BuildNodeIdForType(T.getReturnLoc(),
@@ -3824,6 +3818,7 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
     }
   } break;
   case TypeLoc::FunctionNoProto:
+    InEmitRanges = EmitRanges::No;
     if (!TypeAlreadyBuilt) {
       const auto &T = TypeLoc.castAs<FunctionNoProtoTypeLoc>();
       ID = Observer.getNodeIdForBuiltinType("knrfn");
@@ -3833,11 +3828,11 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
   case TypeLoc::Paren: {
     const auto &T = TypeLoc.castAs<ParenTypeLoc>();
     const auto *DT = dyn_cast<ParenType>(PT);
+    InEmitRanges = EmitRanges::No;
     ID = BuildNodeIdForType(T.getInnerLoc(),
                             DT ? DT->getInnerType().getTypePtr()
                                : T.getInnerLoc().getTypePtr(),
                             EmitRanges);
-    EmitRanges = InEmitRanges = IndexerASTVisitor::EmitRanges::No;
   } break;
   case TypeLoc::Typedef: {
     // TODO(zarko): Return canonicalized versions as non-primary elements of
@@ -3989,7 +3984,7 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
       VisitNestedNameSpecifierLoc(T.getQualifierLoc());
     }
     // Don't link 'struct'.
-    EmitRanges = InEmitRanges = IndexerASTVisitor::EmitRanges::No;
+    InEmitRanges = IndexerASTVisitor::EmitRanges::No;
     // TODO(zarko): Add an anchor for all the Elaborated type; otherwise decls
     // like `typedef B::C tdef;` will only anchor `C` instead of `B::C`.
   } break;
@@ -4174,6 +4169,7 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
     // don't share ancestors and the code has some side effects.
     const auto &OPTL = TypeLoc.castAs<ObjCObjectPointerTypeLoc>();
     const auto *DT = dyn_cast<ObjCObjectPointerType>(PT);
+    InEmitRanges = EmitRanges::No;
     auto PointeeID(BuildNodeIdForType(OPTL.getPointeeLoc(),
                                       DT ? DT->getPointeeType().getTypePtr()
                                          : OPTL.getPointeeLoc().getTypePtr(),
@@ -4263,6 +4259,7 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
   case TypeLoc::BlockPointer: {
     const auto &BPTL = TypeLoc.getAs<BlockPointerTypeLoc>();
     const auto &DT = dyn_cast<BlockPointerType>(PT);
+    InEmitRanges = EmitRanges::No;
     auto PointeeID(BuildNodeIdForType(BPTL.getPointeeLoc(),
                                       DT ? DT->getPointeeType().getTypePtr()
                                          : BPTL.getPointeeLoc().getTypePtr(),

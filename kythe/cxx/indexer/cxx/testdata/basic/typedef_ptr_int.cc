@@ -3,7 +3,7 @@
 //- TypeAlias.node/kind talias
 //- TypeAlias named vname("tdef#n", "", "", "", "c++")
 //- @int ref IntType
-//- @"int*" ref IntPtrType
+//- !{@"int*" ref _}
 typedef int* tdef;
 //- TypeAlias aliases IntPtrType
 //- IntPtrType.node/kind tapp
