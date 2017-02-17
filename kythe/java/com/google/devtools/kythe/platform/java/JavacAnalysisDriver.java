@@ -16,7 +16,6 @@
 
 package com.google.devtools.kythe.platform.java;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.platform.shared.AnalysisException;
