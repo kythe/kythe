@@ -53,6 +53,8 @@ DEFINE_bool(experimental_alias_template_instantiations, false,
             "Ignore template instantation information when generating IDs.");
 DEFINE_bool(experimental_threaded_claiming, false,
             "Defer answering claims and submit them in bulk when possible.");
+DEFINE_bool(emit_anchors_on_builtins, true,
+            "Emit anchors on builtin types like int and float.");
 
 namespace kythe {
 
@@ -3656,6 +3658,9 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
   } break;
   case TypeLoc::Builtin: { // Leaf.
     const auto &T = TypeLoc.castAs<BuiltinTypeLoc>();
+    if (!FLAGS_emit_anchors_on_builtins) {
+      InEmitRanges = EmitRanges::No;
+    }
     if (TypeAlreadyBuilt) {
       break;
     }
