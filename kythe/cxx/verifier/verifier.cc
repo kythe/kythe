@@ -861,9 +861,8 @@ void Verifier::DumpErrorGoal(size_t group, size_t index) {
       }
     }
   }
-  if (!printed_goal) {
-    goal->Dump(symbol_table_, &printer);
-  }
+  printer.Print("\n  Goal: ");
+  goal->Dump(symbol_table_, &printer);
   printer.Print("\n");
 }
 

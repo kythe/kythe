@@ -347,6 +347,7 @@ bool AssertionParser::ResolveLocations(const yy::location &end_of_line,
     EVar *evar = record.anchor_evar;
     std::string &token = record.anchor_text;
     yy::location location = evar->location();
+    location.columns(token.size());
     if (record.use_line_number &&
         (record.line_number != end_of_line.begin.line)) {
       if (end_of_file) {
