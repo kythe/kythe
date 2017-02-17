@@ -31,6 +31,15 @@ class Vistor {
   /** kFile is the VName for the source file. */
   kFile: VName;
 
+  /** symbolNames maps ts.Symbol to their assigned VNames. */
+  symbolNames = new Map<ts.Symbol, VName>();
+
+  /**
+   * anonId increments for each anonymous block, to give them unique
+   * signatures.
+   */
+  anonId = 0;
+
   constructor(
       private typeChecker: ts.TypeChecker,
       /**
@@ -96,12 +105,71 @@ class Vistor {
     });
   }
 
+  /**
+   * scopedSignature computes a scoped name for a ts.Node.
+   * E.g. if you have a function `foo` containing a block containing a variable
+   * `bar`, it might return a string like foo.block0.bar.
+   */
+  scopedSignature(startNode: ts.Node): string {
+    let parts: string[] = [];
+    // Traverse the containing blocks upward, gathering names from nodes that
+    // introduce scopes.
+    for (let node: ts.Node|undefined = startNode; node != null;
+         node = node.parent) {
+      switch (node.kind) {
+        case ts.SyntaxKind.Block:
+          if (node.parent &&
+              node.parent.kind === ts.SyntaxKind.FunctionDeclaration) {
+            // A block that's an immediate child of a function is the
+            // function's body, so it doesn't need a separate name.
+            continue;
+          }
+          parts.push(`block${this.anonId++}`);
+          break;
+        case ts.SyntaxKind.FunctionDeclaration:
+        case ts.SyntaxKind.Parameter:
+        case ts.SyntaxKind.VariableDeclaration:
+          let decl = node as ts.Declaration;
+          if (decl.name && decl.name.kind === ts.SyntaxKind.Identifier) {
+            parts.push(decl.name.text);
+          } else {
+            // TODO: handle other declarations, e.g. binding patterns.
+            parts.push(`anon${this.anonId++}`);
+          }
+          break;
+        case ts.SyntaxKind.SourceFile:
+          // TODO: name the outermost signature after the module name, so that
+          // cross-module references work.
+          parts.push('TODOSourceFile');
+          break;
+        case ts.SyntaxKind.VariableDeclarationList:
+        case ts.SyntaxKind.VariableStatement:
+          break;
+        default:
+          // TODO: namespace {}, interface {}, etc.
+          console.error('TODO(scopedSignature)', ts.SyntaxKind[node.kind]);
+      }
+    }
+
+    // The names were gathered from bottom to top, so reverse before joining.
+    return parts.reverse().join('.');
+  }
+
   /** getSymbolName computes the VName (and signature) of a ts.Symbol. */
   getSymbolName(sym: ts.Symbol): VName {
-    // TODO: this is totally incorrect but it's sufficient to make the
-    // current test pass, and future tests will better establish what
-    // behavior is actually needed.
-    return this.newVName(sym.name);
+    let vname = this.symbolNames.get(sym);
+    if (vname) return vname;
+
+    if (!sym.declarations || sym.declarations.length < 1) {
+      throw new Error('TODO: symbol has no declarations?');
+    }
+    // TODO: think about symbols with multiple declarations.
+
+    let decl = sym.declarations[0];
+    let sig = this.scopedSignature(decl);
+    vname = this.newVName(sig);
+    this.symbolNames.set(sym, vname);
+    return vname;
   }
 
   visitExportDeclaration(decl: ts.ExportDeclaration) {
