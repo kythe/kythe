@@ -1,19 +1,19 @@
 // We index namespaces.
-//- @ns defines/binding NamespaceNS
+//- @ns ref NamespaceNS
 //- NamespaceNS.node/kind package
 //- NamespaceNS.subkind namespace
 namespace ns {
-  //- @cns defines/binding NamespaceCNS
+  //- @cns ref NamespaceCNS
   namespace cns {
   }
 }
 //- NamespaceCNS childof NamespaceNS
 
-//- @cns defines/binding ExternalCNS
+//- @cns ref ExternalCNS
 //- !{ ExternalCNS childof NamespaceNS }
 namespace cns {
 }
 
-//- @ns defines/binding NamespaceNS
+//- @ns ref NamespaceNS
 namespace ns {
 }

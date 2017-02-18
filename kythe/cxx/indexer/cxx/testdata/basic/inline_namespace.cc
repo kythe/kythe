@@ -1,4 +1,4 @@
 // We index inline namespaces.
-//- @ns defines/binding NamespaceNS
+//- @ns ref NamespaceNS
 inline namespace ns {
 }

@@ -1,5 +1,5 @@
 // We keep track of namespace membership.
-//- @ns defines/binding NamespaceNS
+//- @ns ref NamespaceNS
 namespace ns {
 //- @x defines/binding VarX
   int x;

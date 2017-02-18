@@ -2,6 +2,6 @@
 // anonymous namespaces.
 //- @x defines/binding VarNode
 //- VarNode.node/kind variable
-//- @namespace defines/binding Namespace
+//- @namespace ref Namespace
 //- VarNode childof Namespace
 namespace { int x; }

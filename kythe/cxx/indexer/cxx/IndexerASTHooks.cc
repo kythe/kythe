@@ -1709,8 +1709,12 @@ bool IndexerASTVisitor::VisitNamespaceDecl(const clang::NamespaceDecl *Decl) {
   } else {
     NameRange = RangeForNameOfDeclaration(Decl);
   }
-  MaybeRecordDefinitionRange(
-      RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode);
+  // Namespaces are never defined; they are only invoked.
+  if (auto RCC =
+          RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange)) {
+    Observer.recordDeclUseLocation(RCC.primary(), DeclNode,
+                                   GraphObserver::Claimability::Unclaimable);
+  }
   Observer.recordNamespaceNode(DeclName, DeclNode,
                                Marks.GenerateMarkedSource(DeclNode));
   AddChildOfEdgeToDeclContext(Decl, DeclNode);

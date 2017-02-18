@@ -1,18 +1,18 @@
 // The anonymous namespace is common among headers but distinct in TUs.
 #pragma kythe_claim
 #include "header.h"
-//- @namespace defines/binding CcNamespace
+//- @namespace ref CcNamespace
 namespace { }
 #include "footer.h"
 
 #example header.h
 #pragma kythe_claim
-//- @namespace=HeaderDecl defines/binding HNamespace
-//- !{ HeaderDecl defines/binding CcNamespace }
+//- @namespace=HeaderDecl ref HNamespace
+//- !{ HeaderDecl ref CcNamespace }
 namespace { }
 
 #example footer.h
 #pragma kythe_claim
-//- @namespace=FooterDecl defines/binding HNamespace
-//- !{ FooterDecl defines/binding CcNamespace }
+//- @namespace=FooterDecl ref HNamespace
+//- !{ FooterDecl ref CcNamespace }
 namespace { }

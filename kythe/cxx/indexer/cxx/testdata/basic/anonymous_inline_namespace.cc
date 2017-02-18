@@ -1,4 +1,4 @@
 // We index anonymous inline namespaces.
-//- @namespace defines/binding AnonymousInlineNS
+//- @namespace ref AnonymousInlineNS
 inline namespace {
 }

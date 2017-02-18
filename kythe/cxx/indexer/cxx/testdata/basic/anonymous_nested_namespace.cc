@@ -3,7 +3,7 @@
 #include "header.h"
 namespace Ns {
 namespace {
-//- @namespace defines/binding CcNamespace
+//- @namespace ref CcNamespace
 namespace { }
 }
 }
@@ -13,8 +13,8 @@ namespace { }
 #pragma kythe_claim
 namespace Ns {
 namespace {
-//- @namespace=HeaderDecl defines/binding HNamespace
-//- !{ HeaderDecl defines/binding CcNamespace }
+//- @namespace=HeaderDecl ref HNamespace
+//- !{ HeaderDecl ref CcNamespace }
 namespace { }
 }
 }
@@ -23,8 +23,8 @@ namespace { }
 #pragma kythe_claim
 namespace Ns {
 namespace {
-//- @namespace=FooterDecl defines/binding HNamespace
-//- !{ FooterDecl defines/binding CcNamespace }
+//- @namespace=FooterDecl ref HNamespace
+//- !{ FooterDecl ref CcNamespace }
 namespace { }
 }
 }
