@@ -35,6 +35,7 @@
 @end
 
 int main(int argc, char **argv) {
+  //- @O ref OImpl
   //- @box defines/binding BoxVar
   //- BoxVar typed PtrBoxVarType
   //- PtrBoxVarType.node/kind tapp
