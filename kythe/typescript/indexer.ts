@@ -155,12 +155,11 @@ class Vistor {
           // cross-module references work.
           parts.push('TODOSourceFile');
           break;
-        case ts.SyntaxKind.VariableDeclarationList:
-        case ts.SyntaxKind.VariableStatement:
-          break;
         default:
+          // Most nodes are children of other nodes that do not introduce a
+          // new namespace, e.g. "return x;", so ignore all other parents
+          // by default.
           // TODO: namespace {}, interface {}, etc.
-          console.error('TODO(scopedSignature)', ts.SyntaxKind[node.kind]);
       }
     }
 
@@ -251,23 +250,16 @@ class Vistor {
         // expression; we'll handle identifiers that occur in other
         // circumstances (e.g. in a type) separately.
         let sym = this.typeChecker.getSymbolAtLocation(node);
+        if (!sym) {
+          // E.g. a field of an "any".
+          return;
+        }
         let name = this.getSymbolName(sym);
         this.emitEdge(this.newAnchor(node), 'ref', name);
         return;
-      case ts.SyntaxKind.BinaryExpression:
-      case ts.SyntaxKind.Block:
-      case ts.SyntaxKind.CallExpression:
-      case ts.SyntaxKind.EndOfFileToken:
-      case ts.SyntaxKind.ExpressionStatement:
-      case ts.SyntaxKind.NumericLiteral:
-      case ts.SyntaxKind.PlusToken:
-      case ts.SyntaxKind.PostfixUnaryExpression:
-      case ts.SyntaxKind.VariableDeclarationList:
-      case ts.SyntaxKind.VariableStatement:
+      default:
         // Use default recursive processing.
         return ts.forEachChild(node, n => this.visit(n));
-      default:
-        console.warn(`TODO: handle input node: ${ts.SyntaxKind[node.kind]}`);
     }
   }
 

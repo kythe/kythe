@@ -10,6 +10,10 @@ function test(a: number) {
   //- @x defines/binding X
   //- X.node/kind variable
   let x = 1;
+
+  // Check indexing through "return" statements.
+  //- @a ref ParamA
+  return a;
 }
 
 //- @test ref F
