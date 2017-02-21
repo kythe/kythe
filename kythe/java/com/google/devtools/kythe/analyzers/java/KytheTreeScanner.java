@@ -235,7 +235,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     Optional<String> signature = signatureGenerator.getSignature(classDef.sym);
     if (signature.isPresent()) {
-      EntrySet classNode = entrySets.getNode(classDef.sym, signature.get());
+      EntrySet classNode = entrySets.getNode(signatureGenerator, classDef.sym, signature.get());
 
       // Find the method or class in which this class is defined, if any.
       TreeContext container = ctx.getClassOrMethodParent();
@@ -355,7 +355,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     Optional<String> signature = signatureGenerator.getSignature(methodDef.sym);
     if (signature.isPresent()) {
-      EntrySet methodNode = entrySets.getNode(methodDef.sym, signature.get());
+      EntrySet methodNode = entrySets.getNode(signatureGenerator, methodDef.sym, signature.get());
       boolean documented = visitDocComment(methodDef, methodNode);
       visitAnnotations(methodNode, methodDef.getModifiers().getAnnotations(), ctx);
 
@@ -450,7 +450,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     Optional<String> signature = signatureGenerator.getSignature(varDef.sym);
     if (signature.isPresent()) {
-      EntrySet varNode = entrySets.getNode(varDef.sym, signature.get());
+      EntrySet varNode = entrySets.getNode(signatureGenerator, varDef.sym, signature.get());
       boolean documented = visitDocComment(varDef, varNode);
       emitAnchor(
           varDef.name,
@@ -761,7 +761,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     if (!signature.isPresent()) {
       return null;
     }
-    return new JavaNode(entrySets.getNode(sym, signature.get()), signature.get());
+    return new JavaNode(
+        entrySets.getNode(signatureGenerator, sym, signature.get()), signature.get());
   }
 
   private void visitAnnotations(
@@ -804,7 +805,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   private JavaNode getJavaLangObjectNode() {
     Symbol javaLangObject = getSymbols().objectType.asElement();
     String javaLangObjectSignature = signatureGenerator.getSignature(javaLangObject).get();
-    EntrySet javaLangObjectEntrySet = entrySets.getNode(javaLangObject, javaLangObjectSignature);
+    EntrySet javaLangObjectEntrySet =
+        entrySets.getNode(signatureGenerator, javaLangObject, javaLangObjectSignature);
     return new JavaNode(javaLangObjectEntrySet, javaLangObjectSignature);
   }
 
@@ -812,7 +814,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   private JavaNode getJavaLangEnumNode(EntrySet enumEntrySet, String enumSignature) {
     Symbol javaLangEnum = getSymbols().enumSym;
     String javaLangEnumSignature = signatureGenerator.getSignature(javaLangEnum).get();
-    EntrySet javaLangEnumEntrySet = entrySets.getNode(javaLangEnum, javaLangEnumSignature);
+    EntrySet javaLangEnumEntrySet =
+        entrySets.getNode(signatureGenerator, javaLangEnum, javaLangEnumSignature);
     EntrySet typeNode =
         entrySets.newTApply(javaLangEnumEntrySet, Collections.singletonList(enumEntrySet));
     String qualifiedName = javaLangEnumSignature + "<" + enumSignature + ">";
@@ -968,7 +971,8 @@ class TreeContext {
 
   public TreeContext getClassOrMethodParent() {
     TreeContext parent = up();
-    while (parent != null && !(parent.getTree() instanceof JCMethodDecl || parent.getTree() instanceof JCClassDecl)) {
+    while (parent != null
+        && !(parent.getTree() instanceof JCMethodDecl || parent.getTree() instanceof JCClassDecl)) {
       parent = parent.up();
     }
     return parent;

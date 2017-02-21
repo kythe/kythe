@@ -26,15 +26,20 @@ import com.google.devtools.kythe.analyzers.base.FactEmitter;
 import com.google.devtools.kythe.analyzers.base.KytheEntrySets;
 import com.google.devtools.kythe.analyzers.base.NodeKind;
 import com.google.devtools.kythe.analyzers.java.SourceText.Positions;
+import com.google.devtools.kythe.common.FormattingLogger;
+import com.google.devtools.kythe.platform.java.helpers.SignatureGenerator;
 import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
+import com.google.devtools.kythe.proto.Link;
 import com.google.devtools.kythe.proto.MarkedSource;
 import com.google.devtools.kythe.proto.Storage.VName;
+import com.google.devtools.kythe.util.KytheURI;
 import com.google.devtools.kythe.util.Span;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import com.sun.tools.javac.code.Symbol.PackageSymbol;
+import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.code.TypeTag;
 import com.sun.tools.javac.tree.JCTree;
 import java.io.UnsupportedEncodingException;
@@ -42,6 +47,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
@@ -50,6 +56,7 @@ import javax.tools.JavaFileObject;
 
 /** Specialization of {@link KytheEntrySets} for Java. */
 public class JavaEntrySets extends KytheEntrySets {
+  private static final FormattingLogger logger = FormattingLogger.getLogger(JavaEntrySets.class);
   private final Map<Symbol, EntrySet> symbolNodes = new HashMap<>();
   private final Map<Symbol, Integer> symbolHashes = new HashMap<>();
   private final Map<Symbol, Set<String>> symbolSigs = new HashMap<Symbol, Set<String>>();
@@ -88,7 +95,7 @@ public class JavaEntrySets extends KytheEntrySets {
    * Returns the Symbol for sym's parent in qualified names, assuming that we'll be using
    * getIdentToken() to print nodes.
    *
-   * We're going through this extra effort to try and give people unsurprising qualified names.
+   * <p>We're going through this extra effort to try and give people unsurprising qualified names.
    * To do that we have to deal with javac's mangling (in {@link getIdentToken} above), since for
    * anonymous classes javac only stores mangled symbols. The code as written will emit only dotted
    * fully-qualified names, even for inner or anonymous classes, and considers concrete type,
@@ -116,10 +123,80 @@ public class JavaEntrySets extends KytheEntrySets {
   }
 
   /**
+   * Returns a {@link MarkedSource} instance for sym's type (or its return type, if sym is a
+   * method). If there is no appropriate type for sym, returns null. Generates links with
+   * signatureGenerator.
+   */
+  private MarkedSource markType(SignatureGenerator signatureGenerator, Symbol sym) {
+    // TODO(zarko): Mark up any annotations.
+    Type type = sym.type;
+    if (type == null || sym == type.tsym) {
+      return null;
+    }
+    boolean wasArray = false;
+    if (type.getReturnType() != null) {
+      type = type.getReturnType();
+    }
+    if (type.hasTag(TypeTag.ARRAY) && ((Type.ArrayType) type).elemtype != null) {
+      wasArray = true;
+      type = ((Type.ArrayType) type).elemtype;
+    }
+    MarkedSource.Builder builder = MarkedSource.newBuilder().setKind(MarkedSource.Kind.TYPE);
+    if (type.hasTag(TypeTag.CLASS)) {
+      MarkedSource.Builder context = MarkedSource.newBuilder();
+      String identToken = buildContext(context, type.tsym);
+      builder.addChild(context.build());
+      builder.addChild(
+          MarkedSource.newBuilder()
+              .setKind(MarkedSource.Kind.IDENTIFIER)
+              .setPreText(identToken + (wasArray ? "[] " : " "))
+              .build());
+      Optional<String> signature = signatureGenerator.getSignature(type.tsym);
+      if (signature.isPresent()) {
+        EntrySet node = getNode(signatureGenerator, type.tsym, signature.get());
+        builder.addLink(Link.newBuilder().addDefinition(new KytheURI(node.getVName()).toString()));
+      }
+    } else {
+      builder.addChild(
+          MarkedSource.newBuilder()
+              .setKind(MarkedSource.Kind.IDENTIFIER)
+              .setPreText(type.toString() + (wasArray ? "[] " : " "))
+              .build());
+    }
+    return builder.build();
+  }
+
+  /**
+   * Sets the provided {@link MarkedSource.Builder} to a CONTEXT node, populating it with the
+   * fully-qualified parent scope for sym. Returns the identifier corresponding to sym.
+   */
+  private String buildContext(MarkedSource.Builder context, Symbol sym) {
+    context.setKind(MarkedSource.Kind.CONTEXT).setPostChildText(".").setAddFinalListToken(true);
+    String identToken = getIdentToken(sym);
+    Symbol parent = getQualifiedNameParent(sym);
+    List<MarkedSource> parents = Lists.newArrayList();
+    while (parent != null) {
+      String parentName = getIdentToken(parent);
+      if (!parentName.isEmpty()) {
+        parents.add(
+            MarkedSource.newBuilder()
+                .setKind(MarkedSource.Kind.IDENTIFIER)
+                .setPreText(parentName)
+                .build());
+      }
+      parent = getQualifiedNameParent(parent);
+    }
+    for (int i = 0; i < parents.size(); ++i) {
+      context.addChild(parents.get(parents.size() - i - 1));
+    }
+    return identToken;
+  }
+
+  /**
    * Returns a node for the given {@link Symbol} and its signature. A new node is created and
    * emitted if necessary.
    */
-  public EntrySet getNode(Symbol sym, String signature) {
+  public EntrySet getNode(SignatureGenerator signatureGenerator, Symbol sym, String signature) {
     checkSignature(sym, signature);
 
     EntrySet node;
@@ -141,26 +218,13 @@ public class JavaEntrySets extends KytheEntrySets {
         v = v.toBuilder().setPath(enclClass != null ? enclClass.toString() : "").build();
       }
 
-      MarkedSource.Builder context = MarkedSource.newBuilder();
-      context.setKind(MarkedSource.Kind.CONTEXT).setPostChildText(".").setAddFinalListToken(true);
-      String identToken = getIdentToken(sym);
-      Symbol parent = getQualifiedNameParent(sym);
-      List<MarkedSource> parents = Lists.newArrayList();
-      while (parent != null) {
-        String parentName = getIdentToken(parent);
-        if (!parentName.isEmpty()) {
-          parents.add(
-              MarkedSource.newBuilder()
-                  .setKind(MarkedSource.Kind.IDENTIFIER)
-                  .setPreText(parentName)
-                  .build());
-        }
-        parent = getQualifiedNameParent(parent);
-      }
-      for (int i = 0; i < parents.size(); ++i) {
-        context.addChild(parents.get(parents.size() - i - 1));
-      }
       MarkedSource.Builder markedSource = MarkedSource.newBuilder();
+      MarkedSource markedType = markType(signatureGenerator, sym);
+      if (markedType != null) {
+        markedSource.addChild(markedType);
+      }
+      MarkedSource.Builder context = MarkedSource.newBuilder();
+      String identToken = buildContext(context, sym);
       markedSource.addChild(context.build());
       switch (sym.getKind()) {
         case CONSTRUCTOR:

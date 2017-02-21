@@ -18,25 +18,33 @@ public class MarkedSource {
   //- @fieldName defines/binding Field
   //- Field childof Class
   //- @int ref Int
-  //- Field code FieldId
-  //- FieldId child.0 FieldCxt
+  //- Field code FieldTypeId
+  //- FieldTypeId child.0 FieldType
+  //- FieldTypeId child.1 FieldCxt
+  //- FieldTypeId child.2 FieldId
+  //- FieldType.kind "TYPE"
+  //- FieldType child.0 FieldTypeIdent
+  //- FieldTypeIdent.pre_text "int "
   //- FieldCxt child.1 FieldCxtClass
   //- FieldCxtClass.pre_text "MarkedSource"
-  //- FieldId child.1 FieldTok
-  //- FieldTok.pre_text "fieldName"
+  //- FieldId.kind "IDENTIFIER"
+  //- FieldId.pre_text "fieldName"
   int fieldName;
 
   //- @methodName defines/binding Method
   //- Method childof Class
   //- Method typed MType
   //- MType param.1 Void
-  //- Method code MethodId
-  //- MethodId child.0 MethodCxt
+  //- Method code MethodTypeCxtId
+  //- MethodTypeCxtId child.0 MethodType
+  //- MethodTypeCxtId child.1 MethodCxt
+  //- MethodTypeCxtId child.2 MethodTok
+  //- MethodTypeCxtId child.3 MethodParams
+  //- MethodType child.0 MethodVoid
+  //- MethodVoid.pre_text "void "
   //- MethodCxt child.1 MethodCxtClass
   //- MethodCxtClass.pre_text "MarkedSource"
-  //- MethodId child.1 MethodTok
   //- MethodTok.pre_text "methodName"
-  //- MethodId child.2 MethodParams
   //- MethodParams.kind "PARAMETER_LOOKUP_BY_PARAM"
   //- MethodParams.pre_text "("
   //- MethodParams.post_child_text ", "
@@ -51,11 +59,11 @@ public class MarkedSource {
   void methodWithParams(String a, int b) {}
 
   //- @Inner defines/binding InnerClass
-  //- InnerClass code InnerId
+  //- InnerClass code _
   public class Inner {
     //- @field defines/binding IField
     //- IField code CIField
-    //- CIField child.0 CIFieldCxt
+    //- CIField child.1 CIFieldCxt
     //- CIFieldCxt child.0 CIFieldPkg
     //- CIFieldPkg.pre_text "pkg"
     //- CIFieldCxt child.1 CIFieldMS
@@ -85,7 +93,7 @@ public class MarkedSource {
     Object o = new Object() {
       //- @field defines/binding IAField
       //- IAField code CIAField
-      //- CIAField child.0 CIACxt
+      //- CIAField child.1 CIACxt
       //- CIACxt child.0 CIAPkg
       //- CIACxt child.1 CIAMs
       //- CIACxt child.2 CIAMethod
@@ -103,7 +111,7 @@ public class MarkedSource {
     Object o = new Object() {
       //- @field defines/binding IIAField
       //- IIAField code CIIAField
-      //- CIIAField child.0 CIIACxt
+      //- CIIAField child.1 CIIACxt
       //- CIIACxt child.2 CIIAInnerCls
       //- CIIACxt child.3 CIIAInnerAnon
       //- CIIAInnerCls.pre_text "InnerAnon"
