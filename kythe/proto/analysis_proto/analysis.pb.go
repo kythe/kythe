@@ -35,7 +35,9 @@ var _ = math.Inf
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the proto package it is being compiled against.
-const _ = proto.ProtoPackageIsVersion1
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 // An AnalysisRequest instructs an analyzer to perform an analysis on a single
 // CompilationUnit.
@@ -60,6 +62,13 @@ func (m *AnalysisRequest) GetCompilation() *CompilationUnit {
 	return nil
 }
 
+func (m *AnalysisRequest) GetFileDataService() string {
+	if m != nil {
+		return m.FileDataService
+	}
+	return ""
+}
+
 // AnalysisOutput contains an output artifact for the current analysis taking
 // place.  A given analysis may not produce any outputs.  It is okay for an
 // indexer to send an empty AnalysisOutput message if needed to keep the RPC
@@ -75,6 +84,13 @@ func (m *AnalysisOutput) Reset()                    { *m = AnalysisOutput{} }
 func (m *AnalysisOutput) String() string            { return proto.CompactTextString(m) }
 func (*AnalysisOutput) ProtoMessage()               {}
 func (*AnalysisOutput) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{1} }
+
+func (m *AnalysisOutput) GetValue() []byte {
+	if m != nil {
+		return m.Value
+	}
+	return nil
+}
 
 // Describes a single unit of compilation.
 type CompilationUnit struct {
@@ -137,11 +153,60 @@ func (m *CompilationUnit) GetVName() *kythe_proto1.VName {
 	return nil
 }
 
+func (m *CompilationUnit) GetRevision() string {
+	if m != nil {
+		return m.Revision
+	}
+	return ""
+}
+
 func (m *CompilationUnit) GetRequiredInput() []*CompilationUnit_FileInput {
 	if m != nil {
 		return m.RequiredInput
 	}
 	return nil
+}
+
+func (m *CompilationUnit) GetHasCompileErrors() bool {
+	if m != nil {
+		return m.HasCompileErrors
+	}
+	return false
+}
+
+func (m *CompilationUnit) GetArgument() []string {
+	if m != nil {
+		return m.Argument
+	}
+	return nil
+}
+
+func (m *CompilationUnit) GetSourceFile() []string {
+	if m != nil {
+		return m.SourceFile
+	}
+	return nil
+}
+
+func (m *CompilationUnit) GetOutputKey() string {
+	if m != nil {
+		return m.OutputKey
+	}
+	return ""
+}
+
+func (m *CompilationUnit) GetWorkingDirectory() string {
+	if m != nil {
+		return m.WorkingDirectory
+	}
+	return ""
+}
+
+func (m *CompilationUnit) GetEntryContext() string {
+	if m != nil {
+		return m.EntryContext
+	}
+	return ""
 }
 
 func (m *CompilationUnit) GetEnvironment() []*CompilationUnit_Env {
@@ -209,6 +274,20 @@ func (m *CompilationUnit_Env) String() string            { return proto.CompactT
 func (*CompilationUnit_Env) ProtoMessage()               {}
 func (*CompilationUnit_Env) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{2, 1} }
 
+func (m *CompilationUnit_Env) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *CompilationUnit_Env) GetValue() string {
+	if m != nil {
+		return m.Value
+	}
+	return ""
+}
+
 // A FilesRequest specifies a collection of files to be fetched from a
 // FileDataService.
 type FilesRequest struct {
@@ -245,6 +324,20 @@ func (m *FileInfo) String() string            { return proto.CompactTextString(m
 func (*FileInfo) ProtoMessage()               {}
 func (*FileInfo) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{4} }
 
+func (m *FileInfo) GetPath() string {
+	if m != nil {
+		return m.Path
+	}
+	return ""
+}
+
+func (m *FileInfo) GetDigest() string {
+	if m != nil {
+		return m.Digest
+	}
+	return ""
+}
+
 // A FileData carries the content of a single file, as returned from the Get
 // method of a FileDataService.
 type FileData struct {
@@ -268,11 +361,25 @@ func (m *FileData) String() string            { return proto.CompactTextString(m
 func (*FileData) ProtoMessage()               {}
 func (*FileData) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{5} }
 
+func (m *FileData) GetContent() []byte {
+	if m != nil {
+		return m.Content
+	}
+	return nil
+}
+
 func (m *FileData) GetInfo() *FileInfo {
 	if m != nil {
 		return m.Info
 	}
 	return nil
+}
+
+func (m *FileData) GetMissing() bool {
+	if m != nil {
+		return m.Missing
+	}
+	return false
 }
 
 // A CompilationBundle carries a CompilationUnit and its required FileData.
@@ -313,101 +420,101 @@ func init() {
 	proto.RegisterType((*FileData)(nil), "kythe.proto.FileData")
 	proto.RegisterType((*CompilationBundle)(nil), "kythe.proto.CompilationBundle")
 }
-func (m *AnalysisRequest) Marshal() (data []byte, err error) {
+func (m *AnalysisRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *AnalysisRequest) MarshalTo(data []byte) (int, error) {
+func (m *AnalysisRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if m.Compilation != nil {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintAnalysis(data, i, uint64(m.Compilation.Size()))
-		n1, err := m.Compilation.MarshalTo(data[i:])
+		i = encodeVarintAnalysis(dAtA, i, uint64(m.Compilation.Size()))
+		n1, err := m.Compilation.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n1
 	}
 	if len(m.FileDataService) > 0 {
-		data[i] = 0x12
+		dAtA[i] = 0x12
 		i++
-		i = encodeVarintAnalysis(data, i, uint64(len(m.FileDataService)))
-		i += copy(data[i:], m.FileDataService)
+		i = encodeVarintAnalysis(dAtA, i, uint64(len(m.FileDataService)))
+		i += copy(dAtA[i:], m.FileDataService)
 	}
 	return i, nil
 }
 
-func (m *AnalysisOutput) Marshal() (data []byte, err error) {
+func (m *AnalysisOutput) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *AnalysisOutput) MarshalTo(data []byte) (int, error) {
+func (m *AnalysisOutput) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.Value) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintAnalysis(data, i, uint64(len(m.Value)))
-		i += copy(data[i:], m.Value)
+		i = encodeVarintAnalysis(dAtA, i, uint64(len(m.Value)))
+		i += copy(dAtA[i:], m.Value)
 	}
 	return i, nil
 }
 
-func (m *CompilationUnit) Marshal() (data []byte, err error) {
+func (m *CompilationUnit) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *CompilationUnit) MarshalTo(data []byte) (int, error) {
+func (m *CompilationUnit) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if m.VName != nil {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintAnalysis(data, i, uint64(m.VName.Size()))
-		n2, err := m.VName.MarshalTo(data[i:])
+		i = encodeVarintAnalysis(dAtA, i, uint64(m.VName.Size()))
+		n2, err := m.VName.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n2
 	}
 	if len(m.Revision) > 0 {
-		data[i] = 0x12
+		dAtA[i] = 0x12
 		i++
-		i = encodeVarintAnalysis(data, i, uint64(len(m.Revision)))
-		i += copy(data[i:], m.Revision)
+		i = encodeVarintAnalysis(dAtA, i, uint64(len(m.Revision)))
+		i += copy(dAtA[i:], m.Revision)
 	}
 	if len(m.RequiredInput) > 0 {
 		for _, msg := range m.RequiredInput {
-			data[i] = 0x1a
+			dAtA[i] = 0x1a
 			i++
-			i = encodeVarintAnalysis(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
+			i = encodeVarintAnalysis(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
@@ -415,69 +522,69 @@ func (m *CompilationUnit) MarshalTo(data []byte) (int, error) {
 		}
 	}
 	if m.HasCompileErrors {
-		data[i] = 0x20
+		dAtA[i] = 0x20
 		i++
 		if m.HasCompileErrors {
-			data[i] = 1
+			dAtA[i] = 1
 		} else {
-			data[i] = 0
+			dAtA[i] = 0
 		}
 		i++
 	}
 	if len(m.Argument) > 0 {
 		for _, s := range m.Argument {
-			data[i] = 0x2a
+			dAtA[i] = 0x2a
 			i++
 			l = len(s)
 			for l >= 1<<7 {
-				data[i] = uint8(uint64(l)&0x7f | 0x80)
+				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
 				l >>= 7
 				i++
 			}
-			data[i] = uint8(l)
+			dAtA[i] = uint8(l)
 			i++
-			i += copy(data[i:], s)
+			i += copy(dAtA[i:], s)
 		}
 	}
 	if len(m.SourceFile) > 0 {
 		for _, s := range m.SourceFile {
-			data[i] = 0x32
+			dAtA[i] = 0x32
 			i++
 			l = len(s)
 			for l >= 1<<7 {
-				data[i] = uint8(uint64(l)&0x7f | 0x80)
+				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
 				l >>= 7
 				i++
 			}
-			data[i] = uint8(l)
+			dAtA[i] = uint8(l)
 			i++
-			i += copy(data[i:], s)
+			i += copy(dAtA[i:], s)
 		}
 	}
 	if len(m.OutputKey) > 0 {
-		data[i] = 0x3a
+		dAtA[i] = 0x3a
 		i++
-		i = encodeVarintAnalysis(data, i, uint64(len(m.OutputKey)))
-		i += copy(data[i:], m.OutputKey)
+		i = encodeVarintAnalysis(dAtA, i, uint64(len(m.OutputKey)))
+		i += copy(dAtA[i:], m.OutputKey)
 	}
 	if len(m.WorkingDirectory) > 0 {
-		data[i] = 0x42
+		dAtA[i] = 0x42
 		i++
-		i = encodeVarintAnalysis(data, i, uint64(len(m.WorkingDirectory)))
-		i += copy(data[i:], m.WorkingDirectory)
+		i = encodeVarintAnalysis(dAtA, i, uint64(len(m.WorkingDirectory)))
+		i += copy(dAtA[i:], m.WorkingDirectory)
 	}
 	if len(m.EntryContext) > 0 {
-		data[i] = 0x4a
+		dAtA[i] = 0x4a
 		i++
-		i = encodeVarintAnalysis(data, i, uint64(len(m.EntryContext)))
-		i += copy(data[i:], m.EntryContext)
+		i = encodeVarintAnalysis(dAtA, i, uint64(len(m.EntryContext)))
+		i += copy(dAtA[i:], m.EntryContext)
 	}
 	if len(m.Environment) > 0 {
 		for _, msg := range m.Environment {
-			data[i] = 0x52
+			dAtA[i] = 0x52
 			i++
-			i = encodeVarintAnalysis(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
+			i = encodeVarintAnalysis(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
@@ -486,10 +593,10 @@ func (m *CompilationUnit) MarshalTo(data []byte) (int, error) {
 	}
 	if len(m.Details) > 0 {
 		for _, msg := range m.Details {
-			data[i] = 0x5a
+			dAtA[i] = 0x5a
 			i++
-			i = encodeVarintAnalysis(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
+			i = encodeVarintAnalysis(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
@@ -499,46 +606,46 @@ func (m *CompilationUnit) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *CompilationUnit_FileInput) Marshal() (data []byte, err error) {
+func (m *CompilationUnit_FileInput) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *CompilationUnit_FileInput) MarshalTo(data []byte) (int, error) {
+func (m *CompilationUnit_FileInput) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if m.VName != nil {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintAnalysis(data, i, uint64(m.VName.Size()))
-		n3, err := m.VName.MarshalTo(data[i:])
+		i = encodeVarintAnalysis(dAtA, i, uint64(m.VName.Size()))
+		n3, err := m.VName.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n3
 	}
 	if m.Info != nil {
-		data[i] = 0x12
+		dAtA[i] = 0x12
 		i++
-		i = encodeVarintAnalysis(data, i, uint64(m.Info.Size()))
-		n4, err := m.Info.MarshalTo(data[i:])
+		i = encodeVarintAnalysis(dAtA, i, uint64(m.Info.Size()))
+		n4, err := m.Info.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n4
 	}
 	if m.Context != nil {
-		data[i] = 0x1a
+		dAtA[i] = 0x1a
 		i++
-		i = encodeVarintAnalysis(data, i, uint64(m.Context.Size()))
-		n5, err := m.Context.MarshalTo(data[i:])
+		i = encodeVarintAnalysis(dAtA, i, uint64(m.Context.Size()))
+		n5, err := m.Context.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -547,57 +654,57 @@ func (m *CompilationUnit_FileInput) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *CompilationUnit_Env) Marshal() (data []byte, err error) {
+func (m *CompilationUnit_Env) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *CompilationUnit_Env) MarshalTo(data []byte) (int, error) {
+func (m *CompilationUnit_Env) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.Name) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintAnalysis(data, i, uint64(len(m.Name)))
-		i += copy(data[i:], m.Name)
+		i = encodeVarintAnalysis(dAtA, i, uint64(len(m.Name)))
+		i += copy(dAtA[i:], m.Name)
 	}
 	if len(m.Value) > 0 {
-		data[i] = 0x12
+		dAtA[i] = 0x12
 		i++
-		i = encodeVarintAnalysis(data, i, uint64(len(m.Value)))
-		i += copy(data[i:], m.Value)
+		i = encodeVarintAnalysis(dAtA, i, uint64(len(m.Value)))
+		i += copy(dAtA[i:], m.Value)
 	}
 	return i, nil
 }
 
-func (m *FilesRequest) Marshal() (data []byte, err error) {
+func (m *FilesRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *FilesRequest) MarshalTo(data []byte) (int, error) {
+func (m *FilesRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.Files) > 0 {
 		for _, msg := range m.Files {
-			data[i] = 0xa
+			dAtA[i] = 0xa
 			i++
-			i = encodeVarintAnalysis(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
+			i = encodeVarintAnalysis(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
@@ -607,100 +714,100 @@ func (m *FilesRequest) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *FileInfo) Marshal() (data []byte, err error) {
+func (m *FileInfo) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *FileInfo) MarshalTo(data []byte) (int, error) {
+func (m *FileInfo) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.Path) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintAnalysis(data, i, uint64(len(m.Path)))
-		i += copy(data[i:], m.Path)
+		i = encodeVarintAnalysis(dAtA, i, uint64(len(m.Path)))
+		i += copy(dAtA[i:], m.Path)
 	}
 	if len(m.Digest) > 0 {
-		data[i] = 0x12
+		dAtA[i] = 0x12
 		i++
-		i = encodeVarintAnalysis(data, i, uint64(len(m.Digest)))
-		i += copy(data[i:], m.Digest)
+		i = encodeVarintAnalysis(dAtA, i, uint64(len(m.Digest)))
+		i += copy(dAtA[i:], m.Digest)
 	}
 	return i, nil
 }
 
-func (m *FileData) Marshal() (data []byte, err error) {
+func (m *FileData) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *FileData) MarshalTo(data []byte) (int, error) {
+func (m *FileData) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.Content) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintAnalysis(data, i, uint64(len(m.Content)))
-		i += copy(data[i:], m.Content)
+		i = encodeVarintAnalysis(dAtA, i, uint64(len(m.Content)))
+		i += copy(dAtA[i:], m.Content)
 	}
 	if m.Info != nil {
-		data[i] = 0x12
+		dAtA[i] = 0x12
 		i++
-		i = encodeVarintAnalysis(data, i, uint64(m.Info.Size()))
-		n6, err := m.Info.MarshalTo(data[i:])
+		i = encodeVarintAnalysis(dAtA, i, uint64(m.Info.Size()))
+		n6, err := m.Info.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n6
 	}
 	if m.Missing {
-		data[i] = 0x18
+		dAtA[i] = 0x18
 		i++
 		if m.Missing {
-			data[i] = 1
+			dAtA[i] = 1
 		} else {
-			data[i] = 0
+			dAtA[i] = 0
 		}
 		i++
 	}
 	return i, nil
 }
 
-func (m *CompilationBundle) Marshal() (data []byte, err error) {
+func (m *CompilationBundle) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *CompilationBundle) MarshalTo(data []byte) (int, error) {
+func (m *CompilationBundle) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if m.Unit != nil {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintAnalysis(data, i, uint64(m.Unit.Size()))
-		n7, err := m.Unit.MarshalTo(data[i:])
+		i = encodeVarintAnalysis(dAtA, i, uint64(m.Unit.Size()))
+		n7, err := m.Unit.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -708,10 +815,10 @@ func (m *CompilationBundle) MarshalTo(data []byte) (int, error) {
 	}
 	if len(m.Files) > 0 {
 		for _, msg := range m.Files {
-			data[i] = 0x12
+			dAtA[i] = 0x12
 			i++
-			i = encodeVarintAnalysis(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
+			i = encodeVarintAnalysis(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
@@ -721,31 +828,31 @@ func (m *CompilationBundle) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func encodeFixed64Analysis(data []byte, offset int, v uint64) int {
-	data[offset] = uint8(v)
-	data[offset+1] = uint8(v >> 8)
-	data[offset+2] = uint8(v >> 16)
-	data[offset+3] = uint8(v >> 24)
-	data[offset+4] = uint8(v >> 32)
-	data[offset+5] = uint8(v >> 40)
-	data[offset+6] = uint8(v >> 48)
-	data[offset+7] = uint8(v >> 56)
+func encodeFixed64Analysis(dAtA []byte, offset int, v uint64) int {
+	dAtA[offset] = uint8(v)
+	dAtA[offset+1] = uint8(v >> 8)
+	dAtA[offset+2] = uint8(v >> 16)
+	dAtA[offset+3] = uint8(v >> 24)
+	dAtA[offset+4] = uint8(v >> 32)
+	dAtA[offset+5] = uint8(v >> 40)
+	dAtA[offset+6] = uint8(v >> 48)
+	dAtA[offset+7] = uint8(v >> 56)
 	return offset + 8
 }
-func encodeFixed32Analysis(data []byte, offset int, v uint32) int {
-	data[offset] = uint8(v)
-	data[offset+1] = uint8(v >> 8)
-	data[offset+2] = uint8(v >> 16)
-	data[offset+3] = uint8(v >> 24)
+func encodeFixed32Analysis(dAtA []byte, offset int, v uint32) int {
+	dAtA[offset] = uint8(v)
+	dAtA[offset+1] = uint8(v >> 8)
+	dAtA[offset+2] = uint8(v >> 16)
+	dAtA[offset+3] = uint8(v >> 24)
 	return offset + 4
 }
-func encodeVarintAnalysis(data []byte, offset int, v uint64) int {
+func encodeVarintAnalysis(dAtA []byte, offset int, v uint64) int {
 	for v >= 1<<7 {
-		data[offset] = uint8(v&0x7f | 0x80)
+		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
-	data[offset] = uint8(v)
+	dAtA[offset] = uint8(v)
 	return offset + 1
 }
 func (m *AnalysisRequest) Size() (n int) {
@@ -935,8 +1042,8 @@ func sovAnalysis(x uint64) (n int) {
 func sozAnalysis(x uint64) (n int) {
 	return sovAnalysis(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-func (m *AnalysisRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *AnalysisRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -948,7 +1055,7 @@ func (m *AnalysisRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -976,7 +1083,7 @@ func (m *AnalysisRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -993,7 +1100,7 @@ func (m *AnalysisRequest) Unmarshal(data []byte) error {
 			if m.Compilation == nil {
 				m.Compilation = &CompilationUnit{}
 			}
-			if err := m.Compilation.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.Compilation.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -1009,7 +1116,7 @@ func (m *AnalysisRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1024,11 +1131,11 @@ func (m *AnalysisRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.FileDataService = string(data[iNdEx:postIndex])
+			m.FileDataService = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipAnalysis(data[iNdEx:])
+			skippy, err := skipAnalysis(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -1047,8 +1154,8 @@ func (m *AnalysisRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *AnalysisOutput) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *AnalysisOutput) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -1060,7 +1167,7 @@ func (m *AnalysisOutput) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -1088,7 +1195,7 @@ func (m *AnalysisOutput) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1102,14 +1209,14 @@ func (m *AnalysisOutput) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Value = append(m.Value[:0], data[iNdEx:postIndex]...)
+			m.Value = append(m.Value[:0], dAtA[iNdEx:postIndex]...)
 			if m.Value == nil {
 				m.Value = []byte{}
 			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipAnalysis(data[iNdEx:])
+			skippy, err := skipAnalysis(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -1128,8 +1235,8 @@ func (m *AnalysisOutput) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *CompilationUnit) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *CompilationUnit) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -1141,7 +1248,7 @@ func (m *CompilationUnit) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -1169,7 +1276,7 @@ func (m *CompilationUnit) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1186,7 +1293,7 @@ func (m *CompilationUnit) Unmarshal(data []byte) error {
 			if m.VName == nil {
 				m.VName = &kythe_proto1.VName{}
 			}
-			if err := m.VName.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.VName.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -1202,7 +1309,7 @@ func (m *CompilationUnit) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1217,7 +1324,7 @@ func (m *CompilationUnit) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Revision = string(data[iNdEx:postIndex])
+			m.Revision = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
@@ -1231,7 +1338,7 @@ func (m *CompilationUnit) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1246,7 +1353,7 @@ func (m *CompilationUnit) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.RequiredInput = append(m.RequiredInput, &CompilationUnit_FileInput{})
-			if err := m.RequiredInput[len(m.RequiredInput)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.RequiredInput[len(m.RequiredInput)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -1262,7 +1369,7 @@ func (m *CompilationUnit) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1282,7 +1389,7 @@ func (m *CompilationUnit) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1297,7 +1404,7 @@ func (m *CompilationUnit) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Argument = append(m.Argument, string(data[iNdEx:postIndex]))
+			m.Argument = append(m.Argument, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
 		case 6:
 			if wireType != 2 {
@@ -1311,7 +1418,7 @@ func (m *CompilationUnit) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1326,7 +1433,7 @@ func (m *CompilationUnit) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.SourceFile = append(m.SourceFile, string(data[iNdEx:postIndex]))
+			m.SourceFile = append(m.SourceFile, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
 		case 7:
 			if wireType != 2 {
@@ -1340,7 +1447,7 @@ func (m *CompilationUnit) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1355,7 +1462,7 @@ func (m *CompilationUnit) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.OutputKey = string(data[iNdEx:postIndex])
+			m.OutputKey = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 8:
 			if wireType != 2 {
@@ -1369,7 +1476,7 @@ func (m *CompilationUnit) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1384,7 +1491,7 @@ func (m *CompilationUnit) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.WorkingDirectory = string(data[iNdEx:postIndex])
+			m.WorkingDirectory = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 9:
 			if wireType != 2 {
@@ -1398,7 +1505,7 @@ func (m *CompilationUnit) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1413,7 +1520,7 @@ func (m *CompilationUnit) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.EntryContext = string(data[iNdEx:postIndex])
+			m.EntryContext = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 10:
 			if wireType != 2 {
@@ -1427,7 +1534,7 @@ func (m *CompilationUnit) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1442,7 +1549,7 @@ func (m *CompilationUnit) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.Environment = append(m.Environment, &CompilationUnit_Env{})
-			if err := m.Environment[len(m.Environment)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.Environment[len(m.Environment)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -1458,7 +1565,7 @@ func (m *CompilationUnit) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1473,13 +1580,13 @@ func (m *CompilationUnit) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.Details = append(m.Details, &google_protobuf.Any{})
-			if err := m.Details[len(m.Details)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.Details[len(m.Details)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipAnalysis(data[iNdEx:])
+			skippy, err := skipAnalysis(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -1498,8 +1605,8 @@ func (m *CompilationUnit) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *CompilationUnit_FileInput) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *CompilationUnit_FileInput) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -1511,7 +1618,7 @@ func (m *CompilationUnit_FileInput) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -1539,7 +1646,7 @@ func (m *CompilationUnit_FileInput) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1556,7 +1663,7 @@ func (m *CompilationUnit_FileInput) Unmarshal(data []byte) error {
 			if m.VName == nil {
 				m.VName = &kythe_proto1.VName{}
 			}
-			if err := m.VName.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.VName.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -1572,7 +1679,7 @@ func (m *CompilationUnit_FileInput) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1589,7 +1696,7 @@ func (m *CompilationUnit_FileInput) Unmarshal(data []byte) error {
 			if m.Info == nil {
 				m.Info = &FileInfo{}
 			}
-			if err := m.Info.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.Info.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -1605,7 +1712,7 @@ func (m *CompilationUnit_FileInput) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1622,13 +1729,13 @@ func (m *CompilationUnit_FileInput) Unmarshal(data []byte) error {
 			if m.Context == nil {
 				m.Context = &kythe_proto.ContextDependentVersion{}
 			}
-			if err := m.Context.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.Context.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipAnalysis(data[iNdEx:])
+			skippy, err := skipAnalysis(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -1647,8 +1754,8 @@ func (m *CompilationUnit_FileInput) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *CompilationUnit_Env) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *CompilationUnit_Env) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -1660,7 +1767,7 @@ func (m *CompilationUnit_Env) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -1688,7 +1795,7 @@ func (m *CompilationUnit_Env) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1703,7 +1810,7 @@ func (m *CompilationUnit_Env) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Name = string(data[iNdEx:postIndex])
+			m.Name = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -1717,7 +1824,7 @@ func (m *CompilationUnit_Env) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1732,11 +1839,11 @@ func (m *CompilationUnit_Env) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Value = string(data[iNdEx:postIndex])
+			m.Value = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipAnalysis(data[iNdEx:])
+			skippy, err := skipAnalysis(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -1755,8 +1862,8 @@ func (m *CompilationUnit_Env) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *FilesRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *FilesRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -1768,7 +1875,7 @@ func (m *FilesRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -1796,7 +1903,7 @@ func (m *FilesRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1811,13 +1918,13 @@ func (m *FilesRequest) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.Files = append(m.Files, &FileInfo{})
-			if err := m.Files[len(m.Files)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.Files[len(m.Files)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipAnalysis(data[iNdEx:])
+			skippy, err := skipAnalysis(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -1836,8 +1943,8 @@ func (m *FilesRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *FileInfo) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *FileInfo) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -1849,7 +1956,7 @@ func (m *FileInfo) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -1877,7 +1984,7 @@ func (m *FileInfo) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1892,7 +1999,7 @@ func (m *FileInfo) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Path = string(data[iNdEx:postIndex])
+			m.Path = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -1906,7 +2013,7 @@ func (m *FileInfo) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1921,11 +2028,11 @@ func (m *FileInfo) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Digest = string(data[iNdEx:postIndex])
+			m.Digest = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipAnalysis(data[iNdEx:])
+			skippy, err := skipAnalysis(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -1944,8 +2051,8 @@ func (m *FileInfo) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *FileData) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *FileData) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -1957,7 +2064,7 @@ func (m *FileData) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -1985,7 +2092,7 @@ func (m *FileData) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1999,7 +2106,7 @@ func (m *FileData) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Content = append(m.Content[:0], data[iNdEx:postIndex]...)
+			m.Content = append(m.Content[:0], dAtA[iNdEx:postIndex]...)
 			if m.Content == nil {
 				m.Content = []byte{}
 			}
@@ -2016,7 +2123,7 @@ func (m *FileData) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2033,7 +2140,7 @@ func (m *FileData) Unmarshal(data []byte) error {
 			if m.Info == nil {
 				m.Info = &FileInfo{}
 			}
-			if err := m.Info.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.Info.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -2049,7 +2156,7 @@ func (m *FileData) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2059,7 +2166,7 @@ func (m *FileData) Unmarshal(data []byte) error {
 			m.Missing = bool(v != 0)
 		default:
 			iNdEx = preIndex
-			skippy, err := skipAnalysis(data[iNdEx:])
+			skippy, err := skipAnalysis(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -2078,8 +2185,8 @@ func (m *FileData) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *CompilationBundle) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *CompilationBundle) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -2091,7 +2198,7 @@ func (m *CompilationBundle) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -2119,7 +2226,7 @@ func (m *CompilationBundle) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2136,7 +2243,7 @@ func (m *CompilationBundle) Unmarshal(data []byte) error {
 			if m.Unit == nil {
 				m.Unit = &CompilationUnit{}
 			}
-			if err := m.Unit.Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.Unit.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -2152,7 +2259,7 @@ func (m *CompilationBundle) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2167,13 +2274,13 @@ func (m *CompilationBundle) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.Files = append(m.Files, &FileData{})
-			if err := m.Files[len(m.Files)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.Files[len(m.Files)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipAnalysis(data[iNdEx:])
+			skippy, err := skipAnalysis(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -2192,8 +2299,8 @@ func (m *CompilationBundle) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func skipAnalysis(data []byte) (n int, err error) {
-	l := len(data)
+func skipAnalysis(dAtA []byte) (n int, err error) {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		var wire uint64
@@ -2204,7 +2311,7 @@ func skipAnalysis(data []byte) (n int, err error) {
 			if iNdEx >= l {
 				return 0, io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -2222,7 +2329,7 @@ func skipAnalysis(data []byte) (n int, err error) {
 					return 0, io.ErrUnexpectedEOF
 				}
 				iNdEx++
-				if data[iNdEx-1] < 0x80 {
+				if dAtA[iNdEx-1] < 0x80 {
 					break
 				}
 			}
@@ -2239,7 +2346,7 @@ func skipAnalysis(data []byte) (n int, err error) {
 				if iNdEx >= l {
 					return 0, io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				length |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2262,7 +2369,7 @@ func skipAnalysis(data []byte) (n int, err error) {
 					if iNdEx >= l {
 						return 0, io.ErrUnexpectedEOF
 					}
-					b := data[iNdEx]
+					b := dAtA[iNdEx]
 					iNdEx++
 					innerWire |= (uint64(b) & 0x7F) << shift
 					if b < 0x80 {
@@ -2273,7 +2380,7 @@ func skipAnalysis(data []byte) (n int, err error) {
 				if innerWireType == 4 {
 					break
 				}
-				next, err := skipAnalysis(data[start:])
+				next, err := skipAnalysis(dAtA[start:])
 				if err != nil {
 					return 0, err
 				}
@@ -2296,6 +2403,8 @@ var (
 	ErrInvalidLengthAnalysis = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowAnalysis   = fmt.Errorf("proto: integer overflow")
 )
+
+func init() { proto.RegisterFile("kythe/proto/analysis.proto", fileDescriptorAnalysis) }
 
 var fileDescriptorAnalysis = []byte{
 	// 693 bytes of a gzipped FileDescriptorProto

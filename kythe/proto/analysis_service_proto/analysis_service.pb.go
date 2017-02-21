@@ -29,7 +29,9 @@ var _ = math.Inf
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the proto package it is being compiled against.
-const _ = proto.ProtoPackageIsVersion1
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ context.Context
@@ -37,7 +39,7 @@ var _ grpc.ClientConn
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-const _ = grpc.SupportPackageIsVersion2
+const _ = grpc.SupportPackageIsVersion4
 
 // Client API for CompilationAnalyzer service
 
@@ -141,6 +143,7 @@ var _CompilationAnalyzer_serviceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
+	Metadata: "kythe/proto/analysis_service.proto",
 }
 
 // Client API for FileDataService service
@@ -253,7 +256,10 @@ var _FileDataService_serviceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
+	Metadata: "kythe/proto/analysis_service.proto",
 }
+
+func init() { proto.RegisterFile("kythe/proto/analysis_service.proto", fileDescriptorAnalysisService) }
 
 var fileDescriptorAnalysisService = []byte{
 	// 210 bytes of a gzipped FileDescriptorProto

@@ -27,8 +27,6 @@ import (
 	grpc "google.golang.org/grpc"
 )
 
-import errors "errors"
-
 import io "io"
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -38,7 +36,9 @@ var _ = math.Inf
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the proto package it is being compiled against.
-const _ = proto.ProtoPackageIsVersion1
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type NodesRequest struct {
 	// The tickets of the nodes to be looked up.
@@ -55,6 +55,20 @@ func (m *NodesRequest) Reset()                    { *m = NodesRequest{} }
 func (m *NodesRequest) String() string            { return proto.CompactTextString(m) }
 func (*NodesRequest) ProtoMessage()               {}
 func (*NodesRequest) Descriptor() ([]byte, []int) { return fileDescriptorGraph, []int{0} }
+
+func (m *NodesRequest) GetTicket() []string {
+	if m != nil {
+		return m.Ticket
+	}
+	return nil
+}
+
+func (m *NodesRequest) GetFilter() []string {
+	if m != nil {
+		return m.Filter
+	}
+	return nil
+}
 
 type NodesReply struct {
 	// One NodeInfo, keyed by its ticket, is returned for each requested node
@@ -126,6 +140,41 @@ func (m *EdgesRequest) String() string            { return proto.CompactTextStri
 func (*EdgesRequest) ProtoMessage()               {}
 func (*EdgesRequest) Descriptor() ([]byte, []int) { return fileDescriptorGraph, []int{2} }
 
+func (m *EdgesRequest) GetTicket() []string {
+	if m != nil {
+		return m.Ticket
+	}
+	return nil
+}
+
+func (m *EdgesRequest) GetKind() []string {
+	if m != nil {
+		return m.Kind
+	}
+	return nil
+}
+
+func (m *EdgesRequest) GetFilter() []string {
+	if m != nil {
+		return m.Filter
+	}
+	return nil
+}
+
+func (m *EdgesRequest) GetPageSize() int32 {
+	if m != nil {
+		return m.PageSize
+	}
+	return 0
+}
+
+func (m *EdgesRequest) GetPageToken() string {
+	if m != nil {
+		return m.PageToken
+	}
+	return ""
+}
+
 // An EdgeSet represents a collection of edges outbound from a single node.  The
 // edges are organized into groups, each sharing a common edge kind.
 //
@@ -180,6 +229,20 @@ func (m *EdgeSet_Group_Edge) String() string            { return proto.CompactTe
 func (*EdgeSet_Group_Edge) ProtoMessage()               {}
 func (*EdgeSet_Group_Edge) Descriptor() ([]byte, []int) { return fileDescriptorGraph, []int{3, 0, 0} }
 
+func (m *EdgeSet_Group_Edge) GetTargetTicket() string {
+	if m != nil {
+		return m.TargetTicket
+	}
+	return ""
+}
+
+func (m *EdgeSet_Group_Edge) GetOrdinal() int32 {
+	if m != nil {
+		return m.Ordinal
+	}
+	return 0
+}
+
 type EdgesReply struct {
 	// This field will contain one EdgeSet for each source node with one or more
 	// matching outbound edges, keyed by the source node's ticket.  The number of
@@ -230,6 +293,13 @@ func (m *EdgesReply) GetTotalEdgesByKind() map[string]int64 {
 	return nil
 }
 
+func (m *EdgesReply) GetNextPageToken() string {
+	if m != nil {
+		return m.NextPageToken
+	}
+	return ""
+}
+
 func init() {
 	proto.RegisterType((*NodesRequest)(nil), "kythe.proto.NodesRequest")
 	proto.RegisterType((*NodesReply)(nil), "kythe.proto.NodesReply")
@@ -246,7 +316,7 @@ var _ grpc.ClientConn
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-const _ = grpc.SupportPackageIsVersion2
+const _ = grpc.SupportPackageIsVersion4
 
 // Client API for GraphService service
 
@@ -347,238 +417,245 @@ var _GraphService_serviceDesc = grpc.ServiceDesc{
 			Handler:    _GraphService_Edges_Handler,
 		},
 	},
-	Streams: []grpc.StreamDesc{},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "kythe/proto/graph.proto",
 }
 
-func (m *NodesRequest) Marshal() (data []byte, err error) {
+func (m *NodesRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *NodesRequest) MarshalTo(data []byte) (int, error) {
+func (m *NodesRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.Ticket) > 0 {
 		for _, s := range m.Ticket {
-			data[i] = 0xa
+			dAtA[i] = 0xa
 			i++
 			l = len(s)
 			for l >= 1<<7 {
-				data[i] = uint8(uint64(l)&0x7f | 0x80)
+				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
 				l >>= 7
 				i++
 			}
-			data[i] = uint8(l)
+			dAtA[i] = uint8(l)
 			i++
-			i += copy(data[i:], s)
+			i += copy(dAtA[i:], s)
 		}
 	}
 	if len(m.Filter) > 0 {
 		for _, s := range m.Filter {
-			data[i] = 0x12
+			dAtA[i] = 0x12
 			i++
 			l = len(s)
 			for l >= 1<<7 {
-				data[i] = uint8(uint64(l)&0x7f | 0x80)
+				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
 				l >>= 7
 				i++
 			}
-			data[i] = uint8(l)
+			dAtA[i] = uint8(l)
 			i++
-			i += copy(data[i:], s)
+			i += copy(dAtA[i:], s)
 		}
 	}
 	return i, nil
 }
 
-func (m *NodesReply) Marshal() (data []byte, err error) {
+func (m *NodesReply) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *NodesReply) MarshalTo(data []byte) (int, error) {
+func (m *NodesReply) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.Nodes) > 0 {
 		for k, _ := range m.Nodes {
-			data[i] = 0xa
+			dAtA[i] = 0xa
 			i++
 			v := m.Nodes[k]
-			if v == nil {
-				return 0, errors.New("proto: map has nil element")
+			msgSize := 0
+			if v != nil {
+				msgSize = v.Size()
+				msgSize += 1 + sovGraph(uint64(msgSize))
 			}
-			msgSize := v.Size()
-			mapSize := 1 + len(k) + sovGraph(uint64(len(k))) + 1 + msgSize + sovGraph(uint64(msgSize))
-			i = encodeVarintGraph(data, i, uint64(mapSize))
-			data[i] = 0xa
+			mapSize := 1 + len(k) + sovGraph(uint64(len(k))) + msgSize
+			i = encodeVarintGraph(dAtA, i, uint64(mapSize))
+			dAtA[i] = 0xa
 			i++
-			i = encodeVarintGraph(data, i, uint64(len(k)))
-			i += copy(data[i:], k)
-			data[i] = 0x12
-			i++
-			i = encodeVarintGraph(data, i, uint64(v.Size()))
-			n1, err := v.MarshalTo(data[i:])
-			if err != nil {
-				return 0, err
+			i = encodeVarintGraph(dAtA, i, uint64(len(k)))
+			i += copy(dAtA[i:], k)
+			if v != nil {
+				dAtA[i] = 0x12
+				i++
+				i = encodeVarintGraph(dAtA, i, uint64(v.Size()))
+				n1, err := v.MarshalTo(dAtA[i:])
+				if err != nil {
+					return 0, err
+				}
+				i += n1
 			}
-			i += n1
 		}
 	}
 	return i, nil
 }
 
-func (m *EdgesRequest) Marshal() (data []byte, err error) {
+func (m *EdgesRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *EdgesRequest) MarshalTo(data []byte) (int, error) {
+func (m *EdgesRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.Ticket) > 0 {
 		for _, s := range m.Ticket {
-			data[i] = 0xa
+			dAtA[i] = 0xa
 			i++
 			l = len(s)
 			for l >= 1<<7 {
-				data[i] = uint8(uint64(l)&0x7f | 0x80)
+				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
 				l >>= 7
 				i++
 			}
-			data[i] = uint8(l)
+			dAtA[i] = uint8(l)
 			i++
-			i += copy(data[i:], s)
+			i += copy(dAtA[i:], s)
 		}
 	}
 	if len(m.Kind) > 0 {
 		for _, s := range m.Kind {
-			data[i] = 0x12
+			dAtA[i] = 0x12
 			i++
 			l = len(s)
 			for l >= 1<<7 {
-				data[i] = uint8(uint64(l)&0x7f | 0x80)
+				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
 				l >>= 7
 				i++
 			}
-			data[i] = uint8(l)
+			dAtA[i] = uint8(l)
 			i++
-			i += copy(data[i:], s)
+			i += copy(dAtA[i:], s)
 		}
 	}
 	if len(m.Filter) > 0 {
 		for _, s := range m.Filter {
-			data[i] = 0x1a
+			dAtA[i] = 0x1a
 			i++
 			l = len(s)
 			for l >= 1<<7 {
-				data[i] = uint8(uint64(l)&0x7f | 0x80)
+				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
 				l >>= 7
 				i++
 			}
-			data[i] = uint8(l)
+			dAtA[i] = uint8(l)
 			i++
-			i += copy(data[i:], s)
+			i += copy(dAtA[i:], s)
 		}
 	}
 	if m.PageSize != 0 {
-		data[i] = 0x40
+		dAtA[i] = 0x40
 		i++
-		i = encodeVarintGraph(data, i, uint64(m.PageSize))
+		i = encodeVarintGraph(dAtA, i, uint64(m.PageSize))
 	}
 	if len(m.PageToken) > 0 {
-		data[i] = 0x4a
+		dAtA[i] = 0x4a
 		i++
-		i = encodeVarintGraph(data, i, uint64(len(m.PageToken)))
-		i += copy(data[i:], m.PageToken)
+		i = encodeVarintGraph(dAtA, i, uint64(len(m.PageToken)))
+		i += copy(dAtA[i:], m.PageToken)
 	}
 	return i, nil
 }
 
-func (m *EdgeSet) Marshal() (data []byte, err error) {
+func (m *EdgeSet) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *EdgeSet) MarshalTo(data []byte) (int, error) {
+func (m *EdgeSet) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.Groups) > 0 {
 		for k, _ := range m.Groups {
-			data[i] = 0x12
+			dAtA[i] = 0x12
 			i++
 			v := m.Groups[k]
-			if v == nil {
-				return 0, errors.New("proto: map has nil element")
+			msgSize := 0
+			if v != nil {
+				msgSize = v.Size()
+				msgSize += 1 + sovGraph(uint64(msgSize))
 			}
-			msgSize := v.Size()
-			mapSize := 1 + len(k) + sovGraph(uint64(len(k))) + 1 + msgSize + sovGraph(uint64(msgSize))
-			i = encodeVarintGraph(data, i, uint64(mapSize))
-			data[i] = 0xa
+			mapSize := 1 + len(k) + sovGraph(uint64(len(k))) + msgSize
+			i = encodeVarintGraph(dAtA, i, uint64(mapSize))
+			dAtA[i] = 0xa
 			i++
-			i = encodeVarintGraph(data, i, uint64(len(k)))
-			i += copy(data[i:], k)
-			data[i] = 0x12
-			i++
-			i = encodeVarintGraph(data, i, uint64(v.Size()))
-			n2, err := v.MarshalTo(data[i:])
-			if err != nil {
-				return 0, err
+			i = encodeVarintGraph(dAtA, i, uint64(len(k)))
+			i += copy(dAtA[i:], k)
+			if v != nil {
+				dAtA[i] = 0x12
+				i++
+				i = encodeVarintGraph(dAtA, i, uint64(v.Size()))
+				n2, err := v.MarshalTo(dAtA[i:])
+				if err != nil {
+					return 0, err
+				}
+				i += n2
 			}
-			i += n2
 		}
 	}
 	return i, nil
 }
 
-func (m *EdgeSet_Group) Marshal() (data []byte, err error) {
+func (m *EdgeSet_Group) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *EdgeSet_Group) MarshalTo(data []byte) (int, error) {
+func (m *EdgeSet_Group) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.Edge) > 0 {
 		for _, msg := range m.Edge {
-			data[i] = 0x12
+			dAtA[i] = 0x12
 			i++
-			i = encodeVarintGraph(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
+			i = encodeVarintGraph(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
@@ -588,150 +665,156 @@ func (m *EdgeSet_Group) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *EdgeSet_Group_Edge) Marshal() (data []byte, err error) {
+func (m *EdgeSet_Group_Edge) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *EdgeSet_Group_Edge) MarshalTo(data []byte) (int, error) {
+func (m *EdgeSet_Group_Edge) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.TargetTicket) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintGraph(data, i, uint64(len(m.TargetTicket)))
-		i += copy(data[i:], m.TargetTicket)
+		i = encodeVarintGraph(dAtA, i, uint64(len(m.TargetTicket)))
+		i += copy(dAtA[i:], m.TargetTicket)
 	}
 	if m.Ordinal != 0 {
-		data[i] = 0x10
+		dAtA[i] = 0x10
 		i++
-		i = encodeVarintGraph(data, i, uint64(m.Ordinal))
+		i = encodeVarintGraph(dAtA, i, uint64(m.Ordinal))
 	}
 	return i, nil
 }
 
-func (m *EdgesReply) Marshal() (data []byte, err error) {
+func (m *EdgesReply) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *EdgesReply) MarshalTo(data []byte) (int, error) {
+func (m *EdgesReply) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.EdgeSets) > 0 {
 		for k, _ := range m.EdgeSets {
-			data[i] = 0xa
+			dAtA[i] = 0xa
 			i++
 			v := m.EdgeSets[k]
-			if v == nil {
-				return 0, errors.New("proto: map has nil element")
+			msgSize := 0
+			if v != nil {
+				msgSize = v.Size()
+				msgSize += 1 + sovGraph(uint64(msgSize))
 			}
-			msgSize := v.Size()
-			mapSize := 1 + len(k) + sovGraph(uint64(len(k))) + 1 + msgSize + sovGraph(uint64(msgSize))
-			i = encodeVarintGraph(data, i, uint64(mapSize))
-			data[i] = 0xa
+			mapSize := 1 + len(k) + sovGraph(uint64(len(k))) + msgSize
+			i = encodeVarintGraph(dAtA, i, uint64(mapSize))
+			dAtA[i] = 0xa
 			i++
-			i = encodeVarintGraph(data, i, uint64(len(k)))
-			i += copy(data[i:], k)
-			data[i] = 0x12
-			i++
-			i = encodeVarintGraph(data, i, uint64(v.Size()))
-			n3, err := v.MarshalTo(data[i:])
-			if err != nil {
-				return 0, err
+			i = encodeVarintGraph(dAtA, i, uint64(len(k)))
+			i += copy(dAtA[i:], k)
+			if v != nil {
+				dAtA[i] = 0x12
+				i++
+				i = encodeVarintGraph(dAtA, i, uint64(v.Size()))
+				n3, err := v.MarshalTo(dAtA[i:])
+				if err != nil {
+					return 0, err
+				}
+				i += n3
 			}
-			i += n3
 		}
 	}
 	if len(m.Nodes) > 0 {
 		for k, _ := range m.Nodes {
-			data[i] = 0x12
+			dAtA[i] = 0x12
 			i++
 			v := m.Nodes[k]
-			if v == nil {
-				return 0, errors.New("proto: map has nil element")
+			msgSize := 0
+			if v != nil {
+				msgSize = v.Size()
+				msgSize += 1 + sovGraph(uint64(msgSize))
 			}
-			msgSize := v.Size()
-			mapSize := 1 + len(k) + sovGraph(uint64(len(k))) + 1 + msgSize + sovGraph(uint64(msgSize))
-			i = encodeVarintGraph(data, i, uint64(mapSize))
-			data[i] = 0xa
+			mapSize := 1 + len(k) + sovGraph(uint64(len(k))) + msgSize
+			i = encodeVarintGraph(dAtA, i, uint64(mapSize))
+			dAtA[i] = 0xa
 			i++
-			i = encodeVarintGraph(data, i, uint64(len(k)))
-			i += copy(data[i:], k)
-			data[i] = 0x12
-			i++
-			i = encodeVarintGraph(data, i, uint64(v.Size()))
-			n4, err := v.MarshalTo(data[i:])
-			if err != nil {
-				return 0, err
+			i = encodeVarintGraph(dAtA, i, uint64(len(k)))
+			i += copy(dAtA[i:], k)
+			if v != nil {
+				dAtA[i] = 0x12
+				i++
+				i = encodeVarintGraph(dAtA, i, uint64(v.Size()))
+				n4, err := v.MarshalTo(dAtA[i:])
+				if err != nil {
+					return 0, err
+				}
+				i += n4
 			}
-			i += n4
 		}
 	}
 	if len(m.TotalEdgesByKind) > 0 {
 		for k, _ := range m.TotalEdgesByKind {
-			data[i] = 0x2a
+			dAtA[i] = 0x2a
 			i++
 			v := m.TotalEdgesByKind[k]
 			mapSize := 1 + len(k) + sovGraph(uint64(len(k))) + 1 + sovGraph(uint64(v))
-			i = encodeVarintGraph(data, i, uint64(mapSize))
-			data[i] = 0xa
+			i = encodeVarintGraph(dAtA, i, uint64(mapSize))
+			dAtA[i] = 0xa
 			i++
-			i = encodeVarintGraph(data, i, uint64(len(k)))
-			i += copy(data[i:], k)
-			data[i] = 0x10
+			i = encodeVarintGraph(dAtA, i, uint64(len(k)))
+			i += copy(dAtA[i:], k)
+			dAtA[i] = 0x10
 			i++
-			i = encodeVarintGraph(data, i, uint64(v))
+			i = encodeVarintGraph(dAtA, i, uint64(v))
 		}
 	}
 	if len(m.NextPageToken) > 0 {
-		data[i] = 0x4a
+		dAtA[i] = 0x4a
 		i++
-		i = encodeVarintGraph(data, i, uint64(len(m.NextPageToken)))
-		i += copy(data[i:], m.NextPageToken)
+		i = encodeVarintGraph(dAtA, i, uint64(len(m.NextPageToken)))
+		i += copy(dAtA[i:], m.NextPageToken)
 	}
 	return i, nil
 }
 
-func encodeFixed64Graph(data []byte, offset int, v uint64) int {
-	data[offset] = uint8(v)
-	data[offset+1] = uint8(v >> 8)
-	data[offset+2] = uint8(v >> 16)
-	data[offset+3] = uint8(v >> 24)
-	data[offset+4] = uint8(v >> 32)
-	data[offset+5] = uint8(v >> 40)
-	data[offset+6] = uint8(v >> 48)
-	data[offset+7] = uint8(v >> 56)
+func encodeFixed64Graph(dAtA []byte, offset int, v uint64) int {
+	dAtA[offset] = uint8(v)
+	dAtA[offset+1] = uint8(v >> 8)
+	dAtA[offset+2] = uint8(v >> 16)
+	dAtA[offset+3] = uint8(v >> 24)
+	dAtA[offset+4] = uint8(v >> 32)
+	dAtA[offset+5] = uint8(v >> 40)
+	dAtA[offset+6] = uint8(v >> 48)
+	dAtA[offset+7] = uint8(v >> 56)
 	return offset + 8
 }
-func encodeFixed32Graph(data []byte, offset int, v uint32) int {
-	data[offset] = uint8(v)
-	data[offset+1] = uint8(v >> 8)
-	data[offset+2] = uint8(v >> 16)
-	data[offset+3] = uint8(v >> 24)
+func encodeFixed32Graph(dAtA []byte, offset int, v uint32) int {
+	dAtA[offset] = uint8(v)
+	dAtA[offset+1] = uint8(v >> 8)
+	dAtA[offset+2] = uint8(v >> 16)
+	dAtA[offset+3] = uint8(v >> 24)
 	return offset + 4
 }
-func encodeVarintGraph(data []byte, offset int, v uint64) int {
+func encodeVarintGraph(dAtA []byte, offset int, v uint64) int {
 	for v >= 1<<7 {
-		data[offset] = uint8(v&0x7f | 0x80)
+		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
-	data[offset] = uint8(v)
+	dAtA[offset] = uint8(v)
 	return offset + 1
 }
 func (m *NodesRequest) Size() (n int) {
@@ -762,8 +845,9 @@ func (m *NodesReply) Size() (n int) {
 			l = 0
 			if v != nil {
 				l = v.Size()
+				l += 1 + sovGraph(uint64(l))
 			}
-			mapEntrySize := 1 + len(k) + sovGraph(uint64(len(k))) + 1 + l + sovGraph(uint64(l))
+			mapEntrySize := 1 + len(k) + sovGraph(uint64(len(k))) + l
 			n += mapEntrySize + 1 + sovGraph(uint64(mapEntrySize))
 		}
 	}
@@ -811,8 +895,9 @@ func (m *EdgeSet) Size() (n int) {
 			l = 0
 			if v != nil {
 				l = v.Size()
+				l += 1 + sovGraph(uint64(l))
 			}
-			mapEntrySize := 1 + len(k) + sovGraph(uint64(len(k))) + 1 + l + sovGraph(uint64(l))
+			mapEntrySize := 1 + len(k) + sovGraph(uint64(len(k))) + l
 			n += mapEntrySize + 1 + sovGraph(uint64(mapEntrySize))
 		}
 	}
@@ -854,8 +939,9 @@ func (m *EdgesReply) Size() (n int) {
 			l = 0
 			if v != nil {
 				l = v.Size()
+				l += 1 + sovGraph(uint64(l))
 			}
-			mapEntrySize := 1 + len(k) + sovGraph(uint64(len(k))) + 1 + l + sovGraph(uint64(l))
+			mapEntrySize := 1 + len(k) + sovGraph(uint64(len(k))) + l
 			n += mapEntrySize + 1 + sovGraph(uint64(mapEntrySize))
 		}
 	}
@@ -866,8 +952,9 @@ func (m *EdgesReply) Size() (n int) {
 			l = 0
 			if v != nil {
 				l = v.Size()
+				l += 1 + sovGraph(uint64(l))
 			}
-			mapEntrySize := 1 + len(k) + sovGraph(uint64(len(k))) + 1 + l + sovGraph(uint64(l))
+			mapEntrySize := 1 + len(k) + sovGraph(uint64(len(k))) + l
 			n += mapEntrySize + 1 + sovGraph(uint64(mapEntrySize))
 		}
 	}
@@ -899,8 +986,8 @@ func sovGraph(x uint64) (n int) {
 func sozGraph(x uint64) (n int) {
 	return sovGraph(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-func (m *NodesRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *NodesRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -912,7 +999,7 @@ func (m *NodesRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -940,7 +1027,7 @@ func (m *NodesRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -955,7 +1042,7 @@ func (m *NodesRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Ticket = append(m.Ticket, string(data[iNdEx:postIndex]))
+			m.Ticket = append(m.Ticket, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -969,7 +1056,7 @@ func (m *NodesRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -984,11 +1071,11 @@ func (m *NodesRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Filter = append(m.Filter, string(data[iNdEx:postIndex]))
+			m.Filter = append(m.Filter, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipGraph(data[iNdEx:])
+			skippy, err := skipGraph(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -1007,8 +1094,8 @@ func (m *NodesRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *NodesReply) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *NodesReply) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -1020,7 +1107,7 @@ func (m *NodesReply) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -1048,7 +1135,7 @@ func (m *NodesReply) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1070,7 +1157,7 @@ func (m *NodesReply) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				keykey |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1085,7 +1172,7 @@ func (m *NodesReply) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLenmapkey |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1100,61 +1187,66 @@ func (m *NodesReply) Unmarshal(data []byte) error {
 			if postStringIndexmapkey > l {
 				return io.ErrUnexpectedEOF
 			}
-			mapkey := string(data[iNdEx:postStringIndexmapkey])
+			mapkey := string(dAtA[iNdEx:postStringIndexmapkey])
 			iNdEx = postStringIndexmapkey
-			var valuekey uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGraph
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				valuekey |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			var mapmsglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGraph
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				mapmsglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if mapmsglen < 0 {
-				return ErrInvalidLengthGraph
-			}
-			postmsgIndex := iNdEx + mapmsglen
-			if mapmsglen < 0 {
-				return ErrInvalidLengthGraph
-			}
-			if postmsgIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			mapvalue := &kythe_proto_common.NodeInfo{}
-			if err := mapvalue.Unmarshal(data[iNdEx:postmsgIndex]); err != nil {
-				return err
-			}
-			iNdEx = postmsgIndex
 			if m.Nodes == nil {
 				m.Nodes = make(map[string]*kythe_proto_common.NodeInfo)
 			}
-			m.Nodes[mapkey] = mapvalue
+			if iNdEx < postIndex {
+				var valuekey uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowGraph
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					valuekey |= (uint64(b) & 0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				var mapmsglen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowGraph
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					mapmsglen |= (int(b) & 0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if mapmsglen < 0 {
+					return ErrInvalidLengthGraph
+				}
+				postmsgIndex := iNdEx + mapmsglen
+				if mapmsglen < 0 {
+					return ErrInvalidLengthGraph
+				}
+				if postmsgIndex > l {
+					return io.ErrUnexpectedEOF
+				}
+				mapvalue := &kythe_proto_common.NodeInfo{}
+				if err := mapvalue.Unmarshal(dAtA[iNdEx:postmsgIndex]); err != nil {
+					return err
+				}
+				iNdEx = postmsgIndex
+				m.Nodes[mapkey] = mapvalue
+			} else {
+				var mapvalue *kythe_proto_common.NodeInfo
+				m.Nodes[mapkey] = mapvalue
+			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipGraph(data[iNdEx:])
+			skippy, err := skipGraph(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -1173,8 +1265,8 @@ func (m *NodesReply) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *EdgesRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *EdgesRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -1186,7 +1278,7 @@ func (m *EdgesRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -1214,7 +1306,7 @@ func (m *EdgesRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1229,7 +1321,7 @@ func (m *EdgesRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Ticket = append(m.Ticket, string(data[iNdEx:postIndex]))
+			m.Ticket = append(m.Ticket, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -1243,7 +1335,7 @@ func (m *EdgesRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1258,7 +1350,7 @@ func (m *EdgesRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Kind = append(m.Kind, string(data[iNdEx:postIndex]))
+			m.Kind = append(m.Kind, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
@@ -1272,7 +1364,7 @@ func (m *EdgesRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1287,7 +1379,7 @@ func (m *EdgesRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Filter = append(m.Filter, string(data[iNdEx:postIndex]))
+			m.Filter = append(m.Filter, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
 		case 8:
 			if wireType != 0 {
@@ -1301,7 +1393,7 @@ func (m *EdgesRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.PageSize |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1320,7 +1412,7 @@ func (m *EdgesRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1335,11 +1427,11 @@ func (m *EdgesRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.PageToken = string(data[iNdEx:postIndex])
+			m.PageToken = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipGraph(data[iNdEx:])
+			skippy, err := skipGraph(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -1358,8 +1450,8 @@ func (m *EdgesRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *EdgeSet) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *EdgeSet) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -1371,7 +1463,7 @@ func (m *EdgeSet) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -1399,7 +1491,7 @@ func (m *EdgeSet) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1421,7 +1513,7 @@ func (m *EdgeSet) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				keykey |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1436,7 +1528,7 @@ func (m *EdgeSet) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLenmapkey |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1451,61 +1543,66 @@ func (m *EdgeSet) Unmarshal(data []byte) error {
 			if postStringIndexmapkey > l {
 				return io.ErrUnexpectedEOF
 			}
-			mapkey := string(data[iNdEx:postStringIndexmapkey])
+			mapkey := string(dAtA[iNdEx:postStringIndexmapkey])
 			iNdEx = postStringIndexmapkey
-			var valuekey uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGraph
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				valuekey |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			var mapmsglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGraph
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				mapmsglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if mapmsglen < 0 {
-				return ErrInvalidLengthGraph
-			}
-			postmsgIndex := iNdEx + mapmsglen
-			if mapmsglen < 0 {
-				return ErrInvalidLengthGraph
-			}
-			if postmsgIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			mapvalue := &EdgeSet_Group{}
-			if err := mapvalue.Unmarshal(data[iNdEx:postmsgIndex]); err != nil {
-				return err
-			}
-			iNdEx = postmsgIndex
 			if m.Groups == nil {
 				m.Groups = make(map[string]*EdgeSet_Group)
 			}
-			m.Groups[mapkey] = mapvalue
+			if iNdEx < postIndex {
+				var valuekey uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowGraph
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					valuekey |= (uint64(b) & 0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				var mapmsglen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowGraph
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					mapmsglen |= (int(b) & 0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if mapmsglen < 0 {
+					return ErrInvalidLengthGraph
+				}
+				postmsgIndex := iNdEx + mapmsglen
+				if mapmsglen < 0 {
+					return ErrInvalidLengthGraph
+				}
+				if postmsgIndex > l {
+					return io.ErrUnexpectedEOF
+				}
+				mapvalue := &EdgeSet_Group{}
+				if err := mapvalue.Unmarshal(dAtA[iNdEx:postmsgIndex]); err != nil {
+					return err
+				}
+				iNdEx = postmsgIndex
+				m.Groups[mapkey] = mapvalue
+			} else {
+				var mapvalue *EdgeSet_Group
+				m.Groups[mapkey] = mapvalue
+			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipGraph(data[iNdEx:])
+			skippy, err := skipGraph(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -1524,8 +1621,8 @@ func (m *EdgeSet) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *EdgeSet_Group) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *EdgeSet_Group) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -1537,7 +1634,7 @@ func (m *EdgeSet_Group) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -1565,7 +1662,7 @@ func (m *EdgeSet_Group) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1580,13 +1677,13 @@ func (m *EdgeSet_Group) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.Edge = append(m.Edge, &EdgeSet_Group_Edge{})
-			if err := m.Edge[len(m.Edge)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.Edge[len(m.Edge)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipGraph(data[iNdEx:])
+			skippy, err := skipGraph(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -1605,8 +1702,8 @@ func (m *EdgeSet_Group) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *EdgeSet_Group_Edge) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *EdgeSet_Group_Edge) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -1618,7 +1715,7 @@ func (m *EdgeSet_Group_Edge) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -1646,7 +1743,7 @@ func (m *EdgeSet_Group_Edge) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1661,7 +1758,7 @@ func (m *EdgeSet_Group_Edge) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.TargetTicket = string(data[iNdEx:postIndex])
+			m.TargetTicket = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 0 {
@@ -1675,7 +1772,7 @@ func (m *EdgeSet_Group_Edge) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.Ordinal |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1684,7 +1781,7 @@ func (m *EdgeSet_Group_Edge) Unmarshal(data []byte) error {
 			}
 		default:
 			iNdEx = preIndex
-			skippy, err := skipGraph(data[iNdEx:])
+			skippy, err := skipGraph(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -1703,8 +1800,8 @@ func (m *EdgeSet_Group_Edge) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *EdgesReply) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *EdgesReply) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -1716,7 +1813,7 @@ func (m *EdgesReply) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -1744,7 +1841,7 @@ func (m *EdgesReply) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1766,7 +1863,7 @@ func (m *EdgesReply) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				keykey |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1781,7 +1878,7 @@ func (m *EdgesReply) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLenmapkey |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1796,57 +1893,62 @@ func (m *EdgesReply) Unmarshal(data []byte) error {
 			if postStringIndexmapkey > l {
 				return io.ErrUnexpectedEOF
 			}
-			mapkey := string(data[iNdEx:postStringIndexmapkey])
+			mapkey := string(dAtA[iNdEx:postStringIndexmapkey])
 			iNdEx = postStringIndexmapkey
-			var valuekey uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGraph
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				valuekey |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			var mapmsglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGraph
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				mapmsglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if mapmsglen < 0 {
-				return ErrInvalidLengthGraph
-			}
-			postmsgIndex := iNdEx + mapmsglen
-			if mapmsglen < 0 {
-				return ErrInvalidLengthGraph
-			}
-			if postmsgIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			mapvalue := &EdgeSet{}
-			if err := mapvalue.Unmarshal(data[iNdEx:postmsgIndex]); err != nil {
-				return err
-			}
-			iNdEx = postmsgIndex
 			if m.EdgeSets == nil {
 				m.EdgeSets = make(map[string]*EdgeSet)
 			}
-			m.EdgeSets[mapkey] = mapvalue
+			if iNdEx < postIndex {
+				var valuekey uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowGraph
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					valuekey |= (uint64(b) & 0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				var mapmsglen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowGraph
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					mapmsglen |= (int(b) & 0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if mapmsglen < 0 {
+					return ErrInvalidLengthGraph
+				}
+				postmsgIndex := iNdEx + mapmsglen
+				if mapmsglen < 0 {
+					return ErrInvalidLengthGraph
+				}
+				if postmsgIndex > l {
+					return io.ErrUnexpectedEOF
+				}
+				mapvalue := &EdgeSet{}
+				if err := mapvalue.Unmarshal(dAtA[iNdEx:postmsgIndex]); err != nil {
+					return err
+				}
+				iNdEx = postmsgIndex
+				m.EdgeSets[mapkey] = mapvalue
+			} else {
+				var mapvalue *EdgeSet
+				m.EdgeSets[mapkey] = mapvalue
+			}
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -1860,7 +1962,7 @@ func (m *EdgesReply) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1882,7 +1984,7 @@ func (m *EdgesReply) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				keykey |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1897,7 +1999,7 @@ func (m *EdgesReply) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLenmapkey |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1912,57 +2014,62 @@ func (m *EdgesReply) Unmarshal(data []byte) error {
 			if postStringIndexmapkey > l {
 				return io.ErrUnexpectedEOF
 			}
-			mapkey := string(data[iNdEx:postStringIndexmapkey])
+			mapkey := string(dAtA[iNdEx:postStringIndexmapkey])
 			iNdEx = postStringIndexmapkey
-			var valuekey uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGraph
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				valuekey |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			var mapmsglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGraph
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				mapmsglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if mapmsglen < 0 {
-				return ErrInvalidLengthGraph
-			}
-			postmsgIndex := iNdEx + mapmsglen
-			if mapmsglen < 0 {
-				return ErrInvalidLengthGraph
-			}
-			if postmsgIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			mapvalue := &kythe_proto_common.NodeInfo{}
-			if err := mapvalue.Unmarshal(data[iNdEx:postmsgIndex]); err != nil {
-				return err
-			}
-			iNdEx = postmsgIndex
 			if m.Nodes == nil {
 				m.Nodes = make(map[string]*kythe_proto_common.NodeInfo)
 			}
-			m.Nodes[mapkey] = mapvalue
+			if iNdEx < postIndex {
+				var valuekey uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowGraph
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					valuekey |= (uint64(b) & 0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				var mapmsglen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowGraph
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					mapmsglen |= (int(b) & 0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if mapmsglen < 0 {
+					return ErrInvalidLengthGraph
+				}
+				postmsgIndex := iNdEx + mapmsglen
+				if mapmsglen < 0 {
+					return ErrInvalidLengthGraph
+				}
+				if postmsgIndex > l {
+					return io.ErrUnexpectedEOF
+				}
+				mapvalue := &kythe_proto_common.NodeInfo{}
+				if err := mapvalue.Unmarshal(dAtA[iNdEx:postmsgIndex]); err != nil {
+					return err
+				}
+				iNdEx = postmsgIndex
+				m.Nodes[mapkey] = mapvalue
+			} else {
+				var mapvalue *kythe_proto_common.NodeInfo
+				m.Nodes[mapkey] = mapvalue
+			}
 			iNdEx = postIndex
 		case 5:
 			if wireType != 2 {
@@ -1976,7 +2083,7 @@ func (m *EdgesReply) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1998,7 +2105,7 @@ func (m *EdgesReply) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				keykey |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2013,7 +2120,7 @@ func (m *EdgesReply) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLenmapkey |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2028,42 +2135,47 @@ func (m *EdgesReply) Unmarshal(data []byte) error {
 			if postStringIndexmapkey > l {
 				return io.ErrUnexpectedEOF
 			}
-			mapkey := string(data[iNdEx:postStringIndexmapkey])
+			mapkey := string(dAtA[iNdEx:postStringIndexmapkey])
 			iNdEx = postStringIndexmapkey
-			var valuekey uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGraph
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				valuekey |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			var mapvalue int64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGraph
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				mapvalue |= (int64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
 			if m.TotalEdgesByKind == nil {
 				m.TotalEdgesByKind = make(map[string]int64)
 			}
-			m.TotalEdgesByKind[mapkey] = mapvalue
+			if iNdEx < postIndex {
+				var valuekey uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowGraph
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					valuekey |= (uint64(b) & 0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				var mapvalue int64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowGraph
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					mapvalue |= (int64(b) & 0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				m.TotalEdgesByKind[mapkey] = mapvalue
+			} else {
+				var mapvalue int64
+				m.TotalEdgesByKind[mapkey] = mapvalue
+			}
 			iNdEx = postIndex
 		case 9:
 			if wireType != 2 {
@@ -2077,7 +2189,7 @@ func (m *EdgesReply) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2092,11 +2204,11 @@ func (m *EdgesReply) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.NextPageToken = string(data[iNdEx:postIndex])
+			m.NextPageToken = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipGraph(data[iNdEx:])
+			skippy, err := skipGraph(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -2115,8 +2227,8 @@ func (m *EdgesReply) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func skipGraph(data []byte) (n int, err error) {
-	l := len(data)
+func skipGraph(dAtA []byte) (n int, err error) {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		var wire uint64
@@ -2127,7 +2239,7 @@ func skipGraph(data []byte) (n int, err error) {
 			if iNdEx >= l {
 				return 0, io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -2145,7 +2257,7 @@ func skipGraph(data []byte) (n int, err error) {
 					return 0, io.ErrUnexpectedEOF
 				}
 				iNdEx++
-				if data[iNdEx-1] < 0x80 {
+				if dAtA[iNdEx-1] < 0x80 {
 					break
 				}
 			}
@@ -2162,7 +2274,7 @@ func skipGraph(data []byte) (n int, err error) {
 				if iNdEx >= l {
 					return 0, io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				length |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -2185,7 +2297,7 @@ func skipGraph(data []byte) (n int, err error) {
 					if iNdEx >= l {
 						return 0, io.ErrUnexpectedEOF
 					}
-					b := data[iNdEx]
+					b := dAtA[iNdEx]
 					iNdEx++
 					innerWire |= (uint64(b) & 0x7F) << shift
 					if b < 0x80 {
@@ -2196,7 +2308,7 @@ func skipGraph(data []byte) (n int, err error) {
 				if innerWireType == 4 {
 					break
 				}
-				next, err := skipGraph(data[start:])
+				next, err := skipGraph(dAtA[start:])
 				if err != nil {
 					return 0, err
 				}
@@ -2219,6 +2331,8 @@ var (
 	ErrInvalidLengthGraph = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowGraph   = fmt.Errorf("proto: integer overflow")
 )
+
+func init() { proto.RegisterFile("kythe/proto/graph.proto", fileDescriptorGraph) }
 
 var fileDescriptorGraph = []byte{
 	// 612 bytes of a gzipped FileDescriptorProto

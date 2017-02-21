@@ -26,7 +26,9 @@ var _ = math.Inf
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the proto package it is being compiled against.
-const _ = proto.ProtoPackageIsVersion1
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 // ContextDependentVersion columns and rows define a table that relates input
 // contexts (keyed by a single source context per row) to tuples of (byte
@@ -66,6 +68,20 @@ func (*ContextDependentVersion_Column) Descriptor() ([]byte, []int) {
 	return fileDescriptorFilecontext, []int{0, 0}
 }
 
+func (m *ContextDependentVersion_Column) GetOffset() int32 {
+	if m != nil {
+		return m.Offset
+	}
+	return 0
+}
+
+func (m *ContextDependentVersion_Column) GetLinkedContext() string {
+	if m != nil {
+		return m.LinkedContext
+	}
+	return ""
+}
+
 // See ContextDependentVersionColumn for details.  It is valid for a Row to
 // have no columns. In this case, the associated file was seen to exist in
 // some context C, but did not refer to any other files while in that
@@ -87,6 +103,13 @@ func (*ContextDependentVersion_Row) Descriptor() ([]byte, []int) {
 	return fileDescriptorFilecontext, []int{0, 1}
 }
 
+func (m *ContextDependentVersion_Row) GetSourceContext() string {
+	if m != nil {
+		return m.SourceContext
+	}
+	return ""
+}
+
 func (m *ContextDependentVersion_Row) GetColumn() []*ContextDependentVersion_Column {
 	if m != nil {
 		return m.Column
@@ -94,32 +117,39 @@ func (m *ContextDependentVersion_Row) GetColumn() []*ContextDependentVersion_Col
 	return nil
 }
 
+func (m *ContextDependentVersion_Row) GetAlwaysProcess() bool {
+	if m != nil {
+		return m.AlwaysProcess
+	}
+	return false
+}
+
 func init() {
 	proto.RegisterType((*ContextDependentVersion)(nil), "kythe.proto.ContextDependentVersion")
 	proto.RegisterType((*ContextDependentVersion_Column)(nil), "kythe.proto.ContextDependentVersion.Column")
 	proto.RegisterType((*ContextDependentVersion_Row)(nil), "kythe.proto.ContextDependentVersion.Row")
 }
-func (m *ContextDependentVersion) Marshal() (data []byte, err error) {
+func (m *ContextDependentVersion) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *ContextDependentVersion) MarshalTo(data []byte) (int, error) {
+func (m *ContextDependentVersion) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.Row) > 0 {
 		for _, msg := range m.Row {
-			data[i] = 0xa
+			dAtA[i] = 0xa
 			i++
-			i = encodeVarintFilecontext(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
+			i = encodeVarintFilecontext(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
@@ -129,62 +159,62 @@ func (m *ContextDependentVersion) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *ContextDependentVersion_Column) Marshal() (data []byte, err error) {
+func (m *ContextDependentVersion_Column) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *ContextDependentVersion_Column) MarshalTo(data []byte) (int, error) {
+func (m *ContextDependentVersion_Column) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if m.Offset != 0 {
-		data[i] = 0x8
+		dAtA[i] = 0x8
 		i++
-		i = encodeVarintFilecontext(data, i, uint64(m.Offset))
+		i = encodeVarintFilecontext(dAtA, i, uint64(m.Offset))
 	}
 	if len(m.LinkedContext) > 0 {
-		data[i] = 0x12
+		dAtA[i] = 0x12
 		i++
-		i = encodeVarintFilecontext(data, i, uint64(len(m.LinkedContext)))
-		i += copy(data[i:], m.LinkedContext)
+		i = encodeVarintFilecontext(dAtA, i, uint64(len(m.LinkedContext)))
+		i += copy(dAtA[i:], m.LinkedContext)
 	}
 	return i, nil
 }
 
-func (m *ContextDependentVersion_Row) Marshal() (data []byte, err error) {
+func (m *ContextDependentVersion_Row) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *ContextDependentVersion_Row) MarshalTo(data []byte) (int, error) {
+func (m *ContextDependentVersion_Row) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.SourceContext) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintFilecontext(data, i, uint64(len(m.SourceContext)))
-		i += copy(data[i:], m.SourceContext)
+		i = encodeVarintFilecontext(dAtA, i, uint64(len(m.SourceContext)))
+		i += copy(dAtA[i:], m.SourceContext)
 	}
 	if len(m.Column) > 0 {
 		for _, msg := range m.Column {
-			data[i] = 0x12
+			dAtA[i] = 0x12
 			i++
-			i = encodeVarintFilecontext(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
+			i = encodeVarintFilecontext(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
@@ -192,43 +222,43 @@ func (m *ContextDependentVersion_Row) MarshalTo(data []byte) (int, error) {
 		}
 	}
 	if m.AlwaysProcess {
-		data[i] = 0x18
+		dAtA[i] = 0x18
 		i++
 		if m.AlwaysProcess {
-			data[i] = 1
+			dAtA[i] = 1
 		} else {
-			data[i] = 0
+			dAtA[i] = 0
 		}
 		i++
 	}
 	return i, nil
 }
 
-func encodeFixed64Filecontext(data []byte, offset int, v uint64) int {
-	data[offset] = uint8(v)
-	data[offset+1] = uint8(v >> 8)
-	data[offset+2] = uint8(v >> 16)
-	data[offset+3] = uint8(v >> 24)
-	data[offset+4] = uint8(v >> 32)
-	data[offset+5] = uint8(v >> 40)
-	data[offset+6] = uint8(v >> 48)
-	data[offset+7] = uint8(v >> 56)
+func encodeFixed64Filecontext(dAtA []byte, offset int, v uint64) int {
+	dAtA[offset] = uint8(v)
+	dAtA[offset+1] = uint8(v >> 8)
+	dAtA[offset+2] = uint8(v >> 16)
+	dAtA[offset+3] = uint8(v >> 24)
+	dAtA[offset+4] = uint8(v >> 32)
+	dAtA[offset+5] = uint8(v >> 40)
+	dAtA[offset+6] = uint8(v >> 48)
+	dAtA[offset+7] = uint8(v >> 56)
 	return offset + 8
 }
-func encodeFixed32Filecontext(data []byte, offset int, v uint32) int {
-	data[offset] = uint8(v)
-	data[offset+1] = uint8(v >> 8)
-	data[offset+2] = uint8(v >> 16)
-	data[offset+3] = uint8(v >> 24)
+func encodeFixed32Filecontext(dAtA []byte, offset int, v uint32) int {
+	dAtA[offset] = uint8(v)
+	dAtA[offset+1] = uint8(v >> 8)
+	dAtA[offset+2] = uint8(v >> 16)
+	dAtA[offset+3] = uint8(v >> 24)
 	return offset + 4
 }
-func encodeVarintFilecontext(data []byte, offset int, v uint64) int {
+func encodeVarintFilecontext(dAtA []byte, offset int, v uint64) int {
 	for v >= 1<<7 {
-		data[offset] = uint8(v&0x7f | 0x80)
+		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
-	data[offset] = uint8(v)
+	dAtA[offset] = uint8(v)
 	return offset + 1
 }
 func (m *ContextDependentVersion) Size() (n int) {
@@ -288,8 +318,8 @@ func sovFilecontext(x uint64) (n int) {
 func sozFilecontext(x uint64) (n int) {
 	return sovFilecontext(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-func (m *ContextDependentVersion) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *ContextDependentVersion) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -301,7 +331,7 @@ func (m *ContextDependentVersion) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -329,7 +359,7 @@ func (m *ContextDependentVersion) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -344,13 +374,13 @@ func (m *ContextDependentVersion) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.Row = append(m.Row, &ContextDependentVersion_Row{})
-			if err := m.Row[len(m.Row)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.Row[len(m.Row)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipFilecontext(data[iNdEx:])
+			skippy, err := skipFilecontext(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -369,8 +399,8 @@ func (m *ContextDependentVersion) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *ContextDependentVersion_Column) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *ContextDependentVersion_Column) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -382,7 +412,7 @@ func (m *ContextDependentVersion_Column) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -410,7 +440,7 @@ func (m *ContextDependentVersion_Column) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				m.Offset |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -429,7 +459,7 @@ func (m *ContextDependentVersion_Column) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -444,11 +474,11 @@ func (m *ContextDependentVersion_Column) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.LinkedContext = string(data[iNdEx:postIndex])
+			m.LinkedContext = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipFilecontext(data[iNdEx:])
+			skippy, err := skipFilecontext(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -467,8 +497,8 @@ func (m *ContextDependentVersion_Column) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *ContextDependentVersion_Row) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *ContextDependentVersion_Row) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -480,7 +510,7 @@ func (m *ContextDependentVersion_Row) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -508,7 +538,7 @@ func (m *ContextDependentVersion_Row) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -523,7 +553,7 @@ func (m *ContextDependentVersion_Row) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.SourceContext = string(data[iNdEx:postIndex])
+			m.SourceContext = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -537,7 +567,7 @@ func (m *ContextDependentVersion_Row) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -552,7 +582,7 @@ func (m *ContextDependentVersion_Row) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.Column = append(m.Column, &ContextDependentVersion_Column{})
-			if err := m.Column[len(m.Column)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.Column[len(m.Column)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -568,7 +598,7 @@ func (m *ContextDependentVersion_Row) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -578,7 +608,7 @@ func (m *ContextDependentVersion_Row) Unmarshal(data []byte) error {
 			m.AlwaysProcess = bool(v != 0)
 		default:
 			iNdEx = preIndex
-			skippy, err := skipFilecontext(data[iNdEx:])
+			skippy, err := skipFilecontext(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -597,8 +627,8 @@ func (m *ContextDependentVersion_Row) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func skipFilecontext(data []byte) (n int, err error) {
-	l := len(data)
+func skipFilecontext(dAtA []byte) (n int, err error) {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		var wire uint64
@@ -609,7 +639,7 @@ func skipFilecontext(data []byte) (n int, err error) {
 			if iNdEx >= l {
 				return 0, io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -627,7 +657,7 @@ func skipFilecontext(data []byte) (n int, err error) {
 					return 0, io.ErrUnexpectedEOF
 				}
 				iNdEx++
-				if data[iNdEx-1] < 0x80 {
+				if dAtA[iNdEx-1] < 0x80 {
 					break
 				}
 			}
@@ -644,7 +674,7 @@ func skipFilecontext(data []byte) (n int, err error) {
 				if iNdEx >= l {
 					return 0, io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				length |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -667,7 +697,7 @@ func skipFilecontext(data []byte) (n int, err error) {
 					if iNdEx >= l {
 						return 0, io.ErrUnexpectedEOF
 					}
-					b := data[iNdEx]
+					b := dAtA[iNdEx]
 					iNdEx++
 					innerWire |= (uint64(b) & 0x7F) << shift
 					if b < 0x80 {
@@ -678,7 +708,7 @@ func skipFilecontext(data []byte) (n int, err error) {
 				if innerWireType == 4 {
 					break
 				}
-				next, err := skipFilecontext(data[start:])
+				next, err := skipFilecontext(dAtA[start:])
 				if err != nil {
 					return 0, err
 				}
@@ -701,6 +731,8 @@ var (
 	ErrInvalidLengthFilecontext = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowFilecontext   = fmt.Errorf("proto: integer overflow")
 )
+
+func init() { proto.RegisterFile("kythe/proto/filecontext.proto", fileDescriptorFilecontext) }
 
 var fileDescriptorFilecontext = []byte{
 	// 279 bytes of a gzipped FileDescriptorProto

@@ -34,7 +34,9 @@ var _ = math.Inf
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the proto package it is being compiled against.
-const _ = proto.ProtoPackageIsVersion1
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type CorpusRootsRequest struct {
 }
@@ -72,6 +74,20 @@ func (*CorpusRootsReply_Corpus) Descriptor() ([]byte, []int) {
 	return fileDescriptorFiletree, []int{1, 0}
 }
 
+func (m *CorpusRootsReply_Corpus) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *CorpusRootsReply_Corpus) GetRoot() []string {
+	if m != nil {
+		return m.Root
+	}
+	return nil
+}
+
 type DirectoryRequest struct {
 	Corpus string `protobuf:"bytes,1,opt,name=corpus,proto3" json:"corpus,omitempty"`
 	Root   string `protobuf:"bytes,2,opt,name=root,proto3" json:"root,omitempty"`
@@ -82,6 +98,27 @@ func (m *DirectoryRequest) Reset()                    { *m = DirectoryRequest{} 
 func (m *DirectoryRequest) String() string            { return proto.CompactTextString(m) }
 func (*DirectoryRequest) ProtoMessage()               {}
 func (*DirectoryRequest) Descriptor() ([]byte, []int) { return fileDescriptorFiletree, []int{2} }
+
+func (m *DirectoryRequest) GetCorpus() string {
+	if m != nil {
+		return m.Corpus
+	}
+	return ""
+}
+
+func (m *DirectoryRequest) GetRoot() string {
+	if m != nil {
+		return m.Root
+	}
+	return ""
+}
+
+func (m *DirectoryRequest) GetPath() string {
+	if m != nil {
+		return m.Path
+	}
+	return ""
+}
 
 type DirectoryReply struct {
 	// Set of tickets for each contained sub-directory's corpus, root, and path.
@@ -94,6 +131,20 @@ func (m *DirectoryReply) Reset()                    { *m = DirectoryReply{} }
 func (m *DirectoryReply) String() string            { return proto.CompactTextString(m) }
 func (*DirectoryReply) ProtoMessage()               {}
 func (*DirectoryReply) Descriptor() ([]byte, []int) { return fileDescriptorFiletree, []int{3} }
+
+func (m *DirectoryReply) GetSubdirectory() []string {
+	if m != nil {
+		return m.Subdirectory
+	}
+	return nil
+}
+
+func (m *DirectoryReply) GetFile() []string {
+	if m != nil {
+		return m.File
+	}
+	return nil
+}
 
 func init() {
 	proto.RegisterType((*CorpusRootsRequest)(nil), "kythe.proto.CorpusRootsRequest")
@@ -109,7 +160,7 @@ var _ grpc.ClientConn
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-const _ = grpc.SupportPackageIsVersion2
+const _ = grpc.SupportPackageIsVersion4
 
 // Client API for FileTreeService service
 
@@ -208,20 +259,21 @@ var _FileTreeService_serviceDesc = grpc.ServiceDesc{
 			Handler:    _FileTreeService_Directory_Handler,
 		},
 	},
-	Streams: []grpc.StreamDesc{},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "kythe/proto/filetree.proto",
 }
 
-func (m *CorpusRootsRequest) Marshal() (data []byte, err error) {
+func (m *CorpusRootsRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *CorpusRootsRequest) MarshalTo(data []byte) (int, error) {
+func (m *CorpusRootsRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
@@ -229,27 +281,27 @@ func (m *CorpusRootsRequest) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *CorpusRootsReply) Marshal() (data []byte, err error) {
+func (m *CorpusRootsReply) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *CorpusRootsReply) MarshalTo(data []byte) (int, error) {
+func (m *CorpusRootsReply) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.Corpus) > 0 {
 		for _, msg := range m.Corpus {
-			data[i] = 0xa
+			dAtA[i] = 0xa
 			i++
-			i = encodeVarintFiletree(data, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(data[i:])
+			i = encodeVarintFiletree(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
 			if err != nil {
 				return 0, err
 			}
@@ -259,154 +311,154 @@ func (m *CorpusRootsReply) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *CorpusRootsReply_Corpus) Marshal() (data []byte, err error) {
+func (m *CorpusRootsReply_Corpus) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *CorpusRootsReply_Corpus) MarshalTo(data []byte) (int, error) {
+func (m *CorpusRootsReply_Corpus) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.Name) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintFiletree(data, i, uint64(len(m.Name)))
-		i += copy(data[i:], m.Name)
+		i = encodeVarintFiletree(dAtA, i, uint64(len(m.Name)))
+		i += copy(dAtA[i:], m.Name)
 	}
 	if len(m.Root) > 0 {
 		for _, s := range m.Root {
-			data[i] = 0x12
+			dAtA[i] = 0x12
 			i++
 			l = len(s)
 			for l >= 1<<7 {
-				data[i] = uint8(uint64(l)&0x7f | 0x80)
+				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
 				l >>= 7
 				i++
 			}
-			data[i] = uint8(l)
+			dAtA[i] = uint8(l)
 			i++
-			i += copy(data[i:], s)
+			i += copy(dAtA[i:], s)
 		}
 	}
 	return i, nil
 }
 
-func (m *DirectoryRequest) Marshal() (data []byte, err error) {
+func (m *DirectoryRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *DirectoryRequest) MarshalTo(data []byte) (int, error) {
+func (m *DirectoryRequest) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.Corpus) > 0 {
-		data[i] = 0xa
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintFiletree(data, i, uint64(len(m.Corpus)))
-		i += copy(data[i:], m.Corpus)
+		i = encodeVarintFiletree(dAtA, i, uint64(len(m.Corpus)))
+		i += copy(dAtA[i:], m.Corpus)
 	}
 	if len(m.Root) > 0 {
-		data[i] = 0x12
+		dAtA[i] = 0x12
 		i++
-		i = encodeVarintFiletree(data, i, uint64(len(m.Root)))
-		i += copy(data[i:], m.Root)
+		i = encodeVarintFiletree(dAtA, i, uint64(len(m.Root)))
+		i += copy(dAtA[i:], m.Root)
 	}
 	if len(m.Path) > 0 {
-		data[i] = 0x1a
+		dAtA[i] = 0x1a
 		i++
-		i = encodeVarintFiletree(data, i, uint64(len(m.Path)))
-		i += copy(data[i:], m.Path)
+		i = encodeVarintFiletree(dAtA, i, uint64(len(m.Path)))
+		i += copy(dAtA[i:], m.Path)
 	}
 	return i, nil
 }
 
-func (m *DirectoryReply) Marshal() (data []byte, err error) {
+func (m *DirectoryReply) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
 	if err != nil {
 		return nil, err
 	}
-	return data[:n], nil
+	return dAtA[:n], nil
 }
 
-func (m *DirectoryReply) MarshalTo(data []byte) (int, error) {
+func (m *DirectoryReply) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
 	if len(m.Subdirectory) > 0 {
 		for _, s := range m.Subdirectory {
-			data[i] = 0xa
+			dAtA[i] = 0xa
 			i++
 			l = len(s)
 			for l >= 1<<7 {
-				data[i] = uint8(uint64(l)&0x7f | 0x80)
+				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
 				l >>= 7
 				i++
 			}
-			data[i] = uint8(l)
+			dAtA[i] = uint8(l)
 			i++
-			i += copy(data[i:], s)
+			i += copy(dAtA[i:], s)
 		}
 	}
 	if len(m.File) > 0 {
 		for _, s := range m.File {
-			data[i] = 0x12
+			dAtA[i] = 0x12
 			i++
 			l = len(s)
 			for l >= 1<<7 {
-				data[i] = uint8(uint64(l)&0x7f | 0x80)
+				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
 				l >>= 7
 				i++
 			}
-			data[i] = uint8(l)
+			dAtA[i] = uint8(l)
 			i++
-			i += copy(data[i:], s)
+			i += copy(dAtA[i:], s)
 		}
 	}
 	return i, nil
 }
 
-func encodeFixed64Filetree(data []byte, offset int, v uint64) int {
-	data[offset] = uint8(v)
-	data[offset+1] = uint8(v >> 8)
-	data[offset+2] = uint8(v >> 16)
-	data[offset+3] = uint8(v >> 24)
-	data[offset+4] = uint8(v >> 32)
-	data[offset+5] = uint8(v >> 40)
-	data[offset+6] = uint8(v >> 48)
-	data[offset+7] = uint8(v >> 56)
+func encodeFixed64Filetree(dAtA []byte, offset int, v uint64) int {
+	dAtA[offset] = uint8(v)
+	dAtA[offset+1] = uint8(v >> 8)
+	dAtA[offset+2] = uint8(v >> 16)
+	dAtA[offset+3] = uint8(v >> 24)
+	dAtA[offset+4] = uint8(v >> 32)
+	dAtA[offset+5] = uint8(v >> 40)
+	dAtA[offset+6] = uint8(v >> 48)
+	dAtA[offset+7] = uint8(v >> 56)
 	return offset + 8
 }
-func encodeFixed32Filetree(data []byte, offset int, v uint32) int {
-	data[offset] = uint8(v)
-	data[offset+1] = uint8(v >> 8)
-	data[offset+2] = uint8(v >> 16)
-	data[offset+3] = uint8(v >> 24)
+func encodeFixed32Filetree(dAtA []byte, offset int, v uint32) int {
+	dAtA[offset] = uint8(v)
+	dAtA[offset+1] = uint8(v >> 8)
+	dAtA[offset+2] = uint8(v >> 16)
+	dAtA[offset+3] = uint8(v >> 24)
 	return offset + 4
 }
-func encodeVarintFiletree(data []byte, offset int, v uint64) int {
+func encodeVarintFiletree(dAtA []byte, offset int, v uint64) int {
 	for v >= 1<<7 {
-		data[offset] = uint8(v&0x7f | 0x80)
+		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
-	data[offset] = uint8(v)
+	dAtA[offset] = uint8(v)
 	return offset + 1
 }
 func (m *CorpusRootsRequest) Size() (n int) {
@@ -492,8 +544,8 @@ func sovFiletree(x uint64) (n int) {
 func sozFiletree(x uint64) (n int) {
 	return sovFiletree(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-func (m *CorpusRootsRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *CorpusRootsRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -505,7 +557,7 @@ func (m *CorpusRootsRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -523,7 +575,7 @@ func (m *CorpusRootsRequest) Unmarshal(data []byte) error {
 		switch fieldNum {
 		default:
 			iNdEx = preIndex
-			skippy, err := skipFiletree(data[iNdEx:])
+			skippy, err := skipFiletree(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -542,8 +594,8 @@ func (m *CorpusRootsRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *CorpusRootsReply) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *CorpusRootsReply) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -555,7 +607,7 @@ func (m *CorpusRootsReply) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -583,7 +635,7 @@ func (m *CorpusRootsReply) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -598,13 +650,13 @@ func (m *CorpusRootsReply) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.Corpus = append(m.Corpus, &CorpusRootsReply_Corpus{})
-			if err := m.Corpus[len(m.Corpus)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+			if err := m.Corpus[len(m.Corpus)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipFiletree(data[iNdEx:])
+			skippy, err := skipFiletree(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -623,8 +675,8 @@ func (m *CorpusRootsReply) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *CorpusRootsReply_Corpus) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *CorpusRootsReply_Corpus) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -636,7 +688,7 @@ func (m *CorpusRootsReply_Corpus) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -664,7 +716,7 @@ func (m *CorpusRootsReply_Corpus) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -679,7 +731,7 @@ func (m *CorpusRootsReply_Corpus) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Name = string(data[iNdEx:postIndex])
+			m.Name = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -693,7 +745,7 @@ func (m *CorpusRootsReply_Corpus) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -708,11 +760,11 @@ func (m *CorpusRootsReply_Corpus) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Root = append(m.Root, string(data[iNdEx:postIndex]))
+			m.Root = append(m.Root, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipFiletree(data[iNdEx:])
+			skippy, err := skipFiletree(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -731,8 +783,8 @@ func (m *CorpusRootsReply_Corpus) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *DirectoryRequest) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *DirectoryRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -744,7 +796,7 @@ func (m *DirectoryRequest) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -772,7 +824,7 @@ func (m *DirectoryRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -787,7 +839,7 @@ func (m *DirectoryRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Corpus = string(data[iNdEx:postIndex])
+			m.Corpus = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -801,7 +853,7 @@ func (m *DirectoryRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -816,7 +868,7 @@ func (m *DirectoryRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Root = string(data[iNdEx:postIndex])
+			m.Root = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
@@ -830,7 +882,7 @@ func (m *DirectoryRequest) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -845,11 +897,11 @@ func (m *DirectoryRequest) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Path = string(data[iNdEx:postIndex])
+			m.Path = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipFiletree(data[iNdEx:])
+			skippy, err := skipFiletree(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -868,8 +920,8 @@ func (m *DirectoryRequest) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *DirectoryReply) Unmarshal(data []byte) error {
-	l := len(data)
+func (m *DirectoryReply) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		preIndex := iNdEx
@@ -881,7 +933,7 @@ func (m *DirectoryReply) Unmarshal(data []byte) error {
 			if iNdEx >= l {
 				return io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -909,7 +961,7 @@ func (m *DirectoryReply) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -924,7 +976,7 @@ func (m *DirectoryReply) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Subdirectory = append(m.Subdirectory, string(data[iNdEx:postIndex]))
+			m.Subdirectory = append(m.Subdirectory, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -938,7 +990,7 @@ func (m *DirectoryReply) Unmarshal(data []byte) error {
 				if iNdEx >= l {
 					return io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -953,11 +1005,11 @@ func (m *DirectoryReply) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.File = append(m.File, string(data[iNdEx:postIndex]))
+			m.File = append(m.File, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
-			skippy, err := skipFiletree(data[iNdEx:])
+			skippy, err := skipFiletree(dAtA[iNdEx:])
 			if err != nil {
 				return err
 			}
@@ -976,8 +1028,8 @@ func (m *DirectoryReply) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func skipFiletree(data []byte) (n int, err error) {
-	l := len(data)
+func skipFiletree(dAtA []byte) (n int, err error) {
+	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
 		var wire uint64
@@ -988,7 +1040,7 @@ func skipFiletree(data []byte) (n int, err error) {
 			if iNdEx >= l {
 				return 0, io.ErrUnexpectedEOF
 			}
-			b := data[iNdEx]
+			b := dAtA[iNdEx]
 			iNdEx++
 			wire |= (uint64(b) & 0x7F) << shift
 			if b < 0x80 {
@@ -1006,7 +1058,7 @@ func skipFiletree(data []byte) (n int, err error) {
 					return 0, io.ErrUnexpectedEOF
 				}
 				iNdEx++
-				if data[iNdEx-1] < 0x80 {
+				if dAtA[iNdEx-1] < 0x80 {
 					break
 				}
 			}
@@ -1023,7 +1075,7 @@ func skipFiletree(data []byte) (n int, err error) {
 				if iNdEx >= l {
 					return 0, io.ErrUnexpectedEOF
 				}
-				b := data[iNdEx]
+				b := dAtA[iNdEx]
 				iNdEx++
 				length |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
@@ -1046,7 +1098,7 @@ func skipFiletree(data []byte) (n int, err error) {
 					if iNdEx >= l {
 						return 0, io.ErrUnexpectedEOF
 					}
-					b := data[iNdEx]
+					b := dAtA[iNdEx]
 					iNdEx++
 					innerWire |= (uint64(b) & 0x7F) << shift
 					if b < 0x80 {
@@ -1057,7 +1109,7 @@ func skipFiletree(data []byte) (n int, err error) {
 				if innerWireType == 4 {
 					break
 				}
-				next, err := skipFiletree(data[start:])
+				next, err := skipFiletree(dAtA[start:])
 				if err != nil {
 					return 0, err
 				}
@@ -1080,6 +1132,8 @@ var (
 	ErrInvalidLengthFiletree = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowFiletree   = fmt.Errorf("proto: integer overflow")
 )
+
+func init() { proto.RegisterFile("kythe/proto/filetree.proto", fileDescriptorFiletree) }
 
 var fileDescriptorFiletree = []byte{
 	// 319 bytes of a gzipped FileDescriptorProto
