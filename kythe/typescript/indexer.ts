@@ -26,6 +26,19 @@ interface VName {
   corpus: string;
 }
 
+/**
+ * toArray converts an Iterator to an array of its values.
+ * It's necessary when running in ES5 environments where for-of loops
+ * don't iterate through Iterators.
+ */
+function toArray<T>(it: Iterator<T>): T[] {
+  let array: T[] = [];
+  for (let next = it.next(); !next.done; next = it.next()) {
+    array.push(next.value);
+  }
+  return array;
+}
+
 /** Visitor manages the indexing process for a single TypeScript SourceFile. */
 class Vistor {
   /** kFile is the VName for the source file. */
@@ -212,7 +225,7 @@ class Vistor {
       kFunc = this.newVName('TODO');
     }
 
-    for (const [index, param] of decl.parameters.entries()) {
+    for (const [index, param] of toArray(decl.parameters.entries())) {
       let sym = this.typeChecker.getSymbolAtLocation(param.name);
       let kParam = this.getSymbolName(sym);
       this.emitNode(kParam, 'variable');
