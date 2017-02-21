@@ -47,7 +47,17 @@ import (
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
-var disableSlowPaths = flag.Bool("disable_slow_paths", false, "Disable all slow path serving code")
+// TODO(schroederc): remove all Slow* functions and their corresponding flags
+var (
+	disableAllSlowPaths = flag.Bool("disable_slow_paths", false, "Disable all slow path serving code")
+
+	disableSlowOverrides     = flag.Bool("disable_slow_overrides", false, "Disable SlowOverrides serving code")
+	disableSlowDefinitions   = flag.Bool("disable_slow_definitions", false, "Disable SlowDefinitions serving code")
+	disableSlowDecls         = flag.Bool("disable_slow_declarations", false, "Disable SlowDeclarationsForCrossReferences serving code")
+	disableSlowCallers       = flag.Bool("disable_slow_callers", false, "Disable SlowCallersForCrossReferences serving code")
+	disableSlowDocumentation = flag.Bool("disable_slow_documentation", false, "Disable SlowDocumentation serving code")
+	disableSlowSignatures    = flag.Bool("disable_slow_signatures", false, "Disable SlowSignature serving code")
+)
 
 // Service defines the interface for file based cross-references.  Informally,
 // the cross-references of an entity comprise the definitions of that entity,
@@ -248,7 +258,7 @@ func AllEdges(ctx context.Context, es GraphService, req *gpb.EdgesRequest) (*gpb
 // SlowOverrides retrieves the list of Overrides for every input ticket. The map that it
 // returns will only contain entries for input tickets that have at least one Override.
 func SlowOverrides(ctx context.Context, xs Service, tickets []string) (map[string][]*xpb.DecorationsReply_Override, error) {
-	if *disableSlowPaths {
+	if *disableSlowOverrides || *disableAllSlowPaths {
 		log.Println("SlowOverrides disabled")
 		return nil, nil
 	}
@@ -295,7 +305,7 @@ func SlowOverrides(ctx context.Context, xs Service, tickets []string) (map[strin
 // definition will be returned only if it is unambiguous, but the definition may be indirect
 // (through an intermediary node).
 func SlowDefinitions(ctx context.Context, xs Service, tickets []string) (map[string]*xpb.Anchor, error) {
-	if *disableSlowPaths {
+	if *disableSlowDefinitions || *disableAllSlowPaths {
 		log.Println("SlowDefinitions disabled")
 		return nil, nil
 	}
@@ -359,10 +369,13 @@ func SlowDefinitions(ctx context.Context, xs Service, tickets []string) (map[str
 
 // SlowDeclarationsForCrossReferences finds the tickets of every declaration completed by the same definitions.
 func SlowDeclarationsForCrossReferences(ctx context.Context, xs Service, ticket string) ([]string, error) {
-	if *disableSlowPaths {
+	if *disableSlowDecls || *disableAllSlowPaths {
 		log.Println("SlowDeclarationsForCrossReferences disabled")
 		return nil, nil
 	}
+	start := time.Now()
+	defer func() { log.Printf("SlowDeclarationsForCrossReferences: %s", time.Since(start)) }()
+	log.Println("WARNING: performing slow-lookup of declarations")
 	// Find the set of definitions covered by the ticket (which may be either a declaration or a definition).
 	reply, err := xs.CrossReferences(ctx, &xpb.CrossReferencesRequest{
 		Ticket:         []string{ticket},
@@ -763,10 +776,13 @@ type CallersReply struct {
 // SlowCallersForCrossReferences is an implementation of callgraph support meant
 // for intermediate-term use by CrossReferences.
 func SlowCallersForCrossReferences(ctx context.Context, service Service, req *CallersRequest) (*CallersReply, error) {
-	if *disableSlowPaths {
+	if *disableSlowCallers || *disableAllSlowPaths {
 		log.Println("SlowCallersForCrossReferences disabled")
 		return &CallersReply{}, nil
 	}
+	start := time.Now()
+	defer func() { log.Printf("SlowCallersForCrossReferences: %s", time.Since(start)) }()
+	log.Println("WARNING: performing slow-lookup of callers")
 	ticket, err := kytheuri.Fix(req.Ticket)
 	if err != nil {
 		return nil, err
@@ -1193,10 +1209,13 @@ func slowSignatureLevel(s slowSignatureState) (*xpb.MarkedSource, error) {
 
 // SlowSignature generates an xpb.MarkedSource given a ticket.
 func SlowSignature(ctx context.Context, service Service, ticket string) (*xpb.MarkedSource, error) {
-	if *disableSlowPaths {
+	if *disableSlowSignatures || *disableAllSlowPaths {
 		log.Println("SlowSignature disabled")
 		return nil, nil
 	}
+	start := time.Now()
+	defer func() { log.Printf("SlowSignature: %s", time.Since(start)) }()
+	log.Println("WARNING: performing slow-lookup of signature")
 	req := &gpb.NodesRequest{
 		Ticket: []string{ticket},
 		Filter: []string{facts.NodeKind, facts.Code, facts.ParamDefault},
@@ -1413,10 +1432,13 @@ func signatureLinkTickets(sg *xpb.MarkedSource, s stringset.Set) {
 
 // SlowDocumentation is an implementation of the Documentation API built from other APIs.
 func SlowDocumentation(ctx context.Context, service Service, req *xpb.DocumentationRequest) (*xpb.DocumentationReply, error) {
-	if *disableSlowPaths {
+	if *disableSlowDocumentation || *disableAllSlowPaths {
 		log.Println("SlowDocumentation disabled")
 		return &xpb.DocumentationReply{}, nil
 	}
+	start := time.Now()
+	defer func() { log.Printf("SlowDocumentation: %s", time.Since(start)) }()
+	log.Println("WARNING: performing slow-lookup of documentation")
 	tickets, err := FixTickets(req.Ticket)
 	if err != nil {
 		return nil, err
