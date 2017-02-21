@@ -1,7 +1,7 @@
 // Test that subclasses extend and ref their superclass. Test that overridden
 // methods have the right edges.
 
-//- @Super defines/binding SuperInterface
+//- @Super defines/binding SuperDecl
 @interface Super
 //- @"foo" defines/binding FooDecl
 -(int)foo;
@@ -19,8 +19,8 @@
 // IndexerASTVisitor::ConnectToSuperClassAndProtocols where we generate the
 // node for the superclass.
 //
-//- @Duper defines/binding DuperInterface
-//- DuperInterface extends SuperImpl
+//- @Duper defines/binding DuperDecl
+//- DuperDecl extends SuperImpl
 //- @Super ref SuperDecl
 //- @Super ref SuperImpl
 @interface Duper : Super

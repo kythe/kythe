@@ -4200,9 +4200,15 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
     const auto &ITypeLoc = TypeLoc.getAs<ObjCInterfaceTypeLoc>();
     if (!TypeAlreadyBuilt) {
       const auto *IFace = ITypeLoc.getIFaceDecl();
+      // Link to the implementation if we have one, otherwise link to the
+      // interface. If we just have a forward declaration, link to the nominal
+      // type node.
       if (const auto *Impl = IFace->getImplementation()) {
         Claimability = GraphObserver::Claimability::Unclaimable;
         ID = BuildNodeIdForDecl(Impl);
+      } else if (IFace->hasDefinition()) {
+        Claimability = GraphObserver::Claimability::Unclaimable;
+        ID = BuildNodeIdForDecl(IFace);
       } else {
         // Thanks to the ODR, we shouldn't record multiple nominal type nodes
         // for the same TU: given distinct names, NameIds will be distinct,

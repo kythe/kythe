@@ -1131,7 +1131,10 @@ cxx_indexer_test(
     srcs = ["libraries/proto_parsetextproto.cc"],
     ignore_dups = True,
     tags = ["libraries"],
-    deps = ["libraries/parsetextproto.h", "libraries/message.proto.h"],
+    deps = [
+        "libraries/message.proto.h",
+        "libraries/parsetextproto.h",
+    ],
 )
 
 cxx_indexer_test(
@@ -1139,7 +1142,10 @@ cxx_indexer_test(
     srcs = ["libraries/proto_parsetextproto_tabs.cc"],
     ignore_dups = True,
     tags = ["libraries"],
-    deps = ["libraries/parsetextproto.h", "libraries/message.proto.h"],
+    deps = [
+        "libraries/message.proto.h",
+        "libraries/parsetextproto.h",
+    ],
 )
 
 test_suite(
@@ -2046,6 +2052,14 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "extends",
     srcs = ["objc/extends.m"],
+    ignore_dups = True,
+    objc = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "extends_no_super_impl",
+    srcs = ["objc/extends_no_super_impl.m"],
     ignore_dups = True,
     objc = True,
     tags = ["objc"],
