@@ -5,7 +5,8 @@
     "build": "tsc",
     "watch": "tsc -w",
     "browse": "node indexer.js indexer.ts | ./browse",
-    "test": "node test.js"
+    "test": "yarn build && yarn runtest",
+    "runtest": "node test.js"
   },
   "dependencies": {
     "@types/node": "^7.0.4",
