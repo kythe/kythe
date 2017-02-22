@@ -3,7 +3,7 @@
 //- @Box defines/binding BoxIface
 @interface Box
 
-//- @"foo" defines/binding FooDecl
+//- @foo defines/binding FooDecl
 //- FooDecl.node/kind function
 //- FooDecl.complete incomplete
 //- FooDecl childof BoxIface
@@ -14,11 +14,11 @@
 //- @Box defines/binding BoxImpl
 @implementation Box
 
-//- @"foo " defines/binding FooDefn
+//- @foo defines/binding FooDefn
 //- FooDefn.node/kind function
 //- FooDefn.complete definition
 //- FooDefn childof BoxImpl
-//- @"foo " completes/uniquely FooDecl
+//- @foo completes/uniquely FooDecl
 +(int) foo {
   return 8;
 }

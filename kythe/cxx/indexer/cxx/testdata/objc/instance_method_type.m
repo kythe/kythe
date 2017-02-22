@@ -3,7 +3,7 @@
 //- @Box defines/binding BoxIface
 @interface Box
 
-//- @"foo" defines/binding FooDecl
+//- @foo defines/binding FooDecl
 //- FooDecl.node/kind function
 //- FooDecl typed FooTy
 //- FooTy.node/kind FooTApp
@@ -11,7 +11,7 @@
 //- FooTy param.1 vname("int#builtin",_,_,_,_)
 -(int) foo;
 
-//- @"bar:(float)f withI:(int)i" defines/binding BarDecl
+//- @bar defines/binding BarDecl
 //- BarDecl.node/kind function
 //- BarDecl typed BarTy
 //- BarTy.node/kind BarTApp
@@ -26,13 +26,13 @@
 //- @Box defines/binding BoxImpl
 @implementation Box
 
-//- @"foo " defines/binding FooDefn
+//- @foo defines/binding FooDefn
 //- FooDefn typed FooTy
 -(int) foo {
   return 8;
 }
 
-//- @"bar:(float)f withI:(int)i " defines/binding BarDefn
+//- @bar defines/binding BarDefn
 //- BarDefn typed BarTy
 -(int) bar:(float)f withI:(int)i {
   return ((int)f) * i;

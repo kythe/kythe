@@ -23,9 +23,9 @@
 //- @Clock defines/binding ClockClassImpl
 @implementation Clock
 
-//- @"wind " defines/binding WindClockImpl
+//- @wind defines/binding WindClockImpl
 //- WindClockImpl childof ClockClassImpl
-//- @"wind " completes/uniquely WindDecl
+//- @wind completes/uniquely WindDecl
 -(int)wind {
   return 2;
 }
@@ -41,14 +41,14 @@
 //- @OldClock defines/binding OldClockImpl
 @implementation OldClock
 
-//- @"getTime " defines/binding GetTimeOldClockImpl
+//- @getTime defines/binding GetTimeOldClockImpl
 //- GetTimeOldClockImpl childof OldClockImpl
 //- GetTimeOldClockImpl overrides GetTimeDecl
 -(int)getTime {
   return 1009;
 }
 
-//- @"wind " defines/binding WindOldClockImpl
+//- @wind defines/binding WindOldClockImpl
 //- WindOldClockImpl childof OldClockImpl
 //- WindOldClockImpl overrides WindDecl
 -(int)wind {
@@ -60,9 +60,11 @@ int main(int argc, char **argv) {
   OldClock *c = [[OldClock alloc] init];
 
   //- @"[c wind]" ref/call WindImpl
+  //- @wind ref WindImpl
   [c wind];
 
   //- @"[c getTime]" ref/call GetTimeImpl
+  //- @getTime ref GetTimeImpl
   [c getTime];
   return 0;
 }

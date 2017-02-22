@@ -11,7 +11,7 @@
 
 // todo(salguarnieri) For now, we have too much whitespace.
 // Test that whitespace gets removed for the source range.
-//- @"foo   " defines/binding FooDecl
+//- @foo defines/binding FooDecl
 -(int)    foo   ;
 
 @end
@@ -23,7 +23,7 @@
   return self;
 }
 
-//- @"foo " defines/binding FooDefn
+//- @foo defines/binding FooDefn
 -(int) foo {
   return 20;
 }
@@ -38,6 +38,7 @@ int main(int argc, char **argv) {
   //- @"[bClone foo]" childof Main
   //- @"[bClone foo]".node/kind anchor
   //- @"[bClone foo]" ref/call FooDecl
+  //- @foo ref FooDecl
   int s = [bClone foo];
 
   return 0;

@@ -4,19 +4,19 @@
 
 //- @Super defines/binding SuperInterface
 @interface Super
-//- @"foo" defines/binding FooDecl
+//- @foo defines/binding FooDecl
 -(int)foo;
-//- @"bar" defines/binding BarDecl
+//- @bar defines/binding BarDecl
 -(int)bar;
 @end
 
 //- @Super defines/binding SuperImpl
 @implementation Super
-//- @"foo " defines/binding FooImpl
+//- @foo defines/binding FooImpl
 -(int)foo {
   return 200;
 }
-//- @"bar " defines/binding BarImpl
+//- @bar defines/binding BarImpl
 -(int)bar {
   return 202;
 }
@@ -25,11 +25,11 @@
 //- @Duper defines/binding DuperInterface
 //- DuperInterface extends SuperImpl
 @interface Duper : Super
-//- @"foo" defines/binding FooDecl2
+//- @foo defines/binding FooDecl2
 //- FooDecl2 overrides FooDecl
 //- !{FooDecl2 overrides BarDecl}
 -(int)foo;
-//- @"bar" defines/binding BarDecl2
+//- @bar defines/binding BarDecl2
 //- BarDecl2 overrides BarDecl
 //- !{BarDecl2 overrides FooDecl}
 -(int)bar;
@@ -38,14 +38,14 @@
 
 //- @Duper defines/binding DuperImpl
 @implementation Duper
-//- @"foo " defines/binding FooImpl2
+//- @foo defines/binding FooImpl2
 //- FooImpl2 overrides FooDecl
 //- !{FooImpl2 overrides BarDecl}
 -(int)foo {
   return 24;
 }
 
-//- @"bar " defines/binding BarImpl2
+//- @bar defines/binding BarImpl2
 //- BarImpl2 overrides BarDecl
 //- !{BarImpl2 overrides FooDecl}
 -(int)bar {

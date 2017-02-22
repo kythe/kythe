@@ -16,10 +16,10 @@
 //- @Box defines/binding BoxIface
 @interface Box
 
-//- @"foo" defines/binding FooDecl
+//- @foo defines/binding FooDecl
 -(int) foo;
 
-//- @"bar:(T*)k" defines/binding BarDecl
+//- @bar defines/binding BarDecl
 //- @k defines/binding KArgDecl
 //- BarDecl param.0 KArgDecl
 //- KArgDecl typed TPtrTy
@@ -33,14 +33,14 @@
 //- @Box defines/binding BoxImpl
 @implementation Box
 
-//- @"foo " defines/binding FooDefn
-//- @"foo " completes/uniquely FooDecl
+//- @foo defines/binding FooDefn
+//- @foo completes/uniquely FooDecl
 -(int) foo {
   return 8;
 }
 
-//- @"bar:(T*) k " defines/binding BarDefn
-//- @"bar:(T*) k " completes/uniquely BarDecl
+//- @bar defines/binding BarDefn
+//- @bar completes/uniquely BarDecl
 //- @k defines/binding KArgDefn
 //- BarDefn param.0 KArgDefn
 //- KArgDefn typed TPtrTy
@@ -54,12 +54,14 @@ int main(int argc, char **argv) {
   Box *box = [[Box alloc] init];
 
   //- @"[box foo]" ref/call FooDefn
+  //- @foo ref FooDefn
   //- @"[box foo]" childof Main
   [box foo];
 
   T *t = [[T alloc] init];
 
   //- @"[box bar: t]" ref/call BarDefn
+  //- @bar ref BarDefn
   //- @"[box bar: t]" childof Main
   [box bar: t];
 

@@ -17,12 +17,12 @@
 //- @width defines/binding WidthPropDecl
 @property (getter=foo,setter=bar:) int width;
 
-//- @"foo" defines/binding FooDecl
+//- @foo defines/binding FooDecl
 //- FooDecl.node/kind function
 //- FooDecl childof BoxDecl
 -(int) foo;
 
-//- @"bar:(int)value" defines/binding BarDecl
+//- @bar defines/binding BarDecl
 //- BarDecl.node/kind function
 //- BarDecl childof BoxDecl
 -(void) bar:(int)value;
@@ -36,18 +36,18 @@
 @implementation Box
 @synthesize width = _testwidth;
 
-//- @"foo " defines/binding FooImpl
+//- @foo defines/binding FooImpl
 //- FooImpl.node/kind function
 //- FooImpl childof BoxImpl
-//- @"foo " completes/uniquely FooDecl
+//- @foo completes/uniquely FooDecl
 -(int) foo {
   return self->_testwidth;
 }
 
-//- @"bar:(int)value " defines/binding BarImpl
+//- @bar defines/binding BarImpl
 //- BarImpl.node/kind function
 //- BarImpl childof BoxImpl
-//- @"bar:(int)value " completes/uniquely BarDecl
+//- @bar completes/uniquely BarDecl
 -(void) bar:(int)value {
   self->_testwidth = value;
 }
@@ -66,6 +66,7 @@ int main(int argc, char **argv) {
   //- @"[box bar:55]" childof Main
   //- @"[box bar:55]".node/kind anchor
   //- @"[box bar:55]" ref/call BarImpl
+  //- @bar ref BarImpl
   [box bar:55];
 
   //- @width ref/call FooDecl
@@ -75,6 +76,7 @@ int main(int argc, char **argv) {
   int a = box.width;
 
   //- @"[box foo]" ref/call FooImpl
+  //- @foo ref FooImpl
   //- @"[box foo]" childof Main
   //- @"[box foo]".node/kind anchor
   int b = [box foo];

@@ -11,7 +11,7 @@
 // Since we won't have the impl of FwdClass, we have to refer to it by name in
 // our tapp below.
 //
-//- @"foo:(FwdClass*)p1" defines/binding FooDecl
+//- @foo defines/binding FooDecl
 //- @p1 defines/binding P1ArgDecl
 //- FooDecl param.0 P1ArgDecl
 //- P1ArgDecl typed P1PtrTy

@@ -3,11 +3,11 @@
 //- @Shape defines/binding ShapeProto
 @protocol Shape
 
-//- @"name" defines/binding Name
+//- @name defines/binding Name
 //- Name childof ShapeProto
 -(int)name;
 
-//- @"fitsIn:(id<Shape>)shape" defines/binding FitsIn
+//- @fitsIn defines/binding FitsIn
 //- FitsIn childof ShapeProto
 -(int)fitsIn:(id<Shape>)shape;
 

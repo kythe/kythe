@@ -31,13 +31,13 @@
 //- BoxAbs.node/kind abs
 //- BoxAbs param.0 TypeVar
 @interface Box<Type> : Obj
-//- @"addToList:(Type)item" defines/binding FuncDecl
+//- @addToList defines/binding FuncDecl
 -(int) addToList:(Type)item;
 @end
 
 //- @Box defines/binding BoxImpl
 @implementation Box
-//- @"addToList:(id)item " defines/binding FuncImpl
+//- @addToList defines/binding FuncImpl
 -(int) addToList:(id)item {
   return 1;
 }
@@ -48,6 +48,7 @@ int main(int argc, char **argv) {
   Child *child = [[Child alloc] init];
 
   //- @"[b addToList:child]" ref/call FuncImpl
+  //- @addToList ref FuncImpl
   [b addToList:child];
 
   return 0;

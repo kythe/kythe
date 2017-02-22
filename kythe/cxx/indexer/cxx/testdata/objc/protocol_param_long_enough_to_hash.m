@@ -13,7 +13,7 @@
 
 //- @ShapeVeryLongNameThatShouldBeHashed11111111111111111111111111111111111111111111111111 defines/binding ShapeProto
 @protocol ShapeVeryLongNameThatShouldBeHashed11111111111111111111111111111111111111111111111111
-//- @"matches:(id<ShapeVeryLongNameThatShouldBeHashed11111111111111111111111111111111111111111111111111>)param1 withColor:(id<ShapeVeryLongNameThatShouldBeHashed11111111111111111111111111111111111111111111111111, ColorVeryLongNameThatShouldBeHashed11111111111111111111111111111111111111111111111111>)param2" defines/binding MatchesDecl
+//- @"matches" defines/binding MatchesDecl
 //- MatchesDecl childof ShapeProto
 //- @param1 defines/binding MatchesParam1
 //- MatchesParam1 typed ShapeParamType
@@ -29,7 +29,7 @@
 -(int)matches:(id<ShapeVeryLongNameThatShouldBeHashed11111111111111111111111111111111111111111111111111>)param1 withColor:(id<ShapeVeryLongNameThatShouldBeHashed11111111111111111111111111111111111111111111111111, ColorVeryLongNameThatShouldBeHashed11111111111111111111111111111111111111111111111111>)param2;
 
 // Test that the order of protocol arguments does not matter.
-//- @"bar:(id<ColorVeryLongNameThatShouldBeHashed11111111111111111111111111111111111111111111111111, ShapeVeryLongNameThatShouldBeHashed11111111111111111111111111111111111111111111111111>)param1" defines/binding BarDecl
+//- @"bar" defines/binding BarDecl
 //- BarDecl childof ShapeProto
 //- @param1 defines/binding BarParam1
 //- BarParam1 typed MatchesParam2Type

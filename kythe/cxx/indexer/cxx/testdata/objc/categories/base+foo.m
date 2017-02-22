@@ -11,16 +11,16 @@
 //- GetFooDecl.complete incomplete
 //- GetFooDecl childof BaseFooDecl
 
-//- @"Base" ref BaseDecl
-//- @"Foo" defines/binding BaseFooImpl
+//- @Base ref BaseDecl
+//- @Foo defines/binding BaseFooImpl
 //- BaseFooImpl extends/category BaseDecl
 //- BaseFooImpl.node/kind record
 //- BaseFooImpl.subkind category
-//- @"Foo" completes BaseFooDecl
+//- @Foo completes BaseFooDecl
 @implementation Base (Foo)
 
-//- @"getFoo " defines/binding GetFooImpl
-//- @"getFoo " completes GetFooDecl
+//- @getFoo defines/binding GetFooImpl
+//- @getFoo completes GetFooDecl
 //- GetFooImpl.node/kind function
 //- GetFooImpl.complete definition
 //- GetFooImpl childof BaseFooImpl

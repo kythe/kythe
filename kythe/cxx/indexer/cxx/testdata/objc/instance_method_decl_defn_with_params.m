@@ -4,13 +4,13 @@
 //- @Box defines/binding BoxIface
 @interface Box
 
-//- @"foo" defines/binding FooDecl
+//- @foo defines/binding FooDecl
 //- FooDecl.node/kind function
 //- FooDecl.complete incomplete
 //- FooDecl childof BoxIface
 -(int) foo;
 
-//- @"bar:(int)k" defines/binding BarDecl
+//- @bar defines/binding BarDecl
 //- BarDecl.node/kind function
 //- BarDecl.complete incomplete
 //- BarDecl childof BoxIface
@@ -21,20 +21,20 @@
 //- @Box defines/binding BoxImpl
 @implementation Box
 
-//- @"foo " defines/binding FooDefn
+//- @foo defines/binding FooDefn
 //- FooDefn.node/kind function
 //- FooDefn.complete definition
 //- FooDefn childof BoxImpl
-//- @"foo " completes/uniquely FooDecl
+//- @foo completes/uniquely FooDecl
 -(int) foo {
   return 8;
 }
 
-//- @"bar:(int)k " defines/binding BarDefn
+//- @bar defines/binding BarDefn
 //- BarDefn.node/kind function
 //- BarDefn.complete definition
 //- BarDefn childof BoxImpl
-//- @"bar:(int)k " completes/uniquely BarDecl
+//- @bar completes/uniquely BarDecl
 -(int) bar:(int)k {
   return k * 2;
 }

@@ -10,7 +10,7 @@
 //- FooFuncTy param.1 vname("int#builtin", _, _, _, _)
 -(int) foo;
 
-//- @"bar:(int)i" defines/binding BarFuncVar
+//- @bar defines/binding BarFuncVar
 //- BarFuncVar typed BarFuncTy
 //- BarFuncTy.node/kind TApp
 //- BarFuncTy param.0 vname("fn#builtin", _, _, _, _)
@@ -18,7 +18,7 @@
 //- BarFuncTy param.2 vname("int#builtin", _, _, _, _)
 -(int) bar:(int)i;
 
-//- @"bar:(int)i baz:(char)c" defines/binding BarBazFuncVar
+//- @bar defines/binding BarBazFuncVar
 //- BarBazFuncVar typed BarBazFuncTy
 //- BarBazFuncTy.node/kind TApp
 //- BarBazFuncTy param.0 vname("fn#builtin", _, _, _, _)
@@ -31,19 +31,19 @@
 
 @implementation Box
 
-//- @"foo " defines/binding FooImpl
+//- @foo defines/binding FooImpl
 //- FooImpl typed FooFuncTy
 -(int) foo {
   return 21;
 }
 
-//- @"bar:(int)i " defines/binding BarImpl
+//- @bar defines/binding BarImpl
 //- BarImpl typed BarFuncTy
 -(int) bar:(int)i {
   return 22;
 }
 
-//- @"bar:(int)i baz:(char)c " defines/binding BarBazImpl
+//- @bar defines/binding BarBazImpl
 //- BarBazImpl typed BarBazFuncTy
 -(int) bar:(int)i baz:(char)c {
   return 23;

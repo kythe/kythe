@@ -11,10 +11,10 @@
 //- @Box defines/binding BoxIface
 @interface Box
 
-//- @"foo" defines/binding FooDecl
+//- @foo defines/binding FooDecl
 -(int) foo;
 
-//- @"bar:(T*)k" defines/binding BarDecl
+//- @bar defines/binding BarDecl
 //- @k defines/binding KArgDecl
 //- BarDecl param.0 KArgDecl
 -(int) bar:(T*)k;
@@ -24,14 +24,14 @@
 //- @Box defines/binding BoxImpl
 @implementation Box
 
-//- @"foo " defines/binding FooDefn
-//- @"foo " completes/uniquely FooDecl
+//- @foo defines/binding FooDefn
+//- @foo completes/uniquely FooDecl
 -(int) foo {
   return 8;
 }
 
-//- @"bar:(T*) k " defines/binding BarDefn
-//- @"bar:(T*) k " completes/uniquely BarDecl
+//- @bar defines/binding BarDefn
+//- @bar completes/uniquely BarDecl
 //- @k defines/binding KArgDefn
 //- BarDefn param.0 KArgDefn
 -(int) bar:(T*) k {
@@ -47,6 +47,7 @@ int main(int argc, char **argv) {
   box = [[Box alloc] init];
 
   //- @"[box foo]" ref/call FooDefn
+  //- @foo ref FooDefn
   //- @"[box foo]" childof Main
   //- @"foo" ref FooDefn
   //- @box ref BoxLocal
@@ -56,8 +57,9 @@ int main(int argc, char **argv) {
   T *tvar = [[T alloc] init];
 
   //- @"[box bar: tvar]" ref/call BarDefn
+  //- @bar ref BarDefn
   //- @"[box bar: tvar]" childof Main
-  //- @"bar: tvar" ref BarDefn
+  //- @"bar" ref BarDefn
   //- @box ref BoxLocal
   //- @tvar ref TLocal
   [box bar: tvar];

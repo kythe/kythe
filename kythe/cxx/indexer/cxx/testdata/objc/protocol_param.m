@@ -22,14 +22,14 @@
 
 // This is tested here to make sure the addition of protocol logic did not
 // break the basic id type logic.
-//- @"name:(id)param1" defines/binding NameDecl
+//- @"name" defines/binding NameDecl
 //- NameDecl childof ShapeProto
 //- @param1 defines/binding NameParam
 //- NameParam typed IdTy
 //- @id ref IdTy
 -(int)name:(id)param1;
 
-//- @"fitsIn:(id<Shape>)shape" defines/binding FitsInDecl
+//- @"fitsIn" defines/binding FitsInDecl
 //- FitsInDecl childof ShapeProto
 //- @shape defines/binding ShapeParam
 //- ShapeParam typed ShapeParamType
@@ -41,7 +41,7 @@
 
 // Make sure we record the location of id<Shape> even though we already saw that
 // type. This catches a bug that was present in the code.
-//- @"fits2In:(id<Shape>)shape" defines/binding Fits2InDecl
+//- @"fits2In" defines/binding Fits2InDecl
 //- Fits2InDecl childof ShapeProto
 //- @shape defines/binding ShapeParam2
 //- ShapeParam2 typed ShapeParamType
@@ -50,7 +50,7 @@
 
 // Skip the method defines/binding check because we have to split the
 // definition over two lines to make matching the protocols easier.
-//#- @"matches:(id<Shape>)param1 withColor:(id<Shape, Color>)param2" defines/binding MatchesDecl
+//- @matches defines/binding MatchesDecl
 //- MatchesDecl childof ShapeProto
 //- @param1 defines/binding MatchesParam1
 //- MatchesParam1 typed ShapeParamType
@@ -70,7 +70,7 @@
     (id<Shape, Color>)param2;
 
 // Test that the order of protocol arguments does not matter.
-//- @"bar:(id<Color, Shape>)param1" defines/binding BarDecl
+//- @"bar" defines/binding BarDecl
 //- BarDecl childof ShapeProto
 //- @param1 defines/binding BarParam1
 //- BarParam1 typed MatchesParam2Type

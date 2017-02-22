@@ -506,27 +506,26 @@ clang::SourceRange IndexerASTVisitor::RangeForNameOfDeclaration(
         }
       }
     } else if (auto *M = dyn_cast<clang::ObjCMethodDecl>(Decl)) {
-      // Take the whole declaration in Objective-C. For decls this goes up to
-      // but does not include the ";". For definitions this goes up to but does
-      // not include the "{". This range will include other fields, such as the
-      // return type, parameter types, and parameter names.
+      // Only take the first selector (if we have one). This simplifies what
+      // consumers of this data have to do but it is not correct.
 
-      // TODO(salguarnieri) This includes too much text. If our method was:
-      // -(int) foo:(int)f withBar:(int)b without:(int)c
-      // we would want to return three ranges (one for each selector location
-      // foo:, withBar:, and without:. Since we only return one source range,
-      // we should return the range for
-      // foo:(int)f withBar:(int)b without:(int)c. We are able to get the
-      // correct start location with M->getSelectorStartLoc() but finding the
-      // right ending location is a little tricky. getSourceRange gives us
-      // the whole expression, whitespace included. If we could strip out
-      // whitespace at the end, this would basically be what we want. If we
-      // end at GetLocForEndOfToken(LastSelectorLoc) then we don't get the ":"
-      // or the argument type or param. We will probably have to use this and
-      // do some parsing, but that can go into a cleanup CL.
-      auto S = M->getSelectorStartLoc();
-      auto E = M->getDeclaratorEndLoc();
-      return SourceRange(S, E);
+      if (M->getNumSelectorLocs() == 0) {
+        // Take the whole declaration. For decls this goes up to but does not
+        // include the ";". For definitions this goes up to but does not include
+        // the "{". This range will include other fields, such as the return
+        // type, parameter types, and parameter names.
+
+        auto S = M->getSelectorStartLoc();
+        auto E = M->getDeclaratorEndLoc();
+        return SourceRange(S, E);
+      }
+      // TODO(salguarnieri) Return multiple ranges, one for each portion of the
+      // selector.
+      return RangeForSingleTokenFromSourceLocation(
+          *Observer.getSourceManager(),
+          *Observer.getLangOptions(),
+          M->getSelectorLoc(0)
+      );
     }
   }
   return RangeForASTEntityFromSourceLocation(
@@ -4817,7 +4816,6 @@ bool IndexerASTVisitor::VisitObjCMethodDecl(const clang::ObjCMethodDecl *Decl) {
       if (CategoryDecl->IsClassExtension() &&
           CategoryDecl->getClassInterface() != nullptr &&
           CategoryDecl->getClassInterface()->getImplementation() != nullptr) {
-        // Temp variable to make code slightly more readable.
         ObjCImplementationDecl *ClassImpl =
             CategoryDecl->getClassInterface()->getImplementation();
         if (auto MethodImpl = ClassImpl->getMethod(Decl->getSelector(),
@@ -4854,7 +4852,7 @@ bool IndexerASTVisitor::VisitObjCMethodDecl(const clang::ObjCMethodDecl *Decl) {
     // If we want to draw an edge from method impl to property we can modify the
     // following code:
     // auto *propertyDecl = Decl->findPropertyDecl(true /* checkOverrides */);
-    // if (propertyDecl != nullptr) { ...
+    // if (propertyDecl != nullptr)  ...
 
     // This is necessary if this definition comes from an implicit method from
     // a property.
@@ -5014,8 +5012,15 @@ bool IndexerASTVisitor::VisitObjCMessageExpr(
         Observer.recordDeclUseLocation(
             RCC.primary(), DeclId, GraphObserver::Claimability::Unclaimable);
       } else {
-        SourceRange RefRange(Expr->getSelectorLoc(0), Expr->getLocEnd());
-        if (auto R = ExplicitRangeInCurrentContext(RefRange)) {
+        // TODO Record multiple ranges, one for each selector.
+        // For now, just record the range for the first selector. This should
+        // make it easier for frontends to make use of this data.
+        const SourceRange &range = RangeForSingleTokenFromSourceLocation(
+                    *Observer.getSourceManager(),
+                    *Observer.getLangOptions(),
+                    Expr->getSelectorLoc(0)
+                );
+        if (auto R = ExplicitRangeInCurrentContext(range)) {
           Observer.recordDeclUseLocation(
               R.primary(), DeclId, GraphObserver::Claimability::Unclaimable);
         }

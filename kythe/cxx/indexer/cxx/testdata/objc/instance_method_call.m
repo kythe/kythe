@@ -6,9 +6,9 @@
 //- @Box defines/binding BoxIface
 @interface Box
 
-//- @"foo" defines/binding FooDecl
+//- @foo defines/binding FooDecl
 -(int) foo;
-//- @"bar" defines/binding BarDecl
+//- @bar defines/binding BarDecl
 -(int) bar;
 
 @end
@@ -16,14 +16,14 @@
 //- @Box defines/binding BoxImpl
 @implementation Box
 
-//- @"foo " defines/binding FooDefn
-//- @"foo " completes/uniquely FooDecl
+//- @foo defines/binding FooDefn
+//- @foo completes/uniquely FooDecl
 -(int) foo {
   return 8;
 }
 
-//- @"bar " defines/binding BarDefn
-//- @"bar " completes/uniquely BarDecl
+//- @bar defines/binding BarDefn
+//- @bar completes/uniquely BarDecl
 -(int) bar {
   return 28;
 }
@@ -36,11 +36,13 @@ int main(int argc, char **argv) {
   //- @"[box foo]" ref/call FooDefn
   //- @"[box foo]" childof Main
   //- @"[box foo]".node/kind anchor
+  //- @foo ref FooDefn
   [box foo];
 
   //- @"[    box    bar    ]" ref/call BarDefn
   //- @"[    box    bar    ]" childof Main
   //- @"[    box    bar    ]".node/kind anchor
+  //- @bar ref BarDefn
   [    box    bar    ]      ;
 
   return 0;

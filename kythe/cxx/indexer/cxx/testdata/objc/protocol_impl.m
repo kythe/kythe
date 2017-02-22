@@ -4,11 +4,11 @@
 //- @Shape defines/binding ShapeProto
 @protocol Shape
 
-//- @"name" defines/binding NameDecl
+//- @name defines/binding NameDecl
 //- NameDecl childof ShapeProto
 -(int)name;
 
-//- @"fitsIn:(id<Shape>)shape" defines/binding FitsInDecl
+//- @fitsIn defines/binding FitsInDecl
 //- FitsInDecl childof ShapeProto
 -(int)fitsIn:(id<Shape>)shape;
 
@@ -42,13 +42,13 @@
 @end
 
 @implementation Box
-//- @"name " defines/binding NameImpl
+//- @name defines/binding NameImpl
 //- NameImpl overrides NameDecl
 -(int)name {
   return 22;
 }
 
-//- @"fitsIn:(id<Shape>)shape " defines/binding FitsInImpl
+//- @fitsIn defines/binding FitsInImpl
 //- FitsInImpl overrides FitsInDecl
 -(int)fitsIn:(id<Shape>)shape {
   return 1;

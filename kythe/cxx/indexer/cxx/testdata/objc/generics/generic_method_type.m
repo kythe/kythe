@@ -29,7 +29,7 @@
 //- BoxAbs param.0 TypeVar
 @interface Box<Type> : Obj
 
-//- @"addToList:(Type)item" defines/binding FuncDecl
+//- @addToList defines/binding FuncDecl
 //- FuncDecl typed FuncTy
 //- FuncTy.node/kind TApp
 //- FuncTy param.0 vname("fn#builtin", _, _, _, _)
@@ -42,7 +42,7 @@
 //- @Box defines/binding BoxImpl
 @implementation Box
 
-//- @"addToList:(id)item " defines/binding FuncImpl
+//- @addToList defines/binding FuncImpl
 //- FuncImpl typed FuncIdTy
 //- FuncIdTy.node/kind TApp
 //- FuncIdTy param.0 vname("fn#builtin", _, _, _, _)

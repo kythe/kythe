@@ -33,10 +33,10 @@
 
 @synthesize width = _testwidth;
 
-//- @"setWidth:(int)value " defines/binding SetWidthDefn
+//- @setWidth defines/binding SetWidthDefn
 //- SetWidthDefn.node/kind function
 //- SetWidthDefn childof BoxImpl
-//- @"setWidth:(int)value " completes/uniquely SetWidthDecl
+//- @setWidth completes/uniquely SetWidthDecl
 -(void) setWidth:(int)value {
   self->_testwidth = value;
 }
@@ -56,6 +56,7 @@ int main(int argc, char **argv) {
   //- @"[box setWidth:55]" childof Main
   //- @"[box setWidth:55]".node/kind anchor
   //- @"[box setWidth:55]" ref/call SetWidthDefn
+  //- @setWidth ref SetWidthDefn
   [box setWidth:55];
 
   //- @width ref/call GetWidthMethod
@@ -65,6 +66,7 @@ int main(int argc, char **argv) {
   int a = box.width;
 
   //- @"[box width]" ref/call GetWidthMethod
+  //- @width ref GetWidthMethod
   //- @"[box width]" childof Main
   //- @"[box width]".node/kind anchor
   int b = [box width];

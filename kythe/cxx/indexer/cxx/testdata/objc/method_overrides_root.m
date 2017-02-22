@@ -2,14 +2,14 @@
 
 //- @A defines/binding ADecl
 @interface A
-//- @"foo" defines/binding FooDecl
+//- @foo defines/binding FooDecl
 //- !{ FooDecl overrides/root _}
 -(int)foo;
 @end
 
 //- @A defines/binding AImpl
 @implementation A
-//- @"foo " defines/binding FooImpl
+//- @foo defines/binding FooImpl
 //- !{ FooImpl overrides/root _}
 -(int)foo {
   return 200;
@@ -19,7 +19,7 @@
 //- @B defines/binding BInterface
 //- BInterface extends AImpl
 @interface B : A
-//- @"foo" defines/binding FooDecl2
+//- @foo defines/binding FooDecl2
 //- FooDecl2 overrides FooDecl
 //- FooDecl2 overrides/root FooDecl
 -(int)foo;
@@ -27,7 +27,7 @@
 
 //- @B defines/binding BImpl
 @implementation B
-//- @"foo " defines/binding FooImpl2
+//- @foo defines/binding FooImpl2
 //- FooImpl2 overrides FooDecl
 //- FooImpl2 overrides/root FooDecl
 -(int)foo {
@@ -38,7 +38,7 @@
 //- @C defines/binding CInterface
 //- CInterface extends BImpl
 @interface C : B
-//- @"foo" defines/binding FooDecl3
+//- @foo defines/binding FooDecl3
 //- FooDecl3 overrides FooDecl2
 //- FooDecl3 overrides/root FooDecl
 -(int)foo;
@@ -46,7 +46,7 @@
 
 //- @C defines/binding CImpl
 @implementation C
-//- @"foo " defines/binding FooImpl3
+//- @foo defines/binding FooImpl3
 //- FooImpl3 overrides FooDecl2
 //- FooImpl3 overrides/root FooDecl
 -(int)foo {

@@ -9,8 +9,8 @@
 //- @Box defines/binding BoxImpl
 @implementation Box
 
-//- @"foo " defines/binding FooDefn
-//- @"foo " completes FooDecl
+//- @foo defines/binding FooDefn
+//- @foo completes FooDecl
 //- FooDefn.node/kind function
 //- FooDefn.complete definition
 //- FooDefn childof BoxImpl

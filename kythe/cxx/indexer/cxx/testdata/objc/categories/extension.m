@@ -23,8 +23,8 @@
   return 20;
 }
 
-//- @"magicNum " completes/uniquely MagicNumDecl
-//- @"magicNum " defines/binding MagicNumDefn
+//- @magicNum completes/uniquely MagicNumDecl
+//- @magicNum defines/binding MagicNumDefn
 //- MagicNumDefn.node/kind function
 //- MagicNumDefn.complete definition
 //- MagicNumDefn childof BoxImpl
