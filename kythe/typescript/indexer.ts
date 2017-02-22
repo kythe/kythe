@@ -39,13 +39,34 @@ function toArray<T>(it: Iterator<T>): T[] {
   return array;
 }
 
+/**
+ * TSNamespace represents the two namespaces of TypeScript: types and values.
+ * A given symbol may be a type, it may be a value, and the two may even
+ * be unrelated.
+ *
+ * See the table at
+ *   https://www.typescriptlang.org/docs/handbook/declaration-merging.html
+ *
+ * TODO: there are actually three namespaces; the third is (confusingly)
+ * itself called namespaces.  Implement those in this enum and other places.
+ */
+enum TSNamespace {
+  TYPE,
+  VALUE,
+}
+
 /** Visitor manages the indexing process for a single TypeScript SourceFile. */
 class Vistor {
   /** kFile is the VName for the source file. */
   kFile: VName;
 
-  /** symbolNames maps ts.Symbol to their assigned VNames. */
-  symbolNames = new Map<ts.Symbol, VName>();
+  /**
+   * symbolNames maps ts.Symbols to their assigned VNames.
+   * The value is a tuple of the separate TypeScript namespaces, and entries
+   * in it correspond to TSNamespace values.  See the documentation of
+   * TSNamespace.
+   */
+  symbolNames = new Map<ts.Symbol, [VName|null, VName|null]>();
 
   /**
    * anonId increments for each anonymous block, to give them unique
@@ -172,9 +193,9 @@ class Vistor {
   }
 
   /** getSymbolName computes the VName (and signature) of a ts.Symbol. */
-  getSymbolName(sym: ts.Symbol): VName {
-    let vname = this.symbolNames.get(sym);
-    if (vname) return vname;
+  getSymbolName(sym: ts.Symbol, ns: TSNamespace): VName {
+    let vnames = this.symbolNames.get(sym);
+    if (vnames && vnames[ns]) return vnames[ns]!;
 
     if (!sym.declarations || sym.declarations.length < 1) {
       throw new Error('TODO: symbol has no declarations?');
@@ -183,9 +204,48 @@ class Vistor {
 
     let decl = sym.declarations[0];
     let sig = this.scopedSignature(decl);
-    vname = this.newVName(sig);
-    this.symbolNames.set(sym, vname);
+    // The signature of a value is undecorated;
+    // the signature of a type has the #type suffix.
+    if (ns === TSNamespace.TYPE) {
+      sig += '#type';
+    }
+
+    // Compute a vname and save it in the appropriate slot in the symbolNames
+    // table.
+    let vname = this.newVName(sig);
+    if (!vnames) vnames = [null, null];
+    vnames[ns] = vname;
+    this.symbolNames.set(sym, vnames);
+
     return vname;
+  }
+
+  visitTypeAliasDeclaration(decl: ts.TypeAliasDeclaration) {
+    let sym = this.typeChecker.getSymbolAtLocation(decl.name);
+    let kType = this.getSymbolName(sym, TSNamespace.TYPE);
+    this.emitNode(kType, 'alias');
+    this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kType);
+
+    this.visitType(decl.type);
+  }
+
+  /**
+   * visitType is the main dispatch for visiting type nodes.
+   * It's separate from visit() because bare ts.Identifiers within a normal
+   * expression are values (handled by visit) but bare ts.Identifiers within
+   * a type are types (handled here).
+   */
+  visitType(node: ts.Node): void {
+    switch (node.kind) {
+      case ts.SyntaxKind.Identifier:
+        let sym = this.typeChecker.getSymbolAtLocation(node);
+        let name = this.getSymbolName(sym, TSNamespace.TYPE);
+        this.emitEdge(this.newAnchor(node), 'ref', name);
+        return;
+      default:
+        // Default recursion, but using visitType(), not visit().
+        return ts.forEachChild(node, n => this.visitType(n));
+    }
   }
 
   visitExportDeclaration(decl: ts.ExportDeclaration) {
@@ -211,7 +271,7 @@ class Vistor {
   }) {
     if (decl.name.kind === ts.SyntaxKind.Identifier) {
       let sym = this.typeChecker.getSymbolAtLocation(decl.name);
-      let kVar = this.getSymbolName(sym);
+      let kVar = this.getSymbolName(sym, TSNamespace.VALUE);
       this.emitNode(kVar, 'variable');
 
       this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kVar);
@@ -219,6 +279,7 @@ class Vistor {
       console.warn(
           'TODO: handle variable declaration:', ts.SyntaxKind[decl.name.kind]);
     }
+    if (decl.type) this.visitType(decl.type);
     if (decl.initializer) this.visit(decl.initializer);
   }
 
@@ -226,7 +287,7 @@ class Vistor {
     let kFunc: VName;
     if (decl.name) {
       let sym = this.typeChecker.getSymbolAtLocation(decl.name);
-      kFunc = this.getSymbolName(sym);
+      kFunc = this.getSymbolName(sym, TSNamespace.VALUE);
       this.emitNode(kFunc, 'function');
 
       this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kFunc);
@@ -237,7 +298,7 @@ class Vistor {
 
     for (const [index, param] of toArray(decl.parameters.entries())) {
       let sym = this.typeChecker.getSymbolAtLocation(param.name);
-      let kParam = this.getSymbolName(sym);
+      let kParam = this.getSymbolName(sym, TSNamespace.VALUE);
       this.emitNode(kParam, 'variable');
       this.emitEdge(kFunc, `param.${index}`, kParam);
 
@@ -275,16 +336,18 @@ class Vistor {
             node as ts.FunctionLikeDeclaration);
       case ts.SyntaxKind.ClassDeclaration:
         return this.visitClassDeclaration(node as ts.ClassDeclaration);
+      case ts.SyntaxKind.TypeAliasDeclaration:
+        return this.visitTypeAliasDeclaration(node as ts.TypeAliasDeclaration);
       case ts.SyntaxKind.Identifier:
         // Assume that this identifer is occurring as part of an
-        // expression; we'll handle identifiers that occur in other
-        // circumstances (e.g. in a type) separately.
+        // expression; we handle identifiers that occur in other
+        // circumstances (e.g. in a type) separately in visitType.
         let sym = this.typeChecker.getSymbolAtLocation(node);
         if (!sym) {
           // E.g. a field of an "any".
           return;
         }
-        let name = this.getSymbolName(sym);
+        let name = this.getSymbolName(sym, TSNamespace.VALUE);
         this.emitEdge(this.newAnchor(node), 'ref', name);
         return;
       default:
