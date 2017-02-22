@@ -132,15 +132,19 @@ class Vistor {
       switch (node.kind) {
         case ts.SyntaxKind.Block:
           if (node.parent &&
-              node.parent.kind === ts.SyntaxKind.FunctionDeclaration) {
+              (node.parent.kind === ts.SyntaxKind.FunctionDeclaration ||
+              node.parent.kind === ts.SyntaxKind.MethodDeclaration)) {
             // A block that's an immediate child of a function is the
             // function's body, so it doesn't need a separate name.
             continue;
           }
           parts.push(`block${this.anonId++}`);
           break;
+        case ts.SyntaxKind.ClassDeclaration:
         case ts.SyntaxKind.FunctionDeclaration:
+        case ts.SyntaxKind.MethodDeclaration:
         case ts.SyntaxKind.Parameter:
+        case ts.SyntaxKind.PropertyDeclaration:
         case ts.SyntaxKind.VariableDeclaration:
           let decl = node as ts.Declaration;
           if (decl.name && decl.name.kind === ts.SyntaxKind.Identifier) {
@@ -197,7 +201,14 @@ class Vistor {
     }
   }
 
-  visitVariableDeclaration(decl: ts.VariableDeclaration) {
+  /**
+   * Note: visitVariableDeclaration is also used for class properties;
+   * the decl parameter is the union of the attributes of the two types.
+   */
+  visitVariableDeclaration(decl: {
+    name: ts.BindingName | ts.PropertyName,
+    initializer?: ts.Expression,
+  }) {
     if (decl.name.kind === ts.SyntaxKind.Identifier) {
       let sym = this.typeChecker.getSymbolAtLocation(decl.name);
       let kVar = this.getSymbolName(sym);
@@ -211,7 +222,7 @@ class Vistor {
     if (decl.initializer) this.visit(decl.initializer);
   }
 
-  visitFunctionDeclaration(decl: ts.FunctionDeclaration) {
+  visitFunctionLikeDeclaration(decl: ts.FunctionLikeDeclaration) {
     let kFunc: VName;
     if (decl.name) {
       let sym = this.typeChecker.getSymbolAtLocation(decl.name);
@@ -236,6 +247,19 @@ class Vistor {
     if (decl.body) this.visit(decl.body);
   }
 
+  visitClassDeclaration(decl: ts.ClassDeclaration) {
+    if (decl.name) {
+      let sym = this.typeChecker.getSymbolAtLocation(decl.name);
+      let kClass = this.getSymbolName(sym);
+      this.emitNode(kClass, 'record');
+
+      this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kClass);
+    }
+    for (const member of decl.members) {
+      this.visit(member);
+    }
+  }
+
   /** visit is the main dispatch for visiting AST nodes. */
   visit(node: ts.Node): void {
     switch (node.kind) {
@@ -243,8 +267,14 @@ class Vistor {
         return this.visitExportDeclaration(node as ts.ExportDeclaration);
       case ts.SyntaxKind.VariableDeclaration:
         return this.visitVariableDeclaration(node as ts.VariableDeclaration);
+      case ts.SyntaxKind.PropertyDeclaration:
+        return this.visitVariableDeclaration(node as ts.PropertyDeclaration);
       case ts.SyntaxKind.FunctionDeclaration:
-        return this.visitFunctionDeclaration(node as ts.FunctionDeclaration);
+      case ts.SyntaxKind.MethodDeclaration:
+        return this.visitFunctionLikeDeclaration(
+            node as ts.FunctionLikeDeclaration);
+      case ts.SyntaxKind.ClassDeclaration:
+        return this.visitClassDeclaration(node as ts.ClassDeclaration);
       case ts.SyntaxKind.Identifier:
         // Assume that this identifer is occurring as part of an
         // expression; we'll handle identifiers that occur in other
