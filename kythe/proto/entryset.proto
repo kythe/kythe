@@ -1,0 +1,94 @@
+/*
+ * Copyright 2017 Google Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+package kythe.storage;
+
+// An EntrySet represents a compact collection of entries.
+// Compaction is achieved by encoding node names and string-valued data as
+// table offsets, and by sorting and prefix-encoding all the strings.
+//
+// Even without more sophisticated compression this provides a fairly large
+// savings over fully-separate entries, even when encoded with protobuf
+// wire-format overhead.
+//
+// The format is somewhat expensive to construct, but not asymptotically bad,
+// and decoding is both simpler and less memory-intensive than encoding.
+message EntrySet {
+  // The order of these fields reflects the standard ordering for vnames.
+  // Each of the fields is an index into the symbol table.
+  message Node {
+    int32 corpus = 1;
+    int32 language = 2;
+    int32 path = 3;
+    int32 root = 4;
+    int32 signature = 5;
+  }
+
+  // TODO(fromberger): The standard ordering is actually defined in terms of
+  // tickets rather than vnames, from back when entries carried tickets.  This
+  // definition uses the same field ordering so as long as the ticket is in
+  // canonical form I think it should be equivalent.
+
+  // One entry for each unique node named in the entry set, in canonical order.
+  // The index of a node in this field is its id.
+  repeated Node nodes = 1;
+
+  message Fact {
+    int32 name = 1;   // symbol
+    int32 value = 2;  // symbol
+  }
+  message FactGroup {
+    repeated Fact facts = 1;
+  }
+
+  // One entry for each node in the entry set. The index of a group in this
+  // field matches the id of its corresponding node.
+  repeated FactGroup fact_groups = 2;
+
+  message Edge {
+    int32 kind = 1;    // symbol
+    int32 target = 2;  // node
+  }
+  message EdgeGroup {
+    repeated Edge edges = 1;
+  }
+
+  // One entry for each node in the entry set. The index of a group in this
+  // field matches the id of its corresponding source node.
+  repeated EdgeGroup edge_groups = 3;
+
+  message String {
+    int32 prefix = 1;  // length of common prefix with predecessor (expanded)
+    bytes suffix = 2;  // the unshared suffix
+  }
+
+  // A prefix-coded table of all the symbols referenced by the messages above.
+  // The entries in this field are lexicographically ordered.  The string table
+  // always implicitly contains the empty string as its first entry, but it is
+  // not represented explicitly in the message.
+  repeated String symbols = 4;
+}
+
+// TODO(fromberger): Some additional tricks to consider.
+//
+// Static dictionaries for common schema types (fact names, edge kinds). This
+// makes ordering harder, though, and doesn't seem to save much, though
+// amortized over many edge sets it might help more.
+//
+// Separate blobs for large values, e.g., files. This also makes ordering a
+// little harder, and large blobs are rarely repeated.

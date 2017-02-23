@@ -198,3 +198,11 @@ proto_library(
         ":serving_proto",
     ],
 )
+
+# Protocol buffer definitions used to record indexer outputs for storage.
+# WARNING: These should not be exposed to clients.
+proto_library(
+    name = "entryset_proto",
+    srcs = ["entryset.proto"],
+    go_api_version = 2,
+)
