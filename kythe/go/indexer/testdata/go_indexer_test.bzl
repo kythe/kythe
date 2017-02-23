@@ -34,7 +34,7 @@ def _emit_extractor_script(ctx, script, output, srcs, deps, ipath):
   srcdir  = tmpdir + '/src/' + ipath
   pkgdir  = tmpdir + '/pkg/%s_%s' % (env['GOOS'], env['GOARCH'])
   outpack = output.path + '_pack'
-  cmds    = ['set -e', 'set -o pipefail',
+  cmds    = ['set -e',
              'mkdir -p ' + pkgdir, 'mkdir -p ' + srcdir]
 
   # Link the source files and dependencies into a common temporary directory.
