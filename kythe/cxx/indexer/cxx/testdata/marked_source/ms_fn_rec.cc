@@ -3,7 +3,7 @@ struct S {
   struct {
 //- @f defines/binding FnF
 //- FnF code FCRoot
-//- FCRoot child.0 FCIdent
+//- FCRoot child.2 FCIdent
 //- FCIdent child.0 FCContext
 //- FCContext child.0 FCS
 //- FCS.kind "IDENTIFIER"

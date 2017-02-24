@@ -11,12 +11,18 @@ void f(const S* s) {
 }
 
 //- Fn code FCRoot
-//- FCRoot child.0 FCIdentBox
+//- FCRoot child.0 FCTypeLhs
+//- FCRoot child.1 FCIdentBox
+//- FCRoot child.2 FCParams
+//- FCRoot child.3 FCTypeRhs
+//- FCTypeLhs.kind "TYPE"
+//- FCTypeLhs.pre_text "float (*"
 //- FCIdentBox child.0 FCContext
 //- FCContext child.0 FCContextIdent
 //- FCContext.kind "CONTEXT"
 //- FCContextIdent.pre_text "S"
 //- FCIdentBox child.1 FCIdent
 //- FCIdent.pre_text "bam"
-//- FCRoot child.1 FCParams
 //- FCParams.kind "PARAMETER_LOOKUP_BY_PARAM"
+//- FCTypeRhs.kind "TYPE"
+//- FCTypeRhs.pre_text " const)(int function_ptr_arg)"

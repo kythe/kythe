@@ -182,7 +182,7 @@ void AppendEscapedHtmlString(const SourceString& source, std::string* dest) {
 /// Target buffer for RenderSimpleIdentifier.
 class RenderSimpleIdentifierTarget {
  public:
-  /// \brief escapes and appends `source` to the buffer.
+  /// \brief Escapes and appends `source` to the buffer.
   template <typename SourceString>
   void Append(const SourceString& source) {
     if (!prepend_buffer_.empty() && !source.empty()) {
@@ -191,13 +191,21 @@ class RenderSimpleIdentifierTarget {
     }
     AppendEscapedHtmlString(source, &buffer_);
   }
-  /// \brief escapes and adds `source` before the (non-empty) text that would
+  /// \brief Escapes and adds `source` before the (non-empty) text that would
   /// be added by the next call to `Append`.
   template <typename SourceString>
   void AppendFinalListToken(const SourceString& source) {
     prepend_buffer_.append(std::string(source));
   }
   const std::string buffer() const { return buffer_; }
+  void AppendRaw(const std::string& text) { buffer_.append(text); }
+  /// \brief Make sure that there's a space between the current content of the
+  /// buffer and whatever is appended to it later on.
+  void AppendHeuristicSpace() {
+    if (!buffer_.empty() && buffer_[buffer_.size() - 1] != ' ') {
+      prepend_buffer_.push_back(' ');
+    }
+  }
 
  private:
   /// The buffer used to hold escaped data.
@@ -209,13 +217,40 @@ class RenderSimpleIdentifierTarget {
 
 /// State while recursing through MarkedSource for RenderSimpleIdentifier.
 struct RenderSimpleIdentifierState {
+  const HtmlRendererOptions* options = nullptr;
   bool render_identifier = false;
   bool render_context = false;
+  bool render_types = false;
+  bool render_parameters = false;
   bool in_identifier = false;
   bool in_context = false;
+  bool in_parameter = false;
+  bool in_type = false;
+  bool linkify = false;
+  std::string get_link(const proto::MarkedSource& sig) {
+    if (options == nullptr || !linkify) {
+      return "";
+    }
+    std::string link;
+    for (const auto& plink : sig.link()) {
+      for (const auto& ptick : plink.definition()) {
+        if (const auto* node_info = options->node_info(ptick)) {
+          if (const auto* anchor =
+                  options->anchor_for_ticket(node_info->definition())) {
+            link = options->make_semantic_link_uri(*anchor, ptick);
+            if (link.empty()) {
+              link = options->make_link_uri(*anchor);
+            }
+          }
+        }
+      }
+    }
+    return link;
+  }
   bool should_render() const {
     return (render_context && in_context) ||
-           (render_identifier && in_identifier);
+           (render_identifier && in_identifier) ||
+           (render_parameters && in_parameter) || (render_types && in_type);
   }
 };
 
@@ -229,6 +264,18 @@ void RenderSimpleIdentifier(const proto::MarkedSource& sig,
     case proto::MarkedSource::IDENTIFIER:
       state.in_identifier = true;
       break;
+    case proto::MarkedSource::PARAMETER:
+      if (!state.render_parameters) {
+        return;
+      }
+      state.in_parameter = true;
+      break;
+    case proto::MarkedSource::TYPE:
+      if (!state.render_types) {
+        return;
+      }
+      state.in_type = true;
+      break;
     case proto::MarkedSource::CONTEXT:
       if (!state.render_context) {
         return;
@@ -240,7 +287,25 @@ void RenderSimpleIdentifier(const proto::MarkedSource& sig,
     default:
       return;
   }
+  bool has_open_link = false;
   if (state.should_render()) {
+    std::string link_text = state.get_link(sig);
+    if (!link_text.empty()) {
+      out->AppendRaw("<a href=\"");
+      out->AppendRaw(link_text);
+      out->AppendRaw("\" title=\"");
+      {
+        RenderSimpleIdentifierTarget target;
+        RenderSimpleIdentifierState state;
+        state.render_identifier = true;
+        state.render_context = true;
+        state.render_types = true;
+        RenderSimpleIdentifier(sig, &target, state, 0);
+        out->AppendRaw(target.buffer());
+      }
+      out->AppendRaw("\">");
+      has_open_link = true;
+    }
     out->Append(sig.pre_text());
   }
   for (int child = 0; child < sig.child_size(); ++child) {
@@ -255,6 +320,12 @@ void RenderSimpleIdentifier(const proto::MarkedSource& sig,
   }
   if (state.should_render()) {
     out->Append(sig.post_text());
+    if (has_open_link) {
+      out->AppendRaw("</a>");
+    }
+    if (sig.kind() == proto::MarkedSource::TYPE) {
+      out->AppendHeuristicSpace();
+    }
   }
 }
 
@@ -298,6 +369,19 @@ const proto::Anchor* DocumentHtmlRendererOptions::anchor_for_ticket(
   auto anchor = document_.definition_locations().find(ticket);
   return anchor == document_.definition_locations().end() ? nullptr
                                                           : &anchor->second;
+}
+
+std::string RenderSignature(const HtmlRendererOptions& options,
+                            const proto::MarkedSource& sig, bool linkify) {
+  RenderSimpleIdentifierTarget target;
+  RenderSimpleIdentifierState state;
+  state.render_identifier = true;
+  state.render_types = true;
+  state.render_parameters = true;
+  state.linkify = linkify;
+  state.options = &options;
+  RenderSimpleIdentifier(sig, &target, state, 0);
+  return target.buffer();
 }
 
 std::string RenderSimpleIdentifier(const proto::MarkedSource& sig) {
@@ -439,7 +523,11 @@ std::string RenderHtml(const HtmlRendererOptions& options,
                         options.anchor_for_ticket(def_info->definition())) {
                   open_spans.top().valid = true;
                   out->buffer.append("<a href=\"");
-                  auto link_uri = options.make_link_uri(*def_anchor);
+                  auto link_uri =
+                      options.make_semantic_link_uri(*def_anchor, definition);
+                  if (link_uri.empty()) {
+                    link_uri = options.make_link_uri(*def_anchor);
+                  }
                   // + 2 for the closing ">.
                   out->buffer.reserve(out->buffer.size() + link_uri.size() + 2);
                   for (auto c : link_uri) {

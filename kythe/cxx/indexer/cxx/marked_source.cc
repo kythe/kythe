@@ -27,7 +27,7 @@
 
 DEFINE_bool(reformat_marked_source, false,
             "Reformat source code used in MarkedSource (experimental).");
-DEFINE_bool(pretty_print_function_prototypes, true,
+DEFINE_bool(pretty_print_function_prototypes, false,
             "Synthesize new function prototypes (experimental).");
 
 namespace kythe {
@@ -162,10 +162,9 @@ class NodeStack {
         AppendToTop(formatted_range, cancel_count, cursor, next_begin, false);
         cursor = next_begin;
       }
-      nodes_.push(Node{&next,
-                       annotation == 1
-                           ? dest_source
-                           : nodes_.top().marked_source->add_child()});
+      nodes_.push(Node{&next, annotation == 1
+                                  ? dest_source
+                                  : nodes_.top().marked_source->add_child()});
       auto *child = nodes_.top().marked_source;
       switch (next.kind) {
         case Annotation::TokenText:
@@ -278,12 +277,12 @@ clang::SourceRange GetReturnTypeSourceRangeForFunctionPointerReturningFunction(
   }
   return {};
 }
-bool SameFileRangesOverlap(const clang::SourceRange &outer,
-                           const clang::SourceRange &inner) {
+bool SameFileRangesOverlapOpenInterval(const clang::SourceRange &outer,
+                                       const clang::SourceRange &inner) {
   return outer.isValid() && inner.isValid() &&
          outer.getBegin().getRawEncoding() <=
              inner.getBegin().getRawEncoding() &&
-         outer.getEnd().getRawEncoding() >= inner.getBegin().getRawEncoding();
+         outer.getEnd().getRawEncoding() > inner.getBegin().getRawEncoding();
 }
 /// \brief Walks the AST to annotate source text.
 ///
@@ -313,6 +312,14 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
     return ident_node_ ? ident_node_ : marked_source_;
   }
   void VisitVarDecl(clang::VarDecl *decl) {
+    if (const auto *type_source_info = decl->getTypeSourceInfo()) {
+      InsertAnnotation(ExpandRangeBySingleToken(
+                           cache_->source_manager(), cache_->lang_options(),
+                           type_source_info->getTypeLoc().getSourceRange()),
+                       Annotation{Annotation::Type});
+    }
+  }
+  void VisitFieldDecl(clang::FieldDecl *decl) {
     if (const auto *type_source_info = decl->getTypeSourceInfo()) {
       InsertAnnotation(ExpandRangeBySingleToken(
                            cache_->source_manager(), cache_->lang_options(),
@@ -354,12 +361,12 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
       // which will yield `float (* const &)(int b)`.
       // It appears that we'll need to parse the text manually looking for
       // the closing paren to determine where type_rhs should begin.
-      if (SameFileRangesOverlap(type_lhs, name_range_)) {
+      if (SameFileRangesOverlapOpenInterval(type_lhs, name_range_)) {
         type_rhs = clang::SourceRange(name_range_.getEnd(), type_lhs.getEnd());
         type_lhs =
             clang::SourceRange(type_lhs.getBegin(), name_range_.getBegin());
       }
-      if (SameFileRangesOverlap(type_rhs, arg_list)) {
+      if (SameFileRangesOverlapOpenInterval(type_rhs, arg_list)) {
         if (type_lhs == type_rhs) {
           type_lhs =
               clang::SourceRange(type_lhs.getBegin(), arg_list.getBegin());
@@ -446,9 +453,13 @@ bool MarkedSourceGenerator::WillGenerateMarkedSource() const {
   if (decl_->isImplicit() || implicit_) {
     return false;
   }
-  // Both of these are more or less dependent on one another.
   if (llvm::isa<clang::FunctionDecl>(decl_) ||
-      llvm::isa<clang::ParmVarDecl>(decl_)) {
+      llvm::isa<clang::VarDecl>(decl_) ||
+      llvm::isa<clang::NamespaceDecl>(decl_) ||
+      llvm::isa<clang::TagDecl>(decl_) ||
+      llvm::isa<clang::TypedefNameDecl>(decl_) ||
+      llvm::isa<clang::FieldDecl>(decl_) ||
+      llvm::isa<clang::EnumConstantDecl>(decl_)) {
     return true;
   }
   return false;
@@ -518,9 +529,8 @@ void MarkedSourceGenerator::ReplaceMarkedSourceWithTemplateArgumentList(
           return false;
         case clang::TemplateArgument::Type:
           list_prefix.addArgument(clang::TemplateArgumentLoc(
-              arg,
-              cache_->sema()->getASTContext().getTrivialTypeSourceInfo(
-                  arg.getAsType())));
+              arg, cache_->sema()->getASTContext().getTrivialTypeSourceInfo(
+                       arg.getAsType())));
           return true;
         case clang::TemplateArgument::Declaration:
         case clang::TemplateArgument::NullPtr:
@@ -675,9 +685,26 @@ bool MarkedSourceGenerator::ReplaceMarkedSourceWithQualifiedName(
 MaybeFew<MarkedSource> MarkedSourceGenerator::GenerateMarkedSourceUsingSource(
     const GraphObserver::NodeId &decl_id) {
   auto start_loc = decl_->getSourceRange().getBegin();
+  if (start_loc.isMacroID()) {
+    start_loc = cache_->source_manager().getExpansionLoc(start_loc);
+  }
+  auto end_loc = end_loc_.isMacroID()
+                     ? cache_->source_manager().getExpansionLoc(end_loc_)
+                     : end_loc_;
   auto range = GetTextRange(cache_->source_manager(),
-                            clang::SourceRange(start_loc, end_loc_));
+                            clang::SourceRange(start_loc, end_loc));
   if (range.empty()) {
+    if (VLOG_IS_ON(1)) {
+      VLOG(1) << "GetTextRange failed for " << decl_->getDeclKindName() << " "
+              << decl_->getQualifiedNameAsString() << "\n at "
+              << start_loc.printToString(cache_->source_manager()) << "\n to "
+              << end_loc.printToString(cache_->source_manager())
+              << "\n originally "
+              << decl_->getSourceRange().getBegin().printToString(
+                     cache_->source_manager())
+              << "\n         to "
+              << end_loc_.printToString(cache_->source_manager());
+    }
     return None();
   }
   MarkedSource out_sig;
@@ -688,8 +715,8 @@ MaybeFew<MarkedSource> MarkedSourceGenerator::GenerateMarkedSourceUsingSource(
     auto formatted_range = Reformat(cache_->lang_options(), range.str(),
                                     &replacements, &incomplete);
     if (incomplete) {
-      LOG(WARNING) << "Incomplete reformatting for "
-                   << decl_id.getRawIdentity();
+      LOG(WARNING) << "Incomplete reformatting for " << decl_id.getRawIdentity()
+                   << " (" << decl_->getQualifiedNameAsString() << ")";
       return None();
     }
     DeclAnnotator annotator(cache_, &replacements, start_loc, formatted_range,
@@ -718,6 +745,13 @@ MarkedSource MarkedSourceGenerator::GenerateMarkedSourceForFunction(
   return out;
 }
 
+MarkedSource MarkedSourceGenerator::GenerateMarkedSourceForNamedDecl(
+    const clang::NamedDecl *decl) {
+  MarkedSource out;
+  ReplaceMarkedSourceWithQualifiedName(out.add_child());
+  return out;
+}
+
 MaybeFew<MarkedSource> MarkedSourceGenerator::GenerateMarkedSource(
     const GraphObserver::NodeId &decl_id) {
   // MarkedSource generation is expensive. If we're not going to write out the
@@ -726,7 +760,7 @@ MaybeFew<MarkedSource> MarkedSourceGenerator::GenerateMarkedSource(
   if (!WillGenerateMarkedSource()) {
     return None();
   }
-  if (llvm::isa<clang::VarDecl>(decl_)) {
+  if (llvm::isa<clang::VarDecl>(decl_) || llvm::isa<clang::FieldDecl>(decl_)) {
     return GenerateMarkedSourceUsingSource(decl_id);
   } else if (const auto *func = llvm::dyn_cast<clang::FunctionDecl>(decl_)) {
     if (FLAGS_pretty_print_function_prototypes) {
@@ -735,6 +769,6 @@ MaybeFew<MarkedSource> MarkedSourceGenerator::GenerateMarkedSource(
       return GenerateMarkedSourceUsingSource(decl_id);
     }
   }
-  return None();
+  return GenerateMarkedSourceForNamedDecl(decl_);
 }
 }  // namespace kythe

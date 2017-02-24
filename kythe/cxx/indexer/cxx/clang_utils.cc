@@ -156,6 +156,9 @@ clang::SourceLocation GetLocForEndOfToken(
     const clang::SourceManager &source_manager,
     const clang::LangOptions &lang_options,
     clang::SourceLocation start_location) {
+  if (start_location.isMacroID()) {
+    start_location = source_manager.getExpansionLoc(start_location);
+  }
   return clang::Lexer::getLocForEndOfToken(start_location,
                                            0 /* offset from end of token */,
                                            source_manager, lang_options);

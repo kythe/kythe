@@ -33,6 +33,16 @@ struct HtmlRendererOptions {
   /// will be replaced by &amp;).
   std::function<std::string(const proto::Anchor&)> make_link_uri =
       [](const proto::Anchor&) { return ""; };
+  /// Used to determine the href attribute value for a link pointing to an
+  /// `Anchor`. HtmlRenderer will HTML-escape the link (e.g., ampersands
+  /// will be replaced by &amp;). semantic_ticket is the ticket associated with
+  /// the `Anchor`. If this returns the empty string, the renderer will try
+  /// `make_link_uri`.
+  std::function<std::string(const proto::Anchor&, const std::string&)>
+      make_semantic_link_uri =
+          [](const proto::Anchor&, const std::string& semantic_ticket) {
+            return "";
+          };
   /// Used to retrieve `NodeInfo` for the given semantic ticket.
   virtual const proto::common::NodeInfo* node_info(const std::string&) const {
     return nullptr;
@@ -98,6 +108,10 @@ std::string RenderSimpleIdentifier(const proto::MarkedSource& sig);
 /// \return The empty string if there is no such identifier.
 std::string RenderSimpleQualifiedName(const proto::MarkedSource& sig,
                                       bool include_identifier);
+
+/// \brief Render `sig` as a full signature.
+std::string RenderSignature(const HtmlRendererOptions& options,
+                            const proto::MarkedSource& sig, bool linkify);
 
 }  // namespace kythe
 

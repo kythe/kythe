@@ -1,9 +1,14 @@
 // We emit reasonable markup for functions and their parameters.
 //- @fn1 defines/binding Fn1
 //- Fn1 code FCRoot
-//- FCRoot child.0 FCIdent
+//- FCRoot child.0 FCVoid
+//- FCVoid.kind "TYPE"
+//- FCVoid.pre_text void
+//- FCRoot child.1 FCSpace
+//- FCSpace.pre_text " "
+//- FCRoot child.2 FCIdent
 //- FCIdent.pre_text fn1
-//- FCRoot child.1 FCParams
+//- FCRoot child.3 FCParams
 //- FCParams.kind "PARAMETER_LOOKUP_BY_PARAM"
 //- FCParams.pre_text "("
 //- FCParams.post_text ")"

@@ -1727,6 +1727,11 @@ bool IndexerASTVisitor::VisitFieldDecl(const clang::FieldDecl *Decl) {
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
   MaybeRecordDefinitionRange(
       RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode);
+  Marks.set_implicit(Job->UnderneathImplicitTemplateInstantiation);
+  Marks.set_marked_source_end(GetLocForEndOfToken(
+      *Observer.getSourceManager(), *Observer.getLangOptions(),
+      Decl->getSourceRange().getEnd()));
+  Marks.set_name_range(NameRange);
   // TODO(zarko): Record completeness data. This is relevant for static fields,
   // which may be declared along with a complete class definition but later
   // defined in a separate translation unit.
@@ -1746,24 +1751,41 @@ bool IndexerASTVisitor::VisitFieldDecl(const clang::FieldDecl *Decl) {
 
 bool IndexerASTVisitor::VisitEnumConstantDecl(
     const clang::EnumConstantDecl *Decl) {
+  auto Marks = MarkedSources.Generate(Decl);
+  Marks.set_implicit(Job->UnderneathImplicitTemplateInstantiation);
   // We first build the NameId and NodeId for the enumerator.
   GraphObserver::NameId DeclName(BuildNameIdForDecl(Decl));
   GraphObserver::NodeId DeclNode(BuildNodeIdForDecl(Decl));
   SourceLocation DeclLoc = Decl->getLocation();
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
+  Marks.set_marked_source_end(GetLocForEndOfToken(
+      *Observer.getSourceManager(), *Observer.getLangOptions(),
+      Decl->getSourceRange().getEnd()));
+  Marks.set_name_range(NameRange);
   MaybeRecordDefinitionRange(
       RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode);
   Observer.recordNamedEdge(DeclNode, DeclName);
   Observer.recordIntegerConstantNode(DeclNode, Decl->getInitVal());
   AddChildOfEdgeToDeclContext(Decl, DeclNode);
+  Observer.recordMarkedSource(DeclNode, Marks.GenerateMarkedSource(DeclNode));
   return true;
 }
 
 bool IndexerASTVisitor::VisitEnumDecl(const clang::EnumDecl *Decl) {
+  auto Marks = MarkedSources.Generate(Decl);
+  Marks.set_implicit(Job->UnderneathImplicitTemplateInstantiation);
   GraphObserver::NameId DeclName(BuildNameIdForDecl(Decl));
   GraphObserver::NodeId DeclNode(BuildNodeIdForDecl(Decl));
   SourceLocation DeclLoc = Decl->getLocation();
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
+  if (Decl->isThisDeclarationADefinition() && Decl->hasBody()) {
+    Marks.set_marked_source_end(Decl->getBody()->getSourceRange().getBegin());
+  } else {
+    Marks.set_marked_source_end(GetLocForEndOfToken(
+        *Observer.getSourceManager(), *Observer.getLangOptions(),
+        Decl->getSourceRange().getEnd()));
+  }
+  Marks.set_name_range(NameRange);
   MaybeRecordDefinitionRange(
       RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode);
   Observer.recordNamedEdge(DeclNode, DeclName);
@@ -1777,6 +1799,7 @@ bool IndexerASTVisitor::VisitEnumDecl(const clang::EnumDecl *Decl) {
   // or !Decl->isCompleteDefinition()? Do those calls have the same meaning
   // as Decl->getDefinition() != Decl? The Clang documentation suggests that
   // there is a subtle difference.
+  Observer.recordMarkedSource(DeclNode, Marks.GenerateMarkedSource(DeclNode));
   // TODO(zarko): Add edges to previous decls.
   if (Decl->getDefinition() != Decl) {
     // TODO(jdennett): Should we use Type::isIncompleteType() instead of doing
@@ -2357,7 +2380,7 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
   GraphObserver::NameId DeclName(BuildNameIdForDecl(Decl));
   SourceLocation DeclLoc = Decl->getLocation();
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
-  if (Decl->hasBody()) {
+  if (Decl->isThisDeclarationADefinition() && Decl->hasBody()) {
     Marks.set_marked_source_end(Decl->getBody()->getSourceRange().getBegin());
   } else {
     Marks.set_marked_source_end(GetLocForEndOfToken(
@@ -2491,10 +2514,11 @@ IndexerASTVisitor::BuildNodeIdForTypedefNameDecl(
   if (Cached != DeclToNodeId.end()) {
     return Cached->second;
   }
-  auto Marks = MarkedSources.Generate(Decl);
   clang::TypeSourceInfo *TSI = Decl->getTypeSourceInfo();
   if (auto AliasedTypeId =
           BuildNodeIdForType(TSI->getTypeLoc(), EmitRanges::Yes)) {
+    auto Marks = MarkedSources.Generate(Decl);
+    Marks.set_implicit(Job->UnderneathImplicitTemplateInstantiation);
     GraphObserver::NameId AliasNameId(BuildNameIdForDecl(Decl));
     return Observer.recordTypeAliasNode(
         AliasNameId, AliasedTypeId.primary(),
@@ -3140,6 +3164,11 @@ IndexerASTVisitor::BuildNodeIdForDecl(const clang::Decl *Decl) {
           } else {
             Ostream << "#" << HashToString(SemanticHash(TemplateArgs));
           }
+        } else if (const auto* MSI = FD->getMemberSpecializationInfo()) {
+          if (const auto* DC = dyn_cast<const class Decl>(FD->getDeclContext())) {
+            Ostream << "#" << BuildNodeIdForDecl(DC);
+            break;
+          }
         }
       } else if (const auto *VD = dyn_cast<VarTemplateSpecializationDecl>(
                      CurrentNodeAsDecl)) {
@@ -3151,6 +3180,13 @@ IndexerASTVisitor::BuildNodeIdForDecl(const clang::Decl *Decl) {
             Ostream << "#"
                     << HashToString(
                            SemanticHash(&VD->getTemplateInstantiationArgs()));
+          }
+        }
+      } else if (const auto *VD = dyn_cast<VarDecl>(CurrentNodeAsDecl)) {
+        if (const auto* MSI = VD->getMemberSpecializationInfo()) {
+          if (const auto* DC = dyn_cast<const class Decl>(VD->getDeclContext())) {
+            Ostream << "#" << BuildNodeIdForDecl(DC);
+            break;
           }
         }
       }

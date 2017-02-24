@@ -163,8 +163,8 @@ doc
       ticket = kythe::URI::FromString(
           "kythe://" +
           kythe::UriEscape(kythe::UriEscapeMode::kEscapePaths, FLAGS_corpus) +
-          "?path=" + kythe::UriEscape(kythe::UriEscapeMode::kEscapePaths,
-                                      FLAGS_path));
+          "?path=" +
+          kythe::UriEscape(kythe::UriEscapeMode::kEscapePaths, FLAGS_path));
     }
     if (!ticket.first) {
       ::fprintf(stderr, "Couldn't parse URI %s\n", FLAGS_path.c_str());

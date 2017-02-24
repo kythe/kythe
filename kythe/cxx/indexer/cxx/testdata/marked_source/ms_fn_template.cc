@@ -2,13 +2,13 @@
 
 //- @f defines/binding AbsF
 //- AbsF code ACRoot
-//- ACRoot child.0 ACIdentToken
+//- ACRoot child.2 ACIdentToken
 //- ACIdentToken.pre_text "f"
 template <typename T> void f() {}
 
 //- @f defines/binding FSpec
 //- FSpec code SCRoot
-//- SCRoot child.0 SCIdentToken
+//- SCRoot child.2 SCIdentToken
 //- SCIdentToken.pre_text "f"
 template <> void f<int>() {}
 

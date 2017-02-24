@@ -137,6 +137,10 @@ void IndexerPPCallbacks::MacroDefined(const clang::Token &Token,
                                           MacroId);
     Observer.recordMacroNode(MacroId);
     Observer.recordNamedEdge(MacroId, MacroName);
+    MarkedSource MacroCode;
+    MacroCode.set_kind(MarkedSource::IDENTIFIER);
+    MacroCode.set_pre_text(Token.getIdentifierInfo()->getName());
+    Observer.recordMarkedSource(MacroId, MacroCode);
   }
   // TODO(zarko): Record information about the definition (like other macro
   // references).

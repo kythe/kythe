@@ -3,7 +3,7 @@ namespace ns {
   namespace {
 //- @f defines/binding FnF
 //- FnF code FCRoot
-//- FCRoot child.0 FnFIdent
+//- FCRoot child.2 FnFIdent
 //- FnFIdent child.0 FnFContext
 //- FnFIdent child.1 FnFToken
 //- FnFToken.kind "IDENTIFIER"
