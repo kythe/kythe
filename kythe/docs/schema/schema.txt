@@ -1246,22 +1246,26 @@ Naming convention::
   Language:::
     No special rules.
   Path:::
-    The *Path* of the <<file>> this anchor is <<childof>> (or empty if there is
-    no such file).
+    The *Path* of the <<file>> containing this anchor (or empty if there is no
+    such file).
   Root:::
-    The *Root* of the <<file>> this anchor is <<childof>>.
+    The *Root* of the <<file>> containing this anchor.
   Corpus:::
-    The *Corpus* of the <<file>> this anchor is <<childof>>.
+    The *Corpus* of the <<file>> containing this anchor.
   Signature:::
     No special rules.
 Expected out-edges::
-  <<childof>>
+  <<defines>>, <<definesbinding,[defines/binding]>>, <<ref>>,
+  <<refcall,[ref/call]>>
 Facts::
   loc/start:::
-    The starting byte offset (from 0) in the <<file>> this anchor is <<childof>>
+    The starting byte offset (from 0) in the <<file>> containing this anchor.
   loc/end:::
-    The ending byte offset (exclusive) in the <<file>> this anchor is
-    <<childof>>
+    The ending byte offset (exclusive) in the <<file>> containing this anchor.
+  snippet/start:::
+    The starting byte offset (from 0) of the snippet for this anchor (optional).
+  snippet/end:::
+    The ending byte offset (from 0) of the snippet for this anchor (optional).
   subkind::
     If set to `implicit`, this anchor should not also have `loc/start` or
     `loc/end` facts. It is an artifact of some internal process that may still
@@ -1270,8 +1274,8 @@ See also::
   <<file>>
 
 Anchor VNames are specified such that one may determine the VName of the
-<<file>> an anchor is <<childof>> by dropping the anchor VName's *Language*
-and *Signature* fields.
+<<file>> containing an anchor by dropping the anchor VName's *Language* and
+*Signature* fields.
 
 [kythe,C++,"Anchors have byte offsets."]
 --------------------------------------------------------------------------------
