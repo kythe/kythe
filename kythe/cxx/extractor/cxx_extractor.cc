@@ -39,6 +39,7 @@
 #include "kythe/cxx/common/path_utils.h"
 #include "kythe/cxx/common/proto_conversions.h"
 #include "kythe/proto/analysis.pb.h"
+#include "kythe/proto/buildinfo.pb.h"
 #include "kythe/proto/cxx.pb.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/TargetSelect.h"
@@ -49,11 +50,15 @@ namespace kythe {
 namespace {
 
 // We need "the lowercase ascii hex SHA-256 digest of the file contents."
-static constexpr char kHexDigits[] = "0123456789abcdef";
+constexpr char kHexDigits[] = "0123456789abcdef";
+
+// The message type URI for the build details message.
+constexpr char kBuildDetailsURI[] =
+    "kythe.io/proto/kythe.proto.BuildDetails";
 
 /// \brief Lowercase-string-hex-encodes the array sha_buf.
 /// \param sha_buf The bytes of the hash.
-static std::string LowercaseStringHexEncodeSha(
+std::string LowercaseStringHexEncodeSha(
     const unsigned char (&sha_buf)[SHA256_DIGEST_LENGTH]) {
   std::string sha_text(SHA256_DIGEST_LENGTH * 2, '\0');
   for (unsigned i = 0; i < SHA256_DIGEST_LENGTH; ++i) {
@@ -947,9 +952,8 @@ void IndexWriter::FillFileInput(
 }
 
 void IndexWriter::WriteIndex(
-    supported_language::Language lang,
-    std::unique_ptr<IndexWriterSink> sink, const std::string& main_source_file,
-    const std::string& entry_context,
+    supported_language::Language lang, std::unique_ptr<IndexWriterSink> sink,
+    const std::string& main_source_file, const std::string& entry_context,
     const std::unordered_map<std::string, SourceFile>& source_files,
     const HeaderSearchInfo* header_search_info, bool had_errors,
     const std::string& clang_working_dir) {
@@ -976,13 +980,19 @@ void IndexWriter::WriteIndex(
   kythe::proto::VName main_vname = VNameForPath(main_source_file);
   unit_vname->CopyFrom(main_vname);
   unit_vname->set_language(supported_language::ToString(lang));
-  unit_vname->set_signature("cu#" + identifying_blob_digest);
   unit_vname->clear_path();
 
   if (header_search_info != nullptr) {
     kythe::proto::CxxCompilationUnitDetails cxx_details;
     header_search_info->CopyTo(&cxx_details);
     PackAny(cxx_details, kCxxCompilationUnitDetailsURI, unit.add_details());
+  }
+
+  if (!target_name_.empty()) {
+    kythe::proto::BuildDetails build_details;
+    build_details.set_build_target(target_name_);
+    build_details.set_rule_type(rule_type_);  // may be empty; that's OK
+    PackAny(build_details, kBuildDetailsURI, unit.add_details());
   }
 
   for (const auto& file : source_files) {
@@ -1110,6 +1120,8 @@ bool ExtractorConfiguration::Extract(supported_language::Language lang,
                                      std::unique_ptr<IndexWriterSink> sink) {
   llvm::IntrusiveRefCntPtr<clang::FileManager> file_manager(
       new clang::FileManager(file_system_options_));
+  index_writer_.set_target_name(target_name_);
+  index_writer_.set_rule_type(rule_type_);
   auto extractor = NewExtractor(
       &index_writer_,
       [this, &lang, &sink](

@@ -1,5 +1,4 @@
 v_name {
-  signature: ""
   corpus: "test_corpus"
   language: "c++"
 }

@@ -34,14 +34,12 @@ KYTHE_CORPUS=test_corpus KYTHE_ROOT_DIRECTORY="${BASE_DIR}" \
 INDEX_PATH=$(ls -1 "${OUT_DIR}"/*.kindex)
 "${KINDEX_TOOL}" -canonicalize_hashes -suppress_details -explode \
     "${INDEX_PATH}"
-sed "s|signature: \"cu.*\"|signature: \"\"|" "${INDEX_PATH}_UNIT" > \
-    "${INDEX_PATH}_UNIT_NS"
 
 # Remove lines that are system specific
-skip_inplace "-target" 1 "${INDEX_PATH}_UNIT_NS"
+skip_inplace "-target" 1 "${INDEX_PATH}_UNIT"
 
 sed "s:TEST_CWD:${PWD}/:
 s:TEST_EXTRACTOR:${KYTHE_EXTRACTOR}:" "${BASE_DIR}/testdata/expected.unit" | \
     skip "-target" 1 |
-    diff - "${INDEX_PATH}_UNIT_NS"
+    diff - "${INDEX_PATH}_UNIT"
 diff "${BASE_DIR}/testdata/expected.file" "${INDEX_PATH}_${EXPECTED_FILE_HASH}"

@@ -19,6 +19,7 @@ cc_library(
         "//kythe/cxx/common:lib",
         "//kythe/cxx/common:supported_language",
         "//kythe/proto:analysis_proto_cc",
+        "//kythe/proto:buildinfo_proto_cc",
         "//kythe/proto:cxx_proto_cc",
         "//third_party/llvm",
         "//third_party/llvm/src:clang_builtin_headers",

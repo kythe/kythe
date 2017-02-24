@@ -173,6 +173,10 @@ class IndexWriter {
   void set_triple(const std::string &triple) { triple_ = triple; }
   /// \brief Configure the default corpus.
   void set_corpus(const std::string &corpus) { corpus_ = corpus; }
+  /// \brief Record the name of the target that generated this compilation.
+  void set_target_name(const std::string &target) { target_name_ = target; }
+  /// \brief Record the rule type that generated this compilation.
+  void set_rule_type(const std::string &rule_type) { rule_type_ = rule_type; }
   /// \brief Configure vname generation using some JSON string.
   /// \return true on success, false on failure
   bool SetVNameConfiguration(const std::string &json_string);
@@ -183,8 +187,7 @@ class IndexWriter {
   const std::string &root_directory() const { return root_directory_; }
   /// \brief Write the index file to `sink`, consuming the sink in the process.
   void WriteIndex(
-      supported_language::Language lang,
-      std::unique_ptr<IndexWriterSink> sink,
+      supported_language::Language lang, std::unique_ptr<IndexWriterSink> sink,
       const std::string &main_source_file, const std::string &entry_context,
       const std::unordered_map<std::string, SourceFile> &source_files,
       const HeaderSearchInfo *header_search_info, bool had_errors,
@@ -214,6 +217,10 @@ class IndexWriter {
   std::string output_directory_ = ".";
   /// The directory to use to generate relative paths.
   std::string root_directory_ = ".";
+  /// If nonempty, the name of the target that generated this compilation.
+  std::string target_name_;
+  /// If nonempty, the rule type that generated this compilation.
+  std::string rule_type_;
 };
 
 /// \brief Creates a `FrontendAction` that records information about a
@@ -241,6 +248,10 @@ class ExtractorConfiguration {
   void SetVNameConfig(const std::string &path);
   /// \brief If a kindex file will be written, write it here.
   void SetKindexOutputFile(const std::string &path) { kindex_path_ = path; }
+  /// \brief Record the name of the target that generated this compilation.
+  void SetTargetName(const std::string &target) { target_name_ = target; }
+  /// \brief Record the rule type that generated this compilation.
+  void SetRuleType(const std::string &rule_type) { rule_type_ = rule_type; }
   /// \brief Executes the extractor with this configuration, returning true on
   /// success.
   bool Extract(supported_language::Language lang);
@@ -262,6 +273,10 @@ class ExtractorConfiguration {
   bool using_index_packs_ = false;
   /// If nonempty, emit kindex files to this exact path.
   std::string kindex_path_;
+  /// If nonempty, the name of the target that generated this compilation.
+  std::string target_name_;
+  /// If nonempty, the rule type that generated this compilation.
+  std::string rule_type_;
 };
 
 }  // namespace kythe
