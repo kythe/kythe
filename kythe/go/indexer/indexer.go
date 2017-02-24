@@ -532,7 +532,14 @@ func (pi *PackageInfo) addOwners(pkg *types.Package) {
 	for _, name := range scope.Names() {
 		switch obj := scope.Lookup(name).(type) {
 		case *types.TypeName:
-			switch t := obj.Type().Underlying().(type) {
+			// Go 1.9 will have support for type aliases.  For now, skip these
+			// so we don't wind up emitting redundant declaration sites for the
+			// aliased type.
+			named, ok := obj.Type().(*types.Named)
+			if !ok {
+				continue
+			}
+			switch t := named.Underlying().(type) {
 			case *types.Struct:
 				// Inspect the fields of a struct.
 				for i := 0; i < t.NumFields(); i++ {
