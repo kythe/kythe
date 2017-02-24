@@ -53,8 +53,7 @@ namespace {
 constexpr char kHexDigits[] = "0123456789abcdef";
 
 // The message type URI for the build details message.
-constexpr char kBuildDetailsURI[] =
-    "kythe.io/proto/kythe.proto.BuildDetails";
+constexpr char kBuildDetailsURI[] = "kythe.io/proto/kythe.proto.BuildDetails";
 
 /// \brief Lowercase-string-hex-encodes the array sha_buf.
 /// \param sha_buf The bytes of the hash.
@@ -961,6 +960,16 @@ void IndexWriter::WriteIndex(
   std::string identifying_blob;
   identifying_blob.append(corpus_);
 
+  // Try to find the name of the output file. It's okay if this doesn't succeed.
+  // TODO(fromberger): Consider maybe recognizing "-ofoo" too.
+  std::string output_file;
+  for (int i = 0; i < args_.size(); i++) {
+    if (args_[i] == "-o" && (i + 1) < args_.size()) {
+      output_file = args_[i + 1];
+      break;
+    }
+  }
+
   std::vector<std::string> final_args(args_);
   // Record the target triple in the list of arguments. Put it at the front
   // (after the tool) in the unlikely event that a different triple was
@@ -1001,6 +1010,7 @@ void IndexWriter::WriteIndex(
   unit.set_entry_context(entry_context);
   unit.set_has_compile_errors(had_errors);
   unit.add_source_file(main_source_file);
+  unit.set_output_key(output_file);  // may be empty; that's OK
   llvm::SmallString<256> absolute_working_directory(
       llvm::StringRef(clang_working_dir.data(), clang_working_dir.size()));
   std::error_code err =
