@@ -61,6 +61,7 @@ public class JavaEntrySets extends KytheEntrySets {
   private final Map<Symbol, Integer> symbolHashes = new HashMap<>();
   private final Map<Symbol, Set<String>> symbolSigs = new HashMap<Symbol, Set<String>>();
   private final boolean ignoreVNamePaths;
+  private Map<String, Integer> sourceToWildcardCounter = new HashMap<>();
 
   public JavaEntrySets(
       StatisticsCollector statistics,
@@ -329,8 +330,10 @@ public class JavaEntrySets extends KytheEntrySets {
   }
 
   /** Emits and returns a new {@link EntrySet} for the given wildcard. */
-  public EntrySet getWildcardNode(JCTree.JCWildcard wild) {
-    return emitAndReturn(newNode(NodeKind.ABS_VAR).addSignatureSalt("" + wild.hashCode()));
+  public EntrySet getWildcardNode(JCTree.JCWildcard wild, String sourcePath) {
+    int counter = sourceToWildcardCounter.getOrDefault(sourcePath, 0);
+    sourceToWildcardCounter.put(sourcePath, counter + 1);
+    return emitAndReturn(newNode(NodeKind.ABS_VAR).addSignatureSalt(sourcePath + counter));
   }
 
   /** Returns and emits a Java anchor for the given {@link JCTree}. */

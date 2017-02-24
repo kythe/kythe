@@ -616,7 +616,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   public JavaNode visitWildcard(JCWildcard wild, TreeContext owner) {
     TreeContext ctx = owner.down(wild);
 
-    EntrySet node = entrySets.getWildcardNode(wild);
+    EntrySet node = entrySets.getWildcardNode(wild, owner.getSourcePath());
     String signature = wild.kind.kind.toString();
     Builder<EntrySet> wildcards = ImmutableList.builder();
     wildcards.add(node);
@@ -931,6 +931,13 @@ class TreeContext {
 
   public String getSourceName() {
     return filePositions.getFilename();
+  }
+
+  /** Path relative to source root. */
+  public String getSourcePath() {
+    // The URI is absolute and hierarchical, so the path will always begin with a slash
+    // (see {@link java.net.URI} for details).  We strip that leading slash to return a relative path.
+    return filePositions.getSourceFile().toUri().getPath().substring(1);
   }
 
   public TreeContext down(JCTree tree) {
