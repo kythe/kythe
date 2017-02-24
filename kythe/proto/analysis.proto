@@ -34,6 +34,9 @@ message AnalysisRequest {
   // be used in preference to any other file data service the analyzer may know
   // about for this compilation.
   string file_data_service = 2;
+
+  // The revision marker that should be attributed to this compilation.
+  string revision = 3;
 }
 
 // AnalysisOutput contains an output artifact for the current analysis taking
