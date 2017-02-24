@@ -30,8 +30,14 @@ import (
 	apb "kythe.io/kythe/proto/analysis_proto"
 )
 
+// A Compilation represents a compilation and other metadata needed to analyze it.
+type Compilation struct {
+	Unit     *apb.CompilationUnit // the compilation to analyze
+	Revision string               // revision marker to attribute to the compilation
+}
+
 // CompilationFunc handles a single CompilationUnit.
-type CompilationFunc func(context.Context, *apb.CompilationUnit) error
+type CompilationFunc func(context.Context, Compilation) error
 
 // A Queue represents an ordered sequence of compilation units.
 type Queue interface {
@@ -65,23 +71,23 @@ type Driver struct {
 	// (before Teardown is called).  The error returned from AnalysisError
 	// replaces the analysis error that would normally be returned from Run.  If
 	// ErrRetry is returned, the analysis is retried immediately.
-	AnalysisError func(context.Context, *apb.CompilationUnit, error) error
+	AnalysisError func(context.Context, Compilation, error) error
 }
 
 // IO is the IO subset of the analysis Driver struct.
 type IO interface {
 	// Setup is called after a compilation has been pulled from the Queue and
 	// before it is sent to the Analyzer (or Output is called).
-	Setup(context.Context, *apb.CompilationUnit) error
+	Setup(context.Context, Compilation) error
 	// Output is called for each analysis output returned from the Analyzer
 	Output(context.Context, *apb.AnalysisOutput) error
 	// Teardown is called after a compilation has been analyzed and there will be no further calls to Output.
-	Teardown(context.Context, *apb.CompilationUnit) error
+	Teardown(context.Context, Compilation) error
 	// AnalysisError is called for each non-nil err returned from the Analyzer
 	// (before Teardown is called).  The error returned from AnalysisError
 	// replaces the analysis error that would normally be returned from Run.  If
 	// ErrRetry is returned, the analysis is retried immediately.
-	AnalysisError(context.Context, *apb.CompilationUnit, error) error
+	AnalysisError(context.Context, Compilation, error) error
 }
 
 // Apply updates the Driver's IO functions to be that of the given interface.
@@ -111,7 +117,7 @@ func (d *Driver) Run(ctx context.Context) error {
 		return err
 	}
 	for {
-		if err := d.Compilations.Next(ctx, func(ctx context.Context, cu *apb.CompilationUnit) error {
+		if err := d.Compilations.Next(ctx, func(ctx context.Context, cu Compilation) error {
 			if d.Setup != nil {
 				if err := d.Setup(ctx, cu); err != nil {
 					return fmt.Errorf("analysis setup error: %v", err)
@@ -120,8 +126,9 @@ func (d *Driver) Run(ctx context.Context) error {
 			err := ErrRetry
 			for err == ErrRetry {
 				err = d.Analyzer.Analyze(ctx, &apb.AnalysisRequest{
-					Compilation:     cu,
+					Compilation:     cu.Unit,
 					FileDataService: d.FileDataService,
+					Revision:        cu.Revision,
 				}, d.Output)
 				if d.AnalysisError != nil && err != nil {
 					err = d.AnalysisError(ctx, cu, err)

@@ -35,6 +35,8 @@ type KIndexQueue struct {
 
 	index int
 	paths []string
+
+	// TODO(fromberger): Support an optional revision marker.
 }
 
 // NewKIndexQueue returns a new KIndexQueue over the given paths to .kindex
@@ -56,7 +58,9 @@ func (k *KIndexQueue) Next(ctx context.Context, f driver.CompilationFunc) error 
 	}
 
 	k.Fetcher = cu
-	err = f(ctx, cu.Proto)
+	err = f(ctx, driver.Compilation{
+		Unit: cu.Proto,
+	})
 	k.Fetcher = nil
 
 	return err

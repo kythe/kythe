@@ -34,7 +34,7 @@ type mock struct {
 	t *testing.T
 
 	idx          int
-	Compilations []*apb.CompilationUnit
+	Compilations []Compilation
 
 	Outputs      []*apb.AnalysisOutput
 	AnalyzeError error
@@ -129,11 +129,11 @@ func TestDriver(t *testing.T) {
 		Analyzer:     m,
 		Compilations: m,
 		Output:       m.out(),
-		Setup: func(_ context.Context, cu *apb.CompilationUnit) error {
+		Setup: func(_ context.Context, cu Compilation) error {
 			setupIdx++
 			return nil
 		},
-		Teardown: func(_ context.Context, cu *apb.CompilationUnit) error {
+		Teardown: func(_ context.Context, cu Compilation) error {
 			if setupIdx != teardownIdx+1 {
 				t.Error("Teardown was not called directly after Setup/Analyze")
 			}
@@ -187,7 +187,7 @@ func TestDriverErrorHandler(t *testing.T) {
 		Analyzer:     m,
 		Compilations: m,
 		Output:       m.out(),
-		AnalysisError: func(_ context.Context, cu *apb.CompilationUnit, err error) error {
+		AnalysisError: func(_ context.Context, cu Compilation, err error) error {
 			analysisErr = err
 			return nil // don't return err
 		},
@@ -212,7 +212,7 @@ func TestDriverSetup(t *testing.T) {
 		Analyzer:     m,
 		Compilations: m,
 		Output:       m.out(),
-		Setup: func(_ context.Context, cu *apb.CompilationUnit) error {
+		Setup: func(_ context.Context, cu Compilation) error {
 			setupIdx++
 			return nil
 		},
@@ -237,7 +237,7 @@ func TestDriverTeardown(t *testing.T) {
 		Analyzer:     m,
 		Compilations: m,
 		Output:       m.out(),
-		Teardown: func(_ context.Context, cu *apb.CompilationUnit) error {
+		Teardown: func(_ context.Context, cu Compilation) error {
 			teardownIdx++
 			return nil
 		},
@@ -258,9 +258,11 @@ func outs(vals ...string) (as []*apb.AnalysisOutput) {
 	return
 }
 
-func comps(sigs ...string) (cs []*apb.CompilationUnit) {
+func comps(sigs ...string) (cs []Compilation) {
 	for _, sig := range sigs {
-		cs = append(cs, &apb.CompilationUnit{VName: &spb.VName{Signature: sig}})
+		cs = append(cs, Compilation{
+			Unit: &apb.CompilationUnit{VName: &spb.VName{Signature: sig}},
+		})
 	}
 	return
 }
