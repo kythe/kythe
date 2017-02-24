@@ -1223,6 +1223,12 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "rec_fwd_class_type_ref",
+    srcs = ["rec/rec_fwd_class_type_ref.cc"],
+    tags = ["rec"],
+)
+
+cxx_indexer_test(
     name = "rec_inner_class",
     srcs = ["rec/rec_inner_class.cc"],
     tags = ["rec"],

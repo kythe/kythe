@@ -2626,6 +2626,12 @@ IndexerASTVisitor::BuildNameEqClassForDecl(const clang::Decl *D) {
   } else if (const auto *T = dyn_cast<clang::ClassTemplateDecl>(D)) {
     // Eqclasses should see through templates.
     return BuildNameEqClassForDecl(T->getTemplatedDecl());
+  } else if (isa<clang::ObjCContainerDecl>(D)) {
+      // In the future we might want to do something different for each of the
+      // important subclasses: clang::ObjCInterfaceDecl,
+      // clang::ObjCImplementationDecl, clang::ObjCProtocolDecl,
+      // clang::ObjCCategoryDecl, and clang::ObjCCategoryImplDecl.
+    return GraphObserver::NameId::NameEqClass::Class;
   }
   return GraphObserver::NameId::NameEqClass::None;
 }
