@@ -27,21 +27,35 @@ import (
 	"kythe.io/kythe/go/platform/kindex"
 )
 
+// An Option controls the behaviour of a KIndexQueue.
+type Option func(*KIndexQueue)
+
 // KIndexQueue is a driver.Queue reading each compilation from a .kindex file.
 // On each call to the driver.CompilationFunc, KIndexQueue's analysis.Fetcher
 // interface exposes the .kindex archive's file contents.
 type KIndexQueue struct {
 	analysis.Fetcher
 
-	index int
-	paths []string
+	index    int      // the next index to consume from paths
+	paths    []string // the paths of kindex files to read
+	revision string   // the revision marker to attribute to each compilation
+}
 
-	// TODO(fromberger): Support an optional revision marker.
+// Revision returns an option that sets the revision marker on compilations
+// delivered by a KIndexQueue.
+func Revision(rev string) Option {
+	return func(k *KIndexQueue) { k.revision = rev }
 }
 
 // NewKIndexQueue returns a new KIndexQueue over the given paths to .kindex
 // files.
-func NewKIndexQueue(paths []string) *KIndexQueue { return &KIndexQueue{paths: paths} }
+func NewKIndexQueue(paths []string, opts ...Option) *KIndexQueue {
+	q := &KIndexQueue{paths: paths}
+	for _, opt := range opts {
+		opt(q)
+	}
+	return q
+}
 
 // Next implements the driver.Queue interface.
 func (k *KIndexQueue) Next(ctx context.Context, f driver.CompilationFunc) error {
@@ -59,7 +73,8 @@ func (k *KIndexQueue) Next(ctx context.Context, f driver.CompilationFunc) error 
 
 	k.Fetcher = cu
 	err = f(ctx, driver.Compilation{
-		Unit: cu.Proto,
+		Unit:     cu.Proto,
+		Revision: k.revision,
 	})
 	k.Fetcher = nil
 
