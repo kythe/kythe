@@ -178,6 +178,7 @@ func (db *DB) WriteUnit(ctx context.Context, revision, corpus, formatKey string,
 	if revision == "" {
 		return "", errors.New("empty revision marker")
 	}
+	unit.Canonicalize()
 	name, err := db.Archive.WriteUnit(ctx, formatKey, unit)
 	if err != nil {
 		return "", err

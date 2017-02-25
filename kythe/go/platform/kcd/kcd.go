@@ -236,6 +236,10 @@ type Unit interface {
 
 	// Index returns a the indexable terms of this unit.
 	Index() Index
+
+	// Canonicalize organizes the unit into a canonical form.  The meaning of
+	// canonicalization is unit-dependent, and may safely be a no-op.
+	Canonicalize()
 }
 
 // Index represents the indexable terms of a compilation.

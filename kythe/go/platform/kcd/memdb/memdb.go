@@ -183,6 +183,7 @@ func (db *DB) WriteUnit(_ context.Context, revision, corpus, formatKey string, u
 	if revision == "" {
 		return "", errors.New("empty revision marker")
 	}
+	unit.Canonicalize()
 	bits, err := unit.MarshalBinary()
 	if err != nil {
 		return "", err

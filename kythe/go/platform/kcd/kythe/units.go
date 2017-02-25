@@ -19,13 +19,16 @@ package kythe
 
 import (
 	"encoding/json"
+	"sort"
+	"strings"
+
+	"github.com/golang/protobuf/proto"
 
 	"kythe.io/kythe/go/platform/kcd"
+	"kythe.io/kythe/go/util/ptypes"
 
 	apb "kythe.io/kythe/proto/analysis_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
-
-	"github.com/golang/protobuf/proto"
 )
 
 // Format is the format key used to denote Kythe compilations, stored
@@ -61,6 +64,18 @@ func (u Unit) Index() kcd.Index {
 	return idx
 }
 
+// Canonicalize satisfies part of the kcd.Unit interface.  It orders required
+// inputs by the digest of their contents, orders environment variables and
+// source paths by name, and orders compilation details by their type URL.
+func (u Unit) Canonicalize() {
+	pb := u.Proto
+
+	sort.Sort(byDigest(pb.RequiredInput))
+	sort.Sort(byName(pb.Environment))
+	sort.Strings(pb.SourceFile)
+	ptypes.SortByTypeURL(pb.Details)
+}
+
 // ConvertUnit reports whether v can be converted to a Kythe kcd.Unit, and if
 // so returns the appropriate implementation.
 func ConvertUnit(v interface{}) (kcd.Unit, bool) {
@@ -69,3 +84,20 @@ func ConvertUnit(v interface{}) (kcd.Unit, bool) {
 	}
 	return nil, false
 }
+
+type byDigest []*apb.CompilationUnit_FileInput
+
+func (b byDigest) Len() int      { return len(b) }
+func (b byDigest) Swap(i, j int) { b[i], b[j] = b[j], b[i] }
+func (b byDigest) Less(i, j int) bool {
+	if n := strings.Compare(b[i].Info.GetDigest(), b[j].Info.GetDigest()); n != 0 {
+		return n < 0
+	}
+	return b[i].Info.GetPath() < b[j].Info.GetPath()
+}
+
+type byName []*apb.CompilationUnit_Env
+
+func (b byName) Len() int           { return len(b) }
+func (b byName) Less(i, j int) bool { return b[i].Name < b[j].Name }
+func (b byName) Swap(i, j int)      { b[i], b[j] = b[j], b[i] }

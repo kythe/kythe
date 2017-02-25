@@ -7,6 +7,7 @@ go_package_library(
     srcs = ["units.go"],
     deps = [
         "//kythe/go/platform/kcd",
+        "//kythe/go/util/ptypes",
         "//kythe/proto:analysis_proto_go",
         "//kythe/proto:storage_proto_go",
         "@go_protobuf//:proto",
@@ -18,4 +19,5 @@ go_test(
     srcs = ["units_test.go"],
     library = "kythe",
     visibility = ["//visibility:private"],
+    deps = ["//third_party/proto:any_proto_go"],
 )
