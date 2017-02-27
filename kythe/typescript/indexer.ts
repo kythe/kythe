@@ -66,7 +66,7 @@ class Vistor {
    * in it correspond to TSNamespace values.  See the documentation of
    * TSNamespace.
    */
-  symbolNames = new Map<ts.Symbol, [VName|null, VName|null]>();
+  symbolNames = new Map<ts.Symbol, [VName | null, VName|null]>();
 
   /**
    * anonId increments for each anonymous block, to give them unique
@@ -154,7 +154,7 @@ class Vistor {
         case ts.SyntaxKind.Block:
           if (node.parent &&
               (node.parent.kind === ts.SyntaxKind.FunctionDeclaration ||
-              node.parent.kind === ts.SyntaxKind.MethodDeclaration)) {
+               node.parent.kind === ts.SyntaxKind.MethodDeclaration)) {
             // A block that's an immediate child of a function is the
             // function's body, so it doesn't need a separate name.
             continue;
@@ -267,6 +267,7 @@ class Vistor {
    */
   visitVariableDeclaration(decl: {
     name: ts.BindingName | ts.PropertyName,
+    type?: ts.TypeNode,
     initializer?: ts.Expression,
   }) {
     if (decl.name.kind === ts.SyntaxKind.Identifier) {
@@ -311,7 +312,7 @@ class Vistor {
   visitClassDeclaration(decl: ts.ClassDeclaration) {
     if (decl.name) {
       let sym = this.typeChecker.getSymbolAtLocation(decl.name);
-      let kClass = this.getSymbolName(sym);
+      let kClass = this.getSymbolName(sym, TSNamespace.VALUE);
       this.emitNode(kClass, 'record');
 
       this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kClass);
