@@ -587,15 +587,12 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 			}
 		}
 
-		// Reference.TargetTicket -> []Reference set
-		var refs map[string][]*xpb.DecorationsReply_Reference
 		// ExpandedAnchor.Ticket -> ExpandedAnchor
 		var defs map[string]*srvpb.ExpandedAnchor
 		if req.TargetDefinitions {
-			refs = make(map[string][]*xpb.DecorationsReply_Reference)
 			reply.DefinitionLocations = make(map[string]*xpb.Anchor)
 
-			defs = make(map[string]*srvpb.ExpandedAnchor)
+			defs = make(map[string]*srvpb.ExpandedAnchor, len(decor.TargetDefinitions))
 			for _, def := range decor.TargetDefinitions {
 				defs[def.Ticket] = def
 			}
@@ -616,8 +613,6 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 					if req.TargetDefinitions {
 						if def, ok := defs[d.TargetDefinition]; ok {
 							reply.DefinitionLocations[d.TargetDefinition] = a2a(def, false).Anchor
-						} else {
-							refs[r.TargetTicket] = append(refs[r.TargetTicket], r)
 						}
 					} else {
 						r.TargetDefinition = ""
@@ -636,7 +631,6 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 			}
 		}
 
-		var extendsOverridesTargets stringset.Set
 		if len(decor.TargetOverride) > 0 {
 			// Read overrides from serving data
 			reply.ExtendsOverrides = make(map[string]*xpb.DecorationsReply_Overrides, len(bindings))
@@ -668,6 +662,7 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 				}
 			}
 		} else {
+			var extendsOverridesTargets stringset.Set
 			// Dynamically construct overrides; data not found in serving tables
 			if len(bindings) != 0 {
 				extendsOverrides, err := xrefs.SlowOverrides(ctx, t, bindings.Elements())
@@ -703,39 +698,6 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 					}
 					for ticket, node := range nodes.Nodes {
 						reply.Nodes[ticket] = node
-					}
-				}
-			}
-		}
-
-		// Only compute target definitions if the serving data doesn't contain any
-		// TODO(schroederc): remove this once serving data is always populated
-		if req.TargetDefinitions && len(defs) == 0 {
-			targetTickets := stringset.New(extendsOverridesTargets.Elements()...)
-			for ticket := range refs {
-				targetTickets.Add(ticket)
-			}
-
-			defs, err := xrefs.SlowDefinitions(ctx, t, targetTickets.Elements())
-			if err != nil {
-				return nil, fmt.Errorf("error retrieving target definitions: %v", err)
-			}
-
-			reply.DefinitionLocations = make(map[string]*xpb.Anchor, len(defs))
-			for tgt, def := range defs {
-				if extendsOverridesTargets.Contains(tgt) {
-					if _, ok := reply.DefinitionLocations[tgt]; !ok {
-						reply.DefinitionLocations[tgt] = def
-					}
-				}
-				if refsTgt, ok := refs[tgt]; ok {
-					for _, ref := range refsTgt {
-						if def.Ticket != ref.SourceTicket {
-							ref.TargetDefinition = def.Ticket
-							if _, ok := reply.DefinitionLocations[def.Ticket]; !ok {
-								reply.DefinitionLocations[def.Ticket] = def
-							}
-						}
 					}
 				}
 			}
