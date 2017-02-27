@@ -251,6 +251,15 @@ Other fields can be added as necessary—for example, if a Branch or Client labe
 becomes necessary. As a rule, we try to keep the number of essential VName
 dimensions as small as possible.
 
+==== [[VNameOrder]] VName Ordering
+
+When it is necessary to order VNames, the standard order is defined by
+lexicographic comparison of the VName fields in this order:
+
+    Corpus, Language, Path, Root, Signature
+
+Each field is ordered by lexicographic string comparison of its value.
+
 === [[TermTicket]] Ticket
 
 A ticket is defined as a canonical, invertible, textual (and, if practical,
@@ -366,7 +375,8 @@ target.
 Given a particular ticket encoding, the standard entry order is defined by
 lexicographic comparison of the fields of the entry, with ties broken in
 left-to-right order: Source, Kind, Target, Fact, Value. An empty string (ø) is
-considered to precede any non-empty string.
+considered to precede any non-empty string. The VName valued fields Source and
+Target are compared according to <<VNameOrder,the VName ordering rule>>.
 
 For example, the following entries are in standard (nondecreasing) entry order;
 the underlined element in each row denotes the field that “causes” the row to
@@ -385,8 +395,8 @@ be ordered after the previous row.
 |=====================================================================================
 
 Conceptually, each field is compared in isolation; in practice this can be
-implemented by a flat string comparison treating adjacent fields as if they
-were separated by a NUL byte.
+implemented by a flat string comparison separating adjacent fields as if they
+by an out-of-band delimiter such as NUL.
 
 === [[TermDirection]] Edge Direction
 

@@ -5,19 +5,28 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 go_package_library(
     name = "vnameutil",
-    srcs = ["rewrite.go"],
+    srcs = [
+        "order.go",
+        "rewrite.go",
+    ],
     deps = ["//kythe/proto:storage_proto_go"],
 )
 
 go_test(
-    name = "vnameutil_test",
+    name = "rewrite_test",
     srcs = ["rewrite_test.go"],
     library = "vnameutil",
-    visibility = ["//visibility:private"],
     deps = [
         "//kythe/proto:storage_proto_go",
         "@go_protobuf//:proto",
     ],
+)
+
+go_test(
+    name = "order_test",
+    srcs = ["order_test.go"],
+    library = "vnameutil",
+    deps = ["//kythe/proto:storage_proto_go"],
 )
 
 # A driver program for testing vname rewrite rule sets.
