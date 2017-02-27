@@ -1170,6 +1170,19 @@ Points toward::
 #define FOO BAZ
 --------------------------------------------------------------------------------
 
+Common node facts
+-----------------
+
+[[doc/uri]]
+doc/uri
+~~~~~~~
+
+Brief description::
+  If this node's primary documentation exists outside the graph, this fact can hold a URI pointing to that documentation. For example, you may want to link builtin functions to their definitions in a language's reference manual.
+
+Attached to::
+  semantic nodes
+
 Node kinds
 ----------
 
@@ -1459,7 +1472,7 @@ Facts::
     definition.
   subkind:::
     `constructor` for constructors; `destructor` for destructors;
-    `none` or unspecified for normal or member functions
+    `none` or unspecified for normal or member functions.
 
 [kythe,C++,"Functions are functions."]
 --------------------------------------------------------------------------------
