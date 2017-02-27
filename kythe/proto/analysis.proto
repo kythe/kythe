@@ -57,8 +57,7 @@ message CompilationUnit {
   // the compilation's sources.
   VName v_name = 1;
 
-  // The revision of the compilation.
-  string revision = 2;
+  reserved 2;
 
   // All files that might be touched in the course of this compilation.
   // Consumers of the CompilationUnit may not assume anything about the order

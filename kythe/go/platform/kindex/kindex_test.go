@@ -54,7 +54,6 @@ func TestRoundTrip(t *testing.T) {
 			Path:      "magic/test/unit",
 			Signature: "成功",
 		},
-		Revision:         "1",
 		WorkingDirectory: "/usr/local/src",
 		RequiredInput: []*apb.CompilationUnit_FileInput{
 			{Info: &apb.FileInfo{
