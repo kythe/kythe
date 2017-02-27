@@ -102,9 +102,9 @@ TEST(IndexPack, ScanData) {
   kythe::proto::FileData file_data;
   file_data.set_content("data1");
   kythe::proto::CompilationUnit unit_a;
-  unit_a.set_output_key("unit_a");
+  unit_a.set_revision("unit_a");
   kythe::proto::CompilationUnit unit_b;
-  unit_b.set_output_key("unit_b");
+  unit_b.set_revision("unit_b");
   ASSERT_TRUE(pack.AddCompilationUnit(unit_a, &error_text));
   ASSERT_TRUE(pack.AddCompilationUnit(unit_b, &error_text));
   ASSERT_TRUE(pack.AddFileData(file_data, &error_text));
@@ -142,11 +142,11 @@ TEST(IndexPack, ScanData) {
         kythe::proto::CompilationUnit unit;
         std::string error_text;
         if (!pack.ReadCompilationUnit(unit_hash, &unit, &error_text) ||
-            !error_text.empty() || unit.output_key().empty()) {
+            !error_text.empty() || unit.revision().empty()) {
           unit_errors = true;
-        } else if (unit.output_key() == "unit_a" && !unit_a_ok) {
+        } else if (unit.revision() == "unit_a" && !unit_a_ok) {
           unit_a_ok = true;
-        } else if (unit.output_key() == "unit_b" && !unit_b_ok) {
+        } else if (unit.revision() == "unit_b" && !unit_b_ok) {
           unit_b_ok = true;
         } else {
           unit_errors = true;
@@ -179,13 +179,13 @@ TEST(IndexPack, ReadCompilationUnit) {
       new InMemoryIndexPackFilesystem());
   filesystem
       ->files_[IndexPackFilesystem::DataKind::kCompilationUnit]["fakehash"] =
-      "{\"format\":\"kythe\",\"content\":{\"output_key\":\"test\"}}";
+      "{\"format\":\"kythe\",\"content\":{\"revision\":\"test\"}}";
   IndexPack pack(std::move(filesystem));
   kythe::proto::CompilationUnit unit;
   std::string error_text;
   EXPECT_TRUE(pack.ReadCompilationUnit("fakehash", &unit, &error_text));
   EXPECT_TRUE(error_text.empty());
-  EXPECT_EQ("test", unit.output_key());
+  EXPECT_EQ("test", unit.revision());
   EXPECT_FALSE(pack.ReadCompilationUnit("notafile", &unit, &error_text));
   EXPECT_FALSE(error_text.empty());
 }
@@ -195,7 +195,7 @@ TEST(IndexPack, ReadCompilationUnitBadVersion) {
       new InMemoryIndexPackFilesystem());
   filesystem
       ->files_[IndexPackFilesystem::DataKind::kCompilationUnit]["fakehash"] =
-      "{\"format\":\"wrong\",\"content\":{\"output_key\":\"test\"}}";
+      "{\"format\":\"wrong\",\"content\":{\"revision\":\"test\"}}";
   IndexPack pack(std::move(filesystem));
   kythe::proto::CompilationUnit unit;
   std::string error_text;
