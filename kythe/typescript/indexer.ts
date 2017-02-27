@@ -163,9 +163,11 @@ class Vistor {
           break;
         case ts.SyntaxKind.ClassDeclaration:
         case ts.SyntaxKind.FunctionDeclaration:
+        case ts.SyntaxKind.InterfaceDeclaration:
         case ts.SyntaxKind.MethodDeclaration:
         case ts.SyntaxKind.Parameter:
         case ts.SyntaxKind.PropertyDeclaration:
+        case ts.SyntaxKind.PropertySignature:
         case ts.SyntaxKind.VariableDeclaration:
           let decl = node as ts.Declaration;
           if (decl.name && decl.name.kind === ts.SyntaxKind.Identifier) {
@@ -184,7 +186,7 @@ class Vistor {
           // Most nodes are children of other nodes that do not introduce a
           // new namespace, e.g. "return x;", so ignore all other parents
           // by default.
-          // TODO: namespace {}, interface {}, etc.
+          // TODO: namespace {}, etc.
       }
     }
 
@@ -218,6 +220,17 @@ class Vistor {
     this.symbolNames.set(sym, vnames);
 
     return vname;
+  }
+
+  visitInterfaceDeclaration(decl: ts.InterfaceDeclaration) {
+    let sym = this.typeChecker.getSymbolAtLocation(decl.name);
+    let kType = this.getSymbolName(sym, TSNamespace.TYPE);
+    this.emitNode(kType, 'interface');
+    this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kType);
+
+    for (const member of decl.members) {
+      this.visit(member);
+    }
   }
 
   visitTypeAliasDeclaration(decl: ts.TypeAliasDeclaration) {
@@ -337,8 +350,12 @@ class Vistor {
             node as ts.FunctionLikeDeclaration);
       case ts.SyntaxKind.ClassDeclaration:
         return this.visitClassDeclaration(node as ts.ClassDeclaration);
+      case ts.SyntaxKind.InterfaceDeclaration:
+        return this.visitInterfaceDeclaration(node as ts.InterfaceDeclaration);
       case ts.SyntaxKind.TypeAliasDeclaration:
         return this.visitTypeAliasDeclaration(node as ts.TypeAliasDeclaration);
+      case ts.SyntaxKind.TypeReference:
+        return this.visitType(node as ts.TypeNode);
       case ts.SyntaxKind.Identifier:
         // Assume that this identifer is occurring as part of an
         // expression; we handle identifiers that occur in other
