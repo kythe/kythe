@@ -2445,6 +2445,22 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "protocol_extends",
+    srcs = ["objc/protocol_extends.m"],
+    ignore_dups = True,
+    objc = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "protocol_extends_impl",
+    srcs = ["objc/protocol_extends_impl.m"],
+    ignore_dups = True,
+    objc = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
     name = "protocol_impl",
     srcs = ["objc/protocol_impl.m"],
     ignore_dups = True,

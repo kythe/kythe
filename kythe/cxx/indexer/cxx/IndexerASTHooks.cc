@@ -2627,10 +2627,10 @@ IndexerASTVisitor::BuildNameEqClassForDecl(const clang::Decl *D) {
     // Eqclasses should see through templates.
     return BuildNameEqClassForDecl(T->getTemplatedDecl());
   } else if (isa<clang::ObjCContainerDecl>(D)) {
-      // In the future we might want to do something different for each of the
-      // important subclasses: clang::ObjCInterfaceDecl,
-      // clang::ObjCImplementationDecl, clang::ObjCProtocolDecl,
-      // clang::ObjCCategoryDecl, and clang::ObjCCategoryImplDecl.
+    // In the future we might want to do something different for each of the
+    // important subclasses: clang::ObjCInterfaceDecl,
+    // clang::ObjCImplementationDecl, clang::ObjCProtocolDecl,
+    // clang::ObjCCategoryDecl, and clang::ObjCCategoryImplDecl.
     return GraphObserver::NameId::NameEqClass::Class;
   }
   return GraphObserver::NameId::NameEqClass::None;
@@ -4636,16 +4636,26 @@ void IndexerASTVisitor::ConnectToSuperClassAndProtocols(
     }
   }
 
+  ConnectToProtocols(BodyDeclNode, IFace->protocol_loc_begin(),
+      IFace->protocol_loc_end(), IFace->protocol_begin(),
+      IFace->protocol_end());
+}
+
+void IndexerASTVisitor::ConnectToProtocols(
+    const GraphObserver::NodeId BodyDeclNode,
+    clang::ObjCProtocolList::loc_iterator locStart,
+    clang::ObjCProtocolList::loc_iterator locEnd,
+    clang::ObjCProtocolList::iterator itStart,
+    clang::ObjCProtocolList::iterator itEnd) {
   // The location of the protocols in the interface decl and the protocol
   // decls are stored in two parallel arrays, iterate through them at the same
   // time.
-  auto PLocIt = IFace->protocol_loc_begin();
-  auto PIt = IFace->protocol_begin();
+  auto PLocIt = locStart;
+  auto PIt = itStart;
   // The termination condition should only need to check one of the iterators
   // since they should have the exact same number of elements but checking
   // them both keeps us safe.
-  for (; PLocIt != IFace->protocol_loc_end() && PIt != IFace->protocol_end();
-       ++PLocIt, ++PIt) {
+  for (; PLocIt != locEnd && PIt != itEnd; ++PLocIt, ++PIt) {
     Observer.recordExtendsEdge(BodyDeclNode, BuildNodeIdForDecl(*PIt),
                                false /* isVirtual */,
                                clang::AccessSpecifier::AS_none);
@@ -4790,6 +4800,8 @@ bool IndexerASTVisitor::VisitObjCProtocolDecl(
   Observer.recordNamedEdge(DeclNode, BuildNameIdForDecl(Decl));
   AddChildOfEdgeToDeclContext(Decl, DeclNode);
   Observer.recordInterfaceNode(DeclNode, Marks.GenerateMarkedSource(DeclNode));
+  ConnectToProtocols(DeclNode, Decl->protocol_loc_begin(),
+      Decl->protocol_loc_end(), Decl->protocol_begin(), Decl->protocol_end());
   return true;
 }
 

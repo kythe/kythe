@@ -763,6 +763,11 @@ private:
   //// protocols.
   void ConnectToSuperClassAndProtocols(const GraphObserver::NodeId BodyDeclNode,
                                        const clang::ObjCInterfaceDecl *IFace);
+  void ConnectToProtocols(const GraphObserver::NodeId BodyDeclNode,
+                          clang::ObjCProtocolList::loc_iterator locStart,
+                          clang::ObjCProtocolList::loc_iterator locEnd,
+                          clang::ObjCProtocolList::iterator itStart,
+                          clang::ObjCProtocolList::iterator itEnd);
 
   /// \brief Connect a parameter to a function decl.
   ///
