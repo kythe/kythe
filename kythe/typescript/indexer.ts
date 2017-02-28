@@ -365,6 +365,10 @@ class Vistor {
           // E.g. a field of an "any".
           return;
         }
+        if (!sym.declarations || sym.declarations.length === 0) {
+          // An undeclared symbol, e.g. "undefined".
+          return;
+        }
         let name = this.getSymbolName(sym, TSNamespace.VALUE);
         this.emitEdge(this.newAnchor(node), 'ref', name);
         return;

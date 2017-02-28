@@ -16,3 +16,7 @@ let y = x + 3;
   //- @x ref X
   let obj = {age: x};
 }
+
+// Verify we don't crash on "undefined", which is special in that it is
+// allowed to refer to nothing.
+let undef = undefined;
