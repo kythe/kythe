@@ -795,6 +795,16 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 
 		Total: &xpb.CrossReferencesReply_Total{},
 	}
+	if len(req.Filter) > 0 {
+		reply.Total.RelatedNodesByRelation = make(map[string]int64)
+	}
+	if req.NodeDefinitions {
+		reply.DefinitionLocations = make(map[string]*xpb.Anchor)
+	}
+
+	features := make(map[srvpb.PagedCrossReferences_Feature]bool)
+	patterns := xrefs.ConvertFilters(req.Filter)
+
 	nextPageToken := &ipb.PageToken{
 		SubTokens: make(map[string]string),
 		Indices:   make(map[string]int32),
@@ -805,7 +815,8 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 			req.DeclarationKind != xpb.CrossReferencesRequest_NO_DECLARATIONS ||
 			req.ReferenceKind != xpb.CrossReferencesRequest_NO_REFERENCES ||
 			req.DocumentationKind != xpb.CrossReferencesRequest_NO_DOCUMENTATION ||
-			req.CallerKind != xpb.CrossReferencesRequest_NO_CALLERS)
+			req.CallerKind != xpb.CrossReferencesRequest_NO_CALLERS ||
+			len(req.Filter) > 0)
 
 	for i, ticket := range tickets {
 		// TODO(schroederc): retrieve PagedCrossReferences in parallel
@@ -816,9 +827,15 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		} else if err != nil {
 			return nil, fmt.Errorf("error looking up cross-references for ticket %q: %v", ticket, err)
 		}
+		for _, feature := range cr.Feature {
+			features[feature] = true
+		}
 
 		crs := &xpb.CrossReferencesReply_CrossReferenceSet{
 			Ticket: ticket,
+		}
+		if features[srvpb.PagedCrossReferences_MARKED_SOURCE] && req.ExperimentalSignatures {
+			crs.MarkedSource = m2m(cr.MarkedSource)
 		}
 
 		for _, grp := range cr.Group {
@@ -842,6 +859,12 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 				reply.Total.References += int64(len(grp.Anchor))
 				if wantMoreCrossRefs {
 					stats.addAnchors(&crs.Reference, grp.Anchor, req.AnchorText)
+				}
+			case features[srvpb.PagedCrossReferences_RELATED_NODES] &&
+				len(req.Filter) > 0 && !edges.IsAnchorEdge(grp.Kind):
+				reply.Total.RelatedNodesByRelation[grp.Kind] += int64(len(grp.RelatedNode))
+				if wantMoreCrossRefs {
+					stats.addRelatedNodes(reply, crs, grp, patterns)
 				}
 			}
 		}
@@ -949,10 +972,20 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 					}
 					stats.addAnchors(&crs.Reference, p.Group.Anchor, req.AnchorText)
 				}
+			case features[srvpb.PagedCrossReferences_RELATED_NODES] &&
+				len(req.Filter) > 0 && !edges.IsAnchorEdge(idx.Kind):
+				reply.Total.RelatedNodesByRelation[idx.Kind] += int64(idx.Count)
+				if wantMoreCrossRefs && !stats.skipPage(idx) {
+					p, err := t.crossReferencesPage(ctx, idx.PageKey)
+					if err != nil {
+						return nil, fmt.Errorf("internal error: error retrieving cross-references page: %v", idx.PageKey)
+					}
+					stats.addRelatedNodes(reply, crs, p.Group, patterns)
+				}
 			}
 		}
 
-		if len(crs.Declaration) > 0 || len(crs.Definition) > 0 || len(crs.Reference) > 0 || len(crs.Documentation) > 0 || len(crs.Caller) > 0 {
+		if len(crs.Declaration) > 0 || len(crs.Definition) > 0 || len(crs.Reference) > 0 || len(crs.Documentation) > 0 || len(crs.Caller) > 0 || len(crs.RelatedNode) > 0 {
 			reply.CrossReferences[crs.Ticket] = crs
 		}
 	}
@@ -961,7 +994,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		nextPageToken.Indices["skip"] = int32(initialSkip + stats.total)
 	}
 
-	if len(req.Filter) > 0 {
+	if len(req.Filter) > 0 && !features[srvpb.PagedCrossReferences_RELATED_NODES] {
 		er, err := t.edges(ctx, edgesRequest{
 			Tickets:   tickets,
 			Filters:   req.Filter,
@@ -1018,7 +1051,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		reply.NextPageToken = base64.StdEncoding.EncodeToString(snappy.Encode(nil, rec))
 	}
 
-	if req.ExperimentalSignatures {
+	if req.ExperimentalSignatures && !features[srvpb.PagedCrossReferences_MARKED_SOURCE] {
 		for ticket, crs := range reply.CrossReferences {
 			crs.MarkedSource, err = xrefs.SlowSignature(ctx, t, ticket)
 			if err != nil {
@@ -1027,19 +1060,17 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		}
 	}
 
-	if req.NodeDefinitions {
+	if req.NodeDefinitions && !features[srvpb.PagedCrossReferences_RELATED_NODES] {
 		nodeTickets := make([]string, 0, len(reply.Nodes))
 		for ticket := range reply.Nodes {
 			nodeTickets = append(nodeTickets, ticket)
 		}
 
-		// TODO(schroederc): cache this in the serving data
 		defs, err := xrefs.SlowDefinitions(ctx, t, nodeTickets)
 		if err != nil {
 			return nil, fmt.Errorf("error retrieving node definitions: %v", err)
 		}
 
-		reply.DefinitionLocations = make(map[string]*xpb.Anchor, len(defs))
 		for ticket, def := range defs {
 			node, ok := reply.Nodes[ticket]
 			if !ok {
@@ -1077,6 +1108,45 @@ func (s *refStats) skipPage(idx *srvpb.PagedCrossReferences_PageIndex) bool {
 		return true
 	}
 	return s.total >= s.max
+}
+
+func (s *refStats) addRelatedNodes(reply *xpb.CrossReferencesReply, crs *xpb.CrossReferencesReply_CrossReferenceSet, grp *srvpb.PagedCrossReferences_Group, patterns []*regexp.Regexp) bool {
+	ns := grp.RelatedNode
+	nodes := reply.Nodes
+	defs := reply.DefinitionLocations
+
+	if s.total == s.max {
+		// We've already hit our cap; return true that we're done.
+		return true
+	} else if s.skip > len(ns) {
+		// We can skip this entire group.
+		s.skip -= len(ns)
+		return false
+	} else if s.skip > 0 {
+		// Skip part of the group, and put the rest in the reply.
+		ns = ns[s.skip:]
+		s.skip = 0
+	}
+
+	if s.total+len(ns) > s.max {
+		ns = ns[:(s.max - s.total)]
+	}
+	s.total += len(ns)
+	for _, rn := range ns {
+		if _, ok := nodes[rn.Node.Ticket]; !ok {
+			nodes[rn.Node.Ticket] = nodeToInfo(patterns, rn.Node)
+			if defs != nil && rn.Node.DefinitionLocation != nil {
+				nodes[rn.Node.Ticket].Definition = rn.Node.DefinitionLocation.Ticket
+				defs[rn.Node.DefinitionLocation.Ticket] = a2a(rn.Node.DefinitionLocation, false).Anchor
+			}
+		}
+		crs.RelatedNode = append(crs.RelatedNode, &xpb.CrossReferencesReply_RelatedNode{
+			RelationKind: grp.Kind,
+			Ticket:       rn.Node.Ticket,
+			Ordinal:      rn.Ordinal,
+		})
+	}
+	return s.total == s.max // return whether we've hit our cap
 }
 
 func (s *refStats) addAnchors(to *[]*xpb.CrossReferencesReply_RelatedAnchor, as []*srvpb.ExpandedAnchor, anchorText bool) bool {

@@ -25,6 +25,9 @@ import "kythe/proto/common.proto";
 message Node {
   string ticket = 1;
   repeated kythe.proto.common.Fact fact = 2;
+
+  // This node's definition location (anchor).
+  ExpandedAnchor definition_location = 3;
 }
 
 // Full representation of a Kythe edge; useful during post-processing.
@@ -253,9 +256,29 @@ message FileDecorations {
 // CrossReferencesReply.{definition,reference,documentation} anchors.  Related
 // nodes can be retrieved from edge sets/pages.
 message PagedCrossReferences {
+  // Set of features implemented by this serving datum.  This tells the server
+  // which data must be computed dynamically.
+  repeated Feature feature = 10;
+  enum Feature {
+    // Related nodes are mixed with related anchors.
+    RELATED_NODES = 0;
+    // The marked_source field is populated.
+    MARKED_SOURCE = 1;
+  }
+
+  // Node which is related to the source_ticket node.  The relation kind is
+  // stored in each Group.  See: kythe.proto.CrossReferencesReply.RelatedNode.
+  message RelatedNode {
+    Node node = 1;
+    int32 ordinal = 2;
+  }
+
   message Group {
     string kind = 1;
+
+    // A group is either composed entirely of anchors or related nodes.
     repeated ExpandedAnchor anchor = 2;
+    repeated RelatedNode related_node = 3; // feature: RELATED_NODES
   }
 
   message Page {
@@ -280,4 +303,7 @@ message PagedCrossReferences {
   // /kythe/edge/defines edges are considered declarations or definitions.
   // /kythe/edge/completes edges are always grouped as definitions.
   bool incomplete = 5;
+
+  // The source node's MarkedSource.
+  MarkedSource marked_source = 6; // feature: MARKED_SOURCE
 }
