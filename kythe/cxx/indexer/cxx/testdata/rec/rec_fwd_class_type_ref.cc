@@ -1,4 +1,4 @@
-// Checks that forward declarations are referenced correctly.
+// Checks that forward declarations are referenced correctly in the type graph.
 
 //- @FwdClass defines/binding FwdDecl
 //- FwdDecl.node/kind record

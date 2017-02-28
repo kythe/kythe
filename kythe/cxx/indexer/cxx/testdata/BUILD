@@ -1229,6 +1229,12 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "rec_fwd_class_ref",
+    srcs = ["rec/rec_fwd_class_ref.cc"],
+    tags = ["rec"],
+)
+
+cxx_indexer_test(
     name = "rec_fwd_class_type_ref",
     srcs = ["rec/rec_fwd_class_type_ref.cc"],
     tags = ["rec"],
@@ -2410,6 +2416,14 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "property_decl_defn",
     srcs = ["objc/property_decl_defn.m"],
+    ignore_dups = True,
+    objc = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
+    name = "property_decl_defn_class",
+    srcs = ["objc/property_decl_defn_class.m"],
     ignore_dups = True,
     objc = True,
     tags = ["objc"],
