@@ -3,7 +3,7 @@ export {}
 // Check references to a type in a generic.
 
 //- @IFace defines/binding IFace
-//- @IFace.node/kind interface
+//- IFace.node/kind interface
 interface IFace {
   foo: string;
 }
