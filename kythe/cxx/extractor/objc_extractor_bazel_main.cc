@@ -125,6 +125,7 @@ int main(int argc, char *argv[]) {
   config.SetKindexOutputFile(output_file);
   config.SetArgs(args);
   config.SetVNameConfig(vname_config);
+  config.SetTargetName(info.owner());
   config.Extract(kythe::supported_language::Language::kObjectiveC);
   google::protobuf::ShutdownProtobufLibrary();
   return 0;
