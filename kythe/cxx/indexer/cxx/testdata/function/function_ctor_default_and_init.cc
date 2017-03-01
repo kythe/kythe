@@ -8,7 +8,7 @@ class C {
   //- FooCall=@"foo()" ref/call FnFoo
   //- FooCall childof CtorC0
   //- !{ BarCall childof CtorC0 }
-  C() : i(foo()) { }
+  C() : ivar(foo()) { }
   //- @C defines/binding CtorC1
   //- !{ FooCall childof CtorC1 }
   //- BarCall childof CtorC1
@@ -18,5 +18,5 @@ class C {
   //- BarCall childof CtorC2
   C(float) { }
   //- BarCall=@"bar()" ref/call FnBar
-  int i = bar();
+  int ivar = bar();
 };

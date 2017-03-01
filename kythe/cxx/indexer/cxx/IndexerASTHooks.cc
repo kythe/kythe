@@ -521,11 +521,9 @@ clang::SourceRange IndexerASTVisitor::RangeForNameOfDeclaration(
       }
       // TODO(salguarnieri) Return multiple ranges, one for each portion of the
       // selector.
-      return RangeForSingleTokenFromSourceLocation(
-          *Observer.getSourceManager(),
-          *Observer.getLangOptions(),
-          M->getSelectorLoc(0)
-      );
+      return RangeForSingleTokenFromSourceLocation(*Observer.getSourceManager(),
+                                                   *Observer.getLangOptions(),
+                                                   M->getSelectorLoc(0));
     }
   }
   return RangeForASTEntityFromSourceLocation(
@@ -2438,6 +2436,19 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
     size_t InitNumber = 0;
     for (const auto *Init : CC->inits()) {
       ++InitNumber;
+
+      // Draw ref edge for the field we are initializing.
+      if (auto M = Init->getMember()) {
+        auto MemberSR = RangeForSingleTokenFromSourceLocation(
+            *Observer.getSourceManager(), *Observer.getLangOptions(),
+            Init->getMemberLocation());
+        if (auto RCC = ExplicitRangeInCurrentContext(MemberSR)) {
+          const auto &ID = BuildNodeIdForDecl(M);
+          Observer.recordDeclUseLocation(
+              RCC.primary(), ID, GraphObserver::Claimability::Claimable);
+        }
+      }
+
       if (const auto *InitTy = Init->getTypeSourceInfo()) {
         auto QT = InitTy->getType().getCanonicalType();
         if (QT.getTypePtr()->isDependentType()) {
@@ -3170,8 +3181,9 @@ IndexerASTVisitor::BuildNodeIdForDecl(const clang::Decl *Decl) {
           } else {
             Ostream << "#" << HashToString(SemanticHash(TemplateArgs));
           }
-        } else if (const auto* MSI = FD->getMemberSpecializationInfo()) {
-          if (const auto* DC = dyn_cast<const class Decl>(FD->getDeclContext())) {
+        } else if (const auto *MSI = FD->getMemberSpecializationInfo()) {
+          if (const auto *DC =
+                  dyn_cast<const class Decl>(FD->getDeclContext())) {
             Ostream << "#" << BuildNodeIdForDecl(DC);
             break;
           }
@@ -3189,8 +3201,9 @@ IndexerASTVisitor::BuildNodeIdForDecl(const clang::Decl *Decl) {
           }
         }
       } else if (const auto *VD = dyn_cast<VarDecl>(CurrentNodeAsDecl)) {
-        if (const auto* MSI = VD->getMemberSpecializationInfo()) {
-          if (const auto* DC = dyn_cast<const class Decl>(VD->getDeclContext())) {
+        if (const auto *MSI = VD->getMemberSpecializationInfo()) {
+          if (const auto *DC =
+                  dyn_cast<const class Decl>(VD->getDeclContext())) {
             Ostream << "#" << BuildNodeIdForDecl(DC);
             break;
           }
@@ -4637,8 +4650,8 @@ void IndexerASTVisitor::ConnectToSuperClassAndProtocols(
   }
 
   ConnectToProtocols(BodyDeclNode, IFace->protocol_loc_begin(),
-      IFace->protocol_loc_end(), IFace->protocol_begin(),
-      IFace->protocol_end());
+                     IFace->protocol_loc_end(), IFace->protocol_begin(),
+                     IFace->protocol_end());
 }
 
 void IndexerASTVisitor::ConnectToProtocols(
@@ -4801,7 +4814,8 @@ bool IndexerASTVisitor::VisitObjCProtocolDecl(
   AddChildOfEdgeToDeclContext(Decl, DeclNode);
   Observer.recordInterfaceNode(DeclNode, Marks.GenerateMarkedSource(DeclNode));
   ConnectToProtocols(DeclNode, Decl->protocol_loc_begin(),
-      Decl->protocol_loc_end(), Decl->protocol_begin(), Decl->protocol_end());
+                     Decl->protocol_loc_end(), Decl->protocol_begin(),
+                     Decl->protocol_end());
   return true;
 }
 
@@ -5070,10 +5084,8 @@ bool IndexerASTVisitor::VisitObjCMessageExpr(
         // For now, just record the range for the first selector. This should
         // make it easier for frontends to make use of this data.
         const SourceRange &range = RangeForSingleTokenFromSourceLocation(
-                    *Observer.getSourceManager(),
-                    *Observer.getLangOptions(),
-                    Expr->getSelectorLoc(0)
-                );
+            *Observer.getSourceManager(), *Observer.getLangOptions(),
+            Expr->getSelectorLoc(0));
         if (auto R = ExplicitRangeInCurrentContext(range)) {
           Observer.recordDeclUseLocation(
               R.primary(), DeclId, GraphObserver::Claimability::Unclaimable);
