@@ -31,7 +31,7 @@ let tsOptions: ts.CompilerOptions = {
   // Disable searching for @types typings.  This prevents TS from looking around
   // for a node_modules directory.
   types: [],
-  lib: ['lib.es6.d.ts'],
+  target: ts.ScriptTarget.ES2015,
 };
 
 /**
