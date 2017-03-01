@@ -843,22 +843,22 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 			case xrefs.IsDefKind(req.DefinitionKind, grp.Kind, cr.Incomplete):
 				reply.Total.Definitions += int64(len(grp.Anchor))
 				if wantMoreCrossRefs {
-					stats.addAnchors(&crs.Definition, grp.Anchor, req.AnchorText)
+					stats.addAnchors(&crs.Definition, grp, req.AnchorText)
 				}
 			case xrefs.IsDeclKind(req.DeclarationKind, grp.Kind, cr.Incomplete):
 				reply.Total.Declarations += int64(len(grp.Anchor))
 				if wantMoreCrossRefs {
-					stats.addAnchors(&crs.Declaration, grp.Anchor, req.AnchorText)
+					stats.addAnchors(&crs.Declaration, grp, req.AnchorText)
 				}
 			case xrefs.IsDocKind(req.DocumentationKind, grp.Kind):
 				reply.Total.Documentation += int64(len(grp.Anchor))
 				if wantMoreCrossRefs {
-					stats.addAnchors(&crs.Documentation, grp.Anchor, req.AnchorText)
+					stats.addAnchors(&crs.Documentation, grp, req.AnchorText)
 				}
 			case xrefs.IsRefKind(req.ReferenceKind, grp.Kind):
 				reply.Total.References += int64(len(grp.Anchor))
 				if wantMoreCrossRefs {
-					stats.addAnchors(&crs.Reference, grp.Anchor, req.AnchorText)
+					stats.addAnchors(&crs.Reference, grp, req.AnchorText)
 				}
 			case features[srvpb.PagedCrossReferences_RELATED_NODES] &&
 				len(req.Filter) > 0 && !edges.IsAnchorEdge(grp.Kind):
@@ -928,7 +928,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 				for _, grp := range cr.Group {
 					if xrefs.IsDeclKind(req.DeclarationKind, grp.Kind, cr.Incomplete) {
 						reply.Total.Declarations += int64(len(grp.Anchor))
-						stats.addAnchors(&crs.Declaration, grp.Anchor, req.AnchorText)
+						stats.addAnchors(&crs.Declaration, grp, req.AnchorText)
 					}
 				}
 			}
@@ -943,7 +943,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 					if err != nil {
 						return nil, fmt.Errorf("internal error: error retrieving cross-references page: %v", idx.PageKey)
 					}
-					stats.addAnchors(&crs.Definition, p.Group.Anchor, req.AnchorText)
+					stats.addAnchors(&crs.Definition, p.Group, req.AnchorText)
 				}
 			case xrefs.IsDeclKind(req.DeclarationKind, idx.Kind, cr.Incomplete):
 				reply.Total.Declarations += int64(idx.Count)
@@ -952,7 +952,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 					if err != nil {
 						return nil, fmt.Errorf("internal error: error retrieving cross-references page: %v", idx.PageKey)
 					}
-					stats.addAnchors(&crs.Declaration, p.Group.Anchor, req.AnchorText)
+					stats.addAnchors(&crs.Declaration, p.Group, req.AnchorText)
 				}
 			case xrefs.IsDocKind(req.DocumentationKind, idx.Kind):
 				reply.Total.Documentation += int64(idx.Count)
@@ -961,7 +961,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 					if err != nil {
 						return nil, fmt.Errorf("internal error: error retrieving cross-references page: %v", idx.PageKey)
 					}
-					stats.addAnchors(&crs.Documentation, p.Group.Anchor, req.AnchorText)
+					stats.addAnchors(&crs.Documentation, p.Group, req.AnchorText)
 				}
 			case xrefs.IsRefKind(req.ReferenceKind, idx.Kind):
 				reply.Total.References += int64(idx.Count)
@@ -970,7 +970,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 					if err != nil {
 						return nil, fmt.Errorf("internal error: error retrieving cross-references page: %v", idx.PageKey)
 					}
-					stats.addAnchors(&crs.Reference, p.Group.Anchor, req.AnchorText)
+					stats.addAnchors(&crs.Reference, p.Group, req.AnchorText)
 				}
 			case features[srvpb.PagedCrossReferences_RELATED_NODES] &&
 				len(req.Filter) > 0 && !edges.IsAnchorEdge(idx.Kind):
@@ -1149,7 +1149,10 @@ func (s *refStats) addRelatedNodes(reply *xpb.CrossReferencesReply, crs *xpb.Cro
 	return s.total == s.max // return whether we've hit our cap
 }
 
-func (s *refStats) addAnchors(to *[]*xpb.CrossReferencesReply_RelatedAnchor, as []*srvpb.ExpandedAnchor, anchorText bool) bool {
+func (s *refStats) addAnchors(to *[]*xpb.CrossReferencesReply_RelatedAnchor, grp *srvpb.PagedCrossReferences_Group, anchorText bool) bool {
+	kind := edges.Canonical(grp.Kind)
+	as := grp.Anchor
+
 	if s.total == s.max {
 		return true
 	} else if s.skip > len(as) {
@@ -1165,7 +1168,9 @@ func (s *refStats) addAnchors(to *[]*xpb.CrossReferencesReply_RelatedAnchor, as 
 	}
 	s.total += len(as)
 	for _, a := range as {
-		*to = append(*to, a2a(a, anchorText))
+		ra := a2a(a, anchorText)
+		ra.Anchor.Kind = kind
+		*to = append(*to, ra)
 	}
 	return s.total == s.max
 }

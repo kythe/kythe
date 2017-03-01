@@ -293,7 +293,6 @@ var (
 				Kind: "%/kythe/edge/defines/binding",
 				Anchor: []*srvpb.ExpandedAnchor{{
 					Ticket: "kythe://c?lang=otpl?path=/a/path#27-33",
-					Kind:   "/kythe/edge/defines/binding",
 
 					Span: &cpb.Span{
 						Start: &cpb.Point{
@@ -366,7 +365,6 @@ var (
 				Kind: "%/kythe/edge/ref",
 				Anchor: []*srvpb.ExpandedAnchor{{
 					Ticket: "kythe:?path=some/utf16/file#0-4",
-					Kind:   "/kythe/edge/ref",
 
 					Span: &cpb.Span{
 						Start: &cpb.Point{LineNumber: 1},
@@ -386,7 +384,6 @@ var (
 					Snippet: "これはいくつかのテキストです",
 				}, {
 					Ticket: "kythe://c?lang=otpl?path=/a/path#51-55",
-					Kind:   "/kythe/edge/ref",
 
 					Span: &cpb.Span{
 						Start: &cpb.Point{
