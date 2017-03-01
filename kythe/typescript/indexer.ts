@@ -21,10 +21,10 @@ import * as ts from 'typescript';
 /** VName is the type of Kythe node identities. */
 interface VName {
   signature: string;
+  corpus: string;
+  root: string;
   path: string;
   language: string;
-  root: string;
-  corpus: string;
 }
 
 /**
@@ -101,10 +101,10 @@ class Vistor {
   newVName(signature: string, sourceFile = this.sourceFile): VName {
     return {
       signature,
+      corpus: 'TODO',
+      root: '',
       path: path.relative(this.sourceRoot, sourceFile.path),
       language: 'typescript',
-      root: '',
-      corpus: 'TODO',
     };
   }
 
