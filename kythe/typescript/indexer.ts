@@ -15,6 +15,7 @@
  */
 
 import 'source-map-support/register';
+import * as path from 'path';
 import * as ts from 'typescript';
 
 /** VName is the type of Kythe node identities. */
@@ -57,6 +58,9 @@ enum TSNamespace {
 
 /** Visitor manages the indexing process for a single TypeScript SourceFile. */
 class Vistor {
+  /** sourceFile is the ts.SourceFile we're currently indexing. */
+  sourceFile: ts.SourceFile;
+
   /** kFile is the VName for the source file. */
   kFile: VName;
 
@@ -77,12 +81,11 @@ class Vistor {
   constructor(
       private typeChecker: ts.TypeChecker,
       /**
-       * Path to the source file, for use in generated output.  Note
-       * that sourceFile.sourcePath is the absolute path to the source
-       * file, but for output purposes we want a repository-relative
-       * path.
+       * Absolute path to the corpus root.  Note that sourceFile.sourcePath is
+       * the absolute path to the source file, but for output purposes we want a
+       * repository-relative path.
        */
-      private sourcePath: string) {}
+      private sourceRoot: string) {}
 
   /**
    * emit emits a Kythe entry, structured as a JSON object.  Defaults to
@@ -95,10 +98,10 @@ class Vistor {
       }
 
   /** newVName returns a new VName pointing at the current file. */
-  newVName(signature: string): VName {
+  newVName(signature: string, sourceFile = this.sourceFile): VName {
     return {
       signature,
-      path: this.sourcePath,
+      path: path.relative(this.sourceRoot, sourceFile.path),
       language: 'typescript',
       root: '',
       corpus: 'TODO',
@@ -143,9 +146,12 @@ class Vistor {
    * scopedSignature computes a scoped name for a ts.Node.
    * E.g. if you have a function `foo` containing a block containing a variable
    * `bar`, it might return a string like foo.block0.bar.
+   * Also returns the source file containing the node.
    */
-  scopedSignature(startNode: ts.Node): string {
+  scopedSignature(startNode: ts.Node): [string, ts.SourceFile] {
+    let sourceFile: ts.SourceFile|undefined;
     let parts: string[] = [];
+
     // Traverse the containing blocks upward, gathering names from nodes that
     // introduce scopes.
     for (let node: ts.Node|undefined = startNode; node != null;
@@ -178,9 +184,7 @@ class Vistor {
           }
           break;
         case ts.SyntaxKind.SourceFile:
-          // TODO: name the outermost signature after the module name, so that
-          // cross-module references work.
-          parts.push('TODOSourceFile');
+          sourceFile = node as ts.SourceFile;
           break;
         default:
           // Most nodes are children of other nodes that do not introduce a
@@ -191,7 +195,7 @@ class Vistor {
     }
 
     // The names were gathered from bottom to top, so reverse before joining.
-    return parts.reverse().join('.');
+    return [parts.reverse().join('.'), sourceFile!];
   }
 
   /** getSymbolName computes the VName (and signature) of a ts.Symbol. */
@@ -205,7 +209,7 @@ class Vistor {
     // TODO: think about symbols with multiple declarations.
 
     let decl = sym.declarations[0];
-    let sig = this.scopedSignature(decl);
+    let [sig, sourceFile] = this.scopedSignature(decl);
     // The signature of a value is undecorated;
     // the signature of a type has the #type suffix.
     if (ns === TSNamespace.TYPE) {
@@ -214,7 +218,7 @@ class Vistor {
 
     // Compute a vname and save it in the appropriate slot in the symbolNames
     // table.
-    let vname = this.newVName(sig);
+    let vname = this.newVName(sig, sourceFile);
     if (!vnames) vnames = [null, null];
     vnames[ns] = vname;
     this.symbolNames.set(sym, vnames);
@@ -380,6 +384,7 @@ class Vistor {
 
   /** indexFile is the main entry point, starting the recursive visit. */
   indexFile(file: ts.SourceFile) {
+    this.sourceFile = file;
     this.kFile = this.newVName(/* empty signature */ '');
     this.kFile.language = '';
     this.emitFact(this.kFile, 'node/kind', 'file');
@@ -390,7 +395,7 @@ class Vistor {
 
 /**
  * index indexes a TypeScript program, producing Kythe JSON objects for the
- * source file in the specified path.
+ * source files in the specified paths.
  *
  * (A ts.Program is a configured collection of parsed source files, but
  * the caller must specify the source files within the program that they want
@@ -400,7 +405,7 @@ class Vistor {
  * @param emit If provided, a function that receives objects as they
  */
 export function index(
-    path: string, program: ts.Program, emit?: (obj: any) => void) {
+    paths: string[], program: ts.Program, emit?: (obj: any) => void) {
   let diags = ts.getPreEmitDiagnostics(program);
   if (diags.length > 0) {
     let message = ts.formatDiagnostics(diags, {
@@ -416,20 +421,23 @@ export function index(
     });
     throw new Error(message);
   }
-  let sourceFile = program.getSourceFile(path);
-  let visitor = new Vistor(program.getTypeChecker(), path);
-  if (emit != null) {
-    visitor.emit = emit;
+
+  for (const path of paths) {
+    let sourceFile = program.getSourceFile(path);
+    let visitor = new Vistor(program.getTypeChecker(), process.cwd());
+    if (emit != null) {
+      visitor.emit = emit;
+    }
+    visitor.indexFile(sourceFile);
   }
-  visitor.indexFile(sourceFile);
 }
 
 function main(argv: string[]) {
-  if (argv.length !== 3) {
-    console.error('usage: indexer path.ts');
+  if (argv.length < 3) {
+    console.error('usage: indexer PATH...');
     return 1;
   }
-  let inPath = argv[2];
+  let inPaths = argv.slice(2);
   // TODO: accept compiler options from the user.
   // These options are just enough to get indexer.ts itself indexable.
   let tsOpts: ts.CompilerOptions = {
@@ -441,8 +449,8 @@ function main(argv: string[]) {
     // to load itself for debugging.
     lib: ['lib.es6.d.ts'],
   };
-  let program = ts.createProgram([inPath], tsOpts);
-  index(inPath, program);
+  let program = ts.createProgram(inPaths, tsOpts);
+  index(inPaths, program);
   return 0;
 }
 
