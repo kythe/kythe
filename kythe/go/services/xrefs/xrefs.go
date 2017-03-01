@@ -139,7 +139,8 @@ func IsDefKind(requestedKind xpb.CrossReferencesRequest_DefinitionKind, edgeKind
 	case xpb.CrossReferencesRequest_ALL_DEFINITIONS:
 		return edges.IsVariant(edgeKind, edges.Defines) || edges.IsVariant(edgeKind, edges.Completes)
 	default:
-		panic("unhandled CrossReferencesRequest_DefinitionKind")
+		log.Printf("ERROR: unhandled CrossReferencesRequest_DefinitionKind: %v", requestedKind)
+		return false
 	}
 }
 
@@ -156,7 +157,8 @@ func IsDeclKind(requestedKind xpb.CrossReferencesRequest_DeclarationKind, edgeKi
 	case xpb.CrossReferencesRequest_ALL_DECLARATIONS:
 		return edges.IsVariant(edgeKind, edges.Defines)
 	default:
-		panic("unhandled CrossReferenceRequest_DeclarationKind")
+		log.Printf("ERROR: unhandled CrossReferenceRequest_DeclarationKind: %v", requestedKind)
+		return false
 	}
 }
 
@@ -174,7 +176,25 @@ func IsRefKind(requestedKind xpb.CrossReferencesRequest_ReferenceKind, edgeKind 
 	case xpb.CrossReferencesRequest_ALL_REFERENCES:
 		return edges.IsVariant(edgeKind, edges.Ref)
 	default:
-		panic("unhandled CrossReferencesRequest_ReferenceKind")
+		log.Printf("ERROR: unhandled CrossReferencesRequest_ReferenceKind: %v", requestedKind)
+		return false
+	}
+}
+
+// IsCallerKind determines whether the given edgeKind matches the requested
+// caller kind.
+func IsCallerKind(requestedKind xpb.CrossReferencesRequest_CallerKind, edgeKind string) bool {
+	edgeKind = edges.Canonical(edgeKind)
+	switch requestedKind {
+	case xpb.CrossReferencesRequest_NO_CALLERS:
+		return false
+	case xpb.CrossReferencesRequest_DIRECT_CALLERS:
+		return edgeKind == edges.RefCall
+	case xpb.CrossReferencesRequest_OVERRIDE_CALLERS:
+		return edges.IsVariant(edgeKind, edges.RefCall)
+	default:
+		log.Printf("ERROR: unhandled CrossReferencesRequest_CallerKind: %v", requestedKind)
+		return false
 	}
 }
 
@@ -188,7 +208,8 @@ func IsDocKind(requestedKind xpb.CrossReferencesRequest_DocumentationKind, edgeK
 	case xpb.CrossReferencesRequest_ALL_DOCUMENTATION:
 		return edges.IsVariant(edgeKind, edges.Documents)
 	default:
-		panic("unhandled CrossDocumentationRequest_DocumentationKind")
+		log.Printf("ERROR: unhandled CrossDocumentationRequest_DocumentationKind: %v", requestedKind)
+		return false
 	}
 }
 

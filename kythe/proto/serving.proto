@@ -264,6 +264,8 @@ message PagedCrossReferences {
     RELATED_NODES = 0;
     // The marked_source field is populated.
     MARKED_SOURCE = 1;
+    // Callers are mixed with related anchors.
+    CALLERS = 2;
   }
 
   // Node which is related to the source_ticket node.  The relation kind is
@@ -273,12 +275,28 @@ message PagedCrossReferences {
     int32 ordinal = 2;
   }
 
+  // Caller of the source node with all associated callsites within the caller.
+  message Caller {
+    // The anchor covering the caller.
+    ExpandedAnchor caller = 1;
+
+    // The relevant semantic ticket for the caller.
+    string semantic_caller = 2;
+    // MarkedSource for the caller.
+    MarkedSource marked_source = 3;
+
+    // Specific locations within the caller that caused the relationship to
+    // exist.
+    repeated ExpandedAnchor callsite = 4;
+  }
+
   message Group {
     string kind = 1;
 
-    // A group is either composed entirely of anchors or related nodes.
+    // A group is composed entirely of anchors, related nodes, or callers.
     repeated ExpandedAnchor anchor = 2;
     repeated RelatedNode related_node = 3; // feature: RELATED_NODES
+    repeated Caller caller = 4; // feature: CALLERS
   }
 
   message Page {

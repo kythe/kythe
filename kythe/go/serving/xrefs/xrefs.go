@@ -866,10 +866,17 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 				if wantMoreCrossRefs {
 					stats.addRelatedNodes(reply, crs, grp, patterns)
 				}
+			case features[srvpb.PagedCrossReferences_CALLERS] &&
+				xrefs.IsCallerKind(req.CallerKind, grp.Kind):
+				reply.Total.Callers += int64(len(grp.Caller))
+				if wantMoreCrossRefs {
+					stats.addCallers(crs, grp, req.ExperimentalSignatures)
+				}
 			}
 		}
 
-		if wantMoreCrossRefs && req.CallerKind != xpb.CrossReferencesRequest_NO_CALLERS {
+		if !features[srvpb.PagedCrossReferences_CALLERS] &&
+			wantMoreCrossRefs && req.CallerKind != xpb.CrossReferencesRequest_NO_CALLERS {
 			tokenStr := fmt.Sprintf("callers.%d", i)
 			callerSkip := pageToken.Indices[tokenStr]
 			callersToken, hasToken := pageToken.SubTokens[tokenStr]
@@ -981,6 +988,16 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 						return nil, fmt.Errorf("internal error: error retrieving cross-references page: %v", idx.PageKey)
 					}
 					stats.addRelatedNodes(reply, crs, p.Group, patterns)
+				}
+			case features[srvpb.PagedCrossReferences_CALLERS] &&
+				xrefs.IsCallerKind(req.CallerKind, idx.Kind):
+				reply.Total.Callers += int64(idx.Count)
+				if wantMoreCrossRefs && !stats.skipPage(idx) {
+					p, err := t.crossReferencesPage(ctx, idx.PageKey)
+					if err != nil {
+						return nil, fmt.Errorf("internal error: error retrieving cross-references page: %v", idx.PageKey)
+					}
+					stats.addCallers(crs, p.Group, req.ExperimentalSignatures)
 				}
 			}
 		}
@@ -1110,6 +1127,42 @@ func (s *refStats) skipPage(idx *srvpb.PagedCrossReferences_PageIndex) bool {
 	return s.total >= s.max
 }
 
+func (s *refStats) addCallers(crs *xpb.CrossReferencesReply_CrossReferenceSet, grp *srvpb.PagedCrossReferences_Group, includeSignature bool) bool {
+	cs := grp.Caller
+
+	if s.total == s.max {
+		// We've already hit our cap; return true that we're done.
+		return true
+	} else if s.skip > len(cs) {
+		// We can skip this entire group.
+		s.skip -= len(cs)
+		return false
+	} else if s.skip > 0 {
+		// Skip part of the group, and put the rest in the reply.
+		cs = cs[s.skip:]
+		s.skip = 0
+	}
+
+	if s.total+len(cs) > s.max {
+		cs = cs[:(s.max - s.total)]
+	}
+	s.total += len(cs)
+	for _, c := range cs {
+		ra := &xpb.CrossReferencesReply_RelatedAnchor{
+			Anchor: a2a(c.Caller, false).Anchor,
+			Ticket: c.SemanticCaller,
+		}
+		if includeSignature {
+			ra.MarkedSource = m2m(c.MarkedSource)
+		}
+		for _, site := range c.Callsite {
+			ra.Site = append(ra.Site, a2a(site, false).Anchor)
+		}
+		crs.Caller = append(crs.Caller, ra)
+	}
+	return s.total == s.max // return whether we've hit our cap
+}
+
 func (s *refStats) addRelatedNodes(reply *xpb.CrossReferencesReply, crs *xpb.CrossReferencesReply_CrossReferenceSet, grp *srvpb.PagedCrossReferences_Group, patterns []*regexp.Regexp) bool {
 	ns := grp.RelatedNode
 	nodes := reply.Nodes
@@ -1213,15 +1266,18 @@ func a2a(a *srvpb.ExpandedAnchor, anchorText bool) *xpb.CrossReferencesReply_Rel
 		Kind:         edges.Canonical(a.Kind),
 		Parent:       parent,
 		Text:         text,
-		Start:        p2p(a.Span.Start),
-		End:          p2p(a.Span.End),
+		Start:        p2p(a.Span.GetStart()),
+		End:          p2p(a.Span.GetEnd()),
 		Snippet:      a.Snippet,
-		SnippetStart: p2p(a.SnippetSpan.Start),
-		SnippetEnd:   p2p(a.SnippetSpan.End),
+		SnippetStart: p2p(a.SnippetSpan.GetStart()),
+		SnippetEnd:   p2p(a.SnippetSpan.GetEnd()),
 	}}
 }
 
 func p2p(p *cpb.Point) *xpb.Location_Point {
+	if p == nil {
+		return nil
+	}
 	return &xpb.Location_Point{
 		ByteOffset:   p.ByteOffset,
 		LineNumber:   p.LineNumber,
