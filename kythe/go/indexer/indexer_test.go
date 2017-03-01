@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"go/ast"
 	"go/token"
 	"io/ioutil"
@@ -264,6 +265,53 @@ func TestSink(t *testing.T) {
 		if !hasEdge(want.src, want.tgt, want.kind) {
 			t.Errorf("Missing edge %+v ―%s→ %+v", want.src, want.kind, want.tgt)
 		}
+	}
+}
+
+func TestComments(t *testing.T) {
+	// Verify that comment text is correctly escaped when translated into
+	// documentation nodes.
+	const input = `// Comment [escape] tests \t all the things.
+package pkg
+
+/*
+  Comment [escape] tests \t all the things.
+*/
+var z int
+`
+	unit, digest := oneFileCompilation("testfile/comment.go", "pkg", input)
+	pi, err := Resolve(unit, memFetcher{digest: input}, XRefTypeInfo())
+	if err != nil {
+		t.Fatalf("Resolve failed: %v\nInput unit:\n%s", err, proto.MarshalTextString(unit))
+	}
+
+	var single, multi string
+	if err := pi.Emit(context.Background(), func(_ context.Context, e *spb.Entry) error {
+		if e.FactName != "/kythe/text" {
+			return nil
+		}
+		if e.Source.Signature == "package doc" {
+			if single != "" {
+				return fmt.Errorf("multiple package docs (%q, %q)", single, string(e.FactValue))
+			}
+			single = string(e.FactValue)
+		} else if e.Source.Signature == "var z doc" {
+			if multi != "" {
+				return fmt.Errorf("multiple variable docs (%q, %q)", multi, string(e.FactValue))
+			}
+			multi = string(e.FactValue)
+		}
+		return nil
+	}, nil); err != nil {
+		t.Fatalf("Emit unexpectedly failed: %v", err)
+	}
+
+	const want = `Comment \[escape\] tests \\t all the things.`
+	if single != want {
+		t.Errorf("Incorrect single-line comment escaping:\ngot  %#q\nwant %#q", single, want)
+	}
+	if multi != want {
+		t.Errorf("Incorrect multi-line comment escaping:\ngot  %#q\nwant %#q", multi, want)
 	}
 }
 

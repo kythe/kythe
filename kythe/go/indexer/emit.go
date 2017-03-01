@@ -539,14 +539,18 @@ func mapFields(fields *ast.FieldList, f func(i int, id *ast.Ident)) {
 	}
 }
 
+var escComment = strings.NewReplacer("[", `\[`, "]", `\]`, `\`, `\\`)
+
 // trimComment removes the comment delimiters from a comment.  For single-line
 // comments, it also removes a single leading space, if present; for multi-line
-// comments it discards leading and trailing whitespace.
+// comments it discards leading and trailing whitespace. Brackets and backslash
+// characters are escaped per http://www.kythe.io/docs/schema/#doc.
 func trimComment(text string) string {
 	if single := strings.TrimPrefix(text, "//"); single != text {
-		return strings.TrimPrefix(single, " ")
+		return escComment.Replace(strings.TrimPrefix(single, " "))
 	}
-	return strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(text, "/*"), "*/"))
+	trimmed := strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(text, "/*"), "*/"))
+	return escComment.Replace(trimmed)
 }
 
 // specComment returns the innermost comment associated with spec, or nil.
