@@ -365,7 +365,7 @@ var (
 			},
 
 			Group: []*srvpb.PagedCrossReferences_Group{{
-				Kind: "/kythe/edge/ref/call",
+				Kind: "#internal/ref/call/direct",
 				Caller: []*srvpb.PagedCrossReferences_Caller{{
 					Caller: &srvpb.ExpandedAnchor{
 						Ticket: "kythe:?path=someFile#someCallerAnchor",
@@ -381,7 +381,7 @@ var (
 					}},
 				}},
 			}, {
-				Kind: "/kythe/edge/ref/call/overridden",
+				Kind: "#internal/ref/call/override",
 				Caller: []*srvpb.PagedCrossReferences_Caller{{
 					Caller: &srvpb.ExpandedAnchor{
 						Ticket: "kythe:?path=someFile#someOverrideCallerAnchor1",

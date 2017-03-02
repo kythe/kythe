@@ -181,6 +181,12 @@ func IsRefKind(requestedKind xpb.CrossReferencesRequest_ReferenceKind, edgeKind 
 	}
 }
 
+// Internal-only edge kinds for caller cross-references
+const (
+	internalCallerKindDirect   = "#internal/ref/call/direct"
+	internalCallerKindOverride = "#internal/ref/call/override"
+)
+
 // IsCallerKind determines whether the given edgeKind matches the requested
 // caller kind.
 func IsCallerKind(requestedKind xpb.CrossReferencesRequest_CallerKind, edgeKind string) bool {
@@ -189,9 +195,9 @@ func IsCallerKind(requestedKind xpb.CrossReferencesRequest_CallerKind, edgeKind 
 	case xpb.CrossReferencesRequest_NO_CALLERS:
 		return false
 	case xpb.CrossReferencesRequest_DIRECT_CALLERS:
-		return edgeKind == edges.RefCall
+		return edgeKind == internalCallerKindDirect
 	case xpb.CrossReferencesRequest_OVERRIDE_CALLERS:
-		return edges.IsVariant(edgeKind, edges.RefCall)
+		return edgeKind == internalCallerKindDirect || edgeKind == internalCallerKindOverride
 	default:
 		log.Printf("ERROR: unhandled CrossReferencesRequest_CallerKind: %v", requestedKind)
 		return false
