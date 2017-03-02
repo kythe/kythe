@@ -18,9 +18,14 @@
 // directory.  It's written in TypeScript (rather than a plain shell)
 // script) so it can reuse TypeScript data structures across test cases,
 // speeding up the test.
+//
+// If run with no arguments, runs all tests found in testdata/.
+// Otherwise run any files through the verifier by passing them:
+//   node test.js path/to/test1.ts testdata/test2.ts
 
 import * as child_process from 'child_process';
 import * as fs from 'fs';
+import * as path from 'path';
 import * as ts from 'typescript';
 
 import * as indexer from './indexer';
@@ -87,15 +92,18 @@ function verify(host: ts.CompilerHost, test: string): Promise<void> {
   });
 }
 
-async function testMain() {
-  // chdir into the testdata directory so that the compiler doesn't see the
-  // node_modules contained in this project.
-  process.chdir('testdata');
+async function testMain(args: string[]) {
+  let testPaths = args;
+  if (args.length === 0) {
+    // If no tests were passed on the command line, run all the .ts files found
+    // in testdata/.
+    testPaths = fs.readdirSync('testdata')
+                    .map(test => path.join('testdata', test))
+                    .filter(test => test.match(/\.ts$/));
+  }
 
   let host = createTestCompilerHost();
-  for (const test of fs.readdirSync('.')) {
-    if (!test.match(/\.ts$/)) continue;
-
+  for (const test of testPaths) {
     let start = new Date().valueOf();
     process.stdout.write(`${test}: `);
     try {
@@ -110,7 +118,7 @@ async function testMain() {
   return 0;
 }
 
-testMain()
+testMain(process.argv.slice(2))
     .then(() => process.exit(0))
     .catch((e) => {
       console.error(e);
