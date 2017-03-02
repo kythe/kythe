@@ -521,9 +521,16 @@ clang::SourceRange IndexerASTVisitor::RangeForNameOfDeclaration(
       }
       // TODO(salguarnieri) Return multiple ranges, one for each portion of the
       // selector.
-      return RangeForSingleTokenFromSourceLocation(*Observer.getSourceManager(),
-                                                   *Observer.getLangOptions(),
-                                                   M->getSelectorLoc(0));
+      const SourceLocation &Loc = M->getSelectorLoc(0);
+      if (Loc.isValid() && Loc.isFileID()) {
+        return RangeForSingleTokenFromSourceLocation(
+            *Observer.getSourceManager(), *Observer.getLangOptions(), Loc);
+      }
+
+      // If the selector location is not valid or is not a file, return the
+      // whole range of the selector and hope for the best.
+      LogErrorWithASTDump("Could not get source range", M);
+      return M->getSourceRange();
     }
   }
   return RangeForASTEntityFromSourceLocation(
@@ -2439,9 +2446,16 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
 
       // Draw ref edge for the field we are initializing.
       if (auto M = Init->getMember()) {
-        auto MemberSR = RangeForSingleTokenFromSourceLocation(
-            *Observer.getSourceManager(), *Observer.getLangOptions(),
-            Init->getMemberLocation());
+        // This range is too large, if we have `A() : b_(10)`, it returns the
+        // range for b_(10), not b_.
+        auto MemberSR = Init->getSourceRange();
+        // If we are in a valid file, we can be more precise with the range for
+        // the variable we are initializing.
+        const SourceLocation &Loc = Init->getMemberLocation();
+        if (Loc.isValid() && Loc.isFileID()) {
+          MemberSR = RangeForSingleTokenFromSourceLocation(
+              *Observer.getSourceManager(), *Observer.getLangOptions(), Loc);
+        }
         if (auto RCC = ExplicitRangeInCurrentContext(MemberSR)) {
           const auto &ID = BuildNodeIdForDecl(M);
           Observer.recordDeclUseLocation(
@@ -5211,7 +5225,7 @@ IndexerASTVisitor::CreateObjCMethodTypeNode(const clang::ObjCMethodDecl *MD,
 }
 
 void IndexerASTVisitor::LogErrorWithASTDump(const std::string &msg,
-                                            const clang::Decl *Decl) {
+                                            const clang::Decl *Decl) const {
   std::string s;
   llvm::raw_string_ostream ss(s);
   Decl->dump(ss);
@@ -5219,7 +5233,7 @@ void IndexerASTVisitor::LogErrorWithASTDump(const std::string &msg,
 }
 
 void IndexerASTVisitor::LogErrorWithASTDump(const std::string &msg,
-                                            const clang::Expr *Expr) {
+                                            const clang::Expr *Expr) const {
   std::string s;
   llvm::raw_string_ostream ss(s);
   Expr->dump(ss);

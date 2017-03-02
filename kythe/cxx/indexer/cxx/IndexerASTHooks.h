@@ -806,8 +806,8 @@ private:
   void ConnectCategoryToBaseClass(const GraphObserver::NodeId &DeclNode,
                                   const clang::ObjCInterfaceDecl *IFace);
 
-  void LogErrorWithASTDump(const std::string &msg, const clang::Decl *Decl);
-  void LogErrorWithASTDump(const std::string &msg, const clang::Expr *Expr);
+  void LogErrorWithASTDump(const std::string &msg, const clang::Decl *Decl) const;
+  void LogErrorWithASTDump(const std::string &msg, const clang::Expr *Expr) const;
 
   /// \brief Mark each node of `NNSL` as a reference.
   /// \param NNSL the nested name specifier to visit.
