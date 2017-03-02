@@ -41,6 +41,14 @@ function toArray<T>(it: Iterator<T>): T[] {
 }
 
 /**
+ * stripExtension strips the .d.ts or .ts extension from a path.
+ * It's used to map a file path to the module name.
+ */
+function stripExtension(path: string): string {
+  return path.replace(/\.(d\.)?ts$/, '');
+}
+
+/**
  * TSNamespace represents the two namespaces of TypeScript: types and values.
  * A given symbol may be a type, it may be a value, and the two may even
  * be unrelated.
@@ -103,7 +111,7 @@ class Vistor {
       signature,
       corpus: 'TODO',
       root: '',
-      path: path.relative(this.sourceRoot, sourceFile.path),
+      path: stripExtension(path.relative(this.sourceRoot, sourceFile.path)),
       language: 'typescript',
     };
   }
@@ -171,6 +179,7 @@ class Vistor {
         case ts.SyntaxKind.FunctionDeclaration:
         case ts.SyntaxKind.InterfaceDeclaration:
         case ts.SyntaxKind.MethodDeclaration:
+        case ts.SyntaxKind.NamespaceImport:
         case ts.SyntaxKind.Parameter:
         case ts.SyntaxKind.PropertyDeclaration:
         case ts.SyntaxKind.PropertySignature:
@@ -191,6 +200,14 @@ class Vistor {
           // new namespace, e.g. "return x;", so ignore all other parents
           // by default.
           // TODO: namespace {}, etc.
+
+          // If the node has a 'name' attribute it's likely this function should
+          // have handled it.  Warn if not.
+          if ('name' in node) {
+            console.warn(
+                `TODO: scopedSignature: ${ts.SyntaxKind[node.kind]} ` +
+                `has unused 'name' property`);
+          }
       }
     }
 
@@ -262,6 +279,127 @@ class Vistor {
       default:
         // Default recursion, but using visitType(), not visit().
         return ts.forEachChild(node, n => this.visitType(n));
+    }
+  }
+
+  /**
+   * getPathFromModule gets the "module path" from the module import
+   * symbol referencing a module system path to reference to a module.
+   *
+   * E.g. from
+   *   import ... from './foo';
+   * getPathFromModule(the './foo' node) might return a string like
+   * 'path/to/project/foo'.  Note also that it has no extension -- the module
+   * name is independent of the file extension.
+   */
+  getModulePathFromModuleReference(sym: ts.Symbol): string {
+    let name = sym.name;
+    // TODO: this is hacky; it may be the case we need to use the TypeScript
+    // module resolver to get the real path (?).  But it appears the symbol
+    // name is the quoted(!) path to the module.
+    if (!(name.startsWith('"') && name.endsWith('"'))) {
+      throw new Error(`TODO: handle module symbol ${name}`);
+    }
+    name = name.substr(1, name.length - 2);
+    name = path.relative(this.sourceRoot, name);
+    return name;
+  }
+
+  /** visitImportDeclaration handles the various forms of "import ...". */
+  visitImportDeclaration(decl: ts.ImportDeclaration) {
+    // All varieties of import statements reference a module on the right,
+    // so start by linking that.
+    let moduleSym = this.typeChecker.getSymbolAtLocation(decl.moduleSpecifier);
+    if (!moduleSym) {
+      // TODO: handle modules without symbols.  This seems to occur when
+      // a required input is not passed the compilation(?).
+      return;
+    }
+    let kModule = this.newVName('module');
+    kModule.signature = 'module';
+    kModule.path = this.getModulePathFromModuleReference(moduleSym);
+    this.emitEdge(this.newAnchor(decl.moduleSpecifier), 'ref/imports', kModule);
+
+    if (!decl.importClause) {
+      // This is a side-effecting import that doesn't declare anything, e.g.:
+      //   import 'foo';
+      return;
+    }
+    let clause = decl.importClause;
+
+    if (clause.name) {
+      // This is a default import, e.g.:
+      //   import foo from './bar';
+      // This is equivalent to
+      //   import {default as foo} from './bar';
+      throw new Error(`TODO: handle default imports.`);
+    }
+
+    if (!clause.namedBindings) {
+      // TODO: I believe clause.name or clause.namedBindings are always present,
+      // which means this check is not necessary, but the types don't show that.
+      throw new Error(`import declaration ${decl.getText()} has no bindings`);
+    }
+    switch (clause.namedBindings.kind) {
+      case ts.SyntaxKind.NamespaceImport:
+        // This is a namespace import, e.g.:
+        //   import * as foo from 'foo';
+        let name = clause.namedBindings.name;
+        let sym = this.typeChecker.getSymbolAtLocation(name);
+        let kModuleObject = this.getSymbolName(sym, TSNamespace.VALUE);
+        this.emitNode(kModuleObject, 'variable');
+        this.emitEdge(this.newAnchor(name), 'defines/binding', kModuleObject);
+        break;
+      case ts.SyntaxKind.NamedImports:
+        // This is named imports, e.g.:
+        //   import {bar, baz} from 'foo';
+        let imports = clause.namedBindings.elements;
+        for (let imp of imports) {
+          // There are two names to consider for each import: the name in the
+          // module we're importing from (call it the "remote" name) and the
+          // name we give the import in this module (call it the "local" name).
+          // Those two names can differ in the case where you rename:
+          //   import {bar as baz} from 'foo';
+          //
+          // imp.name is always the local name of the import.
+          // If imp.propertyName is present, then it's the remote name;
+          // otherwise the remote name is the same as the local name.
+          //
+          // The goal is to link all of these names to the same VName, which
+          // is the one exposed by the imported module.
+
+          let anchors = [this.newAnchor(imp.name)];
+          let remoteName = imp.name.text;
+
+          if (imp.propertyName) {
+            remoteName = imp.propertyName.text;
+            anchors.push(this.newAnchor(imp.propertyName));
+          }
+
+          // TypeScript has two separate Symbol objects for imports: there's
+          // one for the symbol in the local file and one for the symbol in
+          // the remote module.  Grab the latter by looking up the remote name
+          // in the remote module's exports.
+          let localSym = this.typeChecker.getSymbolAtLocation(imp.name);
+          let remoteSym = this.typeChecker.tryGetMemberInModuleExports(
+              remoteName, moduleSym);
+          if (!remoteSym) {
+            throw new Error(
+                `imported symbol ${remoteName} not found in module`);
+          }
+
+          // Resolve the anchors to point at the remote symbol.
+          // TODO: import a type, not just a value.
+          let kImp = this.getSymbolName(remoteSym, TSNamespace.VALUE);
+          for (const anchor of anchors) {
+            this.emitEdge(anchor, 'ref', kImp);
+          }
+
+          // Mark the local symbol with the remote symbol's VName so that all
+          // references resolve to the remote symbol.
+          this.symbolNames.set(localSym, [null, kImp]);
+        }
+        break;
     }
   }
 
@@ -342,6 +480,8 @@ class Vistor {
   /** visit is the main dispatch for visiting AST nodes. */
   visit(node: ts.Node): void {
     switch (node.kind) {
+      case ts.SyntaxKind.ImportDeclaration:
+        return this.visitImportDeclaration(node as ts.ImportDeclaration);
       case ts.SyntaxKind.ExportDeclaration:
         return this.visitExportDeclaration(node as ts.ExportDeclaration);
       case ts.SyntaxKind.VariableDeclaration:
@@ -385,10 +525,17 @@ class Vistor {
   /** indexFile is the main entry point, starting the recursive visit. */
   indexFile(file: ts.SourceFile) {
     this.sourceFile = file;
+
+    // Emit a "file" node, containing the source text.
     this.kFile = this.newVName(/* empty signature */ '');
     this.kFile.language = '';
     this.emitFact(this.kFile, 'node/kind', 'file');
     this.emitFact(this.kFile, 'text', file.text);
+
+    // Emit a "record" node, representing the module object.
+    let kMod = this.newVName('module');
+    this.emitFact(kMod, 'node/kind', 'record');
+
     ts.forEachChild(file, n => this.visit(n));
   }
 }

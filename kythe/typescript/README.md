@@ -58,3 +58,12 @@ name.
 This seems to work so far but we might need to revisit it.  I'm not yet
 clear on whether this approach is correct for symbols with declarations
 in multiple modules, for example.
+
+### Module name
+
+A file `foo/bar.ts` has an associated *module name* `foo/bar`.  This is
+distinct (without the extension) because it's also possible to define it via
+other file names, such as `foo/bar.d.ts`, and all such files all define into
+the single extension-less namespace.
+
+The module name is used as the path in produced VNames.
