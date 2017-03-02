@@ -455,5 +455,7 @@ function main(argv: string[]) {
 }
 
 if (require.main === module) {
-  process.exit(main(process.argv));
+  // Note: do not use process.exit(), because that does not ensure that
+  // process.stdout has been flushed(!).
+  process.exitCode = main(process.argv);
 }
