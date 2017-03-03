@@ -106,6 +106,7 @@ public class KytheURITest extends TestCase {
     assertEquals("kythe:#a%3D", builder().setSignature("a=").build().toString());
     assertEquals(
         "kythe://kythe#a%3D", builder().setCorpus("kythe").setSignature("a=").build().toString());
+    assertEquals("kythe:#%E5%BA%83", builder().setSignature("広").build().toString());
   }
 
   private void checkToString(String expected, String... cases) throws URISyntaxException {

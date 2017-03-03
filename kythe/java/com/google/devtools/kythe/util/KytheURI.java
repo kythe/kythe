@@ -23,8 +23,8 @@ import static com.google.common.base.Strings.nullToEmpty;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
-import com.google.common.escape.CharEscaper;
 import com.google.common.escape.Escaper;
+import com.google.common.net.PercentEscaper;
 import com.google.devtools.kythe.proto.Storage.VName;
 import java.io.Serializable;
 import java.net.URI;
@@ -42,8 +42,9 @@ public class KytheURI implements Serializable {
   public static final String SCHEME_LABEL = "kythe";
   public static final KytheURI EMPTY = new KytheURI();
 
-  private static final Escaper PATH_ESCAPER = new KytheEscaper(false);
-  private static final Escaper ALL_ESCAPER = new KytheEscaper(true);
+  private static final String SAFE_CHARS = ".-_~";
+  private static final Escaper PATH_ESCAPER = new PercentEscaper(SAFE_CHARS + "/", false);
+  private static final Escaper ALL_ESCAPER = new PercentEscaper(SAFE_CHARS, false);
 
   private final VName vName;
 
@@ -229,43 +230,5 @@ public class KytheURI implements Serializable {
       }
     }
     return Joiner.on('/').join(clean);
-  }
-
-  /** Java equivalent of kythe/go/util/kytheuri/escape.go */
-  private static final class KytheEscaper extends CharEscaper {
-    private static final char[] HEX_DIGITS =
-        new char[] {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
-
-    private final boolean escapePaths;
-
-    public KytheEscaper(boolean escapePaths) {
-      this.escapePaths = escapePaths;
-    }
-
-    @Override
-    public char[] escape(char c) {
-      if (!shouldEscape(c)) {
-        return null;
-      }
-      return new char[] {'%', HEX_DIGITS[c >> 4], HEX_DIGITS[c % 16]};
-    }
-
-    /** Java equivalent of kythe/go/util/kytheuri/escape.go#shouldEscape */
-    private boolean shouldEscape(char c) {
-      if ('a' <= c && c <= 'z' || 'A' <= c && c <= 'Z' || '0' <= c && c <= '9') {
-        return false;
-      }
-      switch (c) {
-        case '-':
-        case '.':
-        case '_':
-        case '~':
-          return false; // unreserved: punctuation
-        case '/':
-          return escapePaths;
-        default:
-          return true;
-      }
-    }
   }
 }

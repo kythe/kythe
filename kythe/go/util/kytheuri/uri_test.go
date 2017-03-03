@@ -212,6 +212,14 @@ func TestRoundTripVName(t *testing.T) {
 	}
 }
 
+func TestUnicode(t *testing.T) {
+	const expected = "kythe:#%E5%BA%83"
+	uri := &URI{Signature: "広"}
+	if found := uri.String(); found != expected {
+		t.Errorf("Expected: %q; found: %q", expected, found)
+	}
+}
+
 func TestString(t *testing.T) {
 	const empty = "kythe:"
 	const canonical = "kythe:?lang=L?path=P?root=R"
