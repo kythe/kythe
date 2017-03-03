@@ -18,12 +18,13 @@ package com.google.devtools.kythe.util;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Strings.emptyToNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.base.Strings.nullToEmpty;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
+import com.google.common.escape.CharEscaper;
+import com.google.common.escape.Escaper;
 import com.google.devtools.kythe.proto.Storage.VName;
 import java.io.Serializable;
 import java.net.URI;
@@ -40,6 +41,9 @@ public class KytheURI implements Serializable {
 
   public static final String SCHEME_LABEL = "kythe";
   public static final KytheURI EMPTY = new KytheURI();
+
+  private static final Escaper PATH_ESCAPER = new KytheEscaper(false);
+  private static final Escaper ALL_ESCAPER = new KytheEscaper(true);
 
   private final VName vName;
 
@@ -90,34 +94,6 @@ public class KytheURI implements Serializable {
     return vName.getLanguage();
   }
 
-  /**
-   * Returns an equivalent {@link URI}.
-   *
-   * @throw URISyntaxException when the corpus/path/root/language are all empty
-   */
-  public URI toURI() throws URISyntaxException {
-    String query =
-        Joiner.on("?")
-            .skipNulls()
-            .join(
-                attr("lang", vName.getLanguage()),
-                attr("path", cleanPath(vName.getPath())),
-                attr("root", vName.getRoot()));
-    String corpus = vName.getCorpus();
-    String authority = corpus, path = null;
-    int slash = corpus.indexOf('/');
-    if (slash != -1) {
-      authority = corpus.substring(0, slash);
-      path = corpus.substring(slash);
-    }
-    return new URI(
-        SCHEME_LABEL,
-        emptyToNull(authority),
-        path,
-        emptyToNull(query),
-        emptyToNull(vName.getSignature()));
-  }
-
   /** Returns an equivalent {@link VName}. */
   public VName toVName() {
     return vName;
@@ -125,20 +101,19 @@ public class KytheURI implements Serializable {
 
   @Override
   public String toString() {
-    if (vName.getCorpus().isEmpty()
-        && vName.getPath().isEmpty()
-        && vName.getRoot().isEmpty()
-        && vName.getLanguage().isEmpty()) {
-      // java.net.URI does not handle an empty scheme-specific-part well...
-      return vName.getSignature().isEmpty()
-          ? SCHEME_LABEL + ":"
-          : SCHEME_LABEL + ":#" + vName.getSignature();
+    StringBuilder b = new StringBuilder(SCHEME_LABEL + ":");
+    if (!vName.getCorpus().isEmpty()) {
+      b.append("//");
+      b.append(PATH_ESCAPER.escape(vName.getCorpus()));
     }
-    try {
-      return toURI().toString().replace("+", "%2B");
-    } catch (URISyntaxException e) {
-      throw new IllegalArgumentException("URI failed to construct", e);
+    b.append(attr("lang", ALL_ESCAPER.escape(vName.getLanguage())));
+    b.append(attr("path", PATH_ESCAPER.escape(cleanPath(vName.getPath()))));
+    b.append(attr("root", PATH_ESCAPER.escape(vName.getRoot())));
+    if (!vName.getSignature().isEmpty()) {
+      b.append("#");
+      b.append(ALL_ESCAPER.escape(vName.getSignature()));
     }
+    return b.toString();
   }
 
   @Override
@@ -234,7 +209,7 @@ public class KytheURI implements Serializable {
   }
 
   private static String attr(String name, String value) {
-    return value.isEmpty() ? null : name + "=" + value;
+    return value.isEmpty() ? "" : "?" + name + "=" + value;
   }
 
   /**
@@ -254,5 +229,43 @@ public class KytheURI implements Serializable {
       }
     }
     return Joiner.on('/').join(clean);
+  }
+
+  /** Java equivalent of kythe/go/util/kytheuri/escape.go */
+  private static final class KytheEscaper extends CharEscaper {
+    private static final char[] HEX_DIGITS =
+        new char[] {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+
+    private final boolean escapePaths;
+
+    public KytheEscaper(boolean escapePaths) {
+      this.escapePaths = escapePaths;
+    }
+
+    @Override
+    public char[] escape(char c) {
+      if (!shouldEscape(c)) {
+        return null;
+      }
+      return new char[] {'%', HEX_DIGITS[c >> 4], HEX_DIGITS[c % 16]};
+    }
+
+    /** Java equivalent of kythe/go/util/kytheuri/escape.go#shouldEscape */
+    private boolean shouldEscape(char c) {
+      if ('a' <= c && c <= 'z' || 'A' <= c && c <= 'Z' || '0' <= c && c <= '9') {
+        return false;
+      }
+      switch (c) {
+        case '-':
+        case '.':
+        case '_':
+        case '~':
+          return false; // unreserved: punctuation
+        case '/':
+          return escapePaths;
+        default:
+          return true;
+      }
+    }
   }
 }

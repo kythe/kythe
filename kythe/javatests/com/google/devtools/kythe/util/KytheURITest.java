@@ -101,6 +101,13 @@ public class KytheURITest extends TestCase {
         "kythe://a?path=c#sig", "kythe://a?path=b/../c#sig", "kythe://a?path=./d/.././c#sig");
   }
 
+  public void testToStringGoCompatibility() {
+    // Test cases added when an incompatibility with Go's kytheuri library is found.
+    assertEquals("kythe:#a%3D", builder().setSignature("a=").build().toString());
+    assertEquals(
+        "kythe://kythe#a%3D", builder().setCorpus("kythe").setSignature("a=").build().toString());
+  }
+
   private void checkToString(String expected, String... cases) throws URISyntaxException {
     for (String str : cases) {
       assertEquals("KytheURI.parse(\"" + str + "\").toString()", expected, parse(str).toString());
