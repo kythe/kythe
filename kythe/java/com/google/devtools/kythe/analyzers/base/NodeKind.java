@@ -29,6 +29,7 @@ public enum NodeKind {
   INTERFACE("interface"),
   NAME("name"),
   PACKAGE("package"),
+  PROCESS("process"),
   TAPPLY("tapp"),
   TBUILTIN("tbuiltin"),
 

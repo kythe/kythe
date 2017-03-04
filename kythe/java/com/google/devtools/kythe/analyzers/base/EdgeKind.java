@@ -31,6 +31,7 @@ public enum EdgeKind {
   BOUNDED_LOWER("bounded/lower"),
   BOUNDED_UPPER("bounded/upper"),
   CHILDOF("childof"),
+  DEPENDS("depends"),
   EXTENDS("extends"),
   NAMED("named"),
   OVERRIDES("overrides"),
