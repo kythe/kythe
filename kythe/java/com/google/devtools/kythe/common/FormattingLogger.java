@@ -52,59 +52,59 @@ public class FormattingLogger {
   }
 
   public void finestfmt(String message, Object... args) {
-    logger.log(Level.FINEST, String.format(message, args));
+    logfmt(Level.FINEST, message, args);
   }
 
   public void finerfmt(String message, Object... args) {
-    logger.log(Level.FINER, String.format(message, args));
+    logfmt(Level.FINER, message, args);
   }
 
   public void finefmt(String message, Object... args) {
-    logger.log(Level.FINE, String.format(message, args));
+    logfmt(Level.FINE, message, args);
   }
 
   public void infofmt(String message, Object... args) {
-    logger.log(Level.INFO, String.format(message, args));
+    logfmt(Level.INFO, message, args);
   }
 
   public void configfmt(String message, Object... args) {
-    logger.log(Level.CONFIG, String.format(message, args));
+    logfmt(Level.CONFIG, message, args);
   }
 
   public void warningfmt(String message, Object... args) {
-    logger.log(Level.WARNING, String.format(message, args));
+    logfmt(Level.WARNING, message, args);
   }
 
   public void severefmt(String message, Object... args) {
-    logger.log(Level.SEVERE, String.format(message, args));
+    logfmt(Level.SEVERE, message, args);
   }
 
   public void finestfmt(Throwable thrown, String message, Object... args) {
-    finest(thrown, String.format(message, args));
+    logfmt(Level.FINEST, thrown, message, args);
   }
 
   public void finerfmt(Throwable thrown, String message, Object... args) {
-    finer(thrown, String.format(message, args));
+    logfmt(Level.FINER, thrown, message, args);
   }
 
   public void finefmt(Throwable thrown, String message, Object... args) {
-    fine(thrown, String.format(message, args));
+    logfmt(Level.FINE, thrown, message, args);
   }
 
   public void configfmt(Throwable thrown, String message, Object... args) {
-    config(thrown, String.format(message, args));
+    logfmt(Level.CONFIG, thrown, message, args);
   }
 
   public void warningfmt(Throwable thrown, String message, Object... args) {
-    warning(thrown, String.format(message, args));
+    logfmt(Level.WARNING, thrown, message, args);
   }
 
   public void infofmt(Throwable thrown, String message, Object... args) {
-    info(thrown, String.format(message, args));
+    logfmt(Level.INFO, thrown, message, args);
   }
 
   public void severefmt(Throwable thrown, String message, Object... args) {
-    severe(thrown, String.format(message, args));
+    logfmt(Level.SEVERE, thrown, message, args);
   }
 
   public void finest(Throwable thrown, String message) {
@@ -161,6 +161,20 @@ public class FormattingLogger {
 
   public void severe(String message) {
     logger.severe(message);
+  }
+
+  private void logfmt(Level level, String message, Object... args) {
+    // Check the log level before logging, to avoid spurious formatted string generation.
+    if (logger.isLoggable(level)) {
+      logger.log(level, String.format(message, args));
+    }
+  }
+
+  private void logfmt(Level level, Throwable thrown, String message, Object... args) {
+    // Check the log level before logging, to avoid spurious formatted string generation.
+    if (logger.isLoggable(level)) {
+      logger.log(level, String.format(message, args), thrown);
+    }
   }
 
   /** Simple handler that sets the class and method name of each {@link LogRecord}. */
