@@ -17,7 +17,6 @@
 package com.google.devtools.kythe.common;
 
 import com.google.common.collect.ImmutableSet;
-import java.util.Set;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
@@ -182,7 +181,7 @@ public class FormattingLogger {
     private static final SetSourceHandler INSTANCE = new SetSourceHandler();
 
     // Classes that appear at the tail of a stack trace coming from #publish(LogRecord).
-    private static final Set<String> LOGGER_CLASSES =
+    private static final ImmutableSet<String> LOGGER_CLASSES =
         ImmutableSet.<String>builder()
             .add("com.google.devtools.kythe.common.FormattingLogger$SetSourceHandler")
             .add("java.util.logging.Logger")

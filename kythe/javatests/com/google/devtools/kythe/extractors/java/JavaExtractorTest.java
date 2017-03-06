@@ -51,7 +51,7 @@ public class JavaExtractorTest extends TestCase {
   private static final String CORPUS = "testCorpus";
   private static final String TARGET1 = "target1";
 
-  private static final List<String> EMPTY = ImmutableList.of();
+  private static final ImmutableList<String> EMPTY = ImmutableList.of();
 
   /** Tests the basic case of indexing a java compilation with two sources. */
   public void testJavaExtractorSimple() throws Exception {
