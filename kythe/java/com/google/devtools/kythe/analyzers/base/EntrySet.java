@@ -250,12 +250,17 @@ public class EntrySet {
   protected static String buildSignature(
       ImmutableList<String> salts, ImmutableSortedMap<String, byte[]> properties) {
     Hasher signature = SIGNATURE_HASH_FUNCTION.newHasher();
+    logger.finest(">>>>>>>> Building signature");
     for (String salt : salts) {
+      logger.finestfmt("    Salt: %s", salt);
       signature.putString(salt, PROPERTY_VALUE_CHARSET);
     }
     for (Map.Entry<String, byte[]> property : properties.entrySet()) {
+      logger.finestfmt("    %s: %s", property.getKey(), new String(property.getValue()));
       signature.putString(property.getKey(), PROPERTY_VALUE_CHARSET).putBytes(property.getValue());
     }
-    return signature.hash().toString();
+    String ret = signature.hash().toString();
+    logger.finestfmt("<<<<<<<< Built signature: %s", ret);
+    return ret;
   }
 }
