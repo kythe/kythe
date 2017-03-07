@@ -179,6 +179,7 @@ class Vistor {
         case ts.SyntaxKind.FunctionDeclaration:
         case ts.SyntaxKind.InterfaceDeclaration:
         case ts.SyntaxKind.MethodDeclaration:
+        case ts.SyntaxKind.MethodSignature:
         case ts.SyntaxKind.NamespaceImport:
         case ts.SyntaxKind.Parameter:
         case ts.SyntaxKind.PropertyDeclaration:
@@ -452,6 +453,37 @@ class Vistor {
       kFunc = this.newVName('TODO');
     }
 
+    if (decl.parent) {
+      // Emit a "childof" edge on class/interface members.
+      let parentName: ts.Identifier|undefined;
+      let namespace: TSNamespace|undefined;
+      switch (decl.parent.kind) {
+        case ts.SyntaxKind.ClassDeclaration:
+        case ts.SyntaxKind.ClassExpression:
+          parentName = (decl.parent as ts.ClassLikeDeclaration).name;
+          namespace = TSNamespace.VALUE;
+          break;
+        case ts.SyntaxKind.InterfaceDeclaration:
+          parentName = (decl.parent as ts.InterfaceDeclaration).name;
+          namespace = TSNamespace.TYPE;
+          break;
+      }
+      if (parentName !== undefined && namespace !== undefined) {
+        let kParent = this.getSymbolName(
+            this.typeChecker.getSymbolAtLocation(parentName),
+            namespace);
+        this.emitEdge(kFunc, 'childof', kParent);
+      }
+
+      // TODO: emit an "overrides" edge if this method overrides.
+      // It appears the TS API doesn't make finding that information easy,
+      // perhaps because it mostly cares about whether types are structrually
+      // compatible.  But I think you can start from the parent class/iface,
+      // then from there follow the "implements"/"extends" chain to other
+      // classes/ifaces, and then from there look for methods with matching
+      // names.
+    }
+
     for (const [index, param] of toArray(decl.parameters.entries())) {
       let sym = this.typeChecker.getSymbolAtLocation(param.name);
       let kParam = this.getSymbolName(sym, TSNamespace.VALUE);
@@ -461,7 +493,11 @@ class Vistor {
       this.emitEdge(this.newAnchor(param.name), 'defines/binding', kParam);
     }
 
-    if (decl.body) this.visit(decl.body);
+    if (decl.body) {
+      this.visit(decl.body);
+    } else {
+      this.emitFact(kFunc, 'complete', 'incomplete');
+    }
   }
 
   visitClassDeclaration(decl: ts.ClassDeclaration) {
@@ -490,6 +526,7 @@ class Vistor {
         return this.visitVariableDeclaration(node as ts.PropertyDeclaration);
       case ts.SyntaxKind.FunctionDeclaration:
       case ts.SyntaxKind.MethodDeclaration:
+      case ts.SyntaxKind.MethodSignature:
         return this.visitFunctionLikeDeclaration(
             node as ts.FunctionLikeDeclaration);
       case ts.SyntaxKind.ClassDeclaration:
