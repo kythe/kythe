@@ -361,7 +361,9 @@ func (t *Table) edges(ctx context.Context, req edgesRequest) (*gpb.EdgesReply, e
 					for _, n := range ns {
 						if len(patterns) > 0 && !nodeTickets.Contains(n.Ticket) {
 							nodeTickets.Add(n.Ticket)
-							reply.Nodes[n.Ticket] = nodeToInfo(patterns, n)
+							if info := nodeToInfo(patterns, n); info != nil {
+								reply.Nodes[n.Ticket] = info
+							}
 						}
 					}
 					groups[grp.Kind] = ng
@@ -396,7 +398,9 @@ func (t *Table) edges(ctx context.Context, req edgesRequest) (*gpb.EdgesReply, e
 						for _, n := range ns {
 							if len(patterns) > 0 && !nodeTickets.Contains(n.Ticket) {
 								nodeTickets.Add(n.Ticket)
-								reply.Nodes[n.Ticket] = nodeToInfo(patterns, n)
+								if info := nodeToInfo(patterns, n); info != nil {
+									reply.Nodes[n.Ticket] = info
+								}
 							}
 						}
 						groups[ep.EdgesGroup.Kind] = ng
@@ -512,6 +516,9 @@ func nodeToInfo(patterns []*regexp.Regexp, n *srvpb.Node) *cpb.NodeInfo {
 			ni.Facts[f.Name] = f.Value
 		}
 	}
+	if len(ni.Facts) == 0 {
+		return nil
+	}
 	return ni
 }
 
@@ -579,11 +586,12 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 		reply.Nodes = make(map[string]*cpb.NodeInfo)
 
 		// Reference.TargetTicket -> NodeInfo (superset of reply.Nodes)
-		var nodes map[string]*cpb.NodeInfo
+		nodes := make(map[string]*cpb.NodeInfo)
 		if len(patterns) > 0 {
-			nodes = make(map[string]*cpb.NodeInfo)
 			for _, n := range decor.Target {
-				nodes[n.Ticket] = nodeToInfo(patterns, n)
+				if info := nodeToInfo(patterns, n); info != nil {
+					nodes[n.Ticket] = info
+				}
 			}
 		}
 
@@ -624,8 +632,8 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 
 					reply.Reference = append(reply.Reference, r)
 
-					if nodes != nil {
-						reply.Nodes[r.TargetTicket] = nodes[r.TargetTicket]
+					if n := nodes[r.TargetTicket]; n != nil {
+						reply.Nodes[r.TargetTicket] = n
 					}
 				}
 			}
@@ -650,8 +658,8 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 					}
 					os.Override = append(os.Override, ov)
 
-					if nodes != nil {
-						reply.Nodes[o.Overridden] = nodes[o.Overridden]
+					if n := nodes[o.Overridden]; n != nil {
+						reply.Nodes[o.Overridden] = n
 					}
 					if req.TargetDefinitions {
 						if def, ok := defs[o.OverriddenDefinition]; ok {
@@ -1187,10 +1195,12 @@ func (s *refStats) addRelatedNodes(reply *xpb.CrossReferencesReply, crs *xpb.Cro
 	s.total += len(ns)
 	for _, rn := range ns {
 		if _, ok := nodes[rn.Node.Ticket]; !ok {
-			nodes[rn.Node.Ticket] = nodeToInfo(patterns, rn.Node)
-			if defs != nil && rn.Node.DefinitionLocation != nil {
-				nodes[rn.Node.Ticket].Definition = rn.Node.DefinitionLocation.Ticket
-				defs[rn.Node.DefinitionLocation.Ticket] = a2a(rn.Node.DefinitionLocation, false).Anchor
+			if info := nodeToInfo(patterns, rn.Node); info != nil {
+				nodes[rn.Node.Ticket] = info
+				if defs != nil && rn.Node.DefinitionLocation != nil {
+					nodes[rn.Node.Ticket].Definition = rn.Node.DefinitionLocation.Ticket
+					defs[rn.Node.DefinitionLocation.Ticket] = a2a(rn.Node.DefinitionLocation, false).Anchor
+				}
 			}
 		}
 		crs.RelatedNode = append(crs.RelatedNode, &xpb.CrossReferencesReply_RelatedNode{
