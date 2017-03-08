@@ -21,15 +21,24 @@ import (
 	"sort"
 	"testing"
 
+	"kythe.io/kythe/go/util/ptypes"
+
 	apb "kythe.io/kythe/proto/analysis_proto"
+	bipb "kythe.io/kythe/proto/buildinfo_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
 	anypb "kythe.io/third_party/proto/any_proto"
 )
 
 func TestIndexing(t *testing.T) {
+	buildInfo, err := ptypes.MarshalAny(&bipb.BuildDetails{
+		BuildTarget: "T",
+	})
+	if err != nil {
+		t.Fatalf("Error marshaling build details: %v", err)
+	}
 	unit := Unit{Proto: &apb.CompilationUnit{
 		VName: &spb.VName{
-			Signature: "T",
+			Signature: "false target",
 			Language:  "c++",
 		},
 		RequiredInput: []*apb.CompilationUnit_FileInput{{
@@ -40,6 +49,7 @@ func TestIndexing(t *testing.T) {
 		}},
 		SourceFile: []string{"S"},
 		OutputKey:  "O",
+		Details:    []*anypb.Any{buildInfo},
 	}}
 
 	idx := unit.Index()

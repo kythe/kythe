@@ -9,6 +9,7 @@ go_package_library(
         "//kythe/go/platform/kcd",
         "//kythe/go/util/ptypes",
         "//kythe/proto:analysis_proto_go",
+        "//kythe/proto:buildinfo_proto_go",
         "//kythe/proto:storage_proto_go",
         "@go_protobuf//:proto",
     ],

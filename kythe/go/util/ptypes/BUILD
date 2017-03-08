@@ -9,6 +9,7 @@ go_package_library(
         "//third_party/proto:any_proto_go",
         "@go_protobuf//:proto",
         "@go_protobuf//:ptypes",
+        "@go_protobuf//:ptypes/any",
     ],
 )
 

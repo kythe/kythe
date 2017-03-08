@@ -28,6 +28,7 @@ import (
 	"kythe.io/kythe/go/util/ptypes"
 
 	apb "kythe.io/kythe/proto/analysis_proto"
+	bipb "kythe.io/kythe/proto/buildinfo_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
 )
 
@@ -59,6 +60,12 @@ func (u Unit) Index() kcd.Index {
 	for _, ri := range u.Proto.RequiredInput {
 		if info := ri.Info; info != nil {
 			idx.Inputs = append(idx.Inputs, info.Digest)
+		}
+	}
+	for _, detail := range u.Proto.Details {
+		var info bipb.BuildDetails
+		if err := ptypes.UnmarshalAny(detail, &info); err == nil {
+			idx.Target = info.BuildTarget
 		}
 	}
 	return idx
