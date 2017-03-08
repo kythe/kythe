@@ -436,11 +436,11 @@ depends
 ~~~~~~~
 
 Brief description::
-  A *depends* B if processing of A depends on the existence or presence of B.
+  A *depends* B if processing of A depends on the existence or presence of B. For example, if a process depends a set of files and/or processes. Another example, a file depends upon a process which outputs said file.
 Commonly arises from::
   build dependencies
 Points from::
-  <<process>>
+  <<process>>, <<file>>
 Points toward::
   <<process>>, <<file>>
 Ordinals are used::
