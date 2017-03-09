@@ -923,7 +923,8 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 			}
 		}
 
-		if wantMoreCrossRefs && req.DeclarationKind != xpb.CrossReferencesRequest_NO_DECLARATIONS {
+		if !features[srvpb.PagedCrossReferences_DECLARATIONS] &&
+			wantMoreCrossRefs && req.DeclarationKind != xpb.CrossReferencesRequest_NO_DECLARATIONS {
 			decls, err := xrefs.SlowDeclarationsForCrossReferences(ctx, t, ticket)
 			if err != nil {
 				return nil, fmt.Errorf("error in SlowDeclarations: %v", err)

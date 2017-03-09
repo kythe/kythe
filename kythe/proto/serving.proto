@@ -266,6 +266,8 @@ message PagedCrossReferences {
     MARKED_SOURCE = 1;
     // Callers are mixed with related anchors.
     CALLERS = 2;
+    // Declarations are mixed with related anchors.
+    DECLARATIONS = 3;
   }
 
   // Node which is related to the source_ticket node.  The relation kind is

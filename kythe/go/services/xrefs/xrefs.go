@@ -148,15 +148,12 @@ func IsDefKind(requestedKind xpb.CrossReferencesRequest_DefinitionKind, edgeKind
 // IsDeclKind reports whether the given edgeKind matches the requested
 // declaration kind
 func IsDeclKind(requestedKind xpb.CrossReferencesRequest_DeclarationKind, edgeKind string, incomplete bool) bool {
-	if !incomplete {
-		return false
-	}
 	edgeKind = edges.Canonical(edgeKind)
 	switch requestedKind {
 	case xpb.CrossReferencesRequest_NO_DECLARATIONS:
 		return false
 	case xpb.CrossReferencesRequest_ALL_DECLARATIONS:
-		return edges.IsVariant(edgeKind, edges.Defines)
+		return (incomplete && edges.IsVariant(edgeKind, edges.Defines)) || edgeKind == internalDeclarationKind
 	default:
 		log.Printf("ERROR: unhandled CrossReferenceRequest_DeclarationKind: %v", requestedKind)
 		return false
@@ -182,11 +179,12 @@ func IsRefKind(requestedKind xpb.CrossReferencesRequest_ReferenceKind, edgeKind 
 	}
 }
 
-// Internal-only edge kinds for caller cross-references
+// Internal-only edge kinds for cross-references
 const (
 	internalKindPrefix         = "#internal/"
 	internalCallerKindDirect   = internalKindPrefix + "ref/call/direct"
 	internalCallerKindOverride = internalKindPrefix + "ref/call/override"
+	internalDeclarationKind    = internalKindPrefix + "ref/declare"
 )
 
 // IsInternalKind determines whether the given edge kind is an internal variant.
