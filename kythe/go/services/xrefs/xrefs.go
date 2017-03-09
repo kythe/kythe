@@ -30,6 +30,7 @@ import (
 	"regexp"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"kythe.io/kythe/go/services/web"
@@ -183,9 +184,21 @@ func IsRefKind(requestedKind xpb.CrossReferencesRequest_ReferenceKind, edgeKind 
 
 // Internal-only edge kinds for caller cross-references
 const (
-	internalCallerKindDirect   = "#internal/ref/call/direct"
-	internalCallerKindOverride = "#internal/ref/call/override"
+	internalKindPrefix         = "#internal/"
+	internalCallerKindDirect   = internalKindPrefix + "ref/call/direct"
+	internalCallerKindOverride = internalKindPrefix + "ref/call/override"
 )
+
+// IsInternalKind determines whether the given edge kind is an internal variant.
+func IsInternalKind(kind string) bool {
+	return strings.HasPrefix(kind, internalKindPrefix)
+}
+
+// IsRelatedNodeKind determines whether the give edge kind is a non-anchor,
+// related node kind.
+func IsRelatedNodeKind(kind string) bool {
+	return !IsInternalKind(kind) && !edges.IsAnchorEdge(kind)
+}
 
 // IsCallerKind determines whether the given edgeKind matches the requested
 // caller kind.

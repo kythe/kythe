@@ -869,7 +869,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 					stats.addAnchors(&crs.Reference, grp, req.AnchorText)
 				}
 			case features[srvpb.PagedCrossReferences_RELATED_NODES] &&
-				len(req.Filter) > 0 && !edges.IsAnchorEdge(grp.Kind):
+				len(req.Filter) > 0 && xrefs.IsRelatedNodeKind(grp.Kind):
 				reply.Total.RelatedNodesByRelation[grp.Kind] += int64(len(grp.RelatedNode))
 				if wantMoreCrossRefs {
 					stats.addRelatedNodes(reply, crs, grp, patterns)
@@ -988,7 +988,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 					stats.addAnchors(&crs.Reference, p.Group, req.AnchorText)
 				}
 			case features[srvpb.PagedCrossReferences_RELATED_NODES] &&
-				len(req.Filter) > 0 && !edges.IsAnchorEdge(idx.Kind):
+				len(req.Filter) > 0 && xrefs.IsRelatedNodeKind(idx.Kind):
 				reply.Total.RelatedNodesByRelation[idx.Kind] += int64(idx.Count)
 				if wantMoreCrossRefs && !stats.skipPage(idx) {
 					p, err := t.crossReferencesPage(ctx, idx.PageKey)
