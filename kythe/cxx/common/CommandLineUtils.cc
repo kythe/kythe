@@ -284,8 +284,7 @@ AdjustClangArgsForSyntaxOnly(const std::vector<std::string> &clang_args) {
       "|-nostartfiles"
       "|-s"
       "|-shared");
-  const FullMatchRegex inapplicable_args_with_values_re("-M[FTQ]"
-                                                        "|-o");
+  const FullMatchRegex inapplicable_args_with_values_re("-M[FTQ]");
 
   std::vector<std::string> result = CopyOmittingMatchesAndFollowers(
       inapplicable_args_with_values_re,
