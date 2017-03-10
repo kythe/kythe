@@ -126,6 +126,9 @@ int main(int argc, char *argv[]) {
   config.SetArgs(args);
   config.SetVNameConfig(vname_config);
   config.SetTargetName(info.owner());
+  if (spawn_info.output_file_size() > 0) {
+    config.SetOutputPath(spawn_info.output_file(0));
+  }
   config.Extract(kythe::supported_language::Language::kObjectiveC);
   google::protobuf::ShutdownProtobufLibrary();
   return 0;

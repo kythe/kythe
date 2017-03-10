@@ -962,11 +962,13 @@ void IndexWriter::WriteIndex(
 
   // Try to find the name of the output file. It's okay if this doesn't succeed.
   // TODO(fromberger): Consider maybe recognizing "-ofoo" too.
-  std::string output_file;
-  for (int i = 0; i < args_.size(); i++) {
-    if (args_[i] == "-o" && (i + 1) < args_.size()) {
-      output_file = args_[i + 1];
-      break;
+  std::string output_file = output_path_;
+  if (output_file.empty()) {
+    for (int i = 0; i < args_.size(); i++) {
+      if (args_[i] == "-o" && (i + 1) < args_.size()) {
+        output_file = args_[i + 1];
+        break;
+      }
     }
   }
 
