@@ -17,7 +17,7 @@
 package com.google.devtools.kythe.analyzers.base;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableMap;
+import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
 import com.google.devtools.kythe.proto.MarkedSource;
@@ -43,6 +43,8 @@ import java.util.Map;
  * <p>This class is meant to be subclassed to build indexer-specific nodes and edges.
  */
 public class KytheEntrySets {
+  private static final FormattingLogger logger = FormattingLogger.getLogger(KytheEntrySets.class);
+
   public static final String NODE_PREFIX = "/kythe/";
 
   private final Map<String, EntrySet> nameNodes = new HashMap<>();
@@ -64,7 +66,7 @@ public class KytheEntrySets {
     this.language = compilationVName.getLanguage();
     this.compilationVName = compilationVName;
 
-    ImmutableMap.Builder<String, VName> inputVNames = ImmutableMap.builder();
+    inputVNames = new HashMap<>();
     for (FileInput input : requiredInputs) {
       String digest = input.getInfo().getDigest();
       VName.Builder name = input.getVName().toBuilder();
@@ -74,9 +76,14 @@ public class KytheEntrySets {
         // Ensure file VName has digest signature
         name = name.setSignature(digest);
       }
+      if (inputVNames.containsKey(digest)) {
+        statistics.incrementCounter("file-digest-collision");
+        logger.warningfmt(
+            "Found two files with the same digest [%s]: %s and %s",
+            digest, name, inputVNames.get(digest));
+      }
       inputVNames.put(digest, name.build());
     }
-    this.inputVNames = inputVNames.build();
   }
 
   /** Returns the {@link FactEmitter} used to emit generated {@link EntrySet}s. */
