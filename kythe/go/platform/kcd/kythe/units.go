@@ -77,7 +77,7 @@ func (u Unit) Index() kcd.Index {
 func (u Unit) Canonicalize() {
 	pb := u.Proto
 
-	sort.Sort(byDigest(pb.RequiredInput))
+	pb.RequiredInput = sortAndDedup(pb.RequiredInput)
 	sort.Sort(byName(pb.Environment))
 	sort.Strings(pb.SourceFile)
 	ptypes.SortByTypeURL(pb.Details)
@@ -94,13 +94,15 @@ func ConvertUnit(v interface{}) (kcd.Unit, bool) {
 
 type byDigest []*apb.CompilationUnit_FileInput
 
-func (b byDigest) Len() int      { return len(b) }
-func (b byDigest) Swap(i, j int) { b[i], b[j] = b[j], b[i] }
-func (b byDigest) Less(i, j int) bool {
-	if n := strings.Compare(b[i].Info.GetDigest(), b[j].Info.GetDigest()); n != 0 {
-		return n < 0
+func (b byDigest) Len() int           { return len(b) }
+func (b byDigest) Swap(i, j int)      { b[i], b[j] = b[j], b[i] }
+func (b byDigest) Less(i, j int) bool { return compareInputs(b[i], b[j]) < 0 }
+
+func compareInputs(a, b *apb.CompilationUnit_FileInput) int {
+	if n := strings.Compare(a.Info.GetDigest(), b.Info.GetDigest()); n != 0 {
+		return n
 	}
-	return b[i].Info.GetPath() < b[j].Info.GetPath()
+	return strings.Compare(a.Info.GetPath(), b.Info.GetPath())
 }
 
 type byName []*apb.CompilationUnit_Env
@@ -108,3 +110,29 @@ type byName []*apb.CompilationUnit_Env
 func (b byName) Len() int           { return len(b) }
 func (b byName) Less(i, j int) bool { return b[i].Name < b[j].Name }
 func (b byName) Swap(i, j int)      { b[i], b[j] = b[j], b[i] }
+
+func sortAndDedup(ri []*apb.CompilationUnit_FileInput) []*apb.CompilationUnit_FileInput {
+	if len(ri) == 0 {
+		return nil
+	}
+	sort.Sort(byDigest(ri))
+
+	// Invariant: All elements at or before i are unique (no duplicates).
+	i, j := 0, 1
+	for j < len(ri) {
+		// If ri[j] ≠ ri[i], it is a new element, not a duplicate.  Move it
+		// next in sequence after i and advance i; this ensures we keep the
+		// first occurrence among duplicates.
+		//
+		// Otherwise, ri[k] == ri[i] for i <= k <= j, i.e., we are scanning a
+		// run of duplicates, and should leave i where it is.
+		if compareInputs(ri[i], ri[j]) != 0 {
+			i++
+			if i != j {
+				ri[i], ri[j] = ri[j], ri[i]
+			}
+		}
+		j++
+	}
+	return ri[:i+1]
+}

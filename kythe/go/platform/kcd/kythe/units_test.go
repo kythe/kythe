@@ -77,6 +77,8 @@ func TestCanonicalization(t *testing.T) {
 			{Info: &apb.FileInfo{Digest: "B"}},
 			{Info: &apb.FileInfo{Digest: "C"}},
 			{Info: &apb.FileInfo{Digest: "A"}},
+			{Info: &apb.FileInfo{Digest: "C"}},
+			{Info: &apb.FileInfo{Digest: "A"}},
 		},
 		SourceFile: []string{"C", "A", "B"},
 		Environment: []*apb.CompilationUnit_Env{
