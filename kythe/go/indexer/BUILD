@@ -20,6 +20,7 @@ go_library(
         "@go_protobuf//:proto",
         "@go_stringset//:stringset",
         "@go_x_tools//:go/gcexportdata",
+        "@go_x_tools//:go/types/typeutil",
     ],
 )
 
@@ -97,4 +98,9 @@ go_indexer_test(
 go_indexer_test(
     name = "unsafe_test",
     srcs = ["testdata/unsafe.go"],
+)
+
+go_indexer_test(
+    name = "implements_test",
+    srcs = ["testdata/basic/implements.go"],
 )

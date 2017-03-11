@@ -25,3 +25,8 @@ external_go_package(
         "gcimporter16_test.go",
     ],
 )
+
+external_go_package(
+    name = "go/types/typeutil",
+    base_pkg = "golang.org/x/tools",
+)

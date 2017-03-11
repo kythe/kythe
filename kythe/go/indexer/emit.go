@@ -27,6 +27,7 @@ import (
 	"strings"
 
 	"github.com/golang/protobuf/proto"
+	"golang.org/x/tools/go/types/typeutil"
 
 	"kythe.io/kythe/go/extractors/govname"
 	"kythe.io/kythe/go/util/schema/edges"
@@ -52,6 +53,9 @@ func (e *EmitOptions) shouldEmit(vname *spb.VName) bool {
 	return e != nil && e.EmitStandardLibs && govname.IsStandardLibrary(vname)
 }
 
+// An impl records that a type A implements an interface B.
+type impl struct{ A, B types.Object }
+
 // Emit generates Kythe facts and edges to represent pi, and writes them to
 // sink. In case of errors, processing continues as far as possible before the
 // first error encountered is reported.
@@ -61,6 +65,7 @@ func (pi *PackageInfo) Emit(ctx context.Context, sink Sink, opts *EmitOptions) e
 		pi:   pi,
 		sink: sink,
 		opts: opts,
+		impl: make(map[impl]bool),
 	}
 
 	// Emit a node to represent the package as a whole.
@@ -103,6 +108,10 @@ func (pi *PackageInfo) Emit(ctx context.Context, sink Sink, opts *EmitOptions) e
 		}), file)
 	}
 
+	// Emit edges from each named type to the interface types it satisfies, for
+	// those interface types that are known to this compiltion.
+	e.emitSatisfactions()
+
 	// TODO(fromberger): Add diagnostics for type-checker errors.
 	for _, err := range pi.Errors {
 		log.Printf("WARNING: Type resolution error: %v", err)
@@ -115,6 +124,7 @@ type emitter struct {
 	pi       *PackageInfo
 	sink     Sink
 	opts     *EmitOptions
+	impl     map[impl]bool
 	firstErr error
 }
 
@@ -255,7 +265,9 @@ func (e *emitter) visitTypeSpec(spec *ast.TypeSpec, stack stackFunc) {
 		}
 		// Mark the interface as an extension of any embedded interfaces.
 		for i, n := 0, t.NumEmbeddeds(); i < n; i++ {
-			e.writeEdge(target, e.pi.ObjectVName(t.Embedded(i).Obj()), edges.Extends)
+			if eobj := t.Embedded(i).Obj(); e.checkImplements(obj, eobj) {
+				e.writeEdge(target, e.pi.ObjectVName(eobj), edges.Extends)
+			}
 		}
 
 		// Add bindings for the explicitly-named methods in this declaration.
@@ -356,10 +368,123 @@ func (e *emitter) emitParameters(ftype *ast.FuncType, sig *types.Signature, info
 	})
 }
 
+// emitSatisfactions visits each named type known through the compilation being
+// indexed, and emits edges connecting it to any known interfaces its method
+// set satisfies.
+func (e *emitter) emitSatisfactions() {
+	// Find the names of all defined types mentioned in this compilation.
+	var allNames []*types.TypeName
+
+	// For the current source package, use all names, even local ones.
+	for _, obj := range e.pi.Info.Defs {
+		if obj, ok := obj.(*types.TypeName); ok {
+			if _, ok := obj.Type().(*types.Named); ok {
+				allNames = append(allNames, obj)
+			}
+		}
+	}
+
+	// For dependencies, we only have access to package-level types, not those
+	// defined by inner scopes.
+	for _, pkg := range e.pi.Dependencies {
+		scope := pkg.Scope()
+		for _, name := range scope.Names() {
+			if obj, ok := scope.Lookup(name).(*types.TypeName); ok {
+				if _, ok := obj.Type().(*types.Named); ok {
+					allNames = append(allNames, obj)
+				}
+			}
+		}
+	}
+
+	// Cache the method set of each named type in this package.
+	var msets typeutil.MethodSetCache
+	for _, xobj := range allNames {
+		if xobj.Pkg() != e.pi.Package {
+			continue // not from this package
+		}
+
+		// Check whether x is a named type with methods; if not, skip it.
+		x := xobj.Type()
+		ximset := typeutil.IntuitiveMethodSet(x, &msets)
+		if len(ximset) == 0 {
+			continue // no methods to consider
+		}
+
+		// TODO(fromberger): This relation isn't really "extends", but for now
+		// that is our best match. See T224 for more discussion.
+		//
+		// TODO(fromberger): Consider adding "override" edges between the
+		// concrete methods and the interface methods they implement.
+		//
+		// N.B. This implementation is quadratic in the number of visible
+		// interfaces, but that's probably OK since are only considering a
+		// single compilation.
+
+		for _, yobj := range allNames {
+			if xobj == yobj {
+				continue
+			}
+
+			y := yobj.Type()
+			ymset := msets.MethodSet(y)
+
+			ifx, ify := isInterface(x), isInterface(y)
+			switch {
+			case ifx && ify && ymset.Len() > 0:
+				if types.AssignableTo(x, y) {
+					e.writeImplements(xobj, yobj)
+				}
+				if types.AssignableTo(y, x) {
+					e.writeImplements(yobj, xobj)
+				}
+
+			case ifx:
+				// y is a concrete type
+				if types.AssignableTo(y, x) {
+					e.writeImplements(yobj, xobj)
+				} else if py := types.NewPointer(y); types.AssignableTo(py, x) {
+					e.writeImplements(yobj, xobj)
+					// TODO(fromberger): Do we want this case?
+				}
+
+			case ify && ymset.Len() > 0:
+				// x is a concrete type
+				if types.AssignableTo(x, y) {
+					e.writeImplements(xobj, yobj)
+				} else if px := types.NewPointer(x); types.AssignableTo(px, y) {
+					e.writeImplements(xobj, yobj)
+					// TODO(fromberger): Do we want this case?
+				}
+
+			default:
+				// Both x and y are concrete.
+			}
+		}
+	}
+}
+
+func isInterface(typ types.Type) bool { _, ok := typ.Underlying().(*types.Interface); return ok }
+
 func (e *emitter) check(err error) {
 	if err != nil && e.firstErr == nil {
 		e.firstErr = err
 		log.Printf("ERROR indexing %q: %v", e.pi.ImportPath, err)
+	}
+}
+
+func (e *emitter) checkImplements(src, tgt types.Object) bool {
+	i := impl{A: src, B: tgt}
+	if e.impl[i] {
+		return false
+	}
+	e.impl[i] = true
+	return true
+}
+
+func (e *emitter) writeImplements(src, tgt types.Object) {
+	if e.checkImplements(src, tgt) {
+		e.writeEdge(e.pi.ObjectVName(src), e.pi.ObjectVName(tgt), edges.Extends)
 	}
 }
 
