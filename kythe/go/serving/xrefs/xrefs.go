@@ -417,7 +417,9 @@ func (t *Table) edges(ctx context.Context, req edgesRequest) (*gpb.EdgesReply, e
 
 			if len(patterns) > 0 && !nodeTickets.Contains(pes.Source.Ticket) {
 				nodeTickets.Add(pes.Source.Ticket)
-				reply.Nodes[pes.Source.Ticket] = nodeToInfo(patterns, pes.Source)
+				if info := nodeToInfo(patterns, pes.Source); info != nil {
+					reply.Nodes[pes.Source.Ticket] = info
+				}
 			}
 		}
 	}
