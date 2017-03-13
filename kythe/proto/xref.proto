@@ -584,7 +584,7 @@ message DocumentationReply {
   repeated Document document = 1;
   // The facts left from the requested filters of the documented node facts.
   map<string, common.NodeInfo> nodes = 2;
-  // Map from the definition tickets referred to in each NodeInfo to their
-  // Anchor.
+  // Map from the definition anchor tickets referred to in each NodeInfo to
+  // their corresponding Anchor data.
   map<string, Anchor> definition_locations = 3;
 }
