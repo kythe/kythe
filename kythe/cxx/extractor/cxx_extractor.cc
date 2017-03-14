@@ -1134,6 +1134,7 @@ bool ExtractorConfiguration::Extract(supported_language::Language lang,
       new clang::FileManager(file_system_options_));
   index_writer_.set_target_name(target_name_);
   index_writer_.set_rule_type(rule_type_);
+  index_writer_.set_output_path(output_path_);
   auto extractor = NewExtractor(
       &index_writer_,
       [this, &lang, &sink](
