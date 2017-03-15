@@ -15,6 +15,7 @@
  */
 
 import 'source-map-support/register';
+import * as fs from 'fs';
 import * as path from 'path';
 import * as ts from 'typescript';
 
@@ -616,24 +617,37 @@ export function index(
   }
 }
 
+/**
+ * loadTsConfig loads a tsconfig.json from a path, throwing on any errors
+ * like "file not found" or parse errors.
+ */
+export function loadTsConfig(path: string, projectPath: string): ts.ParsedCommandLine {
+  let {config: json, error} = ts.readConfigFile(path, (path: string) => {
+    return fs.readFileSync(path, 'utf8');
+  });
+  if (error) {
+    throw new Error(ts.formatDiagnostics([error], ts.createCompilerHost({})));
+  }
+  let config = ts.parseJsonConfigFileContent(json, ts.sys, projectPath);
+  if (config.errors.length > 0) {
+    throw new Error(ts.formatDiagnostics(config.errors, ts.createCompilerHost({})));
+  }
+  return config;
+}
+
 function main(argv: string[]) {
-  if (argv.length < 3) {
-    console.error('usage: indexer PATH...');
+  if (argv.length < 1) {
+    console.error('usage: indexer path/to/tsconfig.json [PATH...]');
     return 1;
   }
-  let inPaths = argv.slice(2);
-  // TODO: accept compiler options from the user.
-  // These options are just enough to get indexer.ts itself indexable.
-  let tsOpts: ts.CompilerOptions = {
-    module: ts.ModuleKind.CommonJS,
-    target: ts.ScriptTarget.ES2015,
-    // NOTE: the 'lib' parameter in tsconfig.json is translated by the 'tsc'
-    // command-line parser into one of these values, which are what the compiler
-    // uses internally.  This is just enough to get this indexer.ts to be able
-    // to load itself for debugging.
-    lib: ['lib.es6.d.ts'],
-  };
-  let program = ts.createProgram(inPaths, tsOpts);
+
+  let config = loadTsConfig(argv[0], path.dirname(argv[0]));
+  let inPaths = argv.slice(1);
+  if (inPaths.length === 0) {
+    inPaths = config.fileNames;
+  }
+
+  let program = ts.createProgram(inPaths, config.options);
   index(inPaths, program);
   return 0;
 }
@@ -641,5 +655,5 @@ function main(argv: string[]) {
 if (require.main === module) {
   // Note: do not use process.exit(), because that does not ensure that
   // process.stdout has been flushed(!).
-  process.exitCode = main(process.argv);
+  process.exitCode = main(process.argv.slice(2));
 }

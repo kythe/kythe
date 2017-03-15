@@ -4,7 +4,7 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
-    "browse": "node indexer.js indexer.ts | ./browse",
+    "browse": "node indexer.js tsconfig.json | ./browse",
     "test": "yarn build && yarn runtest",
     "runtest": "node test.js"
   },
