@@ -1117,6 +1117,68 @@ fact_value: "42"
   ASSERT_TRUE(v.VerifyAllGoals());
 }
 
+TEST(VerifierUnitTest, BCPLCommentBlocksWrongRule) {
+  Verifier v;
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+#- //SomeNode.content 43
+#- SomeNode.content 42
+source { root:"1" }
+fact_name: "/kythe/content"
+fact_value: "42"
+})"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_TRUE(v.VerifyAllGoals());
+}
+
+TEST(VerifierUnitTest, BCPLCommentInStringLiteral) {
+  Verifier v;
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+#- SomeNode.content "4//2"
+source { root:"1" }
+fact_name: "/kythe/content"
+fact_value: "4//2"
+})"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_TRUE(v.VerifyAllGoals());
+}
+
+TEST(VerifierUnitTest, BCPLCommentTrailingValue) {
+  Verifier v;
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+#- SomeNode.content 42//x
+source { root:"1" }
+fact_name: "/kythe/content"
+fact_value: "42"
+})"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_TRUE(v.VerifyAllGoals());
+}
+
+TEST(VerifierUnitTest, EmptyBCPLCommentTrailingValue) {
+  Verifier v;
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+#- SomeNode.content 42//
+source { root:"1" }
+fact_name: "/kythe/content"
+fact_value: "42"
+})"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_TRUE(v.VerifyAllGoals());
+}
+
+TEST(VerifierUnitTest, EmptyBCPLComment) {
+  Verifier v;
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+#-//
+#- SomeNode.content 43
+source { root:"1" }
+fact_name: "/kythe/content"
+fact_value: "42"
+})"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_FALSE(v.VerifyAllGoals());
+}
+
 TEST(VerifierUnitTest, EVarsUnsetAfterNegatedBlock) {
   Verifier v;
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {

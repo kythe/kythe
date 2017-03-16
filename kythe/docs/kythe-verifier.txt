@@ -85,6 +85,14 @@ matching behavior uses the regex `\s*\/\/\-(.*)`. To specify an alternate
 regex--for example, one that requires goals to be bracketed--use
 `--goal_regex='\s*\/\/\-\s*\[(.*)\]'`.
 
+You may use BCPL-style comments in the assertion language:
+
+  //- this-is-a-goal // and this is ignored.
+
+The `//` token is independent of the goal prefix or regex:
+
+  #- this-is-a-goal // and this is ignored.
+
 === Literal strings
 
 The verifier permits literal strings to be specified with C-style escapes:

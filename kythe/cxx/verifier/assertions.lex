@@ -81,25 +81,26 @@ blank [ \t]
           context.ResetLine();
           BEGIN(INITIAL);
          }
-"("      return yy::AssertionParserImpl::token::LPAREN;
-")"      return yy::AssertionParserImpl::token::RPAREN;
-","      return yy::AssertionParserImpl::token::COMMA;
-"_"      return yy::AssertionParserImpl::token::DONTCARE;
-"'"      return yy::AssertionParserImpl::token::APOSTROPHE;
-"@^"     return yy::AssertionParserImpl::token::AT_HAT;
-"@$"     return yy::AssertionParserImpl::token::AT_CASH;
-"@"      return yy::AssertionParserImpl::token::AT;
-"."      return yy::AssertionParserImpl::token::DOT;
-"?"      return yy::AssertionParserImpl::token::WHAT;
-"="      return yy::AssertionParserImpl::token::EQUALS;
-"{"      return yy::AssertionParserImpl::token::LBRACE;
-"}"      return yy::AssertionParserImpl::token::RBRACE;
-"!"      return yy::AssertionParserImpl::token::BANG;
-":"      return yy::AssertionParserImpl::token::COLON;
-"+"      return yy::AssertionParserImpl::token::PLUS;
-"#"      return yy::AssertionParserImpl::token::HASH;
-{int}    yylval->string = yytext; return yy::AssertionParserImpl::token::NUMBER;
-{id}     yylval->string = yytext; return yy::AssertionParserImpl::token::IDENTIFIER;
+"//"[^\n]* yylloc->step();
+"("        return yy::AssertionParserImpl::token::LPAREN;
+")"        return yy::AssertionParserImpl::token::RPAREN;
+","        return yy::AssertionParserImpl::token::COMMA;
+"_"        return yy::AssertionParserImpl::token::DONTCARE;
+"'"        return yy::AssertionParserImpl::token::APOSTROPHE;
+"@^"       return yy::AssertionParserImpl::token::AT_HAT;
+"@$"       return yy::AssertionParserImpl::token::AT_CASH;
+"@"        return yy::AssertionParserImpl::token::AT;
+"."        return yy::AssertionParserImpl::token::DOT;
+"?"        return yy::AssertionParserImpl::token::WHAT;
+"="        return yy::AssertionParserImpl::token::EQUALS;
+"{"        return yy::AssertionParserImpl::token::LBRACE;
+"}"        return yy::AssertionParserImpl::token::RBRACE;
+"!"        return yy::AssertionParserImpl::token::BANG;
+":"        return yy::AssertionParserImpl::token::COLON;
+"+"        return yy::AssertionParserImpl::token::PLUS;
+"#"        return yy::AssertionParserImpl::token::HASH;
+{int}      yylval->string = yytext; return yy::AssertionParserImpl::token::NUMBER;
+{id}       yylval->string = yytext; return yy::AssertionParserImpl::token::IDENTIFIER;
 \"(\\.|[^\\"])*\" {
                    std::string out;
                    if (!context.Unescape(yytext, &out)) {
