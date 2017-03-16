@@ -265,8 +265,12 @@ public class KytheEntrySets {
   }
 
   /** Returns (and emits) a new abstract node over child. */
-  public EntrySet newAbstract(EntrySet child, List<EntrySet> params) {
-    EntrySet abs = emitAndReturn(newNode(NodeKind.ABS).addSignatureSalt(child.getVName()));
+  public EntrySet newAbstract(EntrySet child, List<EntrySet> params, MarkedSource markedSource) {
+    EntrySet abs =
+        emitAndReturn(
+            newNode(NodeKind.ABS)
+                .addSignatureSalt(child.getVName())
+                .setProperty("code", markedSource));
     emitEdge(child, EdgeKind.CHILDOF, abs);
     emitOrdinalEdges(abs, EdgeKind.PARAM, params);
     return abs;

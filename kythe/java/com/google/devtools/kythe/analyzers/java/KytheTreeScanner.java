@@ -31,6 +31,7 @@ import com.google.devtools.kythe.platform.java.helpers.JCTreeScanner;
 import com.google.devtools.kythe.platform.java.helpers.JavacUtil;
 import com.google.devtools.kythe.platform.java.helpers.SignatureGenerator;
 import com.google.devtools.kythe.platform.shared.StatisticsCollector;
+import com.google.devtools.kythe.proto.MarkedSource;
 import com.google.devtools.kythe.util.Span;
 import com.sun.source.tree.MemberReferenceTree.ReferenceMode;
 import com.sun.source.tree.Tree.Kind;
@@ -235,7 +236,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     Optional<String> signature = signatureGenerator.getSignature(classDef.sym);
     if (signature.isPresent()) {
-      EntrySet classNode = entrySets.getNode(signatureGenerator, classDef.sym, signature.get());
+      MarkedSource.Builder markedSource = MarkedSource.newBuilder();
+      EntrySet classNode =
+          entrySets.getNode(signatureGenerator, classDef.sym, signature.get(), markedSource);
 
       // Find the method or class in which this class is defined, if any.
       TreeContext container = ctx.getClassOrMethodParent();
@@ -248,8 +251,6 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       if (container != null) {
         entrySets.emitEdge(classNode, EdgeKind.CHILDOF, container.getNode().entries);
       }
-
-      boolean documented = visitDocComment(classDef, classNode);
 
       Span classIdent =
           filePositions.findIdentifier(classDef.name, classDef.getPreferredPosition());
@@ -264,7 +265,11 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
               ctx,
               classNode,
               classDef.getTypeParameters(),
-              ImmutableList.<EntrySet>of() /* There are no wildcards in class definitions */);
+              ImmutableList.<EntrySet>of(), /* There are no wildcards in class definitions */
+              markedSource.build());
+
+      boolean documented = visitDocComment(classDef, classNode, absNode);
+
       if (absNode != null) {
         List<String> tParamNames = new LinkedList<>();
         for (JCTypeParameter tParam : classDef.getTypeParameters()) {
@@ -355,12 +360,15 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     Optional<String> signature = signatureGenerator.getSignature(methodDef.sym);
     if (signature.isPresent()) {
-      EntrySet methodNode = entrySets.getNode(signatureGenerator, methodDef.sym, signature.get());
-      boolean documented = visitDocComment(methodDef, methodNode);
+      MarkedSource.Builder markedSource = MarkedSource.newBuilder();
+      EntrySet methodNode =
+          entrySets.getNode(signatureGenerator, methodDef.sym, signature.get(), markedSource);
       visitAnnotations(methodNode, methodDef.getModifiers().getAnnotations(), ctx);
 
       EntrySet absNode =
-          defineTypeParameters(ctx, methodNode, methodDef.getTypeParameters(), wildcards);
+          defineTypeParameters(
+              ctx, methodNode, methodDef.getTypeParameters(), wildcards, markedSource.build());
+      boolean documented = visitDocComment(methodDef, methodNode, absNode);
 
       EntrySet ret, bindingAnchor = null;
       String fnTypeName = "(" + Joiner.on(",").join(paramTypeNames) + ")";
@@ -450,8 +458,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     Optional<String> signature = signatureGenerator.getSignature(varDef.sym);
     if (signature.isPresent()) {
-      EntrySet varNode = entrySets.getNode(signatureGenerator, varDef.sym, signature.get());
-      boolean documented = visitDocComment(varDef, varNode);
+      EntrySet varNode = entrySets.getNode(signatureGenerator, varDef.sym, signature.get(), null);
+      boolean documented = visitDocComment(varDef, varNode, null);
       emitAnchor(
           varDef.name,
           varDef.getStartPosition(),
@@ -663,8 +671,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     return scanAll(owner.downAsSnippet(assgnOp), assgnOp.lhs, assgnOp.rhs);
   }
 
-  private boolean visitDocComment(JCTree tree, EntrySet node) {
-    return docScanner != null && docScanner.visitDocComment(tree, node);
+  private boolean visitDocComment(JCTree tree, EntrySet node, EntrySet absNode) {
+    // TODO(https://phabricator-dot-kythe-repo.appspot.com/T185): always use absNode
+    return docScanner != null && docScanner.visitDocComment(tree, node, absNode);
   }
 
   //// Utility methods ////
@@ -719,7 +728,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       TreeContext ownerContext,
       EntrySet owner,
       List<JCTypeParameter> params,
-      List<EntrySet> wildcards) {
+      List<EntrySet> wildcards,
+      MarkedSource markedSource) {
     if (params.isEmpty() && wildcards.isEmpty()) {
       return null;
     }
@@ -746,7 +756,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     // public static <T> void foo(Ty<?> a, Obj<?, ?> b, Obj<Ty<?>, Ty<?>> c) should declare an abs
     // node that has 1 named absvar (T) and 5 unnamed absvars.
     typeParams.addAll(wildcards);
-    return entrySets.newAbstract(owner, typeParams);
+    return entrySets.newAbstract(owner, typeParams, markedSource);
   }
 
   /** Returns the node associated with a {@link Symbol} or {@code null}. */
@@ -762,7 +772,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       return null;
     }
     return new JavaNode(
-        entrySets.getNode(signatureGenerator, sym, signature.get()), signature.get());
+        entrySets.getNode(signatureGenerator, sym, signature.get(), null), signature.get());
   }
 
   private void visitAnnotations(
@@ -806,7 +816,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     Symbol javaLangObject = getSymbols().objectType.asElement();
     String javaLangObjectSignature = signatureGenerator.getSignature(javaLangObject).get();
     EntrySet javaLangObjectEntrySet =
-        entrySets.getNode(signatureGenerator, javaLangObject, javaLangObjectSignature);
+        entrySets.getNode(signatureGenerator, javaLangObject, javaLangObjectSignature, null);
     return new JavaNode(javaLangObjectEntrySet, javaLangObjectSignature);
   }
 
@@ -815,7 +825,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     Symbol javaLangEnum = getSymbols().enumSym;
     String javaLangEnumSignature = signatureGenerator.getSignature(javaLangEnum).get();
     EntrySet javaLangEnumEntrySet =
-        entrySets.getNode(signatureGenerator, javaLangEnum, javaLangEnumSignature);
+        entrySets.getNode(signatureGenerator, javaLangEnum, javaLangEnumSignature, null);
     EntrySet typeNode =
         entrySets.newTApply(javaLangEnumEntrySet, Collections.singletonList(enumEntrySet));
     String qualifiedName = javaLangEnumSignature + "<" + enumSignature + ">";
@@ -860,7 +870,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     emitCommentsOnLine(defLine - 1, node);
   }
 
-  void emitDoc(String bracketedText, Iterable<Symbol> params, EntrySet node) {
+  void emitDoc(String bracketedText, Iterable<Symbol> params, EntrySet node, EntrySet absNode) {
     List<EntrySet> paramNodes = Lists.newArrayList();
     for (Symbol s : params) {
       EntrySet paramNode = getNode(s);
@@ -870,7 +880,11 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       paramNodes.add(paramNode);
     }
     EntrySet doc = entrySets.getDoc(filePositions, bracketedText, paramNodes);
+    // TODO(https://phabricator-dot-kythe-repo.appspot.com/T185): always use absNode
     entrySets.emitEdge(doc, EdgeKind.DOCUMENTS, node);
+    if (absNode != null) {
+      entrySets.emitEdge(doc, EdgeKind.DOCUMENTS, absNode);
+    }
   }
 
   private EntrySet commentAnchor(Comment comment, EntrySet node) {

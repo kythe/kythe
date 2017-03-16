@@ -160,7 +160,7 @@ public class JavaEntrySets extends KytheEntrySets {
               .build());
       Optional<String> signature = signatureGenerator.getSignature(type.tsym);
       if (signature.isPresent()) {
-        EntrySet node = getNode(signatureGenerator, type.tsym, signature.get());
+        EntrySet node = getNode(signatureGenerator, type.tsym, signature.get(), null);
         builder.addLink(Link.newBuilder().addDefinition(new KytheURI(node.getVName()).toString()));
       }
     } else {
@@ -201,9 +201,13 @@ public class JavaEntrySets extends KytheEntrySets {
 
   /**
    * Returns a node for the given {@link Symbol} and its signature. A new node is created and
-   * emitted if necessary.
+   * emitted if necessary. If non-null, msBuilder will be used to generate a signature.
    */
-  public EntrySet getNode(SignatureGenerator signatureGenerator, Symbol sym, String signature) {
+  public EntrySet getNode(
+      SignatureGenerator signatureGenerator,
+      Symbol sym,
+      String signature,
+      MarkedSource.Builder msBuilder) {
     checkSignature(sym, signature);
 
     EntrySet node;
@@ -225,7 +229,7 @@ public class JavaEntrySets extends KytheEntrySets {
         v = v.toBuilder().setPath(enclClass != null ? enclClass.toString() : "").build();
       }
 
-      MarkedSource.Builder markedSource = MarkedSource.newBuilder();
+      MarkedSource.Builder markedSource = msBuilder == null ? MarkedSource.newBuilder() : msBuilder;
       MarkedSource markedType = markType(signatureGenerator, sym);
       if (markedType != null) {
         markedSource.addChild(markedType);

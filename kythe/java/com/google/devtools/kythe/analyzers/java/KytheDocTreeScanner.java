@@ -43,7 +43,8 @@ public class KytheDocTreeScanner extends DocTreeScanner<Void, DCDocComment> {
     this.miniAnchors = new ArrayList<>();
   }
 
-  public boolean visitDocComment(JCTree tree, EntrySet node) {
+  public boolean visitDocComment(JCTree tree, EntrySet node, EntrySet absNode) {
+    // TODO(https://phabricator-dot-kythe-repo.appspot.com/T185): always use absNode
     final DCDocComment doc = table.getCommentTree(tree);
     if (doc == null) {
       return false;
@@ -67,7 +68,7 @@ public class KytheDocTreeScanner extends DocTreeScanner<Void, DCDocComment> {
     for (MiniAnchor<Symbol> miniAnchor : miniAnchors) {
       anchoredTo.add(miniAnchor.getAnchoredTo());
     }
-    treeScanner.emitDoc(bracketed, anchoredTo, node);
+    treeScanner.emitDoc(bracketed, anchoredTo, node, absNode);
     return treeScanner.emitCommentsOnLine(treeScanner.charToLine(startChar), node);
   }
 

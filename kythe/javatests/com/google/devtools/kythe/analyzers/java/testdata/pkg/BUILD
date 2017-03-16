@@ -85,6 +85,12 @@ java_verifier_test(
 )
 
 java_verifier_test(
+    name = "generic_comment_tests",
+    size = "small",
+    srcs = ["GenericComments.java"],
+)
+
+java_verifier_test(
     name = "generic_method_tests",
     size = "small",
     srcs = ["GenericMethod.java"],
