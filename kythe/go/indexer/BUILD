@@ -104,3 +104,8 @@ go_indexer_test(
     name = "implements_test",
     srcs = ["testdata/basic/implements.go"],
 )
+
+go_indexer_test(
+    name = "structref_test",
+    srcs = ["testdata/basic/structref.go"],
+)
