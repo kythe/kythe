@@ -442,8 +442,8 @@ void ExtractorPPCallbacks::AddFile(const clang::FileEntry* file,
                                                buffer->getBufferEnd());
     contents.first->second.vname.CopyFrom(index_writer_->VNameForPath(
         RelativizePath(path, index_writer_->root_directory())));
-    LOG(INFO) << "added content for " << path << ": mapped to "
-              << contents.first->second.vname.DebugString() << "\n";
+    VLOG(1) << "added content for " << path << ": mapped to "
+            << contents.first->second.vname.DebugString() << "\n";
   }
 }
 
