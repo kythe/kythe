@@ -28,7 +28,8 @@ bazel --bazelrc=/dev/null build //kythe/docs/... //kythe/docs/schema \
     //kythe/docs/schema:callgraph \
     //kythe/docs/schema:verifierstyle \
     //kythe/docs/schema:writing-an-indexer \
-    //kythe/docs/schema:indexing-protobuf
+    //kythe/docs/schema:indexing-protobuf \
+    //kythe/docs/schema:marked-source
 rsync -Lr --chmod=a+w --delete "bazel-bin/kythe/docs/" "$DIR"/_docs
 DOCS=($(bazel query 'kind("source file", deps(//kythe/docs/..., 1))' | \
   grep -E '\.(txt|adoc|ad)$' | \

@@ -40,6 +40,7 @@ export LANGUAGE="$3"
 export LABEL="$4"
 export SHOWGRAPH="$5"
 export DIV_STYLE="$6"
+export VERIFIER_ARGS="$7"
 
 error() {
   echo "[ FAILED $1: $LABEL ]" >&2

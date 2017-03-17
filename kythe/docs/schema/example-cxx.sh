@@ -26,6 +26,7 @@ set -o pipefail
 #   CXX_INDEXER_BIN
 #   VERIFIER_BIN
 #   SHOWGRAPH
+#   VERIFIER_ARGS
 
 SRCS="$TMP/example"
 mkdir "$SRCS"
@@ -84,7 +85,7 @@ do
   "$CXX_INDEXER_BIN" --ignore_unimplemented=false -i "${TEST_CC}" -- $CXX_ARGS \
       >> "${TEST_ENTRIES}"
 done
-"$VERIFIER_BIN" --ignore_dups "${SRCS}"/* < "${TEST_ENTRIES}"
+"$VERIFIER_BIN" "${VERIFIER_ARGS}" --ignore_dups "${SRCS}"/* < "${TEST_ENTRIES}"
 
 trap 'error FORMAT' ERR
 EXAMPLE_ID=$(sha1sum "$RAW_EXAMPLE" | cut -c 1-40)
@@ -98,7 +99,7 @@ fi
 echo "<h5 id=\"_${LABEL}\">${LABEL}"
 
 if [[ "${SHOWGRAPH}" == 1 ]]; then
-  "$VERIFIER_BIN" --ignore_dups --graphviz < "${TEST_ENTRIES}" > "$TMP/${EXAMPLE_ID}.dot"
+  "$VERIFIER_BIN" "${VERIFIER_ARGS}" --ignore_dups --graphviz < "${TEST_ENTRIES}" > "$TMP/${EXAMPLE_ID}.dot"
   dot -Tsvg -o "$EXAMPLE_ID.svg" "$TMP/${EXAMPLE_ID}.dot"
   echo "(<a href=\"${EXAMPLE_ID}.svg\" target=\"_blank\">${LANGUAGE}</a>)</h5>"
 else

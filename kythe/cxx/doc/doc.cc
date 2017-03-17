@@ -40,6 +40,8 @@ DEFINE_string(save_response, "",
               "Save the initial documentation response to this file as an "
               "ASCII protobuf.");
 DEFINE_string(css, "", "Include this stylesheet path in the resulting HTML.");
+DEFINE_bool(common_signatures, false,
+            "Render the MarkedSource proto from standard in.");
 
 namespace kythe {
 namespace {
@@ -97,6 +99,24 @@ int DocumentNodesFromStdin() {
   return DocumentNodesFrom(doc_reply);
 }
 
+int RenderMarkedSourceFromStdin() {
+  proto::MarkedSource marked_source;
+  google::protobuf::io::FileInputStream file_input_stream(STDIN_FILENO);
+  CHECK(
+      google::protobuf::TextFormat::Parse(&file_input_stream, &marked_source));
+  ::printf("      RenderSimpleIdentifier: \"%s\"\n",
+           RenderSimpleIdentifier(marked_source).c_str());
+  auto params = RenderSimpleParams(marked_source);
+  for (const auto& param : params) {
+    ::printf("          RenderSimpleParams: \"%s\"\n", param.c_str());
+  }
+  ::printf("RenderSimpleQualifiedName-ID: \"%s\"\n",
+           RenderSimpleQualifiedName(marked_source, false).c_str());
+  ::printf("RenderSimpleQualifiedName+ID: \"%s\"\n",
+           RenderSimpleQualifiedName(marked_source, true).c_str());
+  return 0;
+}
+
 int DocumentNodesFrom(XrefsJsonClient* client, const proto::VName& file_name) {
   proto::DecorationsRequest request;
   proto::DecorationsReply reply;
@@ -149,9 +169,14 @@ doc -corpus foo -file bar.cc
 doc
   Formats documentation from a text-format proto::DocumentationReply provided
   on standard input.
+doc -common_signatures
+  Renders the text-format proto::MarkedSource message provided on standard
+  input into several common forms.
 )");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  if (FLAGS_path.empty()) {
+  if (FLAGS_common_signatures) {
+    return kythe::RenderMarkedSourceFromStdin();
+  } else if (FLAGS_path.empty()) {
     return kythe::DocumentNodesFromStdin();
   } else {
     kythe::JsonClient::InitNetwork();

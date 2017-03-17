@@ -1173,12 +1173,24 @@ Points toward::
 Common node facts
 -----------------
 
-[[doc/uri]]
+[[code]]
+code
+~~~~
+
+Brief description:
+  A node's *code* is a serialized link:marked-source.html[MarkedSource]
+  message that can be used to describe that node.
+Attached to::
+  semantic nodes
+
+[[docuri]]
 doc/uri
 ~~~~~~~
 
 Brief description::
-  If this node's primary documentation exists outside the graph, this fact can hold a URI pointing to that documentation. For example, you may want to link builtin functions to their definitions in a language's reference manual.
+  If this node's primary documentation exists outside the graph, this fact can
+  hold a URI pointing to that documentation. For example, you may want to link
+  builtin functions to their definitions in a language's reference manual.
 
 Attached to::
   semantic nodes

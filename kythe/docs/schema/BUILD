@@ -26,3 +26,8 @@ asciidoc_with_verifier(
     name = "writing-an-indexer",
     src = "writing-an-indexer.txt",
 )
+
+asciidoc_with_verifier(
+    name = "marked-source",
+    src = "marked-source.txt",
+)

@@ -1,0 +1,259 @@
+// Copyright 2017 Google Inc. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+Annotating nodes for display
+============================
+:Revision: 1.0
+:toc2:
+:toclevels: 3
+:priority: 999
+
+Semantic nodes in a Kythe graph may stand for objects with complex structure,
+such as polymorphic functions bearing many type constraints. Representing these
+nodes in a UI for human viewers is often complicated. Displaying only the
+source text may omit important context (like types inferred by the compiler).
+On the other hand, fully expanding the node's internal representation may result
+in a very long, difficult-to-read string. Semantic information may also be lost,
+as in the case where programmers use transparent `typedef`s in the C family
+of languages.
+
+The schema provides a link:/docs/schema#code[code] fact, when attached to an
+arbitrary semantic node in the Kythe graph, instructs clients on how that node
+can be presented to users. The fact's value is a serialized `MarkedSource`
+protocol buffer message, defined in
+link:https://github.com/google/kythe/blob/master/kythe/proto/xref.proto[xref.proto].
+Unlike most facts in the Kythe graph, `MarkedSource` is a structured message
+rather than a plain string, because clients have differing requirements for the
+amount and level of detail they display. By including or excluding various parts
+of this message, clients can precisely format a node's presentation according to
+their requirements. The message also offers the ability to link subspans to other
+nodes and to include other nodes' *code* by reference. Kythe indexers are
+responsible for emitting `MarkedSource` messages.
+
+== Experimenting with `MarkedSource`
+
+The Kythe repository contains a sample utility for rendering documentation,
+including any included `MarkedSource` messages. You can build it with:
+
+[source,bash]
+----
+bazel build //kythe/cxx/doc
+----
+
+To run it in a mode that will accept and render a ASCII `MarkedSource` message,
+use:
+
+[source,bash]
+----
+./bazel-bin/kythe/cxx/doc/doc --common_signatures
+----
+
+An empty message produces the following output (shown between double-quotes with
+HTML special characters escaped):
+
+.Output
+----
+      RenderSimpleIdentifier: ""
+RenderSimpleQualifiedName-ID: ""
+RenderSimpleQualifiedName+ID: ""
+----
+
+== Generating `MarkedSource`
+
+`MarkedSource` messages describe simplified parse trees for source code. The
+parse tree represented by a `MarkedSource` message need not correspond exactly
+to the surface syntax of the language, but is intended to be as similar as
+possible so that a reader familiar with the language will understand the
+structure that is represented. Each message is a node in the parse tree.
+Messages have kinds (distinct from the `kind` facts on Kythe nodes) that apply
+to themselves and their children, so a message with the `TYPE` kind applies the
+type nature to itself and its subtree. When tools render `MarkedSource`, they
+include or exclude parts of the parse tree by inspecting kinds. For a full
+listing of valid kinds, refer to the message definition in
+link:https://github.com/google/kythe/blob/master/kythe/proto/xref.proto[xref.proto].
+
+Renderers traverse the tree in order. If a message is elected to be rendered,
+its `pre_text` is appended when it is first visited. Each of the message's
+children is traversed. After each child is rendered, the parent's `post_child_text`
+is appended, unless that child is the last child. Once all of the children have
+been traversed, the parent's `post_text` is appended. For example:
+
+[source,javascript]
+----
+kind: IDENTIFIER
+pre_text: "pre"
+post_child_text: "post_child"
+post_text: "post"
+----
+
+(Here and elsewhere we show `MarkedSource` messages as text format protobuf
+messages.)
+
+.Output
+----
+      RenderSimpleIdentifier: "prepost"
+RenderSimpleQualifiedName-ID: ""
+RenderSimpleQualifiedName+ID: "prepost"
+----
+
+[source,javascript]
+----
+kind: IDENTIFIER
+pre_text: "pre"
+post_child_text: "post_child"
+post_text: "post"
+child {
+  pre_text: "1"
+}
+child {
+  pre_text: "2"
+}
+----
+
+.Output
+----
+      RenderSimpleIdentifier: "pre1post_child2post"
+RenderSimpleQualifiedName-ID: ""
+RenderSimpleQualifiedName+ID: "pre1post_child2post"
+----
+
+A `MarkedSource` representation of a typical $$C++$$ qualified name would be:
+
+[source,javascript]
+----
+kind: BOX
+child {
+  kind: CONTEXT
+  child {
+    kind: IDENTIFIER
+    pre_text: "std"
+  }
+  child {
+    kind: IDENTIFIER
+    pre_text: "experimental"
+  }
+  post_child_text: "::"
+  add_final_list_token: true
+}
+child {
+  kind: IDENTIFIER
+  pre_text: "string_view"
+}
+----
+
+.Output
+----
+      RenderSimpleIdentifier: "string_view"
+RenderSimpleQualifiedName-ID: "std::experimental"
+RenderSimpleQualifiedName+ID: "std::experimental::string_view"
+----
+
+A function prototype would look like:
+[source,javascript]
+----
+child { kind: TYPE pre_text: "void" }
+child { pre_text: " " }
+child { kind: IDENTIFIER pre_text: "foo" }
+child {
+  kind: PARAMETER
+  child {
+    child { kind: TYPE pre_text: "int" }
+    child { pre_text: " " }
+    child {
+      kind: CONTEXT
+      child { kind: IDENTIFIER pre_text: "foo" }
+      post_child_text: "::"
+      add_final_list_token: true
+    }
+    child { kind: IDENTIFIER pre_text: "x" }
+  }
+  child {
+    child { kind: TYPE pre_text: "int" }
+    child { pre_text: " " }
+    child {
+      kind: CONTEXT
+      child { kind: IDENTIFIER pre_text: "foo" }
+      post_child_text: "::"
+      add_final_list_token: true
+    }
+    child { kind: IDENTIFIER pre_text: "y" }
+  }
+  pre_text: "("
+  post_child_text: ", "
+  post_text: ")"
+}
+----
+
+.Output
+----
+      RenderSimpleIdentifier: "foo"
+          RenderSimpleParams: "x"
+          RenderSimpleParams: "y"
+RenderSimpleQualifiedName-ID: ""
+RenderSimpleQualifiedName+ID: "foo"
+----
+
+=== Including `MarkedSource` by reference
+
+In the function prototype example above, the `MarkedSource` for `x` and `y` will
+appear duplicated in the indexer output: once for each variable, then again
+in the `code` fact for `foo`. It is possible to avert this duplication by
+including the `code` of another node in the Kythe graph by using a `LOOKUP`
+message kind. For example, the prototype could have been equivalently written:
+
+[source,javascript]
+----
+child { kind: TYPE pre_text: "void" }
+child { pre_text: " " }
+child { kind: IDENTIFIER pre_text: "foo" }
+child {
+  kind: PARAMETER_LOOKUP_BY_PARAM
+  pre_text: "("
+  post_child_text: ", "
+  post_text: ")"
+}
+----
+
+WARNING: There is a tradeoff between size and speed in the use of the `LOOKUP`
+kinds. You should not expect more than one `LOOKUP` level to be dereferenced
+by the serving infrastructure on your behalf.
+
+== Testing `MarkedSource` facts
+
+The link:../kythe-verifier.html[verifier] supports checking `MarkedSource`
+subtrees by exploding the protocol buffer into a subgraph. Because this
+behavior can add many facts to its database, it is disabled by default.
+Enable it using the `--convert_marked_source` flag. If some node `N` has
+a fact such that `N.code` is an encoded `MarkedSource`, that fact will be
+replaced with a synthesized `code` edge connected to the root `MarkedSource`
+node with facts that are named the same as the fields in the `MarkedSource`
+proto definition. Child messages are attached via `ParentMS child.N ChildMS`
+edges, where `N` is the zero-based index of the child in the parent. For
+example, the following test script checks the `MarkedSource` attached to a
+$$C++$$ variable:
+
+[kythe,C++,"Variable source.",1,"","--convert_marked_source"]
+--------------------------------------------------------------------------------
+//- @x defines/binding VarX
+//- VarX code VXRoot
+//- VXRoot child.0 VXType
+//- VXType.pre_text int
+//- VXType.kind "TYPE"
+//- VXRoot child.1 VXSpaceBox
+//- VXSpaceBox.pre_text " "
+//- VXRoot child.2 VXIdentifier
+//- VXIdentifier.kind "IDENTIFIER"
+//- VXIdenfifier.pre_text x
+int x;
+--------------------------------------------------------------------------------
