@@ -270,6 +270,10 @@ message PagedCrossReferences {
     DECLARATIONS = 3;
   }
 
+  // Nodes with cross-references that should be merged into this node's set of
+  // cross-references.  These are highly related nodes that share a definition.
+  repeated string merge_with = 7;
+
   // Node which is related to the source_ticket node.  The relation kind is
   // stored in each Group.  See: kythe.proto.CrossReferencesReply.RelatedNode.
   message RelatedNode {

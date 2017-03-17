@@ -820,6 +820,8 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		Indices:   make(map[string]int32),
 	}
 
+	mergeInto := make(map[string]string)
+
 	wantMoreCrossRefs := edgesPageToken == "" &&
 		(req.DefinitionKind != xpb.CrossReferencesRequest_NO_DEFINITIONS ||
 			req.DeclarationKind != xpb.CrossReferencesRequest_NO_DECLARATIONS ||
@@ -828,8 +830,8 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 			req.CallerKind != xpb.CrossReferencesRequest_NO_CALLERS ||
 			len(req.Filter) > 0)
 
-	for i, ticket := range tickets {
-		// TODO(schroederc): retrieve PagedCrossReferences in parallel
+	for i := 0; i < len(tickets); i++ {
+		ticket := tickets[i]
 		cr, err := t.crossReferences(ctx, ticket)
 		if err == table.ErrNoSuchKey {
 			log.Println("Missing CrossReferences:", ticket)
@@ -841,11 +843,28 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 			features[feature] = true
 		}
 
-		crs := &xpb.CrossReferencesReply_CrossReferenceSet{
-			Ticket: ticket,
+		// If this node is to be merged into another, we will use that node's ticket
+		// for all further book-keeping purposes.
+		if mergeNode, ok := mergeInto[ticket]; ok {
+			ticket = mergeNode
 		}
-		if features[srvpb.PagedCrossReferences_MARKED_SOURCE] && req.ExperimentalSignatures {
+
+		// We may have partially completed the xrefs set due merge nodes.
+		crs := reply.CrossReferences[ticket]
+		if crs == nil {
+			crs = &xpb.CrossReferencesReply_CrossReferenceSet{
+				Ticket: ticket,
+			}
+		}
+		if features[srvpb.PagedCrossReferences_MARKED_SOURCE] &&
+			req.ExperimentalSignatures && crs.MarkedSource == nil {
 			crs.MarkedSource = m2m(cr.MarkedSource)
+		}
+
+		// Add any additional merge nodes to the set of table lookups
+		for _, mergeNode := range cr.MergeWith {
+			tickets = append(tickets, mergeNode)
+			mergeInto[mergeNode] = ticket
 		}
 
 		for _, grp := range cr.Group {

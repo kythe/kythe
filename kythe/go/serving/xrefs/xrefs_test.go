@@ -359,6 +359,12 @@ var (
 				}},
 			}},
 		}, {
+			SourceTicket: "kythe://someCorpus?lang=otpl#withMerge",
+			MergeWith: []string{
+				"kythe://someCorpus?lang=otpl#withCallers",
+				"kythe://someCorpus?lang=otpl#withRelated",
+			},
+		}, {
 			SourceTicket: "kythe://someCorpus?lang=otpl#withCallers",
 			Feature: []srvpb.PagedCrossReferences_Feature{
 				srvpb.PagedCrossReferences_CALLERS,
@@ -1040,6 +1046,75 @@ func TestCrossReferencesMarkedSource(t *testing.T) {
 	}
 
 	if err := testutil.DeepEqual(&xpb.CrossReferencesReply_Total{
+		RelatedNodesByRelation: map[string]int64{
+			"/kythe/edge/extends": 1,
+			"/kythe/edge/param":   2,
+		},
+	}, reply.Total); err != nil {
+		t.Error(err)
+	}
+
+	xr := reply.CrossReferences[ticket]
+	if xr == nil {
+		t.Fatalf("Missing expected CrossReferences; found: %#v", reply)
+	} else if err := testutil.DeepEqual(expected, xr); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCrossReferencesMerge(t *testing.T) {
+	ticket := "kythe://someCorpus?lang=otpl#withMerge"
+
+	st := tbl.Construct(t)
+	reply, err := st.CrossReferences(ctx, &xpb.CrossReferencesRequest{
+		Ticket:     []string{ticket},
+		CallerKind: xpb.CrossReferencesRequest_DIRECT_CALLERS,
+		Filter:     []string{"**"},
+
+		ExperimentalSignatures: true,
+	})
+	testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
+
+	expected := &xpb.CrossReferencesReply_CrossReferenceSet{
+		Ticket: ticket,
+		MarkedSource: &xpb.MarkedSource{
+			Kind:    xpb.MarkedSource_IDENTIFIER,
+			PreText: "id",
+		},
+
+		Caller: []*xpb.CrossReferencesReply_RelatedAnchor{{
+			Anchor: &xpb.Anchor{
+				Ticket: "kythe:?path=someFile#someCallerAnchor",
+				Parent: "kythe:?path=someFile",
+				Start:  p2p(arbitrarySpan.Start),
+				End:    p2p(arbitrarySpan.End),
+			},
+			Ticket: "kythe:#someCaller",
+			MarkedSource: &xpb.MarkedSource{
+				Kind:    xpb.MarkedSource_IDENTIFIER,
+				PreText: "id",
+			},
+			Site: []*xpb.Anchor{{
+				Ticket: "kythe:?path=someFile#someCallsiteAnchor",
+				Parent: "kythe:?path=someFile",
+			}},
+		}},
+		RelatedNode: []*xpb.CrossReferencesReply_RelatedNode{{
+			Ticket:       "kythe:#someRelatedNode",
+			RelationKind: "/kythe/edge/extends",
+		}, {
+			Ticket:       "kythe:#someParameter0",
+			RelationKind: "/kythe/edge/param",
+			Ordinal:      0,
+		}, {
+			Ticket:       "kythe:#someParameter1",
+			RelationKind: "/kythe/edge/param",
+			Ordinal:      1,
+		}},
+	}
+
+	if err := testutil.DeepEqual(&xpb.CrossReferencesReply_Total{
+		Callers: 1,
 		RelatedNodesByRelation: map[string]int64{
 			"/kythe/edge/extends": 1,
 			"/kythe/edge/param":   2,
