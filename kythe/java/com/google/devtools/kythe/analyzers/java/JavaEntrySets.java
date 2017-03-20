@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import javax.annotation.Nullable;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.Name;
@@ -97,7 +98,7 @@ public class JavaEntrySets extends KytheEntrySets {
    * getIdentToken() to print nodes.
    *
    * <p>We're going through this extra effort to try and give people unsurprising qualified names.
-   * To do that we have to deal with javac's mangling (in {@link getIdentToken} above), since for
+   * To do that we have to deal with javac's mangling (in {@link #getIdentToken} above), since for
    * anonymous classes javac only stores mangled symbols. The code as written will emit only dotted
    * fully-qualified names, even for inner or anonymous classes, and considers concrete type,
    * package, or method names to be appropriate dot points. (If we weren't careful here we might,
@@ -105,6 +106,7 @@ public class JavaEntrySets extends KytheEntrySets {
    * to anonymous classes.) This reflects the nesting structure from the Java side, not the JVM
    * side.
    */
+  @Nullable
   private Symbol getQualifiedNameParent(Symbol sym) {
     sym = sym.owner;
     while (sym != null) {
@@ -120,7 +122,7 @@ public class JavaEntrySets extends KytheEntrySets {
       }
       sym = sym.owner;
     }
-    return sym;
+    return null;
   }
 
   /**
@@ -128,6 +130,7 @@ public class JavaEntrySets extends KytheEntrySets {
    * method). If there is no appropriate type for sym, returns null. Generates links with
    * signatureGenerator.
    */
+  @Nullable
   private MarkedSource markType(SignatureGenerator signatureGenerator, Symbol sym) {
     // TODO(zarko): Mark up any annotations.
     Type type = sym.type;
@@ -269,7 +272,7 @@ public class JavaEntrySets extends KytheEntrySets {
 
       NodeKind kind = elementNodeKind(sym.getKind());
       NodeBuilder builder =
-          kind != NodeKind.UNKNOWN ?
+          kind != null ?
               newNode(kind) :
               newNode(sym.getKind().toString());
       node =
@@ -363,7 +366,8 @@ public class JavaEntrySets extends KytheEntrySets {
   }
 
   /** Returns the equivalent {@link NodeKind} for the given {@link ElementKind}. */
-  public static NodeKind elementNodeKind(ElementKind kind) {
+  @Nullable
+  private static NodeKind elementNodeKind(ElementKind kind) {
     switch (kind) {
       case CLASS:
         return NodeKind.RECORD_CLASS;
@@ -393,7 +397,7 @@ public class JavaEntrySets extends KytheEntrySets {
       case TYPE_PARAMETER:
         return NodeKind.ABS_VAR;
       default:
-        return NodeKind.UNKNOWN;
+        return null;
     }
   }
 

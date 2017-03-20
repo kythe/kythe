@@ -26,6 +26,7 @@ java_library(
         "//kythe/proto:xref_proto_java",
         "//third_party/proto:protobuf_java",
         "@bazel_tools//third_party/java/jdk/langtools:javac",
+        "@com_google_code_findbugs_jsr305//jar",
         "@com_google_guava_guava//jar",
     ],
 )

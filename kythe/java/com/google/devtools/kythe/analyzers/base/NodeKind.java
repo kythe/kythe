@@ -21,7 +21,6 @@ import javax.annotation.Nullable;
 
 /** Schema-defined Kythe node kinds. */
 public enum NodeKind {
-  UNKNOWN("unknown"),
   // Core kinds
   ABS("abs"),
   ABS_VAR("absvar"),
