@@ -16,6 +16,7 @@
 
 package com.google.devtools.kythe.analyzers.base;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.platform.shared.StatisticsCollector;
@@ -331,16 +332,16 @@ public class KytheEntrySets {
       setupNode(kind.getKind(), kind.getSubkind());
     }
 
-    private NodeBuilder(String kind, String subkind, String language) {
+    private NodeBuilder(String kind, Optional<String> subkind, String language) {
       super(VName.newBuilder().setLanguage(language));
       setupNode(kind, subkind);
     }
 
-    private void setupNode(String kind, String subkind) {
+    private void setupNode(String kind, Optional<String> subkind) {
       setPropertyPrefix(NODE_PREFIX);
       setProperty(NODE_KIND_LABEL, kind);
-      if (subkind != null) {
-        setProperty(NODE_SUBKIND_LABEL, subkind);
+      if (subkind.isPresent()) {
+        setProperty(NODE_SUBKIND_LABEL, subkind.get());
       }
     }
 

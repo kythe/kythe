@@ -268,7 +268,10 @@ public class JavaEntrySets extends KytheEntrySets {
       }
 
       NodeKind kind = elementNodeKind(sym.getKind());
-      NodeBuilder builder = kind != null ? newNode(kind) : newNode(sym.getKind().toString());
+      NodeBuilder builder =
+          kind != NodeKind.UNKNOWN ?
+              newNode(kind) :
+              newNode(sym.getKind().toString());
       node =
           builder
               .setCorpusPath(CorpusPath.fromVName(v))
@@ -390,8 +393,7 @@ public class JavaEntrySets extends KytheEntrySets {
       case TYPE_PARAMETER:
         return NodeKind.ABS_VAR;
       default:
-        // TODO(schroederc): handle all cases, make this exceptional, and remove all null checks
-        return null;
+        return NodeKind.UNKNOWN;
     }
   }
 

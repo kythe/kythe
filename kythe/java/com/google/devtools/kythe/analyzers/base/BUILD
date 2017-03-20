@@ -22,6 +22,10 @@ java_library(
         "EdgeKind.java",
         "NodeKind.java",
     ],
+    deps = [
+        "@com_google_code_findbugs_jsr305//jar",
+        "@com_google_guava_guava//jar",
+    ],
 )
 
 java_library(
