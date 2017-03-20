@@ -1488,8 +1488,8 @@ type DocumentationReply struct {
 	Document []*DocumentationReply_Document `protobuf:"bytes,1,rep,name=document" json:"document,omitempty"`
 	// The facts left from the requested filters of the documented node facts.
 	Nodes map[string]*kythe_proto_common.NodeInfo `protobuf:"bytes,2,rep,name=nodes" json:"nodes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value"`
-	// Map from the definition tickets referred to in each NodeInfo to their
-	// Anchor.
+	// Map from the definition anchor tickets referred to in each NodeInfo to
+	// their corresponding Anchor data.
 	DefinitionLocations map[string]*Anchor `protobuf:"bytes,3,rep,name=definition_locations,json=definitionLocations" json:"definition_locations,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value"`
 }
 
