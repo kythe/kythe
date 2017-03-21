@@ -10,5 +10,8 @@
         // used for developing the indexer.
         "noImplicitAny": false,
         "strictNullChecks": false
-    }
+    },
+    "exclude": [
+        "compilefail.ts"
+    ]
 }

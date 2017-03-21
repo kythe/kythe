@@ -587,13 +587,22 @@ class Vistor {
  * Kythe output for, because e.g. the standard library is contained within
  * the Program and we only want to process it once.)
  *
- * @param emit If provided, a function that receives objects as they
+ * @param emit If provided, a function that receives objects as they are
+ *     emitted; otherwise, they are printed to stdout.
  */
 export function index(
     paths: string[], program: ts.Program, emit?: (obj: any) => void) {
-  let diags = ts.getPreEmitDiagnostics(program);
-  if (diags.length > 0) {
-    let message = ts.formatDiagnostics(diags, {
+  // Note: we only call getPreEmitDiagnostics (which causes type checking to
+  // happen) on the input paths as provided in paths.  This means we don't
+  // e.g. type-check the standard library unless we were explicitly told to.
+  let diags = new Set<ts.Diagnostic>();
+  for (const path of paths) {
+    for (const diag of ts.getPreEmitDiagnostics(program, program.getSourceFile(path))) {
+      diags.add(diag);
+    }
+  }
+  if (diags.size > 0) {
+    let message = ts.formatDiagnostics(Array.from(diags), {
       getCurrentDirectory() {
         return process.cwd();
       },

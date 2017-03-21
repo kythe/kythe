@@ -10,10 +10,17 @@ import * as mod_imp from './module';
 //- @"'./module'" ref/imports ModRef
 import {value} from './module';
 
-// Import and rename a value and ensure all of the references link.
 //- @value ref Val
 //- @renamedValue ref Val
 import {value as renamedValue} from './module';
+
+// Verify that importing from a failing-to-compile module doesn't cause this
+// module to also fail compilation.  This indirectly verifies that we don't
+// type-check inputs other than the ones that were requested.
+import {Bad} from './compilefail';
+let x: Bad;
+
+// Ensure the various names of the imported value link together.
 
 //- @value ref Val
 value;
