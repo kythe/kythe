@@ -17,7 +17,10 @@ def _parse_version(version):
   else:
     return (_tuplicate(parts[0], '.'), ())
 
-def check_version(required):
+def check_version(min_required, max_supported):
   found = native.bazel_version
-  if _parse_version(required) > _parse_version(found):
-    fail("Required version {} of bazel, found {}".format(required, found))
+  found_version = _parse_version(found)[0]
+  if _parse_version(min_required)[0] > found_version:
+    fail("You need to update bazel. Required version {} of bazel, found {}".format(min_required, found))
+  if _parse_version(max_supported)[0] < found_version:
+    fail("Your bazel is too new. Maximum supported version {} of bazel, found {}".format(max_supported, found))
