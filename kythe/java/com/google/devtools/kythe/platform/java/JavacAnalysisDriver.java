@@ -56,8 +56,7 @@ public class JavacAnalysisDriver {
   public void analyze(
       JavacAnalyzer analyzer,
       CompilationUnit compilationUnit,
-      FileDataProvider fileDataProvider,
-      boolean isLocalAnalysis)
+      FileDataProvider fileDataProvider)
       throws AnalysisException {
 
     // If there are no source files, then there is nothing for us to do.
@@ -69,8 +68,7 @@ public class JavacAnalysisDriver {
     checkEnvironment(compilationUnit);
 
     analyzer.analyzeCompilationUnit(
-        JavaCompilationDetails.createDetails(
-            compilationUnit, fileDataProvider, isLocalAnalysis, processors));
+        JavaCompilationDetails.createDetails(compilationUnit, fileDataProvider, processors));
   }
 
   private static void checkEnvironment(CompilationUnit compilation) throws AnalysisException {

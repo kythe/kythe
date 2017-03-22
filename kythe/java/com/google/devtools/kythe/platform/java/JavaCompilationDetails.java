@@ -64,31 +64,15 @@ public class JavaCompilationDetails {
       };
 
   public static JavaCompilationDetails createDetails(
-      CompilationUnit compilationUnit, FileDataProvider fileDataProvider, boolean useStdErr) {
-    return createDetails(
-        compilationUnit, fileDataProvider, false, ImmutableList.<Processor>of(), useStdErr);
-  }
-
-  public static JavaCompilationDetails createDetails(
       CompilationUnit compilationUnit,
       FileDataProvider fileDataProvider,
-      boolean isLocalAnalysis,
       List<Processor> processors) {
-    return createDetails(compilationUnit, fileDataProvider, isLocalAnalysis, processors, false);
-  }
-
-  public static JavaCompilationDetails createDetails(
-      CompilationUnit compilationUnit,
-      FileDataProvider fileDataProvider,
-      boolean isLocalAnalysis,
-      List<Processor> processors,
-      boolean useStdErr) {
 
     JavaCompiler compiler = JavacAnalysisDriver.getCompiler();
     DiagnosticCollector<JavaFileObject> diagnosticsCollector = new DiagnosticCollector<>();
 
     // Get the compilation options
-    List<String> options = optionsFromCompilationUnit(compilationUnit, processors, isLocalAnalysis);
+    List<String> options = optionsFromCompilationUnit(compilationUnit, processors);
     Charset encoding = JavacOptionsUtils.getEncodingOption(options);
 
     // Create a StandardFileManager that uses the fileDataProvider and compilationUnit
@@ -102,8 +86,8 @@ public class JavaCompilationDetails {
     Iterable<? extends JavaFileObject> sources =
         fileManager.getJavaFileObjectsFromStrings(compilationUnit.getSourceFileList());
 
-    // If we use no writer, output will go to stdErr. The NullWriter is /dev/null.
-    Writer javacOut = useStdErr ? null : NullWriter.getInstance();
+    // Causes output to go to stdErr
+    Writer javacOut = null;
 
     // Get a task for compiling the current CompilationUnit.
     JavacTaskImpl javacTask =
@@ -196,28 +180,18 @@ public class JavaCompilationDetails {
   }
 
   /**
-   * Modify options so the compiler can find the classpath and sourcepath. As well as disable any
-   * annotation processor.
-   *
-   * @param isLocalAnalysis when true we do not add jre jars to the classpath. Adding jre jars to
-   *     classpath for local analysis done by {@link
-   *     com.google.devtools.kythe.platform.java.local.LocalJavacAnalysisDriver} will cause the
-   *     analysis to fail.
+   * Generate options (such as classpath and sourcepath) from the compilation unit.
    */
   private static List<String> optionsFromCompilationUnit(
-      CompilationUnit compilationUnit, List<Processor> processors, boolean isLocalAnalysis) {
+      CompilationUnit compilationUnit, List<Processor> processors) {
     // Start with the default options, and then add in source
     // Turn on all warnings as well.
     List<String> options = Lists.newArrayList(compilationUnit.getArgumentList());
-    // Use Xlint options in the compilation unit, instead of adding Xlint:all,
-    // so that it's possible to turn off lint checks.
-    // options = JavacOptionsUtils.useAllWarnings(options);
+    // TODO(jrtom): use static imports for brevity
     options = JavacOptionsUtils.ensureEncodingSet(options, DEFAULT_ENCODING);
     options = JavacOptionsUtils.removeUnsupportedOptions(options);
 
-    if (!isLocalAnalysis) {
-      JavacOptionsUtils.appendJREJarsToClasspath(options);
-    }
+    JavacOptionsUtils.appendJREJarsToClasspath(options, compilationUnit);
 
     if (processors.isEmpty()) {
       options.add("-proc:none");

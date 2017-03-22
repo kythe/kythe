@@ -18,6 +18,7 @@ package com.google.devtools.kythe.platform.java;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.StandardSystemProperty;
+import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.sun.tools.javac.main.Option;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
@@ -106,7 +107,8 @@ public class JavacOptionsUtils {
   }
 
   /** Append the classpath to the list of options. */
-  public static void appendJREJarsToClasspath(List<String> arguments) {
+    public static void appendJREJarsToClasspath(
+        List<String> arguments, CompilationUnit compilationUnit) {
     List<String> paths = new ArrayList<>();
     Path javaHome = Paths.get(StandardSystemProperty.JAVA_HOME.value());
     for (String jreJar : JRE_JARS) {

@@ -484,6 +484,13 @@ public class JavaCompilationUnitExtractor {
         case SOURCE:
           results.newSourcePath.add(JAR_ROOT);
           break;
+        default:
+          // TODO(T227): we shouldn't need to throw an exception here because the above switch
+          // statement means that we never hit this default, but the static analysis tools can't
+          // figure that out.  Try to refactor this code to remove this issue.
+          throw new IllegalStateException(
+              String.format(
+                  "Unsupported java file kind: '%s' for '%s'", requiredInput.getKind().name(), uri));
       }
       strippedPath = JAR_ROOT + entryPath;
     }

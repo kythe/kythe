@@ -79,8 +79,7 @@ public class JavaIndexer {
                   new StreamFactEmitter(stream),
                   statistics == null ? NullStatisticsCollector.getInstance() : statistics),
               desc.getCompilationUnit(),
-              new FileDataCache(desc.getFileContents()),
-              false);
+              new FileDataCache(desc.getFileContents()));
     }
 
     if (statistics != null) {

@@ -61,8 +61,7 @@ public class JavaIndexerServer {
       driver.analyze(
           new KytheJavacAnalyzer(config, emitter, getStatisticsCollector()),
           compilation,
-          fileData,
-          false);
+          fileData);
     }
   }
 

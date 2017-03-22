@@ -119,6 +119,9 @@ public class JavaEntrySets extends KytheEntrySets {
         case PCK:
         case MTH:
           return sym;
+          // TODO(T227): resolve non-exhaustive switch statements w/o defaults
+        default:
+          break;
       }
       sym = sym.owner;
     }
@@ -397,6 +400,7 @@ public class JavaEntrySets extends KytheEntrySets {
       case TYPE_PARAMETER:
         return NodeKind.ABS_VAR;
       default:
+        // TODO(T227): handle all cases, make this exceptional, and remove all null checks
         return null;
     }
   }
