@@ -35,6 +35,7 @@ import com.google.devtools.kythe.proto.MarkedSource;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.devtools.kythe.util.KytheURI;
 import com.google.devtools.kythe.util.Span;
+import com.sun.tools.javac.code.Flags;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Symbol.MethodSymbol;
@@ -62,6 +63,7 @@ public class JavaEntrySets extends KytheEntrySets {
   private final Map<Symbol, Integer> symbolHashes = new HashMap<>();
   private final Map<Symbol, Set<String>> symbolSigs = new HashMap<Symbol, Set<String>>();
   private final boolean ignoreVNamePaths;
+  private final String overrideJdkCorpus;
   private Map<String, Integer> sourceToWildcardCounter = new HashMap<>();
 
   public JavaEntrySets(
@@ -69,9 +71,11 @@ public class JavaEntrySets extends KytheEntrySets {
       FactEmitter emitter,
       VName compilationVName,
       List<FileInput> requiredInputs,
-      boolean ignoreVNamePaths) {
+      boolean ignoreVNamePaths,
+      String overrideJdkCorpus) {
     super(statistics, emitter, compilationVName, requiredInputs);
     this.ignoreVNamePaths = ignoreVNamePaths;
+    this.overrideJdkCorpus = overrideJdkCorpus;
   }
 
   /**
@@ -217,13 +221,16 @@ public class JavaEntrySets extends KytheEntrySets {
 
     ClassSymbol enclClass = sym.enclClass();
     VName v = lookupVName(enclClass);
-    if (v == null && fromJDK(sym)) {
-      v = VName.newBuilder().setCorpus("jdk").build();
+    if ((v == null || overrideJdkCorpus != null) && fromJDK(sym)) {
+      v =
+          VName.newBuilder()
+              .setCorpus(overrideJdkCorpus != null ? overrideJdkCorpus : "jdk")
+              .build();
     }
 
     if (v == null) {
       node = getName(signature);
-      // NAME node was already be emitted
+      // NAME node was already emitted
     } else {
       if (ignoreVNamePaths) {
         v = v.toBuilder().setPath(enclClass != null ? enclClass.toString() : "").build();
@@ -278,10 +285,7 @@ public class JavaEntrySets extends KytheEntrySets {
       }
 
       NodeKind kind = elementNodeKind(sym.getKind());
-      NodeBuilder builder =
-          kind != null ?
-              newNode(kind) :
-              newNode(sym.getKind().toString());
+      NodeBuilder builder = kind != null ? newNode(kind) : newNode(sym.getKind().toString());
       node =
           builder
               .setCorpusPath(CorpusPath.fromVName(v))
@@ -425,10 +429,11 @@ public class JavaEntrySets extends KytheEntrySets {
     if (sym.members() != null) {
       for (Symbol member : sym.members().getSymbols()) {
         if (member.isPrivate()
-            || member instanceof MethodSymbol && ((MethodSymbol) member).isStaticOrInstanceInit()) {
-          // Ignore initializers and private members.  It's possible these do not appear in the
-          // symbol's scope outside of its .java source compilation (i.e. they do not appear in
-          // dependent compilations for Bazel's java rules).
+            || member instanceof MethodSymbol && ((MethodSymbol) member).isStaticOrInstanceInit()
+            || ((member.flags_field & (Flags.BRIDGE | Flags.SYNTHETIC)) != 0)) {
+          // Ignore initializers, private members, and synthetic members.  It's possible these do
+          // not appear in the symbol's scope outside of its .java source compilation (i.e. they do
+          // not appear in dependent compilations for Bazel's java rules).
           continue;
         }
         // We can't recursively get the result of hashSymbol(member) since the extractor removes all

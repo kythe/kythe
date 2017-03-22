@@ -45,6 +45,14 @@ public class IndexerConfig {
   private boolean ignoreVNamePaths;
 
   @Parameter(
+    names = "--override_jdk_corpus",
+    description =
+        "If set, use this as the corpus for classes from java.*, javax.*, com.sun.*, and sun.*. "
+            + " Anchor and file VNames are not affected."
+  )
+  private String overrideJdkCorpus;
+
+  @Parameter(
     names = "--verbose",
     description =
         "Determines whether the analyzer should emit verbose logging messages for debugging."
@@ -76,12 +84,21 @@ public class IndexerConfig {
     return ignoreVNamePaths;
   }
 
+  public final String getOverrideJdkCorpus() {
+    return overrideJdkCorpus;
+  }
+
   public final boolean getVerboseLogging() {
     return verboseLogging;
   }
 
   public IndexerConfig setIgnoreVNamePaths(boolean ignoreVNamePaths) {
     this.ignoreVNamePaths = ignoreVNamePaths;
+    return this;
+  }
+
+  public IndexerConfig setOverrideJdkCorpus(String overrideJdkCorpus) {
+    this.overrideJdkCorpus = overrideJdkCorpus;
     return this;
   }
 
