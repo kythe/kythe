@@ -139,6 +139,8 @@ def _go_verifier_test(ctx):
   vargs    = ['--use_file_nodes', '--show_goals']
   if ctx.attr.log_entries:
     vargs.append('--show_protos')
+  if ctx.attr.has_marked_source:
+    vargs.append('--convert_marked_source')
   cmds = ['set -e', 'set -o pipefail', ' '.join([
       indexer.short_path, '-zip', pack.short_path,
       '\\\n|', verifier.short_path,
@@ -163,6 +165,9 @@ go_verifier_test = rule(
         # Whether to log the input entries to the verifier.
         "log_entries": attr.bool(default = False),
 
+        # Whether to enable explosion of MarkedSource facts.
+        "has_marked_source": attr.bool(default = False),
+
         # The location of the Go indexer binary.
         "_indexer": attr.label(
             default = Label("//kythe/go/indexer/cmd/go_indexer"),
@@ -184,7 +189,7 @@ go_verifier_test = rule(
 # A convenience macro to generate a test library, pass it to the Go indexer,
 # and feed the output of indexing to the Kythe schema verifier.
 def go_indexer_test(name, srcs, deps=[], import_path='',
-                    log_entries=False, size='small'):
+                    log_entries=False, has_marked_source=False, size='small'):
   testlib = name+'_lib'
   go_library(
       name = testlib,
@@ -202,4 +207,5 @@ def go_indexer_test(name, srcs, deps=[], import_path='',
       size = size,
       indexpack = ':'+testpack,
       log_entries = log_entries,
+      has_marked_source = has_marked_source,
   )
