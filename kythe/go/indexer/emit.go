@@ -411,11 +411,8 @@ func (e *emitter) emitSatisfactions() {
 			continue // no methods to consider
 		}
 
-		// TODO(fromberger): This relation isn't really "extends", but for now
-		// that is our best match. See T224 for more discussion.
-		//
-		// TODO(fromberger): Consider adding "override" edges between the
-		// concrete methods and the interface methods they implement.
+		// TODO(fromberger): Add "override" edges between the concrete methods
+		// and the interface methods they satisfy.
 		//
 		// N.B. This implementation is quadratic in the number of visible
 		// interfaces, but that's probably OK since are only considering a
@@ -433,27 +430,27 @@ func (e *emitter) emitSatisfactions() {
 			switch {
 			case ifx && ify && ymset.Len() > 0:
 				if types.AssignableTo(x, y) {
-					e.writeImplements(xobj, yobj)
+					e.writeSatisfies(xobj, yobj)
 				}
 				if types.AssignableTo(y, x) {
-					e.writeImplements(yobj, xobj)
+					e.writeSatisfies(yobj, xobj)
 				}
 
 			case ifx:
 				// y is a concrete type
 				if types.AssignableTo(y, x) {
-					e.writeImplements(yobj, xobj)
+					e.writeSatisfies(yobj, xobj)
 				} else if py := types.NewPointer(y); types.AssignableTo(py, x) {
-					e.writeImplements(yobj, xobj)
+					e.writeSatisfies(yobj, xobj)
 					// TODO(fromberger): Do we want this case?
 				}
 
 			case ify && ymset.Len() > 0:
 				// x is a concrete type
 				if types.AssignableTo(x, y) {
-					e.writeImplements(xobj, yobj)
+					e.writeSatisfies(xobj, yobj)
 				} else if px := types.NewPointer(x); types.AssignableTo(px, y) {
-					e.writeImplements(xobj, yobj)
+					e.writeSatisfies(xobj, yobj)
 					// TODO(fromberger): Do we want this case?
 				}
 
@@ -482,9 +479,9 @@ func (e *emitter) checkImplements(src, tgt types.Object) bool {
 	return true
 }
 
-func (e *emitter) writeImplements(src, tgt types.Object) {
+func (e *emitter) writeSatisfies(src, tgt types.Object) {
 	if e.checkImplements(src, tgt) {
-		e.writeEdge(e.pi.ObjectVName(src), e.pi.ObjectVName(tgt), edges.Extends)
+		e.writeEdge(e.pi.ObjectVName(src), e.pi.ObjectVName(tgt), edges.Satisfies)
 	}
 }
 

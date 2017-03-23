@@ -101,8 +101,8 @@ go_indexer_test(
 )
 
 go_indexer_test(
-    name = "implements_test",
-    srcs = ["testdata/basic/implements.go"],
+    name = "satisfies_test",
+    srcs = ["testdata/basic/satisfies.go"],
 )
 
 go_indexer_test(

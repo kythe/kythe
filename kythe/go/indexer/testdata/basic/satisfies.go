@@ -1,7 +1,4 @@
 // Package impl tests implementation relationships.
-//
-// TODO(fromberger): Update the edge labels here when we have decided what to
-// do about T224.
 package impl
 
 //- @Busy defines/binding BusyInterface
@@ -16,16 +13,16 @@ type Busy interface {
 }
 
 //- @Phil defines/binding Phil
-//- Phil extends Busy
+//- Phil satisfies Busy
 type Phil int
 
 func (Phil) Do() {}
 func (Phil) Be() {}
 
 //- @Bad1 defines/binding DoOnly
-//- !{ DoOnly extends Busy}
+//- !{ DoOnly satisfies Busy}
 type Bad1 bool
 
 //- @Bad2 defines/binding BeOnly
-//- !{ BeOnly extends Busy}
+//- !{ BeOnly satisfies Busy}
 type Bad2 float64

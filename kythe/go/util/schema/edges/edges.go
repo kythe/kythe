@@ -42,6 +42,7 @@ const (
 	Named                   = Prefix + "named"
 	Overrides               = Prefix + "overrides"
 	Param                   = Prefix + "param"
+	Satisfies               = Prefix + "satisfies"
 	Typed                   = Prefix + "typed"
 )
 

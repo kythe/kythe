@@ -1077,6 +1077,36 @@ Ordinals are used::
 #endif
 --------------------------------------------------------------------------------
 
+[[satisfies]]
+satisfies
+~~~~~~~~~
+
+Brief description::
+  A *satisfies* T if A is a concrete type that satisfies an interface type T.
+Points from::
+  type nodes (<<record>>)
+Points toward::
+  <<interface>>
+Ordinals are used::
+  never
+
+[kythe,Go,"Concrete types satisfy nearby interfaces."]
+--------------------------------------------------------------------------------
+package sat
+
+//- @Badger defines/binding Badger
+//- Badger.node/kind interface
+type Badger interface { HasBadge() bool }
+
+//- @SB defines/binding StaticBadger
+//- StaticBadger satisfies Badger
+type SB bool
+
+//- @HasBadge defines/binding HasBadge
+//- HasBadge childof StaticBadger
+func (s SB) HasBadge() bool { return bool(s) }
+--------------------------------------------------------------------------------
+
 [[specializes]]
 specializes
 ~~~~~~~~~~~
