@@ -111,6 +111,10 @@ class AssertionParser {
   /// Should every EVar be added by default to the inspection list?
   void InspectAllEVars() { default_inspect_ = true; }
 
+  /// \brief Check that there are no singleton EVars.
+  /// \return true if there were singletons.
+  bool CheckForSingletonEVars();
+
  private:
   friend class yy::AssertionParserImpl;
 
@@ -320,6 +324,7 @@ class AssertionParser {
   /// Context mapping symbols to AST nodes.
   std::unordered_map<Symbol, Identifier *> identifier_context_;
   std::unordered_map<Symbol, EVar *> evar_context_;
+  std::unordered_map<EVar *, Symbol> singleton_evars_;
   /// Are we dumping lexer trace information?
   bool trace_lex_;
   /// Are we dumping parser trace information?

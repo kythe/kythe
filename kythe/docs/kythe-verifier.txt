@@ -116,8 +116,15 @@ If you want to match against text beginning with a capital letter, you must
 surround it with quotes to form a string literal.
 
 IMPORTANT: Any mention of `SomeEvar` refers to the *same* `SomeEvar`, even
-across different rules. There are cases where new evars may be instantiated at
-runtime (universal quantification), but these aren't yet implemented.
+across different rules, unless the identifier starts with an underscore.
+Starting a variable's name with an underscore indicates to the verifier that
+you don't care about its value.
+
+The verifier can return an error result if any (uninspected) existential
+variable is mentioned only once. This usually indicates that you've made a typo
+somewhere in your goal script. To enable this behavior, pass the
+`--check_for_singletons=true` flag. This behavior will eventually become the
+default.
 
 === Anchor specifiers
 
@@ -292,6 +299,8 @@ eg:
 It may also be useful to see a dump of your goals after they have been parsed.
 For this, pass the `--show_goals` command-line flag.
 
+If an evar is inspected, it is never considered to be a singleton.
+
 === Explicit unification
 
 At times it might be necessary to match subparts of vnames. A vname is stored
@@ -326,6 +335,8 @@ instantiated for `_`):
   Root: EVar(0x7f49a8 = Root)
   _: EVar(0x7f49d8 = Path)
   Language: EVar(0x7f4a08 = Language)
+
+This don't-care rule applies to any identifier beginning with the underscore.
 
 [[subexp]]
 === Naming expressions

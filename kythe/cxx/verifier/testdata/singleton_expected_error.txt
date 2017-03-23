@@ -1,0 +1,2 @@
+singleton_input.txt:2.19-27: singleton variable Something used only here
+singleton_input.txt:2.5-13: singleton variable Singleton used only here

@@ -174,6 +174,10 @@ class Verifier {
   /// \brief Convert MarkedSource-valued facts to graphs.
   void ConvertMarkedSource() { convert_marked_source_ = true; }
 
+  /// \brief Check for singleton EVars.
+  /// \return true if there were singletons.
+  bool CheckForSingletonEVars() { return parser_.CheckForSingletonEVars(); }
+
  private:
   /// \brief Generate a VName that will not conflict with any other VName.
   AstNode *NewUniqueVName(const yy::location &loc);

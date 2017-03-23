@@ -1,13 +1,14 @@
 #!/bin/bash
-# This script checks that the verifier properly applies goal regexes and
-# computes the correct line and column information for diagnostics.
+# This script checks that the verifier properly handles singleton checking.
 HAD_ERRORS=0
 VERIFIER="../verifier"
+TEST_INPUT="$1"
+TEST_EXPECTED="$2"
 cd "$(dirname "$0")"
-"${VERIFIER}" --goal_regex='\s*\/\/\-\s*\[(.*)\]' \
-    regex_input.txt < /dev/null 2>&1 \
+"${VERIFIER}" --check_for_singletons=true \
+    "${TEST_INPUT}" < /dev/null 2>&1 \
     | sed '/0x[0-9a-fA-F]*/d' \
-    | diff - regex_expected_error.txt
+    | diff - "${TEST_EXPECTED}"
 RESULTS=( ${PIPESTATUS[0]} ${PIPESTATUS[2]} )
 if [ ${RESULTS[0]} -ne 1 ]; then
   echo "[ VERIFIER DID NOT FAIL ]"

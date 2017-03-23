@@ -25,6 +25,40 @@ sh_test(
 )
 
 sh_test(
+    name = "singleton",
+    size = "small",
+    srcs = [
+        "test_singleton.sh",
+    ],
+    args = [
+        "singleton_input.txt",
+        "singleton_expected_error.txt",
+    ],
+    data = [
+        "singleton_input.txt",
+        "singleton_expected_error.txt",
+        "//kythe/cxx/verifier",
+    ],
+)
+
+sh_test(
+    name = "singleton_inspect",
+    size = "small",
+    srcs = [
+        "test_singleton.sh",
+    ],
+    args = [
+        "singleton_inspect_input.txt",
+        "singleton_inspect_expected_error.txt",
+    ],
+    data = [
+        "singleton_inspect_input.txt",
+        "singleton_inspect_expected_error.txt",
+        "//kythe/cxx/verifier",
+    ],
+)
+
+sh_test(
     name = "outputs",
     size = "small",
     srcs = [

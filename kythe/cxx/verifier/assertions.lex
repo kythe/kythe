@@ -23,7 +23,7 @@
 static size_t loc_ofs;
 %}
 %option noyywrap nounput batch debug noinput bison-bridge
-id    [a-zA-Z/][a-zA-Z_0-9/]*
+id    [_a-zA-Z/][a-zA-Z_0-9/]*
 int   [0-9]+
 blank [ \t]
 

@@ -1,3 +1,2 @@
 Could not verify all goals. The furthest we reached was:
-  regex_input.txt:2:6-2:17 Aaa bbb Ccc
-  Goal: App(fact, (EVar( = <nullptr>), /kythe/edge/bbb, EVar( = <nullptr>), /, ""))
+  regex_input.txt:2:6-2:19 _Aaa bbb _Ccc
