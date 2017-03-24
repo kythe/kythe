@@ -1431,8 +1431,13 @@ func compilePreDocument(ctx context.Context, service Service, details documentDe
 	text := &xpb.Printable{}
 	document.Text = text
 	for _, assocDoc := range preDocument.docNode {
-		text.RawText = text.RawText + assocDoc.rawText
-		text.Link = append(text.Link, assocDoc.link...)
+		// Assume the longest document is the best one to show.
+		// TODO(zarko): Amend the API to pass down all documents and allow the
+		// client to make this decision (informed by provenance).
+		if len(assocDoc.rawText) > len(text.RawText) {
+			text.RawText = assocDoc.rawText
+			text.Link = assocDoc.link
+		}
 	}
 	return document, nil
 }
