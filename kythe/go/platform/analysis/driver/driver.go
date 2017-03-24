@@ -56,9 +56,6 @@ type Driver struct {
 	Analyzer        analysis.CompilationAnalyzer
 	FileDataService string
 
-	// Compilations is a queue of compilations to be sent for analysis.
-	Compilations Queue
-
 	// Setup is called after a compilation has been pulled from the Queue and
 	// before it is sent to the Analyzer (or Output is called).
 	Setup CompilationFunc
@@ -101,8 +98,6 @@ func (d *Driver) Apply(io IO) {
 func (d *Driver) validate() error {
 	if d.Analyzer == nil {
 		return errors.New("missing Analyzer")
-	} else if d.Compilations == nil {
-		return errors.New("missing Compilations Queue")
 	} else if d.Output == nil {
 		return errors.New("missing Output function")
 	}
@@ -112,12 +107,12 @@ func (d *Driver) validate() error {
 // Run sends each compilation received from the driver's Queue to the driver's
 // Analyzer.  All outputs are passed to Output in turn.  An error is immediately
 // returned if the Analyzer, Output, or Compilations fields are unset.
-func (d *Driver) Run(ctx context.Context) error {
+func (d *Driver) Run(ctx context.Context, queue Queue) error {
 	if err := d.validate(); err != nil {
 		return err
 	}
 	for {
-		if err := d.Compilations.Next(ctx, func(ctx context.Context, cu Compilation) error {
+		if err := queue.Next(ctx, func(ctx context.Context, cu Compilation) error {
 			if d.Setup != nil {
 				if err := d.Setup(ctx, cu); err != nil {
 					return fmt.Errorf("analysis setup error: %v", err)

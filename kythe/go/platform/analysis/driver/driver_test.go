@@ -33,9 +33,9 @@ import (
 type mock struct {
 	t *testing.T
 
-	idx          int
-	Compilations []Compilation
+	idx int
 
+	Compilations []Compilation
 	Outputs      []*apb.AnalysisOutput
 	AnalyzeError error
 	OutputError  error
@@ -89,17 +89,13 @@ const fdsAddr = "TEST FDS ADDR"
 func TestDriverInvalid(t *testing.T) {
 	m := &mock{t: t}
 	tests := []*Driver{
-		{},
-		{Analyzer: m},
-		{Compilations: m},
-		{Output: m.out()},
-		{Analyzer: m, Compilations: m},
-		{Analyzer: m, Output: m.out()},
-		{Compilations: m, Output: m.out()},
+		{},                // missing both analyzer and output
+		{Analyzer: m},     // missing output
+		{Output: m.out()}, // missing analyzer
 	}
 
 	for _, d := range tests {
-		if err := d.Run(context.Background()); err == nil {
+		if err := d.Run(context.Background(), m); err == nil {
 			t.Fatalf("Did not receive expected error from %#v.Run(ctx)", d)
 		}
 	}
@@ -108,11 +104,10 @@ func TestDriverInvalid(t *testing.T) {
 func TestDriverEmpty(t *testing.T) {
 	m := &mock{t: t}
 	d := &Driver{
-		Analyzer:     m,
-		Compilations: m,
-		Output:       m.out(),
+		Analyzer: m,
+		Output:   m.out(),
 	}
-	testutil.FatalOnErrT(t, "Driver error: %v", d.Run(context.Background()))
+	testutil.FatalOnErrT(t, "Driver error: %v", d.Run(context.Background(), m))
 	if len(m.Requests) != 0 {
 		t.Fatalf("Unexpected AnalysisRequests: %v", m.Requests)
 	}
@@ -126,9 +121,8 @@ func TestDriver(t *testing.T) {
 	}
 	var setupIdx, teardownIdx int
 	d := &Driver{
-		Analyzer:     m,
-		Compilations: m,
-		Output:       m.out(),
+		Analyzer: m,
+		Output:   m.out(),
 		Setup: func(_ context.Context, cu Compilation) error {
 			setupIdx++
 			return nil
@@ -141,7 +135,7 @@ func TestDriver(t *testing.T) {
 			return nil
 		},
 	}
-	testutil.FatalOnErrT(t, "Driver error: %v", d.Run(context.Background()))
+	testutil.FatalOnErrT(t, "Driver error: %v", d.Run(context.Background(), m))
 	if len(m.Requests) != len(m.Compilations) {
 		t.Errorf("Expected %d AnalysisRequests; found %v", len(m.Compilations), m.Requests)
 	}
@@ -163,11 +157,10 @@ func TestDriverAnalyzeError(t *testing.T) {
 		AnalyzeError: errFromAnalysis,
 	}
 	d := &Driver{
-		Analyzer:     m,
-		Compilations: m,
-		Output:       m.out(),
+		Analyzer: m,
+		Output:   m.out(),
 	}
-	if err := d.Run(context.Background()); err != errFromAnalysis {
+	if err := d.Run(context.Background(), m); err != errFromAnalysis {
 		t.Errorf("Expected AnalysisError: %v; found: %v", errFromAnalysis, err)
 	}
 	if len(m.Requests) != 1 { // we didn't analyze the second
@@ -184,15 +177,14 @@ func TestDriverErrorHandler(t *testing.T) {
 	}
 	var analysisErr error
 	d := &Driver{
-		Analyzer:     m,
-		Compilations: m,
-		Output:       m.out(),
+		Analyzer: m,
+		Output:   m.out(),
 		AnalysisError: func(_ context.Context, cu Compilation, err error) error {
 			analysisErr = err
 			return nil // don't return err
 		},
 	}
-	testutil.FatalOnErrT(t, "Driver error: %v", d.Run(context.Background()))
+	testutil.FatalOnErrT(t, "Driver error: %v", d.Run(context.Background(), m))
 	if len(m.Requests) != len(m.Compilations) {
 		t.Errorf("Expected %d AnalysisRequests; found %v", len(m.Compilations), m.Requests)
 	}
@@ -209,15 +201,14 @@ func TestDriverSetup(t *testing.T) {
 	}
 	var setupIdx int
 	d := &Driver{
-		Analyzer:     m,
-		Compilations: m,
-		Output:       m.out(),
+		Analyzer: m,
+		Output:   m.out(),
 		Setup: func(_ context.Context, cu Compilation) error {
 			setupIdx++
 			return nil
 		},
 	}
-	testutil.FatalOnErrT(t, "Driver error: %v", d.Run(context.Background()))
+	testutil.FatalOnErrT(t, "Driver error: %v", d.Run(context.Background(), m))
 	if len(m.Requests) != len(m.Compilations) {
 		t.Errorf("Expected %d AnalysisRequests; found %v", len(m.Compilations), m.Requests)
 	}
@@ -234,15 +225,14 @@ func TestDriverTeardown(t *testing.T) {
 	}
 	var teardownIdx int
 	d := &Driver{
-		Analyzer:     m,
-		Compilations: m,
-		Output:       m.out(),
+		Analyzer: m,
+		Output:   m.out(),
 		Teardown: func(_ context.Context, cu Compilation) error {
 			teardownIdx++
 			return nil
 		},
 	}
-	testutil.FatalOnErrT(t, "Driver error: %v", d.Run(context.Background()))
+	testutil.FatalOnErrT(t, "Driver error: %v", d.Run(context.Background(), m))
 	if len(m.Requests) != len(m.Compilations) {
 		t.Errorf("Expected %d AnalysisRequests; found %v", len(m.Compilations), m.Requests)
 	}

@@ -110,14 +110,14 @@ func main() {
 	wr := delimited.NewWriter(os.Stdout)
 
 	driver := &driver.Driver{
-		Analyzer: &remote.Analyzer{aspb.NewCompilationAnalyzerClient(conn)},
-		Output:   func(_ context.Context, out *apb.AnalysisOutput) error { return wr.Put(out.Value) },
-
+		Analyzer:        &remote.Analyzer{aspb.NewCompilationAnalyzerClient(conn)},
 		FileDataService: fdsAddr,
-		Compilations:    queue,
+		Output: func(_ context.Context, out *apb.AnalysisOutput) error {
+			return wr.Put(out.Value)
+		},
 	}
 
-	if err := driver.Run(context.Background()); err != nil {
+	if err := driver.Run(context.Background(), queue); err != nil {
 		log.Fatal(err)
 	}
 
