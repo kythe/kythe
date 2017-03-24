@@ -2444,22 +2444,25 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
     for (const auto *Init : CC->inits()) {
       ++InitNumber;
 
-      // Draw ref edge for the field we are initializing.
+      // Draw ref edge for the field we are initializing if we're doing so
+      // explicitly.
       if (auto M = Init->getMember()) {
-        // This range is too large, if we have `A() : b_(10)`, it returns the
-        // range for b_(10), not b_.
-        auto MemberSR = Init->getSourceRange();
-        // If we are in a valid file, we can be more precise with the range for
-        // the variable we are initializing.
-        const SourceLocation &Loc = Init->getMemberLocation();
-        if (Loc.isValid() && Loc.isFileID()) {
-          MemberSR = RangeForSingleTokenFromSourceLocation(
-              *Observer.getSourceManager(), *Observer.getLangOptions(), Loc);
-        }
-        if (auto RCC = ExplicitRangeInCurrentContext(MemberSR)) {
-          const auto &ID = BuildNodeIdForDecl(M);
-          Observer.recordDeclUseLocation(
-              RCC.primary(), ID, GraphObserver::Claimability::Claimable);
+        if (Init->isWritten()) {
+          // This range is too large, if we have `A() : b_(10)`, it returns the
+          // range for b_(10), not b_.
+          auto MemberSR = Init->getSourceRange();
+          // If we are in a valid file, we can be more precise with the range
+          // for the variable we are initializing.
+          const SourceLocation &Loc = Init->getMemberLocation();
+          if (Loc.isValid() && Loc.isFileID()) {
+            MemberSR = RangeForSingleTokenFromSourceLocation(
+                *Observer.getSourceManager(), *Observer.getLangOptions(), Loc);
+          }
+          if (auto RCC = ExplicitRangeInCurrentContext(MemberSR)) {
+            const auto &ID = BuildNodeIdForDecl(M);
+            Observer.recordDeclUseLocation(
+                RCC.primary(), ID, GraphObserver::Claimability::Claimable);
+          }
         }
       }
 

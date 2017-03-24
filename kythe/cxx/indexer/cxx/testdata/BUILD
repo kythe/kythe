@@ -1222,6 +1222,12 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "rec_ctor_implicit_refs",
+    srcs = ["rec/rec_ctor_implicit_refs.cc"],
+    tags = ["rec"],
+)
+
+cxx_indexer_test(
     name = "rec_fwd_struct_name",
     srcs = ["rec/rec_fwd_struct_name.c"],
     std = "c99",
