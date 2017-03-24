@@ -386,7 +386,6 @@ void GoogleProtoLibrarySupport::InspectCallExpr(
   } else {
     // The intended ParseProtoHelper usage is a temporary contructed right
     // before calling the cast operator. We don't support other usages.
-    LOG(ERROR) << "Usage of non-temporary ParseProtoHelper";
     return;
   }
 

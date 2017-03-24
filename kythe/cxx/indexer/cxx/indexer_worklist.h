@@ -28,10 +28,15 @@ namespace kythe {
 
 /// \brief An indexer task and its related state.
 struct IndexJob {
-  explicit IndexJob(clang::Decl* Decl) : Decl(Decl) {}
+  explicit IndexJob(clang::Decl* Decl) : Decl(Decl), FileNode(nullptr, "") {}
+  /// \brief Build an IndexJob to visit a file's top-level comment.
+  IndexJob(clang::Decl* Decl, clang::FileID Id,
+           const GraphObserver::NodeId& FileNode)
+      : IsDeclJob(false), Decl(Decl), FileId(Id), FileNode(FileNode) {}
   IndexJob(const IndexJob& ParentJob, clang::Decl* Decl,
            bool SetPruneIncompleteFunctions, std::string ClaimId)
       : Decl(Decl),
+        FileNode(nullptr, ""),
         UnderneathImplicitTemplateInstantiation(
             ParentJob.UnderneathImplicitTemplateInstantiation),
         SetPruneIncompleteFunctions(SetPruneIncompleteFunctions),
@@ -40,8 +45,18 @@ struct IndexJob {
         BlameStack(ParentJob.BlameStack),
         ClaimId(ClaimId) {}
 
+  /// \brief Is this job meant to index Decl?
+  bool IsDeclJob = true;
+
   /// \brief The `Decl` to index.
   clang::Decl* Decl;
+
+  /// \brief The file ID of the file whose top-level comment should be indexed.
+  clang::FileID FileId;
+
+  /// \brief The file node for the file whose top-level comment should be
+  /// indexed.
+  GraphObserver::NodeId FileNode;
 
   /// \brief True if we're currently underneath an implicit template
   /// instantiation.

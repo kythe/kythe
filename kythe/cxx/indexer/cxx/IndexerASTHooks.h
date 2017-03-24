@@ -507,7 +507,12 @@ public:
 
   void RunJob(std::unique_ptr<IndexJob> JobToRun) {
     Job = std::move(JobToRun);
-    TraverseDecl(Job->Decl);
+    if (Job->IsDeclJob) {
+      TraverseDecl(Job->Decl);
+    } else {
+      // There is no declaration attached to a top-level file comment.
+      HandleFileLevelComments(Job->FileId, Job->FileNode);
+    }
   }
 
   const IndexJob &getCurrentJob() {
@@ -522,8 +527,9 @@ public:
     while (!ShouldStopIndexing() && Worklist->DoWork())
       ;
     Observer.iterateOverClaimedFiles(
-        [this](clang::FileID Id, const GraphObserver::NodeId &FileNode) {
-          HandleFileLevelComments(Id, FileNode);
+        [this, InitialDecl](clang::FileID Id,
+                            const GraphObserver::NodeId &FileNode) {
+          RunJob(llvm::make_unique<IndexJob>(InitialDecl, Id, FileNode));
           return !ShouldStopIndexing();
         });
     Worklist.reset();
