@@ -84,28 +84,50 @@ func (m *mock) Next(ctx context.Context, f CompilationFunc) error {
 	return err
 }
 
+// A testContext implements the Context interface through local functions.
+// The default implementations are no-ops without error.
+type testContext struct {
+	setup         func(context.Context, Compilation) error
+	teardown      func(context.Context, Compilation) error
+	analysisError func(context.Context, Compilation, error) error
+}
+
+func (t testContext) Setup(ctx context.Context, unit Compilation) error {
+	if t.setup != nil {
+		return t.setup(ctx, unit)
+	}
+	return nil
+}
+
+func (t testContext) Teardown(ctx context.Context, unit Compilation) error {
+	if t.teardown != nil {
+		return t.teardown(ctx, unit)
+	}
+	return nil
+}
+
+func (t testContext) AnalysisError(ctx context.Context, unit Compilation, err error) error {
+	if t.analysisError != nil {
+		return t.analysisError(ctx, unit, err)
+	}
+	return nil
+}
+
 const fdsAddr = "TEST FDS ADDR"
 
 func TestDriverInvalid(t *testing.T) {
 	m := &mock{t: t}
-	tests := []*Driver{
-		{},                // missing both analyzer and output
-		{Analyzer: m},     // missing output
-		{Output: m.out()}, // missing analyzer
-	}
-
-	for _, d := range tests {
-		if err := d.Run(context.Background(), m); err == nil {
-			t.Fatalf("Did not receive expected error from %#v.Run(ctx)", d)
-		}
+	test := new(Driver)
+	if err := test.Run(context.Background(), m); err == nil {
+		t.Error("Expected error from %#v.Run but got none", test)
 	}
 }
 
 func TestDriverEmpty(t *testing.T) {
 	m := &mock{t: t}
 	d := &Driver{
-		Analyzer: m,
-		Output:   m.out(),
+		Analyzer:    m,
+		WriteOutput: m.out(),
 	}
 	testutil.FatalOnErrT(t, "Driver error: %v", d.Run(context.Background(), m))
 	if len(m.Requests) != 0 {
@@ -121,18 +143,20 @@ func TestDriver(t *testing.T) {
 	}
 	var setupIdx, teardownIdx int
 	d := &Driver{
-		Analyzer: m,
-		Output:   m.out(),
-		Setup: func(_ context.Context, cu Compilation) error {
-			setupIdx++
-			return nil
-		},
-		Teardown: func(_ context.Context, cu Compilation) error {
-			if setupIdx != teardownIdx+1 {
-				t.Error("Teardown was not called directly after Setup/Analyze")
-			}
-			teardownIdx++
-			return nil
+		Analyzer:    m,
+		WriteOutput: m.out(),
+		Context: testContext{
+			setup: func(_ context.Context, cu Compilation) error {
+				setupIdx++
+				return nil
+			},
+			teardown: func(_ context.Context, cu Compilation) error {
+				if setupIdx != teardownIdx+1 {
+					t.Error("Teardown was not called directly after Setup/Analyze")
+				}
+				teardownIdx++
+				return nil
+			},
 		},
 	}
 	testutil.FatalOnErrT(t, "Driver error: %v", d.Run(context.Background(), m))
@@ -157,8 +181,8 @@ func TestDriverAnalyzeError(t *testing.T) {
 		AnalyzeError: errFromAnalysis,
 	}
 	d := &Driver{
-		Analyzer: m,
-		Output:   m.out(),
+		Analyzer:    m,
+		WriteOutput: m.out(),
 	}
 	if err := d.Run(context.Background(), m); err != errFromAnalysis {
 		t.Errorf("Expected AnalysisError: %v; found: %v", errFromAnalysis, err)
@@ -177,11 +201,13 @@ func TestDriverErrorHandler(t *testing.T) {
 	}
 	var analysisErr error
 	d := &Driver{
-		Analyzer: m,
-		Output:   m.out(),
-		AnalysisError: func(_ context.Context, cu Compilation, err error) error {
-			analysisErr = err
-			return nil // don't return err
+		Analyzer:    m,
+		WriteOutput: m.out(),
+		Context: testContext{
+			analysisError: func(_ context.Context, cu Compilation, err error) error {
+				analysisErr = err
+				return nil // don't return err
+			},
 		},
 	}
 	testutil.FatalOnErrT(t, "Driver error: %v", d.Run(context.Background(), m))
@@ -201,11 +227,13 @@ func TestDriverSetup(t *testing.T) {
 	}
 	var setupIdx int
 	d := &Driver{
-		Analyzer: m,
-		Output:   m.out(),
-		Setup: func(_ context.Context, cu Compilation) error {
-			setupIdx++
-			return nil
+		Analyzer:    m,
+		WriteOutput: m.out(),
+		Context: testContext{
+			setup: func(_ context.Context, cu Compilation) error {
+				setupIdx++
+				return nil
+			},
 		},
 	}
 	testutil.FatalOnErrT(t, "Driver error: %v", d.Run(context.Background(), m))
@@ -225,11 +253,13 @@ func TestDriverTeardown(t *testing.T) {
 	}
 	var teardownIdx int
 	d := &Driver{
-		Analyzer: m,
-		Output:   m.out(),
-		Teardown: func(_ context.Context, cu Compilation) error {
-			teardownIdx++
-			return nil
+		Analyzer:    m,
+		WriteOutput: m.out(),
+		Context: testContext{
+			teardown: func(_ context.Context, cu Compilation) error {
+				teardownIdx++
+				return nil
+			},
 		},
 	}
 	testutil.FatalOnErrT(t, "Driver error: %v", d.Run(context.Background(), m))

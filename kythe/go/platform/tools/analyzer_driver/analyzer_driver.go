@@ -112,7 +112,7 @@ func main() {
 	driver := &driver.Driver{
 		Analyzer:        &remote.Analyzer{aspb.NewCompilationAnalyzerClient(conn)},
 		FileDataService: fdsAddr,
-		Output: func(_ context.Context, out *apb.AnalysisOutput) error {
+		WriteOutput: func(_ context.Context, out *apb.AnalysisOutput) error {
 			return wr.Put(out.Value)
 		},
 	}
