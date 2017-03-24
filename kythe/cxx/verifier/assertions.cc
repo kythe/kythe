@@ -247,7 +247,7 @@ AstNode *AssertionParser::CreateAtom(const yy::location &location,
                                      const std::string &for_token) {
   if (!for_token.empty() && for_token[0] == '_') {
     return CreateDontCare(location);
-  } else if (for_token.size() && isupper(for_token[0])) {
+  } else if (!for_token.empty() && isupper(for_token[0])) {
     return CreateEVar(location, for_token);
   } else {
     return CreateIdentifier(location, for_token);
