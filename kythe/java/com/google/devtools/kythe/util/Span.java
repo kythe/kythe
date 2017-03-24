@@ -16,9 +16,12 @@
 
 package com.google.devtools.kythe.util;
 
+import java.util.Objects;
+
 /** Structure representing some arbitrary offset span. */
-public class Span implements Comparable<Span> {
-  private final int start, end;
+public final class Span implements Comparable<Span> {
+  private final int start;
+  private final int end;
 
   public Span(int startOffset, int endOffset) {
     this.start = startOffset;
@@ -53,5 +56,22 @@ public class Span implements Comparable<Span> {
   @Override
   public String toString() {
     return String.format("Span{%d, %d}", start, end);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    Span span = (Span) o;
+    return start == span.start && end == span.end;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(start, end);
   }
 }
