@@ -784,7 +784,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
   // Emits a node for the given sym, an anchor encompassing the TreeContext, and a REF edge
   private JavaNode emitSymUsage(TreeContext ctx, Symbol sym) {
-    JavaNode node = getJavaNode(sym);
+    JavaNode node = getRefNode(sym);
     if (node == null) {
       return todoNode(ctx, "ExprUsage: " + ctx.getTree());
     }
@@ -801,13 +801,23 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
   // Emits a node for the given sym, an anchor encompassing the name, and a given edge kind
   private JavaNode emitNameUsage(TreeContext ctx, Symbol sym, Name name, EdgeKind edgeKind) {
-    JavaNode node = getJavaNode(sym);
+    JavaNode node = getRefNode(sym);
     if (node == null) {
       return todoNode(ctx, "NameUsage: " + ctx.getTree() + " -- " + name);
     }
 
     emitAnchor(name, ctx.getTree().getStartPosition(), edgeKind, node.entries, ctx.getSnippet());
     statistics.incrementCounter("name-usages-emitted");
+    return node;
+  }
+
+  // Returns the reference node for the given symbol.
+  private JavaNode getRefNode(Symbol sym) {
+    JavaNode node = getJavaNode(sym);
+    if (node != null && sym instanceof ClassSymbol && !sym.getTypeParameters().isEmpty()) {
+      // Always reference the abs node of a generic class.
+      node = new JavaNode(entrySets.newAbstract(node.entries), node.qualifiedName);
+    }
     return node;
   }
 
@@ -825,7 +835,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     Symbol javaLangEnum = getSymbols().enumSym;
     String javaLangEnumSignature = signatureGenerator.getSignature(javaLangEnum).get();
     EntrySet javaLangEnumEntrySet =
-        entrySets.getNode(signatureGenerator, javaLangEnum, javaLangEnumSignature, null);
+        entrySets.newAbstract(
+            entrySets.getNode(signatureGenerator, javaLangEnum, javaLangEnumSignature, null));
     EntrySet typeNode =
         entrySets.newTApply(javaLangEnumEntrySet, Collections.singletonList(enumEntrySet));
     String qualifiedName = javaLangEnumSignature + "<" + enumSignature + ">";

@@ -28,10 +28,12 @@ import com.google.devtools.kythe.util.Span;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nullable;
 
 /**
  * Factory for Kythe-compliant node and edge {@link EntrySet}s. In general, this class provides two
@@ -265,15 +267,22 @@ public class KytheEntrySets {
   }
 
   /** Returns (and emits) a new abstract node over child. */
-  public EntrySet newAbstract(EntrySet child, List<EntrySet> params, MarkedSource markedSource) {
-    EntrySet abs =
-        emitAndReturn(
-            newNode(NodeKind.ABS)
-                .addSignatureSalt(child.getVName())
-                .setProperty("code", markedSource));
+  public EntrySet newAbstract(
+      EntrySet child, List<EntrySet> params, @Nullable MarkedSource markedSource) {
+    NodeBuilder absBuilder = newNode(NodeKind.ABS).addSignatureSalt(child.getVName());
+    if (markedSource != null) {
+      absBuilder.setProperty("code", markedSource);
+    }
+
+    EntrySet abs = emitAndReturn(absBuilder);
     emitEdge(child, EdgeKind.CHILDOF, abs);
     emitOrdinalEdges(abs, EdgeKind.PARAM, params);
     return abs;
+  }
+
+  /** Returns (and emits) a new abstract node over child. */
+  public EntrySet newAbstract(EntrySet child) {
+    return newAbstract(child, Collections.emptyList(), null);
   }
 
   /** Returns and emits a new {@link NodeKind#TAPPLY} function type node. */

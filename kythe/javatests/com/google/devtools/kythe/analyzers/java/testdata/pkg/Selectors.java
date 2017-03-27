@@ -4,7 +4,7 @@ public class Selectors {
   //- @field defines/binding Field
   String field;
 
-  //- @Optional ref Optional
+  //- @Optional ref OptionalAbs
   //- @maybe defines/binding Param
   public String m(Optional<String> maybe) {
     //- @maybe ref Param
@@ -37,6 +37,7 @@ public class Selectors {
 
   //- @Optional defines/binding OptionalAbs
   //- Optional childof OptionalAbs
+  //- Optional.node/kind interface
   private static interface Optional<T> {
     public T get();
     public boolean isPresent();

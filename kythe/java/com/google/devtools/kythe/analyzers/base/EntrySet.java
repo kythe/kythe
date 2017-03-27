@@ -19,6 +19,7 @@ package com.google.devtools.kythe.analyzers.base;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hasher;
@@ -108,6 +109,8 @@ public class EntrySet {
     return VName.newBuilder(base).mergeFrom(extension).build();
   }
 
+  private static final int MAX_VALUE_STRING_SIZE = 64;
+
   @Override
   public String toString() {
     StringBuilder builder = new StringBuilder("EntrySet {\n");
@@ -117,9 +120,14 @@ public class EntrySet {
       builder.append("EdgeKind: " + edgeKind);
     }
     for (Map.Entry<String, byte[]> entry : properties.entrySet()) {
-      builder.append(
-          String.format(
-              "%s %s\n", entry.getKey(), new String(entry.getValue(), PROPERTY_VALUE_CHARSET)));
+      String val;
+      if (SALT_IGNORED_FACT_VALUES.contains(entry.getKey())
+          || entry.getValue().length > MAX_VALUE_STRING_SIZE) {
+        val = "<...>";
+      } else {
+        val = new String(entry.getValue(), PROPERTY_VALUE_CHARSET);
+      }
+      builder.append(String.format("%s %s\n", entry.getKey(), val));
     }
     return builder.append("}").toString();
   }
@@ -246,6 +254,8 @@ public class EntrySet {
   }
 
   private static final HashFunction SIGNATURE_HASH_FUNCTION = Hashing.sha256();
+  private static final ImmutableSet<String> SALT_IGNORED_FACT_VALUES =
+      ImmutableSet.of("/kythe/code");
 
   protected static String buildSignature(
       ImmutableList<String> salts, ImmutableSortedMap<String, byte[]> properties) {
@@ -256,6 +266,10 @@ public class EntrySet {
       signature.putString(salt, PROPERTY_VALUE_CHARSET);
     }
     for (Map.Entry<String, byte[]> property : properties.entrySet()) {
+      if (SALT_IGNORED_FACT_VALUES.contains(property.getKey())) {
+        logger.finestfmt("    %s [SKIPPED]", property.getKey());
+        continue;
+      }
       logger.finestfmt("    %s: %s", property.getKey(), new String(property.getValue()));
       signature.putString(property.getKey(), PROPERTY_VALUE_CHARSET).putBytes(property.getValue());
     }

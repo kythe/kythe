@@ -33,7 +33,7 @@ public class Generics<T> {
     //- @gs defines/binding GVar
     //- GVar typed GType
     //- GType.node/kind tapp
-    //- GType param.0 Class
+    //- GType param.0 GAbs
     //- GType param.1 Str
     Generics<String> gs =
         //- @"Generics<String>" ref GType

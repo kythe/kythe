@@ -32,4 +32,4 @@ public class Files {
 enum OtherDecl {}
 
 //- @Inter defines/binding Inter
-interface Inter {}
+interface Inter<T> {}

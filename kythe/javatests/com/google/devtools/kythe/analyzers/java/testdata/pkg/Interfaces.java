@@ -48,10 +48,10 @@ public interface Interfaces {
   //- @T defines/binding TypeVariable
   //- DeredroTAbs param.0 TypeVariable
   public static interface Deredro<T>
-      //- @Ordered ref OrderedInterface
+      //- @Ordered ref OrderedTAbs
       //- @T ref TypeVariable
       //- OrderedTApp.node/kind tapp
-      //- OrderedTApp param.0 OrderedInterface
+      //- OrderedTApp param.0 OrderedTAbs
       //- OrderedTApp param.1 TypeVariable
       //- DeredroInterface extends OrderedTApp
       extends Ordered<T> {
@@ -72,7 +72,7 @@ public interface Interfaces {
   //- @IntComparison defines/binding IntComparisonClass
   //- @Integer ref IntegerClass
   //- DeredroTApp.node/kind tapp
-  //- DeredroTApp param.0 DeredroInterface
+  //- DeredroTApp param.0 DeredroTAbs
   //- DeredroTApp param.1 IntegerClass
   //- IntComparisonClass extends DeredroTApp
   public static class IntComparison implements Deredro<Integer> {
