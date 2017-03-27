@@ -56,7 +56,7 @@ then
 fi
 
 # Execute the kindex file generator, using the root kythe build file as input
-$PWD/kythe/cxx/tools/kindex_file_generator.sh "//kythe/BUILD" "kythe" \
+$PWD/kythe/cxx/tools/kindex_file_generator.sh "//kythe/BUILD" "kythe/BUILD" "kythe" \
   "skylark" "$TMP_KINDEX_OUTPUT_FILE" "$SOURCE_INPUT_FILE"
 
 # Ensure the output file was populated

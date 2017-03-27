@@ -19,8 +19,8 @@
 #
 # Usage Example:
 # bazel build //kythe/cxx/tools:kindex_file_generator
-# bazel run //kythe/cxx/tools:kindex_file_generator "//kythe/BUILD" "kythe" \
-# "bazel" "$(readlink -f ./output_dir/)/kythe.build.kindex" \
+# bazel run //kythe/cxx/tools:kindex_file_generator "//kythe/BUILD" "kythe/BUILD" \
+# "kythe" "bazel" "$(readlink -f ./output_dir/)/kythe.build.kindex" \
 # $(readlink -f ./kythe/BUILD)
 #
 # This script looks for the optional env vars:
@@ -128,16 +128,17 @@ generate_file_data_proto()
 # Check for proper usage
 if [ $# -lt "5" ]; then
    echo "Usage: bazel run kythe/cxx/tools/kindex_file_generator [cpu_signature] \
-[corpus] [language] [kindex_output_file] [input_source_file]"
+[cpu_path] [corpus] [language] [kindex_output_file] [input_source_file]"
    exit 1
 fi
 
 # Parse input args.
 CPU_SIGNATURE="$1"
-CORPUS="$2"
-LANGUAGE="$3"
-KINDEX_OUTPUT_FILE="$4"
-INPUT_SOURCE_FILE="$5"
+CPU_PATH="$2"
+CORPUS="$3"
+LANGUAGE="$4"
+KINDEX_OUTPUT_FILE="$5"
+INPUT_SOURCE_FILE="$6"
 
 # If no env var exists for the shasum_tool, set a default path
 : ${SHASUM_TOOL:=${PWD}/kythe/go/platform/tools/shasum_tool/shasum_tool}
@@ -155,7 +156,7 @@ trap "rm $CPU_TMP_FILE; rm $FILE_DATA_TMP_FILE" SIGHUP SIGINT SIGTERM EXIT
 
 # Generate the CompilationUnit text proto and store into a temp file.
 CPU_PROTO_TEXT=$(generate_cpu_proto "$CPU_SIGNATURE" "$CORPUS" "$LANGUAGE" \
-  "$INPUT_SOURCE_FILE")
+  "$CPU_PATH")
 echo $CPU_PROTO_TEXT > $CPU_TMP_FILE
 
 # Generate the FileData text proto and store into a temp file.
