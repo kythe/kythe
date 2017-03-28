@@ -16,6 +16,7 @@
 
 package com.google.devtools.kythe.analyzers.base;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
@@ -56,7 +57,11 @@ public abstract class AbstractCompilationAnalyzer {
     Preconditions.checkNotNull(req, "AnalysisRequest must be non-null");
     Stopwatch timer = Stopwatch.createStarted();
     try (FileDataProvider fileData = parseFileDataService(req.getFileDataService())) {
-      analyzeCompilation(req.getCompilation(), fileData, emitter);
+      String revision = req.getRevision();
+      if (revision.isEmpty()) {
+        revision = null;
+      }
+      analyzeCompilation(req.getCompilation(), Optional.fromNullable(revision), fileData, emitter);
     } catch (Throwable t) {
       logger.warningfmt("Uncaught exception: %s", t);
       t.printStackTrace();
@@ -83,8 +88,10 @@ public abstract class AbstractCompilationAnalyzer {
    * {@link FileDataProvider} and {@link FactEmitter} should no longer be used.
    */
   protected abstract void analyzeCompilation(
-      CompilationUnit compilationUnit, FileDataProvider fileDataProvider, FactEmitter emitter)
-      throws AnalysisException;
+      CompilationUnit compilationUnit,
+      Optional<String> revision,
+      FileDataProvider fileDataProvider,
+      FactEmitter emitter) throws AnalysisException;
 
   /**
    * {@link FactEmitter} that emits an {@link AnalysisOutput} with an embedded {@link Entry} for

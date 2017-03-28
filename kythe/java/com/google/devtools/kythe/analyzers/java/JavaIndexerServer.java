@@ -17,6 +17,7 @@
 package com.google.devtools.kythe.analyzers.java;
 
 import com.beust.jcommander.Parameter;
+import com.google.common.base.Optional;
 import com.google.devtools.kythe.analyzers.base.FactEmitter;
 import com.google.devtools.kythe.analyzers.base.GRPCCompilationAnalyzer;
 import com.google.devtools.kythe.analyzers.base.IndexerConfig;
@@ -56,8 +57,10 @@ public class JavaIndexerServer {
 
     @Override
     public void analyzeCompilation(
-        CompilationUnit compilation, FileDataProvider fileData, FactEmitter emitter)
-        throws AnalysisException {
+        CompilationUnit compilation,
+        Optional<String> revision,
+        FileDataProvider fileData,
+        FactEmitter emitter) throws AnalysisException {
       driver.analyze(
           new KytheJavacAnalyzer(config, emitter, getStatisticsCollector()),
           compilation,
