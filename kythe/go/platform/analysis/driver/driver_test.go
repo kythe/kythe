@@ -119,7 +119,7 @@ func TestDriverInvalid(t *testing.T) {
 	m := &mock{t: t}
 	test := new(Driver)
 	if err := test.Run(context.Background(), m); err == nil {
-		t.Error("Expected error from %#v.Run but got none", test)
+		t.Errorf("Expected error from %#v.Run but got none", test)
 	}
 }
 

@@ -102,7 +102,7 @@ func (d *Driver) teardown(ctx context.Context, unit Compilation) error {
 }
 
 func (d *Driver) analysisError(ctx context.Context, unit Compilation, err error) error {
-	if c := d.Context; c != nil {
+	if c := d.Context; c != nil && err != nil {
 		return c.AnalysisError(ctx, unit, err)
 	}
 	return err
