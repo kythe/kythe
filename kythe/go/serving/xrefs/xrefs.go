@@ -821,6 +821,9 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 	}
 
 	mergeInto := make(map[string]string)
+	for _, ticket := range tickets {
+		mergeInto[ticket] = ticket
+	}
 
 	wantMoreCrossRefs := edgesPageToken == "" &&
 		(req.DefinitionKind != xpb.CrossReferencesRequest_NO_DEFINITIONS ||
@@ -845,9 +848,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 
 		// If this node is to be merged into another, we will use that node's ticket
 		// for all further book-keeping purposes.
-		if mergeNode, ok := mergeInto[ticket]; ok {
-			ticket = mergeNode
-		}
+		ticket = mergeInto[ticket]
 
 		// We may have partially completed the xrefs set due merge nodes.
 		crs := reply.CrossReferences[ticket]
@@ -863,6 +864,10 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 
 		// Add any additional merge nodes to the set of table lookups
 		for _, mergeNode := range cr.MergeWith {
+			if prevMerge, ok := mergeInto[mergeNode]; ok {
+				log.Printf("WARNING: node %q already previously merged with %q", mergeNode, prevMerge)
+				continue
+			}
 			tickets = append(tickets, mergeNode)
 			mergeInto[mergeNode] = ticket
 		}
