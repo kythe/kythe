@@ -29,7 +29,7 @@
 // The protocol between indexer (X) and proxy (P) is:
 //
 //   X → P: {"req":"analysis"}<LF>
-//   P → X: {"rsp":"ok","args":{"unit":<unit>,"rev":<revision>}}<LF>
+//   P → X: {"rsp":"ok","args":{"unit":<unit>,"rev":<revision>,"fds":<addr>}}<LF>
 //          {"rsp":"error","args":<error>}<LF>
 //
 //   X → P: {"req":"output","args":[<entry>...]}<LF>
@@ -46,6 +46,7 @@
 //
 // Where:
 //
+//    <addr>     -- service address
 //    <bytes>    -- BASE-64 encoded bytes (string)
 //    <digest>   -- file content digest (string)
 //    <entry>    -- JSON encoded kythe.proto.Entry message
@@ -108,8 +109,9 @@ type response struct {
 
 // A unit represents a compilation unit to be analyzed.
 type unit struct {
-	Unit     *apb.CompilationUnit `json:"unit"`
-	Revision string               `json:"rev,omitempty"`
+	Unit            *apb.CompilationUnit `json:"unit"`
+	Revision        string               `json:"rev,omitempty"`
+	FileDataService string               `json:"fds,omitempty"`
 }
 
 // A file represents a file request or content reply.
@@ -157,8 +159,9 @@ func (p *Proxy) Run(h Handler) error {
 			} else {
 				hasReq = true
 				p.reply("ok", &unit{
-					Unit:     req.Compilation,
-					Revision: req.Revision,
+					Unit:            req.Compilation,
+					Revision:        req.Revision,
+					FileDataService: req.FileDataService,
 				})
 			}
 

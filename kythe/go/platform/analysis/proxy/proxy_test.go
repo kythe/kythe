@@ -143,6 +143,8 @@ var (
 		Compilation: &apb.CompilationUnit{
 			VName: &spb.VName{Signature: "test"},
 		},
+		Revision:        "1",
+		FileDataService: "Q",
 	}
 
 	testEntries = []*spb.Entry{
@@ -151,7 +153,7 @@ var (
 	}
 )
 
-const analysisReply = `{"rsp":"ok","args":{"unit":{"v_name":{"signature":"test"}}}}`
+const analysisReply = `{"rsp":"ok","args":{"fds":"Q","rev":"1","unit":{"v_name":{"signature":"test"}}}}`
 
 func mustMarshal(v interface{}) string {
 	bits, err := json.Marshal(v)
