@@ -4125,13 +4125,14 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
     // or template template parameter. Non-dependent template specializations
     // appear as different types.
     const auto &T = TypeLoc.castAs<TemplateSpecializationTypeLoc>();
+    const SourceLocation &TNameLoc = T.getTemplateNameLoc();
     auto TemplateName = BuildNodeIdForTemplateName(
-        T.getTypePtr()->getTemplateName(), T.getTemplateNameLoc());
+        T.getTypePtr()->getTemplateName(), TNameLoc);
     if (!TemplateName) {
       return TemplateName;
     }
     if (EmitRanges == IndexerASTVisitor::EmitRanges::Yes &&
-        T.getTemplateNameLoc().isFileID()) {
+        TNameLoc.isFileID()) {
       // Create a reference to the template instantiation that this type refers
       // to. If the type is dependent, create a reference to the primary
       // template.
@@ -4143,7 +4144,7 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
       if (auto RCC = ExplicitRangeInCurrentContext(
               RangeForSingleTokenFromSourceLocation(
                   *Observer.getSourceManager(), *Observer.getLangOptions(),
-                  T.getTemplateNameLoc()))) {
+                  TNameLoc))) {
         Observer.recordDeclUseLocation(RCC.primary(), DeclNode);
       }
     }
@@ -5100,12 +5101,15 @@ bool IndexerASTVisitor::VisitObjCMessageExpr(
         // TODO Record multiple ranges, one for each selector.
         // For now, just record the range for the first selector. This should
         // make it easier for frontends to make use of this data.
-        const SourceRange &range = RangeForSingleTokenFromSourceLocation(
-            *Observer.getSourceManager(), *Observer.getLangOptions(),
-            Expr->getSelectorLoc(0));
-        if (auto R = ExplicitRangeInCurrentContext(range)) {
-          Observer.recordDeclUseLocation(
-              R.primary(), DeclId, GraphObserver::Claimability::Unclaimable);
+        const SourceLocation &Loc = Expr->getSelectorLoc(0);
+        if (Loc.isValid() && Loc.isFileID()) {
+          const SourceRange &range = RangeForSingleTokenFromSourceLocation(
+              *Observer.getSourceManager(), *Observer.getLangOptions(),
+              Loc);
+          if (auto R = ExplicitRangeInCurrentContext(range)) {
+            Observer.recordDeclUseLocation(
+                R.primary(), DeclId, GraphObserver::Claimability::Unclaimable);
+          }
         }
       }
     }
