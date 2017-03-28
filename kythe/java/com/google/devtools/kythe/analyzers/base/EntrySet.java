@@ -30,6 +30,7 @@ import com.google.devtools.kythe.proto.Storage.VName;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Set of storage entries with a common (source, edgeKind, target) tuple.
@@ -37,11 +38,11 @@ import java.util.Map;
  * <p>The signature of source {@link VName} may be explicitly set or be determined by the set of
  * properties in the {@link EntrySet} along with a set of salts.
  */
-public class EntrySet {
+public final class EntrySet {
   private static final FormattingLogger logger = FormattingLogger.getLogger(EntrySet.class);
 
   /** {@link Charset} used to encode {@link String} property values. */
-  public static final Charset PROPERTY_VALUE_CHARSET = StandardCharsets.UTF_8;
+  static final Charset PROPERTY_VALUE_CHARSET = StandardCharsets.UTF_8;
 
   /**
    * Map with only the "empty" property. This is used since a (source, edge, target) tuple may only
@@ -105,7 +106,7 @@ public class EntrySet {
    * Using the first {@link VName} as a base, merge the specified fields from the {@code extension}
    * {@link VName} into a new {@link VName}.
    */
-  public static VName extendVName(VName base, VName extension) {
+  static VName extendVName(VName base, VName extension) {
     return VName.newBuilder(base).mergeFrom(extension).build();
   }
 
@@ -137,6 +138,26 @@ public class EntrySet {
     if (!emitted) {
       logger.severefmt("EntrySet finalized before being emitted: " + this);
     }
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof EntrySet)) {
+      return false;
+    }
+    EntrySet entrySet = (EntrySet) o;
+    return Objects.equals(source, entrySet.source) &&
+        Objects.equals(edgeKind, entrySet.edgeKind) &&
+        Objects.equals(target, entrySet.target) &&
+        Objects.equals(properties, entrySet.properties);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(source, edgeKind, target, properties);
   }
 
   /**
@@ -270,7 +291,8 @@ public class EntrySet {
         logger.finestfmt("    %s [SKIPPED]", property.getKey());
         continue;
       }
-      logger.finestfmt("    %s: %s", property.getKey(), new String(property.getValue()));
+      String propertyValue = new String(property.getValue(), PROPERTY_VALUE_CHARSET);
+      logger.finestfmt("    %s: %s", property.getKey(), propertyValue);
       signature.putString(property.getKey(), PROPERTY_VALUE_CHARSET).putBytes(property.getValue());
     }
     String ret = signature.hash().toString();
