@@ -68,7 +68,7 @@ public class JavaExtractor {
         Lists.newArrayList(Iterables.filter(jInfo.getJavacOptList(), JAVAC_OPT_FILTER));
 
     // Set up a fresh output directory
-    javacOpts.add(Option.D.getText());
+    javacOpts.add("-d");
     Path output = Files.createTempDirectory("output");
     javacOpts.add(output.toString());
 
@@ -76,7 +76,7 @@ public class JavaExtractor {
     if (!jInfo.getProcessorList().isEmpty()) {
       String gensrcdir = readGeneratedSourceDirParam(jInfo);
       if (gensrcdir != null) {
-        javacOpts.add(Option.S.getText());
+        javacOpts.add("-s");
         javacOpts.add(gensrcdir);
         // javac expects the directory to already exist.
         Files.createDirectories(Paths.get(gensrcdir));

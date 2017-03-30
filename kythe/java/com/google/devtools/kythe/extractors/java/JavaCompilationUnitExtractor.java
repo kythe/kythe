@@ -186,9 +186,9 @@ public class JavaCompilationUnitExtractor {
     CompilationUnit.Builder unit = CompilationUnit.newBuilder();
     unit.setVName(VName.newBuilder().setSignature(target).setLanguage("java"));
     unit.addAllArgument(options);
-    unit.addArgument(Option.SOURCEPATH.getText());
+    unit.addArgument("-sourcepath");
     unit.addArgument(Joiner.on(":").join(newSourcePath));
-    unit.addArgument(Option.CP.getText());
+    unit.addArgument("-cp");
     unit.addArgument(Joiner.on(":").join(newClassPath));
     unit.setHasCompileErrors(hasErrors);
     unit.addAllRequiredInput(requiredInputs);
@@ -788,16 +788,16 @@ public class JavaCompilationUnitExtractor {
     String classPathJoined = Joiner.on(":").join(classpath);
     String sourcePathJoined = Joiner.on(":").join(sourcepath);
     if (!Strings.isNullOrEmpty(classPathJoined)) {
-      completeOptions.add(Option.CP.getText());
+      completeOptions.add("-classpath");
       completeOptions.add(classPathJoined);
     }
     if (!Strings.isNullOrEmpty(sourcePathJoined)) {
-      completeOptions.add(Option.SOURCEPATH.getText());
+      completeOptions.add("-sourcepath");
       completeOptions.add(sourcePathJoined);
     }
 
     JavacOptionsUtils.removeOptions(completeOptions, EnumSet.of(Option.D));
-    completeOptions.add(Option.D.getText());
+    completeOptions.add("-d");
     completeOptions.add(tempDestinationDir.toString());
 
     return completeOptions;

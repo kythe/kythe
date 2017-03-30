@@ -625,10 +625,10 @@ public class JavaExtractorTest extends TestCase {
       List<String> sourcepath = new LinkedList<>();
       List<String> classpath = new LinkedList<>();
       for (int i = 0; i < args.size(); i++) {
-        if (args.get(i).equals(Option.SOURCEPATH.getText())) {
+        if (args.get(i).equals("-s") || args.get(i).equals("-sourcepath")) {
           i++;
           sourcepath.addAll(parsePathList(args.get(i)));
-        } else if (Option.CP.matches(args.get(i)) || Option.CLASSPATH.matches(args.get(i))) {
+        } else if (args.get(i).equals("-cp") || args.get(i).equals("-classpath")) {
           i++;
           classpath.addAll(parsePathList(args.get(i)));
         }

@@ -81,14 +81,14 @@ public class JavacOptionsUtils {
    * returns null.
    */
   public static @Nullable Charset getEncodingOption(List<String> options) {
-    int i = options.lastIndexOf(Option.ENCODING.getText());
+    int i = options.lastIndexOf("-encoding");
     return (i >= 0) ? Charset.forName(options.get(i + 1)) : null;
   }
 
   /** If there is no encoding set, make sure to set the default encoding. */
   public static List<String> ensureEncodingSet(List<String> options, Charset defaultEncoding) {
     if (getEncodingOption(options) == null) {
-      options.add(Option.ENCODING.getText());
+      options.add("-encoding");
       options.add(defaultEncoding.name());
     }
     return options;
@@ -116,7 +116,7 @@ public class JavacOptionsUtils {
     }
 
     for (int i = 0; i < arguments.size(); i++) {
-      if (Option.CP.matches(arguments.get(i))) {
+      if (arguments.get(i).equals("-cp") || arguments.get(i).equals("-classpath")) {
         if (i + 1 >= arguments.size()) {
           throw new IllegalArgumentException("Malformed -cp argument: " + arguments);
         }
@@ -128,7 +128,7 @@ public class JavacOptionsUtils {
       }
     }
 
-    arguments.add(Option.CP.getText());
+    arguments.add("-classpath");
     arguments.add(Joiner.on(":").join(paths));
   }
 }
