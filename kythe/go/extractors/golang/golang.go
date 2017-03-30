@@ -148,8 +148,9 @@ func (e *Extractor) fetchAndStore(ctx context.Context, path string, a *indexpack
 	}
 	digest := strings.TrimSuffix(name, filepath.Ext(name))
 	if e.fmap == nil {
-		e.fmap = map[string]string{path: digest}
+		e.fmap = make(map[string]string)
 	}
+	e.fmap[path] = digest
 	return digest, err
 }
 
@@ -361,22 +362,42 @@ func (p *Package) Store(ctx context.Context, a *indexpack.Archive) ([]string, er
 	return unitFiles, nil
 }
 
-// extFetcher implements analysis.Fetcher by dispatching to an extractor.
-type extFetcher struct {
-	ctx context.Context
-	ext *Extractor
-}
+// mapFetcher implements analysis.Fetcher by dispatching to a preloaded map
+// from digests to contents.
+type mapFetcher map[string][]byte
 
-// Fetch implements the analysis.Fetcher interface. Where this is used, the
-// digest argument is actually the fully-expanded path, and the nominal path is
-// ignored.
-func (e extFetcher) Fetch(_, digest string) ([]byte, error) { return e.ext.readFile(e.ctx, digest) }
+// Fetch implements the analysis.Fetcher interface. The path argument is ignored.
+func (m mapFetcher) Fetch(_, digest string) ([]byte, error) {
+	if data, ok := m[digest]; ok {
+		return data, nil
+	}
+	return nil, os.ErrNotExist
+}
 
 // EachUnit calls f with a compilation record for each unit in p.  If f reports
 // an error, that error is returned by EachUnit.
 func (p *Package) EachUnit(ctx context.Context, f func(*kindex.Compilation) error) error {
+	fetcher := make(mapFetcher)
 	for _, cu := range p.Units {
-		idx, err := kindex.FromUnit(cu, extFetcher{ctx: ctx, ext: p.ext})
+		// Ensure all the file contents are loaded, and update the digests.
+		for _, ri := range cu.RequiredInput {
+			if !strings.Contains(ri.Info.Digest, "/") {
+				continue // skip those that are already complete
+			}
+			rc, err := vfs.Open(ctx, ri.Info.Digest)
+			if err != nil {
+				return fmt.Errorf("opening input: %v", err)
+			}
+			fd, err := kindex.FileData(ri.Info.Path, rc)
+			rc.Close()
+			if err != nil {
+				return fmt.Errorf("reading input: %v", err)
+			}
+			fetcher[fd.Info.Digest] = fd.Content
+			ri.Info.Digest = fd.Info.Digest
+		}
+
+		idx, err := kindex.FromUnit(cu, fetcher)
 		if err != nil {
 			return fmt.Errorf("loading compilation: %v", err)
 		}
