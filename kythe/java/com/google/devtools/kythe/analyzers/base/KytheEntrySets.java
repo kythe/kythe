@@ -185,13 +185,13 @@ public class KytheEntrySets {
   }
 
   /** Emits and returns a new {@link EntrySet} representing a file digest. */
-  public EntrySet getFileNode(String digest, byte[] contents, Charset encoding) {
+  public EntrySet getAndEmitFileNode(String digest, byte[] contents, Charset encoding) {
     VName name = getFileVName(digest);
-    return getFileNode(name, contents, encoding);
+    return getAndEmitFileNode(name, contents, encoding);
   }
 
   /** Emits and returns a new {@link EntrySet} representing a file {@link VName}. */
-  public EntrySet getFileNode(VName name, byte[] contents, Charset encoding) {
+  public EntrySet getAndEmitFileNode(VName name, byte[] contents, Charset encoding) {
     EntrySet node =
         emitAndReturn(
             new NodeBuilder(NodeKind.FILE, name)
