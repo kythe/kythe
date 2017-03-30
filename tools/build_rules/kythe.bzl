@@ -121,8 +121,11 @@ def java_verifier_test_impl(ctx):
       runfiles = runfiles,
       jar = jar,
       entries = entries,
+      output_groups = {
+        "entries": [entries],
+        "kindex": [kindex],
+      },
       sources = ctx.files.srcs,
-      files = set([kindex, entries]),
   )
 
 def cc_verifier_test_impl(ctx):
@@ -147,6 +150,10 @@ def cc_verifier_test_impl(ctx):
   runfiles = verify(ctx, entries)
   return struct(
       runfiles = runfiles,
+      output_groups = {
+        "entries": entries,
+        "kindex": [kindex],
+      },
   )
 
 def objc_bazel_verifier_test_impl(ctx):
@@ -171,6 +178,10 @@ def objc_bazel_verifier_test_impl(ctx):
   runfiles = verify(ctx, entries)
   return struct(
       runfiles = runfiles,
+      output_groups = {
+        "entries": entries,
+        "kindex": [kindex],
+      },
   )
 
 def cc_bazel_verifier_test_impl(ctx):
@@ -192,6 +203,10 @@ def cc_bazel_verifier_test_impl(ctx):
   runfiles = verify(ctx, entries)
   return struct(
       runfiles = runfiles,
+      output_groups = {
+        "entries": entries,
+        "kindex": [kindex],
+      },
   )
 
 java_verifier_test = rule(
