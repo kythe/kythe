@@ -72,6 +72,7 @@ import com.sun.source.tree.UnionTypeTree;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.tree.WhileLoopTree;
 import com.sun.source.tree.WildcardTree;
+import com.sun.source.util.TreePath;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCAnnotatedType;
 import com.sun.tools.javac.tree.JCTree.JCAnnotation;
@@ -132,12 +133,32 @@ import com.sun.tools.javac.tree.JCTree.TypeBoundKind;
 /** A {@link TreeScanner} with the scan/reduce semantics of a {@link TreeVisitor}. */
 public class JCTreeScanner<R, P> implements TreeVisitor<R, P> {
 
+  protected TreePath treePath;
+
+  public R scan(JCCompilationUnit unit, P p) {
+    return scan(new TreePath(unit), p);
+  }
+
+  public R scan(TreePath path, P p) {
+    treePath = path;
+    return scan((JCTree) path.getLeaf(), p);
+  }
+
   public R scan(JCTree tree, P p) {
     if (tree instanceof LetExpr || tree instanceof TypeBoundKind) {
       // Skip non-public APIs
       return null;
     }
-    return tree == null ? null : tree.accept(this, p);
+    if (tree == null) {
+      return null;
+    }
+    TreePath prev = treePath;
+    try {
+      treePath = new TreePath(treePath, tree);
+      return tree.accept(this, p);
+    } finally {
+      treePath = prev;
+    }
   }
 
   public R scanAll(P p, JCTree tree, JCTree... others) {

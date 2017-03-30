@@ -18,40 +18,38 @@ package com.google.devtools.kythe.analyzers.java;
 
 import com.google.devtools.kythe.analyzers.base.EntrySet;
 import com.sun.source.doctree.ReferenceTree;
-import com.sun.source.util.DocTreeScanner;
+import com.sun.source.util.DocTreePath;
+import com.sun.source.util.DocTreePathScanner;
+import com.sun.source.util.DocTrees;
+import com.sun.source.util.TreePath;
+import com.sun.tools.javac.api.JavacTrees;
 import com.sun.tools.javac.code.Symbol;
-import com.sun.tools.javac.code.Symtab;
 import com.sun.tools.javac.tree.DCTree.DCDocComment;
 import com.sun.tools.javac.tree.DCTree.DCReference;
-import com.sun.tools.javac.tree.DocCommentTable;
-import com.sun.tools.javac.tree.JCTree;
-import com.sun.tools.javac.tree.JCTree.JCFieldAccess;
-import com.sun.tools.javac.tree.JCTree.JCIdent;
-import com.sun.tools.javac.util.Name;
+import com.sun.tools.javac.util.Context;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 
-public class KytheDocTreeScanner extends DocTreeScanner<Void, DCDocComment> {
+public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> {
   private final KytheTreeScanner treeScanner;
-  private final DocCommentTable table;
   private final List<MiniAnchor<Symbol>> miniAnchors;
+  private final DocTrees trees;
 
-  public KytheDocTreeScanner(KytheTreeScanner treeScanner, DocCommentTable table) {
+  public KytheDocTreeScanner(KytheTreeScanner treeScanner, Context context) {
     this.treeScanner = treeScanner;
-    this.table = table;
     this.miniAnchors = new ArrayList<>();
+    this.trees = JavacTrees.instance(context);
   }
 
-  public boolean visitDocComment(JCTree tree, EntrySet node, EntrySet absNode) {
+  public boolean visitDocComment(TreePath treePath, EntrySet node, EntrySet absNode) {
     // TODO(https://phabricator-dot-kythe-repo.appspot.com/T185): always use absNode
-    final DCDocComment doc = table.getCommentTree(tree);
+    DCDocComment doc = (DCDocComment) trees.getDocCommentTree(treePath);
     if (doc == null) {
       return false;
     }
 
     miniAnchors.clear();
-    doc.accept(this, doc);
+    scan(new DocTreePath(treePath, doc), doc);
     int startChar = (int) doc.getSourcePosition(doc);
 
     String bracketed =
@@ -76,8 +74,7 @@ public class KytheDocTreeScanner extends DocTreeScanner<Void, DCDocComment> {
   public Void visitReference(ReferenceTree tree, DCDocComment doc) {
     DCReference ref = (DCReference) tree;
 
-    // TODO(schroederc): handle non-expression references (e.g. "#memberName" or "#methodName()")
-    Symbol sym = findSymbol(ref.qualifierExpression);
+    Symbol sym = (Symbol) trees.getElement(getCurrentPath());
     if (sym == null) {
       return null;
     }
@@ -87,38 +84,6 @@ public class KytheDocTreeScanner extends DocTreeScanner<Void, DCDocComment> {
 
     treeScanner.emitDocReference(sym, startPos, endPos);
     miniAnchors.add(new MiniAnchor<Symbol>(sym, startPos, endPos));
-
-    return null;
-  }
-
-  private Symbol findSymbol(JCTree tree) {
-    Symtab syms = treeScanner.getSymbols();
-    Name name;
-    if (tree instanceof JCIdent) {
-      JCIdent ident = (JCIdent) tree;
-      name = ident.name;
-    } else if (tree instanceof JCFieldAccess) {
-      JCFieldAccess field = (JCFieldAccess) tree;
-      name = field.name.table.fromString(field.selected.toString()).append('.', field.name);
-    } else {
-      return null;
-    }
-
-    // TODO(schroederc): handle member references (e.g. "className#memberName")
-    if (syms.classes.containsKey(name)) {
-      return syms.classes.get(name);
-    } else if (!name.toString().matches("[$.#]")) {
-      List<Name> matches = new LinkedList<>();
-      for (Name clsName : syms.classes.keySet()) {
-        String[] parts = clsName.toString().split("[$.]");
-        if (parts[parts.length - 1].equals(name.toString())) {
-          matches.add(clsName);
-        }
-      }
-      if (matches.size() == 1) {
-        return syms.classes.get(matches.get(0));
-      }
-    }
 
     return null;
   }

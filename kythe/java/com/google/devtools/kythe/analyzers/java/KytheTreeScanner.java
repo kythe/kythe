@@ -145,7 +145,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   @Override
   public JavaNode visitTopLevel(JCCompilationUnit compilation, TreeContext owner) {
     if (compilation.docComments != null) {
-      docScanner = new KytheDocTreeScanner(this, compilation.docComments);
+      docScanner = new KytheDocTreeScanner(this, javaContext);
     }
     TreeContext ctx = new TreeContext(filePositions, compilation);
 
@@ -673,7 +673,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
   private boolean visitDocComment(JCTree tree, EntrySet node, EntrySet absNode) {
     // TODO(https://phabricator-dot-kythe-repo.appspot.com/T185): always use absNode
-    return docScanner != null && docScanner.visitDocComment(tree, node, absNode);
+    return docScanner != null && docScanner.visitDocComment(treePath, node, absNode);
   }
 
   //// Utility methods ////
