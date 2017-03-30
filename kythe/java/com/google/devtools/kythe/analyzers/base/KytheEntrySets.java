@@ -117,7 +117,7 @@ public class KytheEntrySets {
   }
 
   /** Returns (and emits) a new builtin node. */
-  public EntrySet getBuiltin(String name) {
+  public EntrySet newBuiltinAndEmit(String name) {
     EntrySet node =
         emitAndReturn(
             newNode(NodeKind.TBUILTIN)
@@ -132,16 +132,11 @@ public class KytheEntrySets {
     return node;
   }
 
-  /** Returns (and emits) a new anchor node at the given location in the file. */
-  public EntrySet getAnchor(VName fileVName, Span loc) {
-    return getAnchor(fileVName, loc, null);
-  }
-
   /**
    * Returns (and emits) a new anchor node at the given location in the file with an optional
    * snippet span.
    */
-  public EntrySet getAnchor(VName fileVName, Span loc, Span snippet) {
+  public EntrySet newAnchorAndEmit(VName fileVName, Span loc, Span snippet) {
     if (loc == null || !loc.valid()) {
       // TODO(schroederc): reduce number of invalid anchors
       return null;
@@ -162,7 +157,7 @@ public class KytheEntrySets {
   }
 
   /** Returns and emits a NAME node. NAME nodes are cached so that they are only emitted once. */
-  public EntrySet getName(String name) {
+  public EntrySet getNameAndEmit(String name) {
     EntrySet node = nameNodes.get(name);
     if (node == null) {
       node = emitAndReturn(newNode(NodeKind.NAME).setSignature(name));
@@ -185,13 +180,13 @@ public class KytheEntrySets {
   }
 
   /** Emits and returns a new {@link EntrySet} representing a file digest. */
-  public EntrySet getAndEmitFileNode(String digest, byte[] contents, Charset encoding) {
+  public EntrySet newFileNodeAndEmit(String digest, byte[] contents, Charset encoding) {
     VName name = getFileVName(digest);
-    return getAndEmitFileNode(name, contents, encoding);
+    return newFileNodeAndEmit(name, contents, encoding);
   }
 
   /** Emits and returns a new {@link EntrySet} representing a file {@link VName}. */
-  public EntrySet getAndEmitFileNode(VName name, byte[] contents, Charset encoding) {
+  public EntrySet newFileNodeAndEmit(VName name, byte[] contents, Charset encoding) {
     EntrySet node =
         emitAndReturn(
             new NodeBuilder(NodeKind.FILE, name)
@@ -218,7 +213,7 @@ public class KytheEntrySets {
 
   /** Emits a NAME node and its associated edge to the given {@code node}. */
   public void emitName(EntrySet node, String name) {
-    emitEdge(node, EdgeKind.NAMED, getName(name));
+    emitEdge(node, EdgeKind.NAMED, getNameAndEmit(name));
   }
 
   /** Emits an edge of the given kind from {@code source} to {@code target}. */
@@ -267,7 +262,7 @@ public class KytheEntrySets {
   }
 
   /** Returns (and emits) a new abstract node over child. */
-  public EntrySet newAbstract(
+  public EntrySet newAbstractAndEmit(
       EntrySet child, List<EntrySet> params, @Nullable MarkedSource markedSource) {
     NodeBuilder absBuilder = newNode(NodeKind.ABS).addSignatureSalt(child.getVName());
     if (markedSource != null) {
@@ -281,19 +276,19 @@ public class KytheEntrySets {
   }
 
   /** Returns (and emits) a new abstract node over child. */
-  public EntrySet newAbstract(EntrySet child) {
-    return newAbstract(child, Collections.emptyList(), null);
+  public EntrySet newAbstractAndEmit(EntrySet child) {
+    return newAbstractAndEmit(child, Collections.emptyList(), null);
   }
 
   /** Returns and emits a new {@link NodeKind#TAPPLY} function type node. */
-  public EntrySet newFunctionType(EntrySet returnType, List<EntrySet> arguments) {
+  public EntrySet newFunctionTypeAndEmit(EntrySet returnType, List<EntrySet> arguments) {
     List<EntrySet> tArgs = new LinkedList<>(arguments);
     tArgs.add(0, returnType);
-    return newTApply(getBuiltin("fn"), tArgs);
+    return newTApplyAndEmit(newBuiltinAndEmit("fn"), tArgs);
   }
 
   /** Returns and emits a new {@link NodeKind#TAPPLY} node along with its parameter edges. */
-  public EntrySet newTApply(EntrySet head, List<EntrySet> arguments) {
+  public EntrySet newTApplyAndEmit(EntrySet head, List<EntrySet> arguments) {
     EntrySet node = emitAndReturn(newApplyNode(NodeKind.TAPPLY, head, arguments));
     emitEdge(node, EdgeKind.PARAM, head, 0);
     emitOrdinalEdges(node, EdgeKind.PARAM, arguments, 1);
@@ -306,11 +301,6 @@ public class KytheEntrySets {
    */
   private NodeBuilder newApplyNode(NodeKind kind, EntrySet head, Iterable<EntrySet> dependencies) {
     return newNode(kind, dependencies).addSignatureSalt(head.getVName());
-  }
-
-  private NodeBuilder newNode(NodeKind kind, VName name) {
-    getStatisticsCollector().incrementCounter("new-node-" + kind);
-    return new NodeBuilder(kind, name);
   }
 
   /**

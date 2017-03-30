@@ -229,7 +229,7 @@ public class JavaEntrySets extends KytheEntrySets {
     }
 
     if (v == null) {
-      node = getName(signature);
+      node = getNameAndEmit(signature);
       // NAME node was already emitted
     } else {
       if (ignoreVNamePaths) {
@@ -301,7 +301,8 @@ public class JavaEntrySets extends KytheEntrySets {
     return node;
   }
 
-  public EntrySet getDoc(Positions filePositions, String text, Iterable<EntrySet> params) {
+  /** Emits and returns a new {@link EntrySet} representing Javadoc. */
+  public EntrySet newDocAndEmit(Positions filePositions, String text, Iterable<EntrySet> params) {
     VName fileVName = getFileVName(getDigest(filePositions.getSourceFile()));
     byte[] encodedText;
     try {
@@ -321,17 +322,17 @@ public class JavaEntrySets extends KytheEntrySets {
   }
 
   /** Emits and returns a new {@link EntrySet} representing the Java file. */
-  public EntrySet getFileNode(Positions file) {
-    return getAndEmitFileNode(getDigest(file.getSourceFile()), file.getData(), file.getEncoding());
+  public EntrySet newFileNodeAndEmit(Positions file) {
+    return newFileNodeAndEmit(getDigest(file.getSourceFile()), file.getData(), file.getEncoding());
   }
 
   /** Emits and returns a new {@link EntrySet} representing a Java package. */
-  public EntrySet getPackageNode(PackageSymbol sym) {
-    return getPackageNode(sym.getQualifiedName().toString());
+  public EntrySet newPackageNodeAndEmit(PackageSymbol sym) {
+    return newPackageNodeAndEmit(sym.getQualifiedName().toString());
   }
 
   /** Emits and returns a new {@link EntrySet} representing a Java package. */
-  public EntrySet getPackageNode(String name) {
+  public EntrySet newPackageNodeAndEmit(String name) {
     EntrySet node =
         emitAndReturn(
             newNode(NodeKind.PACKAGE)
@@ -347,33 +348,29 @@ public class JavaEntrySets extends KytheEntrySets {
   }
 
   /** Emits and returns a new {@link EntrySet} for the given wildcard. */
-  public EntrySet getWildcardNode(JCTree.JCWildcard wild, String sourcePath) {
+  public EntrySet newWildcardNodeAndEmit(JCTree.JCWildcard wild, String sourcePath) {
     int counter = sourceToWildcardCounter.getOrDefault(sourcePath, 0);
     sourceToWildcardCounter.put(sourcePath, counter + 1);
     return emitAndReturn(newNode(NodeKind.ABS_VAR).addSignatureSalt(sourcePath + counter));
   }
 
-  /** Returns and emits a Java anchor for the given {@link JCTree}. */
-  public EntrySet getAnchor(Positions filePositions, JCTree tree) {
-    return getAnchor(filePositions, filePositions.getSpan(tree));
+  /** Returns and emits a Java anchor for the given offset span. */
+  public EntrySet newAnchorAndEmit(Positions filePositions, Span loc) {
+    return newAnchorAndEmit(filePositions, loc, null);
   }
 
   /** Returns and emits a Java anchor for the given offset span. */
-  public EntrySet getAnchor(Positions filePositions, Span loc) {
-    return getAnchor(filePositions, loc, null);
-  }
-
-  /** Returns and emits a Java anchor for the given offset span. */
-  public EntrySet getAnchor(Positions filePositions, Span loc, Span snippet) {
-    return getAnchor(getFileVName(getDigest(filePositions.getSourceFile())), loc, snippet);
+  public EntrySet newAnchorAndEmit(Positions filePositions, Span loc, Span snippet) {
+    return newAnchorAndEmit(getFileVName(getDigest(filePositions.getSourceFile())), loc, snippet);
   }
 
   /** Returns and emits a Java anchor for the given identifier. */
-  public EntrySet getAnchor(Positions filePositions, Name name, int startOffset, Span snippet) {
+  public EntrySet newAnchorAndEmit(
+      Positions filePositions, Name name, int startOffset, Span snippet) {
     Span span = filePositions.findIdentifier(name, startOffset);
     return span == null
         ? null
-        : getAnchor(getFileVName(getDigest(filePositions.getSourceFile())), span, snippet);
+        : newAnchorAndEmit(getFileVName(getDigest(filePositions.getSourceFile())), span, snippet);
   }
 
   /** Returns the equivalent {@link NodeKind} for the given {@link ElementKind}. */
@@ -454,7 +451,8 @@ public class JavaEntrySets extends KytheEntrySets {
     return h;
   }
 
-  private VName lookupVName(ClassSymbol cls) {
+  @Nullable
+  private VName lookupVName(@Nullable ClassSymbol cls) {
     if (cls == null) {
       return null;
     }
@@ -462,7 +460,8 @@ public class JavaEntrySets extends KytheEntrySets {
     return clsVName != null ? clsVName : lookupVName(getDigest(cls.sourcefile));
   }
 
-  private static String getDigest(JavaFileObject sourceFile) {
+  @Nullable
+  private static String getDigest(@Nullable JavaFileObject sourceFile) {
     if (sourceFile == null) {
       return null;
     }
@@ -483,7 +482,7 @@ public class JavaEntrySets extends KytheEntrySets {
     }
   }
 
-  private static boolean fromJDK(Symbol sym) {
+  private static boolean fromJDK(@Nullable Symbol sym) {
     if (sym == null || sym.enclClass() == null) {
       return false;
     }
