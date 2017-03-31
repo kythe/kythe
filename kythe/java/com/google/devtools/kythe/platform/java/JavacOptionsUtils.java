@@ -17,8 +17,13 @@
 package com.google.devtools.kythe.platform.java;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Splitter;
 import com.google.common.base.StandardSystemProperty;
+import com.google.common.collect.ImmutableList;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
+import com.google.devtools.kythe.proto.Java.JavaDetails;
+import com.google.protobuf.Any;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.sun.tools.javac.main.Option;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
@@ -32,10 +37,20 @@ import javax.annotation.Nullable;
 /** A utility class for dealing with javac command-line options. */
 public class JavacOptionsUtils {
 
-  private static final String[] JRE_JARS =
-      new String[] {
-        "lib/rt.jar", "lib/resources.jar", "lib/jsse.jar", "lib/jce.jar", "lib/charsets.jar"
-      };
+  private static final ImmutableList<String> JRE_JARS = ImmutableList.of(
+      "lib/rt.jar", "lib/resources.jar", "lib/jsse.jar", "lib/jce.jar", "lib/charsets.jar");
+  private static final ImmutableList<String> JRE_PATHS;
+  static {
+    ImmutableList.Builder<String> paths = ImmutableList.builder();
+    Path javaHome = Paths.get(StandardSystemProperty.JAVA_HOME.value());
+    for (String jreJar : JRE_JARS) {
+      paths.add(javaHome.resolve(jreJar).toString());
+    }
+    JRE_PATHS = paths.build();
+  }
+
+  private static final Splitter PATH_SPLITTER = Splitter.on(':').trimResults().omitEmptyStrings();
+  private static final Joiner PATH_JOINER = Joiner.on(':').skipNulls();
 
   /** Returns a new list of options with only javac compiler supported options. */
   public static List<String> removeUnsupportedOptions(List<String> rawOptions) {
@@ -94,41 +109,116 @@ public class JavacOptionsUtils {
     return options;
   }
 
-  /** Remove the existing warning options, and do all instead. */
-  public static List<String> useAllWarnings(List<String> options) {
-    List<String> result = new ArrayList<>();
-    for (String option : options) {
-      if (!option.startsWith("-Xlint")) {
-        result.add(option);
+  /**
+   * Update the command line arguments based on {@code compilationUnit}'s
+   * {@code JavaDetails} (if present) and the JRE jars.
+   *
+   * @param arguments the command line arguments to be updated
+   * @param the compilation unit in which to look for {@code JavaDetails}
+   */
+  public static void updateArgumentsWithJavaOptions(
+      List<String> arguments, CompilationUnit compilationUnit) {
+    JavaDetails javaDetails = null;
+
+    for (Any detail : compilationUnit.getDetailsList()) {
+      if (detail.is(JavaDetails.class)) {
+        try {
+          javaDetails = detail.unpack(JavaDetails.class);
+        } catch (InvalidProtocolBufferException e) {
+          throw new IllegalArgumentException("Error in extracting JavaDetails", e);
+        }
+        break;  // assume that <= 1 of these is a JavaDetails
       }
     }
-    result.add("-Xlint:all");
-    return result;
+    // Use JavaDetails if present, otherwise use the default (system) properties.
+    if (javaDetails != null) {
+      updateArgumentsFromJavaDetails(arguments, javaDetails);
+    } else {
+      updateArgumentsFromSystemProperties(arguments);
+    }
   }
 
-  /** Append the classpath to the list of options. */
-    public static void appendJREJarsToClasspath(
-        List<String> arguments, CompilationUnit compilationUnit) {
-    List<String> paths = new ArrayList<>();
-    Path javaHome = Paths.get(StandardSystemProperty.JAVA_HOME.value());
-    for (String jreJar : JRE_JARS) {
-      paths.add(javaHome.resolve(jreJar).toString());
+  private static void updateArgumentsFromJavaDetails(
+      List<String> arguments, JavaDetails javaDetails) {
+    updatePathArguments(arguments, Option.CP, javaDetails.getClasspathList());
+    updatePathArguments(arguments, Option.SOURCEPATH, javaDetails.getSourcepathList());
+    updatePathArguments(arguments, Option.BOOTCLASSPATH, javaDetails.getBootclasspathList());
+
+    // just append the Java options to the arguments, separated by spaces
+    // (assumes that this is a series of "option" followed by "value" entries)
+    if (!javaDetails.getExtraJavacoptsList().isEmpty()) {
+      arguments.add(Joiner.on(' ').join(javaDetails.getExtraJavacoptsList()));
+    }
+  }
+
+  private static void updateArgumentsFromSystemProperties(List<String> arguments) {
+    ImmutableList.Builder<String> paths = ImmutableList.builder();
+    paths.addAll(extractArgumentPaths(arguments, Option.BOOTCLASSPATH));
+    paths.addAll(JRE_PATHS);
+
+    arguments.add(Option.BOOTCLASSPATH.getText());
+    arguments.add(PATH_JOINER.join(paths.build()));
+  }
+
+  private static void updatePathArguments(List<String> arguments,
+      Option option,
+      List<String> pathList) {
+    ImmutableList.Builder<String> pathEntries = ImmutableList.builder();
+
+    // We need to call extractArgumentPaths() even if we don't use the return value because it
+    // strips out any existing command-line-specified values from 'arguments'.
+    List<String> argumentPaths = extractArgumentPaths(arguments, option);
+    List<String> detailsPaths = extractDetailsPaths(pathList);
+
+    // Use paths specified in the JavaDetails' pathList if present; otherwise, use those
+    // specified on the command line.
+    if (!detailsPaths.isEmpty()) {
+      pathEntries.addAll(detailsPaths);
+    } else {
+      pathEntries.addAll(argumentPaths);
     }
 
+    // If this is for the bootclasspath, append the paths to the system jars.
+    if (Option.BOOTCLASSPATH.equals(option)) {
+      pathEntries.addAll(JRE_PATHS);
+    }
+
+    ImmutableList<String> paths = pathEntries.build();
+
+    if (!paths.isEmpty()) {
+      arguments.add(option.getText());
+      arguments.add(PATH_JOINER.join(paths));
+    }
+  }
+
+  /**
+   * Identify the paths associated with the specified option, remove them from the arguments list,
+   * and return them.
+   */
+  private static ImmutableList<String> extractArgumentPaths(List<String> arguments, Option option) {
+    ImmutableList.Builder<String> paths = ImmutableList.builder();
     for (int i = 0; i < arguments.size(); i++) {
-      if (arguments.get(i).equals("-cp") || arguments.get(i).equals("-classpath")) {
+      if (option.matches(arguments.get(i))) {
         if (i + 1 >= arguments.size()) {
-          throw new IllegalArgumentException("Malformed -cp argument: " + arguments);
+          throw new IllegalArgumentException(String.format("Malformed %s argument: %s",
+                  option.getText(), arguments));
         }
         arguments.remove(i);
-        for (String path : arguments.remove(i).split(":")) {
+        for (String path : PATH_SPLITTER.split(arguments.remove(i))) {
           paths.add(path);
         }
-        break;
       }
     }
+    return paths.build();
+  }
 
-    arguments.add("-classpath");
-    arguments.add(Joiner.on(":").join(paths));
+  private static List<String> extractDetailsPaths(List<String> pathList) {
+    ImmutableList.Builder<String> paths = ImmutableList.builder();
+    for (String entry : pathList) {
+      for (String dir : PATH_SPLITTER.split(entry)) {
+        paths.add(dir);
+      }
+    }
+    return paths.build();
   }
 }

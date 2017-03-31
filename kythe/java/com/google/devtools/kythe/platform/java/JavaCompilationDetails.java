@@ -185,18 +185,17 @@ public class JavaCompilationDetails {
   private static List<String> optionsFromCompilationUnit(
       CompilationUnit compilationUnit, List<Processor> processors) {
     // Start with the default options, and then add in source
-    // Turn on all warnings as well.
-    List<String> options = Lists.newArrayList(compilationUnit.getArgumentList());
+    List<String> arguments = Lists.newArrayList(compilationUnit.getArgumentList());
     // TODO(jrtom): use static imports for brevity
-    options = JavacOptionsUtils.ensureEncodingSet(options, DEFAULT_ENCODING);
-    options = JavacOptionsUtils.removeUnsupportedOptions(options);
+    arguments = JavacOptionsUtils.ensureEncodingSet(arguments, DEFAULT_ENCODING);
+    arguments = JavacOptionsUtils.removeUnsupportedOptions(arguments);
 
-    JavacOptionsUtils.appendJREJarsToClasspath(options, compilationUnit);
+    JavacOptionsUtils.updateArgumentsWithJavaOptions(arguments, compilationUnit);
 
     if (processors.isEmpty()) {
-      options.add("-proc:none");
+      arguments.add("-proc:none");
     }
-    return ImmutableList.copyOf(options);
+    return ImmutableList.copyOf(arguments);
   }
 
   /** Writes nothing, used to reduce noise from the javac analysis output. */

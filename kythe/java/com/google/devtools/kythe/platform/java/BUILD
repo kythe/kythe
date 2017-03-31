@@ -28,6 +28,9 @@ java_library(
     srcs = ["JavacOptionsUtils.java"],
     deps = [
         "//kythe/proto:analysis_proto_java",
+        "//kythe/proto:java_proto_java",
+        "//third_party/proto:any_proto_java",
+        "//third_party/proto:protobuf_java",
         "@bazel_tools//third_party/java/jdk/langtools:javac",
         "@com_google_code_findbugs_jsr305//jar",
         "@com_google_guava_guava//jar",
