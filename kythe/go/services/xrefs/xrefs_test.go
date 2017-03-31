@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
 	"regexp"
 	"testing"
 
@@ -149,7 +148,7 @@ last line without newline`
 
 	n := NewNormalizer([]byte(text))
 	for _, test := range tests {
-		if p := n.Point(test.p); !reflect.DeepEqual(p, test.expected) {
+		if p := n.Point(test.p); !proto.Equal(p, test.expected) {
 			t.Errorf("n.Point({%v}): expected {%v}; found {%v}", test.p, test.expected, p)
 		}
 	}

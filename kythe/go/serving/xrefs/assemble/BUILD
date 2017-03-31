@@ -31,5 +31,8 @@ go_test(
     srcs = ["assemble_test.go"],
     library = "assemble",
     visibility = ["//visibility:private"],
-    deps = ["//kythe/go/test/testutil"],
+    deps = [
+        "//kythe/go/test/testutil",
+        "@go_protobuf//:proto",
+    ],
 )

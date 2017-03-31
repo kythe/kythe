@@ -18,7 +18,6 @@ package assemble
 
 import (
 	"context"
-	"reflect"
 	"testing"
 
 	"kythe.io/kythe/go/test/testutil"
@@ -26,6 +25,8 @@ import (
 	ipb "kythe.io/kythe/proto/internal_proto"
 	srvpb "kythe.io/kythe/proto/serving_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
+
+	"github.com/golang/protobuf/proto"
 )
 
 func fact(name, value string) *spb.Entry {
@@ -357,7 +358,7 @@ func TestEdgeSetBuilder(t *testing.T) {
 			// Expected a new PagedEdgeSet
 			if edgeSets+1 != len(tESB.PagedEdgeSets) {
 				t.Fatalf("Missing expected PagedEdgeSet: %v", test.edgeSet)
-			} else if found := tESB.PagedEdgeSets[len(tESB.PagedEdgeSets)-1]; !reflect.DeepEqual(test.edgeSet, found) {
+			} else if found := tESB.PagedEdgeSets[len(tESB.PagedEdgeSets)-1]; !proto.Equal(test.edgeSet, found) {
 				t.Errorf("Expected PagedEdgeSet: %v; found: %v", test.edgeSet, found)
 			}
 			edgeSets++
