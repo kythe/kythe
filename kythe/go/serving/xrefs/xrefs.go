@@ -29,6 +29,7 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
+	"flag"
 	"fmt"
 	"log"
 	"regexp"
@@ -50,6 +51,8 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/snappy"
 )
+
+var maxTicketsPerRequest = flag.Int("max_tickets_per_request", 20, "Maximum number of tickets allowed per request")
 
 type edgeSetResult struct {
 	PagedEdgeSet *srvpb.PagedEdgeSet
@@ -222,6 +225,8 @@ func (t *Table) Nodes(ctx context.Context, req *gpb.NodesRequest) (*gpb.NodesRep
 	tickets, err := xrefs.FixTickets(req.Ticket)
 	if err != nil {
 		return nil, err
+	} else if len(tickets) > *maxTicketsPerRequest {
+		return nil, fmt.Errorf("too many tickets requested: %d (max %d)", len(tickets), *maxTicketsPerRequest)
 	}
 
 	rs, err := t.pagedEdgeSets(ctx, tickets)
@@ -267,6 +272,8 @@ func (t *Table) Edges(ctx context.Context, req *gpb.EdgesRequest) (*gpb.EdgesRep
 	tickets, err := xrefs.FixTickets(req.Ticket)
 	if err != nil {
 		return nil, err
+	} else if len(tickets) > *maxTicketsPerRequest {
+		return nil, fmt.Errorf("too many tickets requested: %d (max %d)", len(tickets), *maxTicketsPerRequest)
 	}
 
 	allowedKinds := stringset.New(req.Kind...)
@@ -763,6 +770,8 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 	tickets, err := xrefs.FixTickets(req.Ticket)
 	if err != nil {
 		return nil, err
+	} else if len(tickets) > *maxTicketsPerRequest {
+		return nil, fmt.Errorf("too many tickets requested: %d (max %d)", len(tickets), *maxTicketsPerRequest)
 	}
 
 	stats := refStats{
@@ -867,6 +876,9 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 			if prevMerge, ok := mergeInto[mergeNode]; ok {
 				log.Printf("WARNING: node %q already previously merged with %q", mergeNode, prevMerge)
 				continue
+			} else if len(tickets) >= *maxTicketsPerRequest {
+				log.Printf("WARNING: max number of tickets reached; cannot merge any further nodes for ", ticket)
+				break
 			}
 			tickets = append(tickets, mergeNode)
 			mergeInto[mergeNode] = ticket
