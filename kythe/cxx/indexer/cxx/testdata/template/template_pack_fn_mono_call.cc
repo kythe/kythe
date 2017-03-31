@@ -4,7 +4,7 @@ template <typename... Ts>
 void f(Ts... ts) { }
 
 void g() {
-//- @f ref FnF
+//- @f ref AppFnTFSigma
   f(1, "one");
 }
 
@@ -14,6 +14,7 @@ const char *cc;
 int tn;
 
 //- FnF instantiates AppFnTFSigma
+//- FnF.node/kind function
 //- AppFnTFSigma param.0 FnTF
 //- AppFnTFSigma param.1 Sigma
 //- Sigma.node/kind tsigma

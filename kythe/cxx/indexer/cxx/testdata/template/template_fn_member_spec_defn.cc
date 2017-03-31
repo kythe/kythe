@@ -1,5 +1,6 @@
 // Checks indexing refs and defs of member function specializations.
 //- @S defines/binding AbsS
+//- @f defines/binding FnF
 template <typename T> struct S { int f() { return 0; } };
 
 int q() {
@@ -7,9 +8,12 @@ int q() {
   //- VarS typed TAppAbsSInt
   //- TAppAbsSInt param.0 AbsS
   S<int> s;
-  //- @f ref MemF
-  //- MemF childof SInstInt
+  //- @f ref UnaryTAppF  // Until we index the full type context: T230
+  //- UnaryTAppF.node/kind tapp
+  //- UnaryTAppF param.0 FnF
+  //- FnFImp instantiates UnaryTAppF
   //- SInstInt specializes TAppAbsSInt
-  //- @"s.f()" ref/call MemF
+  //- FnFImp childof SInstInt
+  //- @"s.f()" ref/call UnaryTAppF
   return s.f();
 }

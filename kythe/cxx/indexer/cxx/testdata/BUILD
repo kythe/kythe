@@ -1355,6 +1355,30 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "template_blame_member",
+    srcs = ["template/template_blame_member.cc"],
+    tags = ["template"],
+)
+
+cxx_indexer_test(
+    name = "template_blame_spec",
+    srcs = ["template/template_blame_spec.cc"],
+    tags = ["template"],
+)
+
+cxx_indexer_test(
+    name = "template_blame_pspec_member",
+    srcs = ["template/template_blame_pspec_member.cc"],
+    tags = ["template"],
+)
+
+cxx_indexer_test(
+    name = "template_blame_spec_member",
+    srcs = ["template/template_blame_spec_member.cc"],
+    tags = ["template"],
+)
+
+cxx_indexer_test(
     name = "template_class_template_ctor",
     srcs = ["template/template_class_template_ctor.cc"],
     ignore_dups = True,

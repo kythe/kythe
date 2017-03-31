@@ -14,7 +14,7 @@ template <> bool f(int* arg);
 //- PrimaryFInt param.0 PrimaryF
 bool t = f((int*)nullptr);
 
-//- @f ref ImpPrimaryFDouble
+//- @f ref PrimaryFDouble
 //- ImpPrimaryFDouble.node/kind function
 //- ImpPrimaryFDouble specializes PrimaryFDouble
 //- ImpPrimaryFDouble instantiates PrimaryFDouble

@@ -1883,10 +1883,11 @@ void f(Ts... ts) { }
 
 //- @int ref IntType
 //- @double ref DoubleType
-//- @f ref FnF
+//- @f ref AppFnTFSigma
 int g(double x) { f(1, x); }
 
 //- FnF instantiates AppFnTFSigma
+//- FnF.node/kind function
 //- AppFnTFSigma param.0 FnTF
 //- AppFnTFSigma param.1 Sigma
 //- Sigma.node/kind tsigma

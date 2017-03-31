@@ -1,7 +1,7 @@
 // Tests support for implicit specializations of function templates.
 //- @id defines/binding AbsId
 template <typename T> T id(T x) { return x; }
-//- @id ref SpecId
+//- @id ref TAppAbsInt
 int y = id(42);
 //- SpecId.node/kind function
 //- SpecId specializes TAppAbsInt

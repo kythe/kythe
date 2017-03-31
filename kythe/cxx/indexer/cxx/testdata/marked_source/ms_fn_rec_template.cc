@@ -8,7 +8,7 @@ template <typename T> struct S { void f(T t) { } };
 template <> struct S<int> { void f(int t) { } };
 
 void g(S<double>& s) {
-//- @f ref FnFInst
+//- @f ref NullaryTAppFnF
 //- !{FnFInst code _}
 //- FnFInst instantiates NullaryTAppFnF
 //- NullaryTAppFnF param.0 FnF

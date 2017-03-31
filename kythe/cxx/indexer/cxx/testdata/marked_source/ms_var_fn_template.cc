@@ -14,7 +14,7 @@ template <typename T> void f(T param) { }
 template <> void f(int param) { }
 
 void g() {
-//- @f ref FnFInst
+//- @f ref FnFApp
 //- !{FnFInst code _}
 //- FnFInst instantiates FnFApp
 //- FnFApp param.0 FnF

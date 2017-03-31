@@ -13,7 +13,7 @@ template <typename T> void f() {}
 template <> void f<int>() {}
 
 void g() {
-  //- @f ref InstF
+  //- @f ref TAppFShort
   //- !{ InstF code _ }
   //- InstF instantiates TAppFShort
   //- TAppFShort param.0 AbsF

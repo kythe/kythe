@@ -368,6 +368,21 @@ public:
   MaybeFew<GraphObserver::NodeId>
   BuildNodeIdForImplicitStmt(const clang::Stmt *Stmt);
 
+  /// \brief Builds a stable node ID for `Decl`'s tapp if it's an implicit
+  /// template instantiation.
+  MaybeFew<GraphObserver::NodeId>
+  BuildNodeIdForImplicitTemplateInstantiation(const clang::Decl *Decl);
+
+  /// \brief Builds a stable node ID for an external reference to `Decl`.
+  ///
+  /// This is equivalent to BuildNodeIdForDecl for Decls that are not
+  /// implicit template instantiations; otherwise, it returns the `NodeId`
+  /// for the tapp node for the instantiation.
+  ///
+  /// \param Decl The declaration that is being identified.
+  /// \return The node for `Decl`.
+  GraphObserver::NodeId BuildNodeIdForRefToDecl(const clang::Decl *Decl);
+
   /// \brief Builds a stable node ID for `Decl`.
   ///
   /// \param Decl The declaration that is being identified.
@@ -739,6 +754,11 @@ private:
   /// Otherwise points at the DeclContext as a Decl.
   MaybeFew<GraphObserver::NodeId>
   BuildNodeIdForDeclContext(const clang::DeclContext *DC);
+
+  /// Points at the tapp node for a DeclContext, if it's an implicit template
+  /// instantiation. Otherwise behaves as `BuildNodeIdForDeclContext`.
+  MaybeFew<GraphObserver::NodeId>
+  BuildNodeIdForRefToDeclContext(const clang::DeclContext *DC);
 
   /// Avoid regenerating type node IDs and keep track of where we are while
   /// generating node IDs for recursive types. The key is opaque and
