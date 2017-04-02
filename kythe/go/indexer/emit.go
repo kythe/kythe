@@ -166,7 +166,7 @@ func (e *emitter) visitFuncDecl(decl *ast.FuncDecl, stack stackFunc) {
 		e.pi.sigs[obj] = fmt.Sprintf("%s#%d", e.pi.Signature(obj), e.pi.numInits)
 	}
 
-	info.vname = e.writeBinding(decl.Name, nodes.Function, nil)
+	info.vname = e.mustWriteBinding(decl.Name, nodes.Function, nil)
 	e.writeDef(decl, info.vname)
 	e.writeDoc(decl.Doc, info.vname)
 
@@ -176,8 +176,9 @@ func (e *emitter) visitFuncDecl(decl *ast.FuncDecl, stack stackFunc) {
 	if sig.Recv() != nil {
 		// The receiver is treated as parameter 0.
 		if names := decl.Recv.List[0].Names; names != nil {
-			recv := e.writeBinding(names[0], nodes.Variable, info.vname)
-			e.writeEdge(info.vname, recv, edges.ParamIndex(0))
+			if recv := e.writeBinding(names[0], nodes.Variable, info.vname); recv != nil {
+				e.writeEdge(info.vname, recv, edges.ParamIndex(0))
+			}
 		}
 
 		// The method should be a child of its (named) enclosing type.
@@ -218,10 +219,10 @@ func (e *emitter) visitValueSpec(spec *ast.ValueSpec, stack stackFunc) {
 	}
 	doc := specComment(spec, stack)
 	for _, id := range spec.Names {
-		if e.pi.Info.Defs[id] == nil {
+		target := e.writeBinding(id, kind, e.nameContext(stack))
+		if target == nil {
 			continue // type error (reported elsewhere)
 		}
-		target := e.writeBinding(id, kind, e.nameContext(stack))
 		e.writeDoc(doc, target)
 	}
 }
@@ -233,7 +234,7 @@ func (e *emitter) visitTypeSpec(spec *ast.TypeSpec, stack stackFunc) {
 	if obj == nil {
 		return // type error
 	}
-	target := e.writeBinding(spec.Name, "", e.nameContext(stack))
+	target := e.mustWriteBinding(spec.Name, "", e.nameContext(stack))
 	e.writeDef(spec, target)
 	e.writeDoc(specComment(spec, stack), target)
 
@@ -318,7 +319,7 @@ func (e *emitter) visitAssignStmt(stmt *ast.AssignStmt, stack stackFunc) {
 		if id, _ := expr.(*ast.Ident); id != nil {
 			// Add a binding only if this is the definition site for the name.
 			if obj := e.pi.Info.Defs[id]; obj != nil && obj.Pos() == id.Pos() {
-				e.writeBinding(id, nodes.Variable, up)
+				e.mustWriteBinding(id, nodes.Variable, up)
 			}
 		}
 	}
@@ -356,8 +357,9 @@ func (e *emitter) emitParameters(ftype *ast.FuncType, sig *types.Signature, info
 	// Emit bindings and parameter edges for the parameters.
 	mapFields(ftype.Params, func(i int, id *ast.Ident) {
 		if sig.Params().At(i) != nil {
-			param := e.writeBinding(id, nodes.Variable, info.vname)
-			e.writeEdge(info.vname, param, edges.ParamIndex(paramIndex))
+			if param := e.writeBinding(id, nodes.Variable, info.vname); param != nil {
+				e.writeEdge(info.vname, param, edges.ParamIndex(paramIndex))
+			}
 		}
 		paramIndex++
 	})
@@ -506,12 +508,27 @@ func (e *emitter) writeRef(origin ast.Node, target *spb.VName, kind string) *spb
 	return anchor
 }
 
+// mustWriteBinding is as writeBinding, but panics if id does not resolve.  Use
+// this in cases where the object is known already to exist.
+func (e *emitter) mustWriteBinding(id *ast.Ident, kind string, parent *spb.VName) *spb.VName {
+	if target := e.writeBinding(id, kind, parent); target != nil {
+		return target
+	}
+	panic("unresolved definition") // logged in writeBinding
+}
+
 // writeBinding emits a node of the specified kind for the target of id.  If
 // the identifier is not "_", an anchor for a binding definition of the target
 // is also emitted at id. If parent != nil, the target is also recorded as its
 // child. The target vname is returned.
 func (e *emitter) writeBinding(id *ast.Ident, kind string, parent *spb.VName) *spb.VName {
-	target := e.pi.ObjectVName(e.pi.Info.Defs[id])
+	obj := e.pi.Info.Defs[id]
+	if obj == nil {
+		loc := e.pi.FileSet.Position(id.Pos())
+		log.Printf("ERROR: Missing definition for id %q at %s", id.Name, loc)
+		return nil
+	}
+	target := e.pi.ObjectVName(obj)
 	if kind != "" {
 		e.writeFact(target, facts.NodeKind, kind)
 	}
