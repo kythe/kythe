@@ -48,6 +48,12 @@ std::string BuildEnvVarCommandPrefix(const blaze::SpawnInfo &si);
 /// \brief Run a command and capture its (trimmed) stdout in a string.
 std::string RunScript(const std::string &cmd);
 
+// \brief Populate args with the arguments from ci where the magic bazel strings
+// have been replaced with their actual values.
+void FillWithFixedArgs(std::vector<std::string> &args,
+                       const blaze::CppCompileInfo &ci,
+                       const std::string &devdir, const std::string &sdkroot);
+
 // \brief Populate args with the arguments from si where the magic bazel strings
 // have been replaced with their actual values.
 void FillWithFixedArgs(std::vector<std::string> &args,

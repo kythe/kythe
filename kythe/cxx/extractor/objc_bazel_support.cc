@@ -40,7 +40,7 @@ std::string SanitizeArgument(const std::string &s) {
 
 std::string BuildEnvVarCommandPrefix(const blaze::SpawnInfo &si) {
   std::stringstream ret;
-  for (auto env : si.variable()) {
+  for (const auto &env : si.variable()) {
     // Neither name nor value are validated or sanitized.
     // This really should be unnecessary, but we don't have any guarantees.
     if (RE2::FullMatch(env.name(), "[a-zA-Z_][a-zA-Z_0-9]*")) {
@@ -67,9 +67,22 @@ std::string RunScript(const std::string &cmd) {
 }
 
 void FillWithFixedArgs(std::vector<std::string> &args,
+                       const blaze::CppCompileInfo &ci,
+                       const std::string &devdir, const std::string &sdkroot) {
+  args.push_back(ci.tool());
+  for (const auto &i : ci.compiler_option()) {
+    std::string arg = i;
+    RE2::GlobalReplace(&arg, "__BAZEL_XCODE_DEVELOPER_DIR__", devdir);
+    RE2::GlobalReplace(&arg, "__BAZEL_XCODE_SDKROOT__", sdkroot);
+    args.push_back(arg);
+  }
+  args.push_back(ci.source_file());
+}
+
+void FillWithFixedArgs(std::vector<std::string> &args,
                        const blaze::SpawnInfo &si, const std::string &devdir,
                        const std::string &sdkroot) {
-  for (auto i : si.argument()) {
+  for (const auto &i : si.argument()) {
     std::string arg = i;
     RE2::GlobalReplace(&arg, "__BAZEL_XCODE_DEVELOPER_DIR__", devdir);
     RE2::GlobalReplace(&arg, "__BAZEL_XCODE_SDKROOT__", sdkroot);

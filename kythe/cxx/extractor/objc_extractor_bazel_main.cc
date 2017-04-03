@@ -81,19 +81,81 @@
 #include "cxx_extractor.h"
 #include "objc_bazel_support.h"
 
-static void LoadExtraAction(const std::string &path,
-                            blaze::ExtraActionInfo *info,
-                            blaze::SpawnInfo *spawn_info) {
+struct XAState {
+  std::string extra_action_file;
+  std::string output_file;
+  std::string vname_config;
+  std::string devdir_script;
+  std::string sdkroot_script;
+};
+
+static void LoadSpawnInfo(const XAState &xa_state,
+                          const blaze::ExtraActionInfo &info,
+                          kythe::ExtractorConfiguration &config) {
+  blaze::SpawnInfo spawn_info = info.GetExtension(blaze::SpawnInfo::spawn_info);
+
+  auto cmdPrefix = kythe::BuildEnvVarCommandPrefix(spawn_info);
+  auto devdir = kythe::RunScript(cmdPrefix + xa_state.devdir_script);
+  auto sdkroot = kythe::RunScript(cmdPrefix + xa_state.sdkroot_script);
+
+  std::vector<std::string> args;
+  kythe::FillWithFixedArgs(args, spawn_info, devdir, sdkroot);
+
+  config.SetKindexOutputFile(xa_state.output_file);
+  config.SetArgs(args);
+  config.SetVNameConfig(xa_state.vname_config);
+  config.SetTargetName(info.owner());
+  if (spawn_info.output_file_size() > 0) {
+    config.SetOutputPath(spawn_info.output_file(0));
+  }
+}
+
+static void LoadCppInfo(const XAState &xa_state,
+                        const blaze::ExtraActionInfo &info,
+                        kythe::ExtractorConfiguration &config) {
+  blaze::CppCompileInfo cpp_info =
+      info.GetExtension(blaze::CppCompileInfo::cpp_compile_info);
+
+  // There are no environmental variables in the cpp info proto, so assume
+  // defaults for now. If they are exposed in CPP ExtraInfo then we can refactor
+  // this and LoadSpawnInfo so devdir and sdkroot are calculated once outside
+  // both of these functions.
+  auto devdir = kythe::RunScript(xa_state.devdir_script);
+  auto sdkroot = kythe::RunScript(xa_state.sdkroot_script);
+
+  std::vector<std::string> args;
+  kythe::FillWithFixedArgs(args, cpp_info, devdir, sdkroot);
+
+  config.SetKindexOutputFile(xa_state.output_file);
+  config.SetArgs(args);
+  config.SetVNameConfig(xa_state.vname_config);
+  config.SetTargetName(info.owner());
+  config.SetOutputPath(cpp_info.output_file());
+}
+
+static bool LoadExtraAction(const XAState &xa_state,
+                            kythe::ExtractorConfiguration &config) {
   using namespace google::protobuf::io;
-  int fd = open(path.c_str(), O_RDONLY, S_IREAD | S_IWRITE);
-  CHECK_GE(fd, 0) << "Couldn't open input file " << path;
+  blaze::ExtraActionInfo info;
+  int fd =
+      open(xa_state.extra_action_file.c_str(), O_RDONLY, S_IREAD | S_IWRITE);
+  CHECK_GE(fd, 0) << "Couldn't open input file " << xa_state.extra_action_file;
   FileInputStream file_input_stream(fd);
   CodedInputStream coded_input_stream(&file_input_stream);
   coded_input_stream.SetTotalBytesLimit(INT_MAX, -1);
-  CHECK(info->ParseFromCodedStream(&coded_input_stream));
+  CHECK(info.ParseFromCodedStream(&coded_input_stream));
   close(fd);
-  CHECK(info->HasExtension(blaze::SpawnInfo::spawn_info));
-  *spawn_info = info->GetExtension(blaze::SpawnInfo::spawn_info);
+
+  if (info.HasExtension(blaze::SpawnInfo::spawn_info)) {
+    LoadSpawnInfo(xa_state, info, config);
+    return true;
+  } else if (info.HasExtension(blaze::CppCompileInfo::cpp_compile_info)) {
+    LoadCppInfo(xa_state, info, config);
+    return true;
+  }
+  LOG(ERROR)
+      << "ObjcCompile Extra Action didn't have SpawnInfo or CppCompileInfo.";
+  return false;
 }
 
 int main(int argc, char *argv[]) {
@@ -107,29 +169,18 @@ int main(int argc, char *argv[]) {
             argv[0]);
     return 1;
   }
-  std::string extra_action_file = argv[1];
-  std::string output_file = argv[2];
-  std::string vname_config = argv[3];
-  std::string devdir_script = argv[4];
-  std::string sdkroot_script = argv[5];
-  blaze::ExtraActionInfo info;
-  blaze::SpawnInfo spawn_info;
-  LoadExtraAction(extra_action_file, &info, &spawn_info);
-  auto cmdPrefix = kythe::BuildEnvVarCommandPrefix(spawn_info);
-  auto devdir = kythe::RunScript(cmdPrefix + devdir_script);
-  auto sdkroot = kythe::RunScript(cmdPrefix + sdkroot_script);
-  std::vector<std::string> args;
-  kythe::FillWithFixedArgs(args, spawn_info, devdir, sdkroot);
+  XAState xa_state;
+  xa_state.extra_action_file = argv[1];
+  xa_state.output_file = argv[2];
+  xa_state.vname_config = argv[3];
+  xa_state.devdir_script = argv[4];
+  xa_state.sdkroot_script = argv[5];
 
   kythe::ExtractorConfiguration config;
-  config.SetKindexOutputFile(output_file);
-  config.SetArgs(args);
-  config.SetVNameConfig(vname_config);
-  config.SetTargetName(info.owner());
-  if (spawn_info.output_file_size() > 0) {
-    config.SetOutputPath(spawn_info.output_file(0));
+  bool success = LoadExtraAction(xa_state, config);
+  if (success) {
+    config.Extract(kythe::supported_language::Language::kObjectiveC);
   }
-  config.Extract(kythe::supported_language::Language::kObjectiveC);
   google::protobuf::ShutdownProtobufLibrary();
-  return 0;
+  return success ? 0 : 2;
 }
