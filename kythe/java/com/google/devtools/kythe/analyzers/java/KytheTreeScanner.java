@@ -276,13 +276,13 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
           tParamNames.add(tParam.getName().toString());
         }
         if (classIdent != null) {
-          EntrySet absAnchor = entrySets.newAnchorAndEmit(filePositions, classIdent, ctx.getSnippet());
+          EntrySet absAnchor =
+              entrySets.newAnchorAndEmit(filePositions, classIdent, ctx.getSnippet());
           emitAnchor(absAnchor, EdgeKind.DEFINES_BINDING, absNode);
         }
         if (!documented) {
           emitComment(classDef, absNode);
         }
-        entrySets.emitName(absNode, signature.get() + "<" + Joiner.on(",").join(tParamNames) + ">");
       }
       if (absNode == null && classIdent != null) {
         EntrySet anchor = entrySets.newAnchorAndEmit(filePositions, classIdent, ctx.getSnippet());
@@ -420,7 +420,6 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       emitOrdinalEdges(methodNode, EdgeKind.PARAM, params);
       EntrySet fnTypeNode = entrySets.newFunctionTypeAndEmit(ret, toEntries(paramTypes));
       entrySets.emitEdge(methodNode, EdgeKind.TYPED, fnTypeNode);
-      entrySets.emitName(fnTypeNode, fnTypeName);
 
       ClassSymbol ownerClass = (ClassSymbol) methodDef.sym.owner;
       Set<Element> ownerDirectSupertypes = new HashSet<>();
@@ -506,7 +505,6 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     emitAnchor(ctx, EdgeKind.REF, typeNode);
 
     String qualifiedName = typeCtorNode.qualifiedName + "<" + Joiner.on(',').join(argNames) + ">";
-    entrySets.emitName(typeNode, qualifiedName);
 
     return new JavaNode(typeNode, qualifiedName, childWildcards.build());
   }
@@ -606,10 +604,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     JavaNode typeNode = scan(arrayType.getType(), ctx);
     EntrySet node =
-        entrySets.newTApplyAndEmit(entrySets.newBuiltinAndEmit("array"), Arrays.asList(typeNode.entries));
+        entrySets.newTApplyAndEmit(
+            entrySets.newBuiltinAndEmit("array"), Arrays.asList(typeNode.entries));
     emitAnchor(ctx, EdgeKind.REF, node);
     JavaNode arrayNode = new JavaNode(node, typeNode.qualifiedName + "[]");
-    entrySets.emitName(node, arrayNode.qualifiedName);
     return arrayNode;
   }
 
@@ -840,14 +838,14 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     EntrySet typeNode =
         entrySets.newTApplyAndEmit(javaLangEnumEntrySet, Collections.singletonList(enumEntrySet));
     String qualifiedName = javaLangEnumSignature + "<" + enumSignature + ">";
-    entrySets.emitName(typeNode, qualifiedName);
     return new JavaNode(typeNode, qualifiedName);
   }
 
   // Creates/emits an anchor and an associated edge
   private EntrySet emitAnchor(TreeContext anchorContext, EdgeKind kind, EntrySet node) {
     return emitAnchor(
-        entrySets.newAnchorAndEmit(filePositions, anchorContext.getTreeSpan(), anchorContext.getSnippet()),
+        entrySets.newAnchorAndEmit(
+            filePositions, anchorContext.getTreeSpan(), anchorContext.getSnippet()),
         kind,
         node);
   }

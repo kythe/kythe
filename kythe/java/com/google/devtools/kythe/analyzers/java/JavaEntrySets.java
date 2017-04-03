@@ -293,7 +293,6 @@ public class JavaEntrySets extends KytheEntrySets {
               .addSignatureSalt("" + hashSymbol(sym))
               .setProperty("code", markedSource.build())
               .build();
-      emitName(node, signature);
       node.emit(getEmitter());
     }
 
@@ -343,7 +342,6 @@ public class JavaEntrySets extends KytheEntrySets {
                         .setPreText(name)
                         .setKind(MarkedSource.Kind.IDENTIFIER)
                         .build()));
-    emitName(node, name);
     return node;
   }
 

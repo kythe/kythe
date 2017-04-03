@@ -26,4 +26,3 @@ public class Imports {
 }
 
 //- String.node/kind record
-//- String named vname("java.lang.String","","","","java")

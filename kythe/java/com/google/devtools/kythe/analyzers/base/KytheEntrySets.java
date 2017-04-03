@@ -26,8 +26,6 @@ import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.devtools.kythe.util.KytheURI;
 import com.google.devtools.kythe.util.Span;
 import java.nio.charset.Charset;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -128,7 +126,6 @@ public class KytheEntrySets {
                         .setPreText(name)
                         .setKind(MarkedSource.Kind.IDENTIFIER)
                         .build()));
-    emitName(node, name);
     return node;
   }
 
@@ -187,16 +184,10 @@ public class KytheEntrySets {
 
   /** Emits and returns a new {@link EntrySet} representing a file {@link VName}. */
   public EntrySet newFileNodeAndEmit(VName name, byte[] contents, Charset encoding) {
-    EntrySet node =
-        emitAndReturn(
-            new NodeBuilder(NodeKind.FILE, name)
-                .setProperty("text", contents)
-                .setProperty("text/encoding", encoding.name()));
-    Path fileName = Paths.get(name.getPath()).getFileName();
-    if (fileName != null) {
-      emitName(node, fileName.toString());
-    }
-    return node;
+    return emitAndReturn(
+        new NodeBuilder(NodeKind.FILE, name)
+            .setProperty("text", contents)
+            .setProperty("text/encoding", encoding.name()));
   }
 
   /**
@@ -209,11 +200,6 @@ public class KytheEntrySets {
       builder.addSignatureSalt(e.getVName());
     }
     return builder;
-  }
-
-  /** Emits a NAME node and its associated edge to the given {@code node}. */
-  public void emitName(EntrySet node, String name) {
-    emitEdge(node, EdgeKind.NAMED, getNameAndEmit(name));
   }
 
   /** Emits an edge of the given kind from {@code source} to {@code target}. */

@@ -48,7 +48,6 @@ public class Generics<T> {
     Optional<Generics<String>> opt;
   }
 
-
   //- @Optional defines/binding OptionalAbs
   //- OptionalClass childof OptionalAbs
   //- @T defines/binding OptionalTVar
@@ -66,17 +65,16 @@ public class Generics<T> {
   //- @classTypeVarBound defines/binding ClassTypeVarBoundFunc
   //- @E defines/binding EVar
   //- EVar bounded/upper TVar
-  //- ClassTypeVarBoundFunc named vname("pkg.Generics.<E extends pkg.Generics~T>classTypeVarBound()","","","","java")
   public <E extends T> void classTypeVarBound() {}
 
-  //- @X defines/binding XVar
-  public <X,
+  public <
+          //- @X defines/binding XVar
+          X,
+          //- @Y defines/binding YVar
+          //- YVar bounded/upper XVar
+          Y extends X>
       //- @ownTypeVarBound defines/binding OwnTypeVarBoundFunc
-      //- @Y defines/binding YVar
-      //- YVar bounded/upper XVar
-      //- OwnTypeVarBoundFunc named vname("pkg.Generics.<X,Y extends X>ownTypeVarBound()","","","","java")
-      Y extends X> void ownTypeVarBound() {}
-
+      void ownTypeVarBound() {}
 
   // Verify that, if there are interface bounds, then java.lang.Object appears as a superclass bound
   // (and in the type parameter's signature) iff it's provided explicitly.
@@ -93,13 +91,11 @@ public class Generics<T> {
   //- @noIFaceBound defines/binding Func
   //- @S0 defines/binding S0Var
   //- S0Var bounded/upper Obj
-  //- Func named vname("pkg.Generics.<S0>noIFaceBound()","","","","java")
   public <S0> void noIFaceBound() {}
 
   //- @objAndNoIFaceBound defines/binding OFunc
   //- @S1 defines/binding S1Var
   //- S1Var bounded/upper Obj
-  //- OFunc named vname("pkg.Generics.<S1>objAndNoIFaceBound()","","","","java")
   public <S1> void objAndNoIFaceBound() {}
 
   // If there is at least one interface bound, only emit a bound of java.lang.Object if it was explicit.
@@ -109,7 +105,6 @@ public class Generics<T> {
   //- @List ref List
   //- !{ S2Var bounded/upper Obj }
   //- S2Var bounded/upper List
-  //- IFunc named vname("pkg.Generics.<S2 extends java.util.List>oneIFaceBound()","","","","java")
   public <S2 extends java.util.List> void oneIFaceBound() {}
 
   //- @objAndOneIFaceBound defines/binding OIFunc
@@ -117,7 +112,6 @@ public class Generics<T> {
   //- @List ref List
   //- S3Var bounded/upper Obj
   //- S3Var bounded/upper List
-  //- OIFunc named vname("pkg.Generics.<S3 extends java.lang.Object&java.util.List>objAndOneIFaceBound()","","","","java")
   public <S3 extends Object & java.util.List> void objAndOneIFaceBound() {}
 
   //- @twoIfaceBounds defines/binding IIFunc
@@ -127,7 +121,6 @@ public class Generics<T> {
   //- !{ S4Var bounded/upper Obj }
   //- S4Var bounded/upper List
   //- S4Var bounded/upper Inter
-  //- IIFunc named vname("pkg.Generics.<S4 extends java.util.List&pkg.Generics.Inter>twoIfaceBounds()","","","","java")
   public <S4 extends java.util.List & Inter> void twoIfaceBounds() {}
 
   //- @objAndTwoIFaceBounds defines/binding OIIFunc
@@ -137,7 +130,6 @@ public class Generics<T> {
   //- S5Var bounded/upper Obj
   //- S5Var bounded/upper List
   //- S5Var bounded/upper Inter
-  //- OIIFunc named vname("pkg.Generics.<S5 extends java.lang.Object&java.util.List&pkg.Generics.Inter>objAndTwoIFaceBounds()","","","","java")
   public <S5 extends Object & java.util.List & Inter> void objAndTwoIFaceBounds() {}
 
   //- @Inter defines/binding Inter

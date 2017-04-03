@@ -103,10 +103,6 @@ done
 curl -sf $ADDR >/dev/null
 curl -sf $ADDR/corpusRoots | jq . >/dev/null
 curl -sf $ADDR/dir | jq . >/dev/null
-curl -sf $ADDR/nodes -d '{"ticket": ["kythe:?lang=java#pkg.Names"]}' | \
-  jq -e '(.nodes | length) > 0'
-curl -sf $ADDR/edges -d '{"ticket": ["kythe:?lang=java#pkg.Names"]}' | \
-  jq -e '(.edge_sets | length) > 0'
 curl -sf $ADDR/decorations -d '{"location": {"ticket": "kythe://kythe?path=kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/Names.java"}, "source_text": true, "references": true}' | \
   jq -e '(.reference | length) > 0
      and (.nodes | length) == 0

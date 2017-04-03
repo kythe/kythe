@@ -2,6 +2,7 @@ package pkg;
 
 public final class WildcardMethod {
   public static final class Optional<T> {}
+
   public static final class Generic<T> {}
 
   //- @Optional ref OptionalClass
@@ -60,7 +61,6 @@ public final class WildcardMethod {
   //- Wildcard1 bounded/upper Str
   //- @String ref Str
   //- !{ Wildcard1 bounded/lower Anything2 }
-  //- OptionalWildString named vname("pkg.WildcardMethod.Optional<? extends java.lang.String>","","","","java")
   private static void wildcardBound(Optional<? extends String> ovar) {}
 
   //- @Optional ref OptionalClass
@@ -76,7 +76,6 @@ public final class WildcardMethod {
   //- WildcardSuper1 bounded/lower Str
   //- !{ WildcardSuper1 bounded/upper Anything1 }
   //- @String ref Str
-  //- OptionalWildSuperString named vname("pkg.WildcardMethod.Optional<? super java.lang.String>","","","","java")
   private static void wildcardSuperBound(Optional<? super String> ovar) {}
 
   //- @Optional ref OptionalClass

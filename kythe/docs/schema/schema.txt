@@ -716,15 +716,6 @@ See also::
 int x;
 --------------------------------------------------------------------------------
 
-[kythe,Java,"Classes have names."]
---------------------------------------------------------------------------------
-package pkg;
-//- @E defines/binding ClassE
-//- ClassE named vname("pkg.E","","","","java")
-public class E {
-}
---------------------------------------------------------------------------------
-
 [[overrides]]
 overrides
 ~~~~~~~~~
@@ -1654,7 +1645,6 @@ Brief description::
 [kythe,Java,"Top-level declarations are children of package nodes."]
 --------------------------------------------------------------------------------
 //- @pkg ref Pkg
-//- Pkg named vname("pkg","","","","java")
 //- Pkg.node/kind package
 package pkg;
 //- @E defines/binding ClassE

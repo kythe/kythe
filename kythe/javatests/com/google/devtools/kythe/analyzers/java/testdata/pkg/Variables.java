@@ -15,7 +15,6 @@ public class Variables {
   //- V typed Str = vname(_,"jdk","","","java")
   //- Str.node/kind record
   //- Str.subkind class
-  //- Str named vname("java.lang.String","","","","java")
   String field;
 
   //- @m defines/binding F
