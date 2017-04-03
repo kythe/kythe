@@ -877,7 +877,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 				log.Printf("WARNING: node %q already previously merged with %q", mergeNode, prevMerge)
 				continue
 			} else if len(tickets) >= *maxTicketsPerRequest {
-				log.Printf("WARNING: max number of tickets reached; cannot merge any further nodes for ", ticket)
+				log.Printf("WARNING: max number of tickets reached; cannot merge any further nodes for %q", ticket)
 				break
 			}
 			tickets = append(tickets, mergeNode)
