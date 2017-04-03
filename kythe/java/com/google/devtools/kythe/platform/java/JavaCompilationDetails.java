@@ -216,6 +216,6 @@ public class JavaCompilationDetails {
     public void close() {}
 
     @Override
-    public void write(char cbuf[], int off, int len) {}
+    public void write(char[] cbuf, int off, int len) {}
   }
 }
