@@ -72,6 +72,12 @@ void FillWithFixedArgs(std::vector<std::string> &args,
   args.push_back(ci.tool());
   for (const auto &i : ci.compiler_option()) {
     std::string arg = i;
+    // TODO(salguarnieri) revert this when it is fixed in bazel.
+    if (arg.find("-isysroot ") == 0) {
+      args.push_back("-isysroot");
+      // Set arg to the actual isysroot argument now.
+      arg = arg.substr(10);
+    }
     RE2::GlobalReplace(&arg, "__BAZEL_XCODE_DEVELOPER_DIR__", devdir);
     RE2::GlobalReplace(&arg, "__BAZEL_XCODE_SDKROOT__", sdkroot);
     args.push_back(arg);
