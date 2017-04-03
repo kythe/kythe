@@ -135,15 +135,21 @@ go_indexpack = rule(
 def _go_verifier_test(ctx):
   pack     = ctx.attr.indexpack.zipfile
   indexer  = ctx.files._indexer[-1]
+  iargs    = [indexer.short_path, '-zip']
   verifier = ctx.file._verifier
-  vargs    = ['--use_file_nodes', '--show_goals']
+  vargs    = [verifier.short_path, '--use_file_nodes', '--show_goals']
+
   if ctx.attr.log_entries:
     vargs.append('--show_protos')
+
+  # If the test wants marked source, enable support for it in the indexer and
+  # in the verifier.
   if ctx.attr.has_marked_source:
     vargs.append('--convert_marked_source')
-  cmds = ['set -e', 'set -o pipefail', ' '.join([
-      indexer.short_path, '-zip', pack.short_path,
-      '\\\n|', verifier.short_path,
+    iargs.append('-code')
+
+  cmds = ['set -e', 'set -o pipefail', ' '.join(iargs + [
+      pack.short_path, '\\\n|',
   ] + vargs), '']
   ctx.file_action(output=ctx.outputs.executable,
                   content='\n'.join(cmds), executable=True)

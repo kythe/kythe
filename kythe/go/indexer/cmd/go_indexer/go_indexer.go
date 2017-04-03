@@ -43,6 +43,7 @@ var (
 	doZipPack   = flag.Bool("zip", false, "Treat arguments as zipped indexpack files (implies -indexpack)")
 	doJSON      = flag.Bool("json", false, "Write output as JSON")
 	doLibNodes  = flag.Bool("libnodes", false, "Emit nodes for standard library packages")
+	doCodeFacts = flag.Bool("code", false, "Emit code facts containing MarkedSource markup")
 
 	writeEntry func(context.Context, *spb.Entry) error
 )
@@ -104,6 +105,7 @@ func indexGo(ctx context.Context, unit *apb.CompilationUnit, f indexer.Fetcher) 
 	log.Printf("Finished resolving compilation: %s", pi.String())
 	return pi.Emit(ctx, writeEntry, &indexer.EmitOptions{
 		EmitStandardLibs: *doLibNodes,
+		EmitMarkedSource: *doCodeFacts,
 	})
 }
 

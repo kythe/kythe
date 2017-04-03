@@ -17,6 +17,7 @@ go_library(
         "//kythe/go/util/schema/nodes",
         "//kythe/proto:analysis_proto_go",
         "//kythe/proto:storage_proto_go",
+        "//kythe/proto:xref_proto_go",
         "@go_protobuf//:proto",
         "@go_stringset//:stringset",
         "@go_x_tools//:go/gcexportdata",
@@ -108,4 +109,10 @@ go_indexer_test(
 go_indexer_test(
     name = "structref_test",
     srcs = ["testdata/basic/structref.go"],
+)
+
+go_indexer_test(
+    name = "code_smoke_test",
+    srcs = ["testdata/code/smoke.go"],
+    has_marked_source = True,
 )

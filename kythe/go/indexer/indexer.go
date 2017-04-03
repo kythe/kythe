@@ -53,6 +53,7 @@ import (
 
 	apb "kythe.io/kythe/proto/analysis_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
+	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
 // A Fetcher retrieves the contents of a file given its path and/or hex-encoded
@@ -335,6 +336,22 @@ func (pi *PackageInfo) ObjectVName(obj types.Object) *spb.VName {
 	vname := proto.Clone(base).(*spb.VName)
 	vname.Signature = sig
 	return vname
+}
+
+// MarkedSource returns a MarkedSource message describing obj.
+// See: http://www.kythe.io/docs/schema/marked-source.html.
+//
+// TODO(fromberger): This implementation is intentionally minimalistic at the
+// moment, to avoid maintaining a fork of the type rendering code from the
+// go/types package. Figure out a better solution to let us have more
+// structure, particularly for functions and struct types. See also: T232.
+func (pi *PackageInfo) MarkedSource(obj types.Object) *xpb.MarkedSource {
+	if obj.Name() == "" {
+		return nil
+	} else if s := obj.String(); s != "" {
+		return &xpb.MarkedSource{PreText: s}
+	}
+	return nil
 }
 
 // FileVName returns a VName for path relative to the package base.

@@ -44,6 +44,9 @@ type EmitOptions struct {
 	// encountered. This is helpful if you want to index a package in isolation
 	// where data for the standard library are not available.
 	EmitStandardLibs bool
+
+	// If true, emit code facts containing MarkedSource messages.
+	EmitMarkedSource bool
 }
 
 // shouldEmit reports whether the indexer should emit a node for the given
@@ -537,6 +540,16 @@ func (e *emitter) writeBinding(id *ast.Ident, kind string, parent *spb.VName) *s
 	}
 	if parent != nil {
 		e.writeEdge(target, parent, edges.ChildOf)
+	}
+	if e.opts != nil && e.opts.EmitMarkedSource {
+		if ms := e.pi.MarkedSource(obj); ms != nil {
+			bits, err := proto.Marshal(ms)
+			if err != nil {
+				log.Printf("ERROR: Unable to marshal marked source: %v", err)
+			} else {
+				e.writeFact(target, facts.Code, string(bits))
+			}
+		}
 	}
 	return target
 }
