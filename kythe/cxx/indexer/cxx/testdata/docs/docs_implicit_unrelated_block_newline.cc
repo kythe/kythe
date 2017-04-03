@@ -7,5 +7,4 @@ void f() {
 }
 
 //- VarX.node/kind variable
-//- VarX named vname("x:1:0:f#n",_,_,_,_)
 //- !{Something documents VarX}

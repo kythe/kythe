@@ -3,12 +3,10 @@
 //- @defnflag defines/binding FlagNodeDecl
 //- FlagNodeDecl.node/kind google/gflag
 //- FlagNodeDecl.complete incomplete
-//- FlagNodeDecl named FlagName
 DECLARE_int64(defnflag);
 //- @defnflag defines/binding FlagNode
 //- FlagNode.node/kind google/gflag
 //- FlagNode.complete definition
-//- FlagNode named FlagName
 //- @defnflag completes/uniquely FlagNodeDecl
 DEFINE_int64(defnflag, 0, "adef");
 //- @FLAGS_defnflag ref FlagNode

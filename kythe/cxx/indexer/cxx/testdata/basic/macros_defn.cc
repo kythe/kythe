@@ -1,10 +1,11 @@
 // Tests basic macro definitions.
 //- @ID defines/binding MacroID
-//- MacroID named vname("ID#m",_,_,_,_)
+//- MacroID.node/kind macro
 #define ID(x) (x)
 //- @SYMBOL defines/binding MacroSymbol
-//- MacroSymbol named vname("SYMBOL#m",_,_,_,_)
+//- MacroSymbol.node/kind macro
 #define SYMBOL 1
 //- @SYMBOL defines/binding OtherMacroSymbol
-//- OtherMacroSymbol named vname("SYMBOL#m",_,_,_,_)
+//- !{@SYMBOL defines/binding MacroSymbol}
+//- OtherMacroSymbol.node/kind macro
 #define SYMBOL 2

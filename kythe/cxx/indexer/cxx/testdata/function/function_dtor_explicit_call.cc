@@ -2,7 +2,6 @@
 class C {
  public:
   //- @"~C" defines/binding CDtor
-  //- CDtor named vname("~C:C#n",_,_,_,_)
   ~C() { }
 };
 void F(C* c) {

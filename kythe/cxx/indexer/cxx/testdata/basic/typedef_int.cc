@@ -4,5 +4,4 @@
 //- TypeAlias.node/kind talias
 //- TypeAlias aliases IntType
 //- TypeAlias aliases vname("int#builtin", "", "", "", "c++")
-//- TypeAlias named vname("tdef#n", "", "", "", "c++")
 typedef int tdef;

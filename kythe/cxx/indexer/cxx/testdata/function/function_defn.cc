@@ -3,4 +3,3 @@
 void f() { }
 //- FDefn.node/kind function
 //- FDefn.complete definition
-//- FDefn named FName

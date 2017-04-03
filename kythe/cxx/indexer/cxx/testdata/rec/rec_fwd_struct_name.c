@@ -4,5 +4,4 @@ struct S {
   struct R *rrr;
 };
 //- @R defines/binding StructR
-//- StructR named vname("R#c",_,_,_,_)
 struct R;

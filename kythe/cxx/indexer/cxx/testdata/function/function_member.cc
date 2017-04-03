@@ -2,7 +2,6 @@
 //- @f defines/binding MemberF
 //- @S defines/binding StructS
 //- MemberF childof StructS
-//- MemberF named vname("f:S#n",_,_,_,_)
 struct S { int f() { return 0; } };
 void f() {
   //- @s defines/binding VarS

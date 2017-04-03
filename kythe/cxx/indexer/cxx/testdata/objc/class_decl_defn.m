@@ -15,9 +15,6 @@
 @implementation Box
 @end
 
-//- BoxIface named BoxName
-//- BoxImpl named BoxName
-
 int main(int argc, char **argv) {
   return 0;
 }

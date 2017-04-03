@@ -16,7 +16,6 @@ FOO
 #example bcorpus_broot_bpath.h
 // Unclaimed
 //- !{ @BAR defines/binding MacroBar }
-//- !{ MacroBar named vname("BAR#m",_,_,_,_) }
 #define BAR
 //- !{ @BAR ref/expands MacroBar }
 BAR

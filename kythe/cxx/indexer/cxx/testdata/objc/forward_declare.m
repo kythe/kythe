@@ -19,7 +19,6 @@
 //- P1PtrTy param.0 vname("ptr#builtin",_,_,_,_)
 //- P1PtrTy param.1 FwdClassType
 //- FwdClassType.node/kind tnominal
-//- FwdClassType named vname("FwdClass#c",_,_,_,_)
 -(int) foo:(FwdClass*)p1;
 
 @end

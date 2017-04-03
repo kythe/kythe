@@ -6,6 +6,6 @@ struct rat {
 //- FieldDev.node/kind variable
 //- FieldDev.subkind field
 //- @fwd ref StructFwd
-//- StructFwd named vname("fwd#c",_,_,_,_)
+//- StructFwd.node/kind tnominal
   struct fwd *dev;
 };

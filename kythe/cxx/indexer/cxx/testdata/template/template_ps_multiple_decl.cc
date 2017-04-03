@@ -17,8 +17,6 @@ template
 class C
 <int, W>;
 
-//- CWDecl named CName
-//- CVDecl named CName
 //- CWDecl specializes TAppCNameW
 //- CVDecl specializes TAppCNameV
 //- TAppCNameW.node/kind tapp
@@ -26,4 +24,3 @@ class C
 //- TAppCNameW param.0 NominalC
 //- TAppCNameV param.0 NominalC
 //- NominalC.node/kind tnominal
-//- NominalC named CName

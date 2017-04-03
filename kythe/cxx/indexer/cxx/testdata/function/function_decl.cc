@@ -3,4 +3,3 @@
 void f();
 //- FDecl.node/kind function
 //- FDecl.complete incomplete
-//- FDecl named FName

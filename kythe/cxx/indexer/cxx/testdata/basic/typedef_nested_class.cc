@@ -7,8 +7,5 @@ class C {
 };
 // Note that the tag at the end of a stringified NameId refers to the whole
 // name, not just that node.
-//- TypeAlias named vname("tdef:C#n", "", "", "", "c++")
 //- TypeAlias aliases NominalD
 //- NominalD.node/kind tnominal
-//- NominalD named vname("D:C#c", "", "",
-//-     "", "c++")

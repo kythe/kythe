@@ -2,7 +2,6 @@
 
 
 //- @Box defines/binding BoxDecl
-//- BoxDecl named vname(_, _, _, _, "c++")
 @interface Box
 @end
 

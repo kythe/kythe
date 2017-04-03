@@ -36,7 +36,6 @@ enum class NodeKindID {
   kConstant,
   kAbs,
   kAbsVar,
-  kName,
   kFunction,
   kLookup,
   kMacro,
@@ -70,7 +69,6 @@ enum class PropertyID {
 /// \brief Known edge kinds. See the schema for details.
 enum class EdgeKindID {
   kDefinesFull,
-  kNamed,
   kHasType,
   kRef,
   kParam,

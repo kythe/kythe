@@ -10,5 +10,3 @@ using alias_alias = builtin_alias;
 //- BuiltinAlias aliases IntType
 //- AliasAlias aliases BuiltinAlias
 //- BuiltinAlias aliases vname("int#builtin", "", "", "", "c++")
-//- BuiltinAlias named vname("builtin_alias#n", "", "", "", "c++")
-//- AliasAlias named vname("alias_alias#n", "", "", "", "c++")

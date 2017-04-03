@@ -24,9 +24,6 @@
 }
 @end
 
-//- FooDecl named FooName
-//- FooDefn named FooName
-
 int main(int argc, char **argv) {
   //- @"[Box foo]" ref/call FooDefn
   //- @"[Box foo]" childof Main

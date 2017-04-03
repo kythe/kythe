@@ -510,7 +510,6 @@ public:
 
   /// \brief Records that a variable (either local or global) has been
   /// declared.
-  /// \param DeclName The name to which this element is being bound.
   /// \param DeclNode The identifier for this particular element.
   /// \param Compl The completeness of this variable declaration.
   /// \param Subkind Which kind of variable declaration this is.
@@ -518,17 +517,14 @@ public:
   // TODO(zarko): We should make note of the storage-class-specifier (dcl.stc)
   // of the variable, which is a property the variable itself and not of its
   // type.
-  virtual void recordVariableNode(const NameId &DeclName,
-                                  const NodeId &DeclNode, Completeness Compl,
+  virtual void recordVariableNode(const NodeId &DeclNode, Completeness Compl,
                                   VariableSubkind Subkind,
                                   const MaybeFew<MarkedSource> &MarkedSource) {}
 
   /// \brief Records that a namespace has been declared.
-  /// \param DeclName The name to which this element is being bound.
   /// \param DeclNode The identifier for this particular element.
   /// \param MarkedSource marked source for this namespace.
-  virtual void recordNamespaceNode(const NameId &DeclName,
-                                   const NodeId &DeclNode,
+  virtual void recordNamespaceNode(const NodeId &DeclNode,
                                    const MaybeFew<MarkedSource> &MarkedSource) {
   }
 
@@ -609,26 +605,6 @@ public:
   /// and the `DefnId`.
   virtual void recordCompletionRange(const Range &SourceRange,
                                      const NodeId &DefnId, Specificity Spec) {}
-
-  /// \brief Records that a particular `Node` has been given some `Name`.
-  ///
-  /// A given node may have zero or more names distinct from its `NodeId`.
-  /// These may be used as entry points into the graph. For example,
-  /// `recordNamedEdge` may be called with the unique `NodeId` for a function
-  /// definition and the `NameId` corresponding to the fully-qualified name
-  /// of that function; it may subsequently be called with that same `NodeId`
-  /// and a `NameId` corresponding to that function's mangled name.
-  ///
-  /// A call to `recordNamedEdge` may have the following form:
-  /// ~~~
-  /// // DeclName is the lookup name for some record type (roughly, the "C" in
-  /// // "class C").
-  /// GraphObserver::NameId DeclName = BuildNameIdForDecl(RecordDecl);
-  /// // DeclNode refers to a particular decl of some record type.
-  /// GraphObserver::NodeId DeclNode = BuildNodeIdForDecl(RecordDecl);
-  /// Observer->recordNamedEdge(DeclNode, DeclName);
-  /// ~~~
-  virtual void recordNamedEdge(const NodeId &Node, const NameId &Name) {}
 
   /// \brief Records the type of a node as an edge in the graph.
   /// \param TermNodeId The identifier for the node to be given a type.
@@ -720,12 +696,10 @@ public:
                                  clang::AccessSpecifier AS) {}
 
   /// \brief Records a node with a provided kind.
-  /// \param Name The name of the node to record (including a `named` edge from
-  /// `Id`).
   /// \param Id The ID of the node to record.
   /// \param NodeKind The kind of the node ("google/protobuf")
   /// \param Compl Whether this node is complete.
-  virtual void recordUserDefinedNode(const NameId &Name, const NodeId &Id,
+  virtual void recordUserDefinedNode(const NodeId &Id,
                                      const llvm::StringRef &NodeKind,
                                      Completeness Compl) {}
 
@@ -788,15 +762,6 @@ public:
   /// \param MacroId The `NodeId` of the macro being queried.
   virtual void recordBoundQueryRange(const Range &SourceRange,
                                      const NodeId &MacroId) {}
-
-  /// \brief Records that an undefined macro was queried at some location.
-  ///
-  /// Testing a macro for definedness does not expand it.
-  ///
-  /// \param SourceRange The `Range` covering the text causing the query.
-  /// \param MacroName The `NameId` of the macro being queried.
-  virtual void recordUnboundQueryRange(const Range &SourceRange,
-                                       const NameId &MacroName) {}
 
   /// \brief Records that another resource was included at some location.
   /// \param SourceRange The `Range` covering the text causing the inclusion.

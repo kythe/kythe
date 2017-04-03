@@ -10,11 +10,9 @@ class C {
   //- CtorC.subkind constructor
   //- Call ref/call FnF
   //- Call childof CtorC
-  //- CtorC named vname("C:C#n",_,_,_,_)
   C() { f(); }
   //- @C defines/binding CtorC2
   //- CtorC2 childof ClassC
-  //- CtorC2 named vname("C:C#n",_,_,_,_)
   C(int) { }
 };
 //- @g defines/binding FnG

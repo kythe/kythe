@@ -96,9 +96,6 @@ void IndexerPPCallbacks::FilterAndEmitDeferredRecords() {
             R.Range,
             BuildNodeIdForMacro(R.MacroName, *R.Macro->getMacroInfo()));
       }
-    } else {
-      Observer.recordUnboundQueryRange(R.Range,
-                                       BuildNameIdForMacro(R.MacroName));
     }
   }
   DeferredRecords.clear();
@@ -136,7 +133,6 @@ void IndexerPPCallbacks::MacroDefined(const clang::Token &Token,
     Observer.recordDefinitionBindingRange(RangeForTokenInCurrentContext(Token),
                                           MacroId);
     Observer.recordMacroNode(MacroId);
-    Observer.recordNamedEdge(MacroId, MacroName);
     MarkedSource MacroCode;
     MacroCode.set_kind(MarkedSource::IDENTIFIER);
     MacroCode.set_pre_text(Token.getIdentifierInfo()->getName());

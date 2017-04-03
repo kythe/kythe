@@ -7,4 +7,3 @@ enum E {
 //- EMElt childof EEnum
 //- EMElt.node/kind constant
 //- EMElt.text 0
-//- EMElt named vname("EM:E#n",_,_,_,_)

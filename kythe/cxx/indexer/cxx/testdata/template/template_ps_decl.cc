@@ -10,12 +10,9 @@ template
 class C
 <int>;
 
-//- CDecl named CName
-//- PCDecl named CName
 //- PCDecl specializes TAppNomCInt
 //- TAppNomCInt.node/kind tapp
 //- TAppNomCInt param.0 NominalC
-//- NominalC named CName
 //- IncompleteC childof CDecl
 //- IncompleteC.node/kind record
 //- IncompleteC.complete incomplete

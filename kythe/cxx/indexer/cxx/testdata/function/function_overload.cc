@@ -5,5 +5,6 @@ void F(int X) { }
 void F(float Y) { }
 //- FnFI param.0 IntX
 //- FnFF param.0 FloatY
-//- IntX named vname("X:F#n",_,_,_,_)
-//- FloatY named vname("Y:F#n",_,_,_,_)
+//- IntX.node/kind variable
+//- FloatY.node/kind variable
+

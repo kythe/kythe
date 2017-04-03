@@ -10,4 +10,3 @@ typedef int alias;
 //- TypeAlias.node/kind talias
 //- TypeAlias aliases IntType
 //- TypeAlias aliases vname("int#builtin", "", "", "", "c++")
-//- TypeAlias named vname("alias#n", "", "", "", "c++")

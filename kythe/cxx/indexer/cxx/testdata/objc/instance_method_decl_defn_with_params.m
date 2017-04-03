@@ -40,11 +40,6 @@
 }
 @end
 
-//- FooDecl named FooName
-//- FooDefn named FooName
-//- BarDecl named BarName
-//- BarDefn named BarName
-
 int main(int argc, char **argv) {
   return 0;
 }

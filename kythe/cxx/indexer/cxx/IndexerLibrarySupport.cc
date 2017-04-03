@@ -190,7 +190,7 @@ void GoogleFlagsLibrarySupport::InspectVariable(
     FlagNameId.Path = FlagName.str();
     FlagNameId.EqClass = GraphObserver::NameId::NameEqClass::None;
     GraphObserver::NodeId FlagNodeId = NodeIdForFlag(NodeId);
-    GO.recordUserDefinedNode(FlagNameId, FlagNodeId, "google/gflag", Compl);
+    GO.recordUserDefinedNode(FlagNodeId, "google/gflag", Compl);
     if (auto RCC = V.ExplicitRangeInCurrentContext(Range)) {
       GO.recordDefinitionBindingRange(RCC.primary(), FlagNodeId);
       clang::FileID DeclFile =
@@ -231,4 +231,4 @@ void GoogleFlagsLibrarySupport::InspectDeclRef(
                              GraphObserver::Claimability::Unclaimable);
   }
 }
-}
+} // namespace kythe

@@ -41,7 +41,7 @@ following rules:
     the input.
 
 Additional rules govern the generation of VNames for certain kinds of nodes,
-most notably <<name,names>>. These nodes are frequently used as points
+most notably <<file,files>>. These nodes are frequently used as points
 for linking together the output of discrete indexer runs and may have greater
 stability properties than may be derived using the preceding VName rules.
 
@@ -692,30 +692,6 @@ template <typename T> struct S {
 };
 --------------------------------------------------------------------------------
 
-[[named]]
-named
-~~~~~
-
-Brief description::
-  A *named* B if B identifies A.
-Commonly arises from::
-  definitions and declarations
-Points from::
-  semantic nodes
-Points toward::
-  names
-Ordinals are used::
-  never
-See also::
-  <<name>>
-
-[kythe,C++,"Variables have names."]
---------------------------------------------------------------------------------
-//- @x defines/binding VariableX
-//- VariableX named NameX
-int x;
---------------------------------------------------------------------------------
-
 [[overrides]]
 overrides
 ~~~~~~~~~
@@ -1051,19 +1027,19 @@ Brief description::
 Points from::
   anchors
 Points toward::
-  <<macro,macros>>, <<name,names>>
+  <<macro,macros>>
 Ordinals are used::
   never
 
-[kythe,C++,"Queries can be bound or unbound."]
+[kythe,C++,"Queries to bound macros are recorded."]
 --------------------------------------------------------------------------------
 //- @FOO defines/binding MacroFoo
 #define FOO BAR
 //- @FOO ref/queries MacroFoo
-//- MacroFoo named vname("FOO#m",_,_,_,_)
+//- MacroFoo.node/kind macro
 #if defined(FOO)
 #endif
-//- @BAZ ref/queries vname("BAZ#m",_,_,_,_)
+//- !{@BAZ ref/queries _}
 #ifdef BAZ
 #endif
 --------------------------------------------------------------------------------
@@ -1609,32 +1585,6 @@ Naming convention::
 //- vname("tapp#meta","","","","c++").node/kind meta
 --------------------------------------------------------------------------------
 
-[[name]]
-name
-~~~~
-
-Brief description::
-  A *name* identifies zero or more nodes.
-Naming convention::
-  Signature:::
-    *language-specific-string*#*language-specific-tag*
-  Language:::
-    See <<lsr,Language-specific rules>> for language identifiers.
-Notes::
-  See the <<lsr,Language-specific rules>> section below for name formation
-  rules.
-
-[kythe,C++,"Declarations and definitions share the same name."]
---------------------------------------------------------------------------------
-//- @C defines/binding CDecl
-class C;
-//- @C defines/binding CDefn
-class C { };
-//- CDecl named CName=vname("C#c","","","","c++")
-//- CDefn named CName
-//- CName.node/kind name
---------------------------------------------------------------------------------
-
 [[package]]
 package
 ~~~~~~
@@ -1771,7 +1721,7 @@ talias
 Brief description::
   A *talias* gives a new name to an existing type.
 Expected out-edges::
-  <<aliases>>, <<named>>
+  <<aliases>>
 Notes::
   A *talias* may be virtually removed from the graph. Some languages may have
   additional reduction rules.
@@ -1834,8 +1784,6 @@ tnominal
 
 Brief description::
   A *tnominal* is a type that may be purely identified by its name.
-Expected out-edges::
-  <<named>>
 Notes::
   When a `tnominal`'s definition is known, some <<lsr,language-specific rules>>
   dictate that the definition node be used instead of a `tnominal` in the
@@ -1845,13 +1793,11 @@ Notes::
 --------------------------------------------------------------------------------
 //- @C defines/binding ClassC
 //- ClassC.node/kind record
-//- ClassC named ClassCName
 class C;
 //- @Alias defines/binding Alias
 //- Alias aliases PtrC
 //- PtrC param.1 NominalC
 //- NominalC.node/kind tnominal
-//- NominalC named ClassCName
 using Alias = C*;
 --------------------------------------------------------------------------------
 
@@ -2104,55 +2050,6 @@ enum E { };
 enum class EC;
 --------------------------------------------------------------------------------
 
-Names
-^^^^^
-
-$$C++$$ defines the following language-specific tags for lexically scoped names:
-
-  * `m`: macros (see <<macro>>)
-  * `c`: class or struct (see <<record>>)
-  * `u`: union (see <<record>>)
-  * `n`: any other name
-
-A $$C++$$ lexically-scoped name is stored as a colon-delimited path, starting
-with the most specific name and ending with the most general.
-
-[kythe,C++,"Lexically scoped names"]
---------------------------------------------------------------------------------
-//- @C defines/binding ClassC
-//- ClassC named vname("C#c",_,_,_,_)
-class C;
-namespace A {
-//- @D defines/binding ClassD
-//- ClassD named vname("D:A#c",_,_,_,_)
-  class D;
-  namespace B {
-//- @E defines/binding ClassE
-//- ClassE named vname("E:B:A#c",_,_,_,_)
-    class E;
-  }
-}
---------------------------------------------------------------------------------
-
-Anonymous namespaces are represented using `@#anon` and possibly some extra
-(opaque) information. Scopes without names are given ordinal values reflecting
-an arbitrary but consistent ordering between syntactic elements:
-
-[kythe,C++,"Ordinal path nodes in names"]
---------------------------------------------------------------------------------
-void foo() {
-//- @x defines/binding VarNode
-//- VarNode named vname("x:0:0:foo#n",_,_,_,_)
-  int x;
-//- @x defines/binding VarNode2
-//- VarNode2 named vname("x:0:1:0:foo#n",_,_,_,_)
-  { int x; }
-//- @x defines/binding VarNode3
-//- VarNode3 named vname("x:0:2:0:foo#n",_,_,_,_)
-  { int x; }
-}
---------------------------------------------------------------------------------
-
 References to definitions and declarations of types
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -2174,12 +2071,10 @@ If the indexer only has a *complete* $$C++$$ node, or if the node is
 [kythe,C++,"Refer to complete or incomplete declarations indirectly."]
 --------------------------------------------------------------------------------
 //- @E defines/binding CompleteEnumE
-//- CompleteEnumE named EnumEName
 enum class E : int;
 //- @Alias defines/binding EAlias
 //- EAlias aliases EnumETNominal
 //- EnumETNominal.node/kind tnominal
-//- EnumETNominal named EnumEName
 using Alias = E;
 --------------------------------------------------------------------------------
 

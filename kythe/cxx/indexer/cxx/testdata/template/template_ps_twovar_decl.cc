@@ -15,7 +15,4 @@ class C
 //- TAppCDeclIntAbsU.node/kind tapp
 //- TAppCDeclIntAbsU param.2 AbsU
 //- PCDecl param.0 AbsU
-//- PCDecl named CName
-//- CDecl named CName
 //- TAppCDeclIntAbsU param.0 CNominal
-//- CNominal named CName
