@@ -179,22 +179,20 @@ public class JavaCompilationDetails {
     return encoding;
   }
 
-  /**
-   * Generate options (such as classpath and sourcepath) from the compilation unit.
-   */
+  /** Generate options (such as classpath and sourcepath) from the compilation unit. */
   private static List<String> optionsFromCompilationUnit(
       CompilationUnit compilationUnit, List<Processor> processors) {
     // Start with the default options, and then add in source
     List<String> arguments = Lists.newArrayList(compilationUnit.getArgumentList());
     // TODO(jrtom): use static imports for brevity
     arguments = JavacOptionsUtils.ensureEncodingSet(arguments, DEFAULT_ENCODING);
-    arguments = JavacOptionsUtils.removeUnsupportedOptions(arguments);
-
     JavacOptionsUtils.updateArgumentsWithJavaOptions(arguments, compilationUnit);
 
     if (processors.isEmpty()) {
       arguments.add("-proc:none");
     }
+
+    arguments = JavacOptionsUtils.removeUnsupportedOptions(arguments);
     return ImmutableList.copyOf(arguments);
   }
 
