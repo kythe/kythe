@@ -119,7 +119,7 @@ public class KytheEntrySets {
     EntrySet node =
         emitAndReturn(
             newNode(NodeKind.TBUILTIN)
-                .setSignature(name + "#builtin")
+            .setSignature(getBuiltinSignature(name))
                 .setProperty(
                     "code",
                     MarkedSource.newBuilder()
@@ -129,6 +129,15 @@ public class KytheEntrySets {
     return node;
   }
 
+  /**
+   * Returns a VName for the builtin node corresponding to the specified name.
+   */
+  public VName getBuiltinVName(String name) {
+    return VName.newBuilder()
+        .setSignature(getBuiltinSignature(name))
+        .setLanguage(this.language)
+        .build();
+  }
   /**
    * Returns (and emits) a new anchor node at the given location in the file with an optional
    * snippet span.
@@ -305,6 +314,13 @@ public class KytheEntrySets {
   protected EntrySet emitAndReturn(EntrySet set) {
     set.emit(emitter);
     return set;
+  }
+
+  /**
+   * Gets a builtin signature for the specified name.
+   */
+  protected static String getBuiltinSignature(String name) {
+    return String.format("%s#builtin", name);
   }
 
   /** {@link EntrySet.Builder} for Kythe nodes. */
