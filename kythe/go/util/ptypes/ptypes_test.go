@@ -17,7 +17,6 @@
 package ptypes
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/golang/protobuf/proto"
@@ -78,7 +77,7 @@ func TestUnmarshalAny(t *testing.T) {
 		}, got); err != nil {
 			t.Errorf("Unmarshaling URL %q, data %q: error %v", test.url, test.data, err)
 		}
-		if !reflect.DeepEqual(got, test.want) {
+		if *got != *test.want {
 			t.Errorf("Unmarshaling failed: got %+v, want %+v", got, test.want)
 		}
 	}

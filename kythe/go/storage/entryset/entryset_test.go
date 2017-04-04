@@ -23,6 +23,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/golang/protobuf/proto"
+
 	"kythe.io/kythe/go/util/kytheuri"
 
 	spb "kythe.io/kythe/proto/storage_proto"
@@ -197,7 +199,19 @@ func TestRoundTrip(t *testing.T) {
 	// Because the input was canonical before encoding, the decoded result
 	// should come back in exactly the same (canonical) order.
 
-	if !reflect.DeepEqual(beforeEntries, afterEntries) {
+	if !entriesEqual(beforeEntries, afterEntries) {
 		t.Errorf("Round-trip failed.\n--- Got:\n%+v\n--- Want:\n%+v\n", beforeEntries, afterEntries)
 	}
+}
+
+func entriesEqual(as, bs []*spb.Entry) bool {
+	if len(as) != len(bs) {
+		return false
+	}
+	for i, a := range as {
+		if !proto.Equal(a, bs[i]) {
+			return false
+		}
+	}
+	return true
 }
