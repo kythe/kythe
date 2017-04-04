@@ -732,6 +732,7 @@ func m2m(m *srvpb.MarkedSource) *xpb.MarkedSource {
 		Kind:                 xpb.MarkedSource_Kind(m.Kind),
 		PreText:              m.PreText,
 		PostChildText:        m.PostChildText,
+		PostText:             m.PostText,
 		LookupIndex:          m.LookupIndex,
 		DefaultChildrenCount: m.DefaultChildrenCount,
 		AddFinalListToken:    m.AddFinalListToken,
