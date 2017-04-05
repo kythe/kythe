@@ -657,14 +657,24 @@ func (n *Normalizer) ByteOffset(offset int32) *xpb.Location_Point {
 func ConvertFilters(filters []string) []*regexp.Regexp {
 	var patterns []*regexp.Regexp
 	for _, filter := range filters {
-		patterns = append(patterns, filterToRegexp(filter))
+		re := filterToRegexp(filter)
+		if re == matchesAll {
+			return []*regexp.Regexp{re}
+		}
+		patterns = append(patterns, re)
 	}
 	return patterns
 }
 
-var filterOpsRE = regexp.MustCompile("[*][*]|[*?]")
+var (
+	filterOpsRE = regexp.MustCompile("[*][*]|[*?]")
+	matchesAll  = regexp.MustCompile(".*")
+)
 
 func filterToRegexp(pattern string) *regexp.Regexp {
+	if pattern == "**" {
+		return matchesAll
+	}
 	var re string
 	for {
 		loc := filterOpsRE.FindStringIndex(pattern)
@@ -690,7 +700,7 @@ func filterToRegexp(pattern string) *regexp.Regexp {
 // MatchesAny reports whether if str matches any of the patterns
 func MatchesAny(str string, patterns []*regexp.Regexp) bool {
 	for _, p := range patterns {
-		if p.MatchString(str) {
+		if p == matchesAll || p.MatchString(str) {
 			return true
 		}
 	}
