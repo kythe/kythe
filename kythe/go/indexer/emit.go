@@ -153,7 +153,7 @@ func (e *emitter) visitIdent(id *ast.Ident, stack stackFunc) {
 
 // visitFuncDecl handles function and method declarations and their parameters.
 func (e *emitter) visitFuncDecl(decl *ast.FuncDecl, stack stackFunc) {
-	info := new(funcInfo)
+	info := &funcInfo{vname: new(spb.VName)}
 	e.pi.function[decl] = info
 
 	// Get the type of this function, even if its name is blank.
