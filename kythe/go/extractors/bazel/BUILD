@@ -14,6 +14,7 @@ go_package_library(
         "//kythe/go/util/vnameutil",
         "//kythe/proto:analysis_proto_go",
         "//kythe/proto:buildinfo_proto_go",
+        "//kythe/proto:go_proto_go",
         "//kythe/proto:storage_proto_go",
         "//third_party/bazel:extra_actions_base_proto_go",
         "@go_protobuf//:proto",

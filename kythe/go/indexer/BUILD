@@ -12,10 +12,12 @@ go_library(
     ],
     deps = [
         "//kythe/go/extractors/govname",
+        "//kythe/go/util/ptypes",
         "//kythe/go/util/schema/edges",
         "//kythe/go/util/schema/facts",
         "//kythe/go/util/schema/nodes",
         "//kythe/proto:analysis_proto_go",
+        "//kythe/proto:go_proto_go",
         "//kythe/proto:storage_proto_go",
         "//kythe/proto:xref_proto_go",
         "@go_protobuf//:proto",

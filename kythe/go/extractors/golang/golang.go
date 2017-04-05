@@ -46,10 +46,12 @@ import (
 	"kythe.io/kythe/go/platform/indexpack"
 	"kythe.io/kythe/go/platform/kindex"
 	"kythe.io/kythe/go/platform/vfs"
+	"kythe.io/kythe/go/util/ptypes"
 
 	"bitbucket.org/creachadair/stringset"
 
 	apb "kythe.io/kythe/proto/analysis_proto"
+	gopb "kythe.io/kythe/proto/go_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
 )
 
@@ -277,9 +279,16 @@ func (p *Package) Extract() error {
 		Argument: []string{"go", "build"},
 	}
 	bc := p.ext.BuildContext
-	p.addEnv(cu, "GOPATH", bc.GOPATH)
-	p.addEnv(cu, "GOOS", bc.GOOS)
-	p.addEnv(cu, "GOARCH", bc.GOARCH)
+	if info, err := ptypes.MarshalAny(&gopb.GoDetails{
+		Gopath:     bc.GOPATH,
+		Goos:       bc.GOOS,
+		Goarch:     bc.GOARCH,
+		Compiler:   bc.Compiler,
+		BuildTags:  bc.BuildTags,
+		CgoEnabled: bc.CgoEnabled,
+	}); err == nil {
+		cu.Details = append(cu.Details, info)
+	}
 
 	// Add required inputs from this package (source files of various kinds).
 	bp := p.BuildPackage
@@ -304,8 +313,8 @@ func (p *Package) Extract() error {
 	missing = append(missing, p.addDeps(cu, bp.TestImports)...)
 
 	// Add command-line arguments.
-	// TODO(fromberger): Figure out what to do with cgo compiler flags.
-	// Also, whether we should emit separate compilations for cgo actions.
+	// TODO(fromberger): Figure out whether we should emit separate
+	// compilations for cgo actions.
 	p.addFlag(cu, "-compiler", bc.Compiler)
 	if t := bp.AllTags; len(t) > 0 {
 		p.addFlag(cu, "-tags", strings.Join(t, " "))

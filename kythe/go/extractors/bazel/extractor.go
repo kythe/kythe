@@ -40,6 +40,7 @@ import (
 
 	apb "kythe.io/kythe/proto/analysis_proto"
 	bipb "kythe.io/kythe/proto/buildinfo_proto"
+	gopb "kythe.io/kythe/proto/go_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
 	eapb "kythe.io/third_party/bazel/extra_actions_base_proto"
 )
@@ -89,14 +90,39 @@ func (c *Config) Extract(ctx context.Context, info *eapb.ExtraActionInfo) (*kind
 			Argument:         toolArgs.compile,
 			SourceFile:       toolArgs.sources,
 			WorkingDirectory: toolArgs.workDir,
-			Environment: []*apb.CompilationUnit_Env{{
-				Name:  "GOROOT",
-				Value: toolArgs.goRoot,
-			}},
 		},
 	}
+
+	// Capture environment variables. Special cases are for $PATH, which we
+	// don't want to keep at all, and $GOOS and $GOARCH which we stash in the
+	// language-specific details.
+	var goos, goarch string
+	for _, evar := range spawnInfo.Variable {
+		switch name := evar.GetName(); name {
+		case "PATH":
+			continue
+		case "GOOS":
+			goos = evar.GetValue()
+		case "GOARCH":
+			goarch = evar.GetValue()
+		default:
+			cu.Proto.Environment = append(cu.Proto.Environment, &apb.CompilationUnit_Env{
+				Name:  name,
+				Value: evar.GetValue(),
+			})
+		}
+	}
+
 	if info, err := ptypes.MarshalAny(&bipb.BuildDetails{
 		BuildTarget: info.GetOwner(),
+	}); err == nil {
+		cu.Proto.Details = append(cu.Proto.Details, info)
+	}
+	if info, err := ptypes.MarshalAny(&gopb.GoDetails{
+		Goroot:     toolArgs.goRoot,
+		Goos:       goos,
+		Goarch:     goarch,
+		CgoEnabled: toolArgs.useCgo,
 	}); err == nil {
 		cu.Proto.Details = append(cu.Proto.Details, info)
 	}
@@ -141,19 +167,6 @@ func (c *Config) Extract(ctx context.Context, info *eapb.ExtraActionInfo) (*kind
 	for _, out := range spawnInfo.OutputFile {
 		cu.Proto.OutputKey = out
 		break
-	}
-
-	// Capture environment variables.
-	for _, evar := range spawnInfo.Variable {
-		if evar.GetName() == "PATH" {
-			// TODO(fromberger): Perhaps whitelist or blacklist which
-			// environment variables to capture here.
-			continue
-		}
-		cu.Proto.Environment = append(cu.Proto.Environment, &apb.CompilationUnit_Env{
-			Name:  evar.GetName(),
-			Value: evar.GetValue(),
-		})
 	}
 
 	return cu, nil

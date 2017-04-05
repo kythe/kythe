@@ -30,7 +30,10 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
+	"kythe.io/kythe/go/util/ptypes"
+
 	apb "kythe.io/kythe/proto/analysis_proto"
+	gopb "kythe.io/kythe/proto/go_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
 )
 
@@ -71,6 +74,50 @@ func oneFileCompilation(path, pkg, content string) (*apb.CompilationUnit, string
 		}},
 		SourceFile: []string{path},
 	}, digest
+}
+
+func TestBuildTags(t *testing.T) {
+	// Make sure build tags are being respected. Synthesize a compilation with
+	// two trivial files, one tagged and the other not. After resolving, there
+	// should only be one file.
+
+	const keepFile = "// +build keepme\n\npackage foo"
+	const dropFile = "// +build ignore\n\npackage foo"
+
+	// Cobble together the data from two compilations into one.
+	u1, keepDigest := oneFileCompilation("keep.go", "foo", keepFile)
+	u2, dropDigest := oneFileCompilation("drop.go", "foo", dropFile)
+	u1.RequiredInput = append(u1.RequiredInput, u2.RequiredInput...)
+	u1.SourceFile = append(u1.SourceFile, u2.SourceFile...)
+
+	fetcher := memFetcher{
+		keepDigest: keepFile,
+		dropDigest: dropFile,
+	}
+
+	// Attach details with the build tags we care about.
+	info, err := ptypes.MarshalAny(&gopb.GoDetails{
+		BuildTags: []string{"keepme"},
+	})
+	if err != nil {
+		t.Fatalf("Marshaling Go details failed: %v", err)
+	}
+	u1.Details = append(u1.Details, info)
+
+	pi, err := Resolve(u1, fetcher, nil)
+	if err != nil {
+		t.Fatalf("Resolving compilation failed: %v", err)
+	}
+
+	// Make sure the files are what we think we want.
+	if n := len(pi.SourceText); n != 1 {
+		t.Errorf("Wrong number of source files: got %d, want 1", n)
+	}
+	for _, got := range pi.SourceText {
+		if got != keepFile {
+			t.Errorf("Wrong source:\n got: %#q\nwant: %#q", got, keepFile)
+		}
+	}
 }
 
 func TestResolve(t *testing.T) { // are you function enough not to back down?

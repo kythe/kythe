@@ -37,9 +37,12 @@ import (
 	"errors"
 	"fmt"
 	"go/ast"
+	"go/build"
 	"go/parser"
 	"go/token"
 	"go/types"
+	"io"
+	"io/ioutil"
 	"log"
 	"path/filepath"
 	"strconv"
@@ -50,8 +53,10 @@ import (
 	"golang.org/x/tools/go/gcexportdata"
 
 	"kythe.io/kythe/go/extractors/govname"
+	"kythe.io/kythe/go/util/ptypes"
 
 	apb "kythe.io/kythe/proto/analysis_proto"
+	gopb "kythe.io/kythe/proto/go_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
@@ -169,13 +174,20 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 	filev := make(map[*ast.File]*spb.VName) // file → vname
 	floc := make(map[*token.File]*ast.File) // file → ast
 	fset := token.NewFileSet()              // location info for the parser
-	goRoot := getenv("GOROOT", unit)
+	details := goDetails(unit)
 	var files []*ast.File // parsed sources
 
 	// Classify the required inputs as either sources, which are to be parsed,
 	// or dependencies, which are to be "imported" via the type-checker's
 	// import mechanism.  If successful, this populates fset and files with the
 	// lexical and syntactic content of the package's own sources.
+	//
+	// The build context is used to check build tags.
+	bc := &build.Context{
+		GOOS:      details.GetGoos(),
+		GOARCH:    details.GetGoarch(),
+		BuildTags: details.GetBuildTags(),
+	}
 	for _, ri := range unit.RequiredInput {
 		if ri.Info == nil {
 			return nil, errors.New("required input file info missing")
@@ -188,6 +200,10 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 			data, err := f.Fetch(fpath, ri.Info.Digest)
 			if err != nil {
 				return nil, fmt.Errorf("fetching %q (%s): %v", fpath, ri.Info.Digest, err)
+			}
+			if !matchesBuildTags(fpath, data, bc) {
+				log.Printf("Skipped source file %q because build tags do not match", fpath)
+				continue
 			}
 			vpath := ri.VName.GetPath()
 			if vpath == "" {
@@ -220,7 +236,7 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 			return nil, fmt.Errorf("missing vname for %q", fpath)
 		}
 
-		ipath := vnameToImport(ri.VName, goRoot)
+		ipath := vnameToImport(ri.VName, details.GetGoroot())
 		imap[ipath] = ri.VName
 		fmap[ipath] = ri.Info
 	}
@@ -240,7 +256,7 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 
 	pi := &PackageInfo{
 		Name:         files[0].Name.Name,
-		ImportPath:   vnameToImport(unit.VName, goRoot),
+		ImportPath:   vnameToImport(unit.VName, details.GetGoroot()),
 		FileSet:      fset,
 		Files:        files,
 		Info:         info,
@@ -637,15 +653,30 @@ func rootRelative(root, path string) (string, bool) {
 	return trimmed, true
 }
 
-// getenv returns the value of the specified environment variable from unit.
-// It returns "" if no such variable is defined.
-func getenv(name string, unit *apb.CompilationUnit) string {
-	for _, env := range unit.Environment {
-		if env.Name == name {
-			return env.Value
+// goDetails returns the GoDetails message attached to unit, if there is one;
+// otherwise it returns nil.
+func goDetails(unit *apb.CompilationUnit) *gopb.GoDetails {
+	for _, msg := range unit.Details {
+		var dets gopb.GoDetails
+		if err := ptypes.UnmarshalAny(msg, &dets); err == nil {
+			return &dets
 		}
 	}
-	return ""
+	return nil
+}
+
+// matchesBuildTags reports whether the file at fpath, whose content is in
+// data, would be matched by the settings in bc.
+func matchesBuildTags(fpath string, data []byte, bc *build.Context) bool {
+	dir, name := filepath.Split(fpath)
+	bc.OpenFile = func(path string) (io.ReadCloser, error) {
+		if path != fpath {
+			return nil, errors.New("file not found")
+		}
+		return ioutil.NopCloser(bytes.NewReader(data)), nil
+	}
+	match, err := bc.MatchFile(dir, name)
+	return err == nil && match
 }
 
 // AllTypeInfo creates a new types.Info value with empty maps for each of the

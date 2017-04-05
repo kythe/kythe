@@ -12,6 +12,7 @@ filegroup(
         "cxx.proto",
         "filecontext.proto",
         "filetree.proto",
+        "go.proto",
         "graph.proto",
         "java.proto",
         "status_service.proto",
@@ -129,6 +130,13 @@ proto_library(
     name = "cxx_proto",
     srcs = ["cxx.proto"],
     cc_api_version = 2,
+)
+
+# Go-specific protocol buffer definitions
+proto_library(
+    name = "go_proto",
+    srcs = ["go.proto"],
+    go_api_version = 2,
 )
 
 # Java-specific protocol buffer definitions
