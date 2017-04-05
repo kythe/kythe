@@ -19,6 +19,7 @@ package nodes
 
 // Node kind labels
 const (
+	Abs       = "abs"
 	Anchor    = "anchor"
 	Constant  = "constant"
 	Doc       = "doc"

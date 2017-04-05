@@ -590,7 +590,7 @@ std::string RenderDocument(
       {
         CssTag type_div(CssTag::Kind::Div, options.type_name_div, &text_out);
         CssTag type_name(CssTag::Kind::Span, options.name_span, &text_out);
-        text_out.append(RenderSimpleIdentifier(document.marked_source()));
+        text_out.append(RenderSignature(options, document.marked_source(), true));
       }
       {
         CssTag detail_div(CssTag::Kind::Div, options.sig_detail_div, &text_out);
@@ -604,9 +604,14 @@ std::string RenderDocument(
             RenderSimpleQualifiedName(document.marked_source(), false));
       }
     }
-    CssTag content_div(CssTag::Kind::Div, options.content_div, &text_out);
-    text_out.append(RenderPrintable(options, handlers, document.text(),
-                                    Printable::IncludeAll));
+    {
+      CssTag content_div(CssTag::Kind::Div, options.content_div, &text_out);
+      text_out.append(RenderPrintable(options, handlers, document.text(),
+                                      Printable::IncludeAll));
+    }
+    for (const auto& child : document.children()) {
+      text_out.append(RenderDocument(options, handlers, child));
+    }
   }
   return text_out;
 }

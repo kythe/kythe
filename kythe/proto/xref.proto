@@ -562,6 +562,10 @@ message DocumentationRequest {
   // returned. The filter applies to ALL documented and linked nodes.
   // See EdgesRequest (graph.proto) for the format of the filter globs.
   repeated string filter = 2;
+
+  // If set, this DocumentationRequest will return documents for the requested
+  // tickets as well as their immediate semantic descendants.
+  bool include_children = 3;
 }
 
 message DocumentationReply {
@@ -578,6 +582,10 @@ message DocumentationReply {
     Printable initializer = 5;  // Will be deprecated.
     Printable defined_by = 6;   // Will be deprecated.
     MarkedSource marked_source = 8;
+
+    // The children of this Document. This relationship may be distinct from the
+    // `childof` relationship.
+    repeated Document children = 9;
 
     reserved 7;
   }

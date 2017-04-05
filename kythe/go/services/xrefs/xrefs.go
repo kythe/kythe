@@ -1479,6 +1479,81 @@ func signatureLinkTickets(sg *xpb.MarkedSource, s stringset.Set) {
 	}
 }
 
+// slowMultilevelDocumentation is an implementation of the Documentation API (with IncludeChildren set) based on other APIs.
+func slowMultilevelDocumentation(ctx context.Context, service Service, req *xpb.DocumentationRequest) (*xpb.DocumentationReply, error) {
+	start := time.Now()
+	defer func() { log.Printf("slowMultilevelDocumentation: %s", time.Since(start)) }()
+	log.Println("WARNING: performing slow multilevel lookup of documentation")
+	if len(req.Ticket) != 1 {
+		return nil, fmt.Errorf("only expected one top-level ticket in slowMultilevelDocumentation")
+	}
+	tickets, err := FixTickets(req.Ticket)
+	if err != nil {
+		return nil, err
+	}
+	var subTickets stringset.Set
+	if err := forAllEdges(ctx, service, stringset.New(tickets...), []string{edges.Mirror(edges.ChildOf)},
+		func(_, target, targetKind, _ string) error {
+			if targetKind != nodes.Anchor {
+				subTickets.Add(target)
+			}
+			return nil
+		}); err != nil {
+		return nil, fmt.Errorf("error getting childof edges in slowMultilevelDocumentation: %v", err)
+	}
+	elements := subTickets.Elements()
+	if len(elements) == 1 {
+		// The source ticket might have been an abs.
+		var subSubTickets stringset.Set
+		childTicket := elements[0]
+		isAbsChild := false
+		if err := forAllEdges(ctx, service, stringset.New(childTicket), []string{edges.Mirror(edges.ChildOf), edges.ChildOf},
+			func(_, target, targetKind, edgeKind string) error {
+				if edgeKind == edges.ChildOf {
+					if targetKind == nodes.Abs {
+						isAbsChild = true
+					}
+				} else if targetKind != nodes.Anchor {
+					subSubTickets.Add(target)
+				}
+				return nil
+			}); err != nil {
+			return nil, fmt.Errorf("error getting childof edges in slowMultilevelDocumentation: %v", err)
+		}
+		if isAbsChild {
+			// Include the abs child's children along with the abs's children.
+			subTickets.Update(subSubTickets)
+			subTickets.Discard(childTicket)
+			elements = subTickets.Elements()
+		}
+	}
+	docs, err := SlowDocumentation(ctx, service, &xpb.DocumentationRequest{
+		Ticket: append(elements, tickets[0]),
+		Filter: req.Filter,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error getting documents in slowMultilevelDocumentation: %v", err)
+	}
+	var subDocs []*xpb.DocumentationReply_Document
+	var rootDoc *xpb.DocumentationReply_Document
+	for _, doc := range docs.Document {
+		if doc.Ticket == tickets[0] {
+			rootDoc = doc
+		} else {
+			subDocs = append(subDocs, doc)
+		}
+	}
+	if rootDoc == nil {
+		return nil, fmt.Errorf("missing requested root document for %q", tickets[0])
+	}
+	rootDoc.Children = subDocs
+	return &xpb.DocumentationReply{
+		Nodes:               docs.Nodes,
+		DefinitionLocations: docs.DefinitionLocations,
+		Document:            []*xpb.DocumentationReply_Document{rootDoc},
+	}, nil
+}
+
 const (
 	// The maximum number of times SlowDocumentation will flip CrossReferences pages.
 	maxDocumentationXrefPages = 10
@@ -1489,6 +1564,9 @@ func SlowDocumentation(ctx context.Context, service Service, req *xpb.Documentat
 	if *disableSlowDocumentation || *disableAllSlowPaths {
 		log.Println("SlowDocumentation disabled")
 		return &xpb.DocumentationReply{}, nil
+	}
+	if req.IncludeChildren {
+		return slowMultilevelDocumentation(ctx, service, req)
 	}
 	start := time.Now()
 	defer func() { log.Printf("SlowDocumentation: %s", time.Since(start)) }()
