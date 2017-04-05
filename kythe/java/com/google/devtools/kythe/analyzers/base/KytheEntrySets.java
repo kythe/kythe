@@ -116,17 +116,24 @@ public class KytheEntrySets {
 
   /** Returns (and emits) a new builtin node. */
   public EntrySet newBuiltinAndEmit(String name) {
-    EntrySet node =
-        emitAndReturn(
-            newNode(NodeKind.TBUILTIN)
-            .setSignature(getBuiltinSignature(name))
-                .setProperty(
-                    "code",
-                    MarkedSource.newBuilder()
-                        .setPreText(name)
-                        .setKind(MarkedSource.Kind.IDENTIFIER)
-                        .build()));
-    return node;
+    return newBuiltinAndEmit(name, Optional.<String>fromNullable(null));
+  }
+
+  /** Returns (and emits) a new builtin node. */
+  public EntrySet newBuiltinAndEmit(String name, Optional<String> docUri) {
+    EntrySet.Builder nodeBuilder =
+        newNode(NodeKind.TBUILTIN)
+        .setSignature(getBuiltinSignature(name))
+        .setProperty(
+            "code",
+            MarkedSource.newBuilder()
+              .setPreText(name)
+              .setKind(MarkedSource.Kind.IDENTIFIER)
+              .build());
+    if (docUri.isPresent()) {
+      setDocumentUriProperty(nodeBuilder, docUri.get());
+    }
+    return emitAndReturn(nodeBuilder);
   }
 
   /**
@@ -321,6 +328,13 @@ public class KytheEntrySets {
    */
   protected static String getBuiltinSignature(String name) {
     return String.format("%s#builtin", name);
+  }
+
+  /**
+   * Sets the document URI property for the specified node builder.
+   */
+  protected static EntrySet.Builder setDocumentUriProperty(EntrySet.Builder builder, String docUri) {
+    return builder.setProperty("doc/uri", docUri);
   }
 
   /** {@link EntrySet.Builder} for Kythe nodes. */
