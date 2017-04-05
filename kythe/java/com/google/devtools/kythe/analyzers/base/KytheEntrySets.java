@@ -123,22 +123,20 @@ public class KytheEntrySets {
   public EntrySet newBuiltinAndEmit(String name, Optional<String> docUri) {
     EntrySet.Builder nodeBuilder =
         newNode(NodeKind.TBUILTIN)
-        .setSignature(getBuiltinSignature(name))
-        .setProperty(
-            "code",
-            MarkedSource.newBuilder()
-              .setPreText(name)
-              .setKind(MarkedSource.Kind.IDENTIFIER)
-              .build());
+            .setSignature(getBuiltinSignature(name))
+            .setProperty(
+                "code",
+                MarkedSource.newBuilder()
+                    .setPreText(name)
+                    .setKind(MarkedSource.Kind.IDENTIFIER)
+                    .build());
     if (docUri.isPresent()) {
       setDocumentUriProperty(nodeBuilder, docUri.get());
     }
     return emitAndReturn(nodeBuilder);
   }
 
-  /**
-   * Returns a VName for the builtin node corresponding to the specified name.
-   */
+  /** Returns a VName for the builtin node corresponding to the specified name. */
   public VName getBuiltinVName(String name) {
     return VName.newBuilder()
         .setSignature(getBuiltinSignature(name))
@@ -323,17 +321,14 @@ public class KytheEntrySets {
     return set;
   }
 
-  /**
-   * Gets a builtin signature for the specified name.
-   */
+  /** Gets a builtin signature for the specified name. */
   protected static String getBuiltinSignature(String name) {
     return String.format("%s#builtin", name);
   }
 
-  /**
-   * Sets the document URI property for the specified node builder.
-   */
-  protected static EntrySet.Builder setDocumentUriProperty(EntrySet.Builder builder, String docUri) {
+  /** Sets the document URI property for the specified node builder. */
+  protected static EntrySet.Builder setDocumentUriProperty(
+      EntrySet.Builder builder, String docUri) {
     return builder.setProperty("doc/uri", docUri);
   }
 
