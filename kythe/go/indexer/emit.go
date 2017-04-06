@@ -205,9 +205,10 @@ func (e *emitter) visitFuncLit(flit *ast.FuncLit, stack stackFunc) {
 	fi.numAnons++
 	info := &funcInfo{vname: proto.Clone(fi.vname).(*spb.VName)}
 	info.vname.Language = govname.Language
-	info.vname.Signature += fmt.Sprintf("$%d", fi.numAnons)
+	info.vname.Signature += "$" + strconv.Itoa(fi.numAnons)
 	e.pi.function[flit] = info
 	e.writeDef(flit, info.vname)
+	e.writeFact(info.vname, facts.NodeKind, nodes.Function)
 
 	if sig, ok := e.pi.Info.Types[flit].Type.(*types.Signature); ok {
 		e.emitParameters(flit.Type, sig, info)

@@ -8,9 +8,16 @@ package functions
 // Anonymous functions do not get binding anchors.
 //
 //- @"func(b bool) {}" defines
-//-   Anon = vname("package.<init>$1", "test", _, "fun", "go")
-//- Anon param.0 AnonPB
+//-   Anon1 = vname("package.<init>$1", "test", _, "fun", "go")
+//- Anon1 param.0 AnonPB
+//- Anon1.node/kind function
 var _ = func(b bool) {}
+
+//- @"func(z int) {}" defines
+//-   Anon2 = vname("package.<init>$2", "test", _, "fun", "go")
+//- Anon2 param.0 AnonPZ
+//- Anon2.node/kind function
+var _ = func(z int) {}
 
 //- @"func F(input int) (output int) { return 17 }" defines Fun
 //- @F defines/binding Fun
@@ -49,6 +56,7 @@ func (recv *T) M(input int) (output int) { return 34 }
 func outer() {
 	//- @"func(q bool) {}" defines Inner = vname("func outer$1", _, _, _, _)
 	//- Inner param.0 InnerPQ
+	//- Inner.node/kind function
 	_ = func(q bool) {}
 }
 
