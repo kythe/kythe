@@ -7,7 +7,7 @@ default_target_cpu: "same_as_host"
 
 default_toolchain {
   cpu: "%{cpu}"
-  toolchain_identifier: "local"
+  toolchain_identifier: "%{default_toolchain_name}"
 }
 
 default_toolchain {
@@ -17,12 +17,17 @@ default_toolchain {
 
 default_toolchain {
   cpu: "x64_windows_msvc"
-  toolchain_identifier: "vc_14_0_x64"
+  toolchain_identifier: "msvc_x64"
+}
+
+default_toolchain {
+  cpu: "x64_windows_msys"
+  toolchain_identifier: "msys_x64"
 }
 
 default_toolchain {
   cpu: "s390x"
-  toolchain_identifier: "local"
+  toolchain_identifier: "%{toolchain_name}"
 }
 
 default_toolchain {
@@ -96,7 +101,7 @@ toolchain {
 }
 
 toolchain {
-  toolchain_identifier: "local"
+  toolchain_identifier: "%{toolchain_name}"
 %{content}
 
   compilation_mode_flags {
@@ -107,20 +112,21 @@ toolchain {
     mode: OPT
 %{opt_content}
   }
+  linking_mode_flags { mode: DYNAMIC }
+
+%{coverage}
 }
 
 toolchain {
-  toolchain_identifier: "vc_14_0_x64"
+  toolchain_identifier: "msvc_x64"
   host_system_name: "local"
   target_system_name: "local"
-
   abi_version: "local"
   abi_libc_version: "local"
-  target_cpu: "x64_windows_msvc"
+  target_cpu: "x64_windows"
   compiler: "cl"
   target_libc: "msvcrt140"
   default_python_version: "python2.7"
-
 %{cxx_builtin_include_directory}
 
   tool_path {
@@ -217,6 +223,41 @@ toolchain {
   linker_flag: "-m64"
 
   feature {
+    name: "msvc_env"
+    env_set {
+      action: "c-compile"
+      action: "c++-compile"
+      action: "c++-module-compile"
+      action: "c++-header-parsing"
+      action: "c++-header-preprocessing"
+      action: "assemble"
+      action: "preprocess-assemble"
+      action: "c++-link-executable"
+      action: "c++-link-dynamic-library"
+      action: "c++-link-static-library"
+      action: "c++-link-alwayslink-static-library"
+      action: "c++-link-pic-static-library"
+      action: "c++-link-alwayslink-pic-static-library"
+      env_entry {
+        key: "PATH"
+        value: "%{msvc_env_path}"
+      }
+      env_entry {
+        key: "INCLUDE"
+        value: "%{msvc_env_include}"
+      }
+      env_entry {
+        key: "LIB"
+        value: "%{msvc_env_lib}"
+      }
+      env_entry {
+        key: "TMP"
+        value: "%{msvc_env_tmp}"
+      }
+    }
+  }
+
+  feature {
     name: 'include_paths'
     flag_set {
       action: 'preprocess-assemble'
@@ -296,6 +337,7 @@ toolchain {
         flag: '/Fi%{output_preprocess_file}'
       }
     }
+    implies: 'msvc_env'
   }
 
   action_config {
@@ -329,6 +371,7 @@ toolchain {
         flag: '/Fi%{output_preprocess_file}'
       }
     }
+    implies: 'msvc_env'
   }
 
   action_config {
@@ -337,11 +380,13 @@ toolchain {
      tool {
          tool_path: 'wrapper/bin/msvc_link.bat'
      }
+     implies: 'strip_debug_symbols'
      implies: 'linkstamps'
      implies: 'output_execpath_flags'
      implies: 'input_param_flags'
      implies: 'legacy_link_flags'
      implies: 'linker_param_file'
+     implies: 'msvc_env'
   }
 
   action_config {
@@ -350,6 +395,7 @@ toolchain {
      tool {
          tool_path: 'wrapper/bin/msvc_link.bat'
      }
+     implies: 'strip_debug_symbols'
      implies: 'shared_flag'
      implies: 'linkstamps'
      implies: 'output_execpath_flags'
@@ -357,6 +403,7 @@ toolchain {
      implies: 'has_configured_linker_path'
      implies: 'legacy_link_flags'
      implies: 'linker_param_file'
+     implies: 'msvc_env'
   }
 
   action_config {
@@ -367,6 +414,7 @@ toolchain {
      }
      implies: 'input_param_flags'
      implies: 'linker_param_file'
+     implies: 'msvc_env'
   }
 
   action_config {
@@ -377,6 +425,7 @@ toolchain {
      }
      implies: 'input_param_flags'
      implies: 'linker_param_file'
+     implies: 'msvc_env'
   }
 
   # TODO(pcloudy): The following action_config is listed in MANDATORY_LINK_TARGET_TYPES.
@@ -389,6 +438,7 @@ toolchain {
      }
      implies: 'input_param_flags'
      implies: 'linker_param_file'
+     implies: 'msvc_env'
   }
 
   action_config {
@@ -399,6 +449,7 @@ toolchain {
      }
      implies: 'input_param_flags'
      implies: 'linker_param_file'
+     implies: 'msvc_env'
   }
 
   action_config {
@@ -407,11 +458,26 @@ toolchain {
     tool {
       tool_path: 'wrapper/bin/msvc_link.bat'
     }
+    implies: 'strip_debug_symbols'
     implies: 'linker_param_file'
+    implies: 'msvc_env'
   }
 
   feature {
     name: 'has_configured_linker_path'
+  }
+
+  feature {
+    name: 'strip_debug_symbols'
+    flag_set {
+      action: 'c++-link-executable'
+      action: 'c++-link-dynamic-library'
+      action: 'c++-link-interface-dynamic-library'
+      flag_group {
+        expand_if_all_available: 'strip_debug_symbols'
+        flag: '-Wl,-S'
+      }
+    }
   }
 
   feature {
