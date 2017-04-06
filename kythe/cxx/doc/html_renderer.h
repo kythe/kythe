@@ -17,6 +17,7 @@
 #ifndef KYTHE_CXX_DOC_HTML_RENDERER_H_
 #define KYTHE_CXX_DOC_HTML_RENDERER_H_
 
+#include "kythe/cxx/common/kythe_uri.h"
 #include "kythe/cxx/doc/markup_handler.h"
 #include "kythe/proto/common.pb.h"
 #include "kythe/proto/xref.pb.h"
@@ -33,6 +34,13 @@ struct HtmlRendererOptions {
   /// will be replaced by &amp;).
   std::function<std::string(const proto::Anchor&)> make_link_uri =
       [](const proto::Anchor&) { return ""; };
+  /// Used to format a location from an `Anchor`. HtmlRenderer will HTML-escape
+  /// the resulting text.
+  std::function<std::string(const proto::Anchor&)> format_location =
+      [](const proto::Anchor& anchor) {
+        auto uri = URI::FromString(anchor.ticket());
+        return uri.first ? std::string(uri.second.v_name().path()) : "";
+      };
   /// Used to determine the href attribute value for a link pointing to an
   /// `Anchor`. HtmlRenderer will HTML-escape the link (e.g., ampersands
   /// will be replaced by &amp;). semantic_ticket is the ticket associated with

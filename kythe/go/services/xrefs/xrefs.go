@@ -1601,14 +1601,16 @@ func SlowDocumentation(ctx context.Context, service Service, req *xpb.Documentat
 		}
 		for ticket, xrefSet := range xReply.CrossReferences {
 			details.ticketToMarkedSource[ticket] = xrefSet.MarkedSource
-			if !ambiguousDefinitionTickets.Contains(ticket) && len(xrefSet.Definition) >= 1 {
-				if details.ticketToDefinition[ticket] != nil {
-					details.ticketToDefinition[ticket] = nil
-					ambiguousDefinitionTickets.Add(ticket)
-				} else if len(xrefSet.Definition) == 1 {
-					details.ticketToDefinition[ticket] = xrefSet.Definition[0].Anchor
-				} else {
-					ambiguousDefinitionTickets.Add(ticket)
+			if !ambiguousDefinitionTickets.Contains(ticket) {
+				for _, def := range xrefSet.Definition {
+					if def.Anchor.Kind == edges.DefinesBinding {
+						if details.ticketToDefinition[ticket] != nil {
+							details.ticketToDefinition[ticket] = nil
+							ambiguousDefinitionTickets.Add(ticket)
+						} else {
+							details.ticketToDefinition[ticket] = def.Anchor
+						}
+					}
 				}
 			}
 		}

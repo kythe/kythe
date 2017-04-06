@@ -590,7 +590,8 @@ std::string RenderDocument(
       {
         CssTag type_div(CssTag::Kind::Div, options.type_name_div, &text_out);
         CssTag type_name(CssTag::Kind::Span, options.name_span, &text_out);
-        text_out.append(RenderSignature(options, document.marked_source(), true));
+        text_out.append(
+            RenderSignature(options, document.marked_source(), true));
       }
       {
         CssTag detail_div(CssTag::Kind::Div, options.sig_detail_div, &text_out);
@@ -599,9 +600,33 @@ std::string RenderDocument(
           AppendEscapedHtmlString(kind_name, &text_out);
           text_out.append(" ");
         }
-        text_out.append("declared by ");
-        text_out.append(
-            RenderSimpleQualifiedName(document.marked_source(), false));
+        auto declared_context =
+            RenderSimpleQualifiedName(document.marked_source(), false);
+        if (declared_context.empty()) {
+          if (const auto* node_info = options.node_info(document.ticket())) {
+            if (const auto* anchor =
+                    options.anchor_for_ticket(node_info->definition())) {
+              auto anchor_text = options.format_location(*anchor);
+              if (!anchor_text.empty()) {
+                text_out.append("declared in ");
+                auto anchor_link =
+                    options.make_semantic_link_uri(*anchor, document.ticket());
+                if (!anchor_link.empty()) {
+                  text_out.append("<a href=\"");
+                  AppendEscapedHtmlString(anchor_link, &text_out);
+                  text_out.append(">");
+                }
+                AppendEscapedHtmlString(anchor_text, &text_out);
+                if (!anchor_link.empty()) {
+                  text_out.append("</a>");
+                }
+              }
+            }
+          }
+        } else {
+          text_out.append("declared by ");
+          text_out.append(declared_context);
+        }
       }
     }
     {
