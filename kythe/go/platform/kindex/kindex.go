@@ -46,13 +46,15 @@ import (
 	"os"
 	"sync"
 
+	"github.com/golang/protobuf/proto"
+
 	"kythe.io/kythe/go/platform/analysis"
 	"kythe.io/kythe/go/platform/delimited"
 	"kythe.io/kythe/go/platform/vfs"
+	"kythe.io/kythe/go/util/ptypes"
 
 	apb "kythe.io/kythe/proto/analysis_proto"
-
-	"github.com/golang/protobuf/proto"
+	spb "kythe.io/kythe/proto/storage_proto"
 )
 
 // Extension is the standard file extension for Kythe compilation index files.
@@ -216,6 +218,44 @@ func FromUnit(unit *apb.CompilationUnit, f analysis.Fetcher) (*Compilation, erro
 		Proto: unit,
 		Files: inputs,
 	}, nil
+}
+
+// Unit returns the CompilationUnit associated with c, creating a new empty one
+// if necessary.
+func (c *Compilation) Unit() *apb.CompilationUnit {
+	if c.Proto == nil {
+		c.Proto = new(apb.CompilationUnit)
+	}
+	return c.Proto
+}
+
+// AddFile adds an input file to the compilation by fully reading r.  The file
+// is added to the required inputs, attributed to the designated path, and also
+// to the file data slice.  If v != nil it is used as the vname of the input
+// added.
+func (c *Compilation) AddFile(path string, r io.Reader, v *spb.VName) error {
+	fd, err := FileData(path, r)
+	if err != nil {
+		return err
+	}
+	c.Files = append(c.Files, fd)
+	unit := c.Unit()
+	unit.RequiredInput = append(unit.RequiredInput, &apb.CompilationUnit_FileInput{
+		VName: v,
+		Info:  fd.Info,
+	})
+	return nil
+}
+
+// AddDetails adds the specified details message to the compilation.
+func (c *Compilation) AddDetails(msg proto.Message) error {
+	details, err := ptypes.MarshalAny(msg)
+	if err != nil {
+		return err
+	}
+	unit := c.Unit()
+	unit.Details = append(unit.Details, details)
+	return nil
 }
 
 // FileData creates a file data protobuf message by fully reading the contents
