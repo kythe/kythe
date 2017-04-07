@@ -256,7 +256,7 @@ func (e *emitter) visitTypeSpec(spec *ast.TypeSpec, stack stackFunc) {
 		// Parent edges were already added, so skip them here.
 		if st, ok := spec.Type.(*ast.StructType); ok {
 			mapFields(st.Fields, func(_ int, id *ast.Ident) {
-				e.writeBinding(id, nodes.Variable, nil)
+				e.writeVarBinding(id, nodes.Field, nil)
 			})
 		}
 		// TODO(fromberger): Add bindings for anonymous fields. This will need
@@ -519,6 +519,16 @@ func (e *emitter) mustWriteBinding(id *ast.Ident, kind string, parent *spb.VName
 		return target
 	}
 	panic("unresolved definition") // logged in writeBinding
+}
+
+// writeVarBinding is as writeBinding, assuming the kind is "variable".
+// If subkind != "", it is also emitted as a subkind.
+func (e *emitter) writeVarBinding(id *ast.Ident, subkind string, parent *spb.VName) *spb.VName {
+	vname := e.writeBinding(id, nodes.Variable, parent)
+	if vname != nil && subkind != "" {
+		e.writeFact(vname, facts.Subkind, subkind)
+	}
+	return vname
 }
 
 // writeBinding emits a node of the specified kind for the target of id.  If

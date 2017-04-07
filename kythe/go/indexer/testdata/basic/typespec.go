@@ -16,6 +16,7 @@ type Ptr *bool
 type Struct struct {
 	//- @Alpha defines/binding Alpha
 	//- Alpha.node/kind variable
+	//- Alpha.subkind X?
 	//- Alpha childof Struct
 	Alpha string
 
