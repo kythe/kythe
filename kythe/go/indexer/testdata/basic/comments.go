@@ -55,9 +55,16 @@ func alpha() {}
 //- @+3"widget" defines/binding Widget
 
 // widget comment
-type widget struct {}
+type widget struct {
+	//- Lawyer.node/kind variable
+	//- LawyerDoc? documents Lawyer
+	//- LawyerDoc.text "Lawyer takes the bar."
+	//-
+	//- @+3"Lawyer" defines/binding Lawyer
 
-// TODO(fromberger): Handle fields.
+	// Lawyer takes the bar.
+	Lawyer bool
+}
 
 //- Widget.node/kind record
 //- WidgetComment.node/kind doc

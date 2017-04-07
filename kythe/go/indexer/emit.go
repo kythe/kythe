@@ -255,8 +255,9 @@ func (e *emitter) visitTypeSpec(spec *ast.TypeSpec, stack stackFunc) {
 		// Add bindings for the explicitly-named fields in this declaration.
 		// Parent edges were already added, so skip them here.
 		if st, ok := spec.Type.(*ast.StructType); ok {
-			mapFields(st.Fields, func(_ int, id *ast.Ident) {
-				e.writeVarBinding(id, nodes.Field, nil)
+			mapFields(st.Fields, func(i int, id *ast.Ident) {
+				target := e.writeVarBinding(id, nodes.Field, nil)
+				e.writeDoc(st.Fields.List[i].Doc, target)
 			})
 		}
 		// TODO(fromberger): Add bindings for anonymous fields. This will need
