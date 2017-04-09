@@ -1660,10 +1660,17 @@ func SlowDocumentation(ctx context.Context, service Service, req *xpb.Documentat
 		signatureLinkTickets(document.MarkedSource, definitionSet)
 		reply.Document = append(reply.Document, document)
 	}
-	nodes, err := service.Nodes(ctx, &gpb.NodesRequest{
-		Filter: req.Filter,
-		Ticket: definitionSet.Elements(),
-	})
+	var nodes map[string]*cpb.NodeInfo
+	if len(definitionSet) != 0 {
+		nodesReply, err := service.Nodes(ctx, &gpb.NodesRequest{
+			Filter: req.Filter,
+			Ticket: definitionSet.Elements(),
+		})
+		if err != nil {
+			return nil, fmt.Errorf("during Nodes: %v", err)
+		}
+		nodes = nodesReply.Nodes
+	}
 	for ticket := range details.ticketToDefinition {
 		definitionSet.Discard(ticket)
 	}
@@ -1684,9 +1691,9 @@ func SlowDocumentation(ctx context.Context, service Service, req *xpb.Documentat
 			reply.DefinitionLocations[def.Ticket] = def
 		}
 	}
-	if len(nodes.Nodes) != 0 {
-		reply.Nodes = make(map[string]*cpb.NodeInfo, len(nodes.Nodes))
-		for node, info := range nodes.Nodes {
+	if nodes != nil && len(nodes) != 0 {
+		reply.Nodes = make(map[string]*cpb.NodeInfo, len(nodes))
+		for node, info := range nodes {
 			if def, ok := defs[node]; ok {
 				info.Definition = def.Ticket
 			}
