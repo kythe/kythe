@@ -93,7 +93,7 @@ also keep track of source locations (`--include_source_info`) and data about
 the `.proto` files that are (transitively) imported (`--include_imports`).
 This information is sufficient to build a Kythe graph for a given `.proto`
 definition file. It will become important later that every object that the
-descriptor describes has an address, like "4:0", that corresponds (roughly)
+descriptor describes has an address, like "4.0", that corresponds (roughly)
 to its position in the descriptor's AST. These addresses are used as keys into
 the table that keeps track of source locations in the original `.proto` file.
 
@@ -144,7 +144,7 @@ and see that it was unified with the appropriate VName:
 .Output
 ----
 MessageFoo: EVar(... = App(vname,
-    (4:0, kythe, "", kythe/examples/proto/example.proto, proto)))
+    (4.0, kythe, "", kythe/examples/proto/example.proto, protobuf)))
 ----
 
 == Using generated source code
@@ -242,7 +242,7 @@ class Foo {
 
 and the `protoc` backend that generated it reported that the text range 
 `Foo` was associated with an object in its original `FileDescriptorProto` at
-some location encoded as "4:0"&mdash;and the proto_indexer guaranteed it would
+some location encoded as "4.0"&mdash;and the proto_indexer guaranteed it would
 always emit objects with signatures based on their descriptor locations--the
 $$C++$$ indexer would only need to watch for *defines/binding* edges starting at
 that text range. Should such an edge be emitted, the $$C++$$ indexer would also
@@ -258,7 +258,7 @@ as `proto2.GeneratedCodeInfo` messages. These messages connect byte offsets
 in generated source code with paths in the `proto2.FileDescriptorProto` AST.
 These paths are the same ones used by the `proto2.SourceCodeInfo` message that
 the Kythe proto_indexer consumes; they are the paths we will use to link up
-`proto` language nodes with the nodes for generated source code.
+`protobuf` language nodes with the nodes for generated source code.
 
 Each `protoc` backend must be individually instrumented to produce
 `proto2.GeneratedCodeInfo` messages. To turn annotation on for the $$C++$$
@@ -343,7 +343,7 @@ between the proto source and use sites of its generated code:
 
 //- @Foo ref CxxFooDecl
 //- MessageFoo? generates CxxFooDecl
-//- vname(_, "kythe", "", "kythe/examples/proto/example.proto", "proto")
+//- vname(_, "kythe", "", "kythe/examples/proto/example.proto", "protobuf")
 //-     defines/binding MessageFoo
 void UseProto(kythe::examples::proto::example::Foo* foo) {
 }
@@ -352,7 +352,7 @@ void UseProto(kythe::examples::proto::example::Foo* foo) {
 .Output
 ----
 MessageFoo: EVar(... = App(vname,
-    (4:0, kythe, "", kythe/examples/proto/example.proto, proto)))
+    (4.0, kythe, "", kythe/examples/proto/example.proto, protobuf)))
 ----
 
 Of course, Kythe clients need to understand that *generates* edges should be

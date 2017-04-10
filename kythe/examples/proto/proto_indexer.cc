@@ -28,6 +28,7 @@
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
 #include "kythe/cxx/common/indexing/KytheOutputStream.h"
+#include "kythe/cxx/common/protobuf_metadata_file.h"
 
 DEFINE_string(corpus_name, "kythe", "Use this corpus in VNames.");
 
@@ -198,10 +199,12 @@ class ProtoTreeCursor {
   KytheGraphRecorder* recorder_;
   /// The filename of the source .proto file.
   std::string filename_;
+  /// The VName for the source .proto file.
+  proto::VName file_vname_;
   /// The corpus for emitted Kythe artifacts.
   const std::string corpus_ = "kythe";
   /// The language for emitted Kythe artifacts.
-  const std::string language_ = "proto";
+  const std::string language_ = "protobuf";
   /// anchor_vname_ref_'s signature.
   std::string anchor_vname_signature_;
   /// A reference to the current path's anchor's VName. Valid only after a call
@@ -227,6 +230,8 @@ bool ProtoTreeCursor::IndexDescriptor(const gpb::FileDescriptorProto& fd) {
                    &loc);
   }
   filename_ = fd.name();
+  file_vname_.set_corpus(corpus_);
+  file_vname_.set_path(filename_);
   {
     auto ms = EnterField(gpb::FileDescriptorProto::kMessageTypeFieldNumber);
     for (int i = 0; i < fd.message_type_size(); ++i) {
@@ -240,11 +245,7 @@ bool ProtoTreeCursor::IndexDescriptor(const gpb::FileDescriptorProto& fd) {
 void ProtoTreeCursor::IndexDescriptor(const gpb::DescriptorProto& d) {
   if (auto name =
           EnterField(gpb::DescriptorProto::kNameFieldNumber).EmitAnchor()) {
-    proto::VName message_vname;
-    message_vname.set_signature(PathToSignature());
-    message_vname.set_language(language_);
-    message_vname.set_path(filename_);
-    message_vname.set_corpus(corpus_);
+    proto::VName message_vname = VNameForProtoPath(file_vname_, path_);
     recorder_->AddEdge(*name, EdgeKindID::kDefinesBinding,
                        VNameRef(message_vname));
     recorder_->AddProperty(VNameRef(message_vname), NodeKindID::kRecord);

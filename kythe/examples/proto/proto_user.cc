@@ -18,7 +18,7 @@
 
 //- @Foo ref CxxFooDecl
 //- MessageFoo? generates CxxFooDecl
-//- vname(_, "kythe", "", "kythe/examples/proto/example.proto", "proto")
+//- vname(_, "kythe", "", "kythe/examples/proto/example.proto", "protobuf")
 //-     defines/binding MessageFoo
 void UseProto(kythe::examples::proto::example::Foo* foo) {
 }

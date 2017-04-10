@@ -26,6 +26,26 @@
 
 namespace kythe {
 
+/// \brief Generates a VName for the given proto path.
+/// \param file_vname the VName for the proto file. Its signature and language
+/// will be ignored.
+/// \param path the proto AST path.
+template <typename Path>
+proto::VName VNameForProtoPath(const proto::VName &file_vname,
+                               const Path &path) {
+  proto::VName out(file_vname);
+  std::string signature;
+  std::stringstream sig(signature);
+  bool first_node = true;
+  for (const auto &node : path) {
+    sig << (first_node ? "" : ".") << node;
+    first_node = false;
+  }
+  out.set_signature(sig.str());
+  out.set_language("protobuf");
+  return out;
+}
+
 /// Provides metadata support for proto2.GeneratedCodeInfo metadata.
 class ProtobufMetadataSupport : public MetadataSupport {
  public:

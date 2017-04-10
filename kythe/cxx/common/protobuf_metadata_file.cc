@@ -32,17 +32,8 @@ proto::VName ProtobufMetadataSupport::VNameForAnnotation(
   if (!vname_lookup_(annotation.source_file(), &out)) {
     out.set_corpus(context_vname.corpus());
   }
-  std::string signature;
-  std::stringstream sig(signature);
-  bool first_node = true;
-  for (const auto &node : annotation.path()) {
-    sig << (first_node ? "" : ":") << node;
-    first_node = false;
-  }
-  out.set_signature(sig.str());
-  out.set_language("proto");
   out.set_path(annotation.source_file());
-  return out;
+  return VNameForProtoPath(out, annotation.path());
 }
 
 std::unique_ptr<kythe::MetadataFile> ProtobufMetadataSupport::ParseFile(
