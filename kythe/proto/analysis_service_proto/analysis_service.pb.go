@@ -51,6 +51,10 @@ type CompilationAnalyzerClient interface {
 	// A driver may choose to retry analyses that return RPC errors.  It should
 	// not retry analyses that are reported as finished unless it is necessary to
 	// recover from an external production issue.
+	//
+	// If the RPC implementation does not support out-of-band error messages, the
+	// analyzer may report status by setting the final_result field of its last
+	// AnalysisOutput message.
 	Analyze(ctx context.Context, in *kythe_proto2.AnalysisRequest, opts ...grpc.CallOption) (CompilationAnalyzer_AnalyzeClient, error)
 }
 
@@ -104,6 +108,10 @@ type CompilationAnalyzerServer interface {
 	// A driver may choose to retry analyses that return RPC errors.  It should
 	// not retry analyses that are reported as finished unless it is necessary to
 	// recover from an external production issue.
+	//
+	// If the RPC implementation does not support out-of-band error messages, the
+	// analyzer may report status by setting the final_result field of its last
+	// AnalysisOutput message.
 	Analyze(*kythe_proto2.AnalysisRequest, CompilationAnalyzer_AnalyzeServer) error
 }
 

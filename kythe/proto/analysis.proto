@@ -48,6 +48,33 @@ message AnalysisRequest {
 // emit wire-format kythe.proto.Entry messages.
 message AnalysisOutput {
   bytes value = 1;
+
+  // An analyzer may optionally report the final result of analysis by
+  // populating this field in the last output it emits.
+  //
+  // Constraints: If final_result is set, value must be unset, and once a
+  // final_result has been sent no further outputs may be sent. The driver must
+  // enforce these constraints by aborting and discarding the request if the
+  // analyzer sends additional data after the final_result. It is legal for the
+  // analyzer to omit any final_result, in which case the driver will assume
+  // that the analysis was completed successfully.
+  AnalysisResult final_result = 10;
+
+  // TODO(fromberger): Convert these fields to a single oneof, to enforce the
+  // mutual exclusion explicitly. For now I'm leaving them separate to make it
+  // easier to migrate existing uses.
+}
+
+// AnalysisResult documents the analyzer's opinion of an analysis request.
+message AnalysisResult {
+  enum Status {
+    COMPLETE = 0;         // analysis completed successfully without error
+    INCOMPLETE = 1;       // analysis ended after partial results
+    INVALID_REQUEST = 2;  // the analysis request was invalid for this analyzer
+  }
+
+  Status status = 1;   // the status code describing the result
+  string summary = 2;  // a human-readable error message for use in diagnostics
 }
 
 // Describes a single unit of compilation.
