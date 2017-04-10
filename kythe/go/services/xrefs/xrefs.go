@@ -1605,7 +1605,7 @@ func SlowDocumentation(ctx context.Context, service Service, req *xpb.Documentat
 				for _, def := range xrefSet.Definition {
 					if def.Anchor.Kind == edges.DefinesBinding {
 						if details.ticketToDefinition[ticket] != nil {
-							details.ticketToDefinition[ticket] = nil
+							delete(details.ticketToDefinition, ticket)
 							ambiguousDefinitionTickets.Add(ticket)
 						} else {
 							details.ticketToDefinition[ticket] = def.Anchor
@@ -1691,7 +1691,7 @@ func SlowDocumentation(ctx context.Context, service Service, req *xpb.Documentat
 			reply.DefinitionLocations[def.Ticket] = def
 		}
 	}
-	if nodes != nil && len(nodes) != 0 {
+	if len(nodes) != 0 {
 		reply.Nodes = make(map[string]*cpb.NodeInfo, len(nodes))
 		for node, info := range nodes {
 			if def, ok := defs[node]; ok {
