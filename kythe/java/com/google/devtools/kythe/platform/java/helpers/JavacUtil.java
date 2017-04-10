@@ -42,7 +42,7 @@ public class JavacUtil {
       TypeSymbol owner = (TypeSymbol) methodSymbol.owner;
       // Iterates over the list of all super classes and interfaces
       for (Type sup : types.closure(owner.type)) {
-        if (sup == owner.type) {
+        if (sup.tsym.equals(owner)) {
           continue; // Skip the owner of the method
         }
 
