@@ -20,6 +20,8 @@ package remote
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"io"
 
 	"kythe.io/kythe/go/platform/analysis"
@@ -34,7 +36,19 @@ type Analyzer struct {
 	Client aspb.CompilationAnalyzerClient
 }
 
-// Analyze implements the analysis.CompilationAnalyzer interface.
+// An AnalysisError implements the error interface carrying an analysis
+// response message received from the remote analyzer.
+type AnalysisError struct {
+	Result *apb.AnalysisResult
+}
+
+func (a AnalysisError) Error() string {
+	return fmt.Sprintf("analysis result: %s: %s", a.Result.Status, a.Result.Summary)
+}
+
+// Analyze implements the analysis.CompilationAnalyzer interface. If the remote
+// analyzer reports a final result carrying a non-success error, the returned
+// error will have concrete type AnalysisError carrying the result message.
 func (a *Analyzer) Analyze(ctx context.Context, req *apb.AnalysisRequest, f analysis.OutputFunc) error {
 	c, err := a.Client.Analyze(ctx, req)
 	if err != nil {
@@ -49,6 +63,25 @@ func (a *Analyzer) Analyze(ctx context.Context, req *apb.AnalysisRequest, f anal
 			return err
 		}
 
+		// Check for a final result. If there is one, we don't report that to
+		// the output handler, but shortcut it explicitly here.
+		if res := out.FinalResult; res != nil {
+			// Constraints: There may be no further outputs; there may not be
+			// an output value with the final result.
+			if out.Value != nil {
+				return errors.New("remote: output value returned with final result")
+			} else if _, err := c.Recv(); err != io.EOF {
+				return fmt.Errorf("remote: extra output after final result: %v", err)
+			}
+
+			// Don't count a complete analysis as an error.
+			if res.Status == apb.AnalysisResult_COMPLETE {
+				return nil
+			}
+			return AnalysisError{Result: res}
+		}
+
+		// Reaching here, we have an output to deliver to the callback.
 		if err := f(ctx, out); err != nil {
 			return err
 		}
