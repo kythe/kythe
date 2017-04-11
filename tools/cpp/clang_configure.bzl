@@ -25,6 +25,7 @@ def _get_value(it):
   else:
     return "\"%s\"" % it
 
+
 def _build_crosstool(d, prefix="  "):
   """Convert `d` to a string version of a CROSSTOOL file content."""
   lines = []
@@ -35,6 +36,7 @@ def _build_crosstool(d, prefix="  "):
     else:
       lines.append("%s%s: %s" % (prefix, k, _get_value(d[k])))
   return "\n".join(lines)
+
 
 def _build_tool_path(d):
   """Build the list of tool_path for the CROSSTOOL file."""
@@ -49,11 +51,13 @@ def auto_configure_fail(msg):
   no_color = "\033[0m"
   fail("\n%sAuto-Configuration Error:%s %s\n" % (red, no_color, msg))
 
+
 def auto_configure_warning(msg):
   """Output warning message during auto configuration."""
   yellow = "\033[1;33m"
   no_color = "\033[0m"
   print("\n%sAuto-Configuration Warning:%s %s\n" % (yellow, no_color, msg))
+
 
 def _get_env_var(repository_ctx, name, default = None, enable_warning = True):
   """Find an environment variable in system path."""
@@ -65,10 +69,12 @@ def _get_env_var(repository_ctx, name, default = None, enable_warning = True):
     return default
   auto_configure_fail("'%s' environment variable is not set" % name)
 
+
 def _which(repository_ctx, cmd, default = None):
   """A wrapper around repository_ctx.which() to provide a fallback value."""
   result = repository_ctx.which(cmd)
   return default if result == None else str(result)
+
 
 def _which_cmd(repository_ctx, cmd, default = None):
   """Find cmd in PATH using repository_ctx.which() and fail if cannot find it."""
@@ -82,16 +88,29 @@ def _which_cmd(repository_ctx, cmd, default = None):
   auto_configure_fail("Cannot find %s in PATH, please make sure %s is installed and add its directory in PATH.\nPATH=%s" % (cmd, cmd, path))
   return str(result)
 
-def _execute(repository_ctx, command, environment = None):
+
+def _execute(repository_ctx, command, environment = None,
+             expect_failure = False):
   """Execute a command, return stdout if succeed and throw an error if it fails."""
   if environment:
     result = repository_ctx.execute(command, environment = environment)
   else:
     result = repository_ctx.execute(command)
-  if result.stderr:
-    auto_configure_fail(result.stderr)
-  else:
-    return result.stdout.strip()
+  if expect_failure != (result.return_code != 0):
+    if expect_failure:
+      auto_configure_fail(
+          "expected failure, command %s, stderr: (%s)" % (
+              command, result.stderr))
+    else:
+      auto_configure_fail(
+          "non-zero exit code: %d, command %s, stderr: (%s)" % (
+              result.return_code, command, result.stderr))
+  stripped_stdout = result.stdout.strip()
+  if not stripped_stdout:
+    auto_configure_fail(
+        "empty output from command %s, stderr: (%s)" % (command, result.stderr))
+  return stripped_stdout
+
 
 def _get_tool_paths(repository_ctx, darwin, cc):
   """Compute the path to the various tools."""
@@ -111,6 +130,7 @@ def _get_tool_paths(repository_ctx, darwin, cc):
                     if darwin else _which(repository_ctx, "ar", "/usr/bin/ar")
           }
 
+
 def _cplus_include_paths(repository_ctx):
   """Use ${CPLUS_INCLUDE_PATH} to compute the list of flags for cxxflag."""
   if "CPLUS_INCLUDE_PATH" in repository_ctx.os.environ:
@@ -121,6 +141,7 @@ def _cplus_include_paths(repository_ctx):
     return result
   else:
     return []
+
 
 def _get_cpu_value(repository_ctx):
   """Compute the cpu_value based on the OS name."""
@@ -139,13 +160,12 @@ def _get_cpu_value(repository_ctx):
     return "arm"
   return "k8" if result.stdout.strip() in ["amd64", "x86_64", "x64"] else "piii"
 
+
 _INC_DIR_MARKER_BEGIN = "#include <...>"
 
 # OSX add " (framework directory)" at the end of line, strip it.
 _OSX_FRAMEWORK_SUFFIX = " (framework directory)"
-
-_OSX_FRAMEWORK_SUFFIX_LEN = len(_OSX_FRAMEWORK_SUFFIX)
-
+_OSX_FRAMEWORK_SUFFIX_LEN =  len(_OSX_FRAMEWORK_SUFFIX)
 def _cxx_inc_convert(path):
   """Convert path returned by cc -E xc++ in a complete path."""
   path = path.strip()
@@ -365,10 +385,12 @@ def _opt_content(darwin):
       "linker_flag": [] if darwin else ["-Wl,--gc-sections"]
   }
 
+
 def _dbg_content():
   """Return the content of the dbg specific section of the CROSSTOOL file."""
   # Enable debug symbols
   return {"compiler_flag": "-g"}
+
 
 def _get_system_root(repository_ctx):
   r"""Get System root path on Windows, default is C:\\Windows."""
@@ -397,6 +419,7 @@ def _find_cc(repository_ctx):
         "Cannot find clang, either correct your path or set the CLANG" +
         " environment variable")
   return cc
+
 
 def _find_cuda(repository_ctx):
   """Find out if and where cuda is installed."""
@@ -539,6 +562,7 @@ def _find_env_vars(repository_ctx, vc_path):
     env_map[key] = value.replace("\\", "\\\\")
   return env_map
 
+
 def _find_msvc_tool(repository_ctx, vc_path, tool):
   """Find the exact path of a specific build tool in MSVC."""
   tool_path = ""
@@ -569,8 +593,9 @@ def _is_support_whole_archive(repository_ctx, vc_path):
   if "NO_WHOLE_ARCHIVE_OPTION" in env and env["NO_WHOLE_ARCHIVE_OPTION"] == "1":
     return False
   linker = _find_msvc_tool(repository_ctx, vc_path, "link.exe")
-  result = _execute(repository_ctx, [linker])
+  result = _execute(repository_ctx, [linker], expect_failure = True)
   return result.find("/WHOLEARCHIVE") != -1
+
 
 def _cuda_compute_capabilities(repository_ctx):
   """Returns a list of strings representing cuda compute capabilities."""
@@ -588,13 +613,15 @@ def _cuda_compute_capabilities(repository_ctx):
       auto_configure_fail("Invalid compute capability: %s" % capability)
   return capabilities
 
-def _tpl(repository_ctx, tpl, substitutions={}, out=None, repo="bazel_tools"):
+
+def _tpl(repository_ctx, tpl, substitutions={}, out=None):
   if not out:
     out = tpl
   repository_ctx.template(
       out,
-      Label("@%s//tools/cpp:%s.tpl" % (repo, tpl)),
+      Label("@bazel_tools//tools/cpp:%s.tpl" % tpl),
       substitutions)
+
 
 def _get_env(repository_ctx):
   """Convert the environment in a list of export if in Homebrew."""
@@ -746,7 +773,9 @@ def _impl(repository_ctx):
         "%{msvc_env_lib}": "",
     })
 
+
 cc_autoconf = repository_rule(
+    implementation=_impl,
     environ = [
         "ABI_LIBC_VERSION",
         "ABI_VERSION",
@@ -772,10 +801,8 @@ cc_autoconf = repository_rule(
         "VS100COMNTOOLS",
         "VS110COMNTOOLS",
         "VS120COMNTOOLS",
-        "VS140COMNTOOLS",
-    ],
-    implementation = _impl,
-)
+        "VS140COMNTOOLS"])
+
 
 def clang_configure():
   """A C++ configuration rules that generate the crosstool file."""

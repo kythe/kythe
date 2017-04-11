@@ -53,7 +53,6 @@ toolchain {
   target_cpu: "armeabi-v7a"
   target_system_name: "armeabi-v7a"
   toolchain_identifier: "stub_armeabi-v7a"
-
   tool_path { name: "ar" path: "/bin/false" }
   tool_path { name: "compat-ld" path: "/bin/false" }
   tool_path { name: "cpp" path: "/bin/false" }
@@ -84,7 +83,6 @@ toolchain {
   supports_interface_shared_objects: false
   supports_normalizing_ar: false
   supports_start_end_lib: false
-
   tool_path { name: "ar" path: "/bin/false" }
   tool_path { name: "compat-ld" path: "/bin/false" }
   tool_path { name: "cpp" path: "/bin/false" }
@@ -558,12 +556,7 @@ toolchain {
           }
           iterate_over: 'libraries_to_link.object_files'
           flag_group {
-            expand_if_false: 'libraries_to_link.is_whole_archive'
             flag: '%{libraries_to_link.object_files}'
-          }
-          flag_group {
-            expand_if_true: 'libraries_to_link.is_whole_archive'
-            flag: '/WHOLEARCHIVE:%{libraries_to_link.object_files}'
           }
         }
         flag_group {
@@ -572,12 +565,7 @@ toolchain {
             value: 'object_file'
           }
           flag_group {
-            expand_if_false: 'libraries_to_link.is_whole_archive'
             flag: '%{libraries_to_link.name}'
-          }
-          flag_group {
-            expand_if_true: 'libraries_to_link.is_whole_archive'
-            flag: '/WHOLEARCHIVE:%{libraries_to_link.name}'
           }
         }
         flag_group {
