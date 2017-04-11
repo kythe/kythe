@@ -16,6 +16,8 @@
 
 package com.google.devtools.kythe.extractors.shared;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import com.google.common.base.Preconditions;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.gson.Gson;
@@ -27,9 +29,10 @@ import com.google.gson.JsonParseException;
 import com.google.gson.reflect.TypeToken;
 import com.google.re2j.Matcher;
 import com.google.re2j.Pattern;
-import java.io.FileReader;
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Stack;
@@ -64,8 +67,8 @@ public class FileVNames {
   private FileVNames(List<BaseFileVName> baseVNames) {
     Preconditions.checkNotNull(baseVNames);
     for (BaseFileVName b : baseVNames) {
-      Preconditions.checkNotNull(b.pattern, "pattern == null for base VName: " + b.vname);
-      Preconditions.checkNotNull(b.vname, "vname template == null for pattern: " + b.pattern);
+      Preconditions.checkNotNull(b.pattern, "pattern == null for base VName: %s", b.vname);
+      Preconditions.checkNotNull(b.vname, "vname template == null for pattern: %s", b.pattern);
     }
     this.baseVNames = baseVNames;
   }
@@ -82,7 +85,8 @@ public class FileVNames {
 
   public static FileVNames fromFile(String configFile) throws IOException {
     return new FileVNames(
-        GSON.<List<BaseFileVName>>fromJson(new FileReader(configFile), CONFIG_TYPE));
+        GSON.<List<BaseFileVName>>fromJson(
+            Files.newBufferedReader(Paths.get(configFile), UTF_8), CONFIG_TYPE));
   }
 
   public static FileVNames fromJson(String json) {
@@ -118,7 +122,9 @@ public class FileVNames {
 
   /** Subset of a {@link VName} with built-in templating '@<num>@' markers. */
   private static class VNameTemplate {
-    private final String corpus, root, path;
+    private final String corpus;
+    private final String root;
+    private final String path;
 
     public VNameTemplate(String corpus, String root, String path) {
       this.corpus = corpus;
@@ -170,7 +176,9 @@ public class FileVNames {
 
   /** Representation of a '@n@' marker's span and integer parse of 'n'. */
   private static class ReplacementMarker {
-    final int start, end, grp;
+    final int start;
+    final int end;
+    final int grp;
 
     ReplacementMarker(int start, int end, int grp) {
       this.start = start;
@@ -187,3 +195,4 @@ public class FileVNames {
     }
   }
 }
+
