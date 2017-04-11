@@ -16,7 +16,6 @@
 
 package com.google.devtools.kythe.analyzers.base;
 
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
@@ -32,6 +31,7 @@ import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Storage.Entry;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.protobuf.ByteString;
+import java.util.Optional;
 
 /** Abstract CompilationAnalyzer that handles common boilerplate code. */
 public abstract class AbstractCompilationAnalyzer {
@@ -61,7 +61,7 @@ public abstract class AbstractCompilationAnalyzer {
       if (revision.isEmpty()) {
         revision = null;
       }
-      analyzeCompilation(req.getCompilation(), Optional.fromNullable(revision), fileData, emitter);
+      analyzeCompilation(req.getCompilation(), Optional.ofNullable(revision), fileData, emitter);
     } catch (Throwable t) {
       logger.warningfmt("Uncaught exception: %s", t);
       t.printStackTrace();

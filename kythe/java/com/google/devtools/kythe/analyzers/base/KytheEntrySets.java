@@ -16,12 +16,12 @@
 
 package com.google.devtools.kythe.analyzers.base;
 
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
 import com.google.devtools.kythe.proto.MarkedSource;
+import com.google.devtools.kythe.proto.MarkedSource.Kind;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.devtools.kythe.util.KytheURI;
 import com.google.devtools.kythe.util.Span;
@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import javax.annotation.Nullable;
 
 /**
@@ -116,7 +117,7 @@ public class KytheEntrySets {
 
   /** Returns (and emits) a new builtin node. */
   public EntrySet newBuiltinAndEmit(String name) {
-    return newBuiltinAndEmit(name, Optional.<String>fromNullable(null));
+    return newBuiltinAndEmit(name, Optional.empty());
   }
 
   /** Returns (and emits) a new builtin node. */
@@ -128,7 +129,7 @@ public class KytheEntrySets {
                 "code",
                 MarkedSource.newBuilder()
                     .setPreText(name)
-                    .setKind(MarkedSource.Kind.IDENTIFIER)
+                    .setKind(Kind.IDENTIFIER)
                     .build());
     if (docUri.isPresent()) {
       setDocumentUriProperty(nodeBuilder, docUri.get());

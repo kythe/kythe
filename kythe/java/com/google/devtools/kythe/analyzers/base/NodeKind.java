@@ -16,7 +16,7 @@
 
 package com.google.devtools.kythe.analyzers.base;
 
-import com.google.common.base.Optional;
+import java.util.Optional;
 import javax.annotation.Nullable;
 
 /** Schema-defined Kythe node kinds. */
@@ -66,7 +66,7 @@ public enum NodeKind {
 
   /** Returns the node's subkind Kythe GraphStore value (or {@code null}). */
   public final Optional<String> getSubkind() {
-    return Optional.fromNullable(subkind);
+    return Optional.ofNullable(subkind);
   }
 
   @Override
