@@ -313,30 +313,39 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
   }
   void VisitVarDecl(clang::VarDecl *decl) {
     if (const auto *type_source_info = decl->getTypeSourceInfo()) {
-      InsertAnnotation(ExpandRangeBySingleToken(
-                           cache_->source_manager(), cache_->lang_options(),
-                           type_source_info->getTypeLoc().getSourceRange()),
-                       Annotation{Annotation::Type});
+      if (!ShouldSkipDecl(decl, type_source_info->getType(),
+                          type_source_info->getTypeLoc().getSourceRange())) {
+        InsertAnnotation(ExpandRangeBySingleToken(
+                             cache_->source_manager(), cache_->lang_options(),
+                             type_source_info->getTypeLoc().getSourceRange()),
+                         Annotation{Annotation::Type});
+      }
     }
   }
   void VisitFieldDecl(clang::FieldDecl *decl) {
     if (const auto *type_source_info = decl->getTypeSourceInfo()) {
-      InsertAnnotation(ExpandRangeBySingleToken(
-                           cache_->source_manager(), cache_->lang_options(),
-                           type_source_info->getTypeLoc().getSourceRange()),
-                       Annotation{Annotation::Type});
+      if (!ShouldSkipDecl(decl, type_source_info->getType(),
+                          type_source_info->getTypeLoc().getSourceRange())) {
+        InsertAnnotation(ExpandRangeBySingleToken(
+                             cache_->source_manager(), cache_->lang_options(),
+                             type_source_info->getTypeLoc().getSourceRange()),
+                         Annotation{Annotation::Type});
+      }
     }
   }
   void VisitFunctionDecl(clang::FunctionDecl *decl) {
     clang::SourceRange arg_list;
     if (const auto *type_info = decl->getTypeSourceInfo()) {
-      if (auto function_type = type_info->getTypeLoc()
-                                   .IgnoreParens()
-                                   .getAs<clang::FunctionTypeLoc>()) {
-        arg_list = ExpandRangeBySingleToken(cache_->source_manager(),
-                                            cache_->lang_options(),
-                                            function_type.getParensRange());
-        InsertAnnotation(arg_list, Annotation{Annotation::ArgListWithParens});
+      if (!ShouldSkipDecl(decl, type_info->getType(),
+                          type_info->getTypeLoc().getSourceRange())) {
+        if (auto function_type = type_info->getTypeLoc()
+                                     .IgnoreParens()
+                                     .getAs<clang::FunctionTypeLoc>()) {
+          arg_list = ExpandRangeBySingleToken(cache_->source_manager(),
+                                              cache_->lang_options(),
+                                              function_type.getParensRange());
+          InsertAnnotation(arg_list, Annotation{Annotation::ArgListWithParens});
+        }
       }
     }
     auto type_range = decl->getReturnTypeSourceRange();
@@ -344,7 +353,8 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
       type_range =
           GetReturnTypeSourceRangeForFunctionPointerReturningFunction(decl);
     }
-    if (type_range.isValid()) {
+    if (!ShouldSkipDecl(decl, decl->getReturnType(), type_range) &&
+        type_range.isValid()) {
       auto type_lhs = ExpandRangeBySingleToken(
           cache_->source_manager(), cache_->lang_options(), type_range);
       clang::SourceRange type_rhs = type_lhs;
@@ -436,6 +446,22 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
     }
     annotations_.push_back(std::move(annotation));
   }
+
+  /// \brief determines if we should skip trying to record an annotation for
+  /// this decl.
+  ///
+  /// In Objective-C, the nullability attribute is troublesome because:
+  /// 1) The range we get for the Decl is backwards (goes from the e to the n in
+  /// nullable).
+  /// 2) The token is transformed to _Nullable by the time we analyze. nullable
+  /// is placed to the left of types, _Nullable is placed to the right of types.
+  bool ShouldSkipDecl(const clang::Decl *decl, const clang::QualType &qt,
+                      const clang::SourceRange &sr) {
+    clang::Optional<clang::NullabilityKind> k =
+        qt->getNullability(decl->getASTContext());
+    return k && sr.getBegin().getRawEncoding() > sr.getEnd().getRawEncoding();
+  }
+
   MarkedSourceCache *cache_;
   clang::tooling::Replacements *replacements_;
   clang::SourceLocation original_begin_;
