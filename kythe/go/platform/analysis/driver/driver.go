@@ -32,8 +32,9 @@ import (
 
 // A Compilation represents a compilation and other metadata needed to analyze it.
 type Compilation struct {
-	Unit     *apb.CompilationUnit // the compilation to analyze
-	Revision string               // revision marker to attribute to the compilation
+	Unit       *apb.CompilationUnit // the compilation to analyze
+	Revision   string               // revision marker to attribute to the compilation
+	UnitDigest string               // unit digest identifying the compilation in a KCD
 }
 
 // CompilationFunc handles a single CompilationUnit.

@@ -20,7 +20,9 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
+	"strings"
 	"testing"
 
 	"kythe.io/kythe/go/platform/analysis"
@@ -157,6 +159,11 @@ func TestDriver(t *testing.T) {
 				teardownIdx++
 				return nil
 			},
+			analysisError: func(_ context.Context, _ Compilation, err error) error {
+				// Compilations that do not report an error should not call this hook.
+				t.Errorf("Unexpected call of AnalysisError hook with %v", err)
+				return err
+			},
 		},
 	}
 	testutil.FatalOnErrT(t, "Driver error: %v", d.Run(context.Background(), m))
@@ -232,6 +239,16 @@ func TestDriverSetup(t *testing.T) {
 		Context: testContext{
 			setup: func(_ context.Context, cu Compilation) error {
 				setupIdx++
+				var missing []string
+				if cu.UnitDigest == "" {
+					missing = append(missing, "unit digest")
+				}
+				if cu.Revision == "" {
+					missing = append(missing, "revision marker")
+				}
+				if len(missing) != 0 {
+					return fmt.Errorf("missing %s: %v", strings.Join(missing, ", "), cu)
+				}
 				return nil
 			},
 		},
@@ -281,7 +298,9 @@ func outs(vals ...string) (as []*apb.AnalysisOutput) {
 func comps(sigs ...string) (cs []Compilation) {
 	for _, sig := range sigs {
 		cs = append(cs, Compilation{
-			Unit: &apb.CompilationUnit{VName: &spb.VName{Signature: sig}},
+			Unit:       &apb.CompilationUnit{VName: &spb.VName{Signature: sig}},
+			Revision:   "12345",
+			UnitDigest: "digest:" + sig,
 		})
 	}
 	return
