@@ -19,6 +19,7 @@ go_package_library(
         "@go_protobuf//:proto",
         "@go_snappy//:snappy",
         "@go_stringset//:stringset",
+        "@go_x_net//:trace",
     ],
 )
 

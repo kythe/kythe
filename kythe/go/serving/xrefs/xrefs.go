@@ -50,6 +50,7 @@ import (
 	"bitbucket.org/creachadair/stringset"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/snappy"
+	"golang.org/x/net/trace"
 )
 
 var maxTicketsPerRequest = flag.Int("max_tickets_per_request", 20, "Maximum number of tickets allowed per request")
@@ -126,21 +127,26 @@ func toKeys(ss []string) [][]byte {
 }
 
 func (s *SplitTable) pagedEdgeSets(ctx context.Context, tickets []string) (<-chan edgeSetResult, error) {
+	tracePrintf(ctx, "Reading PagedEdgeSets: %s", tickets)
 	return lookupPagedEdgeSets(ctx, s.Edges, toKeys(tickets))
 }
 func (s *SplitTable) edgePage(ctx context.Context, key string) (*srvpb.EdgePage, error) {
+	tracePrintf(ctx, "Reading EdgePage: %s", key)
 	var ep srvpb.EdgePage
 	return &ep, s.EdgePages.Lookup(ctx, []byte(key), &ep)
 }
 func (s *SplitTable) fileDecorations(ctx context.Context, ticket string) (*srvpb.FileDecorations, error) {
+	tracePrintf(ctx, "Reading FileDecorations: %s", ticket)
 	var fd srvpb.FileDecorations
 	return &fd, s.Decorations.Lookup(ctx, []byte(ticket), &fd)
 }
 func (s *SplitTable) crossReferences(ctx context.Context, ticket string) (*srvpb.PagedCrossReferences, error) {
+	tracePrintf(ctx, "Reading PagedCrossReferences: %s", ticket)
 	var cr srvpb.PagedCrossReferences
 	return &cr, s.CrossReferences.Lookup(ctx, []byte(ticket), &cr)
 }
 func (s *SplitTable) crossReferencesPage(ctx context.Context, key string) (*srvpb.PagedCrossReferences_Page, error) {
+	tracePrintf(ctx, "Reading PagedCrossReferences.Page: %s", key)
 	var p srvpb.PagedCrossReferences_Page
 	return &p, s.CrossReferencePages.Lookup(ctx, []byte(key), &p)
 }
@@ -647,6 +653,7 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 				}
 			}
 		}
+		tracePrintf(ctx, "References: %d", len(reply.Reference))
 
 		if len(decor.TargetOverride) > 0 {
 			// Read overrides from serving data
@@ -719,6 +726,9 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 				}
 			}
 		}
+
+		tracePrintf(ctx, "ExtendsOverrides: %d", len(reply.ExtendsOverrides))
+		tracePrintf(ctx, "DefinitionLocations: %d", len(reply.DefinitionLocations))
 	}
 
 	return reply, nil
@@ -875,7 +885,9 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		// Add any additional merge nodes to the set of table lookups
 		for _, mergeNode := range cr.MergeWith {
 			if prevMerge, ok := mergeInto[mergeNode]; ok {
-				log.Printf("WARNING: node %q already previously merged with %q", mergeNode, prevMerge)
+				if prevMerge != ticket {
+					log.Printf("WARNING: node %q already previously merged with %q", mergeNode, prevMerge)
+				}
 				continue
 			} else if len(tickets) >= *maxTicketsPerRequest {
 				log.Printf("WARNING: max number of tickets reached; cannot merge any further nodes for %q", ticket)
@@ -1052,6 +1064,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 
 		if len(crs.Declaration) > 0 || len(crs.Definition) > 0 || len(crs.Reference) > 0 || len(crs.Documentation) > 0 || len(crs.Caller) > 0 || len(crs.RelatedNode) > 0 {
 			reply.CrossReferences[crs.Ticket] = crs
+			tracePrintf(ctx, "CrossReferenceSet: %s", crs.Ticket)
 		}
 	}
 
@@ -1338,4 +1351,10 @@ func p2p(p *cpb.Point) *xpb.Location_Point {
 // Documentation implements part of the xrefs Service interface.
 func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest) (*xpb.DocumentationReply, error) {
 	return xrefs.SlowDocumentation(ctx, t, req)
+}
+
+func tracePrintf(ctx context.Context, msg string, args ...interface{}) {
+	if t, ok := trace.FromContext(ctx); ok {
+		t.LazyPrintf(msg, args...)
+	}
 }
