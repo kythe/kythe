@@ -56,8 +56,10 @@ then
 fi
 
 # Execute the kindex file generator, using the root kythe build file as input
-$PWD/kythe/cxx/tools/kindex_file_generator.sh "//kythe/BUILD" "kythe/BUILD" "kythe" \
-  "skylark" "$TMP_KINDEX_OUTPUT_FILE" "$SOURCE_INPUT_FILE"
+$PWD/kythe/go/platform/tools/kindex_file_generator/kindex_file_generator \
+  --uri "kythe://kythe?lang=bazel?path=kythe/BUILD#//kythe/BUILD" \
+  --output "$TMP_KINDEX_OUTPUT_FILE" \
+  --source "$SOURCE_INPUT_FILE"
 
 # Ensure the output file was populated
 # We cannot use stat because different systems implement it differently and

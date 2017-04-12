@@ -84,26 +84,3 @@ cc_binary(
         ":claimcmdlib",
     ],
 )
-
-sh_binary(
-    name = "kindex_file_generator",
-    srcs = [
-        "kindex_file_generator.sh",
-    ],
-    data = [
-        ":kindex_tool",
-        "//kythe/go/platform/tools/shasum_tool",
-    ],
-)
-
-sh_test(
-    name = "kindex_file_generator_test",
-    srcs = [
-        "kindex_file_generator_test.sh",
-    ],
-    data = [
-        ":kindex_file_generator",
-        ":kindex_tool",
-        "//kythe/testdata:BUILD",
-    ],
-)
