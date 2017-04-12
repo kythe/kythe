@@ -4,7 +4,7 @@ load("//:version.bzl", "check_version")
 
 # Check that the user has a version between our minimum supported version of
 # Bazel and our maximum supported version of Bazel.
-check_version("0.4.5")
+check_version("0.4.5", "0.4.5")
 
 load("//tools/cpp:clang_configure.bzl", "clang_configure")
 
