@@ -3767,9 +3767,29 @@ MaybeFew<GraphObserver::NodeId>
 IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
                                       const clang::Type *PT,
                                       const EmitRanges EmitRanges) {
+  return BuildNodeIdForType(TypeLoc, PT, EmitRanges, TypeLoc.getSourceRange());
+}
+
+MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
+    const clang::TypeLoc &TypeLoc, const clang::Type *PT,
+    const EmitRanges EmitRanges, SourceRange SR) {
+  // If we have an attributed type, treat it as the raw type, but provide the
+  // source range of the attributed type. This allows us to connect a _Nonnull
+  // type back to the underlying type's definition. For example:
+  // `@property Data * _Nullable var;` should connect back to the type Data *,
+  // not Data * _Nullable;
+  if (TypeLoc.getTypeLocClass() == TypeLoc::Attributed) {
+    // Sometimes the TypeLoc is Attributed, but the type is actually
+    // TypedefType.
+    if (const auto *AT = dyn_cast<AttributedType>(PT)) {
+      const auto &ATL = TypeLoc.castAs<AttributedTypeLoc>();
+      return BuildNodeIdForType(ATL.getModifiedLoc(),
+                                AT->getModifiedType().getTypePtr(), EmitRanges,
+                                SR);
+    }
+  }
   MaybeFew<GraphObserver::NodeId> ID;
   const QualType QT = TypeLoc.getType();
-  SourceRange SR = TypeLoc.getSourceRange();
   int64_t Key = ComputeKeyFromQualType(Context, QT, PT);
   const auto &Prev = TypeNodes.find(Key);
   bool TypeAlreadyBuilt = false;
@@ -3793,6 +3813,7 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
   // to emit ranges recursively. For example, for the type T*, we don't want to
   // emit a range for [T*], but we do want to emit one for [T]*.
   auto InEmitRanges = EmitRanges;
+
   // We only care about leaves in the type hierarchy (eg, we shouldn't match
   // on Reference, but instead on LValueReference or RValueReference).
   switch (TypeLoc.getTypeLocClass()) {
@@ -4157,7 +4178,6 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
     // TODO(zarko): Add an anchor for all the Elaborated type; otherwise decls
     // like `typedef B::C tdef;` will only anchor `C` instead of `B::C`.
   } break;
-    UNSUPPORTED_CLANG_TYPE(Attributed);
   // Either the `TemplateTypeParm` will link directly to a relevant
   // `TemplateTypeParmDecl` or (particularly in the case of canonicalized types)
   // we will find the Decl in the `Job->TypeContext` according to the
@@ -4358,7 +4378,7 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
     ID = ApplyBuiltinTypeConstructor("ptr", PointeeID);
   } break;
   case TypeLoc::ObjCInterface: { // Leaf
-    const auto &ITypeLoc = TypeLoc.getAs<ObjCInterfaceTypeLoc>();
+    const auto &ITypeLoc = TypeLoc.castAs<ObjCInterfaceTypeLoc>();
     if (!TypeAlreadyBuilt) {
       const auto *IFace = ITypeLoc.getIFaceDecl();
       // Link to the implementation if we have one, otherwise link to the
@@ -4387,7 +4407,7 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
     }
   } break;
   case TypeLoc::ObjCObject: {
-    const auto &ObjLoc = TypeLoc.getAs<ObjCObjectTypeLoc>();
+    const auto &ObjLoc = TypeLoc.castAs<ObjCObjectTypeLoc>();
     const auto *DT = dyn_cast<ObjCObjectType>(PT);
     MaybeFew<GraphObserver::NodeId> IFaceNode;
     if (const auto *IFace = DT->getInterface()) {
@@ -4424,7 +4444,7 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
     }
   }; break;
   case TypeLoc::ObjCTypeParam: {
-    const auto &OTPTL = TypeLoc.getAs<ObjCTypeParamTypeLoc>();
+    const auto &OTPTL = TypeLoc.castAs<ObjCTypeParamTypeLoc>();
     const auto *OTPT = dyn_cast<ObjCTypeParamType>(PT);
 
     if (const auto *TPD = OTPT ? OTPT->getDecl() : OTPTL.getDecl()) {
@@ -4433,7 +4453,7 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
 
   } break;
   case TypeLoc::BlockPointer: {
-    const auto &BPTL = TypeLoc.getAs<BlockPointerTypeLoc>();
+    const auto &BPTL = TypeLoc.castAs<BlockPointerTypeLoc>();
     const auto &DT = dyn_cast<BlockPointerType>(PT);
     InEmitRanges = IndexerASTVisitor::EmitRanges::No;
     auto PointeeID(BuildNodeIdForType(BPTL.getPointeeLoc(),
@@ -4455,6 +4475,9 @@ IndexerASTVisitor::BuildNodeIdForType(const clang::TypeLoc &TypeLoc,
   } break;
     UNSUPPORTED_CLANG_TYPE(Atomic);
     UNSUPPORTED_CLANG_TYPE(Pipe);
+    // Attributed is handled in a special way at the top of this function so it
+    // is impossible for the typeloc to be TypeLoc::Attributed.
+    UNSUPPORTED_CLANG_TYPE(Attributed);
   }
   if (TypeAlreadyBuilt) {
     ID = Prev->second;

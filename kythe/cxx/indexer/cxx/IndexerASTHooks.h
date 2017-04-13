@@ -311,6 +311,20 @@ public:
                      EmitRanges ER);
 
   /// \brief Builds a stable node ID for `Type`.
+  /// \param TypeLoc The type that is being identified. If its location is valid
+  /// and `ER` is `EmitRanges::Yes`, notifies the attached `GraphObserver` about
+  /// the location of constituent elements.
+  /// \param DType The deduced form of `Type`. (May be `Type.getTypePtr()`).
+  /// \param ER whether to notify the `GraphObserver` about source text ranges
+  /// for types.
+  /// \param SR source range to use for the type location. This will be used
+  /// instead of the range in TypeLoc.
+  /// \return The Node ID for `Type`.
+  MaybeFew<GraphObserver::NodeId>
+  BuildNodeIdForType(const clang::TypeLoc &TypeLoc, const clang::Type *DType,
+                     EmitRanges ER, clang::SourceRange SR);
+
+  /// \brief Builds a stable node ID for `Type`.
   /// \param Type The type that is being identified. If its location is valid
   /// and `ER` is `EmitRanges::Yes`, notifies the attached `GraphObserver` about
   /// the location of constituent elements.

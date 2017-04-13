@@ -1949,6 +1949,14 @@ test_suite(
 # Objective C Tests
 
 cxx_indexer_test(
+    name = "attribute_nullable",
+    srcs = ["objc/attribute_nullable.m"],
+    ignore_dups = True,
+    objc = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
     name = "block_pointer",
     srcs = ["objc/block_pointer.m"],
     ignore_dups = True,
