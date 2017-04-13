@@ -6,7 +6,7 @@ package comment
 //- PkgDoc documents Pkg
 //- PkgDoc.text "Package comment contains comments."
 
-//- @+3"foo" defines/binding Foo?
+//- @+3"foo" defines/binding Foo
 
 /* foo comment */
 var foo int
@@ -57,13 +57,22 @@ func alpha() {}
 // widget comment
 type widget struct {
 	//- Lawyer.node/kind variable
-	//- LawyerDoc? documents Lawyer
+	//- LawyerDoc documents Lawyer
 	//- LawyerDoc.text "Lawyer takes the bar."
 	//-
 	//- @+3"Lawyer" defines/binding Lawyer
 
 	// Lawyer takes the bar.
 	Lawyer bool
+
+	//- ErrField.node/kind variable
+	//- ErrDoc documents ErrField
+	//- ErrDoc.text "What went wrong."
+	//-
+	//- @+3"error" defines/binding ErrField
+
+	// What went wrong.
+	error
 }
 
 //- Widget.node/kind record

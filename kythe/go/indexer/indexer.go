@@ -617,6 +617,32 @@ func (pi *PackageInfo) addOwners(pkg *types.Package) {
 	}
 }
 
+// findFieldName tries to resolve the identifier that names an embedded
+// anonymous field declaration at expr, and reports whether successful.
+func (pi *PackageInfo) findFieldName(expr ast.Expr) (id *ast.Ident, ok bool) {
+	// There are three cases we care about here:
+	//
+	// A bare identifier (foo), which refers to a type defined in
+	// this package, or a builtin type,
+	//
+	// A selector expression (pkg.Foo) referring to an exported
+	// type defined in another package, or
+	//
+	// A pointer to either of these.
+
+	switch t := expr.(type) {
+	case *ast.StarExpr: // *T
+		return pi.findFieldName(t.X)
+	case *ast.Ident: // T declared locally
+		return t, true
+	case *ast.SelectorExpr: // pkg.T declared elsewhere
+		return t.Sel, true
+	default:
+		// No idea what this is; possibly malformed code.
+		return nil, false
+	}
+}
+
 // vnameToImport returns the putative Go import path corresponding to v.  The
 // resulting string corresponds to the string literal appearing in source at
 // the import site for the package so named.

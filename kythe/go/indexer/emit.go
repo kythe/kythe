@@ -259,9 +259,28 @@ func (e *emitter) visitTypeSpec(spec *ast.TypeSpec, stack stackFunc) {
 				target := e.writeVarBinding(id, nodes.Field, nil)
 				e.writeDoc(st.Fields.List[i].Doc, target)
 			})
+
+			// Handle anonymous fields. Such fields behave as if they were
+			// named by the base identifier of their type.
+			for _, field := range st.Fields.List {
+				if len(field.Names) != 0 {
+					continue // already handled above
+				}
+				id, ok := e.pi.findFieldName(field.Type)
+				obj := e.pi.Info.Defs[id]
+				if ok && obj != nil {
+					// Don't write a fresh anchor here; we already wrote one as
+					// part of the ref to the type, and we don't want duplicate
+					// outputs.
+					anchor := e.pi.AnchorVName(e.pi.Span(id))
+					target := e.pi.ObjectVName(obj)
+					e.writeEdge(anchor, target, edges.DefinesBinding)
+					e.writeFact(target, facts.NodeKind, nodes.Variable)
+					e.writeFact(target, facts.Subkind, nodes.Field)
+					e.writeDoc(field.Doc, target)
+				}
+			}
 		}
-		// TODO(fromberger): Add bindings for anonymous fields. This will need
-		// to account for pointers and qualified identifiers.
 
 	case *types.Interface:
 		e.writeFact(target, facts.NodeKind, nodes.Interface)

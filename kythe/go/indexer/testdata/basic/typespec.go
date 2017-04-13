@@ -1,6 +1,8 @@
 // Package tspec tests properties of type declarations.
 package tspec
 
+import "fmt"
+
 //- @Int defines/binding Int
 //- @"Int int" defines Int
 type Int int
@@ -16,14 +18,49 @@ type Ptr *bool
 type Struct struct {
 	//- @Alpha defines/binding Alpha
 	//- Alpha.node/kind variable
-	//- Alpha.subkind X?
+	//- Alpha.subkind field
 	//- Alpha childof Struct
 	Alpha string
 
 	//- @Bravo defines/binding Bravo
 	//- Bravo.node/kind variable
+	//- Bravo.subkind field
 	//- Bravo childof Struct
 	Bravo int
+}
+
+//- @Embed defines/binding Embed
+//- Embed.node/kind record
+//- Embed.subkind struct
+type Embed struct {
+	// An embedded type from this package.
+	//
+	//- @"Struct" defines/binding EmbedStruct
+	//- EmbedStruct.node/kind variable
+	//- EmbedStruct.subkind field
+	//- @"Struct" ref Struct
+	Struct
+
+	// An embedded pointer type.
+	//
+	//- @"float64" defines/binding EmbedFloat
+	//- EmbedFloat.node/kind variable
+	//- EmbedFloat.subkind field
+	*float64
+
+	// A type from another package.
+	//
+	//- @"Stringer" defines/binding FmtStringer
+	//- FmtStringer.node/kind variable
+	//- FmtStringer.subkind field
+	fmt.Stringer
+
+	// A regular field mixed with the above.
+	//
+	//- @Velocipede defines/binding Velo
+	//- Velo.node/kind variable
+	//- Velo.subkind field
+	Velocipede struct{}
 }
 
 //- @Thinger defines/binding Thinger
