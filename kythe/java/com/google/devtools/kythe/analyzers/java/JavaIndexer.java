@@ -26,7 +26,9 @@ import com.google.devtools.kythe.platform.indexpack.Archive;
 import com.google.devtools.kythe.platform.java.JavacAnalysisDriver;
 import com.google.devtools.kythe.platform.shared.AnalysisException;
 import com.google.devtools.kythe.platform.shared.FileDataCache;
+import com.google.devtools.kythe.platform.shared.KytheMetadataLoader;
 import com.google.devtools.kythe.platform.shared.MemoryStatisticsCollector;
+import com.google.devtools.kythe.platform.shared.MetadataLoaders;
 import com.google.devtools.kythe.platform.shared.NullStatisticsCollector;
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
@@ -72,12 +74,15 @@ public class JavaIndexer {
         Strings.isNullOrEmpty(config.getOutputPath())
             ? System.out
             : new BufferedOutputStream(new FileOutputStream(config.getOutputPath()))) {
+      MetadataLoaders metadataLoaders = new MetadataLoaders();
+      metadataLoaders.addLoader(new KytheMetadataLoader());
       new JavacAnalysisDriver()
           .analyze(
               new KytheJavacAnalyzer(
                   config,
                   new StreamFactEmitter(stream),
-                  statistics == null ? NullStatisticsCollector.getInstance() : statistics),
+                  statistics == null ? NullStatisticsCollector.getInstance() : statistics,
+                  metadataLoaders),
               desc.getCompilationUnit(),
               new FileDataCache(desc.getFileContents()));
     }

@@ -21,6 +21,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.Lists;
+import com.google.common.io.ByteStreams;
 import com.google.devtools.kythe.analyzers.base.EdgeKind;
 import com.google.devtools.kythe.analyzers.base.EntrySet;
 import com.google.devtools.kythe.analyzers.java.SourceText.Comment;
@@ -30,6 +31,8 @@ import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.platform.java.helpers.JCTreeScanner;
 import com.google.devtools.kythe.platform.java.helpers.JavacUtil;
 import com.google.devtools.kythe.platform.java.helpers.SignatureGenerator;
+import com.google.devtools.kythe.platform.shared.Metadata;
+import com.google.devtools.kythe.platform.shared.MetadataLoaders;
 import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.proto.MarkedSource;
 import com.google.devtools.kythe.util.Span;
@@ -55,6 +58,7 @@ import com.sun.tools.javac.tree.JCTree.JCExpressionStatement;
 import com.sun.tools.javac.tree.JCTree.JCFieldAccess;
 import com.sun.tools.javac.tree.JCTree.JCIdent;
 import com.sun.tools.javac.tree.JCTree.JCImport;
+import com.sun.tools.javac.tree.JCTree.JCLiteral;
 import com.sun.tools.javac.tree.JCTree.JCMemberReference;
 import com.sun.tools.javac.tree.JCTree.JCMethodDecl;
 import com.sun.tools.javac.tree.JCTree.JCMethodInvocation;
@@ -68,6 +72,7 @@ import com.sun.tools.javac.tree.JCTree.JCVariableDecl;
 import com.sun.tools.javac.tree.JCTree.JCWildcard;
 import com.sun.tools.javac.util.Context;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Collections;
@@ -81,6 +86,9 @@ import java.util.Set;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Name;
+import javax.tools.FileObject;
+import javax.tools.StandardJavaFileManager;
+import javax.tools.StandardLocation;
 
 /** {@link JCTreeScanner} that emits Kythe nodes and edges. */
 public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
@@ -94,6 +102,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   private final Positions filePositions;
   private final Map<Integer, List<Comment>> comments = new HashMap<>();
   private final Context javaContext;
+  private final StandardJavaFileManager fileManager;
+  private final MetadataLoaders metadataLoaders;
+  private List<Metadata> metadata;
+  private String packageName;
 
   private KytheDocTreeScanner docScanner;
 
@@ -103,13 +115,17 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       SignatureGenerator signatureGenerator,
       SourceText src,
       Context javaContext,
-      boolean verboseLogging) {
+      boolean verboseLogging,
+      StandardJavaFileManager fileManager,
+      MetadataLoaders metadataLoaders) {
     this.entrySets = entrySets;
     this.statistics = statistics;
     this.signatureGenerator = signatureGenerator;
     this.filePositions = src.getPositions();
     this.javaContext = javaContext;
     this.verboseLogging = verboseLogging;
+    this.fileManager = fileManager;
+    this.metadataLoaders = metadataLoaders;
 
     for (Comment comment : src.getComments()) {
       for (int line = comment.lineSpan.getStart(); line <= comment.lineSpan.getEnd(); line++) {
@@ -129,11 +145,20 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       SignatureGenerator signatureGenerator,
       JCCompilationUnit compilation,
       Charset sourceEncoding,
-      boolean verboseLogging)
+      boolean verboseLogging,
+      StandardJavaFileManager fileManager,
+      MetadataLoaders metadataLoaders)
       throws IOException {
     SourceText src = new SourceText(javaContext, compilation, sourceEncoding);
     new KytheTreeScanner(
-            entrySets, statistics, signatureGenerator, src, javaContext, verboseLogging)
+            entrySets,
+            statistics,
+            signatureGenerator,
+            src,
+            javaContext,
+            verboseLogging,
+            fileManager,
+            metadataLoaders)
         .scan(compilation, null);
   }
 
@@ -148,6 +173,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       docScanner = new KytheDocTreeScanner(this, javaContext);
     }
     TreeContext ctx = new TreeContext(filePositions, compilation);
+    packageName = compilation.packge.toString();
+    metadata = Lists.newArrayList();
 
     EntrySet fileNode = entrySets.newFileNodeAndEmit(filePositions);
 
@@ -232,6 +259,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
   @Override
   public JavaNode visitClassDef(JCClassDecl classDef, TreeContext owner) {
+    loadAnnotationsFromClassDecl(classDef);
     TreeContext ctx = owner.down(classDef);
 
     Optional<String> signature = signatureGenerator.getSignature(classDef.sym);
@@ -278,7 +306,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         if (classIdent != null) {
           EntrySet absAnchor =
               entrySets.newAnchorAndEmit(filePositions, classIdent, ctx.getSnippet());
-          emitAnchor(absAnchor, EdgeKind.DEFINES_BINDING, absNode);
+          emitDefinesBindingEdge(classIdent, absAnchor, absNode);
         }
         if (!documented) {
           emitComment(classDef, absNode);
@@ -286,7 +314,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       }
       if (absNode == null && classIdent != null) {
         EntrySet anchor = entrySets.newAnchorAndEmit(filePositions, classIdent, ctx.getSnippet());
-        emitAnchor(anchor, EdgeKind.DEFINES_BINDING, classNode);
+        emitDefinesBindingEdge(classIdent, anchor, classNode);
       }
       emitAnchor(ctx, EdgeKind.DEFINES, classNode);
       if (!documented) {
@@ -861,6 +889,21 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     return emitAnchor(anchor, kind, node);
   }
 
+  private void emitDefinesBindingEdge(Span span, EntrySet anchor, EntrySet node) {
+    for (Metadata data : metadata) {
+      for (Metadata.Rule rule : data.getRulesForLocation(span.getStart())) {
+        if (rule.end == span.getEnd()) {
+          if (rule.reverseEdge) {
+            entrySets.emitEdge(rule.vname, rule.edgeOut, node.getVName());
+          } else {
+            entrySets.emitEdge(node.getVName(), rule.edgeOut, rule.vname);
+          }
+        }
+      }
+    }
+    emitAnchor(anchor, EdgeKind.DEFINES_BINDING, node);
+  }
+
   // Creates/emits an anchor and an associated edge
   private EntrySet emitAnchor(EntrySet anchor, EdgeKind kind, EntrySet node) {
     Preconditions.checkArgument(
@@ -931,6 +974,62 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       nodes.add(scan(t, owner));
     }
     return nodes;
+  }
+
+  private void loadAnnotationsFile(String path) {
+    try {
+      FileObject file =
+          fileManager.getFileForInput(StandardLocation.SOURCE_PATH, packageName, path);
+      if (file == null) {
+        logger.warning(
+            "Can't find metadata " + path + " for " + filePositions.getSourceFile().toUri());
+        return;
+      }
+      InputStream stream = file.openInputStream();
+      Metadata newMetadata = metadataLoaders.parseFile(path, ByteStreams.toByteArray(stream));
+      if (newMetadata == null) {
+        logger.warning(
+            "Can't load metadata " + path + " for " + filePositions.getSourceFile().toUri());
+        return;
+      }
+      metadata.add(newMetadata);
+    } catch (IOException ex) {
+      logger.warning(
+          "Can't read metadata " + path + " for " + filePositions.getSourceFile().toUri());
+    }
+  }
+
+  private void loadAnnotationsFromClassDecl(JCClassDecl decl) {
+    for (JCAnnotation annotation : decl.getModifiers().getAnnotations()) {
+      Symbol annotationSymbol = null;
+      if (annotation.getAnnotationType() instanceof JCFieldAccess) {
+        annotationSymbol = ((JCFieldAccess) annotation.getAnnotationType()).sym;
+      } else if (annotation.getAnnotationType() instanceof JCIdent) {
+        annotationSymbol = ((JCIdent) annotation.getAnnotationType()).sym;
+      }
+      if (annotationSymbol == null
+          || !annotationSymbol.toString().equals("javax.annotation.Generated")) {
+        continue;
+      }
+      for (JCExpression arg : annotation.getArguments()) {
+        if (!(arg instanceof JCAssign)) {
+          continue;
+        }
+        JCAssign assignArg = (JCAssign) arg;
+        if (!(assignArg.lhs instanceof JCIdent) || !(assignArg.rhs instanceof JCLiteral)) {
+          continue;
+        }
+        JCIdent lhs = (JCIdent) assignArg.lhs;
+        JCLiteral rhs = (JCLiteral) assignArg.rhs;
+        if (!lhs.name.toString().equals("comments") || !(rhs.getValue() instanceof String)) {
+          continue;
+        }
+        String comments = (String) rhs.getValue();
+        if (comments.startsWith(Metadata.ANNOTATION_COMMENT_PREFIX)) {
+          loadAnnotationsFile(comments.substring(Metadata.ANNOTATION_COMMENT_PREFIX.length()));
+        }
+      }
+    }
   }
 }
 

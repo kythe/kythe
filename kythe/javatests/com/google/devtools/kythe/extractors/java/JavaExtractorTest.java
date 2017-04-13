@@ -29,7 +29,6 @@ import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
 import com.google.devtools.kythe.proto.Analysis.FileInfo;
 import com.google.devtools.kythe.proto.Java.JavaDetails;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.sun.tools.javac.main.Option;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -75,6 +74,38 @@ public class JavaExtractorTest extends TestCase {
     // With the expected sources as required inputs.
     assertThat(getInfos(unit.getRequiredInputList()))
         .containsExactlyElementsIn(getExpectedInfos(sources));
+
+    // And the correct sourcepath set to replay the compilation.
+    JavaArguments args = JavaArguments.parseArguments(unit);
+    assertThat(args.getSourcepath()).containsExactly(TEST_DATA_DIR);
+    assertThat(args.getClasspath()).isEmpty();
+    assertThatArgumentsMatch(args, unit);
+  }
+
+  /** Tests that metadata is included when a file specifies it. */
+  public void testJavaExtractorMetadata() throws Exception {
+    JavaCompilationUnitExtractor java = new JavaCompilationUnitExtractor(CORPUS);
+
+    List<String> sources = Lists.newArrayList(join(TEST_DATA_DIR, "/pkg/M.java"));
+    List<String> dependencies =
+        Lists.newArrayList(
+            join(TEST_DATA_DIR, "/pkg/M.java"), join(TEST_DATA_DIR, "/pkg/M.java.meta"));
+
+    // Index the specified sources
+    CompilationDescription description =
+        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
+
+    CompilationUnit unit = description.getCompilationUnit();
+    assertNotNull(unit);
+    assertEquals(TARGET1, unit.getVName().getSignature());
+
+    // With the expected sources as explicit sources.
+    assertEquals(1, unit.getSourceFileCount());
+    assertThat(unit.getSourceFileList()).containsExactly(sources.get(0));
+
+    // With the expected dependencies as required inputs.
+    assertThat(getInfos(unit.getRequiredInputList()))
+        .containsExactlyElementsIn(getExpectedInfos(dependencies));
 
     // And the correct sourcepath set to replay the compilation.
     JavaArguments args = JavaArguments.parseArguments(unit);

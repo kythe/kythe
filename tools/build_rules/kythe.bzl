@@ -111,7 +111,7 @@ def java_verifier_test_impl(ctx):
   )
 
   kindex = ctx.new_file(ctx.configuration.genfiles_dir, ctx.label.name + "/compilation.kindex")
-  extract(ctx, kindex, args, inputs=inputs+[jar], mnemonic='JavacExtractor')
+  extract(ctx, kindex, args, inputs=ctx.files.meta+inputs+[jar], mnemonic='JavacExtractor')
 
   entries = ctx.new_file(ctx.configuration.bin_dir, ctx.label.name + ".entries.gz")
   index(ctx, kindex, entries, mnemonic='JavaIndexer')
@@ -213,6 +213,7 @@ java_verifier_test = rule(
     java_verifier_test_impl,
     attrs = base_attrs + {
         "srcs": attr.label_list(allow_files = FileType([".java"])),
+        "meta": attr.label_list(allow_files = FileType([".meta"])),
         "deps": attr.label_list(
             allow_files = False,
             providers = [

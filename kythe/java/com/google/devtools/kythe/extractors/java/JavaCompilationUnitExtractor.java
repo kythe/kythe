@@ -447,11 +447,15 @@ public class JavaCompilationUnitExtractor {
       uri = URI.create(uri.getRawSchemeSpecificPart());
     }
 
-    // We only support .class & .java files right now.
     switch (requiredInput.getKind()) {
       case CLASS:
       case SOURCE:
         break;
+      case OTHER:
+        if (uri.getPath().endsWith(".meta")) {
+          break;
+        }
+        throw new IllegalStateException(String.format("Unsupported OTHER file kind: '%s'", uri));
       default:
         throw new IllegalStateException(
             String.format(
@@ -490,7 +494,8 @@ public class JavaCompilationUnitExtractor {
           // figure that out.  Try to refactor this code to remove this issue.
           throw new IllegalStateException(
               String.format(
-                  "Unsupported java file kind: '%s' for '%s'", requiredInput.getKind().name(), uri));
+                  "Unsupported java file kind: '%s' for '%s'",
+                  requiredInput.getKind().name(), uri));
       }
       strippedPath = JAR_ROOT + entryPath;
     }

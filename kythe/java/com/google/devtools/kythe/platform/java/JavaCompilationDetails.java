@@ -49,6 +49,7 @@ public class JavaCompilationDetails {
   private final CompilationUnit compilationUnit;
   private final Throwable analysisCrash;
   private final Charset encoding;
+  private final StandardJavaFileManager fileManager;
 
   private static final FormattingLogger logger =
       FormattingLogger.getLogger(JavaCompilationDetails.class);
@@ -114,7 +115,8 @@ public class JavaCompilationDetails {
         compilationUnits,
         compilationUnit,
         analysisCrash,
-        encoding);
+        encoding,
+        fileManager);
   }
 
   private JavaCompilationDetails(
@@ -123,13 +125,15 @@ public class JavaCompilationDetails {
       Iterable<? extends CompilationUnitTree> asts,
       CompilationUnit compilationUnit,
       Throwable analysisCrash,
-      Charset encoding) {
+      Charset encoding,
+      StandardJavaFileManager fileManager) {
     this.javac = javac;
     this.diagnostics = diagnostics;
     this.asts = asts;
     this.compilationUnit = compilationUnit;
     this.analysisCrash = analysisCrash;
     this.encoding = Preconditions.checkNotNull(encoding);
+    this.fileManager = fileManager;
   }
 
   public boolean inBadCompilationState() {
@@ -177,6 +181,11 @@ public class JavaCompilationDetails {
   /** Returns he encoding for the source files in this compilation */
   public Charset getEncoding() {
     return encoding;
+  }
+
+  /** @return The file manager for the source files in this compilation */
+  public StandardJavaFileManager getFileManager() {
+    return fileManager;
   }
 
   /** Generate options (such as classpath and sourcepath) from the compilation unit. */

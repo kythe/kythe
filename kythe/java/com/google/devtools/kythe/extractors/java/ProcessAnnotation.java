@@ -17,14 +17,20 @@
 package com.google.devtools.kythe.extractors.java;
 
 import com.google.devtools.kythe.common.FormattingLogger;
+import com.google.devtools.kythe.platform.shared.Metadata;
+import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Symbol.TypeSymbol;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Set;
+import javax.annotation.Generated;
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.lang.model.SourceVersion;
+import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
+import javax.tools.JavaFileObject;
 import javax.tools.JavaFileObject.Kind;
 import javax.tools.StandardLocation;
 
@@ -74,6 +80,24 @@ public class ProcessAnnotation extends AbstractProcessor {
         // We only log any IO exception here and do not cancel the whole processing because of an
         // exception in this stage.
         logger.severefmt("Error in annotation processing: %s", ex.getMessage());
+      }
+    }
+    for (Element ae : roundEnv.getElementsAnnotatedWith(Generated.class)) {
+      Generated generated = ae.getAnnotation(Generated.class);
+      if (generated == null
+          || generated.comments() == null
+          || !generated.comments().startsWith(Metadata.ANNOTATION_COMMENT_PREFIX)) {
+        continue;
+      }
+      String annotationFile =
+          generated.comments().substring(Metadata.ANNOTATION_COMMENT_PREFIX.length());
+      if (ae instanceof ClassSymbol) {
+        ClassSymbol cs = (ClassSymbol) ae;
+        String annotationPath = cs.sourcefile.toUri().resolve(annotationFile).getPath();
+        for (JavaFileObject file :
+            fileManager.getJavaFileForSources(Arrays.asList(annotationPath))) {
+          ((UsageAsInputReportingJavaFileObject) file).markUsed();
+        }
       }
     }
     // We must return false so normal processors run after us.

@@ -137,6 +137,16 @@ java_verifier_test(
 )
 
 java_verifier_test(
+    name = "metadata_tests",
+    srcs = [
+        "Metadata.java",
+    ],
+    meta = [
+        "Metadata.java.meta",
+    ],
+)
+
+java_verifier_test(
     name = "variables_tests",
     size = "small",
     srcs = ["Variables.java"],

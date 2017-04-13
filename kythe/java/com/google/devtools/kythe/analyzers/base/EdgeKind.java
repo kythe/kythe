@@ -37,7 +37,8 @@ public enum EdgeKind {
   OVERRIDES("overrides"),
   OVERRIDES_TRANSITIVE("overrides/transitive"),
   PARAM("param"),
-  TYPED("typed");
+  TYPED("typed"),
+  GENERATES("generates");
 
   private static final String EDGE_PREFIX = "/kythe/edge/";
 

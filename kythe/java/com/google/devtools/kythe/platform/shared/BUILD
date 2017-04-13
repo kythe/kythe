@@ -45,3 +45,22 @@ java_library(
         "@com_google_guava_guava//jar",
     ],
 )
+
+java_library(
+    name = "metadata",
+    srcs = [
+        "KytheMetadataLoader.java",
+        "Metadata.java",
+        "MetadataLoader.java",
+        "MetadataLoaders.java",
+    ],
+    deps = [
+        "//kythe/java/com/google/devtools/kythe/analyzers/base:schema",
+        "//kythe/java/com/google/devtools/kythe/common",
+        "//kythe/java/com/google/devtools/kythe/util:json",
+        "//kythe/proto:storage_proto_java",
+        "//third_party/proto:protobuf_java",
+        "@com_google_code_gson_gson//jar",
+        "@com_google_guava_guava//jar",
+    ],
+)

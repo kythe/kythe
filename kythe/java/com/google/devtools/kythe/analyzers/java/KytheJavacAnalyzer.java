@@ -24,6 +24,7 @@ import com.google.devtools.kythe.platform.java.JavaCompilationDetails;
 import com.google.devtools.kythe.platform.java.JavacAnalyzer;
 import com.google.devtools.kythe.platform.java.helpers.SignatureGenerator;
 import com.google.devtools.kythe.platform.shared.AnalysisException;
+import com.google.devtools.kythe.platform.shared.MetadataLoaders;
 import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.sun.source.tree.CompilationUnitTree;
@@ -42,17 +43,22 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
 
   private final FactEmitter emitter;
   private final IndexerConfig config;
+  private final MetadataLoaders metadataLoaders;
 
   // should be set in analyzeCompilationUnit before any call to analyzeFile
   private JavaEntrySets entrySets;
 
   public KytheJavacAnalyzer(
-      IndexerConfig config, FactEmitter emitter, StatisticsCollector statistics) {
+      IndexerConfig config,
+      FactEmitter emitter,
+      StatisticsCollector statistics,
+      MetadataLoaders metadataLoaders) {
     super(statistics);
     Preconditions.checkArgument(emitter != null, "FactEmitter must be non-null");
     Preconditions.checkArgument(config != null, "IndexerConfig must be non-null");
     this.emitter = emitter;
     this.config = config;
+    this.metadataLoaders = metadataLoaders;
   }
 
   @Override
@@ -96,7 +102,9 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
           signatureGenerator,
           (JCCompilationUnit) ast,
           details.getEncoding(),
-          config.getVerboseLogging());
+          config.getVerboseLogging(),
+          details.getFileManager(),
+          metadataLoaders);
     } catch (IOException e) {
       throw new AnalysisException("Exception analyzing file: " + ast.getSourceFile().getName(), e);
     }
