@@ -16,23 +16,30 @@
 
 package com.google.devtools.kythe.platform.java;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.base.StandardSystemProperty;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.PeekingIterator;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Java.JavaDetails;
 import com.google.protobuf.Any;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.sun.tools.javac.api.JavacTool;
+import com.sun.tools.javac.file.JavacFileManager;
 import com.sun.tools.javac.main.Option;
+import com.sun.tools.javac.util.Context;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import javax.annotation.Nullable;
+import javax.tools.OptionChecker;
 
 /** A utility class for dealing with javac command-line options. */
 public class JavacOptionsUtils {
@@ -54,19 +61,20 @@ public class JavacOptionsUtils {
 
   /** Returns a new list of options with only javac compiler supported options. */
   public static List<String> removeUnsupportedOptions(List<String> rawOptions) {
-    Set<Option> supportedOptions = EnumSet.allOf(Option.class);
     List<String> options = new ArrayList<>();
-    for (int i = 0; i < rawOptions.size(); i++) {
-      String opt = rawOptions.get(i);
-      for (Option o : supportedOptions) {
-        if (o.matches(opt)) {
-          options.add(opt);
-          if (o.hasArg()) {
-            options.add(rawOptions.get(++i));
-          }
-          break;
+    ImmutableList<OptionChecker> optionCheckers =
+        ImmutableList.of(JavacTool.create(), new JavacFileManager(new Context(), false, UTF_8));
+    PeekingIterator<String> it = Iterators.peekingIterator(rawOptions.iterator());
+    outer:
+    while (it.hasNext()) {
+      for (OptionChecker optionChecker : optionCheckers) {
+        int arity = optionChecker.isSupportedOption(it.peek());
+        if (arity != -1) {
+          Iterators.addAll(options, Iterators.limit(it, arity + 1));
+          continue outer;
         }
       }
+      it.next();
     }
     return options;
   }
