@@ -1479,6 +1479,23 @@ func signatureLinkTickets(sg *xpb.MarkedSource, s stringset.Set) {
 	}
 }
 
+// mergeDocumentationReply adds from's document to into.Document[0].Children and merges its Nodes and DefinitionLocations.
+func mergeDocumentationReply(from, into *xpb.DocumentationReply) {
+	into.Document[0].Children = append(into.Document[0].Children, from.Document...)
+	for k, v := range from.Nodes {
+		if into.Nodes == nil {
+			into.Nodes = make(map[string]*cpb.NodeInfo)
+		}
+		into.Nodes[k] = v
+	}
+	for k, v := range from.DefinitionLocations {
+		if into.DefinitionLocations == nil {
+			into.DefinitionLocations = make(map[string]*xpb.Anchor)
+		}
+		into.DefinitionLocations[k] = v
+	}
+}
+
 // slowMultilevelDocumentation is an implementation of the Documentation API (with IncludeChildren set) based on other APIs.
 func slowMultilevelDocumentation(ctx context.Context, service Service, req *xpb.DocumentationRequest) (*xpb.DocumentationReply, error) {
 	start := time.Now()
@@ -1501,11 +1518,10 @@ func slowMultilevelDocumentation(ctx context.Context, service Service, req *xpb.
 		}); err != nil {
 		return nil, fmt.Errorf("error getting childof edges in slowMultilevelDocumentation: %v", err)
 	}
-	elements := subTickets.Elements()
-	if len(elements) == 1 {
+	if len(subTickets) == 1 {
 		// The source ticket might have been an abs.
 		var subSubTickets stringset.Set
-		childTicket := elements[0]
+		childTicket := subTickets.Elements()[0]
 		isAbsChild := false
 		if err := forAllEdges(ctx, service, stringset.New(childTicket), []string{edges.Mirror(edges.ChildOf), edges.ChildOf},
 			func(_, target, targetKind, edgeKind string) error {
@@ -1524,34 +1540,29 @@ func slowMultilevelDocumentation(ctx context.Context, service Service, req *xpb.
 			// Include the abs child's children along with the abs's children.
 			subTickets.Update(subSubTickets)
 			subTickets.Discard(childTicket)
-			elements = subTickets.Elements()
 		}
 	}
-	docs, err := SlowDocumentation(ctx, service, &xpb.DocumentationRequest{
-		Ticket: append(elements, tickets[0]),
+	retDoc, err := SlowDocumentation(ctx, service, &xpb.DocumentationRequest{
+		Ticket: []string{tickets[0]},
 		Filter: req.Filter,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("error getting documents in slowMultilevelDocumentation: %v", err)
+		return nil, fmt.Errorf("error getting root document in slowMultilevelDocumentation: %v", err)
 	}
-	var subDocs []*xpb.DocumentationReply_Document
-	var rootDoc *xpb.DocumentationReply_Document
-	for _, doc := range docs.Document {
-		if doc.Ticket == tickets[0] {
-			rootDoc = doc
-		} else {
-			subDocs = append(subDocs, doc)
+	if len(retDoc.Document) != 1 {
+		return nil, fmt.Errorf("unexpected number (%v) of root documents in slowMultilevelDocumentation", len(retDoc.Document))
+	}
+	for subTicket := range subTickets {
+		doc, err := SlowDocumentation(ctx, service, &xpb.DocumentationRequest{
+			Ticket: []string{subTicket},
+			Filter: req.Filter,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("error getting subdocument in slowMultilevelDocumentation: %v", err)
 		}
+		mergeDocumentationReply(doc, retDoc)
 	}
-	if rootDoc == nil {
-		return nil, fmt.Errorf("missing requested root document for %q", tickets[0])
-	}
-	rootDoc.Children = subDocs
-	return &xpb.DocumentationReply{
-		Nodes:               docs.Nodes,
-		DefinitionLocations: docs.DefinitionLocations,
-		Document:            []*xpb.DocumentationReply_Document{rootDoc},
-	}, nil
+	return retDoc, nil
 }
 
 const (
@@ -1624,6 +1635,7 @@ func SlowDocumentation(ctx context.Context, service Service, req *xpb.Documentat
 	}
 	for _, ticket := range tickets {
 		// TODO(zarko): Include outbound override edges.
+		// TODO(zarko): Optimize this if possible from merge_with field in xref data
 		ticketSet, err := expandDefRelatedNodeSet(ctx, service, stringset.New(ticket) /*includeOverrides=*/, false)
 		if err != nil {
 			return nil, fmt.Errorf("couldn't expandDefRelatedNodeSet in Documentation: %v", err)
