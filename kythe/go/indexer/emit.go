@@ -394,6 +394,25 @@ func (e *emitter) emitParameters(ftype *ast.FuncType, sig *types.Signature, info
 	})
 }
 
+// An override represents the relationship that x overrides y.
+type override struct {
+	x, y types.Object
+}
+
+// overrides represents a set of override relationships we've already generated.
+type overrides map[override]bool
+
+// seen reports whether an x overrides y was already cached, and if not adds it
+// to the set.
+func (o overrides) seen(x, y types.Object) bool {
+	ov := override{x: x, y: y}
+	ok := o[ov]
+	if !ok {
+		o[ov] = true
+	}
+	return ok
+}
+
 // emitSatisfactions visits each named type known through the compilation being
 // indexed, and emits edges connecting it to any known interfaces its method
 // set satisfies.
@@ -425,6 +444,8 @@ func (e *emitter) emitSatisfactions() {
 
 	// Cache the method set of each named type in this package.
 	var msets typeutil.MethodSetCache
+	// Cache the overrides we've noticed to avoid duplicate entries.
+	cache := make(overrides)
 	for _, xobj := range allNames {
 		if xobj.Pkg() != e.pi.Package {
 			continue // not from this package
@@ -437,13 +458,11 @@ func (e *emitter) emitSatisfactions() {
 			continue // no methods to consider
 		}
 
-		// TODO(fromberger): Add "override" edges between the concrete methods
-		// and the interface methods they satisfy.
-		//
 		// N.B. This implementation is quadratic in the number of visible
 		// interfaces, but that's probably OK since are only considering a
 		// single compilation.
 
+		xmset := msets.MethodSet(x)
 		for _, yobj := range allNames {
 			if xobj == yobj {
 				continue
@@ -479,11 +498,34 @@ func (e *emitter) emitSatisfactions() {
 					e.writeSatisfies(xobj, yobj)
 					// TODO(fromberger): Do we want this case?
 				}
+				e.emitOverrides(xmset, ymset, cache)
 
 			default:
 				// Both x and y are concrete.
 			}
 		}
+	}
+}
+
+// Add xm-(overrides)-ym for each concrete method xm with a corresponding
+// abstract method ym.
+func (e *emitter) emitOverrides(xmset, ymset *types.MethodSet, cache overrides) {
+	for i, n := 0, ymset.Len(); i < n; i++ {
+		ym := ymset.At(i)
+		yobj := ym.Obj()
+		xm := xmset.Lookup(yobj.Pkg(), yobj.Name())
+		if xm == nil {
+			continue // this method is not part of the interface we're probing
+		}
+
+		xobj := xm.Obj()
+		if cache.seen(xobj, yobj) {
+			continue
+		}
+
+		xvname := e.pi.ObjectVName(xobj)
+		yvname := e.pi.ObjectVName(yobj)
+		e.writeEdge(xvname, yvname, edges.Overrides)
 	}
 }
 

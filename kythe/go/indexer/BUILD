@@ -118,3 +118,8 @@ go_indexer_test(
     srcs = ["testdata/code/smoke.go"],
     has_marked_source = True,
 )
+
+go_indexer_test(
+    name = "override_test",
+    srcs = ["testdata/override.go"],
+)

@@ -141,6 +141,8 @@ def _go_verifier_test(ctx):
 
   if ctx.attr.log_entries:
     vargs.append('--show_protos')
+  if ctx.attr.allow_duplicates:
+    vargs.append('--ignore_dups')
 
   # If the test wants marked source, enable support for it in the indexer and
   # in the verifier.
@@ -174,6 +176,9 @@ go_verifier_test = rule(
         # Whether to enable explosion of MarkedSource facts.
         "has_marked_source": attr.bool(default = False),
 
+        # Whether to allow duplicate facts.
+        "allow_duplicates": attr.bool(default = False),
+
         # The location of the Go indexer binary.
         "_indexer": attr.label(
             default = Label("//kythe/go/indexer/cmd/go_indexer"),
@@ -194,8 +199,10 @@ go_verifier_test = rule(
 
 # A convenience macro to generate a test library, pass it to the Go indexer,
 # and feed the output of indexing to the Kythe schema verifier.
-def go_indexer_test(name, srcs, deps=[], import_path='',
-                    log_entries=False, has_marked_source=False, size='small'):
+def go_indexer_test(name, srcs, deps=[], import_path='', size = 'small',
+                    log_entries=False,
+                    has_marked_source=False,
+                    allow_duplicates=False):
   testlib = name+'_lib'
   go_library(
       name = testlib,
@@ -214,4 +221,5 @@ def go_indexer_test(name, srcs, deps=[], import_path='',
       indexpack = ':'+testpack,
       log_entries = log_entries,
       has_marked_source = has_marked_source,
+      allow_duplicates = allow_duplicates,
   )
