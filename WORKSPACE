@@ -157,13 +157,6 @@ load("@io_bazel_rules_go//go:def.bzl", "go_repositories")
 
 go_repositories()
 
-http_archive(
-    name = "io_bazel",
-    sha256 = "5a3388d58440200b5650cdc59b82f458184cba2578cf0e1c437eead3e5bde4bb",
-    strip_prefix = "bazel-0.4.4",
-    url = "https://github.com/bazelbuild/bazel/archive/0.4.4.zip",
-)
-
 new_git_repository(
     name = "go_gogo_protobuf",
     build_file = "third_party/go/gogo_protobuf.BUILD",
