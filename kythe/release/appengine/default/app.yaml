@@ -2,6 +2,8 @@ runtime: go
 api_version: go1
 threadsafe: true
 
+inbound_services:
+  - warmup
 handlers:
 - url: /.*
   script: _go_app
