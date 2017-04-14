@@ -19,6 +19,7 @@ package kytheuri
 import (
 	"bytes"
 	"errors"
+	"strings"
 )
 
 type escaper int
@@ -83,34 +84,33 @@ func dehex(c byte) int {
 	return -1
 }
 
-// unescape unencodes a %-escaped string.
-func unescape(s string) (string, error) {
-	var numEsc int
-	for i := 0; i < len(s); i++ {
-		if s[i] == '%' {
-			numEsc++
-		}
-	}
-	if numEsc == 0 {
-		return s, nil
+// unescape unencodes a %-escaped string using buf as a temporary buffer,
+// replacing *v with the result on success. Requires len(buf) >= len(*v).
+func unescape(v *string, buf []byte) error {
+	s := *v
+	if strings.IndexByte(s, '%') < 0 {
+		return nil // nothing to do
 	}
 
-	b := bytes.NewBuffer(make([]byte, 0, len(s)-2*numEsc))
+	pos := 0
 	for i := 0; i < len(s); i++ {
 		if c := s[i]; c != '%' {
-			b.WriteByte(c)
+			buf[pos] = c
+			pos++
 			continue
 		}
 		if i+2 >= len(s) {
-			return "", errors.New("invalid hex escape")
+			return errors.New("invalid hex escape")
 		}
 		hi := dehex(s[i+1])
 		lo := dehex(s[i+2])
 		if hi < 0 || lo < 0 {
-			return "", errors.New("invalid hex digit")
+			return errors.New("invalid hex digit")
 		}
-		b.WriteByte(byte(hi<<4 | lo))
+		buf[pos] = byte(hi<<4 | lo)
+		pos++
 		i += 2 // skip the extra bytes from the escape
 	}
-	return b.String(), nil
+	*v = string(buf[:pos])
+	return nil
 }

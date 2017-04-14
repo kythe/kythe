@@ -30,10 +30,10 @@ import (
 )
 
 // Scheme is the URI scheme label for Kythe.
-const Scheme = "kythe"
+const Scheme = "kythe:"
 
-// A URI represents a parsed Kythe URI.  A zero-valued URI is ready for use,
-// representing the empty URI.
+// A URI represents a parsed, unescaped Kythe URI.  A zero-valued URI is ready
+// for use, representing the empty URI.
 type URI struct {
 	Signature string
 	Corpus    string
@@ -62,29 +62,65 @@ func (u *URI) VName() *spb.VName {
 // parsing a string, this may return a different string from that.  However,
 // parsing this string will always give back the same URI.  If u == nil, it is
 // treated as an empty URI.
-func (u *URI) String() string {
-	const empty = Scheme + ":"
+func (u *URI) String() string { return u.Encode().String() }
+
+// Equal reports whether u is equal to v.
+func (u *URI) Equal(v *URI) bool { return u.String() == v.String() }
+
+// Encode returns an escaped "raw" Kythe URI equivalent to u.
+func (u *URI) Encode() *Raw {
 	if u == nil {
-		return empty
+		return nil
 	}
-	var buf bytes.Buffer
-	buf.WriteString(empty)
-	if c := u.Corpus; c != "" {
+	return &Raw{
+		URI: URI{
+			Signature: all.escape(u.Signature),
+			Corpus:    paths.escape(u.Corpus),
+			Root:      paths.escape(u.Root),
+			Path:      paths.escape(cleanPath(u.Path)),
+			Language:  all.escape(u.Language),
+		},
+	}
+}
+
+// A Raw represents a parsed, "raw" Kythe URI whose field values are escaped.
+// Use the Decode method to convert a *Raw to a plain *URI.
+type Raw struct{ URI URI }
+
+// Decode returns a *URI equivalent to r but with its field values unescaped.
+func (r *Raw) Decode() (*URI, error) {
+	u := r.URI // copy
+	buf := make([]byte, len(u.Signature)+len(u.Corpus)+len(u.Root)+len(u.Path)+len(u.Language))
+	return decode(&u, buf)
+}
+
+// String renders r into the standard URI string format.
+//
+// The resulting string is in canonical ordering, so if the URI was created by
+// parsing a string, this may return a different string from that.  However,
+// parsing this string will always give back the same URI.  If r == nil, it is
+// treated as an empty URI.
+func (r *Raw) String() string {
+	if r == nil {
+		return Scheme
+	}
+	buf := bytes.NewBufferString(Scheme)
+	if c := r.URI.Corpus; c != "" {
 		buf.WriteString("//")
-		buf.WriteString(paths.escape(c))
+		buf.WriteString(c)
 	}
 
-	// Pack up the query arguments.  Order matters here, so that we can
-	// preserve a canonical string format.
+	// Pack up the query arguments. Order matters here, so that we can preserve
+	// a canonical string format.
 	var query []string
-	if s := u.Language; s != "" {
-		query = append(query, "lang="+all.escape(s))
+	if s := r.URI.Language; s != "" {
+		query = append(query, "lang="+s)
 	}
-	if s := cleanPath(u.Path); s != "" {
-		query = append(query, "path="+paths.escape(s))
+	if s := r.URI.Path; s != "" {
+		query = append(query, "path="+s)
 	}
-	if s := u.Root; s != "" {
-		query = append(query, "root="+paths.escape(s))
+	if s := r.URI.Root; s != "" {
+		query = append(query, "root="+s)
 	}
 	if len(query) != 0 {
 		buf.WriteByte('?')
@@ -92,15 +128,12 @@ func (u *URI) String() string {
 	}
 
 	// If there is a signature, add that in as well.
-	if s := u.Signature; s != "" {
+	if s := r.URI.Signature; s != "" {
 		buf.WriteByte('#')
-		buf.WriteString(all.escape(s))
+		buf.WriteString(s)
 	}
 	return buf.String()
 }
-
-// Equal reports whether u is equal to v.
-func (u *URI) Equal(v *URI) bool { return u.String() == v.String() }
 
 // FromVName returns a Kythe URI for the given Kythe VName protobuf message.
 func FromVName(v *spb.VName) *URI {
@@ -126,94 +159,113 @@ func cleanPath(s string) string {
 
 // Partition s around the first occurrence of mark, if any.
 // If s has the form p mark q, returns p, q; otherwise returns s, "".
-func split(s, mark string) (prefix, suffix string) {
-	if i := strings.Index(s, mark); i >= 0 {
-		return s[:i], s[i+len(mark):]
+func split(s string, mark byte) (prefix, suffix string) {
+	if i := strings.IndexByte(s, mark); i >= 0 {
+		return s[:i], s[i+1:]
 	}
 	return s, ""
 }
 
-// scheme returns the scheme marker from the beginning of s, if it has one.
-func scheme(s string) (scheme, tail string) {
-	for i := 0; i < len(s); i++ {
-		switch c := s[i]; {
-		case 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z':
-			// keep going
-		case '0' <= c && c <= '9' || c == '+' || c == '-' || c == '.':
-			if i == 0 {
-				return "", s
-			}
-		case c == ':':
-			return s[:i], s[i:]
-		}
+// ParseRaw parses a Kythe URI from s, but does not unescape its fields.  Use
+// Parse to fully parse and unescape a URI, or call the Decode method of the
+// returned value.
+func ParseRaw(s string) (*Raw, error) {
+	if s == "" {
+		return new(Raw), nil
 	}
-	return "", s
-}
 
-// Parse parses a Kythe URI from s, if possible.  If s omits a scheme label,
-// the "kythe" scheme is assumed.
-func Parse(s string) (*URI, error) {
 	// Split off the signature from the fragment tail, if defined.
-	head, fragment := split(s, "#")
+	head, fragment := split(s, '#')
 
 	// Check for a scheme label.  This may be empty; but if present, it must be
 	// our expected scheme.
-	scheme, head := scheme(head)
-	if scheme == "" {
-		if strings.HasPrefix(head, ":") { // e.g., "://foo/bar"
-			return nil, errors.New("empty scheme")
-		}
-	} else if scheme != Scheme {
-		return nil, fmt.Errorf("invalid scheme: %q", scheme)
-	} else {
-		head = head[1:] // drop the ":" following the scheme
+	if tail := strings.TrimPrefix(head, Scheme); tail != head {
+		head = tail // found and removed our scheme marker
 	}
 
 	// Check for a bundle of attribute values.  This may be empty.
-	head, attrs := split(head, "?")
-	if head != "" && !strings.HasPrefix(head, "//") {
-		return nil, fmt.Errorf("invalid corpus label: %q", head)
+	head, attrs := split(head, '?')
+	if tail := strings.TrimPrefix(head, "//"); tail != head {
+		head = tail
+	} else if head != "" {
+		return nil, errors.New("invalid URI scheme")
 	}
-	sig, err := unescape(fragment)
-	if err != nil {
-		return nil, fmt.Errorf("invalid signature: %q", fragment)
-	}
-	corpus, err := unescape(strings.TrimLeft(head, "//"))
-	if err != nil {
-		return nil, fmt.Errorf("invalid corpus label: %q", corpus)
-	}
-	u := &URI{
-		Signature: sig,
-		Corpus:    corpus,
+
+	r := &Raw{
+		URI: URI{
+			Signature: fragment,
+			Corpus:    head,
+		},
 	}
 
 	// If there are any attributes, parse them.  We allow valid attributes to
 	// occur in any order, even if it is not canonical.
 	if attrs != "" {
-		for _, attr := range strings.Split(attrs, "?") {
-			i := strings.Index(attr, "=")
-			if i < 0 {
-				return nil, fmt.Errorf("invalid attribute name: %q", attr)
+		if err := splitByte(attrs, '?', func(attr string) error {
+			name, value := split(attr, '=')
+			if value == "" {
+				return fmt.Errorf("invalid attribute: %q", attr)
 			}
-			name := attr[:i]
-			value, err := unescape(attr[i+1:])
-			if err != nil {
-				return nil, fmt.Errorf("invalid attribute value %q: %v", value, err)
-			} else if value == "" {
-				return nil, fmt.Errorf("empty attribute value for %q", name)
-			}
-
 			switch name {
 			case "lang":
-				u.Language = value
+				r.URI.Language = value
 			case "root":
-				u.Root = value
+				r.URI.Root = value
 			case "path":
-				u.Path = value
+				r.URI.Path = value
 			default:
-				return nil, fmt.Errorf("invalid attribute: %q", name)
+				return fmt.Errorf("invalid attribute: %q", name)
 			}
+			return nil
+		}); err != nil {
+			return nil, err
 		}
+	}
+	return r, nil
+}
+
+// splitByte calls f with each partition of s delimited by b or the end of the
+// string.  If f reports an error, the split is aborted and that error is
+// returned to the caller of splitByte.
+func splitByte(s string, b byte, f func(string) error) error {
+	pos := 0
+	for pos < len(s) {
+		tail := s[pos:]
+		i := strings.IndexByte(tail, b)
+		if i < 0 {
+			return f(tail)
+		} else if err := f(tail[:i]); err != nil {
+			return err
+		}
+		pos += i + 1
+	}
+	return nil
+}
+
+// Parse parses and unescapes a Kythe URI from s. If s omits a scheme label,
+// the "kythe" scheme is assumed.
+func Parse(s string) (*URI, error) {
+	r, err := ParseRaw(s)
+	if err != nil {
+		return nil, err
+	}
+	return decode(&r.URI, make([]byte, len(s)))
+}
+
+// decode decodes u in-place using buf as an intermediate buffer.  The caller
+// must ensure len(buf) is sufficent to hold the longest field.  Preallocation
+// reduces allocation for unescaping and saves ~200 ns/op in benchmarks.
+func decode(u *URI, buf []byte) (*URI, error) {
+	if err := unescape(&u.Signature, buf); err != nil {
+		return nil, fmt.Errorf("invalid signature: %v", err)
+	} else if err := unescape(&u.Corpus, buf); err != nil {
+		return nil, fmt.Errorf("invalid corpus label: %v", err)
+	} else if err := unescape(&u.Language, buf); err != nil {
+		return nil, fmt.Errorf("invalid language: %v", err)
+	} else if err := unescape(&u.Path, buf); err != nil {
+		return nil, fmt.Errorf("invalid path: %v", err)
+	} else if err := unescape(&u.Root, buf); err != nil {
+		return nil, fmt.Errorf("invalid root: %v", err)
 	}
 	return u, nil
 }

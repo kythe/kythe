@@ -13,7 +13,10 @@ go_package_library(
 
 go_test(
     name = "kytheuri_test",
-    srcs = ["uri_test.go"],
+    srcs = [
+        "bench_test.go",
+        "uri_test.go",
+    ],
     library = "kytheuri",
     visibility = ["//visibility:private"],
     deps = ["@go_protobuf//:proto"],
