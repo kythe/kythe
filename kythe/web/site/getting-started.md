@@ -78,33 +78,33 @@ enough to have a symlink of the `third_party/llvm/llvm` directory.
 #### Troubleshooting bazel/clang/llvm errors
 You must either have /usr/bin/clang aliased properly, or the CLANG env var set:
 
-```shell
+{% highlight bash %}
 sudo ln -s /usr/bin/clang-3.5 /usr/bin/clang
 sudo ln -s /usr/bin/clang++-3.5 /usr/bin/clang++
-```
+{% endhighlight %}
 
 OR:
 
-```shell
+{% highlight bash %}
 echo 'export CLANG=/usr/bin/clang' >> ~/.bashrc
 source ~/.bashrc
-```
+{% endhighlight %}
 
 If you ran bazel and get errors like this:
 
-```
+{% highlight bash %}
 /home/username/kythe/third_party/zlib/BUILD:10:1: undeclared inclusion(s) in rule '//third_party/zlib:zlib':
 this rule is missing dependency declarations for the following files included by 'third_party/zlib/uncompr.c':
   '/usr/lib/llvm-3.5/lib/clang/3.5.0/include/limits.h'
   '/usr/lib/llvm-3.5/lib/clang/3.5.0/include/stddef.h'
   '/usr/lib/llvm-3.5/lib/clang/3.5.0/include/stdarg.h'.
-```
+{% endhighlight %}
 
 then you need to clean and rebuild your TOOLCHAIN:
 
-```shell
+{% highlight bash %}
 bazel clean --expunge && bazel build @local_config_cc//:toolchain
-```
+{% endhighlight %}
 
 ## Building Kythe
 
@@ -174,6 +174,7 @@ language-agnostic services), using the Go tool is very convenient.
 
 Prerequisites:
 {% highlight bash %}
+apt-get install ruby ruby-dev build-essential
 gem install bundler
 {% endhighlight %}
 
