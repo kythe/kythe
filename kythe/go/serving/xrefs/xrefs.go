@@ -53,7 +53,10 @@ import (
 	"golang.org/x/net/trace"
 )
 
-var maxTicketsPerRequest = flag.Int("max_tickets_per_request", 20, "Maximum number of tickets allowed per request")
+var (
+	maxTicketsPerRequest = flag.Int("max_tickets_per_request", 20, "Maximum number of tickets allowed per request")
+	mergeCrossReferences = flag.Bool("merge_cross_references", true, "Whether to merge nodes when responding to a CrossReferencesRequest")
+)
 
 type edgeSetResult struct {
 	PagedEdgeSet *srvpb.PagedEdgeSet
@@ -882,19 +885,21 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 			crs.MarkedSource = m2m(cr.MarkedSource)
 		}
 
-		// Add any additional merge nodes to the set of table lookups
-		for _, mergeNode := range cr.MergeWith {
-			if prevMerge, ok := mergeInto[mergeNode]; ok {
-				if prevMerge != ticket {
-					log.Printf("WARNING: node %q already previously merged with %q", mergeNode, prevMerge)
+		if *mergeCrossReferences {
+			// Add any additional merge nodes to the set of table lookups
+			for _, mergeNode := range cr.MergeWith {
+				if prevMerge, ok := mergeInto[mergeNode]; ok {
+					if prevMerge != ticket {
+						log.Printf("WARNING: node %q already previously merged with %q", mergeNode, prevMerge)
+					}
+					continue
+				} else if len(tickets) >= *maxTicketsPerRequest {
+					log.Printf("WARNING: max number of tickets reached; cannot merge any further nodes for %q", ticket)
+					break
 				}
-				continue
-			} else if len(tickets) >= *maxTicketsPerRequest {
-				log.Printf("WARNING: max number of tickets reached; cannot merge any further nodes for %q", ticket)
-				break
+				tickets = append(tickets, mergeNode)
+				mergeInto[mergeNode] = ticket
 			}
-			tickets = append(tickets, mergeNode)
-			mergeInto[mergeNode] = ticket
 		}
 
 		for _, grp := range cr.Group {
