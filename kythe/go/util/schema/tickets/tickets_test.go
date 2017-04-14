@@ -25,6 +25,7 @@ func TestAnchorFile(t *testing.T) {
 		{"kythe://foo?path=bar?lang=c++", "kythe://foo?path=bar"},
 		{"//foo?lang=go?path=bar#siggy", "kythe://foo?path=bar"},
 		{"kythe:?root=apple?path=pear?lang=plum#cherry", "kythe:?path=pear?root=apple"},
+		{"kythe://foo%2Bbar?path=a%20b?root=%24?lang=%5Bjs%5D#p%09d%09q", "kythe://foo%2Bbar?path=a%20b?root=%24"},
 	}
 	for _, test := range tests {
 		got, err := AnchorFile(test.anchor)
@@ -40,5 +41,15 @@ func TestBadAnchor(t *testing.T) {
 	const input = "bogus"
 	if got, err := AnchorFile(input); err == nil {
 		t.Errorf("AnchorFile(%q): got %q, expected error", input, got)
+	}
+}
+
+const benchURI = `kythe://some.long.nasty/corpus/label/from.hell%21%21?lang=winkerbean%2b%2b?path=miscdata/experiments/parthenon/studies/gaming/weeble_native_live_catastrophe.wb#IDENTIFIER%3AWeebleNativeLiveCatastrophe.Experiment.Gaming.weeble_native_live_catastrophe`
+
+func BenchmarkAnchorFile(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		if _, err := AnchorFile(benchURI); err != nil {
+			panic(err)
+		}
 	}
 }

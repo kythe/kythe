@@ -22,12 +22,13 @@ import "kythe.io/kythe/go/util/kytheuri"
 // AnchorFile constructs the canonical file ticket corresponding to a given
 // anchor ticket. It is an error only if anchofTicket is invalid.
 func AnchorFile(anchorTicket string) (string, error) {
-	u, err := kytheuri.Parse(anchorTicket)
+	// Use ParseRaw to avoid the expense of unescaping, which we don't need.
+	r, err := kytheuri.ParseRaw(anchorTicket)
 	if err != nil {
 		return "", err
 	}
 	// See http://www.kythe.io/docs/schema/#anchor for vname rules.
-	u.Signature = ""
-	u.Language = ""
-	return u.String(), nil
+	r.URI.Signature = ""
+	r.URI.Language = ""
+	return r.String(), nil
 }
