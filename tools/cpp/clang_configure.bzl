@@ -614,12 +614,12 @@ def _cuda_compute_capabilities(repository_ctx):
   return capabilities
 
 
-def _tpl(repository_ctx, tpl, substitutions={}, out=None):
+def _tpl(repository_ctx, tpl, substitutions={}, out=None, repo="bazel_tools"):
   if not out:
     out = tpl
   repository_ctx.template(
       out,
-      Label("@bazel_tools//tools/cpp:%s.tpl" % tpl),
+      Label("@%s//tools/cpp:%s.tpl" % (repo, tpl)),
       substitutions)
 
 
@@ -762,7 +762,8 @@ def _impl(repository_ctx):
         "%{default_toolchain_name}": _get_env_var(repository_ctx, "CC_TOOLCHAIN_NAME", "local", False),
         "%{toolchain_name}": _get_env_var(repository_ctx, "CC_TOOLCHAIN_NAME", "local", False),
         "%{content}": _build_crosstool(crosstool_content) + "\n" +
-                      _build_tool_path(tool_paths),
+                      _build_tool_path(tool_paths) + "\n" +
+                      ("" if darwin else "linking_mode_flags { mode: DYNAMIC }\n"),
         "%{opt_content}": _build_crosstool(opt_content, "    "),
         "%{dbg_content}": _build_crosstool(dbg_content, "    "),
         "%{cxx_builtin_include_directory}": "",
@@ -771,7 +772,7 @@ def _impl(repository_ctx):
         "%{msvc_env_path}": "",
         "%{msvc_env_include}": "",
         "%{msvc_env_lib}": "",
-    })
+    }, repo="")
 
 
 cc_autoconf = repository_rule(
