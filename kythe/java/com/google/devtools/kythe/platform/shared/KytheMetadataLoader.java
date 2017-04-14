@@ -121,8 +121,4 @@ public class KytheMetadataLoader implements MetadataLoader {
     }
     return null;
   }
-
-  private static Gson buildGson(GsonBuilder builder) {
-    return JsonUtil.registerProtoTypes(builder).create();
-  }
 }

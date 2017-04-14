@@ -296,7 +296,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
               ImmutableList.<EntrySet>of(), /* There are no wildcards in class definitions */
               markedSource.build());
 
-      boolean documented = visitDocComment(classDef, classNode, absNode);
+      boolean documented = visitDocComment(classNode, absNode);
 
       if (absNode != null) {
         List<String> tParamNames = new LinkedList<>();
@@ -396,7 +396,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       EntrySet absNode =
           defineTypeParameters(
               ctx, methodNode, methodDef.getTypeParameters(), wildcards, markedSource.build());
-      boolean documented = visitDocComment(methodDef, methodNode, absNode);
+      boolean documented = visitDocComment(methodNode, absNode);
 
       EntrySet ret, bindingAnchor = null;
       String fnTypeName = "(" + Joiner.on(",").join(paramTypeNames) + ")";
@@ -486,7 +486,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     Optional<String> signature = signatureGenerator.getSignature(varDef.sym);
     if (signature.isPresent()) {
       EntrySet varNode = entrySets.getNode(signatureGenerator, varDef.sym, signature.get(), null);
-      boolean documented = visitDocComment(varDef, varNode, null);
+      boolean documented = visitDocComment(varNode, null);
       emitAnchor(
           varDef.name,
           varDef.getStartPosition(),
@@ -697,7 +697,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     return scanAll(owner.downAsSnippet(assgnOp), assgnOp.lhs, assgnOp.rhs);
   }
 
-  private boolean visitDocComment(JCTree tree, EntrySet node, EntrySet absNode) {
+  private boolean visitDocComment(EntrySet node, EntrySet absNode) {
     // TODO(https://phabricator-dot-kythe-repo.appspot.com/T185): always use absNode
     return docScanner != null && docScanner.visitDocComment(treePath, node, absNode);
   }

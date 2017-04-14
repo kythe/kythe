@@ -594,6 +594,7 @@ public class JavaCompilationUnitExtractor {
       context.put(
           FSInfo.class,
           new Context.Factory<FSInfo>() {
+            @Override
             public FSInfo make(Context c) {
               FSInfo instance = new NonResolvingCacheFSInfo();
               c.put(FSInfo.class, instance);
