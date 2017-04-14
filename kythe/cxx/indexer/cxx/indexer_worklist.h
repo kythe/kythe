@@ -18,6 +18,7 @@
 #define KYTHE_CXX_INDEXER_CXX_INDEXER_WORKLIST_H_
 
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "clang/AST/Decl.h"
@@ -43,7 +44,7 @@ struct IndexJob {
         RangeContext(ParentJob.RangeContext),
         TypeContext(ParentJob.TypeContext),
         BlameStack(ParentJob.BlameStack),
-        ClaimId(ClaimId) {}
+        ClaimId(std::move(ClaimId)) {}
 
   /// \brief Is this job meant to index Decl?
   bool IsDeclJob = true;
