@@ -4521,7 +4521,7 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::RecordIdTypeNode(
     ProtocolNodes.insert(std::pair<std::string, GraphObserver::NodeId>(
         P->getNameAsString(), PID));
   }
-  if (ProtocolNodes.size() == 0) {
+  if (ProtocolNodes.empty()) {
     return Observer.getNodeIdForBuiltinType("id");
   } else if (ProtocolNodes.size() == 1) {
     // We have something like id<P1>. This is a special case of the following

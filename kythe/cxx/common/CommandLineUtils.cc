@@ -55,7 +55,7 @@ class FullMatchRegex {
   bool FullMatch(llvm::StringRef String) const {
     std::lock_guard<std::mutex> MutexLock(RegexMutex);
     llvm::SmallVector<llvm::StringRef, 1> Matches;
-    return String.size() > 0 && InnerRegex.match(String, &Matches);
+    return !String.empty() && InnerRegex.match(String, &Matches);
   }
 
  private:

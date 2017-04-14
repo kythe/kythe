@@ -20,6 +20,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Tooling/Tooling.h"
@@ -141,9 +142,9 @@ std::string IndexCompilationUnit(
           });
     }
   }
-  std::unique_ptr<IndexerFrontendAction> Action(
-      new IndexerFrontendAction(&Observer, HSIValid ? &HSI : nullptr,
-                                Options.ShouldStopIndexing, CreateWorklist));
+  std::unique_ptr<IndexerFrontendAction> Action(new IndexerFrontendAction(
+      &Observer, HSIValid ? &HSI : nullptr, Options.ShouldStopIndexing,
+      std::move(CreateWorklist)));
   Action->setIgnoreUnimplemented(Options.UnimplementedBehavior);
   Action->setTemplateMode(Options.TemplateBehavior);
   Action->setVerbosity(Options.Verbosity);

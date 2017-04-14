@@ -20,6 +20,7 @@
 #include <functional>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 
 #include "glog/logging.h"
 
@@ -135,7 +136,7 @@ class KytheGraphObserver : public GraphObserver {
  public:
   KytheGraphObserver(KytheGraphRecorder *recorder, KytheClaimClient *client,
                      const MetadataSupports *meta_supports,
-                     const llvm::IntrusiveRefCntPtr<IndexVFS> vfs,
+                     const llvm::IntrusiveRefCntPtr<IndexVFS> &vfs,
                      ProfilingCallback ReportProfileEventCallback)
       : recorder_(CHECK_NOTNULL(recorder)),
         client_(CHECK_NOTNULL(client)),
@@ -143,7 +144,7 @@ class KytheGraphObserver : public GraphObserver {
         vfs_(vfs) {
     default_token_.set_rough_claimed(true);
     type_token_.set_rough_claimed(true);
-    ReportProfileEvent = ReportProfileEventCallback;
+    ReportProfileEvent = std::move(ReportProfileEventCallback);
     RegisterBuiltins();
     EmitMetaNodes();
   }
@@ -435,7 +436,7 @@ class KytheGraphObserver : public GraphObserver {
     }
     static size_t ComputeHash(const clang::SourceRange &PhysicalRange,
                               EdgeKindID EdgeKind,
-                              const GraphObserver::NodeId EdgeTarget) {
+                              const GraphObserver::NodeId &EdgeTarget) {
       return std::hash<unsigned>()(PhysicalRange.getBegin().getRawEncoding()) ^
              (std::hash<unsigned>()(PhysicalRange.getEnd().getRawEncoding())
               << 1) ^

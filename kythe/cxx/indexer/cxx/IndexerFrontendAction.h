@@ -76,8 +76,8 @@ class IndexerFrontendAction : public clang::ASTFrontendAction {
           CreateWorklist)
       : Observer(CHECK_NOTNULL(GO)),
         HeaderConfigValid(Info != nullptr),
-        ShouldStopIndexing(ShouldStopIndexing),
-        CreateWorklist(CreateWorklist) {
+        ShouldStopIndexing(std::move(ShouldStopIndexing)),
+        CreateWorklist(std::move(CreateWorklist)) {
     if (HeaderConfigValid) {
       HeaderConfig = *Info;
     }

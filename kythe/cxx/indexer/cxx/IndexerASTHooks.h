@@ -23,6 +23,7 @@
 #include <memory>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/ASTTypeTraits.h"
@@ -193,8 +194,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
  public:
   IndexerASTVisitor(clang::ASTContext &C, BehaviorOnUnimplemented B,
                     BehaviorOnTemplates T, Verbosity V,
-                    const LibrarySupports &S, clang::Sema &Sema,
-                    std::function<bool()> ShouldStopIndexing,
+                    const LibrarySupports &S,
+                    clang::Sema &Sema, std::function<bool()> ShouldStopIndexing,
                     GraphObserver *GO = nullptr)
       : IgnoreUnimplemented(B),
         TemplateMode(T),
@@ -204,7 +205,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
         Supports(S),
         Sema(Sema),
         MarkedSources(&Sema, &Observer),
-        ShouldStopIndexing(ShouldStopIndexing) {}
+        ShouldStopIndexing(std::move(ShouldStopIndexing)) {}
 
   ~IndexerASTVisitor() { deleteAllParents(); }
 
@@ -444,8 +445,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// such that the dependent name is lookup(lookup*(Root, NNS), Id).
   /// \param ER If `EmitRanges::Yes`, records ranges for syntactic elements.
   MaybeFew<GraphObserver::NodeId> BuildNodeIdForDependentName(
-      const clang::NestedNameSpecifierLoc &NNS,
-      const clang::DeclarationName &Id, const clang::SourceLocation IdLoc,
+      const clang::NestedNameSpecifierLoc &NNS, const clang::DeclarationName &Id,
+      const clang::SourceLocation IdLoc,
       const MaybeFew<GraphObserver::NodeId> &Root, EmitRanges ER);
 
   /// \brief Is `VarDecl` a definition?
@@ -905,8 +906,8 @@ class IndexerASTConsumer : public clang::SemaConsumer {
         TemplateMode(T),
         Verbosity(V),
         Supports(S),
-        ShouldStopIndexing(ShouldStopIndexing),
-        CreateWorklist(CreateWorklist) {}
+        ShouldStopIndexing(std::move(ShouldStopIndexing)),
+        CreateWorklist(std::move(CreateWorklist)) {}
 
   void HandleTranslationUnit(clang::ASTContext &Context) override {
     CHECK(Sema != nullptr);

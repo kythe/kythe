@@ -185,7 +185,7 @@ void AssertionParser::SetTopLocationSpecMatchNumber(const std::string &number) {
 Identifier *AssertionParser::PathIdentifierFor(
     const yy::location &location, const std::string &path_frag,
     const std::string &default_root) {
-  if (path_frag.size() == 0) {
+  if (path_frag.empty()) {
     return verifier_.IdentifierFor(location, "/");
   } else if (path_frag[0] != '/') {
     return verifier_.IdentifierFor(location, default_root + path_frag);
@@ -291,7 +291,7 @@ bool AssertionParser::ValidateTopLocationSpec(const yy::location &location,
                                               bool *use_line_number,
                                               bool *must_be_unambiguous,
                                               int *match_number) {
-  if (!location_spec_stack_.size()) {
+  if (location_spec_stack_.empty()) {
     Error(location, "No locations on location stack.");
     return verifier_.empty_string_id();
   }

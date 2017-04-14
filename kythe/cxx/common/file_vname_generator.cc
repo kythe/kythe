@@ -99,13 +99,13 @@ kythe::proto::VName FileVNameGenerator::LookupBaseVName(
     int capture_groups = rule.pattern->NumberOfCapturingGroups();
     if (RE2::FullMatchN(path, *rule.pattern, arg_pointers, capture_groups)) {
       kythe::proto::VName result;
-      if (rule.corpus.size()) {
+      if (!rule.corpus.empty()) {
         result.set_corpus(ApplyRule(rule.corpus, argv, capture_groups));
       }
-      if (rule.root.size()) {
+      if (!rule.root.empty()) {
         result.set_root(ApplyRule(rule.root, argv, capture_groups));
       }
-      if (rule.path.size()) {
+      if (!rule.path.empty()) {
         result.set_path(ApplyRule(rule.path, argv, capture_groups));
       }
       return result;
