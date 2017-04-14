@@ -23,7 +23,6 @@
 #include <memory>
 #include <unordered_map>
 #include <unordered_set>
-#include <utility>
 
 #include "glog/logging.h"
 #include "clang/AST/ASTContext.h"
@@ -192,21 +191,16 @@ class PruneCheck;
 /// \brief An AST visitor that extracts information for a translation unit and
 /// writes it to a `GraphObserver`.
 class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
- public:
+public:
   IndexerASTVisitor(clang::ASTContext &C, BehaviorOnUnimplemented B,
                     BehaviorOnTemplates T, Verbosity V,
-                    const LibrarySupports &S,
-                    clang::Sema &Sema, std::function<bool()> ShouldStopIndexing,
+                    const LibrarySupports &S, clang::Sema &Sema,
+                    std::function<bool()> ShouldStopIndexing,
                     GraphObserver *GO = nullptr)
-      : IgnoreUnimplemented(B),
-        TemplateMode(T),
-        Verbosity(V),
-        Observer(GO ? *GO : NullObserver),
-        Context(C),
-        Supports(S),
-        Sema(Sema),
+      : IgnoreUnimplemented(B), TemplateMode(T), Verbosity(V),
+        Observer(GO ? *GO : NullObserver), Context(C), Supports(S), Sema(Sema),
         MarkedSources(&Sema, &Observer),
-        ShouldStopIndexing(std::move(ShouldStopIndexing)) {}
+        ShouldStopIndexing(ShouldStopIndexing) {}
 
   ~IndexerASTVisitor() { deleteAllParents(); }
 
@@ -220,8 +214,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool VisitCXXDeleteExpr(const clang::CXXDeleteExpr *E);
   bool VisitCXXNewExpr(const clang::CXXNewExpr *E);
   bool VisitCXXPseudoDestructorExpr(const clang::CXXPseudoDestructorExpr *E);
-  bool VisitCXXUnresolvedConstructExpr(
-      const clang::CXXUnresolvedConstructExpr *E);
+  bool
+  VisitCXXUnresolvedConstructExpr(const clang::CXXUnresolvedConstructExpr *E);
   bool VisitCallExpr(const clang::CallExpr *Expr);
   bool VisitMemberExpr(const clang::MemberExpr *Expr);
   bool VisitCXXDependentScopeMemberExpr(
@@ -243,8 +237,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool VisitObjCPropertyImplDecl(const clang::ObjCPropertyImplDecl *Decl);
   bool VisitObjCCompatibleAliasDecl(const clang::ObjCCompatibleAliasDecl *Decl);
   bool VisitObjCCategoryDecl(const clang::ObjCCategoryDecl *Decl);
-  bool VisitObjCImplementationDecl(
-      const clang::ObjCImplementationDecl *ImplDecl);
+  bool
+  VisitObjCImplementationDecl(const clang::ObjCImplementationDecl *ImplDecl);
   bool VisitObjCCategoryImplDecl(const clang::ObjCCategoryImplDecl *ImplDecl);
   bool VisitObjCInterfaceDecl(const clang::ObjCInterfaceDecl *Decl);
   bool VisitObjCProtocolDecl(const clang::ObjCProtocolDecl *Decl);
@@ -288,14 +282,14 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// \brief For functions that support it, controls the emission of range
   /// information.
   enum class EmitRanges {
-    No,  ///< Don't emit range information.
-    Yes  ///< Emit range information when it's available.
+    No, ///< Don't emit range information.
+    Yes ///< Emit range information when it's available.
   };
 
   // Objective C methods don't have TypeSourceInfo so we must construct a type
   // for the methods to be used in the graph.
-  MaybeFew<GraphObserver::NodeId> CreateObjCMethodTypeNode(
-      const clang::ObjCMethodDecl *MD, EmitRanges ER);
+  MaybeFew<GraphObserver::NodeId>
+  CreateObjCMethodTypeNode(const clang::ObjCMethodDecl *MD, EmitRanges ER);
 
   /// \brief Builds a stable node ID for a compile-time expression.
   /// \param Expr The expression to represent.
@@ -312,8 +306,9 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// \param ER whether to notify the `GraphObserver` about source text ranges
   /// for types.
   /// \return The Node ID for `Type`.
-  MaybeFew<GraphObserver::NodeId> BuildNodeIdForType(
-      const clang::TypeLoc &TypeLoc, const clang::Type *DType, EmitRanges ER);
+  MaybeFew<GraphObserver::NodeId>
+  BuildNodeIdForType(const clang::TypeLoc &TypeLoc, const clang::Type *DType,
+                     EmitRanges ER);
 
   /// \brief Builds a stable node ID for `Type`.
   /// \param TypeLoc The type that is being identified. If its location is valid
@@ -361,16 +356,19 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   MaybeFew<GraphObserver::NodeId> BuildNodeIdForType(const clang::QualType &QT);
 
   /// \brief Builds a stable node ID for the given `TemplateName`.
-  MaybeFew<GraphObserver::NodeId> BuildNodeIdForTemplateName(
-      const clang::TemplateName &Name, clang::SourceLocation L);
+  MaybeFew<GraphObserver::NodeId>
+  BuildNodeIdForTemplateName(const clang::TemplateName &Name,
+                             clang::SourceLocation L);
 
   /// \brief Builds a stable node ID for the given `TemplateArgument`.
-  MaybeFew<GraphObserver::NodeId> BuildNodeIdForTemplateArgument(
-      const clang::TemplateArgumentLoc &Arg, EmitRanges ER);
+  MaybeFew<GraphObserver::NodeId>
+  BuildNodeIdForTemplateArgument(const clang::TemplateArgumentLoc &Arg,
+                                 EmitRanges ER);
 
   /// \brief Builds a stable node ID for the given `TemplateArgument`.
-  MaybeFew<GraphObserver::NodeId> BuildNodeIdForTemplateArgument(
-      const clang::TemplateArgument &Arg, clang::SourceLocation L);
+  MaybeFew<GraphObserver::NodeId>
+  BuildNodeIdForTemplateArgument(const clang::TemplateArgument &Arg,
+                                 clang::SourceLocation L);
 
   /// \brief Builds a stable node ID for `Stmt`.
   ///
@@ -381,13 +379,13 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// \param Decl The statement that is being identified
   /// \return The node for `Stmt` if the statement was implicit; otherwise,
   /// None.
-  MaybeFew<GraphObserver::NodeId> BuildNodeIdForImplicitStmt(
-      const clang::Stmt *Stmt);
+  MaybeFew<GraphObserver::NodeId>
+  BuildNodeIdForImplicitStmt(const clang::Stmt *Stmt);
 
   /// \brief Builds a stable node ID for `Decl`'s tapp if it's an implicit
   /// template instantiation.
-  MaybeFew<GraphObserver::NodeId> BuildNodeIdForImplicitTemplateInstantiation(
-      const clang::Decl *Decl);
+  MaybeFew<GraphObserver::NodeId>
+  BuildNodeIdForImplicitTemplateInstantiation(const clang::Decl *Decl);
 
   /// \brief Builds a stable node ID for an external reference to `Decl`.
   ///
@@ -408,8 +406,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// \brief Builds a stable node ID for `TND`.
   ///
   /// \param Decl The declaration that is being identified.
-  MaybeFew<GraphObserver::NodeId> BuildNodeIdForTypedefNameDecl(
-      const clang::TypedefNameDecl *TND);
+  MaybeFew<GraphObserver::NodeId>
+  BuildNodeIdForTypedefNameDecl(const clang::TypedefNameDecl *TND);
 
   /// \brief Builds a stable node ID for `Decl`.
   ///
@@ -428,8 +426,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
 
   /// \brief Categorizes the name of `Decl` according to the equivalence classes
   /// defined by `GraphObserver::NameId::NameEqClass`.
-  GraphObserver::NameId::NameEqClass BuildNameEqClassForDecl(
-      const clang::Decl *Decl);
+  GraphObserver::NameId::NameEqClass
+  BuildNameEqClassForDecl(const clang::Decl *Decl);
 
   /// \brief Builds a stable name ID for the name of `Decl`.
   ///
@@ -446,8 +444,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// such that the dependent name is lookup(lookup*(Root, NNS), Id).
   /// \param ER If `EmitRanges::Yes`, records ranges for syntactic elements.
   MaybeFew<GraphObserver::NodeId> BuildNodeIdForDependentName(
-      const clang::NestedNameSpecifierLoc &NNS, const clang::DeclarationName &Id,
-      const clang::SourceLocation IdLoc,
+      const clang::NestedNameSpecifierLoc &NNS,
+      const clang::DeclarationName &Id, const clang::SourceLocation IdLoc,
       const MaybeFew<GraphObserver::NodeId> &Root, EmitRanges ER);
 
   /// \brief Is `VarDecl` a definition?
@@ -466,8 +464,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   ///
   /// The returned range is a best-effort attempt to cover the "name" of
   /// the entity as written in the source code.
-  clang::SourceRange RangeForNameOfDeclaration(
-      const clang::NamedDecl *Decl) const;
+  clang::SourceRange
+  RangeForNameOfDeclaration(const clang::NamedDecl *Decl) const;
 
   /// Consume a token of the `ExpectedKind` from the `StartLocation`,
   /// returning the range for that token on success and an invalid
@@ -899,20 +897,16 @@ private:
 
 /// \brief An `ASTConsumer` that passes events to a `GraphObserver`.
 class IndexerASTConsumer : public clang::SemaConsumer {
- public:
+public:
   explicit IndexerASTConsumer(
       GraphObserver *GO, BehaviorOnUnimplemented B, BehaviorOnTemplates T,
       Verbosity V, const LibrarySupports &S,
       std::function<bool()> ShouldStopIndexing,
       std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor *)>
           CreateWorklist)
-      : Observer(GO),
-        IgnoreUnimplemented(B),
-        TemplateMode(T),
-        Verbosity(V),
-        Supports(S),
-        ShouldStopIndexing(std::move(ShouldStopIndexing)),
-        CreateWorklist(std::move(CreateWorklist)) {}
+      : Observer(GO), IgnoreUnimplemented(B), TemplateMode(T), Verbosity(V),
+        Supports(S), ShouldStopIndexing(ShouldStopIndexing),
+        CreateWorklist(CreateWorklist) {}
 
   void HandleTranslationUnit(clang::ASTContext &Context) override {
     CHECK(Sema != nullptr);
@@ -929,7 +923,7 @@ class IndexerASTConsumer : public clang::SemaConsumer {
 
   void ForgetSema() override { Sema = nullptr; }
 
- private:
+private:
   GraphObserver *const Observer;
   /// Whether we should stop on missing cases or continue on.
   BehaviorOnUnimplemented IgnoreUnimplemented;

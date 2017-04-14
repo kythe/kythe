@@ -47,6 +47,7 @@ namespace kythe {
 namespace {
 
 using clang::SourceLocation;
+using llvm::StringRef;
 
 class AnchorMarkTest : public ::testing::Test {
  protected:

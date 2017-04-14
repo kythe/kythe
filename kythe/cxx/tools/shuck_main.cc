@@ -48,6 +48,7 @@
 
 using kythe::proto::ClaimAssignment;
 using kythe::proto::CompilationUnit;
+using kythe::proto::VName;
 
 DEFINE_string(index_pack, "", "Read from this index pack.");
 DEFINE_string(static_claim, "", "Read from this claim file.");

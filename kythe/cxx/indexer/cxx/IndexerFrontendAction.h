@@ -69,20 +69,18 @@ bool RunToolOnCode(std::unique_ptr<clang::FrontendAction> tool_action,
 // TODO(jdennett): Consider moving/renaming this to kythe::ExtractIndexAction.
 class IndexerFrontendAction : public clang::ASTFrontendAction {
 public:
- IndexerFrontendAction(
-     GraphObserver *GO, const HeaderSearchInfo *Info,
-     std::function<bool()> ShouldStopIndexing,
-     std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor *)>
-         CreateWorklist)
-     : Observer(CHECK_NOTNULL(GO)),
-       HeaderConfigValid(Info != nullptr),
-       ShouldStopIndexing(std::move(ShouldStopIndexing)),
-       CreateWorklist(std::move(CreateWorklist)) {
-   if (HeaderConfigValid) {
-     HeaderConfig = *Info;
-   }
-   Supports.push_back(llvm::make_unique<GoogleFlagsLibrarySupport>());
-   Supports.push_back(llvm::make_unique<GoogleProtoLibrarySupport>());
+  IndexerFrontendAction(
+      GraphObserver *GO, const HeaderSearchInfo *Info,
+      std::function<bool()> ShouldStopIndexing,
+      std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor *)>
+          CreateWorklist)
+      : Observer(CHECK_NOTNULL(GO)), HeaderConfigValid(Info != nullptr),
+        ShouldStopIndexing(ShouldStopIndexing), CreateWorklist(CreateWorklist) {
+    if (HeaderConfigValid) {
+      HeaderConfig = *Info;
+    }
+    Supports.push_back(llvm::make_unique<GoogleFlagsLibrarySupport>());
+    Supports.push_back(llvm::make_unique<GoogleProtoLibrarySupport>());
   }
 
   /// \brief Barrel through even if we don't understand part of a program?

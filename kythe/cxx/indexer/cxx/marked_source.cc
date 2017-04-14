@@ -444,7 +444,7 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
       }
       return;
     }
-    annotations_.push_back(annotation);
+    annotations_.push_back(std::move(annotation));
   }
 
   /// \brief determines if we should skip trying to record an annotation for
@@ -626,7 +626,7 @@ void MarkedSourceGenerator::ReplaceMarkedSourceWithTemplateArgumentList(
       llvm::raw_string_ostream stream(pre_text);
       print_arg.print(policy, stream);
     }
-    *next_arg->mutable_pre_text() = pre_text;
+    *next_arg->mutable_pre_text() = std::move(pre_text);
   }
 }
 
@@ -668,7 +668,7 @@ bool MarkedSourceGenerator::ReplaceMarkedSourceWithQualifiedName(
           llvm::raw_string_ostream stream(pre_text);
           stream << spec->getName();
         }
-        *class_name->mutable_pre_text() = pre_text;
+        *class_name->mutable_pre_text() = std::move(pre_text);
         ReplaceMarkedSourceWithTemplateArgumentList(parent->add_child(), spec);
       } else {
         parent->set_kind(MarkedSource::IDENTIFIER);
@@ -699,7 +699,7 @@ bool MarkedSourceGenerator::ReplaceMarkedSourceWithQualifiedName(
             stream << *llvm::cast<clang::NamedDecl>(decl_context);
           }
         }
-        *parent->mutable_pre_text() = pre_text;
+        *parent->mutable_pre_text() = std::move(pre_text);
       }
     }
   }

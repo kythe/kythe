@@ -18,7 +18,6 @@
 
 #include <type_traits>
 #include <unordered_map>
-#include <utility>
 
 #include <fcntl.h>
 #include <openssl/sha.h>
@@ -740,7 +739,7 @@ class ExtractorAction : public clang::PreprocessorFrontendAction {
  public:
   explicit ExtractorAction(IndexWriter* index_writer,
                            ExtractorCallback callback)
-      : callback_(std::move(callback)), index_writer_(index_writer) {}
+      : callback_(callback), index_writer_(index_writer) {}
 
   void ExecuteAction() override {
     const auto inputs = getCompilerInstance().getFrontendOpts().Inputs;
@@ -1038,7 +1037,7 @@ void IndexWriter::WriteIndex(
 std::unique_ptr<clang::FrontendAction> NewExtractor(
     IndexWriter* index_writer, ExtractorCallback callback) {
   return std::unique_ptr<clang::FrontendAction>(
-      new ExtractorAction(index_writer, std::move(callback)));
+      new ExtractorAction(index_writer, callback));
 }
 
 void MapCompilerResources(clang::tooling::ToolInvocation* invocation,
@@ -1080,7 +1079,7 @@ void ExtractorConfiguration::SetVNameConfig(const std::string& path) {
 
 void ExtractorConfiguration::SetArgs(const std::vector<std::string>& args) {
   final_args_ = args;
-  std::string executable = !final_args_.empty() ? final_args_[0] : "";
+  std::string executable = final_args_.size() ? final_args_[0] : "";
   if (final_args_.size() >= 3 && final_args_[1] == "--with_executable") {
     executable = final_args_[2];
     final_args_.erase(final_args_.begin() + 1, final_args_.begin() + 3);

@@ -181,7 +181,7 @@ class ClaimTool {
       ++total_input_count_;
       if (input.context().row_size()) {
         VName input_vname = input.v_name();
-        if (!input_vname.signature().empty()) {
+        if (input_vname.signature().size()) {
           // We generally expect that file vnames have no signature.
           // If this happens, we'll emit a warning, but we'll also be sure to
           // keep the signature around as a suffix when building vnames for

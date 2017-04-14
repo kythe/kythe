@@ -22,6 +22,14 @@
 namespace {
 
 using ::kythe::common::HasCxxInputInCommandLineOrArgs;
+using ::kythe::common::DriverAction;
+using ::kythe::common::ASSEMBLY;
+using ::kythe::common::CXX_COMPILE;
+using ::kythe::common::C_COMPILE;
+using ::kythe::common::FORTRAN_COMPILE;
+using ::kythe::common::GO_COMPILE;
+using ::kythe::common::LINK;
+using ::kythe::common::UNKNOWN;
 
 TEST(HasCxxInputInCommandLineOrArgs, GoodInputs) {
   EXPECT_TRUE(HasCxxInputInCommandLineOrArgs({"-c", "a.c"}));

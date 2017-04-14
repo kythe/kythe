@@ -20,7 +20,6 @@
 
 #include <memory>
 #include <string>
-#include <utility>
 
 #include "kythe/cxx/common/indexing/KytheClaimClient.h"
 #include "kythe/cxx/common/indexing/KytheGraphRecorder.h"
@@ -143,9 +142,9 @@ std::string IndexCompilationUnit(
           });
     }
   }
-  std::unique_ptr<IndexerFrontendAction> Action(new IndexerFrontendAction(
-      &Observer, HSIValid ? &HSI : nullptr, Options.ShouldStopIndexing,
-      std::move(CreateWorklist)));
+  std::unique_ptr<IndexerFrontendAction> Action(
+      new IndexerFrontendAction(&Observer, HSIValid ? &HSI : nullptr,
+                                Options.ShouldStopIndexing, CreateWorklist));
   Action->setIgnoreUnimplemented(Options.UnimplementedBehavior);
   Action->setTemplateMode(Options.TemplateBehavior);
   Action->setVerbosity(Options.Verbosity);

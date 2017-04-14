@@ -18,7 +18,6 @@
 
 #include <openssl/sha.h>
 #include <uuid/uuid.h>
-#include <utility>
 
 #include "glog/logging.h"
 #include "google/protobuf/io/coded_stream.h"
@@ -355,7 +354,7 @@ bool IndexPack::ReadCompilationUnit(const std::string &hash,
 bool IndexPack::ScanData(IndexPackFilesystem::DataKind kind,
                          IndexPackFilesystem::ScanCallback callback,
                          std::string *error_text) {
-  return filesystem_->ScanFiles(kind, std::move(callback), error_text);
+  return filesystem_->ScanFiles(kind, callback, error_text);
 }
 
 bool IndexPack::AddFileData(const kythe::proto::FileData &content,

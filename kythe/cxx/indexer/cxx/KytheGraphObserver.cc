@@ -48,6 +48,7 @@ DEFINE_bool(fail_on_unimplemented_builtin, false,
 namespace kythe {
 
 using clang::SourceLocation;
+using kythe::proto::Entry;
 using llvm::StringRef;
 
 static const char *CompletenessToString(
