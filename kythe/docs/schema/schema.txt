@@ -436,7 +436,9 @@ depends
 ~~~~~~~
 
 Brief description::
-  A *depends* B if processing of A depends on the existence or presence of B. For example, if a process depends a set of files and/or processes. Another example, a file depends upon a process which outputs said file.
+  A *depends* B if processing of A depends on the existence or presence of B. For example, if a
+  process depends a set of files and/or processes. Another example, a file depends upon a process
+  which outputs said file.
 Commonly arises from::
   build dependencies
 Points from::
@@ -480,6 +482,44 @@ int v;   //- @"/// An empty class." documents ClassC
          //- ClassC.node/kind record
 /// An empty class.
 class C { };
+--------------------------------------------------------------------------------
+
+[[exports]]
+exports
+~~~~~~~~
+Brief description::
+  A *exports* B if process node A exports process node B.
+Commonly arises from::
+  build rules
+Points from::
+  process nodes
+Points toward::
+  process nodes
+Orginals are used::
+  never
+See also::
+  <<process>>
+Notes::
+  Tools like bazel have cases where build rules export other build rules, wherein the closure of all
+  rules reached via exports attributes are considered direct dependencies of any rule that directly
+  depends on the target with exports. The exports are not direct dependencies of the rule they belong
+  to.
+
+[kythe,clike,"Process node exports other process node."]
+--------------------------------------------------------------------------------
+//- ProcessNodeA.node/kind process
+//- ProcessNodeB.node/kind process
+//- ProcessNodeA exports ProcessNodeB
+java_library(
+  name = "A",
+  exports = [
+    ":B",
+  ],
+)
+
+java_library(
+  name = "B",
+)
 --------------------------------------------------------------------------------
 
 [[extends]]
