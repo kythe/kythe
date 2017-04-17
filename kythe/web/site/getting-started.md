@@ -13,6 +13,11 @@ permalink: /getting-started/
 git clone https://github.com/google/kythe.git
 {% endhighlight %}
 
+Or if you will need to push and want to use ssh to authenticate to github:
+{% highlight bash %}
+git clone git@github.com:google/kythe.git
+{% endhighlight %}
+
 ### External Dependencies
 
 Kythe relies on the following external dependencies:
