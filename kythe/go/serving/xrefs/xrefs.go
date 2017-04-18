@@ -601,10 +601,10 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 		}
 
 		reply.Reference = make([]*xpb.DecorationsReply_Reference, 0, len(decor.Decoration))
-		reply.Nodes = make(map[string]*cpb.NodeInfo)
+		reply.Nodes = make(map[string]*cpb.NodeInfo, len(decor.Target))
 
 		// Reference.TargetTicket -> NodeInfo (superset of reply.Nodes)
-		nodes := make(map[string]*cpb.NodeInfo)
+		nodes := make(map[string]*cpb.NodeInfo, len(decor.Target))
 		if len(patterns) > 0 {
 			for _, n := range decor.Target {
 				if info := nodeToInfo(patterns, n); info != nil {
@@ -612,17 +612,19 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 				}
 			}
 		}
+		tracePrintf(ctx, "Potential target nodes: %d", len(nodes))
 
-		// ExpandedAnchor.Ticket -> ExpandedAnchor
-		var defs map[string]*srvpb.ExpandedAnchor
+		// All known definition locations (Anchor.Ticket -> Anchor)
+		var defs map[string]*xpb.Anchor
 		if req.TargetDefinitions {
-			reply.DefinitionLocations = make(map[string]*xpb.Anchor)
+			reply.DefinitionLocations = make(map[string]*xpb.Anchor, len(decor.TargetDefinitions))
 
-			defs = make(map[string]*srvpb.ExpandedAnchor, len(decor.TargetDefinitions))
+			defs = make(map[string]*xpb.Anchor, len(decor.TargetDefinitions))
 			for _, def := range decor.TargetDefinitions {
-				defs[def.Ticket] = def
+				defs[def.Ticket] = a2a(def, false).Anchor
 			}
 		}
+		tracePrintf(ctx, "Potential target defs: %d", len(defs))
 
 		bindings := stringset.New()
 
@@ -630,30 +632,30 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 			start, end, exists := patcher.Patch(d.Anchor.StartOffset, d.Anchor.EndOffset)
 			// Filter non-existent anchor.  Anchors can no longer exist if we were
 			// given a dirty buffer and the anchor was inside a changed region.
-			if exists {
-				if xrefs.InSpanBounds(spanKind, start, end, startBoundary, endBoundary) {
-					d.Anchor.StartOffset = start
-					d.Anchor.EndOffset = end
+			if !exists || !xrefs.InSpanBounds(spanKind, start, end, startBoundary, endBoundary) {
+				continue
+			}
 
-					r := decorationToReference(norm, d)
-					if req.TargetDefinitions {
-						if def, ok := defs[d.TargetDefinition]; ok {
-							reply.DefinitionLocations[d.TargetDefinition] = a2a(def, false).Anchor
-						}
-					} else {
-						r.TargetDefinition = ""
-					}
+			d.Anchor.StartOffset = start
+			d.Anchor.EndOffset = end
 
-					if req.ExtendsOverrides && (r.Kind == edges.Defines || r.Kind == edges.DefinesBinding) {
-						bindings.Add(r.TargetTicket)
-					}
-
-					reply.Reference = append(reply.Reference, r)
-
-					if n := nodes[r.TargetTicket]; n != nil {
-						reply.Nodes[r.TargetTicket] = n
-					}
+			r := decorationToReference(norm, d)
+			if req.TargetDefinitions {
+				if def, ok := defs[d.TargetDefinition]; ok {
+					reply.DefinitionLocations[d.TargetDefinition] = def
 				}
+			} else {
+				r.TargetDefinition = ""
+			}
+
+			if req.ExtendsOverrides && (r.Kind == edges.Defines || r.Kind == edges.DefinesBinding) {
+				bindings.Add(r.TargetTicket)
+			}
+
+			reply.Reference = append(reply.Reference, r)
+
+			if n := nodes[r.TargetTicket]; n != nil {
+				reply.Nodes[r.TargetTicket] = n
 			}
 		}
 		tracePrintf(ctx, "References: %d", len(reply.Reference))
@@ -683,7 +685,7 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 					if req.TargetDefinitions {
 						if def, ok := defs[o.OverriddenDefinition]; ok {
 							ov.TargetDefinition = o.OverriddenDefinition
-							reply.DefinitionLocations[o.OverriddenDefinition] = a2a(def, false).Anchor
+							reply.DefinitionLocations[o.OverriddenDefinition] = def
 						}
 					}
 				}
