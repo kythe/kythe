@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"path/filepath"
 
 	"kythe.io/kythe/go/platform/analysis"
 	"kythe.io/kythe/go/platform/analysis/driver"
@@ -73,8 +74,9 @@ func (k *KIndexQueue) Next(ctx context.Context, f driver.CompilationFunc) error 
 
 	k.Fetcher = cu
 	err = f(ctx, driver.Compilation{
-		Unit:     cu.Proto,
-		Revision: k.revision,
+		Unit:       cu.Proto,
+		Revision:   k.revision,
+		UnitDigest: filepath.Base(path),
 	})
 	k.Fetcher = nil
 
