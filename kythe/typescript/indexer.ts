@@ -20,7 +20,7 @@ import * as path from 'path';
 import * as ts from 'typescript';
 
 /** VName is the type of Kythe node identities. */
-interface VName {
+export interface VName {
   signature: string;
   corpus: string;
   root: string;
