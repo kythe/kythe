@@ -25,6 +25,7 @@ import com.google.devtools.kythe.platform.shared.AnalysisException;
 import com.google.devtools.kythe.platform.shared.FileDataProvider;
 import com.google.devtools.kythe.platform.shared.KytheMetadataLoader;
 import com.google.devtools.kythe.platform.shared.MetadataLoaders;
+import com.google.devtools.kythe.platform.shared.ProtobufMetadataLoader;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import io.grpc.netty.NettyServerBuilder;
 import java.io.IOException;
@@ -65,6 +66,8 @@ public class JavaIndexerServer {
         FactEmitter emitter)
         throws AnalysisException {
       MetadataLoaders metadataLoaders = new MetadataLoaders();
+      metadataLoaders.addLoader(
+          new ProtobufMetadataLoader(compilation, config.getDefaultMetadataCorpus()));
       metadataLoaders.addLoader(new KytheMetadataLoader());
       driver.analyze(
           new KytheJavacAnalyzer(config, emitter, getStatisticsCollector(), metadataLoaders),

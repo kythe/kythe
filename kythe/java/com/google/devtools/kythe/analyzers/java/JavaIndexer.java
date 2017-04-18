@@ -30,6 +30,7 @@ import com.google.devtools.kythe.platform.shared.KytheMetadataLoader;
 import com.google.devtools.kythe.platform.shared.MemoryStatisticsCollector;
 import com.google.devtools.kythe.platform.shared.MetadataLoaders;
 import com.google.devtools.kythe.platform.shared.NullStatisticsCollector;
+import com.google.devtools.kythe.platform.shared.ProtobufMetadataLoader;
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -75,6 +76,8 @@ public class JavaIndexer {
             ? System.out
             : new BufferedOutputStream(new FileOutputStream(config.getOutputPath()))) {
       MetadataLoaders metadataLoaders = new MetadataLoaders();
+      metadataLoaders.addLoader(
+          new ProtobufMetadataLoader(desc.getCompilationUnit(), config.getDefaultMetadataCorpus()));
       metadataLoaders.addLoader(new KytheMetadataLoader());
       new JavacAnalysisDriver()
           .analyze(

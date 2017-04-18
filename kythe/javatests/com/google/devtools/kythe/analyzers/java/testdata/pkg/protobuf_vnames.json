@@ -1,0 +1,9 @@
+[
+  {
+    "pattern": "(.*)",
+    "vname": {
+      "corpus": "kythe",
+      "path": "@1@"
+    }
+  }
+]

@@ -147,6 +147,18 @@ java_verifier_test(
 )
 
 java_verifier_test(
+    name = "protobuf_metadata_tests",
+    srcs = [
+        "ProtobufMetadata.java",
+    ],
+    meta = [
+        "ProtobufMetadata.java.pb.meta",
+    ],
+    vnames_config = "protobuf_vnames.json",
+    indexer_opts = ["--verbose", "--default_metadata_corpus=default"],
+)
+
+java_verifier_test(
     name = "variables_tests",
     size = "small",
     srcs = ["Variables.java"],

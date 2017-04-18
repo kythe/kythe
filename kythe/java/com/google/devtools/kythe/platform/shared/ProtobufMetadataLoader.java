@@ -1,0 +1,129 @@
+/*
+ * Copyright 2017 Google Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.devtools.kythe.platform.shared;
+
+import com.google.devtools.kythe.analyzers.base.EdgeKind;
+import com.google.devtools.kythe.common.FormattingLogger;
+import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
+import com.google.devtools.kythe.proto.Storage.VName;
+import com.google.protobuf.DescriptorProtos.GeneratedCodeInfo;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.function.Function;
+
+/** Loads protobuf metadata (stored as GeneratedCodeInfo messages). */
+public class ProtobufMetadataLoader implements MetadataLoader {
+  private static final FormattingLogger logger =
+      FormattingLogger.getLogger(ProtobufMetadataLoader.class);
+
+  /**
+   * @param vnameLookup maps from paths to VNames.
+   * @param defaultCorpus should vnameLookup return null, this value should be used for the corpus
+   *     field; if it is null, then no metadata will be emitted.
+   */
+  public ProtobufMetadataLoader(Function<String, VName> vnameLookup, String defaultCorpus) {
+    this.vnameLookup = vnameLookup;
+    this.defaultCorpus = defaultCorpus;
+  }
+
+  /**
+   * @param unit used to look up VNames for paths.
+   * @param defaultCorpus should vnameLookup return null, this value should be used for the corpus
+   *     field; if it is null, then no metadata will be emitted.
+   */
+  public ProtobufMetadataLoader(CompilationUnit unit, String defaultCorpus) {
+    this.vnameLookup = lookupVNameFromCompilationUnit(unit);
+    this.defaultCorpus = defaultCorpus;
+  }
+
+  /** This extension signifies a GeneratedCodeInfo metadata file. */
+  private static final String META_SUFFIX = ".pb.meta";
+
+  /** The language used for protobuf VNames. */
+  private static final String PROTOBUF_LANGUAGE = "protobuf";
+
+  /** vnameLookup is used to map GeneratedCodeInfo filenames to VNames. */
+  private final Function<String, VName> vnameLookup;
+
+  /** defaultCorpus is used when no corpus can be found for a given file. */
+  private final String defaultCorpus;
+
+  /** @return a function that looks up the VName for some filename in the given CompilationUnit. */
+  private static Function<String, VName> lookupVNameFromCompilationUnit(CompilationUnit unit) {
+    HashMap<String, VName> map = new HashMap<>();
+    for (CompilationUnit.FileInput input : unit.getRequiredInputList()) {
+      map.put(input.getInfo().getPath(), input.getVName());
+    }
+    return map::get;
+  }
+
+  @Override
+  public Metadata parseFile(String fileName, byte[] data) {
+    if (!fileName.endsWith(META_SUFFIX)) {
+      return null;
+    }
+    GeneratedCodeInfo info;
+    try (ByteArrayInputStream stream = new ByteArrayInputStream(data)) {
+      info = GeneratedCodeInfo.parseFrom(stream);
+    } catch (IOException ex) {
+      logger.warning("IOException on " + fileName);
+      return null;
+    }
+    VName contextVName = vnameLookup.apply(fileName);
+    if (contextVName == null) {
+      logger.warning("Failed getting VName for metadata: " + fileName);
+      if (defaultCorpus == null) {
+        return null;
+      }
+      contextVName = VName.newBuilder().setCorpus(defaultCorpus).build();
+    }
+    Metadata metadata = new Metadata();
+    for (GeneratedCodeInfo.Annotation annotation : info.getAnnotationList()) {
+      Metadata.Rule rule = new Metadata.Rule();
+      rule.begin = annotation.getBegin();
+      rule.end = annotation.getEnd();
+      rule.vname = vnameLookup.apply(annotation.getSourceFile());
+      StringBuilder protoPath = new StringBuilder();
+      boolean needsDot = false;
+      for (int node : annotation.getPathList()) {
+        if (needsDot) {
+          protoPath.append(".");
+        }
+        protoPath.append(node);
+        needsDot = true;
+      }
+      if (rule.vname == null) {
+        rule.vname =
+            VName.newBuilder()
+                .setCorpus(contextVName.getCorpus())
+                .setPath(annotation.getSourceFile())
+                .build();
+      }
+      rule.vname =
+          rule.vname
+              .toBuilder()
+              .setSignature(protoPath.toString())
+              .setLanguage(PROTOBUF_LANGUAGE)
+              .build();
+      rule.edgeOut = EdgeKind.GENERATES;
+      rule.reverseEdge = true;
+      metadata.addRule(rule);
+    }
+    return metadata;
+  }
+}

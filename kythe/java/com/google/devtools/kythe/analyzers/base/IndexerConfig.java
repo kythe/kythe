@@ -59,6 +59,13 @@ public class IndexerConfig {
   )
   private boolean verboseLogging;
 
+  @Parameter(
+    names = "--default_metadata_corpus",
+    description =
+        "If set, use this as the corpus for VNames generated from metadata (if a corpus cannot otherwise be determined)."
+  )
+  private String defaultMetadataCorpus;
+
   public IndexerConfig(String programName) {
     this.programName = programName;
   }
@@ -92,6 +99,10 @@ public class IndexerConfig {
     return verboseLogging;
   }
 
+  public final String getDefaultMetadataCorpus() {
+    return defaultMetadataCorpus;
+  }
+
   public IndexerConfig setIgnoreVNamePaths(boolean ignoreVNamePaths) {
     this.ignoreVNamePaths = ignoreVNamePaths;
     return this;
@@ -104,6 +115,11 @@ public class IndexerConfig {
 
   public IndexerConfig setVerboseLogging(boolean verboseLogging) {
     this.verboseLogging = verboseLogging;
+    return this;
+  }
+
+  public IndexerConfig setDefaultMetadataCorpus(String defaultMetadataCorpus) {
+    this.defaultMetadataCorpus = defaultMetadataCorpus;
     return this;
   }
 }
