@@ -751,6 +751,9 @@ func m2m(m *srvpb.MarkedSource) *xpb.MarkedSource {
 		LookupIndex:          m.LookupIndex,
 		DefaultChildrenCount: m.DefaultChildrenCount,
 		AddFinalListToken:    m.AddFinalListToken,
+
+		Child: make([]*xpb.MarkedSource, 0, len(m.Child)),
+		Link:  make([]*xpb.Link, 0, len(m.Link)),
 	}
 	for _, c := range m.Child {
 		res.Child = append(res.Child, m2m(c))
@@ -1219,6 +1222,7 @@ func (s *refStats) addCallers(crs *xpb.CrossReferencesReply_CrossReferenceSet, g
 		ra := &xpb.CrossReferencesReply_RelatedAnchor{
 			Anchor: a2a(c.Caller, false).Anchor,
 			Ticket: c.SemanticCaller,
+			Site:   make([]*xpb.Anchor, 0, len(c.Callsite)),
 		}
 		if includeSignature {
 			ra.MarkedSource = m2m(c.MarkedSource)
