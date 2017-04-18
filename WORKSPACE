@@ -223,7 +223,7 @@ new_git_repository(
 new_git_repository(
     name = "go_stringset",
     build_file = "third_party/go/stringset.BUILD",
-    commit = "09623af4dbc0fdd85acd9ed0da7f5028aa03c139",
+    commit = "cca3c3baee12304723dbf81064dfe387b8e4f61f",
     remote = "https://bitbucket.org/creachadair/stringset.git",
 )
 
