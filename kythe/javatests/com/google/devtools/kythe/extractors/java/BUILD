@@ -4,11 +4,11 @@ java_test(
     srcs = ["JavaExtractorTest.java"],
     data = glob(["testdata/**"]) + [
         ":SillyProcessor_deploy.jar",
-        "@bazel_tools//third_party/java/jdk/langtools:javac_jar",
+        "//third_party/javac:javac_jar",
     ],
     javacopts = ["-Xlint:all"],
     jvm_flags = [
-        "-Xbootclasspath/p:$$JAVA_RUNFILES/io_kythe/$(location @bazel_tools//third_party/java/jdk/langtools:javac_jar)",
+        "-Xbootclasspath/p:$$JAVA_RUNFILES/io_kythe/$(location //third_party/javac:javac_jar)",
     ],
     test_class = "com.google.devtools.kythe.extractors.java.JavaExtractorTest",
     deps = [
@@ -17,8 +17,8 @@ java_test(
         "//kythe/proto:analysis_proto_java",
         "//kythe/proto:java_proto_java",
         "//kythe/proto:storage_proto_java",
+        "//third_party/javac",
         "//third_party/proto:protobuf_java",
-        "@bazel_tools//third_party/java/jdk/langtools:javac",
         "@com_google_guava_guava//jar",
         "@com_google_truth_truth//jar",
         "@junit_junit//jar",

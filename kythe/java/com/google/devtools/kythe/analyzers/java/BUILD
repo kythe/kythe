@@ -25,8 +25,8 @@ java_library(
         "//kythe/proto:analysis_proto_java",
         "//kythe/proto:storage_proto_java",
         "//kythe/proto:xref_proto_java",
+        "//third_party/javac",
         "//third_party/proto:protobuf_java",
-        "@bazel_tools//third_party/java/jdk/langtools:javac",
         "@com_google_code_findbugs_jsr305//jar",
         "@com_google_guava_guava//jar",
     ],
@@ -35,6 +35,12 @@ java_library(
 java_binary(
     name = "indexer",
     srcs = ["JavaIndexer.java"],
+    data = [
+        "//third_party/javac:javac_jar",
+    ],
+    jvm_flags = [
+        "-Xbootclasspath/p:$$JAVA_RUNFILES/io_kythe/$(location //third_party/javac:javac_jar)",
+    ],
     main_class = "com.google.devtools.kythe.analyzers.java.JavaIndexer",
     deps = [
         ":analyzer",

@@ -60,11 +60,13 @@ REAL_JAVAC="$(which java)" \
   extractors/javac-wrapper.sh -cp "$TEST_REPOSRCDIR/third_party/guava"/*.jar \
   "$TEST_REPOSRCDIR/kythe/java/com/google/devtools/kythe/common"/*.java
 cat "$TMPDIR"/javac-extractor.{out,err}
-java -jar indexers/java_indexer.jar "$TMPDIR/java_compilation"/*.kindex | \
+java -Xbootclasspath/p:$PWD/indexers/java_indexer.jar \
+  -jar indexers/java_indexer.jar "$TMPDIR/java_compilation"/*.kindex | \
   tools/entrystream --count
 
 # Ensure the Java indexer works on a curated test compilation
-java -jar indexers/java_indexer.jar "$TEST_REPOSRCDIR/kythe/testdata/test.kindex" > entries
+java -Xbootclasspath/p:$PWD/indexers/java_indexer.jar \
+  -jar indexers/java_indexer.jar "$TEST_REPOSRCDIR/kythe/testdata/test.kindex" > entries
 # TODO(zarko): add C++ test kindex entries
 
 # Ensure basic Kythe pipeline toolset works

@@ -1,0 +1,7 @@
+URL: http://repo1.maven.org/maven2/com/google/errorprone/javac/9-dev-r3297-4/javac-9-dev-r3297-4.jar
+Version: 9-dev-r3297
+License: GNU GPL v2 with Classpath exception
+License File: LICENSE
+Description: The OpenJDK javac.
+Local Modifications:
+ No modifications.

@@ -21,7 +21,7 @@ java_library(
         "//kythe/proto:storage_proto_java",
         "//third_party/proto:any_proto_java",
         "//third_party/proto:protobuf_java",
-        "@bazel_tools//third_party/java/jdk/langtools:javac",
+        "//third_party/javac",
         "@com_google_guava_guava//jar",
     ],
 )
