@@ -89,7 +89,17 @@ struct XAState {
   std::string sdkroot_script;
 };
 
-static void LoadSpawnInfo(const XAState &xa_state,
+static bool ContainsUnsupportedArg(const std::vector<std::string> &args) {
+  for (const auto &arg : args) {
+    // We do not support compilations using modules yet.
+    if (arg == "-fmodules") {
+      return true;
+    }
+  }
+  return false;
+}
+
+static bool LoadSpawnInfo(const XAState &xa_state,
                           const blaze::ExtraActionInfo &info,
                           kythe::ExtractorConfiguration &config) {
   blaze::SpawnInfo spawn_info = info.GetExtension(blaze::SpawnInfo::spawn_info);
@@ -101,6 +111,12 @@ static void LoadSpawnInfo(const XAState &xa_state,
   std::vector<std::string> args;
   kythe::FillWithFixedArgs(args, spawn_info, devdir, sdkroot);
 
+  if (ContainsUnsupportedArg(args)) {
+    LOG(INFO) << "Not extracting " << info.id()
+              << " because it had an unsupported argument.";
+    return false;
+  }
+
   config.SetKindexOutputFile(xa_state.output_file);
   config.SetArgs(args);
   config.SetVNameConfig(xa_state.vname_config);
@@ -108,9 +124,10 @@ static void LoadSpawnInfo(const XAState &xa_state,
   if (spawn_info.output_file_size() > 0) {
     config.SetOutputPath(spawn_info.output_file(0));
   }
+  return true;
 }
 
-static void LoadCppInfo(const XAState &xa_state,
+static bool LoadCppInfo(const XAState &xa_state,
                         const blaze::ExtraActionInfo &info,
                         kythe::ExtractorConfiguration &config) {
   blaze::CppCompileInfo cpp_info =
@@ -123,11 +140,18 @@ static void LoadCppInfo(const XAState &xa_state,
   std::vector<std::string> args;
   kythe::FillWithFixedArgs(args, cpp_info, devdir, sdkroot);
 
+  if (ContainsUnsupportedArg(args)) {
+    LOG(INFO) << "Not extracting " << info.id()
+              << " because it had an unsupported argument.";
+    return false;
+  }
+
   config.SetKindexOutputFile(xa_state.output_file);
   config.SetArgs(args);
   config.SetVNameConfig(xa_state.vname_config);
   config.SetTargetName(info.owner());
   config.SetOutputPath(cpp_info.output_file());
+  return true;
 }
 
 static bool LoadExtraAction(const XAState &xa_state,
@@ -144,11 +168,9 @@ static bool LoadExtraAction(const XAState &xa_state,
   close(fd);
 
   if (info.HasExtension(blaze::SpawnInfo::spawn_info)) {
-    LoadSpawnInfo(xa_state, info, config);
-    return true;
+    return LoadSpawnInfo(xa_state, info, config);
   } else if (info.HasExtension(blaze::CppCompileInfo::cpp_compile_info)) {
-    LoadCppInfo(xa_state, info, config);
-    return true;
+    return LoadCppInfo(xa_state, info, config);
   }
   LOG(ERROR)
       << "ObjcCompile Extra Action didn't have SpawnInfo or CppCompileInfo.";
@@ -179,5 +201,5 @@ int main(int argc, char *argv[]) {
     config.Extract(kythe::supported_language::Language::kObjectiveC);
   }
   google::protobuf::ShutdownProtobufLibrary();
-  return success ? 0 : 2;
+  return success ? 0 : 1;
 }
