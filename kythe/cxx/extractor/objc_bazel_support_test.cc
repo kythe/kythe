@@ -54,7 +54,7 @@ TEST(ObjcExtractorBazelMain, TestExtractOneEnvVar) {
   e->set_name("VONE");
   e->set_value("VAL");
 
-  std::string v = BuildEnvVarCommandPrefix(si);
+  std::string v = BuildEnvVarCommandPrefix(si.variable());
 
   EXPECT_EQ("VONE='VAL' ", v);
 }
@@ -80,7 +80,7 @@ TEST(ObjcExtractorBazelMain, TestExtractManyEnvVars) {
   e->set_name("VFIVE");
   e->set_value("B 'A' G$");
 
-  std::string v = BuildEnvVarCommandPrefix(si);
+  std::string v = BuildEnvVarCommandPrefix(si.variable());
 
   EXPECT_EQ(
       "VONE='VAL' VTWO='' VTHREE='space space' VFOUR='space\\ space' VFIVE=\"B "
@@ -107,7 +107,7 @@ TEST(ObjcExtractorBazelMain, TestExtractIgnoreInvalidVarNames) {
   e->set_name("VFIVE");
   e->set_value("T");
 
-  std::string v = BuildEnvVarCommandPrefix(si);
+  std::string v = BuildEnvVarCommandPrefix(si.variable());
 
   EXPECT_EQ("VONE='VAL' VFIVE='T' ", v);
 }

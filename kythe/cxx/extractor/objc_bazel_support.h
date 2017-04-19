@@ -43,7 +43,8 @@ std::string SanitizeArgument(const std::string &s);
 /// \brief Build a command prefix that specifies the environment variables
 // that should be set according to bazel. This returns a string like:
 // "env V1=VAL V2=VAL "
-std::string BuildEnvVarCommandPrefix(const blaze::SpawnInfo &si);
+std::string BuildEnvVarCommandPrefix(
+    const google::protobuf::RepeatedPtrField<blaze::EnvironmentVariable> &vars);
 
 /// \brief Run a command and capture its (trimmed) stdout in a string.
 std::string RunScript(const std::string &cmd);

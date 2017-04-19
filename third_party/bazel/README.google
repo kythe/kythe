@@ -1,18 +1,14 @@
-URL: https://github.com/bazelbuild/bazel/archive/6db6eba6b2e1a0368e79da47a8cafd5dd9b6d63e.zip
-Version: 6db6eba6b2e1a0368e79da47a8cafd5dd9b6d63e
+URL: https://github.com/bazelbuild/bazel/archive/0b18c5dcf807c6062018f9595dcb054bc35492fc.zip
+Version: 0b18c5dcf807c6062018f9595dcb054bc35492fc
 License: Apache License 2.0 http://www.apache.org/licenses/LICENSE-2.0
 License File: LICENSE
 
 Description: Correct, reproducible, and fast builds for everyone.
 
 Modifications:
-Only the needed subset of bazel tools directory has been imported.
-Added necessary license declarations to BUILD files.
-Built tools/jdk/*_deploy.jar
-
-Remove tools/jdk/ijar binary and use a filegroup instead.
-
-The extra_actions_base and test_status protos have their generated Go source code checked-in.
+* Only the needed subset of bazel protos have been imported.
+* Added necessary license declarations to BUILD files.
+* The extra_actions_base and test_status protos have their generated Go source code checked-in.
 
 Two helper scripts (get_devdir.sh and get_sdkroot.sh) were created by
 modifying src/tools/xcode/xcrunwrapper/xcrunwrapper.sh @

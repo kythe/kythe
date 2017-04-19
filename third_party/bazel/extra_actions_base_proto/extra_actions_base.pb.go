@@ -30,15 +30,22 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+
 // A list of extra actions and metadata for the print_action command.
 type ExtraActionSummary struct {
 	Action           []*DetailedExtraActionInfo `protobuf:"bytes,1,rep,name=action" json:"action,omitempty"`
 	XXX_unrecognized []byte                     `json:"-"`
 }
 
-func (m *ExtraActionSummary) Reset()         { *m = ExtraActionSummary{} }
-func (m *ExtraActionSummary) String() string { return proto.CompactTextString(m) }
-func (*ExtraActionSummary) ProtoMessage()    {}
+func (m *ExtraActionSummary) Reset()                    { *m = ExtraActionSummary{} }
+func (m *ExtraActionSummary) String() string            { return proto.CompactTextString(m) }
+func (*ExtraActionSummary) ProtoMessage()               {}
+func (*ExtraActionSummary) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
 func (m *ExtraActionSummary) GetAction() []*DetailedExtraActionInfo {
 	if m != nil {
@@ -61,15 +68,16 @@ type DetailedExtraActionInfo struct {
 	// are declared and then add all of them here (which would be a huge superset
 	// of the files that are actually required), or we could run the include
 	// scanner and add those files here.
-	TriggeringFile *string `protobuf:"bytes,1,opt,name=triggering_file" json:"triggering_file,omitempty"`
+	TriggeringFile *string `protobuf:"bytes,1,opt,name=triggering_file,json=triggeringFile" json:"triggering_file,omitempty"`
 	// The actual action.
 	Action           *ExtraActionInfo `protobuf:"bytes,2,req,name=action" json:"action,omitempty"`
 	XXX_unrecognized []byte           `json:"-"`
 }
 
-func (m *DetailedExtraActionInfo) Reset()         { *m = DetailedExtraActionInfo{} }
-func (m *DetailedExtraActionInfo) String() string { return proto.CompactTextString(m) }
-func (*DetailedExtraActionInfo) ProtoMessage()    {}
+func (m *DetailedExtraActionInfo) Reset()                    { *m = DetailedExtraActionInfo{} }
+func (m *DetailedExtraActionInfo) String() string            { return proto.CompactTextString(m) }
+func (*DetailedExtraActionInfo) ProtoMessage()               {}
+func (*DetailedExtraActionInfo) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
 
 func (m *DetailedExtraActionInfo) GetTriggeringFile() string {
 	if m != nil && m.TriggeringFile != nil {
@@ -90,18 +98,35 @@ func (m *DetailedExtraActionInfo) GetAction() *ExtraActionInfo {
 type ExtraActionInfo struct {
 	// The label of the ActionOwner of the shadowed action.
 	Owner *string `protobuf:"bytes,1,opt,name=owner" json:"owner,omitempty"`
+	// Only set if the owner is an Aspect.
+	// Corresponds to AspectValue.AspectKey.getAspectClass.getName()
+	// This field is deprecated as there might now be
+	// multiple aspects applied to the same target.
+	// This is the aspect name of the last aspect
+	// in 'aspects' (8) field.
+	AspectName *string `protobuf:"bytes,6,opt,name=aspect_name,json=aspectName" json:"aspect_name,omitempty"`
+	// Only set if the owner is an Aspect.
+	// Corresponds to AspectValue.AspectKey.getParameters()
+	// This field is deprecated as there might now be
+	// multiple aspects applied to the same target.
+	// These are the aspect parameters of the last aspect
+	// in 'aspects' (8) field.
+	AspectParameters map[string]*ExtraActionInfo_StringList `protobuf:"bytes,7,rep,name=aspect_parameters,json=aspectParameters" json:"aspect_parameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// If the owner is an aspect, all aspects applied to the target
+	Aspects []*ExtraActionInfo_AspectDescriptor `protobuf:"bytes,8,rep,name=aspects" json:"aspects,omitempty"`
 	// An id uniquely describing the shadowed action at the ActionOwner level.
 	Id *string `protobuf:"bytes,2,opt,name=id" json:"id,omitempty"`
 	// The mnemonic of the shadowed action. Used to distinguish actions with the
 	// same ActionType.
-	Mnemonic         *string                   `protobuf:"bytes,5,opt,name=mnemonic" json:"mnemonic,omitempty"`
-	XXX_extensions   map[int32]proto.Extension `json:"-"`
-	XXX_unrecognized []byte                    `json:"-"`
+	Mnemonic                     *string `protobuf:"bytes,5,opt,name=mnemonic" json:"mnemonic,omitempty"`
+	proto.XXX_InternalExtensions `json:"-"`
+	XXX_unrecognized             []byte `json:"-"`
 }
 
-func (m *ExtraActionInfo) Reset()         { *m = ExtraActionInfo{} }
-func (m *ExtraActionInfo) String() string { return proto.CompactTextString(m) }
-func (*ExtraActionInfo) ProtoMessage()    {}
+func (m *ExtraActionInfo) Reset()                    { *m = ExtraActionInfo{} }
+func (m *ExtraActionInfo) String() string            { return proto.CompactTextString(m) }
+func (*ExtraActionInfo) ProtoMessage()               {}
+func (*ExtraActionInfo) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
 
 var extRange_ExtraActionInfo = []proto.ExtensionRange{
 	{1000, 536870911},
@@ -110,18 +135,33 @@ var extRange_ExtraActionInfo = []proto.ExtensionRange{
 func (*ExtraActionInfo) ExtensionRangeArray() []proto.ExtensionRange {
 	return extRange_ExtraActionInfo
 }
-func (m *ExtraActionInfo) ExtensionMap() map[int32]proto.Extension {
-	if m.XXX_extensions == nil {
-		m.XXX_extensions = make(map[int32]proto.Extension)
-	}
-	return m.XXX_extensions
-}
 
 func (m *ExtraActionInfo) GetOwner() string {
 	if m != nil && m.Owner != nil {
 		return *m.Owner
 	}
 	return ""
+}
+
+func (m *ExtraActionInfo) GetAspectName() string {
+	if m != nil && m.AspectName != nil {
+		return *m.AspectName
+	}
+	return ""
+}
+
+func (m *ExtraActionInfo) GetAspectParameters() map[string]*ExtraActionInfo_StringList {
+	if m != nil {
+		return m.AspectParameters
+	}
+	return nil
+}
+
+func (m *ExtraActionInfo) GetAspects() []*ExtraActionInfo_AspectDescriptor {
+	if m != nil {
+		return m.Aspects
+	}
+	return nil
 }
 
 func (m *ExtraActionInfo) GetId() string {
@@ -138,15 +178,87 @@ func (m *ExtraActionInfo) GetMnemonic() string {
 	return ""
 }
 
+type ExtraActionInfo_StringList struct {
+	Value            []string `protobuf:"bytes,1,rep,name=value" json:"value,omitempty"`
+	XXX_unrecognized []byte   `json:"-"`
+}
+
+func (m *ExtraActionInfo_StringList) Reset()                    { *m = ExtraActionInfo_StringList{} }
+func (m *ExtraActionInfo_StringList) String() string            { return proto.CompactTextString(m) }
+func (*ExtraActionInfo_StringList) ProtoMessage()               {}
+func (*ExtraActionInfo_StringList) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2, 1} }
+
+func (m *ExtraActionInfo_StringList) GetValue() []string {
+	if m != nil {
+		return m.Value
+	}
+	return nil
+}
+
+type ExtraActionInfo_AspectDescriptor struct {
+	// Corresponds to AspectDescriptor.getName()
+	AspectName *string `protobuf:"bytes,1,opt,name=aspect_name,json=aspectName" json:"aspect_name,omitempty"`
+	// Corresponds to AspectDescriptor.getParameters()
+	AspectParameters map[string]*ExtraActionInfo_AspectDescriptor_StringList `protobuf:"bytes,2,rep,name=aspect_parameters,json=aspectParameters" json:"aspect_parameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	XXX_unrecognized []byte                                                  `json:"-"`
+}
+
+func (m *ExtraActionInfo_AspectDescriptor) Reset()         { *m = ExtraActionInfo_AspectDescriptor{} }
+func (m *ExtraActionInfo_AspectDescriptor) String() string { return proto.CompactTextString(m) }
+func (*ExtraActionInfo_AspectDescriptor) ProtoMessage()    {}
+func (*ExtraActionInfo_AspectDescriptor) Descriptor() ([]byte, []int) {
+	return fileDescriptor0, []int{2, 2}
+}
+
+func (m *ExtraActionInfo_AspectDescriptor) GetAspectName() string {
+	if m != nil && m.AspectName != nil {
+		return *m.AspectName
+	}
+	return ""
+}
+
+func (m *ExtraActionInfo_AspectDescriptor) GetAspectParameters() map[string]*ExtraActionInfo_AspectDescriptor_StringList {
+	if m != nil {
+		return m.AspectParameters
+	}
+	return nil
+}
+
+type ExtraActionInfo_AspectDescriptor_StringList struct {
+	Value            []string `protobuf:"bytes,1,rep,name=value" json:"value,omitempty"`
+	XXX_unrecognized []byte   `json:"-"`
+}
+
+func (m *ExtraActionInfo_AspectDescriptor_StringList) Reset() {
+	*m = ExtraActionInfo_AspectDescriptor_StringList{}
+}
+func (m *ExtraActionInfo_AspectDescriptor_StringList) String() string {
+	return proto.CompactTextString(m)
+}
+func (*ExtraActionInfo_AspectDescriptor_StringList) ProtoMessage() {}
+func (*ExtraActionInfo_AspectDescriptor_StringList) Descriptor() ([]byte, []int) {
+	return fileDescriptor0, []int{2, 2, 1}
+}
+
+func (m *ExtraActionInfo_AspectDescriptor_StringList) GetValue() []string {
+	if m != nil {
+		return m.Value
+	}
+	return nil
+}
+
 type EnvironmentVariable struct {
-	Name             *string `protobuf:"bytes,1,req,name=name" json:"name,omitempty"`
+	// It is possible that this name is not a valid variable identifier.
+	Name *string `protobuf:"bytes,1,req,name=name" json:"name,omitempty"`
+	// The value is unescaped and unquoted.
 	Value            *string `protobuf:"bytes,2,req,name=value" json:"value,omitempty"`
 	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *EnvironmentVariable) Reset()         { *m = EnvironmentVariable{} }
-func (m *EnvironmentVariable) String() string { return proto.CompactTextString(m) }
-func (*EnvironmentVariable) ProtoMessage()    {}
+func (m *EnvironmentVariable) Reset()                    { *m = EnvironmentVariable{} }
+func (m *EnvironmentVariable) String() string            { return proto.CompactTextString(m) }
+func (*EnvironmentVariable) ProtoMessage()               {}
+func (*EnvironmentVariable) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
 
 func (m *EnvironmentVariable) GetName() string {
 	if m != nil && m.Name != nil {
@@ -162,19 +274,21 @@ func (m *EnvironmentVariable) GetValue() string {
 	return ""
 }
 
-// provides access to data that is specific to spawn actions.
+// Provides access to data that is specific to spawn actions.
 // Usually provided by actions using the "Spawn" & "Genrule" Mnemonics.
 type SpawnInfo struct {
-	Argument         []string               `protobuf:"bytes,1,rep,name=argument" json:"argument,omitempty"`
+	Argument []string `protobuf:"bytes,1,rep,name=argument" json:"argument,omitempty"`
+	// A list of environment variables and their values. No order is enforced.
 	Variable         []*EnvironmentVariable `protobuf:"bytes,2,rep,name=variable" json:"variable,omitempty"`
-	InputFile        []string               `protobuf:"bytes,4,rep,name=input_file" json:"input_file,omitempty"`
-	OutputFile       []string               `protobuf:"bytes,5,rep,name=output_file" json:"output_file,omitempty"`
+	InputFile        []string               `protobuf:"bytes,4,rep,name=input_file,json=inputFile" json:"input_file,omitempty"`
+	OutputFile       []string               `protobuf:"bytes,5,rep,name=output_file,json=outputFile" json:"output_file,omitempty"`
 	XXX_unrecognized []byte                 `json:"-"`
 }
 
-func (m *SpawnInfo) Reset()         { *m = SpawnInfo{} }
-func (m *SpawnInfo) String() string { return proto.CompactTextString(m) }
-func (*SpawnInfo) ProtoMessage()    {}
+func (m *SpawnInfo) Reset()                    { *m = SpawnInfo{} }
+func (m *SpawnInfo) String() string            { return proto.CompactTextString(m) }
+func (*SpawnInfo) ProtoMessage()               {}
+func (*SpawnInfo) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
 
 func (m *SpawnInfo) GetArgument() []string {
 	if m != nil {
@@ -209,26 +323,30 @@ var E_SpawnInfo_SpawnInfo = &proto.ExtensionDesc{
 	ExtensionType: (*SpawnInfo)(nil),
 	Field:         1003,
 	Name:          "blaze.SpawnInfo.spawn_info",
-	Tag:           "bytes,1003,opt,name=spawn_info",
+	Tag:           "bytes,1003,opt,name=spawn_info,json=spawnInfo",
+	Filename:      "third_party/bazel/src/main/protobuf/extra_actions_base.proto",
 }
 
 // Provides access to data that is specific to C++ compile actions.
 // Usually provided by actions using the "CppCompile" Mnemonic.
 type CppCompileInfo struct {
 	Tool           *string  `protobuf:"bytes,1,opt,name=tool" json:"tool,omitempty"`
-	CompilerOption []string `protobuf:"bytes,2,rep,name=compiler_option" json:"compiler_option,omitempty"`
-	SourceFile     *string  `protobuf:"bytes,3,opt,name=source_file" json:"source_file,omitempty"`
-	OutputFile     *string  `protobuf:"bytes,4,opt,name=output_file" json:"output_file,omitempty"`
+	CompilerOption []string `protobuf:"bytes,2,rep,name=compiler_option,json=compilerOption" json:"compiler_option,omitempty"`
+	SourceFile     *string  `protobuf:"bytes,3,opt,name=source_file,json=sourceFile" json:"source_file,omitempty"`
+	OutputFile     *string  `protobuf:"bytes,4,opt,name=output_file,json=outputFile" json:"output_file,omitempty"`
 	// Due to header discovery, this won't include headers unless the build is
 	// actually performed. If set, this field will include the value of
 	// "source_file" in addition to the headers.
-	SourcesAndHeaders []string `protobuf:"bytes,5,rep,name=sources_and_headers" json:"sources_and_headers,omitempty"`
-	XXX_unrecognized  []byte   `json:"-"`
+	SourcesAndHeaders []string `protobuf:"bytes,5,rep,name=sources_and_headers,json=sourcesAndHeaders" json:"sources_and_headers,omitempty"`
+	// A list of environment variables and their values. No order is enforced.
+	Variable         []*EnvironmentVariable `protobuf:"bytes,6,rep,name=variable" json:"variable,omitempty"`
+	XXX_unrecognized []byte                 `json:"-"`
 }
 
-func (m *CppCompileInfo) Reset()         { *m = CppCompileInfo{} }
-func (m *CppCompileInfo) String() string { return proto.CompactTextString(m) }
-func (*CppCompileInfo) ProtoMessage()    {}
+func (m *CppCompileInfo) Reset()                    { *m = CppCompileInfo{} }
+func (m *CppCompileInfo) String() string            { return proto.CompactTextString(m) }
+func (*CppCompileInfo) ProtoMessage()               {}
+func (*CppCompileInfo) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
 
 func (m *CppCompileInfo) GetTool() string {
 	if m != nil && m.Tool != nil {
@@ -265,31 +383,41 @@ func (m *CppCompileInfo) GetSourcesAndHeaders() []string {
 	return nil
 }
 
+func (m *CppCompileInfo) GetVariable() []*EnvironmentVariable {
+	if m != nil {
+		return m.Variable
+	}
+	return nil
+}
+
 var E_CppCompileInfo_CppCompileInfo = &proto.ExtensionDesc{
 	ExtendedType:  (*ExtraActionInfo)(nil),
 	ExtensionType: (*CppCompileInfo)(nil),
 	Field:         1001,
 	Name:          "blaze.CppCompileInfo.cpp_compile_info",
-	Tag:           "bytes,1001,opt,name=cpp_compile_info",
+	Tag:           "bytes,1001,opt,name=cpp_compile_info,json=cppCompileInfo",
+	Filename:      "third_party/bazel/src/main/protobuf/extra_actions_base.proto",
 }
 
 // Provides access to data that is specific to C++ link  actions.
 // Usually provided by actions using the "CppLink" Mnemonic.
 type CppLinkInfo struct {
-	InputFile               []string `protobuf:"bytes,1,rep,name=input_file" json:"input_file,omitempty"`
-	OutputFile              *string  `protobuf:"bytes,2,opt,name=output_file" json:"output_file,omitempty"`
-	InterfaceOutputFile     *string  `protobuf:"bytes,3,opt,name=interface_output_file" json:"interface_output_file,omitempty"`
-	LinkTargetType          *string  `protobuf:"bytes,4,opt,name=link_target_type" json:"link_target_type,omitempty"`
-	LinkStaticness          *string  `protobuf:"bytes,5,opt,name=link_staticness" json:"link_staticness,omitempty"`
-	LinkStamp               []string `protobuf:"bytes,6,rep,name=link_stamp" json:"link_stamp,omitempty"`
-	BuildInfoHeaderArtifact []string `protobuf:"bytes,7,rep,name=build_info_header_artifact" json:"build_info_header_artifact,omitempty"`
-	LinkOpt                 []string `protobuf:"bytes,8,rep,name=link_opt" json:"link_opt,omitempty"`
-	XXX_unrecognized        []byte   `json:"-"`
+	InputFile               []string `protobuf:"bytes,1,rep,name=input_file,json=inputFile" json:"input_file,omitempty"`
+	OutputFile              *string  `protobuf:"bytes,2,opt,name=output_file,json=outputFile" json:"output_file,omitempty"`
+	InterfaceOutputFile     *string  `protobuf:"bytes,3,opt,name=interface_output_file,json=interfaceOutputFile" json:"interface_output_file,omitempty"`
+	LinkTargetType          *string  `protobuf:"bytes,4,opt,name=link_target_type,json=linkTargetType" json:"link_target_type,omitempty"`
+	LinkStaticness          *string  `protobuf:"bytes,5,opt,name=link_staticness,json=linkStaticness" json:"link_staticness,omitempty"`
+	LinkStamp               []string `protobuf:"bytes,6,rep,name=link_stamp,json=linkStamp" json:"link_stamp,omitempty"`
+	BuildInfoHeaderArtifact []string `protobuf:"bytes,7,rep,name=build_info_header_artifact,json=buildInfoHeaderArtifact" json:"build_info_header_artifact,omitempty"`
+	// The list of command line options used for running the linking tool.
+	LinkOpt          []string `protobuf:"bytes,8,rep,name=link_opt,json=linkOpt" json:"link_opt,omitempty"`
+	XXX_unrecognized []byte   `json:"-"`
 }
 
-func (m *CppLinkInfo) Reset()         { *m = CppLinkInfo{} }
-func (m *CppLinkInfo) String() string { return proto.CompactTextString(m) }
-func (*CppLinkInfo) ProtoMessage()    {}
+func (m *CppLinkInfo) Reset()                    { *m = CppLinkInfo{} }
+func (m *CppLinkInfo) String() string            { return proto.CompactTextString(m) }
+func (*CppLinkInfo) ProtoMessage()               {}
+func (*CppLinkInfo) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
 
 func (m *CppLinkInfo) GetInputFile() []string {
 	if m != nil {
@@ -352,7 +480,8 @@ var E_CppLinkInfo_CppLinkInfo = &proto.ExtensionDesc{
 	ExtensionType: (*CppLinkInfo)(nil),
 	Field:         1002,
 	Name:          "blaze.CppLinkInfo.cpp_link_info",
-	Tag:           "bytes,1002,opt,name=cpp_link_info",
+	Tag:           "bytes,1002,opt,name=cpp_link_info,json=cppLinkInfo",
+	Filename:      "third_party/bazel/src/main/protobuf/extra_actions_base.proto",
 }
 
 // Provides access to data that is specific to java compile actions.
@@ -361,16 +490,18 @@ type JavaCompileInfo struct {
 	Outputjar        *string  `protobuf:"bytes,1,opt,name=outputjar" json:"outputjar,omitempty"`
 	Classpath        []string `protobuf:"bytes,2,rep,name=classpath" json:"classpath,omitempty"`
 	Sourcepath       []string `protobuf:"bytes,3,rep,name=sourcepath" json:"sourcepath,omitempty"`
-	SourceFile       []string `protobuf:"bytes,4,rep,name=source_file" json:"source_file,omitempty"`
-	JavacOpt         []string `protobuf:"bytes,5,rep,name=javac_opt" json:"javac_opt,omitempty"`
+	SourceFile       []string `protobuf:"bytes,4,rep,name=source_file,json=sourceFile" json:"source_file,omitempty"`
+	JavacOpt         []string `protobuf:"bytes,5,rep,name=javac_opt,json=javacOpt" json:"javac_opt,omitempty"`
 	Processor        []string `protobuf:"bytes,6,rep,name=processor" json:"processor,omitempty"`
 	Processorpath    []string `protobuf:"bytes,7,rep,name=processorpath" json:"processorpath,omitempty"`
+	Bootclasspath    []string `protobuf:"bytes,8,rep,name=bootclasspath" json:"bootclasspath,omitempty"`
 	XXX_unrecognized []byte   `json:"-"`
 }
 
-func (m *JavaCompileInfo) Reset()         { *m = JavaCompileInfo{} }
-func (m *JavaCompileInfo) String() string { return proto.CompactTextString(m) }
-func (*JavaCompileInfo) ProtoMessage()    {}
+func (m *JavaCompileInfo) Reset()                    { *m = JavaCompileInfo{} }
+func (m *JavaCompileInfo) String() string            { return proto.CompactTextString(m) }
+func (*JavaCompileInfo) ProtoMessage()               {}
+func (*JavaCompileInfo) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7} }
 
 func (m *JavaCompileInfo) GetOutputjar() string {
 	if m != nil && m.Outputjar != nil {
@@ -421,25 +552,34 @@ func (m *JavaCompileInfo) GetProcessorpath() []string {
 	return nil
 }
 
+func (m *JavaCompileInfo) GetBootclasspath() []string {
+	if m != nil {
+		return m.Bootclasspath
+	}
+	return nil
+}
+
 var E_JavaCompileInfo_JavaCompileInfo = &proto.ExtensionDesc{
 	ExtendedType:  (*ExtraActionInfo)(nil),
 	ExtensionType: (*JavaCompileInfo)(nil),
 	Field:         1000,
 	Name:          "blaze.JavaCompileInfo.java_compile_info",
-	Tag:           "bytes,1000,opt,name=java_compile_info",
+	Tag:           "bytes,1000,opt,name=java_compile_info,json=javaCompileInfo",
+	Filename:      "third_party/bazel/src/main/protobuf/extra_actions_base.proto",
 }
 
 // Provides access to data that is specific to python rules.
 // Usually provided by actions using the "Python" Mnemonic.
 type PythonInfo struct {
-	SourceFile       []string `protobuf:"bytes,1,rep,name=source_file" json:"source_file,omitempty"`
-	DepFile          []string `protobuf:"bytes,2,rep,name=dep_file" json:"dep_file,omitempty"`
+	SourceFile       []string `protobuf:"bytes,1,rep,name=source_file,json=sourceFile" json:"source_file,omitempty"`
+	DepFile          []string `protobuf:"bytes,2,rep,name=dep_file,json=depFile" json:"dep_file,omitempty"`
 	XXX_unrecognized []byte   `json:"-"`
 }
 
-func (m *PythonInfo) Reset()         { *m = PythonInfo{} }
-func (m *PythonInfo) String() string { return proto.CompactTextString(m) }
-func (*PythonInfo) ProtoMessage()    {}
+func (m *PythonInfo) Reset()                    { *m = PythonInfo{} }
+func (m *PythonInfo) String() string            { return proto.CompactTextString(m) }
+func (*PythonInfo) ProtoMessage()               {}
+func (*PythonInfo) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{8} }
 
 func (m *PythonInfo) GetSourceFile() []string {
 	if m != nil {
@@ -460,13 +600,101 @@ var E_PythonInfo_PythonInfo = &proto.ExtensionDesc{
 	ExtensionType: (*PythonInfo)(nil),
 	Field:         1005,
 	Name:          "blaze.PythonInfo.python_info",
-	Tag:           "bytes,1005,opt,name=python_info",
+	Tag:           "bytes,1005,opt,name=python_info,json=pythonInfo",
+	Filename:      "third_party/bazel/src/main/protobuf/extra_actions_base.proto",
 }
 
 func init() {
+	proto.RegisterType((*ExtraActionSummary)(nil), "blaze.ExtraActionSummary")
+	proto.RegisterType((*DetailedExtraActionInfo)(nil), "blaze.DetailedExtraActionInfo")
+	proto.RegisterType((*ExtraActionInfo)(nil), "blaze.ExtraActionInfo")
+	proto.RegisterType((*ExtraActionInfo_StringList)(nil), "blaze.ExtraActionInfo.StringList")
+	proto.RegisterType((*ExtraActionInfo_AspectDescriptor)(nil), "blaze.ExtraActionInfo.AspectDescriptor")
+	proto.RegisterType((*ExtraActionInfo_AspectDescriptor_StringList)(nil), "blaze.ExtraActionInfo.AspectDescriptor.StringList")
+	proto.RegisterType((*EnvironmentVariable)(nil), "blaze.EnvironmentVariable")
+	proto.RegisterType((*SpawnInfo)(nil), "blaze.SpawnInfo")
+	proto.RegisterType((*CppCompileInfo)(nil), "blaze.CppCompileInfo")
+	proto.RegisterType((*CppLinkInfo)(nil), "blaze.CppLinkInfo")
+	proto.RegisterType((*JavaCompileInfo)(nil), "blaze.JavaCompileInfo")
+	proto.RegisterType((*PythonInfo)(nil), "blaze.PythonInfo")
 	proto.RegisterExtension(E_SpawnInfo_SpawnInfo)
 	proto.RegisterExtension(E_CppCompileInfo_CppCompileInfo)
 	proto.RegisterExtension(E_CppLinkInfo_CppLinkInfo)
 	proto.RegisterExtension(E_JavaCompileInfo_JavaCompileInfo)
 	proto.RegisterExtension(E_PythonInfo_PythonInfo)
+}
+
+func init() {
+	proto.RegisterFile("third_party/bazel/src/main/protobuf/extra_actions_base.proto", fileDescriptor0)
+}
+
+var fileDescriptor0 = []byte{
+	// 1059 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x8c, 0x56, 0xdd, 0x6e, 0xe3, 0x44,
+	0x18, 0x95, 0xdd, 0xa6, 0x8d, 0xbf, 0x68, 0xd3, 0x74, 0x4a, 0xd9, 0x6c, 0x80, 0xdd, 0x12, 0x10,
+	0x5b, 0x01, 0x72, 0xa4, 0x5c, 0x2c, 0x88, 0x1f, 0xa1, 0x6e, 0xb7, 0xa8, 0x40, 0x45, 0x2b, 0x77,
+	0x85, 0x90, 0x10, 0xb2, 0x26, 0xf6, 0x24, 0x9d, 0xd6, 0xf6, 0x8c, 0xc6, 0x93, 0x94, 0xec, 0x55,
+	0x5f, 0x82, 0x3b, 0x1e, 0x85, 0x97, 0xe0, 0x2d, 0x76, 0x41, 0xdc, 0x20, 0x1e, 0x60, 0x35, 0x3f,
+	0xb6, 0x9b, 0x34, 0xed, 0xe6, 0x6e, 0xe6, 0x7c, 0xc7, 0xdf, 0xcf, 0x39, 0x33, 0x93, 0xc0, 0x57,
+	0xf2, 0x8c, 0x8a, 0x38, 0xe4, 0x58, 0xc8, 0x69, 0x6f, 0x80, 0x5f, 0x90, 0xa4, 0x97, 0x8b, 0xa8,
+	0x97, 0x62, 0x9a, 0xf5, 0xb8, 0x60, 0x92, 0x0d, 0xc6, 0xc3, 0x1e, 0xf9, 0x4d, 0x0a, 0x1c, 0xe2,
+	0x48, 0x52, 0x96, 0xe5, 0xe1, 0x00, 0xe7, 0xc4, 0xd7, 0x31, 0x54, 0x1b, 0x24, 0xf8, 0x05, 0xe9,
+	0x1e, 0x01, 0x3a, 0x50, 0x94, 0x3d, 0xcd, 0x38, 0x1d, 0xa7, 0x29, 0x16, 0x53, 0xf4, 0x04, 0xd6,
+	0xcc, 0x27, 0x6d, 0x67, 0x67, 0x65, 0xb7, 0xd1, 0x7f, 0xe8, 0x6b, 0xb6, 0xff, 0x8c, 0x48, 0x4c,
+	0x13, 0x12, 0x5f, 0xfb, 0xe4, 0xbb, 0x6c, 0xc8, 0x02, 0xcb, 0xee, 0x0a, 0xb8, 0x7f, 0x0b, 0x05,
+	0x3d, 0x86, 0x0d, 0x29, 0xe8, 0x68, 0x44, 0x04, 0xcd, 0x46, 0xe1, 0x90, 0x26, 0xa4, 0xed, 0xec,
+	0x38, 0xbb, 0x5e, 0xd0, 0xac, 0xe0, 0x6f, 0x69, 0x42, 0x90, 0x5f, 0xd6, 0x76, 0x77, 0xdc, 0xdd,
+	0x46, 0xff, 0x6d, 0x5b, 0xfb, 0xb6, 0x9a, 0xff, 0xd7, 0x60, 0x63, 0xbe, 0xd8, 0x5b, 0x50, 0x63,
+	0x97, 0x19, 0x11, 0xb6, 0x84, 0xd9, 0xa0, 0x0f, 0xa0, 0x81, 0x73, 0x4e, 0x22, 0x19, 0x66, 0x38,
+	0x25, 0xed, 0x35, 0x15, 0x7b, 0xea, 0xb6, 0x9d, 0x00, 0x0c, 0xfc, 0x23, 0x4e, 0x09, 0xfa, 0x15,
+	0x36, 0x2d, 0x89, 0x63, 0x81, 0x53, 0x22, 0x89, 0xc8, 0xdb, 0xeb, 0x5a, 0x85, 0x4f, 0x17, 0x77,
+	0xe2, 0xef, 0x69, 0xfe, 0x49, 0x49, 0x3f, 0xc8, 0xa4, 0x98, 0xea, 0xc4, 0x2d, 0x3c, 0x17, 0x42,
+	0x7b, 0xb0, 0x6e, 0xb0, 0xbc, 0x5d, 0xd7, 0x49, 0x1f, 0xdf, 0x99, 0xf4, 0x19, 0xc9, 0x23, 0x41,
+	0xb9, 0x64, 0x22, 0x28, 0xbe, 0x43, 0x4d, 0x70, 0x69, 0xdc, 0x76, 0xf5, 0x64, 0x2e, 0x8d, 0x51,
+	0x07, 0xea, 0x69, 0x46, 0x52, 0x96, 0xd1, 0xa8, 0x5d, 0xd3, 0x68, 0xb9, 0xef, 0x0c, 0x61, 0x7b,
+	0x61, 0x77, 0xa8, 0x05, 0x2b, 0x17, 0x64, 0x6a, 0xf5, 0x51, 0x4b, 0xf4, 0x19, 0xd4, 0x26, 0x38,
+	0x19, 0x13, 0x9d, 0xb9, 0xd1, 0x7f, 0xff, 0x96, 0xbe, 0x4e, 0xa5, 0x72, 0xea, 0x88, 0xe6, 0x32,
+	0x30, 0xfc, 0x2f, 0xdc, 0xcf, 0x9d, 0xce, 0x47, 0x00, 0x55, 0x40, 0xc9, 0x6f, 0x52, 0xa9, 0xd3,
+	0xe3, 0x95, 0xbc, 0xb6, 0xd3, 0xf9, 0xd3, 0x85, 0xd6, 0xfc, 0x64, 0xe8, 0xd1, 0xac, 0x2f, 0xa6,
+	0xa7, 0xeb, 0x9e, 0x9c, 0x2f, 0xf2, 0xc4, 0xd5, 0xf2, 0x7d, 0xbd, 0xa4, 0x7c, 0x8b, 0x4d, 0xba,
+	0x69, 0x50, 0xe7, 0x72, 0x79, 0xc5, 0x0e, 0x67, 0x15, 0xeb, 0x2f, 0xdb, 0xca, 0x62, 0x09, 0xbb,
+	0x6f, 0x96, 0xf0, 0x63, 0xaf, 0xfe, 0x72, 0xbd, 0x75, 0x75, 0x75, 0x75, 0xe5, 0x76, 0xbf, 0x81,
+	0xad, 0x83, 0x6c, 0x42, 0x05, 0xcb, 0x52, 0x92, 0xc9, 0x9f, 0xb0, 0xa0, 0x78, 0x90, 0x10, 0x84,
+	0x60, 0xd5, 0x8a, 0xe8, 0xee, 0x7a, 0x81, 0x5e, 0x57, 0xb9, 0x5c, 0x0d, 0x9a, 0x4d, 0xf7, 0x95,
+	0x03, 0xde, 0x29, 0xc7, 0x97, 0xe6, 0xc6, 0x74, 0xa0, 0x8e, 0xc5, 0x68, 0xac, 0x72, 0xd9, 0x92,
+	0xe5, 0x1e, 0x3d, 0x81, 0xfa, 0xc4, 0xe6, 0xb7, 0xaa, 0x77, 0x8a, 0x51, 0x6f, 0x76, 0x10, 0x94,
+	0x5c, 0xf4, 0x1e, 0x00, 0xcd, 0xf8, 0x58, 0x9a, 0xdb, 0xbe, 0xaa, 0xb3, 0x7a, 0x1a, 0xd1, 0x17,
+	0xfd, 0x11, 0x34, 0xd8, 0x58, 0x96, 0xf1, 0x9a, 0x8e, 0x83, 0x81, 0x14, 0xa1, 0x7f, 0x08, 0x90,
+	0xab, 0x06, 0x43, 0xaa, 0x3a, 0xbc, 0xe5, 0x1d, 0x68, 0xff, 0xb3, 0xae, 0xd5, 0x6f, 0xd9, 0x70,
+	0x39, 0x52, 0xe0, 0xe5, 0xc5, 0xb2, 0xfb, 0x97, 0x0b, 0xcd, 0x7d, 0xce, 0xf7, 0x59, 0xca, 0x69,
+	0x42, 0xf4, 0xc0, 0x08, 0x56, 0x25, 0x63, 0x89, 0xf5, 0x53, 0xaf, 0xd5, 0x1b, 0x15, 0x19, 0x8a,
+	0x08, 0x19, 0xb7, 0x6f, 0x90, 0xea, 0xaa, 0x59, 0xc0, 0xc7, 0x1a, 0x55, 0xad, 0xe7, 0x6c, 0x2c,
+	0x22, 0x62, 0x5a, 0x5f, 0x31, 0x27, 0xd6, 0x40, 0x8b, 0x66, 0x5b, 0x35, 0x84, 0x6a, 0x36, 0xe4,
+	0xc3, 0x96, 0xa1, 0xe7, 0x21, 0xce, 0xe2, 0xf0, 0x8c, 0xe0, 0x58, 0x1d, 0x6a, 0x23, 0xc2, 0xa6,
+	0x0d, 0xed, 0x65, 0xf1, 0xa1, 0x09, 0xcc, 0x78, 0xb0, 0xb6, 0xbc, 0x07, 0xfd, 0x9f, 0xa1, 0x15,
+	0x71, 0x1e, 0xda, 0xfe, 0xef, 0x56, 0xf2, 0x95, 0x51, 0x72, 0xdb, 0x86, 0x67, 0x05, 0x0b, 0x9a,
+	0xd1, 0xcc, 0xbe, 0xfb, 0xc7, 0x0a, 0x34, 0xf6, 0x39, 0x3f, 0xa2, 0xd9, 0x85, 0x16, 0x74, 0xd6,
+	0x6d, 0xe7, 0x0d, 0x6e, 0xbb, 0x37, 0x14, 0xe9, 0xc3, 0x36, 0xcd, 0x24, 0x11, 0x43, 0x1c, 0x91,
+	0xf0, 0x3a, 0xd5, 0xa8, 0xbb, 0x55, 0x06, 0x8f, 0xab, 0x6f, 0x76, 0xa1, 0x95, 0xd0, 0xec, 0x22,
+	0x94, 0x58, 0x8c, 0x88, 0x0c, 0xe5, 0x94, 0x17, 0x5a, 0x37, 0x15, 0xfe, 0x5c, 0xc3, 0xcf, 0xa7,
+	0x9c, 0x28, 0x6b, 0x35, 0x33, 0x97, 0x58, 0xd2, 0x28, 0x23, 0x79, 0x6e, 0xdf, 0x4a, 0x4d, 0x3c,
+	0x2d, 0x51, 0x35, 0x46, 0x41, 0x4c, 0xb9, 0x96, 0xda, 0x0b, 0x3c, 0xcb, 0x49, 0x39, 0xfa, 0x12,
+	0x3a, 0x83, 0x31, 0x4d, 0x62, 0xad, 0xa4, 0xb5, 0x2d, 0xc4, 0x42, 0xd2, 0x21, 0x8e, 0xa4, 0xfe,
+	0x9d, 0xf0, 0x82, 0xfb, 0x9a, 0xa1, 0x44, 0x31, 0xee, 0xed, 0xd9, 0x30, 0x7a, 0x00, 0x75, 0x9d,
+	0x9b, 0x71, 0xa9, 0x5f, 0x7f, 0x2f, 0x58, 0x57, 0xfb, 0x63, 0x2e, 0xfb, 0xc7, 0x70, 0x4f, 0xf9,
+	0xa4, 0xc3, 0x77, 0x9a, 0xf4, 0xb7, 0x31, 0x09, 0x55, 0x26, 0x15, 0x0e, 0x04, 0x8d, 0xa8, 0xda,
+	0x74, 0xff, 0x73, 0x61, 0xe3, 0x7b, 0x3c, 0xc1, 0xd7, 0xcf, 0xfc, 0xbb, 0xe0, 0x19, 0x61, 0xcf,
+	0x71, 0xf1, 0xd3, 0x58, 0x01, 0x2a, 0x1a, 0x25, 0x38, 0xcf, 0x39, 0x96, 0x67, 0xf6, 0xdc, 0x57,
+	0x00, 0x7a, 0x08, 0xf6, 0x7c, 0xeb, 0xf0, 0x8a, 0xb9, 0xac, 0x15, 0x32, 0x7f, 0x25, 0x56, 0xaf,
+	0x13, 0xb4, 0x57, 0xef, 0x80, 0x77, 0x8e, 0x27, 0x38, 0xd2, 0xd3, 0x9b, 0x73, 0x5e, 0xd7, 0xc0,
+	0x31, 0x97, 0xaa, 0x36, 0x17, 0x2c, 0x22, 0x79, 0xce, 0x44, 0x21, 0x7a, 0x09, 0xa0, 0x0f, 0xe1,
+	0x5e, 0xb9, 0xd1, 0xe5, 0x8d, 0xce, 0xb3, 0xa0, 0x62, 0x0d, 0x18, 0x93, 0xd5, 0x0c, 0x46, 0xe2,
+	0x59, 0xb0, 0xff, 0x0b, 0x6c, 0xaa, 0xaa, 0xcb, 0xdd, 0x88, 0x97, 0x46, 0xec, 0x22, 0x3c, 0xa7,
+	0x67, 0xb0, 0x71, 0x3e, 0x0b, 0x74, 0x7f, 0x77, 0x00, 0x4e, 0xa6, 0xf2, 0xcc, 0xfe, 0x0d, 0x99,
+	0xd3, 0xc4, 0xb9, 0xa1, 0xc9, 0x03, 0xa8, 0xc7, 0x84, 0x17, 0x37, 0x42, 0x1f, 0x88, 0x98, 0x70,
+	0xfd, 0xf8, 0xfd, 0x00, 0x0d, 0xae, 0x33, 0xdd, 0xdd, 0xe1, 0xbf, 0xa6, 0xc3, 0x4d, 0x1b, 0xae,
+	0x8a, 0x07, 0xc0, 0xcb, 0xf5, 0xd3, 0x1e, 0x7c, 0x12, 0xb1, 0xd4, 0x1f, 0x31, 0x36, 0x4a, 0x88,
+	0x1f, 0x93, 0x89, 0x7a, 0xee, 0x72, 0x5f, 0x9f, 0x53, 0x3f, 0xa1, 0x03, 0xdf, 0xfe, 0x41, 0xf4,
+	0xf5, 0xdf, 0xc5, 0x13, 0xe7, 0x75, 0x00, 0x00, 0x00, 0xff, 0xff, 0x6a, 0x6b, 0x4a, 0xda, 0x5c,
+	0x0a, 0x00, 0x00,
 }

@@ -38,9 +38,11 @@ std::string SanitizeArgument(const std::string &s) {
   return "\"" + ret + "\"";
 }
 
-std::string BuildEnvVarCommandPrefix(const blaze::SpawnInfo &si) {
+std::string BuildEnvVarCommandPrefix(
+    const google::protobuf::RepeatedPtrField<blaze::EnvironmentVariable>
+        &vars) {
   std::stringstream ret;
-  for (const auto &env : si.variable()) {
+  for (const auto &env : vars) {
     // Neither name nor value are validated or sanitized.
     // This really should be unnecessary, but we don't have any guarantees.
     if (RE2::FullMatch(env.name(), "[a-zA-Z_][a-zA-Z_0-9]*")) {

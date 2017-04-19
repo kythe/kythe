@@ -94,7 +94,7 @@ static void LoadSpawnInfo(const XAState &xa_state,
                           kythe::ExtractorConfiguration &config) {
   blaze::SpawnInfo spawn_info = info.GetExtension(blaze::SpawnInfo::spawn_info);
 
-  auto cmdPrefix = kythe::BuildEnvVarCommandPrefix(spawn_info);
+  auto cmdPrefix = kythe::BuildEnvVarCommandPrefix(spawn_info.variable());
   auto devdir = kythe::RunScript(cmdPrefix + xa_state.devdir_script);
   auto sdkroot = kythe::RunScript(cmdPrefix + xa_state.sdkroot_script);
 
@@ -116,12 +116,9 @@ static void LoadCppInfo(const XAState &xa_state,
   blaze::CppCompileInfo cpp_info =
       info.GetExtension(blaze::CppCompileInfo::cpp_compile_info);
 
-  // There are no environmental variables in the cpp info proto, so assume
-  // defaults for now. If they are exposed in CPP ExtraInfo then we can refactor
-  // this and LoadSpawnInfo so devdir and sdkroot are calculated once outside
-  // both of these functions.
-  auto devdir = kythe::RunScript(xa_state.devdir_script);
-  auto sdkroot = kythe::RunScript(xa_state.sdkroot_script);
+  auto cmdPrefix = kythe::BuildEnvVarCommandPrefix(cpp_info.variable());
+  auto devdir = kythe::RunScript(cmdPrefix + xa_state.devdir_script);
+  auto sdkroot = kythe::RunScript(cmdPrefix + xa_state.sdkroot_script);
 
   std::vector<std::string> args;
   kythe::FillWithFixedArgs(args, cpp_info, devdir, sdkroot);
