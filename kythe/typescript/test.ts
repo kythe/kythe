@@ -70,7 +70,7 @@ function verify(
         shell: true,
       });
 
-  indexer.index([test], program, (obj: any) => {
+  indexer.index('testcorpus', [test], program, (obj: any) => {
     verifier.stdin.write(JSON.stringify(obj) + '\n');
   });
   verifier.stdin.end();

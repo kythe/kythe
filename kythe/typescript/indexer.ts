@@ -88,7 +88,8 @@ class Vistor {
   anonId = 0;
 
   constructor(
-      private typeChecker: ts.TypeChecker,
+      /**  Corpus name for produced VNames. */
+      private corpus: string, private typeChecker: ts.TypeChecker,
       /**
        * Absolute path to the corpus root.  Note that sourceFile.sourcePath is
        * the absolute path to the source file, but for output purposes we want a
@@ -110,7 +111,7 @@ class Vistor {
   newVName(signature: string, sourceFile = this.sourceFile): VName {
     return {
       signature,
-      corpus: 'TODO',
+      corpus: this.corpus,
       root: '',
       path: stripExtension(path.relative(this.sourceRoot, sourceFile.path)),
       language: 'typescript',
@@ -591,7 +592,8 @@ class Vistor {
  *     emitted; otherwise, they are printed to stdout.
  */
 export function index(
-    paths: string[], program: ts.Program, emit?: (obj: any) => void) {
+    corpus: string, paths: string[], program: ts.Program,
+    emit?: (obj: any) => void) {
   // Note: we only call getPreEmitDiagnostics (which causes type checking to
   // happen) on the input paths as provided in paths.  This means we don't
   // e.g. type-check the standard library unless we were explicitly told to.
@@ -619,7 +621,7 @@ export function index(
 
   for (const path of paths) {
     let sourceFile = program.getSourceFile(path);
-    let visitor = new Vistor(program.getTypeChecker(), process.cwd());
+    let visitor = new Vistor(corpus, program.getTypeChecker(), process.cwd());
     if (emit != null) {
       visitor.emit = emit;
     }
@@ -660,7 +662,7 @@ function main(argv: string[]) {
   }
 
   let program = ts.createProgram(inPaths, config.options);
-  index(inPaths, program);
+  index('TODOcorpus', inPaths, program);
   return 0;
 }
 
