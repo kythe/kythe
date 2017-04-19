@@ -102,8 +102,7 @@ class Vistor {
    * emitting to stdout but users may replace it.
    */
   emit =
-      (obj: any) => {
-        // TODO: allow control of where the output is produced.
+      (obj: {}) => {
         console.log(JSON.stringify(obj));
       }
 
@@ -593,7 +592,7 @@ class Vistor {
  */
 export function index(
     corpus: string, paths: string[], program: ts.Program,
-    emit?: (obj: any) => void) {
+    emit?: (obj: {}) => void) {
   // Note: we only call getPreEmitDiagnostics (which causes type checking to
   // happen) on the input paths as provided in paths.  This means we don't
   // e.g. type-check the standard library unless we were explicitly told to.

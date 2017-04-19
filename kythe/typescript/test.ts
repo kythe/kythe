@@ -15,7 +15,7 @@
  */
 
 // This program runs the Kythe verifier on test cases in the testdata/
-// directory.  It's written in TypeScript (rather than a plain shell)
+// directory.  It's written in TypeScript (rather than a plain shell
 // script) so it can reuse TypeScript data structures across test cases,
 // speeding up the test.
 //
@@ -70,7 +70,7 @@ function verify(
         shell: true,
       });
 
-  indexer.index('testcorpus', [test], program, (obj: any) => {
+  indexer.index('testcorpus', [test], program, (obj: {}) => {
     verifier.stdin.write(JSON.stringify(obj) + '\n');
   });
   verifier.stdin.end();
