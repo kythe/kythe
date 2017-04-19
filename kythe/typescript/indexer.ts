@@ -146,7 +146,8 @@ class Vistor {
   emitEdge(source: VName, name: string, target: VName) {
     this.emit({
       source,
-      edge_kind: '/kythe/edge/' + name, target,
+      edge_kind: '/kythe/edge/' + name,
+      target,
       fact_name: '/',
     });
   }
@@ -471,8 +472,7 @@ class Vistor {
       }
       if (parentName !== undefined && namespace !== undefined) {
         let kParent = this.getSymbolName(
-            this.typeChecker.getSymbolAtLocation(parentName),
-            namespace);
+            this.typeChecker.getSymbolAtLocation(parentName), namespace);
         this.emitEdge(kFunc, 'childof', kParent);
       }
 
@@ -597,7 +597,8 @@ export function index(
   // e.g. type-check the standard library unless we were explicitly told to.
   let diags = new Set<ts.Diagnostic>();
   for (const path of paths) {
-    for (const diag of ts.getPreEmitDiagnostics(program, program.getSourceFile(path))) {
+    for (const diag of ts.getPreEmitDiagnostics(
+             program, program.getSourceFile(path))) {
       diags.add(diag);
     }
   }
@@ -630,7 +631,8 @@ export function index(
  * loadTsConfig loads a tsconfig.json from a path, throwing on any errors
  * like "file not found" or parse errors.
  */
-export function loadTsConfig(path: string, projectPath: string): ts.ParsedCommandLine {
+export function loadTsConfig(
+    path: string, projectPath: string): ts.ParsedCommandLine {
   let {config: json, error} = ts.readConfigFile(path, (path: string) => {
     return fs.readFileSync(path, 'utf8');
   });
@@ -639,7 +641,8 @@ export function loadTsConfig(path: string, projectPath: string): ts.ParsedComman
   }
   let config = ts.parseJsonConfigFileContent(json, ts.sys, projectPath);
   if (config.errors.length > 0) {
-    throw new Error(ts.formatDiagnostics(config.errors, ts.createCompilerHost({})));
+    throw new Error(
+        ts.formatDiagnostics(config.errors, ts.createCompilerHost({})));
   }
   return config;
 }

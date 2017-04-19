@@ -6,7 +6,8 @@
     "watch": "tsc -w",
     "browse": "node indexer.js tsconfig.json | ./browse",
     "test": "yarn build && yarn runtest",
-    "runtest": "node test.js"
+    "runtest": "node test.js",
+    "fmt": "clang-format -i *.ts"
   },
   "dependencies": {
     "@types/node": "^7.0.4",

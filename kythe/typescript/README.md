@@ -16,6 +16,9 @@ first.)
 
 Run `yarn test` to run the test suite.  (You'll need to have built first.)
 
+Run `yarn run fmt` to autoformat the source code.  (Better, configure your
+editor to run clang-format on save.)
+
 ### Writing tests
 
 By default in TypeScript, files are "scripts", where every declaration is in
