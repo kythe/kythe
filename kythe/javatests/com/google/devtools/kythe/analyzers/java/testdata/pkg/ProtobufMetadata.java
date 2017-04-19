@@ -4,4 +4,4 @@ package pkg;
 //- @ProtobufMetadata defines/binding ProtobufMetadata
 public class ProtobufMetadata {
 }
-//- vname("4.2","default","","ProtobufMetadata.proto",protobuf) generates ProtobufMetadata
+//- vname("4.2",kythe,"","ProtobufMetadata.proto",protobuf) generates ProtobufMetadata

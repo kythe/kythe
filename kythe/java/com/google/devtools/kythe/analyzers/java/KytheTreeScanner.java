@@ -28,6 +28,7 @@ import com.google.devtools.kythe.analyzers.java.SourceText.Comment;
 import com.google.devtools.kythe.analyzers.java.SourceText.Keyword;
 import com.google.devtools.kythe.analyzers.java.SourceText.Positions;
 import com.google.devtools.kythe.common.FormattingLogger;
+import com.google.devtools.kythe.platform.java.filemanager.JavaFileStoreBasedFileManager;
 import com.google.devtools.kythe.platform.java.helpers.JCTreeScanner;
 import com.google.devtools.kythe.platform.java.helpers.JavacUtil;
 import com.google.devtools.kythe.platform.java.helpers.SignatureGenerator;
@@ -73,6 +74,7 @@ import com.sun.tools.javac.tree.JCTree.JCWildcard;
 import com.sun.tools.javac.util.Context;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Collections;
@@ -87,8 +89,7 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Name;
 import javax.tools.FileObject;
-import javax.tools.StandardJavaFileManager;
-import javax.tools.StandardLocation;
+import javax.tools.JavaFileObject;
 
 /** {@link JCTreeScanner} that emits Kythe nodes and edges. */
 public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
@@ -102,7 +103,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   private final Positions filePositions;
   private final Map<Integer, List<Comment>> comments = new HashMap<>();
   private final Context javaContext;
-  private final StandardJavaFileManager fileManager;
+  private final JavaFileStoreBasedFileManager fileManager;
   private final MetadataLoaders metadataLoaders;
   private List<Metadata> metadata;
   private String packageName;
@@ -116,7 +117,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       SourceText src,
       Context javaContext,
       boolean verboseLogging,
-      StandardJavaFileManager fileManager,
+      JavaFileStoreBasedFileManager fileManager,
       MetadataLoaders metadataLoaders) {
     this.entrySets = entrySets;
     this.statistics = statistics;
@@ -146,7 +147,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       JCCompilationUnit compilation,
       Charset sourceEncoding,
       boolean verboseLogging,
-      StandardJavaFileManager fileManager,
+      JavaFileStoreBasedFileManager fileManager,
       MetadataLoaders metadataLoaders)
       throws IOException {
     SourceText src = new SourceText(javaContext, compilation, sourceEncoding);
@@ -977,25 +978,26 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   }
 
   private void loadAnnotationsFile(String path) {
+    URI uri = filePositions.getSourceFile().toUri();
     try {
-      FileObject file =
-          fileManager.getFileForInput(StandardLocation.SOURCE_PATH, packageName, path);
+      String fullPath = uri.resolve(path).getPath();
+      if (fullPath.startsWith("/")) {
+        fullPath = fullPath.substring(1);
+      }
+      FileObject file = fileManager.getJavaFileFromPath(fullPath, JavaFileObject.Kind.OTHER);
       if (file == null) {
-        logger.warning(
-            "Can't find metadata " + path + " for " + filePositions.getSourceFile().toUri());
+        logger.warning("Can't find metadata " + path + " for " + uri + " at " + fullPath);
         return;
       }
       InputStream stream = file.openInputStream();
-      Metadata newMetadata = metadataLoaders.parseFile(path, ByteStreams.toByteArray(stream));
+      Metadata newMetadata = metadataLoaders.parseFile(fullPath, ByteStreams.toByteArray(stream));
       if (newMetadata == null) {
-        logger.warning(
-            "Can't load metadata " + path + " for " + filePositions.getSourceFile().toUri());
+        logger.warning("Can't load metadata " + path + " for " + uri);
         return;
       }
       metadata.add(newMetadata);
-    } catch (IOException ex) {
-      logger.warning(
-          "Can't read metadata " + path + " for " + filePositions.getSourceFile().toUri());
+    } catch (IOException | IllegalArgumentException ex) {
+      logger.warning("Can't read metadata " + path + " for " + uri);
     }
   }
 

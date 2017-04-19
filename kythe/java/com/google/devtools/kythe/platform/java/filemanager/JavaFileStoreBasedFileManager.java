@@ -132,7 +132,7 @@ public class JavaFileStoreBasedFileManager
     return fileManager.inferBinaryName(location, file);
   }
 
-  private JavaFileObject getJavaFileFromPath(String file, Kind kind) {
+  public JavaFileObject getJavaFileFromPath(String file, Kind kind) {
     return javaFileStore.findByPath(file, kind);
   }
 

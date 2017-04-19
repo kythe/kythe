@@ -17,6 +17,7 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/analyzers/base:schema",
         "//kythe/java/com/google/devtools/kythe/common",
         "//kythe/java/com/google/devtools/kythe/platform/java",
+        "//kythe/java/com/google/devtools/kythe/platform/java/filemanager",
         "//kythe/java/com/google/devtools/kythe/platform/java/helpers",
         "//kythe/java/com/google/devtools/kythe/platform/shared:analysis_exception",
         "//kythe/java/com/google/devtools/kythe/platform/shared:metadata",
