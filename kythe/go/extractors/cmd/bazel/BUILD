@@ -13,10 +13,12 @@ go_binary(
         "//kythe/go/platform/kindex",
         "//kythe/go/util/vnameutil",
         "//kythe/proto:analysis_proto_go",
+        "//kythe/proto:go_proto_go",
         "//kythe/proto:storage_proto_go",
         "//third_party/bazel:extra_actions_base_proto_go",
         "@go_protobuf//:proto",
         "@go_shell//:shell",
+        "@go_stringset//:stringset",
     ],
 )
 
@@ -30,10 +32,10 @@ action_listener(
 
 extra_action(
     name = "extra_action",
-    cmd = "$(location :bazel_go_extractor)" +
-          " $(EXTRA_ACTION_FILE)" +
-          " $(output $(ACTION_ID).go.kindex)" +
-          " $(location :govnames.json)",
+    cmd = ("$(location :bazel_go_extractor)" +
+           " $(EXTRA_ACTION_FILE)" +
+           " $(output $(ACTION_ID).go.kindex)" +
+           " $(location :govnames.json)"),
     data = [":govnames.json"],
     out_templates = ["$(ACTION_ID).go.kindex"],
     tools = [":bazel_go_extractor"],

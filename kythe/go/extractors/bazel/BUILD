@@ -1,4 +1,4 @@
-load("//tools:build_rules/go.bzl", "go_package_library")
+load("//tools:build_rules/go.bzl", "go_package_library", "go_test")
 
 package(default_visibility = ["//kythe:default_visibility"])
 
@@ -21,4 +21,10 @@ go_package_library(
         "@go_shell//:shell",
         "@go_stringset//:stringset",
     ],
+)
+
+go_test(
+    name = "bazel_test",
+    srcs = ["extractor_test.go"],
+    library = ":bazel",
 )

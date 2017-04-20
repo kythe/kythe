@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-// bazel_go_extractor is a Bazel extra action that extracts Go compilations.
-package main
+// Package bazel implements the internal plumbing of a Bazel extractor for Go.
+package bazel
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -27,190 +26,190 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
+	"time"
 
 	"bitbucket.org/creachadair/shell"
 	"bitbucket.org/creachadair/stringset"
 	"github.com/golang/protobuf/proto"
 
-	"kythe.io/kythe/go/extractors/bazel"
 	"kythe.io/kythe/go/extractors/govname"
 	"kythe.io/kythe/go/platform/kindex"
+	"kythe.io/kythe/go/util/ptypes"
 	"kythe.io/kythe/go/util/vnameutil"
 
+	apb "kythe.io/kythe/proto/analysis_proto"
+	bipb "kythe.io/kythe/proto/buildinfo_proto"
 	gopb "kythe.io/kythe/proto/go_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
 	eapb "kythe.io/third_party/bazel/extra_actions_base_proto"
 )
 
-var (
-	corpus = flag.String("corpus", "kythe", "The corpus label to assign (required)")
-)
+// TODO(fromberger): The extractor logic depends on details of the Bazel rule
+// implementation, which needs some cleanup.
 
-const baseUsage = `Usage: %[1]s [flags] <extra-action> <output-file> <vname-config>`
+func osOpen(_ context.Context, path string) (io.ReadCloser, error) { return os.Open(path) }
 
-func init() {
-	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, baseUsage+`
+// A Config carries settings that control the extraction process.
+type Config struct {
+	Corpus   string          // the default corpus label to use
+	Mnemonic string          // the build mnemonic to match (if "", matches all)
+	Rules    vnameutil.Rules // rules for rewriting file VNames
 
-Extract a Kythe compilation record for Go from a Bazel extra action.
-
-Arguments:
- <extra-action> is a file containing a wire format ExtraActionInfo protobuf.
- <output-file>  is the path where the output kindex file is written.
- <vname-config> is the path of a VName configuration JSON file.
-
-Flags:
-`, filepath.Base(os.Args[0]))
-		flag.PrintDefaults()
-	}
+	// If set, this function is used to open files for reading.  If nil,
+	// os.Open is used.
+	OpenRead func(context.Context, string) (io.ReadCloser, error)
 }
 
-func main() {
-	flag.Parse()
-	if flag.NArg() != 3 {
-		log.Fatalf(baseUsage+` [run "%[1]s --help" for details]`, filepath.Base(os.Args[0]))
-	}
-	extraActionFile := flag.Arg(0)
-	outputFile := flag.Arg(1)
-	vnameRuleFile := flag.Arg(2)
-
-	info, err := loadExtraAction(extraActionFile)
+// Extract extracts a compilation from the specified extra action info.
+func (c *Config) Extract(ctx context.Context, info *eapb.ExtraActionInfo) (*kindex.Compilation, error) {
+	si, err := proto.GetExtension(info, eapb.E_SpawnInfo_SpawnInfo)
 	if err != nil {
-		log.Fatalf("Error loading extra action: %v", err)
+		return nil, fmt.Errorf("extra action does not have SpawnInfo: %v", err)
 	}
-	if m := info.GetMnemonic(); m != "GoCompile" {
-		log.Fatalf("Extractor is not applicable to this action: %q", m)
+	spawnInfo := si.(*eapb.SpawnInfo)
+
+	// Verify that the mnemonic is what we expect.
+	if m := info.GetMnemonic(); m != c.Mnemonic && c.Mnemonic != "" {
+		return nil, fmt.Errorf("mnemonic does not match %q ≠ %q", m, c.Mnemonic)
 	}
 
-	// Load vname rewriting rules. We handle this directly, becaues the Bazel
-	// Go rules have some pathological symlink handling that the normal rules
-	// need to be patched for.
-	rules, err := loadRules(vnameRuleFile)
+	// Construct the basic compilation.
+	toolArgs, err := c.extractToolArgs(ctx, spawnInfo.Argument)
 	if err != nil {
-		log.Fatalf("Error loading vname rules: %v", err)
+		return nil, fmt.Errorf("extracting tool arguments: %v", err)
+	}
+	log.Printf("Extracting compilation for %q", info.GetOwner())
+	cu := &kindex.Compilation{
+		Proto: &apb.CompilationUnit{
+			VName: &spb.VName{
+				Language: govname.Language,
+				Corpus:   c.Corpus,
+				Path:     toolArgs.importPath,
+			},
+			Argument:         toolArgs.compile,
+			SourceFile:       toolArgs.sources,
+			WorkingDirectory: toolArgs.workDir,
+		},
 	}
 
-	ext := &extractor{rules: rules}
-	config := &bazel.Config{
-		Corpus:      *corpus,
-		Language:    govname.Language,
-		CheckAction: ext.checkAction,
-		CheckInput:  ext.checkInput,
-		CheckEnv:    ext.checkEnv,
-		Fixup:       ext.fixup,
-	}
-	cu, err := config.Extract(context.Background(), info)
-	if err != nil {
-		log.Fatalf("Extraction failed: %v", err)
-	}
-
-	// Write and flush the output to a .kindex file.
-	if err := writeToFile(cu, outputFile); err != nil {
-		log.Fatalf("Writing output failed: %v", err)
-	}
-}
-
-// writeToFile creates the specified output file from the contents of w.
-func writeToFile(w io.WriterTo, path string) error {
-	f, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	_, err = w.WriteTo(f)
-	cerr := f.Close()
-	if err != nil {
-		return err
-	}
-	return cerr
-}
-
-// loadExtraAction reads the contents of the file at path and decodes it as an
-// ExtraActionInfo protobuf message.
-func loadExtraAction(path string) (*eapb.ExtraActionInfo, error) {
-	bits, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-	var info eapb.ExtraActionInfo
-	if err := proto.Unmarshal(bits, &info); err != nil {
-		return nil, err
-	}
-	return &info, nil
-}
-
-// loadRules reads the contents of the file at path and decodes it as a
-// slice of vname rewriting rules. The result is empty if path == "".
-func loadRules(path string) (vnameutil.Rules, error) {
-	if path == "" {
-		return nil, nil
-	}
-	bits, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-	return vnameutil.ParseRules(bits)
-}
-
-type extractor struct {
-	rules        vnameutil.Rules
-	toolArgs     *toolArgs
-	goos, goarch string
-}
-
-func (e *extractor) checkAction(_ context.Context, info *eapb.SpawnInfo) error {
-	toolArgs, err := extractToolArgs(info.Argument)
-	if err != nil {
-		return fmt.Errorf("extracting tool arguments: %v", err)
-	}
-	e.toolArgs = toolArgs
-
-	for _, evar := range info.Variable {
+	// Capture environment variables. Special cases are for $PATH, which we
+	// don't want to keep at all, and $GOOS and $GOARCH which we stash in the
+	// language-specific details.
+	var goos, goarch string
+	for _, evar := range spawnInfo.Variable {
 		switch name := evar.GetName(); name {
+		case "PATH":
+			continue
 		case "GOOS":
-			e.goos = evar.GetValue()
+			goos = evar.GetValue()
 		case "GOARCH":
-			e.goarch = evar.GetValue()
+			goarch = evar.GetValue()
+		default:
+			cu.Proto.Environment = append(cu.Proto.Environment, &apb.CompilationUnit_Env{
+				Name:  name,
+				Value: evar.GetValue(),
+			})
 		}
 	}
-	return nil
-}
 
-func (e *extractor) checkInput(path string) (string, bool) {
-	return path, e.toolArgs.wantInput(path)
-}
-
-func (*extractor) checkEnv(name, _ string) bool {
-	switch name {
-	case "PATH", "GOOS", "GOARCH":
-		return false
+	if info, err := ptypes.MarshalAny(&bipb.BuildDetails{
+		BuildTarget: info.GetOwner(),
+	}); err == nil {
+		cu.Proto.Details = append(cu.Proto.Details, info)
 	}
-	return true
+	if info, err := ptypes.MarshalAny(&gopb.GoDetails{
+		Goroot:     toolArgs.goRoot,
+		Goos:       goos,
+		Goarch:     goarch,
+		CgoEnabled: toolArgs.useCgo,
+	}); err == nil {
+		cu.Proto.Details = append(cu.Proto.Details, info)
+	}
+
+	// Load and populate file contents and required inputs.  First scan the
+	// inputs and filter out which ones we actually want to keep by path
+	// inspection; then load the contents concurrently.
+	var wantPaths []string
+	for _, in := range spawnInfo.InputFile {
+		if toolArgs.wantInput(in) {
+			wantPaths = append(wantPaths, in)
+			cu.Files = append(cu.Files, nil)
+			cu.Proto.RequiredInput = append(cu.Proto.RequiredInput, nil)
+		}
+	}
+
+	// Fetch concurrently. Each element of the proto slices is accessed by a
+	// single goroutine corresponding to its index.
+	log.Printf("Reading file contents for %d required inputs", len(wantPaths))
+	start := time.Now()
+	var wg sync.WaitGroup
+	for i, path := range wantPaths {
+		i, path := i, path
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			fd, err := c.readFileData(ctx, path)
+			if err != nil {
+				log.Fatalf("Unable to read input %q: %v", path, err)
+			}
+			cu.Files[i] = fd
+			ri := c.fileDataToInfo(fd, toolArgs.fixPath)
+			cu.Proto.RequiredInput[i] = ri
+		}()
+	}
+	wg.Wait()
+	log.Printf("Finished reading required inputs [%v elapsed]", time.Since(start))
+
+	// Set the output path.  Although the SpawnInfo has room for multiple
+	// outputs, we expect only one to be set in practice.  It's harmless if
+	// there are more, though, so don't fail for that.
+	for _, out := range spawnInfo.OutputFile {
+		cu.Proto.OutputKey = out
+		break
+	}
+
+	return cu, nil
 }
 
-func (e *extractor) fixup(cu *kindex.Compilation) error {
-	unit := cu.Proto
-	unit.Argument = e.toolArgs.compile
-	unit.SourceFile = e.toolArgs.sources
-	unit.WorkingDirectory = e.toolArgs.workDir
-	unit.VName.Path = e.toolArgs.importPath
+// openFile opens a the file at path using the opener from c or osOpen.
+func (c *Config) openFile(ctx context.Context, path string) (io.ReadCloser, error) {
+	open := c.OpenRead
+	if open == nil {
+		open = osOpen
+	}
+	return open(ctx, path)
+}
 
-	// Adjust the paths through the symlink forest.
-	for i, fi := range cu.Files {
-		path := fi.Info.Path
-		fixed := e.toolArgs.fixPath(path)
-		fi.Info.Path = fixed
-		unit.RequiredInput[i].VName = e.rules.ApplyDefault(fixed, &spb.VName{
-			Corpus: *corpus,
+// readFileData fetches the contents of the file at path and returns a FileData
+// message populated with its content and digest.
+func (c *Config) readFileData(ctx context.Context, path string) (*apb.FileData, error) {
+	f, err := c.openFile(ctx, path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	return kindex.FileData(path, f)
+}
+
+// fileDataToInfo produces a file info message corresponding to fd, using rules
+// to generate the vname and root as the working directory. Paths are mapped to
+// their compiler-apparent location using fix.
+func (c *Config) fileDataToInfo(fd *apb.FileData, fix func(string) string) *apb.CompilationUnit_FileInput {
+	path := fd.Info.Path
+	fixed := fix(path)
+	fd.Info.Path = fixed
+	vname, ok := c.Rules.Apply(fixed)
+	if !ok {
+		vname = &spb.VName{
+			Corpus: c.Corpus,
 			Path:   fixed,
-		})
-
+		}
 	}
-	return cu.AddDetails(&gopb.GoDetails{
-		Goroot:     e.toolArgs.goRoot,
-		Goos:       e.goos,
-		Goarch:     e.goarch,
-		CgoEnabled: e.toolArgs.useCgo,
-	})
+	return &apb.CompilationUnit_FileInput{
+		VName: vname,
+		Info:  fd.Info,
+	}
 }
 
 // toolArgs captures the settings expressed by the Go compiler tool and its
@@ -315,7 +314,7 @@ type bazelArgs struct {
 // parseBazelArgs extracts the compiler command line from the raw argument list
 // passed in by Bazel. The official Go rules currently pass in a response file
 // containing a shell script that we have to parse.
-func parseBazelArgs(args []string) (*bazelArgs, error) {
+func (c *Config) parseBazelArgs(ctx context.Context, args []string) (*bazelArgs, error) {
 	if len(args) != 1 || filepath.Ext(args[0]) != ".params" {
 		// This is some unusual case; assume the arguments are already parsed.
 		return &bazelArgs{compile: args}, nil
@@ -323,7 +322,7 @@ func parseBazelArgs(args []string) (*bazelArgs, error) {
 
 	// This is the expected case, a response file.
 	result := &bazelArgs{paramsFile: args[0]}
-	f, err := os.Open(result.paramsFile)
+	f, err := c.openFile(ctx, result.paramsFile)
 	if err != nil {
 		return nil, err
 	}
@@ -359,8 +358,8 @@ func parseBazelArgs(args []string) (*bazelArgs, error) {
 }
 
 // extractToolArgs extracts the build tool arguments from args.
-func extractToolArgs(args []string) (*toolArgs, error) {
-	parsed, err := parseBazelArgs(args)
+func (c *Config) extractToolArgs(ctx context.Context, args []string) (*toolArgs, error) {
+	parsed, err := c.parseBazelArgs(ctx, args)
 	if err != nil {
 		return nil, err
 	}
