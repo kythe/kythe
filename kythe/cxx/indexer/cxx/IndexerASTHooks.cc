@@ -2477,7 +2477,8 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
   }
   SourceLocation DeclLoc = Decl->getLocation();
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
-  if (Decl->isThisDeclarationADefinition() && Decl->hasBody()) {
+  if (!DeclLoc.isMacroID() && Decl->isThisDeclarationADefinition() &&
+      Decl->hasBody()) {
     Marks.set_marked_source_end(Decl->getBody()->getSourceRange().getBegin());
   } else {
     Marks.set_marked_source_end(GetLocForEndOfToken(
