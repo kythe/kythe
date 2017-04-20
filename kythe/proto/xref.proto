@@ -178,7 +178,7 @@ message DecorationsReply {
   // Represents a reference edge source ---KIND---> target.  Each source is an
   // anchor within the requested source location.
   message Reference {
-    string source_ticket = 1;
+    string source_ticket = 1 [deprecated = true];
     string target_ticket = 2;
     string kind = 3;
 

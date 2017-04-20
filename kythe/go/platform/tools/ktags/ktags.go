@@ -87,19 +87,13 @@ func main() {
 				continue
 			}
 
-			offset, err := strconv.Atoi(string(nmap[r.SourceTicket][facts.AnchorStart]))
-			if err != nil {
-				log.Printf("Invalid start offset for anchor %q", r.SourceTicket)
-				continue
-			}
-
 			fields, err := getTagFields(xs, r.TargetTicket)
 			if err != nil {
 				log.Printf("Failed to get tagfields for %q: %v", r.TargetTicket, err)
 			}
 
 			fmt.Printf("%s\t%s\t%d;\"\t%s\n",
-				ident, file, offsetLine(decor.SourceText, offset), strings.Join(fields, "\t"))
+				ident, file, offsetLine(decor.SourceText, int(r.Span.Start.ByteOffset)), strings.Join(fields, "\t"))
 			emitted.Add(r.TargetTicket)
 		}
 	}

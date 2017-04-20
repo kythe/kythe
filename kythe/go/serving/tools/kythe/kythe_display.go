@@ -157,7 +157,6 @@ func displayDecorations(decor *xpb.DecorationsReply) error {
 		}
 
 		r := strings.NewReplacer(
-			"@source@", ref.SourceTicket,
 			"@target@", ref.TargetTicket,
 			"@edgeKind@", ref.Kind,
 			"@nodeKind@", nodeKind,

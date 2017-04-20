@@ -350,7 +350,6 @@ var (
 			flag.StringVar(&refFormat, "format", "@edgeKind@\t@^line@:@^col@-@$line@:@$col@\t@nodeKind@\t@target@",
 				`Format for each decoration result.
       Format Markers:
-        @source@    -- ticket of anchor source node
         @target@    -- ticket of referenced target node
         @targetDef@ -- ticket of referenced target's definition
         @edgeKind@  -- edge kind from anchor node to its referenced target
