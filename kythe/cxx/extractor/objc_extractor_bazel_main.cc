@@ -112,7 +112,7 @@ static bool LoadSpawnInfo(const XAState &xa_state,
   kythe::FillWithFixedArgs(args, spawn_info, devdir, sdkroot);
 
   if (ContainsUnsupportedArg(args)) {
-    LOG(INFO) << "Not extracting " << info.id()
+    LOG(INFO) << "Not extracting " << info.owner()
               << " because it had an unsupported argument.";
     return false;
   }
@@ -141,7 +141,7 @@ static bool LoadCppInfo(const XAState &xa_state,
   kythe::FillWithFixedArgs(args, cpp_info, devdir, sdkroot);
 
   if (ContainsUnsupportedArg(args)) {
-    LOG(INFO) << "Not extracting " << info.id()
+    LOG(INFO) << "Not extracting " << info.owner()
               << " because it had an unsupported argument.";
     return false;
   }
