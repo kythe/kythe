@@ -19,6 +19,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as ts from 'typescript';
 
+import * as utf8 from './utf8';
+
 /** VName is the type of Kythe node identities. */
 export interface VName {
   signature: string;
@@ -95,16 +97,29 @@ class Vistor {
        * the absolute path to the source file, but for output purposes we want a
        * repository-relative path.
        */
-      private sourceRoot: string) {}
+      private sourceRoot: string,
+      private offsetTables: Map<string, utf8.OffsetTable>) {}
 
   /**
    * emit emits a Kythe entry, structured as a JSON object.  Defaults to
    * emitting to stdout but users may replace it.
    */
-  emit =
-      (obj: {}) => {
-        console.log(JSON.stringify(obj));
-      }
+  emit = (obj: {}) => {
+    console.log(JSON.stringify(obj));
+  };
+
+  /**
+   * Gets the utf8.OffsetTable for a path, creating and caching it if necessary.
+   */
+  getOffsetTable(path: string): utf8.OffsetTable {
+    let table = this.offsetTables.get(path);
+    if (!table) {
+      let buf = fs.readFileSync(path);
+      table = new utf8.OffsetTable(buf);
+      this.offsetTables.set(path, table);
+    }
+    return table;
+  }
 
   /** newVName returns a new VName pointing at the current file. */
   newVName(signature: string, sourceFile = this.sourceFile): VName {
@@ -121,9 +136,11 @@ class Vistor {
   newAnchor(node: ts.Node): VName {
     let name = this.newVName(`@${node.pos}:${node.end}`);
     this.emitNode(name, 'anchor');
-    // TODO: loc/* should be in bytes, but these offsets are in UTF-16 units.
-    this.emitFact(name, 'loc/start', node.getStart().toString());
-    this.emitFact(name, 'loc/end', node.getEnd().toString());
+    let offsetTable = this.getOffsetTable(node.getSourceFile().path);
+    this.emitFact(
+        name, 'loc/start', offsetTable.lookup(node.getStart()).toString());
+    this.emitFact(
+        name, 'loc/end', offsetTable.lookup(node.getEnd()).toString());
     this.emitEdge(name, 'childof', this.kFile);
     return name;
   }
@@ -618,9 +635,11 @@ export function index(
     throw new Error(message);
   }
 
+  let offsetTables = new Map<string, utf8.OffsetTable>();
   for (const path of paths) {
     let sourceFile = program.getSourceFile(path);
-    let visitor = new Vistor(corpus, program.getTypeChecker(), process.cwd());
+    let visitor = new Vistor(
+        corpus, program.getTypeChecker(), process.cwd(), offsetTables);
     if (emit != null) {
       visitor.emit = emit;
     }
