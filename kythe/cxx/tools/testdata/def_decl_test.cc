@@ -4,4 +4,4 @@
 
 struct DefDeclTest;
 struct DefDeclTest;
-struct DefDeclTest{};
+struct DefDeclTest {};

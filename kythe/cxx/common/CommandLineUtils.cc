@@ -40,7 +40,7 @@ namespace {
 /// regular expressions which may contain empty options without those silently
 /// matching empty strings.
 class FullMatchRegex {
-public:
+ public:
   /// \param Regex an extended-syntax regex to match.
   explicit FullMatchRegex(llvm::StringRef Regex)
       : InnerRegex("^(" + Regex.str() + ")$", llvm::Regex::NoFlags) {
@@ -58,13 +58,13 @@ public:
     return String.size() > 0 && InnerRegex.match(String, &Matches);
   }
 
-private:
+ private:
   mutable llvm::Regex InnerRegex;
   /// This mutex protects `InnerRegex`, since `llvm::Regex` is not threadsafe.
   mutable std::mutex RegexMutex;
 };
 
-} // anonymous namespace
+}  // anonymous namespace
 
 // Decide what will the driver do based on the inputs found on the command
 // line.
@@ -118,8 +118,7 @@ DriverAction DetermineDriverAction(const std::vector<std::string> &args) {
   // If the user did not specify -c, then the linker will be invoked.
   // Note that if the command line was something like "clang foo.cc",
   // it will be considered a LINK action.
-  if (is_link)
-    return LINK;
+  if (is_link) return LINK;
 
   return action;
 }
@@ -134,9 +133,8 @@ bool HasCxxInputInCommandLineOrArgs(
 
 // Returns a copy of the input vector with every string which matches the
 // regular expression removed.
-static std::vector<std::string>
-CopyOmittingMatches(const FullMatchRegex &re,
-                    const std::vector<std::string> &input) {
+static std::vector<std::string> CopyOmittingMatches(
+    const FullMatchRegex &re, const std::vector<std::string> &input) {
   std::vector<std::string> output;
   std::remove_copy_if(
       input.begin(), input.end(), back_inserter(output),
@@ -147,15 +145,14 @@ CopyOmittingMatches(const FullMatchRegex &re,
 // Returns a copy of the input vector after removing each string which matches
 // the regular expression and one string immediately following the matching
 // string.
-static std::vector<std::string>
-CopyOmittingMatchesAndFollowers(const FullMatchRegex &re,
-                                const std::vector<std::string> &input) {
+static std::vector<std::string> CopyOmittingMatchesAndFollowers(
+    const FullMatchRegex &re, const std::vector<std::string> &input) {
   std::vector<std::string> output;
   for (size_t i = 0; i < input.size(); ++i) {
     if (!re.FullMatch(input[i])) {
       output.push_back(input[i]);
     } else {
-      ++i; // Skip the matching string *and* the next string.
+      ++i;  // Skip the matching string *and* the next string.
     }
   }
   return output;
@@ -163,8 +160,8 @@ CopyOmittingMatchesAndFollowers(const FullMatchRegex &re,
 
 // Returns a copy of the input vector with the supplied prefix string removed
 // from any element of which it was a prefix.
-static std::vector<std::string>
-StripPrefix(const std::string &prefix, const std::vector<std::string> &input) {
+static std::vector<std::string> StripPrefix(
+    const std::string &prefix, const std::vector<std::string> &input) {
   std::vector<std::string> output;
   const size_t prefix_size = prefix.size();
   for (const auto &arg : input) {
@@ -177,8 +174,8 @@ StripPrefix(const std::string &prefix, const std::vector<std::string> &input) {
   return output;
 }
 
-std::vector<std::string>
-GCCArgsToClangArgs(const std::vector<std::string> &gcc_args) {
+std::vector<std::string> GCCArgsToClangArgs(
+    const std::vector<std::string> &gcc_args) {
   // These are GCC-specific arguments which Clang does not yet understand or
   // support without issuing ugly warnings, and cannot otherwise be suppressed.
   const FullMatchRegex unsupported_args_re(
@@ -225,7 +222,7 @@ GCCArgsToClangArgs(const std::vector<std::string> &gcc_args) {
       "|-f(no-)?tracer"
       "|-f(no-)?tree-.*"
       "|-f(no-)?unroll-all-loops"
-      "|-f(no-)?warn-incomplete-patterns" // Why do we see this haskell flag?
+      "|-f(no-)?warn-incomplete-patterns"  // Why do we see this haskell flag?
       "|-g(:lines,source|gdb)"
       "|-m(no-)?align-double"
       "|-m(no-)?fpmath=.*"
@@ -247,18 +244,18 @@ GCCArgsToClangArgs(const std::vector<std::string> &gcc_args) {
                          CopyOmittingMatches(unsupported_args_re, gcc_args)));
 }
 
-std::vector<std::string>
-GCCArgsToClangSyntaxOnlyArgs(const std::vector<std::string> &gcc_args) {
+std::vector<std::string> GCCArgsToClangSyntaxOnlyArgs(
+    const std::vector<std::string> &gcc_args) {
   return AdjustClangArgsForSyntaxOnly(GCCArgsToClangArgs(gcc_args));
 }
 
-std::vector<std::string>
-GCCArgsToClangAnalyzeArgs(const std::vector<std::string> &gcc_args) {
+std::vector<std::string> GCCArgsToClangAnalyzeArgs(
+    const std::vector<std::string> &gcc_args) {
   return AdjustClangArgsForAnalyze(GCCArgsToClangArgs(gcc_args));
 }
 
-std::vector<std::string>
-AdjustClangArgsForSyntaxOnly(const std::vector<std::string> &clang_args) {
+std::vector<std::string> AdjustClangArgsForSyntaxOnly(
+    const std::vector<std::string> &clang_args) {
   // These are arguments which are inapplicable to '-fsyntax-only' behavior, but
   // are applicable to regular compilation.
   const FullMatchRegex inapplicable_args_re(
@@ -279,7 +276,7 @@ AdjustClangArgsForSyntaxOnly(const std::vector<std::string> &clang_args) {
       "|-f(no-)?strict-aliasing"
       "|-f(no-)?test-coverage"
       "|-f(no-)?unroll-loops"
-      "|-fsyntax-only" // We don't want multiple -fsyntax-only args.
+      "|-fsyntax-only"  // We don't want multiple -fsyntax-only args.
       "|-g.+"
       "|-nostartfiles"
       "|-s"
@@ -294,8 +291,8 @@ AdjustClangArgsForSyntaxOnly(const std::vector<std::string> &clang_args) {
   return result;
 }
 
-std::vector<std::string>
-AdjustClangArgsForAnalyze(const std::vector<std::string> &clang_args) {
+std::vector<std::string> AdjustClangArgsForAnalyze(
+    const std::vector<std::string> &clang_args) {
   // --analyze is just like -fsyntax-only, except for the name of the
   // flag itself.
   std::vector<std::string> args = AdjustClangArgsForSyntaxOnly(clang_args);
@@ -311,8 +308,8 @@ AdjustClangArgsForAnalyze(const std::vector<std::string> &clang_args) {
   return args;
 }
 
-std::vector<std::string>
-ClangArgsToGCCArgs(const std::vector<std::string> &clang_args) {
+std::vector<std::string> ClangArgsToGCCArgs(
+    const std::vector<std::string> &clang_args) {
   // These are Clang-specific args which GCC does not understand.
   const FullMatchRegex unsupported_args_re(
       "--target=.*"
@@ -360,8 +357,9 @@ ClangArgsToGCCArgs(const std::vector<std::string> &clang_args) {
       "|-fplugin=.*"
       "|-fplugin-arg-.*"
       "|-gline-tables-only");
-  const FullMatchRegex unsupported_args_with_values_re("-Xclang"
-                                                       "|-target");
+  const FullMatchRegex unsupported_args_with_values_re(
+      "-Xclang"
+      "|-target");
 
   // It's important to remove the matches that have followers first -- those
   // followers might match one of the flag regular expressions, and removing
@@ -373,8 +371,8 @@ ClangArgsToGCCArgs(const std::vector<std::string> &clang_args) {
                               unsupported_args_with_values_re, clang_args)));
 }
 
-std::vector<std::string>
-AdjustClangArgsForAddressSanitizer(const std::vector<std::string> &input) {
+std::vector<std::string> AdjustClangArgsForAddressSanitizer(
+    const std::vector<std::string> &input) {
   const FullMatchRegex inapplicable_flags_re("-static");
   const FullMatchRegex inapplicable_flags_with_shared_re("-pie");
 
@@ -399,5 +397,5 @@ std::vector<char *> CommandLineToArgv(const std::vector<std::string> &command) {
   return result;
 }
 
-} // namespace driver
-} // namespace clang
+}  // namespace common
+}  // namespace kythe

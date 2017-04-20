@@ -37,7 +37,7 @@ class IndexerASTVisitor;
 /// language-level objects. LibrarySupport plugins can use additional knowledge
 /// about particular libraries to emit further semantic information.
 class LibrarySupport {
-public:
+ public:
   virtual ~LibrarySupport() {}
 
   /// \brief A single completed declaration (in the Kythe `completes` sense).
@@ -100,7 +100,7 @@ using LibrarySupports = std::vector<std::unique_ptr<LibrarySupport>>;
 /// \brief Snoops on variable declarations and references to see if they
 /// are flags.
 class GoogleFlagsLibrarySupport : public LibrarySupport {
-public:
+ public:
   GoogleFlagsLibrarySupport() {}
 
   /// \brief Emits a google/gflag node if `Decl` is a flag.
@@ -119,6 +119,6 @@ public:
                       const clang::NamedDecl *TargetDecl) override;
 };
 
-} // namespace kythe
+}  // namespace kythe
 
-#endif // KYTHE_CXX_INDEXER_CXX_INDEXER_LIBRARY_SUPPORT_H_
+#endif  // KYTHE_CXX_INDEXER_CXX_INDEXER_LIBRARY_SUPPORT_H_

@@ -49,10 +49,11 @@ bool HeaderSearchInfo::CopyFrom(
   angled_dir_idx = info.first_angled_dir();
   system_dir_idx = info.first_system_dir();
   for (const auto& dir : info.dir()) {
-    paths.emplace_back(HeaderSearchInfo::Path{
-        dir.path(), static_cast<clang::SrcMgr::CharacteristicKind>(
-                        dir.characteristic_kind()),
-        dir.is_framework()});
+    paths.emplace_back(
+        HeaderSearchInfo::Path{dir.path(),
+                               static_cast<clang::SrcMgr::CharacteristicKind>(
+                                   dir.characteristic_kind()),
+                               dir.is_framework()});
   }
   for (const auto& prefix : cxx_details.system_header_prefix()) {
     system_prefixes.emplace_back(prefix.prefix(), prefix.is_system_header());

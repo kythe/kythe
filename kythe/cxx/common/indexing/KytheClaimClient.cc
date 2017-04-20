@@ -144,4 +144,4 @@ void DynamicClaimClient::AssignClaim(const kythe::proto::VName &claimable,
                                      const kythe::proto::VName &claimant) {
   claim_table_[claimable] = claimant;
 }
-}
+}  // namespace kythe

@@ -44,6 +44,6 @@ struct VNameLess {
     return lhs.language() < rhs.language();
   }
 };
-}
+}  // namespace kythe
 
 #endif

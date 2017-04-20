@@ -19,12 +19,12 @@
 #include "IndexerPPCallbacks.h"
 #include "GraphObserver.h"
 
-#include "glog/logging.h"
-#include "kythe/cxx/common/path_utils.h"
 #include "clang/Basic/FileManager.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Lex/PPCallbacks.h"
 #include "clang/Lex/Preprocessor.h"
+#include "glog/logging.h"
+#include "kythe/cxx/common/path_utils.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
 
@@ -48,7 +48,7 @@ IndexerPPCallbacks::IndexerPPCallbacks(clang::Preprocessor &PP,
                                        GraphObserver &GO, enum Verbosity V)
     : Preprocessor(PP), Observer(GO), Verbosity(V) {
   class MetadataPragmaHandlerWrapper : public clang::PragmaHandler {
-  public:
+   public:
     MetadataPragmaHandlerWrapper(IndexerPPCallbacks *context)
         : PragmaHandler("kythe_metadata"), context_(context) {}
     void HandlePragma(clang::Preprocessor &Preprocessor,
@@ -57,7 +57,7 @@ IndexerPPCallbacks::IndexerPPCallbacks(clang::Preprocessor &PP,
       context_->HandleKytheMetadataPragma(Preprocessor, Introducer, FirstToken);
     }
 
-  private:
+   private:
     IndexerPPCallbacks *context_;
   };
   // Clang takes ownership.
@@ -71,20 +71,20 @@ void IndexerPPCallbacks::FileChanged(clang::SourceLocation Loc,
                                      clang::SrcMgr::CharacteristicKind FileType,
                                      clang::FileID PrevFID) {
   switch (Reason) {
-  case clang::PPCallbacks::EnterFile:
-    Observer.pushFile(LastInclusionHash, Loc);
-    break;
-  case clang::PPCallbacks::ExitFile:
-    Observer.popFile();
-    break;
-  case clang::PPCallbacks::SystemHeaderPragma:
-    break;
-  // RenameFile occurs when a #line directive is encountered, for example:
-  // #line 10 "foo.cc"
-  case clang::PPCallbacks::RenameFile:
-    break;
-  default:
-    llvm::dbgs() << "Unknown FileChangeReason " << Reason << "\n";
+    case clang::PPCallbacks::EnterFile:
+      Observer.pushFile(LastInclusionHash, Loc);
+      break;
+    case clang::PPCallbacks::ExitFile:
+      Observer.popFile();
+      break;
+    case clang::PPCallbacks::SystemHeaderPragma:
+      break;
+    // RenameFile occurs when a #line directive is encountered, for example:
+    // #line 10 "foo.cc"
+    case clang::PPCallbacks::RenameFile:
+      break;
+    default:
+      llvm::dbgs() << "Unknown FileChangeReason " << Reason << "\n";
   }
 }
 
@@ -106,8 +106,8 @@ void IndexerPPCallbacks::EndOfMainFile() {
   Observer.popFile();
 }
 
-GraphObserver::Range
-IndexerPPCallbacks::RangeForTokenInCurrentContext(const clang::Token &Token) {
+GraphObserver::Range IndexerPPCallbacks::RangeForTokenInCurrentContext(
+    const clang::Token &Token) {
   const auto Start = Token.getLocation();
   const auto End = Start.getLocWithOffset(Token.getLength());
   return RangeInCurrentContext(clang::SourceRange(Start, End));
@@ -170,11 +170,11 @@ void IndexerPPCallbacks::MacroExpands(const clang::Token &Token,
       if (!NewBegin.isFileID()) {
         return;
       }
-      Range = clang::SourceRange(NewBegin,
-                                 clang::Lexer::getLocForEndOfToken(
-                                     NewBegin, 0, /* offset from token end */
-                                     *Observer.getSourceManager(),
-                                     *Observer.getLangOptions()));
+      Range = clang::SourceRange(
+          NewBegin,
+          clang::Lexer::getLocForEndOfToken(
+              NewBegin, 0, /* offset from token end */
+              *Observer.getSourceManager(), *Observer.getLangOptions()));
       if (Range.isInvalid()) {
         return;
       }
@@ -260,8 +260,8 @@ void IndexerPPCallbacks::AddReferenceToMacro(const clang::Token &MacroNameToken,
                               BuildNodeIdForMacro(MacroNameToken, Info));
 }
 
-GraphObserver::NameId
-IndexerPPCallbacks::BuildNameIdForMacro(const clang::Token &Spelling) {
+GraphObserver::NameId IndexerPPCallbacks::BuildNameIdForMacro(
+    const clang::Token &Spelling) {
   CHECK(Spelling.getIdentifierInfo()) << "Macro spelling lacks IdentifierInfo";
   GraphObserver::NameId Id;
   Id.EqClass = GraphObserver::NameId::NameEqClass::Macro;
@@ -269,9 +269,8 @@ IndexerPPCallbacks::BuildNameIdForMacro(const clang::Token &Spelling) {
   return Id;
 }
 
-GraphObserver::NodeId
-IndexerPPCallbacks::BuildNodeIdForMacro(const clang::Token &Spelling,
-                                        clang::MacroInfo const &Info) {
+GraphObserver::NodeId IndexerPPCallbacks::BuildNodeIdForMacro(
+    const clang::Token &Spelling, clang::MacroInfo const &Info) {
   // Macro definitions always appear at the topmost level *and* always appear
   // in source text (or are implicit). For this reason, it's safe to use
   // location information to stably unique them. However, we must be careful
@@ -323,4 +322,4 @@ void IndexerPPCallbacks::HandleKytheMetadataPragma(
   }
 }
 
-} // namespace kythe
+}  // namespace kythe

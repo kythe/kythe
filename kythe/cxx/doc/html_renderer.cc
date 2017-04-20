@@ -183,8 +183,7 @@ void AppendEscapedHtmlString(const SourceString& source, std::string* dest) {
 class RenderSimpleIdentifierTarget {
  public:
   /// \brief Escapes and appends `source` to the buffer.
-  template <typename SourceString>
-  void Append(const SourceString& source) {
+  template <typename SourceString> void Append(const SourceString& source) {
     if (!prepend_buffer_.empty() && !source.empty()) {
       AppendEscapedHtmlString(prepend_buffer_, &buffer_);
       prepend_buffer_.clear();

@@ -24,13 +24,13 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "glog/logging.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/ASTTypeTraits.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Index/USRGeneration.h"
 #include "clang/Sema/SemaConsumer.h"
 #include "clang/Sema/Template.h"
+#include "glog/logging.h"
 
 #include "GraphObserver.h"
 #include "IndexerLibrarySupport.h"
@@ -77,19 +77,19 @@ inline bool IsClaimableForTraverse(const clang::Stmt *S) { return false; }
 /// TODO(zarko): Is this necessary to change for naming?
 class IndexedParentASTVisitor
     : public clang::RecursiveASTVisitor<IndexedParentASTVisitor> {
-public:
+ public:
   /// \brief Builds and returns the translation unit's indexed parent map.
   ///
   /// The caller takes ownership of the returned `IndexedParentMap`.
-  static std::unique_ptr<IndexedParentMap>
-  buildMap(clang::TranslationUnitDecl &TU) {
+  static std::unique_ptr<IndexedParentMap> buildMap(
+      clang::TranslationUnitDecl &TU) {
     std::unique_ptr<IndexedParentMap> ParentMap(new IndexedParentMap);
     IndexedParentASTVisitor Visitor(ParentMap.get());
     Visitor.TraverseDecl(&TU);
     return ParentMap;
   }
 
-private:
+ private:
   typedef RecursiveASTVisitor<IndexedParentASTVisitor> VisitorBase;
 
   explicit IndexedParentASTVisitor(IndexedParentMap *Parents)
@@ -108,8 +108,7 @@ private:
   // on values of type `T*` and returns a boolean traversal result.
   template <typename T, typename BaseTraverseFn>
   bool TraverseNode(T *Node, BaseTraverseFn traverse) {
-    if (!Node)
-      return true;
+    if (!Node) return true;
     if (!ParentStack.empty()) {
       auto &NodeOrVector = (*Parents)[Node];
       if (NodeOrVector.getPointer() == nullptr) {
@@ -120,13 +119,13 @@ private:
     ParentStack.push_back(
         {clang::ast_type_traits::DynTypedNode::create(*Node), 0});
     bool SavedClaimableAtThisDepth = ClaimableAtThisDepth;
-    ClaimableAtThisDepth = false; // for depth + 1
+    ClaimableAtThisDepth = false;  // for depth + 1
     bool Result = traverse(Node);
     if (ClaimableAtThisDepth || IsClaimableForTraverse(Node)) {
-      ClaimableAtThisDepth = true; // for depth
+      ClaimableAtThisDepth = true;  // for depth
       (*Parents)[Node].setInt(1);
     } else {
-      ClaimableAtThisDepth = SavedClaimableAtThisDepth; // restore depth
+      ClaimableAtThisDepth = SavedClaimableAtThisDepth;  // restore depth
     }
     ParentStack.pop_back();
     if (!ParentStack.empty()) {
@@ -156,21 +155,21 @@ private:
 
 /// \brief Specifies whether uncommonly-used data should be dropped.
 enum Verbosity : bool {
-  Classic = true, ///< Emit all data.
-  Lite = false    ///< Emit only common data.
+  Classic = true,  ///< Emit all data.
+  Lite = false     ///< Emit only common data.
 };
 
 /// \brief Specifies what the indexer should do if it encounters a case it
 /// doesn't understand.
 enum BehaviorOnUnimplemented : bool {
-  Abort = false,  ///< Stop indexing and exit with an error.
-  Continue = true ///< Continue indexing, possibly emitting less data.
+  Abort = false,   ///< Stop indexing and exit with an error.
+  Continue = true  ///< Continue indexing, possibly emitting less data.
 };
 
 /// \brief Specifies what the indexer should do with template instantiations.
 enum BehaviorOnTemplates : bool {
-  SkipInstantiations = false, ///< Don't visit template instantiations.
-  VisitInstantiations = true  ///< Visit template instantiations.
+  SkipInstantiations = false,  ///< Don't visit template instantiations.
+  VisitInstantiations = true   ///< Visit template instantiations.
 };
 
 /// \brief A byte range that links to some node.
@@ -191,14 +190,19 @@ class PruneCheck;
 /// \brief An AST visitor that extracts information for a translation unit and
 /// writes it to a `GraphObserver`.
 class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
-public:
+ public:
   IndexerASTVisitor(clang::ASTContext &C, BehaviorOnUnimplemented B,
                     BehaviorOnTemplates T, Verbosity V,
                     const LibrarySupports &S, clang::Sema &Sema,
                     std::function<bool()> ShouldStopIndexing,
                     GraphObserver *GO = nullptr)
-      : IgnoreUnimplemented(B), TemplateMode(T), Verbosity(V),
-        Observer(GO ? *GO : NullObserver), Context(C), Supports(S), Sema(Sema),
+      : IgnoreUnimplemented(B),
+        TemplateMode(T),
+        Verbosity(V),
+        Observer(GO ? *GO : NullObserver),
+        Context(C),
+        Supports(S),
+        Sema(Sema),
         MarkedSources(&Sema, &Observer),
         ShouldStopIndexing(ShouldStopIndexing) {}
 
@@ -214,8 +218,8 @@ public:
   bool VisitCXXDeleteExpr(const clang::CXXDeleteExpr *E);
   bool VisitCXXNewExpr(const clang::CXXNewExpr *E);
   bool VisitCXXPseudoDestructorExpr(const clang::CXXPseudoDestructorExpr *E);
-  bool
-  VisitCXXUnresolvedConstructExpr(const clang::CXXUnresolvedConstructExpr *E);
+  bool VisitCXXUnresolvedConstructExpr(
+      const clang::CXXUnresolvedConstructExpr *E);
   bool VisitCallExpr(const clang::CallExpr *Expr);
   bool VisitMemberExpr(const clang::MemberExpr *Expr);
   bool VisitCXXDependentScopeMemberExpr(
@@ -237,8 +241,8 @@ public:
   bool VisitObjCPropertyImplDecl(const clang::ObjCPropertyImplDecl *Decl);
   bool VisitObjCCompatibleAliasDecl(const clang::ObjCCompatibleAliasDecl *Decl);
   bool VisitObjCCategoryDecl(const clang::ObjCCategoryDecl *Decl);
-  bool
-  VisitObjCImplementationDecl(const clang::ObjCImplementationDecl *ImplDecl);
+  bool VisitObjCImplementationDecl(
+      const clang::ObjCImplementationDecl *ImplDecl);
   bool VisitObjCCategoryImplDecl(const clang::ObjCCategoryImplDecl *ImplDecl);
   bool VisitObjCInterfaceDecl(const clang::ObjCInterfaceDecl *Decl);
   bool VisitObjCProtocolDecl(const clang::ObjCProtocolDecl *Decl);
@@ -282,14 +286,14 @@ public:
   /// \brief For functions that support it, controls the emission of range
   /// information.
   enum class EmitRanges {
-    No, ///< Don't emit range information.
-    Yes ///< Emit range information when it's available.
+    No,  ///< Don't emit range information.
+    Yes  ///< Emit range information when it's available.
   };
 
   // Objective C methods don't have TypeSourceInfo so we must construct a type
   // for the methods to be used in the graph.
-  MaybeFew<GraphObserver::NodeId>
-  CreateObjCMethodTypeNode(const clang::ObjCMethodDecl *MD, EmitRanges ER);
+  MaybeFew<GraphObserver::NodeId> CreateObjCMethodTypeNode(
+      const clang::ObjCMethodDecl *MD, EmitRanges ER);
 
   /// \brief Builds a stable node ID for a compile-time expression.
   /// \param Expr The expression to represent.
@@ -306,9 +310,8 @@ public:
   /// \param ER whether to notify the `GraphObserver` about source text ranges
   /// for types.
   /// \return The Node ID for `Type`.
-  MaybeFew<GraphObserver::NodeId>
-  BuildNodeIdForType(const clang::TypeLoc &TypeLoc, const clang::Type *DType,
-                     EmitRanges ER);
+  MaybeFew<GraphObserver::NodeId> BuildNodeIdForType(
+      const clang::TypeLoc &TypeLoc, const clang::Type *DType, EmitRanges ER);
 
   /// \brief Builds a stable node ID for `Type`.
   /// \param TypeLoc The type that is being identified. If its location is valid
@@ -320,9 +323,9 @@ public:
   /// \param SR source range to use for the type location. This will be used
   /// instead of the range in TypeLoc.
   /// \return The Node ID for `Type`.
-  MaybeFew<GraphObserver::NodeId>
-  BuildNodeIdForType(const clang::TypeLoc &TypeLoc, const clang::Type *DType,
-                     EmitRanges ER, clang::SourceRange SR);
+  MaybeFew<GraphObserver::NodeId> BuildNodeIdForType(
+      const clang::TypeLoc &TypeLoc, const clang::Type *DType, EmitRanges ER,
+      clang::SourceRange SR);
 
   /// \brief Builds a stable node ID for `Type`.
   /// \param Type The type that is being identified. If its location is valid
@@ -356,19 +359,16 @@ public:
   MaybeFew<GraphObserver::NodeId> BuildNodeIdForType(const clang::QualType &QT);
 
   /// \brief Builds a stable node ID for the given `TemplateName`.
-  MaybeFew<GraphObserver::NodeId>
-  BuildNodeIdForTemplateName(const clang::TemplateName &Name,
-                             clang::SourceLocation L);
+  MaybeFew<GraphObserver::NodeId> BuildNodeIdForTemplateName(
+      const clang::TemplateName &Name, clang::SourceLocation L);
 
   /// \brief Builds a stable node ID for the given `TemplateArgument`.
-  MaybeFew<GraphObserver::NodeId>
-  BuildNodeIdForTemplateArgument(const clang::TemplateArgumentLoc &Arg,
-                                 EmitRanges ER);
+  MaybeFew<GraphObserver::NodeId> BuildNodeIdForTemplateArgument(
+      const clang::TemplateArgumentLoc &Arg, EmitRanges ER);
 
   /// \brief Builds a stable node ID for the given `TemplateArgument`.
-  MaybeFew<GraphObserver::NodeId>
-  BuildNodeIdForTemplateArgument(const clang::TemplateArgument &Arg,
-                                 clang::SourceLocation L);
+  MaybeFew<GraphObserver::NodeId> BuildNodeIdForTemplateArgument(
+      const clang::TemplateArgument &Arg, clang::SourceLocation L);
 
   /// \brief Builds a stable node ID for `Stmt`.
   ///
@@ -379,13 +379,13 @@ public:
   /// \param Decl The statement that is being identified
   /// \return The node for `Stmt` if the statement was implicit; otherwise,
   /// None.
-  MaybeFew<GraphObserver::NodeId>
-  BuildNodeIdForImplicitStmt(const clang::Stmt *Stmt);
+  MaybeFew<GraphObserver::NodeId> BuildNodeIdForImplicitStmt(
+      const clang::Stmt *Stmt);
 
   /// \brief Builds a stable node ID for `Decl`'s tapp if it's an implicit
   /// template instantiation.
-  MaybeFew<GraphObserver::NodeId>
-  BuildNodeIdForImplicitTemplateInstantiation(const clang::Decl *Decl);
+  MaybeFew<GraphObserver::NodeId> BuildNodeIdForImplicitTemplateInstantiation(
+      const clang::Decl *Decl);
 
   /// \brief Builds a stable node ID for an external reference to `Decl`.
   ///
@@ -406,8 +406,8 @@ public:
   /// \brief Builds a stable node ID for `TND`.
   ///
   /// \param Decl The declaration that is being identified.
-  MaybeFew<GraphObserver::NodeId>
-  BuildNodeIdForTypedefNameDecl(const clang::TypedefNameDecl *TND);
+  MaybeFew<GraphObserver::NodeId> BuildNodeIdForTypedefNameDecl(
+      const clang::TypedefNameDecl *TND);
 
   /// \brief Builds a stable node ID for `Decl`.
   ///
@@ -426,8 +426,8 @@ public:
 
   /// \brief Categorizes the name of `Decl` according to the equivalence classes
   /// defined by `GraphObserver::NameId::NameEqClass`.
-  GraphObserver::NameId::NameEqClass
-  BuildNameEqClassForDecl(const clang::Decl *Decl);
+  GraphObserver::NameId::NameEqClass BuildNameEqClassForDecl(
+      const clang::Decl *Decl);
 
   /// \brief Builds a stable name ID for the name of `Decl`.
   ///
@@ -464,8 +464,8 @@ public:
   ///
   /// The returned range is a best-effort attempt to cover the "name" of
   /// the entity as written in the source code.
-  clang::SourceRange
-  RangeForNameOfDeclaration(const clang::NamedDecl *Decl) const;
+  clang::SourceRange RangeForNameOfDeclaration(
+      const clang::NamedDecl *Decl) const;
 
   /// Consume a token of the `ExpectedKind` from the `StartLocation`,
   /// returning the range for that token on success and an invalid
@@ -517,22 +517,21 @@ public:
 
   /// Returns `SR` as a `Range` in this `RecursiveASTVisitor`'s current
   /// RangeContext.
-  MaybeFew<GraphObserver::Range>
-  ExplicitRangeInCurrentContext(const clang::SourceRange &SR);
+  MaybeFew<GraphObserver::Range> ExplicitRangeInCurrentContext(
+      const clang::SourceRange &SR);
 
   /// If `Implicit` is true, returns `Id` as an implicit Range; otherwise,
   /// returns `SR` as a `Range` in this `RecursiveASTVisitor`'s current
   /// RangeContext.
-  MaybeFew<GraphObserver::Range>
-  RangeInCurrentContext(bool Implicit, const GraphObserver::NodeId &Id,
-                        const clang::SourceRange &SR);
+  MaybeFew<GraphObserver::Range> RangeInCurrentContext(
+      bool Implicit, const GraphObserver::NodeId &Id,
+      const clang::SourceRange &SR);
 
   /// If `Id` is some NodeId, returns it as an implicit Range; otherwise,
   /// returns `SR` as a `Range` in this `RecursiveASTVisitor`'s current
   /// RangeContext.
-  MaybeFew<GraphObserver::Range>
-  RangeInCurrentContext(const MaybeFew<GraphObserver::NodeId> &Id,
-                        const clang::SourceRange &SR);
+  MaybeFew<GraphObserver::Range> RangeInCurrentContext(
+      const MaybeFew<GraphObserver::NodeId> &Id, const clang::SourceRange &SR);
 
   void RunJob(std::unique_ptr<IndexJob> JobToRun) {
     Job = std::move(JobToRun);
@@ -573,7 +572,7 @@ public:
   void RecordCallEdges(const GraphObserver::Range &Range,
                        const GraphObserver::NodeId &Callee);
 
-private:
+ private:
   friend class PruneCheck;
 
   /// Whether we should stop on missing cases or continue on.
@@ -591,8 +590,8 @@ private:
 
   /// \brief The result of calling into the lexer.
   enum class LexerResult {
-    Failure, ///< The operation failed.
-    Success  ///< The operation completed.
+    Failure,  ///< The operation failed.
+    Success   ///< The operation completed.
   };
 
   /// \brief Using the `Observer`'s preprocessor, relexes the token at the
@@ -665,9 +664,8 @@ private:
   bool AddNameToStream(llvm::raw_string_ostream &Ostream,
                        const clang::NamedDecl *ND);
 
-  MaybeFew<GraphObserver::NodeId>
-  ApplyBuiltinTypeConstructor(const char *BuiltinName,
-                              const MaybeFew<GraphObserver::NodeId> &Param);
+  MaybeFew<GraphObserver::NodeId> ApplyBuiltinTypeConstructor(
+      const char *BuiltinName, const MaybeFew<GraphObserver::NodeId> &Param);
 
   /// \brief Ascribes a type to `AscribeTo`.
   /// \param Type The `TypeLoc` referring to the type
@@ -717,8 +715,8 @@ private:
   /// This excludes, for example, certain template instantiations.
   bool declDominatesPrunableSubtree(const clang::Decl *Decl);
 
-  IndexedParent *
-  getIndexedParent(const clang::ast_type_traits::DynTypedNode &Node);
+  IndexedParent *getIndexedParent(
+      const clang::ast_type_traits::DynTypedNode &Node);
   /// A map from memoizable DynTypedNodes to their parent nodes
   /// and their child indices with respect to those parents.
   /// Filled on the first call to `getIndexedParents`.
@@ -736,10 +734,9 @@ private:
 
   /// Records information about the generic class by wrapping the node
   /// `BodyId`. Returns the `NodeId` for the dominating generic type.
-  GraphObserver::NodeId
-  RecordGenericClass(const clang::ObjCInterfaceDecl *IDecl,
-                     const clang::ObjCTypeParamList *TPL,
-                     const GraphObserver::NodeId &BodyId);
+  GraphObserver::NodeId RecordGenericClass(
+      const clang::ObjCInterfaceDecl *IDecl,
+      const clang::ObjCTypeParamList *TPL, const GraphObserver::NodeId &BodyId);
 
   /// \brief Fills `ArgNodeIds` with pointers to `NodeId`s for a template
   /// argument list.
@@ -766,13 +763,13 @@ private:
 
   /// Points at the inner node of the DeclContext, if it's a template.
   /// Otherwise points at the DeclContext as a Decl.
-  MaybeFew<GraphObserver::NodeId>
-  BuildNodeIdForDeclContext(const clang::DeclContext *DC);
+  MaybeFew<GraphObserver::NodeId> BuildNodeIdForDeclContext(
+      const clang::DeclContext *DC);
 
   /// Points at the tapp node for a DeclContext, if it's an implicit template
   /// instantiation. Otherwise behaves as `BuildNodeIdForDeclContext`.
-  MaybeFew<GraphObserver::NodeId>
-  BuildNodeIdForRefToDeclContext(const clang::DeclContext *DC);
+  MaybeFew<GraphObserver::NodeId> BuildNodeIdForRefToDeclContext(
+      const clang::DeclContext *DC);
 
   /// Avoid regenerating type node IDs and keep track of where we are while
   /// generating node IDs for recursive types. The key is opaque and
@@ -826,9 +823,9 @@ private:
   /// If this is a naked id (no protocols listed), this returns the node id
   /// for the builtin id node. Otherwise, this calls BuildNodeIdForDecl for
   /// each protocol and constructs a new tapp node for this TypeUnion.
-  MaybeFew<GraphObserver::NodeId>
-  RecordIdTypeNode(const clang::ObjCObjectType *T,
-                   llvm::ArrayRef<clang::SourceLocation> ProtocolLocs);
+  MaybeFew<GraphObserver::NodeId> RecordIdTypeNode(
+      const clang::ObjCObjectType *T,
+      llvm::ArrayRef<clang::SourceLocation> ProtocolLocs);
 
   /// \brief Draw the completes edge from a Decl to each of its redecls.
   void RecordCompletesForRedecls(const clang::Decl *Decl,
@@ -863,9 +860,8 @@ private:
   /// returned. Otherwise, the method tries to find the implementation by
   /// looking through the interface and its implementation. If a method
   /// implementation is found, it is returned otherwise `MD` is returned.
-  const clang::ObjCMethodDecl *
-  FindMethodDefn(const clang::ObjCMethodDecl *MD,
-                 const clang::ObjCInterfaceDecl *I);
+  const clang::ObjCMethodDecl *FindMethodDefn(
+      const clang::ObjCMethodDecl *MD, const clang::ObjCInterfaceDecl *I);
 
   /// \brief Maps known Decls to their NodeIds.
   llvm::DenseMap<const clang::Decl *, GraphObserver::NodeId> DeclToNodeId;
@@ -897,15 +893,19 @@ private:
 
 /// \brief An `ASTConsumer` that passes events to a `GraphObserver`.
 class IndexerASTConsumer : public clang::SemaConsumer {
-public:
+ public:
   explicit IndexerASTConsumer(
       GraphObserver *GO, BehaviorOnUnimplemented B, BehaviorOnTemplates T,
       Verbosity V, const LibrarySupports &S,
       std::function<bool()> ShouldStopIndexing,
       std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor *)>
           CreateWorklist)
-      : Observer(GO), IgnoreUnimplemented(B), TemplateMode(T), Verbosity(V),
-        Supports(S), ShouldStopIndexing(ShouldStopIndexing),
+      : Observer(GO),
+        IgnoreUnimplemented(B),
+        TemplateMode(T),
+        Verbosity(V),
+        Supports(S),
+        ShouldStopIndexing(ShouldStopIndexing),
         CreateWorklist(CreateWorklist) {}
 
   void HandleTranslationUnit(clang::ASTContext &Context) override {
@@ -923,7 +923,7 @@ public:
 
   void ForgetSema() override { Sema = nullptr; }
 
-private:
+ private:
   GraphObserver *const Observer;
   /// Whether we should stop on missing cases or continue on.
   BehaviorOnUnimplemented IgnoreUnimplemented;
@@ -942,6 +942,6 @@ private:
       CreateWorklist;
 };
 
-} // namespace kythe
+}  // namespace kythe
 
-#endif // KYTHE_CXX_INDEXER_CXX_INDEXER_AST_HOOKS_H_
+#endif  // KYTHE_CXX_INDEXER_CXX_INDEXER_AST_HOOKS_H_

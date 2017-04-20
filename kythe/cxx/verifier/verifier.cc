@@ -264,7 +264,7 @@ static Order CompareFactWithKey(Order incomplete, AstNode *a, AtomFactKey *k) {
   }
   return Order::EQ;
 }
-}
+}  // namespace
 
 // We want to be able to find the following bounds:
 // (0,0,2,3) (0,1,2,3) (0,1,2,4) (1,1,2,4)
@@ -1216,10 +1216,10 @@ AstNode *Verifier::ConvertMarkedSource(const yy::location &loc,
       std::cerr << loc << ": bad URI in link" << std::endl;
       return nullptr;
     }
-    facts_.push_back(MakePredicate(
-        loc, fact_id_, {vname, marked_source_link_id_,
-                        ConvertVName(loc, from_uri.second.v_name()), root_id_,
-                        empty_string_id_}));
+    facts_.push_back(MakePredicate(loc, fact_id_,
+                                   {vname, marked_source_link_id_,
+                                    ConvertVName(loc, from_uri.second.v_name()),
+                                    root_id_, empty_string_id_}));
   }
   auto emit_fact = [&](AstNode *fact_id, AstNode *fact_value) {
     facts_.push_back(MakePredicate(

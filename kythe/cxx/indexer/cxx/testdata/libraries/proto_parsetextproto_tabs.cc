@@ -1,6 +1,6 @@
 // Checks that the content of proto string literals is indexed.
-#include "parsetextproto.h"
 #include "message.proto.h"
+#include "parsetextproto.h"
 
 class string;
 

@@ -324,7 +324,7 @@ namespace kythe {
 namespace verifier {
 class AssertionParser;
 }
-}
+}  // namespace kythe
 struct YySemanticValue {
   std::string string;
   kythe::verifier::AstNode *node;

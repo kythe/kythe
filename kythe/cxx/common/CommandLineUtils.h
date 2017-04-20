@@ -57,44 +57,44 @@ bool HasCxxInputInCommandLineOrArgs(
 
 // Converts GCC's arguments to Clang's arguments by dropping GCC args that
 // Clang doesn't understand.
-std::vector<std::string>
-GCCArgsToClangArgs(const std::vector<std::string> &gcc_args);
+std::vector<std::string> GCCArgsToClangArgs(
+    const std::vector<std::string> &gcc_args);
 
 // Converts GCC's arguments to Clang's arguments by dropping GCC args that
 // Clang doesn't understand or that are not supported in -fsyntax-only mode
 // and adding -fsyntax-only. The return value is guaranteed to contain exactly
 // one -fsyntax-only flag.
-std::vector<std::string>
-GCCArgsToClangSyntaxOnlyArgs(const std::vector<std::string> &gcc_args);
+std::vector<std::string> GCCArgsToClangSyntaxOnlyArgs(
+    const std::vector<std::string> &gcc_args);
 
 // Converts GCC's arguments to Clang's arguments by dropping GCC args that
 // Clang doesn't understand or that are not supported in --analyze mode
 // and adding --analyze. The return value is guaranteed to contain exactly
 // one --analyze flag.
-std::vector<std::string>
-GCCArgsToClangAnalyzeArgs(const std::vector<std::string> &gcc_args);
+std::vector<std::string> GCCArgsToClangAnalyzeArgs(
+    const std::vector<std::string> &gcc_args);
 
 // Adds -fsyntax-only to the args, and removes args incompatible with
 // -fsyntax-only.  The return value is guaranteed to contain exactly
 // one -fsyntax-only flag.
-std::vector<std::string>
-AdjustClangArgsForSyntaxOnly(const std::vector<std::string> &clang_args);
+std::vector<std::string> AdjustClangArgsForSyntaxOnly(
+    const std::vector<std::string> &clang_args);
 
 // Adds --analyze to the args, and removes args incompatible with
 // --analyze.  The return value is guaranteed to contain exactly
 // one --analyze flag.
-std::vector<std::string>
-AdjustClangArgsForAnalyze(const std::vector<std::string> &clang_args);
+std::vector<std::string> AdjustClangArgsForAnalyze(
+    const std::vector<std::string> &clang_args);
 
 // Converts Clang's arguments to GCC's arguments by dropping Clang args that
 // GCC doesn't understand.
-std::vector<std::string>
-ClangArgsToGCCArgs(const std::vector<std::string> &clang_args);
+std::vector<std::string> ClangArgsToGCCArgs(
+    const std::vector<std::string> &clang_args);
 
 // Removes and adjusts the flags to be valid for compiling with
 // AddressSanitizer.
-std::vector<std::string>
-AdjustClangArgsForAddressSanitizer(const std::vector<std::string> &clang_args);
+std::vector<std::string> AdjustClangArgsForAddressSanitizer(
+    const std::vector<std::string> &clang_args);
 
 // Converts a std::string std::vector representing a command line into a C
 // string std::vector representing the argv (including the trailing NULL).
@@ -105,8 +105,8 @@ AdjustClangArgsForAddressSanitizer(const std::vector<std::string> &clang_args);
 // Note that the result std::vector contains char* rather than const char*,
 // in order to work with legacy C-style APIs.  It's the caller's responsibility
 // not to modify the contents of the C-strings.
-std::vector<char *>
-CommandLineToArgv(const std::vector<std::string> &command_line);
+std::vector<char *> CommandLineToArgv(
+    const std::vector<std::string> &command_line);
 
 // `CommandLineToArgv` should not be used with temporaries.
 void CommandLineToArgv(const std::vector<std::string> &&) = delete;
@@ -126,7 +126,7 @@ enum DriverAction {
 // line.
 DriverAction DetermineDriverAction(const std::vector<std::string> &args);
 
-} // namespace driver
-} // namespace clang
+}  // namespace common
+}  // namespace kythe
 
-#endif // LLVM_CLANG_LIB_DRIVER_COMMANDLINE_UTILS_H
+#endif  // LLVM_CLANG_LIB_DRIVER_COMMANDLINE_UTILS_H

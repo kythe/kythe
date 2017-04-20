@@ -99,10 +99,9 @@ class CxxExtractorTest : public testing::Test {
     int write_fd;
     UndoableCreateDirectories(path);
     ASSERT_EQ(0, llvm::sys::fs::remove(path).value());
-    ASSERT_EQ(
-        0,
-        llvm::sys::fs::openFileForWrite(path, write_fd, llvm::sys::fs::F_Text)
-            .value());
+    ASSERT_EQ(0, llvm::sys::fs::openFileForWrite(path, write_fd,
+                                                 llvm::sys::fs::F_Text)
+                     .value());
     ASSERT_EQ(code.size(), ::write(write_fd, code.c_str(), code.size()));
     ASSERT_EQ(0, ::close(write_fd));
     files_to_remove_.insert(path);
@@ -326,10 +325,9 @@ TEST_F(CxxExtractorTest, SupportsAbsoluteIncludes) {
   std::string absolute_header = GetRootedPath("/a/a.h");
   AddAbsoluteSourceFile(absolute_header, "class A;");
 
-  AddSourceFile("z.cc",
-                "#include \"" + absolute_header +
-                    "\"\n"
-                    "int main() { return 0; }");
+  AddSourceFile("z.cc", "#include \"" + absolute_header +
+                            "\"\n"
+                            "int main() { return 0; }");
   FillAndVerifyCompilationUnit("z.cc", {"-I."},
                                {absolute_header.c_str(), "z.cc"});
 }

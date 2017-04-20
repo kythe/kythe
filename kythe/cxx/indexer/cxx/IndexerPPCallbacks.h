@@ -31,7 +31,7 @@ namespace kythe {
 /// \brief Listener for preprocessor events, handling file tracking and macro
 /// use and definition.
 class IndexerPPCallbacks : public clang::PPCallbacks {
-public:
+ public:
   IndexerPPCallbacks(clang::Preprocessor &PP, GraphObserver &GO, Verbosity V);
   ~IndexerPPCallbacks() override;
 
@@ -84,15 +84,15 @@ public:
 
   void EndOfMainFile() override;
 
-private:
+ private:
   /// Some heuristics (such as whether a macro is a header guard) can only
   /// be determined when a file has been fully preprocessed. A `DeferredRecord`
   /// keeps track of a macro that needs this kind of analysis.
   struct DeferredRecord {
-    const clang::Token MacroName;       ///< The spelling site for this macro.
-    const clang::MacroDirective *Macro; ///< The macro itself, if defined.
-    bool WasDefined; ///< If true, the macro was defined at time of deferral.
-    GraphObserver::Range Range; ///< The range covering the spelling site.
+    const clang::Token MacroName;        ///< The spelling site for this macro.
+    const clang::MacroDirective *Macro;  ///< The macro itself, if defined.
+    bool WasDefined;  ///< If true, the macro was defined at time of deferral.
+    GraphObserver::Range Range;  ///< The range covering the spelling site.
   };
 
   /// \brief Emits the deferred macros that should be emitted according to
@@ -144,6 +144,6 @@ private:
   enum Verbosity Verbosity;
 };
 
-} // namespace kythe
+}  // namespace kythe
 
-#endif // KYTHE_CXX_INDEXER_CXX_PP_CALLBACKS_H_
+#endif  // KYTHE_CXX_INDEXER_CXX_PP_CALLBACKS_H_

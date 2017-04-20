@@ -17,8 +17,8 @@
 #ifndef KYTHE_CXX_VERIFIER_PRETTY_PRINTER_H_
 #define KYTHE_CXX_VERIFIER_PRETTY_PRINTER_H_
 
-#include <string>
 #include <sstream>
+#include <string>
 
 namespace kythe {
 namespace verifier {

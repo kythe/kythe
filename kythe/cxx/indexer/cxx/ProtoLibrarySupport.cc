@@ -110,8 +110,7 @@ class ParseTextProtoHandler {
   // Returns the source location/range of a given position/token.
   clang::SourceLocation GetSourceLocation(
       const LineColumnPair& LineColumn) const;
-  clang::SourceRange GetTokenSourceRange(
-      const Tokenizer::Token& Token) const;
+  clang::SourceRange GetTokenSourceRange(const Tokenizer::Token& Token) const;
 
   const clang::StringLiteral* const Literal;
   const clang::ASTContext& Context;
@@ -160,7 +159,8 @@ ParseTextProtoHandler::ParseTextProtoHandler(
       ++LineColumn.Line;
       LineColumn.Column = 0;
     } else if (c == '\t') {
-      LineColumn.Column += kTokenizerTabWidth - LineColumn.Column % kTokenizerTabWidth;
+      LineColumn.Column +=
+          kTokenizerTabWidth - LineColumn.Column % kTokenizerTabWidth;
     } else {
       ++LineColumn.Column;
     }
@@ -168,10 +168,11 @@ ParseTextProtoHandler::ParseTextProtoHandler(
   }
 }
 
-bool ParseTextProtoHandler::Parse(
-    const ParseCallback& FoundField, const clang::StringLiteral* Literal,
-    const clang::CXXRecordDecl& MsgDecl,
-    const clang::ASTContext& Context, const clang::LangOptions& LangOpts) {
+bool ParseTextProtoHandler::Parse(const ParseCallback& FoundField,
+                                  const clang::StringLiteral* Literal,
+                                  const clang::CXXRecordDecl& MsgDecl,
+                                  const clang::ASTContext& Context,
+                                  const clang::LangOptions& LangOpts) {
   ParseTextProtoHandler handler(FoundField, Literal, Context, LangOpts);
   return handler.ParseMsg(MsgDecl, false);
 }
@@ -272,9 +273,9 @@ clang::SourceLocation ParseTextProtoHandler::GetSourceLocation(
     const LineColumnPair& LineColumn) const {
   const auto OffsetIt = LineColumnToOffset.find(LineColumn);
   CHECK(OffsetIt != LineColumnToOffset.end());
-  return Literal->getLocationOfByte(
-      OffsetIt->second, Context.getSourceManager(), LangOpts,
-      Context.getTargetInfo());
+  return Literal->getLocationOfByte(OffsetIt->second,
+                                    Context.getSourceManager(), LangOpts,
+                                    Context.getTargetInfo());
 }
 
 clang::SourceRange ParseTextProtoHandler::GetTokenSourceRange(
@@ -294,8 +295,8 @@ const clang::RecordDecl* LookupRecordDecl(const clang::ASTContext& ASTContext,
     if (result.empty() || result.front()->isInvalidDecl()) {
       return nullptr;
     }
-    Context = clang::dyn_cast<clang::DeclContext>(
-        result.front()->getCanonicalDecl());
+    Context =
+        clang::dyn_cast<clang::DeclContext>(result.front()->getCanonicalDecl());
     FullName = Parts.second;
   }
   return clang::dyn_cast<clang::RecordDecl>(Context);
@@ -311,9 +312,8 @@ bool GoogleProtoLibrarySupport::CompilationUnitHasParseProtoHelperDecl(
     const clang::DeclContext* const TranslationUnitContext =
         Expr.getCalleeDecl()->getTranslationUnitDecl();
     // Look for ParseProtoHelper.
-    ParseProtoHelperDecl =
-        LookupRecordDecl(ASTContext, TranslationUnitContext,
-                         FLAGS_parseprotohelper_full_name);
+    ParseProtoHelperDecl = LookupRecordDecl(ASTContext, TranslationUnitContext,
+                                            FLAGS_parseprotohelper_full_name);
   }
   return ParseProtoHelperDecl != nullptr;
 }
@@ -391,12 +391,10 @@ void GoogleProtoLibrarySupport::InspectCallExpr(
 
   CHECK(Literal);
 
-  const auto Callback = [&V](
-      const clang::CXXMethodDecl& AccessorDecl,
-      const clang::SourceRange& Range) {
-    V.RecordCallEdges(
-        V.ExplicitRangeInCurrentContext(Range).primary(),
-        V.BuildNodeIdForDecl(&AccessorDecl));
+  const auto Callback = [&V](const clang::CXXMethodDecl& AccessorDecl,
+                             const clang::SourceRange& Range) {
+    V.RecordCallEdges(V.ExplicitRangeInCurrentContext(Range).primary(),
+                      V.BuildNodeIdForDecl(&AccessorDecl));
   };
   ParseTextProtoHandler::Parse(
       Callback, Literal, *Expr->getType()->getAsCXXRecordDecl(),

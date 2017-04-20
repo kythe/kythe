@@ -19,8 +19,8 @@
 //   reads the names of .kindex files from standard input or an
 //   index pack and emits a static claim assignment to standard output
 
-#include <sys/stat.h>
 #include <fcntl.h>
+#include <sys/stat.h>
 
 #include <iostream>
 #include <map>

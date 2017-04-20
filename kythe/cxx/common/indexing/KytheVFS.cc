@@ -120,8 +120,8 @@ std::string IndexVFS::get_debug_uid_string(const llvm::sys::fs::UniqueID &uid) {
   if (record != uid_to_record_map_.end()) {
     return record->second->status.getName();
   }
-  return "uid(device: " + std::to_string(uid.getDevice()) + " file: " +
-         std::to_string(uid.getFile()) + ")";
+  return "uid(device: " + std::to_string(uid.getDevice()) +
+         " file: " + std::to_string(uid.getFile()) + ")";
 }
 
 IndexVFS::FileRecord *IndexVFS::FileRecordForPathRoot(const llvm::Twine &path,

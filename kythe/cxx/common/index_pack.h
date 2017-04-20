@@ -246,6 +246,6 @@ class IndexPack {
   /// The view of the filesystem for this IndexPack.
   std::unique_ptr<IndexPackFilesystem> filesystem_;
 };
-}
+}  // namespace kythe
 
 #endif  // KYTHE_CXX_COMMON_INDEX_PACK_H_

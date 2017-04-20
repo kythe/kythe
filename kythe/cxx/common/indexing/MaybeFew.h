@@ -37,7 +37,7 @@ struct None {};
 /// deriving one may fail (if the type is unsupported) or may return more than
 /// one possible ID (if the type is noncanonical).
 template <typename T> class MaybeFew {
-public:
+ public:
   /// \brief Constructs a new `MaybeFew` holding zero or more elements.
   /// If there are more than zero elements, the first one provided is primary.
   template <typename... Ts>
@@ -88,7 +88,7 @@ public:
     }
   }
 
-private:
+ private:
   /// The elements stored in this value, where `Content[0]` is the primary
   /// element (if any elements exist at all).
   std::vector<T> Content;
@@ -99,6 +99,6 @@ template <typename T> MaybeFew<T> Some(T &&t) {
   return MaybeFew<T>(std::forward<T>(t));
 }
 
-} // namespace kythe
+}  // namespace kythe
 
-#endif // KYTHE_CXX_COMMON_INDEXING_MAYBE_FEW_H_
+#endif  // KYTHE_CXX_COMMON_INDEXING_MAYBE_FEW_H_

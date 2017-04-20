@@ -1,7 +1,7 @@
 // File-level comments with includes are recorded.
 // This file includes some other files.
-#include "docs_file_level_includes_b.h"
 #include "docs_file_level_includes_a.h"
+#include "docs_file_level_includes_b.h"
 //- MainFile=vname("","","","kythe/cxx/indexer/cxx/testdata/docs/docs_file_level_includes.cc","").node/kind file
 //- HeaderA=vname("","","","kythe/cxx/indexer/cxx/testdata/docs/docs_file_level_includes_a.h","").node/kind file
 //- HeaderB=vname("","","","kythe/cxx/indexer/cxx/testdata/docs/docs_file_level_includes_b.h","").node/kind file

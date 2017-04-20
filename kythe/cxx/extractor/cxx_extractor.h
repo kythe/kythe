@@ -36,7 +36,7 @@
 namespace clang {
 class FrontendAction;
 class FileManager;
-}
+}  // namespace clang
 
 namespace kythe {
 

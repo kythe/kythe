@@ -130,9 +130,9 @@ TEST(KytheUri, Parse) {
   for (auto &test : tests) {
     auto parsed = URI::FromString(test.input);
     EXPECT_TRUE(parsed.first) << test.input;
-    EXPECT_TRUE(parsed.second == test.expect) << parsed.second.ToString()
-                                              << " got, expected "
-                                              << test.expect.ToString();
+    EXPECT_TRUE(parsed.second == test.expect)
+        << parsed.second.ToString() << " got, expected "
+        << test.expect.ToString();
   }
 }
 

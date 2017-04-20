@@ -53,9 +53,9 @@ Printable::Printable(const proto::Printable& from,
   // Number of list blocks we're inside.
   size_t list_count = 0;
   for (size_t i = 0; i < from.raw_text().size(); ++i) {
-    char c = from.raw_text()[i],
-         next =
-             (i + 1 == from.raw_text().size()) ? '\0' : from.raw_text()[i + 1];
+    char c = from.raw_text()[i], next = (i + 1 == from.raw_text().size())
+                                            ? '\0'
+                                            : from.raw_text()[i + 1];
     switch (c) {
       case '\\':
         if (!ShouldReject(filter, important_count, list_count)) {

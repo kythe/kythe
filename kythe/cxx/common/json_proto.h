@@ -19,8 +19,8 @@
 
 #include <string>
 
-#include "google/protobuf/message.h"
 #include "google/protobuf/any.pb.h"
+#include "google/protobuf/message.h"
 #include "rapidjson/document.h"
 
 namespace kythe {

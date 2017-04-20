@@ -72,6 +72,21 @@ arc patch D1234
 arc land
 {% endhighlight %}
 
+### Style formatting
+
+Kythe C++ code follows the Google style guide. You can run `clang-format` to do
+this automatically:
+
+{% highlight bash %}
+clang-format -i --style=file <filename>
+{% endhighlight %}
+
+If you forgot to do this for a commit, you can amend it easily:
+
+{% highlight bash %}
+clang-format i --style=file $(git show --pretty="" --name-only <SHA1>)
+git commit --amend
+{% endhighlight %}
 
 ## Contribution Ideas
 

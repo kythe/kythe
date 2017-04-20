@@ -102,8 +102,7 @@ class PrintableSpans {
   /// Empty or negative-length spans are discarded.
   void Merge(const PrintableSpans& more);
   /// Construct a span and insert it.
-  template <typename... T>
-  void Emplace(T&&... span_args) {
+  template <typename... T> void Emplace(T&&... span_args) {
     spans_.emplace_back(span_args...);
   }
   /// \return the number of spans being stored.

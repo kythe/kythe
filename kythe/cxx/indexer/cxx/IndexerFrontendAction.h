@@ -32,14 +32,14 @@
 #include <string>
 #include <utility>
 
-#include "glog/logging.h"
-#include "kythe/cxx/common/cxx_details.h"
-#include "kythe/cxx/common/kythe_metadata_file.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Lex/HeaderSearch.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Tooling/Tooling.h"
+#include "glog/logging.h"
+#include "kythe/cxx/common/cxx_details.h"
+#include "kythe/cxx/common/kythe_metadata_file.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/Twine.h"
 
@@ -52,7 +52,7 @@ namespace kythe {
 namespace proto {
 class CompilationUnit;
 class FileData;
-} // namespace proto
+}  // namespace proto
 class KytheClaimClient;
 
 /// \brief Runs a given tool on a piece of code with a given assumed filename.
@@ -68,14 +68,16 @@ bool RunToolOnCode(std::unique_ptr<clang::FrontendAction> tool_action,
 //
 // TODO(jdennett): Consider moving/renaming this to kythe::ExtractIndexAction.
 class IndexerFrontendAction : public clang::ASTFrontendAction {
-public:
+ public:
   IndexerFrontendAction(
       GraphObserver *GO, const HeaderSearchInfo *Info,
       std::function<bool()> ShouldStopIndexing,
       std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor *)>
           CreateWorklist)
-      : Observer(CHECK_NOTNULL(GO)), HeaderConfigValid(Info != nullptr),
-        ShouldStopIndexing(ShouldStopIndexing), CreateWorklist(CreateWorklist) {
+      : Observer(CHECK_NOTNULL(GO)),
+        HeaderConfigValid(Info != nullptr),
+        ShouldStopIndexing(ShouldStopIndexing),
+        CreateWorklist(CreateWorklist) {
     if (HeaderConfigValid) {
       HeaderConfig = *Info;
     }
@@ -97,10 +99,9 @@ public:
   /// \param V Degree of verbosity.
   void setVerbosity(Verbosity V) { Verbosity = V; }
 
-private:
-  std::unique_ptr<clang::ASTConsumer>
-  CreateASTConsumer(clang::CompilerInstance &CI,
-                    llvm::StringRef Filename) override {
+ private:
+  std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(
+      clang::CompilerInstance &CI, llvm::StringRef Filename) override {
     if (HeaderConfigValid) {
       auto &HeaderSearch = CI.getPreprocessor().getHeaderSearchInfo();
       auto &FileManager = CI.getFileManager();
@@ -185,17 +186,16 @@ class StdinAdjustSingleFrontendActionFactory
     : public clang::tooling::FrontendActionFactory {
   std::unique_ptr<clang::FrontendAction> Action;
 
-public:
+ public:
   /// \param Action The single FrontendAction to run once. Takes ownership.
   StdinAdjustSingleFrontendActionFactory(
       std::unique_ptr<clang::FrontendAction> Action)
       : Action(std::move(Action)) {}
 
-  bool
-  runInvocation(clang::CompilerInvocation *Invocation,
-                clang::FileManager *Files,
-                std::shared_ptr<clang::PCHContainerOperations> PCHContainerOps,
-                clang::DiagnosticConsumer *DiagConsumer) override {
+  bool runInvocation(
+      clang::CompilerInvocation *Invocation, clang::FileManager *Files,
+      std::shared_ptr<clang::PCHContainerOperations> PCHContainerOps,
+      clang::DiagnosticConsumer *DiagConsumer) override {
     auto &FEOpts = Invocation->getFrontendOpts();
     for (auto &Input : FEOpts.Inputs) {
       if (Input.isFile() && Input.getFile() == "-") {
@@ -258,6 +258,6 @@ std::string IndexCompilationUnit(
     std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor *)>
         CreateWorklist);
 
-} // namespace kythe
+}  // namespace kythe
 
-#endif // KYTHE_CXX_INDEXER_CXX_INDEXER_FRONTEND_ACTION_H_
+#endif  // KYTHE_CXX_INDEXER_CXX_INDEXER_FRONTEND_ACTION_H_

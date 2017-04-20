@@ -186,6 +186,6 @@ class XrefsJsonClient : public XrefsClient {
   std::string decorations_uri_;
   std::string documentation_uri_;
 };
-}
+}  // namespace kythe
 
 #endif  // KYTHE_CXX_COMMON_NET_CLIENT_H_

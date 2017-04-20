@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
+#include "kythe/cxx/common/net_client.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "kythe/cxx/common/json_proto.h"
-#include "kythe/cxx/common/net_client.h"
 #include "kythe/proto/common.pb.h"
 #include "kythe/proto/graph.pb.h"
 
@@ -43,7 +43,7 @@ void TestNodeRequest() {
   CHECK_EQ("/kythe/node/kind", node.facts().begin()->first);
   CHECK_EQ("file", node.facts().begin()->second);
 }
-}
+}  // namespace
 
 int main(int argc, char **argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;

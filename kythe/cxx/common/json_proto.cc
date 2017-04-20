@@ -19,20 +19,19 @@
 #include <openssl/base64.h>
 #include <openssl/sha.h>
 
-#include "rapidjson/document.h"
-#include "rapidjson/filewritestream.h"
-#include "rapidjson/stringbuffer.h"
-#include "rapidjson/writer.h"
 #include "glog/logging.h"
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "google/protobuf/message.h"
+#include "rapidjson/document.h"
+#include "rapidjson/filewritestream.h"
+#include "rapidjson/stringbuffer.h"
+#include "rapidjson/writer.h"
 
 namespace kythe {
 
 bool DecodeBase64(const google::protobuf::string &data,
                   google::protobuf::string *decoded) {
-
   size_t expected_size;
   if (::EVP_DecodedLength(&expected_size, data.size()) != 1) {
     return false;
@@ -66,7 +65,7 @@ google::protobuf::string EncodeBase64(const google::protobuf::string &data) {
   encoded.resize(expected_size - 1);
 
   const uint8_t *input = reinterpret_cast<const uint8_t *>(data.data());
-  uint8_t* output = reinterpret_cast<uint8_t*>(&encoded[0]);
+  uint8_t *output = reinterpret_cast<uint8_t *>(&encoded[0]);
   const size_t encoded_size = ::EVP_EncodeBlock(output, input, data.size());
 
   // Shrink-to-fit the actual encoded size.
@@ -337,4 +336,4 @@ bool UnpackAny(const google::protobuf::Any &any,
   google::protobuf::io::CodedInputStream coded_input_stream(&stream);
   return result->ParseFromCodedStream(&coded_input_stream);
 }
-}
+}  // namespace kythe

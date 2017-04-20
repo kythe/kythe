@@ -28,6 +28,6 @@ namespace kythe {
 inline llvm::StringRef ToStringRef(const google::protobuf::string &string) {
   return llvm::StringRef(string.c_str(), string.size());
 }
-}
+}  // namespace kythe
 
 #endif  // KYTHE_CXX_COMMON_PROTO_CONVERSIONS_H_

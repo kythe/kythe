@@ -25,7 +25,7 @@
 namespace clang {
 class FileEntry;
 class Preprocessor;
-}
+}  // namespace clang
 
 namespace kythe {
 /// \brief Relativize `to_relativize` with respect to `relativize_against`.
@@ -62,6 +62,6 @@ const clang::FileEntry *LookupFileForIncludePragma(
     clang::Preprocessor *preprocessor, llvm::SmallVectorImpl<char> *search_path,
     llvm::SmallVectorImpl<char> *relative_path,
     llvm::SmallVectorImpl<char> *filename);
-}
+}  // namespace kythe
 
 #endif  // KYTHE_CXX_COMMON_PATH_UTILS_H_

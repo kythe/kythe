@@ -36,7 +36,7 @@ class GoogleProtoLibrarySupport : public LibrarySupport {
   // Lazily initializes ParseProtoHelperDecl, and returns true if
   // ParseProtoHelper is available.
   bool CompilationUnitHasParseProtoHelperDecl(
-      const clang::ASTContext& ASTContext, const clang::CallExpr& Expr);
+      const clang::ASTContext &ASTContext, const clang::CallExpr &Expr);
 
   bool Initialized = false;
   const clang::Decl *ParseProtoHelperDecl = nullptr;

@@ -1,0 +1,17 @@
+# Copyright 2017 Google Inc. All rights reserved.
+BasedOnStyle: Google
+
+# While Google style guide allows both left and right:
+# https://google.github.io/styleguide/cppguide.html#Pointer_and_Reference_Expressions
+# for Kythe we prefer maintaining a file's existing format, or Left otherwise.
+DerivePointerAlignment: true
+PointerAlignment: Left
+
+# This is necessary because kythe's verifier comments get royally fubar'd by
+# aggressive reformatting of comments. Verifier bits typically start with '//-'
+# so we can safely ignore them. If you get rid of this, expect lots of pain and
+# test failures.
+CommentPragmas: ^- 
+
+# Enforcing line break is perhaps more common, but we don't care.
+AlwaysBreakTemplateDeclarations: false

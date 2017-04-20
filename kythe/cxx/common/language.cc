@@ -36,5 +36,5 @@ std::string ToString(Language l) {
   }
 }
 
-}  // namespace supported_langauge
+}  // namespace supported_language
 }  // namespace kythe

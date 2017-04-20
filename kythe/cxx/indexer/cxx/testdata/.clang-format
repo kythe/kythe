@@ -1,0 +1,6 @@
+# Copyright 2017 Google Inc. All rights reserved.
+
+# The kythe verifier does not like it when clang-format adds line breaks,
+# and a lot of the code in here has been carefully set up to verify behavior,
+# so we don't attempt to format underneath here.
+DisableFormat: true

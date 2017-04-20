@@ -1,8 +1,8 @@
 // Check to see if test_vnames.json does the right thing.
 #pragma kythe_claim
+#include "_croot_cpath.h"
 #include "acorpus_aroot_apath.h"
 #include "bcorpus__bpath.h"
-#include "_croot_cpath.h"
 #include "long_path.h"
 //- @main_v=vname(_,"bundle","","test.cc","c++").node/kind anchor
 #define main_v macromainv

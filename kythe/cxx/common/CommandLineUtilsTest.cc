@@ -71,7 +71,7 @@ TEST(HasCxxInputInCommandLineOrArgs, BadInputs) {
 
 // TODO(zarko): Port additional tests.
 
-} // namespace
+}  // namespace
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);

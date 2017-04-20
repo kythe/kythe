@@ -26,6 +26,7 @@ namespace {
 /// A default value for tags that don't create tag blocks.
 #define NOT_TAG_BLOCK Author
 /// v is called as (TagEnumerator, "tag-name", is-tag-block, tag-block-id)
+// clang-format off
 #define JAVADOC_TAGS(v) \
   v(Author, "author", true, Author) \
   v(Code, "code", false, NOT_TAG_BLOCK) \
@@ -46,14 +47,17 @@ namespace {
   v(Throws, "throws", false, NOT_TAG_BLOCK) \
   v(Value, "value", false, NOT_TAG_BLOCK) \
   v(Version, "version", true, Version)
+// clang-format on
 /// v is called as
 ///     (TagEnumerator, "tag-name", is-section, is-tag-block, tag-block-id)
 /// Sections affect parsing. We don't treat the "\brief" section as a tag block.
+// clang-format-off
 #define DOXYGEN_TAGS(v) \
   v(Brief, "brief", true, false, NOT_TAG_BLOCK) \
   v(C, "c", false, false, NOT_TAG_BLOCK) \
   v(Return, "return", true, true, Returns) \
   v(Returns, "returns", true, true, Returns)
+// clang-format on
 enum class JavadocTag : int {
 #define ENUM_CASE(n, s, b, i) n,
   JAVADOC_TAGS(ENUM_CASE)

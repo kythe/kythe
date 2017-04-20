@@ -8,24 +8,25 @@ required_input {
   }
   info {
     path: "./kythe/cxx/extractor/testdata/transcript_main.cc"
-    digest: "7684704ae672c88bd4a656eff30a716ab29a8270e87e387d9101b32527cde498"
+    digest: "a719ebca696362eb639992c5afd3b08ab6c1938bc5639fdfe1fde06fd86bd622"
   }
   context {
     row {
       source_context: "hash0"
       column {
+        offset: 20
         linked_context: "hash1"
       }
       column {
-        offset: 26
+        offset: 46
         linked_context: "hash2"
       }
       column {
-        offset: 52
+        offset: 72
         linked_context: "hash3"
       }
       column {
-        offset: 78
+        offset: 98
         linked_context: "hash2"
       }
     }

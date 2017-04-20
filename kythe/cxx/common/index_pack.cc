@@ -414,4 +414,4 @@ bool IndexPack::WriteData(IndexPackFilesystem::DataKind kind, const char *data,
       },
       error_text);
 }
-}
+}  // namespace kythe

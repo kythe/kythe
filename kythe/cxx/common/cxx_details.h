@@ -61,6 +61,6 @@ struct HeaderSearchInfo {
 
 /// The type URI for C++ details.
 extern const char kCxxCompilationUnitDetailsURI[];
-}
+}  // namespace kythe
 
 #endif  // KYTHE_CXX_COMMON_CXX_DETAILS_H_

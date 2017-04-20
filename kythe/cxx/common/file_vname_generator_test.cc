@@ -89,17 +89,16 @@ TEST(FileVNameGenerator, LookupGroups) {
   kythe::proto::VName kythe_java_vname;
   kythe_java_vname.set_corpus("kythe");
   kythe_java_vname.set_root("java");
-  EXPECT_EQ(
-      kythe_java_vname.DebugString(),
-      generator
-          .LookupBaseVName(
-               "bazel-bin/kythe/java/some/path/A.jar!/some/path/A.class")
-          .DebugString());
-  EXPECT_EQ(
-      kythe_java_vname.DebugString(),
-      generator.LookupBaseVName(
+  EXPECT_EQ(kythe_java_vname.DebugString(),
+            generator
+                .LookupBaseVName(
+                    "bazel-bin/kythe/java/some/path/A.jar!/some/path/A.class")
+                .DebugString());
+  EXPECT_EQ(kythe_java_vname.DebugString(),
+            generator
+                .LookupBaseVName(
                     "kythe/java/com/google/devtools/kythe/util/KytheURI.java")
-          .DebugString());
+                .DebugString());
   kythe::proto::VName other_java_vname;
   other_java_vname.set_corpus("otherCorpus");
   other_java_vname.set_root("java");
@@ -107,7 +106,7 @@ TEST(FileVNameGenerator, LookupGroups) {
       other_java_vname.DebugString(),
       generator
           .LookupBaseVName(
-               "otherCorpus/java/com/google/devtools/kythe/util/KytheURI.java")
+              "otherCorpus/java/com/google/devtools/kythe/util/KytheURI.java")
           .DebugString());
 }
 
@@ -124,7 +123,7 @@ TEST(FileVNameGenerator, ActualConfigTests) {
       test_file.DebugString(),
       generator
           .LookupVName(
-               "kythe/cxx/extractor/testdata/extract_verify_std_string_test.cc")
+              "kythe/cxx/extractor/testdata/extract_verify_std_string_test.cc")
           .DebugString());
 
   kythe::proto::VName stdlib_file;

@@ -112,8 +112,8 @@ TEST(IndexPack, ScanData) {
   bool file_matched = false, file_had_errors = false, multiple_files = false;
   EXPECT_TRUE(
       pack.ScanData(IndexPackFilesystem::DataKind::kFileData,
-                    [&pack, &file_matched, &multiple_files, &file_had_errors](
-                        const std::string &data_hash) {
+                    [&pack, &file_matched, &multiple_files,
+                     &file_had_errors](const std::string &data_hash) {
                       if (file_matched) {
                         multiple_files = true;
                       } else {
@@ -137,8 +137,8 @@ TEST(IndexPack, ScanData) {
   bool unit_errors = false;
   EXPECT_TRUE(pack.ScanData(
       IndexPackFilesystem::DataKind::kCompilationUnit,
-      [&pack, &unit_a_ok, &unit_b_ok, &unit_errors](
-          const std::string &unit_hash) {
+      [&pack, &unit_a_ok, &unit_b_ok,
+       &unit_errors](const std::string &unit_hash) {
         kythe::proto::CompilationUnit unit;
         std::string error_text;
         if (!pack.ReadCompilationUnit(unit_hash, &unit, &error_text) ||
@@ -218,8 +218,9 @@ static const char kUnit2Sha[] =
 class TemporaryFilesystem {
  public:
   TemporaryFilesystem() {
-    CHECK_EQ(0, llvm::sys::fs::createUniqueDirectory("index_pack_test", root_)
-                    .value());
+    CHECK_EQ(
+        0,
+        llvm::sys::fs::createUniqueDirectory("index_pack_test", root_).value());
     directories_to_remove_.insert(root_.str());
   }
 
