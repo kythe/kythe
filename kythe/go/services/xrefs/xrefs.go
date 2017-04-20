@@ -567,20 +567,40 @@ func (n *Normalizer) Location(loc *xpb.Location) (*xpb.Location, error) {
 		return nl, nil
 	}
 
-	if loc.Start == nil {
-		return nil, errors.New("invalid SPAN: missing start point")
-	} else if loc.End == nil {
-		return nil, errors.New("invalid SPAN: missing end point")
+	if loc.Span == nil {
+		return nil, errors.New("invalid SPAN: missing span")
+	} else if loc.Span.Start == nil {
+		return nil, errors.New("invalid SPAN: missing span start point")
+	} else if loc.Span.End == nil {
+		return nil, errors.New("invalid SPAN: missing span end point")
 	}
 
-	nl.Start = n.Point(loc.Start)
-	nl.End = n.Point(loc.End)
+	nl.Span = n.Span(loc.Span)
 
-	start, end := nl.Start.ByteOffset, nl.End.ByteOffset
+	start, end := nl.Span.Start.ByteOffset, nl.Span.End.ByteOffset
 	if start > end {
 		return nil, fmt.Errorf("invalid SPAN: start (%d) is after end (%d)", start, end)
 	}
 	return nl, nil
+}
+
+// Span returns a Span with its start and end normalized.
+func (n *Normalizer) Span(s *cpb.Span) *cpb.Span {
+	if s == nil {
+		return nil
+	}
+	return &cpb.Span{
+		Start: n.Point(s.Start),
+		End:   n.Point(s.End),
+	}
+}
+
+// SpanOffsets returns a Span based on normalized start and end byte offsets.
+func (n *Normalizer) SpanOffsets(start, end int32) *cpb.Span {
+	return &cpb.Span{
+		Start: n.ByteOffset(start),
+		End:   n.ByteOffset(end),
+	}
 }
 
 var lineEnd = []byte("\n")
@@ -588,7 +608,7 @@ var lineEnd = []byte("\n")
 // Point returns a normalized point within the Normalizer's text.  A normalized
 // point has all of its fields set consistently and clamped within the range
 // [0,len(text)).
-func (n *Normalizer) Point(p *xpb.Location_Point) *xpb.Location_Point {
+func (n *Normalizer) Point(p *cpb.Point) *cpb.Point {
 	if p == nil {
 		return nil
 	}
@@ -596,7 +616,7 @@ func (n *Normalizer) Point(p *xpb.Location_Point) *xpb.Location_Point {
 	if p.ByteOffset > 0 {
 		return n.ByteOffset(p.ByteOffset)
 	} else if p.LineNumber > 0 {
-		np := &xpb.Location_Point{
+		np := &cpb.Point{
 			LineNumber:   p.LineNumber,
 			ColumnOffset: p.ColumnOffset,
 		}
@@ -618,14 +638,14 @@ func (n *Normalizer) Point(p *xpb.Location_Point) *xpb.Location_Point {
 		return np
 	}
 
-	return &xpb.Location_Point{LineNumber: 1}
+	return &cpb.Point{LineNumber: 1}
 }
 
 // ByteOffset returns a normalized point based on the given offset within the
 // Normalizer's text.  A normalized point has all of its fields set consistently
 // and clamped within the range [0,len(text)).
-func (n *Normalizer) ByteOffset(offset int32) *xpb.Location_Point {
-	np := &xpb.Location_Point{ByteOffset: offset}
+func (n *Normalizer) ByteOffset(offset int32) *cpb.Point {
+	np := &cpb.Point{ByteOffset: offset}
 	if np.ByteOffset > n.textLen {
 		np.ByteOffset = n.textLen
 	}

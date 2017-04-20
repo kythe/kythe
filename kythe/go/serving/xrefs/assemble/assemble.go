@@ -42,7 +42,6 @@ import (
 	ipb "kythe.io/kythe/proto/internal_proto"
 	srvpb "kythe.io/kythe/proto/serving_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
-	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
 // Node returns the Source as a srvpb.Node.
@@ -654,7 +653,7 @@ func ExpandAnchor(anchor *srvpb.RawAnchor, file *srvpb.File, norm *xrefs.Normali
 	}
 
 	var snippet string
-	var ssp, sep *xpb.Location_Point
+	var ssp, sep *cpb.Point
 	if anchor.SnippetStart != 0 || anchor.SnippetEnd != 0 {
 		if err := checkSpan(len(file.Text), anchor.SnippetStart, anchor.SnippetEnd); err != nil {
 			return nil, fmt.Errorf("invalid snippet offsets: %v", err)
@@ -668,15 +667,15 @@ func ExpandAnchor(anchor *srvpb.RawAnchor, file *srvpb.File, norm *xrefs.Normali
 		}
 	} else {
 		// fallback to a line-based snippet if the indexer did not provide its own snippet offsets
-		ssp = &xpb.Location_Point{
+		ssp = &cpb.Point{
 			ByteOffset: sp.ByteOffset - sp.ColumnOffset,
 			LineNumber: sp.LineNumber,
 		}
-		nextLine := norm.Point(&xpb.Location_Point{LineNumber: sp.LineNumber + 1})
+		nextLine := norm.Point(&cpb.Point{LineNumber: sp.LineNumber + 1})
 		if nextLine.ByteOffset <= ssp.ByteOffset { // double-check ssp != EOF
 			return nil, errors.New("anchor past EOF")
 		}
-		sep = &xpb.Location_Point{
+		sep = &cpb.Point{
 			ByteOffset:   nextLine.ByteOffset - 1,
 			LineNumber:   sp.LineNumber,
 			ColumnOffset: sp.ColumnOffset + (nextLine.ByteOffset - sp.ByteOffset - 1),
@@ -716,7 +715,7 @@ func checkSpan(textLen int, start, end int32) error {
 	return nil
 }
 
-func getText(sp, ep *xpb.Location_Point, file *srvpb.File) (string, error) {
+func getText(sp, ep *cpb.Point, file *srvpb.File) (string, error) {
 	txt, err := text.ToUTF8(file.Encoding, file.Text[sp.ByteOffset:ep.ByteOffset])
 	if err != nil {
 		return "", fmt.Errorf("unable to decode file text: %v", err)
@@ -724,7 +723,7 @@ func getText(sp, ep *xpb.Location_Point, file *srvpb.File) (string, error) {
 	return txt, nil
 }
 
-func p2p(p *xpb.Location_Point) *cpb.Point {
+func p2p(p *cpb.Point) *cpb.Point {
 	return &cpb.Point{
 		ByteOffset:   p.ByteOffset,
 		LineNumber:   p.LineNumber,

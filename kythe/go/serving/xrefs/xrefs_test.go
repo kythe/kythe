@@ -754,6 +754,18 @@ func TestDecorationsDirtyBuffer(t *testing.T) {
 			TargetTicket: "kythe://c?lang=otpl?path=/a/path#map",
 			Kind:         "/kythe/defines/binding",
 
+			Span: &cpb.Span{
+				Start: &cpb.Point{
+					ByteOffset:   6,
+					LineNumber:   1,
+					ColumnOffset: 6,
+				},
+				End: &cpb.Point{
+					ByteOffset:   9,
+					LineNumber:   1,
+					ColumnOffset: 9,
+				},
+			},
 			AnchorStart: &xpb.Location_Point{
 				ByteOffset:   6,
 				LineNumber:   1,
@@ -771,6 +783,18 @@ func TestDecorationsDirtyBuffer(t *testing.T) {
 			SourceTicket: "kythe://c?lang=otpl?path=/a/path#51-55",
 			TargetTicket: "kythe://core?lang=otpl#cons",
 			Kind:         "/kythe/refs",
+			Span: &cpb.Span{
+				Start: &cpb.Point{
+					ByteOffset:   48,
+					LineNumber:   4,
+					ColumnOffset: 5,
+				},
+				End: &cpb.Point{
+					ByteOffset:   52,
+					LineNumber:   4,
+					ColumnOffset: 9,
+				},
+			},
 			AnchorStart: &xpb.Location_Point{
 				ByteOffset:   48,
 				LineNumber:   4,
@@ -881,9 +905,23 @@ func TestCrossReferences(t *testing.T) {
 			Kind:   "/kythe/edge/ref",
 			Parent: "kythe:?path=some/utf16/file",
 
+			Span: &cpb.Span{
+				Start: &cpb.Point{LineNumber: 1},
+				End:   &cpb.Point{ByteOffset: 4, LineNumber: 1, ColumnOffset: 4},
+			},
 			Start: &xpb.Location_Point{LineNumber: 1},
 			End:   &xpb.Location_Point{ByteOffset: 4, LineNumber: 1, ColumnOffset: 4},
 
+			SnippetSpan: &cpb.Span{
+				Start: &cpb.Point{
+					LineNumber: 1,
+				},
+				End: &cpb.Point{
+					ByteOffset:   28,
+					LineNumber:   1,
+					ColumnOffset: 28,
+				},
+			},
 			SnippetStart: &xpb.Location_Point{
 				LineNumber: 1,
 			},
@@ -898,6 +936,18 @@ func TestCrossReferences(t *testing.T) {
 			Kind:   "/kythe/edge/ref",
 			Parent: "kythe://c?path=/a/path",
 
+			Span: &cpb.Span{
+				Start: &cpb.Point{
+					ByteOffset:   51,
+					LineNumber:   4,
+					ColumnOffset: 15,
+				},
+				End: &cpb.Point{
+					ByteOffset:   55,
+					LineNumber:   5,
+					ColumnOffset: 2,
+				},
+			},
 			Start: &xpb.Location_Point{
 				ByteOffset:   51,
 				LineNumber:   4,
@@ -909,6 +959,17 @@ func TestCrossReferences(t *testing.T) {
 				ColumnOffset: 2,
 			},
 
+			SnippetSpan: &cpb.Span{
+				Start: &cpb.Point{
+					ByteOffset: 36,
+					LineNumber: 4,
+				},
+				End: &cpb.Point{
+					ByteOffset:   52,
+					LineNumber:   4,
+					ColumnOffset: 16,
+				},
+			},
 			SnippetStart: &xpb.Location_Point{
 				ByteOffset: 36,
 				LineNumber: 4,
@@ -926,6 +987,18 @@ func TestCrossReferences(t *testing.T) {
 			Kind:   "/kythe/edge/defines/binding",
 			Parent: "kythe://c?path=/a/path",
 
+			Span: &cpb.Span{
+				Start: &cpb.Point{
+					ByteOffset:   27,
+					LineNumber:   2,
+					ColumnOffset: 10,
+				},
+				End: &cpb.Point{
+					ByteOffset:   33,
+					LineNumber:   3,
+					ColumnOffset: 5,
+				},
+			},
 			Start: &xpb.Location_Point{
 				ByteOffset:   27,
 				LineNumber:   2,
@@ -937,6 +1010,17 @@ func TestCrossReferences(t *testing.T) {
 				ColumnOffset: 5,
 			},
 
+			SnippetSpan: &cpb.Span{
+				Start: &cpb.Point{
+					ByteOffset: 17,
+					LineNumber: 2,
+				},
+				End: &cpb.Point{
+					ByteOffset:   27,
+					LineNumber:   2,
+					ColumnOffset: 10,
+				},
+			},
 			SnippetStart: &xpb.Location_Point{
 				ByteOffset: 17,
 				LineNumber: 2,
@@ -1085,6 +1169,7 @@ func TestCrossReferencesMerge(t *testing.T) {
 			Anchor: &xpb.Anchor{
 				Ticket: "kythe:?path=someFile#someCallerAnchor",
 				Parent: "kythe:?path=someFile",
+				Span:   arbitrarySpan,
 				Start:  p2p(arbitrarySpan.Start),
 				End:    p2p(arbitrarySpan.End),
 			},
@@ -1149,6 +1234,7 @@ func TestCrossReferencesDirectCallers(t *testing.T) {
 			Anchor: &xpb.Anchor{
 				Ticket: "kythe:?path=someFile#someCallerAnchor",
 				Parent: "kythe:?path=someFile",
+				Span:   arbitrarySpan,
 				Start:  p2p(arbitrarySpan.Start),
 				End:    p2p(arbitrarySpan.End),
 			},
@@ -1195,6 +1281,7 @@ func TestCrossReferencesOverrideCallers(t *testing.T) {
 			Anchor: &xpb.Anchor{
 				Ticket: "kythe:?path=someFile#someCallerAnchor",
 				Parent: "kythe:?path=someFile",
+				Span:   arbitrarySpan,
 				Start:  p2p(arbitrarySpan.Start),
 				End:    p2p(arbitrarySpan.End),
 			},
@@ -1207,12 +1294,14 @@ func TestCrossReferencesOverrideCallers(t *testing.T) {
 			Anchor: &xpb.Anchor{
 				Ticket: "kythe:?path=someFile#someOverrideCallerAnchor1",
 				Parent: "kythe:?path=someFile",
+				Span:   arbitrarySpan,
 				Start:  p2p(arbitrarySpan.Start),
 				End:    p2p(arbitrarySpan.End),
 			},
 			Site: []*xpb.Anchor{{
 				Ticket: "kythe:?path=someFile#someCallsiteAnchor",
 				Parent: "kythe:?path=someFile",
+				Span:   arbitrarySpan,
 				Start:  p2p(arbitrarySpan.Start),
 				End:    p2p(arbitrarySpan.End),
 			}},
@@ -1220,6 +1309,7 @@ func TestCrossReferencesOverrideCallers(t *testing.T) {
 			Anchor: &xpb.Anchor{
 				Ticket: "kythe:?path=someFile#someOverrideCallerAnchor2",
 				Parent: "kythe:?path=someFile",
+				Span:   arbitrarySpan,
 				Start:  p2p(arbitrarySpan.Start),
 				End:    p2p(arbitrarySpan.End),
 			},
@@ -1269,7 +1359,7 @@ type byOffset []*xpb.CrossReferencesReply_RelatedAnchor
 func (s byOffset) Len() int      { return len(s) }
 func (s byOffset) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
 func (s byOffset) Less(i, j int) bool {
-	return s[i].Anchor.Start.ByteOffset < s[j].Anchor.Start.ByteOffset
+	return s[i].Anchor.Span.Start.ByteOffset < s[j].Anchor.Span.Start.ByteOffset
 }
 
 func nodeInfo(n *srvpb.Node) *cpb.NodeInfo {

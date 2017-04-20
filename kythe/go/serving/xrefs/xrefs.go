@@ -576,7 +576,7 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 		if loc.Kind == xpb.Location_FILE {
 			reply.SourceText = text
 		} else {
-			reply.SourceText = text[loc.Start.ByteOffset:loc.End.ByteOffset]
+			reply.SourceText = text[loc.Span.Start.ByteOffset:loc.Span.End.ByteOffset]
 		}
 	}
 
@@ -596,8 +596,8 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 			endBoundary = int32(len(text))
 			spanKind = xpb.DecorationsRequest_WITHIN_SPAN
 		} else {
-			startBoundary = loc.Start.ByteOffset
-			endBoundary = loc.End.ByteOffset
+			startBoundary = loc.Span.Start.ByteOffset
+			endBoundary = loc.Span.End.ByteOffset
 		}
 
 		reply.Reference = make([]*xpb.DecorationsReply_Reference, 0, len(decor.Decoration))
@@ -774,12 +774,14 @@ func l2l(l *srvpb.Link) *xpb.Link {
 type span struct{ start, end int32 }
 
 func decorationToReference(norm *xrefs.Normalizer, d *srvpb.FileDecorations_Decoration) *xpb.DecorationsReply_Reference {
+	span := norm.SpanOffsets(d.Anchor.StartOffset, d.Anchor.EndOffset)
 	return &xpb.DecorationsReply_Reference{
 		SourceTicket:     d.Anchor.Ticket,
 		TargetTicket:     d.Target,
 		Kind:             d.Kind,
-		AnchorStart:      norm.ByteOffset(d.Anchor.StartOffset),
-		AnchorEnd:        norm.ByteOffset(d.Anchor.EndOffset),
+		AnchorStart:      p2p(span.Start),
+		AnchorEnd:        p2p(span.End),
+		Span:             span,
 		TargetDefinition: d.TargetDefinition,
 	}
 }
@@ -1327,9 +1329,11 @@ func a2a(a *srvpb.ExpandedAnchor, anchorText bool) *xpb.CrossReferencesReply_Rel
 		Text:         text,
 		Start:        p2p(a.Span.GetStart()),
 		End:          p2p(a.Span.GetEnd()),
+		Span:         a.Span,
 		Snippet:      a.Snippet,
 		SnippetStart: p2p(a.SnippetSpan.GetStart()),
 		SnippetEnd:   p2p(a.SnippetSpan.GetEnd()),
+		SnippetSpan:  a.SnippetSpan,
 	}}
 }
 

@@ -70,8 +70,12 @@ func (m *Fact) GetValue() []byte {
 // this constraint is satisfied.  This may be impossible if the column offset
 // exceeds the bounds of the file.
 type Point struct {
-	ByteOffset   int32 `protobuf:"varint,1,opt,name=byte_offset,json=byteOffset,proto3" json:"byte_offset,omitempty"`
-	LineNumber   int32 `protobuf:"varint,2,opt,name=line_number,json=lineNumber,proto3" json:"line_number,omitempty"`
+	// The offset in bytes from the beginning of the file.
+	// Requires 0 ≤ byte_offset ≤ len(file).
+	ByteOffset int32 `protobuf:"varint,1,opt,name=byte_offset,json=byteOffset,proto3" json:"byte_offset,omitempty"`
+	// The line number containing the point, 1-based.
+	LineNumber int32 `protobuf:"varint,2,opt,name=line_number,json=lineNumber,proto3" json:"line_number,omitempty"`
+	// The byte offset of the point within its line.
 	ColumnOffset int32 `protobuf:"varint,3,opt,name=column_offset,json=columnOffset,proto3" json:"column_offset,omitempty"`
 }
 

@@ -35,6 +35,7 @@ import (
 	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/facts"
 
+	cpb "kythe.io/kythe/proto/common_proto"
 	ftpb "kythe.io/kythe/proto/filetree_proto"
 	gpb "kythe.io/kythe/proto/graph_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
@@ -324,14 +325,13 @@ var (
 				SourceText: true,
 			}
 			if decorSpan != "" {
-				start, end, err := parseSpan(decorSpan)
+				span, err := parseSpan(decorSpan)
 				if err != nil {
 					return fmt.Errorf("invalid --span %q: %v", decorSpan, err)
 				}
 
 				req.Location.Kind = xpb.Location_SPAN
-				req.Location.Start = start
-				req.Location.End = end
+				req.Location.Span = span
 			}
 
 			logRequest(req)
@@ -394,14 +394,13 @@ var (
 				req.DirtyBuffer = buf
 			}
 			if decorSpan != "" {
-				start, end, err := parseSpan(decorSpan)
+				span, err := parseSpan(decorSpan)
 				if err != nil {
 					return fmt.Errorf("invalid --span %q: %v", decorSpan, err)
 				}
 
 				req.Location.Kind = xpb.Location_SPAN
-				req.Location.Start = start
-				req.Location.End = end
+				req.Location.Span = span
 			}
 
 			logRequest(req)
@@ -434,19 +433,19 @@ var (
 	lineNumberPointRE = regexp.MustCompile(`^(\d+)(:(\d+))?$`)
 )
 
-func parsePoint(p string) (*xpb.Location_Point, error) {
+func parsePoint(p string) (*cpb.Point, error) {
 	if m := byteOffsetPointRE.FindStringSubmatch(p); m != nil {
 		offset, err := strconv.Atoi(m[1])
 		if err != nil {
 			return nil, fmt.Errorf("invalid byte-offset: %v", err)
 		}
-		return &xpb.Location_Point{ByteOffset: int32(offset)}, nil
+		return &cpb.Point{ByteOffset: int32(offset)}, nil
 	} else if m := lineNumberPointRE.FindStringSubmatch(p); m != nil {
 		line, err := strconv.Atoi(m[1])
 		if err != nil {
 			return nil, fmt.Errorf("invalid line number: %v", err)
 		}
-		np := &xpb.Location_Point{LineNumber: int32(line)}
+		np := &cpb.Point{LineNumber: int32(line)}
 		if m[3] != "" {
 			col, err := strconv.Atoi(m[3])
 			if err != nil {
@@ -459,20 +458,23 @@ func parsePoint(p string) (*xpb.Location_Point, error) {
 	return nil, fmt.Errorf("unknown format %q", p)
 }
 
-func parseSpan(span string) (start, end *xpb.Location_Point, err error) {
+func parseSpan(span string) (*cpb.Span, error) {
 	parts := strings.Split(span, "-")
 	if len(parts) != 2 {
-		return nil, nil, errors.New("unknown format")
+		return nil, errors.New("unknown format")
 	}
-	start, err = parsePoint(parts[0])
+	start, err := parsePoint(parts[0])
 	if err != nil {
-		return nil, nil, fmt.Errorf("invalid start: %v", err)
+		return nil, fmt.Errorf("invalid start: %v", err)
 	}
-	end, err = parsePoint(parts[1])
+	end, err := parsePoint(parts[1])
 	if err != nil {
-		return nil, nil, fmt.Errorf("invalid end: %v", err)
+		return nil, fmt.Errorf("invalid end: %v", err)
 	}
-	return
+	return &cpb.Span{
+		Start: start,
+		End:   end,
+	}, nil
 }
 
 // command specifies a named sub-command for the kythe tool with its own flags.

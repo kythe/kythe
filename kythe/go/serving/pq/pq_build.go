@@ -425,23 +425,13 @@ func a2a(a *srvpb.ExpandedAnchor, anchorText bool) *xpb.Anchor {
 		log.Printf("Error parsing anchor ticket: %v", err)
 	}
 	return &xpb.Anchor{
-		Ticket:       a.Ticket,
-		Kind:         edges.Canonical(a.Kind),
-		Parent:       parent,
-		Text:         text,
-		Start:        p2p(a.Span.Start),
-		End:          p2p(a.Span.End),
-		Snippet:      a.Snippet,
-		SnippetStart: p2p(a.SnippetSpan.Start),
-		SnippetEnd:   p2p(a.SnippetSpan.End),
-	}
-}
-
-func p2p(p *cpb.Point) *xpb.Location_Point {
-	return &xpb.Location_Point{
-		ByteOffset:   p.ByteOffset,
-		LineNumber:   p.LineNumber,
-		ColumnOffset: p.ColumnOffset,
+		Ticket:      a.Ticket,
+		Kind:        edges.Canonical(a.Kind),
+		Parent:      parent,
+		Text:        text,
+		Span:        a.Span,
+		Snippet:     a.Snippet,
+		SnippetSpan: a.SnippetSpan,
 	}
 }
 

@@ -149,12 +149,6 @@ func displayDecorations(decor *xpb.DecorationsReply) error {
 		nodeKind := factValue(nodes, ref.TargetTicket, facts.NodeKind, "UNKNOWN")
 		subkind := factValue(nodes, ref.TargetTicket, facts.Subkind, "")
 
-		loc := &xpb.Location{
-			Kind:  xpb.Location_SPAN,
-			Start: ref.AnchorStart,
-			End:   ref.AnchorEnd,
-		}
-
 		var targetDef string
 		if ref.TargetDefinition != "" {
 			targetDef = ref.TargetDefinition
@@ -168,12 +162,12 @@ func displayDecorations(decor *xpb.DecorationsReply) error {
 			"@edgeKind@", ref.Kind,
 			"@nodeKind@", nodeKind,
 			"@subkind@", subkind,
-			"@^offset@", itoa(loc.Start.ByteOffset),
-			"@^line@", itoa(loc.Start.LineNumber),
-			"@^col@", itoa(loc.Start.ColumnOffset),
-			"@$offset@", itoa(loc.End.ByteOffset),
-			"@$line@", itoa(loc.End.LineNumber),
-			"@$col@", itoa(loc.End.ColumnOffset),
+			"@^offset@", itoa(ref.Span.Start.ByteOffset),
+			"@^line@", itoa(ref.Span.Start.LineNumber),
+			"@^col@", itoa(ref.Span.Start.ColumnOffset),
+			"@$offset@", itoa(ref.Span.End.ByteOffset),
+			"@$line@", itoa(ref.Span.End.LineNumber),
+			"@$col@", itoa(ref.Span.End.ColumnOffset),
 			"@targetDef@", targetDef,
 		)
 		if _, err := r.WriteString(out, refFormat+"\n"); err != nil {
@@ -432,13 +426,15 @@ func displayRelatedAnchors(kind string, anchors []*xpb.CrossReferencesReply_Rela
 			}
 			if _, err := fmt.Fprintf(out, "    %s\t%s\t[%d:%d-%d:%d)\n      %q\n",
 				pURI.Path, showSignature(a.MarkedSource),
-				a.Anchor.Start.LineNumber, a.Anchor.Start.ColumnOffset, a.Anchor.End.LineNumber, a.Anchor.End.ColumnOffset,
+				a.Anchor.Span.Start.LineNumber, a.Anchor.Span.Start.ColumnOffset,
+				a.Anchor.Span.End.LineNumber, a.Anchor.Span.End.ColumnOffset,
 				string(a.Anchor.Snippet)); err != nil {
 				return err
 			}
 			for _, site := range a.Site {
 				if _, err := fmt.Fprintf(out, "      [%d:%d-%d-%d)\n        %q\n",
-					site.Start.LineNumber, site.Start.ColumnOffset, site.End.LineNumber, site.End.ColumnOffset,
+					site.Span.Start.LineNumber, site.Span.Start.ColumnOffset,
+					site.Span.End.LineNumber, site.Span.End.ColumnOffset,
 					string(site.Snippet)); err != nil {
 					return err
 				}

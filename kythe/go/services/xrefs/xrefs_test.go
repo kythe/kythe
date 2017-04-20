@@ -71,78 +71,78 @@ func TestNormalizerPoint(t *testing.T) {
 line 2
 last line without newline`
 
-	tests := []struct{ p, expected *xpb.Location_Point }{
+	tests := []struct{ p, expected *cpb.Point }{
 		{
-			&xpb.Location_Point{},
-			&xpb.Location_Point{ByteOffset: 0, LineNumber: 1, ColumnOffset: 0},
+			&cpb.Point{},
+			&cpb.Point{ByteOffset: 0, LineNumber: 1, ColumnOffset: 0},
 		},
 		{
-			&xpb.Location_Point{LineNumber: 1},
-			&xpb.Location_Point{ByteOffset: 0, LineNumber: 1, ColumnOffset: 0},
+			&cpb.Point{LineNumber: 1},
+			&cpb.Point{ByteOffset: 0, LineNumber: 1, ColumnOffset: 0},
 		},
 		{
-			&xpb.Location_Point{ByteOffset: 1},
-			&xpb.Location_Point{ByteOffset: 1, LineNumber: 1, ColumnOffset: 1},
+			&cpb.Point{ByteOffset: 1},
+			&cpb.Point{ByteOffset: 1, LineNumber: 1, ColumnOffset: 1},
 		},
 		{
-			&xpb.Location_Point{ByteOffset: 6},
-			&xpb.Location_Point{ByteOffset: 6, LineNumber: 1, ColumnOffset: 6},
+			&cpb.Point{ByteOffset: 6},
+			&cpb.Point{ByteOffset: 6, LineNumber: 1, ColumnOffset: 6},
 		},
 		{
-			&xpb.Location_Point{LineNumber: 1, ColumnOffset: 6},
-			&xpb.Location_Point{ByteOffset: 6, LineNumber: 1, ColumnOffset: 6},
+			&cpb.Point{LineNumber: 1, ColumnOffset: 6},
+			&cpb.Point{ByteOffset: 6, LineNumber: 1, ColumnOffset: 6},
 		},
 		{
-			&xpb.Location_Point{ByteOffset: 7},
-			&xpb.Location_Point{ByteOffset: 7, LineNumber: 2, ColumnOffset: 0},
+			&cpb.Point{ByteOffset: 7},
+			&cpb.Point{ByteOffset: 7, LineNumber: 2, ColumnOffset: 0},
 		},
 		{
-			&xpb.Location_Point{LineNumber: 2},
-			&xpb.Location_Point{ByteOffset: 7, LineNumber: 2, ColumnOffset: 0},
+			&cpb.Point{LineNumber: 2},
+			&cpb.Point{ByteOffset: 7, LineNumber: 2, ColumnOffset: 0},
 		},
 		{
-			&xpb.Location_Point{ByteOffset: 10},
-			&xpb.Location_Point{ByteOffset: 10, LineNumber: 2, ColumnOffset: 3},
+			&cpb.Point{ByteOffset: 10},
+			&cpb.Point{ByteOffset: 10, LineNumber: 2, ColumnOffset: 3},
 		},
 		{
-			&xpb.Location_Point{ByteOffset: 13},
-			&xpb.Location_Point{ByteOffset: 13, LineNumber: 2, ColumnOffset: 6},
+			&cpb.Point{ByteOffset: 13},
+			&cpb.Point{ByteOffset: 13, LineNumber: 2, ColumnOffset: 6},
 		},
 		{
-			&xpb.Location_Point{LineNumber: 2, ColumnOffset: 6},
-			&xpb.Location_Point{ByteOffset: 13, LineNumber: 2, ColumnOffset: 6},
+			&cpb.Point{LineNumber: 2, ColumnOffset: 6},
+			&cpb.Point{ByteOffset: 13, LineNumber: 2, ColumnOffset: 6},
 		},
 		{
-			&xpb.Location_Point{LineNumber: 2, ColumnOffset: 7}, // past end of column
-			&xpb.Location_Point{ByteOffset: 13, LineNumber: 2, ColumnOffset: 6},
+			&cpb.Point{LineNumber: 2, ColumnOffset: 7}, // past end of column
+			&cpb.Point{ByteOffset: 13, LineNumber: 2, ColumnOffset: 6},
 		},
 		{
-			&xpb.Location_Point{LineNumber: 3},
-			&xpb.Location_Point{ByteOffset: 14, LineNumber: 3, ColumnOffset: 0},
+			&cpb.Point{LineNumber: 3},
+			&cpb.Point{ByteOffset: 14, LineNumber: 3, ColumnOffset: 0},
 		},
 		{
-			&xpb.Location_Point{LineNumber: 3, ColumnOffset: 5},
-			&xpb.Location_Point{ByteOffset: 19, LineNumber: 3, ColumnOffset: 5},
+			&cpb.Point{LineNumber: 3, ColumnOffset: 5},
+			&cpb.Point{ByteOffset: 19, LineNumber: 3, ColumnOffset: 5},
 		},
 		{
-			&xpb.Location_Point{ByteOffset: 39},
-			&xpb.Location_Point{ByteOffset: 39, LineNumber: 3, ColumnOffset: 25},
+			&cpb.Point{ByteOffset: 39},
+			&cpb.Point{ByteOffset: 39, LineNumber: 3, ColumnOffset: 25},
 		},
 		{
-			&xpb.Location_Point{ByteOffset: 40}, // past end of text
-			&xpb.Location_Point{ByteOffset: 39, LineNumber: 3, ColumnOffset: 25},
+			&cpb.Point{ByteOffset: 40}, // past end of text
+			&cpb.Point{ByteOffset: 39, LineNumber: 3, ColumnOffset: 25},
 		},
 		{
-			&xpb.Location_Point{LineNumber: 5, ColumnOffset: 5}, // past end of text
-			&xpb.Location_Point{ByteOffset: 39, LineNumber: 3, ColumnOffset: 25},
+			&cpb.Point{LineNumber: 5, ColumnOffset: 5}, // past end of text
+			&cpb.Point{ByteOffset: 39, LineNumber: 3, ColumnOffset: 25},
 		},
 		{
-			&xpb.Location_Point{ByteOffset: -1}, // before start of text
-			&xpb.Location_Point{ByteOffset: 0, LineNumber: 1, ColumnOffset: 0},
+			&cpb.Point{ByteOffset: -1}, // before start of text
+			&cpb.Point{ByteOffset: 0, LineNumber: 1, ColumnOffset: 0},
 		},
 		{
-			&xpb.Location_Point{LineNumber: -1, ColumnOffset: 5}, // before start of text
-			&xpb.Location_Point{LineNumber: 1},
+			&cpb.Point{LineNumber: -1, ColumnOffset: 5}, // before start of text
+			&cpb.Point{LineNumber: 1},
 		},
 	}
 

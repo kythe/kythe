@@ -39,8 +39,14 @@ message Fact {
 // this constraint is satisfied.  This may be impossible if the column offset
 // exceeds the bounds of the file.
 message Point {
+  // The offset in bytes from the beginning of the file.
+  // Requires 0 ≤ byte_offset ≤ len(file).
   int32 byte_offset = 1;
+
+  // The line number containing the point, 1-based.
   int32 line_number = 2;
+
+  // The byte offset of the point within its line.
   int32 column_offset = 3;
 }
 

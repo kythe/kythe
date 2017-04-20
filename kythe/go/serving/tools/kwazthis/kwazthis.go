@@ -52,6 +52,7 @@ import (
 	"kythe.io/kythe/go/util/schema/facts"
 	"kythe.io/kythe/go/util/schema/tickets"
 
+	cpb "kythe.io/kythe/proto/common_proto"
 	gpb "kythe.io/kythe/proto/graph_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
@@ -169,7 +170,7 @@ func main() {
 	}
 
 	fileTicket := (&kytheuri.URI{Corpus: *corpus, Root: *root, Path: relPath}).String()
-	point := &xpb.Location_Point{
+	point := &cpb.Point{
 		ByteOffset:   int32(*offset),
 		LineNumber:   int32(*lineNumber),
 		ColumnOffset: int32(*columnOffset),
@@ -179,8 +180,7 @@ func main() {
 		Location: &xpb.Location{
 			Ticket: fileTicket,
 			Kind:   xpb.Location_SPAN,
-			Start:  point,
-			End:    point,
+			Span:   &cpb.Span{Start: point, End: point},
 		},
 		SpanKind:    xpb.DecorationsRequest_AROUND_SPAN,
 		References:  true,
@@ -198,7 +198,7 @@ func main() {
 
 	en := json.NewEncoder(os.Stdout)
 	for _, ref := range decor.Reference {
-		start, end := int(ref.AnchorStart.ByteOffset), int(ref.AnchorEnd.ByteOffset)
+		start, end := int(ref.Span.Start.ByteOffset), int(ref.Span.End.ByteOffset)
 
 		var r reference
 		r.Span.Start = start

@@ -21,7 +21,6 @@ go_package_library(
         "//kythe/proto:internal_proto_go",
         "//kythe/proto:serving_proto_go",
         "//kythe/proto:storage_proto_go",
-        "//kythe/proto:xref_proto_go",
         "@go_stringset//:stringset",
     ],
 )
