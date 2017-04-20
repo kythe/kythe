@@ -93,10 +93,14 @@ public class ProcessAnnotation extends AbstractProcessor {
           generated.comments().substring(Metadata.ANNOTATION_COMMENT_PREFIX.length());
       if (ae instanceof ClassSymbol) {
         ClassSymbol cs = (ClassSymbol) ae;
-        String annotationPath = cs.sourcefile.toUri().resolve(annotationFile).getPath();
-        for (JavaFileObject file :
-            fileManager.getJavaFileForSources(Arrays.asList(annotationPath))) {
-          ((UsageAsInputReportingJavaFileObject) file).markUsed();
+        try {
+          String annotationPath = cs.sourcefile.toUri().resolve(annotationFile).getPath();
+          for (JavaFileObject file :
+              fileManager.getJavaFileForSources(Arrays.asList(annotationPath))) {
+            ((UsageAsInputReportingJavaFileObject) file).markUsed();
+          }
+        } catch (IllegalArgumentException ex) {
+          logger.warningfmt("Bad annotationFile (%s): %s", ex.getMessage(), annotationFile);
         }
       }
     }
