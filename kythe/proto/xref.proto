@@ -210,8 +210,9 @@ message DecorationsReply {
     Kind kind = 2;
 
     // A display name for the object at ticket.
-    Printable display_name = 3;  // Will be deprecated.
     MarkedSource marked_source = 4;
+
+    reserved 3;
   }
 
   message Overrides {
@@ -295,21 +296,6 @@ message CrossReferencesRequest {
   // information.
   ReferenceKind reference_kind = 3;
 
-  enum DocumentationKind {
-    // No documentation will be populated in the CrossReferencesReply.
-    NO_DOCUMENTATION = 0;
-    // All known documentation reached by the "/kythe/edge/documentation" edge
-    // kind (or its variants) will be populated in the CrossReferencesReply.
-    ALL_DOCUMENTATION = 1;
-  }
-
-  // Determines what kind of documentation anchors, if any, should be returned
-  // in the response.  See the documentation for each DocumentationKind for more
-  // information.
-  // NOTE: this field is deprecated and will be treated as NO_DOCUMENTATION
-  // in the future.
-  DocumentationKind documentation_kind = 4;
-
   enum CallerKind {
     // No callgraph information will be populated in the CrossReferencesReply.
     NO_CALLERS = 0;
@@ -371,6 +357,8 @@ message CrossReferencesRequest {
   // edge if any are available at all.
   int32 page_size = 10;
   string page_token = 11;
+
+  reserved 4;
 }
 
 // TODO(schroederc): eliminate duplicate serving.ExpandedAnchor message defintion
@@ -411,11 +399,12 @@ message Link {
     // This span of text is important.
     IMPORTANT = 999;
   }
-  reserved 1;
   // The kind of this span.
   Kind kind = 2;  // Will be deprecated.
   // Semantic tickets for DEFINITION links.
   repeated string definition = 3;
+
+  reserved 1;
 }
 
 message Printable {
@@ -492,20 +481,20 @@ message CrossReferencesReply {
     // The anchor covering the related object.
     Anchor anchor = 1;
     // A name for the related object.
-    Printable display_name = 2;  // Will be deprecated.
     MarkedSource marked_source = 5;
     // Specific locations, usually within the related object, that caused
     // the relationship to exist. This field is relevant to caller sets.
     repeated Anchor site = 3;
     // The relevant semantic object. Populated for callers.
     string ticket = 4;
+
+    reserved 2;
   }
 
   message CrossReferenceSet {
     string ticket = 1;
 
     // A name for the given node.
-    Printable display_name = 7;  // Will be deprecated.
     MarkedSource marked_source = 8;
 
     // The set of definitions for the given node.
@@ -514,13 +503,13 @@ message CrossReferencesReply {
     repeated RelatedAnchor declaration = 5;
     // The set of simple references for the given node.
     repeated RelatedAnchor reference = 3;
-    // The set of documentation for the given node.
-    repeated RelatedAnchor documentation = 4;
     // The set of callers for the given node.
     repeated RelatedAnchor caller = 6;
 
     // The set of related nodes to the given node.
     repeated RelatedNode related_node = 10;
+
+    reserved 4, 7;
   }
 
   message Total {

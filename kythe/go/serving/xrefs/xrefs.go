@@ -857,7 +857,6 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		(req.DefinitionKind != xpb.CrossReferencesRequest_NO_DEFINITIONS ||
 			req.DeclarationKind != xpb.CrossReferencesRequest_NO_DECLARATIONS ||
 			req.ReferenceKind != xpb.CrossReferencesRequest_NO_REFERENCES ||
-			req.DocumentationKind != xpb.CrossReferencesRequest_NO_DOCUMENTATION ||
 			req.CallerKind != xpb.CrossReferencesRequest_NO_CALLERS ||
 			len(req.Filter) > 0)
 
@@ -918,11 +917,6 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 				reply.Total.Declarations += int64(len(grp.Anchor))
 				if wantMoreCrossRefs {
 					stats.addAnchors(&crs.Declaration, grp, req.AnchorText)
-				}
-			case xrefs.IsDocKind(req.DocumentationKind, grp.Kind):
-				reply.Total.Documentation += int64(len(grp.Anchor))
-				if wantMoreCrossRefs {
-					stats.addAnchors(&crs.Documentation, grp, req.AnchorText)
 				}
 			case xrefs.IsRefKind(req.ReferenceKind, grp.Kind):
 				reply.Total.References += int64(len(grp.Anchor))
@@ -1031,15 +1025,6 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 					}
 					stats.addAnchors(&crs.Declaration, p.Group, req.AnchorText)
 				}
-			case xrefs.IsDocKind(req.DocumentationKind, idx.Kind):
-				reply.Total.Documentation += int64(idx.Count)
-				if wantMoreCrossRefs && !stats.skipPage(idx) {
-					p, err := t.crossReferencesPage(ctx, idx.PageKey)
-					if err != nil {
-						return nil, fmt.Errorf("internal error: error retrieving cross-references page: %v", idx.PageKey)
-					}
-					stats.addAnchors(&crs.Documentation, p.Group, req.AnchorText)
-				}
 			case xrefs.IsRefKind(req.ReferenceKind, idx.Kind):
 				reply.Total.References += int64(idx.Count)
 				if wantMoreCrossRefs && !stats.skipPage(idx) {
@@ -1072,7 +1057,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 			}
 		}
 
-		if len(crs.Declaration) > 0 || len(crs.Definition) > 0 || len(crs.Reference) > 0 || len(crs.Documentation) > 0 || len(crs.Caller) > 0 || len(crs.RelatedNode) > 0 {
+		if len(crs.Declaration) > 0 || len(crs.Definition) > 0 || len(crs.Reference) > 0 || len(crs.Caller) > 0 || len(crs.RelatedNode) > 0 {
 			reply.CrossReferences[crs.Ticket] = crs
 			tracePrintf(ctx, "CrossReferenceSet: %s", crs.Ticket)
 		}

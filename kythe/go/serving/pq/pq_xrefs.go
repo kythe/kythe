@@ -393,7 +393,7 @@ func (d *DB) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReques
 				return nil, err
 			}
 			if xrs != nil && xrs.Ticket != ticket {
-				if len(xrs.Definition) > 0 || len(xrs.Documentation) > 0 || len(xrs.Reference) > 0 || len(xrs.RelatedNode) > 0 {
+				if len(xrs.Definition) > 0 || len(xrs.Reference) > 0 || len(xrs.RelatedNode) > 0 || len(xrs.Caller) > 0 {
 					reply.CrossReferences[xrs.Ticket] = xrs
 				}
 				xrs = nil
@@ -408,11 +408,6 @@ func (d *DB) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReques
 				if err != nil {
 					return nil, err
 				}
-			case xrefs.IsDocKind(req.DocumentationKind, kind):
-				xrs.Documentation, err = addRelatedAnchor(xrs.Documentation, rec, req.AnchorText)
-				if err != nil {
-					return nil, err
-				}
 			case xrefs.IsRefKind(req.ReferenceKind, kind):
 				xrs.Reference, err = addRelatedAnchor(xrs.Reference, rec, req.AnchorText)
 				if err != nil {
@@ -420,7 +415,7 @@ func (d *DB) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReques
 				}
 			}
 		}
-		if xrs != nil && (len(xrs.Definition) > 0 || len(xrs.Documentation) > 0 || len(xrs.Reference) > 0 || len(xrs.RelatedNode) > 0) {
+		if xrs != nil && (len(xrs.Definition) > 0 || len(xrs.Reference) > 0 || len(xrs.RelatedNode) > 0) || len(xrs.Caller) > 0 {
 			reply.CrossReferences[xrs.Ticket] = xrs
 		}
 

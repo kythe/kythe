@@ -215,21 +215,6 @@ func IsCallerKind(requestedKind xpb.CrossReferencesRequest_CallerKind, edgeKind 
 	}
 }
 
-// IsDocKind determines whether the given edgeKind matches the requested
-// documentation kind.
-func IsDocKind(requestedKind xpb.CrossReferencesRequest_DocumentationKind, edgeKind string) bool {
-	edgeKind = edges.Canonical(edgeKind)
-	switch requestedKind {
-	case xpb.CrossReferencesRequest_NO_DOCUMENTATION:
-		return false
-	case xpb.CrossReferencesRequest_ALL_DOCUMENTATION:
-		return edges.IsVariant(edgeKind, edges.Documents)
-	default:
-		log.Printf("ERROR: unhandled CrossDocumentationRequest_DocumentationKind: %v", requestedKind)
-		return false
-	}
-}
-
 // AllEdges returns all edges for a particular EdgesRequest.  This means that
 // the returned reply will not have a next page token.  WARNING: the paging API
 // exists for a reason; using this can lead to very large memory consumption
@@ -843,14 +828,13 @@ func SlowCallersForCrossReferences(ctx context.Context, service Service, req *Ca
 	}
 	// This will not recursively call SlowCallersForCrossReferences as we're requesting NO_CALLERS above.
 	xrefs, err := service.CrossReferences(ctx, &xpb.CrossReferencesRequest{
-		Ticket:            callees.Elements(),
-		DefinitionKind:    xpb.CrossReferencesRequest_NO_DEFINITIONS,
-		ReferenceKind:     xpb.CrossReferencesRequest_CALL_REFERENCES,
-		DocumentationKind: xpb.CrossReferencesRequest_NO_DOCUMENTATION,
-		CallerKind:        xpb.CrossReferencesRequest_NO_CALLERS,
-		AnchorText:        true,
-		PageSize:          req.PageSize,
-		PageToken:         req.PageToken,
+		Ticket:         callees.Elements(),
+		DefinitionKind: xpb.CrossReferencesRequest_NO_DEFINITIONS,
+		ReferenceKind:  xpb.CrossReferencesRequest_CALL_REFERENCES,
+		CallerKind:     xpb.CrossReferencesRequest_NO_CALLERS,
+		AnchorText:     true,
+		PageSize:       req.PageSize,
+		PageToken:      req.PageToken,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("can't get CrossReferences for callees set: %v", err)

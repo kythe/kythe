@@ -75,8 +75,8 @@ var (
 	extendsOverrides bool
 
 	// xrefs flags
-	defKind, declKind, refKind, docKind, callerKind string
-	relatedNodes, nodeDefinitions                   bool
+	defKind, declKind, refKind, callerKind string
+	relatedNodes, nodeDefinitions          bool
 
 	spanHelp = `Limit results to this span (e.g. "10-30", "b1462-b1847", "3:5-3:10")
       Formats:
@@ -211,7 +211,6 @@ var (
 			flag.StringVar(&defKind, "definitions", "all", "Kind of definitions to return (kinds: all, binding, full, or none)")
 			flag.StringVar(&declKind, "declarations", "all", "Kind of declarations to return (kinds: all or none)")
 			flag.StringVar(&refKind, "references", "noncall", "Kind of references to return (kinds: all, noncall, call, or none)")
-			flag.StringVar(&docKind, "documentation", "all", "Kind of documentation to return (kinds: all or none)")
 			flag.StringVar(&callerKind, "callers", "none", "Kind of callers to return (kinds: direct, overrides, or none)")
 			flag.BoolVar(&relatedNodes, "related_nodes", false, "Whether to request related nodes")
 			flag.StringVar(&nodeFilters, "filters", "", "Comma-separated list of additional fact filters to use when requesting related nodes")
@@ -265,14 +264,6 @@ var (
 			default:
 				return fmt.Errorf("unknown reference kind: %q", refKind)
 			}
-			switch docKind {
-			case "all":
-				req.DocumentationKind = xpb.CrossReferencesRequest_ALL_DOCUMENTATION
-			case "none":
-				req.DocumentationKind = xpb.CrossReferencesRequest_NO_DOCUMENTATION
-			default:
-				return fmt.Errorf("unknown documentation kind: %q", docKind)
-			}
 			switch callerKind {
 			case "direct":
 				req.CallerKind = xpb.CrossReferencesRequest_DIRECT_CALLERS
@@ -281,7 +272,7 @@ var (
 			case "none":
 				req.CallerKind = xpb.CrossReferencesRequest_NO_CALLERS
 			default:
-				return fmt.Errorf("unknown caller kind: %q", docKind)
+				return fmt.Errorf("unknown caller kind: %q", callerKind)
 			}
 			logRequest(req)
 			reply, err := xs.CrossReferences(ctx, req)

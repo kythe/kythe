@@ -849,10 +849,9 @@ func TestDecorationsSourceText(t *testing.T) {
 func TestCrossReferencesNone(t *testing.T) {
 	st := tbl.Construct(t)
 	reply, err := st.CrossReferences(ctx, &xpb.CrossReferencesRequest{
-		Ticket:            []string{"kythe://someCorpus?lang=otpl#sig2"},
-		DocumentationKind: xpb.CrossReferencesRequest_ALL_DOCUMENTATION,
-		DefinitionKind:    xpb.CrossReferencesRequest_ALL_DEFINITIONS,
-		ReferenceKind:     xpb.CrossReferencesRequest_ALL_REFERENCES,
+		Ticket:         []string{"kythe://someCorpus?lang=otpl#sig2"},
+		DefinitionKind: xpb.CrossReferencesRequest_ALL_DEFINITIONS,
+		ReferenceKind:  xpb.CrossReferencesRequest_ALL_REFERENCES,
 	})
 	testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
 

@@ -346,7 +346,6 @@ func (s *mockService) CrossReferences(ctx context.Context, req *xpb.CrossReferen
 	if req.DefinitionKind != xpb.CrossReferencesRequest_BINDING_DEFINITIONS &&
 		req.DefinitionKind != xpb.CrossReferencesRequest_ALL_DEFINITIONS ||
 		req.ReferenceKind != xpb.CrossReferencesRequest_NO_REFERENCES ||
-		req.DocumentationKind != xpb.CrossReferencesRequest_NO_DOCUMENTATION ||
 		req.AnchorText {
 		return nil, fmt.Errorf("Unexpected CrossReferences request: %v", req)
 	}

@@ -368,9 +368,6 @@ func displayXRefs(reply *xpb.CrossReferencesReply) error {
 		if err := displayRelatedAnchors("Declarations", xr.Declaration); err != nil {
 			return err
 		}
-		if err := displayRelatedAnchors("Documentation", xr.Documentation); err != nil {
-			return err
-		}
 		if err := displayRelatedAnchors("References", xr.Reference); err != nil {
 			return err
 		}
