@@ -209,6 +209,48 @@ def cc_bazel_verifier_test_impl(ctx):
       },
   )
 
+def _integration_test_impl(ctx):
+  atomizer      = ctx.executable._atomizer
+  entrystream   = ctx.executable._entrystream
+  postprocessor = ctx.executable._postprocessor
+  server        = ctx.executable._server
+  verifier      = ctx.executable._verifier
+
+  file_tickets = ctx.attr.file_tickets
+  if not file_tickets:
+    fail("Must provide file_tickets for: " + str(ctx.label))
+
+  all_entries = set()
+  for dep in ctx.attr.srcs:
+    all_entries += [dep.entries]
+  if not all_entries:
+    fail("Must have targets providing entries for: " + str(ctx.label))
+
+  ctx.file_action(
+      output = ctx.outputs.executable,
+      content = '\n'.join([
+        "#!/bin/bash -e",
+        "set -o pipefail",
+        "TMP_TABLE=\"${TEST_TMPDIR:-/tmp}/table\"",
+        "gunzip -c " + " ".join(_template(all_entries, "{short_path}")) + " | " +
+          entrystream.short_path + " --sort | " +
+          postprocessor.short_path + " --entries /dev/stdin --out \"$TMP_TABLE\"",
+        atomizer.short_path + " --api \"$TMP_TABLE\" " + " ".join(ctx.attr.file_tickets) + " | " +
+          verifier.short_path + " --ignore_dups --use_file_nodes",
+      ]),
+      executable = True,
+  )
+  return struct(
+      runfiles = ctx.runfiles(files = list(all_entries) + [
+          ctx.outputs.executable,
+          atomizer,
+          entrystream,
+          postprocessor,
+          server,
+          verifier,
+        ], collect_data = True),
+      )
+
 java_verifier_test = rule(
     java_verifier_test_impl,
     attrs = base_attrs + {
@@ -356,5 +398,39 @@ cc_bazel_verifier_test = rule(
     },
     executable = True,
     output_to_genfiles = True,
+    test = True,
+)
+
+kythe_integration_test = rule(
+    _integration_test_impl,
+    attrs = {
+        "srcs": attr.label_list(providers = ["entries"]),
+        "file_tickets": attr.string_list(),
+        "_verifier": attr.label(
+            default = Label("//kythe/cxx/verifier"),
+            executable = True,
+            cfg = "host",
+        ),
+        "_entrystream": attr.label(
+            default = Label("//kythe/go/platform/tools/entrystream"),
+            executable = True,
+            cfg = "host",
+        ),
+        "_postprocessor": attr.label(
+            default = Label("//kythe/go/serving/tools/write_tables"),
+            executable = True,
+            cfg = "host",
+        ),
+        "_server": attr.label(
+            default = Label("//kythe/go/serving/tools/http_server"),
+            executable = True,
+            cfg = "host",
+        ),
+        "_atomizer": attr.label(
+            default = Label("//kythe/go/test/tools:xrefs_atomizer"),
+            executable = True,
+            cfg = "host",
+        ),
+    },
     test = True,
 )

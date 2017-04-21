@@ -1,4 +1,18 @@
-load("//tools:build_rules/kythe.bzl", "java_verifier_test")
+load("//tools:build_rules/kythe.bzl", "java_verifier_test", "kythe_integration_test")
+
+ticket_root = "kythe://kythe?path=kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg"
+
+kythe_integration_test(
+    name = "cross_file_integration_test",
+    srcs = [
+        ":cross_file_tests",
+        ":files_tests",
+    ],
+    file_tickets = [
+        ticket_root + "/Files.java",
+        ticket_root + "/CrossFile.java",
+    ],
+)
 
 java_verifier_test(
     name = "annotations_tests",
@@ -151,11 +165,14 @@ java_verifier_test(
     srcs = [
         "ProtobufMetadata.java",
     ],
+    indexer_opts = [
+        "--verbose",
+        "--default_metadata_corpus=default",
+    ],
     meta = [
         "ProtobufMetadata.java.pb.meta",
     ],
     vnames_config = "protobuf_vnames.json",
-    indexer_opts = ["--verbose", "--default_metadata_corpus=default"],
 )
 
 java_verifier_test(
