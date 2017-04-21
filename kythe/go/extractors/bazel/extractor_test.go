@@ -73,7 +73,6 @@ func TestExtractor(t *testing.T) {
 		gotInfo       *xapb.SpawnInfo
 		checkedInputs []string
 		checkedEnv    []string
-		gotUnit       *kindex.Compilation
 	)
 	config := &Config{
 		Corpus:   testCorpus,
@@ -95,7 +94,7 @@ func TestExtractor(t *testing.T) {
 		},
 
 		IsSource: func(path string) bool { return filepath.Ext(path) == ".src" },
-		Fixup:    func(unit *kindex.Compilation) error { gotUnit = unit; return nil },
+		Fixup:    func(unit *kindex.Compilation) error { return nil },
 
 		// All the files are empty, and all the children are above average.
 		OpenRead: func(_ context.Context, path string) (io.ReadCloser, error) {
