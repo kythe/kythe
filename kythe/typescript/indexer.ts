@@ -69,9 +69,6 @@ enum TSNamespace {
 
 /** Visitor manages the indexing process for a single TypeScript SourceFile. */
 class Vistor {
-  /** sourceFile is the ts.SourceFile we're currently indexing. */
-  sourceFile: ts.SourceFile;
-
   /** kFile is the VName for the source file. */
   kFile: VName;
 
@@ -109,6 +106,18 @@ class Vistor {
   };
 
   /**
+   * moduleName returns the ES6 module name of a SourceFile.
+   * E.g. foo/bar.ts and foo/bar.d.ts both have the same module name,
+   * 'foo/bar'.
+   */
+  moduleName(sourceFile: ts.SourceFile): string {
+    // sourceFile.Path is the path after resolution, so it is an
+    // absolute path even if in the source text imported it relatively.
+    // Use path.relative to make it relative to the source root.
+    return stripExtension(path.relative(this.sourceRoot, sourceFile.path));
+  }
+
+  /**
    * Gets the utf8.OffsetTable for a path, creating and caching it if necessary.
    */
   getOffsetTable(path: string): utf8.OffsetTable {
@@ -121,13 +130,17 @@ class Vistor {
     return table;
   }
 
-  /** newVName returns a new VName pointing at the current file. */
-  newVName(signature: string, sourceFile = this.sourceFile): VName {
+  /**
+   * newVName returns a new VName.
+   * @param sourcefile If provided, scopes the VName to the module path
+   *     of the file.
+   */
+  newVName(signature: string, sourceFile?: ts.SourceFile): VName {
     return {
       signature,
       corpus: this.corpus,
       root: '',
-      path: stripExtension(path.relative(this.sourceRoot, sourceFile.path)),
+      path: sourceFile ? this.moduleName(sourceFile) : '',
       language: 'typescript',
     };
   }
@@ -135,6 +148,9 @@ class Vistor {
   /** newAnchor emits a new anchor entry that covers a TypeScript node. */
   newAnchor(node: ts.Node): VName {
     let name = this.newVName(`@${node.pos}:${node.end}`);
+    // An anchor refers to specific text, so its path is the file path,
+    // not the module name.
+    name.path = path.relative(this.sourceRoot, node.getSourceFile().path);
     this.emitNode(name, 'anchor');
     let offsetTable = this.getOffsetTable(node.getSourceFile().path);
     this.emitFact(
@@ -336,7 +352,6 @@ class Vistor {
       return;
     }
     let kModule = this.newVName('module');
-    kModule.signature = 'module';
     kModule.path = this.getModulePathFromModuleReference(moduleSym);
     this.emitEdge(this.newAnchor(decl.moduleSpecifier), 'ref/imports', kModule);
 
@@ -579,17 +594,17 @@ class Vistor {
 
   /** indexFile is the main entry point, starting the recursive visit. */
   indexFile(file: ts.SourceFile) {
-    this.sourceFile = file;
-
     // Emit a "file" node, containing the source text.
     this.kFile = this.newVName(/* empty signature */ '');
+    this.kFile.path = path.relative(this.sourceRoot, file.path);
     this.kFile.language = '';
     this.emitFact(this.kFile, 'node/kind', 'file');
     this.emitFact(this.kFile, 'text', file.text);
 
     // Emit a "record" node, representing the module object.
-    let kMod = this.newVName('module');
+    let kMod = this.newVName('module', file);
     this.emitFact(kMod, 'node/kind', 'record');
+    this.emitEdge(this.kFile, 'childof', kMod);
 
     ts.forEachChild(file, n => this.visit(n));
   }
