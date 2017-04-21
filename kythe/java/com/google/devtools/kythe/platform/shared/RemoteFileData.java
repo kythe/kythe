@@ -40,7 +40,7 @@ public class RemoteFileData implements FileDataProvider {
   public RemoteFileData(String addr) {
     HostAndPort hp = HostAndPort.fromString(addr);
     ManagedChannel channel =
-        NettyChannelBuilder.forAddress(new InetSocketAddress(hp.getHostText(), hp.getPort()))
+        NettyChannelBuilder.forAddress(new InetSocketAddress(hp.getHost(), hp.getPort()))
             .negotiationType(NegotiationType.PLAINTEXT)
             .build();
     stub = FileDataServiceGrpc.newStub(channel);
