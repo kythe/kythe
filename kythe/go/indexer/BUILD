@@ -114,8 +114,26 @@ go_indexer_test(
 )
 
 go_indexer_test(
-    name = "code_smoke_test",
-    srcs = ["testdata/code/smoke.go"],
+    name = "code_function_test",
+    srcs = ["testdata/code/funcdecl.go"],
+    has_marked_source = True,
+)
+
+go_indexer_test(
+    name = "code_interface_test",
+    srcs = ["testdata/code/interface.go"],
+    has_marked_source = True,
+)
+
+go_indexer_test(
+    name = "code_var_test",
+    srcs = ["testdata/code/pkgvar.go"],
+    has_marked_source = True,
+)
+
+go_indexer_test(
+    name = "code_struct_test",
+    srcs = ["testdata/code/structtype.go"],
     has_marked_source = True,
 )
 

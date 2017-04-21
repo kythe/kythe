@@ -356,18 +356,159 @@ func (pi *PackageInfo) ObjectVName(obj types.Object) *spb.VName {
 
 // MarkedSource returns a MarkedSource message describing obj.
 // See: http://www.kythe.io/docs/schema/marked-source.html.
-//
-// TODO(fromberger): This implementation is intentionally minimalistic at the
-// moment, to avoid maintaining a fork of the type rendering code from the
-// go/types package. Figure out a better solution to let us have more
-// structure, particularly for functions and struct types. See also: T232.
 func (pi *PackageInfo) MarkedSource(obj types.Object) *xpb.MarkedSource {
-	if obj.Name() == "" {
-		return nil
-	} else if s := obj.String(); s != "" {
-		return &xpb.MarkedSource{PreText: s}
+	ms := &xpb.MarkedSource{
+		Kind:    xpb.MarkedSource_IDENTIFIER,
+		PreText: objectName(obj),
 	}
-	return nil
+
+	// Include the package name as context, and for objects that hang off a
+	// named struct or interface, a label for that type.
+	//
+	// For example, given
+	//     package p
+	//     var v int                // context is "p"
+	//     type s struct { v int }  // context is "p.s"
+	//
+	if pkg := obj.Pkg(); pkg != nil {
+		ctx := []*xpb.MarkedSource{{
+			PreText: pkg.Name(),
+		}}
+		if par, ok := pi.owner[obj]; ok {
+			if _, ok := par.Type().(*types.Named); ok {
+				ctx = append(ctx, &xpb.MarkedSource{PreText: typeName(par.Type())})
+			}
+		}
+		ms = &xpb.MarkedSource{
+			Kind: xpb.MarkedSource_BOX,
+			Child: []*xpb.MarkedSource{
+				{
+					Kind:              xpb.MarkedSource_CONTEXT,
+					Child:             setKind(xpb.MarkedSource_IDENTIFIER, ctx...),
+					PostChildText:     ".",
+					AddFinalListToken: true,
+				},
+				ms,
+			},
+		}
+	}
+
+	// Handle types with "interesting" structure specially.
+	switch t := obj.(type) {
+	case *types.Func:
+		// For functions we include the parameters and return values, and for
+		// methods the receiver.
+		//
+		// Methods:   func (R) Name(p1, ...) (r0, ...)
+		// Functions: func Name(p0, ...) (r0, ...)
+		children := []*xpb.MarkedSource{{Kind: xpb.MarkedSource_TYPE, PreText: "func "}}
+		sig := t.Type().(*types.Signature)
+		firstParam := 0
+		if recv := sig.Recv(); recv != nil {
+			children = append(children, setKind(xpb.MarkedSource_PARAMETER,
+				identifiers(types.NewTuple(recv), true),
+			)...)
+			firstParam = 1
+		}
+		children = append(children, ms, &xpb.MarkedSource{
+			Kind:          xpb.MarkedSource_PARAMETER_LOOKUP_BY_PARAM,
+			PreText:       "(",
+			PostChildText: ", ",
+			PostText:      ")",
+			LookupIndex:   uint32(firstParam),
+		})
+		if res := sig.Results(); res != nil {
+			children = append(children, setKind(xpb.MarkedSource_PARAMETER,
+				&xpb.MarkedSource{PreText: " "},
+				identifiers(res, false),
+			)...)
+		}
+		ms = &xpb.MarkedSource{Child: children}
+
+	case *types.Var:
+		// For variables and fields, include the type.
+		tag := "var"
+		if t.IsField() {
+			tag = "field"
+		}
+
+		repl := &xpb.MarkedSource{Child: setKind(xpb.MarkedSource_TYPE,
+			&xpb.MarkedSource{PreText: tag + " "}, new(xpb.MarkedSource), &xpb.MarkedSource{PreText: " "},
+			&xpb.MarkedSource{PreText: typeName(t.Type())},
+		)}
+		repl.Child[1] = ms
+		ms = repl
+
+	case *types.TypeName:
+		// For named types, include the underlying type.
+		repl := &xpb.MarkedSource{Child: setKind(xpb.MarkedSource_TYPE,
+			&xpb.MarkedSource{PreText: "type "}, new(xpb.MarkedSource), &xpb.MarkedSource{PreText: " "},
+			&xpb.MarkedSource{PreText: typeName(t.Type().Underlying())},
+		)}
+		repl.Child[1] = ms
+		ms = repl
+
+	default:
+		// TODO(fromberger): Handle other variations from go/types.
+	}
+	return ms
+}
+
+// objectName returns a human-readable name for obj if one can be inferred.  If
+// the object has its own non-blank name, that is used; otherwise if the object
+// is of a named type, that type's name is used. Otherwise the result is "_".
+func objectName(obj types.Object) string {
+	if name := obj.Name(); name != "" && name != "" {
+		return name // the object's given name
+	} else if name := typeName(obj.Type()); name != "" {
+		return name // the object's type's name
+	}
+	return "_" // not sure what to call it
+}
+
+// typeName returns a human readable name for typ.
+func typeName(typ types.Type) string {
+	switch t := typ.(type) {
+	case *types.Named:
+		return t.Obj().Name()
+	case *types.Basic:
+		return t.Name()
+	case *types.Struct:
+		return "struct {...}"
+	case *types.Interface:
+		return "interface {...}"
+	}
+	return typ.String()
+}
+
+// setKind applies kind to each element of mss and returns mss.
+func setKind(kind xpb.MarkedSource_Kind, mss ...*xpb.MarkedSource) []*xpb.MarkedSource {
+	for _, ms := range mss {
+		ms.Kind = kind
+	}
+	return mss
+}
+
+// identifiers returns a slice of identifier markup for the object names of the
+// elements of t. If forceParens is true, parentheses are inserted even if
+// there is only one element; otherwise parentheses are omitted for that case.
+func identifiers(t *types.Tuple, forceParens bool) *xpb.MarkedSource {
+	ms := new(xpb.MarkedSource)
+
+	for i := 0; i < t.Len(); i++ {
+		ms.Child = append(ms.Child, &xpb.MarkedSource{
+			Kind:    xpb.MarkedSource_IDENTIFIER,
+			PreText: objectName(t.At(i)),
+		})
+	}
+	if forceParens || len(ms.Child) != 1 {
+		ms.PreText = "("
+		ms.PostText = ")"
+		if len(ms.Child) > 1 {
+			ms.PostChildText = ", "
+		}
+	}
+	return ms
 }
 
 // FileVName returns a VName for path relative to the package base.
