@@ -104,9 +104,9 @@ message Location {
 
   // Deprecated: use span instead
   // The starting point of the location.
-  Point start = 3;
+  Point start = 3 [deprecated = true];
   // The ending point of the location.
-  Point end = 4;
+  Point end = 4 [deprecated = true];
 
   // If kind == SPAN, this is the represented span within the file.
   common.Span span = 5;
