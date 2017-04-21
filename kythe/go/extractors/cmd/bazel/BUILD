@@ -22,9 +22,22 @@ go_binary(
     ],
 )
 
+go_binary(
+    name = "extract_kindex",
+    srcs = ["extract_kindex.go"],
+    deps = [
+        "//kythe/go/extractors/bazel",
+        "//kythe/go/platform/kindex",
+        "//kythe/go/util/vnameutil",
+        "//third_party/bazel:extra_actions_base_proto_go",
+        "@go_protobuf//:proto",
+        "@go_stringset//:stringset",
+    ],
+)
+
 # An action listener that attaches the Go extractor action to Go compilations.
 action_listener(
-    name = "extract_kindex",
+    name = "extract_kindex_go",
     extra_actions = [":extra_action"],
     mnemonics = ["GoCompile"],
     visibility = ["//visibility:public"],
