@@ -1941,6 +1941,22 @@ cxx_indexer_test(
     tags = ["marked_source"],
 )
 
+cxx_indexer_test(
+    name = "objc_marked_source",
+    srcs = ["objc/marked_method.m"],
+    convert_marked_source = True,
+    objc = True,
+    tags = ["marked_source", "objc"],
+)
+
+cxx_indexer_test(
+    name = "objc_marked_source_attr__Nullable",
+    srcs = ["objc/marked_attr__Nullable.m"],
+    convert_marked_source = True,
+    objc = True,
+    tags = ["marked_source", "objc"],
+)
+
 test_suite(
     name = "indexer_marked_source",
     tags = ["marked_source"],

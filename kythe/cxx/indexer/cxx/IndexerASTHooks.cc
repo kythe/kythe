@@ -4944,6 +4944,12 @@ bool IndexerASTVisitor::VisitObjCMethodDecl(const clang::ObjCMethodDecl *Decl) {
   auto Marks = MarkedSources.Generate(Decl);
   auto Node = BuildNodeIdForDecl(Decl);
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
+  // TODO(salguarnieri) Use something more honest for the name in the marked
+  // source. The "name" of an Objective-C method is not a single range in the
+  // source code. Ex: -(void) myFunc:(int)data except:(int)moreData should have
+  // the name "myFunc:except:".
+  Marks.set_name_range(NameRange);
+  Marks.set_marked_source_end(Decl->getSourceRange().getEnd());
   auto NameRangeInContext(
       RangeInCurrentContext(Decl->isImplicit(), Node, NameRange));
   MaybeRecordDefinitionRange(NameRangeInContext, Node);

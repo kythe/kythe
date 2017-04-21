@@ -389,6 +389,26 @@ class DeclAnnotator : public clang::DeclVisitor<DeclAnnotator> {
       InsertAnnotation(type_lhs, Annotation{Annotation::Type});
     }
   }
+
+  void VisitObjCMethodDecl(clang::ObjCMethodDecl *decl) {
+    // TODO(salguarneri) Do something sensible for selectors and arguments.
+    // Selectors are effectively the name of the method, but the selectors are
+    // interrupted in source code by parameters, so we don't have a single range
+    // for the method name or the method parameters. For example:
+    // -(void) myFunc:(int)size withTimeout:(int)time. The "name" should be
+    // myFunc:withTimeout and the arguments should be something like
+    // "(int)size, (int)time".
+    auto ret_type_range = ExpandRangeBySingleToken(
+        cache_->source_manager(), cache_->lang_options(),
+        decl->getReturnTypeSourceRange());
+    if (ret_type_range.isValid()) {
+      InsertAnnotation(ret_type_range, Annotation{Annotation::Type});
+    } else {
+      LOG(WARNING) << "Invalid return type range for "
+                   << decl->getNameAsString();
+    }
+  }
+
   void Annotate(const clang::NamedDecl *named_decl) {
     Visit(const_cast<clang::NamedDecl *>(named_decl));
     CompleteMarkedSource();
@@ -479,16 +499,14 @@ bool MarkedSourceGenerator::WillGenerateMarkedSource() const {
   if (decl_->isImplicit() || implicit_) {
     return false;
   }
-  if (llvm::isa<clang::FunctionDecl>(decl_) ||
-      llvm::isa<clang::VarDecl>(decl_) ||
-      llvm::isa<clang::NamespaceDecl>(decl_) ||
-      llvm::isa<clang::TagDecl>(decl_) ||
-      llvm::isa<clang::TypedefNameDecl>(decl_) ||
-      llvm::isa<clang::FieldDecl>(decl_) ||
-      llvm::isa<clang::EnumConstantDecl>(decl_)) {
-    return true;
-  }
-  return false;
+  return llvm::isa<clang::FunctionDecl>(decl_) ||
+         llvm::isa<clang::VarDecl>(decl_) ||
+         llvm::isa<clang::NamespaceDecl>(decl_) ||
+         llvm::isa<clang::TagDecl>(decl_) ||
+         llvm::isa<clang::TypedefNameDecl>(decl_) ||
+         llvm::isa<clang::FieldDecl>(decl_) ||
+         llvm::isa<clang::EnumConstantDecl>(decl_) ||
+         llvm::isa<clang::ObjCMethodDecl>(decl_);
 }
 
 std::string GetDeclName(const clang::LangOptions &lang_options,
@@ -794,6 +812,8 @@ MaybeFew<MarkedSource> MarkedSourceGenerator::GenerateMarkedSource(
     } else {
       return GenerateMarkedSourceUsingSource(decl_id);
     }
+  } else if (llvm::isa<clang::ObjCMethodDecl>(decl_)) {
+    return GenerateMarkedSourceUsingSource(decl_id);
   }
   return GenerateMarkedSourceForNamedDecl(decl_);
 }
