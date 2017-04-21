@@ -63,11 +63,11 @@ class AssertionParser;
   EQUALS "="
   COLON ":"
   PLUS "+"
-  HASH "#"
 ;
 %token <string> IDENTIFIER "identifier"
 %token <string> STRING "string"
 %token <string> NUMBER "number"
+%token <string> HASH_NUMBER "hashnumber"
 %type <node> exp
 %type <node> atom
 %type <node> goal
@@ -154,8 +154,8 @@ location_spec:
 
 location_spec_hash:
     location_spec { $$ = $1; }
-  | HASH "number" location_spec {
-    context.SetTopLocationSpecMatchNumber($2); $$ = $3;
+  | HASH_NUMBER location_spec {
+    context.SetTopLocationSpecMatchNumber($1); $$ = $2;
   }
 
 %%

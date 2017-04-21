@@ -177,8 +177,9 @@ void AssertionParser::PushAbsoluteLocationSpec(const std::string &for_token,
 
 void AssertionParser::SetTopLocationSpecMatchNumber(const std::string &number) {
   if (!location_spec_stack_.empty()) {
+    // number is "#"{blank}*{int}
     location_spec_stack_.back().must_be_unambiguous = false;
-    location_spec_stack_.back().match_number = atoi(number.c_str());
+    location_spec_stack_.back().match_number = atoi(number.c_str() + 1);
   }
 }
 
@@ -187,8 +188,17 @@ Identifier *AssertionParser::PathIdentifierFor(
     const std::string &default_root) {
   if (path_frag.empty()) {
     return verifier_.IdentifierFor(location, "/");
-  } else if (path_frag[0] != '/') {
-    return verifier_.IdentifierFor(location, default_root + path_frag);
+  }
+  std::string sigil;
+  if (path_frag[0] == '#' || path_frag[0] == '%') {
+    sigil = path_frag[0];
+    if (path_frag.size() == 1) {
+      return verifier_.IdentifierFor(location, sigil);
+    }
+  }
+  if (path_frag[sigil.size()] != '/') {
+    return verifier_.IdentifierFor(
+        location, sigil + default_root + path_frag.substr(sigil.size()));
   }
   return verifier_.IdentifierFor(location, path_frag);
 }

@@ -23,7 +23,7 @@
 static size_t loc_ofs;
 %}
 %option noyywrap nounput batch debug noinput bison-bridge
-id    [_a-zA-Z/][a-zA-Z_0-9/]*
+id    [%#]?[_a-zA-Z/][a-zA-Z_0-9/]*
 int   [0-9]+
 blank [ \t]
 
@@ -98,7 +98,9 @@ blank [ \t]
 "!"        return yy::AssertionParserImpl::token::BANG;
 ":"        return yy::AssertionParserImpl::token::COLON;
 "+"        return yy::AssertionParserImpl::token::PLUS;
-"#"        return yy::AssertionParserImpl::token::HASH;
+"#"{blank}*{int} {
+    yylval->string = yytext; return yy::AssertionParserImpl::token::HASH_NUMBER;
+}
 {int}      yylval->string = yytext; return yy::AssertionParserImpl::token::NUMBER;
 {id}       yylval->string = yytext; return yy::AssertionParserImpl::token::IDENTIFIER;
 \"(\\.|[^\\"])*\" {

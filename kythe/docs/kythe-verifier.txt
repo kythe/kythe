@@ -269,6 +269,15 @@ with an evar:
 
   #- SomeNode param.Ordinal SomeParam
 
+Kythe internals can generate edge kinds that begin with $$%$$ or $$#$$. The
+following edge kinds are equivalent:
+
+  #- SomeInternal %impl Target
+  #- SomeInternal %/kythe/edge/impl Target
+
+  #- SomeInternal #implTwo Target
+  #- SomeInternal #/kythe/edge/implTwo Target
+
 === Node goals
 
 The goal `evar-exp . name-literal value-exp` is satisfied when `evar-exp`
@@ -279,6 +288,14 @@ fact called `/kythe/name-literal`. For example:
 
 generates a goal that can be satisfied when there exists a node with a fact
 called `/kythe/content`.
+
+Similar to internal edge kinds, the following fact names are equivalent:
+
+  #- SomeInternal.%fact value
+  #- SomeInternal.%/kythe/fact value
+
+  #- SomeInternal.#factTwo value
+  #- SomeInternal.#/kythe/factTwo value
 
 === Getting feedback
 

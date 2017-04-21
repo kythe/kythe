@@ -1528,6 +1528,18 @@ fact_value: "43"
   ASSERT_FALSE(v.VerifyAllGoals());
 }
 
+TEST(VerifierUnitTest, PercentContentFactFails) {
+  Verifier v;
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+#- SomeNode.%content 42
+source { root:"1" }
+fact_name: "%/kythe/content"
+fact_value: "43"
+})"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_FALSE(v.VerifyAllGoals());
+}
+
 TEST(VerifierUnitTest, SpacesDontDisableRules) {
   Verifier v;
   ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
@@ -1546,6 +1558,62 @@ TEST(VerifierUnitTest, DefinesEdgePasses) {
 #- SomeAnchor defines SomeNode
 source { root:"1" }
 edge_kind: "/kythe/edge/defines"
+target { root:"2" }
+fact_name: "/"
+fact_value: ""
+})"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_TRUE(v.VerifyAllGoals());
+}
+
+TEST(VerifierUnitTest, HashDefinesEdgePasses) {
+  Verifier v;
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+#- SomeAnchor #defines SomeNode
+source { root:"1" }
+edge_kind: "#/kythe/edge/defines"
+target { root:"2" }
+fact_name: "/"
+fact_value: ""
+})"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_TRUE(v.VerifyAllGoals());
+}
+
+TEST(VerifierUnitTest, HashFullDefinesEdgePasses) {
+  Verifier v;
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+#- SomeAnchor #/kythe/edge/defines SomeNode
+source { root:"1" }
+edge_kind: "#/kythe/edge/defines"
+target { root:"2" }
+fact_name: "/"
+fact_value: ""
+})"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_TRUE(v.VerifyAllGoals());
+}
+
+TEST(VerifierUnitTest, PercentDefinesEdgePasses) {
+  Verifier v;
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+#- SomeAnchor %defines SomeNode
+source { root:"1" }
+edge_kind: "%/kythe/edge/defines"
+target { root:"2" }
+fact_name: "/"
+fact_value: ""
+})"));
+  ASSERT_TRUE(v.PrepareDatabase());
+  ASSERT_TRUE(v.VerifyAllGoals());
+}
+
+TEST(VerifierUnitTest, PercentFullDefinesEdgePasses) {
+  Verifier v;
+  ASSERT_TRUE(v.LoadInlineProtoFile(R"(entries {
+#- SomeAnchor %/kythe/edge/defines SomeNode
+source { root:"1" }
+edge_kind: "%/kythe/edge/defines"
 target { root:"2" }
 fact_name: "/"
 fact_value: ""
