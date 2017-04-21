@@ -73,6 +73,7 @@ func TestExtractor(t *testing.T) {
 		gotInfo       *xapb.SpawnInfo
 		checkedInputs []string
 		checkedEnv    []string
+		gotUnit       *kindex.Compilation
 	)
 	config := &Config{
 		Corpus:   testCorpus,
@@ -94,7 +95,7 @@ func TestExtractor(t *testing.T) {
 		},
 
 		IsSource: func(path string) bool { return filepath.Ext(path) == ".src" },
-		Fixup:    func(unit *kindex.Compilation) error { return nil },
+		Fixup:    func(unit *kindex.Compilation) error { gotUnit = unit; return nil },
 
 		// All the files are empty, and all the children are above average.
 		OpenRead: func(_ context.Context, path string) (io.ReadCloser, error) {
@@ -107,6 +108,11 @@ func TestExtractor(t *testing.T) {
 	cu, err := config.Extract(context.Background(), xa)
 	if err != nil {
 		t.Errorf("Error in extraction: %v", err)
+	}
+
+	// Verify that the fixup callback got passed the unit that was returned.
+	if cu != gotUnit {
+		t.Errorf("Wrong unit passed to fixup: got %p, want %p", gotUnit, cu)
 	}
 
 	// Verify that the info check callback was invoked.
