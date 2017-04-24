@@ -28,6 +28,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"time"
 
 	"bitbucket.org/creachadair/stringset"
@@ -51,6 +52,7 @@ var (
 	excludeFiles = flag.String("exclude", "", `RE2 matching files to exclude (if "", exclude none)`)
 	sourceFiles  = flag.String("source", "", `RE2 matching source files (if "", select none)`)
 	sourceArgs   = flag.String("args", "", `RE2 matching arguments to consider source files (if "", select none)`)
+	scopedSource = flag.Bool("scoped", false, "Only match source paths within the target package")
 )
 
 func init() {
@@ -71,6 +73,12 @@ To designate paths as source inputs, set -source to a RE2 regexp matching them,
 or set -args to a RE2 regexp matching command-line arguments that should be
 considered source paths.  At least one of these must be set, and it is safe to
 set both; the results will be merged.
+
+If -scoped is true, a file selected by matching the -source regexp will only be
+considered as a source input if it also contains the Bazel package name as a
+substring. For example, when building //foo/bar/baz:quux with -source '\.go$'
+and -scoped set, a source file like "workdir/blah/foo/bar/baz/my/file.go" will
+be a source input, but "workdir/blah/zip/zip/my/file.go" will not.
 
 [*] https://bazel.build/versions/master/docs/be/extra-actions.html
 
@@ -96,6 +104,11 @@ func main() {
 	case *sourceFiles == "" && *sourceArgs == "":
 		log.Fatal("You must set at least one of --source and --args")
 	}
+
+	// Ensure the extra action can be loaded.
+	info := mustLoadAction(*extraAction)
+	pkg := packageName(info.GetOwner())
+	log.Printf("Extra action for target %q (package %q)", info.GetOwner(), pkg)
 
 	config := &bazel.Config{
 		Corpus:     *corpus,
@@ -130,7 +143,13 @@ func main() {
 	// If there is a source matching regexp, set a filter for it.
 	if *sourceFiles != "" {
 		r := mustRegexp(*sourceFiles, "source file")
-		config.IsSource = r.MatchString
+		if *scopedSource {
+			config.IsSource = func(path string) bool {
+				return r.MatchString(path) && pathInPackage(path, pkg)
+			}
+		} else {
+			config.IsSource = r.MatchString
+		}
 	}
 
 	// If we have been asked to include source files from the argument list,
@@ -150,7 +169,7 @@ func main() {
 	}
 
 	start := time.Now()
-	cu, err := config.Extract(context.Background(), mustLoadAction(*extraAction))
+	cu, err := config.Extract(context.Background(), info)
 	if err != nil {
 		log.Fatalf("Extraction failed: %v", err)
 	}
@@ -215,4 +234,15 @@ func mustRegexp(expr, description string) *regexp.Regexp {
 		log.Fatalf("Invalid %s regexp: %v", description, err)
 	}
 	return r
+}
+
+// packageName extracts the base name of a Bazel package from a target label,
+// for example //foo/bar:baz ⇒ foo/bar.
+func packageName(label string) string {
+	return strings.SplitN(strings.TrimPrefix(label, "//"), ":", 2)[0]
+}
+
+// pathInPackage reports whether path contains pkg as a directory fragment.
+func pathInPackage(path, pkg string) bool {
+	return strings.Contains(path, "/"+pkg+"/") || strings.HasPrefix(path, pkg+"/")
 }

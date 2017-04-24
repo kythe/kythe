@@ -15,7 +15,8 @@
 #
 
 def kindex_extractor(name, corpus, language, rules='', mnemonics=None,
-                     include='', exclude='', sources='', source_args=''):
+                     include='', exclude='', sources='', source_args='',
+                     scoped=True):
   """This macro expands to an extra action listener that invokes extract_kindex
   on matching spawn actions to produce a Kythe compilation record in .kindex
   format.
@@ -31,7 +32,13 @@ def kindex_extractor(name, corpus, language, rules='', mnemonics=None,
   xa_name = name + "_extra_action"
   xa_tool = "//kythe/go/extractors/cmd/bazel:extract_kindex"
   xa_output = "$(ACTION_ID).%s.kindex" % language
-  xa_args = {}
+  xa_args = {
+      "extra_action": "$(EXTRA_ACTION_FILE)",
+      "corpus":       corpus,
+      "language":     language,
+      "output":       "$(output %s)" % xa_output,
+      "scoped":       "true" if scoped else "false",
+  }
   if include:
     xa_args['include'] = _quote_re(include)
   if exclude:
@@ -49,14 +56,9 @@ def kindex_extractor(name, corpus, language, rules='', mnemonics=None,
       out_templates = [xa_output],
       tools = [xa_tool],
       cmd = (
-        "$(location %s)" % xa_tool +
-        " --extra_action=$(EXTRA_ACTION_FILE)" +
-        " --corpus="+corpus +
-        " --language="+language +
-        " --output=$(output %s)" % xa_output +
-        " " +
-        " ".join(sorted(["--%s=%s" % (key, value)
-                         for key, value in xa_args.items()]))
+        "$(location %s) " % xa_tool + " ".join(sorted([
+            "--%s=%s" % (key, value) for key, value in xa_args.items()
+        ]))
       ),
   )
 
