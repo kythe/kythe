@@ -148,9 +148,9 @@ public class JavacOptionsUtils {
 
   private static void updateArgumentsFromJavaDetails(
       List<String> arguments, JavaDetails javaDetails) {
-    updatePathArguments(arguments, Option.CP, javaDetails.getClasspathList());
-    updatePathArguments(arguments, Option.SOURCEPATH, javaDetails.getSourcepathList());
-    updatePathArguments(arguments, Option.BOOTCLASSPATH, javaDetails.getBootclasspathList());
+    updatePathArguments(arguments, Option.CLASS_PATH, javaDetails.getClasspathList());
+    updatePathArguments(arguments, Option.SOURCE_PATH, javaDetails.getSourcepathList());
+    updatePathArguments(arguments, Option.BOOT_CLASS_PATH, javaDetails.getBootclasspathList());
 
     // just append the Java options to the arguments, separated by spaces
     // (assumes that this is a series of "option" followed by "value" entries)
@@ -161,10 +161,10 @@ public class JavacOptionsUtils {
 
   private static void updateArgumentsFromSystemProperties(List<String> arguments) {
     ImmutableList.Builder<String> paths = ImmutableList.builder();
-    paths.addAll(extractArgumentPaths(arguments, Option.BOOTCLASSPATH));
+    paths.addAll(extractArgumentPaths(arguments, Option.BOOT_CLASS_PATH));
     paths.addAll(JRE_PATHS);
 
-    arguments.add(Option.BOOTCLASSPATH.getText());
+    arguments.add(Option.BOOT_CLASS_PATH.getPrimaryName());
     arguments.add(PATH_JOINER.join(paths.build()));
   }
 
@@ -187,14 +187,14 @@ public class JavacOptionsUtils {
     }
 
     // If this is for the bootclasspath, append the paths to the system jars.
-    if (Option.BOOTCLASSPATH.equals(option)) {
+    if (Option.BOOT_CLASS_PATH.equals(option)) {
       pathEntries.addAll(JRE_PATHS);
     }
 
     ImmutableList<String> paths = pathEntries.build();
 
     if (!paths.isEmpty()) {
-      arguments.add(option.getText());
+      arguments.add(option.getPrimaryName());
       arguments.add(PATH_JOINER.join(paths));
     }
   }
@@ -208,8 +208,8 @@ public class JavacOptionsUtils {
     for (int i = 0; i < arguments.size(); i++) {
       if (option.matches(arguments.get(i))) {
         if (i + 1 >= arguments.size()) {
-          throw new IllegalArgumentException(String.format("Malformed %s argument: %s",
-                  option.getText(), arguments));
+          throw new IllegalArgumentException(
+              String.format("Malformed %s argument: %s", option.getPrimaryName(), arguments));
         }
         arguments.remove(i);
         for (String path : PATH_SPLITTER.split(arguments.remove(i))) {

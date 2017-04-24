@@ -23,6 +23,7 @@ import com.sun.tools.javac.main.Arguments;
 import com.sun.tools.javac.main.Option;
 import com.sun.tools.javac.util.Context;
 import com.sun.tools.javac.util.Options;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -50,21 +51,21 @@ public class Javac8Wrapper extends AbstractJavacWrapper {
     }
 
     // Retrieve the list of class paths provided by the -classpath argument.
-    List<String> classPaths = splitPaths(options.get(Option.CLASSPATH));
+    List<String> classPaths = splitPaths(options.get(Option.CLASS_PATH));
 
     // Retrieve the list of source paths provided by the -sourcepath argument.
-    List<String> sourcePaths = splitPaths(options.get(Option.SOURCEPATH));
+    List<String> sourcePaths = splitPaths(options.get(Option.SOURCE_PATH));
 
     // Retrieve the list of processor paths provided by the -processorpath argument.
-    List<String> processorPaths = splitPaths(options.get(Option.PROCESSORPATH));
+    List<String> processorPaths = splitPaths(options.get(Option.PROCESSOR_PATH));
 
     // Retrieve the list of processors provided by the -processor argument.
     List<String> processors = splitCSV(options.get(Option.PROCESSOR));
 
     EnumSet<Option> claimed =
         EnumSet.of(
-            Option.CLASSPATH, Option.SOURCEPATH,
-            Option.PROCESSORPATH, Option.PROCESSOR);
+            Option.CLASS_PATH, Option.SOURCE_PATH,
+            Option.PROCESSOR_PATH, Option.PROCESSOR);
 
     // Retrieve all other javac options.
     List<String> completeOptions = new ArrayList<>();
@@ -72,11 +73,11 @@ public class Javac8Wrapper extends AbstractJavacWrapper {
       if (!claimed.contains(opt)) {
         String value = options.get(opt);
         if (value != null) {
-          if (opt.getText().endsWith(":")) {
-            completeOptions.add(opt.getText() + value);
+          if (opt.getPrimaryName().endsWith(":")) {
+            completeOptions.add(opt.getPrimaryName() + value);
           } else {
-            completeOptions.add(opt.getText());
-            if (!value.equals(opt.getText())) {
+            completeOptions.add(opt.getPrimaryName());
+            if (!value.equals(opt.getPrimaryName())) {
               completeOptions.add(value);
             }
           }

@@ -113,7 +113,9 @@ public class CompilationUnitBasedJavaFileStore implements JavaFileStore {
       for (Kind kind : kinds) {
         if (fileName.endsWith(kind.extension)) {
           int lastDot = fileName.lastIndexOf('.');
-          String clsName = packageName + "." + fileName.substring(0, lastDot);
+          // files with kind == OTHER may not have an externaion
+          String simpleName = lastDot == -1 ? fileName : fileName.substring(0, lastDot);
+          String clsName = packageName + "." + simpleName;
           files.add(
               new CustomJavaFileObject(
                   contentProvider,

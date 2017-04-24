@@ -67,7 +67,7 @@ public class JavacUtil {
     char[] nameChars = name.toCharArray();
     int dotIndex = len;
     while (true) {
-      ClassSymbol s = symtab.classes.get(names.fromChars(nameChars, 0, len));
+      ClassSymbol s = symtab.getClass(symtab.java_base, names.fromChars(nameChars, 0, len));
       if (s != null) {
         return s;
       }

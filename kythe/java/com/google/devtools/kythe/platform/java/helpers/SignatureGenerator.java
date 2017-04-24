@@ -32,6 +32,7 @@ import com.sun.tools.javac.code.Type.ErrorType;
 import com.sun.tools.javac.code.Type.ForAll;
 import com.sun.tools.javac.code.Type.IntersectionClassType;
 import com.sun.tools.javac.code.Type.MethodType;
+import com.sun.tools.javac.code.Type.ModuleType;
 import com.sun.tools.javac.code.Type.PackageType;
 import com.sun.tools.javac.code.Type.TypeVar;
 import com.sun.tools.javac.code.Type.UndetVar;
@@ -471,5 +472,11 @@ public class SignatureGenerator
     e.getEnclosingElement().accept(this, sb);
     sb.append(".").append(e.getEnclosingElement().getSimpleName()).append("()");
     return null;
+  }
+
+  @Override
+  public Void visitModuleType(ModuleType moduleType, StringBuilder sb) {
+    // TODO(b/37488599): implement this method for full Java 9 support
+    throw new UnsupportedOperationException();
   }
 }

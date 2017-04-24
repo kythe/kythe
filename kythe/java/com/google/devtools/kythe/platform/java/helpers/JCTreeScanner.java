@@ -37,6 +37,7 @@ import com.sun.source.tree.DoWhileLoopTree;
 import com.sun.source.tree.EmptyStatementTree;
 import com.sun.source.tree.EnhancedForLoopTree;
 import com.sun.source.tree.ErroneousTree;
+import com.sun.source.tree.ExportsTree;
 import com.sun.source.tree.ExpressionStatementTree;
 import com.sun.source.tree.ForLoopTree;
 import com.sun.source.tree.IdentifierTree;
@@ -52,12 +53,16 @@ import com.sun.source.tree.MemberSelectTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.ModifiersTree;
+import com.sun.source.tree.ModuleTree;
 import com.sun.source.tree.NewArrayTree;
 import com.sun.source.tree.NewClassTree;
+import com.sun.source.tree.OpensTree;
 import com.sun.source.tree.PackageTree;
 import com.sun.source.tree.ParameterizedTypeTree;
 import com.sun.source.tree.ParenthesizedTree;
 import com.sun.source.tree.PrimitiveTypeTree;
+import com.sun.source.tree.ProvidesTree;
+import com.sun.source.tree.RequiresTree;
 import com.sun.source.tree.ReturnTree;
 import com.sun.source.tree.SwitchTree;
 import com.sun.source.tree.SynchronizedTree;
@@ -69,6 +74,7 @@ import com.sun.source.tree.TypeCastTree;
 import com.sun.source.tree.TypeParameterTree;
 import com.sun.source.tree.UnaryTree;
 import com.sun.source.tree.UnionTypeTree;
+import com.sun.source.tree.UsesTree;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.tree.WhileLoopTree;
 import com.sun.source.tree.WildcardTree;
@@ -93,6 +99,7 @@ import com.sun.tools.javac.tree.JCTree.JCContinue;
 import com.sun.tools.javac.tree.JCTree.JCDoWhileLoop;
 import com.sun.tools.javac.tree.JCTree.JCEnhancedForLoop;
 import com.sun.tools.javac.tree.JCTree.JCErroneous;
+import com.sun.tools.javac.tree.JCTree.JCExports;
 import com.sun.tools.javac.tree.JCTree.JCExpressionStatement;
 import com.sun.tools.javac.tree.JCTree.JCFieldAccess;
 import com.sun.tools.javac.tree.JCTree.JCForLoop;
@@ -107,11 +114,15 @@ import com.sun.tools.javac.tree.JCTree.JCMemberReference;
 import com.sun.tools.javac.tree.JCTree.JCMethodDecl;
 import com.sun.tools.javac.tree.JCTree.JCMethodInvocation;
 import com.sun.tools.javac.tree.JCTree.JCModifiers;
+import com.sun.tools.javac.tree.JCTree.JCModuleDecl;
 import com.sun.tools.javac.tree.JCTree.JCNewArray;
 import com.sun.tools.javac.tree.JCTree.JCNewClass;
+import com.sun.tools.javac.tree.JCTree.JCOpens;
 import com.sun.tools.javac.tree.JCTree.JCPackageDecl;
 import com.sun.tools.javac.tree.JCTree.JCParens;
 import com.sun.tools.javac.tree.JCTree.JCPrimitiveTypeTree;
+import com.sun.tools.javac.tree.JCTree.JCProvides;
+import com.sun.tools.javac.tree.JCTree.JCRequires;
 import com.sun.tools.javac.tree.JCTree.JCReturn;
 import com.sun.tools.javac.tree.JCTree.JCSkip;
 import com.sun.tools.javac.tree.JCTree.JCSwitch;
@@ -124,6 +135,7 @@ import com.sun.tools.javac.tree.JCTree.JCTypeIntersection;
 import com.sun.tools.javac.tree.JCTree.JCTypeParameter;
 import com.sun.tools.javac.tree.JCTree.JCTypeUnion;
 import com.sun.tools.javac.tree.JCTree.JCUnary;
+import com.sun.tools.javac.tree.JCTree.JCUses;
 import com.sun.tools.javac.tree.JCTree.JCVariableDecl;
 import com.sun.tools.javac.tree.JCTree.JCWhileLoop;
 import com.sun.tools.javac.tree.JCTree.JCWildcard;
@@ -728,5 +740,68 @@ public class JCTreeScanner<R, P> implements TreeVisitor<R, P> {
   public final R visitPackage(JCPackageDecl tree, P p) {
     R r = scan(tree.annotations, p);
     return scanAndReduce(tree.pid, p, r);
+  }
+
+  @Override
+  public R visitModule(ModuleTree tree, P p) {
+    return visitModule((JCModuleDecl) tree, p);
+  }
+
+  public R visitModule(JCModuleDecl tree, P p) {
+    R r = scan(tree.mods.annotations, p);
+    r = scanAndReduce(tree.getName(), p, r);
+    r = scanAndReduce(tree.getDirectives(), p, r);
+    return r;
+  }
+
+  @Override
+  public R visitExports(ExportsTree tree, P p) {
+    return visitExports((JCExports) tree, p);
+  }
+
+  public R visitExports(JCExports tree, P p) {
+    R r = scan(tree.getPackageName(), p);
+    r = scanAndReduce(tree.getModuleNames(), p, r);
+    return r;
+  }
+
+  @Override
+  public R visitOpens(OpensTree tree, P p) {
+    return visitOpens((JCOpens) tree, p);
+  }
+
+  public R visitOpens(JCOpens tree, P p) {
+    R r = scan(tree.getPackageName(), p);
+    r = scanAndReduce(tree.getModuleNames(), p, r);
+    return r;
+  }
+
+  @Override
+  public R visitProvides(ProvidesTree tree, P p) {
+    return visitProvides((JCProvides) tree, p);
+  }
+
+  public R visitProvides(JCProvides tree, P p) {
+    R r = scan(tree.serviceName, p);
+    r = scanAndReduce(tree.implNames, p, r);
+    return r;
+  }
+
+  @Override
+  public R visitRequires(RequiresTree tree, P p) {
+    return visitRequires((JCRequires) tree, p);
+  }
+
+  public R visitRequires(JCRequires tree, P p) {
+    return scan(tree.getModuleName(), p);
+  }
+
+  @Override
+  public final R visitUses(UsesTree tree, P p) {
+    return visitUses((JCUses) tree, p);
+  }
+
+  public final R visitUses(JCUses tree, P p) {
+    return scan(tree.qualid, p);
   }
 }

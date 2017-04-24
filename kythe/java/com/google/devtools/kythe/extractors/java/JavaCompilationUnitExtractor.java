@@ -812,7 +812,7 @@ public class JavaCompilationUnitExtractor {
   /** Returns a map from a classfile's {@link URI} to its sourcefile path's basename. */
   private static Map<URI, String> mapClassesToSources(Symtab syms) {
     Map<URI, String> sourceBaseNames = new HashMap<>();
-    for (ClassSymbol sym : syms.classes.values()) {
+    for (ClassSymbol sym : syms.getAllClasses()) {
       if (sym.sourcefile != null && sym.classfile != null) {
         String path = sym.sourcefile.toUri().getPath();
         if (path != null) {
