@@ -54,23 +54,40 @@ arc feature feature-name # OR git checkout -b feature-name
 # do some changes
 git add ...                    # add the changes
 git commit -m "Commit message" # commit the changes
-arc diff --browse              # send the commit for review
+arc diff                       # send the commit for review
 # go through code review in Phabricator UI...
 # get change accepted
+{% endhighlight %}
 
+You can reply to comments in
+[Differential](https://phabricator-dot-kythe-repo.appspot.com/differential/)
+inside Phabriactor. To submit additional commits to that same review, just git
+checkout to the same branch as your original arc feature, and then either
+`git commit` to make new commits or `git commit --amend` to tack it on to the
+last existing commit. Finally, just re-run `arc diff` to automatically send out
+another review request.
+
+**After someone has accepted your diff** in phabiractor (you should see a green
+checkbox saying "This revision is now ready to land"), core contributors with
+write access to the Kythe respository run this command from their arc feature
+branch to merge the change into master and push it to Github:
+
+{% highlight bash %}
 arc land                       # merge the change into master
 {% endhighlight %}
 
-For core contributors with write access to the Kythe repository, `arc land` will
-merge the change into master and push it to Github.  Others should request that
-someone else land their change for them once the change has been reviewed and
-accepted.
+Others should request that someone else land their change for them once the
+change has been reviewed and accepted (basically, ask a core contributor to
+run these commands):
 
 {% highlight bash %}
 # Land a reviewed change
 arc patch D1234
 arc land
 {% endhighlight %}
+
+Once landed, it should show up in github
+[commit list](https://github.com/google/kythe/commits/master).
 
 ### Style formatting
 
