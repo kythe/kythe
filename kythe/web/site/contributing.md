@@ -43,14 +43,15 @@ popd
 echo "export PATH=\"${ARC_PATH}/arcanist/bin:\$PATH\"" >> ~/.bashrc
 source ~/.bashrc
 
-arc install-certificate # in Kythe repository root
+cd $KYTHE_DIR  # your kythe repository root
+arc install-certificate
 {% endhighlight %}
 
 ### Using arcanist
 
 {% highlight bash %}
 git checkout master
-arc feature feature-name # OR git checkout -b feature-name
+git checkout -b feature-name # OR arc feature feature-name
 # do some changes
 git add ...                    # add the changes
 git commit -m "Commit message" # commit the changes
@@ -61,14 +62,14 @@ arc diff                       # send the commit for review
 
 You can reply to comments in
 [Differential](https://phabricator-dot-kythe-repo.appspot.com/differential/)
-inside Phabriactor. To submit additional commits to that same review, just git
-checkout to the same branch as your original arc feature, and then either
+inside Phabriactor. To submit additional commits to that same review, just
+`git checkout` to the same branch as your original arc feature, and then either
 `git commit` to make new commits or `git commit --amend` to tack it on to the
 last existing commit. Finally, just re-run `arc diff` to automatically send out
 another review request.
 
 **After someone has accepted your diff** in phabiractor (you should see a green
-checkbox saying "This revision is now ready to land"), core contributors with
+checkbox saying "This revision is now ready to land"). Core contributors with
 write access to the Kythe respository run this command from their arc feature
 branch to merge the change into master and push it to Github:
 

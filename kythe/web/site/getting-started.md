@@ -9,11 +9,18 @@ permalink: /getting-started/
 
 ## Get the Kythe source code
 
+Decide where you want to store kythe code, e.g. `~/my/code/dir` (note that
+after we clone from git, it will append 'kythe' as the last directory).
+
 {% highlight bash %}
+cd ~/my/code/dir
 git clone https://github.com/google/kythe.git
 {% endhighlight %}
 
-Or if you will need to push and want to use ssh to authenticate to github:
+Also set the env var `KYTHE_DIR=~/my/code/dir/kythe` in your `.bashrc`
+while you're at it.
+
+If you use ssh to authenticate to github:
 {% highlight bash %}
 git clone git@github.com:google/kythe.git
 {% endhighlight %}
