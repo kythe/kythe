@@ -95,7 +95,7 @@ class Vistor {
        * repository-relative path.
        */
       private sourceRoot: string,
-      private offsetTables: Map<string, utf8.OffsetTable>) {}
+      private getOffsetTable: (path: string) => utf8.OffsetTable) {}
 
   /**
    * emit emits a Kythe entry, structured as a JSON object.  Defaults to
@@ -115,19 +115,6 @@ class Vistor {
     // absolute path even if in the source text imported it relatively.
     // Use path.relative to make it relative to the source root.
     return stripExtension(path.relative(this.sourceRoot, sourceFile.path));
-  }
-
-  /**
-   * Gets the utf8.OffsetTable for a path, creating and caching it if necessary.
-   */
-  getOffsetTable(path: string): utf8.OffsetTable {
-    let table = this.offsetTables.get(path);
-    if (!table) {
-      let buf = fs.readFileSync(path);
-      table = new utf8.OffsetTable(buf);
-      this.offsetTables.set(path, table);
-    }
-    return table;
   }
 
   /**
@@ -621,10 +608,15 @@ class Vistor {
  *
  * @param emit If provided, a function that receives objects as they are
  *     emitted; otherwise, they are printed to stdout.
+ * @param readFile If provided, a function that reads a file as bytes to a
+ *     Node Buffer.  It'd be nice to just reuse program.getSourceFile but
+ *     unfortunately that returns a (Unicode) string and we need to get at
+ *     each file's raw bytes for UTF-8<->UTF-16 conversions.
  */
 export function index(
     corpus: string, paths: string[], program: ts.Program,
-    emit?: (obj: {}) => void) {
+    emit?: (obj: {}) => void,
+    readFile: (path: string) => Buffer = fs.readFileSync) {
   // Note: we only call getPreEmitDiagnostics (which causes type checking to
   // happen) on the input paths as provided in paths.  This means we don't
   // e.g. type-check the standard library unless we were explicitly told to.
@@ -651,10 +643,20 @@ export function index(
   }
 
   let offsetTables = new Map<string, utf8.OffsetTable>();
+  const getOffsetTable = (path: string): utf8.OffsetTable => {
+    let table = offsetTables.get(path);
+    if (!table) {
+      let buf = readFile(path);
+      table = new utf8.OffsetTable(buf);
+      offsetTables.set(path, table);
+    }
+    return table;
+  }
+
   for (const path of paths) {
     let sourceFile = program.getSourceFile(path);
     let visitor = new Vistor(
-        corpus, program.getTypeChecker(), process.cwd(), offsetTables);
+        corpus, program.getTypeChecker(), process.cwd(), getOffsetTable);
     if (emit != null) {
       visitor.emit = emit;
     }
