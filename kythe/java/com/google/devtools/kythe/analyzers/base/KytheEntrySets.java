@@ -106,7 +106,7 @@ public class KytheEntrySets {
   @Deprecated
   public NodeBuilder newNode(String kind) {
     getStatisticsCollector().incrementCounter("deprecated-new-node-" + kind);
-    return new NodeBuilder(kind, null, language);
+    return new NodeBuilder(kind, Optional.empty(), language);
   }
 
   /** Returns a new {@link NodeBuilder} with the given node kind set. */
@@ -127,10 +127,7 @@ public class KytheEntrySets {
             .setSignature(getBuiltinSignature(name))
             .setProperty(
                 "code",
-                MarkedSource.newBuilder()
-                    .setPreText(name)
-                    .setKind(Kind.IDENTIFIER)
-                    .build());
+                MarkedSource.newBuilder().setPreText(name).setKind(Kind.IDENTIFIER).build());
     if (docUri.isPresent()) {
       setDocumentUriProperty(nodeBuilder, docUri.get());
     }
