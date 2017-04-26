@@ -209,3 +209,36 @@ func TestRevMatch(t *testing.T) {
 		}
 	}
 }
+
+func TestIsValidDigest(t *testing.T) {
+	tests := []struct {
+		input string
+		want  bool
+	}{
+		// String too short.
+		{"", false},
+		{"e3b0c4429", false},
+		{"E3B0C4429", false},
+		{"x y z", false},
+		{"<dir>", false},
+
+		// Invalid characters in the digest.
+		{"e3b-c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", false},
+		{"e3b0c?4298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b85+", false},
+		{"all your base are belong to us you have no chance to survive ha!", false},
+
+		// Correct format, correct case.
+		{"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", true},
+		{"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", true},
+		{"0000000000000000000000000000000000000000000000000000000000000000", true},
+
+		// Correct format, but case matters.
+		{"E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855", false},
+	}
+	for _, test := range tests {
+		got := IsValidDigest(test.input)
+		if got != test.want {
+			t.Errorf("IsValidDigest(%q): got %v, want %v", test.input, got, test.want)
+		}
+	}
+}
