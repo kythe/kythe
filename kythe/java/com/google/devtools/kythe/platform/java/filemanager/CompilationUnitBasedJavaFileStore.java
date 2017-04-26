@@ -110,17 +110,22 @@ public class CompilationUnitBasedJavaFileStore implements JavaFileStore {
     Set<CustomJavaFileObject> files = new HashSet<>();
     for (Entry<String, String> entry : entries.entrySet()) {
       String fileName = entry.getKey();
+      String digest = entry.getValue();
+      if (digest.equals(CompilationUnitFileTree.DIRECTORY_DIGEST)) {
+        // Don't include directories in the file listing.
+        continue;
+      }
       for (Kind kind : kinds) {
         if (fileName.endsWith(kind.extension)) {
           int lastDot = fileName.lastIndexOf('.');
-          // files with kind == OTHER may not have an externaion
+          // files with kind == OTHER may not have an extension.
           String simpleName = lastDot == -1 ? fileName : fileName.substring(0, lastDot);
           String clsName = packageName + "." + simpleName;
           files.add(
               new CustomJavaFileObject(
                   contentProvider,
-                  join(dirToLookIn, entry.getKey()),
-                  entry.getValue(),
+                  join(dirToLookIn, fileName),
+                  digest,
                   clsName,
                   kind,
                   encoding));
