@@ -80,7 +80,7 @@ export class OffsetTable {
    */
   offsets: Array<[number, number]>;
 
-  constructor(private buf: Buffer, private spanSize: number = 7) {
+  constructor(private buf: Buffer, private spanSize: number = 128) {
     this.build(buf);
   }
 
