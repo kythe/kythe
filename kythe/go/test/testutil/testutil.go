@@ -24,6 +24,8 @@ import (
 	"reflect"
 	"runtime"
 	"testing"
+
+	"github.com/golang/protobuf/proto"
 )
 
 func caller(up int) (file string, line int) {
@@ -34,9 +36,25 @@ func caller(up int) (file string, line int) {
 	return filepath.Base(file), line
 }
 
-// DeepEqual determines if expected is deeply equal to got, returning a detailed
-// error if not.
+// DeepEqual determines if expected is deeply equal to got, returning a
+// detailed error if not. It is okay for expected and got to be protobuf
+// message values.
 func DeepEqual(expected, got interface{}) error {
+	// Check for proto.Message types specifically; because protobuf generated
+	// types have complex conditions for equality, only do the reflective step
+	// if they are known not to be equivalent. This avoids spurious errors that
+	// may arise from messages that are equivalent but have different internal
+	// states (e.g., due to unrecognized fields, caching, etc.).
+	if epb, ok := expected.(proto.Message); ok {
+		if gpb, ok := got.(proto.Message); ok {
+			if proto.Equal(epb, gpb) {
+				return nil
+			}
+		}
+	}
+
+	// At this point, we either have non-protobuf values, or we know that the
+	// two are unequal.
 	et, gt := reflect.TypeOf(expected), reflect.TypeOf(got)
 	ev, gv := reflect.ValueOf(expected), reflect.ValueOf(got)
 
