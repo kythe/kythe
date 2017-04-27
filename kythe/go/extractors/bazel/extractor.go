@@ -75,6 +75,7 @@ type Config struct {
 	Corpus   string          // the default corpus label to use
 	Language string          // the language label to apply
 	Rules    vnameutil.Rules // rules for rewriting file VNames
+	Verbose  bool            // whether to emit verbose (per-file) logging
 
 	// If set, this function checks whether the given spawn action should be
 	// further processed. If it returns an error, the action will be rejected.
@@ -151,6 +152,12 @@ func (c *Config) openRead(ctx context.Context, path string) (io.ReadCloser, erro
 	return os.Open(path)
 }
 
+func (c *Config) logPrintf(msg string, args ...interface{}) {
+	if c.Verbose {
+		log.Printf(msg, args...)
+	}
+}
+
 // Extract extracts a compilation from the specified extra action info.
 func (c *Config) Extract(ctx context.Context, info *xapb.ExtraActionInfo) (*kindex.Compilation, error) {
 	si, err := proto.GetExtension(info, xapb.E_SpawnInfo_SpawnInfo)
@@ -211,7 +218,7 @@ func (c *Config) Extract(ctx context.Context, info *xapb.ExtraActionInfo) (*kind
 			inputs = append(inputs, path)
 			if c.isSource(path) {
 				sourceFiles.Add(path)
-				log.Printf("Matched source file from inputs: %q", path)
+				c.logPrintf("Matched source file from inputs: %q", path)
 			}
 			vname, ok := c.Rules.Apply(path)
 			if !ok {
@@ -224,7 +231,7 @@ func (c *Config) Extract(ctx context.Context, info *xapb.ExtraActionInfo) (*kind
 				VName: vname,
 			})
 		} else {
-			log.Printf("Excluding input file: %q", in)
+			c.logPrintf("Excluding input file: %q", in)
 		}
 	}
 	cu.Proto.SourceFile = sourceFiles.Elements()

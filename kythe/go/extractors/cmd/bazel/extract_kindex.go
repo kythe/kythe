@@ -53,6 +53,7 @@ var (
 	sourceFiles  = flag.String("source", "", `RE2 matching source files (if "", select none)`)
 	sourceArgs   = flag.String("args", "", `RE2 matching arguments to consider source files (if "", select none)`)
 	scopedSource = flag.Bool("scoped", false, "Only match source paths within the target package")
+	verboseLog   = flag.Bool("v", false, "Enable verbose (per-file) logging")
 )
 
 func init() {
@@ -114,6 +115,7 @@ func main() {
 		Corpus:     *corpus,
 		Language:   *language,
 		Rules:      mustLoadRules(*vnameRules),
+		Verbose:    *verboseLog,
 		CheckInput: func(path string) (string, bool) { return path, true },
 	}
 
