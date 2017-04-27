@@ -29,6 +29,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"path/filepath"
+	"strings"
 
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema/edges"
@@ -88,9 +90,7 @@ func (a Atomizer) Decorations(ctx context.Context, decor *xpb.DecorationsReply) 
 	a.emitFact(ctx, file, facts.Text, decor.SourceText)
 	a.emitFact(ctx, file, facts.TextEncoding, []byte(decor.Encoding))
 	for _, ref := range decor.Reference {
-		// TODO(schroederc): remove use of deprecated SourceTicket field
-		anchor := a.parseTicket(ref.SourceTicket)
-		a.anchorNode(ctx, anchor, ref.Span, nil)
+		anchor := a.anchorNode(ctx, decor.Location.Ticket, ref.Span, nil)
 		a.emitEdge(ctx, anchor, ref.Kind, a.parseTicket(ref.TargetTicket))
 	}
 	for ticket, node := range decor.Nodes {
@@ -144,7 +144,21 @@ func (a Atomizer) parseTicket(ticket string) *spb.VName {
 	return uri.VName()
 }
 
-func (a Atomizer) anchorNode(ctx context.Context, anchor *spb.VName, span *cpb.Span, snippet *cpb.Span) {
+// anchorURI synthesizes an anchor URI from a span and its parent file.
+func (a Atomizer) anchorURI(fileTicket string, span *cpb.Span) *kytheuri.URI {
+	uri, err := kytheuri.Parse(fileTicket)
+	if err != nil {
+		panic(atomizerPanic{err})
+	}
+	uri.Signature = fmt.Sprintf("a[%d,%d)", span.GetStart().GetByteOffset(), span.GetEnd().GetByteOffset())
+	// The language doesn't have to exactly match the schema; just use the file's
+	// extension as an approximation.
+	uri.Language = strings.TrimPrefix(filepath.Ext(uri.Path), ".")
+	return uri
+}
+
+func (a Atomizer) anchorNode(ctx context.Context, parentFile string, span *cpb.Span, snippet *cpb.Span) *spb.VName {
+	anchor := a.anchorURI(parentFile, span).VName()
 	a.emitFact(ctx, anchor, facts.NodeKind, []byte(nodes.Anchor))
 	a.emitFact(ctx, anchor, facts.AnchorStart, []byte(fmt.Sprintf("%d", span.Start.ByteOffset)))
 	a.emitFact(ctx, anchor, facts.AnchorEnd, []byte(fmt.Sprintf("%d", span.End.ByteOffset)))
@@ -152,6 +166,7 @@ func (a Atomizer) anchorNode(ctx context.Context, anchor *spb.VName, span *cpb.S
 		a.emitFact(ctx, anchor, facts.SnippetStart, []byte(fmt.Sprintf("%d", snippet.Start.ByteOffset)))
 		a.emitFact(ctx, anchor, facts.SnippetEnd, []byte(fmt.Sprintf("%d", snippet.End.ByteOffset)))
 	}
+	return anchor
 }
 
 func (a Atomizer) emitFact(ctx context.Context, src *spb.VName, fact string, value []byte) {
@@ -177,8 +192,7 @@ func (a Atomizer) emitEdge(ctx context.Context, src *spb.VName, kind string, tgt
 
 func (a Atomizer) emitAnchors(ctx context.Context, n *spb.VName, ras []*xpb.CrossReferencesReply_RelatedAnchor) {
 	for _, ra := range ras {
-		anchor := a.parseTicket(ra.Anchor.Ticket)
-		a.anchorNode(ctx, anchor, ra.Anchor.Span, ra.Anchor.SnippetSpan)
+		anchor := a.anchorNode(ctx, ra.Anchor.Parent, ra.Anchor.Span, ra.Anchor.SnippetSpan)
 		a.emitEdge(ctx, anchor, ra.Anchor.Kind, n)
 	}
 }
