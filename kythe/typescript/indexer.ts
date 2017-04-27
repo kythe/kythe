@@ -111,10 +111,10 @@ class Vistor {
    * 'foo/bar'.
    */
   moduleName(sourceFile: ts.SourceFile): string {
-    // sourceFile.Path is the path after resolution, so it is an
+    // sourceFile.fileName is the path after resolution, so it is an
     // absolute path even if in the source text imported it relatively.
     // Use path.relative to make it relative to the source root.
-    return stripExtension(path.relative(this.sourceRoot, sourceFile.path));
+    return stripExtension(path.relative(this.sourceRoot, sourceFile.fileName));
   }
 
   /**
@@ -137,9 +137,9 @@ class Vistor {
     let name = this.newVName(`@${node.pos}:${node.end}`);
     // An anchor refers to specific text, so its path is the file path,
     // not the module name.
-    name.path = path.relative(this.sourceRoot, node.getSourceFile().path);
+    name.path = path.relative(this.sourceRoot, node.getSourceFile().fileName);
     this.emitNode(name, 'anchor');
-    let offsetTable = this.getOffsetTable(node.getSourceFile().path);
+    let offsetTable = this.getOffsetTable(node.getSourceFile().fileName);
     this.emitFact(
         name, 'loc/start', offsetTable.lookup(node.getStart()).toString());
     this.emitFact(
@@ -583,7 +583,7 @@ class Vistor {
   indexFile(file: ts.SourceFile) {
     // Emit a "file" node, containing the source text.
     this.kFile = this.newVName(/* empty signature */ '');
-    this.kFile.path = path.relative(this.sourceRoot, file.path);
+    this.kFile.path = path.relative(this.sourceRoot, file.fileName);
     this.kFile.language = '';
     this.emitFact(this.kFile, 'node/kind', 'file');
     this.emitFact(this.kFile, 'text', file.text);
@@ -643,15 +643,16 @@ export function index(
   }
 
   let offsetTables = new Map<string, utf8.OffsetTable>();
-  const getOffsetTable = (path: string): utf8.OffsetTable => {
-    let table = offsetTables.get(path);
-    if (!table) {
-      let buf = readFile(path);
-      table = new utf8.OffsetTable(buf);
-      offsetTables.set(path, table);
-    }
-    return table;
-  }
+  const getOffsetTable =
+      (path: string): utf8.OffsetTable => {
+        let table = offsetTables.get(path);
+        if (!table) {
+          let buf = readFile(path);
+          table = new utf8.OffsetTable(buf);
+          offsetTables.set(path, table);
+        }
+        return table;
+      }
 
   for (const path of paths) {
     let sourceFile = program.getSourceFile(path);
