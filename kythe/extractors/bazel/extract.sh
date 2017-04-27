@@ -27,8 +27,9 @@ the same as no flags.
 
 Flags:
   --index_pack: use <output-dir> as the root of an index pack instead of a collection of .kindex files
-  --java:       turn on the use of the Bazel/Kythe Java extractor
   --cxx:        turn on the use of the Bazel/Kythe C++ extractor
+  --go:         turn on the use of the Bazel/Kythe Go extractor
+  --java:       turn on the use of the Bazel/Kythe Java extractor
   --bazel_arg:  add the given argument to Bazel during the build
 EOF
   exit 1
@@ -52,6 +53,9 @@ while [[ $# -gt 0 ]]; do
     --cxx)
       ALL=
       CXX=1 ;;
+    --go)
+      ALL=
+      GO=1 ;;
     --bazel_arg)
       BAZEL_ARGS+=("$2")
       shift ;;
@@ -64,6 +68,7 @@ done
 if [[ -n "$ALL" ]]; then
   JAVA=1
   CXX=1
+  GO=1
 fi
 
 ROOT=$PWD
@@ -91,6 +96,9 @@ fi
 if [[ -n "$CXX" ]]; then
   BAZEL_ARGS+=(--experimental_action_listener=//kythe/cxx/extractor:extract_kindex)
 fi
+if [[ -n "$GO" ]]; then
+  BAZEL_ARGS+=(--experimental_action_listener=//kythe/go/extractors/cmd/bazel:extract_kindex_go)
+fi
 
 bazel "${BAZEL_ARGS[@]}" //... || \
   echo "Bazel exited with error code $?; trying to continue..." >&2
@@ -104,7 +112,7 @@ for idx in "${INDICES[@]}"; do
   dir="$OUTPUT/$lang"
 
   if [[ -n "$INDEX_PACK" ]]; then
-      "$ROOT/bazel-bin/kythe/go/platform/tools/indexpack" --to_archive "$dir" "$idx"
+      "$ROOT/bazel-bin/kythe/go/platform/tools/indexpack/indexpack" --to_archive "$dir" "$idx"
   else
     mkdir -p "$dir"
     dest="$dir/$(tr '/' '_' <<<"${idx#$xad/}")"
