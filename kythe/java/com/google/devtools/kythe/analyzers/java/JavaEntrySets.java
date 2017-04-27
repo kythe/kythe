@@ -245,15 +245,6 @@ public class JavaEntrySets extends KytheEntrySets {
       String identToken = buildContext(context, sym);
       markedSource.addChild(context.build());
       switch (sym.getKind()) {
-        case CONSTRUCTOR:
-          markedSource.addChild(
-              MarkedSource.newBuilder()
-                  .setKind(MarkedSource.Kind.IDENTIFIER)
-                  .setPreText(
-                      (enclClass != null ? enclClass.getSimpleName() : sym.getSimpleName())
-                          .toString())
-                  .build());
-          break;
         case TYPE_PARAMETER:
           markedSource.addChild(
               MarkedSource.newBuilder()
@@ -261,11 +252,18 @@ public class JavaEntrySets extends KytheEntrySets {
                   .setPreText("<" + sym.getSimpleName().toString() + ">")
                   .build());
           break;
+        case CONSTRUCTOR:
         case METHOD:
+          String methodName;
+          if (sym.getKind() == ElementKind.CONSTRUCTOR && enclClass != null) {
+            methodName = enclClass.getSimpleName().toString();
+          } else {
+            methodName = sym.getSimpleName().toString();
+          }
           markedSource.addChild(
               MarkedSource.newBuilder()
                   .setKind(MarkedSource.Kind.IDENTIFIER)
-                  .setPreText(sym.getSimpleName().toString())
+                  .setPreText(methodName)
                   .build());
           markedSource.addChild(
               MarkedSource.newBuilder()

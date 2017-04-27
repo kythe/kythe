@@ -31,6 +31,26 @@ public class MarkedSource {
   //- FieldId.pre_text "fieldName"
   int fieldName;
 
+  //- @MarkedSource defines/binding Ctor
+  //- Ctor childof Class
+  //- Ctor typed CType
+  //- CType param.1 Class
+  //- Ctor code CtorTypeCxtId
+  //- CtorTypeCxtId child.0 CtorType
+  //- CtorTypeCxtId child.1 CtorCxt
+  //- CtorTypeCxtId child.2 CtorTok
+  //- CtorTypeCxtId child.3 CtorParams
+  //- CtorType child.0 CtorVoid
+  //- CtorVoid.pre_text "void "
+  //- CtorCxt child.1 CtorCxtClass
+  //- CtorCxtClass.pre_text "MarkedSource"
+  //- CtorTok.pre_text "MarkedSource"
+  //- CtorParams.kind "PARAMETER_LOOKUP_BY_PARAM"
+  //- CtorParams.pre_text "("
+  //- CtorParams.post_child_text ", "
+  //- CtorParams.post_text ")"
+  public MarkedSource() {}
+
   //- @methodName defines/binding Method
   //- Method childof Class
   //- Method typed MType
