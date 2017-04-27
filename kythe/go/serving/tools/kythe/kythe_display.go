@@ -255,12 +255,15 @@ func displayEdgeGraph(reply *gpb.EdgesReply) error {
 		if _, err := fmt.Printf(`	%q [label=<<table><tr><td colspan="2">%s</td></tr>`, ticket, html.EscapeString(ticket)); err != nil {
 			return err
 		}
-		var facts []string
+		var factNames []string
 		for fact := range node {
-			facts = append(facts, fact)
+			if fact == facts.Code {
+				continue
+			}
+			factNames = append(factNames, fact)
 		}
-		sort.Strings(facts)
-		for _, fact := range facts {
+		sort.Strings(factNames)
+		for _, fact := range factNames {
 			if _, err := fmt.Printf("<tr><td>%s</td><td>%s</td></tr>", html.EscapeString(fact), html.EscapeString(string(node[fact]))); err != nil {
 				return err
 			}
