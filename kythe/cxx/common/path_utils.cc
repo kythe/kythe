@@ -114,9 +114,8 @@ const clang::FileEntry* LookupFileForIncludePragma(
       is_angled, nullptr /* FromDir */, nullptr /* FromFile */, cur_dir,
       search_path, relative_path, nullptr /* SuggestedModule */,
       false /* SkipCache */);
-  if (!file) {
-    preprocessor->Diag(filename_token, clang::diag::err_pp_file_not_found)
-        << filename;
+  if (file == nullptr) {
+    fprintf(stderr, "Missing required file %s.\n", filename.str().c_str());
   }
   return file;
 }
