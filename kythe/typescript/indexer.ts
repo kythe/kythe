@@ -118,26 +118,25 @@ class Vistor {
   }
 
   /**
-   * newVName returns a new VName.
-   * @param sourcefile If provided, scopes the VName to the module path
-   *     of the file.
+   * newVName returns a new VName with a given signature and path.
    */
-  newVName(signature: string, sourceFile?: ts.SourceFile): VName {
+  newVName(signature: string, path: string): VName {
     return {
       signature,
       corpus: this.corpus,
       root: '',
-      path: sourceFile ? this.moduleName(sourceFile) : '',
+      path,
       language: 'typescript',
     };
   }
 
   /** newAnchor emits a new anchor entry that covers a TypeScript node. */
   newAnchor(node: ts.Node): VName {
-    let name = this.newVName(`@${node.pos}:${node.end}`);
-    // An anchor refers to specific text, so its path is the file path,
-    // not the module name.
-    name.path = path.relative(this.sourceRoot, node.getSourceFile().fileName);
+    let name = this.newVName(
+        `@${node.pos}:${node.end}`,
+        // An anchor refers to specific text, so its path is the file path,
+        // not the module name.
+        path.relative(this.sourceRoot, node.getSourceFile().fileName));
     this.emitNode(name, 'anchor');
     let offsetTable = this.getOffsetTable(node.getSourceFile().fileName);
     this.emitFact(
@@ -175,11 +174,12 @@ class Vistor {
   /**
    * scopedSignature computes a scoped name for a ts.Node.
    * E.g. if you have a function `foo` containing a block containing a variable
-   * `bar`, it might return a string like foo.block0.bar.
-   * Also returns the source file containing the node.
+   * `bar`, it might return a VName like
+   *   signature: "foo.block0.bar""
+   *   path: <appropriate path to module>
    */
-  scopedSignature(startNode: ts.Node): [string, ts.SourceFile] {
-    let sourceFile: ts.SourceFile|undefined;
+  scopedSignature(startNode: ts.Node): VName {
+    let moduleName: string|undefined;
     let parts: string[] = [];
 
     // Traverse the containing blocks upward, gathering names from nodes that
@@ -215,8 +215,29 @@ class Vistor {
             parts.push(`anon${this.anonId++}`);
           }
           break;
+        case ts.SyntaxKind.ModuleDeclaration:
+          const modDecl = node as ts.ModuleDeclaration;
+          if (modDecl.name.kind === ts.SyntaxKind.StringLiteral) {
+            // Syntax like:
+            //   declare module 'foo/bar' {}
+            // This is the syntax for defining symbols in another, named
+            // module.
+            moduleName = (modDecl.name as ts.StringLiteral).text;
+          } else if (modDecl.name.kind === ts.SyntaxKind.Identifier) {
+            // Syntax like:
+            //   declare module foo {}
+            // without quotes is just an obsolete way of saying 'namespace'.
+            parts.push((modDecl.name as ts.Identifier).text);
+          }
+          break;
         case ts.SyntaxKind.SourceFile:
-          sourceFile = node as ts.SourceFile;
+          // moduleName can already be set if the target was contained within
+          // a "declare module 'foo/bar'" block (see the handling of
+          // ModuleDeclaration).  Otherwise, the module name is derived from the
+          // name of the current file.
+          if (!moduleName) {
+            moduleName = this.moduleName(node as ts.SourceFile);
+          }
           break;
         default:
           // Most nodes are children of other nodes that do not introduce a
@@ -235,7 +256,8 @@ class Vistor {
     }
 
     // The names were gathered from bottom to top, so reverse before joining.
-    return [parts.reverse().join('.'), sourceFile!];
+    const sig = parts.reverse().join('.');
+    return this.newVName(sig, moduleName!);
   }
 
   /**
@@ -259,16 +281,14 @@ class Vistor {
     // TODO: think about symbols with multiple declarations.
 
     let decl = sym.declarations[0];
-    let [sig, sourceFile] = this.scopedSignature(decl);
+    let vname = this.scopedSignature(decl);
     // The signature of a value is undecorated;
     // the signature of a type has the #type suffix.
     if (ns === TSNamespace.TYPE) {
-      sig += '#type';
+      vname.signature += '#type';
     }
 
-    // Compute a vname and save it in the appropriate slot in the symbolNames
-    // table.
-    let vname = this.newVName(sig, sourceFile);
+    // Save it in the appropriate slot in the symbolNames table.
     if (!vnames) vnames = [null, null];
     vnames[ns] = vname;
     this.symbolNames.set(sym, vnames);
@@ -359,8 +379,8 @@ class Vistor {
       console.error(`TODO: import ${decl.getText()} has no symbol`);
       return;
     }
-    let kModule = this.newVName('module');
-    kModule.path = this.getModulePathFromModuleReference(moduleSym);
+    let kModule = this.newVName(
+        'module', this.getModulePathFromModuleReference(moduleSym));
     this.emitEdge(this.newAnchor(decl.moduleSpecifier), 'ref/imports', kModule);
 
     if (!decl.importClause) {
@@ -509,7 +529,7 @@ class Vistor {
       this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kFunc);
     } else {
       // TODO: choose VName for anonymous functions.
-      kFunc = this.newVName('TODO');
+      kFunc = this.newVName('TODO', 'TODOPath');
     }
 
     if (decl.parent) {
@@ -632,14 +652,14 @@ class Vistor {
   /** indexFile is the main entry point, starting the recursive visit. */
   indexFile(file: ts.SourceFile) {
     // Emit a "file" node, containing the source text.
-    this.kFile = this.newVName(/* empty signature */ '');
-    this.kFile.path = path.relative(this.sourceRoot, file.fileName);
+    this.kFile = this.newVName(
+        /* empty signature */ '', path.relative(this.sourceRoot, file.fileName));
     this.kFile.language = '';
     this.emitFact(this.kFile, 'node/kind', 'file');
     this.emitFact(this.kFile, 'text', file.text);
 
     // Emit a "record" node, representing the module object.
-    let kMod = this.newVName('module', file);
+    let kMod = this.newVName('module', this.moduleName(file));
     this.emitFact(kMod, 'node/kind', 'record');
     this.emitEdge(this.kFile, 'childof', kMod);
 
