@@ -238,6 +238,16 @@ class Vistor {
     return [parts.reverse().join('.'), sourceFile!];
   }
 
+  /**
+   * getSymbolAtLocation is the same as this.typeChecker.getSymbolAtLocation,
+   * except that it has a return type that properly captures that
+   * getSymbolAtLocation can return undefined.  (The TypeScript API itself is
+   * not yet null-safe, so it hasn't been annotated with full types.)
+   */
+  getSymbolAtLocation(node: ts.Node): ts.Symbol|undefined {
+    return this.typeChecker.getSymbolAtLocation(node);
+  }
+
   /** getSymbolName computes the VName (and signature) of a ts.Symbol. */
   getSymbolName(sym: ts.Symbol, ns: TSNamespace): VName {
     let vnames = this.symbolNames.get(sym);
@@ -267,7 +277,11 @@ class Vistor {
   }
 
   visitInterfaceDeclaration(decl: ts.InterfaceDeclaration) {
-    let sym = this.typeChecker.getSymbolAtLocation(decl.name);
+    let sym = this.getSymbolAtLocation(decl.name);
+    if (!sym) {
+      console.error(`TODO: interface ${decl.name.getText()} has no symbol`);
+      return;
+    }
     let kType = this.getSymbolName(sym, TSNamespace.TYPE);
     this.emitNode(kType, 'interface');
     this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kType);
@@ -278,7 +292,11 @@ class Vistor {
   }
 
   visitTypeAliasDeclaration(decl: ts.TypeAliasDeclaration) {
-    let sym = this.typeChecker.getSymbolAtLocation(decl.name);
+    let sym = this.getSymbolAtLocation(decl.name);
+    if (!sym) {
+      console.error(`TODO: type alias ${decl.name.getText()} has no symbol`);
+      return;
+    }
     let kType = this.getSymbolName(sym, TSNamespace.TYPE);
     this.emitNode(kType, 'alias');
     this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kType);
@@ -295,7 +313,11 @@ class Vistor {
   visitType(node: ts.Node): void {
     switch (node.kind) {
       case ts.SyntaxKind.Identifier:
-        let sym = this.typeChecker.getSymbolAtLocation(node);
+        let sym = this.getSymbolAtLocation(node);
+        if (!sym) {
+          console.error(`TODO: type ${node.getText()} has no symbol`);
+          return;
+        }
         let name = this.getSymbolName(sym, TSNamespace.TYPE);
         this.emitEdge(this.newAnchor(node), 'ref', name);
         return;
@@ -332,10 +354,9 @@ class Vistor {
   visitImportDeclaration(decl: ts.ImportDeclaration) {
     // All varieties of import statements reference a module on the right,
     // so start by linking that.
-    let moduleSym = this.typeChecker.getSymbolAtLocation(decl.moduleSpecifier);
+    let moduleSym = this.getSymbolAtLocation(decl.moduleSpecifier);
     if (!moduleSym) {
-      // TODO: handle modules without symbols.  This seems to occur when
-      // a required input is not passed the compilation(?).
+      console.error(`TODO: import ${decl.getText()} has no symbol`);
       return;
     }
     let kModule = this.newVName('module');
@@ -367,7 +388,12 @@ class Vistor {
         // This is a namespace import, e.g.:
         //   import * as foo from 'foo';
         let name = clause.namedBindings.name;
-        let sym = this.typeChecker.getSymbolAtLocation(name);
+        let sym = this.getSymbolAtLocation(name);
+        if (!sym) {
+          console.error(
+              `TODO: namespace import ${clause.getText()} has no symbol`);
+          return;
+        }
         let kModuleObject = this.getSymbolName(sym, TSNamespace.VALUE);
         this.emitNode(kModuleObject, 'variable');
         this.emitEdge(this.newAnchor(name), 'defines/binding', kModuleObject);
@@ -402,7 +428,10 @@ class Vistor {
           // one for the symbol in the local file and one for the symbol in
           // the remote module.  Grab the latter by looking up the remote name
           // in the remote module's exports.
-          let localSym = this.typeChecker.getSymbolAtLocation(imp.name);
+          let localSym = this.getSymbolAtLocation(imp.name);
+          if (!localSym) {
+            throw new Error(`TODO: local name ${imp.name} has no symbol`);
+          }
           let remoteSym = this.typeChecker.tryGetMemberInModuleExports(
               remoteName, moduleSym);
           if (!remoteSym) {
@@ -448,7 +477,11 @@ class Vistor {
     initializer?: ts.Expression,
   }) {
     if (decl.name.kind === ts.SyntaxKind.Identifier) {
-      let sym = this.typeChecker.getSymbolAtLocation(decl.name);
+      let sym = this.getSymbolAtLocation(decl.name);
+      if (!sym) {
+        console.error(`TODO: declaration ${decl.name.getText()} has no symbol`);
+        return;
+      }
       let kVar = this.getSymbolName(sym, TSNamespace.VALUE);
       this.emitNode(kVar, 'variable');
 
@@ -464,7 +497,12 @@ class Vistor {
   visitFunctionLikeDeclaration(decl: ts.FunctionLikeDeclaration) {
     let kFunc: VName;
     if (decl.name) {
-      let sym = this.typeChecker.getSymbolAtLocation(decl.name);
+      let sym = this.getSymbolAtLocation(decl.name);
+      if (!sym) {
+        console.error(
+            `TODO: function declaration ${decl.name.getText()} has no symbol`);
+        return;
+      }
       kFunc = this.getSymbolName(sym, TSNamespace.VALUE);
       this.emitNode(kFunc, 'function');
 
@@ -490,8 +528,12 @@ class Vistor {
           break;
       }
       if (parentName !== undefined && namespace !== undefined) {
-        let kParent = this.getSymbolName(
-            this.typeChecker.getSymbolAtLocation(parentName), namespace);
+        let parentSym = this.getSymbolAtLocation(parentName);
+        if (!parentSym) {
+          console.error(`TODO: parent ${parentName} has no symbol`);
+          return;
+        }
+        let kParent = this.getSymbolName(parentSym, namespace);
         this.emitEdge(kFunc, 'childof', kParent);
       }
 
@@ -505,7 +547,11 @@ class Vistor {
     }
 
     for (const [index, param] of toArray(decl.parameters.entries())) {
-      let sym = this.typeChecker.getSymbolAtLocation(param.name);
+      let sym = this.getSymbolAtLocation(param.name);
+      if (!sym) {
+        console.error(`TODO: param ${param.name.getText()} has no symbol`);
+        continue;
+      }
       let kParam = this.getSymbolName(sym, TSNamespace.VALUE);
       this.emitNode(kParam, 'variable');
       this.emitEdge(kFunc, `param.${index}`, kParam);
@@ -522,7 +568,11 @@ class Vistor {
 
   visitClassDeclaration(decl: ts.ClassDeclaration) {
     if (decl.name) {
-      let sym = this.typeChecker.getSymbolAtLocation(decl.name);
+      let sym = this.getSymbolAtLocation(decl.name);
+      if (!sym) {
+        console.error(`TODO: class ${decl.name.getText()} has no symbol`);
+        return;
+      }
       let kClass = this.getSymbolName(sym, TSNamespace.VALUE);
       this.emitNode(kClass, 'record');
 
@@ -561,7 +611,7 @@ class Vistor {
         // Assume that this identifer is occurring as part of an
         // expression; we handle identifiers that occur in other
         // circumstances (e.g. in a type) separately in visitType.
-        let sym = this.typeChecker.getSymbolAtLocation(node);
+        let sym = this.getSymbolAtLocation(node);
         if (!sym) {
           // E.g. a field of an "any".
           return;
