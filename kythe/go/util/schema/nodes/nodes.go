@@ -46,4 +46,5 @@ const (
 	EnumClass = "enumClass"
 	Implicit  = "implicit"
 	Field     = "field"
+	Type      = "type"
 )

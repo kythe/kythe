@@ -5,12 +5,27 @@ import "fmt"
 
 //- @Int defines/binding Int
 //- @"Int int" defines Int
+//- Int.node/kind record
+//- Int.subkind type
 type Int int
 
 //- @Ptr defines/binding Ptr
 //- @"Ptr *bool" defines Ptr
-//- Ptr.node/kind tapp
+//- Ptr.node/kind record
+//- Ptr.subkind type
 type Ptr *bool
+
+type under struct { z int }
+
+//- @Over defines/binding Over
+//- Over.node/kind record
+//- Over.subkind struct
+type Over under
+
+//- @UPtr defines/binding UPtr
+//- UPtr.node/kind record
+//- UPtr.subkind type
+type UPtr *under
 
 //- @Struct defines/binding Struct
 //- Struct.node/kind record

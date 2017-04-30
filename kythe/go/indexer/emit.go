@@ -304,8 +304,13 @@ func (e *emitter) visitTypeSpec(spec *ast.TypeSpec, stack stackFunc) {
 		}
 
 	default:
-		e.writeFact(target, facts.NodeKind, nodes.TApp)
-		// TODO(fromberger): Handle pointer types, newtype forms.
+		// We model a newtype form whose underlying type is not already a
+		// struct (e.g., "type Foo int") as if it were a record with a single
+		// unexported field of the underlying type. That is not really what Go
+		// does, but it is close enough for the graph model to work. Since
+		// there is no actual field declaration, however, we don't emit that.
+		e.writeFact(target, facts.NodeKind, nodes.Record)
+		e.writeFact(target, facts.Subkind, nodes.Type)
 	}
 }
 
