@@ -110,14 +110,13 @@ var (
 			case 1:
 				uri, err := kytheuri.Parse(flag.Arg(0))
 				if err != nil {
-					log.Fatalf("invalid uri %q: %v", flag.Arg(0), err)
+					return fmt.Errorf("invalid uri %q: %v", flag.Arg(0), err)
 				}
 				corpus = uri.Corpus
 				root = uri.Root
 				path = uri.Path
 			default:
-				flag.Usage()
-				os.Exit(1)
+				return fmt.Errorf("too many arguments given: %v", flag.Args())
 			}
 			path = filetree.CleanDirPath(path)
 			req := &ftpb.DirectoryRequest{
@@ -477,15 +476,19 @@ func parseSpan(span string) (*cpb.Span, error) {
 }
 
 // command specifies a named sub-command for the kythe tool with its own flags.
+// TODO(schroederc): look into using https://godoc.org/github.com/google/subcommands
 type command struct {
 	*flag.FlagSet
 	f func(*flag.FlagSet) error
 }
 
-// run executes c with the leftover arguments after the sub-command name
-// parsed by c's FlagSet.
-func (c command) run() error {
-	c.FlagSet.Parse(flag.Args()[1:])
+func (c command) parseArguments(args []string) error { return c.FlagSet.Parse(args) }
+
+// Run implements the Command interface.
+func (c command) Run(ctx context.Context, api API) error {
+	// TODO(schroederc): remove global service variables
+	xs = api.XRefService
+	ft = api.FileTreeService
 	return c.f(c.FlagSet)
 }
 

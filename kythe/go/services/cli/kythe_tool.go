@@ -18,9 +18,10 @@
 package cli
 
 import (
+	"context"
+	"errors"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"sort"
@@ -30,21 +31,34 @@ import (
 	"kythe.io/kythe/go/util/build"
 )
 
-// TODO(schroederc): refactor into reusable Tool struct instead of using globals
-//                   absolutely everywhere...
+// API contains access points the CLI's backend services.
+type API struct {
+	XRefService     xrefs.Service
+	FileTreeService filetree.Service
+}
 
-// Run executes a Kythe CLI command using the given services.  As a
-// precondition, flag.Parse() must be called.  Run must only be called once.
-func Run(xService xrefs.Service, ftService filetree.Service) {
-	if len(flag.Args()) == 0 {
-		flag.Usage()
-		os.Exit(0)
+// Command represents a single CLI command that can be executed against an API.
+type Command interface {
+	// Run executes a command against a given API.
+	Run(context.Context, API) error
+}
+
+// ParseCommand returns the Command specified by the given command-line
+// arguments.  The first argument must be the name of the Command.
+//
+// Example arguments: []string{"magic_command", "--flag1", "blah"}
+func ParseCommand(args []string) (Command, error) {
+	if len(args) == 0 {
+		return nil, errors.New("no subcommand specified")
 	}
-	xs = xService
-	ft = ftService
-	if err := getCommand(flag.Arg(0)).run(); err != nil {
-		log.Fatal("ERROR: ", err)
+	name, args := args[0], args[1:]
+	c, err := getCommand(name)
+	if err != nil {
+		return nil, err
+	} else if err := c.parseArguments(args); err != nil {
+		return nil, err
 	}
+	return c, nil
 }
 
 var shortHelp bool
@@ -101,14 +115,18 @@ func init() {
 			if len(flag.Args()) == 0 {
 				globalUsage()
 			} else {
-				getCommand(flag.Arg(0)).Usage()
+				c, err := getCommand(flag.Arg(0))
+				if err != nil {
+					return err
+				}
+				c.Usage()
 			}
 			return nil
 		})
 	flag.Usage = globalUsage
 }
 
-func getCommand(name string) command {
+func getCommand(name string) (*command, error) {
 	c, ok := cmds[name]
 	if !ok {
 		synonymn, found := cmdSynonymns[name]
@@ -117,9 +135,7 @@ func getCommand(name string) command {
 		}
 	}
 	if !ok {
-		fmt.Fprintf(os.Stderr, "ERROR: unknown command %q\n", name)
-		globalUsage()
-		os.Exit(1)
+		return nil, fmt.Errorf("unknown command %q", name)
 	}
-	return c
+	return &c, nil
 }
