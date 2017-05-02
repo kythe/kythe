@@ -4843,7 +4843,7 @@ bool IndexerASTVisitor::VisitObjCInterfaceDecl(
 
   auto Completeness = Decl->hasDefinition()
                           ? GraphObserver::Completeness::Complete
-                          : GraphObserver::Completeness ::Incomplete;
+                          : GraphObserver::Completeness::Incomplete;
   Observer.recordRecordNode(BodyDeclNode, GraphObserver::RecordKind::Class,
                             Completeness, None());
   Observer.recordMarkedSource(DeclNode, Marks.GenerateMarkedSource(DeclNode));
