@@ -46,7 +46,7 @@ package main
 import (
 	"context"
 	"flag"
-	"log"
+	"os"
 
 	"kythe.io/kythe/go/services/cli"
 	"kythe.io/kythe/go/serving/api"
@@ -55,15 +55,11 @@ import (
 func main() {
 	apiFlag := api.Flag("api", api.CommonDefault, api.CommonFlagUsage)
 	flag.Parse()
-	defer (*apiFlag).Close()
 
-	cmd, err := cli.ParseCommand(flag.Args())
-	if err != nil {
-		log.Fatalf("ERROR: could not parse command: %v", err)
-	} else if err := cmd.Run(context.Background(), cli.API{
+	status := cli.Execute(context.Background(), cli.API{
 		XRefService:     *apiFlag,
 		FileTreeService: *apiFlag,
-	}); err != nil {
-		log.Fatalf("ERROR: %v", err)
-	}
+	})
+	(*apiFlag).Close()
+	os.Exit(int(status))
 }

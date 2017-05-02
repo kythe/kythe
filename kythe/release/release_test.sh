@@ -87,7 +87,7 @@ if tools/verifier --ignore_dups any_nosuchedge_any2 < entries; then
 fi
 
 # Ensure kythe tool is functional
-tools/kythe --api srv node 'kythe:?lang=java#pkg.Names'
+tools/kythe --api srv nodes 'kythe:?lang=java#pkg.Names'
 
 tools/http_server \
   --public_resources web/ui \

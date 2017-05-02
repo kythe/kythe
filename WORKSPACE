@@ -213,6 +213,13 @@ new_git_repository(
 )
 
 new_git_repository(
+    name = "go_subcommands",
+    build_file = "third_party/go/subcommands.BUILD",
+    commit = "ce3d4cfc062faac7115d44e5befec8b5a08c3faa",
+    remote = "https://github.com/google/subcommands.git",
+)
+
+new_git_repository(
     name = "go_grpc",
     build_file = "third_party/go/grpc.BUILD",
     commit = "cb653e4b6150b81ba5157618b57c6f910a6a99f7",

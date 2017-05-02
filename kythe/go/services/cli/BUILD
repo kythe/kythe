@@ -4,11 +4,7 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 go_package_library(
     name = "cli",
-    srcs = [
-        "kythe_commands.go",
-        "kythe_display.go",
-        "kythe_tool.go",
-    ],
+    srcs = glob(["*.go"]),
     deps = [
         "//kythe/go/platform/vfs",
         "//kythe/go/services/filetree",
@@ -25,5 +21,6 @@ go_package_library(
         "//kythe/proto:xref_proto_go",
         "@go_protobuf//:proto",
         "@go_stringset//:stringset",
+        "@go_subcommands//:subcommands",
     ],
 )
