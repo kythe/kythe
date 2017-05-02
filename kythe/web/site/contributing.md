@@ -62,13 +62,13 @@ arc diff                       # send the commit for review
 
 You can reply to comments in
 [Differential](https://phabricator-dot-kythe-repo.appspot.com/differential/)
-inside Phabriactor. To submit additional commits to that same review, just
+inside Phabricator. To submit additional commits to that same review, just
 `git checkout` to the same branch as your original arc feature, and then either
 `git commit` to make new commits or `git commit --amend` to tack it on to the
 last existing commit. Finally, just re-run `arc diff` to automatically send out
 another review request.
 
-**After someone has accepted your diff** in phabiractor (you should see a green
+**After someone has accepted your diff** in Phabriactor (you should see a green
 checkbox saying "This revision is now ready to land"). Core contributors with
 write access to the Kythe respository run this command from their arc feature
 branch to merge the change into master and push it to Github:
