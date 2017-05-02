@@ -18,7 +18,7 @@
 //- @Box defines/binding BoxDecl
 //- BoxDecl.node/kind record
 //- BoxDecl.subkind class
-//- BoxDecl.complete incomplete
+//- BoxDecl.complete complete
 @interface Box {
 
 //- @"_testwidth" defines/binding WidthVarDecl

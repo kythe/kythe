@@ -36,7 +36,7 @@
 //- BaseFooDecl extends/category BaseDecl
 //- BaseFooDecl.node/kind record
 //- BaseFooDecl.subkind category
-//- BaseFooDecl.complete incomplete
+//- BaseFooDecl.complete complete
 @interface Base (Foo)
   //- @getFoo defines/binding GetFooDecl
   //- GetFooDecl.node/kind function
@@ -52,6 +52,7 @@
 //- BaseFooImpl extends/category BaseDecl
 //- BaseFooImpl.node/kind record
 //- BaseFooImpl.subkind category
+//- BaseFooImpl.complete definition
 //- @"Foo" completes/uniquely BaseFooDecl
 @implementation Base (Foo)
 

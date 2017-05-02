@@ -3,7 +3,7 @@
 //- @Box defines/binding BoxIface
 //- BoxIface.node/kind record
 //- BoxIface.subkind class
-//- BoxIface.complete incomplete
+//- BoxIface.complete complete
 @interface Box
 @end
 

@@ -5,7 +5,7 @@
 //- BaseFooDecl extends/category BaseDecl
 //- BaseFooDecl.node/kind record
 //- BaseFooDecl.subkind category
-//- BaseFooDecl.complete incomplete
+//- BaseFooDecl.complete complete
 
 //- GetFooDecl.node/kind function
 //- GetFooDecl.complete incomplete
@@ -16,6 +16,7 @@
 //- BaseFooImpl extends/category BaseDecl
 //- BaseFooImpl.node/kind record
 //- BaseFooImpl.subkind category
+//- BaseFooImpl.complete definition
 //- @Foo completes BaseFooDecl
 @implementation Base (Foo)
 

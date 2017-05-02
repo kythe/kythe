@@ -203,7 +203,8 @@ int64_t ComputeKeyFromQualType(const ASTContext &Context, const QualType &QT,
 
 /// \brief Restores the type of a stacklike container of `ElementType` upon
 /// destruction.
-template <typename StackType> class StackSizeRestorer {
+template <typename StackType>
+class StackSizeRestorer {
  public:
   explicit StackSizeRestorer(StackType &Target)
       : Target(&Target), Size(Target.size()) {}
@@ -4840,8 +4841,11 @@ bool IndexerASTVisitor::VisitObjCInterfaceDecl(
 
   AddChildOfEdgeToDeclContext(Decl, DeclNode);
 
+  auto Completeness = Decl->hasDefinition()
+                          ? GraphObserver::Completeness::Complete
+                          : GraphObserver::Completeness ::Incomplete;
   Observer.recordRecordNode(BodyDeclNode, GraphObserver::RecordKind::Class,
-                            GraphObserver::Completeness::Incomplete, None());
+                            Completeness, None());
   Observer.recordMarkedSource(DeclNode, Marks.GenerateMarkedSource(DeclNode));
   RecordCompletesForRedecls(Decl, NameRange, BodyDeclNode);
   ConnectToSuperClassAndProtocols(BodyDeclNode, Decl);
@@ -4869,7 +4873,7 @@ bool IndexerASTVisitor::VisitObjCCategoryDecl(
       RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode);
   AddChildOfEdgeToDeclContext(Decl, DeclNode);
   Observer.recordRecordNode(DeclNode, GraphObserver::RecordKind::Category,
-                            GraphObserver::Completeness::Incomplete,
+                            GraphObserver::Completeness::Complete,
                             Marks.GenerateMarkedSource(DeclNode));
   RecordCompletesForRedecls(Decl, NameRange, DeclNode);
   if (auto BaseClassInterface = Decl->getClassInterface()) {
