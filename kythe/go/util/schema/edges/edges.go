@@ -39,6 +39,7 @@ const (
 	ExtendsPublic           = Prefix + "extends/public"
 	ExtendsPublicVirtual    = Prefix + "extends/public/virtual"
 	ExtendsVirtual          = Prefix + "extends/virtual"
+	Generates               = Prefix + "generates"
 	Named                   = Prefix + "named"
 	Overrides               = Prefix + "overrides"
 	Param                   = Prefix + "param"
