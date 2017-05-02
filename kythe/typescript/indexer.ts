@@ -741,13 +741,12 @@ export function index(
  */
 export function loadTsConfig(
     path: string, projectPath: string,
-    loader?: (path: string) => string): ts.ParsedCommandLine {
-  if (!loader) loader = (path: string) => fs.readFileSync(path, 'utf8');
-  let {config: json, error} = ts.readConfigFile(path, loader);
+    host: ts.ParseConfigHost = ts.sys): ts.ParsedCommandLine {
+  let {config: json, error} = ts.readConfigFile(path, host.readFile);
   if (error) {
     throw new Error(ts.formatDiagnostics([error], ts.createCompilerHost({})));
   }
-  let config = ts.parseJsonConfigFileContent(json, ts.sys, projectPath);
+  let config = ts.parseJsonConfigFileContent(json, host, projectPath);
   if (config.errors.length > 0) {
     throw new Error(
         ts.formatDiagnostics(config.errors, ts.createCompilerHost({})));
