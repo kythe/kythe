@@ -55,7 +55,7 @@ func (c *xrefsCommand) SetFlags(flag *flag.FlagSet) {
 	flag.StringVar(&c.pageToken, "page_token", "", "CrossReferences page token")
 	flag.IntVar(&c.pageSize, "page_size", 0, "Maximum number of cross-references returned (0 lets the service use a sensible default)")
 }
-func (c *xrefsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) error {
+func (c xrefsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) error {
 	req := &xpb.CrossReferencesRequest{
 		Ticket:          flag.Args(),
 		PageToken:       c.pageToken,
@@ -121,7 +121,7 @@ func (c *xrefsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) err
 	return c.displayXRefs(reply)
 }
 
-func (c *xrefsCommand) displayXRefs(reply *xpb.CrossReferencesReply) error {
+func (c xrefsCommand) displayXRefs(reply *xpb.CrossReferencesReply) error {
 	if *displayJSON {
 		return json.NewEncoder(os.Stdout).Encode(reply)
 	}

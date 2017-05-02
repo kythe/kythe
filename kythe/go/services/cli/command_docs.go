@@ -38,7 +38,7 @@ func (docsCommand) Name() string                   { return "docs" }
 func (docsCommand) Synopsis() string               { return "display documentation for a node" }
 func (docsCommand) Usage() string                  { return "" }
 func (c *docsCommand) SetFlags(flag *flag.FlagSet) {}
-func (c *docsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) error {
+func (c docsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) error {
 	fmt.Fprintf(os.Stderr, "Warning: The Documentation API is experimental and may be slow.")
 	req := &xpb.DocumentationRequest{
 		Ticket: flag.Args(),
@@ -51,7 +51,7 @@ func (c *docsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) erro
 	return c.displayDocumentation(reply)
 }
 
-func (c *docsCommand) displayDocumentation(reply *xpb.DocumentationReply) error {
+func (c docsCommand) displayDocumentation(reply *xpb.DocumentationReply) error {
 	// TODO(zarko): Emit formatted data for -json=false.
 	return json.NewEncoder(out).Encode(reply)
 }

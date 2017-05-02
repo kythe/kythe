@@ -18,6 +18,7 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -26,10 +27,15 @@ import (
 
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/services/xrefs"
+	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema/facts"
 
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
+
+// DefaultFileCorpus is the --corpus flag used by source/decor/diagnostics
+// commands to construct a file ticket from a raw file path.
+var DefaultFileCorpus string
 
 type decorCommand struct {
 	decorSpan        string
@@ -62,13 +68,15 @@ func (c *decorCommand) SetFlags(flag *flag.FlagSet) {
 	flag.StringVar(&c.decorSpan, "span", "", spanHelp)
 	flag.BoolVar(&c.targetDefs, "target_definitions", false, "Whether to request definitions (@targetDef@ format marker) for each reference's target")
 	flag.BoolVar(&c.extendsOverrides, "extends_overrides", false, "Whether to request extends/overrides information")
+	flag.StringVar(&DefaultFileCorpus, "corpus", DefaultFileCorpus, "File corpus to use if given a raw path")
 }
-func (c *decorCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) error {
-	// TODO(schroederc): construct ticket using default corpus if just given path
+func (c decorCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) error {
+	ticket, err := fileTicketArg(flag)
+	if err != nil {
+		return err
+	}
 	req := &xpb.DecorationsRequest{
-		Location: &xpb.Location{
-			Ticket: flag.Arg(0),
-		},
+		Location:          &xpb.Location{Ticket: ticket},
 		References:        true,
 		TargetDefinitions: c.targetDefs,
 		ExtendsOverrides:  c.extendsOverrides,
@@ -110,7 +118,7 @@ func (c *decorCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) err
 	return c.displayDecorations(reply)
 }
 
-func (c *decorCommand) displayDecorations(decor *xpb.DecorationsReply) error {
+func (c decorCommand) displayDecorations(decor *xpb.DecorationsReply) error {
 	if *displayJSON {
 		return jsonMarshaler.Marshal(out, decor)
 	}
@@ -158,4 +166,18 @@ func factValue(m map[string]map[string][]byte, ticket, factName, def string) str
 		}
 	}
 	return def
+}
+
+func fileTicketArg(flag *flag.FlagSet) (string, error) {
+	if flag.NArg() < 0 {
+		return "", errors.New("no file given")
+	}
+	file := flag.Arg(0)
+	if strings.HasPrefix(file, kytheuri.Scheme) {
+		return file, nil
+	}
+	return (&kytheuri.URI{
+		Corpus: DefaultFileCorpus,
+		Path:   file,
+	}).String(), nil
 }

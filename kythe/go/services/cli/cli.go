@@ -69,6 +69,7 @@ func registerAllCommands(cdr *subcommands.Commander) {
 	cdr.Register(&commandWrapper{&lsCommand{}}, "")
 
 	cdr.Register(&commandWrapper{&decorCommand{}}, "xrefs")
+	cdr.Register(&commandWrapper{&diagnosticsCommand{}}, "xrefs")
 	cdr.Register(&commandWrapper{&docsCommand{}}, "xrefs")
 	cdr.Register(&commandWrapper{&sourceCommand{}}, "xrefs")
 	cdr.Register(&commandWrapper{&xrefsCommand{}}, "xrefs")

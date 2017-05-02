@@ -40,7 +40,7 @@ func (c *nodesCommand) SetFlags(flag *flag.FlagSet) {
 	flag.IntVar(&c.factSizeThreshold, "max_fact_size", 64,
 		"Maximum size of fact values to display.  Facts with byte lengths longer than this value will only have their fact names displayed.")
 }
-func (c *nodesCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) error {
+func (c nodesCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) error {
 	if c.factSizeThreshold < 0 {
 		return fmt.Errorf("invalid --max_fact_size value (must be non-negative): %d", c.factSizeThreshold)
 	}

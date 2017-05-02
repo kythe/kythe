@@ -92,12 +92,15 @@ func (sourceCommand) Synopsis() string { return "retrieve a file's source text" 
 func (sourceCommand) Usage() string    { return "" }
 func (c *sourceCommand) SetFlags(flag *flag.FlagSet) {
 	flag.StringVar(&c.decorSpan, "span", "", spanHelp)
+	flag.StringVar(&DefaultFileCorpus, "corpus", DefaultFileCorpus, "File corpus to use if given a raw path")
 }
-func (c *sourceCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) error {
+func (c sourceCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) error {
+	ticket, err := fileTicketArg(flag)
+	if err != nil {
+		return err
+	}
 	req := &xpb.DecorationsRequest{
-		Location: &xpb.Location{
-			Ticket: flag.Arg(0),
-		},
+		Location:   &xpb.Location{Ticket: ticket},
 		SourceText: true,
 	}
 	if c.decorSpan != "" {

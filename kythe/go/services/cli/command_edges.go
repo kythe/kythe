@@ -56,7 +56,7 @@ func (c *edgesCommand) SetFlags(flag *flag.FlagSet) {
 	flag.StringVar(&c.pageToken, "page_token", "", "Edges page token")
 	flag.IntVar(&c.pageSize, "page_size", 0, "Maximum number of edges returned (0 lets the service use a sensible default)")
 }
-func (c *edgesCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) error {
+func (c edgesCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) error {
 	if c.countOnly && c.targetsOnly {
 		return errors.New("--count_only and --targets_only are mutually exclusive")
 	} else if c.countOnly && c.dotGraph {
@@ -96,7 +96,7 @@ func (c *edgesCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) err
 	return c.displayEdges(reply)
 }
 
-func (c *edgesCommand) displayEdges(reply *gpb.EdgesReply) error {
+func (c edgesCommand) displayEdges(reply *gpb.EdgesReply) error {
 	if *displayJSON {
 		return jsonMarshaler.Marshal(out, reply)
 	}
@@ -116,7 +116,7 @@ func (c *edgesCommand) displayEdges(reply *gpb.EdgesReply) error {
 	return nil
 }
 
-func (c *edgesCommand) displayTargets(edges map[string]*gpb.EdgeSet) error {
+func (c edgesCommand) displayTargets(edges map[string]*gpb.EdgeSet) error {
 	var targets stringset.Set
 	for _, es := range edges {
 		for _, g := range es.Groups {
@@ -138,7 +138,7 @@ func (c *edgesCommand) displayTargets(edges map[string]*gpb.EdgeSet) error {
 	return nil
 }
 
-func (c *edgesCommand) displayEdgeGraph(reply *gpb.EdgesReply) error {
+func (c edgesCommand) displayEdgeGraph(reply *gpb.EdgesReply) error {
 	nodes := xrefs.NodesMap(reply.Nodes)
 	esets := make(map[string]map[string]stringset.Set)
 
@@ -208,7 +208,7 @@ func (c *edgesCommand) displayEdgeGraph(reply *gpb.EdgesReply) error {
 	return nil
 }
 
-func (c *edgesCommand) displayEdgeCounts(edges *gpb.EdgesReply) error {
+func (c edgesCommand) displayEdgeCounts(edges *gpb.EdgesReply) error {
 	counts := make(map[string]int)
 	for _, es := range edges.EdgeSets {
 		for kind, g := range es.Groups {
@@ -230,7 +230,7 @@ func (c *edgesCommand) displayEdgeCounts(edges *gpb.EdgesReply) error {
 
 // expandEdgeKind prefixes unrooted (not starting with "/") edge kinds with the
 // standard Kythe edge prefix ("/kythe/edge/").
-func (c *edgesCommand) expandEdgeKind(kind string) string {
+func (c edgesCommand) expandEdgeKind(kind string) string {
 	ck := edges.Canonical(kind)
 	if strings.HasPrefix(ck, "/") {
 		return kind

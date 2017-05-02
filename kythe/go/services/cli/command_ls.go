@@ -43,7 +43,7 @@ func (c *lsCommand) SetFlags(flag *flag.FlagSet) {
 	flag.BoolVar(&c.filesOnly, "files", false, "Display only files")
 	flag.BoolVar(&c.dirsOnly, "dirs", false, "Display only directories")
 }
-func (c *lsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) error {
+func (c lsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) error {
 	if c.filesOnly && c.dirsOnly {
 		return errors.New("--files and --dirs are mutually exclusive")
 	}
@@ -91,7 +91,7 @@ func (c *lsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) error 
 	return c.displayDirectory(dir)
 }
 
-func (c *lsCommand) displayCorpusRoots(cr *ftpb.CorpusRootsReply) error {
+func (c lsCommand) displayCorpusRoots(cr *ftpb.CorpusRootsReply) error {
 	if *displayJSON {
 		return jsonMarshaler.Marshal(out, cr)
 	}
@@ -116,7 +116,7 @@ func (c *lsCommand) displayCorpusRoots(cr *ftpb.CorpusRootsReply) error {
 	return nil
 }
 
-func (c *lsCommand) displayDirectory(d *ftpb.DirectoryReply) error {
+func (c lsCommand) displayDirectory(d *ftpb.DirectoryReply) error {
 	if *displayJSON {
 		return jsonMarshaler.Marshal(out, d)
 	}
