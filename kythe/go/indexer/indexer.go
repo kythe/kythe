@@ -158,14 +158,26 @@ func (pi *packageImporter) Import(importPath string) (*types.Package, error) {
 	return nil, fmt.Errorf("package %q not found", importPath)
 }
 
+// ResolveOptions control the behaviour of the Resolve function. A nil options
+// pointer provides default values.
+type ResolveOptions struct {
+	// Passes a value whose non-nil map fields will be filled in by the type
+	// checker during resolution. The value will also be copied to the Info
+	// field of the PackageInfo returned by Resolve.
+	Info *types.Info
+}
+
+func (r *ResolveOptions) info() *types.Info {
+	if r != nil {
+		return r.Info
+	}
+	return nil
+}
+
 // Resolve resolves the package information for unit and its dependencies.  On
 // success the package corresponding to unit is located via ImportPath in the
 // Packages map of the returned value.
-//
-// If info != nil, it is used to populate the Info field of the return value
-// and will contain the output of the type checker in each user-provided map
-// field.
-func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageInfo, error) {
+func Resolve(unit *apb.CompilationUnit, f Fetcher, opts *ResolveOptions) (*PackageInfo, error) {
 	sourceFiles := stringset.New(unit.SourceFile...)
 
 	imap := make(map[string]*spb.VName)     // import path → vname
@@ -259,7 +271,7 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, info *types.Info) (*PackageIn
 		ImportPath:   vnameToImport(unit.VName, details.GetGoroot()),
 		FileSet:      fset,
 		Files:        files,
-		Info:         info,
+		Info:         opts.info(),
 		SourceText:   srcs,
 		PackageVName: make(map[*types.Package]*spb.VName),
 		Dependencies: make(map[string]*types.Package), // :: import path → package

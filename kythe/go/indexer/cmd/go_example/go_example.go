@@ -102,7 +102,9 @@ func main() {
 
 	rw := delimited.NewWriter(os.Stdout)
 	if err := pkg.EachUnit(ctx, func(unit *kindex.Compilation) error {
-		pi, err := indexer.Resolve(unit.Proto, unit, indexer.XRefTypeInfo())
+		pi, err := indexer.Resolve(unit.Proto, unit, &indexer.ResolveOptions{
+			Info: indexer.XRefTypeInfo(),
+		})
 		if err != nil {
 			return err
 		}

@@ -327,7 +327,7 @@ package pkg
 var z int
 `
 	unit, digest := oneFileCompilation("testfile/comment.go", "pkg", input)
-	pi, err := Resolve(unit, memFetcher{digest: input}, XRefTypeInfo())
+	pi, err := Resolve(unit, memFetcher{digest: input}, &ResolveOptions{Info: XRefTypeInfo()})
 	if err != nil {
 		t.Fatalf("Resolve failed: %v\nInput unit:\n%s", err, proto.MarshalTextString(unit))
 	}
