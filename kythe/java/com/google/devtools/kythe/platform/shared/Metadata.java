@@ -18,6 +18,8 @@ package com.google.devtools.kythe.platform.shared;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import com.google.common.collect.ListMultimap;
+import com.google.common.collect.MultimapBuilder;
 import com.google.devtools.kythe.analyzers.base.EdgeKind;
 import com.google.devtools.kythe.proto.Storage.VName;
 import java.util.Collections;
@@ -54,12 +56,7 @@ public class Metadata {
   /** Applies a new {@link Rule} to the file to which this metadata pertains. */
   public void addRule(Rule rule) {
     Preconditions.checkNotNull(rule);
-    List<Rule> ruleList = rules.get(rule.begin);
-    if (rules.get(rule.begin) == null) {
-      rules.put(rule.begin, Lists.newArrayList(rule));
-    } else {
-      ruleList.add(rule);
-    }
+    rules.put(rule.begin, rule);
   }
 
   /**
@@ -67,12 +64,11 @@ public class Metadata {
    * @return all rules with spans starting at that offset.
    */
   public Iterable<Rule> getRulesForLocation(int location) {
-    List<Rule> ruleList = rules.get(location);
-    return (ruleList == null) ? Collections.<Rule>emptyList() : ruleList;
+    return rules.get(location);
   }
 
   /** All of the {@link Rule} instances, keyed on their starting offsets. */
-  private TreeMap<Integer, List<Rule>> rules = new TreeMap<>();
+  private ListMultimap<Integer, Rule> rules = MultimapBuilder.treeKeys().arrayListValues().build();
 
   /**
    * A class's javax.annotation.Generated must have a comments field with this string as a prefix to

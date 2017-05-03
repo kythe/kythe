@@ -147,6 +147,12 @@ maven_jar(
     sha1 = "f7be08ec23c21485b9b5a1cf1654c2ec8c58168d",
 )
 
+maven_jar(
+    name = "com_google_auto_value",
+    artifact = "com.google.auto.value:auto-value:1.4.1",
+    sha1 = "8172ebbd7970188aff304c8a420b9f17168f6f48",
+)
+
 git_repository(
     name = "io_bazel_rules_go",
     remote = "https://github.com/bazelbuild/rules_go.git",
@@ -267,10 +273,4 @@ new_git_repository(
     build_file = "third_party/go/levigo.BUILD",
     commit = "1ddad808d437abb2b8a55a950ec2616caa88969b",
     remote = "https://github.com/jmhodges/levigo.git",
-)
-
-maven_jar(
-    name = "com_google_auto_value",
-    artifact = "com.google.auto.value:auto-value:1.3",
-    sha1 = "4961194f62915eb45e21940537d60ac53912c57d",
 )

@@ -58,10 +58,12 @@ java_library(
     deps = [
         "//kythe/java/com/google/devtools/kythe/analyzers/base:schema",
         "//kythe/java/com/google/devtools/kythe/common",
+        "//kythe/java/com/google/devtools/kythe/common:autovalue",
         "//kythe/java/com/google/devtools/kythe/util:json",
         "//kythe/proto:analysis_proto_java",
         "//kythe/proto:storage_proto_java",
         "//third_party/proto:protobuf_java",
+        "@com_google_code_findbugs_jsr305//jar",
         "@com_google_code_gson_gson//jar",
         "@com_google_guava_guava//jar",
     ],

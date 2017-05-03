@@ -16,6 +16,7 @@
 
 package com.google.devtools.kythe.platform.shared;
 
+import com.google.auto.value.AutoValue;
 import com.google.devtools.kythe.analyzers.base.EdgeKind;
 import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.proto.Storage.VName;
@@ -27,11 +28,11 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
-import com.google.gson.JsonSyntaxException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import javax.annotation.Nullable;
 
 /** Loads Kythe JSON-formatted metadata (with the .meta extension). */
 public class KytheMetadataLoader implements MetadataLoader {
@@ -55,11 +56,25 @@ public class KytheMetadataLoader implements MetadataLoader {
   private static final Gson GSON = JsonUtil.registerProtoTypes(new GsonBuilder()).create();
   private static final JsonParser PARSER = new JsonParser();
 
-  // TODO(zarko): Replace exceptions with some @AutoValue return type.
-  private static Metadata.Rule parseRule(JsonObject json) throws JsonSyntaxException {
+  @AutoValue
+  abstract static class RuleXorError {
+    static RuleXorError create(Metadata.Rule rule) {
+      return new AutoValue_KytheMetadataLoader_RuleXorError(rule, null);
+    }
+
+    static RuleXorError create(String error) {
+      return new AutoValue_KytheMetadataLoader_RuleXorError(null, error);
+    }
+
+    @Nullable abstract Metadata.Rule rule();
+    @Nullable abstract String error();
+  }
+
+  @Nullable
+  private static RuleXorError parseRule(JsonObject json) {
     JsonPrimitive ruleType = json.getAsJsonPrimitive(TYPE);
     if (ruleType == null) {
-      throw new JsonSyntaxException("Rule missing type.");
+      return RuleXorError.create("Rule missing type.");
     }
     switch (ruleType.getAsString()) {
       case NOP:
@@ -71,7 +86,7 @@ public class KytheMetadataLoader implements MetadataLoader {
         rule.end = json.getAsJsonPrimitive(END).getAsInt();
         String edge = json.getAsJsonPrimitive(EDGE).getAsString();
         if (edge.length() == 0) {
-          throw new JsonSyntaxException("Rule edge has zero length");
+          return RuleXorError.create("Rule edge has zero length");
         }
         rule.reverseEdge = (edge.charAt(0) == '%');
         if (rule.reverseEdge) {
@@ -80,45 +95,58 @@ public class KytheMetadataLoader implements MetadataLoader {
         if (edge.equals(GENERATES)) {
           rule.edgeOut = EdgeKind.GENERATES;
         } else {
-          throw new JsonSyntaxException("Unknown edge type: " + edge);
+          return RuleXorError.create("Unknown edge type: " + edge);
         }
-        return rule;
+        return RuleXorError.create(rule);
       default:
-        throw new JsonSyntaxException("Unknown rule type: " + ruleType.getAsString());
+        return RuleXorError.create("Unknown rule type: " + ruleType.getAsString());
     }
   }
 
-  // TODO(zarko): Use AutoValue return here and only worry about IOException.
   @Override
   public Metadata parseFile(String fileName, byte[] data) {
     if (!fileName.endsWith(META_SUFFIX)) {
       return null;
     }
+    JsonElement root = null;
     try (ByteArrayInputStream stream = new ByteArrayInputStream(data);
         InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
-      JsonElement root = PARSER.parse(reader);
-      if (root == null || !root.isJsonObject()) {
-        throw new JsonSyntaxException("Missing root.");
-      }
-      JsonObject rootObject = root.getAsJsonObject();
-      JsonPrimitive rootType = rootObject.getAsJsonPrimitive(TYPE);
-      if (rootType == null || !rootType.getAsString().equals(KYTHE_FORMAT_0)) {
-        throw new JsonSyntaxException("Root missing type.");
-      }
-      JsonArray rules = rootObject.getAsJsonArray(META);
-      if (rules == null) {
-        throw new JsonSyntaxException("Root missing meta array.");
-      }
-      Metadata metadata = new Metadata();
-      for (JsonElement rule : rules) {
-        metadata.addRule(parseRule(rule.getAsJsonObject()));
-      }
-      return metadata;
-    } catch (JsonSyntaxException ex) {
-      logger.warning("JsonSyntaxException on " + fileName);
+      root = PARSER.parse(reader);
     } catch (IOException ex) {
-      logger.warning("IOException on " + fileName);
+      emitWarning(ex.getMessage(), fileName);
+      return null;
     }
-    return null;
+    if (root == null || !root.isJsonObject()) {
+      emitWarning("Missing root.", fileName);
+      return null;
+    }
+    JsonObject rootObject = root.getAsJsonObject();
+    JsonPrimitive rootType = rootObject.getAsJsonPrimitive(TYPE);
+    if (rootType == null || !rootType.getAsString().equals(KYTHE_FORMAT_0)) {
+      emitWarning("Root missing type.", fileName);
+      return null;
+    }
+    JsonArray rules = rootObject.getAsJsonArray(META);
+    if (rules == null) {
+      emitWarning("Root missing meta array.", fileName);
+      return null;
+    }
+    Metadata metadata = new Metadata();
+    for (JsonElement rule : rules) {
+      RuleXorError ruleXorError = parseRule(rule.getAsJsonObject());
+      if (ruleXorError != null) {  // skip nulls
+        Metadata.Rule metadataRule = ruleXorError.rule();
+        if (metadataRule != null) {
+          metadata.addRule(metadataRule);
+        } else {
+          emitWarning(ruleXorError.error(), fileName);
+        }
+      }
+    }
+    return metadata;
+  }
+
+  private static void emitWarning(String warning, String fileName) {
+    logger.warningfmt("Error in parsing rule: %s\nfrom file: %s", warning, fileName);
   }
 }
