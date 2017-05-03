@@ -53,6 +53,7 @@ import (
 	"golang.org/x/tools/go/gcexportdata"
 
 	"kythe.io/kythe/go/extractors/govname"
+	"kythe.io/kythe/go/util/metadata"
 	"kythe.io/kythe/go/util/ptypes"
 
 	apb "kythe.io/kythe/proto/analysis_proto"
@@ -79,6 +80,7 @@ type PackageInfo struct {
 	FileSet      *token.FileSet                // Location info for the source files
 	Files        []*ast.File                   // The parsed ASTs of the source files
 	SourceText   map[*ast.File]string          // The text of the source files
+	Rules        map[*ast.File]metadata.Rules  // Mapping metadata for each source file
 
 	Info   *types.Info // If non-nil, contains type-checker results
 	Errors []error     // All errors reported by the type checker
@@ -165,6 +167,16 @@ type ResolveOptions struct {
 	// checker during resolution. The value will also be copied to the Info
 	// field of the PackageInfo returned by Resolve.
 	Info *types.Info
+
+	// If set, this function is called for each required input to check whether
+	// it contains metadata rules.
+	//
+	// Valid return are:
+	//    rs, nil    -- a valid ruleset
+	//    nil, nil   -- no ruleset found
+	//    _, err     -- an error attempting to load a ruleset
+	//
+	CheckRules func(ri *apb.CompilationUnit_FileInput, f Fetcher) (*Ruleset, error)
 }
 
 func (r *ResolveOptions) info() *types.Info {
@@ -172,6 +184,20 @@ func (r *ResolveOptions) info() *types.Info {
 		return r.Info
 	}
 	return nil
+}
+
+func (r *ResolveOptions) checkRules(ri *apb.CompilationUnit_FileInput, f Fetcher) (*Ruleset, error) {
+	if r == nil || r.CheckRules == nil {
+		return nil, nil
+	}
+	return r.CheckRules(ri, f)
+}
+
+// A Ruleset represents a collection of mapping rules applicable to a source
+// file in a compilation to be indexed.
+type Ruleset struct {
+	Path  string         // the file path this rule set applies to
+	Rules metadata.Rules // the rules that apply to the path
 }
 
 // Resolve resolves the package information for unit and its dependencies.  On
@@ -183,11 +209,13 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, opts *ResolveOptions) (*Packa
 	imap := make(map[string]*spb.VName)     // import path → vname
 	srcs := make(map[*ast.File]string)      // file → text
 	fmap := make(map[string]*apb.FileInfo)  // import path → file info
+	smap := make(map[string]*ast.File)      // file path → file (sources)
 	filev := make(map[*ast.File]*spb.VName) // file → vname
 	floc := make(map[*token.File]*ast.File) // file → ast
 	fset := token.NewFileSet()              // location info for the parser
 	details := goDetails(unit)
 	var files []*ast.File // parsed sources
+	var rules []*Ruleset  // parsed linkage rules
 
 	// Classify the required inputs as either sources, which are to be parsed,
 	// or dependencies, which are to be "imported" via the type-checker's
@@ -237,6 +265,16 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, opts *ResolveOptions) (*Packa
 			vname.Path = vpath
 			filev[parsed] = vname
 			srcs[parsed] = string(data)
+			smap[fpath] = parsed
+			continue
+		}
+
+		// Check for mapping metadata.
+		if rs, err := opts.checkRules(ri, f); err != nil {
+			log.Printf("Error checking rules in %q: %v", fpath, err)
+		} else if rs != nil {
+			log.Printf("Found %d metadata rules for path %q", len(rs.Rules), rs.Path)
+			rules = append(rules, rs)
 			continue
 		}
 
@@ -280,6 +318,17 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, opts *ResolveOptions) (*Packa
 		sigs:      make(map[types.Object]string),
 		fileVName: filev,
 		fileLoc:   floc,
+	}
+
+	// If mapping rules were found, populate the corresponding field.
+	if len(rules) != 0 {
+		pi.Rules = make(map[*ast.File]metadata.Rules)
+		for _, rs := range rules {
+			f, ok := smap[rs.Path]
+			if ok {
+				pi.Rules[f] = rs.Rules
+			}
+		}
 	}
 
 	// Run the type-checker and collect any errors it generates.  Errors in the

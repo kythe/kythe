@@ -30,6 +30,8 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
+	"kythe.io/kythe/go/test/testutil"
+	"kythe.io/kythe/go/util/metadata"
 	"kythe.io/kythe/go/util/ptypes"
 
 	apb "kythe.io/kythe/proto/analysis_proto"
@@ -359,6 +361,53 @@ var z int
 	}
 	if multi != want {
 		t.Errorf("Incorrect multi-line comment escaping:\ngot  %#q\nwant %#q", multi, want)
+	}
+}
+
+func TestRules(t *testing.T) {
+	const input = "package main\n"
+	unit, digest := oneFileCompilation("main.go", "main", input)
+	unit.RequiredInput = append(unit.RequiredInput, &apb.CompilationUnit_FileInput{
+		VName: &spb.VName{Signature: "hey ho let's go"},
+		Info:  &apb.FileInfo{Path: "meta"},
+	})
+	fetcher := memFetcher{digest: input}
+
+	// Resolve the compilation with a rule checker that recognizes the special
+	// input we added and emits a rule for the main file. This verifies we get
+	// the right mapping from paths back to source inputs.
+	pi, err := Resolve(unit, fetcher, &ResolveOptions{
+		CheckRules: func(ri *apb.CompilationUnit_FileInput, _ Fetcher) (*Ruleset, error) {
+			if ri.Info.Path == "meta" {
+				return &Ruleset{
+					Path: "main.go", // associate these rules to the main source
+					Rules: metadata.Rules{{
+						Begin: 1,
+						End:   2,
+						VName: ri.VName,
+					}},
+				}, nil
+			}
+			return nil, nil
+		},
+	})
+	if err != nil {
+		t.Fatalf("Resolve failed: %v", err)
+	}
+
+	// The rules should have an entry for the primary source file, and it
+	// should contain the rule we generated.
+	rs, ok := pi.Rules[pi.Files[0]]
+	if !ok {
+		t.Fatal("Missing primary source file")
+	}
+	want := metadata.Rules{{
+		Begin: 1,
+		End:   2,
+		VName: &spb.VName{Signature: "hey ho let's go"},
+	}}
+	if err := testutil.DeepEqual(want, rs); err != nil {
+		t.Errorf("Wrong rules: %v", err)
 	}
 }
 

@@ -12,6 +12,7 @@ go_library(
     ],
     deps = [
         "//kythe/go/extractors/govname",
+        "//kythe/go/util/metadata",
         "//kythe/go/util/ptypes",
         "//kythe/go/util/schema/edges",
         "//kythe/go/util/schema/facts",
@@ -34,7 +35,10 @@ go_test(
     # TODO(fromberger): Build this with a library rule.
     data = [":testdata/foo.a"],
     library = ":indexer",
-    deps = ["@go_protobuf//:proto"],
+    deps = [
+        "//kythe/go/test/testutil",
+        "@go_protobuf//:proto",
+    ],
 )
 
 load(":testdata/go_indexer_test.bzl", "go_indexer_test")
