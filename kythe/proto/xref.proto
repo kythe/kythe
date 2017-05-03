@@ -165,6 +165,9 @@ message DecorationsRequest {
   // definition_locations field will include (where possible) the locations of
   // the definitions of the nodes that are extended or overridden.
   bool extends_overrides = 7;
+
+  // If true, return diagnostics for the given file.
+  bool diagnostics = 8;
 }
 
 message DecorationsReply {
@@ -229,6 +232,9 @@ message DecorationsReply {
 
   // The reference edges located in the specified window.
   repeated Reference reference = 4;
+
+  // If requested, a list of diagnostics applying to the requested file location.
+  repeated common.Diagnostic diagnostic = 5;
 
   // This field will contain one entry, keyed by ticket, for each distinct node
   // referenced by a reference edge that has at least 1 non-filtered fact.

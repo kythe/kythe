@@ -68,3 +68,23 @@ message NodeInfo {
   reserved 1;
   reserved "ticket";
 }
+
+message Diagnostic {
+  // Text span to which the diagnostic applies.  If the span is unset, the
+  // diagnostic refers to its entire parent context (i.e. the file to which it
+  // is attached).
+  Span span = 1;
+
+  // Plain-text diagnostic message to be reported to users.
+  string message = 2;
+
+  // Optional details that further refine the diagnostic but need not be
+  // reported to users immediately.  This field can be used to provide more
+  // context for bug reports and may contain compiler/build errors.
+  string details = 3;
+
+  // Optional URL leading to more detailed information on this diagnostic.  This
+  // may be documentation on a particular class of errors or a tracking issue
+  // for prevalent errors.
+  string context_url = 4;
+}
