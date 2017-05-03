@@ -155,8 +155,7 @@ git_repository(
 
 load("@io_bazel_rules_go//go:def.bzl", "go_repositories")
 
-# TODO(fromberger): fix Go indexer tests to work with 1.8.1
-go_repositories(go_version = "1.7.5")
+go_repositories(go_version = "1.8.1")
 
 new_git_repository(
     name = "go_gogo_protobuf",
@@ -189,7 +188,7 @@ new_git_repository(
 new_git_repository(
     name = "go_x_tools",
     build_file = "third_party/go/x_tools.BUILD",
-    commit = "b5ed9db83fbf41b937824795876668fc8d31335a",
+    commit = "5682db0e919ed9cfc6f52ac32e170511a106eb3b",
     remote = "https://go.googlesource.com/tools",
 )
 
