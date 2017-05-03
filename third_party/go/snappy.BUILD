@@ -6,10 +6,4 @@ licenses(["notice"])
 
 exports_files(["LICENSE"])
 
-external_go_package(
-    base_pkg = "github.com/golang/snappy",
-    exclude_srcs = [
-        "decode_amd64.go",
-        "encode_amd64.go",
-    ],
-)
+external_go_package(base_pkg = "github.com/golang/snappy")

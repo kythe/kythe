@@ -9,15 +9,9 @@ exports_files(["LICENSE"])
 external_go_package(
     name = "http2",
     base_pkg = "golang.org/x/net",
-    exclude_srcs = [
-        "configure_transport.go",
-        "go16.go",
-	"go18.go",
-        "not_go17.go",
-    ],
     deps = [
         ":http2/hpack",
-	":idna",
+        ":idna",
         ":lex/httplex",
     ],
 )
@@ -30,27 +24,17 @@ external_go_package(
 external_go_package(
     name = "lex/httplex",
     base_pkg = "golang.org/x/net",
-    deps = [
-        ":idna",
-    ],
+    deps = [":idna"],
 )
 
 external_go_package(
     name = "context",
     base_pkg = "golang.org/x/net",
-    exclude_srcs = [
-        "withtimeout_test.go",
-        "go17.go",
-    ],
 )
 
 external_go_package(
     name = "context/ctxhttp",
     base_pkg = "golang.org/x/net",
-    exclude_srcs = [
-        "cancelreq_go14.go",
-        "ctxhttp.go",
-    ],
     deps = [":context"],
 )
 
@@ -72,7 +56,6 @@ external_go_package(
 external_go_package(
     name = "html/atom",
     base_pkg = "golang.org/x/net",
-    exclude_srcs = ["gen.go"],
 )
 
 external_go_package(

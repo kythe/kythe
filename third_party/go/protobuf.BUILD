@@ -57,7 +57,6 @@ external_go_package(
 external_go_package(
     name = "proto",
     base_pkg = "github.com/golang/protobuf",
-    exclude_srcs = ["pointer_reflect.go"],
 )
 
 external_go_package(

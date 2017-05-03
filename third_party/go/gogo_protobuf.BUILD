@@ -271,8 +271,4 @@ external_go_package(
 external_go_package(
     name = "proto",
     base_pkg = "github.com/gogo/protobuf",
-    exclude_srcs = [
-        "pointer_reflect.go",
-        "pointer_reflect_gogo.go",
-    ],
 )

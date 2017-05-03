@@ -9,11 +9,6 @@ exports_files(["LICENSE"])
 external_go_package(
     name = "language",
     base_pkg = "golang.org/x/text",
-    exclude_srcs = [
-        "gen_*.go",
-        "go1_1.go",
-        "maketables.go",
-    ],
     deps = [":internal/tag"],
 )
 
@@ -31,7 +26,6 @@ external_go_package(
 external_go_package(
     name = "encoding/traditionalchinese",
     base_pkg = "golang.org/x/text",
-    exclude_srcs = ["maketables.go"],
     deps = [
         ":encoding",
         ":encoding/internal",
@@ -56,7 +50,6 @@ external_go_package(
 external_go_package(
     name = "encoding/htmlindex",
     base_pkg = "golang.org/x/text",
-    exclude_srcs = ["gen.go"],
     deps = [
         ":encoding",
         ":encoding/charmap",
@@ -74,7 +67,6 @@ external_go_package(
 external_go_package(
     name = "encoding/charmap",
     base_pkg = "golang.org/x/text",
-    exclude_srcs = ["maketables.go"],
     deps = [
         ":encoding",
         ":encoding/internal",
@@ -95,7 +87,6 @@ external_go_package(
 external_go_package(
     name = "encoding/simplifiedchinese",
     base_pkg = "golang.org/x/text",
-    exclude_srcs = ["maketables.go"],
     deps = [
         ":encoding",
         ":encoding/internal",
@@ -107,7 +98,6 @@ external_go_package(
 external_go_package(
     name = "encoding/korean",
     base_pkg = "golang.org/x/text",
-    exclude_srcs = ["maketables.go"],
     deps = [
         ":encoding",
         ":encoding/internal",
@@ -119,7 +109,6 @@ external_go_package(
 external_go_package(
     name = "encoding/japanese",
     base_pkg = "golang.org/x/text",
-    exclude_srcs = ["maketables.go"],
     deps = [
         ":encoding",
         ":encoding/internal",
@@ -141,7 +130,6 @@ external_go_package(
 external_go_package(
     name = "encoding/internal/identifier",
     base_pkg = "golang.org/x/text",
-    exclude_srcs = ["gen.go"],
 )
 
 external_go_package(

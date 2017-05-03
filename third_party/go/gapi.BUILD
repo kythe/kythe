@@ -24,7 +24,6 @@ external_go_package(
 external_go_package(
     name = "transport",
     base_pkg = "google.golang.org/api",
-    exclude_srcs = ["dial_appengine.go"],
     deps = [
         ":internal",
         ":option",

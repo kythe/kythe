@@ -150,12 +150,13 @@ maven_jar(
 git_repository(
     name = "io_bazel_rules_go",
     remote = "https://github.com/bazelbuild/rules_go.git",
-    tag = "0.4.0",
+    tag = "0.4.3",
 )
 
 load("@io_bazel_rules_go//go:def.bzl", "go_repositories")
 
-go_repositories()
+# TODO(fromberger): fix Go indexer tests to work with 1.8.1
+go_repositories(go_version = "1.7.5")
 
 new_git_repository(
     name = "go_gogo_protobuf",
