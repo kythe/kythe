@@ -199,7 +199,15 @@ int main(int argc, char *argv[]) {
   bool success = LoadExtraAction(xa_state, config);
   if (success) {
     config.Extract(kythe::supported_language::Language::kObjectiveC);
+  } else {
+    // If we couldn't extract, just write an empty output file. This way the
+    // extra_action will be a success from bazel's perspective, which should
+    // remove some log spam.
+    auto F = fopen(xa_state.output_file.c_str(), "w");
+    if (F != nullptr) {
+      fclose(F);
+    }
   }
   google::protobuf::ShutdownProtobufLibrary();
-  return success ? 0 : 1;
+  return 0;
 }
