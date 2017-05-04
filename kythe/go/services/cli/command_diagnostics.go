@@ -66,7 +66,7 @@ func spanToString(s *cpb.Span) string {
 	if s == nil {
 		return ""
 	}
-	return fmt.Sprintf("%s:%s-%s:%s",
+	return fmt.Sprintf("%d:%d-%d:%d",
 		s.Start.GetLineNumber(), s.Start.GetColumnOffset(),
 		s.End.GetLineNumber(), s.End.GetColumnOffset())
 }
