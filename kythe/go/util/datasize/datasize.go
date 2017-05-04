@@ -41,6 +41,11 @@ func Flag(name, value, description string) *Size {
 	return &f.Size
 }
 
+// Get implements part of the flag.Getter interface.
+func (f *sizeFlag) Get() interface{} {
+	return f.Size
+}
+
 // Set implements part of the flag.Value interface.
 func (f *sizeFlag) Set(s string) error {
 	sz, err := Parse(s)

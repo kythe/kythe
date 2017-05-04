@@ -75,6 +75,11 @@ func (f *gsFlag) String() string {
 	return fmt.Sprintf("%T", *f.gs)
 }
 
+// Get implements part of the flag.Getter interface.
+func (f *gsFlag) Get() interface{} {
+	return *f.gs
+}
+
 // Set implements part of the flag.Value interface.
 func (f *gsFlag) Set(str string) (err error) {
 	*f.gs, err = ParseGraphStore(str)
