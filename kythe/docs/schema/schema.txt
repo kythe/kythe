@@ -1162,6 +1162,21 @@ specializes/speculative
 See <<instantiatesspeculative,[instantiates/speculative]>>.
 
 
+[[tagged]]
+tagged
+~~~~~~
+
+Brief description::
+  A *tagged* B if B labels A with a <<diagnostic>> message.
+Commonly arises from::
+  build/analysis errors
+Points from::
+  <<anchor>>, <<file>>
+Points toward::
+  <<diagnostic>>
+Ordinals are used::
+  never
+
 [[typed]]
 typed
 ~~~~~
@@ -1424,6 +1439,26 @@ public enum E {
   A;
 }
 --------------------------------------------------------------------------------
+
+[[diagnostic]]
+diagnostic
+~~~~~~~~~~
+
+Brief description::
+  A *diagnostic* is a node with a message concerning some aspect of the related
+  <<file>> or <<anchor>>.  These can often result from errors while building or
+  analyzing a compilation and allow an analyzer to surface errors to end-users.
+Facts::
+  message:::
+    A relatively short, one-line, human-readable string explaining the
+    diagnostic.  The encoding must be UTF-8.
+  details:::
+    Longer form of the message that exposes more detail concerning the
+    diagnostic.  This could be very specialized to the particular diagnostic,
+    possibly even containing stack traces or build system logs (optional).
+  context/url:::
+    URL leading to more detailed information concerning this diagnostic or a
+    related group of diagnostics (optional).
 
 [[doc]]
 doc
