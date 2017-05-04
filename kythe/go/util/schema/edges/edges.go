@@ -57,6 +57,7 @@ const (
 	Ref               = Prefix + "ref"
 	RefCall           = Prefix + "ref/call"
 	RefImports        = Prefix + "ref/imports"
+	Tagged            = Prefix + "tagged"
 )
 
 // ParamIndex returns an edge label of the form "param.i" for the i given.
