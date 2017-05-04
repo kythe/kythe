@@ -29,11 +29,6 @@ import (
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
-const spanHelp = `Limit results to this span (e.g. "10-30", "b1462-b1847", "3:5-3:10")
-      Formats:
-        b\d+-b\d+             -- Byte-offsets
-        \d+(:\d+)?-\d+(:\d+)? -- Line offsets with optional column offsets`
-
 var (
 	byteOffsetPointRE = regexp.MustCompile(`^b(\d+)$`)
 	lineNumberPointRE = regexp.MustCompile(`^(\d+)(:(\d+))?$`)
@@ -84,34 +79,21 @@ func parseSpan(span string) (*cpb.Span, error) {
 }
 
 type sourceCommand struct {
-	decorSpan string
+	baseDecorCommand
 }
 
 func (sourceCommand) Name() string     { return "source" }
 func (sourceCommand) Synopsis() string { return "retrieve a file's source text" }
 func (sourceCommand) Usage() string    { return "" }
 func (c *sourceCommand) SetFlags(flag *flag.FlagSet) {
-	flag.StringVar(&c.decorSpan, "span", "", spanHelp)
-	flag.StringVar(&DefaultFileCorpus, "corpus", DefaultFileCorpus, "File corpus to use if given a raw path")
+	c.baseDecorCommand.SetFlags(flag)
 }
 func (c sourceCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) error {
-	ticket, err := fileTicketArg(flag)
+	req, err := c.baseRequest(flag)
 	if err != nil {
 		return err
 	}
-	req := &xpb.DecorationsRequest{
-		Location:   &xpb.Location{Ticket: ticket},
-		SourceText: true,
-	}
-	if c.decorSpan != "" {
-		span, err := parseSpan(c.decorSpan)
-		if err != nil {
-			return fmt.Errorf("invalid --span %q: %v", c.decorSpan, err)
-		}
-
-		req.Location.Kind = xpb.Location_SPAN
-		req.Location.Span = span
-	}
+	req.SourceText = true
 
 	logRequest(req)
 	reply, err := api.XRefService.Decorations(ctx, req)

@@ -30,15 +30,88 @@ import (
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema/facts"
 
+	cpb "kythe.io/kythe/proto/common_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
-// DefaultFileCorpus is the --corpus flag used by source/decor/diagnostics
-// commands to construct a file ticket from a raw file path.
-var DefaultFileCorpus string
+var (
+	// DefaultFileCorpus is the --corpus flag used by source/decor/diagnostics
+	// commands to construct a file ticket from a raw file path.
+	DefaultFileCorpus string
+
+	// DefaultFileRoot is the --root flag used by source/decor/diagnostics commands
+	// to construct a file ticket from a raw file path.
+	DefaultFileRoot string
+
+	// DefaultFilePathPrefix is the --path_prefix flag used by
+	// source/decor/diagnostics commands to construct a file ticket from a raw file
+	// path.
+	DefaultFilePathPrefix string
+)
+
+// baseDecorCommand is a shared base for the source/decor/diagnostics commands
+type baseDecorCommand struct {
+	decorSpan                string
+	corpus, root, pathPrefix string
+}
+
+func (c *baseDecorCommand) SetFlags(flag *flag.FlagSet) {
+	flag.StringVar(&c.decorSpan, "span", "",
+		`Limit results to this span (e.g. "10-30", "b1462-b1847", "3:5-3:10")
+      Formats:
+        b\d+-b\d+             -- Byte-offsets
+        \d+(:\d+)?-\d+(:\d+)? -- Line offsets with optional column offsets`)
+	flag.StringVar(&c.corpus, "corpus", DefaultFileCorpus, "File corpus to use if given a raw path")
+	flag.StringVar(&c.root, "root", DefaultFileRoot, "File root to use if given a raw path")
+	flag.StringVar(&c.pathPrefix, "path_prefix", DefaultFilePathPrefix, "File path prefix to use if given a raw path (this is prepended directly to the raw path without any joining slashes)")
+}
+
+func (c baseDecorCommand) fileTicketArg(flag *flag.FlagSet) (string, error) {
+	if flag.NArg() < 0 {
+		return "", errors.New("no file given")
+	}
+	file := flag.Arg(0)
+	if strings.HasPrefix(file, kytheuri.Scheme) {
+		return file, nil
+	}
+	return (&kytheuri.URI{
+		Corpus: c.corpus,
+		Root:   c.root,
+		Path:   c.pathPrefix + file,
+	}).String(), nil
+}
+
+func (c baseDecorCommand) baseRequest(flag *flag.FlagSet) (*xpb.DecorationsRequest, error) {
+	ticket, err := c.fileTicketArg(flag)
+	if err != nil {
+		return nil, err
+	}
+	req := &xpb.DecorationsRequest{
+		Location: &xpb.Location{Ticket: ticket},
+	}
+	span, err := c.spanArg()
+	if err != nil {
+		return nil, err
+	} else if span != nil {
+		req.Location.Kind = xpb.Location_SPAN
+		req.Location.Span = span
+	}
+	return req, nil
+}
+
+func (c baseDecorCommand) spanArg() (*cpb.Span, error) {
+	if c.decorSpan == "" {
+		return nil, nil
+	}
+	span, err := parseSpan(c.decorSpan)
+	if err != nil {
+		return nil, fmt.Errorf("invalid --span %q: %v", c.decorSpan, err)
+	}
+	return span, nil
+}
 
 type decorCommand struct {
-	decorSpan        string
+	baseDecorCommand
 	targetDefs       bool
 	dirtyFile        string
 	refFormat        string
@@ -49,6 +122,7 @@ func (decorCommand) Name() string     { return "decor" }
 func (decorCommand) Synopsis() string { return "list a file's decorations" }
 func (decorCommand) Usage() string    { return "" }
 func (c *decorCommand) SetFlags(flag *flag.FlagSet) {
+	c.baseDecorCommand.SetFlags(flag)
 	// TODO(schroederc): add option to look for dirty files based on file-ticket path and a directory root
 	flag.StringVar(&c.dirtyFile, "dirty", "", "Send the given file as the dirty buffer for patching references")
 	flag.StringVar(&c.refFormat, "format", "@edgeKind@\t@^line@:@^col@-@$line@:@$col@\t@nodeKind@\t@target@",
@@ -65,25 +139,20 @@ func (c *decorCommand) SetFlags(flag *flag.FlagSet) {
         @$offset@   -- anchor source's ending byte-offset
         @$line@     -- anchor source's ending line
         @$col@      -- anchor source's ending column offset`)
-	flag.StringVar(&c.decorSpan, "span", "", spanHelp)
 	flag.BoolVar(&c.targetDefs, "target_definitions", false, "Whether to request definitions (@targetDef@ format marker) for each reference's target")
 	flag.BoolVar(&c.extendsOverrides, "extends_overrides", false, "Whether to request extends/overrides information")
-	flag.StringVar(&DefaultFileCorpus, "corpus", DefaultFileCorpus, "File corpus to use if given a raw path")
 }
 func (c decorCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) error {
-	ticket, err := fileTicketArg(flag)
+	req, err := c.baseRequest(flag)
 	if err != nil {
 		return err
 	}
-	req := &xpb.DecorationsRequest{
-		Location:          &xpb.Location{Ticket: ticket},
-		References:        true,
-		TargetDefinitions: c.targetDefs,
-		ExtendsOverrides:  c.extendsOverrides,
-		Filter: []string{
-			facts.NodeKind,
-			facts.Subkind,
-		},
+	req.References = true
+	req.TargetDefinitions = c.targetDefs
+	req.ExtendsOverrides = c.extendsOverrides
+	req.Filter = []string{
+		facts.NodeKind,
+		facts.Subkind,
 	}
 	if c.dirtyFile != "" {
 		f, err := vfs.Open(ctx, c.dirtyFile)
@@ -98,15 +167,6 @@ func (c decorCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) erro
 			return fmt.Errorf("error closing dirty buffer file: %v", err)
 		}
 		req.DirtyBuffer = buf
-	}
-	if c.decorSpan != "" {
-		span, err := parseSpan(c.decorSpan)
-		if err != nil {
-			return fmt.Errorf("invalid --span %q: %v", c.decorSpan, err)
-		}
-
-		req.Location.Kind = xpb.Location_SPAN
-		req.Location.Span = span
 	}
 
 	logRequest(req)
@@ -166,18 +226,4 @@ func factValue(m map[string]map[string][]byte, ticket, factName, def string) str
 		}
 	}
 	return def
-}
-
-func fileTicketArg(flag *flag.FlagSet) (string, error) {
-	if flag.NArg() < 0 {
-		return "", errors.New("no file given")
-	}
-	file := flag.Arg(0)
-	if strings.HasPrefix(file, kytheuri.Scheme) {
-		return file, nil
-	}
-	return (&kytheuri.URI{
-		Corpus: DefaultFileCorpus,
-		Path:   file,
-	}).String(), nil
 }

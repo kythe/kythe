@@ -25,23 +25,22 @@ import (
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
-type diagnosticsCommand struct{}
+type diagnosticsCommand struct {
+	baseDecorCommand
+}
 
 func (diagnosticsCommand) Name() string     { return "diagnostics" }
 func (diagnosticsCommand) Synopsis() string { return "list a file's diagnostics" }
 func (diagnosticsCommand) Usage() string    { return "" }
 func (c *diagnosticsCommand) SetFlags(flag *flag.FlagSet) {
-	flag.StringVar(&DefaultFileCorpus, "corpus", DefaultFileCorpus, "File corpus to use if given a raw path")
+	c.baseDecorCommand.SetFlags(flag)
 }
 func (c diagnosticsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) error {
-	ticket, err := fileTicketArg(flag)
+	req, err := c.baseRequest(flag)
 	if err != nil {
 		return err
 	}
-	req := &xpb.DecorationsRequest{
-		Location:    &xpb.Location{Ticket: ticket},
-		Diagnostics: true,
-	}
+	req.Diagnostics = true
 
 	logRequest(req)
 	reply, err := api.XRefService.Decorations(ctx, req)
