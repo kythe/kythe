@@ -19,6 +19,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"flag"
@@ -27,12 +28,14 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"kythe.io/kythe/go/indexer/indexer"
 	"kythe.io/kythe/go/platform/delimited"
 	"kythe.io/kythe/go/platform/indexpack"
 	"kythe.io/kythe/go/platform/kindex"
 	"kythe.io/kythe/go/platform/vfs"
+	"kythe.io/kythe/go/util/metadata"
 
 	apb "kythe.io/kythe/proto/analysis_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
@@ -44,6 +47,7 @@ var (
 	doJSON      = flag.Bool("json", false, "Write output as JSON")
 	doLibNodes  = flag.Bool("libnodes", false, "Emit nodes for standard library packages")
 	doCodeFacts = flag.Bool("code", false, "Emit code facts containing MarkedSource markup")
+	metaSuffix  = flag.String("meta", "", "If set, treat files with this suffix as JSON linkage metadata")
 
 	writeEntry func(context.Context, *spb.Entry) error
 )
@@ -96,10 +100,31 @@ func main() {
 	}
 }
 
+// checkMetadata checks whether ri denotes a metadata file according to the
+// setting of the -meta flag, and if so loads the corresponding ruleset.
+func checkMetadata(ri *apb.CompilationUnit_FileInput, f indexer.Fetcher) (*indexer.Ruleset, error) {
+	if *metaSuffix == "" || !strings.HasSuffix(ri.Info.GetPath(), *metaSuffix) {
+		return nil, nil // nothing to do
+	}
+	bits, err := f.Fetch(ri.Info.GetPath(), ri.Info.GetDigest())
+	if err != nil {
+		return nil, fmt.Errorf("reading metadata file: %v", err)
+	}
+	rules, err := metadata.Parse(bytes.NewReader(bits))
+	if err != nil {
+		return nil, err
+	}
+	return &indexer.Ruleset{
+		Path:  strings.TrimSuffix(ri.Info.GetPath(), *metaSuffix),
+		Rules: rules,
+	}, nil
+}
+
 // indexGo is a visitFunct that invokes the Kythe Go indexer on unit.
 func indexGo(ctx context.Context, unit *apb.CompilationUnit, f indexer.Fetcher) error {
 	pi, err := indexer.Resolve(unit, f, &indexer.ResolveOptions{
-		Info: indexer.XRefTypeInfo(),
+		Info:       indexer.XRefTypeInfo(),
+		CheckRules: checkMetadata,
 	})
 	if err != nil {
 		return err
@@ -108,6 +133,7 @@ func indexGo(ctx context.Context, unit *apb.CompilationUnit, f indexer.Fetcher) 
 	return pi.Emit(ctx, writeEntry, &indexer.EmitOptions{
 		EmitStandardLibs: *doLibNodes,
 		EmitMarkedSource: *doCodeFacts,
+		EmitLinkages:     *metaSuffix != "",
 	})
 }
 

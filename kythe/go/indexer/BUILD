@@ -145,3 +145,10 @@ go_indexer_test(
     name = "override_test",
     srcs = ["testdata/override.go"],
 )
+
+go_indexer_test(
+    name = "metadata_test",
+    srcs = ["testdata/meta.go"],
+    data = ["testdata/meta.go.linkage"],
+    metadata_suffix = ".linkage",
+)

@@ -84,6 +84,9 @@ type Extractor struct {
 	// extractor will try in this location.
 	AltInstallPath string
 
+	// Extra file paths to include in each compilation record.
+	ExtraFiles []string
+
 	// A function to generate a vname from a package's import path.  If nil,
 	// the extractor will use govname.ForPackage.
 	PackageVName func(corpus string, bp *build.Package) *spb.VName
@@ -300,6 +303,9 @@ func (p *Package) Extract() error {
 	p.addFiles(cu, bp.Root, srcBase, bp.HFiles)
 	p.addSource(cu, bp.Root, srcBase, bp.TestGoFiles)
 
+	// Add extra inputs that may be specified by the extractor.
+	p.addFiles(cu, "", "", p.ext.ExtraFiles)
+
 	// TODO(fromberger): Treat tests that are not in the same package as a
 	// separate compilation, e.g.,
 	// p.addSource(cu, bp.Root, srcBase, bp.XTestGoFiles)
@@ -428,10 +434,15 @@ func (p *Package) addFiles(cu *apb.CompilationUnit, root, base string, names []s
 		if base != "" {
 			path = filepath.Join(base, name)
 		}
+		trimmed := strings.TrimPrefix(path, root+"/")
 		cu.RequiredInput = append(cu.RequiredInput, &apb.CompilationUnit_FileInput{
+			VName: &spb.VName{
+				Corpus: p.ext.Corpus,
+				Path:   trimmed,
+			},
 			Info: &apb.FileInfo{
-				Path:   strings.TrimPrefix(path, root+"/"),
-				Digest: path,
+				Path:   trimmed,
+				Digest: path, // provisional, until the file is loaded
 			},
 		})
 	}

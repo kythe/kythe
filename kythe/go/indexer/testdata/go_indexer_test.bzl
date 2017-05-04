@@ -28,12 +28,13 @@ load(
 
 # Emit a shell script that sets up the environment needed by the extractor to
 # capture dependencies and runs the extractor.
-def _emit_extractor_script(ctx, script, output, srcs, deps, ipath):
+def _emit_extractor_script(ctx, script, output, srcs, deps, ipath, data):
   env     = go_environment_vars(ctx) # for GOOS and GOARCH
   tmpdir  = output.dirname + '/tmp'
   srcdir  = tmpdir + '/src/' + ipath
   pkgdir  = tmpdir + '/pkg/%s_%s' % (env['GOOS'], env['GOARCH'])
   outpack = output.path + '_pack'
+  extras  = []
   cmds    = ['set -e',
              'mkdir -p ' + pkgdir, 'mkdir -p ' + srcdir]
 
@@ -50,6 +51,10 @@ def _emit_extractor_script(ctx, script, output, srcs, deps, ipath):
         "ln -s '%s%s' '%s.a'" % ('../'*tups, path, fullpath),
     ]
 
+  # Gather any extra data dependencies.
+  for target in data:
+    extras += [f.path for f in target.files]
+
   # Invoke the extractor on the temp directory.
   goroot = '/'.join(ctx.files._goroot[0].path.split('/')[:-2])
   cmds.append(' '.join([
@@ -57,6 +62,7 @@ def _emit_extractor_script(ctx, script, output, srcs, deps, ipath):
       '-output_dir', outpack,
       '-goroot', goroot,
       '-gopath', tmpdir,
+      '-extra_files', "'%s'" % ','.join(extras),
       '-bydir',
       srcdir,
   ]))
@@ -73,23 +79,27 @@ def _emit_extractor_script(ctx, script, output, srcs, deps, ipath):
   return f
 
 def _go_indexpack(ctx):
-  depfiles= [dep.go_library_object for dep in ctx.attr.library.direct_deps]
+  depfiles = [dep.go_library_object for dep in ctx.attr.library.direct_deps]
   deps   = {dep.path: ctx.attr.library.transitive_go_importmap[dep.path]
             for dep in depfiles}
   srcs   = list(ctx.attr.library.go_sources)
   tools  = ctx.files._goroot + ctx.files._extractor
   output = ctx.outputs.archive
+  data   = ctx.attr.data
   ipath  = ctx.attr.import_path
   if not ipath:
     ipath = srcs[0].path.rsplit('/', 1)[0]
+  extras = []
+  for target in data:
+    extras += target.files.to_list()
 
   script = _emit_extractor_script(ctx, ctx.label.name+'-extract.sh',
-                                  output, srcs, deps, ipath)
+                                  output, srcs, deps, ipath, data)
   ctx.action(
       mnemonic   = 'GoIndexPack',
       executable = script,
       outputs    = [output],
-      inputs     = srcs + depfiles + tools,
+      inputs     = srcs + extras + depfiles + tools,
   )
   return struct(zipfile = output)
 
@@ -114,6 +124,12 @@ go_indexpack = rule(
         # The import path to attribute to the compilation.
         # If omitted, use the base name of the source directory.
         "import_path": attr.string(),
+
+        # Additional data files to include in each compilation.
+        "data": attr.label_list(
+            allow_empty = True,
+            allow_files = True,
+        ),
 
         # The location of the Go extractor binary.
         "_extractor": attr.label(
@@ -150,6 +166,10 @@ def _go_verifier_test(ctx):
     vargs.append('--convert_marked_source')
     iargs.append('-code')
 
+  # If the test wants linkage metadata, enable support for it in the indexer.
+  if ctx.attr.metadata_suffix:
+    iargs += ['-meta', ctx.attr.metadata_suffix]
+
   cmds = ['set -e', 'set -o pipefail', ' '.join(iargs + [
       pack.short_path, '\\\n|',
   ] + vargs), '']
@@ -179,6 +199,9 @@ go_verifier_test = rule(
         # Whether to allow duplicate facts.
         "allow_duplicates": attr.bool(default = False),
 
+        # The suffix used to recognize linkage metadata files, if non-empty.
+        "metadata_suffix": attr.string(default = ''),
+
         # The location of the Go indexer binary.
         "_indexer": attr.label(
             default = Label("//kythe/go/indexer/cmd/go_indexer"),
@@ -200,9 +223,10 @@ go_verifier_test = rule(
 # A convenience macro to generate a test library, pass it to the Go indexer,
 # and feed the output of indexing to the Kythe schema verifier.
 def go_indexer_test(name, srcs, deps=[], import_path='', size = 'small',
-                    log_entries=False,
+                    log_entries=False, data=None,
                     has_marked_source=False,
-                    allow_duplicates=False):
+                    allow_duplicates=False,
+                    metadata_suffix=''):
   testlib = name+'_lib'
   go_library(
       name = testlib,
@@ -214,6 +238,7 @@ def go_indexer_test(name, srcs, deps=[], import_path='', size = 'small',
       name = testpack,
       library = ':'+testlib,
       import_path = import_path,
+      data = data if data else [],
   )
   go_verifier_test(
       name = name,
@@ -222,4 +247,5 @@ def go_indexer_test(name, srcs, deps=[], import_path='', size = 'small',
       log_entries = log_entries,
       has_marked_source = has_marked_source,
       allow_duplicates = allow_duplicates,
+      metadata_suffix = metadata_suffix,
   )

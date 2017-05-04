@@ -27,6 +27,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/pborman/uuid"
 
@@ -44,6 +45,7 @@ var (
 	corpus     = flag.String("corpus", "", "Default corpus name to use")
 	localPath  = flag.String("local_path", "", "Directory where relative imports are resolved")
 	outputDir  = flag.String("output_dir", "", "Directory where output should be written")
+	extraFiles = flag.String("extra_files", "", "Additional files to include in each compilation (CSV)")
 	indexFiles = flag.Bool("kindex", false, "Write outputs to .kindex files")
 	byDir      = flag.Bool("bydir", false, "Import by directory rather than import path")
 	keepGoing  = flag.Bool("continue", false, "Continue past errors")
@@ -100,6 +102,10 @@ func main() {
 		Corpus:       *corpus,
 		LocalPath:    *localPath,
 	}
+	if *extraFiles != "" {
+		ext.ExtraFiles = strings.Split(*extraFiles, ",")
+	}
+
 	locate := ext.Locate
 	if *byDir {
 		locate = ext.ImportDir

@@ -615,12 +615,6 @@ func (pi *PackageInfo) Span(node ast.Node) (file *ast.File, start, end int) {
 	return
 }
 
-// Anchor returns an anchor VName and offsets for the given AST node.
-func (pi *PackageInfo) Anchor(node ast.Node) (vname *spb.VName, start, end int) {
-	file, start, end := pi.Span(node)
-	return pi.AnchorVName(file, start, end), start, end
-}
-
 const (
 	isBuiltin = "builtin-"
 	tagConst  = "const"

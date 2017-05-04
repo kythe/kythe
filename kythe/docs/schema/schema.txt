@@ -1648,7 +1648,7 @@ public class E {}
 //- Pkg.node/kind package
 package foo
 
-//- File = vname("", "kythe", _, "kythe/schema/example.go", "").node/kind file
+//- File = vname("", _, _, "kythe/schema/example.go", "").node/kind file
 //- File childof Pkg
 --------------------------------------------------------------------------------
 

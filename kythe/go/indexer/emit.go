@@ -47,6 +47,9 @@ type EmitOptions struct {
 
 	// If true, emit code facts containing MarkedSource messages.
 	EmitMarkedSource bool
+
+	// If true, emit linkages specified by metadata rules.
+	EmitLinkages bool
 }
 
 // shouldEmit reports whether the indexer should emit a node for the given
@@ -573,9 +576,26 @@ func (e *emitter) writeAnchor(src *spb.VName, start, end int) {
 // writeRef emits an anchor spanning origin and referring to target with an
 // edge of the given kind. The vname of the anchor is returned.
 func (e *emitter) writeRef(origin ast.Node, target *spb.VName, kind string) *spb.VName {
-	anchor, start, end := e.pi.Anchor(origin)
+	file, start, end := e.pi.Span(origin)
+	anchor := e.pi.AnchorVName(file, start, end)
 	e.writeAnchor(anchor, start, end)
 	e.writeEdge(anchor, target, kind)
+
+	// Check whether we are intended to emit metadata linkage edges, and if so,
+	// whether there are any to process.
+	//
+	// TODO(fromberger): Don't iterate over the whole list of rules every time.
+	if e.opts != nil && e.opts.EmitLinkages {
+		for _, rule := range e.pi.Rules[file] {
+			if rule.Begin == start && rule.End == end && rule.EdgeIn == kind {
+				from, to := target, rule.VName
+				if rule.Reverse {
+					from, to = to, from
+				}
+				e.writeEdge(from, to, rule.EdgeOut)
+			}
+		}
+	}
 	return anchor
 }
 

@@ -11,6 +11,7 @@ go_binary(
         "//kythe/go/platform/indexpack",
         "//kythe/go/platform/kindex",
         "//kythe/go/platform/vfs",
+        "//kythe/go/util/metadata",
         "//kythe/proto:analysis_proto_go",
         "//kythe/proto:storage_proto_go",
     ],

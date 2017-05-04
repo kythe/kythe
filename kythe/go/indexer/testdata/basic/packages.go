@@ -3,5 +3,5 @@
 package pkg
 
 //- Pkg=vname("package", "test", _, "pkg", "go").node/kind package
-//- File=vname("", "test", _, "src/test/pkg/packages.go", "").node/kind file
+//- File=vname("", _, _, "src/test/pkg/packages.go", "").node/kind file
 //- File childof Pkg
