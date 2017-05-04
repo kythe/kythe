@@ -30,6 +30,7 @@ import (
 	"golang.org/x/tools/go/types/typeutil"
 
 	"kythe.io/kythe/go/extractors/govname"
+	"kythe.io/kythe/go/util/metadata"
 	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/facts"
 	"kythe.io/kythe/go/util/schema/nodes"
@@ -130,7 +131,8 @@ type emitter struct {
 	pi       *PackageInfo
 	sink     Sink
 	opts     *EmitOptions
-	impl     map[impl]bool
+	impl     map[impl]bool                        // see checkImplements
+	rmap     map[*ast.File]map[int]metadata.Rules // see applyRules
 	firstErr error
 }
 
@@ -583,19 +585,14 @@ func (e *emitter) writeRef(origin ast.Node, target *spb.VName, kind string) *spb
 
 	// Check whether we are intended to emit metadata linkage edges, and if so,
 	// whether there are any to process.
-	//
-	// TODO(fromberger): Don't iterate over the whole list of rules every time.
-	if e.opts != nil && e.opts.EmitLinkages {
-		for _, rule := range e.pi.Rules[file] {
-			if rule.Begin == start && rule.End == end && rule.EdgeIn == kind {
-				from, to := target, rule.VName
-				if rule.Reverse {
-					from, to = to, from
-				}
-				e.writeEdge(from, to, rule.EdgeOut)
-			}
+	e.applyRules(file, start, end, kind, func(rule metadata.Rule) {
+		if rule.Reverse {
+			e.writeEdge(rule.VName, target, rule.EdgeOut)
+		} else {
+			e.writeEdge(target, rule.VName, rule.EdgeOut)
 		}
-	}
+	})
+
 	return anchor
 }
 
@@ -725,6 +722,34 @@ func (e *emitter) nameContext(stack stackFunc) *spb.VName {
 		return fi.vname
 	}
 	return e.pi.VName
+}
+
+// applyRules calls apply for each metadata rule matching the given combination
+// of location and kind.
+func (e *emitter) applyRules(file *ast.File, start, end int, kind string, apply func(r metadata.Rule)) {
+	if e.opts == nil || !e.opts.EmitLinkages {
+		return // nothing to do
+	} else if e.rmap == nil {
+		e.rmap = make(map[*ast.File]map[int]metadata.Rules)
+	}
+
+	// Lazily populate a cache of file :: start :: rules mappings, so that we
+	// need only scan the rules coincident on the starting point of the range
+	// we care about. In almost all cases that will be just one, if any.
+	rules, ok := e.rmap[file]
+	if !ok {
+		rules = make(map[int]metadata.Rules)
+		for _, rule := range e.pi.Rules[file] {
+			rules[rule.Begin] = append(rules[rule.Begin], rule)
+		}
+		e.rmap[file] = rules
+	}
+
+	for _, rule := range rules[start] {
+		if rule.End == end && rule.EdgeIn == kind {
+			apply(rule)
+		}
+	}
 }
 
 // A visitFunc visits a node of the Go AST. The function can use stack to
