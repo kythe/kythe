@@ -283,6 +283,24 @@ var (
 					},
 				},
 				Target: getNodes("kythe://c?lang=otpl?path=/a/path#map", "kythe://core?lang=otpl#empty?", "kythe://core?lang=otpl#cons"),
+				Diagnostic: []*cpb.Diagnostic{
+					{Message: "Test diagnostic message"},
+					{
+						Span: &cpb.Span{
+							Start: &cpb.Point{
+								ByteOffset:   6,
+								LineNumber:   1,
+								ColumnOffset: 6,
+							},
+							End: &cpb.Point{
+								ByteOffset:   9,
+								LineNumber:   1,
+								ColumnOffset: 9,
+							},
+						},
+						Message: "Test diagnostic message w/ Span",
+					},
+				},
 			},
 		},
 
@@ -867,6 +885,22 @@ func TestDecorationsSourceText(t *testing.T) {
 	}
 	if len(reply.Reference) > 0 {
 		t.Errorf("Unexpected references in DecorationsReply %v", reply.Reference)
+	}
+}
+
+func TestDecorationsDiagnostics(t *testing.T) {
+	d := tbl.Decorations[1]
+
+	st := tbl.Construct(t)
+	reply, err := st.Decorations(ctx, &xpb.DecorationsRequest{
+		Location:    &xpb.Location{Ticket: d.File.Ticket},
+		Diagnostics: true,
+	})
+	testutil.FatalOnErrT(t, "DecorationsRequest error: %v", err)
+
+	expected := tbl.Decorations[1].Diagnostic
+	if err := testutil.DeepEqual(expected, reply.Diagnostic); err != nil {
+		t.Fatal(err)
 	}
 }
 

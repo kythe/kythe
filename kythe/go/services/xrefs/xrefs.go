@@ -530,6 +530,12 @@ func (p *Patcher) Patch(spanStart, spanEnd int32) (newStart, newEnd int32, exist
 	return 0, 0, false
 }
 
+// PatchSpan returns the given Span's byte offsets mapped from the Patcher's
+// oldText to its newText using Patcher.Patch.
+func (p *Patcher) PatchSpan(span *cpb.Span) (newStart, newEnd int32, exists bool) {
+	return p.Patch(span.GetStart().GetByteOffset(), span.GetEnd().GetByteOffset())
+}
+
 // Normalizer fixes xref.Locations within a given source text so that each point
 // has consistent byte_offset, line_number, and column_offset fields within the
 // range of text's length and its line lengths.

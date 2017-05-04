@@ -580,25 +580,25 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 		}
 	}
 
+	var patcher *xrefs.Patcher
+	if len(req.DirtyBuffer) > 0 {
+		patcher = xrefs.NewPatcher(decor.File.Text, req.DirtyBuffer)
+	}
+
+	// The span with which to constrain the set of returned anchor references.
+	var startBoundary, endBoundary int32
+	spanKind := req.SpanKind
+	if loc.Kind == xpb.Location_FILE {
+		startBoundary = 0
+		endBoundary = int32(len(text))
+		spanKind = xpb.DecorationsRequest_WITHIN_SPAN
+	} else {
+		startBoundary = loc.Span.Start.ByteOffset
+		endBoundary = loc.Span.End.ByteOffset
+	}
+
 	if req.References {
 		patterns := xrefs.ConvertFilters(req.Filter)
-
-		var patcher *xrefs.Patcher
-		if len(req.DirtyBuffer) > 0 {
-			patcher = xrefs.NewPatcher(decor.File.Text, req.DirtyBuffer)
-		}
-
-		// The span with which to constrain the set of returned anchor references.
-		var startBoundary, endBoundary int32
-		spanKind := req.SpanKind
-		if loc.Kind == xpb.Location_FILE {
-			startBoundary = 0
-			endBoundary = int32(len(text))
-			spanKind = xpb.DecorationsRequest_WITHIN_SPAN
-		} else {
-			startBoundary = loc.Span.Start.ByteOffset
-			endBoundary = loc.Span.End.ByteOffset
-		}
 
 		reply.Reference = make([]*xpb.DecorationsReply_Reference, 0, len(decor.Decoration))
 		reply.Nodes = make(map[string]*cpb.NodeInfo, len(decor.Target))
@@ -734,6 +734,26 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 
 		tracePrintf(ctx, "ExtendsOverrides: %d", len(reply.ExtendsOverrides))
 		tracePrintf(ctx, "DefinitionLocations: %d", len(reply.DefinitionLocations))
+	}
+
+	if req.Diagnostics {
+		for _, diag := range decor.Diagnostic {
+			if diag.Span == nil {
+				reply.Diagnostic = append(reply.Diagnostic, diag)
+			} else {
+				start, end, exists := patcher.PatchSpan(diag.Span)
+				// Filter non-existent (or out-of-bounds) diagnostic.  Diagnostics can
+				// no longer exist if we were given a dirty buffer and the diagnostic
+				// was inside a changed region.
+				if !exists || !xrefs.InSpanBounds(spanKind, start, end, startBoundary, endBoundary) {
+					continue
+				}
+
+				diag.Span = norm.SpanOffsets(start, end)
+				reply.Diagnostic = append(reply.Diagnostic, diag)
+			}
+		}
+		tracePrintf(ctx, "Diagnostics: %d", len(reply.Diagnostic))
 	}
 
 	return reply, nil

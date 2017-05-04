@@ -250,6 +250,9 @@ message FileDecorations {
 
   // List of overrides for target semantic nodes.
   repeated Override target_override = 5;
+
+  // List of file diagnostics.
+  repeated kythe.proto.common.Diagnostic diagnostic = 6;
 }
 
 // PagedCrossReferences are used for efficiently storing pre-cached data for
