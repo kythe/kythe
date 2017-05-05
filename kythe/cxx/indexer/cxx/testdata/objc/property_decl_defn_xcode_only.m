@@ -8,7 +8,7 @@
 //- @Box defines/binding BoxDecl
 //- BoxDecl.node/kind record
 //- BoxDecl.subkind class
-//- BoxDecl.complete incomplete
+//- BoxDecl.complete complete
 @interface Box {
   //- @width defines/binding WidthIVarDecl
   int width;
