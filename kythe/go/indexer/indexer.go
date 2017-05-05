@@ -588,6 +588,7 @@ func (pi *PackageInfo) FileVName(file *ast.File) *spb.VName {
 func (pi *PackageInfo) AnchorVName(file *ast.File, start, end int) *spb.VName {
 	vname := proto.Clone(pi.FileVName(file)).(*spb.VName)
 	vname.Signature = "#" + strconv.Itoa(start) + ":" + strconv.Itoa(end)
+	vname.Language = govname.Language
 	return vname
 }
 

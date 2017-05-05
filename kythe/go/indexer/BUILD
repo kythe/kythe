@@ -152,3 +152,8 @@ go_indexer_test(
     data = ["testdata/meta.go.linkage"],
     metadata_suffix = ".linkage",
 )
+
+go_indexer_test(
+    name = "anchors_test",
+    srcs = ["testdata/basic/anchors.go"],
+)
