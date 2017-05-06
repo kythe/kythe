@@ -234,6 +234,13 @@ func (e *emitter) visitValueSpec(spec *ast.ValueSpec, stack stackFunc) {
 		}
 		e.writeDoc(doc, target)
 	}
+
+	// Handle fields of anonymous struct types declared in situ.
+	for _, v := range spec.Values {
+		if lit, ok := v.(*ast.CompositeLit); ok {
+			e.emitAnonFields(lit.Type)
+		}
+	}
 }
 
 // visitTypeSpec handles type declarations, including the bindings for fields
@@ -393,6 +400,7 @@ func (e *emitter) emitParameters(ftype *ast.FuncType, sig *types.Signature, info
 		if sig.Params().At(i) != nil {
 			if param := e.writeBinding(id, nodes.Variable, info.vname); param != nil {
 				e.writeEdge(info.vname, param, edges.ParamIndex(paramIndex))
+				e.emitAnonFields(ftype.Params.List[i].Type)
 			}
 		}
 		paramIndex++
@@ -402,6 +410,19 @@ func (e *emitter) emitParameters(ftype *ast.FuncType, sig *types.Signature, info
 	mapFields(ftype.Results, func(i int, id *ast.Ident) {
 		e.writeBinding(id, nodes.Variable, info.vname)
 	})
+}
+
+// emitAnonFields checks whether expr denotes an anonymous struct type, and if
+// so emits bindings for the fields of that struct. The resulting fields do not
+// parent to the struct, since it has no referential identity; but we do
+// capture documentation in the unlikely event someone wrote any.
+func (e *emitter) emitAnonFields(expr ast.Expr) {
+	if st, ok := expr.(*ast.StructType); ok {
+		mapFields(st.Fields, func(i int, id *ast.Ident) {
+			target := e.writeVarBinding(id, nodes.Field, nil) // no parent
+			e.writeDoc(st.Fields.List[i].Doc, target)
+		})
+	}
 }
 
 // An override represents the relationship that x overrides y.

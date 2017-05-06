@@ -157,3 +157,8 @@ go_indexer_test(
     name = "anchors_test",
     srcs = ["testdata/basic/anchors.go"],
 )
+
+go_indexer_test(
+    name = "anonymous_test",
+    srcs = ["testdata/basic/anonymous.go"],
+)
