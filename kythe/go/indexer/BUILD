@@ -121,30 +121,35 @@ go_indexer_test(
     name = "code_function_test",
     srcs = ["testdata/code/funcdecl.go"],
     has_marked_source = True,
+    import_path = "funcdecl",
 )
 
 go_indexer_test(
     name = "code_interface_test",
     srcs = ["testdata/code/interface.go"],
     has_marked_source = True,
+    import_path = "test/iface",
 )
 
 go_indexer_test(
     name = "code_var_test",
     srcs = ["testdata/code/pkgvar.go"],
     has_marked_source = True,
+    import_path = "pkgvar",
 )
 
 go_indexer_test(
     name = "code_struct_test",
     srcs = ["testdata/code/structtype.go"],
     has_marked_source = True,
+    import_path = "structtype",
 )
 
 go_indexer_test(
     name = "code_method_test",
     srcs = ["testdata/code/methdecl.go"],
     has_marked_source = True,
+    import_path = "methdecl",
 )
 
 go_indexer_test(

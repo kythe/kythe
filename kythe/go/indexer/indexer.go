@@ -116,6 +116,9 @@ type PackageInfo struct {
 
 	// The number of package-level init declarations seen.
 	numInits int
+
+	// The Go-specific details from the compilation record.
+	details *gopb.GoDetails
 }
 
 type funcInfo struct {
@@ -318,6 +321,7 @@ func Resolve(unit *apb.CompilationUnit, f Fetcher, opts *ResolveOptions) (*Packa
 		sigs:      make(map[types.Object]string),
 		fileVName: filev,
 		fileLoc:   floc,
+		details:   details,
 	}
 
 	// If mapping rules were found, populate the corresponding field.
@@ -433,7 +437,7 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *xpb.MarkedSource {
 	//
 	if pkg := obj.Pkg(); pkg != nil {
 		ctx := []*xpb.MarkedSource{{
-			PreText: pkg.Name(),
+			PreText: pi.importPath(pkg),
 		}}
 		if par, ok := pi.owner[obj]; ok {
 			if _, ok := par.Type().(*types.Named); ok {
@@ -845,6 +849,14 @@ func (pi *PackageInfo) findFieldName(expr ast.Expr) (id *ast.Ident, ok bool) {
 		// No idea what this is; possibly malformed code.
 		return nil, false
 	}
+}
+
+// importPath returns the import path of pkg.
+func (pi *PackageInfo) importPath(pkg *types.Package) string {
+	if v := pi.PackageVName[pkg]; v != nil {
+		return vnameToImport(v, pi.details.GetGoroot())
+	}
+	return pkg.Name()
 }
 
 // vnameToImport returns the putative Go import path corresponding to v.  The

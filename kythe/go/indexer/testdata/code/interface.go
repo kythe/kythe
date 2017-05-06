@@ -13,7 +13,7 @@ package iface
 //- THC1Context.post_child_text "."
 //- THC1Context child.0 THC1ContextID
 //- THC1ContextID.kind "IDENTIFIER"
-//- THC1ContextID.pre_text "iface"
+//- THC1ContextID.pre_text "test/iface"
 //-
 //- THC1 child.1 THC1Ident
 //- THC1Ident.kind "IDENTIFIER"
@@ -53,7 +53,7 @@ type Thinger interface {
 	//- MCContext.kind "CONTEXT"
 	//- MCContext child.0 MCContextPkg
 	//- MCContextPkg.kind "IDENTIFIER"
-	//- MCContextPkg.pre_text "iface"
+	//- MCContextPkg.pre_text "test/iface"
 	//-
 	//- MCContext child.1 MCContextType
 	//- MCContextType.kind "IDENTIFIER"
