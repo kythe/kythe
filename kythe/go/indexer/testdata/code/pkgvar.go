@@ -6,31 +6,26 @@ package pkgvar
 //-
 //- //--------------------------------------------------
 //- VarCode child.0 VC0
-//- VC0.kind "TYPE"
-//- VC0.pre_text "var "
+//- VC0.kind "BOX"
+//-
+//- VC0 child.0 VC1Context
+//- VC0Context.kind "CONTEXT"
+//- VC0Context.post_child_text "."
+//- VC0Context child.0 VC1ContextID
+//- VC0ContextID.kind "IDENTIFIER"
+//- VC0ContextID.pre_text "pkgvar"
+//-
+//- VC0 child.1 VC1Ident
+//- VC0Ident.kind "IDENTIFIER"
+//- VC0Ident.pre_text "V"
 //-
 //- //--------------------------------------------------
 //- VarCode child.1 VC1
-//- VC1.kind "BOX"
-//-
-//- VC1 child.0 VC1Context
-//- VC1Context.kind "CONTEXT"
-//- VC1Context.post_child_text "."
-//- VC1Context child.0 VC1ContextID
-//- VC1ContextID.kind "IDENTIFIER"
-//- VC1ContextID.pre_text "pkgvar"
-//-
-//- VC1 child.1 VC1Ident
-//- VC1Ident.kind "IDENTIFIER"
-//- VC1Ident.pre_text "V"
+//- VC1.kind "TYPE"
+//- VC1.pre_text " "
 //-
 //- //--------------------------------------------------
 //- VarCode child.2 VC2
 //- VC2.kind "TYPE"
-//- VC2.pre_text " "
-//-
-//- //--------------------------------------------------
-//- VarCode child.3 VC3
-//- VC3.kind "TYPE"
-//- VC3.pre_text "int"
+//- VC2.pre_text "int"
 var V int

@@ -499,16 +499,11 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *xpb.MarkedSource {
 
 	case *types.Var:
 		// For variables and fields, include the type.
-		tag := "var"
-		if t.IsField() {
-			tag = "field"
-		}
-
 		repl := &xpb.MarkedSource{Child: setKind(xpb.MarkedSource_TYPE,
-			&xpb.MarkedSource{PreText: tag + " "}, new(xpb.MarkedSource), &xpb.MarkedSource{PreText: " "},
+			new(xpb.MarkedSource), &xpb.MarkedSource{PreText: " "},
 			&xpb.MarkedSource{PreText: typeName(t.Type())},
 		)}
-		repl.Child[1] = ms
+		repl.Child[0] = ms
 		ms = repl
 
 	case *types.TypeName:

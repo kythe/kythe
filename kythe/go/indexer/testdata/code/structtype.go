@@ -40,37 +40,32 @@ type T struct {
 	//-
 	//- //--------------------------------------------------
 	//- FieldCode child.0 FC0
-	//- FC0.kind "TYPE"
-	//- FC0.pre_text "field "
+	//- FCo.kind "BOX"
+	//-
+	//- FC0 child.0 FC1Context
+	//- FC0Context.kind "CONTEXT"
+	//- FC0Context.post_child_text "."
+	//-
+	//- FC0Context child.0 FC1ContextID
+	//- FC0ContextID.kind "IDENTIFIER"
+	//- FC0ContextID.pre_text "structtype"
+	//-
+	//- FC0Context child.1 FC1ContextType
+	//- FC0ContextType.kind "IDENTIFIER"
+	//- FC0ContextType.pre_text "T"
+	//-
+	//- FC0 child.1 FC1Ident?
+	//- FC0Ident.kind "IDENTIFIER"
+	//- FC0Ident.pre_text "F"
 	//-
 	//- //--------------------------------------------------
 	//- FieldCode child.1 FC1
-	//- FC1.kind "BOX"
-	//-
-	//- FC1 child.0 FC1Context
-	//- FC1Context.kind "CONTEXT"
-	//- FC1Context.post_child_text "."
-	//-
-	//- FC1Context child.0 FC1ContextID
-	//- FC1ContextID.kind "IDENTIFIER"
-	//- FC1ContextID.pre_text "structtype"
-	//-
-	//- FC1Context child.1 FC1ContextType
-	//- FC1ContextType.kind "IDENTIFIER"
-	//- FC1ContextType.pre_text "T"
-	//-
-	//- FC1 child.1 FC1Ident?
-	//- FC1Ident.kind "IDENTIFIER"
-	//- FC1Ident.pre_text "F"
+	//- FC1.kind "TYPE"
+	//- FC1.pre_text " "
 	//-
 	//- //--------------------------------------------------
 	//- FieldCode child.2 FC2
 	//- FC2.kind "TYPE"
-	//- FC2.pre_text " "
-	//-
-	//- //--------------------------------------------------
-	//- FieldCode child.3 FC3
-	//- FC3.kind "TYPE"
-	//- FC3.pre_text "byte"
+	//- FC2.pre_text "byte"
 	F byte
 }
