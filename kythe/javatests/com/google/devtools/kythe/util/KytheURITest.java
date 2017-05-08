@@ -33,7 +33,7 @@ public class KytheURITest extends TestCase {
     assertEquals(builder().setSignature("sig").build(), parse("#sig"));
     assertEquals(builder().setSignature("sig").build(), parse("kythe:#sig"));
     assertEquals(builder().setCorpus("corpus").build(), parse("kythe://corpus"));
-    assertEquals(builder().setCorpus("corpus").build(), parse("kythe://corpus/"));
+    assertEquals(builder().setCorpus("corpus/").build(), parse("kythe://corpus/"));
     assertEquals(
         builder().setCorpus("corpus/with/path").build(), parse("kythe://corpus/with/path"));
     assertEquals(builder().setCorpus("corpus/with/path").build(), parse("//corpus/with/path"));
@@ -141,6 +141,25 @@ public class KytheURITest extends TestCase {
     assertEquals("", vname.getRoot()); // Proto fields are never null
     assertEquals(path, vname.getPath());
     assertEquals(lang, vname.getLanguage());
+  }
+
+  public void testParseErrors() {
+    String[] tests =
+        new String[] {
+          "badscheme:",
+          "badscheme://corpus",
+          "badscheme:?path=path",
+          "kythe:#sig1#sig2",
+          "kythe:?badparam=val"
+        };
+    for (String test : tests) {
+      try {
+        KytheURI uri = KytheURI.parse(test);
+        fail();
+      } catch (Exception e) {
+        // pass test
+      }
+    }
   }
 
   private static KytheURI.Builder builder() {

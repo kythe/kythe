@@ -27,12 +27,13 @@ import com.google.common.escape.Escaper;
 import com.google.common.net.PercentEscaper;
 import com.google.devtools.kythe.proto.Storage.VName;
 import java.io.Serializable;
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.net.URLDecoder;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.Map;
 
 /**
- * {@link URI}/{@link String} realization of a {@link VName}.
+ * /{@link String} realization of a {@link VName}.
  *
  * <p>Specification: //kythe/util/go/kytheuri/kythe-uri-spec.txt
  */
@@ -40,6 +41,7 @@ public class KytheURI implements Serializable {
   private static final long serialVersionUID = 2726281203803801095L;
 
   public static final String SCHEME_LABEL = "kythe";
+  public static final String SCHEME = SCHEME_LABEL + ":";
   public static final KytheURI EMPTY = new KytheURI();
 
   private static final String SAFE_CHARS = ".-_~";
@@ -102,14 +104,23 @@ public class KytheURI implements Serializable {
 
   @Override
   public String toString() {
-    StringBuilder b = new StringBuilder(SCHEME_LABEL + ":");
+    StringBuilder b =
+        new StringBuilder(
+            SCHEME.length()
+                + "//?=?=?=#".length() // assume all punctuation is necessary
+                + getCorpus().length()
+                + getPath().length()
+                + getRoot().length()
+                + getLanguage().length()
+                + getSignature().length());
+    b.append(SCHEME);
     if (!vName.getCorpus().isEmpty()) {
       b.append("//");
       b.append(PATH_ESCAPER.escape(vName.getCorpus()));
     }
-    b.append(attr("lang", ALL_ESCAPER.escape(vName.getLanguage())));
-    b.append(attr("path", PATH_ESCAPER.escape(cleanPath(vName.getPath()))));
-    b.append(attr("root", PATH_ESCAPER.escape(vName.getRoot())));
+    attr(b, "lang", ALL_ESCAPER.escape(vName.getLanguage()));
+    attr(b, "path", PATH_ESCAPER.escape(cleanPath(vName.getPath())));
+    attr(b, "root", PATH_ESCAPER.escape(vName.getRoot()));
     if (!vName.getSignature().isEmpty()) {
       b.append("#");
       b.append(ALL_ESCAPER.escape(vName.getSignature()));
@@ -128,47 +139,80 @@ public class KytheURI implements Serializable {
   }
 
   /** Parses the given string to produce a new {@link KytheURI}. */
-  public static KytheURI parse(String str) throws URISyntaxException {
+  public static KytheURI parse(String str) {
     checkNotNull(str, "str must be non-null");
-
-    // java.net.URI does not handle an empty scheme-specific-part well...
-    str = str.replaceFirst("^" + SCHEME_LABEL + ":([^/]|$)", SCHEME_LABEL + "://$1");
-    if (str.isEmpty() || str.equals(SCHEME_LABEL + "://")) {
+    if (str.isEmpty() || str.equals(SCHEME) || str.equals(SCHEME + "//")) {
       return EMPTY;
     }
+    String original = str;
 
-    URI uri = new URI(str);
-    checkArgument(
-        SCHEME_LABEL.equals(uri.getScheme()) || isNullOrEmpty(uri.getScheme()),
-        "URI Scheme must be " + SCHEME_LABEL + "; was " + uri.getScheme());
-    String root = null, path = null, lang = null;
-    if (!isNullOrEmpty(uri.getQuery())) {
-      for (String attr : uri.getQuery().split("\\?")) {
-        String[] keyValue = attr.split("=", 2);
-        if (keyValue.length != 2) {
-          throw new URISyntaxException(str, "Invalid query: " + uri.getQuery());
-        }
-        switch (keyValue[0]) {
-          case "lang":
-            lang = keyValue[1];
+    // Check for a scheme label.  This may be empty; but if present, it must be
+    // our expected scheme.
+    if (str.startsWith(SCHEME)) {
+      str = str.substring(SCHEME.length());
+    }
+
+    String signature = null;
+    String corpus = null;
+    String path = null;
+    String root = null;
+    String lang = null;
+
+    // Split corpus/attributes from signature.
+    Iterator<String> parts = Splitter.on("#").split(str).iterator();
+    String head = parts.next();
+    if (parts.hasNext()) {
+      signature = parts.next();
+    }
+    checkArgument(!parts.hasNext(), "URI has multiple fragments: %s", original);
+
+    // Remove corpus prefix from attributes.
+    int firstParam = head.indexOf('?');
+    firstParam = firstParam < 0 ? head.length() : firstParam;
+    if (head.startsWith("//")) {
+      corpus = head.substring(2, firstParam);
+      head = head.substring(firstParam);
+    } else {
+      checkArgument(firstParam == 0, "invalid URI scheme: %s", original);
+    }
+
+    // If there are any attributes, parse them.  We allow valid attributes to
+    // occur in any order, even if it is not canonical.
+    if (!head.isEmpty()) {
+      Map<String, String> params =
+          Splitter.on("?").withKeyValueSeparator("=").split(head.substring(1));
+
+      for (Map.Entry<String, String> e : params.entrySet()) {
+        switch (e.getKey()) {
+          case "path":
+            path = e.getValue();
             break;
           case "root":
-            root = keyValue[1];
+            root = e.getValue();
             break;
-          case "path":
-            path = cleanPath(keyValue[1]);
+          case "lang":
+            lang = e.getValue();
             break;
           default:
-            throw new URISyntaxException(str, "Invalid query attribute: " + keyValue[0]);
+            checkArgument(false, "invalid attribute: %s (value: %s)", e.getKey(), e.getValue());
+            break;
         }
       }
     }
-    String signature = uri.getFragment();
-    String corpus =
-        ((uri.getHost() == null ? nullToEmpty(uri.getAuthority()) : nullToEmpty(uri.getHost()))
-                + nullToEmpty(uri.getPath()))
-            .replaceAll("/+$", "");
-    return new KytheURI(signature, corpus, root, path, lang);
+
+    return new KytheURI(
+        decode(signature), decode(corpus), decode(root), decode(path), decode(lang));
+  }
+
+  private static String decode(String str) {
+    if (isNullOrEmpty(str)) {
+      return null;
+    }
+    try {
+      return URLDecoder.decode(str.replace("+", "%2B"), "UTF-8");
+    } catch (java.io.UnsupportedEncodingException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   /** Returns a new {@link KytheURI.Builder}. */
@@ -209,8 +253,14 @@ public class KytheURI implements Serializable {
     }
   }
 
-  private static String attr(String name, String value) {
-    return value.isEmpty() ? "" : "?" + name + "=" + value;
+  private static void attr(StringBuilder b, String name, String value) {
+    if (value.isEmpty()) {
+      return;
+    }
+    b.append("?");
+    b.append(name);
+    b.append("=");
+    b.append(value);
   }
 
   /**
