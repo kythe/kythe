@@ -466,9 +466,16 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *xpb.MarkedSource {
 		sig := t.Type().(*types.Signature)
 		firstParam := 0
 		if recv := sig.Recv(); recv != nil {
-			children = append(children, setKind(xpb.MarkedSource_PARAMETER,
-				identifiers(types.NewTuple(recv), true),
-			)...)
+			// Parenthesized receiver type, e.g. (R).
+			children = append(children, &xpb.MarkedSource{
+				Kind:     xpb.MarkedSource_PARAMETER,
+				PreText:  "(",
+				PostText: ") ",
+				Child: []*xpb.MarkedSource{{
+					Kind:    xpb.MarkedSource_TYPE,
+					PreText: typeName(recv.Type()),
+				}},
+			})
 			firstParam = 1
 		}
 		children = append(children, ms, &xpb.MarkedSource{

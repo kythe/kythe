@@ -142,6 +142,12 @@ go_indexer_test(
 )
 
 go_indexer_test(
+    name = "code_method_test",
+    srcs = ["testdata/code/methdecl.go"],
+    has_marked_source = True,
+)
+
+go_indexer_test(
     name = "override_test",
     srcs = ["testdata/override.go"],
 )

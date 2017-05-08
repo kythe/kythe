@@ -41,11 +41,10 @@ type Thinger interface {
 	//- MethodCode child.1 MC1
 	//- MC1.kind "PARAMETER"
 	//- MC1.pre_text "("
-	//- MC1.post_text ")"
-	//-
-	//- MC1 child.0 MCReceiver
-	//- MC1Receiver.kind "IDENTIFIER"
-	//- MC1Receiver.pre_text "Thinger"
+	//- MC1.post_text ") "
+	//- MC1 child.0 MCRecv
+	//- MCRecv.kind "TYPE"
+	//- MCRecv.pre_text "Thinger"
 	//-
 	//- //--------------------------------------------------
 	//- MethodCode child.2 MCIdent
