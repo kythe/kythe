@@ -200,6 +200,7 @@ class Vistor {
         case ts.SyntaxKind.ClassDeclaration:
         case ts.SyntaxKind.FunctionDeclaration:
         case ts.SyntaxKind.InterfaceDeclaration:
+        case ts.SyntaxKind.ImportSpecifier:
         case ts.SyntaxKind.MethodDeclaration:
         case ts.SyntaxKind.MethodSignature:
         case ts.SyntaxKind.NamespaceImport:
@@ -370,6 +371,63 @@ class Vistor {
     return name;
   }
 
+  /**
+   * visitImportSpecifier handles a single entry in an import statement, e.g.
+   * "bar" in code like
+   *   import {foo, bar} from 'baz';
+   * See visitImportDeclaration for the code handling the entire statement.
+   *
+   * @param moduleSym The ts.Symbol for the module specifer ('baz' in above).
+   */
+  visitImportSpecifier(imp: ts.ImportSpecifier, moduleSym: ts.Symbol) {
+    // An import both imports a symbol from another module
+    // (call it the "remote" symbol) and it defines a local symbol.
+    //
+    // Those two symbols often have the same name, with statements like:
+    //   import {foo} from 'bar';
+    // But they can be different, in e.g.
+    //   import {foo as baz} from 'bar';
+    // Which maps the remote symbol named 'foo' to a local named 'baz'.
+    //
+    // In all cases TypeScript maintains two different ts.Symbol objects,
+    // one for the local and one for the remote.  In principle for the
+    // simple import statement
+    //   import {foo} from 'bar';
+    // the "foo" should be both:
+    // - a ref/imports to the remote symbol
+    // - a defines/binding for the local symbol
+    //
+    // But in Kythe the UI for stacking multiple references out from a single
+    // anchor isn't great, so this code instead unifies all references
+    // (including renaming imports) to a single VName.
+
+    const localSym = this.getSymbolAtLocation(imp.name);
+    if (!localSym) {
+      throw new Error(`TODO: local name ${imp.name} has no symbol`);
+    }
+
+    // Find the symbol in the imported module by looking it up by name.
+    // imp.propertyName is the remote name, but present only when the import is
+    // renaming.
+    const remoteName = (imp.propertyName || imp.name).text;
+    const remoteSym =
+        this.typeChecker.tryGetMemberInModuleExports(remoteName, moduleSym);
+    if (!remoteSym) {
+      throw new Error(`imported symbol ${remoteName} not found in module`);
+    }
+
+    // TODO: import a type, not just a value.
+    const kImport = this.getSymbolName(remoteSym, TSNamespace.VALUE);
+    // Mark the local symbol with the remote symbol's VName so that all
+    // references resolve to the remote symbol.
+    this.symbolNames.set(localSym, [null, kImport]);
+
+    this.emitEdge(this.newAnchor(imp.name), 'ref/imports', kImport);
+    if (imp.propertyName) {
+      this.emitEdge(this.newAnchor(imp.propertyName), 'ref/imports', kImport);
+    }
+  }
+
   /** visitImportDeclaration handles the various forms of "import ...". */
   visitImportDeclaration(decl: ts.ImportDeclaration) {
     // All varieties of import statements reference a module on the right,
@@ -423,52 +481,7 @@ class Vistor {
         //   import {bar, baz} from 'foo';
         let imports = clause.namedBindings.elements;
         for (let imp of imports) {
-          // There are two names to consider for each import: the name in the
-          // module we're importing from (call it the "remote" name) and the
-          // name we give the import in this module (call it the "local" name).
-          // Those two names can differ in the case where you rename:
-          //   import {bar as baz} from 'foo';
-          //
-          // imp.name is always the local name of the import.
-          // If imp.propertyName is present, then it's the remote name;
-          // otherwise the remote name is the same as the local name.
-          //
-          // The goal is to link all of these names to the same VName, which
-          // is the one exposed by the imported module.
-
-          let anchors = [this.newAnchor(imp.name)];
-          let remoteName = imp.name.text;
-
-          if (imp.propertyName) {
-            remoteName = imp.propertyName.text;
-            anchors.push(this.newAnchor(imp.propertyName));
-          }
-
-          // TypeScript has two separate Symbol objects for imports: there's
-          // one for the symbol in the local file and one for the symbol in
-          // the remote module.  Grab the latter by looking up the remote name
-          // in the remote module's exports.
-          let localSym = this.getSymbolAtLocation(imp.name);
-          if (!localSym) {
-            throw new Error(`TODO: local name ${imp.name} has no symbol`);
-          }
-          let remoteSym = this.typeChecker.tryGetMemberInModuleExports(
-              remoteName, moduleSym);
-          if (!remoteSym) {
-            throw new Error(
-                `imported symbol ${remoteName} not found in module`);
-          }
-
-          // Resolve the anchors to point at the remote symbol.
-          // TODO: import a type, not just a value.
-          let kImp = this.getSymbolName(remoteSym, TSNamespace.VALUE);
-          for (const anchor of anchors) {
-            this.emitEdge(anchor, 'ref', kImp);
-          }
-
-          // Mark the local symbol with the remote symbol's VName so that all
-          // references resolve to the remote symbol.
-          this.symbolNames.set(localSym, [null, kImp]);
+          this.visitImportSpecifier(imp, moduleSym);
         }
         break;
     }
@@ -653,7 +666,8 @@ class Vistor {
   indexFile(file: ts.SourceFile) {
     // Emit a "file" node, containing the source text.
     this.kFile = this.newVName(
-        /* empty signature */ '', path.relative(this.sourceRoot, file.fileName));
+        /* empty signature */ '',
+        path.relative(this.sourceRoot, file.fileName));
     this.kFile.language = '';
     this.emitFact(this.kFile, 'node/kind', 'file');
     this.emitFact(this.kFile, 'text', file.text);
