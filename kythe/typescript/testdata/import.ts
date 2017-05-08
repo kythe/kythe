@@ -6,12 +6,13 @@
 import * as mod_imp from './module';
 
 // Importing from a module gets a VName that refers into the other module.
-//- @value ref Val=VName(_, _, _, "testdata/module", _)
+//- @value ref/imports Val=VName(_, _, _, "testdata/module", _)
 //- @"'./module'" ref/imports ModRef
 import {value} from './module';
 
-//- @value ref Val
-//- @renamedValue ref Val
+// Importing from a module gets a VName that refers into the other module,.
+//- @value ref/imports Val
+//- @renamedValue ref/imports Val
 import {value as renamedValue} from './module';
 
 // Ensure the various names of the imported value link together.
