@@ -244,6 +244,10 @@ bool SkipAliasedDecl(const clang::Decl *D) {
   return FLAGS_experimental_alias_template_instantiations &&
          (FindSpecializedTemplate(D) != D);
 }
+
+bool IsObjCForwardDecl(const clang::ObjCInterfaceDecl *decl) {
+  return !decl->hasDefinition() || decl != decl->getCanonicalDecl();
+}
 }  // anonymous namespace
 
 bool IsClaimableForTraverse(const clang::Decl *decl) {
@@ -4385,7 +4389,7 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
         if (const auto *Impl = IFace->getImplementation()) {
           Claimability = GraphObserver::Claimability::Unclaimable;
           ID = BuildNodeIdForDecl(Impl);
-        } else if (IFace->hasDefinition()) {
+        } else if (!IsObjCForwardDecl(IFace)) {
           Claimability = GraphObserver::Claimability::Unclaimable;
           ID = BuildNodeIdForDecl(IFace);
         } else {
@@ -4735,7 +4739,7 @@ bool IndexerASTVisitor::VisitObjCCategoryImplDecl(
 void IndexerASTVisitor::ConnectToSuperClassAndProtocols(
     const GraphObserver::NodeId BodyDeclNode,
     const clang::ObjCInterfaceDecl *IFace) {
-  if (!IFace->hasDefinition()) {
+  if (IsObjCForwardDecl(IFace)) {
     // This is a forward declaration, so it won't have superclass or protocol
     // info
     return;
@@ -4841,9 +4845,9 @@ bool IndexerASTVisitor::VisitObjCInterfaceDecl(
 
   AddChildOfEdgeToDeclContext(Decl, DeclNode);
 
-  auto Completeness = Decl->hasDefinition()
-                          ? GraphObserver::Completeness::Complete
-                          : GraphObserver::Completeness::Incomplete;
+  auto Completeness = IsObjCForwardDecl(Decl)
+                          ? GraphObserver::Completeness::Incomplete
+                          : GraphObserver::Completeness::Complete;
   Observer.recordRecordNode(BodyDeclNode, GraphObserver::RecordKind::Class,
                             Completeness, None());
   Observer.recordMarkedSource(DeclNode, Marks.GenerateMarkedSource(DeclNode));
@@ -4907,6 +4911,13 @@ void IndexerASTVisitor::ConnectCategoryToBaseClass(
 void IndexerASTVisitor::RecordCompletesForRedecls(
     const Decl *Decl, const SourceRange &NameRange,
     const GraphObserver::NodeId &DeclNode) {
+  // Only draw completion edges if this is the canonical declaration. Otherwise
+  // we could be drawing completion edges to forward declarations and that
+  // doesn't make senes.
+  if (Decl != Decl->getCanonicalDecl()) {
+    return;
+  }
+
   FileID DeclFile = Observer.getSourceManager()->getFileID(Decl->getLocation());
   if (auto NameRangeInContext =
           RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange)) {
