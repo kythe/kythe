@@ -131,18 +131,16 @@ class Vistor {
   }
 
   /** newAnchor emits a new anchor entry that covers a TypeScript node. */
-  newAnchor(node: ts.Node): VName {
+  newAnchor(node: ts.Node, start = node.getStart(), end = node.end): VName {
     let name = this.newVName(
-        `@${node.pos}:${node.end}`,
+        `@${start}:${end}`,
         // An anchor refers to specific text, so its path is the file path,
         // not the module name.
         path.relative(this.sourceRoot, node.getSourceFile().fileName));
     this.emitNode(name, 'anchor');
     let offsetTable = this.getOffsetTable(node.getSourceFile().fileName);
-    this.emitFact(
-        name, 'loc/start', offsetTable.lookup(node.getStart()).toString());
-    this.emitFact(
-        name, 'loc/end', offsetTable.lookup(node.getEnd()).toString());
+    this.emitFact(name, 'loc/start', offsetTable.lookup(start).toString());
+    this.emitFact(name, 'loc/end', offsetTable.lookup(end).toString());
     this.emitEdge(name, 'childof', this.kFile);
     return name;
   }
@@ -187,6 +185,17 @@ class Vistor {
     for (let node: ts.Node|undefined = startNode; node != null;
          node = node.parent) {
       switch (node.kind) {
+        case ts.SyntaxKind.ExportAssignment:
+          const exportDecl = node as ts.ExportAssignment;
+          if (!exportDecl.isExportEquals) {
+            // It's an "export default" statement.
+            // This is semantically equivalent to exporting a variable
+            // named 'default'.
+            parts.push('default');
+          } else {
+            console.error('TODO: handle ExportAssignment with =');
+          }
+          break;
         case ts.SyntaxKind.Block:
           if (node.parent &&
               (node.parent.kind === ts.SyntaxKind.FunctionDeclaration ||
@@ -205,6 +214,7 @@ class Vistor {
         case ts.SyntaxKind.MethodSignature:
         case ts.SyntaxKind.NamespaceImport:
         case ts.SyntaxKind.Parameter:
+        case ts.SyntaxKind.PropertyAssignment:
         case ts.SyntaxKind.PropertyDeclaration:
         case ts.SyntaxKind.PropertySignature:
         case ts.SyntaxKind.VariableDeclaration:
@@ -375,11 +385,13 @@ class Vistor {
    * visitImportSpecifier handles a single entry in an import statement, e.g.
    * "bar" in code like
    *   import {foo, bar} from 'baz';
+   * And it's carefully factored also to handle "import default" statements.
    * See visitImportDeclaration for the code handling the entire statement.
    *
-   * @param moduleSym The ts.Symbol for the module specifer ('baz' in above).
+   * @param remoteSym The ts.Symbol for the symbol in the module ('bar').
+   * @return The VName for the import.
    */
-  visitImportSpecifier(imp: ts.ImportSpecifier, moduleSym: ts.Symbol) {
+  visitImport(name: ts.Node, remoteSym: ts.Symbol): VName {
     // An import both imports a symbol from another module
     // (call it the "remote" symbol) and it defines a local symbol.
     //
@@ -401,19 +413,9 @@ class Vistor {
     // anchor isn't great, so this code instead unifies all references
     // (including renaming imports) to a single VName.
 
-    const localSym = this.getSymbolAtLocation(imp.name);
+    const localSym = this.getSymbolAtLocation(name);
     if (!localSym) {
-      throw new Error(`TODO: local name ${imp.name} has no symbol`);
-    }
-
-    // Find the symbol in the imported module by looking it up by name.
-    // imp.propertyName is the remote name, but present only when the import is
-    // renaming.
-    const remoteName = (imp.propertyName || imp.name).text;
-    const remoteSym =
-        this.typeChecker.tryGetMemberInModuleExports(remoteName, moduleSym);
-    if (!remoteSym) {
-      throw new Error(`imported symbol ${remoteName} not found in module`);
+      throw new Error(`TODO: local name ${name} has no symbol`);
     }
 
     // TODO: import a type, not just a value.
@@ -422,10 +424,8 @@ class Vistor {
     // references resolve to the remote symbol.
     this.symbolNames.set(localSym, [null, kImport]);
 
-    this.emitEdge(this.newAnchor(imp.name), 'ref/imports', kImport);
-    if (imp.propertyName) {
-      this.emitEdge(this.newAnchor(imp.propertyName), 'ref/imports', kImport);
-    }
+    this.emitEdge(this.newAnchor(name), 'ref/imports', kImport);
+    return kImport;
   }
 
   /** visitImportDeclaration handles the various forms of "import ...". */
@@ -453,7 +453,11 @@ class Vistor {
       //   import foo from './bar';
       // This is equivalent to
       //   import {default as foo} from './bar';
-      throw new Error(`TODO: handle default imports.`);
+      let remoteSym =
+          this.typeChecker.tryGetMemberInModuleExports('default', moduleSym);
+      if (!remoteSym) return;
+      this.visitImport(clause.name, remoteSym);
+      return;
     }
 
     if (!clause.namedBindings) {
@@ -481,12 +485,55 @@ class Vistor {
         //   import {bar, baz} from 'foo';
         let imports = clause.namedBindings.elements;
         for (let imp of imports) {
-          this.visitImportSpecifier(imp, moduleSym);
+          // Find the symbol in the imported module by looking it up by name.
+          // imp.propertyName is the remote name, but present only when the
+          // import is renaming.
+          const remoteName = (imp.propertyName || imp.name).text;
+          const remoteSym = this.typeChecker.tryGetMemberInModuleExports(
+              remoteName, moduleSym);
+          if (!remoteSym) continue;
+
+          const kImport = this.visitImport(imp.name, remoteSym);
+          if (imp.propertyName) {
+            this.emitEdge(
+                this.newAnchor(imp.propertyName), 'ref/imports', kImport);
+          }
         }
         break;
     }
   }
 
+  /**
+   * Handles code like:
+   *   export default ...;
+   *   export = ...;
+   */
+  visitExportAssignment(assign: ts.ExportAssignment) {
+    if (assign.isExportEquals) {
+      console.warn(`TODO: handle export = statement`);
+    } else {
+      // export default <expr>;
+      // is the same as exporting the expression under the symbol named
+      // "default".  But we don't have a nice name to link the symbol to!
+      // So instead we link the keyword "default" itself to the VName.
+      // The TypeScript AST does not expose the location of the 'default'
+      // keyword so we just find it in the source text to link it.
+      const ofs = assign.getText().indexOf('default');
+      if (ofs < 0) throw new Error(`'export default' without 'default'?`);
+      const start = assign.getStart() + ofs;
+      const anchor = this.newAnchor(assign, start, start + 'default'.length);
+      this.emitEdge(anchor, 'defines/binding', this.scopedSignature(assign));
+    }
+  }
+
+  /**
+   * Handles code that explicitly exports a symbol, like:
+   *   export {Foo} from './bar';
+   *
+   * Note that export can also be a modifier on a declaration, like:
+   *   export class Foo {}
+   * and that case is handled as part of the ordinary declaration handling.
+   */
   visitExportDeclaration(decl: ts.ExportDeclaration) {
     // TODO: this code doesn't do much yet, but it's enough to silence a TODO
     // that is printed in unrelated tests.
@@ -621,6 +668,8 @@ class Vistor {
     switch (node.kind) {
       case ts.SyntaxKind.ImportDeclaration:
         return this.visitImportDeclaration(node as ts.ImportDeclaration);
+      case ts.SyntaxKind.ExportAssignment:
+        return this.visitExportAssignment(node as ts.ExportAssignment);
       case ts.SyntaxKind.ExportDeclaration:
         return this.visitExportDeclaration(node as ts.ExportDeclaration);
       case ts.SyntaxKind.VariableDeclaration:
