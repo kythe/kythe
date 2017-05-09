@@ -251,6 +251,14 @@ Other fields can be added as necessary—for example, if a Branch or Client labe
 becomes necessary. As a rule, we try to keep the number of essential VName
 dimensions as small as possible.
 
+==== [[VNameComposition]] VName Composition
+
+The fields of a VName shall be Unicode strings, save that control characters
+(categories Cf, Cs, Co, and Cn) and surrogate pair codepoints are disallowed,
+and category Cc is restricted to TAB (9), CR (10), and LF (13). When encoding
+VName fields for transmission or storage, the encoding format will be UTF-8
+with no byte-order mark, using Normalization Form NFKC.
+
 ==== [[VNameOrder]] VName Ordering
 
 When it is necessary to order VNames, the standard order is defined by
