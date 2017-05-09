@@ -304,7 +304,7 @@ func (p *Package) Extract() error {
 	p.addSource(cu, bp.Root, srcBase, bp.TestGoFiles)
 
 	// Add extra inputs that may be specified by the extractor.
-	p.addFiles(cu, "", "", p.ext.ExtraFiles)
+	p.addFiles(cu, filepath.Dir(bp.SrcRoot), "", p.ext.ExtraFiles)
 
 	// TODO(fromberger): Treat tests that are not in the same package as a
 	// separate compilation, e.g.,

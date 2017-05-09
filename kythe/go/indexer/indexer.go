@@ -678,7 +678,16 @@ func (pi *PackageInfo) newSignature(obj types.Object) (tag, base string) {
 				_, base := pi.newSignature(owner)
 				return tagMethod, base + "." + t.Name()
 			}
-			return tagMethod, fmt.Sprintf("(%s).%s", recv.Type(), t.Name())
+			// If the receiver is defined in this package, fully qualify the
+			// name so references from elsewhere will work. Strictly speaking
+			// this is only necessary for exported methods, but it's simpler to
+			// do it for everything.
+			return tagMethod, fmt.Sprintf("(%s).%s", types.TypeString(recv.Type(), func(pkg *types.Package) string {
+				if pkg == pi.Package {
+					return pi.ImportPath
+				}
+				return pkg.Path()
+			}), t.Name())
 		}
 
 	case *types.TypeName:

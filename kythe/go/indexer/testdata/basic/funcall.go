@@ -2,6 +2,9 @@
 //- @fun defines/binding Pkg
 package fun
 
+//- @"\"os/exec\"" ref/imports OSExec
+import "os/exec"
+
 //- Pkg.node/kind package
 //- Init childof Pkg
 //- Init.node/kind function
@@ -11,8 +14,8 @@ func F() int { return 0 }
 
 type T struct{}
 
-//- @M defines/binding Meth = vname("method (fun.T).M", "test", _, "fun", "go")
-func (p T) M() {}
+//- @M defines/binding Meth = vname("method (*test/fun.T).M", "test", _, "fun", "go")
+func (p *T) M() {}
 
 //- @F ref Fun
 //- TCall=@"F()" ref/call Fun
@@ -32,4 +35,16 @@ func init() {
 	//- MCall=@"t.M()" ref/call Meth
 	//- MCall childof InitFunc
 	t.M()
+}
+
+func imported() {
+	//- @cmd defines/binding Cmd
+	//- @exec ref OSExec
+	//- @Command ref ExecCommand
+	cmd := exec.Command("pwd")
+
+	//- @cmd ref Cmd
+	//- @Run ref CmdRun=vname("method (*os/exec.Cmd).Run","golang.org","","os/exec","go")
+	//- @"cmd.Run()" ref/call CmdRun
+	cmd.Run()
 }

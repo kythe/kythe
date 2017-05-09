@@ -53,7 +53,9 @@ def _emit_extractor_script(ctx, script, output, srcs, deps, ipath, data):
 
   # Gather any extra data dependencies.
   for target in data:
-    extras += [f.path for f in target.files]
+    for f in target.files:
+      cmds.append('ln -s "%s%s" "%s"' % ('../'*ups, f.path, srcdir))
+      extras.append(srcdir + '/' + f.path.rsplit('/', 1)[-1])
 
   # Invoke the extractor on the temp directory.
   goroot = '/'.join(ctx.files._goroot[0].path.split('/')[:-2])
@@ -88,7 +90,7 @@ def _go_indexpack(ctx):
   data   = ctx.attr.data
   ipath  = ctx.attr.import_path
   if not ipath:
-    ipath = srcs[0].path.rsplit('/', 1)[0]
+    ipath = 'test/' + srcs[0].path.rsplit('/', 1)[-1].rsplit('.', 1)[0]
   extras = []
   for target in data:
     extras += target.files.to_list()
