@@ -558,6 +558,25 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 		return nil, fmt.Errorf("lookup error for file decorations %q: %v", ticket, err)
 	}
 
+	if decor.File == nil {
+		if len(decor.Diagnostic) == 0 {
+			log.Printf("Error: FileDecorations.file is missing without related diagnostics: %q", req.Location.Ticket)
+			return nil, xrefs.ErrDecorationsNotFound
+		}
+
+		// FileDecorations may be saved without a File if the file does not exist in
+		// the index but related diagnostics do exist.  If diagnostics were
+		// requested, we may return them successfully, but otherwise, an error
+		// indicating a missing file is returned.
+		if req.Diagnostics {
+			return &xpb.DecorationsReply{
+				Location:   req.Location,
+				Diagnostic: decor.Diagnostic,
+			}, nil
+		}
+		return nil, xrefs.ErrDecorationsNotFound
+	}
+
 	text := decor.File.Text
 	if len(req.DirtyBuffer) > 0 {
 		text = req.DirtyBuffer
