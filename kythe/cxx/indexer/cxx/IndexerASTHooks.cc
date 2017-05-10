@@ -246,7 +246,7 @@ bool SkipAliasedDecl(const clang::Decl *D) {
 }
 
 bool IsObjCForwardDecl(const clang::ObjCInterfaceDecl *decl) {
-  return !decl->hasDefinition() || decl != decl->getCanonicalDecl();
+  return !decl->isThisDeclarationADefinition();
 }
 }  // anonymous namespace
 
@@ -4917,11 +4917,12 @@ void IndexerASTVisitor::ConnectCategoryToBaseClass(
 void IndexerASTVisitor::RecordCompletesForRedecls(
     const Decl *Decl, const SourceRange &NameRange,
     const GraphObserver::NodeId &DeclNode) {
-  // Only draw completion edges if this is the canonical declaration. Otherwise
-  // we could be drawing completion edges to forward declarations and that
-  // doesn't make senes.
-  if (Decl != Decl->getCanonicalDecl()) {
-    return;
+  // Don't draw completion edges if this is a forward declared class in
+  // Objective-C because forward declarations don't complete anything.
+  if (const auto *I = dyn_cast<clang::ObjCInterfaceDecl>(Decl)) {
+    if (IsObjCForwardDecl(I)) {
+      return;
+    }
   }
 
   FileID DeclFile = Observer.getSourceManager()->getFileID(Decl->getLocation());

@@ -1946,7 +1946,10 @@ cxx_indexer_test(
     srcs = ["objc/marked_method.m"],
     convert_marked_source = True,
     objc = True,
-    tags = ["marked_source", "objc"],
+    tags = [
+        "marked_source",
+        "objc",
+    ],
 )
 
 cxx_indexer_test(
@@ -1954,7 +1957,10 @@ cxx_indexer_test(
     srcs = ["objc/marked_attr__Nullable.m"],
     convert_marked_source = True,
     objc = True,
-    tags = ["marked_source", "objc"],
+    tags = [
+        "marked_source",
+        "objc",
+    ],
 )
 
 test_suite(
@@ -2149,8 +2155,16 @@ cxx_indexer_test(
     name = "forward_declare_not_necessary",
     srcs = ["objc/forward_declare_not_necessary.m"],
     objc = True,
-    deps = ["objc/FwdClass.h"],
     tags = ["objc"],
+    deps = ["objc/FwdClass.h"],
+)
+
+cxx_indexer_test(
+    name = "forward_declare_not_necessary_2",
+    srcs = ["objc/forward_declare_not_necessary_2.m"],
+    objc = True,
+    tags = ["objc"],
+    deps = ["objc/FwdClass.h"],
 )
 
 cxx_indexer_test(
