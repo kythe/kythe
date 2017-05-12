@@ -95,7 +95,7 @@ func (c sourceCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) err
 	}
 	req.SourceText = true
 
-	logRequest(req)
+	LogRequest(req)
 	reply, err := api.XRefService.Decorations(ctx, req)
 	if err != nil {
 		return err
@@ -104,8 +104,8 @@ func (c sourceCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) err
 }
 
 func displaySource(decor *xpb.DecorationsReply) error {
-	if *displayJSON {
-		return jsonMarshaler.Marshal(out, decor)
+	if *DisplayJSON {
+		return PrintJSONMessage(decor)
 	}
 
 	_, err := out.Write(decor.SourceText)

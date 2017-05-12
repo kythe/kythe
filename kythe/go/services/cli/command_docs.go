@@ -18,7 +18,6 @@ package cli
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -43,7 +42,7 @@ func (c docsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) error
 	req := &xpb.DocumentationRequest{
 		Ticket: flag.Args(),
 	}
-	logRequest(req)
+	LogRequest(req)
 	reply, err := api.XRefService.Documentation(ctx, req)
 	if err != nil {
 		return err
@@ -53,5 +52,5 @@ func (c docsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) error
 
 func (c docsCommand) displayDocumentation(reply *xpb.DocumentationReply) error {
 	// TODO(zarko): Emit formatted data for -json=false.
-	return json.NewEncoder(out).Encode(reply)
+	return PrintJSONMessage(reply)
 }

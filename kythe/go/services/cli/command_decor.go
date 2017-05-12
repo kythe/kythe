@@ -169,7 +169,7 @@ func (c decorCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) erro
 		req.DirtyBuffer = buf
 	}
 
-	logRequest(req)
+	LogRequest(req)
 	reply, err := api.XRefService.Decorations(ctx, req)
 	if err != nil {
 		return err
@@ -179,8 +179,8 @@ func (c decorCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) erro
 }
 
 func (c decorCommand) displayDecorations(decor *xpb.DecorationsReply) error {
-	if *displayJSON {
-		return jsonMarshaler.Marshal(out, decor)
+	if *DisplayJSON {
+		return PrintJSONMessage(decor)
 	}
 
 	nodes := xrefs.NodesMap(decor.Nodes)

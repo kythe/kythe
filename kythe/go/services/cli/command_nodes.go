@@ -18,7 +18,6 @@ package cli
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"strings"
@@ -51,7 +50,7 @@ func (c nodesCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) erro
 	if c.nodeFilters != "" {
 		req.Filter = strings.Split(c.nodeFilters, ",")
 	}
-	logRequest(req)
+	LogRequest(req)
 	reply, err := api.XRefService.Nodes(ctx, req)
 	if err != nil {
 		return err
@@ -60,8 +59,8 @@ func (c nodesCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) erro
 }
 
 func (c *nodesCommand) displayNodes(nodes map[string]*cpb.NodeInfo) error {
-	if *displayJSON {
-		return json.NewEncoder(out).Encode(nodes)
+	if *DisplayJSON {
+		return PrintJSON(nodes)
 	}
 
 	for ticket, n := range nodes {

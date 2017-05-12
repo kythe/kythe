@@ -50,7 +50,7 @@ func (c lsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) error {
 
 	if len(flag.Args()) == 0 {
 		req := &ftpb.CorpusRootsRequest{}
-		logRequest(req)
+		LogRequest(req)
 		cr, err := api.FileTreeService.CorpusRoots(ctx, req)
 		if err != nil {
 			return err
@@ -76,7 +76,7 @@ func (c lsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) error {
 		Root:   root,
 		Path:   path,
 	}
-	logRequest(req)
+	LogRequest(req)
 	dir, err := api.FileTreeService.Directory(ctx, req)
 	if err != nil {
 		return err
@@ -92,8 +92,8 @@ func (c lsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) error {
 }
 
 func (c lsCommand) displayCorpusRoots(cr *ftpb.CorpusRootsReply) error {
-	if *displayJSON {
-		return jsonMarshaler.Marshal(out, cr)
+	if *DisplayJSON {
+		return PrintJSONMessage(cr)
 	}
 
 	for _, corpus := range cr.Corpus {
@@ -117,8 +117,8 @@ func (c lsCommand) displayCorpusRoots(cr *ftpb.CorpusRootsReply) error {
 }
 
 func (c lsCommand) displayDirectory(d *ftpb.DirectoryReply) error {
-	if *displayJSON {
-		return jsonMarshaler.Marshal(out, d)
+	if *DisplayJSON {
+		return PrintJSONMessage(d)
 	}
 
 	for _, d := range d.Subdirectory {

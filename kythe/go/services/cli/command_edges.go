@@ -18,7 +18,6 @@ package cli
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -78,7 +77,7 @@ func (c edgesCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) erro
 	if c.dotGraph {
 		req.Filter = []string{"**"}
 	}
-	logRequest(req)
+	LogRequest(req)
 	reply, err := api.XRefService.Edges(ctx, req)
 	if err != nil {
 		return err
@@ -97,8 +96,8 @@ func (c edgesCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) erro
 }
 
 func (c edgesCommand) displayEdges(reply *gpb.EdgesReply) error {
-	if *displayJSON {
-		return jsonMarshaler.Marshal(out, reply)
+	if *DisplayJSON {
+		return PrintJSONMessage(reply)
 	}
 
 	for source, es := range reply.EdgeSets {
@@ -126,8 +125,8 @@ func (c edgesCommand) displayTargets(edges map[string]*gpb.EdgeSet) error {
 		}
 	}
 
-	if *displayJSON {
-		return json.NewEncoder(out).Encode(targets.Elements())
+	if *DisplayJSON {
+		return PrintJSON(targets.Elements())
 	}
 
 	for target := range targets {
@@ -216,8 +215,8 @@ func (c edgesCommand) displayEdgeCounts(edges *gpb.EdgesReply) error {
 		}
 	}
 
-	if *displayJSON {
-		return json.NewEncoder(out).Encode(counts)
+	if *DisplayJSON {
+		return PrintJSON(counts)
 	}
 
 	for kind, cnt := range counts {

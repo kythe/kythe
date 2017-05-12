@@ -42,7 +42,7 @@ func (c diagnosticsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API
 	}
 	req.Diagnostics = true
 
-	logRequest(req)
+	LogRequest(req)
 	reply, err := api.XRefService.Decorations(ctx, req)
 	if err != nil {
 		return err
@@ -52,8 +52,8 @@ func (c diagnosticsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API
 }
 
 func (c diagnosticsCommand) displayDiagnostics(decor *xpb.DecorationsReply) error {
-	if *displayJSON {
-		return jsonMarshaler.Marshal(out, decor)
+	if *DisplayJSON {
+		return PrintJSONMessage(decor)
 	}
 
 	for _, d := range decor.Diagnostic {

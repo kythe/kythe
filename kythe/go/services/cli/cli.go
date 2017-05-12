@@ -19,6 +19,7 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -34,8 +35,11 @@ import (
 )
 
 var (
+	// DisplayJSON is true if the user wants all service responses to be displayed
+	// as JSON (using the PrintJSON and PrintJSONMessage functions).
+	DisplayJSON = flag.Bool("json", false, "Display results as JSON")
+
 	logRequests = flag.Bool("log_requests", false, "Log all requests to stderr as JSON")
-	displayJSON = flag.Bool("json", false, "Display results as JSON")
 	out         = os.Stdout
 )
 
@@ -57,29 +61,32 @@ func Execute(ctx context.Context, api API) subcommands.ExitStatus {
 	subcommands.Register(subcommands.HelpCommand(), "usage")
 	subcommands.Register(subcommands.FlagsCommand(), "usage")
 	subcommands.Register(subcommands.CommandsCommand(), "usage")
-	registerAllCommands(subcommands.DefaultCommander)
+
+	RegisterCommand(&nodesCommand{}, "graph")
+	RegisterCommand(&edgesCommand{}, "graph")
+
+	RegisterCommand(&lsCommand{}, "")
+
+	RegisterCommand(&decorCommand{}, "xrefs")
+	RegisterCommand(&diagnosticsCommand{}, "xrefs")
+	RegisterCommand(&docsCommand{}, "xrefs")
+	RegisterCommand(&sourceCommand{}, "xrefs")
+	RegisterCommand(&xrefsCommand{}, "xrefs")
+
 	return subcommands.Execute(ctx, api)
 }
 
-// registerAllCommands registers all Kythe subcommands with the given Commander.
-func registerAllCommands(cdr *subcommands.Commander) {
-	cdr.Register(&commandWrapper{&nodesCommand{}}, "graph")
-	cdr.Register(&commandWrapper{&edgesCommand{}}, "graph")
-
-	cdr.Register(&commandWrapper{&lsCommand{}}, "")
-
-	cdr.Register(&commandWrapper{&decorCommand{}}, "xrefs")
-	cdr.Register(&commandWrapper{&diagnosticsCommand{}}, "xrefs")
-	cdr.Register(&commandWrapper{&docsCommand{}}, "xrefs")
-	cdr.Register(&commandWrapper{&sourceCommand{}}, "xrefs")
-	cdr.Register(&commandWrapper{&xrefsCommand{}}, "xrefs")
+// RegisterCommand adds a KytheCommand to the list of subcommands for the
+// specified group.
+func RegisterCommand(c KytheCommand, group string) {
+	subcommands.Register(&commandWrapper{c}, group)
 }
 
 // TODO(schroederc): subcommand aliases
 // TODO(schroederc): more documentation per command
 // TODO(schroederc): split commands into separate packages
 
-type commandWrapper struct{ kytheCommand }
+type commandWrapper struct{ KytheCommand }
 
 func (w *commandWrapper) Execute(ctx context.Context, f *flag.FlagSet, args ...interface{}) subcommands.ExitStatus {
 	if len(args) != 1 {
@@ -96,8 +103,8 @@ func (w *commandWrapper) Execute(ctx context.Context, f *flag.FlagSet, args ...i
 	return subcommands.ExitSuccess
 }
 
-// A kytheCommand is a type-safe version of the subcommands.Command interface.
-type kytheCommand interface {
+// A KytheCommand is a type-safe version of the subcommands.Command interface.
+type KytheCommand interface {
 	Name() string
 	Synopsis() string
 	Usage() string
@@ -105,7 +112,8 @@ type kytheCommand interface {
 	Run(context.Context, *flag.FlagSet, API) error
 }
 
-func logRequest(req proto.Message) {
+// LogRequest should be passed all proto request messages for logging.
+func LogRequest(req proto.Message) {
 	if *logRequests {
 		str, err := jsonMarshaler.MarshalToString(req)
 		if err != nil {
@@ -114,6 +122,15 @@ func logRequest(req proto.Message) {
 		log.Printf("%s: %s", baseTypeName(req), string(str))
 	}
 }
+
+// PrintJSONMessage prints the given proto message to the console.  This should
+// be called whenever the DisplayJSON flag is true.
+func PrintJSONMessage(resp proto.Message) error { return jsonMarshaler.Marshal(out, resp) }
+
+// PrintJSON prints the given value to the console.  This should be called
+// whenever the DisplayJSON flag is true.  PrintJSONMessage should be preferred
+// when possible.
+func PrintJSON(val interface{}) error { return json.NewEncoder(out).Encode(val) }
 
 func baseTypeName(x interface{}) string {
 	ss := strings.SplitN(fmt.Sprintf("%T", x), ".", 2)

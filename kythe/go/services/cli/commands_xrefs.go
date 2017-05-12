@@ -18,11 +18,9 @@ package cli
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
-	"os"
 	"strings"
 
 	"kythe.io/kythe/go/util/kytheuri"
@@ -110,7 +108,7 @@ func (c xrefsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) erro
 	default:
 		return fmt.Errorf("unknown caller kind: %q", c.callerKind)
 	}
-	logRequest(req)
+	LogRequest(req)
 	reply, err := api.XRefService.CrossReferences(ctx, req)
 	if err != nil {
 		return err
@@ -122,8 +120,8 @@ func (c xrefsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) erro
 }
 
 func (c xrefsCommand) displayXRefs(reply *xpb.CrossReferencesReply) error {
-	if *displayJSON {
-		return json.NewEncoder(os.Stdout).Encode(reply)
+	if *DisplayJSON {
+		return PrintJSONMessage(reply)
 	}
 
 	for _, xr := range reply.CrossReferences {
