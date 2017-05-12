@@ -179,7 +179,7 @@ func (c decorCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) erro
 }
 
 func (c decorCommand) displayDecorations(decor *xpb.DecorationsReply) error {
-	if *DisplayJSON {
+	if DisplayJSON {
 		return PrintJSONMessage(decor)
 	}
 

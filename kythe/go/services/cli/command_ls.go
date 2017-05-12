@@ -92,7 +92,7 @@ func (c lsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) error {
 }
 
 func (c lsCommand) displayCorpusRoots(cr *ftpb.CorpusRootsReply) error {
-	if *DisplayJSON {
+	if DisplayJSON {
 		return PrintJSONMessage(cr)
 	}
 
@@ -117,7 +117,7 @@ func (c lsCommand) displayCorpusRoots(cr *ftpb.CorpusRootsReply) error {
 }
 
 func (c lsCommand) displayDirectory(d *ftpb.DirectoryReply) error {
-	if *DisplayJSON {
+	if DisplayJSON {
 		return PrintJSONMessage(d)
 	}
 

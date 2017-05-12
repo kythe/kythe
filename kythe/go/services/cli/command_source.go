@@ -104,7 +104,7 @@ func (c sourceCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) err
 }
 
 func displaySource(decor *xpb.DecorationsReply) error {
-	if *DisplayJSON {
+	if DisplayJSON {
 		return PrintJSONMessage(decor)
 	}
 

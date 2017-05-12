@@ -59,7 +59,7 @@ func (c nodesCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) erro
 }
 
 func (c *nodesCommand) displayNodes(nodes map[string]*cpb.NodeInfo) error {
-	if *DisplayJSON {
+	if DisplayJSON {
 		return PrintJSON(nodes)
 	}
 

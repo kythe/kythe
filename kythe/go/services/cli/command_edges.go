@@ -96,7 +96,7 @@ func (c edgesCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) erro
 }
 
 func (c edgesCommand) displayEdges(reply *gpb.EdgesReply) error {
-	if *DisplayJSON {
+	if DisplayJSON {
 		return PrintJSONMessage(reply)
 	}
 
@@ -125,7 +125,7 @@ func (c edgesCommand) displayTargets(edges map[string]*gpb.EdgeSet) error {
 		}
 	}
 
-	if *DisplayJSON {
+	if DisplayJSON {
 		return PrintJSON(targets.Elements())
 	}
 
@@ -215,7 +215,7 @@ func (c edgesCommand) displayEdgeCounts(edges *gpb.EdgesReply) error {
 		}
 	}
 
-	if *DisplayJSON {
+	if DisplayJSON {
 		return PrintJSON(counts)
 	}
 

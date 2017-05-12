@@ -52,7 +52,7 @@ func (c diagnosticsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API
 }
 
 func (c diagnosticsCommand) displayDiagnostics(decor *xpb.DecorationsReply) error {
-	if *DisplayJSON {
+	if DisplayJSON {
 		return PrintJSONMessage(decor)
 	}
 

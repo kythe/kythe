@@ -34,18 +34,21 @@ import (
 	"github.com/google/subcommands"
 )
 
-var (
-	// DisplayJSON is true if the user wants all service responses to be displayed
-	// as JSON (using the PrintJSON and PrintJSONMessage functions).
-	DisplayJSON = flag.Bool("json", false, "Display results as JSON")
+// DisplayJSON is true if the user wants all service responses to be displayed
+// as JSON (using the PrintJSON and PrintJSONMessage functions).
+var DisplayJSON bool
 
+var (
 	logRequests = flag.Bool("log_requests", false, "Log all requests to stderr as JSON")
 	out         = os.Stdout
 )
 
 var jsonMarshaler = web.JSONMarshaler
 
-func init() { jsonMarshaler.Indent = "  " }
+func init() {
+	jsonMarshaler.Indent = "  "
+	flag.BoolVar(&DisplayJSON, "json", DisplayJSON, "Display results as JSON")
+}
 
 // API contains access points the CLI's backend services.
 type API struct {

@@ -120,7 +120,7 @@ func (c xrefsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) erro
 }
 
 func (c xrefsCommand) displayXRefs(reply *xpb.CrossReferencesReply) error {
-	if *DisplayJSON {
+	if DisplayJSON {
 		return PrintJSONMessage(reply)
 	}
 
