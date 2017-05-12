@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
+import com.google.devtools.kythe.proto.Diagnostic;
 import com.google.devtools.kythe.proto.MarkedSource;
 import com.google.devtools.kythe.proto.MarkedSource.Kind;
 import com.google.devtools.kythe.proto.Storage.VName;
@@ -173,6 +174,32 @@ public class KytheEntrySets {
       nameNodes.put(name, node);
     }
     return node;
+  }
+
+  /** Emits and returns a DIAGNOSTIC node attached for the given file. */
+  public EntrySet emitDiagnostic(VName fileVName, Diagnostic d) {
+    NodeBuilder builder =
+        newNode(NodeKind.DIAGNOSTIC)
+            .addSignatureSalt(d.getMessage())
+            .addSignatureSalt(d.getDetails())
+            .addSignatureSalt(d.getContextUrl())
+            .setProperty("/kythe/message", d.getMessage());
+    if (!d.getDetails().isEmpty()) {
+      builder.setProperty("/kythe/details", d.getDetails());
+    }
+    if (!d.getContextUrl().isEmpty()) {
+      builder.setProperty("/kythe/context/url", d.getContextUrl());
+    }
+    EntrySet dn = emitAndReturn(builder);
+    if (d.hasSpan()) {
+      Span s =
+          new Span(d.getSpan().getStart().getByteOffset(), d.getSpan().getEnd().getByteOffset());
+      EntrySet anchor = newAnchorAndEmit(fileVName, s, null);
+      emitEdge(anchor, EdgeKind.TAGGED, dn);
+    } else {
+      emitEdge(fileVName, EdgeKind.TAGGED, dn.getVName());
+    }
+    return dn;
   }
 
   /**

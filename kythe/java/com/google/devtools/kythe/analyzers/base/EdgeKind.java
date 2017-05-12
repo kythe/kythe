@@ -21,6 +21,7 @@ public enum EdgeKind {
   DEFINES(true, "defines"),
   DEFINES_BINDING(true, "defines/binding"),
   DOCUMENTS(true, "documents"),
+  TAGGED(true, "tagged"),
 
   REF(true, "ref"),
   REF_CALL(true, "ref/call"),

@@ -26,6 +26,7 @@ public enum NodeKind {
   ABS_VAR("absvar"),
   ANCHOR("anchor"),
   CONSTANT("constant"),
+  DIAGNOSTIC("diagnostic"),
   DOC("doc"),
   FILE("file"),
   FUNCTION("function"),
@@ -47,8 +48,7 @@ public enum NodeKind {
   VARIABLE_RESOURCE("variable", "local/resource");
 
   private final String kind;
-  @Nullable
-  private final String subkind;
+  @Nullable private final String subkind;
 
   NodeKind(String kind) {
     this(kind, null);
