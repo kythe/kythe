@@ -35,6 +35,7 @@ import com.google.devtools.kythe.platform.java.helpers.SignatureGenerator;
 import com.google.devtools.kythe.platform.shared.Metadata;
 import com.google.devtools.kythe.platform.shared.MetadataLoaders;
 import com.google.devtools.kythe.platform.shared.StatisticsCollector;
+import com.google.devtools.kythe.proto.Diagnostic;
 import com.google.devtools.kythe.proto.MarkedSource;
 import com.google.devtools.kythe.util.Span;
 import com.sun.source.tree.MemberReferenceTree.ReferenceMode;
@@ -264,110 +265,110 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     TreeContext ctx = owner.down(classDef);
 
     Optional<String> signature = signatureGenerator.getSignature(classDef.sym);
-    if (signature.isPresent()) {
-      MarkedSource.Builder markedSource = MarkedSource.newBuilder();
-      EntrySet classNode =
-          entrySets.getNode(signatureGenerator, classDef.sym, signature.get(), markedSource);
-
-      // Find the method or class in which this class is defined, if any.
-      TreeContext container = ctx.getClassOrMethodParent();
-      // Emit the fact that the class is a child of its containing class or method.
-      // Note that for a nested/inner class, we already emitted the fact that it's a
-      // child of the containing class when we scanned the containing class's members.
-      // However we can't restrict ourselves to just classes contained in methods here,
-      // because that would miss the case of local/anonymous classes in static/member
-      // initializers. But there's no harm in emitting the same fact twice!
-      if (container != null) {
-        entrySets.emitEdge(classNode, EdgeKind.CHILDOF, container.getNode().entries);
-      }
-
-      Span classIdent =
-          filePositions.findIdentifier(classDef.name, classDef.getPreferredPosition());
-      if (!classDef.name.isEmpty() && classIdent == null) {
-        logger.warning("Missing span for class identifier: " + classDef.sym);
-      }
-
-      // Generic classes record the source range of the class name for the abs node, regular
-      // classes record the source range of the class name for the record node.
-      EntrySet absNode =
-          defineTypeParameters(
-              ctx,
-              classNode,
-              classDef.getTypeParameters(),
-              ImmutableList.<EntrySet>of(), /* There are no wildcards in class definitions */
-              markedSource.build());
-
-      boolean documented = visitDocComment(classNode, absNode);
-
-      if (absNode != null) {
-        List<String> tParamNames = new LinkedList<>();
-        for (JCTypeParameter tParam : classDef.getTypeParameters()) {
-          tParamNames.add(tParam.getName().toString());
-        }
-        if (classIdent != null) {
-          EntrySet absAnchor =
-              entrySets.newAnchorAndEmit(filePositions, classIdent, ctx.getSnippet());
-          emitDefinesBindingEdge(classIdent, absAnchor, absNode);
-        }
-        if (!documented) {
-          emitComment(classDef, absNode);
-        }
-      }
-      if (absNode == null && classIdent != null) {
-        EntrySet anchor = entrySets.newAnchorAndEmit(filePositions, classIdent, ctx.getSnippet());
-        emitDefinesBindingEdge(classIdent, anchor, classNode);
-      }
-      emitAnchor(ctx, EdgeKind.DEFINES, classNode);
-      if (!documented) {
-        emitComment(classDef, classNode);
-      }
-
-      visitAnnotations(classNode, classDef.getModifiers().getAnnotations(), ctx);
-
-      JavaNode superClassNode = scan(classDef.getExtendsClause(), ctx);
-      if (superClassNode == null) {
-        // Use the implicit superclass.
-        switch (classDef.getKind()) {
-          case CLASS:
-            superClassNode = getJavaLangObjectNode();
-            break;
-          case ENUM:
-            superClassNode = getJavaLangEnumNode(classNode, signature.get());
-            break;
-            // Interfaces have no implicit superclass.
-        }
-      }
-
-      if (superClassNode != null) {
-        emitEdge(classNode, EdgeKind.EXTENDS, superClassNode);
-      }
-
-      for (JCExpression implClass : classDef.getImplementsClause()) {
-        JavaNode implNode = scan(implClass, ctx);
-        if (implNode == null) {
-          statistics.incrementCounter("warning-missing-implements-node");
-          logger.warning(
-              "Missing 'implements' node for " + implClass.getClass() + ": " + implClass);
-          continue;
-        }
-        emitEdge(classNode, EdgeKind.EXTENDS, implNode);
-      }
-
-      // Set the resulting node for the class before recursing through its members.  Setting the node
-      // first is necessary to correctly add childof edges from local/anonymous classes defined directly
-      // in the class body (in static initializers or member initializers).
-      JavaNode node = ctx.setNode(new JavaNode(classNode, signature.get()));
-
-      for (JCTree member : classDef.getMembers()) {
-        JavaNode n = scan(member, ctx);
-        if (n != null) {
-          entrySets.emitEdge(n.entries, EdgeKind.CHILDOF, classNode);
-        }
-      }
-
-      return node;
+    if (!signature.isPresent()) {
+      // TODO(schroederc): details
+      return emitDiagnostic(ctx, "missing class signature", null, null);
     }
-    return todoNode(ctx, "JCClass: " + classDef);
+
+    MarkedSource.Builder markedSource = MarkedSource.newBuilder();
+    EntrySet classNode =
+        entrySets.getNode(signatureGenerator, classDef.sym, signature.get(), markedSource);
+
+    // Find the method or class in which this class is defined, if any.
+    TreeContext container = ctx.getClassOrMethodParent();
+    // Emit the fact that the class is a child of its containing class or method.
+    // Note that for a nested/inner class, we already emitted the fact that it's a
+    // child of the containing class when we scanned the containing class's members.
+    // However we can't restrict ourselves to just classes contained in methods here,
+    // because that would miss the case of local/anonymous classes in static/member
+    // initializers. But there's no harm in emitting the same fact twice!
+    if (container != null) {
+      entrySets.emitEdge(classNode, EdgeKind.CHILDOF, container.getNode().entries);
+    }
+
+    Span classIdent = filePositions.findIdentifier(classDef.name, classDef.getPreferredPosition());
+    if (!classDef.name.isEmpty() && classIdent == null) {
+      logger.warning("Missing span for class identifier: " + classDef.sym);
+    }
+
+    // Generic classes record the source range of the class name for the abs node, regular
+    // classes record the source range of the class name for the record node.
+    EntrySet absNode =
+        defineTypeParameters(
+            ctx,
+            classNode,
+            classDef.getTypeParameters(),
+            ImmutableList.<EntrySet>of(), /* There are no wildcards in class definitions */
+            markedSource.build());
+
+    boolean documented = visitDocComment(classNode, absNode);
+
+    if (absNode != null) {
+      List<String> tParamNames = new LinkedList<>();
+      for (JCTypeParameter tParam : classDef.getTypeParameters()) {
+        tParamNames.add(tParam.getName().toString());
+      }
+      if (classIdent != null) {
+        EntrySet absAnchor =
+            entrySets.newAnchorAndEmit(filePositions, classIdent, ctx.getSnippet());
+        emitDefinesBindingEdge(classIdent, absAnchor, absNode);
+      }
+      if (!documented) {
+        emitComment(classDef, absNode);
+      }
+    }
+    if (absNode == null && classIdent != null) {
+      EntrySet anchor = entrySets.newAnchorAndEmit(filePositions, classIdent, ctx.getSnippet());
+      emitDefinesBindingEdge(classIdent, anchor, classNode);
+    }
+    emitAnchor(ctx, EdgeKind.DEFINES, classNode);
+    if (!documented) {
+      emitComment(classDef, classNode);
+    }
+
+    visitAnnotations(classNode, classDef.getModifiers().getAnnotations(), ctx);
+
+    JavaNode superClassNode = scan(classDef.getExtendsClause(), ctx);
+    if (superClassNode == null) {
+      // Use the implicit superclass.
+      switch (classDef.getKind()) {
+        case CLASS:
+          superClassNode = getJavaLangObjectNode();
+          break;
+        case ENUM:
+          superClassNode = getJavaLangEnumNode(classNode, signature.get());
+          break;
+          // Interfaces have no implicit superclass.
+      }
+    }
+
+    if (superClassNode != null) {
+      emitEdge(classNode, EdgeKind.EXTENDS, superClassNode);
+    }
+
+    for (JCExpression implClass : classDef.getImplementsClause()) {
+      JavaNode implNode = scan(implClass, ctx);
+      if (implNode == null) {
+        statistics.incrementCounter("warning-missing-implements-node");
+        logger.warning("Missing 'implements' node for " + implClass.getClass() + ": " + implClass);
+        continue;
+      }
+      emitEdge(classNode, EdgeKind.EXTENDS, implNode);
+    }
+
+    // Set the resulting node for the class before recursing through its members.  Setting the node
+    // first is necessary to correctly add childof edges from local/anonymous classes defined
+    // directly in the class body (in static initializers or member initializers).
+    JavaNode node = ctx.setNode(new JavaNode(classNode, signature.get()));
+
+    for (JCTree member : classDef.getMembers()) {
+      JavaNode n = scan(member, ctx);
+      if (n != null) {
+        entrySets.emitEdge(n.entries, EdgeKind.CHILDOF, classNode);
+      }
+    }
+
+    return node;
   }
 
   @Override
@@ -388,98 +389,97 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
 
     Optional<String> signature = signatureGenerator.getSignature(methodDef.sym);
-    if (signature.isPresent()) {
-      MarkedSource.Builder markedSource = MarkedSource.newBuilder();
-      EntrySet methodNode =
-          entrySets.getNode(signatureGenerator, methodDef.sym, signature.get(), markedSource);
-      visitAnnotations(methodNode, methodDef.getModifiers().getAnnotations(), ctx);
+    if (!signature.isPresent()) {
+      // Try to scan method body even if signature could not be generated.
+      scan(methodDef.getBody(), ctx);
 
-      EntrySet absNode =
-          defineTypeParameters(
-              ctx, methodNode, methodDef.getTypeParameters(), wildcards, markedSource.build());
-      boolean documented = visitDocComment(methodNode, absNode);
+      // TODO(schroederc): details
+      return emitDiagnostic(ctx, "missing method signature", null, null);
+    }
 
-      EntrySet ret, bindingAnchor = null;
-      String fnTypeName = "(" + Joiner.on(",").join(paramTypeNames) + ")";
-      if (methodDef.sym.isConstructor()) {
-        // Implicit constructors (those without syntactic definition locations) share the same
-        // preferred position as their owned class.  Since implicit constructors don't exist in the
-        // file's text, don't generate anchors them by ensuring the constructor's position is ahead
-        // of the owner's position.
-        if (methodDef.getPreferredPosition() > owner.getTree().getPreferredPosition()) {
-          // Use the owner's name (the class name) to find the definition anchor's
-          // location because constructors are internally named "<init>".
-          bindingAnchor =
-              emitDefinesBindingAnchorEdge(
-                  methodDef.sym.owner.name,
-                  methodDef.getPreferredPosition(),
-                  methodNode,
-                  ctx.getSnippet());
-        }
-        // Likewise, constructors don't have return types in the Java AST, but
-        // Kythe models all functions with return types.  As a solution, we use
-        // the class type as the return type for all constructors.
-        ret = getNode(methodDef.sym.owner);
-      } else {
+    MarkedSource.Builder markedSource = MarkedSource.newBuilder();
+    EntrySet methodNode =
+        entrySets.getNode(signatureGenerator, methodDef.sym, signature.get(), markedSource);
+    visitAnnotations(methodNode, methodDef.getModifiers().getAnnotations(), ctx);
+
+    EntrySet absNode =
+        defineTypeParameters(
+            ctx, methodNode, methodDef.getTypeParameters(), wildcards, markedSource.build());
+    boolean documented = visitDocComment(methodNode, absNode);
+
+    EntrySet ret, bindingAnchor = null;
+    String fnTypeName = "(" + Joiner.on(",").join(paramTypeNames) + ")";
+    if (methodDef.sym.isConstructor()) {
+      // Implicit constructors (those without syntactic definition locations) share the same
+      // preferred position as their owned class.  Since implicit constructors don't exist in the
+      // file's text, don't generate anchors them by ensuring the constructor's position is ahead
+      // of the owner's position.
+      if (methodDef.getPreferredPosition() > owner.getTree().getPreferredPosition()) {
+        // Use the owner's name (the class name) to find the definition anchor's
+        // location because constructors are internally named "<init>".
         bindingAnchor =
             emitDefinesBindingAnchorEdge(
-                methodDef.name,
+                methodDef.sym.owner.name,
                 methodDef.getPreferredPosition(),
                 methodNode,
                 ctx.getSnippet());
-        ret = returnType.entries;
-        fnTypeName = returnType.qualifiedName + fnTypeName;
       }
-
-      if (bindingAnchor != null) {
-        if (!documented) {
-          emitComment(methodDef, methodNode);
-        }
-        if (absNode != null) {
-          emitAnchor(bindingAnchor, EdgeKind.DEFINES_BINDING, absNode);
-          Span span = filePositions.findIdentifier(methodDef.name, methodDef.getPreferredPosition());
-          if (span != null) {
-            emitMetadata(span, absNode);
-          }
-          if (!documented) {
-            emitComment(methodDef, absNode);
-          }
-        }
-        emitAnchor(ctx, EdgeKind.DEFINES, methodNode);
-      }
-
-      emitOrdinalEdges(methodNode, EdgeKind.PARAM, params);
-      EntrySet fnTypeNode = entrySets.newFunctionTypeAndEmit(ret, toEntries(paramTypes));
-      entrySets.emitEdge(methodNode, EdgeKind.TYPED, fnTypeNode);
-
-      ClassSymbol ownerClass = (ClassSymbol) methodDef.sym.owner;
-      Set<Element> ownerDirectSupertypes = new HashSet<>();
-      ownerDirectSupertypes.add(ownerClass.getSuperclass().asElement());
-      for (Type interfaceParent : ownerClass.getInterfaces()) {
-        ownerDirectSupertypes.add(interfaceParent.asElement());
-      }
-      for (MethodSymbol superMethod : JavacUtil.superMethods(javaContext, methodDef.sym)) {
-        EntrySet superNode = getNode(superMethod);
-        if (ownerDirectSupertypes.contains(superMethod.owner)) {
-          entrySets.emitEdge(methodNode, EdgeKind.OVERRIDES, superNode);
-        } else {
-          entrySets.emitEdge(methodNode, EdgeKind.OVERRIDES_TRANSITIVE, superNode);
-        }
-      }
-
-      // Set the resulting node for the method and then recurse through its body.  Setting the node
-      // first is necessary to correctly add childof edges in the callgraph.
-      JavaNode node =
-          ctx.setNode(
-              new JavaNode(methodNode, signature.get(), new JavaNode(fnTypeNode, fnTypeName)));
-      scan(methodDef.getBody(), ctx);
-
-      return node;
+      // Likewise, constructors don't have return types in the Java AST, but
+      // Kythe models all functions with return types.  As a solution, we use
+      // the class type as the return type for all constructors.
+      ret = getNode(methodDef.sym.owner);
     } else {
-      // Try to scan method body even if signature could not be generated.
-      scan(methodDef.getBody(), ctx);
+      bindingAnchor =
+          emitDefinesBindingAnchorEdge(
+              methodDef.name, methodDef.getPreferredPosition(), methodNode, ctx.getSnippet());
+      ret = returnType.entries;
+      fnTypeName = returnType.qualifiedName + fnTypeName;
     }
-    return todoNode(ctx, "MethodDef: " + methodDef);
+
+    if (bindingAnchor != null) {
+      if (!documented) {
+        emitComment(methodDef, methodNode);
+      }
+      if (absNode != null) {
+        emitAnchor(bindingAnchor, EdgeKind.DEFINES_BINDING, absNode);
+        Span span = filePositions.findIdentifier(methodDef.name, methodDef.getPreferredPosition());
+        if (span != null) {
+          emitMetadata(span, absNode);
+        }
+        if (!documented) {
+          emitComment(methodDef, absNode);
+        }
+      }
+      emitAnchor(ctx, EdgeKind.DEFINES, methodNode);
+    }
+
+    emitOrdinalEdges(methodNode, EdgeKind.PARAM, params);
+    EntrySet fnTypeNode = entrySets.newFunctionTypeAndEmit(ret, toEntries(paramTypes));
+    entrySets.emitEdge(methodNode, EdgeKind.TYPED, fnTypeNode);
+
+    ClassSymbol ownerClass = (ClassSymbol) methodDef.sym.owner;
+    Set<Element> ownerDirectSupertypes = new HashSet<>();
+    ownerDirectSupertypes.add(ownerClass.getSuperclass().asElement());
+    for (Type interfaceParent : ownerClass.getInterfaces()) {
+      ownerDirectSupertypes.add(interfaceParent.asElement());
+    }
+    for (MethodSymbol superMethod : JavacUtil.superMethods(javaContext, methodDef.sym)) {
+      EntrySet superNode = getNode(superMethod);
+      if (ownerDirectSupertypes.contains(superMethod.owner)) {
+        entrySets.emitEdge(methodNode, EdgeKind.OVERRIDES, superNode);
+      } else {
+        entrySets.emitEdge(methodNode, EdgeKind.OVERRIDES_TRANSITIVE, superNode);
+      }
+    }
+
+    // Set the resulting node for the method and then recurse through its body.  Setting the node
+    // first is necessary to correctly add childof edges in the callgraph.
+    JavaNode node =
+        ctx.setNode(
+            new JavaNode(methodNode, signature.get(), new JavaNode(fnTypeNode, fnTypeName)));
+    scan(methodDef.getBody(), ctx);
+
+    return node;
   }
 
   @Override
@@ -487,31 +487,29 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     TreeContext ctx = owner.downAsSnippet(varDef);
 
     Optional<String> signature = signatureGenerator.getSignature(varDef.sym);
-    if (signature.isPresent()) {
-      EntrySet varNode = entrySets.getNode(signatureGenerator, varDef.sym, signature.get(), null);
-      boolean documented = visitDocComment(varNode, null);
-      emitDefinesBindingAnchorEdge(
-          varDef.name,
-          varDef.getStartPosition(),
-          varNode,
-          ctx.getSnippet());
-      emitAnchor(ctx, EdgeKind.DEFINES, varNode);
-      if (varDef.sym.getKind().isField() && !documented) {
-        // emit comments for fields and enumeration constants
-        emitComment(varDef, varNode);
-      }
-
-      visitAnnotations(varNode, varDef.getModifiers().getAnnotations(), ctx);
-
-      JavaNode typeNode = scan(varDef.getType(), ctx);
-      if (typeNode != null) {
-        emitEdge(varNode, EdgeKind.TYPED, typeNode);
-      }
-
-      scan(varDef.getInitializer(), ctx);
-      return new JavaNode(varNode, signature.get(), typeNode);
+    if (!signature.isPresent()) {
+      // TODO(schroederc): details
+      return emitDiagnostic(ctx, "missing variable signature", null, null);
     }
-    return todoNode(ctx, "VarDef: " + varDef);
+
+    EntrySet varNode = entrySets.getNode(signatureGenerator, varDef.sym, signature.get(), null);
+    boolean documented = visitDocComment(varNode, null);
+    emitDefinesBindingAnchorEdge(varDef.name, varDef.getStartPosition(), varNode, ctx.getSnippet());
+    emitAnchor(ctx, EdgeKind.DEFINES, varNode);
+    if (varDef.sym.getKind().isField() && !documented) {
+      // emit comments for fields and enumeration constants
+      emitComment(varDef, varNode);
+    }
+
+    visitAnnotations(varNode, varDef.getModifiers().getAnnotations(), ctx);
+
+    JavaNode typeNode = scan(varDef.getType(), ctx);
+    if (typeNode != null) {
+      emitEdge(varNode, EdgeKind.TYPED, typeNode);
+    }
+
+    scan(varDef.getInitializer(), ctx);
+    return new JavaNode(varNode, signature.get(), typeNode);
   }
 
   @Override
@@ -573,16 +571,17 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     scan(invoke.getTypeArguments(), ctx);
 
     JavaNode method = scan(invoke.getMethodSelect(), ctx);
-    if (method != null) {
-      EntrySet anchor = emitAnchor(ctx, EdgeKind.REF_CALL, method.entries);
-      TreeContext parentContext = ctx.getMethodParent();
-      if (anchor != null && parentContext != null && parentContext.getNode() != null) {
-        emitEdge(anchor, EdgeKind.CHILDOF, parentContext.getNode());
-      }
-      return method;
+    if (method == null) {
+      // TODO details
+      return emitDiagnostic(ctx, "error analyzing method", null, null);
     }
 
-    return todoNode(ctx, "Apply: " + invoke);
+    EntrySet anchor = emitAnchor(ctx, EdgeKind.REF_CALL, method.entries);
+    TreeContext parentContext = ctx.getMethodParent();
+    if (anchor != null && parentContext != null && parentContext.getNode() != null) {
+      emitEdge(anchor, EdgeKind.CHILDOF, parentContext.getNode());
+    }
+    return method;
   }
 
   @Override
@@ -590,30 +589,30 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     TreeContext ctx = owner.down(newClass);
 
     EntrySet ctorNode = getNode(newClass.constructor);
-    if (ctorNode != null) {
-      // Span over "new Class"
-      Span refSpan =
-          new Span(
-              filePositions.getStart(newClass), filePositions.getEnd(newClass.getIdentifier()));
-      EntrySet anchor = entrySets.newAnchorAndEmit(filePositions, refSpan, ctx.getSnippet());
-      emitAnchor(anchor, EdgeKind.REF, ctorNode);
-
-      // Span over "new Class(...)"
-      Span callSpan = new Span(refSpan.getStart(), filePositions.getEnd(newClass));
-      EntrySet callAnchor = entrySets.newAnchorAndEmit(filePositions, callSpan, ctx.getSnippet());
-      emitAnchor(callAnchor, EdgeKind.REF_CALL, ctorNode);
-      TreeContext parentContext = owner.getMethodParent();
-      if (anchor != null && parentContext != null && parentContext.getNode() != null) {
-        emitEdge(callAnchor, EdgeKind.CHILDOF, parentContext.getNode());
-      }
-
-      scanList(newClass.getTypeArguments(), ctx);
-      scanList(newClass.getArguments(), ctx);
-      scan(newClass.getEnclosingExpression(), ctx);
-      scan(newClass.getClassBody(), ctx);
-      return scan(newClass.getIdentifier(), ctx);
+    if (ctorNode == null) {
+      return emitDiagnostic(ctx, "error analyzing class", null, null);
     }
-    return todoNode(ctx, "NewClass: " + newClass);
+
+    // Span over "new Class"
+    Span refSpan =
+        new Span(filePositions.getStart(newClass), filePositions.getEnd(newClass.getIdentifier()));
+    EntrySet anchor = entrySets.newAnchorAndEmit(filePositions, refSpan, ctx.getSnippet());
+    emitAnchor(anchor, EdgeKind.REF, ctorNode);
+
+    // Span over "new Class(...)"
+    Span callSpan = new Span(refSpan.getStart(), filePositions.getEnd(newClass));
+    EntrySet callAnchor = entrySets.newAnchorAndEmit(filePositions, callSpan, ctx.getSnippet());
+    emitAnchor(callAnchor, EdgeKind.REF_CALL, ctorNode);
+    TreeContext parentContext = owner.getMethodParent();
+    if (anchor != null && parentContext != null && parentContext.getNode() != null) {
+      emitEdge(callAnchor, EdgeKind.CHILDOF, parentContext.getNode());
+    }
+
+    scanList(newClass.getTypeArguments(), ctx);
+    scanList(newClass.getArguments(), ctx);
+    scan(newClass.getEnclosingExpression(), ctx);
+    scan(newClass.getClassBody(), ctx);
+    return scan(newClass.getIdentifier(), ctx);
   }
 
   @Override
@@ -704,7 +703,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     return docScanner != null && docScanner.visitDocComment(treePath, node, absNode);
   }
 
-  //// Utility methods ////
+  // // Utility methods ////
 
   void emitDocReference(Symbol sym, int startChar, int endChar) {
     EntrySet node = getNode(sym);
@@ -766,8 +765,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     for (JCTypeParameter tParam : params) {
       TreeContext ctx = ownerContext.down(tParam);
       EntrySet node = getNode(tParam.type.asElement());
-      emitDefinesBindingAnchorEdge(
-          tParam.name, tParam.getStartPosition(), node, ctx.getSnippet());
+      emitDefinesBindingAnchorEdge(tParam.name, tParam.getStartPosition(), node, ctx.getSnippet());
       visitAnnotations(node, tParam.getAnnotations(), ctx);
       typeParams.add(node);
 
@@ -814,7 +812,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   private JavaNode emitSymUsage(TreeContext ctx, Symbol sym) {
     JavaNode node = getRefNode(ctx, sym);
     if (node == null) {
-      return todoNode(ctx, "ExprUsage: " + ctx.getTree());
+      // TODO(schroederc): details
+      return emitDiagnostic(ctx, "failed to resolve symbol reference", null, null);
     }
 
     emitAnchor(ctx, EdgeKind.REF, node.entries);
@@ -831,7 +830,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   private JavaNode emitNameUsage(TreeContext ctx, Symbol sym, Name name, EdgeKind edgeKind) {
     JavaNode node = getRefNode(ctx, sym);
     if (node == null) {
-      return todoNode(ctx, "NameUsage: " + ctx.getTree() + " -- " + name);
+      // TODO(schroederc): details
+      return emitDiagnostic(ctx, "failed to resolve symbol name", null, null);
     }
 
     emitAnchor(name, ctx.getTree().getStartPosition(), edgeKind, node.entries, ctx.getSnippet());
@@ -845,7 +845,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     // (e.g., `List` is in generic context in `List<String> x` but not in `List x`).
     boolean inGenericContext = ctx.up().getTree() instanceof JCTypeApply;
     JavaNode node = getJavaNode(sym);
-    if (node != null && sym instanceof ClassSymbol && inGenericContext && !sym.getTypeParameters().isEmpty()) {
+    if (node != null
+        && sym instanceof ClassSymbol
+        && inGenericContext
+        && !sym.getTypeParameters().isEmpty()) {
       // Always reference the abs node of a generic class, unless used as a raw type.
       node = new JavaNode(entrySets.newAbstractAndEmit(node.entries), node.qualifiedName);
     }
@@ -977,14 +980,20 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     entrySets.emitOrdinalEdges(node, kind, entries);
   }
 
-  @Deprecated
-  private JavaNode todoNode(TreeContext ctx, String message) {
-    return new JavaNode(
-        entrySets.todoNode(ctx.getSourceName(), ctx.getTree(), message),
-        "TODO",
-        new JavaNode(
-            entrySets.todoNode(ctx.getSourceName(), ctx.getTree(), "type:" + message),
-            "TODO:type"));
+  private JavaNode emitDiagnostic(TreeContext ctx, String message, String details, String context) {
+    Diagnostic.Builder d = Diagnostic.newBuilder().setMessage(message);
+    if (details != null) {
+      d.setDetails(details);
+    }
+    if (context != null) {
+      d.setContextUrl(context);
+    }
+    Span s = ctx.getTreeSpan();
+    d.getSpanBuilder().getStartBuilder().setByteOffset(s.getStart());
+    d.getSpanBuilder().getEndBuilder().setByteOffset(s.getEnd());
+    EntrySet node = entrySets.emitDiagnostic(filePositions, d.build());
+    // TODO(schroederc): don't allow any edges to a diagnostic node
+    return new JavaNode(node, "diagnostic");
   }
 
   private <T extends JCTree> List<JavaNode> scanList(List<T> trees, TreeContext owner) {
@@ -1077,8 +1086,8 @@ class TreeContext {
 
   /** Path relative to source root. */
   public String getSourcePath() {
-    // The URI is absolute and hierarchical, so the path will always begin with a slash
-    // (see {@link java.net.URI} for details).  We strip that leading slash to return a relative path.
+    // The URI is absolute and hierarchical, so the path will always begin with a slash (see {@link
+    // java.net.URI} for details).  We strip that leading slash to return a relative path.
     return filePositions.getSourceFile().toUri().getPath().substring(1);
   }
 

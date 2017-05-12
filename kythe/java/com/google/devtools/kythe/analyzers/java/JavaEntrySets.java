@@ -30,6 +30,7 @@ import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.platform.java.helpers.SignatureGenerator;
 import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
+import com.google.devtools.kythe.proto.Diagnostic;
 import com.google.devtools.kythe.proto.Link;
 import com.google.devtools.kythe.proto.MarkedSource;
 import com.google.devtools.kythe.proto.Storage.VName;
@@ -370,6 +371,11 @@ public class JavaEntrySets extends KytheEntrySets {
         : newAnchorAndEmit(getFileVName(getDigest(filePositions.getSourceFile())), span, snippet);
   }
 
+  /** Emits and returns a DIAGNOSTIC node attached to the given file. */
+  public EntrySet emitDiagnostic(Positions filePositions, Diagnostic d) {
+    return emitDiagnostic(getFileVName(getDigest(filePositions.getSourceFile())), d);
+  }
+
   /** Returns the equivalent {@link NodeKind} for the given {@link ElementKind}. */
   @Nullable
   private static NodeKind elementNodeKind(ElementKind kind) {
@@ -488,23 +494,5 @@ public class JavaEntrySets extends KytheEntrySets {
         || cls.startsWith("javax.")
         || cls.startsWith("com.sun.")
         || cls.startsWith("sun.");
-  }
-
-  /**
-   * Returns and emits a placeholder node meant to be <b>soon</b> replaced by a Kythe
-   * schema-compliant node.
-   */
-  @Deprecated
-  EntrySet todoNode(String sourceName, JCTree tree, String message) {
-    return emitAndReturn(
-        newNode("TODO")
-            .addSignatureSalt("" + System.nanoTime()) // Ensure unique TODOs
-            .setProperty("todo", message)
-            .setProperty("sourcename", sourceName)
-            .setProperty("jctree/class", tree.getClass().toString())
-            .setProperty("jctree/tag", "" + tree.getTag())
-            .setProperty("jctree/type", "" + tree.type)
-            .setProperty("jctree/pos", "" + tree.pos)
-            .setProperty("jctree/start", "" + tree.getStartPosition()));
   }
 }
