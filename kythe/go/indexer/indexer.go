@@ -482,13 +482,22 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *xpb.MarkedSource {
 			})
 			firstParam = 1
 		}
-		children = append(children, ms, &xpb.MarkedSource{
-			Kind:          xpb.MarkedSource_PARAMETER_LOOKUP_BY_PARAM,
-			PreText:       "(",
-			PostChildText: ", ",
-			PostText:      ")",
-			LookupIndex:   uint32(firstParam),
-		})
+		children = append(children, ms)
+
+		// If there are no parameters, the lookup will not produce anything.
+		// Ensure when this happens we still get parentheses for notational
+		// purposes.
+		if sig.Params().Len() == 0 {
+			children = append(children, &xpb.MarkedSource{PreText: "()"})
+		} else {
+			children = append(children, &xpb.MarkedSource{
+				Kind:          xpb.MarkedSource_PARAMETER_LOOKUP_BY_PARAM,
+				PreText:       "(",
+				PostChildText: ", ",
+				PostText:      ")",
+				LookupIndex:   uint32(firstParam),
+			})
+		}
 		if res := sig.Results(); res != nil {
 			children = append(children, setKind(xpb.MarkedSource_PARAMETER,
 				&xpb.MarkedSource{PreText: " "},

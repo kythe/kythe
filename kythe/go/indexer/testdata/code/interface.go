@@ -65,10 +65,7 @@ type Thinger interface {
 	//-
 	//- //--------------------------------------------------
 	//- MethodCode child.3 MCParams
-	//- MCParams.kind "PARAMETER_LOOKUP_BY_PARAM"
-	//- MCParams.pre_text "("
-	//- MCParams.post_child_text ", "
-	//- MCParams.post_text ")"
-	//- MCParams.lookup_index 1
+	//- MCParams.kind "BOX"
+	//- MCParams.pre_text "()"
 	Thing()
 }

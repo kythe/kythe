@@ -40,3 +40,9 @@ package funcdecl
 func Positive(x int) bool {
 	return x > 0
 }
+
+//- @True defines/binding True
+//- True code TrueCode
+//- TrueCode child.2 TC2
+//- TC2.pre_text "()"
+func True() bool { return true}
