@@ -2,6 +2,7 @@
 package comment
 
 //- Pkg.node/kind package
+//- Pkg.doc/uri "http://godoc.org/test/comments"
 //- PkgDoc.node/kind doc
 //- PkgDoc documents Pkg
 //- PkgDoc.text "Package comment contains comments."

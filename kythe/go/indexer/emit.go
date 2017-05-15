@@ -23,6 +23,8 @@ import (
 	"go/token"
 	"go/types"
 	"log"
+	"net/url"
+	"path"
 	"strconv"
 	"strings"
 
@@ -51,6 +53,10 @@ type EmitOptions struct {
 
 	// If true, emit linkages specified by metadata rules.
 	EmitLinkages bool
+
+	// If set, use this as the base URL for links to godoc.  The import path is
+	// appended to the path of this URL to obtain the target URL to link to.
+	DocBase *url.URL
 }
 
 // shouldEmit reports whether the indexer should emit a node for the given
@@ -58,6 +64,17 @@ type EmitOptions struct {
 // corresponding option is enabled.
 func (e *EmitOptions) shouldEmit(vname *spb.VName) bool {
 	return e != nil && e.EmitStandardLibs && govname.IsStandardLibrary(vname)
+}
+
+// docURL returns a documentation URL for the specified package, if one is
+// specified by the options, or "" if not.
+func (e *EmitOptions) docURL(pi *PackageInfo) string {
+	if e != nil && e.DocBase != nil {
+		u := *e.DocBase
+		u.Path = path.Join(u.Path, pi.ImportPath)
+		return u.String()
+	}
+	return ""
 }
 
 // An impl records that a type A implements an interface B.
@@ -77,6 +94,9 @@ func (pi *PackageInfo) Emit(ctx context.Context, sink Sink, opts *EmitOptions) e
 
 	// Emit a node to represent the package as a whole.
 	e.writeFact(pi.VName, facts.NodeKind, nodes.Package)
+	if url := e.opts.docURL(pi); url != "" {
+		e.writeFact(pi.VName, facts.DocURI, url)
+	}
 
 	// Emit facts for all the source files claimed by this package.
 	for file, text := range pi.SourceText {

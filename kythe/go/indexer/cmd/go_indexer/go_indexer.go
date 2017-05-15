@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -48,8 +49,10 @@ var (
 	doLibNodes  = flag.Bool("libnodes", false, "Emit nodes for standard library packages")
 	doCodeFacts = flag.Bool("code", false, "Emit code facts containing MarkedSource markup")
 	metaSuffix  = flag.String("meta", "", "If set, treat files with this suffix as JSON linkage metadata")
+	docBase     = flag.String("docbase", "http://godoc.org", "If set, use as the base URL for godoc links")
 
 	writeEntry func(context.Context, *spb.Entry) error
+	docURL     *url.URL
 )
 
 func init() {
@@ -90,6 +93,13 @@ func main() {
 		writeEntry = func(_ context.Context, entry *spb.Entry) error {
 			return rw.PutProto(entry)
 		}
+	}
+	if *docBase != "" {
+		u, err := url.Parse(*docBase)
+		if err != nil {
+			log.Fatalf("Invalid doc base URL: %v", err)
+		}
+		docURL = u
 	}
 
 	ctx := context.Background()
@@ -134,6 +144,7 @@ func indexGo(ctx context.Context, unit *apb.CompilationUnit, f indexer.Fetcher) 
 		EmitStandardLibs: *doLibNodes,
 		EmitMarkedSource: *doCodeFacts,
 		EmitLinkages:     *metaSuffix != "",
+		DocBase:          docURL,
 	})
 }
 

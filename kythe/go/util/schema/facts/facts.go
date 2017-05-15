@@ -27,6 +27,7 @@ const (
 	Complete     = prefix + "complete"
 	ContextURL   = prefix + "context/url"
 	Details      = prefix + "details"
+	DocURI       = prefix + "doc/uri"
 	Message      = prefix + "message"
 	NodeKind     = prefix + "node/kind"
 	ParamDefault = prefix + "param/default"
