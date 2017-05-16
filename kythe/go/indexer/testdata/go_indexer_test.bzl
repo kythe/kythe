@@ -155,7 +155,8 @@ def _go_verifier_test(ctx):
   indexer  = ctx.files._indexer[-1]
   iargs    = [indexer.short_path, '-zip']
   verifier = ctx.file._verifier
-  vargs    = [verifier.short_path, '--use_file_nodes', '--show_goals']
+  vargs    = [verifier.short_path,
+              '--use_file_nodes', '--show_goals', '--check_for_singletons']
 
   if ctx.attr.log_entries:
     vargs.append('--show_protos')

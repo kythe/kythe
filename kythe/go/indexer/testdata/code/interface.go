@@ -2,70 +2,51 @@
 package iface
 
 //- @Thinger defines/binding Thinger
-//- Thinger code ThingerCode
+//- Thinger code TCode
 //-
-//- //--------------------------------------------------
-//- ThingerCode child.1 THC1
-//- THC1.kind "BOX"
+//- TCode.kind "TYPE"
+//- TCode child.0 TType
+//- TCode child.1 TName
+//- TCode child.2 TSpace
+//- TCode child.3 TInterface
 //-
-//- THC1 child.0 THC1Context
-//- THC1Context.kind "CONTEXT"
-//- THC1Context.post_child_text "."
-//- THC1Context child.0 THC1ContextID
-//- THC1ContextID.kind "IDENTIFIER"
-//- THC1ContextID.pre_text "test/iface"
+//- TType.pre_text "type "
 //-
-//- THC1 child.1 THC1Ident
-//- THC1Ident.kind "IDENTIFIER"
-//- THC1Ident.pre_text "Thinger"
+//- TName child.0 TContext
+//- TName child.1 TIdent
 //-
-//- //--------------------------------------------------
-//- ThingerCode child.2 THC2
-//- THC2.kind "TYPE"
-//- THC2.pre_text " "
-//-
-//- //--------------------------------------------------
-//- ThingerCode child.3 THC3
-//- THC3.kind "TYPE"
-//- THC3.pre_text "interface {...}"
+//- TSpace.pre_text " "
+//- TInterface.pre_text "interface {...}"
 type Thinger interface {
-	//- @Thing defines/binding Method
-	//- Method code MethodCode
+	//- @Thing defines/binding Thing
+	//- Thing code MCode
 	//-
-	//- //--------------------------------------------------
-	//- MethodCode child.0 MC0
-	//- MC0.kind "TYPE"
-	//- MC0.pre_text "func "
+	//- MCode child.0 MFunc
+	//- MCode child.1 MRecv
+	//- MCode child.2 MName
+	//- MCode child.3 MParams
 	//-
-	//- //--------------------------------------------------
-	//- MethodCode child.1 MC1
-	//- MC1.kind "PARAMETER"
-	//- MC1.pre_text "("
-	//- MC1.post_text ") "
-	//- MC1 child.0 MCRecv
-	//- MCRecv.kind "TYPE"
-	//- MCRecv.pre_text "Thinger"
+	//- MFunc.pre_text "func "
 	//-
-	//- //--------------------------------------------------
-	//- MethodCode child.2 MCIdent
-	//- MCIdent child.0 MCContext
+	//- MRecv.kind "PARAMETER"
+	//- MRecv.pre_text "("
+	//- MRecv.post_text ") "
+	//- MRecv child.0 MRType
 	//-
-	//- MCContext.kind "CONTEXT"
-	//- MCContext child.0 MCContextPkg
-	//- MCContextPkg.kind "IDENTIFIER"
-	//- MCContextPkg.pre_text "test/iface"
+	//- MName.post_child_text "."
+	//- MName child.0 MContext
+	//- MName child.1 MOwner
+	//- MName child.2 MIdent
 	//-
-	//- MCContext child.1 MCContextType
-	//- MCContextType.kind "IDENTIFIER"
-	//- MCContextType.pre_text "Thinger"
+	//- MParams.kind "PARAMETER"
+	//- MParams.pre_text "()"
 	//-
-	//- MCIdent child.1 MCName
-	//- MCName.kind "IDENTIFIER"
-	//- MCName.pre_text "Thing"
+	//- MRType.kind "TYPE"
+	//- MRType.pre_text "Thinger"
 	//-
-	//- //--------------------------------------------------
-	//- MethodCode child.3 MCParams
-	//- MCParams.kind "BOX"
-	//- MCParams.pre_text "()"
+	//- MContext.kind "CONTEXT"
+	//- MContext.pre_text "test/iface"
+	//- MOwner.pre_text "Thinger"
+	//- MIdent.pre_text "Thing"
 	Thing()
 }

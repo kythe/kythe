@@ -6,52 +6,39 @@ type w int
 //- @LessThan defines/binding LT
 //- LT code LTCode
 //-
-//- @rec defines/binding Rec
-//- Rec code RecCode
+//- LTCode child.0 LTFunc
+//- LTCode child.1 LTRecv
+//- LTCode child.2 LTName
+//- LTCode child.3 LTParams
+//- LTCode child.4 LTResult
 //-
-//- @x defines/binding Param
-//- Param code ParamCode
+//- LTFunc.pre_text "func "
 //-
-//- //--------------------------------------------------
-//- LTCode child.0 LC0
-//- LC0.kind "TYPE"
-//- LC0.pre_text "func "
+//- LTRecv.kind "PARAMETER"
+//- LTRecv.pre_text "("
+//- LTRecv.post_text ") "
+//- LTRecv child.0 LTRType
 //-
-//- //--------------------------------------------------
-//- LTCode child.1 LRec
-//- LRec.kind "PARAMETER"
-//- LRec.pre_text "("
-//- LRec.post_text ") "
-//- LRec child.0 LRectype
-//- LRecType.kind "TYPE"
-//- LRecType.pre_text "w"
+//- LTName.post_child_text "."
+//- LTName child.0 LTContext
+//- LTName child.1 LTIdent
 //-
-//- //--------------------------------------------------
-//- LTCode child.2 LC2
-//- LC2 child.0 LC2Context
-//- LC2Context.kind "CONTEXT"
-//- LC2Context child.0 LC2ContextID
-//- LC2ContextID.kind "IDENTIFIER"
-//- LC2ContextID.pre_text "methdecl"
+//- LTParams.kind "PARAMETER_LOOKUP_BY_PARAM"
+//- LTParams.lookup_index 1
+//- LTParams.pre_text "("
+//- LTParams.post_text ")"
+//- LTParams.post_child_text ", "
 //-
-//- LC2 child.1 LC2Ident
-//- LC2Ident.kind "IDENTIFIER"
-//- LC2Ident.pre_text "LessThan"
+//- LTResult.pre_text " "
+//- LTResult child.0 LTReturn
+//- LTReturn.pre_text "bool"
 //-
-//- //--------------------------------------------------
-//- LTCode child.3 LCParams
-//- LCParams.kind "PARAMETER_LOOKUP_BY_PARAM"
-//- LCParams.pre_text "("
-//- LCParams.post_text ")"
-//- LCParams.post_child_text ", "
-//- LCParams.lookup_index 1
+//- LTRType.kind "TYPE"
+//- LTRType.pre_text "w"
 //-
-//- //--------------------------------------------------
-//- LTCode child.5 LCResult
-//- LCResult.kind "PARAMETER"
-//- LCResult child.0 LCBool
-//- LCBool.kind "IDENTIFIER"
-//- LCBool.pre_text "bool"
+//- LTContext.kind "CONTEXT"
+//- LTContext.pre_text "methdecl"
+//- LTIdent.pre_text "LessThan"
 func (rec w) LessThan(x int) bool {
 	return int(rec) < x
 }

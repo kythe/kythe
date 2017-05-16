@@ -4,68 +4,47 @@ package structtype
 //- @T defines/binding Type
 //- Type code TypeCode
 //-
-//- //--------------------------------------------------
-//- TypeCode child.0 TC0
-//- TC0.kind "TYPE"
-//- TC0.pre_text "type "
+//- TypeCode.kind "TYPE"
+//- TypeCode child.0 TType
+//- TypeCode child.1 TName
+//- TypeCode child.2 TSpace
+//- TypeCode child.3 TStruct
 //-
-//- //--------------------------------------------------
-//- TypeCode child.1 TC1
-//- TC1.kind "BOX"
+//- TType.pre_text "type "
 //-
-//- TC1 child.0 TC1Context
-//- TC1Context.kind "CONTEXT"
-//- TC1Context.post_child_text "."
-//- TC1Context child.0 TC1ContextID
-//- TC1ContextID.kind "IDENTIFIER"
-//- TC1ContextID.pre_text "structtype"
+//- TName child.0 TContext
+//- TName child.1 TIdent
 //-
-//- TC1 child.1 TC1Ident
-//- TC1Ident.kind "IDENTIFIER"
-//- TC1Ident.pre_text "T"
+//- TSpace.pre_text " "
 //-
-//- //--------------------------------------------------
-//- TypeCode child.2 TC2
-//- TC2.kind "TYPE"
-//- TC2.pre_text " "
+//- TStruct.pre_text "struct {...}"
 //-
-//- //--------------------------------------------------
-//- TypeCode child.3 TC3
-//- TC3.kind "TYPE"
-//- TC3.pre_text "struct {...}"
+//- TContext.kind "CONTEXT"
+//- TContext.pre_text "structtype"
+//- TIdent.kind "IDENTIFIER"
+//- TIdent.pre_text "T"
 type T struct {
 	//- @F defines/binding Field
-	//- Field childof Type
 	//- Field code FieldCode
 	//-
-	//- //--------------------------------------------------
-	//- FieldCode child.0 FC0
-	//- FCo.kind "BOX"
+	//- FieldCode.kind "TYPE"
+	//- FieldCode child.0 FName
+	//- FieldCode child.1 FSpace
+	//- FieldCode child.2 FType
 	//-
-	//- FC0 child.0 FC1Context
-	//- FC0Context.kind "CONTEXT"
-	//- FC0Context.post_child_text "."
+	//- FName child.0 FContext
+	//- FName child.1 FOwner
+	//- FName child.2 FIdent
 	//-
-	//- FC0Context child.0 FC1ContextID
-	//- FC0ContextID.kind "IDENTIFIER"
-	//- FC0ContextID.pre_text "structtype"
+	//- FSpace.pre_text " "
 	//-
-	//- FC0Context child.1 FC1ContextType
-	//- FC0ContextType.kind "IDENTIFIER"
-	//- FC0ContextType.pre_text "T"
+	//- FType.pre_text "byte"
 	//-
-	//- FC0 child.1 FC1Ident?
-	//- FC0Ident.kind "IDENTIFIER"
-	//- FC0Ident.pre_text "F"
-	//-
-	//- //--------------------------------------------------
-	//- FieldCode child.1 FC1
-	//- FC1.kind "TYPE"
-	//- FC1.pre_text " "
-	//-
-	//- //--------------------------------------------------
-	//- FieldCode child.2 FC2
-	//- FC2.kind "TYPE"
-	//- FC2.pre_text "byte"
+	//- FContext.kind "CONTEXT"
+	//- FContext.pre_text "structtype"
+	//- FOwner.kind "CONTEXT"
+	//- FOwner.pre_text "T"
+	//- FIdent.kind "IDENTIFIER"
+	//- FIdent.pre_text "F"
 	F byte
 }
