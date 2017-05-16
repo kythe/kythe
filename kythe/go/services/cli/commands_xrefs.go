@@ -31,11 +31,19 @@ import (
 )
 
 type xrefsCommand struct {
-	nodeFilters                            string
-	pageToken                              string
-	pageSize                               int
-	defKind, declKind, refKind, callerKind string
-	relatedNodes, nodeDefinitions          bool
+	nodeFilters string
+	pageToken   string
+	pageSize    int
+
+	defKind    string
+	declKind   string
+	refKind    string
+	callerKind string
+
+	relatedNodes    bool
+	nodeDefinitions bool
+	signatures      bool
+	anchorText      bool
 }
 
 func (xrefsCommand) Name() string     { return "xrefs" }
@@ -45,20 +53,25 @@ func (c *xrefsCommand) SetFlags(flag *flag.FlagSet) {
 	flag.StringVar(&c.defKind, "definitions", "all", "Kind of definitions to return (kinds: all, binding, full, or none)")
 	flag.StringVar(&c.declKind, "declarations", "all", "Kind of declarations to return (kinds: all or none)")
 	flag.StringVar(&c.refKind, "references", "noncall", "Kind of references to return (kinds: all, noncall, call, or none)")
-	flag.StringVar(&c.callerKind, "callers", "none", "Kind of callers to return (kinds: direct, overrides, or none)")
-	flag.BoolVar(&c.relatedNodes, "related_nodes", false, "Whether to request related nodes")
+	flag.StringVar(&c.callerKind, "callers", "direct", "Kind of callers to return (kinds: direct, overrides, or none)")
+	flag.BoolVar(&c.relatedNodes, "related_nodes", true, "Whether to request related nodes")
 	flag.StringVar(&c.nodeFilters, "filters", "", "Comma-separated list of additional fact filters to use when requesting related nodes")
 	flag.BoolVar(&c.nodeDefinitions, "node_definitions", false, "Whether to request definition locations for related nodes")
+	flag.BoolVar(&c.anchorText, "anchor_text", false, "Whether to request text for anchors")
+	flag.BoolVar(&c.signatures, "signatures", true, "Whether to request experimental signatures")
 
 	flag.StringVar(&c.pageToken, "page_token", "", "CrossReferences page token")
 	flag.IntVar(&c.pageSize, "page_size", 0, "Maximum number of cross-references returned (0 lets the service use a sensible default)")
 }
 func (c xrefsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) error {
 	req := &xpb.CrossReferencesRequest{
-		Ticket:          flag.Args(),
-		PageToken:       c.pageToken,
-		PageSize:        int32(c.pageSize),
-		NodeDefinitions: c.nodeDefinitions,
+		Ticket:    flag.Args(),
+		PageToken: c.pageToken,
+		PageSize:  int32(c.pageSize),
+
+		AnchorText:             c.anchorText,
+		NodeDefinitions:        c.nodeDefinitions,
+		ExperimentalSignatures: c.signatures,
 	}
 	if c.relatedNodes {
 		req.Filter = []string{facts.NodeKind, facts.Subkind}
@@ -125,7 +138,11 @@ func (c xrefsCommand) displayXRefs(reply *xpb.CrossReferencesReply) error {
 	}
 
 	for _, xr := range reply.CrossReferences {
-		if _, err := fmt.Fprintln(out, "Cross-References for ", showSignature(xr.MarkedSource), xr.Ticket); err != nil {
+		var sig string
+		if xr.MarkedSource != nil {
+			sig = showSignature(xr.MarkedSource) + " "
+		}
+		if _, err := fmt.Fprintf(out, "Cross-References for %s%s\n", sig, xr.Ticket); err != nil {
 			return err
 		}
 		if err := displayRelatedAnchors("Definitions", xr.Definition); err != nil {
@@ -182,8 +199,15 @@ func displayRelatedAnchors(kind string, anchors []*xpb.CrossReferencesReply_Rela
 			if err != nil {
 				return err
 			}
-			if _, err := fmt.Fprintf(out, "    %s\t%s\t[%d:%d-%d:%d)\n      %q\n",
-				pURI.Path, showSignature(a.MarkedSource),
+			if _, err := fmt.Fprintf(out, "    %s\t", pURI.Path); err != nil {
+				return err
+			}
+			if a.MarkedSource != nil {
+				if _, err := fmt.Fprintf(out, "%s\t", showSignature(a.MarkedSource)); err != nil {
+					return err
+				}
+			}
+			if _, err := fmt.Fprintf(out, "    [%d:%d-%d:%d)\n      %q\n",
 				a.Anchor.Span.Start.LineNumber, a.Anchor.Span.Start.ColumnOffset,
 				a.Anchor.Span.End.LineNumber, a.Anchor.Span.End.ColumnOffset,
 				string(a.Anchor.Snippet)); err != nil {
