@@ -312,17 +312,30 @@ type bazelArgs struct {
 	// See also http://github.com/bazelbuild/rules_go/issues/211.
 }
 
+// checkParams reports whether args looks like a response file execution,
+// consisting either of a plain .params file or a bash -c command with an
+// argument file. If so, the response file path is returned.
+func checkParams(args []string) (string, bool) {
+	if len(args) == 1 && filepath.Ext(args[0]) == ".params" {
+		return args[0], true
+	} else if len(args) == 3 && args[0] == "/bin/bash" && args[1] == "-c" {
+		return args[2], true
+	}
+	return "", false
+}
+
 // parseBazelArgs extracts the compiler command line from the raw argument list
 // passed in by Bazel. The official Go rules currently pass in a response file
 // containing a shell script that we have to parse.
 func parseBazelArgs(args []string) (*bazelArgs, error) {
-	if len(args) != 1 || filepath.Ext(args[0]) != ".params" {
+	paramsFile, ok := checkParams(args)
+	if !ok {
 		// This is some unusual case; assume the arguments are already parsed.
 		return &bazelArgs{compile: args}, nil
 	}
 
 	// This is the expected case, a response file.
-	result := &bazelArgs{paramsFile: args[0]}
+	result := &bazelArgs{paramsFile: paramsFile}
 	f, err := os.Open(result.paramsFile)
 	if err != nil {
 		return nil, err
@@ -338,7 +351,7 @@ func parseBazelArgs(args []string) (*bazelArgs, error) {
 	// Bazel exports GOROOT and changes the working directory, both of which we
 	// want for processing the compiler's argument list.
 	result.symlinks = make(map[string]string)
-	var last []string
+	var last, srcs []string
 	parseShellCommands(data, func(cmd string, args []string) {
 		last = append([]string{cmd}, args...)
 		switch cmd {
@@ -352,9 +365,35 @@ func parseBazelArgs(args []string) (*bazelArgs, error) {
 			if len(args) == 3 && args[0] == "-s" {
 				result.symlinks[args[1]] = args[2]
 			}
+		default:
+			// The source arguments are collected using some bash nonsense.
+			// Reverse-engineer this.
+			//
+			// TODO(fromberger): Figure out a better way to deal with this,
+			// and probably file a bug upstream.
+			//
+			// The current incarnation of the Bazel rules expects to be able to
+			// run a filtering tool before the compiler, but it does this
+			// buried in the response file and it's tricky for us to replay
+			// that because we run without write access to those paths.
+			//
+			// We could maybe dike out the commands and run the filter, but for
+			// now we'll just take all the unfiltered source files as is.
+			trimmed := strings.TrimPrefix(cmd, "UNFILTERED_GO_FILES=(")
+			if trimmed != cmd {
+				line := strings.Join(append([]string{trimmed}, args...), " ")
+				srcs, _ = shell.Split(strings.TrimRight(line, ")"))
+			}
 		}
 	})
-	result.compile = last
+	const filteredMarker = `${FILTERED_GO_FILES[@]}`
+	for _, arg := range last {
+		if arg == filteredMarker {
+			result.compile = append(result.compile, srcs...)
+		} else {
+			result.compile = append(result.compile, arg)
+		}
+	}
 	return result, nil
 }
 
