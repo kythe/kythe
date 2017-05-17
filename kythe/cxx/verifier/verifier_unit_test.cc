@@ -25,7 +25,7 @@
 namespace kythe {
 namespace verifier {
 namespace {
-using MarkedSource = kythe::proto::MarkedSource;
+using MarkedSource = kythe::proto::common::MarkedSource;
 
 TEST(VerifierUnitTest, StringPrettyPrinter) {
   StringPrettyPrinter c_string;

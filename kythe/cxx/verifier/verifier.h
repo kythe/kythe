@@ -20,8 +20,8 @@
 #include <functional>
 #include <string>
 
+#include "kythe/proto/common.pb.h"
 #include "kythe/proto/storage.pb.h"
-#include "kythe/proto/xref.pb.h"
 
 #include "assertions.h"
 
@@ -196,7 +196,7 @@ class Verifier {
   /// \return null if something went wrong; otherwise, an AstNode corresponding
   /// to a VName of a synthetic node for `marked_source`.
   AstNode *ConvertMarkedSource(const yy::location &loc,
-                               const kythe::proto::MarkedSource &marked_source);
+                               const kythe::proto::common::MarkedSource &marked_source);
 
   /// \brief Converts a VName proto to its AST representation.
   AstNode *ConvertVName(const yy::location &location,

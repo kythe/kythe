@@ -21,8 +21,8 @@
 
 #include "assertions.h"
 #include "kythe/cxx/common/kythe_uri.h"
+#include "kythe/proto/common.pb.h"
 #include "kythe/proto/storage.pb.h"
-#include "kythe/proto/xref.pb.h"
 
 namespace kythe {
 namespace verifier {
@@ -1126,7 +1126,7 @@ bool Verifier::PrepareDatabase() {
         printer.Print("\nThe decoded values were:\n");
         auto print_decoded = [&](AstNode *value) {
           if (auto *ident = value->AsIdentifier()) {
-            proto::MarkedSource marked_source;
+            proto::common::MarkedSource marked_source;
             if (!marked_source.ParseFromString(
                     symbol_table_.text(ident->symbol()))) {
               printer.Print("(failed to decode)\n");
@@ -1184,7 +1184,7 @@ AstNode *Verifier::NewUniqueVName(const yy::location &loc) {
 
 AstNode *Verifier::ConvertCodeFact(const yy::location &loc,
                                    const google::protobuf::string &code_data) {
-  proto::MarkedSource marked_source;
+  proto::common::MarkedSource marked_source;
   if (!marked_source.ParseFromString(code_data)) {
     std::cerr << loc << ": can't parse code protobuf" << std::endl;
     return nullptr;
@@ -1193,7 +1193,7 @@ AstNode *Verifier::ConvertCodeFact(const yy::location &loc,
 }
 
 AstNode *Verifier::ConvertMarkedSource(const yy::location &loc,
-                                       const proto::MarkedSource &source) {
+                                       const proto::common::MarkedSource &source) {
   // Explode each MarkedSource message into a node with an unutterable vname.
   auto *vname = NewUniqueVName(loc);
   for (int child = 0; child < source.child_size(); ++child) {
@@ -1227,32 +1227,32 @@ AstNode *Verifier::ConvertMarkedSource(const yy::location &loc,
         {vname, empty_string_id_, empty_string_id_, fact_id, fact_value}));
   };
   switch (source.kind()) {
-    case proto::MarkedSource::BOX:
+    case proto::common::MarkedSource::BOX:
       emit_fact(marked_source_kind_id_, marked_source_box_id_);
       break;
-    case proto::MarkedSource::TYPE:
+    case proto::common::MarkedSource::TYPE:
       emit_fact(marked_source_kind_id_, marked_source_type_id_);
       break;
-    case proto::MarkedSource::PARAMETER:
+    case proto::common::MarkedSource::PARAMETER:
       emit_fact(marked_source_kind_id_, marked_source_parameter_id_);
       break;
-    case proto::MarkedSource::IDENTIFIER:
+    case proto::common::MarkedSource::IDENTIFIER:
       emit_fact(marked_source_kind_id_, marked_source_identifier_id_);
       break;
-    case proto::MarkedSource::CONTEXT:
+    case proto::common::MarkedSource::CONTEXT:
       emit_fact(marked_source_kind_id_, marked_source_context_id_);
       break;
-    case proto::MarkedSource::INITIALIZER:
+    case proto::common::MarkedSource::INITIALIZER:
       emit_fact(marked_source_kind_id_, marked_source_initializer_id_);
       break;
-    case proto::MarkedSource::PARAMETER_LOOKUP_BY_PARAM:
+    case proto::common::MarkedSource::PARAMETER_LOOKUP_BY_PARAM:
       emit_fact(marked_source_kind_id_,
                 marked_source_parameter_lookup_by_param_id_);
       break;
-    case proto::MarkedSource::LOOKUP_BY_PARAM:
+    case proto::common::MarkedSource::LOOKUP_BY_PARAM:
       emit_fact(marked_source_kind_id_, marked_source_lookup_by_param_id_);
       break;
-    case proto::MarkedSource::PARAMETER_LOOKUP_BY_PARAM_WITH_DEFAULTS:
+    case proto::common::MarkedSource::PARAMETER_LOOKUP_BY_PARAM_WITH_DEFAULTS:
       emit_fact(marked_source_kind_id_,
                 marked_source_parameter_lookup_by_param_with_defaults_id_);
       break;
