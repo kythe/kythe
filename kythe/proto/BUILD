@@ -170,6 +170,17 @@ proto_library(
     cc_api_version = 2,
     go_api_version = 2,
     java_api_version = 2,
+    visibility = [
+        # TODO(schroederc): prune once MarkedSource has migrated to common.proto
+        "//kythe/cxx/common:__pkg__",
+        "//kythe/cxx/doc:__pkg__",
+        "//kythe/cxx/verifier:__pkg__",
+        "//kythe/go/platform/tools:__subpackages__",
+        "//kythe/go/services:__subpackages__",
+        "//kythe/go/serving:__subpackages__",
+        "//kythe/go/test:__subpackages__",
+        "//kythe/go/util/markedsource:__pkg__",
+    ],
     deps = [":common_proto"],
 )
 
@@ -191,6 +202,10 @@ proto_library(
     cc_api_version = 2,
     go_api_version = 2,
     java_api_version = 2,
+    visibility = [
+        "//kythe/go/serving:__subpackages__",
+        "//kythe/go/util/tools:__pkg__",
+    ],
     deps = [":common_proto"],
 )
 

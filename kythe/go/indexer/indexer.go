@@ -57,9 +57,9 @@ import (
 	"kythe.io/kythe/go/util/ptypes"
 
 	apb "kythe.io/kythe/proto/analysis_proto"
+	cpb "kythe.io/kythe/proto/common_proto"
 	gopb "kythe.io/kythe/proto/go_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
-	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
 // A Fetcher retrieves the contents of a file given its path and/or hex-encoded
@@ -421,11 +421,11 @@ func (pi *PackageInfo) ObjectVName(obj types.Object) *spb.VName {
 
 // MarkedSource returns a MarkedSource message describing obj.
 // See: http://www.kythe.io/docs/schema/marked-source.html.
-func (pi *PackageInfo) MarkedSource(obj types.Object) *xpb.MarkedSource {
-	ms := &xpb.MarkedSource{
+func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
+	ms := &cpb.MarkedSource{
 		PostChildText: ".",
-		Child: []*xpb.MarkedSource{{
-			Kind:    xpb.MarkedSource_IDENTIFIER,
+		Child: []*cpb.MarkedSource{{
+			Kind:    cpb.MarkedSource_IDENTIFIER,
 			PreText: objectName(obj),
 		}},
 	}
@@ -446,17 +446,17 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *xpb.MarkedSource {
 	//     |             |            |
 	//    pkg          type          name
 	//
-	var ctx []*xpb.MarkedSource
+	var ctx []*cpb.MarkedSource
 	if pkg := obj.Pkg(); pkg != nil {
-		ctx = append(ctx, &xpb.MarkedSource{
-			Kind:    xpb.MarkedSource_CONTEXT,
+		ctx = append(ctx, &cpb.MarkedSource{
+			Kind:    cpb.MarkedSource_CONTEXT,
 			PreText: pi.importPath(pkg),
 		})
 	}
 	if par, ok := pi.owner[obj]; ok {
 		if _, ok := par.Type().(*types.Named); ok {
-			ctx = append(ctx, &xpb.MarkedSource{
-				Kind:    xpb.MarkedSource_CONTEXT,
+			ctx = append(ctx, &cpb.MarkedSource{
+				Kind:    cpb.MarkedSource_CONTEXT,
 				PreText: typeName(par.Type()),
 			})
 		}
@@ -473,20 +473,20 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *xpb.MarkedSource {
 		//
 		// Methods:   func (R) Name(p1, ...) (r0, ...)
 		// Functions: func Name(p0, ...) (r0, ...)
-		fn := &xpb.MarkedSource{
-			Kind:  xpb.MarkedSource_TYPE,
-			Child: []*xpb.MarkedSource{{PreText: "func "}},
+		fn := &cpb.MarkedSource{
+			Kind:  cpb.MarkedSource_TYPE,
+			Child: []*cpb.MarkedSource{{PreText: "func "}},
 		}
 		sig := t.Type().(*types.Signature)
 		firstParam := 0
 		if recv := sig.Recv(); recv != nil {
 			// Parenthesized receiver type, e.g. (R).
-			fn.Child = append(fn.Child, &xpb.MarkedSource{
-				Kind:     xpb.MarkedSource_PARAMETER,
+			fn.Child = append(fn.Child, &cpb.MarkedSource{
+				Kind:     cpb.MarkedSource_PARAMETER,
 				PreText:  "(",
 				PostText: ") ",
-				Child: []*xpb.MarkedSource{{
-					Kind:    xpb.MarkedSource_TYPE,
+				Child: []*cpb.MarkedSource{{
+					Kind:    cpb.MarkedSource_TYPE,
 					PreText: typeName(recv.Type()),
 				}},
 			})
@@ -498,13 +498,13 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *xpb.MarkedSource {
 		// Ensure when this happens we still get parentheses for notational
 		// purposes.
 		if sig.Params().Len() == 0 {
-			fn.Child = append(fn.Child, &xpb.MarkedSource{
-				Kind:    xpb.MarkedSource_PARAMETER,
+			fn.Child = append(fn.Child, &cpb.MarkedSource{
+				Kind:    cpb.MarkedSource_PARAMETER,
 				PreText: "()",
 			})
 		} else {
-			fn.Child = append(fn.Child, &xpb.MarkedSource{
-				Kind:          xpb.MarkedSource_PARAMETER_LOOKUP_BY_PARAM,
+			fn.Child = append(fn.Child, &cpb.MarkedSource{
+				Kind:          cpb.MarkedSource_PARAMETER_LOOKUP_BY_PARAM,
 				PreText:       "(",
 				PostChildText: ", ",
 				PostText:      ")",
@@ -512,7 +512,7 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *xpb.MarkedSource {
 			})
 		}
 		if res := sig.Results(); res != nil && res.Len() > 0 {
-			rms := &xpb.MarkedSource{PreText: " "}
+			rms := &cpb.MarkedSource{PreText: " "}
 			if res.Len() > 1 {
 				// If there is more than one result type, parenthesize.
 				rms.PreText = " ("
@@ -520,7 +520,7 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *xpb.MarkedSource {
 				rms.PostChildText = ", "
 			}
 			for i := 0; i < res.Len(); i++ {
-				rms.Child = append(rms.Child, &xpb.MarkedSource{
+				rms.Child = append(rms.Child, &cpb.MarkedSource{
 					PreText: objectName(res.At(i)),
 				})
 			}
@@ -530,9 +530,9 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *xpb.MarkedSource {
 
 	case *types.Var:
 		// For variables and fields, include the type.
-		repl := &xpb.MarkedSource{
-			Kind: xpb.MarkedSource_TYPE,
-			Child: []*xpb.MarkedSource{
+		repl := &cpb.MarkedSource{
+			Kind: cpb.MarkedSource_TYPE,
+			Child: []*cpb.MarkedSource{
 				ms,
 				{PreText: " "},
 				{PreText: typeName(t.Type())},
@@ -542,9 +542,9 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *xpb.MarkedSource {
 
 	case *types.TypeName:
 		// For named types, include the underlying type.
-		repl := &xpb.MarkedSource{
-			Kind: xpb.MarkedSource_TYPE,
-			Child: []*xpb.MarkedSource{
+		repl := &cpb.MarkedSource{
+			Kind: cpb.MarkedSource_TYPE,
+			Child: []*cpb.MarkedSource{
 				{PreText: "type "},
 				ms,
 				{PreText: " "},

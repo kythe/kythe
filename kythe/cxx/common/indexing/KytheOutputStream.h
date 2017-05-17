@@ -24,8 +24,8 @@
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 
+#include "kythe/proto/common.pb.h"
 #include "kythe/proto/storage.pb.h"
-#include "kythe/proto/xref.pb.h"
 #include "llvm/ADT/StringRef.h"
 
 extern "C" {
@@ -34,7 +34,7 @@ struct memcached_st;
 
 namespace kythe {
 /// \brief Code marked with semantic spans.
-using MarkedSource = kythe::proto::MarkedSource;
+using MarkedSource = kythe::proto::common::MarkedSource;
 
 /// A collection of references to the components of a VName.
 struct VNameRef {
