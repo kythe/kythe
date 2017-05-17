@@ -350,8 +350,8 @@ var (
 				srvpb.PagedCrossReferences_RELATED_NODES,
 				srvpb.PagedCrossReferences_MARKED_SOURCE,
 			},
-			MarkedSource: &srvpb.MarkedSource{
-				Kind:    srvpb.MarkedSource_IDENTIFIER,
+			MarkedSource: &cpb.MarkedSource{
+				Kind:    cpb.MarkedSource_IDENTIFIER,
 				PreText: "id",
 			},
 
@@ -395,8 +395,8 @@ var (
 						Ticket: "kythe:?path=someFile#someCallerAnchor",
 						Span:   arbitrarySpan,
 					},
-					MarkedSource: &srvpb.MarkedSource{
-						Kind:    srvpb.MarkedSource_IDENTIFIER,
+					MarkedSource: &cpb.MarkedSource{
+						Kind:    cpb.MarkedSource_IDENTIFIER,
 						PreText: "id",
 					},
 					SemanticCaller: "kythe:#someCaller",

@@ -778,7 +778,7 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 	return reply, nil
 }
 
-func m2m(m *srvpb.MarkedSource) *xpb.MarkedSource {
+func m2m(m *cpb.MarkedSource) *xpb.MarkedSource {
 	if m == nil {
 		return nil
 	}
@@ -803,7 +803,7 @@ func m2m(m *srvpb.MarkedSource) *xpb.MarkedSource {
 	return res
 }
 
-func l2l(l *srvpb.Link) *xpb.Link {
+func l2l(l *cpb.Link) *xpb.Link {
 	if l == nil {
 		return nil
 	}
