@@ -78,36 +78,6 @@ message Location {
   // What kind of location this is.
   Kind kind = 2;
 
-  // TODO(schroederc): remove Location.Point
-  // A Point represents a location within a file or buffer.
-  //
-  // If line_number ≤ 0, the line number and column offset are considered
-  // unknown and will be ignored.
-  //
-  // A point with line_number > 0 is said to be _normalized_ if it satisfies
-  // the constraint 0 ≤ column_offset ≤ bytelen(line_number); that is, if the
-  // column_offset is within the actual range of the corresponding line.  A
-  // point can be normalized by adjusting line_number and column_offset so that
-  // this constraint is satisfied.  This may be impossible if the column offset
-  // exceeds the bounds of the file.
-  message Point {
-    // The offset in bytes from the beginning of the file.
-    // Requires 0 ≤ byte_offset ≤ len(file).
-    int32 byte_offset = 1;
-
-    // The line number containing the point, 1-based.
-    int32 line_number = 2;
-
-    // The byte offset of the point within its line.
-    int32 column_offset = 3;
-  }
-
-  // Deprecated: use span instead
-  // The starting point of the location.
-  Point start = 3 [deprecated = true];
-  // The ending point of the location.
-  Point end = 4 [deprecated = true];
-
   // If kind == SPAN, this is the represented span within the file.
   common.Span span = 5;
 
@@ -117,6 +87,8 @@ message Location {
   // [start.offset, end.offset).
   //
   // When kind = FILE, span should be unset or set to zero values.
+
+  reserved 3, 4;
 }
 
 message DecorationsRequest {
@@ -181,15 +153,8 @@ message DecorationsReply {
   // Represents a reference edge source ---KIND---> target.  Each source is an
   // anchor within the requested source location.
   message Reference {
-    string source_ticket = 1 [deprecated = true];
     string target_ticket = 2;
     string kind = 3;
-
-    // Deprecated: use span instead
-    // Starting byte offset of this references's anchor (source_ticket) span.
-    Location.Point anchor_start = 10 [deprecated = true];
-    // Ending byte offset of this references's anchor (source_ticket) span.
-    Location.Point anchor_end = 11 [deprecated = true];
 
     // Anchor ticket of the target's definition.  Populated only if
     // target_definitions is true in the DecorationsRequest and the target has
@@ -200,6 +165,8 @@ message DecorationsReply {
     // The reference's span within the source file.  This is also the related
     // anchor's span to which the source_ticket refers.
     common.Span span = 5;
+
+    reserved 1, 10, 11;
   }
 
   message Override {
@@ -386,12 +353,6 @@ message Anchor {
   // Parent ticket of the anchor; this is the file containing the anchor
   string parent = 3;
 
-  // Deprecated: use span instead
-  // Starting location of the anchor within its parent's text
-  Location.Point start = 4 [deprecated = true];
-  // Ending location of the anchor within its parent's text
-  Location.Point end = 5 [deprecated = true];
-
   // Span of the anchor within its parent's text
   common.Span span = 10;
   // The anchor's spanning text within the anchor parent's text
@@ -403,11 +364,7 @@ message Anchor {
   // Span of the anchor's snippet within its parent's text
   common.Span snippet_span = 11;
 
-  // Deprecated: use snippet_span instead
-  // Starting location of the anchor's snippet within its parent's text
-  Location.Point snippet_start = 8 [deprecated = true];
-  // Ending location of the anchor's snippet within its parent's text
-  Location.Point snippet_end = 9 [deprecated = true];
+  reserved 4, 5, 8, 9;
 }
 
 message Link {

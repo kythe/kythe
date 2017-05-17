@@ -815,11 +815,8 @@ type span struct{ start, end int32 }
 func decorationToReference(norm *xrefs.Normalizer, d *srvpb.FileDecorations_Decoration) *xpb.DecorationsReply_Reference {
 	span := norm.SpanOffsets(d.Anchor.StartOffset, d.Anchor.EndOffset)
 	return &xpb.DecorationsReply_Reference{
-		SourceTicket:     d.Anchor.Ticket,
 		TargetTicket:     d.Target,
 		Kind:             d.Kind,
-		AnchorStart:      p2p(span.Start),
-		AnchorEnd:        p2p(span.End),
 		Span:             span,
 		TargetDefinition: d.TargetDefinition,
 	}
@@ -1362,29 +1359,14 @@ func a2a(a *srvpb.ExpandedAnchor, anchorText bool) *xpb.CrossReferencesReply_Rel
 		log.Printf("Error parsing anchor ticket: %v", err)
 	}
 	return &xpb.CrossReferencesReply_RelatedAnchor{Anchor: &xpb.Anchor{
-		Ticket:       a.Ticket,
-		Kind:         edges.Canonical(a.Kind),
-		Parent:       parent,
-		Text:         text,
-		Start:        p2p(a.Span.GetStart()),
-		End:          p2p(a.Span.GetEnd()),
-		Span:         a.Span,
-		Snippet:      a.Snippet,
-		SnippetStart: p2p(a.SnippetSpan.GetStart()),
-		SnippetEnd:   p2p(a.SnippetSpan.GetEnd()),
-		SnippetSpan:  a.SnippetSpan,
+		Ticket:      a.Ticket,
+		Kind:        edges.Canonical(a.Kind),
+		Parent:      parent,
+		Text:        text,
+		Span:        a.Span,
+		Snippet:     a.Snippet,
+		SnippetSpan: a.SnippetSpan,
 	}}
-}
-
-func p2p(p *cpb.Point) *xpb.Location_Point {
-	if p == nil {
-		return nil
-	}
-	return &xpb.Location_Point{
-		ByteOffset:   p.ByteOffset,
-		LineNumber:   p.LineNumber,
-		ColumnOffset: p.ColumnOffset,
-	}
 }
 
 // Documentation implements part of the xrefs Service interface.

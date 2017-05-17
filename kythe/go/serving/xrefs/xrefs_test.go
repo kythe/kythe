@@ -768,7 +768,6 @@ func TestDecorationsDirtyBuffer(t *testing.T) {
 	expected := []*xpb.DecorationsReply_Reference{
 		{
 			// Unpatched anchor for "map"
-			SourceTicket: "kythe://c?lang=otpl?path=/a/path#6-9",
 			TargetTicket: "kythe://c?lang=otpl?path=/a/path#map",
 			Kind:         "/kythe/defines/binding",
 
@@ -784,21 +783,10 @@ func TestDecorationsDirtyBuffer(t *testing.T) {
 					ColumnOffset: 9,
 				},
 			},
-			AnchorStart: &xpb.Location_Point{
-				ByteOffset:   6,
-				LineNumber:   1,
-				ColumnOffset: 6,
-			},
-			AnchorEnd: &xpb.Location_Point{
-				ByteOffset:   9,
-				LineNumber:   1,
-				ColumnOffset: 9,
-			},
 		},
 		// Skipped anchor for "empty?" (inside edit region)
 		{
 			// Patched anchor for "cons" (moved backwards by 3 bytes)
-			SourceTicket: "kythe://c?lang=otpl?path=/a/path#51-55",
 			TargetTicket: "kythe://core?lang=otpl#cons",
 			Kind:         "/kythe/refs",
 			Span: &cpb.Span{
@@ -812,16 +800,6 @@ func TestDecorationsDirtyBuffer(t *testing.T) {
 					LineNumber:   4,
 					ColumnOffset: 9,
 				},
-			},
-			AnchorStart: &xpb.Location_Point{
-				ByteOffset:   48,
-				LineNumber:   4,
-				ColumnOffset: 5,
-			},
-			AnchorEnd: &xpb.Location_Point{
-				ByteOffset:   52,
-				LineNumber:   4,
-				ColumnOffset: 9,
 			},
 		},
 	}
@@ -943,8 +921,6 @@ func TestCrossReferences(t *testing.T) {
 				Start: &cpb.Point{LineNumber: 1},
 				End:   &cpb.Point{ByteOffset: 4, LineNumber: 1, ColumnOffset: 4},
 			},
-			Start: &xpb.Location_Point{LineNumber: 1},
-			End:   &xpb.Location_Point{ByteOffset: 4, LineNumber: 1, ColumnOffset: 4},
 
 			SnippetSpan: &cpb.Span{
 				Start: &cpb.Point{
@@ -955,14 +931,6 @@ func TestCrossReferences(t *testing.T) {
 					LineNumber:   1,
 					ColumnOffset: 28,
 				},
-			},
-			SnippetStart: &xpb.Location_Point{
-				LineNumber: 1,
-			},
-			SnippetEnd: &xpb.Location_Point{
-				ByteOffset:   28,
-				LineNumber:   1,
-				ColumnOffset: 28,
 			},
 			Snippet: "これはいくつかのテキストです",
 		}}, {Anchor: &xpb.Anchor{
@@ -982,16 +950,6 @@ func TestCrossReferences(t *testing.T) {
 					ColumnOffset: 2,
 				},
 			},
-			Start: &xpb.Location_Point{
-				ByteOffset:   51,
-				LineNumber:   4,
-				ColumnOffset: 15,
-			},
-			End: &xpb.Location_Point{
-				ByteOffset:   55,
-				LineNumber:   5,
-				ColumnOffset: 2,
-			},
 
 			SnippetSpan: &cpb.Span{
 				Start: &cpb.Point{
@@ -1003,15 +961,6 @@ func TestCrossReferences(t *testing.T) {
 					LineNumber:   4,
 					ColumnOffset: 16,
 				},
-			},
-			SnippetStart: &xpb.Location_Point{
-				ByteOffset: 36,
-				LineNumber: 4,
-			},
-			SnippetEnd: &xpb.Location_Point{
-				ByteOffset:   52,
-				LineNumber:   4,
-				ColumnOffset: 16,
 			},
 			Snippet: "some random text",
 		}}},
@@ -1033,16 +982,6 @@ func TestCrossReferences(t *testing.T) {
 					ColumnOffset: 5,
 				},
 			},
-			Start: &xpb.Location_Point{
-				ByteOffset:   27,
-				LineNumber:   2,
-				ColumnOffset: 10,
-			},
-			End: &xpb.Location_Point{
-				ByteOffset:   33,
-				LineNumber:   3,
-				ColumnOffset: 5,
-			},
 
 			SnippetSpan: &cpb.Span{
 				Start: &cpb.Point{
@@ -1054,15 +993,6 @@ func TestCrossReferences(t *testing.T) {
 					LineNumber:   2,
 					ColumnOffset: 10,
 				},
-			},
-			SnippetStart: &xpb.Location_Point{
-				ByteOffset: 17,
-				LineNumber: 2,
-			},
-			SnippetEnd: &xpb.Location_Point{
-				ByteOffset:   27,
-				LineNumber:   2,
-				ColumnOffset: 10,
 			},
 			Snippet: "here and  ",
 		}}},
@@ -1204,8 +1134,6 @@ func TestCrossReferencesMerge(t *testing.T) {
 				Ticket: "kythe:?path=someFile#someCallerAnchor",
 				Parent: "kythe:?path=someFile",
 				Span:   arbitrarySpan,
-				Start:  p2p(arbitrarySpan.Start),
-				End:    p2p(arbitrarySpan.End),
 			},
 			Ticket: "kythe:#someCaller",
 			MarkedSource: &xpb.MarkedSource{
@@ -1269,8 +1197,6 @@ func TestCrossReferencesDirectCallers(t *testing.T) {
 				Ticket: "kythe:?path=someFile#someCallerAnchor",
 				Parent: "kythe:?path=someFile",
 				Span:   arbitrarySpan,
-				Start:  p2p(arbitrarySpan.Start),
-				End:    p2p(arbitrarySpan.End),
 			},
 			Ticket: "kythe:#someCaller",
 			MarkedSource: &xpb.MarkedSource{
@@ -1316,8 +1242,6 @@ func TestCrossReferencesOverrideCallers(t *testing.T) {
 				Ticket: "kythe:?path=someFile#someCallerAnchor",
 				Parent: "kythe:?path=someFile",
 				Span:   arbitrarySpan,
-				Start:  p2p(arbitrarySpan.Start),
-				End:    p2p(arbitrarySpan.End),
 			},
 			Ticket: "kythe:#someCaller",
 			Site: []*xpb.Anchor{{
@@ -1329,23 +1253,17 @@ func TestCrossReferencesOverrideCallers(t *testing.T) {
 				Ticket: "kythe:?path=someFile#someOverrideCallerAnchor1",
 				Parent: "kythe:?path=someFile",
 				Span:   arbitrarySpan,
-				Start:  p2p(arbitrarySpan.Start),
-				End:    p2p(arbitrarySpan.End),
 			},
 			Site: []*xpb.Anchor{{
 				Ticket: "kythe:?path=someFile#someCallsiteAnchor",
 				Parent: "kythe:?path=someFile",
 				Span:   arbitrarySpan,
-				Start:  p2p(arbitrarySpan.Start),
-				End:    p2p(arbitrarySpan.End),
 			}},
 		}, {
 			Anchor: &xpb.Anchor{
 				Ticket: "kythe:?path=someFile#someOverrideCallerAnchor2",
 				Parent: "kythe:?path=someFile",
 				Span:   arbitrarySpan,
-				Start:  p2p(arbitrarySpan.Start),
-				End:    p2p(arbitrarySpan.End),
 			},
 			Site: []*xpb.Anchor{{
 				Ticket: "kythe:?path=someFile#someCallsiteAnchor",

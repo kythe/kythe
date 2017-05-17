@@ -508,8 +508,9 @@ func (d *DB) scanReferences(fileTicket string, norm *xrefs.Normalizer) ([]*xpb.D
 	var references []*xpb.DecorationsReply_Reference
 	for rs.Next() {
 		r := &xpb.DecorationsReply_Reference{}
+		var ticket string
 		var start, end int32
-		if err := rs.Scan(&r.SourceTicket, &r.Kind, &r.TargetTicket, &start, &end); err != nil {
+		if err := rs.Scan(&ticket, &r.Kind, &r.TargetTicket, &start, &end); err != nil {
 			return nil, fmt.Errorf("sql scan error: %v", err)
 		}
 		r.Span = norm.SpanOffsets(start, end)
