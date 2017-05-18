@@ -760,10 +760,11 @@ export function index(
       diags.add(diag);
     }
   }
+  const rootDir = program.getCompilerOptions().rootDir || process.cwd();
   if (diags.size > 0) {
     let message = ts.formatDiagnostics(Array.from(diags), {
       getCurrentDirectory() {
-        return process.cwd();
+        return rootDir;
       },
       getCanonicalFileName(fileName: string) {
         return fileName;
@@ -790,7 +791,7 @@ export function index(
   for (const path of paths) {
     let sourceFile = program.getSourceFile(path);
     let visitor = new Vistor(
-        corpus, program.getTypeChecker(), process.cwd(), getOffsetTable);
+        corpus, program.getTypeChecker(), rootDir, getOffsetTable);
     if (emit != null) {
       visitor.emit = emit;
     }
