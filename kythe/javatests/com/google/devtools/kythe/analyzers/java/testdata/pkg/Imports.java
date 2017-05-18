@@ -17,7 +17,8 @@ import java.util.List;
 import java.util.LinkedList;
 
 public class Imports {
-  //- @List ref ListI
+  //- ListI childof ListAbs
+  //- @List ref ListAbs
   public static void forAll(List<String> lst) {
     //- @String ref String
     //- @CASE_INSENSITIVE_ORDER ref StringConst

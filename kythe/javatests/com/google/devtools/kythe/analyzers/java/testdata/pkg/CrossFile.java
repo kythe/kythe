@@ -24,7 +24,7 @@ public class CrossFile {
   //- @OtherDecl ref ODecl
   OtherDecl f3;
 
-  //- @Inter ref Inter
+  //- @Inter ref InterRaw
   Inter i;
 
   public static void main(String[] args) {

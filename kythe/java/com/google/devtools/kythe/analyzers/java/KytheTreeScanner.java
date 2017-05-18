@@ -811,7 +811,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
   // Emits a node for the given sym, an anchor encompassing the TreeContext, and a REF edge
   private JavaNode emitSymUsage(TreeContext ctx, Symbol sym) {
-    JavaNode node = getRefNode(sym);
+    JavaNode node = getRefNode(ctx, sym);
     if (node == null) {
       return todoNode(ctx, "ExprUsage: " + ctx.getTree());
     }
@@ -828,7 +828,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
   // Emits a node for the given sym, an anchor encompassing the name, and a given edge kind
   private JavaNode emitNameUsage(TreeContext ctx, Symbol sym, Name name, EdgeKind edgeKind) {
-    JavaNode node = getRefNode(sym);
+    JavaNode node = getRefNode(ctx, sym);
     if (node == null) {
       return todoNode(ctx, "NameUsage: " + ctx.getTree() + " -- " + name);
     }
@@ -839,10 +839,13 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   }
 
   // Returns the reference node for the given symbol.
-  private JavaNode getRefNode(Symbol sym) {
+  private JavaNode getRefNode(TreeContext ctx, Symbol sym) {
+    // If referencing a generic class, distinguish between generic vs. raw use
+    // (e.g., `List` is in generic context in `List<String> x` but not in `List x`).
+    boolean inGenericContext = ctx.up().getTree() instanceof JCTypeApply;
     JavaNode node = getJavaNode(sym);
-    if (node != null && sym instanceof ClassSymbol && !sym.getTypeParameters().isEmpty()) {
-      // Always reference the abs node of a generic class.
+    if (node != null && sym instanceof ClassSymbol && inGenericContext && !sym.getTypeParameters().isEmpty()) {
+      // Always reference the abs node of a generic class, unless used as a raw type.
       node = new JavaNode(entrySets.newAbstractAndEmit(node.entries), node.qualifiedName);
     }
     return node;

@@ -31,5 +31,6 @@ public class Files {
 //- @OtherDecl defines/binding ODecl
 enum OtherDecl {}
 
-//- @Inter defines/binding Inter
+//- @Inter defines/binding InterAbs
+//- InterRaw childof InterAbs
 interface Inter<T> {}

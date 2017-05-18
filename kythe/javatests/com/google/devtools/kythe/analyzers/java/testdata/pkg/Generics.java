@@ -39,6 +39,14 @@ public class Generics<T> {
         //- @"Generics<String>" ref GType
         new Generics<String>();
 
+    //- @"Generics" ref Class
+    //- @nonGeneric defines/binding NGVar
+    //- NGVar typed NGType
+    //- NGType.node/kind record
+    Generics nonGeneric =
+        //- @"Generics" ref Class
+        new Generics();
+
     //- @"Optional<Generics<String>>" ref OType
     //- OType.node/kind tapp
     //- OType param.0 Optional
