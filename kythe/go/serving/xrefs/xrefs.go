@@ -694,7 +694,7 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 					ov := &xpb.DecorationsReply_Override{
 						Target:       o.Overridden,
 						Kind:         xpb.DecorationsReply_Override_Kind(o.Kind),
-						MarkedSource: m2m(o.MarkedSource),
+						MarkedSource: o.MarkedSource,
 					}
 					os.Override = append(os.Override, ov)
 
@@ -777,40 +777,6 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 
 	return reply, nil
 }
-
-func m2m(m *cpb.MarkedSource) *cpb.MarkedSource {
-	if m == nil {
-		return nil
-	}
-	res := &cpb.MarkedSource{
-		Kind:                 cpb.MarkedSource_Kind(m.Kind),
-		PreText:              m.PreText,
-		PostChildText:        m.PostChildText,
-		PostText:             m.PostText,
-		LookupIndex:          m.LookupIndex,
-		DefaultChildrenCount: m.DefaultChildrenCount,
-		AddFinalListToken:    m.AddFinalListToken,
-
-		Child: make([]*cpb.MarkedSource, 0, len(m.Child)),
-		Link:  make([]*cpb.Link, 0, len(m.Link)),
-	}
-	for _, c := range m.Child {
-		res.Child = append(res.Child, m2m(c))
-	}
-	for _, l := range m.Link {
-		res.Link = append(res.Link, l2l(l))
-	}
-	return res
-}
-
-func l2l(l *cpb.Link) *cpb.Link {
-	if l == nil {
-		return nil
-	}
-	return &cpb.Link{Definition: l.Definition}
-}
-
-type span struct{ start, end int32 }
 
 func decorationToReference(norm *xrefs.Normalizer, d *srvpb.FileDecorations_Decoration) *xpb.DecorationsReply_Reference {
 	span := norm.SpanOffsets(d.Anchor.StartOffset, d.Anchor.EndOffset)
@@ -924,7 +890,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		}
 		if features[srvpb.PagedCrossReferences_MARKED_SOURCE] &&
 			req.ExperimentalSignatures && crs.MarkedSource == nil {
-			crs.MarkedSource = m2m(cr.MarkedSource)
+			crs.MarkedSource = cr.MarkedSource
 		}
 
 		if *mergeCrossReferences {
@@ -1248,7 +1214,7 @@ func (s *refStats) addCallers(crs *xpb.CrossReferencesReply_CrossReferenceSet, g
 			Site:   make([]*xpb.Anchor, 0, len(c.Callsite)),
 		}
 		if includeSignature {
-			ra.MarkedSource = m2m(c.MarkedSource)
+			ra.MarkedSource = c.MarkedSource
 		}
 		for _, site := range c.Callsite {
 			ra.Site = append(ra.Site, a2a(site, false).Anchor)
