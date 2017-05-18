@@ -13,6 +13,9 @@
 		Point
 		Span
 		NodeInfo
+		Diagnostic
+		Link
+		MarkedSource
 */
 package common_proto
 
@@ -32,6 +35,62 @@ var _ = math.Inf
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+
+type MarkedSource_Kind int32
+
+const (
+	// This node only contains other nodes and has no special semantics.
+	MarkedSource_BOX MarkedSource_Kind = 0
+	// This node dominates nodes that should be classified as types.
+	MarkedSource_TYPE MarkedSource_Kind = 1
+	// This node dominates nodes that should be classified as parameters.
+	MarkedSource_PARAMETER MarkedSource_Kind = 2
+	// This node dominates nodes that should be classified as identifiers.
+	MarkedSource_IDENTIFIER MarkedSource_Kind = 3
+	// This node dominates nodes that should be classified as context.
+	MarkedSource_CONTEXT MarkedSource_Kind = 4
+	// This node dominates nodes that should be classified as initializers.
+	MarkedSource_INITIALIZER MarkedSource_Kind = 5
+	// Substitute this node with a PARAMETER formed from the param edges from
+	// the context node starting with `lookup_index`.
+	MarkedSource_PARAMETER_LOOKUP_BY_PARAM MarkedSource_Kind = 6
+	// Substitute this node with the marked source derived from the
+	// `lookup_index`th param edge of the context node.
+	MarkedSource_LOOKUP_BY_PARAM MarkedSource_Kind = 7
+	// Substitute this node with a PARAMETER formed from the param edges from
+	// the context node starting with `lookup_index`. Checks the context
+	// node for a `param/default` fact and uses that to set the
+	// first_default_child field.
+	MarkedSource_PARAMETER_LOOKUP_BY_PARAM_WITH_DEFAULTS MarkedSource_Kind = 8
+)
+
+var MarkedSource_Kind_name = map[int32]string{
+	0: "BOX",
+	1: "TYPE",
+	2: "PARAMETER",
+	3: "IDENTIFIER",
+	4: "CONTEXT",
+	5: "INITIALIZER",
+	6: "PARAMETER_LOOKUP_BY_PARAM",
+	7: "LOOKUP_BY_PARAM",
+	8: "PARAMETER_LOOKUP_BY_PARAM_WITH_DEFAULTS",
+}
+var MarkedSource_Kind_value = map[string]int32{
+	"BOX":                                     0,
+	"TYPE":                                    1,
+	"PARAMETER":                               2,
+	"IDENTIFIER":                              3,
+	"CONTEXT":                                 4,
+	"INITIALIZER":                             5,
+	"PARAMETER_LOOKUP_BY_PARAM":               6,
+	"LOOKUP_BY_PARAM":                         7,
+	"PARAMETER_LOOKUP_BY_PARAM_WITH_DEFAULTS": 8,
+}
+
+func (x MarkedSource_Kind) String() string {
+	return proto.EnumName(MarkedSource_Kind_name, int32(x))
+}
+func (MarkedSource_Kind) EnumDescriptor() ([]byte, []int) { return fileDescriptorCommon, []int{6, 0} }
 
 // Fact represents a single key/value fact from the graph.
 type Fact struct {
@@ -158,11 +217,174 @@ func (m *NodeInfo) GetDefinition() string {
 	return ""
 }
 
+type Diagnostic struct {
+	// Text span to which the diagnostic applies.  If the span is unset, the
+	// diagnostic refers to its entire parent context (i.e. the file to which it
+	// is attached).
+	Span *Span `protobuf:"bytes,1,opt,name=span" json:"span,omitempty"`
+	// Plain-text diagnostic message to be reported to users.
+	Message string `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	// Optional details that further refine the diagnostic but need not be
+	// reported to users immediately.  This field can be used to provide more
+	// context for bug reports and may contain compiler/build errors.
+	Details string `protobuf:"bytes,3,opt,name=details,proto3" json:"details,omitempty"`
+	// Optional URL leading to more detailed information on this diagnostic.  This
+	// may be documentation on a particular class of errors or a tracking issue
+	// for prevalent errors.
+	ContextUrl string `protobuf:"bytes,4,opt,name=context_url,json=contextUrl,proto3" json:"context_url,omitempty"`
+}
+
+func (m *Diagnostic) Reset()                    { *m = Diagnostic{} }
+func (m *Diagnostic) String() string            { return proto.CompactTextString(m) }
+func (*Diagnostic) ProtoMessage()               {}
+func (*Diagnostic) Descriptor() ([]byte, []int) { return fileDescriptorCommon, []int{4} }
+
+func (m *Diagnostic) GetSpan() *Span {
+	if m != nil {
+		return m.Span
+	}
+	return nil
+}
+
+func (m *Diagnostic) GetMessage() string {
+	if m != nil {
+		return m.Message
+	}
+	return ""
+}
+
+func (m *Diagnostic) GetDetails() string {
+	if m != nil {
+		return m.Details
+	}
+	return ""
+}
+
+func (m *Diagnostic) GetContextUrl() string {
+	if m != nil {
+		return m.ContextUrl
+	}
+	return ""
+}
+
+type Link struct {
+	// Semantic tickets for DEFINITION links.
+	Definition []string `protobuf:"bytes,3,rep,name=definition" json:"definition,omitempty"`
+}
+
+func (m *Link) Reset()                    { *m = Link{} }
+func (m *Link) String() string            { return proto.CompactTextString(m) }
+func (*Link) ProtoMessage()               {}
+func (*Link) Descriptor() ([]byte, []int) { return fileDescriptorCommon, []int{5} }
+
+func (m *Link) GetDefinition() []string {
+	if m != nil {
+		return m.Definition
+	}
+	return nil
+}
+
+// Marked up, source code-like text.
+type MarkedSource struct {
+	Kind MarkedSource_Kind `protobuf:"varint,1,opt,name=kind,proto3,enum=kythe.proto.common.MarkedSource_Kind" json:"kind,omitempty"`
+	// Nodes expect to be printed as:
+	// pre_text + (child + post_child_text)* + post_text
+	// where post_child_text is not included after the final child unless
+	// add_final_list_token is asserted. post_child_text should never be
+	// printed if there are no children.
+	PreText       string          `protobuf:"bytes,2,opt,name=pre_text,json=preText,proto3" json:"pre_text,omitempty"`
+	Child         []*MarkedSource `protobuf:"bytes,3,rep,name=child" json:"child,omitempty"`
+	PostChildText string          `protobuf:"bytes,4,opt,name=post_child_text,json=postChildText,proto3" json:"post_child_text,omitempty"`
+	PostText      string          `protobuf:"bytes,5,opt,name=post_text,json=postText,proto3" json:"post_text,omitempty"`
+	LookupIndex   uint32          `protobuf:"varint,6,opt,name=lookup_index,json=lookupIndex,proto3" json:"lookup_index,omitempty"`
+	// The default_children_count children at the end of the child list should
+	// be considered as "default" or uninteresting.
+	DefaultChildrenCount uint32 `protobuf:"varint,7,opt,name=default_children_count,json=defaultChildrenCount,proto3" json:"default_children_count,omitempty"`
+	// `add_final_list_token` ensures that `post_child_text` will be
+	// included after any nonempty list when that list is followed by additional
+	// text.
+	AddFinalListToken bool `protobuf:"varint,10,opt,name=add_final_list_token,json=addFinalListToken,proto3" json:"add_final_list_token,omitempty"`
+	// Annotations covering this subtree's full span.
+	Link []*Link `protobuf:"bytes,11,rep,name=link" json:"link,omitempty"`
+}
+
+func (m *MarkedSource) Reset()                    { *m = MarkedSource{} }
+func (m *MarkedSource) String() string            { return proto.CompactTextString(m) }
+func (*MarkedSource) ProtoMessage()               {}
+func (*MarkedSource) Descriptor() ([]byte, []int) { return fileDescriptorCommon, []int{6} }
+
+func (m *MarkedSource) GetKind() MarkedSource_Kind {
+	if m != nil {
+		return m.Kind
+	}
+	return MarkedSource_BOX
+}
+
+func (m *MarkedSource) GetPreText() string {
+	if m != nil {
+		return m.PreText
+	}
+	return ""
+}
+
+func (m *MarkedSource) GetChild() []*MarkedSource {
+	if m != nil {
+		return m.Child
+	}
+	return nil
+}
+
+func (m *MarkedSource) GetPostChildText() string {
+	if m != nil {
+		return m.PostChildText
+	}
+	return ""
+}
+
+func (m *MarkedSource) GetPostText() string {
+	if m != nil {
+		return m.PostText
+	}
+	return ""
+}
+
+func (m *MarkedSource) GetLookupIndex() uint32 {
+	if m != nil {
+		return m.LookupIndex
+	}
+	return 0
+}
+
+func (m *MarkedSource) GetDefaultChildrenCount() uint32 {
+	if m != nil {
+		return m.DefaultChildrenCount
+	}
+	return 0
+}
+
+func (m *MarkedSource) GetAddFinalListToken() bool {
+	if m != nil {
+		return m.AddFinalListToken
+	}
+	return false
+}
+
+func (m *MarkedSource) GetLink() []*Link {
+	if m != nil {
+		return m.Link
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*Fact)(nil), "kythe.proto.common.Fact")
 	proto.RegisterType((*Point)(nil), "kythe.proto.common.Point")
 	proto.RegisterType((*Span)(nil), "kythe.proto.common.Span")
 	proto.RegisterType((*NodeInfo)(nil), "kythe.proto.common.NodeInfo")
+	proto.RegisterType((*Diagnostic)(nil), "kythe.proto.common.Diagnostic")
+	proto.RegisterType((*Link)(nil), "kythe.proto.common.Link")
+	proto.RegisterType((*MarkedSource)(nil), "kythe.proto.common.MarkedSource")
+	proto.RegisterEnum("kythe.proto.common.MarkedSource_Kind", MarkedSource_Kind_name, MarkedSource_Kind_value)
 }
 func (m *Fact) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
@@ -312,6 +534,170 @@ func (m *NodeInfo) MarshalTo(dAtA []byte) (int, error) {
 	return i, nil
 }
 
+func (m *Diagnostic) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Diagnostic) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Span != nil {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintCommon(dAtA, i, uint64(m.Span.Size()))
+		n3, err := m.Span.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n3
+	}
+	if len(m.Message) > 0 {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintCommon(dAtA, i, uint64(len(m.Message)))
+		i += copy(dAtA[i:], m.Message)
+	}
+	if len(m.Details) > 0 {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintCommon(dAtA, i, uint64(len(m.Details)))
+		i += copy(dAtA[i:], m.Details)
+	}
+	if len(m.ContextUrl) > 0 {
+		dAtA[i] = 0x22
+		i++
+		i = encodeVarintCommon(dAtA, i, uint64(len(m.ContextUrl)))
+		i += copy(dAtA[i:], m.ContextUrl)
+	}
+	return i, nil
+}
+
+func (m *Link) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Link) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Definition) > 0 {
+		for _, s := range m.Definition {
+			dAtA[i] = 0x1a
+			i++
+			l = len(s)
+			for l >= 1<<7 {
+				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
+				l >>= 7
+				i++
+			}
+			dAtA[i] = uint8(l)
+			i++
+			i += copy(dAtA[i:], s)
+		}
+	}
+	return i, nil
+}
+
+func (m *MarkedSource) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MarkedSource) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Kind != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintCommon(dAtA, i, uint64(m.Kind))
+	}
+	if len(m.PreText) > 0 {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintCommon(dAtA, i, uint64(len(m.PreText)))
+		i += copy(dAtA[i:], m.PreText)
+	}
+	if len(m.Child) > 0 {
+		for _, msg := range m.Child {
+			dAtA[i] = 0x1a
+			i++
+			i = encodeVarintCommon(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	if len(m.PostChildText) > 0 {
+		dAtA[i] = 0x22
+		i++
+		i = encodeVarintCommon(dAtA, i, uint64(len(m.PostChildText)))
+		i += copy(dAtA[i:], m.PostChildText)
+	}
+	if len(m.PostText) > 0 {
+		dAtA[i] = 0x2a
+		i++
+		i = encodeVarintCommon(dAtA, i, uint64(len(m.PostText)))
+		i += copy(dAtA[i:], m.PostText)
+	}
+	if m.LookupIndex != 0 {
+		dAtA[i] = 0x30
+		i++
+		i = encodeVarintCommon(dAtA, i, uint64(m.LookupIndex))
+	}
+	if m.DefaultChildrenCount != 0 {
+		dAtA[i] = 0x38
+		i++
+		i = encodeVarintCommon(dAtA, i, uint64(m.DefaultChildrenCount))
+	}
+	if m.AddFinalListToken {
+		dAtA[i] = 0x50
+		i++
+		if m.AddFinalListToken {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if len(m.Link) > 0 {
+		for _, msg := range m.Link {
+			dAtA[i] = 0x5a
+			i++
+			i = encodeVarintCommon(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	return i, nil
+}
+
 func encodeFixed64Common(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	dAtA[offset+1] = uint8(v >> 8)
@@ -400,6 +786,82 @@ func (m *NodeInfo) Size() (n int) {
 	l = len(m.Definition)
 	if l > 0 {
 		n += 1 + l + sovCommon(uint64(l))
+	}
+	return n
+}
+
+func (m *Diagnostic) Size() (n int) {
+	var l int
+	_ = l
+	if m.Span != nil {
+		l = m.Span.Size()
+		n += 1 + l + sovCommon(uint64(l))
+	}
+	l = len(m.Message)
+	if l > 0 {
+		n += 1 + l + sovCommon(uint64(l))
+	}
+	l = len(m.Details)
+	if l > 0 {
+		n += 1 + l + sovCommon(uint64(l))
+	}
+	l = len(m.ContextUrl)
+	if l > 0 {
+		n += 1 + l + sovCommon(uint64(l))
+	}
+	return n
+}
+
+func (m *Link) Size() (n int) {
+	var l int
+	_ = l
+	if len(m.Definition) > 0 {
+		for _, s := range m.Definition {
+			l = len(s)
+			n += 1 + l + sovCommon(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *MarkedSource) Size() (n int) {
+	var l int
+	_ = l
+	if m.Kind != 0 {
+		n += 1 + sovCommon(uint64(m.Kind))
+	}
+	l = len(m.PreText)
+	if l > 0 {
+		n += 1 + l + sovCommon(uint64(l))
+	}
+	if len(m.Child) > 0 {
+		for _, e := range m.Child {
+			l = e.Size()
+			n += 1 + l + sovCommon(uint64(l))
+		}
+	}
+	l = len(m.PostChildText)
+	if l > 0 {
+		n += 1 + l + sovCommon(uint64(l))
+	}
+	l = len(m.PostText)
+	if l > 0 {
+		n += 1 + l + sovCommon(uint64(l))
+	}
+	if m.LookupIndex != 0 {
+		n += 1 + sovCommon(uint64(m.LookupIndex))
+	}
+	if m.DefaultChildrenCount != 0 {
+		n += 1 + sovCommon(uint64(m.DefaultChildrenCount))
+	}
+	if m.AddFinalListToken {
+		n += 2
+	}
+	if len(m.Link) > 0 {
+		for _, e := range m.Link {
+			l = e.Size()
+			n += 1 + l + sovCommon(uint64(l))
+		}
 	}
 	return n
 }
@@ -946,6 +1408,531 @@ func (m *NodeInfo) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+func (m *Diagnostic) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCommon
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Diagnostic: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Diagnostic: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Span", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCommon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCommon
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Span == nil {
+				m.Span = &Span{}
+			}
+			if err := m.Span.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Message", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCommon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCommon
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Message = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Details", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCommon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCommon
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Details = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ContextUrl", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCommon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCommon
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ContextUrl = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCommon(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCommon
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Link) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCommon
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Link: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Link: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Definition", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCommon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCommon
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Definition = append(m.Definition, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCommon(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCommon
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MarkedSource) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCommon
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MarkedSource: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MarkedSource: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Kind", wireType)
+			}
+			m.Kind = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCommon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Kind |= (MarkedSource_Kind(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PreText", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCommon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCommon
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PreText = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Child", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCommon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCommon
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Child = append(m.Child, &MarkedSource{})
+			if err := m.Child[len(m.Child)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PostChildText", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCommon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCommon
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PostChildText = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PostText", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCommon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCommon
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PostText = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LookupIndex", wireType)
+			}
+			m.LookupIndex = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCommon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.LookupIndex |= (uint32(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 7:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DefaultChildrenCount", wireType)
+			}
+			m.DefaultChildrenCount = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCommon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.DefaultChildrenCount |= (uint32(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 10:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AddFinalListToken", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCommon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.AddFinalListToken = bool(v != 0)
+		case 11:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Link", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCommon
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCommon
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Link = append(m.Link, &Link{})
+			if err := m.Link[len(m.Link)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCommon(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCommon
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func skipCommon(dAtA []byte) (n int, err error) {
 	l := len(dAtA)
 	iNdEx := 0
@@ -1054,28 +2041,54 @@ var (
 func init() { proto.RegisterFile("kythe/proto/common.proto", fileDescriptorCommon) }
 
 var fileDescriptorCommon = []byte{
-	// 354 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x7c, 0x90, 0xcf, 0x4a, 0xfb, 0x40,
-	0x10, 0xc7, 0x7f, 0x9b, 0x3f, 0xa5, 0xbf, 0x69, 0x85, 0xb2, 0x78, 0x88, 0x1e, 0xd2, 0x12, 0x0f,
-	0x16, 0x84, 0x54, 0xda, 0x4b, 0x11, 0xbc, 0x08, 0x0a, 0x7a, 0xa8, 0x25, 0x3e, 0x40, 0x49, 0x93,
-	0x49, 0x0d, 0x4d, 0x76, 0x4a, 0xb2, 0x2d, 0xe4, 0x4d, 0x7c, 0x0d, 0xdf, 0xc2, 0xa3, 0x8f, 0x20,
-	0xf5, 0x45, 0x24, 0xbb, 0x16, 0x0b, 0x16, 0x6f, 0x33, 0xdf, 0xfd, 0x7c, 0x67, 0x66, 0xbf, 0xe0,
-	0x2c, 0x2b, 0xf9, 0x8c, 0x83, 0x55, 0x41, 0x92, 0x06, 0x11, 0xe5, 0x39, 0x09, 0x5f, 0x35, 0x9c,
-	0xab, 0x17, 0xdd, 0xf8, 0xfa, 0xc5, 0xbb, 0x04, 0xeb, 0x2e, 0x8c, 0x24, 0xe7, 0x60, 0x89, 0x30,
-	0x47, 0x87, 0xf5, 0x58, 0xff, 0x7f, 0xa0, 0x6a, 0x7e, 0x0c, 0xf6, 0x26, 0xcc, 0xd6, 0xe8, 0x18,
-	0x3d, 0xd6, 0x6f, 0x07, 0xba, 0xf1, 0x04, 0xd8, 0x53, 0x4a, 0x85, 0xe4, 0x5d, 0x68, 0xcd, 0x2b,
-	0x89, 0x33, 0x4a, 0x92, 0x12, 0xa5, 0x72, 0xda, 0x01, 0xd4, 0xd2, 0xa3, 0x52, 0x6a, 0x20, 0x4b,
-	0x05, 0xce, 0xc4, 0x3a, 0x9f, 0x63, 0xa1, 0xa6, 0xd8, 0x01, 0xd4, 0xd2, 0x44, 0x29, 0xfc, 0x0c,
-	0x8e, 0x22, 0xca, 0xd6, 0xb9, 0xd8, 0xcd, 0x30, 0x15, 0xd2, 0xd6, 0xa2, 0x9e, 0xe2, 0xc5, 0x60,
-	0x3d, 0xad, 0x42, 0xc1, 0x07, 0x60, 0x97, 0x32, 0x2c, 0xf4, 0xa2, 0xd6, 0xf0, 0xc4, 0xff, 0xfd,
-	0x1b, 0x5f, 0x1d, 0x16, 0x68, 0x8e, 0x5f, 0x80, 0x89, 0x22, 0x56, 0x6b, 0xff, 0xc4, 0x6b, 0xca,
-	0x7b, 0x65, 0xd0, 0x9c, 0x50, 0x8c, 0xf7, 0x22, 0x21, 0x7e, 0x0d, 0x76, 0x12, 0x46, 0xb2, 0x74,
-	0x8c, 0x9e, 0xd9, 0x6f, 0x0d, 0xcf, 0x0f, 0x79, 0x77, 0xb0, 0x5f, 0xc7, 0x57, 0xde, 0x0a, 0x59,
-	0x54, 0x81, 0x76, 0x71, 0x17, 0x20, 0xc6, 0x24, 0x15, 0xa9, 0x4c, 0x49, 0x38, 0xb6, 0x4a, 0x74,
-	0x4f, 0x39, 0x1d, 0x03, 0xfc, 0x98, 0x78, 0x07, 0xcc, 0x25, 0x56, 0xdf, 0xc1, 0xd7, 0xe5, 0xe1,
-	0xdc, 0xaf, 0x8c, 0x31, 0x7b, 0xb0, 0x9a, 0xac, 0x63, 0x04, 0x0d, 0x99, 0x46, 0x4b, 0x94, 0x37,
-	0xa3, 0xb7, 0xad, 0xcb, 0xde, 0xb7, 0x2e, 0xfb, 0xd8, 0xba, 0xec, 0xe5, 0xd3, 0xfd, 0x07, 0xdd,
-	0x88, 0x72, 0x7f, 0x41, 0xb4, 0xc8, 0xd0, 0x8f, 0x71, 0x23, 0x89, 0xb2, 0x72, 0xff, 0xf8, 0x29,
-	0x9b, 0x37, 0x54, 0x31, 0xfa, 0x0a, 0x00, 0x00, 0xff, 0xff, 0xfc, 0x73, 0xe4, 0x0f, 0x27, 0x02,
-	0x00, 0x00,
+	// 774 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x52, 0xdd, 0x8e, 0xdb, 0x44,
+	0x14, 0xae, 0x63, 0x7b, 0x93, 0x9c, 0xec, 0x76, 0xcd, 0xb0, 0x42, 0x5e, 0x10, 0x69, 0x30, 0x82,
+	0x46, 0x2a, 0xf2, 0xa2, 0x14, 0xa1, 0x82, 0xc4, 0xc5, 0xfe, 0x78, 0x85, 0xdb, 0x34, 0x89, 0x66,
+	0xbd, 0xa2, 0xe5, 0xc6, 0xf2, 0x7a, 0x26, 0xdb, 0x91, 0x9d, 0x99, 0xc8, 0x1e, 0x57, 0x9b, 0xa7,
+	0xe0, 0x96, 0xd7, 0xe0, 0x8a, 0x57, 0xe0, 0x12, 0x89, 0x17, 0x40, 0xcb, 0x8b, 0xa0, 0x99, 0x49,
+	0x60, 0x29, 0x81, 0xde, 0xcd, 0xf9, 0xbe, 0xef, 0x9c, 0x33, 0xdf, 0x37, 0x03, 0x7e, 0xb1, 0x92,
+	0xaf, 0xe8, 0xd1, 0xb2, 0x12, 0x52, 0x1c, 0xe5, 0x62, 0xb1, 0x10, 0x3c, 0xd4, 0x05, 0x42, 0x9a,
+	0x31, 0x45, 0x68, 0x98, 0xe0, 0x73, 0x70, 0xce, 0xb3, 0x5c, 0x22, 0x04, 0x0e, 0xcf, 0x16, 0xd4,
+	0xb7, 0x06, 0xd6, 0xb0, 0x8b, 0xf5, 0x19, 0x1d, 0x80, 0xfb, 0x3a, 0x2b, 0x1b, 0xea, 0xb7, 0x06,
+	0xd6, 0x70, 0x17, 0x9b, 0x22, 0xe0, 0xe0, 0xce, 0x04, 0xe3, 0x12, 0x3d, 0x80, 0xde, 0xd5, 0x4a,
+	0xd2, 0x54, 0xcc, 0xe7, 0x35, 0x95, 0xba, 0xd3, 0xc5, 0xa0, 0xa0, 0xa9, 0x46, 0x94, 0xa0, 0x64,
+	0x9c, 0xa6, 0xbc, 0x59, 0x5c, 0xd1, 0x4a, 0x4f, 0x71, 0x31, 0x28, 0x68, 0xa2, 0x11, 0xf4, 0x31,
+	0xec, 0xe5, 0xa2, 0x6c, 0x16, 0x7c, 0x33, 0xc3, 0xd6, 0x92, 0x5d, 0x03, 0x9a, 0x29, 0x01, 0x01,
+	0xe7, 0x62, 0x99, 0x71, 0x74, 0x04, 0x6e, 0x2d, 0xb3, 0xca, 0x2c, 0xea, 0x8d, 0x0e, 0xc3, 0x7f,
+	0xbb, 0x09, 0xf5, 0xc5, 0xb0, 0xd1, 0xa1, 0x47, 0x60, 0x53, 0x4e, 0xf4, 0xda, 0xff, 0x95, 0x2b,
+	0x55, 0xf0, 0x93, 0x05, 0x9d, 0x89, 0x20, 0x34, 0xe6, 0x73, 0x81, 0xbe, 0x01, 0x77, 0x9e, 0xe5,
+	0xb2, 0xf6, 0x5b, 0x03, 0x7b, 0xd8, 0x1b, 0x3d, 0xdc, 0xd6, 0xbb, 0x11, 0x87, 0x2a, 0xbe, 0x3a,
+	0xe2, 0xb2, 0x5a, 0x61, 0xd3, 0x85, 0xfa, 0x00, 0x84, 0xce, 0x19, 0x67, 0x92, 0x09, 0xee, 0xbb,
+	0x3a, 0xd1, 0x3b, 0xc8, 0xfb, 0x4f, 0x00, 0xfe, 0x6e, 0x42, 0x1e, 0xd8, 0x05, 0x5d, 0xad, 0x83,
+	0x57, 0xc7, 0xed, 0xb9, 0x7f, 0xdd, 0x7a, 0x62, 0x3d, 0x75, 0x3a, 0x96, 0xd7, 0xc2, 0x3b, 0x92,
+	0xe5, 0x05, 0x95, 0xc1, 0x0f, 0x16, 0xc0, 0x19, 0xcb, 0xae, 0xb9, 0xa8, 0x25, 0xcb, 0xd1, 0x67,
+	0xe0, 0xd4, 0xcb, 0x8c, 0xaf, 0xf3, 0xf1, 0xb7, 0x5d, 0x5a, 0x05, 0x89, 0xb5, 0x0a, 0xf9, 0xd0,
+	0x5e, 0xd0, 0xba, 0xce, 0xae, 0xcd, 0x9a, 0x2e, 0xde, 0x94, 0x8a, 0x21, 0x54, 0x66, 0xac, 0xac,
+	0xf5, 0x7b, 0x74, 0xf1, 0xa6, 0x54, 0x0f, 0x9a, 0x0b, 0x2e, 0xe9, 0x8d, 0x4c, 0x9b, 0xaa, 0xf4,
+	0x1d, 0xe3, 0x6c, 0x0d, 0x5d, 0x56, 0x65, 0x30, 0x02, 0x67, 0xcc, 0x78, 0xf1, 0x46, 0x02, 0xf6,
+	0xc0, 0xfe, 0x67, 0x02, 0xc6, 0xc7, 0x53, 0xa7, 0xd3, 0xf2, 0xec, 0xe0, 0x37, 0x07, 0x76, 0x9f,
+	0x67, 0x55, 0x41, 0xc9, 0x85, 0x68, 0xaa, 0x9c, 0xa2, 0xaf, 0xc0, 0x29, 0x18, 0x27, 0xda, 0xc7,
+	0xfd, 0xd1, 0x27, 0xdb, 0x7c, 0xdc, 0xd5, 0x87, 0xcf, 0x18, 0x27, 0x58, 0xb7, 0xa0, 0x43, 0xe8,
+	0x2c, 0x2b, 0x9a, 0xaa, 0xeb, 0x6c, 0x5c, 0x2d, 0x2b, 0x9a, 0xd0, 0x1b, 0x89, 0xbe, 0x04, 0x37,
+	0x7f, 0xc5, 0x4a, 0xa2, 0x6f, 0xd3, 0x1b, 0x0d, 0xde, 0x36, 0x16, 0x1b, 0x39, 0xfa, 0x14, 0xf6,
+	0x97, 0xa2, 0x96, 0xa9, 0xae, 0xcc, 0x64, 0xe3, 0x7b, 0x4f, 0xc1, 0xa7, 0x0a, 0xd5, 0xf3, 0x3f,
+	0x80, 0xae, 0xd6, 0x69, 0x85, 0x79, 0xf3, 0x8e, 0x02, 0x34, 0xf9, 0x11, 0xec, 0x96, 0x42, 0x14,
+	0xcd, 0x32, 0x65, 0x9c, 0xd0, 0x1b, 0x7f, 0x67, 0x60, 0x0d, 0xf7, 0x70, 0xcf, 0x60, 0xb1, 0x82,
+	0xd0, 0x17, 0xf0, 0x1e, 0xa1, 0xf3, 0xac, 0x29, 0xd7, 0xab, 0x2a, 0xca, 0xd3, 0x5c, 0x34, 0x5c,
+	0xfa, 0x6d, 0x2d, 0x3e, 0x58, 0xb3, 0xa7, 0x6b, 0xf2, 0x54, 0x71, 0xe8, 0x08, 0x0e, 0x32, 0x42,
+	0xd2, 0x39, 0xe3, 0x59, 0x99, 0x96, 0x4c, 0xed, 0x17, 0x05, 0xe5, 0x3e, 0x0c, 0xac, 0x61, 0x07,
+	0xbf, 0x93, 0x11, 0x72, 0xae, 0xa8, 0x31, 0xab, 0x65, 0xa2, 0x08, 0xf5, 0x49, 0x4a, 0xc6, 0x0b,
+	0xbf, 0xa7, 0x53, 0xd8, 0xfa, 0x49, 0xd4, 0x0b, 0x62, 0xad, 0x0a, 0x7e, 0xb6, 0xc0, 0x51, 0xf1,
+	0xa2, 0x36, 0xd8, 0x27, 0xd3, 0x17, 0xde, 0x3d, 0xd4, 0x01, 0x27, 0x79, 0x39, 0x8b, 0x3c, 0x0b,
+	0xed, 0x41, 0x77, 0x76, 0x8c, 0x8f, 0x9f, 0x47, 0x49, 0x84, 0xbd, 0x16, 0xba, 0x0f, 0x10, 0x9f,
+	0x45, 0x93, 0x24, 0x3e, 0x8f, 0x23, 0xec, 0xd9, 0xa8, 0x07, 0xed, 0xd3, 0xe9, 0x24, 0x89, 0x5e,
+	0x24, 0x9e, 0x83, 0xf6, 0xa1, 0x17, 0x4f, 0xe2, 0x24, 0x3e, 0x1e, 0xc7, 0xdf, 0x47, 0xd8, 0x73,
+	0xd1, 0x87, 0x70, 0xf8, 0x57, 0x73, 0x3a, 0x9e, 0x4e, 0x9f, 0x5d, 0xce, 0xd2, 0x93, 0x97, 0xa9,
+	0xc6, 0xbc, 0x1d, 0xf4, 0x2e, 0xec, 0xbf, 0x09, 0xb6, 0xd1, 0x23, 0x78, 0xf8, 0x9f, 0x3d, 0xe9,
+	0x77, 0x71, 0xf2, 0x6d, 0x7a, 0x16, 0x9d, 0x1f, 0x5f, 0x8e, 0x93, 0x0b, 0xaf, 0x73, 0xf2, 0xf8,
+	0x97, 0xdb, 0xbe, 0xf5, 0xeb, 0x6d, 0xdf, 0xfa, 0xfd, 0xb6, 0x6f, 0xfd, 0xf8, 0x47, 0xff, 0x1e,
+	0x3c, 0xc8, 0xc5, 0x22, 0xbc, 0x16, 0xe2, 0xba, 0xa4, 0x21, 0xa1, 0xaf, 0xa5, 0x10, 0x65, 0x7d,
+	0xd7, 0xfe, 0xcc, 0xba, 0xda, 0xd1, 0x87, 0xc7, 0x7f, 0x06, 0x00, 0x00, 0xff, 0xff, 0x8a, 0x16,
+	0x7e, 0x4e, 0x43, 0x05, 0x00, 0x00,
 }
