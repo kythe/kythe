@@ -100,7 +100,7 @@ int DocumentNodesFromStdin() {
 }
 
 int RenderMarkedSourceFromStdin() {
-  proto::MarkedSource marked_source;
+  proto::common::MarkedSource marked_source;
   google::protobuf::io::FileInputStream file_input_stream(STDIN_FILENO);
   CHECK(
       google::protobuf::TextFormat::Parse(&file_input_stream, &marked_source));
@@ -170,7 +170,7 @@ doc
   Formats documentation from a text-format proto::DocumentationReply provided
   on standard input.
 doc -common_signatures
-  Renders the text-format proto::MarkedSource message provided on standard
+  Renders the text-format proto::common::MarkedSource message provided on standard
   input into several common forms.
 )");
   gflags::ParseCommandLineFlags(&argc, &argv, true);

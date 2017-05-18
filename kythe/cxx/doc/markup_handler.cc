@@ -67,10 +67,10 @@ Printable::Printable(const proto::Printable& from,
         if (current_link < from.link_size()) {
           unclosed_links.push(spans_.size());
           switch (from.link(current_link).kind()) {
-            case proto::Link::LIST:
+            case proto::common::Link::LIST:
               ++list_count;
               break;
-            case proto::Link::IMPORTANT:
+            case proto::common::Link::IMPORTANT:
               ++important_count;
               break;
             default:
@@ -88,10 +88,10 @@ Printable::Printable(const proto::Printable& from,
             spans_.mutable_span(unclosed_links.top())->set_end(text_.size());
           }
           switch (spans_.span(unclosed_links.top()).link().kind()) {
-            case proto::Link::LIST:
+            case proto::common::Link::LIST:
               --list_count;
               break;
-            case proto::Link::IMPORTANT:
+            case proto::common::Link::IMPORTANT:
               --important_count;
               break;
             default:
@@ -187,16 +187,16 @@ std::string PrintableSpans::Dump(const std::string& annotated_buffer) const {
         case PrintableSpan::Semantic::Link: {
           text_out.append("[link");
           switch (open_spans.top()->link().kind()) {
-            case proto::Link::DEFINITION:
+            case proto::common::Link::DEFINITION:
               text_out.append("D ");
               break;
-            case proto::Link::LIST:
+            case proto::common::Link::LIST:
               text_out.append("L ");
               break;
-            case proto::Link::LIST_ITEM:
+            case proto::common::Link::LIST_ITEM:
               text_out.append("E ");
               break;
-            case proto::Link::IMPORTANT:
+            case proto::common::Link::IMPORTANT:
               text_out.append("I ");
               break;
             default:

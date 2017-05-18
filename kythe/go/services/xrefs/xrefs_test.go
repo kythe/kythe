@@ -199,7 +199,7 @@ func (s span) String() string { return fmt.Sprintf("(%d, %d]", s.start, s.end) }
 type mockNode struct {
 	ticket, kind, documented, defines, completes, completed, childof, typed, text, defaultParam string
 	params, definitionText                                                                      []string
-	code                                                                                        *xpb.MarkedSource
+	code                                                                                        *cpb.MarkedSource
 }
 
 // mockService implements interface xrefs.Service.
@@ -371,53 +371,53 @@ func containsString(arr []string, key string) bool {
 }
 
 func TestSlowSignature(t *testing.T) {
-	mkID := func(text string) *xpb.MarkedSource {
-		return &xpb.MarkedSource{Kind: xpb.MarkedSource_IDENTIFIER, PreText: text}
+	mkID := func(text string) *cpb.MarkedSource {
+		return &cpb.MarkedSource{Kind: cpb.MarkedSource_IDENTIFIER, PreText: text}
 	}
 	service := makeMockService([]mockNode{
 		{ticket: "kythe://test#ident", kind: "etc", code: mkID("IDENT")},
 		{ticket: "kythe://test#other", kind: "etc", code: mkID("OTHER")},
-		{ticket: "kythe://test#a", kind: "etc", params: []string{"invalid", "kythe://test#ident", "kythe://test#other"}, code: &xpb.MarkedSource{
-			Kind: xpb.MarkedSource_PARAMETER_LOOKUP_BY_PARAM, LookupIndex: 1,
+		{ticket: "kythe://test#a", kind: "etc", params: []string{"invalid", "kythe://test#ident", "kythe://test#other"}, code: &cpb.MarkedSource{
+			Kind: cpb.MarkedSource_PARAMETER_LOOKUP_BY_PARAM, LookupIndex: 1,
 			PreText: "PRE", PostChildText: "POSTC", PostText: "POST", AddFinalListToken: true}},
-		{ticket: "kythe://test#b", kind: "etc", params: []string{"invalid", "kythe://test#ident", "kythe://test#other"}, defaultParam: "2", code: &xpb.MarkedSource{
-			Kind: xpb.MarkedSource_PARAMETER_LOOKUP_BY_PARAM_WITH_DEFAULTS, LookupIndex: 1,
+		{ticket: "kythe://test#b", kind: "etc", params: []string{"invalid", "kythe://test#ident", "kythe://test#other"}, defaultParam: "2", code: &cpb.MarkedSource{
+			Kind: cpb.MarkedSource_PARAMETER_LOOKUP_BY_PARAM_WITH_DEFAULTS, LookupIndex: 1,
 			PreText: "PRE", PostChildText: "POSTC", PostText: "POST", AddFinalListToken: true}},
-		{ticket: "kythe://test#aa", kind: "etc", params: []string{"invalid", "kythe://test#a"}, code: &xpb.MarkedSource{
-			Kind: xpb.MarkedSource_LOOKUP_BY_PARAM, LookupIndex: 1}},
-		{ticket: "kythe://test#loop", kind: "etc", params: []string{"kythe://test#loop"}, code: &xpb.MarkedSource{
-			Kind: xpb.MarkedSource_LOOKUP_BY_PARAM, LookupIndex: 0}},
+		{ticket: "kythe://test#aa", kind: "etc", params: []string{"invalid", "kythe://test#a"}, code: &cpb.MarkedSource{
+			Kind: cpb.MarkedSource_LOOKUP_BY_PARAM, LookupIndex: 1}},
+		{ticket: "kythe://test#loop", kind: "etc", params: []string{"kythe://test#loop"}, code: &cpb.MarkedSource{
+			Kind: cpb.MarkedSource_LOOKUP_BY_PARAM, LookupIndex: 0}},
 		{ticket: "kythe://test#app", kind: "tapp", params: []string{"kythe://test#ptr", "kythe://test#ident"}},
-		{ticket: "kythe://test#ptr", kind: "etc", code: &xpb.MarkedSource{
-			Kind: xpb.MarkedSource_BOX, PostText: "*", Child: []*xpb.MarkedSource{
-				{Kind: xpb.MarkedSource_LOOKUP_BY_PARAM, LookupIndex: 1}}}},
-		{ticket: "kythe:#xapp%23meta", kind: "meta", code: &xpb.MarkedSource{
-			Kind: xpb.MarkedSource_PARAMETER_LOOKUP_BY_PARAM, PostChildText: ","}},
+		{ticket: "kythe://test#ptr", kind: "etc", code: &cpb.MarkedSource{
+			Kind: cpb.MarkedSource_BOX, PostText: "*", Child: []*cpb.MarkedSource{
+				{Kind: cpb.MarkedSource_LOOKUP_BY_PARAM, LookupIndex: 1}}}},
+		{ticket: "kythe:#xapp%23meta", kind: "meta", code: &cpb.MarkedSource{
+			Kind: cpb.MarkedSource_PARAMETER_LOOKUP_BY_PARAM, PostChildText: ","}},
 		{ticket: "kythe://test#app2", kind: "xapp", params: []string{"kythe://test#other", "kythe://test#ident"}},
 	})
 	tests := []struct {
 		ticket string
-		reply  *xpb.MarkedSource
+		reply  *cpb.MarkedSource
 	}{
 		{ticket: "kythe://test#ident", reply: mkID("IDENT")},
-		{ticket: "kythe://test#a", reply: &xpb.MarkedSource{
-			Kind: xpb.MarkedSource_PARAMETER, PreText: "PRE",
+		{ticket: "kythe://test#a", reply: &cpb.MarkedSource{
+			Kind: cpb.MarkedSource_PARAMETER, PreText: "PRE",
 			PostChildText: "POSTC", PostText: "POST", AddFinalListToken: true,
-			Child: []*xpb.MarkedSource{mkID("IDENT"), mkID("OTHER")}}},
-		{ticket: "kythe://test#b", reply: &xpb.MarkedSource{
-			Kind: xpb.MarkedSource_PARAMETER, PreText: "PRE",
+			Child: []*cpb.MarkedSource{mkID("IDENT"), mkID("OTHER")}}},
+		{ticket: "kythe://test#b", reply: &cpb.MarkedSource{
+			Kind: cpb.MarkedSource_PARAMETER, PreText: "PRE",
 			PostChildText: "POSTC", PostText: "POST", AddFinalListToken: true,
-			Child: []*xpb.MarkedSource{mkID("IDENT"), mkID("OTHER")}, DefaultChildrenCount: 1}},
-		{ticket: "kythe://test#a", reply: &xpb.MarkedSource{
-			Kind: xpb.MarkedSource_PARAMETER, PreText: "PRE",
+			Child: []*cpb.MarkedSource{mkID("IDENT"), mkID("OTHER")}, DefaultChildrenCount: 1}},
+		{ticket: "kythe://test#a", reply: &cpb.MarkedSource{
+			Kind: cpb.MarkedSource_PARAMETER, PreText: "PRE",
 			PostChildText: "POSTC", PostText: "POST", AddFinalListToken: true,
-			Child: []*xpb.MarkedSource{mkID("IDENT"), mkID("OTHER")}}},
-		{ticket: "kythe://test#loop", reply: &xpb.MarkedSource{PreText: "..."}},
-		{ticket: "kythe://test#app", reply: &xpb.MarkedSource{
-			Kind: xpb.MarkedSource_BOX, PostText: "*", Child: []*xpb.MarkedSource{mkID("IDENT")}}},
-		{ticket: "kythe://test#app2", reply: &xpb.MarkedSource{
-			Kind: xpb.MarkedSource_PARAMETER, PostChildText: ",",
-			Child: []*xpb.MarkedSource{mkID("OTHER"), mkID("IDENT")}}},
+			Child: []*cpb.MarkedSource{mkID("IDENT"), mkID("OTHER")}}},
+		{ticket: "kythe://test#loop", reply: &cpb.MarkedSource{PreText: "..."}},
+		{ticket: "kythe://test#app", reply: &cpb.MarkedSource{
+			Kind: cpb.MarkedSource_BOX, PostText: "*", Child: []*cpb.MarkedSource{mkID("IDENT")}}},
+		{ticket: "kythe://test#app2", reply: &cpb.MarkedSource{
+			Kind: cpb.MarkedSource_PARAMETER, PostChildText: ",",
+			Child: []*cpb.MarkedSource{mkID("OTHER"), mkID("IDENT")}}},
 	}
 	_, err := SlowSignature(nil, service, "kythe://test#missing")
 	if err == nil {
@@ -436,8 +436,8 @@ func TestSlowSignature(t *testing.T) {
 }
 
 func TestSlowDocumentation(t *testing.T) {
-	mkID := func(text string) *xpb.MarkedSource {
-		return &xpb.MarkedSource{Kind: xpb.MarkedSource_IDENTIFIER, PreText: "text"}
+	mkID := func(text string) *cpb.MarkedSource {
+		return &cpb.MarkedSource{Kind: cpb.MarkedSource_IDENTIFIER, PreText: "text"}
 	}
 	service := makeMockService([]mockNode{
 		{ticket: "kythe://test#a", kind: "etc", documented: "kythe://test#adoc", code: mkID("asig")},
@@ -453,9 +453,9 @@ func TestSlowDocumentation(t *testing.T) {
 		{ticket: "kythe://test#l", kind: "etc", documented: "kythe://test#ldoc", code: mkID("lsig")},
 	})
 	mkPr := func(text string, linkTicket ...string) *xpb.Printable {
-		links := make([]*xpb.Link, len(linkTicket))
+		links := make([]*cpb.Link, len(linkTicket))
 		for i, link := range linkTicket {
-			links[i] = &xpb.Link{Definition: []string{link}}
+			links[i] = &cpb.Link{Definition: []string{link}}
 		}
 		return &xpb.Printable{RawText: text, Link: links}
 	}

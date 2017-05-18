@@ -300,7 +300,7 @@ child {
 }
 )"";
 TEST_F(HtmlRendererTest, RenderSimpleParams) {
-  proto::MarkedSource marked;
+  proto::common::MarkedSource marked;
   ASSERT_TRUE(TextFormat::ParseFromString(kSampleMarkedSource, &marked))
       << "(invalid ascii protobuf)";
   auto params = kythe::RenderSimpleParams(marked);
@@ -309,13 +309,13 @@ TEST_F(HtmlRendererTest, RenderSimpleParams) {
   EXPECT_EQ("param_name_two", params[1]);
 }
 TEST_F(HtmlRendererTest, RenderSimpleIdentifier) {
-  proto::MarkedSource marked;
+  proto::common::MarkedSource marked;
   ASSERT_TRUE(TextFormat::ParseFromString(kSampleMarkedSource, &marked))
       << "(invalid ascii protobuf)";
   EXPECT_EQ("FunctionName", kythe::RenderSimpleIdentifier(marked));
 }
 TEST_F(HtmlRendererTest, RenderSimpleQualifiedName) {
-  proto::MarkedSource marked;
+  proto::common::MarkedSource marked;
   ASSERT_TRUE(TextFormat::ParseFromString(kSampleMarkedSource, &marked))
       << "(invalid ascii protobuf)";
   EXPECT_EQ("namespace::(anonymous namespace)::ClassContainer",

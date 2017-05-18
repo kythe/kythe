@@ -19,28 +19,28 @@ package markedsource
 import (
 	"testing"
 
-	xpb "kythe.io/kythe/proto/xref_proto"
+	cpb "kythe.io/kythe/proto/common_proto"
 )
 
 func TestRender(t *testing.T) {
 	tests := []struct {
-		in  *xpb.MarkedSource
+		in  *cpb.MarkedSource
 		out string
 	}{
-		{&xpb.MarkedSource{}, ""},
-		{&xpb.MarkedSource{PreText: "PRE", PostText: "POST"}, "PREPOST"},
-		{&xpb.MarkedSource{PostChildText: ","}, ""},
-		{&xpb.MarkedSource{PostChildText: ",", AddFinalListToken: true}, ""},
-		{&xpb.MarkedSource{PreText: "PRE", PostText: "POST", PostChildText: ",",
-			Child: []*xpb.MarkedSource{{PreText: "C1"}}}, "PREC1POST"},
-		{&xpb.MarkedSource{PreText: "PRE", PostText: "POST", PostChildText: ",", AddFinalListToken: true,
-			Child: []*xpb.MarkedSource{{PreText: "C1"}}}, "PREC1,POST"},
-		{&xpb.MarkedSource{PreText: "PRE", PostText: "POST", PostChildText: ",",
-			Child: []*xpb.MarkedSource{{PreText: "C1"}, {PreText: "C2"}}}, "PREC1,C2POST"},
-		{&xpb.MarkedSource{PreText: "PRE", PostText: "POST", PostChildText: ",", AddFinalListToken: true,
-			Child: []*xpb.MarkedSource{{PreText: "C1"}, {PreText: "C2"}}}, "PREC1,C2,POST"},
-		{&xpb.MarkedSource{PreText: "PRE", PostChildText: ",", AddFinalListToken: true,
-			Child: []*xpb.MarkedSource{{PreText: "C1"}, {PreText: "C2"}}}, "PREC1,C2,"},
+		{&cpb.MarkedSource{}, ""},
+		{&cpb.MarkedSource{PreText: "PRE", PostText: "POST"}, "PREPOST"},
+		{&cpb.MarkedSource{PostChildText: ","}, ""},
+		{&cpb.MarkedSource{PostChildText: ",", AddFinalListToken: true}, ""},
+		{&cpb.MarkedSource{PreText: "PRE", PostText: "POST", PostChildText: ",",
+			Child: []*cpb.MarkedSource{{PreText: "C1"}}}, "PREC1POST"},
+		{&cpb.MarkedSource{PreText: "PRE", PostText: "POST", PostChildText: ",", AddFinalListToken: true,
+			Child: []*cpb.MarkedSource{{PreText: "C1"}}}, "PREC1,POST"},
+		{&cpb.MarkedSource{PreText: "PRE", PostText: "POST", PostChildText: ",",
+			Child: []*cpb.MarkedSource{{PreText: "C1"}, {PreText: "C2"}}}, "PREC1,C2POST"},
+		{&cpb.MarkedSource{PreText: "PRE", PostText: "POST", PostChildText: ",", AddFinalListToken: true,
+			Child: []*cpb.MarkedSource{{PreText: "C1"}, {PreText: "C2"}}}, "PREC1,C2,POST"},
+		{&cpb.MarkedSource{PreText: "PRE", PostChildText: ",", AddFinalListToken: true,
+			Child: []*cpb.MarkedSource{{PreText: "C1"}, {PreText: "C2"}}}, "PREC1,C2,"},
 	}
 	for _, test := range tests {
 		if got := Render(test.in); got != test.out {

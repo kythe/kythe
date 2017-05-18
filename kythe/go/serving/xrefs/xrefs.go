@@ -778,12 +778,12 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 	return reply, nil
 }
 
-func m2m(m *cpb.MarkedSource) *xpb.MarkedSource {
+func m2m(m *cpb.MarkedSource) *cpb.MarkedSource {
 	if m == nil {
 		return nil
 	}
-	res := &xpb.MarkedSource{
-		Kind:                 xpb.MarkedSource_Kind(m.Kind),
+	res := &cpb.MarkedSource{
+		Kind:                 cpb.MarkedSource_Kind(m.Kind),
 		PreText:              m.PreText,
 		PostChildText:        m.PostChildText,
 		PostText:             m.PostText,
@@ -791,8 +791,8 @@ func m2m(m *cpb.MarkedSource) *xpb.MarkedSource {
 		DefaultChildrenCount: m.DefaultChildrenCount,
 		AddFinalListToken:    m.AddFinalListToken,
 
-		Child: make([]*xpb.MarkedSource, 0, len(m.Child)),
-		Link:  make([]*xpb.Link, 0, len(m.Link)),
+		Child: make([]*cpb.MarkedSource, 0, len(m.Child)),
+		Link:  make([]*cpb.Link, 0, len(m.Link)),
 	}
 	for _, c := range m.Child {
 		res.Child = append(res.Child, m2m(c))
@@ -803,11 +803,11 @@ func m2m(m *cpb.MarkedSource) *xpb.MarkedSource {
 	return res
 }
 
-func l2l(l *cpb.Link) *xpb.Link {
+func l2l(l *cpb.Link) *cpb.Link {
 	if l == nil {
 		return nil
 	}
-	return &xpb.Link{Definition: l.Definition}
+	return &cpb.Link{Definition: l.Definition}
 }
 
 type span struct{ start, end int32 }

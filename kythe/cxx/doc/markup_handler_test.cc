@@ -95,7 +95,7 @@ class MarkupHandlerTest : public ::testing::Test {
     }
     return result;
   }
-  proto::Link& ExpectLink(const std::string& uri) {
+  proto::common::Link& ExpectLink(const std::string& uri) {
     auto* link = reply_.add_link();
     link->add_definition(uri);
     return *link;

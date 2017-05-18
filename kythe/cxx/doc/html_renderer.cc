@@ -226,7 +226,7 @@ struct RenderSimpleIdentifierState {
   bool in_parameter = false;
   bool in_type = false;
   bool linkify = false;
-  std::string get_link(const proto::MarkedSource& sig) {
+  std::string get_link(const proto::common::MarkedSource& sig) {
     if (options == nullptr || !linkify) {
       return "";
     }
@@ -253,35 +253,35 @@ struct RenderSimpleIdentifierState {
   }
 };
 
-void RenderSimpleIdentifier(const proto::MarkedSource& sig,
+void RenderSimpleIdentifier(const proto::common::MarkedSource& sig,
                             RenderSimpleIdentifierTarget* out,
                             RenderSimpleIdentifierState state, size_t depth) {
   if (depth >= kMaxRenderDepth) {
     return;
   }
   switch (sig.kind()) {
-    case proto::MarkedSource::IDENTIFIER:
+    case proto::common::MarkedSource::IDENTIFIER:
       state.in_identifier = true;
       break;
-    case proto::MarkedSource::PARAMETER:
+    case proto::common::MarkedSource::PARAMETER:
       if (!state.render_parameters) {
         return;
       }
       state.in_parameter = true;
       break;
-    case proto::MarkedSource::TYPE:
+    case proto::common::MarkedSource::TYPE:
       if (!state.render_types) {
         return;
       }
       state.in_type = true;
       break;
-    case proto::MarkedSource::CONTEXT:
+    case proto::common::MarkedSource::CONTEXT:
       if (!state.render_context) {
         return;
       }
       state.in_context = true;
       break;
-    case proto::MarkedSource::BOX:
+    case proto::common::MarkedSource::BOX:
       break;
     default:
       return;
@@ -322,7 +322,7 @@ void RenderSimpleIdentifier(const proto::MarkedSource& sig,
     if (has_open_link) {
       out->AppendRaw("</a>");
     }
-    if (sig.kind() == proto::MarkedSource::TYPE) {
+    if (sig.kind() == proto::common::MarkedSource::TYPE) {
       out->AppendHeuristicSpace();
     }
   }
@@ -330,18 +330,18 @@ void RenderSimpleIdentifier(const proto::MarkedSource& sig,
 
 /// Render identifiers underneath PARAMETER nodes with no other non-BOXes in
 /// between.
-void RenderSimpleParams(const proto::MarkedSource& sig,
+void RenderSimpleParams(const proto::common::MarkedSource& sig,
                         std::vector<std::string>* out, size_t depth) {
   if (depth >= kMaxRenderDepth) {
     return;
   }
   switch (sig.kind()) {
-    case proto::MarkedSource::BOX:
+    case proto::common::MarkedSource::BOX:
       for (const auto& child : sig.child()) {
         RenderSimpleParams(child, out, depth + 1);
       }
       break;
-    case proto::MarkedSource::PARAMETER:
+    case proto::common::MarkedSource::PARAMETER:
       for (const auto& child : sig.child()) {
         out->emplace_back();
         RenderSimpleIdentifierTarget target;
@@ -371,7 +371,7 @@ const proto::Anchor* DocumentHtmlRendererOptions::anchor_for_ticket(
 }
 
 std::string RenderSignature(const HtmlRendererOptions& options,
-                            const proto::MarkedSource& sig, bool linkify) {
+                            const proto::common::MarkedSource& sig, bool linkify) {
   RenderSimpleIdentifierTarget target;
   RenderSimpleIdentifierState state;
   state.render_identifier = true;
@@ -383,7 +383,7 @@ std::string RenderSignature(const HtmlRendererOptions& options,
   return target.buffer();
 }
 
-std::string RenderSimpleIdentifier(const proto::MarkedSource& sig) {
+std::string RenderSimpleIdentifier(const proto::common::MarkedSource& sig) {
   RenderSimpleIdentifierTarget target;
   RenderSimpleIdentifierState state;
   state.render_identifier = true;
@@ -391,7 +391,7 @@ std::string RenderSimpleIdentifier(const proto::MarkedSource& sig) {
   return target.buffer();
 }
 
-std::string RenderSimpleQualifiedName(const proto::MarkedSource& sig,
+std::string RenderSimpleQualifiedName(const proto::common::MarkedSource& sig,
                                       bool include_identifier) {
   RenderSimpleIdentifierTarget target;
   RenderSimpleIdentifierState state;
@@ -401,7 +401,7 @@ std::string RenderSimpleQualifiedName(const proto::MarkedSource& sig,
   return target.buffer();
 }
 
-std::vector<std::string> RenderSimpleParams(const proto::MarkedSource& sig) {
+std::vector<std::string> RenderSimpleParams(const proto::common::MarkedSource& sig) {
   std::vector<std::string> result;
   RenderSimpleParams(sig, &result, 0);
   return result;

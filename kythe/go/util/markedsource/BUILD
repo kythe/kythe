@@ -6,7 +6,7 @@ go_package_library(
     name = "markedsource",
     srcs = ["markedsource.go"],
     deps = [
-        "//kythe/proto:xref_proto_go",
+        "//kythe/proto:common_proto_go",
     ],
 )
 

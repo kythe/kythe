@@ -27,6 +27,7 @@ import (
 	"kythe.io/kythe/go/util/markedsource"
 	"kythe.io/kythe/go/util/schema/facts"
 
+	cpb "kythe.io/kythe/proto/common_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
@@ -227,7 +228,7 @@ func displayRelatedAnchors(kind string, anchors []*xpb.CrossReferencesReply_Rela
 	return nil
 }
 
-func showSignature(signature *xpb.MarkedSource) string {
+func showSignature(signature *cpb.MarkedSource) string {
 	if signature == nil {
 		return "(nil)"
 	}

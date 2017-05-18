@@ -17,6 +17,7 @@
 #ifndef KYTHE_CXX_DOC_MARKUP_HANDLER_H_
 #define KYTHE_CXX_DOC_MARKUP_HANDLER_H_
 
+#include "kythe/proto/common.pb.h"
 #include "kythe/proto/xref.pb.h"
 
 #include <functional>
@@ -53,7 +54,7 @@ class PrintableSpan {
     See
   };
   enum class Style : int { Bold, Italic, H1, H2, H3, H4, H5, H6 };
-  PrintableSpan(size_t begin, size_t end, const proto::Link& link)
+  PrintableSpan(size_t begin, size_t end, const proto::common::Link& link)
       : begin_(begin), end_(end), link_(link), semantic_(Semantic::Link) {}
   PrintableSpan(size_t begin, size_t end, Semantic sema)
       : begin_(begin), end_(end), semantic_(sema) {}
@@ -74,7 +75,7 @@ class PrintableSpan {
   const size_t begin() const { return begin_; }
   const size_t end() const { return end_; }
   void set_end(size_t end) { end_ = end; }
-  const proto::Link& link() const { return link_; }
+  const proto::common::Link& link() const { return link_; }
   Semantic semantic() const { return semantic_; }
   Style style() const { return style_; }
   std::pair<TagBlockId, size_t> tag_block() const { return tag_block_; }
@@ -86,7 +87,7 @@ class PrintableSpan {
   /// The ending offset, in bytes, of the span.
   size_t end_;
   /// The link for the span.
-  proto::Link link_;
+  proto::common::Link link_;
   /// The semantic for the span.
   Semantic semantic_;
   /// The tag block ID for the span.

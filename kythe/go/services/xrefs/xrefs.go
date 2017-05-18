@@ -303,7 +303,7 @@ func SlowOverrides(ctx context.Context, xs Service, tickets []string) (map[strin
 		sig, err := SlowSignature(ctx, xs, target)
 		if err != nil {
 			log.Printf("SlowOverrides: error getting signature for %s: %v", target, err)
-			sig = &xpb.MarkedSource{}
+			sig = &cpb.MarkedSource{}
 		}
 		okind := xpb.DecorationsReply_Override_EXTENDS
 		if edgeKind == edges.Overrides {
@@ -932,7 +932,7 @@ func SlowCallersForCrossReferences(ctx context.Context, service Service, req *Ca
 			log.Printf("Warning: missing expanded anchor for caller %v", ticket)
 			continue
 		}
-		var signature *xpb.MarkedSource
+		var signature *cpb.MarkedSource
 		if req.GenerateSignatures {
 			signature, err = SlowSignature(ctx, service, caller)
 			if err != nil {
@@ -1012,7 +1012,7 @@ func getLanguage(ticket string) string {
 }
 
 // slowLookupMeta retrieves the meta node for some node kind in some language.
-func slowLookupMeta(ctx context.Context, service Service, language string, kind string) (*xpb.MarkedSource, error) {
+func slowLookupMeta(ctx context.Context, service Service, language string, kind string) (*cpb.MarkedSource, error) {
 	uri := kytheuri.URI{Language: language, Signature: kind + "#meta"}
 	req := &gpb.NodesRequest{
 		Ticket: []string{uri.String()},
@@ -1024,7 +1024,7 @@ func slowLookupMeta(ctx context.Context, service Service, language string, kind 
 	}
 	for _, node := range nodes.Nodes {
 		for _, value := range node.Facts {
-			rsig := &xpb.MarkedSource{}
+			rsig := &cpb.MarkedSource{}
 			err = proto.Unmarshal(value, rsig)
 			return rsig, err
 		}
@@ -1059,7 +1059,7 @@ func getFactValue(edges *gpb.EdgesReply, ticket, fact string) []byte {
 type SignatureDetails struct {
 	// Maps from tickets to node kinds.
 	kinds      map[string]string
-	signatures map[string]*xpb.MarkedSource
+	signatures map[string]*cpb.MarkedSource
 	// The tickets of this node's parameters (in parameter order).
 	params []string
 	// The first default param, if one is set.
@@ -1089,7 +1089,7 @@ func findSignatureDetails(ctx context.Context, service Service, ticket string) (
 	}
 	details := SignatureDetails{
 		kinds:         make(map[string]string),
-		signatures:    make(map[string]*xpb.MarkedSource),
+		signatures:    make(map[string]*cpb.MarkedSource),
 		defaultParams: make(map[string]int),
 	}
 	for nodeTicket, node := range allEdges.Nodes {
@@ -1101,7 +1101,7 @@ func findSignatureDetails(ctx context.Context, service Service, ticket string) (
 			}
 		}
 		if sersig := node.Facts[facts.Code]; len(sersig) != 0 {
-			sig := &xpb.MarkedSource{}
+			sig := &cpb.MarkedSource{}
 			if proto.Unmarshal(sersig, sig) == nil {
 				details.signatures[nodeTicket] = sig
 			}
@@ -1124,7 +1124,7 @@ type slowSignatureState struct {
 	// ticket's kind.
 	kind string
 	// The MarkedSource being traversed.
-	marked *xpb.MarkedSource
+	marked *cpb.MarkedSource
 	// ticket's first default parameter, or negative if there is no such parameter.
 	defaultParam int
 	// Details about ticket and its params.
@@ -1135,10 +1135,10 @@ type slowSignatureState struct {
 
 // slowSignatureTraverseLevel traverses MarkedSource data for one particular ticket. If it needs to
 // issue graph queries for other tickets, it will defer to slowSignatureLevel (at the next depth).
-func slowSignatureTraverseLevel(s slowSignatureState) (*xpb.MarkedSource, error) {
+func slowSignatureTraverseLevel(s slowSignatureState) (*cpb.MarkedSource, error) {
 	// Copy the template MarkedSource to the output MarkedSource. We may elaborate the template depending on its kind.
 	// Data that are irrelevant for static MarkedSource nodes (like LookupIndex) are dropped.
-	outsig := &xpb.MarkedSource{
+	outsig := &cpb.MarkedSource{
 		Kind:                 s.marked.Kind,
 		PreText:              s.marked.PreText,
 		PostChildText:        s.marked.PostChildText,
@@ -1148,8 +1148,8 @@ func slowSignatureTraverseLevel(s slowSignatureState) (*xpb.MarkedSource, error)
 		Link:                 s.marked.Link,
 	}
 	switch s.marked.Kind {
-	case xpb.MarkedSource_PARAMETER_LOOKUP_BY_PARAM, xpb.MarkedSource_PARAMETER_LOOKUP_BY_PARAM_WITH_DEFAULTS:
-		outsig.Kind = xpb.MarkedSource_PARAMETER
+	case cpb.MarkedSource_PARAMETER_LOOKUP_BY_PARAM, cpb.MarkedSource_PARAMETER_LOOKUP_BY_PARAM_WITH_DEFAULTS:
+		outsig.Kind = cpb.MarkedSource_PARAMETER
 		if int(s.marked.LookupIndex) >= len(s.details.params) {
 			log.Printf("Lookup index out of bounds for ticket %v", s.ticket)
 			return outsig, nil
@@ -1170,7 +1170,7 @@ func slowSignatureTraverseLevel(s slowSignatureState) (*xpb.MarkedSource, error)
 				outsig.Child = append(outsig.Child, outc)
 			}
 		}
-		if s.marked.Kind == xpb.MarkedSource_PARAMETER_LOOKUP_BY_PARAM_WITH_DEFAULTS && s.defaultParam >= 0 {
+		if s.marked.Kind == cpb.MarkedSource_PARAMETER_LOOKUP_BY_PARAM_WITH_DEFAULTS && s.defaultParam >= 0 {
 			count := len(s.details.params) - s.defaultParam
 			if int(s.marked.LookupIndex) > s.defaultParam {
 				count -= int(s.marked.LookupIndex) - s.defaultParam
@@ -1181,9 +1181,9 @@ func slowSignatureTraverseLevel(s slowSignatureState) (*xpb.MarkedSource, error)
 				outsig.DefaultChildrenCount = uint32(count)
 			}
 		}
-	case xpb.MarkedSource_LOOKUP_BY_PARAM:
+	case cpb.MarkedSource_LOOKUP_BY_PARAM:
 		if int(s.marked.LookupIndex) >= len(s.details.params) {
-			outsig.Kind = xpb.MarkedSource_BOX
+			outsig.Kind = cpb.MarkedSource_BOX
 			log.Printf("Couldn't look up param %v of node with ticket %v: param out of range", s.marked.LookupIndex, s.ticket)
 		} else {
 			param := s.details.params[s.marked.LookupIndex]
@@ -1227,9 +1227,9 @@ func slowSignatureTraverseLevel(s slowSignatureState) (*xpb.MarkedSource, error)
 // slowSignatureLevel issues graph queries to traverse s.ticket's MarkedSource.
 // In particular, it replaces the details field of s with an appropriate details struct
 // for s.ticket, then calls recursively to slowSignatureTraverseLevel.
-func slowSignatureLevel(s slowSignatureState) (*xpb.MarkedSource, error) {
+func slowSignatureLevel(s slowSignatureState) (*cpb.MarkedSource, error) {
 	if s.depth > maxFormatExpansions {
-		return &xpb.MarkedSource{Kind: xpb.MarkedSource_BOX, PreText: "..."}, nil
+		return &cpb.MarkedSource{Kind: cpb.MarkedSource_BOX, PreText: "..."}, nil
 	}
 	if s.kind == "" {
 		log.Printf("Node %v missing kind", s.ticket)
@@ -1265,8 +1265,8 @@ func slowSignatureLevel(s slowSignatureState) (*xpb.MarkedSource, error) {
 	})
 }
 
-// SlowSignature generates an xpb.MarkedSource given a ticket.
-func SlowSignature(ctx context.Context, service Service, ticket string) (*xpb.MarkedSource, error) {
+// SlowSignature generates an cpb.MarkedSource given a ticket.
+func SlowSignature(ctx context.Context, service Service, ticket string) (*cpb.MarkedSource, error) {
 	if *disableSlowSignatures || *disableAllSlowPaths {
 		log.Println("SlowSignature disabled")
 		return nil, nil
@@ -1287,7 +1287,7 @@ func SlowSignature(ctx context.Context, service Service, ticket string) (*xpb.Ma
 	}
 
 	var kind string
-	var sig *xpb.MarkedSource
+	var sig *cpb.MarkedSource
 	defaultParam := -1
 	for _, node := range nodes.Nodes {
 		kind = string(node.Facts[facts.NodeKind])
@@ -1298,7 +1298,7 @@ func SlowSignature(ctx context.Context, service Service, ticket string) (*xpb.Ma
 			}
 		}
 		if node.Facts[facts.Code] != nil {
-			sig = &xpb.MarkedSource{}
+			sig = &cpb.MarkedSource{}
 			err = proto.Unmarshal(node.Facts[facts.Code], sig)
 			if err != nil {
 				return nil, fmt.Errorf("could not unmarshal signature: %v", err)
@@ -1320,7 +1320,7 @@ func SlowSignature(ctx context.Context, service Service, ticket string) (*xpb.Ma
 // Data from a doc node that documents some other ticket.
 type associatedDocNode struct {
 	rawText string
-	link    []*xpb.Link
+	link    []*cpb.Link
 	// Tickets this associatedDocNode documents.
 	documented []string
 }
@@ -1341,7 +1341,7 @@ type documentDetails struct {
 	// (e.g., if they are in the same equivalence class defined by expandDefRelatedNodeSet.
 	ticketToPreDocument map[string]*preDocument
 	// Maps tickets to MarkedSource.
-	ticketToMarkedSource map[string]*xpb.MarkedSource
+	ticketToMarkedSource map[string]*cpb.MarkedSource
 	// Tickets of known doc nodes.
 	docs stringset.Set
 	// Maps tickets to definition anchors when they're known.
@@ -1426,9 +1426,9 @@ func getDocLinks(ctx context.Context, service Service, details documentDetails) 
 		if assocDoc := details.docTicketToAssocNode[sourceTicket]; assocDoc != nil {
 			for _, group := range set.Groups {
 				params := extractParams(group.Edge)
-				assocDoc.link = make([]*xpb.Link, len(params))
+				assocDoc.link = make([]*cpb.Link, len(params))
 				for i, param := range extractParams(group.Edge) {
-					assocDoc.link[i] = &xpb.Link{Definition: []string{param}}
+					assocDoc.link[i] = &cpb.Link{Definition: []string{param}}
 				}
 			}
 		}
@@ -1475,7 +1475,7 @@ func linkTickets(p *xpb.Printable, s stringset.Set) {
 
 // signatureLinkTickets inserts into s all of the Definition tickets for all
 // links in sg and its children.
-func signatureLinkTickets(sg *xpb.MarkedSource, s stringset.Set) {
+func signatureLinkTickets(sg *cpb.MarkedSource, s stringset.Set) {
 	if sg == nil {
 		return
 	}
@@ -1600,7 +1600,7 @@ func SlowDocumentation(ctx context.Context, service Service, req *xpb.Documentat
 		ticketToPreDocument:  make(map[string]*preDocument),
 		docTicketToAssocNode: make(map[string]*associatedDocNode),
 		docs:                 make(stringset.Set),
-		ticketToMarkedSource: make(map[string]*xpb.MarkedSource),
+		ticketToMarkedSource: make(map[string]*cpb.MarkedSource),
 		ticketToDefinition:   make(map[string]*xpb.Anchor),
 	}
 	// We assume that expandDefRelatedNodeSet will return disjoint sets (and thus we can treat them as equivalence classes

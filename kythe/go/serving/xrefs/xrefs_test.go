@@ -1073,8 +1073,8 @@ func TestCrossReferencesMarkedSource(t *testing.T) {
 
 	expected := &xpb.CrossReferencesReply_CrossReferenceSet{
 		Ticket: ticket,
-		MarkedSource: &xpb.MarkedSource{
-			Kind:    xpb.MarkedSource_IDENTIFIER,
+		MarkedSource: &cpb.MarkedSource{
+			Kind:    cpb.MarkedSource_IDENTIFIER,
 			PreText: "id",
 		},
 
@@ -1124,8 +1124,8 @@ func TestCrossReferencesMerge(t *testing.T) {
 
 	expected := &xpb.CrossReferencesReply_CrossReferenceSet{
 		Ticket: ticket,
-		MarkedSource: &xpb.MarkedSource{
-			Kind:    xpb.MarkedSource_IDENTIFIER,
+		MarkedSource: &cpb.MarkedSource{
+			Kind:    cpb.MarkedSource_IDENTIFIER,
 			PreText: "id",
 		},
 
@@ -1136,8 +1136,8 @@ func TestCrossReferencesMerge(t *testing.T) {
 				Span:   arbitrarySpan,
 			},
 			Ticket: "kythe:#someCaller",
-			MarkedSource: &xpb.MarkedSource{
-				Kind:    xpb.MarkedSource_IDENTIFIER,
+			MarkedSource: &cpb.MarkedSource{
+				Kind:    cpb.MarkedSource_IDENTIFIER,
 				PreText: "id",
 			},
 			Site: []*xpb.Anchor{{
@@ -1199,8 +1199,8 @@ func TestCrossReferencesDirectCallers(t *testing.T) {
 				Span:   arbitrarySpan,
 			},
 			Ticket: "kythe:#someCaller",
-			MarkedSource: &xpb.MarkedSource{
-				Kind:    xpb.MarkedSource_IDENTIFIER,
+			MarkedSource: &cpb.MarkedSource{
+				Kind:    cpb.MarkedSource_IDENTIFIER,
 				PreText: "id",
 			},
 			Site: []*xpb.Anchor{{

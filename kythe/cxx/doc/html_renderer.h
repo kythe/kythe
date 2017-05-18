@@ -104,22 +104,22 @@ std::string RenderDocument(const HtmlRendererOptions& options,
                            const proto::DocumentationReply::Document& document);
 
 /// \brief Extract and render the simple identifiers for parameters in `sig`.
-std::vector<std::string> RenderSimpleParams(const proto::MarkedSource& sig);
+std::vector<std::string> RenderSimpleParams(const proto::common::MarkedSource& sig);
 
 /// \brief Extract and render the simple identifier for `sig`.
 /// \return The empty string if there is no such identifier.
-std::string RenderSimpleIdentifier(const proto::MarkedSource& sig);
+std::string RenderSimpleIdentifier(const proto::common::MarkedSource& sig);
 
 /// \brief Extract and render the simple qualified name for `sig`.
 /// \param include_identifier if set, include the identifier on the qualified
 /// name.
 /// \return The empty string if there is no such identifier.
-std::string RenderSimpleQualifiedName(const proto::MarkedSource& sig,
+std::string RenderSimpleQualifiedName(const proto::common::MarkedSource& sig,
                                       bool include_identifier);
 
 /// \brief Render `sig` as a full signature.
 std::string RenderSignature(const HtmlRendererOptions& options,
-                            const proto::MarkedSource& sig, bool linkify);
+                            const proto::common::MarkedSource& sig, bool linkify);
 
 }  // namespace kythe
 

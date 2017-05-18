@@ -20,7 +20,7 @@ package markedsource
 import (
 	"bytes"
 
-	xpb "kythe.io/kythe/proto/xref_proto"
+	cpb "kythe.io/kythe/proto/common_proto"
 )
 
 type context struct {
@@ -28,7 +28,7 @@ type context struct {
 }
 
 // render flattens ms to the given context.
-func (cxt *context) render(ms *xpb.MarkedSource) {
+func (cxt *context) render(ms *cpb.MarkedSource) {
 	cxt.buffer.WriteString(ms.PreText)
 	if len(ms.Child) > 0 {
 		for n, c := range ms.Child {
@@ -42,7 +42,7 @@ func (cxt *context) render(ms *xpb.MarkedSource) {
 }
 
 // Render flattens MarkedSource to a string using reasonable defaults.
-func Render(ms *xpb.MarkedSource) string {
+func Render(ms *cpb.MarkedSource) string {
 	cxt := &context{}
 	cxt.render(ms)
 	return cxt.buffer.String()
