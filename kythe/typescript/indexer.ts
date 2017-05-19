@@ -639,6 +639,11 @@ class Vistor {
       this.emitEdge(this.newAnchor(param.name), 'defines/binding', kParam);
     }
 
+    if (decl.type) {
+      // "type" here is the return type of the function.
+      this.visitType(decl.type);
+    }
+
     if (decl.body) {
       this.visit(decl.body);
     } else {
