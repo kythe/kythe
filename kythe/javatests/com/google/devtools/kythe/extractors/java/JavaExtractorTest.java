@@ -417,6 +417,7 @@ public class JavaExtractorTest extends TestCase {
             outputDirs.get(0).toString(),
             "-h",
             outputDirs.get(1).toString(),
+            "-g:lines",  // ensure this conjoined arg is handled correctly
             "-d",
             outputDirs.get(2).toString());
 
@@ -445,6 +446,7 @@ public class JavaExtractorTest extends TestCase {
     assertThat(unit.getArgumentList())
         .containsExactly(
             "-Xdoclint:-Xdoclint:all/private",
+            "-g:lines",
             "-sourcepath",
             TEST_DATA_DIR + ":" + outputDirs.get(0).getFileName(),
             "-cp",

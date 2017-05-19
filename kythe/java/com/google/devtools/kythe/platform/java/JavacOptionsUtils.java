@@ -77,6 +77,10 @@ public class JavacOptionsUtils {
     while (it.hasNext()) {
       for (OptionChecker optionChecker : optionCheckers) {
         int arity = optionChecker.isSupportedOption(it.peek());
+        if (arity > 0 && it.peek().indexOf(':') != -1) {
+          // For "conjoined" flags (e.g., -flag:arg) we want to consume just command-line option.
+          arity = 0;
+        }
         if (arity != -1) {
           Iterators.addAll(options, Iterators.limit(it, arity + 1));
           continue outer;
@@ -130,7 +134,7 @@ public class JavacOptionsUtils {
    * present) and the JRE jars.
    *
    * @param arguments the command line arguments to be updated
-   * @param the compilation unit in which to look for {@code JavaDetails}
+   * @param compilationUnit the compilation unit in which to look for {@code JavaDetails}
    */
   public static void updateArgumentsWithJavaOptions(
       List<String> arguments, CompilationUnit compilationUnit) {
