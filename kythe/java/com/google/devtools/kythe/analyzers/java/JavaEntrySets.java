@@ -82,13 +82,14 @@ public class JavaEntrySets extends KytheEntrySets {
    * The only place the integer index for nested classes/anonymous classes is stored is in the
    * flatname of the symbol. (This index is determined at compile time using linear search; see
    * 'localClassName' in Check.java). The simple name can't be relied on; for nested classes it
-   * drops the name of the parent class (so 'pkg.Clasz$Inner' yields only 'Inner') and for anonymous
-   * classes it's blank. For multiply-nested classes, we'll see tokens like 'Class$Inner$1$1'.
+   * drops the name of the parent class (so 'pkg.OuterClass$Inner' yields only 'Inner') and for anonymous
+   * classes it's blank. For multiply-nested classes, we'll see tokens like 'OuterClass$Inner$1$1'.
    */
   private String getIdentToken(Symbol sym) {
     String flatName = sym.flatName().toString();
     int lastDot = flatName.lastIndexOf('.');
-    int lastCash = flatName.lastIndexOf('$');
+    // A$1 is a valid variable/method name, so make sure we only look at $ in class names.
+    int lastCash = (sym instanceof ClassSymbol) ? flatName.lastIndexOf('$') : - 1;
     int lastTok = lastDot > lastCash ? lastDot : lastCash;
     String identToken = lastTok < 0 ? flatName : flatName.substring(lastTok + 1);
     if (!identToken.isEmpty() && Character.isDigit(identToken.charAt(0))) {

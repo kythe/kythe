@@ -15,7 +15,7 @@ package pkg;
 //- ClassTok.pre_text "MarkedSource"
 public class MarkedSource {
 
-  //- @fieldName defines/binding Field
+  //- @"fieldName$1" defines/binding Field
   //- Field childof Class
   //- @int ref Int
   //- Field code FieldTypeId
@@ -28,8 +28,8 @@ public class MarkedSource {
   //- FieldCxt child.1 FieldCxtClass
   //- FieldCxtClass.pre_text "MarkedSource"
   //- FieldId.kind "IDENTIFIER"
-  //- FieldId.pre_text "fieldName"
-  int fieldName;
+  //- FieldId.pre_text "fieldName$1"
+  int fieldName$1;
 
   //- @MarkedSource defines/binding Ctor
   //- Ctor childof Class
