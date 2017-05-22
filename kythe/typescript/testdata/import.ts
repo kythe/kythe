@@ -26,3 +26,5 @@ mod_imp.value;
 
 //- @renamedValue ref Val
 renamedValue;
+
+import {value as exportedValue} from './export';

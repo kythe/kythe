@@ -218,6 +218,7 @@ class Vistor {
         case ts.SyntaxKind.FunctionDeclaration:
         case ts.SyntaxKind.InterfaceDeclaration:
         case ts.SyntaxKind.ImportSpecifier:
+        case ts.SyntaxKind.ExportSpecifier:
         case ts.SyntaxKind.MethodDeclaration:
         case ts.SyntaxKind.MethodSignature:
         case ts.SyntaxKind.NamespaceImport:
