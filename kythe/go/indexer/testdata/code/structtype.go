@@ -4,7 +4,7 @@ package structtype
 //- @T defines/binding Type
 //- Type code TypeCode
 //-
-//- TypeCode.kind "TYPE"
+//- TypeCode.kind "BOX"
 //- TypeCode child.0 TType
 //- TypeCode child.1 TName
 //- TypeCode child.2 TSpace
@@ -27,7 +27,7 @@ type T struct {
 	//- @F defines/binding Field
 	//- Field code FieldCode
 	//-
-	//- FieldCode.kind "TYPE"
+	//- FieldCode.kind "BOX"
 	//- FieldCode child.0 FName
 	//- FieldCode child.1 FSpace
 	//- FieldCode child.2 FType
@@ -39,6 +39,7 @@ type T struct {
 	//- FSpace.pre_text " "
 	//-
 	//- FType.pre_text "byte"
+	//- FType.kind "TYPE"
 	//-
 	//- FContext.kind "CONTEXT"
 	//- FContext.pre_text "structtype"

@@ -4,7 +4,7 @@ package iface
 //- @Thinger defines/binding Thinger
 //- Thinger code TCode
 //-
-//- TCode.kind "TYPE"
+//- TCode.kind "BOX"
 //- TCode child.0 TType
 //- TCode child.1 TName
 //- TCode child.2 TSpace
