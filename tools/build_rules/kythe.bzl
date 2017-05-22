@@ -213,7 +213,6 @@ def _integration_test_impl(ctx):
   atomizer      = ctx.executable._atomizer
   entrystream   = ctx.executable._entrystream
   postprocessor = ctx.executable._postprocessor
-  server        = ctx.executable._server
   verifier      = ctx.executable._verifier
 
   file_tickets = ctx.attr.file_tickets
@@ -226,27 +225,35 @@ def _integration_test_impl(ctx):
   if not all_entries:
     fail("Must have targets providing entries for: " + str(ctx.label))
 
+  atomized_entries = ctx.new_file(ctx.label.name + "_atomized.entries")
+  ctx.action(
+      inputs = [entrystream, postprocessor, atomizer] + list(all_entries),
+      outputs = [atomized_entries],
+      command = '\n'.join([
+        "#!/bin/bash -e",
+        "set -o pipefail",
+        "TMP_TABLE=\"${TEST_TMPDIR:-/tmp}/table\"",
+        "gunzip -c " + " ".join(_template(all_entries, "{path}")) + " | " +
+          entrystream.path + " --sort | " +
+          postprocessor.path + " --entries /dev/stdin --out \"$TMP_TABLE\"",
+        atomizer.path + " --api \"$TMP_TABLE\" " + " ".join(ctx.attr.file_tickets) +
+          " > " + atomized_entries.path,
+      ]),
+  )
+
   ctx.file_action(
       output = ctx.outputs.executable,
       content = '\n'.join([
         "#!/bin/bash -e",
         "set -o pipefail",
-        "TMP_TABLE=\"${TEST_TMPDIR:-/tmp}/table\"",
-        "gunzip -c " + " ".join(_template(all_entries, "{short_path}")) + " | " +
-          entrystream.short_path + " --sort | " +
-          postprocessor.short_path + " --entries /dev/stdin --out \"$TMP_TABLE\"",
-        atomizer.short_path + " --api \"$TMP_TABLE\" " + " ".join(ctx.attr.file_tickets) + " | " +
-          verifier.short_path + " --ignore_dups --use_file_nodes",
+        verifier.short_path + " --ignore_dups --use_file_nodes <" + atomized_entries.short_path,
       ]),
       executable = True,
   )
   return struct(
       runfiles = ctx.runfiles(files = list(all_entries) + [
           ctx.outputs.executable,
-          atomizer,
-          entrystream,
-          postprocessor,
-          server,
+          atomized_entries,
           verifier,
         ], collect_data = True),
       )
@@ -418,11 +425,6 @@ kythe_integration_test = rule(
         ),
         "_postprocessor": attr.label(
             default = Label("//kythe/go/serving/tools/write_tables"),
-            executable = True,
-            cfg = "host",
-        ),
-        "_server": attr.label(
-            default = Label("//kythe/go/serving/tools/http_server"),
             executable = True,
             cfg = "host",
         ),

@@ -33,6 +33,7 @@ import (
 	"strings"
 
 	"kythe.io/kythe/go/util/kytheuri"
+	"kythe.io/kythe/go/util/markedsource"
 	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/facts"
 	"kythe.io/kythe/go/util/schema/nodes"
@@ -115,6 +116,10 @@ func (a Atomizer) CrossReferences(ctx context.Context, xrefs *xpb.CrossReference
 				return err
 			}
 			a.emitFact(ctx, src, facts.Code, rec)
+
+			rendered := markedsource.Render(xrs.MarkedSource)
+			a.emitFact(ctx, src, facts.Code+"/rendered", []byte(rendered))
+			// TODO(schroederc): add equivalent facts for C++ doc renderer
 		}
 		a.emitAnchors(ctx, src, xrs.Definition)
 		a.emitAnchors(ctx, src, xrs.Declaration)

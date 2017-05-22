@@ -150,10 +150,59 @@ go_indexpack = rule(
     outputs = {"archive": "%{name}.zip"},
 )
 
-def _go_verifier_test(ctx):
+def _go_entries(ctx):
   pack     = ctx.attr.indexpack.zipfile
   indexer  = ctx.files._indexer[-1]
-  iargs    = [indexer.short_path, '-zip']
+  iargs    = [indexer.path, '-zip']
+  output   = ctx.outputs.entries
+
+  # If the test wants marked source, enable support for it in the indexer.
+  if ctx.attr.has_marked_source:
+    iargs.append('-code')
+
+  # If the test wants linkage metadata, enable support for it in the indexer.
+  if ctx.attr.metadata_suffix:
+    iargs += ['-meta', ctx.attr.metadata_suffix]
+
+  iargs += [pack.path, '| gzip >'+output.path]
+
+  cmds = ['set -e', 'set -o pipefail', ' '.join(iargs), '']
+  ctx.action(
+      mnemonic = 'GoIndexPack',
+      command  = '\n'.join(cmds),
+      outputs  = [output],
+      inputs   = [pack] + ctx.files._indexer,
+  )
+  return struct(entries = output)
+
+# Run the Kythe indexer on the output that results from a go_indexpack rule.
+go_entries = rule(
+    _go_entries,
+    attrs = {
+        # The go_indexpack output to pass to the indexer.
+        "indexpack": attr.label(
+            providers = ["zipfile"],
+            mandatory = True,
+        ),
+
+        # Whether to enable explosion of MarkedSource facts.
+        "has_marked_source": attr.bool(default = False),
+
+        # The suffix used to recognize linkage metadata files, if non-empty.
+        "metadata_suffix": attr.string(default = ""),
+
+        # The location of the Go indexer binary.
+        "_indexer": attr.label(
+            default = Label("//kythe/go/indexer/cmd/go_indexer"),
+            executable = True,
+            cfg = "data",
+        ),
+    },
+    outputs = {"entries": "%{name}.entries.gz"},
+)
+
+def _go_verifier_test(ctx):
+  entries  = ctx.attr.entries.entries
   verifier = ctx.file._verifier
   vargs    = [verifier.short_path,
               '--use_file_nodes', '--show_goals', '--check_for_singletons']
@@ -163,23 +212,17 @@ def _go_verifier_test(ctx):
   if ctx.attr.allow_duplicates:
     vargs.append('--ignore_dups')
 
-  # If the test wants marked source, enable support for it in the indexer and
-  # in the verifier.
+  # If the test wants marked source, enable support for it in the verifier.
   if ctx.attr.has_marked_source:
     vargs.append('--convert_marked_source')
-    iargs.append('-code')
 
-  # If the test wants linkage metadata, enable support for it in the indexer.
-  if ctx.attr.metadata_suffix:
-    iargs += ['-meta', ctx.attr.metadata_suffix]
-
-  cmds = ['set -e', 'set -o pipefail', ' '.join(iargs + [
-      pack.short_path, '\\\n|',
-  ] + vargs), '']
+  cmds = ['set -e', 'set -o pipefail', ' '.join(
+      ['zcat', entries.short_path, '|'] + vargs),
+  '']
   ctx.file_action(output=ctx.outputs.executable,
                   content='\n'.join(cmds), executable=True)
   return struct(
-      runfiles = ctx.runfiles([indexer, verifier, pack]),
+      runfiles = ctx.runfiles([verifier, entries]),
   )
 
 # Run the Kythe verifier on the output that results from invoking the Go
@@ -187,9 +230,9 @@ def _go_verifier_test(ctx):
 go_verifier_test = rule(
     _go_verifier_test,
     attrs = {
-        # The go_indexpack output to pass to the indexer.
-        "indexpack": attr.label(
-            providers = ["zipfile"],
+        # The entries output to pass to the verifier.
+        "entries": attr.label(
+            providers = ["entries"],
             mandatory = True,
         ),
 
@@ -202,16 +245,6 @@ go_verifier_test = rule(
         # Whether to allow duplicate facts.
         "allow_duplicates": attr.bool(default = False),
 
-        # The suffix used to recognize linkage metadata files, if non-empty.
-        "metadata_suffix": attr.string(default = ''),
-
-        # The location of the Go indexer binary.
-        "_indexer": attr.label(
-            default = Label("//kythe/go/indexer/cmd/go_indexer"),
-            executable = True,
-            cfg = "data",
-        ),
-
         # The location of the Kythe verifier binary.
         "_verifier": attr.label(
             default = Label("//kythe/cxx/verifier"),
@@ -223,10 +256,9 @@ go_verifier_test = rule(
     test = True,
 )
 
-# A convenience macro to generate a test library, pass it to the Go indexer,
-# and feed the output of indexing to the Kythe schema verifier.
-def go_indexer_test(name, srcs, deps=[], import_path='', size = 'small',
-                    log_entries=False, data=None,
+# Shared extract/index logic for the go_indexer_test/go_integration_test rules.
+def _go_indexer(name, srcs, deps=[], import_path='',
+                    data=None,
                     has_marked_source=False,
                     allow_duplicates=False,
                     metadata_suffix=''):
@@ -243,12 +275,61 @@ def go_indexer_test(name, srcs, deps=[], import_path='', size = 'small',
       import_path = import_path,
       data = data if data else [],
   )
+  entries = name+'_entries'
+  go_entries(
+      name = entries,
+      indexpack = ':'+testpack,
+      has_marked_source = has_marked_source,
+      metadata_suffix = metadata_suffix,
+  )
+  return entries
+
+# A convenience macro to generate a test library, pass it to the Go indexer,
+# and feed the output of indexing to the Kythe schema verifier.
+def go_indexer_test(name, srcs, deps=[], import_path='', size = 'small',
+                    log_entries=False, data=None,
+                    has_marked_source=False,
+                    allow_duplicates=False,
+                    metadata_suffix=''):
+  entries = _go_indexer(
+      name = name,
+      srcs = srcs,
+      deps = deps,
+      data = data,
+      import_path = import_path,
+      has_marked_source = has_marked_source,
+      metadata_suffix = metadata_suffix,
+  )
   go_verifier_test(
       name = name,
       size = size,
-      indexpack = ':'+testpack,
+      entries = ':'+entries,
       log_entries = log_entries,
       has_marked_source = has_marked_source,
       allow_duplicates = allow_duplicates,
+  )
+
+load("//tools:build_rules/kythe.bzl", "kythe_integration_test")
+
+# A convenience macro to generate a test library, pass it to the Go indexer,
+# and feed the output of indexing to the Kythe integration test pipeline.
+def go_integration_test(name, srcs, deps=[], data=None,
+                        file_tickets=[],
+                        import_path='', size='small',
+                        has_marked_source=False,
+                        metadata_suffix=''):
+  entries = _go_indexer(
+      name = name,
+      srcs = srcs,
+      deps = deps,
+      data = data,
+      import_path = import_path,
+      has_marked_source = has_marked_source,
       metadata_suffix = metadata_suffix,
+  )
+  kythe_integration_test(
+      name = name,
+      size = size,
+      srcs = [':'+entries],
+      file_tickets = file_tickets,
   )

@@ -173,3 +173,14 @@ go_indexer_test(
     name = "anonymous_test",
     srcs = ["testdata/basic/anonymous.go"],
 )
+
+load(":testdata/go_indexer_test.bzl", "go_integration_test")
+
+go_integration_test(
+    name = "marked_source_integration_test",
+    srcs = ["testdata/integration/marked_source.go"],
+    file_tickets = [
+        "kythe:?path=src/test/marked_source/marked_source.go",
+    ],
+    has_marked_source = True,
+)
