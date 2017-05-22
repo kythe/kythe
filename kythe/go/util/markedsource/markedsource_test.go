@@ -17,10 +17,150 @@
 package markedsource
 
 import (
+	"bufio"
+	"bytes"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
 	"testing"
+
+	"github.com/golang/protobuf/proto"
 
 	cpb "kythe.io/kythe/proto/common_proto"
 )
+
+var docPath = filepath.Join(os.Getenv("RUNFILES_DIR"), "io_kythe/kythe/cxx/doc/doc")
+
+type oracleResults struct {
+	SimpleIdentifier string
+	SimpleParams     []string
+}
+
+// runOracle executes the C++ doc utility with ms as its input.  The utility's
+// output is then parsed and returned.
+//
+// Example utility output:
+//         RenderSimpleIdentifier: "hello world"
+//         RenderSimpleParams: "param"
+//   RenderSimpleQualifiedName-ID: ""
+//   RenderSimpleQualifiedName+ID: "hello world"
+func runOracle(t *testing.T, ms *cpb.MarkedSource) *oracleResults {
+	cmd := exec.Command(docPath, "--common_signatures")
+	// The doc utility expects its stdin to be a single text-format MarkedSource
+	// proto message.
+	in := &bytes.Buffer{}
+	if err := proto.CompactText(in, ms); err != nil {
+		t.Fatal(err)
+	}
+	// The utility's output is a series of lines, one per
+	out := &bytes.Buffer{}
+	cmd.Stdin = in
+	cmd.Stdout = out
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		t.Fatal(err)
+	}
+	var res oracleResults
+	s := bufio.NewScanner(out)
+	for s.Scan() {
+		line := strings.TrimSpace(s.Text())
+		if ident := strings.TrimPrefix(line, "RenderSimpleIdentifier: "); ident != line {
+			res.SimpleIdentifier = strings.Trim(ident, `"`)
+		} else if param := strings.TrimPrefix(line, "RenderSimpleParams: "); param != line {
+			res.SimpleParams = append(res.SimpleParams, strings.Trim(param, `"`))
+		} else {
+			t.Logf("Skipping doc line: %q", line)
+		}
+	}
+	if err := s.Err(); err != nil {
+		t.Fatal(err)
+	}
+	return &res
+}
+
+// TestInteropt checks the Go MarkedSource renderer against the canonical C++
+// renderer.  Each test parses the C++ doc utility output and compares the
+// results with the native Go implementations.
+func TestInteropt(t *testing.T) {
+	tests := []*cpb.MarkedSource{{
+		Kind:     cpb.MarkedSource_IDENTIFIER,
+		PreText:  "hello",
+		PostText: " world",
+	}, {
+		Kind: cpb.MarkedSource_BOX,
+		Child: []*cpb.MarkedSource{{
+			Kind:    cpb.MarkedSource_IDENTIFIER,
+			PreText: "ident",
+		}},
+	}, {
+		Kind: cpb.MarkedSource_PARAMETER,
+		Child: []*cpb.MarkedSource{{
+			Kind:    cpb.MarkedSource_IDENTIFIER,
+			PreText: "parameter",
+		}},
+	}, {
+		Kind: cpb.MarkedSource_BOX,
+		Child: []*cpb.MarkedSource{{
+			Kind:     cpb.MarkedSource_CONTEXT,
+			PreText:  "context",
+			PostText: ".",
+			Child: []*cpb.MarkedSource{{
+				Kind:    cpb.MarkedSource_IDENTIFIER,
+				PreText: "funcName",
+			}},
+		}, {
+			Kind: cpb.MarkedSource_PARAMETER,
+			Child: []*cpb.MarkedSource{{
+				Kind:    cpb.MarkedSource_IDENTIFIER,
+				PreText: "paramA",
+			}, {
+				Kind:    cpb.MarkedSource_IDENTIFIER,
+				PreText: "paramB",
+			}},
+		}},
+	}, {
+		Kind: cpb.MarkedSource_BOX,
+		Child: []*cpb.MarkedSource{{
+			Kind: cpb.MarkedSource_TYPE,
+			Child: []*cpb.MarkedSource{{
+				Kind:    cpb.MarkedSource_IDENTIFIER,
+				PreText: "int ",
+			}},
+		}, {
+			Kind:              cpb.MarkedSource_CONTEXT,
+			PostChildText:     ".",
+			AddFinalListToken: true,
+			Child: []*cpb.MarkedSource{{
+				Kind:    cpb.MarkedSource_IDENTIFIER,
+				PreText: "pkg",
+			}, {
+				Kind:    cpb.MarkedSource_IDENTIFIER,
+				PreText: "Files",
+			}},
+		}, {
+			Kind:    cpb.MarkedSource_IDENTIFIER,
+			PreText: "CONSTANT",
+		}},
+	}}
+
+	for _, test := range tests {
+		oracle := runOracle(t, test)
+		if ident := RenderSimpleIdentifier(test); oracle.SimpleIdentifier != ident {
+			t.Errorf("RenderSimpleIdentifier({%+v}): expected: %q; found %q", test, oracle.SimpleIdentifier, ident)
+		}
+		params := RenderSimpleParams(test)
+		if len(params) != len(oracle.SimpleParams) {
+			t.Errorf("RenderSimpleParams({%+v}); expected: %#v; found: %#v", test, oracle.SimpleParams, params)
+		} else {
+			for i, expected := range oracle.SimpleParams {
+				if expected != params[i] {
+					t.Errorf("RenderSimpleParams({%+v})[%d]; expected: %#v; found: %#v", test, i, expected, params[i])
+				}
+			}
+		}
+	}
+}
 
 func TestRender(t *testing.T) {
 	tests := []struct {

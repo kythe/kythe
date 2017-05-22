@@ -371,7 +371,8 @@ const proto::Anchor* DocumentHtmlRendererOptions::anchor_for_ticket(
 }
 
 std::string RenderSignature(const HtmlRendererOptions& options,
-                            const proto::common::MarkedSource& sig, bool linkify) {
+                            const proto::common::MarkedSource& sig,
+                            bool linkify) {
   RenderSimpleIdentifierTarget target;
   RenderSimpleIdentifierState state;
   state.render_identifier = true;
@@ -401,7 +402,8 @@ std::string RenderSimpleQualifiedName(const proto::common::MarkedSource& sig,
   return target.buffer();
 }
 
-std::vector<std::string> RenderSimpleParams(const proto::common::MarkedSource& sig) {
+std::vector<std::string> RenderSimpleParams(
+    const proto::common::MarkedSource& sig) {
   std::vector<std::string> result;
   RenderSimpleParams(sig, &result, 0);
   return result;

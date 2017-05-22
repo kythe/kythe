@@ -119,7 +119,12 @@ func (a Atomizer) CrossReferences(ctx context.Context, xrefs *xpb.CrossReference
 
 			rendered := markedsource.Render(xrs.MarkedSource)
 			a.emitFact(ctx, src, facts.Code+"/rendered", []byte(rendered))
-			// TODO(schroederc): add equivalent facts for C++ doc renderer
+			ident := markedsource.RenderSimpleIdentifier(xrs.MarkedSource)
+			a.emitFact(ctx, src, facts.Code+"/rendered/identifier", []byte(ident))
+			params := markedsource.RenderSimpleParams(xrs.MarkedSource)
+			if len(params) > 0 {
+				a.emitFact(ctx, src, facts.Code+"/rendered/params", []byte(strings.Join(params, ",")))
+			}
 		}
 		a.emitAnchors(ctx, src, xrs.Definition)
 		a.emitAnchors(ctx, src, xrs.Declaration)
