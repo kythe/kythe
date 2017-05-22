@@ -552,7 +552,8 @@ class Vistor {
       }
     }
     if (decl.moduleSpecifier) {
-      this.todo(decl.moduleSpecifier, `handle module specifier in ${decl.getText()}`);
+      this.todo(
+          decl.moduleSpecifier, `handle module specifier in ${decl.getText()}`);
     }
   }
 
@@ -568,7 +569,8 @@ class Vistor {
     if (decl.name.kind === ts.SyntaxKind.Identifier) {
       let sym = this.getSymbolAtLocation(decl.name);
       if (!sym) {
-        this.todo(decl.name, `declaration ${decl.name.getText()} has no symbol`);
+        this.todo(
+            decl.name, `declaration ${decl.name.getText()} has no symbol`);
         return;
       }
       let kVar = this.getSymbolName(sym, TSNamespace.VALUE);
@@ -576,7 +578,9 @@ class Vistor {
 
       this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kVar);
     } else {
-      this.todo(decl.name, `handle variable declaration: ${ts.SyntaxKind[decl.name.kind]}`);
+      this.todo(
+          decl.name,
+          `handle variable declaration: ${ts.SyntaxKind[decl.name.kind]}`);
     }
     if (decl.type) this.visitType(decl.type);
     if (decl.initializer) this.visit(decl.initializer);
@@ -587,7 +591,9 @@ class Vistor {
     if (decl.name) {
       let sym = this.getSymbolAtLocation(decl.name);
       if (!sym) {
-        this.todo(decl.name, `function declaration ${decl.name.getText()} has no symbol`);
+        this.todo(
+            decl.name,
+            `function declaration ${decl.name.getText()} has no symbol`);
         return;
       }
       kFunc = this.getSymbolName(sym, TSNamespace.VALUE);
