@@ -225,6 +225,7 @@ class Vistor {
         case ts.SyntaxKind.PropertyAssignment:
         case ts.SyntaxKind.PropertyDeclaration:
         case ts.SyntaxKind.PropertySignature:
+        case ts.SyntaxKind.TypeAliasDeclaration:
         case ts.SyntaxKind.TypeParameter:
         case ts.SyntaxKind.VariableDeclaration:
           let decl = node as ts.Declaration;
@@ -353,11 +354,16 @@ class Vistor {
       return;
     }
     let kType = this.getSymbolName(sym, TSNamespace.TYPE);
-    this.emitNode(kType, 'alias');
+    this.emitNode(kType, 'talias');
     this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kType);
 
     if (decl.typeParameters) this.visitTypeParameters(decl.typeParameters);
     this.visitType(decl.type);
+    // TODO: in principle right here we emit an "aliases" edge.
+    // However, it's complicated by the fact that some types don't have
+    // specific names to alias, e.g.
+    //   type foo = number|string;
+    // Just punt for now.
   }
 
   /**

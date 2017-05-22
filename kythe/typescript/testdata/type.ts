@@ -8,7 +8,7 @@ export {}
 let typeAndValue: number;
 
 //- @typeAndValue defines/binding Type
-//- Type.node/kind alias
+//- Type.node/kind talias
 type typeAndValue = string;
 // TODO: check that 'string' refers to the appropriate type as well.
 
