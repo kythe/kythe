@@ -12,12 +12,13 @@ interface Num {
 //- @a defines/binding ParamA
 //- ParamA.node/kind variable
 //- F param.0 ParamA
-//- @Num ref Num
-function test(a: number): Num {
+//- @#0Num ref Num
+//- @#1Num ref Num
+function test(a: number, num: Num): Num {
   // Check indexing function body and indexing through "return" statements.
   //- @a ref ParamA
   return {num: a};
 }
 
 //- @test ref F
-test(3);
+test(3, {num: 3});

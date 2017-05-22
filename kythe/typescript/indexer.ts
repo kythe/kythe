@@ -650,6 +650,7 @@ class Vistor {
       this.emitEdge(kFunc, `param.${index}`, kParam);
 
       this.emitEdge(this.newAnchor(param.name), 'defines/binding', kParam);
+      if (param.type) this.visitType(param.type);
     }
 
     if (decl.type) {
