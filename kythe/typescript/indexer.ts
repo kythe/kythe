@@ -847,9 +847,10 @@ export function index(
  * like "file not found" or parse errors.
  */
 export function loadTsConfig(
-    path: string, projectPath: string,
+    tsconfigPath: string, projectPath: string,
     host: ts.ParseConfigHost = ts.sys): ts.ParsedCommandLine {
-  let {config: json, error} = ts.readConfigFile(path, host.readFile);
+  projectPath = path.resolve(projectPath);
+  let {config: json, error} = ts.readConfigFile(tsconfigPath, host.readFile);
   if (error) {
     throw new Error(ts.formatDiagnostics([error], ts.createCompilerHost({})));
   }

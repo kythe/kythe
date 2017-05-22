@@ -25,6 +25,7 @@
 
 import * as assert from 'assert';
 import * as child_process from 'child_process';
+import * as path from 'path';
 import * as ts from 'typescript';
 
 import * as indexer from './indexer';
@@ -88,7 +89,8 @@ function verify(
 
 function testLoadTsConfig() {
   let config = indexer.loadTsConfig('testdata/tsconfig-files.json', 'testdata');
-  assert.deepEqual(config.fileNames, ['testdata/alt.ts']);
+  // We expect the paths that were loaded to be absolute.
+  assert.deepEqual(config.fileNames, [path.resolve('testdata/alt.ts')]);
 }
 
 async function testIndexer(args: string[]) {
@@ -97,7 +99,7 @@ async function testIndexer(args: string[]) {
   if (args.length === 0) {
     // If no tests were passed on the command line, run all the .ts files found
     // by the tsconfig.json, which covers all the tests in testdata/.
-    testPaths = config.fileNames;
+    testPaths = config.fileNames.map(p => path.relative(process.cwd(), p));
   }
 
   let host = createTestCompilerHost(config.options);
