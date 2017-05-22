@@ -410,10 +410,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
           // Use the owner's name (the class name) to find the definition anchor's
           // location because constructors are internally named "<init>".
           bindingAnchor =
-              emitAnchor(
+              emitDefinesBindingAnchorEdge(
                   methodDef.sym.owner.name,
                   methodDef.getPreferredPosition(),
-                  EdgeKind.DEFINES_BINDING,
                   methodNode,
                   ctx.getSnippet());
         }
@@ -423,10 +422,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         ret = getNode(methodDef.sym.owner);
       } else {
         bindingAnchor =
-            emitAnchor(
+            emitDefinesBindingAnchorEdge(
                 methodDef.name,
                 methodDef.getPreferredPosition(),
-                EdgeKind.DEFINES_BINDING,
                 methodNode,
                 ctx.getSnippet());
         ret = returnType.entries;
@@ -439,6 +437,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         }
         if (absNode != null) {
           emitAnchor(bindingAnchor, EdgeKind.DEFINES_BINDING, absNode);
+          Span span = filePositions.findIdentifier(methodDef.name, methodDef.getPreferredPosition());
+          if (span != null) {
+            emitMetadata(span, absNode);
+          }
           if (!documented) {
             emitComment(methodDef, absNode);
           }
@@ -488,10 +490,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     if (signature.isPresent()) {
       EntrySet varNode = entrySets.getNode(signatureGenerator, varDef.sym, signature.get(), null);
       boolean documented = visitDocComment(varNode, null);
-      emitAnchor(
+      emitDefinesBindingAnchorEdge(
           varDef.name,
           varDef.getStartPosition(),
-          EdgeKind.DEFINES_BINDING,
           varNode,
           ctx.getSnippet());
       emitAnchor(ctx, EdgeKind.DEFINES, varNode);
@@ -765,8 +766,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     for (JCTypeParameter tParam : params) {
       TreeContext ctx = ownerContext.down(tParam);
       EntrySet node = getNode(tParam.type.asElement());
-      emitAnchor(
-          tParam.name, tParam.getStartPosition(), EdgeKind.DEFINES_BINDING, node, ctx.getSnippet());
+      emitDefinesBindingAnchorEdge(
+          tParam.name, tParam.getStartPosition(), node, ctx.getSnippet());
       visitAnnotations(node, tParam.getAnnotations(), ctx);
       typeParams.add(node);
 
@@ -893,7 +894,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     return emitAnchor(anchor, kind, node);
   }
 
-  private void emitDefinesBindingEdge(Span span, EntrySet anchor, EntrySet node) {
+  private void emitMetadata(Span span, EntrySet node) {
     for (Metadata data : metadata) {
       for (Metadata.Rule rule : data.getRulesForLocation(span.getStart())) {
         if (rule.end == span.getEnd()) {
@@ -905,6 +906,20 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         }
       }
     }
+  }
+
+  private EntrySet emitDefinesBindingAnchorEdge(
+      Name name, int startOffset, EntrySet node, Span snippet) {
+    EntrySet anchor = emitAnchor(name, startOffset, EdgeKind.DEFINES_BINDING, node, snippet);
+    Span span = filePositions.findIdentifier(name, startOffset);
+    if (span != null) {
+      emitMetadata(span, node);
+    }
+    return anchor;
+  }
+
+  private void emitDefinesBindingEdge(Span span, EntrySet anchor, EntrySet node) {
+    emitMetadata(span, node);
     emitAnchor(anchor, EdgeKind.DEFINES_BINDING, node);
   }
 
