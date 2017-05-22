@@ -225,6 +225,7 @@ class Vistor {
         case ts.SyntaxKind.PropertyAssignment:
         case ts.SyntaxKind.PropertyDeclaration:
         case ts.SyntaxKind.PropertySignature:
+        case ts.SyntaxKind.TypeParameter:
         case ts.SyntaxKind.VariableDeclaration:
           let decl = node as ts.Declaration;
           if (decl.name && decl.name.kind === ts.SyntaxKind.Identifier) {
@@ -316,6 +317,19 @@ class Vistor {
     return vname;
   }
 
+  visitTypeParameters(params: ts.TypeParameterDeclaration[]) {
+    for (const param of params) {
+      const sym = this.getSymbolAtLocation(param.name);
+      if (!sym) {
+        this.todo(param, `type param ${param.getText()} has no symbol`);
+        return;
+      }
+      const kType = this.getSymbolName(sym, TSNamespace.TYPE);
+      this.emitNode(kType, 'absvar');
+      this.emitEdge(this.newAnchor(param.name), 'defines/binding', kType);
+    }
+  }
+
   visitInterfaceDeclaration(decl: ts.InterfaceDeclaration) {
     let sym = this.getSymbolAtLocation(decl.name);
     if (!sym) {
@@ -326,6 +340,7 @@ class Vistor {
     this.emitNode(kType, 'interface');
     this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kType);
 
+    if (decl.typeParameters) this.visitTypeParameters(decl.typeParameters);
     for (const member of decl.members) {
       this.visit(member);
     }
@@ -341,6 +356,7 @@ class Vistor {
     this.emitNode(kType, 'alias');
     this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kType);
 
+    if (decl.typeParameters) this.visitTypeParameters(decl.typeParameters);
     this.visitType(decl.type);
   }
 
@@ -658,6 +674,7 @@ class Vistor {
       this.visitType(decl.type);
     }
 
+    if (decl.typeParameters) this.visitTypeParameters(decl.typeParameters);
     if (decl.body) {
       this.visit(decl.body);
     } else {
@@ -677,6 +694,7 @@ class Vistor {
 
       this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kClass);
     }
+    if (decl.typeParameters) this.visitTypeParameters(decl.typeParameters);
     for (const member of decl.members) {
       this.visit(member);
     }
