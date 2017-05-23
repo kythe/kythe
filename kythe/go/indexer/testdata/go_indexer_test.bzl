@@ -25,6 +25,11 @@ load(
     "go_library",
     "go_library_attrs",
 )
+load(
+    "//tools:build_rules/kythe.bzl",
+    "kythe_integration_test",
+    "verifier_test",
+)
 
 # Emit a shell script that sets up the environment needed by the extractor to
 # capture dependencies and runs the extractor.
@@ -173,7 +178,7 @@ def _go_entries(ctx):
       outputs  = [output],
       inputs   = [pack] + ctx.files._indexer,
   )
-  return struct(entries = output)
+  return struct(kythe_entries = [output])
 
 # Run the Kythe indexer on the output that results from a go_indexpack rule.
 go_entries = rule(
@@ -202,7 +207,7 @@ go_entries = rule(
 )
 
 def _go_verifier_test(ctx):
-  entries  = ctx.attr.entries.entries
+  entries  = ctx.attr.entries.kythe_entries
   verifier = ctx.file._verifier
   vargs    = [verifier.short_path,
               '--use_file_nodes', '--show_goals', '--check_for_singletons']
@@ -225,36 +230,25 @@ def _go_verifier_test(ctx):
       runfiles = ctx.runfiles([verifier, entries]),
   )
 
-# Run the Kythe verifier on the output that results from invoking the Go
-# indexer on the output of a go_indexpack rule.
-go_verifier_test = rule(
-    _go_verifier_test,
-    attrs = {
-        # The entries output to pass to the verifier.
-        "entries": attr.label(
-            providers = ["entries"],
-            mandatory = True,
-        ),
+def go_verifier_test(name, entries, size="small", tags=[],
+                     log_entries=False, has_marked_source=False,
+                     allow_duplicates=False):
+  opts = ['--use_file_nodes', '--show_goals', '--check_for_singletons']
+  if log_entries:
+    opts.append('--show_protos')
+  if allow_duplicates:
+    opts.append('--ignore_dups')
 
-        # Whether to log the input entries to the verifier.
-        "log_entries": attr.bool(default = False),
-
-        # Whether to enable explosion of MarkedSource facts.
-        "has_marked_source": attr.bool(default = False),
-
-        # Whether to allow duplicate facts.
-        "allow_duplicates": attr.bool(default = False),
-
-        # The location of the Kythe verifier binary.
-        "_verifier": attr.label(
-            default = Label("//kythe/cxx/verifier"),
-            executable = True,
-            single_file = True,
-            cfg = "data",
-        ),
-    },
-    test = True,
-)
+  # If the test wants marked source, enable support for it in the verifier.
+  if has_marked_source:
+    opts.append('--convert_marked_source')
+  return verifier_test(
+      name = name,
+      size = size,
+      tags = tags,
+      deps = [entries],
+      opts=opts
+  )
 
 # Shared extract/index logic for the go_indexer_test/go_integration_test rules.
 def _go_indexer(name, srcs, deps=[], import_path='',
@@ -308,8 +302,6 @@ def go_indexer_test(name, srcs, deps=[], import_path='', size = 'small',
       has_marked_source = has_marked_source,
       allow_duplicates = allow_duplicates,
   )
-
-load("//tools:build_rules/kythe.bzl", "kythe_integration_test")
 
 # A convenience macro to generate a test library, pass it to the Go indexer,
 # and feed the output of indexing to the Kythe integration test pipeline.

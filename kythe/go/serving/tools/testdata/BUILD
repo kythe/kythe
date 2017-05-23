@@ -44,7 +44,7 @@ sh_test(
         "//kythe/go/serving/tools:write_tables",
         "//kythe/go/storage/tools:write_entries",
         "//kythe/go/test/tools:http_server",
-        "//kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg:generics_tests",
+        "//kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg:generics_tests_entries.entries.gz",
         "//third_party/jq",
     ],
 )

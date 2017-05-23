@@ -63,6 +63,20 @@ java_binary(
     ],
 )
 
+# When run from within Bazel, we need to execute the Java indexer
+# from a different directory and remap the provided paths as it refuses
+# to run from the source directory and believes the execroot is one.
+# See https://kythe.io/phabricator/T70
+sh_binary(
+    name = "wrapped_indexer",
+    srcs = ["wrapped_indexer.sh"],
+    data = [
+        ":indexer",
+        "//tools/cdexec",
+        "//tools/modules:abspath",
+    ],
+)
+
 java_binary(
     name = "indexer_server",
     srcs = ["JavaIndexerServer.java"],

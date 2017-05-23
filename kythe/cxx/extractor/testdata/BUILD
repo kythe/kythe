@@ -1,6 +1,9 @@
-load("//tools:build_rules/kythe.bzl", "cc_verifier_test")
-load("//tools:build_rules/kythe.bzl", "objc_bazel_verifier_test")
-load("//tools:build_rules/kythe.bzl", "cc_bazel_verifier_test")
+load(
+    "//tools:build_rules/kythe.bzl",
+    "cc_verifier_test",
+    "objc_bazel_verifier_test",
+    "cc_bazel_verifier_test",
+)
 
 package(default_visibility = ["//kythe:default_visibility"])
 
@@ -250,7 +253,7 @@ objc_library(
 objc_bazel_verifier_test(
     name = "objc_lib_test",
     size = "small",
-    srcs = "objc_lib.m",
+    src = "objc_lib.m",
     data = "objc_lib.xa",
     # This test can only pass on darwin, so do not include it in our presubmit.
     tags = [
@@ -274,6 +277,6 @@ cc_library(
 cc_bazel_verifier_test(
     name = "cc_lib_test",
     size = "small",
-    srcs = "cc_lib.cc",
+    src = "cc_lib.cc",
     data = "cc_lib.xa",
 )

@@ -1,6 +1,7 @@
 sh_binary(
     name = "abspath",
     srcs = ["abspath.sh"],
+    visibility = ["//visibility:public"],
 )
 
 genrule(

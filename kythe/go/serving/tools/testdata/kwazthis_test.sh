@@ -18,7 +18,7 @@ set -x
 BASE_DIR="$PWD/kythe/go/serving/tools/testdata"
 OUT_DIR="$TEST_TMPDIR"
 
-TEST_ENTRIES="$PWD/kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/generics_tests.entries.gz"
+TEST_ENTRIES="$PWD/kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg/generics_tests_entries.entries.gz"
 source "kythe/cxx/common/testdata/start_http_service.sh"
 
 jq () { "third_party/jq/jq" -e "$@" <<<"$JSON"; }
