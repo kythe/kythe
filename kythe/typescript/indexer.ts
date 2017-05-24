@@ -610,25 +610,31 @@ class Vistor {
   }
 
   visitFunctionLikeDeclaration(decl: ts.FunctionLikeDeclaration) {
-    let kFunc: VName;
+    let kFunc: VName|undefined = undefined;
     if (decl.name) {
       let sym = this.getSymbolAtLocation(decl.name);
-      if (!sym) {
-        this.todo(
-            decl.name,
-            `function declaration ${decl.name.getText()} has no symbol`);
-        return;
-      }
-      kFunc = this.getSymbolName(sym, TSNamespace.VALUE);
-      this.emitNode(kFunc, 'function');
+      if (decl.name.kind === ts.SyntaxKind.ComputedPropertyName) {
+        // TODO: it's not clear what to do with computed property named
+        // functions.  They don't have a symbol.
+        this.visit((decl.name as ts.ComputedPropertyName).expression);
+      } else {
+        if (!sym) {
+          this.todo(
+              decl.name,
+              `function declaration ${decl.name.getText()} has no symbol`);
+          return;
+        }
+        kFunc = this.getSymbolName(sym, TSNamespace.VALUE);
+        this.emitNode(kFunc, 'function');
 
-      this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kFunc);
+        this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kFunc);
+      }
     } else {
       // TODO: choose VName for anonymous functions.
       kFunc = this.newVName('TODO', 'TODOPath');
     }
 
-    if (decl.parent) {
+    if (kFunc && decl.parent) {
       // Emit a "childof" edge on class/interface members.
       let parentName: ts.Identifier|undefined;
       let namespace: TSNamespace|undefined;
@@ -670,7 +676,7 @@ class Vistor {
       }
       let kParam = this.getSymbolName(sym, TSNamespace.VALUE);
       this.emitNode(kParam, 'variable');
-      this.emitEdge(kFunc, `param.${index}`, kParam);
+      if (kFunc) this.emitEdge(kFunc, `param.${index}`, kParam);
 
       this.emitEdge(this.newAnchor(param.name), 'defines/binding', kParam);
       if (param.type) this.visitType(param.type);
@@ -685,7 +691,7 @@ class Vistor {
     if (decl.body) {
       this.visit(decl.body);
     } else {
-      this.emitFact(kFunc, 'complete', 'incomplete');
+      if (kFunc) this.emitFact(kFunc, 'complete', 'incomplete');
     }
   }
 
