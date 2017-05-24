@@ -142,6 +142,31 @@ func TestInteropt(t *testing.T) {
 			Kind:    cpb.MarkedSource_IDENTIFIER,
 			PreText: "CONSTANT",
 		}},
+	}, {
+		Kind: cpb.MarkedSource_PARAMETER,
+		Child: []*cpb.MarkedSource{{
+			Kind:    cpb.MarkedSource_TYPE,
+			PreText: "*pkg.receiver",
+		}, {
+			Kind:          cpb.MarkedSource_BOX,
+			PostChildText: ".",
+			Child: []*cpb.MarkedSource{{
+				Kind: cpb.MarkedSource_BOX,
+				Child: []*cpb.MarkedSource{{
+					Kind:    cpb.MarkedSource_CONTEXT,
+					PreText: "pkg",
+				}, {
+					Kind:    cpb.MarkedSource_IDENTIFIER,
+					PreText: "param",
+				}},
+			}, {
+				Kind:    cpb.MarkedSource_BOX,
+				PreText: " ",
+			}, {
+				Kind:    cpb.MarkedSource_TYPE,
+				PreText: "string",
+			}},
+		}},
 	}}
 
 	for _, test := range tests {
