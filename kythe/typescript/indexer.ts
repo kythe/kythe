@@ -584,12 +584,8 @@ class Vistor {
    * and that case is handled as part of the ordinary declaration handling.
    */
   visitExportDeclaration(decl: ts.ExportDeclaration) {
-    // TODO: this code doesn't do much yet, but it's enough to silence a TODO
-    // that is printed in unrelated tests.
     if (decl.exportClause) {
-      for (const element of decl.exportClause.elements) {
-        this.todo(element, `handle export element in ${decl.getText()}`);
-      }
+      ts.forEachChild(decl.exportClause, (n) => this.visit(n));
     }
     if (decl.moduleSpecifier) {
       this.todo(

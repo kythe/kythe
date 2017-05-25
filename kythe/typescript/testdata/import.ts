@@ -28,3 +28,5 @@ mod_imp.value;
 renamedValue;
 
 import {value as exportedValue} from './export';
+import {local} from './export';
+import {aliasedLocal} from './export';
