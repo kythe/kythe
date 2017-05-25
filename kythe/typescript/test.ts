@@ -95,17 +95,18 @@ function testLoadTsConfig() {
 
 async function testIndexer(args: string[]) {
   let config = indexer.loadTsConfig('testdata/tsconfig.json', 'testdata');
-  let testPaths = args;
+  let testPaths = args.map(path.resolve);
   if (args.length === 0) {
     // If no tests were passed on the command line, run all the .ts files found
     // by the tsconfig.json, which covers all the tests in testdata/.
-    testPaths = config.fileNames.map(p => path.relative(process.cwd(), p));
+    testPaths = config.fileNames;
   }
 
   let host = createTestCompilerHost(config.options);
   for (const test of testPaths) {
+    const testName = path.relative(config.options.rootDir!, test);
     let start = new Date().valueOf();
-    process.stdout.write(`${test}: `);
+    process.stdout.write(`${testName}: `);
     try {
       await verify(host, config.options, test);
     } catch (e) {

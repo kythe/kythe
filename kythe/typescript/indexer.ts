@@ -86,16 +86,27 @@ class Vistor {
    */
   anonId = 0;
 
+  typeChecker: ts.TypeChecker;
+
+  /** A shorter name for the rootDir in the CompilerOptions. */
+  sourceRoot: string;
+
+  /**
+   * rootDirs is the list of rootDirs in the compiler options, sorted
+   * longest first.  See this.moduleName().
+   */
+  rootDirs: string[];
+
   constructor(
-      /**  Corpus name for produced VNames. */
-      private corpus: string, private typeChecker: ts.TypeChecker,
-      /**
-       * Absolute path to the corpus root.  Note that sourceFile.sourcePath is
-       * the absolute path to the source file, but for output purposes we want a
-       * repository-relative path.
-       */
-      private sourceRoot: string,
-      private getOffsetTable: (path: string) => utf8.OffsetTable) {}
+      /** Corpus name for produced VNames. */
+      private corpus: string, program: ts.Program,
+      private getOffsetTable: (path: string) => utf8.OffsetTable) {
+    this.typeChecker = program.getTypeChecker();
+
+    this.sourceRoot = program.getCompilerOptions().rootDir!;
+    this.rootDirs = program.getCompilerOptions().rootDirs!.map(d => d + '/');
+    this.rootDirs.sort((a, b) => b.length - a.length);
+  }
 
   /**
    * emit emits a Kythe entry, structured as a JSON object.  Defaults to
@@ -114,15 +125,23 @@ class Vistor {
   }
 
   /**
-   * moduleName returns the ES6 module name of a SourceFile.
+   * moduleName returns the ES6 module name of a path to a source file.
    * E.g. foo/bar.ts and foo/bar.d.ts both have the same module name,
-   * 'foo/bar'.
+   * 'foo/bar', and rootDirs (like bazel-bin/) are eliminated.
+   * See README.md for a discussion of this.
    */
-  moduleName(sourceFile: ts.SourceFile): string {
-    // sourceFile.fileName is the path after resolution, so it is an
-    // absolute path even if in the source text imported it relatively.
-    // Use path.relative to make it relative to the source root.
-    return stripExtension(path.relative(this.sourceRoot, sourceFile.fileName));
+  moduleName(sourcePath: string): string {
+    // Compute sourcePath as relative to one of the rootDirs.
+    // This canonicalizes e.g. bazel-bin/foo to just foo.
+    // Note that this.rootDirs is sorted longest first, so we'll use the
+    // longest match.
+    for (const rootDir of this.rootDirs) {
+      if (sourcePath.startsWith(rootDir)) {
+        sourcePath = path.relative(rootDir, sourcePath);
+        break;
+      }
+    }
+    return stripExtension(sourcePath);
   }
 
   /**
@@ -258,7 +277,7 @@ class Vistor {
           // ModuleDeclaration).  Otherwise, the module name is derived from the
           // name of the current file.
           if (!moduleName) {
-            moduleName = this.moduleName(node as ts.SourceFile);
+            moduleName = this.moduleName((node as ts.SourceFile).fileName);
           }
           break;
         default:
@@ -397,8 +416,7 @@ class Vistor {
    * E.g. from
    *   import ... from './foo';
    * getPathFromModule(the './foo' node) might return a string like
-   * 'path/to/project/foo'.  Note also that it has no extension -- the module
-   * name is independent of the file extension.
+   * 'path/to/project/foo'.  See this.moduleName().
    */
   getModulePathFromModuleReference(sym: ts.Symbol): string {
     let name = sym.name;
@@ -408,9 +426,8 @@ class Vistor {
     if (!(name.startsWith('"') && name.endsWith('"'))) {
       throw new Error(`TODO: handle module symbol ${name}`);
     }
-    name = name.substr(1, name.length - 2);
-    name = path.relative(this.sourceRoot, name);
-    return name;
+    const sourcePath = name.substr(1, name.length - 2);
+    return this.moduleName(sourcePath);
   }
 
   /**
@@ -772,7 +789,7 @@ class Vistor {
     this.emitFact(this.kFile, 'text', file.text);
 
     // Emit a "record" node, representing the module object.
-    let kMod = this.newVName('module', this.moduleName(file));
+    let kMod = this.newVName('module', this.moduleName(file.fileName));
     this.emitFact(kMod, 'node/kind', 'record');
     this.emitEdge(this.kFile, 'childof', kMod);
 
@@ -810,11 +827,10 @@ export function index(
       diags.add(diag);
     }
   }
-  const rootDir = program.getCompilerOptions().rootDir || process.cwd();
   if (diags.size > 0) {
     let message = ts.formatDiagnostics(Array.from(diags), {
       getCurrentDirectory() {
-        return rootDir;
+        return program.getCompilerOptions().rootDir!;
       },
       getCanonicalFileName(fileName: string) {
         return fileName;
@@ -840,8 +856,7 @@ export function index(
 
   for (const path of paths) {
     let sourceFile = program.getSourceFile(path);
-    let visitor =
-        new Vistor(corpus, program.getTypeChecker(), rootDir, getOffsetTable);
+    let visitor = new Vistor(corpus, program, getOffsetTable);
     if (emit != null) {
       visitor.emit = emit;
     }

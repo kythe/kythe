@@ -69,6 +69,11 @@ distinct (without the extension) because it's also possible to define that
 module via other file names, such as `foo/bar.d.ts`, and all such files all
 define into the single extension-less namespace.
 
+TypeScript's `rootDirs`, which merge directories into a single shared
+namespace (e.g. like the way `.` and `bazel-bin` are merged in bazel),
+also are collapsed when computing a module name. In the test suite we use a
+`fake-genfiles` directory to recreate a `rootDirs` environment.
+
 Semantic VNames (like an exported value) use the module name as the 'path'
 field of the VName.  VNames that refer specifically to the file, such as
 the file text, use the real path of the file (including the extension).
