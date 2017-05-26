@@ -338,7 +338,14 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         case ENUM:
           superClassNode = getJavaLangEnumNode(classNode, signature.get());
           break;
-          // Interfaces have no implicit superclass.
+        case ANNOTATION_TYPE:
+          // TODO(schroederc): handle annotation superclass
+          break;
+        case INTERFACE:
+          break; // Interfaces have no implicit superclass.
+        default:
+          logger.warningfmt("Unexpected JCClassDecl kind: %s", classDef.getKind());
+          break;
       }
     }
 
@@ -1059,164 +1066,5 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         }
       }
     }
-  }
-}
-
-class TreeContext {
-  private final Positions filePositions;
-  private final TreeContext up;
-  private final JCTree tree;
-  private final Span snippet;
-  private JavaNode node;
-
-  public TreeContext(Positions filePositions, JCCompilationUnit topLevel) {
-    this(filePositions, null, topLevel, null);
-  }
-
-  private TreeContext(Positions filePositions, TreeContext up, JCTree tree, Span snippet) {
-    this.filePositions = filePositions;
-    this.up = up;
-    this.tree = tree;
-    this.snippet = snippet;
-  }
-
-  public String getSourceName() {
-    return filePositions.getFilename();
-  }
-
-  /** Path relative to source root. */
-  public String getSourcePath() {
-    // The URI is absolute and hierarchical, so the path will always begin with a slash (see {@link
-    // java.net.URI} for details).  We strip that leading slash to return a relative path.
-    return filePositions.getSourceFile().toUri().getPath().substring(1);
-  }
-
-  public TreeContext down(JCTree tree) {
-    return new TreeContext(filePositions, this, tree, snippet);
-  }
-
-  public TreeContext downAsSnippet(JCTree tree) {
-    return new TreeContext(filePositions, this, tree, filePositions.getSpan(tree));
-  }
-
-  public TreeContext up() {
-    return up;
-  }
-
-  public JCTree getTree() {
-    return tree;
-  }
-
-  public JavaNode setNode(JavaNode node) {
-    if (this.node != null) {
-      throw new IllegalStateException("cannot call setNode() twice on same TreeContext");
-    }
-    this.node = node;
-    return node;
-  }
-
-  public JavaNode getNode() {
-    return node;
-  }
-
-  public TreeContext getMethodParent() {
-    TreeContext parent = up();
-    while (parent != null && !(parent.getTree() instanceof JCMethodDecl)) {
-      parent = parent.up();
-    }
-    return parent;
-  }
-
-  public TreeContext getClassOrMethodParent() {
-    TreeContext parent = up();
-    while (parent != null
-        && !(parent.getTree() instanceof JCMethodDecl || parent.getTree() instanceof JCClassDecl)) {
-      parent = parent.up();
-    }
-    return parent;
-  }
-
-  public Span getTreeSpan() {
-    return filePositions.getSpan(tree);
-  }
-
-  public Span getSnippet() {
-    return snippet;
-  }
-
-  @Override
-  public String toString() {
-    List<String> parts = new LinkedList<>();
-    parts.add("JCTree = " + tree);
-    if (node != null) {
-      parts.add("JavaNode = " + node);
-    }
-    parts.add("TreeSpan = " + getTreeSpan());
-    if (snippet != null) {
-      parts.add("Snippet span = " + snippet);
-    }
-    List<String> parents = new LinkedList<>();
-    TreeContext cur = up;
-    while (cur != null) {
-      String parent = "" + cur.getTree().getTag();
-      String name = NameVisitor.getName(cur.getTree());
-      if (name != null) {
-        parent += "[" + name + "]";
-      }
-      parents.add(parent);
-      cur = cur.up();
-    }
-    if (!parents.isEmpty()) {
-      parts.add("JCTree parents = " + parents);
-    }
-    return String.format("TreeContext{\n  %s,\n}", Joiner.on(",\n  ").join(parts));
-  }
-}
-
-class JavaNode {
-  // TODO(schroederc): clearly separate semantic/type nodes
-  final EntrySet entries;
-  final JavaNode typeNode;
-  final String qualifiedName;
-
-  // I think order matters for the wildcards because the abs node will be connected to them with
-  // param edges, which are numbered. If order doesn't matter, we should change this to something
-  // like bazel's NestedSet.
-  /**
-   * The full list of wildcards that are parented by this node. This includes all wildcards that
-   * directly belong to this node, and all wildcards that belong to children of this node.
-   */
-  final ImmutableList<EntrySet> childWildcards;
-
-  JavaNode(EntrySet entries, String qualifiedName) {
-    this(entries, qualifiedName, null, ImmutableList.<EntrySet>of());
-  }
-
-  JavaNode(EntrySet entries, String qualifiedName, ImmutableList<EntrySet> childWildcards) {
-    this(entries, qualifiedName, null, childWildcards);
-  }
-
-  JavaNode(EntrySet entries, String qualifiedName, JavaNode typeNode) {
-    this(
-        entries,
-        qualifiedName,
-        typeNode,
-        typeNode != null ? typeNode.childWildcards : ImmutableList.<EntrySet>of());
-  }
-
-  JavaNode(
-      EntrySet entries,
-      String qualifiedName,
-      JavaNode typeNode,
-      ImmutableList<EntrySet> childWildcards) {
-    this.entries = entries;
-    this.qualifiedName = qualifiedName;
-    this.typeNode = typeNode;
-    this.childWildcards = childWildcards;
-  }
-
-  @Override
-  public String toString() {
-    return "JavaNode{" + qualifiedName + "}";
   }
 }
