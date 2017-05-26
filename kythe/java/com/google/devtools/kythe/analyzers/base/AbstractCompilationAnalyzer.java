@@ -31,6 +31,7 @@ import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Storage.Entry;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.TextFormat;
 import java.util.Optional;
 
 /** Abstract CompilationAnalyzer that handles common boilerplate code. */
@@ -61,6 +62,9 @@ public abstract class AbstractCompilationAnalyzer {
       if (revision.isEmpty()) {
         revision = null;
       }
+      logger.infofmt(
+          "Analyzing compilation: {%s}",
+          TextFormat.shortDebugString(req.getCompilation().getVName()));
       analyzeCompilation(req.getCompilation(), Optional.ofNullable(revision), fileData, emitter);
     } catch (Throwable t) {
       logger.warningfmt("Uncaught exception: %s", t);
@@ -91,7 +95,8 @@ public abstract class AbstractCompilationAnalyzer {
       CompilationUnit compilationUnit,
       Optional<String> revision,
       FileDataProvider fileDataProvider,
-      FactEmitter emitter) throws AnalysisException;
+      FactEmitter emitter)
+      throws AnalysisException;
 
   /**
    * {@link FactEmitter} that emits an {@link AnalysisOutput} with an embedded {@link Entry} for
