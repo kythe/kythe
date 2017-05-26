@@ -14,6 +14,7 @@ go_package_library(
 
 go_test(
     name = "rewrite_test",
+    size = "small",
     srcs = ["rewrite_test.go"],
     library = "vnameutil",
     deps = [
@@ -24,6 +25,7 @@ go_test(
 
 go_test(
     name = "order_test",
+    size = "small",
     srcs = ["order_test.go"],
     library = "vnameutil",
     deps = ["//kythe/proto:storage_proto_go"],

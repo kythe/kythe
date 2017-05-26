@@ -9,6 +9,7 @@ go_package_library(
 
 go_test(
     name = "process_test",
+    size = "small",
     srcs = ["process_test.go"],
     library = "process",
     visibility = ["//visibility:private"],

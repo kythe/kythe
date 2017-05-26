@@ -9,6 +9,7 @@ go_package_library(
 
 go_test(
     name = "rdf_test",
+    size = "small",
     srcs = ["rdf_test.go"],
     library = "rdf",
     visibility = ["//visibility:private"],

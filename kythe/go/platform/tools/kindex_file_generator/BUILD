@@ -15,6 +15,7 @@ go_binary(
 
 sh_test(
     name = "kindex_file_generator_test",
+    size = "small",
     srcs = [
         "kindex_file_generator_test.sh",
     ],

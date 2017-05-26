@@ -14,6 +14,7 @@ go_package_library(
 
 go_test(
     name = "disksort_test",
+    size = "small",
     srcs = ["disksort_test.go"],
     library = "disksort",
     visibility = ["//visibility:private"],

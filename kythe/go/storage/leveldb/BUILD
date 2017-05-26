@@ -15,6 +15,7 @@ go_package_library(
 
 go_test(
     name = "leveldb_test",
+    size = "small",
     srcs = ["leveldb_test.go"],
     library = "leveldb",
     visibility = ["//visibility:private"],

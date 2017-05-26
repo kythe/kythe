@@ -10,6 +10,7 @@ go_package_library(
 
 go_test(
     name = "markedsource_test",
+    size = "small",
     srcs = ["markedsource_test.go"],
     data = ["//kythe/cxx/doc"],
     library = "markedsource",

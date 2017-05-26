@@ -17,6 +17,7 @@ go_package_library(
 
 go_test(
     name = "kythe_test",
+    size = "small",
     srcs = ["units_test.go"],
     library = "kythe",
     visibility = ["//visibility:private"],

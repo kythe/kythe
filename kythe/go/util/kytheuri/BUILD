@@ -13,6 +13,7 @@ go_package_library(
 
 go_test(
     name = "kytheuri_test",
+    size = "small",
     srcs = [
         "bench_test.go",
         "uri_test.go",

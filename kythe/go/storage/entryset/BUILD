@@ -14,6 +14,7 @@ go_package_library(
 
 go_test(
     name = "entryset_test",
+    size = "small",
     srcs = ["entryset_test.go"],
     library = "entryset",
     deps = ["//kythe/go/util/kytheuri"],

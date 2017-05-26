@@ -27,6 +27,7 @@ go_package_library(
 
 go_test(
     name = "assemble_test",
+    size = "small",
     srcs = ["assemble_test.go"],
     library = "assemble",
     visibility = ["//visibility:private"],

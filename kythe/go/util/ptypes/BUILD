@@ -15,6 +15,7 @@ go_package_library(
 
 go_test(
     name = "ptypes_test",
+    size = "small",
     srcs = ["ptypes_test.go"],
     library = "ptypes",
     visibility = ["//visibility:private"],

@@ -10,6 +10,7 @@ go_package_library(
 
 go_test(
     name = "cache_test",
+    size = "small",
     srcs = ["cache_test.go"],
     library = "cache",
     visibility = ["//visibility:private"],

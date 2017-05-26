@@ -10,6 +10,7 @@ go_package_library(
 
 go_test(
     name = "html_test",
+    size = "small",
     srcs = ["html_test.go"],
     library = "html",
     visibility = ["//visibility:private"],

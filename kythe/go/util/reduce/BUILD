@@ -17,6 +17,7 @@ go_package_library(
 
 go_test(
     name = "reduce_test",
+    size = "small",
     srcs = ["reduce_test.go"],
     library = "reduce",
     visibility = ["//visibility:private"],

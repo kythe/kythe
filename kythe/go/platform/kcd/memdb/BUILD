@@ -13,6 +13,7 @@ go_package_library(
 
 go_test(
     name = "memdb_test",
+    size = "small",
     srcs = ["memdb_test.go"],
     library = "memdb",
     visibility = ["//visibility:private"],

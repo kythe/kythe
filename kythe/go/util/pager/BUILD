@@ -12,6 +12,7 @@ go_package_library(
 
 go_test(
     name = "pager_test",
+    size = "small",
     srcs = ["pager_test.go"],
     library = "pager",
     visibility = ["//visibility:private"],

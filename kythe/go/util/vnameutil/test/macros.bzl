@@ -1,5 +1,5 @@
 # Test a JSON file of rewrite rules against a JSON file of tests.
-def test_vname_rules(name, rules, tests):
+def test_vname_rules(name, rules, tests, size="small"):
   tool = "//kythe/go/util/vnameutil:test_vname_rules"
   script = name+"_script"
   native.genrule(
@@ -13,6 +13,7 @@ def test_vname_rules(name, rules, tests):
   )
   native.sh_test(
       name = name,
+      size = size,
       srcs = [script],
       data = [":"+rules, ":"+tests, tool],
       args = ["$(location :%s)" % rules, "$(location :%s)" % tests],

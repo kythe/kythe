@@ -15,6 +15,7 @@ go_package_library(
 
 go_test(
     name = "indexpack_test",
+    size = "small",
     srcs = ["indexpack_test.go"],
     library = "indexpack",
     visibility = ["//visibility:private"],

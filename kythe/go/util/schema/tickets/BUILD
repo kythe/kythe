@@ -10,6 +10,7 @@ go_package_library(
 
 go_test(
     name = "tickets_test",
+    size = "small",
     srcs = ["tickets_test.go"],
     library = "tickets",
 )

@@ -10,6 +10,7 @@ go_package_library(
 
 go_test(
     name = "edges_test",
+    size = "small",
     srcs = ["edges_test.go"],
     library = "edges",
     visibility = ["//visibility:private"],

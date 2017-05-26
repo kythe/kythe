@@ -23,6 +23,7 @@ go_package_library(
 
 go_test(
     name = "xrefs_test",
+    size = "small",
     srcs = ["xrefs_test.go"],
     library = "xrefs",
     visibility = ["//visibility:private"],

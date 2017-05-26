@@ -21,6 +21,7 @@ go_package_library(
 
 go_test(
     name = "paths_test",
+    size = "small",
     srcs = ["paths_test.go"],
     library = "paths",
     visibility = ["//visibility:private"],

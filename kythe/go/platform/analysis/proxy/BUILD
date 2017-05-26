@@ -13,6 +13,7 @@ go_package_library(
 
 go_test(
     name = "proxy_test",
+    size = "small",
     srcs = ["proxy_test.go"],
     library = "proxy",
 )

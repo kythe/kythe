@@ -18,6 +18,7 @@ go_package_library(
 
 go_test(
     name = "kindex_test",
+    size = "small",
     srcs = ["kindex_test.go"],
     library = "kindex",
     visibility = ["//visibility:private"],

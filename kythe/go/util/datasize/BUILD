@@ -9,6 +9,7 @@ go_package_library(
 
 go_test(
     name = "datasize_test",
+    size = "small",
     srcs = ["datasize_test.go"],
     library = "datasize",
     visibility = ["//visibility:private"],

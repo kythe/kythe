@@ -10,6 +10,7 @@ go_package_library(
 
 go_test(
     name = "compare_test",
+    size = "small",
     srcs = ["compare_test.go"],
     library = "compare",
     visibility = ["//visibility:private"],

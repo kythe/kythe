@@ -9,6 +9,7 @@ go_package_library(
 
 go_test(
     name = "dedup_test",
+    size = "small",
     srcs = ["dedup_test.go"],
     library = "dedup",
     visibility = ["//visibility:private"],

@@ -14,6 +14,7 @@ go_package_library(
 
 go_test(
     name = "metadata_test",
+    size = "small",
     srcs = ["metadata_test.go"],
     library = ":metadata",
     deps = [

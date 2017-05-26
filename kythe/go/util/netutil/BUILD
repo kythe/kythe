@@ -9,6 +9,7 @@ go_package_library(
 
 go_test(
     name = "netutil_test",
+    size = "small",
     srcs = ["netutil_test.go"],
     library = "netutil",
     visibility = ["//visibility:private"],

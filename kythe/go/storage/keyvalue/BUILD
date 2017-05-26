@@ -14,6 +14,7 @@ go_package_library(
 
 go_test(
     name = "keyvalue_test",
+    size = "small",
     srcs = ["keyvalue_test.go"],
     library = "keyvalue",
     visibility = ["//visibility:private"],

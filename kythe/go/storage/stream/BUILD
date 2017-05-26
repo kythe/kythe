@@ -13,6 +13,7 @@ go_package_library(
 
 go_test(
     name = "stream_test",
+    size = "small",
     srcs = ["stream_test.go"],
     library = "stream",
     visibility = ["//visibility:private"],

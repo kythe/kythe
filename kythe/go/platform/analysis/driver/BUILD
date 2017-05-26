@@ -13,6 +13,7 @@ go_package_library(
 
 go_test(
     name = "driver_test",
+    size = "small",
     srcs = ["driver_test.go"],
     library = "driver",
     visibility = ["//visibility:private"],

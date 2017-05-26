@@ -16,6 +16,7 @@ go_package_library(
 
 go_test(
     name = "delimited_test",
+    size = "small",
     srcs = ["delimited_test.go"],
     library = "delimited",
     visibility = ["//visibility:private"],

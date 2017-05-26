@@ -25,6 +25,7 @@ go_package_library(
 
 go_test(
     name = "bazel_test",
+    size = "small",
     srcs = ["extractor_test.go"],
     library = ":bazel",
 )

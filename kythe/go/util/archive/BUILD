@@ -9,6 +9,7 @@ go_package_library(
 
 go_test(
     name = "archive_test",
+    size = "small",
     srcs = ["reader_test.go"],
     library = "archive",
     visibility = ["//visibility:private"],
