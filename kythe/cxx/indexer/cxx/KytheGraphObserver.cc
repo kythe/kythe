@@ -922,12 +922,8 @@ void KytheGraphObserver::applyMetadataFile(clang::FileID id,
     fprintf(stderr, "Couldn't get content for %s\n", file->getName());
     return;
   }
-  for (auto &support : *meta_supports_) {
-    auto metadata = support->ParseFile(file->getName(), buffer);
-    if (metadata) {
-      meta_.emplace(id, std::move(metadata));
-      break;
-    }
+  if (auto metadata = meta_supports_->ParseFile(file->getName(), buffer)) {
+    meta_.emplace(id, std::move(metadata));
   }
 }
 

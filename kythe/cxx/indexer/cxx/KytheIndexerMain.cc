@@ -77,8 +77,8 @@ int main(int argc, char *argv[]) {
     options.EffectiveWorkingDirectory = job.working_directory;
 
     kythe::MetadataSupports meta_supports;
-    meta_supports.push_back(llvm::make_unique<ProtobufMetadataSupport>());
-    meta_supports.push_back(llvm::make_unique<KytheMetadataSupport>());
+    meta_supports.Add(llvm::make_unique<ProtobufMetadataSupport>());
+    meta_supports.Add(llvm::make_unique<KytheMetadataSupport>());
 
     std::string result = IndexCompilationUnit(
         job.unit, job.virtual_files, *context.claim_client(),

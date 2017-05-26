@@ -135,12 +135,10 @@ std::string IndexCompilationUnit(
     }
   }
   if (MetaSupports != nullptr) {
-    for (auto &support : *MetaSupports) {
-      support->UseVNameLookup(
-          [VFS](const std::string &path, proto::VName *out) {
-            return VFS->get_vname(path, out);
-          });
-    }
+    MetaSupports->UseVNameLookup(
+        [VFS](const std::string &path, proto::VName *out) {
+          return VFS->get_vname(path, out);
+        });
   }
   std::unique_ptr<IndexerFrontendAction> Action(new IndexerFrontendAction(
       &Observer, HSIValid ? &HSI : nullptr, Options.ShouldStopIndexing,

@@ -833,6 +833,20 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "metadata_h_generates_rule",
+    srcs = ["metadata/metadata_h_generates_rule.cc"],
+    tags = ["metadata"],
+    deps = ["metadata/single.meta.h"],
+)
+
+cxx_indexer_test(
+    name = "fancy_metadata_h_generates_rule",
+    srcs = ["metadata/fancy_metadata_h_generates_rule.cc"],
+    tags = ["metadata"],
+    deps = ["metadata/fancy_single.meta.h"],
+)
+
+cxx_indexer_test(
     name = "metadata_pragma",
     srcs = ["metadata/metadata_pragma.cc"],
     tags = ["metadata"],

@@ -17,6 +17,8 @@
 #include "kythe_metadata_file.h"
 
 #include "glog/logging.h"
+#include "kythe/cxx/common/json_proto.h"  // DecodeBase64
+#include "kythe/cxx/common/proto_conversions.h"
 #include "kythe/proto/storage.pb.h"
 #include "rapidjson/document.h"
 #include "rapidjson/error/en.h"
@@ -51,6 +53,49 @@ bool LoadVName(const rapidjson::Value &value, proto::VName *vname_out) {
     return false;
   }
   return true;
+}
+
+/// \brief Attempts to load buffer as a header-style metadata file.
+/// \param buffer data to try and parse.
+/// \return the decoded metadata on success or null on failure.
+std::unique_ptr<llvm::MemoryBuffer> LoadHeaderMetadata(
+    const llvm::MemoryBuffer *buffer) {
+  if (buffer->getBufferSize() < 2) {
+    return nullptr;
+  }
+  google::protobuf::string raw_data;
+  raw_data.reserve(buffer->getBufferSize());
+  auto buf_string = buffer->getBuffer();
+  if (buf_string[0] != '/') {
+    return nullptr;
+  }
+  size_t pos = 2;
+  // Tolerate single-line comments as well as multi-line comments.
+  // If there's a single-line comment, it should be the only thing in the
+  // file.
+  bool single_line = buf_string[1] == '/';
+  auto next_term =
+      single_line ? llvm::StringRef::npos : buf_string.find("*/", pos);
+  for (size_t pos = 2; pos < buffer->getBufferSize();) {
+    auto next_newline = buf_string.find("\n", pos);
+    if (next_term != llvm::StringRef::npos &&
+        (next_newline == llvm::StringRef::npos || next_term < next_newline)) {
+      raw_data.append(buf_string.data() + pos, next_term - pos);
+    } else if (next_newline != llvm::StringRef::npos) {
+      raw_data.append(buf_string.data() + pos, next_newline - pos);
+      pos = next_newline + 1;
+      if (!single_line) {
+        continue;
+      }
+    } else {
+      raw_data.append(buf_string.data() + pos, buf_string.size() - pos);
+    }
+    break;
+  }
+  google::protobuf::string decoded;
+  return DecodeBase64(raw_data, &decoded)
+             ? llvm::MemoryBuffer::getMemBufferCopy(ToStringRef(decoded))
+             : nullptr;
 }
 }  // anonymous namespace
 
@@ -150,6 +195,35 @@ std::unique_ptr<kythe::MetadataFile> KytheMetadataSupport::ParseFile(
     LOG(WARNING) << "Failed loading " << filename;
   }
   return metadata;
+}
+
+void MetadataSupports::UseVNameLookup(VNameLookup lookup) const {
+  for (auto &support : supports_) {
+    support->UseVNameLookup(lookup);
+  }
+}
+
+std::unique_ptr<kythe::MetadataFile> MetadataSupports::ParseFile(
+    const std::string &filename, const llvm::MemoryBuffer *buffer) const {
+  std::string modified_filename = filename;
+  std::unique_ptr<llvm::MemoryBuffer> decoded_buffer_storage;
+  const llvm::MemoryBuffer *decoded_buffer = buffer;
+  if (filename.size() >= 2 &&
+      filename.find(".h", filename.size() - 2) != std::string::npos) {
+    decoded_buffer_storage = LoadHeaderMetadata(buffer);
+    if (decoded_buffer_storage != nullptr) {
+      decoded_buffer = decoded_buffer_storage.get();
+      modified_filename = filename.substr(0, filename.size() - 2);
+    } else {
+      LOG(WARNING) << filename << " wasn't a metadata header.";
+    }
+  }
+  for (const auto &support : supports_) {
+    if (auto metadata = support->ParseFile(modified_filename, decoded_buffer)) {
+      return metadata;
+    }
+  }
+  return nullptr;
 }
 
 }  // namespace kythe
