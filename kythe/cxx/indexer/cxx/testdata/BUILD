@@ -1,6 +1,6 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
-load(":cxx_indexer_test.bzl", "cxx_indexer_test", "cc_indexer_test")
+load(":cxx_indexer_test.bzl", "cxx_indexer_test")
 
 sh_test(
     name = "kindex",
@@ -76,13 +76,13 @@ cxx_indexer_test(
     tags = ["basic"],
 )
 
-cc_indexer_test(
+cxx_indexer_test(
     name = "anonymous_namespace",
     srcs = ["basic/anonymous_namespace.cc"],
     tags = ["basic"],
 )
 
-cc_indexer_test(
+cxx_indexer_test(
     name = "anonymous_inline_namespace",
     srcs = ["basic/anonymous_inline_namespace.cc"],
     tags = ["basic"],
@@ -152,13 +152,13 @@ cxx_indexer_test(
     tags = ["basic"],
 )
 
-cc_indexer_test(
+cxx_indexer_test(
     name = "alias_alias_int",
     srcs = ["basic/alias_alias_int.cc"],
     tags = ["basic"],
 )
 
-cc_indexer_test(
+cxx_indexer_test(
     name = "alias_alias_ptr_int",
     srcs = ["basic/alias_alias_ptr_int.cc"],
     tags = ["basic"],
