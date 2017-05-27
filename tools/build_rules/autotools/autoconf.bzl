@@ -1,6 +1,6 @@
 """Skylark rules for generating files via an autotools ./configure script."""
 
-load("@//tools/cdexec:cdexec.bzl", "rootpath")
+load("//tools/cdexec:cdexec.bzl", "rootpath")
 
 def _fixtail(arg, prefixes):
   """If arg starts with any prefix, make tail be a root-relative path."""

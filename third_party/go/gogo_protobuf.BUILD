@@ -1,7 +1,7 @@
 package(default_visibility = ["//visibility:public"])
 
 load("@io_bazel_rules_go//go:def.bzl", "go_binary")
-load("@//third_party:go/build.bzl", "external_go_package")
+load("@io_kythe//third_party:go/build.bzl", "external_go_package")
 
 licenses(["notice"])
 

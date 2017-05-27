@@ -46,7 +46,7 @@ cc_library(
         "include",
     ],
     deps = [
-        "@//third_party/googlelog:config_h",
+        "@io_kythe//third_party/googlelog:config_h",
         "@com_github_gflags_gflags//:gflags",
     ],
 )
