@@ -54,7 +54,8 @@ class ProtobufMetadataSupport : public MetadataSupport {
   /// not parse into a `proto2.GeneratedCodeInfo` message, returns null and logs
   /// a warning.
   std::unique_ptr<kythe::MetadataFile> ParseFile(
-      const std::string &filename, const llvm::MemoryBuffer *buffer) override;
+      const std::string &raw_filename, const std::string &filename,
+      const llvm::MemoryBuffer *buffer) override;
 
   void UseVNameLookup(VNameLookup lookup) override { vname_lookup_ = lookup; }
 

@@ -189,10 +189,11 @@ std::unique_ptr<MetadataFile> KytheMetadataSupport::LoadFromJSON(
 }
 
 std::unique_ptr<kythe::MetadataFile> KytheMetadataSupport::ParseFile(
-    const std::string &filename, const llvm::MemoryBuffer *buffer) {
+    const std::string &raw_filename, const std::string &filename,
+    const llvm::MemoryBuffer *buffer) {
   auto metadata = LoadFromJSON(buffer->getBuffer());
   if (!metadata) {
-    LOG(WARNING) << "Failed loading " << filename;
+    LOG(WARNING) << "Failed loading " << raw_filename;
   }
   return metadata;
 }
@@ -219,7 +220,8 @@ std::unique_ptr<kythe::MetadataFile> MetadataSupports::ParseFile(
     }
   }
   for (const auto &support : supports_) {
-    if (auto metadata = support->ParseFile(modified_filename, decoded_buffer)) {
+    if (auto metadata =
+            support->ParseFile(filename, modified_filename, decoded_buffer)) {
       return metadata;
     }
   }

@@ -78,11 +78,12 @@ using VNameLookup =
 class MetadataSupport {
  public:
   virtual ~MetadataSupport() {}
-  /// \brief Attempt to parse the file named `filename` with contents in
-  /// `buffer`.
+  /// \brief Attempt to parse the file originally named `raw_filename` with
+  /// decoded filename `filename` and contents in `buffer`.
   /// \return A `MetadataFile` on success; otherwise, null.
   virtual std::unique_ptr<kythe::MetadataFile> ParseFile(
-      const std::string &filename, const llvm::MemoryBuffer *buffer) {
+      const std::string &raw_filename, const std::string &filename,
+      const llvm::MemoryBuffer *buffer) {
     return nullptr;
   }
 
@@ -125,7 +126,8 @@ class MetadataSupports {
 class KytheMetadataSupport : public MetadataSupport {
  public:
   std::unique_ptr<kythe::MetadataFile> ParseFile(
-      const std::string &filename, const llvm::MemoryBuffer *buffer) override;
+      const std::string &raw_filename, const std::string &filename,
+      const llvm::MemoryBuffer *buffer) override;
 
  private:
   /// \brief Load the JSON-encoded metadata from `json`.

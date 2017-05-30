@@ -37,18 +37,19 @@ proto::VName ProtobufMetadataSupport::VNameForAnnotation(
 }
 
 std::unique_ptr<kythe::MetadataFile> ProtobufMetadataSupport::ParseFile(
-    const std::string &filename, const llvm::MemoryBuffer *buffer) {
+    const std::string &raw_filename, const std::string &filename,
+    const llvm::MemoryBuffer *buffer) {
   llvm::StringRef file_ref(filename);
   if (!file_ref.endswith(".pb.h.meta") && !file_ref.endswith(".proto.h.meta")) {
     return nullptr;
   }
   proto::VName context_vname;
-  if (!vname_lookup_(filename, &context_vname)) {
-    LOG(WARNING) << "Failed getting VName for metadata: " << filename;
+  if (!vname_lookup_(raw_filename, &context_vname)) {
+    LOG(WARNING) << "Failed getting VName for metadata: " << raw_filename;
   }
   google::protobuf::GeneratedCodeInfo info;
   if (!info.ParseFromArray(buffer->getBufferStart(), buffer->getBufferSize())) {
-    LOG(WARNING) << "Failed ParseFromArray: " << filename;
+    LOG(WARNING) << "Failed ParseFromArray: " << raw_filename;
     return nullptr;
   }
   std::vector<MetadataFile::Rule> rules;
