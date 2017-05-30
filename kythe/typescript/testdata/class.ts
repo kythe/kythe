@@ -16,6 +16,7 @@ interface IFace {
 
 //- @Class defines/binding Class
 //- Class.node/kind record
+//- @IFace ref Iface
 class Class implements IFace {
   //- @member defines/binding Member
   //- Member.node/kind variable

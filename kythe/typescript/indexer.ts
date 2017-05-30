@@ -362,6 +362,11 @@ class Vistor {
     this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kType);
 
     if (decl.typeParameters) this.visitTypeParameters(decl.typeParameters);
+    if (decl.heritageClauses) {
+      for (const heritage of decl.heritageClauses) {
+        this.visit(heritage);
+      }
+    }
     for (const member of decl.members) {
       this.visit(member);
     }
@@ -721,6 +726,11 @@ class Vistor {
       this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kClass);
     }
     if (decl.typeParameters) this.visitTypeParameters(decl.typeParameters);
+    if (decl.heritageClauses) {
+      for (const heritage of decl.heritageClauses) {
+        this.visit(heritage);
+      }
+    }
     for (const member of decl.members) {
       this.visit(member);
     }
