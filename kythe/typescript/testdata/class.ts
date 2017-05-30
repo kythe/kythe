@@ -8,6 +8,10 @@ interface IFace {
   //- IFaceMethod.complete incomplete
   //- IFaceMethod childof IFace
   ifaceMethod(): void;
+
+  //- @member defines/binding IFaceMember
+  //- IFaceMember.node/kind variable
+  member: number;
 }
 
 //- @Class defines/binding Class

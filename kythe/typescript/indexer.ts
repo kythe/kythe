@@ -738,6 +738,7 @@ class Vistor {
       case ts.SyntaxKind.VariableDeclaration:
         return this.visitVariableDeclaration(node as ts.VariableDeclaration);
       case ts.SyntaxKind.PropertyDeclaration:
+      case ts.SyntaxKind.PropertySignature:
         return this.visitVariableDeclaration(node as ts.PropertyDeclaration);
       case ts.SyntaxKind.FunctionDeclaration:
       case ts.SyntaxKind.MethodDeclaration:
