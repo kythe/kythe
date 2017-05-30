@@ -223,6 +223,10 @@ class Vistor {
             this.todo(node, 'handle ExportAssignment with =');
           }
           break;
+        case ts.SyntaxKind.ArrowFunction:
+          // Arrow functions are anonymous, so generate a unique id.
+          parts.push(`arrow${this.anonId++}`);
+          break;
         case ts.SyntaxKind.Block:
           if (node.parent &&
               (node.parent.kind === ts.SyntaxKind.FunctionDeclaration ||
@@ -750,6 +754,7 @@ class Vistor {
       case ts.SyntaxKind.PropertyDeclaration:
       case ts.SyntaxKind.PropertySignature:
         return this.visitVariableDeclaration(node as ts.PropertyDeclaration);
+      case ts.SyntaxKind.ArrowFunction:
       case ts.SyntaxKind.FunctionDeclaration:
       case ts.SyntaxKind.MethodDeclaration:
       case ts.SyntaxKind.MethodSignature:

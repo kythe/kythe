@@ -22,3 +22,13 @@ function test(a: number, num: Num): Num {
 
 //- @test ref F
 test(3, {num: 3});
+
+//- @x defines/binding X
+//- X.node/kind variable
+let x: 3;
+
+//- @#0x defines/binding ArrowX
+//- ArrowX.node/kind variable
+//- @#1x ref ArrowX
+//- !{@#1x ref X}
+test((x => x + 1)(3), undefined);
