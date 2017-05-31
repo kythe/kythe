@@ -33,7 +33,6 @@ type Thinger interface {
 	//- MRecv.post_text ") "
 	//- MRecv child.0 MRType
 	//-
-	//- MName.post_child_text "."
 	//- MName child.0 MContext
 	//- MName child.1 MIdent
 	//-
@@ -44,6 +43,7 @@ type Thinger interface {
 	//- MRType.pre_text "Thinger"
 	//-
 	//- MContext.kind "CONTEXT"
+	//- MContext.post_child_text "."
 	//- MContext child.0 MPkg
 	//- MContext child.1 MOwner
 	//- MPkg.pre_text "test/iface"

@@ -423,7 +423,6 @@ func (pi *PackageInfo) ObjectVName(obj types.Object) *spb.VName {
 // See: http://www.kythe.io/docs/schema/marked-source.html.
 func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
 	ms := &cpb.MarkedSource{
-		PostChildText: ".",
 		Child: []*cpb.MarkedSource{{
 			Kind:    cpb.MarkedSource_IDENTIFIER,
 			PreText: objectName(obj),

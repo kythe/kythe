@@ -19,7 +19,6 @@ type w int
 //- LTRecv.post_text ") "
 //- LTRecv child.0 LTRType
 //-
-//- LTName.post_child_text "."
 //- LTName child.0 LTContext
 //- LTName child.1 LTIdent
 //-
@@ -37,6 +36,7 @@ type w int
 //- LTRType.pre_text "w"
 //-
 //- LTContext.kind "CONTEXT"
+//- LTContext.post_child_text "."
 //- LTContext child.0 LTPkg
 //- LTPkg.pre_text "methdecl"
 //- LTIdent.pre_text "LessThan"
