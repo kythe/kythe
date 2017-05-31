@@ -15,7 +15,9 @@ package pkgvar
 //- VType.pre_text "int"
 //-
 //- VContext.kind "CONTEXT"
-//- VContext.pre_text "pkgvar"
+//- VContext child.0 VPkg
+//- VPkg.pre_text "pkgvar"
+//-
 //- VIdent.kind "IDENTIFIER"
 //- VIdent.pre_text "V"
 var V int

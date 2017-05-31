@@ -20,7 +20,8 @@ package structtype
 //- TStruct.pre_text "struct {...}"
 //-
 //- TContext.kind "CONTEXT"
-//- TContext.pre_text "structtype"
+//- TContext child.0 TPkg
+//- TPkg.pre_text "structtype"
 //- TIdent.kind "IDENTIFIER"
 //- TIdent.pre_text "T"
 type T struct {
@@ -33,8 +34,7 @@ type T struct {
 	//- FieldCode child.2 FType
 	//-
 	//- FName child.0 FContext
-	//- FName child.1 FOwner
-	//- FName child.2 FIdent
+	//- FName child.1 FIdent
 	//-
 	//- FSpace.pre_text " "
 	//-
@@ -42,8 +42,9 @@ type T struct {
 	//- FType.kind "TYPE"
 	//-
 	//- FContext.kind "CONTEXT"
-	//- FContext.pre_text "structtype"
-	//- FOwner.kind "CONTEXT"
+	//- FContext child.0 FPkg
+	//- FContext child.1 FOwner
+	//- FPkg.pre_text "structtype"
 	//- FOwner.pre_text "T"
 	//- FIdent.kind "IDENTIFIER"
 	//- FIdent.pre_text "F"

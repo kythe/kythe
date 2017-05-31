@@ -442,27 +442,32 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
 	//
 	//                 (box)
 	//                   |
-	//   (ctx)---"."---(ctx)---"."---(id)
-	//     |             |            |
-	//    pkg          type          name
+	//         (ctx)-----+-------(id)
+	//           |                |
+	//     +----"."----+(".")    name
+	//     |           |
+	//    pkg         type
 	//
 	var ctx []*cpb.MarkedSource
 	if pkg := obj.Pkg(); pkg != nil {
 		ctx = append(ctx, &cpb.MarkedSource{
-			Kind:    cpb.MarkedSource_CONTEXT,
 			PreText: pi.importPath(pkg),
 		})
 	}
 	if par, ok := pi.owner[obj]; ok {
 		if _, ok := par.Type().(*types.Named); ok {
 			ctx = append(ctx, &cpb.MarkedSource{
-				Kind:    cpb.MarkedSource_CONTEXT,
 				PreText: typeName(par.Type()),
 			})
 		}
 	}
 	if len(ctx) != 0 {
-		ms.Child = append(ctx, ms.Child...)
+		ms.Child = append([]*cpb.MarkedSource{{
+			Kind:              cpb.MarkedSource_CONTEXT,
+			PostChildText:     ".",
+			AddFinalListToken: true,
+			Child:             ctx,
+		}}, ms.Child...)
 	}
 
 	// Handle types with "interesting" superstructure specially.
@@ -534,11 +539,8 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
 			Kind: cpb.MarkedSource_BOX,
 			Child: []*cpb.MarkedSource{
 				ms,
-				{PreText: " "},
-				{
-					Kind:    cpb.MarkedSource_TYPE,
-					PreText: typeName(t.Type()),
-				},
+				{Kind: cpb.MarkedSource_TYPE, PreText: " "},
+				{Kind: cpb.MarkedSource_TYPE, PreText: typeName(t.Type())},
 			},
 		}
 		ms = repl
@@ -550,11 +552,8 @@ func (pi *PackageInfo) MarkedSource(obj types.Object) *cpb.MarkedSource {
 			Child: []*cpb.MarkedSource{
 				{PreText: "type "},
 				ms,
-				{PreText: " "},
-				{
-					Kind:    cpb.MarkedSource_TYPE,
-					PreText: typeName(t.Type().Underlying()),
-				},
+				{Kind: cpb.MarkedSource_TYPE, PreText: " "},
+				{Kind: cpb.MarkedSource_TYPE, PreText: typeName(t.Type().Underlying())},
 			},
 		}
 		ms = repl

@@ -30,7 +30,8 @@ package funcdecl
 //-
 //- //--------------------------------------------------
 //- PCContext.kind "CONTEXT"
-//- PCContext.pre_text "funcdecl"
+//- PCContext child.0 PCPkg
+//- PCPkg.pre_text "funcdecl"
 //- PCIdent.kind "IDENTIFIER"
 //- PCIdent.pre_text "Positive"
 //-

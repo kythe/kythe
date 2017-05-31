@@ -35,8 +35,7 @@ type Thinger interface {
 	//-
 	//- MName.post_child_text "."
 	//- MName child.0 MContext
-	//- MName child.1 MOwner
-	//- MName child.2 MIdent
+	//- MName child.1 MIdent
 	//-
 	//- MParams.kind "PARAMETER"
 	//- MParams.pre_text "()"
@@ -45,7 +44,9 @@ type Thinger interface {
 	//- MRType.pre_text "Thinger"
 	//-
 	//- MContext.kind "CONTEXT"
-	//- MContext.pre_text "test/iface"
+	//- MContext child.0 MPkg
+	//- MContext child.1 MOwner
+	//- MPkg.pre_text "test/iface"
 	//- MOwner.pre_text "Thinger"
 	//- MIdent.pre_text "Thing"
 	Thing()

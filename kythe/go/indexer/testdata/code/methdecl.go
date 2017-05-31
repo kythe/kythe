@@ -37,7 +37,8 @@ type w int
 //- LTRType.pre_text "w"
 //-
 //- LTContext.kind "CONTEXT"
-//- LTContext.pre_text "methdecl"
+//- LTContext child.0 LTPkg
+//- LTPkg.pre_text "methdecl"
 //- LTIdent.pre_text "LessThan"
 func (rec w) LessThan(x int) bool {
 	return int(rec) < x
