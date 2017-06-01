@@ -443,14 +443,12 @@ class Vistor {
    * visitImportSpecifier handles a single entry in an import statement, e.g.
    * "bar" in code like
    *   import {foo, bar} from 'baz';
-   * And it's carefully factored also to handle "import default" statements.
    * See visitImportDeclaration for the code handling the entire statement.
    *
-   * @param remoteSym The ts.Symbol for the symbol in the module ('bar').
    * @return The VName for the import.
    */
-  visitImport(name: ts.Node, remoteSym: ts.Symbol): VName {
-    // An import both imports a symbol from another module
+  visitImport(name: ts.Node): VName {
+    // An import both aliases a symbol from another module
     // (call it the "remote" symbol) and it defines a local symbol.
     //
     // Those two symbols often have the same name, with statements like:
@@ -477,6 +475,7 @@ class Vistor {
     }
 
     // TODO: import a type, not just a value.
+    const remoteSym = this.typeChecker.getAliasedSymbol(localSym);
     const kImport = this.getSymbolName(remoteSym, TSNamespace.VALUE);
     // Mark the local symbol with the remote symbol's VName so that all
     // references resolve to the remote symbol.
@@ -509,12 +508,7 @@ class Vistor {
     if (clause.name) {
       // This is a default import, e.g.:
       //   import foo from './bar';
-      // This is equivalent to
-      //   import {default as foo} from './bar';
-      let remoteSym =
-          this.typeChecker.tryGetMemberInModuleExports('default', moduleSym);
-      if (!remoteSym) return;
-      this.visitImport(clause.name, remoteSym);
+      this.visitImport(clause.name);
       return;
     }
 
@@ -543,15 +537,7 @@ class Vistor {
         //   import {bar, baz} from 'foo';
         let imports = clause.namedBindings.elements;
         for (let imp of imports) {
-          // Find the symbol in the imported module by looking it up by name.
-          // imp.propertyName is the remote name, but present only when the
-          // import is renaming.
-          const remoteName = (imp.propertyName || imp.name).text;
-          const remoteSym = this.typeChecker.tryGetMemberInModuleExports(
-              remoteName, moduleSym);
-          if (!remoteSym) continue;
-
-          const kImport = this.visitImport(imp.name, remoteSym);
+          const kImport = this.visitImport(imp.name);
           if (imp.propertyName) {
             this.emitEdge(
                 this.newAnchor(imp.propertyName), 'ref/imports', kImport);
@@ -594,7 +580,21 @@ class Vistor {
    */
   visitExportDeclaration(decl: ts.ExportDeclaration) {
     if (decl.exportClause) {
-      ts.forEachChild(decl.exportClause, (n) => this.visit(n));
+      for (const exp of decl.exportClause.elements) {
+        const localSym = this.getSymbolAtLocation(exp.name);
+        if (!localSym) {
+          console.error(`TODO: export ${name} has no symbol`);
+          continue;
+        }
+        // TODO: import a type, not just a value.
+        const remoteSym = this.typeChecker.getAliasedSymbol(localSym);
+        const kExport = this.getSymbolName(remoteSym, TSNamespace.VALUE);
+        this.emitEdge(this.newAnchor(exp.name), 'ref', kExport);
+        if (exp.propertyName) {
+          // Aliased export; propertyName is the 'as <...>' bit.
+          this.emitEdge(this.newAnchor(exp.propertyName), 'ref', kExport);
+        }
+      }
     }
     if (decl.moduleSpecifier) {
       this.todo(

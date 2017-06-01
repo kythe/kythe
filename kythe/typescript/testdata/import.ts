@@ -27,6 +27,9 @@ mod_imp.value;
 //- @renamedValue ref Val
 renamedValue;
 
+//- @value ref/imports Val
 import {value as exportedValue} from './export';
+//- @local ref/imports Local
 import {local} from './export';
+//- @aliasedLocal ref/imports Local
 import {aliasedLocal} from './export';
