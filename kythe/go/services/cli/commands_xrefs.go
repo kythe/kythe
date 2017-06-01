@@ -25,6 +25,7 @@ import (
 
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/markedsource"
+	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/facts"
 
 	cpb "kythe.io/kythe/proto/common_proto"
@@ -179,7 +180,11 @@ func (c xrefsCommand) displayXRefs(reply *xpb.CrossReferencesReply) error {
 				} else if subkind != "" {
 					nodeKind += "/" + subkind
 				}
-				if _, err := fmt.Fprintf(out, "    %s %s [%s]\n", n.Ticket, n.RelationKind, nodeKind); err != nil {
+				var ordinal string
+				if edges.OrdinalKind(n.RelationKind) || n.Ordinal != 0 {
+					ordinal = fmt.Sprintf(".%d", n.Ordinal)
+				}
+				if _, err := fmt.Fprintf(out, "    %s %s%s [%s]\n", n.Ticket, n.RelationKind, ordinal, nodeKind); err != nil {
 					return err
 				}
 			}

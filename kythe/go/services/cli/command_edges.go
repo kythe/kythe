@@ -105,8 +105,13 @@ func (c edgesCommand) displayEdges(reply *gpb.EdgesReply) error {
 			return err
 		}
 		for kind, g := range es.Groups {
+			hasOrdinal := edges.OrdinalKind(kind)
 			for _, edge := range g.Edge {
-				if _, err := fmt.Fprintf(out, "%s\t%s\n", kind, edge.TargetTicket); err != nil {
+				var ordinal string
+				if hasOrdinal || edge.Ordinal != 0 {
+					ordinal = fmt.Sprintf(".%d", edge.Ordinal)
+				}
+				if _, err := fmt.Fprintf(out, "%s%s\t%s\n", kind, ordinal, edge.TargetTicket); err != nil {
 					return err
 				}
 			}
