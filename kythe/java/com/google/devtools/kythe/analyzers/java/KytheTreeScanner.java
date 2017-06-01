@@ -996,8 +996,14 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       d.setContextUrl(context);
     }
     Span s = ctx.getTreeSpan();
-    d.getSpanBuilder().getStartBuilder().setByteOffset(s.getStart());
-    d.getSpanBuilder().getEndBuilder().setByteOffset(s.getEnd());
+    if (s.valid()) {
+      d.getSpanBuilder().getStartBuilder().setByteOffset(s.getStart());
+      d.getSpanBuilder().getEndBuilder().setByteOffset(s.getEnd());
+    } else if (s.getStart() >= 0) {
+      // If the span isn't valid but we have a valid start, use the start for a zero-width span.
+      d.getSpanBuilder().getStartBuilder().setByteOffset(s.getStart());
+      d.getSpanBuilder().getEndBuilder().setByteOffset(s.getStart());
+    }
     EntrySet node = entrySets.emitDiagnostic(filePositions, d.build());
     // TODO(schroederc): don't allow any edges to a diagnostic node
     return new JavaNode(node, "diagnostic");
