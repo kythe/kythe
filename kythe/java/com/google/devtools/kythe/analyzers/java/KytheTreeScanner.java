@@ -389,7 +389,14 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     List<JavaNode> paramTypes = new LinkedList<>();
     List<String> paramTypeNames = new LinkedList<>();
     List<EntrySet> wildcards = new LinkedList<>();
-    for (JavaNode n : params) {
+    for (int i = 0; i < params.size(); i++) {
+      JavaNode n = params.get(i);
+      if (n.typeNode == null) {
+        logger.warningfmt(
+            "Missing parameter type (method: %s; parameter: %s)",
+            methodDef.getName(), methodDef.getParameters().get(i));
+        continue;
+      }
       paramTypes.add(n.typeNode);
       paramTypeNames.add(n.typeNode.qualifiedName);
       wildcards.addAll(n.childWildcards);
