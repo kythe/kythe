@@ -493,6 +493,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
             new JavaNode(methodNode, signature.get(), new JavaNode(fnTypeNode, fnTypeName)));
     scan(methodDef.getBody(), ctx);
 
+    for (JavaNode param : params) {
+      entrySets.emitEdge(param.entries, EdgeKind.CHILDOF, node.entries);
+    }
+
     return node;
   }
 
@@ -515,6 +519,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       emitComment(varDef, varNode);
     }
 
+    TreeContext parentContext = ctx.getClassOrMethodParent();
+    if (parentContext != null && parentContext.getNode() != null) {
+      emitEdge(varNode, EdgeKind.CHILDOF, parentContext.getNode());
+    }
     visitAnnotations(varNode, varDef.getModifiers().getAnnotations(), ctx);
 
     JavaNode typeNode = scan(varDef.getType(), ctx);
