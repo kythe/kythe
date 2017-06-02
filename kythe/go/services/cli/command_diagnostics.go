@@ -20,6 +20,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"strings"
 
 	cpb "kythe.io/kythe/proto/common_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
@@ -57,7 +58,20 @@ func (c diagnosticsCommand) displayDiagnostics(decor *xpb.DecorationsReply) erro
 	}
 
 	for _, d := range decor.Diagnostic {
-		fmt.Fprintf(out, "%s\t%s\n", spanToString(d.Span), d.Message)
+		span := spanToString(d.Span)
+		if span != "" {
+			span += "  "
+		}
+		fmt.Fprintf(out, "* %s%s\n", span, d.Message)
+		if d.ContextUrl != "" {
+			fmt.Fprintf(out, "    - Context: %s\n", d.ContextUrl)
+		}
+		if d.Details != "" {
+			fmt.Fprintln(out, "    - Details:")
+			for _, line := range strings.Split(d.Details, "\n") {
+				fmt.Fprintf(out, "        > %s\n", line)
+			}
+		}
 	}
 	return nil
 }
