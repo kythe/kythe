@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # docker build -t gcr.io/kythe_repo/kythe-builder .
-FROM debian:jessie
+FROM ubuntu:xenial
 
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -22,18 +22,20 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends curl ca-certificates && \
     apt-get clean
 
-RUN echo deb http://http.debian.net/debian jessie-backports main >> /etc/apt/sources.list
+RUN echo "deb [arch=amd64] http://storage.googleapis.com/bazel-apt stable jdk1.8" | tee /etc/apt/sources.list.d/bazel.list
+RUN curl https://bazel.build/bazel-release.pub.gpg | apt-key add -
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
       git pkg-config zip unzip rsync patch zsh wget net-tools less parallel locales make \
-      g++ gcc openjdk-8-jdk openjdk-8-source clang-3.5 flex asciidoc source-highlight graphviz \
-      zlib1g-dev libarchive-dev libncurses-dev uuid-dev libssl-dev \
+      g++ gcc openjdk-8-jdk openjdk-8-source clang-3.6 flex asciidoc source-highlight graphviz \
+      zlib1g-dev libarchive-dev libncurses-dev uuid-dev libssl-dev bazel cmake \
       ca-certificates-java libcurl4-openssl-dev libmemcached-dev libsasl2-dev && \
     apt-get clean
 
+RUN update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
 ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
-RUN ln -Ts /usr/bin/clang-3.5 /usr/bin/clang
+ENV CLANG=/usr/bin/clang-3.6
 
 # Bison
 RUN wget http://archive.kernel.org/debian-archive/debian/pool/main/b/bison/bison_2.3.dfsg-5_amd64.deb -O /tmp/bison_2.3.deb && \
@@ -46,10 +48,3 @@ RUN wget https://storage.googleapis.com/golang/go1.4.linux-amd64.tar.gz -O /tmp/
     rm -f /tmp/go.tar.gz
 ENV PATH=/usr/local/go/bin:$PATH
 
-RUN cd /opt && \
-    git clone https://github.com/google/bazel/ && \
-    cd bazel && \
-    git checkout 53f407608ef6547bd690fa4420418aa6b6991b22 && \
-    sed -i '/Building Bazel with Bazel/iexit 0' compile.sh && \
-    ./compile.sh compile && \
-    ln -s /opt/bazel/output/bazel /usr/bin/
