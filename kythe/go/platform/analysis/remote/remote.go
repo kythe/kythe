@@ -20,7 +20,6 @@ package remote
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 
@@ -28,6 +27,8 @@ import (
 
 	apb "kythe.io/kythe/proto/analysis_proto"
 	aspb "kythe.io/kythe/proto/analysis_service_proto"
+
+	"github.com/pkg/errors"
 )
 
 // Analyzer implements the analysis.CompilationAnalyzer interface by using a
@@ -71,7 +72,7 @@ func (a *Analyzer) Analyze(ctx context.Context, req *apb.AnalysisRequest, f anal
 			if out.Value != nil {
 				return errors.New("remote: output value returned with final result")
 			} else if _, err := c.Recv(); err != io.EOF {
-				return fmt.Errorf("remote: extra output after final result: %v", err)
+				return errors.WithMessage(err, "remote: extra output after final result")
 			}
 
 			// Don't count a complete analysis as an error.

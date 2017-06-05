@@ -20,14 +20,15 @@ package driver
 
 import (
 	"context"
-	"errors"
-	"fmt"
+	goerrors "errors"
 	"io"
 	"log"
 
 	"kythe.io/kythe/go/platform/analysis"
 
 	apb "kythe.io/kythe/proto/analysis_proto"
+
+	"github.com/pkg/errors"
 )
 
 // A Compilation represents a compilation and other metadata needed to analyze it.
@@ -71,7 +72,7 @@ type Context interface {
 
 // ErrRetry can be returned from a Driver's AnalysisError function to signal
 // that the driver should retry the analysis immediately.
-var ErrRetry = errors.New("retry analysis")
+var ErrRetry = goerrors.New("retry analysis")
 
 // Driver sends compilations sequentially from a queue to an analyzer.
 type Driver struct {
@@ -120,7 +121,7 @@ func (d *Driver) Run(ctx context.Context, queue Queue) error {
 	for {
 		if err := queue.Next(ctx, func(ctx context.Context, cu Compilation) error {
 			if err := d.setup(ctx, cu); err != nil {
-				return fmt.Errorf("driver: analysis setup: %v", err)
+				return errors.WithMessage(err, "driver: analysis setup")
 			}
 			err := ErrRetry
 			for err == ErrRetry {
@@ -132,7 +133,7 @@ func (d *Driver) Run(ctx context.Context, queue Queue) error {
 			}
 			if terr := d.teardown(ctx, cu); terr != nil {
 				if err == nil {
-					return fmt.Errorf("driver: analysis teardown: %v", terr)
+					return errors.WithMessage(terr, "driver: analysis teardown")
 				}
 				log.Printf("WARNING: analysis teardown failed: %v (analysis error: %v)", terr, err)
 			}

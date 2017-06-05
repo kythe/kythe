@@ -164,6 +164,13 @@ load("@io_bazel_rules_go//go:def.bzl", "go_repositories")
 go_repositories(go_version = "1.8.1")
 
 new_git_repository(
+    name = "go_errors",
+    build_file = "third_party/go/errors.BUILD",
+    commit = "ff09b135c25aae272398c51a07235b90a75aa4f0",
+    remote = "https://github.com/pkg/errors.git",
+)
+
+new_git_repository(
     name = "go_gogo_protobuf",
     build_file = "third_party/go/gogo_protobuf.BUILD",
     commit = "f9114dace7bd920b32f943b3c73fafbcbab2bf31",

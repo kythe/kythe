@@ -9,5 +9,6 @@ go_package_library(
         "//kythe/go/platform/analysis",
         "//kythe/proto:analysis_proto_go",
         "//kythe/proto:analysis_service_proto_go",
+        "@go_errors//:errors",
     ],
 )
