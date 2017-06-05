@@ -243,8 +243,25 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         } else {
           cls = JavacUtil.getClassSymbol(javaContext, imprtField.selected.toString());
           if (cls != null) {
-            // Import may be a class member
-            sym = cls.members().findFirst(imprtField.name);
+            // Import is a class member; emit usages for all matching (by name) class members.
+            ctx = ctx.down(imprtField);
+            JavaNode lastMember = null;
+            for (Symbol member : cls.members().getSymbolsByName(imprtField.name)) {
+              try {
+                // Ensure member symbol's type is complete.  If the extractor finds that a static
+                // member isn't used (due to overloads), the symbol's dependent type classes won't
+                // be saved in the CompilationUnit and this will throw an exception.
+                if (member.type != null) {
+                  member.type.tsym.complete();
+                }
+
+                lastMember = emitNameUsage(ctx, member, imprtField.name, EdgeKind.REF_IMPORTS);
+              } catch (Symbol.CompletionFailure e) {
+                // Symbol resolution failed (see above comment).  Ignore and continue with other
+                // class members matching static import.
+              }
+            }
+            return lastMember;
           }
         }
       }

@@ -7,7 +7,10 @@ package pkg;
 import static java.lang.String.CASE_INSENSITIVE_ORDER;
 //- @hashCode ref/imports HashCodeMethod
 import static java.util.Objects.hashCode;
-// TODO(schroederc): handle overloaded static method imports
+
+//- @staticMethod ref/imports StaticBool
+//- @staticMethod ref/imports StaticInt
+import static pkg.StaticMethods.staticMethod;
 
 //- @"java.util" ref UtilPackage
 //- UtilPackage.node/kind package

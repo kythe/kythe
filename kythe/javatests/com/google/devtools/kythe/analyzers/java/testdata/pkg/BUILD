@@ -71,7 +71,10 @@ java_verifier_test(
 java_verifier_test(
     name = "imports_tests",
     size = "small",
-    srcs = ["Imports.java"],
+    srcs = [
+        "Imports.java",
+        "StaticMethods.java",
+    ],
 )
 
 java_verifier_test(
