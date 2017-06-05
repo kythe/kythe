@@ -22,6 +22,15 @@ class Class implements IFace {
   //- Member.node/kind variable
   member: number;
 
+  // This ctor declares a new member var named 'otherMember', and also
+  // declares an ordinary parameter named 'member' (to ensure we don't get
+  // confused about params to the ctor vs true member variables).
+  //- @otherMember defines/binding OtherMember
+  //- OtherMember.node/kind variable
+  //- @member defines/binding FakeMember
+  //- FakeMember.node/kind variable
+  constructor(public otherMember: number, member: string) {}
+
   //- @method defines/binding Method
   //- Method.node/kind function
   //- Method childof Class
@@ -36,5 +45,9 @@ class Class implements IFace {
   //- @ifaceMethod defines/binding ClassIFaceMethod
   ifaceMethod(): void {}
 }
+
+let instance = new Class(3, 'a');
+//- @otherMember ref OtherMember
+instance.otherMember;
 
 // TODO: subclass, extends/implements, generics, etc.

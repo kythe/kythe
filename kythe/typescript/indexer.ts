@@ -262,6 +262,9 @@ class Vistor {
             parts.push(`anon${this.anonId++}`);
           }
           break;
+        case ts.SyntaxKind.Constructor:
+          parts.push('constructor');
+          break;
         case ts.SyntaxKind.ModuleDeclaration:
           const modDecl = node as ts.ModuleDeclaration;
           if (modDecl.name.kind === ts.SyntaxKind.StringLiteral) {
@@ -757,6 +760,7 @@ class Vistor {
       case ts.SyntaxKind.PropertySignature:
         return this.visitVariableDeclaration(node as ts.PropertyDeclaration);
       case ts.SyntaxKind.ArrowFunction:
+      case ts.SyntaxKind.Constructor:
       case ts.SyntaxKind.FunctionDeclaration:
       case ts.SyntaxKind.MethodDeclaration:
       case ts.SyntaxKind.MethodSignature:
