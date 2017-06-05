@@ -103,9 +103,11 @@ class Vistor {
       private getOffsetTable: (path: string) => utf8.OffsetTable) {
     this.typeChecker = program.getTypeChecker();
 
-    this.sourceRoot = program.getCompilerOptions().rootDir!;
-    this.rootDirs = program.getCompilerOptions().rootDirs!.map(d => d + '/');
-    this.rootDirs.sort((a, b) => b.length - a.length);
+    this.sourceRoot = program.getCompilerOptions().rootDir || process.cwd();
+    let rootDirs = program.getCompilerOptions().rootDirs || [this.sourceRoot];
+    rootDirs = rootDirs.map(d => d + '/');
+    rootDirs.sort((a, b) => b.length - a.length);
+    this.rootDirs = rootDirs;
   }
 
   /**
