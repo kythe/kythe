@@ -18,7 +18,7 @@ public class Generics<T> {
   //- @P defines/binding PVar
   //- PrintAbs param.0 PVar
   //- PVar.node/kind absvar
-  //- PVar bounded/upper Obj
+  //- PVar bounded/upper.0 Obj
   public static <P> void print(
       //- @P ref PVar
       P p) {
@@ -66,20 +66,20 @@ public class Generics<T> {
   //- BVar.node/kind absvar
   //- @List ref List
   //- @Inter ref Inter
-  //- BVar bounded/upper List
-  //- BVar bounded/upper Inter
+  //- BVar bounded/upper.0 List
+  //- BVar bounded/upper.1 Inter
   private static class Bounded<BV extends java.util.List & Inter> {}
 
   //- @classTypeVarBound defines/binding ClassTypeVarBoundFunc
   //- @E defines/binding EVar
-  //- EVar bounded/upper TVar
+  //- EVar bounded/upper.0 TVar
   public <E extends T> void classTypeVarBound() {}
 
   public <
           //- @X defines/binding XVar
           X,
           //- @Y defines/binding YVar
-          //- YVar bounded/upper XVar
+          //- YVar bounded/upper.0 XVar
           Y extends X>
       //- @ownTypeVarBound defines/binding OwnTypeVarBoundFunc
       void ownTypeVarBound() {}
@@ -93,17 +93,17 @@ public class Generics<T> {
   // We test the cases of single vs. multiple interface bounds because those have different code paths
   // (the latter is implemented by javac as an intersection type).
 
-  // With only an (implicit or explicit) bound of Object, do emit a bounded/upper edge,
+  // With only an (implicit or explicit) bound of Object, do emit a bounded/upper.0 edge,
   // but don't add the superfluous "extends java.lang.Object" in the name.
 
   //- @noIFaceBound defines/binding Func
   //- @S0 defines/binding S0Var
-  //- S0Var bounded/upper Obj
+  //- S0Var bounded/upper.0 Obj
   public <S0> void noIFaceBound() {}
 
   //- @objAndNoIFaceBound defines/binding OFunc
   //- @S1 defines/binding S1Var
-  //- S1Var bounded/upper Obj
+  //- S1Var bounded/upper.0 Obj
   public <S1> void objAndNoIFaceBound() {}
 
   // If there is at least one interface bound, only emit a bound of java.lang.Object if it was explicit.
@@ -111,33 +111,33 @@ public class Generics<T> {
   //- @oneIFaceBound defines/binding IFunc
   //- @S2 defines/binding S2Var
   //- @List ref List
-  //- !{ S2Var bounded/upper Obj }
-  //- S2Var bounded/upper List
+  //- !{ S2Var bounded/upper.0 Obj }
+  //- S2Var bounded/upper.0 List
   public <S2 extends java.util.List> void oneIFaceBound() {}
 
   //- @objAndOneIFaceBound defines/binding OIFunc
   //- @S3 defines/binding S3Var
   //- @List ref List
-  //- S3Var bounded/upper Obj
-  //- S3Var bounded/upper List
+  //- S3Var bounded/upper.0 Obj
+  //- S3Var bounded/upper.1 List
   public <S3 extends Object & java.util.List> void objAndOneIFaceBound() {}
 
   //- @twoIfaceBounds defines/binding IIFunc
   //- @S4 defines/binding S4Var
   //- @List ref List
   //- @Inter ref Inter
-  //- !{ S4Var bounded/upper Obj }
-  //- S4Var bounded/upper List
-  //- S4Var bounded/upper Inter
+  //- !{ S4Var bounded/upper.0 Obj }
+  //- S4Var bounded/upper.0 List
+  //- S4Var bounded/upper.1 Inter
   public <S4 extends java.util.List & Inter> void twoIfaceBounds() {}
 
   //- @objAndTwoIFaceBounds defines/binding OIIFunc
   //- @S5 defines/binding S5Var
   //- @List ref List
   //- @Inter ref Inter
-  //- S5Var bounded/upper Obj
-  //- S5Var bounded/upper List
-  //- S5Var bounded/upper Inter
+  //- S5Var bounded/upper.0 Obj
+  //- S5Var bounded/upper.1 List
+  //- S5Var bounded/upper.2 Inter
   public <S5 extends Object & java.util.List & Inter> void objAndTwoIFaceBounds() {}
 
   //- @Inter defines/binding Inter

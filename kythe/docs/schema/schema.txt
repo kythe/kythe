@@ -171,6 +171,11 @@ Notes::
     assigned any subtype of Object, but no primitive type.
   * It is possible for an <<absvar>> to have multiple bounds. For example, this
     occurs in Java when a type parameter must implement several interfaces.
+    In cases where the order of the bounds matters (e.g., in Java, where the
+    order affects type erasure), the bound edge kind may be qualified by an ordinal,
+    so that A is *bounded/upper.N* by B if B is the Nth upper bound of A.
+    Code interpreting *bounded* edges should be able to handle both
+    ordered and unordered edges.
 
 [kythe,Java,"Generic type parameters can be bound."]
 --------------------------------------------------------------------------------

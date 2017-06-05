@@ -32,7 +32,7 @@ public final class GenericMethod {
   //- VWParam1Type.node/kind tapp
   //- VWParam1Type param.0 OptionalClass
   //- VWParam1Type param.1 TVWVar
-  //- !{ TVWVar bounded/upper Anything0
-  //-    TVWVar bounded/lower Anything1 }
+  //- !{ TVWVar bounded/upper.0 Anything0
+  //-    TVWVar bounded/lower.0 Anything1 }
   private static <T> void verboseWildcard(Optional<T> ovar) {}
 }

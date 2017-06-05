@@ -86,6 +86,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Name;
@@ -809,13 +810,11 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       typeParams.add(node);
 
       List<JCExpression> bounds = tParam.getBounds();
-      if (bounds.size() == 0) {
-        emitEdge(node, EdgeKind.BOUNDED_UPPER, getJavaLangObjectNode());
-      } else {
-        for (JCExpression expr : bounds) {
-          emitEdge(node, EdgeKind.BOUNDED_UPPER, scan(expr, ctx));
-        }
+      List<JavaNode> boundNodes = bounds.stream().map(expr -> scan(expr, ctx)).collect(Collectors.toList());
+      if (boundNodes.size() == 0) {
+        boundNodes.add(getJavaLangObjectNode());
       }
+      emitOrdinalEdges(node, EdgeKind.BOUNDED_UPPER, boundNodes);
     }
     // Add all of the wildcards that roll up to this node. For example:
     // public static <T> void foo(Ty<?> a, Obj<?, ?> b, Obj<Ty<?>, Ty<?>> c) should declare an abs
