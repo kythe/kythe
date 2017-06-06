@@ -12,10 +12,22 @@ let y = x + 3;
 
 // Check indexing through object literal values.
 {
+  // TODO: - @age defines/binding Age
   //- @obj defines/binding Obj
   //- @x ref X
   let obj = {age: x};
+
+  // TODO: - @age ref Age
+  //- @destructure defines/binding Destructure
+  let {age: destructure} = obj;
+
+  //- @destructure ref Destructure
+  destructure;
 }
+
+// TODO: test array destructuring.
+// It currently doesn't work because we need to alter the tsconfig to bring
+// in [Symbol.iterator] I think.
 
 // Verify we don't crash on "undefined", which is special in that it is
 // allowed to refer to nothing.

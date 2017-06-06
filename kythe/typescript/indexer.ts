@@ -239,6 +239,7 @@ class Vistor {
           }
           parts.push(`block${this.anonId++}`);
           break;
+        case ts.SyntaxKind.BindingElement:
         case ts.SyntaxKind.ClassDeclaration:
         case ts.SyntaxKind.FunctionDeclaration:
         case ts.SyntaxKind.InterfaceDeclaration:
@@ -616,21 +617,29 @@ class Vistor {
     type?: ts.TypeNode,
     initializer?: ts.Expression,
   }) {
-    if (decl.name.kind === ts.SyntaxKind.Identifier) {
-      let sym = this.getSymbolAtLocation(decl.name);
-      if (!sym) {
-        this.todo(
-            decl.name, `declaration ${decl.name.getText()} has no symbol`);
-        return;
-      }
-      let kVar = this.getSymbolName(sym, TSNamespace.VALUE);
-      this.emitNode(kVar, 'variable');
+    switch (decl.name.kind) {
+      case ts.SyntaxKind.Identifier:
+        let sym = this.getSymbolAtLocation(decl.name);
+        if (!sym) {
+          this.todo(
+              decl.name, `declaration ${decl.name.getText()} has no symbol`);
+          return;
+        }
+        let kVar = this.getSymbolName(sym, TSNamespace.VALUE);
+        this.emitNode(kVar, 'variable');
 
-      this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kVar);
-    } else {
-      this.todo(
-          decl.name,
-          `handle variable declaration: ${ts.SyntaxKind[decl.name.kind]}`);
+        this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kVar);
+        break;
+      case ts.SyntaxKind.ObjectBindingPattern:
+      case ts.SyntaxKind.ArrayBindingPattern:
+        for (const element of (decl.name as ts.BindingPattern).elements) {
+          this.visit(element);
+        }
+        break;
+      default:
+        this.todo(
+            decl.name,
+            `handle variable declaration: ${ts.SyntaxKind[decl.name.kind]}`);
     }
     if (decl.type) this.visitType(decl.type);
     if (decl.initializer) this.visit(decl.initializer);
@@ -774,6 +783,8 @@ class Vistor {
         return this.visitTypeAliasDeclaration(node as ts.TypeAliasDeclaration);
       case ts.SyntaxKind.TypeReference:
         return this.visitType(node as ts.TypeNode);
+      case ts.SyntaxKind.BindingElement:
+        return this.visitVariableDeclaration(node as ts.BindingElement);
       case ts.SyntaxKind.Identifier:
         // Assume that this identifer is occurring as part of an
         // expression; we handle identifiers that occur in other
