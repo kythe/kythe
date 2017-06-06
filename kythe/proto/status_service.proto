@@ -51,4 +51,11 @@ message StatusReply {
       SUPPORTED = 2;     // the language is fully supported
     }
   }
+
+  // An index may comprise data from multiple build origins.  An index_version
+  // is an opaque identifier for a complete index, encompassing all reported
+  // origins being served.  This is usually distinct from each origin's
+  // revision, and may be as simple as a timestamp at which the serving data
+  // were created.
+  string index_version = 3;
 }
