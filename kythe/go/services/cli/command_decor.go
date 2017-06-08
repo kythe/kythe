@@ -125,20 +125,21 @@ func (c *decorCommand) SetFlags(flag *flag.FlagSet) {
 	c.baseDecorCommand.SetFlags(flag)
 	// TODO(schroederc): add option to look for dirty files based on file-ticket path and a directory root
 	flag.StringVar(&c.dirtyFile, "dirty", "", "Send the given file as the dirty buffer for patching references")
-	flag.StringVar(&c.refFormat, "format", "@edgeKind@\t@^line@:@^col@-@$line@:@$col@\t@nodeKind@\t@target@",
+	flag.StringVar(&c.refFormat, "format", "@edgeKind@\t@^line@:@^col@-@$line@:@$col@\t@targetKind@\t@target@",
 		`Format for each decoration result.
       Format Markers:
-        @target@    -- ticket of referenced target node
-        @targetDef@ -- ticket of referenced target's definition
-        @edgeKind@  -- edge kind from anchor node to its referenced target
-        @nodeKind@  -- node kind of referenced target
-        @subkind@   -- subkind of referenced target
-        @^offset@   -- anchor source's starting byte-offset
-        @^line@     -- anchor source's starting line
-        @^col@      -- anchor source's starting column offset
-        @$offset@   -- anchor source's ending byte-offset
-        @$line@     -- anchor source's ending line
-        @$col@      -- anchor source's ending column offset`)
+        @target@     -- ticket of referenced target node
+        @targetDef@  -- ticket of referenced target's definition
+        @edgeKind@   -- edge kind from anchor node to its referenced target
+        @targetKind@ -- node kind and subkind of referenced target
+        @nodeKind@   -- node kind of referenced target
+        @subkind@    -- subkind of referenced target
+        @^offset@    -- anchor source's starting byte-offset
+        @^line@      -- anchor source's starting line
+        @^col@       -- anchor source's starting column offset
+        @$offset@    -- anchor source's ending byte-offset
+        @$line@      -- anchor source's ending line
+        @$col@       -- anchor source's ending column offset`)
 	flag.BoolVar(&c.targetDefs, "target_definitions", false, "Whether to request definitions (@targetDef@ format marker) for each reference's target")
 	flag.BoolVar(&c.extendsOverrides, "extends_overrides", false, "Whether to request extends/overrides information")
 }
@@ -189,6 +190,11 @@ func (c decorCommand) displayDecorations(decor *xpb.DecorationsReply) error {
 		nodeKind := factValue(nodes, ref.TargetTicket, facts.NodeKind, "UNKNOWN")
 		subkind := factValue(nodes, ref.TargetTicket, facts.Subkind, "")
 
+		tgtKind := nodeKind
+		if subkind != "" {
+			tgtKind += "/" + subkind
+		}
+
 		var targetDef string
 		if ref.TargetDefinition != "" {
 			targetDef = ref.TargetDefinition
@@ -199,6 +205,7 @@ func (c decorCommand) displayDecorations(decor *xpb.DecorationsReply) error {
 		r := strings.NewReplacer(
 			"@target@", ref.TargetTicket,
 			"@edgeKind@", ref.Kind,
+			"@targetKind@", tgtKind,
 			"@nodeKind@", nodeKind,
 			"@subkind@", subkind,
 			"@^offset@", itoa(ref.Span.Start.ByteOffset),
