@@ -148,11 +148,15 @@ func (c edgesCommand) displayEdgeGraph(reply *gpb.EdgesReply) error {
 
 	for source, es := range reply.EdgeSets {
 		for gKind, g := range es.Groups {
+			hasOrdinal := edges.OrdinalKind(gKind)
 			for _, edge := range g.Edge {
 				tgt := edge.TargetTicket
 				src, kind := source, gKind
 				if edges.IsReverse(kind) {
 					src, kind, tgt = tgt, edges.Mirror(kind), src
+				}
+				if hasOrdinal || edge.Ordinal != 0 {
+					kind = fmt.Sprintf("%s.%d", kind, edge.Ordinal)
 				}
 				groups, ok := esets[src]
 				if !ok {
