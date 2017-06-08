@@ -213,8 +213,8 @@ public class E {
   //- @objAndOneIFaceBound defines/binding OIFunc
   //- @S1 defines/binding S1Var
   //- @List ref List
-  //- S1Var bounded/upper Obj
-  //- S1Var bounded/upper List
+  //- S1Var bounded/upper.0 Obj
+  //- S1Var bounded/upper.1 List
   public <S1 extends Object & java.util.List> void objAndOneIFaceBound() {}
 
 }
