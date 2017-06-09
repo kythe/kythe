@@ -24,6 +24,8 @@ cc_library(
     linkopts = ["-lcurl"],
 )
 
+exports_files(["libmemcached.mem_config.h"])
+
 alias(
     name = "gtest",
     actual = "@com_github_google_googletest//:gtest",

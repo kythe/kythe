@@ -4,7 +4,7 @@ load("//:version.bzl", "check_version")
 
 # Check that the user has a version between our minimum supported version of
 # Bazel and our maximum supported version of Bazel.
-check_version("0.4.5", "0.5.0")
+check_version("0.4.5", "0.5.1")
 
 load("//tools/cpp:clang_configure.bzl", "clang_configure")
 
@@ -19,10 +19,17 @@ cc_system_package(
     modname = "uuid",
 )
 
-cc_system_package(
+new_http_archive(
+    name = "org_libmemcached_libmemcached",
+    build_file = "third_party/libmemcached.BUILD",
+    sha256 = "e22c0bb032fde08f53de9ffbc5a128233041d9f33b5de022c0978a2149885f82",
+    strip_prefix = "libmemcached-1.0.18",
+    url = "https://launchpad.net/libmemcached/1.0/1.0.18/+download/libmemcached-1.0.18.tar.gz",
+)
+
+bind(
     name = "libmemcached",
-    default = "/usr/local/opt/libmemcached",
-    envvar = "MEMCACHED_HOME",
+    actual = "@org_libmemcached_libmemcached//:libmemcached",
 )
 
 http_archive(
