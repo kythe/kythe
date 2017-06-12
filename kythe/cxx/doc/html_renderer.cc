@@ -615,7 +615,7 @@ std::string RenderDocument(
                 if (!anchor_link.empty()) {
                   text_out.append("<a href=\"");
                   AppendEscapedHtmlString(anchor_link, &text_out);
-                  text_out.append(">");
+                  text_out.append("\">");
                 }
                 AppendEscapedHtmlString(anchor_text, &text_out);
                 if (!anchor_link.empty()) {
