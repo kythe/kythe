@@ -30,7 +30,7 @@ RUN apt-get update && \
       git pkg-config zip unzip rsync patch zsh wget net-tools less parallel locales make \
       g++ gcc openjdk-8-jdk openjdk-8-source clang-3.6 flex asciidoc source-highlight graphviz \
       zlib1g-dev libarchive-dev libncurses-dev uuid-dev libssl-dev bazel cmake \
-      ca-certificates-java libcurl4-openssl-dev libmemcached-dev libsasl2-dev && \
+      ca-certificates-java libcurl4-openssl-dev libsasl2-dev && \
     apt-get clean
 
 RUN update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
@@ -47,4 +47,3 @@ RUN wget https://storage.googleapis.com/golang/go1.4.linux-amd64.tar.gz -O /tmp/
     tar xzf /tmp/go.tar.gz -C /usr/local/ && \
     rm -f /tmp/go.tar.gz
 ENV PATH=/usr/local/go/bin:$PATH
-
