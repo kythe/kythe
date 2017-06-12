@@ -237,5 +237,10 @@ func showSignature(signature *cpb.MarkedSource) string {
 	if signature == nil {
 		return "(nil)"
 	}
-	return markedsource.Render(signature)
+	ident := markedsource.RenderSimpleIdentifier(signature)
+	params := markedsource.RenderSimpleParams(signature)
+	if len(params) == 0 {
+		return ident
+	}
+	return fmt.Sprintf("%s(%s)", ident, strings.Join(params, ","))
 }
