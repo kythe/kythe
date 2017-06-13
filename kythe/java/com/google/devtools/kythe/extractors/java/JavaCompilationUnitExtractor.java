@@ -18,12 +18,12 @@ package com.google.devtools.kythe.extractors.java;
 
 import static java.nio.file.LinkOption.NOFOLLOW_LINKS;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
@@ -87,7 +87,7 @@ import javax.tools.Diagnostic;
 import javax.tools.DiagnosticCollector;
 import javax.tools.JavaCompiler;
 import javax.tools.JavaCompiler.CompilationTask;
-import javax.tools.JavaFileManager;
+import javax.tools.JavaFileManager.Location;
 import javax.tools.JavaFileObject;
 import javax.tools.JavaFileObject.Kind;
 import javax.tools.StandardJavaFileManager;
@@ -108,8 +108,13 @@ public class JavaCompilationUnitExtractor {
   private static final FormattingLogger logger =
       FormattingLogger.getLogger(JavaCompilationUnitExtractor.class);
 
+  private static final String SOURCE_JAR_ROOT = "!SOURCE_JAR!";
+
+  private static String classJarRoot(Location location) {
+    return String.format("!%s_JAR!", location);
+  }
+
   private static final String JAR_SCHEME = "jar";
-  @VisibleForTesting static final String JAR_ROOT = "!jar!";
   private final String jdkJar;
   private final String rootDirectory;
   private final boolean trackUnusedDependencies;
@@ -180,6 +185,7 @@ public class JavaCompilationUnitExtractor {
       boolean hasErrors,
       Set<String> newSourcePath,
       Set<String> newClassPath,
+      Iterable<String> newBootClassPath,
       List<String> sourceFiles,
       String outputPath,
       Set<String> unusedJars) {
@@ -190,6 +196,8 @@ public class JavaCompilationUnitExtractor {
     unit.addArgument(Joiner.on(":").join(newSourcePath));
     unit.addArgument("-cp");
     unit.addArgument(Joiner.on(":").join(newClassPath));
+    unit.addArgument("-bootclasspath");
+    unit.addArgument(Joiner.on(":").join(newBootClassPath));
     unit.setHasCompileErrors(hasErrors);
     unit.addAllRequiredInput(requiredInputs);
     for (String sourceFile : sourceFiles) {
@@ -202,6 +210,7 @@ public class JavaCompilationUnitExtractor {
             .setValue(
                 JavaDetails.newBuilder()
                     .addAllClasspath(newClassPath)
+                    .addAllBootclasspath(newBootClassPath)
                     .addAllSourcepath(newSourcePath)
                     .build()
                     .toByteString()));
@@ -230,6 +239,7 @@ public class JavaCompilationUnitExtractor {
       String target,
       Iterable<String> sources,
       Iterable<String> classpath,
+      Iterable<String> bootclasspath,
       Iterable<String> sourcepath,
       Iterable<String> processorpath,
       Iterable<String> processors,
@@ -239,6 +249,7 @@ public class JavaCompilationUnitExtractor {
     Preconditions.checkNotNull(target);
     Preconditions.checkNotNull(sources);
     Preconditions.checkNotNull(classpath);
+    Preconditions.checkNotNull(bootclasspath);
     Preconditions.checkNotNull(sourcepath);
     Preconditions.checkNotNull(processorpath);
     Preconditions.checkNotNull(processors);
@@ -249,7 +260,7 @@ public class JavaCompilationUnitExtractor {
     if (sources.iterator().hasNext()) {
       results =
           runJavaAnalysisToExtractCompilationDetails(
-              sources, classpath, sourcepath, processorpath, processors, options);
+              sources, classpath, bootclasspath, sourcepath, processorpath, processors, options);
     } else {
       results = new AnalysisResults();
     }
@@ -282,6 +293,7 @@ public class JavaCompilationUnitExtractor {
             results.hasErrors,
             results.newSourcePath,
             results.newClassPath,
+            results.newBootClassPath,
             results.explicitSources,
             ExtractorUtils.tryMakeRelative(rootDirectory, outputPath),
             results.unusedJars);
@@ -405,14 +417,15 @@ public class JavaCompilationUnitExtractor {
       Map<URI, String> sourceFiles,
       AnalysisResults results)
       throws ExtractionException {
-    for (JavaFileObject fileObject : fileManager.getUsages()) {
-      processRequiredInput(fileObject, fileManager, sourceFiles, results);
+    for (InputUsageRecord input : fileManager.getUsages()) {
+      processRequiredInput(input.fileObject(), input.location(), fileManager, sourceFiles, results);
     }
   }
 
   private void processRequiredInput(
       JavaFileObject requiredInput,
-      JavaFileManager fileManager,
+      Location location,
+      UsageAsInputReportingFileManager fileManager,
       Map<URI, String> sourceFiles,
       AnalysisResults results)
       throws ExtractionException {
@@ -435,7 +448,7 @@ public class JavaCompilationUnitExtractor {
         JarURLConnection jarConn = ((JarURLConnection) conn);
         jarPath = jarConn.getJarFileURL().getFile().toString();
         // jar entries don't have a leading '/', and we expect
-        // paths like "!JAR!/com/foo/Bar.class"
+        // paths like "!CLASS_PATH_JAR!/com/foo/Bar.class"
         entryPath = "/" + jarConn.getEntryName();
       } else {
         entryPath = url.getFile().toString();
@@ -475,18 +488,22 @@ public class JavaCompilationUnitExtractor {
 
     String strippedPath = relativePath;
     if (isJarPath) {
-      // If the file came from a jar file, we strip that out as we
-      // don't care where it came from, it was not as a source file in source control.
-      // We turn it in to a fake path that starts with !JAR!/
-      // This is done so we do not need to download the entire jar file for each
-      // file's compilation (e.g. instead of downloading 200MB we only download 60K
-      // for analyzing the kythe java indexer).
+      // If the file came from a jar file, we strip that out as we don't care where it came from, it
+      // was not as a source file in source control.  We turn it in to a fake path.  This is done so
+      // we do not need to download the entire jar file for each file's compilation (e.g. instead of
+      // downloading 200MB we only download 60K for analyzing the Kythe java indexer).
       switch (requiredInput.getKind()) {
         case CLASS:
-          results.newClassPath.add(JAR_ROOT);
+          String root = classJarRoot(location);
+          strippedPath = root + entryPath;
+          (location == StandardLocation.PLATFORM_CLASS_PATH
+                  ? results.newBootClassPath
+                  : results.newClassPath)
+              .add(root);
           break;
         case SOURCE:
-          results.newSourcePath.add(JAR_ROOT);
+          results.newSourcePath.add(SOURCE_JAR_ROOT);
+          strippedPath = SOURCE_JAR_ROOT + entryPath;
           break;
         default:
           // TODO(T227): we shouldn't need to throw an exception here because the above switch
@@ -497,26 +514,10 @@ public class JavaCompilationUnitExtractor {
                   "Unsupported java file kind: '%s' for '%s'",
                   requiredInput.getKind().name(), uri));
       }
-      strippedPath = JAR_ROOT + entryPath;
     }
     if (!isJarPath && requiredInput.getKind() == Kind.CLASS) {
       // If the class file was on disk, we need to infer the correct classpath to add.
-      String binaryName = fileManager.inferBinaryName(StandardLocation.CLASS_OUTPUT, requiredInput);
-      if (binaryName == null) {
-        binaryName = fileManager.inferBinaryName(StandardLocation.CLASS_PATH, requiredInput);
-      }
-      if (binaryName == null) {
-        binaryName = fileManager.inferBinaryName(StandardLocation.SOURCE_PATH, requiredInput);
-      }
-      if (binaryName == null) {
-        binaryName =
-            fileManager.inferBinaryName(StandardLocation.PLATFORM_CLASS_PATH, requiredInput);
-      }
-      if (binaryName == null) {
-        throw new ExtractionException(
-            String.format("unable to infer classpath for %s", strippedPath), false);
-      }
-
+      String binaryName = getBinaryNameForClass(fileManager, requiredInput);
       // Java package names map to folders on disk, so if we want to find the right directory
       // we replace each . with a /.
       String csubdir = binaryName.replace('.', '/');
@@ -527,7 +528,10 @@ public class JavaCompilationUnitExtractor {
                 "unable to infer classpath for %s from %s, %s", strippedPath, csubdir, binaryName),
             false);
       } else {
-        results.newClassPath.add(strippedPath.substring(0, cindex));
+        (location == StandardLocation.PLATFORM_CLASS_PATH
+                ? results.newBootClassPath
+                : results.newClassPath)
+            .add(strippedPath.substring(0, cindex));
       }
     }
     // TODO: Better way to identify generated source files?
@@ -561,6 +565,33 @@ public class JavaCompilationUnitExtractor {
     }
   }
 
+  /** {@link Location}s that may contain class files. */
+  private static final ImmutableSet<Location> CLASS_LOCATIONS =
+      ImmutableSet.<Location>of(
+          StandardLocation.CLASS_OUTPUT,
+          StandardLocation.CLASS_PATH,
+          StandardLocation.PLATFORM_CLASS_PATH);
+
+  /**
+   * Returns the location and binary name of a class file, or {@code null} if the file object is not
+   * a class.
+   */
+  private static String getBinaryNameForClass(
+      UsageAsInputReportingFileManager fileManager, JavaFileObject fileObject)
+      throws ExtractionException {
+    if (fileObject.getKind() != Kind.CLASS) {
+      return null;
+    }
+    String binaryName;
+    for (Location location : CLASS_LOCATIONS) {
+      if ((binaryName = fileManager.inferBinaryName(location, fileObject)) != null) {
+        return binaryName;
+      }
+    }
+    throw new ExtractionException(
+        String.format("unable to infer classpath for %s", fileObject.getName()), false);
+  }
+
   private static class AnalysisResults {
     // Map from strippedPath to an input's relative path to the corpus root.
     final Map<String, String> relativePaths = new LinkedHashMap<>();
@@ -576,6 +607,7 @@ public class JavaCompilationUnitExtractor {
     // This is done to speed up analysis.
     final Set<String> newSourcePath = new LinkedHashSet<>();
     final Set<String> newClassPath = new LinkedHashSet<>();
+    final Set<String> newBootClassPath = new LinkedHashSet<>();
     final List<String> explicitSources = new ArrayList<>();
     final Set<String> unusedJars = new LinkedHashSet<>();
     boolean hasErrors = false;
@@ -612,6 +644,7 @@ public class JavaCompilationUnitExtractor {
   private AnalysisResults runJavaAnalysisToExtractCompilationDetails(
       Iterable<String> sources,
       Iterable<String> classpath,
+      Iterable<String> bootclasspath,
       Iterable<String> sourcepath,
       Iterable<String> processorpath,
       Iterable<String> processors,
@@ -651,7 +684,9 @@ public class JavaCompilationUnitExtractor {
       throw new ExtractionException(
           "Unable to create temporary .class output directory", ioe, true);
     }
-    List<String> completeOptions = completeCompilerOptions(options, classpath, sourcepath, tempDir);
+    List<String> completeOptions =
+        completeCompilerOptions(
+            standardFileManager, options, classpath, bootclasspath, sourcepath, tempDir);
 
     Iterable<? extends CompilationUnitTree> compilationUnits;
     Symtab syms;
@@ -745,6 +780,30 @@ public class JavaCompilationUnitExtractor {
     return results;
   }
 
+  /** Sets the given location using command-line flags and the FileManager API. */
+  private static void setLocation(
+      List<String> options,
+      StandardJavaFileManager fileManager,
+      Iterable<String> searchpath,
+      String flag,
+      StandardLocation location)
+      throws ExtractionException {
+    String joined = Joiner.on(":").join(searchpath);
+    if (!joined.isEmpty()) {
+      options.add(flag);
+      options.add(joined);
+      try {
+        List<File> files = Lists.newArrayList();
+        for (String elt : searchpath) {
+          files.add(new File(elt));
+        }
+        fileManager.setLocation(location, files);
+      } catch (IOException e) {
+        throw new ExtractionException(String.format("Couldn't set %s", location), e, false);
+      }
+    }
+  }
+
   /** Create the ClassLoader to use for annotation processors. */
   private static ClassLoader processingClassloader(
       Iterable<String> classpath, Iterable<String> processorpath) throws ExtractionException {
@@ -788,28 +847,33 @@ public class JavaCompilationUnitExtractor {
    * {@link List}.
    */
   private static List<String> completeCompilerOptions(
+      StandardJavaFileManager standardFileManager,
       Iterable<String> rawOptions,
       Iterable<String> classpath,
+      Iterable<String> bootclasspath,
       Iterable<String> sourcepath,
-      Path tempDestinationDir) {
+      Path tempDestinationDir)
+      throws ExtractionException {
 
     List<String> completeOptions =
         JavacOptionsUtils.ensureEncodingSet(
             JavacOptionsUtils.removeUnsupportedOptions(Lists.newArrayList(rawOptions)),
             Charsets.UTF_8);
 
-    // We need to modify the options to the compiler to pass in -classpath and
-    // -sourcepath arguments.
-    String classPathJoined = Joiner.on(":").join(classpath);
-    String sourcePathJoined = Joiner.on(":").join(sourcepath);
-    if (!Strings.isNullOrEmpty(classPathJoined)) {
-      completeOptions.add("-classpath");
-      completeOptions.add(classPathJoined);
-    }
-    if (!Strings.isNullOrEmpty(sourcePathJoined)) {
-      completeOptions.add("-sourcepath");
-      completeOptions.add(sourcePathJoined);
-    }
+    setLocation(
+        completeOptions, standardFileManager, classpath, "-cp", StandardLocation.CLASS_PATH);
+    setLocation(
+        completeOptions,
+        standardFileManager,
+        sourcepath,
+        "-sourcepath",
+        StandardLocation.SOURCE_PATH);
+    setLocation(
+        completeOptions,
+        standardFileManager,
+        bootclasspath,
+        "-bootclasspath",
+        StandardLocation.PLATFORM_CLASS_PATH);
 
     JavacOptionsUtils.removeOptions(completeOptions, EnumSet.of(Option.D));
     completeOptions.add("-d");
@@ -847,8 +911,8 @@ public class JavaCompilationUnitExtractor {
       }
       jars.add(ExtractorUtils.tryMakeRelative(rootDirectory, classpath));
     }
-    for (JavaFileObject usage : fileManager.getUsages()) {
-      URI uri = usage.toUri();
+    for (InputUsageRecord usage : fileManager.getUsages()) {
+      URI uri = usage.fileObject().toUri();
       if (!uri.getScheme().equals(JAR_SCHEME)) {
         continue;
       }

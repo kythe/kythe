@@ -19,9 +19,10 @@ java_library(
         "//kythe/proto:analysis_proto_java",
         "//kythe/proto:java_proto_java",
         "//kythe/proto:storage_proto_java",
+        "//third_party/javac",
         "//third_party/proto:any_proto_java",
         "//third_party/proto:protobuf_java",
-        "//third_party/javac",
+        "@com_google_code_findbugs_jsr305//jar",
         "@com_google_guava_guava//jar",
     ],
 )

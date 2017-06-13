@@ -29,7 +29,6 @@ import com.google.devtools.kythe.extractors.shared.FileVNames;
 import com.google.devtools.kythe.extractors.shared.IndexInfoUtils;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.ExtensionRegistry;
-import com.sun.tools.javac.main.Option;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -90,6 +89,7 @@ public class JavaExtractor {
                 info.getOwner(),
                 jInfo.getSourceFileList(),
                 jInfo.getClasspathList(),
+                jInfo.getBootclasspathList(),
                 jInfo.getSourcepathList(),
                 jInfo.getProcessorpathList(),
                 jInfo.getProcessorList(),

@@ -23,11 +23,12 @@ import com.sun.tools.javac.main.Arguments;
 import com.sun.tools.javac.main.Option;
 import com.sun.tools.javac.util.Context;
 import com.sun.tools.javac.util.Options;
-import java.lang.reflect.Field;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import javax.tools.JavaFileObject;
+import javax.tools.StandardLocation;
 
 /** A class that wraps javac to extract compilation information and write it to an index file. */
 public class Javac8Wrapper extends AbstractJavacWrapper {
@@ -85,6 +86,11 @@ public class Javac8Wrapper extends AbstractJavacWrapper {
       }
     }
 
+    List<String> bootclasspath = new ArrayList<>();
+    for (File bcp : fileManager.getLocation(StandardLocation.PLATFORM_CLASS_PATH)) {
+      bootclasspath.add(bcp.toString());
+    }
+
     // Get the output directory for this target.
     String outputDirectory = options.get(Option.D);
     if (outputDirectory == null) {
@@ -97,6 +103,7 @@ public class Javac8Wrapper extends AbstractJavacWrapper {
         analysisTarget,
         sources,
         classPaths,
+        bootclasspath,
         sourcePaths,
         processorPaths,
         processors,

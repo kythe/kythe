@@ -16,6 +16,10 @@
 
 package com.google.devtools.kythe.extractors.java;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import javax.annotation.Nullable;
+import javax.tools.JavaFileManager.Location;
 import javax.tools.JavaFileObject;
 
 /**
@@ -26,13 +30,14 @@ import javax.tools.JavaFileObject;
 public class InputUsageRecord {
 
   private final JavaFileObject fileObject;
+  private final Location location;
+
   private boolean isUsed = false;
 
-  public InputUsageRecord(JavaFileObject fileObject) {
-    if (fileObject == null) {
-      throw new IllegalStateException();
-    }
-    this.fileObject = fileObject;
+  /** @param location of a class file object, or {@code null} for source files. */
+  public InputUsageRecord(JavaFileObject fileObject, @Nullable Location location) {
+    this.fileObject = checkNotNull(fileObject);
+    this.location = location;
   }
 
   /** Record that the compiler used this file as input. */
@@ -48,5 +53,10 @@ public class InputUsageRecord {
   /** Returns the first file object created for this file. */
   public JavaFileObject fileObject() {
     return fileObject;
+  }
+
+  /** Return the file's {@link Location}. */
+  public Location location() {
+    return location;
   }
 }

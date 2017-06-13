@@ -61,7 +61,7 @@ public class JavaExtractorTest extends TestCase {
 
     // Index the specified sources
     CompilationDescription description =
-        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
+        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
 
     CompilationUnit unit = description.getCompilationUnit();
     assertNotNull(unit);
@@ -93,7 +93,7 @@ public class JavaExtractorTest extends TestCase {
 
     // Index the specified sources
     CompilationDescription description =
-        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
+        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
 
     CompilationUnit unit = description.getCompilationUnit();
     assertNotNull(unit);
@@ -129,7 +129,7 @@ public class JavaExtractorTest extends TestCase {
 
     // Index the specified sources
     CompilationDescription description =
-        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
+        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
 
     CompilationUnit unit = description.getCompilationUnit();
     assertThat(unit).isNotNull();
@@ -163,7 +163,7 @@ public class JavaExtractorTest extends TestCase {
 
     // Index the specified sources
     CompilationDescription description =
-        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
+        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
 
     CompilationUnit unit = description.getCompilationUnit();
     assertNotNull(unit);
@@ -200,7 +200,7 @@ public class JavaExtractorTest extends TestCase {
 
     // Index the specified sources and classes from the classpath
     CompilationDescription description =
-        java.extract(TARGET1, sources, classpath, EMPTY, EMPTY, EMPTY, EMPTY, "output");
+        java.extract(TARGET1, sources, classpath, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
 
     CompilationUnit unit = description.getCompilationUnit();
     assertNotNull(unit);
@@ -234,15 +234,15 @@ public class JavaExtractorTest extends TestCase {
 
     // Index the specified sources and classes from inside jar on the classpath.
     CompilationDescription description =
-        java.extract(TARGET1, sources, classpath, EMPTY, EMPTY, EMPTY, EMPTY, "output");
+        java.extract(TARGET1, sources, classpath, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
 
     CompilationUnit unit = description.getCompilationUnit();
     assertThat(unit).isNotNull();
     assertThat(unit.getVName().getSignature()).isEqualTo(TARGET1);
     assertThat(unit.getSourceFileList()).containsExactlyElementsIn(sources).inOrder();
 
-    // The classpath is adjusted to start wit !jar!
-    String classFile = join(JavaCompilationUnitExtractor.JAR_ROOT, "base/A.class");
+    // The classpath is adjusted to start wit !CLASS_PATH_JAR!
+    String classFile = join("!CLASS_PATH_JAR!", "base/A.class");
 
     // Ensure the right class files are picked up from the classpath from within the jar.
     assertThat(getInfos(unit.getRequiredInputList()))
@@ -254,8 +254,8 @@ public class JavaExtractorTest extends TestCase {
     assertEquals(1, args.getSourcepath().size());
     assertEquals(join(TEST_DATA_DIR, "child"), args.getSourcepath().get(0));
     assertEquals(1, args.getClasspath().size());
-    // Ensure the magic !jar! classpath is added.
-    assertEquals(JavaCompilationUnitExtractor.JAR_ROOT, args.getClasspath().get(0));
+    // Ensure the magic !CLASS_PATH_JAR! classpath is added.
+    assertEquals("!CLASS_PATH_JAR!", args.getClasspath().get(0));
     assertThatArgumentsMatch(args, unit);
   }
 
@@ -270,7 +270,7 @@ public class JavaExtractorTest extends TestCase {
 
     // Index the specified sources, reporting compilation failure.
     CompilationDescription description =
-        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
+        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
 
     CompilationUnit unit = description.getCompilationUnit();
     assertNotNull(unit);
@@ -302,7 +302,7 @@ public class JavaExtractorTest extends TestCase {
 
     // Index the specified sources
     CompilationDescription description =
-        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
+        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
 
     CompilationUnit unit = description.getCompilationUnit();
     assertNotNull(unit);
@@ -332,7 +332,7 @@ public class JavaExtractorTest extends TestCase {
 
     // Index the specified sources
     CompilationDescription description =
-        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
+        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
 
     CompilationUnit unit = description.getCompilationUnit();
     assertNotNull(unit);
@@ -365,7 +365,7 @@ public class JavaExtractorTest extends TestCase {
 
     // Index the specified sources
     CompilationDescription description =
-        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
+        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
 
     CompilationUnit unit = description.getCompilationUnit();
     assertNotNull(unit);
@@ -417,7 +417,7 @@ public class JavaExtractorTest extends TestCase {
             outputDirs.get(0).toString(),
             "-h",
             outputDirs.get(1).toString(),
-            "-g:lines",  // ensure this conjoined arg is handled correctly
+            "-g:lines", // ensure this conjoined arg is handled correctly
             "-d",
             outputDirs.get(2).toString());
 
@@ -437,7 +437,15 @@ public class JavaExtractorTest extends TestCase {
     // Index the specified sources
     CompilationDescription description =
         java.extract(
-            TARGET1, testSources, EMPTY, EMPTY, processorpath, processors, options, "output");
+            TARGET1,
+            testSources,
+            EMPTY,
+            EMPTY,
+            EMPTY,
+            processorpath,
+            processors,
+            options,
+            "output");
 
     CompilationUnit unit = description.getCompilationUnit();
     assertNotNull(unit);
@@ -450,6 +458,8 @@ public class JavaExtractorTest extends TestCase {
             "-sourcepath",
             TEST_DATA_DIR + ":" + outputDirs.get(0).getFileName(),
             "-cp",
+            "",
+            "-bootclasspath",
             "")
         .inOrder();
   }
@@ -488,7 +498,15 @@ public class JavaExtractorTest extends TestCase {
     // Index the specified sources
     CompilationDescription description =
         java.extract(
-            TARGET1, testSources, EMPTY, EMPTY, processorpath, processors, options, "output");
+            TARGET1,
+            testSources,
+            EMPTY,
+            EMPTY,
+            EMPTY,
+            processorpath,
+            processors,
+            options,
+            "output");
 
     CompilationUnit unit = description.getCompilationUnit();
     assertNotNull(unit);
@@ -525,7 +543,7 @@ public class JavaExtractorTest extends TestCase {
 
     // Index the specified sources
     CompilationDescription description =
-        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, options, "output");
+        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, options, "output");
 
     CompilationUnit unit = description.getCompilationUnit();
 
@@ -554,7 +572,7 @@ public class JavaExtractorTest extends TestCase {
 
     // Index the specified sources
     CompilationDescription description =
-        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, options, "output");
+        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, options, "output");
 
     CompilationUnit unit = description.getCompilationUnit();
     assertNotNull(unit);
@@ -567,13 +585,17 @@ public class JavaExtractorTest extends TestCase {
     for (FileInput input : unit.getRequiredInputList()) {
       requiredPaths.add(input.getInfo().getPath());
     }
-    assertThat(requiredPaths).containsExactly(sources.get(0), "!jar!/java/lang/Fake.class");
+    assertThat(requiredPaths)
+        .containsExactly(sources.get(0), "!PLATFORM_CLASS_PATH_JAR!/java/lang/Fake.class");
 
-    // And the correct classpath set to replay the compilation.
+    // And the correct source/class locations set to replay the compilation.
     JavaArguments args = JavaArguments.parseArguments(unit);
-    assertEquals(0, args.getSourcepath().size());
-    assertEquals(1, args.getClasspath().size());
-    assertEquals("!jar!", args.getClasspath().get(0));
+    assertThat(args.getSourcepath()).isEmpty();
+    assertThat(args.getClasspath()).isEmpty();
+    assertThat(args.getBootclasspath())
+        .containsExactly(
+            "kythe/javatests/com/google/devtools/kythe/extractors/java/testdata/empty/fake-rt.jar",
+            "!PLATFORM_CLASS_PATH_JAR!");
     assertThatArgumentsMatch(args, unit);
   }
 
@@ -643,11 +665,13 @@ public class JavaExtractorTest extends TestCase {
   }
 
   private static class JavaArguments {
-    private final List<String> sourcepath, classpath;
+    private final List<String> sourcepath, classpath, bootclasspath;
 
-    private JavaArguments(List<String> sourcepath, List<String> classpath) {
+    private JavaArguments(
+        List<String> sourcepath, List<String> classpath, List<String> bootclasspath) {
       this.sourcepath = ImmutableList.copyOf(sourcepath);
       this.classpath = ImmutableList.copyOf(classpath);
+      this.bootclasspath = ImmutableList.copyOf(bootclasspath);
     }
 
     public static JavaArguments parseArguments(CompilationUnit unit) {
@@ -657,6 +681,7 @@ public class JavaExtractorTest extends TestCase {
     public static JavaArguments parse(List<String> args) {
       List<String> sourcepath = new LinkedList<>();
       List<String> classpath = new LinkedList<>();
+      List<String> bootclasspath = new LinkedList<>();
       for (int i = 0; i < args.size(); i++) {
         if (args.get(i).equals("-s") || args.get(i).equals("-sourcepath")) {
           i++;
@@ -664,9 +689,12 @@ public class JavaExtractorTest extends TestCase {
         } else if (args.get(i).equals("-cp") || args.get(i).equals("-classpath")) {
           i++;
           classpath.addAll(parsePathList(args.get(i)));
+        } else if (args.get(i).equals("-bootclasspath")) {
+          i++;
+          bootclasspath.addAll(parsePathList(args.get(i)));
         }
       }
-      return new JavaArguments(sourcepath, classpath);
+      return new JavaArguments(sourcepath, classpath, bootclasspath);
     }
 
     public List<String> getSourcepath() {
@@ -675,6 +703,10 @@ public class JavaExtractorTest extends TestCase {
 
     public List<String> getClasspath() {
       return classpath;
+    }
+
+    public List<String> getBootclasspath() {
+      return bootclasspath;
     }
 
     private static List<String> parsePathList(String paths) {

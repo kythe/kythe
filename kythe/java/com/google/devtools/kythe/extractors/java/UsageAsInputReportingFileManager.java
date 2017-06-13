@@ -45,11 +45,11 @@ class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<Standar
   }
 
   /** Returns collection of JavaFileObjects that Javac read the contents of. */
-  public Collection<JavaFileObject> getUsages() {
-    Collection<JavaFileObject> result = new ArrayList<>();
+  public Collection<InputUsageRecord> getUsages() {
+    Collection<InputUsageRecord> result = new ArrayList<>();
     for (InputUsageRecord usageRecord : inputUsageRecords.values()) {
       if (usageRecord.isUsed()) {
-        result.add(usageRecord.fileObject());
+        result.add(usageRecord);
       }
     }
     return result;
@@ -68,19 +68,19 @@ class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<Standar
         new Function<JavaFileObject, JavaFileObject>() {
           @Override
           public JavaFileObject apply(JavaFileObject input) {
-            return map(input);
+            return map(input, location);
           }
         });
   }
 
   /** Wraps a JavaFileObject in a UsageAsInputReportingJavaFileObject, shares existing instances. */
-  private JavaFileObject map(JavaFileObject item) {
+  private JavaFileObject map(JavaFileObject item, Location location) {
     if (item == null) {
       return item;
     }
     InputUsageRecord usage = inputUsageRecords.get(item.toUri());
     if (usage == null) {
-      usage = new InputUsageRecord(item);
+      usage = new InputUsageRecord(item, location);
       inputUsageRecords.put(item.toUri(), usage);
     }
     return new UsageAsInputReportingJavaFileObject(item, usage);
@@ -93,7 +93,7 @@ class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<Standar
         new Function<JavaFileObject, JavaFileObject>() {
           @Override
           public JavaFileObject apply(JavaFileObject input) {
-            return map(input);
+            return map(input, null);
           }
         });
   }
@@ -101,7 +101,7 @@ class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<Standar
   @Override
   public JavaFileObject getJavaFileForInput(
       final Location location, final String className, final Kind kind) throws IOException {
-    return map(fileManager.getJavaFileForInput(location, className, kind));
+    return map(fileManager.getJavaFileForInput(location, className, kind), location);
   }
 
   @Override
@@ -109,7 +109,8 @@ class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<Standar
       Location location, String className, Kind kind, FileObject sibling) throws IOException {
     // A java file opened initially for output might later get reopened for input (e.g.,
     // source files generated during annotation processing), so we need to track them too.
-    return map(fileManager.getJavaFileForOutput(location, className, kind, unwrap(sibling)));
+    return map(
+        fileManager.getJavaFileForOutput(location, className, kind, unwrap(sibling)), location);
   }
 
   @Override
