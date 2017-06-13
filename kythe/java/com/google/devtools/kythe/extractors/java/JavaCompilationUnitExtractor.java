@@ -662,18 +662,27 @@ public class JavaCompilationUnitExtractor {
               null, fileManager, diagnosticsCollector, completeOptions, null, sourceFiles);
 
       List<Processor> procs = Lists.<Processor>newArrayList(new ProcessAnnotation(fileManager));
-      ClassLoader loader = processingClassloader(classpath, processorpath);
-      for (String processor : processors) {
-        try {
-          procs.add(loader.loadClass(processor).asSubclass(Processor.class).newInstance());
-        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-          throw new ExtractionException("Bad processor entry", e, false);
-        }
-      }
+      Set<Class<?>> loadedProcessors = new HashSet<>();
 
       // Add any processors registered in the META-INF/services configuration.
+      ClassLoader loader = processingClassloader(classpath, processorpath);
       for (Processor proc : ServiceLoader.load(Processor.class, loader)) {
         procs.add(proc);
+        loadedProcessors.add(proc.getClass());
+      }
+
+      // Add any processors passed as flags.
+      for (String processor : processors) {
+        try {
+          Class<?> procClass = loader.loadClass(processor);
+          if (!loadedProcessors.add(procClass)) {
+            // Skip processors already loaded from the META-INF/services configuration.
+            continue;
+          }
+          procs.add(procClass.asSubclass(Processor.class).getConstructor().newInstance());
+        } catch (ReflectiveOperationException e) {
+          throw new ExtractionException("Bad processor entry", e, false);
+        }
       }
 
       JavacTask javacTask = (JavacTask) task;
