@@ -17,6 +17,7 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/platform/shared:metadata",
         "//kythe/java/com/google/devtools/kythe/util",
         "//kythe/proto:analysis_proto_java",
+        "//kythe/proto:buildinfo_proto_java",
         "//kythe/proto:java_proto_java",
         "//kythe/proto:storage_proto_java",
         "//third_party/javac",

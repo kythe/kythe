@@ -28,6 +28,7 @@ import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
 import com.google.devtools.kythe.proto.Analysis.FileInfo;
 import com.google.devtools.kythe.proto.Java.JavaDetails;
+import com.google.protobuf.Any;
 import com.google.protobuf.InvalidProtocolBufferException;
 import java.io.File;
 import java.nio.file.Files;
@@ -653,11 +654,14 @@ public class JavaExtractorTest extends TestCase {
 
   private void assertThatArgumentsMatch(JavaArguments args, CompilationUnit unit)
       throws InvalidProtocolBufferException {
-    assertThat(unit.getDetailsList()).hasSize(1);
-    assertThat(unit.getDetails(0).getTypeUrl())
-        .isEqualTo(JavaCompilationUnitExtractor.JAVA_DETAILS_URL);
+    JavaDetails details = null;
+    for (Any any : unit.getDetailsList()) {
+      if (any.getTypeUrl().equals(JavaCompilationUnitExtractor.JAVA_DETAILS_URL)) {
+        details = JavaDetails.parseFrom(any.getValue());
+      }
+    }
+    assertThat(details).isNotNull();
 
-    JavaDetails details = JavaDetails.parseFrom(unit.getDetails(0).getValue());
     assertThat(details.getClasspathList()).containsExactlyElementsIn(args.getClasspath()).inOrder();
     assertThat(details.getSourcepathList())
         .containsExactlyElementsIn(args.getSourcepath())

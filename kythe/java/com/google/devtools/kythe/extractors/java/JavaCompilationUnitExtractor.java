@@ -39,6 +39,7 @@ import com.google.devtools.kythe.platform.java.JavacOptionsUtils;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
 import com.google.devtools.kythe.proto.Analysis.FileData;
+import com.google.devtools.kythe.proto.Buildinfo.BuildDetails;
 import com.google.devtools.kythe.proto.Java.JavaDetails;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.devtools.kythe.util.DeleteRecursively;
@@ -104,6 +105,7 @@ import javax.tools.ToolProvider;
  */
 public class JavaCompilationUnitExtractor {
   public static final String JAVA_DETAILS_URL = "kythe.io/proto/kythe.proto.JavaDetails";
+  public static final String BUILD_DETAILS_URL = "kythe.io/proto/kythe.proto.BuildDetails";
 
   private static final FormattingLogger logger =
       FormattingLogger.getLogger(JavaCompilationUnitExtractor.class);
@@ -214,6 +216,10 @@ public class JavaCompilationUnitExtractor {
                     .addAllSourcepath(newSourcePath)
                     .build()
                     .toByteString()));
+    unit.addDetails(
+        Any.newBuilder()
+            .setTypeUrl(BUILD_DETAILS_URL)
+            .setValue(BuildDetails.newBuilder().setBuildTarget(target).build().toByteString()));
     return unit.build();
   }
 
