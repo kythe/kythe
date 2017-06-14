@@ -506,7 +506,8 @@ bool MarkedSourceGenerator::WillGenerateMarkedSource() const {
          llvm::isa<clang::TypedefNameDecl>(decl_) ||
          llvm::isa<clang::FieldDecl>(decl_) ||
          llvm::isa<clang::EnumConstantDecl>(decl_) ||
-         llvm::isa<clang::ObjCMethodDecl>(decl_);
+         llvm::isa<clang::ObjCMethodDecl>(decl_) ||
+         llvm::isa<clang::ObjCContainerDecl>(decl_);
 }
 
 std::string GetDeclName(const clang::LangOptions &lang_options,
@@ -789,10 +790,9 @@ MarkedSource MarkedSourceGenerator::GenerateMarkedSourceForFunction(
   return out;
 }
 
-MarkedSource MarkedSourceGenerator::GenerateMarkedSourceForNamedDecl(
-    const clang::NamedDecl *decl) {
+MarkedSource MarkedSourceGenerator::GenerateMarkedSourceForNamedDecl() {
   MarkedSource out;
-  ReplaceMarkedSourceWithQualifiedName(out.add_child());
+  ReplaceMarkedSourceWithQualifiedName(&out);
   return out;
 }
 
@@ -815,6 +815,6 @@ MaybeFew<MarkedSource> MarkedSourceGenerator::GenerateMarkedSource(
   } else if (llvm::isa<clang::ObjCMethodDecl>(decl_)) {
     return GenerateMarkedSourceUsingSource(decl_id);
   }
-  return GenerateMarkedSourceForNamedDecl(decl_);
+  return GenerateMarkedSourceForNamedDecl();
 }
 }  // namespace kythe

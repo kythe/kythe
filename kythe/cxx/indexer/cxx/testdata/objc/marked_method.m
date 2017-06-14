@@ -1,4 +1,4 @@
-// Test marked source with attributes.
+// Test marked source with attributes for methods.
 //
 // TODO: Do something meaningful with selectors/arguments.
 

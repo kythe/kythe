@@ -1900,6 +1900,22 @@ test_suite(
 )
 
 cxx_indexer_test(
+    name = "ms_class",
+    srcs = ["marked_source/ms_class.cc"],
+    convert_marked_source = True,
+    std = "c++14",
+    tags = ["marked_source"],
+)
+
+cxx_indexer_test(
+    name = "ms_class_ns",
+    srcs = ["marked_source/ms_class_ns.cc"],
+    convert_marked_source = True,
+    std = "c++14",
+    tags = ["marked_source"],
+)
+
+cxx_indexer_test(
     name = "ms_fn",
     srcs = ["marked_source/ms_fn.cc"],
     convert_marked_source = True,
@@ -1956,7 +1972,18 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
-    name = "objc_marked_source",
+    name = "objc_marked_source_class",
+    srcs = ["objc/marked_class.m"],
+    convert_marked_source = True,
+    objc = True,
+    tags = [
+        "marked_source",
+        "objc",
+    ],
+)
+
+cxx_indexer_test(
+    name = "objc_marked_source_method",
     srcs = ["objc/marked_method.m"],
     convert_marked_source = True,
     objc = True,
