@@ -52,7 +52,7 @@ func (xrefsCommand) Name() string     { return "xrefs" }
 func (xrefsCommand) Synopsis() string { return "retrieve cross-references for the given node" }
 func (xrefsCommand) Usage() string    { return "" }
 func (c *xrefsCommand) SetFlags(flag *flag.FlagSet) {
-	flag.StringVar(&c.defKind, "definitions", "all", "Kind of definitions to return (kinds: all, binding, full, or none)")
+	flag.StringVar(&c.defKind, "definitions", "binding", "Kind of definitions to return (kinds: all, binding, full, or none)")
 	flag.StringVar(&c.declKind, "declarations", "all", "Kind of declarations to return (kinds: all or none)")
 	flag.StringVar(&c.refKind, "references", "noncall", "Kind of references to return (kinds: all, noncall, call, or none)")
 	flag.StringVar(&c.callerKind, "callers", "direct", "Kind of callers to return (kinds: direct, overrides, or none)")
