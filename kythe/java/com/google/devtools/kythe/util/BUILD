@@ -25,3 +25,8 @@ java_library(
         "@com_google_guava_guava//jar",
     ],
 )
+
+java_library(
+    name = "position_mappings",
+    srcs = ["PositionMappings.java"],
+)

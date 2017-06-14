@@ -54,15 +54,3 @@ java_test(
         "@junit_junit//jar",
     ],
 )
-
-java_test(
-    name = "source_text_test",
-    size = "small",
-    srcs = ["SourceTextTest.java"],
-    test_class = "com.google.devtools.kythe.analyzers.java.SourceTextTest",
-    deps = [
-        "//kythe/java/com/google/devtools/kythe/analyzers/java:analyzer",
-        "@com_google_truth_truth//jar",
-        "@junit_junit//jar",
-    ],
-)

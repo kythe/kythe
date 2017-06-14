@@ -19,6 +19,7 @@ package com.google.devtools.kythe.analyzers.java;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.devtools.kythe.platform.java.helpers.SyntaxPreservingScanner;
 import com.google.devtools.kythe.platform.java.helpers.SyntaxPreservingScanner.CommentToken;
+import com.google.devtools.kythe.util.PositionMappings;
 import com.google.devtools.kythe.util.Span;
 import com.sun.tools.javac.parser.Tokens.Token;
 import com.sun.tools.javac.parser.Tokens.TokenKind;
@@ -268,76 +269,6 @@ public final class SourceText {
 
     int charToByteOffset(int charOffset) {
       return mappings.charToByteOffset(charOffset);
-    }
-  }
-
-  @VisibleForTesting
-  static class PositionMappings {
-    final int[] byteOffsets, lineNumbers;
-
-    public PositionMappings(Charset encoding, CharSequence text) {
-      byteOffsets = new int[text.length() + 1];
-      lineNumbers = new int[text.length() + 1];
-
-      CountingOutputStream counter = new CountingOutputStream();
-      OutputStreamWriter writer = new OutputStreamWriter(counter, encoding);
-      for (int i = 0; i < text.length(); i++) {
-        byteOffsets[i] = counter.getCount();
-        lineNumbers[i] = counter.getLines() + 1;
-        try {
-          writer.append(text.charAt(i));
-          writer.flush();
-        } catch (IOException ioe) {
-          throw new IllegalStateException(ioe);
-        }
-      }
-      byteOffsets[text.length()] = counter.getCount();
-      lineNumbers[text.length()] = counter.getLines() + 1;
-    }
-
-    public int charToLine(int charOffset) {
-      if (charOffset < 0) {
-        return -1;
-      } else if (charOffset > lineNumbers.length) {
-        System.err.printf(
-            "WARNING: offset past end of source: %d > %d\n", charOffset, lineNumbers.length);
-        return -1;
-      }
-      return lineNumbers[charOffset];
-    }
-
-    public int charToByteOffset(int charOffset) {
-      if (charOffset < 0) {
-        return -1;
-      } else if (charOffset > byteOffsets.length) {
-        System.err.printf(
-            "WARNING: offset past end of source: %d > %d\n", charOffset, byteOffsets.length);
-        return -1;
-      }
-      return byteOffsets[charOffset];
-    }
-  }
-
-  /** {@link OutputStream} that only counts each {@code byte} that should be written. */
-  private static class CountingOutputStream extends OutputStream {
-    private int count, lines;
-
-    /** Returns the count of bytes that have been requested to be written. */
-    public int getCount() {
-      return count;
-    }
-
-    /** Returns the number of full lines that have been requested to be written. */
-    public int getLines() {
-      return lines;
-    }
-
-    @Override
-    public void write(int b) {
-      count++;
-      if (b == '\n') {
-        lines++;
-      }
     }
   }
 }

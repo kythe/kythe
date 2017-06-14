@@ -12,3 +12,16 @@ java_test(
         "@junit_junit//jar",
     ],
 )
+
+java_test(
+    name = "position_mappings_test",
+    size = "small",
+    srcs = ["PositionMappingsTest.java"],
+    test_class = "com.google.devtools.kythe.util.PositionMappingsTest",
+    deps = [
+        "//kythe/java/com/google/devtools/kythe/util:position_mappings",
+        "@com_google_guava_guava//jar",
+        "@com_google_truth_truth//jar",
+        "@junit_junit//jar",
+    ],
+)

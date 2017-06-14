@@ -26,6 +26,7 @@ java_library(
         "//kythe/java/com/google/devtools/kythe/platform/shared:metadata",
         "//kythe/java/com/google/devtools/kythe/platform/shared:statistics",
         "//kythe/java/com/google/devtools/kythe/util",
+        "//kythe/java/com/google/devtools/kythe/util:position_mappings",
         "//kythe/proto:analysis_proto_java",
         "//kythe/proto:common_proto_java",
         "//kythe/proto:storage_proto_java",
