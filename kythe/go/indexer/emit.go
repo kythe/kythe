@@ -130,6 +130,8 @@ func (pi *PackageInfo) Emit(ctx context.Context, sink Sink, opts *EmitOptions) e
 				e.visitAssignStmt(n, stack)
 			case *ast.RangeStmt:
 				e.visitRangeStmt(n, stack)
+			case *ast.CompositeLit:
+				e.visitCompositeLit(n, stack)
 			}
 			return true
 		}), file)
@@ -402,6 +404,44 @@ func (e *emitter) visitRangeStmt(stmt *ast.RangeStmt, stack stackFunc) {
 	if val, _ := stmt.Value.(*ast.Ident); val != nil {
 		e.writeBinding(val, nodes.Variable, up)
 	}
+}
+
+// visitCompositeLit handles references introduced by positional initializers
+// in composite literals that construct (pointer to) struct values. Named
+// initializers are handled separately.
+func (e *emitter) visitCompositeLit(expr *ast.CompositeLit, stack stackFunc) {
+	if len(expr.Elts) == 0 {
+		return // no fields to initialize
+	}
+
+	tv, ok := e.pi.Info.Types[expr.Type]
+	if !ok {
+		log.Printf("WARNING: Unable to determine composite literal type (%s)", e.pi.FileSet.Position(expr.Pos()))
+		return
+	}
+	sv, ok := deref(tv.Type.Underlying()).(*types.Struct)
+	if !ok {
+		return // non-struct type, e.g. a slice; nothing to do here
+	}
+	for i, elt := range expr.Elts {
+		// The keys for key-value initializers are handled upstream of us, so
+		// we need only handle the values.
+		switch t := elt.(type) {
+		case *ast.KeyValueExpr:
+			e.emitPosRef(t.Value, sv.Field(i), edges.RefInit)
+		default:
+			e.emitPosRef(t, sv.Field(i), edges.RefInit)
+		}
+	}
+}
+
+// emitPosRef emits a zero-width anchor at the start of loc, pointing to obj.
+func (e *emitter) emitPosRef(loc ast.Node, obj types.Object, kind string) {
+	target := e.pi.ObjectVName(obj)
+	file, start, end := e.pi.Span(loc)
+	anchor := e.pi.AnchorVName(file, start, end)
+	e.writeAnchor(anchor, start, end)
+	e.writeEdge(anchor, target, kind)
 }
 
 // emitParameters emits parameter edges for the parameters of a function type,

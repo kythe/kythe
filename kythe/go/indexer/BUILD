@@ -174,6 +174,11 @@ go_indexer_test(
     srcs = ["testdata/basic/anonymous.go"],
 )
 
+go_indexer_test(
+    name = "structinit_test",
+    srcs = ["testdata/structinit.go"],
+)
+
 load(":testdata/go_indexer_test.bzl", "go_integration_test")
 
 go_integration_test(

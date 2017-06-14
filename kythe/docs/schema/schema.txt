@@ -977,7 +977,7 @@ Notes::
 int FOO;
 --------------------------------------------------------------------------------
 
-[[ref/file]]
+[[reffile]]
 ref/file
 ~~~~~~~~
 
@@ -1078,6 +1078,39 @@ Ordinals are used::
 
 #example test.h
 // ...
+--------------------------------------------------------------------------------
+
+[[refinit]]
+ref/init
+~~~~~~~~
+
+Brief description::
+  A *ref/init* B if A is an anchor attached to an expression that initializes B,
+  typically a field or variable.
+Points from::
+  anchors
+Points toward::
+  semantic nodes
+Ordinals are used::
+  never
+
+[kythe,Go,"Initializer expressions init their fields."]
+--------------------------------------------------------------------------------
+package p
+
+type S struct {
+  //- @F defines/binding Field
+  F int
+}
+
+// Positional
+//- @"17" ref/init Field
+var _ = S{17}
+
+// Key-value
+//- @F ref Field
+//- @"101" ref/init Field
+var _ = S{F: 101}
 --------------------------------------------------------------------------------
 
 [[refqueries]]
