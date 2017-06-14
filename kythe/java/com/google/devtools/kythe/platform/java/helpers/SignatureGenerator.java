@@ -16,14 +16,17 @@
 
 package com.google.devtools.kythe.platform.java.helpers;
 
+import com.google.common.base.Charsets;
 import com.google.devtools.kythe.common.FormattingLogger;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.util.TreePath;
 import com.sun.tools.javac.code.BoundKind;
 import com.sun.tools.javac.code.Symbol;
+import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import com.sun.tools.javac.code.Symbol.TypeSymbol;
 import com.sun.tools.javac.code.Symbol.TypeVariableSymbol;
+import com.sun.tools.javac.code.Symbol.VarSymbol;
 import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.code.Type.ArrayType;
 import com.sun.tools.javac.code.Type.CapturedType;
@@ -38,7 +41,9 @@ import com.sun.tools.javac.code.Type.TypeVar;
 import com.sun.tools.javac.code.Type.UndetVar;
 import com.sun.tools.javac.code.Type.Visitor;
 import com.sun.tools.javac.code.Type.WildcardType;
+import com.sun.tools.javac.code.Types;
 import com.sun.tools.javac.util.Context;
+import com.sun.tools.javac.util.Name;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -73,6 +78,8 @@ import javax.lang.model.type.TypeKind;
 public class SignatureGenerator
     implements ElementVisitor<Void, StringBuilder>, Visitor<Void, StringBuilder> {
 
+  private final boolean useJvmSignatures;
+
   private static boolean isJavaLangObject(Type type) {
     return type.tsym.getQualifiedName().contentEquals(Object.class.getName());
   }
@@ -106,21 +113,38 @@ public class SignatureGenerator
     return memoizedTreePathScanner.getPath(e);
   }
 
+  public boolean getUseJvmSignatures() {
+    return useJvmSignatures;
+  }
   // Do not decrease this number.
   private static final int STRING_BUILDER_INIT_CAPACITY = 512;
+
+  private final SigGen sigGen;
 
   public StringBuilder getStringBuilder() {
     return new StringBuilder(STRING_BUILDER_INIT_CAPACITY);
   }
 
-  public SignatureGenerator(CompilationUnitTree compilationUnit, Context context) {
+  public SignatureGenerator(
+      CompilationUnitTree compilationUnit, Context context, boolean useJvmSignatures) {
+    this.useJvmSignatures = useJvmSignatures;
     this.memoizedTreePathScanner = new MemoizedTreePathScanner(compilationUnit, context);
+    sigGen = new SigGen(Types.instance(context));
   }
 
   /** Returns a Java signature for the specified Symbol. */
   public Optional<String> getSignature(Symbol symbol) {
     if (symbol == null) {
       return Optional.empty();
+    }
+    if (useJvmSignatures) {
+      if (symbol instanceof ClassSymbol) {
+        return Optional.of(sigGen.getSignature((ClassSymbol) symbol));
+      } else if (symbol instanceof MethodSymbol) {
+        return Optional.of(sigGen.getSignature((MethodSymbol) symbol));
+      } else if (symbol instanceof VarSymbol) {
+        return Optional.of(sigGen.getSignature((VarSymbol) symbol));
+      }
     }
     try {
       StringBuilder sb = getStringBuilder();
@@ -478,5 +502,104 @@ public class SignatureGenerator
   public Void visitModuleType(ModuleType moduleType, StringBuilder sb) {
     // TODO(b/37488599): implement this method for full Java 9 support
     throw new UnsupportedOperationException();
+  }
+  
+  /**
+   * Generates signatures that are expansions on the JVM signatures as defined in
+   * https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.3.4
+   *
+   * <p>The main difference is that jvms-4.3.4 has no notion of full signatures, e.g. for a method
+   * we emit type.name.argument/return signature where the spec only defines the argument/return
+   * signature.
+   */
+  private static class SigGen extends com.sun.tools.javac.code.Types.SignatureGenerator {
+
+    /**
+     * Generates Type signature according to the "ClassSignature" grammar e.g. "Ljava/lang/String;"
+     */
+    public String getSignature(ClassSymbol symbol) {
+      addSignature(symbol);
+      return toString();
+    }
+
+    /**
+     * Generates full method signature "ClassSignature.name:MethodTypeSignature" e.g.
+     * "Ljava/lang/String;.charAt(I)C"
+     */
+    public String getSignature(MethodSymbol symbol) {
+      addSignature(symbol);
+      return toString();
+    }
+
+    private void addSignature(ClassSymbol symbol) {
+      this.assembleSig(symbol.type);
+    }
+
+    private void addSignature(MethodSymbol symbol) {
+      addSignature((ClassSymbol) symbol.owner);
+      append('.');
+      append(symbol.name);
+      append(':');
+      assembleSig(symbol.type);
+    }
+
+    /**
+     * Generates full variable signature (both fields & variables).
+     * <p/>
+     * Grammar for fields:
+     * "ClassSignature.name:ClassSignature" e.g. "Lmy/Type;.myField:Ljava/lang/String;"
+     * <p/>
+     * Grammar for variables:
+     * Method signature from {@link #getSignature(MethodSymbol)} + ".name:ClassSignature" e.g.
+     * "Lmy/Type;.myMethod(I):Ljava/lang/String;.e:Ljava/lang/Exception;"
+     */
+    public String getSignature(VarSymbol symbol) {
+      Symbol owner = symbol.owner;
+      if (owner instanceof ClassSymbol) {
+        addSignature((ClassSymbol) owner);
+      } else if (owner instanceof MethodSymbol) {
+        MethodSymbol method = (MethodSymbol) owner;
+        // Javac doesn't assign a type or name to the class initialization block but represents it
+        // as a method.
+        if (method.type == null) {
+          sb.append("<clinit>");
+        } else {
+          addSignature(method);
+        }
+      }
+      append('.');
+      append(symbol.name);
+      append(':');
+      assembleSig(symbol.type);
+      return toString();
+    }
+
+    private final StringBuilder sb = new StringBuilder();
+
+    SigGen(Types types) {
+      super(types);
+    }
+
+    @Override
+    protected void append(char ch) {
+      sb.append(ch);
+    }
+
+    @Override
+    protected void append(byte[] ba) {
+      sb.append(new String(ba, Charsets.UTF_8));
+    }
+
+    @Override
+    protected void append(Name name) {
+      sb.append(name.toString());
+    }
+
+    @Override
+    public String toString() {
+      String signature = sb.toString();
+      sb.setLength(0);
+      return signature;
+    }
   }
 }

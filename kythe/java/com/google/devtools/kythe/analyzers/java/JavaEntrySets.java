@@ -285,14 +285,16 @@ public class JavaEntrySets extends KytheEntrySets {
       }
 
       NodeKind kind = elementNodeKind(sym.getKind());
-      NodeBuilder builder = kind != null ? newNode(kind) : newNode(sym.getKind().toString());
-      node =
-          builder
-              .setCorpusPath(CorpusPath.fromVName(v))
-              .addSignatureSalt(signature)
-              .addSignatureSalt("" + hashSymbol(sym))
-              .setProperty("code", markedSource.build())
-              .build();
+      NodeBuilder builder =
+          kind != null ? newNode(kind) : newNode(sym.getKind().toString());
+      builder.setCorpusPath(CorpusPath.fromVName(v)).setProperty("code", markedSource.build());
+
+      if (signatureGenerator.getUseJvmSignatures()) {
+        builder.setSignature(signature);
+      } else {
+        builder.addSignatureSalt(signature).addSignatureSalt("" + hashSymbol(sym));
+      }
+      node = builder.build();
       node.emit(getEmitter());
     }
 

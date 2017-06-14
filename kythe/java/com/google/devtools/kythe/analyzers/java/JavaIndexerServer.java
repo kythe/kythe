@@ -19,7 +19,6 @@ package com.google.devtools.kythe.analyzers.java;
 import com.beust.jcommander.Parameter;
 import com.google.devtools.kythe.analyzers.base.FactEmitter;
 import com.google.devtools.kythe.analyzers.base.GRPCCompilationAnalyzer;
-import com.google.devtools.kythe.analyzers.base.IndexerConfig;
 import com.google.devtools.kythe.platform.java.JavacAnalysisDriver;
 import com.google.devtools.kythe.platform.shared.AnalysisException;
 import com.google.devtools.kythe.platform.shared.FileDataProvider;
@@ -52,9 +51,9 @@ public class JavaIndexerServer {
 
   private static class JavaCompilationAnalyzer extends GRPCCompilationAnalyzer {
     private final JavacAnalysisDriver driver = new JavacAnalysisDriver();
-    private final IndexerConfig config;
+    private final JavaIndexerConfig config;
 
-    public JavaCompilationAnalyzer(IndexerConfig config) {
+    public JavaCompilationAnalyzer(JavaIndexerConfig config) {
       this.config = config;
     }
 
@@ -76,7 +75,7 @@ public class JavaIndexerServer {
     }
   }
 
-  private static class ServerConfig extends IndexerConfig {
+  private static class ServerConfig extends JavaIndexerConfig {
     @Parameter(
       names = {"-p", "--port"},
       required = true,

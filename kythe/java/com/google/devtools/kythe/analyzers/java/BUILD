@@ -5,6 +5,7 @@ java_library(
     srcs = [
         "JavaEntrySets.java",
         "JavaNode.java",
+        "JavaIndexerConfig.java",
         "KytheDocTreeScanner.java",
         "KytheJavacAnalyzer.java",
         "KytheTreeScanner.java",
@@ -31,6 +32,8 @@ java_library(
         "//third_party/javac",
         "//third_party/proto:protobuf_java",
         "@com_google_code_findbugs_jsr305//jar",
+        "@bazel_tools//third_party/java/jdk/langtools:javac",
+        "@com_beust_jcommander//jar",
         "@com_google_guava_guava//jar",
     ],
 )

@@ -18,7 +18,6 @@ package com.google.devtools.kythe.analyzers.java;
 
 import com.google.common.base.Preconditions;
 import com.google.devtools.kythe.analyzers.base.FactEmitter;
-import com.google.devtools.kythe.analyzers.base.IndexerConfig;
 import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.platform.java.JavaCompilationDetails;
 import com.google.devtools.kythe.platform.java.JavacAnalyzer;
@@ -42,14 +41,14 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
       FormattingLogger.getLogger(KytheJavacAnalyzer.class);
 
   private final FactEmitter emitter;
-  private final IndexerConfig config;
+  private final JavaIndexerConfig config;
   private final MetadataLoaders metadataLoaders;
 
   // should be set in analyzeCompilationUnit before any call to analyzeFile
   private JavaEntrySets entrySets;
 
   public KytheJavacAnalyzer(
-      IndexerConfig config,
+      JavaIndexerConfig config,
       FactEmitter emitter,
       StatisticsCollector statistics,
       MetadataLoaders metadataLoaders) {
@@ -93,7 +92,8 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
     Preconditions.checkState(
         entrySets != null, "analyzeCompilationUnit must be called to analyze each file");
     Context context = ((JavacTaskImpl) details.getJavac()).getContext();
-    SignatureGenerator signatureGenerator = new SignatureGenerator(ast, context);
+    SignatureGenerator signatureGenerator =
+        new SignatureGenerator(ast, context, config.getEmitJvmSignatures());
     try {
       KytheTreeScanner.emitEntries(
           context,

@@ -33,6 +33,16 @@ java_verifier_test(
 )
 
 java_verifier_test(
+    name = "jvm_definitions_tests",
+    size = "small",
+    srcs = ["Definitions.java"],
+    indexer_opts = [
+        "--verbose",
+        "--emit_jvm_signatures",
+    ],
+)
+
+java_verifier_test(
     name = "selectors_tests",
     size = "small",
     srcs = ["Selectors.java"],
@@ -88,6 +98,27 @@ java_verifier_test(
     size = "small",
     srcs = ["CrossFile.java"],
     deps = [":files_tests"],
+)
+
+java_verifier_test(
+    name = "jvm_files_tests",
+    size = "small",
+    srcs = ["Files.java"],
+    indexer_opts = [
+        "--verbose",
+        "--emit_jvm_signatures",
+    ],
+)
+
+java_verifier_test(
+    name = "jvm_cross_file_tests",
+    size = "small",
+    srcs = ["CrossFile.java"],
+    indexer_opts = [
+        "--verbose",
+        "--emit_jvm_signatures",
+    ],
+    deps = [":jvm_files_tests"],
 )
 
 # TODO This test currently fails: https://phabricator-dot-kythe-repo.appspot.com/T185

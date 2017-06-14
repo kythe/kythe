@@ -27,6 +27,8 @@ import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.devtools.kythe.util.KytheURI;
 import com.google.devtools.kythe.util.Span;
 import java.nio.charset.Charset;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -167,7 +169,7 @@ public class KytheEntrySets {
   }
 
   /** Returns and emits a NAME node. NAME nodes are cached so that they are only emitted once. */
-  public EntrySet getNameAndEmit(String name) {
+    public EntrySet getNameAndEmit(String name) {
     EntrySet node = nameNodes.get(name);
     if (node == null) {
       node = emitAndReturn(newNode(NodeKind.NAME).setSignature(name));
@@ -228,7 +230,7 @@ public class KytheEntrySets {
             .setProperty("text", contents)
             .setProperty("text/encoding", encoding.name()));
   }
-
+  
   /**
    * Returns a {@link NodeBuilder} with the given kind and added signature salts for each {@link
    * EntrySet} dependency.
