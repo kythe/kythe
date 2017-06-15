@@ -26,7 +26,6 @@ import com.google.devtools.kythe.analyzers.base.FactEmitter;
 import com.google.devtools.kythe.analyzers.base.KytheEntrySets;
 import com.google.devtools.kythe.analyzers.base.NodeKind;
 import com.google.devtools.kythe.analyzers.java.SourceText.Positions;
-import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.platform.java.helpers.SignatureGenerator;
 import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
@@ -59,7 +58,6 @@ import javax.tools.JavaFileObject;
 
 /** Specialization of {@link KytheEntrySets} for Java. */
 public class JavaEntrySets extends KytheEntrySets {
-  private static final FormattingLogger logger = FormattingLogger.getLogger(JavaEntrySets.class);
   private final Map<Symbol, EntrySet> symbolNodes = new HashMap<>();
   private final Map<Symbol, Integer> symbolHashes = new HashMap<>();
   private final Map<Symbol, Set<String>> symbolSigs = new HashMap<Symbol, Set<String>>();
