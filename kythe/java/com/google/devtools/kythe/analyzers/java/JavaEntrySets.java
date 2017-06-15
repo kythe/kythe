@@ -431,7 +431,7 @@ public class JavaEntrySets extends KytheEntrySets {
     if (sym.members() != null) {
       for (Symbol member : sym.members().getSymbols()) {
         if (member.isPrivate()
-            || member instanceof MethodSymbol && ((MethodSymbol) member).isStaticOrInstanceInit()
+            || (member instanceof MethodSymbol && ((MethodSymbol) member).isStaticOrInstanceInit())
             || ((member.flags_field & (Flags.BRIDGE | Flags.SYNTHETIC)) != 0)) {
           // Ignore initializers, private members, and synthetic members.  It's possible these do
           // not appear in the symbol's scope outside of its .java source compilation (i.e. they do

@@ -29,7 +29,6 @@ import com.sun.tools.javac.tree.JCTree.JCCompilationUnit;
 import com.sun.tools.javac.util.Context;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -93,7 +92,9 @@ public final class SourceText {
   }
 
   public static final class Comment {
-    public final Span charSpan, lineSpan, byteSpan;
+    public final Span charSpan;
+    public final Span lineSpan;
+    public final Span byteSpan;
     public final String text;
 
     private Comment(Positions pos, CommentToken token) {

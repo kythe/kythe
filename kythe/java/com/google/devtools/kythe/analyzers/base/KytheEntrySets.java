@@ -28,7 +28,6 @@ import com.google.devtools.kythe.util.KytheURI;
 import com.google.devtools.kythe.util.Span;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;

@@ -26,7 +26,8 @@ import java.nio.charset.Charset;
  * and line numbers.
  */
 public class PositionMappings {
-  private final int[] byteOffsets, lineNumbers;
+  private final int[] byteOffsets;
+  private final int[] lineNumbers;
 
   /**
    * Constructs a new {@link PositionMappings} instance.
@@ -60,7 +61,7 @@ public class PositionMappings {
    * Returns the line number corresponding to the specified char offset.
    *
    * @param charOffset The char offset of the requested line.
-   * @retuen The line number for the specified offset. -1 if the specified offset
+   * @return The line number for the specified offset. -1 if the specified offset
    * was out of bounds.
    */
   public int charToLine(int charOffset) {
@@ -94,7 +95,8 @@ public class PositionMappings {
 
   /** {@link OutputStream} that only counts each {@code byte} that should be written. */
   private static class CountingOutputStream extends OutputStream {
-    private int count, lines;
+    private int count;
+    private int lines;
 
     /** Returns the count of bytes that have been requested to be written. */
     public int getCount() {
