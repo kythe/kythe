@@ -16,9 +16,14 @@
 
 package com.google.devtools.kythe.extractors.java.bazel;
 
+import static com.google.common.io.Files.touch;
+
 import com.google.common.base.Predicate;
+import com.google.common.collect.Collections2;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.io.ByteSource;
+import com.google.common.io.MoreFiles;
 import com.google.devtools.build.lib.actions.extra.ExtraActionInfo;
 import com.google.devtools.build.lib.actions.extra.ExtraActionsBase;
 import com.google.devtools.build.lib.actions.extra.JavaCompileInfo;
@@ -29,12 +34,16 @@ import com.google.devtools.kythe.extractors.shared.FileVNames;
 import com.google.devtools.kythe.extractors.shared.IndexInfoUtils;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.ExtensionRegistry;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Enumeration;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 /** Java CompilationUnit extractor using Bazel's extra_action feature. */
 public class JavaExtractor {
@@ -63,6 +72,28 @@ public class JavaExtractor {
 
     JavaCompileInfo jInfo = info.getExtension(JavaCompileInfo.javaCompileInfo);
 
+    List<String> sources = Lists.newArrayList(jInfo.getSourceFileList());
+    List<String> sourcepaths = jInfo.getSourcepathList();
+
+    if (!sourcepaths.isEmpty()) {
+      List<String> updatedSourcepaths = Lists.newArrayList();
+      for (String sourcepath : sourcepaths) {
+        // Support source jars like proto compilation outputs.
+        if (sourcepath.endsWith(".jar") || sourcepath.endsWith(".srcjar")) {
+          extractSourceJar(sourcepath, sources);
+        } else {
+          updatedSourcepaths.add(sourcepath);
+        }
+      }
+      sourcepaths = updatedSourcepaths;
+    }
+
+    if (sources.isEmpty()) {
+      // Skip binary-only compilations; there is nothing to analyze.
+      touch(new File(outputPath));
+      return;
+    }
+
     List<String> javacOpts =
         Lists.newArrayList(Iterables.filter(jInfo.getJavacOptList(), JAVAC_OPT_FILTER));
 
@@ -87,16 +118,74 @@ public class JavaExtractor {
                 FileVNames.fromFile(vNamesConfigPath), System.getProperty("user.dir"))
             .extract(
                 info.getOwner(),
-                jInfo.getSourceFileList(),
+                sources,
                 jInfo.getClasspathList(),
                 jInfo.getBootclasspathList(),
-                jInfo.getSourcepathList(),
+                sourcepaths,
                 jInfo.getProcessorpathList(),
                 jInfo.getProcessorList(),
                 javacOpts,
                 jInfo.getOutputjar());
 
     IndexInfoUtils.writeIndexInfoToFile(description, outputPath);
+  }
+
+  /** Extracts a source jar and adds all java files in it to the list of sources. */
+  private static void extractSourceJar(String sourcepath, List<String> sources) throws IOException {
+    // We unzip the sourcefiles to a temp location (<the location of the jar>.files/)
+    File tempFile = new File(sourcepath + ".files");
+    if (tempFile.exists()) {
+      MoreFiles.deleteRecursively(tempFile.toPath());
+    }
+    tempFile.mkdirs();
+    List<String> files = unzipFile(new ZipFile(sourcepath), tempFile);
+
+    // And update the list of sources based on the .java files we unzipped.
+    sources.addAll(
+        Collections2.filter(
+            files,
+            new Predicate<String>() {
+              @Override
+              public boolean apply(String input) {
+                return input.endsWith(".java");
+              }
+            }));
+  }
+
+  /** Unzips specified zipFile to targetDirectory and returns a list of the unzipped files. */
+  private static List<String> unzipFile(final ZipFile zipFile, File targetDirectory)
+      throws IOException {
+    List<String> files = Lists.newArrayList();
+    try {
+      Enumeration<? extends ZipEntry> entries = zipFile.entries();
+      while (entries.hasMoreElements()) {
+        final ZipEntry entry = entries.nextElement();
+        File targetFile = new File(targetDirectory, entry.getName());
+        if (entry.isDirectory()) {
+          if (!targetFile.isDirectory() && !targetFile.mkdirs()) {
+            throw new IOException("Failed to create directory: " + targetFile.getAbsolutePath());
+          }
+        } else {
+          File parentFile = targetFile.getParentFile();
+          if (!parentFile.isDirectory()) {
+            if (!parentFile.mkdirs()) {
+              throw new IOException("Failed to create directory: " + parentFile.getAbsolutePath());
+            }
+          }
+          // Write the file to the destination.
+          new ByteSource() {
+            @Override
+            public InputStream openStream() throws IOException {
+              return zipFile.getInputStream(entry);
+            }
+          }.copyTo(MoreFiles.asByteSink(targetFile.toPath()));
+          files.add(targetFile.getAbsolutePath());
+        }
+      }
+    } finally {
+      zipFile.close();
+    }
+    return files;
   }
 
   /**
