@@ -4,8 +4,8 @@ java_library(
     name = "analyzer",
     srcs = [
         "JavaEntrySets.java",
-        "JavaNode.java",
         "JavaIndexerConfig.java",
+        "JavaNode.java",
         "KytheDocTreeScanner.java",
         "KytheJavacAnalyzer.java",
         "KytheTreeScanner.java",
@@ -32,9 +32,9 @@ java_library(
         "//kythe/proto:storage_proto_java",
         "//third_party/javac",
         "//third_party/proto:protobuf_java",
-        "@com_google_code_findbugs_jsr305//jar",
         "@bazel_tools//third_party/java/jdk/langtools:javac",
         "@com_beust_jcommander//jar",
+        "@com_google_code_findbugs_jsr305//jar",
         "@com_google_guava_guava//jar",
     ],
 )
@@ -46,7 +46,7 @@ java_binary(
         "//third_party/javac:javac_jar",
     ],
     jvm_flags = [
-        "-Xbootclasspath/p:$$JAVA_RUNFILES/io_kythe/$(location //third_party/javac:javac_jar)",
+        "-Xbootclasspath/p:$${RUNPATH}$(location //third_party/javac:javac_jar)",
     ],
     main_class = "com.google.devtools.kythe.analyzers.java.JavaIndexer",
     deps = [

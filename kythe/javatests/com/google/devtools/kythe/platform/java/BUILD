@@ -5,7 +5,7 @@ java_test(
     size = "small",
     srcs = ["OptionsTest.java"],
     data = ["//third_party/javac:javac_jar"],
-    jvm_flags = ["-Xbootclasspath/p:$$JAVA_RUNFILES/io_kythe/$(location //third_party/javac:javac_jar)"],
+    jvm_flags = ["-Xbootclasspath/p:$${RUNPATH}$(location //third_party/javac:javac_jar)"],
     test_class = "com.google.devtools.kythe.platform.java.OptionsTest",
     deps = [
         "//kythe/java/com/google/devtools/kythe/platform/java:options",

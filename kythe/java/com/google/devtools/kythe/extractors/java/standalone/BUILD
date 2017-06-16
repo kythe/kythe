@@ -12,7 +12,7 @@ java_binary(
     ],
     data = ["//third_party/javac:javac_jar"],
     jvm_flags = [
-        "-Xbootclasspath/p:$$JAVA_RUNFILES/io_kythe/$(location //third_party/javac:javac_jar)",
+        "-Xbootclasspath/p:$${RUNPATH}$(location //third_party/javac:javac_jar)",
     ],
     main_class = "com.google.devtools.kythe.extractors.java.standalone.Javac8Wrapper",
     deps = [

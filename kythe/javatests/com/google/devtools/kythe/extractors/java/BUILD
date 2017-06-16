@@ -8,7 +8,7 @@ java_test(
     ],
     javacopts = ["-Xlint:all"],
     jvm_flags = [
-        "-Xbootclasspath/p:$$JAVA_RUNFILES/io_kythe/$(location //third_party/javac:javac_jar)",
+        "-Xbootclasspath/p:$${RUNPATH}$(location //third_party/javac:javac_jar)",
     ],
     test_class = "com.google.devtools.kythe.extractors.java.JavaExtractorTest",
     deps = [
