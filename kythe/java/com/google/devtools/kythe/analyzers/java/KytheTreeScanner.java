@@ -77,6 +77,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -96,6 +97,10 @@ import javax.tools.JavaFileObject;
 /** {@link JCTreeScanner} that emits Kythe nodes and edges. */
 public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   private static final FormattingLogger logger = FormattingLogger.getLogger(KytheTreeScanner.class);
+
+  /** Maximum allowed text size for variable {@link MarkedSource.Kind.INITIALIZER}s */
+  private static final int MAX_INITIALIZER_LENGTH = 80;
+
   private final boolean verboseLogging;
 
   private final JavaEntrySets entrySets;
@@ -288,7 +293,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     MarkedSource.Builder markedSource = MarkedSource.newBuilder();
     EntrySet classNode =
-        entrySets.getNode(signatureGenerator, classDef.sym, signature.get(), markedSource);
+        entrySets.getNode(signatureGenerator, classDef.sym, signature.get(), markedSource, null);
 
     // Find the method or class in which this class is defined, if any.
     TreeContext container = ctx.getClassOrMethodParent();
@@ -429,7 +434,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     MarkedSource.Builder markedSource = MarkedSource.newBuilder();
     EntrySet methodNode =
-        entrySets.getNode(signatureGenerator, methodDef.sym, signature.get(), markedSource);
+        entrySets.getNode(signatureGenerator, methodDef.sym, signature.get(), markedSource, null);
     visitAnnotations(methodNode, methodDef.getModifiers().getAnnotations(), ctx);
 
     EntrySet absNode =
@@ -527,7 +532,21 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       return emitDiagnostic(ctx, "missing variable signature", null, null);
     }
 
-    EntrySet varNode = entrySets.getNode(signatureGenerator, varDef.sym, signature.get(), null);
+    List<MarkedSource> markedSourceChildren = new ArrayList<>();
+    if (varDef.getInitializer() != null) {
+      String initializer = varDef.getInitializer().toString();
+      if (initializer.length() <= MAX_INITIALIZER_LENGTH) {
+        markedSourceChildren.add(
+            MarkedSource.newBuilder()
+                .setKind(MarkedSource.Kind.INITIALIZER)
+                .setPreText(initializer)
+                .build());
+      }
+    }
+
+    EntrySet varNode =
+        entrySets.getNode(
+            signatureGenerator, varDef.sym, signature.get(), null, markedSourceChildren);
     boolean documented = visitDocComment(varNode, null);
     emitDefinesBindingAnchorEdge(varDef.name, varDef.getStartPosition(), varNode, ctx.getSnippet());
     emitAnchor(ctx, EdgeKind.DEFINES, varNode);
@@ -836,7 +855,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       return null;
     }
     return new JavaNode(
-        entrySets.getNode(signatureGenerator, sym, signature.get(), null), signature.get());
+        entrySets.getNode(signatureGenerator, sym, signature.get(), null, null), signature.get());
   }
 
   private void visitAnnotations(
@@ -906,7 +925,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     Symbol javaLangObject = getSymbols().objectType.asElement();
     String javaLangObjectSignature = signatureGenerator.getSignature(javaLangObject).get();
     EntrySet javaLangObjectEntrySet =
-        entrySets.getNode(signatureGenerator, javaLangObject, javaLangObjectSignature, null);
+        entrySets.getNode(signatureGenerator, javaLangObject, javaLangObjectSignature, null, null);
     return new JavaNode(javaLangObjectEntrySet, javaLangObjectSignature);
   }
 
@@ -916,7 +935,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     String javaLangEnumSignature = signatureGenerator.getSignature(javaLangEnum).get();
     EntrySet javaLangEnumEntrySet =
         entrySets.newAbstractAndEmit(
-            entrySets.getNode(signatureGenerator, javaLangEnum, javaLangEnumSignature, null));
+            entrySets.getNode(signatureGenerator, javaLangEnum, javaLangEnumSignature, null, null));
     EntrySet typeNode =
         entrySets.newTApplyAndEmit(javaLangEnumEntrySet, Collections.singletonList(enumEntrySet));
     String qualifiedName = javaLangEnumSignature + "<" + enumSignature + ">";

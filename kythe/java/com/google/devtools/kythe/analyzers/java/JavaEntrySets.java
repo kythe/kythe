@@ -173,7 +173,7 @@ public class JavaEntrySets extends KytheEntrySets {
               .build());
       Optional<String> signature = signatureGenerator.getSignature(type.tsym);
       if (signature.isPresent()) {
-        EntrySet node = getNode(signatureGenerator, type.tsym, signature.get(), null);
+        EntrySet node = getNode(signatureGenerator, type.tsym, signature.get(), null, null);
         builder.addLink(Link.newBuilder().addDefinition(new KytheURI(node.getVName()).toString()));
       }
     } else {
@@ -221,7 +221,9 @@ public class JavaEntrySets extends KytheEntrySets {
       SignatureGenerator signatureGenerator,
       Symbol sym,
       String signature,
-      MarkedSource.Builder msBuilder) {
+      // TODO(schroederc): separate MarkedSource generation from JavaEntrySets
+      @Nullable MarkedSource.Builder msBuilder,
+      @Nullable Iterable<MarkedSource> postChildren) {
     checkSignature(sym, signature);
 
     EntrySet node;
@@ -293,6 +295,9 @@ public class JavaEntrySets extends KytheEntrySets {
                   .setPreText(identToken)
                   .build());
           break;
+      }
+      if (postChildren != null) {
+        postChildren.forEach(markedSource::addChild);
       }
 
       NodeKind kind = elementNodeKind(sym.getKind());

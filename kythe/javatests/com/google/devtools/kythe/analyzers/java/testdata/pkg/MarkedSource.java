@@ -15,6 +15,19 @@ package pkg;
 //- ClassTok.pre_text "MarkedSource"
 public class MarkedSource {
 
+  //- @CONSTANT defines/binding Constant
+  //- Constant code CMS
+  //- CMS child.0 ConstantType
+  //- ConstantType.kind "TYPE"
+  //- CMS child.1 ContantCtx
+  //- ConstantCtx.kind "CONTEXT"
+  //- CMS child.2 ConstantIdent
+  //- ConstantIdent.kind "IDENTIFIER"
+  //- CMS child.3 ConstantInit
+  //- ConstantInit.kind "INITIALIZER"
+  //- ConstantInit.pre_text "\"value\""
+  public static final String CONSTANT = "value";
+
   //- @"fieldName$1" defines/binding Field
   //- Field childof Class
   //- @int ref Int
