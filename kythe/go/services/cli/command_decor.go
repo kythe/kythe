@@ -125,7 +125,7 @@ func (c *decorCommand) SetFlags(flag *flag.FlagSet) {
 	c.baseDecorCommand.SetFlags(flag)
 	// TODO(schroederc): add option to look for dirty files based on file-ticket path and a directory root
 	flag.StringVar(&c.dirtyFile, "dirty", "", "Send the given file as the dirty buffer for patching references")
-	flag.StringVar(&c.refFormat, "format", "@edgeKind@\t@^line@:@^col@-@$line@:@$col@\t@targetKind@\t@target@",
+	flag.StringVar(&c.refFormat, "format", "@edgeKind@\t@^line@:@^col@-@$line@:@$col@\t@targetKind@\t@target@\t@targetDef@",
 		`Format for each decoration result.
       Format Markers:
         @target@     -- ticket of referenced target node
