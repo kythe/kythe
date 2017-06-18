@@ -423,6 +423,14 @@ func (e *emitter) visitCompositeLit(expr *ast.CompositeLit, stack stackFunc) {
 	if !ok {
 		return // non-struct type, e.g. a slice; nothing to do here
 	}
+
+	if n := sv.NumFields(); n != len(expr.Elts) {
+		// TODO(fromberger): Embedded "anonymous" fields do not seem to be
+		// showing up correctly. I think this is a bug in the Go library,
+		// but for now we'll work around it.
+		log.Printf("ERROR: Struct has %d fields but %d initializers (skipping)", n, len(expr.Elts))
+		return
+	}
 	for i, elt := range expr.Elts {
 		// The keys for key-value initializers are handled upstream of us, so
 		// we need only handle the values.
