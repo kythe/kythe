@@ -34,6 +34,7 @@ public enum NodeKind {
   NAME("name"),
   PACKAGE("package"),
   PROCESS("process"),
+  TALIAS("talias"),
   TAPPLY("tapp"),
   TBUILTIN("tbuiltin"),
 
