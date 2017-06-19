@@ -81,10 +81,16 @@ public class JavaEntrySets extends KytheEntrySets {
    * The only place the integer index for nested classes/anonymous classes is stored is in the
    * flatname of the symbol. (This index is determined at compile time using linear search; see
    * 'localClassName' in Check.java). The simple name can't be relied on; for nested classes it
-   * drops the name of the parent class (so 'pkg.OuterClass$Inner' yields only 'Inner') and for anonymous
-   * classes it's blank. For multiply-nested classes, we'll see tokens like 'OuterClass$Inner$1$1'.
+   * drops the name of the parent class (so 'pkg.OuterClass$Inner' yields only 'Inner') and for
+   * anonymous classes it's blank. For multiply-nested classes, we'll see tokens like
+   * 'OuterClass$Inner$1$1'.
    */
-  private String getIdentToken(Symbol sym) {
+  private String getIdentToken(Symbol sym, SignatureGenerator signatureGenerator) {
+    // If the symbol represents the generated `Array` class, replace it with the actual
+    // array type, if we have it.
+    if (SignatureGenerator.isArrayHelperClass(sym) && signatureGenerator != null) {
+      return signatureGenerator.getArrayTypeName();
+    }
     String flatName = sym.flatName().toString();
     int lastDot = flatName.lastIndexOf('.');
     // A$1 is a valid variable/method name, so make sure we only look at $ in class names.
@@ -155,7 +161,7 @@ public class JavaEntrySets extends KytheEntrySets {
     MarkedSource.Builder builder = MarkedSource.newBuilder().setKind(MarkedSource.Kind.TYPE);
     if (type.hasTag(TypeTag.CLASS)) {
       MarkedSource.Builder context = MarkedSource.newBuilder();
-      String identToken = buildContext(context, type.tsym);
+      String identToken = buildContext(context, type.tsym, signatureGenerator);
       builder.addChild(context.build());
       builder.addChild(
           MarkedSource.newBuilder()
@@ -181,13 +187,14 @@ public class JavaEntrySets extends KytheEntrySets {
    * Sets the provided {@link MarkedSource.Builder} to a CONTEXT node, populating it with the
    * fully-qualified parent scope for sym. Returns the identifier corresponding to sym.
    */
-  private String buildContext(MarkedSource.Builder context, Symbol sym) {
+  private String buildContext(
+      MarkedSource.Builder context, Symbol sym, SignatureGenerator signatureGenerator) {
     context.setKind(MarkedSource.Kind.CONTEXT).setPostChildText(".").setAddFinalListToken(true);
-    String identToken = getIdentToken(sym);
+    String identToken = getIdentToken(sym, signatureGenerator);
     Symbol parent = getQualifiedNameParent(sym);
     List<MarkedSource> parents = Lists.newArrayList();
     while (parent != null) {
-      String parentName = getIdentToken(parent);
+      String parentName = getIdentToken(parent, signatureGenerator);
       if (!parentName.isEmpty()) {
         parents.add(
             MarkedSource.newBuilder()
@@ -242,7 +249,7 @@ public class JavaEntrySets extends KytheEntrySets {
         markedSource.addChild(markedType);
       }
       MarkedSource.Builder context = MarkedSource.newBuilder();
-      String identToken = buildContext(context, sym);
+      String identToken = buildContext(context, sym, signatureGenerator);
       markedSource.addChild(context.build());
       switch (sym.getKind()) {
         case TYPE_PARAMETER:
@@ -490,7 +497,8 @@ public class JavaEntrySets extends KytheEntrySets {
       return false;
     }
     String cls = sym.enclClass().className();
-    return cls.startsWith("java.")
+    return SignatureGenerator.isArrayHelperClass(sym.enclClass())
+        || cls.startsWith("java.")
         || cls.startsWith("javax.")
         || cls.startsWith("com.sun.")
         || cls.startsWith("sun.");

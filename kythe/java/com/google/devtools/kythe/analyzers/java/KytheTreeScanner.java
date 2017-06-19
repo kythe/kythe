@@ -882,15 +882,23 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     // If referencing a generic class, distinguish between generic vs. raw use
     // (e.g., `List` is in generic context in `List<String> x` but not in `List x`).
     boolean inGenericContext = ctx.up().getTree() instanceof JCTypeApply;
-    JavaNode node = getJavaNode(sym);
-    if (node != null
-        && sym instanceof ClassSymbol
-        && inGenericContext
-        && !sym.getTypeParameters().isEmpty()) {
-      // Always reference the abs node of a generic class, unless used as a raw type.
-      node = new JavaNode(entrySets.newAbstractAndEmit(node.entries), node.qualifiedName);
+    try {
+      if (SignatureGenerator.isArrayHelperClass(sym.enclClass())
+          && ctx.getTree() instanceof JCFieldAccess) {
+        signatureGenerator.setArrayTypeContext(((JCFieldAccess) ctx.getTree()).selected.type);
+      }
+      JavaNode node = getJavaNode(sym);
+      if (node != null
+          && sym instanceof ClassSymbol
+          && inGenericContext
+          && !sym.getTypeParameters().isEmpty()) {
+        // Always reference the abs node of a generic class, unless used as a raw type.
+        node = new JavaNode(entrySets.newAbstractAndEmit(node.entries), node.qualifiedName);
+      }
+      return node;
+    } finally {
+      signatureGenerator.setArrayTypeContext(null);
     }
-    return node;
   }
 
   // Returns a JavaNode representing java.lang.Object.

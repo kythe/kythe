@@ -92,6 +92,11 @@ public class SignatureGenerator
   // Constant used to prepend to the beginning of error type names.
   private static final String ERROR_TYPE = "ERROR-TYPE";
 
+  // The full name of the compiler-generated class that holds array members
+  // (e.g., clone(), length) on behalf of the true array types.
+  // Note the name has no package prefix.
+  private static final String ARRAY_HELPER_CLASS = "Array";
+
   private final BlockAnonymousSignatureGenerator blockNumber =
       new BlockAnonymousSignatureGenerator(this);
 
@@ -108,6 +113,25 @@ public class SignatureGenerator
   private final Set<TypeVar> boundedVars = new HashSet<>();
 
   private final MemoizedTreePathScanner memoizedTreePathScanner;
+
+  // If we're generating a signature for a member of an array type (e.g., the `length` and
+  // `clone()` members), this field references that array type.  Otherwise, it's set to null.
+  //
+  // This is necessary because javac, as an implementation detail, uses a generated class named `Array`
+  // (with no package) as an intermediate holder for the references to those members. Therefore the
+  // MethodSymbol for, e.g., `clone()` will have as its owner the ClassSymbol for this `Array` class,
+  // instead of a ClassSymbol representing the actual array type, e.g., `int[]`. This will cause us to
+  // generate the signature `.Array.clone()` instead of `int[].clone()`.
+  //
+  // Not only does this expose a compiler implementation detail, but it gives the same signature for all
+  // array types, whereas the JLS specifies, in effect, that `int[].clone()`, `float[].clone()` etc.
+  // are different methods (each array type directly extends Object, so, at the language level,
+  // each must define its own clone()).
+  // See https://docs.oracle.com/javase/specs/jls/se8/html/jls-10.html#jls-10.8 for details.
+  //
+  // The original array type is not reachable from the member Symbol, so we use this field to provide that
+  // information out-of-band, so that we can generate signatures that conform to the specific array types.
+  private Type arrayTypeContext = null;
 
   public TreePath getPath(Element e) {
     return memoizedTreePathScanner.getPath(e);
@@ -130,6 +154,24 @@ public class SignatureGenerator
     this.useJvmSignatures = useJvmSignatures;
     this.memoizedTreePathScanner = new MemoizedTreePathScanner(compilationUnit, context);
     sigGen = new SigGen(Types.instance(context));
+  }
+
+  /** Does this symbol represent the compiler-generated Array member helper class? */
+  public static boolean isArrayHelperClass(Symbol sym) {
+    return (sym instanceof ClassSymbol)
+        && ((ClassSymbol) sym).className().equals(ARRAY_HELPER_CLASS);
+  }
+
+  /** Call this when generating a signature for an array member, with the array's type. */
+  public void setArrayTypeContext(Type arrayTypeContext) {
+    this.arrayTypeContext = arrayTypeContext;
+  }
+
+  public String getArrayTypeName() {
+    if (arrayTypeContext == null) {
+      return ARRAY_HELPER_CLASS; // With no context we indicate an array of unknown type.
+    }
+    return arrayTypeContext.toString();
   }
 
   /** Returns a Java signature for the specified Symbol. */
@@ -186,20 +228,24 @@ public class SignatureGenerator
 
   @Override
   public Void visitType(TypeElement e, StringBuilder sbout) {
-    if (!visitedElements.containsKey(e)) {
-      StringBuilder sb = new StringBuilder();
-      if (e.getNestingKind() == NestingKind.ANONYMOUS) {
-        sb.append(blockNumber.getAnonymousSignature(e));
-      } else if (e.asType() != null
-          && (e.asType().getKind().isPrimitive() || e.asType().getKind() == TypeKind.VOID)) {
-        sb.append(e.getSimpleName());
-      } else {
-        visitEnclosingElement(e, sb);
-        sb.append(".").append(e.getSimpleName());
+    if (e.getQualifiedName().toString().equals(ARRAY_HELPER_CLASS)) {
+      sbout.append(getArrayTypeName());
+    } else {
+      if (!visitedElements.containsKey(e)) {
+        StringBuilder sb = new StringBuilder();
+        if (e.getNestingKind() == NestingKind.ANONYMOUS) {
+          sb.append(blockNumber.getAnonymousSignature(e));
+        } else if (e.asType() != null
+            && (e.asType().getKind().isPrimitive() || e.asType().getKind() == TypeKind.VOID)) {
+          sb.append(e.getSimpleName());
+        } else {
+          visitEnclosingElement(e, sb);
+          sb.append(".").append(e.getSimpleName());
+        }
+        visitedElements.put(e, sb.toString());
       }
-      visitedElements.put(e, sb.toString());
+      sbout.append(visitedElements.get(e));
     }
-    sbout.append(visitedElements.get(e));
     return null;
   }
 

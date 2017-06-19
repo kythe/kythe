@@ -140,6 +140,18 @@ public class MarkedSource {
     };
   }
 
+  static Object referencesArrayMember(int[][] arry) {
+    //- @clone ref ArrayCloneMethod
+    //- ArrayCloneMethod.node/kind function
+    //- ArrayCloneMethod code ACMRoot
+    //- ACMRoot child.1 ACMContext
+    //- ACMContext.kind "CONTEXT"
+    //- ACMContext child.0 ACMContextIdent
+    //- ACMContextIdent.kind "IDENTIFIER"
+    //- ACMContextIdent.pre_text "int[][]"
+    return arry.clone();
+  }
+
   //- Void code VoidId
   //- VoidId.kind "IDENTIFIER"
   //- VoidId.pre_text void
