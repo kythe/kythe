@@ -194,12 +194,6 @@ public class JavaCompilationUnitExtractor {
     CompilationUnit.Builder unit = CompilationUnit.newBuilder();
     unit.setVName(VName.newBuilder().setSignature(target).setLanguage("java"));
     unit.addAllArgument(options);
-    unit.addArgument("-sourcepath");
-    unit.addArgument(Joiner.on(":").join(newSourcePath));
-    unit.addArgument("-cp");
-    unit.addArgument(Joiner.on(":").join(newClassPath));
-    unit.addArgument("-bootclasspath");
-    unit.addArgument(Joiner.on(":").join(newBootClassPath));
     unit.setHasCompileErrors(hasErrors);
     unit.addAllRequiredInput(requiredInputs);
     for (String sourceFile : sourceFiles) {

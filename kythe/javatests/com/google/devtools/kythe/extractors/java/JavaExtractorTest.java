@@ -37,7 +37,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import junit.framework.TestCase;
 
@@ -77,10 +76,9 @@ public class JavaExtractorTest extends TestCase {
         .containsExactlyElementsIn(getExpectedInfos(sources));
 
     // And the correct sourcepath set to replay the compilation.
-    JavaArguments args = JavaArguments.parseArguments(unit);
-    assertThat(args.getSourcepath()).containsExactly(TEST_DATA_DIR);
-    assertThat(args.getClasspath()).isEmpty();
-    assertThatArgumentsMatch(args, unit);
+    JavaDetails details = getJavaDetails(unit);
+    assertThat(details.getSourcepathList()).containsExactly(TEST_DATA_DIR);
+    assertThat(details.getClasspathList()).isEmpty();
   }
 
   /** Tests that metadata is included when a file specifies it. */
@@ -109,10 +107,9 @@ public class JavaExtractorTest extends TestCase {
         .containsExactlyElementsIn(getExpectedInfos(dependencies));
 
     // And the correct sourcepath set to replay the compilation.
-    JavaArguments args = JavaArguments.parseArguments(unit);
-    assertThat(args.getSourcepath()).containsExactly(TEST_DATA_DIR);
-    assertThat(args.getClasspath()).isEmpty();
-    assertThatArgumentsMatch(args, unit);
+    JavaDetails details = getJavaDetails(unit);
+    assertThat(details.getSourcepathList()).containsExactly(TEST_DATA_DIR);
+    assertThat(details.getClasspathList()).isEmpty();
   }
 
   /** Tests indexing within a symlink root. */
@@ -144,10 +141,9 @@ public class JavaExtractorTest extends TestCase {
         .containsExactlyElementsIn(getExpectedInfos(sources));
 
     // And the correct sourcepath set to replay the compilation.
-    JavaArguments args = JavaArguments.parseArguments(unit);
-    assertThat(args.getSourcepath()).containsExactly(TEST_DATA_DIR);
-    assertThat(args.getClasspath()).isEmpty();
-    assertThatArgumentsMatch(args, unit);
+    JavaDetails details = getJavaDetails(unit);
+    assertThat(details.getSourcepathList()).containsExactly(TEST_DATA_DIR);
+    assertThat(details.getClasspathList()).isEmpty();
   }
 
   /**
@@ -178,11 +174,10 @@ public class JavaExtractorTest extends TestCase {
         .containsExactlyElementsIn(getExpectedInfos(sources));
 
     // And the correct sourcepath set to replay the compilation for both sources.
-    JavaArguments args = JavaArguments.parseArguments(unit);
-    assertThat(args.getSourcepath())
+    JavaDetails details = getJavaDetails(unit);
+    assertThat(details.getSourcepathList())
         .containsExactly(join(TEST_DATA_DIR, "one"), join(TEST_DATA_DIR, "two"));
-    assertThat(args.getClasspath()).isEmpty();
-    assertThatArgumentsMatch(args, unit);
+    assertThat(details.getClasspathList()).isEmpty();
   }
 
   /**
@@ -213,11 +208,10 @@ public class JavaExtractorTest extends TestCase {
     assertThat(getInfos(unit.getRequiredInputList()))
         .containsExactlyElementsIn(getExpectedInfos(Arrays.asList(sources.get(0), classFile)));
 
-    JavaArguments args = JavaArguments.parseArguments(unit);
-    assertThat(args.getSourcepath()).containsExactly(join(TEST_DATA_DIR, "child"));
+    JavaDetails details = getJavaDetails(unit);
+    assertThat(details.getSourcepathList()).containsExactly(join(TEST_DATA_DIR, "child"));
     // Ensure the classpath is set for replay.
-    assertThat(args.getClasspath()).containsExactly(parentCp);
-    assertThatArgumentsMatch(args, unit);
+    assertThat(details.getClasspathList()).containsExactly(parentCp);
   }
 
   /**
@@ -251,13 +245,12 @@ public class JavaExtractorTest extends TestCase {
             makeFileInfo(sources.get(0)),
             makeFileInfo(classFile, join(TEST_DATA_DIR, "parent/base/A.class")));
 
-    JavaArguments args = JavaArguments.parseArguments(unit);
-    assertEquals(1, args.getSourcepath().size());
-    assertEquals(join(TEST_DATA_DIR, "child"), args.getSourcepath().get(0));
-    assertEquals(1, args.getClasspath().size());
+    JavaDetails details = getJavaDetails(unit);
+    assertEquals(1, details.getSourcepathList().size());
+    assertEquals(join(TEST_DATA_DIR, "child"), details.getSourcepathList().get(0));
+    assertEquals(1, details.getClasspathList().size());
     // Ensure the magic !CLASS_PATH_JAR! classpath is added.
-    assertEquals("!CLASS_PATH_JAR!", args.getClasspath().get(0));
-    assertThatArgumentsMatch(args, unit);
+    assertEquals("!CLASS_PATH_JAR!", details.getClasspathList().get(0));
   }
 
   /**
@@ -284,11 +277,10 @@ public class JavaExtractorTest extends TestCase {
     assertEquals(1, unit.getSourceFileCount());
     assertThat(unit.getSourceFileList()).containsExactly(sources.get(0)).inOrder();
 
-    JavaArguments args = JavaArguments.parseArguments(unit);
-    assertEquals(1, args.getSourcepath().size());
-    assertEquals(TEST_DATA_DIR, args.getSourcepath().get(0));
-    assertEquals(0, args.getClasspath().size());
-    assertThatArgumentsMatch(args, unit);
+    JavaDetails details = getJavaDetails(unit);
+    assertEquals(1, details.getSourcepathList().size());
+    assertEquals(TEST_DATA_DIR, details.getSourcepathList().get(0));
+    assertEquals(0, details.getClasspathList().size());
   }
 
   /** Tests that dependent files are ordered correctly. */
@@ -346,11 +338,10 @@ public class JavaExtractorTest extends TestCase {
         .containsExactlyElementsIn(getExpectedInfos(sources));
 
     // And the correct sourcepath set to replay the compilation.
-    JavaArguments args = JavaArguments.parseArguments(unit);
-    assertEquals(1, args.getSourcepath().size());
-    assertEquals(TEST_DATA_DIR, args.getSourcepath().get(0));
-    assertEquals(0, args.getClasspath().size());
-    assertThatArgumentsMatch(args, unit);
+    JavaDetails details = getJavaDetails(unit);
+    assertEquals(1, details.getSourcepathList().size());
+    assertEquals(TEST_DATA_DIR, details.getSourcepathList().get(0));
+    assertEquals(0, details.getClasspathList().size());
   }
 
   /**
@@ -379,10 +370,9 @@ public class JavaExtractorTest extends TestCase {
         .containsExactlyElementsIn(getExpectedInfos(sources));
 
     // And the correct sourcepath set to replay the compilation.
-    JavaArguments args = JavaArguments.parseArguments(unit);
-    assertThat(args.getSourcepath()).containsExactly(TEST_DATA_DIR);
-    assertThat(args.getClasspath()).isEmpty();
-    assertThatArgumentsMatch(args, unit);
+    JavaDetails details = getJavaDetails(unit);
+    assertThat(details.getSourcepathList()).containsExactly(TEST_DATA_DIR);
+    assertThat(details.getClasspathList()).isEmpty();
   }
 
   /**
@@ -453,15 +443,7 @@ public class JavaExtractorTest extends TestCase {
 
     // Check that the -d, -s, and -h flags have been removed from the compilation's arguments
     assertThat(unit.getArgumentList())
-        .containsExactly(
-            "-Xdoclint:-Xdoclint:all/private",
-            "-g:lines",
-            "-sourcepath",
-            TEST_DATA_DIR + ":" + outputDirs.get(0).getFileName(),
-            "-cp",
-            "",
-            "-bootclasspath",
-            "")
+        .containsExactly("-Xdoclint:-Xdoclint:all/private", "-g:lines")
         .inOrder();
   }
 
@@ -527,11 +509,11 @@ public class JavaExtractorTest extends TestCase {
             makeFileInfo(sillyGenerated, Paths.get(testDir, sillyGenerated).toString()));
 
     // And the correct sourcepath set to replay the compilation.
-    JavaArguments args = JavaArguments.parseArguments(unit);
-    assertEquals(2, args.getSourcepath().size());
-    assertThat(args.getSourcepath()).containsExactly(TEST_DATA_DIR, "output-gensrc.jar.files");
-    assertEquals(0, args.getClasspath().size());
-    assertThatArgumentsMatch(args, unit);
+    JavaDetails details = getJavaDetails(unit);
+    assertEquals(2, details.getSourcepathList().size());
+    assertThat(details.getSourcepathList())
+        .containsExactly(TEST_DATA_DIR, "output-gensrc.jar.files");
+    assertEquals(0, details.getClasspathList().size());
   }
 
   /** Tests that the extractor doesn't fall over when it's provided with no sources. */
@@ -539,12 +521,11 @@ public class JavaExtractorTest extends TestCase {
     JavaCompilationUnitExtractor java = new JavaCompilationUnitExtractor(CORPUS);
 
     List<String> sources = Collections.emptyList();
-    List<String> options =
-        Lists.newArrayList("-bootclasspath", testFiles("empty/fake-rt.jar").get(0));
+    List<String> bootclasspath = testFiles("empty/fake-rt.jar");
 
     // Index the specified sources
     CompilationDescription description =
-        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, options, "output");
+        java.extract(TARGET1, sources, EMPTY, bootclasspath, EMPTY, EMPTY, EMPTY, EMPTY, "output");
 
     CompilationUnit unit = description.getCompilationUnit();
 
@@ -554,10 +535,9 @@ public class JavaExtractorTest extends TestCase {
     assertEquals(0, unit.getRequiredInputCount());
 
     // And the correct classpath set to replay the compilation.
-    JavaArguments args = JavaArguments.parseArguments(unit);
-    assertEquals(0, args.getSourcepath().size());
-    assertEquals(0, args.getClasspath().size());
-    assertThatArgumentsMatch(args, unit);
+    JavaDetails details = getJavaDetails(unit);
+    assertEquals(0, details.getSourcepathList().size());
+    assertEquals(0, details.getClasspathList().size());
   }
 
   /**
@@ -568,12 +548,11 @@ public class JavaExtractorTest extends TestCase {
     JavaCompilationUnitExtractor java = new JavaCompilationUnitExtractor(CORPUS);
 
     List<String> sources = testFiles("empty/Empty.java");
-    List<String> options =
-        Lists.newArrayList("-bootclasspath", testFiles("empty/fake-rt.jar").get(0));
+    List<String> bootclasspath = testFiles("empty/fake-rt.jar");
 
     // Index the specified sources
     CompilationDescription description =
-        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, options, "output");
+        java.extract(TARGET1, sources, EMPTY, bootclasspath, EMPTY, EMPTY, EMPTY, EMPTY, "output");
 
     CompilationUnit unit = description.getCompilationUnit();
     assertNotNull(unit);
@@ -589,15 +568,14 @@ public class JavaExtractorTest extends TestCase {
     assertThat(requiredPaths)
         .containsExactly(sources.get(0), "!PLATFORM_CLASS_PATH_JAR!/java/lang/Fake.class");
 
+    assertThat(unit.getArgumentList())
+        .containsNoneOf("-bootclasspath", "-sourcepath", "-cp", "-classpath");
+
     // And the correct source/class locations set to replay the compilation.
-    JavaArguments args = JavaArguments.parseArguments(unit);
-    assertThat(args.getSourcepath()).isEmpty();
-    assertThat(args.getClasspath()).isEmpty();
-    assertThat(args.getBootclasspath())
-        .containsExactly(
-            "kythe/javatests/com/google/devtools/kythe/extractors/java/testdata/empty/fake-rt.jar",
-            "!PLATFORM_CLASS_PATH_JAR!");
-    assertThatArgumentsMatch(args, unit);
+    JavaDetails details = getJavaDetails(unit);
+    assertThat(details.getSourcepathList()).isEmpty();
+    assertThat(details.getClasspathList()).isEmpty();
+    assertThat(details.getBootclasspathList()).containsExactly("!PLATFORM_CLASS_PATH_JAR!");
   }
 
   private List<String> testFiles(String... files) {
@@ -652,73 +630,13 @@ public class JavaExtractorTest extends TestCase {
     }
   }
 
-  private void assertThatArgumentsMatch(JavaArguments args, CompilationUnit unit)
-      throws InvalidProtocolBufferException {
-    JavaDetails details = null;
+  private JavaDetails getJavaDetails(CompilationUnit unit) throws InvalidProtocolBufferException {
     for (Any any : unit.getDetailsList()) {
       if (any.getTypeUrl().equals(JavaCompilationUnitExtractor.JAVA_DETAILS_URL)) {
-        details = JavaDetails.parseFrom(any.getValue());
+        return JavaDetails.parseFrom(any.getValue());
       }
     }
-    assertThat(details).isNotNull();
-
-    assertThat(details.getClasspathList()).containsExactlyElementsIn(args.getClasspath()).inOrder();
-    assertThat(details.getSourcepathList())
-        .containsExactlyElementsIn(args.getSourcepath())
-        .inOrder();
-  }
-
-  private static class JavaArguments {
-    private final List<String> sourcepath, classpath, bootclasspath;
-
-    private JavaArguments(
-        List<String> sourcepath, List<String> classpath, List<String> bootclasspath) {
-      this.sourcepath = ImmutableList.copyOf(sourcepath);
-      this.classpath = ImmutableList.copyOf(classpath);
-      this.bootclasspath = ImmutableList.copyOf(bootclasspath);
-    }
-
-    public static JavaArguments parseArguments(CompilationUnit unit) {
-      return parse(unit.getArgumentList());
-    }
-
-    public static JavaArguments parse(List<String> args) {
-      List<String> sourcepath = new LinkedList<>();
-      List<String> classpath = new LinkedList<>();
-      List<String> bootclasspath = new LinkedList<>();
-      for (int i = 0; i < args.size(); i++) {
-        if (args.get(i).equals("-s") || args.get(i).equals("-sourcepath")) {
-          i++;
-          sourcepath.addAll(parsePathList(args.get(i)));
-        } else if (args.get(i).equals("-cp") || args.get(i).equals("-classpath")) {
-          i++;
-          classpath.addAll(parsePathList(args.get(i)));
-        } else if (args.get(i).equals("-bootclasspath")) {
-          i++;
-          bootclasspath.addAll(parsePathList(args.get(i)));
-        }
-      }
-      return new JavaArguments(sourcepath, classpath, bootclasspath);
-    }
-
-    public List<String> getSourcepath() {
-      return sourcepath;
-    }
-
-    public List<String> getClasspath() {
-      return classpath;
-    }
-
-    public List<String> getBootclasspath() {
-      return bootclasspath;
-    }
-
-    private static List<String> parsePathList(String paths) {
-      if (paths.isEmpty()) {
-        return EMPTY;
-      }
-      return ImmutableList.copyOf(paths.split(File.pathSeparator));
-    }
+    return null;
   }
 
   private static String join(String base, String... paths) {
