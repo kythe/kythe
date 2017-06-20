@@ -18,7 +18,8 @@ type Inky struct {
 }
 
 func msPacMan() {
-	// Verify that named initializers ref their fields.
+	// Verify that named initializers ref/init their fields, and that the names
+	// ref the fields.
 	a := &Inky{
 		//- @Pinky ref Pinky
 		//- @"\"pink\"" ref/init Pinky
@@ -32,8 +33,7 @@ func msPacMan() {
 	}
 	_ = a
 
-	// Verify that unnamed initializers ref their fields from zero-width
-	// anchors.
+	// Verify that unnamed initializers ref/init their fields.
 	b := &Inky{
 		//- @"a.Pinky" ref/init Pinky
 		a.Pinky,
@@ -45,4 +45,35 @@ func msPacMan() {
 		0x84077e,
 	}
 	_ = b
+}
+
+func realNames() {
+	//- @ghost defines/binding Ghost
+	type ghost struct {
+		//- @name defines/binding Name
+		//- @nick defines/binding Nick
+		name, nick string
+	}
+
+	// Verify that fields composite literals without explicit type names
+	// correctly point back to the fields of their defining type.
+
+	//- @ghost ref Ghost
+	_ = []ghost{
+		//- @"\"bashful\"" ref/init Name
+		//- @"\"inky\"" ref/init Nick
+		{"bashful", "inky"},
+		//- @"\"speedy\"" ref/init Name
+		//- @"\"pinky\"" ref/init Nick
+		{"speedy", "pinky"},
+		//- @"\"shadow\"" ref/init Name
+		//- @"\"blinky\"" ref/init Nick
+		{"shadow", "blinky"},
+
+		//- @name ref Name
+		//- @"\"pokey\"" ref/init Name
+		//- @nick ref Nick
+		//- @"\"clyde\"" ref/init Nick
+		{name: "pokey", nick: "clyde"},
+	}
 }

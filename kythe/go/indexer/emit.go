@@ -414,7 +414,7 @@ func (e *emitter) visitCompositeLit(expr *ast.CompositeLit, stack stackFunc) {
 		return // no fields to initialize
 	}
 
-	tv, ok := e.pi.Info.Types[expr.Type]
+	tv, ok := e.pi.Info.Types[expr]
 	if !ok {
 		log.Printf("WARNING: Unable to determine composite literal type (%s)", e.pi.FileSet.Position(expr.Pos()))
 		return
