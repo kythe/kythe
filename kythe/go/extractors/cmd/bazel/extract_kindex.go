@@ -159,9 +159,14 @@ func main() {
 	if *sourceArgs != "" {
 		r := mustRegexp(*sourceArgs, "source argument")
 		config.Fixup = func(cu *kindex.Compilation) error {
+			var inputs stringset.Set
+			for _, ri := range cu.Proto.RequiredInput {
+				inputs.Add(ri.Info.GetPath())
+			}
+
 			srcs := stringset.New(cu.Proto.SourceFile...)
 			for _, arg := range cu.Proto.Argument {
-				if r.MatchString(arg) {
+				if r.MatchString(arg) && inputs.Contains(arg) {
 					srcs.Add(arg)
 				}
 			}
