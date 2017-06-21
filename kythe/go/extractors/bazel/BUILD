@@ -4,7 +4,10 @@ package(default_visibility = ["//kythe:default_visibility"])
 
 go_package_library(
     name = "bazel",
-    srcs = ["extractor.go"],
+    srcs = [
+        "extractor.go",
+        "utils.go",
+    ],
     deps = [
         "//kythe/go/extractors/golang",
         "//kythe/go/extractors/govname",

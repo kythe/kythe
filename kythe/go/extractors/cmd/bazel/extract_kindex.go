@@ -22,24 +22,16 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"regexp"
-	"strings"
 	"time"
 
 	"bitbucket.org/creachadair/stringset"
 
-	"github.com/golang/protobuf/proto"
-
 	"kythe.io/kythe/go/extractors/bazel"
 	"kythe.io/kythe/go/platform/kindex"
-	"kythe.io/kythe/go/util/vnameutil"
-
-	xapb "kythe.io/third_party/bazel/extra_actions_base_proto"
 )
 
 var (
@@ -107,14 +99,21 @@ func main() {
 	}
 
 	// Ensure the extra action can be loaded.
-	info := mustLoadAction(*extraAction)
-	pkg := packageName(info.GetOwner())
+	info, err := bazel.LoadAction(*extraAction)
+	if err != nil {
+		log.Fatalf("Loading extra action: %v", err)
+	}
+	pkg := bazel.PackageName(info.GetOwner())
 	log.Printf("Extra action for target %q (package %q)", info.GetOwner(), pkg)
 
+	rules, err := bazel.LoadRules(*vnameRules)
+	if err != nil {
+		log.Fatalf("Loading rules: %v", err)
+	}
 	config := &bazel.Config{
 		Corpus:     *corpus,
 		Language:   *language,
-		Rules:      mustLoadRules(*vnameRules),
+		Rules:      rules,
 		Verbose:    *verboseLog,
 		CheckInput: func(path string) (string, bool) { return path, true },
 	}
@@ -147,7 +146,7 @@ func main() {
 		r := mustRegexp(*sourceFiles, "source file")
 		if *scopedSource {
 			config.IsSource = func(path string) bool {
-				return r.MatchString(path) && pathInPackage(path, pkg)
+				return r.MatchString(path) && bazel.PathInPackage(path, pkg)
 			}
 		} else {
 			config.IsSource = r.MatchString
@@ -181,56 +180,9 @@ func main() {
 		log.Fatalf("Extraction failed: %v", err)
 	}
 	log.Printf("Finished extracting [%v elapsed]", time.Since(start))
-	mustWrite(cu, *outputPath)
-}
-
-// mustWrite writes w to path, creating the path if necessary and replacing any
-// existing file at that location.
-func mustWrite(w io.WriterTo, path string) {
-	start := time.Now()
-	f, err := os.Create(path)
-	if err != nil {
-		log.Fatalf("Creating output file: %v", err)
+	if err := bazel.Write(cu, *outputPath); err != nil {
+		log.Fatalf("Writing index: %v", err)
 	}
-	if _, err := w.WriteTo(f); err != nil {
-		log.Fatalf("Writing output file: %v", err)
-	} else if err := f.Close(); err != nil {
-		log.Fatalf("Closing output file: %v", err)
-	}
-	log.Printf("Finished writing output [%v elapsed]", time.Since(start))
-}
-
-// mustLoadAction loads and parses a wire-format ExtraActionInfo message from
-// the specified path, or aborts the program with an error.
-func mustLoadAction(path string) *xapb.ExtraActionInfo {
-	xa, err := ioutil.ReadFile(path)
-	if err != nil {
-		log.Fatalf("Reading extra action info: %v", err)
-	}
-	var info xapb.ExtraActionInfo
-	if err := proto.Unmarshal(xa, &info); err != nil {
-		log.Fatalf("Parsing extra action info: %v", err)
-	}
-	log.Printf("Read %d bytes from extra action file %q", len(xa), path)
-	return &info
-}
-
-// mustLoadRules loads and parses the vname mapping rules in path.
-// If path == "", this returns nil (no rules).
-// In case of error the program is aborted with a log.
-func mustLoadRules(path string) vnameutil.Rules {
-	if path == "" {
-		return nil
-	}
-	data, err := ioutil.ReadFile(path)
-	if err != nil {
-		log.Fatalf("Reading vname rules: %v", err)
-	}
-	rules, err := vnameutil.ParseRules(data)
-	if err != nil {
-		log.Fatalf("Parsing vname rules: %v", err)
-	}
-	return rules
 }
 
 // mustRegexp parses the given regular expression or exits the program with a
@@ -241,15 +193,4 @@ func mustRegexp(expr, description string) *regexp.Regexp {
 		log.Fatalf("Invalid %s regexp: %v", description, err)
 	}
 	return r
-}
-
-// packageName extracts the base name of a Bazel package from a target label,
-// for example //foo/bar:baz ⇒ foo/bar.
-func packageName(label string) string {
-	return strings.SplitN(strings.TrimPrefix(label, "//"), ":", 2)[0]
-}
-
-// pathInPackage reports whether path contains pkg as a directory fragment.
-func pathInPackage(path, pkg string) bool {
-	return strings.Contains(path, "/"+pkg+"/") || strings.HasPrefix(path, pkg+"/")
 }
