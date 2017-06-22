@@ -51,16 +51,17 @@ type entrySet struct {
 	Target   *spb.VName `json:"target,omitempty"`
 	EdgeKind string     `json:"edge_kind,omitempty"`
 
-	Properties map[string]string `json:"properties"`
+	Properties map[string]json.RawMessage `json:"properties"`
 }
 
 var (
-	readJSON    = flag.Bool("read_json", false, "Assume stdin is a stream of JSON entries instead of protobufs")
-	writeJSON   = flag.Bool("write_json", false, "Print JSON stream as output")
-	sortStream  = flag.Bool("sort", false, "Sort entry stream into GraphStore order")
-	uniqEntries = flag.Bool("unique", false, "Print only unique entries (implies --sort)")
-	entrySets   = flag.Bool("entrysets", false, "Print Entry protos as JSON EntrySets (implies --sort and --write_json)")
-	countOnly   = flag.Bool("count", false, "Only print the count of protos streamed")
+	readJSON        = flag.Bool("read_json", false, "Assume stdin is a stream of JSON entries instead of protobufs")
+	writeJSON       = flag.Bool("write_json", false, "Print JSON stream as output")
+	sortStream      = flag.Bool("sort", false, "Sort entry stream into GraphStore order")
+	uniqEntries     = flag.Bool("unique", false, "Print only unique entries (implies --sort)")
+	entrySets       = flag.Bool("entrysets", false, "Print Entry protos as JSON EntrySets (implies --sort and --write_json)")
+	countOnly       = flag.Bool("count", false, "Only print the count of protos streamed")
+	structuredFacts = flag.Bool("structured_facts", false, "Encode and/or decode the fact_value for marked source facts")
 )
 
 func init() {
@@ -79,7 +80,11 @@ func main() {
 
 	var rd stream.EntryReader
 	if *readJSON {
-		rd = stream.NewJSONReader(in)
+		if *structuredFacts {
+			rd = stream.NewStructuredJSONReader(in)
+		} else {
+			rd = stream.NewJSONReader(in)
+		}
 	} else {
 		rd = stream.NewReader(in)
 	}
@@ -115,10 +120,15 @@ func main() {
 				set.Source = entry.Source
 				set.EdgeKind = entry.EdgeKind
 				set.Target = entry.Target
-				set.Properties = make(map[string]string)
+				set.Properties = make(map[string]json.RawMessage)
 			}
-			set.Properties[entry.FactName] = string(entry.FactValue)
-			return nil
+			var err error
+			if *structuredFacts {
+				set.Properties[entry.FactName], err = stream.StructuredFactValueJSON(entry)
+			} else {
+				set.Properties[entry.FactName], err = json.Marshal(entry)
+			}
+			return err
 		}))
 		if len(set.Properties) != 0 {
 			failOnErr(encoder.Encode(set))
@@ -126,6 +136,9 @@ func main() {
 	case *writeJSON:
 		encoder := json.NewEncoder(out)
 		failOnErr(rd(func(entry *spb.Entry) error {
+			if *structuredFacts {
+				return encoder.Encode(stream.Structured(entry))
+			}
 			return encoder.Encode(entry)
 		}))
 	default:

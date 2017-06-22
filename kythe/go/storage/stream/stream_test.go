@@ -25,7 +25,11 @@ import (
 	"kythe.io/kythe/go/platform/delimited"
 	"kythe.io/kythe/go/test/testutil"
 
+	cpb "kythe.io/kythe/proto/common_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
+
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
 )
 
 func TestReader(t *testing.T) {
@@ -63,6 +67,46 @@ func TestJSONReader(t *testing.T) {
 
 	if i != len(testEntries) {
 		t.Fatalf("Missing %d entries", len(testEntries)-i)
+	}
+}
+
+func TestStructuredEntry(t *testing.T) {
+	ms := &cpb.MarkedSource{PreText: "hi"}
+	pbms, err := proto.Marshal(ms)
+	if err != nil {
+		t.Fatalf("Error marshaling MarkedSource: %v", err)
+	}
+	entry := &StructuredEntry{
+		Source:    &spb.VName{Signature: "sig"},
+		FactName:  "/kythe/code",
+		FactValue: pbms,
+	}
+	entryJSON, err := json.Marshal(entry)
+	if err != nil {
+		t.Fatalf("Error marshaling entry: %v", err)
+	}
+
+	var rawOut richJSONEntry
+	if err := json.Unmarshal(entryJSON, &rawOut); err != nil {
+		t.Fatalf("Error unmarshaling entry (without fact_value): %v", err)
+	}
+
+	var msOut cpb.MarkedSource
+	if err := jsonpb.UnmarshalString(string(rawOut.FactValue), &msOut); err != nil {
+		t.Fatalf("Error unmarshaling fact_value: %v", err)
+	}
+
+	if !proto.Equal(ms, &msOut) {
+		t.Errorf("Failed to properly encode marked source:\n%s", rawOut.FactValue)
+	}
+
+	var entryOut StructuredEntry
+	if err := json.Unmarshal(entryJSON, &entryOut); err != nil {
+		t.Fatalf("Error unmarshaling StructuredEntry: %v", err)
+	}
+
+	if !proto.Equal(entry, &entryOut) {
+		t.Errorf("Roundtrip Marshal/Unmarshal failed: \n%v\n%v", entry, &entryOut)
 	}
 }
 
