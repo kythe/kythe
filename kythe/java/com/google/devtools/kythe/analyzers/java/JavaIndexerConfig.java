@@ -21,14 +21,71 @@ import com.google.devtools.kythe.analyzers.base.IndexerConfig;
 
 public class JavaIndexerConfig extends IndexerConfig {
 
-  @Parameter(names = "--emit_jvm_signatures", description = "Generate vmames with jvm signatures.")
+  @Parameter(names = "--emit_jvm_signatures", description = "Generate vnames with jvm signatures.")
   private boolean emitJvmSignatures;
+
+  @Parameter(
+    names = "--ignore_vname_paths",
+    description =
+        "Determines whether the analyzer should ignore the path components of the"
+            + " {@link VName}s in each compilation.  This can be used to \"fix\" the coherence"
+            + " of {@link VName}s across compilations when the extractor was not (or could not be)"
+            + " supplied with a proper {@link VName}s configuration file.  Each path will instead be"
+            + " set to the qualified name of each node's enclosing class (e.g. \"java.lang.String\""
+            + " or \"com.google.common.base.Predicate\")."
+  )
+  private boolean ignoreVNamePaths;
+
+  @Parameter(
+    names = "--ignore_vname_roots",
+    description =
+        "Determines whether the analyzer should ignore the root components of the"
+            + " {@link VName}s in each compilation.  This can be used to \"fix\" the coherence"
+            + " of {@link VName}s across compilations when the extractor was not (or could not be)"
+            + " supplied with a proper {@link VName}s configuration file."
+  )
+  private boolean ignoreVNameRoots;
+
+  @Parameter(
+    names = "--override_jdk_corpus",
+    description =
+        "If set, use this as the corpus for classes from java.*, javax.*, com.sun.*, and sun.*. "
+            + " Anchor and file VNames are not affected."
+  )
+  private String overrideJdkCorpus;
 
   public JavaIndexerConfig(String programName) {
     super(programName);
   }
 
+  public final boolean getIgnoreVNamePaths() {
+    return ignoreVNamePaths;
+  }
+
+  public final boolean getIgnoreVNameRoots() {
+    return ignoreVNameRoots;
+  }
+
+  public final String getOverrideJdkCorpus() {
+    return overrideJdkCorpus;
+  }
+
   public boolean getEmitJvmSignatures() {
     return emitJvmSignatures;
+  }
+
+  public JavaIndexerConfig setIgnoreVNamePaths(boolean ignoreVNamePaths) {
+    this.ignoreVNamePaths = ignoreVNamePaths;
+    return this;
+  }
+
+  public JavaIndexerConfig setIgnoreVNameRoots(boolean ignoreVNameRoots) {
+    this.ignoreVNameRoots = ignoreVNameRoots;
+    return this;
+  }
+
+  public JavaIndexerConfig setOverrideJdkCorpus(String overrideJdkCorpus) {
+    this.overrideJdkCorpus = overrideJdkCorpus;
+    return this;
   }
 }

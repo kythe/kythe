@@ -20,7 +20,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 
-/** Common configuration for the Kythe Java indexer. */
+/** Common configuration for Kythe indexers. */
 @Parameters(separators = "=")
 public class IndexerConfig {
   private final String programName;
@@ -31,26 +31,6 @@ public class IndexerConfig {
     help = true
   )
   private boolean help;
-
-  @Parameter(
-    names = "--ignore_vname_paths",
-    description =
-        "Determines whether the analyzer should ignore the path components of the"
-            + " {@link VName}s in each compilation.  This can be used to \"fix\" the coherence"
-            + " of {@link VName}s across compilations when the extractor was not (or could not be)"
-            + " supplied with a proper {@link VName}s configuration file.  Each path will instead be"
-            + " set to the qualified name of each node's enclosing class (e.g. \"java.lang.String\""
-            + " or \"com.google.common.base.Predicate\")."
-  )
-  private boolean ignoreVNamePaths;
-
-  @Parameter(
-    names = "--override_jdk_corpus",
-    description =
-        "If set, use this as the corpus for classes from java.*, javax.*, com.sun.*, and sun.*. "
-            + " Anchor and file VNames are not affected."
-  )
-  private String overrideJdkCorpus;
 
   @Parameter(
     names = "--verbose",
@@ -87,30 +67,12 @@ public class IndexerConfig {
     return help;
   }
 
-  public final boolean getIgnoreVNamePaths() {
-    return ignoreVNamePaths;
-  }
-
-  public final String getOverrideJdkCorpus() {
-    return overrideJdkCorpus;
-  }
-
   public final boolean getVerboseLogging() {
     return verboseLogging;
   }
 
   public final String getDefaultMetadataCorpus() {
     return defaultMetadataCorpus;
-  }
-
-  public IndexerConfig setIgnoreVNamePaths(boolean ignoreVNamePaths) {
-    this.ignoreVNamePaths = ignoreVNamePaths;
-    return this;
-  }
-
-  public IndexerConfig setOverrideJdkCorpus(String overrideJdkCorpus) {
-    this.overrideJdkCorpus = overrideJdkCorpus;
-    return this;
   }
 
   public IndexerConfig setVerboseLogging(boolean verboseLogging) {

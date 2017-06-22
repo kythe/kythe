@@ -62,6 +62,7 @@ public class JavaEntrySets extends KytheEntrySets {
   private final Map<Symbol, Integer> symbolHashes = new HashMap<>();
   private final Map<Symbol, Set<String>> symbolSigs = new HashMap<Symbol, Set<String>>();
   private final boolean ignoreVNamePaths;
+  private final boolean ignoreVNameRoots;
   private final String overrideJdkCorpus;
   private Map<String, Integer> sourceToWildcardCounter = new HashMap<>();
 
@@ -71,9 +72,11 @@ public class JavaEntrySets extends KytheEntrySets {
       VName compilationVName,
       List<FileInput> requiredInputs,
       boolean ignoreVNamePaths,
+      boolean ignoreVNameRoots,
       String overrideJdkCorpus) {
     super(statistics, emitter, compilationVName, requiredInputs);
     this.ignoreVNamePaths = ignoreVNamePaths;
+    this.ignoreVNameRoots = ignoreVNameRoots;
     this.overrideJdkCorpus = overrideJdkCorpus;
   }
 
@@ -94,7 +97,7 @@ public class JavaEntrySets extends KytheEntrySets {
     String flatName = sym.flatName().toString();
     int lastDot = flatName.lastIndexOf('.');
     // A$1 is a valid variable/method name, so make sure we only look at $ in class names.
-    int lastCash = (sym instanceof ClassSymbol) ? flatName.lastIndexOf('$') : - 1;
+    int lastCash = (sym instanceof ClassSymbol) ? flatName.lastIndexOf('$') : -1;
     int lastTok = lastDot > lastCash ? lastDot : lastCash;
     String identToken = lastTok < 0 ? flatName : flatName.substring(lastTok + 1);
     if (!identToken.isEmpty() && Character.isDigit(identToken.charAt(0))) {
@@ -242,6 +245,9 @@ public class JavaEntrySets extends KytheEntrySets {
       if (ignoreVNamePaths) {
         v = v.toBuilder().setPath(enclClass != null ? enclClass.toString() : "").build();
       }
+      if (ignoreVNameRoots) {
+        v = v.toBuilder().clearRoot().build();
+      }
 
       MarkedSource.Builder markedSource = msBuilder == null ? MarkedSource.newBuilder() : msBuilder;
       MarkedSource markedType = markType(signatureGenerator, sym);
@@ -290,8 +296,7 @@ public class JavaEntrySets extends KytheEntrySets {
       }
 
       NodeKind kind = elementNodeKind(sym.getKind());
-      NodeBuilder builder =
-          kind != null ? newNode(kind) : newNode(sym.getKind().toString());
+      NodeBuilder builder = kind != null ? newNode(kind) : newNode(sym.getKind().toString());
       builder.setCorpusPath(CorpusPath.fromVName(v)).setProperty("code", markedSource.build());
 
       if (signatureGenerator.getUseJvmSignatures()) {
