@@ -683,7 +683,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   @Override
   public JavaNode visitAnnotation(JCAnnotation annotation, TreeContext owner) {
     TreeContext ctx = owner.down(annotation);
-
+    scanList(annotation.getArguments(), ctx);
     return scan(annotation.getAnnotationType(), ctx);
   }
 
@@ -810,7 +810,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       typeParams.add(node);
 
       List<JCExpression> bounds = tParam.getBounds();
-      List<JavaNode> boundNodes = bounds.stream().map(expr -> scan(expr, ctx)).collect(Collectors.toList());
+      List<JavaNode> boundNodes =
+          bounds.stream().map(expr -> scan(expr, ctx)).collect(Collectors.toList());
       if (boundNodes.size() == 0) {
         boundNodes.add(getJavaLangObjectNode());
       }

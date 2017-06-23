@@ -2,11 +2,20 @@ package pkg;
 
 //- @Annotations defines/binding Annotation
 //- Annotation.node/kind interface
-public @interface Annotations {}
+public @interface Annotations {
+  //- @classes defines/binding ClassesM
+  Class<?>[] classes() default {};
+}
 
 //- @Annotations ref Annotation
+@Annotations(
+  //- @C ref C
+  //- @Annotations ref Annotation
+  //- @classes ref ClassesM
+  classes = {C.class, Annotations.class}
+)
 //- @Deprecated ref Deprecated
-@Annotations @Deprecated
+@Deprecated
 //- @C defines/binding C
 //- C annotatedby Annotatedby
 //- C annotatedby Deprecated
