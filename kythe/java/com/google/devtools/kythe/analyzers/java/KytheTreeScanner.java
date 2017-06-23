@@ -108,7 +108,6 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   private final JavaFileStoreBasedFileManager fileManager;
   private final MetadataLoaders metadataLoaders;
   private List<Metadata> metadata;
-  private String packageName;
 
   private KytheDocTreeScanner docScanner;
 
@@ -176,7 +175,6 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       docScanner = new KytheDocTreeScanner(this, javaContext);
     }
     TreeContext ctx = new TreeContext(filePositions, compilation);
-    packageName = compilation.packge.toString();
     metadata = Lists.newArrayList();
 
     EntrySet fileNode = entrySets.newFileNodeAndEmit(filePositions);
@@ -439,7 +437,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
             ctx, methodNode, methodDef.getTypeParameters(), wildcards, markedSource.build());
     boolean documented = visitDocComment(methodNode, absNode);
 
-    EntrySet ret, bindingAnchor = null;
+    EntrySet ret = null;
+    EntrySet bindingAnchor = null;
     String fnTypeName = "(" + Joiner.on(",").join(paramTypeNames) + ")";
     if (methodDef.sym.isConstructor()) {
       // Implicit constructors (those without syntactic definition locations) share the same
