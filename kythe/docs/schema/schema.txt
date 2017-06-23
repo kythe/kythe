@@ -1850,12 +1850,14 @@ symbol
 
 Brief description::
   A *symbol* is a common name used by tools to refer to a set of objects.
-  The rules for binding a symbol to a particular object from this set may depend on 
+  The spelling of a symbol is defined per language, and should be constructible by
+  tools that do not necessarily have direct access to the compiler.
+  The rules for binding a symbol to a particular object from this set may depend on
   external configuration (such as the list of libraries being linked together to produce
   an executable).
 Naming convention::
   Language:::
-    No special rules (though see below).
+    No special rules.
   Path:::
     *empty*
   Root:::

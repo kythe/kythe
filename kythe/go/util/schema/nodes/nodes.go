@@ -31,6 +31,7 @@ const (
 	Name       = "name"
 	Package    = "package"
 	Record     = "record"
+	Symbol     = "symbol"
 	TAlias     = "talias"
 	TApp       = "tapp"
 	TBuiltin   = "tbuiltin"
