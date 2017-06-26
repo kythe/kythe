@@ -89,14 +89,14 @@
                   (group-overlapping-anchors
                     (filter (fn [{:keys [start end kind]}]
                               (and (> end 0) (< start end)))
-                            (map (fn [{:keys [source_ticket target_ticket anchor_start anchor_end kind target_definition]}]
+                            (map (fn [{:keys [target_ticket span kind target_definition]}]
                                    (let [def (when target_definition
                                                (get definitions (keyword target_definition)))]
-                                     {:start (:byte_offset anchor_start)
-                                      :end (:byte_offset anchor_end)
+                                     {:start (:byte_offset (:start span))
+                                      :end (:byte_offset (:end span))
                                       :target-definition def
                                       :kind (schema/trim-edge-prefix kind)
-                                      :anchor-ticket source_ticket
+                                      :anchor-ticket target_ticket
                                       :target-ticket target_ticket}))
                                  (filter #(not (contains? #{schema/documents-edge schema/defines-edge} (:kind %)))
                           (:reference decorations))))))]
@@ -136,7 +136,7 @@
                                      (put! file-to-view
                                            {:ticket (:parent target-definition)
                                             :anchor (:ticket target-definition)
-                                            :line   (:line_number (:start target-definition))}))
+                                            :line   (:line_number (:start (:span target-definition)))}))
                                    ;; Open cross-references panel
                                    (put! xrefs-to-view target-ticket)))
                       :style #js {:backgroundColor background}
@@ -156,6 +156,7 @@
             (fn [nodes]
               (map (fn [node]
                      (if (:anchor-ticket node)
+                       ;; TODO(schroederc): fix highlighting
                        (cond
                          (= xref-jump (:anchor-ticket node))
                          (assoc node :background "lightgreen")

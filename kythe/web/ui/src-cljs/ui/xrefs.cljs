@@ -65,17 +65,18 @@
 (defn- collect-anchors [anchors]
   (into {}
     (for [[file anchors] (group-by :parent anchors)]
-      [file (sort-by (comp :byte_offset :start) anchors)])))
+      [file (sort-by (comp :byte_offset :start :span) anchors)])))
 
 (defn- display-anchor [file anchor file-to-view]
-  (let [line (:line_number (:snippet_start anchor))
-        snippet (:snippet anchor)]
+  (let [line (:line_number (:start (:snippet_span anchor)))
+        snippet (:snippet anchor)
+        span (:span anchor)]
     (when (and line snippet)
      (dom/p #js {:className "snippet"}
        (dom/a #js {:href "#"
                    :title (gstring/format "[%d:%d-%d:%d) %s %s"
-                            line (:column_offset (:start anchor))
-                            (:line_number (:end anchor)) (:column_offset (:end anchor))
+                            line (:column_offset (:start span))
+                            (:line_number (:end span)) (:column_offset (:end span))
                             (:kind anchor)
                             (:text anchor))
                    :onClick (fn [e]
