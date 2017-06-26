@@ -45,11 +45,9 @@ import com.sun.tools.javac.code.TypeTag;
 import com.sun.tools.javac.tree.JCTree;
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import javax.annotation.Nullable;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
@@ -60,7 +58,6 @@ import javax.tools.JavaFileObject;
 public class JavaEntrySets extends KytheEntrySets {
   private final Map<Symbol, EntrySet> symbolNodes = new HashMap<>();
   private final Map<Symbol, Integer> symbolHashes = new HashMap<>();
-  private final Map<Symbol, Set<String>> symbolSigs = new HashMap<Symbol, Set<String>>();
   private final boolean ignoreVNamePaths;
   private final boolean ignoreVNameRoots;
   private final String overrideJdkCorpus;
@@ -224,8 +221,6 @@ public class JavaEntrySets extends KytheEntrySets {
       // TODO(schroederc): separate MarkedSource generation from JavaEntrySets
       @Nullable MarkedSource.Builder msBuilder,
       @Nullable Iterable<MarkedSource> postChildren) {
-    checkSignature(sym, signature);
-
     EntrySet node;
     if ((node = symbolNodes.get(sym)) != null) {
       return node;
@@ -487,19 +482,6 @@ public class JavaEntrySets extends KytheEntrySets {
     }
     // This matches our {@link CustomFileObject#toUri()} logic
     return sourceFile.toUri().getHost();
-  }
-
-  /** Ensures that a particular {@link Symbol} is only associated with a single signature. */
-  private void checkSignature(Symbol sym, String signature) {
-    // TODO(schroederc): remove this check in production releases
-    if (!symbolSigs.containsKey(sym)) {
-      symbolSigs.put(sym, new HashSet<String>());
-    }
-    Set<String> signatures = symbolSigs.get(sym);
-    signatures.add(signature);
-    if (signatures.size() > 1) {
-      throw new IllegalStateException("Multiple signatures found for " + sym + ": " + signatures);
-    }
   }
 
   private static boolean fromJDK(@Nullable Symbol sym) {
