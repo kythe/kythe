@@ -575,6 +575,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     TreeContext ctx = owner.down(tApply);
 
     JavaNode typeCtorNode = scan(tApply.getType(), ctx);
+    if (typeCtorNode == null) {
+      logger.warning("Missing type constructor: " + tApply.getType());
+      return emitDiagnostic(ctx, "missing type constructor", null, null);
+    }
 
     List<JavaNode> arguments = scanList(tApply.getTypeArguments(), ctx);
     List<EntrySet> argEntries = new LinkedList<>();
