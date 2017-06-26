@@ -70,7 +70,7 @@
    :next (:next_page_token resp)})
 
 (defn get-xrefs
-  "Requests the global references, definitions, declarations, and documentation of the given node ticket."
+  "Requests the global references, definitions and declarations of the given node ticket."
   ([ticket handler error-handler]
    (get-xrefs ticket {} handler error-handler))
   ([ticket opts handler error-handler]
@@ -78,7 +78,6 @@
      {:params (merge {:definition_kind    "BINDING_DEFINITIONS"
                       :declaration_kind   "ALL_DECLARATIONS"
                       :reference_kind     "ALL_REFERENCES"
-                      :documentation_kind "ALL_DOCUMENTATION"
                       :filter [schema/node-kind-fact]
                       :anchor_text true
                       :page_size 20}

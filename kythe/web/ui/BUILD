@@ -25,7 +25,7 @@ genrule(
         "$$lein cljsbuild once prod",
         "$$lein licenses | sort > licenses.txt",
         "cd ../../..",
-        "mv kythe/web/ui/resources/public/js/main.js $(location resources/public/js/main.js)",
+        "cp kythe/web/ui/resources/public/js/main.js $(location resources/public/js/main.js)",
         "mv kythe/web/ui/licenses.txt $(location resources/public/js/licenses.txt)",
     ]),
     heuristic_label_expansion = False,
