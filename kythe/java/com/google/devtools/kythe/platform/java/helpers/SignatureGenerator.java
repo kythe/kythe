@@ -114,23 +114,24 @@ public class SignatureGenerator
 
   private final MemoizedTreePathScanner memoizedTreePathScanner;
 
-  // If we're generating a signature for a member of an array type (e.g., the `length` and
-  // `clone()` members), this field references that array type.  Otherwise, it's set to null.
+  // If we're generating a signature for a member of an array type (e.g., the `length` and `clone()`
+  // members), this field references that array type.  Otherwise, it's set to null.
   //
-  // This is necessary because javac, as an implementation detail, uses a generated class named `Array`
-  // (with no package) as an intermediate holder for the references to those members. Therefore the
-  // MethodSymbol for, e.g., `clone()` will have as its owner the ClassSymbol for this `Array` class,
-  // instead of a ClassSymbol representing the actual array type, e.g., `int[]`. This will cause us to
-  // generate the signature `.Array.clone()` instead of `int[].clone()`.
+  // This is necessary because javac, as an implementation detail, uses a generated class named
+  // `Array` (with no package) as an intermediate holder for the references to those members.
+  // Therefore the MethodSymbol for, e.g., `clone()` will have as its owner the ClassSymbol for this
+  // `Array` class, instead of a ClassSymbol representing the actual array type, e.g., `int[]`. This
+  // will cause us to generate the signature `.Array.clone()` instead of `int[].clone()`.
   //
-  // Not only does this expose a compiler implementation detail, but it gives the same signature for all
-  // array types, whereas the JLS specifies, in effect, that `int[].clone()`, `float[].clone()` etc.
-  // are different methods (each array type directly extends Object, so, at the language level,
-  // each must define its own clone()).
-  // See https://docs.oracle.com/javase/specs/jls/se8/html/jls-10.html#jls-10.8 for details.
+  // Not only does this expose a compiler implementation detail, but it gives the same signature for
+  // all array types, whereas the JLS specifies, in effect, that `int[].clone()`, `float[].clone()`
+  // etc.  are different methods (each array type directly extends Object, so, at the language
+  // level, each must define its own clone()).  See
+  // https://docs.oracle.com/javase/specs/jls/se8/html/jls-10.html#jls-10.8 for details.
   //
-  // The original array type is not reachable from the member Symbol, so we use this field to provide that
-  // information out-of-band, so that we can generate signatures that conform to the specific array types.
+  // The original array type is not reachable from the member Symbol, so we use this field to
+  // provide that information out-of-band, so that we can generate signatures that conform to the
+  // specific array types.
   private Type arrayTypeContext = null;
 
   public TreePath getPath(Element e) {
@@ -202,8 +203,6 @@ public class SignatureGenerator
       return Optional.empty();
     }
   }
-
-  // Declaration Signatures
 
   @Override
   public Void visit(Element e, StringBuilder sb) {
@@ -284,7 +283,6 @@ public class SignatureGenerator
     return null;
   }
 
-  //////////////////////////// helper functions ////////////////////////////
   private void visitTypeParameters(
       List<? extends TypeParameterElement> typeParams, StringBuilder sb) {
     if (!typeParams.isEmpty()) {
@@ -336,7 +334,6 @@ public class SignatureGenerator
       sb.append(">");
     }
   }
-  //////////////////////////////////////////////////////////////////////////
 
   @Override
   public Void visitExecutable(ExecutableElement e, StringBuilder sbout) {
@@ -400,8 +397,6 @@ public class SignatureGenerator
   public Void visitUnknown(Element e, StringBuilder sb) {
     return null;
   }
-
-  // Instantiation Signatures
 
   @Override
   public Void visitArrayType(ArrayType t, StringBuilder sbout) {
@@ -546,10 +541,10 @@ public class SignatureGenerator
 
   @Override
   public Void visitModuleType(ModuleType moduleType, StringBuilder sb) {
-    // TODO(b/37488599): implement this method for full Java 9 support
+    // TODO(T257): implement this method for full Java 9 support
     throw new UnsupportedOperationException();
   }
-  
+
   /**
    * Generates signatures that are expansions on the JVM signatures as defined in
    * https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.3.4
@@ -591,12 +586,12 @@ public class SignatureGenerator
 
     /**
      * Generates full variable signature (both fields & variables).
-     * <p/>
-     * Grammar for fields:
-     * "ClassSignature.name:ClassSignature" e.g. "Lmy/Type;.myField:Ljava/lang/String;"
-     * <p/>
-     * Grammar for variables:
-     * Method signature from {@link #getSignature(MethodSymbol)} + ".name:ClassSignature" e.g.
+     *
+     * <p>Grammar for fields: "ClassSignature.name:ClassSignature" e.g.
+     * "Lmy/Type;.myField:Ljava/lang/String;"
+     *
+     * <p>Grammar for variables: Method signature from {@link #getSignature(MethodSymbol)} +
+     * ".name:ClassSignature" e.g.
      * "Lmy/Type;.myMethod(I):Ljava/lang/String;.e:Ljava/lang/Exception;"
      */
     public String getSignature(VarSymbol symbol) {
