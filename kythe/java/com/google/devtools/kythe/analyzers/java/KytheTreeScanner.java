@@ -902,7 +902,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     // (e.g., `List` is in generic context in `List<String> x` but not in `List x`).
     boolean inGenericContext = ctx.up().getTree() instanceof JCTypeApply;
     try {
-      if (SignatureGenerator.isArrayHelperClass(sym.enclClass())
+      if (sym != null
+          && SignatureGenerator.isArrayHelperClass(sym.enclClass())
           && ctx.getTree() instanceof JCFieldAccess) {
         signatureGenerator.setArrayTypeContext(((JCFieldAccess) ctx.getTree()).selected.type);
       }
