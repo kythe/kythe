@@ -105,7 +105,7 @@ type Fact struct {
 var (
 	schemaFile = flag.String("schema", "", "Schema file path (required)")
 
-	beginSection = regexp.MustCompile(`(?m)^([ \w]+?)$\n--+?$`)
+	beginSection = regexp.MustCompile(`(?m)^([ \w]+?)$\n--{1,50}$`)
 	kindHeader   = regexp.MustCompile(`(?m)^\[\[\w+\]\]\n([^\n]+)\n~+$`)
 	mainLabel    = regexp.MustCompile(`(?m)^([- \w]+)::$`)
 	subLabel     = regexp.MustCompile(`(?m) +([ \w/]+):::$`)

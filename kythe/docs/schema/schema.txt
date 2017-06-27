@@ -1375,8 +1375,6 @@ anchor
 Brief description::
   An *anchor* connects concrete syntax to abstract syntax.
 Naming convention::
-  Language:::
-    No special rules.
   Path:::
     The *Path* of the <<file>> containing this anchor (or empty if there is no
     such file).
@@ -1384,8 +1382,6 @@ Naming convention::
     The *Root* of the <<file>> containing this anchor.
   Corpus:::
     The *Corpus* of the <<file>> containing this anchor.
-  Signature:::
-    No special rules.
 Expected out-edges::
   <<defines>>, <<definesbinding,[defines/binding]>>, <<ref>>,
   <<refcall,[ref/call]>>
@@ -1454,7 +1450,6 @@ D d;
 //- ImplicitCallToCCtor childof DCtor
 --------------------------------------------------------------------------------
 
-
 [kythe,Java,"Anchors have VName rules."]
 --------------------------------------------------------------------------------
 public class E {
@@ -1462,6 +1457,13 @@ public class E {
   int foo;
 }
 //- File=vname("",Corpus,Root,Path,"").node/kind file
+--------------------------------------------------------------------------------
+
+[kythe,Go,"Anchors have VName rules."]
+--------------------------------------------------------------------------------
+//- @anchor=vname(_,Corpus,Root,Path,"go").node/kind anchor
+//- File=vname("",Corpus,Root,Path,"").node/kind file
+package anchor
 --------------------------------------------------------------------------------
 
 [[constant]]
@@ -1856,16 +1858,12 @@ Brief description::
   external configuration (such as the list of libraries being linked together to produce
   an executable).
 Naming convention::
-  Language:::
-    No special rules.
   Path:::
     *empty*
   Root:::
     *empty*
   Corpus:::
     *empty*
-  Signature:::
-    No special rules.
 
 [[talias]]
 talias
