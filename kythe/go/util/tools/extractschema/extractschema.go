@@ -32,12 +32,15 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+
+	"bitbucket.org/creachadair/stringset"
 )
 
 // Schema represents the schema as a whole.
 type Schema struct {
 	Nodes []*Node `json:"nodes,omitempty"`
 	Edges []*Edge `json:"edges,omitempty"`
+	VName *Name   `json:"vname,omitempty"`
 }
 
 // findNodeKind returns the *Node representing nodes of the given kind, or nil
@@ -58,6 +61,17 @@ type Node struct {
 	Facts       []*Fact  `json:"facts,omitempty"` // applicable facts
 	Edges       []string `json:"edges,omitempty"` // related edge kinds
 	Related     []string `json:"rel,omitempty"`   // related node kinds
+	VName       *Name    `json:"vname,omitempty"` // naming conventions
+}
+
+// A Name carries metadata about naming conventions.
+type Name struct {
+	Language  string `json:"language,omitempty"`
+	Path      string `json:"path,omitempty"`
+	Root      string `json:"root,omitempty"`
+	Corpus    string `json:"corpus,omitempty"`
+	Signature string `json:"signature,omitempty"`
+	Notes     string `json:"notes,omitempty"`
 }
 
 // addEdgeKind adds kind to the set of edge kinds for n, if it is not already
@@ -109,6 +123,7 @@ var (
 	kindHeader   = regexp.MustCompile(`(?m)^\[\[\w+\]\]\n([^\n]+)\n~+$`)
 	mainLabel    = regexp.MustCompile(`(?m)^([- \w]+)::$`)
 	subLabel     = regexp.MustCompile(`(?m) +([ \w/]+):::$`)
+	listEntry    = regexp.MustCompile("(?m) +[-*] +`([ \\w]+)`:")
 	kindLink     = regexp.MustCompile(`\b(semantic) nodes\b|\b(anchor)s\b|<<([\w/]+)(?:,\w+)?>>`)
 	factLink     = regexp.MustCompile("`([^`]+)`")
 )
@@ -129,12 +144,16 @@ func main() {
 	if s, ok := sections["node kinds"]; ok {
 		schema.Nodes = extractNodeKinds(s)
 	}
-
 	sort.Sort(nodesByKind(schema.Nodes))
+
 	if s, ok := sections["edge kinds"]; ok {
 		schema.Edges = extractEdgeKinds(s)
 	}
 	sort.Sort(edgesByKind(schema.Edges))
+
+	if s, ok := sections["vname conventions"]; ok {
+		schema.VName = extractNameRules(s)
+	}
 
 	// Add the kind of each edge to the edges set of any node mentioned in the
 	// source or targets list for that edge.
@@ -153,6 +172,20 @@ func main() {
 	}
 }
 
+func extractNameRules(s string) *Name {
+	nc := splitOnRegexp(listEntry, s)
+	if len(nc) == 0 {
+		return nil
+	}
+	return &Name{
+		Language:  cleanText(nc["language"]),
+		Corpus:    cleanText(nc["corpus"]),
+		Root:      cleanText(nc["root"]),
+		Path:      cleanText(nc["path"]),
+		Signature: cleanText(nc["signature"]),
+	}
+}
+
 func extractNodeKinds(s string) []*Node {
 	var out []*Node
 
@@ -163,7 +196,7 @@ func extractNodeKinds(s string) []*Node {
 			Description: cleanText(labels["brief description"]),
 		}
 		for name, desc := range splitOnRegexp(subLabel, labels["facts"]) {
-			fact := &Fact{Label: name, Description: collapseLines(trimExtra(desc))}
+			fact := &Fact{Label: name, Description: cleanText(desc)}
 			for _, val := range factLink.FindAllStringSubmatch(fact.Description, -1) {
 				fact.Values = append(fact.Values, val[1])
 			}
@@ -171,15 +204,49 @@ func extractNodeKinds(s string) []*Node {
 			node.Facts = append(node.Facts, fact)
 
 		}
-		for _, target := range kindLink.FindAllStringSubmatch(node.Description, -1) {
-			node.Related = append(node.Related, nonempty(target[1:])...)
+
+		var nodeKinds, edgeKinds stringset.Set
+
+		nc := splitOnRegexp(subLabel, labels["naming convention"])
+		if len(nc) != 0 {
+			node.VName = new(Name)
+		} else if raw := labels["naming convention"]; raw != "" {
+			node.VName = &Name{Notes: cleanText(raw)}
 		}
-		for _, target := range kindLink.FindAllStringSubmatch(labels["expected out-edges"], -1) {
-			node.Edges = append(node.Edges, nonempty(target[1:])...)
+		for name, desc := range nc {
+			clean := cleanText(desc)
+			switch strings.ToLower(name) {
+			case "language":
+				node.VName.Language = clean
+			case "path":
+				node.VName.Path = clean
+			case "root":
+				node.VName.Root = clean
+			case "corpus":
+				node.VName.Corpus = clean
+			case "signature":
+				node.VName.Signature = clean
+			default:
+				log.Printf("WARNING: Ignoring unknown name rule %q", name)
+				continue
+			}
+			nodeKinds.Add(relatedKinds(clean)...)
 		}
+		nodeKinds.Add(relatedKinds(node.Description)...)
+		edgeKinds.Add(relatedKinds(labels["expected out-edges"])...)
+		node.Related = nodeKinds.Elements()
+		node.Edges = edgeKinds.Elements()
 		out = append(out, node)
 	}
 	return out
+}
+
+func relatedKinds(s string) []string {
+	var rel []string
+	for _, target := range kindLink.FindAllStringSubmatch(s, -1) {
+		rel = append(rel, nonempty(target[1:])...)
+	}
+	return rel
 }
 
 func extractEdgeKinds(s string) []*Edge {

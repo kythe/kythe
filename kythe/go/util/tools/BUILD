@@ -54,4 +54,5 @@ go_binary(
 go_binary(
     name = "extractschema",
     srcs = ["extractschema/extractschema.go"],
+    deps = ["@go_stringset//:stringset"],
 )
