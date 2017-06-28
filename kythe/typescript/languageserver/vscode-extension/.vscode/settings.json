@@ -1,0 +1,7 @@
+{
+	"search.exclude": {
+		"dist": true  // set this to false to include "dist" folder in search results
+	},
+	// use the TS server in the node_modules folder to control its version
+	"typescript.tsdk": "./node_modules/typescript/lib"
+}

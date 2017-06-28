@@ -1,0 +1,28 @@
+{
+  "name": "kythe-languageserver",
+  "version": "0.0.1",
+  "description": "A language server for Kythe",
+  "main": "dist/src/server.js",
+  "bin": {
+    "kythe-languageserver": "dist/src/server.js"
+  },
+  "typings": "dist/src/server.d.ts",
+  "scripts": {
+    "clean": "rm -r dist",
+    "prepare": "tsc -p .",
+    "compile": "tsc -p .",        
+    "watch": "tsc --watch -p .",
+    "watch_test": "tsc --watch -p ./tsconfig.test.json",
+    "pretest": "rm -r dist && tsc -p ./tsconfig.test.json",
+    "test": "mocha dist/test"
+  },
+  "dependencies": {
+    "vscode-languageserver": "^3.3.0"
+  },
+  "devDependencies": {
+    "@types/mocha": "^2.2.41",
+    "@types/node": "^8.0.3",
+    "mocha": "^2.5.3",
+    "typescript": "^2.4.1"
+  }
+}
