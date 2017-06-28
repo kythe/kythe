@@ -16,6 +16,7 @@
 
 package com.google.devtools.kythe.platform.java.filemanager;
 
+import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.extractors.java.JavaCompilationUnitExtractor;
 import com.google.devtools.kythe.platform.shared.FileDataProvider;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
@@ -36,6 +37,8 @@ import javax.tools.StandardLocation;
  */
 @com.sun.tools.javac.api.ClientCodeWrapper.Trusted
 public class CompilationUnitBasedJavaFileManager extends JavaFileStoreBasedFileManager {
+  private static final FormattingLogger logger =
+      FormattingLogger.getLogger(CompilationUnitBasedJavaFileManager.class);
 
   /**
    * paths searched for .class files, can be relative or absolute, but must match path as named by
@@ -49,6 +52,8 @@ public class CompilationUnitBasedJavaFileManager extends JavaFileStoreBasedFileM
    */
   private final Set<String> sourcepath = new HashSet<>();
 
+  private final Set<String> bootclasspath = new HashSet<>();
+
   public CompilationUnitBasedJavaFileManager(
       FileDataProvider contentProvider,
       CompilationUnit unit,
@@ -56,29 +61,33 @@ public class CompilationUnitBasedJavaFileManager extends JavaFileStoreBasedFileM
       Charset encoding) {
     super(new CompilationUnitBasedJavaFileStore(unit, contentProvider, encoding), fileManager);
 
-    // TODO(schroederc): determine if we want to keep around legacy argument parsing support
-    classpath.add("");
-    classpath.addAll(getPathSet(unit.getArgumentList(), "-cp"));
-    classpath.addAll(getPathSet(unit.getArgumentList(), "-classpath"));
-    sourcepath.add("");
-    sourcepath.addAll(getPathSet(unit.getArgumentList(), "-sourcepath"));
-
     JavaDetails details = getDetails(unit);
     if (details != null) {
       classpath.addAll(details.getClasspathList());
       sourcepath.addAll(details.getSourcepathList());
+      bootclasspath.addAll(details.getBootclasspathList());
+    } else {
+      logger.warningfmt("Compilation missing JavaDetails; falling back to flag parsing");
+      classpath.add("");
+      classpath.addAll(getPathSet(unit.getArgumentList(), "-cp"));
+      classpath.addAll(getPathSet(unit.getArgumentList(), "-classpath"));
+      sourcepath.add("");
+      sourcepath.addAll(getPathSet(unit.getArgumentList(), "-sourcepath"));
+      bootclasspath.add("");
+      bootclasspath.addAll(getPathSet(unit.getArgumentList(), "-bootclasspath"));
     }
   }
 
   @Override
   protected Set<String> getSearchPaths(Location location) {
-    Set<String> dirsToLookIn = new HashSet<>();
     if (location == StandardLocation.CLASS_PATH) {
-      dirsToLookIn = classpath;
+      return classpath;
     } else if (location == StandardLocation.SOURCE_PATH) {
-      dirsToLookIn = sourcepath;
+      return sourcepath;
+    } else if (location == StandardLocation.PLATFORM_CLASS_PATH) {
+      return bootclasspath;
     }
-    return dirsToLookIn;
+    return new HashSet<>();
   }
 
   private static Set<String> getPathSet(List<String> options, String optName) {
