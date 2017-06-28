@@ -35,7 +35,9 @@ import (
 const jsonBodyType = "application/json; charset=utf-8"
 
 // JSONMarshaler is the marshaler used to encode all JSON web requests.
-var JSONMarshaler = jsonpb.Marshaler{}
+var JSONMarshaler = jsonpb.Marshaler{
+	OrigName: true,
+}
 
 // RegisterQuitHandler adds a handler for /quitquitquit that call os.Exit(0).
 func RegisterQuitHandler(mux *http.ServeMux) {
