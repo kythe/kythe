@@ -130,6 +130,7 @@ proto_library(
     name = "cxx_proto",
     srcs = ["cxx.proto"],
     cc_api_version = 2,
+    go_api_version = 2,
 )
 
 # Go-specific protocol buffer definitions
@@ -143,6 +144,7 @@ proto_library(
 proto_library(
     name = "java_proto",
     srcs = ["java.proto"],
+    go_api_version = 2,
     java_api_version = 2,
 )
 

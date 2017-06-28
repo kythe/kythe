@@ -29,6 +29,13 @@ import (
 
 	"kythe.io/kythe/go/platform/kindex"
 	"kythe.io/kythe/go/util/flagutil"
+
+	"github.com/golang/protobuf/jsonpb"
+
+	_ "kythe.io/kythe/proto/buildinfo_proto"
+	_ "kythe.io/kythe/proto/cxx_proto"
+	_ "kythe.io/kythe/proto/go_proto"
+	_ "kythe.io/kythe/proto/java_proto"
 )
 
 func init() {
@@ -36,7 +43,13 @@ func init() {
 		"[--files] <kindex-file>")
 }
 
-var printFiles = flag.Bool("files", false, "Print file contents as well as the compilation")
+var (
+	printFiles = flag.Bool("files", false, "Print file contents as well as the compilation")
+
+	m = &jsonpb.Marshaler{
+		OrigName: true,
+	}
+)
 
 func main() {
 	flag.Parse()
@@ -52,13 +65,13 @@ func main() {
 		log.Fatalf("Error reading %q: %v", path, err)
 	}
 
-	en := json.NewEncoder(os.Stdout)
+	out := os.Stdout
 	if *printFiles {
-		if err := en.Encode(idx); err != nil {
+		if err := json.NewEncoder(out).Encode(idx); err != nil {
 			log.Fatalf("Error encoding JSON: %v", err)
 		}
 	} else {
-		if err := en.Encode(idx.Proto); err != nil {
+		if err := m.Marshal(out, idx.Proto); err != nil {
 			log.Fatalf("Error encoding JSON compilation: %v", err)
 		}
 	}
