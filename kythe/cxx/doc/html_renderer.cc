@@ -27,7 +27,7 @@ constexpr size_t kMaxRenderDepth = 10;
 /// \brief A RAII class to deal with styled div/span tags.
 class CssTag {
  public:
-  enum class Kind { Div, Span };
+  enum class Kind { Div, Span, Pre };
   /// \param kind the kind of tag to open.
   /// \param style the CSS style to apply to the tag. Must be escaped.
   /// \param buffer must outlive CssTag.
@@ -50,7 +50,7 @@ class CssTag {
     buffer->append(">");
   }
   static const char* label(Kind kind) {
-    return kind == Kind::Div ? "div" : "span";
+    return kind == Kind::Div ? "div" : (kind == Kind::Span ? "span" : "pre");
   }
   CssTag(const CssTag& o) = delete;
 
@@ -183,7 +183,8 @@ void AppendEscapedHtmlString(const SourceString& source, std::string* dest) {
 class RenderSimpleIdentifierTarget {
  public:
   /// \brief Escapes and appends `source` to the buffer.
-  template <typename SourceString> void Append(const SourceString& source) {
+  template <typename SourceString>
+  void Append(const SourceString& source) {
     if (!prepend_buffer_.empty() && !source.empty()) {
       AppendEscapedHtmlString(prepend_buffer_, &buffer_);
       prepend_buffer_.clear();
@@ -221,10 +222,12 @@ struct RenderSimpleIdentifierState {
   bool render_context = false;
   bool render_types = false;
   bool render_parameters = false;
+  bool render_initializer = false;
   bool in_identifier = false;
   bool in_context = false;
   bool in_parameter = false;
   bool in_type = false;
+  bool in_initializer = false;
   bool linkify = false;
   std::string get_link(const proto::common::MarkedSource& sig) {
     if (options == nullptr || !linkify) {
@@ -249,7 +252,8 @@ struct RenderSimpleIdentifierState {
   bool should_render() const {
     return (render_context && in_context) ||
            (render_identifier && in_identifier) ||
-           (render_parameters && in_parameter) || (render_types && in_type);
+           (render_parameters && in_parameter) || (render_types && in_type) ||
+           (render_initializer && in_initializer);
   }
 };
 
@@ -280,6 +284,12 @@ void RenderSimpleIdentifier(const proto::common::MarkedSource& sig,
         return;
       }
       state.in_context = true;
+      break;
+    case proto::common::MarkedSource::INITIALIZER:
+      if (!state.render_initializer) {
+        return;
+      }
+      state.in_initializer = true;
       break;
     case proto::common::MarkedSource::BOX:
       break;
@@ -398,6 +408,14 @@ std::string RenderSimpleQualifiedName(const proto::common::MarkedSource& sig,
   RenderSimpleIdentifierState state;
   state.render_identifier = include_identifier;
   state.render_context = true;
+  RenderSimpleIdentifier(sig, &target, state, 0);
+  return target.buffer();
+}
+
+std::string RenderInitializer(const proto::common::MarkedSource& sig) {
+  RenderSimpleIdentifierTarget target;
+  RenderSimpleIdentifierState state;
+  state.render_initializer = true;
   RenderSimpleIdentifier(sig, &target, state, 0);
   return target.buffer();
 }
@@ -629,6 +647,17 @@ std::string RenderDocument(
           text_out.append(declared_context);
         }
       }
+    }
+    auto initializer = RenderInitializer(document.marked_source());
+    if (!initializer.empty()) {
+      CssTag init_div(CssTag::Kind::Div, options.initializer_div, &text_out);
+      text_out.append("Initializer: ");
+      bool multiline = initializer.find("\n") != decltype(initializer)::npos;
+      CssTag code_div(CssTag::Kind::Pre,
+                      multiline ? options.initializer_multiline_pre
+                                : options.initializer_pre,
+                      &text_out);
+      text_out.append(initializer);
     }
     {
       CssTag content_div(CssTag::Kind::Div, options.content_div, &text_out);

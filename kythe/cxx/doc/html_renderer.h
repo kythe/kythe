@@ -79,6 +79,15 @@ struct HtmlRendererOptions {
   std::string name_span = "kythe-doc-name-span";
   /// Configures the CSS class to apply to signature detail divs.
   std::string sig_detail_div = "kythe-doc-qualified-name";
+  /// Configures the CSS class to apply to initializer section divs.
+  std::string initializer_div =
+      "kythe-doc-initializer-section kythe-doc-qualified-name";
+  /// Configures the CSS class to apply to multiline initializer pres.
+  std::string initializer_multiline_pre =
+      "kythe-doc-initializer kythe-doc-pre-code "
+      "kythe-doc-initializer-multiline";
+  /// Configures the CSS class to apply to initializer pres.
+  std::string initializer_pre = "kythe-doc-initializer kythe-doc-pre-code";
 };
 
 class DocumentHtmlRendererOptions : public HtmlRendererOptions {
@@ -104,7 +113,8 @@ std::string RenderDocument(const HtmlRendererOptions& options,
                            const proto::DocumentationReply::Document& document);
 
 /// \brief Extract and render the simple identifiers for parameters in `sig`.
-std::vector<std::string> RenderSimpleParams(const proto::common::MarkedSource& sig);
+std::vector<std::string> RenderSimpleParams(
+    const proto::common::MarkedSource& sig);
 
 /// \brief Extract and render the simple identifier for `sig`.
 /// \return The empty string if there is no such identifier.
@@ -117,9 +127,14 @@ std::string RenderSimpleIdentifier(const proto::common::MarkedSource& sig);
 std::string RenderSimpleQualifiedName(const proto::common::MarkedSource& sig,
                                       bool include_identifier);
 
+/// \brief Extract and render a plaintext initializer for `sig`.
+/// \return The empty string if there is no such initializer.
+std::string RenderInitializer(const proto::common::MarkedSource& sig);
+
 /// \brief Render `sig` as a full signature.
 std::string RenderSignature(const HtmlRendererOptions& options,
-                            const proto::common::MarkedSource& sig, bool linkify);
+                            const proto::common::MarkedSource& sig,
+                            bool linkify);
 
 }  // namespace kythe
 
