@@ -199,7 +199,7 @@ public class SignatureGenerator
       return Optional.of(sb.toString());
     } catch (Throwable e) {
       // In case something unexpected happened during signature generation we do not want to fail.
-      logger.warning(new RuntimeException("Failure generating signature for " + symbol, e), "");
+      logger.warningfmt(e, "Failure generating signature for %s", symbol);
       return Optional.empty();
     }
   }

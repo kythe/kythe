@@ -17,6 +17,7 @@
 package com.google.devtools.kythe.analyzers.java;
 
 import com.google.devtools.kythe.analyzers.base.EntrySet;
+import com.google.devtools.kythe.common.FormattingLogger;
 import com.sun.source.doctree.ReferenceTree;
 import com.sun.source.util.DocTreePath;
 import com.sun.source.util.DocTreePathScanner;
@@ -31,6 +32,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> {
+  private static final FormattingLogger logger =
+      FormattingLogger.getLogger(KytheDocTreeScanner.class);
+
   private final KytheTreeScanner treeScanner;
   private final List<MiniAnchor<Symbol>> miniAnchors;
   private final DocTrees trees;
@@ -74,7 +78,12 @@ public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> 
   public Void visitReference(ReferenceTree tree, DCDocComment doc) {
     DCReference ref = (DCReference) tree;
 
-    Symbol sym = (Symbol) trees.getElement(getCurrentPath());
+    Symbol sym = null;
+    try {
+      sym = (Symbol) trees.getElement(getCurrentPath());
+    } catch (Symbol.CompletionFailure e) {
+      logger.warningfmt(e, "Failed to resolve documentation reference: %s", tree);
+    }
     if (sym == null) {
       return null;
     }
