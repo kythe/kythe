@@ -48,6 +48,8 @@ import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.ImportTree;
 import com.sun.source.util.JavacTask;
+import com.sun.source.util.TaskEvent;
+import com.sun.source.util.TaskListener;
 import com.sun.tools.javac.api.JavacTaskImpl;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Symtab;
@@ -676,7 +678,7 @@ public class JavaCompilationUnitExtractor {
         completeCompilerOptions(
             standardFileManager, options, classpath, bootclasspath, sourcepath, tempDir);
 
-    Iterable<? extends CompilationUnitTree> compilationUnits;
+    final List<CompilationUnitTree> compilationUnits = new ArrayList<>();
     Symtab syms;
     try {
       // Launch the java compiler with our modified settings and the filemanager wrapper
@@ -712,13 +714,27 @@ public class JavaCompilationUnitExtractor {
       JavacTask javacTask = (JavacTask) task;
       javacTask.setProcessors(procs);
       syms = Symtab.instance(((JavacTaskImpl) javacTask).getContext());
+
+      javacTask.addTaskListener(
+          new TaskListener() {
+            @Override
+            public void finished(TaskEvent e) {
+              if (e.getKind() == TaskEvent.Kind.PARSE) {
+                compilationUnits.add(e.getCompilationUnit());
+              }
+            }
+
+            @Override
+            public void started(TaskEvent e) {}
+          });
+
       try {
-        // In order for the compiler to load all required .java & .class files
-        // we need to have it go through parsing, analysis & generate phases.
-        // Unfortunately the latter is needed to get a complete list, this was found
-        // as we were breaking on analyzing certain files.
-        compilationUnits = javacTask.parse();
-        javacTask.generate();
+        // In order for the compiler to load all required .java & .class files we need to have it go
+        // through parsing, analysis & generate phases.  Unfortunately the latter is needed to get a
+        // complete list, this was found as we were breaking on analyzing certain files.
+        // JavacTask#call() subsumes parse() and generate(), but calling those methods directly may
+        // silently ignore fatal errors.
+        results.hasErrors = !javacTask.call();
       } catch (com.sun.tools.javac.util.Abort e) {
         // Type resolution issues, the diagnostics will give hints on what's going wrong.
         for (Diagnostic<? extends JavaFileObject> diagnostic :
@@ -727,8 +743,6 @@ public class JavaCompilationUnitExtractor {
             logger.severefmt("Fatal error in compiler: %s", diagnostic.getMessage(Locale.ENGLISH));
           }
         }
-        throw new ExtractionException("Fatal error while running javac compiler.", e, false);
-      } catch (IOException e) {
         throw new ExtractionException("Fatal error while running javac compiler.", e, false);
       }
     } finally {
