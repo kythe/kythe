@@ -18,6 +18,7 @@ package com.google.devtools.kythe.extractors.java.bazel;
 
 import static com.google.common.io.Files.touch;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Iterables;
@@ -103,13 +104,14 @@ public class JavaExtractor {
     javacOpts.add(output.toString());
 
     // Add the generated sources directory if any processors could be invoked.
+    Optional<Path> genSrcDir = Optional.absent();
     if (!jInfo.getProcessorList().isEmpty()) {
-      String gensrcdir = readGeneratedSourceDirParam(jInfo);
-      if (gensrcdir != null) {
+      genSrcDir = readGeneratedSourceDirParam(jInfo);
+      if (genSrcDir.isPresent()) {
         javacOpts.add("-s");
-        javacOpts.add(gensrcdir);
+        javacOpts.add(genSrcDir.get().toString());
         // javac expects the directory to already exist.
-        Files.createDirectories(Paths.get(gensrcdir));
+        Files.createDirectories(genSrcDir.get());
       }
     }
 
@@ -124,6 +126,7 @@ public class JavaExtractor {
                 sourcepaths,
                 jInfo.getProcessorpathList(),
                 jInfo.getProcessorList(),
+                genSrcDir,
                 javacOpts,
                 jInfo.getOutputjar());
 
@@ -188,11 +191,9 @@ public class JavaExtractor {
     return files;
   }
 
-  /**
-   * Reads Bazel's compilation params file and returns the value of the --sourcegendir flag. Returns
-   * {@code null} if the value does not exist.
-   */
-  private static String readGeneratedSourceDirParam(JavaCompileInfo jInfo) throws IOException {
+  /** Reads Bazel's compilation params file and returns the value of the --sourcegendir flag. */
+  private static Optional<Path> readGeneratedSourceDirParam(JavaCompileInfo jInfo)
+      throws IOException {
     try (java.io.BufferedReader params =
         Files.newBufferedReader(
             Paths.get(jInfo.getOutputjar() + "-2.params"),
@@ -200,10 +201,10 @@ public class JavaExtractor {
       String line;
       while ((line = params.readLine()) != null) {
         if ("--sourcegendir".equals(line)) {
-          return params.readLine();
+          return Optional.of(Paths.get(params.readLine()));
         }
       }
-      return null;
+      return Optional.absent();
     }
   }
 

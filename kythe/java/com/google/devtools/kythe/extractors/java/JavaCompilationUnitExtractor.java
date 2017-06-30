@@ -20,6 +20,7 @@ import static java.nio.file.LinkOption.NOFOLLOW_LINKS;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.HashMultimap;
@@ -235,6 +236,7 @@ public class JavaCompilationUnitExtractor {
       Iterable<String> sourcepath,
       Iterable<String> processorpath,
       Iterable<String> processors,
+      Optional<Path> genSrcDir,
       Iterable<String> options,
       String outputPath)
       throws ExtractionException {
@@ -245,6 +247,7 @@ public class JavaCompilationUnitExtractor {
     Preconditions.checkNotNull(sourcepath);
     Preconditions.checkNotNull(processorpath);
     Preconditions.checkNotNull(processors);
+    Preconditions.checkNotNull(genSrcDir);
     Preconditions.checkNotNull(options);
     Preconditions.checkNotNull(outputPath);
 
@@ -252,7 +255,14 @@ public class JavaCompilationUnitExtractor {
     if (sources.iterator().hasNext()) {
       results =
           runJavaAnalysisToExtractCompilationDetails(
-              sources, classpath, bootclasspath, sourcepath, processorpath, processors, options);
+              sources,
+              classpath,
+              bootclasspath,
+              sourcepath,
+              processorpath,
+              processors,
+              genSrcDir,
+              options);
     } else {
       results = new AnalysisResults();
     }
@@ -406,10 +416,12 @@ public class JavaCompilationUnitExtractor {
   private void findRequiredFiles(
       UsageAsInputReportingFileManager fileManager,
       Map<URI, String> sourceFiles,
+      Optional<Path> genSrcDir,
       AnalysisResults results)
       throws ExtractionException {
     for (InputUsageRecord input : fileManager.getUsages()) {
-      processRequiredInput(input.fileObject(), input.location(), fileManager, sourceFiles, results);
+      processRequiredInput(
+          input.fileObject(), input.location(), fileManager, sourceFiles, genSrcDir, results);
     }
   }
 
@@ -418,6 +430,7 @@ public class JavaCompilationUnitExtractor {
       Location location,
       UsageAsInputReportingFileManager fileManager,
       Map<URI, String> sourceFiles,
+      Optional<Path> genSrcDir,
       AnalysisResults results)
       throws ExtractionException {
     URI uri = requiredInput.toUri();
@@ -525,12 +538,16 @@ public class JavaCompilationUnitExtractor {
             .add(strippedPath.substring(0, cindex));
       }
     }
-    // TODO: Better way to identify generated source files?
-    if (requiredInput.getKind() == Kind.SOURCE && strippedPath.contains("-gensrc.jar.files/")) {
+
+    // Identify generated sources by checking if the source file is under the genSrcDir.
+    if (genSrcDir.isPresent()
+        && !isJarPath
+        && requiredInput.getKind() == Kind.SOURCE
+        && Paths.get(relativePath).startsWith(genSrcDir.get())) {
       results.explicitSources.add(strippedPath);
-      int i = strippedPath.indexOf("-gensrc.jar.files/") + 17;
-      results.newSourcePath.add(strippedPath.substring(0, i));
+      results.newSourcePath.add(genSrcDir.get().toString());
     }
+
     if (!results.fileContents.containsKey(strippedPath)) {
       try {
         // Retrieve the contents of the file.
@@ -638,6 +655,7 @@ public class JavaCompilationUnitExtractor {
       Iterable<String> sourcepath,
       Iterable<String> processorpath,
       Iterable<String> processors,
+      Optional<Path> genSrcDir,
       Iterable<String> options)
       throws ExtractionException {
 
@@ -767,6 +785,11 @@ public class JavaCompilationUnitExtractor {
       }
     }
 
+    // Ensure generated source directory is relative to root.
+    genSrcDir =
+        genSrcDir.transform(
+            p -> Paths.get(ExtractorUtils.tryMakeRelative(rootDirectory, p.toString())));
+
     for (String source : sources) {
       results.explicitSources.add(ExtractorUtils.tryMakeRelative(rootDirectory, source));
     }
@@ -776,7 +799,7 @@ public class JavaCompilationUnitExtractor {
     // Find files potentially used for resolving .* imports.
     findOnDemandImportedFiles(compilationUnits, fileManager);
     // We accumulate all file contents from the java compiler so we can store it in the bigtable.
-    findRequiredFiles(fileManager, mapClassesToSources(syms), results);
+    findRequiredFiles(fileManager, mapClassesToSources(syms), genSrcDir, results);
     return results;
   }
 

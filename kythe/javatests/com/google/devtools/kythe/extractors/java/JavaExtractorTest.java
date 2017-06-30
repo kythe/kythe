@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 import com.google.common.base.Function;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
@@ -61,7 +62,17 @@ public class JavaExtractorTest extends TestCase {
 
     // Index the specified sources
     CompilationDescription description =
-        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
+        java.extract(
+            TARGET1,
+            sources,
+            EMPTY,
+            EMPTY,
+            EMPTY,
+            EMPTY,
+            EMPTY,
+            Optional.absent(),
+            EMPTY,
+            "output");
 
     CompilationUnit unit = description.getCompilationUnit();
     assertNotNull(unit);
@@ -92,7 +103,17 @@ public class JavaExtractorTest extends TestCase {
 
     // Index the specified sources
     CompilationDescription description =
-        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
+        java.extract(
+            TARGET1,
+            sources,
+            EMPTY,
+            EMPTY,
+            EMPTY,
+            EMPTY,
+            EMPTY,
+            Optional.absent(),
+            EMPTY,
+            "output");
 
     CompilationUnit unit = description.getCompilationUnit();
     assertNotNull(unit);
@@ -127,7 +148,17 @@ public class JavaExtractorTest extends TestCase {
 
     // Index the specified sources
     CompilationDescription description =
-        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
+        java.extract(
+            TARGET1,
+            sources,
+            EMPTY,
+            EMPTY,
+            EMPTY,
+            EMPTY,
+            EMPTY,
+            Optional.absent(),
+            EMPTY,
+            "output");
 
     CompilationUnit unit = description.getCompilationUnit();
     assertThat(unit).isNotNull();
@@ -160,7 +191,17 @@ public class JavaExtractorTest extends TestCase {
 
     // Index the specified sources
     CompilationDescription description =
-        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
+        java.extract(
+            TARGET1,
+            sources,
+            EMPTY,
+            EMPTY,
+            EMPTY,
+            EMPTY,
+            EMPTY,
+            Optional.absent(),
+            EMPTY,
+            "output");
 
     CompilationUnit unit = description.getCompilationUnit();
     assertNotNull(unit);
@@ -196,7 +237,17 @@ public class JavaExtractorTest extends TestCase {
 
     // Index the specified sources and classes from the classpath
     CompilationDescription description =
-        java.extract(TARGET1, sources, classpath, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
+        java.extract(
+            TARGET1,
+            sources,
+            classpath,
+            EMPTY,
+            EMPTY,
+            EMPTY,
+            EMPTY,
+            Optional.absent(),
+            EMPTY,
+            "output");
 
     CompilationUnit unit = description.getCompilationUnit();
     assertNotNull(unit);
@@ -229,7 +280,17 @@ public class JavaExtractorTest extends TestCase {
 
     // Index the specified sources and classes from inside jar on the classpath.
     CompilationDescription description =
-        java.extract(TARGET1, sources, classpath, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
+        java.extract(
+            TARGET1,
+            sources,
+            classpath,
+            EMPTY,
+            EMPTY,
+            EMPTY,
+            EMPTY,
+            Optional.absent(),
+            EMPTY,
+            "output");
 
     CompilationUnit unit = description.getCompilationUnit();
     assertThat(unit).isNotNull();
@@ -264,7 +325,17 @@ public class JavaExtractorTest extends TestCase {
 
     // Index the specified sources, reporting compilation failure.
     CompilationDescription description =
-        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
+        java.extract(
+            TARGET1,
+            sources,
+            EMPTY,
+            EMPTY,
+            EMPTY,
+            EMPTY,
+            EMPTY,
+            Optional.absent(),
+            EMPTY,
+            "output");
 
     CompilationUnit unit = description.getCompilationUnit();
     assertNotNull(unit);
@@ -295,7 +366,17 @@ public class JavaExtractorTest extends TestCase {
 
     // Index the specified sources
     CompilationDescription description =
-        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
+        java.extract(
+            TARGET1,
+            sources,
+            EMPTY,
+            EMPTY,
+            EMPTY,
+            EMPTY,
+            EMPTY,
+            Optional.absent(),
+            EMPTY,
+            "output");
 
     CompilationUnit unit = description.getCompilationUnit();
     assertNotNull(unit);
@@ -325,7 +406,17 @@ public class JavaExtractorTest extends TestCase {
 
     // Index the specified sources
     CompilationDescription description =
-        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
+        java.extract(
+            TARGET1,
+            sources,
+            EMPTY,
+            EMPTY,
+            EMPTY,
+            EMPTY,
+            EMPTY,
+            Optional.absent(),
+            EMPTY,
+            "output");
 
     CompilationUnit unit = description.getCompilationUnit();
     assertNotNull(unit);
@@ -357,7 +448,17 @@ public class JavaExtractorTest extends TestCase {
 
     // Index the specified sources
     CompilationDescription description =
-        java.extract(TARGET1, sources, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, "output");
+        java.extract(
+            TARGET1,
+            sources,
+            EMPTY,
+            EMPTY,
+            EMPTY,
+            EMPTY,
+            EMPTY,
+            Optional.absent(),
+            EMPTY,
+            "output");
 
     CompilationUnit unit = description.getCompilationUnit();
     assertNotNull(unit);
@@ -435,6 +536,7 @@ public class JavaExtractorTest extends TestCase {
             EMPTY,
             processorpath,
             processors,
+            Optional.absent(),
             options,
             "output");
 
@@ -464,10 +566,9 @@ public class JavaExtractorTest extends TestCase {
 
     List<String> processorpath = Arrays.asList(processorFile.getPath());
     List<String> processors = Arrays.asList("processor.SillyProcessor");
-    List<String> options =
-        Arrays.asList("-s", new File(testDir, "output-gensrc.jar.files").getPath());
-
-    new File(testDir, "output-gensrc.jar.files").mkdir();
+    Path genSrcDir = Paths.get(testDir, "output-gensrc.jar.files");
+    List<String> options = Arrays.asList("-s", genSrcDir.toString());
+    genSrcDir.toFile().mkdir();
 
     // Copy sources from runfiles into test dir
     List<String> testSources = new ArrayList<String>();
@@ -488,13 +589,13 @@ public class JavaExtractorTest extends TestCase {
             EMPTY,
             processorpath,
             processors,
+            Optional.of(genSrcDir),
             options,
             "output");
 
     CompilationUnit unit = description.getCompilationUnit();
     assertNotNull(unit);
-    assertEquals(TARGET1, unit.getVName().getSignature());
-    assertEquals(3, unit.getSourceFileCount());
+    assertThat(unit.getVName().getSignature()).isEqualTo(TARGET1);
 
     String sillyGenerated = "output-gensrc.jar.files/processor/SillyGenerated.java";
     assertThat(unit.getSourceFileList())
@@ -525,7 +626,17 @@ public class JavaExtractorTest extends TestCase {
 
     // Index the specified sources
     CompilationDescription description =
-        java.extract(TARGET1, sources, EMPTY, bootclasspath, EMPTY, EMPTY, EMPTY, EMPTY, "output");
+        java.extract(
+            TARGET1,
+            sources,
+            EMPTY,
+            bootclasspath,
+            EMPTY,
+            EMPTY,
+            EMPTY,
+            Optional.absent(),
+            EMPTY,
+            "output");
 
     CompilationUnit unit = description.getCompilationUnit();
 
@@ -552,7 +663,17 @@ public class JavaExtractorTest extends TestCase {
 
     // Index the specified sources
     CompilationDescription description =
-        java.extract(TARGET1, sources, EMPTY, bootclasspath, EMPTY, EMPTY, EMPTY, EMPTY, "output");
+        java.extract(
+            TARGET1,
+            sources,
+            EMPTY,
+            bootclasspath,
+            EMPTY,
+            EMPTY,
+            EMPTY,
+            Optional.absent(),
+            EMPTY,
+            "output");
 
     CompilationUnit unit = description.getCompilationUnit();
     assertNotNull(unit);
