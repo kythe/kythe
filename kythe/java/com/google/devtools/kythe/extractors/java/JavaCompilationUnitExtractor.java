@@ -74,7 +74,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
@@ -119,7 +118,6 @@ public class JavaCompilationUnitExtractor {
   private static final String JAR_SCHEME = "jar";
   private final String jdkJar;
   private final String rootDirectory;
-  private final boolean trackUnusedDependencies;
   private final FileVNames fileVNames;
 
   /**
@@ -149,14 +147,7 @@ public class JavaCompilationUnitExtractor {
 
   public JavaCompilationUnitExtractor(FileVNames fileVNames, String rootDirectory)
       throws ExtractionException {
-    this(fileVNames, rootDirectory, false);
-  }
-
-  public JavaCompilationUnitExtractor(
-      FileVNames fileVNames, String rootDirectory, boolean trackUnusedDependencies)
-      throws ExtractionException {
     this.fileVNames = fileVNames;
-    this.trackUnusedDependencies = trackUnusedDependencies;
 
     Path javaHome = Paths.get(System.getProperty("java.home")).getParent();
     try {
@@ -189,8 +180,7 @@ public class JavaCompilationUnitExtractor {
       Set<String> newClassPath,
       Iterable<String> newBootClassPath,
       List<String> sourceFiles,
-      String outputPath,
-      Set<String> unusedJars) {
+      String outputPath) {
     CompilationUnit.Builder unit = CompilationUnit.newBuilder();
     unit.setVName(VName.newBuilder().setSignature(target).setLanguage("java"));
     unit.addAllArgument(options);
@@ -295,8 +285,7 @@ public class JavaCompilationUnitExtractor {
             results.newClassPath,
             results.newBootClassPath,
             results.explicitSources,
-            ExtractorUtils.tryMakeRelative(rootDirectory, outputPath),
-            results.unusedJars);
+            ExtractorUtils.tryMakeRelative(rootDirectory, outputPath));
     return new CompilationDescription(compilationUnit, fileContents);
   }
 
@@ -609,7 +598,6 @@ public class JavaCompilationUnitExtractor {
     final Set<String> newClassPath = new LinkedHashSet<>();
     final Set<String> newBootClassPath = new LinkedHashSet<>();
     final List<String> explicitSources = new ArrayList<>();
-    final Set<String> unusedJars = new LinkedHashSet<>();
     boolean hasErrors = false;
   }
 
@@ -775,9 +763,6 @@ public class JavaCompilationUnitExtractor {
     findOnDemandImportedFiles(compilationUnits, fileManager);
     // We accumulate all file contents from the java compiler so we can store it in the bigtable.
     findRequiredFiles(fileManager, mapClassesToSources(syms), results);
-    if (trackUnusedDependencies) {
-      findUnusedDependencies(classpath, fileManager, results);
-    }
     return results;
   }
 
@@ -899,33 +884,5 @@ public class JavaCompilationUnitExtractor {
       }
     }
     return sourceBaseNames;
-  }
-
-  private void findUnusedDependencies(
-      Iterable<String> classpaths,
-      UsageAsInputReportingFileManager fileManager,
-      AnalysisResults results) {
-    Set<String> jars = new HashSet<>();
-    for (String classpath : classpaths) {
-      if (!classpath.endsWith(".jar")) {
-        continue;
-      }
-      jars.add(ExtractorUtils.tryMakeRelative(rootDirectory, classpath));
-    }
-    for (InputUsageRecord usage : fileManager.getUsages()) {
-      URI uri = usage.fileObject().toUri();
-      if (!uri.getScheme().equals(JAR_SCHEME)) {
-        continue;
-      }
-      // Javac uses the pattern of JAR:<jarfile-url>!<classfile> for class files inside jar files.
-      String jar = uri.getRawSchemeSpecificPart().split("!")[0];
-      uri = URI.create(jar);
-      String jarPath =
-          ExtractorUtils.tryMakeRelative(rootDirectory, uri.getRawSchemeSpecificPart());
-      if (jars.contains(jarPath)) {
-        jars.remove(jarPath);
-      }
-    }
-    results.unusedJars.addAll(jars);
   }
 }
