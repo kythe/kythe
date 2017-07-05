@@ -476,7 +476,7 @@ void ExtractorPPCallbacks::MacroExpands(
   }
   if (macro_name.getLocation().isFileID()) {
     llvm::StringRef macro_name_string =
-        macro_name.getIdentifierInfo()->getName().str();
+        macro_name.getIdentifierInfo()->getName();
     RecordMacroExpansion(
         macro_name.getLocation(),
         getMacroUnexpandedString(range, *preprocessor_, macro_name_string,
@@ -528,7 +528,7 @@ void ExtractorPPCallbacks::MacroDefined(
     return;
   }
   llvm::StringRef macro_name_string =
-      macro_name.getIdentifierInfo()->getName().str();
+      macro_name.getIdentifierInfo()->getName();
   history()->Update(source_manager_->getFileOffset(macro_location));
   history()->Update(macro_name_string);
 }
@@ -541,7 +541,7 @@ void ExtractorPPCallbacks::MacroUndefined(
     return;
   }
   llvm::StringRef macro_name_string =
-      macro_name.getIdentifierInfo()->getName().str();
+      macro_name.getIdentifierInfo()->getName();
   history()->Update(source_manager_->getFileOffset(macro_location));
   if (macro_definition) {
     // We don't just care that a macro was undefined; we care that
