@@ -18,11 +18,12 @@ package com.google.devtools.kythe.analyzers.java;
 
 import com.google.common.collect.ImmutableList;
 import com.google.devtools.kythe.analyzers.base.EntrySet;
+import com.google.devtools.kythe.proto.Storage.VName;
 
 /** Kythe graph node representing a Java language construct. */
 class JavaNode {
   // TODO(schroederc): handle cases where a single JCTree corresponds to multiple Kythe nodes
-  final EntrySet entries;
+  private final VName vName;
 
   // I think order matters for the wildcards because the abs node will be connected to them with
   // param edges, which are numbered. If order doesn't matter, we should change this to something
@@ -31,14 +32,18 @@ class JavaNode {
    * The full list of wildcards that are parented by this node. This includes all wildcards that
    * directly belong to this node, and all wildcards that belong to children of this node.
    */
-  final ImmutableList<EntrySet> childWildcards;
+  final ImmutableList<VName> childWildcards;
 
   JavaNode(EntrySet entries) {
     this(entries, null);
   }
 
-  JavaNode(EntrySet entries, ImmutableList<EntrySet> childWildcards) {
-    this.entries = entries;
-    this.childWildcards = childWildcards == null ? ImmutableList.<EntrySet>of() : childWildcards;
+  JavaNode(EntrySet entries, ImmutableList<VName> childWildcards) {
+    this.vName = entries.getVName();
+    this.childWildcards = childWildcards == null ? ImmutableList.<VName>of() : childWildcards;
+  }
+
+  VName getVName() {
+    return vName;
   }
 }

@@ -167,7 +167,7 @@ public class KytheEntrySets {
   }
 
   /** Returns and emits a NAME node. NAME nodes are cached so that they are only emitted once. */
-    public EntrySet getNameAndEmit(String name) {
+  public EntrySet getNameAndEmit(String name) {
     EntrySet node = nameNodes.get(name);
     if (node == null) {
       node = emitAndReturn(newNode(NodeKind.NAME).setSignature(name));
@@ -228,15 +228,15 @@ public class KytheEntrySets {
             .setProperty("text", contents)
             .setProperty("text/encoding", encoding.name()));
   }
-  
+
   /**
    * Returns a {@link NodeBuilder} with the given kind and added signature salts for each {@link
    * EntrySet} dependency.
    */
-  public NodeBuilder newNode(NodeKind kind, Iterable<EntrySet> dependencies) {
+  public NodeBuilder newNode(NodeKind kind, Iterable<VName> dependencies) {
     NodeBuilder builder = newNode(kind);
-    for (EntrySet e : dependencies) {
-      builder.addSignatureSalt(e.getVName());
+    for (VName d : dependencies) {
+      builder.addSignatureSalt(d);
     }
     return builder;
   }
@@ -267,56 +267,56 @@ public class KytheEntrySets {
   }
 
   /**
-   * Emits edges of the given kind from {@code source} to each of the target {@link EntrySet}s, with
+   * Emits edges of the given kind from {@code source} to each of the target {@link VName}s, with
    * their respective {@link Iterable} order (0-based) as their edge ordinal.
    */
-  public void emitOrdinalEdges(EntrySet source, EdgeKind kind, Iterable<EntrySet> targets) {
+  public void emitOrdinalEdges(VName source, EdgeKind kind, Iterable<VName> targets) {
     emitOrdinalEdges(source, kind, targets, 0);
   }
 
   /**
-   * Emits edges of the given kind from {@code source} to each of the target {@link EntrySet}s, with
+   * Emits edges of the given kind from {@code source} to each of the target {@link VName}s, with
    * their respective {@link Iterable} order as their edge ordinal.
    */
   public void emitOrdinalEdges(
-      EntrySet source, EdgeKind kind, Iterable<EntrySet> targets, int startingOrdinal) {
+      VName source, EdgeKind kind, Iterable<VName> targets, int startingOrdinal) {
     int ordinal = startingOrdinal;
-    for (EntrySet target : targets) {
+    for (VName target : targets) {
       emitEdge(source, kind, target, ordinal++);
     }
   }
 
   /** Returns (and emits) a new abstract node over child. */
   public EntrySet newAbstractAndEmit(
-      EntrySet child, List<EntrySet> params, @Nullable MarkedSource markedSource) {
-    NodeBuilder absBuilder = newNode(NodeKind.ABS).addSignatureSalt(child.getVName());
+      VName child, List<VName> params, @Nullable MarkedSource markedSource) {
+    NodeBuilder absBuilder = newNode(NodeKind.ABS).addSignatureSalt(child);
     if (markedSource != null) {
       absBuilder.setProperty("code", markedSource);
     }
 
     EntrySet abs = emitAndReturn(absBuilder);
-    emitEdge(child, EdgeKind.CHILDOF, abs);
-    emitOrdinalEdges(abs, EdgeKind.PARAM, params);
+    emitEdge(child, EdgeKind.CHILDOF, abs.getVName());
+    emitOrdinalEdges(abs.getVName(), EdgeKind.PARAM, params);
     return abs;
   }
 
   /** Returns (and emits) a new abstract node over child. */
-  public EntrySet newAbstractAndEmit(EntrySet child) {
+  public EntrySet newAbstractAndEmit(VName child) {
     return newAbstractAndEmit(child, Collections.emptyList(), null);
   }
 
   /** Returns and emits a new {@link NodeKind#TAPPLY} function type node. */
-  public EntrySet newFunctionTypeAndEmit(EntrySet returnType, List<EntrySet> arguments) {
-    List<EntrySet> tArgs = new LinkedList<>(arguments);
+  public EntrySet newFunctionTypeAndEmit(VName returnType, List<VName> arguments) {
+    List<VName> tArgs = new LinkedList<>(arguments);
     tArgs.add(0, returnType);
-    return newTApplyAndEmit(newBuiltinAndEmit("fn"), tArgs);
+    return newTApplyAndEmit(newBuiltinAndEmit("fn").getVName(), tArgs);
   }
 
   /** Returns and emits a new {@link NodeKind#TAPPLY} node along with its parameter edges. */
-  public EntrySet newTApplyAndEmit(EntrySet head, List<EntrySet> arguments) {
+  public EntrySet newTApplyAndEmit(VName head, List<VName> arguments) {
     EntrySet node = emitAndReturn(newApplyNode(NodeKind.TAPPLY, head, arguments));
-    emitEdge(node, EdgeKind.PARAM, head, 0);
-    emitOrdinalEdges(node, EdgeKind.PARAM, arguments, 1);
+    emitEdge(node.getVName(), EdgeKind.PARAM, head, 0);
+    emitOrdinalEdges(node.getVName(), EdgeKind.PARAM, arguments, 1);
     return node;
   }
 
@@ -324,8 +324,8 @@ public class KytheEntrySets {
    * Returns a {@link NodeBuilder} with the given kind and added signature salts for each {@link
    * EntrySet} dependency as well as the "head" node of the application.
    */
-  private NodeBuilder newApplyNode(NodeKind kind, EntrySet head, Iterable<EntrySet> dependencies) {
-    return newNode(kind, dependencies).addSignatureSalt(head.getVName());
+  private NodeBuilder newApplyNode(NodeKind kind, VName head, Iterable<VName> dependencies) {
+    return newNode(kind, dependencies).addSignatureSalt(head);
   }
 
   /**

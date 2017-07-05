@@ -313,7 +313,7 @@ public class JavaEntrySets extends KytheEntrySets {
   }
 
   /** Emits and returns a new {@link EntrySet} representing Javadoc. */
-  public EntrySet newDocAndEmit(Positions filePositions, String text, Iterable<EntrySet> params) {
+  public EntrySet newDocAndEmit(Positions filePositions, String text, Iterable<VName> params) {
     VName fileVName = getFileVName(getDigest(filePositions.getSourceFile()));
     byte[] encodedText;
     try {
@@ -326,9 +326,9 @@ public class JavaEntrySets extends KytheEntrySets {
             .setCorpusPath(CorpusPath.fromVName(fileVName))
             .setProperty("text", encodedText)
             .addSignatureSalt(text);
-    params.forEach(param -> builder.addSignatureSalt(param.getVName()));
+    params.forEach(param -> builder.addSignatureSalt(param));
     EntrySet node = emitAndReturn(builder);
-    emitOrdinalEdges(node, EdgeKind.PARAM, params);
+    emitOrdinalEdges(node.getVName(), EdgeKind.PARAM, params);
     return node;
   }
 

@@ -70,8 +70,9 @@ public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> 
     for (MiniAnchor<Symbol> miniAnchor : miniAnchors) {
       anchoredTo.add(miniAnchor.getAnchoredTo());
     }
-    treeScanner.emitDoc(bracketed, anchoredTo, node, absNode);
-    return treeScanner.emitCommentsOnLine(treeScanner.charToLine(startChar), node);
+    treeScanner.emitDoc(
+        bracketed, anchoredTo, node.getVName(), absNode == null ? null : absNode.getVName());
+    return treeScanner.emitCommentsOnLine(treeScanner.charToLine(startChar), node.getVName());
   }
 
   @Override
