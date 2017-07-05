@@ -24,7 +24,6 @@ class JavaNode {
   // TODO(schroederc): clearly separate semantic/type nodes
   final EntrySet entries;
   final JavaNode typeNode;
-  final String qualifiedName;
 
   // I think order matters for the wildcards because the abs node will be connected to them with
   // param edges, which are numbered. If order doesn't matter, we should change this to something
@@ -35,35 +34,24 @@ class JavaNode {
    */
   final ImmutableList<EntrySet> childWildcards;
 
-  JavaNode(EntrySet entries, String qualifiedName) {
-    this(entries, qualifiedName, null, ImmutableList.<EntrySet>of());
+  JavaNode(EntrySet entries) {
+    this(entries, null, ImmutableList.<EntrySet>of());
   }
 
-  JavaNode(EntrySet entries, String qualifiedName, ImmutableList<EntrySet> childWildcards) {
-    this(entries, qualifiedName, null, childWildcards);
+  JavaNode(EntrySet entries, ImmutableList<EntrySet> childWildcards) {
+    this(entries, null, childWildcards);
   }
 
-  JavaNode(EntrySet entries, String qualifiedName, JavaNode typeNode) {
+  JavaNode(EntrySet entries, JavaNode typeNode) {
     this(
         entries,
-        qualifiedName,
         typeNode,
         typeNode != null ? typeNode.childWildcards : ImmutableList.<EntrySet>of());
   }
 
-  JavaNode(
-      EntrySet entries,
-      String qualifiedName,
-      JavaNode typeNode,
-      ImmutableList<EntrySet> childWildcards) {
+  JavaNode(EntrySet entries, JavaNode typeNode, ImmutableList<EntrySet> childWildcards) {
     this.entries = entries;
-    this.qualifiedName = qualifiedName;
     this.typeNode = typeNode;
     this.childWildcards = childWildcards;
-  }
-
-  @Override
-  public String toString() {
-    return "JavaNode{" + qualifiedName + "}";
   }
 }

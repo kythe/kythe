@@ -16,7 +16,6 @@
 
 package com.google.devtools.kythe.analyzers.java;
 
-import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
@@ -197,7 +196,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     scan(compilation.getImports(), ctx);
     scan(compilation.getPackageAnnotations(), ctx);
-    return new JavaNode(fileNode, filePositions.getFilename());
+    return new JavaNode(fileNode);
   }
 
   @Override
@@ -387,7 +386,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     // Set the resulting node for the class before recursing through its members.  Setting the node
     // first is necessary to correctly add childof edges from local/anonymous classes defined
     // directly in the class body (in static initializers or member initializers).
-    JavaNode node = ctx.setNode(new JavaNode(classNode, signature.get()));
+    JavaNode node = ctx.setNode(new JavaNode(classNode));
 
     for (JCTree member : classDef.getMembers()) {
       JavaNode n = scan(member, ctx);
@@ -408,7 +407,6 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     JavaNode returnType = scan(methodDef.getReturnType(), ctx);
     List<JavaNode> params = scanList(methodDef.getParameters(), ctx);
     List<JavaNode> paramTypes = new LinkedList<>();
-    List<String> paramTypeNames = new LinkedList<>();
     List<EntrySet> wildcards = new LinkedList<>();
     for (int i = 0; i < params.size(); i++) {
       JavaNode n = params.get(i);
@@ -419,7 +417,6 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         continue;
       }
       paramTypes.add(n.typeNode);
-      paramTypeNames.add(n.typeNode.qualifiedName);
       wildcards.addAll(n.childWildcards);
     }
 
@@ -444,7 +441,6 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     EntrySet ret = null;
     EntrySet bindingAnchor = null;
-    String fnTypeName = "(" + Joiner.on(",").join(paramTypeNames) + ")";
     if (methodDef.sym.isConstructor()) {
       // Implicit constructors (those without syntactic definition locations) share the same
       // preferred position as their owned class.  Since implicit constructors don't exist in the
@@ -469,7 +465,6 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
           emitDefinesBindingAnchorEdge(
               methodDef.name, methodDef.getPreferredPosition(), methodNode, ctx.getSnippet());
       ret = returnType.entries;
-      fnTypeName = returnType.qualifiedName + fnTypeName;
     }
 
     if (bindingAnchor != null) {
@@ -510,9 +505,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     // Set the resulting node for the method and then recurse through its body.  Setting the node
     // first is necessary to correctly add childof edges in the callgraph.
-    JavaNode node =
-        ctx.setNode(
-            new JavaNode(methodNode, signature.get(), new JavaNode(fnTypeNode, fnTypeName)));
+    JavaNode node = ctx.setNode(new JavaNode(methodNode, new JavaNode(fnTypeNode)));
     scan(methodDef.getBody(), ctx);
 
     for (JavaNode param : params) {
@@ -567,7 +560,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
 
     scan(varDef.getInitializer(), ctx);
-    return new JavaNode(varNode, signature.get(), typeNode);
+    return new JavaNode(varNode, typeNode);
   }
 
   @Override
@@ -582,11 +575,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     List<JavaNode> arguments = scanList(tApply.getTypeArguments(), ctx);
     List<EntrySet> argEntries = new LinkedList<>();
-    List<String> argNames = new LinkedList<>();
     Builder<EntrySet> childWildcards = ImmutableList.builder();
     for (JavaNode n : arguments) {
       argEntries.add(n.entries);
-      argNames.add(n.qualifiedName);
       childWildcards.addAll(n.childWildcards);
     }
 
@@ -594,9 +585,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     // TODO(salguarnieri) Think about removing this since it isn't something that we have a use for.
     emitAnchor(ctx, EdgeKind.REF, typeNode);
 
-    String qualifiedName = typeCtorNode.qualifiedName + "<" + Joiner.on(',').join(argNames) + ">";
-
-    return new JavaNode(typeNode, qualifiedName, childWildcards.build());
+    return new JavaNode(typeNode, childWildcards.build());
   }
 
   @Override
@@ -609,7 +598,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     } else if (field.sym.getKind() == ElementKind.PACKAGE) {
       EntrySet pkgNode = entrySets.newPackageNodeAndEmit((PackageSymbol) field.sym);
       emitAnchor(ctx, EdgeKind.REF, pkgNode);
-      return new JavaNode(pkgNode, field.sym.toString());
+      return new JavaNode(pkgNode);
     } else {
       scan(field.getExpression(), ctx);
       return emitNameUsage(ctx, field.sym, field.name);
@@ -686,7 +675,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     String name = primitiveType.typetag.toString().toLowerCase();
     EntrySet node = entrySets.newBuiltinAndEmit(name);
     emitAnchor(ctx, EdgeKind.REF, node);
-    return new JavaNode(node, name);
+    return new JavaNode(node);
   }
 
   @Override
@@ -698,7 +687,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         entrySets.newTApplyAndEmit(
             entrySets.newBuiltinAndEmit("array"), Arrays.asList(typeNode.entries));
     emitAnchor(ctx, EdgeKind.REF, node);
-    JavaNode arrayNode = new JavaNode(node, typeNode.qualifiedName + "[]");
+    JavaNode arrayNode = new JavaNode(node);
     return arrayNode;
   }
 
@@ -714,20 +703,18 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     TreeContext ctx = owner.down(wild);
 
     EntrySet node = entrySets.newWildcardNodeAndEmit(wild, owner.getSourcePath());
-    String signature = wild.kind.kind.toString();
     Builder<EntrySet> wildcards = ImmutableList.builder();
     wildcards.add(node);
 
     if (wild.getKind() != Kind.UNBOUNDED_WILDCARD) {
       JavaNode bound = scan(wild.getBound(), ctx);
-      signature += bound.qualifiedName;
       emitEdge(
           node,
           wild.getKind() == Kind.EXTENDS_WILDCARD ? EdgeKind.BOUNDED_UPPER : EdgeKind.BOUNDED_LOWER,
           bound);
       wildcards.addAll(bound.childWildcards);
     }
-    return new JavaNode(node, signature, wildcards.build());
+    return new JavaNode(node, wildcards.build());
   }
 
   @Override
@@ -858,8 +845,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     if (!signature.isPresent()) {
       return null;
     }
-    return new JavaNode(
-        entrySets.getNode(signatureGenerator, sym, signature.get(), null, null), signature.get());
+    return new JavaNode(entrySets.getNode(signatureGenerator, sym, signature.get(), null, null));
   }
 
   private void visitAnnotations(
@@ -917,7 +903,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
           && inGenericContext
           && !sym.getTypeParameters().isEmpty()) {
         // Always reference the abs node of a generic class, unless used as a raw type.
-        node = new JavaNode(entrySets.newAbstractAndEmit(node.entries), node.qualifiedName);
+        node = new JavaNode(entrySets.newAbstractAndEmit(node.entries));
       }
       return node;
     } finally {
@@ -931,7 +917,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     String javaLangObjectSignature = signatureGenerator.getSignature(javaLangObject).get();
     EntrySet javaLangObjectEntrySet =
         entrySets.getNode(signatureGenerator, javaLangObject, javaLangObjectSignature, null, null);
-    return new JavaNode(javaLangObjectEntrySet, javaLangObjectSignature);
+    return new JavaNode(javaLangObjectEntrySet);
   }
 
   // Returns a JavaNode representing java.lang.Enum<E> where E is a given enum type.
@@ -943,8 +929,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
             entrySets.getNode(signatureGenerator, javaLangEnum, javaLangEnumSignature, null, null));
     EntrySet typeNode =
         entrySets.newTApplyAndEmit(javaLangEnumEntrySet, Collections.singletonList(enumEntrySet));
-    String qualifiedName = javaLangEnumSignature + "<" + enumSignature + ">";
-    return new JavaNode(typeNode, qualifiedName);
+    return new JavaNode(typeNode);
   }
 
   // Creates/emits an anchor and an associated edge
@@ -1069,7 +1054,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
     EntrySet node = entrySets.emitDiagnostic(filePositions, d.build());
     // TODO(schroederc): don't allow any edges to a diagnostic node
-    return new JavaNode(node, "diagnostic");
+    return new JavaNode(node);
   }
 
   private <T extends JCTree> List<JavaNode> scanList(List<T> trees, TreeContext owner) {
