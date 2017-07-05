@@ -405,19 +405,22 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     scan(methodDef.getThrows(), ctx);
 
     JavaNode returnType = scan(methodDef.getReturnType(), ctx);
-    List<JavaNode> params = scanList(methodDef.getParameters(), ctx);
+    List<JavaNode> params = new LinkedList<>();
     List<JavaNode> paramTypes = new LinkedList<>();
     List<EntrySet> wildcards = new LinkedList<>();
-    for (int i = 0; i < params.size(); i++) {
-      JavaNode n = params.get(i);
-      if (n.typeNode == null) {
+    for (JCVariableDecl param : methodDef.getParameters()) {
+      JavaNode n = scan(param, ctx);
+      params.add(n);
+      wildcards.addAll(n.childWildcards);
+
+      JavaNode typeNode = scan(param.getType(), ctx.downAsSnippet(param));
+      if (typeNode == null) {
         logger.warningfmt(
-            "Missing parameter type (method: %s; parameter: %s)",
-            methodDef.getName(), methodDef.getParameters().get(i));
+            "Missing parameter type (method: %s; parameter: %s)", methodDef.getName(), param);
         continue;
       }
-      paramTypes.add(n.typeNode);
-      wildcards.addAll(n.childWildcards);
+      wildcards.addAll(typeNode.childWildcards);
+      paramTypes.add(typeNode);
     }
 
     Optional<String> signature = signatureGenerator.getSignature(methodDef.sym);
@@ -505,7 +508,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
 
     // Set the resulting node for the method and then recurse through its body.  Setting the node
     // first is necessary to correctly add childof edges in the callgraph.
-    JavaNode node = ctx.setNode(new JavaNode(methodNode, new JavaNode(fnTypeNode)));
+    JavaNode node = ctx.setNode(new JavaNode(methodNode));
     scan(methodDef.getBody(), ctx);
 
     for (JavaNode param : params) {
@@ -560,7 +563,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
 
     scan(varDef.getInitializer(), ctx);
-    return new JavaNode(varNode, typeNode);
+    return new JavaNode(varNode, typeNode.childWildcards);
   }
 
   @Override

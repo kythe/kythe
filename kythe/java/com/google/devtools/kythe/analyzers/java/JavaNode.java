@@ -21,9 +21,8 @@ import com.google.devtools.kythe.analyzers.base.EntrySet;
 
 /** Kythe graph node representing a Java language construct. */
 class JavaNode {
-  // TODO(schroederc): clearly separate semantic/type nodes
+  // TODO(schroederc): handle cases where a single JCTree corresponds to multiple Kythe nodes
   final EntrySet entries;
-  final JavaNode typeNode;
 
   // I think order matters for the wildcards because the abs node will be connected to them with
   // param edges, which are numbered. If order doesn't matter, we should change this to something
@@ -35,23 +34,11 @@ class JavaNode {
   final ImmutableList<EntrySet> childWildcards;
 
   JavaNode(EntrySet entries) {
-    this(entries, null, ImmutableList.<EntrySet>of());
+    this(entries, null);
   }
 
   JavaNode(EntrySet entries, ImmutableList<EntrySet> childWildcards) {
-    this(entries, null, childWildcards);
-  }
-
-  JavaNode(EntrySet entries, JavaNode typeNode) {
-    this(
-        entries,
-        typeNode,
-        typeNode != null ? typeNode.childWildcards : ImmutableList.<EntrySet>of());
-  }
-
-  JavaNode(EntrySet entries, JavaNode typeNode, ImmutableList<EntrySet> childWildcards) {
     this.entries = entries;
-    this.typeNode = typeNode;
-    this.childWildcards = childWildcards;
+    this.childWildcards = childWildcards == null ? ImmutableList.<EntrySet>of() : childWildcards;
   }
 }

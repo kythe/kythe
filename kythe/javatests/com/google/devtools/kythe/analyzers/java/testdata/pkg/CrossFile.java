@@ -13,6 +13,7 @@ import static pkg.Files.staticMethod;
 import static pkg.Files.*;
 import pkg.*;
 
+
 public class CrossFile {
   //- @Files ref FilesClass
   Files f1;
