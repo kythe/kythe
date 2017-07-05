@@ -9,6 +9,7 @@ java_library(
         "KytheDocTreeScanner.java",
         "KytheJavacAnalyzer.java",
         "KytheTreeScanner.java",
+        "MarkedSources.java",
         "MiniAnchor.java",
         "NameVisitor.java",
         "SourceText.java",
