@@ -43,6 +43,7 @@
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/Twine.h"
 
+#include "GoogleFlagsLibrarySupport.h"
 #include "GraphObserver.h"
 #include "IndexerASTHooks.h"
 #include "IndexerPPCallbacks.h"
