@@ -358,7 +358,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
           superClassNode = getJavaLangObjectNode();
           break;
         case ENUM:
-          superClassNode = getJavaLangEnumNode(classNode, signature.get());
+          superClassNode = getJavaLangEnumNode(classNode);
           break;
         case ANNOTATION_TYPE:
           // TODO(schroederc): handle annotation superclass
@@ -932,7 +932,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   }
 
   // Returns a JavaNode representing java.lang.Enum<E> where E is a given enum type.
-  private JavaNode getJavaLangEnumNode(EntrySet enumEntrySet, String enumSignature) {
+  private JavaNode getJavaLangEnumNode(EntrySet enumEntrySet) {
     Symbol javaLangEnum = getSymbols().enumSym;
     String javaLangEnumSignature = signatureGenerator.getSignature(javaLangEnum).get();
     EntrySet javaLangEnumEntrySet =
