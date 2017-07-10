@@ -273,9 +273,9 @@ clang::SourceLocation ParseTextProtoHandler::GetSourceLocation(
     const LineColumnPair& LineColumn) const {
   const auto OffsetIt = LineColumnToOffset.find(LineColumn);
   CHECK(OffsetIt != LineColumnToOffset.end());
-  return Literal->getLocationOfByte(OffsetIt->second,
-                                    Context.getSourceManager(), LangOpts,
-                                    Context.getTargetInfo());
+  return Context.getSourceManager().getSpellingLoc(
+      Literal->getLocationOfByte(OffsetIt->second, Context.getSourceManager(),
+                                 LangOpts, Context.getTargetInfo()));
 }
 
 clang::SourceRange ParseTextProtoHandler::GetTokenSourceRange(

@@ -14,7 +14,7 @@ int main() {
   inner.my_int();
 
   const some::package::Outer msg =
-      ::proto2::contrib::parse_proto::ParseTextProtoOrDieAt(
+      PARSE_TEXT_PROTO(
           //- LiteralInner.node/kind anchor
           //- LiteralInner.loc/start @^:33"in"
           //- LiteralInner.loc/end @$:33"ner"
@@ -33,6 +33,5 @@ int main() {
           " inner {"
           "  my_int: 3\n"
           " }"
-          " my_string: 'blah'",
-          false, __FILE__, __LINE__);
+          " my_string: 'blah'");
 }
