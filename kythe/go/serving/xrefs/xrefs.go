@@ -76,7 +76,7 @@ type staticLookupTables interface {
 // lookup tables for each API component.
 type SplitTable struct {
 	// Edges is a table of srvpb.PagedEdgeSets keyed by their source tickets.
-	Edges table.ProtoBatch
+	Edges table.Proto
 
 	// EdgePages is a table of srvpb.EdgePages keyed by their page keys.
 	EdgePages table.Proto
@@ -94,28 +94,25 @@ type SplitTable struct {
 	CrossReferencePages table.Proto
 }
 
-func lookupPagedEdgeSets(ctx context.Context, tbl table.ProtoBatch, keys [][]byte) (<-chan edgeSetResult, error) {
-	rs, err := tbl.LookupBatch(ctx, keys, (*srvpb.PagedEdgeSet)(nil))
-	if err != nil {
-		return nil, err
-	}
+func lookupPagedEdgeSets(ctx context.Context, tbl table.Proto, keys [][]byte) (<-chan edgeSetResult, error) {
 	ch := make(chan edgeSetResult)
 	go func() {
 		defer close(ch)
-		for r := range rs {
-			if r.Err == table.ErrNoSuchKey {
-				log.Printf("Could not locate edges with key %q", r.Key)
-				ch <- edgeSetResult{Err: r.Err}
+		for _, key := range keys {
+			var pes srvpb.PagedEdgeSet
+			if err := tbl.Lookup(ctx, key, &pes); err == table.ErrNoSuchKey {
+				log.Printf("Could not locate edges with key %q", key)
+				ch <- edgeSetResult{Err: err}
 				continue
-			} else if r.Err != nil {
-				ticket := strings.TrimPrefix(string(r.Key), edgeSetsTablePrefix)
+			} else if err != nil {
+				ticket := strings.TrimPrefix(string(key), edgeSetsTablePrefix)
 				ch <- edgeSetResult{
-					Err: fmt.Errorf("edges lookup error (ticket %q): %v", ticket, r.Err),
+					Err: fmt.Errorf("edges lookup error (ticket %q): %v", ticket, err),
 				}
 				continue
 			}
 
-			ch <- edgeSetResult{PagedEdgeSet: r.Value.(*srvpb.PagedEdgeSet)}
+			ch <- edgeSetResult{PagedEdgeSet: &pes}
 		}
 	}()
 	return ch, nil
@@ -163,7 +160,7 @@ const (
 	edgePagesTablePrefix    = "edgePages:"
 )
 
-type combinedTable struct{ table.ProtoBatch }
+type combinedTable struct{ table.Proto }
 
 func (c *combinedTable) pagedEdgeSets(ctx context.Context, tickets []string) (<-chan edgeSetResult, error) {
 	keys := make([][]byte, len(tickets), len(tickets))
@@ -196,7 +193,7 @@ func NewSplitTable(c *SplitTable) *Table { return &Table{c} }
 // NewCombinedTable returns a table for the given combined xrefs lookup table.
 // The table's keys are expected to be constructed using only the EdgeSetKey,
 // EdgePageKey, and DecorationsKey functions.
-func NewCombinedTable(t table.ProtoBatch) *Table { return &Table{&combinedTable{t}} }
+func NewCombinedTable(t table.Proto) *Table { return &Table{&combinedTable{t}} }
 
 // EdgeSetKey returns the edgeset CombinedTable key for the given source ticket.
 func EdgeSetKey(ticket string) []byte {

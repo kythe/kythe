@@ -80,7 +80,7 @@ func ParseSpec(apiSpec string) (Interface, error) {
 		}
 		api.closer = func() error { return db.Close() }
 
-		tbl := table.ProtoBatchParallel{&table.KVProto{db}}
+		tbl := &table.KVProto{db}
 		api.xs = xsrv.NewCombinedTable(tbl)
 		api.ft = &ftsrv.Table{tbl, true}
 	} else {

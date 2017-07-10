@@ -99,7 +99,7 @@ func Run(ctx context.Context, rd stream.EntryReader, db keyvalue.DB, opts *Optio
 	log.Println("Starting serving pipeline")
 
 	out := &servingOutput{
-		xs: table.ProtoBatchParallel{&table.KVProto{DB: db}},
+		xs: &table.KVProto{DB: db},
 	}
 	rd = filterReverses(rd)
 

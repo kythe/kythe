@@ -59,7 +59,7 @@ func main() {
 		log.Fatalf("Error opening db at %q: %v", *servingTable, err)
 	}
 	defer db.Close()
-	tbl := table.ProtoBatchParallel{&table.KVProto{db}}
+	tbl := &table.KVProto{db}
 	xs := xsrv.NewCombinedTable(tbl)
 	ft := &ftsrv.Table{Proto: tbl, PrefixedKeys: true}
 

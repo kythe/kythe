@@ -1411,7 +1411,7 @@ func (tbl *testTable) Construct(t *testing.T) *Table {
 	for _, crp := range tbl.RefPages {
 		testutil.FatalOnErrT(t, "Error writing cross-references: %v", p.Put(ctx, CrossReferencesPageKey(crp.PageKey), crp))
 	}
-	return NewCombinedTable(table.ProtoBatchParallel{p})
+	return NewCombinedTable(p)
 }
 
 func mustFix(t *testing.T, ticket string) string {
