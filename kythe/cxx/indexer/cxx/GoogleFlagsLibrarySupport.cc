@@ -18,8 +18,8 @@
 
 #include "clang/AST/ASTContext.h"
 
+#include "GoogleFlagsLibrarySupport.h"
 #include "IndexerASTHooks.h"
-#include "IndexerLibrarySupport.h"
 
 namespace kythe {
 
