@@ -939,6 +939,11 @@ void IndexerASTVisitor::VisitComment(
   }
 }
 
+bool IndexerASTVisitor::VisitDeclaratorDecl(const clang::DeclaratorDecl *Decl) {
+    VisitNestedNameSpecifierLoc(Decl->getQualifierLoc());
+    return true;
+}
+
 bool IndexerASTVisitor::VisitDecl(const clang::Decl *Decl) {
   if (Job->UnderneathImplicitTemplateInstantiation || Decl == nullptr) {
     // Template instantiation can't add any documentation text.
@@ -2084,8 +2089,7 @@ bool IndexerASTVisitor::TraverseFunctionDecl(clang::FunctionDecl *FD) {
       Job->UnderneathImplicitTemplateInstantiation = true;
     }
   }
-  bool Result =
-      RecursiveASTVisitor<IndexerASTVisitor>::TraverseFunctionDecl(FD);
+  bool Result = RecursiveASTVisitor::TraverseFunctionDecl(FD);
   Job->UnderneathImplicitTemplateInstantiation = UITI;
   return Result;
 }
@@ -2493,8 +2497,8 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
         Decl->getSourceRange().getEnd()));
   }
   Marks.set_name_range(NameRange);
-  auto NameRangeInContext(
-      RangeInCurrentContext(Decl->isImplicit(), OuterNode, NameRange));
+  auto NameRangeInContext =
+      RangeInCurrentContext(Decl->isImplicit(), OuterNode, NameRange);
   MaybeRecordDefinitionRange(NameRangeInContext, OuterNode);
   bool IsFunctionDefinition = IsDefinition(Decl);
   unsigned ParamNumber = 0;

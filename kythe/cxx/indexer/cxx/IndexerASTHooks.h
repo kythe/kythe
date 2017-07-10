@@ -210,6 +210,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   ~IndexerASTVisitor() { deleteAllParents(); }
 
   bool VisitDecl(const clang::Decl *Decl);
+  bool VisitDeclaratorDecl(const clang::DeclaratorDecl *Decl);
   bool VisitFieldDecl(const clang::FieldDecl *Decl);
   bool VisitVarDecl(const clang::VarDecl *Decl);
   bool VisitNamespaceDecl(const clang::NamespaceDecl *Decl);

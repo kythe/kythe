@@ -7,6 +7,8 @@ struct U {
     struct T {
 //- @f defines/binding FnF
       static int f();
+//- @d defines/binding DataD
+      static int d;
     };
   };
 };
@@ -16,3 +18,16 @@ struct U {
 //- @T ref StructT
 //- @f ref FnF
 int v = U::S::T::f();
+
+//- @U ref StructU
+//- @S ref StructS
+//- @T ref StructT
+//- @f completes/uniquely FnF
+int U::S::T::f() { }
+
+
+//- @U ref StructU
+//- @S ref StructS
+//- @T ref StructT
+//- @d completes/uniquely DataD
+int U::S::T::d = 1;
