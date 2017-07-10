@@ -86,8 +86,7 @@ func (o *Options) diskSorter(l sortutil.Lesser, m disksort.Marshaler) (disksort.
 const chBuf = 512
 
 type servingOutput struct {
-	xs  table.Proto
-	idx table.Inverted
+	xs table.Proto
 }
 
 // Run writes the xrefs and filetree serving tables to db based on the given
@@ -100,8 +99,7 @@ func Run(ctx context.Context, rd stream.EntryReader, db keyvalue.DB, opts *Optio
 	log.Println("Starting serving pipeline")
 
 	out := &servingOutput{
-		xs:  table.ProtoBatchParallel{&table.KVProto{DB: db}},
-		idx: &table.KVInverted{DB: db},
+		xs: table.ProtoBatchParallel{&table.KVProto{DB: db}},
 	}
 	rd = filterReverses(rd)
 
@@ -176,13 +174,9 @@ func combineNodesAndEdges(ctx context.Context, opts *Options, out *servingOutput
 		return nil, err
 	}
 
-	bIdx := out.idx.Buffered()
 	if err := assemble.Sources(rd, func(src *ipb.Source) error {
-		return writePartialEdges(ctx, partialSorter, bIdx, src)
+		return writePartialEdges(ctx, partialSorter, src)
 	}); err != nil {
-		return nil, err
-	}
-	if err := bIdx.Flush(ctx); err != nil {
 		return nil, err
 	}
 
@@ -262,7 +256,7 @@ func filterReverses(rd stream.EntryReader) stream.EntryReader {
 	}
 }
 
-func writePartialEdges(ctx context.Context, sorter disksort.Interface, idx table.BufferedInverted, src *ipb.Source) error {
+func writePartialEdges(ctx context.Context, sorter disksort.Interface, src *ipb.Source) error {
 	edges := assemble.PartialReverseEdges(src)
 	for _, pe := range edges {
 		if err := sorter.Add(pe); err != nil {
