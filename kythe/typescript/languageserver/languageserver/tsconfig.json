@@ -2,11 +2,21 @@
   "include": ["src/**/*"],
   "compilerOptions": {
     
-    "target": "es2016",
+    "target": "ES2017",
     "module": "commonjs",                     
     "outDir": "./dist/src",
-    "rootDir": "./src",
-    "declaration": true,                                         
-    "strict": true                            
+    "rootDir": "./src",               
+    "strict": true,
+    "strictNullChecks": true,
+    "noImplicitAny": true,
+    "downlevelIteration": true,
+    "allowJs": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "moduleResolution": "node",
+    "sourceMap": true
   }
 }

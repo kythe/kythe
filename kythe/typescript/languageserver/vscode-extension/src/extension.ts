@@ -25,13 +25,13 @@ export function activate(context: ExtensionContext) {
   const serverModule = context.asAbsolutePath(
       join('node_modules', '.bin', 'kythe-languageserver'));
 
-  const debugOptions = {execArgv: ['--nolazy', '--debug=6009']};
+  const debugOptions = {execArgv: ['--nolazy', '--debug=6004']};
 
   const serverOptions = {
-    run: {module: serverModule, transport: TransportKind.ipc},
+    run: {module: serverModule, transport: TransportKind.pipe},
     debug: {
       module: serverModule,
-      transport: TransportKind.ipc,
+      transport: TransportKind.pipe,
       options: debugOptions
     },
   };

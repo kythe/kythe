@@ -8,7 +8,7 @@
 			"type": "extensionHost",
 			"request": "launch",
 			"runtimeExecutable": "${execPath}",
-			"args": [ "--extensionDevelopmentPath=${workspaceRoot}", "${workspaceRoot}/../../../"],
+			"args": [ "--extensionDevelopmentPath=${workspaceRoot}", "${workspaceRoot}/../../../../"],
 			"stopOnEntry": false,
 			"sourceMaps": true,
 			"outFiles": [ "${workspaceRoot}/dist/**/*.js" ],
