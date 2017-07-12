@@ -2345,11 +2345,11 @@ Go
 The source language for Go is spelled "`go`".
 
 Type Definitions
-~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^
 
 A Go type definition like `type Foo Bar` creates a new named type `Foo` with
 the same structure as `Bar` but with a distinct method set. In the Kythe schema
-we model this as a [[record]] node. If the underlying type is not already a
+we model `Foo` as a <<record>> node. If the underlying type is not already a
 struct this node is given the subkind `type`.
 
 [kythe,Go,"Type definitions"]
