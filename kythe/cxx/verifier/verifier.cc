@@ -204,8 +204,6 @@ struct AtomFactKey {
   }
 };
 
-namespace {
-
 enum class Order { LT, EQ, GT };
 
 // How we order incomplete keys depends on whether we're looking for
@@ -264,7 +262,6 @@ static Order CompareFactWithKey(Order incomplete, AstNode *a, AtomFactKey *k) {
   }
   return Order::EQ;
 }
-}  // namespace
 
 // We want to be able to find the following bounds:
 // (0,0,2,3) (0,1,2,3) (0,1,2,4) (1,1,2,4)
@@ -584,7 +581,7 @@ class Solver {
   size_t highest_group_reached_ = 0;
   size_t highest_goal_reached_ = 0;
 };
-}  // anonymous namespace
+}  // namespace
 
 Verifier::Verifier(bool trace_lex, bool trace_parse)
     : parser_(this, trace_lex, trace_parse),
