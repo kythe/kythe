@@ -60,6 +60,7 @@ conn.onInitialize((params): InitializeResult => {
   /* All implemented behaviors go here */
   conn.onDidOpenTextDocument(server.onDidOpenTextDocument.bind(server));
   conn.onReferences(server.onReferences.bind(server));
+  conn.onDefinition(server.onDefinition.bind(server));
 
   return ret;
 });

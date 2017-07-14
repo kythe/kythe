@@ -42,7 +42,9 @@ export class Document {
 }
 
 function rangeContains(range: Range, pos: Position) {
+  // Some editors (i.e. vscode) use the character after an identifier for
+  // positions so we treat ranges as inclusive on both ends
   return ((range.start.line === pos.line &&
            range.start.character <= pos.character)) &&
-      ((range.end.line === pos.line && range.end.character > pos.character));
+      ((range.end.line === pos.line && range.end.character >= pos.character));
 }

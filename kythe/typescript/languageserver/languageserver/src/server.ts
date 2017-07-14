@@ -32,7 +32,8 @@ export class Server {
     return {
       capabilities: {
         referencesProvider: true,
-        textDocumentSync: LS.TextDocumentSyncKind.Full
+        textDocumentSync: LS.TextDocumentSyncKind.Full,
+        definitionProvider: true,
       }
     };
   }
@@ -46,7 +47,6 @@ export class Server {
     if (!doc) return [];
 
     const ticket = doc.xrefs(position) as {} as string;
-
     const xrefs = await this.client.xrefs({
       ticket: [ticket],
       reference_kind:
@@ -99,6 +99,35 @@ export class Server {
     }
 
     this.lookup.set(localPath, new Document(qualifiedXRefs));
+  }
+
+  async onDefinition({textDocument: {uri}, position}: 
+                        LS.TextDocumentPositionParams): Promise<LS.Location[]> {
+    const localPath = normalizeLSPath(uri);
+    const doc = this.lookup.get(localPath);
+
+    // If we don't have decorations for the file, we can't find references
+    if (!doc) return [];
+
+    const ticket = doc.xrefs(position) as {} as string;
+
+    // LSP does not distinguish definitions and declarations so just return both
+    const xrefs = await this.client.xrefs({
+      ticket: [ticket],
+      definition_kind:
+          kythe.proto.CrossReferencesRequest.DefinitionKind.BINDING_DEFINITIONS,
+      declaration_kind:
+          kythe.proto.CrossReferencesRequest.DeclarationKind.ALL_DECLARATIONS,
+    });
+
+    if (xrefs.cross_references == null) return [];
+    const refs = [...xrefs.cross_references[ticket].declaration || [], 
+                  ...xrefs.cross_references[ticket].definition || []];
+
+    const locs =
+        refs.map(r => this.anchortoLoc(r)).filter(r => !(r instanceof Error)) as
+        LS.Location[];
+    return locs;
   }
 
   private anchortoLoc(r: kythe.proto.CrossReferencesReply.IRelatedAnchor):
