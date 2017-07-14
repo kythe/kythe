@@ -14,20 +14,46 @@
  * limitations under the License.
  */
 
+import * as fs from 'fs';
+import {join} from 'path';
 import {URL} from 'url';
 import {createConnection, IConnection, InitializeResult} from 'vscode-languageserver';
 
 import {PathContext} from '../pathContext';
 import {Server} from '../server';
+import {parseSettings} from '../settings';
 import {XRefHTTPClient} from '../xrefClient';
+
+const SETTINGS_FILE = '.kythe-settings.json';
 
 const conn: IConnection = createConnection();
 
+
+
 conn.onInitialize((params): InitializeResult => {
   const root = params.rootUri ? new URL(params.rootUri).pathname : '';
+  const settingsPath = join(root, SETTINGS_FILE);
 
-  const server =
-      new Server(new PathContext(root), new XRefHTTPClient('localhost', 8080));
+  try {
+    fs.accessSync(settingsPath, fs.constants.R_OK);
+  } catch (_) {
+    conn.window.showErrorMessage(
+        `${SETTINGS_FILE} not found in project root '${root}'`);
+    // If we cannot find the settings file, we have no capabilities
+    return {capabilities: {}};
+  }
+
+  const settingsObject = JSON.parse(fs.readFileSync(settingsPath, 'UTF8'));
+
+  const settings = parseSettings(settingsObject);
+  if (settings instanceof Error) {
+    conn.window.showErrorMessage(settings.message);
+    return {capabilities: {}};
+  }
+
+  const server = new Server(
+      new PathContext(root, settings.mappings),
+      new XRefHTTPClient(settings.xrefs.host, settings.xrefs.port));
 
   const ret = server.onInitialize(params);
 
@@ -38,4 +64,5 @@ conn.onInitialize((params): InitializeResult => {
   return ret;
 });
 
+console.error('LISTENING!');
 conn.listen();

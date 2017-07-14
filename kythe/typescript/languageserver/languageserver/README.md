@@ -42,8 +42,10 @@ The server communicates over the
 (Language Server Protocol](https://github.com/Microsoft/language-server-protocol)
 (specifically [v2](https://github.com/Microsoft/language-server-protocol/blob/master/versions/protocol-2-x.md)).
 
-The server makes requests to localhost:8080 which should be running an HTTP interface for the Kythe xref service.
-In the future this will be configurable.
+The server, by default, makes requests to localhost:8080 which should be running an HTTP interface for the Kythe xref service.
+
+A `.kythe-settings.json` file is required in the root of your project. See Configuration for more details.
+
 
 #### STDIO communication
 ```
@@ -58,6 +60,26 @@ node dist/src/bin/kythe-languageserver.js --pipe=/tmp/socket.sock
 #### Node IPC
 ```
 node dist/src/bin/kythe-languageserver.js --ipc
+```
+
+## Configuration
+The server looks for a `kythe-settings.json` file in the root of the workspace. See this example config file containing all possible options:
+
+```
+{
+    "mappings": [{
+        "local": ":file*",
+        "vname": {
+            "path": "kythe.io/:file*",
+            "corpus": "kythe"
+        }
+    }],
+
+    "xrefs": {
+        "host": "localhost",
+        "port": 8080
+    }
+}
 ```
 
 ## Editor specific instructions

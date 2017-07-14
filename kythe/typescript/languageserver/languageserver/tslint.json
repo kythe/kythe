@@ -97,6 +97,7 @@
             "allow-leading-underscore",
             "allow-trailing-underscore"
         ],
-        "no-non-null-assertion": true
+        "no-non-null-assertion": true,
+        "eofline": true
     }
 }

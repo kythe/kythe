@@ -79,10 +79,6 @@ type PathMapping = {
   cons: p2r.PathFunction
 };
 
-// TODO(djrenren): Remove when config loading is implemented
-const DEFAULT_CONFIG: PathConfig =
-    [{local: ':file*', vname: {path: 'kythe.io/:file*', corpus: 'kythe.io'}}];
-
 /*
  * Kythe does not require a hard-mapping between local paths and kythe paths.
  * PathContext does this mapping by applying rules defined in a PathConfig.
@@ -99,7 +95,7 @@ export class PathContext {
     }
   }>;
 
-  constructor(private root: string, config: PathConfig = DEFAULT_CONFIG) {
+  constructor(private root: string, config: PathConfig) {
 
     // Normalize our root to have no relative components or trailing slash
     this.root = resolve(root);
@@ -193,7 +189,7 @@ export function tryParseTicket(s: string): KytheTicket|Error {
 export function normalizeLSPath(path: string): LocalPath {
   const uri = new URL(path);
 
-  if (uri.protocol === 'git:' && uri.protocol.endsWith('.git')) {
+  if (uri.protocol === 'git:' && uri.pathname.endsWith('.git')) {
     // Remove the .git extension
     return uri.pathname.substring(0, uri.pathname.length - 4) as String as
         LocalPath;

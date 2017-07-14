@@ -15,9 +15,11 @@
     "watch_test": "tsc --watch -p ./tsconfig.test.json",
     "pretest": "rm -r dist && tsc -p ./tsconfig.test.json",
     "proto": "mkdir -p src/proto; pbjs --keep-case -t static-module -w commonjs -o src/proto/xref.js ../../../proto/xref.proto ../../../proto/common.proto && pbts -o src/proto/xref.d.ts src/proto/xref.js",
-    "test": "mocha dist/test"
+    "test": "mocha dist/test",
+    "lint": "tslint '{src,test}/**/*.ts' --exclude 'src/**/*.d.ts'"
   },
   "dependencies": {
+    "ajv": "^5.2.2",
     "path-to-regexp": "^1.7.0",
     "protobufjs": "github:Alexendoo/protobuf.js#optional-field-types",
     "request": "^2.81.0",
@@ -25,6 +27,7 @@
     "vscode-languageserver": "^3.3.0"
   },
   "devDependencies": {
+    "@types/ajv": "^1.0.0",
     "@types/chai": "^4.0.1",
     "@types/long": "^3.0.31",
     "@types/mocha": "^2.2.41",
