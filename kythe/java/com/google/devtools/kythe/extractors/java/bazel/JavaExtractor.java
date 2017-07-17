@@ -16,6 +16,7 @@
 
 package com.google.devtools.kythe.extractors.java.bazel;
 
+import static com.google.common.base.StandardSystemProperty.USER_DIR;
 import static com.google.common.io.Files.touch;
 
 import com.google.common.base.Optional;
@@ -116,8 +117,7 @@ public class JavaExtractor {
     }
 
     CompilationDescription description =
-        new JavaCompilationUnitExtractor(
-                FileVNames.fromFile(vNamesConfigPath), System.getProperty("user.dir"))
+        new JavaCompilationUnitExtractor(FileVNames.fromFile(vNamesConfigPath), USER_DIR.value())
             .extract(
                 info.getOwner(),
                 sources,

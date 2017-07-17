@@ -22,7 +22,7 @@ import java.io.Serializable;
 public class NullStatisticsCollector implements StatisticsCollector, Serializable {
   private static final long serialVersionUID = 7642617128987532613L;
 
-  private static NullStatisticsCollector instance = new NullStatisticsCollector();
+  private static final NullStatisticsCollector instance = new NullStatisticsCollector();
 
   /** Returns the single instance of the {@link StatisticsCollector} that ignores all statistics. */
   public static NullStatisticsCollector getInstance() {

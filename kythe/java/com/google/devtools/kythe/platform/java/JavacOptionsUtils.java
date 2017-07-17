@@ -223,9 +223,7 @@ public class JavacOptionsUtils {
               String.format("Malformed %s argument: %s", option.getPrimaryName(), arguments));
         }
         arguments.remove(i);
-        for (String path : PATH_SPLITTER.split(arguments.remove(i))) {
-          paths.add(path);
-        }
+        paths.addAll(PATH_SPLITTER.split(arguments.remove(i)));
       }
     }
     return paths.build();
@@ -234,9 +232,7 @@ public class JavacOptionsUtils {
   private static List<String> extractDetailsPaths(List<String> pathList) {
     ImmutableList.Builder<String> paths = ImmutableList.builder();
     for (String entry : pathList) {
-      for (String dir : PATH_SPLITTER.split(entry)) {
-        paths.add(dir);
-      }
+      paths.addAll(PATH_SPLITTER.split(entry));
     }
     return paths.build();
   }

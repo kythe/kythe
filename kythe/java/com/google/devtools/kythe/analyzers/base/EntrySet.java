@@ -49,7 +49,7 @@ public final class EntrySet {
    * be emitted if there is at least one associated property set.
    */
   private static final ImmutableMap<String, byte[]> EMPTY_PROPERTIES =
-      ImmutableMap.<String, byte[]>builder().put("/", new byte[0]).build();
+      ImmutableMap.of("/", new byte[0]);
 
   // invariant: source != null && ((edgeKind == null) == (target == null))
   private final VName source;
@@ -115,10 +115,10 @@ public final class EntrySet {
   @Override
   public String toString() {
     StringBuilder builder = new StringBuilder("EntrySet {\n");
-    builder.append("Source: {" + source + "}\n");
+    builder.append("Source: {").append(source).append("}\n");
     if (edgeKind != null) {
-      builder.append("Target: {" + target + "}\n");
-      builder.append("EdgeKind: " + edgeKind);
+      builder.append("Target: {").append(target).append("}\n");
+      builder.append("EdgeKind: ").append(edgeKind);
     }
     for (Map.Entry<String, byte[]> entry : properties.entrySet()) {
       String val;

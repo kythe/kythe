@@ -168,11 +168,9 @@ public class KytheEntrySets {
 
   /** Returns and emits a NAME node. NAME nodes are cached so that they are only emitted once. */
   public EntrySet getNameAndEmit(String name) {
-    EntrySet node = nameNodes.get(name);
-    if (node == null) {
-      node = emitAndReturn(newNode(NodeKind.NAME).setSignature(name));
-      nameNodes.put(name, node);
-    }
+    EntrySet node =
+        nameNodes.computeIfAbsent(
+            name, (String k) -> emitAndReturn(newNode(NodeKind.NAME).setSignature(k)));
     return node;
   }
 

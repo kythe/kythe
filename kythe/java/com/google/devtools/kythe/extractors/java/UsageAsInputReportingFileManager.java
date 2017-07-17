@@ -78,11 +78,9 @@ class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<Standar
     if (item == null) {
       return item;
     }
-    InputUsageRecord usage = inputUsageRecords.get(item.toUri());
-    if (usage == null) {
-      usage = new InputUsageRecord(item, location);
-      inputUsageRecords.put(item.toUri(), usage);
-    }
+    InputUsageRecord usage =
+        inputUsageRecords.computeIfAbsent(
+            item.toUri(), (URI k) -> new InputUsageRecord(item, location));
     return new UsageAsInputReportingJavaFileObject(item, usage);
   }
 

@@ -102,7 +102,7 @@ public class MiniAnchor<T> {
     StringBuilder bracketed = new StringBuilder(text.length() + miniAnchors.size() * 2);
     Iterator<MiniAnchor<T>> anchors = miniAnchors.iterator();
     MiniAnchor<T> nextAnchor = anchors.hasNext() ? anchors.next() : null;
-    PriorityQueue<Integer> ends = new PriorityQueue<Integer>();
+    PriorityQueue<Integer> ends = new PriorityQueue<>();
     for (int i = 0; i < text.length(); ++i) {
       int sourcePos = posTransform.transform(i);
       char c = text.charAt(i);
