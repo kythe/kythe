@@ -3585,6 +3585,7 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForDependentName(
       UNEXPECTED_DECLARATION_NAME_KIND(CXXOperatorName);
       UNEXPECTED_DECLARATION_NAME_KIND(CXXLiteralOperatorName);
       UNEXPECTED_DECLARATION_NAME_KIND(CXXUsingDirective);
+      UNEXPECTED_DECLARATION_NAME_KIND(CXXDeductionGuideName);
 #undef UNEXPECTED_DECLARATION_NAME_KIND
   }
   if (ER == EmitRanges::Yes) {
@@ -4287,18 +4288,21 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
                                      TemplateArgsPtrs.size());
       }
     } break;
-    case TypeLoc::Auto: {
-      const auto *DT = dyn_cast<AutoType>(PT);
+    case TypeLoc::Auto:
+    case TypeLoc::DeducedTemplateSpecialization: {
+      const auto *DT = dyn_cast<DeducedType>(PT);
       QualType DeducedQT = DT->getDeducedType();
       if (DeducedQT.isNull()) {
-        const auto &AutoT = TypeLoc.castAs<AutoTypeLoc>();
-        const auto *T = AutoT.getTypePtr();
+        const auto &DTL = TypeLoc.castAs<DeducedTypeLoc>();
+        const auto *T = DTL.getTypePtr();
         DeducedQT = T->getDeducedType();
         if (DeducedQT.isNull()) {
           // We still need to come up with a name here--it's more useful than
           // returning None, since we might be down a branch of some structural
           // type. We might also have an unconstrained type variable,
           // as with `auto foo();` with no definition.
+          // TODO(zarko): Is "auto" the correct thing to return here for
+          // a DeducedTemplateSpecialization?
           ID = Observer.getNodeIdForBuiltinType("auto");
           break;
         }

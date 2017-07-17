@@ -50,7 +50,7 @@ std::string getMacroExpandedStringInternal(
   typedef clang::MacroInfo::tokens_iterator Iter;
   for (Iter I = MI->tokens_begin(), E = MI->tokens_end(); I != E; ++I) {
     clang::IdentifierInfo *II = I->getIdentifierInfo();
-    int ArgNo = (II && Args ? MI->getArgumentNum(II) : -1);
+    int ArgNo = (II && Args ? MI->getParameterNum(II) : -1);
     if (ArgNo == -1) {
       // This isn't an argument, just add it.
       if (II == nullptr)

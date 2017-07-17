@@ -49,7 +49,7 @@ class ActionFactory : public clang::tooling::ToolAction {
 
   /// \copydoc clang::tooling::ToolAction::runInvocation
   bool runInvocation(
-      clang::CompilerInvocation *invocation, clang::FileManager *files,
+      std::shared_ptr<clang::CompilerInvocation> invocation, clang::FileManager *files,
       std::shared_ptr<clang::PCHContainerOperations> pch_container_ops,
       clang::DiagnosticConsumer *diagnostics) override;
 

@@ -919,7 +919,7 @@ void KytheGraphObserver::applyMetadataFile(clang::FileID id,
   const llvm::MemoryBuffer *buffer =
       SourceManager->getMemoryBufferForFile(file);
   if (!buffer) {
-    fprintf(stderr, "Couldn't get content for %s\n", file->getName());
+    fprintf(stderr, "Couldn't get content for %s\n", file->getName().str().c_str());
     return;
   }
   if (auto metadata = meta_supports_->ParseFile(file->getName(), buffer)) {

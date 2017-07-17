@@ -59,7 +59,8 @@ class IndexerPPCallbacks : public clang::PPCallbacks {
               const clang::MacroDefinition &Macro) override;
 
   void MacroUndefined(const clang::Token &MacroName,
-                      const clang::MacroDefinition &Macro) override;
+                      const clang::MacroDefinition &Macro,
+                      const clang::MacroDirective* Undef) override;
 
   void InclusionDirective(clang::SourceLocation HashLocation,
                           const clang::Token &IncludeToken,

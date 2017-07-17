@@ -49,6 +49,7 @@ cc_library(
         "llvm/build/lib/libLLVMBitReader.a",
         "llvm/build/lib/libLLVMProfileData.a",
         "llvm/build/lib/libLLVMCore.a",
+        "llvm/build/lib/libLLVMBinaryFormat.a",
         "llvm/build/lib/libLLVMSupport.a",
         "llvm/build/lib/libLLVMDemangle.a",
         "//tools/modules:check_modules",
@@ -84,5 +85,5 @@ cc_library(
 
 cc_resources(
     name = "clang_builtin_headers_resources",
-    data = glob(["llvm/build/lib/clang/4.0.0/include/**/*.h"]),
+    data = glob(["llvm/build/lib/clang/5.0.0/include/**/*.h"]),
 )

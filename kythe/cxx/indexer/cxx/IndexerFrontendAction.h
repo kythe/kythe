@@ -142,8 +142,7 @@ class IndexerFrontendAction : public clang::ASTFrontendAction {
         ShouldStopIndexing, CreateWorklist);
   }
 
-  bool BeginSourceFileAction(clang::CompilerInstance &CI,
-                             llvm::StringRef Filename) override {
+  bool BeginSourceFileAction(clang::CompilerInstance &CI) override {
     if (Observer) {
       CI.getPreprocessor().addPPCallbacks(llvm::make_unique<IndexerPPCallbacks>(
           CI.getPreprocessor(), *Observer, Verbosity));
@@ -194,7 +193,7 @@ class StdinAdjustSingleFrontendActionFactory
       : Action(std::move(Action)) {}
 
   bool runInvocation(
-      clang::CompilerInvocation *Invocation, clang::FileManager *Files,
+      std::shared_ptr<clang::CompilerInvocation> Invocation, clang::FileManager *Files,
       std::shared_ptr<clang::PCHContainerOperations> PCHContainerOps,
       clang::DiagnosticConsumer *DiagConsumer) override {
     auto &FEOpts = Invocation->getFrontendOpts();

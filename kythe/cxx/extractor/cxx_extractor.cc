@@ -223,7 +223,8 @@ class ExtractorPPCallbacks : public clang::PPCallbacks {
                     const clang::MacroDirective* macro_directive) override;
 
   void MacroUndefined(const clang::Token& macro_name,
-                      const clang::MacroDefinition& macro_definition) override;
+                      const clang::MacroDefinition& macro_definition,
+                      const clang::MacroDirective* undef) override;
 
   void Defined(const clang::Token& macro_name,
                const clang::MacroDefinition& macro_definition,
@@ -535,7 +536,8 @@ void ExtractorPPCallbacks::MacroDefined(
 
 void ExtractorPPCallbacks::MacroUndefined(
     const clang::Token& macro_name,
-    const clang::MacroDefinition& macro_definition) {
+    const clang::MacroDefinition& macro_definition,
+    const clang::MacroDirective* undef) {
   clang::SourceLocation macro_location = macro_name.getLocation();
   if (!macro_location.isFileID()) {
     return;
@@ -813,7 +815,7 @@ class ExtractorAction : public clang::PreprocessorFrontendAction {
           contents.first->second.vname.CopyFrom(
               index_writer_->VNameForPath(RelativizePath(
                   file->getName(), index_writer_->root_directory())));
-          LOG(INFO) << "added module map content for " << file->getName();
+          LOG(INFO) << "added module map content for " << file->getName().str();
         }
       } else {
         LOG(WARNING) << "Module " << module->Name << " is missing a FileEntry.";

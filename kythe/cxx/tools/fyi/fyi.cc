@@ -557,7 +557,7 @@ void ActionFactory::BeginNextIteration() {
 bool ActionFactory::ShouldRunAgain() { return iterations_ > 0; }
 
 bool ActionFactory::runInvocation(
-    clang::CompilerInvocation *invocation, clang::FileManager *files,
+    std::shared_ptr<clang::CompilerInvocation> invocation, clang::FileManager *files,
     std::shared_ptr<clang::PCHContainerOperations> pch_container_ops,
     clang::DiagnosticConsumer *diagnostics) {
   // ASTUnit::LoadFromCompilerInvocationAction complains about this too, but

@@ -96,7 +96,7 @@ bool HeaderSearchInfo::CopyFrom(
       default:  // clang::DirectoryLookup::LT_HeaderMap:
         // TODO(zarko): Support LT_HeaderMap.
         LOG(WARNING) << "Can't reproduce include lookup state: "
-                     << iter->getName() << " is not a normal directory.";
+                     << iter->getName().str() << " is not a normal directory.";
         return false;
     }
   }

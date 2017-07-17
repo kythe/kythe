@@ -143,7 +143,8 @@ void IndexerPPCallbacks::MacroDefined(const clang::Token &Token,
 }
 
 void IndexerPPCallbacks::MacroUndefined(const clang::Token &MacroName,
-                                        const clang::MacroDefinition &Macro) {
+                                        const clang::MacroDefinition &Macro,
+                                        const clang::MacroDirective* Undef) {
   if (!Macro) {
     return;
   }

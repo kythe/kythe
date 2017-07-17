@@ -113,7 +113,7 @@ const clang::FileEntry* LookupFileForIncludePragma(
                                              : filename,
       is_angled, nullptr /* FromDir */, nullptr /* FromFile */, cur_dir,
       search_path, relative_path, nullptr /* SuggestedModule */,
-      false /* SkipCache */);
+      nullptr /* IsMapped */, false /* SkipCache */);
   if (file == nullptr) {
     fprintf(stderr, "Missing required file %s.\n", filename.str().c_str());
   }
