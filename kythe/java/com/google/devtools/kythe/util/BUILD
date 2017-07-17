@@ -30,3 +30,11 @@ java_library(
     name = "position_mappings",
     srcs = ["PositionMappings.java"],
 )
+
+java_library(
+    name = "qualified_name_extractor",
+    srcs = ["QualifiedNameExtractor.java"],
+    deps = [
+        "//kythe/proto:common_proto_java",
+    ],
+)

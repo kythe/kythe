@@ -25,3 +25,18 @@ java_test(
         "@junit_junit//jar",
     ],
 )
+
+java_test(
+    name = "qualified_name_extractor_test",
+    size = "small",
+    srcs = ["QualifiedNameExtractorTest.java"],
+    test_class = "com.google.devtools.kythe.util.QualifiedNameExtractorTest",
+    deps = [
+        "//kythe/java/com/google/devtools/kythe/util:qualified_name_extractor",
+        "//kythe/proto:common_proto_java",
+        "//third_party/proto:protobuf_java",
+        "@com_google_guava_guava//jar",
+        "@com_google_truth_truth//jar",
+        "@junit_junit//jar",
+    ],
+)
