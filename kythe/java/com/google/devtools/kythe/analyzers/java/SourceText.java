@@ -16,6 +16,7 @@
 
 package com.google.devtools.kythe.analyzers.java;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.devtools.kythe.platform.java.helpers.SyntaxPreservingScanner;
 import com.google.devtools.kythe.platform.java.helpers.SyntaxPreservingScanner.CommentToken;
 import com.google.devtools.kythe.util.PositionMappings;
@@ -122,7 +123,7 @@ public final class SourceText {
 
     @Override
     public boolean contentEquals(CharSequence cs) {
-      return keyword.contentEquals(cs);
+      return keyword.equals(cs.toString());
     }
 
     @Override
@@ -248,7 +249,11 @@ public final class SourceText {
 
     // Adds an identifier location to the lookup table for findIdentifier().
     private void addIdentifier(Name name, Span position) {
-      List<Span> spans = identTable.computeIfAbsent(name, (Name k) -> new ArrayList<>());
+      List<Span> spans = identTable.get(name);
+      if (spans == null) {
+        spans = new ArrayList<>();
+        identTable.put(name, spans);
+      }
       spans.add(
           new Span(charToByteOffset(position.getStart()), charToByteOffset(position.getEnd())));
     }

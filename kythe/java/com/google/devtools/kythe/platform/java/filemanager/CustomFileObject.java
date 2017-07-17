@@ -79,7 +79,9 @@ public class CustomFileObject implements FileObject {
             String.format("Unable to find file with digest %s, path %s", digest, path));
       }
       return result;
-    } catch (InterruptedException | ExecutionException e) {
+    } catch (InterruptedException e) {
+      throw new IOException(e);
+    } catch (ExecutionException e) {
       throw new IOException(e);
     }
   }

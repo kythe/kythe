@@ -9,7 +9,6 @@ java_test(
         "//kythe/java/com/google/devtools/kythe/util",
         "//kythe/proto:storage_proto_java",
         "//third_party/proto:protobuf_java",
-        "@com_google_truth_truth//jar",
         "@junit_junit//jar",
     ],
 )

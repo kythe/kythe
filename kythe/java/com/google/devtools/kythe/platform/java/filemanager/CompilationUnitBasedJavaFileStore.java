@@ -30,8 +30,8 @@ import javax.tools.JavaFileObject.Kind;
 /** An implementation of {@link JavaFileStore} based on data from a {@link CompilationUnit}. */
 public class CompilationUnitBasedJavaFileStore implements JavaFileStore {
   private final CompilationUnitFileTree fileTree;
-  private final FileDataProvider contentProvider;
-  private final Charset encoding;
+  private FileDataProvider contentProvider;
+  private Charset encoding;
 
   public CompilationUnitBasedJavaFileStore(
       CompilationUnit unit, FileDataProvider contentProvider, Charset encoding) {

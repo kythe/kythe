@@ -118,6 +118,6 @@ class UsageAsInputReportingJavaFileObject implements JavaFileObject {
 
   @Override
   public String toString() {
-    return toUri() + "@" + getKind().name();
+    return toUri().toString() + "@" + getKind().name();
   }
 }

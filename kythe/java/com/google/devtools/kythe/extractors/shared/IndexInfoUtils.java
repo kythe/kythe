@@ -70,11 +70,14 @@ public class IndexInfoUtils {
 
   public static void writeIndexInfoToStream(CompilationDescription description, OutputStream stream)
       throws IOException {
-    try (OutputStream indexOutputStream = new GZIPOutputStream(stream)) {
+    OutputStream indexOutputStream = new GZIPOutputStream(stream);
+    try {
       description.getCompilationUnit().writeDelimitedTo(indexOutputStream);
       for (FileData fileContent : description.getFileContents()) {
         fileContent.writeDelimitedTo(indexOutputStream);
       }
+    } finally {
+      indexOutputStream.close();
     }
   }
 

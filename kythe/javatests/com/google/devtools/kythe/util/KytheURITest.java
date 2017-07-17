@@ -16,8 +16,6 @@
 
 package com.google.devtools.kythe.util;
 
-import static com.google.common.truth.Truth.assertThat;
-
 import com.google.devtools.kythe.proto.Storage.VName;
 import java.net.URISyntaxException;
 import junit.framework.TestCase;
@@ -126,7 +124,7 @@ public class KytheURITest extends TestCase {
     KytheURI uri = new KytheURI(signature, corpus, root, path, lang);
     assertEquals(signature, uri.getSignature());
     assertEquals(corpus, uri.getCorpus());
-    assertThat(uri.getRoot()).isEmpty(); // nullToEmpty used
+    assertEquals("", uri.getRoot()); // nullToEmpty used
     assertEquals(path, uri.getPath());
     assertEquals(lang, uri.getLanguage());
   }
@@ -140,7 +138,7 @@ public class KytheURITest extends TestCase {
     VName vname = new KytheURI(signature, corpus, root, path, lang).toVName();
     assertEquals(signature, vname.getSignature());
     assertEquals(corpus, vname.getCorpus());
-    assertThat(vname.getRoot()).isEmpty(); // Proto fields are never null
+    assertEquals("", vname.getRoot()); // Proto fields are never null
     assertEquals(path, vname.getPath());
     assertEquals(lang, vname.getLanguage());
   }

@@ -21,7 +21,6 @@ import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Ordering;
 import com.google.common.hash.Hashing;
 import com.google.devtools.kythe.extractors.java.JavaCompilationUnitExtractor;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
@@ -112,13 +111,15 @@ public abstract class AbstractJavacWrapper {
         }
       }
     } catch (IOException e) {
-      System.err.printf(
-          "Unexpected IO error (probably while writing to index file): %s%n", e.toString());
+      System.err.println(
+          String.format(
+              "Unexpected IO error (probably while writing to index file): %s", e.toString()));
       System.err.println(Throwables.getStackTraceAsString(e));
       System.exit(2);
     } catch (Exception e) {
-      System.err.printf(
-          "Unexpected error compiling and indexing java compilation: %s%n", e.toString());
+      System.err.println(
+          String.format(
+              "Unexpected error compiling and indexing java compilation: %s", e.toString()));
       System.err.println(Throwables.getStackTraceAsString(e));
       System.exit(2);
     }
@@ -184,17 +185,18 @@ public abstract class AbstractJavacWrapper {
   }
 
   protected static String createTargetFromSourceFiles(List<String> sourceFiles) {
-    List<String> sortedSourceFiles = Ordering.natural().sortedCopy(sourceFiles);
+    List<String> sortedSourceFiles = Lists.newArrayList(sourceFiles);
+    Collections.sort(sortedSourceFiles);
     String joinedSourceFiles = Joiner.on(":").join(sortedSourceFiles);
-    return "#" + Hashing.sha256().hashUnencodedChars(joinedSourceFiles);
+    return "#" + Hashing.sha256().hashUnencodedChars(joinedSourceFiles).toString();
   }
 
   protected static List<String> splitPaths(String path) {
-    return path == null ? Collections.<String>emptyList() : Splitter.on(':').splitToList(path);
+    return path == null ? Collections.<String>emptyList() : Splitter.on(":").splitToList(path);
   }
 
   protected static List<String> splitCSV(String lst) {
-    return lst == null ? Collections.<String>emptyList() : Splitter.on(',').splitToList(lst);
+    return lst == null ? Collections.<String>emptyList() : Splitter.on(",").splitToList(lst);
   }
 
   static String readEnvironmentVariable(String variableName) {
@@ -210,7 +212,7 @@ public abstract class AbstractJavacWrapper {
     }
     if (Strings.isNullOrEmpty(result)) {
       if (Strings.isNullOrEmpty(defaultValue)) {
-        System.err.printf("Missing environment variable: %s%n", variableName);
+        System.err.println(String.format("Missing environment variable: %s", variableName));
         System.exit(1);
       }
       result = defaultValue;

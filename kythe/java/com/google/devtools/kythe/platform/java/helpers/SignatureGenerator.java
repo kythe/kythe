@@ -227,7 +227,7 @@ public class SignatureGenerator
 
   @Override
   public Void visitType(TypeElement e, StringBuilder sbout) {
-    if (e.getQualifiedName().contentEquals(ARRAY_HELPER_CLASS)) {
+    if (e.getQualifiedName().toString().equals(ARRAY_HELPER_CLASS)) {
       sbout.append(getArrayTypeName());
     } else {
       if (!visitedElements.containsKey(e)) {
@@ -360,7 +360,7 @@ public class SignatureGenerator
     if (tsym.type.getKind() != TypeKind.NONE) {
       if (!visitedElements.containsKey(e)) {
         StringBuilder sb = new StringBuilder();
-        sb.append(tsym.name);
+        sb.append(tsym.name.toString());
         // Don't use TypeKind to check the upper bound, because java 8 introduces a new kind for
         // intersection types. We can't use TypeKind.INTERSECTION until we're using JDK8, since
         // javax.lang.model.* classes come from the runtime.
@@ -416,10 +416,10 @@ public class SignatureGenerator
       if (t.getEnclosingType().getKind() != TypeKind.NONE) {
         t.getEnclosingType().accept(this, sb);
       } else {
-        sb.append(t.tsym.owner.getQualifiedName());
+        sb.append(t.tsym.owner.getQualifiedName().toString());
       }
       sb.append(".");
-      sb.append(t.tsym.name);
+      sb.append(t.tsym.name.toString());
       visitTypeArguments(t.getTypeArguments(), sb);
       visitedTypes.put(t, sb.toString());
     }
@@ -443,9 +443,9 @@ public class SignatureGenerator
     if (!visitedTypes.containsKey(t)) {
       StringBuilder sb = new StringBuilder();
       if (t.isPrimitive()) {
-        sb.append(t.tsym.name);
+        sb.append(t.tsym.name.toString());
       } else if (t.getKind() == TypeKind.VOID) {
-        sb.append(t.tsym.name);
+        sb.append(t.tsym.name.toString());
       }
       visitedTypes.put(t, sb.toString());
     }
@@ -456,12 +456,12 @@ public class SignatureGenerator
   @Override
   public Void visitTypeVar(TypeVar t, StringBuilder sbout) {
     if (boundedVars.contains(t)) {
-      sbout.append(t.tsym.name);
+      sbout.append(t.tsym.name.toString());
     } else {
       if (!visitedTypes.containsKey(t)) {
         StringBuilder sb = new StringBuilder();
         t.tsym.owner.accept(this, sb);
-        sb.append("~").append(t.tsym.name);
+        sb.append("~").append(t.tsym.name.toString());
         visitedTypes.put(t, sb.toString());
       }
       sbout.append(visitedTypes.get(t));
@@ -486,7 +486,7 @@ public class SignatureGenerator
   public Void visitWildcardType(WildcardType t, StringBuilder sbout) {
     if (!visitedTypes.containsKey(t)) {
       StringBuilder sb = new StringBuilder();
-      sb.append(t.kind);
+      sb.append(t.kind.toString());
       if (t.kind == BoundKind.EXTENDS) {
         t.getExtendsBound().accept(this, sb);
       } else if (t.kind == BoundKind.SUPER) {
@@ -633,7 +633,7 @@ public class SignatureGenerator
 
     @Override
     protected void append(Name name) {
-      sb.append(name);
+      sb.append(name.toString());
     }
 
     @Override

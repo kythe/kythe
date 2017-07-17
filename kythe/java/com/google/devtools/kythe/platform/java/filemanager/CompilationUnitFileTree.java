@@ -28,7 +28,7 @@ public class CompilationUnitFileTree {
    * Map from a directory path to file entries in that directory. Each file entry is a pair of file
    * name and file's digest.
    */
-  private final Map<String, Map<String, String>> dirs = new HashMap<>();
+  private Map<String, Map<String, String>> dirs = new HashMap<>();
 
   public static final String DIRECTORY_DIGEST = "<dir>";
 
@@ -60,7 +60,11 @@ public class CompilationUnitFileTree {
       dirname = ".";
     }
     String basename = path.getFileName().toString();
-    Map<String, String> dir = dirs.computeIfAbsent(dirname, (String k) -> new HashMap<>());
+    Map<String, String> dir = dirs.get(dirname);
+    if (dir == null) {
+      dir = new HashMap<>();
+      dirs.put(dirname, dir);
+    }
     String existing = dir.get(digest);
     if (existing != null && !existing.equals(digest)) {
       throw new IllegalStateException("Trying to register conflicting digests for the same path");

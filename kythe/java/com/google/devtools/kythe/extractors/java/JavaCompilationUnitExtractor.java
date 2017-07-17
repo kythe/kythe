@@ -16,7 +16,6 @@
 
 package com.google.devtools.kythe.extractors.java;
 
-import static com.google.common.base.StandardSystemProperty.JAVA_HOME;
 import static java.nio.file.LinkOption.NOFOLLOW_LINKS;
 
 import com.google.common.base.Charsets;
@@ -29,6 +28,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 import com.google.common.io.ByteStreams;
 import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
@@ -152,7 +152,7 @@ public class JavaCompilationUnitExtractor {
       throws ExtractionException {
     this.fileVNames = fileVNames;
 
-    Path javaHome = Paths.get(JAVA_HOME.value()).getParent();
+    Path javaHome = Paths.get(System.getProperty("java.home")).getParent();
     try {
       // Remove trailing dots.  Interesting trivia: in some build systems,
       // the java.home variable is terminated with "/bin/..".
@@ -279,7 +279,7 @@ public class JavaCompilationUnitExtractor {
       if (sourceBasename != null
           && vname.getPath().endsWith(".java")
           && !vname.getPath().endsWith(sourceBasename)) {
-        Path fixedPath = Paths.get(vname.getPath()).resolveSibling(sourceBasename);
+        Path fixedPath = Paths.get(vname.getPath()).getParent().resolve(sourceBasename);
         vname = vname.toBuilder().setPath(fixedPath.toString()).build();
       }
       compilationFileInputs.add(
@@ -343,7 +343,7 @@ public class JavaCompilationUnitExtractor {
         JavaFileObject firstClass =
             Iterables.getFirst(
                 fileManager.list(
-                    StandardLocation.CLASS_PATH, pkg.getKey(), EnumSet.of(Kind.CLASS), false),
+                    StandardLocation.CLASS_PATH, pkg.getKey(), Sets.newHashSet(Kind.CLASS), false),
                 null);
         if (firstClass == null) {
           firstClass =
@@ -351,7 +351,7 @@ public class JavaCompilationUnitExtractor {
                   fileManager.list(
                       StandardLocation.PLATFORM_CLASS_PATH,
                       pkg.getKey(),
-                      EnumSet.of(Kind.CLASS),
+                      Sets.newHashSet(Kind.CLASS),
                       false),
                   null);
         }
@@ -361,7 +361,10 @@ public class JavaCompilationUnitExtractor {
         JavaFileObject firstSource =
             Iterables.getFirst(
                 fileManager.list(
-                    StandardLocation.SOURCE_PATH, pkg.getKey(), EnumSet.of(Kind.SOURCE), false),
+                    StandardLocation.SOURCE_PATH,
+                    pkg.getKey(),
+                    Sets.newHashSet(Kind.SOURCE),
+                    false),
                 null);
         if (firstSource != null) {
           firstSource.getCharContent(true);
@@ -447,12 +450,12 @@ public class JavaCompilationUnitExtractor {
       if (conn instanceof JarURLConnection) {
         isJarPath = true;
         JarURLConnection jarConn = ((JarURLConnection) conn);
-        jarPath = jarConn.getJarFileURL().getFile();
+        jarPath = jarConn.getJarFileURL().getFile().toString();
         // jar entries don't have a leading '/', and we expect
         // paths like "!CLASS_PATH_JAR!/com/foo/Bar.class"
         entryPath = "/" + jarConn.getEntryName();
       } else {
-        entryPath = url.getFile();
+        entryPath = url.getFile().toString();
       }
     }
 
@@ -667,7 +670,8 @@ public class JavaCompilationUnitExtractor {
           "Could not get system Java compiler; are you missing the JDK?");
     }
 
-    DiagnosticCollector<JavaFileObject> diagnosticsCollector = new DiagnosticCollector<>();
+    DiagnosticCollector<JavaFileObject> diagnosticsCollector =
+        new DiagnosticCollector<JavaFileObject>();
 
     StandardJavaFileManager standardFileManager =
         compiler.getStandardFileManager(diagnosticsCollector, null, null);

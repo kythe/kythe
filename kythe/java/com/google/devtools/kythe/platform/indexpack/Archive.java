@@ -18,7 +18,7 @@ package com.google.devtools.kythe.platform.indexpack;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicates;
+import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.hash.HashFunction;
@@ -201,7 +201,12 @@ public class Archive {
                 }
               }
             }),
-        Predicates.notNull());
+        new Predicate<T>() {
+          @Override
+          public boolean apply(T unit) {
+            return unit != null;
+          }
+        });
   }
 
   /**
@@ -262,7 +267,7 @@ public class Archive {
   }
 
   private static String writeData(Path dir, String suffix, byte[] data) throws IOException {
-    File tempFile = dir.resolve(UUID.randomUUID() + NEW_SUFFIX).toFile();
+    File tempFile = dir.resolve(UUID.randomUUID().toString() + NEW_SUFFIX).toFile();
     try (OutputStream intermediary = new FileOutputStream(tempFile);
         OutputStream output = new GZIPOutputStream(intermediary)) {
       output.write(data);

@@ -17,7 +17,6 @@
 package com.google.devtools.kythe.extractors.shared;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.StandardSystemProperty.USER_DIR;
 import static com.google.common.hash.Hashing.sha256;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -25,7 +24,6 @@ import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Ordering;
 import com.google.common.io.Files;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
@@ -39,6 +37,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -152,7 +151,7 @@ public class ExtractorUtils {
   }
 
   public static String getCurrentWorkingDirectory() {
-    return USER_DIR.value();
+    return System.getProperty("user.dir");
   }
 
   public static String digestForPath(String path) throws NoSuchAlgorithmException, IOException {
@@ -171,9 +170,8 @@ public class ExtractorUtils {
 
   public static CompilationUnit normalizeCompilationUnit(CompilationUnit existingCompilationUnit) {
     CompilationUnit.Builder builder = CompilationUnit.newBuilder(existingCompilationUnit);
-    List<FileInput> oldRequiredInputs =
-        Ordering.from(CompilationFileInputComparator.getComparator())
-            .sortedCopy(builder.getRequiredInputList());
+    List<FileInput> oldRequiredInputs = Lists.newArrayList(builder.getRequiredInputList());
+    Collections.sort(oldRequiredInputs, CompilationFileInputComparator.getComparator());
     builder.clearRequiredInput();
     builder.addAllRequiredInput(oldRequiredInputs);
     existingCompilationUnit = builder.build();

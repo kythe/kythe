@@ -106,7 +106,8 @@ public class JsonUtil {
 
     @Override
     public ByteString deserialize(
-        JsonElement json, Type typeOfT, JsonDeserializationContext context) {
+        JsonElement json, Type typeOfT, JsonDeserializationContext context)
+        throws JsonParseException {
       return ByteString.copyFrom((byte[]) context.deserialize(json, byte[].class));
     }
   }
@@ -121,7 +122,8 @@ public class JsonUtil {
     }
 
     @Override
-    public byte[] deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) {
+    public byte[] deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+        throws JsonParseException {
       return ENCODING.decode((String) context.deserialize(json, String.class));
     }
   }
@@ -130,7 +132,7 @@ public class JsonUtil {
       implements JsonSerializer<LazyStringList>, JsonDeserializer<LazyStringList> {
     @Override
     public JsonElement serialize(LazyStringList lsl, Type t, JsonSerializationContext ctx) {
-      ArrayList<String> elements = new ArrayList<>(lsl.size());
+      ArrayList<String> elements = new ArrayList<String>(lsl.size());
       for (byte[] element : lsl.asByteArrayList()) {
         elements.add(new String(element));
       }
@@ -138,7 +140,8 @@ public class JsonUtil {
     }
 
     @Override
-    public LazyStringList deserialize(JsonElement json, Type t, JsonDeserializationContext ctx) {
+    public LazyStringList deserialize(JsonElement json, Type t, JsonDeserializationContext ctx)
+        throws JsonParseException {
       if (json.isJsonNull()) {
         return null;
       }
@@ -161,8 +164,8 @@ public class JsonUtil {
 
     @Override
     @SuppressWarnings("unchecked")
-    public ProtocolMessageEnum deserialize(
-        JsonElement json, Type t, JsonDeserializationContext ctx) {
+    public ProtocolMessageEnum deserialize(JsonElement json, Type t, JsonDeserializationContext ctx)
+        throws JsonParseException {
       int num = json.getAsJsonPrimitive().getAsInt();
       Class<? extends ProtocolMessageEnum> enumClass = (Class<? extends ProtocolMessageEnum>) t;
       try {

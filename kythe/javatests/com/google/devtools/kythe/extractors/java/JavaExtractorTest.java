@@ -307,9 +307,9 @@ public class JavaExtractorTest extends TestCase {
             makeFileInfo(classFile, join(TEST_DATA_DIR, "parent/base/A.class")));
 
     JavaDetails details = getJavaDetails(unit);
-    assertThat(details.getSourcepathList()).hasSize(1);
+    assertEquals(1, details.getSourcepathList().size());
     assertEquals(join(TEST_DATA_DIR, "child"), details.getSourcepathList().get(0));
-    assertThat(details.getClasspathList()).hasSize(1);
+    assertEquals(1, details.getClasspathList().size());
     // Ensure the magic !CLASS_PATH_JAR! classpath is added.
     assertEquals("!CLASS_PATH_JAR!", details.getClasspathList().get(0));
   }
@@ -349,9 +349,9 @@ public class JavaExtractorTest extends TestCase {
     assertThat(unit.getSourceFileList()).containsExactly(sources.get(0)).inOrder();
 
     JavaDetails details = getJavaDetails(unit);
-    assertThat(details.getSourcepathList()).hasSize(1);
+    assertEquals(1, details.getSourcepathList().size());
     assertEquals(TEST_DATA_DIR, details.getSourcepathList().get(0));
-    assertThat(details.getClasspathList()).isEmpty();
+    assertEquals(0, details.getClasspathList().size());
   }
 
   /** Tests that dependent files are ordered correctly. */
@@ -430,9 +430,9 @@ public class JavaExtractorTest extends TestCase {
 
     // And the correct sourcepath set to replay the compilation.
     JavaDetails details = getJavaDetails(unit);
-    assertThat(details.getSourcepathList()).hasSize(1);
+    assertEquals(1, details.getSourcepathList().size());
     assertEquals(TEST_DATA_DIR, details.getSourcepathList().get(0));
-    assertThat(details.getClasspathList()).isEmpty();
+    assertEquals(0, details.getClasspathList().size());
   }
 
   /**
@@ -518,7 +518,7 @@ public class JavaExtractorTest extends TestCase {
     }
 
     // Copy sources from runfiles into test dir
-    List<String> testSources = new ArrayList<>();
+    List<String> testSources = new ArrayList<String>();
     for (String source : origSources) {
       Path destFile = Paths.get(testDir).resolve(source);
       Files.createDirectories(destFile.getParent());
@@ -571,7 +571,7 @@ public class JavaExtractorTest extends TestCase {
     genSrcDir.toFile().mkdir();
 
     // Copy sources from runfiles into test dir
-    List<String> testSources = new ArrayList<>();
+    List<String> testSources = new ArrayList<String>();
     for (String source : origSources) {
       Path destFile = Paths.get(testDir).resolve(source);
       Files.createDirectories(destFile.getParent());
@@ -611,10 +611,10 @@ public class JavaExtractorTest extends TestCase {
 
     // And the correct sourcepath set to replay the compilation.
     JavaDetails details = getJavaDetails(unit);
-    assertThat(details.getSourcepathList()).hasSize(2);
+    assertEquals(2, details.getSourcepathList().size());
     assertThat(details.getSourcepathList())
         .containsExactly(TEST_DATA_DIR, "output-gensrc.jar.files");
-    assertThat(details.getClasspathList()).isEmpty();
+    assertEquals(0, details.getClasspathList().size());
   }
 
   /** Tests that the extractor doesn't fall over when it's provided with no sources. */
@@ -647,8 +647,8 @@ public class JavaExtractorTest extends TestCase {
 
     // And the correct classpath set to replay the compilation.
     JavaDetails details = getJavaDetails(unit);
-    assertThat(details.getSourcepathList()).isEmpty();
-    assertThat(details.getClasspathList()).isEmpty();
+    assertEquals(0, details.getSourcepathList().size());
+    assertEquals(0, details.getClasspathList().size());
   }
 
   /**
@@ -682,7 +682,7 @@ public class JavaExtractorTest extends TestCase {
     assertThat(unit.getSourceFileList()).containsExactly(sources.get(0)).inOrder();
 
     assertEquals(2, unit.getRequiredInputCount());
-    List<String> requiredPaths = new ArrayList<>();
+    List<String> requiredPaths = new ArrayList<String>();
     for (FileInput input : unit.getRequiredInputList()) {
       requiredPaths.add(input.getInfo().getPath());
     }
@@ -700,7 +700,7 @@ public class JavaExtractorTest extends TestCase {
   }
 
   private List<String> testFiles(String... files) {
-    List<String> res = new ArrayList<>();
+    List<String> res = new ArrayList<String>();
     for (String file : files) {
       res.add(join(TEST_DATA_DIR, file));
     }

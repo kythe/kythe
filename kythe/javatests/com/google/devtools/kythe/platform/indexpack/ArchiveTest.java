@@ -16,8 +16,6 @@
 
 package com.google.devtools.kythe.platform.indexpack;
 
-import static com.google.common.truth.Truth.assertThat;
-
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
@@ -143,11 +141,11 @@ public class ArchiveTest extends TestCase {
     Iterator<CompilationUnit> it = archive.readUnits();
     while (it.hasNext()) {
       CompilationUnit unit = it.next();
-      assertThat(toRead).contains(unit);
+      assertTrue(toRead.contains(unit));
       toRead.remove(unit);
     }
 
-    assertThat(toRead).isEmpty();
+    assertEquals(0, toRead.size());
   }
 
   public void testWriteDescription() throws IOException {
@@ -166,11 +164,11 @@ public class ArchiveTest extends TestCase {
     Iterator<CompilationDescription> it = archive.readDescriptions();
     while (it.hasNext()) {
       CompilationDescription desc = it.next();
-      assertThat(toRead).contains(desc);
+      assertTrue(toRead.contains(desc));
       toRead.remove(desc);
     }
 
-    assertThat(toRead).isEmpty();
+    assertEquals(0, toRead.size());
   }
 
   private static byte[] createTestData(int i) {
@@ -210,6 +208,6 @@ public class ArchiveTest extends TestCase {
   }
 
   private void assertArrayEquals(byte[] exp, byte[] a) {
-    assertThat(a).isEqualTo(exp);
+    assertTrue(Arrays.equals(exp, a));
   }
 }

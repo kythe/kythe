@@ -24,7 +24,6 @@ import com.google.devtools.kythe.proto.Java.JavaDetails;
 import com.google.protobuf.Any;
 import com.google.protobuf.InvalidProtocolBufferException;
 import java.nio.charset.Charset;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -98,11 +97,13 @@ public class CompilationUnitBasedJavaFileManager extends JavaFileStoreBasedFileM
           throw new IllegalArgumentException("Malformed " + optName + " argument");
         }
         Set<String> paths = new HashSet<>();
-        Collections.addAll(paths, options.get(i + 1).split(":"));
+        for (String path : options.get(i + 1).split(":")) {
+          paths.add(path);
+        }
         return paths;
       }
     }
-    return new HashSet<>();
+    return new HashSet<String>();
   }
 
   private static JavaDetails getDetails(CompilationUnit unit) {

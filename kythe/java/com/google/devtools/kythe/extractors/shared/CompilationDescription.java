@@ -44,7 +44,7 @@ public class CompilationDescription {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(compilationUnit);
+    return Objects.hash(compilationUnit);
   }
 
   @Override
