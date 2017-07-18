@@ -16,10 +16,12 @@
 
 package com.google.devtools.kythe.analyzers.java;
 
+import com.google.common.base.Ascii;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Streams;
 import com.google.common.io.ByteStreams;
 import com.google.devtools.kythe.analyzers.base.EdgeKind;
 import com.google.devtools.kythe.analyzers.base.EntrySet;
@@ -88,7 +90,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Name;
@@ -232,7 +233,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
             entrySets.newPackageNodeAndEmit(imprtField.selected.toString()).getVName());
       }
 
-      if (imprtField.name.toString().equals("*")) {
+      if (imprtField.name.contentEquals("*")) {
         return null;
       }
 
@@ -685,7 +686,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     if (verboseLogging && primitiveType.typetag == TypeTag.ERROR) {
       logger.warning("found primitive ERROR type: " + ctx);
     }
-    String name = primitiveType.typetag.toString().toLowerCase();
+    String name = Ascii.toLowerCase(primitiveType.typetag.toString());
     EntrySet node = entrySets.newBuiltinAndEmit(name);
     emitAnchor(ctx, EdgeKind.REF, node.getVName());
     return new JavaNode(node);
@@ -801,9 +802,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   }
 
   private static List<VName> toVNames(Iterable<JavaNode> nodes) {
-    return StreamSupport.stream(nodes.spliterator(), false)
-        .map(JavaNode::getVName)
-        .collect(Collectors.toList());
+    return Streams.stream(nodes).map(JavaNode::getVName).collect(Collectors.toList());
   }
 
   // TODO When we want to refer to a type or method that is generic, we need to point to the abs
@@ -832,7 +831,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       List<JCExpression> bounds = tParam.getBounds();
       List<JavaNode> boundNodes =
           bounds.stream().map(expr -> scan(expr, ctx)).collect(Collectors.toList());
-      if (boundNodes.size() == 0) {
+      if (boundNodes.isEmpty()) {
         boundNodes.add(getJavaLangObjectNode());
       }
       emitOrdinalEdges(node, EdgeKind.BOUNDED_UPPER, boundNodes);
@@ -997,7 +996,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   // Creates/emits an anchor and an associated edge
   private EntrySet emitAnchor(EntrySet anchor, EdgeKind kind, VName node) {
     Preconditions.checkArgument(
-        kind.isAnchorEdge(), "EdgeKind was not intended for ANCHORs: " + kind);
+        kind.isAnchorEdge(), "EdgeKind was not intended for ANCHORs: %s", kind);
     if (anchor == null) {
       return null;
     }
@@ -1120,7 +1119,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         }
         JCIdent lhs = (JCIdent) assignArg.lhs;
         JCLiteral rhs = (JCLiteral) assignArg.rhs;
-        if (!lhs.name.toString().equals("comments") || !(rhs.getValue() instanceof String)) {
+        if (!lhs.name.contentEquals("comments") || !(rhs.getValue() instanceof String)) {
           continue;
         }
         String comments = (String) rhs.getValue();

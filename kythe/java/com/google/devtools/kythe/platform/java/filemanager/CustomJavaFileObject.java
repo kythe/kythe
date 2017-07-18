@@ -27,7 +27,7 @@ import javax.tools.JavaFileObject;
 public class CustomJavaFileObject extends CustomFileObject implements JavaFileObject {
 
   private final String className;
-  private Kind kind;
+  private final Kind kind;
 
   public CustomJavaFileObject(
       FileDataProvider contentProvider,

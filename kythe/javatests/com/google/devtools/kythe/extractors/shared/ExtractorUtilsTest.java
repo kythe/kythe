@@ -16,6 +16,8 @@
 
 package com.google.devtools.kythe.extractors.shared;
 
+import static com.google.common.base.StandardSystemProperty.USER_DIR;
+import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertArrayEquals;
 
 import com.google.common.collect.Lists;
@@ -55,9 +57,9 @@ public class ExtractorUtilsTest extends TestCase {
     data.put("a/b/c", new byte[] {1, 2, 3});
     data.put("d/e/f", new byte[] {4, 5, 6});
     List<FileData> results = ExtractorUtils.convertBytesToFileDatas(data);
-    assertEquals(2, results.size());
+    assertThat(results).hasSize(2);
     for (FileData entry : results) {
-      assertTrue(data.containsKey(entry.getInfo().getPath()));
+      assertThat(data).containsKey(entry.getInfo().getPath());
       byte[] input = data.get(entry.getInfo().getPath());
       assertArrayEquals(input, entry.getContent().toByteArray());
       assertEquals(ExtractorUtils.getContentDigest(input), entry.getInfo().getDigest());
@@ -70,7 +72,7 @@ public class ExtractorUtilsTest extends TestCase {
 
     byte[] content = Files.toByteArray(new File(path));
 
-    assertEquals(1, fds.size());
+    assertThat(fds).hasSize(1);
     FileData fd = fds.get(0);
     assertEquals(path, fd.getInfo().getPath());
     assertEquals(ExtractorUtils.getContentDigest(content), fd.getInfo().getDigest());
@@ -88,13 +90,13 @@ public class ExtractorUtilsTest extends TestCase {
                     .setContent(ByteString.copyFromUtf8(content))
                     .setInfo(FileInfo.newBuilder().setDigest(digest).setPath(path).build())
                     .build()));
-    assertEquals(1, cfis.size());
+    assertThat(cfis).hasSize(1);
     assertEquals(digest, cfis.get(0).getInfo().getDigest());
     assertEquals(path, cfis.get(0).getInfo().getPath());
   }
 
   public void testTryMakeRelative() {
-    String cwd = System.getProperty("user.dir");
+    String cwd = USER_DIR.value();
     assertEquals(cwd + "/relative", ExtractorUtils.tryMakeRelative("/someroot", "relative"));
     assertEquals(cwd + "/relative/sd", ExtractorUtils.tryMakeRelative("/someroot", "relative/sd"));
     assertEquals(
@@ -113,7 +115,7 @@ public class ExtractorUtilsTest extends TestCase {
   }
 
   public void testGetCurrentWorkingDirectory() {
-    assertEquals(System.getProperty("user.dir"), ExtractorUtils.getCurrentWorkingDirectory());
+    assertEquals(USER_DIR.value(), ExtractorUtils.getCurrentWorkingDirectory());
   }
 
   public void testGetContentDigest() throws NoSuchAlgorithmException {

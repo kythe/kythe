@@ -87,7 +87,7 @@ public class BlockAnonymousSignatureGenerator
   // Holds the signature for each anonymous class.
   // Anonymous classes are numbered with respect to their first enclosing class declaration or
   // block. They are numbered from zero.
-  private Map<Tree, String> blockAnonymousMap = new HashMap<Tree, String>();
+  private final Map<Tree, String> blockAnonymousMap = new HashMap<>();
 
   /**
    * @param element
@@ -172,7 +172,7 @@ public class BlockAnonymousSignatureGenerator
   @Override
   public Void visitClass(ClassTree classTree, BlockAnonymousData blockData) {
     JCClassDecl classDecl = (JCClassDecl) classTree;
-    if (classTree.getSimpleName().toString().equals("")) {
+    if (classTree.getSimpleName().contentEquals("")) {
       StringBuilder anonymousClassSignature = new StringBuilder();
       anonymousClassSignature.append(getBlockSignature(classDecl.sym));
       anonymousClassSignature.append(SignatureGenerator.ANONYMOUS);

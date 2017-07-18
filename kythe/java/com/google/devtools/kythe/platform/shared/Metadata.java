@@ -17,14 +17,10 @@
 package com.google.devtools.kythe.platform.shared;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.MultimapBuilder;
 import com.google.devtools.kythe.analyzers.base.EdgeKind;
 import com.google.devtools.kythe.proto.Storage.VName;
-import java.util.Collections;
-import java.util.List;
-import java.util.TreeMap;
 
 /**
  * Metadata provides rules for emitting new edges when edges of certain kinds are emitted. An
@@ -68,7 +64,8 @@ public class Metadata {
   }
 
   /** All of the {@link Rule} instances, keyed on their starting offsets. */
-  private ListMultimap<Integer, Rule> rules = MultimapBuilder.treeKeys().arrayListValues().build();
+  private final ListMultimap<Integer, Rule> rules =
+      MultimapBuilder.treeKeys().arrayListValues().build();
 
   /**
    * A class's javax.annotation.Generated must have a comments field with this string as a prefix to

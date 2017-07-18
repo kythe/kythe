@@ -23,7 +23,7 @@ import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
 public class FormattingLogger {
-  private Logger logger;
+  private final Logger logger;
 
   public FormattingLogger() {
     this(Logger.getAnonymousLogger());
@@ -182,11 +182,10 @@ public class FormattingLogger {
 
     // Classes that appear at the tail of a stack trace coming from #publish(LogRecord).
     private static final ImmutableSet<String> LOGGER_CLASSES =
-        ImmutableSet.<String>builder()
-            .add("com.google.devtools.kythe.common.FormattingLogger$SetSourceHandler")
-            .add("java.util.logging.Logger")
-            .add("com.google.devtools.kythe.common.FormattingLogger")
-            .build();
+        ImmutableSet.of(
+            "com.google.devtools.kythe.common.FormattingLogger$SetSourceHandler",
+            "java.util.logging.Logger",
+            "com.google.devtools.kythe.common.FormattingLogger");
 
     @Override
     public void publish(LogRecord record) {

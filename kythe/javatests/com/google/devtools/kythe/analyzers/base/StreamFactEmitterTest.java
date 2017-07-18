@@ -50,6 +50,6 @@ public class StreamFactEmitterTest extends TestCase {
     assertNotNull(entry);
     assertEquals(entry.getSource(), testVName);
     assertEquals(entry.getFactName(), testFactName);
-    assertEquals(entry.getFactValue().toString(UTF_8), testFactValue);
+    assertEquals(entry.getFactValue().toStringUtf8(), testFactValue);
   }
 }

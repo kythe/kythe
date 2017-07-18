@@ -90,8 +90,8 @@ public class JavaFileStoreBasedFileManager
     }
 
     // TODO(schroederc): handle case where some of the package is in the JavaFileStore, but not all
-    if (matchingFiles.size() > 0) {
-      return new ArrayList<JavaFileObject>(matchingFiles);
+    if (!matchingFiles.isEmpty()) {
+      return new ArrayList<>(matchingFiles);
     }
 
     List<JavaFileObject> matchedFiles = new ArrayList<>();

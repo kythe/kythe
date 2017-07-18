@@ -55,7 +55,7 @@ public class JavaEntrySets extends KytheEntrySets {
   private final boolean ignoreVNamePaths;
   private final boolean ignoreVNameRoots;
   private final String overrideJdkCorpus;
-  private Map<String, Integer> sourceToWildcardCounter = new HashMap<>();
+  private final Map<String, Integer> sourceToWildcardCounter = new HashMap<>();
 
   public JavaEntrySets(
       StatisticsCollector statistics,

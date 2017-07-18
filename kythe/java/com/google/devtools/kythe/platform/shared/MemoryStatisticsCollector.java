@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /** {@link StatisticsCollector} backed by an in-memory map that can be printed. */
 public class MemoryStatisticsCollector implements StatisticsCollector {
-  private final Map<String, AtomicLong> counters = new HashMap<String, AtomicLong>();
+  private final Map<String, AtomicLong> counters = new HashMap<>();
 
   /** Prints the current statistics to the given {@link PrintStream}. */
   public synchronized void printStatistics(PrintStream out) {

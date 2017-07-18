@@ -35,7 +35,6 @@ import com.google.protobuf.LazyStringArrayList;
 import com.google.protobuf.LazyStringList;
 import com.google.protobuf.ProtocolMessageEnum;
 import com.google.protobuf.util.JsonFormat;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 
@@ -88,7 +87,7 @@ public class JsonUtil {
         String msg = json instanceof JsonPrimitive ? json.getAsString() : json.toString();
         PARSER.merge(msg, protoBuilder);
         return (GeneratedMessageV3) protoBuilder.build();
-      } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+      } catch (ReflectiveOperationException e) {
         throw new JsonParseException(
             "failed to retrieve Message.Builder while parsing proto3 message", e);
       } catch (InvalidProtocolBufferException e) {
@@ -106,8 +105,7 @@ public class JsonUtil {
 
     @Override
     public ByteString deserialize(
-        JsonElement json, Type typeOfT, JsonDeserializationContext context)
-        throws JsonParseException {
+        JsonElement json, Type typeOfT, JsonDeserializationContext context) {
       return ByteString.copyFrom((byte[]) context.deserialize(json, byte[].class));
     }
   }
@@ -122,8 +120,7 @@ public class JsonUtil {
     }
 
     @Override
-    public byte[] deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
-        throws JsonParseException {
+    public byte[] deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) {
       return ENCODING.decode((String) context.deserialize(json, String.class));
     }
   }
@@ -132,7 +129,7 @@ public class JsonUtil {
       implements JsonSerializer<LazyStringList>, JsonDeserializer<LazyStringList> {
     @Override
     public JsonElement serialize(LazyStringList lsl, Type t, JsonSerializationContext ctx) {
-      ArrayList<String> elements = new ArrayList<String>(lsl.size());
+      ArrayList<String> elements = new ArrayList<>(lsl.size());
       for (byte[] element : lsl.asByteArrayList()) {
         elements.add(new String(element));
       }
@@ -140,8 +137,7 @@ public class JsonUtil {
     }
 
     @Override
-    public LazyStringList deserialize(JsonElement json, Type t, JsonDeserializationContext ctx)
-        throws JsonParseException {
+    public LazyStringList deserialize(JsonElement json, Type t, JsonDeserializationContext ctx) {
       if (json.isJsonNull()) {
         return null;
       }
@@ -164,8 +160,8 @@ public class JsonUtil {
 
     @Override
     @SuppressWarnings("unchecked")
-    public ProtocolMessageEnum deserialize(JsonElement json, Type t, JsonDeserializationContext ctx)
-        throws JsonParseException {
+    public ProtocolMessageEnum deserialize(
+        JsonElement json, Type t, JsonDeserializationContext ctx) {
       int num = json.getAsJsonPrimitive().getAsInt();
       Class<? extends ProtocolMessageEnum> enumClass = (Class<? extends ProtocolMessageEnum>) t;
       try {

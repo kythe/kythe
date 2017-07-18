@@ -25,7 +25,6 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonParseException;
 import com.google.gson.reflect.TypeToken;
 import com.google.re2j.Matcher;
 import com.google.re2j.Pattern;
@@ -154,7 +153,7 @@ public class FileVNames {
 
     private static String fillIn(String tmpl, Matcher m) {
       Matcher replacers = replacerMatcher.matcher(tmpl);
-      Stack<ReplacementMarker> matches = new Stack<ReplacementMarker>();
+      Stack<ReplacementMarker> matches = new Stack<>();
       while (replacers.find()) {
         matches.push(
             new ReplacementMarker(
@@ -189,8 +188,7 @@ public class FileVNames {
 
   private static class PatternDeserializer implements JsonDeserializer<Pattern> {
     @Override
-    public Pattern deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
-        throws JsonParseException {
+    public Pattern deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) {
       return Pattern.compile(json.getAsJsonPrimitive().getAsString());
     }
   }

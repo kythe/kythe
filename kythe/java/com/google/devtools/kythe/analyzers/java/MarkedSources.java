@@ -65,7 +65,7 @@ public final class MarkedSources {
         markedSource.addChild(
             MarkedSource.newBuilder()
                 .setKind(MarkedSource.Kind.IDENTIFIER)
-                .setPreText("<" + sym.getSimpleName().toString() + ">")
+                .setPreText("<" + sym.getSimpleName() + ">")
                 .build());
         break;
       case CONSTRUCTOR:
@@ -172,7 +172,7 @@ public final class MarkedSources {
       builder.addChild(
           MarkedSource.newBuilder()
               .setKind(MarkedSource.Kind.IDENTIFIER)
-              .setPreText(type.toString() + (wasArray ? "[] " : " "))
+              .setPreText(type + (wasArray ? "[] " : " "))
               .build());
     }
     return builder.build();
@@ -196,7 +196,7 @@ public final class MarkedSources {
     int lastDot = flatName.lastIndexOf('.');
     // A$1 is a valid variable/method name, so make sure we only look at $ in class names.
     int lastCash = (sym instanceof ClassSymbol) ? flatName.lastIndexOf('$') : -1;
-    int lastTok = lastDot > lastCash ? lastDot : lastCash;
+    int lastTok = Math.max(lastDot, lastCash);
     String identToken = lastTok < 0 ? flatName : flatName.substring(lastTok + 1);
     if (!identToken.isEmpty() && Character.isDigit(identToken.charAt(0))) {
       identToken = "(anon " + identToken + ")";
