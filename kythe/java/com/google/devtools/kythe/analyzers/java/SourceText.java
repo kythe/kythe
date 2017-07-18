@@ -248,7 +248,7 @@ public final class SourceText {
 
     // Adds an identifier location to the lookup table for findIdentifier().
     private void addIdentifier(Name name, Span position) {
-      List<Span> spans = identTable.computeIfAbsent(name, (Name k) -> new ArrayList<>());
+      List<Span> spans = identTable.computeIfAbsent(name, k -> new ArrayList<>());
       spans.add(
           new Span(charToByteOffset(position.getStart()), charToByteOffset(position.getEnd())));
     }

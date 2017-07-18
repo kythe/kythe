@@ -57,12 +57,7 @@ public class JavaCompilationDetails {
   private static final Charset DEFAULT_ENCODING = UTF_8;
 
   private static final Predicate<Diagnostic<?>> ERROR_DIAGNOSTIC =
-      new Predicate<Diagnostic<?>>() {
-        @Override
-        public boolean apply(Diagnostic<?> diag) {
-          return diag.getKind() == Kind.ERROR;
-        }
-      };
+      diag -> diag.getKind() == Kind.ERROR;
 
   public static JavaCompilationDetails createDetails(
       CompilationUnit compilationUnit,
@@ -141,7 +136,7 @@ public class JavaCompilationDetails {
   }
 
   public boolean hasCompileErrors() {
-    return Iterables.any(diagnostics.getDiagnostics(), ERROR_DIAGNOSTIC);
+    return diagnostics.getDiagnostics().stream().anyMatch(ERROR_DIAGNOSTIC);
   }
 
   public Iterable<Diagnostic<? extends JavaFileObject>> getCompileErrors() {

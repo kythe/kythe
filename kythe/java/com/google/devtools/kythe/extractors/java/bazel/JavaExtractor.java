@@ -18,11 +18,9 @@ package com.google.devtools.kythe.extractors.java.bazel;
 
 import static com.google.common.base.StandardSystemProperty.USER_DIR;
 import static com.google.common.io.Files.touch;
+import static java.util.stream.Collectors.toCollection;
 
 import com.google.common.base.Optional;
-import com.google.common.base.Predicate;
-import com.google.common.collect.Collections2;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.io.ByteSource;
 import com.google.common.io.MoreFiles;
@@ -42,6 +40,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.zip.ZipEntry;
@@ -97,7 +96,18 @@ public class JavaExtractor {
     }
 
     List<String> javacOpts =
-        Lists.newArrayList(Iterables.filter(jInfo.getJavacOptList(), JAVAC_OPT_FILTER));
+        jInfo
+            .getJavacOptList()
+            .stream()
+            .filter(
+                // Filter out Bazel-specific flags.  Bazel adds its own flags (such as error-prone
+                // flags) to the javac_opt list that cannot be handled by the standard javac
+                // compiler, or in turn, by this extractor.
+                opt ->
+                    !(opt.startsWith("-Werror:")
+                        || opt.startsWith("-extra_checks")
+                        || opt.startsWith("-Xep")))
+            .collect(toCollection(ArrayList::new));
 
     // Set up a fresh output directory
     javacOpts.add("-d");
@@ -144,15 +154,7 @@ public class JavaExtractor {
     List<String> files = unzipFile(new ZipFile(sourcepath), tempFile);
 
     // And update the list of sources based on the .java files we unzipped.
-    sources.addAll(
-        Collections2.filter(
-            files,
-            new Predicate<String>() {
-              @Override
-              public boolean apply(String input) {
-                return input.endsWith(".java");
-              }
-            }));
+    files.stream().filter(input -> input.endsWith(".java")).forEachOrdered(sources::add);
   }
 
   /** Unzips specified zipFile to targetDirectory and returns a list of the unzipped files. */
@@ -207,17 +209,4 @@ public class JavaExtractor {
       return Optional.absent();
     }
   }
-
-  // Predicate that filters out Bazel-specific flags.  Bazel adds its own flags (such as error-prone
-  // flags) to the javac_opt list that cannot be handled by the standard javac compiler, or in turn,
-  // by this extractor.
-  private static final Predicate<String> JAVAC_OPT_FILTER =
-      new Predicate<String>() {
-        @Override
-        public boolean apply(String opt) {
-          return !(opt.startsWith("-Werror:")
-              || opt.startsWith("-extra_checks")
-              || opt.startsWith("-Xep"));
-        }
-      };
 }

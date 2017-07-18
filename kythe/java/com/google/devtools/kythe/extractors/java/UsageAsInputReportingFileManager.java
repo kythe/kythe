@@ -16,7 +16,6 @@
 
 package com.google.devtools.kythe.extractors.java;
 
-import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
 import java.io.IOException;
 import java.net.URI;
@@ -64,13 +63,7 @@ class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<Standar
   public Iterable<JavaFileObject> list(
       Location location, String packageName, Set<Kind> kinds, boolean recurse) throws IOException {
     return Iterables.transform(
-        fileManager.list(location, packageName, kinds, recurse),
-        new Function<JavaFileObject, JavaFileObject>() {
-          @Override
-          public JavaFileObject apply(JavaFileObject input) {
-            return map(input, location);
-          }
-        });
+        fileManager.list(location, packageName, kinds, recurse), input -> map(input, location));
   }
 
   /** Wraps a JavaFileObject in a UsageAsInputReportingJavaFileObject, shares existing instances. */
@@ -79,21 +72,14 @@ class UsageAsInputReportingFileManager extends ForwardingJavaFileManager<Standar
       return item;
     }
     InputUsageRecord usage =
-        inputUsageRecords.computeIfAbsent(
-            item.toUri(), (URI k) -> new InputUsageRecord(item, location));
+        inputUsageRecords.computeIfAbsent(item.toUri(), k -> new InputUsageRecord(item, location));
     return new UsageAsInputReportingJavaFileObject(item, usage);
   }
 
   /** Helper to match loading source files and tracking their usage. */
   public Iterable<JavaFileObject> getJavaFileForSources(Iterable<String> sources) {
     return Iterables.transform(
-        fileManager.getJavaFileObjectsFromStrings(sources),
-        new Function<JavaFileObject, JavaFileObject>() {
-          @Override
-          public JavaFileObject apply(JavaFileObject input) {
-            return map(input, null);
-          }
-        });
+        fileManager.getJavaFileObjectsFromStrings(sources), input -> map(input, null));
   }
 
   @Override

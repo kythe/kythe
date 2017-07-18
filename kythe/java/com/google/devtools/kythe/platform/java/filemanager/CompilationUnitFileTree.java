@@ -60,7 +60,7 @@ public class CompilationUnitFileTree {
       dirname = ".";
     }
     String basename = path.getFileName().toString();
-    Map<String, String> dir = dirs.computeIfAbsent(dirname, (String k) -> new HashMap<>());
+    Map<String, String> dir = dirs.computeIfAbsent(dirname, k -> new HashMap<>());
     String existing = dir.get(digest);
     if (existing != null && !existing.equals(digest)) {
       throw new IllegalStateException("Trying to register conflicting digests for the same path");

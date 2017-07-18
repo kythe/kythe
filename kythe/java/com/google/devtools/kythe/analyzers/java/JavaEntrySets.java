@@ -165,7 +165,7 @@ public class JavaEntrySets extends KytheEntrySets {
             .setCorpusPath(CorpusPath.fromVName(fileVName))
             .setProperty("text", encodedText)
             .addSignatureSalt(text);
-    params.forEach(param -> builder.addSignatureSalt(param));
+    params.forEach(builder::addSignatureSalt);
     EntrySet node = emitAndReturn(builder);
     emitOrdinalEdges(node.getVName(), EdgeKind.PARAM, params);
     return node;

@@ -19,7 +19,6 @@ package com.google.devtools.kythe.platform.java;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.base.Splitter;
 import com.google.common.base.StandardSystemProperty;
@@ -62,9 +61,6 @@ public class JavacOptionsUtils {
 
   private static final Splitter PATH_SPLITTER = Splitter.on(':').trimResults().omitEmptyStrings();
   private static final Joiner PATH_JOINER = Joiner.on(':').skipNulls();
-  private static final Predicate<String> LINT_OR_ERROR_OPTION =
-      o -> o.startsWith("-Xlint") || o.startsWith("-Werror");
-
   /** Returns a new list of options with only javac compiler supported options. */
   public static List<String> removeUnsupportedOptions(List<String> rawOptions) {
     List<String> options = new ArrayList<>();
@@ -72,7 +68,9 @@ public class JavacOptionsUtils {
         ImmutableList.of(JavacTool.create(), new JavacFileManager(new Context(), false, UTF_8));
     PeekingIterator<String> it =
         Iterators.peekingIterator(
-            Iterators.filter(rawOptions.iterator(), Predicates.not(LINT_OR_ERROR_OPTION)));
+            Iterators.filter(
+                rawOptions.iterator(),
+                Predicates.not(o -> o.startsWith("-Xlint") || o.startsWith("-Werror"))));
     outer:
     while (it.hasNext()) {
       for (OptionChecker optionChecker : optionCheckers) {

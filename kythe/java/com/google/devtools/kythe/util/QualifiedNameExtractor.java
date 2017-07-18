@@ -63,7 +63,7 @@ public class QualifiedNameExtractor {
                     child ->
                         child.getKind().equals(MarkedSource.Kind.IDENTIFIER)
                             && !child.getPreText().isEmpty())
-                .map(ident -> ident.getPreText())
+                .map(MarkedSource::getPreText)
                 .collect(Collectors.toList()));
 
     // emit the qualified class name

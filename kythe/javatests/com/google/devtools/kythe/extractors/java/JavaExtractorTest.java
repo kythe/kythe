@@ -19,7 +19,6 @@ package com.google.devtools.kythe.extractors.java;
 import static com.google.common.truth.Truth.assertThat;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
-import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -707,25 +706,11 @@ public class JavaExtractorTest extends TestCase {
   }
 
   private static List<FileInfo> getInfos(List<FileInput> files) {
-    return Lists.transform(
-        files,
-        new Function<FileInput, FileInfo>() {
-          @Override
-          public FileInfo apply(FileInput file) {
-            return file.getInfo();
-          }
-        });
+    return Lists.transform(files, FileInput::getInfo);
   }
 
   private static List<FileInfo> getExpectedInfos(List<String> files) {
-    return Lists.transform(
-        files,
-        new Function<String, FileInfo>() {
-          @Override
-          public FileInfo apply(String file) {
-            return makeFileInfo(file);
-          }
-        });
+    return Lists.transform(files, JavaExtractorTest::makeFileInfo);
   }
 
   private static FileInfo makeFileInfo(String path) {

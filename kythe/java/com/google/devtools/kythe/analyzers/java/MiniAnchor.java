@@ -16,10 +16,8 @@
 
 package com.google.devtools.kythe.analyzers.java;
 
-import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.PriorityQueue;
@@ -81,24 +79,8 @@ public class MiniAnchor<T> {
    */
   public static <T> String bracket(
       String text, PositionTransform posTransform, List<MiniAnchor<T>> miniAnchors) {
-    Iterables.removeIf(
-        miniAnchors,
-        new Predicate<MiniAnchor<T>>() {
-          @Override
-          public boolean apply(MiniAnchor<T> a) {
-            // Drop empty or negative-length spans. These are not useful for presentation or
-            // are invalid.
-            return a.begin >= a.end;
-          }
-        });
-    Collections.sort(
-        miniAnchors,
-        new Comparator<MiniAnchor<T>>() {
-          @Override
-          public int compare(MiniAnchor<T> l, MiniAnchor<T> r) {
-            return l.begin == r.begin ? r.end - l.end : l.begin - r.begin;
-          }
-        });
+    Iterables.removeIf(miniAnchors, a -> a.begin >= a.end);
+    Collections.sort(miniAnchors, (l, r) -> l.begin == r.begin ? r.end - l.end : l.begin - r.begin);
     StringBuilder bracketed = new StringBuilder(text.length() + miniAnchors.size() * 2);
     Iterator<MiniAnchor<T>> anchors = miniAnchors.iterator();
     MiniAnchor<T> nextAnchor = anchors.hasNext() ? anchors.next() : null;

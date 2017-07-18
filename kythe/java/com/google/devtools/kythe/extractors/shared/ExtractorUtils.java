@@ -18,14 +18,13 @@ package com.google.devtools.kythe.extractors.shared;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.StandardSystemProperty.USER_DIR;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.hash.Hashing.sha256;
+import static java.util.stream.Collectors.toCollection;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Function;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
+import com.google.common.collect.Streams;
 import com.google.common.io.Files;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
@@ -39,6 +38,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -65,15 +65,11 @@ public class ExtractorUtils {
       final Map<String, byte[]> filePathToFileContents) throws ExtractionException {
     checkNotNull(filePathToFileContents);
 
-    return Lists.newArrayList(
-        Iterables.transform(
-            filePathToFileContents.keySet(),
-            new Function<String, FileData>() {
-              @Override
-              public FileData apply(String path) {
-                return createFileData(path, filePathToFileContents.get(path));
-              }
-            }));
+    return filePathToFileContents
+        .keySet()
+        .stream()
+        .map(path -> createFileData(path, filePathToFileContents.get(path)))
+        .collect(toCollection(ArrayList::new));
   }
 
   public static FileData createFileData(String path, byte[] content) {
@@ -85,28 +81,25 @@ public class ExtractorUtils {
     final SettableFuture<ExtractionException> exception = SettableFuture.create();
 
     List<FileData> result =
-        Lists.newArrayList(
-            Iterables.transform(
-                files,
-                new Function<String, FileData>() {
-                  @Override
-                  public FileData apply(String path) {
-                    byte[] content = new byte[0];
-                    try {
-                      content = Files.toByteArray(new File(path));
-                    } catch (IOException e) {
-                      exception.set(new ExtractionException(e, false));
-                    }
-                    if (content == null) {
-                      exception.set(
-                          new ExtractionException(
-                              String.format("Unable to locate required input %s", path), false));
-                      return null;
-                    }
-                    String digest = getContentDigest(content);
-                    return createFileData(path, digest, content);
+        Streams.stream(files)
+            .map(
+                path -> {
+                  byte[] content = new byte[0];
+                  try {
+                    content = Files.toByteArray(new File(path));
+                  } catch (IOException e) {
+                    exception.set(new ExtractionException(e, false));
                   }
-                }));
+                  if (content == null) {
+                    exception.set(
+                        new ExtractionException(
+                            String.format("Unable to locate required input %s", path), false));
+                    return null;
+                  }
+                  String digest = getContentDigest(content);
+                  return createFileData(path, digest, content);
+                })
+            .collect(toCollection(ArrayList::new));
     if (exception.isDone()) {
       try {
         throw exception.get();
@@ -119,24 +112,19 @@ public class ExtractorUtils {
     return result;
   }
 
-  private static final Function<FileData, FileInput> FILE_DATA_TO_COMPILATION_FILE_INPUT =
-      new Function<FileData, FileInput>() {
-        @Override
-        public FileInput apply(FileData fileData) {
-          return FileInput.newBuilder()
-              .setInfo(fileData.getInfo())
-              .setVName(
-                  VName.newBuilder()
-                      // TODO(schroederc): VName path should be corpus+root relative
-                      .setPath(fileData.getInfo().getPath())
-                      .build())
-              .build();
-        }
-      };
-
   public static List<FileInput> toFileInputs(Iterable<FileData> fileDatas) {
-    return ImmutableList.copyOf(
-        Iterables.transform(fileDatas, FILE_DATA_TO_COMPILATION_FILE_INPUT));
+    return Streams.stream(fileDatas)
+        .map(
+            fileData ->
+                FileInput.newBuilder()
+                    .setInfo(fileData.getInfo())
+                    .setVName(
+                        VName.newBuilder()
+                            // TODO(schroederc): VName path should be corpus+root relative
+                            .setPath(fileData.getInfo().getPath())
+                            .build())
+                    .build())
+        .collect(toImmutableList());
   }
 
   /**

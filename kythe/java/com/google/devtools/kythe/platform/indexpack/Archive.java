@@ -16,7 +16,6 @@
 
 package com.google.devtools.kythe.platform.indexpack;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Iterables;
@@ -26,7 +25,6 @@ import com.google.common.hash.Hashing;
 import com.google.common.io.ByteStreams;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
-import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
 import com.google.devtools.kythe.proto.Analysis.FileData;
 import com.google.devtools.kythe.util.JsonUtil;
 import com.google.gson.Gson;
@@ -129,14 +127,7 @@ public class Archive {
    * each unit's required inputs.
    */
   public Iterator<CompilationDescription> readDescriptions() throws IOException {
-    return Iterators.transform(
-        readUnits(),
-        new Function<CompilationUnit, CompilationDescription>() {
-          @Override
-          public CompilationDescription apply(CompilationUnit unit) {
-            return completeDescription(unit);
-          }
-        });
+    return Iterators.transform(readUnits(), this::completeDescription);
   }
 
   /** Returns a complete {@link CompilationDescription} of the given {@link CompilationUnit}. */
@@ -145,17 +136,14 @@ public class Archive {
         unit,
         Iterables.transform(
             unit.getRequiredInputList(),
-            new Function<FileInput, FileData>() {
-              @Override
-              public FileData apply(FileInput input) {
-                try {
-                  return FileData.newBuilder()
-                      .setInfo(input.getInfo())
-                      .setContent(ByteString.copyFrom(readFile(input.getInfo().getDigest())))
-                      .build();
-                } catch (IOException ioe) {
-                  throw new RuntimeException(ioe);
-                }
+            input -> {
+              try {
+                return FileData.newBuilder()
+                    .setInfo(input.getInfo())
+                    .setContent(ByteString.copyFrom(readFile(input.getInfo().getDigest())))
+                    .build();
+              } catch (IOException ioe) {
+                throw new RuntimeException(ioe);
               }
             }));
   }
@@ -188,19 +176,16 @@ public class Archive {
     return Iterators.filter(
         Iterators.transform(
             Files.newDirectoryStream(unitDir, "*" + UNIT_SUFFIX).iterator(),
-            new Function<Path, T>() {
-              @Override
-              public T apply(Path path) {
-                try {
-                  String name = path.getFileName().toString();
-                  if (!name.endsWith(UNIT_SUFFIX)) {
-                    throw new IllegalStateException("Received path without unit suffix: " + path);
-                  }
-                  String key = name.substring(0, name.length() - UNIT_SUFFIX.length());
-                  return readUnit(key, formatKey, cls);
-                } catch (IOException ioe) {
-                  throw new RuntimeException(ioe);
+            path -> {
+              try {
+                String name = path.getFileName().toString();
+                if (!name.endsWith(UNIT_SUFFIX)) {
+                  throw new IllegalStateException("Received path without unit suffix: " + path);
                 }
+                String key = name.substring(0, name.length() - UNIT_SUFFIX.length());
+                return readUnit(key, formatKey, cls);
+              } catch (IOException ioe) {
+                throw new RuntimeException(ioe);
               }
             }),
         Predicates.notNull());
