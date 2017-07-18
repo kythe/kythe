@@ -46,10 +46,10 @@ public class ExtractorUtilsTest extends TestCase {
 
   public void testCreateFileData() {
     FileData fd = ExtractorUtils.createFileData("a/b/c", ABCD);
-    assertNotNull(fd);
-    assertEquals("a/b/c", fd.getInfo().getPath());
-    assertEquals(ABCD_HASH, fd.getInfo().getDigest());
-    assertArrayEquals(ABCD, fd.getContent().toByteArray());
+    assertThat(fd).isNotNull();
+    assertThat(fd.getInfo().getPath()).isEqualTo("a/b/c");
+    assertThat(fd.getInfo().getDigest()).isEqualTo(ABCD_HASH);
+    assertThat(fd.getContent().toByteArray()).isEqualTo(ABCD);
   }
 
   public void testConvertBytesToFileDatas() throws Exception {
@@ -61,8 +61,8 @@ public class ExtractorUtilsTest extends TestCase {
     for (FileData entry : results) {
       assertThat(data).containsKey(entry.getInfo().getPath());
       byte[] input = data.get(entry.getInfo().getPath());
-      assertArrayEquals(input, entry.getContent().toByteArray());
-      assertEquals(ExtractorUtils.getContentDigest(input), entry.getInfo().getDigest());
+      assertThat(entry.getContent().toByteArray()).isEqualTo(input);
+      assertThat(entry.getInfo().getDigest()).isEqualTo(ExtractorUtils.getContentDigest(input));
     }
   }
 
@@ -74,9 +74,9 @@ public class ExtractorUtilsTest extends TestCase {
 
     assertThat(fds).hasSize(1);
     FileData fd = fds.get(0);
-    assertEquals(path, fd.getInfo().getPath());
-    assertEquals(ExtractorUtils.getContentDigest(content), fd.getInfo().getDigest());
-    assertArrayEquals(content, fd.getContent().toByteArray());
+    assertThat(fd.getInfo().getPath()).isEqualTo(path);
+    assertThat(fd.getInfo().getDigest()).isEqualTo(ExtractorUtils.getContentDigest(content));
+    assertThat(fd.getContent().toByteArray()).isEqualTo(content);
   }
 
   public void testToCompilationFileInputs() {
@@ -97,29 +97,34 @@ public class ExtractorUtilsTest extends TestCase {
 
   public void testTryMakeRelative() {
     String cwd = USER_DIR.value();
-    assertEquals(cwd + "/relative", ExtractorUtils.tryMakeRelative("/someroot", "relative"));
-    assertEquals(cwd + "/relative/sd", ExtractorUtils.tryMakeRelative("/someroot", "relative/sd"));
-    assertEquals(
-        "rootrelative", ExtractorUtils.tryMakeRelative("/someroot", "/someroot/rootrelative"));
-    assertEquals(
-        "rootrelative", ExtractorUtils.tryMakeRelative("/someroot/", "/someroot/rootrelative"));
-    assertEquals(cwd + "/cwd_sub", ExtractorUtils.tryMakeRelative("/someroot/", "./cwd_sub"));
-    assertEquals("/one_up", ExtractorUtils.tryMakeRelative("/someroot/", "/someroot/../one_up"));
+    assertThat(ExtractorUtils.tryMakeRelative("/someroot", "relative"))
+        .isEqualTo(cwd + "/relative");
+    assertThat(ExtractorUtils.tryMakeRelative("/someroot", "relative/sd"))
+        .isEqualTo(cwd + "/relative/sd");
+    assertThat(ExtractorUtils.tryMakeRelative("/someroot", "/someroot/rootrelative"))
+        .isEqualTo("rootrelative");
+    assertThat(ExtractorUtils.tryMakeRelative("/someroot/", "/someroot/rootrelative"))
+        .isEqualTo("rootrelative");
+    assertThat(ExtractorUtils.tryMakeRelative("/someroot/", "./cwd_sub"))
+       .isEqualTo(cwd + "/cwd_sub");
+    assertThat(ExtractorUtils.tryMakeRelative("/someroot/", "/someroot/../one_up"))
+        .isEqualTo("/one_up");
 
-    assertEquals("relative", ExtractorUtils.tryMakeRelative(cwd, "relative"));
-    assertEquals("relative/sd", ExtractorUtils.tryMakeRelative(cwd, "relative/sd"));
-    assertEquals("cwd_sub", ExtractorUtils.tryMakeRelative(cwd, "./cwd_sub"));
-    assertEquals("one_up", ExtractorUtils.tryMakeRelative(cwd, "relative/../one_up"));
-    assertEquals(".", ExtractorUtils.tryMakeRelative(cwd, "."));
-    assertEquals(".", ExtractorUtils.tryMakeRelative(cwd, cwd));
+    assertThat(ExtractorUtils.tryMakeRelative(cwd, "relative")).isEqualTo("relative");
+    assertThat(ExtractorUtils.tryMakeRelative(cwd, "relative/sd")).isEqualTo("relative/sd");
+    assertThat(ExtractorUtils.tryMakeRelative(cwd, "./cwd_sub")).isEqualTo("cwd_sub");
+    assertThat(ExtractorUtils.tryMakeRelative(cwd, "relative/../one_up")).isEqualTo("one_up");
+    assertThat(ExtractorUtils.tryMakeRelative(cwd, ".")).isEqualTo(".");
+    assertThat(ExtractorUtils.tryMakeRelative(cwd, cwd)).isEqualTo(".");
   }
 
   public void testGetCurrentWorkingDirectory() {
-    assertEquals(USER_DIR.value(), ExtractorUtils.getCurrentWorkingDirectory());
+    assertThat(ExtractorUtils.getCurrentWorkingDirectory())
+        .isEqualTo(System.getProperty("user.dir"));
   }
 
   public void testGetContentDigest() throws NoSuchAlgorithmException {
-    assertEquals(ABCD_HASH, ExtractorUtils.getContentDigest(ABCD));
+    assertThat(ExtractorUtils.getContentDigest(ABCD)).isEqualTo(ABCD_HASH);
   }
 
   public void testNormalizeCompilationUnit() {
@@ -140,18 +145,18 @@ public class ExtractorUtilsTest extends TestCase {
             .build();
 
     CompilationUnit output = ExtractorUtils.normalizeCompilationUnit(unit);
-    assertEquals(unit.getVName().getSignature(), output.getVName().getSignature());
-    assertSame(unit.getArgumentList(), output.getArgumentList());
-    assertEquals(unit.getOutputKey(), output.getOutputKey());
-    assertSame(unit.getSourceFileList(), output.getSourceFileList());
-    assertEquals(2, output.getRequiredInputCount());
+    assertThat(output.getVName().getSignature()).isEqualTo(unit.getVName().getSignature());
+    assertThat(output.getArgumentList()).isSameAs(unit.getArgumentList());
+    assertThat(output.getOutputKey()).isEqualTo(unit.getOutputKey());
+    assertThat(output.getSourceFileList()).isSameAs(unit.getSourceFileList());
+    assertThat(output.getRequiredInputCount()).isEqualTo(2);
 
     CompilationUnit.FileInput cfi0 = output.getRequiredInput(0);
-    assertEquals("a/b/c", cfi0.getInfo().getPath());
-    assertEquals("DIGEST2", cfi0.getInfo().getDigest());
+    assertThat(cfi0.getInfo().getPath()).isEqualTo("a/b/c");
+    assertThat(cfi0.getInfo().getDigest()).isEqualTo("DIGEST2");
 
     CompilationUnit.FileInput cfi1 = output.getRequiredInput(1);
-    assertEquals("d/e/f", cfi1.getInfo().getPath());
-    assertEquals("DIGEST1", cfi1.getInfo().getDigest());
+    assertThat(cfi1.getInfo().getPath()).isEqualTo("d/e/f");
+    assertThat(cfi1.getInfo().getDigest()).isEqualTo("DIGEST1");
   }
 }

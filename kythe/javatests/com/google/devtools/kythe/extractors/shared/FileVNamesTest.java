@@ -16,6 +16,8 @@
 
 package com.google.devtools.kythe.extractors.shared;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.base.Joiner;
 import com.google.devtools.kythe.proto.Storage.VName;
 import junit.framework.TestCase;
@@ -93,39 +95,36 @@ public class FileVNamesTest extends TestCase {
   }
 
   public void testParsing() {
-    assertNotNull(f);
+    assertThat(f).isNotNull();
   }
 
   public void testLookup_default() {
-    assertEquals(VName.getDefaultInstance(), f.lookupBaseVName(""));
+    assertThat(f.lookupBaseVName("")).isEqualTo(VName.getDefaultInstance());
   }
 
   public void testLookup_static() {
-    assertEquals(
-        VName.newBuilder().setRoot("root").setCorpus("static").build(),
-        f.lookupBaseVName("static/path"));
+    assertThat(f.lookupBaseVName("static/path"))
+        .isEqualTo(VName.newBuilder().setRoot("root").setCorpus("static").build());
   }
 
   public void testLookup_ordered() {
-    assertEquals(VName.newBuilder().setCorpus("first").build(), f.lookupBaseVName("dup/path"));
-    assertEquals(VName.newBuilder().setCorpus("second").build(), f.lookupBaseVName("dup/path2"));
+    assertThat(f.lookupBaseVName("dup/path"))
+        .isEqualTo(VName.newBuilder().setCorpus("first").build());
+    assertThat(f.lookupBaseVName("dup/path2"))
+        .isEqualTo(VName.newBuilder().setCorpus("second").build());
   }
 
   public void testLookup_groups() {
-    assertEquals(
-        VName.newBuilder().setCorpus("corpus").build(), f.lookupBaseVName("corpus/some/path/here"));
-    assertEquals(
-        VName.newBuilder().setCorpus("grp1/endingGroup").setRoot("12345").build(),
-        f.lookupBaseVName("grp1/12345/endingGroup"));
+    assertThat(f.lookupBaseVName("corpus/some/path/here"))
+        .isEqualTo(VName.newBuilder().setCorpus("corpus").build());
+    assertThat(f.lookupBaseVName("grp1/12345/endingGroup"))
+        .isEqualTo(VName.newBuilder().setCorpus("grp1/endingGroup").setRoot("12345").build());
 
-    assertEquals(
-        VName.newBuilder().setCorpus("kythe").setRoot("java").build(),
-        f.lookupBaseVName("bazel-bin/kythe/java/some/path/A.jar!/some/path/A.class"));
-    assertEquals(
-        VName.newBuilder().setCorpus("kythe").setRoot("java").build(),
-        f.lookupBaseVName("kythe/java/com/google/devtools/kythe/util/KytheURI.java"));
-    assertEquals(
-        VName.newBuilder().setCorpus("otherCorpus").setRoot("java").build(),
-        f.lookupBaseVName("otherCorpus/java/com/google/devtools/kythe/util/KytheURI.java"));
+    assertThat(f.lookupBaseVName("bazel-bin/kythe/java/some/path/A.jar!/some/path/A.class"))
+        .isEqualTo(VName.newBuilder().setCorpus("kythe").setRoot("java").build());
+    assertThat(f.lookupBaseVName("kythe/java/com/google/devtools/kythe/util/KytheURI.java"))
+        .isEqualTo(VName.newBuilder().setCorpus("kythe").setRoot("java").build());
+    assertThat(f.lookupBaseVName("otherCorpus/java/com/google/devtools/kythe/util/KytheURI.java"))
+        .isEqualTo(VName.newBuilder().setCorpus("otherCorpus").setRoot("java").build());
   }
 }

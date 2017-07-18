@@ -16,6 +16,7 @@
 
 package com.google.devtools.kythe.analyzers.base;
 
+import static com.google.common.truth.Truth.assertThat;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.devtools.kythe.proto.Storage.Entry;
@@ -47,9 +48,9 @@ public class StreamFactEmitterTest extends TestCase {
     builder.mergeDelimitedFrom(inputStream);
     Entry entry = builder.build();
 
-    assertNotNull(entry);
-    assertEquals(entry.getSource(), testVName);
-    assertEquals(entry.getFactName(), testFactName);
-    assertEquals(entry.getFactValue().toStringUtf8(), testFactValue);
+    assertThat(entry).isNotNull();
+    assertThat(testVName).isEqualTo(entry.getSource());
+    assertThat(testFactName).isEqualTo(entry.getFactName());
+    assertThat(testFactValue).isEqualTo(entry.getFactValue().toString(UTF_8));
   }
 }

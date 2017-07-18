@@ -18,6 +18,8 @@ package com.google.devtools.kythe.platform.indexpack;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.google.devtools.kythe.extractors.shared.CompilationDescription;
@@ -69,11 +71,11 @@ public class ArchiveTest extends TestCase {
   }
 
   public void testCreation() throws IOException {
-    assertTrue(archive.getRoot().toFile().isDirectory());
+    assertThat(archive.getRoot().toFile().isDirectory()).isTrue();
   }
 
   public void testReadUnits_empty() throws IOException {
-    assertFalse(archive.readUnits().hasNext());
+    assertThat(archive.readUnits().hasNext()).isFalse();
   }
 
   public void testReadFile_missing() throws IOException {
@@ -87,12 +89,12 @@ public class ArchiveTest extends TestCase {
 
   public void testWriteUnit() throws IOException {
     String key1 = archive.writeUnit("test", new Object());
-    assertNotNull(key1);
+    assertThat(key1).isNotNull();
     Map<String, String> map = new HashMap<>();
     map.put("something", "else");
     String key2 = archive.writeUnit("test", map);
-    assertNotNull(key2);
-    assertFalse(key1.equals(key2));
+    assertThat(key2).isNotNull();
+    assertThat(key1.equals(key2)).isFalse();
   }
 
   public void testWriteFile_single() throws IOException {
@@ -100,8 +102,8 @@ public class ArchiveTest extends TestCase {
     byte[] data = dataStr.getBytes(Archive.DATA_CHARSET);
 
     String key = archive.writeFile(data);
-    assertNotNull(key);
-    assertEquals(key, archive.writeFile(dataStr));
+    assertThat(key).isNotNull();
+    assertThat(archive.writeFile(dataStr)).isEqualTo(key);
 
     assertArrayEquals(data, archive.readFile(key));
   }
@@ -111,7 +113,7 @@ public class ArchiveTest extends TestCase {
     String[] keys = new String[NUM];
     for (int i = 0; i < NUM; i++) {
       keys[i] = archive.writeFile(createTestData(i));
-      assertNotNull(keys[i]);
+      assertThat(keys[i]).isNotNull();
     }
 
     for (int i = 0; i < NUM; i++) {
@@ -120,16 +122,16 @@ public class ArchiveTest extends TestCase {
   }
 
   public void testReadUnits_single() throws IOException {
-    assertNotNull(archive.writeUnit("test", new Object()));
+    assertThat(archive.writeUnit("test", new Object())).isNotNull();
     Iterator<Object> it = archive.readUnits("test", Object.class);
-    assertTrue(it.hasNext());
-    assertNotNull(it.next());
-    assertFalse(it.hasNext());
+    assertThat(it.hasNext()).isTrue();
+    assertThat(it.next()).isNotNull();
+    assertThat(it.hasNext()).isFalse();
   }
 
   public void testWriteUnit_compilationUnit() throws IOException {
     for (CompilationDescription desc : TEST_COMPILATIONS) {
-      assertNotNull(archive.writeUnit(desc.getCompilationUnit()));
+      assertThat(archive.writeUnit(desc.getCompilationUnit())).isNotNull();
     }
   }
 
@@ -152,7 +154,7 @@ public class ArchiveTest extends TestCase {
 
   public void testWriteDescription() throws IOException {
     for (CompilationDescription desc : TEST_COMPILATIONS) {
-      assertNotNull(archive.writeDescription(desc));
+      assertThat(archive.writeDescription(desc)).isNotNull();
     }
   }
 

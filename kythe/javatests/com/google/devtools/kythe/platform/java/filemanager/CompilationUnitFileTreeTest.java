@@ -16,6 +16,8 @@
 
 package com.google.devtools.kythe.platform.java.filemanager;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.devtools.kythe.proto.Analysis;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit.FileInput;
@@ -28,15 +30,15 @@ public class CompilationUnitFileTreeTest extends TestCase {
   public void testRelPath() {
     Iterable<CompilationUnit.FileInput> fi = createDummyFileInput("foo/bar/baz");
     CompilationUnitFileTree cuft = new CompilationUnitFileTree(fi);
-    assertEquals("dummy digest for foo/bar/baz", cuft.lookup("foo/bar/baz"));
-    assertEquals("<dir>", cuft.lookup("foo/bar"));
+    assertThat(cuft.lookup("foo/bar/baz")).isEqualTo("dummy digest for foo/bar/baz");
+    assertThat(cuft.lookup("foo/bar")).isEqualTo("<dir>");
   }
 
   public void testAbsPath() {
     Iterable<CompilationUnit.FileInput> fi = createDummyFileInput("/foo/bar/baz");
     CompilationUnitFileTree cuft = new CompilationUnitFileTree(fi);
-    assertEquals("dummy digest for /foo/bar/baz", cuft.lookup("/foo/bar/baz"));
-    assertEquals("<dir>", cuft.lookup("/foo/bar"));
+    assertThat(cuft.lookup("/foo/bar/baz")).isEqualTo("dummy digest for /foo/bar/baz");
+    assertThat(cuft.lookup("/foo/bar")).isEqualTo("<dir>");
   }
 
   private List<FileInput> createDummyFileInput(String path) {

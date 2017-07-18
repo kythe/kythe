@@ -75,11 +75,11 @@ public class JavaExtractorTest extends TestCase {
             "output");
 
     CompilationUnit unit = description.getCompilationUnit();
-    assertNotNull(unit);
-    assertEquals(TARGET1, unit.getVName().getSignature());
+    assertThat(unit).isNotNull();
+    assertThat(unit.getVName().getSignature()).isEqualTo(TARGET1);
 
     // With the expected sources as explicit sources.
-    assertEquals(2, unit.getSourceFileCount());
+    assertThat(unit.getSourceFileCount()).isEqualTo(2);
     assertThat(unit.getSourceFileList()).containsExactly(sources.get(0), sources.get(1)).inOrder();
 
     // With the expected sources as required inputs.
@@ -116,11 +116,11 @@ public class JavaExtractorTest extends TestCase {
             "output");
 
     CompilationUnit unit = description.getCompilationUnit();
-    assertNotNull(unit);
-    assertEquals(TARGET1, unit.getVName().getSignature());
+    assertThat(unit).isNotNull();
+    assertThat(unit.getVName().getSignature()).isEqualTo(TARGET1);
 
     // With the expected sources as explicit sources.
-    assertEquals(1, unit.getSourceFileCount());
+    assertThat(unit.getSourceFileCount()).isEqualTo(1);
     assertThat(unit.getSourceFileList()).containsExactly(sources.get(0));
 
     // With the expected dependencies as required inputs.
@@ -204,11 +204,11 @@ public class JavaExtractorTest extends TestCase {
             "output");
 
     CompilationUnit unit = description.getCompilationUnit();
-    assertNotNull(unit);
-    assertEquals(TARGET1, unit.getVName().getSignature());
+    assertThat(unit).isNotNull();
+    assertThat(unit.getVName().getSignature()).isEqualTo(TARGET1);
 
     // With the expected sources as explicit sources.
-    assertEquals(2, unit.getSourceFileCount());
+    assertThat(unit.getSourceFileCount()).isEqualTo(2);
     assertThat(unit.getSourceFileList()).containsExactly(sources.get(0), sources.get(1)).inOrder();
 
     assertThat(getInfos(unit.getRequiredInputList()))
@@ -250,9 +250,9 @@ public class JavaExtractorTest extends TestCase {
             "output");
 
     CompilationUnit unit = description.getCompilationUnit();
-    assertNotNull(unit);
-    assertEquals(TARGET1, unit.getVName().getSignature());
-    assertEquals(1, unit.getSourceFileCount());
+    assertThat(unit).isNotNull();
+    assertThat(unit.getVName().getSignature()).isEqualTo(TARGET1);
+    assertThat(unit.getSourceFileCount()).isEqualTo(1);
     assertThat(unit.getSourceFileList()).containsExactly(sources.get(0)).inOrder();
 
     // Ensure the right class files are picked up from the classpath.
@@ -308,10 +308,10 @@ public class JavaExtractorTest extends TestCase {
 
     JavaDetails details = getJavaDetails(unit);
     assertThat(details.getSourcepathList()).hasSize(1);
-    assertEquals(join(TEST_DATA_DIR, "child"), details.getSourcepathList().get(0));
+    assertThat(details.getSourcepathList().get(0)).isEqualTo(join(TEST_DATA_DIR, "child"));
     assertThat(details.getClasspathList()).hasSize(1);
     // Ensure the magic !CLASS_PATH_JAR! classpath is added.
-    assertEquals("!CLASS_PATH_JAR!", details.getClasspathList().get(0));
+    assertThat(details.getClasspathList().get(0)).isEqualTo("!CLASS_PATH_JAR!");
   }
 
   /**
@@ -338,19 +338,18 @@ public class JavaExtractorTest extends TestCase {
             "output");
 
     CompilationUnit unit = description.getCompilationUnit();
-    assertNotNull(unit);
-    assertEquals(TARGET1, unit.getVName().getSignature());
-    assertEquals(1, unit.getRequiredInputCount());
-    assertEquals(sources.get(0), unit.getRequiredInput(0).getInfo().getPath());
-    assertEquals(
-        ExtractorUtils.digestForPath(sources.get(0)),
-        unit.getRequiredInput(0).getInfo().getDigest());
-    assertEquals(1, unit.getSourceFileCount());
+    assertThat(unit).isNotNull();
+    assertThat(unit.getVName().getSignature()).isEqualTo(TARGET1);
+    assertThat(unit.getRequiredInputCount()).isEqualTo(1);
+    assertThat(unit.getRequiredInput(0).getInfo().getPath()).isEqualTo(sources.get(0));
+    assertThat(unit.getRequiredInput(0).getInfo().getDigest())
+        .isEqualTo(ExtractorUtils.digestForPath(sources.get(0)));
+    assertThat(unit.getSourceFileCount()).isEqualTo(1);
     assertThat(unit.getSourceFileList()).containsExactly(sources.get(0)).inOrder();
 
     JavaDetails details = getJavaDetails(unit);
     assertThat(details.getSourcepathList()).hasSize(1);
-    assertEquals(TEST_DATA_DIR, details.getSourcepathList().get(0));
+    assertThat(details.getSourcepathList().get(0)).isEqualTo(TEST_DATA_DIR);
     assertThat(details.getClasspathList()).isEmpty();
   }
 
@@ -379,9 +378,9 @@ public class JavaExtractorTest extends TestCase {
             "output");
 
     CompilationUnit unit = description.getCompilationUnit();
-    assertNotNull(unit);
-    assertEquals(TARGET1, unit.getVName().getSignature());
-    assertEquals(3, unit.getSourceFileCount());
+    assertThat(unit).isNotNull();
+    assertThat(unit.getVName().getSignature()).isEqualTo(TARGET1);
+    assertThat(unit.getSourceFileCount()).isEqualTo(3);
     assertThat(unit.getSourceFileList())
         .containsExactly(sources.get(0), sources.get(1), sources.get(2))
         .inOrder();
@@ -419,9 +418,9 @@ public class JavaExtractorTest extends TestCase {
             "output");
 
     CompilationUnit unit = description.getCompilationUnit();
-    assertNotNull(unit);
-    assertEquals(TARGET1, unit.getVName().getSignature());
-    assertEquals(2, unit.getSourceFileCount());
+    assertThat(unit).isNotNull();
+    assertThat(unit.getVName().getSignature()).isEqualTo(TARGET1);
+    assertThat(unit.getSourceFileCount()).isEqualTo(2);
     assertThat(unit.getSourceFileList()).containsExactly(sources.get(0), sources.get(1)).inOrder();
 
     // With the expected sources as required inputs.
@@ -431,7 +430,7 @@ public class JavaExtractorTest extends TestCase {
     // And the correct sourcepath set to replay the compilation.
     JavaDetails details = getJavaDetails(unit);
     assertThat(details.getSourcepathList()).hasSize(1);
-    assertEquals(TEST_DATA_DIR, details.getSourcepathList().get(0));
+    assertThat(details.getSourcepathList().get(0)).isEqualTo(TEST_DATA_DIR);
     assertThat(details.getClasspathList()).isEmpty();
   }
 
@@ -461,9 +460,9 @@ public class JavaExtractorTest extends TestCase {
             "output");
 
     CompilationUnit unit = description.getCompilationUnit();
-    assertNotNull(unit);
-    assertEquals(TARGET1, unit.getVName().getSignature());
-    assertEquals(2, unit.getSourceFileCount());
+    assertThat(unit).isNotNull();
+    assertThat(unit.getVName().getSignature()).isEqualTo(TARGET1);
+    assertThat(unit.getSourceFileCount()).isEqualTo(2);
     assertThat(unit.getSourceFileList()).containsExactly(sources.get(0), sources.get(1)).inOrder();
 
     // With the expected sources as required inputs.
@@ -541,7 +540,7 @@ public class JavaExtractorTest extends TestCase {
             "output");
 
     CompilationUnit unit = description.getCompilationUnit();
-    assertNotNull(unit);
+    assertThat(unit).isNotNull();
 
     // Check that the -d, -s, and -h flags have been removed from the compilation's arguments
     assertThat(unit.getArgumentList())
@@ -594,7 +593,7 @@ public class JavaExtractorTest extends TestCase {
             "output");
 
     CompilationUnit unit = description.getCompilationUnit();
-    assertNotNull(unit);
+    assertThat(unit).isNotNull();
     assertThat(unit.getVName().getSignature()).isEqualTo(TARGET1);
 
     String sillyGenerated = "output-gensrc.jar.files/processor/SillyGenerated.java";
@@ -640,10 +639,10 @@ public class JavaExtractorTest extends TestCase {
 
     CompilationUnit unit = description.getCompilationUnit();
 
-    assertNotNull(unit);
-    assertEquals(TARGET1, unit.getVName().getSignature());
-    assertEquals(0, unit.getSourceFileCount());
-    assertEquals(0, unit.getRequiredInputCount());
+   assertThat(unit).isNotNull();
+    assertThat(unit.getVName().getSignature()).isEqualTo(TARGET1);
+    assertThat(unit.getSourceFileCount()).isEqualTo(0);
+    assertThat(unit.getRequiredInputCount()).isEqualTo(0);
 
     // And the correct classpath set to replay the compilation.
     JavaDetails details = getJavaDetails(unit);
@@ -676,12 +675,12 @@ public class JavaExtractorTest extends TestCase {
             "output");
 
     CompilationUnit unit = description.getCompilationUnit();
-    assertNotNull(unit);
-    assertEquals(TARGET1, unit.getVName().getSignature());
-    assertEquals(1, unit.getSourceFileCount());
+    assertThat(unit).isNotNull();
+    assertThat(unit.getVName().getSignature()).isEqualTo(TARGET1);
+    assertThat(unit.getSourceFileCount()).isEqualTo(1);
     assertThat(unit.getSourceFileList()).containsExactly(sources.get(0)).inOrder();
 
-    assertEquals(2, unit.getRequiredInputCount());
+    assertThat(unit.getRequiredInputCount()).isEqualTo(2);
     List<String> requiredPaths = new ArrayList<>();
     for (FileInput input : unit.getRequiredInputList()) {
       requiredPaths.add(input.getInfo().getPath());

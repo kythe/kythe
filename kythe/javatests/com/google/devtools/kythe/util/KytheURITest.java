@@ -18,6 +18,9 @@ package com.google.devtools.kythe.util;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
+
 import com.google.devtools.kythe.proto.Storage.VName;
 import java.net.URISyntaxException;
 import junit.framework.TestCase;
@@ -27,40 +30,43 @@ public class KytheURITest extends TestCase {
 
   public void testParse() throws URISyntaxException {
     // Empty URIs.
-    assertSame(KytheURI.EMPTY, parse(""));
-    assertSame(KytheURI.EMPTY, parse("kythe:"));
-    assertSame(KytheURI.EMPTY, parse("kythe://"));
+    assertThat(parse("")).isSameAs(KytheURI.EMPTY);
+    assertThat(parse("kythe:")).isSameAs(KytheURI.EMPTY);
+    assertThat(parse("kythe://")).isSameAs(KytheURI.EMPTY);
 
     // Individual components.
-    assertEquals(builder().setSignature("sig").build(), parse("#sig"));
-    assertEquals(builder().setSignature("sig").build(), parse("kythe:#sig"));
-    assertEquals(builder().setCorpus("corpus").build(), parse("kythe://corpus"));
-    assertEquals(builder().setCorpus("corpus/").build(), parse("kythe://corpus/"));
-    assertEquals(
-        builder().setCorpus("corpus/with/path").build(), parse("kythe://corpus/with/path"));
-    assertEquals(builder().setCorpus("corpus/with/path").build(), parse("//corpus/with/path"));
-    assertEquals(builder().setRoot("R").build(), parse("kythe:?root=R"));
-    assertEquals(builder().setPath("P").build(), parse("kythe:?path=P"));
-    assertEquals(builder().setLanguage("L").build(), parse("kythe:?lang=L"));
+    assertThat(parse("#sig")).isEqualTo(builder().setSignature("sig").build());
+    assertThat(parse("kythe:#sig")).isEqualTo(builder().setSignature("sig").build());
+    assertThat(parse("kythe://corpus")).isEqualTo(builder().setCorpus("corpus").build());
+    assertThat(parse("kythe://corpus/")).isEqualTo(builder().setCorpus("corpus/").build());
+    assertThat(parse("kythe://corpus/with/path"))
+        .isEqualTo(builder().setCorpus("corpus/with/path").build());
+    assertThat(parse("//corpus/with/path"))
+        .isEqualTo(builder().setCorpus("corpus/with/path").build());
+    assertThat(parse("kythe:?root=R")).isEqualTo(builder().setRoot("R").build());
+    assertThat(parse("kythe:?path=P")).isEqualTo(builder().setPath("P").build());
+    assertThat(parse("kythe:?lang=L")).isEqualTo(builder().setLanguage("L").build());
 
     // Multiple attributes, with permutation of order.
-    assertEquals(builder().setRoot("R").setLanguage("L").build(), parse("kythe:?lang=L?root=R"));
-    assertEquals(
-        builder().setRoot("R").setLanguage("L").setPath("P").build(),
-        parse("kythe:?lang=L?path=P?root=R"));
-    assertEquals(
-        builder().setRoot("R").setLanguage("L").setPath("P").build(),
-        parse("kythe:?root=R?path=P?lang=L"));
+    assertThat(parse("kythe:?lang=L?root=R"))
+        .isEqualTo(builder().setRoot("R").setLanguage("L").build());
+    assertThat(parse("kythe:?lang=L?path=P?root=R"))
+        .isEqualTo(builder().setRoot("R").setLanguage("L").setPath("P").build());
+    assertThat(parse("kythe:?root=R?path=P?lang=L"))
+        .isEqualTo(builder().setRoot("R").setLanguage("L").setPath("P").build());
 
     // Everything.
-    assertEquals(
-        new KytheURI("sig", "bitbucket.org/creachadair/stringset", "blah", "stringset.go", "go"),
-        parse(
-            "kythe://bitbucket.org/creachadair/stringset?path=stringset.go?lang=go?root=blah#sig"));
-    assertEquals(
-        new KytheURI("", "libstdc++", "/usr/include/c++/4.8", "bits/basic_string.h", "c++"),
-        parse(
-            "kythe://libstdc%2B%2B?lang=c%2B%2B?path=bits/basic_string.h?root=/usr/include/c%2B%2B/4.8"));
+    assertThat(
+            parse(
+                "kythe://bitbucket.org/creachadair/stringset?path=stringset.go?lang=go?root=blah#sig"))
+        .isEqualTo(
+            new KytheURI(
+                "sig", "bitbucket.org/creachadair/stringset", "blah", "stringset.go", "go"));
+    assertThat(
+            parse(
+                "kythe://libstdc%2B%2B?lang=c%2B%2B?path=bits/basic_string.h?root=/usr/include/c%2B%2B/4.8"))
+        .isEqualTo(
+            new KytheURI("", "libstdc++", "/usr/include/c++/4.8", "bits/basic_string.h", "c++"));
   }
 
   public void testToString() throws URISyntaxException {
@@ -105,15 +111,17 @@ public class KytheURITest extends TestCase {
 
   public void testToStringGoCompatibility() {
     // Test cases added when an incompatibility with Go's kytheuri library is found.
-    assertEquals("kythe:#a%3D", builder().setSignature("a=").build().toString());
-    assertEquals(
-        "kythe://kythe#a%3D", builder().setCorpus("kythe").setSignature("a=").build().toString());
-    assertEquals("kythe:#%E5%BA%83", builder().setSignature("広").build().toString());
+    assertThat(builder().setSignature("a=").build().toString()).isEqualTo("kythe:#a%3D");
+    assertThat(builder().setCorpus("kythe").setSignature("a=").build().toString())
+        .isEqualTo("kythe://kythe#a%3D");
+    assertThat(builder().setSignature("広").build().toString()).isEqualTo("kythe:#%E5%BA%83");
   }
 
   private void checkToString(String expected, String... cases) throws URISyntaxException {
     for (String str : cases) {
-      assertEquals("KytheURI.parse(\"" + str + "\").toString()", expected, parse(str).toString());
+      assertWithMessage("KytheURI.parse(\"" + str + "\").toString()")
+          .that(parse(str).toString())
+          .isEqualTo(expected);
     }
   }
 
@@ -124,11 +132,11 @@ public class KytheURITest extends TestCase {
         root = null,
         lang = "";
     KytheURI uri = new KytheURI(signature, corpus, root, path, lang);
-    assertEquals(signature, uri.getSignature());
-    assertEquals(corpus, uri.getCorpus());
+    assertThat(uri.getSignature()).isEqualTo(signature);
+    assertThat(uri.getCorpus()).isEqualTo(corpus);
     assertThat(uri.getRoot()).isEmpty(); // nullToEmpty used
-    assertEquals(path, uri.getPath());
-    assertEquals(lang, uri.getLanguage());
+    assertThat(uri.getPath()).isEqualTo(path);
+    assertThat(uri.getLanguage()).isEqualTo(lang);
   }
 
   public void testToVName() throws URISyntaxException {
@@ -138,11 +146,11 @@ public class KytheURITest extends TestCase {
         root = null,
         lang = "c++";
     VName vname = new KytheURI(signature, corpus, root, path, lang).toVName();
-    assertEquals(signature, vname.getSignature());
-    assertEquals(corpus, vname.getCorpus());
+    assertThat(vname.getSignature()).isEqualTo(signature);
+    assertThat(vname.getCorpus()).isEqualTo(corpus);
     assertThat(vname.getRoot()).isEmpty(); // Proto fields are never null
-    assertEquals(path, vname.getPath());
-    assertEquals(lang, vname.getLanguage());
+    assertThat(vname.getPath()).isEqualTo(path);
+    assertThat(vname.getLanguage()).isEqualTo(lang);
   }
 
   public void testParseErrors() {
