@@ -60,11 +60,13 @@ public class ArchiveTest extends TestCase {
 
   private Archive archive;
 
+  @Override
   public void setUp() throws IOException {
     Path tempDir = Files.createTempDirectory("archive_test");
     archive = new Archive(tempDir);
   }
 
+  @Override
   public void tearDown() throws IOException {
     DeleteRecursively.delete(archive.getRoot());
     archive = null;

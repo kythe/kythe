@@ -16,9 +16,10 @@
 
 package com.google.devtools.kythe.util;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import com.google.common.io.BaseEncoding;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
@@ -131,7 +132,7 @@ public class JsonUtil {
     public JsonElement serialize(LazyStringList lsl, Type t, JsonSerializationContext ctx) {
       ArrayList<String> elements = new ArrayList<>(lsl.size());
       for (byte[] element : lsl.asByteArrayList()) {
-        elements.add(new String(element));
+        elements.add(new String(element, UTF_8));
       }
       return ctx.serialize(elements);
     }
@@ -141,7 +142,6 @@ public class JsonUtil {
       if (json.isJsonNull()) {
         return null;
       }
-      JsonArray array = json.getAsJsonArray();
       LazyStringList lsl = new LazyStringArrayList();
       for (JsonElement element : json.getAsJsonArray()) {
         lsl.add((String) ctx.deserialize(element, String.class));

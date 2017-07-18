@@ -17,8 +17,6 @@
 package com.google.devtools.kythe.util;
 
 import static com.google.common.truth.Truth.assertThat;
-
-import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.google.devtools.kythe.proto.Storage.VName;
@@ -126,11 +124,11 @@ public class KytheURITest extends TestCase {
   }
 
   public void testGetters() throws URISyntaxException {
-    String signature = "magic school truck",
-        corpus = "com.crazyTown-1.20_PROTOTYPE",
-        path = "usa/2.0",
-        root = null,
-        lang = "";
+    String signature = "magic school truck";
+    String corpus = "crazyTown";
+    String path = "usa/2.0";
+    String root = null;
+    String lang = "c++";
     KytheURI uri = new KytheURI(signature, corpus, root, path, lang);
     assertThat(uri.getSignature()).isEqualTo(signature);
     assertThat(uri.getCorpus()).isEqualTo(corpus);
@@ -164,7 +162,7 @@ public class KytheURITest extends TestCase {
         };
     for (String test : tests) {
       try {
-        KytheURI uri = KytheURI.parse(test);
+        KytheURI.parse(test);
         fail();
       } catch (Exception e) {
         // pass test

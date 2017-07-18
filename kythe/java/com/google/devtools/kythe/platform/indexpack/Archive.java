@@ -77,7 +77,9 @@ public class Archive {
   private static final String NEW_SUFFIX = ".new";
 
   private final Gson gson;
-  private final Path rootDir, dataDir, unitDir;
+  private final Path rootDir;
+  private final Path dataDir;
+  private final Path unitDir;
 
   /** Opens an existing index pack, if one exists; or if not, then attempts to create one. */
   public Archive(String path) {

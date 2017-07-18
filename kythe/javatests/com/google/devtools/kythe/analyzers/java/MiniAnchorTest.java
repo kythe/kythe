@@ -119,8 +119,8 @@ public class MiniAnchorTest extends TestCase {
     String second = anchors.get(1).getAnchoredTo();
     String third = anchors.get(2).getAnchoredTo();
     assertThat(
-            second.equals("bbb") && third.equals("ccc")
-                || second.equals("ccc") && third.equals("bbb"))
+            (second.equals("bbb") && third.equals("ccc"))
+                || (second.equals("ccc") && third.equals("bbb")))
         .isTrue();
   }
 }

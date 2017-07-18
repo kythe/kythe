@@ -18,7 +18,6 @@ package com.google.devtools.kythe.extractors.shared;
 
 import static com.google.common.base.StandardSystemProperty.USER_DIR;
 import static com.google.common.truth.Truth.assertThat;
-import static org.junit.Assert.assertArrayEquals;
 
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;

@@ -16,6 +16,8 @@
 
 package com.google.devtools.kythe.platform.java.filemanager;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import com.google.devtools.kythe.platform.shared.FileDataProvider;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -91,7 +93,7 @@ public class CustomFileObject implements FileObject {
 
   @Override
   public Reader openReader(boolean ignoreEncodingErrors) throws IOException {
-    return new InputStreamReader(openInputStream());
+    return new InputStreamReader(openInputStream(), UTF_8);
   }
 
   @Override
