@@ -237,24 +237,11 @@ func (c *Config) Extract(ctx context.Context, info *xapb.ExtraActionInfo) (*kind
 	cu.Proto.SourceFile = sourceFiles.Elements()
 	log.Printf("Found %d required inputs, %d source files", len(inputs), len(sourceFiles))
 
-	// Fetch concurrently. Each element of the proto slices is accessed by a
-	// single goroutine corresponding to its index.
-	fileData := make([]*apb.FileData, len(inputs))
 	start := time.Now()
-	var wg sync.WaitGroup
-	wg.Add(len(inputs))
-	for i, path := range inputs {
-		i, path := i, path
-		go func() {
-			defer wg.Done()
-			fd, err := c.readFileData(ctx, path)
-			if err != nil {
-				log.Fatalf("Reading input file: %v", err)
-			}
-			fileData[i] = fd
-		}()
+	fileData, err := c.FetchInputs(ctx, inputs)
+	if err != nil {
+		log.Fatalf("Reading input files failed: %v", err)
 	}
-	wg.Wait()
 	log.Printf("Finished reading required inputs [%v elapsed]", time.Since(start))
 
 	// Update the required inputs with file info.
@@ -274,4 +261,38 @@ func (c *Config) readFileData(ctx context.Context, path string) (*apb.FileData, 
 	}
 	defer f.Close()
 	return kindex.FileData(path, f)
+}
+
+// FetchInputs concurrently fetches the contents of all the specified file
+// paths.  All files are attempted regardless of error, but nil is only
+// returned if all fetches were successful.
+func (c *Config) FetchInputs(ctx context.Context, paths []string) ([]*apb.FileData, error) {
+	// Fetch concurrently. Each element of the proto slices is accessed by a
+	// single goroutine corresponding to its index.
+
+	// TODO(fromberger): Rework this to use golang.org/x/sync/errgroup, maybe.
+	fileData := make([]*apb.FileData, len(paths))
+	errc := make(chan error)
+	var wg sync.WaitGroup
+	wg.Add(len(paths))
+	for i, path := range paths {
+		i, path := i, path
+		go func() {
+			defer wg.Done()
+			fd, err := c.readFileData(ctx, path)
+			if err != nil {
+				log.Printf("ERROR: Reading input file: %v", err)
+				errc <- err
+			} else {
+				fileData[i] = fd
+			}
+		}()
+	}
+	go func() { wg.Wait(); close(errc) }()
+
+	var fetchErr error
+	for fetchErr = range errc {
+	}
+
+	return fileData, fetchErr
 }
