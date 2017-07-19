@@ -138,11 +138,11 @@ public class KytheURITest extends TestCase {
   }
 
   public void testToVName() throws URISyntaxException {
-    String signature = "magic school truck",
-        corpus = "crazyTown",
-        path = "usa/2.0",
-        root = null,
-        lang = "c++";
+    String signature = "magic school truck";
+    String corpus = "crazyTown";
+    String path = "usa/2.0";
+    String root = null;
+    String lang = "c++";
     VName vname = new KytheURI(signature, corpus, root, path, lang).toVName();
     assertThat(vname.getSignature()).isEqualTo(signature);
     assertThat(vname.getCorpus()).isEqualTo(corpus);
