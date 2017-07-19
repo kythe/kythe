@@ -29,8 +29,10 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
+	"kythe.io/kythe/go/platform/kindex"
 	"kythe.io/kythe/go/util/vnameutil"
 
+	bipb "kythe.io/kythe/proto/buildinfo_proto"
 	xapb "kythe.io/third_party/bazel/extra_actions_base_proto"
 )
 
@@ -92,4 +94,16 @@ func PackageName(label string) string {
 // PathInPackage reports whether path contains pkg as a directory fragment.
 func PathInPackage(path, pkg string) bool {
 	return strings.Contains(path, "/"+pkg+"/") || strings.HasPrefix(path, pkg+"/")
+}
+
+// SetTarget adds a details message to unit with the specified build target
+// name and rule type.
+func SetTarget(target, rule string, unit *kindex.Compilation) error {
+	if target != "" || rule != "" {
+		return unit.AddDetails(&bipb.BuildDetails{
+			BuildTarget: target,
+			RuleType:    rule,
+		})
+	}
+	return nil
 }

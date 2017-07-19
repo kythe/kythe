@@ -36,7 +36,6 @@ import (
 	"kythe.io/kythe/go/util/vnameutil"
 
 	apb "kythe.io/kythe/proto/analysis_proto"
-	bipb "kythe.io/kythe/proto/buildinfo_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
 	xapb "kythe.io/third_party/bazel/extra_actions_base_proto"
 )
@@ -200,9 +199,7 @@ func (c *Config) Extract(ctx context.Context, info *xapb.ExtraActionInfo) (*kind
 	}
 
 	// Capture the build system details.
-	if err := cu.AddDetails(&bipb.BuildDetails{
-		BuildTarget: info.GetOwner(),
-	}); err != nil {
+	if err := SetTarget(info.GetOwner(), "", cu); err != nil {
 		log.Printf("ERROR: Adding build details: %v", err)
 	}
 
@@ -210,7 +207,7 @@ func (c *Config) Extract(ctx context.Context, info *xapb.ExtraActionInfo) (*kind
 	// inputs and filter out which ones we actually want to keep by path
 	// inspection; then load the contents concurrently.
 	sort.Strings(spawnInfo.InputFile) // ensure a consistent order
-	inputs := c.ClassifyInputs(spawnInfo.InputFile, cu.Proto)
+	inputs := c.ClassifyInputs(spawnInfo.InputFile, cu)
 
 	start := time.Now()
 	fileData, err := c.FetchInputs(ctx, inputs)
@@ -265,7 +262,7 @@ func (c *Config) FetchInputs(ctx context.Context, paths []string) ([]*apb.FileDa
 // ClassifyInputs updates unit to add required inputs for each matching path
 // and to identify source inputs according to the rules of c. The filtered
 // complete list of inputs paths is returned.
-func (c *Config) ClassifyInputs(paths []string, unit *apb.CompilationUnit) []string {
+func (c *Config) ClassifyInputs(paths []string, unit *kindex.Compilation) []string {
 	var inputs []string
 	var sourceFiles stringset.Set
 	for _, in := range paths {
@@ -283,14 +280,14 @@ func (c *Config) ClassifyInputs(paths []string, unit *apb.CompilationUnit) []str
 
 			// Add the skeleton of a required input carrying the vname.
 			// File info (path, digest) are populated during fetch.
-			unit.RequiredInput = append(unit.RequiredInput, &apb.CompilationUnit_FileInput{
+			unit.Proto.RequiredInput = append(unit.Proto.RequiredInput, &apb.CompilationUnit_FileInput{
 				VName: vname,
 			})
 		} else {
 			c.logPrintf("Excluding input file: %q", in)
 		}
 	}
-	unit.SourceFile = sourceFiles.Elements()
+	unit.Proto.SourceFile = sourceFiles.Elements()
 	log.Printf("Found %d required inputs, %d source files", len(inputs), len(sourceFiles))
 	return inputs
 }
