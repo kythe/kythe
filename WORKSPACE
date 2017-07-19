@@ -295,3 +295,10 @@ new_git_repository(
     commit = "1ddad808d437abb2b8a55a950ec2616caa88969b",
     remote = "https://github.com/jmhodges/levigo.git",
 )
+
+new_git_repository(
+    name = "go_sync",
+    build_file = "third_party/go/sync.BUILD",
+    commit = "f52d1811a62927559de87708c8913c1650ce4f26",
+    remote = "https://github.com/golang/sync",
+)

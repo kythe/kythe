@@ -25,12 +25,12 @@ import (
 	"log"
 	"os"
 	"sort"
-	"sync"
 	"time"
 
 	"bitbucket.org/creachadair/stringset"
 
 	"github.com/golang/protobuf/proto"
+	"golang.org/x/sync/errgroup"
 
 	"kythe.io/kythe/go/platform/kindex"
 	"kythe.io/kythe/go/util/vnameutil"
@@ -245,31 +245,21 @@ func (c *Config) FetchInputs(ctx context.Context, paths []string) ([]*apb.FileDa
 	// Fetch concurrently. Each element of the proto slices is accessed by a
 	// single goroutine corresponding to its index.
 
-	// TODO(fromberger): Rework this to use golang.org/x/sync/errgroup, maybe.
 	fileData := make([]*apb.FileData, len(paths))
-	errc := make(chan error)
-	var wg sync.WaitGroup
-	wg.Add(len(paths))
+	var g errgroup.Group
 	for i, path := range paths {
 		i, path := i, path
-		go func() {
-			defer wg.Done()
+		g.Go(func() error {
 			fd, err := c.readFileData(ctx, path)
 			if err != nil {
 				log.Printf("ERROR: Reading input file: %v", err)
-				errc <- err
 			} else {
 				fileData[i] = fd
 			}
-		}()
+			return err
+		})
 	}
-	go func() { wg.Wait(); close(errc) }()
-
-	var fetchErr error
-	for fetchErr = range errc {
-	}
-
-	return fileData, fetchErr
+	return fileData, g.Wait()
 }
 
 // ClassifyInputs updates unit to add required inputs for each matching path
