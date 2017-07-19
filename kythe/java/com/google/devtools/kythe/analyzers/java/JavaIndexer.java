@@ -70,23 +70,27 @@ public class JavaIndexer {
       return;
     }
 
+    MetadataLoaders metadataLoaders = new MetadataLoaders();
+    metadataLoaders.addLoader(
+        new ProtobufMetadataLoader(desc.getCompilationUnit(), config.getDefaultMetadataCorpus()));
+    metadataLoaders.addLoader(new KytheMetadataLoader());
+
     try (OutputStream stream =
         Strings.isNullOrEmpty(config.getOutputPath())
             ? System.out
             : new BufferedOutputStream(new FileOutputStream(config.getOutputPath()))) {
-      MetadataLoaders metadataLoaders = new MetadataLoaders();
-      metadataLoaders.addLoader(
-          new ProtobufMetadataLoader(desc.getCompilationUnit(), config.getDefaultMetadataCorpus()));
-      metadataLoaders.addLoader(new KytheMetadataLoader());
+      KytheJavacAnalyzer analyzer =
+          new KytheJavacAnalyzer(
+              config,
+              new StreamFactEmitter(stream),
+              statistics == null ? NullStatisticsCollector.getInstance() : statistics,
+              metadataLoaders);
+      if (config.getPrintVNames()) {
+        analyzer.registerPlugin(new Plugin.PrintKytheNodes());
+      }
+
       new JavacAnalysisDriver()
-          .analyze(
-              new KytheJavacAnalyzer(
-                  config,
-                  new StreamFactEmitter(stream),
-                  statistics == null ? NullStatisticsCollector.getInstance() : statistics,
-                  metadataLoaders),
-              desc.getCompilationUnit(),
-              new FileDataCache(desc.getFileContents()));
+          .analyze(analyzer, desc.getCompilationUnit(), new FileDataCache(desc.getFileContents()));
     }
 
     if (statistics != null) {
@@ -104,6 +108,12 @@ public class JavaIndexer {
   private static class StandaloneConfig extends JavaIndexerConfig {
     @Parameter(description = "<compilation to analyze>", required = true)
     private List<String> compilation = new ArrayList<>();
+
+    @Parameter(
+      names = "--print_vnames",
+      description = "Print Kythe node VNames associated to each JCTree to stderr"
+    )
+    private boolean printVNames;
 
     @Parameter(
       names = "--print_statistics",
@@ -125,6 +135,10 @@ public class JavaIndexer {
 
     public StandaloneConfig() {
       super("java-indexer");
+    }
+
+    public final boolean getPrintVNames() {
+      return printVNames;
     }
 
     public final boolean getPrintStatistics() {

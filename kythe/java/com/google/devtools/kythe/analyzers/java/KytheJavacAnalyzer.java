@@ -28,8 +28,14 @@ import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.tools.javac.api.JavacTaskImpl;
+import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCCompilationUnit;
 import com.sun.tools.javac.util.Context;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import javax.tools.Diagnostic;
 
 /** {@link JavacAnalyzer} to emit Kythe nodes and edges. */
@@ -42,6 +48,7 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
   private final FactEmitter emitter;
   private final JavaIndexerConfig config;
   private final MetadataLoaders metadataLoaders;
+  private final List<Plugin> plugins = new ArrayList<>();
 
   // should be set in analyzeCompilationUnit before any call to analyzeFile
   private JavaEntrySets entrySets;
@@ -57,6 +64,15 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
     this.emitter = emitter;
     this.config = config;
     this.metadataLoaders = metadataLoaders;
+  }
+
+  /**
+   * Register a {@link Plugin} to be run for each {@link JCCompilationUnit} analysis. Plugins are
+   * executed in the same order they are registered.
+   */
+  public KytheJavacAnalyzer registerPlugin(Plugin plugin) {
+    plugins.add(plugin);
+    return this;
   }
 
   @Override
@@ -92,6 +108,11 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
     Preconditions.checkState(
         entrySets != null, "analyzeCompilationUnit must be called to analyze each file");
     Context context = ((JavacTaskImpl) details.getJavac()).getContext();
+    JCCompilationUnit compilation = (JCCompilationUnit) ast;
+    Map<JCTree, Plugin.KytheNode> nodes = null;
+    if (!plugins.isEmpty()) {
+      nodes = new HashMap<>();
+    }
     try {
       SignatureGenerator signatureGenerator =
           new SignatureGenerator(ast, context, config.getEmitJvmSignatures());
@@ -100,13 +121,24 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
           getStatisticsCollector(),
           entrySets,
           signatureGenerator,
-          (JCCompilationUnit) ast,
+          compilation,
+          nodes == null ? null : nodes::put,
           details.getEncoding(),
           config.getVerboseLogging(),
           details.getFileManager(),
           metadataLoaders);
     } catch (Throwable e) {
       throw new AnalysisException("Exception analyzing file: " + ast.getSourceFile().getName(), e);
+    }
+    if (!plugins.isEmpty()) {
+      Plugin.KytheGraph graph = new Plugin.KytheGraph(Collections.unmodifiableMap(nodes));
+      for (Plugin plugin : plugins) {
+        try {
+          plugin.run(compilation, entrySets, graph);
+        } catch (Throwable e) {
+          logger.warningfmt(e, "Error running plugin %s: %s", plugin.getClass(), e.getMessage());
+        }
+      }
     }
   }
 }

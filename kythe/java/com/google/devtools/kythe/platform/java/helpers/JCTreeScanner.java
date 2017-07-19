@@ -166,7 +166,9 @@ public class JCTreeScanner<R, P> implements TreeVisitor<R, P> {
     }
     TreePath prev = treePath;
     try {
-      treePath = new TreePath(treePath, tree);
+      if (treePath != null) {
+        treePath = new TreePath(treePath, tree);
+      }
       return tree.accept(this, p);
     } finally {
       treePath = prev;

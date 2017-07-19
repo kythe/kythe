@@ -89,6 +89,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -111,6 +112,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   private final SignatureGenerator signatureGenerator;
   private final Positions filePositions;
   private final Map<Integer, List<Comment>> comments = new HashMap<>();
+  private final BiConsumer<JCTree, Plugin.KytheNode> nodeConsumer;
   private final Context javaContext;
   private final JavaFileStoreBasedFileManager fileManager;
   private final MetadataLoaders metadataLoaders;
@@ -124,6 +126,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       SignatureGenerator signatureGenerator,
       SourceText src,
       Context javaContext,
+      BiConsumer<JCTree, Plugin.KytheNode> nodeConsumer,
       boolean verboseLogging,
       JavaFileStoreBasedFileManager fileManager,
       MetadataLoaders metadataLoaders) {
@@ -132,6 +135,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     this.signatureGenerator = signatureGenerator;
     this.filePositions = src.getPositions();
     this.javaContext = javaContext;
+    this.nodeConsumer = nodeConsumer;
     this.verboseLogging = verboseLogging;
     this.fileManager = fileManager;
     this.metadataLoaders = metadataLoaders;
@@ -153,6 +157,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       JavaEntrySets entrySets,
       SignatureGenerator signatureGenerator,
       JCCompilationUnit compilation,
+      BiConsumer<JCTree, Plugin.KytheNode> nodeConsumer,
       Charset sourceEncoding,
       boolean verboseLogging,
       JavaFileStoreBasedFileManager fileManager,
@@ -165,6 +170,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
             signatureGenerator,
             src,
             javaContext,
+            nodeConsumer,
             verboseLogging,
             fileManager,
             metadataLoaders)
@@ -174,6 +180,15 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   /** Returns the {@link Symtab} (symbol table) for the compilation currently being processed. */
   public Symtab getSymbols() {
     return Symtab.instance(javaContext);
+  }
+
+  @Override
+  public JavaNode scan(JCTree tree, TreeContext owner) {
+    JavaNode node = super.scan(tree, owner);
+    if (node != null && nodeConsumer != null) {
+      nodeConsumer.accept(tree, new Plugin.KytheNode(node.getVName()));
+    }
+    return node;
   }
 
   @Override
@@ -625,8 +640,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     TreeContext ctx = owner.down(reference);
     scan(reference.getQualifierExpression(), ctx);
     return emitNameUsage(
-        ctx,
-        reference.sym,
+            ctx,
+            reference.sym,
         reference.getMode() == ReferenceMode.NEW ? Keyword.of("new") : reference.name);
   }
 
