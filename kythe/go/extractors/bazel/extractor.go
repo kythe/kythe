@@ -210,32 +210,7 @@ func (c *Config) Extract(ctx context.Context, info *xapb.ExtraActionInfo) (*kind
 	// inputs and filter out which ones we actually want to keep by path
 	// inspection; then load the contents concurrently.
 	sort.Strings(spawnInfo.InputFile) // ensure a consistent order
-	var inputs []string
-	var sourceFiles stringset.Set
-	for _, in := range spawnInfo.InputFile {
-		path, ok := c.checkInput(in)
-		if ok {
-			inputs = append(inputs, path)
-			if c.isSource(path) {
-				sourceFiles.Add(path)
-				c.logPrintf("Matched source file from inputs: %q", path)
-			}
-			vname, ok := c.Rules.Apply(path)
-			if !ok {
-				vname = &spb.VName{Corpus: c.Corpus, Path: path}
-			}
-
-			// Add the skeleton of a required input carrying the vname.
-			// File info (path, digest) are populated during fetch.
-			cu.Proto.RequiredInput = append(cu.Proto.RequiredInput, &apb.CompilationUnit_FileInput{
-				VName: vname,
-			})
-		} else {
-			c.logPrintf("Excluding input file: %q", in)
-		}
-	}
-	cu.Proto.SourceFile = sourceFiles.Elements()
-	log.Printf("Found %d required inputs, %d source files", len(inputs), len(sourceFiles))
+	inputs := c.ClassifyInputs(spawnInfo.InputFile, cu.Proto)
 
 	start := time.Now()
 	fileData, err := c.FetchInputs(ctx, inputs)
@@ -295,4 +270,37 @@ func (c *Config) FetchInputs(ctx context.Context, paths []string) ([]*apb.FileDa
 	}
 
 	return fileData, fetchErr
+}
+
+// ClassifyInputs updates unit to add required inputs for each matching path
+// and to identify source inputs according to the rules of c. The filtered
+// complete list of inputs paths is returned.
+func (c *Config) ClassifyInputs(paths []string, unit *apb.CompilationUnit) []string {
+	var inputs []string
+	var sourceFiles stringset.Set
+	for _, in := range paths {
+		path, ok := c.checkInput(in)
+		if ok {
+			inputs = append(inputs, path)
+			if c.isSource(path) {
+				sourceFiles.Add(path)
+				c.logPrintf("Matched source file from inputs: %q", path)
+			}
+			vname, ok := c.Rules.Apply(path)
+			if !ok {
+				vname = &spb.VName{Corpus: c.Corpus, Path: path}
+			}
+
+			// Add the skeleton of a required input carrying the vname.
+			// File info (path, digest) are populated during fetch.
+			unit.RequiredInput = append(unit.RequiredInput, &apb.CompilationUnit_FileInput{
+				VName: vname,
+			})
+		} else {
+			c.logPrintf("Excluding input file: %q", in)
+		}
+	}
+	unit.SourceFile = sourceFiles.Elements()
+	log.Printf("Found %d required inputs, %d source files", len(inputs), len(sourceFiles))
+	return inputs
 }
