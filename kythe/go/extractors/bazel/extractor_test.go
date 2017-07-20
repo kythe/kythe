@@ -20,6 +20,7 @@ import (
 	"context"
 	"io"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -30,10 +31,14 @@ import (
 	"kythe.io/kythe/go/platform/kindex"
 	"kythe.io/kythe/go/util/ptypes"
 
+	apb "kythe.io/kythe/proto/analysis_proto"
 	bipb "kythe.io/kythe/proto/buildinfo_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
 	xapb "kythe.io/third_party/bazel/extra_actions_base_proto"
 )
+
+// The digest of an empty input, cf. openssl sha256 /dev/null
+const emptyDigest = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 
 func TestExtractor(t *testing.T) {
 	const (
@@ -41,8 +46,7 @@ func TestExtractor(t *testing.T) {
 		testTarget = "//target"
 		testLang   = "foo"
 		testOutput = "outfile"
-		wantDigest = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-		// cf. openssl sha256 /dev/null
+		wantDigest = emptyDigest
 	)
 
 	// Gin up an exra action record with some known fields, and make sure the
@@ -169,5 +173,49 @@ func TestExtractor(t *testing.T) {
 		} else if want := (&bipb.BuildDetails{BuildTarget: testTarget}); !proto.Equal(&got, want) {
 			t.Errorf("Wrong build details:\n got %+v\nwant %+v", &got, want)
 		}
+	}
+}
+
+func TestFetchInputs(t *testing.T) {
+	tmp, err := ioutil.TempDir("", "TestFetchInputs")
+	if err != nil {
+		t.Fatalf("Error creating temp directory: %v", err)
+	}
+	defer os.RemoveAll(tmp) // best effort
+
+	goodFile := filepath.Join(tmp, "goodto.go")
+	if err := ioutil.WriteFile(goodFile, nil, 0755); err != nil {
+		t.Fatalf("Creating test file: %v", err)
+	}
+
+	var cfg Config
+	fd, err := cfg.FetchInputs(context.Background(), []string{
+		goodFile,
+		filepath.Join(tmp, "bad.h"), // does not exist
+	})
+
+	// There should have been an error, because one of the requested files does
+	// not exist. However, despite that error we should have gotten data for
+	// the other file.
+	if err == nil {
+		t.Error("FetchInputs was expected to report an error, but did not")
+	} else if len(fd) != 2 {
+		t.Fatalf("FetchInputs: got %d files, wanted %d", len(fd), 2)
+	}
+
+	// There should be as many entries in the result as in the input; any that
+	// were not successfully loaded should be nil.
+	want := &apb.FileData{
+		Content: nil,
+		Info: &apb.FileInfo{
+			Path:   goodFile,
+			Digest: emptyDigest,
+		},
+	}
+	if !proto.Equal(fd[0], want) {
+		t.Errorf("FileData[0]: got %+v, want %+v", fd[0], want)
+	}
+	if fd[1] != nil {
+		t.Errorf("FileData[1]: got %+v, want nil", fd[1])
 	}
 }
