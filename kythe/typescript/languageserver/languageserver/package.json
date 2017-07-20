@@ -6,10 +6,13 @@
   "bin": {
     "kythe-languageserver": "dist/src/bin/kythe-languageserver.js"
   },
+  "files": [
+    "dist/src"
+  ],
   "typings": "dist/src/server.d.ts",
   "scripts": {
     "clean": "rm -r dist",
-    "prepare": "tsc -p .",
+    "prepare": "rm -rf dist; tsc --sourceMap false -p .; cp -R src/proto dist/src",
     "compile": "tsc -p .",
     "watch": "tsc --watch -p .",
     "watch_test": "tsc --watch -p ./tsconfig.test.json",

@@ -10,13 +10,13 @@
     "strictNullChecks": true,
     "noImplicitAny": true,
     "downlevelIteration": true,
-    "allowJs": true,
     "noImplicitThis": true,
     "alwaysStrict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "moduleResolution": "node",
-    "sourceMap": true
+    "sourceMap": true,
+    "declaration": true
   }
 }
