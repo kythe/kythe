@@ -24,23 +24,39 @@ describe('Document', () => {
   describe('xrefs', () => {
 
     it('should return the smallest matching Range', () => {
-      const document = new Document([
-        {
-          range: Range.create(Position.create(1, 1), Position.create(1, 5)),
-          target: 'longest' as String as KytheTicketString
-        },
-        {
-          range: Range.create(Position.create(1, 2), Position.create(1, 3)),
-          target: 'shortest' as String as KytheTicketString
-        },
-        {
-          range: Range.create(Position.create(1, 2), Position.create(1, 4)),
-          target: 'middle' as String as KytheTicketString
-        }
-      ]);
+      const text = 'abcdefg';
+      const document = new Document(
+          [
+            {
+              range: Range.create(Position.create(0, 0), Position.create(0, 5)),
+              target: 'longest' as String as KytheTicketString
+            },
+            {
+              range: Range.create(Position.create(0, 2), Position.create(0, 3)),
+              target: 'shortest' as String as KytheTicketString
+            },
+            {
+              range: Range.create(Position.create(0, 2), Position.create(0, 4)),
+              target: 'middle' as String as KytheTicketString
+            }
+          ],
+          text);
 
-      assert.equal('shortest', document.xrefs(Position.create(1, 2)) as String);
+      assert.equal('shortest', document.xrefs(Position.create(0, 2)) as String);
     });
 
+    it('should map references to dirty state', () => {
+      const text = 'hi there';
+      const document = new Document(
+          [{
+            range: Range.create(Position.create(0, 0), Position.create(0, 2)),
+            target: 'hi' as String as KytheTicketString
+          }],
+          text);
+
+      document.updateDirtyState('  hi there');
+
+      assert.equal('hi', document.xrefs(Position.create(0, 3)) as String);
+    });
   });
 });

@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "ajv": "^5.2.2",
+    "diff-match-patch": "^1.0.0",
     "path-to-regexp": "^1.7.0",
     "protobufjs": "github:Alexendoo/protobuf.js#optional-field-types",
     "request": "^2.81.0",
@@ -29,7 +30,7 @@
   "devDependencies": {
     "@types/ajv": "^1.0.0",
     "@types/chai": "^4.0.1",
-    "@types/long": "^3.0.31",
+    "@types/diff-match-patch": "^1.0.31",
     "@types/mocha": "^2.2.41",
     "@types/node": "^8.0.3",
     "@types/request": "0.0.45",

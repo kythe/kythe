@@ -28,7 +28,6 @@ export interface XRefClient {
 }
 
 export class XRefHTTPClient implements XRefClient {
-  
   // An HTTP client preconfigured with all shared parameters
   private client: RequestAPI<RequestPromise, RequestPromiseOptions, UrlOptions>;
 
@@ -39,11 +38,21 @@ export class XRefHTTPClient implements XRefClient {
 
   async decorations(req: kythe.proto.IDecorationsRequest):
       Promise<kythe.proto.IDecorationsReply> {
-    return await this.client('decorations', {body: req});
+    try {
+      return await this.client('decorations', {body: req});
+    } catch (e) {
+      console.error(e.message);
+      return {};
+    }
   }
 
   async xrefs(req: kythe.proto.ICrossReferencesRequest):
       Promise<kythe.proto.ICrossReferencesReply> {
-    return await this.client('xrefs', {body: req});
+    try {
+      return await this.client('xrefs', {body: req});
+    } catch (e) {
+      console.error(e.message);
+      return {};
+    }
   }
 }

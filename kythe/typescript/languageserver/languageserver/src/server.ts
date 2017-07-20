@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import {StringDecoder} from 'string_decoder';
 import * as LS from 'vscode-languageserver';
 
 import {Document, RefResolution} from './document';
@@ -21,10 +22,11 @@ import {KytheTicketString, LocalPath, normalizeLSPath, PathContext, ticketString
 import {kythe} from './proto/xref';
 import {XRefClient} from './xrefClient';
 
-export class Server {
 
+export class Server {
   // Used to find the Document containing file decorations for a given LocalPath
-  private lookup: Map<LocalPath, Document> = new Map<LocalPath, Document>();
+  private kytheDocuments: Map<LocalPath, Document> =
+      new Map<LocalPath, Document>();
 
   constructor(private paths: PathContext, private client: XRefClient) {}
 
@@ -41,7 +43,7 @@ export class Server {
   async onReferences({textDocument: {uri}, position}: LS.ReferenceParams):
       Promise<LS.Location[]> {
     const localPath = normalizeLSPath(uri);
-    const doc = this.lookup.get(localPath);
+    const doc = this.kytheDocuments.get(localPath);
 
     // If we don't have decorations for the file, we can't find references
     if (!doc) return [];
@@ -63,10 +65,25 @@ export class Server {
     const locs =
         refs.map(r => this.anchortoLoc(r)).filter(r => !(r instanceof Error)) as
         LS.Location[];
+
+    this.adjustDirtyLocations(locs);
     return locs;
   }
 
-  async onDidOpenTextDocument({textDocument: {uri: path}}:
+  async onDidChangeTextDocument({
+    textDocument: {uri: path},
+    contentChanges: [{text}]
+  }: LS.DidChangeTextDocumentParams): Promise<void> {
+    const localPath = normalizeLSPath(path);
+    const doc = this.kytheDocuments.get(localPath);
+    if (doc === undefined) {
+      return;
+    }
+
+    doc.updateDirtyState(text);
+  }
+
+  async onDidOpenTextDocument({textDocument: {uri: path, text}}:
                                   LS.DidOpenTextDocumentParams): Promise<void> {
     const localPath = normalizeLSPath(path);
     const kytheTicket = this.paths.ticket(localPath);
@@ -76,10 +93,14 @@ export class Server {
       return;
     }
 
-    const qualifiedXRefs: RefResolution[] = [];
+    if (this.kytheDocuments.has(localPath)) {
+      return;
+    }
 
+    const qualifiedXRefs: RefResolution[] = [];
+    const ticketStr = ticketString(kytheTicket);
     const dec = await this.client.decorations({
-      location: {ticket: ticketString(kytheTicket) as String as string},
+      location: {ticket: ticketStr as String as string},
       references: true,
       target_definitions: true,
       source_text: true
@@ -98,13 +119,22 @@ export class Server {
           {target: r.target_ticket as String as KytheTicketString, range});
     }
 
-    this.lookup.set(localPath, new Document(qualifiedXRefs));
+    if (dec.source_text === undefined) {
+      console.error(`Server failed to provide source_text for ${ticketStr}`);
+      return;
+    }
+    const decoder = new StringDecoder('utf8');
+    const textBuffer = Buffer.from(dec.source_text as {} as string, 'base64');
+    const kytheText = decoder.write(textBuffer);
+    const doc = new Document(qualifiedXRefs, kytheText, text);
+    this.kytheDocuments.set(localPath, doc);
   }
 
-  async onDefinition({textDocument: {uri}, position}: 
-                        LS.TextDocumentPositionParams): Promise<LS.Location[]> {
+  async onDefinition({textDocument: {uri},
+                      position}: LS.TextDocumentPositionParams):
+      Promise<LS.Location[]> {
     const localPath = normalizeLSPath(uri);
-    const doc = this.lookup.get(localPath);
+    const doc = this.kytheDocuments.get(localPath);
 
     // If we don't have decorations for the file, we can't find references
     if (!doc) return [];
@@ -121,14 +151,20 @@ export class Server {
     });
 
     if (xrefs.cross_references == null) return [];
-    const refs = [...xrefs.cross_references[ticket].declaration || [], 
-                  ...xrefs.cross_references[ticket].definition || []];
+    const refs = [
+      ...xrefs.cross_references[ticket].declaration || [],
+      ...xrefs.cross_references[ticket].definition || []
+    ];
 
     const locs =
         refs.map(r => this.anchortoLoc(r)).filter(r => !(r instanceof Error)) as
         LS.Location[];
+
+    this.adjustDirtyLocations(locs);
+
     return locs;
   }
+
 
   private anchortoLoc(r: kythe.proto.CrossReferencesReply.IRelatedAnchor):
       LS.Location|Error {
@@ -157,7 +193,32 @@ export class Server {
       range,
     };
   }
+
+  // Takes a list of locations in original source files and changes them to the
+  // corresponding location in the dirty state
+  private adjustDirtyLocations(locs: LS.Location[]) {
+    for (const l of locs) {
+      const localPath = normalizeLSPath(l.uri);
+      const doc = this.kytheDocuments.get(localPath);
+      // If the document isn't open, it doesn't have a dirty state we can work
+      // with Note: The document may still be dirty and not open. Checking this
+      // is too expensive.
+      if (doc === undefined) {
+        continue;
+      }
+
+      const dirtyRange = doc.dirtyRange(l.range);
+      if (dirtyRange instanceof Error) {
+        console.error(dirtyRange);
+        continue;
+      }
+
+      l.range = dirtyRange;
+    }
+  }
 }
+
+
 
 function spanToRange(s: kythe.proto.common.ISpan): LS.Range|Error {
   if (s.start === undefined || s.end === undefined) {
@@ -165,7 +226,13 @@ function spanToRange(s: kythe.proto.common.ISpan): LS.Range|Error {
   }
 
   return {
-    start: {line: (s.start.line_number || 0) - 1, character: s.start.column_offset || 0},
-    end: {line: (s.end.line_number || 0) - 1, character: s.end.column_offset || 0}
+    start: {
+      line: (s.start.line_number || 1) - 1,
+      character: s.start.column_offset || 0
+    },
+    end: {
+      line: (s.end.line_number || 1) - 1,
+      character: s.end.column_offset || 0
+    }
   };
 }

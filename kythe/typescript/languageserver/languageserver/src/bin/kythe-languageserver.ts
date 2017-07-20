@@ -58,10 +58,10 @@ conn.onInitialize((params): InitializeResult => {
   const ret = server.onInitialize(params);
 
   /* All implemented behaviors go here */
-  conn.onDidOpenTextDocument(server.onDidOpenTextDocument.bind(server));
   conn.onReferences(server.onReferences.bind(server));
   conn.onDefinition(server.onDefinition.bind(server));
-
+  conn.onDidChangeTextDocument(server.onDidChangeTextDocument.bind(server));
+  conn.onDidOpenTextDocument(server.onDidOpenTextDocument.bind(server));
   return ret;
 });
 
