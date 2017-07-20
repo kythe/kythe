@@ -175,7 +175,11 @@ func main() {
 	}
 
 	start := time.Now()
-	cu, err := config.Extract(context.Background(), info)
+	ai, err := bazel.SpawnAction(info)
+	if err != nil {
+		log.Fatalf("Invalid extra action: %v", err)
+	}
+	cu, err := config.Extract(context.Background(), ai)
 	if err != nil {
 		log.Fatalf("Extraction failed: %v", err)
 	}

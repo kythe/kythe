@@ -74,7 +74,7 @@ func TestExtractor(t *testing.T) {
 	// These values are set by the test hooks to verify the plumbing does the
 	// expected things.
 	var (
-		gotInfo       *xapb.SpawnInfo
+		gotInfo       *ActionInfo
 		checkedInputs []string
 		checkedEnv    []string
 		gotUnit       *kindex.Compilation
@@ -83,7 +83,7 @@ func TestExtractor(t *testing.T) {
 		Corpus:   testCorpus,
 		Language: testLang,
 
-		CheckAction: func(_ context.Context, info *xapb.SpawnInfo) error {
+		CheckAction: func(_ context.Context, info *ActionInfo) error {
 			gotInfo = info
 			return nil
 		},
@@ -109,7 +109,11 @@ func TestExtractor(t *testing.T) {
 
 	t.Log("Extra action info:\n", proto.MarshalTextString(xa))
 
-	cu, err := config.Extract(context.Background(), xa)
+	ai, err := SpawnAction(xa)
+	if err != nil {
+		t.Fatalf("Invalid extra action info: %v", err)
+	}
+	cu, err := config.Extract(context.Background(), ai)
 	if err != nil {
 		t.Errorf("Error in extraction: %v", err)
 	}
@@ -120,10 +124,20 @@ func TestExtractor(t *testing.T) {
 	}
 
 	// Verify that the info check callback was invoked.
+	wantInfo := &ActionInfo{ // N.B.: Values prior to filtering!
+		Target:    testTarget,
+		Arguments: []string{"cc", "-o", testOutput, "-c", "2.src", "4.src"},
+		Inputs:    []string{"1.dep", "2.src", "3.dep", "4.src"},
+		Outputs:   []string{testOutput, "garbage"},
+		Environment: map[string]string{
+			"PATH":  "p1:p2",
+			"BOGUS": "should not be seen",
+		},
+	}
 	if gotInfo == nil {
 		t.Error("SpawnInfo not reported")
-	} else if !proto.Equal(gotInfo, si) {
-		t.Errorf("Wrong SpawnInfo reported:\n got %+v\nwant %+v", gotInfo, si)
+	} else if !reflect.DeepEqual(gotInfo, wantInfo) {
+		t.Errorf("Wrong SpawnInfo reported:\n got %+v\nwant %+v", gotInfo, wantInfo)
 	}
 
 	// Verify that the inputs were all passed to the callback.

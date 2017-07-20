@@ -99,7 +99,11 @@ func main() {
 		CheckEnv:    ext.checkEnv,
 		Fixup:       ext.fixup,
 	}
-	cu, err := config.Extract(context.Background(), info)
+	ai, err := bazel.SpawnAction(info)
+	if err != nil {
+		log.Fatalf("Invalid extra action: %v", err)
+	}
+	cu, err := config.Extract(context.Background(), ai)
 	if err != nil {
 		log.Fatalf("Extraction failed: %v", err)
 	}
@@ -157,19 +161,19 @@ type extractor struct {
 	goos, goarch string
 }
 
-func (e *extractor) checkAction(_ context.Context, info *eapb.SpawnInfo) error {
-	toolArgs, err := extractToolArgs(info.Argument)
+func (e *extractor) checkAction(_ context.Context, info *bazel.ActionInfo) error {
+	toolArgs, err := extractToolArgs(info.Arguments)
 	if err != nil {
 		return fmt.Errorf("extracting tool arguments: %v", err)
 	}
 	e.toolArgs = toolArgs
 
-	for _, evar := range info.Variable {
-		switch name := evar.GetName(); name {
+	for name, value := range info.Environment {
+		switch name {
 		case "GOOS":
-			e.goos = evar.GetValue()
+			e.goos = value
 		case "GOARCH":
-			e.goarch = evar.GetValue()
+			e.goarch = value
 		}
 	}
 	return nil

@@ -42,22 +42,19 @@ import (
 
 // A Config carries settings that control the extraction process.
 //
-// The extractor works for "spawn" actions. By default, all input files are
-// captured as required inputs, all specified environment variables are stored,
-// all command-line arguments are recorded, and the "owner" of the extra action
-// is marked as the build target in a build details message.
+// By default, all input files are captured as required inputs, all specified
+// environment variables are stored, all command-line arguments are recorded,
+// and the "owner" of the extra action is marked as the build target in a build
+// details message.
 //
 // The caller may override these behaviours by providing callbacks to handle
 // various stages of the extraction process. Schematically, the extractor does
 // the following steps:
 //
-//    Unpack .. CheckAction .. CheckInputs/Env .. Fetch .. Fixup
-//
-// The "Unpack" stage extracts a SpawnInfo message from the ExtraActionInfo,
-// and reports an error if one is not found.
+//    CheckAction .. CheckInputs/Env .. Fetch .. Fixup
 //
 // The "CheckAction" stage gives the caller an opportunity to preprocess the
-// action and decide whether to continue. The caller may modify the SpawnInfo
+// action and decide whether to continue. The caller may modify the ActionInfo
 // during this process if it wishes.
 //
 // Next, each input file is checked for inclusion in the compilation, and for
@@ -82,7 +79,7 @@ type Config struct {
 	//
 	// This function may modify its argument, and such changes will be
 	// preserved as this is invoked before further processing.
-	CheckAction func(context.Context, *xapb.SpawnInfo) error
+	CheckAction func(context.Context, *ActionInfo) error
 
 	// If set, this function reports whether an input path should be kept in
 	// the resulting compilation unit, and returns an optionally-modified
@@ -109,7 +106,7 @@ type Config struct {
 	OpenRead func(context.Context, string) (io.ReadCloser, error)
 }
 
-func (c *Config) checkAction(ctx context.Context, info *xapb.SpawnInfo) error {
+func (c *Config) checkAction(ctx context.Context, info *ActionInfo) error {
 	if check := c.CheckAction; check != nil {
 		return check(ctx, info)
 	}
@@ -158,14 +155,9 @@ func (c *Config) logPrintf(msg string, args ...interface{}) {
 }
 
 // Extract extracts a compilation from the specified extra action info.
-func (c *Config) Extract(ctx context.Context, info *xapb.ExtraActionInfo) (*kindex.Compilation, error) {
-	si, err := proto.GetExtension(info, xapb.E_SpawnInfo_SpawnInfo)
-	if err != nil {
-		return nil, fmt.Errorf("extra action does not have SpawnInfo: %v", err)
-	}
-	spawnInfo := si.(*xapb.SpawnInfo)
-	log.Printf("Found SpawnInfo for %q with %d inputs", info.GetOwner(), len(spawnInfo.InputFile))
-	if err := c.checkAction(ctx, spawnInfo); err != nil {
+func (c *Config) Extract(ctx context.Context, info *ActionInfo) (*kindex.Compilation, error) {
+	log.Printf("Extracting XA for %q with %d inputs", info.Target, len(info.Inputs))
+	if err := c.checkAction(ctx, info); err != nil {
 		return nil, err
 	}
 
@@ -176,20 +168,19 @@ func (c *Config) Extract(ctx context.Context, info *xapb.ExtraActionInfo) (*kind
 				Language: c.Language,
 				Corpus:   c.Corpus,
 			},
-			Argument: spawnInfo.Argument,
+			Argument: info.Arguments,
 		},
 	}
 
-	// Capture the primary output path.  Although the SpawnInfo has room for
+	// Capture the primary output path.  Although the action has room for
 	// multiple outputs, we expect only one to be set in practice.  It's
 	// harmless if there are more, though, so don't fail for that.
-	if outs := spawnInfo.OutputFile; len(outs) > 0 {
-		cu.Proto.OutputKey = outs[0]
+	if len(info.Outputs) > 0 {
+		cu.Proto.OutputKey = info.Outputs[0]
 	}
 
 	// Capture environment variables.
-	for _, evar := range spawnInfo.Variable {
-		name, value := evar.GetName(), evar.GetValue()
+	for name, value := range info.Environment {
 		if c.checkEnv(name, value) {
 			cu.Proto.Environment = append(cu.Proto.Environment, &apb.CompilationUnit_Env{
 				Name:  name,
@@ -199,15 +190,15 @@ func (c *Config) Extract(ctx context.Context, info *xapb.ExtraActionInfo) (*kind
 	}
 
 	// Capture the build system details.
-	if err := SetTarget(info.GetOwner(), "", cu); err != nil {
+	if err := SetTarget(info.Target, info.Rule, cu); err != nil {
 		log.Printf("ERROR: Adding build details: %v", err)
 	}
 
 	// Load and populate file contents and required inputs.  First scan the
 	// inputs and filter out which ones we actually want to keep by path
 	// inspection; then load the contents concurrently.
-	sort.Strings(spawnInfo.InputFile) // ensure a consistent order
-	inputs := c.ClassifyInputs(spawnInfo.InputFile, cu)
+	sort.Strings(info.Inputs) // ensure a consistent order
+	inputs := c.ClassifyInputs(info.Inputs, cu)
 
 	start := time.Now()
 	fileData, err := c.FetchInputs(ctx, inputs)
@@ -290,4 +281,43 @@ func (c *Config) ClassifyInputs(paths []string, unit *kindex.Compilation) []stri
 	unit.Proto.SourceFile = sourceFiles.Elements()
 	log.Printf("Found %d required inputs, %d source files", len(inputs), len(sourceFiles))
 	return inputs
+}
+
+// ActionInfo represents the action metadata relevant to the extraction process.
+type ActionInfo struct {
+	Arguments   []string          // command-line arguments
+	Inputs      []string          // input file paths
+	Outputs     []string          // output file paths
+	Environment map[string]string // environment variables
+	Target      string            // build target name
+	Rule        string            // rule class name
+}
+
+// Setenv updates the Environment field with the specified key-value pair.
+func (a *ActionInfo) Setenv(key, value string) {
+	if a.Environment == nil {
+		a.Environment = map[string]string{key: value}
+	} else {
+		a.Environment[key] = value
+	}
+}
+
+// SpawnAction generates an *ActionInfo from a spawn action.
+// It is an error if info does not contain a SpawnInfo.
+func SpawnAction(info *xapb.ExtraActionInfo) (*ActionInfo, error) {
+	msg, err := proto.GetExtension(info, xapb.E_SpawnInfo_SpawnInfo)
+	if err != nil {
+		return nil, fmt.Errorf("extra action does not have SpawnInfo: %v", err)
+	}
+	si := msg.(*xapb.SpawnInfo)
+	ai := &ActionInfo{
+		Target:    info.GetOwner(),
+		Arguments: si.Argument,
+		Inputs:    si.InputFile,
+		Outputs:   si.OutputFile,
+	}
+	for _, env := range si.Variable {
+		ai.Setenv(env.GetName(), env.GetValue())
+	}
+	return ai, nil
 }
