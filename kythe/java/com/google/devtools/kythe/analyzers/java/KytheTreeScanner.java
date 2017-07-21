@@ -416,7 +416,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       params.add(n);
       wildcards.addAll(n.childWildcards);
 
-      JavaNode typeNode = scan(param.getType(), ctx.downAsSnippet(param));
+      JavaNode typeNode = n.getType();
       if (typeNode == null) {
         logger.warningfmt(
             "Missing parameter type (method: %s; parameter: %s)", methodDef.getName(), param);
@@ -574,7 +574,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
 
     scan(varDef.getInitializer(), ctx);
-    return new JavaNode(varNode, typeNode.childWildcards);
+    return new JavaNode(varNode, typeNode.childWildcards).setType(typeNode);
   }
 
   @Override

@@ -1,5 +1,6 @@
 package pkg;
 
+
 public final class WildcardMethod {
   public static final class Optional<T> {}
 
@@ -17,6 +18,10 @@ public final class WildcardMethod {
   //- WildcardParam1Type param.0 OptionalClass
   //- WildcardParam1Type param.1 Wildcard0
   //- Wildcard0.node/kind absvar
+  //- WildcardFn childof WildcardFnAbs
+  //- WildcardFn.node/kind function
+  //- WildcardFn typed WildcardFnType
+  //- WildcardFnType param.2 WildcardParam1Type
   //- !{ Wildcard0 bounded/upper Anything0
   //-    Wildcard0 bounded/lower Anything1 }
   private static void wildcard(Optional<?> ovar) {}

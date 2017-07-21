@@ -23,7 +23,9 @@ import com.google.devtools.kythe.proto.Storage.VName;
 /** Kythe graph node representing a Java language construct. */
 class JavaNode {
   // TODO(schroederc): handle cases where a single JCTree corresponds to multiple Kythe nodes
+  // (i.e. types and abstractions)
   private final VName vName;
+  private JavaNode type;
 
   // I think order matters for the wildcards because the abs node will be connected to them with
   // param edges, which are numbered. If order doesn't matter, we should change this to something
@@ -45,5 +47,14 @@ class JavaNode {
 
   VName getVName() {
     return vName;
+  }
+
+  JavaNode setType(JavaNode type) {
+    this.type = type;
+    return this;
+  }
+
+  JavaNode getType() {
+    return type;
   }
 }
