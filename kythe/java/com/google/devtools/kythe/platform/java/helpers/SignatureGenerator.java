@@ -401,11 +401,8 @@ public class SignatureGenerator
   @Override
   public Void visitArrayType(ArrayType t, StringBuilder sbout) {
     t.getComponentType().accept(this, sbout);
-    if (t.isVarargs()) {
-      sbout.append("...");
-    } else {
-      sbout.append("[]");
-    }
+    // TODO(T266): handle case when ArrayType#isVarargs is incorrect; add "..." for varargs
+    sbout.append("[]");
     return null;
   }
 
