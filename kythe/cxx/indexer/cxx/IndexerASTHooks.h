@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-// This file uses the Clang style conventions.
 // Defines AST visitors and consumers used by the indexer tool.
 
 #ifndef KYTHE_CXX_INDEXER_CXX_INDEXER_AST_HOOKS_H_
@@ -194,8 +193,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
  public:
   IndexerASTVisitor(clang::ASTContext &C, BehaviorOnUnimplemented B,
                     BehaviorOnTemplates T, Verbosity V,
-                    const LibrarySupports &S,
-                    clang::Sema &Sema, std::function<bool()> ShouldStopIndexing,
+                    const LibrarySupports &S, clang::Sema &Sema,
+                    std::function<bool()> ShouldStopIndexing,
                     GraphObserver *GO = nullptr)
       : IgnoreUnimplemented(B),
         TemplateMode(T),
@@ -389,6 +388,18 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   MaybeFew<GraphObserver::NodeId> BuildNodeIdForImplicitTemplateInstantiation(
       const clang::Decl *Decl);
 
+  /// \brief Builds a stable node ID for `Decl`'s tapp if it's an implicit
+  /// function template instantiation.
+  MaybeFew<GraphObserver::NodeId>
+  BuildNodeIdForImplicitFunctionTemplateInstantiation(
+      const clang::FunctionDecl *Decl);
+
+  /// \brief Builds a stable node ID for `Decl`'s tapp if it's an implicit
+  /// class template instantiation.
+  MaybeFew<GraphObserver::NodeId>
+  BuildNodeIdForImplicitClassTemplateInstantiation(
+      const clang::ClassTemplateSpecializationDecl *Decl);
+
   /// \brief Builds a stable node ID for an external reference to `Decl`.
   ///
   /// This is equivalent to BuildNodeIdForDecl for Decls that are not
@@ -446,8 +457,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// such that the dependent name is lookup(lookup*(Root, NNS), Id).
   /// \param ER If `EmitRanges::Yes`, records ranges for syntactic elements.
   MaybeFew<GraphObserver::NodeId> BuildNodeIdForDependentName(
-      const clang::NestedNameSpecifierLoc &NNS, const clang::DeclarationName &Id,
-      const clang::SourceLocation IdLoc,
+      const clang::NestedNameSpecifierLoc &NNS,
+      const clang::DeclarationName &Id, const clang::SourceLocation IdLoc,
       const MaybeFew<GraphObserver::NodeId> &Root, EmitRanges ER);
 
   /// \brief Is `VarDecl` a definition?
@@ -707,7 +718,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   ///
   /// 'NodeT' can be one of Decl, Stmt, Type, TypeLoc,
   /// NestedNameSpecifier or NestedNameSpecifierLoc.
-  template <typename NodeT> IndexedParent *getIndexedParent(const NodeT &Node) {
+  template <typename NodeT>
+  IndexedParent *getIndexedParent(const NodeT &Node) {
     return getIndexedParent(clang::ast_type_traits::DynTypedNode::create(Node));
   }
 

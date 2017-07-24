@@ -1784,6 +1784,14 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "template_rec_member_abs",
+    srcs = ["template/template_rec_member_abs.cc"],
+    experimental_alias_template_instantiations = True,
+    ignore_dups = True,
+    tags = ["template"],
+)
+
+cxx_indexer_test(
     name = "template_rec_override",
     srcs = ["template/template_rec_override.cc"],
     tags = ["template"],

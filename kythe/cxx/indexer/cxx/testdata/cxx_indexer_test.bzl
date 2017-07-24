@@ -15,6 +15,7 @@ def cxx_indexer_test(name, srcs, deps=[], tags=[], size="small",
                      experimental_drop_instantiation_independent_data=False,
                      darwin_only=False,
                      convert_marked_source=False,
+                     experimental_alias_template_instantiations=False,
                      goal_prefix="//-"):
   if len(srcs) != 1:
     fail("A single source file is required.", "srcs")
@@ -52,6 +53,12 @@ def cxx_indexer_test(name, srcs, deps=[], tags=[], size="small",
   else:
     args += ["--indexer",
              "--experimental_drop_instantiation_independent_data=false"]
+  if experimental_alias_template_instantiations:
+    args += ["--indexer",
+             "--experimental_alias_template_instantiations=true"]
+  else:
+    args += ["--indexer",
+             "--experimental_alias_template_instantiations=false"]
   if bundled:
     nondarwin_test = []
     if darwin_only:

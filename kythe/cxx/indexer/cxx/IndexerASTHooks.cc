@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// This file uses the Clang style conventions.
-
 #include "IndexerASTHooks.h"
 #include "GraphObserver.h"
 
@@ -940,8 +938,8 @@ void IndexerASTVisitor::VisitComment(
 }
 
 bool IndexerASTVisitor::VisitDeclaratorDecl(const clang::DeclaratorDecl *Decl) {
-    VisitNestedNameSpecifierLoc(Decl->getQualifierLoc());
-    return true;
+  VisitNestedNameSpecifierLoc(Decl->getQualifierLoc());
+  return true;
 }
 
 bool IndexerASTVisitor::VisitDecl(const clang::Decl *Decl) {
@@ -1398,94 +1396,148 @@ bool IndexerASTVisitor::VisitCallExpr(const clang::CallExpr *E) {
 MaybeFew<GraphObserver::NodeId>
 IndexerASTVisitor::BuildNodeIdForImplicitTemplateInstantiation(
     const clang::Decl *Decl) {
+  if (const auto *FD = dyn_cast<const clang::FunctionDecl>(Decl)) {
+    return BuildNodeIdForImplicitFunctionTemplateInstantiation(FD);
+  } else if (const auto *CD =
+                 dyn_cast<const clang::ClassTemplateSpecializationDecl>(Decl)) {
+    return BuildNodeIdForImplicitClassTemplateInstantiation(CD);
+  }
+  // TODO(zarko): other template kinds as needed.
+  return None();
+}
+
+MaybeFew<GraphObserver::NodeId>
+IndexerASTVisitor::BuildNodeIdForImplicitClassTemplateInstantiation(
+    const clang::ClassTemplateSpecializationDecl *CTSD) {
+  if (CTSD->isExplicitInstantiationOrSpecialization()) {
+    return None();
+  }
+  const clang::ASTTemplateArgumentListInfo *ArgsAsWritten = nullptr;
+  if (const auto *CTPSD =
+          dyn_cast<const clang::ClassTemplatePartialSpecializationDecl>(CTSD)) {
+    ArgsAsWritten = CTPSD->getTemplateArgsAsWritten();
+  }
+  std::vector<GraphObserver::NodeId> NIDS;
+  std::vector<const GraphObserver::NodeId *> NIDPS;
+  auto PrimaryOrPartial = CTSD->getSpecializedTemplateOrPartial();
+  if (BuildTemplateArgumentList(
+          ArgsAsWritten ? llvm::makeArrayRef(ArgsAsWritten->getTemplateArgs(),
+                                             ArgsAsWritten->NumTemplateArgs)
+                        : Optional<ArrayRef<TemplateArgumentLoc>>(),
+          CTSD->getTemplateArgs().asArray(), NIDS, NIDPS)) {
+    if (auto SpecializedNode = BuildNodeIdForTemplateName(
+            clang::TemplateName(CTSD->getSpecializedTemplate()),
+            CTSD->getPointOfInstantiation())) {
+      if (PrimaryOrPartial.is<clang::ClassTemplateDecl *>() &&
+          !isa<const clang::ClassTemplatePartialSpecializationDecl>(CTSD)) {
+        // Point to a tapp of the primary template.
+        return Observer.recordTappNode(
+            SpecializedNode.primary(), NIDPS,
+            ArgsAsWritten ? ArgsAsWritten->NumTemplateArgs : NIDPS.size());
+      }
+    }
+  }
+  if (const auto *Partial =
+          PrimaryOrPartial
+              .dyn_cast<clang::ClassTemplatePartialSpecializationDecl *>()) {
+    if (BuildTemplateArgumentList(
+            llvm::None, CTSD->getTemplateInstantiationArgs().asArray(), NIDS,
+            NIDPS)) {
+      // Point to a tapp of the partial template specialization.
+      return Observer.recordTappNode(BuildNodeIdForDecl(Partial), NIDPS,
+                                     NIDPS.size());
+    }
+  }
+  return None();
+}
+
+MaybeFew<GraphObserver::NodeId>
+IndexerASTVisitor::BuildNodeIdForImplicitFunctionTemplateInstantiation(
+    const clang::FunctionDecl *FD) {
   std::vector<GraphObserver::NodeId> NIDS;
   std::vector<const GraphObserver::NodeId *> NIDPS;
   const clang::TemplateArgumentLoc *ArgsAsWritten = nullptr;
   unsigned NumArgsAsWritten = 0;
   const clang::TemplateArgumentList *Args = nullptr;
-
-  if (const auto *FD = dyn_cast<clang::FunctionDecl>(Decl)) {
-    if (FD->getDescribedFunctionTemplate() != nullptr) {
-      // This is the body of a function template.
+  if (FD->getDescribedFunctionTemplate() != nullptr) {
+    // This is the body of a function template.
+    return None();
+  }
+  if (auto *MSI = FD->getMemberSpecializationInfo()) {
+    if (MSI->isExplicitSpecialization()) {
+      // Refer to explicit specializations directly.
       return None();
     }
-    if (auto *MSI = FD->getMemberSpecializationInfo()) {
-      if (MSI->isExplicitSpecialization()) {
-        // Refer to explicit specializations directly.
-        return None();
-      }
-      // This is a member under a template instantiation. See T230.
-      return Observer.recordTappNode(
-          BuildNodeIdForDecl(MSI->getInstantiatedFrom()), {}, 0);
+    // This is a member under a template instantiation. See T230.
+    return Observer.recordTappNode(
+        BuildNodeIdForDecl(MSI->getInstantiatedFrom()), {}, 0);
+  }
+  std::vector<std::pair<clang::TemplateName, clang::SourceLocation>> TNs;
+  if (auto *FTSI = FD->getTemplateSpecializationInfo()) {
+    if (FTSI->isExplicitSpecialization()) {
+      // Refer to explicit specializations directly.
+      return None();
     }
-    std::vector<std::pair<clang::TemplateName, clang::SourceLocation>> TNs;
-    if (auto *FTSI = FD->getTemplateSpecializationInfo()) {
-      if (FTSI->isExplicitSpecialization()) {
-        // Refer to explicit specializations directly.
-        return None();
+    if (FTSI->TemplateArgumentsAsWritten) {
+      // We have source locations for the template arguments.
+      ArgsAsWritten = FTSI->TemplateArgumentsAsWritten->getTemplateArgs();
+      NumArgsAsWritten = FTSI->TemplateArgumentsAsWritten->NumTemplateArgs;
+    }
+    Args = FTSI->TemplateArguments;
+    TNs.emplace_back(TemplateName(FTSI->getTemplate()),
+                     FTSI->getPointOfInstantiation());
+  } else if (auto *DFTSI = FD->getDependentSpecializationInfo()) {
+    ArgsAsWritten = DFTSI->getTemplateArgs();
+    NumArgsAsWritten = DFTSI->getNumTemplateArgs();
+    for (unsigned T = 0; T < DFTSI->getNumTemplates(); ++T) {
+      TNs.emplace_back(clang::TemplateName(DFTSI->getTemplate(T)),
+                       FD->getLocation());
+    }
+  }
+  // We can't do anything useful if we don't have type arguments.
+  if (ArgsAsWritten || Args) {
+    bool CouldGetAllTypes = true;
+    if (ArgsAsWritten) {
+      // Prefer arguments as they were written in source files.
+      NIDS.reserve(NumArgsAsWritten);
+      NIDPS.reserve(NumArgsAsWritten);
+      for (unsigned I = 0; I < NumArgsAsWritten; ++I) {
+        if (auto ArgId = BuildNodeIdForTemplateArgument(ArgsAsWritten[I],
+                                                        EmitRanges::Yes)) {
+          NIDS.push_back(ArgId.primary());
+        } else {
+          CouldGetAllTypes = false;
+          break;
+        }
       }
-      if (FTSI->TemplateArgumentsAsWritten) {
-        // We have source locations for the template arguments.
-        ArgsAsWritten = FTSI->TemplateArgumentsAsWritten->getTemplateArgs();
-        NumArgsAsWritten = FTSI->TemplateArgumentsAsWritten->NumTemplateArgs;
-      }
-      Args = FTSI->TemplateArguments;
-      TNs.emplace_back(TemplateName(FTSI->getTemplate()),
-                       FTSI->getPointOfInstantiation());
-    } else if (auto *DFTSI = FD->getDependentSpecializationInfo()) {
-      ArgsAsWritten = DFTSI->getTemplateArgs();
-      NumArgsAsWritten = DFTSI->getNumTemplateArgs();
-      for (unsigned T = 0; T < DFTSI->getNumTemplates(); ++T) {
-        TNs.emplace_back(clang::TemplateName(DFTSI->getTemplate(T)),
-                         FD->getLocation());
+    } else {
+      NIDS.reserve(Args->size());
+      NIDPS.reserve(Args->size());
+      for (unsigned I = 0; I < Args->size(); ++I) {
+        if (auto ArgId = BuildNodeIdForTemplateArgument(
+                Args->get(I), clang::SourceLocation())) {
+          NIDS.push_back(ArgId.primary());
+        } else {
+          CouldGetAllTypes = false;
+          break;
+        }
       }
     }
-    // We can't do anything useful if we don't have type arguments.
-    if (ArgsAsWritten || Args) {
-      bool CouldGetAllTypes = true;
-      if (ArgsAsWritten) {
-        // Prefer arguments as they were written in source files.
-        NIDS.reserve(NumArgsAsWritten);
-        NIDPS.reserve(NumArgsAsWritten);
-        for (unsigned I = 0; I < NumArgsAsWritten; ++I) {
-          if (auto ArgId = BuildNodeIdForTemplateArgument(ArgsAsWritten[I],
-                                                          EmitRanges::Yes)) {
-            NIDS.push_back(ArgId.primary());
-          } else {
-            CouldGetAllTypes = false;
-            break;
-          }
-        }
-      } else {
-        NIDS.reserve(Args->size());
-        NIDPS.reserve(Args->size());
-        for (unsigned I = 0; I < Args->size(); ++I) {
-          if (auto ArgId = BuildNodeIdForTemplateArgument(
-                  Args->get(I), clang::SourceLocation())) {
-            NIDS.push_back(ArgId.primary());
-          } else {
-            CouldGetAllTypes = false;
-            break;
-          }
-        }
+    if (CouldGetAllTypes) {
+      for (const auto &NID : NIDS) {
+        NIDPS.push_back(&NID);
       }
-      if (CouldGetAllTypes) {
-        for (const auto &NID : NIDS) {
-          NIDPS.push_back(&NID);
-        }
-        // If there's more than one possible template name (e.g., this is
-        // dependent), choose one arbitrarily.
-        for (const auto &TN : TNs) {
-          if (auto SpecializedNode =
-                  BuildNodeIdForTemplateName(TN.first, TN.second)) {
-            return Observer.recordTappNode(SpecializedNode.primary(), NIDPS,
-                                           NumArgsAsWritten);
-          }
+      // If there's more than one possible template name (e.g., this is
+      // dependent), choose one arbitrarily.
+      for (const auto &TN : TNs) {
+        if (auto SpecializedNode =
+                BuildNodeIdForTemplateName(TN.first, TN.second)) {
+          return Observer.recordTappNode(SpecializedNode.primary(), NIDPS,
+                                         NumArgsAsWritten);
         }
       }
     }
   }
-  // TODO(zarko): Variables and records.
   return None();
 }
 
