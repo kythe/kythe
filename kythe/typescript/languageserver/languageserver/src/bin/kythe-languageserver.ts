@@ -22,28 +22,19 @@ import {createConnection, IConnection, InitializeResult} from 'vscode-languagese
 
 import {PathContext} from '../pathContext';
 import {Server} from '../server';
-import {parseSettings} from '../settings';
+import {parseSettings, findRoot, SETTINGS_FILE} from '../settings';
 import {XRefHTTPClient} from '../xrefClient';
-
-const SETTINGS_FILE = '.kythe-settings.json';
 
 const conn: IConnection = createConnection();
 
-
-
 conn.onInitialize((params): InitializeResult => {
-  const root = params.rootUri ? new URL(params.rootUri).pathname : '';
-  const settingsPath = join(root, SETTINGS_FILE);
-
-  try {
-    fs.accessSync(settingsPath, fs.constants.R_OK);
-  } catch (_) {
-    conn.window.showErrorMessage(
-        `${SETTINGS_FILE} not found in project root '${root}'`);
-    // If we cannot find the settings file, we have no capabilities
+  const root = findRoot(params.rootUri ? new URL(params.rootUri).pathname : '');
+  if (root instanceof Error) {
+    console.error(root);
     return {capabilities: {}};
   }
 
+  const settingsPath = join(root, SETTINGS_FILE);
   const settingsObject = JSON.parse(fs.readFileSync(settingsPath, 'UTF8'));
 
   const settings = parseSettings(settingsObject);

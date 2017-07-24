@@ -15,7 +15,9 @@
  */
 
 import {assert} from 'chai';
-import {parseSettings} from '../src/settings';
+import {resolve} from 'path';
+
+import {findRoot, parseSettings} from '../src/settings';
 
 describe('Settings', () => {
   describe('parseSettings', () => {
@@ -52,6 +54,19 @@ describe('Settings', () => {
       it(`should accept ${description}`, () => {
         assert.notInstanceOf(
             parseSettings(settings), Error, JSON.stringify(settings));
+      });
+    }
+  });
+
+  describe('findRoot', () => {
+    const settingsRoot =
+        resolve(__dirname, '..', '..', 'test', 'settings_test');
+    const goodDirs = ['', 'sub'];
+
+    for (const dir of goodDirs) {
+      it(`should find the bad settings file in settings_test/${dir}`, () => {
+        const root = findRoot(resolve(settingsRoot, dir));
+        assert.deepEqual(root, settingsRoot);
       });
     }
   });

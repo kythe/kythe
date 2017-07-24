@@ -15,8 +15,12 @@
  */
 
 import * as Ajv from 'ajv';
+import {accessSync} from 'fs';
+import {resolve} from 'path';
 
 import {PathConfig} from './pathContext';
+
+export const SETTINGS_FILE = '.kythe-settings.json';
 
 // Type of the data contained in the settings file
 export type Settings = {
@@ -33,13 +37,29 @@ export function parseSettings(obj: {}): Settings|Error {
          []).map(e => e.dataPath ? `${e.dataPath}: ${e.message}` : e.message);
     return new Error(`Settings Error: ${msg.join('; ')}`);
   }
-  
+
   const settings = obj as Settings;
   settings.xrefs = {host: 'localhost', port: 8080, ...settings.xrefs};
 
   return settings;
 }
 
+// Searches upwards for the .kythe-settings.json file
+export function findRoot(path: string): string|Error {
+  while (true) {
+    const possibleFile = resolve(path, SETTINGS_FILE);
+    try {
+      accessSync(possibleFile);
+      return path;
+    } catch (e) {
+      const newPath = resolve(path, '..');
+      if (newPath === path) {
+        return new Error('.kythe-settings.json file not found');
+      }
+      path = newPath;
+    }
+  }
+}
 
 // JSON Schema for settings
 const settingsSchema = {

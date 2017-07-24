@@ -13,7 +13,7 @@
   "scripts": {
     "clean": "rm -r dist",
     "prepare": "rm -rf dist; tsc --sourceMap false -p .; cp -R src/proto dist/src",
-    "compile": "tsc -p .",
+    "compile": "tsc -p .; cp -R src/proto dist/src",
     "watch": "tsc --watch -p .",
     "watch_test": "tsc --watch -p ./tsconfig.test.json",
     "pretest": "rm -r dist && tsc -p ./tsconfig.test.json",
