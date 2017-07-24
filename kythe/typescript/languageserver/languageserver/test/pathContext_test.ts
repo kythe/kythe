@@ -27,13 +27,13 @@ describe('PathContext', () => {
         }]);
 
     it('should return an error if no patterns match', () => {
-      const ticket = context.ticket('/foo/bar' as {} as LocalPath);
+      const ticket = context.ticket('/foo/bar' as LocalPath);
       assert.instanceOf(ticket, Error);
     });
 
     it('should produce a valid ticket for matching paths', () => {
       const ticket =
-          context.ticket('/root/myRoot/myCorpus/my/path' as {} as LocalPath);
+          context.ticket('/root/myRoot/myCorpus/my/path' as LocalPath);
 
       assert.deepEqual(
           ticket, {path: 'P/my/path', corpus: 'C/myCorpus', root: 'R/myRoot'});
@@ -59,7 +59,7 @@ describe('PathContext', () => {
       const ticket = {corpus: 'myCorpus', path: 'myPath', root: 'myRoot'};
 
       const path = context.local(ticket);
-      assert.strictEqual('/root/myCorpus/myPath' as {} as LocalPath, path);
+      assert.strictEqual('/root/myCorpus/myPath' as LocalPath, path);
     });
   });
 
@@ -68,13 +68,13 @@ describe('PathContext', () => {
       const lsPath = 'git:/dir/README.md.git?path=/dir/README.md';
       const path = normalizeLSPath(lsPath);
 
-      assert.strictEqual('/dir/README.md' as {} as LocalPath, path);
+      assert.strictEqual('/dir/README.md' as LocalPath, path);
     });
 
     it('should strip file protocol', () => {
       const path = normalizeLSPath('file:///root/README.md');
 
-      assert.strictEqual('/root/README.md' as {} as LocalPath, path);
+      assert.strictEqual('/root/README.md' as LocalPath, path);
     });
   });
 });

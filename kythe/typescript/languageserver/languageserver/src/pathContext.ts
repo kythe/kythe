@@ -38,10 +38,10 @@ export interface KytheTicket {
 }
 
 // Convenience type representing a Kythe Ticket encoded as a string
-export interface KytheTicketString extends String { _kytheTicketBrand: string; }
+export type KytheTicketString =  string & { _kytheTicketBrand: string; };
 
 // Represents a fully qualified local path on disk
-export interface LocalPath extends String { _localPathBrand: string; }
+export type LocalPath = string &  { _localPathBrand: string; };
 
 /**
  * PathConfig is a string-based representation of the mapping between
@@ -119,7 +119,7 @@ export class PathContext {
     }
 
     // All config filepaths are relative to root so we need to truncate
-    const truncPath = relative(this.root, localPath as String as string);
+    const truncPath = relative(this.root, localPath);
 
     for (const {local, vname: {path, corpus, root}} of this.mappings) {
       const params = extractParams(local.re, truncPath);
@@ -159,7 +159,7 @@ export class PathContext {
       // Add the root directory as a prefix to become fully qualified
       const localPath = join(this.root, unescape(local.cons(params)));
 
-      return localPath as String as LocalPath;
+      return localPath as LocalPath;
     }
 
     return new Error(
@@ -169,13 +169,13 @@ export class PathContext {
 
 // Converts a KytheTicketString into a KytheTicket
 export function parseTicket(ticket: KytheTicketString): KytheTicket {
-  const url = new URL(ticket as String as string);
+  const url = new URL(ticket);
   return {corpus: url.host, ...parse(url.search, '?')};
 }
 
 export function tryParseTicket(s: string): KytheTicket|Error {
   try {
-    const ticket = parseTicket(s as String as KytheTicketString);
+    const ticket = parseTicket(s as KytheTicketString);
     if (ticket.path === undefined)
       return new Error('Ticket String was well-shaped but underspecified');
     return ticket;
@@ -191,18 +191,16 @@ export function normalizeLSPath(path: string): LocalPath {
 
   if (uri.protocol === 'git:' && uri.pathname.endsWith('.git')) {
     // Remove the .git extension
-    return uri.pathname.substring(0, uri.pathname.length - 4) as String as
-        LocalPath;
+    return uri.pathname.substring(0, uri.pathname.length - 4) as LocalPath;
   }
 
-  return uri.pathname as String as LocalPath;
+  return uri.pathname as LocalPath;
 }
 
 // Produces a KytheTicketString from a given KytheTicket
 export function ticketString({corpus, ...params}: KytheTicket) {
   if (params.root === '') delete params.root;
-  return `kythe://${corpus}?` + stringify(params, '?') as String as
-      KytheTicketString;
+  return `kythe://${corpus}?` + stringify(params, '?') as KytheTicketString;
 }
 
 
@@ -213,12 +211,12 @@ type Params = {
 
 // Take a parameterized route regexp and match against a path producing an
 // object keyed by the params
-function extractParams(re: p2r.PathRegExp, path: String): Params|null {
+function extractParams(re: p2r.PathRegExp, path: string): Params|null {
   // Prefix the strings we're matching against with a slash so they adhere to
   // what path-to-regexp expects
   path = '/' + path;
 
-  const match = re.exec(path as string);
+  const match = re.exec(path);
   if (!match) return null;
 
   const params = {} as Params;

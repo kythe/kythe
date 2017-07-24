@@ -29,15 +29,15 @@ describe('Document', () => {
           [
             {
               range: Range.create(Position.create(0, 0), Position.create(0, 5)),
-              target: 'longest' as String as KytheTicketString
+              target: 'longest' as KytheTicketString
             },
             {
               range: Range.create(Position.create(0, 2), Position.create(0, 3)),
-              target: 'shortest' as String as KytheTicketString
+              target: 'shortest' as KytheTicketString
             },
             {
               range: Range.create(Position.create(0, 2), Position.create(0, 4)),
-              target: 'middle' as String as KytheTicketString
+              target: 'middle' as KytheTicketString
             }
           ],
           text);
@@ -50,7 +50,7 @@ describe('Document', () => {
       const document = new Document(
           [{
             range: Range.create(Position.create(0, 0), Position.create(0, 2)),
-            target: 'hi' as String as KytheTicketString
+            target: 'hi' as KytheTicketString
           }],
           text);
 

@@ -48,7 +48,11 @@ export class Server {
     // If we don't have decorations for the file, we can't find references
     if (!doc) return [];
 
-    const ticket = doc.xrefs(position) as {} as string;
+    const ticket = doc.xrefs(position);
+    if(ticket === undefined) {
+      return [];
+    }
+    
     const xrefs = await this.client.xrefs({
       ticket: [ticket],
       reference_kind:
@@ -100,7 +104,7 @@ export class Server {
     const qualifiedXRefs: RefResolution[] = [];
     const ticketStr = ticketString(kytheTicket);
     const dec = await this.client.decorations({
-      location: {ticket: ticketStr as String as string},
+      location: {ticket: ticketStr},
       references: true,
       target_definitions: true,
       source_text: true
@@ -116,7 +120,7 @@ export class Server {
       }
 
       qualifiedXRefs.push(
-          {target: r.target_ticket as String as KytheTicketString, range});
+          {target: r.target_ticket as KytheTicketString, range});
     }
 
     if (dec.source_text === undefined) {
@@ -139,7 +143,10 @@ export class Server {
     // If we don't have decorations for the file, we can't find references
     if (!doc) return [];
 
-    const ticket = doc.xrefs(position) as {} as string;
+    const ticket = doc.xrefs(position);
+    if(ticket === undefined) {
+      return [];
+    }
 
     // LSP does not distinguish definitions and declarations so just return both
     const xrefs = await this.client.xrefs({
