@@ -57,19 +57,9 @@ public abstract class JavacAnalyzer implements Serializable {
         if (!uri.getScheme().equals("file")) {
           fullPath = fullPath.substring(1);
         }
-        String compilationUnitPath = fullPath;
-
-        for (String sourceFile : compilationDetails.getCompilationUnit().getSourceFileList()) {
-          if (fullPath.endsWith(sourceFile)) {
-            compilationUnitPath = sourceFile;
-            break;
-          }
-        }
-
-        if (Strings.isNullOrEmpty(compilationUnitPath)) {
+        if (Strings.isNullOrEmpty(fullPath)) {
           continue;
         }
-
         analyzeFile(compilationDetails, file);
         getStatisticsCollector().incrementCounter("files-analyzed");
       }
