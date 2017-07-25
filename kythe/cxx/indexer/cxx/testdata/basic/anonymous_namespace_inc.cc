@@ -6,5 +6,5 @@ namespace { }
 
 #example header.inc
 #pragma kythe_claim
-//- @namespace=HeaderDecl ref CcNamespace
+//- @namespace ref CcNamespace  // header ref
 namespace { }

@@ -13,7 +13,9 @@ using cv_int_2 = volatile const_int;
 //- VolatileInt.node/kind talias
 //- ConstInt.node/kind talias
 //- ConstInt aliases ConstIntT
+//- ConstIntT.node/kind tapp
 //- VolatileInt aliases VolatileIntT
+//- VolatileIntT.node/kind tapp
 //- CvInt1 aliases CvInt1T
 //- CvInt2 aliases CvInt2T
 //- CvInt1T.node/kind tapp

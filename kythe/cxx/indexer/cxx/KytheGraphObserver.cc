@@ -1283,7 +1283,7 @@ void KytheGraphObserver::RegisterBuiltins() {
 void KytheGraphObserver::EmitBuiltin(Builtin *builtin) {
   builtin->emitted = true;
   VNameRef ref(VNameRefFromNodeId(builtin->node_id));
-  recorder_->AddProperty(ref, NodeKindID::kBuiltin);
+  recorder_->AddProperty(ref, NodeKindID::kTBuiltin);
   recorder_->AddMarkedSource(ref, builtin->marked_source);
 }
 

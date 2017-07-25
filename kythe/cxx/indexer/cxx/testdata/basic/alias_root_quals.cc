@@ -10,6 +10,7 @@ using CVI = int* const volatile;
 using RCVI = int* __restrict volatile const;
 //- @T defines/binding AliasT
 //- AliasT aliases TPtrInt
+//- TPtrInt.node/kind tapp
 using T = int*;
 //- @S defines/binding AliasS
 //- AliasS aliases ConstAliasT

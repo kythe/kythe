@@ -1929,6 +1929,13 @@ Notes::
   See the <<lsr,Language-specific rules>> section below for enumerations of
   these builtin types.
 
+[kythe,C++,"Int is a builtin."]
+--------------------------------------------------------------------------------
+//- @int ref TInt
+//- TInt.node/kind tbuiltin
+using Int = int;
+--------------------------------------------------------------------------------
+
 [[tnominal]]
 tnominal
 ~~~~~~~~

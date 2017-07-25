@@ -32,7 +32,7 @@ static const std::string *const kNodeKindSpellings[] = {
     new std::string("lookup"),    new std::string("macro"),
     new std::string("interface"), new std::string("package"),
     new std::string("tsigma"),    new std::string("doc"),
-    new std::string("builtin"),   new std::string("meta"),
+    new std::string("tbuiltin"),  new std::string("meta"),
 };
 
 static const std::string *kEdgeKindSpellings[] = {

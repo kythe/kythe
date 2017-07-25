@@ -43,7 +43,7 @@ enum class NodeKindID {
   kPackage,
   kTSigma,
   kDoc,
-  kBuiltin,
+  kTBuiltin,
   kMeta
 };
 

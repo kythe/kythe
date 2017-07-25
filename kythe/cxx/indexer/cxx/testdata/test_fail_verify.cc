@@ -1,3 +1,3 @@
 // Checks that we can properly handle a test that fails to verify.
-//- NodeA does/not/relate/to NodeB
+//- _NodeA does/not/relate/to _NodeB
 int x;

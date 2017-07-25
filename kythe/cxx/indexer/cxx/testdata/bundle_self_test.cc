@@ -3,11 +3,11 @@
 // test.cc.
 #include "a.h"
 //- @C=vname(_,"bundle","","test.cc",_).node/kind anchor
-//- File1=vname("","bundle","","test.cc","").node/kind file
+//- vname("","bundle","","test.cc","").node/kind file
 #define C macroc
 #example a.h
 #pragma kythe_claim
 // This is now a header file called a.h.
 //- @A=vname(_,"bundle","","a.h",_).node/kind anchor
-//- File2=vname("","bundle","","a.h","").node/kind file
+//- vname("","bundle","","a.h","").node/kind file
 #define A macroa

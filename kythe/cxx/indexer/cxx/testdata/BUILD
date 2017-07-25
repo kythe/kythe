@@ -50,6 +50,7 @@ cxx_indexer_test(
     name = "anonymous_namespace_header",
     srcs = ["basic/anonymous_namespace_header.cc"],
     bundled = True,
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
@@ -57,6 +58,7 @@ cxx_indexer_test(
     name = "anonymous_namespace_inc",
     srcs = ["basic/anonymous_namespace_inc.cc"],
     bundled = True,
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
@@ -64,6 +66,7 @@ cxx_indexer_test(
     name = "anonymous_namespace_transitive_header",
     srcs = ["basic/anonymous_namespace_transitive_header.cc"],
     bundled = True,
+    check_for_singletons = True,
     ignore_dups = True,
     tags = ["basic"],
 )
@@ -72,6 +75,7 @@ cxx_indexer_test(
     name = "anonymous_nested_namespace",
     srcs = ["basic/anonymous_nested_namespace.cc"],
     bundled = True,
+    check_for_singletons = True,
     ignore_dups = True,
     tags = ["basic"],
 )
@@ -79,12 +83,14 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "anonymous_namespace",
     srcs = ["basic/anonymous_namespace.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "anonymous_inline_namespace",
     srcs = ["basic/anonymous_inline_namespace.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
@@ -92,6 +98,7 @@ cxx_indexer_test(
     name = "bundle_self_test",
     srcs = ["bundle_self_test.cc"],
     bundled = True,
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
@@ -99,6 +106,7 @@ cxx_indexer_test(
     name = "bundle_self_test_mix",
     srcs = ["bundle_self_test_mix.cc"],
     bundled = True,
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
@@ -106,6 +114,7 @@ cxx_indexer_test(
     name = "bundle_self_test_multi_transcript",
     srcs = ["bundle_self_test_multi_transcript.cc"],
     bundled = True,
+    check_for_singletons = True,
     ignore_dups = True,
     tags = ["basic"],
 )
@@ -114,6 +123,7 @@ cxx_indexer_test(
     name = "bundle_self_test_unclaimed",
     srcs = ["bundle_self_test_unclaimed.cc"],
     bundled = True,
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
@@ -121,6 +131,7 @@ cxx_indexer_test(
     name = "bundle_self_test_vnames_json",
     srcs = ["bundle_self_test_vnames_json.cc"],
     bundled = True,
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
@@ -128,6 +139,7 @@ cxx_indexer_test(
     name = "claim_macro_features",
     srcs = ["claim_macro_features.cc"],
     bundled = True,
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
@@ -135,12 +147,14 @@ cxx_indexer_test(
     name = "include_dotdot",
     srcs = ["include_dotdot.cc"],
     bundled = True,
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "fail_index",
     srcs = ["test_fail_index.cc"],
+    check_for_singletons = True,
     expect_fail_index = True,
     tags = ["basic"],
 )
@@ -148,6 +162,7 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "fail_verify",
     srcs = ["test_fail_verify.cc"],
+    check_for_singletons = True,
     expect_fail_verify = True,
     tags = ["basic"],
 )
@@ -155,66 +170,77 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "alias_alias_int",
     srcs = ["basic/alias_alias_int.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "alias_alias_ptr_int",
     srcs = ["basic/alias_alias_ptr_int.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "alias_and_cvr",
     srcs = ["basic/alias_and_cvr.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "alias_int",
     srcs = ["basic/alias_int.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "alias_int_twice",
     srcs = ["basic/alias_int_twice.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "alias_root",
     srcs = ["basic/alias_root.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "alias_root_quals",
     srcs = ["basic/alias_root_quals.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "anchor_utf8",
     srcs = ["basic/anchor_utf8.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "auto",
     srcs = ["basic/auto.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "auto_const_ref",
     srcs = ["basic/auto_const_ref.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "auto_multi",
     srcs = ["basic/auto_multi.cc"],
+    check_for_singletons = True,
     ignore_dups = True,
     tags = ["basic"],
 )
@@ -222,6 +248,7 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "auto_zoo",
     srcs = ["basic/auto_zoo.cc"],
+    check_for_singletons = True,
     ignore_dups = True,
     tags = ["basic"],
 )
@@ -229,6 +256,7 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "builtin_functions",
     srcs = ["basic/builtin_functions.c"],
+    check_for_singletons = True,
     std = "gnu99",
     tags = ["basic"],
 )
@@ -236,6 +264,7 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "builtin_functions_ctd",
     srcs = ["basic/builtin_functions_ctd.c"],
+    check_for_singletons = True,
     std = "gnu99",
     tags = ["basic"],
 )
@@ -243,72 +272,84 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "decltype_auto",
     srcs = ["basic/decltype_auto.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "decltype",
     srcs = ["basic/decltype.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "decltype_const_ref",
     srcs = ["basic/decltype_const_ref.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "decltype_parens",
     srcs = ["basic/decltype_parens.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "empty_case",
     srcs = ["basic/empty_case.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "enum_class_decl",
     srcs = ["basic/enum_class_decl.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "enum_class_element_decl",
     srcs = ["basic/enum_class_element_decl.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "enum_decl",
     srcs = ["basic/enum_decl.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "enum_decl_completes",
     srcs = ["basic/enum_decl_completes.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "enum_decl_ty",
     srcs = ["basic/enum_decl_ty.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "enum_decl_ty_completes",
     srcs = ["basic/enum_decl_ty_completes.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "enum_decl_ty_header_completes",
     srcs = ["basic/enum_decl_ty_header_completes.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
     deps = ["basic/enum_decl_ty_header_completes.h"],
 )
@@ -316,12 +357,14 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "enum_element_decl",
     srcs = ["basic/enum_element_decl.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "file_content",
     srcs = ["basic/file_content.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
     deps = ["basic/a.h"],
 )
@@ -329,12 +372,14 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "file_node",
     srcs = ["basic/file_node.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "file_node_reentrant",
     srcs = ["basic/file_node_reentrant.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
     deps = ["basic/file_node_reentrant.h"],
 )
@@ -342,12 +387,14 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "inline_namespace",
     srcs = ["basic/inline_namespace.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "macros_builtin",
     srcs = ["basic/macros_builtin.c"],
+    check_for_singletons = True,
     std = "c99",
     tags = ["basic"],
 )
@@ -355,48 +402,56 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "macros_defn",
     srcs = ["basic/macros_defn.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "macros_expand",
     srcs = ["basic/macros_expand.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "macros_expand_transitive",
     srcs = ["basic/macros_expand_transitive.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "macros_if",
     srcs = ["basic/macros_if.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "macros_ifdef",
     srcs = ["basic/macros_ifdef.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "macros_if_defined",
     srcs = ["basic/macros_if_defined.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "macros_implicit",
     srcs = ["basic/macros_implicit.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "macros_include",
     srcs = ["basic/macros_include.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
     deps = ["basic/a.h"],
 )
@@ -404,6 +459,7 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "macros_subst_one_level",
     srcs = ["basic/macros_subst_one_level.cc"],
+    check_for_singletons = True,
     ignore_dups = True,
     tags = ["basic"],
 )
@@ -411,18 +467,21 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "macros_undef",
     srcs = ["basic/macros_undef.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "namespace",
     srcs = ["basic/namespace.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "namespace_contains",
     srcs = ["basic/namespace_contains.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
@@ -430,6 +489,7 @@ cxx_indexer_test(
     name = "namespace_header",
     srcs = ["basic/namespace_header.cc"],
     bundled = True,
+    check_for_singletons = True,
     ignore_dups = True,  # namespace foo has the same documentation in two .hs.
     tags = ["basic"],
 )
@@ -438,30 +498,35 @@ cxx_indexer_test(
     name = "namespace_vnames",
     srcs = ["basic/namespace_vnames.cc"],
     bundled = True,
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "nested_name_specifiers",
     srcs = ["basic/nested_name_specifiers.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "new",
     srcs = ["basic/new.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "new_operator",
     srcs = ["basic/new_operator.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "sizeof_ref",
     srcs = ["basic/sizeof_ref.c"],
+    check_for_singletons = True,
     std = "gnu99",
     tags = ["basic"],
 )
@@ -469,6 +534,7 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "sizeof_typedef_ref",
     srcs = ["basic/sizeof_typedef_ref.c"],
+    check_for_singletons = True,
     std = "gnu99",
     tags = ["basic"],
 )
@@ -476,60 +542,70 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "typedef_class",
     srcs = ["basic/typedef_class.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "typedef_class_nested_ns",
     srcs = ["basic/typedef_class_nested_ns.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "typedef_const_int",
     srcs = ["basic/typedef_const_int.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "typedef_int",
     srcs = ["basic/typedef_int.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "typedef_nested_class",
     srcs = ["basic/typedef_nested_class.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "typedef_paren",
     srcs = ["basic/typedef_paren.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "typedef_ptr_int_canonicalized",
     srcs = ["basic/typedef_ptr_int_canonicalized.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "typedef_ptr_int",
     srcs = ["basic/typedef_ptr_int.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "typedef_same",
     srcs = ["basic/typedef_same.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "typeof_param",
     srcs = ["basic/typeof_param.c"],
+    check_for_singletons = True,
     ignore_unimplemented = True,
     std = "gnu99",
     tags = ["basic"],
@@ -538,60 +614,70 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "vardecl_double_shadowed_local_anchor",
     srcs = ["basic/vardecl_double_shadowed_local_anchor.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "vardecl_field",
     srcs = ["basic/vardecl_field.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "vardecl_field_ref",
     srcs = ["basic/vardecl_field_ref.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "vardecl_global_anchor",
     srcs = ["basic/vardecl_global_anchor.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "vardecl_global_anon_ns_anchor",
     srcs = ["basic/vardecl_global_anon_ns_anchor.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "vardecl_global_tu_anchor",
     srcs = ["basic/vardecl_global_tu_anchor.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "vardecl_local_anchor",
     srcs = ["basic/vardecl_local_anchor.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "vardecl_shadowed_local_anchor",
     srcs = ["basic/vardecl_shadowed_local_anchor.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "wild_std_allocator",
     srcs = ["basic/wild_std_allocator.cc"],
+    check_for_singletons = True,
     tags = ["basic"],
 )
 
 cxx_indexer_test(
     name = "wild_struct_field",
     srcs = ["basic/wild_struct_field.c"],
+    check_for_singletons = True,
     std = "c99",
     tags = ["basic"],
 )

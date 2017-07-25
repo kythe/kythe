@@ -7,7 +7,7 @@ namespace { }
 
 #example header.inc
 #pragma kythe_claim
-//- @namespace=HeaderDecl ref HeaderNamespace
+//- @namespace=HeaderDecl ref _HeaderNamespace
 //- !{ HeaderDecl ref CcNamespace }
 namespace { }
 

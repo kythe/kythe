@@ -3,15 +3,15 @@
 // test.cc.
 #include "a.h"
 //- @C=vname(_,"bundle",_,"test.cc",_).node/kind anchor
-//- File1=vname("","bundle","","test.cc","").node/kind file
+//- vname("","bundle","","test.cc","").node/kind file
 #define C macroc
 #example a.h
 #include "b.h"
 //- !{ @A=vname(_,"bundle",_,"a.h",_).node/kind anchor
-//-    File2=vname("","bundle","","a.h","").node/kind file }
+//-    vname("","bundle","","a.h","").node/kind file }
 #define A macroa
 #example b.h
 #pragma kythe_claim
 //- @B=vname(_,"bundle",_,"b.h",_).node/kind anchor
-//- File3=vname("","bundle","","b.h","").node/kind file
+//- vname("","bundle","","b.h","").node/kind file
 #define B macrob

@@ -11,12 +11,12 @@
 #ifdef A_H_1
 // This kythe_claim is only included in the transcript if A_H_1 is defined.
 #pragma kythe_claim
-//- @FOO1 defines/binding MacroFoo
+//- @FOO1 defines/binding _MacroFoo
 #define FOO1
 #endif
 #ifdef A_H_2
 // Unclaimed
-//- !{ @FOO2 defines/binding MacroFoo2 }
+//- !{ @FOO2 defines/binding _MacroFoo2 }
 #define FOO2
 #endif
 
@@ -24,10 +24,10 @@
 // This kythe_claim is included in every transcript.
 #pragma kythe_claim
 #ifdef A_H_1
-//- @FOO3 defines/binding MacroFoo3
+//- @FOO3 defines/binding _MacroFoo3
 #define FOO3
 #endif
 #ifdef A_H_2
-//- @FOO4 defines/binding MacroFoo4
+//- @FOO4 defines/binding _MacroFoo4
 #define FOO4
 #endif

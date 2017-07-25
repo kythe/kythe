@@ -1,6 +1,7 @@
 // Tests the behavior of alias definitions combined with tycons.
 //- @ptr_alias defines/binding PtrAlias
 //- @int ref IntType
+//- IntType.node/kind tbuiltin
 using ptr_alias = int*;
 //- @alias_alias defines/binding AliasAlias
 //- @ptr_alias ref PtrAlias
