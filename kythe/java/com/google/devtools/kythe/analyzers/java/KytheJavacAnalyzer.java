@@ -30,7 +30,6 @@ import com.sun.source.tree.CompilationUnitTree;
 import com.sun.tools.javac.api.JavacTaskImpl;
 import com.sun.tools.javac.tree.JCTree.JCCompilationUnit;
 import com.sun.tools.javac.util.Context;
-import java.io.IOException;
 import javax.tools.Diagnostic;
 
 /** {@link JavacAnalyzer} to emit Kythe nodes and edges. */
@@ -93,9 +92,9 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
     Preconditions.checkState(
         entrySets != null, "analyzeCompilationUnit must be called to analyze each file");
     Context context = ((JavacTaskImpl) details.getJavac()).getContext();
-    SignatureGenerator signatureGenerator =
-        new SignatureGenerator(ast, context, config.getEmitJvmSignatures());
     try {
+      SignatureGenerator signatureGenerator =
+          new SignatureGenerator(ast, context, config.getEmitJvmSignatures());
       KytheTreeScanner.emitEntries(
           context,
           getStatisticsCollector(),
@@ -106,7 +105,7 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
           config.getVerboseLogging(),
           details.getFileManager(),
           metadataLoaders);
-    } catch (IOException e) {
+    } catch (Throwable e) {
       throw new AnalysisException("Exception analyzing file: " + ast.getSourceFile().getName(), e);
     }
   }
