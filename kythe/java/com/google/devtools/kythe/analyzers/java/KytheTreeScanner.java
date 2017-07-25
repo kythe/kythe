@@ -549,6 +549,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
                 .build());
       }
     }
+    scan(varDef.getInitializer(), ctx);
 
     EntrySet varNode =
         entrySets.getNode(
@@ -571,10 +572,10 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     JavaNode typeNode = scan(varDef.getType(), ctx);
     if (typeNode != null) {
       emitEdge(varNode, EdgeKind.TYPED, typeNode);
+      return new JavaNode(varNode, typeNode.childWildcards).setType(typeNode);
     }
 
-    scan(varDef.getInitializer(), ctx);
-    return new JavaNode(varNode, typeNode.childWildcards).setType(typeNode);
+    return new JavaNode(varNode);
   }
 
   @Override
