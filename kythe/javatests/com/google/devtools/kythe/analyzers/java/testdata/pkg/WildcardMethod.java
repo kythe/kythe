@@ -24,6 +24,7 @@ public final class WildcardMethod {
   //- WildcardFnType param.2 WildcardParam1Type
   //- !{ Wildcard0 bounded/upper Anything0
   //-    Wildcard0 bounded/lower Anything1 }
+  //- !{ WildcardFnAbs param.1 Anything21 }
   private static void wildcard(Optional<?> ovar) {}
 
   //- @#0Optional ref OptionalClass
@@ -66,6 +67,7 @@ public final class WildcardMethod {
   //- Wildcard1 bounded/upper Str
   //- @String ref Str
   //- !{ Wildcard1 bounded/lower Anything2 }
+  //- !{ OptionalWildStringFnAbs param.1 Anything22  }
   private static void wildcardBound(Optional<? extends String> ovar) {}
 
   //- @Optional ref OptionalClass
@@ -100,6 +102,8 @@ public final class WildcardMethod {
   //- NestedWildFnAbs.node/kind abs
   //- NestedWildFnAbs param.0 FirstWildcard
   //- NestedWildFnAbs param.1 SecondWildcard
+  //- !{ NestedWildFnAbs param.2 Anything23  }
+  //- !{ NestedWildFnAbs param.3 Anything24  }
   private static void nestedWildcard(Optional<? extends Generic<?>> ogvar) {}
 
   //- @Optional ref OptionalClass
@@ -116,5 +120,6 @@ public final class WildcardMethod {
   //- WildcardAndParamFnAbs.node/kind abs
   //- WildcardAndParamFnAbs param.0 TType
   //- WildcardAndParamFnAbs param.1 Wildcard
+  //- !{ WildcardAndParamFnAbs param.2 Anything25  }
   private static <T> void wildcardAndParam(Optional<?> ovar, T tvar) {}
 }

@@ -414,12 +414,12 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     for (JCVariableDecl param : methodDef.getParameters()) {
       JavaNode n = scan(param, ctx);
       params.add(n);
-      wildcards.addAll(n.childWildcards);
 
       JavaNode typeNode = n.getType();
       if (typeNode == null) {
         logger.warningfmt(
             "Missing parameter type (method: %s; parameter: %s)", methodDef.getName(), param);
+        wildcards.addAll(n.childWildcards);
         continue;
       }
       wildcards.addAll(typeNode.childWildcards);
