@@ -435,10 +435,17 @@ func (e *emitter) visitCompositeLit(expr *ast.CompositeLit, stack stackFunc) {
 	}
 	for i, elt := range expr.Elts {
 		// The keys for key-value initializers are handled upstream of us, so
-		// we need only handle the values.
+		// we need only handle the values. But note that key-value initializers
+		// may not be in order, so we have to take care to get the right field.
+		// Positional fields must be in order, in well-formed code.
 		switch t := elt.(type) {
 		case *ast.KeyValueExpr:
-			e.emitPosRef(t.Value, sv.Field(i), edges.RefInit)
+			f, ok := fieldIndex(t.Key, sv)
+			if !ok {
+				log.Printf("ERROR: Found no field index for %v (skipping)", t.Key)
+				continue
+			}
+			e.emitPosRef(t.Value, sv.Field(f), edges.RefInit)
 		default:
 			e.emitPosRef(t, sv.Field(i), edges.RefInit)
 		}
@@ -903,6 +910,21 @@ func mapFields(fields *ast.FieldList, f func(i int, id *ast.Ident)) {
 			f(i, id)
 		}
 	}
+}
+
+// fieldIndex reports whether sv has a field named by expr, which must be of
+// type *ast.Ident, and returns its positional index if so.
+//
+// N.B. This is a linear scan, but the count of fields should almost always be
+// small enough not to worry about it.
+func fieldIndex(expr ast.Expr, sv *types.Struct) (int, bool) {
+	want := expr.(*ast.Ident).Name
+	for i := 0; i < sv.NumFields(); i++ {
+		if sv.Field(i).Name() == want {
+			return i, true
+		}
+	}
+	return -1, false
 }
 
 var escComment = strings.NewReplacer("[", `\[`, "]", `\]`, `\`, `\\`)

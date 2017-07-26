@@ -75,5 +75,16 @@ func realNames() {
 		//- @nick ref Nick
 		//- @"\"clyde\"" ref/init Nick
 		{name: "pokey", nick: "clyde"},
+
+		// Order and missing fields should not cause problems.
+		//- @nick ref Nick
+		//- @"\"sue\"" ref/init Nick
+		//- @name ref Name
+		//- @"\"Susannah\"" ref/init Name
+		{nick: "sue", name: "Susannah"},
+
+		//- @nick ref Nick
+		//- @"\"kyle\"" ref/init Nick
+		{nick: "kyle"},
 	}
 }
