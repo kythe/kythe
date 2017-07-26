@@ -1183,6 +1183,7 @@ bool IndexerASTVisitor::VisitMemberExpr(const clang::MemberExpr *E) {
   if (E->getMemberLoc().isInvalid()) {
     return true;
   }
+  VisitNestedNameSpecifierLoc(E->getQualifierLoc());
   if (const auto *FieldDecl = E->getMemberDecl()) {
     auto Range = RangeForASTEntityFromSourceLocation(
         *Observer.getSourceManager(), *Observer.getLangOptions(),

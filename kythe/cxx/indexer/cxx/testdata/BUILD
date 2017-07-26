@@ -1420,6 +1420,13 @@ cxx_indexer_test(
     tags = ["rec"],
 )
 
+cxx_indexer_test(
+    name = "rec_class_member_base_call",
+    srcs = ["rec/rec_class_member_base_call.cc"],
+    check_for_singletons = True,
+    tags = ["rec"],
+)
+
 test_suite(
     name = "indexer_rec",
     tags = ["rec"],
