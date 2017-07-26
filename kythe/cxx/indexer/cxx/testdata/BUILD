@@ -682,6 +682,13 @@ cxx_indexer_test(
     tags = ["basic"],
 )
 
+cxx_indexer_test(
+    name = "enum_element_ref",
+    srcs = ["basic/enum_element_ref.cc"],
+    check_for_singletons = True,
+    tags = ["basic"],
+)
+
 test_suite(
     name = "indexer_basic",
     tags = ["basic"],
