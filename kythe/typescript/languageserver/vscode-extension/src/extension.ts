@@ -23,7 +23,7 @@ import {LanguageClient, LanguageClientOptions, ServerOptions, TransportKind} fro
 export function activate(context: ExtensionContext) {
   // Construct the path to the language server
   const serverModule = context.asAbsolutePath(
-      join('node_modules', '.bin', 'kythe-languageserver'));
+      join('node_modules', 'kythe-languageserver', 'dist', 'src', 'bin', 'kythe-languageserver'));
 
   const debugOptions = {execArgv: ['--nolazy', '--debug=6004']};
 
