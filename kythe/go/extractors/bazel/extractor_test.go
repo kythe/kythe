@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -231,5 +232,30 @@ func TestFetchInputs(t *testing.T) {
 	}
 	if fd[1] != nil {
 		t.Errorf("FileData[1]: got %+v, want nil", fd[1])
+	}
+}
+
+func TestFindSourceArgs(t *testing.T) {
+	unit := &kindex.Compilation{
+		Proto: &apb.CompilationUnit{
+			RequiredInput: []*apb.CompilationUnit_FileInput{{
+				Info: &apb.FileInfo{Path: "a/b/c.go"},
+			}, {
+				Info: &apb.FileInfo{Path: "d/e/f.cc"},
+			}, {
+				Info: &apb.FileInfo{Path: "old"},
+			}},
+			SourceFile: []string{"old"},
+			// Matches:        no      yes, keep   yes, skip   no
+			Argument: []string{"blah", "a/b/c.go", "p/d/q.go", "quux"},
+		},
+	}
+	// Results:      new         extant
+	want := []string{"a/b/c.go", "old"}
+
+	r := regexp.MustCompile(`\.go$`)
+	FindSourceArgs(r)(unit)
+	if got := unit.Proto.SourceFile; !reflect.DeepEqual(got, want) {
+		t.Errorf("FindSourceArgs: got %+q, want %+q", got, want)
 	}
 }

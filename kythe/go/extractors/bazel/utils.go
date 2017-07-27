@@ -24,9 +24,11 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
+	"bitbucket.org/creachadair/stringset"
 	"github.com/golang/protobuf/proto"
 
 	"kythe.io/kythe/go/platform/kindex"
@@ -106,4 +108,25 @@ func SetTarget(target, rule string, unit *kindex.Compilation) error {
 		})
 	}
 	return nil
+}
+
+// FindSourceArgs returns a fixup that scans the argument list of a compilation
+// unit for strings matching r. Any that are found, and which also match the
+// names of required input files, are added to the source files of the unit.
+func FindSourceArgs(r *regexp.Regexp) func(*kindex.Compilation) error {
+	return func(cu *kindex.Compilation) error {
+		var inputs stringset.Set
+		for _, ri := range cu.Proto.RequiredInput {
+			inputs.Add(ri.Info.GetPath())
+		}
+
+		srcs := stringset.New(cu.Proto.SourceFile...)
+		for _, arg := range cu.Proto.Argument {
+			if r.MatchString(arg) && inputs.Contains(arg) {
+				srcs.Add(arg)
+			}
+		}
+		cu.Proto.SourceFile = srcs.Elements()
+		return nil
+	}
 }

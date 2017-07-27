@@ -28,10 +28,7 @@ import (
 	"regexp"
 	"time"
 
-	"bitbucket.org/creachadair/stringset"
-
 	"kythe.io/kythe/go/extractors/bazel"
-	"kythe.io/kythe/go/platform/kindex"
 )
 
 var (
@@ -156,22 +153,7 @@ func main() {
 	// If we have been asked to include source files from the argument list,
 	// add a fixup to do that at the end.
 	if *sourceArgs != "" {
-		r := mustRegexp(*sourceArgs, "source argument")
-		config.Fixup = func(cu *kindex.Compilation) error {
-			var inputs stringset.Set
-			for _, ri := range cu.Proto.RequiredInput {
-				inputs.Add(ri.Info.GetPath())
-			}
-
-			srcs := stringset.New(cu.Proto.SourceFile...)
-			for _, arg := range cu.Proto.Argument {
-				if r.MatchString(arg) && inputs.Contains(arg) {
-					srcs.Add(arg)
-				}
-			}
-			cu.Proto.SourceFile = srcs.Elements()
-			return nil
-		}
+		config.Fixup = bazel.FindSourceArgs(mustRegexp(*sourceArgs, "source argument"))
 	}
 
 	start := time.Now()
