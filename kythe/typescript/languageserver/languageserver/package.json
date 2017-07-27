@@ -1,8 +1,13 @@
 {
   "name": "kythe-languageserver",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A language server for Kythe",
   "main": "dist/src/server.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/google/kythe.git"
+  },
+  "license": "Apache-2.0",
   "bin": {
     "kythe-languageserver": "dist/src/bin/kythe-languageserver.js"
   },
