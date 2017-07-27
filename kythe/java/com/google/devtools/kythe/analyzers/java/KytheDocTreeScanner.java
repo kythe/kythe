@@ -18,6 +18,7 @@ package com.google.devtools.kythe.analyzers.java;
 
 import com.google.devtools.kythe.analyzers.base.EntrySet;
 import com.google.devtools.kythe.common.FormattingLogger;
+import com.google.devtools.kythe.proto.Storage.VName;
 import com.sun.source.doctree.ReferenceTree;
 import com.sun.source.util.DocTreePath;
 import com.sun.source.util.DocTreePathScanner;
@@ -45,7 +46,7 @@ public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> 
     this.trees = JavacTrees.instance(context);
   }
 
-  public boolean visitDocComment(TreePath treePath, EntrySet node, EntrySet absNode) {
+  public boolean visitDocComment(TreePath treePath, VName node, EntrySet absNode) {
     // TODO(https://phabricator-dot-kythe-repo.appspot.com/T185): always use absNode
     DCDocComment doc = (DCDocComment) trees.getDocCommentTree(treePath);
     if (doc == null) {
@@ -70,9 +71,8 @@ public class KytheDocTreeScanner extends DocTreePathScanner<Void, DCDocComment> 
     for (MiniAnchor<Symbol> miniAnchor : miniAnchors) {
       anchoredTo.add(miniAnchor.getAnchoredTo());
     }
-    treeScanner.emitDoc(
-        bracketed, anchoredTo, node.getVName(), absNode == null ? null : absNode.getVName());
-    return treeScanner.emitCommentsOnLine(treeScanner.charToLine(startChar), node.getVName());
+    treeScanner.emitDoc(bracketed, anchoredTo, node, absNode == null ? null : absNode.getVName());
+    return treeScanner.emitCommentsOnLine(treeScanner.charToLine(startChar), node);
   }
 
   @Override

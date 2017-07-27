@@ -40,8 +40,16 @@ class JavaNode {
     this(entries, null);
   }
 
+  JavaNode(VName vName) {
+    this(vName, null);
+  }
+
   JavaNode(EntrySet entries, ImmutableList<VName> childWildcards) {
-    this.vName = entries.getVName();
+    this(entries.getVName(), childWildcards);
+  }
+
+  JavaNode(VName vName, ImmutableList<VName> childWildcards) {
+    this.vName = vName;
     this.childWildcards = childWildcards == null ? ImmutableList.<VName>of() : childWildcards;
   }
 

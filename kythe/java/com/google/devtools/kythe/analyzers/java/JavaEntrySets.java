@@ -50,7 +50,7 @@ import javax.tools.JavaFileObject;
 
 /** Specialization of {@link KytheEntrySets} for Java. */
 public class JavaEntrySets extends KytheEntrySets {
-  private final Map<Symbol, EntrySet> symbolNodes = new HashMap<>();
+  private final Map<Symbol, VName> symbolNodes = new HashMap<>();
   private final Map<Symbol, Integer> symbolHashes = new HashMap<>();
   private final boolean ignoreVNamePaths;
   private final boolean ignoreVNameRoots;
@@ -76,7 +76,7 @@ public class JavaEntrySets extends KytheEntrySets {
    * emitted if necessary. If non-null, msBuilder will be used to generate a signature.
    */
   @Deprecated
-  public EntrySet getNode(
+  public VName getNode(
       final SignatureGenerator signatureGenerator,
       Symbol sym,
       String signature,
@@ -96,22 +96,21 @@ public class JavaEntrySets extends KytheEntrySets {
             s ->
                 signatureGenerator
                     .getSignature(s)
-                    .map(sig -> getNode(signatureGenerator, s, sig, null, null))
-                    .map(EntrySet::getVName)));
+                    .map(sig -> getNode(signatureGenerator, s, sig, null, null))));
   }
 
   /**
    * Returns a node for the given {@link Symbol} and its signature. A new node is created and
    * emitted if necessary.
    */
-  public EntrySet getNode(
+  public VName getNode(
       SignatureGenerator signatureGenerator,
       Symbol sym,
       String signature,
       MarkedSource markedSource) {
     EntrySet node;
-    if ((node = symbolNodes.get(sym)) != null) {
-      return node;
+    if (symbolNodes.containsKey(sym)) {
+      return symbolNodes.get(sym);
     }
 
     ClassSymbol enclClass = sym.enclClass();
@@ -147,8 +146,8 @@ public class JavaEntrySets extends KytheEntrySets {
       node.emit(getEmitter());
     }
 
-    symbolNodes.put(sym, node);
-    return node;
+    symbolNodes.put(sym, node.getVName());
+    return node.getVName();
   }
 
   /** Emits and returns a new {@link EntrySet} representing Javadoc. */

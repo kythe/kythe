@@ -309,7 +309,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
 
     MarkedSource.Builder markedSource = MarkedSource.newBuilder();
-    EntrySet classNode =
+    VName classNode =
         entrySets.getNode(signatureGenerator, classDef.sym, signature.get(), markedSource, null);
 
     // Find the method or class in which this class is defined, if any.
@@ -321,7 +321,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     // because that would miss the case of local/anonymous classes in static/member
     // initializers. But there's no harm in emitting the same fact twice!
     if (container != null) {
-      entrySets.emitEdge(classNode.getVName(), EdgeKind.CHILDOF, container.getNode().getVName());
+      entrySets.emitEdge(classNode, EdgeKind.CHILDOF, container.getNode().getVName());
     }
 
     Span classIdent = filePositions.findIdentifier(classDef.name, classDef.getPreferredPosition());
@@ -334,7 +334,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     EntrySet absNode =
         defineTypeParameters(
             ctx,
-            classNode.getVName(),
+            classNode,
             classDef.getTypeParameters(),
             ImmutableList.<VName>of(), /* There are no wildcards in class definitions */
             markedSource.build());
@@ -357,14 +357,14 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
     if (absNode == null && classIdent != null) {
       EntrySet anchor = entrySets.newAnchorAndEmit(filePositions, classIdent, ctx.getSnippet());
-      emitDefinesBindingEdge(classIdent, anchor, classNode.getVName());
+      emitDefinesBindingEdge(classIdent, anchor, classNode);
     }
-    emitAnchor(ctx, EdgeKind.DEFINES, classNode.getVName());
+    emitAnchor(ctx, EdgeKind.DEFINES, classNode);
     if (!documented) {
-      emitComment(classDef, classNode.getVName());
+      emitComment(classDef, classNode);
     }
 
-    visitAnnotations(classNode.getVName(), classDef.getModifiers().getAnnotations(), ctx);
+    visitAnnotations(classNode, classDef.getModifiers().getAnnotations(), ctx);
 
     JavaNode superClassNode = scan(classDef.getExtendsClause(), ctx);
     if (superClassNode == null) {
@@ -388,7 +388,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
 
     if (superClassNode != null) {
-      emitEdge(classNode, EdgeKind.EXTENDS, superClassNode);
+      entrySets.emitEdge(classNode, EdgeKind.EXTENDS, superClassNode.getVName());
     }
 
     for (JCExpression implClass : classDef.getImplementsClause()) {
@@ -398,7 +398,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
         logger.warning("Missing 'implements' node for " + implClass.getClass() + ": " + implClass);
         continue;
       }
-      emitEdge(classNode, EdgeKind.EXTENDS, implNode);
+      entrySets.emitEdge(classNode, EdgeKind.EXTENDS, implNode.getVName());
     }
 
     // Set the resulting node for the class before recursing through its members.  Setting the node
@@ -409,7 +409,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     for (JCTree member : classDef.getMembers()) {
       JavaNode n = scan(member, ctx);
       if (n != null) {
-        entrySets.emitEdge(n.getVName(), EdgeKind.CHILDOF, classNode.getVName());
+        entrySets.emitEdge(n.getVName(), EdgeKind.CHILDOF, classNode);
       }
     }
 
@@ -451,17 +451,13 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
 
     MarkedSource.Builder markedSource = MarkedSource.newBuilder();
-    EntrySet methodNode =
+    VName methodNode =
         entrySets.getNode(signatureGenerator, methodDef.sym, signature.get(), markedSource, null);
-    visitAnnotations(methodNode.getVName(), methodDef.getModifiers().getAnnotations(), ctx);
+    visitAnnotations(methodNode, methodDef.getModifiers().getAnnotations(), ctx);
 
     EntrySet absNode =
         defineTypeParameters(
-            ctx,
-            methodNode.getVName(),
-            methodDef.getTypeParameters(),
-            wildcards,
-            markedSource.build());
+            ctx, methodNode, methodDef.getTypeParameters(), wildcards, markedSource.build());
     boolean documented = visitDocComment(methodNode, absNode);
 
     VName ret = null;
@@ -478,7 +474,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
             emitDefinesBindingAnchorEdge(
                 methodDef.sym.owner.name,
                 methodDef.getPreferredPosition(),
-                methodNode.getVName(),
+                methodNode,
                 ctx.getSnippet());
       }
       // Likewise, constructors don't have return types in the Java AST, but
@@ -488,16 +484,13 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     } else {
       bindingAnchor =
           emitDefinesBindingAnchorEdge(
-              methodDef.name,
-              methodDef.getPreferredPosition(),
-              methodNode.getVName(),
-              ctx.getSnippet());
+              methodDef.name, methodDef.getPreferredPosition(), methodNode, ctx.getSnippet());
       ret = returnType.getVName();
     }
 
     if (bindingAnchor != null) {
       if (!documented) {
-        emitComment(methodDef, methodNode.getVName());
+        emitComment(methodDef, methodNode);
       }
       if (absNode != null) {
         emitAnchor(bindingAnchor, EdgeKind.DEFINES_BINDING, absNode.getVName());
@@ -509,12 +502,12 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
           emitComment(methodDef, absNode.getVName());
         }
       }
-      emitAnchor(ctx, EdgeKind.DEFINES, methodNode.getVName());
+      emitAnchor(ctx, EdgeKind.DEFINES, methodNode);
     }
 
-    emitOrdinalEdges(methodNode.getVName(), EdgeKind.PARAM, params);
+    emitOrdinalEdges(methodNode, EdgeKind.PARAM, params);
     EntrySet fnTypeNode = entrySets.newFunctionTypeAndEmit(ret, toVNames(paramTypes));
-    entrySets.emitEdge(methodNode, EdgeKind.TYPED, fnTypeNode);
+    entrySets.emitEdge(methodNode, EdgeKind.TYPED, fnTypeNode.getVName());
 
     ClassSymbol ownerClass = (ClassSymbol) methodDef.sym.owner;
     Set<Element> ownerDirectSupertypes = new HashSet<>();
@@ -525,9 +518,9 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     for (MethodSymbol superMethod : JavacUtil.superMethods(javaContext, methodDef.sym)) {
       VName superNode = getNode(superMethod);
       if (ownerDirectSupertypes.contains(superMethod.owner)) {
-        entrySets.emitEdge(methodNode.getVName(), EdgeKind.OVERRIDES, superNode);
+        entrySets.emitEdge(methodNode, EdgeKind.OVERRIDES, superNode);
       } else {
-        entrySets.emitEdge(methodNode.getVName(), EdgeKind.OVERRIDES_TRANSITIVE, superNode);
+        entrySets.emitEdge(methodNode, EdgeKind.OVERRIDES_TRANSITIVE, superNode);
       }
     }
 
@@ -566,27 +559,26 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     }
     scan(varDef.getInitializer(), ctx);
 
-    EntrySet varNode =
+    VName varNode =
         entrySets.getNode(
             signatureGenerator, varDef.sym, signature.get(), null, markedSourceChildren);
     boolean documented = visitDocComment(varNode, null);
-    emitDefinesBindingAnchorEdge(
-        varDef.name, varDef.getStartPosition(), varNode.getVName(), ctx.getSnippet());
-    emitAnchor(ctx, EdgeKind.DEFINES, varNode.getVName());
+    emitDefinesBindingAnchorEdge(varDef.name, varDef.getStartPosition(), varNode, ctx.getSnippet());
+    emitAnchor(ctx, EdgeKind.DEFINES, varNode);
     if (varDef.sym.getKind().isField() && !documented) {
       // emit comments for fields and enumeration constants
-      emitComment(varDef, varNode.getVName());
+      emitComment(varDef, varNode);
     }
 
     TreeContext parentContext = ctx.getClassOrMethodParent();
     if (parentContext != null && parentContext.getNode() != null) {
-      emitEdge(varNode, EdgeKind.CHILDOF, parentContext.getNode());
+      entrySets.emitEdge(varNode, EdgeKind.CHILDOF, parentContext.getNode().getVName());
     }
-    visitAnnotations(varNode.getVName(), varDef.getModifiers().getAnnotations(), ctx);
+    visitAnnotations(varNode, varDef.getModifiers().getAnnotations(), ctx);
 
     JavaNode typeNode = scan(varDef.getType(), ctx);
     if (typeNode != null) {
-      emitEdge(varNode, EdgeKind.TYPED, typeNode);
+      entrySets.emitEdge(varNode, EdgeKind.TYPED, typeNode.getVName());
       return new JavaNode(varNode, typeNode.childWildcards).setType(typeNode);
     }
 
@@ -640,8 +632,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     TreeContext ctx = owner.down(reference);
     scan(reference.getQualifierExpression(), ctx);
     return emitNameUsage(
-            ctx,
-            reference.sym,
+        ctx,
+        reference.sym,
         reference.getMode() == ReferenceMode.NEW ? Keyword.of("new") : reference.name);
   }
 
@@ -777,7 +769,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     return scanAll(owner.downAsSnippet(assgnOp), assgnOp.lhs, assgnOp.rhs);
   }
 
-  private boolean visitDocComment(EntrySet node, EntrySet absNode) {
+  private boolean visitDocComment(VName node, EntrySet absNode) {
     // TODO(https://phabricator-dot-kythe-repo.appspot.com/T185): always use absNode
     return docScanner != null && docScanner.visitDocComment(treePath, node, absNode);
   }
@@ -941,23 +933,21 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   private JavaNode getJavaLangObjectNode() {
     Symbol javaLangObject = getSymbols().objectType.asElement();
     String javaLangObjectSignature = signatureGenerator.getSignature(javaLangObject).get();
-    EntrySet javaLangObjectEntrySet =
+    VName javaLangObjectVName =
         entrySets.getNode(signatureGenerator, javaLangObject, javaLangObjectSignature, null, null);
-    return new JavaNode(javaLangObjectEntrySet);
+    return new JavaNode(javaLangObjectVName);
   }
 
   // Returns a JavaNode representing java.lang.Enum<E> where E is a given enum type.
-  private JavaNode getJavaLangEnumNode(EntrySet enumEntrySet) {
+  private JavaNode getJavaLangEnumNode(VName enumVName) {
     Symbol javaLangEnum = getSymbols().enumSym;
     String javaLangEnumSignature = signatureGenerator.getSignature(javaLangEnum).get();
     EntrySet javaLangEnumEntrySet =
         entrySets.newAbstractAndEmit(
-            entrySets
-                .getNode(signatureGenerator, javaLangEnum, javaLangEnumSignature, null, null)
-                .getVName());
+            entrySets.getNode(signatureGenerator, javaLangEnum, javaLangEnumSignature, null, null));
     EntrySet typeNode =
         entrySets.newTApplyAndEmit(
-            javaLangEnumEntrySet.getVName(), Collections.singletonList(enumEntrySet.getVName()));
+            javaLangEnumEntrySet.getVName(), Collections.singletonList(enumVName));
     return new JavaNode(typeNode);
   }
 
