@@ -1012,8 +1012,6 @@ bool IndexerASTVisitor::TraverseDecl(clang::Decl *Decl) {
       if (!FD->isThisDeclarationADefinition()) {
         return true;
       }
-    } else {
-      return true;
     }
   }
   if (FLAGS_experimental_threaded_claiming) {
