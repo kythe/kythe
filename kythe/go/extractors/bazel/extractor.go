@@ -198,7 +198,7 @@ func (c *Config) Extract(ctx context.Context, info *ActionInfo) (*kindex.Compila
 	// inputs and filter out which ones we actually want to keep by path
 	// inspection; then load the contents concurrently.
 	sort.Strings(info.Inputs) // ensure a consistent order
-	inputs := c.ClassifyInputs(info.Inputs, cu)
+	inputs := c.ClassifyInputs(info, cu)
 
 	start := time.Now()
 	fileData, err := c.FetchInputs(ctx, inputs)
@@ -253,13 +253,12 @@ func (c *Config) FetchInputs(ctx context.Context, paths []string) ([]*apb.FileDa
 // ClassifyInputs updates unit to add required inputs for each matching path
 // and to identify source inputs according to the rules of c. The filtered
 // complete list of inputs paths is returned.
-func (c *Config) ClassifyInputs(paths []string, unit *kindex.Compilation) []string {
-	var inputs []string
-	var sourceFiles stringset.Set
-	for _, in := range paths {
+func (c *Config) ClassifyInputs(info *ActionInfo, unit *kindex.Compilation) []string {
+	var inputs, sourceFiles stringset.Set
+	for _, in := range info.Inputs {
 		path, ok := c.checkInput(in)
 		if ok {
-			inputs = append(inputs, path)
+			inputs.Add(path)
 			if c.isSource(path) {
 				sourceFiles.Add(path)
 				c.logPrintf("Matched source file from inputs: %q", path)
@@ -278,9 +277,15 @@ func (c *Config) ClassifyInputs(paths []string, unit *kindex.Compilation) []stri
 			c.logPrintf("Excluding input file: %q", in)
 		}
 	}
+	for _, src := range info.Sources {
+		if inputs.Contains(src) {
+			c.logPrintf("Matched source file from action: %q", src)
+			sourceFiles.Add(src)
+		}
+	}
 	unit.Proto.SourceFile = sourceFiles.Elements()
 	log.Printf("Found %d required inputs, %d source files", len(inputs), len(sourceFiles))
-	return inputs
+	return inputs.Elements()
 }
 
 // ActionInfo represents the action metadata relevant to the extraction process.
@@ -288,9 +293,17 @@ type ActionInfo struct {
 	Arguments   []string          // command-line arguments
 	Inputs      []string          // input file paths
 	Outputs     []string          // output file paths
+	Sources     []string          // source file paths
 	Environment map[string]string // environment variables
 	Target      string            // build target name
 	Rule        string            // rule class name
+
+	// Paths in Sources are expected to be a subset of inputs. In particular
+	// the extractor will keep such a path only if it also appears in the
+	// Inputs, and has been selected by the other rules provided by the caller.
+	//
+	// Such paths, if there are any, are taken in addition to any source files
+	// identified by the extraction rules provided by the caller.
 }
 
 // Setenv updates the Environment field with the specified key-value pair.
