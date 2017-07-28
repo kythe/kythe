@@ -59,9 +59,34 @@ func parsePoint(p string) (*cpb.Point, error) {
 	return nil, fmt.Errorf("unknown format %q", p)
 }
 
+func parseLine(p string) (*cpb.Span, error) {
+	m := lineNumberPointRE.FindStringSubmatch(p)
+	if m == nil {
+		return nil, errors.New("unknown format")
+	}
+	line, err := strconv.Atoi(m[1])
+	if err != nil {
+		return nil, fmt.Errorf("invalid line number: %v", err)
+	}
+	start := &cpb.Point{LineNumber: int32(line)}
+	if m[3] != "" {
+		col, err := strconv.Atoi(m[3])
+		if err != nil {
+			return nil, fmt.Errorf("invalid column offset: %v", err)
+		}
+		start.ColumnOffset = int32(col)
+	}
+	return &cpb.Span{
+		Start: start,
+		End:   &cpb.Point{LineNumber: start.LineNumber + 1},
+	}, nil
+}
+
 func parseSpan(span string) (*cpb.Span, error) {
 	parts := strings.Split(span, "-")
-	if len(parts) != 2 {
+	if len(parts) == 1 {
+		return parseLine(parts[0])
+	} else if len(parts) != 2 {
 		return nil, errors.New("unknown format")
 	}
 	start, err := parsePoint(parts[0])

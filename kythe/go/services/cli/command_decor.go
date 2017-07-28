@@ -57,10 +57,11 @@ type baseDecorCommand struct {
 
 func (c *baseDecorCommand) SetFlags(flag *flag.FlagSet) {
 	flag.StringVar(&c.decorSpan, "span", "",
-		`Limit results to this span (e.g. "10-30", "b1462-b1847", "3:5-3:10")
+		`Limit results to this span (e.g. "10-30", "b1462-b1847", "3:5-3:10", "10")
       Formats:
         b\d+-b\d+             -- Byte-offsets
-        \d+(:\d+)?-\d+(:\d+)? -- Line offsets with optional column offsets`)
+        \d+(:\d+)?-\d+(:\d+)? -- Line offsets with optional column offsets
+        \d+(:\d+)?            -- Full line span (with an optional starting column offset)`)
 	flag.StringVar(&c.corpus, "corpus", DefaultFileCorpus, "File corpus to use if given a raw path")
 	flag.StringVar(&c.root, "root", DefaultFileRoot, "File root to use if given a raw path")
 	flag.StringVar(&c.pathPrefix, "path_prefix", DefaultFilePathPrefix, "File path prefix to use if given a raw path (this is prepended directly to the raw path without any joining slashes)")
