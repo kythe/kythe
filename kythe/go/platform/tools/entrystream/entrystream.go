@@ -41,9 +41,9 @@ import (
 	"kythe.io/kythe/go/util/disksort"
 	"kythe.io/kythe/go/util/flagutil"
 
-	spb "kythe.io/kythe/proto/storage_proto"
-
 	"github.com/golang/protobuf/proto"
+
+	spb "kythe.io/kythe/proto/storage_proto"
 )
 
 type entrySet struct {

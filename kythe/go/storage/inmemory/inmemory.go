@@ -26,9 +26,9 @@ import (
 	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/services/graphstore/compare"
 
-	spb "kythe.io/kythe/proto/storage_proto"
-
 	"github.com/golang/protobuf/proto"
+
+	spb "kythe.io/kythe/proto/storage_proto"
 )
 
 // GraphStore implements the graphstore.Service interface. A zero of this type

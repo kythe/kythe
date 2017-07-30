@@ -48,13 +48,13 @@ import (
 	"strconv"
 	"strings"
 
-	"bitbucket.org/creachadair/stringset"
-	"github.com/golang/protobuf/proto"
-	"golang.org/x/tools/go/gcexportdata"
-
 	"kythe.io/kythe/go/extractors/govname"
 	"kythe.io/kythe/go/util/metadata"
 	"kythe.io/kythe/go/util/ptypes"
+
+	"bitbucket.org/creachadair/stringset"
+	"github.com/golang/protobuf/proto"
+	"golang.org/x/tools/go/gcexportdata"
 
 	apb "kythe.io/kythe/proto/analysis_proto"
 	cpb "kythe.io/kythe/proto/common_proto"

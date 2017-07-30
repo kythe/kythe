@@ -41,16 +41,16 @@ import (
 	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/tickets"
 
+	"bitbucket.org/creachadair/stringset"
+	"github.com/golang/protobuf/proto"
+	"github.com/golang/snappy"
+	"golang.org/x/net/trace"
+
 	cpb "kythe.io/kythe/proto/common_proto"
 	gpb "kythe.io/kythe/proto/graph_proto"
 	ipb "kythe.io/kythe/proto/internal_proto"
 	srvpb "kythe.io/kythe/proto/serving_proto"
 	xpb "kythe.io/kythe/proto/xref_proto"
-
-	"bitbucket.org/creachadair/stringset"
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/snappy"
-	"golang.org/x/net/trace"
 )
 
 var (

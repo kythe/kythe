@@ -24,11 +24,11 @@ import (
 	"io"
 	"log"
 
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/proto"
-
 	"kythe.io/kythe/go/platform/delimited"
 	"kythe.io/kythe/go/util/schema/facts"
+
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
 
 	cpb "kythe.io/kythe/proto/common_proto"
 	spb "kythe.io/kythe/proto/storage_proto"

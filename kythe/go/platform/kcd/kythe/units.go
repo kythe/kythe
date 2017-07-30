@@ -22,10 +22,10 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/golang/protobuf/proto"
-
 	"kythe.io/kythe/go/platform/kcd"
 	"kythe.io/kythe/go/util/ptypes"
+
+	"github.com/golang/protobuf/proto"
 
 	apb "kythe.io/kythe/proto/analysis_proto"
 	bipb "kythe.io/kythe/proto/buildinfo_proto"

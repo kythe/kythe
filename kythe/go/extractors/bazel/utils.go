@@ -28,11 +28,11 @@ import (
 	"strings"
 	"time"
 
-	"bitbucket.org/creachadair/stringset"
-	"github.com/golang/protobuf/proto"
-
 	"kythe.io/kythe/go/platform/kindex"
 	"kythe.io/kythe/go/util/vnameutil"
+
+	"bitbucket.org/creachadair/stringset"
+	"github.com/golang/protobuf/proto"
 
 	bipb "kythe.io/kythe/proto/buildinfo_proto"
 	xapb "kythe.io/third_party/bazel/extra_actions_base_proto"

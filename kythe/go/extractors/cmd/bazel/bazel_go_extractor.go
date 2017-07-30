@@ -28,14 +28,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"bitbucket.org/creachadair/shell"
-	"bitbucket.org/creachadair/stringset"
-	"github.com/golang/protobuf/proto"
-
 	"kythe.io/kythe/go/extractors/bazel"
 	"kythe.io/kythe/go/extractors/govname"
 	"kythe.io/kythe/go/platform/kindex"
 	"kythe.io/kythe/go/util/vnameutil"
+
+	"bitbucket.org/creachadair/shell"
+	"bitbucket.org/creachadair/stringset"
+	"github.com/golang/protobuf/proto"
 
 	gopb "kythe.io/kythe/proto/go_proto"
 	spb "kythe.io/kythe/proto/storage_proto"

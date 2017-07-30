@@ -22,11 +22,11 @@ import (
 
 	"kythe.io/kythe/go/test/testutil"
 
+	"github.com/golang/protobuf/proto"
+
 	ipb "kythe.io/kythe/proto/internal_proto"
 	srvpb "kythe.io/kythe/proto/serving_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
-
-	"github.com/golang/protobuf/proto"
 )
 
 func fact(name, value string) *spb.Entry {

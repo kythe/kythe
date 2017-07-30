@@ -29,12 +29,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pborman/uuid"
-
 	"kythe.io/kythe/go/extractors/golang"
 	"kythe.io/kythe/go/platform/indexpack"
 	"kythe.io/kythe/go/platform/kindex"
 	"kythe.io/kythe/go/platform/vfs"
+
+	"github.com/pborman/uuid"
 
 	apb "kythe.io/kythe/proto/analysis_proto"
 )

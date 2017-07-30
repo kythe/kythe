@@ -25,8 +25,8 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
-	ianypb "github.com/golang/protobuf/ptypes/any"
 
+	ianypb "github.com/golang/protobuf/ptypes/any"
 	anypb "kythe.io/third_party/proto/any_proto"
 )
 

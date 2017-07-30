@@ -46,12 +46,12 @@ import (
 	"os"
 	"sync"
 
-	"github.com/golang/protobuf/proto"
-
 	"kythe.io/kythe/go/platform/analysis"
 	"kythe.io/kythe/go/platform/delimited"
 	"kythe.io/kythe/go/platform/vfs"
 	"kythe.io/kythe/go/util/ptypes"
+
+	"github.com/golang/protobuf/proto"
 
 	apb "kythe.io/kythe/proto/analysis_proto"
 	spb "kythe.io/kythe/proto/storage_proto"

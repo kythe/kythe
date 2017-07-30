@@ -25,11 +25,11 @@ import (
 	"kythe.io/kythe/go/platform/delimited"
 	"kythe.io/kythe/go/test/testutil"
 
-	cpb "kythe.io/kythe/proto/common_proto"
-	spb "kythe.io/kythe/proto/storage_proto"
-
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
+
+	cpb "kythe.io/kythe/proto/common_proto"
+	spb "kythe.io/kythe/proto/storage_proto"
 )
 
 func TestReader(t *testing.T) {

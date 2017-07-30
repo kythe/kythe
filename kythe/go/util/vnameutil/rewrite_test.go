@@ -21,9 +21,9 @@ import (
 	"strings"
 	"testing"
 
-	spb "kythe.io/kythe/proto/storage_proto"
-
 	"github.com/golang/protobuf/proto"
+
+	spb "kythe.io/kythe/proto/storage_proto"
 )
 
 // Copied exactly from kythe/javatests/com/google/devtools/kythe/extractors/shared/FileVNamesTest.java

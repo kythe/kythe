@@ -28,11 +28,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/golang/protobuf/proto"
-
 	"kythe.io/kythe/go/test/testutil"
 	"kythe.io/kythe/go/util/metadata"
 	"kythe.io/kythe/go/util/ptypes"
+
+	"github.com/golang/protobuf/proto"
 
 	apb "kythe.io/kythe/proto/analysis_proto"
 	gopb "kythe.io/kythe/proto/go_proto"

@@ -32,10 +32,10 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/golang/protobuf/proto"
+
 	cpb "kythe.io/kythe/proto/analysis_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
-
-	"github.com/golang/protobuf/proto"
 )
 
 var (

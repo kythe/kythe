@@ -30,10 +30,10 @@ import (
 	"kythe.io/kythe/go/platform/kcd"
 	"kythe.io/kythe/go/platform/kcd/kythe"
 
+	"github.com/golang/protobuf/proto"
+
 	apb "kythe.io/kythe/proto/analysis_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
-
-	"github.com/golang/protobuf/proto"
 )
 
 // TestError is the concrete type of errors returned by the Run function.

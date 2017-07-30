@@ -20,9 +20,9 @@ import (
 	"go/build"
 	"testing"
 
-	"github.com/golang/protobuf/proto"
-
 	"kythe.io/kythe/go/util/kytheuri"
+
+	"github.com/golang/protobuf/proto"
 
 	spb "kythe.io/kythe/proto/storage_proto"
 )

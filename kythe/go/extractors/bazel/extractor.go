@@ -27,13 +27,12 @@ import (
 	"sort"
 	"time"
 
-	"bitbucket.org/creachadair/stringset"
-
-	"github.com/golang/protobuf/proto"
-	"golang.org/x/sync/errgroup"
-
 	"kythe.io/kythe/go/platform/kindex"
 	"kythe.io/kythe/go/util/vnameutil"
+
+	"bitbucket.org/creachadair/stringset"
+	"github.com/golang/protobuf/proto"
+	"golang.org/x/sync/errgroup"
 
 	apb "kythe.io/kythe/proto/analysis_proto"
 	spb "kythe.io/kythe/proto/storage_proto"

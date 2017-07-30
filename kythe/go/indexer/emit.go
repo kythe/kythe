@@ -28,14 +28,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/golang/protobuf/proto"
-	"golang.org/x/tools/go/types/typeutil"
-
 	"kythe.io/kythe/go/extractors/govname"
 	"kythe.io/kythe/go/util/metadata"
 	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/facts"
 	"kythe.io/kythe/go/util/schema/nodes"
+
+	"github.com/golang/protobuf/proto"
+	"golang.org/x/tools/go/types/typeutil"
 
 	spb "kythe.io/kythe/proto/storage_proto"
 )

@@ -25,10 +25,10 @@ import (
 
 	"kythe.io/kythe/go/platform/analysis"
 
+	"github.com/pkg/errors"
+
 	apb "kythe.io/kythe/proto/analysis_proto"
 	aspb "kythe.io/kythe/proto/analysis_service_proto"
-
-	"github.com/pkg/errors"
 )
 
 // Analyzer implements the analysis.CompilationAnalyzer interface by using a
