@@ -168,6 +168,13 @@ func (e *emitter) visitIdent(id *ast.Ident, stack stackFunc) {
 	}
 
 	target := e.pi.ObjectVName(obj)
+	if target == nil {
+		// This should not happen in well-formed packages, but can if the
+		// extractor gets confused. Avoid emitting confusing references in such
+		// cases.
+		log.Printf("WARNING: Missing package vname for object: %+v", obj)
+		return
+	}
 	e.writeRef(id, target, edges.Ref)
 	if call, ok := isCall(id, obj, stack); ok {
 		callAnchor := e.writeRef(call, target, edges.RefCall)
