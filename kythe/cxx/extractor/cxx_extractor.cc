@@ -25,6 +25,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "clang/Basic/VirtualFileSystem.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Lex/MacroArgs.h"
@@ -55,6 +56,10 @@ constexpr char kHexDigits[] = "0123456789abcdef";
 
 // The message type URI for the build details message.
 constexpr char kBuildDetailsURI[] = "kythe.io/proto/kythe.proto.BuildDetails";
+
+/// When a -resource-dir is not specified, map builtin versions of compiler
+/// headers to this directory.
+constexpr char kBuiltinResourceDirectory[] = "/kythe_builtins";
 
 /// \brief Lowercase-string-hex-encodes the array sha_buf.
 /// \param sha_buf The bytes of the hash.
@@ -528,8 +533,7 @@ void ExtractorPPCallbacks::MacroDefined(
   if (!macro_location.isFileID()) {
     return;
   }
-  llvm::StringRef macro_name_string =
-      macro_name.getIdentifierInfo()->getName();
+  llvm::StringRef macro_name_string = macro_name.getIdentifierInfo()->getName();
   history()->Update(source_manager_->getFileOffset(macro_location));
   history()->Update(macro_name_string);
 }
@@ -542,8 +546,7 @@ void ExtractorPPCallbacks::MacroUndefined(
   if (!macro_location.isFileID()) {
     return;
   }
-  llvm::StringRef macro_name_string =
-      macro_name.getIdentifierInfo()->getName();
+  llvm::StringRef macro_name_string = macro_name.getIdentifierInfo()->getName();
   history()->Update(source_manager_->getFileOffset(macro_location));
   if (macro_definition) {
     // We don't just care that a macro was undefined; we care that
@@ -755,6 +758,7 @@ class ExtractorAction : public clang::PreprocessorFrontendAction {
             index_writer_, &getCompilerInstance().getSourceManager(),
             preprocessor, &main_source_file_, &main_source_file_transcript_,
             &source_files_, &main_source_file_stdin_alternate_}));
+    index_writer_->CancelPreviouslyOpenedFiles();
     preprocessor->EnterMainSourceFile();
     clang::Token token;
     do {
@@ -777,52 +781,13 @@ class ExtractorAction : public clang::PreprocessorFrontendAction {
     index_writer_->set_triple(getCompilerInstance().getTargetOpts().Triple);
     HeaderSearchInfo info;
     bool info_valid = info.CopyFrom(header_search_options, header_search_info);
-    RecordModuleInfo(&header_search_info.getModuleMap());
+    index_writer_->ScrubIntermediateFiles(header_search_options);
     callback_(main_source_file_, main_source_file_transcript_, source_files_,
               info_valid ? &info : nullptr,
               getCompilerInstance().getDiagnostics().hasErrorOccurred());
   }
 
  private:
-  void RecordModuleInfo(const clang::ModuleMap* module_map) {
-    // TODO(zarko): Record module flags (::DisableModuleHash, ::ModuleMaps)
-    // from HeaderSearchOptions; support "apple-style headermaps" (see
-    // Clang's InitHeaderSearch.cpp.)
-    auto* source_manager = &getCompilerInstance().getSourceManager();
-    for (auto modules = module_map->module_begin(),
-              modules_end = module_map->module_end();
-         modules != modules_end; ++modules) {
-      auto* module = modules->second;
-      if (module->DefinitionLoc.isInvalid() ||
-          !module->DefinitionLoc.isFileID()) {
-        LOG(WARNING) << "Module " << module->Name
-                     << " has an invalid or non-file definition location.";
-        continue;
-      }
-      auto file_id = source_manager->getFileID(module->DefinitionLoc);
-      if (file_id.isInvalid()) {
-        LOG(WARNING) << "Module " << module->Name << " has an invalid file ID.";
-        continue;
-      }
-      if (const auto* file = source_manager->getFileEntryForID(file_id)) {
-        auto contents = source_files_.insert(
-            std::make_pair(file->getName(), SourceFile{std::string()}));
-        if (contents.second) {
-          const llvm::MemoryBuffer* buffer =
-              source_manager->getMemoryBufferForFile(file);
-          contents.first->second.file_content.assign(buffer->getBufferStart(),
-                                                     buffer->getBufferEnd());
-          contents.first->second.vname.CopyFrom(
-              index_writer_->VNameForPath(RelativizePath(
-                  file->getName(), index_writer_->root_directory())));
-          LOG(INFO) << "added module map content for " << file->getName().str();
-        }
-      } else {
-        LOG(WARNING) << "Module " << module->Name << " is missing a FileEntry.";
-      }
-    }
-  }
-
   ExtractorCallback callback_;
   /// The main source file for the compilation (assuming only one).
   std::string main_source_file_;
@@ -928,6 +893,7 @@ kythe::proto::VName IndexWriter::VNameForPath(const std::string& path) {
 void IndexWriter::FillFileInput(
     const std::string& clang_path, const SourceFile& source_file,
     kythe::proto::CompilationUnit_FileInput* file_input) {
+  extra_includes_.erase(clang_path);
   CHECK(source_file.vname.language().empty());
   file_input->mutable_v_name()->CopyFrom(source_file.vname);
   // This path is distinct from the VName path. It is used by analysis tools
@@ -949,6 +915,50 @@ void IndexWriter::FillFileInput(
       auto* col_pb = row_pb->add_column();
       col_pb->set_offset(col.first);
       col_pb->set_linked_context(col.second);
+    }
+  }
+}
+
+void IndexWriter::InsertExtraIncludes(kythe::proto::CompilationUnit* unit) {
+  auto fs = clang::vfs::getRealFileSystem();
+  for (const auto& path : extra_includes_) {
+    auto normalized = RelativizePath(path, root_directory());
+    auto buffer = fs->getBufferForFile(path);
+    if (!buffer) {
+      LOG(WARNING) << "Couldn't reopen " << path;
+      continue;
+    }
+    extra_data_.emplace_back();
+    auto* file_content = &extra_data_.back();
+    auto* required_input = unit->add_required_input();
+    required_input->mutable_v_name()->CopyFrom(VNameForPath(normalized));
+    required_input->mutable_info()->set_path(path);
+    required_input->mutable_info()->set_digest(
+        Sha256((*buffer)->getBufferStart(), (*buffer)->getBufferSize()));
+    file_content->mutable_info()->CopyFrom(required_input->info());
+    file_content->mutable_content()->assign((*buffer)->getBufferStart(),
+                                            (*buffer)->getBufferEnd());
+  }
+}
+
+void IndexWriter::CancelPreviouslyOpenedFiles() { extra_includes_.clear(); }
+
+void IndexWriter::OpenedForRead(const std::string& path) {
+  if (!llvm::StringRef(path).startswith(kBuiltinResourceDirectory)) {
+    extra_includes_.insert(path);
+  }
+}
+
+void IndexWriter::ScrubIntermediateFiles(
+    const clang::HeaderSearchOptions& options) {
+  if (options.ModuleCachePath.empty()) {
+    return;
+  }
+  for (auto it = extra_includes_.begin(); it != extra_includes_.end();) {
+    if (llvm::StringRef(*it).startswith(options.ModuleCachePath)) {
+      it = extra_includes_.erase(it);
+    } else {
+      ++it;
     }
   }
 }
@@ -1012,6 +1022,7 @@ void IndexWriter::WriteIndex(
   for (const auto& file : source_files) {
     FillFileInput(file.first, file.second, unit.add_required_input());
   }
+  InsertExtraIncludes(&unit);
   unit.set_entry_context(entry_context);
   unit.set_has_compile_errors(had_errors);
   unit.add_source_file(main_source_file);
@@ -1034,6 +1045,9 @@ void IndexWriter::WriteIndex(
     file_content.mutable_info()->CopyFrom(
         unit.required_input(info_index++).info());
     sink->WriteFileContent(file_content);
+  }
+  for (const auto& data : extra_data_) {
+    sink->WriteFileContent(data);
   }
 }
 
@@ -1068,10 +1082,6 @@ static std::string LoadFileOrDie(const std::string& file) {
   CHECK_NE(fclose(handle), EOF) << "Couldn't close " << file;
   return content;
 }
-
-/// When a -resource-dir is not specified, map builtin versions of compiler
-/// headers to this directory.
-constexpr char kBuiltinResourceDirectory[] = "/kythe_builtins";
 
 void ExtractorConfiguration::SetVNameConfig(const std::string& path) {
   if (!index_writer_.SetVNameConfiguration(LoadFileOrDie(path))) {
@@ -1131,10 +1141,50 @@ void ExtractorConfiguration::InitializeFromEnvironment() {
   }
 }
 
+/// Shims Clang's file system. We need to do this because other parts of the
+/// frontend (like the parts that autodetect the standard library and support
+/// for extensions like CUDA) request files separately from the preprocessor.
+/// We still want to keep track of file requests in the preprocessor so we can
+/// record information about transcripts, as these are important for claiming.
+class RecordingFS : public clang::vfs::FileSystem {
+ public:
+  RecordingFS(llvm::IntrusiveRefCntPtr<clang::vfs::FileSystem> base_file_system,
+              IndexWriter* index_writer)
+      : base_file_system_(base_file_system), index_writer_(index_writer) {}
+  llvm::ErrorOr<clang::vfs::Status> status(const llvm::Twine& path) override {
+    return base_file_system_->status(path);
+  }
+  llvm::ErrorOr<std::unique_ptr<clang::vfs::File>> openFileForRead(
+      const llvm::Twine& path) override {
+    auto nested_result = base_file_system_->openFileForRead(path);
+    if (nested_result) {
+      // We expect to be able to open this file at this path in the future.
+      index_writer_->OpenedForRead(path.str());
+    }
+    return nested_result;
+  }
+  clang::vfs::directory_iterator dir_begin(
+      const llvm::Twine& dir, std::error_code& error_code) override {
+    return base_file_system_->dir_begin(dir, error_code);
+  }
+  llvm::ErrorOr<std::string> getCurrentWorkingDirectory() const override {
+    return base_file_system_->getCurrentWorkingDirectory();
+  }
+  std::error_code setCurrentWorkingDirectory(const llvm::Twine& Path) override {
+    return base_file_system_->setCurrentWorkingDirectory(Path);
+  }
+
+ private:
+  llvm::IntrusiveRefCntPtr<clang::vfs::FileSystem> base_file_system_;
+  IndexWriter* index_writer_;
+};
+
 bool ExtractorConfiguration::Extract(supported_language::Language lang,
                                      std::unique_ptr<IndexWriterSink> sink) {
   llvm::IntrusiveRefCntPtr<clang::FileManager> file_manager(
-      new clang::FileManager(file_system_options_));
+      new clang::FileManager(
+          file_system_options_,
+          new RecordingFS(clang::vfs::getRealFileSystem(), &index_writer_)));
   index_writer_.set_target_name(target_name_);
   index_writer_.set_rule_type(rule_type_);
   index_writer_.set_output_path(output_path_);

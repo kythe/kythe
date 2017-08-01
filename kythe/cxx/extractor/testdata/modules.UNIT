@@ -4,15 +4,6 @@ v_name {
 }
 required_input {
   v_name {
-    path: "kythe/cxx/extractor/testdata/modfoo.modulemap"
-  }
-  info {
-    path: "./kythe/cxx/extractor/testdata/modfoo.modulemap"
-    digest: "94416d419ecab4bce80084ef89587c4ca31a3cabad12498bd98aa213b1dd5189"
-  }
-}
-required_input {
-  v_name {
     path: "kythe/cxx/extractor/testdata/modules.cc"
   }
   info {
@@ -32,6 +23,15 @@ required_input {
   info {
     path: "./kythe/cxx/extractor/testdata/modfoo.h"
     digest: "cd8c82152d321ecfa60a7ab3ccec78ad7168abf22dd93150ccee7fea420ad432"
+  }
+}
+required_input {
+  v_name {
+    path: "kythe/cxx/extractor/testdata/modfoo.modulemap"
+  }
+  info {
+    path: "kythe/cxx/extractor/testdata/modfoo.modulemap"
+    digest: "94416d419ecab4bce80084ef89587c4ca31a3cabad12498bd98aa213b1dd5189"
   }
 }
 argument: "./kythe/cxx/extractor/cxx_extractor"

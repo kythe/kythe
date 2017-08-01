@@ -150,6 +150,23 @@ sh_test(
 )
 
 sh_test(
+    name = "has_include",
+    size = "small",
+    srcs = [
+        "test_has_include.sh",
+    ],
+    data = [
+        "has_include_test.UNIT",
+        "has_include_test.cc",
+        "has_include_test.h",
+        "skip_functions.sh",
+        "test_common.sh",
+        "//kythe/cxx/extractor:cxx_extractor",
+        "//kythe/cxx/tools:kindex_tool",
+    ],
+)
+
+sh_test(
     name = "metadata",
     size = "small",
     srcs = [
