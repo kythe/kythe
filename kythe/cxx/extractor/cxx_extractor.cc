@@ -921,8 +921,17 @@ void IndexWriter::FillFileInput(
 
 void IndexWriter::InsertExtraIncludes(kythe::proto::CompilationUnit* unit) {
   auto fs = clang::vfs::getRealFileSystem();
+  std::set<std::string> normalized_clang_paths;
+  for (const auto& input : unit->required_input()) {
+    normalized_clang_paths.insert(
+        RelativizePath(input.info().path(), root_directory()));
+  }
   for (const auto& path : extra_includes_) {
     auto normalized = RelativizePath(path, root_directory());
+    if (normalized_clang_paths.count(normalized) != 0) {
+      // This file is redundant with a required input after normalization.
+      continue;
+    }
     auto buffer = fs->getBufferForFile(path);
     if (!buffer) {
       LOG(WARNING) << "Couldn't reopen " << path;

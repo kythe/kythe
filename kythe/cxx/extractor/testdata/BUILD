@@ -167,6 +167,24 @@ sh_test(
 )
 
 sh_test(
+    name = "indirect_has_include",
+    size = "small",
+    srcs = [
+        "test_indirect_has_include.sh",
+    ],
+    data = [
+        "has_include_test.h",
+        "indirect_has_include_test.UNIT",
+        "indirect_has_include_test.cc",
+        "indirect_has_include_test.h",
+        "skip_functions.sh",
+        "test_common.sh",
+        "//kythe/cxx/extractor:cxx_extractor",
+        "//kythe/cxx/tools:kindex_tool",
+    ],
+)
+
+sh_test(
     name = "metadata",
     size = "small",
     srcs = [
