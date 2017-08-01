@@ -6,8 +6,7 @@
         "strictNullChecks": true,
         "sourceMap": true
     },
-    "exclude": [
-        "node_modules",
-        "testdata"
+    "include": [
+        "*.ts"
     ]
 }
