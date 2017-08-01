@@ -410,7 +410,7 @@ verifier_test = rule(
 def _invoke(rulefn, name, **kwargs):
   """Invoke rulefn with name and kwargs, returning the label of the rule."""
   rulefn(name=name, **kwargs)
-  return "//{}:{}".format(native.package_name(), name)
+  return "//{}:{}".format(PACKAGE_NAME, name)
 
 def cc_verifier_test(name, srcs, deps=[], size="small",
                      indexer_opts=["--ignore_unimplemented=true"],

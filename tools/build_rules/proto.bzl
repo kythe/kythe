@@ -10,7 +10,7 @@ standard_proto_path = "third_party/proto/src/"
 def _invoke(rulefn, name, **kwargs):
   """Invoke rulefn with name and kwargs, returning the label of the rule."""
   rulefn(name=name, **kwargs)
-  return "//{}:{}".format(native.package_name(), name)
+  return "//{}:{}".format(PACKAGE_NAME, name)
 
 def _go_proto_library_impl(ctx):
   """Pseudo-go_library rule used to work around the proto import-path mismatch.
