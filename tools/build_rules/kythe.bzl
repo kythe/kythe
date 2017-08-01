@@ -407,11 +407,16 @@ verifier_test = rule(
     implementation = _verifier_test_impl,
 )
 
+def _invoke(rulefn, name, **kwargs):
+  """Invoke rulefn with name and kwargs, returning the label of the rule."""
+  rulefn(name=name, **kwargs)
+  return "//{}:{}".format(native.package_name(), name)
+
 def cc_verifier_test(name, srcs, deps=[], size="small",
                      indexer_opts=["--ignore_unimplemented=true"],
                      verifier_opts=["--ignore_dups"], tags=[]):
   args = ["-std=c++11", "-c"]
-  kindexes = [extract_kindex(
+  kindexes = [_invoke(extract_kindex,
         name = name + "_" + src + "_kindex",
         srcs = [src],
         tags = tags,
@@ -427,16 +432,16 @@ def cc_verifier_test(name, srcs, deps=[], size="small",
                 "-I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/usr/include",
             ],
         }),
-  ).label() for src in srcs]
-  entries = [index_compilation(
+  ) for src in srcs]
+  entries = [_invoke(index_compilation,
       name = name + "_entries",
       deps = kindexes,
       opts = indexer_opts,
       indexer = "//kythe/cxx/indexer/cxx:indexer",
       tags = tags,
       testonly = True,
-  ).label()]
-  return verifier_test(
+  )]
+  return _invoke(verifier_test,
       name = name,
       size = size,
       deps = entries + deps,
@@ -447,7 +452,7 @@ def cc_verifier_test(name, srcs, deps=[], size="small",
 def java_verifier_test(name, srcs, meta=[], deps=[], size="small", tags=[],
                        indexer_opts=["--verbose"], verifier_opts=["--ignore_dups"],
                        vnames_config=None, visibility=None):
-  kindex = java_extract_kindex(
+  kindex = _invoke(java_extract_kindex,
       name = name + "_kindex",
       srcs = srcs,
       # This is a hack to depend on the .jar producer.
@@ -457,8 +462,8 @@ def java_verifier_test(name, srcs, meta=[], deps=[], size="small", tags=[],
       visibility = visibility,
       vnames_config = vnames_config,
       testonly = True,
-  ).label()
-  entries = index_compilation(
+  )
+  entries = _invoke(index_compilation,
       name = name + "_entries",
       indexer = "//kythe/java/com/google/devtools/kythe/analyzers/java:wrapped_indexer",
       deps = [kindex],
@@ -466,8 +471,8 @@ def java_verifier_test(name, srcs, meta=[], deps=[], size="small", tags=[],
       opts = indexer_opts,
       visibility = visibility,
       testonly = True,
-  ).label()
-  return verifier_test(
+  )
+  return _invoke(verifier_test,
       name = name,
       size = size,
       tags = tags,
@@ -477,7 +482,7 @@ def java_verifier_test(name, srcs, meta=[], deps=[], size="small", tags=[],
   )
 
 def objc_bazel_verifier_test(name, src, data, size="small", tags=[]):
-  kindex = bazel_extract_kindex(
+  kindex = _invoke(bazel_extract_kindex,
       name = name + "_kindex",
       srcs = [src],
       data = data,
@@ -488,15 +493,15 @@ def objc_bazel_verifier_test(name, src, data, size="small", tags=[]):
       ],
       tags = tags,
       testonly = True,
-  ).label()
-  entries = index_compilation(
+  )
+  entries = _invoke(index_compilation,
       name = name + "_entries",
       indexer = "//kythe/cxx/indexer/cxx:indexer",
       deps = [kindex],
       tags = tags,
       testonly = True,
-  ).label()
-  return verifier_test(
+  )
+  return _invoke(verifier_test,
       name = name,
       size = size,
       tags = tags,
@@ -504,22 +509,22 @@ def objc_bazel_verifier_test(name, src, data, size="small", tags=[]):
   )
 
 def cc_bazel_verifier_test(name, src, data, size="small", tags=[]):
-  kindex = bazel_extract_kindex(
+  kindex = _invoke(bazel_extract_kindex,
       name = name + "_kindex",
       srcs = [src],
       data = data,
       extractor = "//kythe/cxx/extractor:cxx_extractor_bazel",
       tags = tags,
       testonly = True,
-  ).label()
-  entries = index_compilation(
+  )
+  entries = _invoke(index_compilation,
       name = name + "_entries",
       indexer = "//kythe/cxx/indexer/cxx:indexer",
       deps = [kindex],
       tags = tags,
       testonly = True,
-  ).label()
-  return verifier_test(
+  )
+  return _invoke(verifier_test,
       name = name,
       size = size,
       tags = tags,
@@ -527,15 +532,15 @@ def cc_bazel_verifier_test(name, src, data, size="small", tags=[]):
   )
 
 def kythe_integration_test(name, srcs, file_tickets, tags=[], size="small"):
-  entries = atomize_entries(
+  entries = _invoke(atomize_entries,
       name = name + "_atomized_entries",
       file_tickets = file_tickets,
       srcs = [],
       deps = srcs,
       tags = tags,
       testonly = True,
-  ).label()
-  return verifier_test(
+  )
+  return _invoke(verifier_test,
       name = name,
       size = size,
       tags = tags,

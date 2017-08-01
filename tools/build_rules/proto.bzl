@@ -7,6 +7,11 @@ load(
 
 standard_proto_path = "third_party/proto/src/"
 
+def _invoke(rulefn, name, **kwargs):
+  """Invoke rulefn with name and kwargs, returning the label of the rule."""
+  rulefn(name=name, **kwargs)
+  return "//{}:{}".format(native.package_name(), name)
+
 def _go_proto_library_impl(ctx):
   """Pseudo-go_library rule used to work around the proto import-path mismatch.
 
@@ -217,15 +222,16 @@ def proto_library(name, srcs, deps=[], visibility=None,
   if cc_api_version not in (None, 0, 2):
     fail("cc_api_version must be 2 if present")
 
-  proto_pkg = genproto(name=name,
-                       src=srcs[0],
-                       deps=deps,
-                       has_services=has_services,
-                       gen_java=bool(java_api_version),
-                       gen_go=bool(go_api_version),
-                       gen_cc=bool(cc_api_version),
-                       emit_metadata=emit_metadata,
-                       gofast=gofast, go_package=go_package)
+  proto_pkg = _invoke(genproto,
+                      name=name,
+                      src=srcs[0],
+                      deps=deps,
+                      has_services=has_services,
+                      gen_java=bool(java_api_version),
+                      gen_go=bool(go_api_version),
+                      gen_cc=bool(cc_api_version),
+                      emit_metadata=emit_metadata,
+                      gofast=gofast, go_package=go_package)
 
   # TODO(shahms): These should probably not be separate libraries, but
   # allowing upstream *_library and *_binary targets to depend on the
@@ -244,7 +250,7 @@ def proto_library(name, srcs, deps=[], visibility=None,
       java_deps += [dep + "_java"]
     native.java_library(
         name  = name + "_java",
-        srcs = [proto_pkg.label()],
+        srcs = [proto_pkg],
         deps = java_deps,
         visibility = visibility,
     )
@@ -260,7 +266,7 @@ def proto_library(name, srcs, deps=[], visibility=None,
       go_deps += [dep + "_go"]
     _go_proto_library_hack(
         name  = name + "_go",
-        srcs = [proto_pkg.label()],
+        srcs = [proto_pkg],
         deps = go_deps,
         visibility = visibility,
     )
@@ -272,8 +278,8 @@ def proto_library(name, srcs, deps=[], visibility=None,
     native.cc_library(
         name = name + "_cc",
         visibility = visibility,
-        hdrs = [proto_pkg.label()],
-        srcs = [proto_pkg.label()],
+        hdrs = [proto_pkg],
+        srcs = [proto_pkg],
         defines = ["GOOGLE_PROTOBUF_NO_RTTI"],
         deps = cc_deps,
     )
