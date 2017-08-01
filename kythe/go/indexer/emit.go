@@ -172,7 +172,9 @@ func (e *emitter) visitIdent(id *ast.Ident, stack stackFunc) {
 		// This should not happen in well-formed packages, but can if the
 		// extractor gets confused. Avoid emitting confusing references in such
 		// cases.
-		log.Printf("WARNING: Missing package vname for object: %+v", obj)
+		e.writeDiagnostic(e.pi.AnchorVName(e.pi.Span(id)), diagnostic{
+			Message: fmt.Sprintf("Unable to identify the package for %q", id.Name),
+		})
 		return
 	}
 	e.writeRef(id, target, edges.Ref)
@@ -678,6 +680,10 @@ func (e *emitter) writeEdge(src, tgt *spb.VName, kind string) {
 
 func (e *emitter) writeAnchor(src *spb.VName, start, end int) {
 	e.check(e.sink.writeAnchor(e.ctx, src, start, end))
+}
+
+func (e *emitter) writeDiagnostic(src *spb.VName, d diagnostic) {
+	e.check(e.sink.writeDiagnostic(e.ctx, src, d))
 }
 
 // writeRef emits an anchor spanning origin and referring to target with an

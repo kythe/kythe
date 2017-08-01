@@ -18,8 +18,13 @@ package indexer
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/base64"
+	"fmt"
 	"strconv"
 
+	"kythe.io/kythe/go/extractors/govname"
+	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/facts"
 	"kythe.io/kythe/go/util/schema/nodes"
 
@@ -57,4 +62,43 @@ func (s Sink) writeAnchor(ctx context.Context, src *spb.VName, start, end int) e
 		return err
 	}
 	return s.writeFact(ctx, src, facts.AnchorEnd, strconv.Itoa(end))
+}
+
+// A diagnostic represents a diagnostic message attached to some node in the
+// graph by the indexer.
+type diagnostic struct {
+	Message string // One-line human-readable summary
+	Details string // Detailed description or content
+	URL     string // Optional context URL
+}
+
+func (d diagnostic) vname(src *spb.VName) *spb.VName {
+	hash := sha256.New()
+	fmt.Fprintln(hash, d.Message, d.Details, d.URL)
+	return &spb.VName{
+		Language:  govname.Language,
+		Corpus:    src.Corpus,
+		Path:      src.Path,
+		Root:      src.Root,
+		Signature: "diag " + base64.URLEncoding.EncodeToString(hash.Sum(nil)[:]),
+	}
+}
+
+// writeDiagnostic attaches d as a diagnostic on src.
+func (s Sink) writeDiagnostic(ctx context.Context, src *spb.VName, d diagnostic) error {
+	dname := d.vname(src)
+	facts := [...]struct{ name, value string }{
+		{facts.NodeKind, nodes.Diagnostic},
+		{facts.Message, d.Message},
+		{facts.Details, d.Details},
+		{facts.ContextURL, d.URL},
+	}
+	for _, fact := range facts {
+		if fact.value == "" {
+			continue
+		} else if err := s.writeFact(ctx, dname, fact.name, fact.value); err != nil {
+			return err
+		}
+	}
+	return s.writeEdge(ctx, src, dname, edges.Tagged)
 }
