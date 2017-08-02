@@ -739,6 +739,12 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "function_ctor_base_delegate",
+    srcs = ["function/function_ctor_base_delegate.cc"],
+    tags = ["function"],
+)
+
+cxx_indexer_test(
     name = "function_ctor_init_refs",
     srcs = ["function/function_ctor_init_refs.cc"],
     tags = ["function"],

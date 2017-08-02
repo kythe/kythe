@@ -1207,6 +1207,9 @@ bool IndexerASTVisitor::VisitMemberExpr(const clang::MemberExpr *E) {
 bool IndexerASTVisitor::VisitCXXConstructExpr(
     const clang::CXXConstructExpr *E) {
   if (const auto *Callee = E->getConstructor()) {
+    // Clang doesn't invoke VisitDeclRefExpr on constructors, so we
+    // must do so manually.
+    VisitDeclRefOrIvarRefExpr(E, Callee, E->getLocation());
     // TODO(zarko): What about static initializers? Do we blame these on the
     // translation unit?
     if (!Job->BlameStack.empty()) {
@@ -2650,6 +2653,8 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
             }
           }
         }
+        // TODO(shahms): Handle non-dependent types (delegated and base
+        // constructors).
       }
     }
   } else if (const auto *CD = dyn_cast<CXXDestructorDecl>(Decl)) {

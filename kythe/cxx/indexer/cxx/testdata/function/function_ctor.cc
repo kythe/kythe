@@ -22,5 +22,6 @@ void g() {
   //- CallC.loc/end @^"c"
   C c;
   //- @"C(42)" ref/call CtorC2
+  //- @C ref CtorC2
   C(42);
 }
