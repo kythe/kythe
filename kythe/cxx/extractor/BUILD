@@ -119,6 +119,7 @@ cc_library(
 
 cc_test(
     name = "objc_bazel_support_library_test",
+    size = "small",
     srcs = ["objc_bazel_support_test.cc"],
     deps = [
         ":objc_bazel_support_library",
