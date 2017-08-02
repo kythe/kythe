@@ -290,6 +290,20 @@ new_git_repository(
 )
 
 new_git_repository(
+    name = "go_langserver",
+    build_file = "third_party/go/langserver.BUILD",
+    commit = "66ff4f536c4fe4a5c525472820a563939a0ab00f",
+    remote = "https://github.com/sourcegraph/go-langserver.git",
+)
+
+new_git_repository(
+    name = "go_jsonrpc2",
+    build_file = "third_party/go/jsonrpc2.BUILD",
+    commit = "3a7c446248199a2abc2dff3cf97bb4f3c0028e5f",
+    remote = "https://github.com/sourcegraph/jsonrpc2.git",
+)
+
+new_git_repository(
     name = "go_levigo",
     build_file = "third_party/go/levigo.BUILD",
     commit = "1ddad808d437abb2b8a55a950ec2616caa88969b",

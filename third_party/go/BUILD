@@ -18,5 +18,7 @@ filegroup(
         "@go_x_oauth2//:LICENSE",
         "@go_x_text//:LICENSE",
         "@go_x_tools//:LICENSE",
+        "@go_langserver//:LICENSE",
+        "@go_jsonrpc2//:LICENSE",
     ],
 )
