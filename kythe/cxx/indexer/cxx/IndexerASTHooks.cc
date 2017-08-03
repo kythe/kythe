@@ -3426,7 +3426,16 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
       Ostream << "#D";
     }
   }
-  clang::SourceRange DeclRange(Decl->getLocStart(), Decl->getLocEnd());
+  clang::SourceRange DeclRange;
+  if (const auto* named_decl = dyn_cast<NamedDecl>(Decl)) {
+    // RangeForNameOfDeclaration doesn't work well with some ObjCInterfaceDecls.
+    if (!isa<ObjCInterfaceDecl>(Decl)) {
+      DeclRange = RangeForNameOfDeclaration(named_decl);
+    }
+  }
+  if (!DeclRange.isValid()) {
+    DeclRange = clang::SourceRange(Decl->getLocStart(), Decl->getLocEnd());
+  }
   Ostream << "@";
   if (DeclRange.getBegin().isValid()) {
     Observer.AppendRangeToStream(
