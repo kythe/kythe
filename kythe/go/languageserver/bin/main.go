@@ -34,26 +34,12 @@ import (
 )
 
 var (
-	root   = flag.String("root", "", "The root which all files are relative to")
-	corpus = flag.String("corpus", "kythe", "The Kythe corpus containing the index")
-	host   = flag.String("host", "localhost", "Host for the Kythe xref service")
-	port   = flag.Int("port", 8080, "Host for the Kythe xref service")
+	host = flag.String("host", "localhost", "Host for the Kythe xref service")
+	port = flag.Int("port", 8080, "Host for the Kythe xref service")
 )
 
 func main() {
 	flag.Parse()
-	if *root == "" {
-		wd, err := os.Getwd()
-		if err != nil {
-			log.Fatalf("Unable to find working directory: %v", err)
-		}
-		*root = wd
-	}
-
-	pc := languageserver.PathConfig{
-		Root:   *root,
-		Corpus: *corpus,
-	}
 
 	host := fmt.Sprintf("%s:%d", *host, *port)
 
@@ -65,7 +51,7 @@ func main() {
 	conn.Close()
 
 	client := xrefs.WebClient("http://" + host)
-	server := languageserver.NewServer(pc, client)
+	server := languageserver.NewServer(client)
 
 	<-jsonrpc2.NewConn(
 		context.Background(),

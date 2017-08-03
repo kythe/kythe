@@ -21,8 +21,10 @@ go_library(
         "handler.go",
         "document.go",
         "path.go",
+        "settings.go",
     ],
     deps = [
+        "//kythe/go/languageserver/pathmap",
         "//kythe/go/util/kytheuri",
         "//kythe/go/services/xrefs",
         "//kythe/proto:xref_proto_go",

@@ -19,14 +19,27 @@ package languageserver
 import (
 	"testing"
 
+	"kythe.io/kythe/go/test/testutil"
+	"kythe.io/kythe/go/util/kytheuri"
+
 	"github.com/sourcegraph/go-langserver/pkg/lsp"
 )
 
 func TestLocalFromURI(t *testing.T) {
-	p := PathConfig{
-		Root:   "/root/dir/",
-		Corpus: "corpus",
+	p, err := newPathConfig("/root/dir", Settings{
+		Mappings: []MappingConfig{{
+			Local: ":path*",
+			VName: VNameConfig{
+				Path:   ":path*",
+				Corpus: "corpus",
+			},
+		}},
+	})
+
+	if err != nil {
+		t.Fatal(err)
 	}
+
 	badURIs := []lsp.DocumentURI{
 		"",
 		"malformed",
@@ -52,5 +65,46 @@ func TestLocalFromURI(t *testing.T) {
 		if err != nil {
 			t.Errorf("Error parsing URI (%s)", u)
 		}
+	}
+}
+
+func TestGeneration(t *testing.T) {
+	p, err := newPathConfig("/root/dir", Settings{
+		Mappings: []MappingConfig{{
+			Local: ":corpus/:path*/:root",
+			VName: VNameConfig{
+				Path:   ":path*",
+				Corpus: ":corpus",
+				Root:   ":root",
+			},
+		}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	l := "/root/dir/myCorpus/deeply/nested/myRoot"
+	u := kytheuri.URI{
+		Path:   "deeply/nested",
+		Root:   "myRoot",
+		Corpus: "myCorpus",
+	}
+
+	// Test local -> URI
+	gu, err := p.kytheURIFromLocal(l)
+	if err != nil {
+		t.Errorf("error generating Kythe URI from local (%s):\n%v", l, err)
+	}
+	if err := testutil.DeepEqual(*gu, u); err != nil {
+		t.Errorf("incorrect Kythe URI generated from local (%s):\n%v", l, err)
+	}
+
+	// Test URI -> local
+	gl, err := p.localFromKytheURI(u)
+	if err != nil {
+		t.Errorf("error generating local from Kythe URI (%v):\n%v", u, err)
+	}
+	if err := testutil.DeepEqual(gl, l); err != nil {
+		t.Errorf("incorrect local generated from Kythe URI (%v):\n%v", u, err)
 	}
 }

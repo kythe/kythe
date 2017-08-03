@@ -71,11 +71,6 @@ func (c MockClient) Nodes(_ context.Context, x *gpb.NodesRequest) (*gpb.NodesRep
 	return nil, fmt.Errorf("Not Implemented")
 }
 func TestReferences(t *testing.T) {
-	p := PathConfig{
-		Root:   "/root/dir/",
-		Corpus: "corpus",
-	}
-
 	c := MockClient{
 		decRsp: []mockDec{
 			{
@@ -104,9 +99,23 @@ func TestReferences(t *testing.T) {
 											Start: &cpb.Point{LineNumber: 3, ColumnOffset: 0},
 											End:   &cpb.Point{LineNumber: 3, ColumnOffset: 3}}}}}}}}}}}
 
-	srv := NewServer(p, c)
+	srv := NewServer(c)
+	p, err := newPathConfig("/root/dir", Settings{
+		Mappings: []MappingConfig{{
+			Local: ":path*",
+			VName: VNameConfig{
+				Path:   ":path*",
+				Corpus: "corpus",
+			}},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv.paths = p
+
 	u := "file:///root/dir/file.txt"
-	err := srv.TextDocumentDidOpen(lsp.DidOpenTextDocumentParams{
+	err = srv.TextDocumentDidOpen(lsp.DidOpenTextDocumentParams{
 		TextDocument: lsp.TextDocumentItem{
 			URI: lsp.DocumentURI(u),
 		},

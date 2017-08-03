@@ -38,15 +38,16 @@ import (
 // Server provides a Language Server for interacting with data in a Kythe index
 type Server struct {
 	docs  map[string]*document
-	Paths PathConfig
+	paths pathConfig
 	XRefs xrefs.Service
 }
 
 // NewServer constructs a Server object
-func NewServer(p PathConfig, x xrefs.Service) Server {
+func NewServer(x xrefs.Service) Server {
+	var p pathConfig
 	return Server{
 		docs:  make(map[string]*document),
-		Paths: p,
+		paths: p,
 		XRefs: x,
 	}
 }
@@ -55,8 +56,8 @@ func NewServer(p PathConfig, x xrefs.Service) Server {
 // receive configuration info (such as the project root) and announce its capabilities.
 func (ls *Server) Initialize(params lsp.InitializeParams) (*lsp.InitializeResult, error) {
 	log.Println("Server Initializing...")
-	fullSync := lsp.TDSKFull
 
+	fullSync := lsp.TDSKFull
 	return &lsp.InitializeResult{
 		Capabilities: lsp.ServerCapabilities{
 			TextDocumentSync: lsp.TextDocumentSyncOptionsOrKind{
@@ -72,14 +73,16 @@ func (ls *Server) Initialize(params lsp.InitializeParams) (*lsp.InitializeResult
 // been opened. The Kythe Language Server uses this time to fetch file
 // decorations.
 func (ls *Server) TextDocumentDidOpen(params lsp.DidOpenTextDocumentParams) error {
-
-	local, err := ls.Paths.localFromURI(params.TextDocument.URI)
+	local, err := ls.paths.localFromURI(params.TextDocument.URI)
 	if err != nil {
 		return fmt.Errorf("failed creating local path from URI (%s):\n%v", params.TextDocument.URI, err)
 
 	}
 
-	ticket, err := ls.Paths.ticketFromLocal(local)
+	ticket, err := ls.paths.kytheURIFromLocal(local)
+	if err != nil {
+		return err
+	}
 
 	dec, err := ls.XRefs.Decorations(context.TODO(), &xpb.DecorationsRequest{
 		Location: &xpb.Location{
@@ -120,7 +123,7 @@ func (ls *Server) TextDocumentDidOpen(params lsp.DidOpenTextDocumentParams) erro
 // TextDocumentDidChange is called when the client edits a file. The Kythe
 // Language Server simply stores the new content and marks the file as dirty
 func (ls *Server) TextDocumentDidChange(params lsp.DidChangeTextDocumentParams) error {
-	local, err := ls.Paths.localFromURI(params.TextDocument.URI)
+	local, err := ls.paths.localFromURI(params.TextDocument.URI)
 	if err != nil {
 		return err
 	}
@@ -140,7 +143,7 @@ func (ls *Server) TextDocumentDidChange(params lsp.DidChangeTextDocumentParams) 
 // locations throughout the project that reference the same semantic node. This
 // can trigger a diff if the source file is dirty
 func (ls *Server) TextDocumentReferences(params lsp.ReferenceParams) ([]lsp.Location, error) {
-	local, err := ls.Paths.localFromURI(params.TextDocument.URI)
+	local, err := ls.paths.localFromURI(params.TextDocument.URI)
 	if err != nil {
 		return nil, err
 	}
@@ -200,7 +203,7 @@ func (ls *Server) anchorToLoc(a xpb.CrossReferencesReply_RelatedAnchor) *lsp.Loc
 		return nil
 	}
 
-	local, err := ls.Paths.localFromTicket(*ticket)
+	local, err := ls.paths.localFromKytheURI(*ticket)
 	if err != nil {
 		return nil
 	}
