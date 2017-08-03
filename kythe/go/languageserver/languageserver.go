@@ -73,7 +73,7 @@ func (ls *Server) Initialize(params lsp.InitializeParams) (*lsp.InitializeResult
 // decorations.
 func (ls *Server) TextDocumentDidOpen(params lsp.DidOpenTextDocumentParams) error {
 
-	local, err := ls.Paths.localFromURI(string(params.TextDocument.URI))
+	local, err := ls.Paths.localFromURI(params.TextDocument.URI)
 	if err != nil {
 		return fmt.Errorf("failed creating local path from URI (%s):\n%v", params.TextDocument.URI, err)
 
@@ -120,7 +120,7 @@ func (ls *Server) TextDocumentDidOpen(params lsp.DidOpenTextDocumentParams) erro
 // TextDocumentDidChange is called when the client edits a file. The Kythe
 // Language Server simply stores the new content and marks the file as dirty
 func (ls *Server) TextDocumentDidChange(params lsp.DidChangeTextDocumentParams) error {
-	local, err := ls.Paths.localFromURI(string(params.TextDocument.URI))
+	local, err := ls.Paths.localFromURI(params.TextDocument.URI)
 	if err != nil {
 		return err
 	}
@@ -140,7 +140,7 @@ func (ls *Server) TextDocumentDidChange(params lsp.DidChangeTextDocumentParams) 
 // locations throughout the project that reference the same semantic node. This
 // can trigger a diff if the source file is dirty
 func (ls *Server) TextDocumentReferences(params lsp.ReferenceParams) ([]lsp.Location, error) {
-	local, err := ls.Paths.localFromURI(string(params.TextDocument.URI))
+	local, err := ls.Paths.localFromURI(params.TextDocument.URI)
 	if err != nil {
 		return nil, err
 	}

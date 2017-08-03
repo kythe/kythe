@@ -22,6 +22,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/sourcegraph/go-langserver/pkg/lsp"
+
 	"kythe.io/kythe/go/util/kytheuri"
 )
 
@@ -32,9 +34,8 @@ type PathConfig struct {
 }
 
 // localFromURI generates a path relative to the root from a file URI
-func (p *PathConfig) localFromURI(lspURI string) (string, error) {
-	// TODO: Change this parameter to lsp.DocumentURI.
-	u, err := url.Parse(lspURI)
+func (p *PathConfig) localFromURI(lspURI lsp.DocumentURI) (string, error) {
+	u, err := url.Parse(string(lspURI))
 	if err != nil {
 		return "", err
 	}

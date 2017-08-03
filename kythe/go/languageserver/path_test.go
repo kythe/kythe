@@ -16,14 +16,18 @@
 
 package languageserver
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/sourcegraph/go-langserver/pkg/lsp"
+)
 
 func TestLocalFromURI(t *testing.T) {
 	p := PathConfig{
 		Root:   "/root/dir/",
 		Corpus: "corpus",
 	}
-	badURIs := []string{
+	badURIs := []lsp.DocumentURI{
 		"",
 		"malformed",
 		"wrong://protocol",
@@ -37,7 +41,7 @@ func TestLocalFromURI(t *testing.T) {
 		}
 	}
 
-	goodURIs := []string{
+	goodURIs := []lsp.DocumentURI{
 		"file:///root/dir/topLevel.file",
 		"file:///root/dir/very/deeply/nested.file",
 	}
