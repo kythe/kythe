@@ -108,7 +108,7 @@ func TestReferences(t *testing.T) {
 	u := "file:///root/dir/file.txt"
 	err := srv.TextDocumentDidOpen(lsp.DidOpenTextDocumentParams{
 		TextDocument: lsp.TextDocumentItem{
-			URI: u,
+			URI: lsp.DocumentURI(u),
 		},
 	})
 	if err != nil {
@@ -118,7 +118,7 @@ func TestReferences(t *testing.T) {
 	locs, err := srv.TextDocumentReferences(lsp.ReferenceParams{
 		TextDocumentPositionParams: lsp.TextDocumentPositionParams{
 			TextDocument: lsp.TextDocumentIdentifier{
-				URI: u,
+				URI: lsp.DocumentURI(u),
 			},
 			Position: lsp.Position{
 				Line:      0,

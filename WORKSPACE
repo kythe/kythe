@@ -292,7 +292,7 @@ new_git_repository(
 new_git_repository(
     name = "go_langserver",
     build_file = "third_party/go/langserver.BUILD",
-    commit = "66ff4f536c4fe4a5c525472820a563939a0ab00f",
+    commit = "d354d3b84b3a1ef4a38679290e4fb4d32ffe3567",
     remote = "https://github.com/sourcegraph/go-langserver.git",
 )
 

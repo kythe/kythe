@@ -33,6 +33,7 @@ type PathConfig struct {
 
 // localFromURI generates a path relative to the root from a file URI
 func (p *PathConfig) localFromURI(lspURI string) (string, error) {
+	// TODO: Change this parameter to lsp.DocumentURI.
 	u, err := url.Parse(lspURI)
 	if err != nil {
 		return "", err
