@@ -39,7 +39,7 @@ func init() {
 	cmd.Stdout = os.Stderr
 
 	//- RunRef=@Run ref CmdRun
-	//-   = vname("method (*os/exec.Cmd).Run","golang.org","","os/exec","go")
+	//-   = vname("method (*exec.Cmd).Run","golang.org","","os/exec","go")
 	//- RunCall=@"cmd.Run()" ref/call CmdRun
 	//- RunCall childof Init
 	//- !{RunRef childof _}

@@ -695,10 +695,7 @@ func (pi *PackageInfo) newSignature(obj types.Object) (tag, base string) {
 			// this is only necessary for exported methods, but it's simpler to
 			// do it for everything.
 			return tagMethod, fmt.Sprintf("(%s).%s", types.TypeString(recv.Type(), func(pkg *types.Package) string {
-				if pkg == pi.Package {
-					return pi.ImportPath
-				}
-				return pkg.Path()
+				return pkg.Name()
 			}), t.Name())
 		}
 
