@@ -116,7 +116,7 @@ func (ls *Server) TextDocumentDidOpen(params lsp.DidOpenTextDocumentParams) erro
 	}
 
 	log.Printf("Found %d refs in file '%s'", len(refs), local)
-	ls.docs[local] = newDocument(refs, params.TextDocument.Text)
+	ls.docs[local] = newDocument(refs, string(dec.SourceText), params.TextDocument.Text)
 	return nil
 }
 
@@ -131,7 +131,7 @@ func (ls *Server) TextDocumentDidChange(params lsp.DidChangeTextDocumentParams) 
 	if doc, ok := ls.docs[local]; ok {
 		// Because the sync Kind is full text, each change notification
 		// contains exactly 1 change with the full text of the document
-		doc.updateSrc(params.ContentChanges[0].Text)
+		doc.updateSource(params.ContentChanges[0].Text)
 	} else {
 		return fmt.Errorf("change notification received for file that was never opened")
 	}
@@ -165,6 +165,7 @@ func (ls *Server) TextDocumentReferences(params lsp.ReferenceParams) ([]lsp.Loca
 		DeclarationKind: xpb.CrossReferencesRequest_ALL_DECLARATIONS,
 		DefinitionKind:  xpb.CrossReferencesRequest_BINDING_DEFINITIONS,
 		ReferenceKind:   xpb.CrossReferencesRequest_NON_CALL_REFERENCES,
+		PageSize:        50, // TODO(djrenren): make this configurable
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to find xrefs for ticket '%s':\n%v", *ticket, err)

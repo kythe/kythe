@@ -71,12 +71,13 @@ func (c MockClient) Nodes(_ context.Context, x *gpb.NodesRequest) (*gpb.NodesRep
 	return nil, fmt.Errorf("Not Implemented")
 }
 func TestReferences(t *testing.T) {
+	const sourceText = "hi\nthere\nhi"
 	c := MockClient{
 		decRsp: []mockDec{
 			{
 				ticket: "kythe://corpus?path=file.txt",
 				resp: xpb.DecorationsReply{
-					SourceText: []byte("hi\nthere\nhi"),
+					SourceText: []byte(sourceText),
 					Reference: []*xpb.DecorationsReply_Reference{
 						{
 							TargetTicket: "kythe://corpus?path=file.txt?signature=hi",
@@ -117,7 +118,8 @@ func TestReferences(t *testing.T) {
 	u := "file:///root/dir/file.txt"
 	err = srv.TextDocumentDidOpen(lsp.DidOpenTextDocumentParams{
 		TextDocument: lsp.TextDocumentItem{
-			URI: lsp.DocumentURI(u),
+			URI:  lsp.DocumentURI(u),
+			Text: sourceText,
 		},
 	})
 	if err != nil {
@@ -146,6 +148,6 @@ func TestReferences(t *testing.T) {
 			End:   lsp.Position{Line: 2, Character: 3}}}}
 
 	if err := testutil.DeepEqual(locs, expected); err != nil {
-		t.Errorf("Incorrect references returned\n  Expected: %#v\n  Found:    %#v", locs, expected)
+		t.Errorf("Incorrect references returned\n  Expected: %#v\n  Found:    %#v", expected, locs)
 	}
 }
