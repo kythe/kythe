@@ -2999,7 +2999,7 @@ GraphObserver::NameId IndexerASTVisitor::BuildNameIdForDecl(
       CurrentNode = IP->Parent;
       continue;
     }
-    if (MissingSeparator) {
+    if (MissingSeparator && !dyn_cast_or_null<LinkageSpecDecl>(CurrentNodeAsDecl)) {
       Ostream << ":";
     } else {
       MissingSeparator = true;
@@ -3012,6 +3012,9 @@ GraphObserver::NameId IndexerASTVisitor::BuildNameIdForDecl(
         if (!AddNameToStream(Ostream, ND)) {
           Ostream << IP->Index;
         }
+      } else if (const auto *LSD = dyn_cast<LinkageSpecDecl>(CurrentNodeAsDecl)) {
+        // Doing anything here breaks C headers that wrap extern "C" in
+        // #ifdef __cplusplus.
       } else {
         // If there's no good name for this Decl, name it after its child
         // index wrt its parent node.
