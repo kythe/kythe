@@ -171,8 +171,9 @@ func (e *emitter) visitIdent(id *ast.Ident, stack stackFunc) {
 	if target == nil {
 		// This should not happen in well-formed packages, but can if the
 		// extractor gets confused. Avoid emitting confusing references in such
-		// cases.
-		e.writeDiagnostic(e.pi.AnchorVName(e.pi.Span(id)), diagnostic{
+		// cases. Note that in this case we need to emit a fresh anchor, since
+		// we aren't otherwise emitting a reference.
+		e.writeNodeDiagnostic(id, diagnostic{
 			Message: fmt.Sprintf("Unable to identify the package for %q", id.Name),
 		})
 		return
@@ -684,6 +685,13 @@ func (e *emitter) writeAnchor(src *spb.VName, start, end int) {
 
 func (e *emitter) writeDiagnostic(src *spb.VName, d diagnostic) {
 	e.check(e.sink.writeDiagnostic(e.ctx, src, d))
+}
+
+func (e *emitter) writeNodeDiagnostic(src ast.Node, d diagnostic) {
+	file, start, end := e.pi.Span(src)
+	anchor := e.pi.AnchorVName(file, start, end)
+	e.writeAnchor(anchor, start, end)
+	e.writeDiagnostic(anchor, d)
 }
 
 // writeRef emits an anchor spanning origin and referring to target with an
