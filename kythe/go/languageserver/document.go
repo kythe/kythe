@@ -99,7 +99,7 @@ func (doc *document) generateNewRefs() {
 	}
 
 	dmp := diffmatchpatch.New()
-	diffs := dmp.DiffCleanupSemantic(dmp.DiffMain(doc.oldSrc, doc.newSrc, true))
+	diffs := dmp.DiffCleanupSemanticLossless(dmp.DiffMain(doc.oldSrc, doc.newSrc, true))
 
 	// oldPos & newPos track progress through the oldSrc and newSrc respectively
 	var oldPos, newPos lsp.Position
