@@ -212,6 +212,26 @@ func (ls *Server) TextDocumentDefinition(params lsp.TextDocumentPositionParams) 
 	// we can return the loc without a service request
 	if l, ok := doc.defLocs[ref.def]; ok {
 		log.Printf("Found target definition for '%s' locally: '%s' at %v", ref.ticket, ref.def, *l)
+		defLocal, err := ls.paths.localFromURI(l.URI)
+
+		if err != nil {
+			return []lsp.Location{}, nil
+		}
+
+		// If we have the doc containing the reference, map it to its new location
+		if defDoc, ok := ls.docs[defLocal]; ok {
+			newRange := defDoc.rangeInNewSource(l.Range)
+			loc := *l
+			if newRange != nil {
+				loc.Range = *newRange
+				return []lsp.Location{loc}, nil
+			}
+
+			// There definition range doesn't exist anymore
+			return []lsp.Location{}, nil
+		}
+
+		// We don't how to map it so we just return the location from Kythe
 		return []lsp.Location{*l}, nil
 	}
 
@@ -254,10 +274,19 @@ func (ls *Server) anchorToLoc(a *xpb.Anchor) *lsp.Location {
 		return nil
 	}
 
+	// Map the old location to its new location if we can
+	if doc, ok := ls.docs[local]; ok {
+		if newRange := doc.rangeInNewSource(*r); newRange != nil {
+			r = newRange
+		} else {
+			return nil
+		}
+	}
 	return &lsp.Location{
 		URI:   lsp.DocumentURI(fmt.Sprintf("file://%s", local)),
-		Range: lsp.Range(*r),
+		Range: *r,
 	}
+
 }
 
 func spanToRange(s *cpb.Span) *lsp.Range {

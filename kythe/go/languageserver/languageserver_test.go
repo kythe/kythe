@@ -81,8 +81,8 @@ func TestReferences(t *testing.T) {
 							Ticket: "kythe://corpus?path=file.txt?signature=def",
 							Parent: "kythe://corpus?path=file.txt",
 							Span: &cpb.Span{
-								Start: &cpb.Point{LineNumber: 5, ColumnOffset: 6},
-								End:   &cpb.Point{LineNumber: 5, ColumnOffset: 9}}},
+								Start: &cpb.Point{LineNumber: 3, ColumnOffset: 0},
+								End:   &cpb.Point{LineNumber: 3, ColumnOffset: 2}}},
 					},
 					Reference: []*xpb.DecorationsReply_Reference{
 						{
@@ -90,7 +90,15 @@ func TestReferences(t *testing.T) {
 							TargetTicket:     "kythe://corpus?path=file.txt?signature=hi",
 							Span: &cpb.Span{
 								Start: &cpb.Point{LineNumber: 1, ColumnOffset: 0},
-								End:   &cpb.Point{LineNumber: 1, ColumnOffset: 3}}}}}}},
+								End:   &cpb.Point{LineNumber: 1, ColumnOffset: 3}},
+						},
+						{
+							TargetDefinition: "kythe://corpus?path=file.txt?signature=def",
+							TargetTicket:     "kythe://corpus?path=file.txt?signature=hi",
+							Span: &cpb.Span{
+								Start: &cpb.Point{LineNumber: 3, ColumnOffset: 0},
+								End:   &cpb.Point{LineNumber: 3, ColumnOffset: 2}},
+						}}}}},
 		refRsp: []mockRef{
 			{
 				ticket: "kythe://corpus?path=file.txt?signature=hi",
@@ -105,7 +113,7 @@ func TestReferences(t *testing.T) {
 										Parent: "kythe://corpus?path=file.txt",
 										Span: &cpb.Span{
 											Start: &cpb.Point{LineNumber: 3, ColumnOffset: 0},
-											End:   &cpb.Point{LineNumber: 3, ColumnOffset: 3}}}}}}}}}}}
+											End:   &cpb.Point{LineNumber: 3, ColumnOffset: 2}}}}}}}}}}}
 
 	srv := NewServer(c)
 	p, err := newPathConfig("/root/dir", Settings{
@@ -152,7 +160,7 @@ func TestReferences(t *testing.T) {
 		URI: "file:///root/dir/file.txt",
 		Range: lsp.Range{
 			Start: lsp.Position{Line: 2, Character: 0},
-			End:   lsp.Position{Line: 2, Character: 3}}}}
+			End:   lsp.Position{Line: 2, Character: 2}}}}
 
 	if err := testutil.DeepEqual(locs, expected); err != nil {
 		t.Errorf("Incorrect references returned\n  Expected: %#v\n  Found:    %#v", expected, locs)
@@ -171,8 +179,8 @@ func TestReferences(t *testing.T) {
 	expected = []lsp.Location{{
 		URI: "file:///root/dir/file.txt",
 		Range: lsp.Range{
-			Start: lsp.Position{Line: 4, Character: 6},
-			End:   lsp.Position{Line: 4, Character: 9},
+			Start: lsp.Position{Line: 2, Character: 0},
+			End:   lsp.Position{Line: 2, Character: 2},
 		},
 	}}
 

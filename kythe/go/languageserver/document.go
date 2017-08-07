@@ -74,6 +74,22 @@ func (doc *document) updateSource(newSrc string) {
 	doc.staleRefs = true
 }
 
+// rangeInNewSource takes in a range representing a ref in the oldSrc
+// and returns that refs range in the newSrc if it exists
+func (doc *document) rangeInNewSource(r lsp.Range) *lsp.Range {
+	if doc.staleRefs {
+		doc.generateNewRefs()
+	}
+
+	for _, ref := range doc.refs {
+		if ref.oldRange == r {
+			return ref.newRange
+		}
+	}
+
+	return nil
+}
+
 // generateNewRefs generates refs by diffing the current file contents against
 // the old contents
 func (doc *document) generateNewRefs() {
