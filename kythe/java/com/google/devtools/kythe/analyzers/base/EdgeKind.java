@@ -29,6 +29,7 @@ public enum EdgeKind {
   REF_FILE(true, "ref/file"),
   REF_IMPORTS(true, "ref/imports"),
 
+  ALIASES("aliases"),
   ANNOTATED_BY("annotatedby"),
   BOUNDED_LOWER("bounded/lower"),
   BOUNDED_UPPER("bounded/upper"),
