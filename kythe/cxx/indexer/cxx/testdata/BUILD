@@ -457,6 +457,20 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "macros_internal_exp_ref",
+    srcs = ["basic/macros_internal_exp_ref.cc"],
+    check_for_singletons = True,
+    tags = ["basic"],
+)
+
+cxx_indexer_test(
+    name = "macros_internal_type_ref",
+    srcs = ["basic/macros_internal_type_ref.cc"],
+    check_for_singletons = True,
+    tags = ["basic"],
+)
+
+cxx_indexer_test(
     name = "macros_subst_one_level",
     srcs = ["basic/macros_subst_one_level.cc"],
     check_for_singletons = True,

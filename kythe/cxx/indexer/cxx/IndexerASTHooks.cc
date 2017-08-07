@@ -2999,7 +2999,8 @@ GraphObserver::NameId IndexerASTVisitor::BuildNameIdForDecl(
       CurrentNode = IP->Parent;
       continue;
     }
-    if (MissingSeparator && !dyn_cast_or_null<LinkageSpecDecl>(CurrentNodeAsDecl)) {
+    if (MissingSeparator &&
+        !dyn_cast_or_null<LinkageSpecDecl>(CurrentNodeAsDecl)) {
       Ostream << ":";
     } else {
       MissingSeparator = true;
@@ -3012,7 +3013,8 @@ GraphObserver::NameId IndexerASTVisitor::BuildNameIdForDecl(
         if (!AddNameToStream(Ostream, ND)) {
           Ostream << IP->Index;
         }
-      } else if (const auto *LSD = dyn_cast<LinkageSpecDecl>(CurrentNodeAsDecl)) {
+      } else if (const auto *LSD =
+                     dyn_cast<LinkageSpecDecl>(CurrentNodeAsDecl)) {
         // Doing anything here breaks C headers that wrap extern "C" in
         // #ifdef __cplusplus.
       } else {
@@ -3430,7 +3432,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
     }
   }
   clang::SourceRange DeclRange;
-  if (const auto* named_decl = dyn_cast<NamedDecl>(Decl)) {
+  if (const auto *named_decl = dyn_cast<NamedDecl>(Decl)) {
     // RangeForNameOfDeclaration doesn't work well with some ObjCInterfaceDecls.
     if (!isa<ObjCInterfaceDecl>(Decl)) {
       DeclRange = RangeForNameOfDeclaration(named_decl);
@@ -3873,6 +3875,29 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
   bool TypeAlreadyBuilt = false;
   GraphObserver::Claimability Claimability =
       GraphObserver::Claimability::Claimable;
+  // If this type reference came from a macro context, try to see whether we
+  // can attribute it back to a source file. This will prevent us from
+  // spuriously rejecting decorations when we test for the early termination
+  // condition below.
+  if (EmitRanges == IndexerASTVisitor::EmitRanges::Yes && SR.isValid() &&
+      SR.getBegin().isMacroID() && SR.getEnd().isMacroID()) {
+    auto NewSR = RangeForASTEntityFromSourceLocation(
+        *Observer.getSourceManager(), *Observer.getLangOptions(),
+        SR.getBegin());
+    if (SR.getBegin() != SR.getEnd()) {
+      auto EndSR = RangeForASTEntityFromSourceLocation(
+          *Observer.getSourceManager(), *Observer.getLangOptions(),
+          SR.getEnd());
+      NewSR.setEnd(EndSR.getEnd());
+    }
+    if (NewSR.isValid() && NewSR.getBegin() != NewSR.getEnd() &&
+        NewSR.getBegin().isFileID() && NewSR.getEnd().isFileID() &&
+        NewSR.getBegin() < NewSR.getEnd() &&
+        Observer.getSourceManager()->getFileID(NewSR.getBegin()) ==
+            Observer.getSourceManager()->getFileID(NewSR.getEnd())) {
+      SR = NewSR;
+    }
+  }
   if (Prev != TypeNodes.end()) {
     // If we're not trying to emit edges for constituent types, or if there's
     // no chance for us to do so because we lack source location information,
