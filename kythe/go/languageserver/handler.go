@@ -67,6 +67,12 @@ func ServerHandler(ls *Server) jsonrpc2.Handler {
 					return nil, err
 				}
 				ret, err = ls.TextDocumentReferences(p)
+			case "textDocument/definition":
+				var p lsp.TextDocumentPositionParams
+				if err := json.Unmarshal(*req.Params, &p); err != nil {
+					return nil, err
+				}
+				ret, err = ls.TextDocumentDefinition(p)
 			}
 			if err != nil {
 				log.Println(err)

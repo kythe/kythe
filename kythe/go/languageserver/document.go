@@ -17,7 +17,6 @@
 package languageserver
 
 import (
-	"errors"
 	"sort"
 	"strings"
 
@@ -31,14 +30,16 @@ type document struct {
 	oldSrc    string
 	newSrc    string
 	staleRefs bool
+	defLocs   map[string]*lsp.Location
 }
 
-func newDocument(refs []*RefResolution, oldSrc string, newSrc string) *document {
+func newDocument(refs []*RefResolution, oldSrc string, newSrc string, defLocs map[string]*lsp.Location) *document {
 	d := &document{
 		refs:      refs,
 		oldSrc:    oldSrc,
 		newSrc:    newSrc,
 		staleRefs: true,
+		defLocs:   defLocs,
 	}
 
 	sort.Slice(d.refs, func(i, j int) bool {
@@ -50,7 +51,7 @@ func newDocument(refs []*RefResolution, oldSrc string, newSrc string) *document 
 
 // xrefs produces a Kythe ticket corresponding to the entity at a given
 // position in the file
-func (doc *document) xrefs(pos lsp.Position) (*string, error) {
+func (doc *document) xrefs(pos lsp.Position) *RefResolution {
 	if doc.staleRefs {
 		doc.generateNewRefs()
 	}
@@ -63,10 +64,7 @@ func (doc *document) xrefs(pos lsp.Position) (*string, error) {
 			smallestValidRef = r
 		}
 	}
-	if smallestValidRef != nil {
-		return &smallestValidRef.ticket, nil
-	}
-	return nil, errors.New("No xref found")
+	return smallestValidRef
 }
 
 // updateSource accepts new file contents to be used for diffing when next
@@ -239,6 +237,7 @@ diffLoop:
 // Kythe ticket
 type RefResolution struct {
 	ticket   string
+	def      string
 	oldRange lsp.Range
 	newRange *lsp.Range
 }

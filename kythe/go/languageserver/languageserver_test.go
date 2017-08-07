@@ -45,8 +45,6 @@ type MockClient struct {
 
 func (c MockClient) Decorations(_ context.Context, d *xpb.DecorationsRequest) (*xpb.DecorationsReply, error) {
 	for _, r := range c.decRsp {
-		fmt.Printf("%s !== %s\n", r.ticket, d.Location.Ticket)
-
 		if r.ticket == d.Location.Ticket {
 			return &r.resp, nil
 		}
@@ -78,9 +76,18 @@ func TestReferences(t *testing.T) {
 				ticket: "kythe://corpus?path=file.txt",
 				resp: xpb.DecorationsReply{
 					SourceText: []byte(sourceText),
+					DefinitionLocations: map[string]*xpb.Anchor{
+						"kythe://corpus?path=file.txt?signature=def": &xpb.Anchor{
+							Ticket: "kythe://corpus?path=file.txt?signature=def",
+							Parent: "kythe://corpus?path=file.txt",
+							Span: &cpb.Span{
+								Start: &cpb.Point{LineNumber: 5, ColumnOffset: 6},
+								End:   &cpb.Point{LineNumber: 5, ColumnOffset: 9}}},
+					},
 					Reference: []*xpb.DecorationsReply_Reference{
 						{
-							TargetTicket: "kythe://corpus?path=file.txt?signature=hi",
+							TargetDefinition: "kythe://corpus?path=file.txt?signature=def",
+							TargetTicket:     "kythe://corpus?path=file.txt?signature=hi",
 							Span: &cpb.Span{
 								Start: &cpb.Point{LineNumber: 1, ColumnOffset: 0},
 								End:   &cpb.Point{LineNumber: 1, ColumnOffset: 3}}}}}}},
@@ -149,5 +156,27 @@ func TestReferences(t *testing.T) {
 
 	if err := testutil.DeepEqual(locs, expected); err != nil {
 		t.Errorf("Incorrect references returned\n  Expected: %#v\n  Found:    %#v", expected, locs)
+	}
+
+	defs, err := srv.TextDocumentDefinition(lsp.TextDocumentPositionParams{
+		TextDocument: lsp.TextDocumentIdentifier{
+			URI: lsp.DocumentURI(u),
+		},
+		Position: lsp.Position{
+			Line:      0,
+			Character: 3,
+		},
+	})
+
+	expected = []lsp.Location{{
+		URI: "file:///root/dir/file.txt",
+		Range: lsp.Range{
+			Start: lsp.Position{Line: 4, Character: 6},
+			End:   lsp.Position{Line: 4, Character: 9},
+		},
+	}}
+
+	if err := testutil.DeepEqual(defs, expected); err != nil {
+		t.Errorf("Incorrect definitions returned\n  Expected: %#v\n  Found:    %#v", expected, defs)
 	}
 }

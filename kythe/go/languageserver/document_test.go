@@ -47,14 +47,14 @@ func TestRangeMatching(t *testing.T) {
 				End:   lsp.Position{Line: 0, Character: 4},
 			},
 		},
-	}, text, text)
+	}, text, text, nil)
 
-	ticket, err := doc.xrefs(lsp.Position{Line: 0, Character: 2})
-	if err != nil {
-		t.Fatalf("Error acquiring xrefs: %v", err)
+	ref := doc.xrefs(lsp.Position{Line: 0, Character: 2})
+	if ref == nil {
+		t.Fatal("error acquiring xrefs")
 	}
-	if *ticket != "shortest" {
-		t.Fatalf("Expected shortest match. Found: %s", *ticket)
+	if ref.ticket != "shortest" {
+		t.Fatalf("expected shortest match. Found: %s", ref.ticket)
 	}
 }
 
@@ -135,25 +135,24 @@ var diffTests = []diffTest{
 
 func TestDiffing(t *testing.T) {
 	for _, d := range diffTests {
-		doc := newDocument(d.refs, d.oldText, d.newText)
+		doc := newDocument(d.refs, d.oldText, d.newText, nil)
 
 		for _, c := range d.cases {
-			tick, err := doc.xrefs(c.pos)
+			ref := doc.xrefs(c.pos)
 
-			if err != nil || tick == nil {
-				t.Errorf("no ticket found for at pos %v. Expected '%s'. %v", c.pos, c.res, err)
+			if ref == nil {
+				t.Errorf("no ticket found for at pos %v. Expected '%s'", c.pos, c.res)
 			}
-			if err := testutil.DeepEqual(*tick, c.res); err != nil {
+			if err := testutil.DeepEqual(ref.ticket, c.res); err != nil {
 				t.Errorf("incorrect ticket returned after edit: %v", err)
 			}
 		}
 
 		for _, p := range d.errors {
-			tick, _ := doc.xrefs(p)
-			if tick != nil {
-				t.Errorf("unexpected ticket found at location %v: %s", p, *tick)
+			ref := doc.xrefs(p)
+			if ref != nil {
+				t.Errorf("unexpected ref found at location %v: %v", p, ref)
 			}
 		}
 	}
-
 }

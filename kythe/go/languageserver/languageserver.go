@@ -88,9 +88,8 @@ func (ls *Server) TextDocumentDidOpen(params lsp.DidOpenTextDocumentParams) erro
 		Location: &xpb.Location{
 			Ticket: ticket.String(),
 		},
-		References: true,
-		// TODO(djrenren): Use this for definition lookups without a service request
-		TargetDefinitions: false,
+		References:        true,
+		TargetDefinitions: true,
 		SourceText:        true,
 	})
 
@@ -111,12 +110,15 @@ func (ls *Server) TextDocumentDidOpen(params lsp.DidOpenTextDocumentParams) erro
 
 		refs = append(refs, &RefResolution{
 			ticket:   r.TargetTicket,
+			def:      r.TargetDefinition,
 			oldRange: *rng,
 		})
 	}
 
+	defLocs := ls.defLocations(dec.DefinitionLocations)
+
 	log.Printf("Found %d refs in file '%s'", len(refs), local)
-	ls.docs[local] = newDocument(refs, string(dec.SourceText), params.TextDocument.Text)
+	ls.docs[local] = newDocument(refs, string(dec.SourceText), params.TextDocument.Text, defLocs)
 	return nil
 }
 
@@ -143,6 +145,8 @@ func (ls *Server) TextDocumentDidChange(params lsp.DidChangeTextDocumentParams) 
 // locations throughout the project that reference the same semantic node. This
 // can trigger a diff if the source file is dirty
 func (ls *Server) TextDocumentReferences(params lsp.ReferenceParams) ([]lsp.Location, error) {
+	log.Printf("Searching for references at %v", params.TextDocumentPositionParams)
+
 	local, err := ls.paths.localFromURI(params.TextDocument.URI)
 	if err != nil {
 		return nil, err
@@ -155,51 +159,92 @@ func (ls *Server) TextDocumentReferences(params lsp.ReferenceParams) ([]lsp.Loca
 		return []lsp.Location{}, nil
 	}
 
-	ticket, err := doc.xrefs(params.Position)
-	if err != nil {
+	ref := doc.xrefs(params.Position)
+	if ref == nil {
 		return []lsp.Location{}, nil
 	}
 
 	xrefs, err := ls.XRefs.CrossReferences(context.TODO(), &xpb.CrossReferencesRequest{
-		Ticket:          []string{*ticket},
+		Ticket:          []string{ref.ticket},
 		DeclarationKind: xpb.CrossReferencesRequest_ALL_DECLARATIONS,
 		DefinitionKind:  xpb.CrossReferencesRequest_BINDING_DEFINITIONS,
 		ReferenceKind:   xpb.CrossReferencesRequest_NON_CALL_REFERENCES,
 		PageSize:        50, // TODO(djrenren): make this configurable
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to find xrefs for ticket '%s':\n%v", *ticket, err)
-
+		return nil, fmt.Errorf("failed to find xrefs for ticket '%s':\n%v", ref.ticket, err)
 	}
 
-	refs := xrefs.CrossReferences[*ticket]
+	refs := xrefs.CrossReferences[ref.ticket]
 	if refs == nil {
-		log.Printf("XRef service provided no xrefs for ticket '%s'", *ticket)
+		log.Printf("XRef service provided no xrefs for ticket '%s'", ref.ticket)
 		return []lsp.Location{}, nil
 	}
 
-	var locs []lsp.Location
-	for _, a := range refs.Reference {
-		l := ls.anchorToLoc(*a)
-		if l != nil {
-			locs = append(locs, *l)
-		}
-	}
-
-	return locs, nil
+	return ls.refLocs(refs), nil
 }
 
-func (ls *Server) anchorToLoc(a xpb.CrossReferencesReply_RelatedAnchor) *lsp.Location {
-	if a.Anchor == nil || a.Anchor.Span == nil {
+// TextDocumentDefinition uses a position in code to produce a list of
+// locations throughout the project that define the semantic node at the original position.
+// This can trigger a diff if the source file is dirty
+func (ls *Server) TextDocumentDefinition(params lsp.TextDocumentPositionParams) ([]lsp.Location, error) {
+	log.Printf("Searching for definition at %v", params)
+	local, err := ls.paths.localFromURI(params.TextDocument.URI)
+	if err != nil {
+		return nil, err
+	}
+
+	// If we don't have decorations we can't find definitions
+	doc, exists := ls.docs[local]
+	if !exists {
+		log.Printf("References requested from unknown file '%s'", local)
+		return []lsp.Location{}, nil
+	}
+
+	// If there's no ref at the location we don't have definitions
+	ref := doc.xrefs(params.Position)
+	if ref == nil {
+		log.Printf("No ref found at %v", params.Position)
+		return []lsp.Location{}, nil
+	}
+
+	// If the ref's target definition is in the document's definition locations
+	// we can return the loc without a service request
+	if l, ok := doc.defLocs[ref.def]; ok {
+		log.Printf("Found target definition for '%s' locally: '%s' at %v", ref.ticket, ref.def, *l)
+		return []lsp.Location{*l}, nil
+	}
+
+	xrefs, err := ls.XRefs.CrossReferences(context.TODO(), &xpb.CrossReferencesRequest{
+		Ticket:          []string{ref.ticket},
+		DeclarationKind: xpb.CrossReferencesRequest_ALL_DECLARATIONS,
+		DefinitionKind:  xpb.CrossReferencesRequest_BINDING_DEFINITIONS,
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to find xrefs for ticket '%s': %v", ref.ticket, err)
+	}
+
+	refs := xrefs.CrossReferences[ref.ticket]
+	if refs == nil {
+		log.Printf("XRef service provided no xrefs for ticket '%s'", ref.ticket)
+		return []lsp.Location{}, nil
+	}
+
+	return ls.refLocs(refs), nil
+}
+
+func (ls *Server) anchorToLoc(a *xpb.Anchor) *lsp.Location {
+	if a == nil || a.Span == nil {
 		return nil
 	}
 
-	r := spanToRange(a.Anchor.Span)
+	r := spanToRange(a.Span)
 	if r == nil {
 		return nil
 	}
 
-	ticket, err := kytheuri.Parse(a.Anchor.Parent)
+	ticket, err := kytheuri.Parse(a.Parent)
 	if err != nil {
 		return nil
 	}
@@ -236,4 +281,41 @@ func spanToRange(s *cpb.Span) *lsp.Range {
 			Character: int(s.End.ColumnOffset),
 		},
 	}
+}
+
+func (ls *Server) defLocations(t map[string]*xpb.Anchor) map[string]*lsp.Location {
+	m := make(map[string]*lsp.Location)
+	for k, v := range t {
+		l := ls.anchorToLoc(v)
+		if l != nil {
+			m[k] = l
+		}
+	}
+	return m
+}
+
+func (ls *Server) refLocs(r *xpb.CrossReferencesReply_CrossReferenceSet) []lsp.Location {
+	var locs []lsp.Location
+	for _, a := range r.Reference {
+		l := ls.anchorToLoc(a.Anchor)
+		if l != nil {
+			locs = append(locs, *l)
+		}
+	}
+
+	for _, a := range r.Definition {
+		l := ls.anchorToLoc(a.Anchor)
+		if l != nil {
+			locs = append(locs, *l)
+		}
+	}
+
+	for _, a := range r.Declaration {
+		l := ls.anchorToLoc(a.Anchor)
+		if l != nil {
+			locs = append(locs, *l)
+		}
+	}
+
+	return locs
 }
