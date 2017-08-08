@@ -37,18 +37,20 @@ import (
 
 // Server provides a Language Server for interacting with data in a Kythe index
 type Server struct {
-	docs  map[string]*document
-	paths pathConfig
-	XRefs xrefs.Service
+	docs             map[string]*document
+	paths            pathConfig
+	XRefs            xrefs.Service
+	settingsProvider SettingsProvider
 }
 
 // NewServer constructs a Server object
-func NewServer(x xrefs.Service) Server {
+func NewServer(x xrefs.Service, s SettingsProvider) Server {
 	var p pathConfig
 	return Server{
-		docs:  make(map[string]*document),
-		paths: p,
-		XRefs: x,
+		docs:             make(map[string]*document),
+		paths:            p,
+		XRefs:            x,
+		settingsProvider: s,
 	}
 }
 
@@ -56,6 +58,23 @@ func NewServer(x xrefs.Service) Server {
 // receive configuration info (such as the project root) and announce its capabilities.
 func (ls *Server) Initialize(params lsp.InitializeParams) (*lsp.InitializeResult, error) {
 	log.Println("Server Initializing...")
+
+	local, err := ls.paths.localFromURI(params.Root())
+	if err != nil {
+		return nil, err
+	}
+
+	s, err := ls.settingsProvider(local)
+	if err != nil {
+		return nil, err
+	}
+
+	err = ls.paths.loadSettings(*s)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Printf("Root found at '%s'", ls.paths.root)
 
 	fullSync := lsp.TDSKFull
 	return &lsp.InitializeResult{

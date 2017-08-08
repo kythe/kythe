@@ -51,7 +51,7 @@ func main() {
 	conn.Close()
 
 	client := xrefs.WebClient("http://" + host)
-	server := languageserver.NewServer(client)
+	server := languageserver.NewServer(client, languageserver.FileSettingsProvider)
 
 	<-jsonrpc2.NewConn(
 		context.Background(),

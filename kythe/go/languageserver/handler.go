@@ -42,14 +42,6 @@ func ServerHandler(ls *Server) jsonrpc2.Handler {
 				if err := json.Unmarshal(*req.Params, &p); err != nil {
 					return nil, err
 				}
-
-				// By loading settings here, the language server does not require
-				// filesystem access which is useful for testing
-				err = ls.paths.findAndLoadSettings(p.RootPath)
-				if err != nil {
-					return nil, err
-				}
-
 				ret, err = ls.Initialize(p)
 			case "textDocument/didOpen":
 				var p lsp.DidOpenTextDocumentParams

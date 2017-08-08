@@ -26,7 +26,8 @@ import (
 )
 
 func TestLocalFromURI(t *testing.T) {
-	p, err := newPathConfig("/root/dir", Settings{
+	p, err := newPathConfig(Settings{
+		Root: "/root/dir",
 		Mappings: []MappingConfig{{
 			Local: ":path*",
 			VName: VNameConfig{
@@ -69,7 +70,8 @@ func TestLocalFromURI(t *testing.T) {
 }
 
 func TestGeneration(t *testing.T) {
-	p, err := newPathConfig("/root/dir", Settings{
+	p, err := newPathConfig(Settings{
+		Root: "/root/dir",
 		Mappings: []MappingConfig{{
 			Local: ":corpus/:path*/:root",
 			VName: VNameConfig{

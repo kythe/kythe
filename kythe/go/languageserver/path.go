@@ -48,38 +48,16 @@ type pathConfig struct {
 }
 
 // newPathConfig constructs a pathConfig from a root and a settings object.
-func newPathConfig(root string, s Settings) (pathConfig, error) {
-	p := pathConfig{root: root}
+func newPathConfig(s Settings) (pathConfig, error) {
+	p := pathConfig{}
 	err := p.loadSettings(s)
 
 	return p, err
 }
 
-// newPathConfig walks upward from the provided directory until it finds
-// the settings file and loads it
-func (pc *pathConfig) findAndLoadSettings(rootOrDeeper string) error {
-	root, err := findRoot(rootOrDeeper)
-	if err != nil {
-		return err
-	}
-
-	pc.root = root
-	settingsFile := filepath.Join(root, settingsFile)
-
-	s, err := unmarshalSettingsFile(settingsFile)
-	if err != nil {
-		return err
-	}
-
-	if err := pc.loadSettings(s); err != nil {
-		return err
-	}
-	return nil
-}
-
 // loadSettings populates the pathConfig object with the
 func (pc *pathConfig) loadSettings(s Settings) error {
-
+	pc.root = s.Root
 	for _, m := range s.Mappings {
 		l, err := pathmap.NewMapper(m.Local)
 		if err != nil {

@@ -115,23 +115,23 @@ func TestReferences(t *testing.T) {
 											Start: &cpb.Point{LineNumber: 3, ColumnOffset: 0},
 											End:   &cpb.Point{LineNumber: 3, ColumnOffset: 2}}}}}}}}}}}
 
-	srv := NewServer(c)
-	p, err := newPathConfig("/root/dir", Settings{
-		Mappings: []MappingConfig{{
-			Local: ":path*",
-			VName: VNameConfig{
-				Path:   ":path*",
-				Corpus: "corpus",
-			}},
-		},
+	srv := NewServer(c, func(_ string) (*Settings, error) {
+		return &Settings{
+			Root: "/root/dir/",
+			Mappings: []MappingConfig{{
+				Local: ":path*",
+				VName: VNameConfig{
+					Path:   ":path*",
+					Corpus: "corpus",
+				}},
+			},
+		}, nil
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	srv.paths = p
+
+	srv.Initialize(lsp.InitializeParams{})
 
 	u := "file:///root/dir/file.txt"
-	err = srv.TextDocumentDidOpen(lsp.DidOpenTextDocumentParams{
+	err := srv.TextDocumentDidOpen(lsp.DidOpenTextDocumentParams{
 		TextDocument: lsp.TextDocumentItem{
 			URI:  lsp.DocumentURI(u),
 			Text: sourceText,

@@ -42,25 +42,35 @@ type MappingConfig struct {
 // Settings contains the user configuration required for the server to
 // communicate properly with its XRefClient
 type Settings struct {
+	Root     string          `json:"root"`
 	Mappings []MappingConfig `json:"mappings"`
 }
 
-// Attempts to read and parse the settings file at the given path.
-// If this fails the default settings object will be returned along
-// with an error.
-func unmarshalSettingsFile(p string) (Settings, error) {
+// SettingsProvider allows for pluggable settings fetching in the language
+// server
+type SettingsProvider func(root string) (*Settings, error)
+
+// FileSettingsProvider searches upward from the given path until it finds
+// a .kythe-settings.json file and attempts to read and parse that file
+func FileSettingsProvider(p string) (*Settings, error) {
+	root, err := findRoot(p)
+	if err != nil {
+		return nil, err
+	}
+
 	// Default settings
 	var m []MappingConfig
-	s := Settings{
+	s := &Settings{
+		Root:     root,
 		Mappings: m,
 	}
 
-	dat, err := ioutil.ReadFile(p)
+	dat, err := ioutil.ReadFile(filepath.Join(root, settingsFile))
 	if err != nil {
 		return s, err
 	}
 
-	if err := json.Unmarshal(dat, &s); err != nil {
+	if err := json.Unmarshal(dat, s); err != nil {
 		return s, err
 	}
 
