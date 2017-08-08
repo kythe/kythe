@@ -91,6 +91,17 @@ message Location {
   reserved 3, 4;
 }
 
+// Which types of snippets to return from a given CrossReferences or Decorations
+// RPC.
+// TODO(schroederc): extend snippet kinds to be (none, indexer-default, or
+// always line-based) instead of (none, all).
+enum SnippetsKind {
+  // Return no snippets.
+  NONE = 0;
+  // Return the default snippet for each item that has one.
+  DEFAULT = 1;
+}
+
 message DecorationsRequest {
   // The location of the file to fetch decorations for.  The ticket of location
   // must be non-empty.  It is an error in any case if location is invalid.
@@ -140,6 +151,9 @@ message DecorationsRequest {
 
   // If true, return diagnostics for the given file.
   bool diagnostics = 8;
+
+  // What kind of snippets to return (or none).
+  SnippetsKind snippets = 9;
 }
 
 message DecorationsReply {
@@ -314,8 +328,6 @@ message CrossReferencesRequest {
   // TODO(T156): remove this flag; always enable feature
   bool experimental_signatures = 100;
 
-  // TODO(schroederc): snippet kinds (none, indexer-default, or always line-based)
-
   // The cross-references matching a request are organized into logical pages.
   // The size of each page is a number of distinct cross-references
   // (definitions, references, documentation, and related nodes).
@@ -338,6 +350,9 @@ message CrossReferencesRequest {
   // edge if any are available at all.
   int32 page_size = 10;
   string page_token = 11;
+
+  // What kind of snippets to return (or none).
+  SnippetsKind snippets = 13;
 
   reserved 4;
 }
