@@ -278,3 +278,24 @@ message PagedCrossReferences {
   // The source node's MarkedSource.
   kythe.proto.common.MarkedSource marked_source = 6; // feature: MARKED_SOURCE
 }
+
+// A single node's documentation for the xrefs Documentation API.
+message Document {
+  string ticket = 1;
+
+  // The node's MarkedSource.
+  kythe.proto.common.MarkedSource marked_source = 2;
+
+  // Raw text that can be displayed to the user (but may also contain markup
+  // that can be interpreted, like Doxygen comments). Links are marked using [].
+  // \ is an escape character (where possible escape sequences are \[, \], and
+  // \\).
+  string raw_text = 3;
+
+  // Annotations for spans in raw_text. The ith Link corresponds to the span
+  // starting at the ith [.
+  repeated kythe.proto.common.Link link = 4;
+
+  // Tickets for this document node's immediate children.
+  repeated string child_ticket = 5;
+}

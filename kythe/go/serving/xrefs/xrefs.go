@@ -56,6 +56,8 @@ import (
 var (
 	maxTicketsPerRequest = flag.Int("max_tickets_per_request", 20, "Maximum number of tickets allowed per request")
 	mergeCrossReferences = flag.Bool("merge_cross_references", true, "Whether to merge nodes when responding to a CrossReferencesRequest")
+
+	useDocumentationServingData = flag.Bool("use_documentation_serving_data", false, "Whether to use Documentation serving data")
 )
 
 type edgeSetResult struct {
@@ -70,6 +72,7 @@ type staticLookupTables interface {
 	fileDecorations(ctx context.Context, ticket string) (*srvpb.FileDecorations, error)
 	crossReferences(ctx context.Context, ticket string) (*srvpb.PagedCrossReferences, error)
 	crossReferencesPage(ctx context.Context, key string) (*srvpb.PagedCrossReferences_Page, error)
+	documentation(ctx context.Context, ticket string) (*srvpb.Document, error)
 }
 
 // SplitTable implements the xrefs Service interface using separate static
@@ -92,6 +95,9 @@ type SplitTable struct {
 	// CrossReferencePages is a table of srvpb.PagedCrossReferences_Pages keyed by
 	// their page keys.
 	CrossReferencePages table.Proto
+
+	// Documentation is a table of srvpb.Documents keyed by their node ticket.
+	Documentation table.Proto
 }
 
 func lookupPagedEdgeSets(ctx context.Context, tbl table.Proto, keys [][]byte) (<-chan edgeSetResult, error) {
@@ -150,14 +156,20 @@ func (s *SplitTable) crossReferencesPage(ctx context.Context, key string) (*srvp
 	var p srvpb.PagedCrossReferences_Page
 	return &p, s.CrossReferencePages.Lookup(ctx, []byte(key), &p)
 }
+func (s *SplitTable) documentation(ctx context.Context, ticket string) (*srvpb.Document, error) {
+	tracePrintf(ctx, "Reading Document: %s", ticket)
+	var d srvpb.Document
+	return &d, s.Documentation.Lookup(ctx, []byte(ticket), &d)
+}
 
 // Key prefixes for the combinedTable implementation.
 const (
-	crossRefTablePrefix     = "xrefs:"
-	crossRefPageTablePrefix = "xrefPages:"
-	decorTablePrefix        = "decor:"
-	edgeSetsTablePrefix     = "edgeSets:"
-	edgePagesTablePrefix    = "edgePages:"
+	crossRefTablePrefix      = "xrefs:"
+	crossRefPageTablePrefix  = "xrefPages:"
+	decorTablePrefix         = "decor:"
+	documentationTablePrefix = "docs:"
+	edgeSetsTablePrefix      = "edgeSets:"
+	edgePagesTablePrefix     = "edgePages:"
 )
 
 type combinedTable struct{ table.Proto }
@@ -184,6 +196,10 @@ func (c *combinedTable) crossReferences(ctx context.Context, ticket string) (*sr
 func (c *combinedTable) crossReferencesPage(ctx context.Context, key string) (*srvpb.PagedCrossReferences_Page, error) {
 	var p srvpb.PagedCrossReferences_Page
 	return &p, c.Lookup(ctx, CrossReferencesPageKey(key), &p)
+}
+func (c *combinedTable) documentation(ctx context.Context, ticket string) (*srvpb.Document, error) {
+	var d srvpb.Document
+	return &d, c.Lookup(ctx, DocumentationKey(ticket), &d)
 }
 
 // NewSplitTable returns a table based on the given serving tables for each API
@@ -221,6 +237,12 @@ func CrossReferencesKey(ticket string) []byte {
 // for the given key.
 func CrossReferencesPageKey(key string) []byte {
 	return []byte(crossRefPageTablePrefix + key)
+}
+
+// DocumentationKey returns the documentation CombinedTable key for the given
+// ticket.
+func DocumentationKey(ticket string) []byte {
+	return []byte(documentationTablePrefix + ticket)
 }
 
 // Table implements the xrefs Service interface using static lookup tables.
@@ -1332,9 +1354,98 @@ func a2a(a *srvpb.ExpandedAnchor, anchorText bool) *xpb.CrossReferencesReply_Rel
 	}}
 }
 
+func d2d(d *srvpb.Document, neededNodes stringset.Set) *xpb.DocumentationReply_Document {
+	neededNodes.Add(d.Ticket)
+	for _, link := range d.Link {
+		neededNodes.Add(link.Definition...)
+	}
+
+	return &xpb.DocumentationReply_Document{
+		Ticket: d.Ticket,
+		Text: &xpb.Printable{
+			RawText: d.RawText,
+			Link:    d.Link,
+		},
+		MarkedSource: d.MarkedSource,
+	}
+}
+
 // Documentation implements part of the xrefs Service interface.
 func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest) (*xpb.DocumentationReply, error) {
-	return xrefs.SlowDocumentation(ctx, t, req)
+	if !*useDocumentationServingData {
+		return xrefs.SlowDocumentation(ctx, t, req)
+	}
+
+	tickets, err := xrefs.FixTickets(req.Ticket)
+	if err != nil {
+		return nil, err
+	} else if len(tickets) > *maxTicketsPerRequest {
+		return nil, fmt.Errorf("too many tickets requested: %d (max %d)", len(tickets), *maxTicketsPerRequest)
+	}
+
+	reply := &xpb.DocumentationReply{}
+	neededNodes := stringset.NewSize(len(tickets))
+
+	for _, ticket := range tickets {
+		d, err := t.documentation(ctx, ticket)
+		if err == table.ErrNoSuchKey {
+			log.Println("Missing Documentation:", ticket)
+			continue
+		} else if err != nil {
+			return nil, fmt.Errorf("error looking up documentation for ticket %q: %v", ticket, err)
+		}
+
+		doc := d2d(d, neededNodes)
+		if req.IncludeChildren {
+			for _, child := range d.ChildTicket {
+				// TODO(schroederc): store children with root of documentation tree
+				cd, err := t.documentation(ctx, child)
+				if err == table.ErrNoSuchKey {
+					log.Println("Missing Documentation for child:", ticket)
+					continue
+				} else if err != nil {
+					return nil, fmt.Errorf("error looking up documentation child with ticket %q: %v", ticket, err)
+				}
+
+				doc.Children = append(doc.Children, d2d(cd, neededNodes))
+			}
+		}
+
+		reply.Document = append(reply.Document, doc)
+	}
+	tracePrintf(ctx, "Documents: %d", len(reply.Document))
+
+	if len(neededNodes) != 0 {
+		// TODO(schroederc): store definitions alongside documentation
+		defs, err := xrefs.SlowDefinitions(ctx, t, neededNodes.Unordered())
+		if err != nil {
+			return nil, fmt.Errorf("SlowDefinitions error: %v", err)
+		}
+		if len(defs) != 0 {
+			reply.DefinitionLocations = make(map[string]*xpb.Anchor, len(defs))
+			for _, def := range defs {
+				reply.DefinitionLocations[def.Ticket] = def
+			}
+		}
+
+		// TODO(schroederc): store node facts alongside documentation
+		nodes, err := t.Nodes(ctx, &gpb.NodesRequest{
+			Ticket: neededNodes.Unordered(),
+			Filter: req.Filter,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("Nodes error: %v", err)
+		}
+		reply.Nodes = nodes.Nodes
+		for ticket, node := range reply.Nodes {
+			if def, ok := defs[ticket]; ok {
+				node.Definition = def.Ticket
+			}
+		}
+	}
+	tracePrintf(ctx, "Nodes: %d", len(neededNodes))
+
+	return reply, nil
 }
 
 func tracePrintf(ctx context.Context, msg string, args ...interface{}) {
