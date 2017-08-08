@@ -141,6 +141,20 @@ func (ls *Server) TextDocumentDidChange(params lsp.DidChangeTextDocumentParams) 
 	return nil
 }
 
+// TextDocumentDidClose removes all cached information about the open document. Because
+// all information extracted from documents are stored internally to the document object,
+// this removal shouldn't leak memory
+func (ls *Server) TextDocumentDidClose(params lsp.DidCloseTextDocumentParams) error {
+	log.Printf("Document close notification received: %v", params)
+	local, err := ls.paths.localFromURI(params.TextDocument.URI)
+	if err != nil {
+		return err
+	}
+
+	delete(ls.docs, local)
+	return nil
+}
+
 // TextDocumentReferences uses a position in code to produce a list of
 // locations throughout the project that reference the same semantic node. This
 // can trigger a diff if the source file is dirty

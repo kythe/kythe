@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"os"
 
 	"github.com/sourcegraph/go-langserver/pkg/lsp"
 	"github.com/sourcegraph/jsonrpc2"
@@ -27,6 +28,7 @@ import (
 
 // ServerHandler produces a JSONRPC 2.0 handler from a Server
 func ServerHandler(ls *Server) jsonrpc2.Handler {
+	shutdownIssued := false
 	return jsonrpc2.HandlerWithError(
 		func(c context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.Request) (interface{}, error) {
 			var (
@@ -73,6 +75,22 @@ func ServerHandler(ls *Server) jsonrpc2.Handler {
 					return nil, err
 				}
 				ret, err = ls.TextDocumentDefinition(p)
+			case "textDocument/didClose":
+				var p lsp.DidCloseTextDocumentParams
+				if err := json.Unmarshal(*req.Params, &p); err != nil {
+					return nil, err
+				}
+				err = ls.TextDocumentDidClose(p)
+			case "shutdown":
+				log.Println("shutdown command received...")
+				shutdownIssued = true
+			case "exit":
+				log.Println("exiting...")
+				if shutdownIssued {
+					os.Exit(0)
+				} else {
+					os.Exit(1)
+				}
 			}
 			if err != nil {
 				log.Println(err)
