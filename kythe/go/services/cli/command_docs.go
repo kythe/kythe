@@ -21,26 +21,31 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
 type docsCommand struct {
-	decorSpan        string
-	targetDefs       bool
-	dirtyFile        string
-	refFormat        string
-	extendsOverrides bool
+	nodeFilters     string
+	includeChildren bool
 }
 
-func (docsCommand) Name() string                   { return "docs" }
-func (docsCommand) Synopsis() string               { return "display documentation for a node" }
-func (docsCommand) Usage() string                  { return "" }
-func (c *docsCommand) SetFlags(flag *flag.FlagSet) {}
+func (docsCommand) Name() string     { return "docs" }
+func (docsCommand) Synopsis() string { return "display documentation for a node" }
+func (docsCommand) Usage() string    { return "" }
+func (c *docsCommand) SetFlags(flag *flag.FlagSet) {
+	flag.StringVar(&c.nodeFilters, "filters", "", "Comma-separated list of node fact filters (default returns all)")
+	flag.BoolVar(&c.includeChildren, "include_children", false, "Include documentation for children of the given node")
+}
 func (c docsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) error {
 	fmt.Fprintf(os.Stderr, "Warning: The Documentation API is experimental and may be slow.")
 	req := &xpb.DocumentationRequest{
-		Ticket: flag.Args(),
+		Ticket:          flag.Args(),
+		IncludeChildren: c.includeChildren,
+	}
+	if c.nodeFilters != "" {
+		req.Filter = strings.Split(c.nodeFilters, ",")
 	}
 	LogRequest(req)
 	reply, err := api.XRefService.Documentation(ctx, req)
