@@ -1725,6 +1725,45 @@ func SlowDocumentation(ctx context.Context, service Service, req *xpb.Documentat
 	return reply, nil
 }
 
+// BoundedRequests guards against requests for more tickets than allowed per
+// the MaxTickets configuration.
+type BoundedRequests struct {
+	MaxTickets int
+	Service
+}
+
+// Nodes implements part of the Service interface.
+func (b BoundedRequests) Nodes(ctx context.Context, req *gpb.NodesRequest) (*gpb.NodesReply, error) {
+	if len(req.Ticket) > b.MaxTickets {
+		return nil, fmt.Errorf("too many tickets requested: %d (max %d)", len(req.Ticket), b.MaxTickets)
+	}
+	return b.Service.Nodes(ctx, req)
+}
+
+// Edges implements part of the Service interface.
+func (b BoundedRequests) Edges(ctx context.Context, req *gpb.EdgesRequest) (*gpb.EdgesReply, error) {
+	if len(req.Ticket) > b.MaxTickets {
+		return nil, fmt.Errorf("too many tickets requested: %d (max %d)", len(req.Ticket), b.MaxTickets)
+	}
+	return b.Service.Edges(ctx, req)
+}
+
+// CrossReferences implements part of the Service interface.
+func (b BoundedRequests) CrossReferences(ctx context.Context, req *xpb.CrossReferencesRequest) (*xpb.CrossReferencesReply, error) {
+	if len(req.Ticket) > b.MaxTickets {
+		return nil, fmt.Errorf("too many tickets requested: %d (max %d)", len(req.Ticket), b.MaxTickets)
+	}
+	return b.Service.CrossReferences(ctx, req)
+}
+
+// Documentation implements part of the Service interface.
+func (b BoundedRequests) Documentation(ctx context.Context, req *xpb.DocumentationRequest) (*xpb.DocumentationReply, error) {
+	if len(req.Ticket) > b.MaxTickets {
+		return nil, fmt.Errorf("too many tickets requested: %d (max %d)", len(req.Ticket), b.MaxTickets)
+	}
+	return b.Service.Documentation(ctx, req)
+}
+
 type grpcClient struct {
 	xpb.XRefServiceClient
 	gpb.GraphServiceClient

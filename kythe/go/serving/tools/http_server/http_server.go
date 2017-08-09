@@ -50,6 +50,8 @@ var (
 	tlsListeningAddr = flag.String("tls_listen", "", "Listening address for TLS HTTP server")
 	tlsCertFile      = flag.String("tls_cert_file", "", "Path to file with concatenation of TLS certificates")
 	tlsKeyFile       = flag.String("tls_key_file", "", "Path to file with TLS private key")
+
+	maxTicketsPerRequest = flag.Int("max_tickets_per_request", 20, "Maximum number of tickets allowed per request")
 )
 
 func init() {
@@ -82,6 +84,12 @@ func main() {
 	defer db.Close()
 	tbl := &table.KVProto{db}
 	xs = xsrv.NewCombinedTable(tbl)
+	if *maxTicketsPerRequest > 0 {
+		xs = xrefs.BoundedRequests{
+			Service:    xs,
+			MaxTickets: *maxTicketsPerRequest,
+		}
+	}
 	ft = &ftsrv.Table{Proto: tbl, PrefixedKeys: true}
 
 	if *httpListeningAddr != "" || *tlsListeningAddr != "" {

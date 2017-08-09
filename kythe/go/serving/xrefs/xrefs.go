@@ -54,15 +54,14 @@ import (
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
-// UseDocumentationServingData toggles whether the documentation serving table should be used.
-var UseDocumentationServingData = false
-
 func init() {
 	flag.BoolVar(&UseDocumentationServingData, "use_documentation_serving_data", UseDocumentationServingData, "Whether to use Documentation serving data")
 }
 
 var (
-	maxTicketsPerRequest = flag.Int("max_tickets_per_request", 20, "Maximum number of tickets allowed per request")
+	// UseDocumentationServingData toggles whether the documentation serving table should be used.
+	UseDocumentationServingData = false
+
 	mergeCrossReferences = flag.Bool("merge_cross_references", true, "Whether to merge nodes when responding to a CrossReferencesRequest")
 
 	// TODO(danielmoy): Remove this flag after rollout looks stable.
@@ -262,8 +261,6 @@ func (t *Table) Nodes(ctx context.Context, req *gpb.NodesRequest) (*gpb.NodesRep
 	tickets, err := xrefs.FixTickets(req.Ticket)
 	if err != nil {
 		return nil, err
-	} else if len(tickets) > *maxTicketsPerRequest {
-		return nil, fmt.Errorf("too many tickets requested: %d (max %d)", len(tickets), *maxTicketsPerRequest)
 	}
 
 	rs, err := t.pagedEdgeSets(ctx, tickets)
@@ -309,8 +306,6 @@ func (t *Table) Edges(ctx context.Context, req *gpb.EdgesRequest) (*gpb.EdgesRep
 	tickets, err := xrefs.FixTickets(req.Ticket)
 	if err != nil {
 		return nil, err
-	} else if len(tickets) > *maxTicketsPerRequest {
-		return nil, fmt.Errorf("too many tickets requested: %d (max %d)", len(tickets), *maxTicketsPerRequest)
 	}
 
 	allowedKinds := stringset.New(req.Kind...)
@@ -827,8 +822,6 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 	tickets, err := xrefs.FixTickets(req.Ticket)
 	if err != nil {
 		return nil, err
-	} else if len(tickets) > *maxTicketsPerRequest {
-		return nil, fmt.Errorf("too many tickets requested: %d (max %d)", len(tickets), *maxTicketsPerRequest)
 	}
 
 	stats := refStats{
@@ -935,9 +928,6 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 						log.Printf("WARNING: node %q already previously merged with %q", mergeNode, prevMerge)
 					}
 					continue
-				} else if len(tickets) >= *maxTicketsPerRequest {
-					log.Printf("WARNING: max number of tickets reached; cannot merge any further nodes for %q", ticket)
-					break
 				}
 				tickets = append(tickets, mergeNode)
 				mergeInto[mergeNode] = ticket
@@ -1414,8 +1404,6 @@ func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest
 	tickets, err := xrefs.FixTickets(req.Ticket)
 	if err != nil {
 		return nil, err
-	} else if len(tickets) > *maxTicketsPerRequest {
-		return nil, fmt.Errorf("too many tickets requested: %d (max %d)", len(tickets), *maxTicketsPerRequest)
 	}
 
 	reply := &xpb.DocumentationReply{}
