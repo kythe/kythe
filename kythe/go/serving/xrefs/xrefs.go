@@ -21,6 +21,7 @@
 //   edgeSets:<ticket>      -> srvpb.PagedEdgeSet
 //   edgePages:<page_key>   -> srvpb.EdgePage
 //   decor:<ticket>         -> srvpb.FileDecorations
+//   docs:<ticket>          -> srvpb.Document
 //   xrefs:<ticket>         -> srvpb.PagedCrossReferences
 //   xrefPages:<page_key>   -> srvpb.PagedCrossReferences_Page
 package xrefs
@@ -53,11 +54,16 @@ import (
 	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
+// UseDocumentationServingData toggles whether the documentation serving table should be used.
+var UseDocumentationServingData = false
+
+func init() {
+	flag.BoolVar(&UseDocumentationServingData, "use_documentation_serving_data", UseDocumentationServingData, "Whether to use Documentation serving data")
+}
+
 var (
 	maxTicketsPerRequest = flag.Int("max_tickets_per_request", 20, "Maximum number of tickets allowed per request")
 	mergeCrossReferences = flag.Bool("merge_cross_references", true, "Whether to merge nodes when responding to a CrossReferencesRequest")
-
-	useDocumentationServingData = flag.Bool("use_documentation_serving_data", false, "Whether to use Documentation serving data")
 )
 
 type edgeSetResult struct {
@@ -1372,7 +1378,7 @@ func d2d(d *srvpb.Document, neededNodes stringset.Set) *xpb.DocumentationReply_D
 
 // Documentation implements part of the xrefs Service interface.
 func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest) (*xpb.DocumentationReply, error) {
-	if !*useDocumentationServingData {
+	if !UseDocumentationServingData {
 		return xrefs.SlowDocumentation(ctx, t, req)
 	}
 
@@ -1394,6 +1400,7 @@ func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest
 		} else if err != nil {
 			return nil, fmt.Errorf("error looking up documentation for ticket %q: %v", ticket, err)
 		}
+		tracePrintf(ctx, "Document: %s", ticket)
 
 		doc := d2d(d, neededNodes)
 		if req.IncludeChildren {
@@ -1401,7 +1408,7 @@ func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest
 				// TODO(schroederc): store children with root of documentation tree
 				cd, err := t.documentation(ctx, child)
 				if err == table.ErrNoSuchKey {
-					log.Println("Missing Documentation for child:", ticket)
+					log.Printf("Missing Documentation for child (of %s): %s", ticket, child)
 					continue
 				} else if err != nil {
 					return nil, fmt.Errorf("error looking up documentation child with ticket %q: %v", ticket, err)
@@ -1409,11 +1416,12 @@ func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest
 
 				doc.Children = append(doc.Children, d2d(cd, neededNodes))
 			}
+			tracePrintf(ctx, "Children: %d", len(d.ChildTicket))
 		}
 
 		reply.Document = append(reply.Document, doc)
 	}
-	tracePrintf(ctx, "Documents: %d", len(reply.Document))
+	tracePrintf(ctx, "Documents: %d (nodes: %d)", len(reply.Document), len(neededNodes))
 
 	if len(neededNodes) != 0 {
 		// TODO(schroederc): store definitions alongside documentation
@@ -1427,6 +1435,7 @@ func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest
 				reply.DefinitionLocations[def.Ticket] = def
 			}
 		}
+		tracePrintf(ctx, "Defs: %d", len(defs))
 
 		// TODO(schroederc): store node facts alongside documentation
 		nodes, err := t.Nodes(ctx, &gpb.NodesRequest{
@@ -1442,8 +1451,8 @@ func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest
 				node.Definition = def.Ticket
 			}
 		}
+		tracePrintf(ctx, "Nodes: %d", len(reply.Nodes))
 	}
-	tracePrintf(ctx, "Nodes: %d", len(neededNodes))
 
 	return reply, nil
 }
