@@ -906,6 +906,8 @@ func TestCrossReferences(t *testing.T) {
 		ReferenceKind:  xpb.CrossReferencesRequest_ALL_REFERENCES,
 
 		ExperimentalSignatures: true,
+
+		Snippets: xpb.SnippetsKind_DEFAULT,
 	})
 	testutil.FatalOnErrT(t, "CrossReferencesRequest error: %v", err)
 

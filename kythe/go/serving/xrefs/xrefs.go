@@ -64,6 +64,9 @@ func init() {
 var (
 	maxTicketsPerRequest = flag.Int("max_tickets_per_request", 20, "Maximum number of tickets allowed per request")
 	mergeCrossReferences = flag.Bool("merge_cross_references", true, "Whether to merge nodes when responding to a CrossReferencesRequest")
+
+	// TODO(danielmoy): Remove this flag after rollout looks stable.
+	optionallyFilterSnippets = flag.Bool("optionally_filter_snippets", false, "Whether or not to support the SnippetsKind filtering on CrossReferencesRequest and DecorationsRequest")
 )
 
 type edgeSetResult struct {
@@ -800,6 +803,12 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 		tracePrintf(ctx, "Diagnostics: %d", len(reply.Diagnostic))
 	}
 
+	if *optionallyFilterSnippets && req.Snippets == xpb.SnippetsKind_NONE {
+		for _, anchor := range reply.DefinitionLocations {
+			clearSnippet(anchor)
+		}
+	}
+
 	return reply, nil
 }
 
@@ -1185,6 +1194,26 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		}
 	}
 
+	if *optionallyFilterSnippets && req.Snippets == xpb.SnippetsKind_NONE {
+		for _, crs := range reply.CrossReferences {
+			for _, def := range crs.Definition {
+				clearRelatedSnippets(def)
+			}
+			for _, dec := range crs.Declaration {
+				clearRelatedSnippets(dec)
+			}
+			for _, ref := range crs.Reference {
+				clearRelatedSnippets(ref)
+			}
+			for _, ca := range crs.Caller {
+				clearRelatedSnippets(ca)
+			}
+		}
+		for _, def := range reply.DefinitionLocations {
+			clearSnippet(def)
+		}
+	}
+
 	return reply, nil
 }
 
@@ -1455,6 +1484,18 @@ func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest
 	}
 
 	return reply, nil
+}
+
+func clearRelatedSnippets(ra *xpb.CrossReferencesReply_RelatedAnchor) {
+	clearSnippet(ra.Anchor)
+	for _, site := range ra.Site {
+		clearSnippet(site)
+	}
+}
+
+func clearSnippet(anchor *xpb.Anchor) {
+	anchor.Snippet = ""
+	anchor.SnippetSpan = nil
 }
 
 func tracePrintf(ctx context.Context, msg string, args ...interface{}) {
