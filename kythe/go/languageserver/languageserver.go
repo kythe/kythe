@@ -176,7 +176,10 @@ func (ls *Server) TextDocumentDidClose(params lsp.DidCloseTextDocumentParams) er
 
 // TextDocumentReferences uses a position in code to produce a list of
 // locations throughout the project that reference the same semantic node. This
-// can trigger a diff if the source file is dirty
+// can trigger a diff if the source file is dirty.
+//
+// NOTE: As per the lsp spec, references must return an error or a valid array.
+// Therefore, if no error is returned, a non-nil location slice must be returned
 func (ls *Server) TextDocumentReferences(params lsp.ReferenceParams) ([]lsp.Location, error) {
 	log.Printf("Searching for references at %v", params.TextDocumentPositionParams)
 
@@ -220,11 +223,14 @@ func (ls *Server) TextDocumentReferences(params lsp.ReferenceParams) ([]lsp.Loca
 // TextDocumentDefinition uses a position in code to produce a list of
 // locations throughout the project that define the semantic node at the original position.
 // This can trigger a diff if the source file is dirty
+//
+// NOTE: As per the lsp spec, definition must return an error or a non-null result.
+// Therefore, if no error is returned, a non-nil location slice must be returned
 func (ls *Server) TextDocumentDefinition(params lsp.TextDocumentPositionParams) ([]lsp.Location, error) {
 	log.Printf("Searching for definition at %v", params)
 	local, err := ls.paths.localFromURI(params.TextDocument.URI)
 	if err != nil {
-		return nil, err
+		return []lsp.Location{}, err
 	}
 
 	// If we don't have decorations we can't find definitions
@@ -356,8 +362,10 @@ func (ls *Server) defLocations(t map[string]*xpb.Anchor) map[string]*lsp.Locatio
 	return m
 }
 
+// refLocs takes a cross reference set and produces a slice of locations. This slice
+// is guaranteed to be non-null even if empty
 func (ls *Server) refLocs(r *xpb.CrossReferencesReply_CrossReferenceSet) []lsp.Location {
-	var locs []lsp.Location
+	locs := []lsp.Location{}
 	for _, a := range r.Reference {
 		l := ls.anchorToLoc(a.Anchor)
 		if l != nil {
