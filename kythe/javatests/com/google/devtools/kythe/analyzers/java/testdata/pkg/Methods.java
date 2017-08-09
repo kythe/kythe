@@ -72,13 +72,18 @@ public class Methods {
   //- StrArray.node/kind tapp
   //- StrArray param.0 ArrayBuiltin = vname("array#builtin", "", "", "", "java")
   //- StrArray param.1 String
-  public static void main(String[] args) {}
+  public static void main(String[] args) {
+    //- @#0toString ref ToString
+    //- @#1toString ref ToString
+    "".toString().toString();
+  }
 
   //- @IOException ref IOE
   public static void throwsException() throws IOException {
     //- @IOException ref IOE
     throw new IOException();
   }
+
 
   //- @Exception ref Exception
   public void error() throws Exception {}

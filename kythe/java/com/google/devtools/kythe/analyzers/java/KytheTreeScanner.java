@@ -899,7 +899,8 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       return emitDiagnostic(ctx, "failed to resolve symbol name", null, null);
     }
 
-    emitAnchor(name, ctx.getTree().getStartPosition(), edgeKind, node.getVName(), ctx.getSnippet());
+    emitAnchor(
+        name, ctx.getTree().getPreferredPosition(), edgeKind, node.getVName(), ctx.getSnippet());
     statistics.incrementCounter("name-usages-emitted");
     return node;
   }
