@@ -78,7 +78,6 @@ import com.sun.tools.javac.util.Context;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -112,7 +111,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   private final SignatureGenerator signatureGenerator;
   private final Positions filePositions;
   private final Map<Integer, List<Comment>> comments = new HashMap<>();
-  private final BiConsumer<JCTree, Plugin.KytheNode> nodeConsumer;
+  private final BiConsumer<JCTree, VName> nodeConsumer;
   private final Context javaContext;
   private final JavaFileStoreBasedFileManager fileManager;
   private final MetadataLoaders metadataLoaders;
@@ -126,7 +125,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       SignatureGenerator signatureGenerator,
       SourceText src,
       Context javaContext,
-      BiConsumer<JCTree, Plugin.KytheNode> nodeConsumer,
+      BiConsumer<JCTree, VName> nodeConsumer,
       boolean verboseLogging,
       JavaFileStoreBasedFileManager fileManager,
       MetadataLoaders metadataLoaders) {
@@ -157,13 +156,12 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
       JavaEntrySets entrySets,
       SignatureGenerator signatureGenerator,
       JCCompilationUnit compilation,
-      BiConsumer<JCTree, Plugin.KytheNode> nodeConsumer,
-      Charset sourceEncoding,
+      BiConsumer<JCTree, VName> nodeConsumer,
+      SourceText src,
       boolean verboseLogging,
       JavaFileStoreBasedFileManager fileManager,
       MetadataLoaders metadataLoaders)
       throws IOException {
-    SourceText src = new SourceText(javaContext, compilation, sourceEncoding);
     new KytheTreeScanner(
             entrySets,
             statistics,
@@ -186,7 +184,7 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
   public JavaNode scan(JCTree tree, TreeContext owner) {
     JavaNode node = super.scan(tree, owner);
     if (node != null && nodeConsumer != null) {
-      nodeConsumer.accept(tree, new Plugin.KytheNode(node.getVName()));
+      nodeConsumer.accept(tree, node.getVName());
     }
     return node;
   }

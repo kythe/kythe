@@ -26,6 +26,8 @@ import com.google.devtools.kythe.platform.shared.AnalysisException;
 import com.google.devtools.kythe.platform.shared.MetadataLoaders;
 import com.google.devtools.kythe.platform.shared.StatisticsCollector;
 import com.google.devtools.kythe.proto.Analysis.CompilationUnit;
+import com.google.devtools.kythe.proto.Storage.VName;
+import com.google.devtools.kythe.util.Span;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.tools.javac.api.JavacTaskImpl;
 import com.sun.tools.javac.tree.JCTree;
@@ -36,6 +38,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import javax.lang.model.element.Name;
 import javax.tools.Diagnostic;
 
 /** {@link JavacAnalyzer} to emit Kythe nodes and edges. */
@@ -109,11 +113,10 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
         entrySets != null, "analyzeCompilationUnit must be called to analyze each file");
     Context context = ((JavacTaskImpl) details.getJavac()).getContext();
     JCCompilationUnit compilation = (JCCompilationUnit) ast;
-    Map<JCTree, Plugin.KytheNode> nodes = null;
-    if (!plugins.isEmpty()) {
-      nodes = new HashMap<>();
-    }
+    final Map<JCTree, Plugin.KytheNode> nodes = new HashMap<>();
+    SourceText src = null;
     try {
+      src = new SourceText(context, compilation, details.getEncoding());
       SignatureGenerator signatureGenerator =
           new SignatureGenerator(ast, context, config.getEmitJvmSignatures());
       KytheTreeScanner.emitEntries(
@@ -122,8 +125,8 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
           entrySets,
           signatureGenerator,
           compilation,
-          nodes == null ? null : nodes::put,
-          details.getEncoding(),
+          nodes == null ? null : (t, v) -> nodes.put(t, new KytheNodeImpl(v)),
+          src,
           config.getVerboseLogging(),
           details.getFileManager(),
           metadataLoaders);
@@ -131,7 +134,8 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
       throw new AnalysisException("Exception analyzing file: " + ast.getSourceFile().getName(), e);
     }
     if (!plugins.isEmpty()) {
-      Plugin.KytheGraph graph = new Plugin.KytheGraph(Collections.unmodifiableMap(nodes));
+      Plugin.KytheGraph graph =
+          new KytheGraphImpl(src.getPositions(), Collections.unmodifiableMap(nodes));
       for (Plugin plugin : plugins) {
         try {
           plugin.run(compilation, entrySets, graph);
@@ -139,6 +143,48 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
           logger.warningfmt(e, "Error running plugin %s: %s", plugin.getClass(), e.getMessage());
         }
       }
+    }
+  }
+
+  private static class KytheGraphImpl implements Plugin.KytheGraph {
+    private final SourceText.Positions filePositions;
+    private final Map<JCTree, Plugin.KytheNode> treeNodes;
+
+    KytheGraphImpl(SourceText.Positions filePositions, Map<JCTree, Plugin.KytheNode> treeNodes) {
+      this.filePositions = filePositions;
+      this.treeNodes = treeNodes;
+    }
+
+    @Override
+    public Optional<Plugin.KytheNode> getNode(JCTree tree) {
+      return Optional.ofNullable(treeNodes.get(tree));
+    }
+
+    @Override
+    public Optional<Span> getSpan(JCTree tree) {
+      return validSpan(filePositions.getSpan(tree));
+    }
+
+    @Override
+    public Optional<Span> findIdentifier(Name name, int startOffset) {
+      return validSpan(filePositions.findIdentifier(name, startOffset));
+    }
+
+    private static Optional<Span> validSpan(Span s) {
+      return Optional.ofNullable(s).filter(Span::valid);
+    }
+  }
+
+  private static final class KytheNodeImpl implements Plugin.KytheNode {
+    private final VName vName;
+
+    KytheNodeImpl(VName vName) {
+      this.vName = vName;
+    }
+
+    @Override
+    public VName getVName() {
+      return vName;
     }
   }
 }

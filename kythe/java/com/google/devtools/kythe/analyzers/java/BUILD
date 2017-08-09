@@ -17,6 +17,7 @@ java_library(
     ],
     deps = [
         ":plugin",
+        ":source_text",
         "//kythe/java/com/google/devtools/kythe/analyzers/base:config",
         "//kythe/java/com/google/devtools/kythe/analyzers/base:entryset",
         "//kythe/java/com/google/devtools/kythe/analyzers/base:schema",
@@ -42,11 +43,23 @@ java_library(
 )
 
 java_library(
+    name = "source_text",
+    srcs = ["SourceText.java"],
+    deps = [
+        "//kythe/java/com/google/devtools/kythe/platform/java/helpers",
+        "//kythe/java/com/google/devtools/kythe/util",
+        "//kythe/java/com/google/devtools/kythe/util:position_mappings",
+        "@bazel_tools//third_party/java/jdk/langtools:javac",
+    ],
+)
+
+java_library(
     name = "plugin",
     srcs = ["Plugin.java"],
     deps = [
         "//kythe/java/com/google/devtools/kythe/analyzers/base:entryset",
         "//kythe/java/com/google/devtools/kythe/platform/java/helpers",
+        "//kythe/java/com/google/devtools/kythe/util",
         "//kythe/proto:storage_proto_java",
         "@bazel_tools//third_party/java/jdk/langtools:javac",
     ],

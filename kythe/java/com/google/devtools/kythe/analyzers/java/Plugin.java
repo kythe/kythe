@@ -19,39 +19,33 @@ package com.google.devtools.kythe.analyzers.java;
 import com.google.devtools.kythe.analyzers.base.KytheEntrySets;
 import com.google.devtools.kythe.platform.java.helpers.JCTreeScanner;
 import com.google.devtools.kythe.proto.Storage.VName;
+import com.google.devtools.kythe.util.Span;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCCompilationUnit;
-import java.util.Map;
 import java.util.Optional;
+import javax.lang.model.element.Name;
 
 /** Plugin interface for the Kythe Java analyzer. */
 public interface Plugin {
   /** Interface to access the Kythe graph from the Java AST. */
-  public static final class KytheGraph {
-    private final Map<JCTree, KytheNode> treeNodes;
-
-    KytheGraph(Map<JCTree, KytheNode> treeNodes) {
-      this.treeNodes = treeNodes;
-    }
-
+  public static interface KytheGraph {
     /** Returns the {@link KytheNode} associated with the given {@link JCTree}. */
-    public Optional<KytheNode> getNode(JCTree tree) {
-      return Optional.ofNullable(treeNodes.get(tree));
-    }
+    public Optional<KytheNode> getNode(JCTree tree);
+
+    /** Returns the {@link Span} for the given {@link JCTree}. */
+    public Optional<Span> getSpan(JCTree tree);
+
+    /**
+     * Returns the {@link Span} for the first known occurrence of the specified {@link Name}d
+     * identifier, starting at or after the specified starting offset.
+     */
+    public Optional<Span> findIdentifier(Name name, int startOffset);
   }
 
   /** Node in the Kythe graph emitted by the Kythe Java analyzer. */
-  public static final class KytheNode {
-    private final VName vName;
-
-    KytheNode(VName vName) {
-      this.vName = vName;
-    }
-
+  public static interface KytheNode {
     /** Returns the {@link VName} associated with the given Kythe node. */
-    public VName getVName() {
-      return vName;
-    }
+    public VName getVName();
   }
 
   /** Execute the {@link Plugin}'s analysis over a {@link JCCompilationUnit}. */
