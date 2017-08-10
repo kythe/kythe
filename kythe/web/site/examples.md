@@ -32,9 +32,12 @@ export KYTHE_VNAMES="$PWD/kythe/data/vnames.json"         # Optional: VNames con
 mkdir -p "$KYTHE_OUTPUT_DIRECTORY"
 
 # Extract a Java compilation
-# java -jar /opt/kythe/extractors/javac_extractor.jar <javac_arguments>
-java -jar /opt/kythe/extractors/javac_extractor.jar \
-  -cp third_party/guava/*.jar kythe/java/com/google/devtools/kythe/common/*.java
+# java -Xbootclasspath/p:/opt/kythe/extractors/javac_extractor.jar \
+#   com.google.devtools.kythe.extractors.java.standalone.Javac8Wrapper \
+#   <javac_arguments>
+java -Xbootclasspath/p:/opt/kythe/extractors/javac_extractor.jar \
+  com.google.devtools.kythe.extractors.java.standalone.Javac8Wrapper \
+  kythe/java/com/google/devtools/kythe/common/*.java
 
 # Extract a C++ compilation
 # /opt/kythe/extractors/cxx_extractor <arguments>
@@ -94,11 +97,17 @@ then be stored in a [GraphStore]({{site.baseurl}}/docs/kythe-storage.html).
   --index_pack=.kythe_indexpack f0dcfd6fe90919e957f635ec568a793554905012aea803589cdbec625d72de4d > entries
 
 # Indexing a Java compilation
-# java -jar /opt/kythe/indexers/java_indexer.jar <kindex-file> > entries
-java -jar /opt/kythe/indexers/java_indexer.jar \
+# java -Xbootclasspath/p:/opt/kythe/indexers/java_indexer.jar \
+#   com.google.devtools.kythe.analyzers.java.JavaIndexer \
+#   <kindex-file> > entries
+java -Xbootclasspath/p:/opt/kythe/indexers/java_indexer.jar \
+  com.google.devtools.kythe.analyzers.java.JavaIndexer \
   $PWD/.kythe_compilations/java/kythe_java_com_google_devtools_kythe_analyzers_java_analyzer.java.kindex > entries
-# java -jar /opt/kythe/indexers/java_indexer.jar --index_path=<root> <unit-hash> > entries
-java -jar /opt/kythe/indexers/java_indexer.jar \
+# java -Xbootclasspath/p:/opt/kythe/indexers/java_indexer.jar \
+#   com.google.devtools.kythe.analyzers.java.JavaIndexer \
+#   --index_path=<root> <unit-hash> > entries
+java -Xbootclasspath/p:/opt/kythe/indexers/java_indexer.jar \
+  com.google.devtools.kythe.analyzers.java.JavaIndexer \
   --index_pack=$PWD/.kythe_indexpack b3759d74b6ee8ba97312cf8b1b47c4263504a56ca9ab63e8f3af98298ccf9fd6 > entries
 # NOTE: https://kythe.io/phabricator/T40 -- the Java indexer should not be run in
 #       the KYTHE_ROOT_DIRECTORY used during extraction
