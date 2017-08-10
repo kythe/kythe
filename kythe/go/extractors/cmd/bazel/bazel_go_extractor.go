@@ -468,7 +468,7 @@ func parseShellCommands(input []byte, f func(cmd string, args []string)) {
 	for _, line := range strings.Split(string(input), "\n") {
 		words, _ := shell.Split(strings.TrimSpace(line))
 		for len(words) > 0 {
-			i := stringset.Index("&&", words...)
+			i := stringset.Index("&&", words)
 			if i < 0 {
 				f(words[0], words[1:])
 				break
