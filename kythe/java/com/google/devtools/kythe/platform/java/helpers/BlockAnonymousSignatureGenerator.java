@@ -146,10 +146,13 @@ public class BlockAnonymousSignatureGenerator
     return parent.getTag() == JCTree.Tag.BLOCK;
   }
 
-  // Returns the anonymous signature of the corresponding element. Element is suppoised to be a
+  // Returns the anonymous signature of the corresponding element. Element is supposed to be an
   // anonymous class definition.
   String getAnonymousSignature(Element e) {
     TreePath tp = signatureGenerator.getPath(e);
+    if (tp == null) {
+      return null;
+    }
     this.process(tp.getCompilationUnit());
     return blockAnonymousMap.get(tp.getLeaf());
   }
