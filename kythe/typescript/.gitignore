@@ -1,6 +1,5 @@
 /graphstore
 node_modules
-*.d.ts
 /tables
 *.js
 *.js.map
