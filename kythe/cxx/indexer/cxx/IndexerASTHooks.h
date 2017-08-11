@@ -303,6 +303,17 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   MaybeFew<GraphObserver::NodeId> BuildNodeIdForExpr(const clang::Expr *Expr,
                                                      EmitRanges ER);
 
+  /// \brief Builds a stable node ID for a special template argument.
+  /// \param Id A string representing the special argument.
+  GraphObserver::NodeId BuildNodeIdForSpecialTemplateArgument(
+      llvm::StringRef Id);
+
+  /// \brief Builds a stable node ID for a template expansion template argument.
+  /// \param Name The template pattern being expanded.
+  /// \param L The location of the expansion.
+  MaybeFew<GraphObserver::NodeId> BuildNodeIdForTemplateExpansion(
+      clang::TemplateName Name, clang::SourceLocation L);
+
   /// \brief Builds a stable node ID for `Type`.
   /// \param TypeLoc The type that is being identified. If its location is valid
   /// and `ER` is `EmitRanges::Yes`, notifies the attached `GraphObserver` about

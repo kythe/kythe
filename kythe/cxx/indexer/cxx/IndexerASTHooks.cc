@@ -3107,7 +3107,6 @@ uint64_t IndexerASTVisitor::SemanticHash(const clang::TemplateArgument &TA) {
       CHECK(IgnoreUnimplemented) << "SemanticHash(Declaration)";
       return 0;
     case TemplateArgument::NullPtr:
-      CHECK(IgnoreUnimplemented) << "SemanticHash(NullPtr)";
       return 0;
     case TemplateArgument::Integral: {
       auto Val = TA.getAsIntegral();
@@ -3680,6 +3679,20 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForDependentName(
   return IdOut;
 }
 
+GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForSpecialTemplateArgument(
+    llvm::StringRef Id) {
+  std::string Identity;
+  llvm::raw_string_ostream Ostream(Identity);
+  Ostream << Id << "#sta";
+  return GraphObserver::NodeId(Observer.getDefaultClaimToken(), Ostream.str());
+}
+
+MaybeFew<GraphObserver::NodeId>
+IndexerASTVisitor::BuildNodeIdForTemplateExpansion(clang::TemplateName Name,
+                                                   clang::SourceLocation L) {
+  return BuildNodeIdForTemplateName(Name, L);
+}
+
 MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForExpr(
     const clang::Expr *Expr, EmitRanges ER) {
   if (!Verbosity) {
@@ -3739,27 +3752,24 @@ IndexerASTVisitor::BuildNodeIdForTemplateArgument(
   // Maybe with Context.getCanonicalTemplateArgument()?
   switch (Arg.getKind()) {
     case TemplateArgument::Null:
-      CHECK(IgnoreUnimplemented) << "TA.Null";
-      return None();
+      return BuildNodeIdForSpecialTemplateArgument("null");
     case TemplateArgument::Type:
       CHECK(!Arg.getAsType().isNull());
       return BuildNodeIdForType(
           Context.getTrivialTypeSourceInfo(Arg.getAsType(), L)->getTypeLoc(),
           EmitRanges::No);
     case TemplateArgument::Declaration:
-      CHECK(IgnoreUnimplemented) << "TA.Declaration";
-      return None();
+      return BuildNodeIdForDecl(Arg.getAsDecl());
     case TemplateArgument::NullPtr:
-      CHECK(IgnoreUnimplemented) << "TA.NullPtr";
-      return None();
+      return BuildNodeIdForSpecialTemplateArgument("nullptr");
     case TemplateArgument::Integral:
-      CHECK(IgnoreUnimplemented) << "TA.Integral";
-      return None();
+      return BuildNodeIdForSpecialTemplateArgument(
+          Arg.getAsIntegral().toString(10) + "i");
     case TemplateArgument::Template:
       return BuildNodeIdForTemplateName(Arg.getAsTemplate(), L);
     case TemplateArgument::TemplateExpansion:
-      CHECK(IgnoreUnimplemented) << "TA.TemplateExpansion";
-      return None();
+      return BuildNodeIdForTemplateExpansion(
+          Arg.getAsTemplateOrTemplatePattern(), L);
     case TemplateArgument::Expression:
       CHECK(Arg.getAsExpr() != nullptr);
       return BuildNodeIdForExpr(Arg.getAsExpr(), EmitRanges::Yes);
@@ -3780,8 +3790,6 @@ IndexerASTVisitor::BuildNodeIdForTemplateArgument(
       }
       return Observer.recordTsigmaNode(NodePointers);
     }
-    default:
-      CHECK(IgnoreUnimplemented) << "Unexpected TemplateArgument kind!";
   }
   return None();
 }
@@ -3794,33 +3802,28 @@ IndexerASTVisitor::BuildNodeIdForTemplateArgument(
   const TemplateArgument &Arg = ArgLoc.getArgument();
   switch (Arg.getKind()) {
     case TemplateArgument::Null:
-      CHECK(IgnoreUnimplemented) << "TA.Null";
-      return None();
+      return BuildNodeIdForSpecialTemplateArgument("null");
     case TemplateArgument::Type:
       return BuildNodeIdForType(ArgLoc.getTypeSourceInfo()->getTypeLoc(),
                                 EmitRanges);
     case TemplateArgument::Declaration:
-      CHECK(IgnoreUnimplemented) << "TA.Declaration";
-      return None();
+      return BuildNodeIdForDecl(Arg.getAsDecl());
     case TemplateArgument::NullPtr:
-      CHECK(IgnoreUnimplemented) << "TA.NullPtr";
-      return None();
+      return BuildNodeIdForSpecialTemplateArgument("nullptr");
     case TemplateArgument::Integral:
-      CHECK(IgnoreUnimplemented) << "TA.Integral";
-      return None();
+      return BuildNodeIdForSpecialTemplateArgument(
+          Arg.getAsIntegral().toString(10) + "i");
     case TemplateArgument::Template:
       return BuildNodeIdForTemplateName(Arg.getAsTemplate(),
                                         ArgLoc.getTemplateNameLoc());
     case TemplateArgument::TemplateExpansion:
-      CHECK(IgnoreUnimplemented) << "TA.TemplateExpansion";
-      return None();
+      return BuildNodeIdForTemplateExpansion(
+          Arg.getAsTemplateOrTemplatePattern(), ArgLoc.getTemplateNameLoc());
     case TemplateArgument::Expression:
       CHECK(ArgLoc.getSourceExpression() != nullptr);
       return BuildNodeIdForExpr(ArgLoc.getSourceExpression(), EmitRanges);
     case TemplateArgument::Pack:
       return BuildNodeIdForTemplateArgument(Arg, ArgLoc.getLocation());
-    default:
-      CHECK(IgnoreUnimplemented) << "Unexpected TemplateArgument kind!";
   }
   return None();
 }

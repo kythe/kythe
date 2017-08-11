@@ -1475,6 +1475,15 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "template_alias_naming",
+    srcs = ["template/template_alias_naming.cc"],
+    check_for_singletons = True,
+    experimental_alias_template_instantiations = True,
+    ignore_dups = True,
+    tags = ["template"],
+)
+
+cxx_indexer_test(
     name = "template_type_alias_param",
     srcs = ["template/template_type_alias_param.cc"],
     tags = ["template"],
