@@ -176,8 +176,7 @@ message DecorationsReply {
     // populated in the top-level definition_locations map.
     string target_definition = 4;
 
-    // The reference's span within the source file.  This is also the related
-    // anchor's span to which the source_ticket refers.
+    // The reference's span within the source file.
     common.Span span = 5;
 
     reserved 1, 10, 11;
