@@ -1392,6 +1392,22 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "rec_implicit_ctor_calls",
+    srcs = ["rec/rec_implicit_ctor_calls.cc"],
+    check_for_singletons = True,
+    ignore_dups = True,
+    tags = ["rec"],
+)
+
+cxx_indexer_test(
+    name = "rec_implicit_ctor_calls_extra",
+    srcs = ["rec/rec_implicit_ctor_calls_extra.cc"],
+    check_for_singletons = True,
+    ignore_dups = True,
+    tags = ["rec"],
+)
+
+cxx_indexer_test(
     name = "rec_nested_name",
     srcs = ["rec/rec_nested_name.cc"],
     tags = ["rec"],

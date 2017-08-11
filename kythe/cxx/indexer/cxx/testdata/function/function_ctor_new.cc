@@ -8,9 +8,7 @@ void f() {
   //- @"C()" ref/call Ctor
   //- @C ref Ctor
   new C();
-  //- CallC ref/call CtorC
-  //- CallC.loc/start @^"C"
-  //- CallC.loc/end @^"C"
+  //- @C ref/call Ctor
   //- @C ref Ctor
   new C;
 }

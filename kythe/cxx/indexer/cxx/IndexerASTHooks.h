@@ -796,7 +796,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// in the same way but do not have a useful common ancestry.
   bool VisitDeclRefOrIvarRefExpr(const clang::Expr *Expr,
                                  const clang::NamedDecl *const FoundDecl,
-                                 clang::SourceLocation SL);
+                                 clang::SourceLocation SL,
+                                 bool IsImplicit = false);
 
   /// \brief Connect a NodeId to the super and implemented protocols for a
   /// ObjCInterfaceDecl.

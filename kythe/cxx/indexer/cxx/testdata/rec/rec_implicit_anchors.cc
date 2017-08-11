@@ -14,9 +14,7 @@ struct Struct {
 
 //- @f defines/binding FnF
 void f() {
-//- Call ref/call StructSCtor
-//- Call.loc/start @^s
-//- Call.loc/end @^s
+//- Call=@s ref/call StructSCtor
   Struct s;
 }
 

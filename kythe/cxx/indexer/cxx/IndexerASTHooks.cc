@@ -1209,15 +1209,22 @@ bool IndexerASTVisitor::VisitCXXConstructExpr(
   if (const auto *Callee = E->getConstructor()) {
     // Clang doesn't invoke VisitDeclRefExpr on constructors, so we
     // must do so manually.
-    VisitDeclRefOrIvarRefExpr(E, Callee, E->getLocation());
     // TODO(zarko): What about static initializers? Do we blame these on the
     // translation unit?
+    clang::SourceLocation RPL = E->getParenOrBraceRange().getEnd();
+    // We assume that a constructor call was inserted by the compiler (or
+    // is otherwise implicit) if it's being provided with arguments but it has
+    // an invalid right-paren location, since such a call would be impossible
+    // to write down.
+    bool IsImplicit = !RPL.isValid() && E->getNumArgs() > 0;
+    VisitDeclRefOrIvarRefExpr(E, Callee, E->getLocation(), IsImplicit);
     if (!Job->BlameStack.empty()) {
-      clang::SourceLocation RPL = E->getParenOrBraceRange().getEnd();
       clang::SourceRange SR = E->getSourceRange();
       if (RPL.isValid()) {
         // This loses the right paren without the offset.
         SR.setEnd(RPL.getLocWithOffset(1));
+      } else {
+        SR.setEnd(SR.getEnd().getLocWithOffset(1));
       }
       auto StmtId = BuildNodeIdForImplicitStmt(E);
       if (auto RCC = RangeInCurrentContext(StmtId, SR)) {
@@ -1643,7 +1650,7 @@ void IndexerASTVisitor::VisitNestedNameSpecifierLoc(
 // instantiations.
 bool IndexerASTVisitor::VisitDeclRefOrIvarRefExpr(
     const clang::Expr *Expr, const NamedDecl *const FoundDecl,
-    SourceLocation SL) {
+    SourceLocation SL, bool IsImplicit) {
   // TODO(zarko): check to see if this DeclRefExpr has already been indexed.
   // (Use a simple N=1 cache.)
   // TODO(zarko): Point at the capture as well as the thing being captured;
@@ -1664,6 +1671,10 @@ bool IndexerASTVisitor::VisitDeclRefOrIvarRefExpr(
   if (SL.isValid()) {
     SourceRange Range = RangeForASTEntityFromSourceLocation(
         *Observer.getSourceManager(), *Observer.getLangOptions(), SL);
+    if (IsImplicit) {
+      // Mark implicit ranges by making them zero-length.
+      Range.setEnd(Range.getBegin());
+    }
     auto StmtId = BuildNodeIdForImplicitStmt(Expr);
     if (auto RCC = RangeInCurrentContext(StmtId, Range)) {
       GraphObserver::NodeId DeclId = BuildNodeIdForRefToDecl(TargetDecl);

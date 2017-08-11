@@ -15,11 +15,8 @@ class C {
   //- CtorC2 childof ClassC
   C(int) { }
 };
-//- @g defines/binding FnG
 void g() {
-  //- CallC ref/call CtorC
-  //- CallC.loc/start @^"c"
-  //- CallC.loc/end @^"c"
+  //- @c ref/call CtorC
   C c;
   //- @"C(42)" ref/call CtorC2
   //- @C ref CtorC2
