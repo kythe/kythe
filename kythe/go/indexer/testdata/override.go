@@ -2,6 +2,8 @@
 // methods of concrete types and the interfaces they satisfy.
 package override
 
+import _ "fmt"
+
 //- @Thinger defines/binding Thinger
 //- Thinger.node/kind interface
 type Thinger interface {
@@ -25,6 +27,8 @@ type Stuffer interface {
 
 //- @foo defines/binding Foo
 //- Foo.node/kind record
+//- Foo satisfies Thinger
+//- Foo satisfies Stuffer
 type foo struct{}
 
 //- @Thing defines/binding ConcreteThing
@@ -38,3 +42,22 @@ func (foo) Thing() {}
 //- ConcreteStuff childof Foo
 //- ConcreteStuff overrides AbstractStuff
 func (foo) Stuff() {}
+
+//- @bar defines/binding Bar
+//- Bar.node/kind record
+//- Bar satisfies Thinger
+//- Bar satisfies vname("type Stringer",_,_,"fmt","go")
+//- !{ Bar satisfies Stuffer }
+type bar struct{}
+
+//- @Thing defines/binding OtherConcreteThing
+//- OtherConcreteThing.node/kind function
+//- OtherConcreteThing childof Bar
+//- OtherConcreteThing overrides AbstractThing
+func (*bar) Thing() {}
+
+//- @String defines/binding String
+//- String.node/kind function
+//- String childof Bar
+//- String overrides vname("method Stringer.String",_,_,"fmt","go")
+func (*bar) String() string { return "" }

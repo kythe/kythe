@@ -553,7 +553,12 @@ func (e *emitter) emitSatisfactions() {
 		scope := pkg.Scope()
 		for _, name := range scope.Names() {
 			if obj, ok := scope.Lookup(name).(*types.TypeName); ok {
-				if _, ok := obj.Type().(*types.Named); ok {
+				// Note that the names of some "named" types that are brought
+				// in from dependencies may not be known at this point -- the
+				// compiled package headers omit the names if they are not
+				// needed.  Skip such cases, even though they would qualify if
+				// we had the source package.
+				if _, ok := obj.Type().(*types.Named); ok && obj.Name() != "" {
 					allNames = append(allNames, obj)
 				}
 			}
@@ -580,7 +585,10 @@ func (e *emitter) emitSatisfactions() {
 		// interfaces, but that's probably OK since are only considering a
 		// single compilation.
 
+		// Check the method sets of both x and pointer-to-x for overrides.
 		xmset := msets.MethodSet(x)
+		pxmset := msets.MethodSet(types.NewPointer(x))
+
 		for _, yobj := range allNames {
 			if xobj == yobj {
 				continue
@@ -592,6 +600,8 @@ func (e *emitter) emitSatisfactions() {
 			ifx, ify := isInterface(x), isInterface(y)
 			switch {
 			case ifx && ify && ymset.Len() > 0:
+				// x and y are both interfaces. Note that extension is handled
+				// elsewhere as part of the type spec for the interface.
 				if types.AssignableTo(x, y) {
 					e.writeSatisfies(xobj, yobj)
 				}
@@ -605,7 +615,6 @@ func (e *emitter) emitSatisfactions() {
 					e.writeSatisfies(yobj, xobj)
 				} else if py := types.NewPointer(y); types.AssignableTo(py, x) {
 					e.writeSatisfies(yobj, xobj)
-					// TODO(fromberger): Do we want this case?
 				}
 
 			case ify && ymset.Len() > 0:
@@ -614,9 +623,8 @@ func (e *emitter) emitSatisfactions() {
 					e.writeSatisfies(xobj, yobj)
 				} else if px := types.NewPointer(x); types.AssignableTo(px, y) {
 					e.writeSatisfies(xobj, yobj)
-					// TODO(fromberger): Do we want this case?
 				}
-				e.emitOverrides(xmset, ymset, cache)
+				e.emitOverrides(xmset, pxmset, ymset, cache)
 
 			default:
 				// Both x and y are concrete.
@@ -627,13 +635,18 @@ func (e *emitter) emitSatisfactions() {
 
 // Add xm-(overrides)-ym for each concrete method xm with a corresponding
 // abstract method ym.
-func (e *emitter) emitOverrides(xmset, ymset *types.MethodSet, cache overrides) {
+func (e *emitter) emitOverrides(xmset, pxmset, ymset *types.MethodSet, cache overrides) {
 	for i, n := 0, ymset.Len(); i < n; i++ {
 		ym := ymset.At(i)
 		yobj := ym.Obj()
 		xm := xmset.Lookup(yobj.Pkg(), yobj.Name())
 		if xm == nil {
-			continue // this method is not part of the interface we're probing
+			if pxmset != nil {
+				xm = pxmset.Lookup(yobj.Pkg(), yobj.Name())
+			}
+			if xm == nil {
+				continue // this method is not part of the interface we're probing
+			}
 		}
 
 		xobj := xm.Obj()
