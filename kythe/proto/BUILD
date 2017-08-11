@@ -14,6 +14,7 @@ filegroup(
         "filetree.proto",
         "go.proto",
         "graph.proto",
+        "identifier.proto",
         "java.proto",
         "status_service.proto",
         "storage.proto",
@@ -184,6 +185,13 @@ proto_library(
         "//kythe/go/util/markedsource:__pkg__",
     ],
     deps = [":common_proto"],
+)
+
+proto_library(
+    name = "identifier_proto",
+    srcs = ["identifier.proto"],
+    go_api_version = 2,
+    has_services = 1,
 )
 
 # Public Kythe graph service API

@@ -1,0 +1,80 @@
+/*
+ * Copyright 2017 Google Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+package kythe.proto;
+
+service IdentifierService {
+  // Find returns a list of tickets associated with a given identifier string.
+  rpc Find(FindRequest) returns (FindReply);
+}
+
+message FindRequest {
+  // The base name of the identifier being searched for
+  string identifier = 1;
+
+  enum MatchKind {
+    // Only return tickets for nodes whose fully qualified name matches the
+    // identifier field exactly.
+    FULLY_QUALIFIED = 0;
+
+    // Return tickets for all nodes whose fully qualified name ends with the
+    // identifier field.
+    SUFFIX = 1;
+  }
+
+  // Defines match behavior.
+  MatchKind match_kind = 2;
+
+  // Restricts the matches to the given corpus labels.
+  repeated string corpus = 3;
+
+  // Restricts the match to the given languages.
+  repeated string languages = 4;
+
+  // Include the base name for matches in the response.
+  bool base_name = 5;
+
+  // Include the qualified name for matches in the response.
+  bool qualified_name = 6;
+
+  // Include the node kind and subkind for matches in the response.
+  bool node_kind = 7;
+
+}
+
+message FindReply {
+    message IdentifierMatch {
+        // Kythe ticket for the matched node.
+        string ticket = 1;
+
+        // Kind of the node being referenced.
+        string node_kind = 2;
+
+        // Subkind of the node being referenced.
+        string node_subkind = 3;
+
+        // The local identifier for the node.
+        string base_name = 4;
+
+        // The fully qualified identifier for the node.
+        string qualified_name = 5;
+    }
+
+    // The list of matches found
+    repeated IdentifierMatch matches = 1;
+}
