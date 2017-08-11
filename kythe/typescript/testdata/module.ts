@@ -4,3 +4,5 @@
 //- Mod=vname("module", _, _, "testdata/module", _).node/kind record
 
 export var value = 3;
+
+export type MyType = string;

@@ -46,8 +46,13 @@ class Class implements IFace {
   ifaceMethod(): void {}
 }
 
+// @Class ref Class
 let instance = new Class(3, 'a');
 //- @otherMember ref OtherMember
 instance.otherMember;
+
+// Using Class in type position should still create a link to the class.
+// @Class ref Class
+let useAsType: Class = instance;
 
 // TODO: subclass, extends/implements, generics, etc.

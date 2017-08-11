@@ -488,13 +488,23 @@ class Vistor {
       throw new Error(`TODO: local name ${name} has no symbol`);
     }
 
-    // TODO: import a type, not just a value.
     const remoteSym = this.typeChecker.getAliasedSymbol(localSym);
-    const kImport = this.getSymbolName(remoteSym, TSNamespace.VALUE);
+    // This imported symbol can refer to a type, a value, or both.
+    const kImportValue = remoteSym.flags & ts.SymbolFlags.Value ?
+        this.getSymbolName(remoteSym, TSNamespace.VALUE) :
+        null;
+    const kImportType = remoteSym.flags & ts.SymbolFlags.Type ?
+        this.getSymbolName(remoteSym, TSNamespace.TYPE) :
+        null;
     // Mark the local symbol with the remote symbol's VName so that all
     // references resolve to the remote symbol.
-    this.symbolNames.set(localSym, [null, kImport]);
+    this.symbolNames.set(localSym, [kImportType, kImportValue]);
 
+    // The name anchor must link somewhere.  In rare cases a symbol is both
+    // a type and a value that resolve to two different locations; for now,
+    // because we must choose one, just prefer linking to the value.
+    // One of the value or type reference should be non-null.
+    const kImport = (kImportValue || kImportType)!;
     this.emitEdge(this.newAnchor(name), 'ref/imports', kImport);
     return kImport;
   }

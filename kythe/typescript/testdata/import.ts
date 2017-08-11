@@ -33,3 +33,9 @@ import {value as exportedValue} from './export';
 import {local} from './export';
 //- @aliasedLocal ref/imports Local
 import {aliasedLocal} from './export';
+
+// Importing a type from another module.
+//- @MyType ref/imports MyType
+import {MyType} from './module';
+//- @MyType ref MyType
+let x: MyType;
