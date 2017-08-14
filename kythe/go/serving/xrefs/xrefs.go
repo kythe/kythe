@@ -1379,11 +1379,24 @@ func a2a(a *srvpb.ExpandedAnchor, anchorText bool) *xpb.CrossReferencesReply_Rel
 	}}
 }
 
+func addLinkNodes(ms *cpb.MarkedSource, nodes stringset.Set) {
+	if ms == nil {
+		return
+	}
+	for _, l := range ms.Link {
+		nodes.Add(l.Definition...)
+	}
+	for _, child := range ms.Child {
+		addLinkNodes(child, nodes)
+	}
+}
+
 func d2d(d *srvpb.Document, neededNodes stringset.Set) *xpb.DocumentationReply_Document {
 	neededNodes.Add(d.Ticket)
 	for _, link := range d.Link {
 		neededNodes.Add(link.Definition...)
 	}
+	addLinkNodes(d.MarkedSource, neededNodes)
 
 	return &xpb.DocumentationReply_Document{
 		Ticket: d.Ticket,
