@@ -54,3 +54,16 @@ java_test(
         "@junit_junit//jar",
     ],
 )
+
+java_library(
+    name = "test_plugin",
+    srcs = ["TestPlugin.java"],
+    visibility = ["//kythe/javatests/com/google/devtools/kythe/analyzers/java:__subpackages__"],
+    deps = [
+        "//kythe/java/com/google/devtools/kythe/analyzers/base:entryset",
+        "//kythe/java/com/google/devtools/kythe/analyzers/java:plugin",
+        "//kythe/java/com/google/devtools/kythe/common:autoservice",
+        "//kythe/proto:storage_proto_java",
+        "@bazel_tools//third_party/java/jdk/langtools:javac",
+    ],
+)

@@ -160,6 +160,18 @@ maven_jar(
     sha1 = "8172ebbd7970188aff304c8a420b9f17168f6f48",
 )
 
+maven_jar(
+    name = "com_google_auto_service",
+    artifact = "com.google.auto.service:auto-service:1.0-rc3",
+    sha1 = "35c5d43b0332b8f94d473f9fee5fb1d74b5e0056",
+)
+
+maven_jar(
+    name = "com_google_auto_common",
+    artifact = "com.google.auto:auto-common:0.3",
+    sha1 = "4073ab16ab4aceb9a217273da6442166bf51ae16",
+)
+
 git_repository(
     name = "io_bazel_rules_go",
     remote = "https://github.com/bazelbuild/rules_go.git",

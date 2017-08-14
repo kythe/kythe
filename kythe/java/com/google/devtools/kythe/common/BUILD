@@ -18,3 +18,19 @@ java_library(
     exported_plugins = [":auto_plugin"],
     exports = ["@com_google_auto_value//jar"],
 )
+
+java_plugin(
+    name = "auto_service_plugin",
+    processor_class = "com.google.auto.service.processor.AutoServiceProcessor",
+    deps = [
+        "@com_google_auto_common//jar",
+        "@com_google_auto_service//jar",
+        "@com_google_guava_guava//jar",
+    ],
+)
+
+java_library(
+    name = "autoservice",
+    exported_plugins = [":auto_service_plugin"],
+    exports = ["@com_google_auto_service//jar"],
+)

@@ -238,3 +238,10 @@ java_verifier_test(
     size = "small",
     srcs = ["WildcardMethod.java"],
 )
+
+java_verifier_test(
+    name = "plugin_tests",
+    size = "small",
+    srcs = ["PluginTests.java"],
+    load_plugin = "//kythe/javatests/com/google/devtools/kythe/analyzers/java:test_plugin",
+)
