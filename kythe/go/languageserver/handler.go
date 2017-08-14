@@ -73,6 +73,12 @@ func ServerHandler(ls *Server) jsonrpc2.Handler {
 					return nil, err
 				}
 				err = ls.TextDocumentDidClose(p)
+			case "textDocument/hover":
+				var p lsp.TextDocumentPositionParams
+				if err := json.Unmarshal(*req.Params, &p); err != nil {
+					return nil, err
+				}
+				ret, err = ls.TextDocumentHover(p)
 			case "shutdown":
 				log.Println("shutdown command received...")
 				shutdownIssued = true

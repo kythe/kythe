@@ -26,6 +26,7 @@ go_library(
     deps = [
         "//kythe/go/languageserver/pathmap",
         "//kythe/go/util/kytheuri",
+        "//kythe/go/util/markedsource",
         "//kythe/go/services/xrefs",
         "//kythe/proto:xref_proto_go",
         "//kythe/proto:common_proto_go",
