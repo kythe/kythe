@@ -39,6 +39,7 @@ import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import com.sun.tools.javac.code.Symbol.PackageSymbol;
 import com.sun.tools.javac.tree.JCTree;
 import java.io.UnsupportedEncodingException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -97,6 +98,10 @@ public class JavaEntrySets extends KytheEntrySets {
                 signatureGenerator
                     .getSignature(s)
                     .map(sig -> getNode(signatureGenerator, s, sig, null, null))));
+  }
+
+  Map<Symbol, VName> getSymbolNodes() {
+    return Collections.unmodifiableMap(symbolNodes);
   }
 
   /**

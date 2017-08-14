@@ -20,8 +20,10 @@ import com.google.devtools.kythe.analyzers.base.KytheEntrySets;
 import com.google.devtools.kythe.platform.java.helpers.JCTreeScanner;
 import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.devtools.kythe.util.Span;
+import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCCompilationUnit;
+import com.sun.tools.javac.util.Context;
 import java.util.Optional;
 import javax.lang.model.element.Name;
 
@@ -29,8 +31,14 @@ import javax.lang.model.element.Name;
 public interface Plugin {
   /** Interface to access the Kythe graph from the Java AST. */
   public static interface KytheGraph {
+    /** Returns the current Java {@link Context}. */
+    public Context getJavaContext();
+
     /** Returns the {@link KytheNode} associated with the given {@link JCTree}. */
     public Optional<KytheNode> getNode(JCTree tree);
+
+    /** Returns the {@link KytheNode} associated with the given {@link Symbol}. */
+    public Optional<KytheNode> getNode(Symbol sym);
 
     /** Returns the {@link Span} for the given {@link JCTree}. */
     public Optional<Span> getSpan(JCTree tree);
@@ -54,11 +62,13 @@ public interface Plugin {
   /** {@link Plugin} that scans the entire {@link JCCompilationUnit} AST. */
   public static class Scanner<R, P> extends JCTreeScanner<R, P> implements Plugin {
     protected KytheGraph kytheGraph;
+    protected KytheEntrySets entrySets;
 
     @Override
     public void run(
         JCCompilationUnit compilation, KytheEntrySets entrySets, KytheGraph kytheGraph) {
       this.kytheGraph = kytheGraph;
+      this.entrySets = entrySets;
       compilation.accept(this, null);
     }
   }

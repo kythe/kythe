@@ -30,6 +30,7 @@ import com.google.devtools.kythe.proto.Storage.VName;
 import com.google.devtools.kythe.util.Span;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.tools.javac.api.JavacTaskImpl;
+import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCCompilationUnit;
 import com.sun.tools.javac.util.Context;
@@ -38,6 +39,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import javax.lang.model.element.Name;
 import javax.tools.Diagnostic;
@@ -134,8 +136,13 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
       throw new AnalysisException("Exception analyzing file: " + ast.getSourceFile().getName(), e);
     }
     if (!plugins.isEmpty()) {
+      Map<Symbol, Plugin.KytheNode> symNodes = new HashMap<>();
+      for (Map.Entry<Symbol, VName> symVName : entrySets.getSymbolNodes().entrySet()) {
+        symNodes.put(symVName.getKey(), new KytheNodeImpl(symVName.getValue()));
+      }
       Plugin.KytheGraph graph =
-          new KytheGraphImpl(src.getPositions(), Collections.unmodifiableMap(nodes));
+          new KytheGraphImpl(
+              context, src.getPositions(), symNodes, Collections.unmodifiableMap(nodes));
       for (Plugin plugin : plugins) {
         try {
           plugin.run(compilation, entrySets, graph);
@@ -147,17 +154,35 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
   }
 
   private static class KytheGraphImpl implements Plugin.KytheGraph {
+    private final Context javaContext;
     private final SourceText.Positions filePositions;
     private final Map<JCTree, Plugin.KytheNode> treeNodes;
+    private final Map<Symbol, Plugin.KytheNode> symNodes;
 
-    KytheGraphImpl(SourceText.Positions filePositions, Map<JCTree, Plugin.KytheNode> treeNodes) {
+    KytheGraphImpl(
+        Context javaContext,
+        SourceText.Positions filePositions,
+        Map<Symbol, Plugin.KytheNode> symNodes,
+        Map<JCTree, Plugin.KytheNode> treeNodes) {
+      this.javaContext = javaContext;
       this.filePositions = filePositions;
+      this.symNodes = symNodes;
       this.treeNodes = treeNodes;
+    }
+
+    @Override
+    public Context getJavaContext() {
+      return javaContext;
     }
 
     @Override
     public Optional<Plugin.KytheNode> getNode(JCTree tree) {
       return Optional.ofNullable(treeNodes.get(tree));
+    }
+
+    @Override
+    public Optional<Plugin.KytheNode> getNode(Symbol sym) {
+      return Optional.ofNullable(symNodes.get(sym));
     }
 
     @Override
@@ -185,6 +210,21 @@ public class KytheJavacAnalyzer extends JavacAnalyzer {
     @Override
     public VName getVName() {
       return vName;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      return o instanceof KytheNodeImpl && Objects.equals(this.vName, ((KytheNodeImpl) o).vName);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hashCode(vName);
+    }
+
+    @Override
+    public String toString() {
+      return "KytheNode{" + vName.toString().replace("\n", " ").trim() + "}";
     }
   }
 }
