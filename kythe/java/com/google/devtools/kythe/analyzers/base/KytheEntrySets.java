@@ -102,12 +102,20 @@ public class KytheEntrySets {
   /**
    * Returns a new {@link NodeBuilder} with the given node kind set.
    *
-   * @deprecated use {@link #newNode(NodeKind)} for schema-defined kinds
+   * <p>Note: use {@link #newNode(NodeKind)} for schema-defined kinds
    */
-  @Deprecated
   public NodeBuilder newNode(String kind) {
-    getStatisticsCollector().incrementCounter("deprecated-new-node-" + kind);
-    return new NodeBuilder(kind, Optional.empty(), language);
+    return newNode(kind, Optional.empty());
+  }
+
+  /**
+   * Returns a new {@link NodeBuilder} with the given node kind set.
+   *
+   * <p>Note: use {@link #newNode(NodeKind)} for schema-defined kinds
+   */
+  public NodeBuilder newNode(String kind, Optional<String> subkind) {
+    getStatisticsCollector().incrementCounter("string-new-node-" + kind);
+    return new NodeBuilder(kind, subkind, language);
   }
 
   /** Returns a new {@link NodeBuilder} with the given node kind set. */

@@ -16,6 +16,8 @@
 
 package com.google.devtools.kythe.analyzers.base;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import com.google.devtools.kythe.proto.Storage.VName;
 
 /** Emitter of facts. */
@@ -25,4 +27,19 @@ public interface FactEmitter {
    * {@code null} (for a node entry) or non-{@code null} (for an edge entry).
    */
   public void emit(VName source, String edgeKind, VName target, String factName, byte[] factValue);
+
+  /** Emits a single fact to some data sink. */
+  public default void emitFact(VName source, String factName, byte[] factValue) {
+    emit(source, null, null, factName, factValue);
+  }
+
+  /** Emits a single fact to some data sink. {@code factValue} will be encoded as {@link UTF_8}. */
+  public default void emitFact(VName source, String factName, String factValue) {
+    emitFact(source, factName, factValue.getBytes(UTF_8));
+  }
+
+  /** Emits a single edge to some data sink. */
+  public default void emitEdge(VName source, String edgeKind, VName target) {
+    emit(source, edgeKind, target, "/", new byte[0]);
+  }
 }
