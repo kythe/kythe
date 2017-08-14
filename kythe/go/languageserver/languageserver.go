@@ -69,6 +69,8 @@ func (ls *Server) Initialize(params lsp.InitializeParams) (*lsp.InitializeResult
 		return nil, err
 	}
 
+	log.Printf("Server Settings: %#v", s)
+
 	err = ls.paths.loadSettings(*s)
 	if err != nil {
 		return nil, err
@@ -115,6 +117,8 @@ func (ls *Server) TextDocumentDidOpen(params lsp.DidOpenTextDocumentParams) erro
 	if err != nil {
 		return fmt.Errorf("failed to find xrefs for %s:\n%v", local, err)
 	}
+
+	log.Printf("Server returned %d refs in file %q", len(dec.Reference), local)
 
 	var refs []*RefResolution
 	for _, r := range dec.Reference {
