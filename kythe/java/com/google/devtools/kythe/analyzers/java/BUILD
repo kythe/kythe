@@ -1,5 +1,7 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
+exports_files(["wrapped_indexer.sh"])
+
 java_library(
     name = "analyzer",
     srcs = [

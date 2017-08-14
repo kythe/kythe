@@ -307,7 +307,7 @@ def _index_compilation_impl(ctx):
           outputs = [entries],
           inputs = [ctx.executable.indexer, input],
           arguments = ([ctx.executable.indexer.path] +
-                       ctx.attr.opts +
+                       [ctx.expand_location(o) for o in ctx.attr.opts] +
                        [input.path, entries.path]),
           command = '("${@:1:${#@}-1}" || rm -f "${@:${#@}}") > "${@:${#@}}"',
           mnemonic = "IndexCompilation",
@@ -327,6 +327,9 @@ index_compilation = rule(
             mandatory = True,
             allow_empty = False,
             allow_files = [".kindex"],
+        ),
+        "tools": attr.label_list(
+            cfg = "host",
         ),
         "indexer": attr.label(
             mandatory = True,
@@ -451,6 +454,7 @@ def cc_verifier_test(name, srcs, deps=[], size="small",
 
 def java_verifier_test(name, srcs, meta=[], deps=[], size="small", tags=[],
                        indexer_opts=["--verbose"], verifier_opts=["--ignore_dups"],
+                       load_plugin=None,
                        vnames_config=None, visibility=None):
   kindex = _invoke(java_extract_kindex,
       name = name + "_kindex",
@@ -463,12 +467,32 @@ def java_verifier_test(name, srcs, meta=[], deps=[], size="small", tags=[],
       vnames_config = vnames_config,
       testonly = True,
   )
+  indexer = "//kythe/java/com/google/devtools/kythe/analyzers/java:wrapped_indexer"
+  tools = []
+  if load_plugin:
+    native.sh_binary(
+        name = name + "_wrapped_indexer",
+        srcs = ["//kythe/java/com/google/devtools/kythe/analyzers/java:wrapped_indexer.sh"],
+        data = [
+            load_plugin,
+            "//kythe/java/com/google/devtools/kythe/analyzers/java:indexer",
+            "//tools/cdexec",
+            "//tools/modules:abspath",
+        ],
+    )
+    indexer = ":" + name + "_wrapped_indexer"
+    indexer_opts += [
+      "--load_plugin",
+      "$(location " + load_plugin + ")",
+    ]
+    tools += [load_plugin]
   entries = _invoke(index_compilation,
       name = name + "_entries",
-      indexer = "//kythe/java/com/google/devtools/kythe/analyzers/java:wrapped_indexer",
+      indexer = indexer,
       deps = [kindex],
       tags = tags,
       opts = indexer_opts,
+      tools = tools,
       visibility = visibility,
       testonly = True,
   )

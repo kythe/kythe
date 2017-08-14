@@ -17,10 +17,19 @@
 RUNFILES=${RUNFILES:-$0.runfiles/io_kythe}
 RUNFILES=$("$RUNFILES/tools/modules/abspath" "$RUNFILES")
 
-
-_ARGS=("${@:1:${#@}-1}")
-for path in "${@:${#@}:1}"; do
-  _ARGS+=("$("${RUNFILES}/tools/modules/abspath" "$path")")
+_ARGS=()
+for path in "${@:1:${#@}}"; do
+  case "$path" in
+    -*)
+      _ARGS+=("$path") ;;
+    *)
+      if [[ ! -r "$path" ]]; then
+        if [[ -r "$RUNFILES/${path##bazel-out/host/bin/}" ]]; then
+          path="$RUNFILES/${path##bazel-out/host/bin/}"
+        fi
+      fi
+      _ARGS+=("$("${RUNFILES}/tools/modules/abspath" "${path}")") ;;
+  esac
 done
 
 exec "${RUNFILES}/tools/cdexec/cdexec" \
