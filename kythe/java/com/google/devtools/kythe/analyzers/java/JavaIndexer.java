@@ -34,14 +34,30 @@ import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.ServiceLoader;
 
 /** Binary to run Kythe's Java index over a single .kindex file, emitting entries to STDOUT. */
 public class JavaIndexer {
   public static void main(String[] args) throws AnalysisException, IOException {
     StandaloneConfig config = new StandaloneConfig();
     config.parseCommandLine(args);
+
+    List<Plugin> plugins = new ArrayList<>();
+    if (!Strings.isNullOrEmpty(config.getPlugin())) {
+      URLClassLoader classLoader =
+          new URLClassLoader(new URL[] {new URL("file://" + config.getPlugin())});
+      for (Plugin plugin : ServiceLoader.load(Plugin.class, classLoader)) {
+        System.err.println("Registering plugin: " + plugin.getClass());
+        plugins.add(plugin);
+      }
+    }
+    if (config.getPrintVNames()) {
+      plugins.add(new Plugin.PrintKytheNodes());
+    }
 
     MemoryStatisticsCollector statistics = null;
     if (config.getPrintStatistics()) {
@@ -85,9 +101,7 @@ public class JavaIndexer {
               new StreamFactEmitter(stream),
               statistics == null ? NullStatisticsCollector.getInstance() : statistics,
               metadataLoaders);
-      if (config.getPrintVNames()) {
-        analyzer.registerPlugin(new Plugin.PrintKytheNodes());
-      }
+      plugins.forEach(analyzer::registerPlugin);
 
       new JavacAnalysisDriver()
           .analyze(analyzer, desc.getCompilationUnit(), new FileDataCache(desc.getFileContents()));
@@ -108,6 +122,12 @@ public class JavaIndexer {
   private static class StandaloneConfig extends JavaIndexerConfig {
     @Parameter(description = "<compilation to analyze>", required = true)
     private List<String> compilation = new ArrayList<>();
+
+    @Parameter(
+      names = "--load_plugin",
+      description = "Load and execute each Kythe Plugin in the given .jar"
+    )
+    private String pluginJar;
 
     @Parameter(
       names = "--print_vnames",
@@ -135,6 +155,10 @@ public class JavaIndexer {
 
     public StandaloneConfig() {
       super("java-indexer");
+    }
+
+    public final String getPlugin() {
+      return pluginJar;
     }
 
     public final boolean getPrintVNames() {
