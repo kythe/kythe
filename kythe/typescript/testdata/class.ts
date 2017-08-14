@@ -16,12 +16,17 @@ interface IFace {
 
 //- @Class defines/binding Class
 //- Class.node/kind record
+//- @Class defines/binding ClassCtor
+//- ClassCtor.node/kind function
+//- ClassCtor.subkind constructor
 //- @IFace ref Iface
 class Class implements IFace {
   //- @member defines/binding Member
   //- Member.node/kind variable
   member: number;
 
+  // TODO: ClassCtor should really point at this constructor, not at the
+  // top-level class declaration.
   // This ctor declares a new member var named 'otherMember', and also
   // declares an ordinary parameter named 'member' (to ensure we don't get
   // confused about params to the ctor vs true member variables).
@@ -46,13 +51,13 @@ class Class implements IFace {
   ifaceMethod(): void {}
 }
 
-// @Class ref Class
+//- @Class ref ClassCtor
 let instance = new Class(3, 'a');
 //- @otherMember ref OtherMember
 instance.otherMember;
 
 // Using Class in type position should still create a link to the class.
-// @Class ref Class
+//- @Class ref Class
 let useAsType: Class = instance;
 
 // TODO: subclass, extends/implements, generics, etc.

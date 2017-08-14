@@ -690,27 +690,19 @@ class Vistor {
 
     if (kFunc && decl.parent) {
       // Emit a "childof" edge on class/interface members.
-      let parentName: ts.Identifier|undefined;
-      let namespace: TSNamespace|undefined;
-      switch (decl.parent.kind) {
-        case ts.SyntaxKind.ClassDeclaration:
-        case ts.SyntaxKind.ClassExpression:
-          parentName = (decl.parent as ts.ClassLikeDeclaration).name;
-          namespace = TSNamespace.VALUE;
-          break;
-        case ts.SyntaxKind.InterfaceDeclaration:
-          parentName = (decl.parent as ts.InterfaceDeclaration).name;
-          namespace = TSNamespace.TYPE;
-          break;
-      }
-      if (parentName !== undefined && namespace !== undefined) {
-        let parentSym = this.getSymbolAtLocation(parentName);
-        if (!parentSym) {
-          this.todo(parentName, `parent ${parentName} has no symbol`);
-          return;
+      if (decl.parent.kind === ts.SyntaxKind.ClassDeclaration ||
+          decl.parent.kind === ts.SyntaxKind.ClassExpression ||
+          decl.parent.kind === ts.SyntaxKind.InterfaceDeclaration) {
+        let parentName = (decl.parent as ts.ClassLikeDeclaration).name;
+        if (parentName !== undefined) {
+          let parentSym = this.getSymbolAtLocation(parentName);
+          if (!parentSym) {
+            this.todo(parentName, `parent ${parentName} has no symbol`);
+            return;
+          }
+          let kParent = this.getSymbolName(parentSym, TSNamespace.TYPE);
+          this.emitEdge(kFunc, 'childof', kParent);
         }
-        let kParent = this.getSymbolName(parentSym, namespace);
-        this.emitEdge(kFunc, 'childof', kParent);
       }
 
       // TODO: emit an "overrides" edge if this method overrides.
@@ -756,10 +748,20 @@ class Vistor {
         this.todo(decl.name, `class ${decl.name.getText()} has no symbol`);
         return;
       }
-      let kClass = this.getSymbolName(sym, TSNamespace.VALUE);
+      // A 'class' declaration declares both a type (a 'record', representing
+      // instances of the class) and a value (the constructor).
+      const kClass = this.getSymbolName(sym, TSNamespace.TYPE);
       this.emitNode(kClass, 'record');
+      const kClassCtor = this.getSymbolName(sym, TSNamespace.VALUE);
+      this.emitNode(kClassCtor, 'function');
+      // TODO: the specific constructor() should really be the thing tagged
+      // with constructor, but we also need to handle classes that don't declare
+      // a constructor.  Fix me later.
+      this.emitFact(kClassCtor, 'subkind', 'constructor');
 
-      this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kClass);
+      const anchor = this.newAnchor(decl.name);
+      this.emitEdge(anchor, 'defines/binding', kClass);
+      this.emitEdge(anchor, 'defines/binding', kClassCtor);
     }
     if (decl.typeParameters) this.visitTypeParameters(decl.typeParameters);
     if (decl.heritageClauses) {
