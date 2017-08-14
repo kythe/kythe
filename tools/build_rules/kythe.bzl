@@ -305,7 +305,7 @@ def _index_compilation_impl(ctx):
       intermediates += [entries]
       ctx.action(
           outputs = [entries],
-          inputs = [ctx.executable.indexer, input],
+          inputs = [ctx.executable.indexer, input] + ctx.files.tools,
           arguments = ([ctx.executable.indexer.path] +
                        [ctx.expand_location(o) for o in ctx.attr.opts] +
                        [input.path, entries.path]),
@@ -470,17 +470,6 @@ def java_verifier_test(name, srcs, meta=[], deps=[], size="small", tags=[],
   indexer = "//kythe/java/com/google/devtools/kythe/analyzers/java:wrapped_indexer"
   tools = []
   if load_plugin:
-    native.sh_binary(
-        name = name + "_wrapped_indexer",
-        srcs = ["//kythe/java/com/google/devtools/kythe/analyzers/java:wrapped_indexer.sh"],
-        data = [
-            load_plugin,
-            "//kythe/java/com/google/devtools/kythe/analyzers/java:indexer",
-            "//tools/cdexec",
-            "//tools/modules:abspath",
-        ],
-    )
-    indexer = ":" + name + "_wrapped_indexer"
     indexer_opts += [
       "--load_plugin",
       "$(location " + load_plugin + ")",
