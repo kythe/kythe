@@ -721,6 +721,13 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "function_lambda_args",
+    srcs = ["function/function_lambda_args.cc"],
+    ignore_dups = True,
+    tags = ["function"],
+)
+
+cxx_indexer_test(
     name = "function_auto_return",
     srcs = ["function/function_auto_return.cc"],
     tags = ["function"],
