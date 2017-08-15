@@ -88,6 +88,7 @@ func (ls *Server) Initialize(params lsp.InitializeParams) (*lsp.InitializeResult
 			},
 			ReferencesProvider: true,
 			HoverProvider:      true,
+			DefinitionProvider: true,
 		},
 	}, nil
 }
