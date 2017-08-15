@@ -67,7 +67,9 @@ public class QualifiedNameExtractor {
                 .collect(Collectors.toList()));
 
     // emit the qualified class name
-    return Optional.of(String.format("%s%s%s", packageName, packageDelim, className));
+    return packageName.isEmpty()
+        ? Optional.of(className)
+        : Optional.of(String.format("%s%s%s", packageName, packageDelim, className));
   }
 
   /**

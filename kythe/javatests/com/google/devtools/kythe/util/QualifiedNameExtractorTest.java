@@ -42,6 +42,18 @@ public class QualifiedNameExtractorTest {
   }
 
   @Test
+  public void testExtractNameFromMarkedSourceReturnsProperlyForNoPackage() throws Exception {
+    MarkedSource.Builder builder = MarkedSource.newBuilder();
+    TextFormat.merge(
+        "child {\nkind: CONTEXT \npost_child_text: \".\"\nadd_final_list_token: true\n} \nchild {\nkind: IDENTIFIER\npre_text: \"JavaEntrySets\"\n}",
+        builder);
+    MarkedSource testInput = builder.build();
+    Optional<String> resolvedName = QualifiedNameExtractor.extractNameFromMarkedSource(testInput);
+    assertThat(resolvedName.isPresent()).isTrue();
+    assertThat(resolvedName.get()).isEqualTo("JavaEntrySets");
+  }
+
+  @Test
   public void testExtractNameFromMarkedSourceProperlyHandlesMissingContext() throws Exception {
     MarkedSource.Builder builder = MarkedSource.newBuilder();
     TextFormat.merge(
