@@ -32,14 +32,14 @@ The schema provides a link:/docs/schema#code[code] fact, when attached to an
 arbitrary semantic node in the Kythe graph, instructs clients on how that node
 can be presented to users. The fact's value is a serialized `MarkedSource`
 protocol buffer message, defined in
-link:https://github.com/google/kythe/blob/master/kythe/proto/xref.proto[xref.proto].
+link:https://github.com/google/kythe/blob/master/kythe/proto/common.proto[common.proto].
 Unlike most facts in the Kythe graph, `MarkedSource` is a structured message
 rather than a plain string, because clients have differing requirements for the
-amount and level of detail they display. By including or excluding various parts
-of this message, clients can precisely format a node's presentation according to
-their requirements. The message also offers the ability to link subspans to other
-nodes and to include other nodes' *code* by reference. Kythe indexers are
-responsible for emitting `MarkedSource` messages.
+amount and level of detail they display. By including or excluding various
+parts of this message, clients can precisely format a node's presentation
+according to their requirements. The message also offers the ability to link
+subspans to other nodes and to include other nodes' *code* by reference. Kythe
+indexers are responsible for emitting `MarkedSource` messages.
 
 == Experimenting with `MarkedSource`
 
