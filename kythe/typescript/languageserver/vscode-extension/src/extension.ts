@@ -28,12 +28,7 @@ export function activate(context: ExtensionContext) {
   const debugOptions = {execArgv: ['--nolazy', '--debug=6004']};
 
   const serverOptions = {
-    run: {module: serverModule, transport: TransportKind.pipe},
-    debug: {
-      module: serverModule,
-      transport: TransportKind.pipe,
-      options: debugOptions
-    },
+    command: "kythe_languageserver"
   };
 
   const clientOptions: LanguageClientOptions = {
