@@ -35,6 +35,11 @@
       "type": "object",
       "title": "Kythe Language Server configuration",
       "properties": {
+        "kytheLanguageServer.bin": {
+          "type": "string",
+          "default": "kythe_languageserver",
+          "description": "Path of the kythe_languageserver executable"
+        },
         "kytheLanguageServer.args": {
           "type": "array",
           "items": {

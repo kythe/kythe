@@ -15,20 +15,18 @@
  */
 
 import {join} from 'path';
-import {Disposable, ExtensionContext, workspace} from 'vscode';
+import {Disposable, ExtensionContext, window, workspace} from 'vscode';
 import {LanguageClient, LanguageClientOptions, ServerOptions, TransportKind} from 'vscode-languageclient';
 
 
 // This method is called when the extension is activated
 export function activate(context: ExtensionContext) {
-  // Construct the path to the language server
-  const serverModule = context.asAbsolutePath(
-      join('node_modules', 'kythe-languageserver', 'dist', 'src', 'bin', 'kythe-languageserver'));
-
   const debugOptions = {execArgv: ['--nolazy', '--debug=6004']};
+  const settings = workspace.getConfiguration('kytheLanguageServer');
 
-  const serverOptions = {
-    command: "kythe_languageserver"
+  const serverOptions: ServerOptions = {
+    command: settings.get('command') || 'kythe_languageserver',
+    args: settings.get('args'),
   };
 
   const clientOptions: LanguageClientOptions = {
