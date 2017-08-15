@@ -1280,11 +1280,22 @@ Points toward::
 Common node facts
 -----------------
 
+[[nodekind]]
+node/kind
+~~~~~~~~~
+
+Brief description::
+  A node's *node/kind* is a label describing the role of the node in the graph.
+  The kind is the one fact every node must have in order to participate in the
+  rest of the schema.
+Attached to::
+  all nodes
+
 [[code]]
 code
 ~~~~
 
-Brief description:
+Brief description::
   A node's *code* is a serialized link:marked-source.html[MarkedSource]
   message that can be used to describe that node.
 Attached to::
