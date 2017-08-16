@@ -2596,10 +2596,16 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
       for (auto O = MF->begin_overridden_methods(),
                 E = MF->end_overridden_methods();
            O != E; ++O) {
-        Observer.recordOverridesEdge(InnerNode, BuildNodeIdForDecl(*O));
+        Observer.recordOverridesEdge(
+            InnerNode, FLAGS_experimental_alias_template_instantiations
+                           ? BuildNodeIdForRefToDecl(*O)
+                           : BuildNodeIdForDecl(*O));
       }
       MapOverrideRoots(MF, [&](const CXXMethodDecl *R) {
-        Observer.recordOverridesRootEdge(InnerNode, BuildNodeIdForDecl(R));
+        Observer.recordOverridesRootEdge(
+            InnerNode, FLAGS_experimental_alias_template_instantiations
+                           ? BuildNodeIdForRefToDecl(R)
+                           : BuildNodeIdForDecl(R));
       });
     }
   }
@@ -5107,11 +5113,17 @@ bool IndexerASTVisitor::VisitObjCMethodDecl(const clang::ObjCMethodDecl *Decl) {
   SmallVector<const ObjCMethodDecl *, 4> overrides;
   Decl->getOverriddenMethods(overrides);
   for (const auto &O : overrides) {
-    Observer.recordOverridesEdge(Node, BuildNodeIdForDecl(O));
+    Observer.recordOverridesEdge(
+        Node, FLAGS_experimental_alias_template_instantiations
+                  ? BuildNodeIdForRefToDecl(O)
+                  : BuildNodeIdForDecl(O));
   }
   if (!overrides.empty()) {
     MapOverrideRoots(Decl, [&](const ObjCMethodDecl *R) {
-      Observer.recordOverridesRootEdge(Node, BuildNodeIdForDecl(R));
+      Observer.recordOverridesRootEdge(
+          Node, FLAGS_experimental_alias_template_instantiations
+                    ? BuildNodeIdForRefToDecl(R)
+                    : BuildNodeIdForDecl(R));
     });
   }
 

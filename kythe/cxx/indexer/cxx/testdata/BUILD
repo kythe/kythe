@@ -1956,6 +1956,15 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "template_rec_override_root_aliasing",
+    srcs = ["template/template_rec_override_root_aliasing.cc"],
+    check_for_singletons = True,
+    experimental_alias_template_instantiations = True,
+    ignore_dups = True,
+    tags = ["template"],
+)
+
+cxx_indexer_test(
     name = "template_redundant_constituents_anchored",
     srcs = ["template/template_redundant_constituents_anchored.cc"],
     tags = ["template"],
