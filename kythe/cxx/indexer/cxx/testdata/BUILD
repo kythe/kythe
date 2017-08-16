@@ -703,6 +703,12 @@ cxx_indexer_test(
     tags = ["basic"],
 )
 
+cxx_indexer_test(
+    name = "using_declaration_ref",
+    srcs = ["basic/using_declaration_ref.cc"],
+    tags = ["basic"],
+)
+
 test_suite(
     name = "indexer_basic",
     tags = ["basic"],
@@ -1216,6 +1222,7 @@ cxx_indexer_test(
 cxx_indexer_test(
     name = "flags_decls",
     srcs = ["libraries/flags_decls.cc"],
+    ignore_dups = True,
     tags = ["libraries"],
     deps = glob(["libraries/gflags*.h"]),
 )

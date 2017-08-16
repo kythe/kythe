@@ -2802,6 +2802,17 @@ bool IndexerASTVisitor::VisitCTypedef(const clang::TypedefNameDecl *Decl) {
   return true;
 }
 
+bool IndexerASTVisitor::VisitUsingShadowDecl(
+    const clang::UsingShadowDecl *Decl) {
+  if (auto RCC =
+          ExplicitRangeInCurrentContext(RangeForNameOfDeclaration(Decl))) {
+    Observer.recordDeclUseLocation(RCC.primary(),
+                                   BuildNodeIdForDecl(Decl->getTargetDecl()),
+                                   GraphObserver::Claimability::Claimable);
+  }
+  return true;
+}
+
 void IndexerASTVisitor::AscribeSpelledType(
     const clang::TypeLoc &Type, const clang::QualType &TrueType,
     const GraphObserver::NodeId &AscribeTo) {

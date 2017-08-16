@@ -231,6 +231,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool VisitTypedefDecl(const clang::TypedefDecl *Decl);
   bool VisitTypeAliasDecl(const clang::TypeAliasDecl *Decl);
   bool VisitObjCTypeParamDecl(const clang::ObjCTypeParamDecl *Decl);
+  bool VisitUsingShadowDecl(const clang::UsingShadowDecl *Decl);
 
   bool VisitRecordDecl(const clang::RecordDecl *Decl);
   bool VisitEnumDecl(const clang::EnumDecl *Decl);
