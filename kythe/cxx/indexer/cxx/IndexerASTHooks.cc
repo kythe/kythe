@@ -2194,8 +2194,8 @@ MaybeFew<GraphObserver::Range> IndexerASTVisitor::ExplicitRangeInCurrentContext(
 
 MaybeFew<GraphObserver::Range> IndexerASTVisitor::RangeInCurrentContext(
     const MaybeFew<GraphObserver::NodeId> &Id, const clang::SourceRange &SR) {
-  if (auto &PrimaryId = Id) {
-    return GraphObserver::Range(PrimaryId.primary());
+  if (Id) {
+    return GraphObserver::Range::Implicit(Id.primary(), SR);
   }
   return ExplicitRangeInCurrentContext(SR);
 }

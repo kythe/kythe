@@ -209,7 +209,8 @@ static const clang::FileEntry *SearchForFileEntry(
 kythe::proto::VName KytheGraphObserver::VNameFromRange(
     const GraphObserver::Range &range) {
   kythe::proto::VName out_name;
-  if (range.Kind == GraphObserver::Range::RangeKind::Implicit) {
+  if (range.Kind == GraphObserver::Range::RangeKind::Implicit &&
+      !range.PhysicalRange.getBegin().isValid()) {
     VNameRefFromNodeId(range.Context).Expand(&out_name);
     out_name.mutable_signature()->append("@syntactic");
   } else {
@@ -239,7 +240,8 @@ kythe::proto::VName KytheGraphObserver::VNameFromRange(
     signature->append(std::to_string(begin_offset));
     signature->append(":");
     signature->append(std::to_string(end_offset));
-    if (range.Kind == GraphObserver::Range::RangeKind::Wraith) {
+    if (range.Kind == GraphObserver::Range::RangeKind::Wraith ||
+        range.Kind == GraphObserver::Range::RangeKind::Implicit) {
       signature->append("@");
       signature->append(range.Context.ToClaimedString());
     }
@@ -336,7 +338,8 @@ void KytheGraphObserver::RecordRange(const proto::VName &anchor_name,
     recorder_->AddProperty(anchor_name_ref, NodeKindID::kAnchor);
     if (range.Kind == GraphObserver::Range::RangeKind::Implicit) {
       recorder_->AddProperty(anchor_name_ref, PropertyID::kSubkind, "implicit");
-    } else {
+    }
+    if (range.PhysicalRange.getBegin().isValid()) {
       RecordSourceLocation(anchor_name_ref, range.PhysicalRange.getBegin(),
                            PropertyID::kLocationStartOffset);
       RecordSourceLocation(anchor_name_ref, range.PhysicalRange.getEnd(),
@@ -919,7 +922,8 @@ void KytheGraphObserver::applyMetadataFile(clang::FileID id,
   const llvm::MemoryBuffer *buffer =
       SourceManager->getMemoryBufferForFile(file);
   if (!buffer) {
-    fprintf(stderr, "Couldn't get content for %s\n", file->getName().str().c_str());
+    fprintf(stderr, "Couldn't get content for %s\n",
+            file->getName().str().c_str());
     return;
   }
   if (auto metadata = meta_supports_->ParseFile(file->getName(), buffer)) {

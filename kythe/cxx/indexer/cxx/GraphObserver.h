@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// This file uses the Clang style conventions.
-
 #ifndef KYTHE_CXX_INDEXER_CXX_GRAPH_OBSERVER_H_
 #define KYTHE_CXX_INDEXER_CXX_GRAPH_OBSERVER_H_
 
@@ -227,6 +225,17 @@ class GraphObserver {
     Range(const Range &R, const clang::SourceRange &NR)
         : Kind(R.Kind), PhysicalRange(NR), Context(R.Context) {
       CHECK(NR.getBegin().isValid());
+    }
+    /// \brief Constructs a new implicit `Range` with a source range hint,
+    /// if that source location is valid, not a macro location, and is
+    /// in a physical file.
+    static Range Implicit(const NodeId &C, const clang::SourceRange &NR) {
+      Range new_range(C);
+      if (NR.getBegin().isValid() && NR.getBegin().isFileID()) {
+        new_range.PhysicalRange = NR;
+        new_range.PhysicalRange.setEnd(new_range.PhysicalRange.getBegin());
+      }
+      return new_range;
     }
     /// \brief Constructs a new `Implicit` `Range` keyed on a semantic object.
     explicit Range(const NodeId &C) : Kind(RangeKind::Implicit), Context(C) {}
