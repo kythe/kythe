@@ -298,4 +298,7 @@ message Document {
 
   // Tickets for this document node's immediate children.
   repeated string child_ticket = 5;
+
+  // Nodes referenced by documentation Links.
+  repeated Node node = 6;
 }
