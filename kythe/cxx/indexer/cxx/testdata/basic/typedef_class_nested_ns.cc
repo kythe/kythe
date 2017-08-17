@@ -1,12 +1,13 @@
 // Nested namespaces create nominal types with paths.
 namespace A {
 namespace B {
+//- @C defines/binding DeclCBA
 class C;
 }
 //- @tdef defines/binding TypeAlias
-//- @C ref NominalCBA
+//- @C ref DeclCBA
 typedef B::C tdef;
 }
 //- TypeAlias aliases NominalCBA
-//- TypeAlias aliases vname("C:B:A#c#t", "", "", "", "c++")
+//- TypeAlias aliases NominalCBA=vname("C:B:A#c#t", "", "", "", "c++")
 //- NominalCBA.node/kind tnominal

@@ -9,6 +9,8 @@ class FwdClass;
 class Box {
   //- @cfwd defines/binding CFwdDecl
   //- CFwdDecl childof BoxClass
-  //- @FwdClass ref vname("FwdClass#c#t",_,_,_,_)
+  //- @FwdClass ref FwdDecl
+  //- CFwdDecl typed TAppPtrFwdClass
+  //- TAppPtrFwdClass param.1 vname("FwdClass#c#t",_,_,_,_)
   FwdClass *cfwd;
 };

@@ -3900,6 +3900,9 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
     }
   }
   MaybeFew<GraphObserver::NodeId> ID;
+  // If non-empty and we're emitting ranges, use SpanID to annotate this type's
+  // range instead of ID.
+  MaybeFew<GraphObserver::NodeId> SpanID;
   const QualType QT = TypeLoc.getType();
   int64_t Key = ComputeKeyFromQualType(Context, QT, PT);
   const auto &Prev = TypeNodes.find(Key);
@@ -4210,6 +4213,7 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
         }
         auto Parent = GetDeclChildOf(SpecializedTemplateDecl);
         auto Marks = MarkedSources.Generate(SpecializedTemplateDecl);
+        MaybeFew<GraphObserver::NodeId> SpanTemplateName;
         GraphObserver::NodeId TemplateName =
             Claimability == GraphObserver::Claimability::Unclaimable
                 ? BuildNodeIdForDecl(SpecializedTemplateDecl)
@@ -4219,6 +4223,9 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
                           Observer.nodeIdForNominalTypeNode(
                               BuildNameIdForDecl(SpecializedTemplateDecl))),
                       Parent ? &Parent.primary() : nullptr);
+        if (EmitRanges == EmitRanges::Yes) {
+          SpanTemplateName = BuildNodeIdForDecl(SpecializedTemplateDecl);
+        }
         const auto &TAL = Spec->getTemplateArgs();
         std::vector<GraphObserver::NodeId> TemplateArgs;
         TemplateArgs.reserve(TAL.size());
@@ -4237,11 +4244,18 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
           ID = Observer.recordTappNode(TemplateName, TemplateArgsPtrs,
                                        TemplateArgsPtrs.size());
         }
-      } else {
+        if (SpanTemplateName) {
+          // We'll still get tapp node facts here.
+          SpanID = Observer.recordTappNode(SpanTemplateName.primary(),
+                                           TemplateArgsPtrs,
+                                           TemplateArgsPtrs.size());
+        }
+      } else /* Not a ClassTemplateSpecializationDecl */ {
         if (RecordDecl *Defn = Decl->getDefinition()) {
           Claimability = GraphObserver::Claimability::Unclaimable;
           if (!TypeAlreadyBuilt) {
             // Special-case linking to a defn instead of using a tnominal.
+            // This handles the SpanID case as well.
             if (const auto *RD = dyn_cast<CXXRecordDecl>(Defn)) {
               if (const auto *CTD = RD->getDescribedClassTemplate()) {
                 // Link to the template binder, not the internal class.
@@ -4270,6 +4284,13 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
                     Observer.nodeIdForNominalTypeNode(DeclNameId)),
                 Parent ? &Parent.primary() : nullptr);
           }
+          if (EmitRanges == EmitRanges::Yes &&
+              !Decl->isEmbeddedInDeclarator()) {
+            // Still use tnominal refs for C-style "struct foo* bar"
+            // declarations.
+            // TODO(zarko): Add completions for these.
+            SpanID = BuildNodeIdForDecl(Decl);
+          }
         }
       }
     } break;
@@ -4294,6 +4315,9 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
         if (Decl->getDefinition()) {
           Claimability = GraphObserver::Claimability::Unclaimable;
         }
+      }
+      if (!Decl->getDefinition() && EmitRanges == EmitRanges::Yes) {
+        SpanID = BuildNodeIdForDecl(Decl);
       }
     } break;
     case TypeLoc::Elaborated: {
@@ -4439,6 +4463,7 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
       if (!TypeAlreadyBuilt) {  // Leaf.
         // TODO(zarko): Replace with logic that uses InjectedType.
         if (RecordDecl *Defn = Decl->getDefinition()) {
+          // This already handles SpanID (by always linking to Defn).
           Claimability = GraphObserver::Claimability::Unclaimable;
           if (const auto *RD = dyn_cast<CXXRecordDecl>(Defn)) {
             if (const auto *CTD = RD->getDescribedClassTemplate()) {
@@ -4461,10 +4486,15 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
               Marks.GenerateMarkedSource(
                   Observer.nodeIdForNominalTypeNode(DeclNameId)),
               Parent ? &Parent.primary() : nullptr);
+          if (EmitRanges == EmitRanges::Yes) {
+            SpanID = BuildNodeIdForDecl(Decl);
+          }
         }
       } else {
         if (Decl->getDefinition() != nullptr) {
           Claimability = GraphObserver::Claimability::Unclaimable;
+        } else if (EmitRanges == EmitRanges::Yes) {
+          SpanID = BuildNodeIdForDecl(Decl);
         }
       }
     } break;
@@ -4519,8 +4549,8 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
     } break;
     case TypeLoc::ObjCInterface: {  // Leaf
       const auto &ITypeLoc = TypeLoc.castAs<ObjCInterfaceTypeLoc>();
+      const auto *IFace = ITypeLoc.getIFaceDecl();
       if (!TypeAlreadyBuilt) {
-        const auto *IFace = ITypeLoc.getIFaceDecl();
         // Link to the implementation if we have one, otherwise link to the
         // interface. If we just have a forward declaration, link to the nominal
         // type node.
@@ -4544,6 +4574,10 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
                   Observer.nodeIdForNominalTypeNode(DeclNameId)),
               Parent ? &Parent.primary() : nullptr);
         }
+      }
+      if (EmitRanges == EmitRanges::Yes && !IFace->getImplementation() &&
+          !IsObjCForwardDecl(IFace)) {
+        SpanID = BuildNodeIdForDecl(IFace);
       }
     } break;
     case TypeLoc::ObjCObject: {
@@ -4633,7 +4667,7 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
                                                SR.getBegin());
     }
     if (auto RCC = ExplicitRangeInCurrentContext(SR)) {
-      ID.Iter([&](const GraphObserver::NodeId &I) {
+      (SpanID ? &SpanID : &ID)->Iter([&](const GraphObserver::NodeId &I) {
         Observer.recordTypeSpellingLocation(RCC.primary(), I, Claimability);
       });
     }

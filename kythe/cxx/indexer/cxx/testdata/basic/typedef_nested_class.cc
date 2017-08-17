@@ -1,7 +1,8 @@
 // Checks that the indexer finds and emits nodes for types and typedefs.
 class C {
+//- @D defines/binding DDecl
   class D;
-//- @D ref NominalD
+//- @D ref DDecl
 //- @tdef defines/binding TypeAlias
   typedef D tdef;
 };
