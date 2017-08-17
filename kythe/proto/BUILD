@@ -1,4 +1,4 @@
-package(default_visibility = ["//kythe:default_visibility"])
+package(default_visibility = ["//kythe:proto_visibility"])
 
 load("//tools:build_rules/proto.bzl", "proto_library")
 
@@ -40,7 +40,7 @@ proto_library(
     go_api_version = 2,
     java_api_version = 2,
     visibility = [
-        "//kythe:default_visibility",
+        "//kythe:proto_visibility",
         "//third_party/llvm/src:__pkg__",
     ],
 )
@@ -54,7 +54,7 @@ proto_library(
     go_api_version = 2,
     java_api_version = 2,
     visibility = [
-        "//kythe:default_visibility",
+        "//kythe:proto_visibility",
         "//third_party/llvm/src:__pkg__",
     ],
     deps = [":storage_proto"],
@@ -68,7 +68,7 @@ proto_library(
     go_api_version = 2,
     java_api_version = 2,
     visibility = [
-        "//kythe:default_visibility",
+        "//kythe:proto_visibility",
         "//third_party/llvm/src:__pkg__",
     ],
     deps = [
@@ -87,7 +87,7 @@ proto_library(
     go_api_version = 2,
     java_api_version = 2,
     visibility = [
-        "//kythe:default_visibility",
+        "//kythe:proto_visibility",
         "//third_party/llvm/src:__pkg__",
     ],
     deps = [
@@ -190,8 +190,8 @@ proto_library(
 proto_library(
     name = "identifier_proto",
     srcs = ["identifier.proto"],
-    go_api_version = 2,
     has_services = 1,
+    go_api_version = 2,
 )
 
 # Public Kythe graph service API
