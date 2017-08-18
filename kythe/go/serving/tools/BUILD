@@ -1,11 +1,6 @@
 package(default_visibility = ["//kythe:default_visibility"])
 
 filegroup(
-    name = "pq",
-    srcs = ["//kythe/go/serving/tools/pq"],
-)
-
-filegroup(
     name = "http_server",
     srcs = ["//kythe/go/serving/tools/http_server"],
 )

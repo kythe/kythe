@@ -267,13 +267,6 @@ new_git_repository(
 )
 
 new_git_repository(
-    name = "go_pq",
-    build_file = "third_party/go/pq.BUILD",
-    commit = "4dd446efc17690bc53e154025146f73203b18309",
-    remote = "https://github.com/lib/pq.git",
-)
-
-new_git_repository(
     name = "go_diff",
     build_file = "third_party/go/diff.BUILD",
     commit = "ec7fdbb58eb3e300c8595ad5ac74a5aa50019cc7",
