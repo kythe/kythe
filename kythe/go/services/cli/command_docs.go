@@ -19,8 +19,6 @@ package cli
 import (
 	"context"
 	"flag"
-	"fmt"
-	"os"
 	"strings"
 
 	xpb "kythe.io/kythe/proto/xref_proto"
@@ -39,7 +37,6 @@ func (c *docsCommand) SetFlags(flag *flag.FlagSet) {
 	flag.BoolVar(&c.includeChildren, "include_children", false, "Include documentation for children of the given node")
 }
 func (c docsCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) error {
-	fmt.Fprintf(os.Stderr, "Warning: The Documentation API is experimental and may be slow.")
 	req := &xpb.DocumentationRequest{
 		Ticket:          flag.Args(),
 		IncludeChildren: c.includeChildren,
