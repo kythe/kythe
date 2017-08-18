@@ -1391,12 +1391,21 @@ func addLinkNodes(ms *cpb.MarkedSource, nodes stringset.Set) {
 	}
 }
 
-func d2d(d *srvpb.Document, neededNodes stringset.Set) *xpb.DocumentationReply_Document {
-	neededNodes.Add(d.Ticket)
-	for _, link := range d.Link {
-		neededNodes.Add(link.Definition...)
+func d2d(d *srvpb.Document, patterns []*regexp.Regexp, nodes map[string]*cpb.NodeInfo, defs map[string]*xpb.Anchor) *xpb.DocumentationReply_Document {
+	for _, node := range d.Node {
+		if _, ok := nodes[node.Ticket]; ok {
+			continue
+		}
+
+		n := nodeToInfo(patterns, node)
+		nodes[node.Ticket] = n
+		if def := node.DefinitionLocation; def != nil {
+			n.Definition = def.Ticket
+			if _, ok := defs[def.Ticket]; !ok {
+				defs[def.Ticket] = a2a(def, false).Anchor
+			}
+		}
 	}
-	addLinkNodes(d.MarkedSource, neededNodes)
 
 	return &xpb.DocumentationReply_Document{
 		Ticket: d.Ticket,
@@ -1419,8 +1428,15 @@ func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest
 		return nil, err
 	}
 
-	reply := &xpb.DocumentationReply{}
-	neededNodes := stringset.NewSize(len(tickets))
+	reply := &xpb.DocumentationReply{
+		Nodes:               make(map[string]*cpb.NodeInfo, len(tickets)),
+		DefinitionLocations: make(map[string]*xpb.Anchor, len(tickets)),
+	}
+	patterns := xrefs.ConvertFilters(req.Filter)
+	if len(patterns) == 0 {
+		// Match all facts if given no filters
+		patterns = xrefs.ConvertFilters([]string{"**"})
+	}
 
 	for _, ticket := range tickets {
 		d, err := t.documentation(ctx, ticket)
@@ -1432,7 +1448,7 @@ func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest
 		}
 		tracePrintf(ctx, "Document: %s", ticket)
 
-		doc := d2d(d, neededNodes)
+		doc := d2d(d, patterns, reply.Nodes, reply.DefinitionLocations)
 		if req.IncludeChildren {
 			for _, child := range d.ChildTicket {
 				// TODO(schroederc): store children with root of documentation tree
@@ -1444,45 +1460,14 @@ func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest
 					return nil, fmt.Errorf("error looking up documentation child with ticket %q: %v", ticket, err)
 				}
 
-				doc.Children = append(doc.Children, d2d(cd, neededNodes))
+				doc.Children = append(doc.Children, d2d(cd, patterns, reply.Nodes, reply.DefinitionLocations))
 			}
 			tracePrintf(ctx, "Children: %d", len(d.ChildTicket))
 		}
 
 		reply.Document = append(reply.Document, doc)
 	}
-	tracePrintf(ctx, "Documents: %d (nodes: %d)", len(reply.Document), len(neededNodes))
-
-	if len(neededNodes) != 0 {
-		// TODO(schroederc): store definitions alongside documentation
-		defs, err := xrefs.SlowDefinitions(ctx, t, neededNodes.Unordered())
-		if err != nil {
-			return nil, fmt.Errorf("SlowDefinitions error: %v", err)
-		}
-		if len(defs) != 0 {
-			reply.DefinitionLocations = make(map[string]*xpb.Anchor, len(defs))
-			for _, def := range defs {
-				reply.DefinitionLocations[def.Ticket] = def
-			}
-		}
-		tracePrintf(ctx, "Defs: %d", len(defs))
-
-		// TODO(schroederc): store node facts alongside documentation
-		nodes, err := t.Nodes(ctx, &gpb.NodesRequest{
-			Ticket: neededNodes.Unordered(),
-			Filter: req.Filter,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("Nodes error: %v", err)
-		}
-		reply.Nodes = nodes.Nodes
-		for ticket, node := range reply.Nodes {
-			if def, ok := defs[ticket]; ok {
-				node.Definition = def.Ticket
-			}
-		}
-		tracePrintf(ctx, "Nodes: %d", len(reply.Nodes))
-	}
+	tracePrintf(ctx, "Documents: %d (nodes: %d) (defs: %d", len(reply.Document), len(reply.Nodes), len(reply.DefinitionLocations))
 
 	return reply, nil
 }
