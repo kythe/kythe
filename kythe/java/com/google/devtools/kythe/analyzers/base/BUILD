@@ -68,23 +68,6 @@ java_library(
     ],
 )
 
-java_library(
-    name = "grpc_compilation_analyzer",
-    srcs = [
-        "GRPCCompilationAnalyzer.java",
-    ],
-    deps = [
-        ":compilation_analyzer",
-        ":entryset",
-        "//kythe/java/com/google/devtools/kythe/platform/shared:file_data",
-        "//kythe/java/com/google/devtools/kythe/platform/shared:remote_file_data",
-        "//kythe/java/com/google/devtools/kythe/platform/shared:statistics",
-        "//kythe/proto:analysis_proto_java",
-        "//kythe/proto:analysis_service_proto_java",
-        "//third_party/grpc-java",
-    ],
-)
-
 # //kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata:corner_case.kindex is derived
 # based on the sources in //kythe/java/com/google/devtools/kythe/analyzers/java:analyzer which
 # depend on this class.

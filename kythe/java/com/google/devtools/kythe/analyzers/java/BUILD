@@ -111,24 +111,3 @@ sh_binary(
         "//tools/modules:abspath",
     ],
 )
-
-java_binary(
-    name = "indexer_server",
-    srcs = ["JavaIndexerServer.java"],
-    main_class = "com.google.devtools.kythe.analyzers.java.JavaIndexerServer",
-    deps = [
-        ":analyzer",
-        "//kythe/java/com/google/devtools/kythe/analyzers/base:config",
-        "//kythe/java/com/google/devtools/kythe/analyzers/base:entryset",
-        "//kythe/java/com/google/devtools/kythe/analyzers/base:grpc_compilation_analyzer",
-        "//kythe/java/com/google/devtools/kythe/platform/java",
-        "//kythe/java/com/google/devtools/kythe/platform/shared:analysis_exception",
-        "//kythe/java/com/google/devtools/kythe/platform/shared:file_data",
-        "//kythe/java/com/google/devtools/kythe/platform/shared:metadata",
-        "//kythe/java/com/google/devtools/kythe/platform/shared:statistics",
-        "//kythe/proto:analysis_proto_java",
-        "//third_party/grpc-java",
-        "@com_beust_jcommander//jar",
-        "@com_google_guava_guava//jar",
-    ],
-)

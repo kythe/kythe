@@ -32,21 +32,6 @@ java_library(
 )
 
 java_library(
-    name = "remote_file_data",
-    srcs = [
-        "RemoteFileData.java",
-    ],
-    deps = [
-        ":file_data",
-        "//kythe/proto:analysis_proto_java",
-        "//kythe/proto:analysis_service_proto_java",
-        "//third_party/grpc-java",
-        "//third_party/proto:protobuf_java",
-        "@com_google_guava_guava//jar",
-    ],
-)
-
-java_library(
     name = "metadata",
     srcs = [
         "KytheMetadataLoader.java",
