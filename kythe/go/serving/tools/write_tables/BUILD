@@ -8,7 +8,6 @@ go_binary(
     deps = [
         "//kythe/go/platform/vfs",
         "//kythe/go/services/graphstore",
-        "//kythe/go/services/graphstore/grpc",
         "//kythe/go/services/graphstore/proxy",
         "//kythe/go/serving/pipeline",
         "//kythe/go/storage/gsutil",

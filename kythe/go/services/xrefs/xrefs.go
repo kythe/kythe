@@ -1764,41 +1764,6 @@ func (b BoundedRequests) Documentation(ctx context.Context, req *xpb.Documentati
 	return b.Service.Documentation(ctx, req)
 }
 
-type grpcClient struct {
-	xpb.XRefServiceClient
-	gpb.GraphServiceClient
-}
-
-// Nodes implements part of the Service interface.
-func (w *grpcClient) Nodes(ctx context.Context, req *gpb.NodesRequest) (*gpb.NodesReply, error) {
-	return w.GraphServiceClient.Nodes(ctx, req)
-}
-
-// Edges implements part of the Service interface.
-func (w *grpcClient) Edges(ctx context.Context, req *gpb.EdgesRequest) (*gpb.EdgesReply, error) {
-	return w.GraphServiceClient.Edges(ctx, req)
-}
-
-// Decorations implements part of the Service interface.
-func (w *grpcClient) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*xpb.DecorationsReply, error) {
-	return w.XRefServiceClient.Decorations(ctx, req)
-}
-
-// CrossReferences implements part of the Service interface.
-func (w *grpcClient) CrossReferences(ctx context.Context, req *xpb.CrossReferencesRequest) (*xpb.CrossReferencesReply, error) {
-	return w.XRefServiceClient.CrossReferences(ctx, req)
-}
-
-// Documentation implements part of the Service interface.
-func (w *grpcClient) Documentation(ctx context.Context, req *xpb.DocumentationRequest) (*xpb.DocumentationReply, error) {
-	return w.XRefServiceClient.Documentation(ctx, req)
-}
-
-// GRPC returns an xrefs Service backed by the given GRPC client and context.
-func GRPC(xref xpb.XRefServiceClient, graph gpb.GraphServiceClient) Service {
-	return &grpcClient{XRefServiceClient: xref, GraphServiceClient: graph}
-}
-
 type webClient struct{ addr string }
 
 // Nodes implements part of the Service interface.

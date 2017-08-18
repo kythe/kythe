@@ -54,21 +54,6 @@ func CleanDirPath(path string) string {
 	return strings.TrimPrefix(filepath.Join(sep, path), sep)
 }
 
-type grpcClient struct{ ftpb.FileTreeServiceClient }
-
-// CorpusRoots implements part of Service interface.
-func (c *grpcClient) CorpusRoots(ctx context.Context, req *ftpb.CorpusRootsRequest) (*ftpb.CorpusRootsReply, error) {
-	return c.FileTreeServiceClient.CorpusRoots(ctx, req)
-}
-
-// Directory implements part of Service interface.
-func (c *grpcClient) Directory(ctx context.Context, req *ftpb.DirectoryRequest) (*ftpb.DirectoryReply, error) {
-	return c.FileTreeServiceClient.Directory(ctx, req)
-}
-
-// GRPC returns a filetree Service backed by a FileTreeServiceClient.
-func GRPC(c ftpb.FileTreeServiceClient) Service { return &grpcClient{c} }
-
 // Map is a FileTree backed by an in-memory map.
 type Map struct {
 	// corpus -> root -> dirPath -> DirectoryReply

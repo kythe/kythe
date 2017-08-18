@@ -21,7 +21,7 @@ extractors, and tools directly supported by the Kythe team.
    - dedup_stream             :: Removes duplicates entries from a delimited stream
    - directory_indexer        :: Emits Kythe file nodes for some local paths
    - entrystream              :: Generic Kythe entry stream processor
-   - http_server              :: HTTP/GRPC server for Kythe service APIs (xrefs, filetree, search)
+   - http_server              :: HTTP server for Kythe service APIs (xrefs, filetree, graph)
    - indexpack                :: Converts between .kindex archives and indexpacks
    - kwazthis                 :: Determine what Kythe node(s) are at a particular point in a file
    - kythe                    :: CLI for the service APIs exposed by http_server

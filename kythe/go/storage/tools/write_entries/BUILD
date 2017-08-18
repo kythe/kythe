@@ -7,7 +7,6 @@ go_binary(
     srcs = ["write_entries.go"],
     deps = [
         "//kythe/go/services/graphstore",
-        "//kythe/go/services/graphstore/grpc",
         "//kythe/go/services/graphstore/proxy",
         "//kythe/go/storage/gsutil",
         "//kythe/go/storage/leveldb",

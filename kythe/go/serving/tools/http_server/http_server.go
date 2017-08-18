@@ -55,7 +55,7 @@ var (
 )
 
 func init() {
-	flag.Usage = flagutil.SimpleUsage("Exposes HTTP/GRPC interfaces for the xrefs and filetree services",
+	flag.Usage = flagutil.SimpleUsage("Exposes HTTP interfaces for the xrefs and filetree services",
 		"(--graphstore spec | --serving_table path) [--listen addr] [--public_resources dir]")
 }
 

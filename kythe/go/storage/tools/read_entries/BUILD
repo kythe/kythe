@@ -9,7 +9,6 @@ go_binary(
         "//kythe/go/platform/delimited",
         "//kythe/go/platform/vfs",
         "//kythe/go/services/graphstore",
-        "//kythe/go/services/graphstore/grpc",
         "//kythe/go/services/graphstore/proxy",
         "//kythe/go/storage/gsutil",
         "//kythe/go/storage/leveldb",

@@ -21,13 +21,11 @@ package graphstore
 import (
 	"context"
 	"errors"
-	"io"
 	"strings"
 
 	"kythe.io/kythe/go/services/graphstore/compare"
 
 	spb "kythe.io/kythe/proto/storage_proto"
-	sspb "kythe.io/kythe/proto/storage_service_proto"
 )
 
 // An EntryFunc is a callback from the implementation of a Service to deliver
@@ -153,59 +151,3 @@ func IsNodeFact(e *spb.Entry) bool { return e.EdgeKind == "" }
 
 // IsEdge determines if the Entry describes an edge; implies !IsNodeFact(e).
 func IsEdge(e *spb.Entry) bool { return e.EdgeKind != "" }
-
-type grpcClient struct{ sspb.GraphStoreClient }
-
-// Read implements part of Service interface.
-func (c *grpcClient) Read(ctx context.Context, req *spb.ReadRequest, f EntryFunc) error {
-	s, err := c.GraphStoreClient.Read(ctx, req)
-	if err != nil {
-		return err
-	}
-	return streamEntries(s, f)
-}
-
-// Scan implements part of Service interface.
-func (c *grpcClient) Scan(ctx context.Context, req *spb.ScanRequest, f EntryFunc) error {
-	s, err := c.GraphStoreClient.Scan(ctx, req)
-	if err != nil {
-		return err
-	}
-	return streamEntries(s, f)
-}
-
-func streamEntries(s entryStream, f EntryFunc) error {
-	for {
-		e, err := s.Recv()
-		if err == io.EOF {
-			return nil
-		} else if err != nil {
-			return err
-		}
-
-		err = f(e)
-		if err == io.EOF {
-			return s.CloseSend()
-		} else if err != nil {
-			s.CloseSend()
-			return err
-		}
-	}
-}
-
-type entryStream interface {
-	Recv() (*spb.Entry, error)
-	CloseSend() error
-}
-
-// Write implements part of Service interface.
-func (c *grpcClient) Write(ctx context.Context, req *spb.WriteRequest) error {
-	_, err := c.GraphStoreClient.Write(ctx, req)
-	return err
-}
-
-// Close implements part of Service interface.
-func (c *grpcClient) Close(ctx context.Context) error { return nil }
-
-// GRPC returns a GraphStore service backed by a GraphStoreClient.
-func GRPC(c sspb.GraphStoreClient) Service { return &grpcClient{c} }
