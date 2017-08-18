@@ -11,6 +11,5 @@ go_binary(
         "//kythe/go/platform/vfs",
         "//kythe/go/util/build",
         "//kythe/proto:analysis_proto_go",
-        "@go_gcloud//:storage",
     ],
 )
