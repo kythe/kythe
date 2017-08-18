@@ -4223,7 +4223,7 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
                           Observer.nodeIdForNominalTypeNode(
                               BuildNameIdForDecl(SpecializedTemplateDecl))),
                       Parent ? &Parent.primary() : nullptr);
-        if (EmitRanges == EmitRanges::Yes) {
+        if (EmitRanges == IndexerASTVisitor::EmitRanges::Yes) {
           SpanTemplateName = BuildNodeIdForDecl(SpecializedTemplateDecl);
         }
         const auto &TAL = Spec->getTemplateArgs();
@@ -4284,7 +4284,7 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
                     Observer.nodeIdForNominalTypeNode(DeclNameId)),
                 Parent ? &Parent.primary() : nullptr);
           }
-          if (EmitRanges == EmitRanges::Yes &&
+          if (EmitRanges == IndexerASTVisitor::EmitRanges::Yes &&
               !Decl->isEmbeddedInDeclarator()) {
             // Still use tnominal refs for C-style "struct foo* bar"
             // declarations.
@@ -4316,7 +4316,8 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
           Claimability = GraphObserver::Claimability::Unclaimable;
         }
       }
-      if (!Decl->getDefinition() && EmitRanges == EmitRanges::Yes) {
+      if (!Decl->getDefinition() &&
+          EmitRanges == IndexerASTVisitor::EmitRanges::Yes) {
         SpanID = BuildNodeIdForDecl(Decl);
       }
     } break;
@@ -4486,14 +4487,14 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
               Marks.GenerateMarkedSource(
                   Observer.nodeIdForNominalTypeNode(DeclNameId)),
               Parent ? &Parent.primary() : nullptr);
-          if (EmitRanges == EmitRanges::Yes) {
+          if (EmitRanges == IndexerASTVisitor::EmitRanges::Yes) {
             SpanID = BuildNodeIdForDecl(Decl);
           }
         }
       } else {
         if (Decl->getDefinition() != nullptr) {
           Claimability = GraphObserver::Claimability::Unclaimable;
-        } else if (EmitRanges == EmitRanges::Yes) {
+        } else if (EmitRanges == IndexerASTVisitor::EmitRanges::Yes) {
           SpanID = BuildNodeIdForDecl(Decl);
         }
       }
@@ -4575,8 +4576,8 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
               Parent ? &Parent.primary() : nullptr);
         }
       }
-      if (EmitRanges == EmitRanges::Yes && !IFace->getImplementation() &&
-          !IsObjCForwardDecl(IFace)) {
+      if (EmitRanges == IndexerASTVisitor::EmitRanges::Yes &&
+          !IFace->getImplementation() && !IsObjCForwardDecl(IFace)) {
         SpanID = BuildNodeIdForDecl(IFace);
       }
     } break;
