@@ -107,48 +107,6 @@ maven_jar(
 )
 
 maven_jar(
-    name = "io_netty_netty_all",
-    artifact = "io.netty:netty-all:4.1.3.Final",
-    sha1 = "5304532edd11da8ab899baeab80aaf36ccf89d6e",
-)
-
-maven_jar(
-    name = "io_grpc_grpc_core",
-    artifact = "io.grpc:grpc-core:1.0.3",
-    sha1 = "104435f03a23f5680a392a9586d03995e45b9d35",
-)
-
-maven_jar(
-    name = "io_grpc_grpc_context",
-    artifact = "io.grpc:grpc-context:1.0.3",
-    sha1 = "fc29af09029527ac52bc9bb97ef27a645709aeea",
-)
-
-maven_jar(
-    name = "io_grpc_grpc_stub",
-    artifact = "io.grpc:grpc-stub:1.0.3",
-    sha1 = "4af1464041224cdef2efbeafbe948f942a3fb028",
-)
-
-maven_jar(
-    name = "io_grpc_grpc_netty",
-    artifact = "io.grpc:grpc-netty:1.0.3",
-    sha1 = "d473fe54759e38cd2e88e2994817421e193adebe",
-)
-
-maven_jar(
-    name = "io_grpc_grpc_protobuf",
-    artifact = "io.grpc:grpc-protobuf:1.0.3",
-    sha1 = "330c3da988bdc9bf336218ae12b2b0ee86767775",
-)
-
-maven_jar(
-    name = "io_grpc_grpc_protobuf_lite",
-    artifact = "io.grpc:grpc-protobuf-lite:1.0.3",
-    sha1 = "016a1669179ab06c7b74d3b1c5959b28f1caa6a1",
-)
-
-maven_jar(
     name = "com_google_code_findbugs_jsr305",
     artifact = "com.google.code.findbugs:jsr305:3.0.1",
     sha1 = "f7be08ec23c21485b9b5a1cf1654c2ec8c58168d",

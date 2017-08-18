@@ -74,13 +74,6 @@ def _genproto_impl(ctx):
       srcjar = ctx.outputs.java_src
     outputs += [srcjar]
     arguments += ["--java_out=" + srcjar.path]
-    if ctx.attr.has_services:
-      java_grpc_plugin = ctx.executable._protoc_grpc_plugin_java
-      inputs += [java_grpc_plugin]
-      arguments += [
-          "--plugin=protoc-gen-java_rpc=" + java_grpc_plugin.path,
-          "--java_rpc_out=" + srcjar.path
-      ]
 
   go_package = go_package_name(ctx.attr._go_package_prefix, ctx.label)
   if ctx.attr.gen_go:
@@ -169,11 +162,6 @@ _genproto_attrs = {
         executable = True,
         cfg = "host",
     ),
-    "_protoc_grpc_plugin_java": attr.label(
-        default = Label("//third_party/grpc-java:plugin"),
-        executable = True,
-        cfg = "host",
-    ),
     "gen_cc": attr.bool(),
     "gen_java": attr.bool(),
     "gen_go": attr.bool(),
@@ -240,12 +228,6 @@ def proto_library(name, srcs, deps=[], visibility=None,
   # buffer library.
   if java_api_version:
     java_deps = ["//third_party/proto:protobuf_java"]
-    if has_services:
-      java_deps += [
-          "@com_google_guava_guava//jar",
-          "@com_google_code_findbugs_jsr305//jar",
-          "//third_party/grpc-java",
-      ]
     for dep in deps:
       java_deps += [dep + "_java"]
     native.java_library(

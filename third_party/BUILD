@@ -7,7 +7,6 @@ filegroup(
     srcs = ["README"] + [
         "//third_party/bazel:license",
         "//third_party/go:licenses",
-        "//third_party/grpc-java:license",
         "//third_party/leiningen:license",
         "//third_party/leveldb:license",
         "//third_party/llvm:license",
