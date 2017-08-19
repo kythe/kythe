@@ -35,6 +35,7 @@ type foo struct{}
 //- ConcreteThing.node/kind function
 //- ConcreteThing childof Foo
 //- ConcreteThing overrides AbstractThing
+//- !{ ConcreteThing overrides FoilThing }
 func (foo) Thing() {}
 
 //- @Stuff defines/binding ConcreteStuff
@@ -54,6 +55,7 @@ type bar struct{}
 //- OtherConcreteThing.node/kind function
 //- OtherConcreteThing childof Bar
 //- OtherConcreteThing overrides AbstractThing
+//- !{ OtherConcreteThing overrides FoilThing }
 func (*bar) Thing() {}
 
 //- @String defines/binding String
@@ -61,3 +63,16 @@ func (*bar) Thing() {}
 //- String childof Bar
 //- String overrides vname("method Stringer.String",_,_,"fmt","go")
 func (*bar) String() string { return "" }
+
+// Foil has a method with the same name as Thinger, but is not a compatible
+// type signature. We use this to verify that we don't try to emit override
+// edges unless the assignability check passes.
+//
+//- @Foil defines/binding Foil
+//- Foil.node/kind interface
+type Foil interface {
+	//- @Thing defines/binding FoilThing
+	//- FoilThing.node/kind function
+	//- FoilThing childof Foil
+	Thing(bool)
+}

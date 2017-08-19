@@ -621,10 +621,11 @@ func (e *emitter) emitSatisfactions() {
 				// x is a concrete type
 				if types.AssignableTo(x, y) {
 					e.writeSatisfies(xobj, yobj)
+					e.emitOverrides(xmset, pxmset, ymset, cache)
 				} else if px := types.NewPointer(x); types.AssignableTo(px, y) {
 					e.writeSatisfies(xobj, yobj)
+					e.emitOverrides(xmset, pxmset, ymset, cache)
 				}
-				e.emitOverrides(xmset, pxmset, ymset, cache)
 
 			default:
 				// Both x and y are concrete.
