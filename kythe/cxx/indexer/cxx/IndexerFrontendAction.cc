@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// This file uses the Clang style conventions.
-
 #include "IndexerFrontendAction.h"
 
 #include <memory>
@@ -87,6 +85,7 @@ std::string IndexCompilationUnit(
     const proto::CompilationUnit &Unit, std::vector<proto::FileData> &Files,
     KytheClaimClient &Client, HashCache *Cache, KytheOutputStream &Output,
     const IndexerOptions &Options, const MetadataSupports *MetaSupports,
+    const LibrarySupports *LibrarySupports,
     std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor *)>
         CreateWorklist) {
   HeaderSearchInfo HSI;
@@ -142,7 +141,7 @@ std::string IndexCompilationUnit(
   }
   std::unique_ptr<IndexerFrontendAction> Action(new IndexerFrontendAction(
       &Observer, HSIValid ? &HSI : nullptr, Options.ShouldStopIndexing,
-      std::move(CreateWorklist)));
+      std::move(CreateWorklist), LibrarySupports));
   Action->setIgnoreUnimplemented(Options.UnimplementedBehavior);
   Action->setTemplateMode(Options.TemplateBehavior);
   Action->setVerbosity(Options.Verbosity);

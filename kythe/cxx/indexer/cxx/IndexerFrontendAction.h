@@ -17,8 +17,6 @@
 /// \file IndexerFrontendAction.h
 /// \brief Defines a tool that passes notifications to a `GraphObserver`.
 
-// This file uses the Clang style conventions.
-
 #ifndef KYTHE_CXX_INDEXER_CXX_INDEXER_FRONTEND_ACTION_H_
 #define KYTHE_CXX_INDEXER_CXX_INDEXER_FRONTEND_ACTION_H_
 
@@ -43,11 +41,9 @@
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/Twine.h"
 
-#include "GoogleFlagsLibrarySupport.h"
 #include "GraphObserver.h"
 #include "IndexerASTHooks.h"
 #include "IndexerPPCallbacks.h"
-#include "ProtoLibrarySupport.h"
 
 namespace kythe {
 namespace proto {
@@ -74,16 +70,16 @@ class IndexerFrontendAction : public clang::ASTFrontendAction {
       GraphObserver *GO, const HeaderSearchInfo *Info,
       std::function<bool()> ShouldStopIndexing,
       std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor *)>
-          CreateWorklist)
+          CreateWorklist,
+      const LibrarySupports *LibrarySupports)
       : Observer(CHECK_NOTNULL(GO)),
         HeaderConfigValid(Info != nullptr),
+        Supports(*CHECK_NOTNULL(LibrarySupports)),
         ShouldStopIndexing(std::move(ShouldStopIndexing)),
         CreateWorklist(std::move(CreateWorklist)) {
     if (HeaderConfigValid) {
       HeaderConfig = *Info;
     }
-    Supports.push_back(llvm::make_unique<GoogleFlagsLibrarySupport>());
-    Supports.push_back(llvm::make_unique<GoogleProtoLibrarySupport>());
   }
 
   /// \brief Barrel through even if we don't understand part of a program?
@@ -167,7 +163,7 @@ class IndexerFrontendAction : public clang::ASTFrontendAction {
   /// Whether to use HeaderConfig.
   bool HeaderConfigValid;
   /// Library-specific callbacks.
-  LibrarySupports Supports;
+  const LibrarySupports &Supports;
   /// \return true if indexing should be cancelled.
   std::function<bool()> ShouldStopIndexing = [] { return false; };
   /// \return a new worklist for the given visitor.
@@ -193,7 +189,8 @@ class StdinAdjustSingleFrontendActionFactory
       : Action(std::move(Action)) {}
 
   bool runInvocation(
-      std::shared_ptr<clang::CompilerInvocation> Invocation, clang::FileManager *Files,
+      std::shared_ptr<clang::CompilerInvocation> Invocation,
+      clang::FileManager *Files,
       std::shared_ptr<clang::PCHContainerOperations> PCHContainerOps,
       clang::DiagnosticConsumer *DiagConsumer) override {
     auto &FEOpts = Invocation->getFrontendOpts();
@@ -248,6 +245,7 @@ struct IndexerOptions {
 /// \param Output The output stream to use.
 /// \param Options Configuration settings for this run.
 /// \param MetaSupports Metadata support for this run.
+/// \param LibrarySupports Library support for this run.
 /// \param Worklist A function that generates a new worklist for the given
 /// visitor.
 /// \return empty if OK; otherwise, an error description.
@@ -255,6 +253,7 @@ std::string IndexCompilationUnit(
     const proto::CompilationUnit &Unit, std::vector<proto::FileData> &Files,
     KytheClaimClient &ClaimClient, HashCache *Cache, KytheOutputStream &Output,
     const IndexerOptions &Options, const MetadataSupports *MetaSupports,
+    const LibrarySupports *LibrarySupports,
     std::function<std::unique_ptr<IndexerWorklist>(IndexerASTVisitor *)>
         CreateWorklist);
 

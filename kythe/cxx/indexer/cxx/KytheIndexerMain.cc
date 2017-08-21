@@ -27,7 +27,9 @@
 #include "google/protobuf/stubs/common.h"
 #include "kythe/cxx/common/indexing/frontend.h"
 #include "kythe/cxx/common/protobuf_metadata_file.h"
+#include "kythe/cxx/indexer/cxx/GoogleFlagsLibrarySupport.h"
 #include "kythe/cxx/indexer/cxx/IndexerFrontendAction.h"
+#include "kythe/cxx/indexer/cxx/ProtoLibrarySupport.h"
 #include "kythe/cxx/indexer/cxx/indexer_worklist.h"
 
 DEFINE_bool(index_template_instantiations, true,
@@ -80,12 +82,17 @@ int main(int argc, char *argv[]) {
     meta_supports.Add(llvm::make_unique<ProtobufMetadataSupport>());
     meta_supports.Add(llvm::make_unique<KytheMetadataSupport>());
 
+    kythe::LibrarySupports library_supports;
+    library_supports.push_back(llvm::make_unique<GoogleFlagsLibrarySupport>());
+    library_supports.push_back(llvm::make_unique<GoogleProtoLibrarySupport>());
+
     std::string result = IndexCompilationUnit(
         job.unit, job.virtual_files, *context.claim_client(),
         context.hash_cache(),
         job.silent ? static_cast<KytheOutputStream &>(null_stream)
                    : static_cast<KytheOutputStream &>(*context.output()),
-        options, &meta_supports, [](IndexerASTVisitor *indexer) {
+        options, &meta_supports, &library_supports,
+        [](IndexerASTVisitor *indexer) {
           return IndexerWorklist::CreateDefaultWorklist(indexer);
         });
 
