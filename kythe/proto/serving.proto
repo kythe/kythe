@@ -302,3 +302,24 @@ message Document {
   // Nodes referenced by documentation Links.
   repeated Node node = 6;
 }
+
+// A single identifier's information for the Identifier API
+message IdentifierMatch {
+  message Node {
+    // Kythe ticket for the matched node.
+    string ticket = 1;
+    
+    // Kind of the node being referenced.
+    string node_kind = 2;
+    
+    // Subkind of the node being referenced.
+    string node_subkind = 3;
+  }
+
+  // The fully qualified identifier for the node.
+  string qualified_name = 1;
+
+  // The local identifier for the node.
+  string base_name = 2;
+  repeated Node node = 3;
+}
