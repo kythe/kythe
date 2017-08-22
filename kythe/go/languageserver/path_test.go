@@ -26,7 +26,7 @@ import (
 )
 
 func TestLocalFromURI(t *testing.T) {
-	p, err := newPathConfig(Settings{
+	p, err := NewSettingsPathConfig(Settings{
 		Root: "/root/dir",
 		Mappings: []MappingConfig{{
 			Local: ":path*",
@@ -49,7 +49,7 @@ func TestLocalFromURI(t *testing.T) {
 		"file://relatively/outside/root",
 	}
 	for _, u := range badURIs {
-		l, err := p.localFromURI(u)
+		l, err := p.LocalFromURI(u)
 		if err == nil {
 			t.Errorf("Expected error converting URI (%s) to local\n  Found: %s", u, l)
 		}
@@ -61,7 +61,7 @@ func TestLocalFromURI(t *testing.T) {
 	}
 
 	for _, u := range goodURIs {
-		_, err := p.localFromURI(u)
+		_, err := p.LocalFromURI(u)
 
 		if err != nil {
 			t.Errorf("Error parsing URI (%s)", u)
@@ -70,7 +70,7 @@ func TestLocalFromURI(t *testing.T) {
 }
 
 func TestGeneration(t *testing.T) {
-	p, err := newPathConfig(Settings{
+	p, err := NewSettingsPathConfig(Settings{
 		Root: "/root/dir",
 		Mappings: []MappingConfig{{
 			Local: ":corpus/:path*/:root",
@@ -93,7 +93,7 @@ func TestGeneration(t *testing.T) {
 	}
 
 	// Test local -> URI
-	gu, err := p.kytheURIFromLocal(l)
+	gu, err := p.KytheURIFromLocal(l)
 	if err != nil {
 		t.Errorf("error generating Kythe URI from local (%s):\n%v", l, err)
 	}
@@ -102,7 +102,7 @@ func TestGeneration(t *testing.T) {
 	}
 
 	// Test URI -> local
-	gl, err := p.localFromKytheURI(u)
+	gl, err := p.LocalFromKytheURI(u)
 	if err != nil {
 		t.Errorf("error generating local from Kythe URI (%v):\n%v", u, err)
 	}

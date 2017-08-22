@@ -136,8 +136,8 @@ func TestReferences(t *testing.T) {
 							PreText: "hi",
 						}}}}}}}}}
 
-	srv := NewServer(c, func(_ string) (*Settings, error) {
-		return &Settings{
+	srv := NewServer(c, func(_ string) (PathConfig, error) {
+		return NewSettingsPathConfig(Settings{
 			Root: "/root/dir/",
 			Mappings: []MappingConfig{{
 				Local: ":path*",
@@ -146,7 +146,7 @@ func TestReferences(t *testing.T) {
 					Corpus: "corpus",
 				}},
 			},
-		}, nil
+		})
 	})
 
 	srv.Initialize(lsp.InitializeParams{})

@@ -46,13 +46,9 @@ type Settings struct {
 	Mappings []MappingConfig `json:"mappings"`
 }
 
-// SettingsProvider allows for pluggable settings fetching in the language
-// server
-type SettingsProvider func(root string) (*Settings, error)
-
-// FileSettingsProvider searches upward from the given path until it finds
+// findSettings searches upward from the given path until it finds
 // a .kythe-settings.json file and attempts to read and parse that file
-func FileSettingsProvider(p string) (*Settings, error) {
+func findSettings(p string) (*Settings, error) {
 	root, err := findRoot(p)
 	if err != nil {
 		return nil, err

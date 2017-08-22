@@ -36,8 +36,28 @@ type mapping struct {
 	root   *pathmap.Mapper
 }
 
-// pathConfig provides the ability to map between paths locally and in Kythe
-type pathConfig struct {
+// PathConfig provides the ability to map between paths locally and in Kythe
+type PathConfig interface {
+	// LocalFromURI generates a local file path from a DocumentURI usually
+	// provided by the language client
+	LocalFromURI(lspURI lsp.DocumentURI) (string, error)
+
+	// KytheURIFromLocal generates a Kythe URI for the local file
+	KytheURIFromLocal(loc string) (*kytheuri.URI, error)
+
+	// LocalFromKytheURI generates an absolute local file path from a Kythe URI
+	LocalFromKytheURI(ticket kytheuri.URI) (string, error)
+
+	// Root returns the workspace root as determined by the PathConfig
+	Root() string
+}
+
+// PathConfigProvider is used for delayed loading of path configs.
+// It receives the editor suggested workspace root and construct a PathConfig.
+type PathConfigProvider func(string) (PathConfig, error)
+
+// SettingsPathConfig uses Settings values to map between paths locally and in Kythe
+type SettingsPathConfig struct {
 	// mappings is an ordered list of mapping options. The first one to match
 	// will be used when converting to & from local paths and Kythe URIs
 	mappings []*mapping
@@ -47,16 +67,29 @@ type pathConfig struct {
 	root string
 }
 
-// newPathConfig constructs a pathConfig from a root and a settings object.
-func newPathConfig(s Settings) (pathConfig, error) {
-	p := pathConfig{}
-	err := p.loadSettings(s)
-
-	return p, err
+// SettingsPathConfigProvider finds the setttings file and produces a SettingsPathConfig
+func SettingsPathConfigProvider(possibleRoot string) (PathConfig, error) {
+	s, err := findSettings(possibleRoot)
+	if err != nil {
+		return &SettingsPathConfig{}, err
+	}
+	return NewSettingsPathConfig(*s)
 }
 
-// loadSettings populates the pathConfig object with the
-func (pc *pathConfig) loadSettings(s Settings) error {
+// NewSettingsPathConfig constructs a SettingsPathConfig from a settings object.
+func NewSettingsPathConfig(s Settings) (*SettingsPathConfig, error) {
+	p := SettingsPathConfig{}
+	err := p.loadSettings(s)
+	return &p, err
+}
+
+// Root returns the SettingsPathConfig's root
+func (pc *SettingsPathConfig) Root() string {
+	return pc.root
+}
+
+// loadSettings populates the SettingsPathConfig object with the
+func (pc *SettingsPathConfig) loadSettings(s Settings) error {
 	pc.root = s.Root
 	for _, m := range s.Mappings {
 		l, err := pathmap.NewMapper(m.Local)
@@ -151,8 +184,8 @@ func (m mapping) relFromTicket(ticket kytheuri.URI) (string, error) {
 	return m.local.Generate(vals)
 }
 
-// localFromURI generates a path relative to the root from a file URI
-func (pc *pathConfig) localFromURI(lspURI lsp.DocumentURI) (string, error) {
+// LocalFromURI implements part of the PathConfig interface
+func (pc *SettingsPathConfig) LocalFromURI(lspURI lsp.DocumentURI) (string, error) {
 	u, err := url.Parse(string(lspURI))
 	if err != nil {
 		return "", err
@@ -169,9 +202,9 @@ func (pc *pathConfig) localFromURI(lspURI lsp.DocumentURI) (string, error) {
 	return u.Path, nil
 }
 
-// kytheURIFromLocal generates a Kythe URI from an absolute local path by
+// KytheURIFromLocal implements part of the PathConfig interface by
 // iteratively attempting to apply mappings to the relative version of it
-func (pc *pathConfig) kytheURIFromLocal(loc string) (*kytheuri.URI, error) {
+func (pc *SettingsPathConfig) KytheURIFromLocal(loc string) (*kytheuri.URI, error) {
 	rel, err := filepath.Rel(pc.root, loc)
 	if err != nil {
 		return nil, fmt.Errorf("local file (%s) is not beneath root (%s)", loc, pc.root)
@@ -187,9 +220,9 @@ func (pc *pathConfig) kytheURIFromLocal(loc string) (*kytheuri.URI, error) {
 
 }
 
-// localFromKytheURI generates an absolute local path from a Kythe URI by
-// iteratively attempting to apply mappings to it
-func (pc *pathConfig) localFromKytheURI(ticket kytheuri.URI) (string, error) {
+// LocalFromKytheURI implements part of the PathConfig interface by
+// iteratively attempting to apply mappings to the given Kythe URI
+func (pc *SettingsPathConfig) LocalFromKytheURI(ticket kytheuri.URI) (string, error) {
 	for _, m := range pc.mappings {
 		l, err := m.relFromTicket(ticket)
 		if err == nil {
