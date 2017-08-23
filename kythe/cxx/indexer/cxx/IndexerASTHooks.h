@@ -239,6 +239,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool VisitFunctionDecl(clang::FunctionDecl *Decl);
   bool TraverseDecl(clang::Decl *Decl);
 
+  bool TraverseLambdaExpr(clang::LambdaExpr* Expr);
+
   // Objective C specific nodes
   bool VisitObjCPropertyImplDecl(const clang::ObjCPropertyImplDecl *Decl);
   bool VisitObjCCompatibleAliasDecl(const clang::ObjCCompatibleAliasDecl *Decl);

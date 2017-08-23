@@ -294,6 +294,7 @@ cxx_indexer_test(
     name = "decltype_parens",
     srcs = ["basic/decltype_parens.cc"],
     check_for_singletons = True,
+    ignore_dups = True,
     tags = ["basic"],
 )
 
@@ -730,6 +731,12 @@ cxx_indexer_test(
     name = "function_lambda_args",
     srcs = ["function/function_lambda_args.cc"],
     ignore_dups = True,
+    tags = ["function"],
+)
+
+cxx_indexer_test(
+    name = "function_nested_rec",
+    srcs = ["function/function_nested_rec.cc"],
     tags = ["function"],
 )
 

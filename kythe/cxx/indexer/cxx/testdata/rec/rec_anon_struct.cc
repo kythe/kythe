@@ -8,3 +8,9 @@
 //- @S defines/binding VarS
 //- VarS typed AnonStruct
 struct { } S;
+
+// Verify that additional, structurally identical, anonymous
+// structs do not share a type.
+//- @T defines/binding VarT
+//- !{ VarT typed AnonStruct }
+struct { } T;

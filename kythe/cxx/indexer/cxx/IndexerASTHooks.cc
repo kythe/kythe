@@ -992,6 +992,20 @@ bool IndexerASTVisitor::VisitDecl(const clang::Decl *Decl) {
   return true;
 }
 
+bool IndexerASTVisitor::TraverseLambdaExpr(clang::LambdaExpr* Expr) {
+  // Clang does not reliably visit the implicitly generated class or (more
+  // importantly) call operator.
+  // Specifically, it only does so for lambdas defined at the top level,
+  // which is a vanishingly small number of them.
+  // TODO(shahms): Figure out *why* Clang behaves this way and fix that.
+  return RecursiveASTVisitor::TraverseLambdaExpr(Expr) && [this, Expr] {
+    if (Expr->getLambdaClass()->getDeclContext()->isFunctionOrMethod()) {
+      return TraverseDecl(Expr->getCallOperator());
+    }
+    return true;
+  }();
+}
+
 bool IndexerASTVisitor::TraverseDecl(clang::Decl *Decl) {
   if (ShouldStopIndexing()) {
     return false;
@@ -3420,7 +3434,7 @@ GraphObserver::NodeId IndexerASTVisitor::BuildNodeIdForDecl(
   // Use hashes to unify otherwise unrelated enums and records across
   // translation units.
   if (const auto *Rec = dyn_cast<clang::RecordDecl>(Decl)) {
-    if (Rec->getDefinition() == Rec) {
+    if (Rec->getDefinition() == Rec && Rec->getDeclName()) {
       Ostream << "#" << HashToString(SemanticHash(Rec));
       GraphObserver::NodeId Id(Token, Ostream.str());
       DeclToNodeId.insert(std::make_pair(Decl, Id));
