@@ -667,11 +667,23 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     // Span over "new Class"
     Span refSpan =
         new Span(filePositions.getStart(newClass), filePositions.getEnd(newClass.getIdentifier()));
+    // Span over "new Class(...)"
+    Span callSpan = new Span(refSpan.getStart(), filePositions.getEnd(newClass));
+
+    if (owner.getTree().getTag() == JCTree.Tag.VARDEF) {
+      JCVariableDecl varDef = (JCVariableDecl) owner.getTree();
+      if (varDef.sym.getKind() == ElementKind.ENUM_CONSTANT) {
+        // Handle enum constructors specially.
+        // Span over "EnumValueName"
+        refSpan = filePositions.findIdentifier(varDef.name, varDef.getStartPosition());
+        // Span over "EnumValueName(...)"
+        callSpan = new Span(refSpan.getStart(), filePositions.getEnd(varDef));
+      }
+    }
+
     EntrySet anchor = entrySets.newAnchorAndEmit(filePositions, refSpan, ctx.getSnippet());
     emitAnchor(anchor, EdgeKind.REF, ctorNode);
 
-    // Span over "new Class(...)"
-    Span callSpan = new Span(refSpan.getStart(), filePositions.getEnd(newClass));
     EntrySet callAnchor = entrySets.newAnchorAndEmit(filePositions, callSpan, ctx.getSnippet());
     emitAnchor(callAnchor, EdgeKind.REF_CALL, ctorNode);
     TreeContext parentContext = owner.getMethodParent();

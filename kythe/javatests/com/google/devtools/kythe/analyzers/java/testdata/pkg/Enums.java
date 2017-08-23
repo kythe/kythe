@@ -11,19 +11,33 @@ public enum Enums {
   //- @B defines/binding B
   //- B childof Enum
   //- B.node/kind constant
+  //- @A ref EnumCtor
+  //- @A ref/call EnumCtor
+  //- @B ref EnumCtor
+  //- @B ref/call EnumCtor
   A, B,
 
   //- @C defines/binding C
   //- C childof Enum
   //- C.node/kind constant
+  //- @C ref EnumStrCtor
+  //- @"C(\"hello\")" ref/call EnumStrCtor
   C("hello"),
 
   //- @D defines/binding D
   //- D childof Enum
   //- D.node/kind constant
   D {
-  };
+  },
 
+  //- @E defines/binding E
+  //- E.node/kind constant
+  //- @E ref EnumCtr
+  //- @"E()" ref/call EnumCtr
+  E();
+
+  //- @Enums defines/binding EnumStrCtor
   private Enums(String s) {}
+  //- @Enums defines/binding EnumCtor
   private Enums() {}
 }
