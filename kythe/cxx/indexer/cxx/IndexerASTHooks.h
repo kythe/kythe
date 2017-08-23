@@ -730,8 +730,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   ///
   /// 'NodeT' can be one of Decl, Stmt, Type, TypeLoc,
   /// NestedNameSpecifier or NestedNameSpecifierLoc.
-  template <typename NodeT>
-  IndexedParent *getIndexedParent(const NodeT &Node) {
+  template <typename NodeT> IndexedParent *getIndexedParent(const NodeT &Node) {
     return getIndexedParent(clang::ast_type_traits::DynTypedNode::create(Node));
   }
 
@@ -843,14 +842,16 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
                     bool IsFunctionDefinition, const unsigned int ParamNumber,
                     const clang::ParmVarDecl *Param, bool DeclIsImplicit);
 
-  /// \brief Record the type node for this id usage. This should only be called
-  /// if T->getInterface() returns null, which means T is of type id and not
-  /// a "real" class.
+  /// \brief Record the type node for this interface usage.
+  ///
+  /// This works properly for id and non-id types. If T->getInterface() returns
+  /// null T is of type id otherwise T is a "real" class.
   ///
   /// If this is a naked id (no protocols listed), this returns the node id
   /// for the builtin id node. Otherwise, this calls BuildNodeIdForDecl for
   /// each protocol and constructs a new tapp node for this TypeUnion.
-  MaybeFew<GraphObserver::NodeId> RecordIdTypeNode(
+  MaybeFew<GraphObserver::NodeId> RecordObjCInterfaceType(
+      GraphObserver::NodeId BaseType, bool BaseIsId,
       const clang::ObjCObjectType *T,
       llvm::ArrayRef<clang::SourceLocation> ProtocolLocs);
 

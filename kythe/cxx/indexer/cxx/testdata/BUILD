@@ -2751,6 +2751,14 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "protocol_param_no_id",
+    srcs = ["objc/protocol_param_no_id.m"],
+    ignore_dups = True,
+    objc = True,
+    tags = ["objc"],
+)
+
+cxx_indexer_test(
     name = "protocol_param_long_enough_to_hash",
     srcs = ["objc/protocol_param_long_enough_to_hash.m"],
     ignore_dups = True,

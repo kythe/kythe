@@ -201,8 +201,7 @@ int64_t ComputeKeyFromQualType(const ASTContext &Context, const QualType &QT,
 
 /// \brief Restores the type of a stacklike container of `ElementType` upon
 /// destruction.
-template <typename StackType>
-class StackSizeRestorer {
+template <typename StackType> class StackSizeRestorer {
  public:
   explicit StackSizeRestorer(StackType &Target)
       : Target(&Target), Size(Target.size()) {}
@@ -4585,14 +4584,19 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
       const auto &ObjLoc = TypeLoc.castAs<ObjCObjectTypeLoc>();
       const auto *DT = dyn_cast<ObjCObjectType>(PT);
       MaybeFew<GraphObserver::NodeId> IFaceNode;
+      MaybeFew<GraphObserver::NodeId> BaseType;
       if (const auto *IFace = DT->getInterface()) {
-        IFaceNode = BuildNodeIdForType(ObjLoc.getBaseLoc(),
-                                       IFace->getTypeForDecl(), EmitRanges);
+        BaseType = BuildNodeIdForType(ObjLoc.getBaseLoc(),
+                                      IFace->getTypeForDecl(), EmitRanges);
       } else {
-        IFaceNode = RecordIdTypeNode(DT, ObjLoc.getProtocolLocs());
+        BaseType = Observer.getNodeIdForBuiltinType("id");
       }
-      if (!IFaceNode) {
-        return IFaceNode;
+      if (BaseType) {
+        IFaceNode = RecordObjCInterfaceType(BaseType.primary(),
+                                            DT->getInterface() == nullptr, DT,
+                                            ObjLoc.getProtocolLocs());
+      } else {
+        return BaseType;
       }
 
       if (ObjLoc.getNumTypeArgs() > 0) {
@@ -4676,11 +4680,13 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::BuildNodeIdForType(
   return ID;
 }
 
-MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::RecordIdTypeNode(
-    const ObjCObjectType *T, ArrayRef<SourceLocation> ProtocolLocs) {
-  CHECK(T->getInterface() == nullptr);
-
+MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::RecordObjCInterfaceType(
+    GraphObserver::NodeId BaseType, bool BaseIsId, const ObjCObjectType *T,
+    ArrayRef<SourceLocation> ProtocolLocs) {
   const auto Protocols = T->getProtocols();
+  if (Protocols.empty()) {
+    return BaseType;
+  }
   // Use a multimap since it is sorted by key and we want our nodes sorted by
   // their (uncompressed) name. We want the items sorted by the original class
   // name because the user should be able to write down a union type
@@ -4700,21 +4706,23 @@ MaybeFew<GraphObserver::NodeId> IndexerASTVisitor::RecordIdTypeNode(
         P->getNameAsString(), PID));
   }
   if (ProtocolNodes.empty()) {
-    return Observer.getNodeIdForBuiltinType("id");
-  } else if (ProtocolNodes.size() == 1) {
+    return BaseType;
+  } else if (BaseIsId && ProtocolNodes.size() == 1) {
     // We have something like id<P1>. This is a special case of the following
     // code that handles id<P1, P2> because *this* case can skip the
     // intermediate union tapp.
     return (ProtocolNodes.begin()->second);
   }
-  // We have something like id<P1, P2>, which means this is a union of types
-  // P1 and P2.
+  // We have something like id<P1, P2> or P1<P2>, which means this is a union
+  // of types P1 and P2.
 
   std::vector<const GraphObserver::NodeId *> ProtocolNodePointers;
-  ProtocolNodePointers.resize(ProtocolNodes.size(), nullptr);
-  i = 0;
+  ProtocolNodePointers.reserve(ProtocolNodes.size() + (BaseIsId ? 0 : 1));
+  if (!BaseIsId) {
+    ProtocolNodePointers.push_back(&BaseType);
+  }
   for (const auto &PN : ProtocolNodes) {
-    ProtocolNodePointers[i++] = &(PN.second);
+    ProtocolNodePointers.push_back(&(PN.second));
   }
   // Create/find the Union node.
   auto UnionTApp = Observer.getNodeIdForBuiltinType("TypeUnion");
