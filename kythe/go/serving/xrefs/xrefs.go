@@ -1397,12 +1397,13 @@ func d2d(d *srvpb.Document, patterns []*regexp.Regexp, nodes map[string]*cpb.Nod
 			continue
 		}
 
-		n := nodeToInfo(patterns, node)
-		nodes[node.Ticket] = n
-		if def := node.DefinitionLocation; def != nil {
-			n.Definition = def.Ticket
-			if _, ok := defs[def.Ticket]; !ok {
-				defs[def.Ticket] = a2a(def, false).Anchor
+		if n := nodeToInfo(patterns, node); n != nil {
+			nodes[node.Ticket] = n
+			if def := node.DefinitionLocation; def != nil {
+				n.Definition = def.Ticket
+				if _, ok := defs[def.Ticket]; !ok {
+					defs[def.Ticket] = a2a(def, false).Anchor
+				}
 			}
 		}
 	}
