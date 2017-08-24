@@ -25,7 +25,7 @@ export function activate(context: ExtensionContext) {
   const settings = workspace.getConfiguration('kytheLanguageServer');
 
   const serverOptions: ServerOptions = {
-    command: settings.get('command') || 'kythe_languageserver',
+    command: settings.get('bin') || 'kythe_languageserver',
     args: settings.get('args'),
   };
 
