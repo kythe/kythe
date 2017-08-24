@@ -206,6 +206,14 @@ static const clang::FileEntry *SearchForFileEntry(
   return out;
 }
 
+kythe::proto::VName KytheGraphObserver::StampedVNameFromRange(
+    const GraphObserver::Range &range, const GraphObserver::NodeId &stamp) {
+  auto vname = VNameFromRange(range);
+  vname.mutable_signature()->append("@");
+  vname.mutable_signature()->append(stamp.ToClaimedString());
+  return vname;
+}
+
 kythe::proto::VName KytheGraphObserver::VNameFromRange(
     const GraphObserver::Range &range) {
   kythe::proto::VName out_name;
@@ -334,21 +342,26 @@ void KytheGraphObserver::recordNamespaceNode(
 void KytheGraphObserver::RecordRange(const proto::VName &anchor_name,
                                      const GraphObserver::Range &range) {
   if (!deferring_nodes_ || deferred_anchors_.insert(range).second) {
-    VNameRef anchor_name_ref(anchor_name);
-    recorder_->AddProperty(anchor_name_ref, NodeKindID::kAnchor);
-    if (range.Kind == GraphObserver::Range::RangeKind::Implicit) {
-      recorder_->AddProperty(anchor_name_ref, PropertyID::kSubkind, "implicit");
-    }
-    if (range.PhysicalRange.getBegin().isValid()) {
-      RecordSourceLocation(anchor_name_ref, range.PhysicalRange.getBegin(),
-                           PropertyID::kLocationStartOffset);
-      RecordSourceLocation(anchor_name_ref, range.PhysicalRange.getEnd(),
-                           PropertyID::kLocationEndOffset);
-    }
-    if (range.Kind == GraphObserver::Range::RangeKind::Wraith) {
-      recorder_->AddEdge(anchor_name_ref, EdgeKindID::kChildOfContext,
-                         VNameRefFromNodeId(range.Context));
-    }
+    UnconditionalRecordRange(anchor_name, range);
+  }
+}
+
+void KytheGraphObserver::UnconditionalRecordRange(
+    const proto::VName &anchor_name, const GraphObserver::Range &range) {
+  VNameRef anchor_name_ref(anchor_name);
+  recorder_->AddProperty(anchor_name_ref, NodeKindID::kAnchor);
+  if (range.Kind == GraphObserver::Range::RangeKind::Implicit) {
+    recorder_->AddProperty(anchor_name_ref, PropertyID::kSubkind, "implicit");
+  }
+  if (range.PhysicalRange.getBegin().isValid()) {
+    RecordSourceLocation(anchor_name_ref, range.PhysicalRange.getBegin(),
+                         PropertyID::kLocationStartOffset);
+    RecordSourceLocation(anchor_name_ref, range.PhysicalRange.getEnd(),
+                         PropertyID::kLocationEndOffset);
+  }
+  if (range.Kind == GraphObserver::Range::RangeKind::Wraith) {
+    recorder_->AddEdge(anchor_name_ref, EdgeKindID::kChildOfContext,
+                       VNameRefFromNodeId(range.Context));
   }
 }
 
@@ -376,6 +389,50 @@ void KytheGraphObserver::MetaHookDefines(const MetadataFile &meta,
     }
   }
 }
+
+void KytheGraphObserver::ApplyMetadataRules(
+    const GraphObserver::Range &source_range,
+    const GraphObserver::NodeId &primary_anchored_to,
+    EdgeKindID anchor_edge_kind, const kythe::proto::VName &anchor_name) {
+  if (source_range.Kind == Range::RangeKind::Physical) {
+    if (anchor_edge_kind == EdgeKindID::kDefinesBinding) {
+      clang::FileID def_file =
+          SourceManager->getFileID(source_range.PhysicalRange.getBegin());
+      const auto metas = meta_.equal_range(def_file);
+      if (metas.first != metas.second) {
+        auto begin = source_range.PhysicalRange.getBegin();
+        if (begin.isMacroID()) {
+          begin = SourceManager->getExpansionLoc(begin);
+        }
+        auto end = source_range.PhysicalRange.getEnd();
+        if (end.isMacroID()) {
+          end = SourceManager->getExpansionLoc(end);
+        }
+        unsigned range_begin = SourceManager->getFileOffset(begin);
+        unsigned range_end = SourceManager->getFileOffset(end);
+        for (auto meta = metas.first; meta != metas.second; ++meta) {
+          MetaHookDefines(*meta->second, VNameRef(anchor_name), range_begin,
+                          range_end, VNameRefFromNodeId(primary_anchored_to));
+        }
+      }
+    }
+  }
+}
+
+void KytheGraphObserver::RecordStampedAnchor(
+    const GraphObserver::Range &source_range,
+    const GraphObserver::NodeId &primary_anchored_to,
+    EdgeKindID anchor_edge_kind, const GraphObserver::NodeId &stamp) {
+  proto::VName anchor_name = StampedVNameFromRange(source_range, stamp);
+  if (stamped_ranges_.emplace(source_range, stamp).second) {
+    UnconditionalRecordRange(anchor_name, source_range);
+  }
+  recorder_->AddEdge(VNameRef(anchor_name), anchor_edge_kind,
+                     VNameRefFromNodeId(primary_anchored_to));
+  ApplyMetadataRules(source_range, primary_anchored_to, anchor_edge_kind,
+                     anchor_name);
+}
+
 void KytheGraphObserver::RecordAnchor(
     const GraphObserver::Range &source_range,
     const GraphObserver::NodeId &primary_anchored_to,
@@ -399,29 +456,8 @@ void KytheGraphObserver::RecordAnchor(
   if (cl == Claimability::Unclaimable) {
     recorder_->AddEdge(VNameRef(anchor_name), anchor_edge_kind,
                        VNameRefFromNodeId(primary_anchored_to));
-    if (source_range.Kind == Range::RangeKind::Physical) {
-      if (anchor_edge_kind == EdgeKindID::kDefinesBinding) {
-        clang::FileID def_file =
-            SourceManager->getFileID(source_range.PhysicalRange.getBegin());
-        const auto metas = meta_.equal_range(def_file);
-        if (metas.first != metas.second) {
-          auto begin = source_range.PhysicalRange.getBegin();
-          if (begin.isMacroID()) {
-            begin = SourceManager->getExpansionLoc(begin);
-          }
-          auto end = source_range.PhysicalRange.getEnd();
-          if (end.isMacroID()) {
-            end = SourceManager->getExpansionLoc(end);
-          }
-          unsigned range_begin = SourceManager->getFileOffset(begin);
-          unsigned range_end = SourceManager->getFileOffset(end);
-          for (auto meta = metas.first; meta != metas.second; ++meta) {
-            MetaHookDefines(*meta->second, VNameRef(anchor_name), range_begin,
-                            range_end, VNameRefFromNodeId(primary_anchored_to));
-          }
-        }
-      }
-    }
+    ApplyMetadataRules(source_range, primary_anchored_to, anchor_edge_kind,
+                       anchor_name);
   }
 }
 
@@ -616,33 +652,29 @@ void KytheGraphObserver::recordDocumentationRange(
 
 void KytheGraphObserver::recordFullDefinitionRange(
     const GraphObserver::Range &source_range, const NodeId &node) {
-  RecordAnchor(source_range, node, EdgeKindID::kDefinesFull,
-               Claimability::Claimable);
+  RecordStampedAnchor(source_range, node, EdgeKindID::kDefinesFull, node);
 }
 
 void KytheGraphObserver::recordDefinitionBindingRange(
     const GraphObserver::Range &binding_range, const NodeId &node) {
-  RecordAnchor(binding_range, node, EdgeKindID::kDefinesBinding,
-               Claimability::Claimable);
+  RecordStampedAnchor(binding_range, node, EdgeKindID::kDefinesBinding, node);
 }
 
 void KytheGraphObserver::recordDefinitionRangeWithBinding(
     const GraphObserver::Range &source_range,
     const GraphObserver::Range &binding_range, const NodeId &node) {
-  RecordAnchor(source_range, node, EdgeKindID::kDefinesFull,
-               Claimability::Claimable);
-  RecordAnchor(binding_range, node, EdgeKindID::kDefinesBinding,
-               Claimability::Claimable);
+  RecordStampedAnchor(source_range, node, EdgeKindID::kDefinesFull, node);
+  RecordStampedAnchor(binding_range, node, EdgeKindID::kDefinesBinding, node);
 }
 
 void KytheGraphObserver::recordCompletionRange(
     const GraphObserver::Range &source_range, const NodeId &node,
-    Specificity spec) {
-  RecordAnchor(source_range, node,
-               spec == Specificity::UniquelyCompletes
-                   ? EdgeKindID::kUniquelyCompletes
-                   : EdgeKindID::kCompletes,
-               Claimability::Unclaimable);
+    Specificity spec, const NodeId &completing_node) {
+  RecordStampedAnchor(source_range, node,
+                      spec == Specificity::UniquelyCompletes
+                          ? EdgeKindID::kUniquelyCompletes
+                          : EdgeKindID::kCompletes,
+                      completing_node);
 }
 
 GraphObserver::NodeId KytheGraphObserver::nodeIdForNominalTypeNode(

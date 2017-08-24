@@ -251,7 +251,8 @@ class KytheGraphObserver : public GraphObserver {
                                             const NodeId &DeclId) override;
 
   void recordCompletionRange(const Range &SourceRange, const NodeId &DefnId,
-                             Specificity Spec) override;
+                             Specificity Spec,
+                             const NodeId &CompletingNode) override;
 
   void recordTypeSpellingLocation(const Range &SourceRange,
                                   const NodeId &TypeId,
@@ -396,6 +397,19 @@ class KytheGraphObserver : public GraphObserver {
   kythe::proto::VName VNameFromFileEntry(const clang::FileEntry *file_entry);
   kythe::proto::VName ClaimableVNameFromFileID(const clang::FileID &file_id);
   kythe::proto::VName VNameFromRange(const GraphObserver::Range &range);
+  kythe::proto::VName StampedVNameFromRange(const GraphObserver::Range &range,
+                                            const GraphObserver::NodeId &stamp);
+  /// Checks whether the edge from the anchor with `anchor_vname` covering
+  /// `source_range` to `primary_anchored_to` with kind `anchor_edge_kind`
+  /// is interesting to any metadata provider.
+  void ApplyMetadataRules(const GraphObserver::Range &source_range,
+                          const GraphObserver::NodeId &primary_anchored_to,
+                          EdgeKindID anchor_edge_kind,
+                          const kythe::proto::VName &anchor_name);
+  void RecordStampedAnchor(const GraphObserver::Range &source_range,
+                           const GraphObserver::NodeId &primary_anchored_to,
+                           EdgeKindID anchor_edge_kind,
+                           const GraphObserver::NodeId &stamp);
   void RecordAnchor(const GraphObserver::Range &source_range,
                     const GraphObserver::NodeId &primary_anchored_to,
                     EdgeKindID anchor_edge_kind, Claimability claimability);
@@ -405,6 +419,8 @@ class KytheGraphObserver : public GraphObserver {
   /// Records a Range.
   void RecordRange(const proto::VName &range_vname,
                    const GraphObserver::Range &range);
+  void UnconditionalRecordRange(const proto::VName &range_vname,
+                                const GraphObserver::Range &range);
   /// Execute metadata actions for `defines` edges.
   void MetaHookDefines(const MetadataFile &meta, const VNameRef &anchor,
                        unsigned range_begin, unsigned range_end,
@@ -421,6 +437,13 @@ class KytheGraphObserver : public GraphObserver {
              (range.Kind == Range::RangeKind::Physical
                   ? 0
                   : (range.Kind == Range::RangeKind::Wraith ? 1 : 2));
+    }
+  };
+
+  struct StampedRangeHash {
+    size_t operator()(const std::pair<Range, GraphObserver::NodeId> &p) const {
+      return (std::hash<std::string>()(p.second.getRawIdentity())) << 1 ^
+             RangeHash()(p.first);
     }
   };
 
@@ -502,6 +525,9 @@ class KytheGraphObserver : public GraphObserver {
   /// A set of (source range, edge kind, target node) tuples, used if
   /// drop_redundant_wraiths_ is asserted.
   std::unordered_set<RangeEdge, ContextFreeRangeEdgeHash> range_edges_;
+  /// Used to eliminate redundant stamped ranges.
+  std::unordered_set<std::pair<Range, GraphObserver::NodeId>, StampedRangeHash>
+      stamped_ranges_;
   /// If true, anchors and edges from a given physical source location will
   /// be dropped if they were previously emitted from the same location
   /// with the same edge kind to the same target.

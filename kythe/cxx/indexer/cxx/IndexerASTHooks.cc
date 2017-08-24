@@ -201,7 +201,8 @@ int64_t ComputeKeyFromQualType(const ASTContext &Context, const QualType &QT,
 
 /// \brief Restores the type of a stacklike container of `ElementType` upon
 /// destruction.
-template <typename StackType> class StackSizeRestorer {
+template <typename StackType>
+class StackSizeRestorer {
  public:
   explicit StackSizeRestorer(StackType &Target)
       : Target(&Target), Size(Target.size()) {}
@@ -1869,7 +1870,8 @@ bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl *Decl) {
             NameRangeInContext.primary(), TargetDecl,
             NextDeclFile == DeclFile
                 ? GraphObserver::Specificity::UniquelyCompletes
-                : GraphObserver::Specificity::Completes);
+                : GraphObserver::Specificity::Completes,
+            DeclNode);
       }
       Completions.push_back(LibrarySupport::Completion{NextDecl, TargetDecl});
     }
@@ -2016,7 +2018,8 @@ bool IndexerASTVisitor::VisitEnumDecl(const clang::EnumDecl *Decl) {
             RCC.primary(), BuildNodeIdForDecl(NextDecl),
             NextDeclFile == DeclFile
                 ? GraphObserver::Specificity::UniquelyCompletes
-                : GraphObserver::Specificity::Completes);
+                : GraphObserver::Specificity::Completes,
+            DeclNode);
       }
     }
   }
@@ -2407,7 +2410,8 @@ bool IndexerASTVisitor::VisitRecordDecl(const clang::RecordDecl *Decl) {
             NameRangeInContext.primary(), TargetDecl,
             NextDeclFile == DeclFile
                 ? GraphObserver::Specificity::UniquelyCompletes
-                : GraphObserver::Specificity::Completes);
+                : GraphObserver::Specificity::Completes,
+            DeclNode);
       }
     }
   }
@@ -2714,7 +2718,8 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
             NameRangeInContext.primary(), TargetDecl,
             NextDeclFile == DeclFile
                 ? GraphObserver::Specificity::UniquelyCompletes
-                : GraphObserver::Specificity::Completes);
+                : GraphObserver::Specificity::Completes,
+            OuterNode);
       }
     }
   }
@@ -4838,7 +4843,8 @@ bool IndexerASTVisitor::VisitObjCImplementationDecl(
             NameRangeInContext.primary(), TargetDecl,
             InterfaceFile == DeclFile
                 ? GraphObserver::Specificity::UniquelyCompletes
-                : GraphObserver::Specificity::Completes);
+                : GraphObserver::Specificity::Completes,
+            DeclNode);
       }
       RecordCompletesForRedecls(ImplDecl, NameRange, DeclNode);
     }
@@ -4887,7 +4893,8 @@ bool IndexerASTVisitor::VisitObjCCategoryImplDecl(
             NameRangeInContext.primary(), DeclNode,
             DeclFile == ImplDeclFile
                 ? GraphObserver::Specificity::UniquelyCompletes
-                : GraphObserver::Specificity::Completes);
+                : GraphObserver::Specificity::Completes,
+            ImplDeclNode);
       }
       RecordCompletesForRedecls(ImplDecl, NameRange, ImplDeclNode);
     }
@@ -5129,7 +5136,8 @@ void IndexerASTVisitor::RecordCompletesForRedecls(
             NameRangeInContext.primary(), TargetDecl,
             NextDeclFile == DeclFile
                 ? GraphObserver::Specificity::UniquelyCompletes
-                : GraphObserver::Specificity::Completes);
+                : GraphObserver::Specificity::Completes,
+            DeclNode);
       }
     }
   }
@@ -5244,7 +5252,8 @@ bool IndexerASTVisitor::VisitObjCMethodDecl(const clang::ObjCMethodDecl *Decl) {
                   ImplNameRangeInContext.primary(), BuildNodeIdForDecl(Decl),
                   DeclFile == ImplFile
                       ? GraphObserver::Specificity::UniquelyCompletes
-                      : GraphObserver::Specificity::Completes);
+                      : GraphObserver::Specificity::Completes,
+                  Node);
             }
           }
         }
@@ -5275,7 +5284,8 @@ bool IndexerASTVisitor::VisitObjCMethodDecl(const clang::ObjCMethodDecl *Decl) {
       Observer.recordCompletionRange(
           DeclNameRangeInContext, BuildNodeIdForDecl(CD),
           CDDeclFile == DefnFile ? GraphObserver::Specificity::UniquelyCompletes
-                                 : GraphObserver::Specificity::Completes);
+                                 : GraphObserver::Specificity::Completes,
+          Node);
     }
 
     // Connect all other redecls to this definition with a completion edge.
@@ -5289,7 +5299,8 @@ bool IndexerASTVisitor::VisitObjCMethodDecl(const clang::ObjCMethodDecl *Decl) {
             DeclNameRangeInContext, BuildNodeIdForDecl(NextDecl),
             RedeclFile == DefnFile
                 ? GraphObserver::Specificity::UniquelyCompletes
-                : GraphObserver::Specificity::Completes);
+                : GraphObserver::Specificity::Completes,
+            Node);
       }
     }
   }
