@@ -238,4 +238,5 @@ proto_library(
     name = "entryset_proto",
     srcs = ["entryset.proto"],
     go_api_version = 2,
+    java_api_version = 2,
 )
