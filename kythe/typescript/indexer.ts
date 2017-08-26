@@ -249,6 +249,8 @@ class Vistor {
           break;
         case ts.SyntaxKind.BindingElement:
         case ts.SyntaxKind.ClassDeclaration:
+        case ts.SyntaxKind.EnumDeclaration:
+        case ts.SyntaxKind.EnumMember:
         case ts.SyntaxKind.FunctionDeclaration:
         case ts.SyntaxKind.InterfaceDeclaration:
         case ts.SyntaxKind.ImportSpecifier:
@@ -631,7 +633,7 @@ class Vistor {
    * the decl parameter is the union of the attributes of the two types.
    */
   visitVariableDeclaration(decl: {
-    name: ts.BindingName | ts.PropertyName,
+    name: ts.BindingName|ts.PropertyName,
     type?: ts.TypeNode,
     initializer?: ts.Expression,
   }) {
@@ -774,6 +776,30 @@ class Vistor {
     }
   }
 
+  visitEnumDeclaration(decl: ts.EnumDeclaration) {
+    let sym = this.getSymbolAtLocation(decl.name);
+    if (!sym) return;
+    const kType = this.getSymbolName(sym, TSNamespace.TYPE);
+    this.emitNode(kType, 'record');
+    const kValue = this.getSymbolName(sym, TSNamespace.VALUE);
+    this.emitNode(kValue, 'constant');
+
+    const anchor = this.newAnchor(decl.name);
+    this.emitEdge(anchor, 'defines/binding', kType);
+    this.emitEdge(anchor, 'defines/binding', kValue);
+    for (const member of decl.members) {
+      this.visit(member);
+    }
+  }
+
+  visitEnumMember(decl: ts.EnumMember) {
+    const sym = this.getSymbolAtLocation(decl.name);
+    if (!sym) return;
+    const kMember = this.getSymbolName(sym, TSNamespace.VALUE);
+    this.emitNode(kMember, 'constant');
+    this.emitEdge(this.newAnchor(decl.name), 'defines/binding', kMember);
+  }
+
   /** visit is the main dispatch for visiting AST nodes. */
   visit(node: ts.Node): void {
     switch (node.kind) {
@@ -801,6 +827,10 @@ class Vistor {
         return this.visitInterfaceDeclaration(node as ts.InterfaceDeclaration);
       case ts.SyntaxKind.TypeAliasDeclaration:
         return this.visitTypeAliasDeclaration(node as ts.TypeAliasDeclaration);
+      case ts.SyntaxKind.EnumDeclaration:
+        return this.visitEnumDeclaration(node as ts.EnumDeclaration);
+      case ts.SyntaxKind.EnumMember:
+        return this.visitEnumMember(node as ts.EnumMember);
       case ts.SyntaxKind.TypeReference:
         return this.visitType(node as ts.TypeNode);
       case ts.SyntaxKind.BindingElement:
