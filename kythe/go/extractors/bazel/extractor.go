@@ -232,11 +232,15 @@ func (c *Config) FetchInputs(ctx context.Context, paths []string) ([]*apb.FileDa
 	// Fetch concurrently. Each element of the proto slices is accessed by a
 	// single goroutine corresponding to its index.
 
+	throttle := make(chan struct{}, 256)
 	fileData := make([]*apb.FileData, len(paths))
 	var g errgroup.Group
 	for i, path := range paths {
 		i, path := i, path
 		g.Go(func() error {
+			throttle <- struct{}{}
+			defer func() { <-throttle }()
+
 			fd, err := c.readFileData(ctx, path)
 			if err != nil {
 				log.Printf("ERROR: Reading input file: %v", err)
