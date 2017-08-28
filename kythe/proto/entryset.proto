@@ -44,8 +44,12 @@ message EntrySet {
   // definition uses the same field ordering so as long as the ticket is in
   // canonical form I think it should be equivalent.
 
-  // One entry for each unique node named in the entry set, in canonical order.
-  // The index of a node in this field is its id.
+  // One entry for each unique node named in the entry set.  The index of a
+  // node in this field is its id.
+  //
+  // If the nodes are stored in canonical vname order, the EntrySet is also
+  // said to be in canonical order. However, an EntrySet is valid whether or
+  // not this applies.
   repeated Node nodes = 1;
 
   message Fact {
