@@ -44,10 +44,8 @@ import com.sun.source.tree.MemberReferenceTree.ReferenceMode;
 import com.sun.source.tree.Tree.Kind;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
-import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import com.sun.tools.javac.code.Symbol.PackageSymbol;
 import com.sun.tools.javac.code.Symtab;
-import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.code.TypeTag;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCAnnotation;
@@ -82,15 +80,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
-import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Name;
 import javax.tools.FileObject;
@@ -507,20 +502,16 @@ public class KytheTreeScanner extends JCTreeScanner<JavaNode, TreeContext> {
     EntrySet fnTypeNode = entrySets.newFunctionTypeAndEmit(ret, toVNames(paramTypes));
     entrySets.emitEdge(methodNode, EdgeKind.TYPED, fnTypeNode.getVName());
 
-    ClassSymbol ownerClass = (ClassSymbol) methodDef.sym.owner;
-    Set<Element> ownerDirectSupertypes = new HashSet<>();
-    ownerDirectSupertypes.add(ownerClass.getSuperclass().asElement());
-    for (Type interfaceParent : ownerClass.getInterfaces()) {
-      ownerDirectSupertypes.add(interfaceParent.asElement());
-    }
-    for (MethodSymbol superMethod : JavacUtil.superMethods(javaContext, methodDef.sym)) {
-      VName superNode = getNode(superMethod);
-      if (ownerDirectSupertypes.contains(superMethod.owner)) {
-        entrySets.emitEdge(methodNode, EdgeKind.OVERRIDES, superNode);
-      } else {
-        entrySets.emitEdge(methodNode, EdgeKind.OVERRIDES_TRANSITIVE, superNode);
-      }
-    }
+    JavacUtil.visitSuperMethods(
+        javaContext,
+        methodDef.sym,
+        (sym, kind) ->
+            entrySets.emitEdge(
+                methodNode,
+                kind == JavacUtil.OverrideKind.DIRECT
+                    ? EdgeKind.OVERRIDES
+                    : EdgeKind.OVERRIDES_TRANSITIVE,
+                getNode(sym)));
 
     // Set the resulting node for the method and then recurse through its body.  Setting the node
     // first is necessary to correctly add childof edges in the callgraph.

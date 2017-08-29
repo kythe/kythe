@@ -83,11 +83,8 @@ public interface Interfaces {
       return x < y;
     }
 
-    // TODO(mazurak) "overrides/transitive" is what the Java indexer currently outputs here, but
-    // maybe it shouldn't. We need a more rigorous definition for the various "overrides" edges.
-    //
     //- @equalTo defines/binding IntegerEqualTo
-    //- IntegerEqualTo overrides/transitive OrderedEqualTo
+    //- IntegerEqualTo overrides OrderedEqualTo
     //- IntegerEqualTo childof IntComparisonClass
     @Override public boolean equalTo(Integer x, Integer y) {
       return x.equals(y);
