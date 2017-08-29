@@ -64,8 +64,11 @@ import (
 	"sort"
 
 	"github.com/golang/protobuf/proto"
+	"kythe.io/kythe/go/util/kytheuri"
+	"kythe.io/kythe/go/util/schema/edges"
 
 	espb "kythe.io/kythe/proto/entryset_proto"
+	intpb "kythe.io/kythe/proto/internal_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
 )
 
@@ -147,6 +150,38 @@ func (s *Set) Add(e *spb.Entry) error {
 		})
 	}
 	return nil
+}
+
+// Sources groups the entries of the set into Source messages and invokes f for
+// each one. If f returns false the visit is aborted.
+func (s *Set) Sources(f func(*intpb.Source) bool) {
+	for i := 0; i < len(s.nodes); i++ {
+		n := s.node(nid(i))
+		nid := nid(i)
+		src := &intpb.Source{
+			Ticket:     s.ticket(n),
+			Facts:      make(map[string][]byte),
+			EdgeGroups: make(map[string]*intpb.Source_EdgeGroup),
+		}
+		for fact := range s.facts[nid] {
+			src.Facts[s.symbol(fact.name)] = []byte(s.symbol(fact.value))
+		}
+		for edge := range s.edges[nid] {
+			kind, ordinal, _ := edges.ParseOrdinal(s.symbol(edge.kind))
+			eg := src.EdgeGroups[kind]
+			if eg == nil {
+				eg = new(intpb.Source_EdgeGroup)
+				src.EdgeGroups[kind] = eg
+			}
+			eg.Edges = append(eg.Edges, &intpb.Source_Edge{
+				Ticket:  s.ticket(s.node(edge.target)),
+				Ordinal: int32(ordinal),
+			})
+		}
+		if !f(src) {
+			return // early exit
+		}
+	}
 }
 
 // Visit calls f with each entry in the set. If s is canonical, entries are
@@ -609,6 +644,17 @@ func (s *Set) vname(n node) *spb.VName {
 		Root:      s.symbol(n.root),
 		Language:  s.symbol(n.language),
 	}
+}
+
+// ticket returns a Kythe ticket equivalent to n.
+func (s *Set) ticket(n node) string {
+	return (&kytheuri.URI{
+		Signature: s.symbol(n.signature),
+		Corpus:    s.symbol(n.corpus),
+		Path:      s.symbol(n.path),
+		Root:      s.symbol(n.root),
+		Language:  s.symbol(n.language),
+	}).String()
 }
 
 // addFact adds f as a fact related to n.

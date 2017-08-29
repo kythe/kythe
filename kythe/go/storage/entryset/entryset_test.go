@@ -25,8 +25,11 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
+	"kythe.io/kythe/go/test/testutil"
 	"kythe.io/kythe/go/util/kytheuri"
 
+	espb "kythe.io/kythe/proto/entryset_proto"
+	intpb "kythe.io/kythe/proto/internal_proto"
 	spb "kythe.io/kythe/proto/storage_proto"
 )
 
@@ -101,6 +104,10 @@ func E(source, target, kind string) *spb.Entry {
 	}
 }
 
+func SYM(suffix string, prefix int32) *espb.EntrySet_String {
+	return &espb.EntrySet_String{Prefix: prefix, Suffix: []byte(suffix)}
+}
+
 func estr(e *spb.Entry) [13]string {
 	s, t := e.Source, e.Target
 	return [...]string{
@@ -144,7 +151,7 @@ var testEntries = []*spb.Entry{
 	E("//alpha?path=p/q", "//alpha?path=p/r", "includes"),
 	F("//bravo?path=P?root=R#sig", "loc/start", "122"),
 	E("//gamma#blah", "//gamma#blah", "selfloop"),
-	E("//a#first", "//b#second", "outbound"),
+	E("//a#first", "//b#second", "outbound.3"),
 	E("//b#second", "//a#first", "return"),
 	F("//b#second", "eats", "cabbage"),
 }
@@ -157,6 +164,85 @@ func testSet(t *testing.T) *Set {
 		}
 	}
 	return s
+}
+
+func TestSources(t *testing.T) {
+	// An EntrySet with two nodes, each having a single fact and a single
+	// outbound edge to the other.
+	input := &espb.EntrySet{
+		Nodes: []*espb.EntrySet_Node{{
+			Corpus:    4,
+			Language:  5,
+			Path:      9,
+			Signature: 7,
+		}, {
+			Corpus:    4,
+			Language:  5,
+			Path:      6,
+			Signature: 8,
+		}},
+
+		FactGroups: []*espb.EntrySet_FactGroup{{
+			Facts: []*espb.EntrySet_Fact{{Name: 1, Value: 10}},
+		}, {
+			Facts: []*espb.EntrySet_Fact{{Name: 1, Value: 11}},
+		}},
+
+		EdgeGroups: []*espb.EntrySet_EdgeGroup{{
+			Edges: []*espb.EntrySet_Edge{{Kind: 2, Target: 1}},
+		}, {
+			Edges: []*espb.EntrySet_Edge{{Kind: 3, Target: 0}},
+		}},
+
+		Symbols: []*espb.EntrySet_String{
+			SYM("/node/kind", 0),       // 1
+			SYM("/edge/nonordinal", 0), // 2
+			SYM("ordinal.3", 6),        // 3
+			SYM("corpus", 0),           // 4
+			SYM("language", 0),         // 5
+			SYM("other/path", 0),       // 6
+			SYM("signature1", 0),       // 7
+			SYM("2", 9),                // 8
+			SYM("some/path", 0),        // 9
+			SYM("whatever", 0),         // 10
+			SYM("oozit", 2),            // 11
+		},
+	}
+
+	const ticket0 = "kythe://corpus?lang=language?path=some/path#signature1"
+	const ticket1 = "kythe://corpus?lang=language?path=other/path#signature2"
+	want := []*intpb.Source{{
+		Ticket: ticket0,
+		Facts:  map[string][]byte{"/node/kind": []byte("whatever")},
+		EdgeGroups: map[string]*intpb.Source_EdgeGroup{
+			"/edge/nonordinal": {Edges: []*intpb.Source_Edge{{
+				Ticket: ticket1,
+			}}},
+		},
+	}, {
+		Ticket: ticket1,
+		Facts:  map[string][]byte{"/node/kind": []byte("whoozit")},
+		EdgeGroups: map[string]*intpb.Source_EdgeGroup{
+			"/edge/ordinal": {Edges: []*intpb.Source_Edge{{
+				Ticket:  ticket0,
+				Ordinal: 3,
+			}}},
+		},
+	}}
+
+	s, err := Decode(input)
+	if err != nil {
+		t.Fatalf("Decoding set failed: %v", err)
+	}
+
+	var got []*intpb.Source
+	s.Sources(func(src *intpb.Source) bool {
+		got = append(got, src)
+		return true
+	})
+	if err := testutil.DeepEqual(want, got); err != nil {
+		t.Errorf("Sources failed: %v", err)
+	}
 }
 
 func TestVisit(t *testing.T) {
