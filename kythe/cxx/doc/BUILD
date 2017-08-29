@@ -53,7 +53,6 @@ cc_library(
         ":markup_handler",
         "//kythe/cxx/common:lib",
         "//kythe/proto:common_proto_cc",
-        "//kythe/proto:storage_proto_cc",
         "//kythe/proto:xref_proto_cc",
         "@com_github_google_glog//:glog",
     ],
@@ -67,6 +66,8 @@ cc_library(
     ],
     deps = [
         ":html_renderer",
+        ":markup_handler",
+        "//kythe/proto:common_proto_cc",
         "//third_party:gtest",
     ],
 )

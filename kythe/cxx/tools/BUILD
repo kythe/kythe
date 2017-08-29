@@ -54,7 +54,6 @@ cc_library(
     ],
     deps = [
         "//kythe/cxx/common:index_pack",
-        "//kythe/cxx/common:lib",
         "//kythe/proto:analysis_proto_cc",
         "//kythe/proto:claim_proto_cc",
         "//third_party/proto:protobuf",

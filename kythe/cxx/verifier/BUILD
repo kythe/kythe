@@ -119,6 +119,7 @@ cc_library(
     ],
     deps = [
         ":lib",
+        "//kythe/proto:common_proto_cc",
         "//kythe/proto:storage_proto_cc",
         "//third_party:gtest",
         "//third_party/proto:protobuf",
