@@ -26,7 +26,7 @@ if [[ ! -d "$TABLE" ]]; then
   exit 1
 fi
 
-scan_leveldb=kythe/go/util/tools/scan_leveldb
+scan_leveldb=kythe/go/util/tools/scan_leveldb/scan_leveldb
 jq=third_party/jq/jq
 
 if [[ ! -x "$scan_leveldb" || -d "$scan_leveldb" ]]; then

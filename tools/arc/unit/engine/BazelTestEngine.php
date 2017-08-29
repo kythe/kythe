@@ -43,7 +43,7 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
     if (empty($targets)) {
       return array();
     }
-    $targets[] = "//kythe/go/util/tools:print_test_status";
+    $targets[] = "//kythe/go/util/tools/print_test_status";
     return $this->runTests($targets);
   }
 
@@ -169,7 +169,7 @@ final class BazelTestEngine extends ArcanistUnitTestEngine {
 
   private function parseTestResultFile($target) {
     $path = "bazel-testlogs/".str_replace(":", "/", substr($target, 2))."/test.cache_status";
-    $future = new ExecFuture("bazel-bin/kythe/go/util/tools/print_test_status %s", $path);
+    $future = new ExecFuture("bazel-bin/kythe/go/util/tools/print_test_status/print_test_status %s", $path);
     $future->setCWD($this->project_root);
     return json_decode($future->resolvex()[0]);
   }

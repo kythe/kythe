@@ -2,7 +2,7 @@ sh_binary(
     name = "debug_serving",
     srcs = ["debug_serving.sh"],
     data = [
-        "//kythe/go/util/tools:scan_leveldb",
+        "//kythe/go/util/tools/scan_leveldb",
         "//third_party/jq",
     ],
 )

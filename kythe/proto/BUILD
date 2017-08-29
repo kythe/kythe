@@ -214,7 +214,7 @@ proto_library(
     java_api_version = 2,
     visibility = [
         "//kythe/go/serving:__subpackages__",
-        "//kythe/go/util/tools:__pkg__",
+        "//kythe/go/util/tools:__subpackages__",
     ],
     deps = [":common_proto"],
 )
