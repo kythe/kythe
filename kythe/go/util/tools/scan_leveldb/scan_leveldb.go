@@ -86,7 +86,7 @@ func main() {
 
 			it, err := db.ScanPrefix([]byte(*keyPrefix), nil)
 			if err != nil {
-				log.Fatalf("Error creating iterator for %q: v", path, err)
+				log.Fatalf("Error creating iterator for %q: %v", path, err)
 			}
 			defer it.Close()
 
