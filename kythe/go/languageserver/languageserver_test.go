@@ -136,8 +136,8 @@ func TestReferences(t *testing.T) {
 							PreText: "hi",
 						}}}}}}}}}
 
-	srv := NewServer(c, func(_ string) (PathConfig, error) {
-		return NewSettingsPathConfig(Settings{
+	srv := NewServer(c, func(_ lsp.DocumentURI) (Workspace, error) {
+		return NewSettingsWorkspace(Settings{
 			Root: "/root/dir/",
 			Mappings: []MappingConfig{{
 				Local: ":path*",

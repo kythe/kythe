@@ -20,8 +20,8 @@ go_library(
         "languageserver.go",
         "handler.go",
         "document.go",
-        "path.go",
-        "settings.go",
+        "workspace.go",
+        "settingsworkspace.go"
     ],
     deps = [
         "//kythe/go/languageserver/pathmap",
@@ -42,7 +42,7 @@ go_library(
 go_test(
     name = "languageserver_test",
     size = "small",
-    srcs = ["document_test.go", "path_test.go", "languageserver_test.go"],
+    srcs = ["document_test.go", "workspace_test.go", "languageserver_test.go"],
     library = "languageserver",
     visibility = ["//visibility:private"],
     deps = [

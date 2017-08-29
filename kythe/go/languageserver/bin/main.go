@@ -25,6 +25,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"path/filepath"
 	"time"
 
 	"kythe.io/kythe/go/languageserver/languageserver"
@@ -40,6 +41,12 @@ var (
 
 func main() {
 	flag.Parse()
+	// Set up the log file
+	file, err := os.OpenFile(filepath.Join(os.TempDir(), "kythe-ls-"+time.Now().Format("20060102-150405")+".log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, os.ModePerm)
+	if err != nil {
+		log.Fatalf("Unable to create log file: %v", err)
+	}
+	log.SetOutput(file)
 
 	host := fmt.Sprintf("%s:%d", *host, *port)
 
@@ -51,7 +58,7 @@ func main() {
 	conn.Close()
 
 	client := xrefs.WebClient("http://" + host)
-	server := languageserver.NewServer(client, languageserver.SettingsPathConfigProvider)
+	server := languageserver.NewServer(client, languageserver.NewSettingsWorkspaceFromURI)
 
 	<-jsonrpc2.NewConn(
 		context.Background(),

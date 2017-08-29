@@ -25,7 +25,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net/url"
 
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/util/kytheuri"
@@ -39,19 +38,19 @@ import (
 
 // Server provides a Language Server for interacting with data in a Kythe index
 type Server struct {
-	docs         map[string]*document
-	paths        PathConfig
+	workspaces   []Workspace
+	docs         map[LocalFile]*document
 	XRefs        xrefs.Service
-	pathProvider PathConfigProvider
+	newWorkspace func(lsp.DocumentURI) (Workspace, error)
 }
 
 // NewServer constructs a Server object
-func NewServer(x xrefs.Service, s PathConfigProvider) Server {
+func NewServer(x xrefs.Service, newWorkspace func(lsp.DocumentURI) (Workspace, error)) Server {
 	return Server{
-		docs:         make(map[string]*document),
-		paths:        nil,
+		docs:         make(map[LocalFile]*document),
+		workspaces:   nil,
 		XRefs:        x,
-		pathProvider: s,
+		newWorkspace: newWorkspace,
 	}
 }
 
@@ -59,20 +58,6 @@ func NewServer(x xrefs.Service, s PathConfigProvider) Server {
 // receive configuration info (such as the project root) and announce its capabilities.
 func (ls *Server) Initialize(params lsp.InitializeParams) (*lsp.InitializeResult, error) {
 	log.Println("Server Initializing...")
-
-	rootURI, err := url.Parse(string(params.Root()))
-	if err != nil {
-		return nil, err
-	}
-
-	pc, err := ls.pathProvider(rootURI.Path)
-	if err != nil {
-		return nil, err
-	}
-
-	ls.paths = pc
-
-	log.Printf("Root found at %q", ls.paths.Root())
 
 	fullSync := lsp.TDSKFull
 	return &lsp.InitializeResult{
@@ -92,13 +77,17 @@ func (ls *Server) Initialize(params lsp.InitializeParams) (*lsp.InitializeResult
 // been opened. The Kythe Language Server uses this time to fetch file
 // decorations.
 func (ls *Server) TextDocumentDidOpen(params lsp.DidOpenTextDocumentParams) error {
-	local, err := ls.paths.LocalFromURI(params.TextDocument.URI)
+	log.Printf("Opened file: %q", params.TextDocument.URI)
+
+	local, err := ls.localFromURI(params.TextDocument.URI)
 	if err != nil {
 		return fmt.Errorf("failed creating local path from URI %q:\n%v", params.TextDocument.URI, err)
 
 	}
 
-	ticket, err := ls.paths.KytheURIFromLocal(local)
+	log.Printf("Found %q in workspace %q", local.RelativePath, local.Workspace.Root())
+
+	ticket, err := local.KytheURI()
 	if err != nil {
 		return err
 	}
@@ -136,17 +125,19 @@ func (ls *Server) TextDocumentDidOpen(params lsp.DidOpenTextDocumentParams) erro
 		})
 	}
 
-	defLocs := ls.defLocations(dec.DefinitionLocations)
-
+	defLocs := ls.defLocations(local.Workspace, dec.DefinitionLocations)
+	log.Printf("Found %d defs in file %q", len(defLocs), ticket.String())
 	log.Printf("Found %d refs in file %q", len(refs), ticket.String())
 	ls.docs[local] = newDocument(refs, string(dec.SourceText), params.TextDocument.Text, defLocs)
+	log.Printf("Currently opened: %d files", len(ls.docs))
+
 	return nil
 }
 
 // TextDocumentDidChange is called when the client edits a file. The Kythe
 // Language Server simply stores the new content and marks the file as dirty
 func (ls *Server) TextDocumentDidChange(params lsp.DidChangeTextDocumentParams) error {
-	local, err := ls.paths.LocalFromURI(params.TextDocument.URI)
+	local, err := ls.localFromURI(params.TextDocument.URI)
 	if err != nil {
 		return err
 	}
@@ -167,7 +158,7 @@ func (ls *Server) TextDocumentDidChange(params lsp.DidChangeTextDocumentParams) 
 // this removal shouldn't leak memory
 func (ls *Server) TextDocumentDidClose(params lsp.DidCloseTextDocumentParams) error {
 	log.Printf("Document close notification received: %v", params)
-	local, err := ls.paths.LocalFromURI(params.TextDocument.URI)
+	local, err := ls.localFromURI(params.TextDocument.URI)
 	if err != nil {
 		return err
 	}
@@ -185,7 +176,7 @@ func (ls *Server) TextDocumentDidClose(params lsp.DidCloseTextDocumentParams) er
 func (ls *Server) TextDocumentReferences(params lsp.ReferenceParams) ([]lsp.Location, error) {
 	log.Printf("Searching for references at %v", params.TextDocumentPositionParams)
 
-	local, err := ls.paths.LocalFromURI(params.TextDocument.URI)
+	local, err := ls.localFromURI(params.TextDocument.URI)
 	if err != nil {
 		return nil, err
 	}
@@ -219,7 +210,7 @@ func (ls *Server) TextDocumentReferences(params lsp.ReferenceParams) ([]lsp.Loca
 		return []lsp.Location{}, nil
 	}
 
-	return ls.refLocs(refs), nil
+	return ls.refLocs(local.Workspace, refs), nil
 }
 
 // TextDocumentDefinition uses a position in code to produce a list of
@@ -230,7 +221,7 @@ func (ls *Server) TextDocumentReferences(params lsp.ReferenceParams) ([]lsp.Loca
 // Therefore, if no error is returned, a non-nil location slice must be returned
 func (ls *Server) TextDocumentDefinition(params lsp.TextDocumentPositionParams) ([]lsp.Location, error) {
 	log.Printf("Searching for definition at %v", params)
-	local, err := ls.paths.LocalFromURI(params.TextDocument.URI)
+	local, err := ls.localFromURI(params.TextDocument.URI)
 	if err != nil {
 		return []lsp.Location{}, err
 	}
@@ -253,7 +244,7 @@ func (ls *Server) TextDocumentDefinition(params lsp.TextDocumentPositionParams) 
 	// we can return the loc without a service request
 	if l, ok := doc.defLocs[ref.def]; ok {
 		log.Printf("Found target definition for %q locally: %q at %v", ref.ticket, ref.def, *l)
-		defLocal, err := ls.paths.LocalFromURI(l.URI)
+		defLocal, err := local.Workspace.LocalFromURI(l.URI)
 
 		if err != nil {
 			return []lsp.Location{}, nil
@@ -272,6 +263,7 @@ func (ls *Server) TextDocumentDefinition(params lsp.TextDocumentPositionParams) 
 			return []lsp.Location{}, nil
 		}
 
+		log.Printf("Unable to map definition to local location")
 		// We don't how to map it so we just return the location from Kythe
 		return []lsp.Location{*l}, nil
 	}
@@ -292,12 +284,12 @@ func (ls *Server) TextDocumentDefinition(params lsp.TextDocumentPositionParams) 
 		return []lsp.Location{}, nil
 	}
 
-	return ls.refLocs(refs), nil
+	return ls.refLocs(local.Workspace, refs), nil
 }
 
 // TextDocumentHover produces a documentation string for the entity referenced at a given location
 func (ls *Server) TextDocumentHover(params lsp.TextDocumentPositionParams) (lsp.Hover, error) {
-	local, err := ls.paths.LocalFromURI(params.TextDocument.URI)
+	local, err := ls.localFromURI(params.TextDocument.URI)
 	if err != nil {
 		return lsp.Hover{}, err
 	}
@@ -346,7 +338,24 @@ func (ls *Server) TextDocumentHover(params lsp.TextDocumentPositionParams) (lsp.
 	}, nil
 }
 
-func (ls *Server) anchorToLoc(a *xpb.Anchor) *lsp.Location {
+func (ls *Server) localFromURI(u lsp.DocumentURI) (LocalFile, error) {
+	for _, w := range ls.workspaces {
+		local, err := w.LocalFromURI(u)
+		if err == nil {
+			return local, nil
+		}
+	}
+
+	w, err := ls.newWorkspace(u)
+	if err != nil {
+		return LocalFile{}, err
+	}
+
+	ls.workspaces = append(ls.workspaces, w)
+	return w.LocalFromURI(u)
+}
+
+func (ls *Server) anchorToLoc(w Workspace, a *xpb.Anchor) *lsp.Location {
 	if a == nil || a.Span == nil {
 		return nil
 	}
@@ -361,24 +370,15 @@ func (ls *Server) anchorToLoc(a *xpb.Anchor) *lsp.Location {
 		return nil
 	}
 
-	local, err := ls.paths.LocalFromKytheURI(*ticket)
+	local, err := w.LocalFromKytheURI(*ticket)
 	if err != nil {
 		return nil
 	}
 
-	// Map the old location to its new location if we can
-	if doc, ok := ls.docs[local]; ok {
-		if newRange := doc.rangeInNewSource(*r); newRange != nil {
-			r = newRange
-		} else {
-			return nil
-		}
-	}
 	return &lsp.Location{
 		URI:   lsp.DocumentURI(fmt.Sprintf("file://%s", local)),
 		Range: *r,
 	}
-
 }
 
 func spanToRange(s *cpb.Span) *lsp.Range {
@@ -404,10 +404,10 @@ func spanToRange(s *cpb.Span) *lsp.Range {
 	}
 }
 
-func (ls *Server) defLocations(t map[string]*xpb.Anchor) map[string]*lsp.Location {
+func (ls *Server) defLocations(w Workspace, t map[string]*xpb.Anchor) map[string]*lsp.Location {
 	m := make(map[string]*lsp.Location)
 	for k, v := range t {
-		l := ls.anchorToLoc(v)
+		l := ls.anchorToLoc(w, v)
 		if l != nil {
 			m[k] = l
 		}
@@ -417,24 +417,24 @@ func (ls *Server) defLocations(t map[string]*xpb.Anchor) map[string]*lsp.Locatio
 
 // refLocs takes a cross reference set and produces a slice of locations. This slice
 // is guaranteed to be non-null even if empty
-func (ls *Server) refLocs(r *xpb.CrossReferencesReply_CrossReferenceSet) []lsp.Location {
+func (ls *Server) refLocs(w Workspace, r *xpb.CrossReferencesReply_CrossReferenceSet) []lsp.Location {
 	locs := []lsp.Location{}
 	for _, a := range r.Reference {
-		l := ls.anchorToLoc(a.Anchor)
+		l := ls.anchorToLoc(w, a.Anchor)
 		if l != nil {
 			locs = append(locs, *l)
 		}
 	}
 
 	for _, a := range r.Definition {
-		l := ls.anchorToLoc(a.Anchor)
+		l := ls.anchorToLoc(w, a.Anchor)
 		if l != nil {
 			locs = append(locs, *l)
 		}
 	}
 
 	for _, a := range r.Declaration {
-		l := ls.anchorToLoc(a.Anchor)
+		l := ls.anchorToLoc(w, a.Anchor)
 		if l != nil {
 			locs = append(locs, *l)
 		}

@@ -26,7 +26,7 @@ import (
 )
 
 func TestLocalFromURI(t *testing.T) {
-	p, err := NewSettingsPathConfig(Settings{
+	p, err := NewSettingsWorkspace(Settings{
 		Root: "/root/dir",
 		Mappings: []MappingConfig{{
 			Local: ":path*",
@@ -70,7 +70,7 @@ func TestLocalFromURI(t *testing.T) {
 }
 
 func TestGeneration(t *testing.T) {
-	p, err := NewSettingsPathConfig(Settings{
+	p, err := NewSettingsWorkspace(Settings{
 		Root: "/root/dir",
 		Mappings: []MappingConfig{{
 			Local: ":corpus/:path*/:root",
@@ -85,7 +85,7 @@ func TestGeneration(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	l := "/root/dir/myCorpus/deeply/nested/myRoot"
+	rel := "myCorpus/deeply/nested/myRoot"
 	u := kytheuri.URI{
 		Path:   "deeply/nested",
 		Root:   "myRoot",
@@ -93,12 +93,12 @@ func TestGeneration(t *testing.T) {
 	}
 
 	// Test local -> URI
-	gu, err := p.KytheURIFromLocal(l)
+	gu, err := p.KytheURIFromRelative(rel)
 	if err != nil {
-		t.Errorf("error generating Kythe URI from local (%s):\n%v", l, err)
+		t.Errorf("error generating Kythe URI from relative path %q:\n%v", rel, err)
 	}
 	if err := testutil.DeepEqual(*gu, u); err != nil {
-		t.Errorf("incorrect Kythe URI generated from local (%s):\n%v", l, err)
+		t.Errorf("incorrect Kythe URI generated from relative path %q:\n%v", rel, err)
 	}
 
 	// Test URI -> local
@@ -106,7 +106,7 @@ func TestGeneration(t *testing.T) {
 	if err != nil {
 		t.Errorf("error generating local from Kythe URI (%v):\n%v", u, err)
 	}
-	if err := testutil.DeepEqual(gl, l); err != nil {
-		t.Errorf("incorrect local generated from Kythe URI (%v):\n%v", u, err)
+	if gl.RelativePath != rel {
+		t.Errorf("incorrect local generated from Kythe URI (%v):\nExpected: %q\nFound: %q", u, rel, gl.RelativePath)
 	}
 }
