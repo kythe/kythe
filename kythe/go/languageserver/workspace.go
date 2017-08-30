@@ -40,6 +40,9 @@ type Workspace interface {
 	// LocalFromKytheURI generates an absolute local file path from a Kythe URI
 	LocalFromKytheURI(ticket kytheuri.URI) (LocalFile, error)
 
+	// URIFromRelative generates a URI that can be passed to a language server
+	URIFromRelative(rel string) string
+
 	// Root returns the workspace root as determined by the Workspace
 	Root() string
 }
@@ -54,9 +57,14 @@ func (l LocalFile) String() string {
 	return filepath.Join(l.Workspace.Root(), l.RelativePath)
 }
 
-// KytheURI produces the a kytheuri object that represents the file remotely
+// KytheURI produces a kytheuri.URI object that represents the file remotely
 func (l LocalFile) KytheURI() (*kytheuri.URI, error) {
 	return l.Workspace.KytheURIFromRelative(l.RelativePath)
+}
+
+// URI produces a DocumentURI for the given LocalFile
+func (l LocalFile) URI() lsp.DocumentURI {
+	return lsp.DocumentURI(l.Workspace.URIFromRelative(l.RelativePath))
 }
 
 // FindEnclosing returns the nearest enclosing directory d of dir for which match(d)

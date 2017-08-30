@@ -178,6 +178,11 @@ func (sw *SettingsWorkspace) LocalFromURI(lspURI lsp.DocumentURI) (LocalFile, er
 	return LocalFile{sw, rel}, nil
 }
 
+// URIFromRelative implements part of the Workspace interface
+func (sw *SettingsWorkspace) URIFromRelative(path string) string {
+	return fmt.Sprintf("file://%s", filepath.Join(sw.root, path))
+}
+
 // ticketFromRel attempts to apply a mapping to a local path relative to
 // the root directory
 func (m mapping) ticketFromRel(rel string) (*kytheuri.URI, error) {

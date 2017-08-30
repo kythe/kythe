@@ -376,7 +376,7 @@ func (ls *Server) anchorToLoc(w Workspace, a *xpb.Anchor) *lsp.Location {
 	}
 
 	return &lsp.Location{
-		URI:   lsp.DocumentURI(fmt.Sprintf("file://%s", local)),
+		URI:   local.URI(),
 		Range: *r,
 	}
 }
