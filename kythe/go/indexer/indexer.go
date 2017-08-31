@@ -23,7 +23,9 @@
 //   var unit *apb.CompilationUnit = ...
 //
 //   // Parse the sources and resolve types.
-//   pi, err := indexer.Resolve(unit, pack, indexer.AllTypeInfo())
+//   pi, err := indexer.Resolve(unit, pack, &indexer.ResolveOptions{
+//     Info: indexer.AllTypeInfo(),
+//   })
 //   if err != nil {
 //     log.Fatal("Resolving failed: %v", err)
 //   }
