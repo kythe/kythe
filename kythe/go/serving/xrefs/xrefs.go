@@ -65,7 +65,7 @@ var (
 	mergeCrossReferences = flag.Bool("merge_cross_references", true, "Whether to merge nodes when responding to a CrossReferencesRequest")
 
 	// TODO(danielmoy): Remove this flag after rollout looks stable.
-	optionallyFilterSnippets = flag.Bool("optionally_filter_snippets", false, "Whether or not to support the SnippetsKind filtering on CrossReferencesRequest and DecorationsRequest")
+	optionallyFilterSnippets = flag.Bool("optionally_filter_snippets", true, "Whether or not to support the SnippetsKind filtering on CrossReferencesRequest and DecorationsRequest")
 )
 
 type edgeSetResult struct {
