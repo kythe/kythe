@@ -308,10 +308,10 @@ message IdentifierMatch {
   message Node {
     // Kythe ticket for the matched node.
     string ticket = 1;
-    
+
     // Kind of the node being referenced.
     string node_kind = 2;
-    
+
     // Subkind of the node being referenced.
     string node_subkind = 3;
   }
