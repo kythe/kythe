@@ -891,6 +891,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 			req.CallerKind != xpb.CrossReferencesRequest_NO_CALLERS ||
 			len(req.Filter) > 0)
 
+	var foundCrossRefs bool
 	for i := 0; i < len(tickets); i++ {
 		ticket := tickets[i]
 		cr, err := t.crossReferences(ctx, ticket)
@@ -900,6 +901,7 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 		} else if err != nil {
 			return nil, fmt.Errorf("error looking up cross-references for ticket %q: %v", ticket, err)
 		}
+		foundCrossRefs = true
 		for _, feature := range cr.Feature {
 			features[feature] = true
 		}
@@ -1089,6 +1091,10 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 			reply.CrossReferences[crs.Ticket] = crs
 			tracePrintf(ctx, "CrossReferenceSet: %s", crs.Ticket)
 		}
+	}
+	if !foundCrossRefs {
+		// Short-circuit return; skip any slow requests.
+		return &xpb.CrossReferencesReply{}, nil
 	}
 
 	if initialSkip+stats.total != sumTotalCrossRefs(reply.Total) && stats.total != 0 {
