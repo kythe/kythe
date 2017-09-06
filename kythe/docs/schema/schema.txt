@@ -25,6 +25,19 @@ Kythe indexers. The assertions in the example code all verify and the
 graphs provided are the graphs that are actually output. Feel free to add
 examples from your own languages, but be sure to keep them up to date.
 
+Kythe Namespace
+---------------
+
+All facts names in this doc are implicitly prefixed by `/kythe`::
+  e.g. `node/kind` is really `/kythe/node/kind`
+
+All edge kinds in this doc are implicitly prefixed by `/kythe/edge`::
+  e.g. `aliases` is really `/kythe/edge/aliases`
+
+The verifier will automatically prepend the respective prefix
+unless the fact name or edge kind starts with `/`.
+
+
 VName conventions
 -----------------
 
@@ -53,6 +66,11 @@ down to manageable fingerprints.
 
 Edge kinds
 ----------
+.Reverse Edges
+TIP: The Kythe API uses `%` to denote a reverse edge.
+For example, if NodeA `defines/binding` NodeB, then NodeB 
+`%/kythe/edge/defines/binding` NodeA. Reverse edges are constructed 
+during post-processing, and should not be emitted by indexers.
 
 [[aliases]]
 aliases
