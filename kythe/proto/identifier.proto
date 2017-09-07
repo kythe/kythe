@@ -24,37 +24,14 @@ service IdentifierService {
 }
 
 message FindRequest {
-  // The base name of the identifier being searched for
+  // The qualified name of the identifier being searched for
   string identifier = 1;
 
-  enum MatchKind {
-    // Only return tickets for nodes whose fully qualified name matches the
-    // identifier field exactly.
-    FULLY_QUALIFIED = 0;
-
-    // Return tickets for all nodes whose fully qualified name ends with the
-    // identifier field.
-    SUFFIX = 1;
-  }
-
-  // Defines match behavior.
-  MatchKind match_kind = 2;
-
   // Restricts the matches to the given corpus labels.
-  repeated string corpus = 3;
+  repeated string corpus = 2;
 
   // Restricts the match to the given languages.
-  repeated string languages = 4;
-
-  // Include the base name for matches in the response.
-  bool base_name = 5;
-
-  // Include the qualified name for matches in the response.
-  bool qualified_name = 6;
-
-  // Include the node kind and subkind for matches in the response.
-  bool node_kind = 7;
-
+  repeated string languages = 3;
 }
 
 message FindReply {
