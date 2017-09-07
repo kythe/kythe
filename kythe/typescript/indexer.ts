@@ -21,14 +21,6 @@ import * as ts from 'typescript';
 
 import * as utf8 from './utf8';
 
-// Forward-declare a type found in TypeScript 2.4 to make this
-// code work both in TS2.3 and TS2.4.
-declare module 'typescript' {
-  interface NamedDeclaration extends ts.Declaration {
-    name?: ts.DeclarationName;
-  }
-}
-
 /** VName is the type of Kythe node identities. */
 export interface VName {
   signature: string;

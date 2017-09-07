@@ -12,6 +12,6 @@
   "dependencies": {
     "@types/node": "^7.0.4",
     "source-map-support": "^0.4.11",
-    "typescript": "^2.3.1"
+    "typescript": "~2.4.2"
   }
 }
