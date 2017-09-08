@@ -35,7 +35,7 @@ message FindRequest {
 }
 
 message FindReply {
-    message IdentifierMatch {
+    message Match {
         // Kythe ticket for the matched node.
         string ticket = 1;
 
@@ -53,5 +53,5 @@ message FindReply {
     }
 
     // The list of matches found
-    repeated IdentifierMatch matches = 1;
+    repeated Match matches = 1;
 }
