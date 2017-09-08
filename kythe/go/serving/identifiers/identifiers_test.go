@@ -31,8 +31,8 @@ import (
 var matchTable = Table{testProtoTable{
 	"foo::bar": &srvpb.IdentifierMatch{
 		Node: []*srvpb.IdentifierMatch_Node{
-			{"kythe://corpus?lang=c++", "record", "class"},
-			{"kythe://corpus?lang=rust", "record", "struct"},
+			node("kythe://corpus?lang=c++", "record", "class"),
+			node("kythe://corpus?lang=rust", "record", "struct"),
 		},
 		BaseName:      "bar",
 		QualifiedName: "foo::bar",
@@ -40,7 +40,7 @@ var matchTable = Table{testProtoTable{
 
 	"com.java.package.Interface": &srvpb.IdentifierMatch{
 		Node: []*srvpb.IdentifierMatch_Node{
-			{"kythe://habeas?lang=java", "record", "interface"},
+			node("kythe://habeas?lang=java", "record", "interface"),
 		},
 		BaseName:      "Interface",
 		QualifiedName: "com.java.package.Interface",
@@ -49,26 +49,26 @@ var matchTable = Table{testProtoTable{
 
 var tests = []testCase{
 	{
-		ipb.FindRequest{"foo::bar", nil, nil},
+		findRequest("foo::bar", nil, nil),
 		[]*ipb.FindReply_Match{
-			{"kythe://corpus?lang=c++", "record", "class", "bar", "foo::bar"},
-			{"kythe://corpus?lang=rust", "record", "struct", "bar", "foo::bar"},
+			match("kythe://corpus?lang=c++", "record", "class", "bar", "foo::bar"),
+			match("kythe://corpus?lang=rust", "record", "struct", "bar", "foo::bar"),
 		},
 	},
 	{
-		ipb.FindRequest{"foo::bar", nil, []string{"rust"}},
+		findRequest("foo::bar", nil, []string{"rust"}),
 		[]*ipb.FindReply_Match{
-			{"kythe://corpus?lang=rust", "record", "struct", "bar", "foo::bar"},
+			match("kythe://corpus?lang=rust", "record", "struct", "bar", "foo::bar"),
 		},
 	},
 	{
-		ipb.FindRequest{"com.java.package.Interface", []string{"habeas"}, nil},
+		findRequest("com.java.package.Interface", []string{"habeas"}, nil),
 		[]*ipb.FindReply_Match{
-			{"kythe://habeas?lang=java", "record", "interface", "Interface", "com.java.package.Interface"},
+			match("kythe://habeas?lang=java", "record", "interface", "Interface", "com.java.package.Interface"),
 		},
 	},
 	{
-		ipb.FindRequest{"com.java.package.Interface", []string{"corpus"}, nil},
+		findRequest("com.java.package.Interface", []string{"corpus"}, nil),
 		[]*ipb.FindReply_Match{},
 	},
 }
@@ -83,6 +83,32 @@ func TestFind(t *testing.T) {
 		if err := testutil.DeepEqual(test.Matches, reply.Matches); err != nil {
 			t.Error(err)
 		}
+	}
+}
+
+func findRequest(qname string, corpora, langs []string) ipb.FindRequest {
+	return ipb.FindRequest{
+		Identifier: qname,
+		Corpus:     corpora,
+		Languages:  langs,
+	}
+}
+
+func node(ticket, kind, subkind string) *srvpb.IdentifierMatch_Node {
+	return &srvpb.IdentifierMatch_Node{
+		Ticket:      ticket,
+		NodeKind:    kind,
+		NodeSubkind: subkind,
+	}
+}
+
+func match(ticket, kind, subkind, bname, qname string) *ipb.FindReply_Match {
+	return &ipb.FindReply_Match{
+		Ticket:        ticket,
+		NodeKind:      kind,
+		NodeSubkind:   subkind,
+		BaseName:      bname,
+		QualifiedName: qname,
 	}
 }
 
