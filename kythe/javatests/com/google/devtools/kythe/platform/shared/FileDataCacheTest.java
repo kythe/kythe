@@ -125,4 +125,24 @@ public final class FileDataCacheTest {
 
     assertThat(barBytes).isEqualTo(fooBytes);
   }
+
+  @Test
+  public void testMultipleFilesWithTheSameDigestNotThrows() throws InterruptedException, ExecutionException {
+    List<Analysis.FileData> fileData = new ArrayList<>();
+
+    Analysis.FileData.Builder fd1 = Analysis.FileData.newBuilder();
+    fd1.getInfoBuilder().setDigest("digest");
+    fd1.setContent(ByteString.copyFromUtf8("first file"));
+    fileData.add(fd1.build());
+    Analysis.FileData.Builder fd2 = Analysis.FileData.newBuilder();
+    fd2.getInfoBuilder().setDigest("digest");
+    fd2.setContent(ByteString.copyFromUtf8("second file"));
+    fileData.add(fd2.build());
+
+    FileDataCache fileDataCache = new FileDataCache(fileData);
+
+    ListenableFuture<byte[]> fooFuture = fileDataCache.startLookup("foo", "digest");
+    byte[] fooBytes = fooFuture.get();
+    assertThat(fooBytes).isEqualTo(ByteString.copyFromUtf8("first file").toByteArray());
+  }
 }

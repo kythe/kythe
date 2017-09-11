@@ -19,21 +19,38 @@ package com.google.devtools.kythe.platform.shared;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.devtools.kythe.common.FormattingLogger;
 import com.google.devtools.kythe.proto.Analysis.FileData;
 
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * {@link FileDataProvider} that looks up file data from a given {@link Iterable} of
  * {@link FileData}.
  */
 public class FileDataCache implements FileDataProvider {
+
+  private static final FormattingLogger logger =
+      FormattingLogger.getLogger(FileDataProvider.class);
+
   private final Map<String, byte[]> fileContents;
 
   public FileDataCache(Iterable<FileData> fileData) {
     ImmutableMap.Builder<String, byte[]> builder = ImmutableMap.builder();
+    Set<String> addedFiles = new HashSet<>();
     for (FileData data : fileData) {
-      builder.put(data.getInfo().getDigest(), data.getContent().toByteArray());
+      String digest = data.getInfo().getDigest();
+      if (addedFiles.contains(digest)) {
+        logger.warningfmt(
+            "File %s with digest %s occurs multiple times in compilation unit.",
+            data.getInfo().getPath(),
+            digest);
+      } else {
+        addedFiles.add(digest);
+        builder.put(digest, data.getContent().toByteArray());
+      }
     }
     fileContents = builder.build();
   }
