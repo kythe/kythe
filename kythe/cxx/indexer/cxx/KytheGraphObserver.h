@@ -231,15 +231,16 @@ class KytheGraphObserver : public GraphObserver {
   void recordUserDefinedNode(const NodeId &Id, const llvm::StringRef &NodeKind,
                              Completeness Compl) override;
 
-  void recordFullDefinitionRange(const Range &SourceRange,
-                                 const NodeId &DefnId) override;
+  void recordFullDefinitionRange(const Range &SourceRange, const NodeId &DeclId,
+                                 const MaybeFew<NodeId> &DefnId) override;
 
   void recordDefinitionBindingRange(const Range &BindingRange,
-                                    const NodeId &DefnId) override;
+                                    const NodeId &DeclId,
+                                    const MaybeFew<NodeId> &DefnId) override;
 
-  void recordDefinitionRangeWithBinding(const Range &SourceRange,
-                                        const Range &BindingRange,
-                                        const NodeId &DefnId) override;
+  void recordDefinitionRangeWithBinding(
+      const Range &SourceRange, const Range &BindingRange, const NodeId &DeclId,
+      const MaybeFew<NodeId> &DefnId) override;
 
   void recordDocumentationRange(const Range &SourceRange,
                                 const NodeId &DocId) override;
@@ -400,16 +401,18 @@ class KytheGraphObserver : public GraphObserver {
   kythe::proto::VName StampedVNameFromRange(const GraphObserver::Range &range,
                                             const GraphObserver::NodeId &stamp);
   /// Checks whether the edge from the anchor with `anchor_vname` covering
-  /// `source_range` to `primary_anchored_to` with kind `anchor_edge_kind`
+  /// `source_range` to `primary_anchored_to_decl` with kind `anchor_edge_kind`
   /// is interesting to any metadata provider.
-  void ApplyMetadataRules(const GraphObserver::Range &source_range,
-                          const GraphObserver::NodeId &primary_anchored_to,
-                          EdgeKindID anchor_edge_kind,
-                          const kythe::proto::VName &anchor_name);
-  void RecordStampedAnchor(const GraphObserver::Range &source_range,
-                           const GraphObserver::NodeId &primary_anchored_to,
-                           EdgeKindID anchor_edge_kind,
-                           const GraphObserver::NodeId &stamp);
+  void ApplyMetadataRules(
+      const GraphObserver::Range &source_range,
+      const GraphObserver::NodeId &primary_anchored_to_decl,
+      const MaybeFew<GraphObserver::NodeId> &primary_anchored_to_def,
+      EdgeKindID anchor_edge_kind, const kythe::proto::VName &anchor_name);
+  void RecordStampedAnchor(
+      const GraphObserver::Range &source_range,
+      const GraphObserver::NodeId &primary_anchored_to_decl,
+      const MaybeFew<GraphObserver::NodeId> &primary_anchored_to_def,
+      EdgeKindID anchor_edge_kind, const GraphObserver::NodeId &stamp);
   void RecordAnchor(const GraphObserver::Range &source_range,
                     const GraphObserver::NodeId &primary_anchored_to,
                     EdgeKindID anchor_edge_kind, Claimability claimability);

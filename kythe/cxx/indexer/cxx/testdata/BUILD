@@ -966,6 +966,13 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "metadata_generates_rule_defn",
+    srcs = ["metadata/metadata_generates_rule_defn.cc"],
+    tags = ["metadata"],
+    deps = ["metadata/single_defn.meta"],
+)
+
+cxx_indexer_test(
     name = "metadata_h_generates_rule",
     srcs = ["metadata/metadata_h_generates_rule.cc"],
     tags = ["metadata"],

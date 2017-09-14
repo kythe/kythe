@@ -369,7 +369,7 @@ void KytheGraphObserver::MetaHookDefines(const MetadataFile &meta,
                                          const VNameRef &anchor,
                                          unsigned range_begin,
                                          unsigned range_end,
-                                         const VNameRef &def) {
+                                         const VNameRef &decl) {
   auto rules = meta.rules().equal_range(range_begin);
   for (auto rule = rules.first; rule != rules.second; ++rule) {
     if (rule->second.begin == range_begin && rule->second.end == range_end &&
@@ -378,9 +378,9 @@ void KytheGraphObserver::MetaHookDefines(const MetadataFile &meta,
       EdgeKindID edge_kind;
       if (of_spelling(rule->second.edge_out, &edge_kind)) {
         if (rule->second.reverse_edge) {
-          recorder_->AddEdge(VNameRef(rule->second.vname), edge_kind, def);
+          recorder_->AddEdge(VNameRef(rule->second.vname), edge_kind, decl);
         } else {
-          recorder_->AddEdge(def, edge_kind, VNameRef(rule->second.vname));
+          recorder_->AddEdge(decl, edge_kind, VNameRef(rule->second.vname));
         }
       } else {
         fprintf(stderr, "Unknown edge kind %s from metadata\n",
@@ -392,7 +392,8 @@ void KytheGraphObserver::MetaHookDefines(const MetadataFile &meta,
 
 void KytheGraphObserver::ApplyMetadataRules(
     const GraphObserver::Range &source_range,
-    const GraphObserver::NodeId &primary_anchored_to,
+    const GraphObserver::NodeId &primary_anchored_to_decl,
+    const MaybeFew<GraphObserver::NodeId> &primary_anchored_to_def,
     EdgeKindID anchor_edge_kind, const kythe::proto::VName &anchor_name) {
   if (source_range.Kind == Range::RangeKind::Physical) {
     if (anchor_edge_kind == EdgeKindID::kDefinesBinding) {
@@ -412,7 +413,13 @@ void KytheGraphObserver::ApplyMetadataRules(
         unsigned range_end = SourceManager->getFileOffset(end);
         for (auto meta = metas.first; meta != metas.second; ++meta) {
           MetaHookDefines(*meta->second, VNameRef(anchor_name), range_begin,
-                          range_end, VNameRefFromNodeId(primary_anchored_to));
+                          range_end,
+                          VNameRefFromNodeId(primary_anchored_to_decl));
+          if (primary_anchored_to_def) {
+            MetaHookDefines(
+                *meta->second, VNameRef(anchor_name), range_begin, range_end,
+                VNameRefFromNodeId(primary_anchored_to_def.primary()));
+          }
         }
       }
     }
@@ -421,16 +428,17 @@ void KytheGraphObserver::ApplyMetadataRules(
 
 void KytheGraphObserver::RecordStampedAnchor(
     const GraphObserver::Range &source_range,
-    const GraphObserver::NodeId &primary_anchored_to,
+    const GraphObserver::NodeId &primary_anchored_to_decl,
+    const MaybeFew<GraphObserver::NodeId> &primary_anchored_to_def,
     EdgeKindID anchor_edge_kind, const GraphObserver::NodeId &stamp) {
   proto::VName anchor_name = StampedVNameFromRange(source_range, stamp);
   if (stamped_ranges_.emplace(source_range, stamp).second) {
     UnconditionalRecordRange(anchor_name, source_range);
   }
   recorder_->AddEdge(VNameRef(anchor_name), anchor_edge_kind,
-                     VNameRefFromNodeId(primary_anchored_to));
-  ApplyMetadataRules(source_range, primary_anchored_to, anchor_edge_kind,
-                     anchor_name);
+                     VNameRefFromNodeId(primary_anchored_to_decl));
+  ApplyMetadataRules(source_range, primary_anchored_to_decl,
+                     primary_anchored_to_def, anchor_edge_kind, anchor_name);
 }
 
 void KytheGraphObserver::RecordAnchor(
@@ -456,8 +464,8 @@ void KytheGraphObserver::RecordAnchor(
   if (cl == Claimability::Unclaimable) {
     recorder_->AddEdge(VNameRef(anchor_name), anchor_edge_kind,
                        VNameRefFromNodeId(primary_anchored_to));
-    ApplyMetadataRules(source_range, primary_anchored_to, anchor_edge_kind,
-                       anchor_name);
+    ApplyMetadataRules(source_range, primary_anchored_to, None(),
+                       anchor_edge_kind, anchor_name);
   }
 }
 
@@ -651,26 +659,33 @@ void KytheGraphObserver::recordDocumentationRange(
 }
 
 void KytheGraphObserver::recordFullDefinitionRange(
-    const GraphObserver::Range &source_range, const NodeId &node) {
-  RecordStampedAnchor(source_range, node, EdgeKindID::kDefinesFull, node);
+    const GraphObserver::Range &source_range, const NodeId &node_decl,
+    const MaybeFew<NodeId> &node_def) {
+  RecordStampedAnchor(source_range, node_decl, node_def,
+                      EdgeKindID::kDefinesFull, node_decl);
 }
 
 void KytheGraphObserver::recordDefinitionBindingRange(
-    const GraphObserver::Range &binding_range, const NodeId &node) {
-  RecordStampedAnchor(binding_range, node, EdgeKindID::kDefinesBinding, node);
+    const GraphObserver::Range &binding_range, const NodeId &node_decl,
+    const MaybeFew<NodeId> &node_def) {
+  RecordStampedAnchor(binding_range, node_decl, node_def,
+                      EdgeKindID::kDefinesBinding, node_decl);
 }
 
 void KytheGraphObserver::recordDefinitionRangeWithBinding(
     const GraphObserver::Range &source_range,
-    const GraphObserver::Range &binding_range, const NodeId &node) {
-  RecordStampedAnchor(source_range, node, EdgeKindID::kDefinesFull, node);
-  RecordStampedAnchor(binding_range, node, EdgeKindID::kDefinesBinding, node);
+    const GraphObserver::Range &binding_range, const NodeId &node_decl,
+    const MaybeFew<NodeId> &node_def) {
+  RecordStampedAnchor(source_range, node_decl, node_def,
+                      EdgeKindID::kDefinesFull, node_decl);
+  RecordStampedAnchor(binding_range, node_decl, node_def,
+                      EdgeKindID::kDefinesBinding, node_decl);
 }
 
 void KytheGraphObserver::recordCompletionRange(
     const GraphObserver::Range &source_range, const NodeId &node,
     Specificity spec, const NodeId &completing_node) {
-  RecordStampedAnchor(source_range, node,
+  RecordStampedAnchor(source_range, node, None(),
                       spec == Specificity::UniquelyCompletes
                           ? EdgeKindID::kUniquelyCompletes
                           : EdgeKindID::kCompletes,

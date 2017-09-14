@@ -540,9 +540,10 @@ clang::SourceRange IndexerASTVisitor::RangeForNameOfDeclaration(
 }
 
 void IndexerASTVisitor::MaybeRecordDefinitionRange(
-    const MaybeFew<GraphObserver::Range> &R, const GraphObserver::NodeId &Id) {
+    const MaybeFew<GraphObserver::Range> &R, const GraphObserver::NodeId &Id,
+    const MaybeFew<GraphObserver::NodeId> &DeclId) {
   if (R) {
-    Observer.recordDefinitionBindingRange(R.primary(), Id);
+    Observer.recordDefinitionBindingRange(R.primary(), Id, DeclId);
   }
 }
 
@@ -993,7 +994,7 @@ bool IndexerASTVisitor::VisitDecl(const clang::Decl *Decl) {
   return true;
 }
 
-bool IndexerASTVisitor::TraverseLambdaExpr(clang::LambdaExpr* Expr) {
+bool IndexerASTVisitor::TraverseLambdaExpr(clang::LambdaExpr *Expr) {
   // Clang does not reliably visit the implicitly generated class or (more
   // importantly) call operator.
   // Specifically, it only does so for lambdas defined at the top level,
@@ -1824,7 +1825,8 @@ bool IndexerASTVisitor::VisitVarDecl(const clang::VarDecl *Decl) {
   }
 
   MaybeRecordDefinitionRange(
-      RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode);
+      RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode,
+      BuildNodeIdForDefnOfDecl(Decl));
   Marks.set_marked_source_end(GetLocForEndOfToken(
       *Observer.getSourceManager(), *Observer.getLangOptions(),
       Decl->getSourceRange().getEnd()));
@@ -1926,7 +1928,8 @@ bool IndexerASTVisitor::VisitFieldDecl(const clang::FieldDecl *Decl) {
   GraphObserver::NodeId DeclNode(BuildNodeIdForDecl(Decl));
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
   MaybeRecordDefinitionRange(
-      RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode);
+      RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode,
+      None());
   Marks.set_implicit(Job->UnderneathImplicitTemplateInstantiation);
   Marks.set_marked_source_end(GetLocForEndOfToken(
       *Observer.getSourceManager(), *Observer.getLangOptions(),
@@ -1961,7 +1964,8 @@ bool IndexerASTVisitor::VisitEnumConstantDecl(
       Decl->getSourceRange().getEnd()));
   Marks.set_name_range(NameRange);
   MaybeRecordDefinitionRange(
-      RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode);
+      RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode,
+      None());
   Observer.recordIntegerConstantNode(DeclNode, Decl->getInitVal());
   AddChildOfEdgeToDeclContext(Decl, DeclNode);
   Observer.recordMarkedSource(DeclNode, Marks.GenerateMarkedSource(DeclNode));
@@ -1983,7 +1987,8 @@ bool IndexerASTVisitor::VisitEnumDecl(const clang::EnumDecl *Decl) {
   }
   Marks.set_name_range(NameRange);
   MaybeRecordDefinitionRange(
-      RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode);
+      RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode,
+      BuildNodeIdForDefnOfDecl(Decl));
   bool HasSpecifiedStorageType = false;
   if (const auto *TSI = Decl->getIntegerTypeSourceInfo()) {
     HasSpecifiedStorageType = true;
@@ -2274,7 +2279,8 @@ GraphObserver::NodeId IndexerASTVisitor::RecordTemplate(
     }
     SourceRange Range = RangeForNameOfDeclaration(ND);
     MaybeRecordDefinitionRange(
-        RangeInCurrentContext(Decl->isImplicit(), ParamId, Range), ParamId);
+        RangeInCurrentContext(Decl->isImplicit(), ParamId, Range), ParamId,
+        None());
     Observer.recordParamEdge(DeclNode, ParamIndex, ParamId);
   }
   return DeclNode;
@@ -2371,7 +2377,8 @@ bool IndexerASTVisitor::VisitRecordDecl(const clang::RecordDecl *Decl) {
     }
   }
   MaybeRecordDefinitionRange(
-      RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode);
+      RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode,
+      BuildNodeIdForDefnOfDecl(Decl));
   GraphObserver::RecordKind RK =
       (Decl->isClass() ? GraphObserver::RecordKind::Class
                        : (Decl->isStruct() ? GraphObserver::RecordKind::Struct
@@ -2581,7 +2588,8 @@ bool IndexerASTVisitor::VisitFunctionDecl(clang::FunctionDecl *Decl) {
   Marks.set_name_range(NameRange);
   auto NameRangeInContext =
       RangeInCurrentContext(Decl->isImplicit(), OuterNode, NameRange);
-  MaybeRecordDefinitionRange(NameRangeInContext, OuterNode);
+  MaybeRecordDefinitionRange(NameRangeInContext, OuterNode,
+                             BuildNodeIdForDefnOfDecl(Decl));
   bool IsFunctionDefinition = IsDefinition(Decl);
   unsigned ParamNumber = 0;
   for (const auto *Param : Decl->parameters()) {
@@ -2758,7 +2766,7 @@ bool IndexerASTVisitor::VisitObjCTypeParamDecl(
   SourceRange TypeSR = RangeForNameOfDeclaration(Decl);
   MaybeRecordDefinitionRange(
       RangeInCurrentContext(Decl->isImplicit(), TypeParamId, TypeSR),
-      TypeParamId);
+      TypeParamId, None());
   GraphObserver::Variance V;
   switch (Decl->getVariance()) {
     case clang::ObjCTypeParamVariance::Contravariant:
@@ -2814,7 +2822,7 @@ bool IndexerASTVisitor::VisitCTypedef(const clang::TypedefNameDecl *Decl) {
     SourceRange Range = RangeForNameOfDeclaration(Decl);
     MaybeRecordDefinitionRange(
         RangeInCurrentContext(Decl->isImplicit(), OuterNodeId, Range),
-        OuterNodeId);
+        OuterNodeId, None());
     AddChildOfEdgeToDeclContext(Decl, OuterNodeId);
   }
   return true;
@@ -4812,7 +4820,7 @@ bool IndexerASTVisitor::VisitObjCCompatibleAliasDecl(
 
   // Record the definition of this type alias
   MaybeRecordDefinitionRange(ExplicitRangeInCurrentContext(AliasRange),
-                             AliasNode);
+                             AliasNode, None());
   AddChildOfEdgeToDeclContext(Decl, AliasNode);
 
   return true;
@@ -4826,7 +4834,7 @@ bool IndexerASTVisitor::VisitObjCImplementationDecl(
 
   MaybeRecordDefinitionRange(
       RangeInCurrentContext(ImplDecl->isImplicit(), DeclNode, NameRange),
-      DeclNode);
+      DeclNode, None());
   AddChildOfEdgeToDeclContext(ImplDecl, DeclNode);
 
   FileID DeclFile =
@@ -4872,7 +4880,7 @@ bool IndexerASTVisitor::VisitObjCCategoryImplDecl(
   auto ImplDeclNode = BuildNodeIdForDecl(ImplDecl);
   MaybeRecordDefinitionRange(
       RangeInCurrentContext(ImplDecl->isImplicit(), ImplDeclNode, NameRange),
-      ImplDeclNode);
+      ImplDeclNode, None());
   AddChildOfEdgeToDeclContext(ImplDecl, ImplDeclNode);
 
   FileID ImplDeclFile =
@@ -5043,7 +5051,8 @@ bool IndexerASTVisitor::VisitObjCInterfaceDecl(
   }
 
   MaybeRecordDefinitionRange(
-      RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode);
+      RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode,
+      None());
 
   AddChildOfEdgeToDeclContext(Decl, DeclNode);
 
@@ -5076,7 +5085,8 @@ bool IndexerASTVisitor::VisitObjCCategoryDecl(
 
   auto DeclNode = BuildNodeIdForDecl(Decl);
   MaybeRecordDefinitionRange(
-      RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode);
+      RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode,
+      None());
   AddChildOfEdgeToDeclContext(Decl, DeclNode);
   Observer.recordRecordNode(DeclNode, GraphObserver::RecordKind::Category,
                             GraphObserver::Completeness::Complete,
@@ -5150,7 +5160,8 @@ bool IndexerASTVisitor::VisitObjCProtocolDecl(
   auto DeclNode = BuildNodeIdForDecl(Decl);
 
   MaybeRecordDefinitionRange(
-      RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode);
+      RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode,
+      None());
   AddChildOfEdgeToDeclContext(Decl, DeclNode);
   Observer.recordInterfaceNode(DeclNode, Marks.GenerateMarkedSource(DeclNode));
   ConnectToProtocols(DeclNode, Decl->protocol_loc_begin(),
@@ -5171,7 +5182,7 @@ bool IndexerASTVisitor::VisitObjCMethodDecl(const clang::ObjCMethodDecl *Decl) {
   Marks.set_marked_source_end(Decl->getSourceRange().getEnd());
   auto NameRangeInContext(
       RangeInCurrentContext(Decl->isImplicit(), Node, NameRange));
-  MaybeRecordDefinitionRange(NameRangeInContext, Node);
+  MaybeRecordDefinitionRange(NameRangeInContext, Node, None());
   bool IsFunctionDefinition = Decl->isThisDeclarationADefinition();
   unsigned ParamNumber = 0;
   for (const auto *Param : Decl->parameters()) {
@@ -5334,7 +5345,7 @@ void IndexerASTVisitor::ConnectParam(const Decl *Decl,
   MaybeRecordDefinitionRange(
       RangeInCurrentContext(Param->isImplicit() || Decl->isImplicit(),
                             VarNodeId, Range),
-      VarNodeId);
+      VarNodeId, BuildNodeIdForDefnOfDecl(Param));
   Observer.recordParamEdge(FuncNode, ParamNumber, VarNodeId);
   MaybeFew<GraphObserver::NodeId> ParamType;
   if (auto *TSI = Param->getTypeSourceInfo()) {
@@ -5358,7 +5369,8 @@ bool IndexerASTVisitor::VisitObjCPropertyDecl(
   GraphObserver::NodeId DeclNode(BuildNodeIdForDecl(Decl));
   SourceRange NameRange = RangeForNameOfDeclaration(Decl);
   MaybeRecordDefinitionRange(
-      RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode);
+      RangeInCurrentContext(Decl->isImplicit(), DeclNode, NameRange), DeclNode,
+      None());
   // TODO(zarko): Record completeness data. This is relevant for static fields,
   // which may be declared along with a complete class definition but later
   // defined in a separate translation unit.

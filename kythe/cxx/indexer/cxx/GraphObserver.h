@@ -540,34 +540,36 @@ class GraphObserver {
   // to have some canonical type during a compilation. (This is a 'canonical'
   // type for a given compilation, but may differ between compilations.)
 
-  /// \brief Records that a particular `Range` contains the definition
-  /// of the node called `DefnId`.
+  /// \brief Records that a particular `Range` contains the declaration
+  /// of the node called `DeclId` (with possible full definition `DefnId`).
   ///
   /// The provided `Range` should cover the full syntactic definition of the
   /// identified node.
-  virtual void recordFullDefinitionRange(const Range &SourceRange,
-                                         const NodeId &DefnId) {}
+  virtual void recordFullDefinitionRange(
+      const Range &SourceRange, const NodeId &DeclId,
+      const MaybeFew<NodeId> &DefnId = None()) {}
 
-  /// \brief Records that a particular `Range` contains the definition
-  /// of the node called `DefnId`.
+  /// \brief Records that a particular `Range` contains the declaration
+  /// of the node called `DeclId` (with possible full definition `DefnId`).
   ///
   /// Generally the `BindingRange` provided will be small and limited only to
   /// the part of the declaration that binds a name. For example, in `class C`,
   /// we would `recordDefinitionBindingRange` on the range for `C`.
-  virtual void recordDefinitionBindingRange(const Range &BindingRange,
-                                            const NodeId &DefnId) {}
+  virtual void recordDefinitionBindingRange(
+      const Range &BindingRange, const NodeId &DeclId,
+      const MaybeFew<NodeId> &DefnId = None()) {}
 
-  /// \brief Records that a particular `Range` contains the definition
-  /// of the node called `DefnId`.
+  /// \brief Records that a particular `Range` contains the declaration
+  /// of the node called `DeclId` (with possible full definition `DefnId`).
   ///
   /// Generally the `BindingRange` provided will be small and limited only to
   /// the part of the declaration that binds a name. For example, in `class C`,
   /// we would `recordDefinitionRangeWithBinding` on the range for `C`.
   /// The `SourceRange` should cover the full syntactic definition of the
   /// identified node.
-  virtual void recordDefinitionRangeWithBinding(const Range &SourceRange,
-                                                const Range &BindingRange,
-                                                const NodeId &DefnId) {}
+  virtual void recordDefinitionRangeWithBinding(
+      const Range &SourceRange, const Range &BindingRange, const NodeId &DeclId,
+      const MaybeFew<NodeId> &DefnId = None()) {}
 
   /// \brief Records that a particular string contains documentation for
   /// the node called `DocId`, possibly containing inner links to other nodes.

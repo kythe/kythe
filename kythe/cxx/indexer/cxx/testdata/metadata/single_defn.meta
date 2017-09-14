@@ -1,0 +1,18 @@
+{
+  "type": "kythe0",
+  "meta": [
+    {
+      "type": "anchor_defines",
+      "begin": 184,
+      "end": 187,
+      "edge": "%/kythe/edge/generates",
+      "vname": {
+        "signature": "gsig",
+        "corpus": "gcorp",
+        "path": "gpath",
+        "language": "glang",
+        "root": "groot"
+      }
+    }
+  ]
+}

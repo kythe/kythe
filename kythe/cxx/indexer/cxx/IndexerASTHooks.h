@@ -239,7 +239,7 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   bool VisitFunctionDecl(clang::FunctionDecl *Decl);
   bool TraverseDecl(clang::Decl *Decl);
 
-  bool TraverseLambdaExpr(clang::LambdaExpr* Expr);
+  bool TraverseLambdaExpr(clang::LambdaExpr *Expr);
 
   // Objective C specific nodes
   bool VisitObjCPropertyImplDecl(const clang::ObjCPropertyImplDecl *Decl);
@@ -430,6 +430,22 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   /// \return The node for `Decl`.
   GraphObserver::NodeId BuildNodeIdForDecl(const clang::Decl *Decl);
 
+  /// \brief Builds a stable node ID for the definition of `Decl`, if
+  /// `Decl` is not already a definition and its definition can be found.
+  ///
+  /// \param Decl The declaration that is being identified.
+  /// \return The node for the definition `Decl` if `Decl` isn't a definition
+  /// and its definition can be found; or None.
+  template <typename D>
+  MaybeFew<GraphObserver::NodeId> BuildNodeIdForDefnOfDecl(const D *Decl) {
+    if (const auto *Defn = Decl->getDefinition()) {
+      if (Defn != Decl) {
+        return BuildNodeIdForDecl(Defn);
+      }
+    }
+    return None();
+  }
+
   /// \brief Builds a stable node ID for `TND`.
   ///
   /// \param Decl The declaration that is being identified.
@@ -533,8 +549,9 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
 
   /// \brief Records the range of a definition. If the range cannot be placed
   /// somewhere inside a source file, no record is made.
-  void MaybeRecordDefinitionRange(const MaybeFew<GraphObserver::Range> &R,
-                                  const GraphObserver::NodeId &Id);
+  void MaybeRecordDefinitionRange(
+      const MaybeFew<GraphObserver::Range> &R, const GraphObserver::NodeId &Id,
+      const MaybeFew<GraphObserver::NodeId> &DeclId);
 
   /// \brief Returns the attached GraphObserver.
   GraphObserver &getGraphObserver() { return Observer; }
@@ -732,7 +749,8 @@ class IndexerASTVisitor : public clang::RecursiveASTVisitor<IndexerASTVisitor> {
   ///
   /// 'NodeT' can be one of Decl, Stmt, Type, TypeLoc,
   /// NestedNameSpecifier or NestedNameSpecifierLoc.
-  template <typename NodeT> IndexedParent *getIndexedParent(const NodeT &Node) {
+  template <typename NodeT>
+  IndexedParent *getIndexedParent(const NodeT &Node) {
     return getIndexedParent(clang::ast_type_traits::DynTypedNode::create(Node));
   }
 
