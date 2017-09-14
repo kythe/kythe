@@ -375,7 +375,7 @@ def _verifier_test_impl(ctx):
         "(",
         "if [[ $ENTRIES ]]; then cat \"${ENTRIES[@]}\"; fi",
         "if [[ $ENTRIES_GZ ]]; then gunzip -c \"${ENTRIES_GZ}\"; fi",
-        ") | {} {}\n".format(
+        ") | {} {} \"$@\"\n".format(
             ctx.executable._verifier.short_path,
             " ".join(args))
       ]),
