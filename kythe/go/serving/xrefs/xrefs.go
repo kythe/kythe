@@ -55,12 +55,12 @@ import (
 )
 
 func init() {
-	flag.BoolVar(&UseDocumentationServingData, "use_documentation_serving_data", UseDocumentationServingData, "Whether to use Documentation serving data")
+	flag.BoolVar(&UseDocumentationServingData, "use_documentation_serving_data", UseDocumentationServingData, "Whether to use Documentation serving data (deprecated; always treated as true")
 }
 
 var (
 	// UseDocumentationServingData toggles whether the documentation serving table should be used.
-	UseDocumentationServingData = false
+	UseDocumentationServingData = true
 
 	mergeCrossReferences = flag.Bool("merge_cross_references", true, "Whether to merge nodes when responding to a CrossReferencesRequest")
 
@@ -732,49 +732,8 @@ func (t *Table) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*
 					}
 				}
 			}
-		} else {
-			var extendsOverridesTargets stringset.Set
-			// Dynamically construct overrides; data not found in serving tables
-			if len(bindings) != 0 {
-				extendsOverrides, err := xrefs.SlowOverrides(ctx, t, bindings.Elements())
-				if err != nil {
-					return nil, fmt.Errorf("lookup error for overrides tickets: %v", err)
-				}
-				if len(extendsOverrides) != 0 {
-					reply.ExtendsOverrides = make(map[string]*xpb.DecorationsReply_Overrides, len(extendsOverrides))
-					for ticket, eos := range extendsOverrides {
-						// Note: extendsOverrides goes out of scope after this loop, so downstream code won't accidentally
-						// mutate reply.ExtendsOverrides via aliasing.
-						pb := &xpb.DecorationsReply_Overrides{Override: eos}
-						for _, eo := range eos {
-							extendsOverridesTargets.Add(eo.Target)
-						}
-						reply.ExtendsOverrides[ticket] = pb
-					}
-				}
-			}
-
-			if len(extendsOverridesTargets) != 0 && len(patterns) > 0 {
-				// Add missing NodeInfo.
-				request := &gpb.NodesRequest{Filter: req.Filter}
-				for ticket := range extendsOverridesTargets {
-					if _, ok := reply.Nodes[ticket]; !ok {
-						request.Ticket = append(request.Ticket, ticket)
-					}
-				}
-				if len(request.Ticket) > 0 {
-					nodes, err := t.Nodes(ctx, request)
-					if err != nil {
-						return nil, fmt.Errorf("lookup error for overrides nodes: %v", err)
-					}
-					for ticket, node := range nodes.Nodes {
-						reply.Nodes[ticket] = node
-					}
-				}
-			}
+			tracePrintf(ctx, "ExtendsOverrides: %d", len(reply.ExtendsOverrides))
 		}
-
-		tracePrintf(ctx, "ExtendsOverrides: %d", len(reply.ExtendsOverrides))
 		tracePrintf(ctx, "DefinitionLocations: %d", len(reply.DefinitionLocations))
 	}
 
@@ -968,73 +927,6 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 			}
 		}
 
-		if !features[srvpb.PagedCrossReferences_CALLERS] &&
-			wantMoreCrossRefs && req.CallerKind != xpb.CrossReferencesRequest_NO_CALLERS {
-			tokenStr := fmt.Sprintf("callers.%d", i)
-			callerSkip := pageToken.Indices[tokenStr]
-			callersToken, hasToken := pageToken.SubTokens[tokenStr]
-			stats.skip -= int(callerSkip) // Mark the previously retrieved callers as skipped
-			var callersEstimate int64
-			if callersToken != "" || !hasToken { // if we didn't reach the last callers page
-				reply, err := xrefs.SlowCallersForCrossReferences(ctx, t, &xrefs.CallersRequest{
-					Ticket:             ticket,
-					PageSize:           int32(stats.max - stats.total),
-					PageToken:          callersToken,
-					IncludeOverrides:   req.CallerKind == xpb.CrossReferencesRequest_OVERRIDE_CALLERS,
-					GenerateSignatures: req.ExperimentalSignatures,
-				})
-				if err != nil {
-					return nil, fmt.Errorf("error in SlowCallersForCrossReferences: %v", err)
-				}
-				callersEstimate = reply.EstimatedTotal
-				added := stats.addRelatedAnchors(&crs.Caller, reply.Callers, req.AnchorText)
-				if added == len(reply.Callers) { // if all of the callers fit on the xrefs page
-					// Update the page token/index for the next callers page
-					hasToken = true
-					callersToken = reply.NextPageToken
-					callerSkip += int32(added)
-				}
-			}
-			if hasToken {
-				nextPageToken.Indices[tokenStr] = callerSkip
-				nextPageToken.SubTokens[tokenStr] = callersToken
-			}
-
-			if callersToken == "" && hasToken {
-				// We've hit the last callers page and know the exact number of callers
-				reply.Total.Callers += int64(callerSkip)
-			} else {
-				reply.Total.Callers += callersEstimate
-			}
-		}
-
-		if !features[srvpb.PagedCrossReferences_DECLARATIONS] &&
-			wantMoreCrossRefs && req.DeclarationKind != xpb.CrossReferencesRequest_NO_DECLARATIONS {
-			decls, err := xrefs.SlowDeclarationsForCrossReferences(ctx, t, ticket)
-			if err != nil {
-				return nil, fmt.Errorf("error in SlowDeclarations: %v", err)
-			}
-			for _, decl := range decls {
-				if decl == ticket {
-					continue // Added in the original loop above.
-				}
-				cr, err := t.crossReferences(ctx, decl)
-				if err == table.ErrNoSuchKey {
-					log.Println("Missing CrossReferences:", decl)
-					continue
-				} else if err != nil {
-					return nil, fmt.Errorf("error looking up cross-references for ticket %q: %v", ticket, err)
-				}
-
-				for _, grp := range cr.Group {
-					if xrefs.IsDeclKind(req.DeclarationKind, grp.Kind, cr.Incomplete) {
-						reply.Total.Declarations += int64(len(grp.Anchor))
-						stats.addAnchors(&crs.Declaration, grp, req.AnchorText)
-					}
-				}
-			}
-		}
-
 		for _, idx := range cr.PageIndex {
 			switch {
 			case xrefs.IsDefKind(req.DefinitionKind, idx.Kind, cr.Incomplete):
@@ -1156,38 +1048,6 @@ func (t *Table) CrossReferences(ctx context.Context, req *xpb.CrossReferencesReq
 			return nil, fmt.Errorf("internal error: error marshalling page token: %v", err)
 		}
 		reply.NextPageToken = base64.StdEncoding.EncodeToString(snappy.Encode(nil, rec))
-	}
-
-	if req.ExperimentalSignatures && !features[srvpb.PagedCrossReferences_MARKED_SOURCE] {
-		for ticket, crs := range reply.CrossReferences {
-			crs.MarkedSource, err = xrefs.SlowSignature(ctx, t, ticket)
-			if err != nil {
-				log.Printf("WARNING: error looking up signature for ticket %q: %v", ticket, err)
-			}
-		}
-	}
-
-	if req.NodeDefinitions && !features[srvpb.PagedCrossReferences_RELATED_NODES] {
-		nodeTickets := make([]string, 0, len(reply.Nodes))
-		for ticket := range reply.Nodes {
-			nodeTickets = append(nodeTickets, ticket)
-		}
-
-		defs, err := xrefs.SlowDefinitions(ctx, t, nodeTickets)
-		if err != nil {
-			return nil, fmt.Errorf("error retrieving node definitions: %v", err)
-		}
-
-		for ticket, def := range defs {
-			node, ok := reply.Nodes[ticket]
-			if !ok {
-				panic(fmt.Sprintf("extra definition returned for unknown node %q: %v", ticket, def))
-			}
-			node.Definition = def.Ticket
-			if _, ok := reply.DefinitionLocations[def.Ticket]; !ok {
-				reply.DefinitionLocations[def.Ticket] = def
-			}
-		}
 	}
 
 	if *optionallyFilterSnippets && req.Snippets == xpb.SnippetsKind_NONE {
@@ -1426,10 +1286,6 @@ func d2d(d *srvpb.Document, patterns []*regexp.Regexp, nodes map[string]*cpb.Nod
 
 // Documentation implements part of the xrefs Service interface.
 func (t *Table) Documentation(ctx context.Context, req *xpb.DocumentationRequest) (*xpb.DocumentationReply, error) {
-	if !UseDocumentationServingData {
-		return xrefs.SlowDocumentation(ctx, t, req)
-	}
-
 	tickets, err := xrefs.FixTickets(req.Ticket)
 	if err != nil {
 		return nil, err
