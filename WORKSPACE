@@ -213,7 +213,7 @@ new_git_repository(
 new_git_repository(
     name = "go_shell",
     build_file = "third_party/go/shell.BUILD",
-    commit = "4e4a4403205db46f1ef0590e98dc814a38d2ea63",
+    commit = "3dcd505a7ca5845388111724cc2e094581e92cc6",
     remote = "https://bitbucket.org/creachadair/shell.git",
 )
 
