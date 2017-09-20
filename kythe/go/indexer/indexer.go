@@ -412,11 +412,22 @@ func (pi *PackageInfo) ObjectVName(obj types.Object) *spb.VName {
 		return pi.PackageVName[pkg.Imported()]
 	}
 	sig := pi.Signature(obj)
-	base := pi.PackageVName[obj.Pkg()]
-	if base == nil {
+	pkg := obj.Pkg()
+	var vname *spb.VName
+	if base := pi.PackageVName[pkg]; base != nil {
+		vname = proto.Clone(base).(*spb.VName)
+	} else if pkg == nil {
 		return govname.ForBuiltin(sig)
+	} else {
+		// This is an indirect import, that is, a name imported but not
+		// mentioned explicitly by the package being indexed.
+		// TODO(T273): This is a workaround, and may not be correct in all
+		// cases; work out a more comprehensive solution (possibly during
+		// extraction).
+		vname = proto.Clone(pi.VName).(*spb.VName)
+		vname.Path = strings.TrimPrefix(pkg.Path(), vname.Corpus+"/")
 	}
-	vname := proto.Clone(base).(*spb.VName)
+
 	vname.Signature = sig
 	return vname
 }
