@@ -41,8 +41,12 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 // The format is somewhat expensive to construct, but not asymptotically bad,
 // and decoding is both simpler and less memory-intensive than encoding.
 type EntrySet struct {
-	// One entry for each unique node named in the entry set, in canonical order.
-	// The index of a node in this field is its id.
+	// One entry for each unique node named in the entry set.  The index of a
+	// node in this field is its id.
+	//
+	// If the nodes are stored in canonical vname order, the EntrySet is also
+	// said to be in canonical order. However, an EntrySet is valid whether or
+	// not this applies.
 	Nodes []*EntrySet_Node `protobuf:"bytes,1,rep,name=nodes" json:"nodes,omitempty"`
 	// One entry for each node in the entry set. The index of a group in this
 	// field matches the id of its corresponding node.
