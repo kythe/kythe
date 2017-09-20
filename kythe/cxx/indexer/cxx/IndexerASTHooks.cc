@@ -1611,8 +1611,10 @@ void IndexerASTVisitor::AddChildOfEdgeToDeclContext(
     const clang::Decl *Decl, const GraphObserver::NodeId DeclNode) {
   if (const DeclContext *DC = Decl->getDeclContext()) {
     if (FLAGS_experimental_alias_template_instantiations) {
-      if (auto ContextId = BuildNodeIdForRefToDeclContext(DC)) {
-        Observer.recordChildOfEdge(DeclNode, ContextId.primary());
+      if (!Job->UnderneathImplicitTemplateInstantiation) {
+        if (auto ContextId = BuildNodeIdForRefToDeclContext(DC)) {
+          Observer.recordChildOfEdge(DeclNode, ContextId.primary());
+        }
       }
     } else {
       if (auto ContextId = BuildNodeIdForDeclContext(DC)) {

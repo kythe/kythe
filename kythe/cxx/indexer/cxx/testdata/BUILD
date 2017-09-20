@@ -1530,6 +1530,16 @@ cxx_indexer_test(
 )
 
 cxx_indexer_test(
+    name = "template_alias_multilevel_abs",
+    srcs = ["template/template_alias_multilevel_abs.cc"],
+    check_for_singletons = True,
+    experimental_alias_template_instantiations = True,
+    ignore_dups = True,
+    ignore_unimplemented = True,  # hash of SubstTemplateTemplateParm
+    tags = ["template"],
+)
+
+cxx_indexer_test(
     name = "template_arg_multiple_typename",
     srcs = ["template/template_arg_multiple_typename.cc"],
     tags = ["template"],
