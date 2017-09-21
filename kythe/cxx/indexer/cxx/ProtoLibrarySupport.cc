@@ -45,6 +45,7 @@
 #include "google/protobuf/io/tokenizer.h"
 #include "google/protobuf/io/zero_copy_stream_impl_lite.h"
 #include "google/protobuf/message.h"
+#include "kythe/cxx/common/proto_conversions.h"
 #include "kythe/cxx/indexer/cxx/IndexerASTHooks.h"
 
 DEFINE_string(parseprotohelper_full_name,
@@ -193,7 +194,7 @@ bool ParseTextProtoHandler::ParseMsg(const clang::CXXRecordDecl& MsgDecl,
       case Tokenizer::TYPE_IDENTIFIER: {
         // Assume that this is a field name.
         const auto* AccessorDecl =
-            FindAccessorDeclWithName(MsgDecl, Token.text);
+            FindAccessorDeclWithName(MsgDecl, ToStringRef(Token.text));
         if (!AccessorDecl) {
           LOG(ERROR) << "Cannot find field " << Token.text << " for message "
                      << MsgDecl.getName().str();
