@@ -17,20 +17,15 @@
 package xrefs
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"regexp"
 	"testing"
 
-	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/facts"
 
 	"github.com/golang/protobuf/proto"
 
 	cpb "kythe.io/kythe/proto/common_proto"
-	gpb "kythe.io/kythe/proto/graph_proto"
-	xpb "kythe.io/kythe/proto/xref_proto"
 )
 
 func TestFilterRegexp(t *testing.T) {
@@ -194,177 +189,3 @@ func TestPatcher(t *testing.T) {
 type span struct{ start, end int32 }
 
 func (s span) String() string { return fmt.Sprintf("(%d, %d]", s.start, s.end) }
-
-type mockNode struct {
-	ticket, kind, documented, defines, completes, completed, childof, typed, text, defaultParam string
-	params, definitionText                                                                      []string
-	code                                                                                        *cpb.MarkedSource
-}
-
-// mockService implements interface xrefs.Service.
-type mockService struct {
-	nodes map[string]*cpb.NodeInfo
-	esets map[string]*gpb.EdgeSet
-	xrefs map[string]*xpb.CrossReferencesReply_CrossReferenceSet
-}
-
-func makeMockService(db []mockNode) *mockService {
-	s := &mockService{
-		nodes: make(map[string]*cpb.NodeInfo),
-		esets: make(map[string]*gpb.EdgeSet),
-		xrefs: make(map[string]*xpb.CrossReferencesReply_CrossReferenceSet),
-	}
-	for _, node := range db {
-		s.nodes[node.ticket] = &cpb.NodeInfo{
-			Facts: map[string][]byte{
-				facts.NodeKind: []byte(node.kind),
-				facts.Text:     []byte(node.text),
-			},
-		}
-		if node.code != nil {
-			p, err := proto.Marshal(node.code)
-			if err != nil {
-				panic("couldn't set up test: couldn't marshal input proto")
-			}
-			s.nodes[node.ticket].Facts[facts.Code] = p
-		}
-		if node.defaultParam != "" {
-			s.nodes[node.ticket].Facts[facts.ParamDefault] = []byte(node.defaultParam)
-		}
-		if node.definitionText != nil {
-			set := &xpb.CrossReferencesReply_CrossReferenceSet{Ticket: node.ticket}
-			for _, text := range node.definitionText {
-				set.Definition = append(set.Definition, &xpb.CrossReferencesReply_RelatedAnchor{Anchor: &xpb.Anchor{Text: text, Ticket: node.ticket + "a"}})
-			}
-			s.xrefs[node.ticket] = set
-		}
-		set := &gpb.EdgeSet{Groups: make(map[string]*gpb.EdgeSet_Group)}
-		if node.typed != "" {
-			set.Groups[edges.Typed] = &gpb.EdgeSet_Group{
-				Edge: []*gpb.EdgeSet_Group_Edge{{TargetTicket: node.typed}},
-			}
-		}
-		if node.childof != "" {
-			set.Groups[edges.ChildOf] = &gpb.EdgeSet_Group{
-				Edge: []*gpb.EdgeSet_Group_Edge{{TargetTicket: node.childof}},
-			}
-		}
-		if node.documented != "" {
-			set.Groups[edges.Mirror(edges.Documents)] = &gpb.EdgeSet_Group{
-				Edge: []*gpb.EdgeSet_Group_Edge{{TargetTicket: node.documented}},
-			}
-		}
-		if node.completes != "" {
-			set.Groups[edges.Completes] = &gpb.EdgeSet_Group{
-				Edge: []*gpb.EdgeSet_Group_Edge{{TargetTicket: node.completes}},
-			}
-		}
-		if node.completed != "" {
-			set.Groups[edges.Mirror(edges.Completes)] = &gpb.EdgeSet_Group{
-				Edge: []*gpb.EdgeSet_Group_Edge{{TargetTicket: node.completed}},
-			}
-		}
-		if node.defines != "" {
-			set.Groups[edges.DefinesBinding] = &gpb.EdgeSet_Group{
-				Edge: []*gpb.EdgeSet_Group_Edge{{TargetTicket: node.defines}},
-			}
-		}
-		if node.params != nil {
-			var groups []*gpb.EdgeSet_Group_Edge
-			for i, p := range node.params {
-				groups = append(groups, &gpb.EdgeSet_Group_Edge{TargetTicket: p, Ordinal: int32(i)})
-			}
-			set.Groups[edges.Param] = &gpb.EdgeSet_Group{Edge: groups}
-		}
-		s.esets[node.ticket] = set
-	}
-	return s
-}
-
-func (s *mockService) getNode(ticket string, facts []string) *cpb.NodeInfo {
-	data, found := s.nodes[ticket]
-	if !found {
-		return nil
-	}
-	info := &cpb.NodeInfo{Facts: make(map[string][]byte)}
-	for _, fact := range facts {
-		info.Facts[fact] = data.Facts[fact]
-	}
-	return info
-}
-
-func (s *mockService) Nodes(ctx context.Context, req *gpb.NodesRequest) (*gpb.NodesReply, error) {
-	reply := &gpb.NodesReply{Nodes: make(map[string]*cpb.NodeInfo)}
-	for _, ticket := range req.Ticket {
-		if info := s.getNode(ticket, req.Filter); info != nil {
-			reply.Nodes[ticket] = info
-		}
-	}
-	return reply, nil
-}
-
-func (s *mockService) Edges(ctx context.Context, req *gpb.EdgesRequest) (*gpb.EdgesReply, error) {
-	reply := &gpb.EdgesReply{
-		EdgeSets: make(map[string]*gpb.EdgeSet),
-		Nodes:    make(map[string]*cpb.NodeInfo),
-	}
-	for _, ticket := range req.Ticket {
-		if data, found := s.esets[ticket]; found {
-			set := &gpb.EdgeSet{Groups: make(map[string]*gpb.EdgeSet_Group)}
-			reply.EdgeSets[ticket] = set
-			nodes := make(map[string]bool)
-			for groupKind, group := range data.Groups {
-				for _, kind := range req.Kind {
-					if groupKind == kind {
-						set.Groups[kind] = group
-						for _, edge := range group.Edge {
-							if !nodes[edge.TargetTicket] {
-								nodes[edge.TargetTicket] = true
-								if node := s.getNode(edge.TargetTicket, req.Filter); node != nil {
-									reply.Nodes[edge.TargetTicket] = node
-								}
-							}
-						}
-						break
-					}
-				}
-			}
-		}
-	}
-	return reply, nil
-}
-
-func (s *mockService) Decorations(ctx context.Context, req *xpb.DecorationsRequest) (*xpb.DecorationsReply, error) {
-	return nil, errors.New("unexpected call to Decorations")
-}
-
-func (s *mockService) CrossReferences(ctx context.Context, req *xpb.CrossReferencesRequest) (*xpb.CrossReferencesReply, error) {
-	reply := &xpb.CrossReferencesReply{
-		CrossReferences: make(map[string]*xpb.CrossReferencesReply_CrossReferenceSet),
-	}
-	if req.DefinitionKind != xpb.CrossReferencesRequest_BINDING_DEFINITIONS &&
-		req.DefinitionKind != xpb.CrossReferencesRequest_ALL_DEFINITIONS ||
-		req.ReferenceKind != xpb.CrossReferencesRequest_NO_REFERENCES ||
-		req.AnchorText {
-		return nil, fmt.Errorf("Unexpected CrossReferences request: %v", req)
-	}
-	for _, ticket := range req.Ticket {
-		if set, found := s.xrefs[ticket]; found {
-			reply.CrossReferences[ticket] = set
-		}
-	}
-	return reply, nil
-}
-
-func (s *mockService) Documentation(ctx context.Context, req *xpb.DocumentationRequest) (*xpb.DocumentationReply, error) {
-	return nil, errors.New("unexpected call to Documentation")
-}
-
-func containsString(arr []string, key string) bool {
-	for _, i := range arr {
-		if i == key {
-			return true
-		}
-	}
-	return false
-}

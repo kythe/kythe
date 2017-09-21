@@ -27,8 +27,10 @@ import (
 	"strings"
 
 	"kythe.io/kythe/go/services/filetree"
+	"kythe.io/kythe/go/services/graph"
 	"kythe.io/kythe/go/services/xrefs"
 	ftsrv "kythe.io/kythe/go/serving/filetree"
+	gsrv "kythe.io/kythe/go/serving/graph"
 	xsrv "kythe.io/kythe/go/serving/xrefs"
 	"kythe.io/kythe/go/storage/leveldb"
 	"kythe.io/kythe/go/storage/table"
@@ -42,6 +44,7 @@ import (
 type Interface interface {
 	io.Closer
 	xrefs.Service
+	graph.Service
 	filetree.Service
 }
 
@@ -72,6 +75,7 @@ func ParseSpec(apiSpec string) (Interface, error) {
 	api := &apiCloser{}
 	if strings.HasPrefix(apiSpec, "http://") || strings.HasPrefix(apiSpec, "https://") {
 		api.xs = xrefs.WebClient(apiSpec)
+		api.gs = graph.WebClient(apiSpec)
 		api.ft = filetree.WebClient(apiSpec)
 	} else if _, err := os.Stat(apiSpec); err == nil {
 		db, err := leveldb.Open(apiSpec, nil)
@@ -82,6 +86,7 @@ func ParseSpec(apiSpec string) (Interface, error) {
 
 		tbl := &table.KVProto{db}
 		api.xs = xsrv.NewCombinedTable(tbl)
+		api.gs = gsrv.NewCombinedTable(tbl)
 		api.ft = &ftsrv.Table{tbl, true}
 	} else {
 		return nil, fmt.Errorf("unknown API spec format: %q", apiSpec)
@@ -111,6 +116,7 @@ func (f *apiFlag) String() string { return f.spec }
 // apiCloser implements Interface
 type apiCloser struct {
 	xs xrefs.Service
+	gs graph.Service
 	ft filetree.Service
 
 	closer func() error
@@ -126,12 +132,12 @@ func (api apiCloser) Close() error {
 
 // Nodes implements part of the graph Service interface.
 func (api apiCloser) Nodes(ctx context.Context, req *gpb.NodesRequest) (*gpb.NodesReply, error) {
-	return api.xs.Nodes(ctx, req)
+	return api.gs.Nodes(ctx, req)
 }
 
 // Edges implements part of the graph Service interface.
 func (api apiCloser) Edges(ctx context.Context, req *gpb.EdgesRequest) (*gpb.EdgesReply, error) {
-	return api.xs.Edges(ctx, req)
+	return api.gs.Edges(ctx, req)
 }
 
 // Decorations implements part of the xrefs Service interface.

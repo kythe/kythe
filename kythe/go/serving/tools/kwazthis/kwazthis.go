@@ -43,6 +43,7 @@ import (
 	"strings"
 
 	"kythe.io/kythe/go/platform/vfs"
+	"kythe.io/kythe/go/services/graph"
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/serving/api"
 	"kythe.io/kythe/go/util/flagutil"
@@ -100,7 +101,10 @@ var (
 	skipDefinitions = flag.Bool("skip_defs", false, "Skip listing definitions for each node")
 )
 
-var xs xrefs.Service
+var (
+	xs xrefs.Service
+	gs graph.Service
+)
 
 type definition struct {
 	File  *spb.VName `json:"file"`
@@ -144,6 +148,7 @@ func main() {
 
 	defer (*apiFlag).Close()
 	xs = *apiFlag
+	gs = *apiFlag
 
 	relPath := *path
 	if *localRepoRoot != "NONE" {
@@ -194,7 +199,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	nodes := xrefs.NodesMap(decor.Nodes)
+	nodes := graph.NodesMap(decor.Nodes)
 
 	en := json.NewEncoder(os.Stdout)
 	for _, ref := range decor.Reference {
@@ -214,13 +219,13 @@ func main() {
 		r.Node.Subkind = string(node[facts.Subkind])
 
 		// TODO(schroederc): use CrossReferences method
-		if eReply, err := xrefs.AllEdges(ctx, xs, &gpb.EdgesRequest{
+		if eReply, err := graph.AllEdges(ctx, gs, &gpb.EdgesRequest{
 			Ticket: []string{ref.TargetTicket},
 			Kind:   []string{edges.Named, edges.Typed, definedAtEdge, definedBindingAtEdge},
 		}); err != nil {
 			log.Printf("WARNING: error getting edges for %q: %v", ref.TargetTicket, err)
 		} else {
-			matching := xrefs.EdgesMap(eReply.EdgeSets)[ref.TargetTicket]
+			matching := graph.EdgesMap(eReply.EdgeSets)[ref.TargetTicket]
 			for name := range matching[edges.Named] {
 				if uri, err := kytheuri.Parse(name); err != nil {
 					log.Printf("WARNING: named node ticket (%q) could not be parsed: %v", name, err)
@@ -265,14 +270,14 @@ func completeDefinition(defAnchor string) (*definition, error) {
 	if err != nil {
 		return nil, err
 	}
-	locReply, err := xs.Nodes(ctx, &gpb.NodesRequest{
+	locReply, err := gs.Nodes(ctx, &gpb.NodesRequest{
 		Ticket: []string{defAnchor},
 		Filter: []string{schema.AnchorLocFilter},
 	})
 	if err != nil {
 		return nil, err
 	}
-	nodes := xrefs.NodesMap(locReply.Nodes)
+	nodes := graph.NodesMap(locReply.Nodes)
 	start, end := parseAnchorSpan(nodes[defAnchor])
 	return &definition{
 		File:  parent.VName(),

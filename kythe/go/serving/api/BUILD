@@ -7,8 +7,10 @@ go_package_library(
     srcs = ["api.go"],
     deps = [
         "//kythe/go/services/filetree",
+        "//kythe/go/services/graph",
         "//kythe/go/services/xrefs",
         "//kythe/go/serving/filetree",
+        "//kythe/go/serving/graph",
         "//kythe/go/serving/xrefs",
         "//kythe/go/storage/leveldb",
         "//kythe/go/storage/table",

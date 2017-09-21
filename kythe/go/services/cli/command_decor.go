@@ -26,7 +26,7 @@ import (
 	"strings"
 
 	"kythe.io/kythe/go/platform/vfs"
-	"kythe.io/kythe/go/services/xrefs"
+	"kythe.io/kythe/go/services/graph"
 	"kythe.io/kythe/go/util/kytheuri"
 	"kythe.io/kythe/go/util/schema/facts"
 
@@ -185,7 +185,7 @@ func (c decorCommand) displayDecorations(decor *xpb.DecorationsReply) error {
 		return PrintJSONMessage(decor)
 	}
 
-	nodes := xrefs.NodesMap(decor.Nodes)
+	nodes := graph.NodesMap(decor.Nodes)
 
 	for _, ref := range decor.Reference {
 		nodeKind := factValue(nodes, ref.TargetTicket, facts.NodeKind, "UNKNOWN")

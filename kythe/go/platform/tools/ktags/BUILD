@@ -6,6 +6,7 @@ go_binary(
     name = "ktags",
     srcs = ["ktags.go"],
     deps = [
+        "//kythe/go/services/graph",
         "//kythe/go/services/xrefs",
         "//kythe/go/util/flagutil",
         "//kythe/go/util/kytheuri",
@@ -13,7 +14,7 @@ go_binary(
         "//kythe/go/util/schema/facts",
         "//kythe/go/util/schema/nodes",
         "//kythe/proto:graph_proto_go",
-	"//kythe/proto:xref_proto_go",
+        "//kythe/proto:xref_proto_go",
         "@go_stringset//:stringset",
     ],
 )

@@ -58,6 +58,7 @@ func main() {
 
 	status := cli.Execute(context.Background(), cli.API{
 		XRefService:     *apiFlag,
+		GraphService:    *apiFlag,
 		FileTreeService: *apiFlag,
 	})
 	(*apiFlag).Close()

@@ -10,6 +10,7 @@ go_package_library(
         "//kythe/go/services/graphstore",
         "//kythe/go/services/xrefs",
         "//kythe/go/serving/filetree",
+        "//kythe/go/serving/graph",
         "//kythe/go/serving/xrefs",
         "//kythe/go/serving/xrefs/assemble",
         "//kythe/go/storage/keyvalue",

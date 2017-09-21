@@ -26,7 +26,7 @@ import (
 	"sort"
 	"strings"
 
-	"kythe.io/kythe/go/services/xrefs"
+	"kythe.io/kythe/go/services/graph"
 	"kythe.io/kythe/go/util/schema/edges"
 	"kythe.io/kythe/go/util/schema/facts"
 
@@ -78,7 +78,7 @@ func (c edgesCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) erro
 		req.Filter = []string{"**"}
 	}
 	LogRequest(req)
-	reply, err := api.XRefService.Edges(ctx, req)
+	reply, err := api.GraphService.Edges(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -143,7 +143,7 @@ func (c edgesCommand) displayTargets(edges map[string]*gpb.EdgeSet) error {
 }
 
 func (c edgesCommand) displayEdgeGraph(reply *gpb.EdgesReply) error {
-	nodes := xrefs.NodesMap(reply.Nodes)
+	nodes := graph.NodesMap(reply.Nodes)
 	esets := make(map[string]map[string]stringset.Set)
 
 	for source, es := range reply.EdgeSets {

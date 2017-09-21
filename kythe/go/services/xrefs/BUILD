@@ -11,7 +11,6 @@ go_package_library(
         "//kythe/go/util/schema/edges",
         "//kythe/go/util/schema/facts",
         "//kythe/proto:common_proto_go",
-        "//kythe/proto:graph_proto_go",
         "//kythe/proto:xref_proto_go",
         "@go_diff//:diffmatchpatch",
         "@go_protobuf//:proto",

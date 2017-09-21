@@ -7,6 +7,7 @@ go_binary(
     srcs = ["kwazthis.go"],
     deps = [
         "//kythe/go/platform/vfs",
+        "//kythe/go/services/graph",
         "//kythe/go/services/xrefs",
         "//kythe/go/serving/api",
         "//kythe/go/util/flagutil",

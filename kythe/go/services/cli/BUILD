@@ -7,6 +7,7 @@ go_package_library(
     srcs = glob(["*.go"]),
     deps = [
         "//kythe/go/platform/vfs",
+        "//kythe/go/services/graph",
         "//kythe/go/services/filetree",
         "//kythe/go/services/web",
         "//kythe/go/services/xrefs",

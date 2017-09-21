@@ -33,9 +33,11 @@ import (
 	"os"
 
 	"kythe.io/kythe/go/services/filetree"
+	"kythe.io/kythe/go/services/graph"
 	"kythe.io/kythe/go/services/web"
 	"kythe.io/kythe/go/services/xrefs"
 	ftsrv "kythe.io/kythe/go/serving/filetree"
+	gsrv "kythe.io/kythe/go/serving/graph"
 	xsrv "kythe.io/kythe/go/serving/xrefs"
 	"kythe.io/kythe/go/storage/leveldb"
 	"kythe.io/kythe/go/storage/table"
@@ -61,10 +63,12 @@ func main() {
 	defer db.Close()
 	tbl := &table.KVProto{db}
 	xs := xsrv.NewCombinedTable(tbl)
+	gs := gsrv.NewCombinedTable(tbl)
 	ft := &ftsrv.Table{Proto: tbl, PrefixedKeys: true}
 
 	ctx := context.Background()
 	xrefs.RegisterHTTPHandlers(ctx, xs, http.DefaultServeMux)
+	graph.RegisterHTTPHandlers(ctx, gs, http.DefaultServeMux)
 	filetree.RegisterHTTPHandlers(ctx, ft, http.DefaultServeMux)
 	web.RegisterQuitHandler(http.DefaultServeMux)
 	http.HandleFunc("/alive", func(w http.ResponseWriter, r *http.Request) {

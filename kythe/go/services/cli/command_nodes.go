@@ -51,7 +51,7 @@ func (c nodesCommand) Run(ctx context.Context, flag *flag.FlagSet, api API) erro
 		req.Filter = strings.Split(c.nodeFilters, ",")
 	}
 	LogRequest(req)
-	reply, err := api.XRefService.Nodes(ctx, req)
+	reply, err := api.GraphService.Nodes(ctx, req)
 	if err != nil {
 		return err
 	}

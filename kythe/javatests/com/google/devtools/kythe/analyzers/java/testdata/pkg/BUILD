@@ -2,17 +2,18 @@ load("//tools:build_rules/kythe.bzl", "java_verifier_test", "kythe_integration_t
 
 ticket_root = "kythe://kythe?path=kythe/javatests/com/google/devtools/kythe/analyzers/java/testdata/pkg"
 
-kythe_integration_test(
-    name = "cross_file_integration_test",
-    srcs = [
-        ":cross_file_tests",
-        ":files_tests",
-    ],
-    file_tickets = [
-        ticket_root + "/Files.java",
-        ticket_root + "/CrossFile.java",
-    ],
-)
+# TODO(schroederc): requires related nodes generated in pipeline
+# kythe_integration_test(
+#     name = "cross_file_integration_test",
+#     srcs = [
+#         ":cross_file_tests",
+#         ":files_tests",
+#     ],
+#     file_tickets = [
+#         ticket_root + "/Files.java",
+#         ticket_root + "/CrossFile.java",
+#     ],
+# )
 
 java_verifier_test(
     name = "annotations_tests",

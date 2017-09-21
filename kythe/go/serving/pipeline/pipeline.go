@@ -31,6 +31,7 @@ import (
 	"kythe.io/kythe/go/services/graphstore"
 	"kythe.io/kythe/go/services/xrefs"
 	ftsrv "kythe.io/kythe/go/serving/filetree"
+	gsrv "kythe.io/kythe/go/serving/graph"
 	xsrv "kythe.io/kythe/go/serving/xrefs"
 	"kythe.io/kythe/go/serving/xrefs/assemble"
 	"kythe.io/kythe/go/storage/keyvalue"
@@ -292,10 +293,10 @@ func writePagedEdges(ctx context.Context, edges <-chan *srvpb.Edge, out table.Pr
 	esb := &assemble.EdgeSetBuilder{
 		MaxEdgePageSize: opts.MaxPageSize,
 		Output: func(ctx context.Context, pes *srvpb.PagedEdgeSet) error {
-			return buffer.Put(ctx, xsrv.EdgeSetKey(pes.Source.Ticket), pes)
+			return buffer.Put(ctx, gsrv.EdgeSetKey(pes.Source.Ticket), pes)
 		},
 		OutputPage: func(ctx context.Context, ep *srvpb.EdgePage) error {
-			return buffer.Put(ctx, xsrv.EdgePageKey(ep.PageKey), ep)
+			return buffer.Put(ctx, gsrv.EdgePageKey(ep.PageKey), ep)
 		},
 	}
 

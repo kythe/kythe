@@ -26,6 +26,7 @@ import (
 	"strconv"
 	"strings"
 
+	"kythe.io/kythe/go/services/graph"
 	"kythe.io/kythe/go/services/xrefs"
 	"kythe.io/kythe/go/util/flagutil"
 	"kythe.io/kythe/go/util/kytheuri"
@@ -62,6 +63,7 @@ func main() {
 	}
 
 	xs := xrefs.WebClient(*remoteAPI)
+	gs := graph.WebClient(*remoteAPI)
 
 	for _, file := range flag.Args() {
 		ticket := (&kytheuri.URI{Corpus: *corpus, Path: file}).String()
@@ -74,7 +76,7 @@ func main() {
 			log.Fatalf("Failed to get decorations for file %q", file)
 		}
 
-		nmap := xrefs.NodesMap(decor.Nodes)
+		nmap := graph.NodesMap(decor.Nodes)
 		var emitted stringset.Set
 
 		for _, r := range decor.Reference {
@@ -87,7 +89,7 @@ func main() {
 				continue
 			}
 
-			fields, err := getTagFields(xs, r.TargetTicket)
+			fields, err := getTagFields(gs, r.TargetTicket)
 			if err != nil {
 				log.Printf("Failed to get tagfields for %q: %v", r.TargetTicket, err)
 			}
@@ -99,8 +101,8 @@ func main() {
 	}
 }
 
-func getTagFields(xs xrefs.Service, ticket string) ([]string, error) {
-	reply, err := xs.Edges(ctx, &gpb.EdgesRequest{
+func getTagFields(gs graph.Service, ticket string) ([]string, error) {
+	reply, err := gs.Edges(ctx, &gpb.EdgesRequest{
 		Ticket: []string{ticket},
 		Kind:   []string{edges.ChildOf, edges.Param},
 		Filter: []string{facts.NodeKind, facts.Subkind, identifierFact},
@@ -111,8 +113,8 @@ func getTagFields(xs xrefs.Service, ticket string) ([]string, error) {
 
 	var fields []string
 
-	nmap := xrefs.NodesMap(reply.Nodes)
-	emap := xrefs.EdgesMap(reply.EdgeSets)
+	nmap := graph.NodesMap(reply.Nodes)
+	emap := graph.EdgesMap(reply.EdgeSets)
 
 	switch string(nmap[ticket][facts.NodeKind]) + "|" + string(nmap[ticket][facts.Subkind]) {
 	case nodes.Function + "|":

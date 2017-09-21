@@ -27,6 +27,7 @@ import (
 	"strings"
 
 	"kythe.io/kythe/go/services/filetree"
+	"kythe.io/kythe/go/services/graph"
 	"kythe.io/kythe/go/services/web"
 	"kythe.io/kythe/go/services/xrefs"
 
@@ -53,6 +54,7 @@ func init() {
 // API contains access points the CLI's backend services.
 type API struct {
 	XRefService     xrefs.Service
+	GraphService    graph.Service
 	FileTreeService filetree.Service
 }
 
